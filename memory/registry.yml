@@ -59,7 +59,26 @@ features:
         # itself about what "agent tooling" covers.
         - .claude/rules/**
         - .claude/settings.json
+        - .claude/agents/**
+        - .claude/hooks/**
+        - .mcp.json
+        - .githooks/**
+        - scripts/lib/create-workspace.mjs
+        - scripts/claude.mjs
+        - scripts/__tests__/claude-launcher.test.mjs
+        - scripts/lib/shared-workspace-runtime.mjs
+        - .worktreeinclude
+        - scripts/lint-ci.mjs
+        - scripts/lib/lint-results.mjs
+        - scripts/__tests__/lint-results.test.mjs
+        - scripts/lint-ratchet.mjs
+        - scripts/supabase-error-audit.mjs
+        - scripts/fail-open-audit.mjs
+        - scripts/paginated-read-audit.mjs
+        - docs/operations/WORKSPACES.md
+        - scripts/control-plane-verify.mjs
         - scripts/new-worktree.sh
+        - scripts/setup-hooks.mjs
         - scripts/worktree-lifecycle.mjs
         - scripts/deploy-prod.sh
         - .vercelignore
@@ -176,6 +195,7 @@ features:
         - supabase/migrations/*helm_debug_db_platform_samples*.sql
         - supabase/migrations/*helm_debug_db_statement_samples*.sql
         - supabase/migrations/*helm_debug_db_analysis_samples*.sql
+        - supabase/migrations/*helm_debug_analysis_drop_index_advisor*.sql
         - supabase/migrations/*helm_debug_db_table_samples*.sql
         - supabase/migrations/*helm_debug_stat_*.sql
         - supabase/migrations/*helm_debug_jobs_health*.sql
@@ -1027,6 +1047,7 @@ features:
         # than a recorded gap.
         - src/hooks/golf/use-golf-messages.ts
         - src/hooks/golf/use-message-attachments.ts
+        - src/hooks/golf/use-message-reactions.ts
       db:
         - supabase/migrations/*messag*.sql
         - supabase/migrations/*announcement*.sql
@@ -1035,9 +1056,19 @@ features:
         # glob (Phase 5 registry glob lint).
         - supabase/migrations/*conversation*.sql
         - supabase/migrations/*chat_*.sql
+        # Named explicitly: the file is about golf_conversation_participants but
+        # its name carries neither "conversation" nor "chat_", so none of the
+        # globs above reach it (G-58).
+        - supabase/migrations/20260907120000_golf_participants_mute_columns.sql
       tests:
         - e2e/messages.spec.ts
+        - e2e/golf-critical-paths.spec.ts
+        - supabase/tests/rls/golf_message_reactions.sql
         - src/app/golf/actions/unified-notifications-model.test.ts
+        # Named explicitly rather than by a __tests__/** glob: that directory
+        # holds several other features' action tests, so a glob would claim them.
+        - src/app/golf/actions/__tests__/message-attachments-partial-failure.test.ts
+        - src/test/actions/send-message-duplicate-key-equivalence.test.ts
     integrations:
       - supabase
       - notifications
@@ -1449,9 +1480,7 @@ features:
     code:
       routes:
         - src/app/admin/engineering/**
-        - src/app/admin/work-log/**
         - src/app/admin/database/**
-        - src/app/admin/lenses/**
         # Every src/app/admin/** subdirectory EXCEPT the three carved out
         # below (errors/ -> admin_incidents, reliability/ ->
         # admin_reliability_collector, self-heal/ -> admin_selfheal), so a
@@ -1461,7 +1490,6 @@ features:
         - src/app/admin/traces/**
         - src/app/admin/deploys/**
         - src/app/admin/auth/**
-        - src/app/admin/qualifiers/**
         - src/app/admin/activity/**
         - src/app/admin/baseball/**
         - src/app/admin/health/**
@@ -1473,7 +1501,6 @@ features:
         - src/app/admin/lifting/**
         - src/app/admin/jobs/**
         - src/app/admin/thread/**
-        - src/app/admin/billing/**
         - src/app/admin/*.tsx
         - src/app/golf/admin/**
       components:
@@ -1649,6 +1676,14 @@ features:
         # The incidents-facing UI is /admin/errors (RcaPanel, EvidenceWall,
         # LifecycleSpine, ErrorSurfaceReconciliation) — there is no
         # src/app/admin/incidents/** route; naming would suggest otherwise.
+        #
+        # This glob now also covers the `sources` and `loop` views under
+        # errors/_components/{sources,loop}/, which were /admin/reliability
+        # and /admin/self-heal before the 30→19 consolidation. Their UI is
+        # owned here (one route, one owner); their DATA layers stay with
+        # admin_reliability_collector (src/lib/admin/reliability/**,
+        # src/lib/reliability/**) and admin_selfheal (src/lib/admin/triage/**)
+        # respectively — see those two feature docs.
         - src/app/admin/errors/**
       components: []
       api: []
@@ -1701,7 +1736,9 @@ features:
       incidents: []
     code:
       routes:
-        - src/app/admin/reliability/**
+        # /admin/reliability retired in the 30→19 consolidation. Its UI is now
+        # the `sources` view of /admin/errors, owned by admin_incidents; the
+        # collector, its read models and the cron below stay here.
         - src/app/admin/releases/**
       components: []
       api:
@@ -1732,7 +1769,7 @@ features:
         - docs/OBSERVABILITY.md
       required_checks:
         - npm run typecheck
-        - npx vitest run src/lib/reliability src/app/admin/reliability src/lib/admin/release-intel
+        - npx vitest run src/lib/reliability src/app/admin/errors/_components/sources src/lib/admin/release-intel
         - npm run build
 
   admin_slo:
@@ -1751,7 +1788,9 @@ features:
       incidents: []
     code:
       routes:
-        - src/app/admin/slo/**
+      # /admin/slo retired in the 30→19 consolidation; its page is now the
+      # `budgets` view of /admin/health, under admin_platform's routes glob.
+      # The four read models under src/lib/admin/slo/** stay here.
       # src/components/admin/slo/** is reserved (this feature's rendering
       # lives inline in page.tsx, matching admin_qualifiers's own
       # convention) — not globbed here since an empty glob fails
@@ -1770,7 +1809,7 @@ features:
         - memory/features/admin-slo.md
       required_checks:
         - npm run typecheck
-        - npx vitest run src/lib/admin/slo src/lib/reliability/__tests__/error-budget.test.ts src/lib/reliability/invariants
+        - npx vitest run src/lib/admin/slo src/app/admin/health src/lib/reliability/__tests__/error-budget.test.ts src/lib/reliability/invariants
         - npm run knowledge:invariants-check
         - npm run knowledge:golden-paths-generate:check
         - npm run build
@@ -1795,8 +1834,10 @@ features:
         - docs/OBSERVABILITY.md
       incidents: []
     code:
-      routes:
-        - src/app/admin/self-heal/**
+      routes: []
+      # /admin/self-heal retired in the 30→19 consolidation. Its UI is now the
+      # `loop` view of /admin/errors, owned by admin_incidents; the triage
+      # contract, the circuit read model and the crons below stay here.
       components: []
       api:
         - src/app/api/cron/selfheal-triage/**
@@ -1850,7 +1891,10 @@ features:
     criticality: medium
     observability:
       feature_keys: []
-      reason: "Agent/operator tooling, not a product surface. No admin_events writes; the Bridge panel it feeds (/admin/self-heal) reads a bundled generated index, not a runtime telemetry source."
+      reason: >-
+        Agent/operator tooling, not a product surface. No admin_events writes;
+        the Bridge panel it feeds (/admin/errors?view=loop) reads a bundled
+        generated index, not a runtime telemetry source.
     docs:
       feature: memory/features/admin-replay-lab.md
       flows:

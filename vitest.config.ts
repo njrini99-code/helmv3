@@ -199,18 +199,34 @@ export default defineConfig({
             // its neighbours; it is the failure-injection suite for the
             // tools/mcp-deny-connector-ids verifier check.
             'scripts/__tests__/mcp-deny-connector-ids.test.ts',
+            // W3A reduced-motion contract: every src file that imports
+            // framer-motion AND animates must honor prefers-reduced-motion
+            // (WCAG 2.3.3). Written during the W3A sweep but never named
+            // here and never given a `node --test` caller, so it ran nowhere.
+            'scripts/__tests__/motion-reduced-motion-coverage.test.mjs',
             // Fixture-repo tests for .githooks/pre-push (the local pre-push
             // gate wired by scripts/setup-hooks.mjs): the HELM_SKIP_PREPUSH
-            // escape hatch, and the generated-docs regenerate-then-diff step
-            // both staying stale (fails) and clean (passes) against a
-            // disposable temp git repo — never this repo's own git state.
+            // escape hatch, pushed-range diff checks, and optional gitleaks
+            // invocation against disposable temp git repos.
             'scripts/__tests__/pre-push-hook.test.mjs',
+            // Fixture-repo coverage for .githooks/pre-commit: staged gitleaks
+            // uses --redact, and migration commits only receive a reminder;
+            // the hook must not regenerate or stage database types.
+            'scripts/__tests__/pre-commit-hook.test.mjs',
             // Settings ownership (A6): user-scope leaks of repo-specific
             // rules, project-scope rules gating an uninstalled plugin
             // namespace, and rule files naming an unrecorded connector id.
             // Failure-injection suite for repo:doctor's settings-ownership.*
             // checks (scripts/check-settings-ownership.mjs).
             'scripts/__tests__/check-settings-ownership.test.mjs',
+            // The single-file apply body (scripts/db/apply.mjs). Named here for
+            // the same reason as its neighbours, and with more at stake than
+            // most: `--apply` is denied to agents and the DB password lives
+            // only in GitHub secrets, so this code path's FIRST real execution
+            // is against production. The pure body-builder is the only part
+            // testable off a live connection, and it is the part that would
+            // ship a wrong ledger row silently.
+            'scripts/__tests__/db-apply-single-file.test.mjs',
             // Weekly control-plane report (A6): the pure decision functions
             // behind control-plane-weekly.yml's four hard checks (secret
             // scanning, Dependabot severity ceiling, full-history gitleaks
@@ -403,6 +419,8 @@ export default defineConfig({
             // exercises .claude/hooks/worktree-create.mjs as a real
             // subprocess against a disposable git fixture.
             'scripts/__tests__/create-workspace.test.ts',
+            'scripts/__tests__/lint-results.test.mjs',
+            'scripts/__tests__/claude-launcher.test.mjs',
             // Gate timing ledger (reorg Phase 7 / W3 Speed): the pure
             // append-and-trim step in scripts/serialize.mjs that writes one
             // row per gate run to memory/ledgers/gates.jsonl, exercised only

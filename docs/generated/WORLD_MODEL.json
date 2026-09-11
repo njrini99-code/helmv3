@@ -232,11 +232,6 @@
         "category": "routes"
       },
       {
-        "id": "routes:src/app/admin/billing/**",
-        "pattern": "src/app/admin/billing/**",
-        "category": "routes"
-      },
-      {
         "id": "routes:src/app/admin/database/**",
         "pattern": "src/app/admin/database/**",
         "category": "routes"
@@ -272,38 +267,13 @@
         "category": "routes"
       },
       {
-        "id": "routes:src/app/admin/lenses/**",
-        "pattern": "src/app/admin/lenses/**",
-        "category": "routes"
-      },
-      {
         "id": "routes:src/app/admin/lifting/**",
         "pattern": "src/app/admin/lifting/**",
         "category": "routes"
       },
       {
-        "id": "routes:src/app/admin/qualifiers/**",
-        "pattern": "src/app/admin/qualifiers/**",
-        "category": "routes"
-      },
-      {
         "id": "routes:src/app/admin/releases/**",
         "pattern": "src/app/admin/releases/**",
-        "category": "routes"
-      },
-      {
-        "id": "routes:src/app/admin/reliability/**",
-        "pattern": "src/app/admin/reliability/**",
-        "category": "routes"
-      },
-      {
-        "id": "routes:src/app/admin/self-heal/**",
-        "pattern": "src/app/admin/self-heal/**",
-        "category": "routes"
-      },
-      {
-        "id": "routes:src/app/admin/slo/**",
-        "pattern": "src/app/admin/slo/**",
         "category": "routes"
       },
       {
@@ -329,11 +299,6 @@
       {
         "id": "routes:src/app/admin/utilization/**",
         "pattern": "src/app/admin/utilization/**",
-        "category": "routes"
-      },
-      {
-        "id": "routes:src/app/admin/work-log/**",
-        "pattern": "src/app/admin/work-log/**",
         "category": "routes"
       },
       {
@@ -1410,6 +1375,16 @@
     ],
     "services": [
       {
+        "id": "services:.claude/agents/**",
+        "pattern": ".claude/agents/**",
+        "category": "services"
+      },
+      {
+        "id": "services:.claude/hooks/**",
+        "pattern": ".claude/hooks/**",
+        "category": "services"
+      },
+      {
         "id": "services:.claude/rules/**",
         "pattern": ".claude/rules/**",
         "category": "services"
@@ -1425,13 +1400,28 @@
         "category": "services"
       },
       {
+        "id": "services:.githooks/**",
+        "pattern": ".githooks/**",
+        "category": "services"
+      },
+      {
         "id": "services:.github/workflows/feature-awareness.yml",
         "pattern": ".github/workflows/feature-awareness.yml",
         "category": "services"
       },
       {
+        "id": "services:.mcp.json",
+        "pattern": ".mcp.json",
+        "category": "services"
+      },
+      {
         "id": "services:.vercelignore",
         "pattern": ".vercelignore",
+        "category": "services"
+      },
+      {
+        "id": "services:.worktreeinclude",
+        "pattern": ".worktreeinclude",
         "category": "services"
       },
       {
@@ -1460,6 +1450,11 @@
         "category": "services"
       },
       {
+        "id": "services:docs/operations/WORKSPACES.md",
+        "pattern": "docs/operations/WORKSPACES.md",
+        "category": "services"
+      },
+      {
         "id": "services:memory/journeys/**",
         "pattern": "memory/journeys/**",
         "category": "services"
@@ -1475,13 +1470,33 @@
         "category": "services"
       },
       {
+        "id": "services:scripts/__tests__/claude-launcher.test.mjs",
+        "pattern": "scripts/__tests__/claude-launcher.test.mjs",
+        "category": "services"
+      },
+      {
+        "id": "services:scripts/__tests__/lint-results.test.mjs",
+        "pattern": "scripts/__tests__/lint-results.test.mjs",
+        "category": "services"
+      },
+      {
         "id": "services:scripts/check-feature-flags.mjs",
         "pattern": "scripts/check-feature-flags.mjs",
         "category": "services"
       },
       {
+        "id": "services:scripts/claude.mjs",
+        "pattern": "scripts/claude.mjs",
+        "category": "services"
+      },
+      {
         "id": "services:scripts/contracts/**",
         "pattern": "scripts/contracts/**",
+        "category": "services"
+      },
+      {
+        "id": "services:scripts/control-plane-verify.mjs",
+        "pattern": "scripts/control-plane-verify.mjs",
         "category": "services"
       },
       {
@@ -1500,6 +1515,11 @@
         "category": "services"
       },
       {
+        "id": "services:scripts/fail-open-audit.mjs",
+        "pattern": "scripts/fail-open-audit.mjs",
+        "category": "services"
+      },
+      {
         "id": "services:scripts/flags/**",
         "pattern": "scripts/flags/**",
         "category": "services"
@@ -1515,8 +1535,38 @@
         "category": "services"
       },
       {
+        "id": "services:scripts/lib/create-workspace.mjs",
+        "pattern": "scripts/lib/create-workspace.mjs",
+        "category": "services"
+      },
+      {
+        "id": "services:scripts/lib/lint-results.mjs",
+        "pattern": "scripts/lib/lint-results.mjs",
+        "category": "services"
+      },
+      {
+        "id": "services:scripts/lib/shared-workspace-runtime.mjs",
+        "pattern": "scripts/lib/shared-workspace-runtime.mjs",
+        "category": "services"
+      },
+      {
+        "id": "services:scripts/lint-ci.mjs",
+        "pattern": "scripts/lint-ci.mjs",
+        "category": "services"
+      },
+      {
+        "id": "services:scripts/lint-ratchet.mjs",
+        "pattern": "scripts/lint-ratchet.mjs",
+        "category": "services"
+      },
+      {
         "id": "services:scripts/new-worktree.sh",
         "pattern": "scripts/new-worktree.sh",
+        "category": "services"
+      },
+      {
+        "id": "services:scripts/paginated-read-audit.mjs",
+        "pattern": "scripts/paginated-read-audit.mjs",
         "category": "services"
       },
       {
@@ -1527,6 +1577,16 @@
       {
         "id": "services:scripts/repo-doctor/checks/db-observability.mjs",
         "pattern": "scripts/repo-doctor/checks/db-observability.mjs",
+        "category": "services"
+      },
+      {
+        "id": "services:scripts/setup-hooks.mjs",
+        "pattern": "scripts/setup-hooks.mjs",
+        "category": "services"
+      },
+      {
+        "id": "services:scripts/supabase-error-audit.mjs",
+        "pattern": "scripts/supabase-error-audit.mjs",
         "category": "services"
       },
       {
@@ -1542,6 +1602,11 @@
       {
         "id": "services:src/hooks/golf/use-message-attachments.ts",
         "pattern": "src/hooks/golf/use-message-attachments.ts",
+        "category": "services"
+      },
+      {
+        "id": "services:src/hooks/golf/use-message-reactions.ts",
+        "pattern": "src/hooks/golf/use-message-reactions.ts",
         "category": "services"
       },
       {
@@ -1817,6 +1882,11 @@
         "category": "tests"
       },
       {
+        "id": "tests:e2e/golf-critical-paths.spec.ts",
+        "pattern": "e2e/golf-critical-paths.spec.ts",
+        "category": "tests"
+      },
+      {
         "id": "tests:e2e/golf-qualifier.spec.ts",
         "pattern": "e2e/golf-qualifier.spec.ts",
         "category": "tests"
@@ -1869,6 +1939,11 @@
       {
         "id": "tests:src/app/golf/actions/__tests__/golf-schemas.test.ts",
         "pattern": "src/app/golf/actions/__tests__/golf-schemas.test.ts",
+        "category": "tests"
+      },
+      {
+        "id": "tests:src/app/golf/actions/__tests__/message-attachments-partial-failure.test.ts",
+        "pattern": "src/app/golf/actions/__tests__/message-attachments-partial-failure.test.ts",
         "category": "tests"
       },
       {
@@ -1964,6 +2039,11 @@
       {
         "id": "tests:src/lib/observability/supabase/__tests__/**",
         "pattern": "src/lib/observability/supabase/__tests__/**",
+        "category": "tests"
+      },
+      {
+        "id": "tests:src/test/actions/send-message-duplicate-key-equivalence.test.ts",
+        "pattern": "src/test/actions/send-message-duplicate-key-equivalence.test.ts",
         "category": "tests"
       },
       {
@@ -2084,6 +2164,11 @@
       {
         "id": "tests:supabase/tests/rls/baseball_*.sql",
         "pattern": "supabase/tests/rls/baseball_*.sql",
+        "category": "tests"
+      },
+      {
+        "id": "tests:supabase/tests/rls/golf_message_reactions.sql",
+        "pattern": "supabase/tests/rls/golf_message_reactions.sql",
         "category": "tests"
       },
       {
@@ -3109,6 +3194,10 @@
         "definedIn": "supabase/migrations/20260807080000_golf_dm_join_requires_creator.sql"
       },
       {
+        "id": "golf_conversation_has_me",
+        "definedIn": "supabase/migrations/20260908160000_golf_message_reactions_access.sql"
+      },
+      {
         "id": "golf_conversation_has_other_participant",
         "definedIn": "supabase/migrations/20260819070000_conversation_creator_cannot_inject_third_party.sql"
       },
@@ -3149,6 +3238,10 @@
         "definedIn": "supabase/migrations/20260803120200_golf_join_code_requires_proof.sql"
       },
       {
+        "id": "golf_user_on_conversation_team",
+        "definedIn": "supabase/migrations/20260907160000_golf_team_chat_membership_management.sql"
+      },
+      {
         "id": "guard_users_role_self_change",
         "definedIn": "supabase/migrations/20260703210000_admin_rollup_consistent_super_admin_gate.sql"
       },
@@ -3166,7 +3259,7 @@
       },
       {
         "id": "helm_debug_db_analysis_snapshot",
-        "definedIn": "supabase/migrations/20260906120100_helm_debug_db_analysis_samples.sql"
+        "definedIn": "supabase/migrations/20260909230000_helm_debug_analysis_drop_index_advisor.sql"
       },
       {
         "id": "helm_debug_db_health_snapshot",
@@ -4380,7 +4473,7 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-incidents.md",
-          "line": 253
+          "line": 263
         },
         {
           "kind": "import_graph",
@@ -4542,12 +4635,12 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-incidents.md",
-          "line": 62
+          "line": 72
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-incidents.md",
-          "line": 261
+          "line": 271
         }
       ]
     },
@@ -4559,22 +4652,22 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-incidents.md",
-          "line": 49
+          "line": 59
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-incidents.md",
-          "line": 98
+          "line": 108
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-incidents.md",
-          "line": 128
+          "line": 138
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-incidents.md",
-          "line": 181
+          "line": 191
         },
         {
           "kind": "import_graph",
@@ -4982,22 +5075,22 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 168
+          "line": 175
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 381
+          "line": 388
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 401
+          "line": 408
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 606
+          "line": 613
         },
         {
           "kind": "import_graph",
@@ -5236,17 +5329,17 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 40
+          "line": 42
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 244
+          "line": 251
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 400
+          "line": 407
         }
       ]
     },
@@ -5258,27 +5351,32 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 41
+          "line": 42
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 169
+          "line": 44
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 245
+          "line": 176
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 410
+          "line": 252
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 492
+          "line": 417
+        },
+        {
+          "kind": "feature_doc_contract",
+          "path": "memory/features/admin-platform.md",
+          "line": 499
         },
         {
           "kind": "import_graph",
@@ -5298,7 +5396,12 @@
         {
           "kind": "import_graph",
           "path": "src/lib/admin/__tests__/rca.test.ts",
-          "line": 22
+          "line": 23
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/__tests__/rca.test.ts",
+          "line": 24
         },
         {
           "kind": "import_graph",
@@ -5805,7 +5908,7 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 1089
+          "line": 1178
         },
         {
           "kind": "import_graph",
@@ -5866,7 +5969,7 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 736
+          "line": 755
         }
       ]
     },
@@ -6149,7 +6252,7 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 737
+          "line": 756
         },
         {
           "kind": "import_graph",
@@ -6674,18 +6777,6 @@
     },
     {
       "source": "admin_platform",
-      "target": "routes:src/app/admin/billing/**",
-      "kind": "feature_route",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/app/admin/billing/**"
-        }
-      ]
-    },
-    {
-      "source": "admin_platform",
       "target": "routes:src/app/admin/database/**",
       "kind": "feature_route",
       "evidence": [
@@ -6758,18 +6849,6 @@
     },
     {
       "source": "admin_platform",
-      "target": "routes:src/app/admin/lenses/**",
-      "kind": "feature_route",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/app/admin/lenses/**"
-        }
-      ]
-    },
-    {
-      "source": "admin_platform",
       "target": "routes:src/app/admin/lifting/**",
       "kind": "feature_route",
       "evidence": [
@@ -6777,18 +6856,6 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/app/admin/lifting/**"
-        }
-      ]
-    },
-    {
-      "source": "admin_platform",
-      "target": "routes:src/app/admin/qualifiers/**",
-      "kind": "feature_route",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/app/admin/qualifiers/**"
         }
       ]
     },
@@ -6849,18 +6916,6 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/app/admin/utilization/**"
-        }
-      ]
-    },
-    {
-      "source": "admin_platform",
-      "target": "routes:src/app/admin/work-log/**",
-      "kind": "feature_route",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/app/admin/work-log/**"
         }
       ]
     },
@@ -7052,27 +7107,32 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-reliability-collector.md",
-          "line": 119
+          "line": 19
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-reliability-collector.md",
-          "line": 144
+          "line": 130
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-reliability-collector.md",
-          "line": 153
+          "line": 155
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-reliability-collector.md",
-          "line": 163
+          "line": 164
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-reliability-collector.md",
-          "line": 180
+          "line": 174
+        },
+        {
+          "kind": "feature_doc_contract",
+          "path": "memory/features/admin-reliability-collector.md",
+          "line": 191
         }
       ]
     },
@@ -7141,12 +7201,12 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-reliability-collector.md",
-          "line": 41
+          "line": 52
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-reliability-collector.md",
-          "line": 79
+          "line": 90
         }
       ]
     },
@@ -7170,7 +7230,7 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-reliability-collector.md",
-          "line": 54
+          "line": 65
         }
       ]
     },
@@ -7183,18 +7243,6 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/app/admin/releases/**"
-        }
-      ]
-    },
-    {
-      "source": "admin_reliability_collector",
-      "target": "routes:src/app/admin/reliability/**",
-      "kind": "feature_route",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/app/admin/reliability/**"
         }
       ]
     },
@@ -7350,7 +7398,7 @@
         {
           "kind": "rpc_call",
           "path": "src/lib/admin/triage-apply.ts",
-          "line": 57
+          "line": 69
         }
       ]
     },
@@ -7362,17 +7410,22 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-selfheal.md",
-          "line": 74
+          "line": 18
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-selfheal.md",
-          "line": 124
+          "line": 83
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-selfheal.md",
-          "line": 179
+          "line": 133
+        },
+        {
+          "kind": "feature_doc_contract",
+          "path": "memory/features/admin-selfheal.md",
+          "line": 188
         },
         {
           "kind": "import_graph",
@@ -7539,7 +7592,7 @@
         {
           "kind": "import_graph",
           "path": "src/lib/admin/selfheal-registry.ts",
-          "line": 39
+          "line": 40
         }
       ]
     },
@@ -7615,18 +7668,6 @@
           "kind": "rpc_call",
           "path": "src/app/admin/actions/triage.ts",
           "line": 28
-        }
-      ]
-    },
-    {
-      "source": "admin_selfheal",
-      "target": "routes:src/app/admin/self-heal/**",
-      "kind": "feature_route",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/app/admin/self-heal/**"
         }
       ]
     },
@@ -7787,7 +7828,7 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-slo.md",
-          "line": 80
+          "line": 90
         },
         {
           "kind": "import_graph",
@@ -7864,17 +7905,17 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-slo.md",
-          "line": 46
+          "line": 56
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-slo.md",
-          "line": 67
+          "line": 77
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-slo.md",
-          "line": 78
+          "line": 88
         }
       ]
     },
@@ -7911,18 +7952,6 @@
           "kind": "import_graph",
           "path": "src/lib/admin/slo/trace-funnels.ts",
           "line": 30
-        }
-      ]
-    },
-    {
-      "source": "admin_slo",
-      "target": "routes:src/app/admin/slo/**",
-      "kind": "feature_route",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/app/admin/slo/**"
         }
       ]
     },
@@ -12222,6 +12251,11 @@
           "kind": "import_graph",
           "path": "src/lib/calendar/availability.ts",
           "line": 16
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/calendar/availability.ts",
+          "line": 17
         }
       ]
     },
@@ -14756,7 +14790,7 @@
         {
           "kind": "feature_doc_contract",
           "path": "docs/ai-system/helmv3-ai-codebase-intelligence.md",
-          "line": 105
+          "line": 116
         }
       ]
     },
@@ -14768,7 +14802,7 @@
         {
           "kind": "feature_doc_contract",
           "path": "docs/ai-system/helmv3-ai-codebase-intelligence.md",
-          "line": 105
+          "line": 116
         }
       ]
     },
@@ -14780,7 +14814,7 @@
         {
           "kind": "feature_doc_contract",
           "path": "docs/ai-system/helmv3-ai-codebase-intelligence.md",
-          "line": 106
+          "line": 117
         }
       ]
     },
@@ -14792,7 +14826,31 @@
         {
           "kind": "feature_doc_contract",
           "path": "docs/ai-system/helmv3-ai-codebase-intelligence.md",
-          "line": 106
+          "line": 117
+        }
+      ]
+    },
+    {
+      "source": "feature_awareness_system",
+      "target": "services:.claude/agents/**",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": ".claude/agents/**"
+        }
+      ]
+    },
+    {
+      "source": "feature_awareness_system",
+      "target": "services:.claude/hooks/**",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": ".claude/hooks/**"
         }
       ]
     },
@@ -14834,6 +14892,18 @@
     },
     {
       "source": "feature_awareness_system",
+      "target": "services:.githooks/**",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": ".githooks/**"
+        }
+      ]
+    },
+    {
+      "source": "feature_awareness_system",
       "target": "services:.github/workflows/feature-awareness.yml",
       "kind": "feature_service",
       "evidence": [
@@ -14846,6 +14916,18 @@
     },
     {
       "source": "feature_awareness_system",
+      "target": "services:.mcp.json",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": ".mcp.json"
+        }
+      ]
+    },
+    {
+      "source": "feature_awareness_system",
       "target": "services:.vercelignore",
       "kind": "feature_service",
       "evidence": [
@@ -14853,6 +14935,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": ".vercelignore"
+        }
+      ]
+    },
+    {
+      "source": "feature_awareness_system",
+      "target": "services:.worktreeinclude",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": ".worktreeinclude"
         }
       ]
     },
@@ -14894,6 +14988,18 @@
     },
     {
       "source": "feature_awareness_system",
+      "target": "services:docs/operations/WORKSPACES.md",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "docs/operations/WORKSPACES.md"
+        }
+      ]
+    },
+    {
+      "source": "feature_awareness_system",
       "target": "services:memory/journeys/**",
       "kind": "feature_service",
       "evidence": [
@@ -14918,6 +15024,42 @@
     },
     {
       "source": "feature_awareness_system",
+      "target": "services:scripts/__tests__/claude-launcher.test.mjs",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/__tests__/claude-launcher.test.mjs"
+        }
+      ]
+    },
+    {
+      "source": "feature_awareness_system",
+      "target": "services:scripts/__tests__/lint-results.test.mjs",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/__tests__/lint-results.test.mjs"
+        }
+      ]
+    },
+    {
+      "source": "feature_awareness_system",
+      "target": "services:scripts/claude.mjs",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/claude.mjs"
+        }
+      ]
+    },
+    {
+      "source": "feature_awareness_system",
       "target": "services:scripts/contracts/**",
       "kind": "feature_service",
       "evidence": [
@@ -14925,6 +15067,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "scripts/contracts/**"
+        }
+      ]
+    },
+    {
+      "source": "feature_awareness_system",
+      "target": "services:scripts/control-plane-verify.mjs",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/control-plane-verify.mjs"
         }
       ]
     },
@@ -14942,6 +15096,18 @@
     },
     {
       "source": "feature_awareness_system",
+      "target": "services:scripts/fail-open-audit.mjs",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/fail-open-audit.mjs"
+        }
+      ]
+    },
+    {
+      "source": "feature_awareness_system",
       "target": "services:scripts/knowledge/**",
       "kind": "feature_service",
       "evidence": [
@@ -14954,6 +15120,66 @@
     },
     {
       "source": "feature_awareness_system",
+      "target": "services:scripts/lib/create-workspace.mjs",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/lib/create-workspace.mjs"
+        }
+      ]
+    },
+    {
+      "source": "feature_awareness_system",
+      "target": "services:scripts/lib/lint-results.mjs",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/lib/lint-results.mjs"
+        }
+      ]
+    },
+    {
+      "source": "feature_awareness_system",
+      "target": "services:scripts/lib/shared-workspace-runtime.mjs",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/lib/shared-workspace-runtime.mjs"
+        }
+      ]
+    },
+    {
+      "source": "feature_awareness_system",
+      "target": "services:scripts/lint-ci.mjs",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/lint-ci.mjs"
+        }
+      ]
+    },
+    {
+      "source": "feature_awareness_system",
+      "target": "services:scripts/lint-ratchet.mjs",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/lint-ratchet.mjs"
+        }
+      ]
+    },
+    {
+      "source": "feature_awareness_system",
       "target": "services:scripts/new-worktree.sh",
       "kind": "feature_service",
       "evidence": [
@@ -14961,6 +15187,42 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "scripts/new-worktree.sh"
+        }
+      ]
+    },
+    {
+      "source": "feature_awareness_system",
+      "target": "services:scripts/paginated-read-audit.mjs",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/paginated-read-audit.mjs"
+        }
+      ]
+    },
+    {
+      "source": "feature_awareness_system",
+      "target": "services:scripts/setup-hooks.mjs",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/setup-hooks.mjs"
+        }
+      ]
+    },
+    {
+      "source": "feature_awareness_system",
+      "target": "services:scripts/supabase-error-audit.mjs",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/supabase-error-audit.mjs"
         }
       ]
     },
@@ -15054,11 +15316,6 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 41
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/golf.ts",
           "line": 42
         },
         {
@@ -15070,6 +15327,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/golf.ts",
           "line": 44
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/golf.ts",
+          "line": 45
         },
         {
           "kind": "import_graph",
@@ -15228,12 +15490,12 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 46
+          "line": 47
         },
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 52
+          "line": 53
         },
         {
           "kind": "import_graph",
@@ -15326,6 +15588,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/golf.ts",
           "line": 30
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/golf.ts",
+          "line": 31
         }
       ]
     },
@@ -15517,11 +15784,6 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 32
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/golf.ts",
           "line": 33
         },
         {
@@ -15532,7 +15794,12 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 58
+          "line": 35
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/golf.ts",
+          "line": 59
         },
         {
           "kind": "import_graph",
@@ -15691,7 +15958,7 @@
         {
           "kind": "rpc_call",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 7226
+          "line": 7271
         }
       ]
     },
@@ -15739,7 +16006,7 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 31
+          "line": 32
         },
         {
           "kind": "import_graph",
@@ -15766,12 +16033,12 @@
         {
           "kind": "rpc_call",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 2323
+          "line": 2327
         },
         {
           "kind": "rpc_call",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 2557
+          "line": 2561
         }
       ]
     },
@@ -16240,12 +16507,12 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/observability-supabase.md",
-          "line": 268
+          "line": 281
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/observability-supabase.md",
-          "line": 271
+          "line": 284
         },
         {
           "kind": "import_graph",
@@ -20901,6 +21168,18 @@
     },
     {
       "source": "team_communications",
+      "target": "services:src/hooks/golf/use-message-reactions.ts",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/hooks/golf/use-message-reactions.ts"
+        }
+      ]
+    },
+    {
+      "source": "team_communications",
       "target": "services:src/lib/supabase/**",
       "kind": "feature_service",
       "evidence": [
@@ -20908,6 +21187,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/lib/supabase/**"
+        }
+      ]
+    },
+    {
+      "source": "team_communications",
+      "target": "tests:e2e/golf-critical-paths.spec.ts",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "e2e/golf-critical-paths.spec.ts"
         }
       ]
     },
@@ -20925,6 +21216,18 @@
     },
     {
       "source": "team_communications",
+      "target": "tests:src/app/golf/actions/__tests__/message-attachments-partial-failure.test.ts",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/golf/actions/__tests__/message-attachments-partial-failure.test.ts"
+        }
+      ]
+    },
+    {
+      "source": "team_communications",
       "target": "tests:src/app/golf/actions/unified-notifications-model.test.ts",
       "kind": "feature_test",
       "evidence": [
@@ -20932,6 +21235,30 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/app/golf/actions/unified-notifications-model.test.ts"
+        }
+      ]
+    },
+    {
+      "source": "team_communications",
+      "target": "tests:src/test/actions/send-message-duplicate-key-equivalence.test.ts",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/test/actions/send-message-duplicate-key-equivalence.test.ts"
+        }
+      ]
+    },
+    {
+      "source": "team_communications",
+      "target": "tests:supabase/tests/rls/golf_message_reactions.sql",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "supabase/tests/rls/golf_message_reactions.sql"
         }
       ]
     },

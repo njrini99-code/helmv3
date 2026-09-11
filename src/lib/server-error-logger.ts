@@ -730,7 +730,14 @@ export async function logServerException(
   context: RoundErrorContext,
   severity: Exclude<ServerTraceSeverity, 'info'> = 'error'
 ): Promise<void> {
-  const normalizedError = error instanceof Error ? error : new Error(String(error));
+  // `String(error)` on a PostgrestError-shaped object yields the useless
+  // '[object Object]' — which is exactly what landed in admin_events for the
+  // calendar-load and getCoachDashboardData rows on 2026-09-09, destroying the
+  // diagnostic content of the incident. describeError() (already imported
+  // above) is this repo's convention for turning an unknown into readable
+  // 'code=… msg=… details=… hint=…' text, and is a no-op for real Errors,
+  // which take the left branch anyway.
+  const normalizedError = error instanceof Error ? error : new Error(describeError(error));
   // Caller explicitly handed us an Error — preserve the exception path so
   // the stack trace is captured even at warning severity.
   await captureServerTrace(normalizedError.message, context, severity, normalizedError, true);

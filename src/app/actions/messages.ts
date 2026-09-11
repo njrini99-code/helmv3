@@ -166,7 +166,53 @@ export async function sendMessage({
       // way either: INSERT cannot overwrite an existing row, so a client that
       // deliberately reused a foreign id would just fail its own write.)
       if (validatedData.client_message_id && messageError.code === '23505') {
-        return { success: true };
+        // …but "the pkey is already taken" is not by itself proof that WE took
+        // it (G-18, §17.3). The reasoning above is about what the client is
+        // known to do, not about what the code enforces, and reporting success
+        // for a row this caller did not write would tell the sender their
+        // message was delivered when it never existed. So verify equivalence
+        // before claiming the send succeeded.
+        //
+        // RLS makes the negative case safe: a row in a conversation this user
+        // is not a participant of is simply invisible here, so `existing` is
+        // null and we fail rather than guess. Unverifiable is treated exactly
+        // like not-ours — the only claim we are willing to make is one the
+        // database just confirmed.
+        //
+        // Content is compared against `sanitizedContent`, i.e. the raw text
+        // this call would have stored. A retry of a row written by an older
+        // sanitizer would therefore fail rather than short-circuit; failing
+        // closed is the right direction, and the caller retains the message.
+        const { data: existing, error: existingError } = await (supabase
+          .from(messagesTable as any) as any)
+          .select('id, conversation_id, sender_id, content')
+          .eq('id', validatedData.client_message_id)
+          .maybeSingle();
+
+        const alreadySentByThisUser =
+          !existingError &&
+          !!existing &&
+          existing.conversation_id === validatedData.conversation_id &&
+          existing.sender_id === user.id &&
+          existing.content === sanitizedContent;
+
+        if (alreadySentByThisUser) {
+          return { success: true };
+        }
+
+        await logServerError('[Security] Duplicate message id is not this sender\'s message', {
+          action: 'messages.sendMessage',
+          metadata: {
+            userId: user.id,
+            conversationId: validatedData.conversation_id,
+            clientMessageId: validatedData.client_message_id,
+            existingFound: !!existing,
+            lookupFailed: !!existingError,
+          },
+        });
+        // Falls through to the normal failure path below: the send is reported
+        // as failed, and the optimistic bubble is RETAINED with a retry (G-19)
+        // rather than being silently accepted.
       }
       await logServerError(`[Security] Message insert failed: ${messageError.message}`, {
         action: 'messages.sendMessage',
@@ -1516,4 +1562,437 @@ const observedGetGolfActiveTeamConversationIds = withAdminObserved(
 
 export async function getGolfActiveTeamConversationIds(): Promise<string[] | null> {
   return observedGetGolfActiveTeamConversationIds();
+}
+
+// ============================================================================
+// Golf group membership — add, remove, leave
+// ============================================================================
+//
+// These three write paths sit behind `golf_participants_insert_v2` and
+// `golf_participants_delete`. Only LEAVE is permitted by the policies as they
+// stand in production today (`USING (user_id = auth.uid())`).
+//
+// ADD and REMOVE additionally require
+// `20260907160000_golf_team_chat_membership_management.sql` to have been
+// APPLIED. Until it is, both return the database's refusal rather than
+// pretending to succeed, and `maybeCaptureRlsDenial` records the 42501 so a
+// pre-migration attempt shows up as a signal instead of a mystery toast. The
+// UI reaches these only for a team chat's creator, which is the same predicate
+// both new policy branches carry — so a permitted click and a refused one are
+// distinguished by whether the migration is live, not by who is asking.
+//
+// Every membership bound is enforced by RLS, not here. The checks below exist
+// to fail EARLY with a readable message and to keep an unauthorized attempt out
+// of the database, never as the security boundary: an action that only checked
+// in TypeScript would be bypassable by any other client holding the same JWT.
+
+interface GolfGroupMemberCandidate {
+  userId: string;
+  name: string;
+  avatarUrl: string | null;
+  subtitle: string | null;
+  type: 'coach' | 'player';
+}
+
+/**
+ * The conversation, if it is a golf TEAM CHAT the current user created.
+ *
+ * Returns the row rather than a boolean because every caller needs `team_id`
+ * next, and re-reading it would be a second round trip against a row the RLS
+ * check already had to touch.
+ */
+async function loadGolfGroupIOwn(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  conversationId: string,
+  userId: string,
+): Promise<{ id: string; team_id: string | null }> {
+  const { data: conversation, error } = await supabase
+    .from('golf_conversations')
+    .select('id, team_id, created_by, is_team_chat')
+    .eq('id', conversationId)
+    .maybeSingle();
+
+  if (error) {
+    maybeCaptureRlsDenial(error, {
+      table: 'golf_conversations',
+      verb: 'select',
+      action: 'messages.loadGolfGroupIOwn',
+      sport: 'golf',
+      feature: 'messaging',
+      userId,
+    });
+    throw new Error('Conversation not found');
+  }
+  if (!conversation) {
+    throw new Error('Conversation not found');
+  }
+  if (!conversation.is_team_chat || !conversation.team_id) {
+    // Deliberately the same bound both new policy branches carry: a DM's
+    // membership is fixed at creation, which is what the 2026-08-19 hardening
+    // was written to guarantee.
+    throw new Error('Only team group chats can change members');
+  }
+  if (conversation.created_by !== userId) {
+    throw new Error('Only the group creator can change members');
+  }
+
+  return { id: conversation.id, team_id: conversation.team_id };
+}
+
+/**
+ * Everyone on the group's team who is not already in it.
+ *
+ * Coaches AND players — `getGolfTeamPlayersForBroadcast` returns players only,
+ * which would silently make assistant coaches unaddable.
+ */
+async function getGolfGroupAddCandidatesImpl(
+  conversationId: string,
+): Promise<{ candidates: GolfGroupMemberCandidate[] } | { error: string }> {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('Unauthorized');
+    }
+
+    const conversation = await loadGolfGroupIOwn(supabase, conversationId, user.id);
+    const teamId = conversation.team_id as string;
+
+    const [existing, members, staff] = await Promise.all([
+      supabase
+        .from('golf_conversation_participants')
+        .select('user_id')
+        .eq('conversation_id', conversationId),
+      supabase
+        .from('golf_team_members')
+        .select('status, player:golf_players(user_id, first_name, last_name, avatar_url, graduation_year)')
+        .eq('team_id', teamId)
+        .eq('status', 'active'),
+      supabase
+        .from('golf_team_coach_staff')
+        .select('coach:golf_coaches(user_id, full_name, avatar_url, title)')
+        .eq('team_id', teamId),
+    ]);
+
+    // The participant list is the exclusion set, so an error here cannot be
+    // absorbed: an empty set would offer to add people who are already in the
+    // group, and adding them again is a unique-violation the user reads as a
+    // bug.
+    if (existing.error) {
+      maybeCaptureRlsDenial(existing.error, {
+        table: 'golf_conversation_participants',
+        verb: 'select',
+        action: 'messages.getGolfGroupAddCandidates',
+        sport: 'golf',
+        feature: 'messaging',
+        userId: user.id,
+      });
+      throw new Error('Failed to load current members');
+    }
+
+    // The roster reads cannot be absorbed either, and for the opposite reason.
+    // Both run under the caller's RLS; on error `.data` is null, both loops
+    // below iterate zero times, and the sheet renders "Everyone on this team
+    // is already in the group." A failed read and a genuinely-full group would
+    // be indistinguishable — and one of them means "try again".
+    //
+    // Each `.error` is named directly rather than walked through a list.
+    // `helm/no-unchecked-supabase-error` is syntactic: it pairs a `.data` read
+    // with a `.error` read on the SAME identifier, and cannot see an error
+    // reached through an intermediate object. Both of these reads were
+    // unchecked before this change, and both were counted.
+    if (members.error) {
+      maybeCaptureRlsDenial(members.error, {
+        table: 'golf_team_members',
+        verb: 'select',
+        action: 'messages.getGolfGroupAddCandidates',
+        sport: 'golf',
+        feature: 'messaging',
+        userId: user.id,
+      });
+      throw new Error('Failed to load the team roster');
+    }
+
+    if (staff.error) {
+      maybeCaptureRlsDenial(staff.error, {
+        table: 'golf_team_coach_staff',
+        verb: 'select',
+        action: 'messages.getGolfGroupAddCandidates',
+        sport: 'golf',
+        feature: 'messaging',
+        userId: user.id,
+      });
+      throw new Error('Failed to load the team roster');
+    }
+
+    const alreadyIn = new Set((existing.data ?? []).map((p) => p.user_id));
+
+    const candidates: GolfGroupMemberCandidate[] = [];
+
+    for (const row of staff.data ?? []) {
+      const coach = row.coach as {
+        user_id: string | null;
+        full_name: string | null;
+        avatar_url: string | null;
+        title: string | null;
+      } | null;
+      if (!coach?.user_id || alreadyIn.has(coach.user_id)) continue;
+      candidates.push({
+        userId: coach.user_id,
+        name: coach.full_name || 'Coach',
+        avatarUrl: coach.avatar_url,
+        subtitle: coach.title || null,
+        type: 'coach',
+      });
+    }
+
+    for (const row of members.data ?? []) {
+      const player = row.player as {
+        user_id: string | null;
+        first_name: string | null;
+        last_name: string | null;
+        avatar_url: string | null;
+        graduation_year: number | null;
+      } | null;
+      if (!player?.user_id || alreadyIn.has(player.user_id)) continue;
+      candidates.push({
+        userId: player.user_id,
+        name: [player.first_name, player.last_name].filter(Boolean).join(' ') || 'Player',
+        avatarUrl: player.avatar_url,
+        subtitle: player.graduation_year ? `Class of ${player.graduation_year}` : null,
+        type: 'player',
+      });
+    }
+
+    candidates.sort((a, b) => a.name.localeCompare(b.name));
+
+    return { candidates };
+  } catch (err) {
+    return formatSafeErrorResponse(err);
+  }
+}
+
+const observedGetGolfGroupAddCandidates = withAdminObserved(
+  'getGolfGroupAddCandidates',
+  { sport: 'golf', feature: 'messaging' },
+  getGolfGroupAddCandidatesImpl,
+);
+
+export async function getGolfGroupAddCandidates(
+  conversationId: string,
+): Promise<{ candidates: GolfGroupMemberCandidate[] } | { error: string }> {
+  return observedGetGolfGroupAddCandidates(conversationId);
+}
+
+async function addGolfGroupMemberImpl(
+  conversationId: string,
+  userId: string,
+): Promise<{ success: true } | { error: string }> {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('Unauthorized');
+    }
+
+    await loadGolfGroupIOwn(supabase, conversationId, user.id);
+
+    const { error } = await supabase
+      .from('golf_conversation_participants')
+      .insert({ conversation_id: conversationId, user_id: userId });
+
+    if (error) {
+      // 23505 is a duplicate participant, which is a race (two coaches, or a
+      // double tap) rather than a failure — the desired end state already
+      // holds, so report success rather than an error the user cannot act on.
+      if (error.code === '23505') {
+        return { success: true };
+      }
+      maybeCaptureRlsDenial(error, {
+        table: 'golf_conversation_participants',
+        verb: 'insert',
+        action: 'messages.addGolfGroupMember',
+        sport: 'golf',
+        feature: 'messaging',
+        userId: user.id,
+      });
+      await logServerError(
+        `[Messages] Failed to add group member: ${describeError(error)}`,
+        {
+          action: 'messages.addGolfGroupMember',
+          metadata: { code: error.code, conversationId, targetUserId: userId },
+        },
+      );
+      throw new Error('Could not add that member');
+    }
+
+    await logSecurityEvent({
+      event: 'golf_group_member_added',
+      action: 'golf_group_member_added',
+      userId: user.id,
+      metadata: { conversationId, targetUserId: userId },
+    });
+
+    return { success: true };
+  } catch (err) {
+    return formatSafeErrorResponse(err);
+  }
+}
+
+const observedAddGolfGroupMember = withAdminObserved(
+  'addGolfGroupMember',
+  { sport: 'golf', feature: 'messaging' },
+  addGolfGroupMemberImpl,
+);
+
+export async function addGolfGroupMember(
+  conversationId: string,
+  userId: string,
+): Promise<{ success: true } | { error: string }> {
+  return observedAddGolfGroupMember(conversationId, userId);
+}
+
+async function removeGolfGroupMemberImpl(
+  conversationId: string,
+  userId: string,
+): Promise<{ success: true } | { error: string }> {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('Unauthorized');
+    }
+
+    if (userId === user.id) {
+      // Not a policy bound — the creator CAN delete their own row, through the
+      // self branch. It is a product bound: that path is "Leave group", which
+      // has its own confirmation and its own consequence (you lose the thread),
+      // and routing it through "Remove" would hide that behind a member row.
+      throw new Error('Use Leave group to remove yourself');
+    }
+
+    await loadGolfGroupIOwn(supabase, conversationId, user.id);
+
+    // Deleting by (conversation_id, user_id) rather than by the row's own id:
+    // the caller names a person, not a row, and the pair is what RLS is written
+    // against. Both equalities are present so this can never widen to "every
+    // row for this user" if the conversation filter were ever dropped.
+    const { error } = await supabase
+      .from('golf_conversation_participants')
+      .delete()
+      .eq('conversation_id', conversationId)
+      .eq('user_id', userId);
+
+    if (error) {
+      maybeCaptureRlsDenial(error, {
+        table: 'golf_conversation_participants',
+        verb: 'delete',
+        action: 'messages.removeGolfGroupMember',
+        sport: 'golf',
+        feature: 'messaging',
+        userId: user.id,
+      });
+      await logServerError(
+        `[Messages] Failed to remove group member: ${describeError(error)}`,
+        {
+          action: 'messages.removeGolfGroupMember',
+          metadata: { code: error.code, conversationId, targetUserId: userId },
+        },
+      );
+      throw new Error('Could not remove that member');
+    }
+
+    await logSecurityEvent({
+      event: 'golf_group_member_removed',
+      action: 'golf_group_member_removed',
+      userId: user.id,
+      metadata: { conversationId, targetUserId: userId },
+    });
+
+    return { success: true };
+  } catch (err) {
+    return formatSafeErrorResponse(err);
+  }
+}
+
+const observedRemoveGolfGroupMember = withAdminObserved(
+  'removeGolfGroupMember',
+  { sport: 'golf', feature: 'messaging' },
+  removeGolfGroupMemberImpl,
+);
+
+export async function removeGolfGroupMember(
+  conversationId: string,
+  userId: string,
+): Promise<{ success: true } | { error: string }> {
+  return observedRemoveGolfGroupMember(conversationId, userId);
+}
+
+/**
+ * Leave a golf group.
+ *
+ * The one membership mutation permitted by production RLS as it stands: the
+ * baseline `golf_participants_delete` is `USING (user_id = auth.uid())`. It
+ * needs no creator check and no team check — the policy's own predicate is the
+ * whole bound, and there is nothing this action could usefully verify that the
+ * database does not already.
+ */
+async function leaveGolfGroupImpl(
+  conversationId: string,
+): Promise<{ success: true } | { error: string }> {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('Unauthorized');
+    }
+
+    const { error } = await supabase
+      .from('golf_conversation_participants')
+      .delete()
+      .eq('conversation_id', conversationId)
+      .eq('user_id', user.id);
+
+    if (error) {
+      maybeCaptureRlsDenial(error, {
+        table: 'golf_conversation_participants',
+        verb: 'delete',
+        action: 'messages.leaveGolfGroup',
+        sport: 'golf',
+        feature: 'messaging',
+        userId: user.id,
+      });
+      await logServerError(
+        `[Messages] Failed to leave group: ${describeError(error)}`,
+        {
+          action: 'messages.leaveGolfGroup',
+          metadata: { code: error.code, conversationId },
+        },
+      );
+      throw new Error('Could not leave that group');
+    }
+
+    await logSecurityEvent({
+      event: 'golf_group_left',
+      action: 'golf_group_left',
+      userId: user.id,
+      metadata: { conversationId },
+    });
+
+    return { success: true };
+  } catch (err) {
+    return formatSafeErrorResponse(err);
+  }
+}
+
+const observedLeaveGolfGroup = withAdminObserved(
+  'leaveGolfGroup',
+  { sport: 'golf', feature: 'messaging' },
+  leaveGolfGroupImpl,
+);
+
+export async function leaveGolfGroup(
+  conversationId: string,
+): Promise<{ success: true } | { error: string }> {
+  return observedLeaveGolfGroup(conversationId);
 }

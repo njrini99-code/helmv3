@@ -43,13 +43,15 @@ vi.mock('@/components/fairway/controls/button', () => ({
     onClick,
     disabled,
     type,
+    'aria-label': ariaLabel,
   }: {
     children?: React.ReactNode;
     onClick?: () => void;
     disabled?: boolean;
     type?: 'button' | 'submit' | 'reset';
+    'aria-label'?: string;
   }) => (
-    <UIButton type={type ?? 'button'} onClick={onClick} disabled={disabled}>
+    <UIButton type={type ?? 'button'} onClick={onClick} disabled={disabled} aria-label={ariaLabel}>
       {children}
     </UIButton>
   ),
@@ -106,6 +108,10 @@ function renderEditor(event: CalendarEvent) {
       teamPlayers={[]}
     />,
   );
+  // The destructive action lives in the bottom dock on the review stage
+  // only (phone-width layout) — every field stays mounted on every stage.
+  const reviewDot = screen.queryByRole('button', { name: 'Go to Review' });
+  if (reviewDot) fireEvent.click(reviewDot);
   return { onDelete, onSave };
 }
 

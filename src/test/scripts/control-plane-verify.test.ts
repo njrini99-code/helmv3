@@ -139,7 +139,7 @@ describe('failure injection — each control goes red for its own reason', () =>
   it('baseline fixture: the checks under test are green before injection', () => {
     for (const id of [
       'hook-scripts-exist',
-      'canonical-write-guard-reachable',
+      'guard-git.mjs-reachable',
       'no-prose-overclaims-enforcement',
       'every-declared-namespace-observed',
       'mutation-budget-enforced',
@@ -151,10 +151,10 @@ describe('failure injection — each control goes red for its own reason', () =>
   it('DELETE a configured hook -> hook-scripts-exist FAILS', () => {
     const fx = makeFixture();
     try {
-      rmSync(join(fx, '.claude/hooks/guard-canonical-write.mjs'));
+      rmSync(join(fx, '.claude/hooks/guard-git.mjs'));
       const r = checkIn(fx, 'hook-scripts-exist');
       expect(r?.state).toBe('FAIL');
-      expect(r?.detail).toMatch(/guard-canonical-write/);
+      expect(r?.detail).toMatch(/guard-git/);
     } finally {
       rmSync(fx, { recursive: true, force: true });
     }
@@ -165,7 +165,7 @@ describe('failure injection — each control goes red for its own reason', () =>
     try {
       const p = join(fx, '.claude/settings.json');
       const d = JSON.parse(readFileSync(p, 'utf-8'));
-      d.hooks.Stop[0].hooks[0].command = '"$CLAUDE_PROJECT_DIR"/.claude/hooks/guard-sql.sh';
+      d.hooks.SessionStart[0].hooks[0].command = '"$CLAUDE_PROJECT_DIR"/.claude/hooks/guard-sql.sh';
       writeFileSync(p, JSON.stringify(d, null, 2));
       expect(checkIn(fx, 'hook-scripts-exist')?.state).toBe('FAIL');
     } finally {
@@ -179,11 +179,11 @@ describe('failure injection — each control goes red for its own reason', () =>
     try {
       const p = join(fx, '.claude/settings.json');
       const d = JSON.parse(readFileSync(p, 'utf-8'));
-      d.hooks.PreToolUse[0].matcher = 'Bash';
+      d.hooks.PreToolUse[0].matcher = 'Read';
       writeFileSync(p, JSON.stringify(d, null, 2));
-      const r = checkIn(fx, 'canonical-write-guard-reachable');
+      const r = checkIn(fx, 'guard-git.mjs-reachable');
       expect(r?.state).toBe('FAIL');
-      expect(r?.detail).toMatch(/cannot reach/);
+      expect(r?.detail).toMatch(/unreachable/);
     } finally {
       rmSync(fx, { recursive: true, force: true });
     }
@@ -271,8 +271,7 @@ describe('runtime evidence expires when its configuration moves', () => {
     const { fingerprintFor, resolveObservation } = await import('../../../scripts/gen-tool-authority.mjs');
     const mcp = JSON.parse(readFileSync(resolve(REPO, '.mcp.json'), 'utf-8'));
     const settings = JSON.parse(readFileSync(resolve(REPO, '.claude/settings.json'), 'utf-8'));
-    const obs = JSON.parse(readFileSync(resolve(REPO, 'config/control-plane-observations.json'), 'utf-8'))
-      .observations.find((o: { service: string }) => o.service === 'Sentry');
+    const obs = { result: 'PASS', observed_at: 'fixture', configuration_fingerprint: fingerprintFor('Sentry', { settings, mcp }) };
 
     // Fresh under the config it was recorded against.
     expect(resolveObservation(obs, fingerprintFor('Sentry', { settings, mcp })).state).not.toBe('STALE');

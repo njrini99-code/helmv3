@@ -156,6 +156,7 @@ export function renderBlock() {
   const mcp = existsSync(MCP) ? JSON.parse(readFileSync(MCP, 'utf-8')) : {};
   const observations = existsSync(OBS) ? JSON.parse(readFileSync(OBS, 'utf-8')).observations ?? [] : [];
   const deny = settings.permissions?.deny ?? [];
+  const ask = settings.permissions?.ask ?? [];
 
   const L = [''];
   L.push('## Authority per service');
@@ -189,7 +190,7 @@ export function renderBlock() {
       const root = row.namespace.replace(/\*$/, '').replace(/__$/, '');
       const whollyDenied = deny.includes(root) || deny.includes(`${root}__`);
       L.push(
-        `| \`${esc(row.namespace)}\` | ${esc(s.service)} | ${esc(row.disposition)} | ${obs?.configured ?? '?'} | ${obs?.connected ?? '?'} | ${obs?.exposed ?? '?'} | ${whollyDenied ? 'DENIED (server-level)' : (obs?.allowed ?? '?')} | ${r.state} |`,
+        `| \`${esc(row.namespace)}\` | ${esc(s.service)} | ${esc(row.disposition)} | ${obs?.configured ?? '?'} | ${r.state === 'STALE' ? 'unknown (stale observation)' : (obs?.connected ?? '?')} | ${r.state === 'STALE' ? 'unknown (stale observation)' : (obs?.exposed ?? '?')} | ${whollyDenied ? 'DENIED (server-level)' : ask.some((rule) => rule.startsWith(root + '__')) ? 'approval required for listed operations' : 'not denied by project'} | ${r.state} |`,
       );
     }
   }

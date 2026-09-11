@@ -17,17 +17,76 @@
  * The day-bucketing logic mirrors the legacy AgendaView verbatim so grouping +
  * "Today/Tomorrow" labelling stay consistent. `nowRef` is parent-owned (seeded
  * from serverNow) — labels never call Date.now().
+ *
+ * NATIVE LIST DETAILS: each day is a raised group card of hairline-divided
+ * rows; its heading pins under the masthead while the day scrolls (the
+ * masthead publishes `--fw-calendar-hero-h`); today's group carries a
+ * now-line at its sorted position, ticking by the minute after mount.
  * ========================================================================== */
 
 import * as React from 'react';
 import { format, isSameDay, addDays, startOfDay, isBefore } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Surface, EmptyState, Button } from '@/components/fairway';
-import { CalendarDays } from 'lucide-react';
+import { CalendarDays, History } from 'lucide-react';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { RSVPStatus } from '@/hooks/useRSVP';
-import { eventDaySpan } from '@/lib/calendar/timezone';
+import { eventDaySpan, formatEventTime } from '@/lib/calendar/timezone';
 import { FairwayEventCard } from './FairwayEventCard';
+
+/** The raised day group: THE card material — hairline, lit top edge, and the
+ *  raised whisper — so each day's schedule sits up off the canvas. */
+const DAY_GROUP_CLASS =
+  'overflow-hidden rounded-xl border border-border-subtle bg-surface [box-shadow:inset_0_1px_0_oklch(1_0_0/0.55),var(--fw-shadow-soft)]';
+
+/** Hairline dividers between rows: 1px, and a true half-pixel on 2x+ screens. */
+const ROW_DIVIDERS_CLASS =
+  '[&>*+*]:border-t [&>*+*]:border-border-subtle [@media(min-resolution:2dppx)]:[&>*+*]:border-t-[0.5px]';
+
+/** Day headings pin under the masthead while their day scrolls — the same
+ *  pinned section header a native list has. The masthead publishes its own
+ *  height (`--fw-calendar-hero-h`); the shell publishes the bar offsets. */
+const STICKY_HEADING_CLASS =
+  'sticky z-[8] top-[calc(var(--golf-mobile-header-offset,0px)+var(--fw-hub-subnav-offset,0px)+var(--fw-calendar-hero-h,0px))] ' +
+  '-mx-4 px-4 md:-mx-6 md:px-6 ' +
+  'bg-[color-mix(in_oklch,var(--fw-color-canvas)_88%,transparent)] backdrop-blur-md ' +
+  '[@media(prefers-reduced-transparency:reduce)]:bg-canvas [@media(prefers-reduced-transparency:reduce)]:backdrop-blur-0';
+
+/** A minute-resolution clock that only starts AFTER mount, so the server and
+ *  the first client render agree (they both see `null` and fall back to the
+ *  parent's seeded `nowRef`). */
+function useMinuteClock(): Date | null {
+  const [clock, setClock] = React.useState<Date | null>(null);
+  React.useEffect(() => {
+    setClock(new Date());
+    const id = window.setInterval(() => setClock(new Date()), 60_000);
+    return () => window.clearInterval(id);
+  }, []);
+  return clock;
+}
+
+function eventStartMs(event: CalendarEvent): number {
+  return new Date(event.start_time || event.start_date).getTime();
+}
+
+/** The "now" rule inside today's group: a dot, a hairline, the current time in
+ *  the team's zone — sitting between what has started and what is next. */
+function NowLine({ now, timezone }: { now: Date; timezone?: string | null }) {
+  return (
+    <div
+      role="separator"
+      data-testid="agenda-now-line"
+      aria-label={`Now, ${formatEventTime(now.toISOString(), timezone)}`}
+      className="flex items-center gap-2 bg-surface px-3 py-1 md:px-4"
+    >
+      <span aria-hidden className="h-2 w-2 shrink-0 rounded-full bg-accent-600 ring-2 ring-surface" />
+      <span aria-hidden className="h-px flex-1 bg-accent-600/60" />
+      <span className="font-fw-sans text-caption font-semibold tabular-nums text-accent-700">
+        {formatEventTime(now.toISOString(), timezone)}
+      </span>
+    </div>
+  );
+}
 
 export interface FairwayAgendaViewProps {
   events: CalendarEvent[];
@@ -39,6 +98,9 @@ export interface FairwayAgendaViewProps {
   focusDate: Date;
   rangeStart?: Date;
   rangeEnd?: Date;
+  /** Human name of the range ("September 2026") for the honest-empty copy,
+   *  so an empty month never reads as "nothing upcoming, ever". */
+  periodLabel?: string;
   isCoach: boolean;
   /** eventId → player's RSVP status (player view). */
   userRsvpStatuses?: Map<string, RSVPStatus>;
@@ -50,6 +112,17 @@ export interface FairwayAgendaViewProps {
   onCreateEvent?: () => void;
   /** Parent-owned reference "now" for Today/Tomorrow labels. */
   nowRef?: Date;
+  /**
+   * True while the fetch covering the CURRENTLY VISIBLE range is still in
+   * flight. Without it, "zero events" and "haven't asked yet" are the same
+   * observation here: an uncovered range genuinely holds no matching rows
+   * until its fetch resolves, so the honest-empty branch fires immediately and
+   * the user reads "Check back when your coach adds events" while a "Loading
+   * events for this date range…" banner sits directly above it. Suppress the
+   * confirmed-empty COPY while this is true; the parent's banner already says
+   * what is happening.
+   */
+  isLoadingRange?: boolean;
   className?: string;
 }
 
@@ -58,6 +131,16 @@ interface DayBucket {
   date: Date;
   label: string;
   events: CalendarEvent[];
+}
+
+/** A quiet "in 3 days" beside a heading within the coming week (Today and
+ *  Tomorrow are already the heading itself). */
+function relativeDayCue(date: Date, nowRef?: Date): string | null {
+  if (!nowRef) return null;
+  const days = Math.round((startOfDay(date).getTime() - startOfDay(nowRef).getTime()) / 86_400_000);
+  if (days === -1) return 'Yesterday';
+  if (days >= 2 && days <= 6) return `in ${days} days`;
+  return null;
 }
 
 function formatDayLabel(date: Date, nowRef?: Date): string {
@@ -158,12 +241,14 @@ export function FairwayAgendaView({
   focusDate,
   rangeStart,
   rangeEnd,
+  periodLabel,
   isCoach,
   userRsvpStatuses,
   timezone,
   onEventClick,
   onCreateEvent,
   nowRef,
+  isLoadingRange = false,
   className,
 }: FairwayAgendaViewProps) {
   const buckets = React.useMemo(
@@ -172,6 +257,7 @@ export function FairwayAgendaView({
   );
 
   const totalEvents = buckets.reduce((sum, b) => sum + b.events.length, 0);
+  const clock = useMinuteClock();
 
   // Past/upcoming split for the "Show earlier" affordance (audit P-05).
   // Day mode is a single explicit date, so it never hides anything.
@@ -184,7 +270,9 @@ export function FairwayAgendaView({
         : [],
     [buckets, mode, todayStartRef],
   );
-  const pastEventCount = pastBuckets.reduce((sum, b) => sum + b.events.length, 0);
+  // Counted as UNIQUE events, not day appearances: a three-day tournament in
+  // history is one earlier event, not three.
+  const pastEventCount = new Set(pastBuckets.flatMap((b) => b.events.map((e) => e.id))).size;
   // If EVERYTHING in range is past (the all-past demo season), collapsing would
   // leave an empty list under a "Show earlier" button — show them instead.
   const allPast = pastBuckets.length === buckets.length;
@@ -232,21 +320,50 @@ export function FairwayAgendaView({
     }
   }, [mode, focusDate, rangeStart, rangeEnd, nowRef, buckets, visibleBuckets]);
 
+  // ── STILL ASKING: the visible range's fetch has not resolved ───────────────
+  // Zero events here does not mean empty, it means unqueried. Render neutral
+  // placeholder rows rather than the confirmed-empty copy below.
+  if (totalEvents === 0 && isLoadingRange) {
+    return (
+      <Surface elevation="border" padding="lg" className={cn('[box-shadow:inset_0_1px_0_oklch(1_0_0/0.55),var(--fw-shadow-soft)]', className)}>
+        <div aria-hidden="true" className="flex flex-col gap-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="flex items-start gap-3 rounded-fw-md bg-surface-sunken px-4 py-3">
+              <div className="mt-0.5 h-4 w-4 shrink-0 animate-pulse rounded-full bg-border-subtle" />
+              <div className="flex flex-1 flex-col gap-2">
+                <div
+                  className="h-3.5 animate-pulse rounded bg-border-subtle"
+                  style={{ maxWidth: `${68 - i * 14}%` }}
+                />
+                <div className="h-3 w-24 animate-pulse rounded bg-border-subtle" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </Surface>
+    );
+  }
+
   // ── HONEST-EMPTY: range mode, zero events ──────────────────────────────────
   if (mode === 'range' && totalEvents === 0) {
     return (
-      <Surface elevation="border" padding="lg" className={className}>
+      // Compact on purpose: a phone never gets a full-screen monolith card
+      // for "nothing here" (design-system quality bar).
+      <Surface elevation="border" padding="md" className={cn('rounded-xl [box-shadow:inset_0_1px_0_oklch(1_0_0/0.55),var(--fw-shadow-soft)]', className)}>
         <EmptyState
+          variant="subtle"
           icon={CalendarDays}
-          title={isCoach ? 'No upcoming events' : 'Nothing upcoming'}
+          title={periodLabel ? `Nothing in ${periodLabel}` : isCoach ? 'No upcoming events' : 'Nothing upcoming'}
           description={
             isCoach
-              ? 'Schedule the next practice or tournament and it shows up here.'
+              ? 'Schedule a practice or tournament and it shows up here.'
               : 'Check back when your coach adds events.'
           }
           action={
             isCoach && onCreateEvent ? (
-              <Button variant="primary" size="md" onClick={onCreateEvent}>
+              // From md up this is the empty state's own call; on a phone the
+              // floating "+" is already the one primary action on screen.
+              <Button variant="primary" size="md" onClick={onCreateEvent} className="hidden md:inline-flex">
                 New event
               </Button>
             ) : undefined
@@ -259,7 +376,7 @@ export function FairwayAgendaView({
   // ── HONEST-EMPTY: single day, zero events ──────────────────────────────────
   if (mode === 'day' && totalEvents === 0) {
     return (
-      <div className={cn('rounded-card bg-inset px-5 py-8 text-center', className)}>
+      <div className={cn('rounded-xl border border-dashed border-border-strong px-5 py-6 text-center', className)}>
         <p className="mb-2 font-fw-display text-eyebrow uppercase tracking-[0.12em] text-text-tertiary">
           {formatDayLabel(focusDate, nowRef)}
         </p>
@@ -286,7 +403,7 @@ export function FairwayAgendaView({
 
   // ── Populated agenda ───────────────────────────────────────────────────────
   return (
-    <div className={cn('flex flex-col gap-7', className)}>
+    <div className={cn('flex flex-col gap-5', className)}>
       {/*
         Past days are COLLAPSED behind an explicit affordance in range mode.
         The agenda's fetch window runs from three months back (deliberately —
@@ -298,33 +415,17 @@ export function FairwayAgendaView({
         own header while keeping every past event one tap away.
       */}
       {mode === 'range' && pastBuckets.length > 0 ? (
-        // Centered, intrinsic-width control — matches the "Show N more" convention
-        // used elsewhere in Fairway (FairwayQualifiers' concluded-list expander:
-        // `<div className="flex justify-center ..."><Button variant="secondary">`).
-        //
-        // `secondary`, not `ghost` — a `ghost` Button is transparent at rest by
-        // design, and the `bg-surface-sunken` override this used to carry RECEDES
-        // below canvas in dark theme (a "well" cue that only reads correctly
-        // nested inside a lighter Surface). `secondary` is the Fairway "matte
-        // surface + warm hairline + shadow" recipe: bg-surface LIFTS off canvas
-        // in both themes (dark: surface L=0.228 vs canvas L=0.188; light:
-        // surface L=0.984 vs canvas L=0.953 — checked in design-tokens.css).
-        //
-        // That alone wasn't enough, though: this row previously stretched
-        // `w-full` across the ~1130px content column with a squared-off
-        // `rounded-fw-sm` corner radius. No other button in the app spans full
-        // content width, so at that width even a bordered/shadowed fill reads as
-        // a divider bar, not a control — regardless of variant. Letting the
-        // Button size to its own content (default `rounded-full` pill, no
-        // `w-full`) and centering it in a `flex justify-center` wrapper is what
-        // actually restores the button affordance.
-        <div className="flex justify-center">
+        // History is a secondary action: a quiet ghost control at the list's
+        // own gutter, never a raised chip competing with the schedule.
+        <div className="-mt-1 flex">
           <Button
             type="button"
-            variant="secondary"
+            variant="ghost"
             size="sm"
+            leftIcon={<History className="h-4 w-4" aria-hidden />}
             onClick={() => setShowPast((v) => !v)}
             aria-expanded={showPast}
+            className="-ml-2"
           >
             {showPast
               ? 'Hide earlier events'
@@ -340,6 +441,15 @@ export function FairwayAgendaView({
         const bucketIsPast = nowRef
           ? !bucketIsToday && isBefore(bucket.date, startOfDay(nowRef))
           : false;
+        // Today / Tomorrow are the heading; the calendar date rides beside them
+        // so the reader never has to count.
+        const headingIsRelative = bucket.label === 'Today' || bucket.label === 'Tomorrow';
+        const cue = relativeDayCue(bucket.date, nowRef);
+        // Today's group carries the now-line at its sorted position: after
+        // everything that has started, before what is next.
+        const now = bucketIsToday ? (clock ?? nowRef ?? null) : null;
+        const nowIndex = now ? bucket.events.findIndex((ev) => eventStartMs(ev) > now.getTime()) : -1;
+        const nowSlot = now ? (nowIndex === -1 ? bucket.events.length : nowIndex) : -1;
         return (
           <section
             key={bucket.key}
@@ -349,34 +459,44 @@ export function FairwayAgendaView({
               else bucketNodesRef.current.delete(bucket.key);
             }}
           >
-            {/* Day header — eyebrow rule + count. */}
-            <div className="mb-3 flex items-center gap-3">
-              <p
+            {/* Day heading — pinned under the masthead while its day scrolls. */}
+            <div className={cn(STICKY_HEADING_CLASS, 'mb-2 flex items-baseline gap-2 py-1.5')}>
+              <h2
                 className={cn(
-                  'font-fw-display text-eyebrow uppercase tracking-[0.12em]',
-                  bucketIsToday ? 'text-accent-700' : 'text-text-tertiary',
+                  'font-fw-sans text-body font-semibold leading-5 tracking-[-0.01em]',
+                  bucketIsToday ? 'text-accent-700' : 'text-text-primary',
                 )}
               >
                 {bucket.label}
-              </p>
-              <span aria-hidden className="h-px flex-1 bg-border-subtle" />
-              <span className="font-fw-mono text-eyebrow uppercase tabular-nums tracking-[0.1em] text-text-tertiary">
-                {bucket.events.length} {bucket.events.length === 1 ? 'event' : 'events'}
-              </span>
+              </h2>
+              {headingIsRelative ? (
+                <span className="font-fw-sans text-caption text-text-tertiary">{format(bucket.date, 'EEEE, MMMM d')}</span>
+              ) : cue ? (
+                <span className="font-fw-sans text-caption text-text-tertiary">{cue}</span>
+              ) : null}
+              {bucket.events.length > 1 ? (
+                <span className="ml-auto font-fw-sans text-caption tabular-nums text-text-tertiary">
+                  {bucket.events.length} events
+                </span>
+              ) : null}
             </div>
 
-            <div className="flex flex-col gap-2.5">
-              {bucket.events.map((ev) => (
-                <FairwayEventCard
-                  key={ev.id}
-                  event={ev}
-                  showRsvp={!isCoach}
-                  rsvpStatus={userRsvpStatuses?.get(ev.id) ?? null}
-                  onClick={onEventClick}
-                  isPast={bucketIsPast}
-                  timezone={timezone}
-                />
+            <div className={cn(DAY_GROUP_CLASS, ROW_DIVIDERS_CLASS)}>
+              {bucket.events.map((ev, index) => (
+                <React.Fragment key={ev.id}>
+                  {now && index === nowSlot ? <NowLine now={now} timezone={timezone} /> : null}
+                  <FairwayEventCard
+                    event={ev}
+                    enterIndex={index}
+                    showRsvp={!isCoach}
+                    rsvpStatus={userRsvpStatuses?.get(ev.id) ?? null}
+                    onClick={onEventClick}
+                    isPast={bucketIsPast}
+                    timezone={timezone}
+                  />
+                </React.Fragment>
               ))}
+              {now && nowSlot === bucket.events.length ? <NowLine now={now} timezone={timezone} /> : null}
             </div>
           </section>
         );

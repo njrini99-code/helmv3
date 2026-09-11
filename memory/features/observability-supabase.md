@@ -173,6 +173,19 @@ fail-open behaviour, and named gaps).
   categories), `rls-coverage.ts` (RLS/grant coverage findings, importable
   by `scripts/db/rls-coverage.mjs` without a live database).
 - Bridge readers: `src/lib/admin/database/statements.ts`, `analysis.ts`.
+- **`index_advisor` must never be called from anything PostgREST invokes.**
+  `extensions.index_advisor()` runs `DEALLOCATE ALL`, which wipes the prepared
+  statements PostgREST holds on the pooled backend connection it happens to be
+  using; every later request on that connection then fails with SQLSTATE 26000,
+  `prepared statement "N" does not exist`. Shipping it inside
+  `helm_debug_db_analysis_snapshot()` (applied to production 2026-09-09 12:47Z)
+  produced a site-wide cascade at :07 past every hour — 303 `admin_events` rows
+  and 9 affected users in 72h — until
+  `20260909230000_helm_debug_analysis_drop_index_advisor.sql` removed the call.
+  The `index_suggestion` category now emits a `note` row only. Restoring it
+  means computing suggestions from a `pg_cron` job (its own backend connection)
+  into `helm_debug.db_analysis_samples`, never from the PostgREST path. See
+  `docs/observability/DATABASE_TAB.md`.
 - Bridge page additions: Slow statements, Index suggestions, Unused
   indexes, Bloat, Coverage sections; a best-effort Drift section (no
   persisted drift verdict or GitHub Actions credential reachable from this

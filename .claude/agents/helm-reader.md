@@ -1,7 +1,7 @@
 ---
 name: helm-reader
 description: Read-only audit contract — inspects code/config/docs and reports findings with file:line citations, never edits anything.
-tools: Read, Glob, Grep, Bash
+disallowedTools: Write, Edit, MultiEdit, NotebookEdit
 model: sonnet
 ---
 

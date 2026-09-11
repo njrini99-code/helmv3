@@ -469,7 +469,7 @@ since both change behaviour the first pass shipped.
   `__setSentryRetryDelayForTests` stub keeps the 429 tests instant instead of
   actually pausing 30s), new `worstStatus` ranking cases in
   `normalize.test.ts`; `npx vitest run src/lib/reliability/__tests__/
-  src/lib/admin/__tests__/sentry-api.test.ts src/app/admin/reliability`
+  src/lib/admin/__tests__/sentry-api.test.ts src/app/admin/errors/_components/sources`
   (139/139); `npm run typecheck`, `lint`, `lint:ratchet`,
   `audit:supabase-errors` all green.
 
@@ -1870,7 +1870,7 @@ the full description of each module; summarized here for the change record.
   Charter & verifier visibility, blast radius + causal confidence, repair
   quality), each backed 1:1 by the modules above. `?entity=<feature_id>`
   selects the blast-radius entity (default `admin_platform`).
-- **`src/app/admin/work-log/page.tsx`** + `WorkLogProofCard.tsx` — the
+- **`src/app/admin/work/_components/WorkProofView.tsx`** + `WorkLogProofCard.tsx` — the
   change-to-proof PR list, distinct from the existing narrative timeline at
   `/admin/work`.
 - **Nav**: `ADMIN_NAV` gained two entries (`/admin/engineering` key `G`,
@@ -1974,7 +1974,7 @@ status transition, not a caller-supplied timestamp).
 - **Verified**: `npm run typecheck`, `npx eslint --max-warnings 0` on
   changed files, `npx vitest run --maxWorkers=4` for
   `src/lib/admin/agent-runs`, `src/lib/admin/engineering`,
-  `src/app/admin/engineering`, `src/app/admin/work-log`,
+  `src/app/admin/engineering`, `src/app/admin/work`,
   `node scripts/sql-lint-ratchet.mjs`,
   `node scripts/knowledge/document-inventory.mjs --check`,
   `node scripts/markdown-lint-ratchet.mjs` — all exit 0.
@@ -2377,3 +2377,21 @@ section for the full per-module description; not restated here.
   `npx vitest run --maxWorkers=4 <paths>` — 17/17 passing, including a
   manual revert-and-rerun of the motion guard test to confirm it actually
   fails on the violation it exists to catch (then restored).
+
+## 2026-09-07 — route `loading.tsx` fallbacks reshaped to the real first paint
+
+- SHA: 6eccdf03d.
+- Change: this feature's route Suspense fallbacks (`admin`, `admin/crm`) were reshaped.
+  No route, table, server action, data flow or business rule changed — the
+  edits are confined to `loading.tsx` skeleton geometry and its ARIA
+  wrapper.
+- Why: the fallbacks were shape-matched to each page's SETTLED layout
+  rather than the markup that paints at t=0. For a `'use client'` page
+  holding its own `loading` state, the Suspense fallback is replaced by
+  that component's loading branch, so reserving the populated geometry
+  caused the layout shift the fallback exists to prevent. A route whose
+  `page.tsx` is a pure `permanentRedirect` shim now renders `bg-canvas`
+  only — no geometry, no `<h1>` for a screen that never mounts.
+- Verification: every edited file was adversarially re-verified against
+  its page's source, twice for the files that failed the first pass.
+  typecheck 0, lint 0, build 0.

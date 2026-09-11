@@ -36,8 +36,11 @@ This area is high criticality because it often uses broader access patterns, ope
 ### Routes
 
 - `src/app/admin/**` (Helm Bridge) — **except** `src/app/admin/errors/**`
-  (`admin_incidents`), `src/app/admin/reliability/**`
-  (`admin_reliability_collector`), and `src/app/admin/self-heal/**`
+  (`admin_incidents`; as of the 30→19 consolidation that glob also covers the
+  Reliability and Self-heal UI, which are now `?view=sources` and `?view=loop`
+  of that one route — their data layers stay with
+  `admin_reliability_collector` and `admin_selfheal`), and the retired
+  `src/app/admin/reliability/**`, `src/app/admin/self-heal/**`
   (`admin_selfheal`); those three sub-capabilities' routes are documented in
   their own docs. Everything else — the dashboard, Golf Tracer, Flight
   Recorder/traces, health, deploys, auth, qualifiers, activity, users, teams,
@@ -74,10 +77,14 @@ This area is high criticality because it often uses broader access patterns, ope
   blast radius + causal confidence, repair quality. Five independently
   `PanelBoundary`-wrapped sections, each backed by its own module under
   `src/lib/admin/engineering/`.
-- `src/app/admin/work-log/**` — the change-to-proof Work Log (Bridge
-  Premium Phase 5). Distinct from `src/app/admin/work/**` (the existing
-  PR-narrative timeline, `github-pr-timeline.ts`'s own render): this adds
-  the release-shipped-in and post-deploy-proof join over the SAME entries.
+- `src/app/admin/work/_components/WorkProofView.tsx` — the change-to-proof
+  Work Log (Bridge Premium Phase 5), reached at `/admin/work?view=proof`.
+  It was its own tab at `/admin/work-log` until the 30→19 consolidation:
+  same PR feed as the timeline view (`github-pr-timeline.ts`), one join
+  wider (release-shipped-in and post-deploy proof). Its own page copy used
+  to have to explain which of the two tabs you wanted, which is the tell
+  that it was one page with two framings. `/admin/work-log` now 307s to the
+  view; see `src/lib/admin/retired-routes.ts`.
     `release-compare.ts` (baseline-vs-current post-deploy comparison).
   - `genome.ts` and `release-watch.ts`, added 2026-09-03 as Phase 1
     ("Incidents + release tracking") of the same brief, §45 — the adapters
@@ -604,10 +611,16 @@ them would have broken those routes, not the dead one.
 - A count that could not be read is rendered as UNREADABLE, never as zero and
   never as nothing — the Health badge follows this rule, the same as the
   Incidents badge documented in `admin_incidents`.
-- The Overview answers "is anything on fire" above the fold: banner, briefing,
-  severity mix, then the triage queue. Posture KPIs live in a disclosure below
-  it, not above it. Each KPI carries its own source note — the provenance is
-  per-tile, not a separate panel.
+- The Overview IS the Command Deck (bridge redesign plan §2, superseding the
+  "Posture KPIs live in a disclosure" rule this bullet used to state): posture
+  sentence + blindness beacon, System Orbit, Attention Stack, Decision Inbox,
+  Release Wake, and the Self-Heal Circuit (with its proof-debt chip) answer
+  "is anything on fire" above the fold, with nothing collapsed by default —
+  the collapsed `PostureDisclosure` inverted visibility (it defaulted CLOSED
+  on every fresh session) and is deleted. The KPI `StatStrip` and the
+  feature-health rollup are promoted out of it, always visible, directly
+  below the Deck. Each KPI still carries its own source note — the provenance
+  is per-tile, not a separate panel.
 - Feature health renders through one component wherever it appears (Overview
   rollup, Health grid, per-app pages). Status thresholds, two-window hysteresis,
   and knownGaps annotations belong to the data layer, never to a view.
@@ -616,6 +629,12 @@ them would have broken those routes, not the dead one.
 - The desktop rail and mobile More sheet expose the same sign-out outcome, with
   an in-place pending state and a visible retryable error if session revocation
   fails.
+- A route's `loading.tsx` reserves the page's paint at t=0 — for a
+  `'use client'` page holding its own `loading` state that is that
+  component's loading branch, not its settled layout. A route whose
+  `page.tsx` is a pure `permanentRedirect` shim renders `bg-canvas` only:
+  no geometry, and no real `<h1>` for a screen that never mounts.
+  Reference implementation: `dashboard/alerts/loading.tsx`.
 
 ## Phase 0 truth models (Bridge Premium Observability, 2026-09-03)
 
@@ -848,16 +867,27 @@ instead of being silently dropped by `buildAgentRunPayload`).
 
 ## Phase 2 Command Deck (Bridge Premium Observability, 2026-09-03)
 
+**Phase 3 discharged this section's "unchanged below it" claim (bridge
+redesign plan §2, 2026-09).** The Deck is no longer an additive layer sitting
+above an unchanged page — it IS the Overview. Right now / Incident operations
+/ the collapsed Posture disclosure are deleted (each was a second or third
+rendering of a computation the Deck already made, or a lens one click away);
+Change timeline survives, unchanged, directly below the Deck; the Deck itself
+gained the blindness beacon (folded in from the deleted `MissionTruthStrip`),
+an `ATTENTION_STACK_LIMIT` of 8 (was 5), and a proof-debt chip on the
+Self-Heal Circuit summary (`selectProofDebt`, reused from the deleted
+`ProofDebtPanel`). See `src/app/admin/__tests__/overview-composition.test.ts`
+for the pinned composition and `CommandDeck.tsx`'s own header comment for the
+full accounting of what moved where. The original Phase 2 description below
+is kept for its data-layer detail, which is still accurate.
+
 `src/lib/admin/command-deck/**` (six pure/mostly-pure modules) and
 `src/components/admin/command-deck/**` (six presentational components plus
-one composition, `CommandDeck.tsx`), inserted above the existing `/admin`
-panels — brief §10 ("Overview: Helm Command Deck"), §11 (System Orbit), §12
-(Release Wake), §18 (Self-Heal Circuit summary), §34 (Decision Inbox). Every
-existing panel below it (Right now / Incident operations / Change timeline /
-the collapsed Posture disclosure) is unchanged. This is a composition layer
-over Phase 0's models and this repo's EXISTING attention/self-heal/coverage
-read models — no second incident, attention, release, or self-heal model
-(brief §44).
+one composition, `CommandDeck.tsx`) — brief §10 ("Overview: Helm Command
+Deck"), §11 (System Orbit), §12 (Release Wake), §18 (Self-Heal Circuit
+summary), §34 (Decision Inbox). This is a composition layer over Phase 0's
+models and this repo's EXISTING attention/self-heal/coverage read models —
+no second incident, attention, release, or self-heal model (brief §44).
 
 - **`posture.ts`** — `derivePostureSentence`: the one scannable line,
   clauses joined by " · " (posture, release state, top incident, self-heal
@@ -1027,12 +1057,71 @@ result. Brief §14/§9/§12/§13/§45 (Phase 1).
   card's footer). Corrected 2026-09-03 (PR #1789 review) — this entry
   previously said the opposite, stale from before that wiring landed.
 
+## The 30→19 consolidation (2026-09-08)
+
+The Bridge Premium Observability brief shipped COMPLETELY — Phases 0 through 6
+are all live. The 30-tab sprawl was not unfinished work; it was finished work
+where no phase removed what it superseded. Phase 2's Command Deck was
+explicitly additive ("keep the existing lower panels") as transitional
+scaffolding, and Phase 3 then landed as three NEW tabs rather than replacing
+those panels. Every duplication symptom below follows from that one unfinished
+migration step, which is why this pass is subtraction and re-composition rather
+than construction.
+
+**The mechanism is `?view=`** (`src/lib/admin/views.ts`), which generalises what
+`src/lib/admin/incidents/types.ts` already stated for the incident queue:
+"These are FILTERS OVER ONE MODEL, not separate datasets — Reliability stopped
+being a competing incident list the moment it became a lens." A view applies
+that to a PAGE: one destination, one fetch, several framings, each addressable.
+Three rules, pinned by `src/test/lib/admin/views.test.ts`:
+
+1. The default view emits no param, so every destination keeps ONE canonical
+   URL and no existing bookmark or `activeMatch` breaks.
+2. An unknown view falls back rather than throwing — a stale link is not a 500.
+3. Every other query param survives a view switch.
+
+**What moved** (all retired paths 307, never 308, and keep their keyboard
+shortcut via `RETIRED_SHORTCUTS`; the table is
+`src/lib/admin/retired-routes.ts`, pinned by `admin-redirects.test.ts`):
+
+| Was | Now |
+| --- | --- |
+| `/admin/lenses/{golf,baseball,lifting,teams,users}` | a `?view=` of each subject |
+| `/admin/lenses/users/[id]` | `/admin/users/[id]?view=journey` |
+| `/admin/work-log` | `/admin/work?view=proof` |
+| `/admin/qualifiers` | `/admin/golf?view=qualifiers` |
+| `/admin/reliability` | `/admin/errors?view=sources` |
+| `/admin/self-heal` | `/admin/errors?view=loop` |
+| `/admin/slo` | `/admin/health?view=budgets` |
+| `/admin/billing` | deleted — `/admin` |
+
+`/admin/health` also gained `?view=heartbeats` (the matrix and lattice,
+promoted out of the bottom of a four-section scroll) and `/admin/database`
+split its nineteen-section column into `posture | performance | schema`.
+
+`/admin/errors/<fingerprint>` did NOT move and will not: it is stored in
+`rca_analysis` rows and matched by the repair contract's PR-body regex in
+`src/lib/admin/incidents/repair-link.ts`.
+
+**Two surfaces were deleted rather than folded**, both verified against
+production first: `/admin/billing` (zero `STRIPE_*` variables across 68
+production env vars, so it could only render its own "not available" notice)
+and the Deploys Traffic panel (the Vercel Web Analytics API answers `404
+not_found` for this project). `CreateInvoiceForm`, `src/lib/stripe/**` and
+`fetchVercelWebInsights()` are all untouched — each is a one-commit restore.
+
+**Result: 30 nav destinations → 19, with no surface lost.**
+
 ## Phase 4 lenses (Bridge Premium Observability, 2026-09-03)
 
 Seven new pure read models under `src/lib/admin/lenses/`, five small
 Fairway-token components under `src/components/admin/lenses/`, and six pages
 under `src/app/admin/lenses/**`, all registered in `ADMIN_NAV` under
-Platform. Source: the owner's Bridge Premium Observability brief §20-27
+Platform. **Superseded 2026-09-08**: the six lens pages were folded into the
+subjects they lens (see "The 30→19 consolidation" above) and
+`src/app/admin/lenses/**` no longer exists. The read models under
+`src/lib/admin/lenses/**` and the components under
+`src/components/admin/lenses/**` are unchanged and still in use. Source: the owner's Bridge Premium Observability brief §20-27
 (App and customer lenses) — `docs/ai-system/briefs/
 BRIDGE_PREMIUM_OBSERVABILITY_BRIEF_2026-09-03.md`, which DOES resolve in
 this checkout (on `main`), unlike the Phase 0 brief referenced above.
@@ -1169,7 +1258,7 @@ Phase 0 entry above.
   not a placeholder waiting to be wired. The two sources with a real
   outcome: `qualifier-invariants.ts`'s `evaluateQualifierInvariants` (the
   established "read model over already-fetched rows" idiom, already wired
-  into `/admin/qualifiers`) and the nightly `admin_events` integrity rows
+  into `/admin/golf?view=qualifiers`) and the nightly `admin_events` integrity rows
   (`source='integrity'`, via `jobs.ts`'s exported `parseIntegrityRows`). A
   failing integrity row is always `severity: 'critical'` — a silent
   data-integrity violation outranks an ordinary warning.
@@ -1524,7 +1613,7 @@ assumed it would:
   a genuinely unknown match, and repair-quality per-source isolation (the
   release ledger failing still returns the PR rows).
 - `src/app/admin/engineering/__tests__/page.test.tsx`,
-  `src/app/admin/work-log/__tests__/{page,WorkLogProofCard}.test.tsx` —
+  `src/app/admin/work/__tests__/{WorkProofView,WorkLogProofCard}.test.tsx` —
   page-shell render tests (every section heading, no nested `<main>`) plus
   a fully data-driven suite for `WorkLogProofCard`.
 - `src/lib/admin/lenses/__tests__/*.test.ts` (Phase 4) — one file per lens
@@ -1573,3 +1662,8 @@ assumed it would:
   above implements — see that section for its worktree location as of
   2026-09-03; not linked here as a repo path because it does not resolve in
   this checkout yet (`docs:path-drift` would flag it).
+
+Claude MCP configuration is verified by the tooling tests in
+`src/test/scripts/control-plane-enforcement.test.ts`. The former admin test
+that required long shipping prose and permanent connector bans was removed;
+it did not exercise admin application behavior.

@@ -19,8 +19,17 @@ const SKELETON_ROW_COUNT = 6;
  * quiet fade, not a layout jump.
  *
  * Eyebrow + h1 are real static text (matching `<ViewHeader eyebrow="Team
- * Stats" title="Team Stats" />`), not `<Skeleton>` blocks; the description
- * needs the fetched roster/team name, so it stays a Skeleton.
+ * Stats" title="Team Stats" />`, TeamStatsBoard.tsx:342-344), not
+ * `<Skeleton>` blocks; the description needs the fetched roster/team name,
+ * so it stays a Skeleton.
+ *
+ * Board row shape verified against the module kit: `RankCell` (Tee/App/
+ * Shrt/Putt/Scor) is a `rounded-fw-sm` badge, NOT a circle (RankCell.tsx:
+ * 24-29); only `RingGauge` (Composite) is actually circular (RingGauge.tsx:
+ * 16-41); the "who" cell is name + subtitle text with no avatar
+ * (TeamStatsBoard.tsx:302-306). Scor/Composite/Trend/Signal hide below
+ * 940px exactly like MatrixBoard's own columns (MatrixBoard.tsx:29,
+ * `HIDE_ON_MOBILE`).
  */
 export default function TeamStatsLoading() {
   return (
@@ -55,14 +64,25 @@ export default function TeamStatsLoading() {
               ))}
             </div>
 
-            {/* Header row */}
+            {/* Header row — Player/Tee/App/Shrt/Putt visible at every width, Scor/
+                Composite/Trend/Signal hidden below 940px, matching MatrixBoard's
+                own `COLUMNS` + `HIDE_ON_MOBILE` (MatrixBoard.tsx:29,120-136;
+                TeamStatsBoard.tsx:150-160). */}
             <div className="flex items-center gap-4 border-b border-border-subtle px-5 py-2.5">
-              {Array.from({ length: 6 }).map((_, i) => (
+              {Array.from({ length: 5 }).map((_, i) => (
                 <Skeleton key={i} className="h-2.5 w-8 flex-shrink-0" />
+              ))}
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={`d-${i}`} className="hidden h-2.5 w-8 flex-shrink-0 min-[940px]:block" />
               ))}
             </div>
 
-            {/* Board rows */}
+            {/* Board rows. The "who" cell is name + subtitle only — no avatar
+                (TeamStatsBoard.tsx:302-306). Tee/App/Shrt/Putt are `RankCell`,
+                a rounded-fw-sm badge (RankCell.tsx:24-29), NOT a circle — only
+                `RingGauge` (composite) is actually circular (RingGauge.tsx:16-41).
+                Scor/Composite/Trend/Signal hide below 940px like the real
+                columns (MatrixBoard.tsx:29). */}
             {Array.from({ length: SKELETON_ROW_COUNT }).map((_, i) => (
               <div key={i} className={cn('flex items-center justify-between gap-4 px-5 py-2.5', i < SKELETON_ROW_COUNT - 1 && 'border-b border-border-subtle')}>
                 <div className="min-w-0 flex-1 space-y-1.5">
@@ -70,10 +90,11 @@ export default function TeamStatsLoading() {
                   <Skeleton className="h-2.5 w-20" />
                 </div>
                 <div className="flex flex-shrink-0 items-center gap-3">
-                  {Array.from({ length: 5 }).map((_, j) => (
-                    <Skeleton key={j} circle className="h-[26px] w-[26px]" />
+                  {Array.from({ length: 4 }).map((_, j) => (
+                    <Skeleton key={j} className="h-[26px] w-[34px]" />
                   ))}
-                  <Skeleton circle className="h-9 w-9" />
+                  <Skeleton className="hidden h-[26px] w-[34px] min-[940px]:block" />
+                  <Skeleton circle className="hidden h-[30px] w-[30px] min-[940px]:block" />
                   <Skeleton className="hidden h-6 w-16 min-[940px]:block" />
                   <Skeleton className="hidden h-6 w-20 rounded-full min-[940px]:block" />
                 </div>

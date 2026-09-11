@@ -1,7 +1,4 @@
-'use client';
-
-import { useRouter } from 'next/navigation';
-import { FilterPill } from '@/components/fairway';
+import { FilterPillLink } from '@/components/fairway';
 
 export interface WorkFilterChip {
   key: string;
@@ -12,13 +9,45 @@ export interface WorkFilterChip {
 }
 
 /**
- * The Work log tab's area + state filter rows — server computes every chip's
- * href/count from the already-fetched `counts.byArea`/`counts` tags (no new
- * fetch), this component just navigates. Same href-based pattern as
- * ActivityKindFilterChips (src/app/admin/activity/ActivityKindFilterChips.tsx)
- * — "server refetch on every change, never client-side row hiding" per that
- * component's own doc comment.
+ * The Work log tab's area + state filter rows. The server computes every
+ * chip's href and count from the already-fetched tags — no new fetch.
+ *
+ * REAL LINKS, not buttons that push the router. Every chip's href is already
+ * computed server-side; rendering it as an `<a>` means the row can be
+ * middle-clicked into a new tab, cmd-clicked, copied with "copy link address"
+ * and previewed on hover — and the file stops needing a `'use client'`
+ * boundary and a router hook to do what an anchor does for free. On an admin
+ * console the whole point of a filtered view is that you can hand someone the
+ * URL. `aria-current` replaces `aria-pressed`: a link is not a toggle.
  */
+function ChipRow({
+  label,
+  chips,
+  ariaLabel,
+}: {
+  label: string;
+  chips: readonly WorkFilterChip[];
+  ariaLabel: string;
+}) {
+  return (
+    <nav className="flex flex-wrap items-center gap-2" aria-label={ariaLabel}>
+      <span className="text-xs font-medium uppercase tracking-widest text-warm-500">{label}</span>
+      {chips.map((chip) => (
+        <FilterPillLink
+          key={chip.key}
+          href={chip.href}
+          size="sm"
+          showCheck={false}
+          selected={chip.selected}
+          count={chip.count}
+        >
+          {chip.label}
+        </FilterPillLink>
+      ))}
+    </nav>
+  );
+}
+
 export function WorkFilterChips({
   areaChips,
   stateChips,
@@ -26,39 +55,10 @@ export function WorkFilterChips({
   areaChips: readonly WorkFilterChip[];
   stateChips: readonly WorkFilterChip[];
 }) {
-  const router = useRouter();
   return (
     <div className="space-y-2">
-      <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filter PRs by area">
-        <span className="text-xs font-medium uppercase tracking-widest text-warm-500">Area</span>
-        {areaChips.map((chip) => (
-          <FilterPill
-            key={chip.key}
-            size="sm"
-            showCheck={false}
-            selected={chip.selected}
-            count={chip.count}
-            onClick={() => router.push(chip.href)}
-          >
-            {chip.label}
-          </FilterPill>
-        ))}
-      </div>
-      <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filter PRs by state">
-        <span className="text-xs font-medium uppercase tracking-widest text-warm-500">State</span>
-        {stateChips.map((chip) => (
-          <FilterPill
-            key={chip.key}
-            size="sm"
-            showCheck={false}
-            selected={chip.selected}
-            count={chip.count}
-            onClick={() => router.push(chip.href)}
-          >
-            {chip.label}
-          </FilterPill>
-        ))}
-      </div>
+      <ChipRow label="Area" chips={areaChips} ariaLabel="Filter PRs by area" />
+      <ChipRow label="State" chips={stateChips} ariaLabel="Filter PRs by state" />
     </div>
   );
 }

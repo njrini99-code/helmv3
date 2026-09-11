@@ -14,7 +14,7 @@
  *   2. Refuses a PR whose branch is not `agent/*`, unless --any-branch is
  *      passed — this tool is for the agent-worktree workflow, not for
  *      landing arbitrary branches on someone's behalf.
- *   3. Merges with `gh pr merge --squash --delete-branch`. Never force-push,
+ *   3. Merges with `gh pr merge --squash`. Never force-push,
  *      never any other merge strategy.
  *   4. Fast-forwards the CANONICAL checkout (resolved from git worktree
  *      metadata, never a hardcoded path) with `git pull --ff-only`.
@@ -23,7 +23,7 @@
  *      deletes the branch under the DELETE_MERGED_EXACT proof standard
  *      (see scripts/lib/worktree-lifecycle.mjs, including the no-upstream
  *      case #1863 added — a merged PR's head OID is stronger evidence than a
- *      remote ref that `gh --delete-branch` already removed).
+ *      remote ref that GitHub automatically removed).
  *   6. Prints a four-line summary.
  *
  * This never overrides the mutation budget and never force-pushes. It runs
@@ -215,21 +215,18 @@ async function main(argv) {
   }
 
   process.stdout.write(`pr-land: PR #${args.prNumber} is green on all ${contexts.length} required contexts (${source}) — merging\n`);
-  const merge = exec('gh', ['pr', 'merge', String(args.prNumber), '--squash', '--delete-branch'], { cwd: canonicalRoot });
+  const merge = exec('gh', ['pr', 'merge', String(args.prNumber), '--squash'], { cwd: canonicalRoot });
   if (!merge.ok) {
-    // `--delete-branch` also tries to delete the LOCAL branch, which git refuses
-    // while a worktree has it checked out — the exact case this command exists
-    // for. The merge itself has already happened by then, so re-read the PR
-    // state before deciding this was a failure. Observed on the first live run
-    // (PR #1864): "cannot delete branch ... used by worktree" after a
-    // successful squash merge.
+    // A transport error can arrive after GitHub accepts the merge. Re-read
+    // its state before reporting failure. Branch deletion belongs to the
+    // lifecycle tool so it can verify an archive before removing either ref.
     const after = ghJson(['pr', 'view', String(args.prNumber), '--json', 'state'], canonicalRoot);
     if (after?.state !== 'MERGED') {
       process.stderr.write(`pr-land: gh pr merge failed:\n${merge.stderr || merge.stdout}\n`);
       return 1;
     }
     process.stdout.write(
-      'pr-land: merged; local branch delete deferred to --retire (branch is checked out in a worktree)\n',
+      'pr-land: confirmed merged; branch archival and deletion deferred to --retire\n',
     );
   }
 
@@ -249,7 +246,7 @@ async function main(argv) {
 
   process.stdout.write('\n');
   process.stdout.write(`pr-land summary for #${args.prNumber}\n`);
-  process.stdout.write(`  merged:  gh pr merge --squash --delete-branch (branch ${pr.headRefName})\n`);
+  process.stdout.write(`  merged:  gh pr merge --squash (branch ${pr.headRefName})\n`);
   process.stdout.write(`  pulled:  ${canonicalRoot} fast-forwarded to origin/main\n`);
   process.stdout.write(`  retired: ${retire.ok ? 'worktree-lifecycle.mjs --retire ran' : 'worktree-lifecycle.mjs --retire reported an issue — see above'}\n`);
   return 0;

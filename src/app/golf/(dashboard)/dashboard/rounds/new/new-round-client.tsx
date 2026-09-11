@@ -57,9 +57,27 @@ import { getRoundRecoverySnapshots } from '@/lib/offline/shot-storage';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayNewRoundEntry } from '@/components/fairway/pages/rounds-new/FairwayNewRoundEntry';
 import { FairwayShotTracking } from '@/components/fairway/pages/rounds-tracking';
+import { Skeleton } from '@/components/fairway';
 import { Button as FwButton } from '@/components/fairway/controls/button';
 import { ModalShell } from '@/components/fairway/overlays/ModalShell';
 import { localDayIso } from '@/lib/golf/local-day';
+import { useActiveWork } from '@/lib/recovery/use-active-work';
+
+function RoundCompletionChunkLoading() {
+  return (
+    <div
+      role="status"
+      aria-busy="true"
+      aria-live="polite"
+      className="pointer-events-none fixed inset-x-0 bottom-[calc(1rem+var(--golf-mobile-bottom-nav-offset,0px))] z-[var(--fw-z-toast)] flex justify-center px-4"
+    >
+      <div className="flex items-center gap-3 rounded-fw-lg border border-border-subtle bg-surface px-4 py-3 font-fw-sans text-body-sm text-text-secondary shadow-fw-modal">
+        <Skeleton circle className="h-2.5 w-2.5" />
+        <span>Preparing your round…</span>
+      </div>
+    </div>
+  );
+}
 
 // Round-completion-only overlays — never rendered until the round is
 // finished, so keep them out of the initial hole-entry bundle (perf audit
@@ -70,9 +88,11 @@ const FairwaySaveRoundModal = dynamic(
 );
 const FairwayRoundSubmitOverlay = dynamic(
   () => import('@/components/fairway/pages/rounds-new/FairwayRoundSubmitOverlay').then((m) => m.FairwayRoundSubmitOverlay),
+  { loading: () => <RoundCompletionChunkLoading /> },
 );
 const FairwayRoundSummarySheet = dynamic(
   () => import('@/components/fairway/pages/rounds-new/FairwayRoundSummarySheet').then((m) => m.FairwayRoundSummarySheet),
+  { loading: () => <RoundCompletionChunkLoading /> },
 );
 
 type Hole = RoundHole;
@@ -565,6 +585,14 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
   // Save data when user leaves the page (phone lock, app switch, tab close)
   const stepRef = useRef(step);
   stepRef.current = step;
+  // A02-001: same gate as handleBeforeUnload below — once setup has been left,
+  // or a course has been named, a stale-asset recovery must not replace the
+  // document out from under the entry the player has not saved yet.
+  useActiveWork(
+    'golf-round-new',
+    step !== 'setup' || Boolean(setupData.courseName),
+  );
+
   useEffect(() => {
     // Warn before closing tab/navigating away if there's any data to lose
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -2733,12 +2761,13 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
       </ModalShell>
 
       {/* Finish Round — Premium Round Summary */}
-      <FairwayRoundSummarySheet
-          open={Boolean(showFinishConfirm && pendingFinalStats)}
+      {pendingFinalStats && (
+        <FairwayRoundSummarySheet
+          open={showFinishConfirm}
           onOpenChange={(next) => {
             if (!next) setShowFinishConfirm(false);
           }}
-          finalStats={pendingFinalStats ?? []}
+          finalStats={pendingFinalStats}
           courseName={setupData.courseName}
           onGoBack={() => setShowFinishConfirm(false)}
           onSubmit={async () => {
@@ -2747,43 +2776,46 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
             await handleRoundSubmit(pendingFinalStats);
           }}
         />
+      )}
 
       {/* Submit Overlay — shows during submission, success celebration, and errors */}
-      <SubmitOverlay
-        isVisible={step === 'submitting'}
-        totalScore={submittingTotalScore}
-        toPar={submittingToPar}
-        courseName={setupData.courseName}
-        error={error || undefined}
-        completedRoundId={completedRoundId ?? undefined}
-        onGoBack={() => {
-          setError('');
-          setQualifierClosed(false);
-          isSubmittingRef.current = false;
-          setStep('tracking');
-          // Always re-show the finish confirm so user can submit again
-          if (pendingFinalStats) {
-            setShowFinishConfirm(true);
-          }
-        }}
-        onRetry={qualifierClosed ? undefined : (pendingFinalStats ? () => {
-          setError('');
-          isSubmittingRef.current = false;
-          void handleRoundSubmit(pendingFinalStats);
-        } : undefined)}
-        secondaryActionLabel={qualifierClosed ? 'Save as practice round' : undefined}
-        onSecondaryAction={qualifierClosed ? handleSaveAsPractice : undefined}
-        onSaveAndExit={async () => {
-          setError('');
-          isSubmittingRef.current = false;
-          await handleSaveForLater();
-        }}
-        onDiscard={async () => {
-          setError('');
-          isSubmittingRef.current = false;
-          await handleDeleteRound();
-        }}
-      />
+      {step === 'submitting' && (
+        <SubmitOverlay
+          isVisible
+          totalScore={submittingTotalScore}
+          toPar={submittingToPar}
+          courseName={setupData.courseName}
+          error={error || undefined}
+          completedRoundId={completedRoundId ?? undefined}
+          onGoBack={() => {
+            setError('');
+            setQualifierClosed(false);
+            isSubmittingRef.current = false;
+            setStep('tracking');
+            // Always re-show the finish confirm so user can submit again
+            if (pendingFinalStats) {
+              setShowFinishConfirm(true);
+            }
+          }}
+          onRetry={qualifierClosed ? undefined : (pendingFinalStats ? () => {
+            setError('');
+            isSubmittingRef.current = false;
+            void handleRoundSubmit(pendingFinalStats);
+          } : undefined)}
+          secondaryActionLabel={qualifierClosed ? 'Save as practice round' : undefined}
+          onSecondaryAction={qualifierClosed ? handleSaveAsPractice : undefined}
+          onSaveAndExit={async () => {
+            setError('');
+            isSubmittingRef.current = false;
+            await handleSaveForLater();
+          }}
+          onDiscard={async () => {
+            setError('');
+            isSubmittingRef.current = false;
+            await handleDeleteRound();
+          }}
+        />
+      )}
 
     </>
   );

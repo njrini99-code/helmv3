@@ -816,9 +816,9 @@ function ScoringDistribution({
                 <motion.div
                   key={p.label}
                   className="h-full first:rounded-l-fw-sm last:rounded-r-fw-sm"
-                  style={{ background: p.color }}
-                  initial={reduced ? false : { width: 0 }}
-                  animate={{ width: `${p.pct * 100}%` }}
+                  style={{ background: p.color, width: `${p.pct * 100}%`, transformOrigin: 'left' }}
+                  initial={reduced ? false : { scaleX: 0 }}
+                  animate={{ scaleX: 1 }}
                   transition={
                     reduced
                       ? { duration: 0 }

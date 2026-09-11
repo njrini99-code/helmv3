@@ -1,7 +1,8 @@
 # Apply path
 
-The only way a migration reaches production: `npm run db:apply`. Everything
-before it is preparation; everything it does is printed as PASS/FAIL, and it
+The reviewed, task-authorized paths for a migration to reach production are
+`npm run db:apply` and a connected write-capable Supabase MCP. Everything
+before the selected path is preparation; each path prints PASS/FAIL and
 refuses to proceed on the first FAIL.
 
 ## Flow
@@ -19,8 +20,9 @@ refuses to proceed on the first FAIL.
    check:migration-headers`) fails the PR if a new migration needs headers
    and lacks them. Pre-existing files are grandfathered in
    `.migration-headers-baseline.json` — a ratchet, it only shrinks.
-4. **PR + review** — `db-migration-reviewer` is mandatory for anything R3
-   (privileged) per `memory/system/golfhelm-engineering-os.md`.
+4. **PR + review** — review the SQL and target. Use
+   `db-migration-reviewer` when the task's risk warrants an independent look;
+   an agent review is optional and does not require repeating task authorization.
 5. **Replay in CI** — the Supabase lint + RLS tests job in `ci.yml` replays
    every migration against a fresh database.
 6. **Merge to `main`.**
@@ -30,16 +32,56 @@ refuses to proceed on the first FAIL.
      (or `--held-override <row anchor> --reason "..."` is passed
      deliberately).
    - The ledger doesn't already carry the file's version.
+   - The filename matches `<14-digit version>_<name>.sql` and the file
+     contains no `CONCURRENTLY` (see below).
    - Prints a PITR marker timestamp — record it before taking a backup.
-   - `supabase db push --dry-run --linked` shows the plan.
-8. **`npm run db:apply -- <migration-file> --apply`** — pushes that one
-   file, re-reads the ledger, runs the file's own `-- VERIFY:` queries, and
-   prints recorded-vs-applied. `--apply` is NOT pre-approved for agents —
-   `.claude/settings.json` `permissions.deny` blocks the `--apply` form of
-   this command; only the `db push`/dry-run form is allowed. Only the owner
-   runs `--apply`.
-9. **Verify** — the same `-- VERIFY:` queries, run again independently, plus
-   whatever the migration's own header calls for.
+   - Prints the plan: the exact SQL body `--apply` would send.
+8. **Apply after authorization** — `npm run db:apply -- <migration-file>
+   --apply` sends that one file, re-reads the ledger, runs the file's own
+   `-- VERIFY:` queries, and prints recorded-vs-applied. Already-given task
+   authorization does not need to be requested again. A connected write-capable Supabase MCP is
+   also valid after the same SQL and target review.
+9. **Verify** — inspect the executed `-- VERIFY:` results and run any
+   additional schema/RLS checks needed by the change. Repeat a query only
+   when its outcome is uncertain or the database changed afterward.
+
+## One file means one file
+
+`--apply` sends the migration through `supabase db query --linked --file`,
+not `supabase db push`. `db push` applies EVERY pending migration;
+`--include-all=false` does not narrow that to the named one — it only
+excludes migrations older than the remote ledger tip. The body sent is the
+reviewed file byte for byte plus one appended `insert` recording the version
+in `supabase_migrations.schema_migrations`, the row `db push` would have
+written.
+
+No `begin;`/`commit;` is added. The Management API behind `--linked` already
+runs a multi-statement body in a single transaction, so the migration and its
+ledger row commit or roll back together. Two consequences:
+
+- A migration containing `CONCURRENTLY` cannot take this path and is refused
+  up front, since `CREATE INDEX CONCURRENTLY` will not run inside a
+  transaction block.
+- `supabase db query --local` cannot rehearse a migration at all — it uses
+  the extended query protocol and rejects any multi-statement file. Rehearse
+  against the local stack with `psql` instead.
+
+`db query` exits 1 on a SQL error and 0 on success (measured on the pinned
+CLI, 2.115.0), so a failed apply throws rather than reporting green. The
+ledger re-read and the `-- VERIFY:` queries still run even when the apply
+reports failure, and that is deliberate: the apply can fail on the response
+while the server has already committed, and those two steps are the only
+partial-commit detector. Do not restructure them into an early exit.
+
+The CONCURRENTLY refusal strips whole-line `--` comments only. A trailing
+comment on a code line (`create index x; -- CONCURRENTLY was considered`)
+will trip it and refuse an otherwise fine file. That is fail-closed and
+deliberate — the cost is one manual review, against a half-applied migration.
+
+Because other pending migrations are now skipped rather than swept in,
+`db-apply.yml`'s guard checks for the opposite hazard: applying a file while
+OLDER migrations are still pending lands it out of order, which needs
+`allow_out_of_order` ticked deliberately.
 
 ## HOLD / OBSOLETE
 

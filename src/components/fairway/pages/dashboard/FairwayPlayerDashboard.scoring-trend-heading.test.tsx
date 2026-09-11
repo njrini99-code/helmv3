@@ -65,3 +65,14 @@ describe('FairwayPlayerDashboard — top slot is the swipe calendar, not the gam
     expect(screen.queryByText(/See where you stack up/i)).not.toBeInTheDocument();
   });
 });
+
+describe('FairwayPlayerDashboard — first-round action', () => {
+  it('offers one round-start action to a player without rounds', () => {
+    const data = playerData();
+    data.stats.roundsPlayed = 0;
+    data.recentRounds = [];
+    render(<FairwayPlayerDashboard data={data} />);
+    expect(screen.getByRole('link', { name: 'Submit your first round' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'New round' })).not.toBeInTheDocument();
+  });
+});

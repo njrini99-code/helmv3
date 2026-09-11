@@ -91,6 +91,12 @@ Player opens round review
 - Round review surfaces need clear highlights, areas to review, stats comparison, predictions, and feedback actions.
 - Standing/goal/intent/hero narrative UI should be polished but not obscure source data or actionability.
 - Mobile views must follow the shared app shell and avoid oversized top-of-screen chrome.
+- A route's `loading.tsx` reserves the page's paint at t=0 — for a
+  `'use client'` page holding its own `loading` state that is that
+  component's loading branch, not its settled layout. A route whose
+  `page.tsx` is a pure `permanentRedirect` shim renders `bg-canvas` only:
+  no geometry, and no real `<h1>` for a screen that never mounts.
+  Reference implementation: `dashboard/alerts/loading.tsx`.
 
 ## Known Risk Areas
 
@@ -148,3 +154,9 @@ Player opens round review
 - `memory/context/coachhelm-ai.md`
 - `memory/context/golfhelm-features.md`
 - `docs/v3-feature-audit.md`
+
+Stats uses CoachHelmShell as its only horizontal container, including the loading fallback. On
+phones, selected development/standing/detail views prioritize their content over the overview spine;
+desktop retains its side-by-side context. The round scope picker and Log round action retain 44px
+touch targets. What-if results reveal with opacity/translation rather than animated layout height,
+and honor reduced motion.

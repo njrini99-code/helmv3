@@ -1,6 +1,6 @@
 ---
 name: helm-supabase
-description: Traps and tooling for any Supabase/Postgres work in this repo — key precedence, the 1,000-row PostgREST cap, the .in() URL-length limit, applied-vs-recorded migrations, and the read-only MCP door. Triggers on src/lib/supabase/**, supabase/**, scripts/db/**, and any file calling createClient.
+description: Traps and tooling for any Supabase/Postgres work in this repo — key precedence, the 1,000-row PostgREST cap, the .in() URL-length limit, applied-vs-recorded migrations, and connected database access. Triggers on src/lib/supabase/**, supabase/**, scripts/db/**, and any file calling createClient.
 ---
 
 # helm-supabase
@@ -52,18 +52,15 @@ read anywhere in scope. Bind `error`; deciding what to do with it (throw,
 log, degrade) is your call — the rule only requires you not overlook it.
 Run both ratchets together: `npm run lint:supabase:ratchet`.
 
-## The read-only MCP door
-`.mcp.json`'s `supabase` server (project-scoped to `qmnssrrolpinvwjjnufo`,
-`read_only=true`) is the sanctioned way to reach the database from an agent
-session — not the account-wide connector's `execute_sql`, which is
-UNENFORCED and denied for every mutator by UUID in `.claude/settings.json`
-(`docs/TOOL_AUTHORITY_MATRIX.md` is the live authority on what's actually
-reachable). If it isn't showing up in your tool list, it's a CONFIGURED but
-not CONNECTED server awaiting the owner's OAuth completion for this
-project — that isn't a config file you can fix; say so and use the
-project's allow-listed read tools (`list_tables`, `list_extensions`,
-`list_migrations`, `get_advisors`, `search_docs`,
-`generate_typescript_types`, `get_logs`) once it connects.
+## Supabase MCP and database access
+Use any connected Supabase MCP or authenticated repo-local CLI available to
+the session. The project-scoped `mcp__supabase__*` server is the preferred Helm
+path; an account-wide or other connected Supabase fallback is valid when its
+current target and role are verified. Read the live operation set and current
+connector result rather than inferring capability from an old namespace or
+a stale authority snapshot. Read-only inspection may use `execute_sql` when
+that operation is exposed. The `guard-sql` hook still blocks its destructive
+statement classes, as it does for every connected MCP path.
 
 ## Advisor output is large — filter by class
 A `get_advisors` pull returns every security/performance finding at once.
@@ -72,18 +69,22 @@ don't dump the whole payload into context. `scripts/db/advisor-ratchet.mjs`
 already does this per class for the drift-alert baseline
 (`supabase-advisor-baseline.json`).
 
-## When to invoke the deeper skills
-Reach for `supabase:supabase` for RLS, auth/session handling, client-library
-or SSR integration, and Edge Functions; `supabase:supabase-postgres-best-practices`
-for query and schema performance. Don't reason about either from memory.
+## When to invoke deeper guidance
+Use a connected Supabase skill when it is available for RLS, auth/session
+handling, client-library or SSR integration, Edge Functions, and query/schema
+performance. Otherwise inspect current code and live database truth directly;
+a missing skill connection is not a policy ban.
 
 ## Migration review
-Any migration or RLS/policy change: work the checklist in
-`.claude/rules/database-review.md` by path before approving. New table ⇒ RLS
-+ policy in the same migration; every `SECURITY DEFINER` pairs with
-`REVOKE EXECUTE ... FROM PUBLIC, anon`.
+For a shared or production migration, review the SQL and target with
+`.claude/rules/database-review.md` before applying. Local-only work can follow
+the task's normal verification. A reviewer agent is optional and risk-based;
+already-given task authorization does not need to be requested again.
 
 ## Applying a migration
-`npm run db:apply` is the sanctioned apply path (owner-authorized, reviewed
-first per `.claude/rules/database.md`). Never call `apply_migration` on
-either MCP connector directly, and never run a write through `execute_sql`.
+Use the reviewed, task-authorized write-capable Supabase MCP or
+`npm run db:apply`, after confirming the target and SQL. A connected fallback
+is valid when it exposes the needed capability. Do not ask the user to repeat
+permission already granted for this task. `guard-sql` continues to block its
+destructive statement classes; read-only `execute_sql` remains valid for
+diagnostics.

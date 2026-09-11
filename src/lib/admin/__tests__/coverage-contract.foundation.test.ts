@@ -222,7 +222,7 @@ describe('global tripwire', () => {
     ).not.toThrow();
   });
 
-  it('total wrapped-and-valid action count across the discovered area is exactly 445', () => {
+  it('total wrapped-and-valid action count across the discovered area is exactly 436', () => {
     const golfActionFiles = discoverGolfActionFiles();
     let total = 0;
 
@@ -237,7 +237,7 @@ describe('global tripwire', () => {
     );
     total += golfMessageExports.length;
 
-    expect(golfMessageExports.length).toBe(10);
+    expect(golfMessageExports.length).toBe(14);
     // 425 as of W2 (2026-07-09): +getPlayerHubSummaryData (player-hub-data.ts,
     // withAdminObserved-wrapped) — the Hub→Dashboard merge's extracted read.
     //
@@ -364,6 +364,23 @@ describe('global tripwire', () => {
     // importers; development.ts's camelCase-args variant is the one every
     // real caller uses). See src/lib/admin/__tests__/feature-registry.test.ts
     // for the matching 439 -> 420 manifest-size update.
-    expect(total).toBe(428);
+    // 2026-09-07 (+4), golf group membership: getGolfGroupAddCandidates,
+    // addGolfGroupMember, removeGolfGroupMember and leaveGolfGroup in
+    // src/app/actions/messages.ts — the group-details sheet's membership
+    // writes plus the read that populates its add list. All four are
+    // withAdminObserved-wrapped with feature `messaging`, so the golf-message
+    // export count moves 10 -> 14 and the total 428 -> 432. Three of them are
+    // gated by RLS that ships unapplied in the same PR
+    // (20260907160000_golf_team_chat_membership_management.sql); the wrapper
+    // requirement is about the action being a public POSTable surface, which
+    // it is either way.
+    // 2026-09-09 (+4), calendar premium: updateAttendanceNote (coach note on
+    // an attendance row) plus three reads — getScheduleWindow (find-a-time
+    // workspace), getConflictInbox (conflict centre) and
+    // getClassOccurrenceDetail (class detail behind golf_player_classes RLS)
+    // — in src/app/golf/actions/{attendance,scheduling,conflict-inbox,
+    // class-detail}.ts, all wrapped with feature `calendar_events`. The three
+    // reads carry no demoSafe. Total 432 -> 436.
+    expect(total).toBe(436);
   });
 });

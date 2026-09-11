@@ -120,9 +120,10 @@ export function WhatIfPanel({
           {simResult && (
             <m.div
               className="flex items-center justify-between px-4 py-3 rounded-xl bg-primary-50 border border-primary-200"
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
+              initial={prefersReducedMotion ? false : { opacity: 0.72, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={prefersReducedMotion ? undefined : { opacity: 0, y: -2 }}
+              transition={{ duration: prefersReducedMotion ? 0 : 0.18 }}
             >
               <div className="flex items-center gap-2">
                 <IconTrendingUp size={16} className="text-primary-600" />

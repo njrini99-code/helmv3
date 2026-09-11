@@ -306,15 +306,6 @@ jobs:
         continue-on-error: true
         run: npm run docs:path-drift
 
-      # The feature router (memory/registry.yml) gates governed edits, but
-      # path-drift scans only .md files and skips globs — so the one map the
-      # edit gate consults was the one map no gate checked. Fails on any
-      # registry entry that resolves to nothing; baseline is ZERO.
-      - name: Feature router against the tree
-        id: registry_globs
-        continue-on-error: true
-        run: npm run knowledge:globs
-
       # World Model graph (docs/generated/WORLD_MODEL.{json,md}) — added
       # 2026-09-02 alongside the generator itself. Without this step the
       # committed artifact could go stale on the very next registry.yml edit
@@ -327,8 +318,8 @@ jobs:
         continue-on-error: true
         run: npm run knowledge:world-model:check
 
-      # The other direction from "Feature router against the tree" above:
-      # that step fails when a registry entry points at a path that no
+      # The other direction from registry glob coverage in knowledge:check:
+      # that check fails when a registry entry points at a path that no
       # longer exists, this one fails when a tracked file under a directory
       # the registry itself claims to fully cover (src/app/admin,
       # src/lib/admin — see check-registry-orphans.mjs's module doc-comment
@@ -479,26 +470,6 @@ jobs:
         id: knowledge_bench
         continue-on-error: true
         run: npm run knowledge:bench:check
-      # Document authority inventory (docs/generated/DOCUMENT_AUTHORITY_INVENTORY.md)
-      # — non-mutating drift check, same shape as "Generated inventory is
-      # current" above. Added 2026-09-06 (docs reorg W4) alongside the
-      # --dead-refs/--lifecycle ratchets below: without this step the
-      # committed table could drift from the tracked tree on the very next
-      # doc edit and nothing would notice.
-      - name: Document authority inventory is current
-        id: doc_inventory
-        continue-on-error: true
-        run: npm run knowledge:doc-inventory:check
-
-      # Feature map (docs/generated/HELM_FEATURE_MAP.md) — same drift-check
-      # shape, generated from memory/registry.yml. Added 2026-09-06 alongside
-      # the doc-inventory check above for the same reason: a committed
-      # generated artifact with no CI caller is not actually gated.
-      - name: Feature map is current
-        id: feature_map
-        continue-on-error: true
-        run: npm run knowledge:feature-map:check
-
       # Living dead-reference ratchet (docs reorg Phase 6 / W4). Counts
       # backticked repo-relative paths that resolve to nothing tracked,
       # restricted to the nine "living" categories (REFERENCE,
@@ -580,6 +551,8 @@ jobs:
     # Always runs.
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      HELM_ESLINT_REPORT_ID: ${{ github.run_id }}-${{ github.run_attempt }}-${{ github.sha }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -595,13 +568,22 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # `npm run lint` was its own job (35 s of eslint behind 82 s of install)
-      # until 2026-09-02. It is a step here now, first, and reports under the
-      # same name in the aggregate.
+      # Parse src + scripts once with the three opt-in audit rules enabled.
+      # Each named gate below evaluates this run's report with its own scope.
+      # Producer failure is included in the aggregate; consumers never rescan
+      # or fall back to a cached result when the report is missing/invalid.
+      - name: ESLint shared scan
+        id: eslint_scan
+        continue-on-error: true
+        run: |
+          export HELM_ESLINT_REPORT="$RUNNER_TEMP/helm-eslint.json"
+          printf 'HELM_ESLINT_REPORT=%s\n' "$HELM_ESLINT_REPORT" >> "$GITHUB_ENV"
+          node scripts/lint-ci.mjs --scan
+
       - name: ESLint
         id: eslint
         continue-on-error: true
-        run: npm run lint
+        run: node scripts/lint-ci.mjs
 
       # The ratchet steps below carry continue-on-error so that ONE
       # failure can't mask the others — on 2026-08-18 a stale Supabase
@@ -851,6 +833,13 @@ jobs:
       # 1-day retention: this artifact only needs to outlive the same run's
       # `pr-smoke-a11y` / `sentry-snapshot-capture` jobs below, and a manual
       # playwright.yml dispatch against the same commit shortly after.
+      # `include-hidden-files` and `if-no-files-found` are BOTH load-bearing
+      # here. `.next` is dot-prefixed, and upload-artifact skips hidden paths
+      # by default — so this step logged "No files were found with the
+      # provided path", uploaded nothing, and still SUCCEEDED. Both consumers
+      # below then failed on download, every run, for as long as the
+      # build-once wiring existed. `error` turns the next silent miss into a
+      # failed step instead of two mystery red checks a job away.
       - name: Upload Next build artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
@@ -858,6 +847,8 @@ jobs:
           path: |
             .next
             !.next/cache
+          include-hidden-files: true
+          if-no-files-found: error
           retention-days: 1
 
   supabase:

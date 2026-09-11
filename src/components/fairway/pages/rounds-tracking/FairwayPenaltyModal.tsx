@@ -30,6 +30,14 @@ const PENALTY_OPTIONS = [
   { v: 'lost', l: 'Lost Ball' },
 ];
 
+/** What happens next, per rule — OB/lost replay from the original spot (usePenaltyHandler). */
+const PENALTY_HINT: Record<string, string> = {
+  ob: 'Stroke and distance: +1 and you play again from where you hit the last shot. Enter the re-tee as your next shot.',
+  lost: 'Stroke and distance: +1 and you play again from where you hit the last shot. Enter the re-tee as your next shot.',
+  water: '+1 stroke. Play on from where you said the ball finished.',
+  unplayable: '+1 stroke. Play on from where you said the ball finished.',
+};
+
 export function FairwayPenaltyModal({ open, penaltyType, dispatch, onConfirm }: FairwayPenaltyModalProps) {
   return (
     <ModalShell
@@ -63,6 +71,9 @@ export function FairwayPenaltyModal({ open, penaltyType, dispatch, onConfirm }: 
             </Button>
           ))}
         </div>
+        <p className="mb-4 min-h-[2.5rem] font-fw-sans text-sm text-text-secondary" aria-live="polite">
+          {penaltyType ? PENALTY_HINT[penaltyType] : 'Penalty for the shot you just entered.'}
+        </p>
         <div className="flex gap-3">
           <Button variant="secondary" className="flex-1" onClick={() => dispatch({ type: 'CLOSE_PENALTY_MODAL' })}>
             Cancel

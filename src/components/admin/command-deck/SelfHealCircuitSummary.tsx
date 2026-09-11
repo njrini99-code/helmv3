@@ -51,7 +51,7 @@ function StageCard({ stage, isActive }: { stage: CircuitStage; isActive: boolean
       </dl>
       {stage.activeIncident ? (
         <Link
-          href={stage.activeIncident.href ?? '/admin/self-heal'}
+          href={stage.activeIncident.href ?? '/admin/errors?view=loop'}
           className="truncate text-caption text-accent-700 underline"
         >
           {stage.activeIncident.title}
@@ -65,8 +65,23 @@ function StageCard({ stage, isActive }: { stage: CircuitStage; isActive: boolean
  * Self-Heal Circuit summary (brief §18) — Diagnose -> Repair -> Close, the
  * three stages this repo actually automates (see `selfheal-circuit.ts`'s
  * header for why the brief's full six-stage circuit is not rendered here).
+ *
+ * `proofDebt` (plan §2.4) is a count of incidents whose fix looks solved but
+ * is not yet evidenced (`selectProofDebt`, computed once by the caller from
+ * the same incident board the rest of this Deck reads — no second model).
+ * `undefined`/`null` BOTH render the literal word "unknown", never a `0` —
+ * a genuine zero only renders when the caller could actually confirm it (see
+ * `CommandDeck.tsx`'s derivation), because a `0` here under an unreadable or
+ * blind source would claim "nothing outstanding" when the truth is "we don't
+ * know".
  */
-export function SelfHealCircuitSummary({ summary }: { summary: CircuitSummary }) {
+export function SelfHealCircuitSummary({
+  summary,
+  proofDebt = null,
+}: {
+  summary: CircuitSummary;
+  proofDebt?: number | null;
+}) {
   return (
     <div className="space-y-2">
       {summary.verdict ? (
@@ -74,6 +89,15 @@ export function SelfHealCircuitSummary({ summary }: { summary: CircuitSummary })
       ) : (
         <p className="text-caption text-fw-warning-ink">Self-heal board could not be read this refresh.</p>
       )}
+      <Link
+        href="/admin/errors?lens=awaiting-proof"
+        className="inline-flex min-h-11 w-fit items-center gap-1.5 rounded-full border border-warm-200 bg-surface-sunken px-3 py-1 text-caption text-warm-700 transition-colors hover:bg-warm-100"
+      >
+        <span className="font-fw-mono tabular-nums text-warm-900">
+          {proofDebt === null ? 'unknown' : proofDebt}
+        </span>
+        proof debt
+      </Link>
       <div className="flex flex-wrap gap-2 sm:flex-nowrap">
         {summary.stages.map((stage, i) => (
           // min-w-0 is load-bearing, not defensive. A flex item defaults to

@@ -383,7 +383,7 @@ export function FairwayPlayerDashboard({
           eyebrow={team?.name ?? 'Your team'}
           title={`${timeWord}, ${firstName}`}
           description="Your game at a glance — trend, standing, and what's next."
-          primaryAction={newRoundCta}
+          primaryAction={stats.roundsPlayed === 0 ? undefined : newRoundCta}
           className="mb-8 md:mb-10"
         />
 
@@ -407,7 +407,7 @@ export function FairwayPlayerDashboard({
 
         {/* ════════════════════════════════════════════════════════════════
             COLD START (0 rounds) — one OnboardingStep-style hero, no duplicate
-            CTAs. The persistent header CTA still applies.
+            CTAs. The first-round hero owns the action until there is a round.
            ════════════════════════════════════════════════════════════════ */}
         {/* The TEAM's schedule is not gated on the player's own round count.
             DayScheduleSwipe used to live only inside the normal branch below,

@@ -43,6 +43,9 @@ describe('shouldEmitCronCheckIns — gated off outside a real Vercel deployment'
   });
 
   it('on for a real Vercel production deployment', () => {
+    // Every Vercel deployment runs under NODE_ENV=production; vitest sets
+    // 'test', which getRuntimeEnv() now (correctly) reads as a dev machine.
+    vi.stubEnv('NODE_ENV', 'production');
     vi.stubEnv('CI', undefined);
     vi.stubEnv('GITHUB_ACTIONS', undefined);
     vi.stubEnv('VERCEL_ENV', 'production');
@@ -51,6 +54,9 @@ describe('shouldEmitCronCheckIns — gated off outside a real Vercel deployment'
   });
 
   it('on for a Vercel preview deployment', () => {
+    // Every Vercel deployment runs under NODE_ENV=production; vitest sets
+    // 'test', which getRuntimeEnv() now (correctly) reads as a dev machine.
+    vi.stubEnv('NODE_ENV', 'production');
     vi.stubEnv('CI', undefined);
     vi.stubEnv('GITHUB_ACTIONS', undefined);
     vi.stubEnv('VERCEL_ENV', 'preview');

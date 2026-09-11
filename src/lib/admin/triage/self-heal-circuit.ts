@@ -40,9 +40,23 @@ import { cachedIncidentBoard } from '@/lib/admin/incidents/fetch';
 import { DEFAULT_INCIDENT_WINDOW_HOURS } from '@/lib/admin/data/incident-feed';
 import { summarizeFlow, type FlowSummary, type FlowStageId, type StageFlow } from '@/lib/admin/selfheal-flow';
 import type { CronBoardStatus } from '@/lib/admin/cron-registry';
-import type { CapabilityState } from '@/lib/admin/selfheal-capability';
+import type { CapabilityState, LoopVerdict } from '@/lib/admin/selfheal-capability';
 import type { StageRunOutcome } from '@/lib/admin/selfheal-provenance';
 import { ok, type AdminFetchResult } from '@/lib/admin/fetch-result';
+import type { FwStatusTone } from '@/components/fairway/controls/_internal';
+
+/** Loop verdict tone — exported so every renderer of a `LoopVerdict`
+ *  (`SelfHealCircuit.tsx`'s own footer line, `SelfHealCircuitSummary.tsx`'s
+ *  header pill) shares the identical color for the identical word, rather
+ *  than independently-authored mappings drifting apart. Moved here verbatim
+ *  from `SelfHealCircuit.tsx` (P0-1): that file's directory is deleted by a
+ *  later step, and this constant has one consumer outside it. */
+export const VERDICT_TONE: Record<LoopVerdict['tone'], FwStatusTone> = {
+  ok: 'success',
+  warning: 'warning',
+  danger: 'danger',
+  unknown: 'info',
+};
 
 /** Never a fabricated number — this codebase tracks no per-stage budget. */
 export type BudgetReading = { tracked: false };

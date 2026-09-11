@@ -217,6 +217,14 @@ export function FairwayTravel({
   const handleSelect = (itinerary: TravelItinerary) => {
     setSelectedId(itinerary.id);
     setActiveTab('details');
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      requestAnimationFrame(() => {
+        detailPanelRef.current?.scrollIntoView({
+          behavior: prefersReducedMotion ? 'auto' : 'smooth',
+          block: 'start',
+        });
+      });
+    }
   };
 
   /* ── create / edit ──────────────────────────────────────────────────────── */
@@ -300,14 +308,25 @@ export function FairwayTravel({
     const result = await exportExpensesToCSV(selected.id);
     if (result.success && result.csv) {
       const blob = new Blob([result.csv], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = `expenses_${selected.event_name.replace(/\s+/g, '_')}_${
-        new Date().toISOString().split('T')[0]
-      }.csv`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      const href = URL.createObjectURL(blob);
+      try {
+        const link = document.createElement('a');
+        link.href = href;
+        link.download = `expenses_${selected.event_name.replace(/\s+/g, '_')}_${
+          new Date().toISOString().split('T')[0]
+        }.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } finally {
+        // An object URL pins its Blob in memory for the lifetime of the
+        // document. This handler ran on every "Export CSV" press and never
+        // revoked, so a coach working a long trip leaked the full CSV of every
+        // export until the tab was closed. Revoked on a macrotask so the click
+        // has committed the download first — revoking synchronously can cancel
+        // it in WebKit, which is the browser the iOS shell runs.
+        setTimeout(() => URL.revokeObjectURL(href), 0);
+      }
     } else {
       fairwayToast.danger(result.error || 'Failed to export expenses');
     }

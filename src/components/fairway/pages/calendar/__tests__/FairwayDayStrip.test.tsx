@@ -100,4 +100,33 @@ describe('FairwayDayStrip — timezone-aware density bucketing', () => {
       screen.getByRole('button', { name: 'Tuesday, July 21 — 1 event' }),
     ).toBeInTheDocument();
   });
+
+  it('marks every day a multi-day commitment runs, not only the day it starts', () => {
+    // A tournament Tue Jul 21 → Thu Jul 23 (ET). The agenda lists it under
+    // each of those days; the strip must agree, or a dotless Wednesday
+    // would read as free.
+    const events = [event({
+      id: 'tourney',
+      title: 'Invitational',
+      event_type: 'tournament',
+      start_date: '2026-07-21T13:00:00.000Z',
+      end_date: '2026-07-23T20:00:00.000Z',
+      end_time: '2026-07-23T20:00:00.000Z',
+    })];
+    render(
+      <FairwayDayStrip
+        focusDate={FOCUS_DATE}
+        selectedDate={SELECTED_DATE}
+        events={events}
+        nowRef={NOW_REF}
+        teamTimezone="America/New_York"
+        onSelectDate={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole('button', { name: 'Monday, July 20 — no events' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Tuesday, July 21 — 1 event' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Wednesday, July 22 — 1 event' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Thursday, July 23 — 1 event' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Friday, July 24 — no events' })).toBeInTheDocument();
+  });
 });

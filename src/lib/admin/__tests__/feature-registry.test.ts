@@ -325,7 +325,7 @@ describe('FEATURE_REGISTRY completeness', () => {
   // 'ALL'-mapped to `course_library`, so this new withAdminObserved-wrapped
   // export is picked up by the live `scanExports` count with no manifest
   // edit required.
-  it('total manifest size is exactly 420 (excludes the CRM row)', () => {
+  it('total manifest size is exactly 428 (excludes the CRM row)', () => {
     let total = 0;
     for (const def of FEATURE_REGISTRY) {
       if (def.excluded || def.app === 'baseballhelm') continue;
@@ -377,7 +377,18 @@ describe('FEATURE_REGISTRY completeness', () => {
     // dead `createFocusAreaFromReview(reviewId, focusAreaData)` (-1 — zero
     // importers; development.ts's camelCase-args variant is the one every
     // real caller uses).
-    expect(total).toBe(420);
+    // 2026-09-07 (+4), golf group membership: getGolfGroupAddCandidates,
+    // addGolfGroupMember, removeGolfGroupMember and leaveGolfGroup added to
+    // `messaging`'s explicit array in src/app/actions/messages.ts. That file
+    // is one of the explicitly-listed (non-'ALL') manifest entries, so unlike
+    // an 'ALL'-mapped file it needs the names spelled out here as well as
+    // being picked up by the live scan in coverage-contract.foundation
+    // (428 -> 432 there).
+    // 2026-09-09 (+4), calendar premium: updateAttendanceNote lands in the
+    // 'ALL'-mapped attendance.ts (+1), and scheduling.ts, conflict-inbox.ts
+    // and class-detail.ts (one read each) join `calendar_events` as 'ALL'
+    // (+3). Matches 432 -> 436 in coverage-contract.foundation.
+    expect(total).toBe(428);
   });
 
   it('the CRM row lists no files (never a wrap target)', () => {

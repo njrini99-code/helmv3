@@ -23,10 +23,14 @@ const SUBNAV_TAB_WIDTHS = [44, 28] as const;
  *
  * Mirrors GenomeCompareView's default (no `?p1=&p2=` yet) first paint: the
  * CoachHelmShell masthead+subnav chain (same nested `mx-auto max-w-[1200px]`
- * pattern as chat/loading.tsx and coachhelm/loading.tsx) plus its "Players >
- * Compare" leaf breadcrumb, then the cockpit — a raised instrument panel shaped
- * like the `!anySelected` EmptyState branch (centered icon chip + title +
- * description) — and the two roster ComparePicker panels below it.
+ * masthead/body wrapper pair as CoachHelmShell.tsx:152,212) plus its "Players
+ * > Compare" leaf breadcrumb, then the cockpit — a raised instrument panel
+ * shaped like the `!anySelected` EmptyState branch (GenomeCompareView.tsx:
+ * 181-188) — and the two roster ComparePicker panels below it. The icon
+ * chip/gap/padding mirror EmptyState's own DEFAULT-variant classes
+ * (EmptyState.tsx:94 `gap-4 px-8 py-16`, :105 `h-16 w-16` chip) —
+ * GenomeCompareView passes no `variant`, so this is not the smaller `subtle`
+ * shape some other loading.tsx files mirror.
  */
 export default function GenomeCompareLoading() {
   return (
@@ -74,9 +78,9 @@ export default function GenomeCompareLoading() {
               {/* The cockpit — raised accent panel, EmptyState-shaped */}
               <div
                 aria-hidden="true"
-                className="flex flex-col items-center gap-3 rounded-card border border-accent-200 bg-surface px-6 py-14 text-center"
+                className="flex flex-col items-center gap-4 rounded-card border border-accent-200 bg-surface px-8 py-16 text-center"
               >
-                <Skeleton circle className="h-12 w-12" />
+                <Skeleton circle className="h-16 w-16" />
                 <Skeleton className="h-5 w-64 max-w-full" />
                 <Skeleton className="h-3.5 w-80 max-w-full" />
               </div>

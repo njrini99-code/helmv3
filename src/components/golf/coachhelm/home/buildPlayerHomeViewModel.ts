@@ -141,10 +141,25 @@ function confidencePct(confidence: number | null): number | null {
   return Math.round(confidence <= 1 ? confidence * 100 : confidence);
 }
 
+/**
+ * The player-home prediction sentence.
+ *
+ * It used to read "Predicted to shoot 74.2 at 78% confidence." A reader takes
+ * that as "78% chance of shooting about 74.2", and the system does not compute
+ * that quantity. What the calibrator actually measures is an INTERVAL hit
+ * rate: how often the true score lands inside the predicted range. So the
+ * sentence states the range and attributes the percentage to the range, which
+ * is the claim the number supports.
+ *
+ * When no range is available the point estimate is kept, but the confidence is
+ * phrased as a track record ("predictions like this have been accurate ~78% of
+ * the time") rather than a probability attached to the single number.
+ */
 export function buildPredictionVerdict(
   predictedValue: number | null | undefined,
   confidence: number | null | undefined,
   topFocusLabel: string | null,
+  range?: { low: number | null | undefined; high: number | null | undefined },
 ): string {
   const n = finite(predictedValue);
   if (n === null) {
@@ -153,9 +168,20 @@ export function buildPredictionVerdict(
       : 'Your next-round prediction fills in once CoachHelm has enough tracked rounds.';
   }
   const conf = confidencePct(finite(confidence));
-  const confText = conf !== null ? ` at ${conf}% confidence` : '';
   const focusText = topFocusLabel ? ` Top focus: ${topFocusLabel.toLowerCase()}.` : '';
-  return `Predicted to shoot ${n.toFixed(1)}${confText}.${focusText}`;
+
+  const low = finite(range?.low);
+  const high = finite(range?.high);
+  if (low !== null && high !== null && high >= low) {
+    const rangeText = `Predicted ${low.toFixed(1)}\u2013${high.toFixed(1)}`;
+    return conf !== null
+      ? `${rangeText} (${conf}% of predictions like this land in that range).${focusText}`
+      : `${rangeText}.${focusText}`;
+  }
+
+  return conf !== null
+    ? `Predicted to shoot ${n.toFixed(1)} \u2014 predictions like this have been accurate about ${conf}% of the time.${focusText}`
+    : `Predicted to shoot ${n.toFixed(1)}.${focusText}`;
 }
 
 /* ───────────────────────────────────────────────────────────────────────────

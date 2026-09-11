@@ -30,6 +30,7 @@ import { Button, IconButton } from '@/components/fairway/controls/button';
 import { Skeleton } from '@/components/fairway/feedback/Skeleton';
 import { InlineNotice } from '@/components/fairway/feedback/InlineNotice';
 import { cn } from '@/lib/utils';
+import { useScrollFade } from '@/lib/fairway/use-scroll-fade';
 import { formatTimeInTz } from '@/lib/utils/timezone';
 import {
   EVENT_LABEL,
@@ -70,11 +71,21 @@ export function DayScheduleSwipe({
   // Hydration-safe clock/timezone resolution — same pattern as DaySchedule.
   const [tz, setTz] = useState<string | null>(null);
   const [todayKey, setTodayKey] = useState<string | null>(null);
-  const [offset, setOffset] = useState(0);
+  /**
+   * The day the USER has paged to, or null while they haven't paged at all.
+   *
+   * Deliberately not `useState(0)` seeded and then corrected by an effect: the
+   * landing day is DERIVED (see `landingOffset`), and "user hasn't chosen yet"
+   * has to be distinguishable from "user chose today" or the derivation would
+   * fight a real selection.
+   */
+  const [userOffset, setUserOffset] = useState<number | null>(null);
   /** +1 → arrived by going forward, -1 backward — drives the slide direction. */
   const [direction, setDirection] = useState(1);
   const dragStartX = useRef<number | null>(null);
   const reduce = useReducedMotion();
+  const { ref: dayRailRef, fadeStyle: dayRailFade } = useScrollFade<HTMLDivElement>('x');
+  const selectedDayRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const resolved = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -131,25 +142,54 @@ export function DayScheduleSwipe({
   // range, so opening on today showed "Nothing scheduled" and the next real
   // event was six taps away (audit 2026-07-24, P-01). One-day-at-a-time paging
   // only works if it starts where the content is.
-  const [landed, setLanded] = useState(false);
-  useEffect(() => {
-    if (!isReady || landed) return;
-    setLanded(true);
+  //
+  // DERIVED, not an effect. This used to be a second useEffect gated on a
+  // `landed` flag, whose own dependencies (isReady, byDay, todayKey,
+  // eventOffsets) are all computed from state the FIRST effect writes. React
+  // cannot run it until the render caused by that first setState has already
+  // committed — so a frame where isReady=true and offset=0 was guaranteed to
+  // paint first, and the card visibly read "Today — Nothing scheduled" before
+  // jumping to the real day. As a useMemo it resolves in the same render pass
+  // that flips isReady, so the first non-skeleton frame is already correct.
+  // (It also stops the aria-live day panel announcing the wrong day and then
+  // correcting itself.)
+  const landingOffset = useMemo(() => {
+    if (!isReady) return 0;
     if ((byDay.get(todayKey as string) ?? []).length === 0 && eventOffsets.length > 0) {
-      setOffset(eventOffsets[0]!);
+      return eventOffsets[0]!;
     }
-  }, [isReady, landed, byDay, todayKey, eventOffsets]);
+    return 0;
+  }, [isReady, byDay, todayKey, eventOffsets]);
 
+  const offset = userOffset ?? landingOffset;
   const clampedOffset = Math.min(offset, maxOffset);
   const dayKey = isReady ? addDaysToKey(todayKey as string, clampedOffset) : '';
   const dayEvents = byDay.get(dayKey) ?? [];
   const label = isReady ? dayLabel(dayKey, todayKey as string) : '';
 
+  useEffect(() => {
+    const selected = selectedDayRef.current;
+    const rail = selected?.parentElement;
+    if (!selected || !rail) return;
+    const keepSelectedVisible = () => {
+      if (rail.scrollWidth <= rail.clientWidth) return;
+      const item = selected.getBoundingClientRect();
+      const bounds = rail.getBoundingClientRect();
+      if (item.left < bounds.left + 28 || item.right > bounds.right - 28) {
+        rail.scrollLeft += item.left + item.width / 2 - bounds.left - bounds.width / 2;
+      }
+    };
+    keepSelectedVisible();
+    const observer = new ResizeObserver(keepSelectedVisible);
+    observer.observe(rail);
+    return () => observer.disconnect();
+  }, [dayKey]);
+
   const goto = (next: number) => {
     const clamped = Math.max(0, Math.min(maxOffset, next));
     if (clamped === clampedOffset) return;
     setDirection(clamped > clampedOffset ? 1 : -1);
-    setOffset(clamped);
+    setUserOffset(clamped);
   };
 
   const headerAction = viewAllHref ? (
@@ -183,8 +223,8 @@ export function DayScheduleSwipe({
         <div className="flex min-w-0 flex-col gap-2">
           {/* Day switcher row */}
           <div className="flex items-center justify-between gap-2">
-            <div className="flex min-w-0 items-baseline gap-2">
-              <span className="font-fw-display text-body font-semibold text-text-primary">
+            <div className="flex min-w-0 flex-col items-start">
+              <span className="whitespace-nowrap font-fw-display text-body font-semibold text-text-primary">
                 {label}
               </span>
               {clampedOffset > 0 ? (
@@ -192,7 +232,7 @@ export function DayScheduleSwipe({
                   variant="ghost"
                   size="sm"
                   onClick={() => goto(0)}
-                  className="px-2 text-caption font-medium text-accent-700 hover:text-accent-600"
+                  className="-ml-2 px-2 text-caption font-medium text-accent-700 hover:text-accent-600"
                 >
                   Back to today
                 </Button>
@@ -248,6 +288,8 @@ export function DayScheduleSwipe({
               (audit 2026-07-24, P-01 / P-14). It doubles as the keyboard
               affordance the chevron-only version never had. */}
           <div
+            ref={dayRailRef}
+            style={dayRailFade}
             role="toolbar"
             aria-label="Pick a day"
             aria-orientation="horizontal"
@@ -276,6 +318,7 @@ export function DayScheduleSwipe({
                 // eslint-disable-next-line helm/no-raw-button -- compact day cell inside a toolbar, not a <Button> pill (audit P-01)
                 <button
                   key={key}
+                  ref={selected ? selectedDayRef : undefined}
                   type="button"
                   onClick={() => goto(dayOffset)}
                   aria-current={selected ? 'true' : undefined}
@@ -283,7 +326,7 @@ export function DayScheduleSwipe({
                     count > 0 ? ` — ${count} event${count === 1 ? '' : 's'}` : ' — nothing scheduled'
                   }`}
                   className={cn(
-                    'flex min-h-11 flex-1 shrink-0 basis-0 flex-col items-center justify-center gap-1 rounded-fw-sm px-1 py-1.5 transition-colors',
+                    'flex min-h-11 min-w-11 flex-1 shrink-0 basis-0 flex-col items-center justify-center gap-1 rounded-fw-sm px-1 py-1.5 transition-colors',
                     selected
                       ? 'bg-accent-650 text-text-on-accent'
                       : 'text-text-tertiary hover:bg-surface-sunken',

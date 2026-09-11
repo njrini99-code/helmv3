@@ -56,7 +56,7 @@ export function ReleaseWakeRibbon({ wake }: { wake: ReleaseWakeSnapshot }) {
         <Lane label="DB errors" lane={wake.lanes.databaseErrors} href="/admin/jobs" />
         <Lane label="Latency" lane={wake.lanes.latency} />
         <Lane label="Invariants" lane={wake.lanes.invariants} href="/admin/jobs" />
-        <Lane label="Self-heal" lane={wake.lanes.selfHealActions} href="/admin/self-heal" />
+        <Lane label="Self-heal" lane={wake.lanes.selfHealActions} href="/admin/errors?view=loop" />
       </div>
       <Link href="/admin/deploys" className="shrink-0 text-caption text-accent-700 underline">
         Release Runway →

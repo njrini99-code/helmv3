@@ -1,3 +1,16 @@
+/**
+ * Loading skeleton for /golf/join/[code].
+ *
+ * Mirrors the real page's (GolfJoinTeamClient, golf-join-team-client.tsx:87-157)
+ * orb composition and auth-glass-card structure — logo, header block with
+ * team icon/name/org line, "Joining as" card, "One Team Only" notice, and
+ * the two action buttons.
+ *
+ * `role="status"`/`aria-busy`/the sr-only label were missing entirely — this
+ * file had no accessible-name announcement for AT users at all. Added on the
+ * content wrapper, matching the pattern used by every sibling auth-style
+ * loading file (e.g. `../../(auth)/login/loading.tsx:37-46`).
+ */
 export default function Loading() {
   return (
     <div className="min-h-dvh bg-auth-golf relative">
@@ -8,7 +21,14 @@ export default function Loading() {
         <div className="auth-orb auth-orb-3 hidden sm:block w-[200px] h-[200px] top-1/3 left-[8%] bg-gradient-to-br from-primary-300/20 to-primary-400/15" />
       </div>
 
-      <div className="relative min-h-dvh flex flex-col items-center justify-center p-4 sm:p-6 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+      <div
+        role="status"
+        aria-busy="true"
+        aria-live="polite"
+        className="relative min-h-dvh flex flex-col items-center justify-center p-4 sm:p-6 pb-[calc(1rem+env(safe-area-inset-bottom))]"
+      >
+        <span className="sr-only">Loading team invite&hellip;</span>
+
         {/* Logo */}
         <div className="mb-6 sm:mb-8">
           <div className="skeleton-shimmer w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-warm-900/10" />

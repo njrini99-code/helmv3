@@ -240,6 +240,35 @@ Use `memory/context/golfhelm-database.md` for exact columns.
   future-dated rounds shipped this date, tracked as an explicit gap here
   rather than silently declared solved.
 
+### Penalty strokes (2026-09-09)
+
+A penalty is its own `golf_shots` row (`is_penalty`, `shot_type: 'penalty'`),
+written by `usePenaltyHandler` → `buildPenaltyShot` AFTER the player records
+the errant shot; the scorecard counts rows, so score = shots + penalty rows.
+The row's `lieBefore` / `distanceToHoleAfter` mean "where the ball is played
+from next" — that is what `CONFIRM_PENALTY`, undo, and the continue-round
+reload (`lieFromShotResult`) restore position from.
+
+- **Water / unplayable**: play on from the drop — the row keeps the current
+  position (two rows, correct).
+- **OB / lost ball**: stroke AND distance — the row carries the errant shot's
+  `lieBefore` / `distanceToHoleBefore`, so the next stroke is entered from
+  there (`getShotTypeFromState` types anything played from `tee` as a tee
+  shot, not only shot 1). Before this the row copied the provisional's landing
+  spot and the replayed stroke was never entered: 24 of 37 OB tee shots and
+  24 of 29 lost balls in the 90 days to 2026-09-09 scored one stroke short.
+- **"+ Penalty" is disabled until a shot exists on the hole** — logged first,
+  the penalty became shot 1 and the real tee shot was entered as the
+  provisional (78 of 311 rows).
+- **Stats attribution** (`getPenaltyCategory`, `golf-stats-calculator-shots.ts`)
+  charges the −1.0 SG to the shot that EARNED the penalty — the nearest
+  preceding non-penalty shot on the hole, else the nearest following one —
+  never to the row's own (drop) position. That had put 130 tee-shot penalties
+  against Approach and 16 approach penalties against Around Green. Pure
+  calculator change: history corrects itself without a data migration.
+- Player-facing summary that went to the coach who reported it: scores were
+  right for water, one short for OB/lost; the SG split was wrong for all four.
+
 ### Reclassification — changing what a round counts toward
 
 - **Re-typing a round is not editing it.** Changing `round_type` /
@@ -348,9 +377,9 @@ Use `memory/context/golfhelm-database.md` for exact columns.
   touch for no gain; it was reverted the same day. The editor now renders on
   `/golf/dashboard/rounds/continue/[id]`, which already scopes its round to
   `player.id`, so it is always the player's own.
-  - Rendered from the SERVER component, outside `ContinueRoundClient`. That
-    component owns live scoring, autosave and recovery; a type picker does not
-    belong inside that state machine.
+  - Constructed by the server component and passed into `ContinueRoundClient`
+    as a presentation slot in its inset-aware resume header. The editor still
+    owns its independent state; scoring, autosave and recovery do not own it.
   - Player rules apply: only qualifiers the player is already ENTERED in,
     because RLS makes entry creation coach-only.
 - **A round re-typed mid-play must still submit.** Saving calls
@@ -406,6 +435,12 @@ Use `memory/context/golfhelm-database.md` for exact columns.
   round saves exactly the holes on screen. Before 2026-09-01 the editor seeded
   once on mount, so "9 holes · Front 9" tapped after the course was confirmed
   still started an 18-hole round (Shenandoah field report).
+- A route's `loading.tsx` reserves the page's paint at t=0 — for a
+  `'use client'` page holding its own `loading` state that is that
+  component's loading branch, not its settled layout. A route whose
+  `page.tsx` is a pure `permanentRedirect` shim renders `bg-canvas` only:
+  no geometry, and no real `<h1>` for a screen that never mounts.
+  Reference implementation: `dashboard/alerts/loading.tsx`.
 
 ## Known Risk Areas
 
@@ -485,8 +520,9 @@ Use `memory/context/golfhelm-database.md` for exact columns.
 
 The round chrome owns the iOS status-bar zone: the Capacitor WKWebView is
 edge-to-edge (`contentInset: 'never'`), so `FairwayScorecardHeader`'s sticky
-bar pads `env(safe-area-inset-top)` (inside the measured element — the
-published `--scorecard-height` var includes it), and both
+bar owns `env(safe-area-inset-top)` as padding for New Round or a sticky
+offset below Continue Round's inset-aware context (the published
+`--scorecard-height` includes the inset in both modes), and both
 `FairwayNewRoundEntry` step wrappers plus `FairwayCoursePicker`'s floating
 Close fold the inset into their top offsets. Off-iOS these resolve to the
 prior paddings (env() = 0). No lifecycle, autosave, or navigation semantics
@@ -512,11 +548,46 @@ The push pre-prompt sheet (`PushPermissionSoftAsk.tsx`) moved off retired
 ## iOS shell chrome (updated 2026-08-26)
 
 Round entry and tracking chrome are safe-area-native in the Capacitor shell:
-`FairwayScorecardHeader` pads `env(safe-area-inset-top)` (publishing
-`--scorecard-height` inclusive of the inset), both `FairwayNewRoundEntry`
+`FairwayScorecardHeader` accounts for `env(safe-area-inset-top)` through
+padding or its resumed-round sticky offset (publishing `--scorecard-height`
+inclusive of the inset), both `FairwayNewRoundEntry`
 step wrappers fold the inset into top padding, and the course-picker close
 control sits below the status bar. The shared `Segmented` control renders an
 accent-green selected thumb in dark scope. Presentation layer only — no
 lifecycle contract change. Ledger: the round-lifecycle file under `memory/ledgers/changes/`
 (2026-08-26 entries); evidence: `docs/audits/evidence/ios-premium-2026-08-25/`
 (course picker, tee step, setup band, and scorecard header captures).
+
+### Course picker viewport repair (2026-09-08)
+
+The course/tee picker now applies top and bottom safe-area insets to its single
+vertical scroll owner, not only the floating Close button. Its full-screen
+surface hides the partial-sheet handle and reduces its available height with
+the keyboard inset. Choosing a course scrolls the tee stage to the top; stage
+transitions overlap briefly instead of waiting through an empty frame. Tee
+cards do not introduce a second vertical scroller. Course, tee and round data
+operations are unchanged.
+
+Long course names wrap within the reserved close-button lane; both back and
+close controls have 44px touch targets. Safe-area regression coverage is in
+`e2e/golf-critical-paths.spec.ts` and only inspects the picker without starting
+a round.
+
+New-round completion shows a fixed, non-blocking loading status while its summary/submit chunks
+load. The summary remains mounted after its first finish attempt so closing can complete the shared
+sheet exit. Round-detail distribution segments keep their final layout widths and reveal with
+transforms.
+
+### Continue Round header ownership (2026-09-08)
+
+The resume context and round-type editor share one header below the status-bar
+inset. The scorecard uses that inset as its sticky top offset, without adding
+a second blank padding band. Its published offset includes the inset for
+offline banners and desktop context. New Round still owns its inset inside
+the scorecard. The tracking wrapper clips horizontal overflow without becoming
+a vertical scroll container, and Continue Round avoids an ancestor transform
+that would trap fixed status-bar chrome. Scores and save behavior are unchanged.
+The completed-round Submit banner lives inside this same measured scorecard
+chrome so it remains reachable while scrolling. A ResizeObserver updates the
+published offset when the banner or save status changes height. The route
+loading placeholder reserves the same inset, context, and editor order.

@@ -10,6 +10,7 @@ import { PanelBoundary } from '../_components/PanelBoundary';
 import { PanelNoData, PanelAllClear } from '../_components/PanelStates';
 import { AutoRefresh } from '../_components/AutoRefresh';
 import { LocalTime } from '../_components/LocalTime';
+import { SectionLabel } from '../_components/SectionLabel';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,14 +20,6 @@ const SECTION_SKELETON = (
     <SkeletonList rows={4} />
   </div>
 );
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <h2 className="border-b border-primary-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
-      {children}
-    </h2>
-  );
-}
 
 function KeyPanelRule() {
   return <DatelineRule className="mb-3" />;

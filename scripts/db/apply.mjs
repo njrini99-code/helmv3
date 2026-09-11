@@ -2,13 +2,13 @@
 /**
  * scripts/db/apply.mjs — D3, Helm Database Plan.
  *
- * The only sanctioned path from a merged migration file to production. Every
- * step prints PASS/FAIL as it runs and the whole thing exits non-zero on any
+ * A reviewed, task-authorized path from a merged migration file to production.
+ * Every step prints PASS/FAIL as it runs and the whole thing exits non-zero on any
  * FAIL. Without `--apply` this is a dry run only — nothing is pushed.
  *
- * `--apply` is deliberately NOT pre-approved for agents
- * (.claude/settings.json permissions.deny carries the `*--apply*` form) —
- * see docs/operations/APPLY_PATH.md.
+ * `--apply` explicitly opts into executing the reviewed migration. Task
+ * authorization already given does not need to be repeated. The dry-run
+ * form remains the default — see docs/operations/APPLY_PATH.md.
  *
  * Usage:
  *   node scripts/db/apply.mjs <migration-file>                 # dry run
@@ -25,15 +25,36 @@
  *       file's version.
  *   (d) Prints a PITR marker line (UTC timestamp) for the owner to record
  *       before taking a backup snapshot.
- *   (e) Dry-run: `supabase db push --dry-run --linked` and print the plan.
- *   (f) With --apply: pushes the ONE file via `supabase db push --linked
- *       --include-all=false`, re-reads the ledger, runs the migration's own
- *       `-- VERIFY:` queries (one SELECT per line, each must return >=1
- *       row), and prints a recorded-vs-applied table.
+ *   (e) Dry-run: print the exact SQL body that --apply would send.
+ *   (f) With --apply: sends that one body via `supabase db query --linked
+ *       --file`, re-reads the ledger, runs the migration's own `-- VERIFY:`
+ *       queries (one SELECT per line, each must return >=1 row), and prints
+ *       a recorded-vs-applied table.
+ *
+ * Why not `db push`: `supabase db push` applies EVERY pending migration, and
+ * `--include-all=false` does not narrow that to one file — it only excludes
+ * migrations OLDER than the remote ledger tip. With ten files pending, the
+ * old step (f) would have swept nine unreviewed ones into production
+ * alongside the named one; the workflow's sweep guard existed solely to
+ * catch that. `db query --linked --file` is the single-file primitive
+ * `db push` never had.
+ *
+ * What actually executes is the reviewed migration file byte for byte, plus
+ * ONE appended `insert` recording the version in the ledger — the row
+ * `db push` would have written. No `begin;`/`commit;` is added: the
+ * Management API that backs `--linked` already runs a multi-statement body
+ * inside one transaction (probed with `set_config(..., is_local := true)`,
+ * whose value set by the first statement is visible to the second), so the
+ * migration and its ledger row commit or roll back together. Adding an
+ * explicit `commit;` would close that outer transaction early instead.
+ *
+ * The single-transaction wrapping is also why a migration containing
+ * CONCURRENTLY is refused below rather than half-applied.
  */
 
 import { execFileSync } from 'node:child_process';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { resolve, dirname, basename, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -65,6 +86,49 @@ function parseArgs(argv) {
   }
   args.file = rest[0] ?? null;
   return args;
+}
+
+/**
+ * The basename is interpolated into the ledger INSERT, so it is constrained
+ * before it gets there rather than escaped afterwards. This is the same shape
+ * `.github/workflows/db-apply.yml` validates; enforced here too so the script
+ * is safe when run directly, not only through the workflow.
+ */
+export function isValidMigrationFilename(fileBasename) {
+  return /^\d{14}_[a-z0-9_]+\.sql$/.test(fileBasename);
+}
+
+function checkFilename(fileBasename) {
+  const ok = isValidMigrationFilename(fileBasename);
+  return step(
+    'filename is <14-digit version>_<name>.sql',
+    ok,
+    ok ? fileBasename : `'${fileBasename}' does not match — refusing to build a ledger row from it`,
+  );
+}
+
+/**
+ * The Management API runs the whole body in one transaction, and CONCURRENTLY
+ * cannot run inside a transaction block. Refuse up front: the alternative is
+ * an error partway through a body whose earlier statements have already been
+ * staged, which is exactly the half-applied state this path exists to avoid.
+ *
+ * Whole-line `--` comments are stripped, trailing ones are not, so a code line
+ * ending `-- CONCURRENTLY ...` trips this and refuses a fine file. Fail-closed
+ * on purpose: the cost is one manual review, the alternative a half-apply.
+ */
+export function hasConcurrently(fileText) {
+  const sql = fileText.replace(/^\s*--.*$/gm, '');
+  return /\bCONCURRENTLY\b/i.test(sql);
+}
+
+function checkNoConcurrently(fileText) {
+  const found = hasConcurrently(fileText);
+  return step(
+    'no CONCURRENTLY (cannot run inside a transaction)',
+    !found,
+    found ? 'this file needs to be applied outside a transaction — not via this path' : '',
+  );
 }
 
 /** (a) HEAD is main, clean, file reachable from origin/main. */
@@ -146,15 +210,29 @@ function printPitrMarker() {
   process.stdout.write(`\nPITR MARKER (record this before taking a backup snapshot): ${ts}\n\n`);
 }
 
-/** (e) Dry-run push plan. */
-function dryRunPush() {
-  try {
-    const out = sh(SUPABASE_CLI, ['db', 'push', '--dry-run', '--linked']);
-    process.stdout.write(`\n--- supabase db push --dry-run --linked ---\n${out}\n`);
-    return step('dry-run plan generated', true);
-  } catch (err) {
-    return step('dry-run plan generated', false, String(err?.stdout ?? err?.message ?? err));
-  }
+/**
+ * The exact body `--apply` sends: the reviewed migration verbatim, then the
+ * one ledger row. `name` is the filename with its 14-digit version prefix and
+ * `.sql` suffix removed, matching what `db push` records.
+ *
+ * Safe to interpolate: `checkFilename` has already refused any basename
+ * outside `^\d{14}_[a-z0-9_]+\.sql$`, so neither value can carry a quote.
+ */
+export function buildApplyBody(fileBasename, fileText) {
+  const version = fileBasename.split('_')[0];
+  const name = fileBasename.replace(/^\d{14}_/, '').replace(/\.sql$/, '');
+  const ledgerInsert =
+    'insert into supabase_migrations.schema_migrations (version, name)\n' +
+    `values ('${version}', '${name}');`;
+  return `${fileText.replace(/\s*$/, '')}\n\n-- db:apply — record this file in the ledger, in the same transaction.\n${ledgerInsert}\n`;
+}
+
+/** (e) Print the exact body --apply would send. The plan IS the payload. */
+function printPlan(body) {
+  process.stdout.write(
+    `\n--- SQL that --apply sends via 'supabase db query --linked --file' ---\n${body}\n--- end of plan ---\n`,
+  );
+  return step('plan generated', true, `${body.split('\n').length} line(s)`);
 }
 
 /** Extract `-- VERIFY:` lines from the migration file header. */
@@ -200,6 +278,8 @@ async function main() {
   process.stdout.write(`\n=== db:apply — ${fileBasename} (${args.apply ? 'APPLY' : 'DRY RUN'}) ===\n\n`);
 
   let ok = true;
+  ok = checkFilename(fileBasename) && ok;
+  ok = checkNoConcurrently(fileText) && ok;
   ok = checkGitState(fileBasename) && ok;
   ok = checkNotHeld(fileBasename, args.heldOverride, args.reason) && ok;
   ok = checkLedger(version) && ok;
@@ -210,22 +290,39 @@ async function main() {
   }
 
   printPitrMarker();
-  ok = dryRunPush() && ok;
+  const applyBody = buildApplyBody(fileBasename, fileText);
+  ok = printPlan(applyBody) && ok;
 
   if (!args.apply) {
-    process.stdout.write('\ndb:apply: dry run complete. Re-run with --apply to push for real.\n');
+    process.stdout.write('\ndb:apply: dry run complete. Re-run with --apply to send the plan above for real.\n');
     process.exit(ok ? 0 : 1);
   }
 
   process.stdout.write(`\n--- APPLYING ${fileBasename} ---\n`);
   let applyOk = true;
+  // A temp dir, not the repo: the body is a build artifact and the worktree is
+  // shared. Removed in `finally` so a failed apply leaves nothing behind.
+  const scratch = mkdtempSync(join(tmpdir(), 'helm-db-apply-'));
+  const bodyPath = join(scratch, fileBasename);
   try {
-    const out = sh(SUPABASE_CLI, ['db', 'push', '--linked', '--include-all=false']);
+    writeFileSync(bodyPath, applyBody, 'utf-8');
+    const out = sh(SUPABASE_CLI, ['db', 'query', '--linked', '--file', bodyPath]);
     process.stdout.write(out + '\n');
-    applyOk = step('supabase db push --linked --include-all=false', true);
+    applyOk = step('supabase db query --linked --file (single migration)', true);
   } catch (err) {
-    applyOk = step('supabase db push --linked --include-all=false', false, String(err?.stdout ?? err?.message ?? err));
+    applyOk = step(
+      'supabase db query --linked --file (single migration)',
+      false,
+      String(err?.stdout ?? err?.message ?? err),
+    );
+  } finally {
+    rmSync(scratch, { recursive: true, force: true });
   }
+
+  // Deliberately NOT an early exit on !applyOk. The apply can report failure
+  // after the server already committed (an API timeout on the response, say),
+  // so the ledger re-read and the VERIFY queries below are the partial-commit
+  // detector — they have to run either way.
 
   const ledgerAfterOk = checkLedgerPresent(version);
   const verifyQueries = extractVerifyQueries(fileText);
@@ -255,7 +352,14 @@ function checkLedgerPresent(version) {
   }
 }
 
-main().catch((err) => {
-  process.stderr.write(`db:apply: ${String(err?.message ?? err)}\n`);
-  process.exit(1);
-});
+// Entrypoint guard: without it, importing this module to test the pure
+// helpers above would run main() and start talking to production.
+const invokedDirectly =
+  process.argv[1] !== undefined && resolve(process.argv[1]) === resolve(fileURLToPath(import.meta.url));
+
+if (invokedDirectly) {
+  main().catch((err) => {
+    process.stderr.write(`db:apply: ${String(err?.message ?? err)}\n`);
+    process.exit(1);
+  });
+}

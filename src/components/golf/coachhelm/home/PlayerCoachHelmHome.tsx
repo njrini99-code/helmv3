@@ -24,7 +24,7 @@
 
 import { useCallback, useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 import { cn } from '@/lib/utils';
 import { Surface, EmptyState, Button } from '@/components/fairway';
@@ -65,6 +65,8 @@ import { StandingDrill } from './StandingDrill';
 import { InsightsDrill } from './InsightsDrill';
 import { DeepDiveDrill } from './DeepDiveDrill';
 import { PlayerCoachHelmNav, useCoachHelmSectionLabel } from './PlayerCoachHelmNav';
+
+const MOBILE_SPINE_HIDDEN_VIEWS = new Set(['development', 'profile', 'standing', 'insights', 'deep-dive']);
 
 function finite(n: number | null | undefined): number | null {
   return typeof n === 'number' && Number.isFinite(n) ? n : null;
@@ -155,9 +157,11 @@ export function PlayerCoachHelmHome({
   playerBaseline,
 }: PlayerCoachHelmHomeProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { addToast } = useToast();
   const [, startMakePlanTransition] = useTransition();
   const [makePlanPendingId, setMakePlanPendingId] = useState<string | null>(null);
+  const showMobileSpine = !MOBILE_SPINE_HIDDEN_VIEWS.has(searchParams.get('view') ?? '');
 
   const shot = initialShotAnalytics ?? null;
 
@@ -289,6 +293,10 @@ export function PlayerCoachHelmHome({
         data.prediction?.predictedValue,
         data.prediction?.calibratedConfidence ?? data.prediction?.confidence,
         priorities[0]?.title ?? null,
+        {
+          low: data.prediction?.predictedRangeLow,
+          high: data.prediction?.predictedRangeHigh,
+        },
       ),
     [data.prediction, priorities],
   );
@@ -411,6 +419,7 @@ export function PlayerCoachHelmHome({
       <div className={cn('flex min-w-0 flex-col gap-5 min-[940px]:grid min-[940px]:grid-cols-[280px_minmax(0,1fr)] min-[940px]:items-start min-[1180px]:grid-cols-[300px_minmax(0,1fr)]')}>
         <PlayerSpine
           className="min-[940px]:sticky min-[940px]:top-20"
+          mobileClassName={showMobileSpine ? undefined : 'hidden'}
           hero={hero}
           verdict={verdict}
           track={track}

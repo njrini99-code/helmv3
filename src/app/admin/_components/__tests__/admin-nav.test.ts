@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
   ADMIN_NAV,
-  ADMIN_COMMAND_SHORTCUTS,
   hrefForShortcut,
   RESERVED_LOCAL_SHORTCUTS,
   BRIDGE_BOTTOM_NAV_HREFS,
@@ -19,12 +18,8 @@ describe('ADMIN_NAV', () => {
       '/admin/errors',
       '/admin/health',
       '/admin/jobs',
-      '/admin/reliability',
-      '/admin/slo',
       '/admin/database',
-      '/admin/self-heal',
       '/admin/traces',
-      '/admin/qualifiers',
       '/admin/teams',
       '/admin/users',
       '/admin/activity',
@@ -36,26 +31,18 @@ describe('ADMIN_NAV', () => {
       '/admin/releases',
       '/admin/auth',
       '/admin/work',
-      '/admin/work-log',
       '/admin/engineering',
-      '/admin/lenses/golf',
-      '/admin/lenses/baseball',
-      '/admin/lenses/lifting',
-      '/admin/lenses/teams',
-      '/admin/lenses/users',
-      '/admin/billing',
       '/admin/ben-leah',
     ]);
     expect(ADMIN_NAV.map((e) => e.key)).toEqual([
-      '1', '3', '0', '8', 'R', 'O', 'X', 'S', 'F', 'Q', 'T', '7',
-      '2', 'U', '5', '6', 'L', '9', 'K', '4', 'W', 'Y', 'Z', 'G',
-      'A', 'P', 'E', 'D', 'V', 'B',
+      '1', '3', '0', '8', 'X', 'F', 'T', '7',
+      '2', 'U', '5', '6', 'L', '9', 'K', '4', 'W', 'Z', 'B',
     ]);
   });
 
   it('groups by the question being asked, not by subsystem', () => {
     const sections = [...new Set(ADMIN_NAV.map((e) => e.section))];
-    expect(sections).toEqual(['Triage', 'Customers', 'Apps', 'Platform', 'Revenue']);
+    expect(sections).toEqual(['Triage', 'Customers', 'Apps', 'Platform']);
   });
 
   it('maps shortcut keys to hrefs', () => {
@@ -66,14 +53,6 @@ describe('ADMIN_NAV', () => {
     expect(hrefForShortcut('9')).toBe('/admin/deploys');
     expect(hrefForShortcut('0')).toBe('/admin/health');
     expect(hrefForShortcut('x')).toBeNull();
-  });
-
-  it('keeps command-center shortcuts on real Bridge tabs', () => {
-    const navHrefs = new Set(ADMIN_NAV.map((entry) => entry.href));
-    for (const shortcut of ADMIN_COMMAND_SHORTCUTS) {
-      expect(navHrefs.has(shortcut.href), `${shortcut.href} is not a registered admin tab`).toBe(true);
-    }
-    expect(ADMIN_COMMAND_SHORTCUTS.map((s) => s.href)).not.toContain('/admin/audit');
   });
 
   // Regression for Bridge Premium Phase 6: AdminShell's global keydown

@@ -25,7 +25,7 @@ is a second thing to keep true.
 **Feature Awareness System** · active · criticality high · owner platform
 
 - **Behaviour:** `docs/ai-system/helmv3-ai-codebase-intelligence.md`
-- **Code:** `scripts/knowledge/**`, `scripts/contracts/**`, `memory/journeys/**`, `.devin/wiki.json`, `.github/workflows/feature-awareness.yml`, `package.json` … and 9 more in the registry
+- **Code:** `scripts/knowledge/**`, `scripts/contracts/**`, `memory/journeys/**`, `.devin/wiki.json`, `.github/workflows/feature-awareness.yml`, `package.json` … and 28 more in the registry
 - **Telemetry:** none. Agent tooling, not a product surface. Nothing here writes admin_events.feature, and no FeatureKey should exist for it.
 - **Incidents:** `memory/incidents/feature_awareness_system/INC-2026-08-16-parallel-agents-shared-tree.md`, `memory/incidents/feature_awareness_system/INC-2026-08-18-worktrees-inside-repo-duplicate-tree.md`, `memory/incidents/feature_awareness_system/INC-2026-08-19-codeql-matrix-rename-phantom-checks.md`, `memory/incidents/feature_awareness_system/INC-2026-08-29-disk-exhaustion-from-six-worktrees.md`, `memory/incidents/feature_awareness_system/INC-2026-08-30-worktree-removed-without-owner-consent.md`, `memory/incidents/feature_awareness_system/INC-2026-08-30-zsh-history-modifier-broke-pushes.md`, `memory/incidents/feature_awareness_system/INC-2026-08-31-vercel-upload-cap-vercelignore-fix.md`, `memory/incidents/feature_awareness_system/INC-2026-08-31-worktree-report-missed-remote-branches.md`, `memory/incidents/feature_awareness_system/INC-2026-09-02-ci-runner-slot-starvation-consolidation.md`, `memory/incidents/feature_awareness_system/INC-2026-09-02-vercel-cli-pipe-close-abort.md`, `memory/incidents/feature_awareness_system/INC-2026-09-04-automemory-user-scope-drift.md`, `memory/incidents/feature_awareness_system/INC-2026-09-04-golf-e2e-env-injection-skip.md`, `memory/incidents/feature_awareness_system/INC-2026-09-04-mcp-namespace-policy-contradiction.md`, `memory/incidents/feature_awareness_system/INC-2026-09-04-sandboxed-dev-server-false-ready.md`, `memory/incidents/feature_awareness_system/INC-2026-09-04-surface-registry-miscategorized-as-generated.md`
 - **Repair units:** none in the queue
@@ -47,7 +47,7 @@ is a second thing to keep true.
 **Supabase Database Observability — Zero-Cost Error/Health Control Plane** · active · criticality high · owner platform
 
 - **Behaviour:** `memory/features/observability-supabase.md`
-- **Code:** `src/app/admin/database/**`, `src/app/api/cron/db-health-sampler/**`, `src/app/api/cron/db-stat-delta/**`, `src/app/api/cron/db-observability-prune/**`, `src/app/admin/database/log-evidence-actions.ts`, `src/lib/observability/supabase/**` … and 18 more in the registry
+- **Code:** `src/app/admin/database/**`, `src/app/api/cron/db-health-sampler/**`, `src/app/api/cron/db-stat-delta/**`, `src/app/api/cron/db-observability-prune/**`, `src/app/admin/database/log-evidence-actions.ts`, `src/lib/observability/supabase/**` … and 19 more in the registry
 - **Telemetry:** none. This module IS the observability layer for Postgres/Supabase (error envelope, health/statement/platform samplers, alert policy, advisor and log-evidence integrations) — instrumenting itself would be circular, the same reasoning observability_sentry above states for the Sentry-side layer.
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
@@ -95,7 +95,7 @@ is a second thing to keep true.
 - **Telemetry:** `crm_recruiting_pipeline` (golfhelm, low)
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
-- **History:** no ledger yet
+- **History:** `memory/ledgers/changes/crm_outreach.md`
 
 ## `qualifiers`
 
@@ -150,7 +150,7 @@ is a second thing to keep true.
 - **Telemetry:** `alerts_system` (coachhelm, med), `patterns_dashboard` (coachhelm, med), `intelligence_dashboard` (coachhelm, med), `coaching_intelligence_settings` (coachhelm, low)
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
-- **History:** no ledger yet
+- **History:** `memory/ledgers/changes/coach_intelligence_triage.md`
 
 ## `player_coachhelm_development`
 
@@ -168,7 +168,7 @@ is a second thing to keep true.
 **Team Communications** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/team-communications.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/messages/**`, `src/app/golf/(dashboard)/dashboard/announcements/**`, `src/components/golf/messages/**`, `src/components/golf/announcements/**`, `src/components/fairway/pages/messages/**`, `src/components/fairway/pages/announcements/**` … and 19 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/messages/**`, `src/app/golf/(dashboard)/dashboard/announcements/**`, `src/components/golf/messages/**`, `src/components/golf/announcements/**`, `src/components/fairway/pages/messages/**`, `src/components/fairway/pages/announcements/**` … and 25 more in the registry
 - **Telemetry:** `messaging` (golfhelm, high), `announcements` (golfhelm, med), `notifications` (golfhelm, med)
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
@@ -205,7 +205,7 @@ is a second thing to keep true.
 - **Telemetry:** `recruiting_prospect_tracking` (golfhelm, low)
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
-- **History:** no ledger yet
+- **History:** `memory/ledgers/changes/recruiting.md`
 
 ## `auth_onboarding_join`
 
@@ -216,7 +216,7 @@ is a second thing to keep true.
 - **Telemetry:** `auth_onboarding` (golfhelm, med), `join_team_flow` (golfhelm, med)
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
-- **History:** no ledger yet
+- **History:** `memory/ledgers/changes/auth_onboarding_join.md`
 
 ## `settings_preferences`
 
@@ -245,7 +245,7 @@ is a second thing to keep true.
 **Admin Platform** · active · criticality high · owner platform
 
 - **Behaviour:** `memory/features/admin-platform.md`
-- **Code:** `src/app/admin/engineering/**`, `src/app/admin/work-log/**`, `src/app/admin/database/**`, `src/app/admin/lenses/**`, `src/app/admin/golf/**`, `src/app/admin/traces/**` … and 57 more in the registry
+- **Code:** `src/app/admin/engineering/**`, `src/app/admin/database/**`, `src/app/admin/golf/**`, `src/app/admin/traces/**`, `src/app/admin/deploys/**`, `src/app/admin/auth/**` … and 53 more in the registry
 - **Telemetry:** `admin_dashboard` (golfhelm, med)
 - **Incidents:** `memory/incidents/admin_platform/INC-2026-07-29-postgres-wedge-took-down-every-route.md`, `memory/incidents/admin_platform/INC-2026-08-26-error-rate-hourly-never-written.md`, `memory/incidents/admin_platform/INC-2026-08-27-swallowed-cron-failure-invisible-to-bridge.md`
 - **Repair units:** `cron-failure-invisible-to-bridge-2026-08-27` (repairing), `error-resolution-lifecycle-2026-08-27` (verified)
@@ -267,7 +267,7 @@ is a second thing to keep true.
 **Admin Reliability Collector** · active · criticality high · owner platform
 
 - **Behaviour:** `memory/features/admin-reliability-collector.md`
-- **Code:** `src/app/admin/reliability/**`, `src/app/admin/releases/**`, `src/app/api/cron/reliability-triage/**`, `src/lib/reliability/**`, `src/lib/admin/release-intel/**`, `scripts/release-intel/**` … and 1 more in the registry
+- **Code:** `src/app/admin/releases/**`, `src/app/api/cron/reliability-triage/**`, `src/lib/reliability/**`, `src/lib/admin/release-intel/**`, `scripts/release-intel/**`, `src/lib/admin/release-intel/__tests__/**`
 - **Telemetry:** none — covered by `admin_platform`. No dedicated runtime FeatureKey yet — writes background_job_logs rows (reliability-snapshot/-triage job types), not admin_events.
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
@@ -278,7 +278,7 @@ is a second thing to keep true.
 **Admin SLO Center** · active · criticality high · owner platform
 
 - **Behaviour:** `memory/features/admin-slo.md`
-- **Code:** `src/app/admin/slo/**`, `src/lib/admin/slo/**`
+- **Code:** `src/lib/admin/slo/**`
 - **Telemetry:** none — covered by `admin_platform`. A synthesis layer — reads background_job_logs, get_feature_health() and helm_debug_list_traces; writes nothing of its own, so it has no admin_events feature tag.
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
@@ -289,7 +289,7 @@ is a second thing to keep true.
 **Admin Self-Heal** · active · criticality high · owner platform
 
 - **Behaviour:** `memory/features/admin-selfheal.md`
-- **Code:** `src/app/admin/self-heal/**`, `src/app/api/cron/selfheal-triage/**`, `src/app/api/cron/log-retention/**`, `src/app/admin/actions/triage.ts`, `src/lib/admin/selfheal-*.ts`, `src/lib/admin/rca*.ts` … and 9 more in the registry
+- **Code:** `src/app/api/cron/selfheal-triage/**`, `src/app/api/cron/log-retention/**`, `src/app/admin/actions/triage.ts`, `src/lib/admin/selfheal-*.ts`, `src/lib/admin/rca*.ts`, `src/lib/admin/triage-*.ts` … and 8 more in the registry
 - **Telemetry:** none — covered by `admin_platform`. No dedicated runtime FeatureKey yet — heartbeats into background_job_logs (selfheal-triage/log-retention) and SELFHEAL_STAGES, not admin_events.
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
@@ -301,7 +301,7 @@ is a second thing to keep true.
 
 - **Behaviour:** `memory/features/admin-replay-lab.md`
 - **Code:** `src/components/admin/replay/**`, `replay/**`, `src/lib/admin/replay/**`, `src/lib/admin/replay/__tests__/replay-manifest-schema.test.ts`
-- **Telemetry:** none. Agent/operator tooling, not a product surface. No admin_events writes; the Bridge panel it feeds (/admin/self-heal) reads a bundled generated index, not a runtime telemetry source.
+- **Telemetry:** none. Agent/operator tooling, not a product surface. No admin_events writes; the Bridge panel it feeds (/admin/errors?view=loop) reads a bundled generated index, not a runtime telemetry source.
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
 - **History:** no ledger yet
@@ -326,7 +326,7 @@ is a second thing to keep true.
 - **Telemetry:** none. Cross-cutting authorization enforced in RLS policies and action guards rather than on a screen. It has no surface of its own to instrument; a failure here shows up as a denial inside whichever feature the user was in.
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
-- **History:** no ledger yet
+- **History:** `memory/ledgers/changes/team_access_control.md`
 
 ## `ios_native_shell`
 

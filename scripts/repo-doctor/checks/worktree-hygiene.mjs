@@ -48,13 +48,8 @@ export const meta = { id: 'worktree', title: 'Worktree hygiene' };
 
 const NEXT_WARN_BYTES = 4 * 1024 * 1024 * 1024; // 4 GiB
 
-// Made cleanup cheap enough it always happens (2026-09-06, after PR #1863
-// needed three manual steps to land). Two of the three checks below are hard
-// FAILs, not WARNs, on purpose: a merged-and-forgotten checkout or an
-// over-budget branch/worktree count is not a nudge, it is the exact leak
-// AGENTS.md's mutation budget and worktree-lifecycle.mjs exist to close, and
-// a WARN here is exactly the kind of "reported but never acted on" residue
-// this whole reset targets.
+// These are cleanup diagnostics, not proof of concurrent writers. Only an
+// explicitly configured workspace cap is enforced as a failure.
 const STALE_MERGED_PR_MS = 24 * 60 * 60 * 1000; // 24 hours
 const MAX_LOCAL_BRANCHES = 25;
 
@@ -201,7 +196,7 @@ export async function run(ctx) {
         }
       }
       if (stale.length > 0) {
-        out.push(check('worktree.stale-merged-pr', Status.FAIL,
+        out.push(check('worktree.stale-merged-pr', Status.WARN,
           `${stale.length} worktree(s) sit on a branch whose PR merged over 24h ago and was never retired`, {
             evidence: stale,
             fix: 'npm run pr:land -- <n>  (or: node scripts/worktree-lifecycle.mjs --retire)',
@@ -223,7 +218,7 @@ export async function run(ctx) {
       const branches = r.value.split('\n').filter(Boolean);
       out.push(
         branches.length > MAX_LOCAL_BRANCHES
-          ? check('worktree.branch-count', Status.FAIL, `${branches.length} local branches exceed the ${MAX_LOCAL_BRANCHES}-branch ceiling`, {
+          ? check('worktree.branch-count', Status.WARN, `${branches.length} local branches exceed the ${MAX_LOCAL_BRANCHES}-branch ceiling`, {
               count: branches.length,
               ceiling: MAX_LOCAL_BRANCHES,
               fix: 'npm run worktrees:retire  (or npm run pr:land -- <n> per merged PR)',
@@ -241,7 +236,7 @@ export async function run(ctx) {
     const ceiling = budget + 1;
     out.push(
       decision.used > ceiling
-        ? check('worktree.budget-exceeded', Status.FAIL,
+        ? check('worktree.budget-exceeded', process.env.HELM_MAX_MUTATION_WORKTREES === undefined ? Status.WARN : Status.FAIL,
             `${decision.used} mutation worktree(s) in use, exceeding budget(${budget})+1=${ceiling}`, {
               used: decision.used,
               budget,

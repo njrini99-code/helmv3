@@ -6,7 +6,7 @@
  * (--worktree / isolation: "worktree"), and raw `git worktree add` — and only
  * the first was governed. A subagent asking for isolation got none of the
  * budget check, the disk reserve, the .helm/workspace.json marker, or the
- * local-only .env.local that a human running new-worktree.sh got for free.
+ * shared runtime inputs that a human running new-worktree.sh got for free.
  *
  * Every caller now goes through `createWorkspace()`:
  *
@@ -52,6 +52,7 @@ import { fileURLToPath } from 'node:url';
 // for "what workspaces exist and what kind are they" — the same reason
 // repo-doctor's identity check stopped owning its own git calls.
 import { inspectWorkspaces } from '../check-mutation-budget.mjs';
+import { shareWorkspaceRuntime } from './shared-workspace-runtime.mjs';
 import { DEFAULT_MUTATION_BUDGET, mutationBudgetDecision } from './worktree-lifecycle.mjs';
 import { canonicalRootOf } from '../../.claude/hooks/lib/workspace-identity.mjs';
 
@@ -90,6 +91,19 @@ function normaliseName(name) {
   return name.trim().replace(/\//g, '-');
 }
 
+function branchCheckedOutAt(repo, branch) {
+  const r = spawnSync('git', ['-C', repo, 'worktree', 'list', '--porcelain'], {
+    encoding: 'utf-8',
+  });
+  if (r.status !== 0) return null;
+  let path = null;
+  for (const line of String(r.stdout || '').split('\n')) {
+    if (line.startsWith('worktree ')) path = line.slice('worktree '.length).trim();
+    else if (line.trim() === `branch refs/heads/${branch}`) return path;
+  }
+  return null;
+}
+
 function branchExists(repo, branch) {
   const r = spawnSync('git', ['-C', repo, 'show-ref', '--verify', '--quiet', `refs/heads/${branch}`]);
   return r.status === 0;
@@ -119,74 +133,17 @@ function freeGib(path) {
 }
 
 /**
- * The local-stack anon key, best-effort. Two sources only, in order:
- *
- *   1. `supabase status -o env`, if the local stack happens to be running.
- *   2. a documented default in supabase/config.toml.
- *
- * This repo's config.toml documents no such default (verified against the
- * file, not assumed) — so when the stack is not running, this returns an
- * empty key rather than inventing one. A fabricated JWT-shaped string would
- * trip .gitleaks.toml's hardcoded-JWT rule and the #516 secrets guard test,
- * and would be wrong besides.
- */
-function resolveLocalAnonKey(repo) {
-  const localBin = resolve(repo, 'node_modules/.bin/supabase');
-  const cmd = existsSync(localBin) ? localBin : 'supabase';
-  const result = spawnSync(cmd, ['status', '-o', 'env'], {
-    cwd: repo,
-    encoding: 'utf-8',
-    timeout: 5000,
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
-  if (!result.error && result.status === 0 && result.stdout) {
-    const m = result.stdout.match(/ANON_KEY="?([^"\n]+)"?/);
-    if (m && m[1]) {
-      return { key: m[1], source: 'supabase status -o env (local stack running at creation time)' };
-    }
-  }
-  return { key: '', source: null };
-}
-
-function buildEnvLocal({ key, source }) {
-  const lines = [
-    '# GENERATED for a task worktree: local stack only, no production credentials;',
-    '# production env lives only in the canonical checkout.',
-    '# Rewritten by scripts/lib/create-workspace.mjs on every (re)creation — do not',
-    "# hand-edit, and never copy the canonical checkout's .env.local into a worktree.",
-    '',
-    'NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321',
-  ];
-  if (key) {
-    lines.push(`# anon key source: ${source}`);
-    lines.push(`NEXT_PUBLIC_SUPABASE_ANON_KEY=${key}`);
-  } else {
-    lines.push(
-      '# The local Supabase stack was not running when this workspace was created,',
-      '# and supabase/config.toml documents no default local anon key to fall back to',
-      "# — there isn't one to fall back to, verified against the file rather than",
-      '# assumed. Start the stack and fill this in:',
-      '#   ./node_modules/.bin/supabase start',
-      '#   ./node_modules/.bin/supabase status -o env',
-    );
-    lines.push('NEXT_PUBLIC_SUPABASE_ANON_KEY=');
-  }
-  lines.push(
-    '',
-    '# SUPABASE_SERVICE_ROLE_KEY is deliberately NOT set here. This workspace gets',
-    "# no production write capability — see AGENTS.md's \"Helm agent canonicality\".",
-    '',
-  );
-  return lines.join('\n');
-}
-
-/**
  * Create one task workspace: the ONE thing every entry point does.
  *
  * @param {object} opts
  * @param {string} opts.name     task name; slashes become dashes, empty refused
  * @param {string} [opts.base]   ref to branch from — default origin/main
  * @param {boolean} [opts.install] real isolated `npm ci` instead of a symlink
+ * @param {boolean} [opts.reattach] check out an EXISTING branch instead of
+ *   creating one — the inverse of `--park`, which removes a checkout and
+ *   keeps its branch. Without this there is no supported way back: the door
+ *   only ever ran `git worktree add -b`, so a parked branch could be
+ *   reattached solely by the raw command guard-git refuses.
  * @param {boolean} [opts.keep]  force parkPolicy: KEEP even on an agent/*
  *                               branch — see the parkPolicy note below
  * @param {string} [opts.home]   worktree home dir — default HELM_WORKTREE_HOME
@@ -218,15 +175,38 @@ export async function createWorkspace(opts = {}) {
   // 2. Refuse if the path or the branch already exists. Cheap, and first —
   // no point checking budget or disk for a request that cannot proceed.
   if (existsSync(path)) fail('PATH_EXISTS', `refusing: ${path} already exists`, { path });
-  if (branchExists(repo, branch)) {
-    fail('BRANCH_EXISTS', `refusing: branch ${branch} already exists`, { branch });
+
+  // `--reattach` inverts this check rather than skipping it: creating wants
+  // the branch absent, reattaching wants it present. Both refuse a branch
+  // that is already checked out somewhere — git would too, but naming the
+  // other worktree is the difference between a fixable message and a puzzle.
+  const reattach = opts.reattach === true;
+  const exists = branchExists(repo, branch);
+  if (reattach && !exists) {
+    fail('BRANCH_MISSING', `refusing: --reattach needs branch ${branch} to exist; it does not`, {
+      branch,
+    });
+  }
+  if (!reattach && exists) {
+    fail(
+      'BRANCH_EXISTS',
+      `refusing: branch ${branch} already exists — pass --reattach to check it out here`,
+      { branch },
+    );
+  }
+  const heldBy = branchCheckedOutAt(repo, branch);
+  if (heldBy) {
+    fail('BRANCH_CHECKED_OUT', `refusing: branch ${branch} is already checked out at ${heldBy}`, {
+      branch,
+      path: heldBy,
+    });
   }
 
   mkdirSync(home, { recursive: true });
 
-  // 3. Mutation-worktree budget — enforced BEFORE any allocation, so a
-  // refusal costs nothing. Shares its classifier with repo:doctor and the
-  // SessionStart stamp hook via listWorkspaces() below.
+  // 3. Existing checkout count is advisory by default: it does not measure
+  // active sessions. An explicitly configured HELM_MAX_MUTATION_WORKTREES
+  // is a hard cap. Disk reserve is always checked before allocation.
   const canonicalRoot = canonicalRootOf(repo);
   const budget = Number(process.env.HELM_MAX_MUTATION_WORKTREES ?? DEFAULT_MUTATION_BUDGET);
   const spaces = inspectWorkspaces(repo, canonicalRoot);
@@ -246,7 +226,10 @@ export async function createWorkspace(opts = {}) {
       '',
       'Override deliberately: HELM_MAX_MUTATION_WORKTREES=<n>.',
     ];
-    fail('BUDGET_EXCEEDED', lines.join('\n'), { decision, spaces });
+    if (process.env.HELM_MAX_MUTATION_WORKTREES !== undefined) {
+      fail('BUDGET_EXCEEDED', lines.join('\n'), { decision, spaces });
+    }
+    warn(`workspace count advisory: ${decision.reason}; continuing subject to disk reserve`);
   }
 
   // 4. Disk reserve — the same 12 GiB floor new-worktree.sh has always used.
@@ -291,11 +274,17 @@ export async function createWorkspace(opts = {}) {
   // --no-track is load-bearing: without it the new branch inherits `base`
   // (often a remote-tracking ref) as its upstream, and a later bare
   // `git push` from the task branch targets that ref instead of its own.
-  const add = spawnSync(
-    'git',
-    ['-C', repo, 'worktree', 'add', '--no-track', path, '-b', branch, base],
-    { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'pipe'] },
-  );
+  // Reattaching names the branch and no base: the branch already carries its
+  // own history, and passing a base would try to move it. --no-track still
+  // applies to creation only — an existing branch keeps whatever upstream it
+  // already had, which is the point of getting it back unchanged.
+  const addArgs = reattach
+    ? ['-C', repo, 'worktree', 'add', path, branch]
+    : ['-C', repo, 'worktree', 'add', '--no-track', path, '-b', branch, base];
+  const add = spawnSync('git', addArgs, {
+    encoding: 'utf-8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
   if (add.status !== 0) {
     fail('WORKTREE_ADD_FAILED', `git worktree add failed: ${(add.stderr || add.stdout || '').trim()}`);
   }
@@ -319,9 +308,9 @@ export async function createWorkspace(opts = {}) {
     task,
     branch,
     base,
-    environment: 'local',
-    supabase: 'local',
-    productionWrites: false,
+    environment: 'shared-canonical',
+    supabase: 'shared-canonical',
+    runtimeSource: canonicalRoot,
     parkPolicy: keep ? 'KEEP' : 'PARK_IF_REPRODUCIBLE',
     createdBy: 'create-workspace.mjs',
     createdAt: new Date().toISOString(),
@@ -375,12 +364,26 @@ export async function createWorkspace(opts = {}) {
     copyFileSync(nodeVersionSrc, join(path, '.node-version'));
   }
 
-  // 10. A LOCAL-ONLY .env.local, generated fresh. Never read or copy the
-  // canonical checkout's .env.local — it holds production credentials this
-  // workspace must never see.
-  writeFileSync(join(path, '.env.local'), buildEnvLocal(resolveLocalAnonKey(repo)));
+  // 10. Runtime inputs stay linked to canonical, so credentials and tool
+  // preferences do not drift between branches. Missing inputs stay missing.
+  const runtime = shareWorkspaceRuntime({ canonicalRoot, workspaceRoot: path });
+  if (!runtime.linked.includes('.env.local')) {
+    warn('canonical .env.local is unavailable; no empty replacement was generated');
+  }
+  // MCP definitions describe the same services even when reattaching an old branch.
+  const mcpSource = join(canonicalRoot, '.mcp.json');
+  if (existsSync(mcpSource)) copyFileSync(mcpSource, join(path, '.mcp.json'));
+  marker.sharedRuntime = runtime.linked;
+  writeFileSync(join(path, '.helm/workspace.json'), `${JSON.stringify(marker, null, 2)}\n`);
 
-  return { path, branch, base, deps };
+  const upstreamProbe = spawnSync(
+    'git',
+    ['-C', path, 'rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}'],
+    { encoding: 'utf-8' },
+  );
+  const upstream = upstreamProbe.status === 0 ? String(upstreamProbe.stdout || '').trim() : null;
+
+  return { path, branch, base, deps, runtime, reattached: reattach, upstream };
 }
 
 /**
@@ -418,7 +421,7 @@ export function listWorkspaces(repo) {
 // ---------------------------------------------------------------------------
 
 function parseArgs(argv) {
-  const out = { install: false, keep: false, pathOnly: false, summary: false, help: false, usageError: false };
+  const out = { install: false, keep: false, reattach: false, pathOnly: false, summary: false, help: false, usageError: false };
   for (let i = 0; i < argv.length; i += 1) {
     const a = argv[i];
     if (a === '--name') out.name = argv[(i += 1)];
@@ -427,6 +430,7 @@ function parseArgs(argv) {
     else if (a === '--repo') out.repo = argv[(i += 1)];
     else if (a === '--install') out.install = true;
     else if (a === '--keep') out.keep = true;
+    else if (a === '--reattach') out.reattach = true;
     else if (a === '--path-only') out.pathOnly = true;
     else if (a === '--summary') out.summary = true;
     else if (a === '-h' || a === '--help') out.help = true;
@@ -451,14 +455,26 @@ function resolveRepoArg(repoArg) {
   }
 }
 
-function renderSummary({ path, branch, base, deps }) {
+export function renderSummary({ path, branch, base, deps, reattached, upstream }) {
+  // A created branch has no upstream by design (--no-track), and saying so
+  // is the point of this line. A reattached one keeps whatever it had, so
+  // repeating the warning would be false where it matters most: a bare push
+  // from a branch that DOES have an upstream goes somewhere.
+  const branchLines = reattached
+    ? [
+        `  branch      ${branch}   (reattached, not created)`,
+        `                          upstream: ${upstream ?? 'none — first push must set one'}`,
+      ]
+    : [
+        `  branch      ${branch}   (no upstream — first push must be:`,
+        `                          git push -u origin ${branch})`,
+      ];
   return [
     '',
     `  workspace   ${path}`,
-    `  branch      ${branch}   (no upstream — first push must be:`,
-    `                          git push -u origin ${branch})`,
-    `  base        ${base}`,
-    '  env         local, no production writes',
+    ...branchLines,
+    `  base        ${reattached ? "(unused — branch's own history)" : base}`,
+    '  env         shared canonical runtime, no production writes',
     `  deps        ${deps}`,
     '',
     path,
@@ -483,6 +499,7 @@ async function main(argv) {
       base: args.base ?? 'origin/main',
       install: args.install,
       keep: args.keep,
+      reattach: args.reattach,
       home: args.home,
       repo,
     });

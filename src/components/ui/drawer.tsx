@@ -45,8 +45,8 @@ DrawerOverlay.displayName = VaulDrawer.Overlay.displayName;
 
 const DrawerContent = React.forwardRef<
   React.ElementRef<typeof VaulDrawer.Content>,
-  React.ComponentPropsWithoutRef<typeof VaulDrawer.Content>
->(({ className, children, ...props }, forwardedRef) => {
+  React.ComponentPropsWithoutRef<typeof VaulDrawer.Content> & { showHandle?: boolean }
+>(({ className, children, showHandle = true, ...props }, forwardedRef) => {
   // vaul's Drawer.Content wraps @radix-ui/react-dialog internally, so it
   // inherits the same trapped FocusScope (real-DOM-containment focus trap)
   // as ModalShell. Capture our own DOM node — via state, not a plain ref,
@@ -110,7 +110,7 @@ const DrawerContent = React.forwardRef<
         {...props}
       >
         {/* Handle bar — iOS sheet motif */}
-        <div className="mx-auto mt-3 h-1 w-10 rounded-full bg-warm-300/65" aria-hidden />
+        {showHandle && <div className="mx-auto mt-3 h-1 w-10 rounded-full bg-warm-300/65" aria-hidden />}
         <ModalPortalContext.Provider value={contentNode}>
           {children}
         </ModalPortalContext.Provider>

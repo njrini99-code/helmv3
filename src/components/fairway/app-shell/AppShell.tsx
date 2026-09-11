@@ -456,7 +456,13 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
         )}
         // In-page sticky sub-headers offset below the glass top bar (4rem tall
         // + the notch inset). The immersive branch sets this var elsewhere.
-        style={{ '--golf-mobile-header-offset': 'calc(4rem + env(safe-area-inset-top, 0px))' } as React.CSSProperties}
+        // `--fw-hub-subnav-offset`: the hub sub-nav strip's height when one is
+        // part of the sticky unit, so a page's own sticky chrome can sit right
+        // under it (calendar hero) without guessing whether a strip exists.
+        style={{
+          '--golf-mobile-header-offset': 'calc(4rem + env(safe-area-inset-top, 0px))',
+          '--fw-hub-subnav-offset': subNav ? '2.5rem' : '0px',
+        } as React.CSSProperties}
       >
         {/* Faint accent wash: a low-alpha team tint bleeding down from the top,
             masked into transparency so it dissolves into the warm cream. Sits
@@ -500,7 +506,7 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
                 // P413: when the mobile bottom-tab bar is mounted, add its height
                 // (~56px) to the mobile bottom pad so it never overlaps content.
                 // Desktop (md+) is unaffected — the bar is md:hidden.
-                bottomNav && 'pb-[calc(2rem+56px+env(safe-area-inset-bottom,0px))] md:pb-[calc(2rem+env(safe-area-inset-bottom,0px))]',
+                bottomNav && 'pb-[calc(2rem+var(--fw-mobile-nav-height))] md:pb-[calc(2rem+env(safe-area-inset-bottom,0px))]',
                 // Keyboard room (a focused field scrolled above the soft keyboard)
                 // is NOT added here: globals.css pads <body> by --keyboard-height
                 // while body.keyboard-open, which covers this shell and every

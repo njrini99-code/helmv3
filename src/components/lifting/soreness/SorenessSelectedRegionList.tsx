@@ -14,6 +14,7 @@ import type { SorenessRegionId } from '@/lib/lifting/soreness-regions';
 import type { RegionEntry } from './SorenessRegionBottomSheet';
 import { IconX, IconChevronRight } from '@/components/icons';
 import { severityBadge } from './severity-colors';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 interface Props {
   entries: Partial<Record<SorenessRegionId, RegionEntry>>;
@@ -31,6 +32,7 @@ function SeverityBadge({ severity }: { severity: number }) {
 }
 
 export function SorenessSelectedRegionList({ entries, onEdit, onRemove }: Props) {
+  const prefersReducedMotion = useReducedMotionGuard();
   const ids = (Object.keys(entries) as SorenessRegionId[]).filter(
     (id) => entries[id] !== undefined,
   );
@@ -51,10 +53,14 @@ export function SorenessSelectedRegionList({ entries, onEdit, onRemove }: Props)
               <motion.li
                 key={id}
                 layout
-                initial={{ opacity: 0, y: -6 }}
+                initial={prefersReducedMotion ? false : { opacity: 0, y: -6 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, x: 12, transition: { duration: 0.15 } }}
-                transition={{ duration: 0.2 }}
+                exit={
+                  prefersReducedMotion
+                    ? { opacity: 0, transition: { duration: 0 } }
+                    : { opacity: 0, x: 12, transition: { duration: 0.15 } }
+                }
+                transition={{ duration: prefersReducedMotion ? 0 : 0.2 }}
               >
                 <div className="flex items-center gap-3 rounded-2xl glass-standard px-4 py-3 shadow-glass-sm">
                   {/* Edit button */}

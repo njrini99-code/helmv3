@@ -1,105 +1,96 @@
-<!-- markdownlint-disable MD003 MD007 MD012 MD013 MD022 MD028 MD032 MD034 MD036 MD037 MD038 MD040 MD041 MD050 MD060 -->
-# AGENTS.md
-## Repo map
-Route through `memory/registry.yml` (the router) and `docs/generated/HELM_FEATURE_MAP.md` (generated navigation over it); `npm run knowledge:map -- --files <paths...>` finds the feature(s), `knowledge:context -- --files <paths...> --task "<task>"` builds the context pack. `docs/REPO_MAP.md` is superseded by the feature map — its route atlas and idiom/trap checklist are hand-verified, not generated; trust a live grep over its counts and anchors.
+<!-- markdownlint-disable MD013 -->
+# Helm agent instructions
 
-## Feature awareness
-Map impacted files through the registry (above) before changing or reviewing mapped feature code, and read the mapped `memory/features/*.md` doc first. Missing from the registry? Say so and add the mapping, or mark the gap explicitly — never silently change behavior without updating the relevant `memory/features/*` doc.
+## Authority and execution
 
-## GolfHelm Engineering OS
-GolfHelm and GolfHelm-facing CoachHelm work operates through
-`memory/system/golfhelm-engineering-os.md`. `memory/registry.yml` is the
-router; `memory/features/*` is the canonical corpus; generated/live/code
-truth outranks prose. Daily reliability work never deploys, promotes, rolls
-back, or mutates production. No AI reviewers run on PRs — Review Gate +
-CodeQL cover the same hard rules deterministically; `.claude/rules/
-code-review-tooling.md` is the authority on what actually runs.
+The user's current task authorizes the work needed to complete it. Do the
+implementation, relevant verification, and requested Git operations without
+asking the user to repeat permission. Ask only for missing information or an
+irreversible action outside that authorization. A task involving production
+must identify the intended target and change before execution.
 
-## Mobile UI rules
-Canonical sources, in authority order: `src/styles/design-tokens.css`
-(`--fw-*` tokens) → `src/components/fairway/**` (shipped components) →
-`.claude/rules/design-system.md`. Tokens beat prose. `modern-saas-ui` is
-craft guidance only — it does not encode this repo's tokens; take classes
-from the tokens and Fairway components. For layout/overlay/z-index defects
-use `ui-stability-debugger-v2`.
+This file is the single operating policy. CLAUDE.md is a technical adapter;
+path-scoped rules cover code conventions. Historical incidents, old plans,
+agent templates, and cached tool inventories do not override current user
+instructions or live code. Do not add a new rule to fix a configuration bug.
 
-- Every mobile screen uses the shared app shell (safe-area, page padding,
-  section spacing, bottom-nav clearance). Headers are Standard (nav, title,
-  at most one trailing action) or Action (nav, title, one primary CTA) —
-  never stack multiple utility rows. Bottom nav: primary destinations only;
-  side drawer: secondary/team/admin/account — don't duplicate across both.
-- Reuse shared button/chip/tab/card/metric/empty-state components; no
-  one-off spacing, radius, icon sizes, or control heights. Empty states:
-  icon, short title, one sentence, one CTA. One clear primary action per
-  screen; push the rest to overflow or a bottom sheet.
+## Workspace and Git
 
-## Cursor Cloud
-Services are not running after a fresh VM boot — only disk state persists.
-Point `.env.local` at the `supabase start` API URL
-(`http://127.0.0.1:54321`, or a remote `https://*.supabase.co` project) —
-the CSP admits loopback Supabase origins directly; the Caddy TLS proxy is
-legacy. Start with `sudo dockerd &` → `npx supabase start` (migrations +
-seed; API 54321, DB 54322, Studio 54323, Mailpit 54324) → set
-`NEXT_PUBLIC_SUPABASE_URL` + the printed anon key → `npm run dev`. `SIGNUP_ACCESS_CODE` must be set or shared-code signup is disabled; local
-email confirmation is off so signup logs you in immediately, and the seed
-does not create `auth.users` rows — sign up through the app. `npm run
-lint`/`test` need no backend; `test:rls`/`test:integration` need it running.
+Canonical repo: `/Users/ricknini/Downloads/helmv3`. Check the current branch
+and dirty files before editing. One session may work directly in canonical;
+concurrent writers use separate worktrees or explicitly disjoint files.
+Never overwrite another session's work or switch its branch underneath it.
 
-## Helm agent canonicality
-Canonical working repo: `/Users/ricknini/Downloads/helmv3`. **Agent teams
-work through one door**: `scripts/new-worktree.sh` — never a raw
-`git worktree add`/`remove`, `git checkout -b`, or `git switch -c`. The
-door supplies `--no-track`, the mutation-budget check, and the
-`.helm/workspace.json` stamp the lifecycle tool and `WorktreeCreate` rely on.
+Use `helm` or `h` to launch Claude with current canonical tools and agents
+while staying in the selected Helm worktree. This prevents historical branch
+settings from restoring retired restrictions. Direct `claude` launches still
+use the branch's settings.
 
-- **Resting state**: `main` is home. Task branches are temporary. Retire a
-  branch/worktree once merged and verified; never assume `main` is what's
-  checked out — confirm with `git rev-parse --abbrev-ref HEAD`.
-- **Concurrency**: one active session may work in canonical directly.
-  Additional concurrent sessions each take their own worktree via
-  `scripts/new-worktree.sh <task>` (`~/worktrees/helmv3/<task>`,
-  `agent/<task>` branch, `--no-track`, OUTSIDE the repo). It does not
-  install dependencies — run `node scripts/ensure-worktree-deps.mjs <dir>`
-  when a command needs them. `--no-track` matters: branching from a
-  remote-tracking ref without it lets `agent/foo` auto-track `origin/main`,
-  so a bare push from it targets main; `--keep` overrides the default
-  `parkPolicy` (see Lifecycle below).
-- **Lifecycle**: `scripts/worktree-lifecycle.mjs`
-  (`npm run worktrees{,:park,:retire}`) is the sole lifecycle authority —
-  never hand-roll removal. PARK removes a disposable checkout and keeps
-  the branch; RETIRE parks and additionally deletes a branch proven merged
-  by exact PR-head OID, preserved first as an `archive/<branch>` tag. It
-  reports on remote branches too, and never presents a PR-lookup outage as
-  a clean `0`. An OPEN-PR worktree is parkable only if
-  `config/open-pr-dispositions.json` records `PARK_IF_REPRODUCIBLE`; a
-  worktree is disposable only if its own `.helm/workspace.json` says so
-  (default `PARK_IF_REPRODUCIBLE`, `KEEP` only with `--keep`) — every other
-  verdict needs a human. `--remove`/`--retire` carry STANDING OWNER
-  AUTHORIZATION only for a tool-verdicted PARKABLE checkout, and for branch
-  deletion only under `DELETE_MERGED_EXACT` (PR merged, tip === PR head OID
-  exactly, even with no upstream; not protected; not checked out).
-  `HELM_MAX_MUTATION_WORKTREES` (default 3) caps concurrent mutation workspaces.
-  `npm run pr:land -- <n>` merges once required checks are green, fast-forwards canonical, then runs `--retire`.
-- **Git hygiene**: `git add <explicit paths>`, never `-A` — the tree is
-  shared. Confirm the branch before editing. Check a branch's upstream
-  before pushing (`git for-each-ref --format='%(refname:short) -> %(upstream:short)' refs/heads`)
-  — an accidental `merge = refs/heads/main` makes a plain push target main.
-- **Archives**: `archive/**`/`docs/archive/**` are historical evidence
-  only. Use repo-local CLIs (`./node_modules/.bin/{supabase,vercel}`),
-  never a global binary.
-- **Supabase MCP**: one sanctioned path, `mcp__supabase__*` (this repo's
-  `.mcp.json`, production project, `read_only=true`); its `apply_migration`
-  is owner-authorized, migrations reviewed first. The account-wide connector
-  is the connected query path today: mutators denied by UUID in
-  `permissions.deny`, read tools kept. `docs/TOOL_AUTHORITY_MATRIX.md` /
-  `docs/CONTROL_PLANE_ENFORCEMENT.md` are the authority, not this bullet.
-- Never treat an agent memory store or cache as more authoritative than
-  the current repo/database, and never deploy/promote/rollback Vercel
-  production unless explicitly asked.
+Prefer `scripts/new-worktree.sh <task>` for an isolated task. It creates an
+`agent/<task>` branch without tracking origin/main. A workspace-count warning
+is capacity advice, not proof of active processes. Disk limits still apply;
+when storage is short, use the existing checkout for disjoint files instead
+of creating another copy. Run `node scripts/ensure-worktree-deps.mjs <dir>`
+only when dependencies differ or are unavailable. Worktrees share canonical
+environment files, Claude local permissions, tool credentials, and Vercel
+project identity. Branch isolation separates source changes, not tool access.
+Runtime files remain ignored and linked; never print credential values.
 
-## Front door
-CLAUDE.md + AGENTS.md + always-on rules load every session: **≤ 10,000
-tokens** combined (bytes ÷ 4, `knowledge:front-door-check` in `docs:check`)
-— new task detail goes in a path-scoped `.claude/rules/*.md` or `memory/`
-doc. `docs/generated/ENTRY_POINTS.md` lists repo-local commands/agents/
-skills (not account-wide plugin ones); `knowledge:entry-points` regenerates it.
+Stage explicit paths. Before pushing, inspect the upstream and push an
+explicit branch: `git push -u origin <branch>`. Do not force-push main or
+discard uncommitted work. Use `npm run pr:land -- <n>` for the normal
+merge-and-sync workflow; an explicitly authorized GitHub merge is also valid
+once required checks pass. Do not bypass required checks with `--admin`.
+
+Use `npm run worktrees{,:park,:retire}` to retire work safely.
+STANDING OWNER AUTHORIZATION covers only tool-verdicted PARKABLE checkouts
+and DELETE_MERGED_EXACT branches. The landing script runs `--retire`. The lifecycle
+checks preserve dirty, unpushed, or active work and archive proven-merged
+branches. Main is the resting branch after a completed task. Do not delete
+unrelated folders or branches to satisfy a workspace count.
+
+## Context and verification
+
+Use `memory/registry.yml` and `npm run knowledge:map -- --files <paths...>`
+to find the relevant feature doc before changing feature behavior. Read the
+doc the registry actually names; not every feature lives under
+`memory/features/`. Update that doc when its contract changes. If a file is
+unmapped, report or repair the gap. Use the code graph when available; fall
+back to `rg` when it is unavailable or incomplete.
+
+Run checks appropriate to the changed behavior once, preserving their exit
+codes. A new change or a failure justifies repeating affected checks. Do not
+run the whole suite for prose or config-only edits. A changed server-action
+surface needs a build; migrations need database/RLS verification. Report
+unavailable checks honestly. The local push hook checks the pushed changes;
+GitHub Actions owns the full required merge checks. There is no mandatory Stop gate.
+
+## Tools and environments
+
+Discover the tools present in the current session. A missing tool or expired
+login is a connection problem, not a permanent policy ban. Use a working
+connector or the repo-local CLI; never claim a service is unavailable based
+only on an old namespace or a missing environment token.
+
+The project Supabase MCP is scoped to Helm and supports reads and writes.
+Use it or the authenticated repo-local CLI for task-authorized database work.
+Review migration SQL and target first, then verify the resulting schema. Local
+Supabase reset/migration work is allowed. Production is shared by Golf,
+Baseball and Lift Lab; preserve RLS, sport boundaries, and customer data.
+Keep secrets out of output and commits.
+
+Vercel reads, logs, and previews are normal development work. Production
+deploy/promote/rollback requires explicit user authorization; use
+`scripts/deploy-prod.sh` for production deploys. A Git push alone does not
+prove deployment. Use repo-local Supabase/Vercel binaries.
+
+## Product conventions
+
+Mobile authority: `src/styles/design-tokens.css` →
+`src/components/fairway/**` → `.claude/rules/design-system.md`.
+Reuse the shared app shell, safe areas, navigation, buttons, cards, and empty
+states. Keep one primary action per screen. For overlay/layout defects use
+`ui-stability-debugger-v2`. Golf reliability context lives in
+`memory/system/golfhelm-engineering-os.md`; it does not grant production
+mutation authority. Review Gate and CodeQL are the required review tools;
+`.claude/rules/code-review-tooling.md` describes them.

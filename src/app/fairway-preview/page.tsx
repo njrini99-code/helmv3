@@ -100,7 +100,6 @@ import {
   FocusAreaCard,
   type FocusAreaCardData,
   // feedback
-  ToastStack,
   fairwayToast,
   InlineNotice,
   EmptyState,
@@ -421,7 +420,8 @@ export default function FairwayPreviewPage() {
 
   return (
     <div className={fairwayScope('min-h-screen bg-canvas font-fw-sans text-text-primary')}>
-      <ToastStack />
+      {/* The root layout mounts the app-wide ToastStack; a second one here
+          would render every toast twice. */}
 
       <AppShell
         sections={NAV_SECTIONS}

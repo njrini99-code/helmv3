@@ -28,6 +28,7 @@ import {
 import { formatSafeErrorResponse, CommonSchemas } from '@/lib/validation/server-action-validator';
 import { notifyQualifierCreated } from '@/lib/notifications';
 import type { RSVPStatus } from '@/lib/calendar/rsvp';
+import { isClassEvent } from '@/lib/calendar/class-events';
 import { invalidateOnRoundComplete } from '@/lib/cache/golf-stats-calculator';
 import { roundStage, classifyAutosaveOutcome, OPERATION } from '@/lib/observability/spans';
 import { recordWorkflow } from '@/lib/observability/metrics';
@@ -177,6 +178,7 @@ interface BlockedTimeUpdateData {
   start_time?: string;
   end_time?: string;
   all_day?: boolean;
+  is_recurring?: boolean;
   recurrence_rule?: string | null;
   description?: string | null;
 }
@@ -184,12 +186,13 @@ interface BlockedTimeUpdateData {
 /** Conflict check result - re-exported from calendar lib */
 export interface ConflictResult {
   hasConflict: boolean;
+  partial?: boolean;
   conflicts: Array<{
     userId: string;
     userName: string;
     playerId?: string;
     conflictingEvent: {
-      id: string;
+      id?: string;
       title: string;
       type: 'event' | 'class' | 'blocked';
       start: string;
@@ -927,6 +930,7 @@ export type RSVPErrorCode =
   | 'event_started'
   | 'event_cancelled'
   | 'not_team_member'
+  | 'class_meeting'
   | 'write_failed';
 
 export type RespondToEventResult =
@@ -5073,7 +5077,7 @@ async function respondToEventImpl(
     // generic write failure.
     const { data: event, error: eventError } = await supabase
       .from('golf_events')
-      .select('id, team_id')
+      .select('id, team_id, event_type, description')
       .eq('id', eventId)
       .maybeSingle();
 
@@ -5088,6 +5092,16 @@ async function respondToEventImpl(
 
     if (!event) {
       return { success: false, error: 'Event not found' };
+    }
+
+    // A synced class meeting is one player's personal commitment on the team
+    // calendar, not an invitation (class-events.ts). It takes no RSVPs: an
+    // attendance row on it was the only way a teammate could pull another
+    // player's class — real title and all — into their own busy schedule.
+    // `isClassEvent` also honours the `[class:<id>]` tag so a row with a stale
+    // event_type is refused the same way every read path already treats it.
+    if (isClassEvent(event)) {
+      return { success: false, error: 'Class meetings don\'t take RSVPs.', code: 'class_meeting' };
     }
 
     const { data: membership, error: membershipError } = await supabase
@@ -5477,7 +5491,8 @@ async function checkScheduleConflictsImpl(
    * server's (audit finding #7 — server-TZ parse made the comparison window
    * drift against UTC-stored timed events). Omitted → UTC, which matches the
    * previous prod behavior deterministically. */
-  timezoneOffset?: number
+  timezoneOffset?: number,
+  allDay = false
 ): Promise<ActionResult<ConflictResult>> {
   try {
     const supabase = await createClient();
@@ -5495,8 +5510,14 @@ async function checkScheduleConflictsImpl(
       return { success: false, error: scope.error };
     }
 
-    const start = new Date(buildDateTimeString(startDate, startTime, timezoneOffset));
-    const end = new Date(buildDateTimeString(endDate, endTime, timezoneOffset));
+    const effectiveEndDate = allDay
+      ? new Date(new Date(`${endDate}T00:00:00Z`).getTime() + 86_400_000).toISOString().slice(0, 10)
+      : endDate;
+    const start = new Date(buildDateTimeString(startDate, allDay ? '00:00' : startTime, timezoneOffset));
+    const end = new Date(buildDateTimeString(effectiveEndDate, allDay ? '00:00' : endTime, timezoneOffset));
+    if (!Number.isFinite(+start) || !Number.isFinite(+end) || end <= start) {
+      return { success: false, error: 'Choose an end time after the start.' };
+    }
 
     const { checkEventConflicts } = await import('@/lib/calendar/conflicts');
     const result = await checkEventConflicts(
@@ -5519,13 +5540,32 @@ async function checkScheduleConflictsImpl(
      * "find a time" path was dead on a one-word mismatch, and the
      * `as unknown as` double cast is what stopped the compiler saying so.
      */
-    const serialized = {
-      ...(result as unknown as ConflictResult),
-      suggestions: (result.suggestedTimes ?? []).map((s) => ({
-        start: s.start instanceof Date ? s.start.toISOString() : s.start,
-        end: s.end instanceof Date ? s.end.toISOString() : s.end,
-      })),
-    } as unknown as ConflictResult;
+    const { getUserBusyPeriodsWithStatus, periodsOverlap } = await import('@/lib/calendar/availability');
+    const own = await getUserBusyPeriodsWithStatus(user.id, start, end, supabase);
+    const ownConflicts = own.periods.filter((period) =>
+      (!excludeEventId || period.eventId !== excludeEventId) && periodsOverlap({ start, end }, period)
+    ).map((period) => ({
+      userId: user.id, userName: 'You',
+      conflictingEvent: { id: period.eventId, title: period.title || 'Busy', type: period.type,
+        start: period.start.toISOString(), end: period.end.toISOString() },
+    }));
+    const conflicts = [...result.conflicts.filter((conflict) => conflict.userId !== user.id).map((conflict) => ({
+      ...conflict, conflictingEvent: { ...conflict.conflictingEvent,
+        start: new Date(conflict.conflictingEvent.start).toISOString(),
+        end: new Date(conflict.conflictingEvent.end).toISOString() },
+    })), ...ownConflicts];
+    // Suggestions must also be checked against the organizer's full window.
+    const candidateSlots = result.partial || own.partial ? [] : result.suggestedTimes ?? [];
+    const candidateOwn = candidateSlots.length ? await getUserBusyPeriodsWithStatus(user.id,
+      new Date(Math.min(...candidateSlots.map((slot) => +new Date(slot.start)))),
+      new Date(Math.max(...candidateSlots.map((slot) => +new Date(slot.end)))), supabase) : own;
+    const serialized: ConflictResult = {
+      hasConflict: conflicts.length > 0,
+      partial: Boolean(result.partial || own.partial || candidateOwn.partial), conflicts,
+      suggestions: candidateOwn.partial ? [] : candidateSlots.filter((slot) => !candidateOwn.periods.some((period) =>
+        (!excludeEventId || period.eventId !== excludeEventId) && periodsOverlap(slot, period)
+      )).map((slot) => ({ start: new Date(slot.start).toISOString(), end: new Date(slot.end).toISOString() })),
+    };
     return { success: true, data: serialized };
 
   } catch {
@@ -5546,9 +5586,10 @@ export async function checkScheduleConflicts(
   endTime: string,
   attendeeIds: string[],
   excludeEventId?: string,
-  timezoneOffset?: number
+  timezoneOffset?: number,
+  allDay = false
 ): Promise<ActionResult<ConflictResult>> {
-  return observedCheckScheduleConflicts(startDate, startTime, endDate, endTime, attendeeIds, excludeEventId, timezoneOffset);
+  return observedCheckScheduleConflicts(startDate, startTime, endDate, endTime, attendeeIds, excludeEventId, timezoneOffset, allDay);
 }
 
 /**
@@ -6071,6 +6112,7 @@ async function addCoachBlockedTimeImpl(
         start_time: validatedData.startTime || null,
         end_time: validatedData.endTime || null,
         all_day: validatedData.allDay || false,
+        is_recurring: Boolean(validatedData.recurrenceRule),
         recurrence_rule: validatedData.recurrenceRule || null,
         description: validatedData.description || null,
       })
@@ -6218,7 +6260,10 @@ async function updateCoachBlockedTimeImpl(
     if (data.startTime !== undefined) updates.start_time = data.startTime;
     if (data.endTime !== undefined) updates.end_time = data.endTime;
     if (data.allDay !== undefined) updates.all_day = data.allDay;
-    if (data.recurrenceRule !== undefined) updates.recurrence_rule = data.recurrenceRule;
+    if (data.recurrenceRule !== undefined) {
+      updates.recurrence_rule = data.recurrenceRule || null;
+      updates.is_recurring = Boolean(data.recurrenceRule);
+    }
     if (data.description !== undefined) updates.description = data.description;
 
     // Update blocked time

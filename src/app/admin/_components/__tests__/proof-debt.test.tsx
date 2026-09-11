@@ -14,12 +14,7 @@
 // =============================================================================
 
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import {
-  ProofDebtPanel,
-  selectProofDebt,
-  summarizeProofDebt,
-} from '@/app/admin/_components/ProofDebtPanel';
+import { selectProofDebt, summarizeProofDebt } from '@/app/admin/_components/ProofDebtPanel';
 import type { ProofGap, UnifiedIncident } from '@/lib/admin/incidents/types';
 
 function incident(id: string, gaps: ProofGap[], description = `incident ${id}`): UnifiedIncident {
@@ -116,58 +111,11 @@ describe('summarizeProofDebt', () => {
   });
 });
 
-describe('ProofDebtPanel', () => {
-  const checkedAt = '2026-08-28T12:00:00.000Z';
-
-  it('renders each row detail verbatim — the detail is why the row is there', () => {
-    // "Waiting for post-deploy traffic" is a category; "live 2h, no iOS
-    // heartbeat since" is what tells an operator whether to wait or go
-    // looking. If someone "simplifies" the detail down to the label, this
-    // goes red.
-    render(
-      <ProofDebtPanel
-        rows={selectProofDebt([incident('a', [gap('awaiting-traffic', 'live 2h, no iOS heartbeat since')])])}
-        canClaimAllClear
-        checkedAt={checkedAt}
-      />,
-    );
-    expect(screen.getByText('live 2h, no iOS heartbeat since')).toBeInTheDocument();
-  });
-
-  it('an empty list with every source reading IS an all clear', () => {
-    render(<ProofDebtPanel rows={[]} canClaimAllClear checkedAt={checkedAt} />);
-    expect(screen.getByText(/No proof debt/i)).toBeInTheDocument();
-  });
-
-  it('an empty list under a blind source is NOT an all clear', () => {
-    // The guard. An empty panel we could not fully compute must never render
-    // as "everything solved is also proven".
-    render(<ProofDebtPanel rows={[]} canClaimAllClear={false} checkedAt={checkedAt} />);
-    expect(screen.queryByText(/No proof debt — everything solved/i)).not.toBeInTheDocument();
-    expect(screen.getByText(/readable sources/i)).toBeInTheDocument();
-  });
-
-  it('names the gap kind as text, so colour is never the only signal', () => {
-    render(
-      <ProofDebtPanel
-        rows={selectProofDebt([incident('a', [gap('source-blind', 'SENTRY: 500')])])}
-        canClaimAllClear={false}
-        checkedAt={checkedAt}
-      />,
-    );
-    // Twice, in fact: once in the summary line and once as the row's chip.
-    // Asserting "at least once" rather than an exact count keeps the test
-    // about the contract (the kind reaches the DOM as words) rather than
-    // about how many places currently choose to say it.
-    expect(screen.getAllByText(/A source is blind/i).length).toBeGreaterThan(0);
-  });
-
-  it('links overflow to the awaiting-proof lens rather than truncating silently', () => {
-    const rows = selectProofDebt(
-      Array.from({ length: 9 }, (_, i) => incident(`i${i}`, [gap('awaiting-traffic', `detail ${i}`)])),
-    );
-    render(<ProofDebtPanel rows={rows} limit={6} canClaimAllClear checkedAt={checkedAt} />);
-    const more = screen.getByRole('link', { name: /3 more awaiting proof/i });
-    expect(more).toHaveAttribute('href', '/admin/errors?lens=awaiting-proof');
-  });
-});
+// `ProofDebtPanel` (the React component that used to render this list as its
+// own Overview section) is deleted — bridge redesign plan §2.1: it was the
+// `awaiting-proof` lens rendered a second time. Its render-time tests went
+// with it. `selectProofDebt`/`summarizeProofDebt` above are the surviving
+// pure functions; `CommandDeck.tsx`'s Self-Heal Circuit proof-debt chip
+// reuses `selectProofDebt`'s count directly (see
+// `SelfHealCircuitSummary.test.tsx` for that chip's own tests), and the full
+// list is one click away at `/admin/errors?lens=awaiting-proof`.

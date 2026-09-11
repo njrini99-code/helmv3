@@ -58,7 +58,11 @@ function tableChain(table: string) {
     limit: self,
     range: self,
     single: async () => settle(),
-    maybeSingle: async () => settle(),
+    maybeSingle: async () => {
+      const outcome = settle();
+      const data = Array.isArray(outcome.data) ? outcome.data[0] ?? null : outcome.data;
+      return { ...outcome, data };
+    },
     then: (resolve: (v: Outcome) => unknown, reject?: (e: unknown) => unknown) =>
       Promise.resolve(settle()).then(resolve, reject),
   });
@@ -71,12 +75,12 @@ const supabase = {
   rpc: async () => ({ data: null, error: null }),
 };
 
-async function check() {
+async function check(attendeePlayerIds = ['p1']) {
   const { checkEventConflicts } = await import('@/lib/calendar/conflicts');
   return checkEventConflicts(
     new Date('2026-09-01T15:00:00Z'),
     new Date('2026-09-01T17:00:00Z'),
-    ['p1'],
+    attendeePlayerIds,
     supabase as never,
   );
 }
@@ -95,6 +99,14 @@ describe('checkEventConflicts — a failed read is not an all-clear', () => {
 
     // Still no conflicts listed — there is nothing to list. The difference is
     // that the caller can now tell "none found" from "could not look".
+    expect(result.hasConflict).toBe(false);
+    expect(result.partial).toBe(true);
+  });
+
+  it('marks the result partial when requested attendee rows are missing', async () => {
+    outcomes.set('golf_players', ok([]));
+
+    const result = await check();
     expect(result.hasConflict).toBe(false);
     expect(result.partial).toBe(true);
   });
@@ -132,8 +144,7 @@ describe('checkEventConflicts — a genuine all-clear stays clean', () => {
     // "couldn't check" warning on every event with no attendees.
     outcomes.set('golf_players', ok([]));
 
-    const result = await check();
-
+    const result = await check([]);
     expect(result.hasConflict).toBe(false);
     expect(result.partial).toBeUndefined();
   });

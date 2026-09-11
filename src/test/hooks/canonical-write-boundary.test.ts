@@ -1,15 +1,4 @@
-// What the canonical-write boundary ACTUALLY enforces.
-//
-// These assertions deliberately pin a gap as well as a guarantee. That is not
-// resignation — it is the point. The invariant "the canonical checkout is
-// agent-read-only" was stated as though universal while a normal route ran
-// straight through it, and nothing in the repo could tell you that. A test
-// that encodes the real shape makes the limit visible and makes any future
-// widening a deliberate, reviewed change rather than a quiet one.
-//
-// If someone later closes the Bash route structurally (a path-based sandbox
-// write policy), the `documents the Bash gap` case below will start failing —
-// and that failure is the signal to update the docs, not to delete the test.
+// Direct tests of the retired hook; active configuration must leave it disabled.
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { execFileSync } from 'node:child_process';
@@ -76,7 +65,7 @@ function runHook(payload: Record<string, unknown>): 'BLOCK' | 'ALLOW' {
   }
 }
 
-describe('canonical-write boundary — what IS enforced', () => {
+describe('retired canonical-write hook — direct invocation', () => {
   it.each(['Write', 'Edit', 'MultiEdit'])(
     'BLOCKS %s targeting a path inside the canonical checkout',
     (tool) => {
@@ -101,7 +90,7 @@ describe('canonical-write boundary — what IS enforced', () => {
   });
 });
 
-describe('canonical-write boundary — what is NOT enforced', () => {
+describe('retired canonical-write hook — scope and retirement', () => {
   it('documents the Bash gap: a realistic Bash payload is not blocked', () => {
     // A Bash payload carries `command`, not `file_path`. The hook exits 0 on a
     // missing file_path, so even if it were invoked it would allow the write.
@@ -114,37 +103,10 @@ describe('canonical-write boundary — what is NOT enforced', () => {
     ).toBe('ALLOW');
   });
 
-  it('the hook is not even ROUTED for Bash — the matcher excludes it', () => {
-    // The more fundamental of the two reasons. Fixing the payload shape alone
-    // would change nothing while the matcher stays tool-scoped.
+  it('is not configured for any hook event or tool', () => {
     const settings = JSON.parse(readFileSync(SETTINGS, 'utf-8')) as {
-      hooks?: { PreToolUse?: { matcher?: string; hooks?: { command?: string }[] }[] };
+      hooks?: Record<string, unknown>;
     };
-    const entry = settings.hooks?.PreToolUse?.find((e) =>
-      e.hooks?.some((h) => h.command?.includes('guard-canonical-write')),
-    );
-    expect(entry).toBeDefined();
-    const matcher = entry?.matcher ?? '';
-    expect(new RegExp(`^(?:${matcher})$`).test('Write')).toBe(true);
-    expect(new RegExp(`^(?:${matcher})$`).test('Bash')).toBe(false);
-  });
-});
-
-describe('canonical-write boundary — the docs must match the mechanism', () => {
-  it('the guard names its own scope rather than claiming to be universal', () => {
-    const src = readFileSync(HOOK, 'utf-8');
-    // It must say what it does NOT cover. A guard that only advertises its
-    // guarantee is how "agent-read-only" came to be believed.
-    expect(src).toMatch(/NOT BLOCKED by anything/);
-    expect(src).toMatch(/Write \/ Edit \/ MultiEdit/);
-  });
-
-  it('shipping.md states the boundary as a table, not as an absolute', () => {
-    const rules = readFileSync(
-      resolve(REPO, '.claude/rules/shipping.md'),
-      'utf-8',
-    );
-    expect(rules).toMatch(/canonical checkout boundary/i);
-    expect(rules).toMatch(/Do not close this with a Bash command parser/);
+    expect(JSON.stringify(settings.hooks ?? {})).not.toContain('guard-canonical-write');
   });
 });

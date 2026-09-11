@@ -14,7 +14,7 @@
  * one place the count renders), so this locks: no `data-slot="readout"` node
  * ever renders inside the rail, in either state.
  * ========================================================================== */
-import { render } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { MessageConversationRail } from './MessageConversationRail';
 import type { GolfConversationWithMeta } from '@/hooks/golf/use-golf-messages';
@@ -71,5 +71,51 @@ describe('MessageConversationRail — no duplicate count readout', () => {
     // The count now lives ONLY in the page masthead — never duplicated here
     // as a big mono numeral inside the rail's own panel bezel.
     expect(container.querySelector('[data-slot="readout"]')).toBeNull();
+  });
+});
+
+
+describe('conversation filters', () => {
+  it('filters real unread and group conversations without changing selection', () => {
+    const onSelect = vi.fn();
+    const conversations = [
+      { id: 'dm', participant_count: 2, unread_count: 1, other_participant: { name: 'Jordan Lee' } },
+      { id: 'group', participant_count: 8, is_group: true, title: 'Travel team', unread_count: 0 },
+    ] as GolfConversationWithMeta[];
+    render(<MessageConversationRail conversations={conversations} selectedId={null} onSelect={onSelect} onNewMessage={vi.fn()} />);
+    fireEvent.click(screen.getByRole('radio', { name: 'Groups' }));
+    expect(screen.getByText('Travel team')).toBeVisible();
+    expect(screen.queryByRole('button', { name: /Jordan Lee/ })).toBeNull();
+    fireEvent.click(screen.getByRole('radio', { name: 'Unread' }));
+    expect(screen.getByRole('button', { name: /Jordan Lee/ })).toBeVisible();
+    expect(screen.queryByText('Travel team')).toBeNull();
+    fireEvent.click(screen.getByRole('radio', { name: 'All' }));
+    expect(screen.getByText('Travel team')).toBeVisible();
+    expect(screen.getByRole('button', { name: /Jordan Lee/ })).toBeVisible();
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it('explains an empty unread filter and lets the reader return to all messages', () => {
+    render(<MessageConversationRail conversations={[
+      { id: 'dm', participant_count: 2, unread_count: 0, other_participant: { name: 'Jordan Lee' } } as GolfConversationWithMeta,
+    ]} selectedId={null} onSelect={vi.fn()} onNewMessage={vi.fn()} />);
+    fireEvent.click(screen.getByRole('radio', { name: 'Unread' }));
+    expect(screen.getByText('You’re all caught up')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Show all messages' }));
+    expect(screen.getByRole('button', { name: /Jordan Lee/ })).toBeVisible();
+  });
+});
+
+
+describe('background inbox refresh', () => {
+  it('keeps existing rows mounted while read receipts refresh and after a refresh error', () => {
+    const conversations = [{ id: 'dm', participant_count: 2, unread_count: 0, other_participant: { name: 'Jordan Lee' } }] as GolfConversationWithMeta[];
+    const props = { conversations, selectedId: 'dm', onSelect: vi.fn(), onNewMessage: vi.fn() };
+    const { rerender } = render(<MessageConversationRail {...props} loading={false} />);
+    const row = screen.getByRole('button', { name: /Jordan Lee/ });
+    rerender(<MessageConversationRail {...props} loading />);
+    expect(screen.getByRole('button', { name: /Jordan Lee/ })).toBe(row);
+    rerender(<MessageConversationRail {...props} loading={false} error />);
+    expect(screen.getByRole('button', { name: /Jordan Lee/ })).toBe(row);
   });
 });

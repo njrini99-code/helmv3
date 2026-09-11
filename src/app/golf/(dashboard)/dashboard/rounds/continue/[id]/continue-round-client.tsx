@@ -1,6 +1,6 @@
 'use client';
 
-import { startTransition, useState, useCallback, useRef, useEffect } from 'react';
+import { startTransition, useState, useCallback, useRef, useEffect, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import type { HoleStats, ShotRecord, RoundHole } from '@/lib/types/golf';
@@ -38,6 +38,7 @@ import { FairwayShotTracking } from '@/components/fairway/pages/rounds-tracking'
 import { Skeleton } from '@/components/fairway';
 import { Button as FwButton } from '@/components/fairway/controls/button';
 import { ModalShell } from '@/components/fairway/overlays/ModalShell';
+import { useActiveWork } from '@/lib/recovery/use-active-work';
 
 // Round-completion-only overlays — never rendered until the round is
 // finished, so keep them out of the initial hole-entry bundle (perf audit
@@ -96,6 +97,7 @@ interface RoundSetupData {
 
 
 interface ContinueRoundClientProps {
+  roundTypeEditor?: ReactNode;
   roundId: string;
   playerId: string;
   setupData: RoundSetupData;
@@ -113,6 +115,7 @@ interface ContinueRoundClientProps {
 }
 
 export default function ContinueRoundClient({
+  roundTypeEditor,
   roundId: routeRoundId,
   playerId,
   setupData,
@@ -169,6 +172,18 @@ export default function ContinueRoundClient({
     }
     return { [startHoleIndex]: initialShots };
   });
+
+  // A02-001: an automatic stale-asset recovery replaces the whole document.
+  // While there is entered hole data a reload would lose — or a submit whose
+  // outcome is not known yet — this screen registers as dirty and the
+  // recovery coordinator refuses to navigate. Same predicate as the
+  // beforeunload guard below, plus the in-flight submit.
+  useActiveWork(
+    'golf-round-continue',
+    submitting ||
+      completedHoleStats.some((s) => s != null) ||
+      Object.keys(inProgressShotsByHole).length > 0,
+  );
 
   const [pendingFinalStats, setPendingFinalStats] = useState<HoleStats[] | null>(null);
   const [showFinishConfirm, setShowFinishConfirm] = useState(false);
@@ -1503,7 +1518,7 @@ export default function ContinueRoundClient({
       {/* Compact resume context. The scorecard owns live hole navigation, so this
           header stays focused on the course and durable progress rather than
           repeating a stale “starting hole” utility row. */}
-      <div className={fairwayScope('bg-surface border-b border-border-subtle px-4 py-3')}>
+      <header data-testid="continue-round-context" className={fairwayScope('bg-surface border-b border-border-subtle px-4 pb-3 pt-[calc(env(safe-area-inset-top,0px)+0.75rem)]')}>
         <div className="max-w-[720px] mx-auto flex items-center gap-3">
           <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-fw-md bg-accent-50 text-accent-700 ring-1 ring-accent-200">
             <svg className="h-5 w-5 text-accent-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -1523,7 +1538,10 @@ export default function ContinueRoundClient({
             <p className="font-fw-sans text-microbadge uppercase tracking-wide text-text-tertiary">saved</p>
           </div>
         </div>
-      </div>
+        {roundTypeEditor && (
+          <div className="max-w-[720px] mx-auto mt-2">{roundTypeEditor}</div>
+        )}
+      </header>
 
       {/* Error Display — Fairway danger tokens. A conflict block additionally
           gets a Reload control: "reload to continue" must name a dead end
@@ -1576,26 +1594,25 @@ export default function ContinueRoundClient({
         />
       </div>
 
-      {/* Submit banner — shown when all holes are done but finish confirm was dismissed.
-          An on-dark "cockpit" band on Fairway tokens so it reads as one surface
-          with the warm-black scorecard band. */}
-      {pendingFinalStats && !showFinishConfirm && !submitting && (
-        <div className={fairwayScope('on-dark sticky top-[var(--golf-mobile-header-offset)] z-20 bg-nav-bg px-4 py-3 text-nav-text lg:top-[49px] flex items-center justify-between gap-3')}>
-          <p className="font-fw-sans text-body-sm font-medium text-nav-text">All holes completed — ready to submit!</p>
-          <FwButton
-            variant="primary"
-            size="sm"
-            onClick={() => setShowFinishConfirm(true)}
-            className="flex-shrink-0"
-          >
-            Submit Round
-          </FwButton>
-        </div>
-      )}
-
       {/* Shot Tracking — presentation only, no mutation/autosave logic moves. */}
       <div className={fairwayScope('min-h-full bg-canvas')}>
         <FairwayShotTracking
+          safeAreaHandledAbove
+          statusSlot={
+            pendingFinalStats && !showFinishConfirm && !submitting && (
+              <div className={fairwayScope('on-dark bg-nav-bg px-4 py-3 text-nav-text flex items-center justify-between gap-3')}>
+                <p className="font-fw-sans text-body-sm font-medium text-nav-text">All holes completed — ready to submit!</p>
+                <FwButton
+                  variant="primary"
+                  size="sm"
+                  onClick={() => setShowFinishConfirm(true)}
+                  className="flex-shrink-0"
+                >
+                  Submit Round
+                </FwButton>
+              </div>
+            )
+          }
           holes={holes}
           currentHoleIndex={currentHoleIndex}
           onHoleComplete={handleHoleComplete}

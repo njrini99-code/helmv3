@@ -58,11 +58,11 @@ describe('guard-git pure logic', () => {
     expect(evaluateCommand('git push origin main', null)).toBeNull();
   });
 
-  it('blocks raw worktree add/remove and checkout -b/switch -c', () => {
-    expect(evaluateCommand('git worktree add ../foo')).toMatch(/worktree add/);
+  it('allows branch creation but preserves worktree deletion checks', () => {
+    expect(evaluateCommand('git worktree add ../foo')).toBeNull();
     expect(evaluateCommand('git worktree remove ../foo')).toMatch(/worktree remove/);
-    expect(evaluateCommand('git checkout -b agent/foo')).toMatch(/checkout -b/);
-    expect(evaluateCommand('git switch -c agent/foo')).toMatch(/switch -c/);
+    expect(evaluateCommand('git checkout -b agent/foo')).toBeNull();
+    expect(evaluateCommand('git switch -c agent/foo')).toBeNull();
   });
 
   it('does not block scripts/new-worktree.sh', () => {
@@ -89,21 +89,21 @@ describe('guard-git pure logic', () => {
     expect(evaluateCommand('git branch -d agent/old-task')).toBeNull();
   });
 
-  it('blocks gh pr merge in every form', () => {
-    expect(evaluateCommand('gh pr merge 123 --squash')).toMatch(/pr merge/);
-    expect(evaluateCommand('gh pr merge --admin 123')).toMatch(/pr merge/);
+  it('leaves merge authorization to the task and required GitHub checks', () => {
+    expect(evaluateCommand('gh pr merge 123 --squash')).toBeNull();
+    expect(evaluateCommand('gh pr merge --admin 123')).toBeNull();
   });
 
   it('does not block npm run pr:land', () => {
     expect(evaluateCommand('npm run pr:land')).toBeNull();
   });
 
-  it('blocks vercel production actions', () => {
-    expect(evaluateCommand('vercel --prod')).toMatch(/production/);
-    expect(evaluateCommand('vercel deploy --prod')).toMatch(/production/);
-    expect(evaluateCommand('vercel promote dpl_123')).toMatch(/promote/);
-    expect(evaluateCommand('vercel rollback')).toMatch(/rollback/);
-    expect(evaluateCommand('vercel env rm MY_VAR')).toMatch(/env rm/);
+  it('leaves production approval to permissions.ask', () => {
+    expect(evaluateCommand('vercel --prod')).toBeNull();
+    expect(evaluateCommand('vercel deploy --prod')).toBeNull();
+    expect(evaluateCommand('vercel promote dpl_123')).toBeNull();
+    expect(evaluateCommand('vercel rollback')).toBeNull();
+    expect(evaluateCommand('vercel env rm MY_VAR')).toBeNull();
   });
 
   it('allows a preview deploy', () => {

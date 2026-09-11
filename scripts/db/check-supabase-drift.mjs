@@ -22,11 +22,23 @@
 import postgres from 'postgres';
 import { config as loadEnv } from 'dotenv';
 import { fileURLToPath } from 'node:url';
-import { resolve as resolvePath } from 'node:path';
+import { resolve as resolvePath, dirname } from 'node:path';
 
 const POOLER_HOST = 'aws-0-us-east-1.pooler.supabase.com';
 
-loadEnv({ path: '.env.local', quiet: true });
+// Load .env.local first, then .env as a FALLBACK. dotenv does not override an
+// already-set variable, so .env.local keeps precedence; .env only fills gaps.
+// This exists because SUPABASE_ACCESS_TOKEN has historically lived in .env
+// while the connection vars live in .env.local — a script loading only one of
+// them saw the token or not depending on which file it happened to read, and
+// the same credential produced different results per script.
+//
+// Both paths resolve from the REPO ROOT, never cwd: these are run from npm
+// scripts, worktrees and CI, and a relative '.env.local' silently loaded
+// nothing whenever cwd was not the repo root.
+const ENV_ROOT = resolvePath(dirname(fileURLToPath(import.meta.url)), '..', '..');
+loadEnv({ path: resolvePath(ENV_ROOT, '.env.local'), quiet: true });
+loadEnv({ path: resolvePath(ENV_ROOT, '.env'), quiet: true });
 
 function buildConnectionString() {
   if (process.env.DATABASE_URL) return process.env.DATABASE_URL;
@@ -95,6 +107,16 @@ const REQUIRED_ACTIVE_BASEBALL_QUERY_COLUMNS = [
 const GOLF_EXPECTED_COLUMNS = [
   ['golf_rounds', 'status'],
   ['golf_documents', 'is_public'],
+  // G-58. These two exist in production and were declared in
+  // supabase/schemas/golf/10_tables.sql, but no migration created either, so a
+  // stack rebuilt from migrations had exactly
+  // (id, conversation_id, user_id, joined_at, last_read_at) — verified against
+  // the local stack on 2026-09-07, before 20260907120000 was written. Drift in
+  // the schemas -> migrations direction, which nothing checked: this invariant
+  // runs against the migrations rebuild, so it is the check that direction was
+  // missing. Removing or breaking that migration now fails CI.
+  ['golf_conversation_participants', 'notification_level'],
+  ['golf_conversation_participants', 'muted_until'],
 ];
 const GOLF_REMOVED_COLUMNS = [
   ['golf_rounds', 'round_status'],

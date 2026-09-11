@@ -18,6 +18,7 @@ import { buildJobWaterfall } from '@/lib/admin/triage/job-waterfall';
 import { JobExecutionWaterfall } from '@/components/admin/triage/JobExecutionWaterfall';
 import { fetchHelmJobsQueueStatus } from '@/lib/admin/data/helm-jobs';
 import { HelmJobsQueuePanel } from './HelmJobsQueuePanel';
+import { SectionLabel } from '../_components/SectionLabel';
 
 export const dynamic = 'force-dynamic';
 
@@ -102,14 +103,6 @@ function InngestDetail({ inngest }: { inngest: InngestHealth }) {
         ) : null}
       </p>
     </>
-  );
-}
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <h2 className="border-b border-primary-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
-      {children}
-    </h2>
   );
 }
 
@@ -503,8 +496,9 @@ function IntegrityGrid({ checks }: { checks: IntegrityRow[] }) {
 /**
  * The self-healing loop.
  *
- * One of its three stages runs OUTSIDE this deployment — a launchd agent on
- * the owner's laptop (Repair) — so nothing in the app can observe it failing.
+ * One of its three stages runs OUTSIDE this deployment — a GitHub Actions
+ * workflow (Repair; it was a launchd agent on the owner's laptop until
+ * 2026-09-05) — so nothing in the app can observe it failing.
  * Its only evidence of life is a heartbeat row, and this panel is where its
  * absence becomes visible. Without it, a dead stage and a quiet week look the
  * same. (Diagnose moved from an Anthropic-hosted cloud routine onto a Vercel

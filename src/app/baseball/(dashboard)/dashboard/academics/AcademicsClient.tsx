@@ -25,6 +25,7 @@ import {
   PaperCard,
 } from '@/components/baseball/living-annual';
 import { InlineNotice } from '@/components/fairway';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 // ============================================================================
 // TYPES
@@ -114,6 +115,7 @@ function SkeletonCard() {
 // ============================================================================
 
 export default function AcademicsPage() {
+  const prefersReducedMotion = useReducedMotionGuard();
   const { loading: authLoading } = useAuth();
   const { selectedTeamId } = useTeamStore();
   const { showToast } = useToast();
@@ -459,9 +461,10 @@ export default function AcademicsPage() {
         <AnimatePresence>
           {error && (
             <motion.div
-              initial={{ opacity: 0, y: -8 }}
+              initial={prefersReducedMotion ? false : { opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
+              exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: -8 }}
+              transition={prefersReducedMotion ? { duration: 0 } : undefined}
             >
               <InlineNotice
                 tone="danger"
@@ -532,7 +535,7 @@ export default function AcademicsPage() {
               {students.map((student) => (
                 <motion.div
                   key={student.id}
-                  layout
+                  layout={!prefersReducedMotion}
                 >
                 <PaperCard className="p-4 shadow-sm">
                   <div className="flex items-start gap-3 mb-3">

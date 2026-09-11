@@ -49,7 +49,7 @@
  * ========================================================================== */
 
 import * as React from 'react';
-import dynamic from 'next/dynamic';
+import { cn } from '@/lib/utils';
 import {
   format,
   startOfWeek as startOfWeekFn,
@@ -58,40 +58,56 @@ import {
   endOfMonth,
   addDays,
   addMonths,
-  isSameDay,
 } from 'date-fns';
-import { CalendarPlus, RefreshCw } from 'lucide-react';
-import { Segmented, Sheet, Button as FwButton, Skeleton, fairwayToast } from '@/components/fairway';
+import { AlertTriangle, ArrowRight, Plus, RefreshCw } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Sheet, Button as FwButton, IconButton, PressTarget, fairwayToast } from '@/components/fairway';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
+import { fwHaptic } from '@/lib/fairway/haptics';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { TeamMember } from '@/components/golf/calendar/PremiumCalendarClient';
 import type { RSVPStatus, RsvpRespondResult } from '@/hooks/useRSVP';
 import { readRsvpLockCode } from '@/hooks/useRSVP';
-import { zonedMidnight, eventDaySpan } from '@/lib/calendar/timezone';
+import { zonedMidnight, DEFAULT_TIMEZONE } from '@/lib/calendar/timezone';
+import { wallClockInZone } from '@/lib/golf/timezone';
 import { useCalendarRangeEvents } from '@/hooks/golf/use-calendar-range-events';
 import { useRouter } from 'next/navigation';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
-import { PLAYER_COLORS } from '@/components/golf/calendar/CalendarAvatarSidebar';
-import type { CalendarFeed } from '@/components/golf/calendar/FeedCard';
-import type { FeedType } from '@/components/golf/calendar/CalendarFeedManager';
+import { PLAYER_COLORS } from '@/lib/calendar/player-colors';
 import type { GolfEventFormData, RecurringEditScope } from '@/components/golf/calendar/EventDetailModal';
 import { FairwayCalendarHero } from './FairwayCalendarHero';
+import surfaces from './CalendarSurfaces.module.css';
 import { FairwayAgendaView } from './FairwayAgendaView';
 import { FairwayMonthGrid, type ScheduleOverlay } from './FairwayMonthGrid';
+import { FairwayMonthOverview } from './FairwayMonthOverview';
 import { FairwayCalendarMemberRail } from './FairwayCalendarMemberRail';
 import { FairwayAvailabilityList } from './FairwayAvailabilityList';
 import { FairwayEventDetailDrawer } from './FairwayEventDetailDrawer';
 import { FairwayEventEditor } from './FairwayEventEditor';
+import type { FairwayEventTimeRequest, FairwayEventSuggestedTime } from './FairwayEventEditor';
+import { CalendarSchedulingDialog } from './CalendarSchedulingDialog';
+import { CalendarPersonDialog, type OpenClassRequest } from './CalendarPersonDialog';
+import { CalendarClassDetail } from './class/CalendarClassDetail';
+import type { ClassOccurrenceView, ClassDetailViewer } from './class/types';
+import { ConflictCenter } from './conflicts/ConflictCenter';
+import { MyAvailabilityScreen } from './availability/MyAvailabilityScreen';
+import { useIsOnline } from './availability/useIsOnline';
+import { FairwayCalendarSubscriptionsSheet } from './settings/CalendarSubscriptionsSheet';
+import { useConflictInbox } from '@/hooks/golf/use-conflict-inbox';
+import type { ConflictInboxRequest, ConflictInboxResult, ConflictGroup } from '@/app/golf/actions/conflict-inbox';
+import type { ScheduleWindowRequest, ScheduleProposal } from '@/lib/calendar/scheduling-contracts';
 import { attributeClassEvents, isClassEvent, type ClassOwnerIndex } from '@/lib/calendar/class-events';
 
-// Code-split: the ICS feed manager (legacy component, reused UNCHANGED) only
-// loads when the Subscribe sheet is opened.
-const CalendarFeedManager = dynamic(
-  () =>
-    import('@/components/golf/calendar/CalendarFeedManager').then((m) => m.CalendarFeedManager),
-);
-
-async function loadCalendarFeedActions() {
-  return import('@/app/golf/actions/calendar-feeds');
+/** `YYYY-MM-DD` for an instant as read on the team's calendar, not the
+ * device's — the conflict window and a class occurrence's date are both
+ * team-local facts. */
+function dayKeyInZone(date: Date, timeZone: string | null): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: timeZone ?? DEFAULT_TIMEZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date);
 }
 
 type ViewId = 'day' | 'week' | 'month' | 'agenda';
@@ -234,9 +250,10 @@ export function FairwayCalendar({
       return { start: startOfMonth(focusDate), end: endOfMonth(focusDate) };
     }
     if (view === 'agenda') {
-      // Agenda gets a wide window so the demo's full Feb–Apr season shows: from
-      // 3 months before the focused day through 3 months after.
-      return { start: addMonths(focusDate, -3), end: addMonths(focusDate, 3) };
+      // Agenda is month-scoped: the period on screen is exactly the month the
+      // title names, stepped by month. "Show N earlier events" reveals the
+      // month's past days; the title's date-jump reaches any other month.
+      return { start: startOfMonth(focusDate), end: endOfMonth(focusDate) };
     }
     return {
       start: startOfWeekFn(focusDate, { weekStartsOn: 0 }),
@@ -434,6 +451,24 @@ export function FairwayCalendar({
   // server actions. They throw on failure so the editor surfaces the error.
   const [editorOpen, setEditorOpen] = React.useState(false);
   const [editorEvent, setEditorEvent] = React.useState<CalendarEvent | null>(null);
+  const [schedulingRequest, setSchedulingRequest] = React.useState<ScheduleWindowRequest | null>(null);
+  const [personRequest, setPersonRequest] = React.useState<ScheduleWindowRequest | null>(null);
+  const [personId, setPersonId] = React.useState<string | null>(null);
+  const [personReturnRequest, setPersonReturnRequest] = React.useState<ScheduleWindowRequest | null>(null);
+  const [initialProposal, setInitialProposal] = React.useState<ScheduleProposal | undefined>();
+  const [suggestedTime, setSuggestedTime] = React.useState<FairwayEventSuggestedTime | null>(null);
+  const suggestionToken = React.useRef(0);
+  const openScheduling = (data?: Partial<FairwayEventTimeRequest>) => {
+    if (!teamId) return;
+    const startDate = new Date(`${data?.date ?? format(focusDate, 'yyyy-MM-dd')}T12:00:00`);
+    const endDate = new Date(`${data?.endDate ?? data?.date ?? format(focusDate, 'yyyy-MM-dd')}T12:00:00`);
+    setInitialProposal(data ? {
+      start: wallClockInZone(startDate, data.startTime ?? '09:00', teamTimezone).toISOString(),
+      end: wallClockInZone(endDate, data.endTime ?? '10:00', teamTimezone).toISOString(),
+    } : undefined);
+    setSchedulingRequest({ teamId, date: data?.date ?? format(focusDate, 'yyyy-MM-dd'), participantIds: data?.attendeeIds ?? teamMembers.filter((person) => person.role !== 'coach' && person.id !== currentUserId && (selectedPlayerIds.length === 0 || selectedPlayerIds.includes(person.id))).map((person) => person.id), excludeEventId: data?.eventId });
+  };
+
   const [isSavingEvent, setIsSavingEvent] = React.useState(false);
 
   const openCreate = React.useCallback(() => {
@@ -699,6 +734,105 @@ export function FairwayCalendar({
   // ── ICS "Add to phone" sheet — reachable for BOTH roles incl. mobile. ──────
   const [subscribeOpen, setSubscribeOpen] = React.useState(false);
 
+  // ── S7 My availability ─────────────────────────────────────────────────────
+  const [availabilityOpen, setAvailabilityOpen] = React.useState(false);
+
+  // ── S8 Conflict centre — a 14-day window from today, team-local. The read
+  //    only runs while the sheet is open; the hook keeps the last snapshot on
+  //    screen while refreshing and never shows a cached one as a fresh all-clear.
+  const [conflictsOpen, setConflictsOpen] = React.useState(false);
+  const online = useIsOnline();
+  // Coaches read the 14-day inbox on Calendar home too (once, then again
+  // whenever the sheet opens) so the attention row can show a REAL count.
+  // Players only read it when they open the sheet.
+  const conflictRequest = React.useMemo<ConflictInboxRequest | null>(() => {
+    if (!teamId) return null;
+    if (!conflictsOpen && !isCoach) return null;
+    return { teamId, from: dayKeyInZone(nowRef, teamTimezone), to: dayKeyInZone(addDays(nowRef, 14), teamTimezone) };
+  }, [conflictsOpen, isCoach, teamId, nowRef, teamTimezone]);
+  const loadConflictInbox = React.useCallback(async (request: ConflictInboxRequest): Promise<ConflictInboxResult> => {
+    const { getConflictInbox } = await import('@/app/golf/actions/conflict-inbox');
+    return getConflictInbox(request);
+  }, []);
+  const conflictInbox = useConflictInbox(conflictRequest, loadConflictInbox);
+  const homeConflictCount = React.useMemo<number | null>(() => {
+    const groups = conflictInbox.snapshot?.groups;
+    if (!groups) return null;
+    return groups.filter((group) => group.overlaps.length > 0).length;
+  }, [conflictInbox.snapshot]);
+  const handleReviewNewTime = React.useCallback((group: ConflictGroup, proposal: ScheduleProposal) => {
+    const event = events.find((candidate) => candidate.id === group.event.id);
+    if (!event) {
+      fairwayToast.info('Open the event’s date in your calendar to reschedule it.');
+      return;
+    }
+    setSuggestedTime({ ...proposal, token: ++suggestionToken.current });
+    setConflictsOpen(false);
+    openEdit(event);
+  }, [events, openEdit]);
+
+  // ── S4 Class detail — from a schedule lane, a commitments row, or a class
+  //    row in the agenda/day views. The action decides access; this only
+  //    holds the request and whatever it returned.
+  const [classRequest, setClassRequest] = React.useState<OpenClassRequest | null>(null);
+  const [classView, setClassView] = React.useState<ClassOccurrenceView>({ kind: 'loading' });
+  const [classRetry, setClassRetry] = React.useState(0);
+  const classRequestRef = React.useRef(0);
+  React.useEffect(() => {
+    if (!classRequest) return;
+    const requestId = ++classRequestRef.current;
+    setClassView({ kind: 'loading' });
+    void (async () => {
+      try {
+        const { getClassOccurrenceDetail } = await import('@/app/golf/actions/class-detail');
+        const result = await getClassOccurrenceDetail(classRequest);
+        if (requestId === classRequestRef.current) setClassView(result);
+      } catch {
+        if (requestId === classRequestRef.current) {
+          setClassView({ success: false, error: 'This class could not be loaded. Please retry.' });
+        }
+      }
+    })();
+  }, [classRequest, classRetry]);
+  const classViewer: ClassDetailViewer = isCoach
+    ? 'coach'
+    : ('kind' in classView && classView.kind === 'offline') || ('access' in classView && classView.access === 'detail')
+      ? 'owner'
+      : 'other';
+
+  // ── Drawer destructive actions (S10 More menu) — same server actions the
+  //    editor uses, keyed on the drawer's own event rather than `editorEvent`.
+  const drawerCancelEvent = React.useCallback(async (event: CalendarEvent) => {
+    try {
+      const { deleteGolfEvent } = await import('@/app/golf/actions/golf');
+      const result = await deleteGolfEvent(event.id);
+      if (result.success) { router.refresh(); refetchVisibleRange(); }
+      return { success: result.success, error: result.error };
+    } catch (err) {
+      return { success: false, error: err instanceof Error ? err.message : 'Could not cancel this event.' };
+    }
+  }, [router, refetchVisibleRange]);
+  const drawerRestoreEvent = React.useCallback(async (event: CalendarEvent) => {
+    try {
+      const { updateGolfEvent } = await import('@/app/golf/actions/golf');
+      const result = await updateGolfEvent(event.id, { status: 'confirmed' } as never);
+      if (result.success) { router.refresh(); refetchVisibleRange(); }
+      return { success: result.success, error: result.error };
+    } catch (err) {
+      return { success: false, error: err instanceof Error ? err.message : 'Could not restore this event.' };
+    }
+  }, [router, refetchVisibleRange]);
+  const drawerDeletePermanently = React.useCallback(async (event: CalendarEvent) => {
+    try {
+      const { deleteGolfEventPermanently } = await import('@/app/golf/actions/golf');
+      const result = await deleteGolfEventPermanently(event.id);
+      if (result.success) { router.refresh(); refetchVisibleRange(); }
+      return { success: result.success, error: result.error };
+    } catch (err) {
+      return { success: false, error: err instanceof Error ? err.message : 'Could not delete this event.' };
+    }
+  }, [router, refetchVisibleRange]);
+
   // ── Drawer + RSVP state — EVERY view (Agenda / Day / Week / Month) opens the
   //    SAME Fairway drawer; the legacy EventDetailModal is retired (audit P232).
   const [drawerEvent, setDrawerEvent] = React.useState<CalendarEvent | null>(null);
@@ -714,68 +848,6 @@ export function FairwayCalendar({
     total: number;
   } | null>(null);
 
-  // Count of events in the visible window (for the hero status line). Day
-  // view is special-cased: `visibleWindow` for 'day' reuses the WEEK range
-  // (a fetch-buffer implementation detail — see visibleWindow above), but the
-  // Day body (FairwayAgendaView mode="day") only ever shows `focusDate`'s own
-  // events, so the hero count must match what's actually on screen instead of
-  // silently counting the whole week (mustFix #4).
-  const windowCount = React.useMemo(() => {
-    if (view === 'day') {
-      return events.filter((e) => {
-        // Zoned bucketing (not implicit-local `new Date(s)`) — must agree
-        // with what FairwayAgendaView mode="day" actually renders for the
-        // same day (both bucket by `teamTimezone`), or the hero count and
-        // the visible list could silently disagree near a midnight boundary.
-        //
-        // `eventDaySpan`, not `eventCalendarDay`, for the same reason: the
-        // agenda counts an event on every day it RUNS, so a start-only test
-        // here would report "0 events" on the Saturday of a tournament the
-        // list below is showing.
-        const span = eventDaySpan(e, teamTimezone);
-        if (!span) return false;
-        return (
-          (isSameDay(span.first, focusDate) || span.first < focusDate) &&
-          (isSameDay(span.last, focusDate) || span.last > focusDate)
-        );
-      }).length;
-    }
-    const startMs = visibleWindow.start.getTime();
-    const endMs = visibleWindow.end.getTime() + 24 * 60 * 60 * 1000 - 1;
-    return events.filter((e) => {
-      const s = e.start_time || e.start_date;
-      if (!s) return false;
-      const t = new Date(s).getTime();
-      return t >= startMs && t <= endMs;
-    }).length;
-  }, [events, visibleWindow, view, focusDate, teamTimezone]);
-
-  // Upcoming count — derived from the SAME canonical `events` list as
-  // `windowCount` (finding #37/#166/#185/#83). The server-computed
-  // `upcomingCount` prop is a SEPARATE read of the same underlying table at a
-  // slightly different instant (its own count query vs. this page's own
-  // fetch+merge), so the hero previously showed two numbers that could each
-  // change independently — one canonical read path now feeds both. `nowRef`
-  // starts equal to `serverNow` (hydration-safe: identical on the first
-  // client render, so no SSR/CSR mismatch), then promotes to the real client
-  // clock exactly like every other "now" in this surface.
-  //
-  // Class meetings are excluded. "12 upcoming" means team commitments — the
-  // coach dashboard's own tile counts exactly that — and counting every
-  // lecture put the two numbers ~150x apart on the same screen for the same
-  // team. A player seeing "187 upcoming" on their calendar is being told
-  // their week is full of the team's business when most of it is their own
-  // timetable, which they can already see rendered.
-  const liveUpcomingCount = React.useMemo(() => {
-    const nowMs = nowRef.getTime();
-    return events.filter((e) => {
-      if (isClassEvent(e)) return false;
-      const s = e.start_time || e.start_date;
-      if (!s) return false;
-      return new Date(s).getTime() >= nowMs;
-    }).length;
-  }, [events, nowRef]);
-
   // ── Navigation ──────────────────────────────────────────────────────────────
   const navigate = React.useCallback(
     (direction: 'prev' | 'next' | 'today') => {
@@ -785,10 +857,10 @@ export function FairwayCalendar({
         return;
       }
       const dir = direction === 'next' ? 1 : -1;
-      if (view === 'month') {
+      if (view === 'month' || view === 'agenda') {
         setFocusDate((d) => addMonths(d, dir));
       } else {
-        // Day/Week/Agenda turn the page by a week (the day-strip is the picker).
+        // Day/Week turn the page by a week (the day-strip is the picker).
         setFocusDate((d) => addDays(d, dir * 7));
       }
     },
@@ -827,8 +899,17 @@ export function FairwayCalendar({
 
   // ── Drawer plumbing — REUSES the existing getEventRSVP / getPlayerEventRSVP
   //    (lazy import, exactly as the legacy editorial drawer). ─────────────────
+  const drawerRequestRef = React.useRef(0);
   const openDrawerForEvent = React.useCallback(
     async (event: CalendarEvent) => {
+      // A class occurrence is a person's commitment, not a team event: it
+      // opens class detail (S4), which decides server-side how much of it
+      // this viewer may see. The drawer would show it as an ordinary event.
+      if (isClassEvent(event)) {
+        setClassRequest({ eventId: event.id, date: dayKeyInZone(new Date(event.start_date), teamTimezone) });
+        return;
+      }
+      const requestId = ++drawerRequestRef.current;
       setDrawerEvent(event);
       setDrawerOpen(true);
       setDrawerRsvpSummary(null);
@@ -837,7 +918,7 @@ export function FairwayCalendar({
         try {
           const { getEventRSVP } = await import('@/app/golf/actions/golf');
           const result = await getEventRSVP(event.id);
-          if (result.success && result.data?.summary) {
+          if (requestId === drawerRequestRef.current && result.success && result.data?.summary) {
             const s = result.data.summary;
             setDrawerRsvpSummary({
               accepted: s.accepted ?? 0,
@@ -866,7 +947,7 @@ export function FairwayCalendar({
         }
       }
     },
-    [isCoach, userRsvpStatuses],
+    [isCoach, userRsvpStatuses, teamTimezone],
   );
 
   // ── Deep-link auto-open (Travel→Calendar cross-link, P440 symmetric fix) ──
@@ -978,75 +1059,132 @@ export function FairwayCalendar({
   const isAgenda = view === 'agenda';
   const isDay = view === 'day';
 
+  // ── The schedule turns like a page ──────────────────────────────────────────
+  // On a phone the masthead has no arrows: a horizontal swipe across the
+  // schedule steps the period (same thresholds as the day strip's gesture;
+  // vertical drags stay the page scroll). The body re-keys on the period it
+  // shows, so a turn slides the new period in from the side it came from.
+  const reduceMotion = useReducedMotionGuard();
+  const swipeRef = React.useRef<{ x: number; y: number; id: number } | null>(null);
+  const handleSwipeStart = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.pointerType === 'mouse') return;
+    swipeRef.current = { x: event.clientX, y: event.clientY, id: event.pointerId };
+  };
+  const handleSwipeEnd = (event: React.PointerEvent<HTMLDivElement>) => {
+    const start = swipeRef.current;
+    swipeRef.current = null;
+    if (!start || start.id !== event.pointerId) return;
+    const dx = event.clientX - start.x;
+    const dy = event.clientY - start.y;
+    if (Math.abs(dx) < 56 || Math.abs(dy) > 40) return;
+    fwHaptic('light');
+    navigate(dx < 0 ? 'next' : 'prev');
+  };
+  const periodKey =
+    view === 'month' || view === 'agenda'
+      ? format(focusDate, 'yyyy-MM')
+      : view === 'week'
+        ? format(startOfWeekFn(focusDate, { weekStartsOn: 0 }), 'yyyy-MM-dd')
+        : format(focusDate, 'yyyy-MM-dd');
+  // Which way did the period move? Derived from the keys themselves (they are
+  // ISO-ordered strings), so an arrow, a swipe, a day-strip tap and a date
+  // jump all turn the page in the direction of time. A view change is a cut.
+  const prevPeriodRef = React.useRef<{ view: ViewId; key: string } | null>(null);
+  const prevPeriod = prevPeriodRef.current;
+  const travel: 1 | -1 | 0 =
+    prevPeriod && prevPeriod.view === view && prevPeriod.key !== periodKey
+      ? periodKey > prevPeriod.key
+        ? 1
+        : -1
+      : 0;
+  React.useEffect(() => {
+    prevPeriodRef.current = { view, key: periodKey };
+  });
+
   return (
-    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-5 px-4 py-2 md:gap-6 md:px-6">
-      {/* ── ONE HERO (plinth + day strip) ────────────────────────────────────── */}
+    <div className={cn("mx-auto flex w-full max-w-[1200px] flex-col gap-4 px-4 pb-6 md:gap-5 md:px-6", surfaces.scope)}>
+      {/* ── The toolbar: title, view selector, stepping, primary action ─────── */}
       <FairwayCalendarHero
         focusDate={focusDate}
         selectedDate={focusDate}
         events={events}
         nowRef={nowRef}
-        upcomingCount={liveUpcomingCount}
-        windowCount={windowCount}
-        isMonthView={view === 'month'}
-        isAgendaView={isAgenda}
         isDayView={isDay}
         isCoach={isCoach}
         onNavigate={navigate}
         onSelectDate={(d) => setFocusDate(d)}
-        onPrimaryAction={primaryAction}
+        onPrimaryAction={isCoach ? primaryAction : undefined}
         primaryActionLabel={primaryActionLabel}
         teamTimezone={teamTimezone}
+        view={view}
+        viewOptions={VIEW_OPTIONS}
+        onViewChange={setView}
+        onFindTime={teamId && isCoach ? () => openScheduling() : undefined}
+        onConflicts={teamId ? () => setConflictsOpen(true) : undefined}
+        onSubscribe={() => setSubscribeOpen(true)}
+        onAvailability={() => setAvailabilityOpen(true)}
+        conflictCount={homeConflictCount}
+        busy={isLoadingRange}
       />
 
-      {/* ── View toggle (default Agenda) + Subscribe entry point ─────────────── */}
-      {/* "Add to phone" is reachable for BOTH roles, including mobile — the
-          flagship "team schedule in my phone" path was previously desktop-
-          coach-only (audit finding #10). Stacks (Segmented full-width, then
-          the button at its natural size) below `sm`; on `sm`+ it's the
-          original side-by-side row. `flex-wrap` alone (Segmented shrinking
-          via `min-w-0 flex-1` + its own internal scroll-fade) left the two
-          controls sharing one line at phone widths, where the button's
-          `whitespace-nowrap` label floors it at its natural width and
-          crowds/overlaps the segmented control's clipped tail — the same
-          stack-then-row idiom used elsewhere in Fairway (e.g. ViewHeader,
-          FairwayQualifierDetail) sidesteps that shrink math entirely. */}
-      <div className="flex flex-col items-start gap-2.5 sm:flex-row sm:flex-wrap sm:items-center">
-        <div className="w-full min-w-0 sm:w-auto sm:flex-1">
-          <Segmented<ViewId>
-            options={VIEW_OPTIONS}
-            value={view}
-            onValueChange={setView}
-            // `lg` = 44px segments — this is the single most-used calendar
-            // control on mobile; it must clear the WCAG 2.2 AA touch target.
-            size="lg"
-            fullWidth
-            aria-label="Calendar view"
-          />
-        </div>
-        <FwButton
-          variant="secondary"
-          size="sm"
-          leftIcon={<CalendarPlus className="h-4 w-4" aria-hidden />}
-          onClick={() => setSubscribeOpen(true)}
+      {/* ── Phone: the coach's ONE primary action floats above the tab bar,
+          where a thumb already is; the masthead carries it from md up. ──── */}
+      {isCoach && primaryAction ? (
+        <IconButton
+          variant="primary"
+          size="lg"
+          aria-label={primaryActionLabel}
+          data-testid="calendar-fab"
+          onClick={primaryAction}
+          className={cn(
+            'fixed right-4 z-[19] h-14 w-14 md:hidden [&_svg]:h-6 [&_svg]:w-6',
+            // Lit from above and lifted well off the page: this is the one
+            // element on the screen that genuinely floats.
+            '[box-shadow:inset_0_1px_0_oklch(1_0_0/0.28),var(--fw-shadow-raise)]',
+            'active:scale-[0.96] active:[transition-duration:110ms] motion-reduce:active:scale-100',
+          )}
+          style={{ bottom: 'calc(var(--fw-mobile-nav-height, 64px) + 1rem)' }}
         >
-          Add to phone
-        </FwButton>
-      </div>
+          <Plus />
+        </IconButton>
+      ) : null}
 
-      {/* ── Range-fetch affordances (loading + retryable error ≠ empty) ──────── */}
-      {isLoadingRange ? (
-        <div
-          role="status"
-          aria-live="polite"
-          className="flex items-center gap-2.5 rounded-fw-md bg-surface-sunken px-4 py-2.5"
+      {/* ── ONE attention row (DESIGN-PLAN §18): the most urgent actionable
+          item, only when there is one. Real count from the inbox; never a
+          global red alert for every soft overlap. */}
+      {homeConflictCount && homeConflictCount > 0 ? (
+        <PressTarget
+          onClick={() => setConflictsOpen(true)}
+          className="flex min-h-11 w-full items-center justify-between gap-3 rounded-fw-md border border-border-subtle bg-fw-warning-bg px-4 py-2.5 text-left text-fw-warning-ink"
         >
-          <span className="h-2 w-2 animate-pulse rounded-full bg-accent-500" aria-hidden />
-          <span className="font-fw-sans text-caption text-text-tertiary">
-            Loading events for this date range…
+          <span className="flex min-w-0 items-center gap-2.5">
+            <AlertTriangle className="h-4 w-4 flex-shrink-0" aria-hidden />
+            <span className="truncate font-fw-sans text-body-sm font-semibold">
+              {homeConflictCount} scheduling {homeConflictCount === 1 ? 'conflict' : 'conflicts'}
+            </span>
           </span>
+          <ArrowRight className="h-4 w-4 flex-shrink-0" aria-hidden />
+        </PressTarget>
+      ) : null}
+
+      {/* ── Player: a contextual response row, only when there is something
+          to respond to. Not a header CTA. ─────────────────────────────────── */}
+      {!isCoach && primaryAction && mostImminentUnrsvpd ? (
+        <div className="flex min-h-11 items-center justify-between gap-3 rounded-fw-md border border-border-subtle bg-surface px-4 py-2 [box-shadow:var(--fw-shadow-card)]">
+          <span className="min-w-0">
+            <span className="block truncate font-fw-sans text-body-sm font-semibold text-text-primary">
+              {mostImminentUnrsvpd.title}
+            </span>
+            <span className="block font-fw-sans text-caption text-text-tertiary">Needs your reply</span>
+          </span>
+          <FwButton variant="primary" size="sm" onClick={primaryAction}>
+            {primaryActionLabel}
+          </FwButton>
         </div>
       ) : null}
+
+      {/* ── Range-fetch error (retryable ≠ empty). A fetch in flight is the
+          masthead's progress line, not a banner here. ─────────────────────── */}
       {rangeError && !isLoadingRange ? (
         <div className="flex items-center justify-between gap-3 rounded-fw-md border border-border-subtle bg-surface-sunken px-4 py-2.5">
           <span className="font-fw-sans text-caption text-fw-danger-ink">{rangeError}</span>
@@ -1067,13 +1205,26 @@ export function FairwayCalendar({
           is shown for coaches across all lenses. */}
       {isCoach ? (
         <FairwayCalendarMemberRail
-          teamMembers={memberRailTeamMembers}
+          teamMembers={memberRailTeamMembers.filter((member) => member.role !== 'coach' || member.id === currentUserId)}
+          onOpenPerson={(id) => { if (teamId) { setPersonId(id); setPersonRequest({ teamId, date: format(focusDate, 'yyyy-MM-dd'), participantIds: id === currentUserId ? [] : [id] }); } }}
           selectedPlayerIds={selectedPlayerIds}
           onSelect={setSelectedPlayerIds}
         />
       ) : null}
 
-      {/* ── BODY ─────────────────────────────────────────────────────────────── */}
+      {/* ── BODY — swipes between periods on a phone; slides in from the side
+          it came from. Re-keyed per period, so the new schedule mounts fresh. ── */}
+      <motion.div
+        key={`${view}|${periodKey}`}
+        data-testid="calendar-body"
+        onPointerDown={handleSwipeStart}
+        onPointerUp={handleSwipeEnd}
+        onPointerCancel={() => { swipeRef.current = null; }}
+        initial={reduceMotion || travel === 0 ? false : { opacity: 0, x: travel * 24 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.26, ease: [0.16, 1, 0.3, 1] }}
+        className="flex flex-col gap-4 md:gap-5 [touch-action:pan-y_pinch-zoom]"
+      >
       {availabilityMode ? (
         // ── Coach availability overlay — selected players' schedules, color-coded
         //    (their team events + classes + blocked). Month → grid overlay; other
@@ -1106,12 +1257,14 @@ export function FairwayCalendar({
           focusDate={focusDate}
           rangeStart={visibleWindow.start}
           rangeEnd={visibleWindow.end}
+          periodLabel={format(focusDate, 'MMMM yyyy')}
           isCoach={isCoach}
           userRsvpStatuses={userRsvpStatuses}
           timezone={teamTimezone}
           onEventClick={openDrawerForEvent}
           onCreateEvent={isCoach ? handlePrimaryAction : undefined}
           nowRef={nowRef}
+          isLoadingRange={isLoadingRange}
         />
       ) : isDay ? (
         <FairwayAgendaView
@@ -1124,6 +1277,7 @@ export function FairwayCalendar({
           onEventClick={openDrawerForEvent}
           onCreateEvent={isCoach ? handlePrimaryAction : undefined}
           nowRef={nowRef}
+          isLoadingRange={isLoadingRange}
         />
       ) : view === 'month' ? (
         // ── Week / Month → fully-native Fairway for BOTH roles (audit P232).
@@ -1138,17 +1292,47 @@ export function FairwayCalendar({
         //    full create (hero "New event" → FairwayEventEditor) and edit/delete/
         //    restore (tap an event → Fairway drawer → Edit → FairwayEventEditor),
         //    all wired to the SAME server actions the legacy grid called.
-        <FairwayMonthGrid
-          events={events}
-          focusDate={focusDate}
-          nowRef={nowRef}
-          timezone={teamTimezone}
-          onEventClick={openDrawerForEvent}
-          onSelectDate={(d) => {
-            setFocusDate(d);
-            setView('day');
-          }}
-        />
+        <>
+          {/* Phone: the shared compact month (CalendarSurface) with the
+              selected day's schedule directly beneath it. Tapping a day only
+              moves the selection — the month stays on screen. */}
+          <div className="flex flex-col gap-4 md:hidden">
+            <FairwayMonthOverview
+              events={events}
+              selectedDate={focusDate}
+              nowRef={nowRef}
+              timezone={teamTimezone}
+              onSelectDate={(d) => setFocusDate(d)}
+              className="block w-full"
+            />
+            <FairwayAgendaView
+              events={events}
+              mode="day"
+              focusDate={focusDate}
+              isCoach={isCoach}
+              userRsvpStatuses={userRsvpStatuses}
+              timezone={teamTimezone}
+              onEventClick={openDrawerForEvent}
+              onCreateEvent={isCoach ? handlePrimaryAction : undefined}
+              nowRef={nowRef}
+              isLoadingRange={isLoadingRange}
+            />
+          </div>
+          <div className="hidden md:block">
+            <FairwayMonthGrid
+              events={events}
+              focusDate={focusDate}
+              nowRef={nowRef}
+              selectedDate={focusDate}
+              timezone={teamTimezone}
+              onEventClick={openDrawerForEvent}
+              onSelectDate={(d) => {
+                setFocusDate(d);
+                setView('day');
+              }}
+            />
+          </div>
+        </>
       ) : (
         // ── Week → a week-scoped agenda for BOTH roles (sparse golf calendars
         //    read better as a list than a time-grid). Opens the same Fairway
@@ -1159,14 +1343,17 @@ export function FairwayCalendar({
           focusDate={focusDate}
           rangeStart={visibleWindow.start}
           rangeEnd={visibleWindow.end}
+          periodLabel={`the week of ${format(visibleWindow.start, 'MMMM d')}`}
           isCoach={isCoach}
           userRsvpStatuses={userRsvpStatuses}
           timezone={teamTimezone}
           onEventClick={openDrawerForEvent}
           onCreateEvent={isCoach ? handlePrimaryAction : undefined}
           nowRef={nowRef}
+          isLoadingRange={isLoadingRange}
         />
       )}
+      </motion.div>
 
       {/* ── DETAIL DRAWER — the single event-detail surface for every view ────── */}
       <FairwayEventDetailDrawer
@@ -1176,7 +1363,8 @@ export function FairwayCalendar({
           setDrawerOpen(o);
           if (!o) {
             // Clear lazily so the drawer's exit animation finishes.
-            setTimeout(() => setDrawerEvent(null), 240);
+            const requestId = ++drawerRequestRef.current;
+            setTimeout(() => { if (requestId === drawerRequestRef.current) setDrawerEvent(null); }, 240);
           }
         }}
         isCoach={isCoach}
@@ -1192,12 +1380,18 @@ export function FairwayCalendar({
             : undefined
         }
         timezone={teamTimezone}
+        onCancelEvent={isCoach ? drawerCancelEvent : undefined}
+        onRestoreEvent={isCoach ? drawerRestoreEvent : undefined}
+        onDeletePermanently={isCoach ? drawerDeletePermanently : undefined}
       />
 
       {/* ── Coach create / edit event editor (native Fairway) ─────────────────── */}
       {isCoach ? (
         <FairwayEventEditor
           open={editorOpen}
+          suspended={Boolean(schedulingRequest)}
+          onFindTime={teamId ? openScheduling : undefined}
+          suggestedTime={suggestedTime}
           onClose={() => setEditorOpen(false)}
           event={editorEvent}
           isCoach={isCoach}
@@ -1212,177 +1406,84 @@ export function FairwayCalendar({
         />
       ) : null}
 
+      <CalendarPersonDialog request={personRequest} personId={personId} onOpenClass={setClassRequest} onClose={() => {
+        const returnRequest = personReturnRequest;
+        setPersonReturnRequest(null); setPersonRequest(null);
+        if (returnRequest) setSchedulingRequest(returnRequest);
+      }}
+        onDateChange={(date) => { if (personRequest) setPersonRequest({ ...personRequest, date }); }}
+        onCompare={() => { setSchedulingRequest(personReturnRequest ?? personRequest); setInitialProposal(undefined); setPersonReturnRequest(null); setPersonRequest(null); }}
+        onEvent={(id) => {
+          const event = events.find((candidate) => candidate.id === id);
+          if (event) {
+            setPersonReturnRequest(null);
+            setPersonRequest(null);
+            void openDrawerForEvent(event);
+          } else {
+            fairwayToast.info('Open the event’s date in your calendar to see its details.');
+          }
+        }} />
+      <CalendarSchedulingDialog request={schedulingRequest} initialProposal={initialProposal} onChange={setSchedulingRequest}
+        onOpenPerson={(id) => { if (!schedulingRequest) return; setPersonReturnRequest(schedulingRequest); setPersonId(id); setPersonRequest({ ...schedulingRequest, participantIds: id === currentUserId ? [] : [id] }); setSchedulingRequest(null); }}
+        onClose={() => setSchedulingRequest(null)} onChoose={(proposal) => {
+          setSuggestedTime({ ...proposal, token: ++suggestionToken.current });
+          setSchedulingRequest(null);
+          if (!editorOpen) { setEditorEvent(null); setEditorOpen(true); }
+        }} />
+
       {/* ── Subscribe / Add to phone (ICS feeds — reuses the legacy manager) ──── */}
-      <FairwaySubscribeSheet
+      <FairwayCalendarSubscriptionsSheet
         open={subscribeOpen}
         onOpenChange={setSubscribeOpen}
         canManageTeamFeed={isCoach && Boolean(teamId ?? initialEvents[0]?.team_id)}
       />
-    </div>
-  );
-}
 
-// ============================================================================
-// FairwaySubscribeSheet — ICS feed manager in a Fairway Sheet
-// ----------------------------------------------------------------------------
-// Reuses the EXISTING CalendarFeedManager (FeedCard + SubscriptionInstructions
-// + calendar-feeds server actions) UNCHANGED — same plumbing as the legacy
-// GolfCalendarWrapper drawer, surfaced where players and mobile coaches can
-// actually reach it (audit finding #10). The manager chunk loads on first open.
-// ============================================================================
-interface FairwaySubscribeSheetProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  /** Coaches manage the team feed; players get a personal feed only. */
-  canManageTeamFeed: boolean;
-}
+      {/* ── S4 Class detail — access decided by the action, never here ─────── */}
+      <CalendarClassDetail
+        open={Boolean(classRequest)}
+        onOpenChange={(o) => { if (!o) setClassRequest(null); }}
+        result={classView}
+        viewer={classViewer}
+        timeZone={teamTimezone ?? DEFAULT_TIMEZONE}
+        onRetry={() => setClassRetry((value) => value + 1)}
+        onEditClass={() => router.push('/golf/dashboard/classes')}
+        onCompareSchedules={teamId && classRequest ? () => {
+          const date = classRequest.date;
+          setClassRequest(null);
+          openScheduling({ date, attendeeIds: personId && personId !== currentUserId ? [personId] : undefined });
+        } : undefined}
+      />
 
-function FairwaySubscribeSheet({ open, onOpenChange, canManageTeamFeed }: FairwaySubscribeSheetProps) {
-  const [feeds, setFeeds] = React.useState<CalendarFeed[]>([]);
-  const [feedsLoading, setFeedsLoading] = React.useState(false);
-  const [feedsError, setFeedsError] = React.useState<string | null>(null);
-  const allowedTypes = React.useMemo<FeedType[]>(
-    () => (canManageTeamFeed ? ['team', 'personal'] : ['personal']),
-    [canManageTeamFeed],
-  );
-
-  const loadFeeds = React.useCallback(async () => {
-    setFeedsLoading(true);
-    setFeedsError(null);
-    try {
-      const { getCalendarFeeds } = await loadCalendarFeedActions();
-      const result = await getCalendarFeeds();
-      if (result.success && result.data) {
-        setFeeds(result.data);
-      } else {
-        setFeeds([]);
-        setFeedsError(result.error || 'Failed to load calendar feeds');
-      }
-    } catch {
-      setFeeds([]);
-      setFeedsError('Unable to load calendar feeds. Please check your connection and try again.');
-    }
-    setFeedsLoading(false);
-  }, []);
-
-  React.useEffect(() => {
-    if (open) void loadFeeds();
-  }, [open, loadFeeds]);
-
-  const handleCreateFeed = React.useCallback(
-    async (type: FeedType, _name: string) => {
-      void _name;
-      if (type === 'team' && !canManageTeamFeed) {
-        setFeedsError('Only coaches can manage team feeds');
-        throw new Error('Only coaches can manage team feeds');
-      }
-      const { createCalendarFeed } = await loadCalendarFeedActions();
-      const result = await createCalendarFeed(type as 'team' | 'personal');
-      if (!result.success || !result.data) {
-        setFeedsError(result.error || 'Failed to create feed');
-        throw new Error(result.error || 'Failed to create feed');
-      }
-      setFeeds((prev) => {
-        const existingIndex = prev.findIndex((feed) => feed.type === type);
-        if (existingIndex === -1) return [...prev, result.data!];
-        const next = [...prev];
-        next[existingIndex] = result.data!;
-        return next;
-      });
-      return result.data;
-    },
-    [canManageTeamFeed],
-  );
-
-  const handleRegenerateFeed = React.useCallback(
-    async (feedId: string) => {
-      const target = feeds.find((feed) => feed.id === feedId);
-      if (!target) return;
-      if (target.type === 'team' && !canManageTeamFeed) {
-        setFeedsError('Only coaches can manage team feeds');
-        return;
-      }
-      const { regenerateCalendarFeed } = await loadCalendarFeedActions();
-      const result = await regenerateCalendarFeed(target.type as 'team' | 'personal');
-      if (!result.success || !result.data) {
-        setFeedsError(result.error || 'Failed to regenerate feed');
-        throw new Error(result.error || 'Failed to regenerate feed');
-      }
-      setFeeds((prev) => prev.map((feed) => (feed.id === feedId ? result.data! : feed)));
-    },
-    [feeds, canManageTeamFeed],
-  );
-
-  const handleDeleteFeed = React.useCallback(
-    async (feedId: string) => {
-      const target = feeds.find((feed) => feed.id === feedId);
-      if (!target) return;
-      if (target.type === 'team' && !canManageTeamFeed) {
-        setFeedsError('Only coaches can manage team feeds');
-        return;
-      }
-      const { deleteCalendarFeed } = await loadCalendarFeedActions();
-      const result = await deleteCalendarFeed(target.type as 'team' | 'personal');
-      if (!result.success) {
-        setFeedsError(result.error || 'Failed to disable feed');
-        throw new Error(result.error || 'Failed to disable feed');
-      }
-      setFeeds((prev) => prev.filter((feed) => feed.id !== feedId));
-    },
-    [feeds, canManageTeamFeed],
-  );
-
-  return (
-    <Sheet
-      open={open}
-      onOpenChange={onOpenChange}
-      side="bottom"
-      title="Subscribe to your calendar"
-      className="sm:mx-auto sm:max-w-xl"
-    >
-      <Sheet.Body className="flex flex-col gap-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
-        <p className="font-fw-sans text-body-sm text-text-secondary">
-          Add the team schedule to Apple Calendar, Google Calendar, or Outlook. It stays in sync
-          automatically when events change.
-        </p>
-        {feedsError ? (
-          <div className="flex items-center justify-between gap-3 rounded-fw-md border border-border-subtle bg-surface-sunken px-4 py-2.5">
-            <span className="font-fw-sans text-caption text-fw-danger-ink">{feedsError}</span>
-            <FwButton variant="secondary" size="sm" onClick={loadFeeds}>
-              Retry
-            </FwButton>
-          </div>
-        ) : null}
-        {/* Genuinely-empty (loaded, no error, zero feeds): a Fairway-framed hint
-            so the empty Subscribe sheet doesn't lean only on the legacy child's
-            empty state (audit P242). */}
-        {!feedsLoading && !feedsError && feeds.length === 0 ? (
-          <p className="font-fw-sans text-caption text-text-tertiary">
-            You don&apos;t have a feed yet — create one below to sync this calendar to your phone.
-          </p>
-        ) : null}
-        {feedsLoading ? (
-          <div className="space-y-3" aria-busy="true" aria-label="Loading calendar feeds">
-            <Skeleton className="h-16 rounded-fw-md" />
-            <Skeleton className="h-16 rounded-fw-md" />
-          </div>
-        ) : feedsError ? null : (
-          // The real feed list/create flow only renders once the load has
-          // actually succeeded — while `feedsError` is set, `feeds` is `[]`
-          // for the same reason the request failed, so this would otherwise
-          // render CalendarFeedManager's own "No calendar feeds yet — create
-          // one" empty state directly under the error above, inviting a
-          // create action while the real list state is still unknown.
-          <CalendarFeedManager
-            feeds={feeds}
-            onCreateFeed={handleCreateFeed}
-            onRegenerateFeed={handleRegenerateFeed}
-            onDeleteFeed={handleDeleteFeed}
-            allowedTypes={allowedTypes}
-            showNameInput={false}
+      {/* ── S8 Conflict centre ───────────────────────────────────────────────── */}
+      <Sheet
+        open={conflictsOpen}
+        onOpenChange={setConflictsOpen}
+        side="bottom"
+        title="Conflicts"
+        hideTitle
+        className={cn("sm:mx-auto sm:max-w-3xl", surfaces.scope)}
+      >
+        <Sheet.Body className="flex h-[min(85dvh,720px)] min-h-0 flex-col p-0">
+          <ConflictCenter
+            snapshot={conflictInbox.snapshot}
+            loading={conflictInbox.loading}
+            refreshing={conflictInbox.refreshing}
+            error={conflictInbox.error}
+            onRefresh={conflictInbox.refresh}
+            timeZone={teamTimezone ?? DEFAULT_TIMEZONE}
+            isOffline={!online}
+            onReviewNewTime={handleReviewNewTime}
           />
-        )}
-      </Sheet.Body>
-    </Sheet>
+        </Sheet.Body>
+      </Sheet>
+
+      {/* ── S7 My availability ───────────────────────────────────────────────── */}
+      <MyAvailabilityScreen
+        open={availabilityOpen}
+        onOpenChange={setAvailabilityOpen}
+        viewerRole={isCoach ? 'coach' : 'player'}
+        teamId={teamId ?? null}
+      />
+    </div>
   );
 }

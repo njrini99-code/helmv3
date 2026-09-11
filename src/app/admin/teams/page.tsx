@@ -10,6 +10,9 @@ import { AutoRefresh } from '../_components/AutoRefresh';
 import { LocalTime } from '../_components/LocalTime';
 import { TeamsSortChips } from './TeamsSortChips';
 import { RecentTimelines } from './RecentTimelines';
+import { parseView } from '@/lib/admin/views';
+import { ViewRail } from '../_components/ViewRail';
+import { TeamsEkgView } from './_components/TeamsEkgView';
 
 export const dynamic = 'force-dynamic';
 
@@ -120,28 +123,45 @@ export default async function TeamsPulsePage({
   await requireSuperAdmin();
   const params = await searchParams;
   const sort = parseSort(params.sort);
+  const view = parseView('/admin/teams', params.view);
 
   return (
     <div className="space-y-4">
       <AutoRefresh intervalMs={60_000} />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-h3 font-semibold text-warm-900">Teams pulse</h1>
+          <h1 className="text-h3 font-semibold text-warm-900">Teams</h1>
           <p className="text-body-sm text-warm-500">
             Every team, one 30-day heartbeat — quiet and spiking teams float to the top. Click a row for its full Thread.
           </p>
         </div>
-        <TeamsSortChips
-          chips={PULSE_SORTS.map((s) => ({
-            key: s,
-            label: SORT_LABEL[s],
-            href: sortHref(s),
-            selected: sort === s,
-          }))}
-        />
+        {/* The sort chips belong to the Pulse view only — the EKG view has its
+            own ordering. Rendering them under EKG would offer a control that
+            changes nothing, which is worse than offering none. */}
+        {view === 'pulse' ? (
+          <TeamsSortChips
+            chips={PULSE_SORTS.map((s) => ({
+              key: s,
+              label: SORT_LABEL[s],
+              href: sortHref(s),
+              selected: sort === s,
+            }))}
+          />
+        ) : null}
       </div>
-      <PanelBoundary title="Teams pulse" skeleton={<PanelPageSkeleton stats={3} rows={8} />}>
-        <Body sort={sort} />
+      <ViewRail
+        host="/admin/teams"
+        active={view}
+        ariaLabel="Teams view"
+        searchParams={params}
+        labels={{ pulse: 'Pulse', ekg: 'Team EKG' }}
+        descriptions={{
+          pulse: 'Every team’s 30-day activity and error heartbeat, sortable.',
+          ekg: '30-day strip per team, with release impact and unresolved incidents.',
+        }}
+      />
+      <PanelBoundary title="Teams" skeleton={<PanelPageSkeleton stats={3} rows={8} />}>
+        {view === 'pulse' ? <Body sort={sort} /> : <TeamsEkgView />}
       </PanelBoundary>
     </div>
   );
