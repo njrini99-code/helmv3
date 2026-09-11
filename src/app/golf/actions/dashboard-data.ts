@@ -89,7 +89,15 @@ interface TopPlayer {
 }
 
 interface ScoringTrend {
+    /** Display text only: "Sep 10", no year. Never parse this back into a
+     *  date — two rounds twelve months apart produce the same label, so any
+     *  axis built from it is fabricated. Use `date`. */
     label: string;
+    /** The round's own `round_date`, a bare YYYY-MM-DD. Added 2026-09-10 so a
+     *  consumer can plot this series on a real date axis; `label` had already
+     *  formatted the year away. Parse it at LOCAL midnight, not through
+     *  `new Date(str)`, which reads a bare date as UTC. */
+    date: string;
     value: number;
 }
 
@@ -1296,6 +1304,7 @@ async function getPlayerDashboardDataImpl(
         .filter(r => r.total_score !== null)
         .map(r => ({
             label: new Date(r.round_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+            date: String(r.round_date).split('T')[0]!,
             value: r.total_score!
         }));
 
