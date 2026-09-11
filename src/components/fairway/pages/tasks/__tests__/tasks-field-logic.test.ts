@@ -33,6 +33,7 @@ import {
   shortDate,
   undatedOpenTasks,
   worstOffender,
+  worstOffenderTie,
   type FairwayTask,
   type TaskAssignment,
 } from '../tasks-field-logic';
@@ -323,6 +324,7 @@ describe('buildTasksVerdict — missing facts in strict precedence', () => {
     overdueTasks: 3,
     completionRate: 42,
     worst: null,
+    worstTie: { lanes: 1, sameTask: true },
   };
   const text = (parts: { text: string }[]) => parts.map((p) => p.text).join('');
 
@@ -364,6 +366,41 @@ describe('buildTasksVerdict — missing facts in strict precedence', () => {
       '3 tasks overdue. Ana Ruiz is furthest behind, 9 days late on "Range block." 7 still open, 42% of all tasks done.',
     );
     expect(parts.find((p) => p.href)?.href).toBe('/golf/dashboard/roster/p-ana');
+  });
+
+  it('refuses to crown one of several people tied at the same lateness', () => {
+    const worst = {
+      key: 'a1',
+      taskId: 't1',
+      title: 'Range block',
+      dueDate: '2026-09-01',
+      laneId: 'p-ana',
+      laneName: 'Ana Ruiz',
+      playerId: 'p-ana',
+      daysLate: 9,
+    };
+    const parts = buildTasksVerdict({ ...base, worst, worstTie: { lanes: 5, sameTask: true } });
+    expect(text(parts)).toBe(
+      '3 tasks overdue. Ana Ruiz and 4 others are furthest behind, all 9 days late on "Range block." 7 still open, 42% of all tasks done.',
+    );
+    // Still links the one person it can name.
+    expect(parts.find((p) => p.href)?.href).toBe('/golf/dashboard/roster/p-ana');
+  });
+
+  it('drops the task title when the tied lanes are late on different tasks', () => {
+    const worst = {
+      key: 'a1',
+      taskId: 't1',
+      title: 'Range block',
+      dueDate: '2026-09-01',
+      laneId: 'p-ana',
+      laneName: 'Ana Ruiz',
+      playerId: 'p-ana',
+      daysLate: 9,
+    };
+    const parts = buildTasksVerdict({ ...base, worst, worstTie: { lanes: 2, sameTask: false } });
+    expect(text(parts)).toContain('Ana Ruiz and 1 other are furthest behind, all 9 days late.');
+    expect(text(parts)).not.toContain('Range block');
   });
 
   it('singularizes one overdue task and one day', () => {
@@ -443,5 +480,76 @@ describe('canExpand — never an affordance that opens nothing', () => {
     expect(canExpand(task({ description: 'Bring a wedge' }), 'player')).toBe(true);
     expect(canExpand(task({ reminder_at: '2026-09-11T09:00:00Z' }), 'player')).toBe(true);
     expect(canExpand(task({ assignments: [assignment('a1', ana)] }), 'coach')).toBe(true);
+  });
+});
+
+describe('ties and unnameable owners', () => {
+  const task = (id: string, due: string, assignees: Array<[string, string]>) => ({
+    id,
+    title: `Task ${id}`,
+    description: null,
+    due_date: due,
+    status: 'active',
+    created_at: '2026-08-01',
+    reminder_at: null,
+    category: null,
+    assignments: assignees.map(([aid, pid]) => ({
+      id: aid,
+      status: 'pending',
+      completed_at: null,
+      player: { id: pid, first_name: 'A', last_name: 'B' },
+    })),
+  });
+
+  it('counts every lane tied at the worst lateness, not just the winner', () => {
+    const items = openItems(
+      [task('t1', '2026-09-01', [['a1', 'p1'], ['a2', 'p2'], ['a3', 'p3']])],
+      'coach',
+    );
+    expect(worstOffenderTie(items, TODAY)).toEqual({ lanes: 3, sameTask: true });
+    // The single worst is still one item, so the two call sites stay in step.
+    expect(worstOffender(items, TODAY)?.daysLate).toBe(9);
+  });
+
+  it('reports sameTask false when the tied lanes are late on different tasks', () => {
+    const items = openItems(
+      [task('t1', '2026-09-01', [['a1', 'p1']]), task('t2', '2026-09-01', [['a2', 'p2']])],
+      'coach',
+    );
+    expect(worstOffenderTie(items, TODAY)).toEqual({ lanes: 2, sameTask: false });
+  });
+
+  it('has no tie to report when nothing is late', () => {
+    const items = openItems([task('t1', '2026-12-01', [['a1', 'p1']])], 'coach');
+    expect(worstOffenderTie(items, TODAY)).toEqual({ lanes: 0, sameTask: false });
+  });
+
+  it('gives an assignment with an unresolved player its own lane, not the team lane', () => {
+    // An assignment row whose player id did not resolve is a person we cannot
+    // name — it must not be folded into the "nobody owns this" bucket, or the
+    // terminal lane takes this row's name and the work that genuinely has no
+    // owner disappears into it.
+    const orphan = {
+      ...task('t1', '2026-09-01', [['a1', 'ignored']]),
+      assignments: [
+        {
+          id: 'a1',
+          status: 'pending',
+          completed_at: null,
+          player: { id: '', first_name: '', last_name: '' },
+        },
+      ],
+    };
+    const items = openItems([orphan], 'coach');
+    expect(items).toHaveLength(1);
+    expect(items[0]?.laneId).not.toBe(TEAM_LANE);
+    expect(items[0]?.laneName).toBe('Unnamed player');
+    expect(items[0]?.playerId).toBeNull();
+
+    const lanes = dueLanes([orphan], TODAY, 'coach');
+    expect(lanes).toHaveLength(1);
+    expect(lanes[0]?.isTeamLane).toBe(false);
+    expect(lanes[0]?.name).toBe('Unnamed player');
+    expect(lanes[0]?.href).toBeNull();
   });
 });

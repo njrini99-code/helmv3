@@ -252,7 +252,14 @@ export function openItems(tasks: readonly FairwayTask[], role: 'coach' | 'player
         taskId: task.id,
         title: task.title,
         dueDate,
-        laneId: assignment.player.id || TEAM_LANE,
+        // An assignment row whose player id did not resolve is a PERSON we
+        // cannot name — not work nobody owns. Falling through to TEAM_LANE
+        // here merged it into the terminal lane, which then took the first
+        // item's name: a lane headed "Unnamed player" that claims to be the
+        // team-wide bucket, borrowing a name for work that has an owner and
+        // hiding work that genuinely has none. Give it its own lane instead,
+        // keyed on the assignment (one row is one person).
+        laneId: assignment.player.id || `unresolved:${assignment.id}`,
         laneName: playerName(assignment.player, role),
         playerId: assignment.player.id || null,
       });
@@ -283,6 +290,39 @@ export function lateItems(items: readonly OpenItem[], today: string): LateItem[]
  */
 export function worstOffender(items: readonly OpenItem[], today: string): LateItem | null {
   return lateItems(items, today)[0] ?? null;
+}
+
+/** How many lanes share the worst lateness, and whether they share the task. */
+export interface WorstTie {
+  /** Distinct lanes late by exactly the worst number of days. 0 if none are. */
+  lanes: number;
+  /** True when every one of those lanes is late on the SAME task. */
+  sameTask: boolean;
+}
+
+/**
+ * The tie around `worstOffender`.
+ *
+ * A coach assigns one task to the whole squad, so on a real roster the worst
+ * lateness is usually a SEVEN-WAY tie. Naming one of those seven "furthest
+ * behind" picks an alphabetical winner and calls it a finding — and the stage
+ * directly below prints the same "50d late" on five lanes, so the masthead is
+ * visibly contradicted by the instrument it summarises. The verdict uses this
+ * to say "and 4 others" instead of singling anybody out.
+ */
+export function worstOffenderTie(items: readonly OpenItem[], today: string): WorstTie {
+  const late = lateItems(items, today);
+  const top = late[0];
+  if (!top) return { lanes: 0, sameTask: false };
+  const lanes = new Set<string>();
+  let sameTask = true;
+  for (const item of late) {
+    // lateItems is sorted worst-first, so the tie ends at the first shortfall.
+    if (item.daysLate !== top.daysLate) break;
+    lanes.add(item.laneId);
+    if (item.taskId !== top.taskId) sameTask = false;
+  }
+  return { lanes: lanes.size, sameTask };
 }
 
 /* ── The stage: Due field ─────────────────────────────────────────────────── */
@@ -468,12 +508,23 @@ export interface TasksVerdictInput {
   /** The single worst offender WITH a player to name, or null when every
    *  overdue task is team-wide. Never a borrowed name. */
   worst: LateItem | null;
+  /** The tie around `worst` — see worstOffenderTie. */
+  worstTie: WorstTie;
 }
 
 /** The masthead sentence. Missing facts follow a strict precedence: a load
  *  error outranks an empty list, which outranks a zero count. */
 export function buildTasksVerdict(input: TasksVerdictInput): VerdictPart[] {
-  const { role, hasError, totalTasks, openTasks: open, overdueTasks, completionRate, worst } = input;
+  const {
+    role,
+    hasError,
+    totalTasks,
+    openTasks: open,
+    overdueTasks,
+    completionRate,
+    worst,
+    worstTie,
+  } = input;
   const parts: VerdictPart[] = [];
 
   if (hasError) {
@@ -517,11 +568,25 @@ export function buildTasksVerdict(input: TasksVerdictInput): VerdictPart[] {
     return parts;
   }
 
+  const dayWord = worst.daysLate === 1 ? 'day' : 'days';
+  const others = Math.max(0, worstTie.lanes - 1);
+
   parts.push({ text: `${overdueTasks} ${plural} overdue. ` });
   parts.push({ text: worst.laneName, href: worst.playerId ? rosterHref(worst.playerId) : undefined });
-  parts.push({
-    text: ` is furthest behind, ${worst.daysLate} ${worst.daysLate === 1 ? 'day' : 'days'} late on "${worst.title}."`,
-  });
+  if (others > 0) {
+    // Tied. Name the one we can link to, then say plainly that others are
+    // level with them — and only claim a shared task when they share one.
+    parts.push({
+      text:
+        ` and ${others} ${others === 1 ? 'other' : 'others'} are furthest behind, all ` +
+        `${worst.daysLate} ${dayWord} late` +
+        (worstTie.sameTask ? ` on "${worst.title}."` : '.'),
+    });
+  } else {
+    parts.push({
+      text: ` is furthest behind, ${worst.daysLate} ${dayWord} late on "${worst.title}."`,
+    });
+  }
   parts.push({ text: tail });
   return parts;
 }

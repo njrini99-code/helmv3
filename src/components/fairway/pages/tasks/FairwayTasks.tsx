@@ -98,6 +98,7 @@ import {
   overdueLedger,
   undatedOpenTasks,
   worstOffender,
+  worstOffenderTie,
   type FairwayTask,
   type FairwayTaskPlayer,
   type FairwayTaskStats,
@@ -250,10 +251,11 @@ export function FairwayTasks({
   // items that have a player to name; when that leaves nothing while overdue
   // work exists, the verdict says "all team-wide" rather than borrowing a name.
   const items = useMemo(() => openItems(viewTasks, role), [viewTasks, role]);
-  const worst = useMemo(
-    () => worstOffender(items.filter((i) => i.playerId !== null), today),
-    [items, today],
-  );
+  const nameable = useMemo(() => items.filter((i) => i.playerId !== null), [items]);
+  const worst = useMemo(() => worstOffender(nameable, today), [nameable, today]);
+  // A squad-wide task makes the worst lateness a tie by construction; the
+  // verdict says "and N others" rather than crowning the alphabetical first.
+  const worstTie = useMemo(() => worstOffenderTie(nameable, today), [nameable, today]);
 
   const { categories, hasUncategorized } = useMemo(() => allCategories(viewTasks), [viewTasks]);
   const categoryCount = categories.length + (hasUncategorized ? 1 : 0);
@@ -268,8 +270,9 @@ export function FairwayTasks({
         overdueTasks: overdueTaskCount,
         completionRate,
         worst,
+        worstTie,
       }),
-    [role, error, viewTasks.length, openTaskCount, overdueTaskCount, completionRate, worst],
+    [role, error, viewTasks.length, openTaskCount, overdueTaskCount, completionRate, worst, worstTie],
   );
 
   const lanes = useMemo(() => dueLanes(viewTasks, today, role), [viewTasks, today, role]);
@@ -288,7 +291,14 @@ export function FairwayTasks({
     () => [
       // No deltas anywhere on this page: nothing persists a historical snapshot
       // of these counts, so a trend here would be fabricated.
-      { key: 'open', label: 'Open', value: String(openTaskCount), note: ' ' },
+      {
+        key: 'open',
+        label: 'Open',
+        // Every other readout carries a note; a blank one here rendered as a
+        // hole in the rail and made the first cell look unfinished.
+        value: String(openTaskCount),
+        note: 'not yet complete',
+      },
       {
         key: 'overdue',
         label: 'Overdue',
@@ -618,7 +628,7 @@ export function FairwayTasks({
           )}
         </LedgerColumn>
 
-        <LedgerColumn title="By category" className="xl:col-span-3 xl:px-8">
+        <LedgerColumn title="Open by category" className="xl:col-span-3 xl:px-8">
           {categoryRows.length === 0 ? (
             <LedgerEmpty>Nothing open to group.</LedgerEmpty>
           ) : (

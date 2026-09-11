@@ -106,6 +106,12 @@ export function LedgerRow({
     </span>
   ) : null;
 
+  // The title wraps to TWO lines rather than truncating. Task titles are
+  // sentences: at a phone width, and in the narrow xl column, `truncate` cut
+  // "Watch Pre-Tournament Course Overview Video" down to "Watch Pre-Tournament
+  // Course Overvi…" — four of five ledger rows lost their identifying half
+  // while the table directly below showed the same titles whole. `items-baseline`
+  // keeps the days-late figure on the first line's baseline as the title grows.
   return (
     <div className="border-b border-border-subtle last:border-b-0">
       <div className="flex items-baseline justify-between gap-3 py-2">
@@ -114,12 +120,12 @@ export function LedgerRow({
             onClick={onOpen}
             aria-expanded={expanded}
             aria-controls={expanded ? detailId : undefined}
-            className="min-w-0 flex-1 truncate text-left font-fw-sans text-body-sm font-medium text-text-primary hover:text-accent-700"
+            className="min-w-0 flex-1 line-clamp-2 text-left font-fw-sans text-body-sm font-medium text-text-primary hover:text-accent-700"
           >
             {title}
           </PressTarget>
         ) : (
-          <span className="min-w-0 flex-1 truncate font-fw-sans text-body-sm font-medium text-text-primary">
+          <span className="min-w-0 flex-1 line-clamp-2 font-fw-sans text-body-sm font-medium text-text-primary">
             {title}
           </span>
         )}
@@ -633,7 +639,10 @@ export function TasksTable({
                         rows, so the cell stays empty rather than claiming one. */}
                     {total > 0 ? `${completed}/${total}` : <span className="text-text-tertiary">–</span>}
                   </td>
-                  <td className={cn(TD, NUM, overdue && 'font-medium text-fw-warning-ink')}>
+                  {/* whitespace-nowrap: at 768 the column narrows enough to
+                      break "Jul 11" across two lines, which stretches every
+                      row in the table to hold one wrapped date. */}
+                  <td className={cn(TD, NUM, 'whitespace-nowrap', overdue && 'font-medium text-fw-warning-ink')}>
                     {task.due_date ? dueLabel(task.due_date, today) : <span className="text-text-tertiary">–</span>}
                   </td>
                   <td className={cn(TD, 'hidden max-w-[10rem] truncate md:table-cell')}>

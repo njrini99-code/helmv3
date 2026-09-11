@@ -55,12 +55,21 @@ const LATE_COL = '5rem';
 const STAGGER_STEP = 0.012;
 const STAGGER_CAP = 16;
 
-/** The tallest an overdue bar grows, and the floor that keeps a one-day-late
- *  task a real mark rather than a speck. */
-const HALF_HEIGHT_PX = 19;
-const MIN_BAR_PX = 2;
 /** A neutral stroke has no magnitude to encode, so it is a fixed height. */
-const TICK_HEIGHT_PX = 12;
+const TICK_HEIGHT_PX = 10;
+/**
+ * The band an overdue bar scales through.
+ *
+ * The floor is NOT a hairline. Days late scaled from 2px up meant a
+ * one-day-late bar at a 21-day cap drew 2px while a not-yet-due stroke drew
+ * 12px: the amber mark for work that is actually late rendered SMALLER than
+ * the grey mark for work that is merely scheduled, inverting the hierarchy on
+ * the one page where amber means urgent. The smallest late bar now starts
+ * above the neutral stroke's height and grows from there; shape (rising out of
+ * the centre rather than straddling it) and colour still separate the two.
+ */
+const MIN_LATE_PX = 12;
+const HALF_HEIGHT_PX = 19;
 const SAME_DAY_NUDGE_PX = 4;
 
 /** Past this fraction of the field a date label would run off the right edge,
@@ -69,6 +78,19 @@ const LABEL_FLIP_PCT = 64;
 /** A tick label this close to the Today rule prints on top of it. The
  *  suppressed tick keeps its mark and its gridline; only the word goes. */
 const TODAY_LABEL_MARGIN = 12;
+/**
+ * The band where a month label is not on top of "Today" but is crowding it.
+ *
+ * These margins are percentages OF THE PLOT, and the plot is roughly 230px
+ * wide at 768 against roughly 380px at 1440 — so a gap that clears comfortably
+ * on a wide screen closes up on a narrow one. At 768 "Sep" and "Today"
+ * printed over each other as "SepToday". A crowded label is anchored to the
+ * LEFT of its own tick instead of centred on it, so it grows away from the
+ * Today rule rather than into it, and keeps a hair of air besides. No
+ * measurement pass and no runtime breakpoint read: the geometry is still pure
+ * percentages.
+ */
+const TODAY_CROWD_MARGIN = 26;
 /** A tick within this much of either end would hang its label off the field,
  *  so the label anchors to that edge while the mark keeps its position. */
 const EDGE_ANCHOR_PCT = 8;
@@ -106,7 +128,8 @@ function Mark({
   onOpen: ((taskId: string) => void) | null;
 }) {
   const height = mark.overdue
-    ? Math.max(MIN_BAR_PX, Math.round((Math.min(mark.daysLate, cap) / cap) * HALF_HEIGHT_PX))
+    ? MIN_LATE_PX +
+      Math.round((Math.min(mark.daysLate, cap) / cap) * (HALF_HEIGHT_PX - MIN_LATE_PX))
     : TICK_HEIGHT_PX;
   const transition = {
     duration: DURATION.short,
@@ -361,16 +384,31 @@ export function DueField({
           {ticks.map((tick) => {
             // Today owns its own space: a tick label that would land under the
             // rule keeps its mark and loses its text.
-            const collides = Math.abs(tick.x - todayX) < TODAY_LABEL_MARGIN;
+            const gap = Math.abs(tick.x - todayX);
+            const collides = gap < TODAY_LABEL_MARGIN;
+            // Close to Today but not under it, and on its left — lay the word
+            // back against its own tick so it cannot grow into the rule.
+            const crowded = !collides && gap < TODAY_CROWD_MARGIN && tick.x < todayX;
             return (
               <span
                 key={tick.key}
-                className={cn('absolute top-0 flex flex-col', anchorItems(tick.x))}
-                style={{ left: `${tick.x}%`, transform: anchorTransform(tick.x) }}
+                className={cn(
+                  'absolute top-0 flex flex-col',
+                  crowded ? 'items-end' : anchorItems(tick.x),
+                )}
+                style={{
+                  left: `${tick.x}%`,
+                  transform: crowded ? 'translateX(-100%)' : anchorTransform(tick.x),
+                }}
               >
                 <span className="block h-1.5 w-px bg-border-strong" />
                 {tick.label && !collides ? (
-                  <span className="mt-0.5 whitespace-nowrap font-fw-mono text-eyebrow font-normal leading-none tabular-nums text-text-tertiary">
+                  <span
+                    className={cn(
+                      'mt-0.5 whitespace-nowrap font-fw-mono text-eyebrow font-normal leading-none tabular-nums text-text-tertiary',
+                      crowded && 'pr-1.5',
+                    )}
+                  >
                     {tick.label}
                   </span>
                 ) : null}

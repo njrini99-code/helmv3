@@ -195,7 +195,7 @@ describe('FairwayTasks — the ledger row', () => {
     const table = () => document.querySelector('[data-slot="tasks-ledger"]');
     expect(table()?.textContent).toContain('Weigh in');
 
-    const byCategory = screen.getByRole('heading', { name: 'By category' }).parentElement as HTMLElement;
+    const byCategory = screen.getByRole('heading', { name: 'Open by category' }).parentElement as HTMLElement;
     await user.click(within(byCategory).getByRole('button', { name: /Practice/ }));
 
     expect(table()?.textContent).toContain('Range block');
