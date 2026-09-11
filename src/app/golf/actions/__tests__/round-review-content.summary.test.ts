@@ -10,7 +10,10 @@
  */
 import { describe, it, expect } from 'vitest';
 import { generateReviewContent } from '../round-review-content';
-import type { RoundData, HoleBreakdown } from '../round-review-content';
+// `round-review-content` re-uses these types but does not re-export them;
+// they are declared in the server-action module. `import type` is erased
+// at compile time, so this does not pull `'use server'` into the test.
+import type { RoundData, HoleBreakdown } from '../round-review-system';
 
 const round = {
   id: 'r1',
