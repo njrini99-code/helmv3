@@ -85,7 +85,11 @@ export default async function GolfQualifiersPage() {
   // the warm-matte Fairway system.
   return (
     <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
-      <FairwayQualifiers isCoach={isCoach} qualifiers={qualifiers} />
+      {/* `today` is resolved here, once, and is what the client's first render
+          uses so the markup matches. The component corrects it to the viewer's
+          own local day after mount; with revalidate=300 the served value can
+          be at most five minutes stale, which that correction absorbs. */}
+      <FairwayQualifiers isCoach={isCoach} qualifiers={qualifiers} today={new Date().toISOString().slice(0, 10)} />
     </div>
   );
 }

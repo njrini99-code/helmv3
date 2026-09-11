@@ -84,7 +84,14 @@ export function scoreFieldTicks(domain: { start: string; end: string }): ScoreFi
   let y = first.getUTCFullYear();
   let mo = first.getUTCMonth() + (first.getUTCDate() === 1 ? 0 : 1);
   if (mo > 11) { mo = 0; y += 1; }
-  for (let t = Date.UTC(y, mo, 1); t <= end; ) {
+  // A corrupt date column can produce a domain thousands of years wide (golf
+  // qualifiers carry production rows dated year 60824). Walking it month by
+  // month is hundreds of thousands of iterations for an axis that can show
+  // eight labels. Callers should clamp their own domain; this is the backstop
+  // that keeps a bad row from freezing a render if one does not.
+  const MAX_TICK_STEPS = 600;
+  let steps = 0;
+  for (let t = Date.UTC(y, mo, 1); t <= end && steps < MAX_TICK_STEPS; steps += 1) {
     const d = new Date(t);
     const isJan = d.getUTCMonth() === 0;
     const x = ((t - start) / (end - start)) * 100;

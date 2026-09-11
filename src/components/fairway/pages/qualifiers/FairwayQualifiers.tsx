@@ -2,100 +2,95 @@
 
 /**
  * ============================================================================
- * Fairway · pages/qualifiers · FairwayQualifiers  (ADDITIVE · FLAG-GATED)
+ * Fairway · pages/qualifiers · FairwayQualifiers — the lineup field sheet
  * ----------------------------------------------------------------------------
- * The flag-on redesign of the SHARED coach+player /golf/dashboard/qualifiers
- * route — the team's "lineup decisions" surface. It re-skins the legacy
- * GolfQualifiersPage onto the warm-matte Fairway design system WITHOUT changing
- * the data: the page fetches the SAME `golf_qualifiers` list (verbatim legacy
- * query, filtered by team_id) and passes it through with the resolved role.
+ * The SHARED coach+player /golf/dashboard/qualifiers route, rebuilt to
+ * docs/design/fairway-facelift/LANGUAGE.md: a bare masthead over one Surface
+ * stage, a bare ledger row, then a dense table.
  *
- * ── ROLE FORK (the ONLY thing role changes) ────────────────────────────────
- *   Coaches and players see the SAME qualifier list and the SAME cards. Role
- *   ONLY toggles (1) the coach-only "Create Qualifier" CTA (masthead + empty
- *   state) and (2) the empty / subtitle copy. Cards link to /qualifiers/[id]
- *   for both. The player sibling route (/my-qualifiers) is separate + out of
- *   scope.
+ * What changed, and why. The previous pass was an Elevated hero card, a
+ * standalone toolbar, and a bordered Surface holding two seam-lists. Four
+ * regions, three of them boxes, and between them they answered one question:
+ * what is this list. The question a coach actually opens this page with is
+ * which qualifier is setting the lineup right now, when does its field lock,
+ * and is the decision already made.
  *
- * ── MENTAL-MODEL ORDER (triage → is-it-working → what's-next) ───────────────
- *   1. HERO  — the single active/upcoming qualifier as an Elevated block,
- *      ABOVE the Toolbar. It is the one persistent "what matters right now"
- *      object and deliberately ignores the Toolbar's own search/status
- *      filter (screens/qualifiers.md) — ANY qualifier list state below it
- *      still surfaces the live/next qualifier up top.
- *   2. TOOLBAR — search + status filter as ONE composed row (was three loose
- *      controls: a status-pill group + a full-width search field stacked).
- *   3. ACTIVE / CONCLUDED — one matte Surface with two seam sections; rows
- *      (name · dates · spots · course · StatusPill · →), not cards. Honest
- *      `subtle` EmptyState for an empty Concluded section (NEVER fabricate a
- *      past event).
+ * Every field this page now reads was already arriving on the row. The loader
+ * selects `golf_qualifiers.*`, so `entry_deadline`, `selection_state`,
+ * `selection_slots_total`, `selection_slots_coach_pick` and `num_rounds` have
+ * been in the payload all along and rendered nowhere. The stage, the deadline
+ * clause, the lineup state and the travel-squad readout are all built from
+ * that unused half of the row, with no new query.
  *
- * ── CRITICAL HONESTY ────────────────────────────────────────────────────────
- *   The legacy time-based "progress" bar is DROPPED entirely — it implied play
- *   that hasn't happened. No fabricated "entered" counts are shown (there is no
- *   real golf_qualifier_entries count query in this view). Numbers tabular-nums.
+ * ── ROLE FORK (the only thing role changes) ────────────────────────────────
+ *   Coaches and players see the same list, the same stage and the same table.
+ *   Role toggles the coach-only "Create qualifier" action, the empty-state
+ *   copy, and where the "needs a decision" ledger points: the selection
+ *   workspace is coach-only and bounces a player straight back to the detail
+ *   page, so a player's row links to the detail page directly rather than
+ *   through a redirect.
  *
- * Tokens ONLY (cream-not-white, SF-not-serif): bg-canvas/surface/sunken,
- * text-text-*, font-fw-display/sans, rounded-card, shadow-soft/flat,
- * bg-accent-*, border-border-subtle. No glass / backdrop-blur / emoji dots.
+ * ── HONESTY ────────────────────────────────────────────────────────────────
+ *   No entry counts: there is no golf_qualifier_entries join in this view. A
+ *   null spot count is never summed as a zero; the readout says how many rows
+ *   it could not count. A qualifier with no recorded entry deadline draws a
+ *   single solid bar rather than a shaded waiting period we never measured.
  *
- * ADDITIVE + GATED — imported only behind the isRedesignEnabled() fork in
- * qualifiers/page.tsx (by DIRECT PATH). Renders inside the `.fairway-ds` scope
- * on a `bg-canvas` page.
+ * ── HYDRATION ──────────────────────────────────────────────────────────────
+ *   `today` arrives from the server and is what the first client render uses,
+ *   so the markup matches. An effect then corrects it to the viewer's own
+ *   local day, which can differ from the server's UTC day near midnight. Day
+ *   arithmetic never reads a clock during render.
  * ========================================================================== */
 
-import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import {
   ViewHeader,
   Surface,
-  Elevated,
-  StatusPill,
   Button,
   EmptyState,
   FilterPill,
   SearchField,
-  Toolbar,
+  Segmented,
+  PressTarget,
 } from '@/components/fairway';
-import { IconCalendar, IconMapPin, IconGolf, IconArrowRight, IconPlus } from '@/components/icons';
+import { IconPlus } from '@/components/icons';
 import type { GolfQualifier } from '@/lib/types/golf';
-import { cn } from '@/lib/utils';
+import { VerdictLine, FieldReadouts, SectionHead, type ReadoutItem } from '@/components/fairway/pages/dashboard/coach-home-parts';
 import { qualifierStatusMeta } from './qualifier-status';
+import { QualifyingField } from './QualifyingField';
+import { LedgerColumn, LedgerEmpty, LedgerRow, QualifiersTable } from './qualifiers-parts';
+import {
+  buildQualifiersVerdict,
+  detailHref,
+  fieldDomain,
+  isActive,
+  isConcluded,
+  lockingSoon,
+  needsDecision,
+  openSpots,
+  pickHero,
+  recentlyConcluded,
+  selectionStateLabel,
+  stageRows,
+  statusOf,
+  toBar,
+  workspaceHref,
+} from './qualifiers-field-logic';
 
 const CREATE_HREF = '/golf/dashboard/qualifiers/new';
-const detailHref = (id: string) => `/golf/dashboard/qualifiers/${id}`;
+const TABLE_PAGE_SIZE = 10;
 
-/** Status segments for the filter row. */
 type StatusFilter = 'all' | 'active' | 'concluded';
-
-/**
- * P328: bound the concluded list so a multi-season history never renders as an
- * unbounded wall. We show the newest N and reveal the rest in pages on demand,
- * keeping the page scannable while respecting the PostgREST 1000-row server cap
- * the page query is limited to.
- */
-const CONCLUDED_PAGE_SIZE = 12;
-
-/* ───────────────────────────────────────────────────────────────────────────
- * Props — the page resolves role + fetches the SAME golf_qualifiers list and
- * passes it straight through. No data work happens in here.
- * ────────────────────────────────────────────────────────────────────────── */
-export interface FairwayQualifiersProps {
-  /** Whether the current viewer is a coach (gates the Create CTA + copy only). */
-  isCoach: boolean;
-  /** The team's qualifiers (legacy query verbatim: team_id, start_date desc). */
-  qualifiers: GolfQualifier[];
-}
+type StageView = 'active' | 'all';
 
 /**
  * Format a bare ISO date ("YYYY-MM-DD") for display. Parsed as **local**
  * midnight, not `new Date(dateStr)` — that treats a date-only string as UTC
  * midnight, so a timezone behind UTC (any US zone) reads it back as the PRIOR
  * calendar day, and server (UTC) vs. client (local) render two different
- * calendar days for the same value — a hydration mismatch (#30/#126). Matches
- * `FairwayMyQualifiers.tsx` / `FairwayQualifierDetail.tsx`'s local-safe parse
- * so a qualifier's date agrees across every surface it's shown on.
+ * calendar days for the same value — a hydration mismatch (#30/#126).
  */
 export function formatDate(dateStr: string): string {
   const [y, m, d] = (dateStr.split('T')[0] ?? dateStr).split('-').map(Number);
@@ -107,117 +102,97 @@ export function formatDate(dateStr: string): string {
   });
 }
 
-/* ───────────────────────────────────────────────────────────────────────────
- * Status → CTA label (P333). An 'Upcoming' qualifier has zero rounds, so the
- * detail shows an "Awaiting first round" empty state — "View leaderboard"
- * over-promises. Match the label to what the detail page will actually show:
- *   upcoming    → "View details"
- *   in_progress → "View leaderboard"
- *   completed   → "View results"
- * ────────────────────────────────────────────────────────────────────────── */
-function ctaLabel(status: string): string {
-  switch (status) {
-    case 'in_progress':
-      return 'View leaderboard';
-    case 'completed':
-      return 'View results';
-    default:
-      // 'upcoming' and any unknown/pre-start status — no leaderboard yet.
-      return 'View details';
-  }
+export interface FairwayQualifiersProps {
+  /** Whether the current viewer is a coach (gates the Create action + copy). */
+  isCoach: boolean;
+  /** The team's qualifiers (loader query verbatim: team_id, start_date desc). */
+  qualifiers: GolfQualifier[];
+  /** The server's own calendar day, `YYYY-MM-DD`. See HYDRATION above. */
+  today: string;
 }
 
-/* ───────────────────────────────────────────────────────────────────────────
- * Component
- * ────────────────────────────────────────────────────────────────────────── */
-export function FairwayQualifiers({ isCoach, qualifiers }: FairwayQualifiersProps) {
-  // ── Filter + search state (P328) ──────────────────────────────────────────
+export function FairwayQualifiers({ isCoach, qualifiers, today: serverToday }: FairwayQualifiersProps) {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [query, setQuery] = useState('');
-  const [concludedVisible, setConcludedVisible] = useState(CONCLUDED_PAGE_SIZE);
+  const [stageView, setStageView] = useState<StageView>('active');
+  const [tableVisible, setTableVisible] = useState(TABLE_PAGE_SIZE);
 
-  const isActiveStatus = (q: GolfQualifier) =>
-    (q.status ?? 'upcoming') === 'upcoming' || q.status === 'in_progress';
+  // The server's day is what the first client render uses, so the markup
+  // matches. Near midnight the viewer's own day can differ; correct it after
+  // mount rather than reading a clock during render.
+  const [today, setToday] = useState(serverToday);
+  useEffect(() => {
+    const d = new Date();
+    const local = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    setToday((prev) => (local === prev ? prev : local));
+  }, [serverToday]);
 
-  // Unfiltered buckets — drive the HONEST total counts on the filter pills.
-  const allActive = useMemo(() => qualifiers.filter(isActiveStatus), [qualifiers]);
-  const allConcluded = useMemo(
-    () => qualifiers.filter((q) => q.status === 'completed'),
-    [qualifiers],
+  const activeCount = useMemo(() => qualifiers.filter(isActive).length, [qualifiers]);
+  const concludedCount = useMemo(() => qualifiers.filter(isConcluded).length, [qualifiers]);
+  const hero = useMemo(() => pickHero(qualifiers), [qualifiers]);
+
+  const verdict = useMemo(
+    () => buildQualifiersVerdict({ hero, activeCount, concludedCount, today, formatDate }),
+    [hero, activeCount, concludedCount, today],
   );
-  const activeCount = allActive.length;
-  const concludedCount = allConcluded.length;
 
-  // Name/description search (P328) — applied to BOTH buckets.
-  const matchesQuery = useMemo(() => {
+  const rows = useMemo(() => stageRows(qualifiers, stageView), [qualifiers, stageView]);
+  const domain = useMemo(() => fieldDomain(rows, today), [rows, today]);
+  const bars = useMemo(() => rows.map((q) => toBar(q, today)), [rows, today]);
+
+  const spots = useMemo(() => openSpots(qualifiers), [qualifiers]);
+  const decisions = useMemo(() => needsDecision(qualifiers), [qualifiers]);
+  const locking = useMemo(() => lockingSoon(qualifiers, today), [qualifiers, today]);
+  const concludedRecent = useMemo(() => recentlyConcluded(qualifiers), [qualifiers]);
+
+  const readouts: ReadoutItem[] = useMemo(
+    () => [
+      { key: 'active', label: 'Active', value: String(activeCount), note: activeCount === 0 ? 'Nothing running' : ' ' },
+      { key: 'concluded', label: 'Concluded', value: String(concludedCount), note: ' ' },
+      {
+        key: 'spots',
+        label: 'Open spots',
+        value: String(spots.total),
+        // A null spot count is not a zero. Say how many rows are missing from
+        // the total rather than publishing a figure that understates itself.
+        note: spots.unknown > 0 ? `excludes ${spots.unknown} with no spot count set` : ' ',
+      },
+      {
+        key: 'squad',
+        label: 'Travel squad',
+        value: hero?.selection_slots_total != null ? String(hero.selection_slots_total) : null,
+        note:
+          hero?.selection_slots_coach_pick != null
+            ? `${hero.selection_slots_coach_pick} coach ${hero.selection_slots_coach_pick === 1 ? 'pick' : 'picks'}`
+            : ' ',
+      },
+    ],
+    [activeCount, concludedCount, spots, hero],
+  );
+
+  // The table's own search and status pills narrow the TABLE only. The stage
+  // keeps its whole row set, which is what guarantees it always has something
+  // to draw and keeps a typed search from emptying the instrument above it.
+  const tableRows = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return (qualifier: GolfQualifier) => {
-      if (!q) return true;
-      const haystack = `${qualifier.name ?? ''} ${qualifier.description ?? ''} ${
-        qualifier.course_name ?? ''
-      }`.toLowerCase();
-      return haystack.includes(q);
-    };
-  }, [query]);
-
-  const showActiveBucket = statusFilter === 'all' || statusFilter === 'active';
-  const showConcludedBucket = statusFilter === 'all' || statusFilter === 'concluded';
-
-  const active = useMemo(
-    () => (showActiveBucket ? allActive.filter(matchesQuery) : []),
-    [showActiveBucket, allActive, matchesQuery],
-  );
-  const concluded = useMemo(
-    () => (showConcludedBucket ? allConcluded.filter(matchesQuery) : []),
-    [showConcludedBucket, allConcluded, matchesQuery],
-  );
-
-  const isFiltering = statusFilter !== 'all' || query.trim().length > 0;
-  // Bounded concluded render — newest N (the list arrives start_date-desc).
-  const concludedShown = concluded.slice(0, concludedVisible);
-  const concludedRemaining = concluded.length - concludedShown.length;
-
-  // The HERO is the single most-relevant active/upcoming qualifier (P327),
-  // derived from `allActive` — the UNFILTERED bucket — not `active`. The Elevated
-  // hero now renders ABOVE the Toolbar (screens/qualifiers.md), so it must not
-  // wink out because a coach typed into search or picked the "Concluded" status
-  // pill; those controls govern the seam-list below, not the persistent hero.
-  // `allActive` arrives start_date-DESC, so `allActive[0]` would be the qualifier
-  // starting FURTHEST in the future — the opposite of "focal". Re-derive instead:
-  // prefer a live (in_progress) qualifier, else the upcoming one with the SOONEST
-  // start_date (the next one to play). Ties on start_date keep list order (stable).
-  const hero = useMemo(() => {
-    if (allActive.length === 0) return null;
-    const live = allActive.find((q) => q.status === 'in_progress');
-    if (live) return live;
-    // No live qualifier — choose the upcoming with the minimum start_date.
-    return allActive.reduce((soonest, q) =>
-      new Date(q.start_date).getTime() < new Date(soonest.start_date).getTime() ? q : soonest,
+    const bucket = qualifiers.filter((row) => {
+      if (statusFilter === 'active') return isActive(row);
+      if (statusFilter === 'concluded') return isConcluded(row);
+      return true;
+    });
+    if (!q) return stageRows(bucket, 'all');
+    return stageRows(
+      bucket.filter((row) =>
+        `${row.name ?? ''} ${row.description ?? ''} ${row.course_name ?? ''}`.toLowerCase().includes(q),
+      ),
+      'all',
     );
-  }, [allActive]);
-  // Everything else in the (filtered) active bucket renders in the "Active"
-  // seam section below the hero — keep the original start_date-desc order for
-  // the remainder, and drop the hero's own row if it's still in the filtered set
-  // (never render the live/next qualifier twice).
-  const restActive = useMemo(
-    () => (hero ? active.filter((q) => q.id !== hero.id) : active),
-    [hero, active],
-  );
+  }, [qualifiers, statusFilter, query]);
 
-  // Section visibility, computed AFTER excluding the hero's own row. Without
-  // this, a search/filter that leaves only the hero behind still rendered a
-  // bare "Concluded" seam heading over an empty body (the inner empty-state
-  // was suppressed by `isFiltering`, but the heading above it wasn't) — a
-  // stray label inside a bordered Surface reads as broken, not honest-empty.
-  // `showConcludedSection` mirrors `showConcludedBucket`'s own contract: show
-  // the section when it has rows, OR when it's genuinely (not search-)empty.
-  const showActiveSection = restActive.length > 0;
-  const showConcludedSection = showConcludedBucket && (concluded.length > 0 || !isFiltering);
+  const tableShown = tableRows.slice(0, tableVisible);
+  const tableRemaining = tableRows.length - tableShown.length;
+  const isFiltering = statusFilter !== 'all' || query.trim().length > 0;
 
-  // The ONE coach-only primary action. This deliberately remains a document
-  // navigation: the coach dashboard's streamed data can keep a soft transition
-  // pending, whereas the qualifier builder is immediately available on a full
-  // request. A real anchor preserves normal modified-click behavior as well.
   const createCta = isCoach ? (
     <Button variant="primary" asChild>
       <a href={CREATE_HREF}>
@@ -227,43 +202,21 @@ export function FairwayQualifiers({ isCoach, qualifiers }: FairwayQualifiersProp
     </Button>
   ) : undefined;
 
-  // Honest count chips — rendered ONLY when > 0 (never a fake "0 active").
-  const meta =
-    activeCount > 0 || concludedCount > 0 ? (
-      <>
-        {activeCount > 0 && (
-          <span className="tabular-nums">
-            {activeCount} active
-          </span>
-        )}
-        {activeCount > 0 && concludedCount > 0 && (
-          <span aria-hidden="true">·</span>
-        )}
-        {concludedCount > 0 && (
-          <span className="tabular-nums">
-            {concludedCount} concluded
-          </span>
-        )}
-      </>
-    ) : undefined;
-
-  return (
-    <div className="mx-auto w-full max-w-[1280px] px-4 py-6 md:px-6 md:py-8 pb-24">
-      {/* ── ONE MASTHEAD ─────────────────────────────────────────────────────── */}
-      <ViewHeader
-        eyebrow="Qualifiers"
-        title="Lineup decisions."
-        description={
-          isCoach
-            ? 'Run head-to-head qualifiers to decide who plays this week.'
-            : 'Qualifiers your coach posts will appear here.'
-        }
-        meta={meta}
-        primaryAction={createCta}
-      />
-
-      {qualifiers.length === 0 ? (
-        // ── FULL-EMPTY — no qualifiers at all (handled; not the demo) ─────────
+  // ── The true zero state keeps the old masthead: there is no field to draw,
+  //    no ledger to fill and no table to head. ──────────────────────────────
+  if (qualifiers.length === 0) {
+    return (
+      <div className="mx-auto w-full max-w-[1280px] px-4 py-6 pb-24 md:px-6 md:py-8">
+        <ViewHeader
+          eyebrow="Qualifiers"
+          title="Lineup decisions."
+          description={
+            isCoach
+              ? 'Run head-to-head qualifiers to decide who plays this week.'
+              : 'Qualifiers your coach posts will appear here.'
+          }
+          primaryAction={createCta}
+        />
         <div className="mt-8">
           <Surface elevation="shadow" padding="lg">
             <EmptyState
@@ -286,309 +239,184 @@ export function FairwayQualifiers({ isCoach, qualifiers }: FairwayQualifiersProp
             />
           </Surface>
         </div>
-      ) : (
-        <div className="mt-8 flex flex-col gap-6">
-          {/* ── 1 · HERO — the single persistent live/next qualifier, above the
-              Toolbar (screens/qualifiers.md "Dominant object"). Unaffected by
-              the Toolbar's own search/status filter below. ───────────────── */}
-          {hero && <QualifierHero qualifier={hero} />}
+      </div>
+    );
+  }
 
-          {/* ── 2 · TOOLBAR — search + status filter as ONE composed row (was
-              a loose status-pill group stacked over a full-width search
-              field) ─────────────────────────────────────────────────────── */}
-          <Toolbar
-            aria-label="Search and filter qualifiers"
-            search={
-              <SearchField
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onClear={() => setQuery('')}
-                placeholder="Search qualifiers"
-                aria-label="Search qualifiers"
-              />
-            }
-            // FilterPills belong in the `filters` slot (left, under the search
-            // on phone; beside it on desktop). In `viewToggle` they sat in the
-            // trailing `ml-auto` cluster and read as orphaned on phone
-            // (qualifiers.mobile.md #1).
-            filters={
-              <div
-                className="flex flex-nowrap items-center gap-2"
-                role="group"
-                aria-label="Filter qualifiers by status"
-              >
-                <FilterPill
-                  selected={statusFilter === 'all'}
-                  showCheck={false}
-                  count={qualifiers.length}
-                  onClick={() => setStatusFilter('all')}
-                >
-                  All
-                </FilterPill>
-                <FilterPill
-                  selected={statusFilter === 'active'}
-                  showCheck={false}
-                  count={activeCount}
-                  onClick={() => setStatusFilter('active')}
-                >
-                  Active
-                </FilterPill>
-                <FilterPill
-                  selected={statusFilter === 'concluded'}
-                  showCheck={false}
-                  count={concludedCount}
-                  onClick={() => setStatusFilter('concluded')}
-                >
-                  Concluded
-                </FilterPill>
+  const ledgerColumns = [decisions.length > 0, locking.length > 0, concludedRecent.length > 0];
+  const heroStatus = hero ? qualifierStatusMeta(statusOf(hero)) : null;
+
+  return (
+    <div className="mx-auto w-full max-w-[1280px] px-4 py-6 pb-24 md:px-6 md:py-8">
+      {/* ── 1 · MASTHEAD, bare on the canvas ────────────────────────────── */}
+      <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+        <p className="font-fw-sans text-eyebrow uppercase tracking-[0.09em] text-text-tertiary">Qualifiers</p>
+        {createCta}
+      </div>
+      <h1 className="mt-2 font-fw-display text-display font-semibold leading-[1.05] tracking-[-0.02em] text-text-primary">
+        Lineup decisions.
+      </h1>
+      <div className="mt-3">
+        <VerdictLine parts={verdict} />
+      </div>
+      <p className="mt-3 font-fw-mono text-caption tabular-nums text-text-tertiary">
+        {qualifiers.length} on file
+        {hero?.course_name ? ` · ${hero.course_name}` : ''}
+        {hero?.num_rounds ? ` · ${hero.num_rounds} ${hero.num_rounds === 1 ? 'round' : 'rounds'}` : ''}
+      </p>
+
+      {/* ── 2 · THE STAGE, the one Surface ──────────────────────────────── */}
+      <Surface elevation="shadow" padding="none" className="mt-10 overflow-hidden">
+        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_15rem] xl:divide-x xl:divide-border-subtle">
+          <div className="min-w-0 p-4 md:p-6">
+            <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+              <div className="min-w-0">
+                <p className="font-fw-sans text-eyebrow uppercase tracking-[0.07em] text-text-tertiary">
+                  The pipeline{heroStatus ? ` · ${heroStatus.label}` : ''}
+                </p>
+                <h2 className="mt-1 font-fw-display text-h2 font-semibold text-text-primary">Qualifying field</h2>
+                <p className="mt-1 max-w-[58ch] font-fw-sans text-body-sm text-text-secondary">
+                  Each bar runs from the entry deadline through the last day of play; the pale half is the
+                  waiting period. A one-day qualifier marks its date instead. Amber means entries
+                  close within a week.
+                </p>
               </div>
-            }
-          />
-
-          {/* ── 3 · ACTIVE / CONCLUDED — ONE matte Surface with two seam
-              sections; rows, not cards. ─────────────────────────────────── */}
-          {active.length === 0 && concluded.length === 0 ? (
-            // ── NO MATCHES — search/filter narrowed everything away ───────────
-            <Surface elevation="border" padding="lg">
-              <EmptyState
-                variant="subtle"
-                title="No qualifiers match your filters"
-                description="Try a different search term or clear the status filter."
-                action={
-                  <Button
-                    variant="secondary"
-                    onClick={() => {
-                      setStatusFilter('all');
-                      setQuery('');
-                    }}
-                  >
-                    Clear filters
-                  </Button>
-                }
+              <Segmented
+                size="sm"
+                options={[
+                  { value: 'active', label: 'Active' },
+                  { value: 'all', label: 'All' },
+                ]}
+                value={stageView}
+                onValueChange={(v) => setStageView(v as StageView)}
+                aria-label="Which qualifiers to plot"
               />
-            </Surface>
-          ) : !showActiveSection && !showConcludedSection ? (
-            // Only the hero matched — it's already visible above; nothing
-            // honest left to list, so render nothing rather than an empty box.
-            null
-          ) : (
-            <Surface elevation="border" padding="none" className="overflow-hidden">
-              {showActiveSection && (
-                <section aria-label="Active qualifiers">
-                  <SeamHeading>Active</SeamHeading>
-                  <div className="divide-y divide-border-subtle border-t border-border-subtle">
-                    {restActive.map((q) => (
-                      <QualifierRow key={q.id} qualifier={q} />
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              {showConcludedSection && (
-                <section
-                  aria-label="Concluded qualifiers"
-                  className={showActiveSection ? 'border-t border-border-subtle' : undefined}
-                >
-                  <SeamHeading>Concluded</SeamHeading>
-                  {concluded.length > 0 ? (
-                    <>
-                      <div className="divide-y divide-border-subtle border-t border-border-subtle">
-                        {concludedShown.map((q) => (
-                          <QualifierRow key={q.id} qualifier={q} />
-                        ))}
-                      </div>
-                      {concludedRemaining > 0 && (
-                        <div className="flex justify-center border-t border-border-subtle px-4 py-3">
-                          <Button
-                            variant="secondary"
-                            onClick={() =>
-                              setConcludedVisible((n) => n + CONCLUDED_PAGE_SIZE)
-                            }
-                          >
-                            Show {Math.min(CONCLUDED_PAGE_SIZE, concludedRemaining)} more
-                            <span className="ml-1 tabular-nums text-text-tertiary">
-                              ({concludedRemaining} remaining)
-                            </span>
-                          </Button>
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    // `showConcludedSection` already guarantees `!isFiltering`
-                    // whenever `concluded.length === 0` — this is a genuinely
-                    // empty Concluded bucket, never a search/filter artifact.
-                    <div className="border-t border-border-subtle">
-                      <EmptyState
-                        variant="subtle"
-                        title="No concluded qualifiers yet"
-                        description="Qualifiers move here once they're completed."
-                      />
-                    </div>
-                  )}
-                </section>
-              )}
-            </Surface>
-          )}
+            </div>
+            <div className="mt-5">
+              <QualifyingField bars={bars} domain={domain} today={today} ariaLabel="Qualifying field" />
+            </div>
+          </div>
+          {/* Below xl the readouts read first, the way the coach home orders
+              them on a phone: the four numbers are the glance, the field is
+              what you scroll into. At xl they take the rail on the right. */}
+          <div className="order-first border-b border-border-subtle p-4 md:p-6 xl:order-none xl:border-b-0">
+            <FieldReadouts items={readouts} />
+          </div>
         </div>
-      )}
-    </div>
-  );
-}
+      </Surface>
 
-/* ───────────────────────────────────────────────────────────────────────────
- * Seam heading — quiet uppercase overline inside the sectioned Surface (a
- * seam label, not a card header — matches the stats-page sections' voice).
- * ────────────────────────────────────────────────────────────────────────── */
-function SeamHeading({ children }: { children: React.ReactNode }) {
-  return (
-    <h3 className="px-4 pt-4 pb-2 font-fw-display text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">
-      {children}
-    </h3>
-  );
-}
+      {/* ── 3 · THE LEDGER ROW, bare, hairline-divided ──────────────────── */}
+      {ledgerColumns.some(Boolean) ? (
+        <div className="mt-12 grid grid-cols-1 gap-y-10 md:grid-cols-2 md:gap-x-8 xl:grid-cols-12 xl:gap-x-0 xl:gap-y-0 xl:divide-x xl:divide-border-subtle">
+          <LedgerColumn title="Needs a decision" className="xl:col-span-4 xl:pr-8">
+            {decisions.length === 0 ? (
+              <LedgerEmpty>
+                {activeCount === 0 ? 'No active qualifier right now.' : 'Every active qualifier has a decided lineup.'}
+              </LedgerEmpty>
+            ) : (
+              decisions.map((q) => (
+                <LedgerRow
+                  key={q.id}
+                  name={q.name ?? 'Untitled qualifier'}
+                  // The selection workspace is coach-only and redirects a
+                  // player to the detail page, so send a player there directly
+                  // rather than through a bounce.
+                  href={isCoach ? workspaceHref(q.id) : detailHref(q.id)}
+                  fact={selectionStateLabel(q.selection_state)}
+                />
+              ))
+            )}
+          </LedgerColumn>
 
-/* ───────────────────────────────────────────────────────────────────────────
- * Shared detail rows (dates · course · spots). tabular-nums on the dates/spots.
- * ────────────────────────────────────────────────────────────────────────── */
-function QualifierMeta({ qualifier }: { qualifier: GolfQualifier }) {
-  const { start_date, end_date, course_name, spots_available } = qualifier;
-  const hasEnd = end_date && end_date !== start_date;
+          <LedgerColumn title="Locking soon" className="xl:col-span-4 xl:px-8">
+            {locking.length === 0 ? (
+              <LedgerEmpty>
+                {activeCount === 0 ? 'No active qualifier right now.' : 'No entry deadlines coming up.'}
+              </LedgerEmpty>
+            ) : (
+              locking.map(({ q, days }) => (
+                <LedgerRow
+                  key={q.id}
+                  name={q.name ?? 'Untitled qualifier'}
+                  href={detailHref(q.id)}
+                  fact={days === 0 ? 'today' : `${days}d`}
+                  factTone={days <= 7 ? 'urgent' : 'quiet'}
+                />
+              ))
+            )}
+          </LedgerColumn>
 
-  return (
-    <div className="grid grid-cols-1 gap-2 font-fw-sans text-body-sm text-text-secondary sm:grid-cols-2">
-      <div className="flex items-center gap-2">
-        <IconCalendar size={15} className="flex-shrink-0 text-text-tertiary" />
-        <span className="tabular-nums">
-          {formatDate(start_date)}
-          {hasEnd ? <> &ndash; {formatDate(end_date as string)}</> : null}
-        </span>
+          <LedgerColumn title="Recently concluded" className="md:col-span-2 xl:col-span-4 xl:pl-8">
+            {concludedRecent.length === 0 ? (
+              <LedgerEmpty>No qualifiers concluded yet.</LedgerEmpty>
+            ) : (
+              concludedRecent.map((q) => (
+                <LedgerRow
+                  key={q.id}
+                  name={q.name ?? 'Untitled qualifier'}
+                  href={detailHref(q.id)}
+                  fact={formatDate(q.end_date ?? q.start_date)}
+                />
+              ))
+            )}
+          </LedgerColumn>
+        </div>
+      ) : null}
+
+      {/* ── 4 · THE TABLE ───────────────────────────────────────────────── */}
+      <div className="mt-12">
+        <SectionHead title="All qualifiers" count={tableRows.length} />
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <div className="min-w-[12rem] flex-1 md:max-w-sm">
+            <SearchField
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onClear={() => setQuery('')}
+              placeholder="Search qualifiers"
+              aria-label="Search qualifiers"
+            />
+          </div>
+          <div className="flex flex-nowrap items-center gap-2">
+            <FilterPill selected={statusFilter === 'all'} showCheck={false} count={qualifiers.length} onClick={() => setStatusFilter('all')}>
+              All
+            </FilterPill>
+            <FilterPill selected={statusFilter === 'active'} showCheck={false} count={activeCount} onClick={() => setStatusFilter('active')}>
+              Active
+            </FilterPill>
+            <FilterPill selected={statusFilter === 'concluded'} showCheck={false} count={concludedCount} onClick={() => setStatusFilter('concluded')}>
+              Concluded
+            </FilterPill>
+          </div>
+        </div>
+
+        {tableRows.length === 0 ? (
+          <div className="mt-6">
+            <EmptyState
+              variant="subtle"
+              title="No matches"
+              description={
+                isFiltering
+                  ? 'No qualifier matches that search and filter. Clear them to see the full list.'
+                  : 'No qualifiers to show.'
+              }
+            />
+          </div>
+        ) : (
+          <>
+            <div className="mt-4">
+              <QualifiersTable rows={tableShown} formatDate={formatDate} />
+            </div>
+            {tableRemaining > 0 ? (
+              <PressTarget
+                onClick={() => setTableVisible((n) => n + TABLE_PAGE_SIZE)}
+                className="mt-4 inline-flex min-h-11 items-center font-fw-sans text-body-sm font-medium text-accent-700 hover:text-accent-600"
+              >
+                Show {Math.min(tableRemaining, TABLE_PAGE_SIZE)} more
+              </PressTarget>
+            ) : null}
+          </>
+        )}
       </div>
-
-      {spots_available != null && (
-        <div className="flex items-center gap-2">
-          <IconGolf size={15} className="flex-shrink-0 text-text-tertiary" />
-          <span className="tabular-nums">
-            {spots_available} {spots_available === 1 ? 'spot' : 'spots'}
-          </span>
-        </div>
-      )}
-
-      {course_name && (
-        <div className="flex items-center gap-2 sm:col-span-2">
-          <IconMapPin size={15} className="flex-shrink-0 text-text-tertiary" />
-          <span className="truncate">{course_name}</span>
-        </div>
-      )}
     </div>
-  );
-}
-
-/* ───────────────────────────────────────────────────────────────────────────
- * HERO — the ONE raised object (Elevated, not a shadow Surface card). The
- * block itself is presentational; "View leaderboard/details/results" is the
- * ONLY link inside it (screens/qualifiers.md "CONTAINERS TO REMOVE" #3). A
- * leaderboard top-3 peek (RankCell) is intentionally NOT rendered here: the
- * `qualifiers` prop is the verbatim `golf_qualifiers` row list (no joined
- * `golf_qualifier_entries`), and the screen spec's own RISKS section calls
- * for exactly this fallback when entries aren't already in the data — "show
- * spots + dates only (no new data logic)".
- * ────────────────────────────────────────────────────────────────────────── */
-function QualifierHero({ qualifier }: { qualifier: GolfQualifier }) {
-  const status = qualifier.status ?? 'upcoming';
-  const cfg = qualifierStatusMeta(status);
-
-  return (
-    <Elevated level="raise" padding="lg" data-slot="qualifier-hero">
-      <div className="flex flex-col gap-5">
-        <div className="min-w-0 space-y-2">
-          <StatusPill tone={cfg.tone} pulse={cfg.pulse} size="md">
-            {cfg.label}
-          </StatusPill>
-          <h2 className="font-fw-display text-h2 font-medium tracking-[-0.01em] text-text-primary">
-            {qualifier.name}
-          </h2>
-          {qualifier.description && (
-            <p className="max-w-[60ch] font-fw-sans text-body text-text-secondary">
-              {qualifier.description}
-            </p>
-          )}
-        </div>
-
-        <QualifierMeta qualifier={qualifier} />
-
-        <Link
-          href={detailHref(qualifier.id)}
-          className="group inline-flex w-fit items-center gap-1.5 font-fw-sans text-label font-medium text-accent-700 transition-colors [transition-duration:180ms] hover:text-accent-600 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-elevated"
-        >
-          {ctaLabel(status)}
-          <IconArrowRight
-            size={16}
-            className="transition-transform [transition-duration:180ms] group-hover:translate-x-0.5 motion-reduce:transition-none"
-          />
-        </Link>
-      </div>
-    </Elevated>
-  );
-}
-
-/* ───────────────────────────────────────────────────────────────────────────
- * ROW — one seam row inside the Active/Concluded Surface (replaces the card
- * galleries — screens/qualifiers.md "CONTAINERS TO REMOVE" #2). The whole row
- * is the link. Desktop: name · date range (tabular) · spots · course ·
- * StatusPill · →. Phone compresses to name · date · StatusPill (· →) — spots
- * and course drop out rather than wrap or truncate into noise.
- * ────────────────────────────────────────────────────────────────────────── */
-function QualifierRow({ qualifier }: { qualifier: GolfQualifier }) {
-  const status = qualifier.status ?? 'upcoming';
-  const cfg = qualifierStatusMeta(status);
-  const { start_date, end_date, course_name, spots_available } = qualifier;
-  const hasEnd = end_date && end_date !== start_date;
-  const spotsLabel =
-    spots_available != null ? `${spots_available} ${spots_available === 1 ? 'spot' : 'spots'}` : null;
-
-  return (
-    <Link
-      href={detailHref(qualifier.id)}
-      className={cn(
-        'group flex min-h-11 items-center gap-3 px-4 py-3 sm:gap-4',
-        'transition-colors [transition-duration:180ms] motion-reduce:transition-none',
-        '[@media(hover:hover)]:hover:bg-surface-sunken',
-        // `ring-inset`, not an offset ring: the row sits inside a
-        // Surface with `overflow-hidden` (so the seam corners stay clean),
-        // which would otherwise clip an offset ring at the row's own edges.
-        'outline-none focus-visible:bg-surface-sunken focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-focus',
-      )}
-    >
-      <span className="min-w-0 flex-1 truncate font-fw-sans text-body font-medium text-text-primary transition-colors [transition-duration:180ms] group-hover:text-accent-700 motion-reduce:transition-none">
-        {qualifier.name}
-      </span>
-
-      {/* Full date range — desktop/tablet only; phone shows the compact date below. */}
-      <span className="hidden shrink-0 whitespace-nowrap font-fw-sans text-body-sm tabular-nums text-text-secondary sm:inline">
-        {formatDate(start_date)}
-        {hasEnd ? <> &ndash; {formatDate(end_date as string)}</> : null}
-      </span>
-      {/* Compact single date — phone only (the compressed name · date · status row). */}
-      <span className="shrink-0 whitespace-nowrap font-fw-sans text-caption tabular-nums text-text-tertiary sm:hidden">
-        {formatDate(start_date)}
-      </span>
-
-      <span className="hidden w-20 shrink-0 whitespace-nowrap font-fw-sans text-body-sm tabular-nums text-text-tertiary md:inline">
-        {spotsLabel ?? '—'}
-      </span>
-
-      <span className="hidden w-40 shrink-0 truncate font-fw-sans text-body-sm text-text-tertiary lg:inline">
-        {course_name ?? '—'}
-      </span>
-
-      <StatusPill tone={cfg.tone} pulse={cfg.pulse} size="sm" className="shrink-0">
-        {cfg.label}
-      </StatusPill>
-
-      <IconArrowRight
-        size={15}
-        className="shrink-0 text-text-tertiary transition-transform [transition-duration:180ms] group-hover:translate-x-0.5 motion-reduce:transition-none"
-      />
-    </Link>
   );
 }
