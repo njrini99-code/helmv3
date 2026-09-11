@@ -225,14 +225,26 @@ export function CategoryField({
 
         {/* ── Player register ───────────────────────────────────────────── */}
         {shown.map((row) => (
-          <Link
+          // The row is a row and the name is a link, which is the only way a
+          // screen reader hears both. `role="row"` on the anchor itself would
+          // override the anchor's implicit link role, so the row would announce
+          // as cells with nothing to say it goes anywhere. The anchor's
+          // `after` pseudo-element then stretches over the whole row, so the
+          // entire row is still one click target — with the anchor doing the
+          // navigating, so there is no div click handler to give a keyboard
+          // listener and no second tab stop.
+          <div
             key={row.id}
-            href={row.href}
             role="row"
-            className={cn(GRID, 'items-center border-b border-border-subtle transition-colors duration-150 last:border-b-0 hover:bg-surface-hover')}
+            className={cn(GRID, 'relative items-center border-b border-border-subtle transition-colors duration-150 last:border-b-0 hover:bg-surface-hover')}
           >
             <span role="rowheader" className="min-w-0 py-2 pr-3">
-              <b className="block truncate font-fw-sans text-body-sm font-semibold text-text-primary">{row.name}</b>
+              <Link
+                href={row.href}
+                className="block truncate font-fw-sans text-body-sm font-semibold text-text-primary after:absolute after:inset-0 after:content-[''] hover:text-accent-700"
+              >
+                {row.name}
+              </Link>
               <span className="block truncate font-fw-sans text-caption text-text-tertiary">{row.meta}</span>
             </span>
             {row.ranks.map((rank, i) => (
@@ -244,7 +256,7 @@ export function CategoryField({
                 )}
               </span>
             ))}
-          </Link>
+          </div>
         ))}
       </div>
 
