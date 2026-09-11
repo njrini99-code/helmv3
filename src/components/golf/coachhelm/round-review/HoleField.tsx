@@ -130,6 +130,11 @@ export interface HoleFieldProps {
   showFairwayRow?: boolean;
   /** Row of green-in-regulation ticks, omitted when no column logged one. */
   showGirRow?: boolean;
+  /** Row labels for the two label rows, printed in the right lane instead of
+   *  inside column one. A column an eighteenth of the screen wide cannot hold
+   *  a word and a number, so "Par 4" truncated to "PA…" at every width below
+   *  1280; the lane always has room. Desktop only, like the rows it names. */
+  rowLabels?: { overline?: string; label?: string };
   ariaLabel: string;
   /** Print every column's lower label on phone rather than one in three. The
    *  upper label row is desktop-only either way: at phone width these columns
@@ -187,12 +192,16 @@ export function HoleField({
   onSelect,
   showFairwayRow = false,
   showGirRow = false,
+  rowLabels,
   ariaLabel,
   denseLabels = false,
   className,
 }: HoleFieldProps) {
   const reduced = useReducedMotionGuard();
   const cap = capProp ?? holeFieldCap(columns);
+  // The lane exists for the line's finishing value and for the row labels. A
+  // field with neither keeps the full width for its columns.
+  const showLane = Boolean(rowLabels?.overline || rowLabels?.label || (line && lineLabel));
   const dividerX = divider ? ((divider.afterIndex + 1) / columns.length) * 100 : null;
 
   return (
@@ -217,10 +226,12 @@ export function HoleField({
         ) : null}
 
         <div className="relative">
-          {/* The instrument proper. The right lane on desktop belongs to the
-              cumulative line's finishing value, so the columns stop short of
-              it and every label row below stays in the same grid. */}
-          <div className="relative md:mr-14">
+          {/* The instrument proper, then the right lane. The lane carries the
+              cumulative line's finishing value and the row labels, and it is
+              a real flex track rather than a margin so each label lines up
+              with its row by structure instead of by arithmetic. */}
+          <div className="flex items-stretch">
+           <div className="relative min-w-0 flex-1">
             <div role="group" aria-label={ariaLabel} className="relative flex w-full items-stretch">
               {columns.map((column, i) => {
                 const selected = selectedKey != null && selectedKey === column.key;
@@ -342,6 +353,20 @@ export function HoleField({
                 />
               </svg>
             ) : null}
+           </div>
+
+           {/* The lane. It mirrors the column stack exactly — same heights,
+               same margins — so "Par" sits on the par row and "Hole" on the
+               hole row without a single magic offset. */}
+           {showLane ? (
+             <div aria-hidden="true" className="hidden w-14 shrink-0 flex-col pl-2 md:flex">
+               <span className="block" style={{ height: BOX_HEIGHT_PX }} />
+               <span className={cn(OVERLINE, 'mt-1.5 block truncate')}>{rowLabels?.overline ?? ''}</span>
+               <span className="mt-0.5 block truncate font-fw-sans text-eyebrow uppercase tracking-[0.07em] text-text-tertiary">
+                 {rowLabels?.label ?? ''}
+               </span>
+             </div>
+           ) : null}
           </div>
 
           {/* The one deep green element on the page: where the round finished. */}

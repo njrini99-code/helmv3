@@ -64,10 +64,10 @@ export function StageReadouts({ items }: { items: Readout[] }) {
   return (
     <dl
       data-slot="stage-readouts"
-      className="grid grid-cols-2 gap-x-6 lg:flex lg:h-full lg:flex-col lg:justify-between lg:divide-y lg:divide-border-subtle"
+      className="grid grid-cols-2 gap-x-6 xl:flex xl:h-full xl:flex-col xl:justify-between xl:divide-y xl:divide-border-subtle"
     >
       {items.map((item) => (
-        <div key={item.key} className="flex min-w-0 flex-col gap-1 py-2 lg:py-3.5 lg:first:pt-0 lg:last:pb-0">
+        <div key={item.key} className="flex min-w-0 flex-col gap-1 py-2 xl:py-3.5 xl:first:pt-0 xl:last:pb-0">
           <dt className={OVERLINE}>{item.label}</dt>
           <dd className="flex items-baseline gap-2">
             <span className="font-fw-mono text-h2 font-medium leading-none tabular-nums text-text-primary">
@@ -199,8 +199,8 @@ export function HoleTable({
             <th scope="col" className={cn(TH, NUM, 'w-14')}>Putts</th>
             <th scope="col" className={cn(TH, 'hidden w-20 md:table-cell')}>Fairway</th>
             <th scope="col" className={cn(TH, 'hidden w-14 md:table-cell')}>GIR</th>
-            <th scope="col" className={cn(TH, 'hidden lg:table-cell')}>Drive</th>
-            <th scope="col" className={cn(TH, 'hidden lg:table-cell')}>Approach</th>
+            <th scope="col" className={cn(TH, 'hidden xl:table-cell')}>Drive</th>
+            <th scope="col" className={cn(TH, 'hidden xl:table-cell')}>Approach</th>
             <th scope="col" className={cn(TH, 'hidden md:table-cell')}>Note</th>
           </tr>
         </thead>
@@ -238,8 +238,8 @@ export function HoleTable({
                 <td className={cn(TD, NUM)}>{hole.putts > 0 ? hole.putts : '–'}</td>
                 <td className={cn(TD, 'hidden md:table-cell')}>{fairwayCell(hole)}</td>
                 <td className={cn(TD, 'hidden md:table-cell')}>{hole.gir ? 'Yes' : 'No'}</td>
-                <td className={cn(TD, 'hidden lg:table-cell')}>{clubDistance(hole.driveClub, hole.driveDist)}</td>
-                <td className={cn(TD, 'hidden lg:table-cell')}>{clubDistance(hole.approachClub, hole.approachDist)}</td>
+                <td className={cn(TD, 'hidden xl:table-cell')}>{clubDistance(hole.driveClub, hole.driveDist)}</td>
+                <td className={cn(TD, 'hidden xl:table-cell')}>{clubDistance(hole.approachClub, hole.approachDist)}</td>
                 <td className={cn(TD, 'hidden truncate md:table-cell')}>{synthesizeHoleNote(hole) ?? '–'}</td>
               </tr>
             );

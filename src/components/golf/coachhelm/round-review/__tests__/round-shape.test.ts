@@ -162,9 +162,9 @@ describe('holeColumns and the instrument scale', () => {
     expect(columns[1]!.fairway).toEqual({ hit: false, side: 'left' });
   });
 
-  it('prints the par row header once and bare numerals after it', () => {
+  it('prints the par row as bare numerals, the word being a row label', () => {
     const columns = holeColumns(holes);
-    expect(columns.map((c) => c.overline)).toEqual(['Par 4', '5', '3']);
+    expect(columns.map((c) => c.overline)).toEqual(['4', '5', '3']);
   });
 
   it('never lets the scale fall below three strokes', () => {

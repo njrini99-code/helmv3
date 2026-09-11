@@ -191,14 +191,14 @@ function scoreName(delta: number): string {
   return SCORE_NAME[delta] ?? (delta > 0 ? `${delta} over` : `${Math.abs(delta)} under`);
 }
 
-/** One column per hole, in hole order. The par row carries the word "Par" on
- *  its first column only and bare numerals after it, the way a scorecard
- *  prints a row header rather than repeating the label eighteen times. */
+/** One column per hole, in hole order. The par row is bare numerals: the word
+ *  "Par" is a row label and lives in the instrument's lane, because a column
+ *  an eighteenth of the screen wide truncates "Par 4" to "PA…". */
 export function holeColumns(holes: ReadonlyArray<HoleBreakdown>): HoleFieldColumn[] {
-  return holes.map((h, i) => ({
+  return holes.map((h) => ({
     key: String(h.hole),
     value: h.scoreToPar,
-    overline: i === 0 ? `Par ${h.par}` : String(h.par),
+    overline: String(h.par),
     label: String(h.hole),
     detail: `Hole ${h.hole}, par ${h.par}, scored ${h.score}, ${scoreName(h.scoreToPar)}`,
     deep: h.scoreToPar <= -2,

@@ -96,11 +96,12 @@ describe('round 2f343331 — the real 18-hole path', () => {
     expect(MOMENTUM[MOMENTUM.length - 1]!.rollingScoreToPar).toBe(23);
   });
 
-  it('draws one column per hole, with the par row labelled once', () => {
+  it('draws one column per hole, with a bare par row under the bars', () => {
     const columns = holeColumns(HOLES);
     expect(columns).toHaveLength(18);
-    expect(columns[0]!.overline).toBe('Par 4');
-    expect(columns[1]!.overline).toBe('4');
+    // The word "Par" is a row label in the instrument's lane, never inside a
+    // column: at an eighteenth of the screen "Par 4" truncates to "PA…".
+    expect(columns.map((c) => c.overline)).toEqual(HOLES.map((h) => String(h.par)));
     expect(columns.map((c) => c.label)).toEqual(HOLES.map((h) => String(h.hole)));
     // Every bar is over par or level. Nothing on this card went under.
     expect(columns.every((c) => (c.value ?? 0) >= 0)).toBe(true);

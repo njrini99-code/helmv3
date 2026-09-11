@@ -279,6 +279,28 @@ and registry until the team lead promotes it.
     par. The rendered proof uses `6b3d748c-a003-46c2-80fb-5c8ee302561b`, 18
     hole rows and 88 shots, inside the persona's own organization.
 
+17. **The side-by-side splits belong to xl, not lg.** Read at 768, 1024, 1280
+    and 1440, the layout failed at exactly 1024: the three ledger columns and
+    the stage's two-column split both engaged at a width that cannot hold
+    them. "SG: Approach" broke mid-word to "Appro / ach", the leak categories
+    truncated to "Co…" and "Sh…", and the instrument was squeezed into about
+    290px. The stage split, the ledger grid, the readouts column and the
+    table's Drive and Approach columns all moved from `lg:` to `xl:`, so
+    1024 now gets one full-width column and the splits arrive at 1280 with
+    room to stand. This also retired the "Fiel…" truncation in the third
+    ledger column: at an xl third, `StandingBars` prints "Field Avg" in full,
+    so no change to that shared file was needed after all.
+
+18. **The par row's label moved out of the columns and into the lane.** "Par 4"
+    in column one truncated to "PA…" at 768 and "P…" at 1024, because a column
+    is an eighteenth of the width. The word is now a row label printed in the
+    instrument's right lane, beside "Hole", with the columns carrying bare
+    numerals the way a scorecard prints them. The lane is a real flex track
+    that mirrors the column stack, so each label aligns with its row by
+    structure rather than by a magic offset, and it renders only when there is
+    something to put in it. The season view uses the same lane for "Date" and
+    "To par".
+
 ### Known limitations
 
 - `src/components/golf/dashboard/premium-components.tsx` is now reachable from
@@ -290,9 +312,6 @@ and registry until the team lead promotes it.
   Deleting a file in the shared golf dashboard tree is outside this pass's
   ownership, so it is reported rather than removed.
 
-- At the specced 3/12 width, `StandingBars` truncates its reference row label
-  to "Fiel…" in the third ledger column. That truncation is inside
-  `src/components/fairway/charts/StandingBars.tsx`, which another session owns.
 - On a scorecard-only round the story column shows the stored V1 summary,
   which reads "Shot 75 (+3) at QA Test Course. 0 pars." That "0 pars" is
   generated in `src/app/golf/actions/round-review-content.ts` from holes that

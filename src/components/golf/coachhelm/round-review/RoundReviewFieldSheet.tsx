@@ -449,8 +449,8 @@ export function RoundReviewFieldSheet({
             </p>
           </div>
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_15rem] lg:divide-x lg:divide-border-subtle">
-          <div className="order-2 flex min-w-0 flex-col justify-center px-5 py-5 md:px-6 lg:order-1">
+        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_15rem] xl:divide-x xl:divide-border-subtle">
+          <div className="order-2 flex min-w-0 flex-col justify-center px-5 py-5 md:px-6 xl:order-1">
             {hasHoles ? (
               <HoleField
                 columns={stageColumns}
@@ -462,6 +462,7 @@ export function RoundReviewFieldSheet({
                 onSelect={(key) => selectHole(Number(key))}
                 showFairwayRow={showFairwayRow}
                 showGirRow={showGirRow}
+                rowLabels={{ overline: 'Par', label: 'Hole' }}
                 ariaLabel="Score against par, hole by hole"
               />
             ) : trendLoading ? (
@@ -471,7 +472,13 @@ export function RoundReviewFieldSheet({
                 <Skeleton className="h-3 w-40" />
               </div>
             ) : stageColumns.length > 0 ? (
-              <HoleField columns={stageColumns} cap={cap} ariaLabel="Score to par by round" denseLabels />
+              <HoleField
+                columns={stageColumns}
+                cap={cap}
+                rowLabels={{ overline: 'Date', label: 'To par' }}
+                ariaLabel="Score to par by round"
+                denseLabels
+              />
             ) : (
               <p className="font-fw-sans text-body-sm text-text-tertiary">
                 Scorecard only, and there are not enough other rounds yet to draw a trajectory. Enter this round&rsquo;s
@@ -484,7 +491,7 @@ export function RoundReviewFieldSheet({
               </p>
             ) : null}
           </div>
-          <div className="order-1 border-b border-border-subtle px-5 py-4 md:px-6 md:py-5 lg:order-2 lg:border-b-0">
+          <div className="order-1 border-b border-border-subtle px-5 py-4 md:px-6 md:py-5 xl:order-2 xl:border-b-0">
             <StageReadouts items={readouts} />
           </div>
         </div>
@@ -506,8 +513,8 @@ export function RoundReviewFieldSheet({
       </Surface>
 
       {/* ── 3 · The ledger row ─────────────────────────────────────────── */}
-      <div className="mt-12 grid grid-cols-1 divide-y divide-border-subtle lg:grid-cols-12 lg:divide-x lg:divide-y-0">
-        <section aria-label="The story" className="flex flex-col gap-3 py-8 first:pt-0 lg:col-span-5 lg:py-0 lg:pr-8">
+      <div className="mt-12 grid grid-cols-1 divide-y divide-border-subtle xl:grid-cols-12 xl:divide-x xl:divide-y-0">
+        <section aria-label="The story" className="flex flex-col gap-3 py-8 first:pt-0 xl:col-span-5 xl:py-0 xl:pr-8">
           <LedgerHead title="The story" />
           <p className="font-fw-sans text-body leading-relaxed text-text-primary">{narrative}</p>
           {promoteSuggestion ? (
@@ -529,7 +536,7 @@ export function RoundReviewFieldSheet({
           ) : null}
         </section>
 
-        <section aria-label="Where it went" className="flex flex-col gap-3 py-8 lg:col-span-4 lg:py-0 lg:px-8">
+        <section aria-label="Where it went" className="flex flex-col gap-3 py-8 xl:col-span-4 xl:py-0 xl:px-8">
           <LedgerHead title="Where it went" note="Strokes to gain" />
           <LeakLedger
             rows={leakRows}
@@ -537,7 +544,7 @@ export function RoundReviewFieldSheet({
           />
         </section>
 
-        <section aria-label="Against the field" className="flex flex-col gap-3 py-8 last:pb-0 lg:col-span-3 lg:py-0 lg:pl-8">
+        <section aria-label="Against the field" className="flex flex-col gap-3 py-8 last:pb-0 xl:col-span-3 xl:py-0 xl:pl-8">
           <LedgerHead title="Against the field" />
           {!hasAnySG ? (
             <p className="font-fw-sans text-body-sm text-text-tertiary">
