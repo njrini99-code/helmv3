@@ -1,4 +1,9 @@
 // @vitest-environment jsdom
+/* eslint-disable helm/no-raw-button -- The trigger/child here is a FIXTURE,
+   not a product surface: the point of these cases is that the wrapper
+   accepts an arbitrary element and does not reach into it. Swapping in the
+   design-system <Button> would test that component's markup instead of this
+   one's contract. The rule stands everywhere the user can actually see. */
 /**
  * ============================================================================
  * Tooltip — desktop-only discoverability hint (Radix Tooltip)

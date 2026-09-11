@@ -140,6 +140,9 @@ describe('MatrixBoard', () => {
       id: 'avery',
       cells: ['Avery Cole', '3', '1'],
       ariaLabel: 'Avery Cole row',
+      // A fixture standing in for whatever the caller passes; the assertion
+      // is about where it lands in the tree, not what element it is.
+      // eslint-disable-next-line helm/no-raw-button
       actions: <button type="button">Overflow</button>,
     };
     const { container } = render(

@@ -1,3 +1,10 @@
+/* global document, getComputedStyle, innerWidth, scrollY */
+// ^ Several helpers below hand a callback to Playwright's `page.evaluate`,
+//   whose body is serialised and run inside the browser, not in Node. The
+//   globals it names are real there and undefined here, which is exactly
+//   what `no-undef` reports. Declaring them is the honest fix; widening the
+//   whole file's env to `browser` would also silence a genuine mistake in
+//   the Node half of the same file.
 // Golf facelift capture: every golf surface, as coach and as player, phone and
 // desktop, labelled with the code that renders it.
 //
