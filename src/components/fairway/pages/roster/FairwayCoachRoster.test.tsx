@@ -173,4 +173,14 @@ describe('FairwayCoachRoster — honesty branches', () => {
     renderRoster({ roundsUnavailable: true });
     expect(screen.getByText(/Couldn.?t load the team.?s rounds/)).toBeInTheDocument();
   });
+
+  it('does not head two columns "Avg" when they are different numbers', () => {
+    // The stage averages the selected window; the table averages the career.
+    // They disagree by strokes, so the table has to say which one it is.
+    renderRoster();
+    const table = document.querySelector('[data-slot="roster-table"]') as HTMLElement;
+    expect(within(table).getByRole('columnheader', { name: 'Avg all-time' })).toBeInTheDocument();
+    expect(within(table).queryByRole('columnheader', { name: 'Avg' })).not.toBeInTheDocument();
+  });
+
 });

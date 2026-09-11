@@ -174,7 +174,12 @@ export function RosterTable({
         <thead>
           <tr className="border-b border-border-strong">
             <th scope="col" className={TH}>Player</th>
-            <th scope="col" className={cn(TH, NUM)}>Avg</th>
+            {/* The stage above also heads a column "Avg", and it is a
+                DIFFERENT number: the stage averages only the selected window
+                while this column is the player's whole career. Two columns
+                with one word between them, disagreeing by three strokes, is a
+                reading hazard the stage's eyebrow cannot fix from up there. */}
+            <th scope="col" className={cn(TH, NUM, 'whitespace-nowrap')}>Avg all-time</th>
             <th scope="col" className={cn(TH, NUM)}>Trend</th>
             <th scope="col" className={cn(TH, NUM, 'hidden md:table-cell')}>Rounds</th>
             <th scope="col" className={cn(TH, NUM, 'hidden md:table-cell')}>SG:Total</th>
