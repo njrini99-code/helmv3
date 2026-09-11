@@ -488,6 +488,10 @@ export function TeamStatsBoard({
       <div className="mt-12 grid grid-cols-1 gap-y-10 xl:grid-cols-2 xl:gap-x-0 xl:gap-y-0 xl:divide-x xl:divide-border-subtle">
         <section className="flex min-w-0 flex-col gap-3 xl:pr-8">
           <SectionHead title="Putts made by distance" />
+          {/* `ChartFrame` takes `takeaway` for the chart's spoken label only and
+              never prints it, so the finding stayed invisible to a coach
+              reading the page. State it in words above the plot. */}
+          {puttTakeaway ? <p className="font-fw-sans text-body-sm text-text-secondary">{puttTakeaway}</p> : null}
           <LeakMap
             title="Putts made by distance"
             subtitle={`Team make% versus ${tour}${roundsTracked}`}
@@ -502,6 +506,7 @@ export function TeamStatsBoard({
         </section>
         <section className="flex min-w-0 flex-col gap-3 xl:pl-8">
           <SectionHead title="Approach proximity by distance" />
+          {approachTakeaway ? <p className="font-fw-sans text-body-sm text-text-secondary">{approachTakeaway}</p> : null}
           <LeakMap
             title="Approach proximity by distance"
             subtitle={`Average proximity to hole versus ${tour}${roundsTracked}`}

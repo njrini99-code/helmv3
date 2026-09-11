@@ -593,3 +593,114 @@ rewrite is the easiest place to lose them.
    this spec requires are the glyph fixes in Risk 6 and the CSS-only header
    labels replacing `useMediaQuery` (What this deletes, item 7) — neither
    touches the loader or the view-model's field shape.
+
+---
+
+## Result
+
+Built on `agent/frost-facelift`. Files:
+
+- `src/components/golf/stats/team-board/TeamStatsBoard.tsx` — rewritten as the
+  composition (masthead, stage, ledger, table, diptych).
+- `src/components/golf/stats/team-board/CategoryField.tsx` — new, page-local.
+- `src/components/golf/stats/team-board/team-stats-logic.ts` — new, pure.
+- `src/components/golf/stats/team-board/team-stats-parts.tsx` — new.
+- `src/components/golf/stats/team-board/buildTeamBoardViewModel.ts` — extended
+  and glyph-swept.
+- `src/components/golf/stats/team-board/__tests__/team-stats-logic.test.ts` — new.
+- `TeamStatsBoard.freshness.test.tsx` and `__tests__/buildTeamBoardViewModel.test.ts`
+  — updated to the new composition and the en dash.
+
+`modules/index.ts`, `modules/types.ts` and `registry.ts` are untouched.
+`CategoryField` is a promotion candidate and nothing else imports it.
+No loader change; `newFields` stayed empty.
+
+### Deviations, and why
+
+1. **The third column's wide header is "Green", not "Around the green".** A
+   4.5rem category track cannot hold "AROUND THE GREEN" on one line at ANY
+   viewport width, and the first capture at 1440 showed it wrapped over three
+   lines — the clipping failure LANGUAGE.md's breakpoint floor exists to
+   prevent. The header carries the head noun; the full name is on the page in
+   the verdict, in the leak ledger, and as the sort control's accessible name.
+   The "Short game"/"Shrt" contradiction the spec set out to fix is gone.
+
+2. **Phone category tracks are 2.5rem, not 3.25rem, and the identity floor is
+   7.5rem.** With the specified 3.25rem the field opened on a 390px phone with
+   the Scoring column off-screen and the active sort column cut in half, which
+   reads as broken rather than as "scroll for more". 7.5rem + 5 × 2.5rem is
+   320px, inside the 326px a 390px phone leaves after the page gutter and the
+   Surface's padding, so all five columns and a whole player name fit with no
+   scrolling at all. A 2.5rem track still clears the 34px rank swatch and the
+   36px team bar. `overflow-x-auto` stays for phones narrower than 390.
+
+3. **The `md:grid-cols-[minmax(0,1fr)...]` identity track keeps a floor below
+   `md`.** Same measurement as above: `minmax(0,1fr)` on a phone leaves roughly
+   66px for a name.
+
+4. **A local `TeamReadouts`, not `FieldReadouts`.** `ReadoutItem.value` is
+   `string | null` (`coach-home-parts.tsx:83`) and the Trajectory readout is
+   three counts with direction glyphs. The spec's own escape hatch applies:
+   the class strings are copied, not reinvented. Two changes to the copy:
+   `xl:justify-between` became `xl:justify-start` and `xl:h-full` was dropped,
+   because three items spread across a rail as tall as a nine-row field made
+   the column read as empty rather than as a stack. `coach-home-parts.tsx` was
+   not modified.
+
+5. **A hand-rolled `<table>`, not the `DataTable` primitive.** `DataTable`
+   renders `rounded-card border border-border-subtle bg-surface` — a box, and
+   this table lives bare on the canvas. The construction matches
+   `qualifiers-parts.tsx`, including the `<caption class="sr-only">` the spec
+   itself specifies.
+
+6. **The phone table is a stacked list, not seven scrolling columns.** The
+   team lead's standing rule for this pass: a `md:hidden` stacked list beside a
+   `hidden md:block` table, both always in the DOM with CSS choosing. The
+   stacked row carries name, signal, rounds, scoring average and all four SG
+   values. The stage keeps its shared grid, which stacking would destroy.
+
+7. **Composite / Trend / Signal drop at `lg`, not `md`.** The table branch only
+   exists from `md` up, so `hidden md:table-cell` would have shown all ten
+   columns at 768px. Dropping at `lg` renders exactly the seven columns the
+   spec names for narrow widths.
+
+8. **The sorted order is its own `useMemo`, not the one that builds `vm`.**
+   Same hydration property — the default sort is derived from the data, so the
+   server render and the first client paint agree — without rebuilding the
+   whole view model on every sort click.
+
+9. **"Who leads each" lists all five columns, including Scoring.** The spec
+   scopes column 1 to the four SG categories but leaves column 2 unqualified
+   and points it at `vm.rows[].ranks`, which carries five. Scoring is the one
+   column a cold-start roster has, so including it keeps the column from
+   rendering empty exactly when the other two have nothing to say.
+
+10. **The leak maps print their takeaway.** `ChartFrame` accepts `takeaway`
+    and uses it only for the chart's spoken label; it never renders it. The
+    sentence is now printed above each plot as well as passed through.
+
+11. **Each diptych half has one heading.** `LeakMap` defaults its title to the
+    component's own name ("Leak Map"), which printed a second heading under
+    every `SectionHead`. Both halves pass their real title, kept in the DOM as
+    the chart's accessible name and hidden visually.
+
+12. **The verdict's cold-start clause is gated on `!roundsError` too.** The
+    spec gates the stage's copy of that sentence; the same sentence in the
+    verdict would otherwise assert a data-collection gap on a failed fetch.
+
+13. **`buildTeamBoardViewModel` gained two derived fields**, both read from
+    data it already had: `rows[].sg` (the player's own per-category strokes
+    gained, for the table's value columns) and `kpis.teamScoringRaw` (so a
+    caller can tell an absent reading from a real one without string-matching
+    the dash). No new query, no new column.
+
+### Not done, and reported instead
+
+- `worstCategoryLabel` in `buildTeamBoardViewModel.ts` still builds the signal
+  chip "Short game slump" while every other surface on this page now says
+  "Around the green". That is the same naming contradiction the spec's header
+  rename fixes, one file over, but it is signal copy the spec did not scope and
+  it has its own tested behaviour. Flagged to the lead rather than widened into.
+- `formatTeamStatsFreshnessHeadline` reads a clock. The spec keeps it
+  unchanged and its test fakes `Date` to assert "Updated 2h ago". Pre-existing,
+  not introduced here — the page has no other clock read.

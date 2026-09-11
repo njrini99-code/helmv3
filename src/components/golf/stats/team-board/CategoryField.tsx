@@ -21,9 +21,10 @@
  *
  * The identity column is the only flexible track; the five category columns
  * are fixed, so the swatches line up as a field rather than reflowing as a
- * table. Below `md` the fixed tracks plus a legible identity floor exceed a
- * phone's width, so the field scrolls inside its own container and the page
- * body never scrolls sideways.
+ * table. Below `md` the tracks are sized so all five columns and a whole
+ * player name fit a 390px phone without scrolling at all; narrower than that,
+ * the field scrolls inside its own container and the page body never scrolls
+ * sideways.
  *
  * Column headers are sort controls, not decoration, and the wide/short label
  * switch is two spans gated by one CSS breakpoint — `hidden` / `inline`, so
@@ -50,16 +51,19 @@ import type { RankInfo } from './buildTeamBoardViewModel';
  * the team register and every player row so a column line runs unbroken from
  * the team bar to the last player.
  *
- * The identity floor below `md` is what makes the spec's "scroll inside the
- * Surface" real: five 3.25rem tracks leave roughly 66px for a name inside a
- * 390px phone, which clips the one cell that identifies the row. The floor
- * plus the container's own `min-w` trades a short sideways scroll for names
- * that stay whole. From `md` up there is room, so the identity track relaxes
- * to `minmax(0,1fr)` exactly as specified.
+ * The phone tracks are measured, not chosen. A 390px phone leaves 326px inside
+ * the page gutter and the Surface's own padding; 7.5rem of identity plus five
+ * 2.5rem category tracks is 320px, so all five columns and a whole player name
+ * fit with no scrolling. Sized any wider, the fifth column falls off the right
+ * edge and the field opens with a swatch cut in half, which reads as broken
+ * rather than as "there is more over here". A 2.5rem track still clears the
+ * 34px rank swatch and the 36px team bar. From `md` up there is room for the
+ * full 4.5rem tracks and the identity relaxes to `minmax(0,1fr)`.
  */
-const GRID = 'grid grid-cols-[minmax(9.5rem,1fr)_repeat(5,3.25rem)] md:grid-cols-[minmax(0,1fr)_repeat(5,4.5rem)]';
-/** 9.5rem + 5 × 3.25rem. Keeps every row the same width inside the scroller. */
-const FIELD_MIN_W = 'min-w-[25.75rem]';
+const GRID = 'grid grid-cols-[minmax(7.5rem,1fr)_repeat(5,2.5rem)] md:grid-cols-[minmax(0,1fr)_repeat(5,4.5rem)]';
+/** 7.5rem + 5 × 2.5rem. Keeps every row the same width inside the scroller,
+ *  which only ever engages on a phone narrower than 390px. */
+const FIELD_MIN_W = 'min-w-[20rem]';
 
 const OVERLINE = 'font-fw-sans text-eyebrow uppercase tracking-[0.07em] text-text-tertiary';
 
@@ -128,13 +132,13 @@ export interface CategoryFieldProps {
 function TeamCell({ cell, domain }: { cell: CategoryFieldTeamCell; domain: number }) {
   if (cell.value === null) {
     return (
-      <div role="cell" className="flex flex-col items-center justify-end gap-1.5 px-1 py-2">
+      <div role="cell" className="flex flex-col items-center justify-end gap-1.5 py-2 md:px-1">
         <span className="font-fw-mono text-caption tabular-nums text-text-tertiary">{cell.display}</span>
       </div>
     );
   }
   return (
-    <div role="cell" className="flex flex-col items-center justify-end gap-1.5 px-1 py-2">
+    <div role="cell" className="flex flex-col items-center justify-end gap-1.5 py-2 md:px-1">
       {/* The value sits ON the mark. A coach never has to measure a 36px bar
           against anything to read it; the bar is there to compare the five
           columns with each other at a glance. */}
@@ -179,7 +183,7 @@ export function CategoryField({
                   onClick={() => onSortChange(col.key)}
                   aria-label={`Sort by ${col.headerWide}`}
                   className={cn(
-                    'flex w-full min-h-11 items-end justify-center px-1 pb-1.5 font-fw-sans text-eyebrow uppercase tracking-[0.07em] transition-colors',
+                    'flex w-full min-h-11 items-end justify-center pb-1.5 font-fw-sans text-eyebrow uppercase tracking-[0.07em] transition-colors md:px-1',
                     active ? 'font-semibold text-accent-700' : 'text-text-tertiary hover:text-text-secondary',
                   )}
                 >
@@ -209,7 +213,7 @@ export function CategoryField({
           {teamNotice ? (
             <div
               role="cell"
-              className="col-span-4 flex items-end px-1 py-2"
+              className="col-span-4 flex items-end py-2 md:px-1"
             >
               <p className="font-fw-sans text-caption leading-snug text-text-tertiary">{teamNotice}</p>
             </div>
