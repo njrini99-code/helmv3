@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 
 import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
+import type { LeakBucket } from '@/app/golf/actions/stats-leak-maps-types';
 import type { RankInfo, TeamBoardRowViewModel } from '../buildTeamBoardViewModel';
 import {
   buildBoardCsv,
@@ -108,8 +109,12 @@ describe('the shared column set', () => {
   it('names the third category the same way its own data label does, not "Short game"', () => {
     const short = CATEGORY_COLUMNS.find((c) => c.key === 'short')!;
     expect(short.prose).toBe('Around the green');
-    expect(short.headerWide).toBe('Around the green');
     expect(short.headerShort).toBe('Grn');
+    // The header carries the head noun, not the phrase: a 4.5rem category
+    // track cannot hold "AROUND THE GREEN" on one line at any viewport width,
+    // and neither can it hold the old "Short game" honestly.
+    expect(short.headerWide).toBe('Green');
+    expect(short.headerWide).not.toBe('Short game');
   });
 
   it('gives Tee the same label at every width, so it renders one span not a pair', () => {
@@ -414,10 +419,13 @@ describe('tour baseline label', () => {
 /* ── Leak maps ────────────────────────────────────────────────────────────── */
 
 describe('worstLeakTakeaway', () => {
-  const bucket = (label: string, team: number | null, pga: number | null, n = 10) => ({
+  const bucket = (label: string, team: number | null, pga: number | null, n = 10): LeakBucket => ({
+    metric_id: null,
+    bucket_id: label.replace(/\W+/g, '_'),
     label,
     team_value: team,
     pga_value: pga,
+    div1_value: null,
     sample_n: n,
   });
 

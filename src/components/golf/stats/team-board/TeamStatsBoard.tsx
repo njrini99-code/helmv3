@@ -235,7 +235,14 @@ export function TeamStatsBoard({
   const hasTrajectory = trajectoryHasSignal(vm.kpis.trajectory);
 
   const readouts: TeamReadoutItem[] = [
-    { key: 'sg', label: 'Team SG / rd', value: <ReadoutNumber>{vm.kpis.teamSg}</ReadoutNumber>, note: `versus ${tour}` },
+    {
+      key: 'sg',
+      label: 'Team SG / rd',
+      // The label carries the unit, so the value carries only the number.
+      // `vm.kpis.teamSg` bakes in a "/ rd" suffix that printed the unit twice.
+      value: <ReadoutNumber>{fmtSg(vm.kpis.teamSgRaw)}</ReadoutNumber>,
+      note: `versus ${tour}`,
+    },
     {
       key: 'trajectory',
       label: 'Trajectory',
@@ -414,15 +421,15 @@ export function TeamStatsBoard({
               <h2 className="mt-1 font-fw-display text-h2 font-semibold text-text-primary">Category field</h2>
               <p className="mt-1 max-w-[62ch] font-fw-sans text-body-sm text-text-secondary">
                 The team&rsquo;s strokes gained per category on top, the roster&rsquo;s ranks in the same five columns below.
-                Bars drop amber below the Tour baseline and rise green above it; darker swatches are stronger. Tap a
-                category to sort by it.
+                Bars drop amber below the Tour baseline and rise green above it; darker swatches are stronger. Choose a
+                category header to sort the roster by it.
               </p>
             </div>
             <div className="mt-5">
               <CategoryField
                 cols={CATEGORY_COLUMNS.map((c) => ({ key: c.key, headerWide: c.headerWide, headerShort: c.headerShort }))}
                 teamName="Team"
-                teamMeta={`${vm.kpis.rounds30d} rds in 30d`}
+                teamMeta="Season to date"
                 teamCells={teamCells}
                 teamNotice={showColdStart ? SG_COLD_START_FULL : undefined}
                 domain={domain}
@@ -482,6 +489,7 @@ export function TeamStatsBoard({
         <section className="flex min-w-0 flex-col gap-3 xl:pr-8">
           <SectionHead title="Putts made by distance" />
           <LeakMap
+            title="Putts made by distance"
             subtitle={`Team make% versus ${tour}${roundsTracked}`}
             takeaway={puttTakeaway}
             data={puttBuckets}
@@ -489,12 +497,13 @@ export function TeamStatsBoard({
             unit="percent"
             state={leakMaps && hasPuttSamples ? undefined : 'insufficient-data'}
             stateMessage={leakMaps && hasPuttSamples ? undefined : leakColdStartMessage}
-            className="border-0 bg-transparent p-0"
+            className="border-0 bg-transparent p-0 [&>header>div>h3]:sr-only"
           />
         </section>
         <section className="flex min-w-0 flex-col gap-3 xl:pl-8">
           <SectionHead title="Approach proximity by distance" />
           <LeakMap
+            title="Approach proximity by distance"
             subtitle={`Average proximity to hole versus ${tour}${roundsTracked}`}
             takeaway={approachTakeaway}
             data={approachBuckets}
@@ -502,7 +511,7 @@ export function TeamStatsBoard({
             unit="feet"
             state={leakMaps && hasApproachSamples ? undefined : 'insufficient-data'}
             stateMessage={leakMaps && hasApproachSamples ? undefined : leakColdStartMessage}
-            className="border-0 bg-transparent p-0"
+            className="border-0 bg-transparent p-0 [&>header>div>h3]:sr-only"
           />
         </section>
       </div>

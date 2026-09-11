@@ -33,8 +33,11 @@ export interface TeamReadoutItem {
    * A `ReactNode`, not a string: the trajectory readout is three counts with
    * their own direction glyphs, which is why this cannot reuse
    * `FieldReadouts`' own `string | null` value. The class strings below are
-   * copied from `coach-home-parts.tsx`'s `FieldReadouts` verbatim so the two
-   * pages share one rhythm rather than inventing a second.
+   * copied from `coach-home-parts.tsx`'s `FieldReadouts` so the two pages share
+   * one rhythm rather than inventing a second, with one change: this rail
+   * carries three items against home's four, and `justify-between` over a rail
+   * as tall as a nine-row field pushed them so far apart the column read as
+   * empty rather than as a stack.
    */
   value: React.ReactNode;
   note?: string;
@@ -44,7 +47,7 @@ export function TeamReadouts({ items }: { items: TeamReadoutItem[] }) {
   return (
     <dl
       data-slot="team-readouts"
-      className="grid grid-cols-2 gap-x-6 gap-y-1 md:grid-cols-4 md:gap-x-8 xl:flex xl:h-full xl:grid-cols-none xl:flex-col xl:justify-between xl:gap-y-0 xl:divide-y xl:divide-border-subtle"
+      className="grid grid-cols-2 gap-x-6 gap-y-1 md:grid-cols-4 md:gap-x-8 xl:flex xl:grid-cols-none xl:flex-col xl:justify-start xl:gap-y-0 xl:divide-y xl:divide-border-subtle"
     >
       {items.map((item) => (
         <div key={item.key} className="flex min-w-0 flex-col gap-1 py-2 xl:py-3.5 xl:first:pt-0 xl:last:pb-0">

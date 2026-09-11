@@ -65,11 +65,17 @@ export interface CategoryColumn {
  *
  * "Around the green" also corrects the header, which alone on this page called
  * the category "Short game" while its own data label said "Around the Green".
+ * The header itself carries the head noun rather than the whole phrase: a
+ * 4.5rem category track cannot hold "AROUND THE GREEN" on one line at ANY
+ * viewport width, and a header wrapped over three lines is the clipping
+ * failure LANGUAGE.md's breakpoint floor exists to prevent. The full name is
+ * on the page three times over — in the verdict, in the leak ledger, and as
+ * the sort control's accessible name.
  */
 export const CATEGORY_COLUMNS: ReadonlyArray<CategoryColumn> = [
   { key: 'tee', metric: 'sg_ott', headerWide: 'Tee', headerShort: 'Tee', prose: 'Off the tee' },
   { key: 'app', metric: 'sg_approach', headerWide: 'Approach', headerShort: 'App', prose: 'Approach' },
-  { key: 'short', metric: 'sg_around_green', headerWide: 'Around the green', headerShort: 'Grn', prose: 'Around the green' },
+  { key: 'short', metric: 'sg_around_green', headerWide: 'Green', headerShort: 'Grn', prose: 'Around the green' },
   { key: 'putt', metric: 'sg_putting', headerWide: 'Putting', headerShort: 'Putt', prose: 'Putting' },
   { key: 'scoring', metric: null, headerWide: 'Scoring', headerShort: 'Scor', prose: 'Scoring' },
 ];
