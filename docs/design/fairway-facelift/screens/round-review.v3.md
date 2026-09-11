@@ -303,17 +303,25 @@ and registry until the team lead promotes it.
 
 ### Known limitations
 
-- `src/components/golf/dashboard/premium-components.tsx` is now reachable from
-  no route. Its only importer in the repo was this page's
-  `containerVariants`/`itemVariants`, and the v3 masthead uses the `m` +
-  `EASE_CINEMATIC` vocabulary directly instead. `src/test/route-reachability.test.ts`
-  lists it, alongside four components orphaned by other sessions' facelift
-  passes (`StandingTrack`, `CommandOpening`, `BriefBand`, `TeamSignalSummary`).
-  Deleting a file in the shared golf dashboard tree is outside this pass's
-  ownership, so it is reported rather than removed.
+Both were found by this pass, both were outside its owned files, and both have
+since been fixed by their owners. Nothing on this screen is knowingly left
+broken; the entries are kept struck through so the record of what was found
+survives, rather than a reader budgeting time for defects that are gone.
 
-- On a scorecard-only round the story column shows the stored V1 summary,
-  which reads "Shot 75 (+3) at QA Test Course. 0 pars." That "0 pars" is
-  generated in `src/app/golf/actions/round-review-content.ts` from holes that
-  were never entered. The page renders the stored narrative faithfully; the
-  fix belongs in the generator, outside this pass's files.
+- ~~`premium-components.tsx` is reachable from no route.~~ Resolved at
+  `9c4a134d6`, outside this pass. Removing this page's framer-motion wrappers
+  took away that file's only importer in the repo, since the v3 masthead uses
+  the `m` + `EASE_CINEMATIC` vocabulary directly. It has since been deleted,
+  along with `StandingTrack.tsx` and its test. Deleting a file in the shared
+  golf dashboard tree was outside this pass's ownership, so it was reported
+  rather than removed here. `src/test/route-reachability.test.ts` is down to
+  the CoachHelm components orphaned by the intelligence rebuild, which that
+  implementer owns.
+
+- ~~The stored narrative says "0 pars" on a scorecard-only round.~~ Fixed at
+  `9d528e486`, outside this pass. The par clause is now guarded on hole count
+  like every other clause in the sentence: it prints when there are hole rows
+  to count and is dropped when there are none, rather than reporting a
+  measurement nobody took. A round that was measured and genuinely had no pars
+  still says so, and the eighteen-bogey case is pinned by a test. The summary
+  also stops emitting a bare trailing period when every clause drops out.
