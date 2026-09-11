@@ -28,6 +28,49 @@ vi.mock('@/components/fairway/feedback/ToastStack', async () => {
 });
 
 import { TeamStatsBoard } from './TeamStatsBoard';
+import type { TeamPlayerStats } from '@/app/golf/(dashboard)/dashboard/stats/team/page';
+
+/** A roster player with nothing recorded — enough to leave the zero-player
+ *  branch so the populated masthead (and its verdict) renders. */
+function player(overrides: Partial<TeamPlayerStats> = {}): TeamPlayerStats {
+  return {
+    id: 'p1',
+    first_name: 'Avery',
+    last_name: 'Lane',
+    avatar_url: null,
+    graduation_year: 2027,
+    handicap: null,
+    rounds_played: 3,
+    scoring_average: 74.2,
+    best_round: null,
+    worst_round: null,
+    fairway_pct: null,
+    fairway_hits: 0,
+    fairway_attempts: 0,
+    gir_pct: null,
+    gir_hits: 0,
+    gir_attempts: 0,
+    putts_per_round: null,
+    total_putts: 0,
+    holes_with_putts: 0,
+    scrambling_pct: null,
+    scrambles_made: 0,
+    scramble_attempts: 0,
+    birdies_per_round: null,
+    total_birdies: 0,
+    holes_with_score: 0,
+    // Null, not zero: fewer than TREND_SIGNAL_MIN_ROUNDS rounds means no
+    // signal has been computed, which is what the verdict has to say.
+    scoring_trend: null,
+    rounds_played_18: 3,
+    rounds_played_9: 0,
+    scoring_average_18: 74.2,
+    scoring_average_9: null,
+    best_round_18: null,
+    best_round_9: null,
+    ...overrides,
+  };
+}
 
 describe('TeamStatsBoard freshness', () => {
   beforeEach(() => {
@@ -62,7 +105,30 @@ describe('TeamStatsBoard freshness', () => {
     expect(screen.queryByText(/rank snapshot as of/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/2026-08-18 16:00 utc/i)).not.toBeInTheDocument();
 
+  });
+
+  // The gate used to be a standalone caption above the board and an
+  // `InsufficientData` block inside the KPI band. It is now one clause of the
+  // masthead verdict, so it only renders on the populated path.
+  it('states the trend gate in the verdict once the roster is not empty', () => {
+    render(
+      <TeamStatsBoard
+        teamName="Guilford College"
+        players={[player()]}
+        intelligenceByPlayer={{}}
+        leakMaps={null}
+        standingByPlayer={new Map()}
+        teamRounds30d={0}
+        freshness={freshness}
+      />,
+    );
+
     expect(screen.getByText(/trend signals begin after 8 completed rounds/i)).toBeVisible();
+    // No strokes gained anywhere and no fetch failure: the cold start is a
+    // real cold start and says so, rather than rendering an empty instrument.
+    expect(screen.getAllByText(/strokes gained appears once players log rounds/i).length).toBeGreaterThan(0);
+    // A trend count of zero must never render as an authoritative "0 climbing".
+    expect(screen.queryByText(/0 climbing/i)).not.toBeInTheDocument();
   });
 
   it('navigates to CoachHelm chat from the overflow Menu', async () => {
