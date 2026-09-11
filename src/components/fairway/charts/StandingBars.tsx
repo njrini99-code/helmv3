@@ -219,7 +219,14 @@ export function StandingBars(props: StandingBarsProps) {
   const showCohortLine = props.show_cohort_text !== false && layout !== 'compact';
 
   const barHeight = size === 'sm' ? 'h-1.5' : 'h-2';
-  const labelWidthClass = size === 'sm' ? 'w-9' : 'w-11';
+  // The label track sizes to the longest label in the group rather than to a
+  // guessed width. A fixed `w-11` is 44px and "Field Avg" at caption size
+  // needs about 55, so the reference row on every strokes-gained metric read
+  // "Fiel…" — a truncation that hid WHICH reference the bar was measured
+  // against, which is the one thing that row exists to say. The grid's first
+  // track is `auto`, so one width still serves every row and the bars stay
+  // aligned; the max keeps a pathological label from eating the bar.
+  const labelWidthClass = size === 'sm' ? 'min-w-9 max-w-[6rem]' : 'min-w-11 max-w-[7rem]';
   const rowGap = layout === 'compact' ? 'gap-1' : 'gap-2';
 
   function railBar(row: Row) {
