@@ -525,7 +525,8 @@ describe('RoundReviewPage — scorecard-only round (no hole rows)', () => {
 
     const { container, findByText, queryByText } = renderAsPlayer();
 
-    // `getRoundReviewTrend` resolves `[]` by default, so there is no
+    // `getRoundReviewTrend` resolves `[]` by default — a SUCCESSFUL read of
+    // nothing, not a failure — so there is no
     // trajectory to draw either — the stage says so in one line instead of
     // rendering an empty instrument or a blank state.
     await findByText(/not enough other rounds yet to draw a trajectory/);
@@ -600,6 +601,41 @@ describe('RoundReviewPage — scorecard-only round (no hole rows)', () => {
     // And no "18 holes" anywhere, which would read as a flat contradiction of
     // the sentence directly above it.
     expect(queryByText(/18 holes/i)).not.toBeInTheDocument();
+  });
+
+  it('says a failed trend read failed, instead of drawing an empty season', async () => {
+    // `getRoundReviewTrend` returns `null` ONLY when the read itself failed.
+    // `[]` still means "read fine, nothing to plot". A coach shown a blank
+    // trend concludes the player has no history, so the two absences cannot
+    // render the same way.
+    const { getRoundReview, getRoundReviewTrend } = await import('@/app/golf/actions/round-review-system');
+    vi.mocked(getRoundReview).mockResolvedValueOnce({
+      success: true,
+      review: {
+        id: 'review-1',
+        player_id: 'player-1',
+        round_id: 'round-1',
+        review_content: {
+          ...FULL_REVIEW_CONTENT,
+          holeByHole: [],
+          momentumData: [],
+          scoringDistribution: { eagles: [], birdies: [], pars: [], bogeys: [], doublePlus: [], holesPlayed: 0 },
+        },
+      },
+    } as unknown as Awaited<ReturnType<typeof getRoundReview>>);
+    vi.mocked(getRoundReviewTrend).mockResolvedValueOnce(null);
+
+    const { container, findByText, queryByText } = renderAsPlayer();
+
+    await findByText(/Season trend unavailable/);
+    expect(queryByText(/not a claim that there are none/)).toBeInTheDocument();
+    // No instrument, because we have nothing honest to draw in it.
+    expect(container.querySelector('[data-slot="hole-field"]')).toBeNull();
+    // And not the "not enough other rounds yet" line, which is the OTHER
+    // absence: that one asserts we looked and there were too few.
+    expect(queryByText(/not enough other rounds yet/)).not.toBeInTheDocument();
+    // It stays a quiet line on the stage, never an error banner.
+    expect(queryByText(/We couldn’t load this review/)).not.toBeInTheDocument();
   });
 
   it('plots the player’s recent rounds, with this one marked, when there are enough of them', async () => {

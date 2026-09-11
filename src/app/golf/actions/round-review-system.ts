@@ -1373,13 +1373,23 @@ export interface RoundReviewTrendRow {
  * `verifyRoundBelongsToPlayer`), since a coach can be authorized for the
  * player without this specific round necessarily belonging to them.
  *
- * Returns `[]` on any failure/denial/cold-start — never throws — so a
- * flaky trend fetch can't take the rest of the review down with it.
+ * Never throws, so a flaky trend fetch can't take the rest of the review
+ * down with it. But it distinguishes the two absences, because the caller
+ * draws them differently and a reader cannot tell them apart otherwise:
+ *
+ *   `[]`   — the read SUCCEEDED and there is nothing to plot. No scored
+ *            rounds yet, or the viewer is not allowed to see them. A blank
+ *            trend is the truth.
+ *   `null` — the read FAILED. We do not know whether this player has a
+ *            season. Saying "no rounds" here would be a lie a coach acts on.
  */
 async function getRoundReviewTrendImpl(
   playerId: string,
   roundId: string,
-): Promise<RoundReviewTrendRow[]> {
+): Promise<RoundReviewTrendRow[] | null> {
+  // The guards below are NOT failures: a malformed id, a viewer without
+  // access and a round that is not this player's all mean "nothing to plot
+  // for you", which is honestly an empty trend.
   if (!isValidUuid(playerId) || !isValidUuid(roundId)) return [];
   const supabase = await createClient();
   try {
@@ -1401,7 +1411,7 @@ async function getRoundReviewTrendImpl(
         `[RoundReview] getRoundReviewTrend read failed: ${describeError(error)}`,
         { action: 'round_review_system.getRoundReviewTrend', featureArea: 'round_reviews', playerId, roundId },
       );
-      return [];
+      return null;
     }
 
     return (data ?? [])
@@ -1412,7 +1422,7 @@ async function getRoundReviewTrendImpl(
       `[RoundReview] getRoundReviewTrend failed: ${describeError(error)}`,
       { action: 'round_review_system.getRoundReviewTrend', featureArea: 'round_reviews', playerId, roundId },
     );
-    return [];
+    return null;
   }
 }
 
@@ -1422,6 +1432,9 @@ const observedGetRoundReviewTrend = withAdminObserved(
   getRoundReviewTrendImpl,
 );
 
-export async function getRoundReviewTrend(playerId: string, roundId: string): Promise<RoundReviewTrendRow[]> {
+export async function getRoundReviewTrend(
+  playerId: string,
+  roundId: string,
+): Promise<RoundReviewTrendRow[] | null> {
   return observedGetRoundReviewTrend(playerId, roundId);
 }

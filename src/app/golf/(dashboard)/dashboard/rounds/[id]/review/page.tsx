@@ -226,6 +226,9 @@ export default function RoundReviewPage() {
   // already paid down once for the standing fetch).
   const [trendRounds, setTrendRounds] = useState<RoundReviewTrendRow[]>([]);
   const [loadingTrend, setLoadingTrend] = useState(true);
+  // `null` back from the trend read means the READ failed, which is not the
+  // same absence as "this player has no scored rounds". The stage says which.
+  const [trendUnavailable, setTrendUnavailable] = useState(false);
   // The player's own recent averages (`getStatAverages` — their last 20
   // completed rounds), the ONLY honest basis for the stage readouts' deltas:
   // the trend rows above carry `score_to_par` alone, so putts, greens and
@@ -521,15 +524,21 @@ export default function RoundReviewPage() {
     }
     let cancelled = false;
     setLoadingTrend(true);
+    setTrendUnavailable(false);
 
     getRoundReviewTrend(round.player_id, roundId)
       .then((rows) => {
-        if (!cancelled) setTrendRounds(rows);
+        if (cancelled) return;
+        // `null` is a failed read; `[]` is a successful read of nothing.
+        setTrendUnavailable(rows === null);
+        setTrendRounds(rows ?? []);
       })
       .catch(() => {
-        // getRoundReviewTrend already resolves `[]` on a handled failure/
-        // denial; an unexpected throw just leaves `trendRounds` at its prior
-        // value — `buildRoundTrendSeries`'s own round-count floor covers it.
+        // An unexpected throw is a failed read too, and it must not leave the
+        // previous player's rounds on screen under this player's name.
+        if (cancelled) return;
+        setTrendUnavailable(true);
+        setTrendRounds([]);
       })
       .finally(() => {
         if (!cancelled) setLoadingTrend(false);
@@ -857,6 +866,7 @@ export default function RoundReviewPage() {
               averages={playerAverages}
               trendRounds={trendRounds}
               trendLoading={loadingTrend}
+              trendUnavailable={trendUnavailable}
               hasAnySG={hasAnySG}
               onRecompute={() => generateReview()}
               recomputing={isGenerating}

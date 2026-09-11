@@ -113,6 +113,9 @@ export interface RoundReviewFieldSheetProps {
   /** The player's recent rounds, which the degraded stage plots. */
   trendRounds: RoundReviewTrendRow[];
   trendLoading: boolean;
+  /** The trend READ failed, which is not the same absence as a player with no
+   *  scored rounds. The stage has to say which one it is looking at. */
+  trendUnavailable?: boolean;
   /** True when at least one round-level Strokes Gained column is populated. */
   hasAnySG: boolean;
   onRecompute: () => void;
@@ -148,6 +151,7 @@ export function RoundReviewFieldSheet({
   averages,
   trendRounds,
   trendLoading,
+  trendUnavailable = false,
   hasAnySG,
   onRecompute,
   recomputing,
@@ -445,7 +449,9 @@ export function RoundReviewFieldSheet({
             <p className="max-w-[64ch] font-fw-sans text-caption text-text-tertiary">
               {hasHoles
                 ? `Each hole against par, over in amber and under in green, scale ±${cap}. The line is the round's running total on its own scale.`
-                : 'Score to par for this player’s recent rounds, with this one marked. The hole-by-hole read unlocks when holes are entered for this round.'}
+                : trendUnavailable
+                  ? 'The hole-by-hole read unlocks when holes are entered for this round.'
+                  : 'Score to par for this player’s recent rounds, with this one marked. The hole-by-hole read unlocks when holes are entered for this round.'}
             </p>
           </div>
         </div>
@@ -471,6 +477,15 @@ export function RoundReviewFieldSheet({
                 <Skeleton className="h-12 w-full rounded-fw-sm" />
                 <Skeleton className="h-3 w-40" />
               </div>
+            ) : trendUnavailable ? (
+              // A failed read, said as a failed read. Not an empty chart,
+              // which would claim this player has no season, and not an error
+              // banner, which would make a secondary absence the loudest
+              // thing on the page.
+              <p className="font-fw-sans text-body-sm text-text-tertiary">
+                Season trend unavailable. We couldn&rsquo;t read this player&rsquo;s recent rounds just now, so this is
+                not a claim that there are none.
+              </p>
             ) : stageColumns.length > 0 ? (
               <HoleField
                 columns={stageColumns}
