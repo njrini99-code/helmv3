@@ -23,12 +23,11 @@ import {
   humanizeClub,
   holeDeltasFromMomentum,
   nineDivider,
-  polylinePoints,
-  roundShapeCap,
   seasonColumns,
   topLeak,
   worstWindow,
 } from '../round-shape';
+import { holeFieldCap, polylinePoints } from '../HoleField';
 
 /** `momentumData` from a list of per-hole deltas, the way the server builds it. */
 function momentumFrom(deltas: number[]): RoundReviewContent['momentumData'] {
@@ -169,9 +168,9 @@ describe('holeColumns and the instrument scale', () => {
   });
 
   it('never lets the scale fall below three strokes', () => {
-    expect(roundShapeCap(holeColumns([hole({ hole: 1, scoreToPar: 1 })]))).toBe(3);
-    expect(roundShapeCap(holeColumns(holes))).toBe(3);
-    expect(roundShapeCap(holeColumns([hole({ hole: 1, scoreToPar: 5 })]))).toBe(5);
+    expect(holeFieldCap(holeColumns([hole({ hole: 1, scoreToPar: 1 })]))).toBe(3);
+    expect(holeFieldCap(holeColumns(holes))).toBe(3);
+    expect(holeFieldCap(holeColumns([hole({ hole: 1, scoreToPar: 5 })]))).toBe(5);
   });
 
   it('reports whether any hole logged an off-the-tee result at all', () => {

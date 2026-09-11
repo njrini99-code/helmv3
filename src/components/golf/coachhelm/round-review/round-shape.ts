@@ -2,7 +2,7 @@
  * ============================================================================
  * round-shape — the pure logic behind the Round review stage (round-review.v3)
  * ----------------------------------------------------------------------------
- * Everything the `RoundShape` instrument, the masthead verdict and the stage
+ * Everything the `HoleField` instrument, the masthead verdict and the stage
  * readouts need, computed from fields that already exist on the round, the
  * stored `RoundReviewContent` and the player's own comparison averages. No
  * React, no Supabase — data in, data out, so every branch is fixture-testable.
@@ -24,6 +24,15 @@ import type {
   RoundReviewTrendRow,
   StrokesToGainItem,
 } from '@/app/golf/actions/round-review-system';
+// Type-only, and one direction: this file maps the review's view model into
+// the instrument's neutral column model. `HoleField` knows nothing about the
+// review, which is what lets the round detail screen share it.
+import type {
+  HoleFieldColumn,
+  HoleFieldDivider,
+  HoleFieldLine,
+  HoleFieldPoint,
+} from './HoleField';
 
 /* ─────────────────────────────────────────────────────────────────────────
  * Hole deltas and stretches
@@ -123,23 +132,6 @@ export function worstWindow(deltas: ReadonlyArray<HoleDelta>, size = 3): Stretch
  * The cumulative line
  * ──────────────────────────────────────────────────────────────────────── */
 
-export interface LinePoint {
-  hole: number;
-  value: number;
-  /** 0-100 across the instrument's width, centered on the hole's column. */
-  x: number;
-  /** 0-100 down the instrument's box: worse (higher to par) sits higher up,
-   *  matching the bars, where over par rises. */
-  y: number;
-}
-
-export interface CumulativeLine {
-  points: LinePoint[];
-  min: number;
-  max: number;
-  last: number;
-}
-
 /**
  * `momentumData` plotted on its OWN scale (never the bars' scale — the two
  * share a box and nothing else, which is why the finishing value is labelled
@@ -153,7 +145,7 @@ export interface CumulativeLine {
 export function cumulativeLine(
   momentum: RoundReviewContent['momentumData'],
   holeOrder?: ReadonlyArray<number>,
-): CumulativeLine | null {
+): HoleFieldLine | null {
   if (momentum.length === 0) return null;
   const order = holeOrder && holeOrder.length > 0 ? holeOrder : momentum.map((p) => p.hole);
   const index = new Map(order.map((holeNumber, i) => [holeNumber, i]));
@@ -164,7 +156,7 @@ export function cumulativeLine(
   const max = Math.max(...values);
   const span = max - min;
   const columnWidth = 100 / order.length;
-  const points = plotted.map((point) => ({
+  const points: HoleFieldPoint[] = plotted.map((point) => ({
     hole: point.hole,
     value: point.rollingScoreToPar,
     x: columnWidth * index.get(point.hole)! + columnWidth / 2,
@@ -173,42 +165,9 @@ export function cumulativeLine(
   return { points, min, max, last: values[values.length - 1]! };
 }
 
-/** `"12,40 20,55"` — the `points` attribute for the cumulative polyline. */
-export function polylinePoints(points: ReadonlyArray<LinePoint>): string {
-  return points.map((p) => `${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(' ');
-}
-
 /* ─────────────────────────────────────────────────────────────────────────
  * The instrument's columns
  * ──────────────────────────────────────────────────────────────────────── */
-
-export interface ShapeColumn {
-  key: string;
-  /** Signed strokes against par. Positive rises in amber, negative drops in
-   *  green, `null` renders the neutral par tick with no claim. */
-  value: number | null;
-  /** The row printed directly under the box (par, or a round's date). */
-  overline: string;
-  /** The row under that (hole number, or the round's score). */
-  label: string;
-  /** Spoken/hover description — the whole fact for this column. */
-  detail: string;
-  /** Eagle or better, which reads deeper than a birdie. */
-  deep?: boolean;
-  /** The reviewed round inside the degraded season view. */
-  marked?: boolean;
-  /** Off-the-tee result: `null` when there is no fairway target at all. */
-  fairway?: { hit: boolean | null; side: 'left' | 'right' | null };
-  /** Green in regulation, `null` when it was never logged. */
-  gir?: boolean | null;
-}
-
-/** Strokes that reach a full bar. At least 3, so a level round still reads. */
-export function roundShapeCap(columns: ReadonlyArray<ShapeColumn>): number {
-  let max = 0;
-  for (const c of columns) if (c.value != null) max = Math.max(max, Math.abs(c.value));
-  return Math.max(3, max);
-}
 
 /** First word of a logged miss direction, or `null` when it is not a side. */
 export function missSide(raw: string | null): 'left' | 'right' | null {
@@ -235,7 +194,7 @@ function scoreName(delta: number): string {
 /** One column per hole, in hole order. The par row carries the word "Par" on
  *  its first column only and bare numerals after it, the way a scorecard
  *  prints a row header rather than repeating the label eighteen times. */
-export function holeColumns(holes: ReadonlyArray<HoleBreakdown>): ShapeColumn[] {
+export function holeColumns(holes: ReadonlyArray<HoleBreakdown>): HoleFieldColumn[] {
   return holes.map((h, i) => ({
     key: String(h.hole),
     value: h.scoreToPar,
@@ -263,7 +222,7 @@ export function hasFairwayRow(holes: ReadonlyArray<HoleBreakdown>): boolean {
 export function seasonColumns(
   rows: ReadonlyArray<RoundReviewTrendRow>,
   currentRoundId: string,
-): ShapeColumn[] {
+): HoleFieldColumn[] {
   if (rows.length < 2) return [];
   return [...rows]
     .reverse()
@@ -556,18 +515,11 @@ export function buildLeakRows(items: ReadonlyArray<StrokesToGainItem>): LeakRow[
  * The front and back split marker
  * ──────────────────────────────────────────────────────────────────────── */
 
-export interface NineDivider {
-  /** Index of the last column of the front nine. */
-  afterIndex: number;
-  frontLabel: string;
-  backLabel: string;
-}
-
 /** The hairline between the nines, present only when both halves were played. */
 export function nineDivider(
   holes: ReadonlyArray<HoleBreakdown>,
   split: RoundReviewContent['frontBackSplit'],
-): NineDivider | null {
+): HoleFieldDivider | null {
   const lastFront = holes.reduce((found, h, i) => (h.hole <= 9 ? i : found), -1);
   if (lastFront < 0 || lastFront === holes.length - 1) return null;
   if (split.front.score <= 0 || split.back.score <= 0) return null;

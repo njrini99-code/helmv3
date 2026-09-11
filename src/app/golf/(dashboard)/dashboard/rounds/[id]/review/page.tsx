@@ -4,7 +4,7 @@
  * Round Review Page
  *
  * Round review as a field sheet (docs/design/fairway-facelift/screens/
- * round-review.v3.md): a bare masthead, ONE stage holding the `RoundShape`
+ * round-review.v3.md): a bare masthead, ONE stage holding the `HoleField`
  * instrument beside its readouts, a three-column ledger, and the hole-by-hole
  * table — all composed by `RoundReviewFieldSheet`. This page owns
  * data-fetching + auth only; see that component for the presentation, and

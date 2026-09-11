@@ -5,7 +5,7 @@
  * from the pre-facelift page), and that `RoundReviewFieldSheet` actually
  * mounts the four regions the v3 composition promises — a bare masthead whose
  * verdict is built from this round's own fields, the one stage holding
- * `RoundShape` beside its readouts, the three-column ledger, and the
+ * `HoleField` beside its readouts, the three-column ledger, and the
  * hole-by-hole table — wired to a complete `RoundReviewContent` fixture.
  *
  * The honesty rules get their own cases: a scorecard-only round degrades the
@@ -356,7 +356,7 @@ describe('RoundReviewPage — the field sheet mounts its four regions', () => {
     const { container } = renderAsPlayer();
 
     const shape = await waitFor(() => {
-      const el = container.querySelector('[data-slot="round-shape"]');
+      const el = container.querySelector('[data-slot="hole-field"]');
       expect(el).toBeTruthy();
       return el as HTMLElement;
     });
@@ -537,11 +537,69 @@ describe('RoundReviewPage — scorecard-only round (no hole rows)', () => {
     );
 
     // No fabricated hole series anywhere: no stage columns, no hole table.
-    expect(container.querySelector('[data-slot="round-shape"]')).toBeNull();
+    expect(container.querySelector('[data-slot="hole-field"]')).toBeNull();
     expect(container.querySelector('[data-slot="hole-ledger"]')).toBeNull();
     expect(queryByText('Hole by hole')).not.toBeInTheDocument();
     expect(queryByText(/Mix:/)).not.toBeInTheDocument();
     expect(queryByText(/0 pars/)).not.toBeInTheDocument();
+  });
+
+  it('believes the hole rows, not holes_played, when the two disagree', async () => {
+    // The trap this pins: a round can carry `holes_played: 18` and have ZERO
+    // `golf_holes` rows, which is exactly the state of the round the facelift
+    // captures run against. Every hole-level branch reads `holeByHole`, so
+    // the count on the card can never talk the page into drawing 18 holes it
+    // does not have.
+    roundRow = { ...DEFAULT_ROUND_ROW, holes_played: 18, holes: [] };
+
+    const { getRoundReview } = await import('@/app/golf/actions/round-review-system');
+    vi.mocked(getRoundReview).mockResolvedValueOnce({
+      success: true,
+      review: {
+        id: 'review-1',
+        player_id: 'player-1',
+        round_id: 'round-1',
+        review_content: {
+          ...FULL_REVIEW_CONTENT,
+          holeByHole: [],
+          scoringDistribution: { eagles: [], birdies: [], pars: [], bogeys: [], doublePlus: [], holesPlayed: 18 },
+        },
+        generated_at: '2026-06-01T00:00:00Z',
+        ai_model_version: 'test',
+        shared_with_coach: false,
+        shared_at: null,
+        coach_notes: null,
+        coach_viewed_at: null,
+        created_at: '2026-06-01T00:00:00Z',
+        updated_at: '2026-06-01T00:00:00Z',
+        round: {
+          id: 'round-1',
+          player_id: 'player-1',
+          course_name: 'Pinehurst No. 2',
+          round_date: '2026-06-01',
+          total_score: 75,
+          score_to_par: 3,
+          total_putts: null,
+          total_fairways_hit: null,
+          total_fairways: null,
+          total_gir: null,
+          total_gir_possible: null,
+        },
+      },
+    });
+
+    const { container, findByText, queryByText } = renderAsPlayer();
+    await findByText(/not enough other rounds yet to draw a trajectory/);
+
+    const verdict = container.querySelector('[data-slot="verdict"]') as HTMLElement;
+    expect(verdict.textContent).toBe(
+      '38 (+2) at Pinehurst No. 2. Scorecard only, so there is no hole-by-hole read yet.',
+    );
+    expect(container.querySelector('[data-slot="hole-field"]')).toBeNull();
+    expect(container.querySelector('[data-slot="hole-ledger"]')).toBeNull();
+    // And no "18 holes" anywhere, which would read as a flat contradiction of
+    // the sentence directly above it.
+    expect(queryByText(/18 holes/i)).not.toBeInTheDocument();
   });
 
   it('plots the player’s recent rounds, with this one marked, when there are enough of them', async () => {
@@ -569,7 +627,7 @@ describe('RoundReviewPage — scorecard-only round (no hole rows)', () => {
 
     await findByText('Season trajectory');
     const shape = await waitFor(() => {
-      const el = container.querySelector('[data-slot="round-shape"]');
+      const el = container.querySelector('[data-slot="hole-field"]');
       expect(el).toBeTruthy();
       return el as HTMLElement;
     });

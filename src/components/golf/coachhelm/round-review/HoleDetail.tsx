@@ -10,7 +10,7 @@
  * slim companion column carries the putting zoom and the compact shot list,
  * and the header states the hole's Strokes Gained in one honest sentence.
  *
- * Both entry points on the page — a column of the `RoundShape` stage and a
+ * Both entry points on the page — a column of the `HoleField` stage and a
  * row of the hole-by-hole table — open THIS panel for the same hole, so the
  * selection lives above them in the composition root, not in here.
  *

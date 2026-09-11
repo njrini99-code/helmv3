@@ -142,15 +142,16 @@ asks for: a bare masthead, one `Surface` holding the new page-local
 vertical hairlines, and the hole-by-hole table.
 
 Files added under `src/components/golf/coachhelm/round-review/`:
-`round-shape.ts` (pure logic), `RoundShape.tsx` (the instrument),
+`round-shape.ts` (pure logic), `HoleField.tsx` (the instrument),
 `round-review-parts.tsx` (verdict, readouts, ledger columns, table),
 `RoundReviewFieldSheet.tsx` (the composition root), `HoleDetail.tsx` (the hole
 panel lifted out of `ReviewHero`), `FullBreakdownPanel.tsx`. `ReviewHero.tsx`
 and `FilmstripReview.tsx` are deleted. The route's `loading.tsx` was
 rebuilt with them: it had been drawing the retired centred card with its
 3-up mini-stat row, which is the first thing a navigation paints, so it now
-mirrors the page's own masthead-and-stage loading surface. `RoundShape` is page-local: it is not
-in the shared fairway barrel or registry.
+mirrors the page's own masthead-and-stage loading surface. `HoleField` is shared-by-design but not yet
+shared-by-location: it stays in this directory and out of the fairway barrel
+and registry until the team lead promotes it.
 
 ### Deviations, and why
 
@@ -232,6 +233,51 @@ in the shared fairway barrel or registry.
     `RoundShape.tsx` and `round-review-parts.tsx` and asserts the affordance
     that replaced the sentence: a hole is a `PressTarget` in the instrument and
     a pressable row in the table. Coverage is repointed, not deleted.
+
+14. **The instrument is `HoleField`, and it takes columns rather than holes.**
+    Round detail draws the same picture, so the file is written to be lifted:
+    it declares its own `HoleFieldColumn`, `HoleFieldPoint`, `HoleFieldLine`
+    and `HoleFieldDivider`, owns `polylinePoints` and `holeFieldCap`, and
+    imports nothing from this page. `round-shape.ts` depends on it, type-only
+    and one-way, never the reverse.
+
+    The props are a column model and not `HoleBreakdown[]` on purpose.
+    `HoleBreakdown` is a `round-review-system` type, so accepting it would tie
+    every future caller to the review's view model — the exact coupling the
+    shared instrument has to avoid. A caller maps what it has into columns and
+    keeps its own framing outside the component. That is also what lets one
+    instrument draw both the hole view and the degraded season view.
+
+    `cap` is optional and derives from the columns when omitted, so rendering
+    the field never requires importing a helper from a review module.
+
+15. **The hole-count trap is pinned by a test, not by new copy.** A round can
+    carry `holes_played: 18` and have zero `golf_holes` rows, which is the
+    state of the round the captures run against. Nothing on this page prints a
+    hole count from `holes_played`: `buildFacts` never prints one at all, the
+    scorecard-only branch reads `holeByHole.length`, and the hole table's
+    "18 holes" note counts the rows it is about to draw. A regression test
+    sets `holes_played: 18` against an empty `holeByHole` and asserts the
+    scorecard-only verdict, no instrument, no table and no "18 holes" string.
+
+16. **Round `2f343331-b1e6-49c6-9dc0-553166a90213` cannot be rendered here,
+    and the reason is organizational, not a bug.** Its player is on Lynchburg
+    Women's Golf, organization `119634a3-b6db-4241-9e8a-d95b0447c4ac`, staffed
+    only by lynchburg.edu coaches. The capture persona staffs only Demo
+    University Golf, `f97a9346-52ef-4f27-9ee7-4cf1e20fc79a`, so the page's
+    team-membership check correctly refuses it and shows "Round not found".
+    (The membership row does exist; its status is `inactive`, and the check
+    does not filter on status, so status was never the blocker.) Signing in as
+    the real student or a real Lynchburg coach is not an option.
+
+    The substitute is stronger than a screenshot: `__tests__/hole-field-real-round.test.ts`
+    carries that round's 18 `golf_holes` rows verbatim and asserts the whole
+    path against them — 18 columns, the cap, the cumulative line finishing at
+    +23, the OUT 49 / IN 46 split, and the verdict sentence. It is a real
+    tie-break fixture too: three 3-hole windows tie at 6 dropped shots, and
+    the round's only run without a dropped shot is level rather than under
+    par. The rendered proof uses `6b3d748c-a003-46c2-80fb-5c8ee302561b`, 18
+    hole rows and 88 shots, inside the persona's own organization.
 
 ### Known limitations
 

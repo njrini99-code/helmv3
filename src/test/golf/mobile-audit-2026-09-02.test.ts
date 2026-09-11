@@ -72,7 +72,7 @@ describe('mobile audit 2026-09-02', () => {
     // hole is now a real press target in the instrument AND a pressable row in
     // the hole table, so the affordance is the control itself rather than a
     // sentence telling a phone to hover. Assert that, not the retired copy.
-    const shape = read('src/components/golf/coachhelm/round-review/RoundShape.tsx');
+    const shape = read('src/components/golf/coachhelm/round-review/HoleField.tsx');
     expect(shape).not.toContain('Hover or tap a hole');
     expect(shape).toContain('<PressTarget');
     const parts = read('src/components/golf/coachhelm/round-review/round-review-parts.tsx');

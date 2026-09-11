@@ -8,7 +8,7 @@
  *   1. Masthead, bare on the canvas: the round-review eyebrow with the course
  *      and date and the actions, the player's name as the title, one verdict
  *      sentence built from this round's own fields, a mono facts line.
- *   2. The stage, the one Surface: `RoundShape` — a bar per hole off the par
+ *   2. The stage, the one Surface: `HoleField` — a bar per hole off the par
  *      baseline with the cumulative line crossing the same box — beside a
  *      readouts column. A scorecard-only round has no holes, so the same
  *      instrument plots the player's recent rounds with this one marked.
@@ -53,7 +53,7 @@ import type {
 import { buildReviewShotsByHole, type RawGolfShotRow, type ReviewShotInput } from './round-review-shots';
 import { buildCourseDateLine, buildNarrative } from './buildReviewViewModel';
 import { HoleDetail } from './HoleDetail';
-import { RoundShape } from './RoundShape';
+import { HoleField, holeFieldCap } from './HoleField';
 import { FieldLedger, HoleTable, LeakLedger, LedgerHead, StageReadouts, VerdictLine } from './round-review-parts';
 import {
   buildFacts,
@@ -65,7 +65,6 @@ import {
   holeColumns,
   holeDeltasFromMomentum,
   nineDivider,
-  roundShapeCap,
   seasonColumns,
 } from './round-shape';
 import { formatToPar } from '@/lib/golf/format-to-par';
@@ -261,7 +260,7 @@ export function RoundReviewFieldSheet({
   const divider = useMemo(() => nineDivider(holes, review.frontBackSplit), [holes, review.frontBackSplit]);
   const seasonShape = useMemo(() => seasonColumns(trendRounds, roundId), [trendRounds, roundId]);
   const stageColumns = hasHoles ? columns : seasonShape;
-  const cap = useMemo(() => roundShapeCap(stageColumns), [stageColumns]);
+  const cap = useMemo(() => holeFieldCap(stageColumns), [stageColumns]);
   const showFairwayRow = hasHoles && hasFairwayRow(holes);
   const showGirRow = hasHoles && holes.some((h) => h.gir != null);
 
@@ -453,7 +452,7 @@ export function RoundReviewFieldSheet({
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_15rem] lg:divide-x lg:divide-border-subtle">
           <div className="order-2 flex min-w-0 flex-col justify-center px-5 py-5 md:px-6 lg:order-1">
             {hasHoles ? (
-              <RoundShape
+              <HoleField
                 columns={stageColumns}
                 cap={cap}
                 line={line}
@@ -472,7 +471,7 @@ export function RoundReviewFieldSheet({
                 <Skeleton className="h-3 w-40" />
               </div>
             ) : stageColumns.length > 0 ? (
-              <RoundShape columns={stageColumns} cap={cap} ariaLabel="Score to par by round" denseLabels />
+              <HoleField columns={stageColumns} cap={cap} ariaLabel="Score to par by round" denseLabels />
             ) : (
               <p className="font-fw-sans text-body-sm text-text-tertiary">
                 Scorecard only, and there are not enough other rounds yet to draw a trajectory. Enter this round&rsquo;s
