@@ -6,10 +6,8 @@ import { useGolfUser } from '@/contexts/golf-user-context';
 import { useTaskRealtime } from '@/hooks/golf/use-task-realtime';
 import { completeTask } from '@/app/golf/actions/tasks';
 import { fairwayScope } from '@/lib/redesign/flag';
-import { cn } from '@/lib/utils';
 import { FairwayTasks } from '@/components/fairway/pages/tasks';
-import { Skeleton } from '@/components/fairway/feedback/Skeleton';
-import { Surface } from '@/components/fairway/surfaces/surface';
+import { FairwayTasksSkeleton } from '@/components/fairway/pages/tasks/FairwayTasksSkeleton';
 
 interface Task {
   id: string;
@@ -45,6 +43,21 @@ export default function GolfTasksPage() {
   // P292 — distinguish "roster fetch failed" from a genuinely empty roster, so
   // the create modal doesn't show "No players on the roster yet" on an outage.
   const [playersError, setPlayersError] = useState(false);
+
+  // THE PAGE'S ONE CLOCK READ.
+  //
+  // FairwayTasks and its stage classify every task as overdue or not, and
+  // label every due date, from this bare YYYY-MM-DD string; nothing in that
+  // tree reads a clock during render, so its markup is a pure function of its
+  // props. Resolving it in an effect (and holding the loading gate until it
+  // lands, below) means the component never renders on the server or on the
+  // first client paint with a day the other side doesn't have.
+  const [today, setToday] = useState<string | null>(null);
+  useEffect(() => {
+    const d = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    setToday(`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`);
+  }, []);
 
   // Use IDs from context — no auth/role queries needed
   const teamId = golfUser.teamId || null;
@@ -163,83 +176,15 @@ export default function GolfTasksPage() {
   // to Suspense) has returned real tasks/stats. Without this branch there'd
   // be a beat of an empty/undefined board between mount and first data.
   //
-  // Facelift (docs/design/fairway-facelift/screens/tasks.md): this mirrors
-  // loading.tsx's shape exactly (same masthead → StatMatrix → toolbar → one
-  // matte Surface of seam rows) so the swap between the two loading states is
-  // invisible — see loading.tsx's docblock for why the two files duplicate
-  // this markup instead of sharing a component.
-  if (loading) {
+  // Facelift (docs/design/fairway-facelift/screens/tasks.v3.md): this and
+  // loading.tsx render the SAME FairwayTasksSkeleton, so the swap between the
+  // two loading states is invisible and neither can drift from the page's
+  // real composition. `today` is part of the gate: FairwayTasks takes the day
+  // as a prop and must never render before it is resolved.
+  if (loading || today === null) {
     return (
       <div className={fairwayScope('min-h-full bg-canvas')}>
-        <div
-          role="status"
-          aria-busy="true"
-          aria-live="polite"
-          className="mx-auto w-full max-w-[1280px] px-4 py-6 pb-24 md:px-6 md:py-8"
-        >
-          <span className="sr-only">Loading tasks…</span>
-
-          {/* Masthead — ViewHeader (eyebrow · title · description · meta) +
-              primary CTA + the header overflow (From template). */}
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-5">
-            <div className="flex min-w-0 flex-col gap-1.5">
-              <Skeleton className="h-3 w-16" />
-              <Skeleton className="h-9 w-52 max-w-full" />
-              <Skeleton className="h-3.5 w-72 max-w-full" />
-              <Skeleton className="h-3 w-20" />
-            </div>
-            <div className="flex flex-shrink-0 items-center gap-2">
-              <Skeleton className="h-10 w-32 rounded-fw-md" />
-              <Skeleton circle className="h-9 w-9" />
-            </div>
-          </div>
-
-          <div className="mt-8 flex flex-col gap-6">
-            {/* StatMatrix — Open · Active · Completed · Overdue (2×2 on
-                phone, one row of 4 from `sm`), the same inset-well seams the
-                real component draws. */}
-            <div className="grid grid-cols-2 overflow-hidden rounded-fw-md bg-surface-sunken sm:grid-cols-4">
-              {[0, 1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className={cn(
-                    'flex flex-col items-center gap-1.5 border-border-subtle px-3 py-3',
-                    i % 2 === 1 && 'border-l',
-                    i >= 2 && 'border-t sm:border-t-0',
-                    i !== 0 && 'sm:border-l',
-                  )}
-                >
-                  <Skeleton className="h-7 w-10" />
-                  <Skeleton className="h-3 w-14" />
-                </div>
-              ))}
-            </div>
-
-            {/* Toolbar — search · status Segmented · category filter, one row. */}
-            <div className="flex min-h-11 flex-wrap items-center gap-3 rounded-card border border-border-subtle bg-surface px-3 py-2">
-              <Skeleton className="h-10 w-full rounded-fw-md sm:min-w-[180px] sm:max-w-sm sm:flex-1 lg:w-72 lg:flex-none" />
-              <Skeleton className="h-9 w-48 rounded-fw-sm" />
-              <Skeleton className="ml-auto h-8 w-28 rounded-full" />
-            </div>
-
-            {/* The task list — ONE matte Surface of seam rows. */}
-            <Surface
-              elevation="border"
-              padding="none"
-              className="divide-y divide-border-subtle overflow-hidden"
-            >
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="flex items-center gap-3 px-4 py-3 sm:gap-4 sm:px-6">
-                  <Skeleton className="h-4 flex-1" style={{ maxWidth: `${60 - (i % 3) * 8}%` }} />
-                  <Skeleton className="hidden h-8 w-28 flex-shrink-0 sm:block" />
-                  <Skeleton className="h-4 w-12 flex-shrink-0 sm:w-16" />
-                  <Skeleton className="hidden h-6 w-20 flex-shrink-0 rounded-full sm:block" />
-                  <Skeleton className="hidden h-4 w-4 flex-shrink-0 sm:block" />
-                </div>
-              ))}
-            </Surface>
-          </div>
-        </div>
+        <FairwayTasksSkeleton />
       </div>
     );
   }
@@ -254,6 +199,7 @@ export default function GolfTasksPage() {
         tasks={tasks}
         stats={stats}
         players={players}
+        today={today}
         playersError={playersError}
         error={tasksError}
         onRefetch={refetch}
