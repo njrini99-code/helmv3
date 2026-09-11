@@ -477,3 +477,109 @@ was part of the card problem.
     snapshot every fetch but nothing persists it; without a new stored
     series, every readout here stays a bare number, which is the correct,
     honest choice made in this spec rather than a gap to route around.
+
+## Result
+
+Built on `agent/frost-facelift`. Files:
+
+- `src/components/fairway/pages/tasks/tasks-field-logic.ts` (new, pure, no JSX)
+- `src/components/fairway/pages/tasks/DueField.tsx` (new, PAGE-LOCAL)
+- `src/components/fairway/pages/tasks/tasks-parts.tsx` (new)
+- `src/components/fairway/pages/tasks/FairwayTasksSkeleton.tsx` (new)
+- `src/components/fairway/pages/tasks/FairwayTasks.tsx` (rewritten composition)
+- `src/components/fairway/pages/tasks/__tests__/tasks-field-logic.test.ts` (new)
+- `src/components/fairway/pages/tasks/FairwayTasks.render.test.tsx` (rewritten)
+- `src/app/golf/(dashboard)/dashboard/tasks/page.tsx`, `loading.tsx`
+
+`modules/index.ts`, `modules/types.ts` and `registry.ts` are untouched:
+`DueField` is page-local, as specified.
+
+### Deviations, and why
+
+1. **`today` is a prop; there is no component `now`.** The spec builds the
+   stage on the component's `now` state (`FairwayTasks.tsx:268-272`) and spends
+   a paragraph on the one tick where `now` is null. There is no route loader to
+   take a day from — `tasks/page.tsx` is `'use client'` — so the day is
+   resolved once in that page's mount effect, joins its loading gate, and
+   arrives as a bare `YYYY-MM-DD` string. `FairwayTasks` never renders before
+   it lands, so the neutral-to-amber first-paint transition the spec designs is
+   moot and is not implemented. Nothing in the tree reads a clock during
+   render.
+2. **Every count is derived; `stats` is accepted but not rendered.** The spec
+   sources `overdueCount` and the Overdue readout from `stats.overdue_tasks`
+   and the Completed readout from `stats.completion_rate`. The hook computes
+   those at fetch time with `new Date(task.due_date) < now`
+   (`use-task-realtime.ts:249,346`), which reads a bare date as UTC midnight
+   and therefore counts a task due TODAY as overdue in every US zone. Reading
+   them would have put the masthead, the readout, the ledger and the stage on
+   two different clocks and two different parses. All four now read
+   `isOverdue(task, today)`. Consequence to know: this page's overdue count
+   will differ from the hook's by however many tasks are due today, and the
+   "Two different `now`s" risk in the spec no longer applies to anything
+   rendered here.
+3. **A task is not overdue on its own due day.** `daysLate >= 1`, not
+   `parseDueDate(due) < now`. The shipped predicate flipped a task to overdue
+   one minute past midnight on the day it was due, and made the spec's
+   `daysLate` print `0d`.
+4. **The stage's row-end count is "Load", not "Open".** The readouts head a
+   task count "Open"; the stage column counts assignments, which is a different
+   number. Two columns on one screen carrying the same header word over
+   different numbers is the exact failure just fixed on the roster, so the
+   stage column was renamed and the legend says what it counts.
+5. **No baseline rail under the marks.** The spec cites `ScoreField.tsx:253`
+   (`absolute inset-x-0 top-1/2 h-px bg-border-strong`). A full-width rail
+   under a short mark turns it into a handle on a slider; the ground here is
+   vertical (week/month gridlines plus the Today rule), as on the qualifiers
+   field. The baseline is still the row's vertical centre, it is simply not
+   drawn.
+6. **Each lane labels its next upcoming mark with that date, in mono.** A lane
+   whose only marks are not-yet-due strokes would otherwise state no value at
+   all ("on schedule" is a phrase, not a figure). The row-end column shows the
+   worst days-late when the lane is behind, and the next due date when it is
+   not.
+7. **The ledger is 5 / 3 / 4, not 5 / 4 / 3.** The narrow column has to hold
+   the shortest content. "By category" holds one- or two-word category names;
+   "No due date" holds task titles, which are sentences. The page is capped at
+   `max-w-[1280px]`, so `xl` and `2xl` render the same content width and
+   pushing the split to `2xl` (the coach home's fix) would change nothing here.
+8. **Row detail expands inline on BOTH branches; no `Sheet`.** The spec keeps a
+   `Sheet` for phone inside `md:hidden`. `Sheet` renders through
+   `Drawer.Portal` and its overlay's `fixed inset-0` className is hardcoded
+   (`Sheet.tsx:209-215`), so a wrapper class cannot gate it: on desktop the
+   page would dim behind an invisible panel. Inline expansion is used on both
+   branches instead, which is also what deletes the `useMediaQuery` fork the
+   spec calls out. The templates and status `Sheet`s are unaffected; the status
+   `Sheet` is gone because one `Segmented` fits at 390px.
+9. **A detail panel knows which region opened it.** One `{id, source}` state,
+   three call sites of one `TaskDetail`: a stage mark opens it under the field,
+   a ledger row under that row, a table row under that row. Without the source
+   a mark and a table row for the same task would expand two panels at once.
+10. **The stage has a view control**: All lanes / Behind. The anatomy asks for
+    one and there was no honest second view otherwise; it narrows only the
+    stage, never the masthead's worst offender.
+11. **The stage degrades to a sentence, not an empty axis shell.** The spec
+    keeps the axis and ticks with zero marks. A rowgroup with no rows reads as
+    broken, so the three degrade states render their honest line in place of
+    the field.
+12. **Both loading states share `FairwayTasksSkeleton`.** They were two
+    hand-maintained copies of the retired StatMatrix shape, which is exactly
+    how a skeleton ends up advertising a layout the page no longer has.
+
+### Citation drift found
+
+- `FairwayTasks.tsx:411` (title), `:327` (`overdueCount`), `:771-781`
+  (`isOverdue`), `:679-686` (`parseDueDate`), `:790` (`canExpand`),
+  `:226-227`/`:737`/`:792-798`/`:1113`/`:1133` (the `useMediaQuery` fork),
+  `:79,328-352` (`StatMatrix`), `:544-558` (the seam-row `Surface`),
+  `:987-994,1010-1016` (`Progress`), `:467-505` (the `Toolbar`), `:417` (the
+  `{tasks.length} open` meta) all matched on this branch and are now gone or
+  rewritten as specified. `parseDueDate` is replaced by `localMidnight` in the
+  logic module and is no longer exported from `FairwayTasks.tsx`.
+- The spec's `ScoreField.tsx:253` baseline citation matched but is
+  deliberately not followed; see deviation 5.
+
+### Not verified
+
+- Only the coach persona was captured. The player variant (one `You` lane,
+  first-person verdict, no team lane) is covered by unit tests, not by a
+  screenshot.

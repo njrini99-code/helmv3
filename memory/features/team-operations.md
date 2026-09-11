@@ -122,6 +122,32 @@ Player Team Hub
 ## UI Contract
 
 - Tasks need pending, overdue, completed, reminder, template, upload-required, and empty states.
+- The coach/player tasks screen is a FIELD SHEET, not a card deck
+  (`docs/design/fairway-facelift/screens/tasks.v3.md`): a bare masthead, ONE
+  `Surface` holding the page-local `DueField` instrument, a bare three-column
+  ledger (Overdue now / By category / No due date), then a dense table. Every
+  derivation lives in `tasks-field-logic.ts` and is unit-tested without a DOM;
+  components never derive a rollup inline.
+- Tasks reads ONE clock. `FairwayTasks` takes `today` as a bare `YYYY-MM-DD`
+  prop resolved once by `tasks/page.tsx`, and nothing in that tree reads a
+  clock during render. Date-only `due_date` values parse at LOCAL midnight
+  (`localMidnight`), never through `new Date(str)`, which reads a bare date as
+  UTC midnight and renders the previous calendar day in any zone behind UTC.
+- Every count on the tasks screen derives from the task list against that one
+  day. `useTaskRealtime`'s `stats.overdue_tasks` is deliberately NOT rendered:
+  it is computed at fetch time against a UTC-midnight parse, so it counts a
+  task due TODAY as overdue. A task is not late on its own due day.
+- The masthead's worst offender and each stage lane's "Worst late" figure are
+  one function (`worstOffender`) at two call sites, so the sentence cannot
+  disagree with the instrument beneath it. A team-wide overdue task has no
+  assignee: it gets its own terminal lane and its own sentence, never a
+  borrowed name.
+- Tasks has no runtime breakpoint branch. Both table branches (a stacked list
+  below `md`, the dense table at `md` and above) are always in the DOM with CSS
+  choosing. The `useMediaQuery` desktop/phone fork was removed; a `Sheet`
+  cannot be CSS-gated because it portals to the body.
+- `tasks/loading.tsx` and `tasks/page.tsx`'s own loading branch render the
+  SAME `FairwayTasksSkeleton`, so neither can drift from the composition.
 - Documents need preview, version history, upload new version, category/visibility, and unsupported-file states.
 - Travel needs itinerary cards, transport/hotel/packing/room assignment details, budget/expense affordances where wired, and player-friendly status.
 - Player Hub should not lie about task completion state; it must read the same operational truth as task completion writes.
