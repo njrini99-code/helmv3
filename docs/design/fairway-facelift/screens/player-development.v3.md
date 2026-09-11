@@ -146,6 +146,28 @@ across a strokes area, a yards area and a percent area. The app already treats
 that fraction as comparable everywhere `getProgressPercent` is called; this
 instrument is the first to let a player see it across rows at once.
 
+**AS BUILT: the row does not split, at any width.** A three-column row
+(identity, track, reading) was built first and measured inside the shell this
+page actually renders in:
+
+| width | track, split | track, stacked |
+| --- | --- | --- |
+| 768 | 281px | 594px |
+| 1024 | 167px | 366px |
+| 1280 | 285px | 602px |
+| 1440 | 365px | 762px |
+
+The split lost at every size and was non-monotonic besides: a reader widening
+from 1024 to 1280 watched the chart shrink from 285 to 167 and back. The cause
+is the shell's rail, not the viewport, so no breakpoint fixes it. The row is
+one column: identity and reading share a line, the track runs full width
+beneath them, and the thin-row caption sits under that.
+
+**The marks are not links.** The spec first copied ScoreField's link-per-mark,
+but every mark in a row shares one destination, so sixteen identical links is
+noise, not access. Every reading is also a dated row in the readings log
+below, which is the accessible equivalent of the plot.
+
 **Mechanics, copied from `ScoreField` rather than imported** (percentage
 geometry, no measurement pass, no SVG scaling): `dayMs`/`dateFraction` for x,
 a one-day floor on the domain, a link per mark to that area's Sheet, an axis
@@ -207,6 +229,13 @@ Both malformed-target branches sit **after** the met check, so they are
 unreachable for a reader who has already passed their target: that reader
 reads 100, which is the honest answer. Pinned in `development-logic.test.ts`.
 
+The caption sits **under the track**, not inside the plot. Inside the plot it
+rendered only for rows with ZERO marks, so the one-reading state, the state it
+was written for, never showed it: a single-reading row drew one dot and said
+nothing. A caption positioned on the baseline also collides with a mark
+sitting on that same baseline, which is exactly where a reader at their
+starting value is.
+
 A row in any of those states still renders its identity, its current value and
 its caption. It never renders a track at a guessed position, and it never
 renders 0 for a value that was simply never logged. **Never a trend through
@@ -223,7 +252,24 @@ holds its content whole, stacked with horizontal hairlines below it. Per the
 amended breakpoint rule, the split point is decided by the 768/1024/1280/1440
 captures, not by a breakpoint name; these are fractional columns, so the loss
 is shared. Only non-empty columns render, and the grid takes the shape of the
-count present. All three empty: no ledger row.
+count present. Both empty: no ledger row.
+
+**AS BUILT: two columns, not three.** The stage content tops out near 762px
+even at 1440, because the shell keeps a right rail that widens with the
+viewport. A third of that will not hold a sentence, so **Why** leaves the
+ledger and takes the full width below it; it is prose and it wants the width.
+Decisions and Goals run 7/5.
+
+**Nothing on this page truncates.** `truncate` gives a row a hard minimum
+width equal to its longest unbroken line, which is what actually caused the
+clipping the captures found: a suggestion row wanted 262px inside a 92px cell
+and pushed 4px of horizontal overflow up through DrillPanel at every width,
+1440 included. Rows wrap. A column that wraps holds its content whole at any
+width, which is what the breakpoint rule asks for.
+
+**Decision rows put their actions on their own line.** Two 44px buttons beside
+a sentence do not fit a third of this page at any width it renders at, so
+there is no breakpoint at which the inline arrangement is right.
 
 - **Decisions** (widest). `proposedAreas` and `suggestions` as hairline rows. These are **two different action pairs** and must not share one blind shape: a proposed area accepts/declines through the focus-area actions, a `GoalSuggestionView` accepts/dismisses through `acceptGoalSuggestion`/`dismissGoalSuggestion`. Each row's own label says which it is.
 - **Goals**. Active goals as hairline rows: name, `now / target` in mono (two columns, no glyph between them), and the percent from `progressPct(g.goal)`, the shipped function, so the number here can never disagree with the goal's own Sheet. `achievedGoals` follow under a `Recent wins` subhead. The `pending_baseline` state is not designed for: `loadActiveGoals` filters to `state === 'active'` before this prop is populated, so that branch cannot fire.
