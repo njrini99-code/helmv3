@@ -182,7 +182,34 @@ async function login(context, persona) {
     await sleep(600);
     await page.fill('#golf-signin-email', email);
     await page.fill('#golf-signin-password', password);
-    await page.getByRole('button', { name: /sign in/i }).click();
+    const submit = page.getByRole('button', { name: /sign in/i });
+    // Sign in stays disabled until React state holds both fields. `fill`
+    // writes the DOM value directly, and a fill that lands before hydration
+    // is thrown away when React attaches: the form LOOKS filled and the
+    // button is dead, which is why this used to burn four attempts of
+    // thirty-second clicks against a permanently disabled control. Typing
+    // the values again after hydration is what actually registers them.
+    let enabled = await submit.isEnabled().catch(() => false);
+    if (!enabled) {
+      for (const [sel, value] of [['#golf-signin-email', email], ['#golf-signin-password', password]]) {
+        const field = page.locator(sel);
+        await field.fill('').catch(() => {});
+        if (typeof field.pressSequentially === 'function') await field.pressSequentially(value, { delay: 5 }).catch(() => {});
+        else await field.type(value, { delay: 5 }).catch(() => {});
+      }
+      enabled = await submit.isEnabled().catch(() => false);
+    }
+    if (!enabled) {
+      console.log(`[${persona}] login attempt ${attempt}: Sign in never enabled (form not hydrated); retrying`);
+      continue;
+    }
+    // Fail this attempt fast rather than spending thirty seconds retrying a
+    // click the page will never accept.
+    const clicked = await submit.click({ timeout: 8_000 }).then(() => true).catch(() => false);
+    if (!clicked) {
+      console.log(`[${persona}] login attempt ${attempt}: submit click did not land; retrying`);
+      continue;
+    }
     ok = await page.waitForURL((u) => !u.toString().includes('/golf/login'), { timeout: 30_000 }).then(() => true).catch(() => false);
     if (!ok) console.log(`[${persona}] login attempt ${attempt} did not leave /golf/login; retrying`);
   }
