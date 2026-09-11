@@ -136,6 +136,7 @@ and completed tasks are left off entirely to keep the strip about current
 exposure, not history. Baseline sits at the row's vertical center, full
 width, and is asymmetric on purpose (there is no honest "how far ahead"
 magnitude the way a golf score has an under-par value):
+
 - **Overdue** (`due_date < now`): a `bg-fw-warning` bar rising from the
   baseline, height `= min(daysLate, cap) / cap * 19px` (`HALF_HEIGHT_PX`,
   `ScoreField.tsx:27`), `MIN_BAR_PX = 2` floor. `cap = clamp(maxDaysLateAcrossAllMarks, 3, 21)`,
@@ -180,6 +181,7 @@ magnitude the way a golf score has an under-par value):
 `ScoreField.tsx:246-251`), mono tabular, no arrow glyphs (banned; the
 existing `▲`/`▼` at `coach-home-parts.tsx:97-99` and `ScoreField.tsx:120-131`
 are not to be repeated here):
+
 - **Open.** Every incomplete assignment for that lane, dated or not. This
   can legitimately exceed the number of marks shown (e.g. "5 open" with only
   3 marks, because 2 of those 5 have no due date): the numeral is the true
@@ -223,6 +225,7 @@ date, title, due-date reading, days late), so the tooltip and screen-reader
 text still deliver the fact even when no panel opens.
 
 **Degrade.**
+
 - **One lane.** Renders exactly like any other lane, nothing special:
   `ScoreField` already proves a single row needs no branch.
 - **Open tasks exist, none are dated.** The axis and ticks still render (for
@@ -279,7 +282,7 @@ is exactly the shape every readout below needs, since none has a historical
 series to sparkline.
 
 | Readout | Source field | Delta |
-|---|---|---|
+| --- | --- | --- |
 | Open | `tasks.filter(t => t.status === 'active').length` (`FairwayTasks.tsx:275`) | None. No historical snapshot of this count exists; showing a trend would fabricate one. |
 | Overdue | `stats.overdue_tasks` (`use-task-realtime.ts:124`) | None, same reason. Amber-toned value when `> 0`. |
 | Completed | `stats.completion_rate` (`use-task-realtime.ts:117-124`), `%` unit | None. Note reads "of all tasks": the field is lifetime, not windowed; never say "this week/cycle." |

@@ -51,7 +51,8 @@ refresh. When a series is too short to be a trend, say what unlocks it.
    your scope. Update the existing tests to the new composition; never
    delete coverage to make a suite pass.
 4. Captures, serialized behind the shared lock, one viewport per run:
-   ```
+
+   ```text
    until mkdir /tmp/helm-capture.lock 2>/dev/null; do sleep 10; done
    node scripts/ui-intelligence/capture-golf-facelift.mjs \
      --base=http://localhost:3013 --persona=coach --only=<slug> --vp=desktop --force
@@ -59,6 +60,7 @@ refresh. When a series is too short to be a trend, say what unlocks it.
      --base=http://localhost:3013 --persona=coach --only=<slug> --vp=phone --force
    rmdir /tmp/helm-capture.lock
    ```
+
    Look at both PNGs yourself before reporting. The dev server on 3013 is
    already running and restarts itself under memory pressure: on
    ECONNREFUSED, wait and retry, never start a second server.
@@ -69,7 +71,7 @@ refresh. When a series is too short to be a trend, say what unlocks it.
 
 Stage explicit paths. Commit, do not push, do not land. End the message with:
 
-```
+```text
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_011zGybqwusmeKC2jJhsU9JC
 ```

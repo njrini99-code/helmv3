@@ -2,7 +2,8 @@
 
 <!-- Synthesized by the facelift design panel (three concepts, one judge) on 2026-09-10. -->
 
-# Rounds library (coach), final spec
+## Rounds library (coach), final spec
+
 `/golf/dashboard/rounds`, coach role. File of record: `src/components/fairway/pages/rounds/FairwayRoundsLibrary.tsx`.
 
 ## Purpose
@@ -41,6 +42,7 @@ Not grafted from concept 3: the two-pane workspace/inspector. Real architectural
 Grid: the existing content column stays `mx-auto flex w-full max-w-[1200px] flex-col gap-8 px-4 py-6 md:px-6`. Regions stack in that column; the Ledger+Leaders row is the one place it splits into two tracks: `grid grid-cols-[minmax(0,1fr)_320px] gap-6` (ledger takes the remaining flexible width, the rail is fixed at 320px). No two adjacent regions share the same visual shape (bordered gauge deck → borderless hairline strip → bare toolbar row → matte ledger surface beside a raised spotlight card and a bare rank list).
 
 ### 1. Masthead, stage, named "Masthead"
+
 Purpose: the one h1, now carrying a verdict instead of a label.
 Visual: `ViewHeader` eyebrow "Team Rounds", H1 built from `firstMonthLabel` + `scoreDelta`, honest fallback to "The library." + the existing meta line when starved.
 Data mapping: `rounds.length` -> round count; `firstMonthLabel(rounds)` -> start label; `stats.trend != null && scoreDelta !== null` -> gate (same 6-scored-round threshold `stats.trend` already uses); `scoreDelta` -> the shot count and direction word.
@@ -50,12 +52,14 @@ Desktop: full width, row 1.
 Phone: unchanged, `ViewHeader`'s own large-title-collapses-into-top-bar behavior.
 
 ### 2. Cockpit gauge cluster, stage, named "Cockpit"
+
 Purpose: replace the five equal StatMatrix boxes with one ranked instrument: a focal dial, a two-item readout rail, a four-up footer of counts.
 Visual: `InstrumentCluster` `balance="focal"`.
 `primary`: `RadialGauge` `size="md"` `title="% under par"` `overline="SEASON"` `readoutLabel="of scored rounds"` `value={starved ? undefined : stats.underParPct/100}` `awaiting={starved}` `samples={stats?.totalRounds}` `minSamples={3}` `unit="rounds"`. No `benchmark` is passed (there is no honest comparison value in memory for it), which means the dial's tone resolves to `accent` (green) whenever it has a real reading and dims to the built-in honest awaiting state below 3 scored rounds. This is `RadialGauge`'s own verified behavior (`RadialGauge.tsx`: `onGoodSide` defaults `true` with no `benchmark`), not a fabricated "gaining" claim.
 `secondary` (two `InstrumentPanel depth="base" padding="md"` panels, the exact composition already shipped in `FairwayEffectiveness.tsx:647-663`, which is the registry's own cited example for this primitive and proves multiple `InstrumentPanel`s inside one `InstrumentCluster` is the established idiom, not a violation of the registry's "avoid more than one per screen" note):
-  - `Readout size="lg" label="Avg score" value={stats.avg}` with `delta={{ value: scoreDelta, direction: scoreDelta<0?'up':scoreDelta>0?'down':'flat' }}` (Readout's own built-in `delta` slot, `Readout.tsx:100-102`; no separate `DeltaChip` needed).
-  - `Readout size="lg" label="Avg to par" unit="strokes" display={avgToParDisplay}` with `delta={{ value: toParDelta, direction: ... }}`.
+
+- `Readout size="lg" label="Avg score" value={stats.avg}` with `delta={{ value: scoreDelta, direction: scoreDelta<0?'up':scoreDelta>0?'down':'flat' }}` (Readout's own built-in `delta` slot, `Readout.tsx:100-102`; no separate `DeltaChip` needed).
+- `Readout size="lg" label="Avg to par" unit="strokes" display={avgToParDisplay}` with `delta={{ value: toParDelta, direction: ... }}`.
 Starved (<3 rounds): both readouts render `state="awaiting"` instead, the exact honesty convention `Readout` already ships.
 `tertiary` (four `InstrumentPanel depth="base" padding="md"` panels, `Readout size="sm"`, no delta): "Rounds" = `stats.totalRounds`, "Best round" = `stats.best`, "Practice" = `filterCounts.practice`, "Tournament" = `filterCounts.tournament`.
 Data mapping: `stats.underParPct`, `stats.avg`, `stats.avgToPar`, `stats.best`, `stats.totalRounds` from `RoundStats` (`rounds/page.tsx:192-227`); `scoreDelta`/`toParDelta` from `FairwayRoundsLibrary.tsx:487-488`; `filterCounts.practice`/`.tournament` from `FairwayRoundsLibrary.tsx:350-364`.
@@ -64,6 +68,7 @@ Desktop: full width; `balance="focal"` gives the dial column roughly 2fr against
 Phone: `InstrumentCluster`'s own documented tier: dial first (full width), the two rail panels stack below it, the tertiary row stays 2-up in one grouped hairline ledger (never four separate full-width cards), this is already built into the primitive (`InstrumentCluster.tsx`, `TERTIARY_PHONE_GROUP`), zero new work.
 
 ### 3. By-type breakdown strip, section, named "Spread"
+
 Purpose: a borderless footnote answering "where does the team actually lose or gain strokes, by round type." Earns a shape none of its neighbors have: no card, no surface, one hairline only.
 Visual: eyebrow "AGAINST PAR, BY TYPE" over `DivergingBars` with 1-3 rows (Practice / Qualifier / Tournament), each `{ label, delta, display }` where `delta` = that type's avg `score_to_par` over `scopedRounds` and `display` = the signed 1-decimal string ("+3.6" / "-1.2"). A type with zero rounds in scope is omitted from `rows`, never shown as 0. `max` = the largest `|delta|` among the rendered rows.
 Data mapping: new `typeAvgToPar` memo over `scopedRounds` (`FairwayRoundsLibrary.tsx:336-347`), grouped by `round_type`.
@@ -72,10 +77,12 @@ Desktop: full width, one top hairline (`border-t border-border-subtle pt-4`), no
 Phone: identical, full width, same compact rows.
 
 ### 4. Toolbar, toolbar, named "Toolbar"
+
 Purpose: search, player scope, round-type pills, Month/Week grouping. Unchanged.
 Visual/primitives/desktop/phone: byte-for-byte the existing `Toolbar` composition at `FairwayRoundsLibrary.tsx:634-729` (`Input`, `Select`, `FilterPill`, `Segmented`, `Menu`). No edits to this region.
 
 ### 5. Ledger, stage, named "Ledger"
+
 Purpose: the dominant object, unchanged in structure, now carrying one more honest visual per row.
 Visual: unchanged `Surface` with sticky seam group headers (`FairwayRoundsLibrary.tsx:770-823`) and `FairwayRoundRow` lines, PLUS each row gains a `MicroBar` (new primitive, see below) beside the existing score/`StatusPill` cluster: `value = round.score_to_par - playerSeasonStats[playerName].avgToPar`, `domain=6`, `goodDirection="low"`, rendered only when that player has ≥2 scored rounds in `playerSeasonStats` (honesty gate; otherwise the row renders exactly as it does today, no bar).
 Data mapping: `round.score_to_par` (`RoundLibraryRound`, `FairwayRoundsLibrary.tsx:108`); `playerSeasonStats` new memo (see Verified data above).
@@ -84,6 +91,7 @@ Desktop: left track of the 2-column row, `minmax(0,1fr)`.
 Phone: full width, single column; `MicroBar` renders at a narrower fixed width (28px) beside the to-par pill, matching the row's existing mobile-condensed pattern.
 
 ### 6. Leaders rail, rail, named "Leaders"
+
 Purpose: sticky companion context that survives the ledger scroll: the single best round in the current filtered scope, and a coach-only leaderboard by season avg score-to-par.
 Visual: top, one `Elevated level="raise"` card: eyebrow "BEST OF THE SCOPE", course name, `Avatar` + player name, mono score + `StatusPill` to-par, date, the best (lowest `score_to_par`) round over `filteredRounds` (same computation the per-group `bestId` already does at `FairwayRoundsLibrary.tsx:436-443`, just over the whole filtered set instead of one group). Below a hairline: up to 5 rows, each `RankCell` (`{rank, of}`) + `Avatar size="sm"` + truncated name + right-aligned mono avg `score_to_par`, from `playerSeasonStats`, ranked ascending (lower avg-to-par first). If fewer than 2 qualifying players exist in the current scope (e.g. the coach has filtered to one player), the leaderboard sub-section renders one plain line, "Only one player in this view," instead of a one-row leaderboard, honest, no new component.
 Data mapping: `filteredRounds` (`FairwayRoundsLibrary.tsx:366-373`); `playerSeasonStats` new memo.
@@ -92,6 +100,7 @@ Desktop: right track, fixed 320px, `lg:sticky` with `top-[calc(var(--golf-mobile
 Phone: collapses to one tappable seam row directly above the ledger's first group header ("Best: {name}, {score} ({toPar}) at {course}") that opens a `Sheet` (bottom, detents) containing the same spotlight + leaderboard.
 
 ### 7. Footer, footer, named "Footer"
+
 Purpose: honest manual pagination with a printed footnote.
 Visual: unchanged "Show 30 more" `Button`, paired with a small tabular-mono footnote to its left: "Showing {visibleCount} of {totalGroupedRounds}" (both already computed, `FairwayRoundsLibrary.tsx:415-464`).
 Primitives: `Button` (existing).
@@ -171,6 +180,7 @@ the `role="img"`/`aria-label` contract, and a reduced-motion no-op check —
 the primitive draws a static fill with no animation to guard).
 
 **Deviations from the literal spec text, with reasons**:
+
 - The Cockpit's two secondary `Readout` delta lines are gated on the SAME
   6-scored-round `hasScoreTrend`/`hasToParTrend` honesty threshold the old
   "Scoring trend" pill used (not merely "not starved"), rather than passing

@@ -108,7 +108,7 @@ fabricated series; a client-only breakpoint branch (CSS gates phone layouts).
 ## Per-page stage
 
 | Page | Question | Stage instrument | Readouts | Ledger | Table |
-|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- |
 | Home | Where does the team stand today, who needs me | `ScoreField` of every player over the window | Scoring avg, GIR, putts, rounds (with sparklines) | Today, Attention (trend segments and movers), Latest | Recent rounds |
 | Roster | Who is up, who is down, what is each player's shape | `ScoreField` sorted by trend with a focus column | Roster count, needs attention, active focus | Attention actions, Focus areas | Players (sortable) |
 | Rounds | What has been played and what is the pattern | Round scatter over time (score to par per round, team average line) | Rounds, avg, best, qualifier share | Leaders, Score bands | Rounds |

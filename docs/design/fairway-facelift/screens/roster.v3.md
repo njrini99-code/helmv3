@@ -182,6 +182,7 @@ legible on load, and `All` stays one click away in the same control.
 **Focus column — the one additive, backward-compatible extension** ("with a focus
 column" per LANGUAGE.md's per-page table; nothing like it exists in `ScoreField`
 today, `types.ts:290-310`):
+
 - `ScoreFieldRow.focus?: number | null` — active focus-area count for that player,
   already a real field (`active_focus_areas`, `roster/page.tsx:575`,
   `FairwayPlayerCard.tsx:47-49`). Optional and unset by Home's existing rows, so
@@ -327,7 +328,7 @@ deletes), same four options: Name / Avg score / Handicap / Rounds
 as ink (green under, amber over):
 
 | Column | Align | Source | Hidden below |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Player | left | name + avatar (`PlayerIdentity`) + `FairwayYearBadge` (`FairwayCoachRoster.tsx:318`) + `FairwayIntentControl` pill inline (`FairwayCoachRoster.tsx:804-810`, moved out of the retired expand band into the row itself) | always visible |
 | Avg | right | `avg_score` (`roster/page.tsx:570`) | always visible |
 | Trend | right | `recent_trend` direction + magnitude once available (see Risks); arrow only until then | always visible |

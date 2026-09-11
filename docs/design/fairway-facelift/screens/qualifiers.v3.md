@@ -111,7 +111,7 @@ Replaces the current Active/Concluded seam-list `Surface` (`FairwayQualifiers.ts
 Columns, left to right:
 
 | Column | Align | Below md | Below lg | Source |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | Name | left, truncate | shown | shown | `name`, `database.ts:15722` |
 | Status | left, `StatusPill` | shown | shown | `status ?? 'upcoming'` via `qualifierStatusMeta`, `qualifier-status.ts:37-51` — same coalesce as the stage's color rule and both ledger columns, above (`FairwayQualifiers.tsx:139-140`); `qualifierStatusMeta`'s own signature takes `string`, not `string \| null`, so the raw column can't be passed through uncoalesced |
 | Start | right, mono | shown (compact) | shown | `start_date`, `database.ts:15729` |

@@ -2,7 +2,8 @@
 
 <!-- Synthesized by the facelift design panel (three concepts, one judge) on 2026-09-10. -->
 
-# Round detail (coach), final spec
+## Round detail (coach), final spec
+
 `/golf/dashboard/rounds/[id]`
 
 ## Purpose
@@ -18,7 +19,7 @@ This is the post round recap surface, archetype E (chronology), pinned by `docs/
 Three concepts were scored 1 to 10 on thought, visuals, architecture, coachUtility, feasibility.
 
 | Concept | thought | visuals | architecture | coachUtility | feasibility | total |
-|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- |
 | 1. Editorial instrument panel | 8 | 7 | 8 | 5 | 9 | 37 |
 | 2. DATA VISUAL | 9 | 8 | 7 | 9 | 6 | 39 |
 | 3. Spatial architecture (resizable workspace) | 8 | 7 | 6 | 6 | 5 | 32 |
@@ -35,7 +36,7 @@ The graft: Concept 2's region order and its two new instruments (standing anchor
 This is the test the owner's actual capture applies, stated explicitly so nobody has to guess at implementation time.
 
 | Region | Renders with zero holes and a fresh review row | Renders with hole data |
-|---|---|---|
+| --- | --- | --- |
 | Masthead | yes, unchanged | yes |
 | Verdict Stage (score, delta, grade, typeset verdict) | yes, unchanged, this already renders on the capture | yes |
 | Verdict Stage's GIR standing row | yes, IF `round.total_gir`/`total_gir_possible` are populated (they are independent of `golf_holes`); if null, the row is omitted, never a placeholder | yes |
@@ -72,6 +73,7 @@ Unchanged. `ViewHeader` with `eyebrow="Round · {dateLabel}"`, `title=heroTitle`
 Visual: the existing `InstrumentPanel depth="raised" tone="accent" padding="lg"`, two columns at `md` and up. Left column, fixed width, unchanged: `Readout size="hero"` (the score), `DeltaChip` (score to par), `GradeDots`. Right column, changed: the AI recap's first sentence is set large in `font-fw-display` at roughly 28px, line height 1.2 (the one enlarged moment beyond the numeral itself); the remainder of the recap continues underneath at `text-body-lg`/`text-text-secondary`, same paragraph, no second box; then a hairline, then one stacked `StandingBars` row for GIR, `frame="bare" size="sm" layout="compact"`, the exact stacking pattern already shipped in `StrokesGainedInstrument` (`src/components/golf/coachhelm/v3/.../StandingDrill.tsx`, the SG rows on Spine's own accent gradient), just one row instead of four, and on the panel's cream bezel rather than a dark gradient, so no `className="text-text-on-accent"` override is needed here.
 
 Data mapping:
+
 - `totalScore`, `scoreToPar`, `gradeScore`, unchanged, from `deriveRoundTotalsFromHoles(holes, round)` and `gradeDotsForDelta`, `FairwayRoundDetail.tsx:279-300`.
 - `aiRecap`, unchanged, `golf_rounds.ai_recap` via `generateRoundRecap`, `page.tsx:201-211`, quoted verbatim.
 - GIR row `player_value`, `girPct`, already computed at `FairwayRoundDetail.tsx:285-287` from `round.total_gir`/`total_gir_possible`. Row omitted entirely when `girPct` is null; never a zero.
@@ -83,6 +85,7 @@ Data mapping:
 Visual: `TrendChart` (`src/components/fairway/charts/TrendChart.tsx`), `variant="line"`, height 220. This is a new instrument on this page. Gated: renders only when the player has 4 or more prior scored rounds (registry: `TrendChart` `avoidFor: ["fewer than 4 points"]`); below that, the whole region is omitted, never an empty chart card.
 
 Data mapping:
+
 - `data: TrendPoint[]`, from a NEW read, `getTrendAnalysis(playerId)` (`src/app/golf/actions/stats-data.ts:1827`, returns `TrendAnalysisResponse`, `trends.score` per `stats-data-types.ts:101-113`). Map each point's date to `x` and its score to par to `y` (confirm the exact property name on `TrendDataPoint` at implementation, the type exists and the shape is `{x,y,marker?}` on the `TrendChart` side, already verified at `TrendChart.tsx:36-49`).
 - `marker` on the point matching `round.round_date`, tone `success` if this round beat the rolling average, `neutral` if it matched, `danger` if it missed. Rolling averages come from the same `TrendAnalysisResponse.rollingAverages`.
 - `benchmark: {value, label}`, OPTIONAL. Source: a NEW read, `getTeamComparison(playerId, teamId)` (`src/app/golf/actions/stats-data.ts:2174`, `teamAverages.scoringAverage`, confirmed field at `stats-data-types.ts:166-175`). `teamId` for this call is the round's OWN team, already read and in scope at `page.tsx:332` as `roundTeamId` (this closes a real gap: `resolveCoachTeamIdWithCookie` only runs for a coach viewer, `page.tsx:128`, so a player viewing their own round would otherwise never resolve a team; `roundTeamId` is available regardless of viewer role). When `roundTeamId` is null, the benchmark dash is simply omitted; the line and marker still render.

@@ -174,6 +174,7 @@ state the table's rows drive (see below) — clicking a table row and
 clicking a stage column do the same thing.
 
 **Degrades**:
+
 - **No holes** (`hasHoles` false, `orderedHoles.length === 0`,
   `FairwayRoundDetail.tsx:315`): the Surface holds ONE `InlineNotice`
   — the exact existing copy, `"Scorecard only. Enter holes to unlock the
@@ -253,6 +254,7 @@ gap — the exact failure the table's own Pen column already guards against
 one section below (see there: "shown as `0` when logged, `–` only when
 null"), so this column follows the identical rule instead of contradicting
 it:
+
 - Front nine: `frontNineTotal` (`FairwayRoundDetail.tsx:282`, `–` when
   null) vs the front nine's par sum — shown ONLY when `front.length > 0`
   AND every hole in `front` (`holes.filter(h => h.hole_number <= 9)`) has
@@ -279,6 +281,7 @@ it:
   `0`, the same null-vs-zero rule the table's Pen column states below).
 
 **Story & next** (4/12) — a list of hairline rows:
+
 - The AI recap, quoted verbatim (prop `aiRecap`,
   `FairwayRoundDetailProps:139-140`, sourced from `golf_rounds.ai_recap`
   via `generateRoundRecap`, `page.tsx:201-211`). No link.
@@ -299,6 +302,7 @@ it:
   placeholder.
 
 **This entry** (3/12) — rows:
+
 - Round type: `roundTypeLabel(round.round_type)`
   (`FairwayRoundDetail.tsx:186-200`). No link.
 - Qualifier: only when `currentQualifierId != null`

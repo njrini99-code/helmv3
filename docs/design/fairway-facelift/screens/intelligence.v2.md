@@ -2,7 +2,7 @@
 
 <!-- Synthesized by the facelift design panel (three concepts, one judge) on 2026-09-10. -->
 
-# CoachHelm cockpit (Brief + Signals): Rail, Strip, Stage
+## CoachHelm cockpit (Brief + Signals): Rail, Strip, Stage
 
 ## Purpose
 
@@ -29,6 +29,7 @@ The Rail never scrolls out of view at 940px and above. The Strip is one line by 
 **Visual.** The existing green full-bleed rail: hero number, one-sentence verdict, then three things that do not exist on the production screen today: a compact severity-mix bar, the urgent signal in its own slot ahead of the ledger instead of trailing after it, and magnitude bars under the top three priorities. All four of Spine's existing render slots (`hero`, `verdict`, `readouts`, `urgent`, `priorities`, `ledger`, `cta`) get used for what each was built for; none of this needs a new component in Spine.tsx itself.
 
 **Data mapping.**
+
 - `hero.value`: `groups.reduce((n, g) => n + g.signals.length, 0)`. Existing, `TriageDesk.tsx:500`, unchanged.
 - `verdict`: `spineVerdict`, from `buildSpineVerdict` in `buildTriageViewModel.ts`. Existing, unchanged.
 - Severity-mix bar (new): a new exported `computeSeverityMix(groups)` in `buildTriageViewModel.ts` walks `groups.flatMap(g => g.signals)` and counts by `GroupedSignal.severity` (`signal-grouping.ts`) into `{ urgent, high, medium, low }`. This is a new derivation, not a reuse of `computeBriefCounts`, which only returns `{ urgent, playersFlagged }` (`buildTriageViewModel.ts:187-197`, verified). The counts render through a small local `SeverityMixBar` subcomponent (same pattern as the existing `SpineUrgentRow`/`SpineHairline` locals already inside `Spine.tsx`, not a new registered primitive), passed as the single row's `value` in Spine's existing `readouts` prop (`SpineReadoutRow.value` is typed `ReactNode`, currently unused in production).
@@ -41,6 +42,7 @@ The Rail never scrolls out of view at 940px and above. The Strip is one line by 
 **Visual.** `TeamCategoryLeakBand` gets a new `variant?: 'panel' | 'strip'` prop, defaulting to `'panel'` so its other callers (`FairwayPlayerCard`, the intelligence loading skeletons, `CoachIntelligenceHome`'s own use) are unaffected, verified by grep: five files besides this screen import the component. TriageDesk opts into `variant="strip"` on desktop only. The strip is one seamed row: the existing `RingGauge` plus a label, then a compact horizontal row of category chips (label, value, trend glyph only, no ticks, no badge, no per-player rows). Tapping a chip expands, below the strip, that category's worst offenders as `RailBars` rows instead of today's bare text-and-glyph rows, the one place this spec keeps Concept 2's decomposition idea at full strength, because it is the only place it is not redundant with the Stage.
 
 **Data mapping.**
+
 - `categories` / `teamHealth`: existing `categoryBandData.categories` / `categoryBandData.teamHealth` (`TriageDesk.tsx:577`), from `getTeamCategoryInsights`, unchanged source.
 - Expanded worst-offender rows: existing `category.players` (`PlayerCategoryStat[]`, `team-category-insights.ts`) filtered to `needsAttention`, mapped to `RailBarRow { label: playerName, pct: <attention-share, derived from the existing sort order>, value: <trendDelta text>, tone: 'warning' }`, using the new `RailBars.tone` prop.
 - `variant`: `isDesktopSpine ? 'strip' : 'panel'`, using the existing 940px flag already defined at `TriageDesk.tsx:140`.
@@ -54,6 +56,7 @@ Inside the dossier, the claim sentence, today an 18px `text-h3` heading, becomes
 When the selected signal is a `team_synthesis` roll-up, a new "Who's contributing" instrument appears under the claim: `RailBars` (existing primitive, `tone="accent"`) showing each contributing player's share, resolving today's confirmed gap where `EvidencePanel`'s `tryRenderV3Standing`/`EvidenceValuePair` render nothing at all for this shape.
 
 **Data mapping.**
+
 - Bezel merge: no data change. Structural class edits only, in `TriageDesk.tsx`, `SignalQueue.tsx`, `SignalDossier.tsx`, `SignalInsightPanel.tsx`.
 - Claim headline: existing `signal.title`, unchanged source, className only.
 - InsetGroup rows: existing `otherSignals`, `activeFocusAreas`, `playerGoals` arrays in `SignalDossier.tsx`, unchanged sources, markup only.
@@ -78,6 +81,7 @@ When the selected signal is a `team_synthesis` roll-up, a new "Who's contributin
 **Existing, reused as-is (wiring or class changes only):** `Spine` (`readouts` and `urgent` props), `PriorityList`, `RingGauge`, `TrendGlyph`, `Badge`, `StatusPill`, `InstrumentPanel`, `ResizableWorkspace`, `Sheet`, `Surface`, and `InsetGroup`/`InsetGroup.Row` (registered, first real consumer).
 
 **Modified, additive, two total:**
+
 1. `RailBars`: add `tone?: 'accent' | 'warning'` to `RailBarRow`. Omitted, it renders exactly as today (`bg-accent-500`/`bg-accent-300`); `'warning'` maps to `bg-fw-warning`, the same token `SignalRow`'s severity dot already uses.
 2. `PriorityList`: add `barPct?: number` to `PriorityItem`. Omitted, a row renders exactly as today; present, a thin sunken track with an accent fill renders under the row.
 
@@ -94,6 +98,7 @@ When the selected signal is a `team_synthesis` roll-up, a new "Who's contributin
 ## Implementation plan
 
 **Files to edit.**
+
 - `src/components/golf/coachhelm/triage/buildTriageViewModel.ts`: add `computeSeverityMix`, `buildDedupedPriorities`, `buildTeamBreakdown`.
 - `src/components/golf/coachhelm/triage/TriageDesk.tsx`: use the three new functions above; move the urgent block from `children` to the `urgent` prop; pass `readouts` with the severity-mix row; pass `variant={isDesktopSpine ? 'strip' : 'panel'}` to `TeamCategoryLeakBand`; pass `teamBreakdown` into both `SignalDossier` call sites (desktop pane and mobile Sheet); wrap the `ResizableWorkspace` in one shared outer `Surface`.
 - `src/components/golf/coachhelm/triage/SignalQueue.tsx`: drop the root border and background classes.
@@ -110,6 +115,7 @@ When the selected signal is a `team_synthesis` roll-up, a new "Who's contributin
 **Data plumbing.** Every new value traces to data already fetched for this screen today: `groups` (per-player and team-synthesis signals, already in TriageDesk state) feeds the severity mix, the deduped priorities, and the team breakdown; `categoryBandData` (already fetched via `getTeamCategoryInsights`) feeds the strip and its expanded rows. No new server action, no new query, no new migration.
 
 **Tests.**
+
 - `src/components/golf/coachhelm/triage/__tests__/buildTriageViewModel.test.ts`: add cases for `computeSeverityMix`, `buildDedupedPriorities` (asserting at most one item per category), and `buildTeamBreakdown` (asserting the empty-match case returns an empty array).
 - `src/components/golf/coachhelm/triage/__tests__/TriageDesk.navigation.test.tsx`: assert the urgent block now renders via Spine's `urgent` slot, before the ledger, not after it.
 - `src/components/golf/coachhelm/triage/__tests__/SignalDossier.teamRollup.test.tsx`: add a case asserting `RailBars` render when `teamBreakdown` has matches, and that nothing extra renders when it is empty.

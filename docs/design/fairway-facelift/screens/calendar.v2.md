@@ -90,18 +90,19 @@ Verified already-landed (`FairwayEventDetailDrawer.tsx`, module doc + body): hea
 
 ## Desktop grid (1440)
 
-```
+```text
 Row 1  ViewHeader        eyebrow · "Calendar" · [Today] [+ New event]
 Row 2  Masthead Toolbar  ‹ period title › (verdict line beneath)   [Day·Week·Month·Agenda]   [⋯ overflow]
 Row 3  Tempo strip       14 day-columns, stacked type segments, conflict dots, full width
 Row 4  Context strip     avatars · "Team schedule · N" · [All players ▾]  [Compare]  [SignalChip]
 Row 5  Stage (Surface)   fills remaining height, Agenda/Day/Week rows w/ RSVP bar, or Month grid w/ density + span bars
 ```
+
 Content column ≈ 1125px (viewport minus the 260px sidebar rail and page gutters, matching the capture). Rows 2-4 are non-card, hairline-closed bands, only row 5 is a bordered/matte `Surface`. Only row 2 is sticky.
 
 ## Phone flow (390, reflow)
 
-```
+```text
 Title row      date-jump trigger · Today · overflow Menu
 Verdict line   "{N} events this period · {M} flagged" (wraps to 2 lines max)
 Segmented      Day · Week · Month · Agenda
@@ -110,6 +111,7 @@ Context strip  avatars · "Team schedule · N" · chevron          [SignalChip b
 Stage          full width, sticky day seams, RSVP bar on requires_rsvp rows
 FAB            + (unchanged, z-[var(--fw-z-sticky)])
 ```
+
 First event row sits above the fold even with the Tempo strip present (56px cap enforced). Event sheet: unchanged frost bottom sheet, unchanged detents.
 
 ## Primitives
@@ -117,6 +119,7 @@ First event row sits above the fold even with the Tempo strip present (56px cap 
 **Existing, reused as-is:** `ViewHeader`, `Toolbar`, `Segmented`, `Button`, `IconButton`, `Menu`, `PopoverPanel`, `AvatarGroup`, `FilterPill`, `SignalChip`, `Surface`, `EmptyState`, `Sheet`, `InsetGroup`, `StatMatrix`, `StatusPill`.
 
 **New (2, at the stated budget):**
+
 1. `TempoStrip`, new UI component, registered in `registry.ts` as above. The only new visual primitive this pass introduces.
 2. `getEventRSVPSummaries(eventIds: string[])`, new server action (not a UI primitive, counted separately since the budget is about components): lives in `src/app/golf/actions/golf.ts` beside `getEventRSVP`, or a new `src/app/golf/actions/calendar-rsvp-summary.ts`; calls a new `getEventRSVPSummariesForEvents(eventIds, supabase)` helper in `src/lib/calendar/rsvp.ts` that runs `.in('event_id', eventIds)` once and groups the rows by `event_id` in JS, reusing the exact per-attendee mapping `getEventRSVPSummary` already does. Same RLS scope as the existing single-event query, no new privacy surface, since neither path applies an app-level filter beyond the event predicate.
 
@@ -154,6 +157,7 @@ Toolbar's frost tier fades in only once stuck (existing `IntersectionObserver` c
 ## Implementation plan
 
 **Files to edit:**
+
 - `src/components/fairway/pages/calendar/FairwayCalendarHero.tsx`, rebuild the desktop Toolbar's leading title cluster (fix the collapse, add `shrink-0` to the title span), add the verdict-sentence line, fold three secondary actions into one `Menu`, keep "Conflicts" wired to the unchanged `onConflicts` callback. Mirror the phone branch (title row / verdict line / Segmented row).
 - `src/components/fairway/pages/calendar/FairwayCalendarMemberRail.tsx`, add `conflictCount?: number | null` and `conflictCheckedAt?: string | null` props; render the trailing `SignalChip`.
 - `src/components/fairway/pages/calendar/FairwayMonthGrid.tsx`, add per-cell density class from `--fw-viz-seq-0..3` keyed on that day's event count; replace repeated per-day chips for a multi-day event with one spanning bar computed from `eventDaySpan`; swap the dashed empty-state card for `EmptyState`.
@@ -164,6 +168,7 @@ Toolbar's frost tier fades in only once stuck (existing `IntersectionObserver` c
 - `src/components/fairway/registry.ts`, add the `TempoStrip` entry (category `data-viz`, status `new`, archetype `E`).
 
 **Files to create:**
+
 - `src/components/fairway/pages/calendar/FairwayCalendarTempoStrip.tsx`, the new `TempoStrip` component (props as specified above), plus phone horizontal-scroll variant using the existing `useScrollFade` pattern.
 - `src/components/fairway/pages/calendar/FairwayCalendarTempoStrip.test.tsx`, new coverage for column rendering, segment sizing, the conflict-window gating rule, and the reduced-motion path.
 - A new test file for `getEventRSVPSummaries` (e.g. `src/app/golf/actions/__tests__/calendar-rsvp-summaries.test.ts`) covering grouping correctness and access scoping.

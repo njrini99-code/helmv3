@@ -2,7 +2,8 @@
 
 <!-- Synthesized by the facelift design panel (three concepts, one judge) on 2026-09-10. -->
 
-# Coach home (dashboard) redesign spec
+## Coach home (dashboard) redesign spec
+
 `/golf/dashboard` (coach) · target file `src/components/fairway/pages/dashboard/FairwayCoachDashboard.tsx`
 
 ## Purpose
@@ -10,6 +11,7 @@
 Answer, in order, exactly what a coach opens this page to find out: what is on today, does anyone on the team need me right now, and is the team's scoring actually moving. Everything else (recent rounds, activity) is chronology, not the point.
 
 The owner's complaint is specific: "so basic, just cards down, where is the architecture." The fix is not more cards, it is:
+
 1. one composed instrument band that reads as a designed cockpit, not a StatMatrix box glued to a chart box
 2. a sticky toolbar that gives the page real structure across a scroll instead of every fact living inside whichever card happens to hold it
 3. Today itself becoming a real instrument (an hour rail) instead of a plain list, since it is the dominant object and currently the least visually resolved thing on the page
@@ -83,6 +85,7 @@ This is the one genuinely new visual moment, and it replaces the StatMatrix-plus
 ### 6. Ledger row, Recent rounds | Activity (8/4)
 
 **Recent rounds** (left, `lg:col-span-8`). Unchanged position and content, kept in its existing bordered `Surface`, the row's one "card" shape. Two fixes, both additive:
+
 - `TickerStrip`'s container padding changes from `mt-1` to `pt-5` (`TickerStrip.tsx`) so the absolutely-positioned `-top-4` label has room inside the container instead of colliding with the card edge, the confirmed root cause of REVIEW.md's open row 26 defect.
 - `TickerItem` gains an additive `tone?: 'good' | 'even' | 'over'` field (`types.ts:163`), computed the same place `tickerItems` already computes `tp` (`FairwayCoachDashboard.tsx` ~L410): `good` when `tp < 0` (bg-accent-500), `over` when `tp > 0` (bg-fw-warning), `even` when `tp === 0` (bg-surface-sunken). When `tone` is absent (the Rounds library's own `TickerStrip` call, its only other consumer), rendering falls back to the current `emphasis`-only behavior unchanged. This turns the strip from "one round highlighted, nine identical dim bars" into a form line that reads by sign.
 
@@ -92,7 +95,7 @@ Both cells get `lg:items-start` on this row's grid div too, same defensive reaso
 
 ## Desktop grid (1440)
 
-```
+```text
 ViewHeader ───────────────────────────────────────────── [New event] [⋯]
 Verdict line (one sentence, full width)
 Toolbar (sticky) ── [signals chip] ──────────────────── [Window: 7D 30D 90D Szn All]
@@ -133,7 +136,8 @@ Each row is its own CSS grid (already true in the current code, the fix is `item
 **Existing, reused as-is**: `ViewHeader`, `Toolbar`, `Segmented`, `Menu`, `StatusPill`, `MatrixBoard`, `Inset`, `InlineNotice`, `InstrumentCluster`, `InstrumentPanel`, `Readout`, `TrendChart`, `InsufficientData`, `TickerStrip`, `Avatar`, `EmptyState`, `NotificationsLatestModule`.
 
 **New primitive (1, well under the two-new-primitive budget)**: `AgendaStrip`, `src/components/fairway/modules/AgendaStrip.tsx`.
-```
+
+```text
 interface AgendaStripEvent { id: string; label: string; startMinutes: number; endMinutes: number; tone: 'accent' | 'warning' | 'info' | 'neutral' }
 interface AgendaStripProps {
   events: AgendaStripEvent[];
@@ -144,6 +148,7 @@ interface AgendaStripProps {
   className?: string;
 }
 ```
+
 A labeled hour rail with tone-filled event pills positioned by percentage of the visible range, an optional 2px accent "now" tick, and a visually-hidden `<ul>` listing each event's title/time for screen readers. Reduced-motion-guarded fade-in, staggered left to right (`useReducedMotionGuard`, never raw `useReducedMotion`). Add a `registry.ts` entry (category `data-viz`, archetype `A`, `bestFor: ["a compact same-day hour axis for a day's events"]`, `avoidFor: ["multi-day ranges", "more than ~8 events (use Filmstrip)"]`) and export it from `src/components/fairway/index.ts`.
 
 **Additive props on existing components (not counted against the primitive budget)**: `NotificationsLatestModule`'s `frame?: 'card' | 'bare'`; `TickerItem`'s `tone?: 'good' | 'even' | 'over'`.
@@ -177,8 +182,8 @@ A labeled hour rail with tone-filled event pills positioned by percentage of the
 
 ### Files to create
 
-9. `src/components/fairway/modules/AgendaStrip.tsx`, the new primitive.
-10. `src/components/fairway/modules/AgendaStrip.test.tsx`, a11y hidden-list contents, tone-to-fill mapping, reduced-motion guard, "now" tick only renders when `nowMinutes` is provided.
+1. `src/components/fairway/modules/AgendaStrip.tsx`, the new primitive.
+2. `src/components/fairway/modules/AgendaStrip.test.tsx`, a11y hidden-list contents, tone-to-fill mapping, reduced-motion guard, "now" tick only renders when `nowMinutes` is provided.
 
 ### Data plumbing
 
@@ -189,6 +194,7 @@ Null handling, stated as data mapping, not as a caveat: `stats.rosterSize`/`upco
 ### Tests
 
 Rewrite `FairwayCoachDashboard.composition.test.tsx`'s region assertions:
+
 - Query regions by name: `"Today's schedule"`, `"Who needs attention"` (renamed from `"Team pulse"`), `"Team performance"` (name unchanged, position changed), `"Recent rounds"`, `"Latest notifications"` (unchanged).
 - DOM order: `today` precedes `whoNeedsAttention` (same operations row, left to right), `today.compareDocumentPosition(whoNeedsAttention) & FOLLOWING` truthy.
 - `whoNeedsAttention` precedes `teamPerformance` (operations row precedes the full-width instrument band), `whoNeedsAttention.compareDocumentPosition(teamPerformance) & FOLLOWING` truthy.
@@ -239,8 +245,8 @@ where it favors coach — the new verdict-line bar, the bare toolbar row with
 one right-pinned pill, and the 8/4 ledger row (a bar-strip + list Panel
 beside a bare list) — and to shape-match `FairwayPlayerDashboard`'s own v2
 pass (landed separately, `2f7dd217b`) where it favors player instead — row
-1's `SectionTitle` + Ribbon-shaped 180px panel on the left, a schedule Surface
-+ bare task rows on the right, and a flat `StatMatrix`-shaped KPI strip at
+1's `SectionTitle` + Ribbon-shaped 180px panel on the left, a schedule
+Surface + bare task rows on the right, and a flat `StatMatrix`-shaped KPI strip at
 every width for the full-width band. Neither role gets a perfect mirror
 everywhere; the file's own doc comment names exactly which role each section
 favors and what the other role's accepted mismatch looks like on handoff —

@@ -2,7 +2,7 @@
 
 <!-- Synthesized by the facelift design panel (three concepts, one judge) on 2026-09-10. -->
 
-# Team Stats (coach), final spec
+## Team Stats (coach), final spec
 
 Route: `/golf/dashboard/stats/team` (the coach-facing Team Stats screen; bare `/golf/dashboard/stats` is the player route and renders `FeatureUnavailable` for a coach). Component: `TeamStatsBoard`. Archetype: B (board) with a C analytical instrument, per `docs/design/fairway-facelift/screens/team-stats.md`.
 
@@ -31,11 +31,13 @@ Stage (verdict sentence) then Toolbar (ledger) then the dominant object (roster 
 **Visual:** `ViewHeader` is unchanged (title "Team Stats", existing description, existing freshness `meta` line, existing primary/secondary actions). Immediately below it, a new paragraph in `font-fw-display`, roughly `text-h3` size, semibold, capped at about 54 characters wide so it reads as a pull quote, not a header. The one figure in the sentence is a nested `font-fw-sans tabular-nums font-semibold` span, colored `text-fw-warning-ink` when the sentence names a leak and `text-accent-700` when it names a lead, matching the app's existing green good / amber caution convention rather than making every number green regardless of meaning.
 
 **Three states, not two** (this is the fix for a real gap in the concept this spec is built on):
+
 1. A category is negative: "Putting is the leak. −3.2 strokes below Tour, every round." (worst category by value)
 2. No category is negative but at least one exists: "Putting leads the way. +0.8 strokes clear of Tour, every round." (best category by value)
 3. No SG data exists at all (`hasSg` false, e.g. a cold roster): reuse the exact cold-start sentence the tornado chart already shows today, "Strokes gained appears once players log rounds with shot-level tracking. Add players to your roster and have them enter rounds shot by shot." so the same honest copy is not authored twice.
 
 **Data mapping:**
+
 - `sgData: SGCategory[]`, existing `useMemo` in `TeamStatsBoard.tsx:276-288`, built from `standingByPlayer.get(p.id)?.get(sg_metric)?.player_value` via `weightedMean`. Unchanged.
 - `fmtSg`, existing export from `buildTeamBoardViewModel.ts`. Unchanged.
 - New pure function `verdictSentence(sgData, hasSg)` added inline in `TeamStatsBoard.tsx` (same file, same convention as the existing `sgTakeaway` block just above it): finds both the worst and the best category instead of only the worst, and returns one of the three states above.
@@ -77,6 +79,7 @@ Stage (verdict sentence) then Toolbar (ledger) then the dominant object (roster 
 **Enrichment (this is the one substantive content upgrade to the board, additive only):** `ExpandBand` currently shows Fairways / GIR / Scrambling / Putts / Birdies as flat percentages with no benchmark, plus a worst-metric callout, SG Putt, last round, and the three triage links. Add, above that unchanged block and inside the same sunken well, four `StandingBars` rows (`frame="bare"`, `size="sm"`) for Off the Tee / Approach / Around the Green / Putting, the exact four categories the board's own rank columns already rank. A coach who taps a row to ask "why is this player ranked 6th in Approach" currently gets nothing about Approach specifically; this answers it with the real You / Team / Tour bars instead of a bare rank number.
 
 **Data mapping for the enrichment (all already fetched, no new query):**
+
 - `standingByPlayer`, already a `TeamStatsBoard` prop, already in scope where rows are built (`TeamStatsBoard.tsx:174`). Thread the one player's map directly into `ExpandBand` at composition time: `expand: <ExpandBand row={row} standing={standingByPlayer.get(row.id)} isWomens={isWomens} />`. This does **not** touch `TeamBoardRowViewModel`'s exported shape, so `buildTeamBoardViewModel.test.ts`, which constructs that shape directly, needs no changes.
 - `SG_CATEGORY_BARS`, already exists in `TeamStatsBoard.tsx:106-111` (the same tee/approach/short/putt metric ids and labels used for the board's own rank columns and the cockpit's tornado). Reuse it to build the four `StandingBars` rows.
 - `getMetricRenderConfig(metric)` from `@/lib/coachhelm/v3/standing/metric-config`, already imported and used this way in `buildTeamBoardViewModel.ts`; add the same import to `TeamStatsBoard.tsx` to supply `direction`, `unit`, and `scale` (`default_scale`) per metric.
@@ -100,6 +103,7 @@ Stage (verdict sentence) then Toolbar (ledger) then the dominant object (roster 
 *Tertiary (the foot row):* two `InstrumentPanel depth="inset"` cells (the pattern this primitive already uses elsewhere, e.g. `EffectivenessScoreboard.tsx`), each holding a small `Readout`: Putts / 18 and Birdies / 18. Not "Score avg," which would repeat the ledger's Team scoring cell verbatim, the same duplication class fixed twice already on this screen.
 
 **The new "by hole type" chart, made honest (this is the one piece of new arithmetic in the whole spec, and it must be done exactly this way):**
+
 - `scoring_par_3` / `scoring_par_4` / `scoring_par_5` are real registry metrics (`METRIC_IDS`, `metric-config.ts:84-86`), `direction: 'lower_better'`, and `standingByPlayer` already carries every metric for every player (`loadPlayersStandingMap` is called with no metric filter in `page.tsx:473`), so there is no new fetch.
 - Do **not** pass the raw team average score (e.g. "4.3") as the chart's signed value; a tornado draws bars from zero, and a raw strokes-to-par number at zero is meaningless, not merely unlabeled. Use the SAME signed-vs-Tour convention the SG categories already use: `weightedMean` (roster-weighted by `roundsPlayed`) over each player's `standingByPlayer.get(id)?.get(metric)?.pga_delta` (already `player_value - pga_value`, present on every `PlayerStanding` row), then flip the sign once (`* -1`) because the metric is `lower_better` and the SG convention is "positive = gained." This mirrors `worstLeakTakeaway`'s existing `direction === 'higher_better' ? raw : -raw` pattern one line away.
 - Gender honesty: if **any** player's standing row for `scoring_par_3`, `_4`, or `_5` carries `pga_omitted` (a women's roster with no credible par-type anchor, per `standing/types.ts:37-41`), do not draw the chart at all. Render it as `state="insufficient-data"` with its own message ("Par-type benchmarks aren't available for this roster yet."), the same honest-degrade pattern the leak maps already use two sections down, rather than mixing an omitted and a non-omitted player in one chart.
@@ -130,7 +134,7 @@ Stage (verdict sentence) then Toolbar (ledger) then the dominant object (roster 
 
 ## Desktop grid (1440, container `max-w-[1536px]` unchanged)
 
-```
+```text
 ViewHeader (title, description, freshness, actions)
 Verdict sentence (prose, capped ~54ch)
 [InlineNotice on partial load failure, unchanged]
@@ -181,6 +185,7 @@ No sheets, no drawers, no new mobile surface. Everything reachable by one linear
 ## Implementation plan
 
 **Files to edit:**
+
 - `src/components/golf/stats/team-board/TeamStatsBoard.tsx`, the main rewrite: verdict sentence + its three-state logic, `StatMatrix variant="plain"`, drop the Bento import/usage in favor of the `InstrumentCluster` cockpit and the hairline diptych, new `parTypeData`/`parTypeOmitted`/`parTypeTakeaway` `useMemo`s beside the existing `sgData`, thread `standingByPlayer.get(row.id)` and `isWomens` into `ExpandBand`, add the `getMetricRenderConfig` import, extend `ExpandBand` with the four `StandingBars` rows and the identity-cell `SignalChip`.
 - `src/components/golf/stats/team-board/buildTeamBoardViewModel.ts`, one-line fix: drop the triangle glyph from the "Most improved" signal label. Nothing else in this file changes; the exported `TeamBoardRowViewModel` shape is untouched.
 - `src/components/fairway/modules/MatrixBoard.tsx`, drop the two inset accent-stripe shadow classes (selected/expanded row, and the expand band). Shared primitive; also changes Roster and CoachHelm players boards' selected-row look, on purpose, per the hard ban.
@@ -190,6 +195,7 @@ No sheets, no drawers, no new mobile surface. Everything reachable by one linear
 **Data plumbing:** none new. Every field used above already reaches `TeamStatsBoard` as a prop today: `standingByPlayer` (covers every `MetricId` for every player, including `gir_pct` and `scoring_par_3/4/5`, per `page.tsx:473`), `players` (`TeamPlayerStats`, including `recent_scores` already oldest to newest), `leakMaps`, `freshness`. No new Supabase query, no new server action.
 
 **Tests:**
+
 - `TeamStatsBoard.freshness.test.tsx`, verified against the exact assertions in the file today (relative freshness line, the "trend signals begin after 8 completed rounds" sentence, the Ask CoachHelm menu navigation, the Freshness details toast). None of those assertions touch the Bento region, the cockpit, or the diptych, so this file needs **no changes** for this spec as written.
 - `buildTeamBoardViewModel.test.ts`, verified it does not assert on the triangle glyph string anywhere, and this spec does not touch the exported view-model shape, so this file needs **no changes** either.
 - New coverage worth adding, not required to ship: a small test for the new `verdictSentence` three-state function (leak / lead / cold-start), and a render test that the par-type tornado shows its insufficient-data state when any player's `scoring_par_*` row carries `pga_omitted`.

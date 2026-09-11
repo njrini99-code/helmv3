@@ -156,7 +156,7 @@ lead-only. Say in your report that it is a promotion candidate.
 One CSS grid, shared by both registers, so a column line runs unbroken from
 the team bar to the last player:
 
-```
+```text
 grid-cols-[minmax(0,1fr)_repeat(5,3.25rem)]          /* below md   */
 md:grid-cols-[minmax(0,1fr)_repeat(5,4.5rem)]        /* md and up  */
 ```
@@ -329,7 +329,7 @@ leave a trailing single on its own row — both are `FieldReadouts`'
 existing behaviour with fewer children, not a new rhythm to build.
 
 | Readout | Source | Missing |
-|---|---|---|
+| --- | --- | --- |
 | Team SG / rd | `vm.kpis.teamSg` (`buildTeamBoardViewModel.ts:305`) | en dash (see Risk 6: the null case is `teamSg`'s own inline ternary at `:514`, not `fmtSg`'s null branch at `:38` — `fmtSg` only formats the non-null half of that ternary) |
 | Trajectory | `vm.kpis.trajectory` (`:307`), rendered by the existing `TrajectoryKpi` (`TeamStatsBoard.tsx:586-603`) | `hasTrajectorySignal === false` → "Not yet" in `text-text-tertiary`; the verdict already carries the explanation, so do NOT repeat the `InsufficientData` block here |
 | Rounds · 30d | `vm.kpis.rounds30d` (`:308`) | `0` is a real count here and prints as `0` |
@@ -450,7 +450,7 @@ load-bearing: an earlier build of Home split at `lg` and collapsed at 1024,
 starving a 15rem rail and clipping player names to one character.
 
 | Width | Stage | Readouts | Ledger | Diptych |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | < 640 | Field, abbreviated headers, horizontal scroll inside the Surface only | 2-up grid below the stage, three items, third alone on its own row | stacked | stacked |
 | 640–939 | same, abbreviated headers | 2-up, third item alone on its own row | stacked | stacked |
 | 940–1279 | full-word headers (CSS, see Stage above) | 4-up row below the stage, three of four tracks populated | 2-up (`md:grid-cols-2`) | stacked |

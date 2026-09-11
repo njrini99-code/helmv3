@@ -111,7 +111,7 @@ field citation applies, the same as Home's own overline text.
 **Data**: a new pure aggregation, `aggregateCategoryLeaks(groups)`, over
 fields that exist today — not a new fact, a new sum of existing ones:
 
-```
+```text
 for each group in groups, for each signal in group.signals
   where signal.kind !== 'team_synthesis'   // signal-grouping.ts:16-23 — a
                                             // roster roll-up double-counts
@@ -130,6 +130,7 @@ for each group in groups, for each signal in group.signals
 ```
 
 **What each mark encodes**:
+
 - **Position/length** (`pct`, RailBars' fill width) — that category's
   `strokesAtRisk` as a percentage of the largest measured `strokesAtRisk`
   across all categories (`clampPct`, `modules/logic.ts:4`, already imported
@@ -185,6 +186,7 @@ table.
 
 **Degradation** (after the load-failure check — see Risks, "an honest
 failure state," which this stage defers to when `groupsError` is set):
+
 - **Zero categories** (`groupsError` is null and
   `aggregateCategoryLeaks(groups).length === 0`): no `RailBars` at all — one
   line, the same precedent `ScoreField`'s own degrade uses
@@ -363,12 +365,12 @@ present, plain tertiary text for "Not measured" (there is nothing to color
 green here — see the stage's baseline note).
 
 | Column | Align | Source | Hidden below |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Severity | left, chip | `SeverityChip` (`SignalRow.tsx:30-37`) | always visible |
 | Player | left | `group.playerName` (or "Team") | always visible |
 | Claim | left | `toCoachVoice(signal.claim, subjectName)`, one line, truncated (`SignalRow.tsx:19`) | always visible |
 | Category | left | `formatCategoryLabel(signal.category)` (`buildTriageViewModel.ts:312-318`) | `md` |
-| Strokes | right, mono | `signal.strokeImpact != null ? \`${Math.abs(signal.strokeImpact).toFixed(2)} str\` : 'Not measured'` (`signal-grouping.ts:31`) | always visible |
+| Strokes | right, mono | `signal.strokeImpact != null ? \`${Math.abs(signal.strokeImpact).toFixed(2)} str\` : 'Not measured'`(`signal-grouping.ts:31`) | always visible |
 | Occurrences | right, mono | `signal.supersededCount + 1` when `supersededCount > 0` (precedent: `SignalDossier.tsx:201-205`), else blank | `lg` |
 
 **Row link**: the whole `<tr>` opens a `DrillPanel`
@@ -486,6 +488,7 @@ client-measured width remains on this screen after this spec.
 
 **Explicitly not deleted** (in scope elsewhere on the same route, unchanged
 by this spec):
+
 - `PlayersGridView` under `?view=players` (`TriageDesk.tsx:676-689`).
 - `EffectivenessScoreboard` under `?view=effectiveness` (`:690-696`).
 - `ViewSwitch` itself (`:542-546`), including its phone rendering (see

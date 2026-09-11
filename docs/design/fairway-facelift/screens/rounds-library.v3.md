@@ -59,6 +59,7 @@ page, not as part of the verdict sentence, so the readout wins and the
 verdict yields.
 
 Field substitution, every one an existing computation:
+
 - `firstMonth` = `firstMonthLabel(rounds)` (existing function, `FairwayRoundsLibrary.tsx:285-293`).
 - `absShots` / `better|worse|even` = `Math.abs(Math.round(scoreDelta))` and its sign, exactly the phrase already assembled at `FairwayRoundsLibrary.tsx:733-737` (`scoreDelta` computed `FairwayRoundsLibrary.tsx:644-652`, oldest-vs-newest normalized score over the full team).
 - `LeaderName` / `avgToParSigned` = the top entry of `playerSeasonStats` **unscoped** — the same sort `leaderboardEntries` already performs (`FairwayRoundsLibrary.tsx:521-526`) but without its player-select pre-filter (`FairwayRoundsLibrary.tsx:523-524`), i.e. `Array.from(playerSeasonStats.entries()).sort((a,b) => a[1].avgToPar - b[1].avgToPar)[0]`. `playerSeasonStats` itself is the existing per-player avg-`score_to_par` memo, min 2 scored rounds to qualify (`FairwayRoundsLibrary.tsx:407-426`). `avgToParSigned` uses the exact `+`/plain-decimal format already defined at `FairwayRoundsLibrary.tsx:710-715`, applied to this player's `avgToPar` instead of `stats.avgToPar`.
@@ -66,6 +67,7 @@ Field substitution, every one an existing computation:
 Missing-fact fallbacks, applied in order — each keeps whichever clauses still
 have data, giving the surviving clause its own subject so the sentence never
 reads as a dangling fragment:
+
 - `rounds.length === 0` — the verdict line does not render at all; the page is already in its top-level `EmptyState` branch (`FairwayRoundsLibrary.tsx:934-951`). Title stays "The library." alone, exactly today's fallback.
 - `scoreDelta === null` (fewer than 2 scored rounds team-wide, `seriesDelta`'s own gate, `FairwayRoundsLibrary.tsx:330-333`) — drop the shots clause, giving the remainder its own subject: `"The season started {firstMonth}."`, then append the leader clause (`", led by {LeaderName} at {avgToParSigned}"`) if one exists.
 - `firstMonth === null` (no parseable date, an edge case) — drop the "since {firstMonth}" framing only, keeping the shots clause with its own subject: `"The team is {absShots} shot{s} {better|worse|even} than where the season started."`, then the leader clause if present.
@@ -114,6 +116,7 @@ searched/typed slice of it.
 
 **Header row** (inside the one stage `Surface`, matching
 `FairwayCoachDashboard.tsx:366-395`'s pattern exactly):
+
 - Overline: `"THE SEASON · {scope}"` where `scope` is `"every player"` when
   `playerFilter === 'all'`, else the selected player's name.
 - Title, `text-h2`: `"Round scatter"`.
@@ -198,11 +201,11 @@ same approach `ScoreField.tsx:12-13` documents, and the same reason
   {avgToPar}"` in `text-accent-700 font-fw-mono text-eyebrow` (same treatment
   as the Today label, `ScoreField.tsx:294`). Rendered only when
   `scopedSummary.toParCount >= 3` — **not** the same denominator as
-  `starved` (`FairwayRoundsLibrary.tsx:696`, which counts rounds with a
-  usable `total_score`): the line draws `avgToPar`, so its own honesty gate
-  counts non-null `score_to_par` values specifically, mirroring the exact
-  asymmetry `page.tsx:195` (`scoredRounds`, filtered on `total_score`) and
-  `page.tsx:196,212` (`toParScores`, filtered on `score_to_par`) already
+  `starved`(`FairwayRoundsLibrary.tsx:696`, which counts rounds with a
+  usable`total_score`): the line draws`avgToPar`, so its own honesty gate
+  counts non-null`score_to_par` values specifically, mirroring the exact
+  asymmetry `page.tsx:195`(`scoredRounds`, filtered on`total_score`) and
+  `page.tsx:196,212`(`toParScores`, filtered on`score_to_par`) already
   keep as two separate arrays with two separate counts, never one shared
   denominator.
 
@@ -264,6 +267,7 @@ same approach `ScoreField.tsx:12-13` documents, and the same reason
   not a score number.
 
 **Degradation**:
+
 - Zero rounds in `playerScopedRounds` (a selected player with no completed
   rounds — an edge case since `playerOptions` are derived from names present
   in `rounds`, `FairwayRoundsLibrary.tsx:379-389`): `EmptyState
@@ -443,7 +447,7 @@ this change the stage is the page's only `Surface`; see Risks for the two
 existing tests this rewrites as a result.
 
 | Column | Source | Align | Hidden |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Date | `round_date` (`FairwayRoundsLibrary.tsx:153`), rendered weekday over "Mon D" via the existing `dateParts()` helper (`FairwayRoundRow.tsx:67-72`) | left | always shown |
 | Player | `player.first_name`/`last_name`/`avatar_url` (`FairwayRoundsLibrary.tsx:169-173`), `Avatar` + `Link` to the round | left | always shown |
 | Course | `course_name` via `cleanCourseName()` (`FairwayRoundsLibrary.tsx:132-133`) | left | `hidden md:table-cell` |
@@ -526,6 +530,7 @@ this page is the destination itself.
 ## Phone
 
 Same order, one column:
+
 1. Masthead — collapsed title/verdict, unchanged `ViewHeader`-equivalent
    behavior.
 2. Stage — `RoundField` at full width (percentage geometry needs no

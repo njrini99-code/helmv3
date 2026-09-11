@@ -145,7 +145,7 @@ How the calendar/dock pass meets it:
 Measurements (2026-09-10, this branch at 0a31c5350 + the drawer perf commit; a Playwright page at 393×852 @2×, iPhone UA, coach account, dev server; in-page `requestAnimationFrame` recorder over the 600 ms after the tap; four runs, medians):
 
 | Sheet | CPU | Open: frames / >33 ms / >50 ms / longest (at) | Close: frames / >33 ms / >50 ms / longest |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | More sheet (dock) | 1× | 49 / 1 / 0 / 38 ms (first frame) | 45 / 1 / 0 / 39 ms |
 | Event sheet (calendar) | 1× | 46 / 1 / 0 / 38 ms (first frame) | 51 / 0 / 0 / 27 ms |
 | More sheet (dock) | 4× throttle | 37 / 2 / 1 / 87 ms | 43 / 0 / 0 / 27 ms |
