@@ -96,7 +96,12 @@ describe('GET /api/jobs/consume', () => {
   });
 
   it('calls helm_jobs_fail when the handler throws', async () => {
-    vi.mocked(postRoundTrigger).mockResolvedValueOnce({ success: false, error: 'boom' });
+    vi.mocked(postRoundTrigger).mockResolvedValueOnce({
+      success: false,
+      error: 'boom',
+      code: 'engine_transient',
+      outcome: { kind: 'retryable_failure', code: 'engine_transient', message: 'boom' },
+    });
     const rpc = vi.fn((fn: string, args?: Record<string, unknown>) => {
       if (fn === 'helm_jobs_read_batch') {
         if (args?.p_queue === 'coachhelm_analysis') {
@@ -124,5 +129,41 @@ describe('GET /api/jobs/consume', () => {
       p_msg_id: 2,
       p_error: expect.stringContaining('boom'),
     });
+  });
+
+  it.each([
+    ['a parked round (under the floor)', { kind: 'waiting_for_data', code: 'engine_below_round_floor', message: '2 of 3' }],
+    ['a teamless player', { kind: 'not_applicable', code: 'engine_no_team_membership', message: 'no roster' }],
+    ['a permanent failure', { kind: 'permanent_failure', code: 'engine_error', message: 'bad input' }],
+  ] as const)('acks %s instead of requeueing it — the round already carries the outcome (R3)', async (_label, outcome) => {
+    vi.mocked(postRoundTrigger).mockResolvedValueOnce({
+      success: false,
+      error: outcome.message,
+      code: outcome.code,
+      outcome,
+    } as never);
+    const rpc = vi.fn((fn: string, args?: Record<string, unknown>) => {
+      if (fn === 'helm_jobs_read_batch') {
+        if (args?.p_queue === 'coachhelm_analysis') {
+          return Promise.resolve({
+            data: [{ msg_id: 3, read_ct: 1, enqueued_at: 'x', vt: 'y', message: { roundId: 'r3', playerId: 'p3' } }],
+            error: null,
+          });
+        }
+        return Promise.resolve({ data: [], error: null });
+      }
+      return Promise.resolve({ data: null, error: null });
+    });
+    createAdminMock.mockReturnValue({ rpc } as unknown as ReturnType<typeof createAdminClient>);
+
+    const res = await GET(req());
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      results: { coachhelm_analysis: { failed: number; acked: number } };
+    };
+    expect(body.results.coachhelm_analysis.acked).toBe(1);
+    expect(body.results.coachhelm_analysis.failed).toBe(0);
+    expect(rpc).toHaveBeenCalledWith('helm_jobs_ack', { p_queue: 'coachhelm_analysis', p_msg_id: 3 });
+    expect(rpc).not.toHaveBeenCalledWith('helm_jobs_fail', expect.anything());
   });
 });

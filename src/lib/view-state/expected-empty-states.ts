@@ -43,6 +43,25 @@ export const EXPECTED_EMPTY_STATES = {
     unit: 'rounds',
   },
   /**
+   * Engine-side (triggerPlayerInsightsAfterRound): the player has fewer
+   * completed rounds than the coach's "minimum rounds before CoachHelm
+   * speaks" setting. A `waiting_for_data` outcome (repair plan R3, 2026-09-12)
+   * — the round parks and the next completed round wakes it.
+   */
+  engine_below_round_floor: {
+    title: 'Not enough rounds yet',
+    description: "CoachHelm speaks once the player reaches the coach's minimum-rounds setting.",
+    unit: 'rounds',
+  },
+  /**
+   * Engine-side: the coach or the team switched CoachHelm off. A `disabled`
+   * outcome (R3) — an intentional setting doing its job, never a fault.
+   */
+  engine_disabled: {
+    title: 'CoachHelm is off',
+    description: 'Analysis resumes when CoachHelm is switched back on for this team.',
+  },
+  /**
    * getPlayerShotAnalytics / getPlayerShotContext: no completed rounds in the
    * SELECTED lookback window — the normal state for a quiet stretch.
    */

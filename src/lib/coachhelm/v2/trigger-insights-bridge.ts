@@ -1,5 +1,7 @@
 import 'server-only';
 
+import type { AnalysisOutcomeCode, PreservedCause } from '@/lib/coachhelm/v3/engine/analysis-outcome';
+
 /**
  * ============================================================================
  * Trusted-server bridge for `triggerPlayerInsightsAfterRound`
@@ -57,6 +59,9 @@ import 'server-only';
 /**
  * Stable, non-message-derived classification produced by
  * triggerPlayerInsightsAfterRoundImpl (src/app/golf/actions/insights.ts).
+ * Since 2026-09-12 (repair plan R3) it is the typed outcome code from
+ * `src/lib/coachhelm/v3/engine/analysis-outcome.ts`, so the engine names its
+ * own state and no consumer classifies from the message.
  *
  * EVERY consumer of that result must classify severity off this field rather
  * than the user-facing message — the withAdminObserved-wrapped path via
@@ -65,10 +70,7 @@ import 'server-only';
  * here, and imported by the implementation, so a new code cannot be added on
  * one side of the bridge and silently dropped on the other.
  */
-export type TriggerPlayerInsightsCode =
-  | 'engine_no_recent_rounds'
-  | 'engine_session_expired'
-  | 'engine_no_team_membership';
+export type TriggerPlayerInsightsCode = AnalysisOutcomeCode;
 
 export interface TriggerPlayerInsightsResult {
   success: boolean;
@@ -76,6 +78,11 @@ export interface TriggerPlayerInsightsResult {
   error?: string;
   partial?: boolean;
   code?: TriggerPlayerInsightsCode;
+  /** Structured context for the outcome (e.g. `{ completedRounds, floor }`). */
+  details?: Record<string, unknown>;
+  /** The original exception when the engine caught one — preserved, never
+   *  collapsed into a generic message. */
+  cause?: PreservedCause;
 }
 
 type TriggerPlayerInsightsFn = (playerId: string) => Promise<TriggerPlayerInsightsResult>;

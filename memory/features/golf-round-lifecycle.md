@@ -171,6 +171,18 @@ Use `memory/context/golfhelm-database.md` for exact columns.
   change exactly `coachhelm_analyzed_at`, `coachhelm_failed_at`, and
   `coachhelm_failure_reason` on an already completed round; it cannot alter
   the recorded round, its identity, or its children.
+- Those three columns carry three populations (repair plan R3, 2026-09-12;
+  `src/lib/coachhelm/v3/engine/analysis-outcome.ts`): never processed (all
+  NULL); PARKED — both timestamps NULL and the reason holds a typed expected
+  state (`engine_below_round_floor`, `engine_no_recent_rounds`,
+  `engine_no_team_membership`, `engine_no_coach`, `engine_disabled`), woken
+  only by the event its policy names; FAILED — `coachhelm_failed_at` set,
+  transient codes (`engine_timeout`, `engine_transient`,
+  `engine_generator_failure`) carrying an attempt count (`:r2`, then
+  `:exhausted`), everything else permanent. `engine_covered_by_later_run`
+  marks a parked or legacy-failed round stamped analyzed because a later run
+  for the same player covered it. Only the code goes in the reason column —
+  the player can read their own row — never a message or an exception.
 - Draft and submit behavior must preserve partial progress and recover from interrupted sessions.
 - The protected atomic submit RPC is the only live completion writer. On every
   RPC failure, application code must preserve the server/device backups and

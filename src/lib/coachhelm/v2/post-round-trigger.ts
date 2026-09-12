@@ -1,11 +1,13 @@
 /**
  * postRoundTrigger — idempotent post-round CoachHelm trigger that writes
  * terminal state to `golf_rounds.coachhelm_analyzed_at` /
- * `coachhelm_failed_at` so the safety-net cron can deterministically
- * identify rounds that still need processing.
+ * `coachhelm_failed_at` / `coachhelm_failure_reason` so the safety-net cron
+ * can deterministically identify rounds that still need processing.
  *
  * Designed for `after(() => postRoundTrigger(admin, args))` from the round
- * submit server action — see audit Finding 2 / A-NEW-6.
+ * submit server action — see audit Finding 2 / A-NEW-6 — and reused
+ * verbatim by the Inngest function, the pgmq consumer and the safety-net
+ * cron, so every path stamps the round the same way.
  *
  * Closes:
  *   - the HTTP self-call hop (no internal `fetch` to `/api/coachhelm/...`)
@@ -13,6 +15,21 @@
  *     insight after round.created_at" probe)
  *   - the 200-OK-on-failure observability gap (failures persist to the
  *     row so operators can see them in DB)
+ *
+ * 2026-09-12 (repair plan R3): the engine's result is a typed
+ * `AnalysisOutcome` (src/lib/coachhelm/v3/engine/analysis-outcome.ts).
+ * Expected states — a player under the coach's round floor, no roster, a
+ * coach who switched CoachHelm off — PARK the round (both timestamps null,
+ * the code in `coachhelm_failure_reason`) instead of stamping it failed;
+ * transient faults stamp failed and are retried by the safety net inside a
+ * deadline; everything else stamps failed and stays inspectable with the
+ * original exception in the log. Nothing here reads the message text.
+ *
+ * Worker context: this function needs only the service-role client it is
+ * handed. The engine behind the bridge resolves the player's team, coach and
+ * philosophy itself with its own admin client — no request session is
+ * involved, so it runs identically from `after()`, a queue consumer, or a
+ * cron.
  *
  * NOT a replacement for triggerPlayerInsightsAfterRound — wraps it.
  */
@@ -24,64 +41,35 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 // against (the cold-start TDZ crash the bridge header documents).
 import '@/app/golf/actions/insights';
 import { triggerPlayerInsightsAfterRound } from '@/lib/coachhelm/v2/trigger-insights-bridge';
+import {
+  classifyThrown,
+  logSeverityFor,
+  outcomeFromTriggerResult,
+  terminalStateFor,
+  type AnalysisOutcome,
+  type AnalysisOutcomeCode,
+  type RoundTerminalState,
+} from '@/lib/coachhelm/v3/engine/analysis-outcome';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
-import { classifySoftFailure } from '@/lib/admin/observe-action-result';
 
 export interface PostRoundTriggerArgs {
   playerId: string;
   roundId: string;
   triggerReason?: 'round_submitted' | 'safety_net' | 'manual_refresh' | 'cron';
+  /** Which attempt this is for the round (first run = 1). The safety net
+   *  passes the next number when it retries a transient failure so the
+   *  attempt count on the reason column keeps climbing to exhaustion. */
+  attempt?: number;
 }
 
-/**
- * Map raw engine error messages to a stable short code before persisting to
- * golf_rounds.coachhelm_failure_reason. The player can SELECT their own
- * golf_rounds row, so the persisted value must not leak Postgres error
- * strings, internal table names, or stack-derived text. Verbose context
- * always goes to logServerError below.
- */
-type FailureCode =
-  | 'engine_timeout'
-  | 'engine_session_expired'
-  | 'engine_membership_missing'
-  | 'engine_disabled'
-  | 'engine_no_recent_rounds'
-  | 'engine_generator_failure'
-  | 'engine_error';
-
-/**
- * Partial-success marker (P0-04). When the engine succeeded OVERALL but one or
- * more mandatory generators threw, the round IS analyzed but is NOT clean — we
- * stamp `coachhelm_analyzed_at` (so the safety-net cron stops re-running it) AND
- * record this in `coachhelm_failure_reason` so a repair job / operator can tell
- * a fully-clean run from one that silently dropped a generator. A NEW
- * `analysis_status` column would be cleaner, but this reuses the existing
- * columns honestly without a schema change.
- */
-const PARTIAL_FAILURE_REASON = 'engine_partial_failure' as const;
-
-/**
- * `postRoundTrigger` is a SECOND, independent consumer of the same
- * `triggerPlayerInsightsAfterRound` result that `observeActionSoftFailure`
- * classifies for the withAdminObserved-wrapped path, and the safety-net cron
- * is a THIRD. All three must agree on severity for the identical `code` —
- * otherwise a routine outcome (no rounds yet, an un-rostered player,
- * background-context session expiry) is simultaneously logged as a handled
- * 'warning'/'info' by one consumer AND as a live Sentry exception at 'error'
- * by another, defeating the whole point of the classification. The verdict
- * itself lives in the classification module so no consumer owns it.
- */
-const classifyEngineFailureSeverity = classifySoftFailure;
-
-function sanitizeFailureReason(reason: string): FailureCode {
-  const lower = reason.toLowerCase();
-  if (lower.includes('timeout') || lower.includes('timed out')) return 'engine_timeout';
-  if (lower.includes('session') && lower.includes('expired')) return 'engine_session_expired';
-  if (lower.includes('membership')) return 'engine_membership_missing';
-  if (lower.includes('disabled')) return 'engine_disabled';
-  if (lower.includes('no completed rounds')) return 'engine_no_recent_rounds';
-  if (lower.includes('generator failure') || lower.includes('tier-1')) return 'engine_generator_failure';
-  return 'engine_error';
+export interface PostRoundTriggerResult {
+  /** True for `succeeded` and `partial` — the round is analyzed. */
+  success: boolean;
+  error?: string;
+  partial?: boolean;
+  code?: AnalysisOutcomeCode;
+  /** The typed outcome every consumer should branch on. */
+  outcome: AnalysisOutcome;
 }
 
 /**
@@ -91,7 +79,7 @@ function sanitizeFailureReason(reason: string): FailureCode {
 async function writeTerminalState(
   admin: SupabaseClient,
   roundId: string,
-  patch: Record<string, string | null>,
+  patch: RoundTerminalState,
   contextAction: string,
 ): Promise<void> {
   // Completed scorecards are immutable.  Terminal CoachHelm state is the
@@ -99,9 +87,9 @@ async function writeTerminalState(
   // can update these three operational columns and nothing else.
   const { data, error } = await admin.rpc('record_round_coachhelm_terminal_state', {
     p_round_id: roundId,
-    p_analyzed_at: patch.coachhelm_analyzed_at ?? null,
-    p_failed_at: patch.coachhelm_failed_at ?? null,
-    p_failure_reason: patch.coachhelm_failure_reason ?? null,
+    p_analyzed_at: patch.coachhelm_analyzed_at,
+    p_failed_at: patch.coachhelm_failed_at,
+    p_failure_reason: patch.coachhelm_failure_reason,
   });
 
   if (error) {
@@ -127,6 +115,68 @@ async function writeTerminalState(
   }
 }
 
+const ACTION_BY_KIND: Record<AnalysisOutcome['kind'], string> = {
+  succeeded: 'postRoundTrigger.engineSuccess',
+  partial: 'postRoundTrigger.enginePartial',
+  waiting_for_data: 'postRoundTrigger.waitingForData',
+  not_applicable: 'postRoundTrigger.notApplicable',
+  disabled: 'postRoundTrigger.disabled',
+  retryable_failure: 'postRoundTrigger.retryableFailure',
+  permanent_failure: 'postRoundTrigger.permanentFailure',
+};
+
+/**
+ * One log line per non-success outcome, at the severity the kind carries.
+ * The message is code-stable (the incident fingerprint hashes it), the
+ * variable parts — reason, details, the preserved exception — ride in
+ * `extra`, so a permanent failure keeps its stack and a transient one its
+ * Postgres code.
+ */
+async function logOutcome(outcome: AnalysisOutcome, args: PostRoundTriggerArgs): Promise<void> {
+  if (outcome.kind === 'succeeded') return;
+  const { severity, skipSentry } = logSeverityFor(outcome.kind);
+  const message = `postRoundTrigger outcome ${outcome.kind}: ${outcome.code}`;
+  const context = {
+    action: ACTION_BY_KIND[outcome.kind],
+    featureArea: 'coachhelm',
+    playerId: args.playerId,
+    errorCode: outcome.code,
+    ...(skipSentry ? { skipSentry: true } : {}),
+    extra: {
+      roundId: args.roundId,
+      triggerReason: args.triggerReason ?? 'round_submitted',
+      attempt: args.attempt ?? 1,
+      outcomeKind: outcome.kind,
+      reason: outcome.message,
+      ...(outcome.details ? { details: outcome.details } : {}),
+      ...(outcome.cause
+        ? {
+            causeName: outcome.cause.name,
+            causeMessage: outcome.cause.message,
+            ...(outcome.cause.code ? { causeCode: outcome.cause.code } : {}),
+            ...(outcome.cause.stack ? { stack: outcome.cause.stack } : {}),
+          }
+        : {}),
+    },
+  };
+  if (severity === 'info') {
+    await logServerEvent(message, context, 'info');
+  } else {
+    await logServerError(message, context, severity);
+  }
+}
+
+function toResult(outcome: AnalysisOutcome): PostRoundTriggerResult {
+  const success = outcome.kind === 'succeeded' || outcome.kind === 'partial';
+  return {
+    success,
+    outcome,
+    code: outcome.code,
+    ...(outcome.kind === 'partial' ? { partial: true } : {}),
+    ...(success ? {} : { error: outcome.message }),
+  };
+}
+
 /**
  * Run the CoachHelm engine for a single round and record terminal state on
  * `golf_rounds`. Never throws — fire-and-forget safe from `after()` callbacks.
@@ -134,118 +184,29 @@ async function writeTerminalState(
 export async function postRoundTrigger(
   admin: SupabaseClient,
   args: PostRoundTriggerArgs,
-): Promise<{ success: boolean; error?: string; partial?: boolean; code?: string }> {
+): Promise<PostRoundTriggerResult> {
   const now = new Date().toISOString();
+  let outcome: AnalysisOutcome;
   try {
-    const result = await triggerPlayerInsightsAfterRound(args.playerId);
+    outcome = outcomeFromTriggerResult(await triggerPlayerInsightsAfterRound(args.playerId));
+  } catch (err) {
+    // The engine envelope never throws by contract; reaching here means the
+    // bridge itself did (unregistered impl, an unexpected rejection). Keep
+    // the exception — it is the diagnosis.
+    outcome = classifyThrown(err);
+  }
 
-    if (!result.success) {
-      const reason = result.error ?? 'engine reported failure';
-      await writeTerminalState(
-        admin,
-        args.roundId,
-        {
-          coachhelm_failed_at: now,
-          coachhelm_failure_reason: sanitizeFailureReason(reason),
-        },
-        'postRoundTrigger.engineFailure',
-      );
-      const code = result.code ?? null;
-      const { severity, skipSentry } = classifyEngineFailureSeverity(reason, code);
-      const logContext = {
-        action: 'postRoundTrigger.engineFailure',
-        featureArea: 'coachhelm',
-        playerId: args.playerId,
-        ...(skipSentry ? { skipSentry: true } : {}),
-        ...(code ? { errorCode: code } : {}),
-        extra: { roundId: args.roundId, triggerReason: args.triggerReason ?? 'round_submitted' },
-      };
-      if (severity === 'info') {
-        await logServerEvent(`postRoundTrigger engine failed: ${reason}`, logContext, 'info');
-      } else {
-        await logServerError(`postRoundTrigger engine failed: ${reason}`, logContext, severity);
-      }
-      // Hand the engine's classification code back to the caller. The
-      // safety-net cron is a THIRD consumer of this same outcome (alongside
-      // this function and observeActionSoftFailure) and, without the code,
-      // had no way to reach the same verdict — so it re-logged expected
-      // outcomes at hardcoded 'error' right after this call had logged them
-      // at 'info'/'warning'. See the classifyEngineFailureSeverity doc
-      // comment above: all consumers must agree on severity for one code.
-      return { success: false, error: reason, ...(code ? { code } : {}) };
-    }
-
-    // P0-04: the engine ran but may have lost one or more generators to an
-    // internal throw (now surfaced via the orchestrator's generatorSummary →
-    // `result.partial`). Mark the round analyzed (so the safety-net cron stops
-    // re-running it) but flag it partial in coachhelm_failure_reason so a repair
-    // job / operator can distinguish a clean run from a degraded one. Reading
-    // `partial` defensively keeps this back-compatible with callers that don't
-    // yet thread it.
-    const partial = result.partial === true;
-    if (partial) {
-      await writeTerminalState(
-        admin,
-        args.roundId,
-        {
-          coachhelm_analyzed_at: now,
-          coachhelm_failed_at: null,
-          coachhelm_failure_reason: PARTIAL_FAILURE_REASON,
-        },
-        'postRoundTrigger.enginePartial',
-      );
-      await logServerError(
-        `postRoundTrigger engine partial: one or more generators failed but the round was analyzed`,
-        {
-          action: 'postRoundTrigger.enginePartial',
-          featureArea: 'coachhelm',
-          playerId: args.playerId,
-          // Routine partial-failure marker — admin-feed only, not Sentry.
-          skipSentry: true,
-          extra: { roundId: args.roundId, triggerReason: args.triggerReason ?? 'round_submitted' },
-        },
-        'warning',
-      );
-      return { success: true, partial: true };
-    }
-
+  try {
     await writeTerminalState(
       admin,
       args.roundId,
-      {
-        coachhelm_analyzed_at: now,
-        coachhelm_failed_at: null,
-        coachhelm_failure_reason: null,
-      },
-      'postRoundTrigger.engineSuccess',
+      terminalStateFor(outcome, now, { attempt: args.attempt }),
+      ACTION_BY_KIND[outcome.kind],
     );
-    return { success: true };
-  } catch (err) {
-    const reason = err instanceof Error ? err.message : String(err);
-    try {
-      await writeTerminalState(
-        admin,
-        args.roundId,
-        {
-          coachhelm_failed_at: now,
-          coachhelm_failure_reason: sanitizeFailureReason(reason),
-        },
-        'postRoundTrigger.throw',
-      );
-    } catch {
-      // If even the state-column write fails, we've lost the signal; the
-      // logServerError below still captures the original failure.
-    }
-    await logServerError(`postRoundTrigger threw: ${reason}`, {
-      action: 'postRoundTrigger.throw',
-      featureArea: 'coachhelm',
-      playerId: args.playerId,
-      extra: {
-        roundId: args.roundId,
-        triggerReason: args.triggerReason ?? 'round_submitted',
-        stack: err instanceof Error ? err.stack : undefined,
-      },
-    });
-    return { success: false, error: reason };
+  } catch {
+    // If even the state-column write fails, we've lost the signal; the
+    // logOutcome below still captures the original outcome.
   }
+  await logOutcome(outcome, args);
+  return toResult(outcome);
 }

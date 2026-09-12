@@ -23,11 +23,15 @@ import { createAdminClient } from '@/lib/supabase/admin';
 // back-edge was the cold-start TDZ cycle; see trigger-insights-bridge.ts).
 import '@/app/golf/actions/insights';
 import { triggerPlayerInsightsAfterRound } from '@/lib/coachhelm/v2/trigger-insights-bridge';
+import { isAnalysisOutcomeCode, kindForCode, type AnalysisOutcomeKind } from '@/lib/coachhelm/v3/engine/analysis-outcome';
 import { logServerError } from '@/lib/server-error-logger';
 import { requireCronAuth } from '@/lib/cron/auth';
 import { recordJobRun } from '@/lib/admin/job-log';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { describeError } from '@/lib/utils/describe-error';
+
+const isFailureKind = (kind: AnalysisOutcomeKind): boolean =>
+  kind === 'retryable_failure' || kind === 'permanent_failure';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -160,8 +164,14 @@ async function handleRosterSweep(): Promise<NextResponse> {
       }
       if (p.result.success) {
         analyzed++;
+      } else if (isAnalysisOutcomeCode(p.result.code) && isFailureKind(kindForCode(p.result.code))) {
+        // R3: the engine names its own state. A transient or permanent
+        // failure is a failure here too — it used to be folded into
+        // `skipped` with the expected states and vanish from the count.
+        failed++;
       } else {
-        // Engine opted out (team disabled, no coach, no completed rounds, etc.) — not an error.
+        // Engine parked the player (team disabled, no coach, under the round
+        // floor, nothing in the window) — an expected state, not an error.
         skipped++;
       }
     }
