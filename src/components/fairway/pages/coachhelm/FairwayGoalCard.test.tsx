@@ -86,3 +86,39 @@ describe('FairwayGoalCard — title never truncates to a single clipped line', (
     expect(title?.textContent).toBe('A Very Long Unregistered Custom Metric Identifier');
   });
 });
+
+describe('FairwayGoalCard — standing strip honours the loader omission (A2)', () => {
+  it('draws no Tour figure and captions why on an on-green approach standing', () => {
+    const data: FairwayGoalCardData = {
+      goal: makeGoal({ metric_id: 'approach_proximity_125_175ft', title: 'Approach 125-175' }),
+      standing: {
+        player_id: 'player-1',
+        metric_id: 'approach_proximity_125_175ft',
+        player_value: 22.6,
+        team_avg: 24.1,
+        team_n: 6,
+        team_pct: 40,
+        level_avg: null,
+        level_n: 0,
+        level_pct: null,
+        pga_value: 30,
+        pga_delta: -7.4,
+        pga_omitted: true,
+        pga_omitted_reason: 'basis_mismatch',
+        computed_at: '2026-09-12T00:00:00.000Z',
+      },
+    };
+    const { container } = render(
+      <FairwayGoalCard
+        data={data}
+        // eslint-disable-next-line jsx-a11y/aria-role -- domain prop, not ARIA
+        role="player"
+      />,
+    );
+    expect(container.textContent).not.toMatch(/30 ft/);
+    expect(container.textContent).toMatch(/Tour proximity counts every approach/);
+    const bar = container.querySelector('[aria-label*="Tour reference not shown"]');
+    expect(bar).not.toBeNull();
+    expect(bar?.getAttribute('aria-label')).not.toContain('PGA Tour: 30');
+  });
+});

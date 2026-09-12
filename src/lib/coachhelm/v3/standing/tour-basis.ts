@@ -25,10 +25,25 @@
  * `ApproachMissGenerator.standingTourComparable = false` is the generator-side
  * expression of the same rule for the standing block it injects into
  * `evidence.standing`; this module is the read-side rule for every other
- * consumer (home/stats standing tiles, goals, suggestions).
+ * consumer (home/stats standing tiles, goals, suggestions) — and, because the
+ * snapshot in `evidence.standing` is frozen at write time, `EvidencePanel`
+ * re-applies it on read so rows persisted before the rule render the same
+ * omission as rows written after it.
  */
 
-import type { PlayerStanding } from './types';
+import type { PgaOmissionReason } from './types';
+
+/**
+ * The fields the rule reads and writes. `PlayerStanding` (live loader rows)
+ * and `EvidenceStanding` (the snapshot frozen into `evidence.standing` at
+ * write time) both satisfy this structurally, so the same function guards a
+ * live tile and a card rendering a row persisted before the rule existed.
+ */
+export interface TourBasisStanding {
+  metric_id: string;
+  pga_omitted?: boolean;
+  pga_omitted_reason?: PgaOmissionReason;
+}
 
 /**
  * Registry ids whose `golf_player_standing.player_value` is measured on a
@@ -51,8 +66,13 @@ export function isStandingTourComparable(metricId: string): boolean {
  * Stamp the omission on a standing row whose Tour marker is not comparable.
  * Pure — returns the row untouched (same reference) for every other metric,
  * and never un-omits a row the gender anchor already omitted.
+ *
+ * Generic so persisted snapshots get the same treatment as live rows: the
+ * 116 `evidence.standing` blocks written before this rule (2026-09-12) carry
+ * `pga_omitted: false` on approach ids, and `EvidencePanel` runs them through
+ * here at render time rather than trusting the frozen flag.
  */
-export function applyTourBasis(standing: PlayerStanding): PlayerStanding {
+export function applyTourBasis<T extends TourBasisStanding>(standing: T): T {
   if (isStandingTourComparable(standing.metric_id)) return standing;
   if (standing.pga_omitted) return standing;
   return {
