@@ -108,7 +108,7 @@ describe('searchInsights', () => {
   });
 
   it('sortBy priority: orders the FULL set by severity in memory and slices the page (N5)', async () => {
-    // What the DB hands back (created_at desc). `priority` is TEXT, so the old
+    // What the DB hands back (id order, whatever that is). `priority` is TEXT, so the old
     // `.order('priority')` produced high < low < medium < urgent — this fixture
     // is arranged so that alphabetical, created_at, and severity orders all
     // differ.

@@ -136,8 +136,21 @@ follows; both are pure functions with tests.
   baseline with `no_target_reason`; the suggestion writer's `rowSeverity`
   returns null and `WriterResult.rows_skipped_basis_mismatch` counts the
   rows it refused. The women's no-anchor omission carries
-  `'no_womens_anchor'` the same way. Remove an id from the set only when
-  the refresh RPC writes it on the Tour's basis.
+  `'no_womens_anchor'` the same way. Two consequences worth knowing: the
+  snapshot frozen into `evidence.standing` predates the rule on 116
+  production rows (2026-09-12), so `EvidencePanel` re-applies
+  `applyTourBasis` on read instead of trusting the stored flag; and every
+  card that receives a live `PlayerStanding` (goal card, focus-area card,
+  home insights drill, standing drills, filmstrip) forwards both omission
+  fields to the strip — a consumer that passes `pga_value` alone redraws
+  the comparison. Remove an id from the set only when the refresh RPC
+  writes it on the Tour's basis.
+- No backwards target. `suggestGoalTarget` offers the Tour midpoint only
+  when the player is behind the anchor (`isWorseThanAnchor`); a player
+  already ahead gets `no_target_reason: 'already_ahead'` and sets their own
+  number. Production 2026-09-12: 135 of 823 comparable standings are ahead
+  (28 of 44 `sg_ott`, 22 of 36 `opening_hole_delta`, 17 of 44 `gir_pct`);
+  those previously received a midpoint below their current value.
 - Severity ordering (N5). `golf_coach_insights.priority` is TEXT, so a
   database `.order('priority')` is alphabetical (high < low < medium <
   urgent). No reader orders by that column. Feeds rank the full visible set

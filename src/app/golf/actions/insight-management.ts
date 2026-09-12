@@ -234,9 +234,11 @@ async function searchInsightsImpl({
       // matching set (one round trip for every coach today: max 352 rows),
       // order it with the shared severity comparator, and slice the page from
       // the ordered whole so page N is the N-th most severe slice, not the
-      // N-th slice of an alphabetical list.
+      // N-th slice of an alphabetical list. The DB order only has to be
+      // stable across pages — `id` (the house pattern in insight-delivery and
+      // getActiveInsights); the comparator decides the final order.
       const all = await fetchAllRowsResult<SearchRow>(
-        (f, t) => buildQuery().order('created_at', { ascending: false }).range(f, t),
+        (f, t) => buildQuery().order('id', { ascending: true }).range(f, t),
         undefined,
         { table: 'golf_coach_insights', action: 'searchInsights', feature: 'coachhelm_ai_engine', sport: 'golf' },
       );
