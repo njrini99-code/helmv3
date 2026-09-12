@@ -655,6 +655,9 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
             // generator whose player value is not on the Tour marker's basis
             // omits it the same way (`standingTourComparable`).
             pga_omitted: this.standingTourComparable ? standing.pga_omitted : true,
+            pga_omitted_reason: this.standingTourComparable
+              ? standing.pga_omitted_reason
+              : 'basis_mismatch',
             computed_at: standing.computed_at,
           },
           counterfactual,

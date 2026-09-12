@@ -12736,6 +12736,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/app/golf/actions/insight-management.ts",
+          "line": 25
+        },
+        {
+          "kind": "import_graph",
           "path": "src/app/golf/actions/intelligence-dashboard.ts",
           "line": 3
         },
@@ -13067,6 +13072,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/app/golf/actions/insight-management.ts",
+          "line": 26
+        },
+        {
+          "kind": "import_graph",
           "path": "src/app/golf/actions/intelligence-dashboard.ts",
           "line": 11
         },
@@ -13074,6 +13084,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/intelligence-dashboard.ts",
           "line": 13
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/intelligence-dashboard.ts",
+          "line": 14
         },
         {
           "kind": "import_graph",
@@ -13440,12 +13455,12 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/insights.ts",
-          "line": 69
+          "line": 74
         },
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/insights.ts",
-          "line": 74
+          "line": 79
         },
         {
           "kind": "import_graph",
@@ -13470,7 +13485,7 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/v3/goals.ts",
-          "line": 35
+          "line": 36
         },
         {
           "kind": "import_graph",
@@ -13641,17 +13656,22 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/insights.ts",
-          "line": 60
+          "line": 55
         },
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/insights.ts",
-          "line": 66
+          "line": 65
         },
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/insights.ts",
-          "line": 67
+          "line": 71
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/insights.ts",
+          "line": 72
         },
         {
           "kind": "import_graph",
@@ -13691,7 +13711,7 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/v3/goals.ts",
-          "line": 29
+          "line": 30
         },
         {
           "kind": "import_graph",
@@ -13835,7 +13855,7 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/insights.ts",
-          "line": 73
+          "line": 78
         },
         {
           "kind": "import_graph",
@@ -13937,17 +13957,17 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/insights.ts",
-          "line": 68
+          "line": 73
         },
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/insights.ts",
-          "line": 76
+          "line": 81
         },
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/insights.ts",
-          "line": 77
+          "line": 82
         },
         {
           "kind": "import_graph",
@@ -13957,7 +13977,7 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/v3/goals.ts",
-          "line": 28
+          "line": 29
         },
         {
           "kind": "import_graph",
@@ -14076,12 +14096,12 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/insights.ts",
-          "line": 55
+          "line": 60
         },
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/insights.ts",
-          "line": 61
+          "line": 66
         },
         {
           "kind": "import_graph",
@@ -14116,12 +14136,17 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/v3/goals.ts",
-          "line": 30
+          "line": 28
         },
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/v3/goals.ts",
-          "line": 34
+          "line": 31
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/v3/goals.ts",
+          "line": 35
         },
         {
           "kind": "import_graph",
@@ -20257,6 +20282,11 @@
       "target": "player_coachhelm_development",
       "kind": "feature_relation",
       "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/stats-leak-maps-types.ts",
+          "line": 13
+        },
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/stats-leak-maps.ts",

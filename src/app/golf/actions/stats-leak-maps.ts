@@ -648,6 +648,8 @@ async function getPlayerStandingRowsImpl(
       team_pct: s.team_pct,
       pga_value: s.pga_value,
       pga_delta: s.pga_delta,
+      pga_omitted: s.pga_omitted,
+      pga_omitted_reason: s.pga_omitted_reason,
       is_womens: s.is_womens,
     }));
     return { success: true, data: rows };

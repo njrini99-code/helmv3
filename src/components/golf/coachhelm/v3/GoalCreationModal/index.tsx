@@ -70,6 +70,30 @@ function roundForInput(value: number, unit: GoalTargetSuggestion['unit']): strin
   return String(Number(value.toFixed(dp)));
 }
 
+/**
+ * Caption for a metric that HAS a standing reading but no honest auto-target
+ * (`suggested_target === null`). Says which of the three reasons applies so
+ * the empty field never reads as a loading failure.
+ */
+function noTargetCopy(
+  s: Pick<GoalTargetSuggestion, 'baseline' | 'pga_value' | 'no_target_reason'>,
+  unit: GoalTargetSuggestion['unit'],
+): string {
+  const baseline = s.baseline === null ? '' : formatValue(s.baseline, unit);
+  switch (s.no_target_reason) {
+    case 'basis_mismatch':
+      return `Your ${baseline} counts only approaches that hit the green; the Tour figure counts every approach, so there is no Tour target to aim at — set your own.`;
+    case 'already_ahead':
+      return s.pga_value === null
+        ? `You are at ${baseline}, ahead of the Tour anchor — set a target to hold or extend it.`
+        : `You are at ${baseline}, ahead of Tour (${formatValue(s.pga_value, unit)}) — set a target to hold or extend it.`;
+    case 'no_womens_anchor':
+      return `Your baseline is ${baseline}. No women’s Tour benchmark for this metric yet — set a target to aim for.`;
+    default:
+      return `Your baseline is ${baseline} — set a target to aim for.`;
+  }
+}
+
 export function GoalCreationModal({
   open,
   onClose,
@@ -135,8 +159,13 @@ export function GoalCreationModal({
         return;
       }
       target = n;
-      // Untouched auto-fill = midpoint; an edited value = manual.
-      target_source = !userEdited && suggestion?.hasStanding ? 'midpoint' : 'manual';
+      // Untouched auto-fill = midpoint; an edited value = manual. A standing
+      // with no honest auto-target (`no_target_reason`) never auto-fills, so
+      // anything in the field is the user's own number.
+      target_source =
+        !userEdited && suggestion?.hasStanding && suggestion.suggested_target !== null
+          ? 'midpoint'
+          : 'manual';
     }
     // Capture the current value as the baseline so the progress track has a
     // real starting tick from day one (cron moves `current` off it later).
@@ -248,6 +277,10 @@ export function GoalCreationModal({
                     {formatValue(suggestion.suggested_target, cfg.unit)} — halfway to Tour
                     ({formatValue(suggestion.pga_value, cfg.unit)}) from your{' '}
                     {formatValue(suggestion.baseline, cfg.unit)}
+                  </span>
+                ) : suggestion?.hasStanding && suggestion.baseline !== null ? (
+                  <span className="mt-1 block text-xs text-warm-500">
+                    {noTargetCopy(suggestion, cfg.unit)}
                   </span>
                 ) : suggestion && !suggestion.hasStanding ? (
                   <span className="mt-1 block text-xs text-warm-500">

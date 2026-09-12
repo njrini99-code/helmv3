@@ -7,6 +7,9 @@
 
 import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 
+/** Why a standing row's Tour marker is suppressed (`pga_omitted: true`). */
+export type PgaOmissionReason = 'no_womens_anchor' | 'basis_mismatch';
+
 /** A row from `public.golf_player_standing`. */
 export interface PlayerStanding {
   player_id: string;
@@ -40,6 +43,16 @@ export interface PlayerStanding {
    * (the default for every men's / unknown-cohort row — unchanged behavior).
    */
   pga_omitted?: boolean;
+
+  /**
+   * Why the Tour marker is omitted, when `pga_omitted` is true. Render layers
+   * turn it into a one-line caption so "—" reads as "not comparable" rather
+   * than "missing data".
+   *   - `no_womens_anchor`: women's cohort, no LPGA row and no estimate.
+   *   - `basis_mismatch`: `player_value` is on-green-only proximity while
+   *     `pga_value` is all-shot Tour proximity (see ./tour-basis.ts).
+   */
+  pga_omitted_reason?: PgaOmissionReason;
 
   /**
    * True when this row was gender-anchored for a women's-team player by
