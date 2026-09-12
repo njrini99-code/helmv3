@@ -1084,3 +1084,240 @@ Live schema evidence came from read-only `information_schema.columns`, `pg_polic
 - [PostGIS validity semantics](https://postgis.net/docs/ST_IsValid.html)
 
 Repository-specific sources and adoption decisions appear in Section 11. Their availability does not establish golf-course coverage, source accuracy or production readiness.
+
+
+## 18. SVG UI/UX correction after the Cacapon proof — researched design specification
+
+**Added 2026-09-12. Status: proposed design; no application implementation or device validation in this research pass.** This section responds to the owner's screenshot of “Cacapon · shared geometry proof.” It refines the visual and interaction acceptance criteria in Sections 5, 12 and 13. Where earlier sizing or presentation suggestions conflict, this section takes precedence. Section 7.7's measurement, lie, direction and unknown-pin contracts remain mandatory.
+
+### 18.1 What failed, and what the screenshot does not establish
+
+The proof has a useful distinction between source geometry and unresolved shots, but its presentation leaves most of the product job undone. The hole surfaces are small, similar in visual weight and surrounded by unused space. Debugging copy occupies substantial vertical space. Neither diagram tells a clear shot story. The entry example repeats historical shot prose before the controls. It looks like a geometry inspection harness.
+
+This screenshot does not establish that the source polygons are wrong, that the tee-to-fairway gap is a bug, or that separate bunkers should be merged. Actual golf holes can have disconnected fairways and long gaps from tees. Do not “fix” physical geography to make the drawing fuller.
+
+The proof's horizontal entry view and vertical review view are not, by themselves, a geometry error. Different cameras can render the same coordinates accurately. Their framing needs a deliberate policy and consistent directional semantics, not identical pixels.
+
+Research and repository scope: re-read the existing main components and the plan branch. The geometry implementation behind the uploaded proof was not identified in the accessible branch/PR results. Therefore this is a source-grounded design prescription for the existing integration points, not a line-by-line review of that unpublished implementation.
+
+### 18.2 Design decision: one scene, separate layouts, purposeful detail
+
+Use one normalized physical scene and one shot-evidence adapter. Let the container decide the visible extent, annotation density, selected shot and interaction mode.
+
+Three approaches were considered:
+
+| Approach | Benefit | Limitation | Decision |
+| --- | --- | --- | --- |
+| Full hole in every small panel | Always shows routing | Greens and bunkers remain tiny; makes entry taller without resolving legibility | Keep as overview |
+| Permanently large interactive map | Plenty of detail | Competes with entry controls, creates gesture and keyboard problems | Expanded view only |
+| Compact contextual view with explicit overview/detail controls | Preserves form space and gives relevant geometry enough pixels | Requires camera state and clear context | Recommended |
+
+A useful calculation: a 25-yard-wide green on a 383-yard hole spanning 320 pixels is only about 21 pixels wide, before padding. A 10-yard bunker is about 8 pixels. Changing fill colors cannot make several numbered shots readable inside that space. Enlarging the geographic features independently would corrupt scale. A closer view is the correct solution.
+
+Apple's layout guidance supports organizing content by importance, grouping related controls and revealing secondary detail on demand. The dimensions below are GolfHelm design targets, not Apple mandates. [Apple layout guidance](https://developer.apple.com/design/human-interface-guidelines/layout).
+
+### 18.3 Shot entry: compact context above the existing form
+
+The form remains the primary task. The map should answer “Which hole and which part of the hole am I recording?” without forcing map interaction.
+
+Initial design targets, measured in CSS pixels:
+
+| Region | Normal phone target | Behavior |
+| --- | --- | --- |
+| Shared round/hole/shot chrome | Preserve one compact sticky region | Remove repeated hole and shot headings; retain saved state and exit |
+| Current shot context row | About 48–64 px at normal text size | Shot number/type/lie on left; existing entered remaining distance on right |
+| Inline geometry | 144–176 px; up to 184 on taller available viewports | Fixed-size slot per layout; camera changes inside it |
+| Controls immediately following scene | Existing 44–48 px minimum design targets | Result first; relevant direction/distance/putting fields follow |
+| Commit action | Existing approximately 48–52 px button | One action area, clear of keyboard and home indicator |
+| Map during distance keyboard entry | Optional 44–56 px collapsed context row | Collapse without moving or obscuring the focused field; preserve draft and scroll position |
+
+The combined context row and map should normally stay around 210–240 px, instead of becoming a 500–700 px hero. These are starting targets, subject to actual 320–430 px width, small-height, large-text and keyboard checks. Do not make an entire card fixed-height when text needs to wrap.
+
+Keep labels in the light Fairway header. Do not float the large distance readout over fairway geometry. Use one cream surface or a continuous grouped surface; avoid a card around a card around the map.
+
+**Context modes:**
+
+- Tee shot: show the complete hole route with tee and green identifiable. Number only recorded shots; no decorative future shot dots on the map.
+- Approach: default to the approach portion when a committed prior shot provides useful context. If the position is unresolved, frame the green and its surrounding surfaces as course context, without pretending the camera is centered on the ball.
+- Around green: enlarge the actual green and adjacent hazards. Maintain visible indication that this is a close view, and offer “Whole hole.”
+- Putting: show a compact distance schematic based on the existing feet, make/miss, break and slope fields. Actual green outline is available through the geometry view; do not insert an unknown cup into it.
+- Penalty: keep the penalty event and existing origin/replay behavior. No line representing a penalty as a travelled stroke.
+
+Use a quiet existing Segmented control or labeled button for “Whole hole / Approach” when both are meaningful. “Expand” opens a read-only viewer. These are viewing controls, not new data-entry questions. No map placement, pin selection or “where it landed” prompts.
+
+**State stability:** choose the default camera when the hole or committed shot changes. Do not reframe on every result selection, digit or hover. A player typing 18 must not watch a scene first fit 1 yard and then 18 yards. Preserve an explicitly chosen mode until the next hole, unless the user resets it. Distinguish an unsaved preview from committed history.
+
+**Scroll and gestures:** the inline SVG must allow normal page scrolling and browser zoom. No wheel zoom, drag-to-pan or capture of vertical swipes in the inline card. Expanded view may provide pan/zoom, with visible zoom/reset/close buttons so gestures are not the only way to operate it. MDN explains how touch-action governs browser gesture handling; W3C requires an alternative to dragging when dragging is not essential. [MDN touch-action](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/touch-action), [W3C dragging guidance](https://www.w3.org/WAI/WCAG22/Understanding/dragging-movements.html).
+
+### 18.4 Round review: one selected-hole panel, not a wall of maps
+
+Preserve the actual ReviewHero/Filmstrip composition: round summary, hole selector, one selected-hole detail. Do not replace the round review with 18 full-size geometry cards.
+
+Recommended mobile detail sequence:
+
+1. Compact hole header: hole number, par, yardage and score together.
+2. One 280–340 px geometry panel at normal phone dimensions.
+3. One compact recorded-shot selector.
+4. One selected-shot row with lie, entered before/after distances and relevant miss information.
+5. Putting detail revealed in the same visual slot or as a compact sibling when selected.
+6. Existing review narrative and areas remain reachable below.
+
+The 280–340 px target is the whole main drawing viewport, not a promise that a long, narrow fairway can fill both its dimensions. Overview uses uniform scale and fit padding. Approach mode changes the extent. The interface must say which view is active. A small overview locator may appear in expanded detail, but should be omitted from the inline view if it makes the panel crowded.
+
+Use a restrained “Hole / Green / Putting” view switch only for available views. “Green” shows actual outline and surrounding course geometry. “Putting” shows logged putts relative to an abstract cup; it is not a geographically registered green map. Do not give an abstract schematic a geographic scale bar or compass.
+
+On desktop, retain the current two-column detail pattern: geometry on the left, selected-shot explanation and putting on the right. Use available container space rather than a single device breakpoint to decide when both columns have enough room.
+
+Selecting a shot should highlight it and update its explanation. A tap on a small visual marker may select it where hit targets are unambiguous; the shot strip and next/previous controls provide the reliable alternative. Never move a physical anchor just to make its marker easier to tap.
+
+No duplicate hole heading inside the SVG, no permanent per-shot SG labels scattered over the scene, and no hover-only access to essential shot information.
+
+### 18.5 SVG visual language: styled vector cartography
+
+The target is a carefully drawn yardage-book diagram in Fairway's palette. Geometry carries location; visual treatment establishes hierarchy.
+
+| Layer | Rendering prescription | Accuracy restriction |
+| --- | --- | --- |
+| Background | Quiet deep evergreen, flat or extremely restrained wash | Means backdrop, not proof that all surrounding ground is rough |
+| Fairway | Medium evergreen fill with subtle tonal separation and a fine boundary | Preserve disconnected sections and actual widths |
+| Green | Brighter muted sage, crisp outline and very restrained interior tone | Actual polygon; no invented cup or pin-centered glow |
+| Bunker | Warm sand fill, darker thin boundary and subtle highlight clipped inside | Do not expand the footprint or suggest measured lip elevation |
+| Water | Muted blue-green, distinct from playable ground | Source-backed water only |
+| Tee | Source outline with quiet neutral fill | Tee area does not establish daily tee-marker position |
+| Shot sequence | Warm cream, selected segment emphasized, previous segments quieter | Estimated connections are not ball-flight trajectories |
+| Shot anchor | Small hollow point or evidence region according to evidence state | No exact point for an unresolved shot |
+| Label | Screen-sized cream/charcoal badge, placed separately from anchor | Label movement never moves the underlying point |
+| Uncertainty | Restrained boundary or hatching for a supported candidate region | Not a statistical confidence contour unless actually calculated |
+
+Order the drawing as background, validated surfaces, surface edge treatment, evidence regions, shot connections, physical anchors and labels. Resolve overlapping source features through validated topology and intended surface semantics; merely drawing one polygon last is not a data repair.
+
+Remove the default dashed centerline from the finished full-geometry scene. It competes with the actual shot sequence and can be mistaken for a travelled path. Route-only fallback may show a faint route guide with clear semantics.
+
+Do not add random trees, rough islands, mowing strips or shadows implying terrain. A subtle clipped material treatment can provide polish, but no amount of texture substitutes for useful scale, labels and composition.
+
+### 18.6 Camera geometry and screen geometry must be separate
+
+Maintain canonical coordinates in a local metric frame. The camera applies rotation, uniform scale and translation. Both axes use the same scale. Convert north-up world coordinates to the SVG's downward-positive y convention once; never reflect the physical scene to make a dogleg fit.
+
+For rotated bounds of width bw and height bh, a drawable viewport W by H with padding px and py uses:
+
+```ts
+// Design pseudocode: viewport is measured in CSS pixels.
+// Rotate the geometry first, then compute these bounds.
+const scale = Math.min(
+  (W - 2 * px) / bw,
+  (H - 2 * py) / bh,
+);
+const tx = (W - scale * bw) / 2 - scale * minX;
+const ty = (H - scale * bh) / 2 - scale * minY;
+```
+
+Reject empty/non-finite bounds before applying the calculation. Account for any controls or annotations occupying the viewport by reserving padding, rather than clipping meaningful features beneath them.
+
+Use meet semantics for overview. Slice can crop a tee or hazard when the actual hole's aspect differs from the old synthetic corridor; it should not be the default whole-hole policy. Explicit close views may crop geography intentionally. [MDN preserveAspectRatio](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute/preserveAspectRatio).
+
+Choose the overview orientation once per hole and presentation mode, then keep it stable while selecting shots. A landscape entry overview may rotate relative to a portrait review overview, provided the physical relationships and shot-direction frame remain unchanged. Direction is relative to the shot/target reference frame, never the phone's left edge. Close views should preserve the overview's rotation where practical.
+
+All displayed anchors must pass through the same camera transform as surfaces. Keep badges, hit regions and label text in a separate screen-coordinate overlay. The map can shrink; a 13–14 px label must not become 4 px.
+
+Use vector-effect="non-scaling-stroke" for appropriate outlines. It preserves stroke weight, **not** circle radius or font size. Screen-sized markers still require a separate overlay or inverse-scale handling. [MDN vector-effect](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute/vector-effect).
+
+SVG ids for gradients, masks and clips must be unique per mounted scene. Repeated hard-coded ids can produce cross-instance styling problems when the filmstrip, review and expanded viewer are mounted together.
+
+### 18.7 Contours, simplification and labels
+
+Do not fit a smooth spline through every raw polygon vertex in React. This can round away a bunker neck, cross a boundary or change green area. Retain canonical geometry for calculations, derive display geometry separately, and record the display revision.
+
+Mapshaper is useful for offline display simplification. Its weighted Visvalingam option preferentially removes acute vertices; its repair and keep-shapes behavior can help, but keep-shapes does not preserve every part of a multipart feature. Preserve important bunker parts and holes explicitly and validate the result. Start conservatively, comparing source/display boundaries at the intended rendered sizes. [Mapshaper repository](https://github.com/mbloch/mapshaper), [simplification reference](https://mapshaper.org/docs/reference.html#-simplify).
+
+A proposed initial visual tolerance is approximately 0.5 CSS pixels of boundary displacement at the intended view, with stricter treatment for greens, narrow bunker connections and known shot anchors near an edge. This is an acceptance target to measure, not a guarantee from the simplifier. Prefer the unsimplified polygon if a candidate changes topology, loses a material feature or changes a shot's apparent lie.
+
+Maintain interior rings. Explicitly configure SVG fill-rule/clip-rule appropriate to the normalized ring contract; evenodd is useful for polygon holes. Do not fill bunker/green cutouts accidentally. [MDN fill-rule](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute/fill-rule).
+
+Label priority is selected shot first, other recorded shots second, optional surface labels last. Try a small fixed set of badge positions; avoid overlapping labels, controls and key anchors. Use a fine leader from displaced badge to unchanged anchor. If no readable position fits, suppress the badge and retain the shot's strip entry.
+
+Mapbox's guidance on collision detection, variable anchors and ordered label priority is directly useful as an algorithmic pattern; installing Mapbox is unnecessary. [Mapbox label placement](https://docs.mapbox.com/help/dive-deeper/optimize-map-label-placement/).
+
+Polylabel provides an internal polygon label anchor, useful for an optional surface label within an irregular green or bunker. It is not a pin locator, ball-position solver or a reason to move a shot to the polygon center. [Polylabel repository](https://github.com/mapbox/polylabel).
+
+### 18.8 Restore the shot story without inventing precision
+
+Use three distinct presentation states:
+
+| Evidence state | Geographic scene | Shot detail |
+| --- | --- | --- |
+| Supported estimated location or region | Hollow anchor or candidate region, selected on demand | Entered measurements plus compact “Estimated position” status |
+| Several plausible regions | Highlight supported alternatives on selection, without false probability weights | Recorded lie/direction/distance remain readable |
+| Unresolved or contradictory | Course context remains; do not insert a fabricated location | Keep numbered shot ledger and offer clearly separate distance schematic |
+
+Never choose the nearest bunker solely because result=sand. Unknown cup position, ambiguous target frame and rounded input distances must be considered under Section 7.7. The same unknown target state must remain consistent across the shot sequence.
+
+Do not draw a normal cream connection through an unresolved gap as though it were reconstructed. A non-geographic shot sequence can still connect numbered events outside the map. Geographic path and shot-order diagram have different meanings.
+
+Keep one unobtrusive explanation of estimated placement. Remove repeated “Position unresolved · no exact endpoint shown” paragraphs from the default player view. Details belong behind the selected shot's information control. Keep required source attribution visible and readable in a compact map footer.
+
+### 18.9 Putting deserves its own scale and interaction
+
+Actual green shape adds context, but a moving cup prevents automatic registration of logged putts to that shape.
+
+The default putting view should show the first-putt distance, subsequent leave distances, make/miss and selected break/slope metadata from existing inputs. Radial distance must remain correct within the abstract schematic. Putts crossing or sharing an anchor use badge leaders; do not push the measured point outwards for separation.
+
+Use one clear selected-putt detail instead of annotating every putt with break, slope and SG simultaneously. Show a plain connection or evidence-appropriate symbolic path; break read alone does not establish actual curvature or speed. A rolled-off-green putt preserves its entered feet unit and resulting lie.
+
+In entry, the putting schematic replaces the full-hole drawing inside the same compact slot. In review, selecting Putting replaces the main detail view or uses the existing adjacent PuttingZoom area on desktop. Avoid stacked overview + green view + putting view that requires several screens of scrolling.
+
+### 18.10 Code integration and dependency choices
+
+References below were re-read on main during this pass. Paths name existing files unless marked proposed.
+
+| Existing file | Observed implementation | Target change |
+| --- | --- | --- |
+| src/components/fairway/pages/rounds-tracking/FairwayHoleHero.tsx | Nested HoleViz; viewBox 320×120; aspect 8:3; light header; fixed synthetic scenery | Keep the header and distance contract; replace nested scenery with shared scene plus compact camera policy |
+| src/components/fairway/pages/rounds-tracking/FairwayShotTracking.tsx | Phone stack; desktop two columns; one sticky round chrome; Hero before Entry | Preserve save/state handlers; own committed-shot selection and keyboard-aware compact layout |
+| src/components/fairway/pages/rounds-tracking/FairwayShotEntry.tsx | Existing manual form and dispatch | Preserve option sets, validation and unit behavior; no geometry prompts |
+| src/components/golf/coachhelm/round-review/ReviewHero.tsx | Filmstrip; one open hole; mobile stacked detail; desktop geometry/putting/ledger columns | Bound the drawing slot, add view selection and selected-shot detail, preserve narrative flow |
+| src/components/golf/coachhelm/v3/HoleShotPath/index.tsx | Review aspect 100:200, max width 300/360; rich markers, animations and tooltip | Replace fixed physical assumptions; screen-space labels, explicit selection, bounded viewport |
+| src/components/golf/coachhelm/v3/HoleShotPath/turf.tsx | Synthetic corridor, green ellipse, rail and flag | Data-driven surface renderer; retain safe schematic fallback under a distinct mode |
+| src/components/golf/coachhelm/v3/HoleShotPath/PuttingZoom.tsx | Existing separate putting panel | Preserve useful distance treatment while avoiding physical pin registration |
+| src/components/fairway/modules/Filmstrip.tsx | Small per-hole previews | Static low-detail scene; no dense labels, active-cell-only motion |
+| src/styles/design-tokens.css | Fairway material/type/spacing authority | Use current tokens; surface colors may be dedicated scoped cartographic tokens |
+
+Proposed seams, aligned with the shared renderer from Section 8: HoleScene for surfaces; HoleSceneViewport for camera and extent; ShotOverlay for anchors/regions; ShotAnnotations for screen-space labels; SelectedShotSummary for HTML detail. Consolidate names with the active implementation rather than creating parallel variants.
+
+Dependency decisions:
+
+- Native SVG and React remain sufficient for the inline drawing.
+- d3-geo's geoPath and geoIdentity are an optional small, established path/fit toolset for already projected planar data. Do not apply a spherical projection to local-meter coordinates. Existing equivalent helpers can be retained. [D3 paths](https://d3js.org/d3-geo/path), [D3 planar identity and fitting](https://d3js.org/d3-geo/projection#geoIdentity).
+- Mapshaper belongs in offline preparation/QA, not the phone's initial bundle.
+- Polylabel is optional preprocessing for surface labels.
+- svg-pan-zoom is a candidate only if the expanded viewer needs its capabilities. Evaluate React ownership, touch behavior and teardown before adoption; inline use does not need it. [svg-pan-zoom](https://github.com/bumbu/svg-pan-zoom).
+- No MapLibre, deck.gl, tile server or canvas/WebGL migration is needed for this visual correction.
+
+### 18.11 Accessibility, performance and acceptance gates
+
+A small dot can be visually elegant without being the only control. Use at least 44×44 CSS-pixel design targets for meaningful touch controls where possible, and resolve overlapping hit regions through the shot selector rather than invisible overlap. WCAG 2.2 AA's general minimum is 24×24 CSS pixels with stated exceptions; 44 is our stronger design target here. Provide selected state, keyboard access and equivalent text. [W3C target size](https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html).
+
+A static scene can be an SVG image with title/description plus adjacent accessible shot details. Do not hide interactive descendants inside an aria-hidden SVG. Selected/estimated/penalty states need shape or text distinctions in addition to color.
+
+Render prepared geometry, not ingestion operations. Memoize the scene by geometry version, level of detail and dimensions. Typing updates form state without rebuilding every polygon. Keep filmstrip thumbnails static. Respect reduced motion; no looping ball pulses, decorative flight animation or camera zoom on every digit. Reserve skeleton dimensions equal to the real slot.
+
+Required evidence before declaring this visual pass complete:
+
+1. Render the **actual components and compiled Fairway styles**, not approximating HTML or another generated image.
+2. Capture the exact same reviewed hole and shot fixture in entry, review, expanded and thumbnail modes.
+3. Test 320, 375, 390 and 430 CSS-pixel widths; a short phone viewport; large text; Safari keyboard open; reduced motion.
+4. Show tee shot, approach, bunker result, ambiguous bunker, putting, rolled-off putt, penalty and missing geometry.
+5. Confirm the normal entry map stays within its size target; essential inputs remain reachable without nested scrolling or shrinking touch controls.
+6. Confirm overview fits the relevant tee/green/hazards; close view is explicitly indicated; no anisotropic scaling or anchor clamping.
+7. Confirm lie and distance fixtures still pass when changing camera, label positions or display geometry.
+8. Compare source outline and styled outline at close zoom. Reject lost holes, merged bunkers, altered narrow features or labels covering the selected anchor.
+9. Test rapid shot switching, keyboard focus, returning from Expand and unsaved input preservation.
+10. Obtain owner review of real phone captures before bulk course enrichment.
+
+### 18.12 Fold this into the existing implementation order
+
+Complete this as a Stage 2 visual acceptance correction, before widening the source pipeline. Keep the reviewed Cacapon fixture if its source checks pass; the screenshot alone is not grounds to replace its geography.
+
+Delivery sequence: (A) bounded actual-screen layout and shared viewport, (B) deliberate surface styling and screen-space annotations, (C) evidence-aware shot selection plus green/putting detail, (D) device and numerical acceptance. Database changes are not a prerequisite for this fixture-based UI pass.
+
+The exit condition is not “the polygons rendered.” It is: the real app screens present the hole recognizably, keep manual entry efficient, make the selected shot understandable, and retain the measurement limits in Section 7.7.
