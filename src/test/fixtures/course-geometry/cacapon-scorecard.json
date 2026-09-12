@@ -1,0 +1,96 @@
+{
+  "source": "Helm read-only course library; 2026-09-12; current snapshot, not surveyed tee markers",
+  "teeName": "Men's Blue",
+  "holes": [
+    {
+      "hole_number": 1,
+      "par": 4,
+      "yardage": 383
+    },
+    {
+      "hole_number": 2,
+      "par": 4,
+      "yardage": 395
+    },
+    {
+      "hole_number": 3,
+      "par": 5,
+      "yardage": 535
+    },
+    {
+      "hole_number": 4,
+      "par": 3,
+      "yardage": 194
+    },
+    {
+      "hole_number": 5,
+      "par": 4,
+      "yardage": 410
+    },
+    {
+      "hole_number": 6,
+      "par": 4,
+      "yardage": 379
+    },
+    {
+      "hole_number": 7,
+      "par": 4,
+      "yardage": 431
+    },
+    {
+      "hole_number": 8,
+      "par": 3,
+      "yardage": 197
+    },
+    {
+      "hole_number": 9,
+      "par": 5,
+      "yardage": 536
+    },
+    {
+      "hole_number": 10,
+      "par": 4,
+      "yardage": 378
+    },
+    {
+      "hole_number": 11,
+      "par": 5,
+      "yardage": 484
+    },
+    {
+      "hole_number": 12,
+      "par": 4,
+      "yardage": 381
+    },
+    {
+      "hole_number": 13,
+      "par": 4,
+      "yardage": 414
+    },
+    {
+      "hole_number": 14,
+      "par": 4,
+      "yardage": 376
+    },
+    {
+      "hole_number": 15,
+      "par": 3,
+      "yardage": 210
+    },
+    {
+      "hole_number": 16,
+      "par": 4,
+      "yardage": 396
+    },
+    {
+      "hole_number": 17,
+      "par": 3,
+      "yardage": 181
+    },
+    {
+      "hole_number": 18,
+      "par": 5,
+      "yardage": 547
+    }
+  ]
+}

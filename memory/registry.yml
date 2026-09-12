@@ -427,6 +427,7 @@ features:
       routes:
         - src/app/golf/(dashboard)/dashboard/rounds/**
       components:
+        - src/components/golf/course-geometry/**
         - src/components/fairway/pages/rounds/**
         - src/components/fairway/pages/rounds-new/**
         - src/components/fairway/pages/rounds-recover/**

@@ -591,3 +591,22 @@ The completed-round Submit banner lives inside this same measured scorecard
 chrome so it remains reachable while scrolling. A ResizeObserver updates the
 published offset when the banner or save status changes height. The route
 loading placeholder reserves the same inset, context, and editor order.
+
+## Course geometry fixture proof (2026-09-12)
+
+Stages 0–2 of `docs/plans/2026-09-12-golfhelm-course-geometry.md` add an
+optional, local-only shared SVG scene under `src/lib/golf/course-geometry/`
+and `src/components/golf/course-geometry/`. The Cacapon fixture is a partial
+source-reviewed draft, with no production binding. Both review and entry
+compositions consume the same physical package and evidence representation.
+The harness reuses `FairwayShotEntry`; existing production consumers and
+all score, save, edit, undo, statistics and putting behavior remain unchanged.
+
+Explicit before/after unit tags are preserved independently. The adapter
+retains all eight approach directions, original Other results and penalty
+transition state. Legacy `shotDistance` is derived evidence only. Ordinary
+events have unresolved endpoints. A separately marked analytic presentation
+fixture supplies test coordinates to demonstrate marker containment and
+label placement; it is not a reconstruction algorithm or a player location.
+Source acceptance and Stage 3–5 storage, access, wiring and reconstruction
+gates remain in the existing plan.

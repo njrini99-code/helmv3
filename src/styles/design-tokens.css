@@ -22,6 +22,22 @@
  * ========================================================================== */
 
 :root {
+  /* Physical course SVG pilot. Terrain colors carry no result/status meaning. */
+  --fw-diagram-ground: #102e22;
+  --fw-diagram-ground-light: #244c32;
+  --fw-diagram-fairway-light: #639465;
+  --fw-diagram-green-light: #91b47b;
+  --fw-diagram-shadow: #092318;
+  --fw-diagram-fairway: #447748;
+  --fw-diagram-green: #719d63;
+  --fw-diagram-tee: #64886b;
+  --fw-diagram-bunker: #eee0bd;
+  --fw-diagram-water: #315c67;
+  --fw-diagram-rough: #274b3e;
+  --fw-diagram-woods: #203c33;
+  --fw-diagram-edge: #315d39;
+  --fw-diagram-route: #afc3ad;
+  --fw-diagram-event: #fff9ed;
   /* ---- Color scheme pin (no-FOUC pair with the `.dark` block below) ----
           Without this, `color-scheme` stays at its initial value ("normal"),
           which does not commit the document to light — so before this

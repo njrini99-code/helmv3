@@ -1,0 +1,280 @@
+{
+  "reviewer": "Codex source/geometry review; independent course-familiar acceptance pending",
+  "date": "2026-09-12",
+  "packageHash": "ff204f4a091c12cd805944cde9180e3100ed7cd76e669e01c4e29c83e9c74120",
+  "topology": "All retained polygons valid (Shapely 2.1.2)",
+  "simplification": "None; all original WGS84 vertices retained",
+  "associationPolicy": "Routes by OSM ref; green contains route end; fairway intersects >10m; tees <25m from route start; explicit reviewed bunker/water IDs in cacapon-associations.json; shared green 4/8 retains shared bunkers. No distance-only hazard inclusion.",
+  "imageryReview": {
+    "provider": "USDA NAIP via GeoPlatform",
+    "tile": "m_3907830_se_17_060_20221020_20230117",
+    "year": 2022,
+    "nominalPixelM": 0.6,
+    "public": "yes",
+    "service": "https://imagery.geoplatform.gov/iipp/rest/services/NAIP/NAIP2022_CONUS/ImageServer",
+    "exportBboxWgs84": [
+      -78.308,
+      39.5,
+      -78.283,
+      39.525
+    ],
+    "exportSize": [
+      2048,
+      2048
+    ],
+    "findings": "18 north-up comparisons inspected, then hazard membership corrected after the first proof exposed neighboring-hole contamination. Routing and major green/bunker groups agree visually; canopy and four-year imagery age prevent current boundary acceptance. Tee 885719212 rejected for pond overlap. No coordinates traced or shifted.",
+    "independentAccuracyM": null
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "routeM": 345.714,
+      "scorecardYards": 383,
+      "greenId": "osm-way-885530502",
+      "greenAreaM2": 463.564,
+      "bunkerIds": [
+        "osm-way-885530496",
+        "osm-way-885530497",
+        "osm-way-885530498",
+        "osm-way-885530500",
+        "osm-way-885530501"
+      ]
+    },
+    {
+      "hole": 2,
+      "routeM": 361.214,
+      "scorecardYards": 395,
+      "greenId": "osm-way-885719159",
+      "greenAreaM2": 405.556,
+      "bunkerIds": [
+        "osm-way-885530499",
+        "osm-way-885719160",
+        "osm-way-885719161",
+        "osm-way-885719162"
+      ]
+    },
+    {
+      "hole": 3,
+      "routeM": 487.1,
+      "scorecardYards": 535,
+      "greenId": "osm-way-885719168",
+      "greenAreaM2": 345.928,
+      "bunkerIds": [
+        "osm-way-885719164",
+        "osm-way-885719165",
+        "osm-way-885719166",
+        "osm-way-885719167"
+      ]
+    },
+    {
+      "hole": 4,
+      "routeM": 159.235,
+      "scorecardYards": 194,
+      "greenId": "osm-way-885719177",
+      "greenAreaM2": 1081.177,
+      "bunkerIds": [
+        "osm-way-885719173",
+        "osm-way-885719174",
+        "osm-way-885719175",
+        "osm-way-885719176"
+      ]
+    },
+    {
+      "hole": 5,
+      "routeM": 373.799,
+      "scorecardYards": 410,
+      "greenId": "osm-way-885719184",
+      "greenAreaM2": 364.504,
+      "bunkerIds": [
+        "osm-way-885719179",
+        "osm-way-885719180",
+        "osm-way-885719181",
+        "osm-way-885719182",
+        "osm-way-885719183"
+      ]
+    },
+    {
+      "hole": 6,
+      "routeM": 348.429,
+      "scorecardYards": 379,
+      "greenId": "osm-way-885719193",
+      "greenAreaM2": 494.773,
+      "bunkerIds": [
+        "osm-way-885719189",
+        "osm-way-885719190",
+        "osm-way-885719191",
+        "osm-way-885719192",
+        "osm-way-885719194"
+      ]
+    },
+    {
+      "hole": 7,
+      "routeM": 396.7,
+      "scorecardYards": 431,
+      "greenId": "osm-way-885719201",
+      "greenAreaM2": 233.237,
+      "bunkerIds": [
+        "osm-way-885719197",
+        "osm-way-885719198",
+        "osm-way-885719199",
+        "osm-way-885719200"
+      ]
+    },
+    {
+      "hole": 8,
+      "routeM": 185.236,
+      "scorecardYards": 197,
+      "greenId": "osm-way-885719177",
+      "greenAreaM2": 1081.177,
+      "bunkerIds": [
+        "osm-way-885719173",
+        "osm-way-885719174",
+        "osm-way-885719175",
+        "osm-way-885719176"
+      ]
+    },
+    {
+      "hole": 9,
+      "routeM": 491.676,
+      "scorecardYards": 536,
+      "greenId": "osm-way-885719211",
+      "greenAreaM2": 368.157,
+      "bunkerIds": [
+        "osm-way-885719207",
+        "osm-way-885719208",
+        "osm-way-885719209",
+        "osm-way-885719210"
+      ]
+    },
+    {
+      "hole": 10,
+      "routeM": 307.879,
+      "scorecardYards": 378,
+      "greenId": "osm-way-885737794",
+      "greenAreaM2": 364.763,
+      "bunkerIds": [
+        "osm-way-885737791",
+        "osm-way-885737792",
+        "osm-way-885737793"
+      ]
+    },
+    {
+      "hole": 11,
+      "routeM": 440.121,
+      "scorecardYards": 484,
+      "greenId": "osm-way-885737801",
+      "greenAreaM2": 524.336,
+      "bunkerIds": [
+        "osm-way-885737796",
+        "osm-way-885737798",
+        "osm-way-885737799",
+        "osm-way-885737800"
+      ]
+    },
+    {
+      "hole": 12,
+      "routeM": 343.153,
+      "scorecardYards": 381,
+      "greenId": "osm-way-885737840",
+      "greenAreaM2": 408.565,
+      "bunkerIds": [
+        "osm-way-885737841",
+        "osm-way-885737842",
+        "osm-way-885737843",
+        "osm-way-885737845",
+        "osm-way-885737846"
+      ]
+    },
+    {
+      "hole": 13,
+      "routeM": 358.607,
+      "scorecardYards": 414,
+      "greenId": "osm-way-885737835",
+      "greenAreaM2": 451.051,
+      "bunkerIds": [
+        "osm-way-885737833",
+        "osm-way-885737834",
+        "osm-way-885737837"
+      ]
+    },
+    {
+      "hole": 14,
+      "routeM": 342.422,
+      "scorecardYards": 376,
+      "greenId": "osm-way-885737827",
+      "greenAreaM2": 603.205,
+      "bunkerIds": [
+        "osm-way-885737824",
+        "osm-way-885737825",
+        "osm-way-885737826",
+        "osm-way-885737829"
+      ]
+    },
+    {
+      "hole": 15,
+      "routeM": 187.57,
+      "scorecardYards": 210,
+      "greenId": "osm-way-885737818",
+      "greenAreaM2": 285.652,
+      "bunkerIds": [
+        "osm-way-885737816",
+        "osm-way-885737817",
+        "osm-way-885737819"
+      ]
+    },
+    {
+      "hole": 16,
+      "routeM": 367.12,
+      "scorecardYards": 396,
+      "greenId": "osm-way-885737812",
+      "greenAreaM2": 378.74,
+      "bunkerIds": [
+        "osm-way-885737810",
+        "osm-way-885737811",
+        "osm-way-885737814",
+        "osm-way-885737815"
+      ]
+    },
+    {
+      "hole": 17,
+      "routeM": 156.008,
+      "scorecardYards": 181,
+      "greenId": "osm-way-885737806",
+      "greenAreaM2": 354.523,
+      "bunkerIds": [
+        "osm-way-885737802",
+        "osm-way-885737803",
+        "osm-way-885737804",
+        "osm-way-885737805"
+      ]
+    },
+    {
+      "hole": 18,
+      "routeM": 494.209,
+      "scorecardYards": 547,
+      "greenId": "osm-way-885719214",
+      "greenAreaM2": 317.194,
+      "bunkerIds": [
+        "osm-way-885719215",
+        "osm-way-885719216",
+        "osm-way-885719218",
+        "osm-way-885737847",
+        "osm-way-885737848"
+      ]
+    }
+  ],
+  "excludedSourceIds": [
+    "osm-way-1003682218",
+    "osm-way-223477490",
+    "osm-way-399561786",
+    "osm-way-649306264",
+    "osm-way-649306269",
+    "osm-way-651229568",
+    "osm-way-885719171",
+    "osm-way-885719212",
+    "osm-way-885719213",
+    "osm-way-885737808",
+    "osm-way-885737823",
+    "osm-way-948237190"
+  ]
+}
