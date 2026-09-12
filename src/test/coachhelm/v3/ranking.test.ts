@@ -18,6 +18,7 @@ import {
   coachabilityBoost,
   cappedStrokesImpact,
   STROKES_IMPACT_CEILING,
+  compareBySeverity,
 } from '@/lib/coachhelm/v3/ranking/score';
 import type { Goal } from '@/lib/coachhelm/v3/goals/types';
 
@@ -261,5 +262,40 @@ describe('cappedStrokesImpact — ranking ceiling (audit EC-1 / FID-1/FID-2)', (
     const realLeak = scoreInsight({ insight_type: 'putting', strokes_impact: 3.0, confidence: 1.0 }, {});
     expect(phantom).toBeLessThanOrEqual(STROKES_IMPACT_CEILING * 0.2);
     expect(realLeak).toBeGreaterThan(phantom);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// N5: severity comparator for "sort by priority" reads. The DB column is
+// TEXT, so `.order('priority')` is alphabetical (high < low < medium <
+// urgent); readers sort the full set with this instead.
+// ---------------------------------------------------------------------------
+describe('compareBySeverity (N5)', () => {
+  const rows = [
+    { id: 'high-old', priority: 'high', created_at: '2026-09-01T00:00:00Z' },
+    { id: 'low', priority: 'low', created_at: '2026-09-12T00:00:00Z' },
+    { id: 'medium', priority: 'medium', created_at: '2026-09-11T00:00:00Z' },
+    { id: 'urgent', priority: 'urgent', created_at: '2026-09-02T00:00:00Z' },
+    { id: 'high-new', priority: 'high', created_at: '2026-09-10T00:00:00Z' },
+    { id: 'unknown', priority: null, created_at: '2026-09-13T00:00:00Z' },
+  ];
+
+  it('orders urgent → high → medium → low, newest first within a band, unknown last', () => {
+    const ids = [...rows].sort(compareBySeverity).map((r) => r.id);
+    expect(ids).toEqual(['urgent', 'high-new', 'high-old', 'medium', 'low', 'unknown']);
+  });
+
+  it('is NOT the alphabetical order the text column would give', () => {
+    const alphabetical = [...rows]
+      .filter((r) => r.priority)
+      .sort((a, b) => (a.priority as string).localeCompare(b.priority as string))
+      .map((r) => r.id);
+    expect(alphabetical[0]).toMatch(/^high/); // what `.order('priority')` put first
+    expect([...rows].sort(compareBySeverity)[0]?.id).toBe('urgent');
+  });
+
+  it('asc flips the band order but keeps newest-first inside a band', () => {
+    const ids = [...rows].sort((a, b) => compareBySeverity(a, b, 'asc')).map((r) => r.id);
+    expect(ids).toEqual(['unknown', 'low', 'medium', 'high-new', 'high-old', 'urgent']);
   });
 });

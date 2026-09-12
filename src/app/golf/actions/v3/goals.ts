@@ -25,9 +25,10 @@ import type {
 import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import { isMetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import { loadStandingForMetric } from '@/lib/coachhelm/v3/standing/loader';
+import type { PgaOmissionReason } from '@/lib/coachhelm/v3/standing/types';
 import { validateCoachTeamAccess } from '@/lib/golf/resolve-team';
 import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
-import { computeTargetValue } from '@/lib/coachhelm/v3/goals/suggestion-writer';
+import { computeTargetValue, isWorseThanAnchor } from '@/lib/coachhelm/v3/goals/suggestion-writer';
 import {
   getMetricRenderConfig,
   type MetricRenderConfig,
@@ -306,11 +307,25 @@ export interface GoalTargetSuggestion {
   hasStanding: boolean;
   /** The player's current observed value on this metric → the goal baseline. */
   baseline: number | null;
-  /** The (gender-anchored) Tour reference for this metric. */
+  /** The (gender-anchored) Tour reference for this metric. Null when the
+   *  loader omitted it (`no_target_reason` says why). */
   pga_value: number | null;
-  /** Midpoint-to-Tour suggested target, or null when no standing exists. */
+  /** Midpoint-to-Tour suggested target, or null when no standing exists or
+   *  no honest midpoint can be offered (see `no_target_reason`). */
   suggested_target: number | null;
+  /**
+   * Why `suggested_target` is null while a standing reading exists:
+   *   - `basis_mismatch`: the player value is on-green-only proximity and the
+   *     Tour figure is all-shot (addendum A2) — no comparable anchor to aim at.
+   *   - `no_womens_anchor`: women's cohort, no credible women's benchmark.
+   *   - `already_ahead`: the player is at or better than the Tour anchor; a
+   *     midpoint would point backwards.
+   * Null when a target was suggested or no standing exists.
+   */
+  no_target_reason: NoTargetReason | null;
 }
+
+export type NoTargetReason = PgaOmissionReason | 'already_ahead';
 
 async function suggestGoalTargetImpl(
   metricId: MetricId,
@@ -327,6 +342,7 @@ async function suggestGoalTargetImpl(
     baseline: null,
     pga_value: null,
     suggested_target: null,
+    no_target_reason: null,
   };
 
   if (!isMetricId(metricId) || !cfg) return base;
@@ -358,6 +374,37 @@ async function suggestGoalTargetImpl(
 
     const standing = await loadStandingForMetric(playerId, metricId);
     if (!standing) return { ...base, ok: true };
+
+    // The loader suppressed the Tour reference (women's row with no credible
+    // anchor, or the approach-proximity basis mismatch — addendum A2). A
+    // midpoint toward a number that is not comparable is not a target; return
+    // the baseline alone and say why.
+    if (standing.pga_omitted) {
+      return {
+        ...base,
+        ok: true,
+        hasStanding: true,
+        baseline: standing.player_value,
+        pga_value: null,
+        suggested_target: null,
+        no_target_reason: standing.pga_omitted_reason ?? 'no_womens_anchor',
+      };
+    }
+
+    // Already at or past the anchor: the midpoint would sit on the wrong side
+    // of the player's own number (a 22-ft player "aiming" for 26 ft). Offer no
+    // auto-target; the modal asks for one to hold or extend.
+    if (!isWorseThanAnchor(standing.player_value, standing.pga_value, cfg.direction)) {
+      return {
+        ...base,
+        ok: true,
+        hasStanding: true,
+        baseline: standing.player_value,
+        pga_value: standing.pga_value,
+        suggested_target: null,
+        no_target_reason: 'already_ahead',
+      };
+    }
 
     return {
       ...base,

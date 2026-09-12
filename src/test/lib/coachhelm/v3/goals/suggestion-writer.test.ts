@@ -25,6 +25,7 @@ import {
   runSuggestionEvaluator,
   reconcileSuggestionsForPlayer,
   severityForMetric,
+  isWorseThanAnchor,
   MAX_ACTIVE_PENDING_PER_PLAYER,
   DEFAULT_SUGGESTION_TTL_DAYS,
   type StandingRowWithDirection,
@@ -515,6 +516,100 @@ describe('severityForMetric', () => {
     expect(
       severityForMetric([row('not_a_metric', 0.1, 0.5)], 'not_a_metric', new Set(['not_a_metric'])),
     ).toBeNull();
+  });
+
+  it('returns null for an approach-proximity metric even when the row reads "worse" (A2 basis)', () => {
+    // On-green-only player value vs the Tour's all-shot figure: the gap is
+    // not a gap. A pending suggestion on this metric is therefore stale and
+    // expires through P1-08 rather than being re-ranked.
+    expect(
+      severityForMetric(
+        [row('approach_proximity_175_plus_ft', 52, 45, 'lower_better')],
+        'approach_proximity_175_plus_ft',
+        new Set(['approach_proximity_175_plus_ft']),
+      ),
+    ).toBeNull();
+  });
+});
+
+describe('approach-proximity basis rule (addendum A2)', () => {
+  function row(
+    metric_id: string,
+    player_value: number,
+    pga_value: number,
+    direction: 'higher_better' | 'lower_better' = 'lower_better',
+  ): StandingRowWithDirection {
+    return { player_id: 'p1', metric_id, player_value, pga_value, pga_delta: player_value - pga_value, direction };
+  }
+
+  it('selectSuggestionsForPlayer never drafts an approach-proximity goal, in either direction', () => {
+    const standings = [
+      // "worse" than Tour on the face of it (52 ft vs 45) — still not comparable.
+      row('approach_proximity_175_plus_ft', 52, 45),
+      // "better" than Tour — the production shape (on-green 22.6 vs all-shot 30).
+      row('approach_proximity_125_175ft', 22.6, 30),
+      // A comparable lower_better metric that IS behind → the only draft.
+      row('penalty_rate_per_round', 0.8, 0.3),
+    ];
+    const drafts = selectSuggestionsForPlayer({
+      player_id: 'p1',
+      standings,
+      metricsWithDrillCoverage: new Set([
+        'approach_proximity_175_plus_ft',
+        'approach_proximity_125_175ft',
+        'penalty_rate_per_round',
+      ]),
+      activeGoalMetrics: new Set(),
+      pendingSuggestionMetrics: new Set(),
+    });
+    expect(drafts.map((d) => d.metric_id)).toEqual(['penalty_rate_per_round']);
+  });
+
+  it('runSuggestionWriter states how many rows the basis rule skipped', async () => {
+    const { client, inserts } = makeSupabase({
+      metrics: [
+        { metric_id: 'approach_proximity_50_125ft', direction: 'lower_better', active: true },
+        { metric_id: 'approach_proximity_175_plus_ft', direction: 'lower_better', active: true },
+        { metric_id: 'sg_putting', direction: 'higher_better', active: true },
+      ],
+      drills: [
+        { impacts_metric_id: 'approach_proximity_50_125ft' },
+        { impacts_metric_id: 'approach_proximity_175_plus_ft' },
+        { impacts_metric_id: 'sg_putting' },
+      ],
+      standings: [
+        { player_id: 'A', metric_id: 'approach_proximity_50_125ft', player_value: 25, pga_value: 18, pga_delta: 7 },
+        { player_id: 'A', metric_id: 'approach_proximity_175_plus_ft', player_value: 52, pga_value: 45, pga_delta: 7 },
+        { player_id: 'A', metric_id: 'sg_putting', player_value: 0.0, pga_value: 0.5, pga_delta: -0.5 },
+      ],
+      activeGoals: [],
+      pendingSuggestions: [],
+    });
+
+    const result = await runSuggestionWriter(client);
+    expect(result.error).toBeUndefined();
+    expect(result.rows_skipped_basis_mismatch).toBe(2);
+    expect(result.suggestions_inserted).toBe(1);
+    expect((inserts as Array<{ metric_id: string }>).map((r) => r.metric_id)).toEqual(['sg_putting']);
+  });
+});
+
+describe('isWorseThanAnchor', () => {
+  it('higher_better: behind only when below the anchor', () => {
+    expect(isWorseThanAnchor(40, 50, 'higher_better')).toBe(true);
+    expect(isWorseThanAnchor(50, 50, 'higher_better')).toBe(false);
+    expect(isWorseThanAnchor(55, 50, 'higher_better')).toBe(false);
+  });
+
+  it('lower_better: behind only when above the anchor', () => {
+    expect(isWorseThanAnchor(26, 18, 'lower_better')).toBe(true);
+    expect(isWorseThanAnchor(18, 18, 'lower_better')).toBe(false);
+    expect(isWorseThanAnchor(17, 18, 'lower_better')).toBe(false);
+  });
+
+  it('non-finite inputs are never "behind"', () => {
+    expect(isWorseThanAnchor(Number.NaN, 18, 'lower_better')).toBe(false);
+    expect(isWorseThanAnchor(20, Number.POSITIVE_INFINITY, 'lower_better')).toBe(false);
   });
 });
 

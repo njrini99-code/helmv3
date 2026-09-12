@@ -19,7 +19,7 @@
 
 import { loadStandingForMetric } from '@/lib/coachhelm/v3/standing/loader';
 import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
-import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
+import type { PgaOmissionReason, PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 
@@ -30,6 +30,8 @@ import { describeError } from '@/lib/utils/describe-error';
 export type EvidenceStanding = {
   /** True when the gender-aware loader omitted a misleading cross-gender PGA anchor. */
   pga_omitted?: boolean;
+  /** Why the anchor is omitted — render layers caption it. */
+  pga_omitted_reason?: PgaOmissionReason;
   /** True for women's-team rows — render layers label the Tour reference "LPGA". */
   is_womens?: boolean;
   metric_id: string;
@@ -52,6 +54,7 @@ function flatten(s: PlayerStanding): EvidenceStanding {
     pga_value: s.pga_value,
     pga_delta: s.pga_delta,
     pga_omitted: s.pga_omitted,
+    pga_omitted_reason: s.pga_omitted_reason,
     is_womens: s.is_womens,
     computed_at: s.computed_at,
   };

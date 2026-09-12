@@ -22,6 +22,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { isMetricId, type MetricId } from '@/lib/coachhelm/v3/metrics/registry';
+import { isStandingTourComparable } from '@/lib/coachhelm/v3/standing/tour-basis';
 
 /**
  * One row from `golf_player_standing` plus the metric direction we need
@@ -86,12 +87,37 @@ const DEFAULT_SUGGESTED_WINDOW_DAYS = 30;
 export const DEFAULT_SUGGESTION_TTL_DAYS = 14;
 
 /**
+ * Direction-aware "is the player behind the anchor" test — the same sign
+ * convention `rowSeverity` uses, exported so the goal modal's auto-target
+ * (`suggestGoalTarget`) refuses to offer a midpoint that would sit on the
+ * wrong side of a player who is already at or past the anchor.
+ */
+export function isWorseThanAnchor(
+  playerValue: number,
+  anchorValue: number,
+  direction: 'higher_better' | 'lower_better',
+): boolean {
+  if (!Number.isFinite(playerValue) || !Number.isFinite(anchorValue)) return false;
+  const rawDelta = playerValue - anchorValue;
+  return (direction === 'higher_better' ? -rawDelta : rawDelta) > 0;
+}
+
+/**
  * Direction-aware severity for one standing row: how far BELOW the PGA
  * baseline the player is, signed so "worse" is always positive. Returns the
  * positive severity, or `null` when the row is ineligible (not worse than
- * baseline, or no finite PGA baseline to aim at).
+ * baseline, no finite PGA baseline to aim at, or a metric whose player value
+ * and Tour value are measured on different bases).
+ *
+ * Basis rule (addendum A2): the approach-proximity rows carry on-green-only
+ * player values against the Tour's all-shot figure, so the "gap" is not a
+ * gap and its sign is not evidence either way. Those metrics are ineligible
+ * here BY DECISION — not silently "better than Tour" — until the standing
+ * refresh moves them onto one basis (Package 7B). `runSuggestionWriter`
+ * reports how many rows this rule skipped.
  */
 function rowSeverity(row: StandingRowWithDirection): number | null {
+  if (!isStandingTourComparable(row.metric_id)) return null;
   if (!Number.isFinite(row.pga_value)) return null;
   const rawDelta = row.pga_delta ?? row.player_value - row.pga_value;
   const severity = row.direction === 'higher_better' ? -rawDelta : rawDelta;
@@ -302,6 +328,13 @@ export interface WriterResult {
   suggestions_inserted: number;
   /** Stale lower-value pending suggestions expired during reconciliation (P1-08). */
   suggestions_expired: number;
+  /**
+   * Standing rows never ranked because their metric's Tour anchor is not on
+   * the player value's basis (addendum A2 — approach proximity). Stated, not
+   * silent: a non-zero count here is the size of the approach category the
+   * writer is deliberately not suggesting goals for.
+   */
+  rows_skipped_basis_mismatch: number;
   per_player: Array<{ player_id: string; inserted: number; metric_ids: string[] }>;
   duration_ms: number;
   error?: string;
@@ -321,6 +354,7 @@ export async function runSuggestionWriter(
     players_with_standings: 0,
     suggestions_inserted: 0,
     suggestions_expired: 0,
+    rows_skipped_basis_mismatch: 0,
     per_player: [],
     duration_ms: 0,
   };
@@ -371,6 +405,9 @@ export async function runSuggestionWriter(
   for (const s of standingRows ?? []) {
     const dir = directionByMetric.get(s.metric_id);
     if (!dir) continue; // Inactive or unknown metric — skip.
+    // Counted here for the run report; `rowSeverity` is what actually refuses
+    // the row, so the pure selector and the P1-08 expiry path agree.
+    if (!isStandingTourComparable(s.metric_id)) result.rows_skipped_basis_mismatch += 1;
     const list = standingsByPlayer.get(s.player_id) ?? [];
     list.push({
       player_id: s.player_id,

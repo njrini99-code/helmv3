@@ -18,6 +18,7 @@ import { loadPlayerCohort } from '@/lib/coachhelm/v3/counterfactual/player-cohor
 
 import { applyGenderAnchor, type LpgaStandards } from './gender-anchor';
 import { loadStandardsForTour } from './pga-standards';
+import { applyTourBasis } from './tour-basis';
 import type { PlayerStanding } from './types';
 
 /**
@@ -63,6 +64,21 @@ function toStanding(row: RawRow): PlayerStanding | null {
 }
 
 /**
+ * The two read-level overrides every loader applies, in order: the cohort
+ * anchor first (women's rows get the LPGA / estimate / omission resolution),
+ * then the Tour-basis rule (addendum A2 — `applyTourBasis`), so an
+ * approach-proximity row is never returned with a comparable-looking Tour
+ * marker no matter which loader served it. Both are pure.
+ */
+function finalizeStanding(
+  standing: PlayerStanding,
+  gender: Awaited<ReturnType<typeof loadPlayerCohort>>['gender'],
+  lpga: LpgaStandards | null,
+): PlayerStanding {
+  return applyTourBasis(applyGenderAnchor(standing, gender, lpga));
+}
+
+/**
  * Load a single (player, metric) standing snapshot. Returns null when
  * the cron hasn't populated it yet (cold-start) or no PGA standard
  * exists for the metric.
@@ -72,7 +88,8 @@ function toStanding(row: RawRow): PlayerStanding | null {
  * same path the generators use) and apply {@link applyGenderAnchor}, so a
  * women's-team player's reference becomes the women's anchor (sand-save 38%,
  * not 50%) and the StandingBar agrees with the prose. Men's / unknown cohorts
- * are returned UNCHANGED.
+ * are returned UNCHANGED. Then the Tour-basis rule (`applyTourBasis`) omits
+ * the Tour marker on the approach-proximity ids for every cohort.
  */
 export async function loadStandingForMetric(
   playerId: string,
@@ -95,7 +112,7 @@ export async function loadStandingForMetric(
   if (!standing) return null;
   const cohort = await loadPlayerCohort(playerId);
   const lpga = await loadLpgaIfWomens(cohort.gender);
-  return applyGenderAnchor(standing, cohort.gender, lpga);
+  return finalizeStanding(standing, cohort.gender, lpga);
 }
 
 /**
@@ -126,7 +143,7 @@ export async function loadPlayerStandingMap(
   const map = new Map<MetricId, PlayerStanding>();
   for (const row of data ?? []) {
     const s = toStanding(row);
-    if (s) map.set(s.metric_id, applyGenderAnchor(s, cohort.gender, lpga));
+    if (s) map.set(s.metric_id, finalizeStanding(s, cohort.gender, lpga));
   }
   return map;
 }
@@ -205,7 +222,7 @@ export async function loadPlayersStandingMap(
       map = new Map();
       result.set(row.player_id, map);
     }
-    map.set(s.metric_id, applyGenderAnchor(s, gender, lpga));
+    map.set(s.metric_id, finalizeStanding(s, gender, lpga));
   }
 
   return result;

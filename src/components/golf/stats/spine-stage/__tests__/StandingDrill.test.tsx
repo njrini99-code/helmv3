@@ -88,6 +88,28 @@ describe('StandingDrill — Strokes Gained instrument group', () => {
       screen.getByText('The full standing board fills in after 5+ rounds with shot detail.'),
     ).toBeInTheDocument();
   });
+
+  it('passes a loader-omitted Tour reference through to the strip (A2: no all-shot tick on an on-green value)', () => {
+    render(
+      <StandingDrill
+        standingRows={[
+          row('approach_proximity_125_175ft', 22.6, {
+            team_avg: 24.1,
+            team_n: 8,
+            team_pct: 60,
+            pga_value: 30,
+            pga_omitted: true,
+            pga_omitted_reason: 'basis_mismatch',
+          }),
+        ]}
+        standingViewerContext="self"
+      />,
+    );
+    // Before this surface forwarded `pga_omitted`, the 30 ft Tour value drew
+    // against the 22.6 ft on-green leave and read as "better than Tour".
+    expect(screen.queryByText('30 ft')).toBeNull();
+    expect(screen.getByText(/counts only the ones that hit the green/)).toBeInTheDocument();
+  });
 });
 
 describe('StandingDrill — "What CoachHelm sees" via CategoryInsightStrip', () => {

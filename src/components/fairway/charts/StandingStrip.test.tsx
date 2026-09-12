@@ -257,3 +257,35 @@ describe('StandingStrip — metric title wraps instead of truncating (finding [1
     expect(title!.className).toContain('break-words');
   });
 });
+
+describe('StandingStrip — suppressed Tour reference with a reason (addendum A2)', () => {
+  const APPROACH: StandingStripProps = {
+    ...BASE,
+    metric_id: 'approach_proximity_125_175ft',
+    metric_label: 'Proximity 125-175 yd',
+    player_value: 22.6,
+    team_avg: 24.1,
+    team_pct: 60,
+    pga_value: 30,
+    direction: 'lower_better',
+    unit: 'feet',
+    scale: { min: 0, max: 60 },
+  };
+
+  it('renders "—" for the Tour value, the basis caption, and narrates the omission in the aria label', () => {
+    const { container } = render(<StandingStrip {...APPROACH} pga_omitted pga_omitted_reason="basis_mismatch" />);
+    expect(screen.queryByText('30 ft')).toBeNull();
+    expect(screen.getByText(/counts only the ones that hit the green/)).toBeInTheDocument();
+    const aria = container.querySelector('[role="img"]')?.getAttribute('aria-label') ?? '';
+    expect(aria).toContain('Tour reference not shown');
+    expect(aria).not.toContain('30 ft');
+    // The team comparison is like-for-like and still renders.
+    expect(screen.getByText('24 ft')).toBeInTheDocument();
+  });
+
+  it('draws the Tour value normally when nothing is omitted', () => {
+    render(<StandingStrip {...APPROACH} />);
+    expect(screen.getByText('30 ft')).toBeInTheDocument();
+    expect(screen.queryByText(/hit the green/)).toBeNull();
+  });
+});
