@@ -1,0 +1,441 @@
+{
+  "packageHash": "ff204f4a091c12cd805944cde9180e3100ed7cd76e669e01c4e29c83e9c74120",
+  "style": "fairway-vector-v3",
+  "projection": "wgs84-local-enu-v1",
+  "algorithm": "evidence-only-v1",
+  "compressedBytes": 30146,
+  "artifacts": [
+    {
+      "file": "cacapon-01-source.svg",
+      "sha256": "4fff459385dc24948286b872294d6eafd50cc91dd042f4e2c1329789a9a9a7d7",
+      "hole": "cacapon-01",
+      "mode": "source"
+    },
+    {
+      "file": "cacapon-01-review.svg",
+      "sha256": "0b010a49585ac3bb2af19877d587982fdd380d8ce47e1137f62161bc9a38fc03",
+      "hole": "cacapon-01",
+      "mode": "review"
+    },
+    {
+      "file": "cacapon-01-compact.svg",
+      "sha256": "665438f1c59ff08fb5d5a05a0be78321945e8b61bd0ff73949c4ec214edaf397",
+      "hole": "cacapon-01",
+      "mode": "compact"
+    },
+    {
+      "file": "cacapon-01-strip.svg",
+      "sha256": "51cb316ca7a12c5ec8526a7cb39a9172f1cd44d880b32f28f21541cfe52df096",
+      "hole": "cacapon-01",
+      "mode": "strip"
+    },
+    {
+      "file": "cacapon-02-source.svg",
+      "sha256": "5e566004ac794b625c2d6ca376311f26378d2bcf36a79c822d487b114b11b3e9",
+      "hole": "cacapon-02",
+      "mode": "source"
+    },
+    {
+      "file": "cacapon-02-review.svg",
+      "sha256": "78ff5a21f2db6175d884df5e16a7829ed9783eb1acb6f26dfaa05427a7055949",
+      "hole": "cacapon-02",
+      "mode": "review"
+    },
+    {
+      "file": "cacapon-02-compact.svg",
+      "sha256": "c86b03384517e5f4980b899fae414948dab127f3d29db2f1dca7c59a92484a0b",
+      "hole": "cacapon-02",
+      "mode": "compact"
+    },
+    {
+      "file": "cacapon-02-strip.svg",
+      "sha256": "652a640e2ce157ddfe5a7c7cc3799248112b51ff2edb618a116e1068b90c8111",
+      "hole": "cacapon-02",
+      "mode": "strip"
+    },
+    {
+      "file": "cacapon-03-source.svg",
+      "sha256": "9ab074428db5a18919f053ba4d1a821d493062e68fa9c6a815d1e95314b2b30a",
+      "hole": "cacapon-03",
+      "mode": "source"
+    },
+    {
+      "file": "cacapon-03-review.svg",
+      "sha256": "f877ae7eaeabfe2a0a55221a1121d6e88747498d779e734ee7c01b0e0f0cb3d9",
+      "hole": "cacapon-03",
+      "mode": "review"
+    },
+    {
+      "file": "cacapon-03-compact.svg",
+      "sha256": "ca0dca40e1c8f2ce66e7949b110499415342514ece1f66c339440019a7863b71",
+      "hole": "cacapon-03",
+      "mode": "compact"
+    },
+    {
+      "file": "cacapon-03-strip.svg",
+      "sha256": "270a73e542417875f4050479ceb1d298e24ae79cfbaadc3b780e9c06f9a0ca53",
+      "hole": "cacapon-03",
+      "mode": "strip"
+    },
+    {
+      "file": "cacapon-04-source.svg",
+      "sha256": "6182fe61ec54e09167f998390177e61fb7cd031b67927a5cafce2cb49f87eb26",
+      "hole": "cacapon-04",
+      "mode": "source"
+    },
+    {
+      "file": "cacapon-04-review.svg",
+      "sha256": "b3c4c802b96501e7f5fb7f71df988b25460a710dd20075774dd69b042ad7adc3",
+      "hole": "cacapon-04",
+      "mode": "review"
+    },
+    {
+      "file": "cacapon-04-compact.svg",
+      "sha256": "c0174267c8a010d89b266b54837c4fd0cd587f79db92a21fcdb26334075fdf34",
+      "hole": "cacapon-04",
+      "mode": "compact"
+    },
+    {
+      "file": "cacapon-04-strip.svg",
+      "sha256": "9abde41a2defb96066bff9a9b4fd6b48d8036a7ac172481fe2e4ec233fc46b6d",
+      "hole": "cacapon-04",
+      "mode": "strip"
+    },
+    {
+      "file": "cacapon-05-source.svg",
+      "sha256": "b1417650b5612b67a2f3b4ea5d8b6c8e493f6b542a322abccee29253bd333acf",
+      "hole": "cacapon-05",
+      "mode": "source"
+    },
+    {
+      "file": "cacapon-05-review.svg",
+      "sha256": "04833051c330ac688df841b6e8ee84fb0eb3ace5c4d933c56d78920ed991122d",
+      "hole": "cacapon-05",
+      "mode": "review"
+    },
+    {
+      "file": "cacapon-05-compact.svg",
+      "sha256": "95b9dc65354d5a1b9b32b34c42510335de81a34623679ab95e14eb8dec01aa7a",
+      "hole": "cacapon-05",
+      "mode": "compact"
+    },
+    {
+      "file": "cacapon-05-strip.svg",
+      "sha256": "88a02e9dff7dd7870774d8057da863fd803b7edcbaf7e4894a7a83113d06474d",
+      "hole": "cacapon-05",
+      "mode": "strip"
+    },
+    {
+      "file": "cacapon-06-source.svg",
+      "sha256": "1860b07244d8cde38ebb89f35bee3c4e5d32ada2c01d36429b37ee445d609a30",
+      "hole": "cacapon-06",
+      "mode": "source"
+    },
+    {
+      "file": "cacapon-06-review.svg",
+      "sha256": "0eaca3c46f993cf782bc810fca20e7f01c60c93644a9d6687735e31ca28eb6ad",
+      "hole": "cacapon-06",
+      "mode": "review"
+    },
+    {
+      "file": "cacapon-06-compact.svg",
+      "sha256": "719bae8de5a7377b809ca042d38fbc1ca1c0ef24d9a253ad28c68b4d71e24121",
+      "hole": "cacapon-06",
+      "mode": "compact"
+    },
+    {
+      "file": "cacapon-06-strip.svg",
+      "sha256": "beb882d47f08a05ef762701329b2e2fe7c7042ec5d8316cdc250f35600984b1d",
+      "hole": "cacapon-06",
+      "mode": "strip"
+    },
+    {
+      "file": "cacapon-07-source.svg",
+      "sha256": "95d84bff55c2afb2f66867154e9cf8853e6243539da10ccd4e73c6a05c067b52",
+      "hole": "cacapon-07",
+      "mode": "source"
+    },
+    {
+      "file": "cacapon-07-review.svg",
+      "sha256": "e8fc888a4b8cbf373ae76ef8d727901b259a2d1bd693101ea7f49679ed536abb",
+      "hole": "cacapon-07",
+      "mode": "review"
+    },
+    {
+      "file": "cacapon-07-compact.svg",
+      "sha256": "1f4838d02fa4ce71bf76fc92d40d32fcc886d8dedc98411af9263be3664f6eb5",
+      "hole": "cacapon-07",
+      "mode": "compact"
+    },
+    {
+      "file": "cacapon-07-strip.svg",
+      "sha256": "c0a6c03f55a0df78764ca20d89e2ded396d5df7bbc2117ec42696f60af8871fe",
+      "hole": "cacapon-07",
+      "mode": "strip"
+    },
+    {
+      "file": "cacapon-08-source.svg",
+      "sha256": "02c034c0d905cd07ccb819e62cf894d81950db5434a8d627b204355a8652c37c",
+      "hole": "cacapon-08",
+      "mode": "source"
+    },
+    {
+      "file": "cacapon-08-review.svg",
+      "sha256": "c8de555558043510c2fffe881c96748b40b74721eb891828096ff05f7e17f9f1",
+      "hole": "cacapon-08",
+      "mode": "review"
+    },
+    {
+      "file": "cacapon-08-compact.svg",
+      "sha256": "53a51938323d81e4507d56f603a26d04813f231ee67de4969c9ea3f65bd07d86",
+      "hole": "cacapon-08",
+      "mode": "compact"
+    },
+    {
+      "file": "cacapon-08-strip.svg",
+      "sha256": "98630e8c250f3744e722fafd7045ededafb5d554eed6930a556dffdc7f57880a",
+      "hole": "cacapon-08",
+      "mode": "strip"
+    },
+    {
+      "file": "cacapon-09-source.svg",
+      "sha256": "dae922983e47e21362d5ac6c42602ddedfe20a524a6e1f71efc3dfe8f7509d16",
+      "hole": "cacapon-09",
+      "mode": "source"
+    },
+    {
+      "file": "cacapon-09-review.svg",
+      "sha256": "b905af24c8a7ce2c3c52fe83a17f9ea348c25f75d91d77e13c23493f910ff36f",
+      "hole": "cacapon-09",
+      "mode": "review"
+    },
+    {
+      "file": "cacapon-09-compact.svg",
+      "sha256": "3f3b6395b9de2b6e50c72d7b4c9baec1b56d1f08a7e82ed5c1e3db70aa52982e",
+      "hole": "cacapon-09",
+      "mode": "compact"
+    },
+    {
+      "file": "cacapon-09-strip.svg",
+      "sha256": "7bb46b7a4e5fd7b6398770ef8131c1aec12b747c7a591bfd3e60b2ae17c22970",
+      "hole": "cacapon-09",
+      "mode": "strip"
+    },
+    {
+      "file": "cacapon-10-source.svg",
+      "sha256": "379277281fadc83dd5ad51985ff689cd279be2d655584dc7013759c2485b366c",
+      "hole": "cacapon-10",
+      "mode": "source"
+    },
+    {
+      "file": "cacapon-10-review.svg",
+      "sha256": "14f2fcba2fbdf935ab245a642a8e25a000d242e5f264e101c25261c4d3564daf",
+      "hole": "cacapon-10",
+      "mode": "review"
+    },
+    {
+      "file": "cacapon-10-compact.svg",
+      "sha256": "de54bb9eb9e8a0a051779cb376ff38b9f4220ae86d684f1e87fc7d74b92c7ef4",
+      "hole": "cacapon-10",
+      "mode": "compact"
+    },
+    {
+      "file": "cacapon-10-strip.svg",
+      "sha256": "710dd9a4dfe6925cdfd3e93538ddd1392860fafb8dfac25ae17332862d04173e",
+      "hole": "cacapon-10",
+      "mode": "strip"
+    },
+    {
+      "file": "cacapon-11-source.svg",
+      "sha256": "c9df6a51199c71206bf9806b6c920121f1ba99cf1d4959c7ed14aca2077e2bbb",
+      "hole": "cacapon-11",
+      "mode": "source"
+    },
+    {
+      "file": "cacapon-11-review.svg",
+      "sha256": "dda8a3e68ea60d471b2e66364117375a0994ddeaf27ca6b2575af7506da44de2",
+      "hole": "cacapon-11",
+      "mode": "review"
+    },
+    {
+      "file": "cacapon-11-compact.svg",
+      "sha256": "191b71234cb9727f156399fdbd3ca7626477b81c117413bfaa95dfde3a6d85c0",
+      "hole": "cacapon-11",
+      "mode": "compact"
+    },
+    {
+      "file": "cacapon-11-strip.svg",
+      "sha256": "562210047b147e91c0a8188a18111710870d10b07152c17bf277001fd1712c6e",
+      "hole": "cacapon-11",
+      "mode": "strip"
+    },
+    {
+      "file": "cacapon-12-source.svg",
+      "sha256": "47a2d549d34983bba3a75375d9fc74c8544ba2f70b2b6f1585cd43b5ca696e86",
+      "hole": "cacapon-12",
+      "mode": "source"
+    },
+    {
+      "file": "cacapon-12-review.svg",
+      "sha256": "9edbffeb4d217cfed78a41e7a4bdaa0ed5806c6691e3925ca600565c4a07ffca",
+      "hole": "cacapon-12",
+      "mode": "review"
+    },
+    {
+      "file": "cacapon-12-compact.svg",
+      "sha256": "961f7e20303c1be1491a6339eac042c3a83625311395a2849639c004ad1d6cca",
+      "hole": "cacapon-12",
+      "mode": "compact"
+    },
+    {
+      "file": "cacapon-12-strip.svg",
+      "sha256": "6c2896bcba738986116a2daaedd88c5e20de9babee7bcb192f84b85cc765ed3c",
+      "hole": "cacapon-12",
+      "mode": "strip"
+    },
+    {
+      "file": "cacapon-13-source.svg",
+      "sha256": "4d9fcf6bab6312efcba0096b4c1d58750f28583b046dad9ebf5c4c807227eb7d",
+      "hole": "cacapon-13",
+      "mode": "source"
+    },
+    {
+      "file": "cacapon-13-review.svg",
+      "sha256": "b493b8bf75e091b79383c6f975729b979713a7716b1b9880f62bf9b190c62145",
+      "hole": "cacapon-13",
+      "mode": "review"
+    },
+    {
+      "file": "cacapon-13-compact.svg",
+      "sha256": "7485861c43ae7e31bf8678c225e2df6196b1da9ce83a7408f685e83eef76ca40",
+      "hole": "cacapon-13",
+      "mode": "compact"
+    },
+    {
+      "file": "cacapon-13-strip.svg",
+      "sha256": "43736c1458fda5d14e62d110be97bc941209166b0983d6993d3dc136ce6becd9",
+      "hole": "cacapon-13",
+      "mode": "strip"
+    },
+    {
+      "file": "cacapon-14-source.svg",
+      "sha256": "af12364755371e1f2f47233ed0683143ab61f9f9b46431d064c619f8c379b487",
+      "hole": "cacapon-14",
+      "mode": "source"
+    },
+    {
+      "file": "cacapon-14-review.svg",
+      "sha256": "1943a7cbf303fe670badde6636c09d4ee383bf87bf93b58ce159608fa596c258",
+      "hole": "cacapon-14",
+      "mode": "review"
+    },
+    {
+      "file": "cacapon-14-compact.svg",
+      "sha256": "df43cf3320609ea17b592601309f0e8be6af40dc63c9091b27c76c941caadbca",
+      "hole": "cacapon-14",
+      "mode": "compact"
+    },
+    {
+      "file": "cacapon-14-strip.svg",
+      "sha256": "863112780b3d4f764b096be633a024007fc211043734324ec9cc46bb5dc75271",
+      "hole": "cacapon-14",
+      "mode": "strip"
+    },
+    {
+      "file": "cacapon-15-source.svg",
+      "sha256": "0bf0633dbc58cc48ff2650eba1c913dd22acf2f05bedff528f9782808701010c",
+      "hole": "cacapon-15",
+      "mode": "source"
+    },
+    {
+      "file": "cacapon-15-review.svg",
+      "sha256": "ce9420686f0ed832947e5a9fdd89e858bbf442f3396d4d2d97abe0820c2a53a6",
+      "hole": "cacapon-15",
+      "mode": "review"
+    },
+    {
+      "file": "cacapon-15-compact.svg",
+      "sha256": "1741897288d21e69e9ab3d05a3d6be33677877514f569aa5a0e477ea6774820d",
+      "hole": "cacapon-15",
+      "mode": "compact"
+    },
+    {
+      "file": "cacapon-15-strip.svg",
+      "sha256": "4bf10cc8ad95f9b9c1172099850b60523690072ab1dea98a336d0c42b67a52dc",
+      "hole": "cacapon-15",
+      "mode": "strip"
+    },
+    {
+      "file": "cacapon-16-source.svg",
+      "sha256": "51522795b0ccb047eeb8e222ea532e6ae9ceb15b3df9dc0c523fba33c4b3b36e",
+      "hole": "cacapon-16",
+      "mode": "source"
+    },
+    {
+      "file": "cacapon-16-review.svg",
+      "sha256": "e204cbc39761d1a08f52edb8ffb945b64012c1f4509096c668646c82d970733a",
+      "hole": "cacapon-16",
+      "mode": "review"
+    },
+    {
+      "file": "cacapon-16-compact.svg",
+      "sha256": "b2e1566dcca35f3092e3ff1f29bf804fdf8c14af6e3d1721d31f40eab2e46699",
+      "hole": "cacapon-16",
+      "mode": "compact"
+    },
+    {
+      "file": "cacapon-16-strip.svg",
+      "sha256": "d3bbd1346f70695eccbfdcff9009e7356c0acbfdf392c6dc65fd2a6626847e6b",
+      "hole": "cacapon-16",
+      "mode": "strip"
+    },
+    {
+      "file": "cacapon-17-source.svg",
+      "sha256": "4c419983ecfdcac0649d1db1f762f10c11d757667bd2a9caed3d8341252a43d5",
+      "hole": "cacapon-17",
+      "mode": "source"
+    },
+    {
+      "file": "cacapon-17-review.svg",
+      "sha256": "36f4814595e7da392f6039622a601b299c7e264994ddbc8abad47d85fde38f8c",
+      "hole": "cacapon-17",
+      "mode": "review"
+    },
+    {
+      "file": "cacapon-17-compact.svg",
+      "sha256": "b0e71a0824a8bfb0d3a2da926d2addc705cdcd770654f12c654e753a4027aa6e",
+      "hole": "cacapon-17",
+      "mode": "compact"
+    },
+    {
+      "file": "cacapon-17-strip.svg",
+      "sha256": "73f569fe94576fbcbc243ae4c6ee50f83bcc42657f255043ea6ea81b69528f4e",
+      "hole": "cacapon-17",
+      "mode": "strip"
+    },
+    {
+      "file": "cacapon-18-source.svg",
+      "sha256": "c02750fc223a26414aa78bb6b950da59be2e72f4d4b57d0fd5c4d4878fcb348c",
+      "hole": "cacapon-18",
+      "mode": "source"
+    },
+    {
+      "file": "cacapon-18-review.svg",
+      "sha256": "1889fda3804ff4bd5f539b02bd7cf68b1d9e7af132f7196f867452e203c3e45b",
+      "hole": "cacapon-18",
+      "mode": "review"
+    },
+    {
+      "file": "cacapon-18-compact.svg",
+      "sha256": "563110dd0106880615c68c57840fda9f3212c78316da57d4e6a7c9899833b0f8",
+      "hole": "cacapon-18",
+      "mode": "compact"
+    },
+    {
+      "file": "cacapon-18-strip.svg",
+      "sha256": "cb92b64474f90a92246a9d1fcd21a521bd7c46d2a942c21cbfcc53b1d43fe8a7",
+      "hole": "cacapon-18",
+      "mode": "strip"
+    }
+  ]
+}

@@ -1,0 +1,95 @@
+{
+  "date": "2026-09-12",
+  "method": "Read-only Helm aggregates and bounded OSM core map GET extracts. Counts indicate presence in crop, not complete layout coverage. Overpass timeouts were not interpreted as absence.",
+  "courses": [
+    {
+      "course": "Bryan Park Champions",
+      "linkedRoundCount": 46,
+      "usageCohort": "all linked round rows; not completed-round cohort",
+      "bboxWgs84": [
+        -79.752,
+        36.169,
+        -79.714,
+        36.202
+      ],
+      "url": "https://www.openstreetmap.org/api/0.6/map?bbox=-79.752,36.169,-79.714,36.202",
+      "extractSha256": "e44ad6790d3dfe09a90f50a151a32b3d1186101492d1a525278f398beb9b5f36",
+      "wayGolfTags": {
+        "bunker": 87,
+        "cartpath": 32,
+        "fairway": 4,
+        "green": 23,
+        "hole": 1,
+        "tee": 79,
+        "water_hazard": 7
+      },
+      "finding": "Several layouts inside crop; 23 greens and only one route. Layout identity incomplete."
+    },
+    {
+      "course": "Cacapon State Park",
+      "linkedRoundCount": 39,
+      "usageCohort": "all linked round rows; not completed-round cohort",
+      "bboxWgs84": [
+        -78.308,
+        39.5,
+        -78.283,
+        39.525
+      ],
+      "url": "https://www.openstreetmap.org/api/0.6/map?bbox=-78.308,39.5,-78.283,39.525",
+      "extractSha256": "3efb3b88368bf3d9be524c4462fab70dd6820a452b8835c3ac65793536d0f2e5",
+      "wayGolfTags": {
+        "bunker": 71,
+        "cartpath": 14,
+        "driving_range": 1,
+        "fairway": 18,
+        "green": 18,
+        "hole": 18,
+        "lateral_water_hazard": 3,
+        "tee": 22
+      },
+      "finding": "Selected: 18 uniquely numbered routes, matching scorecard pars, shared green 4/8."
+    },
+    {
+      "course": "The Cardinal",
+      "linkedRoundCount": 33,
+      "usageCohort": "all linked round rows; not completed-round cohort",
+      "bboxWgs84": [
+        -79.927,
+        36.119,
+        -79.902,
+        36.144
+      ],
+      "url": "https://www.openstreetmap.org/api/0.6/map?bbox=-79.927,36.119,-79.902,36.144",
+      "extractSha256": "ec41c69edf972d2439f650d324e62905016ebe8cd09f82609ab3c30ff5c6e585",
+      "wayGolfTags": {
+        "bunker": 51,
+        "cartpath": 29,
+        "green": 20
+      },
+      "finding": "Facility relation uses Sedgefield Country Club Dye Course with old_name Cardinal. Missing routes/fairways/tees in this crop."
+    },
+    {
+      "course": "Winchester Country Club",
+      "linkedRoundCount": 33,
+      "usageCohort": "all linked round rows; not completed-round cohort",
+      "bboxWgs84": [
+        -78.158,
+        39.158,
+        -78.132,
+        39.182
+      ],
+      "url": "https://www.openstreetmap.org/api/0.6/map?bbox=-78.158,39.158,-78.132,39.182",
+      "extractSha256": "0d67331d02b8b9db57542969215ee75a38ad8f823c06a2b9a929401e1b393337",
+      "wayGolfTags": {
+        "bunker": 45,
+        "cartpath": 37,
+        "driving_range": 1,
+        "fairway": 17,
+        "green": 18,
+        "hole": 18,
+        "tee": 39
+      },
+      "finding": "Strong alternate: 18 routes and greens. Not reviewed per hole in this stage."
+    }
+  ]
+}
