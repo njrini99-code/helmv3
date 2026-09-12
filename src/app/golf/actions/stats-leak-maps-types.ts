@@ -10,6 +10,8 @@
  * ADDITIVE / read-only — nothing here changes existing loader semantics.
  */
 
+import type { PgaOmissionReason } from '@/lib/coachhelm/v3/standing/types';
+
 /**
  * One distance band of a leak map (putt-make% or approach-proximity).
  *
@@ -65,6 +67,15 @@ export interface PlayerStandingRow {
   team_pct: number | null;
   pga_value: number;
   pga_delta: number | null;
+  /**
+   * True when the standing loader suppressed the Tour reference — a women's
+   * row with no credible women's anchor, or a row whose `player_value` is not
+   * on the Tour marker's basis (approach proximity: on-green only vs the
+   * Tour's all-shot figure — addendum A2). Render layers drop the Tour tick
+   * and value; `pga_omitted_reason` captions why.
+   */
+  pga_omitted?: boolean;
+  pga_omitted_reason?: PgaOmissionReason;
   /**
    * True for women's-team rows (gender-anchored by the standing loader).
    * Render layers label the Tour reference "LPGA" instead of "PGA".

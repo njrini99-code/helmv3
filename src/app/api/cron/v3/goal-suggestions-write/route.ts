@@ -60,6 +60,7 @@ async function handle(): Promise<NextResponse> {
         players_with_standings: 0,
         suggestions_inserted: 0,
         suggestions_expired: 0,
+        rows_skipped_basis_mismatch: 0,
         per_player: [],
         duration_ms: 0,
         error: msg,

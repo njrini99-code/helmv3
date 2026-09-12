@@ -52,6 +52,11 @@ import { toInsightInput } from '@/lib/coachhelm/v2/insights/to-insight-input';
 import { classifyDashboardFailure } from '@/lib/coachhelm/v2/dashboard-error-classifier';
 import { logServerError, logServerEvent, logServerException } from '@/lib/server-error-logger';
 import { loadCoachWeightsForPlayer, rankInsights } from '@/lib/coachhelm/v3/ranking/score';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import {
+  rankEvidenceInsights,
+  type RankableEvidenceInsight,
+} from '@/app/golf/actions/insight-delivery-ranking';
 import { loadActiveGoals } from '@/lib/coachhelm/v3/goals/loader';
 import {
   verifyPlayerAccess as sharedVerifyPlayerAccess,
@@ -1196,6 +1201,12 @@ export async function generateTeamInsights() {
 // GET ACTIVE INSIGHTS FOR COACH
 // ============================================================================
 
+/** A `golf_coach_insights` row (+ player join) as this feed returns it —
+ *  the rankable fields are what `rankEvidenceInsights` reads. */
+type ActiveInsightRow = RankableEvidenceInsight & {
+  player: { id: string; first_name: string | null; last_name: string | null; avatar_url: string | null } | null;
+};
+
 async function getActiveInsightsImpl(limit: number = 10) {
   const supabase = await createClient();
 
@@ -1223,22 +1234,33 @@ async function getActiveInsightsImpl(limit: number = 10) {
     // it must not return stale v2 phantoms or archived/tentative rows. The
     // helper adds the v3-engine + visible-lifecycle + not-dismissed guards on
     // top of the existing coach + status='active' scope.
-    const { data: insights, error } = await applyInsightVisibility(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (supabase as any)
-        .from('golf_coach_insights')
-        .select(
-          `
+    //
+    // Ranking (repair plan N5): this feed used to `.order('priority')` — a
+    // TEXT column, so ascending was high < low < medium < urgent — and cut to
+    // `limit` in that non-order. Read the coach's FULL visible active set
+    // (≤ 120 rows per coach today; paginated past the PostgREST cap like every
+    // other feed), rank it with the SAME `scoreInsight` composite the Hub /
+    // player / coach feeds use, then take the top `limit`.
+    const { data, error } = await fetchAllRowsResult<ActiveInsightRow>(
+      (from, to) =>
+        applyInsightVisibility(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (supabase as any)
+            .from('golf_coach_insights')
+            .select(
+              `
         *,
         player:golf_players(id, first_name, last_name, avatar_url)
       `
+            )
+            .eq('coach_id', coach.id)
+            .eq('status', 'active'),
         )
-        .eq('coach_id', coach.id)
-        .eq('status', 'active'),
-    )
-      .order('priority', { ascending: true })
-      .order('created_at', { ascending: false })
-      .limit(limit);
+          .order('id', { ascending: true })
+          .range(from, to),
+      undefined,
+      { table: 'golf_coach_insights', action: 'getActiveInsights', feature: 'coachhelm_ai_engine', sport: 'golf' },
+    );
 
     if (error) {
       await logServerError(`getActiveInsights query failed: ${error.message}`, {
@@ -1249,7 +1271,8 @@ async function getActiveInsightsImpl(limit: number = 10) {
       return { success: false, error: 'Failed to generate insights. Please try again.', insights: [] };
     }
 
-    return { success: true, insights: insights || [] };
+    const ranked = await rankEvidenceInsights(data ?? [], {}, [], supabase);
+    return { success: true, insights: ranked.slice(0, limit) };
   } catch (error) {
     await logServerError(`getActiveInsights failed: ${describeError(error)}`, {
       action: 'getActiveInsights',

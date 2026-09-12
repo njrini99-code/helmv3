@@ -167,6 +167,44 @@ describe('loadStandingForMetric — gender-aware override', () => {
     expect(s).toBeNull();
     expect(loadPlayerCohortMock).not.toHaveBeenCalled();
   });
+
+  // Addendum A2 (read level): the approach-proximity rows are on-green-only
+  // player values against the Tour's all-shot figure. Every cohort gets the
+  // Tour marker omitted with a stated reason; the team tick is untouched.
+  it('men: omits the Tour marker on an approach-proximity row (basis mismatch)', async () => {
+    singleResult.data = dbRow({
+      player_id: 'tyler',
+      metric_id: 'approach_proximity_175_plus_ft',
+      player_value: 26.7,
+      team_avg: 28.2,
+      team_n: 9,
+      pga_value: 45,
+      pga_delta: -18.3,
+    });
+    loadPlayerCohortMock.mockResolvedValue({ gender: 'mens', level: null });
+
+    const s = await loadStandingForMetric('tyler', 'approach_proximity_175_plus_ft');
+    expect(s!.pga_omitted).toBe(true);
+    expect(s!.pga_omitted_reason).toBe('basis_mismatch');
+    expect(s!.team_avg).toBe(28.2);
+    expect(s!.team_n).toBe(9);
+  });
+
+  it('women: an approach-proximity row is omitted for basis even with an LPGA row', async () => {
+    standardsResult.data = [lpgaRow('approach_proximity_125_175ft', 38)];
+    singleResult.data = dbRow({
+      metric_id: 'approach_proximity_125_175ft',
+      player_value: 22.6,
+      pga_value: 30,
+      pga_delta: -7.4,
+    });
+    loadPlayerCohortMock.mockResolvedValue({ gender: 'womens', level: null });
+
+    const s = await loadStandingForMetric('grace', 'approach_proximity_125_175ft');
+    expect(s!.pga_omitted).toBe(true);
+    expect(s!.pga_omitted_reason).toBe('basis_mismatch');
+    expect(s!.is_womens).toBe(true);
+  });
 });
 
 describe('loadPlayerStandingMap — gender-aware override', () => {
@@ -200,6 +238,23 @@ describe('loadPlayerStandingMap — gender-aware override', () => {
 
     const map = await loadPlayerStandingMap('tyler');
     expect(map.get('scrambling_pct_sand')!.pga_value).toBe(50);
+    expect(map.get('scrambling_pct_sand')!.pga_omitted).toBeUndefined();
+  });
+
+  it('men: the map path omits the Tour marker on every approach-proximity row (A2)', async () => {
+    mapResult.data = [
+      dbRow({ metric_id: 'approach_proximity_50_125ft', player_value: 17.4, pga_value: 18 }),
+      dbRow({ metric_id: 'approach_proximity_125_175ft', player_value: 22.6, pga_value: 30 }),
+      dbRow({ metric_id: 'approach_proximity_175_plus_ft', player_value: 26.7, pga_value: 45 }),
+      dbRow({ metric_id: 'scrambling_pct_sand', player_value: 40, pga_value: 50 }),
+    ];
+    loadPlayerCohortMock.mockResolvedValue({ gender: 'mens', level: null });
+
+    const map = await loadPlayerStandingMap('tyler');
+    for (const id of ['approach_proximity_50_125ft', 'approach_proximity_125_175ft', 'approach_proximity_175_plus_ft'] as const) {
+      expect(map.get(id)!.pga_omitted).toBe(true);
+      expect(map.get(id)!.pga_omitted_reason).toBe('basis_mismatch');
+    }
     expect(map.get('scrambling_pct_sand')!.pga_omitted).toBeUndefined();
   });
 });

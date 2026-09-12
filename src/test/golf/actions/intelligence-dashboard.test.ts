@@ -287,6 +287,75 @@ describe('intelligence-dashboard actions', () => {
     expect(selectColumns).toContain('metadata');
     expect(selectColumns).toContain('player_id');
   });
+
+  it('getTeamInsightsSummary picks each player\'s MOST SEVERE row as topInsight, not the newest (N5)', async () => {
+    // The page arrives newest-first from the DB. The old code walked it in
+    // that order under a comment claiming "first one is highest priority".
+    const insightRows = [
+      { id: 'i-low', player_id: 'p-1', team_id: 'team-1', coach_id: 'coach-1', insight_type: 'performance', title: 'newest, low', content: '', priority: 'low', status: 'active', acknowledged_at: null, dismissed: false, dismissed_at: null, metadata: {}, created_at: '2026-09-12T10:00:00Z', updated_at: '2026-09-12T10:00:00Z', player: { id: 'p-1', first_name: 'A', last_name: 'B' } },
+      { id: 'i-urgent', player_id: 'p-1', team_id: 'team-1', coach_id: 'coach-1', insight_type: 'performance', title: 'older, urgent', content: '', priority: 'urgent', status: 'active', acknowledged_at: null, dismissed: false, dismissed_at: null, metadata: {}, created_at: '2026-09-10T10:00:00Z', updated_at: '2026-09-10T10:00:00Z', player: { id: 'p-1', first_name: 'A', last_name: 'B' } },
+      { id: 'i-medium', player_id: 'p-1', team_id: 'team-1', coach_id: 'coach-1', insight_type: 'performance', title: 'oldest, medium', content: '', priority: 'medium', status: 'active', acknowledged_at: null, dismissed: false, dismissed_at: null, metadata: {}, created_at: '2026-09-08T10:00:00Z', updated_at: '2026-09-08T10:00:00Z', player: { id: 'p-1', first_name: 'A', last_name: 'B' } },
+    ];
+    const sb: Record<string, unknown> = {
+      auth: { getUser: async () => ({ data: { user: { id: 'user-1' } } }) },
+      from: (table: string) => {
+        if (table === 'golf_coaches') {
+          return {
+            select: () => ({
+              eq: () => ({
+                maybeSingle: async () => ({ data: { id: 'coach-1' } }),
+                single: async () => ({ data: { id: 'coach-1' } }),
+              }),
+            }),
+          };
+        }
+        if (table === 'golf_team_members') {
+          return {
+            select: () => ({
+              eq: () => ({ eq: async () => ({ data: [{ player_id: 'p-1' }], error: null }) }),
+            }),
+          };
+        }
+        if (table === 'golf_patterns_v2') {
+          return {
+            select: () => ({
+              in: () => ({ eq: () => ({ order: () => ({ limit: async () => ({ data: [], error: null }) }) }) }),
+            }),
+          };
+        }
+        if (table === 'golf_coach_insights') {
+          const visibilityChain = (terminal: unknown) => {
+            const node: Record<string, unknown> = {};
+            node.or = () => node;
+            node.in = () => node;
+            node.neq = () => node;
+            node.then = (resolve: (v: unknown) => void) => Promise.resolve(resolve(terminal));
+            node.order = () => ({ range: async () => terminal });
+            return node;
+          };
+          return {
+            select: (_cols: string, opts?: { count?: string; head?: boolean }) => ({
+              eq: () => ({
+                eq: () =>
+                  visibilityChain(
+                    opts?.head ? { count: insightRows.length, error: null } : { data: insightRows, error: null },
+                  ),
+              }),
+            }),
+          };
+        }
+        return { select: () => ({}) };
+      },
+    };
+    createClientMock.mockResolvedValue(sb);
+
+    const result = await getTeamInsightsSummary('team-1');
+    expect(result.success).toBe(true);
+    const summary = result.data?.playerSummaries.find((s) => s.playerId === 'p-1');
+    expect(summary?.activeInsights).toBe(3);
+    expect(summary?.urgentInsights).toBe(1);
+    expect(summary?.topInsight?.id).toBe('i-urgent');
+  });
 });
 
 /**

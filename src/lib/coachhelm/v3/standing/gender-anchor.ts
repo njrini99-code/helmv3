@@ -132,6 +132,7 @@ export function applyGenderAnchor(
   return {
     ...standing,
     pga_omitted: true,
+    pga_omitted_reason: 'no_womens_anchor',
     is_womens: true,
   };
 }

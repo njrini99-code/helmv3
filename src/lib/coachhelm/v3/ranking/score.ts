@@ -138,6 +138,39 @@ export function priorityFloorScore(
   return PRIORITY_FLOOR[priority ?? 'low'];
 }
 
+/** The minimal row shape {@link compareBySeverity} orders. */
+export interface SeverityOrderable {
+  priority?: string | null;
+  created_at?: string | null;
+}
+
+/**
+ * Severity comparator for a "sort by priority" read: urgent → high → medium
+ * → low, newest first within a band (repair plan N5). `golf_coach_insights.
+ * priority` is TEXT, so a database `.order('priority')` sorts it
+ * ALPHABETICALLY — high < low < medium < urgent — which is not severity in
+ * either direction. Readers that must order by priority sort the full
+ * eligible set in memory with this comparator and slice afterwards; an
+ * unknown / null priority sorts last. `order: 'asc'` flips the BAND order
+ * (low first) for a "least severe first" view; recency stays newest-first
+ * inside a band either way.
+ */
+export function compareBySeverity(
+  a: SeverityOrderable,
+  b: SeverityOrderable,
+  order: 'desc' | 'asc' = 'desc',
+): number {
+  const diff = priorityBand(b.priority) - priorityBand(a.priority);
+  if (diff !== 0) return order === 'asc' ? -diff : diff;
+  return (b.created_at ?? '').localeCompare(a.created_at ?? '');
+}
+
+function priorityBand(priority: string | null | undefined): number {
+  return priority && priority in PRIORITY_FLOOR
+    ? PRIORITY_FLOOR[priority as keyof typeof PRIORITY_FLOOR]
+    : 0;
+}
+
 /**
  * Sample-size damping ∈ (0, 1]. A 5%-make-rate off a thin lifetime sample must
  * not out-rank a deep-sample leak just because its confidence factor reads high.

@@ -110,6 +110,7 @@ export function StandingDrill({ standingByMetric, playerBaseline }: PlayerStandi
                           team_pct={standing.team_pct}
                           pga_value={standing.pga_value}
                           pga_omitted={standing.pga_omitted}
+                          pga_omitted_reason={standing.pga_omitted_reason}
                           is_womens={standing.is_womens}
                           direction={cfg.direction}
                           unit={cfg.unit}

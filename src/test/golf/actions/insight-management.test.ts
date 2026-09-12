@@ -106,6 +106,59 @@ describe('searchInsights', () => {
     expect(textFilter).not.toContain('description.ilike');
     expect(textFilter).toContain('title.ilike');
   });
+
+  it('sortBy priority: orders the FULL set by severity in memory and slices the page (N5)', async () => {
+    // What the DB hands back (created_at desc). `priority` is TEXT, so the old
+    // `.order('priority')` produced high < low < medium < urgent — this fixture
+    // is arranged so that alphabetical, created_at, and severity orders all
+    // differ.
+    const rows = [
+      { id: 'r-medium', priority: 'medium', created_at: '2026-09-12T12:00:00Z', content: '', title: '', metadata: null, insight_type: 'performance', status: 'active', updated_at: '', coach_id: 'coach-1', player: null },
+      { id: 'r-low', priority: 'low', created_at: '2026-09-12T11:00:00Z', content: '', title: '', metadata: null, insight_type: 'performance', status: 'active', updated_at: '', coach_id: 'coach-1', player: null },
+      { id: 'r-urgent', priority: 'urgent', created_at: '2026-09-12T10:00:00Z', content: '', title: '', metadata: null, insight_type: 'performance', status: 'active', updated_at: '', coach_id: 'coach-1', player: null },
+      { id: 'r-high-old', priority: 'high', created_at: '2026-09-11T10:00:00Z', content: '', title: '', metadata: null, insight_type: 'performance', status: 'active', updated_at: '', coach_id: 'coach-1', player: null },
+      { id: 'r-high-new', priority: 'high', created_at: '2026-09-12T09:00:00Z', content: '', title: '', metadata: null, insight_type: 'performance', status: 'active', updated_at: '', coach_id: 'coach-1', player: null },
+    ];
+    const rangeSpy = vi.fn();
+    const orderSpy = vi.fn();
+    createClientMock.mockResolvedValue({
+      auth: { getUser: async () => ({ data: { user: { id: 'u-1' } } }) },
+      from: (table: string) => {
+        if (table === 'golf_coaches') {
+          return { select: () => ({ eq: () => ({ eq: () => ({ single: async () => ({ data: { id: 'coach-1' }, error: null }) }) }) }) };
+        }
+        // A fresh builder per buildQuery() call; the fetch-all pager awaits
+        // `.range()` and expects the full set back in one page.
+        const terminal = { data: rows, error: null, count: rows.length };
+        const node: Record<string, unknown> = {};
+        node.or = () => node;
+        node.in = () => node;
+        node.neq = () => node;
+        node.eq = () => node;
+        node.gte = () => node;
+        node.lte = () => node;
+        node.order = (...args: unknown[]) => { orderSpy(...args); return node; };
+        node.range = (...args: unknown[]) => { rangeSpy(...args); return node; };
+        node.then = (resolve: (v: typeof terminal) => void) => Promise.resolve(resolve(terminal));
+        return { select: () => node };
+      },
+    });
+
+    const page1 = await searchInsights({ coachId: 'coach-1', sortBy: 'priority', sortOrder: 'desc', page: 1, pageSize: 3 });
+    expect(page1.success).toBe(true);
+    expect(page1.totalCount).toBe(5);
+    expect(page1.totalPages).toBe(2);
+    // Most severe first; newest first within a band.
+    expect(page1.insights.map((i) => i.id)).toEqual(['r-urgent', 'r-high-new', 'r-high-old']);
+    // The DB was never asked to order by the text column.
+    expect(orderSpy.mock.calls.map((c) => c[0])).not.toContain('priority');
+
+    const page2 = await searchInsights({ coachId: 'coach-1', sortBy: 'priority', sortOrder: 'desc', page: 2, pageSize: 3 });
+    expect(page2.insights.map((i) => i.id)).toEqual(['r-medium', 'r-low']);
+
+    const asc = await searchInsights({ coachId: 'coach-1', sortBy: 'priority', sortOrder: 'asc', page: 1, pageSize: 5 });
+    expect(asc.insights.map((i) => i.id)).toEqual(['r-low', 'r-medium', 'r-high-new', 'r-high-old', 'r-urgent']);
+  });
 });
 
 describe('bulkDismissInsights', () => {

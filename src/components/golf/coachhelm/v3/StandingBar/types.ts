@@ -8,6 +8,8 @@
  *   PGA. Render gracefully degrades when PGA reference is null.
  */
 
+import type { PgaOmissionReason } from '@/lib/coachhelm/v3/standing/types';
+
 export type Direction = 'higher_better' | 'lower_better';
 
 export type Unit = 'percent' | 'strokes' | 'yards' | 'count' | 'feet';
@@ -44,6 +46,15 @@ export interface StandingBarProps {
    * aria label. Default false — the marker renders as usual.
    */
   pga_omitted?: boolean;
+
+  /**
+   * Why the reference is omitted (addendum A2). When set alongside
+   * `pga_omitted`, the card/strip renders a one-line caption from
+   * `pgaOmissionNote()` and the aria label narrates it, so "—" reads as
+   * "not comparable" rather than "missing data". Optional — the P3 omission
+   * without a reason renders exactly as before.
+   */
+  pga_omitted_reason?: PgaOmissionReason;
 
   /**
    * True when the player's team is a women's program. When set, the Tour

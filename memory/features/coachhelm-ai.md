@@ -92,6 +92,20 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   `hole_number`); derived tee distances carry `distance_method:
   'derived_progress'`. The metric identity table lives in
   `docs/architecture/coachhelm-evidence-contract.md`.
+- Standing Tour basis (2026-09-12, addendum A2 read level): the three
+  `approach_proximity_*` standing rows are on-green-only player values
+  against the Tour's all-shot figure. `v3/standing/tour-basis.ts` names them
+  and every standing loader stamps `pga_omitted: true` with
+  `pga_omitted_reason: 'basis_mismatch'`, so no tile, goal target, or engine
+  suggestion compares them to Tour (the team tick stays — same basis).
+  `StandingStrip`/`StandingBar` caption the omission (`pgaOmissionNote`).
+  Moving the RPC to all-shot proximity is Package 7B; until then do not
+  re-add a Tour comparison for these ids anywhere.
+- Severity ordering (2026-09-12, N5): `golf_coach_insights.priority` is TEXT
+  and sorts alphabetically at the database. Never `.order('priority')`. Rank
+  feeds with `rankEvidenceInsights`; order a "sort by priority" list with
+  `compareBySeverity` from `v3/ranking/score.ts` over the full set, then
+  paginate.
 - Budget-sensitive LLM behavior should use team settings and persisted usage, not hardcoded token math.
 
 ## UI Contract

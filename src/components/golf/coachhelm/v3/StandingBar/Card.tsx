@@ -23,6 +23,7 @@ import {
   formatValue,
   layoutMarkerPositions,
   BAR_MARKER_MIN_GAP_PCT,
+  pgaOmissionNote,
   pgaReferenceLabel,
   resolveDisplayScale,
   shouldShowTeamMarker,
@@ -74,6 +75,7 @@ export function Card(props: CardProps) {
     ? teamRelativeText(props.player_value, props.team_avg, props.direction, props.unit)
     : '';
   const refLabel = pgaReferenceLabel(props.metric_id, props.is_womens).short;
+  const omissionNote = pgaOmissionNote(props);
 
   const toneColor =
     delta.tone === 'good' ? 'text-fw-success-ink' :
@@ -143,6 +145,11 @@ export function Card(props: CardProps) {
       {/* Cohort text */}
       {props.show_cohort_text !== false && cohortText && (
         <p className={`mt-2 font-fw-sans text-caption font-medium ${toneColor}`}>{cohortText}</p>
+      )}
+
+      {/* A2: a suppressed reference with a reason says why (not "missing data"). */}
+      {omissionNote && (
+        <p className="text-xs text-warm-500 mt-2">{omissionNote}</p>
       )}
 
       {state === 'cold-start' && (

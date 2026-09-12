@@ -22,6 +22,8 @@ import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { describeError } from '@/lib/utils/describe-error';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { compareBySeverity } from '@/lib/coachhelm/v3/ranking/score';
 
 // ============================================================================
 // TYPES
@@ -125,116 +127,141 @@ async function searchInsightsImpl({
     }
 
     // Build the query. Apply the SAME shared product-visibility contract (P2
-    // legacy-surface) so the legacy InsightsPageContent search never surfaces
-    // stale v2 phantoms or archived/tentative rows if the redesign flag is ever
-    // flipped off. The text-search `.or(...)` chained below ANDs with the
-    // helper's v3-engine `.or(...)` per PostgREST semantics.
-    let queryBuilder = applyInsightVisibility(
-      supabase
-        .from('golf_coach_insights')
-        .select(
-          `
-        *,
-        player:golf_players(id, first_name, last_name, avatar_url)
-      `,
-          { count: 'exact' }
-        )
-        .eq('coach_id', coach.id),
-    );
+    // legacy-surface) so this search never surfaces stale v2 phantoms or
+    // archived/tentative rows. The text-search `.or(...)` chained below ANDs
+    // with the helper's v3-engine `.or(...)` per PostgREST semantics.
+    //
+    // A closure (not a shared builder) so the severity-ordered path below can
+    // page through the FULL matching set with fresh builders — a PostgREST
+    // builder's .range() mutates its own headers.
+    const buildQuery = () => {
+      let queryBuilder = applyInsightVisibility(
+        supabase
+          .from('golf_coach_insights')
+          .select(
+            `
+          *,
+          player:golf_players(id, first_name, last_name, avatar_url)
+        `,
+            { count: 'exact' }
+          )
+          .eq('coach_id', coach.id),
+      );
 
-    // Text search on title and content.
-    // NOTE: live schema has `content` (not `description`). The old `.or()`
-    // filter referenced a nonexistent column and silently returned 0 rows.
-    // The search term is sanitized before interpolation into the PostgREST
-    // `.or()` filter string (same predicate class as resend-activity.ts:195)
-    // so it cannot inject additional filter terms.
-    if (query && query.trim()) {
-      const sanitizedQuery = query.trim().replace(/[,()\\:{}%]/g, '');
-      if (sanitizedQuery) {
-        const searchTerm = `%${sanitizedQuery}%`;
-        queryBuilder = queryBuilder.or(
-          `title.ilike.${searchTerm},content.ilike.${searchTerm}`
-        );
-      }
-    }
-
-    // Apply filters
-    if (filters) {
-      if (filters.playerId) {
-        queryBuilder = queryBuilder.eq('player_id', filters.playerId);
-      }
-
-      if (filters.insightType) {
-        queryBuilder = queryBuilder.eq('insight_type', filters.insightType);
-      }
-
-      if (filters.priority) {
-        queryBuilder = queryBuilder.eq('priority', filters.priority);
-      }
-
-      if (filters.status) {
-        queryBuilder = queryBuilder.eq('status', filters.status);
-      }
-
-      // Date range filtering
-      if (filters.dateRange) {
-        const now = new Date();
-        let startDate: Date | null = null;
-
-        switch (filters.dateRange) {
-          case 'last_7_days':
-            startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-            break;
-          case 'last_30_days':
-            startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-            break;
-          case 'last_90_days':
-            startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-            break;
-          case 'custom':
-            if (filters.startDate) {
-              startDate = new Date(filters.startDate);
-            }
-            break;
-        }
-
-        if (startDate) {
-          queryBuilder = queryBuilder.gte('created_at', startDate.toISOString());
-        }
-
-        if (filters.dateRange === 'custom' && filters.endDate) {
-          const endDate = new Date(filters.endDate);
-          endDate.setHours(23, 59, 59, 999);
-          queryBuilder = queryBuilder.lte('created_at', endDate.toISOString());
+      // Text search on title and content.
+      // NOTE: live schema has `content` (not `description`). The old `.or()`
+      // filter referenced a nonexistent column and silently returned 0 rows.
+      // The search term is sanitized before interpolation into the PostgREST
+      // `.or()` filter string (same predicate class as resend-activity.ts:195)
+      // so it cannot inject additional filter terms.
+      if (query && query.trim()) {
+        const sanitizedQuery = query.trim().replace(/[,()\\:{}%]/g, '');
+        if (sanitizedQuery) {
+          const searchTerm = `%${sanitizedQuery}%`;
+          queryBuilder = queryBuilder.or(
+            `title.ilike.${searchTerm},content.ilike.${searchTerm}`
+          );
         }
       }
-    }
 
-    // Sorting
-    if (sortBy === 'priority') {
-      // Custom priority ordering: urgent > high > medium > low
-      const priorityOrder = sortOrder === 'asc' ? 'asc' : 'desc';
-      queryBuilder = queryBuilder
-        .order('priority', { ascending: priorityOrder === 'asc' })
-        .order('created_at', { ascending: false });
-    } else if (sortBy === 'player_name') {
-      // Sort by joined player table via PostgREST foreignTable ordering. This
-      // moves the sort to the DB layer so pagination produces a correctly
-      // ordered global slice — the previous client-side sort only reordered
-      // each individual page, leading to wrong alphabetical order across pages.
-      queryBuilder = queryBuilder
-        .order('last_name', { foreignTable: 'player', ascending: sortOrder === 'asc' })
-        .order('first_name', { foreignTable: 'player', ascending: sortOrder === 'asc' });
-    } else {
-      queryBuilder = queryBuilder.order('created_at', { ascending: sortOrder === 'asc' });
-    }
+      // Apply filters
+      if (filters) {
+        if (filters.playerId) {
+          queryBuilder = queryBuilder.eq('player_id', filters.playerId);
+        }
+
+        if (filters.insightType) {
+          queryBuilder = queryBuilder.eq('insight_type', filters.insightType);
+        }
+
+        if (filters.priority) {
+          queryBuilder = queryBuilder.eq('priority', filters.priority);
+        }
+
+        if (filters.status) {
+          queryBuilder = queryBuilder.eq('status', filters.status);
+        }
+
+        // Date range filtering
+        if (filters.dateRange) {
+          const now = new Date();
+          let startDate: Date | null = null;
+
+          switch (filters.dateRange) {
+            case 'last_7_days':
+              startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+              break;
+            case 'last_30_days':
+              startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+              break;
+            case 'last_90_days':
+              startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+              break;
+            case 'custom':
+              if (filters.startDate) {
+                startDate = new Date(filters.startDate);
+              }
+              break;
+          }
+
+          if (startDate) {
+            queryBuilder = queryBuilder.gte('created_at', startDate.toISOString());
+          }
+
+          if (filters.dateRange === 'custom' && filters.endDate) {
+            const endDate = new Date(filters.endDate);
+            endDate.setHours(23, 59, 59, 999);
+            queryBuilder = queryBuilder.lte('created_at', endDate.toISOString());
+          }
+        }
+      }
+      return queryBuilder;
+    };
+    type SearchRow = NonNullable<Awaited<ReturnType<typeof buildQuery>>['data']>[number];
 
     // Pagination
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
-    queryBuilder = queryBuilder.range(from, to);
 
-    const { data: insights, error, count } = await queryBuilder;
+    let insights: SearchRow[] | null;
+    let error: { message: string; code?: string | null } | null;
+    let count: number | null;
+
+    if (sortBy === 'priority') {
+      // Severity ordering (repair plan N5). `priority` is TEXT, so the old
+      // `.order('priority')` sorted it alphabetically — high < low < medium <
+      // urgent — and then paginated that non-order. Page through the FULL
+      // matching set (one round trip for every coach today: max 352 rows),
+      // order it with the shared severity comparator, and slice the page from
+      // the ordered whole so page N is the N-th most severe slice, not the
+      // N-th slice of an alphabetical list.
+      const all = await fetchAllRowsResult<SearchRow>(
+        (f, t) => buildQuery().order('created_at', { ascending: false }).range(f, t),
+        undefined,
+        { table: 'golf_coach_insights', action: 'searchInsights', feature: 'coachhelm_ai_engine', sport: 'golf' },
+      );
+      error = all.error;
+      const ordered = (all.data ?? []).sort((a, b) => compareBySeverity(a, b, sortOrder));
+      insights = ordered.slice(from, to + 1);
+      count = ordered.length;
+    } else {
+      let queryBuilder = buildQuery();
+      if (sortBy === 'player_name') {
+        // Sort by joined player table via PostgREST foreignTable ordering. This
+        // moves the sort to the DB layer so pagination produces a correctly
+        // ordered global slice — the previous client-side sort only reordered
+        // each individual page, leading to wrong alphabetical order across pages.
+        queryBuilder = queryBuilder
+          .order('last_name', { foreignTable: 'player', ascending: sortOrder === 'asc' })
+          .order('first_name', { foreignTable: 'player', ascending: sortOrder === 'asc' });
+      } else {
+        queryBuilder = queryBuilder.order('created_at', { ascending: sortOrder === 'asc' });
+      }
+      const page_ = await queryBuilder.range(from, to);
+      insights = page_.data as SearchRow[] | null;
+      error = page_.error;
+      count = page_.count;
+    }
 
     if (error) {
       await logServerError(`[Insight Search Error]: ${describeError(error)}`, { action: 'insight_management.searchInsights' });
