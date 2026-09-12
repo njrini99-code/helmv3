@@ -1,14 +1,14 @@
 /**
  * v3 metric → display config lookup.
  *
- * StandingBar needs `direction` (higher_better / lower_better) and `unit`
+ * StandingBars needs `direction` (higher_better / lower_better) and `unit`
  * for each metric. These are stored in `public.golf_metrics` but loading
  * from DB on every render is wasteful. This module is a TS mirror of
  * the 28 canonical metrics' direction + unit + display label + a sensible
  * default scale for the bar visual.
  *
  * Used by:
- *   - W15 EvidencePanel (coach insight surfaces) to render <StandingBar>
+ *   - W15 EvidencePanel (coach insight surfaces) to render <StandingBars>
  *     when `evidence.standing` exists.
  *   - W16 player surfaces.
  *   - W17 counterfactual (direction informs the sign of strokes-saved).

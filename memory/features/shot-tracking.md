@@ -353,7 +353,9 @@ the hole index the checkpoint started on.
 - `src/app/golf/actions/golf.ts`
 - `src/app/golf/actions/round-drafts.ts`
 - `src/app/golf/actions/shot-analytics.ts`
-- src/hooks/golf/use-auto-save-round.ts no longer exists; round persistence is `src/hooks/golf/use-offline-sync.ts`
+- Neither `use-auto-save-round.ts` nor `use-offline-sync.ts` exists any more
+  (the second was deleted 2026-09-10, unreferenced). Round persistence is
+  `src/lib/offline/sync-engine.ts` below, driven from the round page.
 - `src/lib/offline/sync-engine.ts`
 - `src/lib/utils/emergency-save.ts` — synchronous device snapshot, keyed by
   round id (or `new_<playerId>` before one exists)

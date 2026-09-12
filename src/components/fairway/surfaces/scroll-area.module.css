@@ -1,0 +1,35 @@
+/* ============================================================================
+ * Fairway · surfaces · ScrollArea — compact desktop scrollbar
+ * ----------------------------------------------------------------------------
+ * Native scrolling (no library, no virtual-scroll wrapper) with a thin
+ * desktop scrollbar so a rail/queue/panel doesn't wear the OS's default fat
+ * bar. Touch devices keep their native overlay scrollbar (untouched, and
+ * `-webkit-overflow-scrolling: touch` + `overscroll-behavior: contain` are
+ * set inline by the component so they apply on every platform, not just
+ * where this module's selectors match).
+ * ========================================================================== */
+
+.viewport {
+  scrollbar-width: thin;
+  scrollbar-color: var(--fw-color-border-strong) transparent;
+}
+
+.viewport::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.viewport::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.viewport::-webkit-scrollbar-thumb {
+  background-color: var(--fw-color-border-strong);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.viewport::-webkit-scrollbar-corner {
+  background: transparent;
+}

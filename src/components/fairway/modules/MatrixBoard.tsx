@@ -18,7 +18,15 @@
  * source CSS. 940px is the SAME spine/stage stacking threshold used by
  * `StatsSpineStage` / the CoachHelm homes, so the board's own column
  * collapse lines up with the shell's single-column breakpoint instead of
- * drifting at Tailwind's `sm` (640px).
+ * drifting at Tailwind's `sm` (640px). `hideOnMobile` (props) unions extra
+ * column keys into this same 940px cutoff for boards that can't reuse the
+ * four built-in keys.
+ *
+ * Selection vs. expansion: a row either expands in place (`expand` content,
+ * unchanged) or, when it has none, can be made SELECTABLE by passing
+ * `onRowSelect` — the row then gets `role="row"`/`aria-selected` and fires
+ * on click/Enter/Space without ever expanding. The two never combine on one
+ * row (see `MatrixRow`'s `isSelectable`).
  * ========================================================================== */
 
 import { useId, useState } from 'react';
@@ -30,8 +38,24 @@ import type { MatrixBoardProps, MatrixBoardRow as MatrixBoardRowData, MatrixColu
 /** Columns hidden below the 940px breakpoint (mockup `.h-tr`, `.h-sig`, `.sig`). */
 const HIDE_ON_MOBILE = new Set(['scor', 'composite', 'trend', 'signal']);
 
-function trackFor(col: MatrixColumn, isFirst: boolean): string {
-  if (isFirst) return 'minmax(120px,1.6fr)';
+/** Default identity (first) column track — see `MatrixBoardProps.identityTrack`.
+ *  Was `minmax(120px,1.6fr)`: at 390pt the 120px floor competed with the
+ *  metric columns' own floors for the leftover width instead of yielding to
+ *  them first, so names clipped at ~10 characters. `minmax(0,2fr)` carries no
+ *  floor of its own — it only takes width the metric columns don't need — and
+ *  a larger fr share, so names truncate only after those columns have already
+ *  shrunk to their own floors. */
+const DEFAULT_IDENTITY_TRACK = 'minmax(0,2fr)';
+
+/** Union the board's built-in phone-hidden set with a caller's own keys
+ *  (`MatrixBoardProps.hideOnMobile`) without mutating the shared constant. */
+function hiddenColumnKeys(extra?: string[]): Set<string> {
+  if (!extra || extra.length === 0) return HIDE_ON_MOBILE;
+  return new Set([...HIDE_ON_MOBILE, ...extra]);
+}
+
+function trackFor(col: MatrixColumn, isFirst: boolean, identityTrack: string): string {
+  if (isFirst) return identityTrack;
   if (col.key === 'trend') return '96px';
   if (col.key === 'signal') return 'minmax(110px,1.2fr)';
   // 48px was a hair under the 34px rank pill plus breathing room, so at 390pt
@@ -42,10 +66,10 @@ function trackFor(col: MatrixColumn, isFirst: boolean): string {
   return 'minmax(44px,1fr)';
 }
 
-function gridTemplate(columns: MatrixColumn[], mobile: boolean): string {
-  const visible = mobile ? columns.filter((c) => !HIDE_ON_MOBILE.has(c.key)) : columns;
+function gridTemplate(columns: MatrixColumn[], mobile: boolean, hidden: Set<string>, identityTrack: string): string {
+  const visible = mobile ? columns.filter((c) => !hidden.has(c.key)) : columns;
   const first = columns[0];
-  return visible.map((c) => trackFor(c, c === first)).join(' ');
+  return visible.map((c) => trackFor(c, c === first, identityTrack)).join(' ');
 }
 
 const GRID_COLS_CLASS =
@@ -71,10 +95,21 @@ function kpiBandCellClass(i: number): string {
  * of which can expand an inline detail band. See `types.ts` for the prop
  * contract (`MatrixBoardProps`).
  */
-export function MatrixBoard({ kpis, columns, rows }: MatrixBoardProps) {
+export function MatrixBoard({
+  kpis,
+  columns,
+  rows,
+  expandedRowId,
+  onExpandedRowChange,
+  hideOnMobile,
+  onRowSelect,
+  selectedId,
+  identityTrack = DEFAULT_IDENTITY_TRACK,
+}: MatrixBoardProps) {
+  const hidden = hiddenColumnKeys(hideOnMobile);
   const gridVars = {
-    '--mtx-mobile': gridTemplate(columns, true),
-    '--mtx-desktop': gridTemplate(columns, false),
+    '--mtx-mobile': gridTemplate(columns, true, hidden, identityTrack),
+    '--mtx-desktop': gridTemplate(columns, false, hidden, identityTrack),
   } as CSSProperties;
 
   return (
@@ -105,17 +140,27 @@ export function MatrixBoard({ kpis, columns, rows }: MatrixBoardProps) {
           `overflow-hidden` (kept for the rounded-card clip) silently clip the
           last column. */}
       <div className="overflow-x-auto">
-        <MatrixHeader columns={columns} />
+        <MatrixHeader columns={columns} hidden={hidden} />
 
         {rows.map((row, i) => (
-          <MatrixRow key={row.id} row={row} columns={columns} isLast={i === rows.length - 1} />
+          <MatrixRow
+            key={row.id}
+            row={row}
+            columns={columns}
+            hidden={hidden}
+            isLast={i === rows.length - 1}
+            expandedRowId={expandedRowId}
+            onExpandedRowChange={onExpandedRowChange}
+            onRowSelect={onRowSelect}
+            selectedId={selectedId}
+          />
         ))}
       </div>
     </div>
   );
 }
 
-function MatrixHeader({ columns }: { columns: MatrixColumn[] }) {
+function MatrixHeader({ columns, hidden }: { columns: MatrixColumn[]; hidden: Set<string> }) {
   return (
     <div
       role="row"
@@ -131,7 +176,7 @@ function MatrixHeader({ columns }: { columns: MatrixColumn[] }) {
           className={cn(
             'font-fw-display text-eyebrow font-bold uppercase tracking-[0.09em] text-text-tertiary',
             col.align === 'center' && 'text-center',
-            HIDE_ON_MOBILE.has(col.key) && 'hidden min-[940px]:block',
+            hidden.has(col.key) && 'hidden min-[940px]:block',
           )}
         >
           {col.label}
@@ -144,46 +189,94 @@ function MatrixHeader({ columns }: { columns: MatrixColumn[] }) {
 function MatrixRow({
   row,
   columns,
+  hidden,
   isLast,
+  expandedRowId,
+  onExpandedRowChange,
+  onRowSelect,
+  selectedId,
 }: {
   row: MatrixBoardRowData;
   columns: MatrixColumn[];
+  hidden: Set<string>;
   isLast: boolean;
+  /** Undefined = uncontrolled (this row owns its own open state, as before).
+   *  Defined (including `null`) = controlled by the parent board. */
+  expandedRowId?: string | null;
+  onExpandedRowChange?: (rowId: string | null) => void;
+  onRowSelect?: (row: MatrixBoardRowData) => void;
+  selectedId?: string | null;
 }) {
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
   const hasExpand = row.expand != null;
   const expandId = useId();
+  const isControlled = expandedRowId !== undefined;
+  const open = isControlled ? expandedRowId === row.id : internalOpen;
+  // A row either expands (existing behavior, unchanged) or — when it carries
+  // no `expand` content and a caller passed `onRowSelect` — is selectable.
+  // The two are mutually exclusive: selecting a bare row never expands it,
+  // because a bare row has nothing to expand.
+  const isSelectable = !hasExpand && onRowSelect != null;
+  const isSelected = isSelectable && selectedId === row.id;
+
+  function toggleOpen() {
+    if (isControlled) {
+      onExpandedRowChange?.(open ? null : row.id);
+    } else {
+      setInternalOpen((v) => !v);
+    }
+  }
+
+  function handleRowActivate() {
+    if (hasExpand) {
+      toggleOpen();
+    } else if (isSelectable) {
+      onRowSelect!(row);
+    }
+  }
 
   return (
     <div data-slot="matrix-row-group">
-      <PressTarget
-        aria-label={row.ariaLabel}
-        aria-expanded={hasExpand ? open : undefined}
-        aria-controls={hasExpand && open ? expandId : undefined}
-        onClick={hasExpand ? () => setOpen((v) => !v) : undefined}
+      <div
+        data-slot="matrix-row"
         className={cn(
-          'grid w-full items-center gap-x-1 px-5 py-2.5 text-left transition-colors duration-150',
+          'flex items-stretch transition-colors duration-150',
           'hover:bg-surface-tint',
-          open && 'bg-accent-50 shadow-[inset_3px_0_0_var(--fw-color-accent-500)]',
+          (open || isSelected) && 'bg-accent-50 shadow-[inset_3px_0_0_var(--fw-color-accent-500)]',
           !(isLast && !hasExpand) && 'border-b border-border-subtle',
-          GRID_COLS_CLASS,
         )}
       >
-        {row.cells.map((cell, i) => {
-          const col = columns[i];
-          return (
-            <div
-              key={col?.key ?? i}
-              className={cn(
-                col?.align === 'center' && 'flex justify-center',
-                col && HIDE_ON_MOBILE.has(col.key) && 'hidden min-[940px]:flex min-[940px]:items-center',
-              )}
-            >
-              {cell}
-            </div>
-          );
-        })}
-      </PressTarget>
+        <PressTarget
+          aria-label={row.ariaLabel}
+          role={isSelectable ? 'row' : undefined}
+          tabIndex={isSelectable ? 0 : undefined}
+          aria-selected={isSelectable ? isSelected : undefined}
+          aria-expanded={hasExpand ? open : undefined}
+          aria-controls={hasExpand && open ? expandId : undefined}
+          onClick={hasExpand || isSelectable ? handleRowActivate : undefined}
+          className={cn('grid flex-1 items-center gap-x-1 px-5 py-2.5 text-left', GRID_COLS_CLASS)}
+        >
+          {row.cells.map((cell, i) => {
+            const col = columns[i];
+            return (
+              <div
+                key={col?.key ?? i}
+                className={cn(
+                  col?.align === 'center' && 'flex justify-center',
+                  col && hidden.has(col.key) && 'hidden min-[940px]:flex min-[940px]:items-center',
+                )}
+              >
+                {cell}
+              </div>
+            );
+          })}
+        </PressTarget>
+        {row.actions != null ? (
+          <div data-slot="matrix-row-actions" className="flex shrink-0 items-center pr-5 pl-2">
+            {row.actions}
+          </div>
+        ) : null}
+      </div>
       {hasExpand && open ? <MatrixExpand id={expandId}>{row.expand}</MatrixExpand> : null}
     </div>
   );

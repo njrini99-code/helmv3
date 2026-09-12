@@ -53,7 +53,7 @@ import {
   enterVariants,
   enterTransition,
   stagger,
-  useReducedMotion,
+  useReducedMotionGuard,
 } from '@/lib/coachhelm/v3/motion';
 
 export type ChartMobileVariant = 'shrink' | 'bars' | 'summary' | 'hide';
@@ -117,7 +117,10 @@ export function ChartShell({
   children,
   ...props
 }: ChartShellProps) {
-  const reduce = useReducedMotion();
+  // `useReducedMotionGuard` (repo convention) normalizes framer-motion's
+  // `boolean | null` to a plain `boolean`, matching every other v3 motion
+  // consumer instead of the raw framer-motion hook.
+  const reduce = useReducedMotionGuard();
   const animate = !noEntrance && !reduce;
 
   return (

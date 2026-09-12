@@ -266,7 +266,7 @@ Added by a top-down live-path trace, cross-checked against a live prod `golf_coa
 | `InsightTrustChips` | DARK | Zero non-self importers; data source (`getInsightTrustSignals`, `coachhelm-analytics.ts:1352`) proven live-correct by `FairwayEffectiveness.tsx:1426`, which is itself DARK |
 | `OutcomeBadge` (per-card outcome pill) | DARK (renders, never populated) | `outcome_status` NULL on 548/548 prod rows; writer (`v2/analytics/effectiveness-writer.ts:326-354`) only maps v2 metric names, v3 `MetricId`s never match |
 | `DrillAttachment.tsx` | DARK | Superseded by `PracticeRxPanel.tsx` |
-| `FairwayPlayerCoachHelm.tsx`, `FairwayMyDevelopment.tsx` | DARK | Neither route renders them; superseded by `PlayerCoachHelmHome.tsx` / `DevelopmentDrill` |
+| `FairwayPlayerCoachHelm.tsx` | DARK | The route renders `PlayerCoachHelmHome.tsx` instead. (`FairwayMyDevelopment.tsx` is LIVE again since the facelift mobile pass: `PlayerCoachHelmHome` mounts `FairwayMyDevelopmentStage` for `?view=development`; `DevelopmentDrill` is deleted.) |
 | `HeroInsightCard.tsx` wrapper (staggered reveal) | DARK | Live hero cards render via duplicate local `HeroInsightCardInner` (`InsightCard.tsx:529-530`), no stagger |
 | `SectionBand` (inside `FingerprintHero.tsx`) | DARK | Zero importers; only `MetricPill` from that file is live |
 | v2 coach-alert insight family (bubble_player, pattern_detected, streak, surge_player, plateau, tournament_pressure, closing_holes, par_3_issues, recurring_weakness, team_trend, scoring_decline) | LIVE-WRITTEN, DARK-READ | Actively generated daily (post-round trigger + `coachhelm-roster-sweep` cron), 100% excluded from every read surface — `engine_version` never stamped `v3` for this family, no v3 successor exists |

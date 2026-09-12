@@ -43,8 +43,9 @@ export interface ChartTooltipProps {
 }
 
 /**
- * The glass tooltip panel. Cream-tinted, ~78% (strong, for legibility over a
- * busy plot), bright specular top rim, soft float shadow. Honors
+ * The glass tooltip panel. Cream-tinted (`--fw-glass-bg-strong`, the same
+ * "strong" tier used by modals/command palette, for legibility over a busy
+ * plot), bright specular top rim, soft float shadow. Honors
  * `prefers-reduced-transparency` via a CSS @supports-style inline fallback.
  */
 export function ChartTooltip({ heading, rows, footnote, className }: ChartTooltipProps) {
@@ -55,8 +56,8 @@ export function ChartTooltip({ heading, rows, footnote, className }: ChartToolti
       className={cn(
         'pointer-events-none min-w-[9rem] max-w-[16rem] rounded-fw-md px-3 py-2.5',
         // warm cream Liquid Glass (strong tint for legibility over plots)
-        'border border-[var(--fw-glass-border)] shadow-raise backdrop-blur-[16px] backdrop-saturate-150',
-        'bg-[rgb(255_254_250_/_0.82)]',
+        'border border-[var(--fw-glass-border)] shadow-raise backdrop-blur-glass backdrop-saturate-150',
+        'bg-[var(--fw-glass-bg-strong)]',
         // reduced-transparency: collapse to opaque surface + soft shadow
         'motion-reduce:backdrop-blur-0 supports-[not(backdrop-filter:blur(0))]:bg-surface',
         className,

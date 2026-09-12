@@ -326,6 +326,34 @@ keeps its date separate from the return-to-today action.
   prev/next from md up only. Row 3 = the week strip in Day view only. A
   range fetch in flight is a 2px progress line along the masthead's bottom
   edge (`busy`, with the sr-only live text), not a banner in the list.
+  (2026-09-10: `FairwayCalendarHero`'s bar is now matte `bg-surface`, not
+  `fw-glass-chrome` — a phone perf fix, "a backdrop-filter over the
+  scrolling stage re-blurs every scroll frame" — and it is `md:hidden`.)
+- Desktop masthead (`FairwayCalendarToolbar`, `FairwayCalendarHero.tsx`,
+  2026-09-10): a SEPARATE component, not a breakpoint branch inside
+  `FairwayCalendarHero` — jsdom applies no breakpoints, so a branch there
+  would duplicate the `<h1>`/Today/Segmented in every test that renders
+  `<FairwayCalendarHero>` directly. `FairwayCalendar` mounts both
+  unconditionally (`md:hidden` / `hidden md:block`) inside one ref'd wrapper
+  div and publishes ONE ResizeObserver measurement of the wrapper (not
+  either child) as `--fw-calendar-hero-h` — two independent per-masthead
+  observers would race, since the CSS-hidden one always measures 0. The
+  desktop row is built on the shared `Toolbar` primitive
+  (`material="frost"`, `sticky`, same `stickyTop` calc as the phone bar) via
+  Toolbar's new `leading` slot (title/date-jump + prev/next + Today);
+  `viewToggle` carries the Segmented, `filters` the secondary actions (Find
+  a time / Conflicts / My availability / Subscribe — shown inline, not
+  behind a "More" menu, since desktop has room and the slot scrolls if it
+  doesn't), `primaryAction` the coach's one "New event". No separate
+  ViewHeader row: the desktop spec ascii's "ViewHeader" does not exist on
+  this route, and adding one would give the coach two primary actions.
+- `?new=1` (`page.tsx` searchParams → `initialComposeNew` →
+  `FairwayCalendar`, 2026-09-10): the coach-home "New event" link's entry
+  point, mirroring the existing `?event=<id>` cross-link pattern. Opens the
+  SAME editor the masthead's primary action opens (`openCreate` — no
+  separate create surface, audit P240) once on mount, coach only, then
+  strips `new` via `router.replace` built from the CURRENT
+  `URLSearchParams` (not a bare path), so a co-existing `?event=` survives.
 - Phone navigation: no arrows. The schedule body (`data-testid="calendar-body"`)
   swipes horizontally (≥56px, ≤40px drift, touch/pen only) to step the
   period; ←/→/T keys and the title's date-jump still work. The body is

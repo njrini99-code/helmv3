@@ -73,6 +73,14 @@ export interface AppShellProps {
    * Hidden when the rail is collapsed.
    */
   sidebarIdentityExtra?: React.ReactNode;
+  /**
+   * The rail's material — forwarded verbatim to `FairwaySidebar`'s `tone`
+   * prop (fairway-facelift BRIEF.md §2). Default `'dark'` (omitted) renders
+   * the existing warm-black rail unchanged; baseball and admin never pass
+   * this. Golf's desktop shell passes `'cream'` so the rail sits beside the
+   * cream canvas as one instrument.
+   */
+  sidebarTone?: FairwaySidebarProps['tone'];
 
   /** Breadcrumb trail for the top bar. */
   breadcrumbs?: readonly Breadcrumb[];
@@ -195,6 +203,7 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
     brand,
     sidebarFooter,
     sidebarIdentityExtra,
+    sidebarTone,
     breadcrumbs,
     onSearchOpen,
     searchPlaceholder = DEFAULT_PLACEHOLDER,
@@ -284,8 +293,9 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
         identityExtra: sidebarIdentityExtra,
         pathname,
         linkComponent,
+        tone: sidebarTone,
       }),
-      [sections, user, brand, sidebarFooter, sidebarIdentityExtra, pathname, linkComponent],
+      [sections, user, brand, sidebarFooter, sidebarIdentityExtra, pathname, linkComponent, sidebarTone],
     );
 
   // Gate the desktop rail's MOUNT (not just its CSS visibility) behind an
@@ -452,7 +462,7 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
           // under the bottom tab bar) and by 97px at 1440x900.
           '[--fw-shell-offset:calc(4rem+env(safe-area-inset-top,0px)+2rem+env(safe-area-inset-bottom,0px))]',
           bottomNav &&
-            'max-md:[--fw-shell-offset:calc(4rem+env(safe-area-inset-top,0px)+2rem+56px+env(safe-area-inset-bottom,0px))]',
+            'max-md:[--fw-shell-offset:calc(4rem+env(safe-area-inset-top,0px)+2rem+80px+env(safe-area-inset-bottom,0px))]',
         )}
         // In-page sticky sub-headers offset below the glass top bar (4rem tall
         // + the notch inset). The immersive branch sets this var elsewhere.
@@ -503,8 +513,9 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
                 // non-notched/desktop, so this is a no-op there) — KEPT in both
                 // modes so home-indicator clearance never regresses.
                 'pb-[calc(2rem+env(safe-area-inset-bottom,0px))]',
-                // P413: when the mobile bottom-tab bar is mounted, add its height
-                // (~56px) to the mobile bottom pad so it never overlaps content.
+                // P413: when the floating dock is mounted, add its reserved height
+                // (--fw-mobile-nav-height: 10px top pad + 60px capsule + 10px float gap + safe
+                // area) to the mobile bottom pad so it never overlaps content.
                 // Desktop (md+) is unaffected — the bar is md:hidden.
                 bottomNav && 'pb-[calc(2rem+var(--fw-mobile-nav-height))] md:pb-[calc(2rem+env(safe-area-inset-bottom,0px))]',
                 // Keyboard room (a focused field scrolled above the soft keyboard)

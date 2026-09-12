@@ -355,6 +355,12 @@ export interface BarCompareProps {
   state?: ChartFrameState;
   actions?: React.ReactNode;
   className?: string;
+  /**
+   * Width reserved for the category labels, in px. Default 96 (unchanged for
+   * every existing caller). Additive: a caller whose labels name two things
+   * ("Fairways to GIR") passes a wider gutter instead of a clipped tick.
+   */
+  labelWidth?: number;
 }
 
 /**
@@ -375,6 +381,7 @@ export function BarCompare({
   state,
   actions,
   className,
+  labelWidth = 96,
 }: BarCompareProps) {
   const fmt = React.useCallback(
     (v: number) => {
@@ -435,7 +442,7 @@ export function BarCompare({
             tick={{ fill: VIZ_COLOR.textSecondary, fontSize: VIZ_FONT.labelSize, fontFamily: VIZ_FONT.numeric }}
             tickLine={false}
             axisLine={false}
-            width={96}
+            width={labelWidth}
           />
           {benchmark ? (
             <ReferenceLine

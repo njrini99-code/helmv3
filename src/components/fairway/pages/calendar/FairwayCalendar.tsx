@@ -61,7 +61,7 @@ import {
 } from 'date-fns';
 import { AlertTriangle, ArrowRight, Plus, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { Sheet, Button as FwButton, IconButton, PressTarget, fairwayToast } from '@/components/fairway';
+import { Sheet, Button as FwButton, IconButton, PressTarget, Surface, fairwayToast } from '@/components/fairway';
 import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { fwHaptic } from '@/lib/fairway/haptics';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
@@ -71,11 +71,11 @@ import { readRsvpLockCode } from '@/hooks/useRSVP';
 import { zonedMidnight, DEFAULT_TIMEZONE } from '@/lib/calendar/timezone';
 import { wallClockInZone } from '@/lib/golf/timezone';
 import { useCalendarRangeEvents } from '@/hooks/golf/use-calendar-range-events';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
 import { PLAYER_COLORS } from '@/lib/calendar/player-colors';
 import type { GolfEventFormData, RecurringEditScope } from '@/components/golf/calendar/EventDetailModal';
-import { FairwayCalendarHero } from './FairwayCalendarHero';
+import { FairwayCalendarHero, FairwayCalendarToolbar, CALENDAR_HERO_HEIGHT_VAR } from './FairwayCalendarHero';
 import surfaces from './CalendarSurfaces.module.css';
 import { FairwayAgendaView } from './FairwayAgendaView';
 import { FairwayMonthGrid, type ScheduleOverlay } from './FairwayMonthGrid';
@@ -83,6 +83,7 @@ import { FairwayMonthOverview } from './FairwayMonthOverview';
 import { FairwayCalendarMemberRail } from './FairwayCalendarMemberRail';
 import { FairwayAvailabilityList } from './FairwayAvailabilityList';
 import { FairwayEventDetailDrawer } from './FairwayEventDetailDrawer';
+import type { EventAttendee } from './detail/EventPeopleSection';
 import { FairwayEventEditor } from './FairwayEventEditor';
 import type { FairwayEventTimeRequest, FairwayEventSuggestedTime } from './FairwayEventEditor';
 import { CalendarSchedulingDialog } from './CalendarSchedulingDialog';
@@ -138,6 +139,16 @@ export interface FairwayCalendarProps {
    * no error thrown for a stale link.
    */
   initialEventId?: string;
+  /**
+   * `?new=1` from the route's searchParams — the coach-home "New event" link's
+   * entry point. Opens the create editor once on mount (coach only; a no-op
+   * for a player, but the param is still stripped either way) via the SAME
+   * `openCreate` the masthead's own primary action calls — no separate create
+   * surface. `FairwayCalendar` strips the param with `router.replace` right
+   * after, preserving any other query params (e.g. a co-existing `?event=`),
+   * so refreshing the page never reopens the editor.
+   */
+  initialComposeNew?: boolean;
   /**
    * Class id → owning player, for every class on this team the VIEWER may read
    * (RLS already scopes it). Class meetings live on the team calendar with no
@@ -199,11 +210,13 @@ export function FairwayCalendar({
   loadedRangeStart,
   loadedRangeEnd,
   initialEventId,
+  initialComposeNew = false,
   classOwners,
   classOwnersResolved = false,
   viewerPlayerId = null,
 }: FairwayCalendarProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const badges = useNotificationBadges();
   // ── serverNow → nowRef deferred hydration (mirrors the legacy surface) ──────
   // MUST use `zonedMidnight` (explicit `teamTimezone`), NOT `toLocalMidnight`
@@ -840,6 +853,12 @@ export function FairwayCalendar({
   const [userRsvpStatuses, setUserRsvpStatuses] = React.useState<Map<string, RSVPStatus>>(
     new Map(),
   );
+  // The coach's People list rides on the SAME getEventRSVP call as the
+  // summary below (one fetch per open, not two): null while in flight, the
+  // list once loaded, undefined when that fetch failed (the People section
+  // then fetches for itself as its Retry path) or for a player, whose
+  // orchestrator only fetches their own status.
+  const [drawerAttendees, setDrawerAttendees] = React.useState<EventAttendee[] | null | undefined>(undefined);
   const [drawerRsvpSummary, setDrawerRsvpSummary] = React.useState<{
     accepted: number;
     declined: number;
@@ -913,33 +932,46 @@ export function FairwayCalendar({
       setDrawerEvent(event);
       setDrawerOpen(true);
       setDrawerRsvpSummary(null);
+      setDrawerAttendees(isCoach ? null : undefined);
 
       if (isCoach) {
         try {
           const { getEventRSVP } = await import('@/app/golf/actions/golf');
           const result = await getEventRSVP(event.id);
-          if (requestId === drawerRequestRef.current && result.success && result.data?.summary) {
-            const s = result.data.summary;
-            setDrawerRsvpSummary({
-              accepted: s.accepted ?? 0,
-              declined: s.declined ?? 0,
-              tentative: s.tentative ?? 0,
-              pending: s.pending ?? 0,
-              total: s.total ?? 0,
-            });
-          }
+          if (requestId !== drawerRequestRef.current) return;
+          // PERF: this lands ~200 ms after the tap, while the sheet is still
+          // translating. A transition lets React render the summary in
+          // interruptible slices instead of one long frame mid-animation.
+          React.startTransition(() => {
+            if (result.success && result.data?.summary) {
+              const s = result.data.summary;
+              setDrawerRsvpSummary({
+                accepted: s.accepted ?? 0,
+                declined: s.declined ?? 0,
+                tentative: s.tentative ?? 0,
+                pending: s.pending ?? 0,
+                total: s.total ?? 0,
+              });
+              setDrawerAttendees(s.attendees ?? []);
+            } else {
+              setDrawerAttendees(undefined);
+            }
+          });
         } catch {
-          // Drawer still works without the summary.
+          // Drawer still works without the summary; People fetches for itself.
+          if (requestId === drawerRequestRef.current) setDrawerAttendees(undefined);
         }
       } else if (!userRsvpStatuses.has(event.id)) {
         try {
           const { getPlayerEventRSVP } = await import('@/app/golf/actions/golf');
           const result = await getPlayerEventRSVP(event.id);
           if (result.success && result.data?.status) {
-            setUserRsvpStatuses((prev) => {
-              const next = new Map(prev);
-              next.set(event.id, result.data!.status as RSVPStatus);
-              return next;
+            React.startTransition(() => {
+              setUserRsvpStatuses((prev) => {
+                const next = new Map(prev);
+                next.set(event.id, result.data!.status as RSVPStatus);
+                return next;
+              });
             });
           }
         } catch {
@@ -966,6 +998,31 @@ export function FairwayCalendar({
     autoOpenedRef.current = true;
     void openDrawerForEvent(match);
   }, [initialEventId, events, openDrawerForEvent]);
+
+  // ── Deep-link auto-compose (coach-home "New event" link, `?new=1`) ────────
+  // Opens the SAME create editor the masthead's primary action opens
+  // (openCreate — no separate create surface, per audit P240). Coach only —
+  // a player following this link has nothing to create, so it's a silent
+  // no-op for them, but the param is still stripped (below) either way so it
+  // never lingers in the URL. Guarded by its own ref (never re-fires once
+  // the coach closes the editor — events reloading via realtime/
+  // router.refresh() must not reopen it, same reasoning as the `?event=`
+  // auto-open above). Strips `new` via router.replace with `scroll: false`,
+  // rebuilding the query from the CURRENT URLSearchParams rather than a bare
+  // path — a coexisting `?event=` (or anything else) survives the replace.
+  const autoComposedRef = React.useRef(false);
+  React.useEffect(() => {
+    if (!initialComposeNew || autoComposedRef.current) return;
+    autoComposedRef.current = true;
+    if (isCoach) openCreate();
+    const params = new URLSearchParams(searchParams?.toString());
+    params.delete('new');
+    const query = params.toString();
+    router.replace(
+      query ? `/golf/dashboard/calendar?${query}` : '/golf/dashboard/calendar',
+      { scroll: false },
+    );
+  }, [initialComposeNew, isCoach, openCreate, router, searchParams]);
 
   // Player RSVP submit — REUSES the existing respondToEvent action UNCHANGED.
   // Typed lock codes (deadline passed / event started / cancelled) are passed
@@ -1101,31 +1158,85 @@ export function FairwayCalendar({
     prevPeriodRef.current = { view, key: periodKey };
   });
 
+  // The masthead wrapper below hosts BOTH the phone bar (FairwayCalendarHero,
+  // `md:hidden`) and the desktop Toolbar (FairwayCalendarToolbar, `hidden
+  // md:flex`) unconditionally, so CSS alone decides which paints. Each
+  // publishes NOTHING itself here (FairwayCalendarHero's own height-publish
+  // effect still runs, but now targets THIS wrapper as its parentElement,
+  // not the page column — an inert write, since nothing reads the var off
+  // the wrapper). ONE observer on the wrapper measures whichever child is
+  // actually laid out (the `display:none` one contributes 0) and publishes
+  // THAT onto the wrapper's own parent, the real page column the stage reads
+  // it from. Two independent per-masthead observers would race: whichever
+  // one last measured its own (possibly 0-height, CSS-hidden) branch would
+  // win, occasionally pinning the stage's sticky day headings under a
+  // phantom height.
+  const mastheadWrapperRef = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => {
+    const wrapper = mastheadWrapperRef.current;
+    const host = wrapper?.parentElement;
+    if (!wrapper || !host) return;
+    const publish = () => host.style.setProperty(CALENDAR_HERO_HEIGHT_VAR, `${wrapper.offsetHeight}px`);
+    publish();
+    if (typeof ResizeObserver === 'undefined') return () => host.style.removeProperty(CALENDAR_HERO_HEIGHT_VAR);
+    const observer = new ResizeObserver(publish);
+    observer.observe(wrapper);
+    return () => {
+      observer.disconnect();
+      host.style.removeProperty(CALENDAR_HERO_HEIGHT_VAR);
+    };
+  }, []);
+
   return (
     <div className={cn("mx-auto flex w-full max-w-[1200px] flex-col gap-4 px-4 pb-6 md:gap-5 md:px-6", surfaces.scope)}>
-      {/* ── The toolbar: title, view selector, stepping, primary action ─────── */}
-      <FairwayCalendarHero
-        focusDate={focusDate}
-        selectedDate={focusDate}
-        events={events}
-        nowRef={nowRef}
-        isDayView={isDay}
-        isCoach={isCoach}
-        onNavigate={navigate}
-        onSelectDate={(d) => setFocusDate(d)}
-        onPrimaryAction={isCoach ? primaryAction : undefined}
-        primaryActionLabel={primaryActionLabel}
-        teamTimezone={teamTimezone}
-        view={view}
-        viewOptions={VIEW_OPTIONS}
-        onViewChange={setView}
-        onFindTime={teamId && isCoach ? () => openScheduling() : undefined}
-        onConflicts={teamId ? () => setConflictsOpen(true) : undefined}
-        onSubscribe={() => setSubscribeOpen(true)}
-        onAvailability={() => setAvailabilityOpen(true)}
-        conflictCount={homeConflictCount}
-        busy={isLoadingRange}
-      />
+      {/* ── The masthead: title, view selector, stepping, primary action.
+          Two mastheads, one wrapper (see the ResizeObserver effect above) —
+          the phone bar below md, the frost Toolbar masthead from md up. ──── */}
+      <div ref={mastheadWrapperRef}>
+        <FairwayCalendarHero
+          focusDate={focusDate}
+          selectedDate={focusDate}
+          events={events}
+          nowRef={nowRef}
+          isDayView={isDay}
+          isCoach={isCoach}
+          onNavigate={navigate}
+          onSelectDate={(d) => setFocusDate(d)}
+          onPrimaryAction={isCoach ? primaryAction : undefined}
+          primaryActionLabel={primaryActionLabel}
+          teamTimezone={teamTimezone}
+          view={view}
+          viewOptions={VIEW_OPTIONS}
+          onViewChange={setView}
+          onFindTime={teamId && isCoach ? () => openScheduling() : undefined}
+          onConflicts={teamId ? () => setConflictsOpen(true) : undefined}
+          onSubscribe={() => setSubscribeOpen(true)}
+          onAvailability={() => setAvailabilityOpen(true)}
+          conflictCount={homeConflictCount}
+          busy={isLoadingRange}
+        />
+        <FairwayCalendarToolbar
+          className="hidden md:block"
+          focusDate={focusDate}
+          selectedDate={focusDate}
+          nowRef={nowRef}
+          isDayView={isDay}
+          isCoach={isCoach}
+          onNavigate={navigate}
+          onSelectDate={(d) => setFocusDate(d)}
+          onPrimaryAction={isCoach ? primaryAction : undefined}
+          primaryActionLabel={primaryActionLabel}
+          view={view}
+          viewOptions={VIEW_OPTIONS}
+          onViewChange={setView}
+          onFindTime={teamId && isCoach ? () => openScheduling() : undefined}
+          onConflicts={teamId ? () => setConflictsOpen(true) : undefined}
+          onSubscribe={() => setSubscribeOpen(true)}
+          onAvailability={() => setAvailabilityOpen(true)}
+          conflictCount={homeConflictCount}
+          busy={isLoadingRange}
+        />
+      </div>
 
       {/* ── Phone: the coach's ONE primary action floats above the tab bar,
           where a thumb already is; the masthead carries it from md up. ──── */}
@@ -1137,10 +1248,13 @@ export function FairwayCalendar({
           data-testid="calendar-fab"
           onClick={primaryAction}
           className={cn(
-            'fixed right-4 z-[19] h-14 w-14 md:hidden [&_svg]:h-6 [&_svg]:w-6',
-            // Lit from above and lifted well off the page: this is the one
-            // element on the screen that genuinely floats.
-            '[box-shadow:inset_0_1px_0_oklch(1_0_0/0.28),var(--fw-shadow-raise)]',
+            // Sticky tier: above the stage's pinned day headings, below the
+            // dock (--fw-z-nav) and every overlay. Never an arbitrary z.
+            'fixed right-4 z-[var(--fw-z-sticky)] h-14 w-14 md:hidden [&_svg]:h-6 [&_svg]:w-6',
+            // Lifted well off the page: this is the one element on the
+            // screen that genuinely floats (the token lift, not a bespoke
+            // shadow).
+            'shadow-raise',
             'active:scale-[0.96] active:[transition-duration:110ms] motion-reduce:active:scale-100',
           )}
           style={{ bottom: 'calc(var(--fw-mobile-nav-height, 64px) + 1rem)' }}
@@ -1294,9 +1408,30 @@ export function FairwayCalendar({
         //    all wired to the SAME server actions the legacy grid called.
         <>
           {/* Phone: the shared compact month (CalendarSurface) with the
-              selected day's schedule directly beneath it. Tapping a day only
-              moves the selection — the month stays on screen. */}
-          <div className="flex flex-col gap-4 md:hidden">
+              selected day's schedule directly beneath it, as ONE matte stage
+              — not two stacked cards. Tapping a day only moves the
+              selection — the month stays on screen.
+
+              FairwayMonthOverview and FairwayAgendaView each carry their OWN
+              `Surface elevation="border"` (a hairline + the card-whisper
+              shadow) since they're also used standalone elsewhere. Neither
+              is edited here — this wrapper is itself a Surface, and the
+              `[data-slot=surface]` descendant override neutralizes BOTH
+              children's own border/radius/shadow (every Surface renders
+              `data-slot="surface"`, so this reaches the child's root
+              whichever of AgendaView's several return branches renders,
+              without needing to know which one), leaving the seam between
+              them as the SAME hairline-on-retina divider AgendaView's own
+              row dividers use. */}
+          <Surface
+            elevation="border"
+            padding="none"
+            className={cn(
+              'overflow-hidden md:hidden',
+              '[&>*+*]:border-t [&>*+*]:border-border-subtle [@media(min-resolution:2dppx)]:[&>*+*]:border-t-[0.5px]',
+              '[&_[data-slot=surface]]:!rounded-none [&_[data-slot=surface]]:!border-0 [&_[data-slot=surface]]:!shadow-none',
+            )}
+          >
             <FairwayMonthOverview
               events={events}
               selectedDate={focusDate}
@@ -1317,7 +1452,7 @@ export function FairwayCalendar({
               nowRef={nowRef}
               isLoadingRange={isLoadingRange}
             />
-          </div>
+          </Surface>
           <div className="hidden md:block">
             <FairwayMonthGrid
               events={events}
@@ -1370,6 +1505,7 @@ export function FairwayCalendar({
         isCoach={isCoach}
         rsvpStatus={drawerEvent ? userRsvpStatuses.get(drawerEvent.id) ?? null : null}
         rsvpSummary={drawerRsvpSummary}
+        attendees={drawerAttendees}
         onRespond={!isCoach ? handleRespond : undefined}
         onEdit={
           isCoach

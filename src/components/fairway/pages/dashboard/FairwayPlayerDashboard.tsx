@@ -10,22 +10,23 @@
  * (PlayerDashboardData + PlayerDashboardPayload from dashboard-data.ts). It does
  * NOT fetch, mutate, or reshape any business data.
  *
- * Reorganization vs the old layout (per dashboard-home.json + _flow-dashboard-home):
- *   • ONE ViewHeader (single h1 greeting) with a PERSISTENT "New Round" primary
- *     action — replaces the late-popping LargeTitleHeader, the bespoke inline
- *     Link CTAs, and the duplicate below-the-fold "Submit New Round" button.
- *   • ONE glass-hero (InsightCard variant="hero") = the game-trend signal strip,
- *     derived from the payload's strokesGained / sparklines / stats. Everything
- *     else is matte Surface / MetricCard. (DESIGN-SYSTEM §4.3: one glass per view.)
- *   • KPI tiles → shared MetricCard with HONEST insufficient-data (no fake zeros).
- *   • Discoverability fix: a genome teaser deep-links to My Game Profile and a
- *     "where you stack up" card links to My Standing (both were URL-only).
- *   • Dashboard-vs-Hub split: the old TodayTimeline + ActionItemsCard collapse
- *     into ONE quiet "Today" card that links INTO the Hub (the canonical action
- *     surface) instead of reproducing it. PlayerFocusAreas (client fetch by
- *     playerId) is reused unchanged and shows its own honest EmptyState.
- *   • Scoring Trend → Fairway TrendChart (cream/green --viz tokens), keeping the
- *     2+ round gate; lazy-loaded ssr:false to preserve the legacy load contract.
+ * Composition (docs/design/fairway-facelift/screens/player-home.v2.md):
+ *   • ONE ViewHeader (single h1 greeting) with a PERSISTENT "New round" primary
+ *     action — the one primary on the screen.
+ *   • The STAGE: the score trajectory as a Ribbon (every scored round the
+ *     payload carries, the LAST round marked and named, the player's own
+ *     scoring average as the dashed benchmark) under the verdict sentence.
+ *     It answers the player's first question, "am I getting better"; the
+ *     schedule and the task rows beside it (7/5 from `md`) answer "what is on
+ *     today". No glass hero, no MetricCard grid, no card inside a card.
+ *   • Form strip: ONE matte StatMatrix of the eight KPIs at every width, the
+ *     four primary cells carrying the split-half delta hint and, from `md`,
+ *     the five-point Sparkline forced to the same verdict.
+ *   • Where your strokes go: the four SG zones as a diverging tornado (x = 0 is
+ *     the field average), with the My Standing link as its action. Replaces
+ *     the single-series radar teaser and the standing promo card.
+ *   • Recent rounds, Latest, Focus areas (PlayerFocusAreas reused unchanged)
+ *     and the CoachHelm signal follow as seam sections.
  *
  * Greeting: the server-known firstName renders on first paint (no blank-then-pop);
  * only the time-of-day word resolves client-side.
@@ -36,8 +37,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import nextDynamic from 'next/dynamic';
-import { Plus, TrendingUp, Target, Activity, Trophy, Flag } from 'lucide-react';
+import { Plus, TrendingUp, Target, Activity, Trophy } from 'lucide-react';
 
 // Imported from each module's own leaf path, not the top `@/components/fairway`
 // barrel — this file is itself re-exported (via pages/dashboard/index.ts) from
@@ -45,48 +45,38 @@ import { Plus, TrendingUp, Target, Activity, Trophy, Flag } from 'lucide-react';
 // flagged by npm run check:cycles.
 import { ViewHeader } from '@/components/fairway/view-header';
 import { Button } from '@/components/fairway/controls';
-import { MetricCard, InsightCard } from '@/components/fairway/cards-insight';
 import { Surface, Inset } from '@/components/fairway/surfaces';
-import { InlineNotice, EmptyState, Skeleton } from '@/components/fairway/feedback';
-import { Sparkline } from '@/components/fairway/charts';
+import { InstrumentPanel } from '@/components/fairway/instrument/InstrumentPanel';
+import { StatMatrix } from '@/components/fairway/modules/StatMatrix';
+import { cn } from '@/lib/utils';
+import { InlineNotice, EmptyState } from '@/components/fairway/feedback';
+import { Sparkline } from '@/components/fairway/charts/Sparkline';
+import type { RibbonPoint } from '@/components/fairway/charts/Ribbon';
+import type { GoodDirection } from '@/components/fairway/charts/TrendChip';
 // The ONE series→delta→verdict reducer (AUDIT-0724 findings #2/#6/#7) — feeds
 // BOTH a KPI card's delta chip AND its Sparkline's `direction` prop from a
 // single call, so the two can never classify the same series two different
 // ways again. Direct-file import (not the barrel) mirrors how MetricCard
 // itself imports its trend classifier.
-import { computeSeriesTrend } from '@/components/fairway/charts/seriesTrend';
+import { computeSeriesTrend, type SeriesTrend } from '@/components/fairway/charts/seriesTrend';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { getGreeting, getTimeOfDay } from '@/lib/utils/time-of-day';
 import { PlayerFocusAreas } from '@/components/golf/coachhelm/insights';
 import { HubInsightSignalCard } from '@/components/golf/player-hub/HubInsightSignalCard';
-import type {
-  PlayerDashboardPayload,
-  SparklineStatCard,
-  TodayEvent,
-} from '@/app/golf/actions/dashboard-data';
+import type { PlayerDashboardPayload, TodayEvent } from '@/app/golf/actions/dashboard-data';
 import type { GolfPlayer, GolfTeam } from '@/lib/types/golf';
 import type { PlayerHubSummaryData } from '@/app/golf/actions/player-hub-data';
 
 import {
   SectionTitle,
-  TodayCard,
-  GenomeFingerprintTeaser,
+  PlayerStage,
+  SgFacetsPanel,
+  TodayTasks,
   RecentRoundsList,
-  StandingCard,
 } from './player-dashboard-parts';
 import { type DayScheduleEvent } from './DaySchedule';
 import { DayScheduleSwipe } from './DayScheduleSwipe';
 import { NotificationsLatestModule } from '@/components/fairway/notifications';
-
-// Fairway TrendChart, lazy + ssr:false — preserves the legacy load contract
-// (the recharts bundle stays out of the server render path / first paint).
-const TrendChart = nextDynamic(
-  () => import('@/components/fairway/charts').then((m) => ({ default: m.TrendChart })),
-  {
-    ssr: false,
-    loading: () => <Skeleton className="h-[240px] w-full rounded-card" />,
-  },
-);
 
 /* ─────────────────────────────────────────────────────────────────────────
  * Props — IDENTICAL data shape to the legacy PlayerDashboard.
@@ -134,108 +124,20 @@ interface FairwayPlayerDashboardProps {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
- * Hero signal derivation — honest, payload-only.
- * ----------------------------------------------------------------------------
- * The plan: ONE glass hero = "game-trend headline + the single most important
- * signal." We derive it from data the payload ALREADY contains. No CoachHelm
- * fetch is added here (the Dashboard's job is overview; the Hub owns the
- * CoachHelm signal card). When nothing is trustworthy, the hero says so.
+ * Cold start copy — the stage before there is a round. Payload-only, honest.
  * ──────────────────────────────────────────────────────────────────────── */
+/** No 18-hole total sits below this; a lower "score" is a 9-hole card. */
+const EIGHTEEN_HOLE_FLOOR = 50;
 
-interface HeroSignal {
-  overline: string;
-  title: string;
-  body: string;
-  priority: 'medium' | 'low' | 'info';
-  empty: boolean;
-}
-
-function deriveHeroSignal(
-  firstName: string,
-  stats: PlayerDashboardData['stats'],
-  payload: PlayerDashboardPayload | null | undefined,
-): HeroSignal {
-  // Honest empties first.
-  if (stats.roundsPlayed === 0) {
-    return {
-      overline: 'Your game',
-      title: 'Log your first round to wake up your game profile',
-      body: 'Strokes-gained, scoring averages, and your genome all start with one round. Three minutes, hole by hole.',
-      priority: 'info',
-      empty: true,
-    };
-  }
-
-  const sg = payload?.strokesGained;
-  const scoring = payload?.sparklines.scoringAvg;
-
-  // Prefer a strokes-gained read when there's a populated SG vector.
-  const sgEntries: Array<{ label: string; value: number }> = sg
-    ? (
-        [
-          { label: 'off the tee', value: sg.sg_off_tee },
-          { label: 'on approach', value: sg.sg_approach },
-          { label: 'around the green', value: sg.sg_around_green },
-          { label: 'on the greens', value: sg.sg_putting },
-        ].filter((e) => e.value != null) as Array<{ label: string; value: number }>
-      )
-    : [];
-
-  if (sgEntries.length >= 3) {
-    const best = sgEntries.reduce((a, b) => (b.value > a.value ? b : a));
-    const worst = sgEntries.reduce((a, b) => (b.value < a.value ? b : a));
-    const trendWord =
-      scoring?.trend === 'improving'
-        ? 'Your scoring is trending down — good.'
-        : scoring?.trend === 'declining'
-          ? 'Your scoring has ticked up lately.'
-          : 'Your scoring has held steady.';
-    return {
-      overline: 'Your game',
-      title: `You're gaining most ${best.label}`,
-      body: `${trendWord} Your biggest leak right now is ${worst.label} — that's where the next strokes are. Open My Standing to see the full picture.`,
-      priority: 'medium',
-      empty: false,
-    };
-  }
-
-  // Fall back to a scoring-average read when SG is sparse but rounds exist.
-  if (scoring?.value != null) {
-    const trendWord =
-      scoring.trend === 'improving'
-        ? 'and trending in the right direction'
-        : scoring.trend === 'declining'
-          ? 'with a little ground to make back'
-          : 'and holding steady';
-    return {
-      overline: 'Your game',
-      title: `Scoring around ${Number(scoring.value).toFixed(1)} ${trendWord}`,
-      body: `Across your last rounds, ${firstName}. Log a few more and your strokes-gained genome fills in so we can pinpoint the next strokes.`,
-      priority: 'low',
-      empty: false,
-    };
-  }
-
-  // Rounds exist but stats-cache is still sparse — be honest, not zero.
-  return {
-    overline: 'Your game',
-    title: 'Your stats are still warming up',
-    body: 'A few more rounds and your strokes-gained breakdown, trends, and standing will fill in. They build off the rounds you log.',
-    priority: 'info',
-    empty: true,
-  };
-}
+const COLD_START = {
+  title: 'Log your first round to wake up your game profile',
+  body: 'Strokes-gained, scoring averages, and your genome all start with one round. Three minutes, hole by hole.',
+} as const;
 
 /* ─────────────────────────────────────────────────────────────────────────
- * KPI helpers — turn a SparklineStatCard into MetricCard props honestly.
- * A `null` value → MetricCard `empty` (insufficient-data), never a fake 0.
+ * KPI helpers — turn a SparklineStatCard into StatMatrix cells honestly.
+ * A `null` value → "—" (insufficient-data), never a fake 0.
  * ──────────────────────────────────────────────────────────────────────── */
-
-function metricEmpty(card: SparklineStatCard | undefined, value: number | null): boolean {
-  if (value == null) return true;
-  if (card && (card.sparkline?.length ?? 0) === 0 && value == null) return true;
-  return false;
-}
 
 /**
  * Honest windowed delta + verdict over a sparkline series (oldest → newest).
@@ -295,12 +197,8 @@ export function FairwayPlayerDashboard({
 
   const hasRounds = stats.roundsPlayed > 0;
 
-  const hero = useMemo(
-    () => deriveHeroSignal(firstName, stats, enhancedData),
-    [firstName, stats, enhancedData],
-  );
-
-  // Scoring-trend points for the Fairway TrendChart (oldest → newest), gated 2+.
+  // Fallback series for the stage: the five recent rounds (newest first in
+  // the payload), oldest → newest for the trace.
   const trendPoints = useMemo(() => {
     return [...recentRounds]
       .reverse()
@@ -315,26 +213,99 @@ export function FairwayPlayerDashboard({
       }));
   }, [recentRounds]);
 
+  // The stage plots the payload's own per-round scoring series (every scored
+  // round it carries, oldest → newest) and falls back to the five recent
+  // rounds when that series is absent or shorter. Neither series carries
+  // holes_played, so a 9-hole total (a 38) would draw a fake collapse on an
+  // 18-hole trace; totals below the 18-hole floor are left off, the same
+  // rounds the scoring average already normalizes away.
+  const stagePoints = useMemo<RibbonPoint[]>(() => {
+    const eighteenHole = (pt: RibbonPoint) => pt.y >= EIGHTEEN_HOLE_FLOOR;
+    const longer = (enhancedData?.scoringTrend ?? [])
+      .filter((pt) => Number.isFinite(pt.value))
+      .map((pt) => ({ x: pt.label, y: pt.value }))
+      .filter(eighteenHole);
+    const fallback = trendPoints.filter(eighteenHole);
+    return longer.length >= fallback.length ? longer : fallback;
+  }, [enhancedData?.scoringTrend, trendPoints]);
+  const lastRound = recentRounds[0] ?? null;
+
   const sparklines = enhancedData?.sparklines;
   const secondary = enhancedData?.secondaryStats;
 
-  // KPI sparkline parity with the coach dashboard (FairwayCoachDashboard.tsx
-  // Team KPI row): the same enhancedData.sparklines.* series was already
-  // being fetched for this page but never wired into the player MetricCards
-  // — they rendered as plain numbers with no inline trend. Same series →
-  // same Sparkline + delta-chip pattern the coach row uses.
+  // The five-point series behind each primary cell's delta hint and `md`+
+  // Sparkline (the same enhancedData.sparklines.* the coach KPI row uses).
   const scoringSeries = sparklines?.scoringAvg.sparkline ?? [];
   const girSeries = sparklines?.girPct.sparkline ?? [];
   const puttsSeries = sparklines?.puttsPerRound.sparkline ?? [];
   const handicapSeries = sparklines?.handicap.sparkline ?? [];
-  // goodDirection matches each metric's own <Sparkline goodDirection=...>
-  // below (down for scoring/putts/handicap, up for GIR%) — same input, same
-  // options, ONE function, so the chip and the sparkline it sits next to
-  // can never disagree (AUDIT-0724 #6).
+  // goodDirection matches each metric's own Sparkline (down for scoring/putts/
+  // handicap, up for GIR%) — same input, same options, ONE function, so the
+  // hint and the sparkline it sits next to can never disagree (AUDIT-0724 #6).
+  // `scoringDelta` also feeds the stage's verdict sentence.
   const scoringDelta = computeSeriesTrend(scoringSeries, { goodDirection: 'down' });
   const girDelta = computeSeriesTrend(girSeries, { goodDirection: 'up' });
   const puttsDelta = computeSeriesTrend(puttsSeries, { goodDirection: 'down' });
   const handicapDelta = computeSeriesTrend(handicapSeries, { goodDirection: 'down' });
+
+  // The form strip: eight numbers as ONE StatMatrix at every width. A null
+  // metric is "—", never a fake 0; the hint is the split-half delta, toned by
+  // its verdict.
+  const kpiValue = (v: number | null | undefined, decimals: number, suffix = '') =>
+    v == null ? '—' : `${Number(v).toFixed(decimals)}${suffix}`;
+  // The cell hint: the split-half delta in words, and from `md` the five-point
+  // Sparkline beside it, forced to the SAME verdict (AUDIT-0724 #6: one
+  // computeSeriesTrend call decides both the chip color and the line color).
+  const kpiHint = (
+    t: SeriesTrend | null,
+    decimals: number,
+    suffix: string,
+    series: ReadonlyArray<number>,
+    goodDirection: GoodDirection,
+    label: string,
+  ) =>
+    t ? (
+      <span className="flex items-center gap-2">
+        <span
+          className={cn(
+            'tabular-nums',
+            t.direction === 'improving'
+              ? 'text-fw-success-ink'
+              : t.direction === 'declining'
+                ? 'text-fw-warning-ink'
+                : 'text-text-tertiary',
+          )}
+        >
+          {t.value > 0 ? '+' : ''}
+          {t.value.toFixed(decimals)}
+          {suffix} · {seriesDeltaLabel(t.points)}
+        </span>
+        {series.length >= 2 ? (
+          <Sparkline
+            className="hidden md:block"
+            data={series}
+            goodDirection={goodDirection}
+            direction={t.direction}
+            width={56}
+            height={18}
+            label={label}
+          />
+        ) : null}
+      </span>
+    ) : undefined;
+  const scoringValue = sparklines?.scoringAvg.value ?? stats.scoringAverage ?? null;
+  const handicapValue = sparklines?.handicap.value ?? stats.handicap ?? null;
+  const bestRoundValue = secondary?.bestRound ?? stats.bestRound ?? null;
+  const kpiItems = [
+    { label: 'Scoring avg', value: kpiValue(scoringValue, 1), hint: kpiHint(scoringDelta, 1, '', scoringSeries, 'down', 'Scoring average'), tone: scoringValue == null ? 'muted' : 'neutral' },
+    { label: 'GIR', value: kpiValue(sparklines?.girPct.value, 0, '%'), hint: kpiHint(girDelta, 0, '%', girSeries, 'up', 'Greens in regulation'), tone: sparklines?.girPct.value == null ? 'muted' : 'neutral' },
+    { label: 'Putts / round', value: kpiValue(sparklines?.puttsPerRound.value, 1), hint: kpiHint(puttsDelta, 1, '', puttsSeries, 'down', 'Putts per round'), tone: sparklines?.puttsPerRound.value == null ? 'muted' : 'neutral' },
+    { label: 'Handicap', value: kpiValue(handicapValue, 1), hint: kpiHint(handicapDelta, 1, '', handicapSeries, 'down', 'Handicap'), tone: handicapValue == null ? 'muted' : 'neutral' },
+    { label: 'FIR', value: kpiValue(secondary?.firPct, 0, '%'), tone: secondary?.firPct == null ? 'muted' : 'neutral' },
+    { label: 'Scrambling', value: kpiValue(secondary?.scramblingPct, 0, '%'), tone: secondary?.scramblingPct == null ? 'muted' : 'neutral' },
+    { label: 'Birdies / round', value: kpiValue(secondary?.birdiesPerRound, 1), tone: secondary?.birdiesPerRound == null ? 'muted' : 'neutral' },
+    { label: 'Best round', value: kpiValue(bestRoundValue, 0), tone: bestRoundValue == null ? 'muted' : 'neutral' },
+  ] as const;
 
   // DaySchedule feed (WAVE — action-items → schedule): merge today's events
   // with the upcoming-beyond-today events (dashboard-data.ts additive field),
@@ -358,10 +329,27 @@ export function FairwayPlayerDashboard({
     return Array.from(merged.values());
   }, [enhancedData?.todayEvents, enhancedData?.upcomingEvents]);
 
+  // `asChild` passes children through untouched (Button cannot inject its icon
+  // spans into an arbitrary child), so the glyph sits inside the Link.
   const newRoundCta = (
-    <Button asChild variant="primary" leftIcon={<Plus className="h-4 w-4" />}>
-      <Link href="/golf/dashboard/rounds/new">New round</Link>
+    <Button asChild variant="primary">
+      <Link href="/golf/dashboard/rounds/new">
+        <Plus className="h-4 w-4 shrink-0" aria-hidden />
+        New round
+      </Link>
     </Button>
+  );
+
+  // The TEAM's schedule is not gated on the player's own round count (a
+  // brand-new player still needs to know where to be), so it renders in both
+  // branches: the top slot on cold start, the right column of the stage grid
+  // otherwise.
+  const schedule = (
+    <DayScheduleSwipe
+      events={scheduleEvents}
+      timezone={enhancedData?.timezone}
+      viewAllHref="/golf/dashboard/calendar"
+    />
   );
 
   return (
@@ -382,7 +370,7 @@ export function FairwayPlayerDashboard({
           disableAnimation
           eyebrow={team?.name ?? 'Your team'}
           title={`${timeWord}, ${firstName}`}
-          description="Your game at a glance — trend, standing, and what's next."
+          description="Your game at a glance."
           primaryAction={stats.roundsPlayed === 0 ? undefined : newRoundCta}
           className="mb-8 md:mb-10"
         />
@@ -405,41 +393,26 @@ export function FairwayPlayerDashboard({
           </div>
         ) : null}
 
-        {/* ════════════════════════════════════════════════════════════════
-            COLD START (0 rounds) — one OnboardingStep-style hero, no duplicate
-            CTAs. The first-round hero owns the action until there is a round.
-           ════════════════════════════════════════════════════════════════ */}
-        {/* The TEAM's schedule is not gated on the player's own round count.
-            DayScheduleSwipe used to live only inside the normal branch below,
-            so a brand-new player saw no calendar at all — despite the team
-            having real events on it. Measured: Shenandoah Women's Golf has
-            "First Year move in" (26 Aug) and "Media and Compliance" (30 Aug)
-            upcoming, and the player added to that roster could not see either.
-            Whether I have logged a round says nothing about whether my team has
-            a schedule, and the first week is exactly when a new player most
-            needs to know where to be. */}
-        <DayScheduleSwipe
-          events={scheduleEvents}
-          timezone={enhancedData?.timezone}
-          viewAllHref="/golf/dashboard/calendar"
-        />
-
         {!hasRounds ? (
+          /* ════════════════════════════════════════════════════════════════
+             COLD START (0 rounds) — the schedule, then the first-round prompt
+             as a matte panel with the ONE action (the ViewHeader hides
+             "New round" until a round exists), then what unlocks.
+             ════════════════════════════════════════════════════════════════ */
           <div className="flex flex-col gap-8">
-            <InsightCard
-              variant="hero"
-              priority="info"
-              overline={hero.overline}
-              title={hero.title}
-              icon={<Flag aria-hidden className="h-full w-full" strokeWidth={2} />}
-              actions={
-                <Button asChild variant="primary" leftIcon={<Plus className="h-4 w-4" />}>
-                  <Link href="/golf/dashboard/rounds/new">Submit your first round</Link>
+            {schedule}
+
+            <InstrumentPanel as="section" aria-label="Your game" eyebrow="Your game" header={COLD_START.title}>
+              <p className="max-w-prose font-fw-sans text-body text-text-secondary">{COLD_START.body}</p>
+              <div className="mt-5">
+                <Button asChild variant="primary">
+                  <Link href="/golf/dashboard/rounds/new">
+                    <Plus className="h-4 w-4 shrink-0" aria-hidden />
+                    Submit your first round
+                  </Link>
                 </Button>
-              }
-            >
-              {hero.body}
-            </InsightCard>
+              </div>
+            </InstrumentPanel>
 
             {/* Feature-preview tiles — calm matte Insets, honest "coming once you log" */}
             <Surface padding="lg">
@@ -480,235 +453,63 @@ export function FairwayPlayerDashboard({
           </div>
         ) : (
           /* ════════════════════════════════════════════════════════════════
-             NORMAL STATE
-            ════════════════════════════════════════════════════════════════ */
+             NORMAL STATE (player-home.v2.md)
+             ════════════════════════════════════════════════════════════════ */
           <div className="flex flex-col gap-10">
-            {/* The swipeable day calendar (founder call 2026-07-24 — replaced
-                the "You're gaining most …" game-trend hero; the standing story
-                lives at My Standing) now renders ABOVE this branch, for every
-                player, so it is not duplicated here. */}
-
-            {/* ── KPI row: matte MetricCards (honest insufficient-data) + standing */}
-            <section>
-              <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-                <MetricCard
-                  // labelLines={2}: these labels truncated at <=390 ("Scoring avg" lost
-                  // 21px, "Putts / round" 35px, and at 320 they rendered "SCO...").
-                  // MetricCard reserves min-h-8 so the row stays aligned.
-                  labelLines={2}
-                  label="Scoring avg"
-                  value={Number(sparklines?.scoringAvg.value ?? stats.scoringAverage ?? 0)}
-                  decimals={1}
-                  goodDirection="down"
-                  icon={<TrendingUp />}
-                  empty={metricEmpty(sparklines?.scoringAvg, sparklines?.scoringAvg.value ?? stats.scoringAverage ?? null)}
-                  emptyMessage="—"
-                  delta={
-                    scoringDelta != null
-                      ? { value: Number(scoringDelta.value.toFixed(1)), label: seriesDeltaLabel(scoringDelta.points) }
-                      : undefined
-                  }
-                  sparkline={
-                    scoringSeries.length >= 2 ? (
-                      <Sparkline
-                        data={scoringSeries}
-                        goodDirection="down"
-                        label="Scoring average"
-                        // AUDIT-0724 #6: force the SAME verdict the delta chip
-                        // above renders (computeSeriesTrend's split-half
-                        // average) instead of Sparkline's own endpoint diff.
-                        direction={scoringDelta?.direction}
-                      />
-                    ) : undefined
-                  }
-                />
-                <MetricCard
-                  // labelLines={2}: these labels truncated at <=390 ("Scoring avg" lost
-                  // 21px, "Putts / round" 35px, and at 320 they rendered "SCO...").
-                  // MetricCard reserves min-h-8 so the row stays aligned.
-                  labelLines={2}
-                  label="GIR"
-                  value={Number(sparklines?.girPct.value ?? 0)}
-                  decimals={0}
-                  suffix="%"
-                  goodDirection="up"
-                  icon={<Target />}
-                  empty={metricEmpty(sparklines?.girPct, sparklines?.girPct.value ?? null)}
-                  emptyMessage="—"
-                  delta={
-                    girDelta != null
-                      ? { value: Number(girDelta.value.toFixed(0)), suffix: '%', label: seriesDeltaLabel(girDelta.points) }
-                      : undefined
-                  }
-                  sparkline={
-                    girSeries.length >= 2 ? (
-                      <Sparkline
-                        data={girSeries}
-                        goodDirection="up"
-                        label="Greens in regulation"
-                        direction={girDelta?.direction}
-                      />
-                    ) : undefined
-                  }
-                />
-                <MetricCard
-                  // labelLines={2}: these labels truncated at <=390 ("Scoring avg" lost
-                  // 21px, "Putts / round" 35px, and at 320 they rendered "SCO...").
-                  // MetricCard reserves min-h-8 so the row stays aligned.
-                  labelLines={2}
-                  label="Putts / round"
-                  value={Number(sparklines?.puttsPerRound.value ?? 0)}
-                  decimals={1}
-                  goodDirection="down"
-                  icon={<Activity />}
-                  empty={metricEmpty(sparklines?.puttsPerRound, sparklines?.puttsPerRound.value ?? null)}
-                  emptyMessage="—"
-                  delta={
-                    puttsDelta != null
-                      ? { value: Number(puttsDelta.value.toFixed(1)), label: seriesDeltaLabel(puttsDelta.points) }
-                      : undefined
-                  }
-                  sparkline={
-                    puttsSeries.length >= 2 ? (
-                      <Sparkline
-                        data={puttsSeries}
-                        goodDirection="down"
-                        label="Putts per round"
-                        // AUDIT-0724 #6 — the exact reported case: series
-                        // [32,38,32,33,35] used to draw amber "declining"
-                        // here (endpoint diff 35-32=+3) beside a green
-                        // "improving" chip fed by the split-half average.
-                        // Forcing the chip's own computeSeriesTrend()
-                        // verdict here makes them agree.
-                        direction={puttsDelta?.direction}
-                      />
-                    ) : undefined
-                  }
-                />
-                <MetricCard
-                  // labelLines={2}: these labels truncated at <=390 ("Scoring avg" lost
-                  // 21px, "Putts / round" 35px, and at 320 they rendered "SCO...").
-                  // MetricCard reserves min-h-8 so the row stays aligned.
-                  labelLines={2}
-                  label="Handicap"
-                  value={Number(
-                    sparklines?.handicap.value ??
-                      (stats.handicap != null ? Number(Number(stats.handicap).toFixed(1)) : 0),
-                  )}
-                  decimals={1}
-                  goodDirection="down"
-                  icon={<Trophy />}
-                  empty={metricEmpty(
-                    sparklines?.handicap,
-                    sparklines?.handicap.value ?? stats.handicap ?? null,
-                  )}
-                  emptyMessage="—"
-                  delta={
-                    handicapDelta != null
-                      ? { value: Number(handicapDelta.value.toFixed(1)), label: seriesDeltaLabel(handicapDelta.points) }
-                      : undefined
-                  }
-                  sparkline={
-                    handicapSeries.length >= 2 ? (
-                      <Sparkline
-                        data={handicapSeries}
-                        goodDirection="down"
-                        label="Handicap"
-                        direction={handicapDelta?.direction}
-                      />
-                    ) : undefined
-                  }
-                />
-              </div>
-
-              {/* Collapsed secondary stats under the primary row */}
-              {secondary ? (
-                <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
-                  <MetricCard
-                    labelLines={2}
-                    label="FIR"
-                    value={Number(secondary.firPct ?? 0)}
-                    suffix="%"
-                    empty={secondary.firPct == null}
-                    emptyMessage="—"
-                  />
-                  <MetricCard
-                    labelLines={2}
-                    label="Scrambling"
-                    value={Number(secondary.scramblingPct ?? 0)}
-                    suffix="%"
-                    empty={secondary.scramblingPct == null}
-                    emptyMessage="—"
-                  />
-                  <MetricCard
-                    labelLines={2}
-                    label="Birdies / round"
-                    value={Number(secondary.birdiesPerRound ?? 0)}
-                    decimals={1}
-                    empty={secondary.birdiesPerRound == null}
-                    emptyMessage="—"
-                  />
-                  <MetricCard
-                    labelLines={2}
-                    label="Best round"
-                    value={Number(secondary.bestRound ?? stats.bestRound ?? 0)}
-                    empty={(secondary.bestRound ?? stats.bestRound) == null}
-                    emptyMessage="—"
-                  />
-                </div>
-              ) : null}
-            </section>
-
-            {/* ── Trend + genome + standing ─────────────────────────────────── */}
-            <section className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-              {/* Scoring trend — Fairway ChartCard, 2+ round gate preserved */}
-              <div className="lg:col-span-2">
+            {/* ── The stage + today: the score trajectory (last round marked,
+                own average dashed) answers "am I getting better"; the schedule
+                and the task rows answer "what is on today". 7/5 from `md`,
+                one column below it; the same DOM at every width. ─────────── */}
+            <section className="grid grid-cols-1 gap-8 md:grid-cols-12">
+              <div className="min-w-0 md:col-span-7">
                 <SectionTitle action={{ label: 'All stats', href: '/golf/dashboard/stats' }}>
                   Scoring trend
                 </SectionTitle>
-                <Surface padding="md">
-                  {/* title omitted (audit #169): the SectionTitle above already
-                      renders "Scoring trend" as the page-level heading — passing
-                      the SAME text into ChartFrame's own `truncate`-d h3 gave the
-                      card a second, redundant "Scoring trend" that then clipped
-                      to "Scoring tre…" once the header row's ViewToggle button
-                      squeezed it. Same null-title pattern already used by
-                      GenomeFingerprintTeaser below for the identical reason. */}
-                  <TrendChart
-                    title={null}
-                    data={trendPoints}
-                    state={trendPoints.length >= 2 ? 'ready' : 'insufficient-data'}
-                    height={240}
-                    takeaway="Lower is better — your scores over your most recent rounds."
-                    valueFormatter={(v) => String(Math.round(v))}
-                  />
-                </Surface>
+                <PlayerStage
+                  points={stagePoints}
+                  lastRound={lastRound}
+                  scoringAverage={scoringValue}
+                  trend={scoringDelta}
+                />
               </div>
-
-              {/* Standing teaser */}
-              <div className="flex flex-col gap-6">
-                <StandingCard ready={hasRounds} />
+              <div className="flex min-w-0 flex-col gap-6 md:col-span-5">
+                {schedule}
+                <TodayTasks actionItems={enhancedData?.actionItems ?? []} />
               </div>
             </section>
 
-            {/* ── Genome teaser + Today ─────────────────────────────────────── */}
-            <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-              <GenomeFingerprintTeaser
-                strokesGained={
-                  enhancedData?.strokesGained ?? {
-                    sg_total: null,
-                    sg_off_tee: null,
-                    sg_approach: null,
-                    sg_around_green: null,
-                    sg_putting: null,
-                  }
-                }
-              />
-              <TodayCard
-                events={enhancedData?.todayEvents ?? []}
-                actionItems={enhancedData?.actionItems ?? []}
-                timezone={enhancedData?.timezone}
-              />
+            {/* ── Form strip: ONE matte StatMatrix at every width (2×4 on the
+                phone, 4 across from `sm`), delta hints plus a `md`+ Sparkline
+                in the four primary cells. The eight MetricCards are gone. ── */}
+            <StatMatrix variant="matte" columns={4} items={kpiItems} aria-label="Your form" />
+
+            {/* ── Where your strokes go + recent rounds ───────────────────── */}
+            <section className="grid grid-cols-1 gap-8 md:grid-cols-2">
+              <SgFacetsPanel strokesGained={enhancedData?.strokesGained} />
+              <div className="min-w-0">
+                <SectionTitle action={{ label: 'View all', href: '/golf/dashboard/rounds' }}>
+                  Recent rounds
+                </SectionTitle>
+                {recentRounds.length > 0 ? (
+                  <RecentRoundsList rounds={recentRounds} />
+                ) : (
+                  <Surface padding="md">
+                    <EmptyState
+                      variant="subtle"
+                      title="No rounds yet"
+                      description="Your logged rounds will show up here."
+                      action={
+                        <Button asChild variant="primary">
+                          <Link href="/golf/dashboard/rounds/new">
+                            <Plus className="h-4 w-4 shrink-0" aria-hidden />
+                            Submit a round
+                          </Link>
+                        </Button>
+                      }
+                    />
+                  </Surface>
+                )}
+              </div>
             </section>
 
             {/* Latest notifications — compact digest of the unified feed
@@ -717,29 +518,6 @@ export function FairwayPlayerDashboard({
                 genuinely nothing new. "View all" opens the same bell panel
                 mounted in the top bar via NotificationPanelContext. */}
             <NotificationsLatestModule />
-
-            {/* ── Recent rounds ─────────────────────────────────────────────── */}
-            <section>
-              <SectionTitle action={{ label: 'View all', href: '/golf/dashboard/rounds' }}>
-                Recent rounds
-              </SectionTitle>
-              {recentRounds.length > 0 ? (
-                <RecentRoundsList rounds={recentRounds} />
-              ) : (
-                <Surface padding="md">
-                  <EmptyState
-                    variant="subtle"
-                    title="No rounds yet"
-                    description="Your logged rounds will show up here."
-                    action={
-                      <Button asChild variant="primary" leftIcon={<Plus className="h-4 w-4" />}>
-                        <Link href="/golf/dashboard/rounds/new">Submit a round</Link>
-                      </Button>
-                    }
-                  />
-                </Surface>
-              )}
-            </section>
 
             {/* ── Focus areas (reused client component, honest EmptyState) ───── */}
             <section>

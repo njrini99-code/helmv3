@@ -100,6 +100,13 @@ export interface RibbonProps {
    * behavior (unchanged for existing callers).
    */
   readoutLabels?: (first: RibbonPoint, last: RibbonPoint) => { value?: React.ReactNode; delta?: string };
+  /**
+   * Mark the LAST plotted point (the newest reading) so a reader finds "where
+   * I am now" on the trace without hovering; the readout already names that
+   * point. Off by default (unchanged for existing callers). The marker fades
+   * in after the draw-on wipe and is instant under reduced motion.
+   */
+  markLast?: boolean;
   className?: string;
 }
 
@@ -120,6 +127,7 @@ export function Ribbon({
   goodDirection = 'up',
   readoutPlacement = 'corner',
   readoutLabels,
+  markLast = false,
   className,
 }: RibbonProps) {
   const reduced = useReducedMotion() ?? false;
@@ -398,6 +406,28 @@ export function Ribbon({
               ) : null}
             </svg>
 
+            {/* the newest reading, marked (opt-in): a DOM dot, not an svg
+                circle — the plot is `preserveAspectRatio="none"`, so an svg
+                circle squashes into a sliver on a phone. Fades in once the
+                draw-on wipe has reached it; instant under reduced motion. */}
+            {markLast && last ? (
+              <motion.span
+                data-slot="ribbon-last-marker"
+                aria-hidden
+                initial={reduced ? false : { opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={
+                  reduced
+                    ? { duration: 0 }
+                    : { duration: 0.18, delay: VIZ_REVEAL_MS / 1000, ease: VIZ_EASE }
+                }
+                className="pointer-events-none absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent-500 ring-2 ring-surface"
+                style={{
+                  left: `${(xAt(points.length - 1) / VIEW_W) * 100}%`,
+                  top: `${(yAt(last.y) / height) * 100}%`,
+                }}
+              />
+            ) : null}
             {/* benchmark label pinned at the baseline (crisp DOM text) */}
             {benchmark?.label && benchY !== null ? (
               <span

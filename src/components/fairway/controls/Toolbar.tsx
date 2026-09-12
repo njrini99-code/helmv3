@@ -2,7 +2,7 @@
 
 /**
  * ============================================================================
- * Fairway · Toolbar — the one quiet triage row (search + filters + actions)
+ * Fairway · Toolbar (a.k.a. the brief's "FrostToolbar" — one component, not two)
  * ----------------------------------------------------------------------------
  * ONE composed control row that replaces the 3 competing filter mechanisms on
  * the Insights page (DESIGN-SYSTEM.md §6 "Toolbar": "sticky glass top bar …
@@ -16,7 +16,36 @@
  *   • Button / IconButton (controls/)  — primary action + bulk actions
  *   • StatusPill / Chip / Badge        — selection count + applied-filter chips
  *
- * ── Material (§4.3 glass allow-list) ─────────────────────────────────────────
+ * ── Material (§4.3 glass allow-list + brief §2/§9 float material) ───────────
+ * `frame` decides whether the row is a box at all:
+ *
+ *   `frame` (default `'bare'`) — the row's CHROME:
+ *     • `'bare'` (default, facelift) — no box. At rest the row is transparent
+ *       with a single bottom hairline so search/filters read as part of the
+ *       page, not a card sitting above the list. While `sticky` + stuck it
+ *       earns the shared frost bar (`fw-frost fw-frost-bar`: blur, tint,
+ *       bottom hairline, no radius). Set `--fw-toolbar-bleed` on an ancestor
+ *       to the page's horizontal padding and the bar bleeds edge-to-edge
+ *       while its controls stay aligned with the content column.
+ *     • `'card'` — the pre-facelift box: `rounded-card border` + the
+ *       `material` recipe below. Keep it only where a toolbar genuinely
+ *       floats over content (a map, a canvas), never above a list.
+ *
+ * Two independent knobs decide a CARD row's material (`frame="bare"` ignores
+ * `material` at rest and always uses the frost bar while stuck):
+ *
+ *   `material` (default `'matte'`) — the row's material AT REST:
+ *     • `'matte'`  (default, unchanged behavior) — `bg-surface` + a single
+ *       hairline at rest; only earns glass while STUCK (below).
+ *     • `'frost'`  — ALWAYS renders on the shared `fw-frost fw-frost-subtle`
+ *       floating material (brief §2 material 4 / §9 "one composed toolbar"),
+ *       whether stuck or not. Every slot and behavior is identical to matte —
+ *       this only swaps the row's own paint.
+ *
+ *   `sticky` — independent of `material`: a sticky matte row still earns the
+ *   STUCK glass upgrade below once it pins (unchanged); a sticky FROST row is
+ *   already on glass, so sticking changes nothing more.
+ *
  * Matte AT REST: a warm `bg-surface` row with a single hairline (border OR
  * shadow, never both). Restrained warm-CREAM glass ONLY while STUCK — when the
  * row is `sticky` and an IntersectionObserver sentinel scrolls out of view, the
@@ -38,7 +67,7 @@
  * the filter row for space and always lands at a real edge. This is what the
  * Signals surface wires to the (currently dead-coded) alerts.ts bulk actions.
  *
- * Slots:  search · filters · viewToggle · primaryAction · bulkActions
+ * Slots:  leading · search · filters · viewToggle · primaryAction · bulkActions
  * Accessible: role="toolbar" + aria-label, an aria-live count on the bulk bar,
  * keyboardable throughout (every child primitive ships its own focus ring).
  *
@@ -50,9 +79,11 @@ import {
   type ReactNode,
   type CSSProperties,
   forwardRef,
+  useCallback,
   useEffect,
   useRef,
   useState,
+  type MutableRefObject,
 } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -89,7 +120,21 @@ const STUCK_GLASS_STYLE: CSSProperties = {
  * Public types
  * ─────────────────────────────────────────────────────────────────────────── */
 
+/** `'matte'` (default): unchanged at-rest row, glass only while stuck. `'frost'`: always on the shared floating frost material. */
+export type ToolbarMaterial = 'matte' | 'frost';
+/** `'bare'` (default): no box, hairline at rest, frost bar while stuck. `'card'`: the boxed row (`rounded-card border` + `material`). */
+export type ToolbarFrame = 'bare' | 'card';
+
 export interface ToolbarProps {
+  /**
+   * A leading cluster rendered BEFORE `search` — e.g. a period title with
+   * prev/next stepping (the calendar masthead's "‹ September 2026 ›"
+   * group). Shrinks to fit its own content (`flex-shrink-0`) rather than
+   * competing with `search`/`filters` for growth, and — like every other
+   * slot — wraps onto its own line first on a narrow row. Omit for the
+   * unchanged layout (search first).
+   */
+  leading?: ReactNode;
   /** The inline search slot (typically a <SearchField />). */
   search?: ReactNode;
   /**
@@ -122,12 +167,32 @@ export interface ToolbarProps {
   /** Called when the bulk bar's "Clear" affordance is pressed. */
   onClearSelection?: () => void;
   /**
+   * The row's at-rest material. `'matte'` (default) keeps today's behavior
+   * exactly — a warm matte row that only earns glass while `sticky` + stuck.
+   * `'frost'` always renders on the shared floating frost material, stuck or
+   * not; every slot and behavior is unchanged either way.
+   */
+  material?: ToolbarMaterial;
+  /**
+   * The row's chrome. `'bare'` (default) renders no box: a transparent row
+   * with one bottom hairline at rest, the shared frost bar while stuck.
+   * `'card'` keeps the boxed row (`rounded-card border` + `material`).
+   */
+  frame?: ToolbarFrame;
+  /**
    * Make the row stick to the top of its scroll container and earn the cream
    * glass once content scrolls under it. Default `false` (static matte row).
    */
   sticky?: boolean;
-  /** Top offset (px) when `sticky` — clears a fixed app/header above. Default 0. */
-  stickyTop?: number;
+  /**
+   * Top offset when `sticky` — clears a fixed app/header above. Default 0.
+   * A `number` is a plain px offset (unchanged behavior). A `string` is
+   * used verbatim as the CSS `top` value — e.g.
+   * `"calc(var(--golf-mobile-header-offset) + var(--fw-hub-subnav-offset, 0px))"`
+   * to clear the app top bar's own safe-area-aware offset instead of a
+   * fixed number.
+   */
+  stickyTop?: number | string;
   /** Accessible label for the toolbar landmark. Default "Filters and actions". */
   'aria-label'?: string;
   /** Extra classes merged (last-wins) onto the row. */
@@ -141,6 +206,7 @@ export interface ToolbarProps {
 
 const ToolbarRoot = forwardRef<HTMLDivElement, ToolbarProps>(function Toolbar(
   {
+    leading,
     search,
     filters,
     viewToggle,
@@ -150,6 +216,8 @@ const ToolbarRoot = forwardRef<HTMLDivElement, ToolbarProps>(function Toolbar(
     selectedCount = 0,
     selectionNoun = 'selected',
     onClearSelection,
+    material = 'matte',
+    frame = 'bare',
     sticky = false,
     stickyTop = 0,
     'aria-label': ariaLabel = 'Filters and actions',
@@ -160,6 +228,15 @@ const ToolbarRoot = forwardRef<HTMLDivElement, ToolbarProps>(function Toolbar(
 ) {
   const reduceMotion = useReducedMotion();
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const rowRef = useRef<HTMLDivElement>(null);
+  const setRowRef = useCallback(
+    (el: HTMLDivElement | null) => {
+      rowRef.current = el;
+      if (typeof ref === 'function') ref(el);
+      else if (ref) (ref as MutableRefObject<HTMLDivElement | null>).current = el;
+    },
+    [ref],
+  );
   const [stuck, setStuck] = useState(false);
   const hasSelection = selectedCount > 0;
   // Premium scroll-edge fade for the (horizontally scrollable) filter cluster —
@@ -176,29 +253,71 @@ const ToolbarRoot = forwardRef<HTMLDivElement, ToolbarProps>(function Toolbar(
     }
     const node = sentinelRef.current;
     if (!node || typeof IntersectionObserver === 'undefined') return;
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        if (entry) setStuck(!entry.isIntersecting);
-      },
-      { threshold: 0, rootMargin: `-${stickyTop + 1}px 0px 0px 0px` },
-    );
-    io.observe(node);
-    return () => io.disconnect();
+    let io: IntersectionObserver | null = null;
+    // Shrink the intersection root by the sticky offset (+1px tolerance) so
+    // the sentinel reads "out of view" exactly when it passes beneath the
+    // pinned row, not the raw viewport edge. rootMargin accepts only px or %
+    // (a calc()/var() string throws "rootMargin must be specified in pixels
+    // or percent" and takes the whole route down), so a string `stickyTop`
+    // is resolved to px through the row's computed `top` — the browser has
+    // already evaluated the expression there — and re-resolved on resize,
+    // when safe-area and header offsets can change.
+    const connect = () => {
+      io?.disconnect();
+      let offsetPx = 0;
+      if (typeof stickyTop === 'number') {
+        offsetPx = stickyTop;
+      } else {
+        const row = rowRef.current;
+        const resolved = row ? Number.parseFloat(getComputedStyle(row).top) : Number.NaN;
+        offsetPx = Number.isFinite(resolved) ? resolved : 0;
+      }
+      io = new IntersectionObserver(
+        ([entry]) => {
+          if (entry) setStuck(!entry.isIntersecting);
+        },
+        { threshold: 0, rootMargin: `${-(Math.round(offsetPx) + 1)}px 0px 0px 0px` },
+      );
+      io.observe(node);
+    };
+    connect();
+    if (typeof stickyTop === 'number') return () => io?.disconnect();
+    window.addEventListener('resize', connect);
+    return () => {
+      window.removeEventListener('resize', connect);
+      io?.disconnect();
+    };
   }, [sticky, stickyTop]);
 
-  // The row carries the warm glass only when STUCK (sticky slot). The bulk
-  // bar is no longer rendered inside this row (it docks to the bottom edge
+  const isBare = frame === 'bare';
+  const isFrost = material === 'frost';
+  // Bare frame: transparent at rest, the shared frost bar only while stuck.
+  const bareStuck = isBare && sticky && stuck;
+
+  // The row carries the warm glass only when STUCK (sticky slot) — and only
+  // for the `matte` material; `frost` is already on the floating material at
+  // rest, so the stuck-glass upgrade has nothing to add for it. The bulk bar
+  // is no longer rendered inside this row (it docks to the bottom edge
   // below), so a live selection no longer has anything to do with THIS row's
   // material — the filter controls stay matte-at-rest exactly as when nothing
   // is selected.
-  const onGlass = sticky && stuck;
+  const onGlass = !isBare && !isFrost && sticky && stuck;
 
   // One merged style: sticky offset/z-index (always when sticky) + the warm
   // glass tint/edge tokens (only when on-glass). Matte at rest carries no inline
   // style so the `border-border-subtle` class wins.
+  // Bare rows bleed by `--fw-toolbar-bleed` (default 0px) so a stuck frost
+  // bar can run edge-to-edge while the controls stay on the content column;
+  // margin and padding cancel, so nothing moves when the bar pins.
   const rowStyle: CSSProperties | undefined =
-    sticky || onGlass
+    sticky || onGlass || isBare
       ? {
+          ...(isBare
+            ? {
+                marginInline: 'calc(var(--fw-toolbar-bleed, 0px) * -1)',
+                paddingInline: 'var(--fw-toolbar-bleed, 0px)',
+              }
+            : {}),
           ...(sticky ? { top: stickyTop, zIndex: 10 } : {}),
           ...(onGlass ? STUCK_GLASS_STYLE : {}),
         }
@@ -209,24 +328,37 @@ const ToolbarRoot = forwardRef<HTMLDivElement, ToolbarProps>(function Toolbar(
       {sticky ? <div ref={sentinelRef} aria-hidden="true" className="h-px w-full" /> : null}
 
       <div
-        ref={ref}
+        ref={setRowRef}
         role="toolbar"
         aria-label={ariaLabel}
         data-slot={dataSlot}
+        data-material={material}
+        data-frame={frame}
         data-stuck={sticky && stuck ? '' : undefined}
         data-selecting={hasSelection ? '' : undefined}
         style={rowStyle}
         className={cn(
-          'rounded-card border',
           'transition-[background-color,border-color,box-shadow] [transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)] motion-reduce:transition-none',
           sticky && 'sticky',
-          onGlass
-            ? // Restrained warm cream glass (sticky-stuck or hosting the bulk bar).
-              // Tint/edge come from STUCK_GLASS_STYLE tokens; only the blur + soft
-              // lift are class-driven here.
-              'backdrop-blur-glass shadow-soft'
-            : // Matte at rest — single hairline, no shadow (border OR shadow, never both)
-              'bg-surface border-border-subtle shadow-flat',
+          isBare
+            ? // No box. One bottom hairline at rest; the shared frost bar
+              // (blur + tint + bottom hairline, no radius) only while stuck.
+              cn('border-b', bareStuck ? 'fw-frost fw-frost-bar' : 'border-border-subtle')
+            : cn(
+                'rounded-card border',
+                isFrost
+                  ? // Always on the shared floating frost material (brief §2/§9) —
+                    // stuck or not; the CSS-only recipe already includes its own
+                    // border/edge-light/shadow, so no extra border/shadow classes.
+                    'fw-frost fw-frost-subtle'
+                  : onGlass
+                    ? // Restrained warm cream glass (sticky-stuck or hosting the bulk bar).
+                      // Tint/edge come from STUCK_GLASS_STYLE tokens; only the blur + soft
+                      // lift are class-driven here.
+                      'backdrop-blur-glass shadow-soft'
+                    : // Matte at rest — single hairline, no shadow (border OR shadow, never both)
+                      'bg-surface border-border-subtle shadow-flat',
+              ),
           className,
         )}
       >
@@ -234,7 +366,16 @@ const ToolbarRoot = forwardRef<HTMLDivElement, ToolbarProps>(function Toolbar(
             selection no longer swaps this away (that hid search/filters for
             the whole time a coach had rows picked); the bulk bar below is an
             ADDITIONAL, separately-docked element instead of a replacement. */}
-        <div className="flex min-h-[44px] flex-wrap items-center gap-3 px-3 py-2">
+        <div className={cn('flex min-h-[44px] flex-wrap items-center gap-3 py-2', isBare ? 'px-0' : 'px-3')}>
+          {/* leading — a fixed-content cluster (period title + stepping) ahead
+              of search/filters. Never grows/shrinks the row's other slots;
+              full-width on its own line below `sm` like every other slot. */}
+          {leading ? (
+            <div className="flex min-w-0 basis-full shrink-0 items-center gap-1 sm:basis-auto">
+              {leading}
+            </div>
+          ) : null}
+
           {/* Below `sm` the row re-composes into stacked full-width lines
               (#957 — at phone width, search, three filter pills, a
               segmented view toggle AND the action buttons cannot share
@@ -301,7 +442,7 @@ const ToolbarRoot = forwardRef<HTMLDivElement, ToolbarProps>(function Toolbar(
 
         {/* Applied-filter chips — quiet recall line below the row (only when set) */}
         {appliedChips ? (
-          <div className="flex flex-wrap items-center gap-2 border-t border-border-subtle px-3 py-2">
+          <div className={cn('flex flex-wrap items-center gap-2 border-t border-border-subtle py-2', isBare ? 'px-0' : 'px-3')}>
             <span className="font-fw-sans text-caption text-text-tertiary">Filtering by</span>
             {appliedChips}
           </div>

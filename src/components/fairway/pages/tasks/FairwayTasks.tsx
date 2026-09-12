@@ -2,176 +2,172 @@
 
 /**
  * ============================================================================
- * Fairway · pages/tasks · FairwayTasks  (ADDITIVE · FLAG-GATED)
+ * Fairway · pages/tasks · FairwayTasks — the tasks field sheet
  * ----------------------------------------------------------------------------
- * The flag-on redesign of the SHARED coach+player /golf/dashboard/tasks route —
- * the team's "to-dos" surface. A PRESENTATION-ONLY re-skin onto the warm-matte
- * Fairway design system: the page keeps the EXACT same data path (the
- * useTaskRealtime live subscription + loadPlayers) and the SAME transform into
- * the legacy `Task` shape; every mutation reuses the legacy task server actions
- * by their exact import paths.
+ * The SHARED coach+player /golf/dashboard/tasks route, rebuilt to
+ * docs/design/fairway-facelift/LANGUAGE.md and screens/tasks.v3.md: a bare
+ * masthead on the canvas, ONE Surface holding the stage instrument, a bare
+ * ledger row of unequal hairline-divided columns, then a dense table.
+ *
+ * What changed, and why. The previous pass was a masthead, a StatMatrix of
+ * four stat cells, a standalone Toolbar and one Surface of seam rows: four
+ * regions, three of them boxes, and between them they answered "what is on
+ * the list". The question a coach actually opens this page with is who is
+ * behind on the work I assigned, how late are they, and what has no due date
+ * or no owner at all. The stage answers it; everything else is typeset around
+ * it. No new query: every field read here was already arriving on the row.
  *
  * ── ROLE FORK ───────────────────────────────────────────────────────────────
- *   • Coach  — sees the team's tasks, an honest per-task assignment progress
- *              read-out, a Create-task CTA, and the Templates rail.
- *   • Player — sees the tasks assigned to them, and can mark a task complete
- *              (optimistic, via the unchanged completeTask action). No create.
+ *   • Coach  — the team's tasks, one stage lane per player who owes open dated
+ *              work plus a terminal lane for work nobody owns, a Create-task
+ *              CTA, From-template in the overflow, and per-task manage.
+ *   • Player — their own tasks in one lane labelled "You", first-person copy,
+ *              and Mark complete at every width. No create, no team lane: a
+ *              team-wide task they were never assigned is not theirs to be
+ *              behind on.
  *
- * ── MENTAL-MODEL ORDER (triage → is-it-working → what's-next) ───────────────
- *   1. Overdue banner (only when stats.overdue_tasks > 0 — never fabricated).
- *   2. Filter pills (All / Active / Completed) with HONEST counts.
- *   3. The task list as matte Surface rows; coach also gets a Templates rail.
+ * ── ONE CLOCK, ONE PREDICATE ────────────────────────────────────────────────
+ *   `today` arrives as a bare YYYY-MM-DD string from the caller and NOTHING
+ *   here reads a clock during render. Every overdue classification, every
+ *   days-late figure and every date label on the page goes through
+ *   tasks-field-logic.ts, so the masthead, the stage, the ledger and the table
+ *   cannot disagree about which tasks are late or by how much. That includes
+ *   the counts: they are derived from `tasks` rather than read from the hook's
+ *   own fetch-time `stats`, which classified a task due TODAY as overdue
+ *   (`new Date('YYYY-MM-DD')` is UTC midnight, which is yesterday in every US
+ *   zone).
  *
- * ── CRITICAL HONESTY ────────────────────────────────────────────────────────
- *   The completion read-out only renders when a task actually has assignment
- *   rows (totalCount > 0). Team-wide tasks (no per-player assignment in this
- *   view's data) never show a fake "0 of 0". Empty lists use EmptyState. Numbers
- *   are tabular-nums. Due dates / reminders render only when present (em-dash
- *   never needed — absent rows are simply omitted).
- *
- * Tokens ONLY: bg-canvas/surface/sunken, text-text, font-fw-display/sans/mono,
- * rounded-card/rounded-fw-md, shadow-flat/soft, accent, fw-warning/fw-danger/
- * fw-success, border-border. No glass / backdrop-blur / legacy warm-/primary- classes.
- *
- * ADDITIVE + GATED — imported only behind the isRedesignEnabled() fork in
- * tasks/page.tsx. Renders inside a `.fairway-ds` scope on a `bg-canvas` page.
+ * ── HONESTY ─────────────────────────────────────────────────────────────────
+ *   A failed read never renders as the empty state. A null is never a zero.
+ *   A team-wide overdue task has no assignee to name, so the verdict says so
+ *   rather than borrowing somebody's name. A task with an impossible due date
+ *   loses its place on the axis and keeps its place in every count.
  * ========================================================================== */
 
 import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { ClipboardList, Bell, ChevronDown } from 'lucide-react';
+import { ClipboardList } from 'lucide-react';
 
-import { cn } from '@/lib/utils';
 import {
-  ViewHeader,
   Surface,
-  StatusPill,
-  Chip,
   Button,
   IconButton,
-  FilterPill,
   EmptyState,
   InlineNotice,
   SearchField,
-  ModalShell,
-  Form,
-  FormField,
-  Input,
-  PopoverPanel,
+  Segmented,
+  Menu,
+  Sheet,
+  Toolbar,
   fairwayToast,
-  type FwStatusTone,
 } from '@/components/fairway';
+import { IconPlus, IconMoreVertical } from '@/components/icons';
+import type { TaskTemplate } from '@/app/golf/actions/tasks';
 import {
-  IconCheck,
-  IconClock,
-  IconUsers,
-  IconPlus,
-  IconMoreVertical,
-  IconBell,
-  IconTrash,
-  IconMessage,
-} from '@/components/icons';
-import {
-  deleteTask,
-  setTaskReminder,
-  clearTaskReminder,
-  type TaskTemplate,
-} from '@/app/golf/actions/tasks';
+  VerdictLine,
+  FieldReadouts,
+  SectionHead,
+  type ReadoutItem,
+} from '@/components/fairway/pages/dashboard/coach-home-parts';
 
 import { FairwayCreateTaskModal } from './FairwayCreateTaskModal';
 import { FairwayCreateFromTemplateModal } from './FairwayCreateFromTemplateModal';
 import { FairwayTaskTemplateList } from './FairwayTaskTemplateList';
+import { DueField } from './DueField';
+import {
+  CategoryLedgerRow,
+  LedgerColumn,
+  LedgerEmpty,
+  LedgerRow,
+  TaskDetail,
+  TasksTable,
+} from './tasks-parts';
+import {
+  UNCATEGORIZED,
+  allCategories,
+  buildTasksVerdict,
+  canExpand,
+  dueDomain,
+  dueFieldCap,
+  dueLanes,
+  filterTasks,
+  isOpen,
+  openByCategory,
+  openCount,
+  openItems,
+  overdueCount,
+  overdueLedger,
+  undatedOpenTasks,
+  worstOffender,
+  type FairwayTask,
+  type FairwayTaskPlayer,
+  type FairwayTaskStats,
+} from './tasks-field-logic';
 
-/* ───────────────────────────────────────────────────────────────────────────
- * Types — the SAME shapes the legacy page builds + passes to TasksList/TaskCard.
- * ────────────────────────────────────────────────────────────────────────── */
-export interface TaskAssignment {
-  id: string;
-  status: string;
-  completed_at: string | null;
-  player: {
-    id: string;
-    first_name: string;
-    last_name: string;
-  };
-}
-
-export interface FairwayTask {
-  id: string;
-  title: string;
-  description: string | null;
-  due_date: string | null;
-  status: string; // 'active' | 'completed' (legacy-normalized)
-  created_at: string;
-  reminder_at: string | null;
-  category: string | null;
-  assignments: TaskAssignment[];
-}
-
-export interface FairwayTaskStats {
-  total_tasks: number;
-  completed_tasks: number;
-  pending_tasks: number;
-  in_progress_tasks: number;
-  overdue_tasks: number;
-  completion_rate: number;
-}
-
-export interface FairwayTaskPlayer {
-  id: string;
-  first_name: string | null;
-  last_name: string | null;
-}
+export type {
+  FairwayTask,
+  TaskAssignment,
+  FairwayTaskStats,
+  FairwayTaskPlayer,
+} from './tasks-field-logic';
 
 type FilterType = 'all' | 'active' | 'completed';
+const STATUS_OPTIONS: { value: FilterType; label: string }[] = [
+  { value: 'all', label: 'All' },
+  { value: 'active', label: 'Active' },
+  { value: 'completed', label: 'Completed' },
+];
+
+type StageView = 'all' | 'behind';
+
+/** Where an open detail panel was opened from, so a stage mark and a table row
+ *  for the same task never expand two panels at once. */
+type DetailSource = 'stage' | 'overdue' | 'undated' | 'table';
 
 export interface FairwayTasksProps {
-  /** Resolved viewer role (gates the create CTA + Templates rail + complete action). */
+  /** Resolved viewer role (gates the create CTA, the team lane and copy). */
   role: 'coach' | 'player';
   /** The team id (null when unresolved — coach create/templates stay hidden). */
   teamId: string | null;
   /** Live tasks, already transformed into the legacy Task shape by the page. */
   tasks: FairwayTask[];
-  /** Live task stats from the realtime hook (overdue count drives the banner). */
+  /**
+   * Live task stats from the realtime hook. ACCEPTED BUT NOT RENDERED: every
+   * number on this page is derived from `tasks` against the same `today`, so
+   * no two regions can disagree. The hook computes its own fetch-time `now`
+   * and reads a bare date as UTC midnight, which counts a task due today as
+   * overdue in any zone behind UTC; the derived counts here do not.
+   */
   stats: FairwayTaskStats;
   /** Roster players, for the coach create / template assignment flows. */
   players: FairwayTaskPlayer[];
+  /** The calendar day the page reads, `YYYY-MM-DD`. Resolved once by the
+   *  caller; nothing in this tree reads a clock during render. */
+  today: string;
   /**
-   * P292 — whether the roster fetch itself failed (vs a genuinely empty roster).
-   * Threaded to the create modal so it shows an honest "couldn't load the roster"
-   * notice instead of "No players yet", and warns before an all-members create
-   * that would assign to nobody.
+   * P292 — whether the roster fetch itself failed (vs a genuinely empty
+   * roster). Threaded to the create modal so it shows an honest notice.
    */
   playersError?: boolean;
   /**
-   * Live-fetch error from useTaskRealtime (P283). When set, the list renders an
-   * honest, recoverable error state instead of letting the failure fall through
-   * to the "No tasks yet" empty state (which would mask an outage). Null/undefined
-   * when the fetch succeeded.
+   * Live-fetch error from useTaskRealtime (P283). When set, the page renders
+   * an honest, recoverable error state instead of letting the failure fall
+   * through to "No tasks yet", which would mask an outage.
    */
   error?: string | null;
   /** Refetch the live task list after a mutation (the hook's refetch). */
   onRefetch: () => void | Promise<void>;
-  /**
-   * Player-only complete (owned by the wrapper). Coach passes none.
-   * P284 — returns the completeTask ActionResult so the card can show honest
-   * success/failure feedback (completeTask resolves `{ success:false }` on a soft
-   * failure rather than throwing). A bare `void` resolution is treated as success.
-   */
+  /** Player-only complete (owned by the wrapper). Coach passes none. */
   onCompleteTask?: (taskId: string) => Promise<CompleteResult | void>;
 }
 
-/** The subset of completeTask's ActionResult the card needs (P284). */
+/** The subset of completeTask's ActionResult the page needs (P284). */
 type CompleteResult = { success: boolean; error?: string };
 
 /**
  * P284 — pure decision for the player "Mark complete" feedback. completeTask
- * resolves an ActionResult that may report `success: false` WITHOUT throwing, so
- * a void/undefined resolution and an explicit `{ success: true }` both count as
- * success. Exported for deterministic unit tests.
- *
- *  - success  → a confirmation toast, no rollback.
- *  - failure  → an error toast (the action's message, or a fallback) + rollback.
+ * resolves an ActionResult that may report `success: false` WITHOUT throwing,
+ * so a void/undefined resolution and an explicit `{ success: true }` both
+ * count as success. Exported for deterministic unit tests.
  */
 export function completionFeedback(
   result: CompleteResult | void | undefined,
@@ -186,31 +182,21 @@ export function completionFeedback(
   return { kind: 'success', message: 'Marked complete.' };
 }
 
-/**
- * Sentinel for the "Uncategorized" chip. A real category is free text from
- * `golf_tasks.category`, so a bare 'uncategorized' could collide with a
- * category a coach actually typed. The leading space keeps it distinct, and
- * the chip renders its own label, so the sentinel is never shown to anyone.
- */
-const UNCATEGORIZED = ' uncategorized';
-
-/* ───────────────────────────────────────────────────────────────────────────
- * Component
- * ────────────────────────────────────────────────────────────────────────── */
 export function FairwayTasks({
   role,
   teamId,
   tasks,
-  stats,
   players,
+  today,
   playersError = false,
   error,
   onRefetch,
   onCompleteTask,
 }: FairwayTasksProps) {
   const isCoach = role === 'coach';
-  // P283 — true fetch failure. Track an in-flight retry so the "Try again" action
-  // shows progress and can't be double-fired.
+
+  // P283 — a true fetch failure. Track an in-flight retry so "Try again" shows
+  // progress and can't be double-fired.
   const [retrying, setRetrying] = useState(false);
   const handleRetry = async () => {
     if (retrying) return;
@@ -223,408 +209,197 @@ export function FairwayTasks({
   };
 
   const [filter, setFilter] = useState<FilterType>('all');
-  // P287 — text search (title/description) + category narrowing for coaches at scale.
   const [query, setQuery] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
-  // P293 — when on Active, the overdue banner sorts overdue tasks to the top.
-  const [overdueFirst, setOverdueFirst] = useState(false);
+  const [categoryFilters, setCategoryFilters] = useState<string[]>([]);
+  const [stageView, setStageView] = useState<StageView>('all');
   const [createOpen, setCreateOpen] = useState(false);
-  const [showTemplates, setShowTemplates] = useState(false);
+  const [templateSheetOpen, setTemplateSheetOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<TaskTemplate | null>(null);
+  const [detail, setDetail] = useState<{ id: string; source: DetailSource } | null>(null);
 
-  // A single client `now` so overdue + relative-date labels match SSR.
-  const [now, setNow] = useState<Date | null>(null);
+  // P290 — true optimistic completion. The row flips the instant the player
+  // taps, then the realtime prop reconciles. Folding it into the task list
+  // (rather than into one row's own state) keeps the counts, the stage and the
+  // table telling the same story for that beat.
+  const [optimisticDone, setOptimisticDone] = useState<string[]>([]);
+  const [completingId, setCompletingId] = useState<string | null>(null);
+
+  const viewTasks = useMemo(() => {
+    if (optimisticDone.length === 0) return tasks;
+    const done = new Set(optimisticDone);
+    return tasks.map((t) => (done.has(t.id) ? { ...t, status: 'completed' } : t));
+  }, [tasks, optimisticDone]);
+
+  // Drop an optimistic flip once the source of truth catches up.
   useEffect(() => {
-    setNow(new Date());
-  }, []);
-
-  // Honest counts — the SAME predicates the legacy page used.
-  const activeCount = tasks.filter((t) => t.status === 'active').length;
-  const completedCount = tasks.filter((t) => t.status === 'completed').length;
-  const dueTodayCount = useMemo(() => {
-    if (!now) return 0;
-    return tasks.filter((t) => {
-      if (t.status !== 'active' || !t.due_date) return false;
-      // P295 — local-safe date-only parse (see parseDueDate below); a raw
-      // `new Date(t.due_date)` here reads a date-only due_date as UTC
-      // midnight and under-counts "due today" by a day in US timezones.
-      return parseDueDate(t.due_date).toDateString() === now.toDateString();
-    }).length;
-  }, [tasks, now]);
-
-  // P287 — distinct task categories (honest: derived only from real task data).
-  const categories = useMemo(() => {
-    const set = new Set<string>();
-    for (const t of tasks) {
-      if (t.category) set.add(t.category);
-    }
-    return Array.from(set).sort((a, b) => a.localeCompare(b));
+    setOptimisticDone((prev) => {
+      if (prev.length === 0) return prev;
+      const next = prev.filter((id) => tasks.some((t) => t.id === id && t.status !== 'completed'));
+      return next.length === prev.length ? prev : next;
+    });
   }, [tasks]);
 
-  // Tasks created from the Create-task dialog carry no category, so before this
-  // they matched NO category chip and vanished the moment a coach filtered by
-  // anything — silently, because the status counts don't move with the category
-  // filter. Give them a bucket of their own rather than leaving them
-  // unreachable. Only offered when such tasks actually exist.
-  const hasUncategorized = useMemo(() => tasks.some((t) => !t.category), [tasks]);
+  const openTaskCount = useMemo(() => openCount(viewTasks), [viewTasks]);
+  const completedCount = viewTasks.length - openTaskCount;
+  const overdueTaskCount = useMemo(() => overdueCount(viewTasks, today), [viewTasks, today]);
+  const completionRate = viewTasks.length > 0 ? Math.round((completedCount / viewTasks.length) * 100) : 0;
 
-  // A stale category filter (the only task with that category was deleted) must
-  // not silently hide the whole list — drop it when it no longer exists.
+  // The masthead's worst offender and every lane's "Worst late" figure are the
+  // SAME function over the same normalized items, so the sentence can never
+  // disagree with the instrument under it. The masthead's set is narrowed to
+  // items that have a player to name; when that leaves nothing while overdue
+  // work exists, the verdict says "all team-wide" rather than borrowing a name.
+  const items = useMemo(() => openItems(viewTasks, role), [viewTasks, role]);
+  const worst = useMemo(
+    () => worstOffender(items.filter((i) => i.playerId !== null), today),
+    [items, today],
+  );
+
+  const { categories, hasUncategorized } = useMemo(() => allCategories(viewTasks), [viewTasks]);
+  const categoryCount = categories.length + (hasUncategorized ? 1 : 0);
+
+  const verdict = useMemo(
+    () =>
+      buildTasksVerdict({
+        role,
+        hasError: !!error,
+        totalTasks: viewTasks.length,
+        openTasks: openTaskCount,
+        overdueTasks: overdueTaskCount,
+        completionRate,
+        worst,
+      }),
+    [role, error, viewTasks.length, openTaskCount, overdueTaskCount, completionRate, worst],
+  );
+
+  const lanes = useMemo(() => dueLanes(viewTasks, today, role), [viewTasks, today, role]);
+  const shownLanes = useMemo(
+    () => (stageView === 'behind' ? lanes.filter((l) => l.worst) : lanes),
+    [lanes, stageView],
+  );
+  const domain = useMemo(() => dueDomain(shownLanes, today), [shownLanes, today]);
+  const cap = useMemo(() => dueFieldCap(shownLanes), [shownLanes]);
+
+  const overdueRows = useMemo(() => overdueLedger(viewTasks, today), [viewTasks, today]);
+  const categoryRows = useMemo(() => openByCategory(viewTasks), [viewTasks]);
+  const undatedRows = useMemo(() => undatedOpenTasks(viewTasks), [viewTasks]);
+
+  const readouts: ReadoutItem[] = useMemo(
+    () => [
+      // No deltas anywhere on this page: nothing persists a historical snapshot
+      // of these counts, so a trend here would be fabricated.
+      { key: 'open', label: 'Open', value: String(openTaskCount), note: ' ' },
+      {
+        key: 'overdue',
+        label: 'Overdue',
+        value: String(overdueTaskCount),
+        note: overdueTaskCount > 0 ? 'past their due date' : ' ',
+      },
+      {
+        key: 'completed',
+        label: 'Completed',
+        value: String(completionRate),
+        unit: '%',
+        // The field is lifetime, not windowed; never say "this week".
+        note: 'of all tasks',
+      },
+      {
+        key: 'undated',
+        label: 'No due date',
+        value: String(undatedRows.length),
+        // This readout exists so the stage's exclusion is never silent.
+        note: undatedRows.length > 0 ? 'excluded from the field' : ' ',
+      },
+    ],
+    [openTaskCount, overdueTaskCount, completionRate, undatedRows.length],
+  );
+
+  // Stale category selections (the only task with that category was deleted)
+  // must not silently hide the whole table.
   useEffect(() => {
-    if (categoryFilter === UNCATEGORIZED) {
-      if (!hasUncategorized) setCategoryFilter(null);
-      return;
-    }
-    if (categoryFilter && !categories.includes(categoryFilter)) {
-      setCategoryFilter(null);
-    }
-  }, [categories, categoryFilter, hasUncategorized]);
-
-  // P287 — status + text search + category, all honest predicates.
-  const filteredTasks = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    const matched = tasks.filter((t) => {
-      if (filter !== 'all' && t.status !== filter) return false;
-      if (categoryFilter === UNCATEGORIZED) {
-        if (t.category) return false;
-      } else if (categoryFilter && t.category !== categoryFilter) {
-        return false;
-      }
-      if (q) {
-        const haystack = `${t.title} ${t.description ?? ''}`.toLowerCase();
-        if (!haystack.includes(q)) return false;
-      }
-      return true;
+    setCategoryFilters((prev) => {
+      const valid = prev.filter((c) => (c === UNCATEGORIZED ? hasUncategorized : categories.includes(c)));
+      return valid.length === prev.length ? prev : valid;
     });
+  }, [categories, hasUncategorized]);
 
-    // P293 — on Active, surface overdue tasks to the top when requested. Stable:
-    // overdue rows float up, the rest keep the hook's due_date asc order.
-    if (overdueFirst && now) {
-      const isOverdueRow = (t: FairwayTask) =>
-        t.status !== 'completed' &&
-        !!t.due_date &&
-        // P295 — same local-safe parse as everywhere else in this file.
-        parseDueDate(t.due_date) < now;
-      return [...matched].sort((a, b) => Number(isOverdueRow(b)) - Number(isOverdueRow(a)));
+  // Search, status and category narrow the TABLE only. The stage and the
+  // ledger always reflect the full dataset.
+  const tableRows = useMemo(
+    () => filterTasks(viewTasks, { status: filter, query, categories: categoryFilters }),
+    [viewTasks, filter, query, categoryFilters],
+  );
+
+  const expandable = useMemo(() => {
+    const map = new Map<string, boolean>();
+    for (const t of viewTasks) map.set(t.id, canExpand(t, role));
+    return (task: FairwayTask) => map.get(task.id) ?? false;
+  }, [viewTasks, role]);
+
+  const taskById = useMemo(() => {
+    const map = new Map<string, FairwayTask>();
+    for (const t of viewTasks) map.set(t.id, t);
+    return map;
+  }, [viewTasks]);
+
+  const toggleDetail = (source: DetailSource) => (taskId: string) =>
+    setDetail((prev) => (prev && prev.id === taskId && prev.source === source ? null : { id: taskId, source }));
+
+  const detailOpen = (source: DetailSource, taskId: string) =>
+    !!detail && detail.source === source && detail.id === taskId;
+
+  const stageDetail = detail?.source === 'stage' ? taskById.get(detail.id) ?? null : null;
+
+  const handleComplete = async (taskId: string) => {
+    if (!onCompleteTask || completingId) return;
+    setCompletingId(taskId);
+    setOptimisticDone((prev) => (prev.includes(taskId) ? prev : [...prev, taskId]));
+    try {
+      const feedback = completionFeedback(await onCompleteTask(taskId));
+      if (feedback.kind === 'error') {
+        setOptimisticDone((prev) => prev.filter((id) => id !== taskId));
+        fairwayToast.error(feedback.message);
+        return;
+      }
+      fairwayToast.success(feedback.message);
+    } catch (err) {
+      setOptimisticDone((prev) => prev.filter((id) => id !== taskId));
+      fairwayToast.error(err instanceof Error ? err.message : 'Could not mark the task complete.');
+    } finally {
+      setCompletingId(null);
     }
-    return matched;
-  }, [tasks, filter, categoryFilter, query, overdueFirst, now]);
-
-  // ── Masthead meta — honest count chips, rendered ONLY when > 0. ──────────────
-  const meta =
-    tasks.length > 0 ? (
-      <>
-        {dueTodayCount > 0 && <span className="tabular-nums">{dueTodayCount} due today</span>}
-        {dueTodayCount > 0 && activeCount > 0 && <span aria-hidden="true">·</span>}
-        {activeCount > 0 && <span className="tabular-nums">{activeCount} open</span>}
-      </>
-    ) : undefined;
+  };
 
   const createCta =
     isCoach && teamId ? (
-      // P293-mobile — Button's non-asChild content wraps ALL children in one
-      // bare <span> (see the Button CHILDREN CONTRACT doc comment). Passing
-      // the icon and label as two sibling children put an `<svg>` (Tailwind
-      // preflight sets `svg { display: block }`) next to inline text inside
-      // that shared span — the block-level icon forced its own line, stacking
-      // the "+" above "Create task" on mobile. `leftIcon` is the documented
-      // fix: it renders the icon as its own flex item in the button's own
-      // `inline-flex items-center gap-2` row instead of inside the label span.
+      // `leftIcon`, not two sibling children: Button wraps all children in one
+      // span, and Tailwind's preflight makes an svg display:block, which used
+      // to stack the "+" above the label on phone.
       <Button variant="primary" onClick={() => setCreateOpen(true)} leftIcon={<IconPlus size={16} />}>
         Create task
       </Button>
     ) : undefined;
 
-  return (
-    <div className="mx-auto w-full max-w-[1280px] px-4 py-6 md:px-6 md:py-8 pb-24">
-      {/* ── ONE MASTHEAD ─────────────────────────────────────────────────────── */}
-      <ViewHeader
-        eyebrow="Tasks"
-        title={isCoach ? 'Team to-dos.' : 'Your to-dos.'}
-        description={
-          isCoach
-            ? 'Assign and track the work that keeps the team moving.'
-            : 'View and complete the tasks your coach assigned you.'
+  const templateOverflow =
+    isCoach && teamId ? (
+      <Menu
+        trigger={
+          <IconButton variant="ghost" size="md" aria-label="More task actions">
+            <IconMoreVertical size={18} />
+          </IconButton>
         }
-        meta={meta}
-        primaryAction={createCta}
-      />
+        align="end"
+        ariaLabel="More task actions"
+      >
+        <Menu.Item icon={<ClipboardList size={16} />} onSelect={() => setTemplateSheetOpen(true)}>
+          From template
+        </Menu.Item>
+      </Menu>
+    ) : undefined;
 
-      {error ? (
-        // ── FETCH FAILURE — never masquerade as the empty state (P283). ───────
-        <div className="mt-8">
-          <InlineNotice
-            tone="danger"
-            title="Couldn't load tasks"
-            action={
-              <Button variant="ghost" size="sm" busy={retrying} disabled={retrying} onClick={handleRetry}>
-                Try again
-              </Button>
-            }
-          >
-            Something went wrong loading your tasks. Check your connection and try again.
-          </InlineNotice>
-        </div>
-      ) : tasks.length === 0 ? (
-        // ── FULL-EMPTY — no tasks at all ─────────────────────────────────────
-        <div className="mt-8">
-          <Surface elevation="shadow" padding="lg">
-            <EmptyState
-              icon={ClipboardList}
-              title="No tasks yet"
-              description={
-                isCoach
-                  ? 'Create a task to assign work and track who has completed it.'
-                  : 'Tasks your coach assigns will show up here.'
-              }
-              action={
-                isCoach && teamId ? (
-                  // Same fix as the masthead CTA above — `leftIcon`, not two
-                  // sibling children (see the comment there for why).
-                  <Button variant="primary" onClick={() => setCreateOpen(true)} leftIcon={<IconPlus size={16} />}>
-                    Create task
-                  </Button>
-                ) : undefined
-              }
-            />
-          </Surface>
-        </div>
-      ) : (
-        <div className="mt-8 flex flex-col gap-6">
-          {/* ── Overdue banner — honest; only when overdue tasks exist. ───────── */}
-          {stats.overdue_tasks > 0 && (
-            <InlineNotice
-              tone="warning"
-              title={`${stats.overdue_tasks} overdue ${
-                stats.overdue_tasks === 1 ? 'task needs' : 'tasks need'
-              } attention`}
-              action={
-                filter !== 'active' ? (
-                  // Not yet on Active — jump there to triage the overdue items.
-                  <Button variant="ghost" size="sm" onClick={() => setFilter('active')}>
-                    View active
-                  </Button>
-                ) : (
-                  // P293 — already on Active: keep the banner actionable by sorting
-                  // the overdue tasks to the top (toggleable so it never traps focus).
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setOverdueFirst((v) => !v)}
-                    aria-pressed={overdueFirst}
-                  >
-                    {overdueFirst ? 'Clear sort' : 'Show overdue first'}
-                  </Button>
-                )
-              }
-            >
-              Review tasks that are past their due date.
-            </InlineNotice>
-          )}
-
-          {/* ── Filter pills — HONEST counts. ─────────────────────────────────── */}
-          <div className="flex flex-wrap items-center gap-2">
-            <FilterPill
-              selected={filter === 'all'}
-              showCheck={false}
-              count={tasks.length}
-              onClick={() => setFilter('all')}
-            >
-              All
-            </FilterPill>
-            <FilterPill
-              selected={filter === 'active'}
-              showCheck={false}
-              count={activeCount}
-              onClick={() => setFilter('active')}
-            >
-              Active
-            </FilterPill>
-            <FilterPill
-              selected={filter === 'completed'}
-              showCheck={false}
-              count={completedCount}
-              onClick={() => setFilter('completed')}
-            >
-              Completed
-            </FilterPill>
-          </div>
-
-          {/* ── P287 — Search + category narrowing. ───────────────────────────── */}
-          <div className="flex flex-col gap-3">
-            <div className="max-w-md">
-              <SearchField
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onClear={() => setQuery('')}
-                placeholder="Search tasks by title or description"
-                aria-label="Search tasks"
-              />
-            </div>
-            {(categories.length > 0 || hasUncategorized) && (
-              <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filter by category">
-                <FilterPill
-                  selected={categoryFilter === null}
-                  showCheck={false}
-                  onClick={() => setCategoryFilter(null)}
-                >
-                  All categories
-                </FilterPill>
-                {categories.map((cat) => (
-                  <FilterPill
-                    key={cat}
-                    selected={categoryFilter === cat}
-                    showCheck={false}
-                    onClick={() => setCategoryFilter((c) => (c === cat ? null : cat))}
-                  >
-                    {cat}
-                  </FilterPill>
-                ))}
-                {hasUncategorized && (
-                  <FilterPill
-                    selected={categoryFilter === UNCATEGORIZED}
-                    showCheck={false}
-                    onClick={() =>
-                      setCategoryFilter((c) => (c === UNCATEGORIZED ? null : UNCATEGORIZED))
-                    }
-                  >
-                    Uncategorized
-                  </FilterPill>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* ── Main grid: list + coach Templates rail. ───────────────────────── */}
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            <div className="lg:col-span-2">
-              {filteredTasks.length === 0 ? (
-                <Surface elevation="border" padding="none">
-                  <EmptyState
-                    variant="subtle"
-                    icon={ClipboardList}
-                    title={
-                      query.trim() || categoryFilter
-                        ? 'No matching tasks'
-                        : filter === 'all'
-                          ? 'No tasks'
-                          : `No ${filter} tasks`
-                    }
-                    description={
-                      query.trim() || categoryFilter
-                        ? 'No tasks match your search or category filter. Try clearing them.'
-                        : filter === 'completed'
-                          ? 'Completed tasks will collect here.'
-                          : 'Nothing in this view right now.'
-                    }
-                    action={
-                      query.trim() || categoryFilter ? (
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => {
-                            setQuery('');
-                            setCategoryFilter(null);
-                          }}
-                        >
-                          Clear filters
-                        </Button>
-                      ) : undefined
-                    }
-                  />
-                </Surface>
-              ) : (
-                <div className="flex flex-col gap-3">
-                  {filteredTasks.map((task) => (
-                    <FairwayTaskCard
-                      key={task.id}
-                      task={task}
-                      now={now}
-                      role={role}
-                      onComplete={onCompleteTask}
-                      // P285 — coach task management (delete / reminder). Only wired
-                      // when the viewer is a coach with a resolved team.
-                      canManage={isCoach && !!teamId}
-                      onManaged={onRefetch}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* ── Templates rail — coach only. ────────────────────────────────── */}
-            {isCoach && teamId && (
-              <aside className="lg:col-span-1">
-                <div className="sticky top-6 flex flex-col gap-4">
-                  <Surface elevation="border" padding="none">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      onClick={() => setShowTemplates((s) => !s)}
-                      aria-expanded={showTemplates}
-                      className={cn(
-                        'block h-auto min-h-0 w-full rounded-card border-0 px-5 py-4 text-left font-normal',
-                        'transition-colors [transition-duration:180ms] hover:bg-surface-tint',
-                        'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
-                      )}
-                    >
-                      <span className="flex w-full items-center justify-between gap-2">
-                        <span className="flex items-center gap-2">
-                          <ClipboardList className="h-[18px] w-[18px] text-text-tertiary" aria-hidden />
-                          <span className="font-fw-sans text-body font-medium text-text-primary">
-                            Templates
-                          </span>
-                        </span>
-                        <ChevronDown
-                          className={cn(
-                            'h-[18px] w-[18px] text-text-tertiary transition-transform [transition-duration:180ms] motion-reduce:transition-none',
-                            showTemplates && 'rotate-180',
-                          )}
-                          aria-hidden
-                        />
-                      </span>
-                    </Button>
-                    {showTemplates && (
-                      <div className="border-t border-border-subtle p-5">
-                        <FairwayTaskTemplateList
-                          teamId={teamId}
-                          onSelectTemplate={(t) => setSelectedTemplate(t)}
-                        />
-                      </div>
-                    )}
-                  </Surface>
-
-                  {/* Quick stats — honest, tabular. */}
-                  <Surface elevation="border" padding="md">
-                    <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.12em] text-text-tertiary">
-                      Quick stats
-                    </p>
-                    <div className="mt-3 grid grid-cols-2 gap-3">
-                      <StatTile label="Active" value={activeCount} />
-                      <StatTile label="Completed" value={completedCount} tone="accent" />
-                    </div>
-                    {stats.overdue_tasks > 0 && (
-                      <div className="mt-3 rounded-fw-md bg-fw-warning-bg px-4 py-3 text-center">
-                        {/* P288 — on-system text tokens (no legacy warm-* class). The
-                            warning surface is carried by bg-fw-warning-bg; the numerals
-                            stay readable on it (text-primary ≈ 13:1, text-secondary ≈ 4.9:1,
-                            both clear WCAG AA — text-fw-warning-ink would only be ~2:1 here). */}
-                        <p className="font-fw-display text-h3 font-medium tabular-nums text-text-primary">
-                          {stats.overdue_tasks}
-                        </p>
-                        <p className="font-fw-sans text-caption text-text-secondary">Overdue</p>
-                      </div>
-                    )}
-                  </Surface>
-                </div>
-              </aside>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ── Create-task modal (coach). ──────────────────────────────────────── */}
-      {isCoach && teamId && (
+  const modals = (
+    <>
+      {isCoach && teamId ? (
         <FairwayCreateTaskModal
           open={createOpen}
           onClose={() => setCreateOpen(false)}
@@ -634,10 +409,30 @@ export function FairwayTasks({
           playersError={playersError}
           categories={categories}
         />
-      )}
+      ) : null}
 
-      {/* ── Create-from-template modal (coach). ─────────────────────────────── */}
-      {isCoach && teamId && selectedTemplate && (
+      {isCoach && teamId ? (
+        <Sheet
+          open={templateSheetOpen}
+          onOpenChange={setTemplateSheetOpen}
+          side="right"
+          mobileSide="bottom"
+          title="Templates"
+          description="Start a task from a saved template."
+        >
+          <Sheet.Body>
+            <FairwayTaskTemplateList
+              teamId={teamId}
+              onSelectTemplate={(t) => {
+                setTemplateSheetOpen(false);
+                setSelectedTemplate(t);
+              }}
+            />
+          </Sheet.Body>
+        </Sheet>
+      ) : null}
+
+      {isCoach && teamId && selectedTemplate ? (
         <FairwayCreateFromTemplateModal
           open={!!selectedTemplate}
           onClose={() => setSelectedTemplate(null)}
@@ -649,588 +444,308 @@ export function FairwayTasks({
           teamId={teamId}
           players={players}
         />
-      )}
-    </div>
+      ) : null}
+    </>
   );
-}
 
-/* ───────────────────────────────────────────────────────────────────────────
- * StatTile — a quiet matte mini-stat for the coach rail.
- * ────────────────────────────────────────────────────────────────────────── */
-function StatTile({
-  label,
-  value,
-  tone = 'neutral',
-}: {
-  label: string;
-  value: number;
-  tone?: 'neutral' | 'accent';
-}) {
-  return (
-    <div className="rounded-fw-md bg-surface-sunken px-4 py-3 text-center">
-      <p
-        className={cn(
-          'font-fw-display text-h3 font-medium tabular-nums',
-          tone === 'accent' ? 'text-accent-700' : 'text-text-primary',
-        )}
-      >
-        {value}
-      </p>
-      <p className="font-fw-sans text-caption text-text-tertiary">{label}</p>
-    </div>
-  );
-}
-
-/* ───────────────────────────────────────────────────────────────────────────
- * Status → Fairway StatusPill config. Token tones only.
- * ────────────────────────────────────────────────────────────────────────── */
-function statusPill(status: string): { tone: FwStatusTone; label: string } {
-  return status === 'completed'
-    ? { tone: 'success', label: 'Completed' }
-    : { tone: 'accent', label: 'Active' };
-}
-
-/* ───────────────────────────────────────────────────────────────────────────
- * Reminder urgency → token tone (mirrors the legacy ReminderIcon thresholds,
- * but on Fairway tokens: fw-warning for soon/imminent, tertiary for upcoming/past).
- * ────────────────────────────────────────────────────────────────────────── */
-function reminderTone(
-  reminderAt: string,
-  now: Date | null,
-): 'imminent' | 'soon' | 'upcoming' | 'past' {
-  // P294 — before hydration (now === null) we cannot know urgency, so default to
-  // the quiet `upcoming` tone. This lets the Bell render on first paint (no
-  // pop-in) and only deepens to imminent/soon after `now` resolves.
-  if (!now) return 'upcoming';
-  const diff = new Date(reminderAt).getTime() - now.getTime();
-  if (diff < 0) return 'past';
-  const hours = diff / (1000 * 60 * 60);
-  if (hours <= 3) return 'imminent';
-  if (hours <= 24) return 'soon';
-  return 'upcoming';
-}
-
-/**
- * P295 — parse a stored `due_date` LOCAL-safe. A pure date-only value
- * ("YYYY-MM-DD", no time/offset) is what `createTask` stores, and
- * `new Date('YYYY-MM-DD')` parses that as UTC-midnight per the ECMA-262 date
- * time string spec — NOT local midnight. In any negative-UTC-offset zone
- * (all of the US) that instant falls on the PREVIOUS local calendar day, so a
- * due date of "today" reads back as "yesterday" and a Today/Tomorrow label
- * flips a day early. Every due-date read in this file must go through this
- * helper (never `new Date(due_date)` directly) so the list card, the
- * masthead's "due today" count, and the overdue/sort checks all agree on the
- * same calendar day. Exported for the regression test. A full timestamp
- * (already carrying a time component) parses exactly as `new Date` would —
- * only the bare date-only case needs the local-construction fix.
- */
-export function parseDueDate(dueDate: string): Date {
-  const dateOnlyMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dueDate);
-  if (dateOnlyMatch) {
-    const [, y, m, d] = dateOnlyMatch;
-    return new Date(Number(y), Number(m) - 1, Number(d));
-  }
-  return new Date(dueDate);
-}
-
-function formatDueLabel(dateString: string, now: Date | null): string {
-  const date = parseDueDate(dateString);
-  if (!now) {
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  }
-  const tomorrow = new Date(now);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  if (date.toDateString() === now.toDateString()) return 'Today';
-  if (date.toDateString() === tomorrow.toDateString()) return 'Tomorrow';
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
-
-/* A visible, non-color, non-icon-only reminder label (e.g. "Reminder · Today
- * 9:00 AM"). Pairs the relative day with the time so the affordance is announced
- * to screen readers and never relies on the Bell glyph or tone color alone. */
-function formatReminderLabel(dateString: string, now: Date | null): string {
-  const time = new Date(dateString).toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-  });
-  return `Reminder · ${formatDueLabel(dateString, now)} ${time}`;
-}
-
-/* ───────────────────────────────────────────────────────────────────────────
- * TaskCard — matte Surface row. Honest per-player completion (only when the
- * task actually has assignment rows). Coach sees an expandable per-player
- * progress list plus a manage menu (reminder / delete); player sees a
- * Mark-complete action that flips OPTIMISTICALLY (reused completeTask action).
- * ────────────────────────────────────────────────────────────────────────── */
-function FairwayTaskCard({
-  task,
-  now,
-  role,
-  onComplete,
-  canManage = false,
-  onManaged,
-}: {
-  task: FairwayTask;
-  now: Date | null;
-  role: 'coach' | 'player';
-  onComplete?: (taskId: string) => Promise<CompleteResult | void>;
-  /** Coach-only: enable the reminder/delete manage menu. */
-  canManage?: boolean;
-  /** Refetch the live list after a coach mutation. */
-  onManaged?: () => void | Promise<void>;
-}) {
-  const router = useRouter();
-  const [expanded, setExpanded] = useState(false);
-  const [completing, setCompleting] = useState(false);
-  // P290 — true optimistic completion. We flip the card locally the instant the
-  // player taps, then let the realtime prop reconcile. `optimisticDone` clears
-  // automatically once the authoritative task.status catches up (effect below),
-  // and rolls back if the action fails.
-  const [optimisticDone, setOptimisticDone] = useState(false);
-
-  // P285 — coach manage state.
-  const [pendingDelete, setPendingDelete] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [reminderOpen, setReminderOpen] = useState(false);
-  const [reminderValue, setReminderValue] = useState('');
-  const [savingReminder, setSavingReminder] = useState(false);
-  const [clearingReminder, setClearingReminder] = useState(false);
-
-  // Reconcile the optimistic flip with the source of truth.
-  useEffect(() => {
-    if (task.status === 'completed' && optimisticDone) {
-      setOptimisticDone(false);
-    }
-  }, [task.status, optimisticDone]);
-
-  // The status the card SHOWS (optimistic completion wins until reconciled).
-  const displayStatus = optimisticDone ? 'completed' : task.status;
-
-  const completedCount = task.assignments.filter((a) => a.status === 'completed').length;
-  const totalCount = task.assignments.length;
-  const completionRate = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
-  const hasAssignments = totalCount > 0;
-
-  const isOverdue =
-    !!now &&
-    !!task.due_date &&
-    // P295 — local-safe parse: `new Date(task.due_date)` reads a date-only
-    // due_date as UTC midnight, which under negative UTC offsets (all of the
-    // US) resolves to the PREVIOUS local day — the same bug that used to
-    // make this card's due label disagree with the masthead's "due today"
-    // count for the identical stored value.
-    parseDueDate(task.due_date) < now &&
-    completionRate < 100 &&
-    displayStatus !== 'completed';
-
-  const pill = statusPill(displayStatus);
-
-  // Player-side complete: only when the action is provided and the task isn't
-  // already complete (and isn't optimistically completing).
-  const playerCanComplete =
-    role === 'player' && !!onComplete && displayStatus !== 'completed';
-
-  const handleComplete = async () => {
-    if (!onComplete || completing) return;
-    setCompleting(true);
-    setOptimisticDone(true); // flip immediately — no spinner wait
-    try {
-      // P284 — completeTask resolves an ActionResult { success, error } on a soft
-      // failure (RLS denial, "not assigned", network) rather than throwing. The pure
-      // completionFeedback() decides: a `success: false` rolls back + error-toasts
-      // just like a thrown error, and a success (explicit or bare void) confirms with
-      // a toast (it was previously silent). The realtime refetch reconciles state.
-      const feedback = completionFeedback(await onComplete(task.id));
-      if (feedback.kind === 'error') {
-        setOptimisticDone(false);
-        fairwayToast.error(feedback.message);
-        return;
-      }
-      fairwayToast.success(feedback.message);
-    } catch (error) {
-      // A genuinely thrown error — roll back the optimistic flip and tell the player.
-      setOptimisticDone(false);
-      fairwayToast.error(
-        error instanceof Error ? error.message : 'Could not mark the task complete.',
-      );
-    } finally {
-      setCompleting(false);
-    }
-  };
-
-  /* ---- P285 · coach manage actions (reuse the unchanged server actions) ---- */
-
-  const openReminderModal = () => {
-    // Seed the picker from the existing reminder (as a local datetime-local value).
-    setReminderValue(task.reminder_at ? toDateTimeLocal(task.reminder_at) : '');
-    setReminderOpen(true);
-  };
-
-  const handleSaveReminder = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!reminderValue) {
-      fairwayToast.warning('Pick a date and time for the reminder.');
-      return;
-    }
-    setSavingReminder(true);
-    try {
-      const result = await setTaskReminder(task.id, new Date(reminderValue).toISOString());
-      if (result.success) {
-        fairwayToast.success('Reminder set.');
-        setReminderOpen(false);
-        await onManaged?.();
-      } else {
-        fairwayToast.error(result.error ?? 'Failed to set the reminder.');
-      }
-    } catch (error) {
-      fairwayToast.error(
-        error instanceof Error ? error.message : 'Failed to set the reminder.',
-      );
-    } finally {
-      setSavingReminder(false);
-    }
-  };
-
-  const handleClearReminder = async () => {
-    setClearingReminder(true);
-    try {
-      const result = await clearTaskReminder(task.id);
-      if (result.success) {
-        fairwayToast.success('Reminder cleared.');
-        await onManaged?.();
-      } else {
-        fairwayToast.error(result.error ?? 'Failed to clear the reminder.');
-      }
-    } catch (error) {
-      fairwayToast.error(
-        error instanceof Error ? error.message : 'Failed to clear the reminder.',
-      );
-    } finally {
-      setClearingReminder(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    setDeleting(true);
-    try {
-      const result = await deleteTask(task.id);
-      if (result.success) {
-        fairwayToast.success('Task deleted.');
-        setPendingDelete(false);
-        await onManaged?.();
-      } else {
-        fairwayToast.error(result.error ?? 'Failed to delete the task.');
-      }
-    } catch (error) {
-      fairwayToast.error(
-        error instanceof Error ? error.message : 'Failed to delete the task.',
-      );
-    } finally {
-      setDeleting(false);
-    }
-  };
-
-  return (
-    <Surface elevation="border" padding="md" className="flex flex-col gap-4">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 space-y-1">
-          <h3 className="font-fw-sans text-body-lg font-medium text-text-primary [text-wrap:balance]">
-            {task.title}
-          </h3>
-          {task.description && (
-            <p className="line-clamp-2 font-fw-sans text-body-sm text-text-tertiary">
-              {task.description}
-            </p>
-          )}
+  const masthead = (
+    <>
+      <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+        <p className="font-fw-sans text-eyebrow uppercase tracking-[0.09em] text-text-tertiary">Tasks</p>
+        <div className="flex flex-shrink-0 items-center gap-2">
+          {createCta}
+          {templateOverflow}
         </div>
-        <div className="flex flex-shrink-0 items-center gap-1.5">
-          <StatusPill tone={pill.tone} size="sm">
-            {pill.label}
-          </StatusPill>
-          {/* P285 — coach task management: reminder + delete, via the existing
-              setTaskReminder / clearTaskReminder / deleteTask server actions. */}
-          {canManage && (
-            <PopoverPanel
-              side="bottom"
-              align="end"
-              surface="matte"
-              width="sm"
-              ariaLabel={`Manage task: ${task.title}`}
-              trigger={
-                <IconButton
-                  variant="ghost"
-                  size="sm"
-                  aria-label={`Manage task: ${task.title}`}
-                >
-                  <IconMoreVertical size={18} />
-                </IconButton>
+      </div>
+      <h1 className="mt-2 font-fw-display text-display font-semibold leading-[1.05] tracking-[-0.02em] text-text-primary">
+        {isCoach ? 'Team to-dos.' : 'Your to-dos.'}
+      </h1>
+      <div className="mt-3">
+        <VerdictLine parts={verdict} />
+      </div>
+      {viewTasks.length > 0 ? (
+        <p className="mt-3 font-fw-mono text-caption tabular-nums text-text-tertiary">
+          {viewTasks.length} total · {categoryCount} {categoryCount === 1 ? 'category' : 'categories'}
+        </p>
+      ) : null}
+    </>
+  );
+
+  // ── A failed read, and the true zero state, keep the masthead and nothing
+  //    else: there is no field to draw, no ledger to fill, no table to head.
+  if (error || viewTasks.length === 0) {
+    return (
+      <div className="mx-auto w-full max-w-[1280px] px-4 py-6 pb-24 md:px-6 md:py-8">
+        {masthead}
+        <div className="mt-8">
+          {error ? (
+            <InlineNotice
+              tone="danger"
+              title="Couldn't load tasks"
+              action={
+                <Button variant="ghost" size="sm" busy={retrying} disabled={retrying} onClick={handleRetry}>
+                  Try again
+                </Button>
               }
             >
-              <PopoverPanel.Item onClick={openReminderModal}>
-                <IconBell size={18} className="text-text-tertiary" />
-                {task.reminder_at ? 'Update reminder' : 'Set reminder'}
-              </PopoverPanel.Item>
-              {task.reminder_at && (
-                <PopoverPanel.Item
-                  onClick={() => void handleClearReminder()}
-                  disabled={clearingReminder}
-                >
-                  <IconBell size={18} className="text-text-tertiary" />
-                  Clear reminder
-                </PopoverPanel.Item>
-              )}
-              <PopoverPanel.Separator />
-              <PopoverPanel.Item
-                onClick={() => setPendingDelete(true)}
-                className="text-fw-danger-ink hover:bg-fw-danger-bg hover:text-fw-danger-ink"
-              >
-                <IconTrash size={18} className="text-fw-danger-ink" />
-                Delete task
-              </PopoverPanel.Item>
-            </PopoverPanel>
+              Something went wrong loading your tasks. Check your connection and try again.
+            </InlineNotice>
+          ) : (
+            <Surface elevation="shadow" padding="lg">
+              <EmptyState
+                icon={ClipboardList}
+                title="No tasks yet"
+                description={
+                  isCoach
+                    ? 'Create a task to assign work and track who has completed it.'
+                    : 'Tasks your coach assigns will show up here.'
+                }
+                action={
+                  isCoach && teamId ? (
+                    <Button variant="primary" onClick={() => setCreateOpen(true)} leftIcon={<IconPlus size={16} />}>
+                      Create task
+                    </Button>
+                  ) : undefined
+                }
+              />
+            </Surface>
           )}
         </div>
+        {modals}
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto w-full max-w-[1280px] px-4 py-6 pb-24 md:px-6 md:py-8">
+      {/* ── 1 · MASTHEAD, bare on the canvas ────────────────────────────── */}
+      {masthead}
+
+      {/* ── 2 · THE STAGE, the one Surface ──────────────────────────────── */}
+      <Surface elevation="shadow" padding="none" className="mt-10 overflow-hidden">
+        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_15rem] xl:divide-x xl:divide-border-subtle">
+          <div className="min-w-0 p-4 md:p-6">
+            <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+              <div className="min-w-0">
+                <p className="font-fw-sans text-eyebrow uppercase tracking-[0.07em] text-text-tertiary">
+                  Outstanding work
+                </p>
+                <h2 className="mt-1 font-fw-display text-h2 font-semibold text-text-primary">Due field</h2>
+                <p className="mt-1 max-w-[62ch] font-fw-sans text-body-sm text-text-secondary">
+                  One lane per person who still owes dated work. An amber bar rises with the days a task is
+                  late; a grey stroke is a date not yet reached. Load counts every open task on that lane,
+                  dated or not.
+                </p>
+              </div>
+              {lanes.length > 0 ? (
+                <Segmented
+                  size="sm"
+                  options={[
+                    { value: 'all', label: 'All lanes' },
+                    { value: 'behind', label: 'Behind' },
+                  ]}
+                  value={stageView}
+                  onValueChange={(v) => setStageView(v as StageView)}
+                  aria-label="Which lanes to plot"
+                />
+              ) : null}
+            </div>
+
+            <div className="mt-5">
+              {shownLanes.length > 0 ? (
+                <DueField
+                  lanes={shownLanes}
+                  domain={domain}
+                  cap={cap}
+                  today={today}
+                  rowsLabel={isCoach ? 'Player' : 'Lane'}
+                  ariaLabel="Open tasks by due date"
+                  onOpenTask={toggleDetail('stage')}
+                />
+              ) : (
+                <p className="font-fw-sans text-body-sm text-text-secondary">
+                  {lanes.length > 0
+                    ? 'No lane is behind right now. Switch to All lanes to see what is scheduled.'
+                    : openTaskCount === 0
+                      ? `Nothing open right now. ${completedCount} completed.`
+                      : 'No open task carries a due date yet. Every one of them is listed under "No due date" in the ledger below.'}
+                </p>
+              )}
+            </div>
+
+            {/* A mark opens the same detail a table row opens, here under the
+                field it was opened from, so nothing jumps the page. */}
+            {stageDetail ? (
+              <div className="mt-4">
+                <TaskDetail task={stageDetail} role={role} today={today} />
+              </div>
+            ) : null}
+          </div>
+
+          {/* Below xl the readouts read first: the four numbers are the glance,
+              the field is what you scroll into. At xl they take the rail. */}
+          <div className="order-first border-b border-border-subtle p-4 md:p-6 xl:order-none xl:border-b-0">
+            <FieldReadouts items={readouts} />
+          </div>
+        </div>
+      </Surface>
+
+      {/* ── 3 · THE LEDGER ROW, bare, hairline-divided ──────────────────── */}
+      <div className="mt-12 grid grid-cols-1 gap-y-10 md:grid-cols-2 md:gap-x-8 xl:grid-cols-12 xl:gap-x-0 xl:gap-y-0 xl:divide-x xl:divide-border-subtle">
+        {/* 5 / 3 / 4, not 5 / 4 / 3: the narrow column has to hold the
+            SHORTEST content, and category names are one or two words while
+            task titles are a sentence. */}
+        <LedgerColumn title="Overdue now" className="xl:col-span-5 xl:pr-8">
+          {overdueRows.length === 0 ? (
+            <LedgerEmpty>
+              {openTaskCount === 0 ? 'Nothing open right now.' : 'Nothing is past its due date.'}
+            </LedgerEmpty>
+          ) : (
+            overdueRows.map(({ task, daysLate: late }) => (
+              <LedgerRow
+                key={task.id}
+                title={task.title}
+                fact={`${late}d`}
+                factTone="urgent"
+                aside={task.category ?? undefined}
+                onOpen={expandable(task) ? () => toggleDetail('overdue')(task.id) : undefined}
+                expanded={detailOpen('overdue', task.id)}
+                detailId={`overdue-detail-${task.id}`}
+              >
+                <TaskDetail task={task} role={role} today={today} />
+              </LedgerRow>
+            ))
+          )}
+        </LedgerColumn>
+
+        <LedgerColumn title="By category" className="xl:col-span-3 xl:px-8">
+          {categoryRows.length === 0 ? (
+            <LedgerEmpty>Nothing open to group.</LedgerEmpty>
+          ) : (
+            categoryRows.map((row) => (
+              <CategoryLedgerRow
+                key={row.value}
+                label={row.label}
+                count={row.count}
+                selected={categoryFilters.length === 1 && categoryFilters[0] === row.value}
+                onSelect={() =>
+                  setCategoryFilters((prev) => (prev.length === 1 && prev[0] === row.value ? [] : [row.value]))
+                }
+              />
+            ))
+          )}
+        </LedgerColumn>
+
+        <LedgerColumn title="No due date" className="md:col-span-2 xl:col-span-4 xl:pl-8">
+          {undatedRows.length === 0 ? (
+            <LedgerEmpty>Every open task has a due date.</LedgerEmpty>
+          ) : (
+            undatedRows.map((task) => {
+              const n = task.assignments.length;
+              return (
+                <LedgerRow
+                  key={task.id}
+                  title={task.title}
+                  fact={n > 0 ? String(n) : undefined}
+                  aside={n > 0 ? (n === 1 ? 'assignee' : 'assignees') : 'team-wide'}
+                  onOpen={expandable(task) ? () => toggleDetail('undated')(task.id) : undefined}
+                  expanded={detailOpen('undated', task.id)}
+                  detailId={`undated-detail-${task.id}`}
+                >
+                  <TaskDetail task={task} role={role} today={today} />
+                </LedgerRow>
+              );
+            })
+          )}
+        </LedgerColumn>
       </div>
 
-      {/* Progress — ONLY when the task has assignment rows (never a fake 0/0). */}
-      {hasAssignments && (
-        <div className="flex flex-col gap-1.5">
-          <div className="flex items-center justify-between font-fw-sans text-caption text-text-tertiary">
-            <span className="flex items-center gap-1.5">
-              <IconUsers size={14} />
-              <span className="tabular-nums">
-                {completedCount} of {totalCount} completed
-              </span>
-            </span>
-            <span className="font-medium tabular-nums text-text-secondary">
-              {Math.round(completionRate)}%
-            </span>
-          </div>
-          <div
-            className="h-1.5 overflow-hidden rounded-full bg-surface-sunken"
-            role="progressbar"
-            aria-valuenow={Math.round(completionRate)}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            // A progressbar needs an accessible NAME, not just a value — /tasks
-            // shipped 8 of these and a screen reader announced eight identical
-            // unnamed "42%" bars with no way to tell which task each belonged
-            // to (audit 2026-07-24, M8). aria-valuetext also replaces the bare
-            // number with the count the sighted label already shows.
-            aria-label={`${task.title} — subtask progress`}
-            aria-valuetext={`${completedCount} of ${totalCount} subtasks completed`}
-          >
-            <div
-              className="h-full rounded-full bg-accent-500 transition-[width] duration-300 motion-reduce:transition-none"
-              style={{ width: `${completionRate}%` }}
+      {/* ── 4 · THE TABLE ───────────────────────────────────────────────── */}
+      <div className="mt-12">
+        <SectionHead title="Tasks" count={tableRows.length} />
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <div className="min-w-[12rem] flex-1 md:max-w-sm">
+            <SearchField
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onClear={() => setQuery('')}
+              placeholder="Search tasks by title or description"
+              aria-label="Search tasks"
             />
           </div>
-        </div>
-      )}
-
-      {/* Meta row: due date · reminder · category */}
-      {(task.due_date || task.reminder_at || task.category) && (
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 font-fw-sans text-body-sm">
-          {task.due_date && (
-            <span
-              className={cn(
-                'inline-flex items-center gap-1.5 tabular-nums',
-                isOverdue ? 'text-fw-danger-ink' : 'text-text-secondary',
-              )}
-              suppressHydrationWarning
-            >
-              <IconClock size={14} className="flex-shrink-0" />
-              {formatDueLabel(task.due_date, now)}
-            </span>
-          )}
-          {/* P294 — render whenever a reminder exists (not gated on `now`), so the
-              Bell never pops in after hydration. Urgency color deepens once `now`
-              resolves; the label degrades to an absolute date pre-hydration. */}
-          {task.reminder_at && (
-            <span
-              className={cn(
-                'inline-flex items-center gap-1.5',
-                reminderTone(task.reminder_at, now) === 'past'
-                  ? 'text-text-tertiary'
-                  : reminderTone(task.reminder_at, now) === 'upcoming'
-                    ? 'text-text-secondary'
-                    : // P288 — imminent/soon: strongest emphasis via an on-system token
-                      // (text-primary ≈ 13:1 on the card surface; no legacy warm-* class).
-                      'text-text-primary',
-              )}
-              suppressHydrationWarning
-            >
-              <Bell className="h-3.5 w-3.5 flex-shrink-0" aria-hidden />
-              <span>{formatReminderLabel(task.reminder_at, now)}</span>
-            </span>
-          )}
-          {task.category && (
-            <Chip tone="neutral" size="sm">
-              {task.category}
-            </Chip>
-          )}
-        </div>
-      )}
-
-      {/* Footer actions */}
-      <div className="flex items-center justify-between gap-3">
-        {/* Coach: expand the per-player progress (only meaningful with assignments). */}
-        {role === 'coach' && hasAssignments ? (
-          <Button
-            variant="ghost"
+          <Segmented
             size="sm"
-            onClick={() => setExpanded((e) => !e)}
-            rightIcon={
-              <ChevronDown
-                className={cn(
-                  'h-4 w-4 transition-transform [transition-duration:180ms] motion-reduce:transition-none',
-                  expanded && 'rotate-180',
-                )}
-                aria-hidden
-              />
-            }
-          >
-            {expanded ? 'Hide details' : 'View details'}
-          </Button>
+            options={STATUS_OPTIONS}
+            value={filter}
+            onValueChange={setFilter}
+            aria-label="Filter tasks by status"
+          />
+          {categories.length > 0 || hasUncategorized ? (
+            <Toolbar.FilterMenu
+              label="Category"
+              options={[
+                ...categories.map((cat) => ({ value: cat, label: cat })),
+                ...(hasUncategorized ? [{ value: UNCATEGORIZED, label: 'Uncategorized' }] : []),
+              ]}
+              selected={categoryFilters}
+              onToggle={(value) =>
+                setCategoryFilters((prev) =>
+                  prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value],
+                )
+              }
+              onClear={() => setCategoryFilters([])}
+            />
+          ) : null}
+        </div>
+
+        {tableRows.length === 0 ? (
+          <div className="mt-6">
+            <EmptyState
+              variant="subtle"
+              title={query.trim() || categoryFilters.length > 0 ? 'No matching tasks' : `No ${filter} tasks`}
+              description={
+                query.trim() || categoryFilters.length > 0
+                  ? 'No task matches that search and filter. Clear them to see the full list.'
+                  : filter === 'completed'
+                    ? 'Completed tasks will collect here.'
+                    : 'Nothing in this view right now.'
+              }
+              action={
+                query.trim() || categoryFilters.length > 0 ? (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => {
+                      setQuery('');
+                      setCategoryFilters([]);
+                    }}
+                  >
+                    Clear filters
+                  </Button>
+                ) : undefined
+              }
+            />
+          </div>
         ) : (
-          <span aria-hidden />
-        )}
-
-        {/* Player: mark complete (optimistic, reused completeTask action). */}
-        {playerCanComplete && (
-          <Button
-            variant="secondary"
-            size="sm"
-            busy={completing}
-            disabled={completing}
-            onClick={handleComplete}
-            leftIcon={<IconCheck size={15} />}
-          >
-            Mark complete
-          </Button>
+          <div className="mt-4">
+            <TasksTable
+              rows={tableRows}
+              role={role}
+              today={today}
+              canManage={isCoach && !!teamId}
+              expandable={expandable}
+              openTaskId={detail?.source === 'table' ? detail.id : null}
+              onToggle={toggleDetail('table')}
+              onManaged={onRefetch}
+              completingId={completingId}
+              onComplete={onCompleteTask ? handleComplete : undefined}
+              isCompleted={(task) => !isOpen(task)}
+            />
+          </div>
         )}
       </div>
 
-      {/* Expanded per-player progress (coach). */}
-      {role === 'coach' && expanded && hasAssignments && (
-        <div className="border-t border-border-subtle pt-4">
-          <p className="mb-3 font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.12em] text-text-tertiary">
-            Player progress
-          </p>
-          <div className="flex flex-col gap-1.5">
-            {task.assignments.map((assignment) => (
-              <div
-                key={assignment.id}
-                className="flex items-center justify-between gap-3 rounded-fw-md bg-surface-sunken px-3 py-2"
-              >
-                <span className="min-w-0 flex-1 truncate font-fw-sans text-body-sm text-text-secondary">
-                  {assignment.player.first_name} {assignment.player.last_name}
-                </span>
-                <div className="flex flex-shrink-0 items-center gap-2">
-                  {assignment.status === 'completed' ? (
-                    <span className="inline-flex items-center gap-1.5 font-fw-sans text-caption font-medium text-accent-700">
-                      <IconCheck size={15} />
-                      Completed
-                    </span>
-                  ) : (
-                    <span className="font-fw-sans text-caption font-medium text-text-tertiary">
-                      Pending
-                    </span>
-                  )}
-                  {assignment.player.id ? (
-                    <IconButton
-                      variant="ghost"
-                      size="sm"
-                      aria-label={`Message ${assignment.player.first_name} ${assignment.player.last_name}`}
-                      onClick={() =>
-                        router.push(`/golf/dashboard/messages?player=${assignment.player.id}`)
-                      }
-                    >
-                      <IconMessage size={15} />
-                    </IconButton>
-                  ) : null}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* P285 — Reminder picker (coach). Reuses setTaskReminder verbatim. */}
-      {canManage && (
-        <ModalShell
-          open={reminderOpen}
-          onOpenChange={(next) => {
-            if (!next && !savingReminder) setReminderOpen(false);
-          }}
-          size="sm"
-          title={task.reminder_at ? 'Update reminder' : 'Set reminder'}
-          description={`Choose when the team gets a nudge for "${task.title}".`}
-        >
-          <Form spacing="cozy" onSubmit={handleSaveReminder}>
-            <FormField label="Reminder" help="The team is nudged at this time.">
-              <Input
-                type="datetime-local"
-                name="reminderAt"
-                value={reminderValue}
-                onChange={(e) => setReminderValue(e.target.value)}
-                required
-              />
-            </FormField>
-            <ModalShell.Footer>
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => setReminderOpen(false)}
-                disabled={savingReminder}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" variant="primary" busy={savingReminder}>
-                {task.reminder_at ? 'Update reminder' : 'Set reminder'}
-              </Button>
-            </ModalShell.Footer>
-          </Form>
-        </ModalShell>
-      )}
-
-      {/* P285 — Delete confirm (coach). DESTRUCTIVE — explicit confirm only. */}
-      {canManage && (
-        <ModalShell
-          open={pendingDelete}
-          onOpenChange={(next) => {
-            if (!next && !deleting) setPendingDelete(false);
-          }}
-          size="sm"
-          title="Delete task?"
-          description={
-            <>
-              Delete <span className="font-medium text-text-primary">{task.title}</span>? This
-              also removes every player&apos;s assignment for it and can&apos;t be undone.
-            </>
-          }
-        >
-          <ModalShell.Footer>
-            <Button variant="ghost" onClick={() => setPendingDelete(false)} disabled={deleting}>
-              Cancel
-            </Button>
-            <Button variant="danger" busy={deleting} onClick={handleDelete}>
-              Delete task
-            </Button>
-          </ModalShell.Footer>
-        </ModalShell>
-      )}
-    </Surface>
+      {modals}
+    </div>
   );
-}
-
-/* Convert a stored ISO timestamp to the `datetime-local` input value
- * (YYYY-MM-DDTHH:mm) in the viewer's local time, so the picker pre-fills with
- * the existing reminder instead of an empty field. */
-function toDateTimeLocal(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '';
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }

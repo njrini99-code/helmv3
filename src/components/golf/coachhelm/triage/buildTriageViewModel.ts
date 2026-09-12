@@ -19,6 +19,7 @@ import {
   type SignalGroup,
   type SignalSeverity,
 } from '@/lib/coachhelm/signal-grouping';
+import type { InsightEvidence, InsightUnit } from '@/lib/coachhelm/v2/insights/types';
 
 /* ───────────────────────────────────────────────────────────────────────────
  * View + filter param resolution — `?view=` / `?filter=` (spec §2/§3). Legacy
@@ -201,7 +202,7 @@ export function computeBriefCounts(groups: readonly SignalGroup[]): BriefCounts 
  *  count. */
 export function buildBriefVerdict(groups: readonly SignalGroup[], counts: BriefCounts): string {
   if (groups.length === 0) {
-    return 'All clear — no open signals right now.';
+    return 'All clear. No open signals right now.';
   }
   const topPlayerGroup = groups.find((g) => g.playerId !== null) ?? null;
 
@@ -214,10 +215,28 @@ export function buildBriefVerdict(groups: readonly SignalGroup[], counts: BriefC
 
   const totalSignals = groups.reduce((n, g) => n + g.signals.length, 0);
   if (topPlayerGroup) {
-    return `Nothing urgent — ${topPlayerGroup.playerName} has the highest-priority open signal.`;
+    return `Nothing urgent. ${topPlayerGroup.playerName} has the highest-priority open signal.`;
   }
   const signalWord = totalSignals === 1 ? 'signal' : 'signals';
-  return `${totalSignals} open ${signalWord} to review — nothing urgent right now.`;
+  return `${totalSignals} open ${signalWord} to review. Nothing urgent right now.`;
+}
+
+/**
+ * The Spine's plain-language verdict (facelift) — folds "players needing
+ * attention" (already inside `buildBriefVerdict`) and "outcomes awaiting" (a
+ * number the Spine has no separate slot for — `Spine`'s fixed shape is one
+ * `verdict` string, a `hero` number, and a `ledger`, not a multi-readout
+ * row) into ONE sentence rather than fabricating a fourth Spine slot.
+ */
+export function buildSpineVerdict(
+  groups: readonly SignalGroup[],
+  counts: BriefCounts,
+  outcomesAwaiting: number,
+): string {
+  const base = buildBriefVerdict(groups, counts);
+  if (outcomesAwaiting <= 0) return base;
+  const outcomeWord = outcomesAwaiting === 1 ? 'outcome' : 'outcomes';
+  return `${base} ${outcomesAwaiting} ${outcomeWord} awaiting a resolved result.`;
 }
 
 /** Relative "last scan" caption. `null` (no scan on record) reads as an
@@ -234,6 +253,56 @@ export function formatRelativeScanTime(scannedAt: string | null, now: Date = new
   if (hours < 24) return `Last scan ${hours}h ago`;
   const days = Math.floor(hours / 24);
   return `Last scan ${days}d ago`;
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * Evidence — type-safe read of `GroupedSignal.evidence` (unknown by design).
+ * ────────────────────────────────────────────────────────────────────────── */
+
+const INSIGHT_UNITS: ReadonlySet<string> = new Set<InsightUnit>([
+  'percent',
+  'strokes',
+  'count',
+  'yards',
+  'feet',
+]);
+
+/**
+ * `GroupedSignal.evidence` is `unknown | null` on purpose (see its docstring
+ * in `signal-grouping.ts`): two incompatible shapes travel through the same
+ * field.
+ *
+ *   - a real `golf_coach_insights.evidence` row — the full `InsightEvidence`
+ *     contract (`your_value`, `comparison_value`, `sample_n`, `window_days`,
+ *     `confidence`, `unit`, `metric`, `metric_label`, ...).
+ *   - `synthesizeTeamSignals`'s roster roll-up (`team-synthesis.ts`) — only
+ *     `{ metric, metric_label, strokes_impact, players_affected }`. No
+ *     per-player value exists to compare, so none of the fields above are
+ *     present.
+ *
+ * `SignalInsightPanel`/`SignalDossier` used to do a blind
+ * `signal.evidence as InsightEvidence`, which let the second shape's missing
+ * fields read as `undefined` all the way into the rendered DOM ("undefined
+ * You", "NaN% confidence" — `Math.round(undefined * 100)` — in the 2026-09
+ * facelift capture). This validates the load-bearing fields before trusting
+ * the cast: only a shape that actually carries a comparable player number
+ * comes back as `InsightEvidence`; anything else (including `null`) comes
+ * back `null`, which `EvidencePanel` already renders as nothing.
+ *
+ * Deliberately loose beyond that — `metric_label`, `sample_n`,
+ * `window_days`, `confidence`, `unit` etc. are NOT individually re-checked
+ * here, because every real generator writes them together as one payload
+ * (per the `InsightEvidence` contract); `EvidencePanel` itself still guards
+ * each field independently at render time as defense-in-depth.
+ */
+export function resolveSignalEvidence(evidence: unknown): InsightEvidence | null {
+  if (!evidence || typeof evidence !== 'object') return null;
+  const rec = evidence as Record<string, unknown>;
+  if (!Number.isFinite(rec.your_value) || !Number.isFinite(rec.comparison_value)) return null;
+  if (typeof rec.unit !== 'string' || !INSIGHT_UNITS.has(rec.unit)) return null;
+  if (typeof rec.metric !== 'string' || rec.metric.length === 0) return null;
+  if (typeof rec.metric_label !== 'string' || rec.metric_label.length === 0) return null;
+  return evidence as InsightEvidence;
 }
 
 /* ───────────────────────────────────────────────────────────────────────────

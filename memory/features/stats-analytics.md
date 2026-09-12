@@ -36,6 +36,12 @@ The current architecture uses cached stats for performance. Cache invalidation m
 
 - `src/components/golf/stats/**`
 - `src/components/golf/stats/sections/**`
+- `src/components/golf/stats/team-board/**` — the coach Team Stats field sheet:
+  `TeamStatsBoard.tsx` composes, `CategoryField.tsx` is the page-local stage
+  instrument, `team-stats-parts.tsx` holds the readouts/ledger/table, and ALL
+  page-level derivation lives in the pure, JSX-free `team-stats-logic.ts`
+  (tested at `__tests__/team-stats-logic.test.ts`). Per-row ranking and
+  formatting stay in `buildTeamBoardViewModel.ts`.
 - `src/app/golf/(dashboard)/dashboard/stats/page.tsx`
 - `src/app/golf/(dashboard)/dashboard/stats/team/page.tsx`
 
@@ -89,6 +95,43 @@ Round completion
 - Loading states should use skeletons and keep chart/table dimensions stable.
 - Mobile stats views should be dense and scannable; avoid oversized decorative panels.
 - Export/share actions must not imply metrics exist when source data is absent.
+- Coach Team Stats (`/golf/dashboard/stats/team`) follows
+  `docs/design/fairway-facelift/LANGUAGE.md`: a bare masthead, ONE `Surface`
+  holding the stage, a bare hairline ledger row, a dense table, then a bare
+  diptych. No `ViewHeader` on the populated path, no `Bento`/`BentoCell`, no
+  `MatrixBoard`, no sticky `StatMatrix` band. If a change to this page
+  produces a masthead over rounded cream boxes, it has regressed the brief.
+- The stage's two registers (team strokes gained, player ranks) MUST keep
+  sharing one column grid. That relationship is the page's architecture: it is
+  what lets a coach fall down the amber column onto the players who own the
+  leak. Do not break the shared grid to make either register look better alone.
+- A missing strokes-gained reading renders an en dash (`–`, U+2013) and NEVER a
+  zero-length bar — a bar of no length claims the team sits exactly on the Tour
+  baseline, which is a measurement nobody took. The whole team-board tree uses
+  the en dash for "absent"; the em dash it used before was swapped out
+  everywhere in one pass.
+- A trend count of zero is not a reading. `hasTrajectorySignal` gates it and
+  the page states the gate (`Trend signals begin after TREND_SIGNAL_MIN_ROUNDS
+  completed rounds.`) rather than printing "0 climbing, 0 sliding".
+- `roundsError`, `intelligenceError` and `leakError` are three independent
+  flags and a failed fetch must never render as a cold start. The
+  "Strokes gained appears once players log rounds..." sentence is gated on
+  `hasSg === false && !roundsError` in both the verdict and the stage.
+- No breakpoint is read at runtime on this page. The 940px header-label switch
+  is a `hidden` / `min-[940px]:inline` span PAIR (never `sr-only`, which would
+  leave both labels in the accessibility tree), and the phone table is a
+  `md:hidden` stacked list beside a `hidden md:block` table, both always in the
+  DOM with CSS choosing.
+- A `CategoryField` player row is a `div role="row"` holding a real `<Link>` on
+  the player name, whose `after:absolute after:inset-0` stretches the anchor
+  over the whole row. `role="row"` placed on the anchor itself overrides the
+  implicit link role and leaves a screen reader announcing cells with no
+  destination; a div `onClick` instead costs a keyboard listener and a second
+  tab stop.
+- `CategoryField` is deliberately page-local. It is a promotion candidate for
+  `modules/`, but `modules/index.ts`, `modules/types.ts` and `registry.ts` are
+  lead-owned and the facelift ratchet requires every barrel export to be named
+  in `registry.ts`.
 - A route's `loading.tsx` reserves the page's paint at t=0 — for a
   `'use client'` page holding its own `loading` state that is that
   component's loading branch, not its settled layout. A route whose
@@ -177,6 +220,9 @@ Round completion
 ## Tests To Prefer
 
 - `src/app/golf/actions/__tests__/stats-data.test.ts`
+- `src/components/golf/stats/team-board/__tests__/team-stats-logic.test.ts`
+- `src/components/golf/stats/team-board/__tests__/buildTeamBoardViewModel.test.ts`
+- `src/components/golf/stats/team-board/TeamStatsBoard.freshness.test.tsx`
 - `src/test/coachhelm/v2/stats/**`
 - `src/test/coachhelm/v2/shot-analysis/**`
 - Browser check for changed stats pages and mobile table/chart behavior.
@@ -188,3 +234,5 @@ Round completion
 - `docs/features/SHOT_TRACKING_DATA_FLOW.md`
 - `docs/features/SHOT_TRACKING_VERIFICATION.md`
 - `docs/v3-research-golf-domain.md`
+- `docs/design/fairway-facelift/LANGUAGE.md`
+- `docs/design/fairway-facelift/screens/team-stats.v3.md`

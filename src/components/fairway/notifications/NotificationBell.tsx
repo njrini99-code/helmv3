@@ -45,6 +45,20 @@ export function NotificationBell() {
   const [filter, setFilter] = useState<NotificationFilter>('all');
   const [markingAllRead, setMarkingAllRead] = useState(false);
 
+  /**
+   * Wall-clock reference for the feed's day-bucket grouping and each row's
+   * relative label. `null` until mount so the server render and the client's
+   * first paint agree (React #418) — same pattern as NotificationCenter's
+   * own `now` state. Ticks every minute so a panel left open relabels
+   * "3m ago" without the user having to reopen it.
+   */
+  const [now, setNow] = useState<Date | null>(null);
+  useEffect(() => {
+    setNow(new Date());
+    const id = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+
   const unreadTotal = badges.notificationsUnread + badges.calendarNotifications;
 
   const load = useCallback(async () => {
@@ -128,6 +142,7 @@ export function NotificationBell() {
       onMarkAllRead={handleMarkAllRead}
       markingAllRead={markingAllRead}
       unreadCount={unreadTotal}
+      now={now}
     />
   );
 

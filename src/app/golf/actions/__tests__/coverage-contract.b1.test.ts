@@ -7,7 +7,12 @@ import { assertAreaFullyWrapped } from '@/lib/admin/__tests__/coverage-contract.
  * Features: round_tracking, stats_analytics, qualifiers, my_qualifiers.
  * Files fully wrapped this batch: round-drafts.ts, stats.ts, stats-data.ts,
  * stats-intelligence.ts, stats-leak-maps.ts, shot-analytics.ts,
- * team-sg-baseline.ts, v3/qualifying.ts.
+ * v3/qualifying.ts.
+ *
+ * 2026-09-10: team-sg-baseline.ts was deleted as unreferenced dead code
+ * (zero importers anywhere in src — never wired into the coaching
+ * intelligence settings page it was built for) and dropped from this list
+ * and from feature-registry.ts's `stats_analytics` manifest.
  *
  * golf.ts spans FIVE batches (B1/B2/B4/B5/B6 — plan
  * docs/superpowers/plans/helm-bridge/waves/w15-total-coverage.md "Batch
@@ -65,7 +70,6 @@ describe('coverage-contract — B1 core play (round_tracking, stats_analytics, q
           'src/app/golf/actions/stats-intelligence.ts',
           'src/app/golf/actions/stats-leak-maps.ts',
           'src/app/golf/actions/shot-analytics.ts',
-          'src/app/golf/actions/team-sg-baseline.ts',
           'src/app/golf/actions/v3/qualifying.ts',
           'src/app/golf/actions/golf.ts',
         ],

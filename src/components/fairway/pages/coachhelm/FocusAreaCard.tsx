@@ -72,7 +72,7 @@ import type { FwStatusTone } from '@/components/fairway/controls/_internal';
 import { InsufficientData } from '@/components/fairway/feedback/InsufficientData';
 import { Sparkline } from '@/components/fairway/charts/Sparkline';
 import { TrendChip, type GoodDirection } from '@/components/fairway/charts/TrendChip';
-import { StandingStrip } from '@/components/fairway/charts/StandingStrip';
+import { StandingBars } from '@/components/fairway/charts/StandingBars';
 import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
@@ -243,6 +243,45 @@ export interface FocusAreaCardProps {
    * Renders nothing when absent — honest-empty, never a fabricated bar.
    */
   standing?: PlayerStanding | null;
+  /**
+   * `card` (default): the card owns its own bordered Surface, exactly as
+   * before. `bare`: drops that chrome (border, background, radius, shadow)
+   * and keeps only its padding rhythm, for hosting inside another container
+   * (an `InstrumentPanel`, a seam-row list) that already supplies the
+   * matte plane — mirrors `StandingBars`' `frame="bare"`. Never nest two
+   * bordered boxes.
+   */
+  frame?: 'card' | 'bare';
+}
+
+/* ---------------------------------------------------------------------------
+ * CardFrame — the card's own bordered Surface, or a plain padded div when a
+ * host container already supplies the matte plane (frame="bare").
+ * ------------------------------------------------------------------------- */
+
+function CardFrame({
+  frame,
+  padding,
+  className,
+  children,
+}: {
+  frame: 'card' | 'bare';
+  padding: 'sm' | 'md';
+  className?: string;
+  children: ReactNode;
+}) {
+  if (frame === 'bare') {
+    return (
+      <div className={cn(padding === 'sm' ? 'p-4' : 'p-6', 'text-text-primary', className)}>
+        {children}
+      </div>
+    );
+  }
+  return (
+    <Surface padding={padding} elevation="border" className={className}>
+      {children}
+    </Surface>
+  );
 }
 
 /* ---------------------------------------------------------------------------
@@ -310,6 +349,50 @@ const ACTIONABLE_STATUSES = new Set(['active', 'in_progress', 'paused']);
 
 function isActionableStatus(status: string | null | undefined): boolean {
   return ACTIONABLE_STATUSES.has(status ?? 'active');
+}
+
+/* ---------------------------------------------------------------------------
+ * Trend series — the per-area Sparkline's input, oldest → newest
+ * ----------------------------------------------------------------------------
+ * Manual "Log progress" notes (`progressHistory`) merged with the driver's own
+ * `snapshots` (#1241), deduped per day; a measured snapshot wins over a
+ * same-day manual note because it is the value the card is actually showing.
+ * Exported so the player's phone focus-area rows (FairwayMyDevelopment) draw
+ * the SAME series the card does, and never a second, drifting derivation.
+ * ------------------------------------------------------------------------- */
+
+export interface FocusAreaTrendEntry {
+  /** The reading's day, `YYYY-MM-DD`. */
+  day: string;
+  value: number;
+}
+
+/**
+ * The dated readings behind {@link focusAreaTrendSeries}, oldest to newest.
+ * The development stage's Ribbon needs the day for its x labels and its
+ * "Last: 47.1 · Aug 31" readout; the series below is this list's values.
+ */
+export function focusAreaTrendEntries(
+  focusArea: Pick<FocusAreaCardData, 'progressHistory' | 'snapshots'>,
+): FocusAreaTrendEntry[] {
+  const byDay = new Map<string, number>();
+  const add = (at: string | null | undefined, value: unknown) => {
+    if (!at || typeof value !== 'number' || !Number.isFinite(value)) return;
+    byDay.set(at.slice(0, 10), value);
+  };
+  for (const e of focusArea.progressHistory ?? []) add(e.at, e.value);
+  // `snapshots` arrives as raw jsonb — never trust its shape.
+  const snaps = Array.isArray(focusArea.snapshots) ? focusArea.snapshots : [];
+  for (const s of snaps) add(s?.date, s?.value);
+  return [...byDay.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([day, value]) => ({ day, value }));
+}
+
+export function focusAreaTrendSeries(
+  focusArea: Pick<FocusAreaCardData, 'progressHistory' | 'snapshots'>,
+): number[] {
+  return focusAreaTrendEntries(focusArea).map((e) => e.value);
 }
 
 /* ---------------------------------------------------------------------------
@@ -386,7 +469,7 @@ export function SourceChip({
  * target value so the card reads "Target: 28.5 by Apr 12".
  * ------------------------------------------------------------------------- */
 
-function formatTimeframe(focusArea: FocusAreaCardData): string | null {
+export function formatTimeframe(focusArea: FocusAreaCardData): string | null {
   if (focusArea.target_kind === 'date' && focusArea.target_date) {
     // Parse the YYYY-MM-DD as a local date (split avoids the UTC-midnight
     // off-by-one that `new Date('2026-04-12')` causes in western timezones).
@@ -498,8 +581,8 @@ function ProgressMeter({
         // authoritative; a one-line reason is honest and actionable.
         <p className="font-fw-sans text-eyebrow text-text-tertiary">
           {!autoTracked
-            ? 'Tracked manually — log progress to move this one.'
-            : 'Progress starts from the next update — no starting value on record.'}
+            ? 'Tracked manually. Log progress to move this one.'
+            : 'Progress starts from the next update. No starting value on record.'}
         </p>
       )}
     </div>
@@ -634,6 +717,7 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
       index = 0,
       className,
       standing,
+      frame = 'card',
     },
     ref,
   ) {
@@ -668,20 +752,14 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
     // demonstrably moved. Merge the driver's own `snapshots` in, deduped per
     // day (the measured snapshot wins over a same-day manual note, since it is
     // the value the card is actually showing).
-    const series = useMemo(() => {
-      const byDay = new Map<string, number>();
-      const add = (at: string | null | undefined, value: unknown) => {
-        if (!at || typeof value !== 'number' || !Number.isFinite(value)) return;
-        byDay.set(at.slice(0, 10), value);
-      };
-      for (const e of focusArea.progressHistory ?? []) add(e.at, e.value);
-      // `snapshots` arrives as raw jsonb — never trust its shape.
-      const snaps = Array.isArray(focusArea.snapshots) ? focusArea.snapshots : [];
-      for (const s of snaps) add(s?.date, s?.value);
-      return [...byDay.entries()]
-        .sort(([a], [b]) => a.localeCompare(b))
-        .map(([, v]) => v);
-    }, [focusArea.progressHistory, focusArea.snapshots]);
+    const series = useMemo(
+      () =>
+        focusAreaTrendSeries({
+          progressHistory: focusArea.progressHistory,
+          snapshots: focusArea.snapshots,
+        }),
+      [focusArea.progressHistory, focusArea.snapshots],
+    );
     const hasTrend = series.length >= 2;
 
     // Trend classification is goodDirection-aware: for lower-is-better metrics,
@@ -712,12 +790,17 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
           animate="visible"
           transition={{ duration: reduced ? 0 : 0.4, delay: reduced ? 0 : index * 0.04, ease: [0.16, 1, 0.3, 1] }}
         >
-          <Surface
+          <CardFrame
+            frame={frame}
             padding="sm"
-            elevation="border"
             className={cn('flex flex-col gap-3', className)}
           >
-            <div className="flex items-center gap-4">
+            {/* Below `sm` the status cluster (pills · date · Reopen) takes its
+                own line under the title: on one line the three of them left
+                the title a few pixels wide, so a phone showed the icon, two
+                pills and Reopen and no name (player-development.mobile.md).
+                From `sm` the row is unchanged. */}
+            <div className="flex flex-wrap items-center gap-4">
               <span className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-fw-md bg-surface-sunken text-text-tertiary">
                 <AreaIcon size={18} />
               </span>
@@ -729,6 +812,7 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
                   <p className="font-fw-sans text-eyebrow text-text-tertiary">{areaLabel}</p>
                 ) : null}
               </div>
+              <div className="flex shrink-0 items-center gap-4 max-sm:w-full max-sm:justify-end">
               {recordedOutcome ? (
                 <StatusPill tone={recordedOutcome.tone} size="sm">
                   Outcome: {recordedOutcome.label}
@@ -762,6 +846,7 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
                   Reopen
                 </Button>
               ) : null}
+              </div>
             </div>
             {showOutcomeCapture ? (
               <div className="border-t border-border-subtle pt-3">
@@ -773,7 +858,7 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
                 />
               </div>
             ) : null}
-          </Surface>
+          </CardFrame>
         </motion.div>
       );
     }
@@ -802,7 +887,7 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
         animate="visible"
         transition={{ duration: reduced ? 0 : 0.4, delay: reduced ? 0 : index * 0.04, ease: [0.16, 1, 0.3, 1] }}
       >
-        <Surface padding="md" elevation="border" className={cn('space-y-4', className)}>
+        <CardFrame frame={frame} padding="md" className={cn('space-y-4', className)}>
           {/* Header: area icon + title + status */}
           <div className="flex items-start gap-4">
             <span className="grid h-12 w-12 flex-shrink-0 place-items-center rounded-fw-md bg-accent-50 text-accent-700">
@@ -906,8 +991,10 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
                 ? (() => {
                     const cfg = getMetricRenderConfig(standing.metric_id);
                     return cfg ? (
-                      <StandingStrip
-                        size="inline"
+                      <StandingBars
+                        frame="bare"
+                        size="sm"
+                        layout="compact"
                         metric_id={standing.metric_id}
                         metric_label={cfg.display_label}
                         player_value={standing.player_value}
@@ -1042,7 +1129,7 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
               ) : null}
             </div>
           )}
-        </Surface>
+        </CardFrame>
       </motion.div>
     );
   },

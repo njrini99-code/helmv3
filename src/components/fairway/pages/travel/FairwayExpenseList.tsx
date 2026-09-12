@@ -9,7 +9,8 @@
  * expand-to-detail row behavior, same delete flow (deleteTravelExpense,
  * unchanged), same receipt viewer — but on Fairway surfaces/tokens:
  *
- *   • ModalShell delete confirm (replaces the legacy `ConfirmDialog`)
+ *   • The shared `overlays/ConfirmModal` for the delete confirm (replaces the
+ *     legacy `ConfirmDialog`, then a file-local ModalShell recipe of its own)
  *   • ModalShell receipt viewer (replaces the raw `bg-warm-900/70` full-screen
  *     click-catcher `<Button>` overlay)
  *   • `fairwayToast` (replaces the direct `@/components/ui/sonner` import)
@@ -42,6 +43,9 @@ import {
   IconLayers,
 } from '@/components/icons';
 import { Button, Badge, ModalShell, fairwayToast, type FwStatusTone } from '@/components/fairway';
+// Direct path (not the barrel) — several page tests mock the top-level
+// fairway barrel and would otherwise need to stub this too.
+import { ConfirmModal } from '@/components/fairway/overlays/ConfirmModal';
 import {
   deleteTravelExpense,
   type TravelExpense,
@@ -288,26 +292,21 @@ export function FairwayExpenseList({ expenses, onEdit, onRefresh, isCoach }: Fai
         );
       })}
 
-      {/* Delete confirm — ONE ModalShell instance, matching the trip-delete
-          confirm on FairwayTripDetail (single overlay paradigm across Travel). */}
-      <ModalShell
+      {/* Delete confirm — the shared overlays/ConfirmModal (facelift
+          consolidation), matching the trip-delete confirm on FairwayTripDetail
+          (single overlay paradigm across Travel). */}
+      <ConfirmModal
         open={pendingDeleteId !== null}
-        onOpenChange={(open) => {
-          if (!open && !deleting) setPendingDeleteId(null);
-        }}
-        size="sm"
         title="Delete this expense?"
-        description="This can't be undone."
-      >
-        <ModalShell.Footer>
-          <Button variant="ghost" onClick={() => setPendingDeleteId(null)} disabled={deleting}>
-            Cancel
-          </Button>
-          <Button variant="danger" onClick={() => { void confirmDelete(); }} busy={deleting}>
-            Delete expense
-          </Button>
-        </ModalShell.Footer>
-      </ModalShell>
+        message="This can't be undone."
+        confirmLabel="Delete expense"
+        tone="danger"
+        isLoading={deleting}
+        onConfirm={() => { void confirmDelete(); }}
+        // Preserves the original guard: Escape/backdrop-click while a delete
+        // is in flight must not clear the target mid-request.
+        onCancel={() => { if (!deleting) setPendingDeleteId(null); }}
+      />
 
       {/* Receipt viewer — replaces the legacy raw bg-warm-900/70 click-catcher. */}
       <ModalShell

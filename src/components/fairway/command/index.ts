@@ -6,11 +6,17 @@
  * CommandMenu  → the summoned ⌘K palette (cmdk engine inside warm Liquid Glass):
  *                grouped results, recent items, zero-state suggestions, fully
  *                keyboardable.
- * GlassSurface → the local restrained Liquid-Glass panel the palette floats in.
+ * GlassSurface → thin `command`-scoped wrapper (internally `CommandGlassSurface`,
+ *                re-exported here as `GlassSurface` for backward compat) over
+ *                the canonical `surfaces` GlassSurface (`surface="command"`)
+ *                that floats the palette.
  *
- * Self-contained: no cross-folder imports beyond `@/lib/utils` (cn) and the
- * Fairway tokens/utilities. Styled to render correctly inside a `.fairway-ds`
- * scope on a `bg-canvas` page.
+ * Mostly self-contained: `command-menu.tsx` and `search-field.tsx` only reach
+ * for `@/lib/utils` (cn) and the Fairway tokens/utilities; `glass-surface.tsx`
+ * is the one intentional exception, delegating to `../surfaces/glass-surface`
+ * (the canonical Liquid-Glass primitive) rather than keeping a second,
+ * drifting glass recipe local to this folder. Styled to render correctly
+ * inside a `.fairway-ds` scope on a `bg-canvas` page.
  * ============================================================================
  */
 
@@ -24,5 +30,5 @@ export type {
   CommandGroup,
 } from './command-menu';
 
-export { GlassSurface } from './glass-surface';
+export { CommandGlassSurface as GlassSurface } from './glass-surface';
 export type { GlassSurfaceProps } from './glass-surface';

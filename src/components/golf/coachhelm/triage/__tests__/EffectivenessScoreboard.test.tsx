@@ -11,6 +11,12 @@
  * independently rendered their own "no data yet" copy — three boxes saying
  * the same non-finding. Pins: the grid no longer stretches rows
  * (`items-start`), and the triple-empty case collapses to ONE EmptyState.
+ *
+ * Container layout updated for the facelift's `InstrumentCluster` conversion
+ * (the old bespoke `grid-cols-1` wrapper is now the cluster's own
+ * `[data-slot="cluster-deck"]` grid; the old `Surface` cards are now
+ * `InstrumentPanel`s, `[data-slot="instrument-panel"]`) — every behavioral
+ * assertion below is unchanged.
  * ========================================================================== */
 import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
@@ -69,13 +75,17 @@ function renderBoard(props: Partial<EffectivenessScoreboardProps> = {}) {
 describe('EffectivenessScoreboard — Adoption intrinsic height', () => {
   it('no longer vertically centers the Adoption card content inside a stretched row', () => {
     const { container } = renderBoard();
-    // The row-level fix: grid stops stretching each card to match its
-    // tallest row-mate (was the implicit CSS Grid default).
-    const grid = container.querySelector('[class*="grid-cols-1"]');
-    expect(grid?.className).toContain('items-start');
+    // The row-level fix: `InstrumentCluster`'s own `cluster-deck` grid has no
+    // prop that reaches it directly, so the override rides a descendant
+    // selector on the outer `[data-slot="instrument-cluster"]` wrapper
+    // (`[&_[data-slot=cluster-deck]]:items-start`) instead of a literal
+    // utility on the grid itself — check the class that actually carries the
+    // fix rather than the (now nested) grid div's own className.
+    const cluster = container.querySelector('[data-slot="instrument-cluster"]');
+    expect(cluster?.className).toContain('items-start');
     // The card-level fix: no more `justify-center` fighting the intrinsic
     // content height inside an artificially tall card.
-    expect(screen.getByText('Adoption').closest('[data-slot="surface"]')?.className).not.toContain(
+    expect(screen.getByText('Adoption').closest('[data-slot="instrument-panel"]')?.className).not.toContain(
       'justify-center',
     );
   });

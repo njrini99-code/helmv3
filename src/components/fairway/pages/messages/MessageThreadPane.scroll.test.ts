@@ -74,6 +74,7 @@ describe('MessageThreadPane initial thread position', () => {
       userId: 'coach-1',
       currentUserId: 'coach-1',
       isOtherTyping: false,
+      now: new Date('2026-09-01T12:00:00Z'),
       onBack: vi.fn(),
       onNewMessage: vi.fn(),
       editingMessageId: null,
@@ -124,6 +125,7 @@ describe('MessageThreadPane initial thread position', () => {
       ] as MessageWithReadStatus[];
       const props: MessageThreadPaneProps = {
         conversation, messages, loading: false, userId: 'coach-1', currentUserId: 'coach-1', isOtherTyping: false,
+        now: new Date('2026-09-01T12:00:00Z'),
         onBack: vi.fn(), onNewMessage: vi.fn(), editingMessageId: null, editContent: '', isEditSaving: false,
         deleteConfirmId: null, mobileActionsId: null, onStartEdit: vi.fn(), onEditContentChange: vi.fn(),
         onCancelEdit: vi.fn(), onSaveEdit: vi.fn(), onDeleteClick: vi.fn(), onConfirmDelete: vi.fn(),
@@ -186,6 +188,7 @@ describe('MessageThreadPane initial thread position', () => {
       { id: 'm2', conversation_id: 'group-1', sender_id: 'p2', content: 'newest', created_at: '2026-09-01T00:01:00Z', read: false, is_deleted: false, edited_at: null, has_attachments: false },
     ] as MessageWithReadStatus[],
     loading: false, userId: 'coach-1', currentUserId: 'coach-1', isOtherTyping: false,
+    now: new Date('2026-09-01T12:00:00Z'),
     onBack: vi.fn(), onNewMessage: vi.fn(), editingMessageId: null, editContent: '', isEditSaving: false,
     deleteConfirmId: null, mobileActionsId: null, onStartEdit: vi.fn(), onEditContentChange: vi.fn(),
     onCancelEdit: vi.fn(), onSaveEdit: vi.fn(), onDeleteClick: vi.fn(), onConfirmDelete: vi.fn(),

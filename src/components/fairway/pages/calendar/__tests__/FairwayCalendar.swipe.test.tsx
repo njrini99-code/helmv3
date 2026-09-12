@@ -57,7 +57,11 @@ function swipe(body: HTMLElement, dx: number, dy: number, pointerType: 'touch' |
   fireEvent.pointerUp(body, { pointerId: 1, pointerType, clientX: 300 + dx, clientY: 400 + dy });
 }
 
-const title = () => screen.getByRole('heading', { level: 1 }).textContent ?? '';
+// Two mastheads mount unconditionally (the phone bar + the desktop Toolbar,
+// md:hidden / hidden md:block — jsdom applies no breakpoints), so there are
+// two <h1>s in the tree; both track the same focusDate/view and always
+// agree, so either serves this assertion.
+const title = () => screen.getAllByRole('heading', { level: 1 })[0]?.textContent ?? '';
 
 describe('FairwayCalendar — page-turn swipe', () => {
   beforeEach(() => {

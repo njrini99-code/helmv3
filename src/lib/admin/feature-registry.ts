@@ -205,7 +205,6 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
       'src/app/golf/actions/stats-intelligence.ts': 'ALL',
       'src/app/golf/actions/stats-leak-maps.ts': 'ALL',
       'src/app/golf/actions/shot-analytics.ts': 'ALL',
-      'src/app/golf/actions/team-sg-baseline.ts': 'ALL',
     },
     primaryTable: 'golf_player_stats_cache',
     heartbeatTable: 'golf_player_stats_cache',
@@ -629,9 +628,7 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     label: 'Admin Platform (self-referential)',
     app: 'golfhelm',
     actions: {
-      'src/app/golf/actions/admin-bi-data.ts': 'ALL',
       'src/app/golf/actions/admin-data.ts': 'ALL',
-      'src/app/golf/actions/admin-people-data.ts': 'ALL',
       'src/app/golf/actions/admin-system-data.ts': 'ALL',
       'src/app/golf/actions/admin-tracer-data.ts': 'ALL',
       'src/app/golf/actions/admin/rollup-c.ts': 'ALL',
@@ -762,7 +759,6 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     app: 'coachhelm',
     actions: {
       'src/app/golf/actions/coachhelm-analytics.ts': 'ALL',
-      'src/app/golf/actions/player-effectiveness.ts': 'ALL',
     },
     primaryTable: 'golf_insight_effectiveness',
     heartbeatTable: 'golf_insight_effectiveness',
@@ -809,7 +805,6 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
       'src/app/golf/actions/round-reviews.ts': 'ALL',
       'src/app/golf/actions/round-review-system.ts': 'ALL',
       'src/app/golf/actions/round-recap.ts': 'ALL',
-      'src/app/golf/actions/v3/llm.ts': 'ALL',
       'src/app/golf/actions/insights.ts': ['generateRoundReview'],
     },
     primaryTable: 'golf_round_reviews',
@@ -870,8 +865,6 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     app: 'coachhelm',
     actions: {
       'src/app/golf/actions/drills.ts': 'ALL',
-      'src/app/golf/actions/v3/practice-rx.ts': 'ALL',
-      'src/app/golf/actions/v3/team-practice-rx.ts': 'ALL',
     },
     primaryTable: 'golf_drills',
     heartbeatTable: 'golf_drills',
@@ -888,8 +881,6 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     app: 'coachhelm',
     actions: {
       'src/app/golf/actions/v3/goals.ts': 'ALL',
-      'src/app/golf/actions/v3/goal-progress.ts': 'ALL',
-      'src/app/golf/actions/v3/focus-area-progress.ts': 'ALL',
       'src/app/golf/actions/v3/intent.ts': 'ALL',
     },
     primaryTable: 'golf_goals',

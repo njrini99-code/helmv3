@@ -46,6 +46,31 @@ const STORAGE_FROM = /storage\s*\.\s*from\(\s*['"`]([a-z0-9][a-z0-9._-]*)['"`]/g
 /** Buckets referenced as a `bucket:` / `bucket =` option, incl. prop defaults. */
 const BUCKET_OPTION = /\bbucket\s*[:=]\s*['"`]([a-z0-9][a-z0-9._-]*)['"`]/g;
 
+/**
+ * `bucket` is not only a storage word. Two vocabularies in this codebase use
+ * it for a CLASSIFICATION and BUCKET_OPTION cannot tell them apart from a
+ * storage id:
+ *
+ *   - the day grouping behind the notification feed, whose values come from
+ *     `dayBucketFor` in `src/app/golf/actions/unified-notifications-model.ts`;
+ *   - the observability program's severity classification, already described
+ *     in the fixtures comment below.
+ *
+ * These are matched on the VALUE, not the file, so a real storage bucket that
+ * happened to be referenced from the same file is still caught. Renaming the
+ * field at either call site would make it diverge from the API it implements,
+ * which is a worse trade than naming the four words here.
+ */
+const NOT_STORAGE_BUCKET_IDS = new Set([
+  'today',
+  'yesterday',
+  'earlier',
+  'expected_control_flow',
+  'actionable_warning',
+  'actionable_error',
+  'critical_error',
+]);
+
 function walk(dir: string, out: string[] = []): string[] {
   for (const entry of readdirSync(dir)) {
     if (entry === 'node_modules' || entry.startsWith('.')) continue;
@@ -79,7 +104,7 @@ function bucketsReferencedInSource(): Map<string, string[]> {
       let m: RegExpExecArray | null;
       while ((m = re.exec(text)) !== null) {
         const id = m[1];
-        if (!id) continue;
+        if (!id || NOT_STORAGE_BUCKET_IDS.has(id)) continue;
         const rel = file.slice(REPO_ROOT.length + 1);
         const at = found.get(id) ?? [];
         if (!at.includes(rel)) at.push(rel);

@@ -44,12 +44,11 @@
  * ADDITIVE ONLY — imported by nothing live until the route fork; renders inside a
  * `.fairway-ds` scope on a `bg-canvas` page.
  *
- * WAVE 2 — the header instrument described above now LIVES in
- * `RosterHealthHeader.tsx` (component + its pure `computeRosterHealth`/
- * `computeNeedsAttention` computations), imported here unchanged, so the
- * canonical Roster page (`FairwayCoachRoster.tsx`) can port the SAME
- * instrument as its own header band instead of it sitting orphaned behind
- * this hidden `?view=players` route.
+ * WAVE 2 — the header instrument described above moved out of this file; its
+ * pure `computeRosterHealth`/`computeNeedsAttention` computations live in
+ * `roster-health.ts` and the canonical Roster page (`FairwayCoachRoster.tsx`)
+ * renders them as its own header band. The `RosterHealthHeader` JSX component
+ * that briefly hosted them was deleted once nothing rendered it.
  * ========================================================================== */
 
 import * as React from 'react';
@@ -64,9 +63,9 @@ import { type AreaAutoFillStats } from './areaTypes';
 import { FocusAreaModal, type FocusAreaModalSubmit } from './FocusAreaModal';
 // The instrument cockpit kit — the warm-glass hero header (matches
 // FairwayEffectiveness): ranked cluster, frosted bezels, honest big readouts.
-// (InstrumentCluster/SegmentBar/SegmentBarPart moved to RosterHealthHeader.tsx
-// with the roster-health instrument itself — InstrumentPanel/Readout stay,
-// still used by FocusAreaBoard below.)
+// (InstrumentCluster/SegmentBar/SegmentBarPart left with the roster-health
+// instrument, since deleted; InstrumentPanel/Readout stay, still used by
+// FocusAreaBoard below.)
 // Imported from each module's own leaf path, not the top `@/components/fairway`
 // barrel — this file is itself re-exported (via pages/coachhelm/index.ts) from
 // that barrel, so importing the barrel back here created an import cycle,
@@ -74,14 +73,12 @@ import { FocusAreaModal, type FocusAreaModalSubmit } from './FocusAreaModal';
 import { InstrumentPanel, Readout } from '@/components/fairway/instrument';
 import { TrendGlyph } from '@/components/fairway/charts';
 import {
-  RosterHealthHeader,
-  computeRosterHealth,
-  computeNeedsAttention,
-} from './RosterHealthHeader';
-import {
   DataTable,
   type ColumnDef,
 } from '@/components/fairway/data-table';
+import { Toolbar } from '@/components/fairway/controls/Toolbar';
+import { SearchField } from '@/components/fairway/command/search-field';
+import { FilterPill } from '@/components/fairway/controls/filter-pill';
 import { PlayerIdentity } from '@/components/fairway/controls/PlayerIdentity';
 import { Button, IconButton } from '@/components/fairway/controls/button';
 import { Segmented } from '@/components/fairway/controls/segmented';
@@ -109,6 +106,16 @@ import {
   type FocusAreaOutcome,
 } from '@/app/golf/actions/development';
 import { formatScoringAverage } from '@/lib/golf/format-scoring-average';
+
+// Seam rows between each bucket's FocusAreaCards (frame="bare") — one
+// hairline between rows, a true half-pixel on 2x+ screens. Same recipe as
+// `InsetGroup`/`FairwayAgendaView`'s row dividers, applied directly on the
+// FocusAreaBoard's own InstrumentPanel plane instead of a nested InsetGroup:
+// InsetGroup's `bg-surface-sunken` would flatten the cards' own internal
+// Inset trend/progress wells (same bg), and its `overflow-hidden` would clip
+// a card control's focus ring sitting flush to the row edge.
+const FOCUS_AREA_ROW_SEAM_CLASS =
+  '[&>*+*]:border-t [&>*+*]:border-border-subtle [@media(min-resolution:2dppx)]:[&>*+*]:border-t-[0.5px]';
 
 /* ---------------------------------------------------------------------------
  * Props — mirror the development route's loader output EXACTLY
@@ -240,10 +247,9 @@ export interface RosterRow {
   completedCount: number;
 }
 
-// `NeedRow` + the roster-health/needs-attention pure computations and the
-// `RosterHealthHeader` instrument itself now live in `RosterHealthHeader.tsx`
-// (Wave 2) — extracted so the canonical Roster page can port the SAME "Who
-// needs your attention" instrument instead of re-deriving it.
+// `NeedRow` + the roster-health/needs-attention pure computations live in
+// `roster-health.ts` (Wave 2), extracted so the canonical Roster page renders
+// the SAME "Who needs your attention" instrument instead of re-deriving it.
 
 /* ---------------------------------------------------------------------------
  * PlayersGridView
@@ -286,6 +292,12 @@ export function PlayersGridView({
     setSelectedPlayerId(initialSelectedPlayerId);
     setView(initialPlayersView ?? (initialSelectedPlayerId ? 'areas' : 'grid'));
   }, [initialSelectedPlayerId, initialPlayersView]);
+
+  // Roster search + focus-area filter — local view-state only (grid view),
+  // scoped to the Toolbar below. Not URL-backed: `onNavigationChange` only
+  // carries `{ view, playerId }`, and neither is worth a deep-link.
+  const [rosterSearch, setRosterSearch] = React.useState('');
+  const [areaFilter, setAreaFilter] = React.useState<'all' | 'with' | 'without'>('all');
 
   // Modal state — the shared FocusAreaModal owns the form lifecycle + saving.
   const [createOpen, setCreateOpen] = React.useState(false);
@@ -333,24 +345,27 @@ export function PlayersGridView({
     [players, focusAreas, playerStats],
   );
 
+  // Name search + "has an active focus area" filter — narrows which rows the
+  // mobile card list and the desktop DataTable render. `rosterRows` above
+  // stays the source of truth for the true "no players on roster" empty
+  // state; this is a SEPARATE "no matches" case (audit: a search/filter that
+  // matches nothing must never look like an empty roster).
+  const filteredRosterRows = React.useMemo(() => {
+    const q = rosterSearch.trim().toLowerCase();
+    return rosterRows.filter((row) => {
+      if (areaFilter === 'with' && row.activeCount === 0) return false;
+      if (areaFilter === 'without' && row.activeCount > 0) return false;
+      if (!q) return true;
+      return playerName(row.player).toLowerCase().includes(q);
+    });
+  }, [rosterRows, rosterSearch, areaFilter]);
+
   const visibleAreas = React.useMemo(
     () =>
       selectedPlayerId
         ? focusAreas.filter((fa) => fa.player_id === selectedPlayerId)
         : focusAreas,
     [focusAreas, selectedPlayerId],
-  );
-
-  /* ---- roster-health header metrics + coach triage (RosterHealthHeader.tsx,
-         Wave 2 extraction — SAME computation, now shared with the Roster
-         page). Derived from the SAME props; no new fetch, no fake. -- */
-  const rosterHealth = React.useMemo(
-    () => computeRosterHealth(players, focusAreas, playerStats),
-    [players, focusAreas, playerStats],
-  );
-  const needsAttention = React.useMemo(
-    () => computeNeedsAttention(rosterRows),
-    [rosterRows],
   );
 
   const selectedPlayer = selectedPlayerId
@@ -457,11 +472,11 @@ export function PlayersGridView({
     // Range guard — ported from the player-side dialog: reject negatives and
     // absurd magnitudes before the round-trip rather than after.
     if (logValue < 0) {
-      setLogValueError('Value can’t be negative — enter 0 or higher.');
+      setLogValueError('Value can’t be negative. Enter 0 or higher.');
       return;
     }
     if (logValue > LOG_VALUE_MAX) {
-      setLogValueError(`That looks too large — enter a value up to ${LOG_VALUE_MAX.toLocaleString('en-US')}.`);
+      setLogValueError(`That looks too large. Enter a value up to ${LOG_VALUE_MAX.toLocaleString('en-US')}.`);
       return;
     }
     setLogValueError(null);
@@ -552,7 +567,7 @@ export function PlayersGridView({
                     tone="neutral"
                     variant="outline"
                     size="sm"
-                    title="Alert posture is set to Silent for this player — CoachHelm keeps analyzing but never surfaces an insight. Change it from the Roster page."
+                    title="Alert posture is set to Silent for this player. CoachHelm keeps analyzing but never surfaces an insight. Change it from the Roster page."
                   >
                     Insights muted
                   </Badge>
@@ -758,35 +773,51 @@ export function PlayersGridView({
     />
   );
 
-  /* ---- header actions ---- */
+  // A search/filter that matches nothing is NOT the same as an empty roster
+  // (rosterEmptyState above) — a distinct, actionable message so a coach
+  // scanning a real, non-empty roster never reads "no players on the active
+  // roster" for their own team.
+  const rosterNoMatchesState = (
+    <EmptyState
+      icon={LucideTarget}
+      title="No players match"
+      description="Try a different name, or clear the focus-area filter."
+    />
+  );
+
+  /* ---- view toggle (Roster / Focus areas) ---- */
+
+  const viewToggle = (
+    <Segmented
+      size="sm"
+      value={view}
+      onValueChange={(v) => {
+        const nextView = v as 'grid' | 'areas';
+        const nextPlayerId = nextView === 'grid' ? null : selectedPlayerId;
+        setView(nextView);
+        if (nextView === 'grid') setSelectedPlayerId(null);
+        onNavigationChange?.({ view: nextView, playerId: nextPlayerId });
+      }}
+      options={[
+        { value: 'grid', label: 'Roster' },
+        { value: 'areas', label: 'Focus areas' },
+      ]}
+      aria-label="Players view"
+    />
+  );
+
+  /* ---- header actions — the ONE primary action; the view toggle + roster
+         search/filter live in the Toolbar below, not up here. ---- */
 
   const headerActions = (
-    <div className="flex items-center gap-2">
-      <Segmented
-        size="sm"
-        value={view}
-        onValueChange={(v) => {
-          const nextView = v as 'grid' | 'areas';
-          const nextPlayerId = nextView === 'grid' ? null : selectedPlayerId;
-          setView(nextView);
-          if (nextView === 'grid') setSelectedPlayerId(null);
-          onNavigationChange?.({ view: nextView, playerId: nextPlayerId });
-        }}
-        options={[
-          { value: 'grid', label: 'Roster' },
-          { value: 'areas', label: 'Focus areas' },
-        ]}
-        aria-label="Players view"
-      />
-      <Button
-        variant="primary"
-        size="sm"
-        leftIcon={<IconPlus size={15} />}
-        onClick={() => openCreate()}
-      >
-        New focus area
-      </Button>
-    </div>
+    <Button
+      variant="primary"
+      size="sm"
+      leftIcon={<IconPlus size={15} />}
+      onClick={() => openCreate()}
+    >
+      New focus area
+    </Button>
   );
 
   return (
@@ -808,10 +839,55 @@ export function PlayersGridView({
           </InlineNotice>
         ) : null}
 
-        {/* ── ROSTER-HEALTH HEADER INSTRUMENT — the hero. A ranked cluster on
-              warm glass: coverage gauge focal, outcome-mix rail, micro-readout
-              foot row. Reads from the same props (no new fetch). ── */}
-        <RosterHealthHeader health={rosterHealth} needs={needsAttention} onAdd={openCreate} />
+        {/* ---- TOOLBAR (bare row on the shell's own matte plane, never a
+               boxed card) — the Roster/Focus areas view toggle always shows;
+               the roster search + "has a focus area" filter only apply to
+               the roster table, so they render only in that view. ---- */}
+        <Toolbar
+          material="frost"
+          aria-label="Players view and roster filters"
+          viewToggle={viewToggle}
+          search={
+            view === 'grid' ? (
+              <SearchField
+                size="sm"
+                value={rosterSearch}
+                onChange={(e) => setRosterSearch(e.target.value)}
+                onClear={() => setRosterSearch('')}
+                placeholder="Search players by name"
+                aria-label="Search players"
+              />
+            ) : null
+          }
+          filters={
+            view === 'grid' ? (
+              <>
+                <FilterPill
+                  selected={areaFilter === 'with'}
+                  onClick={() => setAreaFilter((v) => (v === 'with' ? 'all' : 'with'))}
+                >
+                  With focus areas
+                </FilterPill>
+                <FilterPill
+                  selected={areaFilter === 'without'}
+                  onClick={() => setAreaFilter((v) => (v === 'without' ? 'all' : 'without'))}
+                >
+                  Without focus areas
+                </FilterPill>
+              </>
+            ) : null
+          }
+        />
+
+        {/* The roster-health header instrument (coverage/outcome-mix/micro-
+              readouts) was removed here (Fairway Premium Facelift — Triage
+              Desk spec's "roster health header duplicate" removal item):
+              the same numbers (players needing attention, focus areas
+              active) now live in the Triage Desk's Spine ledger one level
+              up, and this view can be mounted standalone (via the
+              `/development` redirect shim) where that duplication no
+              longer applied either. The math survives in `roster-health.ts`,
+              which `FairwayCoachRoster.tsx` imports. ── */}
 
         {/* Player filter chip strip (selecting a player scopes the areas view). */}
         {selectedPlayer ? (
@@ -840,7 +916,9 @@ export function PlayersGridView({
           <section aria-label="Team roster" className="flex flex-col gap-3">
             <div className="flex items-baseline justify-between gap-3">
               <p className="font-fw-display text-eyebrow uppercase tracking-[0.14em] text-text-tertiary">
-                Roster · {rosterRows.length} player{rosterRows.length === 1 ? '' : 's'}
+                {filteredRosterRows.length === rosterRows.length
+                  ? `Roster · ${rosterRows.length} player${rosterRows.length === 1 ? '' : 's'}`
+                  : `Roster · ${filteredRosterRows.length} of ${rosterRows.length} players`}
               </p>
               <p className="font-fw-sans text-caption text-text-tertiary">
                 Tap a player to scope their focus areas
@@ -858,8 +936,12 @@ export function PlayersGridView({
                 <div className="rounded-card border border-border-subtle bg-surface">
                   {rosterEmptyState}
                 </div>
+              ) : filteredRosterRows.length === 0 ? (
+                <div className="rounded-card border border-border-subtle bg-surface">
+                  {rosterNoMatchesState}
+                </div>
               ) : (
-                rosterRows.map((row) => (
+                filteredRosterRows.map((row) => (
                   <RosterPlayerCard
                     key={row.player.id}
                     row={row}
@@ -887,7 +969,7 @@ export function PlayersGridView({
                 bordered/rounded panels (a faint double hairline). */}
             <div className="hidden sm:block">
               <DataTable<RosterRow>
-                data={rosterRows}
+                data={filteredRosterRows}
                 columns={columns}
                 density="comfortable"
                 getRowId={(r) => r.player.id}
@@ -897,7 +979,7 @@ export function PlayersGridView({
                   setView('areas');
                   onNavigationChange?.({ view: 'areas', playerId: r.player.id });
                 }}
-                emptyState={rosterEmptyState}
+                emptyState={rosterRows.length === 0 ? rosterEmptyState : rosterNoMatchesState}
               />
             </div>
           </section>
@@ -1047,7 +1129,7 @@ export function PlayersGridView({
               <TextArea
                 value={logNote}
                 onChange={(e) => setLogNote(e.target.value)}
-                placeholder="e.g. Drilled dispersion on the range — tighter today."
+                placeholder="e.g. Drilled dispersion on the range, tighter today."
                 rows={2}
               />
             </FormField>
@@ -1319,10 +1401,11 @@ function FocusAreaBoard({
       className="flex flex-col gap-6"
     >
       {active.length > 0 ? (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className={FOCUS_AREA_ROW_SEAM_CLASS}>
           {active.map((fa, i) => (
             <FocusAreaCard
               key={fa.id}
+              frame="bare"
               focusArea={fa}
               // eslint-disable-next-line jsx-a11y/aria-role
               role="coach"
@@ -1348,10 +1431,11 @@ function FocusAreaBoard({
           <p className="font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary">
             Pending acceptance ({proposed.length})
           </p>
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <div className={FOCUS_AREA_ROW_SEAM_CLASS}>
             {proposed.map((fa, i) => (
               <FocusAreaCard
                 key={fa.id}
+                frame="bare"
                 focusArea={fa}
                 // eslint-disable-next-line jsx-a11y/aria-role
                 role="coach"
@@ -1373,10 +1457,11 @@ function FocusAreaBoard({
           <p className="font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary">
             Declined ({declined.length})
           </p>
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <div className={FOCUS_AREA_ROW_SEAM_CLASS}>
             {declined.map((fa, i) => (
               <FocusAreaCard
                 key={fa.id}
+                frame="bare"
                 focusArea={fa}
                 // eslint-disable-next-line jsx-a11y/aria-role
                 role="coach"
@@ -1395,10 +1480,11 @@ function FocusAreaBoard({
           <p className="font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary">
             Completed ({completed.length})
           </p>
-          <div className="space-y-2">
+          <div className={FOCUS_AREA_ROW_SEAM_CLASS}>
             {completed.map((fa, i) => (
               <FocusAreaCard
                 key={fa.id}
+                frame="bare"
                 focusArea={fa}
                 // eslint-disable-next-line jsx-a11y/aria-role
                 role="coach"

@@ -16,9 +16,11 @@
  * repeats them.
  * ========================================================================== */
 
-import type { PriorityItem, SpineLedgerRow, StandingTrackProps } from '@/components/fairway/modules';
+import type { PriorityItem, SpineLedgerRow } from '@/components/fairway/modules';
 import { clampPct } from '@/components/fairway/modules';
-import { standingSubjectLabel } from '@/components/golf/coachhelm/v3/StandingBar';
+import type { StandingBarsProps } from '@/components/fairway/charts/StandingBars';
+import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
+import type { PlayerStandingRow } from '@/app/golf/actions/stats-leak-maps-types';
 
 /** The seven `?area=` stage views (`home` renders the bento). */
 export type StatsArea =
@@ -216,27 +218,39 @@ export function sgToTrackPct(value: number | null | undefined, halfRange = 2): n
 }
 
 /**
- * The spine's `StandingTrack` — you vs Team vs Tour on one rail, anchored by
- * SG: Total. Returns `undefined` when there's no SG: Total value yet (honest
- * cold-start — the spine simply omits the track rather than drawing one at
- * a fabricated center).
+ * The spine's standing readout — you vs Team vs Tour, anchored by SG: Total,
+ * rendered as a bare `StandingBars` row group (replaced 2026-09-10; used to
+ * hand `Spine` a reduced `{pct, benchmarks}` shape for its own `StandingTrack`
+ * pin). Passes the FULL `sg_total` row through — not just the two scalars the
+ * old shape carried — so `StandingBars` derives its own cold-start gate
+ * (`team_n`), not the old "show Team whenever team_avg isn't null" check that
+ * skipped `shouldShowTeamMarker` entirely. Returns `undefined` when there's
+ * no SG: Total value yet (honest cold-start — the spine simply omits the
+ * section rather than drawing one at a fabricated center).
  */
-export function buildStandingTrack(
-  sgTotal: number | null | undefined,
-  teamAvg: number | null | undefined,
+export function buildStandingBars(
+  sgTotalRow: PlayerStandingRow | null | undefined,
   standingViewerContext: 'self' | 'coach' = 'self',
   playerName?: string | null,
-): StandingTrackProps | undefined {
-  const you = finite(sgTotal);
+): StandingBarsProps | undefined {
+  const you = finite(sgTotalRow?.player_value ?? null);
   if (you === null) return undefined;
-  const team = finite(teamAvg);
+  const cfg = getMetricRenderConfig('sg_total');
+  if (!cfg) return undefined;
   return {
-    pct: sgToTrackPct(you),
-    subjectLabel: standingSubjectLabel(standingViewerContext, playerName),
-    benchmarks: [
-      ...(team !== null ? [{ label: 'Team', pct: sgToTrackPct(team) }] : []),
-      { label: 'Tour', pct: sgToTrackPct(0), emphasis: true },
-    ],
+    metric_id: 'sg_total',
+    metric_label: cfg.display_label,
+    player_value: you,
+    team_avg: sgTotalRow?.team_avg ?? null,
+    team_n: sgTotalRow?.team_n ?? 0,
+    team_pct: sgTotalRow?.team_pct ?? null,
+    pga_value: sgTotalRow?.pga_value ?? 0,
+    is_womens: sgTotalRow?.is_womens,
+    direction: cfg.direction,
+    unit: cfg.unit,
+    scale: cfg.default_scale,
+    viewer_context: standingViewerContext,
+    player_name: playerName ?? undefined,
   };
 }
 

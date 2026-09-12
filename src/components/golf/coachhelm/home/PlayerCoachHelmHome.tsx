@@ -19,7 +19,7 @@
  * PRESERVED LOGIC (imported / reused, never rewritten): `rateInsightAsPlayer`
  * feedback round-trip, `getPlayerWhatIf` scenario simulation (inside
  * `DeepDiveDrill`), `createGoal` "make it a plan" (inside `InsightsDrill`'s
- * `ThemesPanel`), every focus-area write action (inside `DevelopmentDrill`).
+ * `ThemesPanel`), every focus-area write action (inside `FairwayMyDevelopment`).
  * ========================================================================== */
 
 import { useCallback, useMemo, useState, useTransition } from 'react';
@@ -53,13 +53,13 @@ import { useToast } from '@/components/ui/sonner';
 import {
   buildFocusAreaPriorities,
   buildPlayerLedger,
-  buildPlayerStandingTrack,
+  buildPlayerStandingBars,
   buildPredictionVerdict,
   formatPredictionHero,
 } from './buildPlayerHomeViewModel';
 import { PlayerSpine } from './PlayerSpine';
 import { PlayerHomeBento } from './PlayerHomeBento';
-import { DevelopmentDrill } from './DevelopmentDrill';
+import { FairwayMyDevelopmentStage } from '@/components/fairway/pages/coachhelm/FairwayMyDevelopment';
 import { ProfileDrill, type GameProfileAxis, type GameProfileDimensionCell, type GameProfilePersonaEntry } from './ProfileDrill';
 import { StandingDrill } from './StandingDrill';
 import { InsightsDrill } from './InsightsDrill';
@@ -184,7 +184,7 @@ export function PlayerCoachHelmHome({
     // FIX 3: a player whose only CoachHelm artifact is completed focus areas
     // (every active/proposed area finished) previously fell through every
     // branch above and got the whole-page empty state, even though
-    // `DevelopmentDrill` has a real "Completed" section to render for them.
+    // `FairwayMyDevelopment` has a real "Completed" section to render for them.
     developmentCompletedAreas.length > 0 ||
     goals.length > 0 ||
     achievedGoals.length > 0;
@@ -263,9 +263,10 @@ export function PlayerCoachHelmHome({
     [addToast, router],
   );
 
-  const sgTotal = finite(standingByMetric['sg_total']?.player_value ?? null);
-  const sgTeamAvg = finite(standingByMetric['sg_total']?.team_avg ?? null);
-  const track = useMemo(() => buildPlayerStandingTrack(sgTotal, sgTeamAvg), [sgTotal, sgTeamAvg]);
+  const standing = useMemo(
+    () => buildPlayerStandingBars(standingByMetric['sg_total']),
+    [standingByMetric],
+  );
 
   const priorities = useMemo(
     () => buildFocusAreaPriorities(data.focusAreas.map((a) => ({ area: a.area, strokesGained: a.strokesGained, value: a.value, unit: a.unit }))),
@@ -353,7 +354,7 @@ export function PlayerCoachHelmHome({
     {
       key: 'development',
       node: (
-        <DevelopmentDrill
+        <FairwayMyDevelopmentStage
           activeAreas={developmentActiveAreas}
           completedAreas={developmentCompletedAreas}
           proposedAreas={developmentProposedAreas}
@@ -422,7 +423,7 @@ export function PlayerCoachHelmHome({
           mobileClassName={showMobileSpine ? undefined : 'hidden'}
           hero={hero}
           verdict={verdict}
-          track={track}
+          standing={standing}
           priorities={priorities}
           ledger={ledger}
         />

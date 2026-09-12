@@ -6,18 +6,21 @@
  * ----------------------------------------------------------------------------
  * The EXPANDED / DOCKED read of ONE signal — the sibling of `InsightCard`.
  *
- * Where `InsightCard` is the *scanned* read in a feed (priority tint bar, lead
- * icon, narrative, evidence Inset, action row), `InsightPanel` is the *read*:
- * the same signal, opened in place to its full detail. It is the expand-in-place
- * that kills the player "View N more" dead-end — a player taps a card and the
- * SAME signal blooms open, never navigating away into a fabricated detail page.
+ * Where `InsightCard` is the *scanned* read in a feed (a small priority dot,
+ * lead icon, narrative, evidence Inset, action row), `InsightPanel` is the
+ * *read*: the same signal, opened in place to its full detail. It is the
+ * expand-in-place that kills the player "View N more" dead-end — a player
+ * taps a card and the SAME signal blooms open, never navigating away into a
+ * fabricated detail page.
  *
  * THE CONTRACT (blueprint primitivesToBuild → InsightPanel):
  *   "MUST look identical scanned vs read." So InsightPanel imports the SAME
- *   `PRIORITY` tone map + `InsightPriority` vocabulary that InsightCard exports
- *   — one source of truth for the tint bar, lead-icon tone, default icon, and
- *   the accessible priority word. It composes the SAME evidence `Inset` token
- *   (`bg-surface-sunken`) and the SAME action vocabulary
+ *   `PRIORITY` tone map + `InsightPriority` vocabulary that InsightCard
+ *   exports — one source of truth for the lead-icon tone, default icon, and
+ *   the accessible priority word (surfaced here as a `StatusPill`, never a
+ *   side-stripe/tint-bar accent — that family is banned, see
+ *   `PRIORITY_PILL_TONE`'s docstring). It composes the SAME evidence `Inset`
+ *   token (`bg-surface-sunken`) and the SAME action vocabulary
  *   (Acknowledge / Dismiss / → Focus Area / Ask). It does NOT fork any of it.
  *
  * RENDER MODES (the blueprint's "Sheet (narrow) or docked column (wide)"):
@@ -34,7 +37,8 @@
  *
  * Self-contained: imports only the shared `cn()`, this folder's `InsightCard`
  * vocabulary, the surfaces/overlays/controls/feedback primitives, and the
- * locked `--fw-*` tokens. ADDITIVE — imported by nothing in the live app.
+ * locked `--fw-*` tokens. First real (non-test) consumer:
+ * `triage/SignalInsightPanel.tsx` (the Signals workspace's "CoachHelm" pane).
  * ============================================================================
  */
 
@@ -51,6 +55,8 @@ import { cn } from '@/lib/utils';
 import { Surface, Inset } from '../surfaces/surface';
 import { Sheet } from '../overlays/Sheet';
 import { Button, IconButton } from '../controls/button';
+import { StatusPill } from '../controls/status-pill';
+import type { FwStatusTone } from '../controls/_internal';
 import { InsufficientData } from '../feedback/InsufficientData';
 // SHARED vocabulary — the single source of truth for priority tone, imported
 // (never re-declared) so a signal looks identical scanned (card) vs read (panel).
@@ -60,6 +66,21 @@ import { InsufficientData } from '../feedback/InsufficientData';
 import { PRIORITY, ICON_TONE, type InsightPriority, type InsightIconTone } from './InsightCard';
 
 export type InsightPanelMode = 'auto' | 'sheet' | 'docked';
+
+/**
+ * Priority → `StatusPill` tone. Facelift (2026-09, REVIEW.md): both render
+ * modes used to paint a colored `absolute left-0 top-0 h-full w-1` rail —
+ * the banned side-stripe accent family. Removed; the same priority now reads
+ * from the lead icon's tone, the overline word, AND this pill (the shared
+ * `PRIORITY` map's `word`, e.g. "Critical") — never a raw color bar.
+ */
+const PRIORITY_PILL_TONE: Record<InsightPriority, FwStatusTone> = {
+  critical: 'danger',
+  high: 'warning',
+  medium: 'accent',
+  low: 'neutral',
+  info: 'info',
+};
 
 /**
  * A single declarative action in the panel's action row. Mirrors the
@@ -85,7 +106,7 @@ export interface InsightPanelAction {
 
 export interface InsightPanelProps {
   /* -- identity / vocabulary (shared with InsightCard) -- */
-  /** Drives the tint bar + lead-icon tone — the SAME map as InsightCard. */
+  /** Drives the priority pill + lead-icon tone — the SAME map as InsightCard. */
   priority?: InsightPriority;
   /** Small uppercase eyebrow above the title (e.g. "Putting · Signal"). */
   overline?: ReactNode;
@@ -228,7 +249,7 @@ function PanelBody({
 }: PanelBodyProps) {
   const tone = PRIORITY[priority];
   // Bug #915: the SAME direction-by-sign override InsightCard exposes — see
-  // its docstring. `priority` still drives the tint bar below.
+  // its docstring. `priority` still drives the icon wrap + the pill below.
   const toneOverride = iconTone ? ICON_TONE[iconTone] : null;
   const iconWrapClass = toneOverride?.iconWrap ?? tone.iconWrap;
   const LeadIcon = toneOverride?.icon ?? tone.icon;
@@ -238,50 +259,67 @@ function PanelBody({
   const hasActions =
     actionsSlot != null || (Array.isArray(actions) && actions.length > 0);
 
+  // Priority pill — the shared PRIORITY map's accessible `word` ("Critical",
+  // "High priority", ...), THE replacement for the removed left-edge tint
+  // bar (see PRIORITY_PILL_TONE's docstring). Rendered in both header shapes
+  // below so sheet mode (which skips the full header entirely) doesn't lose
+  // the priority signal the bar used to carry.
+  const priorityPill = (
+    <StatusPill tone={PRIORITY_PILL_TONE[priority]} size="sm" className="shrink-0">
+      {tone.word}
+    </StatusPill>
+  );
+
   return (
     <div className="flex min-w-0 flex-col gap-5">
-      {/* header: lead icon + overline/title (left) · meta (right). The card
-          uses the EXACT same tint bar + lead-icon wrap tokens — read weight is
-          a larger Fraunces title, nothing forked. */}
+      {/* header: icon + overline + priority pill on one row, the (larger,
+          Fraunces) title on its own line below, meta below that. Previously
+          a large 44px icon sat beside a narrow overline/title column with
+          meta crammed to the right — cramped at panel width (facelift
+          REVIEW.md). The icon steps down to 32px so it reads as a marker
+          next to the overline, not a second focal point competing with the
+          title. */}
       {!headerless ? (
-        <div className="flex items-start gap-4">
-          {leadIcon ? (
-            <span
-              className={cn(
-                'flex h-11 w-11 shrink-0 items-center justify-center rounded-fw-md p-2.5',
-                iconWrapClass,
-              )}
-            >
-              {leadIcon}
-            </span>
-          ) : null}
-
-          <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+        <div className="flex min-w-0 flex-col gap-2">
+          <div className="flex min-w-0 items-center gap-2.5">
+            {leadIcon ? (
+              <span
+                className={cn(
+                  'flex h-8 w-8 shrink-0 items-center justify-center rounded-fw-md p-1.5',
+                  iconWrapClass,
+                )}
+              >
+                {leadIcon}
+              </span>
+            ) : null}
             {overline ? (
-              <span className="font-fw-sans text-eyebrow uppercase text-text-tertiary">
+              <span className="min-w-0 truncate font-fw-sans text-eyebrow uppercase text-text-tertiary">
                 {overline}
               </span>
             ) : null}
-            <h2
-              id={titleId}
-              className="min-w-0 font-fw-display text-h2 font-medium tracking-[-0.005em] text-text-primary"
-            >
-              {title}
-            </h2>
+            {priorityPill}
           </div>
 
+          <h2
+            id={titleId}
+            className="min-w-0 font-fw-display text-h3 font-medium tracking-[-0.005em] text-text-primary"
+          >
+            {title}
+          </h2>
+
           {meta ? (
-            <span className="shrink-0 pt-0.5 font-fw-sans text-caption text-text-tertiary">
-              {meta}
-            </span>
+            <span className="font-fw-sans text-caption text-text-tertiary">{meta}</span>
           ) : null}
         </div>
-      ) : meta ? (
-        // headerless (Sheet) still surfaces the meta line under the sheet title
-        <div className="flex items-center justify-end">
-          <span className="font-fw-sans text-caption text-text-tertiary">{meta}</span>
+      ) : (
+        // headerless (Sheet) — the Sheet renders its own title; this still
+        // surfaces the priority pill (the bar it replaced was the ONLY
+        // priority signal in sheet mode) and the meta line underneath it.
+        <div className="flex items-center justify-between gap-2">
+          {priorityPill}
+          {meta ? <span className="font-fw-sans text-caption text-text-tertiary">{meta}</span> : null}
         </div>
-      ) : null}
+      )}
 
       {/* body: honest emptiness OR the full narrative */}
       {empty ? (
@@ -370,10 +408,14 @@ export const InsightPanel = forwardRef<HTMLDivElement, InsightPanelProps>(
     },
     ref,
   ) {
-    const prefersReduced = useReducedMotion();
+    // `?? false` normalizes framer-motion's `boolean | null` to a plain
+    // `boolean`, matching the repo's convention. It does not by itself close
+    // the hydration gap on the docked panel's `initial` (via `reveal` below)
+    // for a reduced-motion user (server sees `null`/falsy, client's first
+    // render can resolve `true`) — that gap is a separate, open issue.
+    const prefersReduced = useReducedMotion() ?? false;
     const isWide = useIsWide();
     const titleId = useId();
-    const tone = PRIORITY[priority];
 
     // auto → docked on wide, sheet on narrow. Explicit modes win.
     const resolvedMode: 'sheet' | 'docked' =
@@ -405,8 +447,10 @@ export const InsightPanel = forwardRef<HTMLDivElement, InsightPanelProps>(
     /* ── SHEET (narrow) — the SAME signal sliding in from the edge ───────── */
     if (resolvedMode === 'sheet') {
       // The Sheet owns the styled title + its own a11y wiring; render the body
-      // headerless so the title isn't duplicated, but keep the priority tint as
-      // a leading rail so the signal still reads identical to the card.
+      // headerless so the title isn't duplicated. Priority reads from the
+      // headerless PanelBody's own pill row now (see PRIORITY_PILL_TONE) —
+      // side-stripe accents (the left-edge rail this used to render) are
+      // banned by the design system.
       return (
         <Sheet
           open={open}
@@ -440,37 +484,27 @@ export const InsightPanel = forwardRef<HTMLDivElement, InsightPanelProps>(
           className={className}
         >
           <Sheet.Body>
-            {/* priority rail — the same tint vocabulary as the card's tint bar */}
-            <div className="relative pl-4">
-              <span
-                aria-hidden
-                className={cn(
-                  'absolute left-0 top-0 h-full w-1 rounded-full',
-                  tone.bar,
-                )}
-              />
-              <PanelBody
-                priority={priority}
-                overline={overline}
-                title={title}
-                icon={icon}
-                iconTone={iconTone}
-                hideIcon={hideIcon}
-                meta={meta}
-                evidence={evidence}
-                evidenceLabel={evidenceLabel}
-                detail={detail}
-                actions={actions}
-                actionsSlot={actionsSlot}
-                empty={empty}
-                emptyTitle={emptyTitle}
-                emptyMessage={emptyMessage}
-                titleId={titleId}
-                headerless
-              >
-                {children}
-              </PanelBody>
-            </div>
+            <PanelBody
+              priority={priority}
+              overline={overline}
+              title={title}
+              icon={icon}
+              iconTone={iconTone}
+              hideIcon={hideIcon}
+              meta={meta}
+              evidence={evidence}
+              evidenceLabel={evidenceLabel}
+              detail={detail}
+              actions={actions}
+              actionsSlot={actionsSlot}
+              empty={empty}
+              emptyTitle={emptyTitle}
+              emptyMessage={emptyMessage}
+              titleId={titleId}
+              headerless
+            >
+              {children}
+            </PanelBody>
           </Sheet.Body>
         </Sheet>
       );
@@ -501,13 +535,9 @@ export const InsightPanel = forwardRef<HTMLDivElement, InsightPanelProps>(
           padding="lg"
           className="relative overflow-hidden"
         >
-          {/* left priority tint bar — IDENTICAL token to InsightCard's bar */}
-          <span
-            aria-hidden
-            className={cn('absolute left-0 top-0 h-full w-1', tone.bar)}
-          />
-
-          {/* docked close affordance (optional) */}
+          {/* docked close affordance (optional). Priority no longer reads
+              from a left-edge tint bar (banned side-stripe accent) — it's
+              the pill in PanelBody's own header row now. */}
           {onClose ? (
             <div className="absolute right-4 top-4">
               <IconButton
@@ -524,7 +554,7 @@ export const InsightPanel = forwardRef<HTMLDivElement, InsightPanelProps>(
             </div>
           ) : null}
 
-          <div className={cn('pl-2', onClose && 'pr-10')}>{sharedBody}</div>
+          <div className={cn(onClose && 'pr-10')}>{sharedBody}</div>
         </Surface>
       </motion.div>
     );

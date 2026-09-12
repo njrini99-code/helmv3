@@ -1,4 +1,12 @@
 /**
+ * DEPRECATED 2026-09-10 — replaced by charts/StandingBars; delete when the
+ * dead-code pass confirms no consumers. (Owner: "I've asked repeatedly to
+ * get rid of these slider things. Everywhere... Replace it with an actual
+ * component." This file still renders the dot-on-a-rail marker being
+ * replaced — do not add new consumers.)
+ */
+
+/**
  * v3 StandingBar — public entry point.
  *
  * Dispatches to the size-variant component (Card / Inline / Hero). All

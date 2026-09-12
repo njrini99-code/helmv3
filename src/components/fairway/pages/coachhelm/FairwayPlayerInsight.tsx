@@ -83,6 +83,7 @@ import {
 } from '@/app/golf/actions/insights';
 import { createFocusAreaFromInsight } from '@/app/golf/actions/development';
 import { useGolfUser } from '@/contexts/golf-user-context';
+import { formatShortDate } from '@/lib/golf/format-date';
 
 /* ---------------------------------------------------------------------------
  * Props — mirror the legacy PlayerInsightClient signature verbatim
@@ -228,9 +229,17 @@ function formatHandicap(handicap: number | null): string {
   return handicap.toFixed(1);
 }
 
-function formatRelativeDate(dateStr: string): string {
+/**
+ * `now` is required and nullable, not an internal `new Date()`: "how long ago"
+ * is wall-clock-dependent, so reading it directly here could render "Today"
+ * on the server and "3 days ago" on the client's first paint (React #418).
+ * `null` (pre-mount) falls back to the same absolute short date every pass
+ * renders identically — never an empty string, since this label sits inline
+ * in a sentence ("Started …").
+ */
+export function formatRelativeDate(dateStr: string, now: Date | null): string {
   const date = new Date(dateStr);
-  const now = new Date();
+  if (!now) return formatShortDate(date);
   const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
   if (diffDays === 0) return 'Today';
   if (diffDays === 1) return 'Yesterday';
@@ -448,6 +457,18 @@ export function FairwayPlayerInsight({
   // broken-image glyph.
   const [avatarErrored, setAvatarErrored] = useState(false);
   const showAvatarImage = Boolean(player.avatar_url) && !avatarErrored;
+
+  /**
+   * Wall-clock reference for `formatRelativeDate`'s "N days ago" labels.
+   * `null` until mount so the server render and the client's first paint
+   * agree (both fall back to the same absolute date) instead of computing a
+   * relative label from whatever instant each happened to run at (React
+   * #418) — same pattern as FairwayAgendaView's useMinuteClock.
+   */
+  const [now, setNow] = useState<Date | null>(null);
+  useEffect(() => {
+    setNow(new Date());
+  }, []);
 
   const [insights, setInsights] = useState<EvidenceInsight[]>([]);
   const [insightsLoading, setInsightsLoading] = useState(true);
@@ -960,7 +981,7 @@ export function FairwayPlayerInsight({
                           </div>
                         </div>
                       ) : null}
-                      <p className="font-fw-sans text-eyebrow text-text-tertiary">Started {formatRelativeDate(fa.created_at)}</p>
+                      <p className="font-fw-sans text-eyebrow text-text-tertiary">Started {formatRelativeDate(fa.created_at, now)}</p>
                     </div>
                   );
                 })}
@@ -979,7 +1000,7 @@ export function FairwayPlayerInsight({
                           {formatMetricLabel(pred.metric)}
                         </p>
                         {pred.due_date ? (
-                          <p className="mt-0.5 font-fw-sans text-eyebrow text-text-tertiary">Due {formatRelativeDate(pred.due_date)}</p>
+                          <p className="mt-0.5 font-fw-sans text-eyebrow text-text-tertiary">Due {formatRelativeDate(pred.due_date, now)}</p>
                         ) : null}
                       </div>
                       <div className="flex-shrink-0 text-right">

@@ -7,10 +7,16 @@
  * The Fairway re-skin of the legacy `editorial/DayStrip` — seven sculpted day
  * pills that frame the visible week and show event density via tiny dots.
  *
- * Fairway tokens:
- *   - rest    → bg-inset (toasted-cream well), muted past days
- *   - selected → bg-accent-500 + cream text (the green CTA fill)
- *   - today    → ring-2 ring-accent-300 (a quiet calibration ring)
+ * ONE continuous rail (not seven separate pills): a single sunken track
+ * (bg-surface-sunken, rounded-fw-md, p-1) holding seven equal cells. Fairway
+ * tokens:
+ *   - rest     → transparent over the sunken track, muted past days
+ *   - selected → a tinted matte island (bg-surface + accent text,
+ *     rounded-fw-sm) — NO frost; frost is spent on the masthead bar this
+ *     strip lives inside, never nested glass-on-glass.
+ *   - today    → the accent number dot (a small dot under the day number),
+ *     independent of selection so "today" and "selected" read as two
+ *     channels, not one competing ring.
  *   - density  → up to 3 dots colored by event-type tone (accent/warning/
  *     success/neutral), straight from REAL per-day event counts.
  *
@@ -22,7 +28,12 @@
  * are byte-identical between SSR and the first client render; no
  * `suppressHydrationWarning` needed.
  *
- * GOTCHA (a): native <button> per pill, never `Surface as="button"`.
+ * GOTCHA (a): each cell is a native <button> via `PressTarget` (never
+ * `Surface as="button"`, never Fairway `Button` — `Button` fires its own
+ * unconditional `fwHaptic('light')` on click, which would tick even on a
+ * re-tap of the already-selected day; `PressTarget`'s own selection haptic is
+ * disabled here (`haptic={false}`) so the strip can fire it itself, and only
+ * when the day actually changes — see the onClick below).
  *
  * DENSITY-DOT BUCKETING (timezone): events are keyed by calendar day via
  * `getZonedDateParts(iso, teamTimezone)`, NOT a raw `.slice(0, 10)` of the
@@ -41,10 +52,12 @@ import * as React from 'react';
 import { startOfWeek, addDays, isSameDay, isBefore, format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useScrollFade } from '@/lib/fairway/use-scroll-fade';
-import { Button } from '@/components/fairway/controls/button';
+import { PressTarget } from '@/components/fairway/controls/press-target';
 import { fwHaptic } from '@/lib/fairway/haptics';
 import { eventDaySpan } from '@/lib/calendar/timezone';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
+import { typeMeta } from './eventPresentation';
+import type { FwStatusTone } from '@/components/fairway/controls';
 
 /** Same `yyyy-MM-dd` shape as `format(day, 'yyyy-MM-dd')` on the local pill
  *  Dates below, but derived from the event's ISO instant AS SEEN in
@@ -53,19 +66,27 @@ const WEEK_STARTS_ON = 0 as const;
 /** Longest multi-day span a single event may mark (guards a bad end date). */
 const MAX_SPAN_DAYS = 62;
 
-/** event_type → density-dot tint, same tone vocabulary as FairwayEventCard. */
-const TYPE_DOT_CLASS: Record<string, string> = {
-  practice: 'bg-accent-500',
-  tournament: 'bg-fw-warning',
-  qualifier: 'bg-fw-success',
-  qualifying: 'bg-fw-success',
-  travel: 'bg-text-tertiary',
-  workout: 'bg-accent-500',
-  team_meeting: 'bg-text-tertiary',
-  meeting: 'bg-text-tertiary',
-  class: 'bg-text-tertiary',
+/**
+ * Density-dot tint, keyed by TONE rather than by event_type: three copies of
+ * an event-type presentation table already exist (this file, the drawer,
+ * eventPresentation.ts — see calendar.mobile.md RISKS #5), so a type-keyed
+ * dot map here would be a FOURTH list that a new event_type could miss
+ * silently. Routing through `typeMeta(...).tone` — the canonical
+ * eventPresentation.ts lookup, import-only per this package's ownership —
+ * means a new type automatically gets a correct dot color (via its tone and
+ * `typeMeta`'s own 'other' fallback) with nothing to keep in sync here. This
+ * tone→class map is the one remaining local table, and it is exhaustive over
+ * `FwStatusTone` (a closed union), so it cannot drift the way a type-keyed
+ * map could.
+ */
+const TONE_DOT_CLASS: Record<FwStatusTone, string> = {
+  neutral: 'bg-text-tertiary',
+  accent: 'bg-accent-500',
+  success: 'bg-fw-success',
+  warning: 'bg-fw-warning',
+  danger: 'bg-fw-danger',
+  info: 'bg-text-primary',
 };
-const DEFAULT_DOT_CLASS = 'bg-text-tertiary';
 
 export interface FairwayDayStripProps {
   /** Anchor — the strip frames the week containing this date. */
@@ -189,7 +210,13 @@ export function FairwayDayStrip({
       onPointerDown={handleSwipeStart}
       onPointerUp={handleSwipeEnd}
       onPointerCancel={() => { swipeRef.current = null; }}
-      className={cn('grid grid-flow-col auto-cols-[minmax(44px,1fr)] gap-0.5 overflow-x-auto overscroll-x-contain touch-pan-y [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:gap-1', className)}
+      className={cn(
+        // ONE continuous track — the rail itself is the sunken well; each
+        // cell below is transparent over it except the selected island.
+        'grid grid-flow-col auto-cols-[minmax(44px,1fr)] gap-0.5 overflow-x-auto overscroll-x-contain touch-pan-y [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+        'bg-surface-sunken rounded-fw-md p-1 md:gap-1',
+        className,
+      )}
     >
       {days.map((day) => {
         const key = format(day, 'yyyy-MM-dd');
@@ -207,14 +234,15 @@ export function FairwayDayStrip({
         }
 
         return (
-          // GOTCHA (a): Fairway <Button variant="ghost">, not Surface as="button".
-          <Button
+          // GOTCHA (a) — see the file header: PressTarget, haptic disabled,
+          // the strip fires its own gated selection tick below.
+          <PressTarget
             key={key}
             ref={dayIsSelected ? selectedRef : undefined}
-            type="button"
-            variant="ghost"
+            haptic={false}
             onClick={() => {
               if (dayIsSelected) return;
+              fwHaptic('selection');
               onSelectDate(day);
             }}
             aria-current={dayIsToday ? 'date' : undefined}
@@ -225,13 +253,15 @@ export function FairwayDayStrip({
                 : ' — no events'
             }`}
             className={cn(
-              'group relative block h-auto min-h-[60px] w-full border-0 font-normal md:min-h-[68px]',
-              'rounded-fw-md px-0.5 py-1 md:px-2 md:py-2',
-              'transition-[background-color,box-shadow,transform,color] [transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)]',
-              'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
-              'motion-reduce:transition-none',
-              'bg-transparent hover:bg-surface-sunken active:translate-y-0',
-              dayIsSelected && 'text-text-primary',
+              'group relative block h-auto min-h-[60px] w-full font-normal md:min-h-[68px]',
+              // The selected day is a tinted matte island on the sunken
+              // track — bg-surface + accent text, one radius step down from
+              // the track (rounded-fw-sm), no frost (frost is spent on the
+              // masthead bar this strip lives inside).
+              'rounded-fw-sm px-0.5 py-1 md:px-2 md:py-2',
+              dayIsSelected
+                ? 'bg-surface shadow-flat'
+                : '[@media(hover:hover)]:hover:bg-surface-tint',
             )}
           >
             <span className="flex h-full min-h-[44px] w-full flex-col items-center justify-center gap-1">
@@ -255,19 +285,14 @@ export function FairwayDayStrip({
                 {format(day, 'EEE')}
               </span>
 
-              {/* Day number — Fragment-Mono tabular-nums, inside a 32px disc.
-                  Selected = the emerald fill; today = a quiet ring. */}
+              {/* Day number — accent text for selected/today (the island's
+                  background is what marks "selected" now; the number itself
+                  no longer carries a filled disc or a ring). */}
               <span
                 className={cn(
-                  // One date-state vocabulary shared with the month grid:
-                  // selected = solid accent fill; today = a quiet accent ring.
-                  'grid h-9 w-9 place-items-center rounded-full font-fw-sans text-body font-semibold leading-none tabular-nums transition-[background-color,color] motion-reduce:transition-none',
-                  dayIsSelected && 'bg-accent-650 text-text-on-accent [box-shadow:inset_0_1px_0_oklch(1_0_0/0.22),var(--fw-shadow-soft)]',
-                  !dayIsSelected && dayIsToday && 'ring-1 ring-inset ring-accent-650 text-accent-700',
-                  dayIsSelected
-                    ? 'text-text-on-accent'
-                    : dayIsToday
-                      ? 'text-accent-700'
+                  'grid h-9 w-9 place-items-center rounded-full font-fw-sans text-body font-semibold leading-none tabular-nums',
+                  dayIsSelected || dayIsToday
+                    ? 'text-accent-700'
                     : dayIsPast
                       ? // The DATE is the data in this cell, so it must outrank its
                         // own weekday label. At tertiary/70 (3.43:1) it was landing
@@ -282,6 +307,14 @@ export function FairwayDayStrip({
                 {format(day, 'd')}
               </span>
 
+              {/* The accent "today" dot — independent of selection, so
+                  today and selected read as two channels rather than one
+                  ring competing with the island. Fixed-height row (like the
+                  density row below) so non-today cells don't shift. */}
+              <span aria-hidden className="flex h-1 items-center justify-center">
+                {dayIsToday ? <span className="h-1 w-1 rounded-full bg-accent-600" /> : null}
+              </span>
+
               {/* Density dots — up to 3 type-toned (capped at 3). */}
               <span aria-hidden className="flex h-1.5 items-center gap-[3px]">
                 {dotTypes.length === 0 ? (
@@ -292,7 +325,7 @@ export function FairwayDayStrip({
                       key={`${key}-${t}-${i}`}
                       className={cn(
                         'h-1 w-1 rounded-full',
-                        TYPE_DOT_CLASS[t] ?? DEFAULT_DOT_CLASS,
+                        TONE_DOT_CLASS[typeMeta(t).tone],
                         dayIsPast && !dayIsSelected && 'opacity-50',
                       )}
                     />
@@ -300,7 +333,7 @@ export function FairwayDayStrip({
                 )}
               </span>
             </span>
-          </Button>
+          </PressTarget>
         );
       })}
     </div>

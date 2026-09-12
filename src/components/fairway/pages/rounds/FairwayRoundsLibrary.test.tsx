@@ -15,7 +15,7 @@
  * — a real duplicate-draft scenario — must collapse to ONE resumable card.
  * ========================================================================== */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 
 import { FairwayRoundsLibrary } from './FairwayRoundsLibrary';
 import type { RoundLibraryRound } from './FairwayRoundsLibrary';
@@ -173,5 +173,156 @@ describe('FairwayRoundsLibrary — in-progress round discoverability', () => {
 
     expect(screen.getByText('Pebble Beach Golf Links')).toBeInTheDocument();
     expect(screen.getByText('Augusta National')).toBeInTheDocument();
+  });
+});
+
+/**
+ * ============================================================================
+ * Facelift — the page's only Surface is the stage (rounds-library.v3.md
+ * "The table" → "Bare on the canvas, no Surface"; LANGUAGE.md:32/:60)
+ * ----------------------------------------------------------------------------
+ * Pre-v3, this test asserted one ledger Surface wrapping the grouped table.
+ * v3 removes that wrapper entirely — the table (and its group seam headers)
+ * render bare on the canvas — and moves the page's one-and-only Surface to
+ * the stage (`RoundField`'s "Round scatter" region), which renders
+ * unconditionally off `rounds.length > 0`, not off the `stats` prop this
+ * test passes as `null`. So this now asserts: exactly one Surface total,
+ * and it's the stage, not the ledger; the month labels live directly in the
+ * (bare) document, not nested inside that Surface.
+ * ========================================================================== */
+describe('FairwayRoundsLibrary — facelift: the stage is the page\'s only Surface', () => {
+  it('renders exactly one Surface — the stage — with the bare table outside it', () => {
+    const { container } = render(
+      <FairwayRoundsLibrary
+        rounds={[
+          makeRound({ id: 'r1', round_date: '2026-06-15' }),
+          makeRound({ id: 'r2', round_date: '2026-07-02' }),
+        ]}
+        inProgressRounds={[]}
+        userRole="coach"
+        stats={null}
+      />,
+    );
+
+    // Both months' rounds are present, directly on the canvas…
+    expect(screen.getByText('June 2026')).toBeInTheDocument();
+    expect(screen.getByText('July 2026')).toBeInTheDocument();
+
+    // …exactly one Surface on the page, and it's the stage, not the ledger:
+    // a regression that re-wraps the table (or drops the stage) would fail
+    // this either by count or by which node it is.
+    const surfaces = Array.from(container.querySelectorAll('[data-slot="surface"]'));
+    expect(surfaces).toHaveLength(1);
+    const stage = screen.getByRole('region', { name: 'Round scatter' });
+    expect(surfaces[0]).toBe(stage);
+
+    // …and the month labels are NOT nested inside that Surface — they live
+    // in the bare table beside it.
+    expect(stage.textContent ?? '').not.toContain('June 2026');
+    expect(stage.textContent ?? '').not.toContain('July 2026');
+  });
+});
+
+/**
+ * ============================================================================
+ * Facelift follow-up — ledger pagination (owner-reported lag on accounts
+ * with a lot of history: a real ledger can be 90+ rounds, ~8,300px of page,
+ * rendered eagerly in one pass)
+ * ----------------------------------------------------------------------------
+ * Only the first page of rows renders across ALL groups (never per group);
+ * a "Show 30 more" Button grows it. Row count is asserted via each TABLE
+ * row's own `<a href="/golf/dashboard/rounds/:id">` link (one per round),
+ * scoped to `[data-slot="rounds-table"]` — the v3 stage above also links
+ * every plotted round (`RoundField`), so an unscoped count would double-count.
+ * ========================================================================== */
+describe('FairwayRoundsLibrary — pagination for long ledgers', () => {
+  function makeManyRounds(count: number): RoundLibraryRound[] {
+    return Array.from({ length: count }, (_, i) => {
+      const month = 1 + Math.floor(i / 28);
+      const day = (i % 28) + 1;
+      return makeRound({
+        id: `r${i}`,
+        round_date: `2026-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
+      });
+    });
+  }
+
+  it('paints only the first 30 rows across groups, then reveals 30 more per click', () => {
+    const { container } = render(
+      <FairwayRoundsLibrary
+        rounds={makeManyRounds(100)}
+        inProgressRounds={[]}
+        userRole="coach"
+        stats={null}
+      />,
+    );
+    const rowLinks = () =>
+      container.querySelector('[data-slot="rounds-table"]')!.querySelectorAll('a[href^="/golf/dashboard/rounds/"]');
+
+    expect(rowLinks()).toHaveLength(30);
+
+    const showMore = screen.getByRole('button', { name: 'Show 30 more' });
+    fireEvent.click(showMore);
+
+    expect(rowLinks()).toHaveLength(60);
+  });
+
+  it('hides the "Show more" control once every row is on the page', () => {
+    render(
+      <FairwayRoundsLibrary
+        rounds={makeManyRounds(20)}
+        inProgressRounds={[]}
+        userRole="coach"
+        stats={null}
+      />,
+    );
+
+    expect(screen.queryByRole('button', { name: 'Show 30 more' })).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * ============================================================================
+ * player-rounds.v2.md / rounds-library.v3.md — both roles open with their own
+ * stage now: the player's scoring stage (unchanged), the coach's v3 Round
+ * scatter stage (replacing the old Cockpit cluster, see the next describe
+ * block). Neither role has a ledger Surface anymore — the table is bare.
+ * ========================================================================== */
+describe('FairwayRoundsLibrary — player v2 stage (role fork)', () => {
+  const stats = {
+    totalRounds: 3,
+    avg: 74.3,
+    best: 72,
+    avgToPar: 2.3,
+    underParPct: 0,
+    trend: null,
+  } as const;
+  const rounds = [
+    makeRound({ id: 'r1', round_date: '2026-06-15', total_score: 76, score_to_par: 4 }),
+    makeRound({ id: 'r2', round_date: '2026-07-02', total_score: 75, score_to_par: 3 }),
+    makeRound({ id: 'r3', round_date: '2026-08-31', total_score: 72, score_to_par: 0 }),
+  ];
+
+  it('player: the stage names the newest round, the masthead keeps its static title, no cockpit', () => {
+    render(
+      <FairwayRoundsLibrary rounds={rounds} inProgressRounds={[]} userRole="player" stats={stats} />,
+    );
+    expect(screen.getByRole('heading', { level: 1, name: 'Your rounds.' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Scoring' })).toBeInTheDocument();
+    expect(screen.getByText('Six scored rounds unlock the trend.')).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: /Last \(E\) · Pebble Beach Golf Links · Aug 31/ }),
+    ).toHaveAttribute('href', '/golf/dashboard/rounds/r3');
+    expect(screen.getByRole('region', { name: 'Where your scores land' })).toBeInTheDocument();
+    expect(screen.queryByLabelText('Round summary instrument cluster')).not.toBeInTheDocument();
+  });
+
+  it('coach: the v3 Round scatter stage renders and the old cockpit does not', () => {
+    render(
+      <FairwayRoundsLibrary rounds={rounds} inProgressRounds={[]} userRole="coach" stats={stats} />,
+    );
+    expect(screen.getByRole('region', { name: 'Round scatter' })).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Scoring' })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Round summary instrument cluster')).not.toBeInTheDocument();
   });
 });

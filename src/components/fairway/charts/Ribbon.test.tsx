@@ -264,3 +264,31 @@ describe('Ribbon — the trace + its <svg> both fill the full plot width (bug #9
     expect(lastX).toBeGreaterThan(500);
   });
 });
+
+describe('Ribbon — markLast (the newest reading, marked)', () => {
+  const SERIES: RibbonPoint[] = [
+    { x: 'Jun 10', y: 76 },
+    { x: 'Jun 20', y: 78 },
+    { x: 'Jul 1', y: 74 },
+  ];
+
+  it('default (off): no last-point marker is drawn (unchanged for existing callers)', () => {
+    render(<Ribbon title="Scores" data={SERIES} />);
+    expect(document.querySelector('[data-slot="ribbon-last-marker"]')).toBeNull();
+  });
+
+  it('markLast: draws exactly ONE marker, on the last finite point', () => {
+    render(<Ribbon title="Scores" data={[...SERIES, { x: 'Jul 9', y: Number.NaN }]} markLast />);
+    const markers = document.querySelectorAll<HTMLElement>('[data-slot="ribbon-last-marker"]');
+    expect(markers).toHaveLength(1);
+    // Three finite points across the 600-unit viewBox: the last sits at the
+    // right pad (592/600), positioned as a DOM dot so it stays round at any
+    // aspect ratio.
+    expect(markers[0]!.style.left).toMatch(/^98\.6/);
+  });
+
+  it('markLast in the awaiting state draws nothing (never a marker on a fabricated trace)', () => {
+    render(<Ribbon title="Scores" data={SERIES.slice(0, 1)} markLast />);
+    expect(document.querySelector('[data-slot="ribbon-last-marker"]')).toBeNull();
+  });
+});

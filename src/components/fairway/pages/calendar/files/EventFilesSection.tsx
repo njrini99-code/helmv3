@@ -5,12 +5,16 @@
  * contained data fetch (same pattern as the drawer's linked-itinerary
  * lookup): keyed by `active` + `eventId`, failure-silent to a Retry state,
  * never assuming a document exists that hasn't loaded.
+ *
+ * Presentation (calendar.mobile.md "CONTAINERS TO REMOVE / MERGE" item 5):
+ * an eyebrow ("Files · N") above one InsetGroup, a row per file — no
+ * wrapper card around the section in the drawer.
  */
 
 import * as React from 'react';
 import { ExternalLink, FileText, Paperclip, RefreshCw, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Button, EmptyState, InlineNotice, Skeleton } from '@/components/fairway';
+import { Button, EmptyState, InlineNotice, Skeleton, InsetGroup, Eyebrow } from '@/components/fairway';
 import { getEventDocuments, detachDocumentFromEvent, type EventDocumentRow } from '@/app/golf/actions/event-documents';
 import { EventFilePicker } from './EventFilePicker';
 
@@ -98,16 +102,11 @@ export function EventFilesSection({ eventId, teamId, isCoach, active }: EventFil
   };
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <span aria-hidden className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-full', 'text-text-secondary')}>
-            <Paperclip className="h-4 w-4" aria-hidden />
-          </span>
-          <p className="font-fw-sans text-body-sm font-semibold text-text-primary">
-            Files{state.status === 'loaded' ? ` · ${rows.length}` : ''}
-          </p>
-        </div>
+    <div className="flex flex-col">
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <Eyebrow as="p">
+          Files{state.status === 'loaded' ? ` · ${rows.length}` : ''}
+        </Eyebrow>
         {isCoach && state.status !== 'failed' ? (
           <Button
             variant="ghost"
@@ -121,7 +120,7 @@ export function EventFilesSection({ eventId, teamId, isCoach, active }: EventFil
       </div>
 
       {detachError ? (
-        <div>
+        <div className="mb-3">
           <InlineNotice tone="danger" dismissible onDismiss={() => setDetachError(null)}>
             {detachError}
           </InlineNotice>
@@ -158,11 +157,25 @@ export function EventFilesSection({ eventId, teamId, isCoach, active }: EventFil
           <p className="font-fw-sans text-body-sm text-text-tertiary">No files attached.</p>
         )
       ) : (
-        <ul className="flex flex-col gap-2">
+        <InsetGroup variant="inset">
           {rows.map(({ document, attachedAt, note }) => (
-            <li
+            <InsetGroup.Row
               key={document.id}
-              className={cn('flex min-h-12 items-center justify-between gap-3 rounded-fw-md py-2 pl-4 pr-2', 'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]')}
+              trailing={
+                isCoach ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDetach(document.id)}
+                    disabled={detachingId === document.id}
+                    aria-label={`Remove ${document.title}`}
+                    className="h-9 w-9 shrink-0 rounded-fw-sm p-0 text-text-tertiary hover:bg-surface hover:text-fw-danger-ink disabled:opacity-50"
+                  >
+                    <X className="h-4 w-4" aria-hidden />
+                  </Button>
+                ) : undefined
+              }
             >
               <a
                 href={document.file_url}
@@ -170,13 +183,11 @@ export function EventFilesSection({ eventId, teamId, isCoach, active }: EventFil
                 rel="noopener noreferrer"
                 aria-label={`Open ${document.title} (opens in a new tab)`}
                 className={cn(
-                  'flex min-w-0 flex-1 items-center gap-2.5 outline-none',
+                  'flex min-w-0 items-center gap-2.5 rounded-fw-sm outline-none',
                   'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-1',
                 )}
               >
-                <span aria-hidden className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-full', 'text-text-secondary')}>
-                  <FileText className="h-4 w-4" aria-hidden />
-                </span>
+                <FileText className="h-4 w-4 shrink-0 text-text-secondary" aria-hidden />
                 <span className="min-w-0">
                   <span className="flex items-center gap-1.5 truncate font-fw-sans text-body-sm font-medium text-text-primary">
                     {document.title}
@@ -189,25 +200,9 @@ export function EventFilesSection({ eventId, teamId, isCoach, active }: EventFil
                   </span>
                 </span>
               </a>
-              {isCoach ? (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleDetach(document.id)}
-                  disabled={detachingId === document.id}
-                  aria-label={`Remove ${document.title}`}
-                  className={cn(
-                    'h-9 w-9 shrink-0 rounded-fw-sm p-0 text-text-tertiary',
-                    'hover:bg-surface hover:text-fw-danger-ink disabled:opacity-50',
-                  )}
-                >
-                  <X className="h-4 w-4" aria-hidden />
-                </Button>
-              ) : null}
-            </li>
+            </InsetGroup.Row>
           ))}
-        </ul>
+        </InsetGroup>
       )}
 
       {isCoach ? (

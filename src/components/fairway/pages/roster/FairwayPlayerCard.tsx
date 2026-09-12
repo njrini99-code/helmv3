@@ -39,6 +39,14 @@ export interface RosterPlayer {
   /** Canonical scoring trend (`@/lib/golf/scoring-trend`) — null when there
    *  isn't enough round history yet for a real signal. */
   recent_trend?: TrendVerdict | null;
+  /**
+   * Split-half delta behind `recent_trend` (recentAvg − previousAvg, NOT
+   * direction-adjusted) — null exactly when `recent_trend` is null. Facelift
+   * addition (docs/design/fairway-facelift/screens/roster.v3.md, Risks):
+   * powers the stage's Trend chip magnitude, the table's Trend column, and
+   * the masthead verdict's "improving/sliding the most, N strokes" clauses.
+   */
+  recent_trend_delta?: number | null;
   /** golf_player_stats_cache.sg_total_per_round. */
   sg_total?: number | null;
   /** Team-percentile cohort caption for the sg_total standing (e.g. "Top
@@ -48,17 +56,45 @@ export interface RosterPlayer {
   active_focus_areas?: number;
   /** Active v3 goals count. */
   active_goals?: number;
+  /**
+   * Last-10 rounds, 18-hole normalized, oldest→newest — for the roster
+   * MatrixBoard's trend Sparkline (FairwayCoachRoster.tsx). Derived in
+   * roster/page.tsx from the SAME `roundsByPlayer` data already fetched for
+   * `recent_trend`, via the identical `Math.round(score * (18/holes))`
+   * normalization stats/team/page.tsx uses — no new query. Additive/optional
+   * so this card's own render is unaffected.
+   */
+  recent_scores?: number[];
+  /**
+   * Every round this player has logged, oldest→newest, real (unnormalized)
+   * score and to-par — the ScoreField stage's per-round bars. Facelift
+   * addition; unlike `recent_scores`, not capped and not hole-normalized.
+   */
+  rounds?: RosterPlayerRound[];
+}
+
+/** One plotted round for the ScoreField stage — see `RosterPlayer.rounds`. */
+export interface RosterPlayerRound {
+  id: string;
+  /** `YYYY-MM-DD`. */
+  date: string;
+  score: number;
+  toPar: number;
+  courseName: string | null;
 }
 
 /** SG:Total deadzone — |value| at or below this reads as neutral (matches
  *  the "roughly even" honesty band the rest of the SG rendering uses). */
 const SG_TONE_DEADZONE = 0.15;
 
-function formatSgTotal(value: number): string {
+// Exported (in addition to this card's own use) so FairwayCoachRoster's
+// MatrixBoard "SG:Total" column formats/tones the SAME number the same way —
+// one source of truth for this specific formatting, not a second copy.
+export function formatSgTotal(value: number): string {
   return `${value >= 0 ? '+' : ''}${value.toFixed(2)}`;
 }
 
-function sgTone(value: number): string {
+export function sgTone(value: number): string {
   if (value > SG_TONE_DEADZONE) return 'text-fw-success-ink';
   if (value < -SG_TONE_DEADZONE) return 'text-fw-warning-ink';
   return 'text-text-primary';

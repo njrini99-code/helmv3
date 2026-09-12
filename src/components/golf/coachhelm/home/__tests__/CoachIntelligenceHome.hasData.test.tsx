@@ -86,6 +86,7 @@ describe('CoachIntelligenceHome — overview-failure vs empty-roster gate', () =
         groups={[]}
         scannedAt={null}
         groupsError={null}
+        now="2026-01-01T00:00:00.000Z"
         playersDrillProps={playersDrillProps([])}
         effectivenessDrillProps={effectivenessDrillProps}
       />,
@@ -105,6 +106,7 @@ describe('CoachIntelligenceHome — overview-failure vs empty-roster gate', () =
         groups={[]}
         scannedAt={null}
         groupsError={null}
+        now="2026-01-01T00:00:00.000Z"
         playersDrillProps={playersDrillProps([{ id: 'p-1' } as never])}
         effectivenessDrillProps={effectivenessDrillProps}
       />,
@@ -124,13 +126,14 @@ describe('CoachIntelligenceHome — overview-failure vs empty-roster gate', () =
         groups={[]}
         scannedAt={null}
         groupsError={null}
+        now="2026-01-01T00:00:00.000Z"
         playersDrillProps={playersDrillProps([])}
         effectivenessDrillProps={effectivenessDrillProps}
       />,
     );
 
     expect(screen.queryByText('No active players yet')).not.toBeInTheDocument();
-    expect(screen.getByText("Couldn't load team intelligence — retry")).toBeInTheDocument();
+    expect(screen.getByText("Couldn't load team intelligence")).toBeInTheDocument();
     expect(screen.getByText('Query timed out')).toBeInTheDocument();
     expect(screen.getByTestId('triage-desk')).toBeInTheDocument();
   });
@@ -145,12 +148,13 @@ describe('CoachIntelligenceHome — overview-failure vs empty-roster gate', () =
         groups={[]}
         scannedAt={null}
         groupsError={null}
+        now="2026-01-01T00:00:00.000Z"
         playersDrillProps={playersDrillProps([{ id: 'p-1' } as never, { id: 'p-2' } as never])}
         effectivenessDrillProps={effectivenessDrillProps}
       />,
     );
 
-    expect(screen.getByText("Couldn't load team intelligence — retry")).toBeInTheDocument();
+    expect(screen.getByText("Couldn't load team intelligence")).toBeInTheDocument();
     expect(screen.getByTestId('triage-desk')).toBeInTheDocument();
   });
 });

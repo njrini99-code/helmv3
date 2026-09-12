@@ -15,12 +15,16 @@ import { assertAreaFullyWrapped } from '@/lib/admin/__tests__/coverage-contract.
  * Files fully wrapped this batch: insight-management.ts + insight-evidence.ts
  * (insights_management, 11 exports), intelligence-dashboard.ts +
  * team-category-insights.ts + coachhelm-data.ts + causal-relationships.ts
- * (intelligence_dashboard, 13 exports), coachhelm-analytics.ts +
- * player-effectiveness.ts (coachhelm_analytics, 6 exports),
- * coaching-philosophy.ts (coaching_intelligence_settings, 2 exports).
- * 32 exports total (B8's full 39 minus insights.ts's 7 lifecycle fns).
+ * (intelligence_dashboard, 13 exports), coachhelm-analytics.ts
+ * (coachhelm_analytics), coaching-philosophy.ts
+ * (coaching_intelligence_settings, 2 exports).
  *
  * RED before the B8-FILES retrofit (32 unwrapped exports); GREEN after.
+ *
+ * 2026-09-10: player-effectiveness.ts (coachhelm_analytics, 1 export) was
+ * deleted as unreferenced dead code (its own header comment already flagged
+ * it "NOT WIRED... no caller anywhere") and dropped from this list and from
+ * feature-registry.ts's `coachhelm_analytics` manifest.
  */
 describe('coverage-contract — B8-FILES coachhelm coach surfaces (insights_management, intelligence_dashboard, coachhelm_analytics, coaching_intelligence_settings; insights.ts deferred)', () => {
   it('every B8-FILES export is wrapped with withAdminObserved({ feature: <its registry key> })', () => {
@@ -33,7 +37,6 @@ describe('coverage-contract — B8-FILES coachhelm coach surfaces (insights_mana
         'src/app/golf/actions/coachhelm-data.ts',
         'src/app/golf/actions/causal-relationships.ts',
         'src/app/golf/actions/coachhelm-analytics.ts',
-        'src/app/golf/actions/player-effectiveness.ts',
         'src/app/golf/actions/coaching-philosophy.ts',
       ]),
     ).not.toThrow();

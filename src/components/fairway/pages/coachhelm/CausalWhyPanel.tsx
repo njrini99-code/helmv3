@@ -38,21 +38,35 @@
  * is always `[]`.
  * ========================================================================== */
 
-import { useMemo } from 'react';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { useCallback, useMemo, useState } from 'react';
+import nextDynamic from 'next/dynamic';
+import { ArrowRight, ChevronRight, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { fwHaptic } from '@/lib/fairway/haptics';
 // Imported from each module's own leaf path, not the top `@/components/fairway`
 // barrel — this file sits under pages/coachhelm/ (re-exported from that
 // barrel via pages/coachhelm/index.ts), so importing the barrel back here
 // created an import cycle, flagged by npm run check:cycles.
 import { Surface, Inset } from '@/components/fairway/surfaces';
-import { Badge, StatusPill } from '@/components/fairway/controls';
+import { InsetGroup } from '@/components/fairway/surfaces/inset-group';
+import { Sheet } from '@/components/fairway/overlays/Sheet';
+import { Badge } from '@/components/fairway/controls';
 import { EmptyState } from '@/components/fairway/feedback';
+import { Skeleton } from '@/components/fairway/feedback/Skeleton';
 import {
   composeCausalChains,
   type CausalChain,
 } from '@/lib/coachhelm/v3/causality/chains';
 import type { CausalRelationshipRow } from '@/app/golf/actions/causal-relationships';
+
+/**
+ * Recharts is loaded only on the client, once the panel has real rows: the
+ * bars are the one heavy tree on this section and the rows below paint first.
+ */
+const BarCompare = nextDynamic(
+  () => import('@/components/fairway/charts/TrendChart').then((m) => ({ default: m.BarCompare })),
+  { ssr: false, loading: () => <Skeleton className="h-[200px] w-full" aria-hidden /> },
+);
 
 /* ───────────────────────────────────────────────────────────────────────────
  * Plain-English labels for the thin-but-genuine content model
@@ -72,6 +86,31 @@ const CAUSE_LABELS: Record<string, string> = {
 const EFFECT_LABELS: Record<string, string> = {
   scoring: 'Scoring',
 };
+
+/**
+ * Short forms for the strength bars' category gutter, where the full labels
+ * ("Greens in regulation to Putting volume") would not fit a phone. Unknown
+ * tokens fall back to the humanized form, trimmed.
+ */
+const SHORT_LABELS: Record<string, string> = {
+  gir: 'GIR',
+  greens_in_regulation: 'GIR',
+  putting: 'Putting',
+  putting_volume: 'Putts',
+  driving_accuracy: 'Fairways',
+  practice_frequency: 'Practice',
+  scoring: 'Score',
+  scrambling: 'Scrambling',
+  short_game: 'Short game',
+  approach: 'Approach',
+};
+
+function shortLabel(token: string): string {
+  const known = SHORT_LABELS[token];
+  if (known) return known;
+  const h = humanize(token);
+  return h.length > 12 ? `${h.slice(0, 11)}…` : h;
+}
 
 /** Humanize an unknown snake_case token ("driving_accuracy" → "Driving accuracy"). */
 function humanize(token: string): string {
@@ -100,6 +139,11 @@ function pct(value: number): string {
   return `${Math.round(value * 100)}%`;
 }
 
+/** What the phone detail Sheet is showing: one chain or one relationship. */
+type CausalDetail =
+  | { kind: 'chain'; chain: CausalChain }
+  | { kind: 'rel'; rel: CausalRelationshipRow };
+
 /* ───────────────────────────────────────────────────────────────────────────
  * Props
  * ────────────────────────────────────────────────────────────────────────── */
@@ -123,6 +167,16 @@ export function CausalWhyPanel({
 }: CausalWhyPanelProps) {
   // Pure, deterministic, and over the SAME array rendered below — see header.
   const chains = useMemo(() => composeCausalChains(relationships), [relationships]);
+
+  // Phone detail Sheet (player-development.mobile.md #2). `detail` is kept
+  // through the close animation; `detailOpen` drives the sheet.
+  const [detail, setDetail] = useState<CausalDetail | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const openDetail = useCallback((next: CausalDetail) => {
+    fwHaptic('selection');
+    setDetail(next);
+    setDetailOpen(true);
+  }, []);
 
   return (
     <section className={cn('flex flex-col gap-4', className)} aria-label={title}>
@@ -150,19 +204,290 @@ export function CausalWhyPanel({
           />
         </Surface>
       ) : (
-        <div className="flex flex-col gap-4">
+        <>
           {/* Chains first — the deepest one is the closest thing to a root
-              cause the engine can state. Absent for most players; renders
-              nothing at all rather than an empty section. */}
-          {chains.map((chain) => (
-            <CausalChainCard key={chain.metrics.join('>')} chain={chain} />
-          ))}
-          {relationships.map((rel) => (
-            <CausalRelationshipRowCard key={rel.id} rel={rel} />
-          ))}
-        </div>
+              cause the engine can state (a path, not a magnitude). Absent
+              for most players; renders nothing at all rather than an empty
+              section. Rows below `md`, the cards from `md`, CSS-gated so
+              the first paint never flips. */}
+          {chains.length > 0 ? (
+            <>
+              <InsetGroup variant="matte" className="md:hidden">
+                {chains.map((chain) => (
+                  <CausalChainRow
+                    key={chain.metrics.join('>')}
+                    chain={chain}
+                    onOpen={() => openDetail({ kind: 'chain', chain })}
+                  />
+                ))}
+              </InsetGroup>
+              <div className="hidden flex-col gap-4 md:flex">
+                {chains.map((chain) => (
+                  <CausalChainCard key={chain.metrics.join('>')} chain={chain} />
+                ))}
+              </div>
+            </>
+          ) : null}
+
+          {/* Strength as bars (player-development.v2.md #5): one channel,
+              one meaning. Confidence stays in the detail sheet. */}
+          <CausalStrengthBars relationships={relationships} />
+
+          {/* ONE matte group of seam rows (path · type and readouts), each
+              opening the full reading in a Sheet (a bottom sheet below `md`,
+              a docked panel above). The six relationship cards this page
+              drew from `md` are gone: the bars carry the magnitude, the
+              rows carry the mechanism. */}
+          <InsetGroup variant="matte">
+            {relationships.map((rel) => (
+              <CausalRelationshipRow
+                key={rel.id}
+                rel={rel}
+                onOpen={() => openDetail({ kind: 'rel', rel })}
+              />
+            ))}
+          </InsetGroup>
+          <CausalDetailSheet
+            detail={detail}
+            open={detailOpen}
+            onClose={() => setDetailOpen(false)}
+          />
+        </>
       )}
     </section>
+  );
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * CausalStrengthBars — every relationship's strength as one horizontal bar,
+ * strongest first, dose-responsive rows highlighted. Pure data builder
+ * exported for tests; the chart is the shared BarCompare.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+export interface CausalStrengthBar {
+  label: string;
+  value: number;
+  highlight: boolean;
+}
+
+export function causalStrengthBars(relationships: readonly CausalRelationshipRow[]): CausalStrengthBar[] {
+  return relationships
+    .filter((rel) => typeof rel.strength === 'number' && Number.isFinite(rel.strength))
+    .map((rel) => ({
+      label: `${shortLabel(rel.cause)} to ${shortLabel(rel.effect)}`,
+      value: Math.round(rel.strength * 100),
+      highlight: rel.dose_response === true,
+    }))
+    .sort((a, b) => b.value - a.value);
+}
+
+function CausalStrengthBars({ relationships }: { relationships: readonly CausalRelationshipRow[] }) {
+  const data = useMemo(() => causalStrengthBars(relationships), [relationships]);
+  if (data.length === 0) return null;
+  const doseCount = data.filter((d) => d.highlight).length;
+  return (
+    <BarCompare
+      title="Effect strength"
+      subtitle="How strongly each cause moves its effect over your own rounds."
+      takeaway={
+        doseCount > 0
+          ? `${doseCount} dose-responsive: more of the cause, more of the effect.`
+          : 'None dose-responsive yet.'
+      }
+      data={data}
+      valueFormatter={(v) => `${Math.round(v)}%`}
+      labelWidth={128}
+      height={Math.max(160, 36 * data.length + 40)}
+    />
+  );
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * PathLine — the nodes of a relationship or chain in order, joined by the
+ * accent arrow glyph (an icon, never a text arrow; "to" for screen readers).
+ * ────────────────────────────────────────────────────────────────────────── */
+
+function PathLine({ nodes, className }: { nodes: string[]; className?: string }) {
+  return (
+    <span className={cn('inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5', className)}>
+      {nodes.map((node, i) => (
+        <span key={`${node}-${i}`} className="inline-flex items-center gap-x-1.5">
+          {i > 0 ? (
+            <>
+              <span className="sr-only"> to </span>
+              <ArrowRight className="h-3.5 w-3.5 shrink-0 text-accent-600" aria-hidden />
+            </>
+          ) : null}
+          <span>{node}</span>
+        </span>
+      ))}
+    </span>
+  );
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * Phone rows — one seam row per chain or relationship; the detail is a Sheet.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+function CausalChainRow({ chain, onOpen }: { chain: CausalChain; onOpen: () => void }) {
+  const nodes = chainNodeLabels(chain);
+  return (
+    <InsetGroup.Row
+      as="button"
+      align="start"
+      trailing={<ChevronRight aria-hidden />}
+      aria-haspopup="dialog"
+      onClick={onOpen}
+    >
+      <PathLine nodes={nodes} className="font-fw-sans text-body-sm font-medium text-text-primary" />
+      <span className="mt-0.5 block font-fw-sans text-caption text-text-tertiary">
+        Root-cause chain · {chain.hops.length} steps · weakest link {pct(chain.confidence)} confidence
+      </span>
+    </InsetGroup.Row>
+  );
+}
+
+function CausalRelationshipRow({
+  rel,
+  onOpen,
+}: {
+  rel: CausalRelationshipRow;
+  onOpen: () => void;
+}) {
+  const typeLabel = TYPE_LABELS[rel.relationship_type] ?? humanize(rel.relationship_type);
+  return (
+    <InsetGroup.Row
+      as="button"
+      align="start"
+      trailing={<ChevronRight aria-hidden />}
+      aria-haspopup="dialog"
+      onClick={onOpen}
+    >
+      <PathLine
+        nodes={[causeLabel(rel), effectLabel(rel)]}
+        className="font-fw-sans text-body-sm font-medium text-text-primary"
+      />
+      <span className="mt-0.5 block font-fw-sans text-caption text-text-tertiary">
+        {typeLabel}
+        {rel.dose_response ? ' · dose-responsive' : ''}
+      </span>
+      {/* The engine's mechanism sentence, "how this works": the row carries
+          it at every width now that the relationship cards are gone. The
+          strength is the bar above; the confidence is in the sheet. */}
+      {rel.mechanism ? (
+        <span className="mt-1 line-clamp-2 font-fw-sans text-caption text-text-secondary">
+          {rel.mechanism}
+        </span>
+      ) : null}
+    </InsetGroup.Row>
+  );
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * Phone detail Sheet — the same reading the desktop card gives: the path,
+ * the mechanism sentence, and the readouts as label · value rows.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+function ReadoutRow({ label, value, hint }: { label: string; value: string; hint: string }) {
+  return (
+    <InsetGroup.Row
+      align="start"
+      trailing={
+        <span className="font-fw-mono text-body font-semibold tabular-nums text-text-primary">
+          {value}
+        </span>
+      }
+    >
+      <span className="block font-fw-sans text-body-sm font-medium text-text-primary">{label}</span>
+      <span className="block font-fw-sans text-caption text-text-tertiary">{hint}</span>
+    </InsetGroup.Row>
+  );
+}
+
+function CausalDetailSheet({
+  detail,
+  open,
+  onClose,
+}: {
+  detail: CausalDetail | null;
+  open: boolean;
+  onClose: () => void;
+}) {
+  let title = 'Relationship';
+  let description: string | undefined;
+  if (detail?.kind === 'chain') {
+    const nodes = chainNodeLabels(detail.chain);
+    title = `${nodes[0] ?? ''} to ${nodes[nodes.length - 1] ?? ''}`;
+    description = `Root-cause chain, ${detail.chain.hops.length} steps`;
+  } else if (detail?.kind === 'rel') {
+    const typeLabel =
+      TYPE_LABELS[detail.rel.relationship_type] ?? humanize(detail.rel.relationship_type);
+    title = `${causeLabel(detail.rel)} to ${effectLabel(detail.rel)}`;
+    description = detail.rel.dose_response ? `${typeLabel}, dose-responsive` : typeLabel;
+  }
+
+  return (
+    <Sheet
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) onClose();
+      }}
+      title={title}
+      description={description}
+    >
+      <Sheet.Body className="flex flex-col gap-4">
+        {detail?.kind === 'chain' ? (
+          <>
+            <PathLine
+              nodes={chainNodeLabels(detail.chain)}
+              className="font-fw-display text-body-lg font-medium text-text-primary"
+            />
+            <p className="font-fw-sans text-body leading-6 text-text-secondary">
+              Each step was detected separately over this player&apos;s own rounds.
+              Read the chain as the lead to check first. The engine did not test
+              the path end to end.
+            </p>
+            <InsetGroup>
+              <ReadoutRow
+                label="Weakest link: confidence"
+                value={pct(detail.chain.confidence)}
+                hint="The least certain step in the chain"
+              />
+              <ReadoutRow
+                label="Weakest link: strength"
+                value={pct(detail.chain.strength)}
+                hint="The loosest step in the chain"
+              />
+            </InsetGroup>
+          </>
+        ) : detail?.kind === 'rel' ? (
+          <>
+            {detail.rel.mechanism ? (
+              <p className="font-fw-sans text-body leading-6 text-text-secondary">
+                {detail.rel.mechanism}
+              </p>
+            ) : null}
+            <InsetGroup>
+              <ReadoutRow
+                label="Effect strength"
+                value={pct(detail.rel.strength)}
+                hint="How strongly the two move together"
+              />
+              <ReadoutRow
+                label="Confidence"
+                value={pct(detail.rel.confidence)}
+                hint="How sure the engine is it's causal"
+              />
+              <ReadoutRow
+                label="You can change this"
+                value={pct(detail.rel.intervention_potential)}
+                hint="How much practice can shift it"
+              />
+            </InsetGroup>
+          </>
+        ) : null}
+      </Sheet.Body>
+    </Sheet>
   );
 }
 
@@ -222,7 +547,7 @@ function CausalChainCard({ chain }: { chain: CausalChain }) {
 
       <p className="font-fw-sans text-body text-text-secondary leading-6">
         Each step was detected separately over this player&apos;s own rounds.
-        Read the chain as the lead to check first — the engine did not test the
+        Read the chain as the lead to check first. The engine did not test the
         path end to end.
       </p>
 
@@ -230,12 +555,12 @@ function CausalChainCard({ chain }: { chain: CausalChain }) {
           report the weakest hop rather than an average or a product. */}
       <Inset padding="sm" className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <CausalReadout
-          label="Weakest link — confidence"
+          label="Weakest link: confidence"
           value={pct(chain.confidence)}
           hint="The least certain step in the chain"
         />
         <CausalReadout
-          label="Weakest link — strength"
+          label="Weakest link: strength"
           value={pct(chain.strength)}
           hint="The loosest step in the chain"
         />
@@ -245,62 +570,8 @@ function CausalChainCard({ chain }: { chain: CausalChain }) {
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
- * One relationship — flat matte card: cause → effect headline, mechanism
- * sentence, and a readout strip (strength · confidence · intervention).
+ * One readout cell inside a chain card's Inset: label · value · hint.
  * ────────────────────────────────────────────────────────────────────────── */
-
-function CausalRelationshipRowCard({ rel }: { rel: CausalRelationshipRow }) {
-  const typeLabel = TYPE_LABELS[rel.relationship_type] ?? humanize(rel.relationship_type);
-
-  return (
-    <Surface padding="md" className="flex flex-col gap-4">
-      {/* Headline: cause → effect, with the relationship-type badge. */}
-      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2">
-        <span className="font-fw-display text-body-lg font-medium text-text-primary">
-          {causeLabel(rel)}
-        </span>
-        <ArrowRight className="h-4 w-4 flex-shrink-0 text-accent-600" aria-hidden />
-        <span className="font-fw-display text-body-lg font-medium text-text-primary">
-          {effectLabel(rel)}
-        </span>
-        <Badge tone="neutral" variant="outline" size="sm" className="ml-1">
-          {typeLabel}
-        </Badge>
-        {rel.dose_response ? (
-          <StatusPill tone="accent" size="sm">
-            Dose-responsive
-          </StatusPill>
-        ) : null}
-      </div>
-
-      {/* The engine's mechanism sentence — "how this works", plain English. */}
-      {rel.mechanism ? (
-        <p className="font-fw-sans text-body text-text-secondary leading-6">
-          {rel.mechanism}
-        </p>
-      ) : null}
-
-      {/* Readout strip — strength · confidence · intervention potential. */}
-      <Inset padding="sm" className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <CausalReadout
-          label="Effect strength"
-          value={pct(rel.strength)}
-          hint="How strongly the two move together"
-        />
-        <CausalReadout
-          label="Confidence"
-          value={pct(rel.confidence)}
-          hint="How sure the engine is it's causal"
-        />
-        <CausalReadout
-          label="You can change this"
-          value={pct(rel.intervention_potential)}
-          hint="How much practice can shift it"
-        />
-      </Inset>
-    </Surface>
-  );
-}
 
 function CausalReadout({
   label,

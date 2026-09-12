@@ -5,13 +5,27 @@ import {
   buildPriorities,
   formatSgSigned,
   sgToTrackPct,
-  buildStandingTrack,
+  buildStandingBars,
   buildVerdict,
   categorizePattern,
   buildCategoryInsights,
   buildCategoryTrends,
   type CategorizablePatternWithImpact,
 } from '../buildStatsViewModel';
+import type { PlayerStandingRow } from '@/app/golf/actions/stats-leak-maps-types';
+
+function sgTotalRow(overrides: Partial<PlayerStandingRow> = {}): PlayerStandingRow {
+  return {
+    metric_id: 'sg_total',
+    player_value: 0.5,
+    team_avg: 0.2,
+    team_n: 8,
+    team_pct: 60,
+    pga_value: 0,
+    pga_delta: 0.5,
+    ...overrides,
+  };
+}
 
 describe('biggestLeakArea', () => {
   it('picks putting given a fixture where sg_putting is the most negative category', () => {
@@ -230,31 +244,46 @@ describe('sgToTrackPct', () => {
   });
 });
 
-describe('buildStandingTrack', () => {
+describe('buildStandingBars', () => {
   it('returns undefined when sgTotal has no value yet', () => {
-    expect(buildStandingTrack(null, 0.1)).toBeUndefined();
+    expect(buildStandingBars(null, 'self')).toBeUndefined();
+    expect(buildStandingBars(undefined, 'self')).toBeUndefined();
   });
 
-  it('includes a Tour benchmark anchored at 50 and a Team benchmark when known', () => {
-    const track = buildStandingTrack(0.5, 0.2);
-    expect(track?.subjectLabel).toBe('You');
-    expect(track?.benchmarks.find((b) => b.label === 'Tour')?.pct).toBe(sgToTrackPct(0));
-    expect(track?.benchmarks.find((b) => b.label === 'Team')).toBeDefined();
+  it('carries the full row through (pga_value/team_avg/team_n/team_pct), not a reduced {pct, benchmarks} shape', () => {
+    const props = buildStandingBars(sgTotalRow(), 'self');
+    expect(props?.metric_id).toBe('sg_total');
+    expect(props?.player_value).toBe(0.5);
+    expect(props?.team_avg).toBe(0.2);
+    expect(props?.team_n).toBe(8);
+    expect(props?.team_pct).toBe(60);
+    expect(props?.pga_value).toBe(0);
+    expect(props?.direction).toBeDefined();
+    expect(props?.unit).toBeDefined();
+    expect(props?.scale).toBeDefined();
   });
 
-  it('omits the Team benchmark when team average is unknown', () => {
-    const track = buildStandingTrack(0.5, null);
-    expect(track?.benchmarks.find((b) => b.label === 'Team')).toBeUndefined();
+  it('passes team_n through untouched (the cold-start fix) — a 2-teammate cohort is not gated here, StandingBars gates it', () => {
+    const props = buildStandingBars(sgTotalRow({ team_n: 2 }), 'self');
+    expect(props?.team_n).toBe(2);
+    expect(props?.team_avg).toBe(0.2);
   });
 
-  it('labels the subject with the player\'s initials when a coach views a teammate', () => {
-    const track = buildStandingTrack(0.5, 0.2, 'coach', 'Jordan Smith');
-    expect(track?.subjectLabel).toBe('JS');
+  it('defaults team_n to 0 and team_avg to null when the row omits them', () => {
+    const props = buildStandingBars(sgTotalRow({ team_avg: null, team_n: undefined as unknown as number }), 'self');
+    expect(props?.team_avg).toBeNull();
+    expect(props?.team_n).toBe(0);
   });
 
-  it('defaults to "You" for the self viewer context', () => {
-    const track = buildStandingTrack(0.5, 0.2, 'self', 'Jordan Smith');
-    expect(track?.subjectLabel).toBe('You');
+  it('threads viewer_context and player_name through for the coach-facing label', () => {
+    const props = buildStandingBars(sgTotalRow(), 'coach', 'Jordan Smith');
+    expect(props?.viewer_context).toBe('coach');
+    expect(props?.player_name).toBe('Jordan Smith');
+  });
+
+  it('defaults viewer_context to "self" for the player-facing label', () => {
+    const props = buildStandingBars(sgTotalRow());
+    expect(props?.viewer_context).toBe('self');
   });
 });
 

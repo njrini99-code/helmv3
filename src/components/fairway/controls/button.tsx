@@ -30,29 +30,48 @@
 import { type ButtonHTMLAttributes, type MouseEvent, type ReactNode, forwardRef } from 'react';
 import { Slot } from '@radix-ui/react-slot';
 import { cn } from '@/lib/utils';
-import { fwHaptic } from '@/lib/fairway/haptics';
+import { fwHaptic, type FwHapticKind } from '@/lib/fairway/haptics';
 import { fwDisabled, fwFocusRing, fwPress, fwTransition } from './_internal';
 
 export type FwButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 export type FwButtonSize = 'sm' | 'md' | 'lg';
+
+/** Every intensity `fwHaptic` supports, plus `'none'` to suppress the tap entirely. */
+export type FwButtonHaptic = FwHapticKind | 'none';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: FwButtonVariant;
   size?: FwButtonSize;
   /** Busy state: shows an inline spinner, keeps the label, sets aria-busy and blocks clicks. */
   busy?: boolean;
+  /**
+   * Overrides the tap fired on activation. Default is unchanged: `'light'`,
+   * every time, matching today's unconditional `fwHaptic('light')`. Pass a
+   * different `FwHapticKind` for a heavier/lighter confirm, or `'none'` to
+   * suppress it — e.g. a caller that already fires its own haptic sequence,
+   * or a dev "feel lab" row that must not double-tap over the pattern it's
+   * demonstrating.
+   */
+  haptic?: FwButtonHaptic;
   /** Make the button stretch to its container width. */
   fullWidth?: boolean;
   leftIcon?: ReactNode;
   rightIcon?: ReactNode;
   /** Render styling onto the child element (e.g. a Link) instead of a <button>. */
   asChild?: boolean;
+  /**
+   * `pill` (default): the Fairway pill axis — compact actions, CTAs in a row.
+   * `block`: a large rectangular CTA (a sheet's sticky action, a full-width
+   * form submit) on the step-2 radius (14px), where a full pill reads
+   * cartoonish. Design-system exception recorded 2026-09-10.
+   */
+  shape?: 'pill' | 'block';
   children: ReactNode;
 }
 
 const base = cn(
   'relative inline-flex select-none items-center justify-center gap-2 whitespace-nowrap',
-  'rounded-full font-fw-sans font-medium text-text-primary',
+  'font-fw-sans font-medium text-text-primary',
   'border', // border slot — variants set its color (or make it transparent)
   fwTransition,
   fwFocusRing,
@@ -160,7 +179,9 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
     leftIcon,
     rightIcon,
     asChild = false,
+    shape = 'pill',
     disabled,
+    haptic = 'light',
     children,
     onClick,
     onClickCapture,
@@ -173,7 +194,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
   const unavailable = Boolean(disabled || busy);
   const handleClick = (event: MouseEvent<HTMLButtonElement>) => {
     if (event.defaultPrevented || unavailable) return;
-    fwHaptic('light');
+    if (haptic !== 'none') fwHaptic(haptic);
     onClick?.(event);
   };
   // Links have no native disabled attribute. Capture activation before the
@@ -206,6 +227,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
       ref={ref}
       className={cn(
         base,
+        shape === 'block' ? 'rounded-fw-md' : 'rounded-full',
         variantStyles[variant],
         sizeStyles[size],
         fullWidth && 'w-full',
@@ -220,6 +242,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
       aria-busy={busy || undefined}
       data-slot="fw-button"
       data-variant={variant}
+      data-shape={shape}
       onClick={handleClick}
       onClickCapture={handleClickCapture}
       {...props}
@@ -240,6 +263,13 @@ export interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement>
   variant?: FwIconButtonVariant;
   size?: FwIconButtonSize;
   busy?: boolean;
+  /**
+   * Fires `fwHaptic(haptic)` on activation. Unlike `Button`, IconButton fires
+   * NOTHING by default (that has always been true — this prop is purely
+   * additive, so omitting it changes nothing for any existing call site).
+   * Pass an intensity to opt in, or `'none'` to explicitly no-op.
+   */
+  haptic?: FwButtonHaptic;
   /** Required for a11y — icon-only controls need an accessible name. */
   'aria-label': string;
   children: ReactNode;
@@ -295,9 +325,14 @@ const iconSizeStyles: Record<FwIconButtonSize, string> = {
 };
 
 const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(function IconButton(
-  { className, variant = 'ghost', size = 'md', busy = false, disabled, children, type, ...props },
+  { className, variant = 'ghost', size = 'md', busy = false, disabled, haptic, children, type, onClick, ...props },
   ref,
 ) {
+  const handleClick = (event: MouseEvent<HTMLButtonElement>) => {
+    if (haptic && haptic !== 'none') fwHaptic(haptic);
+    onClick?.(event);
+  };
+
   return (
     <button
       ref={ref}
@@ -306,6 +341,7 @@ const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(function IconB
       disabled={disabled || busy}
       aria-busy={busy || undefined}
       data-slot="fw-icon-button"
+      onClick={handleClick}
       {...props}
     >
       {busy ? <Spinner /> : children}

@@ -460,6 +460,42 @@ reload (`lieFromShotResult`) restore position from.
   `page.tsx` is a pure `permanentRedirect` shim renders `bg-canvas` only:
   no geometry, and no real `<h1>` for a screen that never mounts.
   Reference implementation: `dashboard/alerts/loading.tsx`.
+- **Rounds Library v2 (2026-09-10, `docs/design/fairway-facelift/screens/
+  rounds-library.v2.md`)** — `FairwayRoundsLibrary.tsx` reads as a ranked
+  instrument, not a card stack: Masthead (a verdict sentence, "{N} rounds
+  since {month}. {shots} better/worse/even than where the season started,"
+  once ≥6 scored rounds exist; otherwise the static per-role title + meta
+  line, unchanged) → Cockpit (an `InstrumentCluster`: a focal `RadialGauge`
+  "% under par," a two-item `Readout` rail for avg score / avg to par, a
+  four-up tertiary count row) → Spread (a borderless `DivergingBars` of avg
+  score-to-par by round type, omitting any type with zero rounds in scope)
+  → Toolbar (unchanged) → Ledger (unchanged sticky-seam-header `Surface`,
+  now with a `MicroBar` per row comparing that round's to-par against the
+  player's OWN season average, gated on ≥2 scored rounds for that player) +
+  Leaders rail (coach only: a best-of-scope spotlight `Elevated` card + a
+  season-avg-to-par leaderboard of `RankCell` rows, sticky beside the ledger
+  at `lg`+, collapsing to one tappable row opening a `Sheet` below `lg`) →
+  Footer (unchanged "Show 30 more," now with a "Showing N of M" footnote).
+  Player role: no Leaders rail (the grid collapses to one column); the
+  `MicroBar` still renders, comparing against that player's own average.
+  New primitive: `MicroBar` (`src/components/fairway/modules/MicroBar.tsx`),
+  a zero-centered inline bar for one signed per-row stat.
+- **Player rounds v2 (2026-09-10, `docs/design/fairway-facelift/screens/
+  player-rounds.v2.md`)** — the `userRole === 'player'` branch of
+  `FairwayRoundsLibrary.tsx` replaces the Cockpit + Spread with the parts in
+  `pages/rounds/rounds-instruments.tsx`: `RoundsStage` (Avg score with a
+  newest-five-vs-prior-five delta, To par, the verdict sentence, a `Ribbon`
+  of every scored round with the last round marked and its readout a link to
+  `/golf/dashboard/rounds/[id]`), `ScoreBandHistogram` (five score-to-par
+  bands, ≥3 rounds), `RoundTypeSegment` (counts by type as one `SegmentBar`,
+  averages by type as caption, ≥2 types), `MonthDeviationBars` (month average
+  minus season average, `md`+ only, ≥2 months), and captioned Score · Putts ·
+  GIR seam-header sparklines from `md` (`SeamSpark`). The in-progress banner
+  sits between the stage and the instruments on phone and full width under
+  that row from `md`. The masthead verdict sentence is coach-only; the player
+  masthead keeps its static title + meta line. `normalizedScore` moved to the
+  part file (the library imports it). The route skeleton draws one stage
+  block for either role. Coach branch unchanged.
 
 ## Known Risk Areas
 

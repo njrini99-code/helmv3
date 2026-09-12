@@ -111,10 +111,14 @@ export function synthesizeTeamSignals(signals: GroupedSignal[]): GroupedSignal[]
       category: metricId,
       severity: severityForCombined(rounded),
       title: `Team leak: ${entry.label}`,
+      // Facelift (2026-09): dropped the em dash and the "listed on their own
+      // card below" layout reference — the Signals workspace is a queue of
+      // rows, not a stack of cards, and this claim is read in the dossier and
+      // the queue row alike, neither of which is "below" the other.
       claim:
         `${players} players are losing a combined ${rounded.toFixed(2)} strokes per round on ` +
-        `${entry.label}. Each is listed on their own card below — this is the roster total, ` +
-        `and the size of the practice block it would take to close.`,
+        `${entry.label}. Review or dismiss each player's own signal individually; this row is ` +
+        `the roster total, and the size of the practice block it would take to close.`,
       // A synthesis has no detection date of its own; it is as current as the
       // signals it was built from, which the surface already dates.
       ageDays: 0,

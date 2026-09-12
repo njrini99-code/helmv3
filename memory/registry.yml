@@ -1105,6 +1105,7 @@ features:
         - docs/operations/2026-05-17-p0-runbook.md
     code:
       routes:
+        - src/app/golf/(dashboard)/dashboard/page.tsx
         - src/app/golf/(dashboard)/dashboard/tasks/**
         - src/app/golf/(dashboard)/dashboard/documents/**
         - src/app/golf/(dashboard)/dashboard/travel/**
@@ -1116,6 +1117,7 @@ features:
         - src/components/fairway/pages/travel/**
         - src/components/golf/player-hub/**
         - src/components/fairway/pages/team-hub/**
+        - src/components/fairway/pages/dashboard/**
       api:
         - src/components/fairway/pages/documents/**
       actions:

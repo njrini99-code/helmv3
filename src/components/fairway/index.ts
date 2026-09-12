@@ -78,6 +78,15 @@ export {
   GlassSurface,
   type GlassSurfaceProps,
   type GlassSurfaceKind,
+  type GlassSurfaceTier,
+  InsetGroup,
+  InsetGroupRow,
+  type InsetGroupProps,
+  type InsetGroupRowProps,
+  type InsetGroupVariant,
+  ScrollArea,
+  type ScrollAreaProps,
+  type ScrollAreaOrientation,
 } from './surfaces';
 
 // ── cards-insight ─────────────────────────────────────────────────────────--
@@ -149,6 +158,7 @@ export {
   Toolbar,
   ToolbarIconButton,
   type ToolbarProps,
+  type ToolbarMaterial,
   type ToolbarViewToggleProps,
   type ToolbarFilterMenuProps,
   type ToolbarFilterOption,
@@ -357,6 +367,8 @@ export {
   resolveCssColor,
   type UseCanvasLayer,
   type CanvasSize,
+  StandingBars,
+  type StandingBarsProps,
 } from './charts';
 
 // ── ChartCard alias (cohesion: ChartFrame self-describes as the §6 ChartCard) ─
@@ -399,6 +411,13 @@ export {
   type ToneStyle,
   ReportProblemButton,
   type ReportProblemButtonProps,
+  Progress,
+  type ProgressProps,
+  type ProgressSize,
+  type ProgressTone,
+  Meter,
+  type MeterProps,
+  type MeterSize,
 } from './feedback';
 
 // ── overlays ────────────────────────────────────────────────────────────────
@@ -414,6 +433,16 @@ export {
   PopoverPanel,
   type PopoverPanelProps,
   type PopoverPanelSurface,
+  Menu,
+  type MenuProps,
+  type FwMenuItemProps,
+  Tooltip,
+  TooltipProvider,
+  type TooltipProps,
+  type TooltipProviderProps,
+  ConfirmModal,
+  type ConfirmModalProps,
+  type ConfirmModalTone,
 } from './overlays';
 
 // ── command ─────────────────────────────────────────────────────────────────
@@ -533,3 +562,6 @@ export {
   FairwayMyDevelopment,
   type FairwayMyDevelopmentProps,
 } from './pages/coachhelm';
+
+// ── modules (architecture: Spine, Bento, MatrixBoard, Filmstrip, StatMatrix …) ──
+export * from './modules';
