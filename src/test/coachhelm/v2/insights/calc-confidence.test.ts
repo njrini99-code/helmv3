@@ -47,10 +47,14 @@ describe('calcConfidence — honest mode (factors_measured: false)', () => {
 
   it('still honors a genuinely age-decayed recency (< 1) from the lifecycle cron', () => {
     // recency decayed to 0.4 by the cron; variance placeholder dropped.
-    // (0.4·0.7 + 0.3·0.4) / 0.7 = 0.5714…
-    expect(
-      calcConfidence(factors({ sample_adequacy: 0.7, recency: 0.4, factors_measured: false })),
-    ).toBeCloseTo((0.4 * 0.7 + 0.3 * 0.4) / 0.7);
+    // honest_v2: sa · (1 − (3/7)·(1 − rec)) = 0.7 · (1 − 0.6·3/7) = 0.52.
+    // Never above the fresh value (0.7) — the pre-2026-09-12 rule
+    // `(0.4·sa + 0.3·rec)/0.7` could exceed sa (0.24 → 0.56 at rec 0.99).
+    const decayed = calcConfidence(
+      factors({ sample_adequacy: 0.7, recency: 0.4, factors_measured: false }),
+    );
+    expect(decayed).toBeCloseTo(0.7 * (1 - 0.6 * (3 / 7)));
+    expect(decayed).toBeLessThan(0.7);
   });
 
   it('a fresh row (recency 1.0) ignores the placeholder recency entirely', () => {

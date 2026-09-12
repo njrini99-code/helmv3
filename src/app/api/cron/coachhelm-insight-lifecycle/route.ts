@@ -10,6 +10,10 @@
  *      Consecutive-cycle tracking lives on `metadata.healthy_cycles_count`:
  *      incremented when checked AND in the healthy band, reset to 0 when
  *      out of band. Upon resolution we set `resolved_at`.
+ *      A cycle is counted once per DISTINCT evidence snapshot
+ *      (`metadata.healthy_cycle_evidence_key`): the engine re-emits the same
+ *      numbers nightly when a player hasn't played, and two scans over one
+ *      observation are one observation, not two confirmations (2026-09-12).
  *
  *   2. detected insights with `metadata.movement_count == 0`,
  *      staleness > 30d, and no `addressed_at` are archived. Sets `archived_at`.
@@ -27,15 +31,22 @@
  *      nightly flap. So Rules 2 & 3 anchor staleness on the most recent sign
  *      of life: `max(created_at, metadata.last_refreshed_at,
  *      metadata.redetected_at)`. Both metadata fields are parsed defensively
- *      (may be absent or malformed). Rule 4 below deliberately keeps using
- *      `created_at`-based age (it models DATA recency, not row liveness).
+ *      (may be absent or malformed).
  *
- *   4. Recompute `evidence.confidence_factors.recency` using age vs.
- *      window_days: if (age - window_days) > 0, drop recency by 0.2 per
- *      30 days of overage. Re-derive confidence. If confidence falls below
- *      0.4 AND the insight is still in `detected`, demote to `tentative`.
- *      NB: `age` here is `created_at`-based on purpose (data recency), NOT
- *      the liveness anchor used by Rules 2 & 3.
+ *   4. Recompute `evidence.confidence_factors.recency` from how long ago the
+ *      evidence was last computed vs. window_days: if (stale - window_days)
+ *      > 0, drop recency by 0.2 per 30 days of overage. Re-derive confidence.
+ *      If confidence falls below 0.4 AND the insight is still in `detected`,
+ *      demote to `tentative`.
+ *      ANCHOR (2026-09-12): the SAME liveness anchor as Rules 2 & 3. Until
+ *      then Rule 4 used `created_at`, i.e. the row's birth date — but a row
+ *      the engine refreshed last night carries last night's 90-day window, so
+ *      its data is fresh however old the row is. Decaying it contradicted the
+ *      engine (which re-stamps recency=1.0 on every refresh) and, under the
+ *      pre-`honest_v2` formula, RAISED confidence. Data recency == time since
+ *      the evidence was last recomputed. This cron never promotes: only a
+ *      write carrying freshly recomputed evidence may (see
+ *      v2/insights/lifecycle-policy.ts).
  *
  * Schedule: `0 4 * * *` (see vercel.json).
  * Auth:     Vercel Cron sends `Authorization: Bearer ${CRON_SECRET}`.
@@ -43,7 +54,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
-import { calcConfidence, type InsightEvidence, type InsightLifecycleState } from '@/lib/coachhelm/v2/insights/types';
+import { calcConfidence, CONFIDENCE_METHOD_VERSION, type InsightEvidence, type InsightLifecycleState } from '@/lib/coachhelm/v2/insights/types';
 import { rollupInsightEffectivenessForYesterday } from '@/lib/coachhelm/v2/analytics/effectiveness-writer';
 import { rollupPredictionPerformanceRolling30d } from '@/lib/coachhelm/v2/analytics/prediction-performance-writer';
 import { requireCronAuth } from '@/lib/cron/auth';
@@ -326,6 +337,14 @@ function parseMetadataMs(value: unknown): number {
 }
 
 /**
+ * Stable key for "the same evidence snapshot". Two nightly scans over
+ * identical numbers share a key; a new round changes sample_n or the value.
+ */
+function healthyCycleEvidenceKey(evidence: InsightEvidence): string {
+  return `${evidence.sample_n}|${evidence.your_value}|${evidence.comparison_value}`;
+}
+
+/**
  * Pure function: given a row, decide what to write. Returns null when no
  * change is needed. Exported-for-test would be nice but keeping private
  * since the cron is exercised end-to-end.
@@ -335,7 +354,6 @@ function evaluateRow(row: InsightRow, nowMs: number, nowIso: string): UpdatePatc
   let changed = false;
 
   const createdMs = row.created_at ? Date.parse(row.created_at) : nowMs;
-  const ageDays = Math.max(0, (nowMs - createdMs) / MS_PER_DAY);
   const lifecycle = row.lifecycle_state;
   const metadata: JsonRecord = { ...(row.metadata ?? {}) };
 
@@ -419,19 +437,28 @@ function evaluateRow(row: InsightRow, nowMs: number, nowIso: string): UpdatePatc
     const priorCycles = typeof metadata.healthy_cycles_count === 'number'
       ? (metadata.healthy_cycles_count as number)
       : 0;
+    // One cycle per distinct evidence snapshot. The nightly regen re-emits
+    // identical numbers when no new round arrived; counting each scan as a
+    // fresh confirmation resolved insights on zero new evidence.
+    const evidenceKey = healthyCycleEvidenceKey(row.evidence);
+    const alreadyCounted = metadata.healthy_cycle_evidence_key === evidenceKey;
 
     if (gap <= HEALTHY_GAP_THRESHOLD) {
-      const nextCycles = priorCycles + 1;
-      metadata.healthy_cycles_count = nextCycles;
-      changed = true;
-      if (nextCycles >= HEALTHY_CYCLES_TO_RESOLVE) {
-        patch.lifecycle_state = 'resolved';
-        patch.resolved_at = nowIso;
-        patch.metadata = metadata;
-        return patch;
+      if (!alreadyCounted) {
+        const nextCycles = priorCycles + 1;
+        metadata.healthy_cycles_count = nextCycles;
+        metadata.healthy_cycle_evidence_key = evidenceKey;
+        changed = true;
+        if (nextCycles >= HEALTHY_CYCLES_TO_RESOLVE) {
+          patch.lifecycle_state = 'resolved';
+          patch.resolved_at = nowIso;
+          patch.metadata = metadata;
+          return patch;
+        }
       }
     } else if (priorCycles > 0) {
       metadata.healthy_cycles_count = 0;
+      delete metadata.healthy_cycle_evidence_key;
       changed = true;
     }
   }
@@ -443,7 +470,8 @@ function evaluateRow(row: InsightRow, nowMs: number, nowIso: string): UpdatePatc
   // few extra days. Compute decay against a fixed baseline of 1.0 so the
   // value at a given age is stable regardless of how many times the cron ran.
   if (row.evidence && typeof row.evidence.window_days === 'number') {
-    const overageDays = ageDays - row.evidence.window_days;
+    // Anchor on the last recompute (liveness), not created_at — see header.
+    const overageDays = staleDays - row.evidence.window_days;
     if (overageDays > 0) {
       const priorRecency = row.evidence.confidence_factors?.recency ?? 1;
       const decay = (overageDays / 30) * RECENCY_DECAY_PER_30D;
@@ -454,6 +482,7 @@ function evaluateRow(row: InsightRow, nowMs: number, nowIso: string): UpdatePatc
           confidence_factors: {
             ...row.evidence.confidence_factors,
             recency: newRecency,
+            method_version: CONFIDENCE_METHOD_VERSION,
           },
         };
         updatedEvidence.confidence = calcConfidence(updatedEvidence);
