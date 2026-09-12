@@ -52,6 +52,17 @@ export interface ShotTrackingState {
   // Penalty modal
   showPenaltyModal: boolean;
   penaltyType: string | null;
+  /**
+   * Which stroke the penalty belongs to (OB / lost ball only — stroke and
+   * distance needs to know where to send the player back to):
+   *   'entered' — the last shot on the card; replay from where IT was hit.
+   *   'here'    — a stroke the player has NOT entered, hit from the current
+   *               position; that stroke is recorded with the penalty and the
+   *               player replays from here.
+   * Defaulted by defaultPenaltyOrigin() when the modal opens; the modal lets
+   * the player flip it.
+   */
+  penaltyOrigin: PenaltyOrigin;
   // Undo
   showUndoConfirm: boolean;
   undoSaving: boolean;
@@ -94,7 +105,10 @@ export type ShotAction =
   // Penalty
   | { type: 'SHOW_PENALTY_MODAL' }
   | { type: 'SET_PENALTY_TYPE'; payload: string | null }
-  | { type: 'CONFIRM_PENALTY'; payload: ShotRecord }
+  | { type: 'SET_PENALTY_ORIGIN'; payload: PenaltyOrigin }
+  /** `errantStroke` is the un-entered shot that earned the penalty (origin
+   *  'here'); it is written to the card immediately before the penalty row. */
+  | { type: 'CONFIRM_PENALTY'; payload: ShotRecord; errantStroke?: ShotRecord }
   | { type: 'CLOSE_PENALTY_MODAL' }
   // Undo
   | { type: 'SHOW_UNDO_CONFIRM' }
@@ -118,6 +132,27 @@ export type ShotAction =
   | { type: 'HANDLE_RESULT_SELECT'; payload: { result: string; isTeeShot: boolean; isPutting: boolean; isApproachOrAroundGreen: boolean } }
   // Clear input state (used after recording a shot or restoring position)
   | { type: 'CLEAR_INPUT_STATE'; payload?: { distanceAfterUnit?: 'yards' | 'feet' } };
+
+export type PenaltyOrigin = 'entered' | 'here';
+
+/**
+ * Best guess at which stroke an OB / lost-ball penalty is for, from what is
+ * already on the card. Players use BOTH flows (2026-09-10, owner's own test
+ * round): enter the drive as "other", then tap Penalty (the entered shot went
+ * OB) — or stand in the fairway with the last entered shot lying safely at
+ * 115 yds, hit the next one OB, and tap Penalty without entering it. Sending
+ * the second player back to the tee was the reported bug.
+ *
+ * A last shot whose ball is IN PLAY (fairway / rough / sand / green) cannot be
+ * the one that went OB, so the penalty is for an un-entered stroke from here.
+ * A last shot entered as "other" (the only result a ball in trouble gets) is
+ * the errant one. No shot yet, or a penalty row last: from here.
+ */
+export function defaultPenaltyOrigin(shotHistory: ShotRecord[]): PenaltyOrigin {
+  const last = shotHistory[shotHistory.length - 1];
+  if (!last || last.isPenalty) return 'here';
+  return last.result === 'other' ? 'entered' : 'here';
+}
 
 // ============================================================================
 // HELPER: compute restored state from history
@@ -200,6 +235,7 @@ export function shotReducer(state: ShotTrackingState, action: ShotAction): ShotT
         distanceAfterUnit: initialLie === 'green' ? 'feet' : 'yards',
         showPenaltyModal: false,
         penaltyType: null,
+        penaltyOrigin: 'here',
         selectedShotNumber: null,
       };
     }
@@ -270,18 +306,22 @@ export function shotReducer(state: ShotTrackingState, action: ShotAction): ShotT
 
     // Penalty
     case 'SHOW_PENALTY_MODAL':
-      return { ...state, showPenaltyModal: true };
+      return { ...state, showPenaltyModal: true, penaltyOrigin: defaultPenaltyOrigin(state.shotHistory) };
 
     case 'SET_PENALTY_TYPE':
       return { ...state, penaltyType: action.payload };
 
+    case 'SET_PENALTY_ORIGIN':
+      return { ...state, penaltyOrigin: action.payload };
+
     case 'CONFIRM_PENALTY': {
       const penaltyShot = action.payload;
+      const rows = action.errantStroke ? [action.errantStroke, penaltyShot] : [penaltyShot];
       const newLie = lieFromShotResult(penaltyShot);
       return {
         ...state,
-        shotHistory: [...state.shotHistory, penaltyShot],
-        currentShot: state.currentShot + 1,
+        shotHistory: [...state.shotHistory, ...rows],
+        currentShot: state.currentShot + rows.length,
         currentLie: newLie,
         distanceToHole: penaltyShot.distanceToHoleAfter,
         distanceUnit: penaltyShot.distanceUnitAfter,
@@ -501,6 +541,7 @@ function computeInitialState(
     autoSaveRetryAttempt: 0,
     showPenaltyModal: false,
     penaltyType: null,
+    penaltyOrigin: 'here',
     showUndoConfirm: false,
     undoSaving: false,
     undoError: null,
