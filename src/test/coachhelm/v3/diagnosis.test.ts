@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import {
   dominantAxis,
   approachAxisDriver,
+  approachAxisReading,
+  axisReadingToText,
 } from '@/lib/coachhelm/v3/engine/diagnosis';
 
 describe('dominantAxis', () => {
@@ -50,26 +52,65 @@ describe('dominantAxis', () => {
   });
 });
 
-describe('approachAxisDriver', () => {
-  it('SHORT → club-up / commit to a full number', () => {
-    const d = approachAxisDriver('short', 0.7, 78);
-    // Quality contract: names the share, the WHY, and a SPECIFIC action.
-    expect(d).toContain('70%');
-    expect(d).toContain('SHORT');
-    expect(d.toLowerCase()).toContain('club up');
-    expect(d.toLowerCase()).toContain('full number');
+describe('approachAxisReading — observation / check / action (repair plan Package 2)', () => {
+  // Assertive cause phrasings the old driver sentences used. Naming a cause
+  // inside a list of unknowns ("comes from under-clubbing, a headwind, …") is
+  // enumeration, not assertion, and is allowed.
+  const MECHANICAL_CAUSE = /the driver is|not aim|not a distance fix|club up and commit|club down and take spin|decelerat|face-control pattern/i;
+
+  it('SHORT → states the measured share, hands the cause to the coach as a check, recommends', () => {
+    const r = approachAxisReading('short', 0.7, 78);
+    expect(r.observation).toBe('70% of the 78 misses with a distance read finished SHORT.');
+    // The check names what the record does not contain — never a cause.
+    expect(r.check).toMatch(/does not say why/i);
+    expect(r.check).toMatch(/check the club and target/i);
+    expect(r.action).toMatch(/^Recommended:/);
+    for (const field of [r.observation, r.check, r.action]) {
+      expect(field).not.toMatch(MECHANICAL_CAUSE);
+    }
   });
 
-  it('LONG → club down / take spin off it', () => {
-    const d = approachAxisDriver('long', 0.62, 40);
-    expect(d).toContain('LONG');
-    expect(d.toLowerCase()).toContain('club down');
+  it('LONG → same structure, long-side alternatives named as unknowns', () => {
+    const r = approachAxisReading('long', 0.62, 40);
+    expect(r.observation).toContain('62% of the 40 misses with a distance read finished LONG.');
+    expect(r.check).toMatch(/over-clubbing, a helping wind, a back-pin target/);
+    expect(r.check).not.toMatch(/^You/);
   });
 
-  it('LEFT/RIGHT → start-line / face-control action, not a distance fix', () => {
-    const left = approachAxisDriver('left', 0.6, 30);
-    expect(left).toContain('LEFT');
-    expect(left.toLowerCase()).toContain('start line');
-    expect(left.toLowerCase()).not.toContain('club up');
+  it('LEFT/RIGHT → line-read wording, no distance or mechanics claim', () => {
+    const left = approachAxisReading('left', 0.6, 30);
+    expect(left.observation).toBe('60% of the 30 misses with a line read finished LEFT.');
+    expect(left.check).toMatch(/start line, face control, wind, slope, or aiming away/);
+    expect(left.action).toContain('left misses');
+    const right = approachAxisReading('right', 0.6, 30);
+    expect(right.action).toContain('right misses');
+  });
+
+  it('text fallback is the three fields in order, and approachAxisDriver returns exactly that', () => {
+    const r = approachAxisReading('short', 0.7, 78);
+    const text = axisReadingToText(r);
+    expect(text).toBe(`${r.observation} ${r.check} ${r.action}`);
+    expect(approachAxisDriver('short', 0.7, 78)).toBe(text);
+  });
+
+  it('fixture: identical short-miss data under different intentions/conditions reads identically — the observation is the same, no diagnosis is asserted', () => {
+    // Plan checklist: "identical short-miss data occurs under different known
+    // intentions/conditions; the observation may be the same, the diagnosis
+    // cannot be asserted without context." The engine has no intent, wind,
+    // or target record, so the reading must be a function of the tally alone
+    // and must not pick a cause the coach would have to un-teach.
+    const scenarios = [
+      { label: 'calm day, pin in the middle, full shots', share: 0.73, n: 22 },
+      { label: 'two-club headwind all afternoon', share: 0.73, n: 22 },
+      { label: 'front pins, player aiming at the front edge on purpose', share: 0.73, n: 22 },
+      { label: 'par-5 lay-ups logged as approaches', share: 0.73, n: 22 },
+    ];
+    const readings = scenarios.map((sc) => approachAxisReading('short', sc.share, sc.n));
+    for (const r of readings) {
+      expect(r).toEqual(readings[0]);
+      expect(r.observation).toBe('73% of the 22 misses with a distance read finished SHORT.');
+      expect(r.check).toMatch(/headwind|front-edge|lay-up/);
+      expect(axisReadingToText(r)).not.toMatch(MECHANICAL_CAUSE);
+    }
   });
 });

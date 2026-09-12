@@ -500,8 +500,18 @@ export interface ComposedInsight {
   tone: InsightTone;
   confidence: number;
   reasoning?: ReasoningResult;
-  /** Strokes per round this issue costs — higher = more impactful */
+  /** Strokes per round this issue costs — higher = more impactful. Only a
+   *  value measured or modeled in strokes belongs here; it is persisted into
+   *  the review payload as strokes and may be printed as "Estimated impact". */
   strokeImpact?: number;
+  /**
+   * Diagnostic ranking magnitude for insights whose severity is a heuristic
+   * score (a rate × a sample factor, a leave gap / 10, …) rather than a stroke
+   * measurement. Ordering and prioritization read `rankScore ?? strokeImpact`;
+   * nothing renders it as strokes. Keeps heuristic magnitudes off the
+   * strokes-shaped field (repair plan N8 / addendum §7.2).
+   */
+  rankScore?: number;
   /** Structured evidence metrics for visual display */
   evidenceMetrics?: InsightEvidenceMetric[];
 }

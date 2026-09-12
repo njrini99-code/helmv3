@@ -3,8 +3,15 @@
  *
  * Master plan Part IX.2 rule #1. Fires when the player attempts a lot
  * of pitch/chip shots from rough or bunker AND the average post-shot
- * proximity is poor — the "short side" miss is recurring AND being
- * compounded by weak recovery technique.
+ * proximity is poor.
+ *
+ * WHAT IT MEASURES (repair plan Package 2, "replace short-side assertions
+ * where geometry/annotation is absent"): the recovery LEAVE from rough and
+ * sand. It does NOT measure whether the player was short-sided — that needs
+ * pin position and miss side, neither of which the shot record carries. The
+ * rule id and signature are kept (dedup continuity with existing rows), but
+ * the title, prose, and metric label describe the leave, and the short-side
+ * question is handed to the coach as a check, not asserted.
  *
  * Threshold: ≥10 short-game attempts AND avg post-shot proximity > 15 ft.
  * Uses ctx.short_game_shots (raw shot data).
@@ -29,7 +36,7 @@ function leaveFeet(s: { distance_to_hole_after: number; distance_unit_after?: st
 
 const rule: CompositeRule = {
   id: 'short_side_scrambling_chain',
-  name: 'Short-side scrambling chain',
+  name: 'Rough/sand recovery leave',
   priority: 'high',
   category: 'short_game',
 
@@ -69,10 +76,10 @@ const rule: CompositeRule = {
     const bunkerPct = Math.round(Number(match.signals.bunker_pct ?? 0));
     const dominant =
       roughPct > bunkerPct ? `${roughPct}% from rough` : `${bunkerPct}% from bunker`;
-    // Own magnitude (sscc-2): cost of leaving recoveries ~{avg} ft instead of the
-    // Tour ~10 ft. ~10 extra ft of leave ≈ one missed up-and-down per round at
-    // this volume; size it as (avg − Tour) / 10 ft, bounded to 1.5 so a single
-    // bad day can't mint a wild cascade number. Derived, not asserted.
+    // Own magnitude (sscc-2): (avg leave − ~10 ft) / 10 ft, bounded to 1.5 so
+    // a single bad day can't mint a wild cascade number. This is a ROUGH
+    // ESTIMATE — a leave-distance coefficient, not a measured stroke loss —
+    // and ships tagged as one so no surface presents it as strokes gained.
     const TOUR_LEAVE_FT = 10;
     const FT_PER_STROKE = 10;
     const ownStrokesImpact = Math.min(
@@ -80,29 +87,30 @@ const rule: CompositeRule = {
       1.5,
     );
     return {
-      title: 'Short-side misses are compounding',
+      title: 'Rough and sand recoveries are leaving long putts',
       content:
-        `You attempted ${attempts} short-game shots from rough or bunker (${dominant}) ` +
-        `with average post-shot proximity of ${avgProximity.toFixed(0)} ft — well outside ` +
-        `make-able comebacker range. The miss-side pattern is recurring AND the recovery ` +
-        `technique isn't bailing you out. Practice short-side flop and bunker splash shots ` +
-        `to a tucked pin; the goal is consistent leave-distance, not heroics.`,
+        `You attempted ${attempts} short-game shots from rough or bunker (${dominant}); ` +
+        `the average leave was ${avgProximity.toFixed(0)} ft — outside make-able range. ` +
+        `Whether these were short-sided misses is not recorded: check pin position and ` +
+        `miss side on the next few rounds before treating this as a short-side pattern. ` +
+        `Recommended: recovery reps from rough and sand to a 10-ft circle — the ` +
+        `measurable target is leave distance.`,
       signature: 'short_side_scrambling_chain',
       evidence: {
-        metric: 'short_side_proximity',
-        metric_label: 'Short-side recovery proximity',
+        metric: 'recovery_proximity_rough_sand',
+        metric_label: 'Rough/sand recovery leave',
         unit: 'feet',
         your_value: avgProximity,
         your_value_display: `${avgProximity.toFixed(0)} ft avg`,
         comparison_value: 10,
-        comparison_label: 'Tour ~10 ft',
+        comparison_label: 'Tour ~10 ft (approx)',
         comparison_source: 'pga_baseline',
         sample_n: attempts,
         window_days: 90,
         window_start: '',
         window_end: '',
         strokes_impact: ownStrokesImpact,
-        strokes_impact_method: 'peer_delta',
+        strokes_impact_method: 'rough_estimate',
         confidence: attempts >= 20 ? 0.75 : 0.6,
         confidence_factors: {
           sample_adequacy: Math.min(attempts / 20, 1),

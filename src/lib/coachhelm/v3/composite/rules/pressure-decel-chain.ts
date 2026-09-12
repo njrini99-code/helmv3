@@ -85,15 +85,20 @@ const rule: CompositeRule = {
     );
     const sigParts = String(match.signals.short_putt_signature ?? '').split(':');
     const bucket = sigParts[sigParts.length - 1] === '3_5ft' ? '3-5 ft' : '5-10 ft';
+    // Two independent standings side by side — nothing here measured a
+    // pressure putt or a deceleration. The prose says what was observed, what
+    // to check, and what to do; it does not name the mechanism as fact.
     return {
-      title: `Pressure shows up in your short putts`,
+      title: `Pressure gap and short-putt weakness overlap`,
       content:
         `You're playing +${pressureDelta.toFixed(1)} strokes worse in ` +
         `tournaments vs practice AND making only ${shortPuttPct}% from ${bucket}. ` +
-        `Short putts are the canonical "decel under pressure" failure mode — ` +
-        `Tour data shows knee-knockers (4-8 ft) collapse first when nerves ` +
-        `tighten the grip (Research doc §9). Practice the routine, not the ` +
-        `stroke: same alignment, same number of looks, same trigger.`,
+        `These are two separate stats; whether the short putts are where the ` +
+        `tournament strokes go is not measured here. Short putts are where a ` +
+        `pressure gap tends to show first (Research doc §9), so check: compare ` +
+        `make rate from ${bucket} in tournament rounds vs practice rounds. ` +
+        `Recommended: practice the routine, not the stroke — same alignment, ` +
+        `same number of looks, same trigger.`,
       signature: `pressure_decel:${bucket.replace('-', '_').replace(' ft', 'ft')}`,
       evidence: {
         metric: 'practice_tournament_delta',

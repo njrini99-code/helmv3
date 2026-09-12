@@ -7,6 +7,14 @@
  * leak is bigger than either insight alone suggests.
  *
  * Pure insight composite — no ctx needed.
+ *
+ * Basis note (repair Package 2): the proximity here is ON-GREEN-ONLY
+ * (`detail.proximity_when_hit_feet` — misses are not in the average). A Tour
+ * proximity figure includes every approach, so it is a different quantity and
+ * is NOT used as the comparator; `approach-miss.ts` dropped the same anchor
+ * for the same reason. The comparator is the rule's own firing threshold,
+ * labelled as an estimated coaching target, and `polarity` is stamped so the
+ * tone reader does not fall back to the registry's feet-proximity entry.
  */
 
 import type { CompositeRule, CompositeMatch, CompositeContent, EvidenceInsight } from '../types';
@@ -20,12 +28,17 @@ function approachProximityFeet(i: EvidenceInsight): number {
   return typeof prox === 'number' && Number.isFinite(prox) ? prox : NaN;
 }
 
+/** On-green leave (feet) from 50-125 yd that a college player should dial in
+ *  under. A coaching target, not a measured population average — it ships as
+ *  `estimated_target`. */
+const DIAL_IN_TARGET_FT = 22;
+
 function isWeakShortApproach(i: EvidenceInsight): boolean {
   if (i.insight_type !== 'approach_miss') return false;
   if (!i.signature.includes('50_125ft')) return false;
-  // 50-125 yd Tour anchor ~18 ft proximity; > 22 ft on-green-when-hit is the
-  // dial-in leak. Requires a real proximity (≥ MIN_GREENS hit).
-  return approachProximityFeet(i) > 22;
+  // > DIAL_IN_TARGET_FT on-green-when-hit is the dial-in leak. Requires a real
+  // proximity (≥ MIN_GREENS hit).
+  return approachProximityFeet(i) > DIAL_IN_TARGET_FT;
 }
 
 function isWeakScrambling(i: EvidenceInsight): boolean {
@@ -65,21 +78,25 @@ const rule: CompositeRule = {
     return {
       title: 'Short approaches + scrambling are stacking up',
       content:
-        `From 50-125 yd you're leaving the ball ${proximity} ft from the ` +
-        `hole on average (Tour is ~18 ft) — and you're only saving par ` +
-        `${scramble}% of the time when you miss. The two compound: a 30-foot ` +
-        `wedge miss to a tucked pin = a near-automatic bogey. Tighten ` +
-        `wedge distance control first; the scrambling improves on its own.`,
+        `From 50-125 yd, the approaches that hit the green are finishing ` +
+        `${proximity} ft from the hole on average (on-green only; dial-in ` +
+        `target ~${DIAL_IN_TARGET_FT} ft, estimated) — and you are saving par ` +
+        `${scramble}% of the time when you miss. The two stack: a long first ` +
+        `putt and a weak recovery both feed bogey. Check whether the long leaves ` +
+        `share a club or a yardage (full swing vs partial wedge) before naming ` +
+        `the cause. Recommended: wedge distance-control reps to a 20-ft circle ` +
+        `first, then re-check the scrambling rate.`,
       signature: 'short_approach_proximity_gap',
       evidence: {
         metric: 'approach_proximity_50_125ft',
         metric_label: 'Short approach + scrambling',
         unit: 'feet',
+        polarity: 'lower_better',
         your_value: proximity,
-        your_value_display: `${proximity} ft avg`,
-        comparison_value: 18,
-        comparison_label: 'Tour ~18 ft',
-        comparison_source: 'pga_baseline',
+        your_value_display: `${proximity} ft avg (on green)`,
+        comparison_value: DIAL_IN_TARGET_FT,
+        comparison_label: `Dial-in target ~${DIAL_IN_TARGET_FT} ft (est., on-green only)`,
+        comparison_source: 'estimated_target',
         sample_n: Number(match.signals.sample_n ?? 0),
         window_days: 90,
         window_start: '',

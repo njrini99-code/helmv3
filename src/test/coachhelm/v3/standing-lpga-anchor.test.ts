@@ -126,9 +126,14 @@ describe('the approach-proximity unit bug', () => {
 
     // lower_better: −1 means she is 1ft INSIDE the LPGA average. Credible.
     expect(fixed.pga_delta).toBe(-1);
-    // The estimate path produces −45 on a metric measured in feet. Absurd, and
-    // it is what production shows women today.
-    expect(broken.pga_delta).toBe(-45);
+    // The estimate path used to produce −45 on a metric measured in feet
+    // (the percent-shaped 70 read as feet). The green-hit anchors now live
+    // under their own bucket keys, so with no LPGA row there is no estimate
+    // to reach for: the Tour marker is omitted and the delta is left as the
+    // DB computed it against the men's value — never −45.
+    expect(broken.pga_omitted).toBe(true);
+    expect(broken.pga_value).toBe(18);
+    expect(broken.pga_delta).not.toBe(-45);
   });
 });
 
