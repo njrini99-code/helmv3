@@ -66,7 +66,24 @@ interface CourseMgmtAggregate extends GeneratorAggregate {
   /** % whose proximate cause was a 3-putt (or worse). */
   cause_three_putt_pct: number;
   /** Top per-hole-number average-to-par offenders (n>=3 plays), worst first. */
-  worst_holes: Array<{ hole_number: number; avg_to_par: number; n: number }>;
+  /**
+   * Highest avg-to-par SPECIFIC holes, identified by (course_id, hole_number)
+   * — never by hole number alone, which is only an ordinal position and used
+   * to merge hole 7 at every course the player has seen into one "hole 7"
+   * (addendum §6.3). `course_name` is display metadata.
+   */
+  worst_holes: Array<{
+    course_id: string;
+    course_name: string | null;
+    hole_number: number;
+    avg_to_par: number;
+    n: number;
+  }>;
+  /** Rounds logged without a course_id — their holes cannot join a
+   *  specific-hole ranking, so they are left out and the ROUND count is
+   *  stated (a coach thinks in rounds; the hole count for a lifetime window
+   *  runs into the thousands and reads as noise). */
+  worst_holes_excluded_rounds: number;
   /** Honest lifetime span of the cache data (regrade VAL-P2). */
   spanDays: number | null;
   first_round_date: string | null;
@@ -133,15 +150,35 @@ export class CourseMgmtGenerator extends BaseGenerator<CourseMgmtAggregate> {
     // cause split must share its denominator (regrade VAL-P1/P2).
     const holes = await loadCompletedHoles(this.playerId, LIFETIME_WINDOW_DAYS);
     let penaltyN = 0, missedGirN = 0, threePuttN = 0, doublePlusN = 0;
-    const byHole = new Map<number, { sum: number; n: number }>();
+    // Specific-hole identity is (course_id, hole_number). A round without a
+    // course_id contributes to the cause split (which is per hole, not per
+    // course-hole) but not to the ranking — a course NAME is not an identity
+    // and is never used to fabricate one.
+    const byCourseHole = new Map<
+      string,
+      { course_id: string; course_name: string | null; hole_number: number; sum: number; n: number }
+    >();
+    const excludedRounds = new Set<string>();
     for (const h of holes) {
       if (h.score === null) continue;
       const over = h.score - h.par;
-      // Per-hole-number avg-to-par for worst-holes (all holes, not just doubles).
-      const slot = byHole.get(h.hole_number) ?? { sum: 0, n: 0 };
-      slot.sum += over;
-      slot.n += 1;
-      byHole.set(h.hole_number, slot);
+      // Per course-hole avg-to-par for worst-holes (all holes, not just doubles).
+      if (h.course_id) {
+        const key = `${h.course_id}:${h.hole_number}`;
+        const slot = byCourseHole.get(key) ?? {
+          course_id: h.course_id,
+          course_name: h.course_name,
+          hole_number: h.hole_number,
+          sum: 0,
+          n: 0,
+        };
+        slot.sum += over;
+        slot.n += 1;
+        if (slot.course_name === null && h.course_name) slot.course_name = h.course_name;
+        byCourseHole.set(key, slot);
+      } else {
+        excludedRounds.add(h.round_id);
+      }
       // Proximate-cause split over double-plus holes only.
       if (over >= 2) {
         doublePlusN += 1;
@@ -154,10 +191,21 @@ export class CourseMgmtGenerator extends BaseGenerator<CourseMgmtAggregate> {
       }
     }
     const cpct = (k: number) => (doublePlusN > 0 ? (100 * k) / doublePlusN : 0);
-    const worstHoles = Array.from(byHole.entries())
-      .filter(([, v]) => v.n >= 3)
-      .map(([hole_number, v]) => ({ hole_number, avg_to_par: v.sum / v.n, n: v.n }))
-      .sort((a, b) => b.avg_to_par - a.avg_to_par || a.hole_number - b.hole_number)
+    const worstHoles = Array.from(byCourseHole.values())
+      .filter((v) => v.n >= 3)
+      .map((v) => ({
+        course_id: v.course_id,
+        course_name: v.course_name,
+        hole_number: v.hole_number,
+        avg_to_par: v.sum / v.n,
+        n: v.n,
+      }))
+      .sort(
+        (a, b) =>
+          b.avg_to_par - a.avg_to_par ||
+          a.hole_number - b.hole_number ||
+          a.course_id.localeCompare(b.course_id),
+      )
       .slice(0, 2);
 
     // cm-1: anchor the card's priority + prose to the SAME baseline the
@@ -193,6 +241,7 @@ export class CourseMgmtGenerator extends BaseGenerator<CourseMgmtAggregate> {
       first_round_date: (data as { first_round_date?: string | null }).first_round_date ?? null,
       last_round_date: (data as { last_round_date?: string | null }).last_round_date ?? null,
       worst_holes: worstHoles,
+      worst_holes_excluded_rounds: excludedRounds.size,
     };
   }
 
@@ -218,13 +267,26 @@ export class CourseMgmtGenerator extends BaseGenerator<CourseMgmtAggregate> {
 
   composeContent(agg: CourseMgmtAggregate): ComposedContent {
     const r1 = (x: number) => (Math.round(x * 10) / 10).toString();
+    // Specific holes are named with their course; hole number alone is an
+    // ordinal, not an identity. Rounds without a course on file are left out
+    // of the ranking and the coverage gap is stated.
+    const excludedRounds = agg.worst_holes_excluded_rounds;
+    const excludedNote =
+      excludedRounds > 0
+        ? ` (${excludedRounds} round${excludedRounds === 1 ? '' : 's'} without a course on file ` +
+          `${excludedRounds === 1 ? 'is' : 'are'} not in this ranking)`
+        : '';
     const worstClause =
       agg.worst_holes.length > 0
         ? ` Your highest-scoring holes: ` +
           agg.worst_holes
-            .map((w) => `hole ${w.hole_number} (+${w.avg_to_par.toFixed(1)}/play over ${w.n} plays)`)
+            .map(
+              (w) =>
+                `hole ${w.hole_number} at ${w.course_name ?? 'a course on file'} ` +
+                `(+${w.avg_to_par.toFixed(1)}/play over ${w.n} plays)`,
+            )
             .join(', ') +
-          `.`
+          `${excludedNote}.`
         : '';
     // Dominant proximate cause among the double-plus holes.
     const causes: Array<{ key: string; pct: number; rank: number }> = [

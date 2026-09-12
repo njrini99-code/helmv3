@@ -170,6 +170,7 @@ const SOURCE_LABELS: Record<InsightEvidence['comparison_source'], string> = {
   team_avg: 'Team average',
   pga_baseline: 'PGA baseline',
   absolute_target: 'Target',
+  estimated_target: 'Estimated target',
 };
 
 /**

@@ -12,7 +12,14 @@ function makeAgg(
     cause_penalty_pct: number;
     cause_missed_gir_pct: number;
     cause_three_putt_pct: number;
-    worst_holes: Array<{ hole_number: number; avg_to_par: number; n: number }>;
+    worst_holes: Array<{
+      course_id: string;
+      course_name: string | null;
+      hole_number: number;
+      avg_to_par: number;
+      n: number;
+    }>;
+    worst_holes_excluded_rounds: number;
   }> = {},
   cohortGender: 'mens' | 'womens' | null = 'mens',
 ) {
@@ -34,6 +41,7 @@ function makeAgg(
     first_round_date: '2026-04-01',
     last_round_date: '2026-05-25',
     worst_holes: cause.worst_holes ?? [],
+    worst_holes_excluded_rounds: cause.worst_holes_excluded_rounds ?? 0,
   };
 }
 
@@ -156,13 +164,32 @@ describe('CourseMgmtGenerator', () => {
         makeAgg('big_number', 9, 20, { anchor_value: 6, anchor_is_cohort: true }, {
           cause_three_putt_pct: 40, cause_missed_gir_pct: 40, cause_penalty_pct: 20,
           worst_holes: [
-            { hole_number: 7, avg_to_par: 0.9, n: 6 },
-            { hole_number: 14, avg_to_par: 0.7, n: 6 },
+            { course_id: 'c-1', course_name: 'Pine Valley', hole_number: 7, avg_to_par: 0.9, n: 6 },
+            { course_id: 'c-2', course_name: 'Old Town', hole_number: 14, avg_to_par: 0.7, n: 6 },
           ],
         }),
       );
-      expect(c.content).toContain('hole 7');
+      // Specific holes are named with their course — hole 7 at one course is
+      // not hole 7 at another (addendum §6.3).
+      expect(c.content).toContain('hole 7 at Pine Valley');
+      expect(c.content).toContain('hole 14 at Old Town');
       expect(c.content).toContain('+0.9');
+      expect(c.content).not.toContain('without a course on file');
+    });
+
+    it('big_number states the coverage gap when rounds without a course_id were left out of the ranking', () => {
+      const g = new CourseMgmtGenerator(PLAYER_ID, 'big_number');
+      const c = g.composeContent(
+        makeAgg('big_number', 9, 20, { anchor_value: 6, anchor_is_cohort: true }, {
+          cause_three_putt_pct: 40, cause_missed_gir_pct: 40, cause_penalty_pct: 20,
+          worst_holes: [
+            { course_id: 'c-1', course_name: null, hole_number: 3, avg_to_par: 1.2, n: 4 },
+          ],
+          worst_holes_excluded_rounds: 2,
+        }),
+      );
+      expect(c.content).toContain('hole 3 at a course on file');
+      expect(c.content).toContain('2 rounds without a course on file are not in this ranking');
     });
   });
 });

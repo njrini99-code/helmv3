@@ -300,6 +300,9 @@ export function buildDiagnosis(
 ): Diagnosis {
   const driver: DiagnosisDriver = {
     metric: evidence.metric || metricId,
+    // The evidence label names what `your_value` actually is; the metric id
+    // may be a registry id whose quantity differs (approach_miss).
+    label: evidence.metric_label,
     value: evidence.your_value,
     unit: evidence.unit,
     sample_n: evidence.sample_n,
@@ -338,6 +341,25 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
    * `attachStandingWhenAvailable`.
    */
   protected readonly requiresStanding: boolean = true;
+
+  /**
+   * Whether `agg.playerValue` is the SAME quantity as the standing's
+   * `pga_value` / cohort target, so a counterfactual gap between them means
+   * something. Default true. A generator whose player value is measured on a
+   * different basis than its benchmark sets this false and ships NO
+   * counterfactual rather than a gap between two different quantities
+   * (approach_miss: on-green-only proximity vs the Tour's all-shot proximity).
+   */
+  protected readonly counterfactualComparable: boolean = true;
+
+  /**
+   * Whether the Tour marker on the injected standing block is a like-for-like
+   * reference for `standing.player_value`. Default true. When false the block
+   * is stamped `pga_omitted: true` so the StandingBar hides the Tour tick
+   * (the same render path the women's gender-anchor omission uses) instead of
+   * showing a flattering cross-basis comparison. Team ticks are unaffected.
+   */
+  protected readonly standingTourComparable: boolean = true;
 
   /**
    * Load standing even when it is not required, and emit either way.
@@ -580,7 +602,7 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
       if (standing) {
         let counterfactual: ReturnType<typeof computeCounterfactual> | null = null;
         const cfg = METRIC_RENDER_CONFIG[this.metricId];
-        if (cfg) {
+        if (cfg && this.counterfactualComparable) {
           const baseline = await loadPlayerScoringBaseline(this.playerId);
           const cohort = await loadPlayerCohort(this.playerId);
           // Player's OWN per-round attempt rate when the aggregate exposes one
@@ -629,8 +651,10 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
             pga_delta: standing.pga_delta,
             // Gender-anchor omission flag (rescore item 1): set in-memory by
             // applyGenderAnchor but previously DROPPED here, so women's cards
-            // never suppressed a misleading cross-gender Tour marker.
-            pga_omitted: standing.pga_omitted,
+            // never suppressed a misleading cross-gender Tour marker. A
+            // generator whose player value is not on the Tour marker's basis
+            // omits it the same way (`standingTourComparable`).
+            pga_omitted: this.standingTourComparable ? standing.pga_omitted : true,
             computed_at: standing.computed_at,
           },
           counterfactual,

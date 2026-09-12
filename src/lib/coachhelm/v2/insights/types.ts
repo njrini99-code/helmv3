@@ -35,6 +35,12 @@ export type InsightUnit = 'percent' | 'strokes' | 'count' | 'yards' | 'feet';
  * - d1_avg / d2_avg / d3_avg / naia_avg / juco_avg: college-division benchmarks
  * - pga_baseline:     PGA Tour benchmark
  * - absolute_target:  a known target value (par, uniform distribution, etc.)
+ * - estimated_target: a DERIVED coaching target, not a measured population
+ *                     average — e.g. the women's-college anchors in
+ *                     `v3/counterfactual/cohort-baselines.ts`, which are LPGA /
+ *                     NCAA figures discounted to college. Rendered as
+ *                     "Estimated target" so a coach never reads it as a
+ *                     measured norm (repair plan N16).
  *
  * `peer_percentile` was removed in 2026-05-17 (audit finding Q-NEW-12) —
  * it was being used against fixed reference points (uniform 4-way
@@ -50,7 +56,8 @@ export type InsightComparisonSource =
   | 'your_baseline'
   | 'team_avg'
   | 'pga_baseline'
-  | 'absolute_target';
+  | 'absolute_target'
+  | 'estimated_target';
 
 /** Runtime tuple matching {@link InsightComparisonSource} for validation. */
 export const COMPARISON_SOURCES = [
@@ -63,6 +70,7 @@ export const COMPARISON_SOURCES = [
   'juco_avg',
   'pga_baseline',
   'absolute_target',
+  'estimated_target',
 ] as const satisfies readonly InsightComparisonSource[];
 
 /** Stable lookup key in the BaselineRegistry: `${source}.${bucket}`. */
@@ -110,6 +118,16 @@ export interface InsightEvidence {
   metric: string;
   metric_label: string;
   unit: InsightUnit;
+  /**
+   * Which way `your_value` is good. Declared by the PRODUCER when the headline
+   * value is not the quantity the registry entry for `metric` describes —
+   * e.g. `approach_miss` keeps `metric: approach_proximity_*ft` (feet,
+   * lower_better) for standing/signature continuity while `your_value` is the
+   * green-hit PERCENT (higher_better). Readers (`tone-derivation.ts`) prefer
+   * this over the registry direction; absent → registry, then a name-pattern
+   * fallback. Additive: every existing row is unchanged.
+   */
+  polarity?: 'higher_better' | 'lower_better';
 
   // Your number
   your_value: number;
@@ -192,6 +210,13 @@ export type CausalityLevel = 'observed_sequence' | 'inferred_hypothesis';
 export interface DiagnosisDriver {
   /** Canonical metric id this driver reads (e.g. 'putts_made_3_5ft_pct'). */
   metric: string;
+  /**
+   * Human label for THIS driver's value. Set by the producer when the value
+   * is not the registry quantity for `metric` (the approach_miss green-hit %
+   * under a proximity id); the DiagnosisPanel prefers it over the registry
+   * display label so a percent never renders under a feet-metric heading.
+   */
+  label?: string;
   /** The measured value of that metric. */
   value: number;
   /** Unit of `value`. */
