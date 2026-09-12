@@ -17,8 +17,15 @@
  *      * >= 5% movement → update evidence + content; set metadata.movement;
  *        increment metadata.movement_count. When count reaches 3 and current
  *        state is 'detected', promote to 'matured'.
+ *      * EITHER branch: a 'tentative' row whose freshly recomputed confidence
+ *        clears TENTATIVE_CONFIDENCE_FLOOR is promoted to 'detected'
+ *        (2026-09-12 RC0 — this edge was missing; see lifecycle-policy.ts).
+ *        Gated per team by `preferences.tentative_promotion_enabled`.
  *  - Otherwise INSERT new row with lifecycle_state = 'tentative' (if
  *    confidence < 0.4) else 'detected'.
+ *
+ *  All lifecycle decisions are made by the pure evaluator in
+ *  ./lifecycle-policy.ts; this file only persists them.
  *
  * attachDrills() pulls up to 3 drills from golf_drills matching the insight's
  * category + tags, ranked by number of overlapping tags.
@@ -31,7 +38,13 @@ import type {
   InsightLifecycleState,
   InsightMovement,
 } from './types';
-import { calcConfidence } from './types';
+import { calcConfidence, CONFIDENCE_METHOD_VERSION } from './types';
+import {
+  resolveLifecycleOnInsert,
+  resolveLifecycleOnWrite,
+  TENTATIVE_CONFIDENCE_FLOOR,
+  type LifecycleWriteDecision,
+} from './lifecycle-policy';
 import { getActiveGate, incrementGatedCount } from './gate-context';
 import { notifyInsightLanded } from '@/lib/notifications/insight-notifier';
 import { logServerError } from '@/lib/server-error-logger';
@@ -80,7 +93,6 @@ export function isEvidenceRefusal(err: unknown): err is InsightEvidenceRefusal {
 }
 
 const MOVEMENT_THRESHOLD = 0.05; // 5%
-const MATURATION_MOVEMENTS = 3;
 /**
  * Platform evidence floor (see docs/architecture/coachhelm-evidence-contract.md).
  * Exported because it is a floor GENERATORS must respect, not just one this
@@ -89,7 +101,6 @@ const MATURATION_MOVEMENTS = 3;
  * this rather than restating `5`, so moving the floor moves their gates too.
  */
 export const MIN_SAMPLE_N = 5;
-const TENTATIVE_CONFIDENCE_FLOOR = 0.4;
 
 type JsonRecord = Record<string, unknown>;
 
@@ -121,6 +132,10 @@ export async function upsertInsight(
   const evidence: InsightEvidence = {
     ...input.evidence,
     confidence,
+    confidence_factors: {
+      ...input.evidence.confidence_factors,
+      method_version: CONFIDENCE_METHOD_VERSION,
+    },
   };
 
   // 2026-05-24 Wave 7B — philosophy gate (replaces Wave 6 post-filter).
@@ -198,7 +213,7 @@ export async function upsertInsight(
   const existing = (existingRows?.[0] ?? null) as ExistingInsightRow | null;
 
   if (existing) {
-    return updateExisting(supabase, existing, input, evidence);
+    return updateExisting(supabase, existing, input, evidence, resolvedTeamId);
   }
 
   return insertNew(supabase, input, evidence, confidence, resolvedCoachId, resolvedTeamId);
@@ -209,6 +224,7 @@ async function updateExisting(
   existing: ExistingInsightRow,
   input: InsightInput,
   evidence: InsightEvidence,
+  teamId: string | null,
 ): Promise<string> {
   const nowIso = new Date().toISOString();
   const existingValue = existing.evidence?.your_value ?? 0;
@@ -222,85 +238,48 @@ async function updateExisting(
     : absChange / Math.abs(existingValue);
 
   const priorMetadata: JsonRecord = existing.metadata ?? {};
-
-  if (relChange < MOVEMENT_THRESHOLD) {
-    // Small wiggle — refresh evidence + content, preserve lifecycle.
-    const mergedMetadata: JsonRecord = {
-      ...priorMetadata,
-      ...(input.metadata ?? {}),
-      last_refreshed_at: nowIso,
-    };
-
-    const refreshPayload: Record<string, unknown> = {
-      evidence,
-      content: input.content,
-      title: input.title,
-      category: input.category,
-      metadata: mergedMetadata,
-      updated_at: nowIso,
-    };
-    // Re-persist the freshly-computed severity. Value-derived generators
-    // recompute priority every run, and there is no coach manual-priority
-    // edit path (coaches only dismiss/acknowledge/resolve), so an insight that
-    // escalated/de-escalated would otherwise keep its stale INSERT-time
-    // priority — wrong in the Alert Center's ['urgent','high'] filter + ordering.
-    if (input.priority) refreshPayload.priority = input.priority;
-
-    // RESURRECTION (to-95 audit P2): a re-emitted signature whose row was
-    // previously archived (age-based lifecycle sweep or the generator scope
-    // retraction) must return to a visible state — otherwise this refresh
-    // lands fresh evidence on a row delivery can never show again, silently
-    // and permanently. `status` is deliberately NOT touched: a coach
-    // dismissal keeps hiding the row regardless of lifecycle.
-    if (existing.lifecycle_state === 'archived') {
-      // Resurrection honors the SAME confidence gate as a fresh insert
-      // (regrade NEW-P2): sub-floor confidence comes back pre-maturity
-      // 'tentative' (invisible), never straight to coach-visible 'detected'.
-      refreshPayload.lifecycle_state =
-        evidence.confidence < TENTATIVE_CONFIDENCE_FLOOR ? 'tentative' : 'detected';
-      refreshPayload.archived_at = null;
-      mergedMetadata.redetected_at = nowIso;
-    }
-
-    const { error } = await supabase
-      .from('golf_coach_insights')
-      .update(refreshPayload)
-      .eq('id', existing.id);
-
-    if (error) {
-      throw new Error(`upsertInsight.refresh failed: ${error.message}`);
-    }
-    return existing.id;
-  }
-
-  // Movement > 5% — record the movement and possibly promote.
-  const percentChange = existingValue === 0
-    ? (newValue === 0 ? 0 : 1)
-    : (newValue - existingValue) / Math.abs(existingValue);
-
-  const movement: InsightMovement = {
-    from: existingValue,
-    to: newValue,
-    direction: newValue >= existingValue ? 'up' : 'down',
-    percent_change: percentChange,
-  };
-
   const priorMovementCount = typeof priorMetadata.movement_count === 'number'
     ? (priorMetadata.movement_count as number)
     : 0;
-  const nextMovementCount = priorMovementCount + 1;
+  const movedThisWrite = relChange >= MOVEMENT_THRESHOLD;
+  const nextMovementCount = movedThisWrite ? priorMovementCount + 1 : priorMovementCount;
 
-  const shouldMature =
-    existing.lifecycle_state === 'detected' &&
-    nextMovementCount >= MATURATION_MOVEMENTS;
+  // The team gate is only consulted when a promotion is actually possible —
+  // a tentative row clearing the floor — so the common refresh path costs no
+  // extra round-trip. Fails OPEN (see isTentativePromotionEnabled).
+  const promotionPossible =
+    existing.lifecycle_state === 'tentative' &&
+    evidence.confidence >= TENTATIVE_CONFIDENCE_FLOOR;
+  const promotionEnabled = promotionPossible
+    ? await isTentativePromotionEnabled(supabase, teamId)
+    : true;
+
+  const decision: LifecycleWriteDecision = resolveLifecycleOnWrite({
+    existing: existing.lifecycle_state,
+    confidence: evidence.confidence,
+    nextMovementCount,
+    movedThisWrite,
+    promotionEnabled,
+  });
 
   const mergedMetadata: JsonRecord = {
     ...priorMetadata,
     ...(input.metadata ?? {}),
-    movement,
-    movement_count: nextMovementCount,
     last_refreshed_at: nowIso,
   };
+  if (movedThisWrite) {
+    const percentChange = existingValue === 0
+      ? (newValue === 0 ? 0 : 1)
+      : (newValue - existingValue) / Math.abs(existingValue);
+    const movement: InsightMovement = {
+      from: existingValue,
+      to: newValue,
+      direction: newValue >= existingValue ? 'up' : 'down',
+      percent_change: percentChange,
+    };
+    mergedMetadata.movement = movement;
+    mergedMetadata.movement_count = nextMovementCount;
+  }
 
   const updatePayload: Record<string, unknown> = {
     evidence,
@@ -310,22 +289,40 @@ async function updateExisting(
     metadata: mergedMetadata,
     updated_at: nowIso,
   };
-  if (shouldMature) {
-    updatePayload.lifecycle_state = 'matured';
-  }
-  // RESURRECTION on movement — see the refresh-branch comment. shouldMature
-  // requires lifecycle 'detected', so the two assignments are exclusive.
-  if (existing.lifecycle_state === 'archived') {
-    // Same confidence-gated resurrection as the refresh branch (NEW-P2).
-    updatePayload.lifecycle_state =
-      evidence.confidence < TENTATIVE_CONFIDENCE_FLOOR ? 'tentative' : 'detected';
-    updatePayload.archived_at = null;
-    mergedMetadata.redetected_at = nowIso;
-  }
-  // Re-persist freshly-computed severity (no coach manual-priority path exists;
-  // see refresh branch above) so escalations/de-escalations aren't pinned to
-  // the stale INSERT-time value.
+  // Re-persist the freshly-computed severity. Value-derived generators
+  // recompute priority every run, and there is no coach manual-priority
+  // edit path (coaches only dismiss/acknowledge/resolve), so an insight that
+  // escalated/de-escalated would otherwise keep its stale INSERT-time
+  // priority — wrong in the Alert Center's ['urgent','high'] filter + ordering.
   if (input.priority) updatePayload.priority = input.priority;
+
+  // Lifecycle: only written when it actually changes. `status` is deliberately
+  // NEVER touched — a coach dismissal keeps hiding the row regardless of
+  // lifecycle. `created_at` is never rewritten either: a promoted row keeps its
+  // original feed date instead of surfacing as "new today".
+  switch (decision.transition) {
+    case 'promoted':
+      updatePayload.lifecycle_state = decision.next;
+      mergedMetadata.promoted_at = nowIso;
+      mergedMetadata.promotion_reason = 'confidence_floor';
+      if (typeof mergedMetadata.first_visible_at !== 'string') {
+        mergedMetadata.first_visible_at = nowIso;
+      }
+      break;
+    case 'matured':
+      updatePayload.lifecycle_state = decision.next;
+      break;
+    case 'resurrected':
+      // RESURRECTION (to-95 audit P2): fresh evidence landing on an archived
+      // row must bring it back, through the same confidence gate as an insert
+      // (regrade NEW-P2). Otherwise delivery could never show it again.
+      updatePayload.lifecycle_state = decision.next;
+      updatePayload.archived_at = null;
+      mergedMetadata.redetected_at = nowIso;
+      break;
+    case 'none':
+      break;
+  }
 
   const { error } = await supabase
     .from('golf_coach_insights')
@@ -333,41 +330,82 @@ async function updateExisting(
     .eq('id', existing.id);
 
   if (error) {
-    throw new Error(`upsertInsight.update failed: ${error.message}`);
+    const branch = movedThisWrite ? 'update' : 'refresh';
+    throw new Error(`upsertInsight.${branch} failed: ${error.message}`);
   }
 
-  // Wave 1B — post-write push hook. `shouldMature` is the only promotion we
-  // can observe from this code path (detected → matured). Resolution
-  // transitions happen via the lifecycle cron, not upsertInsight. Never let a
-  // push failure break the upsert.
-  const nextLifecycleState: InsightLifecycleState =
-    shouldMature
-      ? 'matured'
-      : existing.lifecycle_state === 'archived'
-        ? (evidence.confidence < TENTATIVE_CONFIDENCE_FLOOR ? 'tentative' : 'detected') // resurrected above
-        : (existing.lifecycle_state ?? 'detected');
-  try {
-    if (input.player_id) {
-      await notifyInsightLanded({
-        player_id: input.player_id,
-        insight_id: existing.id,
-        category: input.category,
-        title: input.title,
-        evidence,
-        lifecycle_state: nextLifecycleState,
-        was_lifecycle_promotion: shouldMature,
-      });
+  // Wave 1B — post-write push hook. The notifier only pushes on matured /
+  // resolved; a tentative → detected promotion is reported as a promotion
+  // (so the hook can see it) but produces no push. Resolution transitions
+  // happen via the lifecycle cron, not upsertInsight. Never let a push
+  // failure break the upsert. Refresh writes with no transition stay silent,
+  // exactly as before.
+  const promotedOrMatured =
+    decision.transition === 'promoted' || decision.transition === 'matured';
+  if (movedThisWrite || promotedOrMatured) {
+    try {
+      if (input.player_id) {
+        await notifyInsightLanded({
+          player_id: input.player_id,
+          insight_id: existing.id,
+          category: input.category,
+          title: input.title,
+          evidence,
+          lifecycle_state: decision.next,
+          was_lifecycle_promotion: promotedOrMatured,
+        });
+      }
+    } catch (error) {
+      // notifyInsightLanded never throws, but belt-and-braces here.
+      await logServerError(
+        `notifyInsightLanded threw unexpectedly: ${describeError(error)}`,
+        { action: 'coachhelm.upsert.updateExisting.notifyInsightLanded', featureArea: 'coachhelm', playerId: input.player_id ?? undefined },
+        'warning'
+      );
     }
-  } catch (error) {
-    // notifyInsightLanded never throws, but belt-and-braces here.
-    await logServerError(
-      `notifyInsightLanded threw unexpectedly: ${describeError(error)}`,
-      { action: 'coachhelm.upsert.updateExisting.notifyInsightLanded', featureArea: 'coachhelm', playerId: input.player_id ?? undefined },
-      'warning'
-    );
   }
 
   return existing.id;
+}
+
+/**
+ * Team gate for the tentative → detected promotion edge, read from
+ * `golf_team_coachhelm_settings.preferences.tentative_promotion_enabled`
+ * (same JSONB blob and same opt-OUT convention as the v3 generator toggles:
+ * only an explicit `false` pauses promotion). Exists so the 2026-09 recovery
+ * can be canaried one team at a time by SQL, without a deploy per step.
+ * Fails OPEN on a missing settings row or a lookup error — a transient DB
+ * fault must not silently freeze visibility — and logs the fault.
+ */
+async function isTentativePromotionEnabled(
+  supabase: SupabaseClient,
+  teamId: string | null,
+): Promise<boolean> {
+  if (!teamId) return true;
+  try {
+    const { data, error } = await supabase
+      .from('golf_team_coachhelm_settings')
+      .select('preferences')
+      .eq('team_id', teamId)
+      .maybeSingle();
+    if (error) {
+      await logServerError(
+        `isTentativePromotionEnabled lookup failed for team=${teamId}: ${error.message}`,
+        { action: 'coachhelm.upsert.isTentativePromotionEnabled', featureArea: 'coachhelm' },
+        'warning'
+      );
+      return true;
+    }
+    const prefs = ((data as { preferences?: unknown } | null)?.preferences ?? {}) as JsonRecord;
+    return prefs.tentative_promotion_enabled !== false;
+  } catch (err) {
+    await logServerError(
+      `isTentativePromotionEnabled threw for team=${teamId}: ${describeError(err)}`,
+      { action: 'coachhelm.upsert.isTentativePromotionEnabled', featureArea: 'coachhelm' },
+      'warning'
+    );
+    return true;
+  }
 }
 
 async function insertNew(
@@ -378,13 +416,16 @@ async function insertNew(
   coachId: string | null,
   teamId: string | null,
 ): Promise<string> {
-  const lifecycleState: InsightLifecycleState =
-    confidence < TENTATIVE_CONFIDENCE_FLOOR ? 'tentative' : 'detected';
+  const lifecycleState: InsightLifecycleState = resolveLifecycleOnInsert(confidence);
 
   const metadata: JsonRecord = {
     ...(input.metadata ?? {}),
     movement_count: 0,
   };
+  // Rows born visible record it; rows born tentative get the stamp on promotion.
+  if (lifecycleState === 'detected') {
+    metadata.first_visible_at = new Date().toISOString();
+  }
 
   // coachId / teamId resolved by upsertInsight() before the dedup lookup;
   // see 2026-05-23 P0-3 fix. `insight_type` is NOT NULL on the legacy

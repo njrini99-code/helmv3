@@ -595,11 +595,12 @@ export function FairwayShotEntry({
             variant="ghost"
             className="flex-1"
             onClick={onAddPenalty}
-            // A penalty is attached to the shot that earned it; logged first it
-            // becomes shot 1 and the real tee shot is entered as the provisional
-            // (78 of 311 penalty rows, 90 days to 2026-09-09) — scored a stroke short.
-            disabled={shotHistory.length === 0}
-            title={shotHistory.length === 0 ? 'Enter the shot first, then add its penalty' : undefined}
+            // Allowed before any shot is entered: the modal records the
+            // un-entered errant stroke together with the penalty (origin
+            // 'here'), so a drive that goes OB and is never typed in still
+            // counts — the stroke-short scorecard the old disable guarded
+            // against (78 of 311 rows, 90 days to 2026-09-09) is written
+            // correctly instead of being refused.
             aria-label="Add penalty stroke"
           >
             + Penalty

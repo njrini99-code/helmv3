@@ -1846,3 +1846,57 @@ describe('approach proximity headline cards — total/hit/miss across a mixed ro
     expect(Math.round(((hitSum + missSum) / 3) * 100) / 100).toBe(stats.approachProximityAvg);
   });
 });
+
+// ============================================================================
+// Errant stroke + stroke-and-distance penalty (2026-09-10): a Penalty tapped
+// from the fairway WITHOUT entering the shot writes a 0-yard "other" stroke
+// plus the penalty. The card must score every row exactly once and SG must
+// charge the pair the same as a player-entered OB shot + penalty.
+// ============================================================================
+
+describe('errant stroke + OB penalty from the fairway (penaltyOrigin "here")', () => {
+  // Owner's hole 1: drive OB (entered as "other"), penalty, re-tee to fairway
+  // 115, second ball OB from the fairway (auto-written errant stroke), penalty,
+  // approach to green, two putts. 8 strokes.
+  const hole = () => [
+    makeRawShot({ shot_number: 1, shot_type: 'tee', club_type: 'driver', lie_before: 'tee', distance_to_hole_before: 400, result: 'other', distance_to_hole_after: 120, shot_distance: 280 }),
+    makeRawShot({ shot_number: 2, shot_type: 'penalty', lie_before: 'tee', distance_to_hole_before: 400, result: 'penalty', distance_to_hole_after: 400, shot_distance: 0, is_penalty: true, penalty_type: 'ob' }),
+    makeRawShot({ shot_number: 3, shot_type: 'tee', club_type: 'driver', lie_before: 'tee', distance_to_hole_before: 400, result: 'fairway', distance_to_hole_after: 115, shot_distance: 285 }),
+    // buildErrantStroke: from the fairway, ends where it began.
+    makeRawShot({ shot_number: 4, shot_type: 'approach', lie_before: 'fairway', distance_to_hole_before: 115, result: 'other', distance_to_hole_after: 115, shot_distance: 0 }),
+    makeRawShot({ shot_number: 5, shot_type: 'penalty', lie_before: 'fairway', distance_to_hole_before: 115, result: 'penalty', distance_to_hole_after: 115, shot_distance: 0, is_penalty: true, penalty_type: 'ob' }),
+    makeRawShot({ shot_number: 6, shot_type: 'approach', lie_before: 'fairway', distance_to_hole_before: 115, result: 'green', distance_to_hole_after: 20, distance_unit_after: 'feet', shot_distance: 108 }),
+    makeRawShot({ shot_number: 7, shot_type: 'putting', club_type: 'putter', lie_before: 'green', distance_to_hole_before: 20, distance_unit_before: 'feet', result: 'green', distance_to_hole_after: 2, distance_unit_after: 'feet' }),
+    makeRawShot({ shot_number: 8, shot_type: 'putting', club_type: 'putter', lie_before: 'green', distance_to_hole_before: 2, distance_unit_before: 'feet', result: 'hole', distance_to_hole_after: 0, distance_unit_after: 'feet' }),
+  ];
+
+  it('scores every row once: 8 strokes, 2 penalties', () => {
+    const stats = calculateHoleStatsFromShots(hole(), 4);
+    expect(stats.score).toBe(8);
+    expect(stats.penalties).toBe(2);
+    expect(stats.putts).toBe(2);
+  });
+
+  it('charges the errant pair exactly like a player-entered OB shot plus its penalty', () => {
+    const holes = [makeHoleInfo({ hole_number: 1, par: 4, yardage: 400 })];
+    const rounds = [makeRoundInfo()];
+    const auto = calculateStatsFromShots(hole(), holes, rounds);
+    // Same hole, but the player entered the second OB shot themselves.
+    const entered = hole().map(s =>
+      s.shot_number === 4 ? { ...s, distance_to_hole_after: 30, shot_distance: 85 } : s
+    );
+    const manual = calculateStatsFromShots(entered, holes, rounds);
+
+    expect(auto.strokesGainedTotal).not.toBeNull();
+    expect(manual.strokesGainedTotal).not.toBeNull();
+    // Both penalties land on their offending category (tee, then approach).
+    expect(auto.strokesGainedTee).toBeCloseTo(manual.strokesGainedTee!, 5);
+    // The errant row's own SG differs from the manual one only by where the
+    // "other" lie was recorded — never by an extra stroke.
+    const parts =
+      (auto.strokesGainedTee ?? 0) + (auto.strokesGainedApproach ?? 0) +
+      (auto.strokesGainedAroundGreen ?? 0) + (auto.strokesGainedPutting ?? 0);
+    expect(auto.strokesGainedTotal!).toBeCloseTo(parts, 5);
+    expect(Math.abs(auto.strokesGainedTotal! - manual.strokesGainedTotal!)).toBeLessThan(1);
+  });
+});
