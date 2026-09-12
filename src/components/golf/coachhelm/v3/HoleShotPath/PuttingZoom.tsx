@@ -452,7 +452,7 @@ export interface PuttingZoomProps {
  * qualifies for the green inset (e.g. every shot stayed well off the green)
  * — never renders an empty floating panel.
  */
-export function PuttingZoom({ plot, className, puttMakePct }: PuttingZoomProps) {
+function LegacyPuttingZoom({ plot, className, puttMakePct }: PuttingZoomProps) {
   const prefersReducedMotion = useReducedMotionGuard();
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const { greenInset } = plot;
@@ -788,4 +788,35 @@ export function PuttingZoom({ plot, className, puttMakePct }: PuttingZoomProps) 
       </div>
     </LazyMotion>
   );
+}
+
+
+export interface DistancePuttingProps {
+  /** Abstract cup frame, independent of physical green geometry. */
+  distanceView: { beforeFeet: number | null; afterFeet?: number | null; made?: boolean; rolledOff?: boolean };
+  width?: number;
+  height?: number;
+  className?: string;
+}
+
+export function PuttingZoom(props: PuttingZoomProps | DistancePuttingProps) {
+  if (!('distanceView' in props)) return <LegacyPuttingZoom {...props} />;
+  const { distanceView: d, width = 320, height = 160 } = props;
+  const before = d.beforeFeet != null && Number.isFinite(d.beforeFeet) && d.beforeFeet >= 0 ? d.beforeFeet : null;
+  const after = d.afterFeet != null && Number.isFinite(d.afterFeet) && d.afterFeet >= 0 ? d.afterFeet : null;
+  const max = Math.max(before ?? 0, after ?? 0);
+  const scale = max > 0 ? Math.max(1, Math.min(width / 2 - 60, height / 2 - 26)) / max : 1;
+  const cx = width / 2, cy = height / 2;
+  const fmt = (n: number) => `${Number(n.toFixed(1))} ft`;
+  return <svg role="img" aria-label="Distance-based putting schematic. Cup is abstract; direction and green contours are unknown."
+    viewBox={`0 0 ${width} ${height}`} width={width} height={height} className={props.className}
+    style={{ width: '100%', height: '100%', display: 'block', background: 'var(--fw-diagram-ground)' }} data-putting-scale={scale}>
+    {/* True radial distances. The leave is an entire ring, never a guessed bearing. */}
+    {before != null && <circle data-putting-radius="before" cx={cx} cy={cy} r={before * scale} fill="none" stroke="var(--fw-diagram-green)" strokeWidth={1} />}
+    {after != null && !d.made && <circle data-putting-radius="after" cx={cx} cy={cy} r={after * scale} fill="none" stroke="var(--fw-diagram-event)" strokeDasharray="3 4" />}
+    <circle cx={cx} cy={cy} r={3} fill={d.made ? 'var(--fw-diagram-event)' : 'var(--fw-diagram-shadow)'} stroke="var(--fw-diagram-event)" />
+    <text x={cx + 10} y={cy - 8} fontSize={13} fill="var(--fw-diagram-event)">{d.made ? 'Holed' : 'Cup reference'}</text>
+    <text x={14} y={21} fontSize={14} fill="var(--fw-diagram-event)">{before == null ? 'Distance unknown' : `${fmt(before)}${after != null ? ' before' : ' to hole'}`}</text>
+    <text x={14} y={height - 12} fontSize={13} fill="var(--fw-diagram-event)">{after != null && !d.made ? `${fmt(after)} remaining${d.rolledOff ? ' · off green' : ' · bearing unknown'}` : 'Distance schematic · no physical pin'}</text>
+  </svg>;
 }

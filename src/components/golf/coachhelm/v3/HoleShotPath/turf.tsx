@@ -540,3 +540,13 @@ export function GreenInsetScenery({
     </m.g>
   );
 }
+
+
+/** Missing geography has no surface or endpoint claims. The ledger remains
+ * available in entry/review; this fixed slot never delays the input controls. */
+export function UnavailableCourseContext() {
+  return <div className="flex h-full flex-col items-center justify-center gap-2 bg-canvas px-6 text-center font-fw-sans">
+    <p className="text-body-sm font-medium text-text-primary">Course outline unavailable</p>
+    <p className="max-w-xs text-caption text-text-secondary">Use the recorded distances below. Shot locations are unresolved.</p>
+  </div>;
+}

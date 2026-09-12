@@ -169,3 +169,14 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
 - `docs/architecture/coachhelm-evidence-contract.md`
 - `docs/v3-research-golf-domain.md`
 - `docs/v3-testing-standards.md`
+
+## Round Review geometry presentation (September 12, 2026)
+
+`ReviewHero` keeps the round summary, hole filmstrip and narrative, with one
+selected-hole drawing bounded to 310 CSS pixels on phones. A recorded-shot
+selector exposes one explanation with original before/after units and miss
+direction; Hole, Green and abstract Putting views share the selected evidence.
+Desktop places geometry and shot detail beside each other. Optional physical
+geometry uses the same adapter/renderer as manual entry. Unknown positions
+remain unresolved and the physical green never implies the day's cup. This
+presentation change does not alter insight generation or statistical inputs.

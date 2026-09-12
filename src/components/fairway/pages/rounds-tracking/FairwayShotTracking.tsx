@@ -20,7 +20,7 @@
  * guard release. Result selection ONLY ever dispatches HANDLE_RESULT_SELECT.
  * ========================================================================== */
 
-import { useRef, useState, useCallback, useEffect, type ReactNode } from 'react';
+import { useRef, useMemo, useState, useCallback, useEffect, type ReactNode } from 'react';
 import { calculateShotDistanceWithDirection, calculateHoleStats } from '@/lib/utils/shot-helpers';
 import { triggerHaptic } from '@/lib/utils/capacitor';
 
@@ -35,6 +35,9 @@ import { displayToFeet, displayToYards } from '@/lib/golf/distance-units';
 
 import { FairwayScorecardHeader, FairwayDesktopExitHeader } from './FairwayScorecardHeader';
 import { FairwayShotPills } from './FairwayShotPills';
+import type { CourseGeometryPackage } from '@/lib/golf/course-geometry/types';
+import { buildHoleScene } from '@/lib/golf/course-geometry/build-scene';
+import { normalizeLiveShot } from '@/lib/golf/course-geometry/normalize';
 import { FairwayHoleHero } from './FairwayHoleHero';
 import { FairwayShotEntry } from './FairwayShotEntry';
 import { FairwayCompletedHole } from './FairwayCompletedHole';
@@ -47,6 +50,8 @@ type Hole = RoundHole;
 
 // IDENTICAL to the legacy ShotTrackingProps interface.
 interface ShotTrackingProps {
+  /** Optional reviewed binding context; never part of score persistence. */
+  geometry?: { package: CourseGeometryPackage; holeKeys: readonly string[] };
   /** Resume context already occupies the initial status-bar inset. */
   safeAreaHandledAbove?: boolean;
   /** Round-level status stays in the same measured sticky chrome. */
@@ -128,6 +133,7 @@ export function resolveDistanceAfterShot(params: {
 export default function FairwayShotTracking({
   safeAreaHandledAbove = false,
   statusSlot,
+  geometry,
   holes,
   currentHoleIndex,
   onHoleComplete,
@@ -515,6 +521,13 @@ export default function FairwayShotTracking({
     }
   }, [dispatch, shotHistory, handleEditShot]);
 
+  const physicalScene = useMemo(() => {
+    const key = geometry?.holeKeys[currentHoleIndex];
+    if (!geometry || !key) return null;
+    try { return buildHoleScene(geometry.package, key, shotHistory.map(normalizeLiveShot)); }
+    catch { return null; } // Optional visual failure cannot block entry or saving.
+  }, [geometry, currentHoleIndex, shotHistory]);
+
   // Early return for invalid hole data - must be after all hooks
   if (!currentHole) {
     return (
@@ -610,6 +623,8 @@ export default function FairwayShotTracking({
                 desktop so the live panel can scroll without losing context. */}
             <div className="lg:sticky lg:top-[calc(var(--scorecard-height,105px)+5.5rem)]">
               <FairwayHoleHero
+              scene={physicalScene}
+              shotType={shotType}
                 currentHole={currentHole}
                 isHoleComplete={isHoleComplete}
                 shotHistory={shotHistory}

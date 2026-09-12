@@ -114,6 +114,23 @@ def main():
                'sources': [{'id': 'osm-2026-09-12', 'provider': 'OpenStreetMap', 'licenseId': 'ODbL-1.0',
                             'url': 'https://www.openstreetmap.org/way/223477412', 'capturedAt': None,
                             'retrievedAt': '2026-09-12', 'attribution': '© OpenStreetMap contributors · ODbL 1.0'}]}
+    # Optional pilot-only canopy context, visually reviewed against the native 2024
+    # NAIP hole export. These polygons describe groups, never individual tree fixes.
+    canopy = json.loads((FIXTURES / 'cacapon-canopy-review.json').read_text())
+    west, south, east, north = canopy['bboxWgs84']
+    for region in canopy['regions']:
+        feature_id = 'naip2024-cacapon-07-canopy-' + region['id']
+        coords = [[west + x / canopy['exportPixels'][0] * (east - west), north - y / canopy['exportPixels'][1] * (north - south)] for x, y in region['pixels']]
+        if not Polygon(coords).is_valid:
+            raise ValueError('Invalid canopy group: ' + feature_id)
+        hole_key = f"cacapon-{region['hole']:02}"
+        package['features'].append({'id': feature_id, 'kind': 'woods', 'sourceIds': ['naip2024-canopy-review'],
+            'holeKeys': [hole_key], 'reviewed': True, 'accuracyMeters': None,
+            'geometryWgs84': {'type': 'Polygon', 'coordinates': [coords]}})
+        next(h for h in holes if h['key'] == hole_key)['featureIds'].append(feature_id)
+    package['sources'].append({'id': 'naip2024-canopy-review', 'provider': 'USDA NAIP via FPAC',
+        'licenseId': 'US-Public-Domain', 'url': canopy['sourceUrl'], 'capturedAt': canopy['capturedAt'],
+        'retrievedAt': '2026-09-12', 'attribution': 'USDA NAIP 2024; canopy groups approximate, tree symbols illustrative'})
     package['contentHash'] = hashlib.sha256(json.dumps(package, sort_keys=True, separators=(',', ':'), ensure_ascii=False).encode()).hexdigest()
     provenance = {'retrievedAt': '2026-09-12', 'url': 'https://www.openstreetmap.org/api/0.6/map?bbox=-78.308,39.500,-78.283,39.525',
                   'rawXmlSha256': hashlib.sha256(source_bytes).hexdigest(),
@@ -121,7 +138,8 @@ def main():
                   'elements': raw}
     quality = {'reviewer': 'Codex source/geometry review; independent course-familiar acceptance pending',
                'date': '2026-09-12', 'packageHash': package['contentHash'], 'topology': 'All retained polygons valid (Shapely 2.1.2)',
-               'simplification': 'None; all original WGS84 vertices retained',
+               'simplification': 'Canonical OSM vertices retained. Display-only cleanup limited to 0.5 m displacement and 1.5 percent ring area; original source view unchanged.',
+               'canopyReview': canopy,
                'associationPolicy': 'Routes by OSM ref; green contains route end; fairway intersects >10m; tees <25m from route start; explicit reviewed bunker/water IDs in cacapon-associations.json; shared green 4/8 retains shared bunkers. No distance-only hazard inclusion.',
                'imageryReview': {'provider': 'USDA NAIP via GeoPlatform', 'tile': 'm_3907830_se_17_060_20221020_20230117',
                                  'year': 2022, 'nominalPixelM': 0.6, 'public': 'yes',

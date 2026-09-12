@@ -610,3 +610,15 @@ fixture supplies test coordinates to demonstrate marker containment and
 label placement; it is not a reconstruction algorithm or a player location.
 Source acceptance and Stage 3–5 storage, access, wiring and reconstruction
 gates remain in the existing plan.
+
+## Local course-geometry UI proof (September 12, 2026)
+
+The shared course SVG now has optional integration seams in the actual
+Fairway tracking and Round Review components. Course data is read-only display
+context; scene construction catches geometry failures without joining save or
+checkpoint success. The local browser harness mounts the real dashboard shell
+and components with inert external adapters and fixture ledgers. It cannot
+access production data. Geometry binding, publication and historical version
+resolution remain unimplemented; no migration or lifecycle writer changes
+are included. See the existing course-geometry plan, Sections 18–19, for source
+provenance, real-component screenshots and device-verification limitations.

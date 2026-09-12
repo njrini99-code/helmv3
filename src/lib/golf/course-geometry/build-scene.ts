@@ -14,7 +14,7 @@ export function buildHoleScene(pkg: CourseGeometryPackage, holeKey: string, evid
   if (!route || route.length < 2) throw new Error('Missing physical routing');
   const start = route[0]!, end = route.at(-1)!;
   const targetUp = Math.PI / 2 - Math.atan2(end[1] - start[1], end[0] - start[0]);
-  const points = features.flatMap(f => f.parts.flat(2));
+  const points = features.filter(f => f.kind !== 'woods').flatMap(f => f.parts.flat(2));
   // One geometry-only orientation for BOTH contexts. Maximize uniform scale
   // in their shared reference aspect; the tee stays below-left of the target.
   let orientationRadians = targetUp - Math.PI / 6;

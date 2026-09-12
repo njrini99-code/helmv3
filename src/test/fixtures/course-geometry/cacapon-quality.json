@@ -1,9 +1,426 @@
 {
   "reviewer": "Codex source/geometry review; independent course-familiar acceptance pending",
   "date": "2026-09-12",
-  "packageHash": "ff204f4a091c12cd805944cde9180e3100ed7cd76e669e01c4e29c83e9c74120",
+  "packageHash": "69ac58c8cc4e29403101c931abf50c8f1fe4305aea474c3e63bd509083c28bfe",
   "topology": "All retained polygons valid (Shapely 2.1.2)",
-  "simplification": "None; all original WGS84 vertices retained",
+  "simplification": "Canonical OSM vertices retained. Display-only cleanup limited to 0.5 m displacement and 1.5 percent ring area; original source view unchanged.",
+  "canopyReview": {
+    "source": "USDA NAIP 2024 / FPAC native hole export",
+    "sourceTile": "m_3907830_SE_17_60_20240910",
+    "sourceUrl": "https://apps.geo.fpac.usda.gov/geo-imagery/rest/services/naip/conus_naip/ImageServer",
+    "capturedAt": "2024-09-10",
+    "reviewedAt": "2026-09-12",
+    "reviewer": "Codex visual comparison; independent course review pending",
+    "license": "USDA NAIP public-domain imagery; attribution retained",
+    "bboxWgs84": [
+      -78.2952,
+      39.5145,
+      -78.2927,
+      39.5191
+    ],
+    "exportPixels": [
+      360,
+      855
+    ],
+    "meaning": "Approximate canopy groups visually delineated from September 2024 leaf-on NAIP at about 0.6 m per output pixel, replacing the reduced 2022 export. Group interiors follow visible crowns; detached cast shadows and uncertain fringes are omitted. Crown glyphs are illustrative, not surveyed individual trees. No currentness or obstruction claim. Only hole 7 is prepared in this UI pass. County leaf-off imagery was viewed for comparison only; no county pixels or traced coordinates are distributed.",
+    "regions": [
+      {
+        "id": "west-fairway",
+        "hole": 7,
+        "pixels": [
+          [
+            34,
+            344
+          ],
+          [
+            59,
+            345
+          ],
+          [
+            80,
+            363
+          ],
+          [
+            79,
+            391
+          ],
+          [
+            68,
+            410
+          ],
+          [
+            77,
+            431
+          ],
+          [
+            73,
+            460
+          ],
+          [
+            58,
+            477
+          ],
+          [
+            37,
+            479
+          ],
+          [
+            21,
+            465
+          ],
+          [
+            20,
+            438
+          ],
+          [
+            26,
+            408
+          ],
+          [
+            21,
+            385
+          ],
+          [
+            27,
+            364
+          ],
+          [
+            34,
+            344
+          ]
+        ]
+      },
+      {
+        "id": "east-fairway",
+        "hole": 7,
+        "pixels": [
+          [
+            246,
+            252
+          ],
+          [
+            267,
+            255
+          ],
+          [
+            286,
+            275
+          ],
+          [
+            295,
+            302
+          ],
+          [
+            281,
+            324
+          ],
+          [
+            278,
+            347
+          ],
+          [
+            269,
+            362
+          ],
+          [
+            276,
+            388
+          ],
+          [
+            277,
+            415
+          ],
+          [
+            266,
+            444
+          ],
+          [
+            271,
+            469
+          ],
+          [
+            258,
+            490
+          ],
+          [
+            246,
+            519
+          ],
+          [
+            225,
+            532
+          ],
+          [
+            206,
+            519
+          ],
+          [
+            200,
+            492
+          ],
+          [
+            193,
+            466
+          ],
+          [
+            188,
+            446
+          ],
+          [
+            192,
+            421
+          ],
+          [
+            181,
+            401
+          ],
+          [
+            190,
+            379
+          ],
+          [
+            207,
+            366
+          ],
+          [
+            203,
+            342
+          ],
+          [
+            216,
+            316
+          ],
+          [
+            230,
+            301
+          ],
+          [
+            232,
+            274
+          ],
+          [
+            246,
+            252
+          ]
+        ]
+      },
+      {
+        "id": "upper-west",
+        "hole": 7,
+        "pixels": [
+          [
+            113,
+            252
+          ],
+          [
+            132,
+            249
+          ],
+          [
+            145,
+            264
+          ],
+          [
+            146,
+            283
+          ],
+          [
+            134,
+            299
+          ],
+          [
+            121,
+            304
+          ],
+          [
+            109,
+            293
+          ],
+          [
+            107,
+            274
+          ],
+          [
+            113,
+            252
+          ]
+        ]
+      },
+      {
+        "id": "green-west-upper",
+        "hole": 7,
+        "pixels": [
+          [
+            75,
+            551
+          ],
+          [
+            96,
+            548
+          ],
+          [
+            108,
+            561
+          ],
+          [
+            109,
+            581
+          ],
+          [
+            95,
+            590
+          ],
+          [
+            79,
+            582
+          ],
+          [
+            70,
+            565
+          ],
+          [
+            75,
+            551
+          ]
+        ]
+      },
+      {
+        "id": "green-west",
+        "hole": 7,
+        "pixels": [
+          [
+            82,
+            632
+          ],
+          [
+            98,
+            632
+          ],
+          [
+            108,
+            642
+          ],
+          [
+            108,
+            659
+          ],
+          [
+            93,
+            670
+          ],
+          [
+            83,
+            663
+          ],
+          [
+            79,
+            648
+          ],
+          [
+            82,
+            632
+          ]
+        ]
+      },
+      {
+        "id": "green-south",
+        "hole": 7,
+        "pixels": [
+          [
+            186,
+            696
+          ],
+          [
+            198,
+            679
+          ],
+          [
+            220,
+            681
+          ],
+          [
+            234,
+            692
+          ],
+          [
+            252,
+            695
+          ],
+          [
+            264,
+            712
+          ],
+          [
+            267,
+            739
+          ],
+          [
+            253,
+            760
+          ],
+          [
+            231,
+            765
+          ],
+          [
+            212,
+            748
+          ],
+          [
+            197,
+            745
+          ],
+          [
+            185,
+            726
+          ],
+          [
+            186,
+            696
+          ]
+        ]
+      },
+      {
+        "id": "green-east",
+        "hole": 7,
+        "pixels": [
+          [
+            256,
+            643
+          ],
+          [
+            265,
+            636
+          ],
+          [
+            275,
+            642
+          ],
+          [
+            280,
+            655
+          ],
+          [
+            273,
+            665
+          ],
+          [
+            260,
+            663
+          ],
+          [
+            253,
+            653
+          ],
+          [
+            256,
+            643
+          ]
+        ]
+      }
+    ],
+    "nominalSourcePixelMeters": 0.6
+  },
   "associationPolicy": "Routes by OSM ref; green contains route end; fairway intersects >10m; tees <25m from route start; explicit reviewed bunker/water IDs in cacapon-associations.json; shared green 4/8 retains shared bunkers. No distance-only hazard inclusion.",
   "imageryReview": {
     "provider": "USDA NAIP via GeoPlatform",

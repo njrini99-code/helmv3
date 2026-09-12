@@ -915,3 +915,16 @@ Shot-entry surfaces render under the safe-area-corrected scorecard header
 (see golf-round-lifecycle.md, same date). No shot-tracking contract change.
 Evidence: `docs/audits/evidence/ios-premium-2026-08-25/` (active-round
 header collision before/after, shot-entry walkthrough captures).
+
+## Optional course context (September 12, 2026)
+
+`FairwayShotTracking` accepts a reviewed geometry package as optional display
+context. `FairwayHoleHero` uses the shared SVG frame with a 160 CSS-pixel
+drawing; committed shot type chooses whole-hole, approach, green-complex or
+abstract putting context. Whole hole and Expand change only the camera. Pending
+form values cannot move that camera or become a saved map marker. The header
+shows the committed lie/remaining distance using the existing unit preference.
+All result, miss, distance, penalty, edit, undo and save handlers remain the
+existing tracking flow. Missing geometry presents a fixed-size neutral fallback
+and the recorded evidence remains available. No production package resolver
+or geometry write is enabled by this optional prop.

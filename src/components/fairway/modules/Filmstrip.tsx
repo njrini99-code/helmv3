@@ -80,7 +80,11 @@ function filmStagger(i: number): number {
   return Math.min(i, FILM_STAGGER_CAP) * FILM_STAGGER_STEP;
 }
 
+import type { HoleScene } from '@/lib/golf/course-geometry/types';
+
 export interface FilmstripComponentProps extends FilmstripProps {
+  scenesByHole?: ReadonlyMap<number, HoleScene>;
+  bounded?: boolean;
   /** Per-hole logged shots, keyed by hole number. A hole absent from the map
    *  (or with an empty array) renders `HoleShotPath`'s honest turf/pin empty
    *  state — never a fabricated visual. `undefined`/`null` while the ledger
@@ -92,7 +96,7 @@ export interface FilmstripComponentProps extends FilmstripProps {
  * The hole-by-hole scrub strip. Presentational only — the caller owns the
  * detail panel/story that reacts to `onScrub`.
  */
-export function Filmstrip({ holes, activeHole, onScrub, shotsByHole }: FilmstripComponentProps) {
+export function Filmstrip({ holes, activeHole, onScrub, shotsByHole, scenesByHole, bounded }: FilmstripComponentProps) {
   const prefersReducedMotion = useReducedMotionGuard();
   const [internalActive, setInternalActive] = useState<number | null>(activeHole ?? null);
   const active = activeHole ?? internalActive;
@@ -142,6 +146,8 @@ export function Filmstrip({ holes, activeHole, onScrub, shotsByHole }: Filmstrip
                   style={{ transformOrigin: 'bottom' }}
                 >
                   <HoleShotPath
+                    scene={scenesByHole?.get(hole.n)}
+                    bounded={bounded}
                     hole_number={hole.n}
                     par={hole.par === 3 || hole.par === 4 || hole.par === 5 ? hole.par : undefined}
                     score={hole.score}

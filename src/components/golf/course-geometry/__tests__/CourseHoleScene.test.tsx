@@ -12,7 +12,7 @@ describe('shared SVG proof', () => {
     const first = markup();
     expect(first).toBe(markup());
     const ids = [...first.matchAll(/\sid="([^"]+)"/g)].map(m => m[1]);
-    expect(ids).toHaveLength(108);
+    expect(ids).toHaveLength(90);
     expect(new Set(ids).size).toBe(ids.length);
     expect(first.match(/data-geometry-hash=/g)).toHaveLength(18);
     expect(first).toContain('Pin location unknown');
@@ -43,4 +43,12 @@ describe('shared SVG proof', () => {
       expect(svg).toContain('data-event="3"');
     }
   });
+});
+
+
+it('removes the route guide on surface scenes and never connects across an unresolved event', () => {
+  const scene = pilotScene('cacapon-07');
+  const svg = renderToStaticMarkup(<CourseHoleScene scene={scene} view="green" selectedShotNumber={2} />);
+  expect(svg).not.toContain('data-surface="route"');
+  expect(svg).not.toContain('data-shot-segment');
 });

@@ -96,3 +96,7 @@ export function auditContinuity(events: readonly ShotEvidence[]): ShotEvidence[]
     return { ...event, issues };
   });
 }
+
+export function recordedDistance(d: DiagramDistance): string {
+  return d.originalValue == null ? '—' : `${d.originalValue} ${({ yards: 'yd', feet: 'ft', meters: 'm' })[d.originalUnit ?? ''] ?? '(unit unknown)'}`;
+}
