@@ -1000,12 +1000,31 @@ putting diagram replaces cup-reference jargon with an illustrated ball-to-hole
 line using the same feet scale as its remaining-distance ring. See Sections
 22.5 and 23 of the existing geometry plan for source and release boundaries.
 
-### September 13 actual-green plan
+### September 13 actual-green first slice
 
-Section 25 of `docs/plans/2026-09-12-golfhelm-course-geometry.md` is the next
-planned contract: canonical whole-green Top by default, one stable active event,
-explicit attempted distance and leave, optional Focus putt and optional pin/ball
-placement. It supersedes the course-backed abstract putting default. It is not
-implemented or enabled by the current renderer patch. Placement requires durable
-client shot identity across snapshot replacement and the existing save/recovery
-contract; no GPS or required coordinate entry is planned.
+When a scene contains the reviewed canonical green for its physical hole, the
+putting context now renders that whole-green Top scope rather than the abstract
+oval. It uses the same source boundary, nearby bunkers, framing, and terrain
+adapter as the hole view; expanded detail can switch it between Top, Terrain,
+Side, and Profile without changing coordinates. Missing or unreviewed green
+geometry retains the explicitly labelled abstract distance view.
+
+This first slice does not invent putting positions. A cup/ball/putt line appears
+only when the shared scene already has a valid evidence-backed anchor; ordinary
+distance, miss, and made inputs keep their existing abstract semantics until a
+durable pin/ball observation contract is added. Section 25 of
+`docs/plans/2026-09-12-golfhelm-course-geometry.md` remains the next contract
+for explicit Focus putt, Set pin, Mark ball, attempted-distance/leave cards,
+and persistence across snapshot replacement.
+
+Expanded detail follows the external committed shot selection rather than
+retaining its opening shot. A selected fixture flight gets a camera-only focus
+near its displayed landing context, with a bounded progressive zoom; a validated
+estimate can do the same. Candidate-only/unresolved shots never receive a
+made-up focus coordinate. Camera state remains display-only and creates no
+score, shot, or location write.
+
+The tracker now selects the newest recorded event after record, hydrate, undo,
+or deletion. That shared key drives the shot pills, inspector, and camera; it
+is local UI state and is not a new persistence field. Putt distance alone still
+does not create an airborne path or an exact ball coordinate.

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { CourseHoleScene, sceneCamera } from '../CourseHoleScene';
-import { pilotScene } from '@/test/fixtures/course-geometry/pilot';
+import { addInteractivePreviewTrajectories, pilotScene, pilotShots } from '@/test/fixtures/course-geometry/pilot';
 import { toScreen } from '@/lib/golf/course-geometry/project';
 import { normalizePersistedShot } from '@/lib/golf/course-geometry/normalize';
 import { inFeature } from '@/lib/golf/course-geometry/spatial';
@@ -53,4 +53,14 @@ it('removes the route guide on surface scenes and never connects across an unres
   const svg = renderToStaticMarkup(<CourseHoleScene scene={scene} view="green" selectedShotNumber={2} />);
   expect(svg).not.toContain('data-surface="route"');
   expect(svg).not.toContain('data-shot-segment');
+});
+
+it('keeps display-only full-shot arcs out of the canonical putting surface', () => {
+  const scene = addInteractivePreviewTrajectories(pilotScene('cacapon-07'), pilotShots);
+  const standard = renderToStaticMarkup(<CourseHoleScene scene={scene} view="green" selectedShotNumber={2} />);
+  const putting = renderToStaticMarkup(<CourseHoleScene scene={scene} view="green" selectedShotNumber={2} showIllustrativeFlightPreviews={false} />);
+  expect(standard).toContain('data-illustrative-preview-trajectory');
+  expect(putting).not.toContain('data-illustrative-preview-trajectory');
+  expect(putting).toContain('data-surface="green"');
+  expect(putting).toContain('data-surface="bunker"');
 });

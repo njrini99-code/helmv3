@@ -1,4 +1,4 @@
-import { Fragment, useId, type RefObject } from 'react';
+import { Fragment, useId, useMemo, type RefObject } from 'react';
 import type { HoleScene, LocalFeature, PointM } from '@/lib/golf/course-geometry/types';
 import { fitCamera, toScreen, type SimilarityTransform } from '@/lib/golf/course-geometry/project';
 import { contextCamera, type CourseView } from '@/lib/golf/course-geometry/camera';
@@ -27,16 +27,19 @@ export function sceneCamera(scene: HoleScene, width: number, height: number, mod
 
 /** Pure SVG: surfaces and anchors share one similarity transform; labels use
  * CSS-pixel dimensions supplied by the measured viewport. No gesture capture. */
-export function CourseHoleScene({ scene, width = 320, height = 380, mode = 'review', view = 'hole', selectedShotNumber, camera: override, terrainCamera, onTerrainUnavailable, runtimeRef }: {
+export function CourseHoleScene({ scene, width = 320, height = 380, mode = 'review', view = 'hole', selectedShotNumber, camera: override, terrainCamera, onTerrainUnavailable, runtimeRef, showIllustrativeFlightPreviews = true }: {
   scene: HoleScene; width?: number; height?: number; mode?: 'review' | 'compact' | 'strip' | 'source';
   view?: CourseView; selectedShotNumber?: number; camera?: SimilarityTransform; terrainCamera?: TerrainCamera;
   onTerrainUnavailable?: () => void; runtimeRef?: RefObject<TerrainRuntimeController | null>;
+  /** Putting keeps full-swing fixture arcs out of its tactical surface view. */
+  showIllustrativeFlightPreviews?: boolean;
 }) {
+  const sceneForDisplay = useMemo(() => showIllustrativeFlightPreviews ? scene : { ...scene, illustrativePreviewTrajectories: [] }, [scene, showIllustrativeFlightPreviews]);
   const id = useId();
-  if (terrainCamera && scene.terrain) return <CourseTerrainCanvas scene={scene} mesh={scene.terrain} camera={terrainCamera} width={width} height={height}
+  if (terrainCamera && scene.terrain) return <CourseTerrainCanvas scene={sceneForDisplay} mesh={scene.terrain} camera={terrainCamera} width={width} height={height}
     selectedShotNumber={selectedShotNumber}
     onUnavailable={onTerrainUnavailable} runtimeRef={runtimeRef}
-    fallback={<CourseHoleScene scene={scene} width={width} height={height} mode={mode} view={view} selectedShotNumber={selectedShotNumber} camera={override} />} />;
+    fallback={<CourseHoleScene scene={sceneForDisplay} width={width} height={height} mode={mode} view={view} selectedShotNumber={selectedShotNumber} camera={override} showIllustrativeFlightPreviews={showIllustrativeFlightPreviews} />} />;
   const camera = override ?? sceneCamera(scene, width, height, mode, view);
   const features = [...scene.features].sort((a, b) => ORDER.indexOf(a.kind) - ORDER.indexOf(b.kind) || a.id.localeCompare(b.id));
   const lightPoint = toScreen([TERRAIN_LIGHT_DIRECTION[0], TERRAIN_LIGHT_DIRECTION[1]], camera);
@@ -119,7 +122,7 @@ export function CourseHoleScene({ scene, width = 320, height = 380, mode = 'revi
             </g>;
           })}
         </g>)}
-        {mode !== 'strip' && <CourseShotOverlay scene={scene} width={width} height={height} selectedShotNumber={selectedShotNumber}
+        {mode !== 'strip' && <CourseShotOverlay scene={sceneForDisplay} width={width} height={height} selectedShotNumber={selectedShotNumber}
           project={point => toScreen(point, camera)} pathForFeature={feature => featurePath(feature, camera)} />}
       </g>
     </svg>

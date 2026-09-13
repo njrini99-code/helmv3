@@ -162,7 +162,10 @@ export function addInteractivePreviewTrajectories(scene: HoleScene, shots: reado
   if (!route || route.length < 2) return scene;
   let origin = route[0]!;
   const trajectories = [...shots].sort((a, b) => a.shotNumber - b.shotNumber).flatMap(shot => {
-    if (shot.isPenalty) return [];
+    // A putt is a surface roll, not an airborne arc. This isolated fixture has
+    // no recorded roll samples or marked ball positions, so it preserves the
+    // honest whole-green view instead of inventing a rainbow from proximity.
+    if (shot.isPenalty || shot.shotType === 'putting') return [];
     const endpoint = endpointForShot(scene, route, shot);
     const pointsM = flightCurve(origin, endpoint.point, shot);
     origin = endpoint.point;

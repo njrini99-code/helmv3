@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { contextCamera, entryView } from '../camera';
+import { contextCamera, contextPoints, entryView } from '../camera';
 import { toScreen, fromScreen } from '../project';
 import { displayOutline, boundaryDistance, DISPLAY_EDGE_LIMIT_M } from '../display-outline';
 import { ringArea, simpleRing } from '../spatial';
-import { pilotScene } from '@/test/fixtures/course-geometry/pilot';
+import { addInteractivePreviewTrajectories, pilotScene, pilotShots } from '@/test/fixtures/course-geometry/pilot';
 
 it('enlarges the green complex, keeping a single physical frame and immutable evidence', () => {
   const scene = pilotScene('cacapon-07');
@@ -32,6 +32,13 @@ it('ignores legacy derived length and all entered numbers when choosing the phys
 });
 it('defaults from committed shot type, including a separate putting frame', () => {
   expect(['tee', 'approach', 'around_green', 'putting'].map(entryView)).toEqual(['hole', 'approach', 'green', 'putting']);
+});
+it('keeps the whole-green fit independent from earlier illustrative flights', () => {
+  const source = pilotScene('cacapon-07', false);
+  const withFlights = addInteractivePreviewTrajectories(source, pilotShots);
+  expect(contextPoints(withFlights, 'green')).toEqual(contextPoints(source, 'green'));
+  expect(contextCamera(withFlights, 390, 380, 'green')).toEqual(contextCamera(source, 390, 380, 'green'));
+  expect(contextPoints(withFlights, 'approach').length).toBeGreaterThan(contextPoints(source, 'approach').length);
 });
 describe('source-backed display-edge cleanup', () => {
   it('retains all components/rings with bounded displacement and area across the pilot', () => {

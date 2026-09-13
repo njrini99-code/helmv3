@@ -236,7 +236,10 @@ export function shotReducer(state: ShotTrackingState, action: ShotAction): ShotT
         showPenaltyModal: false,
         penaltyType: null,
         penaltyOrigin: 'here',
-        selectedShotNumber: null,
+        // The landscape and inspector must start on the most recent recorded
+        // event. This is view selection only; it never persists or mutates a
+        // shot, score, position, or distance.
+        selectedShotNumber: initialShots.at(-1)?.shotNumber ?? null,
       };
     }
 
@@ -245,6 +248,10 @@ export function shotReducer(state: ShotTrackingState, action: ShotAction): ShotT
       return {
         ...state,
         shotHistory: [...state.shotHistory, shot],
+        // A new result is the clearest current context. The camera can now
+        // settle on its declared display geometry instead of retaining the
+        // opening stroke after a five-shot sequence.
+        selectedShotNumber: shot.shotNumber,
       };
     }
 
@@ -357,6 +364,7 @@ export function shotReducer(state: ShotTrackingState, action: ShotAction): ShotT
         undoSaving: false,
         undoError: null,
         showUndoConfirm: false,
+        selectedShotNumber: newHistory.at(-1)?.shotNumber ?? null,
       };
     }
 
@@ -409,6 +417,7 @@ export function shotReducer(state: ShotTrackingState, action: ShotAction): ShotT
         editFormData: null,
         editError: null,
         showDeleteConfirm: false,
+        selectedShotNumber: updatedHistory.at(-1)?.shotNumber ?? null,
       };
     }
 
@@ -436,6 +445,7 @@ export function shotReducer(state: ShotTrackingState, action: ShotAction): ShotT
         editFormData: null,
         editError: null,
         showDeleteConfirm: false,
+        selectedShotNumber: newHistory.at(-1)?.shotNumber ?? null,
       };
     }
 
@@ -551,7 +561,7 @@ function computeInitialState(
     editFormData: null,
     editSaving: false,
     editError: null,
-    selectedShotNumber: null,
+    selectedShotNumber: initialShots.at(-1)?.shotNumber ?? null,
   };
 }
 

@@ -230,6 +230,7 @@ describe('shotReducer', () => {
       expect(next.distanceToHole).toBe(20);
       expect(next.currentLie).toBe('green');
       expect(next.distanceAfterUnit).toBe('feet');
+      expect(next.selectedShotNumber).toBe(2);
     });
 
     it('clears input state on reset', () => {
@@ -259,6 +260,7 @@ describe('shotReducer', () => {
       const next = shotReducer(makeInitialState(), action);
       expect(next.shotHistory).toHaveLength(1);
       expect(next.shotHistory[0]).toEqual(shot);
+      expect(next.selectedShotNumber).toBe(1);
     });
 
     it('preserves existing history', () => {
@@ -271,6 +273,7 @@ describe('shotReducer', () => {
       };
       const next = shotReducer(state, action);
       expect(next.shotHistory).toHaveLength(2);
+      expect(next.selectedShotNumber).toBe(2);
     });
   });
 
@@ -467,6 +470,7 @@ describe('shotReducer', () => {
       expect(next.currentLie).toBe('fairway');
       expect(next.undoSaving).toBe(false);
       expect(next.showUndoConfirm).toBe(false);
+      expect(next.selectedShotNumber).toBe(1);
     });
 
     it('UNDO_COMPLETE with empty history resets to tee', () => {
@@ -483,6 +487,7 @@ describe('shotReducer', () => {
       expect(next.currentShot).toBe(1);
       expect(next.distanceToHole).toBe(400);
       expect(next.currentLie).toBe('tee');
+      expect(next.selectedShotNumber).toBeNull();
     });
 
     it('UNDO_FAIL resets saving state', () => {
@@ -574,6 +579,7 @@ describe('shotReducer', () => {
       expect(next.currentShot).toBe(2);
       expect(next.distanceToHole).toBe(150);
       expect(next.currentLie).toBe('fairway');
+      expect(next.selectedShotNumber).toBe(1);
     });
   });
 

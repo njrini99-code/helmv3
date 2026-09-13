@@ -30,9 +30,11 @@ export function contextPoints(scene: HoleScene, view: CourseView): readonly Poin
     }
   }
   // An isolated preview trace is a display-only estimate, but it must remain
-  // visible after the committed shot. Its world points expand only the camera
-  // fit; they never alter course geometry, score data, or the selected view.
-  const traces = scene.illustrativePreviewTrajectories?.flatMap(trace => trace.pointsM) ?? [];
+  // visible after the committed shot. Its world points expand only the hole or
+  // approach fit; a whole-green frame is anchored strictly to the actual green
+  // complex so an earlier tee/approach flight cannot shrink the putting view.
+  // Traces never alter course geometry, score data, or selected positions.
+  const traces = view === 'green' ? [] : scene.illustrativePreviewTrajectories?.flatMap(trace => trace.pointsM) ?? [];
   // Display padding is applied after rotation. A second geographic bounding
   // box would add empty diagonal corners and shrink this detail needlessly.
   return [...fit, ...traces];

@@ -12,14 +12,18 @@ import type { HoleScene, ShotEvidence } from '@/lib/golf/course-geometry/types';
 import type { SceneView } from '@/lib/golf/course-geometry/camera';
 import { CourseHoleScene, sceneCamera } from './CourseHoleScene';
 import { CourseTerrainProfile } from './CourseTerrainProfile';
-import { TERRAIN_PRESETS, projectTerrainPoint, type TerrainFitProfile, type TerrainPose, type TerrainPreset } from '@/lib/golf/course-geometry/terrain';
+import { TERRAIN_PRESETS, projectTerrainPoint, terrainHeight, type TerrainFitProfile, type TerrainPose, type TerrainPreset } from '@/lib/golf/course-geometry/terrain';
 
 import { fitTerrainViewportCamera } from '@/lib/golf/course-geometry/terrain-viewport';
 import type { TerrainRuntimeController } from '@/lib/golf/course-geometry/runtime-controller';
+import { selectedShotFocus } from '@/lib/golf/course-geometry/selected-shot-focus';
 
 interface CameraMemory { pose: TerrainPose; fitPreset: TerrainFitProfile }
 
 const LABELS: Record<SceneView, string> = { hole: 'Whole hole', approach: 'Approach', green: 'Green', putting: 'Putting' };
+function hasReviewedGreen(scene: HoleScene | null | undefined): boolean {
+  return !!scene?.features.some(feature => feature.id === scene.hole.greenFeatureId && feature.kind === 'green' && feature.reviewed);
+}
 interface FrameProps {
   scene?: HoleScene | null;
   context: 'entry' | 'review';
@@ -43,13 +47,22 @@ export function HoleSceneFrame({ scene, context, defaultView = 'hole', selectedS
   const putting = currentPuttingDistanceM != null || events.some(e => e.shotType === 'putting');
   const unassignedStudy = !!scene?.hole.displayLabel && !scene.hole.routeFeatureId;
   const views: SceneView[] = unassignedStudy ? ['green'] : ['hole', 'green', ...(defaultView === 'approach' ? ['approach' as const] : []), ...(putting ? ['putting' as const] : [])];
+  useEffect(() => {
+    // Detail previously retained its opening shot number forever. A committed
+    // next shot now becomes the active event, while a manual Previous/Next
+    // selection remains in control until the outside selection actually changes.
+    if (expanded) setDetailSelection(selectedShotNumber ?? null);
+  }, [expanded, selectedShotNumber]);
   const expand = <ModalShell open={expanded} onOpenChange={open => {
     if (open) {
       setDetailSelection(selectedShotNumber ?? null);
-      // The compact tracker remains a 2D course card. Opening detail with an
-      // entered flight starts on the side-biased 3D pose instead, so the arc
-      // has visible height instead of reading like a flat map line.
-      if (scene?.illustrativePreviewTrajectories?.length) {
+      // Whole-green putting starts as a plan view: its physical outline, cup,
+      // and any evidence-backed balls need to be readable before terrain is
+      // inspected. The whole-hole flight view still opens Side so an arc has
+      // visible height instead of reading like a flat map line.
+      if (view === 'putting') {
+        poseMemory.current = { pose: TERRAIN_PRESETS.top, fitPreset: 'top' };
+      } else if (scene?.illustrativePreviewTrajectories?.length) {
         poseMemory.current = { pose: TERRAIN_PRESETS.side, fitPreset: 'side' };
       }
     }
@@ -59,7 +72,7 @@ export function HoleSceneFrame({ scene, context, defaultView = 'hole', selectedS
     trigger={<Button variant="ghost" aria-label="Expand course view" className="h-11 min-w-11 shrink-0 px-2"><Maximize2 size={17} aria-hidden /></Button>}>
     <Drawing key={view} scene={scene} view={view} context={context} events={events} selectedShotNumber={detailSelection ?? selectedShotNumber} onSelectEvent={setDetailSelection}
       currentPuttingDistanceM={currentPuttingDistanceM} expanded poseMemory={poseMemory} onClose={() => setExpanded(false)}
-      heading={<><span className="font-fw-display text-body-lg font-semibold">{scene?.hole.displayLabel ? 'Green complex' : scene ? `Hole ${scene.hole.ordinal}` : 'Course view'}</span>
+      heading={<><span className="font-fw-display text-body-lg font-semibold">{view === 'putting' || view === 'green' || scene?.hole.displayLabel ? 'Green complex' : scene ? `Hole ${scene.hole.ordinal}` : 'Course view'}</span>
         <span className="text-caption text-text-secondary">{scene && !unassignedStudy ? `Par ${scene.hole.par} · ${scene.hole.scorecardYards ?? '—'} yd` : 'Source review'}</span></>}
       areaControls={closeArea => <div className="flex flex-wrap gap-1" role="group" aria-label="Expanded course views">
         {views.map(v => <Button variant={view === v ? 'secondary' : 'ghost'} size="sm" key={v} aria-pressed={view === v} onClick={() => { setChoice(v); closeArea(); }}>{LABELS[v]}</Button>)}
@@ -78,7 +91,7 @@ export function HoleSceneFrame({ scene, context, defaultView = 'hole', selectedS
     </div>
     <Drawing scene={scene} view={view} context={context} events={events} selectedShotNumber={selectedShotNumber} currentPuttingDistanceM={currentPuttingDistanceM} />
     <p className="px-3 py-[3px] font-fw-sans text-eyebrow leading-4 text-text-secondary">
-      {view === 'putting' ? 'Illustrated putting view' : scene ? `${scene.hole.completeness === 'reviewed_surfaces' ? 'Reviewed' : 'Partial'}${(scene.sharedGreenHoleOrdinals?.length ?? 0) > 1 ? ' shared green' : ' outline'} · ${scene.attribution.split(' · ')[0]}` : 'Schematic context · no mapped position'}
+      {view === 'putting' ? hasReviewedGreen(scene) ? 'Actual green outline · ball and cup locations remain labelled by evidence' : 'Illustrated putting view' : scene ? `${scene.hole.completeness === 'reviewed_surfaces' ? 'Reviewed' : 'Partial'}${(scene.sharedGreenHoleOrdinals?.length ?? 0) > 1 ? ' shared green' : ' outline'} · ${scene.attribution.split(' · ')[0]}` : 'Schematic context · no mapped position'}
     </p>
     {children}
   </div>;
@@ -106,17 +119,20 @@ function Drawing({ scene, view, context, events, selectedShotNumber, currentPutt
   const [inspectorOpen, setInspectorOpen] = useState(false);
   const [areasOpen, setAreasOpen] = useState(false);
   const currentSelection = selectedShotNumber;
+  const courseBackedPutting = view === 'putting' && hasReviewedGreen(scene);
+  const courseView = view === 'putting' ? (courseBackedPutting ? 'green' : null) : view;
   const pointers = useRef(new Map<number, { x: number; y: number }>());
   const live = useRef({ zoom, pan, pose, fitPreset });
   const nextState = useRef<typeof live.current | null>(null);
+  const autoFocusKey = useRef<string | null>(null);
   function commitCamera() {
     const next = live.current; if (poseMemory) poseMemory.current = { pose: next.pose, fitPreset: next.fitPreset }; setZoom(next.zoom); setPan(next.pan); setPose(next.pose); setFitPreset(next.fitPreset);
     if (scaleBar.current) scaleBar.current.style.visibility = Math.abs(next.pose.pitch - 90) < .01 ? 'visible' : 'hidden';
   }
   function update(next: typeof live.current, commit = false) {
     live.current = next;
-    if (runtime.current && scene?.terrain && view !== 'putting') {
-      const camera = fitTerrainViewportCamera(scene, scene.terrain, view, size.width, size.height, next.pose, next.zoom, [next.pan.x, next.pan.y], next.fitPreset);
+    if (runtime.current && scene?.terrain && courseView) {
+      const camera = fitTerrainViewportCamera(scene, scene.terrain, courseView, size.width, size.height, next.pose, next.zoom, [next.pan.x, next.pan.y], next.fitPreset);
       runtime.current.setCamera(camera, size.width, size.height);
       if (ref.current) { ref.current.dataset.cameraZoom = String(next.zoom); ref.current.dataset.worldScale = String(camera.scale); }
       // A tilted map is foreshortened. Hide the Top-only screen ruler during
@@ -128,22 +144,22 @@ function Drawing({ scene, view, context, events, selectedShotNumber, currentPutt
   const gesture = useRef({ x: 0, y: 0, distance: 0, zoom: 1, pan: { x: 0, y: 0 }, pose, fitPreset, origin: { x: size.width / 2, y: size.height / 2 } });
   // The tracker stays on its compact, familiar SVG course card. Expanding is
   // the explicit opt-in to the live Three.js terrain and elevated flight arc.
-  const terrainRequested = expanded && view !== 'putting' && scene?.terrain != null && !terrainFailed && !showProfile;
+  const terrainRequested = expanded && courseView != null && scene?.terrain != null && !terrainFailed && !showProfile;
   let terrainCamera;
-  if (terrainRequested && scene?.terrain) {
-    try { terrainCamera = fitTerrainViewportCamera(scene, scene.terrain, view, size.width, size.height, pose, zoom, [pan.x, pan.y], fitPreset); }
+  if (terrainRequested && scene?.terrain && courseView) {
+    try { terrainCamera = fitTerrainViewportCamera(scene, scene.terrain, courseView, size.width, size.height, pose, zoom, [pan.x, pan.y], fitPreset); }
     catch { /* Missing source coverage retains the existing 2D view and pan. */ }
   }
   const terrainEnabled = terrainCamera != null;
-  const interactive = expanded && view !== 'putting' && !!scene && !showProfile;
+  const interactive = expanded && courseView != null && !!scene && !showProfile;
   const boundedPan = (x: number, y: number) => ({ x: Math.max(-size.width / 2, Math.min(size.width / 2, x)),
     y: Math.max(-size.height / 2, Math.min(size.height / 2, y)) });
   const isPreset = (preset: TerrainPreset) => Math.abs(pose.pitch - TERRAIN_PRESETS[preset].pitch) < .01 &&
     Math.abs(pose.yawOffset - TERRAIN_PRESETS[preset].yawOffset) < .01;
   useEffect(() => () => cancelAnimationFrame(pendingFrame.current), []);
   function cameraOrigin(current: typeof live.current) {
-    if (scene?.terrain && view !== 'putting') {
-      const camera = fitTerrainViewportCamera(scene, scene.terrain, view, size.width, size.height, current.pose, current.zoom,
+    if (scene?.terrain && courseView) {
+      const camera = fitTerrainViewportCamera(scene, scene.terrain, courseView, size.width, size.height, current.pose, current.zoom,
         [current.pan.x, current.pan.y], current.fitPreset);
       const focus = projectTerrainPoint(camera.focusM, camera);
       return { x: focus[0] - current.pan.x, y: focus[1] - current.pan.y };
@@ -156,6 +172,34 @@ function Drawing({ scene, view, context, events, selectedShotNumber, currentPutt
     gesture.current = { x: p.reduce((n, a) => n + a.x, 0) / p.length, y: p.reduce((n, a) => n + a.y, 0) / p.length,
       distance: p.length > 1 ? Math.hypot(p[0]!.x - p[1]!.x, p[0]!.y - p[1]!.y) : 0, ...live.current, origin: cameraOrigin(live.current) };
   }
+  useEffect(() => {
+    // Putting keeps its whole-green overview after selection. Its ball/roll
+    // geometry needs its own recorded coordinates; an earlier approach arc
+    // must not pull the camera away from the actual green by default.
+    if (!expanded || view === 'putting' || showProfile || !scene?.terrain || !courseView || currentSelection == null || size.width <= 48 || size.height <= 48) return;
+    const focus = selectedShotFocus(scene, currentSelection);
+    if (!focus) return;
+    const key = `${scene.packageHash}:${courseView}:${currentSelection}:${size.width}:${size.height}`;
+    if (autoFocusKey.current === key) return;
+    try {
+      const current = live.current;
+      const base = fitTerrainViewportCamera(scene, scene.terrain, courseView, size.width, size.height,
+        current.pose, focus.zoom, [0, 0], current.fitPreset);
+      const z = terrainHeight(scene.terrain, focus.pointM);
+      if (z == null) return;
+      const point = projectTerrainPoint([focus.pointM[0], focus.pointM[1], z], base);
+      const left = 12, right = 64, top = Math.min(88, size.height * .24), bottom = 24;
+      const targetX = (left + size.width - right) / 2;
+      const targetY = (top + size.height - bottom) / 2;
+      autoFocusKey.current = key;
+      update({ ...current, zoom: focus.zoom, pan: boundedPan(targetX - point[0], targetY - point[1]) }, true);
+    } catch {
+      // Missing terrain coverage retains the existing hole fit. A camera move
+      // must never replace a spatial estimate with a flat or guessed height.
+    }
+    // The event key, not transient render state, owns this one camera settle.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [courseView, currentSelection, expanded, scene, showProfile, size.height, size.width, view]);
   function flush() {
     cancelAnimationFrame(pendingFrame.current);
     if (nextState.current) { update(nextState.current); nextState.current = null; }
@@ -269,7 +313,7 @@ function Drawing({ scene, view, context, events, selectedShotNumber, currentPutt
     // Only the expanded drawing owns wheel input. Values come from live refs.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [interactive, size.width, size.height]);
-  const camera = scene && view !== 'putting' ? sceneCamera(scene, size.width, size.height, context === 'entry' ? 'compact' : 'review', view) : null;
+  const camera = scene && courseView ? sceneCamera(scene, size.width, size.height, context === 'entry' ? 'compact' : 'review', courseView) : null;
   const transformed = camera && expanded ? { ...camera, scale: camera.scale * zoom,
     translation: [size.width / 2 + (camera.translation[0] - size.width / 2) * zoom + pan.x,
       size.height / 2 + (camera.translation[1] - size.height / 2) * zoom + pan.y] as const } : camera;
@@ -283,27 +327,27 @@ function Drawing({ scene, view, context, events, selectedShotNumber, currentPutt
   const scaleWidth = scaleYards * .9144 * mapScale;
   return <div className={expanded ? 'flex min-h-0 flex-1 flex-col overflow-hidden sm:flex-row' : undefined} data-slot={expanded ? 'course-explorer' : undefined}>
     <div className={expanded ? 'relative min-h-[180px] min-w-0 flex-1' : undefined}>
-    <div ref={ref} data-slot="course-drawing" className={`fw-course-motion w-full overflow-clip ${expanded ? 'absolute inset-0' : 'relative'}`}
+    <div ref={ref} data-slot="course-drawing" data-putting-mode={view === 'putting' ? courseBackedPutting ? 'course-green' : 'abstract' : undefined} className={`fw-course-motion w-full overflow-clip ${expanded ? 'absolute inset-0' : 'relative'}`}
       aria-label={expanded ? 'Interactive course landscape' : undefined}
       onPointerDown={startGesture} onPointerMove={moveGesture} onPointerUp={endGesture} onPointerCancel={endGesture} onLostPointerCapture={endGesture}
       data-camera-zoom={zoom} data-world-scale={mapScale} data-dragging={dragging}
       style={{ height: expanded ? '100%' : context === 'entry' ? 160 : 310, touchAction: interactive ? 'none' : 'auto', cursor: interactive ? (dragging ? 'grabbing' : 'grab') : undefined }}>
       <div key={`${scene?.physicalHoleKey ?? 'missing'}-${view}`} className="fw-course-view-enter h-full w-full">
-      {showProfile && scene ? <div className="h-full overflow-y-auto bg-surface pt-24"><CourseTerrainProfile scene={scene} selectedShotNumber={currentSelection} width={size.width} height={size.height - 96} /></div> : view === 'putting' ? <PuttingZoom width={size.width} height={size.height} distanceView={{
+      {showProfile && scene ? <div className="h-full overflow-y-auto bg-surface pt-24"><CourseTerrainProfile scene={scene} selectedShotNumber={currentSelection} width={size.width} height={size.height - 96} /></div> : scene && transformed && courseView ? <CourseHoleScene scene={scene} width={size.width} height={size.height}
+        mode={context === 'entry' ? 'compact' : 'review'} view={courseView} selectedShotNumber={currentSelection} camera={transformed} terrainCamera={terrainCamera}
+        runtimeRef={runtime} onTerrainUnavailable={() => setTerrainFailed(true)} showIllustrativeFlightPreviews={view !== 'putting'} /> : view === 'putting' ? <PuttingZoom width={size.width} height={size.height} distanceView={{
         beforeFeet: before == null ? null : before / .3048, afterFeet: after == null ? null : after / .3048,
         made: currentPuttingDistanceM == null && putt?.putt.made === true,
         rolledOff: putt != null && putt.result !== 'green' && putt.result !== 'hole',
-      }} /> : scene && transformed ? <CourseHoleScene scene={scene} width={size.width} height={size.height}
-        mode={context === 'entry' ? 'compact' : 'review'} view={view} selectedShotNumber={currentSelection} camera={transformed} terrainCamera={terrainCamera}
-        runtimeRef={runtime} onTerrainUnavailable={() => setTerrainFailed(true)} /> : <UnavailableCourseContext />}
+      }} /> : <UnavailableCourseContext />}
       </div>
-      {expanded && view !== 'putting' && scene && !showProfile && <div className="absolute bottom-4 right-3 flex flex-col gap-1 rounded-fw-lg border border-white/30 bg-surface p-1 shadow-card" role="group" aria-label="Zoom and pan" onPointerDown={e => e.stopPropagation()}>
+      {expanded && courseView && scene && !showProfile && <div className="absolute bottom-4 right-3 flex flex-col gap-1 rounded-fw-lg border border-white/30 bg-surface p-1 shadow-card" role="group" aria-label="Zoom and pan" onPointerDown={e => e.stopPropagation()}>
         <Button size="sm" variant="ghost" className="min-w-11 px-2" aria-label="Zoom in" disabled={zoom >= 4} onClick={() => changeCamera(current => ({ ...current, zoom: Math.min(4, current.zoom * 1.4) }))}>+</Button>
         <Button size="sm" variant="ghost" className="min-w-11 px-2" aria-label="Zoom out" disabled={zoom <= .5} onClick={() => changeCamera(current => ({ ...current, zoom: Math.max(.5, current.zoom / 1.4) }))}>−</Button>
         <Button size="sm" variant="ghost" className="min-w-11 px-2" aria-label="Reset view" onClick={() => changeCamera(() => ({ zoom: 1, pan: { x: 0, y: 0 }, pose: TERRAIN_PRESETS.top, fitPreset: 'top' }))}><RotateCcw size={16} aria-hidden /></Button>
         {!terrainEnabled && <Button size="sm" variant="ghost" className="min-w-11 px-2" aria-label="Camera controls" aria-expanded={toolsOpen} onClick={() => setToolsOpen(v => !v)}><SlidersHorizontal size={17} aria-hidden /></Button>}
       </div>}
-      {expanded && view !== 'putting' && scene && !showProfile && (!terrainEnabled || Math.abs(pose.pitch - 90) < .01) && scaleWidth > 0 && scaleWidth < size.width / 2 &&
+      {expanded && courseView && scene && !showProfile && (!terrainEnabled || Math.abs(pose.pitch - 90) < .01) && scaleWidth > 0 && scaleWidth < size.width / 2 &&
         <div ref={scaleBar} aria-label={`Map scale ${scaleYards} yards`} className="pointer-events-none absolute bottom-3 left-4 text-eyebrow font-medium" style={{ color: 'var(--fw-diagram-event)', visibility: dragging ? 'hidden' : 'visible' }}>
           <span className="block border-b border-l border-r pb-1 text-center" style={{ width: scaleWidth }}>{scaleYards} yd</span>
         </div>}
@@ -341,6 +385,7 @@ function Drawing({ scene, view, context, events, selectedShotNumber, currentPutt
             <div className="shrink-0 text-right"><p className="font-fw-display text-xl font-semibold tabular-nums text-text-primary">{recordedDistance(active.after)}</p><p className="text-eyebrow text-text-secondary">Remaining</p></div>
           </div>
         </div>}
+        {view === 'putting' && courseBackedPutting && <p className="px-4 pb-2 text-caption text-text-secondary" data-putting-position-status="evidence-only">Whole green uses the canonical course shape. Ball and cup anchors appear only when their shared coordinates are available.</p>}
         {terrainEnabled && pose.exaggeration !== 1 && <p className="h-6 truncate px-4 pb-2 text-caption text-text-secondary">Relief {pose.exaggeration.toFixed(1)}×</p>}
         {terrainFailed && <p role="status" className="px-4 pb-2 text-caption text-text-secondary">3D view unavailable. Showing the course outline.</p>}
     {expanded && toolsOpen && <div className="flex flex-wrap items-center gap-1 px-3 py-1" role="group" aria-label="Additional camera controls">
