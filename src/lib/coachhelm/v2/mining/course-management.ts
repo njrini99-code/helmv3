@@ -367,6 +367,9 @@ export async function generateWorstHolesInsights(playerId: string): Promise<void
       metric: 'course_worst_holes',
       metric_label: `Worst ${eligible.length} holes on ${courseLabel}`,
       unit: 'strokes',
+      // Strokes over par: less is better. Not a render-registry id, so the
+      // tone reader needs it declared (repair Package 2).
+      polarity: 'lower_better',
       your_value: Number(primary.avgScoreToPar.toFixed(3)),
       your_value_display: `+${yourDisp} (hole ${primary.hole_number})`,
       comparison_value: 0,

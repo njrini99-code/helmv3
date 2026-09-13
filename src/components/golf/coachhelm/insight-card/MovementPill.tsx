@@ -46,12 +46,12 @@ export function MovementPill({ insight, className }: MovementPillProps) {
   // animation frame of the one-shot fade-in.
   const derived = useMemo(() => {
     if (!movement) return null;
-    const improvement = isImprovement(movement.direction, insight.evidence.metric);
+    const improvement = isImprovement(movement.direction, insight.evidence.metric, insight.evidence);
     const arrow = movement.direction === 'up' ? '↑' : '↓';
     const pctLabel = formatMovementMagnitude(Number(movement.percent_change ?? 0));
     const delta = Math.abs(Number(movement.to ?? 0) - Number(movement.from ?? 0));
     return { improvement, arrow, pctLabel, delta };
-  }, [movement, insight.evidence.metric]);
+  }, [movement, insight.evidence]);
 
   if (!movement || !derived) return null;
 

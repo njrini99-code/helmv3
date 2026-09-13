@@ -103,6 +103,11 @@ interface GroupStats {
   fairwayHits: number;
   fairwayPct: number;
   avgDistance: number;
+  /** Tee shots whose distance is derived progress toward the hole (hole
+   *  yardage − remaining), not a recorded travel distance. */
+  derivedDistanceN: number;
+  /** Tee shots that contributed a distance at all. */
+  distanceN: number;
 }
 
 interface TeeStrategyAggregate extends GeneratorAggregate {
@@ -125,9 +130,9 @@ function summarize(rows: TeeStrategyShot[], club: 'driver' | 'non_driver'): Grou
   const attempts = recorded.length;
   const fairwayHits = recorded.filter((r) => r.fairway_hit === true).length;
   // Distance is independent of fairway recording — use every tee shot.
-  const distances = subset
-    .map((r) => r.shot_distance)
-    .filter((d): d is number => typeof d === 'number');
+  const withDistance = subset.filter((r): r is TeeStrategyShot & { shot_distance: number } =>
+    typeof r.shot_distance === 'number');
+  const distances = withDistance.map((r) => r.shot_distance);
   const avgDistance = distances.length
     ? distances.reduce((a, b) => a + b, 0) / distances.length
     : 0;
@@ -138,6 +143,8 @@ function summarize(rows: TeeStrategyShot[], club: 'driver' | 'non_driver'): Grou
     // MIN_DRIVER_ATTEMPTS / MIN_NON_DRIVER_ATTEMPTS returns null first).
     fairwayPct: attempts > 0 ? fairwayHits / attempts : 0,
     avgDistance,
+    derivedDistanceN: withDistance.filter((r) => r.distance_method === 'derived_progress').length,
+    distanceN: withDistance.length,
   };
 }
 
@@ -211,6 +218,17 @@ export class TeeStrategyGenerator extends BaseGenerator<TeeStrategyAggregate> {
     const ndFw = Math.round(agg.nonDriver.fairwayPct * 100);
     const distGap = Math.round(agg.distanceGap);
     const fwGapPp = Math.round(Math.abs(agg.fairwayGap) * 100);
+    // Travel vs progress (addendum §5): when any tee distance was derived from
+    // hole yardage minus the remaining distance, the average is partly
+    // progress toward the hole rather than measured travel — say so, and never
+    // call it carry. Silent when every distance is recorded (the production
+    // norm: 7653 of 7653 tee shots on 2026-09-12).
+    const derivedN = agg.driver.derivedDistanceN + agg.nonDriver.derivedDistanceN;
+    const distanceN = agg.driver.distanceN + agg.nonDriver.distanceN;
+    const distanceNote =
+      derivedN > 0
+        ? ` (${derivedN} of ${distanceN} tee distances are estimated progress toward the hole from hole yardage, not recorded travel distance)`
+        : '';
 
     // Diagnostic strokes_impact for the laggy pattern (tee-strat-1): this
     // generator is requiresStanding=false, so the BaseGenerator injects no
@@ -231,14 +249,14 @@ export class TeeStrategyGenerator extends BaseGenerator<TeeStrategyAggregate> {
         `fairway ${driverFw}% of the time (${agg.driver.attempts} attempts) ` +
         `vs ${ndFw}% with your tee fairway clubs (${agg.nonDriver.attempts} ` +
         `attempts) — a ${fwGapPp}pp accuracy gap. Average distance gain is ` +
-        `only ${distGap} yards. On par-4/5 holes where driver isn't pinning ` +
+        `only ${distGap} yards${distanceNote}. On par-4/5 holes where driver isn't pinning ` +
         `you to a much better approach distance, the layback is the higher-EV play.`;
     } else if (agg.pattern === 'sharp') {
       title = 'Driver is performing — keep it in play';
       content =
         `Across the last ${agg.roundsCovered} rounds your driver fairway% ` +
         `(${driverFw}%) is within ${fwGapPp}pp of your other tee clubs ` +
-        `(${ndFw}%) while gaining ${distGap} yards on average. This is the ` +
+        `(${ndFw}%) while gaining ${distGap} yards on average${distanceNote}. This is the ` +
         `right risk/reward signature — default to driver on par-4/5 tees ` +
         `unless trouble makes the layback obvious.`;
     } else {
@@ -265,6 +283,10 @@ export class TeeStrategyGenerator extends BaseGenerator<TeeStrategyAggregate> {
         metric: this.metricId,
         metric_label: 'Tee Strategy',
         unit: 'percent',
+        // `metricId` is the strokes-gained id (registry unit: strokes); the
+        // headline value is driver fairway %, so the direction is declared
+        // here rather than read off the registry entry (repair Package 2).
+        polarity: 'higher_better',
         your_value: agg.driver.fairwayPct * 100,
         your_value_display: `${driverFw}%`,
         comparison_value: agg.nonDriver.fairwayPct * 100,

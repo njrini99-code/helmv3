@@ -50,11 +50,15 @@ describe('applyGenderAnchor — P1 women get the women\'s anchor', () => {
     );
     expect(putt.pga_value).toBe(52); // women's 5-10ft make target, not men's 62.2
 
+    // approach_proximity_* is a FEET metric; the women's green-hit PERCENT
+    // anchors no longer live under it, so with no LPGA row the Tour marker is
+    // omitted rather than overridden with "56" read as feet.
     const approach = applyGenderAnchor(
-      rawStanding({ metric_id: 'approach_proximity_125_175ft', player_value: 60, pga_value: 65 }),
+      rawStanding({ metric_id: 'approach_proximity_125_175ft', player_value: 25, pga_value: 30 }),
       'womens',
     );
-    expect(approach.pga_value).toBe(56); // women's green-hit band, not men's 65
+    expect(approach.pga_omitted).toBe(true);
+    expect(approach.pga_value).toBe(30); // untouched — the men's value is never rewritten
 
     const gir = applyGenderAnchor(
       rawStanding({ metric_id: 'gir_pct', player_value: 55, pga_value: 66 }),

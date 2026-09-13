@@ -42,7 +42,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `INCIDENT` | 28 | 15 | 2 | 0 |
 | `ADR` | 5 | 0 | 3 | 0 |
 | `INDEX` | 19 | 1 | 7 | 5 |
-| `UNKNOWN` | 93 | 12 | 40 | 80 |
+| `UNKNOWN` | 94 | 12 | 40 | 80 |
 
 ## Files
 
@@ -633,6 +633,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `ios/appstore/REVIEW_NOTES_2.0-9.md` | current | - | - | - | 0 | 0 | - |
 | `ios/appstore/SUBMISSION.md` | current | - | - | - | 0 | 2 | - |
 | `public/courses/CREDITS.md` | current | - | - | - | 0 | 0 | - |
+| `scripts/ops/MAC_MINI_HEADLESS_RUNBOOK.md` | current | - | - | - | 0 | 1 | - |
 | `src/test/SKIPPED.md` | current | - | - | yes | 1 | 15 | 4 |
 | `supabase/migrations/HELD.md` | current | - | - | - | 27 | 41 | - |
 | `tests/golf/qualifier-hell/.momentic-mcp/step-authoring-guide-1787628324409-30568958-fbbd-4cb0-8f55-b90fd56cc3d7.md` | current | - | - | - | 0 | 0 | - |
