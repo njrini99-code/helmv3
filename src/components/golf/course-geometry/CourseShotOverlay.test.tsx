@@ -66,7 +66,7 @@ describe('shared geographic annotation layer', () => {
     expect(scene).toEqual(snapshot);
   });
 
-  it('renders a labeled fixture flight without turning it into a measured anchor or inferred segment', () => {
+  it('renders a labeled estimated fixture flight without turning it into a measured anchor or inferred segment', () => {
     const scene = addInteractivePreviewTrajectories(
       buildHoleScene(pilotPackage, 'cacapon-07', [pilotShots[0]!].map(normalizeLiveShot)),
       [pilotShots[0]!],
@@ -74,9 +74,28 @@ describe('shared geographic annotation layer', () => {
     const drawing = render(scene);
     const trail = drawing.querySelector('[data-illustrative-preview-trajectory="1"]')!;
     expect(trail.getAttribute('data-trajectory-source')).toBe('interactive-preview-fixture');
-    expect(trail.querySelectorAll('polyline')).toHaveLength(2);
-    expect(trail.querySelector('title')!.textContent).toContain('not a recorded ball location');
+    const strokes = trail.querySelectorAll('polyline');
+    expect(strokes).toHaveLength(2);
+    // render() selects Shot 2, so this first-stroke trail uses its quieter
+    // historical weight while retaining the same crisp non-scaling treatment.
+    expect(strokes[1]!.getAttribute('stroke-width')).toBe('1.2');
+    expect(strokes[1]!.getAttribute('vector-effect')).toBe('non-scaling-stroke');
+    expect(trail.querySelector('title')!.textContent).toContain('not a GPS-recorded ball location');
+    expect(trail.querySelectorAll('[data-preview-flight-start], [data-preview-flight-end]')).toHaveLength(2);
     expect(drawing.querySelectorAll('[data-shot-segment], [data-anchor="estimated"]')).toHaveLength(0);
+  });
+
+  it('uses the refined preview flight instead of layering a generic inferred segment beneath it', () => {
+    const scene = addInteractivePreviewTrajectories(
+      buildHoleScene(pilotPackage, 'cacapon-07', pilotShots.map(normalizeLiveShot)),
+      pilotShots,
+    );
+    const second = scene.events[1]!;
+    scene.events[1] = { ...second, connection: { fromM: [1, 1], toM: [2, 2], distanceM: Math.SQRT2,
+      basis: 'inferred_endpoint_separation' } };
+    const drawing = render(scene);
+    expect(drawing.querySelectorAll('[data-illustrative-preview-trajectory]')).toHaveLength(2);
+    expect(drawing.querySelectorAll('[data-shot-segment]')).toHaveLength(0);
   });
 
   it('keeps a validated connection at the physical scale while badges remain readable', () => {

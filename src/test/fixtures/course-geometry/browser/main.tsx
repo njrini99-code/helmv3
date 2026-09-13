@@ -76,7 +76,7 @@ function Screens() {
       <ReviewHero geometry={scenario === 'missing' ? undefined : activeGeometry} totalScore={73} scoreToPar={1} courseDateLine={`${currentPackage.name} · Local example`} grade={{ score: 4, label: 'Solid round' }} mixLine="13 pars · 2 birdies · 3 bogeys" filmstripHoles={filmstripHoles} holeMeta={holeMeta} shotsByHole={shotsByHole} />
       <p className="mt-6 text-caption text-text-secondary">Local fixture. Course and event accuracy review is still pending.</p>
     </main> : <><p role="status" data-interactive-preview-notice className="mx-4 mt-3 rounded-control border border-border-subtle bg-surface px-3 py-2 font-fw-sans text-caption text-text-secondary">
-      Interactive preview only. Flight trails are illustrative and this page saves nothing.
+      Interactive preview only. Each flight path is estimated from the recorded result and remaining distance; this page saves nothing.
     </p><FairwayShotTracking holes={holes} currentHoleIndex={6} initialShots={initial} initialShotNumber={initial.length + 1}
       geometry={scenario === 'missing' ? undefined : activeGeometry} autoSaveDisabled onHoleComplete={async () => true}
       onSaveShot={s => setSaved(list => [...list, s])} onAutoSave={async s => setSaved(s)} onExit={() => {}} /></>}

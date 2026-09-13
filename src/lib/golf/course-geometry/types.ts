@@ -117,9 +117,9 @@ export interface EstimatedPin {
 }
 
 /** A deliberately non-measured path used only by isolated interactive
- * fixtures. It is kept separate from `DiagramEvent.connection`, which models
- * a bounded endpoint relationship, so a preview can never be mistaken for a
- * recorded flight or persisted player location. */
+ * fixtures. It may use recorded lie/result/distance to make a transparent
+ * display estimate, but stays separate from `DiagramEvent.connection` so it
+ * can never become a recorded flight or persisted player location. */
 export interface IllustrativePreviewTrajectory {
   key: string;
   shotNumber: number;

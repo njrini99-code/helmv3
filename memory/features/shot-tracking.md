@@ -932,10 +932,11 @@ or geometry write is enabled by this optional prop.
 An optional `decorateScene` display adapter receives the already-built scene
 and committed in-memory shot history after evidence reconstruction. It cannot
 write, normalize, or persist shots. Production routes do not configure it; the
-isolated static phone fixture alone uses it for a visibly labeled illustrative
-flight trail. That trail is neither a recorded ball coordinate nor a measured
-flight and does not change the source-candidate rule that ordinary entries lack
-geographic anchors.
+isolated static phone fixture alone uses it for a visibly labeled flight-path
+estimate. It derives a display endpoint from the recorded remaining distance,
+result surface, and miss direction against the course route; it is neither a
+recorded ball coordinate nor a measured flight and does not change the
+source-candidate rule that ordinary entries lack geographic anchors.
 
 ### Optional terrain study (September 13, 2026)
 

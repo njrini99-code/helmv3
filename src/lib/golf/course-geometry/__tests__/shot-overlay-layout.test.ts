@@ -6,6 +6,7 @@ import { normalizeLiveShot } from '../normalize';
 import { parseTerrainMesh, projectTerrainPoint, terrainHeight, TERRAIN_PRESETS } from '../terrain';
 import { fitTerrainViewportCamera } from '../terrain-viewport';
 import { inFeature } from '../spatial';
+import { contextCamera } from '../camera';
 import type { ShotRecord } from '@/lib/types/golf';
 import type { LocalFeature, PointM } from '../types';
 import { layoutShotOverlay, prepareShotOverlay } from '../shot-overlay-layout';
@@ -56,15 +57,40 @@ describe('camera-independent shot overlay evidence', () => {
       .toEqual({ anchors: [], badges: [], regions: [], segments: [], pin: null, illustrativePreviewTrajectories: [] });
   });
 
-  it('adds a clearly isolated preview trail only for entries that exist in the local fixture ledger', () => {
-    const base = buildHoleScene(pilotPackage, 'cacapon-07', [pilotShots[0]!].map(normalizeLiveShot), mesh);
-    const scene = addInteractivePreviewTrajectories(base, [pilotShots[0]!]);
+  it('uses the committed fairway result and remaining distance to estimate a visible fixture trail', () => {
+    const shot = { ...pilotShots[0]!, distanceToHoleBefore: 431, distanceToHoleAfter: 135 };
+    const base = buildHoleScene(pilotPackage, 'cacapon-07', [shot].map(normalizeLiveShot), mesh);
+    const scene = addInteractivePreviewTrajectories(base, [shot]);
     const prepared = prepareShotOverlay(scene);
     const layout = layoutShotOverlay(prepared, { width: 600, height: 700, project: point => point, pathForFeature: () => null });
     expect(scene.events[0]!.anchorM).toBeNull();
     expect(scene.illustrativePreviewTrajectories).toHaveLength(1);
     expect(layout.illustrativePreviewTrajectories).toEqual([expect.objectContaining({ shotNumber: 1, active: true })]);
-    expect(layout.illustrativePreviewTrajectories[0]!.points).toHaveLength(4);
+    const route = scene.features.find(feature => feature.id === scene.hole.routeFeatureId)!.parts[0]![0]!;
+    const endpoint = layout.illustrativePreviewTrajectories[0]!.points.at(-1)!;
+    expect(Math.hypot(endpoint[0] - route.at(-1)![0], endpoint[1] - route.at(-1)![1])).toBeCloseTo(135 * .9144, 1);
+    expect(layout.illustrativePreviewTrajectories[0]!.points).toHaveLength(7);
+    // A compact approach context may otherwise crop the tee-to-fairway path.
+    const camera = contextCamera(scene, 320, 160, 'approach');
+    for (const point of layout.illustrativePreviewTrajectories[0]!.points) {
+      const projected = toScreen(point, camera);
+      expect(projected[0]).toBeGreaterThanOrEqual(0);
+      expect(projected[0]).toBeLessThanOrEqual(320);
+      expect(projected[1]).toBeGreaterThanOrEqual(0);
+      expect(projected[1]).toBeLessThanOrEqual(160);
+    }
+  });
+
+  it('uses the selected bunker and miss side for an estimated sand finish', () => {
+    const shots: ShotRecord[] = [
+      { ...pilotShots[0]!, distanceToHoleBefore: 431, distanceToHoleAfter: 135 },
+      { ...pilotShots[1]!, distanceToHoleBefore: 135, distanceToHoleAfter: 17, missDirection: 'right', approachMissDirection: 'right' },
+    ];
+    const scene = addInteractivePreviewTrajectories(
+      buildHoleScene(pilotPackage, 'cacapon-07', shots.map(normalizeLiveShot), mesh), shots,
+    );
+    const endpoint = scene.illustrativePreviewTrajectories!.at(-1)!.pointsM.at(-1)!;
+    expect(scene.features.some(feature => feature.kind === 'bunker' && inFeature(endpoint, feature))).toBe(true);
   });
 
   it('keeps both actual Cacapon candidate outlines legible without enlarging cells or locating the ball', () => {

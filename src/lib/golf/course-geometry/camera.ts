@@ -29,9 +29,13 @@ export function contextPoints(scene: HoleScene, view: CourseView): readonly Poin
       }
     }
   }
+  // An isolated preview trace is a display-only estimate, but it must remain
+  // visible after the committed shot. Its world points expand only the camera
+  // fit; they never alter course geometry, score data, or the selected view.
+  const traces = scene.illustrativePreviewTrajectories?.flatMap(trace => trace.pointsM) ?? [];
   // Display padding is applied after rotation. A second geographic bounding
   // box would add empty diagonal corners and shrink this detail needlessly.
-  return fit;
+  return [...fit, ...traces];
 }
 
 export function contextCamera(scene: HoleScene, width: number, height: number, view: CourseView, padding = 12) {
