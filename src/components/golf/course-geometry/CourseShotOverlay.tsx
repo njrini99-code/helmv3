@@ -22,16 +22,20 @@ export function CourseShotOverlay({ scene, width, height, selectedShotNumber, pr
   // recorded stroke. Its old generic inferred segments duplicate that path
   // and read as a heavy grey rail underneath it.
   const hasPreviewFlight = illustrativePreviewTrajectories.length > 0;
+  // A recorded preview result already has one intentional display endpoint.
+  // Keeping the uncertainty boundary around its entire fairway (or bunker)
+  // competes with the flight line and makes the playing surface look traced.
+  const showCandidateRegions = !hasPreviewFlight;
   return <g data-annotation="shot-evidence">
     <defs>
       <pattern id={`${id}-possible`} patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(-35)">
         <path d="M0 0 V8" stroke="var(--fw-diagram-ground)" strokeWidth="1.1" opacity=".55" />
       </pattern>
-      {regions.map(region => <clipPath key={region.key} id={`${id}-${region.key}`}>
+      {showCandidateRegions && regions.map(region => <clipPath key={region.key} id={`${id}-${region.key}`}>
         <path d={region.clip} clipRule="evenodd" />
       </clipPath>)}
     </defs>
-    {regions.map(region => <g key={region.key} data-possible-area={region.shotNumber}
+    {showCandidateRegions && regions.map(region => <g key={region.key} data-possible-area={region.shotNumber}
       data-candidate-feature={region.featureId} data-position-basis="compatible-surface">
       <title>Candidate surface for shot {region.shotNumber}. The outline identifies a possible surface; hatching shows sampled possible finishes. Pin unknown; alternatives remain.</title>
       <path d={region.clip} data-candidate-outline="halo" fill="none" stroke="var(--fw-diagram-shadow)" strokeWidth="3.2" opacity=".32" />

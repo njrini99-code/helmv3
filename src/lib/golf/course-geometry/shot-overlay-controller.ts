@@ -62,14 +62,16 @@ export function createShotOverlayController(svg: SVGSVGElement, prefix: string, 
   const pattern = element('pattern', { id: patternId, patternUnits: 'userSpaceOnUse', width: 8, height: 8, patternTransform: 'rotate(-35)' });
   pattern.appendChild(element('path', { d: 'M0 0 V8', stroke: ground, 'stroke-width': 1.1, opacity: .55 }));
   defs.appendChild(pattern);
-  const regions = element('g'), segments = element('g'), anchors = element('g'), badges = element('g');
+  const regions = element('g'), segments = element('g'), flights = element('g'), anchors = element('g'), badges = element('g');
   const pin = element('g', { 'data-target': 'estimated-pin', display: 'none' });
-  root.append(defs, regions, segments, anchors, pin, badges);
+  root.append(defs, regions, segments, flights, anchors, pin, badges);
   type RegionNodes = { group: SVGGElement; title: SVGTitleElement; clip: SVGPathElement; halo: SVGPathElement; outline: SVGPathElement;
     feasible: SVGGElement; fill: SVGPathElement; hatch: SVGPathElement };
   type SegmentNodes = { group: SVGGElement; halo: SVGLineElement; line: SVGLineElement };
+  type FlightNodes = { group: SVGGElement; title: SVGTitleElement; halo: SVGPolylineElement; line: SVGPolylineElement;
+    start: SVGCircleElement; end: SVGCircleElement };
   type BadgeNodes = { group: SVGGElement; leader: SVGLineElement; circle: SVGCircleElement; text: SVGTextElement };
-  const regionNodes = new Map<string, RegionNodes>(), segmentNodes = new Map<string, SegmentNodes>();
+  const regionNodes = new Map<string, RegionNodes>(), segmentNodes = new Map<string, SegmentNodes>(), flightNodes = new Map<string, FlightNodes>();
   const anchorNodes = new Map<string, SVGCircleElement>(), badgeNodes = new Map<string, BadgeNodes>();
   let nextClip = 0;
   pin.appendChild(element('title', {}, 'Estimated pin. The actual daily cup location is unknown.'));
@@ -83,8 +85,12 @@ export function createShotOverlayController(svg: SVGSVGElement, prefix: string, 
   pin.append(pinLeader, pinAnchor, pinGlyph, pinPill, pinText);
 
   function paint(layout: ShotOverlayLayout) {
+    // The static phone preview intentionally has one estimated trail per
+    // recorded shot. Its uncertainty outlines would trace an entire fairway
+    // or bunker underneath that trail, so keep those only in normal review.
+    const hasPreviewFlight = layout.illustrativePreviewTrajectories.length > 0;
     const usedRegions = new Set<string>();
-    for (const region of layout.regions) {
+    for (const region of hasPreviewFlight ? [] : layout.regions) {
       usedRegions.add(region.key);
       let nodes = regionNodes.get(region.key);
       if (!nodes) {
@@ -112,7 +118,7 @@ export function createShotOverlayController(svg: SVGSVGElement, prefix: string, 
     for (const [key, nodes] of regionNodes) if (!usedRegions.has(key)) attributes(nodes.group, { display: 'none' });
 
     const usedSegments = new Set<string>();
-    for (const segment of layout.segments) {
+    for (const segment of hasPreviewFlight ? [] : layout.segments) {
       usedSegments.add(segment.key);
       let nodes = segmentNodes.get(segment.key);
       if (!nodes) {
@@ -128,6 +134,30 @@ export function createShotOverlayController(svg: SVGSVGElement, prefix: string, 
       attributes(nodes.line, { ...ends, 'stroke-width': segment.active ? 2.4 : 1.6, opacity: segment.active ? 1 : .65 });
     }
     for (const [key, nodes] of segmentNodes) if (!usedSegments.has(key)) attributes(nodes.group, { display: 'none' });
+
+    const usedFlights = new Set<string>();
+    for (const flight of layout.illustrativePreviewTrajectories) {
+      usedFlights.add(flight.key);
+      let nodes = flightNodes.get(flight.key);
+      if (!nodes) {
+        const group = element('g', { 'data-trajectory-source': 'interactive-preview-fixture' });
+        const title = element('title', {}, 'Estimated flight preview from the recorded lie, result, and remaining distance. This path is not a GPS-recorded ball location or measured flight.');
+        const halo = element('polyline', { fill: 'none', stroke: shadow, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'vector-effect': 'non-scaling-stroke' });
+        const line = element('polyline', { fill: 'none', stroke: ink, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'vector-effect': 'non-scaling-stroke' });
+        const start = element('circle', { fill: ink, stroke: shadow, 'stroke-width': .7 });
+        const end = element('circle', { fill: ink, stroke: shadow, 'stroke-width': .9 });
+        group.append(title, halo, line, start, end); flights.appendChild(group);
+        nodes = { group, title, halo, line, start, end }; flightNodes.set(flight.key, nodes);
+      }
+      const points = flight.points.map(point => point.join(',')).join(' ');
+      const first = flight.points[0]!, last = flight.points.at(-1)!;
+      attributes(nodes.group, { display: 'inline', 'data-illustrative-preview-trajectory': flight.shotNumber, 'data-selected': flight.active });
+      attributes(nodes.halo, { points, 'stroke-width': flight.active ? 3 : 2.4, opacity: .26 });
+      attributes(nodes.line, { points, 'stroke-width': flight.active ? 1.65 : 1.2, opacity: flight.active ? 1 : .64 });
+      attributes(nodes.start, { cx: first[0], cy: first[1], r: flight.active ? 2.15 : 1.8, 'data-preview-flight-start': flight.shotNumber });
+      attributes(nodes.end, { cx: last[0], cy: last[1], r: flight.active ? 2.75 : 2.2, 'data-preview-flight-end': flight.shotNumber });
+    }
+    for (const [key, nodes] of flightNodes) if (!usedFlights.has(key)) attributes(nodes.group, { display: 'none' });
 
     const usedAnchors = new Set<string>();
     for (const anchor of layout.anchors) {

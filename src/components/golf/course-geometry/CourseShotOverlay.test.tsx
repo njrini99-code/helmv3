@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { CourseShotOverlay } from './CourseShotOverlay';
 import { featurePath } from './CourseHoleScene';
+import { prepareShotOverlay } from '@/lib/golf/course-geometry/shot-overlay-layout';
 import { addInteractivePreviewTrajectories, illustrativeScene, pilotPackage, pilotShots } from '@/test/fixtures/course-geometry/pilot';
 import { buildHoleScene } from '@/lib/golf/course-geometry/build-scene';
 import { normalizeLiveShot } from '@/lib/golf/course-geometry/normalize';
@@ -73,6 +74,7 @@ describe('shared geographic annotation layer', () => {
     );
     const drawing = render(scene);
     const trail = drawing.querySelector('[data-illustrative-preview-trajectory="1"]')!;
+    expect(prepareShotOverlay(scene).regions).not.toHaveLength(0);
     expect(trail.getAttribute('data-trajectory-source')).toBe('interactive-preview-fixture');
     const strokes = trail.querySelectorAll('polyline');
     expect(strokes).toHaveLength(2);
@@ -83,6 +85,7 @@ describe('shared geographic annotation layer', () => {
     expect(trail.querySelector('title')!.textContent).toContain('not a GPS-recorded ball location');
     expect(trail.querySelectorAll('[data-preview-flight-start], [data-preview-flight-end]')).toHaveLength(2);
     expect(drawing.querySelectorAll('[data-shot-segment], [data-anchor="estimated"]')).toHaveLength(0);
+    expect(drawing.querySelectorAll('[data-possible-area], [data-candidate-outline]')).toHaveLength(0);
   });
 
   it('uses the refined preview flight instead of layering a generic inferred segment beneath it', () => {

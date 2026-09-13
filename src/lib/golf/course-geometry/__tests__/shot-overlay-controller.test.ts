@@ -1,8 +1,10 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
 import { createShotOverlayController } from '../shot-overlay-controller';
+import { buildHoleScene } from '../build-scene';
+import { normalizeLiveShot } from '../normalize';
 import { parseTerrainMesh, fitTerrainCamera, projectTerrainPoint, terrainHeight, TERRAIN_PRESETS } from '../terrain';
-import { illustrativeScene, pilotPackage } from '@/test/fixtures/course-geometry/pilot';
+import { addInteractivePreviewTrajectories, illustrativeScene, pilotPackage, pilotShots } from '@/test/fixtures/course-geometry/pilot';
 import source from '@/test/fixtures/course-geometry/cacapon-07-terrain.json';
 
 const mesh = parseTerrainMesh(source, pilotPackage);
@@ -53,6 +55,27 @@ describe('imperative evidence camera', () => {
       expect(drawing.querySelectorAll('[data-anchor="estimated"][display="inline"]')).toHaveLength(0);
       expect(drawing.querySelectorAll('[data-shot-segment][display="inline"]')).toHaveLength(0);
       expect(scene.events.every(event => event.anchorM != null)).toBe(true);
+    } finally { controller.dispose(); }
+  });
+
+  it('draws the same refined preview flight over the Three terrain and hides fairway uncertainty outlines', () => {
+    const shot = { ...pilotShots[0]!, distanceToHoleBefore: 431, distanceToHoleAfter: 135 };
+    const scene = addInteractivePreviewTrajectories(
+      buildHoleScene(pilotPackage, 'cacapon-07', [normalizeLiveShot(shot)], mesh), [shot],
+    );
+    const drawing = svg(), camera = fitTerrainCamera(scene, mesh, 'approach', 600, 800, TERRAIN_PRESETS.terrain);
+    const controller = createShotOverlayController(drawing, 'preview', mesh, scene, 1);
+    try {
+      controller.setCamera(camera, 600, 800);
+      const trail = drawing.querySelector('[data-illustrative-preview-trajectory="1"][display="inline"]')!;
+      expect(trail).toBeTruthy();
+      expect(trail.querySelectorAll('polyline')).toHaveLength(2);
+      expect(trail.querySelector('polyline:last-of-type')!.getAttribute('stroke-width')).toBe('1.65');
+      expect(drawing.querySelectorAll('[data-possible-area][display="inline"], [data-candidate-outline][display="inline"]')).toHaveLength(0);
+      const start = trail.querySelector('[data-preview-flight-start="1"]')!, source = scene.illustrativePreviewTrajectories![0]!.pointsM[0]!;
+      const expected = projectTerrainPoint([source[0], source[1], terrainHeight(mesh, source)!], camera);
+      expect(Number(start.getAttribute('cx'))).toBeCloseTo(expected[0], 9);
+      expect(Number(start.getAttribute('cy'))).toBeCloseTo(expected[1], 9);
     } finally { controller.dispose(); }
   });
 });

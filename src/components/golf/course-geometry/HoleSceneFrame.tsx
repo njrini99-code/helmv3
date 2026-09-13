@@ -91,6 +91,7 @@ function Drawing({ scene, view, context, events, selectedShotNumber, currentPutt
   const [showProfile, setShowProfile] = useState(false);
   const pendingFrame = useRef(0);
   const runtime = useRef<TerrainRuntimeController | null>(null);
+  const previewTerrainConfigured = useRef(false);
   const scaleBar = useRef<HTMLDivElement>(null);
   const [inspectorOpen, setInspectorOpen] = useState(false);
   const [areasOpen, setAreasOpen] = useState(false);
@@ -98,6 +99,17 @@ function Drawing({ scene, view, context, events, selectedShotNumber, currentPutt
   const pointers = useRef(new Map<number, { x: number; y: number }>());
   const live = useRef({ zoom, pan, pose, fitPreset });
   const nextState = useRef<typeof live.current | null>(null);
+  const previewTerrain = scene?.overlayKind === 'analytic_fixture';
+  useEffect(() => {
+    if (!previewTerrain || previewTerrainConfigured.current) return;
+    // The public course fixture should demonstrate the actual Three scene
+    // after a shot, rather than a top-down SVG that hides all relief.
+    previewTerrainConfigured.current = true;
+    const next = { zoom: 1, pan: { x: 0, y: 0 }, pose: TERRAIN_PRESETS.terrain, fitPreset: 'terrain' as TerrainFitProfile };
+    live.current = next;
+    if (poseMemory) poseMemory.current = { pose: next.pose, fitPreset: next.fitPreset };
+    setZoom(next.zoom); setPan(next.pan); setPose(next.pose); setFitPreset(next.fitPreset);
+  }, [poseMemory, previewTerrain]);
   function commitCamera() {
     const next = live.current; if (poseMemory) poseMemory.current = { pose: next.pose, fitPreset: next.fitPreset }; setZoom(next.zoom); setPan(next.pan); setPose(next.pose); setFitPreset(next.fitPreset);
     if (scaleBar.current) scaleBar.current.style.visibility = Math.abs(next.pose.pitch - 90) < .01 ? 'visible' : 'hidden';
@@ -115,7 +127,7 @@ function Drawing({ scene, view, context, events, selectedShotNumber, currentPutt
     } else commitCamera();
   }
   const gesture = useRef({ x: 0, y: 0, distance: 0, zoom: 1, pan: { x: 0, y: 0 }, pose, fitPreset, origin: { x: size.width / 2, y: size.height / 2 } });
-  const terrainRequested = expanded && view !== 'putting' && scene?.terrain != null && !terrainFailed && !showProfile;
+  const terrainRequested = (expanded || previewTerrain) && view !== 'putting' && scene?.terrain != null && !terrainFailed && !showProfile;
   let terrainCamera;
   if (terrainRequested && scene?.terrain) {
     try { terrainCamera = fitTerrainViewportCamera(scene, scene.terrain, view, size.width, size.height, pose, zoom, [pan.x, pan.y], fitPreset); }

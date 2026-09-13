@@ -983,9 +983,12 @@ See the existing geometry plan Section 22 for verification and source limits.
 ### Premium landscape adapter (September 13, 2026)
 
 The expanded course view loads a Three.js backend behind the existing shared
-scene; inline maps and exports retain the SVG adapter. A normal-flow nonmodal
-inspector reserves actual camera space on phone/desktop. Mutable camera frames
-and projected annotations share one imperative update. Canonical course meters,
+scene; inline maps and exports retain the SVG adapter. The isolated interactive
+fixture switches its inline map to that same terrain canvas after a recorded
+preview shot, with one thin explicitly estimated flight trace and no candidate
+surface outline beneath it. A normal-flow nonmodal inspector reserves actual
+camera space on phone/desktop. Mutable camera frames and projected annotations
+share one imperative update. Canonical course meters,
 manual evidence, scorecard/units, penalties and local save identities do not
 change. An Estimated pin is a retained manual hypothesis or nominal interior
 green reference, never a measured daily pin or new solver evidence. The revised
