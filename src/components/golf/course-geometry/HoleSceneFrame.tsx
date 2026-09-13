@@ -91,7 +91,10 @@ export function HoleSceneFrame({ scene, context, defaultView = 'hole', selectedS
     </div>
     <Drawing scene={scene} view={view} context={context} events={events} selectedShotNumber={selectedShotNumber} currentPuttingDistanceM={currentPuttingDistanceM} />
     <p className="px-3 py-[3px] font-fw-sans text-eyebrow leading-4 text-text-secondary">
-      {view === 'putting' ? hasReviewedGreen(scene) ? 'Actual green outline · ball and cup locations remain labelled by evidence' : 'Illustrated putting view' : scene ? `${scene.hole.completeness === 'reviewed_surfaces' ? 'Reviewed' : 'Partial'}${(scene.sharedGreenHoleOrdinals?.length ?? 0) > 1 ? ' shared green' : ' outline'} · ${scene.attribution.split(' · ')[0]}` : 'Schematic context · no mapped position'}
+      {view === 'putting' ? hasReviewedGreen(scene)
+        ? scene?.illustrativePuttingTracks?.some(track => track.kind === 'surface_roll') ? 'Actual green outline · estimated ball and roll from entered distances'
+          : scene?.illustrativePuttingTracks?.length ? 'Actual green outline · estimated ball from entered distance' : 'Actual green outline · mark a ball to add its exact position'
+        : 'Illustrated putting view' : scene ? `${scene.hole.completeness === 'reviewed_surfaces' ? 'Reviewed' : 'Partial'}${(scene.sharedGreenHoleOrdinals?.length ?? 0) > 1 ? ' shared green' : ' outline'} · ${scene.attribution.split(' · ')[0]}` : 'Schematic context · no mapped position'}
     </p>
     {children}
   </div>;
@@ -385,7 +388,9 @@ function Drawing({ scene, view, context, events, selectedShotNumber, currentPutt
             <div className="shrink-0 text-right"><p className="font-fw-display text-xl font-semibold tabular-nums text-text-primary">{recordedDistance(active.after)}</p><p className="text-eyebrow text-text-secondary">Remaining</p></div>
           </div>
         </div>}
-        {view === 'putting' && courseBackedPutting && <p className="px-4 pb-2 text-caption text-text-secondary" data-putting-position-status="evidence-only">Whole green uses the canonical course shape. Ball and cup anchors appear only when their shared coordinates are available.</p>}
+        {view === 'putting' && courseBackedPutting && <p className="px-4 pb-2 text-caption text-text-secondary" data-putting-position-status="evidence-only">{scene?.illustrativePuttingTracks?.length
+          ? 'Whole green uses the canonical course shape. Ball and roll estimates come from entered distances; a marked ball can replace them.'
+          : 'Whole green uses the canonical course shape. Mark a ball to add an exact ball position.'}</p>}
         {terrainEnabled && pose.exaggeration !== 1 && <p className="h-6 truncate px-4 pb-2 text-caption text-text-secondary">Relief {pose.exaggeration.toFixed(1)}×</p>}
         {terrainFailed && <p role="status" className="px-4 pb-2 text-caption text-text-secondary">3D view unavailable. Showing the course outline.</p>}
     {expanded && toolsOpen && <div className="flex flex-wrap items-center gap-1 px-3 py-1" role="group" aria-label="Additional camera controls">

@@ -64,14 +64,21 @@ export function createShotOverlayController(svg: SVGSVGElement, prefix: string, 
   defs.appendChild(pattern);
   const regions = element('g'), segments = element('g'), flights = element('g'), anchors = element('g'), badges = element('g');
   const pin = element('g', { 'data-target': 'estimated-pin', display: 'none' });
-  root.append(defs, regions, segments, flights, anchors, pin, badges);
+  // The surface roll's world tube remains depth-tested in Three, while this
+  // screen-facing counterpart makes a close leave readable beside the cup.
+  // It is deliberately above the flag: hiding the ball beneath the pin makes
+  // the putting tracker fail its primary task.
+  const putting = element('g');
+  root.append(defs, regions, segments, flights, anchors, pin, putting, badges);
   type RegionNodes = { group: SVGGElement; title: SVGTitleElement; clip: SVGPathElement; halo: SVGPathElement; outline: SVGPathElement;
     feasible: SVGGElement; fill: SVGPathElement; hatch: SVGPathElement };
   type SegmentNodes = { group: SVGGElement; halo: SVGLineElement; line: SVGLineElement };
   type FlightNodes = { group: SVGGElement; title: SVGTitleElement; halo: SVGPolylineElement; line: SVGPolylineElement;
     start: SVGCircleElement; end: SVGCircleElement };
+  type PuttingNodes = { group: SVGGElement; title: SVGTitleElement; halo: SVGPolylineElement; line: SVGPolylineElement;
+    start: SVGCircleElement; end: SVGCircleElement; core: SVGCircleElement };
   type BadgeNodes = { group: SVGGElement; leader: SVGLineElement; circle: SVGCircleElement; text: SVGTextElement };
-  const regionNodes = new Map<string, RegionNodes>(), segmentNodes = new Map<string, SegmentNodes>(), flightNodes = new Map<string, FlightNodes>();
+  const regionNodes = new Map<string, RegionNodes>(), segmentNodes = new Map<string, SegmentNodes>(), flightNodes = new Map<string, FlightNodes>(), puttingNodes = new Map<string, PuttingNodes>();
   const anchorNodes = new Map<string, SVGCircleElement>(), badgeNodes = new Map<string, BadgeNodes>();
   let nextClip = 0;
   pin.appendChild(element('title', {}, 'Estimated pin. The actual daily cup location is unknown.'));
@@ -160,6 +167,43 @@ export function createShotOverlayController(svg: SVGSVGElement, prefix: string, 
       attributes(nodes.end, { cx: last[0], cy: last[1], r: flight.active ? 2.75 : 2.2, 'data-preview-flight-end': flight.shotNumber });
     }
     for (const [key, nodes] of flightNodes) if (!usedFlights.has(key)) attributes(nodes.group, { display: 'none' });
+
+    const usedPutting = new Set<string>();
+    for (const track of layout.illustrativePuttingTracks) {
+      usedPutting.add(track.key);
+      let nodes = puttingNodes.get(track.key);
+      if (!nodes) {
+        const group = element('g', { 'data-trajectory-source': 'interactive-preview-fixture' });
+        const title = element('title');
+        const halo = element('polyline', { fill: 'none', stroke: shadow, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'vector-effect': 'non-scaling-stroke' });
+        const line = element('polyline', { fill: 'none', stroke: '#FFFDF7', 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'vector-effect': 'non-scaling-stroke' });
+        const start = element('circle', { fill: '#FFFDF7', stroke: shadow });
+        const end = element('circle', { fill: '#FFFDF7', stroke: shadow });
+        const core = element('circle', { fill: ink });
+        group.append(title, halo, line, start, end, core); putting.appendChild(group);
+        nodes = { group, title, halo, line, start, end, core }; puttingNodes.set(track.key, nodes);
+      }
+      const isRoll = track.kind === 'surface_roll', first = track.points[0]!, last = track.points.at(-1)!;
+      const description = isRoll
+        ? `Estimated putting roll for shot ${track.shotNumber}, derived from entered start and leave distances against the nominal pin. This is not a marked ball location or measured roll.`
+        : `Estimated ball position after shot ${track.shotNumber}, derived from the entered remaining distance against the nominal pin. This is not a marked or GPS position.`;
+      if (nodes.title.textContent !== description) nodes.title.textContent = description;
+      attributes(nodes.group, { display: 'inline', 'data-illustrative-putting-track': track.shotNumber,
+        'data-putting-track-kind': track.kind, 'data-selected': track.active });
+      const points = track.points.map(point => point.join(',')).join(' ');
+      attributes(nodes.halo, { display: isRoll ? 'inline' : 'none', points, 'stroke-width': track.active ? 4.2 : 3.1,
+        opacity: track.active ? .62 : .42 });
+      attributes(nodes.line, { display: isRoll ? 'inline' : 'none', points, 'stroke-width': track.active ? 2.1 : 1.35,
+        opacity: track.active ? 1 : .7 });
+      attributes(nodes.start, { display: isRoll ? 'inline' : 'none', cx: first[0], cy: first[1], r: track.active ? 3.25 : 2.7,
+        'stroke-width': track.active ? 1.35 : 1.1, 'data-putting-ball': 'estimated-start', 'data-putting-ball-shot': track.shotNumber });
+      attributes(nodes.end, { cx: last[0], cy: last[1], r: track.active ? 4.3 : 3.45, 'stroke-width': track.active ? 1.7 : 1.35,
+        'data-putting-ball': isRoll ? 'estimated-leave' : 'estimated-current', 'data-putting-ball-shot': track.shotNumber });
+      // A ball must read as a ball—not as a bullseye. Its dark edge supplies
+      // contrast against pale greens, so leave the white centre intact.
+      attributes(nodes.core, { display: 'none', cx: last[0], cy: last[1], r: track.active ? 1.35 : 1.05, 'data-putting-ball-core': track.shotNumber });
+    }
+    for (const [key, nodes] of puttingNodes) if (!usedPutting.has(key)) attributes(nodes.group, { display: 'none' });
 
     const usedAnchors = new Set<string>();
     for (const anchor of layout.anchors) {

@@ -17,12 +17,12 @@ interface OverlayProps {
 export function CourseShotOverlay({ scene, width, height, selectedShotNumber, project, pathForFeature }: OverlayProps) {
   const id = useId();
   const prepared = useMemo(() => prepareShotOverlay(scene, selectedShotNumber), [scene, selectedShotNumber]);
-  const { regions, segments, anchors, badges, pin, illustrativePreviewTrajectories } = layoutShotOverlay(prepared, { width, height, project, pathForFeature });
+  const { regions, segments, anchors, badges, pin, illustrativePreviewTrajectories, illustrativePuttingTracks } = layoutShotOverlay(prepared, { width, height, project, pathForFeature });
   // The interactive fixture supplies one intentional flight treatment per
   // recorded stroke. Its old generic inferred segments duplicate that path
   // and read as a heavy grey rail underneath it.
-  const hasPreviewFlight = illustrativePreviewTrajectories.length > 0;
-  const isInteractivePreview = scene.illustrativePreviewTrajectories != null;
+  const hasPreviewFlight = illustrativePreviewTrajectories.length > 0 || illustrativePuttingTracks.length > 0;
+  const isInteractivePreview = scene.illustrativePreviewTrajectories != null || scene.illustrativePuttingTracks != null;
   // A recorded preview result already has one intentional display endpoint.
   // Keeping the uncertainty boundary around its entire fairway (or bunker)
   // competes with the flight line and makes the playing surface look traced.
@@ -67,6 +67,26 @@ export function CourseShotOverlay({ scene, width, height, selectedShotNumber, pr
       {active && <circle data-preview-flight-estimate={shotNumber} cx={points.at(-1)![0]} cy={points.at(-1)![1]} r="1.1"
         fill="none" stroke="var(--fw-diagram-event)" strokeWidth=".8" opacity=".8" />}
     </g>)}
+    {illustrativePuttingTracks.map(({ key, shotNumber, kind, active, points }) => {
+      const first = points[0]!, last = points.at(-1)!;
+      const isRoll = kind === 'surface_roll';
+      return <g key={key} data-illustrative-putting-track={shotNumber} data-putting-track-kind={kind}
+        data-selected={active} data-trajectory-source="interactive-preview-fixture">
+        <title>{isRoll
+          ? `Estimated putting roll for shot ${shotNumber}, derived from entered start and leave distances against the nominal pin. This is not a marked ball location or measured roll.`
+          : `Estimated ball position after shot ${shotNumber}, derived from the entered remaining distance against the nominal pin. This is not a marked or GPS position.`}</title>
+        {isRoll && <>
+          <polyline points={points.map(point => point.join(',')).join(' ')} fill="none" stroke="var(--fw-diagram-shadow)"
+            strokeWidth={active ? 4.2 : 3.1} strokeLinecap="round" strokeLinejoin="round" opacity={active ? ".62" : ".4"} vectorEffect="non-scaling-stroke" />
+          <polyline points={points.map(point => point.join(',')).join(' ')} fill="none" stroke="#FFFDF7"
+            strokeWidth={active ? 2.1 : 1.35} strokeLinecap="round" strokeLinejoin="round" opacity={active ? "1" : ".7"} vectorEffect="non-scaling-stroke" />
+          <circle data-putting-ball="estimated-start" data-putting-ball-shot={shotNumber} cx={first[0]} cy={first[1]} r={active ? 3.1 : 2.5}
+            fill="#FFFDF7" stroke="var(--fw-diagram-shadow)" strokeWidth={active ? "1.25" : "1"} />
+        </>}
+        <circle data-putting-ball={isRoll ? 'estimated-leave' : 'estimated-current'} data-putting-ball-shot={shotNumber}
+          cx={last[0]} cy={last[1]} r={active ? 4.05 : 3.2} fill="#FFFDF7" stroke="var(--fw-diagram-shadow)" strokeWidth={active ? "1.5" : "1.2"} />
+      </g>;
+    })}
     {anchors.map(({ key, point }) => <circle key={key} data-anchor="estimated"
       cx={point[0]} cy={point[1]} r="2.5" fill="var(--fw-diagram-ground)" stroke="var(--fw-diagram-event)" strokeWidth="1.5" />)}
     {pin && <g data-target="estimated-pin" data-target-basis={pin.basis}>

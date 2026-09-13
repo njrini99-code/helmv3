@@ -156,6 +156,7 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
         terrainFocus: camera.focusM.join(','), terrainTriangles: String(landscape.counts.terrainTriangles),
         terrainTrees: String(landscape.counts.trees), renderCount: String(++renderCount),
         flightPaths: String(flightPaths?.count ?? 0),
+        puttingTracks: String(flightPaths?.puttingCount ?? 0),
         cssWidth: String(width), cssHeight: String(height), bufferWidth: String(canvas.width), bufferHeight: String(canvas.height), pixelRatio: String(ratio),
         debugView: options.debugView ?? 'final',
         crownDetail,

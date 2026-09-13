@@ -1,7 +1,7 @@
 import { checkedAnchor, checkedConnection, checkedRegions } from './quality';
 import { inFeature } from './spatial';
 import { createSurfaceGuard } from './surface-compatibility';
-import type { EstimatedPin, HoleScene, IllustrativePreviewTrajectory, LocalFeature, PointM } from './types';
+import type { EstimatedPin, HoleScene, IllustrativePreviewTrajectory, IllustrativePuttingTrack, LocalFeature, PointM } from './types';
 
 export interface PreparedShotOverlay {
   regions: { key: string; shotNumber: number; feature: LocalFeature; rings: PointM[][] }[];
@@ -12,6 +12,8 @@ export interface PreparedShotOverlay {
   /** Isolated fixture-only presentation, intentionally separate from inferred
    * endpoint segments and the player shot ledger. */
   illustrativePreviewTrajectories: Array<IllustrativePreviewTrajectory & { active: boolean }>;
+  /** Distance-derived fixture positions/rolls. Never a measured ball trace. */
+  illustrativePuttingTracks: Array<IllustrativePuttingTrack & { active: boolean }>;
   protectedFeatures: LocalFeature[];
 }
 
@@ -34,12 +36,13 @@ export interface ShotOverlayLayout {
   badges: { key: string; shotNumber: number; active: boolean; anchor: PointM; label: PointM }[];
   pin: { position: PointM; label: PointM; basis: EstimatedPin['basis']; glyphScale: number } | null;
   illustrativePreviewTrajectories: { key: string; shotNumber: number; active: boolean; points: PointM[] }[];
+  illustrativePuttingTracks: { key: string; shotNumber: number; kind: IllustrativePuttingTrack['kind']; active: boolean; points: PointM[] }[];
 }
 
 /** Validate world evidence when the scene or selected event changes. Camera
  * frames reuse these inputs; a new renderer cannot bypass the surface gates. */
 export function prepareShotOverlay(scene: HoleScene, selectedShotNumber?: number): PreparedShotOverlay {
-  const selected = selectedShotNumber ?? scene.illustrativePreviewTrajectories?.at(-1)?.shotNumber ??
+  const selected = selectedShotNumber ?? scene.illustrativePuttingTracks?.at(-1)?.shotNumber ?? scene.illustrativePreviewTrajectories?.at(-1)?.shotNumber ??
     [...scene.events].reverse().find(event => event.regions?.length)?.evidence.shotNumber;
   const anchors = scene.events.flatMap(event => {
     const pointM = checkedAnchor(event, scene.features);
@@ -79,7 +82,16 @@ export function prepareShotOverlay(scene: HoleScene, selectedShotNumber?: number
       ? [{ ...trajectory, pointsM: points, active: trajectory.shotNumber === selected }]
       : [];
   });
-  return { regions, segments, anchors, badges, pin, illustrativePreviewTrajectories,
+  const illustrativePuttingTracks = (scene.illustrativePuttingTracks ?? []).flatMap(track => {
+    const shotExists = scene.events.some(event => event.evidence.shotNumber === track.shotNumber);
+    const points = track.pointsM.map(point => [...point] as PointM);
+    const minimumPoints = track.kind === 'surface_roll' ? 2 : 1;
+    return track.source === 'interactive_preview_fixture' && shotExists && points.length >= minimumPoints &&
+      points.every(point => point.every(Number.isFinite))
+      ? [{ ...track, pointsM: points, active: track.shotNumber === selected }]
+      : [];
+  });
+  return { regions, segments, anchors, badges, pin, illustrativePreviewTrajectories, illustrativePuttingTracks,
     protectedFeatures: scene.features.filter(feature => feature.kind === 'green' || feature.kind === 'bunker') };
 }
 
@@ -117,7 +129,7 @@ function clearsSurface(point: PointM, halfWidth: number, halfHeight: number, sur
  * offscreen anchor is relocated and no small region is enlarged into a dot. */
 export function layoutShotOverlay(prepared: PreparedShotOverlay, projection: ShotOverlayProjection): ShotOverlayLayout {
   const { width, height, pathForFeature } = projection;
-  const empty: ShotOverlayLayout = { regions: [], segments: [], anchors: [], badges: [], pin: null, illustrativePreviewTrajectories: [] };
+  const empty: ShotOverlayLayout = { regions: [], segments: [], anchors: [], badges: [], pin: null, illustrativePreviewTrajectories: [], illustrativePuttingTracks: [] };
   if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) return empty;
   const reserved = (projection.reservedRects ?? []).filter(rect =>
     [rect.x, rect.y, rect.width, rect.height].every(Number.isFinite) && rect.width > 0 && rect.height > 0);
@@ -199,7 +211,12 @@ export function layoutShotOverlay(prepared: PreparedShotOverlay, projection: Sho
     return points.some(point => point == null) ? [] : [{ key: trajectory.key, shotNumber: trajectory.shotNumber,
       active: trajectory.active, points: points as PointM[] }];
   });
+  const illustrativePuttingTracks = prepared.illustrativePuttingTracks.flatMap(track => {
+    const points = track.pointsM.map(project);
+    return points.some(point => point == null) ? [] : [{ key: track.key, shotNumber: track.shotNumber,
+      kind: track.kind, active: track.active, points: points as PointM[] }];
+  });
   return { regions, segments, anchors, badges,
     pin: pin && pinLabel && prepared.pin ? { position: pin, label: pinLabel, basis: prepared.pin.basis, glyphScale } : null,
-    illustrativePreviewTrajectories };
+    illustrativePreviewTrajectories, illustrativePuttingTracks };
 }

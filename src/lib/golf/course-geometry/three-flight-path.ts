@@ -10,6 +10,8 @@ export interface ThreeFlightPaths {
   group: Group;
   /** Count of display-only estimated arcs, never a count of recorded flights. */
   count: number;
+  /** Count of display-only ground rolls/ball estimates, never measured putts. */
+  puttingCount: number;
   dispose(): void;
 }
 
@@ -63,8 +65,9 @@ export function buildThreeFlightPaths(scene: HoleScene, mesh: TerrainMesh,
   const group = new Group();
   group.name = 'illustrative-shot-flight-paths';
   const geometries: BufferGeometry[] = [], materials: Material[] = [];
-  let count = 0;
-  const activeShotNumber = selectedShotNumber ?? scene.illustrativePreviewTrajectories?.at(-1)?.shotNumber;
+  let count = 0, puttingCount = 0;
+  const activeShotNumber = selectedShotNumber ?? [...(scene.illustrativePreviewTrajectories ?? []), ...(scene.illustrativePuttingTracks ?? [])]
+    .reduce<number | undefined>((latest, item) => latest == null || item.shotNumber > latest ? item.shotNumber : latest, undefined);
   for (const trajectory of scene.illustrativePreviewTrajectories ?? []) {
     if (trajectory.source !== 'interactive_preview_fixture' || trajectory.pointsM.length < 2) continue;
     const ground = trajectory.pointsM.map(point => displayGroundZ(mesh, point, camera));
@@ -146,8 +149,59 @@ export function buildThreeFlightPaths(scene: HoleScene, mesh: TerrainMesh,
       kind: 'estimated_finish_marker', groundOffsetM: markerGroundOffsetM };
     group.add(finish); geometries.push(finishGeometry); materials.push(finishMaterial);
   }
-  group.userData = { trajectorySource: 'interactive_preview_fixture', count };
-  return { group, count, dispose() {
+  for (const track of scene.illustrativePuttingTracks ?? []) {
+    const minimumPoints = track.kind === 'surface_roll' ? 2 : 1;
+    if (track.source !== 'interactive_preview_fixture' || track.pointsM.length < minimumPoints) continue;
+    const ground = track.pointsM.map(point => displayGroundZ(mesh, point, camera));
+    if (ground.some(height => height == null)) continue;
+    const active = track.shotNumber === activeShotNumber;
+    const points = track.pointsM.map((point, index) => new Vector3(point[0], point[1], ground[index]! + markerGroundOffsetM));
+    const markerRadius = displayMarkerScale(camera, active ? 3.35 : 2.65);
+    const addBall = (point: Vector3, name: string, kind: string) => {
+      const ringGeometry = new TorusGeometry(markerRadius * 1.36, Math.max(.09, markerRadius * .15), 8, 20);
+      const ringMaterial = new MeshBasicMaterial({ color: '#1B3624', transparent: true, opacity: active ? .88 : .55,
+        depthTest: true, depthWrite: false, toneMapped: false });
+      const ring = new Mesh(ringGeometry, ringMaterial);
+      ring.name = `${name}-halo`; ring.position.copy(point); ring.position.z += .012; ring.renderOrder = 4;
+      group.add(ring); geometries.push(ringGeometry); materials.push(ringMaterial);
+      const ballGeometry = new SphereGeometry(markerRadius, 14, 10);
+      const ballMaterial = new MeshBasicMaterial({ color: active ? '#FFFDF7' : '#D7E1D2', transparent: !active,
+        opacity: active ? 1 : .72, depthTest: true, depthWrite: false, toneMapped: false });
+      const ball = new Mesh(ballGeometry, ballMaterial);
+      ball.name = name; ball.position.copy(point); ball.position.z += markerRadius * .72; ball.renderOrder = 5;
+      ball.userData = { trajectorySource: 'interactive_preview_fixture', shotNumber: track.shotNumber, kind,
+        positionEvidence: 'distance_derived_fixture_estimate' };
+      group.add(ball); geometries.push(ballGeometry); materials.push(ballMaterial);
+    };
+    if (track.kind === 'surface_roll') {
+      const length = horizontalLength(track.pointsM);
+      if (!Number.isFinite(length) || length < .01) continue;
+      const curve = new CatmullRomCurve3(points, false, 'centripetal');
+      // Ground rolls need a crisp, phone-readable white core. This remains
+      // much thinner than an airborne trace but is no longer subpixel at a
+      // whole-green fit.
+      const radiusM = Math.max(.12, Math.min(.28, .82 / camera.scale)) * (active ? 1 : .8);
+      const haloGeometry = new TubeGeometry(curve, Math.max(12, (points.length - 1) * 5), radiusM * 2.25, 6, false);
+      const haloMaterial = new MeshBasicMaterial({ color: '#193425', transparent: true, opacity: active ? .62 : .38,
+        depthTest: true, depthWrite: false, toneMapped: false });
+      const halo = new Mesh(haloGeometry, haloMaterial);
+      halo.name = `illustrative-putting-roll-halo-${track.shotNumber}`; halo.renderOrder = 3;
+      group.add(halo); geometries.push(haloGeometry); materials.push(haloMaterial);
+      const rollGeometry = new TubeGeometry(curve, Math.max(12, (points.length - 1) * 5), radiusM, 6, false);
+      const rollMaterial = new MeshBasicMaterial({ color: active ? '#FFFDF7' : '#DCE6D8', transparent: !active,
+        opacity: active ? 1 : .64, depthTest: true, depthWrite: false, toneMapped: false });
+      const roll = new Mesh(rollGeometry, rollMaterial);
+      roll.name = `illustrative-putting-roll-${track.shotNumber}`; roll.renderOrder = 4;
+      roll.userData = { trajectorySource: 'interactive_preview_fixture', shotNumber: track.shotNumber,
+        kind: 'estimated_surface_roll', visualRadiusM: radiusM, positionEvidence: 'distance_derived_fixture_estimate' };
+      group.add(roll); geometries.push(rollGeometry); materials.push(rollMaterial);
+      addBall(points[0]!, `illustrative-putting-roll-start-${track.shotNumber}`, 'estimated_roll_start');
+      addBall(points.at(-1)!, `illustrative-putting-ball-${track.shotNumber}`, 'estimated_roll_leave');
+    } else addBall(points[0]!, `illustrative-putting-ball-${track.shotNumber}`, 'estimated_current_ball');
+    puttingCount++;
+  }
+  group.userData = { trajectorySource: 'interactive_preview_fixture', count, puttingCount };
+  return { group, count, puttingCount, dispose() {
     group.removeFromParent(); group.clear();
     for (const geometry of geometries) geometry.dispose();
     for (const material of materials) material.dispose();

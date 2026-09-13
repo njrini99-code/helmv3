@@ -46,6 +46,7 @@ export function CourseHoleScene({ scene, width = 320, height = 380, mode = 'revi
   const light: PointM = [lightPoint[0] - camera.translation[0], lightPoint[1] - camera.translation[1]];
   const lightLength = Math.hypot(...light) || 1;
   const lightUnit: PointM = [light[0] / lightLength, light[1] / lightLength];
+  const hasEstimatedPutting = (scene.illustrativePuttingTracks?.length ?? 0) > 0;
   return (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox={`0 0 ${width} ${height}`} width={width} height={height}
       style={{ width: '100%', height: '100%', display: 'block', background: 'var(--fw-diagram-ground)', fontFamily: 'var(--fw-font-sans)' }}
@@ -53,7 +54,7 @@ export function CourseHoleScene({ scene, width = 320, height = 380, mode = 'revi
       data-geometry-hash={scene.packageHash} data-physical-hole={scene.physicalHoleKey} data-render-version={SCENE_STYLE_VERSION}
       data-view={view} data-scale={camera.scale} data-angle={camera.angle}>
       <title id={`${id}-title`}>{scene.hole.displayLabel ?? `Hole ${scene.hole.ordinal} ${view === 'green' ? 'green complex' : view === 'approach' ? 'approach context' : 'course outline'}`}</title>
-      <desc id={`${id}-desc`}>{scene.hole.completeness === 'reviewed_surfaces' ? 'Reviewed surfaces.' : 'Partial source geometry; acceptance pending.'} Pin location unknown. Course context does not locate the ball. Shot positions are unresolved unless explicitly marked estimated. {scene.attribution}</desc>
+      <desc id={`${id}-desc`}>{scene.hole.completeness === 'reviewed_surfaces' ? 'Reviewed surfaces.' : 'Partial source geometry; acceptance pending.'} Pin location unknown. {hasEstimatedPutting ? 'The ball and putt roll are estimated from entered distances and remain distinct from marked or GPS coordinates.' : 'Course context does not locate the ball. Shot positions are unresolved unless explicitly marked estimated.'} {scene.attribution}</desc>
       <defs>
         <radialGradient id={`${id}-ground`} cx="45%" cy="42%" r="76%">
           <stop stopColor="var(--fw-diagram-ground-light)" />

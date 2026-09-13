@@ -35,6 +35,38 @@ describe('camera-independent shot overlay evidence', () => {
     expect(scene.illustrativePreviewTrajectories).toEqual([]);
   });
 
+  it('keeps an estimated putting ball and surface roll on the actual reviewed green', () => {
+    const ledger: ShotRecord[] = [
+      { ...pilotShots[0]!, distanceToHoleBefore: 431, distanceToHoleAfter: 158 },
+      { ...pilotShots[1]!, distanceToHoleBefore: 158, distanceToHoleAfter: 17, missDirection: 'short_right', approachMissDirection: 'short_right' },
+      { shotNumber: 3, shotType: 'around_green', clubType: 'non_driver', lieBefore: 'sand', distanceToHoleBefore: 17,
+        distanceUnitBefore: 'yards', result: 'green', distanceToHoleAfter: 12, distanceUnitAfter: 'feet', shotDistance: 13, isPenalty: false },
+      { shotNumber: 4, shotType: 'putting', clubType: 'putter', lieBefore: 'green', distanceToHoleBefore: 12,
+        distanceUnitBefore: 'feet', result: 'green', distanceToHoleAfter: 2, distanceUnitAfter: 'feet', shotDistance: 3.3, isPenalty: false, puttBreak: 'left_to_right' },
+      { shotNumber: 5, shotType: 'putting', clubType: 'putter', lieBefore: 'green', distanceToHoleBefore: 2,
+        distanceUnitBefore: 'feet', result: 'hole', distanceToHoleAfter: 0, distanceUnitAfter: 'feet', shotDistance: .66, isPenalty: false },
+    ];
+    const base = buildHoleScene(pilotPackage, 'cacapon-07', ledger.map(normalizeLiveShot), mesh);
+    const scene = addInteractivePreviewTrajectories(base, ledger);
+    const tracks = scene.illustrativePuttingTracks!;
+    const green = scene.features.find(feature => feature.id === scene.target.greenFeatureId)!;
+    const pin = scene.target.estimate!.positionM;
+    const approachBall = tracks.find(track => track.key === 'fixture-putting-ball-3')!;
+    const firstPutt = tracks.find(track => track.key === 'fixture-putting-roll-4')!;
+    const holedPutt = tracks.find(track => track.key === 'fixture-putting-roll-5')!;
+    expect(approachBall.kind).toBe('ball_position');
+    expect(firstPutt.kind).toBe('surface_roll');
+    expect(firstPutt.pointsM.every(point => inFeature(point, green))).toBe(true);
+    expect(holedPutt.pointsM.at(-1)).toEqual(pin);
+    expect(Math.hypot(approachBall.pointsM[0]![0] - pin[0], approachBall.pointsM[0]![1] - pin[1])).toBeCloseTo(12 * .3048, 4);
+    expect(Math.hypot(firstPutt.pointsM.at(-1)![0] - pin[0], firstPutt.pointsM.at(-1)![1] - pin[1])).toBeCloseTo(2 * .3048, 4);
+    const layout = layoutShotOverlay(prepareShotOverlay(scene, 4), { width: 600, height: 700, project: point => point, pathForFeature: () => null });
+    expect(layout.illustrativePuttingTracks).toEqual(expect.arrayContaining([
+      expect.objectContaining({ shotNumber: 3, kind: 'ball_position', active: false }),
+      expect.objectContaining({ shotNumber: 4, kind: 'surface_roll', active: true }),
+    ]));
+  });
+
   it('can reserve the HUD without moving physical anchors or changing their evidence', () => {
     const scene = illustrativeScene(), snapshot = structuredClone(scene);
     const prepared = prepareShotOverlay(scene, 2), preparedSnapshot = structuredClone(prepared);
@@ -58,10 +90,10 @@ describe('camera-independent shot overlay evidence', () => {
     const prepared = prepareShotOverlay(illustrativeScene(), 2);
     expect(layoutShotOverlay(prepared, { width: 600, height: 700,
       project: () => [NaN, Infinity], pathForFeature: () => null }))
-      .toEqual({ anchors: [], badges: [], regions: [], segments: [], pin: null, illustrativePreviewTrajectories: [] });
+      .toEqual({ anchors: [], badges: [], regions: [], segments: [], pin: null, illustrativePreviewTrajectories: [], illustrativePuttingTracks: [] });
     expect(layoutShotOverlay(prepared, { width: 0, height: 700,
       project: point => point, pathForFeature: () => null }))
-      .toEqual({ anchors: [], badges: [], regions: [], segments: [], pin: null, illustrativePreviewTrajectories: [] });
+      .toEqual({ anchors: [], badges: [], regions: [], segments: [], pin: null, illustrativePreviewTrajectories: [], illustrativePuttingTracks: [] });
   });
 
   it('uses the committed fairway result and remaining distance to estimate a visible fixture trail', () => {

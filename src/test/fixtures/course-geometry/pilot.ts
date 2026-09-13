@@ -4,7 +4,7 @@ import { buildHoleScene } from '@/lib/golf/course-geometry/build-scene';
 import { normalizeLiveShot } from '@/lib/golf/course-geometry/normalize';
 import { inFeature } from '@/lib/golf/course-geometry/spatial';
 import type { ShotRecord } from '@/lib/types/golf';
-import type { Direction8, HoleScene, LocalFeature, PointM } from '@/lib/golf/course-geometry/types';
+import type { Direction8, HoleScene, IllustrativePreviewTrajectory, IllustrativePuttingTrack, LocalFeature, PointM } from '@/lib/golf/course-geometry/types';
 
 export const pilotPackage = parseGeometryPackage(source);
 /** Synthetic ledger, never production player data. The numeric evidence does
@@ -114,6 +114,10 @@ function remainingMeters(shot: ShotRecord): number {
   return shot.distanceUnitAfter === 'feet' ? feetToMeters(shot.distanceToHoleAfter) : yardsToMeters(shot.distanceToHoleAfter);
 }
 
+function distanceBeforeMeters(shot: ShotRecord): number {
+  return shot.distanceUnitBefore === 'feet' ? feetToMeters(shot.distanceToHoleBefore) : yardsToMeters(shot.distanceToHoleBefore);
+}
+
 function endpointForShot(scene: HoleScene, route: readonly PointM[], shot: ShotRecord): RouteStation {
   const station = routeStation(route, remainingMeters(shot));
   const target = route.at(-1)!;
@@ -156,24 +160,88 @@ function flightCurve(from: PointM, to: PointM, shot: ShotRecord): PointM[] {
   });
 }
 
+function rotate(vector: PointM, radians: number): PointM {
+  const cosine = Math.cos(radians), sine = Math.sin(radians);
+  return [vector[0] * cosine - vector[1] * sine, vector[0] * sine + vector[1] * cosine];
+}
+
+/** Finds a position at the entered distance from the nominal pin without
+ * replacing a real ball coordinate. A distance-only putt has no bearing, so
+ * the approach side is only a stable display hypothesis for this fixture. */
+function greenPointAtDistance(scene: HoleScene, pin: PointM, distanceM: number, preferred: PointM,
+  turnRadians = 0): PointM | null {
+  const green = scene.features.find(feature => feature.id === scene.target.greenFeatureId && feature.kind === 'green' && feature.reviewed);
+  if (!green || !Number.isFinite(distanceM) || distanceM < 0) return null;
+  const radial = unit(subtract(preferred, pin));
+  // Try the approach/previous-ball direction first, then make a deterministic
+  // sweep. This keeps the stated radius exact while respecting the actual
+  // concave green rather than clamping the point through a boundary.
+  const attempts = [0, ...Array.from({ length: 24 }, (_, index) => {
+    const delta = Math.ceil((index + 1) / 2) * Math.PI / 18;
+    return index % 2 ? -delta : delta;
+  })];
+  for (const offset of attempts) {
+    const point = add(pin, rotate(radial, turnRadians + offset), distanceM);
+    if (inFeature(point, green)) return point;
+  }
+  return null;
+}
+
+function puttingRoll(from: PointM, to: PointM, shot: ShotRecord): PointM[] {
+  const chord = subtract(to, from), length = Math.hypot(chord[0], chord[1]);
+  if (length < .01) return [from, to];
+  const normal = unit([-chord[1], chord[0]]);
+  const read = shot.puttBreak ?? '';
+  const sign = read.includes('left_to_right') ? -1 : read.includes('right_to_left') ? 1 : 0;
+  // A recorded read is not a measured roll. It only supplies a very small,
+  // explicitly illustrative bend so the surface trace remains readable.
+  const control = add(add(from, chord, .5), normal, sign * Math.min(.55, length * .12));
+  return Array.from({ length: 9 }, (_, index) => {
+    const t = index / 8, inverse = 1 - t;
+    return [inverse * inverse * from[0] + 2 * inverse * t * control[0] + t * t * to[0],
+      inverse * inverse * from[1] + 2 * inverse * t * control[1] + t * t * to[1]] as PointM;
+  });
+}
+
 export function addInteractivePreviewTrajectories(scene: HoleScene, shots: readonly ShotRecord[]): HoleScene {
   if (scene.physicalHoleKey !== 'cacapon-07') return scene;
   const route = scene.features.find(feature => feature.id === scene.hole.routeFeatureId && feature.kind === 'route')?.parts[0]?.[0];
   if (!route || route.length < 2) return scene;
-  let origin = route[0]!;
-  const trajectories = [...shots].sort((a, b) => a.shotNumber - b.shotNumber).flatMap(shot => {
-    // A putt is a surface roll, not an airborne arc. This isolated fixture has
-    // no recorded roll samples or marked ball positions, so it preserves the
-    // honest whole-green view instead of inventing a rainbow from proximity.
-    if (shot.isPenalty || shot.shotType === 'putting') return [];
-    const endpoint = endpointForShot(scene, route, shot);
-    const pointsM = flightCurve(origin, endpoint.point, shot);
-    origin = endpoint.point;
-    return [{ key: `fixture-flight-${shot.shotNumber}`, shotNumber: shot.shotNumber,
-      pointsM, source: 'interactive_preview_fixture' as const }];
-  });
+  let origin = route[0]!, currentBall: PointM | null = null;
+  const trajectories: IllustrativePreviewTrajectory[] = [];
+  const puttingTracks: IllustrativePuttingTrack[] = [];
+  const pin = scene.target.estimate?.positionM;
+  for (const shot of [...shots].sort((a, b) => a.shotNumber - b.shotNumber)) {
+    if (shot.isPenalty) continue;
+    if (shot.shotType !== 'putting') {
+      const endpoint = endpointForShot(scene, route, shot);
+      trajectories.push({ key: `fixture-flight-${shot.shotNumber}`, shotNumber: shot.shotNumber,
+        pointsM: flightCurve(origin, endpoint.point, shot), source: 'interactive_preview_fixture' });
+      origin = endpoint.point;
+      if (shot.result === 'green' && pin) {
+        const ball = greenPointAtDistance(scene, pin, remainingMeters(shot), endpoint.point);
+        if (ball) {
+          currentBall = ball;
+          puttingTracks.push({ key: `fixture-putting-ball-${shot.shotNumber}`, shotNumber: shot.shotNumber,
+            kind: 'ball_position', pointsM: [ball], source: 'interactive_preview_fixture' });
+        }
+      } else currentBall = null;
+      continue;
+    }
+    if (!pin) continue;
+    const start = greenPointAtDistance(scene, pin, distanceBeforeMeters(shot), currentBall ?? origin);
+    if (!start) continue;
+    const end = shot.result === 'hole' ? pin : greenPointAtDistance(scene, pin, remainingMeters(shot), start,
+      shot.puttBreak?.includes('left_to_right') ? -.32 : shot.puttBreak?.includes('right_to_left') ? .32 : 0);
+    if (!end) continue;
+    puttingTracks.push({ key: `fixture-putting-roll-${shot.shotNumber}`, shotNumber: shot.shotNumber,
+      kind: 'surface_roll', pointsM: puttingRoll(start, end, shot), source: 'interactive_preview_fixture' });
+    currentBall = end;
+    origin = end;
+  }
   // An empty fixture list still identifies this isolated preview. That keeps
   // candidate-surface boundary dashes off the compact SVG before the first
   // recorded stroke; expanding is what opts into the Three landscape.
-  return { ...scene, overlayKind: 'analytic_fixture', illustrativePreviewTrajectories: trajectories };
+  return { ...scene, overlayKind: 'analytic_fixture', illustrativePreviewTrajectories: trajectories,
+    illustrativePuttingTracks: puttingTracks };
 }

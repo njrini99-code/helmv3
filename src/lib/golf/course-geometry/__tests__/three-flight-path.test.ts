@@ -4,6 +4,7 @@ import source from '@/test/fixtures/course-geometry/cacapon-07-terrain.json';
 import { buildHoleScene } from '../build-scene';
 import { buildThreeFlightPaths } from '../three-flight-path';
 import { parseTerrainMesh, terrainHeight } from '../terrain';
+import type { ShotRecord } from '@/lib/types/golf';
 
 const mesh = parseTerrainMesh(source, pilotPackage);
 
@@ -55,6 +56,35 @@ describe('Three illustrative flight paths', () => {
       expect(flightPaths.group.getObjectByName('illustrative-shot-origin-1')).toBeDefined();
       expect(flightPaths.group.getObjectByName('illustrative-shot-finish-2')).toBeDefined();
       expect(sourceScene).toEqual(snapshot);
+    } finally { flightPaths.dispose(); }
+  });
+
+  it('renders an estimated putting ball and a thin terrain-following roll instead of an airborne putt arc', () => {
+    const putting: ShotRecord[] = [
+      { ...pilotShots[0]!, distanceToHoleBefore: 431, distanceToHoleAfter: 158 },
+      { ...pilotShots[1]!, distanceToHoleBefore: 158, distanceToHoleAfter: 17 },
+      { shotNumber: 3, shotType: 'around_green', clubType: 'non_driver', lieBefore: 'sand', distanceToHoleBefore: 17,
+        distanceUnitBefore: 'yards', result: 'green', distanceToHoleAfter: 12, distanceUnitAfter: 'feet', shotDistance: 13, isPenalty: false },
+      { shotNumber: 4, shotType: 'putting', clubType: 'putter', lieBefore: 'green', distanceToHoleBefore: 12,
+        distanceUnitBefore: 'feet', result: 'green', distanceToHoleAfter: 2, distanceUnitAfter: 'feet', shotDistance: 3.3, isPenalty: false, puttBreak: 'left_to_right' },
+    ];
+    const scene = addInteractivePreviewTrajectories(buildHoleScene(pilotPackage, 'cacapon-07', [], mesh), putting);
+    const flightPaths = buildThreeFlightPaths(scene, mesh, { exaggeration: 1.5, referenceElevationM: mesh.referenceElevationM, scale: 3 }, 4);
+    try {
+      expect(flightPaths.count).toBe(3);
+      expect(flightPaths.puttingCount).toBe(2);
+      expect(flightPaths.group.getObjectByName('illustrative-shot-flight-4')).toBeUndefined();
+      const ball = flightPaths.group.getObjectByName('illustrative-putting-ball-3') as Mesh;
+      const roll = flightPaths.group.getObjectByName('illustrative-putting-roll-4') as Mesh;
+      const leave = flightPaths.group.getObjectByName('illustrative-putting-ball-4') as Mesh;
+      expect(ball.userData.kind).toBe('estimated_current_ball');
+      expect(roll.userData.kind).toBe('estimated_surface_roll');
+      expect(leave.userData.kind).toBe('estimated_roll_leave');
+      const start = scene.illustrativePuttingTracks!.find(track => track.shotNumber === 4 && track.kind === 'surface_roll')!.pointsM[0]!;
+      const ground = terrainHeight(mesh, start)!;
+      expect(roll.userData.visualRadiusM).toBeGreaterThan(.1);
+      expect(roll.userData.visualRadiusM).toBeLessThan(.29);
+      expect(ball.position.z).toBeGreaterThan(mesh.referenceElevationM + (ground - mesh.referenceElevationM) * 1.5);
     } finally { flightPaths.dispose(); }
   });
 });

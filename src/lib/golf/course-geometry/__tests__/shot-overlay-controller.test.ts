@@ -6,6 +6,7 @@ import { normalizeLiveShot } from '../normalize';
 import { parseTerrainMesh, fitTerrainCamera, projectTerrainPoint, terrainHeight, TERRAIN_PRESETS } from '../terrain';
 import { addInteractivePreviewTrajectories, illustrativeScene, pilotPackage, pilotShots } from '@/test/fixtures/course-geometry/pilot';
 import source from '@/test/fixtures/course-geometry/cacapon-07-terrain.json';
+import type { ShotRecord } from '@/lib/types/golf';
 
 const mesh = parseTerrainMesh(source, pilotPackage);
 const svg = () => document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -76,6 +77,33 @@ describe('imperative evidence camera', () => {
       const expected = projectTerrainPoint([source[0], source[1], terrainHeight(mesh, source)!], camera);
       expect(Number(start.getAttribute('cx'))).toBeCloseTo(expected[0], 9);
       expect(Number(start.getAttribute('cy'))).toBeCloseTo(expected[1], 9);
+    } finally { controller.dispose(); }
+  });
+
+  it('keeps a distance-derived putting ball and white surface roll above the cup annotation in the Three view', () => {
+    const shots: ShotRecord[] = [
+      { ...pilotShots[0]!, distanceToHoleBefore: 431, distanceToHoleAfter: 158 },
+      { ...pilotShots[1]!, distanceToHoleBefore: 158, distanceToHoleAfter: 17 },
+      { shotNumber: 3, shotType: 'around_green', clubType: 'non_driver', lieBefore: 'sand', distanceToHoleBefore: 17,
+        distanceUnitBefore: 'yards', result: 'green', distanceToHoleAfter: 12, distanceUnitAfter: 'feet', shotDistance: 13, isPenalty: false },
+      { shotNumber: 4, shotType: 'putting', clubType: 'putter', lieBefore: 'green', distanceToHoleBefore: 12,
+        distanceUnitBefore: 'feet', result: 'green', distanceToHoleAfter: 2, distanceUnitAfter: 'feet', shotDistance: 3.3, isPenalty: false, puttBreak: 'left_to_right' },
+    ];
+    const scene = addInteractivePreviewTrajectories(
+      buildHoleScene(pilotPackage, 'cacapon-07', shots.map(normalizeLiveShot), mesh), shots,
+    );
+    const drawing = svg(), camera = fitTerrainCamera(scene, mesh, 'green', 600, 800, TERRAIN_PRESETS.top);
+    // The Three world owns depth-tested paths; this retained SVG provides the
+    // screen-readable ball/roll annotation without duplicating a flight arc.
+    const controller = createShotOverlayController(drawing, 'putting', mesh, scene, 4, false);
+    try {
+      controller.setCamera(camera, 600, 800);
+      expect(drawing.querySelectorAll('[data-illustrative-preview-trajectory][display="inline"]')).toHaveLength(0);
+      const roll = drawing.querySelector('[data-illustrative-putting-track="4"][display="inline"]')!;
+      expect(roll.getAttribute('data-selected')).toBe('true');
+      expect(roll.querySelector('polyline:last-of-type')!.getAttribute('stroke')).toBe('#FFFDF7');
+      expect(roll.querySelectorAll('[data-putting-ball]')).toHaveLength(2);
+      expect(roll.compareDocumentPosition(drawing.querySelector('[data-target="estimated-pin"]')!) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
     } finally { controller.dispose(); }
   });
 });

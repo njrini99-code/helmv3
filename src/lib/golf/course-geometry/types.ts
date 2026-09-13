@@ -126,6 +126,17 @@ export interface IllustrativePreviewTrajectory {
   pointsM: readonly PointM[];
   source: 'interactive_preview_fixture';
 }
+/** A display-only putting position or surface roll for the isolated fixture.
+ * These points are calculated from a recorded distance-to-pin against the
+ * reviewed green and nominal pin. They are deliberately not shot coordinates,
+ * a measured roll, or input to scoring and analytics. */
+export interface IllustrativePuttingTrack {
+  key: string;
+  shotNumber: number;
+  kind: 'ball_position' | 'surface_roll';
+  pointsM: readonly PointM[];
+  source: 'interactive_preview_fixture';
+}
 export interface HoleScene {
   /** Optional source candidate used only by the expanded terrain feasibility view. */
   terrain?: TerrainMesh;
@@ -143,6 +154,8 @@ export interface HoleScene {
   events: DiagramEvent[];
   /** Never supplied by the course compiler or player-record reconstruction. */
   illustrativePreviewTrajectories?: readonly IllustrativePreviewTrajectory[];
+  /** Never supplied by the course compiler or player-record reconstruction. */
+  illustrativePuttingTracks?: readonly IllustrativePuttingTrack[];
   /** Chosen from physical routing, independent of events and labels. */
   orientationRadians: number;
   attribution: string;

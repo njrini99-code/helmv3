@@ -40,7 +40,7 @@ const ledger: ShotRecord[] = [
 ];
 const scenario = params.get('case') ?? 'tee';
 const review = location.pathname.endsWith('/review');
-const count = scenario === 'tee' ? 0 : scenario === 'approach' ? 1 : scenario === 'putting' ? 3 : 2;
+const count = scenario === 'tee' ? 0 : scenario === 'approach' ? 1 : scenario === 'putting' ? 3 : scenario === 'putting-roll' ? 4 : 2;
 const initial = ledger.slice(0, count);
 if (scenario === 'ambiguous') { initial[1] = { ...initial[1]!, missDirection: undefined, approachMissDirection: undefined }; }
 if (scenario === 'rolloff') ledger[3] = { ...ledger[3]!, result: 'rough', distanceToHoleAfter: 7, distanceUnitAfter: 'yards' };

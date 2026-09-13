@@ -89,6 +89,31 @@ describe('shared geographic annotation layer', () => {
     expect(drawing.querySelectorAll('[data-possible-area], [data-candidate-outline]')).toHaveLength(0);
   });
 
+  it('shows a white estimated ball on the real green and a separate surface roll after a recorded putt', () => {
+    const putting = [
+      { ...pilotShots[0]!, distanceToHoleBefore: 431, distanceToHoleAfter: 158 },
+      { ...pilotShots[1]!, distanceToHoleBefore: 158, distanceToHoleAfter: 17 },
+      { shotNumber: 3, shotType: 'around_green' as const, clubType: 'non_driver' as const, lieBefore: 'sand' as const, distanceToHoleBefore: 17,
+        distanceUnitBefore: 'yards' as const, result: 'green' as const, distanceToHoleAfter: 12, distanceUnitAfter: 'feet' as const, shotDistance: 13, isPenalty: false },
+      { shotNumber: 4, shotType: 'putting' as const, clubType: 'putter' as const, lieBefore: 'green' as const, distanceToHoleBefore: 12,
+        distanceUnitBefore: 'feet' as const, result: 'green' as const, distanceToHoleAfter: 2, distanceUnitAfter: 'feet' as const, shotDistance: 3.3, isPenalty: false, puttBreak: 'left_to_right' as const },
+    ];
+    const scene = addInteractivePreviewTrajectories(
+      buildHoleScene(pilotPackage, 'cacapon-07', putting.map(normalizeLiveShot)), putting,
+    );
+    const drawing = new DOMParser().parseFromString(renderToStaticMarkup(<svg xmlns="http://www.w3.org/2000/svg">
+      <CourseShotOverlay scene={scene} width={600} height={700} selectedShotNumber={4}
+        project={point => toScreen(point, camera)} pathForFeature={feature => featurePath(feature, camera)} />
+    </svg>), 'image/svg+xml');
+    const roll = drawing.querySelector('[data-illustrative-putting-track="4"]')!;
+    expect(drawing.querySelector('[data-illustrative-putting-track="3"]')!.getAttribute('data-putting-track-kind')).toBe('ball_position');
+    expect(roll.getAttribute('data-putting-track-kind')).toBe('surface_roll');
+    expect(roll.querySelector('title')!.textContent).toContain('not a marked ball location or measured roll');
+    expect(roll.querySelectorAll('polyline')).toHaveLength(2);
+    expect(roll.querySelectorAll('[data-putting-ball]')).toHaveLength(2);
+    expect(roll.querySelector('polyline:last-of-type')!.getAttribute('stroke')).toBe('#FFFDF7');
+  });
+
   it('uses the refined preview flight instead of layering a generic inferred segment beneath it', () => {
     const scene = addInteractivePreviewTrajectories(
       buildHoleScene(pilotPackage, 'cacapon-07', pilotShots.map(normalizeLiveShot)),
