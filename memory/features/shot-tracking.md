@@ -984,10 +984,13 @@ See the existing geometry plan Section 22 for verification and source limits.
 
 The expanded course view loads a Three.js backend behind the existing shared
 scene; inline maps and exports retain the SVG adapter. The isolated interactive
-fixture switches its inline map to that same terrain canvas after a recorded
-preview shot, with one thin explicitly estimated flight trace and no candidate
-surface outline beneath it. A normal-flow nonmodal inspector reserves actual
-camera space on phone/desktop. Mutable camera frames and projected annotations
+fixture opens directly on that terrain canvas. A recorded preview shot renders
+as one thin, depth-tested elevated Three.js arc anchored to the terrain; the
+SVG fallback retains a thin projected estimate. Neither path renders
+candidate-surface boundary dashes. These display arcs are explicitly estimated
+from the recorded result and remaining distance, never a recorded flight,
+carry measurement, or spatial shot write. A normal-flow
+nonmodal inspector reserves actual camera space on phone/desktop. Mutable camera frames and projected annotations
 share one imperative update. Canonical course meters,
 manual evidence, scorecard/units, penalties and local save identities do not
 change. An Estimated pin is a retained manual hypothesis or nominal interior

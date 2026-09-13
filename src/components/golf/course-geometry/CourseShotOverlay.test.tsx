@@ -145,6 +145,11 @@ describe('shared geographic annotation layer', () => {
     expect(overview.querySelectorAll('[data-possible-area]')).toHaveLength(1);
     expect(overview.querySelector('[data-candidate-outline="boundary"]')!.getAttribute('d')).toBe(featurePath(bunker, camera));
     expect(overview.querySelector('[data-feasible-region]')!.getAttribute('data-feasible-region')).toBe('false');
+    // The isolated phone fixture preserves ambiguity in its inspector, but
+    // deliberately does not paint its fairway/bunker boundary as white dashes.
+    scene.illustrativePreviewTrajectories = [];
+    expect(render(scene).querySelectorAll('[data-possible-area], [data-candidate-outline]')).toHaveLength(0);
+    scene.illustrativePreviewTrajectories = undefined;
     scene.events[0]!.evidence.result = 'rough';
     expect(render(scene).querySelectorAll('[data-possible-area]')).toHaveLength(0);
   });

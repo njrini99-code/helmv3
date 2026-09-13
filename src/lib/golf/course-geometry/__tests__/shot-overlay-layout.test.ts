@@ -28,6 +28,13 @@ function actualCacaponScene() {
 }
 
 describe('camera-independent shot overlay evidence', () => {
+  it('marks the empty interactive fixture so its first frame can use terrain without surface dashes', () => {
+    const base = buildHoleScene(pilotPackage, 'cacapon-07', [], mesh);
+    const scene = addInteractivePreviewTrajectories(base, []);
+    expect(scene.overlayKind).toBe('analytic_fixture');
+    expect(scene.illustrativePreviewTrajectories).toEqual([]);
+  });
+
   it('can reserve the HUD without moving physical anchors or changing their evidence', () => {
     const scene = illustrativeScene(), snapshot = structuredClone(scene);
     const prepared = prepareShotOverlay(scene, 2), preparedSnapshot = structuredClone(prepared);

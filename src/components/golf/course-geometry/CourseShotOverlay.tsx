@@ -22,10 +22,11 @@ export function CourseShotOverlay({ scene, width, height, selectedShotNumber, pr
   // recorded stroke. Its old generic inferred segments duplicate that path
   // and read as a heavy grey rail underneath it.
   const hasPreviewFlight = illustrativePreviewTrajectories.length > 0;
+  const isInteractivePreview = scene.illustrativePreviewTrajectories != null;
   // A recorded preview result already has one intentional display endpoint.
   // Keeping the uncertainty boundary around its entire fairway (or bunker)
   // competes with the flight line and makes the playing surface look traced.
-  const showCandidateRegions = !hasPreviewFlight;
+  const showCandidateRegions = !isInteractivePreview;
   return <g data-annotation="shot-evidence">
     <defs>
       <pattern id={`${id}-possible`} patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(-35)">

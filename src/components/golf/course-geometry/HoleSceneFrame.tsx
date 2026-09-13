@@ -92,6 +92,7 @@ function Drawing({ scene, view, context, events, selectedShotNumber, currentPutt
   const pendingFrame = useRef(0);
   const runtime = useRef<TerrainRuntimeController | null>(null);
   const previewTerrainConfigured = useRef(false);
+  const previewFlightPoseConfigured = useRef(false);
   const scaleBar = useRef<HTMLDivElement>(null);
   const [inspectorOpen, setInspectorOpen] = useState(false);
   const [areasOpen, setAreasOpen] = useState(false);
@@ -99,7 +100,10 @@ function Drawing({ scene, view, context, events, selectedShotNumber, currentPutt
   const pointers = useRef(new Map<number, { x: number; y: number }>());
   const live = useRef({ zoom, pan, pose, fitPreset });
   const nextState = useRef<typeof live.current | null>(null);
-  const previewTerrain = scene?.overlayKind === 'analytic_fixture';
+  // The public fixture carries this array even before its first recorded shot.
+  // Other analytic scenes retain their normal SVG/review behavior.
+  const previewTerrain = scene?.illustrativePreviewTrajectories != null;
+  const previewFlightCount = scene?.illustrativePreviewTrajectories?.length ?? 0;
   useEffect(() => {
     if (!previewTerrain || previewTerrainConfigured.current) return;
     // The public course fixture should demonstrate the actual Three scene
@@ -110,6 +114,17 @@ function Drawing({ scene, view, context, events, selectedShotNumber, currentPutt
     if (poseMemory) poseMemory.current = { pose: next.pose, fitPreset: next.fitPreset };
     setZoom(next.zoom); setPan(next.pan); setPose(next.pose); setFitPreset(next.fitPreset);
   }, [poseMemory, previewTerrain]);
+  useEffect(() => {
+    if (!previewTerrain || previewFlightCount === 0 || previewFlightPoseConfigured.current) return;
+    // A recorded flight should reveal its vertical arc immediately. The
+    // public fixture begins at Terrain for geographic reading, then settles
+    // once into the lower side pose after its first recorded shot.
+    previewFlightPoseConfigured.current = true;
+    const next = { ...live.current, pose: TERRAIN_PRESETS.side, fitPreset: 'side' as TerrainFitProfile };
+    live.current = next;
+    if (poseMemory) poseMemory.current = { pose: next.pose, fitPreset: next.fitPreset };
+    setPose(next.pose); setFitPreset(next.fitPreset);
+  }, [poseMemory, previewFlightCount, previewTerrain]);
   function commitCamera() {
     const next = live.current; if (poseMemory) poseMemory.current = { pose: next.pose, fitPreset: next.fitPreset }; setZoom(next.zoom); setPan(next.pan); setPose(next.pose); setFitPreset(next.fitPreset);
     if (scaleBar.current) scaleBar.current.style.visibility = Math.abs(next.pose.pitch - 90) < .01 ? 'visible' : 'hidden';

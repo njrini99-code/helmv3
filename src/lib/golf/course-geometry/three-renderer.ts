@@ -5,6 +5,7 @@ import {
 import { installTerrainDebugView, type TerrainDebugView } from '@/components/golf/course-geometry/terrain-debug';
 import { buildThreeLandscape, DEFAULT_THREE_LANDSCAPE_PALETTE } from '@/components/golf/course-geometry/three-landscape';
 import { applyTerrainCamera, pickTerrainPoint } from './three-camera';
+import { buildThreeFlightPaths, type ThreeFlightPaths } from './three-flight-path';
 import { createShotOverlayController } from './shot-overlay-controller';
 import { TERRAIN_LIGHT_DIRECTION, type Point3M, type TerrainCamera, type TerrainMesh } from './terrain';
 import { fitShadowBounds } from './shadow-bounds';
@@ -38,6 +39,7 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
   const renderer = new WebGLRenderer({ canvas, alpha: false, antialias: true, depth: true, powerPreference: 'default' });
   const world = new Scene(), view = new OrthographicCamera(), raycaster = new Raycaster();
   let landscape: ReturnType<typeof buildThreeLandscape> | null = null;
+  let flightPaths: ThreeFlightPaths | null = null;
   let evidence: ReturnType<typeof createShotOverlayController> | null = null;
   let sun: DirectionalLight | null = null;
   let disposed = false, failed = false, ready = false, shaderFailed = false;
@@ -96,7 +98,7 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
     if (disposed) return;
     disposed = true;
     canvas.removeEventListener('webglcontextlost', lost);
-    releaseDebug?.(); evidence?.dispose(); landscape?.dispose(); sun?.shadow.dispose();
+    releaseDebug?.(); evidence?.dispose(); flightPaths?.dispose(); landscape?.dispose(); sun?.shadow.dispose();
     world.clear(); renderer.dispose();
     // React may replace the runtime while retaining the canvas (new geometry,
     // review eligibility or Strict Mode). Dispose GPU resources every time,
@@ -113,6 +115,12 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
   function lost(event: Event) { event.preventDefault(); fail(); }
   canvas.addEventListener('webglcontextlost', lost);
 
+  function replaceFlightPaths(scene: HoleScene, camera: TerrainCamera) {
+    flightPaths?.dispose();
+    flightPaths = buildThreeFlightPaths(scene, mesh, camera, currentSelected);
+    world.add(flightPaths.group);
+  }
+
   function setCamera(camera: TerrainCamera, w: number, h: number) {
     currentCamera = camera; width = w; height = h;
     if (disposed || failed || !ready || !landscape || !evidence) return;
@@ -125,6 +133,7 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
       }
       if (previousExaggeration !== camera.exaggeration || previousReference !== camera.referenceElevationM) {
         landscape.setExaggeration(camera.exaggeration, camera.referenceElevationM);
+        replaceFlightPaths(currentScene, camera);
         fitSun();
         renderer.shadowMap.needsUpdate = true;
         previousExaggeration = camera.exaggeration; previousReference = camera.referenceElevationM;
@@ -146,6 +155,7 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
         terrainExaggeration: String(camera.exaggeration), terrainScale: String(camera.scale),
         terrainFocus: camera.focusM.join(','), terrainTriangles: String(landscape.counts.terrainTriangles),
         terrainTrees: String(landscape.counts.trees), renderCount: String(++renderCount),
+        flightPaths: String(flightPaths?.count ?? 0),
         cssWidth: String(width), cssHeight: String(height), bufferWidth: String(canvas.width), bufferHeight: String(canvas.height), pixelRatio: String(ratio),
         debugView: options.debugView ?? 'final',
         crownDetail,
@@ -164,6 +174,7 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
     world.background = new Color(DEFAULT_THREE_LANDSCAPE_PALETTE.ground);
     landscape = buildThreeLandscape(options.scene, mesh);
     world.add(landscape.group);
+    replaceFlightPaths(options.scene, options.camera);
     // Fixed lighting uses the whole physical package, not the moving camera
     // target. Yaw therefore reveals the same lit sides and real cast shadows.
     const bounds = new Box3().setFromObject(landscape.group);
@@ -186,7 +197,7 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
     world.add(sun, sun.target);
     const sky = new HemisphereLight('#DDEBFF', '#5C7050', 1.2);
     sky.position.set(0, 0, 1); world.add(sky);
-    evidence = createShotOverlayController(overlay, options.overlayId, mesh, options.scene, options.selectedShotNumber);
+    evidence = createShotOverlayController(overlay, options.overlayId, mesh, options.scene, options.selectedShotNumber, false);
     releaseDebug = installTerrainDebugView(world, landscape, mesh, options.debugView ?? 'final', renderer);
     if (options.debugView && options.debugView !== 'final') overlay.style.display = 'none';
     applyTerrainCamera(view, currentCamera, width, height, viewDistance);
@@ -205,9 +216,9 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
     setEvidence(scene, selectedShotNumber) {
       if (disposed || failed || scene === currentScene && selectedShotNumber === currentSelected) return;
       currentScene = scene; currentSelected = selectedShotNumber;
-      // Evidence changes redraw only the retained SVG. The immutable landscape
-      // and stationary camera do not need another GPU frame.
+      replaceFlightPaths(scene, currentCamera);
       evidence?.setEvidence(scene, selectedShotNumber);
+      setCamera(currentCamera, width, height);
     },
     pick(x, y) {
       return ready && !disposed && !failed && landscape

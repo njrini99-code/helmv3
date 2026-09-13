@@ -169,5 +169,8 @@ export function addInteractivePreviewTrajectories(scene: HoleScene, shots: reado
     return [{ key: `fixture-flight-${shot.shotNumber}`, shotNumber: shot.shotNumber,
       pointsM, source: 'interactive_preview_fixture' as const }];
   });
-  return trajectories.length ? { ...scene, overlayKind: 'analytic_fixture', illustrativePreviewTrajectories: trajectories } : scene;
+  // An empty fixture list still identifies this as the isolated interactive
+  // preview. That lets it begin on the Three landscape and prevents SVG
+  // uncertainty boundaries from turning a fairway edge into a white dash.
+  return { ...scene, overlayKind: 'analytic_fixture', illustrativePreviewTrajectories: trajectories };
 }

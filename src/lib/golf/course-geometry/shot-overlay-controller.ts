@@ -17,7 +17,7 @@ function attributes(node: SVGElement, values: Attributes): void {
  * Construction/evidence changes allocate nodes. A camera frame only projects
  * cached world points and updates existing attributes, with no React commit. */
 export function createShotOverlayController(svg: SVGSVGElement, prefix: string, mesh: TerrainMesh,
-  initialScene: HoleScene, initialSelected?: number) {
+  initialScene: HoleScene, initialSelected?: number, renderIllustrativePreviewFlights = true) {
   const element = <K extends keyof SVGElementTagNameMap>(tag: K, attrs: Attributes = {}, text?: string): SVGElementTagNameMap[K] => {
     const node = svg.ownerDocument.createElementNS(NS, tag);
     attributes(node, attrs);
@@ -88,9 +88,9 @@ export function createShotOverlayController(svg: SVGSVGElement, prefix: string, 
     // The static phone preview intentionally has one estimated trail per
     // recorded shot. Its uncertainty outlines would trace an entire fairway
     // or bunker underneath that trail, so keep those only in normal review.
-    const hasPreviewFlight = layout.illustrativePreviewTrajectories.length > 0;
+    const isInteractivePreview = currentScene.illustrativePreviewTrajectories != null;
     const usedRegions = new Set<string>();
-    for (const region of hasPreviewFlight ? [] : layout.regions) {
+    for (const region of isInteractivePreview ? [] : layout.regions) {
       usedRegions.add(region.key);
       let nodes = regionNodes.get(region.key);
       if (!nodes) {
@@ -118,7 +118,7 @@ export function createShotOverlayController(svg: SVGSVGElement, prefix: string, 
     for (const [key, nodes] of regionNodes) if (!usedRegions.has(key)) attributes(nodes.group, { display: 'none' });
 
     const usedSegments = new Set<string>();
-    for (const segment of hasPreviewFlight ? [] : layout.segments) {
+    for (const segment of isInteractivePreview ? [] : layout.segments) {
       usedSegments.add(segment.key);
       let nodes = segmentNodes.get(segment.key);
       if (!nodes) {
@@ -136,7 +136,9 @@ export function createShotOverlayController(svg: SVGSVGElement, prefix: string, 
     for (const [key, nodes] of segmentNodes) if (!usedSegments.has(key)) attributes(nodes.group, { display: 'none' });
 
     const usedFlights = new Set<string>();
-    for (const flight of layout.illustrativePreviewTrajectories) {
+    // A Three runtime renders preview trails as depth-tested world tubes. The
+    // SVG retains them only for schematic/WebGL-fallback output.
+    for (const flight of renderIllustrativePreviewFlights ? layout.illustrativePreviewTrajectories : []) {
       usedFlights.add(flight.key);
       let nodes = flightNodes.get(flight.key);
       if (!nodes) {
