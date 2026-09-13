@@ -152,6 +152,14 @@ export default defineConfig({
             'scripts/__tests__/hooks/route-prompt.test.mjs',
             'scripts/__tests__/hooks/session-state-compaction.test.mjs',
             'scripts/__tests__/hooks/require-gates.test.mjs',
+            // db:apply preflight (2026-09-08). Same "named explicitly" rule.
+            // Both checks it covers were found broken while dry-running the
+            // twelve unapplied migrations: the reachability check threw
+            // ENOBUFS on every call (so it could never pass), and the HELD.md
+            // check missed every qualified `**HOLD — ...**` status and every
+            // grouped row — letting merged-but-held migrations through the
+            // hold gate.
+            'scripts/__tests__/db-apply-preflight.test.mjs',
             // Named explicitly for the same reason as the line above (no
             // `scripts/**` glob — the legacy `node --test` files must not be
             // swept in). This one guards the transient-retry wrapper that sits

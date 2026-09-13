@@ -10,8 +10,9 @@ refuses to proceed on the first FAIL.
 1. **Write the migration** — additive per `.claude/rules/database.md`. If it
    mutates data/DDL (INSERT/UPDATE/DELETE/DROP/ALTER), it MUST carry a
    `-- ROLLBACK:` block (how to undo it, or a named reason none is needed)
-   and a `-- VERIFY:` block (one `SELECT` per line that must return >= 1 row
-   post-apply). See `docs/operations/DECLARATIVE_SCHEMA.md` for the schema
+   and a `-- VERIFY:` block (`SELECT`s that must each return >= 1 row
+   post-apply; continuation lines are joined until a `;`, so one query may
+   span several lines). See `docs/operations/DECLARATIVE_SCHEMA.md` for the schema
    file this migration should also update if one exists for the object
    changed.
 2. **pgTAP** — add/extend a test under `supabase/tests/rls/`; `npm run
