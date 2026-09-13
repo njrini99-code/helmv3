@@ -24,7 +24,7 @@ describe('Three illustrative flight paths', () => {
       expect(end[2]).toBeCloseTo(mesh.referenceElevationM + (endGround - mesh.referenceElevationM) * 1.5, 6);
       expect(points[Math.floor(points.length / 2)]![2]).toBeGreaterThan(points[0]![2] + 10);
       expect(arc.userData.visualApexM).toBeGreaterThanOrEqual(14);
-      expect(arc.userData.visualRadiusM).toBeCloseTo(1.15, 6);
+      expect(arc.userData.visualRadiusM).toBeCloseTo(1.3, 6);
       const footprint = flightPaths.group.getObjectByName('illustrative-shot-footprint-1') as Line;
       const origin = flightPaths.group.getObjectByName('illustrative-shot-origin-1') as Mesh;
       const finish = flightPaths.group.getObjectByName('illustrative-shot-finish-1') as Mesh;
@@ -50,7 +50,6 @@ describe('Three illustrative flight paths', () => {
       expect((active.material as MeshBasicMaterial).vertexColors).toBe(true);
       expect((inactive.material as MeshBasicMaterial).opacity).toBeCloseTo(.48, 6);
       expect(active.geometry.getAttribute('color')).toBeDefined();
-      expect(flightPaths.group.getObjectByName('illustrative-shot-flight-aura-1')).toBeDefined();
       expect(flightPaths.group.getObjectByName('illustrative-shot-footprint-1')).toBeDefined();
       expect(flightPaths.group.getObjectByName('illustrative-shot-footprint-2')).toBeUndefined();
       expect(flightPaths.group.getObjectByName('illustrative-shot-origin-1')).toBeDefined();

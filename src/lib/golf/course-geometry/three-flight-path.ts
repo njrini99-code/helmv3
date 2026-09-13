@@ -23,11 +23,12 @@ function displayMarkerScale(camera: Pick<TerrainCamera, 'scale'>, cssRadius: num
 function paintFlightGradient(geometry: TubeGeometry, active: boolean): void {
   const colors = new Float32Array(geometry.getAttribute('position').count * 3);
   const uv = geometry.getAttribute('uv');
-  // Keep the selected flight in the GolfHelm landscape palette. The previous
-  // near-white apex looked metallic against the grass at phone scale.
-  const launch = new Color(active ? '#0FAE7B' : '#76906D');
-  const apex = new Color(active ? '#9DD442' : '#AAB49D');
-  const finish = new Color(active ? '#14B5D1' : '#76906D');
+  // Selected flights use a clean white core. Its dark backing layer supplies
+  // contrast against fairway, rough, bunkers, and pale sky without making the
+  // path read as a reflective silver tube.
+  const launch = new Color(active ? '#FFFDF7' : '#76906D');
+  const apex = new Color(active ? '#FFFDF7' : '#AAB49D');
+  const finish = new Color(active ? '#FFFDF7' : '#76906D');
   const color = new Color();
   for (let index = 0; index < colors.length / 3; index++) {
     const t = uv.getX(index);
@@ -83,7 +84,7 @@ export function buildThreeFlightPaths(scene: HoleScene, mesh: TerrainMesh,
     // TubeGeometry width is in world meters. Derive it from the opening
     // orthographic scale so the selected trace reads as a restrained 2–3px
     // stroke in the expanded phone view, not a heavy world-space pipe.
-    const radiusM = Math.max(.24, Math.min(1.15, .65 / camera.scale)) * (active ? 1 : .7);
+    const radiusM = Math.max(.24, Math.min(1.3, .72 / camera.scale)) * (active ? 1 : .7);
     const geometry = new TubeGeometry(curve, 48, radiusM, 6, false);
     paintFlightGradient(geometry, active);
     // The flight is a display-only estimate. Use an unlit color trail instead
@@ -100,16 +101,6 @@ export function buildThreeFlightPaths(scene: HoleScene, mesh: TerrainMesh,
       trajectorySource: 'interactive_preview_fixture', shotNumber: trajectory.shotNumber,
       visualApexM: apexM, visualRadiusM: radiusM, displayPointsM: displayPoints.map(point => [point.x, point.y, point.z]),
     };
-    if (active) {
-      const auraGeometry = new TubeGeometry(curve, 48, radiusM * 1.9, 6, false);
-      const auraMaterial = new MeshBasicMaterial({ color: '#2FCB93', transparent: true, opacity: .09,
-        depthWrite: false, depthTest: true, toneMapped: false });
-      const aura = new Mesh(auraGeometry, auraMaterial);
-      aura.name = `illustrative-shot-flight-aura-${trajectory.shotNumber}`;
-      aura.renderOrder = 1;
-      aura.userData = { trajectorySource: 'interactive_preview_fixture', shotNumber: trajectory.shotNumber, kind: 'selected_flight_aura' };
-      group.add(aura); geometries.push(auraGeometry); materials.push(auraMaterial);
-    }
     group.add(arc); geometries.push(geometry); materials.push(material); count++;
 
     const groundPoints = trajectory.pointsM.map((point, index) => new Vector3(point[0], point[1], ground[index]! + markerGroundOffsetM));
