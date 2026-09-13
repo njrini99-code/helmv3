@@ -106,9 +106,20 @@ export interface TeeStrategyShot {
    *  source is golf_holes.fairway_hit; falls back to lie_after = 'fairway'
    *  when the hole-level flag isn't recorded. */
   fairway_hit: boolean;
-  /** Yards traveled. Prefer recorded shot_distance; fall back to
-   *  hole.yardage - distance_to_hole_after when shot_distance is null. */
+  /** Yards. Prefer recorded shot_distance; fall back to
+   *  hole.yardage - distance_to_hole_after when shot_distance is null —
+   *  see `distance_method` for what the number then means. */
   shot_distance: number | null;
+  /**
+   * How `shot_distance` was obtained (addendum §5, travel vs progress):
+   *   - `recorded`: the logged travel distance of the shot.
+   *   - `derived_progress`: hole yardage minus the remaining distance — an
+   *     estimate of PROGRESS TOWARD THE HOLE, not travel or carry (on a dogleg
+   *     the two differ by construction). Prose must not describe it as
+   *     distance the ball flew.
+   *   - null: no distance available.
+   */
+  distance_method: 'recorded' | 'derived_progress' | null;
   is_penalty: boolean;
 }
 
@@ -458,8 +469,10 @@ export async function loadTeeShotsForStrategy(
           ? false
           : r.lie_after === 'fairway';
 
-    // Prefer the recorded shot_distance; derive from yardage when null.
+    // Prefer the recorded shot_distance; derive progress-toward-the-hole from
+    // yardage when null, and say which one the value is.
     let dist: number | null = r.shot_distance ?? null;
+    let method: TeeStrategyShot['distance_method'] = dist === null ? null : 'recorded';
     if (
       dist === null &&
       typeof hole.yardage === 'number' &&
@@ -467,6 +480,7 @@ export async function loadTeeShotsForStrategy(
     ) {
       const derived = hole.yardage - r.distance_to_hole_after;
       dist = derived > 0 ? derived : null;
+      method = dist === null ? null : 'derived_progress';
     }
 
     out.push({
@@ -476,6 +490,7 @@ export async function loadTeeShotsForStrategy(
       par: hole.par,
       fairway_hit: fairway,
       shot_distance: dist,
+      distance_method: method,
       is_penalty: !!r.is_penalty,
     });
   }

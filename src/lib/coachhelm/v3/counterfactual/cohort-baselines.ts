@@ -51,10 +51,13 @@ const COHORT_ANCHORS: Partial<Record<MetricId, GenderAnchor>> = {
   putts_made_15_25ft_pct:    { mens: 15.4, womens: 11.0 },
   putts_made_25_plus_ft_pct: { mens: 5.5,  womens: 4.0  },
 
-  // Approach green-hit % (approximate band anchors; women's discounted ~0.88).
-  approach_proximity_50_125ft:    { mens: 80, womens: 70 },
-  approach_proximity_125_175ft:   { mens: 65, womens: 56 },
-  approach_proximity_175_plus_ft: { mens: 50, womens: 42 },
+  // Approach green-hit % anchors live in GREEN_HIT_ANCHORS below, keyed by
+  // distance bucket — NOT under the approach_proximity_* ids. Those ids are
+  // registered as on-green proximity in FEET (lower_better); parking a percent
+  // under them made every consumer that trusts the registry unit read
+  // "70" as feet (the counterfactual target, the women's standing anchor —
+  // see standing/gender-anchor.ts). `cohortAnchor(approach_proximity_*)` is
+  // therefore null: no like-for-like proximity anchor exists here.
 
   // Sand save % — the headline fix. Men's Tour ~50%, women's college ~38%.
   scrambling_pct_sand:    { mens: 50, womens: 38 },
@@ -64,6 +67,51 @@ const COHORT_ANCHORS: Partial<Record<MetricId, GenderAnchor>> = {
   // GIR % — men's Tour ~66%, women's college ~60%.
   gir_pct: { mens: 66, womens: 60 },
 };
+
+/** Approach distance bands the green-hit anchors are keyed by (matches the
+ *  `approach_miss` generator's bucket ids). */
+export type ApproachBucket = '50_125ft' | '125_175ft' | '175_plus_ft';
+
+/**
+ * Green-hit % per approach band: the share of approaches from the band that
+ * finish ON the green. Its own identity — not GIR (per hole, regulation
+ * strokes) and not proximity (feet, on-green finishes only). Men's values are
+ * the approximate Tour band anchors the approach_miss generator has always
+ * printed; women's are discounted ~0.88 (derived targets, see the header).
+ */
+const GREEN_HIT_ANCHORS: Record<ApproachBucket, GenderAnchor> = {
+  '50_125ft':    { mens: 80, womens: 70 },
+  '125_175ft':   { mens: 65, womens: 56 },
+  '175_plus_ft': { mens: 50, womens: 42 },
+};
+
+/** Green-hit % anchor for an approach band, in percent points. */
+export function greenHitAnchor(bucket: ApproachBucket, gender: CohortGender): number {
+  const a = GREEN_HIT_ANCHORS[bucket];
+  return gender === 'womens' ? a.womens : a.mens;
+}
+
+/**
+ * Evidence `comparison_source` for a cohort anchor. Men's anchors are the
+ * verified Tour values (`pga_baseline`); women's are DERIVED targets and must
+ * ship as `estimated_target` so the evidence panel labels them "Estimated
+ * target" rather than "PGA baseline" (repair plan N16).
+ */
+export function cohortAnchorSource(gender: CohortGender): 'pga_baseline' | 'estimated_target' {
+  return gender === 'womens' ? 'estimated_target' : 'pga_baseline';
+}
+
+/**
+ * Display label for a cohort anchor. `noun` names the stat ("sand save",
+ * "green-hit", "make %"). Women's anchors read as an estimated target, never
+ * as a measured college average — the table above discounts LPGA/NCAA
+ * figures; nobody measured a women's-college population for these.
+ */
+export function cohortAnchorLabel(gender: CohortGender, noun: string): string {
+  return gender === 'womens'
+    ? `Women's college ${noun} target (est.)`
+    : `PGA Tour ${noun} avg`;
+}
 
 /**
  * Realistic target for a metric given the player's cohort gender, in the

@@ -27,6 +27,16 @@ import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 
 export interface DiagnosisHole {
   round_id: string;
+  /**
+   * The round's course (`golf_rounds.course_id`), null when the round was
+   * logged without one. Cross-round SPECIFIC-hole aggregation must key on
+   * (`course_id`, `hole_number`) — a bare hole number is only an ordinal
+   * position and combines unrelated holes from different courses. Ordinal
+   * groupings (opening hole, closing stretch) may ignore it on purpose.
+   */
+  course_id: string | null;
+  /** Display metadata for the course; never an identity substitute. */
+  course_name: string | null;
   hole_number: number;
   par: number;
   score: number;
@@ -91,7 +101,7 @@ export async function loadCompletedHoles(
   // rounds that flipped to 'completed' without a final tally.
   const { data: rounds, error: rErr } = await supabase
     .from('golf_rounds')
-    .select('id')
+    .select('id, course_id, course_name')
     .eq('player_id', playerId)
     .eq('status', 'completed')
     .not('total_score', 'is', null)
@@ -99,6 +109,10 @@ export async function loadCompletedHoles(
   if (rErr) throw new Error(`hole-diagnosis rounds query failed: ${rErr.message}`);
   if (!rounds || rounds.length === 0) return [];
   const roundIds = rounds.map((r) => r.id);
+  const courseByRound = new Map<string, { course_id: string | null; course_name: string | null }>();
+  for (const r of rounds as Array<{ id: string; course_id?: string | null; course_name?: string | null }>) {
+    courseByRound.set(r.id, { course_id: r.course_id ?? null, course_name: r.course_name ?? null });
+  }
 
   const { data, error } = await fetchAllRowsResult<HoleRow>((from, to) =>
     fromUntyped(supabase, 'golf_holes')
@@ -116,8 +130,11 @@ export async function loadCompletedHoles(
     const par = r.par;
     const score = r.score;
     const gir = r.gir === true;
+    const course = courseByRound.get(r.round_id);
     out.push({
       round_id: r.round_id,
+      course_id: course?.course_id ?? null,
+      course_name: course?.course_name ?? null,
       hole_number: r.hole_number,
       par,
       score,

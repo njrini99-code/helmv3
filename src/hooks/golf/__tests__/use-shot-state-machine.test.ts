@@ -38,6 +38,7 @@ function makeInitialState(overrides: Partial<ShotTrackingState> = {}): ShotTrack
     autoSaveStatus: 'idle',
     showPenaltyModal: false,
     penaltyType: null,
+    penaltyOrigin: 'here',
     showUndoConfirm: false,
     undoSaving: false,
     editingShot: null,
@@ -399,6 +400,26 @@ describe('shotReducer', () => {
       expect(next.currentLie).toBe('tee');
       expect(next.distanceToHole).toBe(400);
       expect(next.distanceUnit).toBe('yards');
+    });
+
+    it('CONFIRM_PENALTY with an errant stroke writes both rows and advances two', () => {
+      const safe = makeShotRecord({ shotNumber: 1, result: 'fairway', distanceToHoleAfter: 115 });
+      const state = makeInitialState({ shotHistory: [safe], showPenaltyModal: true, penaltyType: 'lost', penaltyOrigin: 'here', currentShot: 2, currentLie: 'fairway', distanceToHole: 115 });
+      const errant = makeShotRecord({ shotNumber: 2, shotType: 'approach', lieBefore: 'fairway', distanceToHoleBefore: 115, result: 'other', distanceToHoleAfter: 115 });
+      const penalty = makeShotRecord({ shotNumber: 3, shotType: 'penalty', isPenalty: true, penaltyType: 'lost', result: 'penalty', lieBefore: 'fairway', distanceToHoleBefore: 115, distanceToHoleAfter: 115 });
+      const next = shotReducer(state, { type: 'CONFIRM_PENALTY', payload: penalty, errantStroke: errant });
+      expect(next.shotHistory.map((s) => s.shotNumber)).toEqual([1, 2, 3]);
+      expect(next.currentShot).toBe(4);
+      expect(next.currentLie).toBe('fairway');
+      expect(next.distanceToHole).toBe(115);
+    });
+
+    it('SHOW_PENALTY_MODAL defaults the origin from the card', () => {
+      const inPlay = makeShotRecord({ shotNumber: 1, result: 'fairway' });
+      expect(shotReducer(makeInitialState({ shotHistory: [inPlay] }), { type: 'SHOW_PENALTY_MODAL' }).penaltyOrigin).toBe('here');
+      const inTrouble = makeShotRecord({ shotNumber: 1, result: 'other' });
+      expect(shotReducer(makeInitialState({ shotHistory: [inTrouble] }), { type: 'SHOW_PENALTY_MODAL' }).penaltyOrigin).toBe('entered');
+      expect(shotReducer(makeInitialState(), { type: 'SHOW_PENALTY_MODAL' }).penaltyOrigin).toBe('here');
     });
 
     it('CLOSE_PENALTY_MODAL closes modal and clears type', () => {

@@ -202,9 +202,11 @@ describe('insight lifecycle archive anchors on most recent sign of life', () => 
     expect(archivePatchFor(updates, 'y')).toBeUndefined();
   });
 
-  it('Rule 4 recency decay still anchors on created_at, not the liveness anchor', async () => {
-    // 60d old, refreshed yesterday (so Rule 2/3 see it as ALIVE and skip archive),
-    // but evidence window is 14d so created_at-based recency decay MUST still apply.
+  it('Rule 4 recency decay anchors on the liveness anchor, not created_at (2026-09-12)', async () => {
+    // 60d old, refreshed yesterday: the engine recomputed this row's window
+    // last night, so its DATA is fresh however old the row is. The pre-fix
+    // rule decayed it from created_at (and, under the old honest-mode
+    // formula, that decay RAISED confidence). No patch may be written.
     const row: FakeRow = {
       id: 'r4',
       lifecycle_state: 'detected',
@@ -231,9 +233,18 @@ describe('insight lifecycle archive anchors on most recent sign of life', () => 
       updated_at: daysAgoIso(1),
     };
     const { updates } = await runWithRows([row]);
-    // Not archived (alive), but a recency-decay evidence patch was written.
-    expect(archivePatchFor(updates, 'r4')).toBeUndefined();
-    const patch = updates.find((u) => u.id === 'r4')?.patch;
+    expect(updates.find((u) => u.id === 'r4')).toBeUndefined();
+
+    // Same row, but the engine stopped refreshing it 40d ago (window 14d):
+    // 26d of overage → recency decays, confidence patch written.
+    const stale: FakeRow = {
+      ...row,
+      id: 'r4-stale',
+      metadata: { movement_count: 1, last_refreshed_at: daysAgoIso(40) },
+      created_at: daysAgoIso(60),
+    };
+    const { updates: staleUpdates } = await runWithRows([stale]);
+    const patch = staleUpdates.find((u) => u.id === 'r4-stale')?.patch;
     expect(patch).toBeDefined();
     const evidence = patch?.evidence as { confidence_factors?: { recency?: number } } | undefined;
     expect(evidence?.confidence_factors?.recency).toBeLessThan(1);

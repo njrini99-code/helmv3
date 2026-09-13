@@ -78,7 +78,22 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
 - Player-facing feedback must be tied to the authenticated player and revalidate the affected dashboard surfaces.
 - Coach-to-team ownership is via `golf_team_coach_staff`; do not infer it from `golf_coaches.team_id`.
 - V2/V3 scoring and generator logic should stay pure where designed as pure engine code; Supabase access belongs in loaders, actions, or orchestration boundaries.
+- Insight lifecycle is decided only by `src/lib/coachhelm/v2/insights/lifecycle-policy.ts` (see `docs/architecture/coachhelm-evidence-contract.md`). A `tentative` row is promoted to `detected` on the first write whose freshly recomputed confidence clears the 0.4 floor; the nightly lifecycle cron only demotes/archives/resolves and never promotes. Promotion is pausable per team via `golf_team_coachhelm_settings.preferences.tentative_promotion_enabled = false`.
+- Honest-mode confidence (`factors_measured=false`) is `sample_adequacy × freshness` (`honest_v2`); it is a support score, never a probability, and can never rise as evidence ages.
 - Citations, evidence, and baseline comparisons are part of the trust contract. Do not emit fabricated comparisons or uncited claims.
+- Claim honesty (2026-09-12, repair plan Package 2): prose states what was
+  measured, hands unmeasured causes to the coach as a check, and frames the
+  action as a recommendation (`approachAxisReading` observation/check/action in
+  `v3/engine/diagnosis.ts`; the round builders in `v2/orchestrator.ts`; the
+  short-side and pressure-decel composites). Heuristic severities go in
+  `ComposedInsight.rankScore`, never `strokeImpact`. A row whose `your_value`
+  is not the registry quantity for its metric id declares `evidence.polarity`
+  (approach_miss: green-hit percent under `approach_proximity_*ft`). Women's
+  cohort anchors ship as `comparison_source: 'estimated_target'` with a
+  `target (est.)` label. Specific-hole rankings key on (`course_id`,
+  `hole_number`); derived tee distances carry `distance_method:
+  'derived_progress'`. The metric identity table lives in
+  `docs/architecture/coachhelm-evidence-contract.md`.
 - Budget-sensitive LLM behavior should use team settings and persisted usage, not hardcoded token math.
 
 ## UI Contract

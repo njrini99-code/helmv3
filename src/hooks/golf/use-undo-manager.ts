@@ -2,6 +2,7 @@ import { useCallback, useRef } from 'react';
 import type { ShotRecord, HoleStats, RoundHole } from '@/lib/types/golf';
 import { deleteShot } from '@/app/golf/actions/golf';
 import type { ShotTrackingState, ShotAction } from './use-shot-state-machine';
+import { endsWithErrantStrokePair } from './use-penalty-handler';
 
 interface UseUndoManagerParams {
   state: ShotTrackingState;
@@ -47,10 +48,15 @@ export function useUndoManager({
     dispatch({ type: 'UNDO_START' });
 
     try {
-      const lastShot = shotHistory[shotHistory.length - 1]!;
+      // One Penalty tap can write two rows (the un-entered errant stroke and
+      // its stroke-and-distance penalty); one Undo lifts both. Newest first,
+      // so a failure part-way leaves a card that still parses.
+      const rows = endsWithErrantStrokePair(shotHistory) ? 2 : 1;
+      const doomed = shotHistory.slice(-rows).reverse();
 
-      if (lastShot.id) {
-        const result = await deleteShot(lastShot.id);
+      for (const shot of doomed) {
+        if (!shot.id) continue;
+        const result = await deleteShot(shot.id);
         // A stale local ID means the authoritative server state already has
         // this shot removed. Reconcile the local history; do not retry a
         // destructive mutation or show the golfer a false failure.
@@ -61,7 +67,7 @@ export function useUndoManager({
       }
 
       // Read latest shotHistory from ref after async operation
-      const newHistory = stateRef.current.shotHistory.slice(0, -1);
+      const newHistory = stateRef.current.shotHistory.slice(0, -rows);
       dispatch({ type: 'UNDO_COMPLETE', payload: { newHistory } });
 
       // Keep a reopened hole out of the parent completed-scorecard data. The

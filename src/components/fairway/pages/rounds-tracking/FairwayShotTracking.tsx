@@ -687,6 +687,11 @@ export default function FairwayShotTracking({
       <FairwayPenaltyModal
         open={showPenaltyModal}
         penaltyType={penaltyType}
+        penaltyOrigin={state.penaltyOrigin}
+        lastEnteredShot={state.shotHistory[state.shotHistory.length - 1] ?? null}
+        currentLie={state.currentLie}
+        currentDistance={state.distanceToHole}
+        currentUnit={state.distanceUnit}
         dispatch={dispatch}
         onConfirm={confirmPenalty}
       />

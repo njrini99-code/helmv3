@@ -239,6 +239,27 @@ describe('isImprovement', () => {
     expect(isImprovement('up', 'tempo_leak_rate')).toBe(false);
     expect(isImprovement('up', 'start_line_bias')).toBe(false);
   });
+
+  it('trusts a producer-declared polarity over the registry direction', () => {
+    // approach_miss keeps `metric: approach_proximity_*ft` (registry: feet,
+    // lower_better) while `your_value` is the green-hit PERCENT. Measured
+    // 2026-09-12: 38 visible rows carried a movement pill, every one inverted.
+    const hints = { polarity: 'higher_better' as const, unit: 'percent', metric_label: 'Greens hit from 125-175 yd' };
+    expect(isImprovement('up', 'approach_proximity_125_175ft', hints)).toBe(true);
+    expect(isImprovement('down', 'approach_proximity_125_175ft', hints)).toBe(false);
+    // The registry still rules a genuine proximity row (feet).
+    expect(isImprovement('down', 'approach_proximity_125_175ft', { unit: 'feet' })).toBe(true);
+    expect(isImprovement('down', 'approach_proximity_125_175ft')).toBe(true);
+  });
+
+  it('distrusts the registry direction when the evidence unit disagrees with the registry unit (rows written before polarity existed)', () => {
+    // No polarity, percent under a feet id: the id lied, so the label decides.
+    const legacy = { unit: 'percent', metric_label: 'Greens hit from 125-175 yd' };
+    expect(isImprovement('up', 'approach_proximity_125_175ft', legacy)).toBe(true);
+    expect(isImprovement('down', 'approach_proximity_125_175ft', legacy)).toBe(false);
+    // A unit that agrees keeps the registry answer.
+    expect(isImprovement('up', 'gir_pct', { unit: 'percent', metric_label: 'GIR %' })).toBe(true);
+  });
 });
 
 // ---------------------------------------------------------------------------

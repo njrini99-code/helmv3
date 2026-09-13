@@ -257,9 +257,28 @@ reload (`lieFromShotResult`) restore position from.
   shot, not only shot 1). Before this the row copied the provisional's landing
   spot and the replayed stroke was never entered: 24 of 37 OB tee shots and
   24 of 29 lost balls in the 90 days to 2026-09-09 scored one stroke short.
-- **"+ Penalty" is disabled until a shot exists on the hole** — logged first,
-  the penalty became shot 1 and the real tee shot was entered as the
-  provisional (78 of 311 rows).
+- **Which stroke went (2026-09-10, `penaltyOrigin`)**: players use BOTH
+  flows — enter the drive as "other" then tap Penalty (the entered shot went
+  OB), or stand in the fairway with the last entered shot safely at 115 yds,
+  hit the next one OB and tap Penalty without entering it. The 09-09 rule
+  always replayed from the last ENTERED shot's start, which sent the second
+  player back to the tee (owner's test round d69bd372, hole 1). Now
+  `SHOW_PENALTY_MODAL` defaults `penaltyOrigin` via `defaultPenaltyOrigin`:
+  last shot in play (fairway/rough/sand/green) → `'here'`; last shot entered
+  as "other" → `'entered'`; no shot or a penalty row last → `'here'`. The
+  modal shows the choice for OB/lost ("My next shot from here" · "Shot N that
+  I entered") so the player can flip it. `'here'` writes TWO rows via
+  `CONFIRM_PENALTY { payload, errantStroke }`: `buildErrantStroke` (the
+  un-entered stroke from the current spot, result `other`, ball back at the
+  same spot) then the penalty row, and the player replays from here.
+  Water/unplayable ignore origin. "+ Penalty" is therefore enabled again
+  before any shot exists — the un-entered stroke is recorded rather than the
+  penalty being refused (the 78-of-311 stroke-short case). One Undo lifts
+  BOTH rows: `useUndoManager` checks `endsWithErrantStrokePair` (a 0-yard
+  "other" stroke ending where it began, followed by an OB/lost penalty that
+  replays from that spot — recognised by shape so it survives a reload) and
+  deletes penalty-then-errant; a player-entered "other" shot carries real
+  distance, so only its penalty is lifted.
 - **Stats attribution** (`getPenaltyCategory`, `golf-stats-calculator-shots.ts`)
   charges the −1.0 SG to the shot that EARNED the penalty — the nearest
   preceding non-penalty shot on the hole, else the nearest following one —
