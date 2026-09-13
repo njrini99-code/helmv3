@@ -1,0 +1,103 @@
+{
+  "date": "2026-09-13",
+  "scope": "Four highest-use linked courses; completed rounds excluding both demo teams and their players",
+  "imagery": [
+    {
+      "course": "bryan",
+      "nativeGsdM": 0.1524,
+      "captureDate": "2022-02-11",
+      "evidence": "NC Ortho Acquisition seamline FeatureServer/13 queried for the crop; native image service pixel size 0.5 US survey foot",
+      "currentness": "Course reports bunker renovations; 2022 imagery is not accepted as current",
+      "study": "Unassigned green complex; Champions vs Players layout requires confirmation",
+      "sourceService": "https://services.gis.nc.gov/secure/rest/services/Imagery/Orthoimagery_Latest/ImageServer",
+      "retrievedAt": "2026-09-13",
+      "requestedGroundPixelM": 0.1524,
+      "request": {
+        "f": "json",
+        "bbox": "-8876571.668059317,4324452.090209798,-8876259.973485097,4325100.2471956145",
+        "bboxSR": 3857,
+        "imageSR": 3857,
+        "size": "1651,3434",
+        "format": "png",
+        "transparent": "false",
+        "interpolation": "RSP_NearestNeighbor"
+      },
+      "imageSha256": "1790ce934947c61fefeb1f5fc1c338dfc95b3e127851ecbaa955d8a47f413951",
+      "distribution": "Local imagery inspection only; no image pixels redistributed or tracing rights inferred",
+      "registrationRmseM": null
+    },
+    {
+      "course": "cardinal",
+      "nativeGsdM": 0.1524,
+      "captureDate": "2022-02-09",
+      "evidence": "NC Ortho Acquisition seamline FeatureServer/13 queried for the crop; native image service pixel size 0.5 US survey foot",
+      "currentness": "Independent renovation/currentness review pending",
+      "study": "Unassigned green complex; no OSM hole routing or fairway coverage",
+      "sourceService": "https://services.gis.nc.gov/secure/rest/services/Imagery/Orthoimagery_Latest/ImageServer",
+      "retrievedAt": "2026-09-13",
+      "requestedGroundPixelM": 0.1524,
+      "request": {
+        "f": "json",
+        "bbox": "-8896264.085980648,4319116.615040741,-8895985.787253665,4319530.123645234",
+        "bboxSR": 3857,
+        "imageSR": 3857,
+        "size": "1475,2192",
+        "format": "png",
+        "transparent": "false",
+        "interpolation": "RSP_NearestNeighbor"
+      },
+      "imageSha256": "6f46cd979f15a06668f1a7f152a96310aafb481a28bf7764bf97f554ea8fb614",
+      "distribution": "Local imagery inspection only; no image pixels redistributed or tracing rights inferred",
+      "registrationRmseM": null
+    },
+    {
+      "course": "winchester",
+      "nativeGsdM": 0.3048,
+      "captureDate": "2022",
+      "evidence": "VBMP MostRecentImagery_WGS_Tile_Index/MapServer/2: OBJECTID 18846, DO_N17_5180_20.2022, Product 12 inch ortho; capture day unavailable",
+      "currentness": "Independent currentness and registration review pending",
+      "study": "Hole 7 canopy and two greenside bunkers compared visually; other 17 holes are unreviewed source candidates",
+      "sourceService": "https://vginmaps.vdem.virginia.gov/arcgis/rest/services/VBMP_Imagery/MostRecentImagery_WGS/MapServer",
+      "retrievedAt": "2026-09-13",
+      "requestedGroundPixelM": 0.3048,
+      "request": {
+        "f": "json",
+        "bbox": "-8699373.302614585,4745405.829520917,-8699061.608040363,4745980.157283507",
+        "bboxSR": 3857,
+        "imageSR": 3857,
+        "size": "793,1461",
+        "format": "png",
+        "transparent": "false"
+      },
+      "imageSha256": "a8eeb2fa977089d8e7314f77f4e895de690c7a9bc952710ff6f58515c9041f72",
+      "distribution": "Local imagery inspection only; no image pixels redistributed or tracing rights inferred",
+      "registrationRmseM": null
+    },
+    {
+      "course": "cacapon",
+      "nativeGsdM": null,
+      "captureDate": "2024",
+      "evidence": "WV leaf-off mosaic layer 992, Morgan 2024; requested 0.1524m is not verified native GSD",
+      "currentness": "View-only county comparison, not a replacement for the existing 2024 NAIP-derived canopy fixture",
+      "study": "Existing hole 7 terrain/trees retained; county pixels are not traced or distributed",
+      "sourceService": "https://services.wvgis.wvu.edu/arcgis/rest/services/Imagery_BaseMaps_EarthCover/wv_imagery_WVGISTC_leaf_off_mosaic/MapServer",
+      "retrievedAt": "2026-09-13",
+      "requestedGroundPixelM": 0.1524,
+      "request": {
+        "f": "json",
+        "bbox": "-8715781.795557512,4795639.539968635,-8715503.496830529,4796303.325820339",
+        "bboxSR": 3857,
+        "imageSR": 3857,
+        "size": "1409,3361",
+        "format": "png",
+        "transparent": "false",
+        "layers": "show:992"
+      },
+      "imageSha256": "349f98287889e37e721e6ac19d1e430bf6c64bd75b3034bbe2d72036e26cf21a",
+      "distribution": "Local imagery inspection only; no image pixels redistributed or tracing rights inferred",
+      "registrationRmseM": null
+    }
+  ],
+  "rejectedSource": "NC 2024-2027 service produced blank crops at both NC study points; Latest service returned 2022 imagery",
+  "terrainGap": "The bounded USGS ImageServer catalogue query found no USGS 1 Meter product at either NC study point. This does not establish absence from all state/local sources. Coarse terrain was not substituted."
+}

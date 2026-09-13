@@ -8,9 +8,9 @@ review is NOT evidence of currentness, independent accuracy or a known pin.
 import hashlib
 import json
 import math
-from pathlib import Path
 import sys
 import xml.etree.ElementTree as ET
+from pathlib import Path
 
 from shapely.geometry import LineString, Point, Polygon
 

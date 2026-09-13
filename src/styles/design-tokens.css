@@ -24,14 +24,14 @@
 :root {
   /* Physical course SVG pilot. Terrain colors carry no result/status meaning. */
   --fw-diagram-ground: #102e22;
-  --fw-diagram-ground-light: #244c32;
-  --fw-diagram-fairway-light: #618756;
+  --fw-diagram-ground-light: #193e2b;
+  --fw-diagram-fairway-light: #71925e;
   --fw-diagram-surround: #2e563c;
   --fw-diagram-fringe: #47714b;
-  --fw-diagram-green-light: #91b47b;
+  --fw-diagram-green-light: #adc796;
   --fw-diagram-shadow: #092318;
   --fw-diagram-fairway: #527a50;
-  --fw-diagram-green: #94ae83;
+  --fw-diagram-green: #809f71;
   --fw-diagram-tee: #64886b;
   --fw-diagram-bunker: #e4d2ab;
   --fw-diagram-sand-highlight: #fbefd5;
@@ -41,7 +41,7 @@
   --fw-diagram-rough: #274b3e;
   --fw-diagram-woods: #173728;
   --fw-diagram-tree: #31523a;
-  --fw-diagram-tree-light: #3d5d40;
+  --fw-diagram-tree-light: #4c7045;
   --fw-diagram-tree-shadow: #0d291f;
   --fw-diagram-edge: #315d39;
   --fw-diagram-route: #afc3ad;
@@ -731,4 +731,31 @@
      dark surface still reads. */
   --c-primary-600: 22 163 74;  --c-primary-700: 46 150 92;  --c-primary-800: 22 101 52;
   --c-primary-900: 20 83 45;
+}
+
+/* Course views: geometry is static. Only view/selection emphasis animates.
+   The filmstrip and exported SVGs never opt into these scoped classes. */
+@media (prefers-reduced-motion: no-preference) {
+  .fw-course-view-enter {
+    animation: fw-course-view-reveal 260ms var(--fw-ease-glide) both;
+  }
+  .fw-course-evidence-enter {
+    animation: fw-course-evidence-reveal 220ms var(--fw-ease-soft) both;
+  }
+  .fw-course-motion [data-event][data-selected="true"],
+  .fw-course-motion [data-shot-segment][data-selected="true"] {
+    animation: fw-course-selection-reveal 320ms var(--fw-ease-soft) both;
+  }
+}
+@keyframes fw-course-view-reveal {
+  from { opacity: .45; }
+  to { opacity: 1; }
+}
+@keyframes fw-course-evidence-reveal {
+  from { opacity: .55; transform: translateY(3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fw-course-selection-reveal {
+  from { opacity: .35; }
+  to { opacity: 1; }
 }

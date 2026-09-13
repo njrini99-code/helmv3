@@ -50,6 +50,7 @@ import type { Lie } from '@/components/golf/coachhelm/v3/HoleShotPath/types';
 import type { CourseGeometryPackage, HoleScene } from '@/lib/golf/course-geometry/types';
 import { normalizePersistedShot, recordedDistance } from '@/lib/golf/course-geometry/normalize';
 import { buildHoleScene } from '@/lib/golf/course-geometry/build-scene';
+import type { TerrainMesh } from '@/lib/golf/course-geometry/terrain';
 import { Button } from '@/components/fairway/controls/button';
 import type { ReviewGrade } from './buildReviewViewModel';
 import { formatHoleDetail, formatToPar } from './buildReviewViewModel';
@@ -207,7 +208,7 @@ export interface ReviewHoleMeta {
 }
 
 export interface ReviewHeroProps {
-  geometry?: { package: CourseGeometryPackage; holeKeys: readonly string[] };
+  geometry?: { package: CourseGeometryPackage; holeKeys: readonly string[]; terrainByHole?: Readonly<Record<string, TerrainMesh>> };
   totalScore: number;
   scoreToPar: number;
   courseDateLine: string;
@@ -327,7 +328,7 @@ export function ReviewHero({
     if (!geometry) return map;
     geometry.holeKeys.forEach((key, index) => {
       const ledger = (shotsByHole?.get(index + 1) ?? []).map(shot => normalizePersistedShot({ ...shot, putt_details: { miss_tags: shot.miss_tags } }));
-      try { map.set(index + 1, buildHoleScene(geometry.package, key, ledger)); }
+      try { map.set(index + 1, buildHoleScene(geometry.package, key, ledger, geometry.terrainByHole?.[key])); }
       catch { /* Optional geometry cannot block review. */ }
     });
     return map;
@@ -457,7 +458,7 @@ export function ReviewHero({
                   {e.penalty ? `P${e.shotNumber}` : e.shotNumber}
                 </Button>)}
               </div>
-              {selected && <div className="rounded-fw-md border border-border-subtle bg-surface p-4 font-fw-sans" data-slot="selected-shot-explanation" aria-live="polite">
+              {selected && <div key={selected.eventKey} className="fw-course-evidence-enter rounded-fw-md border border-border-subtle bg-surface p-4 font-fw-sans" data-slot="selected-shot-explanation" aria-live="polite">
                 <p className="text-body-sm font-semibold text-text-primary">Shot {selected.shotNumber} · <span className="capitalize">{(selected.shotType ?? 'Shot').replaceAll('_', ' ')}</span></p>
                 <p className="mt-1 text-body-sm text-text-primary"><span className="capitalize">{selected.result ?? selected.lieAfter ?? 'Result unknown'}</span> · {recordedDistance(selected.after)} remaining</p>
                 <p className="mt-1 text-caption text-text-secondary">{recordedDistance(selected.before)} before{selected.rawMiss ? ` · ${selected.rawMiss.replaceAll('_', ' ')}` : ''}</p>

@@ -641,3 +641,25 @@ access production data. Geometry binding, publication and historical version
 resolution remain unimplemented; no migration or lifecycle writer changes
 are included. See the existing course-geometry plan, Sections 18–19, for source
 provenance, real-component screenshots and device-verification limitations.
+
+### Shared terrain renderer feasibility (September 13, 2026)
+
+Both optional geometry props now accept the same `terrainByHole` sidecar.
+`buildHoleScene` attaches it only when the physical-hole key and package hash
+match. `CourseHoleScene` uses its existing SVG backend inline and a WebGL
+backend in expanded terrain views; shared metric projection/material functions
+also produce static SVG exports. The runtime remains Next.js/Capacitor.
+Source ingestion, Python triangulation and source fixtures stay outside player
+routes. This is a one-hole source candidate, with no production resolver,
+publication, account/location collection or lifecycle writer change.
+
+### Four-course local source trial (September 13, 2026)
+
+The fixture harness now includes Winchester alongside Cacapon; both reuse the
+same entry/review scene and optional terrain sidecar. Bryan Park and The Cardinal
+are explicitly unassigned green studies in the internal source-review harness.
+A nullable route is accepted only for a labelled, partial `source_candidate`
+with a green; it cannot be relabelled as a reviewed package. These studies have
+no played-hole binding, tee or daily pin claim and expose no Whole hole control.
+They do not participate in saves or statistics. The existing geometry plan
+Section 21 records the non-demo cohort, imagery provenance and remaining gaps.

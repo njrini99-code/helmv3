@@ -24,6 +24,7 @@ async page => {
   await p.goto(url);
   await p.getByRole('button',{name:'Add penalty stroke',exact:true}).click();
   await p.getByRole('button',{name:'Out of Bounds',exact:true}).click();
+  await p.getByRole('radio',{name:/Shot 2 that I entered/}).click();
   await p.getByRole('button',{name:'Add +1 Stroke',exact:true}).click();
   await p.getByRole('dialog').waitFor({state:'hidden'});
   await p.getByRole('heading',{name:'Shot 4 · Approach'}).waitFor();
@@ -64,4 +65,5 @@ async page => {
   await context.close();
   if(report.errors.length) throw new Error(JSON.stringify(report.errors));
   await page.evaluate(report=>window.__golfInteractionReport=report,report);
+  await page.evaluate(value=>localStorage.setItem('golf-geometry-qa-interactions',JSON.stringify(value)),report);
 }

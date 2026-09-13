@@ -928,3 +928,27 @@ All result, miss, distance, penalty, edit, undo and save handlers remain the
 existing tracking flow. Missing geometry presents a fixed-size neutral fallback
 and the recorded evidence remains available. No production package resolver
 or geometry write is enabled by this optional prop.
+
+### Optional terrain study (September 13, 2026)
+
+The same display context can include a version-matched `terrainByHole` mesh.
+Only the Cacapon 7 local fixture supplies it. Expanded course detail exposes
+Top / Terrain / Side, constrained drag, pinch, pan and visual height emphasis;
+inline entry remains a 160px scroll-friendly SVG or abstract putting view.
+Camera changes never enter the shot state machine, unit conversion or save
+payload. Closing the existing ModalShell preserves unsaved input. A missing
+mesh or lost WebGL context renders the existing SVG fallback. No GPS, location
+questions, cart paths, measured trajectories or terrain-adjusted statistics
+are introduced. The existing geometry plan Section 20 records source dates,
+accuracy limits and verification.
+
+### Four-course local source trial (September 13, 2026)
+
+The fixture harness now includes Winchester alongside Cacapon; both reuse the
+same entry/review scene and optional terrain sidecar. Bryan Park and The Cardinal
+are explicitly unassigned green studies in the internal source-review harness.
+A nullable route is accepted only for a labelled, partial `source_candidate`
+with a green; it cannot be relabelled as a reviewed package. These studies have
+no played-hole binding, tee or daily pin claim and expose no Whole hole control.
+They do not participate in saves or statistics. The existing geometry plan
+Section 21 records the non-demo cohort, imagery provenance and remaining gaps.

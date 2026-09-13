@@ -1,0 +1,228 @@
+{
+  "contentHash": "9f0615b6945ac6274a6ddbc46a1a19ef0c0b4b02dea4186173211560d1915f0f",
+  "triangles": 7796,
+  "elevationRangeM": [
+    262.8568,
+    275.2988
+  ],
+  "features": [
+    {
+      "id": "terrain-context",
+      "kind": "ground",
+      "triangles": 2641,
+      "clippedAreaM2": 25378.568136,
+      "triangleAreaM2": 25378.568136
+    },
+    {
+      "id": "naip2024-cacapon-07-canopy-east-fairway",
+      "kind": "woods",
+      "triangles": 298,
+      "clippedAreaM2": 6606.395674,
+      "triangleAreaM2": 6606.395674
+    },
+    {
+      "id": "naip2024-cacapon-07-canopy-green-east",
+      "kind": "woods",
+      "triangles": 10,
+      "clippedAreaM2": 48.455602,
+      "triangleAreaM2": 48.455602
+    },
+    {
+      "id": "naip2024-cacapon-07-canopy-green-south",
+      "kind": "woods",
+      "triangles": 84,
+      "clippedAreaM2": 779.825261,
+      "triangleAreaM2": 779.825261
+    },
+    {
+      "id": "naip2024-cacapon-07-canopy-green-west",
+      "kind": "woods",
+      "triangles": 0,
+      "clippedAreaM2": 0.0,
+      "triangleAreaM2": 0.0
+    },
+    {
+      "id": "naip2024-cacapon-07-canopy-green-west-upper",
+      "kind": "woods",
+      "triangles": 21,
+      "clippedAreaM2": 228.569121,
+      "triangleAreaM2": 228.569121
+    },
+    {
+      "id": "naip2024-cacapon-07-canopy-upper-west",
+      "kind": "woods",
+      "triangles": 34,
+      "clippedAreaM2": 409.840738,
+      "triangleAreaM2": 409.840738
+    },
+    {
+      "id": "naip2024-cacapon-07-canopy-west-fairway",
+      "kind": "woods",
+      "triangles": 87,
+      "clippedAreaM2": 651.899068,
+      "triangleAreaM2": 651.899068
+    },
+    {
+      "id": "osm-way-885719202",
+      "kind": "fairway",
+      "triangles": 2073,
+      "clippedAreaM2": 8034.472549,
+      "triangleAreaM2": 8034.472549
+    },
+    {
+      "id": "osm-way-885719195",
+      "kind": "tee",
+      "triangles": 45,
+      "clippedAreaM2": 573.987069,
+      "triangleAreaM2": 573.987069
+    },
+    {
+      "id": "osm-way-885719201",
+      "kind": "green",
+      "triangles": 383,
+      "clippedAreaM2": 232.543199,
+      "triangleAreaM2": 232.543199
+    },
+    {
+      "id": "osm-way-885719197",
+      "kind": "bunker",
+      "triangles": 634,
+      "clippedAreaM2": 201.23095,
+      "triangleAreaM2": 201.23095
+    },
+    {
+      "id": "osm-way-885719198",
+      "kind": "bunker",
+      "triangles": 632,
+      "clippedAreaM2": 141.996445,
+      "triangleAreaM2": 141.996445
+    },
+    {
+      "id": "osm-way-885719199",
+      "kind": "bunker",
+      "triangles": 384,
+      "clippedAreaM2": 103.458474,
+      "triangleAreaM2": 103.458474
+    },
+    {
+      "id": "osm-way-885719200",
+      "kind": "bunker",
+      "triangles": 470,
+      "clippedAreaM2": 130.970766,
+      "triangleAreaM2": 130.970766
+    }
+  ],
+  "displayOutlines": [
+    {
+      "id": "osm-way-885719195",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "osm-way-885719197",
+      "boundaryDisplacementM": 0.2523321352785503,
+      "areaChangePercent": -0.3662366865576083
+    },
+    {
+      "id": "osm-way-885719198",
+      "boundaryDisplacementM": 0.13342277604939837,
+      "areaChangePercent": -0.3975804999699517
+    },
+    {
+      "id": "osm-way-885719199",
+      "boundaryDisplacementM": 0.09784310348756621,
+      "areaChangePercent": -0.5290751521605741
+    },
+    {
+      "id": "osm-way-885719200",
+      "boundaryDisplacementM": 0.14374563962606057,
+      "areaChangePercent": -0.4403133874982701
+    },
+    {
+      "id": "osm-way-885719201",
+      "boundaryDisplacementM": 0.11068922006694121,
+      "areaChangePercent": -0.2974968826128799
+    },
+    {
+      "id": "osm-way-885719202",
+      "boundaryDisplacementM": 0.3546854701569978,
+      "areaChangePercent": -0.004155643261449793
+    },
+    {
+      "id": "naip2024-cacapon-07-canopy-west-fairway",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "naip2024-cacapon-07-canopy-east-fairway",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "naip2024-cacapon-07-canopy-upper-west",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "naip2024-cacapon-07-canopy-green-west-upper",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "naip2024-cacapon-07-canopy-green-west",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "naip2024-cacapon-07-canopy-green-south",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "naip2024-cacapon-07-canopy-green-east",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    }
+  ],
+  "boundsM": [
+    100.87854376904556,
+    350.27871372814366,
+    269.8731254877274,
+    782.3345976046172
+  ],
+  "source": {
+    "provider": "USGS 3DEP",
+    "catalogObjectId": 129279,
+    "title": "USGS 1 Meter 17 x73y438 MD_Western_2021_D21",
+    "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/MD_Western_2021_D21/TIFF/USGS_1M_17_x73y438_MD_Western_2021_D21.tif",
+    "acquisitionStart": "2021-12-04",
+    "acquisitionEnd": "2021-12-21",
+    "retrievedAt": "2026-09-13",
+    "nativeResolutionM": 1,
+    "verticalAccuracyM": null,
+    "registrationResidualM": null,
+    "licenseUrl": "https://www.usgs.gov/3d-elevation-program/about-3dep-products-services",
+    "rasterSha256": "efea17e2d7351603c098a0c63d4a04f2af04311030299118cb1e12e306eb8797",
+    "exportExtent": {
+      "xmin": -78.2958,
+      "ymin": 39.5132,
+      "xmax": -78.2922,
+      "ymax": 39.52040000000001,
+      "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+      }
+    },
+    "exportSize": [
+      256,
+      512
+    ],
+    "meshCellM": 8.0
+  },
+  "limitations": [
+    "Terrain source candidate; independent registration and renovation review pending",
+    "Macro elevation only; no bunker-lip or putting-break accuracy",
+    "No observed ball, cup, tree height or flight coordinates",
+    "Height is NAVD88 orthometric elevation, not ellipsoidal ENU Up"
+  ]
+}

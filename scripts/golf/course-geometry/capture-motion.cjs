@@ -1,0 +1,30 @@
+async page => {
+  const context=await page.context().browser().newContext({viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true,hasTouch:true,reducedMotion:'no-preference',recordVideo:{dir:'output/playwright/course-geometry/motion',size:{width:390,height:844}}});
+  const p=await context.newPage(), report={viewAnimation:false,evidenceAnimation:false,reducedMotionStatic:false,filmstripStatic:false};
+  await p.route('**/*',r=>r.request().url().startsWith('http://127.0.0.1:8768/')?r.continue():r.abort());
+  await p.goto('http://127.0.0.1:8768/golf/dashboard/rounds/fixture/review?hole=7');
+  await p.locator('[data-scene-context=review]').waitFor();
+  await p.locator('[data-scene-context=review]').evaluate(el=>scrollTo(0,scrollY+el.getBoundingClientRect().top-72));
+  await p.waitForTimeout(1200);
+  await p.getByRole('button',{name:'Shot 2',exact:true}).click();
+  report.viewAnimation=await p.locator('[data-slot=course-drawing]').evaluate(el=>el.getAnimations({subtree:true}).length>0);
+  report.evidenceAnimation=await p.locator('[data-slot=selected-shot-explanation]').evaluate(el=>el.getAnimations().length>0);
+  await p.waitForTimeout(1400);
+  await p.getByRole('button',{name:'Hole',exact:true}).click();
+  await p.waitForTimeout(1400);
+  await p.getByRole('button',{name:'Green',exact:true}).click();
+  await p.waitForTimeout(1400);
+  await p.getByRole('button',{name:'Shot 4',exact:true}).click();
+  await p.getByRole('button',{name:'Putting',exact:true}).click();
+  await p.waitForTimeout(1400);
+  report.filmstripStatic=await p.locator('[data-render-version][data-physical-hole]').evaluateAll(els=>els.filter(el=>el.closest('[data-slot=course-drawing]')==null).every(el=>el.getAnimations({subtree:true}).length===0));
+  await p.emulateMedia({reducedMotion:'reduce'});
+  await p.getByRole('button',{name:'Green',exact:true}).click();
+  report.reducedMotionStatic=await p.locator('[data-slot=course-drawing]').evaluate(el=>el.getAnimations({subtree:true}).length===0);
+  await p.screenshot({path:'output/playwright/course-geometry/review-shaded-green-390.png'});
+  const video=await p.video().path();
+  await context.close();
+  if(Object.values(report).some(value=>!value)) throw new Error(JSON.stringify(report));
+  await page.evaluate(value=>window.__golfMotionReport=value,{...report,video});
+  await page.evaluate(value=>localStorage.setItem('golf-geometry-qa-ui-motion',JSON.stringify(value)),{...report,video});
+}

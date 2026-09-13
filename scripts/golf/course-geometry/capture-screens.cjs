@@ -44,6 +44,7 @@ async page => {
       if (JSON.stringify(await camera())!==JSON.stringify(before)) throw new Error('Camera changed while typing');
       await screen.getByRole('button',{name:'Expand course view'}).click();
       await screen.getByRole('dialog').waitFor();
+      await screen.waitForFunction(()=>Array.from(document.querySelectorAll('[data-slot=modal-shell]')).every(el=>+getComputedStyle(el).opacity>.999));
       await screen.screenshot({path:'output/playwright/course-geometry/entry-expanded-390.png'});
       await screen.getByRole('button',{name:'Zoom in',exact:true}).click();
       await screen.getByRole('button',{name:'Reset view',exact:true}).click();
@@ -66,4 +67,5 @@ async page => {
   }
   if(report.errors.length) throw new Error(JSON.stringify(report.errors));
   await page.evaluate(report => window.__golfSceneReport=report,report);
+  await page.evaluate(value=>localStorage.setItem('golf-geometry-qa-screens',JSON.stringify(value)),report);
 }

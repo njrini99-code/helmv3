@@ -1,0 +1,66 @@
+[
+  {
+    "courseId": "0c980b93-8eee-48d4-be02-ddddfd3171fd",
+    "name": "Bryan Park Champs",
+    "completedRounds": 45,
+    "status": "source_candidate",
+    "bboxWgs84": [
+      -79.752,
+      36.169,
+      -79.714,
+      36.202
+    ],
+    "identityEvidence": "Prior bounded facility review; layout acceptance remains per-hole",
+    "sourceUrl": "https://www.openstreetmap.org/api/0.6/map?bbox=-79.752,36.169,-79.714,36.202",
+    "sourceFile": "385882940755b7b0.osm.gz",
+    "sourceSha256": "c9d5a8de6c278575a26e9418f1877b6a44c00c64b9f60c7e17c009c682138967"
+  },
+  {
+    "courseId": "c6347725-c890-4545-b25f-a72e342b67da",
+    "name": "Cacapon State Park",
+    "completedRounds": 36,
+    "status": "source_candidate",
+    "bboxWgs84": [
+      -78.308,
+      39.5,
+      -78.283,
+      39.525
+    ],
+    "identityEvidence": "Prior bounded facility review; layout acceptance remains per-hole",
+    "sourceUrl": "https://www.openstreetmap.org/api/0.6/map?bbox=-78.308,39.5,-78.283,39.525",
+    "sourceFile": "0add5ac572edef05.osm.gz",
+    "sourceSha256": "fbef69c948b0b730b4534c8cd90fc298033a589dd014952c025465c1bc952182"
+  },
+  {
+    "courseId": "65069f6c-9576-4a22-8ade-ef11e2a28574",
+    "name": "The Cardinal",
+    "completedRounds": 30,
+    "status": "source_candidate",
+    "bboxWgs84": [
+      -79.927,
+      36.119,
+      -79.902,
+      36.144
+    ],
+    "identityEvidence": "Prior bounded facility review; layout acceptance remains per-hole",
+    "sourceUrl": "https://www.openstreetmap.org/api/0.6/map?bbox=-79.927,36.119,-79.902,36.144",
+    "sourceFile": "f917147cbdf0b508.osm.gz",
+    "sourceSha256": "2fbb3d3f32120f735176c9956be5f6c8216dd4a4bf6aacb64fc037dab056fd4f"
+  },
+  {
+    "courseId": "846f0ccb-26aa-4e3c-a9e7-5a03c85440a2",
+    "name": "Winchester CC",
+    "completedRounds": 30,
+    "status": "source_candidate",
+    "bboxWgs84": [
+      -78.158,
+      39.158,
+      -78.132,
+      39.182
+    ],
+    "identityEvidence": "Prior bounded facility review; layout acceptance remains per-hole",
+    "sourceUrl": "https://www.openstreetmap.org/api/0.6/map?bbox=-78.158,39.158,-78.132,39.182",
+    "sourceFile": "a2e1dcee8760ab84.osm.gz",
+    "sourceSha256": "109d8a1f4d8f2e591874091d3cdfd60f62bff6b23b8b187a3c10e30cc0593b99"
+  }
+]

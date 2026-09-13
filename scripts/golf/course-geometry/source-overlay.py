@@ -8,6 +8,7 @@ Requires Pillow. Coordinates are overlaid in the export CRS, not used for metre 
 import json
 import sys
 from pathlib import Path
+
 from PIL import Image, ImageDraw
 
 ROOT = Path(__file__).resolve().parents[3]

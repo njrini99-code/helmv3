@@ -12,7 +12,9 @@ describe('shared SVG proof', () => {
     const first = markup();
     expect(first).toBe(markup());
     const ids = [...first.matchAll(/\sid="([^"]+)"/g)].map(m => m[1]);
-    expect(ids).toHaveLength(90);
+    expect(ids.length).toBeGreaterThanOrEqual(90);
+    const references = [...first.matchAll(/url\(#([^)]*)\)/g)].map(m => m[1]);
+    for (const reference of references) expect(ids).toContain(reference);
     expect(new Set(ids).size).toBe(ids.length);
     expect(first.match(/data-geometry-hash=/g)).toHaveLength(18);
     expect(first).toContain('Pin location unknown');

@@ -1,4 +1,5 @@
 /** Stage 0–2 display contracts. No field here is a new player measurement. */
+import type { TerrainMesh } from './terrain';
 export type PointM = readonly [number, number];
 export type PositionWgs84 = readonly [number, number];
 export type Direction8 = 'short' | 'short_left' | 'left' | 'long_left' |
@@ -20,11 +21,13 @@ export interface GeometryFeature {
 }
 export interface PhysicalHole {
   key: string;
+  /** Internal source studies may be unassigned to a played hole. */
+  displayLabel?: string;
   ordinal: number;
   par: number;
   scorecardYards: number | null;
   featureIds: string[];
-  routeFeatureId: string;
+  routeFeatureId: string | null;
   greenFeatureId: string | null;
   nominalTargetWgs84: PositionWgs84 | null;
   completeness: 'partial' | 'reviewed_surfaces' | 'route_only';
@@ -36,7 +39,7 @@ export interface CourseGeometryPackage {
   name: string;
   contentHash: string;
   /** This pilot cannot be promoted to a production binding by a page read. */
-  status: 'reviewed_draft';
+  status: 'reviewed_draft' | 'source_candidate';
   originWgs84: PositionWgs84;
   projection: 'wgs84-local-enu-v1';
   features: GeometryFeature[];
@@ -91,10 +94,13 @@ export interface LocalFeature {
   reviewed: boolean;
 }
 export interface HoleScene {
+  /** Optional source candidate used only by the expanded terrain feasibility view. */
+  terrain?: TerrainMesh;
   /** Supplied analytic coordinates exist only in the local demonstration. */
   overlayKind: 'unresolved' | 'analytic_fixture';
   packageHash: string;
   physicalHoleKey: string;
+  sharedGreenHoleOrdinals?: readonly number[];
   algorithmVersion: 'evidence-only-v1';
   target: { kind: 'unknown_pin'; greenFeatureId: string | null };
   hole: PhysicalHole;

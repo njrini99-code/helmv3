@@ -37,6 +37,7 @@ import { FairwayScorecardHeader, FairwayDesktopExitHeader } from './FairwayScore
 import { FairwayShotPills } from './FairwayShotPills';
 import type { CourseGeometryPackage } from '@/lib/golf/course-geometry/types';
 import { buildHoleScene } from '@/lib/golf/course-geometry/build-scene';
+import type { TerrainMesh } from '@/lib/golf/course-geometry/terrain';
 import { normalizeLiveShot } from '@/lib/golf/course-geometry/normalize';
 import { FairwayHoleHero } from './FairwayHoleHero';
 import { FairwayShotEntry } from './FairwayShotEntry';
@@ -48,10 +49,10 @@ import { FairwayUnsavedNavModal } from './FairwayUnsavedNavModal';
 // Local alias for the Hole interface used by this component's props
 type Hole = RoundHole;
 
-// IDENTICAL to the legacy ShotTrackingProps interface.
+// Existing tracking props plus optional read-only course display context.
 interface ShotTrackingProps {
   /** Optional reviewed binding context; never part of score persistence. */
-  geometry?: { package: CourseGeometryPackage; holeKeys: readonly string[] };
+  geometry?: { package: CourseGeometryPackage; holeKeys: readonly string[]; terrainByHole?: Readonly<Record<string, TerrainMesh>> };
   /** Resume context already occupies the initial status-bar inset. */
   safeAreaHandledAbove?: boolean;
   /** Round-level status stays in the same measured sticky chrome. */
@@ -524,7 +525,7 @@ export default function FairwayShotTracking({
   const physicalScene = useMemo(() => {
     const key = geometry?.holeKeys[currentHoleIndex];
     if (!geometry || !key) return null;
-    try { return buildHoleScene(geometry.package, key, shotHistory.map(normalizeLiveShot)); }
+    try { return buildHoleScene(geometry.package, key, shotHistory.map(normalizeLiveShot), geometry.terrainByHole?.[key]); }
     catch { return null; } // Optional visual failure cannot block entry or saving.
   }, [geometry, currentHoleIndex, shotHistory]);
 
@@ -623,8 +624,8 @@ export default function FairwayShotTracking({
                 desktop so the live panel can scroll without losing context. */}
             <div className="lg:sticky lg:top-[calc(var(--scorecard-height,105px)+5.5rem)]">
               <FairwayHoleHero
-              scene={physicalScene}
-              shotType={shotType}
+                scene={physicalScene}
+                shotType={shotType}
                 currentHole={currentHole}
                 isHoleComplete={isHoleComplete}
                 shotHistory={shotHistory}

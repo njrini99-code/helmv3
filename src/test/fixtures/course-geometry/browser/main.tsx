@@ -10,21 +10,31 @@ import { ReviewHero } from '@/components/golf/coachhelm/round-review/ReviewHero'
 import type { ReviewShotInput } from '@/components/golf/coachhelm/round-review/round-review-shots';
 import type { ShotRecord, RoundHole } from '@/lib/types/golf';
 import { pilotPackage, pilotShots } from '../pilot';
+import terrainData from '../cacapon-07-terrain.json';
+import { parseTerrainMesh } from '@/lib/golf/course-geometry/terrain';
 import { normalizeLiveShot } from '@/lib/golf/course-geometry/normalize';
+import { TerrainExportFixture } from './terrain-export';
+import winchesterData from '../winchester.json';
+import winchesterTerrainData from '../winchester-07-terrain.json';
+import { parseGeometryPackage } from '@/lib/golf/course-geometry/schema';
+import { SourceStudy } from './source-study';
 
-const geometry = { package: pilotPackage, holeKeys: pilotPackage.holes.map(h => h.key) };
-const holes: RoundHole[] = pilotPackage.holes.map(h => {
+const params = new URLSearchParams(location.search);
+const winchester = params.get('course') === 'winchester';
+const currentPackage = winchester ? parseGeometryPackage(winchesterData) : pilotPackage;
+const terrain = parseTerrainMesh(winchester ? winchesterTerrainData : terrainData, currentPackage);
+const geometry = { package: currentPackage, holeKeys: currentPackage.holes.map(h => h.key), terrainByHole: { [terrain.physicalHoleKey]: terrain } };
+const holes: RoundHole[] = currentPackage.holes.map(h => {
   if (h.scorecardYards == null) throw new Error('Pilot scorecard yardage required');
   return { number: h.ordinal, par: h.par, yardage: h.scorecardYards, score: null };
 });
 const ledger: ShotRecord[] = [
-  { ...pilotShots[0]!, distanceToHoleBefore: 431, distanceToHoleAfter: 158 },
+  { ...pilotShots[0]!, distanceToHoleBefore: holes[6]!.yardage, distanceToHoleAfter: 158 },
   { ...pilotShots[1]!, distanceToHoleBefore: 158, distanceToHoleAfter: 17, missDirection: 'short_right', approachMissDirection: 'short_right' },
   { shotNumber: 3, shotType: 'around_green', clubType: 'non_driver', lieBefore: 'sand', distanceToHoleBefore: 17, distanceUnitBefore: 'yards', result: 'green', distanceToHoleAfter: 12, distanceUnitAfter: 'feet', shotDistance: 13, isPenalty: false },
   { shotNumber: 4, shotType: 'putting', clubType: 'putter', lieBefore: 'green', distanceToHoleBefore: 12, distanceUnitBefore: 'feet', result: 'green', distanceToHoleAfter: 2, distanceUnitAfter: 'feet', shotDistance: 3.3, isPenalty: false, puttBreak: 'left_to_right', puttSlope: 'level', puttMissTags: ['short', 'low'] },
   { shotNumber: 5, shotType: 'putting', clubType: 'putter', lieBefore: 'green', distanceToHoleBefore: 2, distanceUnitBefore: 'feet', result: 'hole', distanceToHoleAfter: 0, distanceUnitAfter: 'feet', shotDistance: .66, isPenalty: false, puttBreak: 'straight', puttSlope: 'level' },
 ];
-const params = new URLSearchParams(location.search);
 const scenario = params.get('case') ?? 'around';
 const review = location.pathname.endsWith('/review');
 const count = scenario === 'tee' ? 0 : scenario === 'approach' ? 1 : scenario === 'putting' ? 3 : 2;
@@ -47,7 +57,7 @@ function Screens() {
   return <FairwayDashboardShell userData={{ role: 'player', userId: 'local-fixture', name: 'Local review', teamId: 'local-team', teamName: 'GolfHelm' }}>
     {review ? <main className="mx-auto max-w-5xl px-4 py-5 font-fw-sans">
       <h1 className="mb-4 font-fw-display text-h2 font-semibold">Round Review</h1>
-      <ReviewHero geometry={scenario === 'missing' ? undefined : geometry} totalScore={73} scoreToPar={1} courseDateLine="Cacapon · Sep 12, 2026" grade={{ score: 4, label: 'Solid round' }} mixLine="13 pars · 2 birdies · 3 bogeys" filmstripHoles={filmstripHoles} holeMeta={holeMeta} shotsByHole={shotsByHole} />
+      <ReviewHero geometry={scenario === 'missing' ? undefined : geometry} totalScore={73} scoreToPar={1} courseDateLine={`${currentPackage.name} · Local example`} grade={{ score: 4, label: 'Solid round' }} mixLine="13 pars · 2 birdies · 3 bogeys" filmstripHoles={filmstripHoles} holeMeta={holeMeta} shotsByHole={shotsByHole} />
       <p className="mt-6 text-caption text-text-secondary">Local fixture. Course and event accuracy review is still pending.</p>
     </main> : <FairwayShotTracking holes={holes} currentHoleIndex={6} initialShots={initial} initialShotNumber={initial.length + 1}
       geometry={scenario === 'missing' ? undefined : geometry} autoSaveDisabled onHoleComplete={async () => true}
@@ -56,4 +66,8 @@ function Screens() {
     <output hidden data-fixture-ledger={JSON.stringify(saved.map(normalizeLiveShot))} />
   </FairwayDashboardShell>;
 }
-createRoot(document.getElementById('root')!).render(<Screens />);
+const exportPreset = params.get('export');
+const sourceStudy = params.get('study');
+createRoot(document.getElementById('root')!).render(sourceStudy === 'bryan' || sourceStudy === 'cardinal'
+  ? <SourceStudy course={sourceStudy} /> : exportPreset === 'top' || exportPreset === 'terrain' || exportPreset === 'side'
+    ? <TerrainExportFixture preset={exportPreset} /> : <Screens />);

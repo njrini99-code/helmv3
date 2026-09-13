@@ -22,10 +22,15 @@ function tidyRing(ring: PointM[]): PointM[] {
     for (let j = 0; j < steps; j++) sampled.push([a[0] + (b[0] - a[0]) * j / steps, a[1] + (b[1] - a[1]) * j / steps]);
   }
   if (sampled.length > 1800) return ring; // Bounded preparation work.
-  const smoothed = sampled.map((p, i): PointM => {
+  const averaged = sampled.map((p, i): PointM => {
     const prev = sampled[(i + sampled.length - 1) % sampled.length]!, next = sampled[(i + 1) % sampled.length]!;
     return [(prev[0] + 2 * p[0] + next[0]) / 4, (prev[1] + 2 * p[1] + next[1]) / 4];
   });
+  // Discard only exactly collinear display samples before topology checks.
+  // Long straight edges need their endpoints, not hundreds of redundant dots.
+  const smoothed = averaged.filter((point, i) => distanceToSegment(point,
+    averaged[(i + averaged.length - 1) % averaged.length]!, averaged[(i + 1) % averaged.length]!) > 1e-8);
+  if (smoothed.length < 3) return ring;
   smoothed.push(smoothed[0]!);
   // The corner-cut lies within .4m of its original vertex (two <=.8m
   // edges at weight 1/4). Bidirectional checks also protect narrow necks.

@@ -1,9 +1,10 @@
+<!-- markdownlint-disable MD013 MD060 -->
 # GolfHelm — Complete Course Geometry and Shot Visualization Implementation Plan
 
-**Research and design date:** September 12, 2026.  
-**Verified repository:** `njrini99-code/helmv3`, `main` at `6ea9e2ce29a41b574f11b502fd164cb74b6e5e59`.  
-**Database observed read-only:** Helm production Supabase, project `qmnssrrolpinvwjjnufo`, shared by Golf, Baseball and Lift Lab.  
-**Status:** Research, specification and proposed implementation only. No application code, migrations, production data, deployment or external map edits were performed.  
+**Research and design date:** September 12, 2026.
+**Verified repository:** `njrini99-code/helmv3`, `main` at `6ea9e2ce29a41b574f11b502fd164cb74b6e5e59`.
+**Database observed read-only:** Helm production Supabase, project `qmnssrrolpinvwjjnufo`, shared by Golf, Baseball and Lift Lab.
+**Status:** Research, specification and proposed implementation only. No application code, migrations, production data, deployment or external map edits were performed.
 **Authority:** This consolidated document replaces the earlier geometry plan and its appended alternatives. Source observations are distinguished from proposed code, schema and acceptance targets.
 
 ## 1. Product decision and scope
@@ -1085,7 +1086,6 @@ Live schema evidence came from read-only `information_schema.columns`, `pg_polic
 
 Repository-specific sources and adoption decisions appear in Section 11. Their availability does not establish golf-course coverage, source accuracy or production readiness.
 
-
 ## 18. SVG UI/UX correction after the Cacapon proof — researched design specification
 
 **Added 2026-09-12. Status: proposed design; no application implementation or device validation in this research pass.** This section responds to the owner's screenshot of “Cacapon · shared geometry proof.” It refines the visual and interaction acceptance criteria in Sections 5, 12 and 13. Where earlier sizing or presentation suggestions conflict, this section takes precedence. Section 7.7's measurement, lie, direction and unknown-pin contracts remain mandatory.
@@ -1346,7 +1346,7 @@ drafts and test records, not a completed-round usage cohort.
 | Independent units | Before/after tags convert independently without rounding again. Meters preference is converted by the current entry boundary. Missing or conflicting historical tags become issues, not a universal lie-based conversion. |
 | Putt rolls off green | Current writer retains feet after Rough/Sand outcomes; fixtures cover this explicitly. |
 | Other result | Original Other remains Other even where a stored derived lie says rough. Unknown rough coverage cannot imply a surface. |
-| Penalties | Current `buildPenaltyShot` already encodes OB/lost replay at the offending stroke origin, and water/unplayable at the handler's drop state. Penalty rows retain score numbering and transition fields, with no flight. PR #1934 remains open and is not presumed deployed. |
+| Penalties | Current `buildPenaltyShot` already encodes OB/lost replay at the offending stroke origin, and water/unplayable at the handler's drop state. Penalty rows retain score numbering and transition fields, with no flight. At baseline PR #1934 was open. It merged during UI correction and is preserved via main `878d203abbd30d9304897ba94cbff1a7f41d999d`; the current origin-choice controls and un-entered offending-stroke behavior are retained. No deployment status is inferred. |
 | Edit / undo | Evidence is rebuilt from the surviving sequence, with neighbor distance/lie conflicts reported without rewriting it. No private overlay cache or async fetch is introduced in Stage 2. |
 | Putting detail | Existing PuttingZoom is unchanged. New analytic tests cover 20ft/5ft short and long geometry and a true 1ft anchor; they do not certify the legacy renderer's radius floors. Its production integration remains a later gate. |
 
@@ -1532,7 +1532,7 @@ uses the documented 2022 export by default, or the native 2024 hole crop with
 
 Package hash: `69ac58c8cc4e29403101c931abf50c8f1fe4305aea474c3e63bd509083c28bfe`.
 151 physical/source-context features; 18 partial holes; 31,388 bytes compressed.
-Projection `wgs84-local-enu-v1`; style `fairway-vector-v6`;
+Projection `wgs84-local-enu-v1`; style `fairway-vector-v7`;
 ordinary scene algorithm `evidence-only-v1`.
 
 ### 19.6 Verification and remaining gates
@@ -1562,3 +1562,344 @@ Stage 5: the UI does not manufacture precise endpoints to create a pretty path.
 Storage/access/version binding and production geometry resolution remain later
 stages. No source positional accuracy or empirical shot endpoint error is claimed.
 No production migration, bulk enrichment, merge or deployment was performed.
+
+### 19.7 Per-hole visual audit and shared refinements
+
+All 18 clean review PNGs were individually inspected at their native 320×310
+size after inspecting the full contact sheet. This is a rendering/clarity review,
+not a new acceptance of geographic currentness or independent accuracy.
+
+| Hole | Observed clarity opportunity | Treatment / remaining limit |
+|---|---|---|
+| 1 | Small greenside bunker lobes; long gap from tee to fairway | Fine sand edges, lighter strip strokes; retain real gap and use Green detail |
+| 2 | Water sits close to a narrow fairway/green complex | Preserve water separation and blue fill; continuous green collar improves hierarchy |
+| 3 | Long par 5 with two disconnected water features and tiny terminal green | Preserve both water components; Green/Expand supplies detail without widening the hole |
+| 4 | Long shared green can look like an incorrectly colored fairway | Explicit shared-green status for holes 4/8; do not split or shorten the accepted polygon |
+| 5 | Small lobed bunkers and angular fairway transition | Bounded corner cleanup and crisp sand border; preserve strategic narrowing |
+| 6 | Bunker group nearly touches the inside dogleg | Preserve separate features and their coordinates; no opaque badge covering the group |
+| 7 | Tree crowns appeared in a mechanical grid; angular canopy-mask edge visible | Deterministic stagger/jitter, modest crown-size variation and quieter group fill; source masks unchanged |
+| 8 | Same shared green viewed from the other routing direction | Same feature ID/shape and shared-green wording; preserve handedness |
+| 9 | Very long fairway, water beside a tiny terminal green | Keep uniform scale and whole-hole context; selected greenside event defaults to Green |
+| 10 | Rejected tee is absent, with separate near-tee water | Keep tee unknown; do not fabricate a tee to balance the composition |
+| 11 | Several tiny greenside bunkers merge visually in strip size | Reduce strip border weight; detailed view retains individual polygons |
+| 12 | Narrow fairway-to-green transition makes the collar disappear | Render the green collar above fairway fill and below the true green/bunkers |
+| 13 | Green boundary blends into the fairway on the upper edge | Restore continuous collar and preserve actual green proportions |
+| 14 | Simple large fairway risks looking flat or over-decorated | Keep quiet fill/edge hierarchy; no trees without reviewed source groups |
+| 15 | Bunker islands/holes and disconnected fairway are essential | Retain even-odd polygon interiors and real gap; no spline bridging |
+| 16 | Dogleg bunker group has narrow separations | Same sharper sand treatment; no individual bunker enlargement |
+| 17 | Large green relative to short par-3 fairway | Preserve that real proportion and a separate putting view |
+| 18 | Long par 5 makes greenside sand very small in overview | Keep overview honest; Green/Expand supplies readable detail, lighter strip edges |
+
+The audit also exposed redundant collinear points generated by corner cleanup.
+They are now removed before validation/serialization, preserving the same
+boundary within 1e-8m collinearity tolerance. Local macOS/Node timing over 54
+cold scene instances fell from 146ms to 13.9ms p95 SVG serialization; median
+fell from 59.5ms to 6.8ms. Scene construction p95 was 0.73ms. These are local
+measurements, not a claim of representative-phone performance or endpoint accuracy.
+The source geometry, scorecard distances and recorded event values did not change.
+
+## 20. Interactive terrain extension — September 13, 2026
+
+### 20.1 Authority and current scope
+
+Read plan PR #1937 at `bcac4026b2fc238d441575f95f0c6359ff6232b8`, including
+Sections 7.7 and 18 completely. The owner subsequently selected **extend the
+renderer, retain manual entry, and omit cart paths**. This authorizes a bounded
+terrain feasibility extension of this plan. It does not adopt the pasted
+proposal's GPS capture, target/pin placement questions, native-app rewrite or
+CoachHelm insight changes. Production storage, publication and deployment
+remain outside this pass.
+
+At the start of the UI correction, Section 18's contextual crops, actual-screen
+proof and shared surface hierarchy were incomplete. Section 19 records those
+corrections. This pass adds restrained view/selected-evidence motion and
+finishes a one-hole terrain prototype in the existing expanded viewer. The
+remaining Section 18 release gates include native keyboard/safe-area checks,
+course-familiar acceptance and empirically defensible reconstruction. The
+existing manual data still cannot establish exact ball positions or a daily
+pin, so a flight replay is not fabricated to demonstrate camera motion.
+
+Current GolfHelm is Next.js with Capacitor, not React Native. A small WebGL
+backend reuses `CourseHoleScene` and the existing Fairway `ModalShell` for this
+feasibility pass. It uses a real depth buffer, fixed buffers and a camera
+uniform, with no new npm dependency. React Native Skia would require a native
+integration; Skia's web/CanvasKit route can be benchmarked separately. Neither
+backend is being declared the final production winner without device evidence.
+
+### 20.2 Source dossier and coordinate contract
+
+The pilot is **Cacapon physical hole 7**, with the same versioned OSM geometry
+and NAIP canopy context used in Section 19. This initial terrain pass used one hole; Section 21 records the subsequent
+four-course source trial. A bounded, read-only USGS catalogue query identified:
+
+| Field | Observed value / limitation |
+|---|---|
+| Product | USGS 1 Meter 17 x73y438 MD_Western_2021_D21 |
+| Catalogue identity | 3DEPElevation ImageServer OBJECTID 129279; title and source URL retained |
+| Acquisition | December 4–21, 2021 |
+| Vertical datum | NAVD88 orthometric metres |
+| Native DEM resolution | 1m; not a promise of metre positional accuracy |
+| Export | F32, 256×512 pixels, bilinear sampling, locked to that raster |
+| Returned extent | −78.2958, 39.5132 to −78.2922, 39.5204 in EPSG:4326 |
+| Runtime terrain | 8m cell subdivision, with constrained boundary triangles |
+| Mesh | 7,796 triangles; 106,326 bytes gzip (compact JSON, Node gzip) |
+| Sampled mesh elevations | 262.8568–275.2988m NAVD88; this is a crop range, not a shot elevation change |
+| Acceptance | `source_candidate`; independent registration and renovation review pending |
+| Accuracy fields | Vertical accuracy and registration residual remain null |
+
+Sources: [USGS elevation service](https://elevation.nationalmap.gov/arcgis/rest/services/3DEPElevation/ImageServer),
+[original DEM product](https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/MD_Western_2021_D21/TIFF/USGS_1M_17_x73y438_MD_Western_2021_D21.tif),
+[USGS product access and use terms](https://www.usgs.gov/3d-elevation-program/about-3dep-products-services).
+The 2024 NAIP imagery is newer than this terrain. No putting-break, bunker-lip,
+tree-height, survey-grade accuracy or renovation-currentness claim is made.
+
+The initial TNMAccess request timed out; the official ImageServer supplied the
+bounded fallback. A comma-delimited point query returned unrelated catalogue
+results and was discarded. The successful query specifies the point as JSON
+with an explicit spatial reference and verifies the chosen product. The export
+service expands the requested extent to its aspect ratio; sampling uses its
+**returned extent and pixel centres**, not the request's bounds.
+
+The horizontal coordinates are the existing local East/North frame; Z is
+explicitly NAVD88 height, **not ellipsoidal ENU Up or phone altitude**. All
+surface regions use the same DEM. The source mesh is immutable display data;
+camera exaggeration references a local height and never changes original
+vertices, distances, units, lies, scores or statistics.
+
+Geometry hash: `69ac58c8cc4e29403101c931abf50c8f1fe4305aea474c3e63bd509083c28bfe`.
+Terrain hash: `9f0615b6945ac6274a6ddbc46a1a19ef0c0b4b02dea4186173211560d1915f0f`.
+The cached raster hash, source metadata, area reports and remaining limits are
+in `src/test/fixtures/course-geometry/cacapon-07-terrain-report.json`.
+
+### 20.3 Rendering and interaction
+
+- Top is orthographic at 90°; Terrain defaults to 50°; Side is a low-angle 20°
+  view. Drag stays within 20–90° pitch and ±45° yaw, with 1–4× zoom and bounded
+  pan. One fixed base bearing per viewport improves whole-hole framing without
+  counter-rotating during gestures. Only the expanded viewer captures gestures.
+- Top preserves uniform metric XY scale. Tilt naturally foreshortens the
+  projected ground; this explicitly extends the earlier 2D camera contract.
+  Original metrics are always computed outside this visual projection.
+- Height emphasis is visibly labelled 1.0× or 1.5×. No DEM reading or camera
+  change feeds `calculateShotDistance`, scoring or CoachHelm logic.
+- Fairway/green/sand footprints and polygon interiors are preserved. Inward
+  colour ribbons improve green and bunker edges. They are material treatment,
+  not new fringe polygons or surveyed bunker lips. Muted world-space lighting
+  uses the real mesh normals. Source-backed canopy masses support layered illustrative crowns in both
+  views. Crown positions within the mask, heights and shading are decorative;
+  they are not measured individual trees or terrain-obstruction evidence.
+- A missing or lost WebGL context removes unavailable terrain controls and
+  returns to the SVG outline. Source coverage failures remain separate from
+  ordinary absence of terrain. Abstract putting is independent of the DEM.
+- The existing inline entry is 160px and review 310px. Expanded detail uses
+  the existing full-workspace ModalShell, compact controls and a bounded drawing.
+  Its accessible content may scroll on short screens or increased text sizes.
+  Inline diagrams permit normal page scrolling and add no nested scroll area.
+- View transitions and selected evidence use short scoped animations; reduced
+  motion settles camera presets immediately. Filmstrip diagrams remain static.
+- SVG terrain export uses the same projected vertices and materials as the
+  GPU. Planar depth comparisons remove hidden regions before serialization.
+  Per-visible-surface underpainting fixes triangle antialias seams while
+  preserving polygon holes and outer boundaries. No raster image is embedded.
+
+### 20.4 Reproduction and evidence
+
+The real-screen harness still mounts FairwayDashboardShell, FairwayShotTracking,
+FairwayShotEntry and ReviewHero with inert external adapters. It is not an
+authenticated production session and does not certify database writes.
+
+```sh
+# Existing public-source cache is sufficient; no provider calls at runtime.
+python3 scripts/golf/course-geometry/fetch-terrain-pilot.py /tmp/golf-terrain-pilot
+python3 scripts/golf/course-geometry/prepare-terrain-pilot.py /tmp/golf-terrain-pilot
+npx tsx scripts/golf/course-geometry/review-report.tsx
+npx tsx scripts/golf/course-geometry/render-terrain-pilot.ts
+python3 scripts/golf/course-geometry/vectorize-terrain.py output/course-geometry/terrain
+python3 scripts/golf/course-geometry/test-terrain-vectorize.py
+npx vite --config scripts/golf/course-geometry/browser.config.ts
+```
+
+Using Playwright CLI against that server, run `capture-screens.cjs`,
+`verify-interactions.cjs`, `verify-terrain.cjs`, `capture-motion.cjs`,
+`capture-terrain-motion.cjs` and `capture-terrain-exports.cjs` from
+`scripts/golf/course-geometry/`. Then run
+`node scripts/golf/course-geometry/compare-terrain-exports.mjs`.
+The exporter comparison fixture at `/?export=terrain` is a controlled parity
+test; the entry/review URLs in Section 19 remain the actual-screen evidence.
+
+- [Around-green entry](assets/course-geometry-2026-09-13/entry-around-390.png)
+- [Entry putting](assets/course-geometry-2026-09-13/entry-putting-390.png)
+- [Review selected-shot green detail](assets/course-geometry-2026-09-13/review-green-390.png)
+- [Expanded Terrain](assets/course-geometry-2026-09-13/review-terrain-390.png)
+- [Expanded Side](assets/course-geometry-2026-09-13/terrain-side-390.png)
+- [Whole-hole Terrain](assets/course-geometry-2026-09-13/terrain-whole-hole-390.png)
+- [Camera demonstration](assets/course-geometry-2026-09-13/terrain-motion.mp4)
+- [GPU failure fallback](assets/course-geometry-2026-09-13/terrain-gpu-fallback-390.png)
+- [Short focused-input viewport](assets/course-geometry-2026-09-13/entry-short-focused-390.png)
+- [All 18 holes, style v9](assets/course-geometry-2026-09-13/contact-sheet.png)
+- [Browser verification](assets/course-geometry-2026-09-13/browser-verification.json)
+- [Terrain and motion verification](assets/course-geometry-2026-09-13/terrain-verification.json)
+- [SVG/GPU parity](assets/course-geometry-2026-09-13/export-comparison.json)
+- [Top SVG](assets/course-geometry-2026-09-13/cacapon-07-top.svg),
+  [Terrain SVG](assets/course-geometry-2026-09-13/cacapon-07-terrain.svg),
+  [Side SVG](assets/course-geometry-2026-09-13/cacapon-07-side.svg)
+
+Current verification: 309 tests across fourteen geometry/shot-helper/state-machine/
+penalty/unit, entry-distance and save-schema files pass; four analytic depth/hash tests pass. Targeted
+ESLint, full TypeScript and the isolated real-component production bundle pass.
+Browser checks at 375×812, 390×844, 430×932 and 320×568 retain original
+measurements, save/edit/undo/penalty replay, stable inline cameras, unfinished
+12ft input and focus restoration. WebGL context-loss injection falls back
+without losing the form. Missing geometry and putting expose no terrain UI.
+At 620×480, fewer than 0.004% of SVG/GPU pixels differ by more than 32/255 in
+any RGB channel across the three presets. This is rendering agreement only.
+The manifest retains the exact observations and viewport dimensions.
+
+The earlier full Next build predates this extension; it is not claimed as a
+current pass. A 4GB TypeScript attempt exhausted its heap; the serialized 6GB
+retry passed. The isolated fixture bundle uses real components but deliberately
+stubs external infrastructure; its size is not the incremental player-route JS
+budget. GitHub owns the full required application build and CodeQL checks.
+
+Native virtual-keyboard/safe-area behavior, supported-phone GPU performance,
+120Hz feasibility, thermal response, independent terrain registration and
+course-familiar source approval remain **unverified**. A shortened desktop
+viewport with a focused field is labelled separately from a native keyboard.
+Desktop RAF observations are not GPU frame timings or a phone performance SLO.
+Library expansion, production resolution and full manual-input reconstruction
+remain subsequent gates; this pass introduces no production mutation.
+
+
+## 21. Four-course high-fidelity source trial — September 13, 2026
+
+### 21.1 Scope and usage selection
+
+The owner narrowed the expansion to the top courses and requested high-fidelity
+imagery only. The authoritative plan revision remains PR #1937 at
+`bcac4026b2fc238d441575f95f0c6359ff6232b8`, including Sections 7.7 and 18;
+Sections 19–21 record implementation findings rather than competing plans.
+Manual entry, no cart paths, no GPS, unknown pin and immutable original shot
+measurements remain unchanged.
+
+A read-only production query on September 13 found 21 linked course records
+with more than one **completed** round outside the two explicit demo teams.
+It excluded direct demo-team rounds and players with demo memberships, including
+rounds whose team field was null. Null teams were resolved only through a sole
+active team membership. Both demo IDs come from the existing demo-team authority,
+not a name-substring guess. In-progress rounds do not count as completed play.
+The four highest counts were:
+
+| Course record | Completed rounds | Trial result |
+|---|---:|---|
+| Bryan Park Champs | 45 | Unassigned green complex; layout and renovation review pending |
+| Cacapon State Park | 36 | Existing 18-hole partial SVG package; hole 7 terrain/canopy proof |
+| The Cardinal | 30 | Unassigned green complex; routing/fairway/tee coverage missing |
+| Winchester CC | 30 | 18-hole candidate SVG package; hole 7 terrain/canopy proof |
+
+The complete aggregate query and result are retained as `cohort-query.sql` and
+`course-cohort-2026-09-13.json`. No player shot ledger or personal profile was
+queried. There were 105 completed rounds without a course link; their names
+remain unresolved candidates and were not silently attached to library courses.
+No production write, migration, binding, enrichment, merge or deployment occurs.
+
+### 21.2 Native image quality and source dates
+
+| Study | Native resolution and capture | Use / unresolved limitation |
+|---|---|---|
+| Bryan Park | Six inches / 0.1524m, February 11, 2022 | NC Latest imagery; current bunker agreement unresolved |
+| The Cardinal | Six inches / 0.1524m, February 9, 2022 | NC Latest imagery; played-hole order unresolved |
+| Winchester 7 | Twelve inches / 0.3048m, 2022 | VA VBMP tile `DO_N17_5180_20.2022`; day unavailable |
+| Cacapon comparison | Morgan County 2024; native GSD not established | View-only; requested six-inch export is not claimed as native six-inch data |
+
+The NC 2024–2027 service returned blank crops at these points. The Latest
+service returned the actual 2022 photographs; seamline metadata established the
+capture dates. The fetcher rejects blank or provider-resized responses instead
+of silently reducing fidelity. Image pixel size and requested output scale are
+recorded separately from source accuracy. No sharpening/upscaling is presented
+as new geographic evidence.
+
+The [NC image service](https://services.gis.nc.gov/secure/rest/services/Imagery/Orthoimagery_Latest/ImageServer)
+and [acquisition seamlines](https://services.nconemap.gov/secure/rest/services/NC1Map_Ortho_Acquisition_Related/FeatureServer/13)
+support the NC dates. The [VA imagery index](https://vginmaps.vdem.virginia.gov/arcgis/rest/services/VBMP_Imagery/MostRecentImagery_WGS_Tile_Index/MapServer/2)
+identifies Winchester's native twelve-inch product. [Bryan Park's official site](https://bryanpark.com/)
+reports Champions bunker renovations; sharp 2022 imagery cannot establish the
+current renovated boundaries. NC and county photographs remain local inspection
+files, not redistributed pixels or unverified tracing inputs.
+
+### 21.3 Geometry, terrain and tree findings
+
+Winchester's 18 OSM route ordinals and pars match the existing Gold tee scorecard.
+Recorded tee yardages remain unchanged; hole 7 remains 355yd irrespective of
+route length or camera. The package contains 160 features, including two OSM
+multipolygon fairway relations with preserved inner rings. Candidate hazard
+associations omit ambiguous nearby-hole matches and retain the omitted IDs in
+`winchester-review.json`; all 18 holes remain partial source candidates.
+
+Only hole 7's canopy groups and two greenside bunkers received this crop review.
+Visible crown texture was distinguished from detached shadows; other holes do
+not gain invented trees to fill space. Crowns are illustrations inside supported
+canopy masks, not measured tree bases/heights. Shadow pixels do not become rough
+or bunker polygons. A course-familiar independent reviewer has not accepted the
+package or established currentness/registration error.
+
+Winchester 7 uses **USGS 1 Meter 17 x74y434 VA_NorthernShenandoah_2020_D20**,
+captured November 29, 2020–January 12, 2021, in NAVD88. Its 5,484-triangle mesh
+has sampled elevations 192.8197–216.3616m and a 78,249-byte compact JSON gzip
+payload. Those are mesh characteristics, not shot elevation or accuracy claims.
+Geometry hash: `0bb452f127b08568a8a7a41be537af7cdbcabf39b0c7562ecfa047d8f88373c0`.
+Terrain hash: `8eb95c69001283eb67c860d81a3f894ba6834893f0fb2851174f570fd34dd743`.
+
+The bounded USGS ImageServer catalogue query found no `USGS 1 Meter` product at
+the two NC study points. This is not a claim that all state/local elevation is
+unavailable. No older coarse DEM was substituted to manufacture an angled view.
+Bryan and Cardinal therefore remain original-OSM green studies with no physical
+pin, route, tee, full-hole claim or playable binding. The validator permits an
+unrouted study only as an explicitly labelled partial `source_candidate` with a
+green; it rejects relabelling that study as `reviewed_draft`. Internal placeholder
+ordinal/par fields are not exposed as a real scorecard. The source review view
+has only Green/Expand viewing controls and reuses `HoleSceneFrame`.
+
+### 21.4 Reproduction, actual screens and verification
+
+`src/test/fixtures/course-geometry/sources/README.md` documents reproduction from
+immutable compressed OSM extracts and public USGS raster caches. Original source
+hashes, native image metadata and unresolved edges remain beside the fixtures.
+`render-top-courses.tsx` produces 38 deterministic SVG previews using the same
+React `CourseHoleScene`: 18 Cacapon, 18 Winchester and two unassigned studies.
+Contact sheets label played hole/yardage when known, package hash, style and
+partial status outside the physical scene. No image-generation model is used.
+
+The actual Fairway entry/review harness accepts `?course=winchester`; Cacapon is
+the default. `?study=bryan` and `?study=cardinal` open the internal acceptance
+view. It mounts the actual shared app shell and scene component, but does not
+pretend an unassigned green is a playable round. External service adapters are
+inert and the example shot ledger is synthetic.
+
+- [Winchester interactive terrain](assets/course-geometry-2026-09-13/winchester-terrain.png)
+- [Winchester entry](assets/course-geometry-2026-09-13/winchester-entry.png)
+- [Winchester review detail](assets/course-geometry-2026-09-13/winchester-review-green.png)
+- [Winchester 18-hole contact sheet](assets/course-geometry-2026-09-13/winchester-contact.png)
+- [Bryan Park source study](assets/course-geometry-2026-09-13/bryan-source-study.png)
+- [Cardinal source study](assets/course-geometry-2026-09-13/cardinal-source-study.png)
+- [Four-course browser report](assets/course-geometry-2026-09-13/top-course-verification.json)
+- [Per-hole hashes and sizes](assets/course-geometry-2026-09-13/top-course-manifest.json)
+
+The four-course browser check at 390×844 records zero page errors. Cacapon and
+Winchester preserve the unfinished 12ft entry and unchanged saved ledger when
+Expand opens/closes; both use the same scene/reconstruction. The two unassigned
+studies expose no Hole routing control. Targeted ESLint, all preparation-script
+Ruff checks, full TypeScript, 309 tests across fourteen relevant files and four
+analytic vector visibility/hash tests pass. The isolated real-component Vite
+production bundle passes; it is not the full Next application build or a phone
+bundle-size benchmark. Current Cacapon SVG/GPU comparison at 620×480 has fewer
+than 0.004% of pixels differing by more than 32/255 across all three presets.
+This measures renderer agreement only, not geographic accuracy.
+
+This trial is **not four fully accepted courses**. Only Cacapon 7 and Winchester
+7 have terrain studies; other holes lack equivalent detailed source review.
+Bryan/Cardinal need layout/currentness resolution and suitable terrain sources.
+Native phone keyboard/safe-area tests, supported-device frame-time benchmarks,
+independent registration, course-familiar approval and production access/storage
+remain outstanding. Neither source resolution nor attractive trees closes those
+gates. The trial demonstrates reuse and exposes the per-course review work;
+it does not establish a universal enrichment time or national coverage rate.
