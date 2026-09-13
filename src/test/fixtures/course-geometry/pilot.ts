@@ -21,10 +21,12 @@ export function pilotScene(holeKey = 'cacapon-01', includeEvents = true) {
 }
 
 /** Presentation fixture with explicitly supplied test coordinates. These are
- * NOT the output of reconstructing player entries. Ordinary pilotScene stays
- * unresolved. This separate fixture demonstrates marker styling/containment. */
+ * NOT the output of reconstructing player entries. Ordinary pilotScene may
+ * show possible regions but keeps exact endpoints unresolved. This fixture
+ * demonstrates marker styling/containment against a nominal green reference. */
 export function illustrativeScene() {
-  const scene = pilotScene('cacapon-07');
+  // Replacing a ledger must not retain a pin hypothesis solved from the old one.
+  const scene = pilotScene('cacapon-07', false);
   scene.overlayKind = 'analytic_fixture';
   const fixtures = [
     { feature: 'osm-way-885719202', point: [139.3914878419688, 524.840140060172] as const, before: 431, after: 158, miss: undefined },

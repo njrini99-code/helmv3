@@ -49,7 +49,7 @@ for (const hole of pilotPackage.holes) {
 const sheetBase = `<svg xmlns="http://www.w3.org/2000/svg" width="2032" height="1336"><rect width="2032" height="1336" fill="#f6f3ed"/><text x="16" y="24" font-family="sans-serif" font-size="18" fill="#18251f">Cacapon · Partial source-reviewed draft · © OpenStreetMap contributors · ODbL 1.0</text><text x="16" y="48" font-family="sans-serif" font-size="12" fill="#18251f">${hash} · ${SCENE_STYLE_VERSION} · USDA NAIP 2024 canopy context on hole 7 · No pin or shot locations</text></svg>`;
 await sharp(Buffer.from(sheetBase)).composite(contactTiles).png().toFile(`${out}/contact-sheet.png`);
 const summary = { packageHash: hash, style: SCENE_STYLE_VERSION, projection: pilotPackage.projection,
-  algorithm: 'evidence-only-v1', compressedBytes: gzipSync(JSON.stringify(pilotPackage)).length, artifacts: manifest };
+  algorithm: pilotScene(pilotPackage.holes[0]!.key, false).algorithmVersion, compressedBytes: gzipSync(JSON.stringify(pilotPackage)).length, artifacts: manifest };
 await writeFile(`${out}/manifest.json`, JSON.stringify(summary, null, 2) + '\n');
 await writeFile(`${out}/contact-sheet.html`, `<!doctype html><html lang="en"><meta charset="utf-8"><title>Cacapon geometry contact sheet</title>
 <style>body{font:14px system-ui;background:#f6f3ed;color:#18251f;margin:24px}table{border-collapse:collapse}td,th{padding:12px;border-bottom:1px solid #ccc}img{display:block}small{font-weight:400}th{text-align:left}p{max-width:1000px}</style>

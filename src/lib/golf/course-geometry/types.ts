@@ -84,6 +84,23 @@ export interface DiagramEvent {
   inferredSurfaceFeatureId: string | null;
   candidateFeatureIds: string[];
   reasons: string[];
+  /** Bounded examples of feasible area under a shared, unknown target.
+   * The renderer must clip every cell to its canonical source feature.
+   * These are not exhaustive boundaries or statistical confidence regions. */
+  regions?: {
+    featureId: string;
+    cells: { centerM: PointM; radiusM: number }[];
+    basis: 'sampled_feasible_region';
+  }[];
+  /** A straight connection between two representatives of ONE retained
+   * sequence. It is neither a measured flight nor the legacy shot length. */
+  connection?: {
+    fromM: PointM;
+    toM: PointM;
+    /** Planimetric separation, not carry, roll, terrain-adjusted or 3D length. */
+    distanceM: number;
+    basis: 'inferred_endpoint_separation';
+  } | null;
 }
 export interface LocalFeature {
   id: string;
@@ -93,18 +110,25 @@ export interface LocalFeature {
   parts: PointM[][][];
   reviewed: boolean;
 }
+export interface EstimatedPin {
+  /** A display hypothesis only. Never an observed or dated cup location. */
+  positionM: PointM;
+  basis: 'retained_manual_hypothesis' | 'nominal_green_reference';
+}
 export interface HoleScene {
   /** Optional source candidate used only by the expanded terrain feasibility view. */
   terrain?: TerrainMesh;
   /** Supplied analytic coordinates exist only in the local demonstration. */
-  overlayKind: 'unresolved' | 'analytic_fixture';
+  overlayKind: 'unresolved' | 'estimated_regions' | 'analytic_fixture';
   packageHash: string;
   physicalHoleKey: string;
   sharedGreenHoleOrdinals?: readonly number[];
-  algorithmVersion: 'evidence-only-v1';
-  target: { kind: 'unknown_pin'; greenFeatureId: string | null };
+  algorithmVersion: 'evidence-only-v1' | 'manual-bounds-v1';
+  target: { kind: 'unknown_pin'; greenFeatureId: string | null; estimate?: EstimatedPin };
   hole: PhysicalHole;
   features: LocalFeature[];
+  /** Neighboring source geometry for landscape context; excluded from shot inference. */
+  contextFeatures?: LocalFeature[];
   events: DiagramEvent[];
   /** Chosen from physical routing, independent of events and labels. */
   orientationRadians: number;

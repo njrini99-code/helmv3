@@ -792,7 +792,7 @@ function LegacyPuttingZoom({ plot, className, puttMakePct }: PuttingZoomProps) {
 
 
 export interface DistancePuttingProps {
-  /** Abstract cup frame, independent of physical green geometry. */
+  /** Illustrated putting line, independent of the course's estimated pin. */
   distanceView: { beforeFeet: number | null; afterFeet?: number | null; made?: boolean; rolledOff?: boolean };
   width?: number;
   height?: number;
@@ -804,19 +804,38 @@ export function PuttingZoom(props: PuttingZoomProps | DistancePuttingProps) {
   const { distanceView: d, width = 320, height = 160 } = props;
   const before = d.beforeFeet != null && Number.isFinite(d.beforeFeet) && d.beforeFeet >= 0 ? d.beforeFeet : null;
   const after = d.afterFeet != null && Number.isFinite(d.afterFeet) && d.afterFeet >= 0 ? d.afterFeet : null;
-  const max = Math.max(before ?? 0, after ?? 0);
-  const scale = max > 0 ? Math.max(1, Math.min(width / 2 - 60, height / 2 - 26)) / max : 1;
-  const cx = width / 2, cy = height / 2;
+  const hasLeave = !d.made && after != null && after > 0;
+  const cx = width * (hasLeave && after > (before ?? 0) * .5 ? .56 : .74), cy = height * .53;
+  const limits = [before != null && before > 0 ? (cx - 30) / before : Infinity,
+    hasLeave ? Math.min(width - cx - 20, cx - 20, cy - 35, height - cy - 30) / after : Infinity];
+  const scale = Math.max(.001, Math.min(...limits, 1000));
+  const startX = before == null ? null : cx - before * scale;
   const fmt = (n: number) => `${Number(n.toFixed(1))} ft`;
-  return <svg role="img" aria-label="Distance-based putting schematic. Cup is abstract; direction and green contours are unknown."
+  return <svg role="img" aria-label="Illustrated putting view. Recorded distances are to scale; line direction and green shape are illustrative."
     viewBox={`0 0 ${width} ${height}`} width={width} height={height} className={props.className}
-    style={{ width: '100%', height: '100%', display: 'block', background: 'var(--fw-diagram-ground)' }} data-putting-scale={scale}>
-    {/* True radial distances. The leave is an entire ring, never a guessed bearing. */}
-    {before != null && <circle data-putting-radius="before" cx={cx} cy={cy} r={before * scale} fill="none" stroke="var(--fw-diagram-green)" strokeWidth={1} />}
-    {after != null && !d.made && <circle data-putting-radius="after" cx={cx} cy={cy} r={after * scale} fill="none" stroke="var(--fw-diagram-event)" strokeDasharray="3 4" />}
-    <circle cx={cx} cy={cy} r={3} fill={d.made ? 'var(--fw-diagram-event)' : 'var(--fw-diagram-shadow)'} stroke="var(--fw-diagram-event)" />
-    <text x={cx + 10} y={cy - 8} fontSize={13} fill="var(--fw-diagram-event)">{d.made ? 'Holed' : 'Cup reference'}</text>
-    <text x={14} y={21} fontSize={14} fill="var(--fw-diagram-event)">{before == null ? 'Distance unknown' : `${fmt(before)}${after != null ? ' before' : ' to hole'}`}</text>
-    <text x={14} y={height - 12} fontSize={13} fill="var(--fw-diagram-event)">{after != null && !d.made ? `${fmt(after)} remaining${d.rolledOff ? ' · off green' : ' · bearing unknown'}` : 'Distance schematic · no physical pin'}</text>
+    style={{ width: '100%', height: '100%', display: 'block', background: 'var(--fw-diagram-ground)', fontFamily: 'var(--fw-font-sans)' }} data-putting-scale={scale}>
+    {/* This quiet putting surface is illustration, never the physical green.
+        The start-to-hole length and leave radius share one feet scale. */}
+    <rect x={14} y={33} width={width - 28} height={height - 62} rx={(height - 62) / 2}
+      fill="var(--fw-diagram-fringe)" />
+    <rect x={18} y={37} width={width - 36} height={height - 70} rx={(height - 70) / 2}
+      fill="var(--fw-diagram-green)" />
+    {hasLeave && <circle data-putting-radius="after" cx={cx} cy={cy} r={after * scale} fill="none"
+      stroke="var(--fw-diagram-ground)" strokeWidth={1.2} strokeDasharray="3 4" opacity={.7} />}
+    {startX != null && <>
+      <line data-putting-distance-line x1={startX} y1={cy} x2={cx} y2={cy} stroke="var(--fw-diagram-ground)"
+        strokeWidth={1.4} strokeDasharray="5 5" opacity={.65} />
+      <circle data-putting-ball="illustrative_start" cx={startX} cy={cy} r={5}
+        fill="var(--fw-diagram-event)" stroke="var(--fw-diagram-ground)" strokeWidth={1.4} />
+    </>}
+    <g data-putting-hole data-made={d.made === true}>
+      <circle cx={cx} cy={cy} r={4} fill={d.made ? 'var(--fw-diagram-event)' : 'var(--fw-diagram-ground)'}
+        stroke="var(--fw-diagram-event)" strokeWidth={1} />
+      <path d={`M${cx} ${cy - 2} V${cy - 25}`} fill="none" stroke="var(--fw-diagram-ground)" strokeWidth={1.5} />
+      <path d={`M${cx} ${cy - 25} l13 5 -13 6 Z`} fill="var(--fw-diagram-event)" stroke="var(--fw-diagram-ground)" strokeWidth={.8} />
+    </g>
+    <text data-putting-label="before" x={30} y={cy - 40} fontSize={14} fontWeight={600} fill="var(--fw-diagram-ground)">{before == null ? 'Distance unknown' : `${fmt(before)} putt`}</text>
+    <text x={width - 30} y={cy - 40} textAnchor="end" fontSize={13} fill="var(--fw-diagram-ground)">{d.made ? 'Holed' : ''}</text>
+    <text x={16} y={height - 10} fontSize={12} fill="var(--fw-diagram-event)">{after != null && !d.made ? `${fmt(after)} remaining${d.rolledOff ? ' · off green' : ''}` : 'Ball to hole'}</text>
   </svg>;
 }

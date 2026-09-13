@@ -1,0 +1,155 @@
+{
+  "complete": false,
+  "productionReady": false,
+  "nativeDeviceMeasured": false,
+  "build": "running after final lifecycle and diagnostic fixes",
+  "visualReview": "not approved",
+  "globalExceptions": [
+    "Broad source slope remains; remaining coarse context faceting needs further visual calibration",
+    "Registration/currentness unverified",
+    "Only Hole7 has reviewed canopy evidence",
+    "Links/desert/mountain and real-device matrix still pending",
+    "Actual whole-green/putting replacement is planned in Section25, not implemented",
+    "Pan/zoom context coverage beyond canonical views remains unapproved"
+  ],
+  "holes": [
+    {
+      "hole": 1,
+      "sourceCandidate": true,
+      "teeGeometry": "approximate",
+      "canopyReviewed": false,
+      "visualApproval": "pending"
+    },
+    {
+      "hole": 2,
+      "sourceCandidate": true,
+      "teeGeometry": "approximate",
+      "canopyReviewed": false,
+      "visualApproval": "pending"
+    },
+    {
+      "hole": 3,
+      "sourceCandidate": true,
+      "teeGeometry": "approximate",
+      "canopyReviewed": false,
+      "visualApproval": "pending"
+    },
+    {
+      "hole": 4,
+      "sourceCandidate": true,
+      "teeGeometry": "approximate",
+      "canopyReviewed": false,
+      "visualApproval": "pending"
+    },
+    {
+      "hole": 5,
+      "sourceCandidate": true,
+      "teeGeometry": "approximate",
+      "canopyReviewed": false,
+      "visualApproval": "pending"
+    },
+    {
+      "hole": 6,
+      "sourceCandidate": true,
+      "teeGeometry": "approximate",
+      "canopyReviewed": false,
+      "visualApproval": "pending"
+    },
+    {
+      "hole": 7,
+      "sourceCandidate": true,
+      "teeGeometry": "approximate",
+      "canopyReviewed": true,
+      "visualApproval": "pending"
+    },
+    {
+      "hole": 8,
+      "sourceCandidate": true,
+      "teeGeometry": "approximate",
+      "canopyReviewed": false,
+      "visualApproval": "pending"
+    },
+    {
+      "hole": 9,
+      "sourceCandidate": true,
+      "teeGeometry": "approximate",
+      "canopyReviewed": false,
+      "visualApproval": "pending"
+    },
+    {
+      "hole": 10,
+      "sourceCandidate": true,
+      "teeGeometry": "missing",
+      "canopyReviewed": false,
+      "visualApproval": "pending"
+    },
+    {
+      "hole": 11,
+      "sourceCandidate": true,
+      "teeGeometry": "approximate",
+      "canopyReviewed": false,
+      "visualApproval": "pending"
+    },
+    {
+      "hole": 12,
+      "sourceCandidate": true,
+      "teeGeometry": "approximate",
+      "canopyReviewed": false,
+      "visualApproval": "pending"
+    },
+    {
+      "hole": 13,
+      "sourceCandidate": true,
+      "teeGeometry": "approximate",
+      "canopyReviewed": false,
+      "visualApproval": "pending"
+    },
+    {
+      "hole": 14,
+      "sourceCandidate": true,
+      "teeGeometry": "approximate",
+      "canopyReviewed": false,
+      "visualApproval": "pending"
+    },
+    {
+      "hole": 15,
+      "sourceCandidate": true,
+      "teeGeometry": "approximate",
+      "canopyReviewed": false,
+      "visualApproval": "pending"
+    },
+    {
+      "hole": 16,
+      "sourceCandidate": true,
+      "teeGeometry": "approximate",
+      "canopyReviewed": false,
+      "visualApproval": "pending"
+    },
+    {
+      "hole": 17,
+      "sourceCandidate": true,
+      "teeGeometry": "approximate",
+      "canopyReviewed": false,
+      "visualApproval": "pending"
+    },
+    {
+      "hole": 18,
+      "sourceCandidate": true,
+      "teeGeometry": "approximate",
+      "canopyReviewed": false,
+      "visualApproval": "pending"
+    }
+  ],
+  "verification": {
+    "focusedTests": 153,
+    "postStyleTests": 8,
+    "cameraCases": 810,
+    "browserMatrixCaptures": 72,
+    "javascriptErrors": 0,
+    "lint": "51 original changed TS files checked; fixes and seven final review files passed",
+    "build": "running",
+    "physicalDevice": "none connected",
+    "finalReviewTests": 17,
+    "runtimeReplacement": "real WebGL: connected replacement, eligibility removal, final context release passed"
+  }
+}

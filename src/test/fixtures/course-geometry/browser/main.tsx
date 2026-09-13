@@ -1,5 +1,5 @@
 import { createRoot } from 'react-dom/client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import '@/app/globals.css';
 import '@/styles/design-tokens.css';
 import './fonts.css';
@@ -18,6 +18,8 @@ import winchesterData from '../winchester.json';
 import winchesterTerrainData from '../winchester-07-terrain.json';
 import { parseGeometryPackage } from '@/lib/golf/course-geometry/schema';
 import { SourceStudy } from './source-study';
+import { CourseMatrixFixture } from './course-matrix';
+import { loadCompiledFixture } from './fixture-assets';
 
 const params = new URLSearchParams(location.search);
 const winchester = params.get('course') === 'winchester';
@@ -54,20 +56,33 @@ const holeMeta = new Map(holes.map(h => [h.number, { par: h.par, yardage: h.yard
 
 function Screens() {
   const [saved, setSaved] = useState<ShotRecord[]>(initial);
+  const [activeGeometry, setActiveGeometry] = useState(geometry);
+  const [compiledState, setCompiledState] = useState(winchester ? 'not-applicable' : 'loading');
+  useEffect(() => {
+    if (winchester) return;
+    const controller = new AbortController();
+    loadCompiledFixture('cacapon-07', controller.signal).then(mesh => {
+      if (!controller.signal.aborted) {
+        setActiveGeometry({ ...geometry, terrainByHole: { [mesh.physicalHoleKey]: mesh } });
+        setCompiledState('ready');
+      }
+    }).catch(() => { if (!controller.signal.aborted) setCompiledState('unavailable'); });
+    return () => controller.abort();
+  }, []);
   return <FairwayDashboardShell userData={{ role: 'player', userId: 'local-fixture', name: 'Local review', teamId: 'local-team', teamName: 'GolfHelm' }}>
     {review ? <main className="mx-auto max-w-5xl px-4 py-5 font-fw-sans">
       <h1 className="mb-4 font-fw-display text-h2 font-semibold">Round Review</h1>
-      <ReviewHero geometry={scenario === 'missing' ? undefined : geometry} totalScore={73} scoreToPar={1} courseDateLine={`${currentPackage.name} · Local example`} grade={{ score: 4, label: 'Solid round' }} mixLine="13 pars · 2 birdies · 3 bogeys" filmstripHoles={filmstripHoles} holeMeta={holeMeta} shotsByHole={shotsByHole} />
+      <ReviewHero geometry={scenario === 'missing' ? undefined : activeGeometry} totalScore={73} scoreToPar={1} courseDateLine={`${currentPackage.name} · Local example`} grade={{ score: 4, label: 'Solid round' }} mixLine="13 pars · 2 birdies · 3 bogeys" filmstripHoles={filmstripHoles} holeMeta={holeMeta} shotsByHole={shotsByHole} />
       <p className="mt-6 text-caption text-text-secondary">Local fixture. Course and event accuracy review is still pending.</p>
     </main> : <FairwayShotTracking holes={holes} currentHoleIndex={6} initialShots={initial} initialShotNumber={initial.length + 1}
-      geometry={scenario === 'missing' ? undefined : geometry} autoSaveDisabled onHoleComplete={async () => true}
+      geometry={scenario === 'missing' ? undefined : activeGeometry} autoSaveDisabled onHoleComplete={async () => true}
       onSaveShot={s => setSaved(list => [...list, s])} onAutoSave={async s => setSaved(s)} onExit={() => {}} />}
     <CapacitorProvider />
-    <output hidden data-fixture-ledger={JSON.stringify(saved.map(normalizeLiveShot))} />
+    <output hidden data-compiled-state={compiledState} data-fixture-ledger={JSON.stringify(saved.map(normalizeLiveShot))} />
   </FairwayDashboardShell>;
 }
 const exportPreset = params.get('export');
 const sourceStudy = params.get('study');
-createRoot(document.getElementById('root')!).render(sourceStudy === 'bryan' || sourceStudy === 'cardinal'
+createRoot(document.getElementById('root')!).render(params.has('matrix') ? <CourseMatrixFixture holeNumber={Number(params.get('hole') ?? 7)} /> : sourceStudy === 'bryan' || sourceStudy === 'cardinal'
   ? <SourceStudy course={sourceStudy} /> : exportPreset === 'top' || exportPreset === 'terrain' || exportPreset === 'side'
     ? <TerrainExportFixture preset={exportPreset} /> : <Screens />);

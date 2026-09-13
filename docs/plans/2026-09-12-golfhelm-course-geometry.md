@@ -1674,7 +1674,7 @@ in `src/test/fixtures/course-geometry/cacapon-07-terrain-report.json`.
 ### 20.3 Rendering and interaction
 
 - Top is orthographic at 90°; Terrain defaults to 50°; Side is a low-angle 20°
-  view. Drag stays within 20–90° pitch and ±45° yaw, with 1–4× zoom and bounded
+  view. Drag stays within 20–90° pitch and ±45° yaw, with 0.5–4× zoom (updated in Section 22) and bounded
   pan. One fixed base bearing per viewport improves whole-hole framing without
   counter-rotating during gestures. Only the expanded viewer captures gestures.
 - Top preserves uniform metric XY scale. Tilt naturally foreshortens the
@@ -1768,7 +1768,6 @@ viewport with a focused field is labelled separately from a native keyboard.
 Desktop RAF observations are not GPU frame timings or a phone performance SLO.
 Library expansion, production resolution and full manual-input reconstruction
 remain subsequent gates; this pass introduces no production mutation.
-
 
 ## 21. Four-course high-fidelity source trial — September 13, 2026
 
@@ -1903,3 +1902,485 @@ independent registration, course-familiar approval and production access/storage
 remain outstanding. Neither source resolution nor attractive trees closes those
 gates. The trial demonstrates reuse and exposes the per-course review work;
 it does not establish a universal enrichment time or national coverage rate.
+
+## 22. Camera, shot-scale and visual review — September 13, 2026
+
+### 22.1 Reviewed revision and scope
+
+This pass reread plan PR #1937 at `bcac4026b2fc238d441575f95f0c6359ff6232b8`,
+including the complete Sections 7.7 and 18, plus the accumulated Sections 19–21,
+current AGENTS.md, design tokens and mapped shot/lifecycle documentation. The
+implementation branch preserves current-main work through merge `f5d994b01`.
+Three agents reviewed camera/motion, shot accuracy and visual craft independently;
+the primary agent integrated and verified the actual Fairway components.
+
+The fifth supplied image establishes the visual direction: generous map space,
+clear fairway/green hierarchy, dimensional tree groups and readable shot evidence.
+It does not supply geometry, individual tree positions, shot coordinates or club
+measurements. The existing manual controls, no-cart-path decision and production
+mutation restrictions continue to apply.
+
+| Section 18 gap found in the current implementation | Correction in this pass |
+|---|---|
+| Expanded chrome and controls consumed map space | Compact hole header, one view row, floating 44px zoom/reset controls, secondary camera tools and collapsible source detail |
+| Orbit refitted bounds every frame, cancelling part of the drag and changing scale | One geometry-derived world focus and orthographic lens; only explicit zoom changes scale |
+| Tree lift and shadows partly followed screen axes | Project bases, elevated crown centres, world light and ground shadows through the same terrain camera |
+| All ordinary manual shots were unresolved | Bounded distance/surface/direction regions with one latent target model, conservative gates and explicit ambiguity |
+| A pretty adjacent pair of points could suggest a shot connection | Shared overlay requires a validated connection from one coherent retained sequence |
+| Selected greenside detail remained below the visible review area | Deliberate hole/shot selection brings its detail into view; hover/focus scrubbing does not scroll |
+| Flat surface definition and mechanical crown shapes | Stronger muted-sage/rough separation, crisp green/sand edges, varied layered crowns and consistent light direction |
+| Tiny region cells resembled ball dots in whole-hole views | Suppress cells below 24 CSS-pixel² instead of enlarging their geographic extent; retain the evidence explanation and Green/zoom inspection |
+
+### 22.2 Physical scale, camera and gestures
+
+`fitTerrainCamera` now selects its base bearing, world focus and scale from the
+physical context and viewport once. Yaw/pitch no longer trigger a fresh fit.
+Top uses equal East/North metric scale; terrain tilt intentionally foreshortens
+the ground. The Top scale bar is hidden in angled views. Scorecard tee yardage
+remains the original value; it does not stretch the course or masquerade as a
+measured straight distance to today's cup.
+
+Expanded interaction supports 20–90° pitch, ±45° yaw, explicit 0.5–4× zoom and
+bounded pan. Off-centre pinch preserves its midpoint, pointer release removes
+only the released finger, and wheel input normalizes pixel/line/page units.
+Camera buttons flush queued motion and rebase active pointers. Rotate, tilt,
+pan, zoom and reset all have button alternatives. A missing/failed terrain fit
+uses SVG pan; it never captures a drag into an invisible terrain camera.
+Inline entry stays 160px and scroll-friendly; review stays one 310px viewport.
+At standard text size, expanded drawing height is `100dvh - 250px`, constrained
+to 200–720px. Accessible content may scroll in the existing modal body.
+
+The implementation follows the separation of touch actions and per-pointer
+capture in [W3C Pointer Events](https://www.w3.org/TR/pointerevents3/) and the
+requirement for alternatives to dragging in
+[WCAG 2.2 dragging guidance](https://www.w3.org/WAI/WCAG22/Understanding/dragging-movements.html).
+The stable-lens choice follows ordinary
+[orthographic camera semantics](https://threejs.org/docs/pages/OrthographicCamera.html),
+without adding Three.js or a second camera backend.
+
+### 22.3 Strongest defensible manual-shot overlay
+
+`manual-bounds-v1` replaces the earlier evidence-only scene adapter. It retains
+at most 36 hypothetical target samples within the reviewed green, eight states
+per target, 96 region cells per event, 72 events and 250,000 point checks. The
+same hypothetical target is retained through a compatible sequence; it is never
+exported or rendered as an actual pin. The remaining-distance allowance includes
+half the original unit plus an explicitly uncalibrated 2m off-green or 0.3048m
+on-green allowance. These are illustration hypotheses, not empirical error
+estimates, exhaustive feasible sets or statistical confidence intervals.
+
+Approach direction remains one of all eight sectors in the player's target
+frame. An unknown origin or tee aim leaves direction unresolved. Backward
+recovery remains possible. Original `Other`, missing units/distances and
+conflicting neighbors remain explicit conditions. Derived `shotDistance` is
+retained for legacy display/statistics but is never a second radius.
+
+A compatible sampled region must remain inside the relevant reviewed surface.
+A new independent surface guard also limits every cell's full circular extent
+against overlapping sand, green, water and incompatible lies. A fairway polygon
+overlapping a bunker does not justify a fairway position inside that bunker.
+Canonical source polygons remain unchanged.
+
+Current package behavior is deliberately different by source readiness:
+
+- **Cacapon partial reviewed draft:** possible regions only; no exact point or
+  line. The supplied 158yd approach, Sand, Short right, 17yd remaining fits two
+  mapped bunkers. Later green/putting events do not silently choose one.
+- **Winchester source candidate:** course context only, with source acceptance
+  pending. No geographic shot region or marker is asserted.
+- **Complete reviewed analytic fixtures:** a unique compatible surface can
+  receive a deterministic estimated representative from a coherent retained
+  sequence. Its straight dashed connection depicts endpoint separation, not
+  measured flight, carry, roll or a curve along the routing centreline.
+
+Both SVG and terrain now use `CourseShotOverlay`. Anchors share the surface
+camera; numbered badges stay readable in CSS pixels and may move independently
+with leaders. Invalid, penalty, gap-spanning or incoherent connections do not
+render. Penalty transition origins, edit/delete/undo, original units/results,
+scores and driving statistics remain controlled by their existing writers.
+`describePosition` supplies the same truthful status to review and expanded
+entry: possible areas, estimated position, unresolved position, penalty event,
+holed with unknown pin, or abstract putting schematic.
+
+### 22.4 Visual craft and source limits
+
+Style `fairway-vector-v10` strengthens fairway/ground contrast, muted-sage greens,
+warm sand rims and source-backed canopy layers. Canonical feature footprints,
+polygon holes and disconnected fairways are unchanged. Thirty-two cached crown
+silhouettes replace repeated identical shapes with fewer drawing primitives.
+Their heights and individual crown placement remain illustrative within reviewed
+canopy masks. They do not establish real strategic trees or measured shadows.
+No canopy is added to unreviewed holes merely to resemble the reference image.
+
+This follows cartographic emphasis on contrast, hierarchy and proportion in
+[Esri's design principles](https://www.esri.com/arcgis-blog/products/arcgis-pro/mapping/primary-design-principles-for-cartography)
+and explicit interior/painting behavior in
+[SVG painting rules](https://www.w3.org/TR/SVG/painting.html).
+The cream/ground palette contrast measures 13.69:1; fairway/ground measures
+3.60:1. Those comparisons do not constitute a full application contrast audit.
+GPU buffers and cached crown preparation avoid per-frame rebuilds, consistent
+with [WebGL performance guidance](https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/WebGL_best_practices).
+
+The reference's dense woodland requires substantially more reviewed canopy
+coverage. Only the two pilot holes currently have matching terrain/canopy
+studies. Tree billboards are not a full 3D tree volume/occlusion system, and
+USGS macro terrain does not support putting-break claims. The rest of the
+four-course source trial remains at the acceptance levels recorded in Section 21.
+
+### 22.5 Pin and putting correction
+
+The owner's clarification replaces the technical “cup reference” UI with an
+ordinary ball-to-hole putting diagram and an **Estimated pin** flag. The flag
+uses the same retained target hypothesis as the reconstructed shots, or a
+validated interior green reference when that sequence is unavailable. The
+canonical target remains `unknown_pin`: tee selection and remaining yardage
+support an estimate, not a unique observation of the day's hole location. A
+scorecard routing distance is not a measured tee-to-pin chord and cannot stretch
+the real course. The inferred flag never becomes new evidence fed back into the
+solver. Source candidates without accepted green geometry receive no flag.
+
+The putting diagram uses one feet scale for the recorded starting distance and
+remaining-distance ring. Its illustrated bearing does not claim putting break.
+A zero leave does not mark a putt made without the explicit result. Roll-off
+values retain their original yard/foot conversion. Par-3 first approaches now
+respect the explicit approach direction instead of being mistaken for an
+ordinary tee-direction observation. A test-only ledger replacement also resets
+its target provenance instead of inheriting a pin from the previous ledger.
+
+## 23. Web/Capacitor premium landscape vertical slice
+
+### 23.1 Reuse and runtime decision
+
+The owner's 29-section specification is adopted within this existing plan. The
+previously unidentified USGS screen is in this task worktree, behind
+`CourseHoleScene`, `CourseTerrainCanvas` and `HoleSceneFrame`. Its real data
+already lives in the shared geometry packages, `TerrainMesh`, course source
+manifests and manual-shot adapter. No second course catalog, score ledger,
+coordinate model or source acquisition pipeline is introduced.
+
+Helm's runtime is React DOM/Next.js with Capacitor. This slice pins Three.js
+0.186.0 behind the existing expanded-renderer boundary. Raw Three is sufficient;
+React Three Fiber and camera-control dependencies are unnecessary for the
+existing constrained camera controller. The Three module loads only when an
+expanded terrain view is requested. Inline maps and filmstrip previews remain
+SVG, with one live GPU canvas for the expanded hole.
+
+### 23.2 Landscape and interaction contract
+
+The live landscape reuses terrain triangles already split and draped across
+source surface boundaries. It does not triangulate only a polygon outline and
+bridge over its interior relief. Course-local horizontal meters and orthometric
+NAVD88 elevation remain explicitly distinct from rigorous topocentric ENU Up.
+
+The display adapter owns lighting, opaque instanced crown volumes, mowing and
+material variation. It uses the supplied brighter grass/sand palette with one
+world-space sun. Terrain relief may be exaggerated; tree height is preserved
+above its displayed base. Changing display height must update normals, shadow
+geometry and picking consistently without changing the canonical vertices,
+remaining-distance evidence or terrain queries. Tree placement/height is still
+illustrative inside reviewed canopy masks, not surveyed strategic-tree data.
+No cart paths are added.
+
+The expanded phone view is a landscape with a compact floating header and a
+normal-flow inspector below; desktop uses a 320px right inspector. The inspector
+is nonmodal relative to the course and has no overlay intercepting canvas input.
+The enclosing Fairway workspace retains focus/escape/restore behavior while
+protecting the underlying unsaved shot-entry form. Sources and extra camera
+controls stay behind secondary disclosure controls.
+
+The drawing's measured rectangle excludes the inspector. A safe-viewport camera
+wrapper additionally reserves the floating header. Camera updates are sent to an
+imperative runtime controller; React stores committed camera/selection/UI state,
+not every animation frame. GPU terrain and retained SVG shot annotations update
+from the same camera in the same call. There is no continuous idle render loop.
+Manual shot entry, existing penalty/undo/edit behavior and source-readiness gates
+remain authoritative. Geographic target editing and location capture are not
+added by this slice.
+
+### 23.3 Export and release boundaries
+
+The supplied specification correctly distinguishes orthographic projection from
+an undistorted screen ruler at low pitch, and real depth testing from painter
+sorting. Current Three uses WebGL2; failed or lost contexts retain the SVG
+fallback. See [Three's WebGL renderer documentation](https://threejs.org/docs/pages/WebGLRenderer.html).
+
+The shared SVG adapter remains a vector-styled illustration of the same geometry,
+camera and evidence. Its designed shading does not promise pixel identity with
+Three's lit volume shadows. Earlier Section 20/22 GPU-to-SVG comparisons describe
+the preceding flat-color backend only. Three's own SVG adapter explicitly lacks
+shadow/advanced-material fidelity; see [SVGRenderer limitations](https://threejs.org/docs/pages/SVGRenderer.html).
+Browser captures show the full live interface. Exporting identical GPU shading
+plus DOM labels into a product PNG remains a separate capture contract.
+
+The first physical-hole slice uses existing Cacapon 7 and Winchester 7 source
+studies. Their acceptance/provenance limits in Section 21 are unchanged. The
+broader specification's source automation, GPS provider, spatial persistence,
+CoachHelm analysis and native offline durability are subsequent work packages,
+not implied additions to this manual-entry renderer task. No production source,
+round, schema or deployment changes are made. Real-device thermal/FPS and native
+cold-start offline checks remain required before production readiness claims.
+
+## 24. Shared visual correction and course-scale evidence
+
+The September 13 renderer-correction brief extends Section 23. The source
+package and manual ledger remain unchanged. `compile-course-terrain.py` now
+compiles all 18 Cacapon holes from one locked native-1m USGS source acquisition
+(December 4–21, 2021), with immutable request/source checksums. Each package
+contains source-gradient normals, an independent aligned 2m metric query grid,
+actual neighboring context feature IDs and explicit render/source-quality
+metadata. The 2m grid does not improve the source's measurement accuracy.
+
+The original dark band survives both shadow-disabled lighting and a controlled
+normal-buffer comparison on unchanged geometry. Imported source normals remove
+some local surface-cut discontinuities, but they do **not** erase the broad
+source slope. The old 8m mesh and tightly cropped context exposed that slope as
+an angular boundary. No zero-filled terrain samples, skirts or vertical crop
+walls were found. Do not describe a palette adjustment as proof that the source
+terrain is wrong or that all remaining faceting is fixed.
+
+The old convex-hull-plus-24m context and 6.5m fairway surround are replaced by
+wider rectangular source coverage and narrow illustrative transitions. Context
+feature IDs only expand rendering; they never expand the played-hole inference
+or lie-classification domain. Crown geometry stays complete above the ground,
+in spatial batches with stable source-based IDs. Grass bands are world-aligned,
+6m art treatments, with derivative filtering. Lighting remains fixed in world
+space. Shadow coverage includes source relief and complete nearby casting
+objects; no context mask clips crowns.
+
+Compiled terrain spans 14,179–32,050 triangles per hole, within a deliberately
+revised 40,000-triangle validation cap. Source/query accuracy remains independent
+of this display budget. All 18 serialized packages have valid cells, no omitted
+triangles and identical heights/normals at duplicated XY positions. Compressed
+packages total 16,456,410 bytes; the largest decoded package is 6,606,233 bytes.
+They are loaded one hole at a time in the local comparison harness. Hash-checked
+gzip delivery in that harness is not an offline activation protocol.
+
+The shared camera now evaluates both sides of the route bearing and fits Top,
+Terrain and Side independently. Gestures preserve the settled baseline lens;
+preset transitions blend it under the same controller. The safe region excludes
+the measured inspector, floating header and 64px control rail. Numerical checks
+pass for 810 combinations of 18 source-backed holes, five viewport sizes, three
+presets and three areas. A separately labelled Profile charts source elevation
+against real horizontal route distance and breaks at unsupported samples.
+
+These artifacts remain source candidates. Registration and renovation/currentness
+are unverified. Hole 10 lacks a usable tee polygon; existing tee polygons are
+approximate, not invented replacements. Only Hole 7 has reviewed canopy masks.
+Absent canopy evidence is not evidence that the other holes are open links.
+The matrix cannot establish desert/links/mountain visual acceptance, physical
+mobile FPS, thermal stability or Capacitor offline restart. Those are explicit
+remaining acceptance tasks, not inferred passes from desktop phone-sized images.
+
+### 24.1 Review artifacts and verification limits
+
+The [visual review gallery](assets/course-geometry-2026-09-13/visual-system/index.html)
+contains the frozen-camera debug comparison, unchanged-geometry normal study,
+original-resolution phone captures and all 18 holes in Top, Terrain, Profile
+and green-complex views. The [Top contact sheet](assets/course-geometry-2026-09-13/visual-system/contact-top.png)
+and [Terrain contact sheet](assets/course-geometry-2026-09-13/visual-system/contact-terrain.png)
+are review aids; originals preserve the 780×1688 drawing capture.
+
+The [machine-readable exception report](assets/course-geometry-2026-09-13/visual-system/failure-report.json)
+deliberately does not mark the course visually approved or production-ready.
+The [browser report](assets/course-geometry-2026-09-13/visual-system/browser-verification.json)
+records 72 canonical captures, zero JavaScript errors in that run, responsive
+controls, selection, cancellation, reduced motion and idle rendering. These
+use real Fairway components with inert external adapters in a local harness,
+not an authenticated native app shell. The recorded Mac Chrome camera study
+has 167 frame intervals, 10ms median, 11.9ms p95 and 12.4ms maximum; these are
+browser cadence observations, not GPU completion timings or mobile guarantees.
+
+Final review also exercises replacing a runtime on the same connected canvas,
+revoking context-only canopy eligibility, and releasing the removed canvas.
+The [real WebGL regression report](assets/course-geometry-2026-09-13/visual-system/final-review-regressions.json)
+confirms a usable replacement, removal of revoked crowns and final context
+release. Elevation diagnostic colors follow the renderer's rewound triangle
+vertices; affected wireframe captures were regenerated. The controlled normals
+and shadow-disabled comparisons did not depend on that color correction.
+
+Verification covers 153 focused tests before final review and 17 affected tests
+after the lifecycle/diagnostic corrections, plus eight compiler tests and the
+810 camera invariants. Real-device performance, current source registration,
+broader canopy review and native offline restart remain explicit next gates.
+
+## 25. Actual-green overview and putting redesign — implementation plan
+
+**Status: planned, not implemented by this brief.** This is the requested plan
+for IMG_6114/IMG_6115. It supersedes Section 22.5's abstract putting default and
+any earlier automatic tight ball-to-cup crop. Existing renderer work in Section
+24 is separate. This also supersedes abstract-default wording in Sections 7.5,
+7.7.7, 18.3 and 18.9. The new optional Set pin/Mark ball package supersedes the
+no-placement scope in Sections 1, 18.3 and 20.1 only for those explicit secondary
+actions. No GPS, mandatory placement questions or cart paths are introduced.
+No new pin/ball persistence or production migration is executed by this plan.
+Manual scoring remains usable without coordinate entry.
+
+### 25.1 Current code and confirmed reuse
+
+| Existing seam | Verified behavior | Planned change |
+| --- | --- | --- |
+| `src/lib/golf/course-geometry/build-scene.ts` / `types.ts` | One source revision, physical green feature ID and common target hypothesis | Keep this geometry/target authority for hole, green and putting |
+| `src/lib/golf/course-geometry/camera.ts` `contextPoints` | Green includes the entire green and every qualifying bunker within 45m; a whole multipart hazard can substantially enlarge the fit | Add an explicit whole-green scope, distinct from the existing green-complex scope |
+| `terrain.ts` / `terrain-viewport.ts` | Shared metric projector, preset fitting and measured safe viewport | Reuse for physical green; harmonize inline and expanded heading |
+| `FairwayHoleHero.tsx` → `entryView('putting')` | Tracking requests the putting view | Route course-backed putting to whole-green Top |
+| `ReviewHero.tsx` → `HoleShotPath/index.tsx` | Review selects the same view family | Use one active event key across map, inspector, timeline and replay |
+| `HoleSceneFrame.tsx` | Putting bypasses terrain and always renders `PuttingZoom(distanceView)` | Show the physical green when present; keep relative distances as an explicit fallback/disclosure |
+| `PuttingZoom.tsx` distance-only branch | Rounded capsules, fixed horizontal start and abstract cup; receives no physical green or shared target | Retain only for missing geometry or explicitly requested relative information |
+| `quality.ts` / `reconstruct.ts` | Putting has no authorized physical anchor; ordinary flight overlays reject putts | Add a separate shared putting-evidence adapter, without weakening full-swing eligibility checks |
+| `normalize.ts` / `distance-units.ts` | Preserve attempted/remaining values and original units | Build explicit attempt/read/result/leave labels from the selected event |
+
+The existing green-complex camera is broader than the requested green overview.
+In the compiled 390×640 drawing study, the actual green bounding box occupies
+about 5.7% of the drawing on Hole 7 and 4.3% on Hole 15. These are bounding-box
+ratios, not source-accuracy measurements. The green polygon already matches the
+hole scene's feature ID/revision; screenshot resemblance alone is not provenance.
+
+### 25.2 First package: synchronized selection and distance semantics
+
+1. Introduce one parent-owned `activeShotKey`, resolved to a single event view
+   model for all map labels, inspector values and replay. Eliminate independent
+   putting indices and fallback to the previous/last shot while a new event is
+   unavailable. Keep selection distinct from array order and putt ordinal.
+2. Headline attempted distance from `before`, with explicit result/leave from
+   `after`; never derive attempt or traveled roll from their difference. Example:
+   **Putt 1 · 12 ft**, **Left to right · Downhill**, **Missed long · 2 ft left**.
+   Selecting the following 2ft putt shows its own 2ft attempt; a holed event shows
+   **Made** only from its recorded result.
+3. Label approach metrics by time: **Start · Sand · 17 yd to play** describes an
+   origin; **Finish · Sand · 17 yd left** describes the previous shot's result.
+   Do not relabel a 17yd approach finish as that approach's starting distance.
+4. Preserve existing miss/read fields. A long miss may finish beyond the cup
+   even with a much smaller leave. Read direction/slope is player-reported
+   evidence, never a surveyed curve, speed or slope percentage.
+
+Exit evidence: rapid shot/putt selection, undo and loading cases show one event
+in every dependent surface; 12ft attempted/2ft left remains 12ft attempted.
+
+### 25.3 Second package: the actual whole-green camera
+
+Add a serializable green-view state with `scope: whole_green | focused_putt`,
+`cameraMode: top | terrain`, `activeShotKey`, `editMode` and `guidesVisible`.
+Selection is shared domain-view state; scope/mode are camera intent. Do not
+store a second green polygon or normalize its X/Y independently.
+
+Whole-green fitting starts from every ring/component of the canonical green,
+a narrow visual collar, and genuinely located selected nearby points. Use
+uniform scale and the actual safe region. Nearby hazards and a short approach
+entrance render as context; distant bunker components, long approach strips and
+woodland do not force the main lens outward. At explicit scope entry/reset, include bounded nearby off-green positions
+without moving them inside. Afterward, a newly selected offscreen position gets
+an edge indicator and explicit View ball/Focus putt action; selection alone
+never refits the whole-green baseline. Preserve the full connected double green when mapped.
+
+On scope entry and Whole green reset use exact Top with a stable approach/course
+heading. Reconcile current inline SVG and expanded Three orientation so opening
+detail does not swivel the green. Selecting putts or refreshing data preserves
+the user's overview camera. Inspector detents update the safe region, without
+continuous automatic recentering. Terrain is the same scene at an oblique angle.
+
+**Focus putt** is an explicit secondary action, available only with sufficient
+located evidence. Save and restore the previous whole-green camera. Expand for
+long putts; never clamp points or cut a concave green into an ellipse.
+
+Exit evidence: actual Hole 7, wide, narrow, concave and shared-green cases all
+retain source proportions and full outlines; Top, Terrain and hole views use
+identical feature IDs and canonical coordinates.
+
+### 25.4 Third package: honest cup, ball and putt overlays
+
+Extend the common target contract to distinguish unknown cup, green-center
+reference, retained estimated pin and confirmed/versioned cup. The current
+`nominal_green_reference` must not silently become a dated pin observation.
+The current nominal resolver can choose a maximum-clearance interior sample,
+which is not necessarily a center. Label that **Green reference**. Use **Green
+center** only when the adapter records a defined center construction; otherwise
+retain **Pin unknown** or the explicit estimated-pin status. A real green remains viewable with no cup.
+
+The shared resolver accepts a confirmed/versioned round-hole cup before any
+inference. A retained estimated hypothesis is secondary; a nominal green
+reference is only a reference. Pin correction invalidates derived hypotheses
+once across every view, without moving stored ball positions or rewriting their
+recorded distances. Every putt refers to that single pin-observation identity
+and revision; it cannot keep its own independently solved cup.
+
+Resolve ball locations and putt endpoints once in the shared adapter. Known or
+explicitly accepted positions can use screen-sized markers anchored in course
+meters. Unknown bearing remains null. A reported 12ft distance can drive an
+optional labelled placement guide; it does not select an exact point on the
+circle. Guides are distinct from uncertainty regions. Neither the component nor
+the renderer independently reconstructs putting coordinates.
+
+Keep past putts quiet and the selected event prominent. Show reliable endpoints
+or candidate regions when the path is unknown. Measured surface-roll samples,
+explicit estimates and player reads retain different provenance. All paths use
+the common terrain transform, and no full-swing airborne arc enters putting.
+Replay is optional and interruptible; it cannot infer a make from a curve
+crossing the cup or manufacture a lip-out. Whole-green framing stays stable.
+
+Reuse the existing label solver, reserved UI rectangles and leader lines.
+Move labels or hide secondary labels, never the cup/balls. The accessible shot
+list carries every event even when its overlay is hidden.
+
+### 25.5 Fourth package: optional placement and durable identity
+
+Expose Set pin and Mark ball as secondary tasks; neither blocks score entry.
+They use the same course-meter pick/inverse transform and shared target/shot
+view model. Mark ball explicitly identifies origin versus resting finish on the
+durable shot key; user-placed coordinates are user-confirmed estimates, not
+surveyed measurements. Keep the original reported distance when a placed position differs;
+show the discrepancy and let the golfer explicitly correct it. Commit on
+confirmation, not every pointer move. No automatic location capture is added.
+
+**Identity is a prerequisite to enabling persisted placement.** The current
+`ShotRecord` has optional `id` and `shotNumber`; `normalize.ts` uses the database
+ID or `shot-N` as its event key. These are not durable spatial identities across
+all saves: the checked round-save implementation and baseline atomic RPC replace
+hole/shot rows. Do not attach new observations solely to those rotating IDs or
+to a renumberable array index.
+
+Before editing persistence, trace `golf.ts` save/submit/edit, the active RPC
+migration chain, generated database types, `shot-storage.ts`, recovery snapshots
+and `sync-engine.ts` together. Introduce or reuse a durable client shot key
+minted once at shot creation, carried through undo/edit, draft serialization,
+recovery and server acknowledgement. Pair it with the stable round/hole slot;
+keep transient database IDs as mappings. For historical snapshots with no such
+key, allocate a persisted mapping once under revision control rather than
+reconstructing identity from mutable distance/score fields.
+
+Use the existing round authorization and atomic write contract for both shot
+mutation and spatial observation. A versioned pin observation belongs to the
+round/hole scene revision, with source, editor, timestamp and correction history.
+Validate finite coordinates, revision/frame compatibility and idempotent mutation
+IDs. Audit serializers for dropped fields and RLS against the parent round.
+Select an additive sidecar or schema extension only after that current-schema
+inspection. This plan supplies no speculative production SQL.
+
+Exit evidence: mark/correct/undo → save → reload → final submit → reconnect
+preserves the same accepted positions and stable keys exactly once. A snapshot
+replacement cannot orphan pin/ball observations. Camera, selection and replay
+produce no scoring writes.
+
+### 25.6 Fifth package: green-specific polish and acceptance
+
+Tune the shared green/fringe/sand styles after geometry and selection pass.
+Inspect edge offsets, joins, overlapping surfaces and diagnostic passes for
+accidental wedges; preserve source lobes, shoulders and concavity. Use narrow
+quiet fringe, subdued approach stripes and readable sand without luminous rims.
+Source terrain supplies broad relief only; no generic raised plate or implied
+putting-break precision. Nearby trees stay contextual and cannot dictate framing.
+
+Default controls: Top / Terrain, Whole green reset, compact synchronized putt
+card and previous/next. Focus putt, placement and guides remain contextual or
+secondary. Details retain source and uncertainty information. No default Side
+control is needed in this scope. Focus, keyboard and screen-reader navigation
+use the existing Fairway primitives.
+
+Capture original-resolution Top/Terrain/whole-green/explicit focus comparisons
+at matching phone sizes; include large text, expanded inspector, landscape and
+desktop. Use Hole 7, wide/narrow/concave/shared greens, long putt, off-green finish,
+unknown cup/bearing and missing-geometry cases. Test stable coordinates across
+scope changes, correct make/leave semantics, no label/control collisions,
+reduced motion, pointer cancellation and zero score writes from viewing. Record
+real supported-device rendering and native restart evidence separately from
+desktop viewport emulation. Require a coherent result on every representative
+case; a restyled capsule or an attractive crop is not the exit gate.

@@ -1,12 +1,12 @@
 import type { CourseGeometryPackage, HoleScene, ShotEvidence } from './types';
 import { localFeature } from './schema';
 import { auditContinuity } from './normalize';
-import { fitCamera } from './project';
+import { fitCamera, projectToLocal } from './project';
 import type { TerrainMesh } from './terrain';
+import { nominalGreenPin, reconstructHoleEvidence } from './reconstruct';
 
-/** Stage 2 leaves endpoints unresolved. Stage 5 adds bounded latent-target
- * sequences, not circles fed with legacy derived lengths. The same scene
- * feeds review, compact, strip and export without reinterpreting evidence. */
+/** The same physical coordinates and bounded evidence reconstruction feed
+ * review, compact, strip and export. Camera fitting never changes evidence. */
 export function buildHoleScene(pkg: CourseGeometryPackage, holeKey: string, evidence: readonly ShotEvidence[] = [], terrain?: TerrainMesh): HoleScene {
   const hole = pkg.holes.find(h => h.key === holeKey);
   if (!hole) throw new Error('Unknown physical hole');
@@ -26,16 +26,19 @@ export function buildHoleScene(pkg: CourseGeometryPackage, holeKey: string, evid
     if (scale > bestScale) { bestScale = scale; orientationRadians = angle; }
   }
   if (!route) orientationRadians = 0; // North-up context; no invented tee/route.
+  const reconstructed = reconstructHoleEvidence(hole, features, auditContinuity(evidence), pkg.status);
+  const events = reconstructed.events;
+  const estimate = reconstructed.estimatedPin ?? nominalGreenPin(hole, features, pkg.status,
+    hole.nominalTargetWgs84 ? projectToLocal(hole.nominalTargetWgs84, pkg.originWgs84) : undefined);
   return {
-    ...(terrain?.geometryHash === pkg.contentHash && terrain.physicalHoleKey === holeKey ? { terrain } : {}),
-    overlayKind: 'unresolved', packageHash: pkg.contentHash, physicalHoleKey: holeKey, algorithmVersion: 'evidence-only-v1',
+    ...(terrain?.geometryHash === pkg.contentHash && terrain.physicalHoleKey === holeKey ? { terrain,
+      contextFeatures: pkg.features.filter(f => terrain.contextFeatureIds?.includes(f.id) && !hole.featureIds.includes(f.id)).map(f => localFeature(f, pkg)),
+    } : {}),
+    overlayKind: events.some(e => e.regions?.length) ? 'estimated_regions' : 'unresolved',
+    packageHash: pkg.contentHash, physicalHoleKey: holeKey, algorithmVersion: 'manual-bounds-v1',
     sharedGreenHoleOrdinals: hole.greenFeatureId ? pkg.holes.filter(h => h.greenFeatureId === hole.greenFeatureId).map(h => h.ordinal) : [],
-    target: { kind: 'unknown_pin', greenFeatureId: hole.greenFeatureId }, hole, features, orientationRadians,
+    target: { kind: 'unknown_pin', greenFeatureId: hole.greenFeatureId, ...(estimate ? { estimate } : {}) }, hole, features, orientationRadians,
     attribution: [...new Set(pkg.sources.map(s => s.attribution))].join(' · '),
-    events: auditContinuity(evidence).map(e => ({ evidence: e, anchorM: null,
-      placement: e.penalty || e.shotType === 'putting' || e.result === 'hole' ? 'schematic' : 'unknown',
-      inferredSurfaceFeatureId: null, candidateFeatureIds: [],
-      reasons: [...e.issues, e.penalty ? 'penalty_transition_without_flight' : 'endpoint_not_determined'],
-    })),
+    events,
   };
 }

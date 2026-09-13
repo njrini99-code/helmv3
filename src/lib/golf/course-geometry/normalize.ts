@@ -85,6 +85,7 @@ export function auditContinuity(events: readonly ShotEvidence[]): ShotEvidence[]
     const issues = [...event.issues], prev = events[i - 1];
     if (prev) {
       if (event.shotNumber <= prev.shotNumber) issues.push('event_order_conflict');
+      if (event.shotNumber > prev.shotNumber + 1) issues.push('event_sequence_gap');
       // Penalty rows encode a relocation, not a new ball flight from prior end.
       if (!event.penalty) {
         if (prev.after.valueM != null && event.before.valueM != null &&

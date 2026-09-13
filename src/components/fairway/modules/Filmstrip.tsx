@@ -83,6 +83,8 @@ function filmStagger(i: number): number {
 import type { HoleScene } from '@/lib/golf/course-geometry/types';
 
 export interface FilmstripComponentProps extends FilmstripProps {
+  /** Deliberate activation only; hover/focus can preview without scrolling. */
+  onSelectHole?: (hole: FilmstripHole) => void;
   scenesByHole?: ReadonlyMap<number, HoleScene>;
   bounded?: boolean;
   /** Per-hole logged shots, keyed by hole number. A hole absent from the map
@@ -96,7 +98,7 @@ export interface FilmstripComponentProps extends FilmstripProps {
  * The hole-by-hole scrub strip. Presentational only — the caller owns the
  * detail panel/story that reacts to `onScrub`.
  */
-export function Filmstrip({ holes, activeHole, onScrub, shotsByHole, scenesByHole, bounded }: FilmstripComponentProps) {
+export function Filmstrip({ holes, activeHole, onScrub, onSelectHole, shotsByHole, scenesByHole, bounded }: FilmstripComponentProps) {
   const prefersReducedMotion = useReducedMotionGuard();
   const [internalActive, setInternalActive] = useState<number | null>(activeHole ?? null);
   const active = activeHole ?? internalActive;
@@ -132,7 +134,7 @@ export function Filmstrip({ holes, activeHole, onScrub, shotsByHole, scenesByHol
                 aria-pressed={isActive}
                 onMouseEnter={() => scrub(hole)}
                 onFocus={() => scrub(hole)}
-                onClick={() => scrub(hole)}
+                onClick={() => { scrub(hole); onSelectHole?.(hole); }}
                 className={cn(
                   'flex min-w-[1.875rem] flex-col items-center gap-2 rounded-fw-sm px-0 pb-1 transition-colors duration-150',
                   'hover:bg-surface-tint',

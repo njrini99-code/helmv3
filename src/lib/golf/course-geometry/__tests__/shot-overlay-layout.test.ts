@@ -1,0 +1,94 @@
+import { describe, expect, it } from 'vitest';
+import { illustrativeScene, pilotPackage, pilotShots } from '@/test/fixtures/course-geometry/pilot';
+import terrainSource from '@/test/fixtures/course-geometry/cacapon-07-terrain.json';
+import { buildHoleScene } from '../build-scene';
+import { normalizeLiveShot } from '../normalize';
+import { parseTerrainMesh, projectTerrainPoint, terrainHeight, TERRAIN_PRESETS } from '../terrain';
+import { fitTerrainViewportCamera } from '../terrain-viewport';
+import { inFeature } from '../spatial';
+import type { ShotRecord } from '@/lib/types/golf';
+import type { LocalFeature, PointM } from '../types';
+import { layoutShotOverlay, prepareShotOverlay } from '../shot-overlay-layout';
+import { toScreen } from '../project';
+
+const mesh = parseTerrainMesh(terrainSource, pilotPackage);
+function actualCacaponScene() {
+  const ledger: ShotRecord[] = [
+    { ...pilotShots[0]!, distanceToHoleBefore: 431, distanceToHoleAfter: 158 },
+    { ...pilotShots[1]!, distanceToHoleBefore: 158, distanceToHoleAfter: 17, missDirection: 'short_right', approachMissDirection: 'short_right' },
+    { shotNumber: 3, shotType: 'around_green', clubType: 'non_driver', lieBefore: 'sand', distanceToHoleBefore: 17,
+      distanceUnitBefore: 'yards', result: 'green', distanceToHoleAfter: 12, distanceUnitAfter: 'feet', shotDistance: 13, isPenalty: false },
+    { shotNumber: 4, shotType: 'putting', clubType: 'putter', lieBefore: 'green', distanceToHoleBefore: 12,
+      distanceUnitBefore: 'feet', result: 'green', distanceToHoleAfter: 2, distanceUnitAfter: 'feet', shotDistance: 3.3, isPenalty: false },
+    { shotNumber: 5, shotType: 'putting', clubType: 'putter', lieBefore: 'green', distanceToHoleBefore: 2,
+      distanceUnitBefore: 'feet', result: 'hole', distanceToHoleAfter: 0, distanceUnitAfter: 'feet', shotDistance: .66, isPenalty: false },
+  ];
+  return buildHoleScene(pilotPackage, 'cacapon-07', ledger.map(normalizeLiveShot), mesh);
+}
+
+describe('camera-independent shot overlay evidence', () => {
+  it('can reserve the HUD without moving physical anchors or changing their evidence', () => {
+    const scene = illustrativeScene(), snapshot = structuredClone(scene);
+    const prepared = prepareShotOverlay(scene, 2), preparedSnapshot = structuredClone(prepared);
+    const camera = { scale: .6, angle: .4, translation: [220, 400] as const };
+    const projection = { width: 600, height: 700, project: (point: readonly [number, number]) => toScreen(point, camera),
+      pathForFeature: () => null };
+    const ordinary = layoutShotOverlay(prepared, projection);
+    const reserved = layoutShotOverlay(prepared, { ...projection,
+      reservedRects: [{ x: 0, y: 0, width: 600, height: 700 }] });
+    expect(ordinary.badges.length).toBeGreaterThan(0);
+    expect(ordinary.pin).not.toBeNull();
+    expect(reserved.badges).toEqual([]);
+    expect(reserved.pin).toBeNull();
+    expect(reserved.anchors).toEqual(ordinary.anchors);
+    expect(reserved.anchors[0]!.point).toEqual(toScreen(scene.events[0]!.anchorM!, camera));
+    expect(scene).toEqual(snapshot);
+    expect(prepared).toEqual(preparedSnapshot);
+  });
+
+  it('rejects invalid projections rather than emitting nonfinite overlay coordinates', () => {
+    const prepared = prepareShotOverlay(illustrativeScene(), 2);
+    expect(layoutShotOverlay(prepared, { width: 600, height: 700,
+      project: () => [NaN, Infinity], pathForFeature: () => null }))
+      .toEqual({ anchors: [], badges: [], regions: [], segments: [], pin: null });
+    expect(layoutShotOverlay(prepared, { width: 0, height: 700,
+      project: point => point, pathForFeature: () => null }))
+      .toEqual({ anchors: [], badges: [], regions: [], segments: [], pin: null });
+  });
+
+  it('keeps both actual Cacapon candidate outlines legible without enlarging cells or locating the ball', () => {
+    const scene = actualCacaponScene(), snapshot = structuredClone(scene);
+    const prepared = prepareShotOverlay(scene, 2);
+    for (const view of ['hole', 'green'] as const) {
+      const camera = fitTerrainViewportCamera(scene, mesh, view, 388, 700, TERRAIN_PRESETS.terrain);
+      const project = (point: PointM): PointM | null => {
+        const z = terrainHeight(mesh, point);
+        if (z == null) return null;
+        const projected = projectTerrainPoint([point[0], point[1], z], camera);
+        return [projected[0], projected[1]];
+      };
+      const pathForFeature = (feature: LocalFeature) => feature.parts.map(part => part.map(ring => ring.map((point, i) => {
+        const p = project(point)!;
+        return `${i ? 'L' : 'M'}${p[0].toFixed(3)},${p[1].toFixed(3)}`;
+      }).join(' ') + ' Z').join(' ')).join(' ');
+      const layout = layoutShotOverlay(prepared, { width: 388, height: 700, project, pathForFeature,
+        reservedRects: [{ x: 0, y: 0, width: 388, height: 88 }, { x: 324, y: 536, width: 64, height: 164 }] });
+      expect(layout.regions.map(region => region.featureId)).toEqual(['osm-way-885719199', 'osm-way-885719200']);
+      for (const region of layout.regions) expect(region.clip).toBe(pathForFeature(scene.features.find(f => f.id === region.featureId)!));
+      expect(layout.regions.every(region => Boolean(region.d))).toBe(view === 'green');
+      expect(layout.anchors).toEqual([]);
+      expect(layout.segments).toEqual([]);
+      expect(layout.badges).toEqual([]);
+      expect(layout.pin).not.toBeNull();
+      expect(layout.pin!.position).toEqual(project(scene.target.estimate!.positionM));
+      expect(layout.pin!.glyphScale).toBe(view === 'hole' ? .8 : 1);
+      const green = scene.features.find(f => f.id === scene.target.greenFeatureId)!;
+      const screenGreen = { ...green, parts: green.parts.map(part => part.map(ring => ring.map(point => project(point)!))) };
+      // The disclosure's full text box must sit outside the physical green.
+      for (let x = -44; x <= 44; x += 2) for (let y = -10; y <= 10; y += 2) {
+        expect(inFeature([layout.pin!.label[0] + x, layout.pin!.label[1] + y], screenGreen)).toBe(false);
+      }
+    }
+    expect(scene).toEqual(snapshot);
+  });
+});

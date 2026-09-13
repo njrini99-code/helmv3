@@ -952,3 +952,44 @@ with a green; it cannot be relabelled as a reviewed package. These studies have
 no played-hole binding, tee or daily pin claim and expose no Whole hole control.
 They do not participate in saves or statistics. The existing geometry plan
 Section 21 records the non-demo cohort, imagery provenance and remaining gaps.
+
+### Manual evidence and camera refinement (September 13, 2026)
+
+The local shared scene uses `manual-bounds-v1`: one bounded unknown-target
+sequence, all eight directions and original independent unit tags. Partial
+reviewed sources can show possible regions, while source candidates remain
+context only. A complete reviewed fixture can show an estimated point and a
+validated coherent connection. Neither is a measured shot path; derived
+`shotDistance` remains excluded as independent evidence. Overlapping mapped
+hazards constrain the full region cell, not just its centre. Penalty transitions,
+undo/edit/delete, saves, scores and statistics retain existing behavior.
+
+The expanded camera has a fixed world focus/lens through orbit, midpoint-anchored
+pinch, 0.5–4× explicit zoom and button alternatives. Trees, shadows, surfaces and
+shot anchors use the same projection. Inline geometry remains scroll-friendly
+and typing never rebuilds the camera or records a pending map marker. Review
+selection brings one selected detail into view; hover does not scroll the page.
+See the existing geometry plan Section 22 for verification and source limits.
+
+### Premium landscape adapter (September 13, 2026)
+
+The expanded course view loads a Three.js backend behind the existing shared
+scene; inline maps and exports retain the SVG adapter. A normal-flow nonmodal
+inspector reserves actual camera space on phone/desktop. Mutable camera frames
+and projected annotations share one imperative update. Canonical course meters,
+manual evidence, scorecard/units, penalties and local save identities do not
+change. An Estimated pin is a retained manual hypothesis or nominal interior
+green reference, never a measured daily pin or new solver evidence. The revised
+putting diagram replaces cup-reference jargon with an illustrated ball-to-hole
+line using the same feet scale as its remaining-distance ring. See Sections
+22.5 and 23 of the existing geometry plan for source and release boundaries.
+
+### September 13 actual-green plan
+
+Section 25 of `docs/plans/2026-09-12-golfhelm-course-geometry.md` is the next
+planned contract: canonical whole-green Top by default, one stable active event,
+explicit attempted distance and leave, optional Focus putt and optional pin/ball
+placement. It supersedes the course-backed abstract putting default. It is not
+implemented or enabled by the current renderer patch. Placement requires durable
+client shot identity across snapshot replacement and the existing save/recovery
+contract; no GPS or required coordinate entry is planned.

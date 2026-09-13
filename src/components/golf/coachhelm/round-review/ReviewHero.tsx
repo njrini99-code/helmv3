@@ -34,7 +34,7 @@
  * big enough" (264/300 → 300/360; putting zoom 148px → 172px).
  * ========================================================================== */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
@@ -50,6 +50,7 @@ import type { Lie } from '@/components/golf/coachhelm/v3/HoleShotPath/types';
 import type { CourseGeometryPackage, HoleScene } from '@/lib/golf/course-geometry/types';
 import { normalizePersistedShot, recordedDistance } from '@/lib/golf/course-geometry/normalize';
 import { buildHoleScene } from '@/lib/golf/course-geometry/build-scene';
+import { describePosition } from '@/lib/golf/course-geometry/describe-position';
 import type { TerrainMesh } from '@/lib/golf/course-geometry/terrain';
 import { Button } from '@/components/fairway/controls/button';
 import type { ReviewGrade } from './buildReviewViewModel';
@@ -253,6 +254,16 @@ export function ReviewHero({
   const [selectedShot, setSelectedShot] = useState<{ hole: number; number: number } | null>(null);
   const [activeHole, setActiveHole] = useState<number | null>(initialHole);
   const [openHole, setOpenHole] = useState<number | null>(initialHole);
+  const detailRef = useRef<HTMLDivElement>(null);
+  const [detailScrollRequest, setDetailScrollRequest] = useState(0);
+  useEffect(() => {
+    if (!detailScrollRequest) return;
+    // Only a deliberate hole/shot activation moves the page. Desktop hover
+    // and focus scrubbing keep the filmstrip still and preserve keyboard use.
+    const frame = requestAnimationFrame(() => detailRef.current?.scrollIntoView({ block: 'start',
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' }));
+    return () => cancelAnimationFrame(frame);
+  }, [detailScrollRequest]);
 
   // If the round changes under us (navigating between reviews without a full
   // remount), drop any stale open-hole state from the previous round.
@@ -317,6 +328,7 @@ export function ReviewHero({
     } else {
       setOpenHole(activeHole);
       setHoleParam(activeHole);
+      setDetailScrollRequest(request => request + 1);
     }
   }
 
@@ -395,6 +407,7 @@ export function ReviewHero({
           holes={filmstripHoles}
           activeHole={activeHole ?? undefined}
           onScrub={handleScrub}
+          onSelectHole={hole => { if ((shotsByHole?.get(hole.n)?.length ?? 0) > 0) setDetailScrollRequest(request => request + 1); }}
           shotsByHole={shotsByHole}
           scenesByHole={scenesByHole}
           bounded
@@ -424,7 +437,7 @@ export function ReviewHero({
       </div>
 
       {openHole != null && openHoleShots && openHoleShots.length > 0 ? (
-        <div className="min-w-0 border-t border-border-subtle bg-surface-tint p-4 sm:col-span-2 sm:p-5">
+        <div ref={detailRef} className="min-w-0 scroll-mt-20 border-t border-border-subtle bg-surface-tint p-4 sm:col-span-2 sm:p-5">
           <div className="flex min-w-0 items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="font-fw-display text-body-lg font-semibold text-text-primary">Hole {openHole} shot path</p>
@@ -454,7 +467,7 @@ export function ReviewHero({
             <div className="min-w-0 space-y-3">
               <div role="group" aria-label="Recorded shots" className="flex flex-wrap gap-1">
                 {evidence.map(e => <Button key={e.eventKey} size="sm" variant={selected?.eventKey === e.eventKey ? 'secondary' : 'ghost'}
-                  aria-label={e.penalty ? `Penalty ${e.shotNumber}` : `Shot ${e.shotNumber}`} className="h-11 min-w-11 px-3" aria-pressed={selected?.eventKey === e.eventKey} onClick={() => setSelectedShot({ hole: openHole, number: e.shotNumber })}>
+                  aria-label={e.penalty ? `Penalty ${e.shotNumber}` : `Shot ${e.shotNumber}`} className="h-11 min-w-11 px-3" aria-pressed={selected?.eventKey === e.eventKey} onClick={() => { setSelectedShot({ hole: openHole, number: e.shotNumber }); setDetailScrollRequest(request => request + 1); }}>
                   {e.penalty ? `P${e.shotNumber}` : e.shotNumber}
                 </Button>)}
               </div>
@@ -462,7 +475,7 @@ export function ReviewHero({
                 <p className="text-body-sm font-semibold text-text-primary">Shot {selected.shotNumber} · <span className="capitalize">{(selected.shotType ?? 'Shot').replaceAll('_', ' ')}</span></p>
                 <p className="mt-1 text-body-sm text-text-primary"><span className="capitalize">{selected.result ?? selected.lieAfter ?? 'Result unknown'}</span> · {recordedDistance(selected.after)} remaining</p>
                 <p className="mt-1 text-caption text-text-secondary">{recordedDistance(selected.before)} before{selected.rawMiss ? ` · ${selected.rawMiss.replaceAll('_', ' ')}` : ''}</p>
-                <p className="mt-2 text-caption text-text-secondary">{selected.penalty ? 'Penalty stroke. No flight; the next origin follows the recorded penalty transition.' : selected.shotType === 'putting' ? 'Distance schematic. The cup and leave bearing are not mapped onto the physical green.' : 'Position unresolved. Distances and direction do not establish an exact endpoint. Pin location unknown.'}</p>
+                <p className="mt-2 text-caption text-text-secondary">{describePosition(scenesByHole.get(openHole), selected).detail}</p>
                 {selected.shotType === 'putting' && <p className="mt-2 text-caption text-text-secondary">{[selected.putt.break, selected.putt.slope, ...selected.putt.tags].filter(Boolean).join(' · ').replaceAll('_', ' ')}</p>}
                 {seasonBand && puttMakePct && <p className="mt-2 text-caption text-text-secondary">{puttMakePct[seasonBand] == null ? `Your season: no ${puttMakePctBandLabel(seasonBand)} putts logged yet` : `Your season: ~${Math.round(puttMakePct[seasonBand])}% from ${puttMakePctBandLabel(seasonBand)}`}</p>}
               </div>}

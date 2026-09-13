@@ -23,27 +23,28 @@
 
 :root {
   /* Physical course SVG pilot. Terrain colors carry no result/status meaning. */
-  --fw-diagram-ground: #102e22;
-  --fw-diagram-ground-light: #193e2b;
-  --fw-diagram-fairway-light: #71925e;
-  --fw-diagram-surround: #2e563c;
-  --fw-diagram-fringe: #47714b;
-  --fw-diagram-green-light: #adc796;
+  --fw-diagram-ground: #142f25;
+  --fw-diagram-ground-light: #20432e;
+  --fw-diagram-fairway-light: #829e62;
+  --fw-diagram-surround: #365e3f;
+  --fw-diagram-fringe: #537b4d;
+  --fw-diagram-green-light: #bfd3a0;
   --fw-diagram-shadow: #092318;
-  --fw-diagram-fairway: #527a50;
-  --fw-diagram-green: #809f71;
-  --fw-diagram-tee: #64886b;
-  --fw-diagram-bunker: #e4d2ab;
+  --fw-diagram-fairway: #668951;
+  --fw-diagram-green: #96b783;
+  --fw-diagram-tee: #75926d;
+  --fw-diagram-bunker: #e7d5af;
   --fw-diagram-sand-highlight: #fbefd5;
-  --fw-diagram-sand-edge: #88794f;
-  --fw-diagram-green-edge: #c1d0ac;
+  --fw-diagram-sand-edge: #93805a;
+  --fw-diagram-green-edge: #c9d8b2;
   --fw-diagram-water: #315c67;
-  --fw-diagram-rough: #274b3e;
+  --fw-diagram-rough: #2d513b;
   --fw-diagram-woods: #173728;
-  --fw-diagram-tree: #31523a;
-  --fw-diagram-tree-light: #4c7045;
-  --fw-diagram-tree-shadow: #0d291f;
-  --fw-diagram-edge: #315d39;
+  --fw-diagram-tree: #365b3a;
+  --fw-diagram-tree-light: #75974f;
+  --fw-diagram-tree-highlight: #abc57a;
+  --fw-diagram-tree-shadow: #0b251b;
+  --fw-diagram-edge: #40683f;
   --fw-diagram-route: #afc3ad;
   --fw-diagram-event: #fff9ed;
   /* ---- Color scheme pin (no-FOUC pair with the `.dark` block below) ----

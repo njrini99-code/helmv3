@@ -3,7 +3,7 @@ import fc from 'fast-check';
 import { parseGeometryPackage } from '../schema';
 import { buildHoleScene } from '../build-scene';
 import { normalizePersistedShot } from '../normalize';
-import { fitTerrainCamera, parseTerrainMesh, projectTerrainPoint, terrainBasis, terrainHeight, TERRAIN_PRESETS } from '../terrain';
+import { fitTerrainCamera, MAX_TERRAIN_TRIANGLES, MAX_TERRAIN_VERTEX_COMPONENTS, parseTerrainMesh, projectTerrainPoint, terrainBasis, terrainHeight, TERRAIN_PRESETS } from '../terrain';
 import type { Point3M, TerrainMesh } from '../terrain';
 import data from '@/test/fixtures/course-geometry/cacapon.json';
 import terrainData from '@/test/fixtures/course-geometry/cacapon-07-terrain.json';
@@ -26,7 +26,7 @@ describe('source-linked terrain and camera', () => {
     expect(mesh.geometryHash).toBe(pkg.contentHash);
     expect(terrainReport.features.every(f => Math.abs(f.clippedAreaM2 - f.triangleAreaM2) < .001)).toBe(true);
     expect(mesh.triangleFeatures).toHaveLength(terrainReport.triangles);
-    expect(mesh.triangleFeatures.length).toBeLessThan(20000);
+    expect(mesh.triangleFeatures.length).toBeLessThanOrEqual(MAX_TERRAIN_TRIANGLES);
     expect(terrainReport.displayOutlines.every(f => f.boundaryDisplacementM <= .5 && Math.abs(f.areaChangePercent) <= 1.5)).toBe(true);
     expect(mesh.triangleMaterials).toContain(3);
     expect(mesh.triangleMaterials).toContain(4);
@@ -43,12 +43,59 @@ describe('source-linked terrain and camera', () => {
     ]) { const changed = structuredClone(mesh); change(changed); expect(() => parseTerrainMesh(changed, pkg)).toThrow(); }
     expect(buildHoleScene(pkg, 'cacapon-08', [], mesh).terrain).toBeUndefined();
   });
+  it('accepts the 40,000-triangle detail budget and rejects one more complete triangle', () => {
+    const triangle = mesh.vertices.slice(0, 9);
+    const bounded: TerrainMesh = { ...mesh,
+      vertices: Array.from({ length: MAX_TERRAIN_VERTEX_COMPONENTS }, (_, index) => triangle[index % 9]!),
+      sourceNormals: Array.from({ length: MAX_TERRAIN_VERTEX_COMPONENTS }, (_, index) => index % 3 === 2 ? 1 : 0),
+      triangleFeatures: Array(MAX_TERRAIN_TRIANGLES).fill(mesh.triangleFeatures[0]!),
+      triangleMaterials: Array(MAX_TERRAIN_TRIANGLES).fill(mesh.triangleMaterials[0]!),
+    };
+    expect(MAX_TERRAIN_TRIANGLES).toBe(40_000);
+    expect(parseTerrainMesh(bounded, pkg).sourceNormals).toHaveLength(360_000);
+    const oversized = { ...bounded, vertices: [...bounded.vertices, ...triangle],
+      sourceNormals: [...bounded.sourceNormals!, 0, 0, 1, 0, 0, 1, 0, 0, 1],
+      triangleFeatures: [...bounded.triangleFeatures, bounded.triangleFeatures[0]!],
+      triangleMaterials: [...bounded.triangleMaterials, bounded.triangleMaterials[0]!],
+    };
+    expect(() => parseTerrainMesh(oversized, pkg)).toThrow();
+  });
   it('interpolates an analytic sloped surface and leaves points outside it unknown', () => {
     const triangle = { ...mesh, vertices: [0, 0, 100, 10, 0, 110, 0, 10, 120], triangleFeatures: [0] };
     expect(terrainHeight(triangle, [2, 3])).toBeCloseTo(108, 10);
     expect(terrainHeight(triangle, [0, 0])).toBe(100);
     expect(terrainHeight(triangle, [10, 10])).toBeNull();
     expect(terrainHeight(triangle, [NaN, 0])).toBeNull();
+  });
+  it('uses independent source-grid samples and preserves nodata instead of filling it from display triangles', () => {
+    const triangle: TerrainMesh = { ...mesh, vertices: [0, 0, 100, 10, 0, 110, 0, 10, 120], triangleFeatures: [0],
+      metricGrid: { originM: [0, 0], spacingM: 10, columns: 2, rows: 2, heightsM: [200, 210, 220, 230] } };
+    expect(terrainHeight(triangle, [2, 3])).toBeCloseTo(208, 10);
+    triangle.metricGrid!.heightsM[3] = null;
+    expect(terrainHeight(triangle, [2, 3])).toBeNull();
+    expect(terrainHeight(triangle, [11, 0])).toBeNull();
+  });
+  it('validates source normals and additional context associations without assigning them to the played hole', () => {
+    const expanded = structuredClone(mesh);
+    expanded.sourceNormals = Array.from({ length: mesh.vertices.length }, (_, index) => index % 3 === 2 ? 1 : 0);
+    const other = pkg.features.find(feature => feature.kind !== 'route' && !scene.hole.featureIds.includes(feature.id))!;
+    expanded.contextFeatureIds = [other.id];
+    expanded.featureIds.push(other.id);
+    expanded.featureKinds.push(other.kind as TerrainMesh['featureKinds'][number]);
+    expect(parseTerrainMesh(expanded, pkg).contextFeatureIds).toEqual([other.id]);
+    expect(scene.hole.featureIds).not.toContain(other.id);
+    for (const change of [
+      (value: TerrainMesh) => { value.sourceNormals!.pop(); },
+      (value: TerrainMesh) => { value.sourceNormals![2] = -.999; },
+      (value: TerrainMesh) => { value.sourceNormals![2] = .7; },
+      (value: TerrainMesh) => { value.contextFeatureIds = [other.id, other.id]; },
+      (value: TerrainMesh) => { value.contextFeatureIds = ['unknown-feature']; },
+      (value: TerrainMesh) => { value.contextFeatureIds = [scene.hole.routeFeatureId!]; },
+      (value: TerrainMesh) => { value.featureKinds[value.featureKinds.length - 1] = other.kind === 'green' ? 'bunker' : 'green'; },
+    ]) {
+      const invalid = structuredClone(expanded); change(invalid);
+      expect(() => parseTerrainMesh(invalid, pkg)).toThrow();
+    }
   });
   it('has an orthonormal, finite basis even at exact Top', () => {
     fc.assert(fc.property(fc.double({ min: -Math.PI, max: Math.PI, noNaN: true }),

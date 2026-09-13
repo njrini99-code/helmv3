@@ -1,0 +1,1080 @@
+{
+  "physicalHoleKey": "cacapon-09",
+  "contentHash": "42b0c883b16f4efe15eaee2c91cad96d304ddf309cdbaa7ccb045985fd12648d",
+  "geometryHash": "69ac58c8cc4e29403101c931abf50c8f1fe4305aea474c3e63bd509083c28bfe",
+  "configuredBudget": 40000,
+  "originalEnvelope": 20000,
+  "triangles": 28718,
+  "uniqueVertices": 14464,
+  "omittedTriangles": 0,
+  "metricCells": 119625,
+  "metricNodataCells": 0,
+  "duplicateVertexCount": 71690,
+  "sourceNormalDuplicatesAgree": true,
+  "sourceHeightDuplicatesAgree": true,
+  "sourceNormalUnitMaxError": 6.593630286211294e-08,
+  "slopesDegrees": {
+    "max": 42.791162025026594,
+    "p95": 15.567977410722357,
+    "p50": 4.618609466228589
+  },
+  "elevationRangeM": [
+    262.4700401221645,
+    314.02732370133407
+  ],
+  "contextAreaM2": 470016.0,
+  "triangulatedAreaM2": 470016.0,
+  "omittedAreaM2": 0,
+  "contextClippedFeatureIds": [
+    "osm-way-885530503",
+    "osm-way-885719158",
+    "osm-way-885719185",
+    "osm-way-885737797",
+    "osm-way-885737807",
+    "osm-way-885737836",
+    "osm-way-885737839",
+    "osm-way-885719203",
+    "osm-way-885530497",
+    "osm-way-885530499",
+    "osm-way-885737800"
+  ],
+  "tacticalDistanceToContextEdgeM": [
+    176,
+    164,
+    160,
+    168
+  ],
+  "features": [
+    {
+      "id": "terrain-context",
+      "kind": "ground",
+      "triangles": 15265,
+      "areaM2": 381308.4076,
+      "rendererContextOnly": false
+    },
+    {
+      "id": "osm-way-885530503",
+      "kind": "fairway",
+      "triangles": 92,
+      "areaM2": 2116.3114,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885719158",
+      "kind": "fairway",
+      "triangles": 176,
+      "areaM2": 3802.2628,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885719169",
+      "kind": "fairway",
+      "triangles": 343,
+      "areaM2": 9887.4865,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885719172",
+      "kind": "fairway",
+      "triangles": 91,
+      "areaM2": 1133.3881,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885719185",
+      "kind": "fairway",
+      "triangles": 119,
+      "areaM2": 4726.9104,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885719204",
+      "kind": "fairway",
+      "triangles": 123,
+      "areaM2": 2078.4428,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885719206",
+      "kind": "fairway",
+      "triangles": 1796,
+      "areaM2": 10326.242,
+      "rendererContextOnly": false
+    },
+    {
+      "id": "osm-way-885719217",
+      "kind": "fairway",
+      "triangles": 328,
+      "areaM2": 9639.4282,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885737789",
+      "kind": "fairway",
+      "triangles": 257,
+      "areaM2": 5119.9301,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885737797",
+      "kind": "fairway",
+      "triangles": 324,
+      "areaM2": 8273.7646,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885737807",
+      "kind": "fairway",
+      "triangles": 59,
+      "areaM2": 232.2452,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885737836",
+      "kind": "fairway",
+      "triangles": 52,
+      "areaM2": 1096.4594,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885737839",
+      "kind": "fairway",
+      "triangles": 190,
+      "areaM2": 5602.2855,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885530495",
+      "kind": "tee",
+      "triangles": 21,
+      "areaM2": 562.9601,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885719163",
+      "kind": "tee",
+      "triangles": 21,
+      "areaM2": 683.545,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885719170",
+      "kind": "tee",
+      "triangles": 13,
+      "areaM2": 336.6976,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885719178",
+      "kind": "tee",
+      "triangles": 15,
+      "areaM2": 685.4744,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885719203",
+      "kind": "tee",
+      "triangles": 4,
+      "areaM2": 63.411,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885719205",
+      "kind": "tee",
+      "triangles": 517,
+      "areaM2": 853.1019,
+      "rendererContextOnly": false
+    },
+    {
+      "id": "osm-way-885737795",
+      "kind": "tee",
+      "triangles": 15,
+      "areaM2": 797.5773,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885737838",
+      "kind": "tee",
+      "triangles": 13,
+      "areaM2": 385.7758,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885737844",
+      "kind": "tee",
+      "triangles": 23,
+      "areaM2": 1060.3743,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885719159",
+      "kind": "green",
+      "triangles": 103,
+      "areaM2": 404.8982,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885719168",
+      "kind": "green",
+      "triangles": 74,
+      "areaM2": 345.2229,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885719177",
+      "kind": "green",
+      "triangles": 188,
+      "areaM2": 1080.4369,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885719211",
+      "kind": "green",
+      "triangles": 1065,
+      "areaM2": 367.4735,
+      "rendererContextOnly": false
+    },
+    {
+      "id": "osm-way-885719214",
+      "kind": "green",
+      "triangles": 87,
+      "areaM2": 316.5357,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885737794",
+      "kind": "green",
+      "triangles": 104,
+      "areaM2": 364.0727,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885737806",
+      "kind": "green",
+      "triangles": 82,
+      "areaM2": 353.7745,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885737840",
+      "kind": "green",
+      "triangles": 113,
+      "areaM2": 407.9143,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885530496",
+      "kind": "bunker",
+      "triangles": 109,
+      "areaM2": 203.332,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885530497",
+      "kind": "bunker",
+      "triangles": 47,
+      "areaM2": 83.4287,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885530499",
+      "kind": "bunker",
+      "triangles": 22,
+      "areaM2": 38.8155,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885719160",
+      "kind": "bunker",
+      "triangles": 98,
+      "areaM2": 153.0692,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885719161",
+      "kind": "bunker",
+      "triangles": 78,
+      "areaM2": 114.4073,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885719162",
+      "kind": "bunker",
+      "triangles": 93,
+      "areaM2": 154.4879,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885719164",
+      "kind": "bunker",
+      "triangles": 94,
+      "areaM2": 185.7943,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885719165",
+      "kind": "bunker",
+      "triangles": 69,
+      "areaM2": 127.1784,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885719166",
+      "kind": "bunker",
+      "triangles": 71,
+      "areaM2": 130.68,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885719167",
+      "kind": "bunker",
+      "triangles": 79,
+      "areaM2": 154.3481,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885719173",
+      "kind": "bunker",
+      "triangles": 88,
+      "areaM2": 156.5511,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885719174",
+      "kind": "bunker",
+      "triangles": 83,
+      "areaM2": 171.1991,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885719175",
+      "kind": "bunker",
+      "triangles": 67,
+      "areaM2": 132.6941,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885719176",
+      "kind": "bunker",
+      "triangles": 63,
+      "areaM2": 100.1589,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885719179",
+      "kind": "bunker",
+      "triangles": 81,
+      "areaM2": 132.7054,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885719180",
+      "kind": "bunker",
+      "triangles": 75,
+      "areaM2": 118.2306,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885719207",
+      "kind": "bunker",
+      "triangles": 962,
+      "areaM2": 197.9067,
+      "rendererContextOnly": false
+    },
+    {
+      "id": "osm-way-885719208",
+      "kind": "bunker",
+      "triangles": 954,
+      "areaM2": 234.9198,
+      "rendererContextOnly": false
+    },
+    {
+      "id": "osm-way-885719209",
+      "kind": "bunker",
+      "triangles": 557,
+      "areaM2": 118.8313,
+      "rendererContextOnly": false
+    },
+    {
+      "id": "osm-way-885719210",
+      "kind": "bunker",
+      "triangles": 645,
+      "areaM2": 139.8476,
+      "rendererContextOnly": false
+    },
+    {
+      "id": "osm-way-885719215",
+      "kind": "bunker",
+      "triangles": 123,
+      "areaM2": 265.3773,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885719216",
+      "kind": "bunker",
+      "triangles": 215,
+      "areaM2": 474.657,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885719218",
+      "kind": "bunker",
+      "triangles": 109,
+      "areaM2": 170.9245,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885737791",
+      "kind": "bunker",
+      "triangles": 78,
+      "areaM2": 141.5252,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885737792",
+      "kind": "bunker",
+      "triangles": 78,
+      "areaM2": 138.8607,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885737793",
+      "kind": "bunker",
+      "triangles": 74,
+      "areaM2": 172.1629,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885737796",
+      "kind": "bunker",
+      "triangles": 84,
+      "areaM2": 112.5114,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885737798",
+      "kind": "bunker",
+      "triangles": 77,
+      "areaM2": 128.3804,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885737799",
+      "kind": "bunker",
+      "triangles": 67,
+      "areaM2": 97.179,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885737800",
+      "kind": "bunker",
+      "triangles": 107,
+      "areaM2": 202.7508,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885737802",
+      "kind": "bunker",
+      "triangles": 83,
+      "areaM2": 146.3166,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885737803",
+      "kind": "bunker",
+      "triangles": 59,
+      "areaM2": 77.6328,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885737804",
+      "kind": "bunker",
+      "triangles": 54,
+      "areaM2": 89.2988,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885737805",
+      "kind": "bunker",
+      "triangles": 77,
+      "areaM2": 130.4975,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885737841",
+      "kind": "bunker",
+      "triangles": 51,
+      "areaM2": 77.9326,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885737842",
+      "kind": "bunker",
+      "triangles": 54,
+      "areaM2": 78.1394,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885737843",
+      "kind": "bunker",
+      "triangles": 39,
+      "areaM2": 38.3225,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885737845",
+      "kind": "bunker",
+      "triangles": 70,
+      "areaM2": 115.5842,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885737846",
+      "kind": "bunker",
+      "triangles": 74,
+      "areaM2": 129.298,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885737847",
+      "kind": "bunker",
+      "triangles": 133,
+      "areaM2": 229.6078,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-885737848",
+      "kind": "bunker",
+      "triangles": 80,
+      "areaM2": 111.6861,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-651235246",
+      "kind": "water",
+      "triangles": 78,
+      "areaM2": 2350.7229,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-651342726",
+      "kind": "water",
+      "triangles": 175,
+      "areaM2": 3255.08,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-651342727",
+      "kind": "water",
+      "triangles": 671,
+      "areaM2": 4020.1549,
+      "rendererContextOnly": false
+    }
+  ],
+  "contextFeatureIds": [
+    "osm-way-885530503",
+    "osm-way-885719158",
+    "osm-way-885719169",
+    "osm-way-885719172",
+    "osm-way-885719185",
+    "osm-way-885719204",
+    "osm-way-885719217",
+    "osm-way-885737789",
+    "osm-way-885737797",
+    "osm-way-885737807",
+    "osm-way-885737836",
+    "osm-way-885737839",
+    "osm-way-885530495",
+    "osm-way-885719163",
+    "osm-way-885719170",
+    "osm-way-885719178",
+    "osm-way-885719203",
+    "osm-way-885737795",
+    "osm-way-885737838",
+    "osm-way-885737844",
+    "osm-way-885719159",
+    "osm-way-885719168",
+    "osm-way-885719177",
+    "osm-way-885719214",
+    "osm-way-885737794",
+    "osm-way-885737806",
+    "osm-way-885737840",
+    "osm-way-885530496",
+    "osm-way-885530497",
+    "osm-way-885530499",
+    "osm-way-885719160",
+    "osm-way-885719161",
+    "osm-way-885719162",
+    "osm-way-885719164",
+    "osm-way-885719165",
+    "osm-way-885719166",
+    "osm-way-885719167",
+    "osm-way-885719173",
+    "osm-way-885719174",
+    "osm-way-885719175",
+    "osm-way-885719176",
+    "osm-way-885719179",
+    "osm-way-885719180",
+    "osm-way-885719215",
+    "osm-way-885719216",
+    "osm-way-885719218",
+    "osm-way-885737791",
+    "osm-way-885737792",
+    "osm-way-885737793",
+    "osm-way-885737796",
+    "osm-way-885737798",
+    "osm-way-885737799",
+    "osm-way-885737800",
+    "osm-way-885737802",
+    "osm-way-885737803",
+    "osm-way-885737804",
+    "osm-way-885737805",
+    "osm-way-885737841",
+    "osm-way-885737842",
+    "osm-way-885737843",
+    "osm-way-885737845",
+    "osm-way-885737846",
+    "osm-way-885737847",
+    "osm-way-885737848",
+    "osm-way-651235246",
+    "osm-way-651342726"
+  ],
+  "displayOutlines": [
+    {
+      "id": "osm-way-885530503",
+      "boundaryDisplacementM": 0.341752,
+      "areaChangePercent": -0.007364
+    },
+    {
+      "id": "osm-way-885719158",
+      "boundaryDisplacementM": 0.362179,
+      "areaChangePercent": -0.002824
+    },
+    {
+      "id": "osm-way-885719169",
+      "boundaryDisplacementM": 0.344227,
+      "areaChangePercent": -0.003804
+    },
+    {
+      "id": "osm-way-885719172",
+      "boundaryDisplacementM": 0.368922,
+      "areaChangePercent": -0.030323
+    },
+    {
+      "id": "osm-way-885719185",
+      "boundaryDisplacementM": 0.381817,
+      "areaChangePercent": -0.006361
+    },
+    {
+      "id": "osm-way-885719204",
+      "boundaryDisplacementM": 0.350296,
+      "areaChangePercent": -0.012325
+    },
+    {
+      "id": "osm-way-885719206",
+      "boundaryDisplacementM": 0.341217,
+      "areaChangePercent": -0.001838
+    },
+    {
+      "id": "osm-way-885719217",
+      "boundaryDisplacementM": 0.359964,
+      "areaChangePercent": -0.002681
+    },
+    {
+      "id": "osm-way-885737789",
+      "boundaryDisplacementM": 0.378834,
+      "areaChangePercent": -0.005732
+    },
+    {
+      "id": "osm-way-885737797",
+      "boundaryDisplacementM": 0.383313,
+      "areaChangePercent": -0.001927
+    },
+    {
+      "id": "osm-way-885737807",
+      "boundaryDisplacementM": 0.35324,
+      "areaChangePercent": -0.025552
+    },
+    {
+      "id": "osm-way-885737836",
+      "boundaryDisplacementM": 0.360661,
+      "areaChangePercent": -0.004472
+    },
+    {
+      "id": "osm-way-885737839",
+      "boundaryDisplacementM": 0.351255,
+      "areaChangePercent": -0.0039
+    },
+    {
+      "id": "osm-way-885530495",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "osm-way-885719163",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "osm-way-885719170",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "osm-way-885719178",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "osm-way-885719203",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "osm-way-885719205",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "osm-way-885737795",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "osm-way-885737838",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "osm-way-885737844",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "osm-way-885719159",
+      "boundaryDisplacementM": 0.121978,
+      "areaChangePercent": -0.162226
+    },
+    {
+      "id": "osm-way-885719168",
+      "boundaryDisplacementM": 0.127244,
+      "areaChangePercent": -0.203787
+    },
+    {
+      "id": "osm-way-885719177",
+      "boundaryDisplacementM": 0.157884,
+      "areaChangePercent": -0.068474
+    },
+    {
+      "id": "osm-way-885719211",
+      "boundaryDisplacementM": 0.07249,
+      "areaChangePercent": -0.185538
+    },
+    {
+      "id": "osm-way-885719214",
+      "boundaryDisplacementM": 0.109525,
+      "areaChangePercent": -0.207649
+    },
+    {
+      "id": "osm-way-885737794",
+      "boundaryDisplacementM": 0.101748,
+      "areaChangePercent": -0.18914
+    },
+    {
+      "id": "osm-way-885737806",
+      "boundaryDisplacementM": 0.100514,
+      "areaChangePercent": -0.211229
+    },
+    {
+      "id": "osm-way-885737840",
+      "boundaryDisplacementM": 0.081161,
+      "areaChangePercent": -0.159143
+    },
+    {
+      "id": "osm-way-885530496",
+      "boundaryDisplacementM": 0.140889,
+      "areaChangePercent": -0.327731
+    },
+    {
+      "id": "osm-way-885530497",
+      "boundaryDisplacementM": 0.13444,
+      "areaChangePercent": -0.541635
+    },
+    {
+      "id": "osm-way-885530499",
+      "boundaryDisplacementM": 0.148106,
+      "areaChangePercent": -0.381793
+    },
+    {
+      "id": "osm-way-885719160",
+      "boundaryDisplacementM": 0.222095,
+      "areaChangePercent": -0.569982
+    },
+    {
+      "id": "osm-way-885719161",
+      "boundaryDisplacementM": 0.129191,
+      "areaChangePercent": -0.563834
+    },
+    {
+      "id": "osm-way-885719162",
+      "boundaryDisplacementM": 0.156763,
+      "areaChangePercent": -0.414223
+    },
+    {
+      "id": "osm-way-885719164",
+      "boundaryDisplacementM": 0.147952,
+      "areaChangePercent": -0.363945
+    },
+    {
+      "id": "osm-way-885719165",
+      "boundaryDisplacementM": 0.154272,
+      "areaChangePercent": -0.541627
+    },
+    {
+      "id": "osm-way-885719166",
+      "boundaryDisplacementM": 0.162602,
+      "areaChangePercent": -0.597641
+    },
+    {
+      "id": "osm-way-885719167",
+      "boundaryDisplacementM": 0.156548,
+      "areaChangePercent": -0.450697
+    },
+    {
+      "id": "osm-way-885719173",
+      "boundaryDisplacementM": 0.168995,
+      "areaChangePercent": -0.455369
+    },
+    {
+      "id": "osm-way-885719174",
+      "boundaryDisplacementM": 0.133929,
+      "areaChangePercent": -0.368307
+    },
+    {
+      "id": "osm-way-885719175",
+      "boundaryDisplacementM": 0.144207,
+      "areaChangePercent": -0.548276
+    },
+    {
+      "id": "osm-way-885719176",
+      "boundaryDisplacementM": 0.180297,
+      "areaChangePercent": -0.711954
+    },
+    {
+      "id": "osm-way-885719179",
+      "boundaryDisplacementM": 0.167885,
+      "areaChangePercent": -0.519063
+    },
+    {
+      "id": "osm-way-885719180",
+      "boundaryDisplacementM": 0.196598,
+      "areaChangePercent": -0.547327
+    },
+    {
+      "id": "osm-way-885719207",
+      "boundaryDisplacementM": 0.195366,
+      "areaChangePercent": -0.317668
+    },
+    {
+      "id": "osm-way-885719208",
+      "boundaryDisplacementM": 0.165908,
+      "areaChangePercent": -0.302124
+    },
+    {
+      "id": "osm-way-885719209",
+      "boundaryDisplacementM": 0.145967,
+      "areaChangePercent": -0.509949
+    },
+    {
+      "id": "osm-way-885719210",
+      "boundaryDisplacementM": 0.136427,
+      "areaChangePercent": -0.421577
+    },
+    {
+      "id": "osm-way-885719215",
+      "boundaryDisplacementM": 0.177644,
+      "areaChangePercent": -0.270577
+    },
+    {
+      "id": "osm-way-885719216",
+      "boundaryDisplacementM": 0.146842,
+      "areaChangePercent": -0.117716
+    },
+    {
+      "id": "osm-way-885719218",
+      "boundaryDisplacementM": 0.168012,
+      "areaChangePercent": -0.376843
+    },
+    {
+      "id": "osm-way-885737791",
+      "boundaryDisplacementM": 0.135749,
+      "areaChangePercent": -0.491929
+    },
+    {
+      "id": "osm-way-885737792",
+      "boundaryDisplacementM": 0.162528,
+      "areaChangePercent": -0.564705
+    },
+    {
+      "id": "osm-way-885737793",
+      "boundaryDisplacementM": 0.16609,
+      "areaChangePercent": -0.427952
+    },
+    {
+      "id": "osm-way-885737796",
+      "boundaryDisplacementM": 0.128852,
+      "areaChangePercent": -0.408285
+    },
+    {
+      "id": "osm-way-885737798",
+      "boundaryDisplacementM": 0.142108,
+      "areaChangePercent": -0.567838
+    },
+    {
+      "id": "osm-way-885737799",
+      "boundaryDisplacementM": 0.188505,
+      "areaChangePercent": -0.468023
+    },
+    {
+      "id": "osm-way-885737800",
+      "boundaryDisplacementM": 0.216839,
+      "areaChangePercent": -0.269025
+    },
+    {
+      "id": "osm-way-885737802",
+      "boundaryDisplacementM": 0.140927,
+      "areaChangePercent": -0.490736
+    },
+    {
+      "id": "osm-way-885737803",
+      "boundaryDisplacementM": 0.191665,
+      "areaChangePercent": -0.925545
+    },
+    {
+      "id": "osm-way-885737804",
+      "boundaryDisplacementM": 0.12621,
+      "areaChangePercent": -0.747445
+    },
+    {
+      "id": "osm-way-885737805",
+      "boundaryDisplacementM": 0.142975,
+      "areaChangePercent": -0.572366
+    },
+    {
+      "id": "osm-way-885737841",
+      "boundaryDisplacementM": 0.097376,
+      "areaChangePercent": -0.733797
+    },
+    {
+      "id": "osm-way-885737842",
+      "boundaryDisplacementM": 0.118188,
+      "areaChangePercent": -0.739309
+    },
+    {
+      "id": "osm-way-885737843",
+      "boundaryDisplacementM": 0.144657,
+      "areaChangePercent": -1.398989
+    },
+    {
+      "id": "osm-way-885737845",
+      "boundaryDisplacementM": 0.141553,
+      "areaChangePercent": -0.467062
+    },
+    {
+      "id": "osm-way-885737846",
+      "boundaryDisplacementM": 0.141965,
+      "areaChangePercent": -0.515078
+    },
+    {
+      "id": "osm-way-885737847",
+      "boundaryDisplacementM": 0.163836,
+      "areaChangePercent": -0.325206
+    },
+    {
+      "id": "osm-way-885737848",
+      "boundaryDisplacementM": 0.167958,
+      "areaChangePercent": -0.563745
+    },
+    {
+      "id": "osm-way-651235246",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "osm-way-651342726",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "osm-way-651342727",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    }
+  ],
+  "renderProfile": {
+    "compilerVersion": "course-terrain-v1",
+    "styleVersion": "narrow-surround-v1",
+    "tacticalBoundsM": [
+      -48,
+      -380,
+      160,
+      152
+    ],
+    "contextBoundsM": [
+      -224,
+      -544,
+      320,
+      320
+    ],
+    "terrainAvailable": true,
+    "contextCoverage": "complete",
+    "teeGeometry": "approximate",
+    "treeEvidence": "none",
+    "limitations": [
+      "Source candidate; independent registration, renovation and boundary review pending",
+      "Macro terrain only; no putting-break or bunker-lip accuracy claim",
+      "Daily tee markers, actual cup, ball positions and tree heights are unknown",
+      "Neutral ground is not classified rough; outward surrounds are illustrative and at most 0.6m",
+      "Neighbor features are renderer-only context, not reassigned played-hole surfaces",
+      "2021 terrain may predate current surfaces; currentness remains unverified",
+      "No reviewed canopy for this played hole; no tree groups synthesized"
+    ]
+  },
+  "source": {
+    "provider": "USGS 3DEP",
+    "title": "USGS 1 Meter 17 x73y438 MD_Western_2021_D21",
+    "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/MD_Western_2021_D21/TIFF/USGS_1M_17_x73y438_MD_Western_2021_D21.tif",
+    "catalogObjectId": 129279,
+    "acquisitionStart": "2021-12-04",
+    "acquisitionEnd": "2021-12-21",
+    "retrievedAt": "2026-09-13",
+    "nativeResolutionM": 1,
+    "verticalAccuracyM": null,
+    "registrationResidualM": null,
+    "licenseUrl": "https://www.usgs.gov/3d-elevation-program/about-3dep-products-services",
+    "rasterSha256": "440a32120d09a1337bbba2d87451e6195fd4690a14451f18fe63a666c759f63e",
+    "horizontalExportCrs": "EPSG:32617",
+    "exportPixelM": [
+      1.0,
+      1.0
+    ],
+    "renderSamplingM": {
+      "tactical": 4,
+      "detail": 2,
+      "context": 16
+    },
+    "metricSamplingM": 2,
+    "normalGradientStepM": 1
+  },
+  "compressedBytes": 1176245,
+  "asset": {
+    "ordinal": 9,
+    "fileName": "cacapon-09-terrain.json.gz",
+    "encoding": "gzip",
+    "compressedBytes": 1176245,
+    "uncompressedBytes": 5964110,
+    "sha256": "9c121155d5236c6ea3dc9edba20506b489452181c494228f8a476cd310385f9b",
+    "uncompressedSha256": "9694e3f8f722b40a1ab29ca30d9fe05d4c5b377f8a191b7a0e4b954379a1140c",
+    "contentHash": "42b0c883b16f4efe15eaee2c91cad96d304ddf309cdbaa7ccb045985fd12648d"
+  }
+}

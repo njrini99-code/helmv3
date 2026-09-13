@@ -1,14 +1,17 @@
-import { Fragment, useId } from 'react';
+import { Fragment, useId, type RefObject } from 'react';
 import type { HoleScene, LocalFeature, PointM } from '@/lib/golf/course-geometry/types';
 import { fitCamera, toScreen, type SimilarityTransform } from '@/lib/golf/course-geometry/project';
 import { contextCamera, type CourseView } from '@/lib/golf/course-geometry/camera';
-import { canopySymbols, crownScale } from '@/lib/golf/course-geometry/canopy';
+import { canopySymbols, crownOutline, crownScale } from '@/lib/golf/course-geometry/canopy';
 import { displayOutline } from '@/lib/golf/course-geometry/display-outline';
-import { checkedAnchor } from '@/lib/golf/course-geometry/quality';
-import type { TerrainCamera } from '@/lib/golf/course-geometry/terrain';
+import { TERRAIN_LIGHT_DIRECTION, type TerrainCamera } from '@/lib/golf/course-geometry/terrain';
 import { CourseTerrainCanvas } from './CourseTerrainCanvas';
+import { CrownGlyph, CrownPaint } from './TerrainCanopyLayer';
+import { CourseShotOverlay } from './CourseShotOverlay';
 
-export const SCENE_STYLE_VERSION = 'fairway-vector-v9';
+import type { TerrainRuntimeController } from '@/lib/golf/course-geometry/runtime-controller';
+
+export const SCENE_STYLE_VERSION = 'fairway-vector-v10';
 const ORDER: LocalFeature['kind'][] = ['woods', 'rough', 'water', 'fairway', 'tee', 'green', 'bunker', 'route'];
 export function featurePath(feature: LocalFeature, camera: SimilarityTransform): string {
   return feature.parts.flatMap(rings => rings.map(ring => ring.map((p, i) => {
@@ -24,41 +27,25 @@ export function sceneCamera(scene: HoleScene, width: number, height: number, mod
 
 /** Pure SVG: surfaces and anchors share one similarity transform; labels use
  * CSS-pixel dimensions supplied by the measured viewport. No gesture capture. */
-export function CourseHoleScene({ scene, width = 320, height = 380, mode = 'review', view = 'hole', selectedShotNumber, camera: override, terrainCamera, onTerrainUnavailable }: {
+export function CourseHoleScene({ scene, width = 320, height = 380, mode = 'review', view = 'hole', selectedShotNumber, camera: override, terrainCamera, onTerrainUnavailable, runtimeRef }: {
   scene: HoleScene; width?: number; height?: number; mode?: 'review' | 'compact' | 'strip' | 'source';
   view?: CourseView; selectedShotNumber?: number; camera?: SimilarityTransform; terrainCamera?: TerrainCamera;
-  onTerrainUnavailable?: () => void;
+  onTerrainUnavailable?: () => void; runtimeRef?: RefObject<TerrainRuntimeController | null>;
 }) {
   const id = useId();
   if (terrainCamera && scene.terrain) return <CourseTerrainCanvas scene={scene} mesh={scene.terrain} camera={terrainCamera} width={width} height={height}
-    onUnavailable={onTerrainUnavailable}
+    selectedShotNumber={selectedShotNumber}
+    onUnavailable={onTerrainUnavailable} runtimeRef={runtimeRef}
     fallback={<CourseHoleScene scene={scene} width={width} height={height} mode={mode} view={view} selectedShotNumber={selectedShotNumber} camera={override} />} />;
   const camera = override ?? sceneCamera(scene, width, height, mode, view);
   const features = [...scene.features].sort((a, b) => ORDER.indexOf(a.kind) - ORDER.indexOf(b.kind) || a.id.localeCompare(b.id));
-  const anchors = scene.events.map(event => {
-    const point = checkedAnchor(event, scene.features);
-    return point ? toScreen(point, camera) : null;
-  });
-  const labels: PointM[] = [];
-  const entries = scene.events.map((event, index) => ({ event, index })).sort((a, b) =>
-    Number(b.event.evidence.shotNumber === selectedShotNumber) - Number(a.event.evidence.shotNumber === selectedShotNumber));
-  const badges = entries.map(({ event, index }) => {
-    const screen = anchors[index];
-    // Offscreen anchors are retained in the scene and ledger, never clamped.
-    if (!screen || screen[0] < 0 || screen[0] > width || screen[1] < 0 || screen[1] > height) return null;
-    const candidates: PointM[] = [];
-    for (const radius of [24, 48, 72]) for (const angle of [-Math.PI / 4, -3 * Math.PI / 4, Math.PI / 4, 3 * Math.PI / 4, 0, Math.PI]) {
-      const p: PointM = [screen[0] + radius * Math.cos(angle), screen[1] + radius * Math.sin(angle)];
-      if (p[0] >= 14 && p[0] <= width - 14 && p[1] >= 14 && p[1] <= height - 14) candidates.push(p);
-    }
-    const label = candidates.find(p => labels.every(other => Math.hypot(p[0] - other[0], p[1] - other[1]) >= 28));
-    if (!label) return null;
-    labels.push(label);
-    return { event, screen, label };
-  });
+  const lightPoint = toScreen([TERRAIN_LIGHT_DIRECTION[0], TERRAIN_LIGHT_DIRECTION[1]], camera);
+  const light: PointM = [lightPoint[0] - camera.translation[0], lightPoint[1] - camera.translation[1]];
+  const lightLength = Math.hypot(...light) || 1;
+  const lightUnit: PointM = [light[0] / lightLength, light[1] / lightLength];
   return (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox={`0 0 ${width} ${height}`} width={width} height={height}
-      style={{ width: '100%', height: '100%', display: 'block', background: 'var(--fw-diagram-ground)' }}
+      style={{ width: '100%', height: '100%', display: 'block', background: 'var(--fw-diagram-ground)', fontFamily: 'var(--fw-font-sans)' }}
       shapeRendering="geometricPrecision" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby={`${id}-title ${id}-desc`}
       data-geometry-hash={scene.packageHash} data-physical-hole={scene.physicalHoleKey} data-render-version={SCENE_STYLE_VERSION}
       data-view={view} data-scale={camera.scale} data-angle={camera.angle}>
@@ -69,24 +56,28 @@ export function CourseHoleScene({ scene, width = 320, height = 380, mode = 'revi
           <stop stopColor="var(--fw-diagram-ground-light)" />
           <stop offset="1" stopColor="var(--fw-diagram-ground)" />
         </radialGradient>
-        <radialGradient id={`${id}-green`} cx="36%" cy="28%" r="80%">
+        <radialGradient id={`${id}-green`} cx={`${50 + lightUnit[0] * 28}%`} cy={`${50 + lightUnit[1] * 28}%`} r="82%">
           <stop stopColor="var(--fw-diagram-green-light)" />
           <stop offset="1" stopColor="var(--fw-diagram-green)" />
         </radialGradient>
-        <radialGradient id={`${id}-crown`} cx="30%" cy="25%" r="78%">
-          <stop stopColor="var(--fw-diagram-tree-light)" />
-          <stop offset="1" stopColor="var(--fw-diagram-tree)" />
-        </radialGradient>
+        <CrownPaint id={id} light={light} />
         {mode !== 'source' && mode !== 'strip' && features.filter(f => f.kind === 'bunker' || f.kind === 'green').map(f =>
           <clipPath key={f.id} id={`${id}-interior-${f.id}`}><path d={featurePath(displayOutline(f), camera)} clipRule="evenodd" /></clipPath>)}
+        <mask id={`${id}-clear-playing-surfaces`} maskUnits="userSpaceOnUse" x="0" y="0" width={width} height={height}>
+          <rect width={width} height={height} fill="white" />
+          {features.filter(f => !['woods', 'route', 'rough'].includes(f.kind)).map(f =>
+            <path key={f.id} d={featurePath(displayOutline(f), camera)} fill="black" fillRule="evenodd" />)}
+        </mask>
         <clipPath id={`${id}-clip`}><rect width={width} height={height} /></clipPath>
-        <linearGradient id={`${id}-fairway`} x1="0" y1="0" x2="1" y2="1">
+        <linearGradient id={`${id}-fairway`} x1={`${50 + lightUnit[0] * 50}%`} y1={`${50 + lightUnit[1] * 50}%`}
+          x2={`${50 - lightUnit[0] * 50}%`} y2={`${50 - lightUnit[1] * 50}%`}>
           <stop stopColor="var(--fw-diagram-fairway-light)" />
           <stop offset="1" stopColor="var(--fw-diagram-fairway)" />
         </linearGradient>
-        <linearGradient id={`${id}-sand`} x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id={`${id}-sand`} x1={`${50 + lightUnit[0] * 50}%`} y1={`${50 + lightUnit[1] * 50}%`}
+          x2={`${50 - lightUnit[0] * 50}%`} y2={`${50 - lightUnit[1] * 50}%`}>
           <stop stopColor="var(--fw-diagram-sand-highlight)" />
-          <stop offset=".28" stopColor="var(--fw-diagram-bunker)" />
+          <stop offset=".4" stopColor="var(--fw-diagram-bunker)" />
           <stop offset="1" stopColor="var(--fw-diagram-bunker)" />
         </linearGradient>
       </defs>
@@ -105,48 +96,31 @@ export function CourseHoleScene({ scene, width = 320, height = 380, mode = 'revi
           data-feature-id={f.id} data-surface={f.kind} d={featurePath(mode === 'source' ? f : displayOutline(f), camera)}
           fill={f.kind === 'route' ? 'none' : f.kind === 'bunker' ? `url(#${id}-sand)` : f.kind === 'fairway' ? `url(#${id}-fairway)` : f.kind === 'green' ? `url(#${id}-green)` : `var(--fw-diagram-${f.kind})`}
           fillRule="evenodd" fillOpacity={f.kind === 'woods' && mode !== 'source' ? .35 : 1} stroke={f.kind === 'woods' ? 'none' : f.kind === 'route' ? 'var(--fw-diagram-route)' : f.kind === 'bunker' ? 'var(--fw-diagram-sand-edge)' : f.kind === 'green' ? 'var(--fw-diagram-green-edge)' : 'var(--fw-diagram-edge)'}
-          strokeWidth={mode === 'strip' ? .55 : f.kind === 'route' ? 0.7 : f.kind === 'bunker' ? 0.9 : 1.1}
+          strokeWidth={mode === 'strip' ? .55 : f.kind === 'route' ? 0.7 : f.kind === 'bunker' ? 0.85 : .9}
           strokeLinejoin="round" strokeDasharray={f.kind === 'route' ? '2 7' : undefined} />
           {mode !== 'source' && mode !== 'strip' && (f.kind === 'bunker' || f.kind === 'green') && <g clipPath={`url(#${id}-interior-${f.id})`} aria-hidden="true" data-annotation="surface-rim-light">
-            <path d={featurePath(displayOutline(f), camera)} transform="translate(.5,.8)" fill="none"
+            <path d={featurePath(displayOutline(f), camera)} transform={`translate(${lightUnit[0] * .7},${lightUnit[1] * .7})`} fill="none"
+              stroke={f.kind === 'bunker' ? 'var(--fw-diagram-sand-edge)' : 'var(--fw-diagram-fringe)'}
+              strokeWidth={1.8} opacity={.3} strokeLinejoin="round" />
+            <path d={featurePath(displayOutline(f), camera)} transform={`translate(${-lightUnit[0] * .8},${-lightUnit[1] * .8})`} fill="none"
               stroke={f.kind === 'bunker' ? 'var(--fw-diagram-sand-highlight)' : 'var(--fw-diagram-green-edge)'}
-              strokeWidth={1.6} opacity={f.kind === 'bunker' ? .75 : .32} strokeLinejoin="round" />
+              strokeWidth={1.5} opacity={f.kind === 'bunker' ? .9 : .48} strokeLinejoin="round" />
           </g>}
         </Fragment>)}
         {mode !== 'strip' && mode !== 'source' && features.filter(f => f.kind === 'woods').map(f => <g key={`canopies-${f.id}`}
-          data-annotation="illustrative-tree-crowns" data-canopy-source={f.id} aria-hidden="true">
+          data-annotation="illustrative-tree-crowns" data-canopy-source={f.id} mask={`url(#${id}-clear-playing-surfaces)`} aria-hidden="true">
           {canopySymbols(f, scene).map((point, i) => {
             const p = toScreen(point, camera), radius = 3.6 * camera.scale * crownScale(i);
             if (p[0] < -radius || p[0] > width + radius || p[1] < -radius || p[1] > height + radius) return null;
-            return <g key={i} transform={`translate(${p[0]},${p[1]})`}>
-              <circle cy={radius * .13} r={radius} fill="var(--fw-diagram-tree-shadow)" opacity={.5} />
-              {Array.from({ length: 6 }, (_, n) => {
-                const a = (n + i % 3 * .3) * Math.PI / 3;
-                return <circle key={n} cx={Math.cos(a) * radius * .5} cy={Math.sin(a) * radius * .5} r={radius * (.49 + (n + i) % 4 * .015)} fill={`url(#${id}-crown)`} />;
-              })}
-              <circle cx={-radius * .12} cy={-radius * .15} r={radius * .56} fill="var(--fw-diagram-tree-light)" opacity={.7} />
+            return <g key={i} transform={`translate(${p[0]},${p[1]}) scale(${radius})`}>
+              <path d={crownOutline(i)} transform={`translate(${-lightUnit[0] * .35},${-lightUnit[1] * .35}) scale(1.1,.9)`}
+                fill="var(--fw-diagram-tree-shadow)" opacity={.4} />
+              <CrownGlyph id={id} seed={i} light={light} detail={radius >= 4} />
             </g>;
           })}
         </g>)}
-        {mode !== 'strip' && anchors.map((point, index) => {
-          const previous = anchors[index - 1];
-          if (!point || !previous) return null; // Never bridge an unresolved/penalty/putting gap.
-          const selected = scene.events[index]!.evidence.shotNumber === selectedShotNumber;
-          return <line key={`segment-${index}`} data-shot-segment={scene.events[index]!.evidence.shotNumber} data-selected={selected}
-            x1={previous[0]} y1={previous[1]} x2={point[0]} y2={point[1]}
-            stroke="var(--fw-diagram-event)" strokeWidth={selected ? 2.4 : 1.4} strokeDasharray="5 6" opacity={selected ? 1 : .65} />;
-        })}
-        {mode !== 'strip' && badges.map(entry => {
-          if (!entry) return null;
-          const { event, screen, label } = entry;
-          const selected = event.evidence.shotNumber === selectedShotNumber;
-          return <g key={event.evidence.eventKey} data-event={event.evidence.shotNumber} data-selected={selected}>
-            <line x1={screen[0]} y1={screen[1]} x2={label[0]} y2={label[1]} stroke="var(--fw-diagram-event)" strokeWidth={.8} opacity={.7} />
-            <circle data-anchor="estimated" cx={screen[0]} cy={screen[1]} r={2.5} fill="none" stroke="var(--fw-diagram-event)" strokeWidth={1.5} />
-            <circle cx={label[0]} cy={label[1]} r={selected ? 12 : 11} fill="var(--fw-diagram-event)" stroke="var(--fw-diagram-shadow)" strokeWidth={selected ? 2 : 1} />
-            <text x={label[0]} y={label[1]} dy=".35em" textAnchor="middle" fontSize={13} fontWeight={600} fontFamily="inherit" fill="var(--fw-diagram-ground)">{event.evidence.shotNumber}</text>
-          </g>;
-        })}
+        {mode !== 'strip' && <CourseShotOverlay scene={scene} width={width} height={height} selectedShotNumber={selectedShotNumber}
+          project={point => toScreen(point, camera)} pathForFeature={feature => featurePath(feature, camera)} />}
       </g>
     </svg>
   );

@@ -1,4 +1,4 @@
-/** Export the real GPU scene's projection/material for vector visibility QA.
+/** Export the shared world camera with designed vector shading for visibility QA.
  * Run with tsx, then vectorize-terrain.py. No browser/production dependency. */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -7,10 +7,12 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { buildHoleScene } from '../../../src/lib/golf/course-geometry/build-scene';
 import { parseGeometryPackage } from '../../../src/lib/golf/course-geometry/schema';
-import { fitTerrainCamera, parseTerrainMesh, projectTerrainPoint, TERRAIN_PRESETS, type Point3M } from '../../../src/lib/golf/course-geometry/terrain';
+import { fitTerrainCamera, parseTerrainMesh, projectTerrainPoint, terrainHeight, TERRAIN_PRESETS, type Point3M } from '../../../src/lib/golf/course-geometry/terrain';
 import { terrainColors } from '../../../src/lib/golf/course-geometry/terrain-material';
 import { terrainCanopy } from '../../../src/lib/golf/course-geometry/terrain-canopy';
 import { TerrainCanopyLayer } from '../../../src/components/golf/course-geometry/TerrainCanopyLayer';
+import { CourseShotOverlay } from '../../../src/components/golf/course-geometry/CourseShotOverlay';
+import type { LocalFeature, PointM } from '../../../src/lib/golf/course-geometry/types';
 import data from '../../../src/test/fixtures/course-geometry/cacapon.json';
 import terrain from '../../../src/test/fixtures/course-geometry/cacapon-07-terrain.json';
 
@@ -32,10 +34,22 @@ for (const [preset, pose] of Object.entries(TERRAIN_PRESETS)) {
     color: `#${Array.from(colors.slice(i * 9, i * 9 + 3)).map(v => Math.round(v * 255).toString(16).padStart(2, '0')).join('')}`,
     points: [0, 3, 6].map(offset => projectTerrainPoint(mesh.vertices.slice(i*9 + offset, i*9 + offset + 3) as unknown as Point3M, camera)),
   }));
-  const annotations = renderToStaticMarkup(createElement('svg', { xmlns: 'http://www.w3.org/2000/svg' }, createElement(TerrainCanopyLayer, {
-    canopy: terrainCanopy(scene, mesh, camera), width: 620, height: 480,
-  }))).replace(/^<svg[^>]*>|<\/svg>$/g, '').replace(/var\(--fw-diagram-([\w-]+)\)/g, (_, kind: string) => hex(kind));
+  const project = (point: PointM): PointM | null => {
+    const z = terrainHeight(mesh, point);
+    if (z == null) return null;
+    const [x, y] = projectTerrainPoint([point[0], point[1], z], camera);
+    return [x, y];
+  };
+  const pathForFeature = (feature: LocalFeature): string | null => {
+    const parts = feature.parts.map(part => part.map(ring => ring.map(project)));
+    if (parts.some(part => part.some(ring => ring.some(point => point == null)))) return null;
+    return parts.map(part => part.map(ring => ring.map((point, i) => `${i ? 'L' : 'M'}${point![0]},${point![1]}`).join(' ') + ' Z').join(' ')).join(' ');
+  };
+  const annotations = renderToStaticMarkup(createElement('svg', { xmlns: 'http://www.w3.org/2000/svg' },
+    createElement(TerrainCanopyLayer, { canopy: terrainCanopy(scene, mesh, camera), width: 620, height: 480 }),
+    createElement(CourseShotOverlay, { scene, width: 620, height: 480, project, pathForFeature }),
+  )).replace(/^<svg[^>]*>|<\/svg>$/g, '').replace(/var\(--fw-diagram-([\w-]+)\)/g, (_, kind: string) => hex(kind));
   fs.writeFileSync(path.join(directory, `${preset}.json`), JSON.stringify({ width: 620, height: 480, background: hex('ground'),
-    geometryHash: scene.packageHash, terrainHash: mesh.contentHash, preset, camera, triangles, annotations }));
+    fidelity: 'vector-designed-shading', dailyPin: 'estimated-not-observed', geometryHash: scene.packageHash, terrainHash: mesh.contentHash, preset, camera, triangles, annotations }));
 }
 console.log(JSON.stringify({ triangles: mesh.triangleFeatures.length, terrainBytesGzip: gzipSync(JSON.stringify(terrain)).byteLength, directory }));
