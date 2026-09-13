@@ -57,13 +57,15 @@ export function CourseShotOverlay({ scene, width, height, selectedShotNumber, pr
       data-illustrative-preview-trajectory={shotNumber} data-selected={active} data-trajectory-source="interactive-preview-fixture">
       <title>Estimated flight preview from the recorded lie, result, and remaining distance. This path is not a GPS-recorded ball location or measured flight.</title>
       <polyline points={points.map(point => point.join(',')).join(' ')} fill="none" stroke="var(--fw-diagram-shadow)"
-        strokeWidth={active ? 3 : 2.4} strokeLinecap="round" strokeLinejoin="round" opacity=".26" vectorEffect="non-scaling-stroke" />
+        strokeWidth={active ? 2.8 : 2.15} strokeLinecap="round" strokeLinejoin="round" opacity=".26" vectorEffect="non-scaling-stroke" />
       <polyline points={points.map(point => point.join(',')).join(' ')} fill="none" stroke="var(--fw-diagram-event)"
-        strokeWidth={active ? 1.65 : 1.2} strokeLinecap="round" strokeLinejoin="round" opacity={active ? 1 : ".64"} vectorEffect="non-scaling-stroke" />
-      <circle data-preview-flight-start={shotNumber} cx={points[0]![0]} cy={points[0]![1]} r={active ? 2.15 : 1.8}
+        strokeWidth={active ? 1.45 : 1.05} strokeLinecap="round" strokeLinejoin="round" opacity={active ? 1 : ".56"} vectorEffect="non-scaling-stroke" />
+      <circle data-preview-flight-start={shotNumber} cx={points[0]![0]} cy={points[0]![1]} r={active ? 2.3 : 1.8}
         fill="var(--fw-diagram-event)" stroke="var(--fw-diagram-shadow)" strokeWidth=".7" />
-      <circle data-preview-flight-end={shotNumber} cx={points.at(-1)![0]} cy={points.at(-1)![1]} r={active ? 2.75 : 2.2}
-        fill="var(--fw-diagram-event)" stroke="var(--fw-diagram-shadow)" strokeWidth=".9" />
+      <circle data-preview-flight-end={shotNumber} cx={points.at(-1)![0]} cy={points.at(-1)![1]} r={active ? 3.3 : 2.5}
+        fill="var(--fw-diagram-ground)" fillOpacity=".62" stroke="var(--fw-diagram-event)" strokeWidth={active ? "1.25" : ".9"} />
+      {active && <circle data-preview-flight-estimate={shotNumber} cx={points.at(-1)![0]} cy={points.at(-1)![1]} r="1.1"
+        fill="none" stroke="var(--fw-diagram-event)" strokeWidth=".8" opacity=".8" />}
     </g>)}
     {anchors.map(({ key, point }) => <circle key={key} data-anchor="estimated"
       cx={point[0]} cy={point[1]} r="2.5" fill="var(--fw-diagram-ground)" stroke="var(--fw-diagram-event)" strokeWidth="1.5" />)}

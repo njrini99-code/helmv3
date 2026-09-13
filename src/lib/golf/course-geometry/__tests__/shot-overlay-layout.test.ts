@@ -28,7 +28,7 @@ function actualCacaponScene() {
 }
 
 describe('camera-independent shot overlay evidence', () => {
-  it('marks the empty interactive fixture so its first frame can use terrain without surface dashes', () => {
+  it('marks the empty interactive fixture so its compact SVG has no surface dashes', () => {
     const base = buildHoleScene(pilotPackage, 'cacapon-07', [], mesh);
     const scene = addInteractivePreviewTrajectories(base, []);
     expect(scene.overlayKind).toBe('analytic_fixture');

@@ -80,10 +80,11 @@ describe('shared geographic annotation layer', () => {
     expect(strokes).toHaveLength(2);
     // render() selects Shot 2, so this first-stroke trail uses its quieter
     // historical weight while retaining the same crisp non-scaling treatment.
-    expect(strokes[1]!.getAttribute('stroke-width')).toBe('1.2');
+    expect(strokes[1]!.getAttribute('stroke-width')).toBe('1.05');
     expect(strokes[1]!.getAttribute('vector-effect')).toBe('non-scaling-stroke');
     expect(trail.querySelector('title')!.textContent).toContain('not a GPS-recorded ball location');
     expect(trail.querySelectorAll('[data-preview-flight-start], [data-preview-flight-end]')).toHaveLength(2);
+    expect(trail.querySelectorAll('[data-preview-flight-estimate]')).toHaveLength(0);
     expect(drawing.querySelectorAll('[data-shot-segment], [data-anchor="estimated"]')).toHaveLength(0);
     expect(drawing.querySelectorAll('[data-possible-area], [data-candidate-outline]')).toHaveLength(0);
   });

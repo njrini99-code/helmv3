@@ -984,9 +984,10 @@ See the existing geometry plan Section 22 for verification and source limits.
 
 The expanded course view loads a Three.js backend behind the existing shared
 scene; inline maps and exports retain the SVG adapter. The isolated interactive
-fixture opens directly on that terrain canvas. A recorded preview shot renders
-as one thin, depth-tested elevated Three.js arc anchored to the terrain; the
-SVG fallback retains a thin projected estimate. Neither path renders
+fixture keeps its compact tracker map on that SVG adapter; its Expand control
+opens the terrain canvas. A recorded preview shot renders as one thin,
+depth-tested elevated Three.js arc in the expanded canvas, while the compact
+SVG map retains a thin projected estimate. Neither path renders
 candidate-surface boundary dashes. These display arcs are explicitly estimated
 from the recorded result and remaining distance, never a recorded flight,
 carry measurement, or spatial shot write. A normal-flow

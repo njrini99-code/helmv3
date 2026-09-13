@@ -43,7 +43,18 @@ export function HoleSceneFrame({ scene, context, defaultView = 'hole', selectedS
   const putting = currentPuttingDistanceM != null || events.some(e => e.shotType === 'putting');
   const unassignedStudy = !!scene?.hole.displayLabel && !scene.hole.routeFeatureId;
   const views: SceneView[] = unassignedStudy ? ['green'] : ['hole', 'green', ...(defaultView === 'approach' ? ['approach' as const] : []), ...(putting ? ['putting' as const] : [])];
-  const expand = <ModalShell open={expanded} onOpenChange={open => { if (open) setDetailSelection(selectedShotNumber ?? null); setExpanded(open); }} presentation="workspace" title="Course detail" hideTitle hideClose
+  const expand = <ModalShell open={expanded} onOpenChange={open => {
+    if (open) {
+      setDetailSelection(selectedShotNumber ?? null);
+      // The compact tracker remains a 2D course card. Opening detail with an
+      // entered flight starts on the side-biased 3D pose instead, so the arc
+      // has visible height instead of reading like a flat map line.
+      if (scene?.illustrativePreviewTrajectories?.length) {
+        poseMemory.current = { pose: TERRAIN_PRESETS.side, fitPreset: 'side' };
+      }
+    }
+    setExpanded(open);
+  }} presentation="workspace" title="Course detail" hideTitle hideClose
     description="Explore the course. Shot positions are estimates; the daily pin is unknown."
     trigger={<Button variant="ghost" aria-label="Expand course view" className="h-11 min-w-11 shrink-0 px-2"><Maximize2 size={17} aria-hidden /></Button>}>
     <Drawing key={view} scene={scene} view={view} context={context} events={events} selectedShotNumber={detailSelection ?? selectedShotNumber} onSelectEvent={setDetailSelection}
@@ -91,8 +102,6 @@ function Drawing({ scene, view, context, events, selectedShotNumber, currentPutt
   const [showProfile, setShowProfile] = useState(false);
   const pendingFrame = useRef(0);
   const runtime = useRef<TerrainRuntimeController | null>(null);
-  const previewTerrainConfigured = useRef(false);
-  const previewFlightPoseConfigured = useRef(false);
   const scaleBar = useRef<HTMLDivElement>(null);
   const [inspectorOpen, setInspectorOpen] = useState(false);
   const [areasOpen, setAreasOpen] = useState(false);
@@ -100,31 +109,6 @@ function Drawing({ scene, view, context, events, selectedShotNumber, currentPutt
   const pointers = useRef(new Map<number, { x: number; y: number }>());
   const live = useRef({ zoom, pan, pose, fitPreset });
   const nextState = useRef<typeof live.current | null>(null);
-  // The public fixture carries this array even before its first recorded shot.
-  // Other analytic scenes retain their normal SVG/review behavior.
-  const previewTerrain = scene?.illustrativePreviewTrajectories != null;
-  const previewFlightCount = scene?.illustrativePreviewTrajectories?.length ?? 0;
-  useEffect(() => {
-    if (!previewTerrain || previewTerrainConfigured.current) return;
-    // The public course fixture should demonstrate the actual Three scene
-    // after a shot, rather than a top-down SVG that hides all relief.
-    previewTerrainConfigured.current = true;
-    const next = { zoom: 1, pan: { x: 0, y: 0 }, pose: TERRAIN_PRESETS.terrain, fitPreset: 'terrain' as TerrainFitProfile };
-    live.current = next;
-    if (poseMemory) poseMemory.current = { pose: next.pose, fitPreset: next.fitPreset };
-    setZoom(next.zoom); setPan(next.pan); setPose(next.pose); setFitPreset(next.fitPreset);
-  }, [poseMemory, previewTerrain]);
-  useEffect(() => {
-    if (!previewTerrain || previewFlightCount === 0 || previewFlightPoseConfigured.current) return;
-    // A recorded flight should reveal its vertical arc immediately. The
-    // public fixture begins at Terrain for geographic reading, then settles
-    // once into the lower side pose after its first recorded shot.
-    previewFlightPoseConfigured.current = true;
-    const next = { ...live.current, pose: TERRAIN_PRESETS.side, fitPreset: 'side' as TerrainFitProfile };
-    live.current = next;
-    if (poseMemory) poseMemory.current = { pose: next.pose, fitPreset: next.fitPreset };
-    setPose(next.pose); setFitPreset(next.fitPreset);
-  }, [poseMemory, previewFlightCount, previewTerrain]);
   function commitCamera() {
     const next = live.current; if (poseMemory) poseMemory.current = { pose: next.pose, fitPreset: next.fitPreset }; setZoom(next.zoom); setPan(next.pan); setPose(next.pose); setFitPreset(next.fitPreset);
     if (scaleBar.current) scaleBar.current.style.visibility = Math.abs(next.pose.pitch - 90) < .01 ? 'visible' : 'hidden';
@@ -142,7 +126,9 @@ function Drawing({ scene, view, context, events, selectedShotNumber, currentPutt
     } else commitCamera();
   }
   const gesture = useRef({ x: 0, y: 0, distance: 0, zoom: 1, pan: { x: 0, y: 0 }, pose, fitPreset, origin: { x: size.width / 2, y: size.height / 2 } });
-  const terrainRequested = (expanded || previewTerrain) && view !== 'putting' && scene?.terrain != null && !terrainFailed && !showProfile;
+  // The tracker stays on its compact, familiar SVG course card. Expanding is
+  // the explicit opt-in to the live Three.js terrain and elevated flight arc.
+  const terrainRequested = expanded && view !== 'putting' && scene?.terrain != null && !terrainFailed && !showProfile;
   let terrainCamera;
   if (terrainRequested && scene?.terrain) {
     try { terrainCamera = fitTerrainViewportCamera(scene, scene.terrain, view, size.width, size.height, pose, zoom, [pan.x, pan.y], fitPreset); }
@@ -333,7 +319,7 @@ function Drawing({ scene, view, context, events, selectedShotNumber, currentPutt
     {expanded && <aside className="z-10 flex max-h-[48dvh] shrink-0 flex-col border-t border-border-subtle bg-surface font-fw-sans sm:max-h-none sm:w-[320px] sm:border-l sm:border-t-0" aria-label="Course inspector" data-slot="course-inspector" data-modal="false" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
       <div className="flex items-center justify-between gap-1 px-3 pt-2">
         {(terrainEnabled || showProfile) ? <div className="flex items-center rounded-fw-md bg-surface-secondary p-0.5" role="group" aria-label="Terrain camera">
-          {(['top', 'terrain'] as const).map(preset => <Button key={preset} size="sm" className="px-3"
+          {(['top', 'terrain', 'side'] as const).map(preset => <Button key={preset} size="sm" className="px-2.5"
             variant={!showProfile && isPreset(preset) ? 'secondary' : 'ghost'} aria-pressed={!showProfile && isPreset(preset)} onClick={() => presetView(preset)}>
             {{ top: 'Top', terrain: 'Terrain', side: 'Side' }[preset]}</Button>)}
           <Button size="sm" className="px-3" variant={showProfile ? 'secondary' : 'ghost'} aria-pressed={showProfile}
@@ -362,9 +348,6 @@ function Drawing({ scene, view, context, events, selectedShotNumber, currentPutt
         onClick={() => changeCamera(current => ({ ...current, pan: boundedPan(current.pan.x + (direction === 'left' ? 40 : direction === 'right' ? -40 : 0), current.pan.y + (direction === 'up' ? 40 : direction === 'down' ? -40 : 0)) }))}>
         {{ left: '←', up: '↑', down: '↓', right: '→' }[direction]}
       </Button>)}
-      {(terrainEnabled || showProfile) && <>
-        <Button size="sm" variant="ghost" onClick={() => presetView('side')}>Side</Button>
-      </>}
       {terrainEnabled && <>
         {(['Rotate left', 'Rotate right', 'Tilt up', 'Tilt down'] as const).map(action => <Button key={action} size="sm" variant="ghost"
           onClick={() => changeCamera(current => ({ ...current, pose: { ...current.pose,

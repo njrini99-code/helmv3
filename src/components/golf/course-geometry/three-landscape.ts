@@ -138,8 +138,10 @@ export function buildThreeLandscape(
     // Verified neighboring surfaces provide context without competing with the
     // played hole. This changes albedo only, never feature geometry or picking.
     const contextOnly = contextIds.has(mesh.featureIds[mesh.triangleFeatures[t]!]!);
-    if (contextOnly && (kind === 'fairway' || kind === 'tee' || kind === 'green')) albedo.lerp(contextRough, .4);
-    const mown = kind === 'fairway' && mesh.triangleMaterials[t] === 0;
+    if (contextOnly && (kind === 'fairway' || kind === 'tee' || kind === 'green')) albedo.lerp(contextRough, .58);
+    // Context retains real playable surfaces but drops decorative mowing, so
+    // the selected hole remains readable without a fake edge or crop.
+    const mown = kind === 'fairway' && mesh.triangleMaterials[t] === 0 && !contextOnly;
     for (let corner = 0; corner < 3; corner++) {
       const index = offset + corner * 3, original = offset + order[corner]! * 3;
       source.set(v.slice(original, original + 3), index);
