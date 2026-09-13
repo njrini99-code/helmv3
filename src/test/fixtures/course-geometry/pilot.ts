@@ -3,6 +3,7 @@ import { parseGeometryPackage } from '@/lib/golf/course-geometry/schema';
 import { buildHoleScene } from '@/lib/golf/course-geometry/build-scene';
 import { normalizeLiveShot } from '@/lib/golf/course-geometry/normalize';
 import type { ShotRecord } from '@/lib/types/golf';
+import type { HoleScene, PointM } from '@/lib/golf/course-geometry/types';
 
 export const pilotPackage = parseGeometryPackage(source);
 /** Synthetic ledger, never production player data. The numeric evidence does
@@ -39,4 +40,28 @@ export function illustrativeScene() {
     candidateFeatureIds: [fixture.feature], reasons: ['analytic_fixture_only_not_a_reconstruction'],
   }));
   return scene;
+}
+
+/**
+ * An intentionally isolated demonstration layer for the public, static phone
+ * fixture. The source-candidate course data cannot derive a geographic ball
+ * position from a normal score entry, so these paths remain explicit fixture
+ * art rather than becoming player spatial data.
+ */
+const interactivePreviewPaths: readonly (readonly PointM[])[] = [
+  [[241.1853624965016, 757.1854367293256], [222, 700], [194, 653], [170, 620]],
+  [[170, 620], [156, 570], [148, 535], [139.3914878419688, 524.840140060172]],
+  [[139.3914878419688, 524.840140060172], [155, 470], [174, 420], [192.0078017283204, 390.5372678282061]],
+  [[192.0078017283204, 390.5372678282061], [193.4, 391.8], [193.7, 393.4]],
+  [[193.7, 393.4], [193.2, 391.8], [192.6, 390.9]],
+];
+
+export function addInteractivePreviewTrajectories(scene: HoleScene, shots: readonly ShotRecord[]): HoleScene {
+  if (scene.physicalHoleKey !== 'cacapon-07') return scene;
+  const trajectories = shots.flatMap(shot => {
+    const pointsM = interactivePreviewPaths[shot.shotNumber - 1];
+    return pointsM && !shot.isPenalty ? [{ key: `fixture-flight-${shot.shotNumber}`, shotNumber: shot.shotNumber,
+      pointsM, source: 'interactive_preview_fixture' as const }] : [];
+  });
+  return trajectories.length ? { ...scene, overlayKind: 'analytic_fixture', illustrativePreviewTrajectories: trajectories } : scene;
 }

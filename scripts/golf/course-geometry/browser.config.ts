@@ -20,6 +20,7 @@ export default defineConfig({
   }],
   resolve: { alias: [
     { find: '@/lib/supabase/client', replacement: resolve(fixture, 'supabase.ts') },
+    { find: '@/components/golf/OfflineProvider', replacement: resolve(fixture, 'offline-provider.tsx') },
     { find: 'next/navigation', replacement: resolve(fixture, 'navigation.ts') },
     { find: 'next/dynamic', replacement: resolve(fixture, 'dynamic.tsx') },
     { find: 'next/link', replacement: resolve(fixture, 'link.tsx') },

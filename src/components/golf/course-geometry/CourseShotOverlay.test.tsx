@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { CourseShotOverlay } from './CourseShotOverlay';
 import { featurePath } from './CourseHoleScene';
-import { illustrativeScene } from '@/test/fixtures/course-geometry/pilot';
+import { addInteractivePreviewTrajectories, illustrativeScene, pilotPackage, pilotShots } from '@/test/fixtures/course-geometry/pilot';
+import { buildHoleScene } from '@/lib/golf/course-geometry/build-scene';
+import { normalizeLiveShot } from '@/lib/golf/course-geometry/normalize';
 import { toScreen, type SimilarityTransform } from '@/lib/golf/course-geometry/project';
 import type { HoleScene, LocalFeature, PointM } from '@/lib/golf/course-geometry/types';
 
@@ -62,6 +64,19 @@ describe('shared geographic annotation layer', () => {
     expect(drawing.querySelectorAll('[data-anchor="estimated"]')).toHaveLength(2);
     expect(drawing.querySelectorAll('[data-shot-segment]')).toHaveLength(0);
     expect(scene).toEqual(snapshot);
+  });
+
+  it('renders a labeled fixture flight without turning it into a measured anchor or inferred segment', () => {
+    const scene = addInteractivePreviewTrajectories(
+      buildHoleScene(pilotPackage, 'cacapon-07', [pilotShots[0]!].map(normalizeLiveShot)),
+      [pilotShots[0]!],
+    );
+    const drawing = render(scene);
+    const trail = drawing.querySelector('[data-illustrative-preview-trajectory="1"]')!;
+    expect(trail.getAttribute('data-trajectory-source')).toBe('interactive-preview-fixture');
+    expect(trail.querySelectorAll('polyline')).toHaveLength(2);
+    expect(trail.querySelector('title')!.textContent).toContain('not a recorded ball location');
+    expect(drawing.querySelectorAll('[data-shot-segment], [data-anchor="estimated"]')).toHaveLength(0);
   });
 
   it('keeps a validated connection at the physical scale while badges remain readable', () => {

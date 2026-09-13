@@ -17,7 +17,7 @@ interface OverlayProps {
 export function CourseShotOverlay({ scene, width, height, selectedShotNumber, project, pathForFeature }: OverlayProps) {
   const id = useId();
   const prepared = useMemo(() => prepareShotOverlay(scene, selectedShotNumber), [scene, selectedShotNumber]);
-  const { regions, segments, anchors, badges, pin } = layoutShotOverlay(prepared, { width, height, project, pathForFeature });
+  const { regions, segments, anchors, badges, pin, illustrativePreviewTrajectories } = layoutShotOverlay(prepared, { width, height, project, pathForFeature });
   return <g data-annotation="shot-evidence">
     <defs>
       <pattern id={`${id}-possible`} patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(-35)">
@@ -43,6 +43,14 @@ export function CourseShotOverlay({ scene, width, height, selectedShotNumber, pr
       <line x1={from[0]} y1={from[1]} x2={to[0]} y2={to[1]} stroke="var(--fw-diagram-shadow)" strokeWidth={active ? 4.4 : 3.5} opacity=".4" />
       <line x1={from[0]} y1={from[1]} x2={to[0]} y2={to[1]} stroke="var(--fw-diagram-event)"
         strokeWidth={active ? 2.4 : 1.6} strokeLinecap="round" strokeDasharray="5 6" opacity={active ? 1 : .65} />
+    </g>)}
+    {illustrativePreviewTrajectories.map(({ key, shotNumber, active, points }) => <g key={key}
+      data-illustrative-preview-trajectory={shotNumber} data-selected={active} data-trajectory-source="interactive-preview-fixture">
+      <title>Illustrative flight preview only. This path is not a recorded ball location or measured flight.</title>
+      <polyline points={points.map(point => point.join(',')).join(' ')} fill="none" stroke="var(--fw-diagram-shadow)"
+        strokeWidth={active ? 5 : 3.5} strokeLinecap="round" strokeLinejoin="round" opacity=".44" />
+      <polyline points={points.map(point => point.join(',')).join(' ')} fill="none" stroke="var(--fw-diagram-event)"
+        strokeWidth={active ? 2.8 : 1.7} strokeLinecap="round" strokeLinejoin="round" opacity={active ? 1 : ".7"} />
     </g>)}
     {anchors.map(({ key, point }) => <circle key={key} data-anchor="estimated"
       cx={point[0]} cy={point[1]} r="2.5" fill="var(--fw-diagram-ground)" stroke="var(--fw-diagram-event)" strokeWidth="1.5" />)}

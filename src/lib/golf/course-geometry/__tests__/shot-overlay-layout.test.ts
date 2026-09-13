@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { illustrativeScene, pilotPackage, pilotShots } from '@/test/fixtures/course-geometry/pilot';
+import { addInteractivePreviewTrajectories, illustrativeScene, pilotPackage, pilotShots } from '@/test/fixtures/course-geometry/pilot';
 import terrainSource from '@/test/fixtures/course-geometry/cacapon-07-terrain.json';
 import { buildHoleScene } from '../build-scene';
 import { normalizeLiveShot } from '../normalize';
@@ -50,10 +50,21 @@ describe('camera-independent shot overlay evidence', () => {
     const prepared = prepareShotOverlay(illustrativeScene(), 2);
     expect(layoutShotOverlay(prepared, { width: 600, height: 700,
       project: () => [NaN, Infinity], pathForFeature: () => null }))
-      .toEqual({ anchors: [], badges: [], regions: [], segments: [], pin: null });
+      .toEqual({ anchors: [], badges: [], regions: [], segments: [], pin: null, illustrativePreviewTrajectories: [] });
     expect(layoutShotOverlay(prepared, { width: 0, height: 700,
       project: point => point, pathForFeature: () => null }))
-      .toEqual({ anchors: [], badges: [], regions: [], segments: [], pin: null });
+      .toEqual({ anchors: [], badges: [], regions: [], segments: [], pin: null, illustrativePreviewTrajectories: [] });
+  });
+
+  it('adds a clearly isolated preview trail only for entries that exist in the local fixture ledger', () => {
+    const base = buildHoleScene(pilotPackage, 'cacapon-07', [pilotShots[0]!].map(normalizeLiveShot), mesh);
+    const scene = addInteractivePreviewTrajectories(base, [pilotShots[0]!]);
+    const prepared = prepareShotOverlay(scene);
+    const layout = layoutShotOverlay(prepared, { width: 600, height: 700, project: point => point, pathForFeature: () => null });
+    expect(scene.events[0]!.anchorM).toBeNull();
+    expect(scene.illustrativePreviewTrajectories).toHaveLength(1);
+    expect(layout.illustrativePreviewTrajectories).toEqual([expect.objectContaining({ shotNumber: 1, active: true })]);
+    expect(layout.illustrativePreviewTrajectories[0]!.points).toHaveLength(4);
   });
 
   it('keeps both actual Cacapon candidate outlines legible without enlarging cells or locating the ball', () => {

@@ -115,6 +115,17 @@ export interface EstimatedPin {
   positionM: PointM;
   basis: 'retained_manual_hypothesis' | 'nominal_green_reference';
 }
+
+/** A deliberately non-measured path used only by isolated interactive
+ * fixtures. It is kept separate from `DiagramEvent.connection`, which models
+ * a bounded endpoint relationship, so a preview can never be mistaken for a
+ * recorded flight or persisted player location. */
+export interface IllustrativePreviewTrajectory {
+  key: string;
+  shotNumber: number;
+  pointsM: readonly PointM[];
+  source: 'interactive_preview_fixture';
+}
 export interface HoleScene {
   /** Optional source candidate used only by the expanded terrain feasibility view. */
   terrain?: TerrainMesh;
@@ -130,6 +141,8 @@ export interface HoleScene {
   /** Neighboring source geometry for landscape context; excluded from shot inference. */
   contextFeatures?: LocalFeature[];
   events: DiagramEvent[];
+  /** Never supplied by the course compiler or player-record reconstruction. */
+  illustrativePreviewTrajectories?: readonly IllustrativePreviewTrajectory[];
   /** Chosen from physical routing, independent of events and labels. */
   orientationRadians: number;
   attribution: string;

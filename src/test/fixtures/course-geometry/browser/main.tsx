@@ -9,7 +9,7 @@ import FairwayShotTracking from '@/components/fairway/pages/rounds-tracking/Fair
 import { ReviewHero } from '@/components/golf/coachhelm/round-review/ReviewHero';
 import type { ReviewShotInput } from '@/components/golf/coachhelm/round-review/round-review-shots';
 import type { ShotRecord, RoundHole } from '@/lib/types/golf';
-import { pilotPackage, pilotShots } from '../pilot';
+import { addInteractivePreviewTrajectories, pilotPackage, pilotShots } from '../pilot';
 import terrainData from '../cacapon-07-terrain.json';
 import { parseTerrainMesh } from '@/lib/golf/course-geometry/terrain';
 import { normalizeLiveShot } from '@/lib/golf/course-geometry/normalize';
@@ -25,7 +25,8 @@ const params = new URLSearchParams(location.search);
 const winchester = params.get('course') === 'winchester';
 const currentPackage = winchester ? parseGeometryPackage(winchesterData) : pilotPackage;
 const terrain = parseTerrainMesh(winchester ? winchesterTerrainData : terrainData, currentPackage);
-const geometry = { package: currentPackage, holeKeys: currentPackage.holes.map(h => h.key), terrainByHole: { [terrain.physicalHoleKey]: terrain } };
+const geometry = { package: currentPackage, holeKeys: currentPackage.holes.map(h => h.key), terrainByHole: { [terrain.physicalHoleKey]: terrain },
+  ...(!winchester ? { decorateScene: addInteractivePreviewTrajectories } : {}) };
 const holes: RoundHole[] = currentPackage.holes.map(h => {
   if (h.scorecardYards == null) throw new Error('Pilot scorecard yardage required');
   return { number: h.ordinal, par: h.par, yardage: h.scorecardYards, score: null };
@@ -37,7 +38,7 @@ const ledger: ShotRecord[] = [
   { shotNumber: 4, shotType: 'putting', clubType: 'putter', lieBefore: 'green', distanceToHoleBefore: 12, distanceUnitBefore: 'feet', result: 'green', distanceToHoleAfter: 2, distanceUnitAfter: 'feet', shotDistance: 3.3, isPenalty: false, puttBreak: 'left_to_right', puttSlope: 'level', puttMissTags: ['short', 'low'] },
   { shotNumber: 5, shotType: 'putting', clubType: 'putter', lieBefore: 'green', distanceToHoleBefore: 2, distanceUnitBefore: 'feet', result: 'hole', distanceToHoleAfter: 0, distanceUnitAfter: 'feet', shotDistance: .66, isPenalty: false, puttBreak: 'straight', puttSlope: 'level' },
 ];
-const scenario = params.get('case') ?? 'around';
+const scenario = params.get('case') ?? 'tee';
 const review = location.pathname.endsWith('/review');
 const count = scenario === 'tee' ? 0 : scenario === 'approach' ? 1 : scenario === 'putting' ? 3 : 2;
 const initial = ledger.slice(0, count);
@@ -74,9 +75,11 @@ function Screens() {
       <h1 className="mb-4 font-fw-display text-h2 font-semibold">Round Review</h1>
       <ReviewHero geometry={scenario === 'missing' ? undefined : activeGeometry} totalScore={73} scoreToPar={1} courseDateLine={`${currentPackage.name} · Local example`} grade={{ score: 4, label: 'Solid round' }} mixLine="13 pars · 2 birdies · 3 bogeys" filmstripHoles={filmstripHoles} holeMeta={holeMeta} shotsByHole={shotsByHole} />
       <p className="mt-6 text-caption text-text-secondary">Local fixture. Course and event accuracy review is still pending.</p>
-    </main> : <FairwayShotTracking holes={holes} currentHoleIndex={6} initialShots={initial} initialShotNumber={initial.length + 1}
+    </main> : <><p role="status" data-interactive-preview-notice className="mx-4 mt-3 rounded-control border border-border-subtle bg-surface px-3 py-2 font-fw-sans text-caption text-text-secondary">
+      Interactive preview only. Flight trails are illustrative and this page saves nothing.
+    </p><FairwayShotTracking holes={holes} currentHoleIndex={6} initialShots={initial} initialShotNumber={initial.length + 1}
       geometry={scenario === 'missing' ? undefined : activeGeometry} autoSaveDisabled onHoleComplete={async () => true}
-      onSaveShot={s => setSaved(list => [...list, s])} onAutoSave={async s => setSaved(s)} onExit={() => {}} />}
+      onSaveShot={s => setSaved(list => [...list, s])} onAutoSave={async s => setSaved(s)} onExit={() => {}} /></>}
     <CapacitorProvider />
     <output hidden data-compiled-state={compiledState} data-fixture-ledger={JSON.stringify(saved.map(normalizeLiveShot))} />
   </FairwayDashboardShell>;

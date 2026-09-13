@@ -35,7 +35,7 @@ import { displayToFeet, displayToYards } from '@/lib/golf/distance-units';
 
 import { FairwayScorecardHeader, FairwayDesktopExitHeader } from './FairwayScorecardHeader';
 import { FairwayShotPills } from './FairwayShotPills';
-import type { CourseGeometryPackage } from '@/lib/golf/course-geometry/types';
+import type { CourseGeometryPackage, HoleScene } from '@/lib/golf/course-geometry/types';
 import { buildHoleScene } from '@/lib/golf/course-geometry/build-scene';
 import type { TerrainMesh } from '@/lib/golf/course-geometry/terrain';
 import { normalizeLiveShot } from '@/lib/golf/course-geometry/normalize';
@@ -52,7 +52,13 @@ type Hole = RoundHole;
 // Existing tracking props plus optional read-only course display context.
 interface ShotTrackingProps {
   /** Optional reviewed binding context; never part of score persistence. */
-  geometry?: { package: CourseGeometryPackage; holeKeys: readonly string[]; terrainByHole?: Readonly<Record<string, TerrainMesh>> };
+  geometry?: {
+    package: CourseGeometryPackage;
+    holeKeys: readonly string[];
+    terrainByHole?: Readonly<Record<string, TerrainMesh>>;
+    /** Isolated display-only adapter. It cannot alter the shot write path. */
+    decorateScene?: (scene: HoleScene, shots: readonly ShotRecord[]) => HoleScene;
+  };
   /** Resume context already occupies the initial status-bar inset. */
   safeAreaHandledAbove?: boolean;
   /** Round-level status stays in the same measured sticky chrome. */
@@ -525,7 +531,10 @@ export default function FairwayShotTracking({
   const physicalScene = useMemo(() => {
     const key = geometry?.holeKeys[currentHoleIndex];
     if (!geometry || !key) return null;
-    try { return buildHoleScene(geometry.package, key, shotHistory.map(normalizeLiveShot), geometry.terrainByHole?.[key]); }
+    try {
+      const scene = buildHoleScene(geometry.package, key, shotHistory.map(normalizeLiveShot), geometry.terrainByHole?.[key]);
+      return geometry.decorateScene?.(scene, shotHistory) ?? scene;
+    }
     catch { return null; } // Optional visual failure cannot block entry or saving.
   }, [geometry, currentHoleIndex, shotHistory]);
 
@@ -625,6 +634,7 @@ export default function FairwayShotTracking({
             <div className="lg:sticky lg:top-[calc(var(--scorecard-height,105px)+5.5rem)]">
               <FairwayHoleHero
                 scene={physicalScene}
+                selectedShotNumber={selectedShotNumber}
                 shotType={shotType}
                 currentHole={currentHole}
                 isHoleComplete={isHoleComplete}
