@@ -2,7 +2,7 @@
   "complete": false,
   "productionReady": false,
   "nativeDeviceMeasured": false,
-  "build": "running after final lifecycle and diagnostic fixes",
+  "build": "passed: Next.js webpack production build, TypeScript and route generation",
   "visualReview": "not approved",
   "globalExceptions": [
     "Broad source slope remains; remaining coarse context faceting needs further visual calibration",
@@ -147,9 +147,18 @@
     "browserMatrixCaptures": 72,
     "javascriptErrors": 0,
     "lint": "51 original changed TS files checked; fixes and seven final review files passed",
-    "build": "running",
+    "build": "passed",
     "physicalDevice": "none connected",
     "finalReviewTests": 17,
-    "runtimeReplacement": "real WebGL: connected replacement, eligibility removal, final context release passed"
+    "runtimeReplacement": "real WebGL: connected replacement, eligibility removal, final context release passed",
+    "reviewGate": {
+      "head": "42b6d4c0c",
+      "result": "all available local checks passed",
+      "skipped": [
+        "ruff unavailable",
+        "pylint unavailable"
+      ],
+      "remoteCodeQL": "pending push"
+    }
   }
 }

@@ -2200,8 +2200,11 @@ and shadow-disabled comparisons did not depend on that color correction.
 
 Verification covers 153 focused tests before final review and 17 affected tests
 after the lifecycle/diagnostic corrections, plus eight compiler tests and the
-810 camera invariants. Real-device performance, current source registration,
-broader canopy review and native offline restart remain explicit next gates.
+810 camera invariants. The full Next.js webpack build passed, including
+TypeScript and 179 generated routes. Available local Review Gate checks passed;
+Ruff/Pylint were unavailable and skipped. GitHub CodeQL/required CI remain
+separate checks. Real-device performance, current source registration, broader
+canopy review and native offline restart remain explicit next gates.
 
 ## 25. Actual-green overview and putting redesign — implementation plan
 
