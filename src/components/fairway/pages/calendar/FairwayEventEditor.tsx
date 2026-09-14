@@ -31,6 +31,7 @@ import {
 } from '@/components/golf/calendar/event-form-helpers';
 import { parseRecurrenceRule, describeRecurrenceRule } from '@/lib/golf/recurrence';
 import { localDayIso } from '@/lib/golf/local-day';
+import { getValidTimezone } from '@/lib/calendar/timezone';
 import type { TeamPlayer } from './editor/types';
 import type { PeoplePickerPerson } from './people/CalendarPeoplePicker';
 import { EventEssentialsFields } from './editor/EventEssentialsFields';
@@ -315,6 +316,7 @@ export function FairwayEventEditor({
   isSaving,
   teamPlayers = [],
   currentUserId,
+  timezone,
   onOpenPeoplePicker,
 }: FairwayEventEditorProps) {
   const isCreating = !event;
@@ -369,9 +371,9 @@ export function FairwayEventEditor({
   const tzAbbrev = React.useMemo(() => {
     const date = new Date(`${formData.startDate}T12:00:00`);
     if (!Number.isFinite(date.getTime())) return null;
-    return new Intl.DateTimeFormat('en-US', { timeZoneName: 'short' })
+    return new Intl.DateTimeFormat('en-US', { timeZone: getValidTimezone(timezone), timeZoneName: 'short' })
       .formatToParts(date).find((part) => part.type === 'timeZoneName')?.value ?? null;
-  }, [formData.startDate]);
+  }, [formData.startDate, timezone]);
   // Roster filter. Only surfaced above 8 players (see the search box below);
   // the state is unconditional so clearing it can't strand a stale filter.
   const [attendeeQuery, setAttendeeQuery] = React.useState('');
@@ -1069,6 +1071,7 @@ export function FairwayEventEditor({
                 disabled={locked}
                 isCancelled={isCancelled}
                 tzAbbrev={tzAbbrev}
+                timezone={timezone}
                 desktopSplit={isDesktop}
                 offline={isOffline}
                 eventId={event?.id}

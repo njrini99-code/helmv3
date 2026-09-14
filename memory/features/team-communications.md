@@ -17,7 +17,10 @@ initial-open sentinel so it cannot be overwritten by a stale initial scroll.
 The immersive mobile thread uses one bottom safe-area inset, owned by the
 composer. Its writing field sits in a compact flush footer. Attachments open
 in the shared scrollable Sheet on phones and a menu on desktop. Group details
-use Sheet.Body so long member lists scroll within the viewport.
+use Sheet.Body so long member lists scroll within the viewport. Group creation
+dates use the conversation row's UTC calendar date because conversations carry
+no team-timezone field; the same group metadata therefore renders identically
+on every client.
 
 The mobile inbox has one Messages header with working All, Unread and Groups
 filters. Short conversations settle near the composer; longer histories retain

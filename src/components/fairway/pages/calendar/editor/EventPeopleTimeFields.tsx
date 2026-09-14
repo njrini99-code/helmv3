@@ -46,6 +46,7 @@ export interface EventPeopleTimeFieldsProps {
   disabled: boolean;
   isCancelled: boolean;
   tzAbbrev: string | null;
+  timezone?: string | null;
   desktopSplit: boolean;
   /** Publish and Find a time are disabled while offline; every other field
    *  stays editable so the draft isn't locked just because the network is
@@ -95,6 +96,7 @@ export function EventPeopleTimeFields({
   disabled,
   isCancelled,
   tzAbbrev,
+  timezone,
   desktopSplit,
   offline,
   eventId,
@@ -210,6 +212,7 @@ export function EventPeopleTimeFields({
           onRetryAttendees={onRetryAttendees}
           onRetryConflicts={onRetryConflicts}
           onSelectSuggestion={onSelectSuggestion}
+          timezone={timezone}
         />
       ) : null}
     </FormSection>

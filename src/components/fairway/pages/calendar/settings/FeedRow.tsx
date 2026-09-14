@@ -111,7 +111,7 @@ export function FeedRow({ label, description, feed, busy, disabled, error, onCre
               </Inset>
 
               <div className="mt-3 flex items-center justify-between gap-2">
-                <p className="font-fw-sans text-caption text-text-tertiary">Added {formatShortDate(feed.created_at)}</p>
+                <p className="font-fw-sans text-caption text-text-tertiary">Added {formatShortDate(feed.created_at, 'UTC')}</p>
                 {confirm === 'regenerate' ? (
                   <span className="flex items-center gap-2">
                     <span className="font-fw-sans text-caption text-text-secondary">Get a new link? The old one stops working.</span>

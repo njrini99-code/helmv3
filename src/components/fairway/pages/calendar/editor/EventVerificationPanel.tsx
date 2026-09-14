@@ -24,8 +24,8 @@ import { Button as UiButton } from '@/components/ui/button';
 import { Skeleton } from '@/components/fairway/feedback/Skeleton';
 import { cn } from '@/lib/utils';
 import surfaces from '../CalendarSurfaces.module.css';
-import { localDayIso } from '@/lib/golf/local-day';
 import { fwHaptic } from '@/lib/fairway/haptics';
+import { formatEventTime, getValidTimezone, getZonedDateParts } from '@/lib/calendar/timezone';
 
 export type VerificationStatus = 'idle' | 'checking' | 'ready' | 'error';
 
@@ -55,20 +55,36 @@ export interface EventVerificationPanelProps {
   onRetryAttendees: () => void;
   onRetryConflicts: () => void;
   onSelectSuggestion: (slot: { start: Date; end: Date }) => void;
+  /** Team timezone for conflict times returned as UTC instants. */
+  timezone?: string | null;
 }
 
 /**
  * "2026-06-15T14:00:00Z" + "…T15:00:00Z" -> "Jun 15 · 2:00 PM – 3:00 PM"
  * (or "Jun 15 · 2:00 PM – Jun 16 · 12:30 AM" across midnight).
  */
-function formatConflictInterval(startValue: string, endValue: string): string {
+function formatConflictInterval(
+  startValue: string,
+  endValue: string,
+  timezone: string | null | undefined,
+): string {
   const start = new Date(startValue);
   const end = new Date(endValue);
   if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime())) return 'Time unavailable';
-  const date = start.toLocaleDateString([], { month: 'short', day: 'numeric' });
-  const startTime = start.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-  const endTime = end.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-  const endDate = localDayIso(start) === localDayIso(end) ? '' : `${end.toLocaleDateString([], { month: 'short', day: 'numeric' })} · `;
+  const resolvedTimezone = getValidTimezone(timezone);
+  const date = new Intl.DateTimeFormat('en-US', {
+    timeZone: resolvedTimezone,
+    month: 'short',
+    day: 'numeric',
+  }).format(start);
+  const startTime = formatEventTime(startValue, timezone);
+  const endTime = formatEventTime(endValue, timezone);
+  const startDay = getZonedDateParts(startValue, timezone);
+  const endDay = getZonedDateParts(endValue, timezone);
+  const sameDay = startDay.year === endDay.year && startDay.month === endDay.month && startDay.day === endDay.day;
+  const endDate = sameDay
+    ? ''
+    : `${new Intl.DateTimeFormat('en-US', { timeZone: resolvedTimezone, month: 'short', day: 'numeric' }).format(end)} · `;
   return `${date} · ${startTime} – ${endDate}${endTime}`;
 }
 
@@ -88,6 +104,7 @@ export function EventVerificationPanel({
   onRetryAttendees,
   onRetryConflicts,
   onSelectSuggestion,
+  timezone,
 }: EventVerificationPanelProps) {
   const [showAllConflicts, setShowAllConflicts] = React.useState(false);
   const state = deriveVerificationState(status, conflicts);
@@ -170,7 +187,7 @@ export function EventVerificationPanel({
             {(showAllConflicts ? conflicts.conflicts : conflicts.conflicts.slice(0, 4)).map((conflict, index) => (
               <li key={`${conflict.userId}-${index}`} className={cn('rounded-fw-md px-3 py-2', surfaces.overlap)}>
                 <p className="font-medium">{conflict.userName} — {conflict.conflictingEvent.title}</p>
-                <p className="mt-0.5 font-fw-mono tabular-nums">{formatConflictInterval(conflict.conflictingEvent.start, conflict.conflictingEvent.end)} · {conflict.conflictingEvent.type === 'class' ? 'Class' : conflict.conflictingEvent.type === 'blocked' ? 'Blocked time' : 'Event'}</p>
+                <p className="mt-0.5 font-fw-mono tabular-nums">{formatConflictInterval(conflict.conflictingEvent.start, conflict.conflictingEvent.end, timezone)} · {conflict.conflictingEvent.type === 'class' ? 'Class' : conflict.conflictingEvent.type === 'blocked' ? 'Blocked time' : 'Event'}</p>
               </li>
             ))}
           </ul>
@@ -185,7 +202,7 @@ export function EventVerificationPanel({
         <div className="flex flex-wrap gap-1.5">
           {conflicts.suggestions.slice(0, 3).map((slot, index) => (
             <UiButton key={index} variant="ghost" type="button" onClick={() => onSelectSuggestion(slot)} className={cn('min-h-11 rounded-full px-3.5 font-fw-mono text-caption tabular-nums text-text-primary', 'border border-border-subtle bg-surface')}>
-              Try {slot.start.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+              Try {formatEventTime(slot.start.toISOString(), timezone)}
             </UiButton>
           ))}
         </div>

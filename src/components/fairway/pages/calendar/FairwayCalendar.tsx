@@ -151,11 +151,6 @@ export interface FairwayCalendarProps {
   viewerPlayerId?: string | null;
 }
 
-/** Local midnight of the day represented by the given Date. */
-function toLocalMidnight(d: Date): Date {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
-}
-
 /**
  * ONE canonical, deterministic ordering for the merged event list (finding
  * #37/#166/#185/#83). `useCalendarRangeEvents` merges the server payload with
@@ -227,7 +222,7 @@ export function FairwayCalendar({
   const [nowRef, setNowRef] = React.useState<Date>(initialFocus);
 
   React.useEffect(() => {
-    const clientNow = toLocalMidnight(new Date());
+    const clientNow = zonedMidnight(new Date().toISOString(), teamTimezone);
     setNowRef(clientNow);
     setFocusDate((prev) => {
       if (
@@ -238,7 +233,7 @@ export function FairwayCalendar({
       }
       return prev;
     });
-  }, [initialFocus]);
+  }, [initialFocus, teamTimezone]);
 
   // DEFAULT AGENDA — on the all-past demo the current week is empty; Agenda
   // surfaces the real Feb–Apr events immediately. Week stays one tap away.
@@ -852,8 +847,7 @@ export function FairwayCalendar({
   const navigate = React.useCallback(
     (direction: 'prev' | 'next' | 'today') => {
       if (direction === 'today') {
-        const now = new Date();
-        setFocusDate(new Date(now.getFullYear(), now.getMonth(), now.getDate()));
+        setFocusDate(zonedMidnight(new Date().toISOString(), teamTimezone));
         return;
       }
       const dir = direction === 'next' ? 1 : -1;
@@ -864,7 +858,7 @@ export function FairwayCalendar({
         setFocusDate((d) => addDays(d, dir * 7));
       }
     },
-    [view],
+    [view, teamTimezone],
   );
 
   // Keyboard: ←/→ + T. The Fairway shell is the SOLE calendar-navigation
