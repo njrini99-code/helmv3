@@ -43,6 +43,10 @@ export interface ComboboxBaseProps {
   name?: string;
   /** Wrapper classes. */
   className?: string;
+  /** Accessible name for the typeahead input. */
+  "aria-label"?: string;
+  /** Accessible name by reference for the typeahead input. */
+  "aria-labelledby"?: string;
 }
 
 export interface SingleComboboxProps extends ComboboxBaseProps {
@@ -73,9 +77,52 @@ export function Combobox(props: ComboboxProps) {
     disabled,
     name,
     className,
+    "aria-label": ariaLabel,
+    "aria-labelledby": ariaLabelledBy,
   } = props;
 
   const isMulti = props.multiple === true;
+
+  // Base UI keeps the selected item objects. The Fairway contract deliberately
+  // exposes their stable string IDs instead, so form state stays serializable
+  // and callers do not need to keep an object identity from a previous option
+  // list. Translate at this boundary in both directions; passing the IDs
+  // directly makes Base UI render chips without labels and breaks their remove
+  // controls as soon as a controlled multi-select has a value.
+  const optionByValue = React.useMemo(
+    () => new Map(options.map((option) => [option.value, option] as const)),
+    [options],
+  );
+  const selectedValue = React.useMemo(() => {
+    if (isMulti) {
+      return (props.value ?? [])
+        .map((value) => optionByValue.get(value))
+        .filter((option): option is ComboboxOption => option !== undefined);
+    }
+    return typeof props.value === 'string' ? optionByValue.get(props.value) ?? null : null;
+  }, [isMulti, optionByValue, props.value]);
+  const defaultSelectedValue = React.useMemo(() => {
+    if (isMulti) {
+      return (props.defaultValue ?? [])
+        .map((value) => optionByValue.get(value))
+        .filter((option): option is ComboboxOption => option !== undefined);
+    }
+    return typeof props.defaultValue === 'string' ? optionByValue.get(props.defaultValue) ?? null : null;
+  }, [isMulti, optionByValue, props.defaultValue]);
+  const handleValueChange = React.useCallback(
+    (next: ComboboxOption | ComboboxOption[] | null) => {
+      if (isMulti) {
+        (props.onValueChange as ((value: string[]) => void) | undefined)?.(
+          (Array.isArray(next) ? next : []).map((option) => option.value),
+        );
+        return;
+      }
+      (props.onValueChange as ((value: string | null) => void) | undefined)?.(
+        next && !Array.isArray(next) ? next.value : null,
+      );
+    },
+    [isMulti, props.onValueChange],
+  );
 
   // Same ModalShell/Drawer portal-container + z-index fix as Select.tsx —
   // see fairway/overlays/_shared.ts's ModalPortalContext docblock and
@@ -90,9 +137,9 @@ export function Combobox(props: ComboboxProps) {
       items={options}
       multiple={isMulti as never}
       itemToStringLabel={(item: unknown) => (item as ComboboxOption).label}
-      value={props.value as never}
-      defaultValue={props.defaultValue as never}
-      onValueChange={props.onValueChange as never}
+      value={selectedValue as never}
+      defaultValue={defaultSelectedValue as never}
+      onValueChange={handleValueChange as never}
       name={name}
       disabled={disabled}
     >
@@ -143,6 +190,8 @@ export function Combobox(props: ComboboxProps) {
 
         <BaseCombobox.Input
           data-slot="combobox-input"
+          aria-label={ariaLabel}
+          aria-labelledby={ariaLabelledBy}
           placeholder={placeholder}
           className={cn(
             "min-w-[6rem] flex-1 bg-transparent font-fw-sans text-text-primary outline-none",

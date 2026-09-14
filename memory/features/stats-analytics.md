@@ -78,6 +78,13 @@ Round completion
   strokes-gained columns.
 - Stats shown to coaches must be scoped to their team/player access.
 - Player stats pages should show only the authenticated player's allowed data.
+- In a coach player profile, an explicit set of completed rounds scopes the
+  detailed stat report and shot-pattern charts to that player's selected
+  rounds. Qualifier selection is a convenience preset for that player's
+  completed rounds in the qualifier; coaches can add or remove rounds before
+  reviewing the set. Career-only standing, trends, leak maps, and CoachHelm
+  patterns must stay out of this scoped report so two different scopes are
+  never presented as one result.
 - Strokes-gained and putting tendency gaps should be called out rather than silently treated as complete.
 - Team analytics should not mix players across teams or organizations.
 - CoachHelm can consume stats but should not own stat calculation truth.

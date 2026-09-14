@@ -143,6 +143,7 @@ import {
   getStatsSummary,
   getFilterOptions,
   getDetailedStats,
+  getPlayerRoundOptions,
   getSprayChartData,
   getTrendAnalysis,
   getCoachRosterStats,
@@ -439,6 +440,68 @@ describe('2026-06-09 fix E — getDetailedStats passes holes_played into RoundIn
     );
     expect(call).toBeDefined();
     expect(call![2][0]).toMatchObject({ id: 'r9', holes_played: 9 });
+  });
+});
+
+describe('multi-round stats scopes', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockRoundsData = [];
+  });
+
+  it('calculates from only the player-owned rounds in an explicit selection', async () => {
+    mockRoundsData = [
+      { id: 'round-1', round_date: '2026-03-01', course_name: 'North', round_type: 'practice', total_score: 72, score_to_par: 0, holes_played: 18 },
+      { id: 'round-2', round_date: '2026-03-08', course_name: 'South', round_type: 'qualifier', total_score: 74, score_to_par: 2, holes_played: 18 },
+      { id: 'round-3', round_date: '2026-03-15', course_name: 'East', round_type: 'qualifier', total_score: 70, score_to_par: -2, holes_played: 18 },
+    ];
+
+    await getDetailedStats('player-test', ['round-1', 'round-3']);
+
+    const selectionCall = vi.mocked(calculateStatsFromShots).mock.calls.find(
+      (call) => Array.isArray(call[2]) && call[2].length === 2,
+    );
+    expect(selectionCall).toBeDefined();
+    expect(selectionCall![2].map((round) => round.id)).toEqual(['round-1', 'round-3']);
+  });
+
+  it('keeps the shot-pattern response inside the explicit selection', async () => {
+    mockRoundsData = [
+      { id: 'round-1', round_date: '2026-03-01', course_name: 'North', round_type: 'practice', total_score: 72, score_to_par: 0, holes_played: 18 },
+      { id: 'round-2', round_date: '2026-03-08', course_name: 'South', round_type: 'qualifier', total_score: 74, score_to_par: 2, holes_played: 18 },
+      { id: 'round-3', round_date: '2026-03-15', course_name: 'East', round_type: 'qualifier', total_score: 70, score_to_par: -2, holes_played: 18 },
+    ];
+
+    await expect(getSprayChartData('player-test', ['round-1', 'round-3'])).resolves.toMatchObject({
+      scope: {
+        roundId: ['round-1', 'round-3'],
+        roundsIncluded: 2,
+      },
+    });
+  });
+
+  it('returns qualifier identity with each selectable completed round', async () => {
+    mockRoundsData = [{
+      id: 'qualifier-round-2',
+      round_date: '2026-03-08',
+      course_name: 'South',
+      total_score: 74,
+      round_type: 'qualifier',
+      qualifier_id: 'qualifier-spring',
+      qualifier_round_number: 2,
+      qualifier: { name: 'Spring qualifier' },
+    }];
+
+    await expect(getPlayerRoundOptions('player-test')).resolves.toEqual([{
+      id: 'qualifier-round-2',
+      date: '2026-03-08',
+      courseName: 'South',
+      totalScore: 74,
+      roundType: 'qualifier',
+      qualifierId: 'qualifier-spring',
+      qualifierName: 'Spring qualifier',
+      qualifierRoundNumber: 2,
+    }]);
   });
 });
 

@@ -41,7 +41,17 @@ export interface RoundOption {
   courseName: string | null;
   totalScore: number | null;
   roundType: 'practice' | 'qualifier' | 'tournament' | null;
+  /** Present only for a completed qualifier round. */
+  qualifierId: string | null;
+  qualifierName: string | null;
+  qualifierRoundNumber: number | null;
 }
+
+/**
+ * The detailed-stat and spray-chart scope. `overall` preserves the existing
+ * career aggregate; an array is an explicit, coach-adjustable set of rounds.
+ */
+export type StatsRoundScope = 'overall' | string | string[];
 
 // ============================================================================
 // SUMMARY TYPES
@@ -293,7 +303,7 @@ export interface SprayChartResponse {
   driving: SprayChartShotGroup;
   approach: SprayChartShotGroup;
   scope: {
-    roundId: string | 'overall';
+    roundId: StatsRoundScope;
     roundsIncluded: number;
     filterApplied: boolean;
   };
