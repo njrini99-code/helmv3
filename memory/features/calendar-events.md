@@ -38,6 +38,10 @@ Calendar and Events provide team scheduling, RSVP, attendance tracking,
 blocked time, academic conflict detection, class-schedule sync, event document
 links, and attendance summaries.
 
+Calendar-day state and schedule-conflict timestamps are rendered in the team's
+declared IANA timezone. Feed creation is stable UTC metadata, so its displayed
+creation date cannot change between server and client runtimes.
+
 **Recurring events ARE implemented — just not where this file said.** There is no
 `golf_recurring_events` table. Recurrence lives on `golf_events` itself:
 `recurring` (bool), `recurrence_rule` (text), `parent_event_id` (uuid), driven by

@@ -10,6 +10,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { FairwayAgendaView } from '../FairwayAgendaView';
+import { zonedMidnight } from '@/lib/calendar/timezone';
 
 const TZ = 'America/New_York';
 
@@ -31,6 +32,7 @@ function makeEvent(id: string, startIso: string, title = `Event ${id}`): Calenda
 // Thursday July 16 2026, 3:30 PM in New York (19:30Z).
 const NOW = new Date('2026-07-16T19:30:00.000Z');
 const NOW_LABEL = '3:30 PM';
+const CALENDAR_NOW = zonedMidnight(NOW.toISOString(), TZ);
 
 describe('FairwayAgendaView — now-line', () => {
   // The minute clock starts after mount from the real `Date`; pin it to the
@@ -49,7 +51,7 @@ describe('FairwayAgendaView — now-line', () => {
       makeEvent('b', '2026-07-16T21:00:00.000Z', 'Short game'), // 5:00 PM — next
     ];
     render(
-      <FairwayAgendaView events={events} mode="day" focusDate={NOW} isCoach timezone={TZ} nowRef={NOW} />,
+      <FairwayAgendaView events={events} mode="day" focusDate={CALENDAR_NOW} isCoach timezone={TZ} nowRef={CALENDAR_NOW} />,
     );
     const today = screen.getByRole('region', { name: 'Today' });
     const line = within(today).getByTestId('agenda-now-line');
@@ -64,7 +66,7 @@ describe('FairwayAgendaView — now-line', () => {
   it('closes the group when everything today has already started', () => {
     const events = [makeEvent('a', '2026-07-16T13:00:00.000Z', 'Morning lift')];
     render(
-      <FairwayAgendaView events={events} mode="day" focusDate={NOW} isCoach timezone={TZ} nowRef={NOW} />,
+      <FairwayAgendaView events={events} mode="day" focusDate={CALENDAR_NOW} isCoach timezone={TZ} nowRef={CALENDAR_NOW} />,
     );
     const line = screen.getByTestId('agenda-now-line');
     const group = line.parentElement!;
@@ -72,10 +74,10 @@ describe('FairwayAgendaView — now-line', () => {
   });
 
   it('never appears in another day\'s group', () => {
-    const tomorrow = new Date('2026-07-17T19:30:00.000Z');
+    const tomorrow = zonedMidnight('2026-07-17T19:30:00.000Z', TZ);
     const events = [makeEvent('a', '2026-07-17T21:00:00.000Z', 'Qualifier')];
     render(
-      <FairwayAgendaView events={events} mode="day" focusDate={tomorrow} isCoach timezone={TZ} nowRef={NOW} />,
+      <FairwayAgendaView events={events} mode="day" focusDate={tomorrow} isCoach timezone={TZ} nowRef={CALENDAR_NOW} />,
     );
     expect(screen.queryByTestId('agenda-now-line')).not.toBeInTheDocument();
   });
@@ -83,7 +85,7 @@ describe('FairwayAgendaView — now-line', () => {
   it('labels Today with its calendar date beside the heading', () => {
     const events = [makeEvent('a', '2026-07-16T21:00:00.000Z', 'Short game')];
     render(
-      <FairwayAgendaView events={events} mode="day" focusDate={NOW} isCoach timezone={TZ} nowRef={NOW} />,
+      <FairwayAgendaView events={events} mode="day" focusDate={CALENDAR_NOW} isCoach timezone={TZ} nowRef={CALENDAR_NOW} />,
     );
     const today = screen.getByRole('region', { name: 'Today' });
     expect(within(today).getByRole('heading', { level: 2 })).toHaveTextContent('Today');
