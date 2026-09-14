@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { contextCamera, contextPoints, entryView } from '../camera';
+import { contextCamera, contextPoints, entryView, puttingPlanCamera } from '../camera';
 import { toScreen, fromScreen } from '../project';
 import { displayOutline, boundaryDistance, DISPLAY_EDGE_LIMIT_M } from '../display-outline';
 import { ringArea, simpleRing } from '../spatial';
@@ -39,6 +39,20 @@ it('keeps the whole-green fit independent from earlier illustrative flights', ()
   expect(contextPoints(withFlights, 'green')).toEqual(contextPoints(source, 'green'));
   expect(contextCamera(withFlights, 390, 380, 'green')).toEqual(contextCamera(source, 390, 380, 'green'));
   expect(contextPoints(withFlights, 'approach').length).toBeGreaterThan(contextPoints(source, 'approach').length);
+});
+it('fits the compact putting plan to the canonical green before remote bunker context', () => {
+  const scene = pilotScene('cacapon-07', false);
+  const complex = contextCamera(scene, 390, 272, 'green');
+  const plan = puttingPlanCamera(scene, 390, 272);
+  expect(plan.scale).toBeGreaterThan(complex.scale);
+  const green = scene.features.find(feature => feature.id === scene.hole.greenFeatureId)!;
+  for (const point of green.parts.flat(2)) {
+    const [x, y] = toScreen(point, plan);
+    expect(x).toBeGreaterThanOrEqual(20);
+    expect(x).toBeLessThanOrEqual(370);
+    expect(y).toBeGreaterThanOrEqual(20);
+    expect(y).toBeLessThanOrEqual(252);
+  }
 });
 describe('source-backed display-edge cleanup', () => {
   it('retains all components/rings with bounded displacement and area across the pilot', () => {

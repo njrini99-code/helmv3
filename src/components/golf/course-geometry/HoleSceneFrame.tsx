@@ -9,7 +9,7 @@ import { describePosition } from '@/lib/golf/course-geometry/describe-position';
 import { PuttingZoom } from '@/components/golf/coachhelm/v3/HoleShotPath/PuttingZoom';
 import { UnavailableCourseContext } from '@/components/golf/coachhelm/v3/HoleShotPath/turf';
 import type { HoleScene, ShotEvidence } from '@/lib/golf/course-geometry/types';
-import type { SceneView } from '@/lib/golf/course-geometry/camera';
+import { puttingPlanCamera, type SceneView } from '@/lib/golf/course-geometry/camera';
 import { CourseHoleScene, sceneCamera } from './CourseHoleScene';
 import { CourseTerrainProfile } from './CourseTerrainProfile';
 import { TERRAIN_PRESETS, projectTerrainPoint, terrainHeight, type TerrainFitProfile, type TerrainPose, type TerrainPreset } from '@/lib/golf/course-geometry/terrain';
@@ -56,12 +56,11 @@ export function HoleSceneFrame({ scene, context, defaultView = 'hole', selectedS
   const expand = <ModalShell open={expanded} onOpenChange={open => {
     if (open) {
       setDetailSelection(selectedShotNumber ?? null);
-      // Whole-green putting starts as a plan view: its physical outline, cup,
-      // and any evidence-backed balls need to be readable before terrain is
-      // inspected. The whole-hole flight view still opens Side so an arc has
-      // visible height instead of reading like a flat map line.
+      // The card itself is the calm plan view. Opening it is an explicit
+      // request to inspect the same canonical green in terrain, rather than
+      // a second copy of a 2D putting diagram.
       if (view === 'putting') {
-        poseMemory.current = { pose: TERRAIN_PRESETS.top, fitPreset: 'top' };
+        poseMemory.current = { pose: TERRAIN_PRESETS.terrain, fitPreset: 'terrain' };
       } else if (scene?.illustrativePreviewTrajectories?.length) {
         poseMemory.current = { pose: TERRAIN_PRESETS.side, fitPreset: 'side' };
       }
@@ -69,7 +68,9 @@ export function HoleSceneFrame({ scene, context, defaultView = 'hole', selectedS
     setExpanded(open);
   }} presentation="workspace" title="Course detail" hideTitle hideClose
     description="Explore the course. Shot positions are estimates; the daily pin is unknown."
-    trigger={<Button variant="ghost" aria-label="Expand course view" className="h-11 min-w-11 shrink-0 px-2"><Maximize2 size={17} aria-hidden /></Button>}>
+    trigger={<Button variant="ghost" aria-label={view === 'putting' ? 'Open green in 3D' : 'Expand course view'} className={view === 'putting' ? 'h-11 shrink-0 gap-1 px-2.5 text-caption font-semibold' : 'h-11 min-w-11 shrink-0 px-2'}>
+      {view === 'putting' && <span>3D</span>}<Maximize2 size={17} aria-hidden />
+    </Button>}>
     <Drawing key={view} scene={scene} view={view} context={context} events={events} selectedShotNumber={detailSelection ?? selectedShotNumber} onSelectEvent={setDetailSelection}
       currentPuttingDistanceM={currentPuttingDistanceM} expanded poseMemory={poseMemory} onClose={() => setExpanded(false)}
       heading={<><span className="font-fw-display text-body-lg font-semibold">{view === 'putting' || view === 'green' || scene?.hole.displayLabel ? 'Green complex' : scene ? `Hole ${scene.hole.ordinal}` : 'Course view'}</span>
@@ -90,7 +91,7 @@ export function HoleSceneFrame({ scene, context, defaultView = 'hole', selectedS
       </div> : expand}
     </div>
     <Drawing scene={scene} view={view} context={context} events={events} selectedShotNumber={selectedShotNumber} currentPuttingDistanceM={currentPuttingDistanceM} />
-    <p className="px-3 py-[3px] font-fw-sans text-eyebrow leading-4 text-text-secondary">
+    <p className={`px-3 font-fw-sans text-eyebrow leading-4 text-text-secondary ${view === 'putting' && context === 'entry' ? 'py-1.5' : 'py-[3px]'}`}>
       {view === 'putting' ? hasReviewedGreen(scene)
         ? scene?.illustrativePuttingTracks?.some(track => track.kind === 'surface_roll') ? 'Actual green outline · estimated ball and roll from entered distances'
           : scene?.illustrativePuttingTracks?.length ? 'Actual green outline · estimated ball from entered distance' : 'Actual green outline · mark a ball to add its exact position'
@@ -107,7 +108,7 @@ function Drawing({ scene, view, context, events, selectedShotNumber, currentPutt
   onSelectEvent?: (shotNumber: number) => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const [size, setSize] = useState({ width: 320, height: context === 'entry' ? 160 : 310 });
+  const [size, setSize] = useState({ width: 320, height: context === 'entry' ? (view === 'putting' && hasReviewedGreen(scene) ? 272 : 160) : 310 });
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [pose, setPose] = useState<TerrainPose>(poseMemory?.current.pose ?? TERRAIN_PRESETS.top);
@@ -124,6 +125,8 @@ function Drawing({ scene, view, context, events, selectedShotNumber, currentPutt
   const currentSelection = selectedShotNumber;
   const courseBackedPutting = view === 'putting' && hasReviewedGreen(scene);
   const courseView = view === 'putting' ? (courseBackedPutting ? 'green' : null) : view;
+  const compactPuttingPlan = !expanded && context === 'entry' && courseBackedPutting;
+  const compactHeight = compactPuttingPlan ? 272 : context === 'entry' ? 160 : 310;
   const pointers = useRef(new Map<number, { x: number; y: number }>());
   const live = useRef({ zoom, pan, pose, fitPreset });
   const nextState = useRef<typeof live.current | null>(null);
@@ -316,7 +319,9 @@ function Drawing({ scene, view, context, events, selectedShotNumber, currentPutt
     // Only the expanded drawing owns wheel input. Values come from live refs.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [interactive, size.width, size.height]);
-  const camera = scene && courseView ? sceneCamera(scene, size.width, size.height, context === 'entry' ? 'compact' : 'review', courseView) : null;
+  const camera = scene && courseView ? compactPuttingPlan
+    ? puttingPlanCamera(scene, size.width, size.height)
+    : sceneCamera(scene, size.width, size.height, context === 'entry' ? 'compact' : 'review', courseView) : null;
   const transformed = camera && expanded ? { ...camera, scale: camera.scale * zoom,
     translation: [size.width / 2 + (camera.translation[0] - size.width / 2) * zoom + pan.x,
       size.height / 2 + (camera.translation[1] - size.height / 2) * zoom + pan.y] as const } : camera;
@@ -328,17 +333,17 @@ function Drawing({ scene, view, context, events, selectedShotNumber, currentPutt
   const mapScale = terrainCamera?.scale ?? transformed?.scale ?? 0;
   const scaleYards = [5, 10, 20, 50, 100].filter(y => y * .9144 * mapScale <= 90).at(-1) ?? 5;
   const scaleWidth = scaleYards * .9144 * mapScale;
-  return <div className={expanded ? 'flex min-h-0 flex-1 flex-col overflow-hidden sm:flex-row' : undefined} data-slot={expanded ? 'course-explorer' : undefined}>
+  return <div className={expanded ? 'flex min-h-0 flex-1 flex-col overflow-hidden sm:flex-row' : undefined} data-slot={expanded ? 'course-explorer' : undefined} data-putting-overview={compactPuttingPlan || undefined}>
     <div className={expanded ? 'relative min-h-[180px] min-w-0 flex-1' : undefined}>
     <div ref={ref} data-slot="course-drawing" data-putting-mode={view === 'putting' ? courseBackedPutting ? 'course-green' : 'abstract' : undefined} className={`fw-course-motion w-full overflow-clip ${expanded ? 'absolute inset-0' : 'relative'}`}
       aria-label={expanded ? 'Interactive course landscape' : undefined}
       onPointerDown={startGesture} onPointerMove={moveGesture} onPointerUp={endGesture} onPointerCancel={endGesture} onLostPointerCapture={endGesture}
       data-camera-zoom={zoom} data-world-scale={mapScale} data-dragging={dragging}
-      style={{ height: expanded ? '100%' : context === 'entry' ? 160 : 310, touchAction: interactive ? 'none' : 'auto', cursor: interactive ? (dragging ? 'grabbing' : 'grab') : undefined }}>
+      style={{ height: expanded ? '100%' : compactHeight, touchAction: interactive ? 'none' : 'auto', cursor: interactive ? (dragging ? 'grabbing' : 'grab') : undefined }}>
       <div key={`${scene?.physicalHoleKey ?? 'missing'}-${view}`} className="fw-course-view-enter h-full w-full">
       {showProfile && scene ? <div className="h-full overflow-y-auto bg-surface pt-24"><CourseTerrainProfile scene={scene} selectedShotNumber={currentSelection} width={size.width} height={size.height - 96} /></div> : scene && transformed && courseView ? <CourseHoleScene scene={scene} width={size.width} height={size.height}
         mode={context === 'entry' ? 'compact' : 'review'} view={courseView} selectedShotNumber={currentSelection} camera={transformed} terrainCamera={terrainCamera}
-        runtimeRef={runtime} onTerrainUnavailable={() => setTerrainFailed(true)} showIllustrativeFlightPreviews={view !== 'putting'} /> : view === 'putting' ? <PuttingZoom width={size.width} height={size.height} distanceView={{
+        runtimeRef={runtime} onTerrainUnavailable={() => setTerrainFailed(true)} showIllustrativeFlightPreviews={view !== 'putting'} puttingPlan={compactPuttingPlan} /> : view === 'putting' ? <PuttingZoom width={size.width} height={size.height} distanceView={{
         beforeFeet: before == null ? null : before / .3048, afterFeet: after == null ? null : after / .3048,
         made: currentPuttingDistanceM == null && putt?.putt.made === true,
         rolledOff: putt != null && putt.result !== 'green' && putt.result !== 'hole',

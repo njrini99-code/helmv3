@@ -64,3 +64,15 @@ it('keeps display-only full-shot arcs out of the canonical putting surface', () 
   expect(putting).toContain('data-surface="green"');
   expect(putting).toContain('data-surface="bunker"');
 });
+
+it('renders the compact putting card as a quiet plan of the canonical green complex', () => {
+  const scene = addInteractivePreviewTrajectories(pilotScene('cacapon-07'), pilotShots);
+  const svg = renderToStaticMarkup(<CourseHoleScene scene={scene} view="green" mode="compact" selectedShotNumber={4}
+    showIllustrativeFlightPreviews={false} puttingPlan />);
+  expect(svg).toContain('data-putting-plan="true"');
+  expect(svg).toContain('data-surface="green"');
+  expect(svg).toContain('data-surface="bunker"');
+  expect(svg).toContain('data-appearance="putting-plan"');
+  expect(svg).not.toContain('data-annotation="illustrative-tree-crowns"');
+  expect(svg).not.toContain('data-annotation="surface-rim-light"');
+});

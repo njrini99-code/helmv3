@@ -9,7 +9,7 @@ import { HoleSceneFrame } from '@/components/golf/course-geometry/HoleSceneFrame
 
 /** Read-only course context. Pending input never supplies a camera or anchor. */
 export function FairwayHoleHero({ currentHole, scene, shotType = 'tee', currentShot, shotTypeLabel, currentLie,
-  distanceToHole, distanceUnit, isHoleComplete, holeScore, selectedShotNumber }: FairwayHoleHeroProps) {
+  distanceToHole, distanceUnit, isHoleComplete, holeScore, puttCount, selectedShotNumber }: FairwayHoleHeroProps) {
   const { distancePref } = useDistanceUnits();
   const remaining = distanceUnit === 'feet' ? formatFeet(distanceToHole, distancePref) : formatYards(distanceToHole, distancePref);
   const puttingM = distanceUnit === 'feet' ? feetToDisplay(distanceToHole, 'meters', false) : yardsToDisplay(distanceToHole, 'meters', false);
@@ -17,8 +17,8 @@ export function FairwayHoleHero({ currentHole, scene, shotType = 'tee', currentS
     <HoleSceneFrame key={`${currentHole.number}-${scene?.packageHash ?? 'unavailable'}`} scene={scene} context="entry"
       defaultView={entryView(shotType)} selectedShotNumber={selectedShotNumber ?? undefined} currentPuttingDistanceM={shotType === 'putting' ? puttingM : null}
       header={<div className="min-w-0 py-1 font-fw-sans">
-        <h2 className="text-body-sm font-semibold leading-5 text-text-primary">{isHoleComplete ? `Hole complete · ${holeScore}` : `Shot ${currentShot} · ${shotTypeLabel}`}</h2>
-        {!isHoleComplete && <p className="text-caption leading-5 text-text-secondary"><span className="capitalize">{currentLie}</span> · {remaining} remaining</p>}
+        <h2 className="text-body-sm font-semibold leading-5 text-text-primary">{isHoleComplete ? `Hole complete · ${holeScore}` : shotType === 'putting' ? `Putt ${puttCount + 1} · Green` : `Shot ${currentShot} · ${shotTypeLabel}`}</h2>
+        {!isHoleComplete && <p className="text-caption leading-5 text-text-secondary">{shotType === 'putting' ? `${remaining} to cup · Top view` : <><span className="capitalize">{currentLie}</span> · {remaining} remaining</>}</p>}
       </div>} />
   </section>;
 }

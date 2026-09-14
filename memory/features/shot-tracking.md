@@ -920,7 +920,8 @@ header collision before/after, shot-entry walkthrough captures).
 
 `FairwayShotTracking` accepts a reviewed geometry package as optional display
 context. `FairwayHoleHero` uses the shared SVG frame with a 160 CSS-pixel
-drawing; committed shot type chooses whole-hole, approach, green-complex or
+drawing for whole-hole and approach context; a reviewed putting green gets a
+272 CSS-pixel whole-green plan drawing. Committed shot type chooses whole-hole, approach, green-complex or
 abstract putting context. Whole hole and Expand change only the camera. Pending
 form values cannot move that camera or become a saved map marker. The header
 shows the committed lie/remaining distance using the existing unit preference.
@@ -943,7 +944,8 @@ source-candidate rule that ordinary entries lack geographic anchors.
 The same display context can include a version-matched `terrainByHole` mesh.
 Only the Cacapon 7 local fixture supplies it. Expanded course detail exposes
 Top / Terrain / Side, constrained drag, pinch, pan and visual height emphasis;
-inline entry remains a 160px scroll-friendly SVG or abstract putting view.
+inline entry remains a 160px scroll-friendly SVG except for the reviewed,
+whole-green putting plan.
 Camera changes never enter the shot state machine, unit conversion or save
 payload. Closing the existing ModalShell preserves unsaved input. A missing
 mesh or lost WebGL context renders the existing SVG fallback. No GPS, location
@@ -1003,16 +1005,25 @@ line using the same feet scale as its remaining-distance ring. See Sections
 ### September 13 actual-green first slice
 
 When a scene contains the reviewed canonical green for its physical hole, the
-putting context now renders that whole-green Top scope rather than the abstract
-oval. It uses the same source boundary, nearby bunkers, framing, and terrain
-adapter as the hole view; expanded detail can switch it between Top, Terrain,
-Side, and Profile without changing coordinates. Missing or unreviewed green
-geometry retains the explicitly labelled abstract distance view.
+putting context now renders a taller whole-green Top scope rather than the
+abstract oval. It uses the same source boundary, nearby bunkers, framing, and
+terrain adapter as the hole view. The compact card is intentionally quiet:
+no canopy decoration, synthetic rim lighting, badge cloud, or wide flight
+stroke may cover the putting surface. Its compact cup glyph and thin dark roll
+are screen treatment only; green, bunker, cup and ball coordinates retain the
+shared scene transform. Opening the explicit 3D control begins in the Terrain
+preset, with Top, Side, and Profile still available without changing
+coordinates. Missing or unreviewed green geometry retains the explicitly
+labelled abstract distance view.
 
-This first slice does not invent putting positions. A cup/ball/putt line appears
-only when the shared scene already has a valid evidence-backed anchor; ordinary
-distance, miss, and made inputs keep their existing abstract semantics until a
-durable pin/ball observation contract is added. Section 25 of
+This first production slice does not invent putting positions. A cup/ball/putt
+line appears only when the shared scene already has a valid evidence-backed
+anchor; ordinary distance, miss, and made inputs keep their existing abstract
+semantics until a durable pin/ball observation contract is added. The isolated
+static preview fixture may render an explicitly labelled estimated ball or
+surface roll from entered distances to exercise this presentation; it is never
+saved, analytics input, a GPS coordinate, or evidence of production spatial
+capture. Section 25 of
 `docs/plans/2026-09-12-golfhelm-course-geometry.md` remains the next contract
 for explicit Focus putt, Set pin, Mark ball, attempted-distance/leave cards,
 and persistence across snapshot replacement.

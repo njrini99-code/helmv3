@@ -9,12 +9,14 @@ interface OverlayProps {
   selectedShotNumber?: number;
   project: (point: PointM) => PointM | null;
   pathForFeature: (feature: LocalFeature) => string | null;
+  /** A quiet plan treatment for the compact, actual-green putting card. */
+  appearance?: 'default' | 'putting-plan';
 }
 
 /** One annotation layer for both cameras. Source features and estimates share
  * the projector; readable badge positions stay in CSS pixels. Region samples
  * are conditional possibilities, never confidence contours or surveyed pins. */
-export function CourseShotOverlay({ scene, width, height, selectedShotNumber, project, pathForFeature }: OverlayProps) {
+export function CourseShotOverlay({ scene, width, height, selectedShotNumber, project, pathForFeature, appearance = 'default' }: OverlayProps) {
   const id = useId();
   const prepared = useMemo(() => prepareShotOverlay(scene, selectedShotNumber), [scene, selectedShotNumber]);
   const { regions, segments, anchors, badges, pin, illustrativePreviewTrajectories, illustrativePuttingTracks } = layoutShotOverlay(prepared, { width, height, project, pathForFeature });
@@ -26,8 +28,9 @@ export function CourseShotOverlay({ scene, width, height, selectedShotNumber, pr
   // A recorded preview result already has one intentional display endpoint.
   // Keeping the uncertainty boundary around its entire fairway (or bunker)
   // competes with the flight line and makes the playing surface look traced.
-  const showCandidateRegions = !isInteractivePreview;
-  return <g data-annotation="shot-evidence">
+  const puttingPlan = appearance === 'putting-plan';
+  const showCandidateRegions = !puttingPlan && !isInteractivePreview;
+  return <g data-annotation="shot-evidence" data-appearance={appearance}>
     <defs>
       <pattern id={`${id}-possible`} patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(-35)">
         <path d="M0 0 V8" stroke="var(--fw-diagram-ground)" strokeWidth="1.1" opacity=".55" />
@@ -47,13 +50,13 @@ export function CourseShotOverlay({ scene, width, height, selectedShotNumber, pr
         <path d={region.d} fill={`url(#${id}-possible)`} />
       </g>
     </g>)}
-    {!hasPreviewFlight && segments.map(({ key, shotNumber, active, from, to }) => <g key={key} data-shot-segment={shotNumber} data-selected={active}
+    {!puttingPlan && !hasPreviewFlight && segments.map(({ key, shotNumber, active, from, to }) => <g key={key} data-shot-segment={shotNumber} data-selected={active}
       data-distance-basis="inferred-endpoint-separation">
       <line x1={from[0]} y1={from[1]} x2={to[0]} y2={to[1]} stroke="var(--fw-diagram-shadow)" strokeWidth={active ? 4.4 : 3.5} opacity=".4" />
       <line x1={from[0]} y1={from[1]} x2={to[0]} y2={to[1]} stroke="var(--fw-diagram-event)"
         strokeWidth={active ? 2.4 : 1.6} strokeLinecap="round" strokeDasharray="5 6" opacity={active ? 1 : .65} />
     </g>)}
-    {illustrativePreviewTrajectories.map(({ key, shotNumber, active, points }) => <g key={key}
+    {!puttingPlan && illustrativePreviewTrajectories.map(({ key, shotNumber, active, points }) => <g key={key}
       data-illustrative-preview-trajectory={shotNumber} data-selected={active} data-trajectory-source="interactive-preview-fixture">
       <title>Estimated flight preview from the recorded lie, result, and remaining distance. This path is not a GPS-recorded ball location or measured flight.</title>
       <polyline points={points.map(point => point.join(',')).join(' ')} fill="none" stroke="var(--fw-diagram-shadow)"
@@ -76,35 +79,46 @@ export function CourseShotOverlay({ scene, width, height, selectedShotNumber, pr
           ? `Estimated putting roll for shot ${shotNumber}, derived from entered start and leave distances against the nominal pin. This is not a marked ball location or measured roll.`
           : `Estimated ball position after shot ${shotNumber}, derived from the entered remaining distance against the nominal pin. This is not a marked or GPS position.`}</title>
         {isRoll && <>
-          <polyline points={points.map(point => point.join(',')).join(' ')} fill="none" stroke="var(--fw-diagram-shadow)"
-            strokeWidth={active ? 4.2 : 3.1} strokeLinecap="round" strokeLinejoin="round" opacity={active ? ".62" : ".4"} vectorEffect="non-scaling-stroke" />
-          <polyline points={points.map(point => point.join(',')).join(' ')} fill="none" stroke="#FFFDF7"
-            strokeWidth={active ? 2.1 : 1.35} strokeLinecap="round" strokeLinejoin="round" opacity={active ? "1" : ".7"} vectorEffect="non-scaling-stroke" />
-          <circle data-putting-ball="estimated-start" data-putting-ball-shot={shotNumber} cx={first[0]} cy={first[1]} r={active ? 3.1 : 2.5}
-            fill="#FFFDF7" stroke="var(--fw-diagram-shadow)" strokeWidth={active ? "1.25" : "1"} />
+          {puttingPlan ? <polyline points={points.map(point => point.join(',')).join(' ')} fill="none" stroke="#20483A"
+            strokeWidth={active ? 1.35 : .9} strokeLinecap="round" strokeLinejoin="round" opacity={active ? ".94" : ".55"} vectorEffect="non-scaling-stroke" /> : <>
+            <polyline points={points.map(point => point.join(',')).join(' ')} fill="none" stroke="var(--fw-diagram-shadow)"
+              strokeWidth={active ? 4.2 : 3.1} strokeLinecap="round" strokeLinejoin="round" opacity={active ? ".62" : ".4"} vectorEffect="non-scaling-stroke" />
+            <polyline points={points.map(point => point.join(',')).join(' ')} fill="none" stroke="#FFFDF7"
+              strokeWidth={active ? 2.1 : 1.35} strokeLinecap="round" strokeLinejoin="round" opacity={active ? "1" : ".7"} vectorEffect="non-scaling-stroke" />
+          </>}
+          <circle data-putting-ball="estimated-start" data-putting-ball-shot={shotNumber} cx={first[0]} cy={first[1]} r={puttingPlan ? (active ? 3.7 : 3) : (active ? 3.1 : 2.5)}
+            fill="#FFFDF7" stroke={puttingPlan ? "#183B30" : "var(--fw-diagram-shadow)"} strokeWidth={puttingPlan ? (active ? "1.35" : "1.1") : (active ? "1.25" : "1")} />
         </>}
         <circle data-putting-ball={isRoll ? 'estimated-leave' : 'estimated-current'} data-putting-ball-shot={shotNumber}
-          cx={last[0]} cy={last[1]} r={active ? 4.05 : 3.2} fill="#FFFDF7" stroke="var(--fw-diagram-shadow)" strokeWidth={active ? "1.5" : "1.2"} />
+          cx={last[0]} cy={last[1]} r={puttingPlan ? (active ? 4.7 : 3.6) : (active ? 4.05 : 3.2)} fill="#FFFDF7" stroke={puttingPlan ? "#183B30" : "var(--fw-diagram-shadow)"} strokeWidth={puttingPlan ? (active ? "1.55" : "1.2") : (active ? "1.5" : "1.2")} />
       </g>;
     })}
-    {anchors.map(({ key, point }) => <circle key={key} data-anchor="estimated"
+    {!puttingPlan && anchors.map(({ key, point }) => <circle key={key} data-anchor="estimated"
       cx={point[0]} cy={point[1]} r="2.5" fill="var(--fw-diagram-ground)" stroke="var(--fw-diagram-event)" strokeWidth="1.5" />)}
     {pin && <g data-target="estimated-pin" data-target-basis={pin.basis}>
       <title>Estimated pin. The actual daily cup location is unknown.</title>
-      <line x1={pin.position[0]} y1={pin.position[1]} x2={pin.label[0]} y2={pin.label[1]} stroke="var(--fw-diagram-event)"
-        strokeWidth=".7" strokeDasharray="2 3" opacity=".65" />
-      <circle data-pin-anchor="estimated" cx={pin.position[0]} cy={pin.position[1]} r="2.5" fill="var(--fw-diagram-green)"
-        stroke="var(--fw-diagram-event)" strokeWidth="1.4" />
-      <g transform={`translate(${pin.position[0]},${pin.position[1]}) scale(${pin.glyphScale})`} stroke="var(--fw-diagram-shadow)" strokeWidth=".6" strokeLinejoin="round">
-        <path d="M0 -2 V-20" fill="none" stroke="var(--fw-diagram-event)" strokeWidth="1.5" />
-        <path d="M0 -20 L11 -16 L0 -12 Z" fill="var(--fw-diagram-event)" />
-      </g>
-      <rect x={pin.label[0] - 44} y={pin.label[1] - 10} width="88" height="20" rx="10"
-        fill="var(--fw-diagram-event)" fillOpacity=".94" />
-      <text x={pin.label[0]} y={pin.label[1]} dy=".35em" textAnchor="middle" fontFamily="inherit" fontSize="11"
-        fontWeight="500" fill="var(--fw-diagram-ground)">Estimated pin</text>
+      {puttingPlan ? <>
+        <circle data-pin-anchor="estimated" cx={pin.position[0]} cy={pin.position[1]} r="3.25" fill="#FFFDF7" stroke="#183B30" strokeWidth="1.25" />
+        <g transform={`translate(${pin.position[0]},${pin.position[1]}) scale(${Math.max(.72, pin.glyphScale * .7)})`} stroke="#183B30" strokeWidth=".7" strokeLinejoin="round">
+          <path d="M0 -2 V-15" fill="none" stroke="#183B30" strokeWidth="1.45" />
+          <path d="M0 -15 L8 -12 L0 -9 Z" fill="#FFFDF7" />
+        </g>
+      </> : <>
+        <line x1={pin.position[0]} y1={pin.position[1]} x2={pin.label[0]} y2={pin.label[1]} stroke="var(--fw-diagram-event)"
+          strokeWidth=".7" strokeDasharray="2 3" opacity=".65" />
+        <circle data-pin-anchor="estimated" cx={pin.position[0]} cy={pin.position[1]} r="2.5" fill="var(--fw-diagram-green)"
+          stroke="var(--fw-diagram-event)" strokeWidth="1.4" />
+        <g transform={`translate(${pin.position[0]},${pin.position[1]}) scale(${pin.glyphScale})`} stroke="var(--fw-diagram-shadow)" strokeWidth=".6" strokeLinejoin="round">
+          <path d="M0 -2 V-20" fill="none" stroke="var(--fw-diagram-event)" strokeWidth="1.5" />
+          <path d="M0 -20 L11 -16 L0 -12 Z" fill="var(--fw-diagram-event)" />
+        </g>
+        <rect x={pin.label[0] - 44} y={pin.label[1] - 10} width="88" height="20" rx="10"
+          fill="var(--fw-diagram-event)" fillOpacity=".94" />
+        <text x={pin.label[0]} y={pin.label[1]} dy=".35em" textAnchor="middle" fontFamily="inherit" fontSize="11"
+          fontWeight="500" fill="var(--fw-diagram-ground)">Estimated pin</text>
+      </>}
     </g>}
-    {badges.map(badge => {
+    {!puttingPlan && badges.map(badge => {
       const { key, shotNumber, active, anchor, label } = badge;
       return <g key={key} data-event={shotNumber} data-selected={active}>
         <line x1={anchor[0]} y1={anchor[1]} x2={label[0]} y2={label[1]} stroke="var(--fw-diagram-event)" strokeWidth=".8" opacity=".7" />

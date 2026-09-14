@@ -60,6 +60,15 @@ export function contextCamera(scene: HoleScene, width: number, height: number, v
   return fitCamera(points, width, height, angle, padding);
 }
 
+/** The compact putting card deliberately prioritizes the source green itself.
+ * Context geometry still renders when it naturally falls inside this camera,
+ * but remote bunkers and the full approach can never shrink the putting
+ * surface into a decorative island. */
+export function puttingPlanCamera(scene: HoleScene, width: number, height: number, padding = 22) {
+  const green = scene.features.find(feature => feature.id === scene.hole.greenFeatureId && feature.kind === 'green');
+  return fitCamera(green?.parts.flat(2) ?? contextPoints(scene, 'green'), width, height, scene.orientationRadians, padding);
+}
+
 export function entryView(shotType: string): SceneView {
   return shotType === 'putting' ? 'putting' : shotType === 'around_green' ? 'green' : shotType === 'approach' ? 'approach' : 'hole';
 }
