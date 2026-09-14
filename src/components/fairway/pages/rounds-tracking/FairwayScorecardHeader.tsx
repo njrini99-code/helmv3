@@ -24,7 +24,7 @@
  * logic and is9Hole/totals math are all untouched.
  * ========================================================================== */
 
-import { memo, useRef, useCallback, useEffect } from 'react';
+import { memo, useRef, useCallback, useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/fairway/controls/button';
 import { useDistanceUnits } from '@/hooks/golf/use-distance-units';
@@ -56,6 +56,8 @@ interface FairwayScorecardHeaderProps {
    * which is what the desktop sidebar's sticky offset actually wants.
    */
   belowSlot?: React.ReactNode;
+  /** Putting gets a compact task header; the full scorecard remains on demand. */
+  puttingMode?: boolean;
 }
 
 // Verbatim helpers from the legacy file.
@@ -191,7 +193,9 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
   onExit,
   onNavigateToHole,
   belowSlot,
+  puttingMode = false,
 }: FairwayScorecardHeaderProps) {
+  const [scorecardOpen, setScorecardOpen] = useState(false);
   const headerRef = useRef<HTMLDivElement>(null);
   // Distance-unit preference — the legacy ScorecardHeader reads this
   // independently too, so the scorecard's yardage column honors the
@@ -218,6 +222,10 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
       observer?.disconnect();
     };
   }, [updateCSSProperty, safeAreaHandledAbove]);
+
+  useEffect(() => {
+    if (!puttingMode) setScorecardOpen(false);
+  }, [puttingMode]);
 
   const is9Hole = holes.length <= 9;
   const front9 = holes.slice(0, 9);
@@ -341,6 +349,21 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
           : 'top-0 pt-[env(safe-area-inset-top,0px)]',
       )}
     >
+      {/* Green entry needs map room. Its full scorecard remains on demand. */}
+      {puttingMode && (
+        <div className="flex min-h-14 items-center justify-between gap-2 border-b border-border-subtle px-3 py-2 lg:hidden" data-putting-round-chrome="compact">
+          {onExit ? <Button variant="secondary" size="sm" onClick={onExit} aria-label="Save progress and exit round tracking">Exit</Button> : <span className="w-11" aria-hidden="true" />}
+          <div className="min-w-0 text-center font-fw-sans">
+            <p className="text-body-sm font-semibold text-text-primary">Hole {currentHoleNumber}</p>
+            <p className="text-eyebrow text-text-secondary">Putting</p>
+          </div>
+          <div className="flex items-center gap-1">
+            <AutoSaveChip status={autoSaveStatus} compact />
+            <Button variant="ghost" size="sm" aria-expanded={scorecardOpen} aria-controls="fw-putting-scorecard" onClick={() => setScorecardOpen(open => !open)}>Scorecard</Button>
+          </div>
+        </div>
+      )}
+      {!puttingMode && <>
       {/* Mobile control row */}
       <div className="flex items-center justify-between gap-2 border-b border-border-subtle px-3 py-2 lg:hidden">
         <div className="flex items-center gap-1.5">
@@ -381,8 +404,10 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
           Next →
         </Button>
       </div>
+      </>}
 
-      <div
+      {(!puttingMode || scorecardOpen) && <div
+        id={puttingMode ? 'fw-putting-scorecard' : undefined}
         className="overflow-x-auto overscroll-x-contain touch-pan-x"
         style={{
           WebkitOverflowScrolling: 'touch',
@@ -420,7 +445,7 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
               true,
             )}
         </div>
-      </div>
+      </div>}
       {belowSlot}
     </div>
   );

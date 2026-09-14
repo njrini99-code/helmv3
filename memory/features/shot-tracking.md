@@ -1039,3 +1039,31 @@ The tracker now selects the newest recorded event after record, hydrate, undo,
 or deletion. That shared key drives the shot pills, inspector, and camera; it
 is local UI state and is not a new persistence field. Putt distance alone still
 does not create an airborne path or an exact ball coordinate.
+
+### Premium putting workspace refinement (September 13, 2026)
+
+While the active lie is green, the mobile round chrome collapses to a compact
+Hole / Putting header and keeps the existing scorecard behind its explicit
+Scorecard control. The hole-wide scorecard and shot-pill strip remain unchanged
+outside putting, and the compact mode is presentation only: it does not alter
+navigation gates, saves, selection persistence, scores, or shot identity.
+
+The compact card distinguishes a current **draft** putt from recorded putts.
+The active draft uses its own local view state; selecting a recorded putt only
+changes map/card emphasis and never opens the edit flow. A tracked fixture
+leave receives the one current-ball marker and selection halo, while a
+ball-position estimate that coincides with a putt start is suppressed visually
+so it cannot create a stack of identical white markers. These fixture estimates
+remain display-only and are never GPS/marked observations, analytics evidence,
+or durable shot fields.
+
+The green plan uses the canonical boundary with a solid, quiet putting-surface
+fill, a narrow screen-space fringe cue, subdued fairway entrance, and only
+materially visible nearby bunkers. It removes the previous radial green
+spotlight and clipped hazard slivers without changing source geometry. The
+default scope remains Whole green. Focus putt is an explicit, reversible camera
+scope and appears only when an existing displayed surface-roll track supplies
+start/leave geometry; missing positions retain Whole green. Expanded 3D
+continues to use the same scene and coordinates. Status is shortened to a
+source-aware line such as `Mapped green · estimated positions`; full provenance
+remains in the accessible scene description and expanded inspector.

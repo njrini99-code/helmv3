@@ -10,7 +10,7 @@ describe('course-backed putting overview', () => {
     expect(markup).toContain('data-putting-mode="course-green"');
     expect(markup).toContain('data-view="green"');
     expect(markup).not.toContain('data-putting-scale');
-    expect(markup).toContain('Actual green outline');
+    expect(markup).toContain('Mapped green · ball not marked');
     expect(markup).toContain('data-putting-overview="true"');
     expect(markup).toContain('height:272px');
     expect(markup).toContain('aria-label="Open green in 3D"');

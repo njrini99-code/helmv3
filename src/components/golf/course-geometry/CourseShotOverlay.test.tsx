@@ -131,10 +131,35 @@ describe('shared geographic annotation layer', () => {
     const roll = drawing.querySelector('[data-illustrative-putting-track="4"]')!;
     expect(drawing.querySelector('[data-annotation="shot-evidence"]')!.getAttribute('data-appearance')).toBe('putting-plan');
     expect(roll.querySelectorAll('polyline')).toHaveLength(1);
-    expect(roll.querySelector('polyline')!.getAttribute('stroke')).toBe('#20483A');
-    expect(roll.querySelector('polyline')!.getAttribute('stroke-width')).toBe('1.35');
+    expect(roll.querySelector('polyline')!.getAttribute('stroke')).toBe('#214738');
+    expect(roll.querySelector('polyline')!.getAttribute('stroke-width')).toBe('1.7');
     expect(drawing.querySelector('[data-target="estimated-pin"] text')).toBeNull();
     expect(drawing.querySelectorAll('[data-anchor="estimated"], [data-event]')).toHaveLength(0);
+  });
+
+  it('uses one explicit current-draft ball rather than stacking an approach marker under the putt start', () => {
+    const putting = [
+      { ...pilotShots[0]!, distanceToHoleBefore: 431, distanceToHoleAfter: 158 },
+      { ...pilotShots[1]!, distanceToHoleBefore: 158, distanceToHoleAfter: 17 },
+      { shotNumber: 3, shotType: 'around_green' as const, clubType: 'non_driver' as const, lieBefore: 'sand' as const, distanceToHoleBefore: 17,
+        distanceUnitBefore: 'yards' as const, result: 'green' as const, distanceToHoleAfter: 12, distanceUnitAfter: 'feet' as const, shotDistance: 13, isPenalty: false },
+      { shotNumber: 4, shotType: 'putting' as const, clubType: 'putter' as const, lieBefore: 'green' as const, distanceToHoleBefore: 12,
+        distanceUnitBefore: 'feet' as const, result: 'green' as const, distanceToHoleAfter: 2, distanceUnitAfter: 'feet' as const, shotDistance: 3.3, isPenalty: false },
+    ];
+    const scene = addInteractivePreviewTrajectories(
+      buildHoleScene(pilotPackage, 'cacapon-07', putting.map(normalizeLiveShot)), putting,
+    );
+    const drawing = new DOMParser().parseFromString(renderToStaticMarkup(<svg xmlns="http://www.w3.org/2000/svg">
+      <CourseShotOverlay scene={scene} width={600} height={700} activeDraftShotNumber={5} appearance="putting-plan"
+        project={point => toScreen(point, camera)} pathForFeature={feature => featurePath(feature, camera)} />
+    </svg>), 'image/svg+xml');
+    const approach = drawing.querySelector('[data-illustrative-putting-track="3"]')!;
+    const roll = drawing.querySelector('[data-illustrative-putting-track="4"]')!;
+    expect(approach.querySelector('[data-putting-ball]')).toBeNull();
+    expect(roll.getAttribute('data-current-draft')).toBe('true');
+    expect(roll.querySelector('[data-putting-selection-halo="current-draft"]')).not.toBeNull();
+    expect(roll.querySelector('[data-putting-ball="current-draft"]')).not.toBeNull();
+    expect(roll.querySelector('polyline')!.getAttribute('stroke-width')).toBe('1.02');
   });
 
   it('uses the refined preview flight instead of layering a generic inferred segment beneath it', () => {

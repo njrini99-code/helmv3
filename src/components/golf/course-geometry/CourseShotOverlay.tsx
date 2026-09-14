@@ -7,6 +7,8 @@ interface OverlayProps {
   width: number;
   height: number;
   selectedShotNumber?: number;
+  /** The unrecorded current putt owns the ball marker, never a fake shot row. */
+  activeDraftShotNumber?: number;
   project: (point: PointM) => PointM | null;
   pathForFeature: (feature: LocalFeature) => string | null;
   /** A quiet plan treatment for the compact, actual-green putting card. */
@@ -16,7 +18,7 @@ interface OverlayProps {
 /** One annotation layer for both cameras. Source features and estimates share
  * the projector; readable badge positions stay in CSS pixels. Region samples
  * are conditional possibilities, never confidence contours or surveyed pins. */
-export function CourseShotOverlay({ scene, width, height, selectedShotNumber, project, pathForFeature, appearance = 'default' }: OverlayProps) {
+export function CourseShotOverlay({ scene, width, height, selectedShotNumber, activeDraftShotNumber, project, pathForFeature, appearance = 'default' }: OverlayProps) {
   const id = useId();
   const prepared = useMemo(() => prepareShotOverlay(scene, selectedShotNumber), [scene, selectedShotNumber]);
   const { regions, segments, anchors, badges, pin, illustrativePreviewTrajectories, illustrativePuttingTracks } = layoutShotOverlay(prepared, { width, height, project, pathForFeature });
@@ -30,7 +32,16 @@ export function CourseShotOverlay({ scene, width, height, selectedShotNumber, pr
   // competes with the flight line and makes the playing surface look traced.
   const puttingPlan = appearance === 'putting-plan';
   const showCandidateRegions = !puttingPlan && !isInteractivePreview;
-  return <g data-annotation="shot-evidence" data-appearance={appearance}>
+  // The current draft has no saved shot row. Find the most recent display-only
+  // track before it so its resting point can be styled as the current ball.
+  // This changes presentation only; it never promotes a fixture estimate into
+  // durable spatial evidence.
+  const currentDraftTrackKey = puttingPlan && activeDraftShotNumber != null
+    ? [...illustrativePuttingTracks].filter(track => track.shotNumber < activeDraftShotNumber).sort((a, b) => a.shotNumber - b.shotNumber).at(-1)?.key
+    : undefined;
+  const overlapsRollStart = (track: (typeof illustrativePuttingTracks)[number]) => track.kind === 'ball_position' &&
+    illustrativePuttingTracks.some(candidate => candidate.kind === 'surface_roll' && Math.hypot(candidate.points[0]![0] - track.points.at(-1)![0], candidate.points[0]![1] - track.points.at(-1)![1]) < .01);
+  return <g data-annotation="shot-evidence" data-appearance={appearance} data-active-draft-shot={activeDraftShotNumber}>
     <defs>
       <pattern id={`${id}-possible`} patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(-35)">
         <path d="M0 0 V8" stroke="var(--fw-diagram-ground)" strokeWidth="1.1" opacity=".55" />
@@ -73,24 +84,32 @@ export function CourseShotOverlay({ scene, width, height, selectedShotNumber, pr
     {illustrativePuttingTracks.map(({ key, shotNumber, kind, active, points }) => {
       const first = points[0]!, last = points.at(-1)!;
       const isRoll = kind === 'surface_roll';
+      const currentDraftBall = key === currentDraftTrackKey;
+      // In draft view the most recent leave owns the current ball. A selected
+      // recorded putt becomes prominent only after an explicit sequence tap.
+      const selectedRecorded = active && !currentDraftBall && selectedShotNumber != null;
+      const hideDuplicateBall = puttingPlan && overlapsRollStart({ key, shotNumber, kind, active, points });
+      const markerRole = currentDraftBall ? 'current-draft' : isRoll ? 'estimated-leave' : 'estimated-current';
+      const lineOpacity = selectedRecorded ? '.92' : currentDraftBall ? '.62' : '.45';
       return <g key={key} data-illustrative-putting-track={shotNumber} data-putting-track-kind={kind}
-        data-selected={active} data-trajectory-source="interactive-preview-fixture">
+        data-selected={selectedRecorded} data-current-draft={currentDraftBall || undefined} data-trajectory-source="interactive-preview-fixture">
         <title>{isRoll
           ? `Estimated putting roll for shot ${shotNumber}, derived from entered start and leave distances against the nominal pin. This is not a marked ball location or measured roll.`
           : `Estimated ball position after shot ${shotNumber}, derived from the entered remaining distance against the nominal pin. This is not a marked or GPS position.`}</title>
         {isRoll && <>
-          {puttingPlan ? <polyline points={points.map(point => point.join(',')).join(' ')} fill="none" stroke="#20483A"
-            strokeWidth={active ? 1.35 : .9} strokeLinecap="round" strokeLinejoin="round" opacity={active ? ".94" : ".55"} vectorEffect="non-scaling-stroke" /> : <>
+          {puttingPlan ? <polyline points={points.map(point => point.join(',')).join(' ')} fill="none" stroke="#214738"
+            strokeWidth={selectedRecorded ? 1.7 : 1.02} strokeLinecap="round" strokeLinejoin="round" opacity={lineOpacity} vectorEffect="non-scaling-stroke" /> : <>
             <polyline points={points.map(point => point.join(',')).join(' ')} fill="none" stroke="var(--fw-diagram-shadow)"
               strokeWidth={active ? 4.2 : 3.1} strokeLinecap="round" strokeLinejoin="round" opacity={active ? ".62" : ".4"} vectorEffect="non-scaling-stroke" />
             <polyline points={points.map(point => point.join(',')).join(' ')} fill="none" stroke="#FFFDF7"
               strokeWidth={active ? 2.1 : 1.35} strokeLinecap="round" strokeLinejoin="round" opacity={active ? "1" : ".7"} vectorEffect="non-scaling-stroke" />
           </>}
-          <circle data-putting-ball="estimated-start" data-putting-ball-shot={shotNumber} cx={first[0]} cy={first[1]} r={puttingPlan ? (active ? 3.7 : 3) : (active ? 3.1 : 2.5)}
-            fill="#FFFDF7" stroke={puttingPlan ? "#183B30" : "var(--fw-diagram-shadow)"} strokeWidth={puttingPlan ? (active ? "1.35" : "1.1") : (active ? "1.25" : "1")} />
+          <circle data-putting-ball="estimated-start" data-putting-ball-shot={shotNumber} cx={first[0]} cy={first[1]} r={puttingPlan ? (selectedRecorded ? 3.55 : 3.05) : (active ? 3.1 : 2.5)}
+            fill="#FFFDF7" stroke={puttingPlan ? "#183B30" : "var(--fw-diagram-shadow)"} strokeWidth={puttingPlan ? (selectedRecorded ? "1.25" : "1") : (active ? "1.25" : "1")} />
         </>}
-        <circle data-putting-ball={isRoll ? 'estimated-leave' : 'estimated-current'} data-putting-ball-shot={shotNumber}
-          cx={last[0]} cy={last[1]} r={puttingPlan ? (active ? 4.7 : 3.6) : (active ? 4.05 : 3.2)} fill="#FFFDF7" stroke={puttingPlan ? "#183B30" : "var(--fw-diagram-shadow)"} strokeWidth={puttingPlan ? (active ? "1.55" : "1.2") : (active ? "1.5" : "1.2")} />
+        {currentDraftBall && puttingPlan && <circle data-putting-selection-halo="current-draft" cx={last[0]} cy={last[1]} r="11.5" fill="#218348" fillOpacity=".14" stroke="#218348" strokeOpacity=".46" strokeWidth="1.1" vectorEffect="non-scaling-stroke" />}
+        {!hideDuplicateBall && <circle data-putting-ball={markerRole} data-putting-ball-shot={shotNumber}
+          cx={last[0]} cy={last[1]} r={puttingPlan ? (currentDraftBall ? 5.25 : selectedRecorded ? 4.25 : 3.35) : (active ? 4.05 : 3.2)} fill="#FFFDF7" stroke={puttingPlan ? "#183B30" : "var(--fw-diagram-shadow)"} strokeWidth={puttingPlan ? (currentDraftBall ? "1.65" : selectedRecorded ? "1.35" : "1.05") : (active ? "1.5" : "1.2")} />}
       </g>;
     })}
     {!puttingPlan && anchors.map(({ key, point }) => <circle key={key} data-anchor="estimated"

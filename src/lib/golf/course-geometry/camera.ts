@@ -69,6 +69,17 @@ export function puttingPlanCamera(scene: HoleScene, width: number, height: numbe
   return fitCamera(green?.parts.flat(2) ?? contextPoints(scene, 'green'), width, height, scene.orientationRadians, padding);
 }
 
+/** Explicit close inspection for a putt with an existing displayed start/leave.
+ * It never reconstructs a point from a typed distance; absent geometry retains
+ * the whole canonical green view. */
+export function puttingFocusCamera(scene: HoleScene, width: number, height: number, selectedShotNumber?: number, padding = 38) {
+  const roll = [...(scene.illustrativePuttingTracks ?? [])].filter(track => track.kind === 'surface_roll' && (selectedShotNumber == null || track.shotNumber === selectedShotNumber)).at(-1);
+  if (!roll || roll.pointsM.length < 2) return puttingPlanCamera(scene, width, height);
+  const pin = scene.target.estimate?.positionM;
+  const focus = [...roll.pointsM, ...(pin?.every(Number.isFinite) ? [pin] : [])];
+  return fitCamera(focus, width, height, scene.orientationRadians, padding);
+}
+
 export function entryView(shotType: string): SceneView {
   return shotType === 'putting' ? 'putting' : shotType === 'around_green' ? 'green' : shotType === 'approach' ? 'approach' : 'hole';
 }

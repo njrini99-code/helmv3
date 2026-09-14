@@ -206,6 +206,7 @@ export default function FairwayShotTracking({
   // modal/undo overlap cannot apply two local-history removals to one shot.
   const shotMutationInFlightRef = useRef(false);
   const [holeCheckpointStatus, setHoleCheckpointStatus] = useState<'idle' | 'saving' | 'failed'>('idle');
+  const [puttingSelection, setPuttingSelection] = useState<number | 'draft'>('draft');
 
   // ============================================================================
   // SUB-HOOKS — must be called before any early return (Rules of Hooks)
@@ -528,6 +529,20 @@ export default function FairwayShotTracking({
     }
   }, [dispatch, shotHistory, handleEditShot]);
 
+  const handleSelectPuttingContext = useCallback((shotNumber: number | null) => {
+    setPuttingSelection(shotNumber ?? 'draft');
+    // Selection changes map/card emphasis only. It must not open the edit
+    // modal, alter the draft, or create a score mutation.
+    dispatch({ type: 'SELECT_SHOT', payload: shotNumber });
+  }, [dispatch]);
+
+  useEffect(() => {
+    // Recording, undoing, moving holes, or entering the green returns to the
+    // active draft by default. A deliberate historical selection survives
+    // ordinary re-renders while the same putt remains active.
+    if (isPutting) setPuttingSelection('draft');
+  }, [currentHoleIndex, currentShot, isPutting]);
+
   const physicalScene = useMemo(() => {
     const key = geometry?.holeKeys[currentHoleIndex];
     if (!geometry || !key) return null;
@@ -604,6 +619,7 @@ export default function FairwayShotTracking({
           single element that scrolls, sticks and safe-areas as one thing. */}
       <FairwayScorecardHeader
         safeAreaHandledAbove={safeAreaHandledAbove}
+        puttingMode={isPutting}
         holes={holes}
         currentHoleIndex={currentHoleIndex}
         currentHoleNumber={currentHole.number}
@@ -613,12 +629,12 @@ export default function FairwayShotTracking({
         belowSlot={
           <>
             {statusSlot}
-            <FairwayShotPills
+            {!isPutting && <FairwayShotPills
               currentShot={currentShot}
               recordedShotCount={shotHistory.length}
               selectedShotNumber={selectedShotNumber}
               onSelectShot={handleSelectShot}
-            />
+            />}
           </>
         }
       />
@@ -634,7 +650,10 @@ export default function FairwayShotTracking({
             <div className="lg:sticky lg:top-[calc(var(--scorecard-height,105px)+5.5rem)]">
               <FairwayHoleHero
                 scene={physicalScene}
-                selectedShotNumber={selectedShotNumber}
+                selectedShotNumber={isPutting && puttingSelection === 'draft' ? undefined : selectedShotNumber}
+                activeDraftShotNumber={isPutting ? currentShot : undefined}
+                puttingSelection={isPutting ? puttingSelection : undefined}
+                onSelectPuttingContext={handleSelectPuttingContext}
                 shotType={shotType}
                 currentHole={currentHole}
                 isHoleComplete={isHoleComplete}

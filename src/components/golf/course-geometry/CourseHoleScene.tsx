@@ -27,9 +27,9 @@ export function sceneCamera(scene: HoleScene, width: number, height: number, mod
 
 /** Pure SVG: surfaces and anchors share one similarity transform; labels use
  * CSS-pixel dimensions supplied by the measured viewport. No gesture capture. */
-export function CourseHoleScene({ scene, width = 320, height = 380, mode = 'review', view = 'hole', selectedShotNumber, camera: override, terrainCamera, onTerrainUnavailable, runtimeRef, showIllustrativeFlightPreviews = true, puttingPlan = false }: {
+export function CourseHoleScene({ scene, width = 320, height = 380, mode = 'review', view = 'hole', selectedShotNumber, activeDraftShotNumber, camera: override, terrainCamera, onTerrainUnavailable, runtimeRef, showIllustrativeFlightPreviews = true, puttingPlan = false }: {
   scene: HoleScene; width?: number; height?: number; mode?: 'review' | 'compact' | 'strip' | 'source';
-  view?: CourseView; selectedShotNumber?: number; camera?: SimilarityTransform; terrainCamera?: TerrainCamera;
+  view?: CourseView; selectedShotNumber?: number; activeDraftShotNumber?: number; camera?: SimilarityTransform; terrainCamera?: TerrainCamera;
   onTerrainUnavailable?: () => void; runtimeRef?: RefObject<TerrainRuntimeController | null>;
   /** Putting keeps full-swing fixture arcs out of its tactical surface view. */
   showIllustrativeFlightPreviews?: boolean;
@@ -41,9 +41,19 @@ export function CourseHoleScene({ scene, width = 320, height = 380, mode = 'revi
   if (terrainCamera && scene.terrain) return <CourseTerrainCanvas scene={sceneForDisplay} mesh={scene.terrain} camera={terrainCamera} width={width} height={height}
     selectedShotNumber={selectedShotNumber}
     onUnavailable={onTerrainUnavailable} runtimeRef={runtimeRef}
-    fallback={<CourseHoleScene scene={sceneForDisplay} width={width} height={height} mode={mode} view={view} selectedShotNumber={selectedShotNumber} camera={override} showIllustrativeFlightPreviews={showIllustrativeFlightPreviews} puttingPlan={puttingPlan} />} />;
+    fallback={<CourseHoleScene scene={sceneForDisplay} width={width} height={height} mode={mode} view={view} selectedShotNumber={selectedShotNumber} activeDraftShotNumber={activeDraftShotNumber} camera={override} showIllustrativeFlightPreviews={showIllustrativeFlightPreviews} puttingPlan={puttingPlan} />} />;
   const camera = override ?? sceneCamera(scene, width, height, mode, view, puttingPlan);
-  const features = [...scene.features].sort((a, b) => ORDER.indexOf(a.kind) - ORDER.indexOf(b.kind) || a.id.localeCompare(b.id));
+  const features = [...scene.features].sort((a, b) => ORDER.indexOf(a.kind) - ORDER.indexOf(b.kind) || a.id.localeCompare(b.id)).filter(feature => {
+    // A bunker that leaks only a few pixels into the plan reads as a seam, not
+    // useful green-complex context. Keep hazards with a visible silhouette.
+    if (!puttingPlan || feature.kind !== 'bunker') return true;
+    const points = feature.parts.flat(2).map(point => toScreen(point, camera));
+    const minX = Math.min(...points.map(point => point[0])), maxX = Math.max(...points.map(point => point[0]));
+    const minY = Math.min(...points.map(point => point[1])), maxY = Math.max(...points.map(point => point[1]));
+    const area = Math.max(1, (maxX - minX) * (maxY - minY));
+    const visible = Math.max(0, Math.min(width, maxX) - Math.max(0, minX)) * Math.max(0, Math.min(height, maxY) - Math.max(0, minY));
+    return visible / area >= .22;
+  });
   const lightPoint = toScreen([TERRAIN_LIGHT_DIRECTION[0], TERRAIN_LIGHT_DIRECTION[1]], camera);
   const light: PointM = [lightPoint[0] - camera.translation[0], lightPoint[1] - camera.translation[1]];
   const lightLength = Math.hypot(...light) || 1;
@@ -88,7 +98,7 @@ export function CourseHoleScene({ scene, width = 320, height = 380, mode = 'revi
         </linearGradient>
       </defs>
       <g clipPath={`url(#${id}-clip)`}>
-        <rect width={width} height={height} fill={mode === 'source' ? 'var(--fw-diagram-ground)' : `url(#${id}-ground)`} />
+        <rect width={width} height={height} fill={mode === 'source' || puttingPlan ? 'var(--fw-diagram-ground)' : `url(#${id}-ground)`} />
         {mode !== 'source' && !puttingPlan && <g data-annotation="illustrative-mowing-surrounds" aria-hidden="true">
           {features.filter(f => f.kind === 'fairway').map(f => <path key={`surround-${f.id}`}
             d={featurePath(displayOutline(f), camera)} fill="none" stroke="var(--fw-diagram-surround)"
@@ -97,12 +107,12 @@ export function CourseHoleScene({ scene, width = 320, height = 380, mode = 'revi
         {features.map(f => f.kind === 'route' && scene.hole.completeness !== 'route_only' ? null : <Fragment key={f.id}>
           {f.kind === 'green' && mode !== 'source' && <path data-annotation="illustrative-green-collar"
             d={featurePath(displayOutline(f), camera)} fill="none" stroke="var(--fw-diagram-fringe)"
-            strokeWidth={camera.scale * (puttingPlan ? .55 : 2.8)} strokeLinejoin="round" aria-hidden="true" />}
+            strokeWidth={puttingPlan ? 1.2 : camera.scale * 2.8} strokeLinejoin="round" aria-hidden="true" />}
           <path
           data-feature-id={f.id} data-surface={f.kind} d={featurePath(mode === 'source' ? f : displayOutline(f), camera)}
-          fill={f.kind === 'route' ? 'none' : f.kind === 'bunker' ? `url(#${id}-sand)` : f.kind === 'fairway' ? `url(#${id}-fairway)` : f.kind === 'green' ? `url(#${id}-green)` : `var(--fw-diagram-${f.kind})`}
-          fillRule="evenodd" fillOpacity={f.kind === 'woods' && mode !== 'source' ? .35 : 1} stroke={f.kind === 'woods' ? 'none' : f.kind === 'route' ? 'var(--fw-diagram-route)' : f.kind === 'bunker' ? 'var(--fw-diagram-sand-edge)' : f.kind === 'green' ? 'var(--fw-diagram-green-edge)' : 'var(--fw-diagram-edge)'}
-          strokeWidth={mode === 'strip' ? .55 : f.kind === 'route' ? 0.7 : f.kind === 'bunker' ? (puttingPlan ? .68 : .85) : f.kind === 'green' && puttingPlan ? .72 : .9}
+          fill={f.kind === 'route' ? 'none' : f.kind === 'bunker' ? `url(#${id}-sand)` : f.kind === 'fairway' ? (puttingPlan ? 'var(--fw-diagram-fringe)' : `url(#${id}-fairway)`) : f.kind === 'green' ? (puttingPlan ? 'var(--fw-diagram-green)' : `url(#${id}-green)`) : `var(--fw-diagram-${f.kind})`}
+          fillRule="evenodd" fillOpacity={f.kind === 'woods' && mode !== 'source' ? .35 : puttingPlan && f.kind === 'fairway' ? 1 : puttingPlan && f.kind === 'rough' ? .82 : 1} stroke={puttingPlan && f.kind === 'fairway' ? 'none' : f.kind === 'woods' ? 'none' : f.kind === 'route' ? 'var(--fw-diagram-route)' : f.kind === 'bunker' ? 'var(--fw-diagram-sand-edge)' : f.kind === 'green' ? (puttingPlan ? 'var(--fw-diagram-fringe)' : 'var(--fw-diagram-green-edge)') : 'var(--fw-diagram-edge)'}
+          strokeWidth={mode === 'strip' ? .55 : f.kind === 'route' ? .7 : f.kind === 'bunker' ? (puttingPlan ? .62 : .85) : f.kind === 'green' && puttingPlan ? .66 : .9}
           strokeLinejoin="round" strokeDasharray={f.kind === 'route' ? '2 7' : undefined} />
           {mode !== 'source' && mode !== 'strip' && !puttingPlan && (f.kind === 'bunker' || f.kind === 'green') && <g clipPath={`url(#${id}-interior-${f.id})`} aria-hidden="true" data-annotation="surface-rim-light">
             <path d={featurePath(displayOutline(f), camera)} transform={`translate(${lightUnit[0] * .7},${lightUnit[1] * .7})`} fill="none"
@@ -125,7 +135,7 @@ export function CourseHoleScene({ scene, width = 320, height = 380, mode = 'revi
             </g>;
           })}
         </g>)}
-        {mode !== 'strip' && <CourseShotOverlay scene={sceneForDisplay} width={width} height={height} selectedShotNumber={selectedShotNumber}
+        {mode !== 'strip' && <CourseShotOverlay scene={sceneForDisplay} width={width} height={height} selectedShotNumber={selectedShotNumber} activeDraftShotNumber={activeDraftShotNumber}
           project={point => toScreen(point, camera)} pathForFeature={feature => featurePath(feature, camera)} appearance={puttingPlan ? 'putting-plan' : 'default'} />}
       </g>
     </svg>

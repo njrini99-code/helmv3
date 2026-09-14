@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { contextCamera, contextPoints, entryView, puttingPlanCamera } from '../camera';
+import { contextCamera, contextPoints, entryView, puttingFocusCamera, puttingPlanCamera } from '../camera';
 import { toScreen, fromScreen } from '../project';
 import { displayOutline, boundaryDistance, DISPLAY_EDGE_LIMIT_M } from '../display-outline';
 import { ringArea, simpleRing } from '../spatial';
@@ -39,6 +39,17 @@ it('keeps the whole-green fit independent from earlier illustrative flights', ()
   expect(contextPoints(withFlights, 'green')).toEqual(contextPoints(source, 'green'));
   expect(contextCamera(withFlights, 390, 380, 'green')).toEqual(contextCamera(source, 390, 380, 'green'));
   expect(contextPoints(withFlights, 'approach').length).toBeGreaterThan(contextPoints(source, 'approach').length);
+});
+it('uses an explicit displayed roll for Focus putt and retains whole-green fitting without one', () => {
+  const scene = pilotScene('cacapon-07', false);
+  const pin = scene.target.estimate!.positionM;
+  scene.illustrativePuttingTracks = [{ key: 'focus-roll', shotNumber: 4, kind: 'surface_roll', source: 'interactive_preview_fixture', pointsM: [[pin[0] - 4, pin[1] + 2], [pin[0] - 2, pin[1] + 1], pin] }];
+  const whole = puttingPlanCamera(scene, 390, 272);
+  const focus = puttingFocusCamera(scene, 390, 272, 4);
+  expect(focus.scale).toBeGreaterThan(whole.scale);
+  const withoutRoll = structuredClone(scene);
+  withoutRoll.illustrativePuttingTracks = withoutRoll.illustrativePuttingTracks?.filter(track => track.kind !== 'surface_roll');
+  expect(puttingFocusCamera(withoutRoll, 390, 272, 4)).toEqual(puttingPlanCamera(withoutRoll, 390, 272));
 });
 it('fits the compact putting plan to the canonical green before remote bunker context', () => {
   const scene = pilotScene('cacapon-07', false);
