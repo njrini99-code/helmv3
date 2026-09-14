@@ -1,0 +1,23 @@
+{
+  "phase": "AUDIT",
+  "read_scope": "entire repository at the pinned SHA",
+  "write_lease": {
+    "A00": ["premium-audit/baseline.json", "premium-audit/decisions.md", "premium-audit/ownership.json", "premium-audit/coverage.md", "premium-audit/findings.jsonl", "premium-audit/verification/**"],
+    "A01": ["premium-audit/lanes/A01/**"],
+    "A02": ["premium-audit/lanes/A02/**"],
+    "A03": ["premium-audit/lanes/A03/**"],
+    "A04": ["premium-audit/lanes/A04/**"],
+    "A05": ["premium-audit/lanes/A05/**"],
+    "A06": ["premium-audit/lanes/A06/**"],
+    "A07": ["premium-audit/lanes/A07/**"],
+    "A08": ["premium-audit/lanes/A08/**"],
+    "A09": ["premium-audit/lanes/A09/**"],
+    "A11": ["premium-audit/lanes/A11/**"],
+    "A12": ["premium-audit/lanes/A12/**"]
+  },
+  "forbidden_for_every_lane": [
+    "any file under src/, ios/, supabase/, scripts/, or any repo config",
+    "anything under /Users/ricknini/Downloads/helmv3 (canonical checkout, another session live)",
+    "messaging files — separate program"
+  ]
+}
