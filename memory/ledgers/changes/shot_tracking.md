@@ -1,5 +1,15 @@
 # Shot Tracking change ledger
 
+## 2026-09-15 — real-course source-study and GLB compiler spike
+
+- Added bounded NC OneMap native-grid orthophoto acquisition with an explicit
+  four-band analysis quality gate and an honestly labelled RGB visual fallback.
+- Added canonical local-metre study normalization and an offline Blender 5.2
+  static-GLB compiler/import round-trip validator. The artifacts remain local
+  source candidates; they do not bind Cardinal's unassigned green complex to a
+  round or change shot reconstruction, scoring, database state or production
+  asset delivery.
+
 ## 2026-08-22 — distinguish a real fallback from a confirmed snapshot
 
 - SHA: `48b41e1c4d8c86f12f5a2becd11454f5bd3899e2`.

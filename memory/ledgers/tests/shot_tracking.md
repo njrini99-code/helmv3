@@ -1,5 +1,18 @@
 # Shot Tracking test ledger
 
+## 2026-09-15 — real-course source-study compiler coverage
+
+- Added no-network NC OneMap orthophoto contract tests for the native 0.5
+  US-survey-foot grid, native-resolution guard, and analysis-band contract.
+- Verified the native LiDAR acquisition and terrain compiler tests (14 total),
+  Python compilation, the actual Cardinal Blender export, and a fresh GLB
+  import round trip. The cardinal study retained a one-metre world-unit
+  invariant and imported terrain spans within 0.000008m.
+- `golf-schemas` unit coverage (25) and TypeScript passed. The existing
+  round-flow e2e suite passed five tests and failed two pre-existing
+  in-progress/continue fixtures waiting for a `Hole 1` heading; this source
+  tooling does not enter the round UI or alter those routes.
+
 ## 2026-08-22 — false recovery drawer regression coverage
 
 - SHA: `48b41e1c4d8c86f12f5a2becd11454f5bd3899e2`.

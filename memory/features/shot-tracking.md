@@ -21,6 +21,19 @@ grid, records its exact export bounds and file hashes, and records an unknown
 vertical datum as unknown. A source study cannot be bound to a playable hole
 without separately reviewed tee, route, green, and course/hole identity.
 
+The offline real-course rendering spike follows the same rule. Its canonical
+study JSON is a local azimuthal-equidistant metre frame (`x` east, `y` up,
+`z` north; one world unit is one metre) that retains original WGS84 geometry,
+terrain/imagery provenance, confidence and limitations. Blender consumes that
+JSON and the source-hashed terrain raster to generate a static GLB; it does
+not receive or bake shot, ball, cup, label, replay, scoring or analytics data.
+The GLB import validator checks metric spans and axis conversion. NC OneMap
+orthophoto acquisition rejects transparent/downsampled exports; if the
+four-band analysis service is blank, a valid three-band visual export remains
+explicitly RGB-only and cannot supply NIR-derived claims. A partial Cardinal
+green study stays unbound until actual tee/fairway/route/hole identity and
+license/review evidence are complete.
+
 The current round flow uses a wizard for setup, hole configuration, shot capture, and submit. Draft save and continue routes support in-progress rounds. Database auto-save and confirmed per-hole checkpoints are the reliable path. The dashboard-level v2 sync engine drains the legacy IndexedDB bridge only for failed final submissions; normal Continue Round auto-saves must not write a second per-shot v1 queue.
 
 As of 2026-08-22, a failed hole or shot child write preserves the parent
