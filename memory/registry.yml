@@ -1293,6 +1293,7 @@ features:
       services:
         - src/lib/auth/**
         - src/lib/supabase/**
+        - src/hooks/use-presence.ts
       db:
         - supabase/migrations/*auth*.sql
         - supabase/migrations/*user*.sql

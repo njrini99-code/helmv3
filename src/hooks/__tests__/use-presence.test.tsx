@@ -239,6 +239,56 @@ describe('usePresence authenticated heartbeat lifecycle (#1016)', () => {
     expect(rpcMock).toHaveBeenCalledTimes(1);
   });
 
+  it('does not report the Supabase request-deadline timeout as a product error', async () => {
+    getUserMock.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
+    rpcMock.mockResolvedValue({
+      data: undefined,
+      error: { message: 'TimeoutError: signal timed out' },
+    });
+    const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => undefined);
+
+    renderHook(() => usePresence());
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(5_000);
+    });
+
+    expect(rpcMock).toHaveBeenCalledTimes(1);
+    expect(logErrorMock).not.toHaveBeenCalled();
+    expect(getUserMock).toHaveBeenCalledTimes(1);
+    expect(debugSpy).toHaveBeenCalledWith(
+      '[Presence] Heartbeat failed:',
+      'msg=TimeoutError: signal timed out',
+    );
+  });
+
+  it('does not overlap a scheduled heartbeat while the prior refresh is pending', async () => {
+    getUserMock.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
+    let resolveRpc: ((value: { data: undefined; error: null }) => void) | undefined;
+    rpcMock.mockImplementation(() => new Promise((resolve) => {
+      resolveRpc = resolve;
+    }));
+
+    renderHook(() => usePresence());
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(5_000);
+    });
+    expect(rpcMock).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(120_000);
+    });
+    expect(rpcMock).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      resolveRpc?.({ data: undefined, error: null });
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(60_000);
+    });
+    expect(rpcMock).toHaveBeenCalledTimes(2);
+  });
+
   it('does not report a heartbeat that succeeded', async () => {
     getUserMock.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
 

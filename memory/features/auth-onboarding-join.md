@@ -33,6 +33,9 @@ Coach and player onboarding are separate routes. Join-code links can redirect us
 - `src/app/golf/actions/roster.ts`
 - `src/lib/auth/**`
 - `src/lib/supabase/**`
+- `src/hooks/use-presence.ts` — authenticated, best-effort presence heartbeat.
+  It validates the current session before its RPC, serializes overlapping ticks,
+  and does not turn its own request deadline into a product error.
 - `src/lib/observability/golf-login-outcome.ts` — `recordLoginOutcome`,
   called from every `loginActionImpl` return branch (Sentry
   `helm.auth.*` + a structured log line). Lives in its own module rather
