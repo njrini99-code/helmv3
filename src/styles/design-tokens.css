@@ -22,6 +22,31 @@
  * ========================================================================== */
 
 :root {
+  /* Physical course SVG pilot. Terrain colors carry no result/status meaning. */
+  --fw-diagram-ground: #142f25;
+  --fw-diagram-ground-light: #20432e;
+  --fw-diagram-fairway-light: #829e62;
+  --fw-diagram-surround: #365e3f;
+  --fw-diagram-fringe: #537b4d;
+  --fw-diagram-green-light: #bfd3a0;
+  --fw-diagram-shadow: #092318;
+  --fw-diagram-fairway: #668951;
+  --fw-diagram-green: #96b783;
+  --fw-diagram-tee: #75926d;
+  --fw-diagram-bunker: #e7d5af;
+  --fw-diagram-sand-highlight: #fbefd5;
+  --fw-diagram-sand-edge: #93805a;
+  --fw-diagram-green-edge: #c9d8b2;
+  --fw-diagram-water: #315c67;
+  --fw-diagram-rough: #2d513b;
+  --fw-diagram-woods: #173728;
+  --fw-diagram-tree: #365b3a;
+  --fw-diagram-tree-light: #75974f;
+  --fw-diagram-tree-highlight: #abc57a;
+  --fw-diagram-tree-shadow: #0b251b;
+  --fw-diagram-edge: #40683f;
+  --fw-diagram-route: #afc3ad;
+  --fw-diagram-event: #fff9ed;
   /* ---- Color scheme pin (no-FOUC pair with the `.dark` block below) ----
           Without this, `color-scheme` stays at its initial value ("normal"),
           which does not commit the document to light — so before this
@@ -707,4 +732,31 @@
      dark surface still reads. */
   --c-primary-600: 22 163 74;  --c-primary-700: 46 150 92;  --c-primary-800: 22 101 52;
   --c-primary-900: 20 83 45;
+}
+
+/* Course views: geometry is static. Only view/selection emphasis animates.
+   The filmstrip and exported SVGs never opt into these scoped classes. */
+@media (prefers-reduced-motion: no-preference) {
+  .fw-course-view-enter {
+    animation: fw-course-view-reveal 260ms var(--fw-ease-glide) both;
+  }
+  .fw-course-evidence-enter {
+    animation: fw-course-evidence-reveal 220ms var(--fw-ease-soft) both;
+  }
+  .fw-course-motion [data-event][data-selected="true"],
+  .fw-course-motion [data-shot-segment][data-selected="true"] {
+    animation: fw-course-selection-reveal 320ms var(--fw-ease-soft) both;
+  }
+}
+@keyframes fw-course-view-reveal {
+  from { opacity: .45; }
+  to { opacity: 1; }
+}
+@keyframes fw-course-evidence-reveal {
+  from { opacity: .55; transform: translateY(3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fw-course-selection-reveal {
+  from { opacity: .35; }
+  to { opacity: 1; }
 }

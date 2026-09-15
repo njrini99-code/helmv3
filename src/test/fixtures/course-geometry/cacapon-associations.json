@@ -1,0 +1,216 @@
+{
+  "reviewedAt": "2026-09-12",
+  "status": "reviewed_draft",
+  "method": "Explicit per-hole associations after visual comparison of NAIP 2022 and OSM routes/greens. Nearest-route distances used only to flag conflicting assignments. Replaces the rejected 50m proximity inclusion rule.",
+  "holes": [
+    {
+      "hole": 1,
+      "bunkerIds": [
+        "osm-way-885530496",
+        "osm-way-885530497",
+        "osm-way-885530498",
+        "osm-way-885530500",
+        "osm-way-885530501"
+      ],
+      "waterIds": [],
+      "note": "Source comparison draft; excludes adjacent hole greenside/fairway bunkers. Independent familiar review pending."
+    },
+    {
+      "hole": 2,
+      "bunkerIds": [
+        "osm-way-885530499",
+        "osm-way-885719160",
+        "osm-way-885719161",
+        "osm-way-885719162"
+      ],
+      "waterIds": [
+        "osm-way-651342726"
+      ],
+      "note": "Source comparison draft; excludes adjacent hole greenside/fairway bunkers. Independent familiar review pending."
+    },
+    {
+      "hole": 3,
+      "bunkerIds": [
+        "osm-way-885719164",
+        "osm-way-885719165",
+        "osm-way-885719166",
+        "osm-way-885719167"
+      ],
+      "waterIds": [
+        "osm-way-651342726",
+        "osm-way-651342727"
+      ],
+      "note": "Source comparison draft; excludes adjacent hole greenside/fairway bunkers. Independent familiar review pending."
+    },
+    {
+      "hole": 4,
+      "bunkerIds": [
+        "osm-way-885719173",
+        "osm-way-885719174",
+        "osm-way-885719175",
+        "osm-way-885719176"
+      ],
+      "waterIds": [],
+      "note": "Shared green: retains all four surrounding bunkers in both physical-hole views; independent familiar review pending."
+    },
+    {
+      "hole": 5,
+      "bunkerIds": [
+        "osm-way-885719179",
+        "osm-way-885719180",
+        "osm-way-885719181",
+        "osm-way-885719182",
+        "osm-way-885719183"
+      ],
+      "waterIds": [],
+      "note": "Source comparison draft; excludes adjacent hole greenside/fairway bunkers. Independent familiar review pending."
+    },
+    {
+      "hole": 6,
+      "bunkerIds": [
+        "osm-way-885719189",
+        "osm-way-885719190",
+        "osm-way-885719191",
+        "osm-way-885719192",
+        "osm-way-885719194"
+      ],
+      "waterIds": [],
+      "note": "Source comparison draft; excludes adjacent hole greenside/fairway bunkers. Independent familiar review pending."
+    },
+    {
+      "hole": 7,
+      "bunkerIds": [
+        "osm-way-885719197",
+        "osm-way-885719198",
+        "osm-way-885719199",
+        "osm-way-885719200"
+      ],
+      "waterIds": [],
+      "note": "Source comparison draft; excludes adjacent hole greenside/fairway bunkers. Independent familiar review pending."
+    },
+    {
+      "hole": 8,
+      "bunkerIds": [
+        "osm-way-885719173",
+        "osm-way-885719174",
+        "osm-way-885719175",
+        "osm-way-885719176"
+      ],
+      "waterIds": [],
+      "note": "Shared green: retains all four surrounding bunkers in both physical-hole views; independent familiar review pending."
+    },
+    {
+      "hole": 9,
+      "bunkerIds": [
+        "osm-way-885719207",
+        "osm-way-885719208",
+        "osm-way-885719209",
+        "osm-way-885719210"
+      ],
+      "waterIds": [
+        "osm-way-651342727"
+      ],
+      "note": "Source comparison draft; excludes adjacent hole greenside/fairway bunkers. Independent familiar review pending."
+    },
+    {
+      "hole": 10,
+      "bunkerIds": [
+        "osm-way-885737791",
+        "osm-way-885737792",
+        "osm-way-885737793"
+      ],
+      "waterIds": [
+        "osm-way-651235246"
+      ],
+      "note": "Source comparison draft; excludes adjacent hole greenside/fairway bunkers. Independent familiar review pending."
+    },
+    {
+      "hole": 11,
+      "bunkerIds": [
+        "osm-way-885737796",
+        "osm-way-885737798",
+        "osm-way-885737799",
+        "osm-way-885737800"
+      ],
+      "waterIds": [],
+      "note": "Source comparison draft; excludes adjacent hole greenside/fairway bunkers. Independent familiar review pending."
+    },
+    {
+      "hole": 12,
+      "bunkerIds": [
+        "osm-way-885737841",
+        "osm-way-885737842",
+        "osm-way-885737843",
+        "osm-way-885737845",
+        "osm-way-885737846"
+      ],
+      "waterIds": [],
+      "note": "Source comparison draft; excludes adjacent hole greenside/fairway bunkers. Independent familiar review pending."
+    },
+    {
+      "hole": 13,
+      "bunkerIds": [
+        "osm-way-885737833",
+        "osm-way-885737834",
+        "osm-way-885737837"
+      ],
+      "waterIds": [],
+      "note": "Source comparison draft; excludes adjacent hole greenside/fairway bunkers. Independent familiar review pending."
+    },
+    {
+      "hole": 14,
+      "bunkerIds": [
+        "osm-way-885737824",
+        "osm-way-885737825",
+        "osm-way-885737826",
+        "osm-way-885737829"
+      ],
+      "waterIds": [],
+      "note": "Source comparison draft; excludes adjacent hole greenside/fairway bunkers. Independent familiar review pending."
+    },
+    {
+      "hole": 15,
+      "bunkerIds": [
+        "osm-way-885737816",
+        "osm-way-885737817",
+        "osm-way-885737819"
+      ],
+      "waterIds": [],
+      "note": "Source comparison draft; excludes adjacent hole greenside/fairway bunkers. Independent familiar review pending."
+    },
+    {
+      "hole": 16,
+      "bunkerIds": [
+        "osm-way-885737810",
+        "osm-way-885737811",
+        "osm-way-885737814",
+        "osm-way-885737815"
+      ],
+      "waterIds": [],
+      "note": "Source comparison draft; excludes adjacent hole greenside/fairway bunkers. Independent familiar review pending."
+    },
+    {
+      "hole": 17,
+      "bunkerIds": [
+        "osm-way-885737802",
+        "osm-way-885737803",
+        "osm-way-885737804",
+        "osm-way-885737805"
+      ],
+      "waterIds": [],
+      "note": "Source comparison draft; excludes adjacent hole greenside/fairway bunkers. Independent familiar review pending."
+    },
+    {
+      "hole": 18,
+      "bunkerIds": [
+        "osm-way-885719215",
+        "osm-way-885719216",
+        "osm-way-885719218",
+        "osm-way-885737847",
+        "osm-way-885737848"
+      ],
+      "waterIds": [],
+      "note": "Source comparison draft; excludes adjacent hole greenside/fairway bunkers. Independent familiar review pending."
+    }
+  ]
+}

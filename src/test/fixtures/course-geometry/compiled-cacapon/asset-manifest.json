@@ -1,0 +1,188 @@
+{
+  "schemaVersion": 1,
+  "compilerVersion": "course-terrain-v1",
+  "geometryHash": "69ac58c8cc4e29403101c931abf50c8f1fe4305aea474c3e63bd509083c28bfe",
+  "sourceManifestHash": "30c1fad9ed29e367180f93baf3f8945701c22e820d7725e4dfe77f0fa94d5524",
+  "holes": {
+    "cacapon-01": {
+      "ordinal": 1,
+      "fileName": "cacapon-01-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 803682,
+      "uncompressedBytes": 4234496,
+      "sha256": "b0b0f23b55da1e17e17cbb3a35fa8749af18624e429dd85163fd324dca21bc71",
+      "uncompressedSha256": "4af05a1e46672001ecd8e18a7566c0b3bd8c4183cb55a550035d56b2a0e30f91",
+      "contentHash": "3aaffabf2b2110ab5e36c847b69f31b1116c9206218574a95b043884d6e7925e"
+    },
+    "cacapon-02": {
+      "ordinal": 2,
+      "fileName": "cacapon-02-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 847030,
+      "uncompressedBytes": 4369496,
+      "sha256": "5605e4fd00d3391f5728cca10303e43f21a41ba36c0236f2755379feffd9a208",
+      "uncompressedSha256": "d93bf6ea27c57160851b6aa850bc0f7669a3d963a177fae3a19d213c8fda6d3e",
+      "contentHash": "697a7f5c7adb808f66d2f8c661ca9dd27ebc712ea4bc755035266bec0fea25f9"
+    },
+    "cacapon-03": {
+      "ordinal": 3,
+      "fileName": "cacapon-03-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 1139317,
+      "uncompressedBytes": 5720188,
+      "sha256": "8fd0faeffae221a1e8348bb84362c598723b63a749c1cf22b15abcb15e94e197",
+      "uncompressedSha256": "0401d22d9333b0a1fb0b648136cab4a41d81946f3f22d3923860314f3046c6b6",
+      "contentHash": "6f01536e4c2b62917dfc994955f115d96587e2441ef2a1936e62d32265a8b066"
+    },
+    "cacapon-04": {
+      "ordinal": 4,
+      "fileName": "cacapon-04-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 716360,
+      "uncompressedBytes": 3621671,
+      "sha256": "3bbb1c9e81efaee50f3d910a061182a6a6fd8ec8f989c257467e1e682dc7ebce",
+      "uncompressedSha256": "58c3709fb7b8d9db8b0703b2281a6bbe85d0bd946793f4d3207a5779f7b59534",
+      "contentHash": "91d5304ac7ad049967b1ff54d5f00fa0d7ff11ed34d10edc6737fc01f59f9500"
+    },
+    "cacapon-05": {
+      "ordinal": 5,
+      "fileName": "cacapon-05-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 919125,
+      "uncompressedBytes": 4654884,
+      "sha256": "e444bf2cc9c0c2b6b3e5e9e431d8d0b11c1ca1ab29054d162b64af3a211835ef",
+      "uncompressedSha256": "6d4a7befbbb3c56856b9447cb29838c24509f7bd002a2b1f6e5217e38100a5b1",
+      "contentHash": "c355e9f761874d0e0437b841f383a3c745c9244190be100a1c8b5e9ec5ddc5ce"
+    },
+    "cacapon-06": {
+      "ordinal": 6,
+      "fileName": "cacapon-06-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 855604,
+      "uncompressedBytes": 4320184,
+      "sha256": "ca2fd50440051d5225a35056b22f21256186dab896a89adb6068ea9046e83fc8",
+      "uncompressedSha256": "d6d04f07116ce6bf500bd506ed75b190292f0b6a76c54bc8956a66ab84f35eac",
+      "contentHash": "8140bcb2b5a19a4f054b781a5ec969e86acc9dbe52d1a52daf522483a2ea29f1"
+    },
+    "cacapon-07": {
+      "ordinal": 7,
+      "fileName": "cacapon-07-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 975103,
+      "uncompressedBytes": 4844471,
+      "sha256": "5f6c5cd412c9373de62d8b6e2745e2f2f91fbe0f472d744a8a4d1f6bc94d8671",
+      "uncompressedSha256": "c82a44d289302660d3e81f07f0477f63aa1943f0f8c59d203fb0a8ee3da887a5",
+      "contentHash": "623e8cdf179ac36663eb5472b2768da5b84ae46e9094354e580f999b54412749"
+    },
+    "cacapon-08": {
+      "ordinal": 8,
+      "fileName": "cacapon-08-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 798224,
+      "uncompressedBytes": 4059882,
+      "sha256": "98dc5d9ca5c85f290c5d49d5004d2903c9ff6836a0edd5697207f4c88aea23bf",
+      "uncompressedSha256": "ef06a57d0f66244e3be9ac03b08a6984b933c394acdfc159f5793c344ae16383",
+      "contentHash": "5aaa20eedb6f0f52e3806905e3a2da0e3e1edb8682c4bed67e447a45f2d36a78"
+    },
+    "cacapon-09": {
+      "ordinal": 9,
+      "fileName": "cacapon-09-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 1176245,
+      "uncompressedBytes": 5964110,
+      "sha256": "9c121155d5236c6ea3dc9edba20506b489452181c494228f8a476cd310385f9b",
+      "uncompressedSha256": "9694e3f8f722b40a1ab29ca30d9fe05d4c5b377f8a191b7a0e4b954379a1140c",
+      "contentHash": "42b0c883b16f4efe15eaee2c91cad96d304ddf309cdbaa7ccb045985fd12648d"
+    },
+    "cacapon-10": {
+      "ordinal": 10,
+      "fileName": "cacapon-10-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 724685,
+      "uncompressedBytes": 3620909,
+      "sha256": "37001530957bb922f7a44663d6ce73e83a5ee96265e469c9b2a143bfd32ac029",
+      "uncompressedSha256": "41800637c2d5ff37c7df5a323322199cc1ace622537410aed467a8709c1348eb",
+      "contentHash": "831509cd018cab253b065f33a3c4e0980bd863ea6f414f13996ec14c6d25cd44"
+    },
+    "cacapon-11": {
+      "ordinal": 11,
+      "fileName": "cacapon-11-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 1105483,
+      "uncompressedBytes": 5511099,
+      "sha256": "6390f1871b78f2d70277a98fa5d16d7f63bfa1fb3056e4426044b26146a6ded7",
+      "uncompressedSha256": "7983ec23801d7745f207cec95abcfb5f718b038d04bd065faf754e6021067a86",
+      "contentHash": "1cf44504f6f3b830c9afdd2d8cd180ed48ab55f528d9292d5f066d067cb0ceb3"
+    },
+    "cacapon-12": {
+      "ordinal": 12,
+      "fileName": "cacapon-12-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 936552,
+      "uncompressedBytes": 4578685,
+      "sha256": "27963431aa59792ddb45c054b8931fcb371445315054c1963ac4d23e62274bac",
+      "uncompressedSha256": "95fd2449ffe90c9cf3f0dd9ca4d1f9d507970db822aece75413b38c705074c05",
+      "contentHash": "57646320a97bddd4bcb680c849a97fa57794628234ba75b58a9d1e9a5c12be10"
+    },
+    "cacapon-13": {
+      "ordinal": 13,
+      "fileName": "cacapon-13-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 938015,
+      "uncompressedBytes": 4508849,
+      "sha256": "e2dcd6099016e7f738b40adfd33b1eb8256850ada7b4720bdff6cdee25038464",
+      "uncompressedSha256": "b0d3d2da8098266af39dedf32e89109df61ef6cd62583a946996246be20b0d1d",
+      "contentHash": "55f61a20d4f3be07bb393f90fb6ddb45204d5cffae89d00bc7c5e167f1d42a54"
+    },
+    "cacapon-14": {
+      "ordinal": 14,
+      "fileName": "cacapon-14-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 896024,
+      "uncompressedBytes": 4349146,
+      "sha256": "d393419287688208e94e7c6b4552390a569a2928152aedb9231de36f0fe4f3de",
+      "uncompressedSha256": "e9b6c0ef57875ba8abbfca23c5b4eadbbf1542232cf799ea01b325a87f49a0f5",
+      "contentHash": "c0f6ddf55313139273095c1296bd185d9ed02ff0e759fa66ef02395141a409c0"
+    },
+    "cacapon-15": {
+      "ordinal": 15,
+      "fileName": "cacapon-15-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 625775,
+      "uncompressedBytes": 3025233,
+      "sha256": "1bf878b65719a0a3075bdb597924c00db7b577c6993971fa03f564374e827eb2",
+      "uncompressedSha256": "2598269ef4a7a44ecffce751e8e606b1fba81cad96e8d215cf124fde9c2b4bfd",
+      "contentHash": "43ac08eb046f016a18422bee45a71536be8cde553f99bd40cb57c6e738312e47"
+    },
+    "cacapon-16": {
+      "ordinal": 16,
+      "fileName": "cacapon-16-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 979910,
+      "uncompressedBytes": 4831585,
+      "sha256": "bc08d9ad0b809dff31d93ab2cec5951d5677b2ab890b1b642380b31c347ae8e1",
+      "uncompressedSha256": "239e9870a78d63ae034915176bba1ebcc5b23d353e434b27fee732f7d8a4098e",
+      "contentHash": "583d634fa9e3f2a86b82658bec3f0166b36a23f2d1002cbbffa39144f2988542"
+    },
+    "cacapon-17": {
+      "ordinal": 17,
+      "fileName": "cacapon-17-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 704868,
+      "uncompressedBytes": 3551139,
+      "sha256": "a3147fc37bbede7b45a2b79c44166e1928fac3292d34251b237dbbe893bdd09b",
+      "uncompressedSha256": "44c8626ed770a33831cf5842160c8d23e96ea8225af78a9a1c71dbc637cd168e",
+      "contentHash": "a6ed0e80ab6481eeed9f9db92cb2fa9685279f9f325d778c0ceca98151e9b531"
+    },
+    "cacapon-18": {
+      "ordinal": 18,
+      "fileName": "cacapon-18-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 1314408,
+      "uncompressedBytes": 6606233,
+      "sha256": "2a41b772f9fc8353ee0c48cdee9514b52fe24b5005c8fd1388f800e17c30feee",
+      "uncompressedSha256": "98008946c0b38cbf5c03f7f13faa70358bcdfc6979050529209f16879ff0c5ff",
+      "contentHash": "db2026e7ca502948276e0a509be0c9483065b72a77ed9bc828b6328fa725fdbd"
+    }
+  }
+}

@@ -719,6 +719,11 @@
         "category": "components"
       },
       {
+        "id": "components:src/components/golf/course-geometry/**",
+        "pattern": "src/components/golf/course-geometry/**",
+        "category": "components"
+      },
+      {
         "id": "components:src/components/golf/documents/**",
         "pattern": "src/components/golf/documents/**",
         "category": "components"
@@ -1522,6 +1527,11 @@
       {
         "id": "services:scripts/flags/**",
         "pattern": "scripts/flags/**",
+        "category": "services"
+      },
+      {
+        "id": "services:scripts/golf/course-geometry/**",
+        "pattern": "scripts/golf/course-geometry/**",
         "category": "services"
       },
       {
@@ -15700,6 +15710,18 @@
     },
     {
       "source": "golf_round_lifecycle",
+      "target": "components:src/components/golf/course-geometry/**",
+      "kind": "feature_component",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/components/golf/course-geometry/**"
+        }
+      ]
+    },
+    {
+      "source": "golf_round_lifecycle",
       "target": "course_library",
       "kind": "feature_signal",
       "evidence": [
@@ -19779,6 +19801,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/app/golf/(dashboard)/dashboard/rounds/recover/**"
+        }
+      ]
+    },
+    {
+      "source": "shot_tracking",
+      "target": "services:scripts/golf/course-geometry/**",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/golf/course-geometry/**"
         }
       ]
     },

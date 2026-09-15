@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "packageHash": "69ac58c8cc4e29403101c931abf50c8f1fe4305aea474c3e63bd509083c28bfe",
+  "requestedLocalBoundsM": [
+    -424,
+    -936,
+    520,
+    1032
+  ],
+  "selectedTitle": "USGS 1 Meter 17 x73y438 MD_Western_2021_D21",
+  "selectedObjectId": 129279,
+  "sourceUrl": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/MD_Western_2021_D21/TIFF/USGS_1M_17_x73y438_MD_Western_2021_D21.tif",
+  "acquisitionStart": "2021-12-04",
+  "acquisitionEnd": "2021-12-21",
+  "nativeResolutionM": 1,
+  "exportPixelM": [
+    1.0,
+    1.0
+  ],
+  "horizontalExportCrs": "EPSG:32617",
+  "verticalDatum": "NAVD88",
+  "retrievedAt": "2026-09-13",
+  "sourceSelection": "single_full_coverage_native_1m_tile",
+  "licenseUrl": "https://www.usgs.gov/3d-elevation-program/about-3dep-products-services",
+  "fileHashes": {
+    "catalog.json": "78a07f2760cca28a64dc23cea016b24b5f28b385f7c4c38902f4a26bf500e400",
+    "export.json": "160cdc18cb67d92184b2bec57d83bd897adc76a1b271a70816a61e1fd0ad657d",
+    "elevation.tiff": "440a32120d09a1337bbba2d87451e6195fd4690a14451f18fe63a666c759f63e"
+  }
+}

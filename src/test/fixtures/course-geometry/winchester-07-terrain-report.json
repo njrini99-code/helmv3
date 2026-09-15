@@ -1,0 +1,144 @@
+{
+  "contentHash": "8eb95c69001283eb67c860d81a3f894ba6834893f0fb2851174f570fd34dd743",
+  "triangles": 5484,
+  "elevationRangeM": [
+    192.8197,
+    216.3616
+  ],
+  "features": [
+    {
+      "id": "terrain-context",
+      "kind": "ground",
+      "triangles": 2203,
+      "clippedAreaM2": 18376.198533,
+      "triangleAreaM2": 18376.198533
+    },
+    {
+      "id": "osm-way-1039746150-winchester-07-context-crop",
+      "kind": "woods",
+      "triangles": 154,
+      "clippedAreaM2": 1352.828251,
+      "triangleAreaM2": 1352.828251
+    },
+    {
+      "id": "osm-way-214428358-winchester-07-context-crop",
+      "kind": "woods",
+      "triangles": 314,
+      "clippedAreaM2": 6272.956976,
+      "triangleAreaM2": 6272.956976
+    },
+    {
+      "id": "osm-way-800515700",
+      "kind": "fairway",
+      "triangles": 1471,
+      "clippedAreaM2": 4868.592362,
+      "triangleAreaM2": 4868.592362
+    },
+    {
+      "id": "osm-way-1039734596",
+      "kind": "tee",
+      "triangles": 23,
+      "clippedAreaM2": 62.169408,
+      "triangleAreaM2": 62.169408
+    },
+    {
+      "id": "osm-way-1039734599",
+      "kind": "green",
+      "triangles": 638,
+      "clippedAreaM2": 364.66416,
+      "triangleAreaM2": 364.66416
+    },
+    {
+      "id": "osm-way-1039734597",
+      "kind": "bunker",
+      "triangles": 358,
+      "clippedAreaM2": 82.056008,
+      "triangleAreaM2": 82.056008
+    },
+    {
+      "id": "osm-way-1039734598",
+      "kind": "bunker",
+      "triangles": 323,
+      "clippedAreaM2": 63.078186,
+      "triangleAreaM2": 63.078186
+    }
+  ],
+  "displayOutlines": [
+    {
+      "id": "osm-way-214428358-winchester-07-context-crop",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "osm-way-1039746150-winchester-07-context-crop",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "osm-way-1039734599",
+      "boundaryDisplacementM": 0.09224184206013396,
+      "areaChangePercent": -0.16269971176284814
+    },
+    {
+      "id": "osm-way-800515700",
+      "boundaryDisplacementM": 0.3013530895889901,
+      "areaChangePercent": -0.011773095721367977
+    },
+    {
+      "id": "osm-way-1039734596",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "osm-way-1039734597",
+      "boundaryDisplacementM": 0.11418834757551444,
+      "areaChangePercent": -0.691781226652477
+    },
+    {
+      "id": "osm-way-1039734598",
+      "boundaryDisplacementM": 0.11447149506641915,
+      "areaChangePercent": -0.7435085267705754
+    }
+  ],
+  "boundsM": [
+    -206.33477133305823,
+    -454.5460017776485,
+    -48.92991493120366,
+    -96.00347952684197
+  ],
+  "source": {
+    "provider": "USGS 3DEP",
+    "catalogObjectId": 41224,
+    "title": "USGS 1 Meter 17 x74y434 VA_NorthernShenandoah_2020_D20",
+    "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/VA_NorthernShenandoah_2020_D20/TIFF/USGS_1M_17_x74y434_VA_NorthernShenandoah_2020_D20.tif",
+    "acquisitionStart": "2020-11-29",
+    "acquisitionEnd": "2021-01-12",
+    "retrievedAt": "2026-09-13",
+    "nativeResolutionM": 1,
+    "verticalAccuracyM": null,
+    "registrationResidualM": null,
+    "licenseUrl": "https://www.usgs.gov/3d-elevation-program/about-3dep-products-services",
+    "rasterSha256": "3d8927ddfb859ae85d250192b71272f4e7844feaab365a42610692c051eaf541",
+    "exportExtent": {
+      "xmin": -78.14850000000001,
+      "ymin": 39.164833333333334,
+      "xmax": -78.14450000000001,
+      "ymax": 39.170166666666674,
+      "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+      }
+    },
+    "exportSize": [
+      384,
+      512
+    ],
+    "meshCellM": 8.0
+  },
+  "limitations": [
+    "Terrain source candidate; independent registration and renovation review pending",
+    "Macro elevation only; no bunker-lip or putting-break accuracy",
+    "No observed ball, cup, tree height or flight coordinates",
+    "Height is NAVD88 orthometric elevation, not ellipsoidal ENU Up"
+  ]
+}

@@ -157,7 +157,7 @@ export const FairwayShotPills = memo(function FairwayShotPills({
             >
               <span
                 className={cn(
-                  'rounded-full transition-all duration-150',
+                  'block rounded-full transition-all duration-150',
                   isSelected
                     ? 'h-3 w-3 bg-accent-650 ring-2 ring-accent-500/30'
                     : 'h-2 w-2 bg-accent-500 group-active:h-2.5 group-active:w-2.5',

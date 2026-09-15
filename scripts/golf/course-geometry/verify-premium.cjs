@@ -1,0 +1,70 @@
+async page => {
+  const report={viewports:[],errors:[],nativeDevice:false};
+  for(const [width,height] of [[375,812],[390,844],[430,932],[320,568]]) {
+    const context=await page.context().browser().newContext({viewport:{width,height},deviceScaleFactor:2,isMobile:true,hasTouch:true,reducedMotion:'reduce'});
+    const p=await context.newPage();
+    p.on('pageerror',e=>report.errors.push(e.message));
+    await p.route('**/*',r=>r.request().url().startsWith('http://127.0.0.1:8768/')?r.continue():r.abort());
+    await p.goto('http://127.0.0.1:8768/entry?course=winchester&case=around');
+    const ledger=await p.locator('[data-fixture-ledger]').getAttribute('data-fixture-ledger');
+    await p.getByRole('radio',{name:'Green (not fringe)'}).click();
+    const input=p.getByRole('spinbutton',{name:'Proximity to hole in feet'});
+    await input.fill('12');
+    const inline=p.locator('[data-slot=course-drawing]');
+    if(await inline.evaluate(el=>getComputedStyle(el).touchAction)!=='auto')throw new Error('Inline steals scrolling');
+    await p.getByRole('button',{name:'Expand course view'}).click();
+    const dialog=p.getByRole('dialog');
+    await dialog.getByRole('button',{name:'Choose course area',exact:true}).click();
+    await dialog.getByRole('button',{name:'Whole hole',exact:true}).click();
+    const drawing=dialog.locator('[data-slot=course-drawing]'), canvas=dialog.locator('canvas');
+    await p.waitForFunction(() => document.querySelector('canvas[data-terrain-renderer="three-webgl2"]'));
+    const camera=async()=>({scale:+await canvas.getAttribute('data-terrain-scale'),focus:await canvas.getAttribute('data-terrain-focus'),pitch:+await canvas.getAttribute('data-terrain-pitch'),yaw:+await canvas.getAttribute('data-terrain-yaw')});
+    const initial=await camera();
+    const box=await drawing.boundingBox();
+    await p.mouse.move(box.x+box.width*.4,box.y+box.height*.3);
+    await p.mouse.down();
+    await p.mouse.move(box.x+box.width*.4+60,box.y+box.height*.3+100,{steps:14});
+    await p.mouse.up();
+    await p.waitForFunction(()=>+document.querySelector('canvas[data-terrain-pitch]').dataset.terrainPitch<85);
+    const dragged=await camera();
+    if(Math.abs(initial.scale-dragged.scale)>1e-9||initial.focus!==dragged.focus||dragged.yaw<5)throw new Error('Orbit refits lens/focus or failed to rotate');
+    await dialog.getByRole('button',{name:'Reset view',exact:true}).click();
+    const cdp=await context.newCDPSession(p);
+    const x=box.x+box.width*.5,y=box.y+box.height*.45;
+    await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{id:1,x:x-30,y},{id:2,x:x+30,y}]});
+    await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{id:1,x:x-60,y},{id:2,x:x+60,y}]});
+    await p.waitForFunction(()=>+document.querySelector('[role=dialog] [data-camera-zoom]').dataset.cameraZoom>1.5);
+    const pinched=+await drawing.getAttribute('data-camera-zoom');
+    // Chromium releases the specified changed finger here. Omitting it from
+    // touchMove does not emit pointerup; verified with a DOM pointer-event log.
+    await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[{id:2,x:x+60,y}]});
+    await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{id:1,x:x-20,y:y+55}]});
+    await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+    await p.waitForFunction(()=>+document.querySelector('canvas[data-terrain-pitch]').dataset.terrainPitch<89);
+    const afterLift=await camera();
+    if(afterLift.pitch>=89||afterLift.yaw<=0)throw new Error('One-finger continuation lost after pinch');
+    if(await drawing.getAttribute('data-dragging')!=='false')throw new Error('Gesture did not release');
+    await dialog.getByRole('button',{name:'Reset view',exact:true}).click();
+    await p.mouse.move(x,y);await p.mouse.wheel(0,-180);
+    await p.waitForFunction(()=>+document.querySelector('[role=dialog] [data-camera-zoom]').dataset.cameraZoom>1.1);
+    const wheelZoom=+await drawing.getAttribute('data-camera-zoom');
+    await dialog.getByRole('button',{name:'Reset view',exact:true}).click();
+    await dialog.getByRole('button',{name:'Terrain',exact:true}).click();
+    await p.waitForFunction(()=>Array.from(document.querySelectorAll('[data-slot=modal-shell]')).every(el=>+getComputedStyle(el).opacity>.999));
+    await p.screenshot({path:`output/playwright/course-geometry/premium-terrain-${width}.png`});
+    const controls=await dialog.getByRole('button',{name:'Zoom in',exact:true}).boundingBox();
+    if(controls.y+controls.height>height||controls.width<44||controls.height<44)throw new Error('Camera controls outside useful viewport');
+    await p.keyboard.press('Escape');
+    if(await input.inputValue()!=='12'||await p.locator('[data-fixture-ledger]').getAttribute('data-fixture-ledger')!==ledger)throw new Error('Camera changed pending input or history');
+    await p.goto('http://127.0.0.1:8768/review?hole=7');
+    await p.getByRole('button',{name:'Shot 2',exact:true}).click();
+    await p.locator('[data-scene-context=review]').evaluate(el=>scrollTo(0,scrollY+el.getBoundingClientRect().top-72));
+    await p.screenshot({path:`output/playwright/course-geometry/premium-review-${width}.png`});
+    const reviewHeight=await p.locator('[data-slot=course-drawing]').evaluate(el=>el.clientHeight);
+    if(reviewHeight!==310)throw new Error('Review no longer bounded');
+    report.viewports.push({width,height,initial,dragged,pinched,afterLift,wheelZoom,controls,entryHeight:160,reviewHeight,preservedPendingFeet:12,ledgerUnchanged:true});
+    await context.close();
+  }
+  if(report.errors.length)throw new Error(JSON.stringify(report.errors));
+  await page.evaluate(r=>localStorage.setItem('golf-premium-qa',JSON.stringify(r)),report);
+}

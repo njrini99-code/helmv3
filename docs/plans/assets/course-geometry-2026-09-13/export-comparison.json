@@ -1,0 +1,24 @@
+{
+  "description": "Chromium GPU vs librsvg, 620x480. Pixel agreement, not geographic accuracy. Allows antialiasing differences; analytic camera/containment tests run separately.",
+  "acceptance": "Under 1 percent of pixels differ by more than 32/255 in any RGB channel",
+  "comparisons": [
+    {
+      "preset": "top",
+      "pixels": 297600,
+      "percentOver32": 0.0013440860215053765,
+      "meanMaxChannelError": 0.14292674731182795
+    },
+    {
+      "preset": "terrain",
+      "pixels": 297600,
+      "percentOver32": 0.0023521505376344087,
+      "meanMaxChannelError": 0.1747983870967742
+    },
+    {
+      "preset": "side",
+      "pixels": 297600,
+      "percentOver32": 0.003360215053763441,
+      "meanMaxChannelError": 0.20574932795698925
+    }
+  ]
+}

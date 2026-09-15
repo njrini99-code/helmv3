@@ -1,0 +1,825 @@
+{
+  "viewports": [
+    {
+      "width": 375,
+      "height": 812,
+      "scenario": "tee",
+      "drawing": {
+        "width": 341,
+        "height": 160,
+        "top": 311,
+        "bottom": 471
+      },
+      "header": {
+        "width": 341,
+        "height": 56,
+        "top": 255,
+        "bottom": 311
+      },
+      "hero": {
+        "width": 343,
+        "height": 240,
+        "top": 254,
+        "bottom": 494
+      },
+      "view": "hole",
+      "horizontalOverflow": false,
+      "innerVerticalScroll": []
+    },
+    {
+      "width": 375,
+      "height": 812,
+      "scenario": "approach",
+      "drawing": {
+        "width": 341,
+        "height": 160,
+        "top": 311,
+        "bottom": 471
+      },
+      "header": {
+        "width": 341,
+        "height": 56,
+        "top": 255,
+        "bottom": 311
+      },
+      "hero": {
+        "width": 343,
+        "height": 240,
+        "top": 254,
+        "bottom": 494
+      },
+      "view": "approach",
+      "horizontalOverflow": false,
+      "innerVerticalScroll": []
+    },
+    {
+      "width": 375,
+      "height": 812,
+      "scenario": "around",
+      "drawing": {
+        "width": 341,
+        "height": 160,
+        "top": 311,
+        "bottom": 471
+      },
+      "header": {
+        "width": 341,
+        "height": 56,
+        "top": 255,
+        "bottom": 311
+      },
+      "hero": {
+        "width": 343,
+        "height": 240,
+        "top": 254,
+        "bottom": 494
+      },
+      "view": "green",
+      "horizontalOverflow": false,
+      "innerVerticalScroll": []
+    },
+    {
+      "width": 375,
+      "height": 812,
+      "scenario": "putting",
+      "drawing": {
+        "width": 341,
+        "height": 160,
+        "top": 311,
+        "bottom": 471
+      },
+      "header": {
+        "width": 341,
+        "height": 56,
+        "top": 255,
+        "bottom": 311
+      },
+      "hero": {
+        "width": 343,
+        "height": 240,
+        "top": 254,
+        "bottom": 494
+      },
+      "view": "putting",
+      "horizontalOverflow": false,
+      "innerVerticalScroll": []
+    },
+    {
+      "width": 375,
+      "height": 812,
+      "scenario": "ambiguous",
+      "drawing": {
+        "width": 341,
+        "height": 160,
+        "top": 311,
+        "bottom": 471
+      },
+      "header": {
+        "width": 341,
+        "height": 56,
+        "top": 255,
+        "bottom": 311
+      },
+      "hero": {
+        "width": 343,
+        "height": 240,
+        "top": 254,
+        "bottom": 494
+      },
+      "view": "green",
+      "horizontalOverflow": false,
+      "innerVerticalScroll": []
+    },
+    {
+      "width": 375,
+      "height": 812,
+      "scenario": "missing",
+      "drawing": {
+        "width": 341,
+        "height": 160,
+        "top": 311,
+        "bottom": 471
+      },
+      "header": {
+        "width": 341,
+        "height": 56,
+        "top": 255,
+        "bottom": 311
+      },
+      "hero": {
+        "width": 343,
+        "height": 240,
+        "top": 254,
+        "bottom": 494
+      },
+      "view": "green",
+      "horizontalOverflow": false,
+      "innerVerticalScroll": []
+    },
+    {
+      "width": 375,
+      "height": 812,
+      "scenario": "penalty",
+      "drawing": {
+        "width": 341,
+        "height": 160,
+        "top": 311,
+        "bottom": 471
+      },
+      "header": {
+        "width": 341,
+        "height": 56,
+        "top": 255,
+        "bottom": 311
+      },
+      "hero": {
+        "width": 343,
+        "height": 240,
+        "top": 254,
+        "bottom": 494
+      },
+      "view": "green",
+      "horizontalOverflow": false,
+      "innerVerticalScroll": []
+    },
+    {
+      "width": 375,
+      "height": 812,
+      "scenario": "review",
+      "drawing": {
+        "x": 33,
+        "y": 128,
+        "width": 309,
+        "height": 310
+      },
+      "viewportCount": 1
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "scenario": "tee",
+      "drawing": {
+        "width": 356,
+        "height": 160,
+        "top": 311,
+        "bottom": 471
+      },
+      "header": {
+        "width": 356,
+        "height": 56,
+        "top": 255,
+        "bottom": 311
+      },
+      "hero": {
+        "width": 358,
+        "height": 240,
+        "top": 254,
+        "bottom": 494
+      },
+      "view": "hole",
+      "horizontalOverflow": false,
+      "innerVerticalScroll": []
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "scenario": "approach",
+      "drawing": {
+        "width": 356,
+        "height": 160,
+        "top": 311,
+        "bottom": 471
+      },
+      "header": {
+        "width": 356,
+        "height": 56,
+        "top": 255,
+        "bottom": 311
+      },
+      "hero": {
+        "width": 358,
+        "height": 240,
+        "top": 254,
+        "bottom": 494
+      },
+      "view": "approach",
+      "horizontalOverflow": false,
+      "innerVerticalScroll": []
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "scenario": "around",
+      "drawing": {
+        "width": 356,
+        "height": 160,
+        "top": 311,
+        "bottom": 471
+      },
+      "header": {
+        "width": 356,
+        "height": 56,
+        "top": 255,
+        "bottom": 311
+      },
+      "hero": {
+        "width": 358,
+        "height": 240,
+        "top": 254,
+        "bottom": 494
+      },
+      "view": "green",
+      "horizontalOverflow": false,
+      "innerVerticalScroll": []
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "scenario": "putting",
+      "drawing": {
+        "width": 356,
+        "height": 160,
+        "top": 311,
+        "bottom": 471
+      },
+      "header": {
+        "width": 356,
+        "height": 56,
+        "top": 255,
+        "bottom": 311
+      },
+      "hero": {
+        "width": 358,
+        "height": 240,
+        "top": 254,
+        "bottom": 494
+      },
+      "view": "putting",
+      "horizontalOverflow": false,
+      "innerVerticalScroll": []
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "scenario": "ambiguous",
+      "drawing": {
+        "width": 356,
+        "height": 160,
+        "top": 311,
+        "bottom": 471
+      },
+      "header": {
+        "width": 356,
+        "height": 56,
+        "top": 255,
+        "bottom": 311
+      },
+      "hero": {
+        "width": 358,
+        "height": 240,
+        "top": 254,
+        "bottom": 494
+      },
+      "view": "green",
+      "horizontalOverflow": false,
+      "innerVerticalScroll": []
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "scenario": "missing",
+      "drawing": {
+        "width": 356,
+        "height": 160,
+        "top": 311,
+        "bottom": 471
+      },
+      "header": {
+        "width": 356,
+        "height": 56,
+        "top": 255,
+        "bottom": 311
+      },
+      "hero": {
+        "width": 358,
+        "height": 240,
+        "top": 254,
+        "bottom": 494
+      },
+      "view": "green",
+      "horizontalOverflow": false,
+      "innerVerticalScroll": []
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "scenario": "penalty",
+      "drawing": {
+        "width": 356,
+        "height": 160,
+        "top": 311,
+        "bottom": 471
+      },
+      "header": {
+        "width": 356,
+        "height": 56,
+        "top": 255,
+        "bottom": 311
+      },
+      "hero": {
+        "width": 358,
+        "height": 240,
+        "top": 254,
+        "bottom": 494
+      },
+      "view": "green",
+      "horizontalOverflow": false,
+      "innerVerticalScroll": []
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "scenario": "review",
+      "drawing": {
+        "x": 33,
+        "y": 128,
+        "width": 324,
+        "height": 310
+      },
+      "viewportCount": 1
+    },
+    {
+      "width": 430,
+      "height": 932,
+      "scenario": "tee",
+      "drawing": {
+        "width": 396,
+        "height": 160,
+        "top": 311,
+        "bottom": 471
+      },
+      "header": {
+        "width": 396,
+        "height": 56,
+        "top": 255,
+        "bottom": 311
+      },
+      "hero": {
+        "width": 398,
+        "height": 240,
+        "top": 254,
+        "bottom": 494
+      },
+      "view": "hole",
+      "horizontalOverflow": false,
+      "innerVerticalScroll": []
+    },
+    {
+      "width": 430,
+      "height": 932,
+      "scenario": "approach",
+      "drawing": {
+        "width": 396,
+        "height": 160,
+        "top": 311,
+        "bottom": 471
+      },
+      "header": {
+        "width": 396,
+        "height": 56,
+        "top": 255,
+        "bottom": 311
+      },
+      "hero": {
+        "width": 398,
+        "height": 240,
+        "top": 254,
+        "bottom": 494
+      },
+      "view": "approach",
+      "horizontalOverflow": false,
+      "innerVerticalScroll": []
+    },
+    {
+      "width": 430,
+      "height": 932,
+      "scenario": "around",
+      "drawing": {
+        "width": 396,
+        "height": 160,
+        "top": 311,
+        "bottom": 471
+      },
+      "header": {
+        "width": 396,
+        "height": 56,
+        "top": 255,
+        "bottom": 311
+      },
+      "hero": {
+        "width": 398,
+        "height": 240,
+        "top": 254,
+        "bottom": 494
+      },
+      "view": "green",
+      "horizontalOverflow": false,
+      "innerVerticalScroll": []
+    },
+    {
+      "width": 430,
+      "height": 932,
+      "scenario": "putting",
+      "drawing": {
+        "width": 396,
+        "height": 160,
+        "top": 311,
+        "bottom": 471
+      },
+      "header": {
+        "width": 396,
+        "height": 56,
+        "top": 255,
+        "bottom": 311
+      },
+      "hero": {
+        "width": 398,
+        "height": 240,
+        "top": 254,
+        "bottom": 494
+      },
+      "view": "putting",
+      "horizontalOverflow": false,
+      "innerVerticalScroll": []
+    },
+    {
+      "width": 430,
+      "height": 932,
+      "scenario": "ambiguous",
+      "drawing": {
+        "width": 396,
+        "height": 160,
+        "top": 311,
+        "bottom": 471
+      },
+      "header": {
+        "width": 396,
+        "height": 56,
+        "top": 255,
+        "bottom": 311
+      },
+      "hero": {
+        "width": 398,
+        "height": 240,
+        "top": 254,
+        "bottom": 494
+      },
+      "view": "green",
+      "horizontalOverflow": false,
+      "innerVerticalScroll": []
+    },
+    {
+      "width": 430,
+      "height": 932,
+      "scenario": "missing",
+      "drawing": {
+        "width": 396,
+        "height": 160,
+        "top": 311,
+        "bottom": 471
+      },
+      "header": {
+        "width": 396,
+        "height": 56,
+        "top": 255,
+        "bottom": 311
+      },
+      "hero": {
+        "width": 398,
+        "height": 240,
+        "top": 254,
+        "bottom": 494
+      },
+      "view": "green",
+      "horizontalOverflow": false,
+      "innerVerticalScroll": []
+    },
+    {
+      "width": 430,
+      "height": 932,
+      "scenario": "penalty",
+      "drawing": {
+        "width": 396,
+        "height": 160,
+        "top": 311,
+        "bottom": 471
+      },
+      "header": {
+        "width": 396,
+        "height": 56,
+        "top": 255,
+        "bottom": 311
+      },
+      "hero": {
+        "width": 398,
+        "height": 240,
+        "top": 254,
+        "bottom": 494
+      },
+      "view": "green",
+      "horizontalOverflow": false,
+      "innerVerticalScroll": []
+    },
+    {
+      "width": 430,
+      "height": 932,
+      "scenario": "review",
+      "drawing": {
+        "x": 33,
+        "y": 155,
+        "width": 364,
+        "height": 310
+      },
+      "viewportCount": 1
+    },
+    {
+      "width": 320,
+      "height": 568,
+      "scenario": "tee",
+      "drawing": {
+        "width": 286,
+        "height": 160,
+        "top": 311,
+        "bottom": 471
+      },
+      "header": {
+        "width": 286,
+        "height": 56,
+        "top": 255,
+        "bottom": 311
+      },
+      "hero": {
+        "width": 288,
+        "height": 256,
+        "top": 254,
+        "bottom": 510
+      },
+      "view": "hole",
+      "horizontalOverflow": false,
+      "innerVerticalScroll": []
+    },
+    {
+      "width": 320,
+      "height": 568,
+      "scenario": "approach",
+      "drawing": {
+        "width": 286,
+        "height": 160,
+        "top": 331,
+        "bottom": 491
+      },
+      "header": {
+        "width": 286,
+        "height": 76,
+        "top": 255,
+        "bottom": 331
+      },
+      "hero": {
+        "width": 288,
+        "height": 276,
+        "top": 254,
+        "bottom": 530
+      },
+      "view": "approach",
+      "horizontalOverflow": false,
+      "innerVerticalScroll": []
+    },
+    {
+      "width": 320,
+      "height": 568,
+      "scenario": "around",
+      "drawing": {
+        "width": 286,
+        "height": 160,
+        "top": 351,
+        "bottom": 511
+      },
+      "header": {
+        "width": 286,
+        "height": 96,
+        "top": 255,
+        "bottom": 351
+      },
+      "hero": {
+        "width": 288,
+        "height": 296,
+        "top": 254,
+        "bottom": 550
+      },
+      "view": "green",
+      "horizontalOverflow": false,
+      "innerVerticalScroll": []
+    },
+    {
+      "width": 320,
+      "height": 568,
+      "scenario": "putting",
+      "drawing": {
+        "width": 286,
+        "height": 160,
+        "top": 331,
+        "bottom": 491
+      },
+      "header": {
+        "width": 286,
+        "height": 76,
+        "top": 255,
+        "bottom": 331
+      },
+      "hero": {
+        "width": 288,
+        "height": 260,
+        "top": 254,
+        "bottom": 514
+      },
+      "view": "putting",
+      "horizontalOverflow": false,
+      "innerVerticalScroll": []
+    },
+    {
+      "width": 320,
+      "height": 568,
+      "scenario": "ambiguous",
+      "drawing": {
+        "width": 286,
+        "height": 160,
+        "top": 351,
+        "bottom": 511
+      },
+      "header": {
+        "width": 286,
+        "height": 96,
+        "top": 255,
+        "bottom": 351
+      },
+      "hero": {
+        "width": 288,
+        "height": 296,
+        "top": 254,
+        "bottom": 550
+      },
+      "view": "green",
+      "horizontalOverflow": false,
+      "innerVerticalScroll": []
+    },
+    {
+      "width": 320,
+      "height": 568,
+      "scenario": "missing",
+      "drawing": {
+        "width": 286,
+        "height": 160,
+        "top": 351,
+        "bottom": 511
+      },
+      "header": {
+        "width": 286,
+        "height": 96,
+        "top": 255,
+        "bottom": 351
+      },
+      "hero": {
+        "width": 288,
+        "height": 280,
+        "top": 254,
+        "bottom": 534
+      },
+      "view": "green",
+      "horizontalOverflow": false,
+      "innerVerticalScroll": []
+    },
+    {
+      "width": 320,
+      "height": 568,
+      "scenario": "penalty",
+      "drawing": {
+        "width": 286,
+        "height": 160,
+        "top": 351,
+        "bottom": 511
+      },
+      "header": {
+        "width": 286,
+        "height": 96,
+        "top": 255,
+        "bottom": 351
+      },
+      "hero": {
+        "width": 288,
+        "height": 296,
+        "top": 254,
+        "bottom": 550
+      },
+      "view": "green",
+      "horizontalOverflow": false,
+      "innerVerticalScroll": []
+    },
+    {
+      "width": 320,
+      "height": 568,
+      "scenario": "review",
+      "drawing": {
+        "x": 33,
+        "y": 172,
+        "width": 254,
+        "height": 310
+      },
+      "viewportCount": 1
+    }
+  ],
+  "interactions": {
+    "cameraStable": true,
+    "unsavedDistancePreserved": true,
+    "focusRestored": true,
+    "committedShot": true,
+    "saved": [
+      {
+        "number": 1,
+        "result": "fairway",
+        "before": 431,
+        "beforeUnit": "yards",
+        "after": 158,
+        "afterUnit": "yards"
+      },
+      {
+        "number": 2,
+        "result": "sand",
+        "before": 158,
+        "beforeUnit": "yards",
+        "after": 17,
+        "afterUnit": "yards"
+      },
+      {
+        "number": 3,
+        "result": "green",
+        "before": 17,
+        "beforeUnit": "yards",
+        "after": 12,
+        "afterUnit": "feet"
+      }
+    ]
+  },
+  "errors": [],
+  "interactionsDetailed": {
+    "errors": [],
+    "checks": {
+      "edit": true,
+      "undo": true,
+      "penaltyOrigin": true,
+      "metersDisplay": true,
+      "largeText": true,
+      "rolloffUnits": true,
+      "desktopSideBySide": true
+    }
+  }
+}

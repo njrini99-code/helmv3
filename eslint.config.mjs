@@ -92,6 +92,31 @@ export default tseslint.config(
     },
   },
   {
+    // These files are browser callbacks passed to Playwright's page.evaluate,
+    // rather than Node entrypoints.  Scope browser globals to this explicit
+    // set so the remaining scripts keep their Node-only lint contract.
+    files: [
+      "scripts/golf/course-geometry/**/*.{cjs,mjs}",
+      "scripts/__tests__/ui-audit-accname.test.mjs",
+      "scripts/ui-audit-golf.mjs",
+      "scripts/ui-smoke.mjs",
+      "scripts/verify-ios-itinerary-create.mjs",
+    ],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+      },
+    },
+  },
+  {
+    // Course-geometry capture files intentionally export a bare async callback
+    // expression for the runner to inject into page.evaluate().
+    files: ["scripts/golf/course-geometry/**/*.{cjs,mjs}"],
+    rules: {
+      "@typescript-eslint/no-unused-expressions": "off",
+    },
+  },
+  {
     // The GolfHelm Engineering OS's hooks (P2) are plain Node scripts, same
     // shape as scripts/** above — `npm run lint` doesn't reach .claude/ (it
     // targets src/**/*.{ts,tsx} only), but ad-hoc/future linting of these

@@ -1,0 +1,482 @@
+{
+  "queriedAt": "2026-09-13",
+  "selection": "More than one completed round, all non-demo teams; direct team or sole active membership when team is null. Demo members excluded. Unlinked names are unresolved candidates.",
+  "teams": [
+    {
+      "id": "814452e9-35ff-471a-a93a-912f5456f11f",
+      "name": "Hampden-Sydney Golf",
+      "excluded": false
+    },
+    {
+      "id": "27d01293-8b5a-4e4e-9e3c-c86666b53bc9",
+      "name": "Denison University Golf",
+      "excluded": false
+    },
+    {
+      "id": "8a162bfc-c98f-923b-e847-d80d7803acb2",
+      "name": "Demo University Golf (Pat)",
+      "excluded": true
+    },
+    {
+      "id": "b714c30f-5459-4a57-8ccd-8af84fe6861a",
+      "name": "Guilford College Men's Golf Team",
+      "excluded": false
+    },
+    {
+      "id": "fe0e5c98-9ba5-450b-8d17-ae248fab157d",
+      "name": "Piedmont University Golf",
+      "excluded": false
+    },
+    {
+      "id": "a852910f-e5a6-4e34-8a72-998e718ff80d",
+      "name": "Shenandoah University Golf",
+      "excluded": false
+    },
+    {
+      "id": "f5b4fc75-4581-4843-9b62-7d3bc4686aa5",
+      "name": "UNC Wilmington Golf",
+      "excluded": false
+    },
+    {
+      "id": "343731cb-5109-4970-89e4-2e4bd49df8cb",
+      "name": "Lynchburg Women’s Golf",
+      "excluded": false
+    },
+    {
+      "id": "ffd6985f-14b4-4448-895f-d5af20da8d6a",
+      "name": "Shenandoah University Women's Golf",
+      "excluded": false
+    },
+    {
+      "id": "6ecdd1a6-63fe-4beb-b094-00118f334163",
+      "name": "Demo University Golf",
+      "excluded": true
+    }
+  ],
+  "courses": [
+    {
+      "id": "0c980b93-8eee-48d4-be02-ddddfd3171fd",
+      "city": "Greensboro",
+      "name": "Bryan Park Champs",
+      "state": "NC",
+      "teams": 1,
+      "address": null,
+      "website": null,
+      "all_rounds": 46,
+      "deleted_at": null,
+      "completed_rounds": 45
+    },
+    {
+      "id": "c6347725-c890-4545-b25f-a72e342b67da",
+      "city": "Berkeley Springs",
+      "name": "Cacapon State Park",
+      "state": "WV",
+      "teams": 1,
+      "address": "818 Cacapon Lodge Dr",
+      "website": null,
+      "all_rounds": 39,
+      "deleted_at": null,
+      "completed_rounds": 36
+    },
+    {
+      "id": "65069f6c-9576-4a22-8ade-ef11e2a28574",
+      "city": "Greensboro",
+      "name": "The Cardinal",
+      "state": "NC",
+      "teams": 1,
+      "address": null,
+      "website": null,
+      "all_rounds": 30,
+      "deleted_at": null,
+      "completed_rounds": 30
+    },
+    {
+      "id": "846f0ccb-26aa-4e3c-a9e7-5a03c85440a2",
+      "city": "Winchester",
+      "name": "Winchester CC",
+      "state": "Va",
+      "teams": 1,
+      "address": "1300 Senseny Road",
+      "website": null,
+      "all_rounds": 33,
+      "deleted_at": null,
+      "completed_rounds": 30
+    },
+    {
+      "id": "c300318d-332e-4a19-8867-76cd03a39523",
+      "city": "Greensboro",
+      "name": "Starmount Forest",
+      "state": "NC",
+      "teams": 1,
+      "address": null,
+      "website": null,
+      "all_rounds": 23,
+      "deleted_at": null,
+      "completed_rounds": 23
+    },
+    {
+      "id": "9eb84bdc-9d3e-4486-8206-520505cdeb84",
+      "city": "Lexington ",
+      "name": "Big Blue Course (UK)",
+      "state": "KY",
+      "teams": 2,
+      "address": null,
+      "website": null,
+      "all_rounds": 20,
+      "deleted_at": null,
+      "completed_rounds": 19
+    },
+    {
+      "id": "a893a1dd-8f95-49c4-8ff3-651220b28afa",
+      "city": "Myrtle Beach",
+      "name": "Grande Dunes Resort Club",
+      "state": "SC",
+      "teams": 1,
+      "address": null,
+      "website": null,
+      "all_rounds": 13,
+      "deleted_at": null,
+      "completed_rounds": 13
+    },
+    {
+      "id": "74a25931-793f-4f61-99f4-8628d9c8a4bb",
+      "city": "Wallace",
+      "name": "River Landing (River)",
+      "state": "NC",
+      "teams": 1,
+      "address": null,
+      "website": null,
+      "all_rounds": 9,
+      "deleted_at": null,
+      "completed_rounds": 9
+    },
+    {
+      "id": "84fb4402-a80a-4880-aaca-338dcb63af4f",
+      "city": "Snow Hill",
+      "name": "Cutter Creek",
+      "state": "NC",
+      "teams": 1,
+      "address": null,
+      "website": null,
+      "all_rounds": 10,
+      "deleted_at": null,
+      "completed_rounds": 8
+    },
+    {
+      "id": "45570b51-7d2c-4b12-b7a4-f141eb3b00be",
+      "city": "Lynchburg",
+      "name": "Boonsboro CC",
+      "state": "VA",
+      "teams": 1,
+      "address": null,
+      "website": null,
+      "all_rounds": 19,
+      "deleted_at": null,
+      "completed_rounds": 7
+    },
+    {
+      "id": "71f328fb-215b-475f-a7d7-81bce6a478dc",
+      "city": "Wilmington",
+      "name": "CC of Landfall (Marsh 9)",
+      "state": "NC",
+      "teams": 1,
+      "address": null,
+      "website": null,
+      "all_rounds": 7,
+      "deleted_at": null,
+      "completed_rounds": 7
+    },
+    {
+      "id": "aed28a4f-37e2-4029-8e40-9a4963e72527",
+      "city": "Winston-Salem",
+      "name": "Forsyth Country Club",
+      "state": "NC",
+      "teams": 1,
+      "address": null,
+      "website": null,
+      "all_rounds": 7,
+      "deleted_at": null,
+      "completed_rounds": 7
+    },
+    {
+      "id": "991cae6b-4a6e-4018-b101-0288e1aa37af",
+      "city": "Pinehurst",
+      "name": "Pinehurst No. 8",
+      "state": "NC",
+      "teams": 1,
+      "address": null,
+      "website": null,
+      "all_rounds": 7,
+      "deleted_at": null,
+      "completed_rounds": 7
+    },
+    {
+      "id": "36ddc8ee-656f-4151-887b-cc3af6b72a11",
+      "city": "Wallace",
+      "name": "River Landing (Landing)",
+      "state": "NC",
+      "teams": 1,
+      "address": null,
+      "website": null,
+      "all_rounds": 7,
+      "deleted_at": null,
+      "completed_rounds": 7
+    },
+    {
+      "id": "009b2006-bbd2-4e88-bd17-82771709d0b7",
+      "city": "Wilmington",
+      "name": "CC of Landfall (Ocean 9)",
+      "state": "NC",
+      "teams": 1,
+      "address": null,
+      "website": null,
+      "all_rounds": 5,
+      "deleted_at": null,
+      "completed_rounds": 5
+    },
+    {
+      "id": "93f267c8-226e-4078-8716-789db8058c81",
+      "city": "Leland",
+      "name": "Magnolia Greens (Cam 9)",
+      "state": "NC",
+      "teams": 1,
+      "address": null,
+      "website": null,
+      "all_rounds": 5,
+      "deleted_at": null,
+      "completed_rounds": 5
+    },
+    {
+      "id": "932fb4b7-b107-413d-b7e4-5c6d80937039",
+      "city": "Wilmington",
+      "name": "CC of Landfall (Nick O/P)",
+      "state": "NC",
+      "teams": 1,
+      "address": null,
+      "website": null,
+      "all_rounds": 4,
+      "deleted_at": null,
+      "completed_rounds": 3
+    },
+    {
+      "id": "45561342-4746-4e80-860f-553cfa6853d2",
+      "city": "Wilmington",
+      "name": "CC of Landfall (Nick-P/M)",
+      "state": "NC",
+      "teams": 1,
+      "address": null,
+      "website": null,
+      "all_rounds": 3,
+      "deleted_at": null,
+      "completed_rounds": 3
+    },
+    {
+      "id": "00bbda7e-53df-405e-8551-f4c156bb9eaf",
+      "city": "Wilmington",
+      "name": "CC of Landfall (Nick-M/O)",
+      "state": "NC",
+      "teams": 1,
+      "address": null,
+      "website": null,
+      "all_rounds": 2,
+      "deleted_at": null,
+      "completed_rounds": 2
+    },
+    {
+      "id": "a2669ed5-10d3-4d7a-960e-34ffc3c91061",
+      "city": "Greensboro",
+      "name": "Forest Oaks CC",
+      "state": "NC",
+      "teams": 1,
+      "address": null,
+      "website": null,
+      "all_rounds": 2,
+      "deleted_at": null,
+      "completed_rounds": 2
+    },
+    {
+      "id": "2e402439-f096-4b97-91ab-2dfba12bb8e0",
+      "city": null,
+      "name": "PGA National - Champ",
+      "state": null,
+      "teams": 1,
+      "address": null,
+      "website": null,
+      "all_rounds": 2,
+      "deleted_at": null,
+      "completed_rounds": 2
+    }
+  ],
+  "unlinked": [
+    {
+      "rounds": 4,
+      "course_city": "Pinehurst",
+      "course_name": "Forest Creek",
+      "course_state": "NC"
+    },
+    {
+      "rounds": 4,
+      "course_city": null,
+      "course_name": "poplar grove",
+      "course_state": null
+    },
+    {
+      "rounds": 4,
+      "course_city": null,
+      "course_name": "Poplar Grove",
+      "course_state": null
+    },
+    {
+      "rounds": 3,
+      "course_city": null,
+      "course_name": "Forest Creek",
+      "course_state": null
+    },
+    {
+      "rounds": 3,
+      "course_city": null,
+      "course_name": "Golden horshoe",
+      "course_state": null
+    },
+    {
+      "rounds": 3,
+      "course_city": null,
+      "course_name": "Poplar Grove GC",
+      "course_state": null
+    },
+    {
+      "rounds": 3,
+      "course_city": null,
+      "course_name": "Pine Lakes Jekyll Island",
+      "course_state": null
+    },
+    {
+      "rounds": 3,
+      "course_city": null,
+      "course_name": "Poplar Grove ",
+      "course_state": "Va"
+    },
+    {
+      "rounds": 3,
+      "course_city": null,
+      "course_name": "Golden Horseshoe gold course",
+      "course_state": null
+    },
+    {
+      "rounds": 3,
+      "course_city": null,
+      "course_name": "Golden Horseshoe Gold",
+      "course_state": null
+    },
+    {
+      "rounds": 3,
+      "course_city": "Jekyll Island",
+      "course_name": "Jekyll Island Golf Club (Great Dunes)",
+      "course_state": "GA"
+    },
+    {
+      "rounds": 3,
+      "course_city": "Glen Allen",
+      "course_name": "The Dominion Club",
+      "course_state": "VA"
+    },
+    {
+      "rounds": 3,
+      "course_city": "Williamsburg",
+      "course_name": "golden horeshoe",
+      "course_state": "VA"
+    },
+    {
+      "rounds": 3,
+      "course_city": "Pinehurst",
+      "course_name": "Forest Creek Golf Club",
+      "course_state": "NC"
+    },
+    {
+      "rounds": 3,
+      "course_city": "Jekyll Island",
+      "course_name": "Great Dunes",
+      "course_state": "GA"
+    },
+    {
+      "rounds": 2,
+      "course_city": "Richmond",
+      "course_name": "The Dominion Club",
+      "course_state": "VA"
+    },
+    {
+      "rounds": 2,
+      "course_city": "Greenbrier",
+      "course_name": "The Meadows",
+      "course_state": "WV"
+    },
+    {
+      "rounds": 2,
+      "course_city": "Jekyll Island",
+      "course_name": "Pine Lakes Jeckyll",
+      "course_state": "GA"
+    },
+    {
+      "rounds": 2,
+      "course_city": "Jekyll Island",
+      "course_name": "The Dunes",
+      "course_state": "GA"
+    },
+    {
+      "rounds": 2,
+      "course_city": "Williamsburg",
+      "course_name": "Williamsburg GC",
+      "course_state": "Va"
+    },
+    {
+      "rounds": 2,
+      "course_city": "Williamsburg",
+      "course_name": "Golden Horseshoe GC",
+      "course_state": "VA"
+    },
+    {
+      "rounds": 2,
+      "course_city": "pinehurst",
+      "course_name": "forest creek north",
+      "course_state": "nc"
+    },
+    {
+      "rounds": 2,
+      "course_city": null,
+      "course_name": "Jekyll Island",
+      "course_state": null
+    },
+    {
+      "rounds": 2,
+      "course_city": "Savannah",
+      "course_name": "The Club at Savannah Harbor",
+      "course_state": "GA"
+    },
+    {
+      "rounds": 2,
+      "course_city": null,
+      "course_name": "Savannah Country Club",
+      "course_state": null
+    },
+    {
+      "rounds": 2,
+      "course_city": "Williamsburg",
+      "course_name": "Williamsburg Golf Club",
+      "course_state": "VA"
+    }
+  ],
+  "status_counts": [
+    {
+      "rounds": 380,
+      "status": "completed",
+      "unlinked": 105,
+      "unresolved_team": 4
+    },
+    {
+      "rounds": 37,
+      "status": "in_progress",
+      "unlinked": 6,
+      "unresolved_team": 6
+    }
+  ]
+}

@@ -160,3 +160,14 @@ phones, selected development/standing/detail views prioritize their content over
 desktop retains its side-by-side context. The round scope picker and Log round action retain 44px
 touch targets. What-if results reveal with opacity/translation rather than animated layout height,
 and honor reduced motion.
+
+## Round Review course context (September 12, 2026)
+
+Round Review uses the optional shared geometry renderer through `HoleShotPath`
+while preserving the existing summary, filmstrip and narrative. One bounded
+viewport switches between Hole, Green and a separate distance-based putting
+schematic; one selected-shot explanation retains original event units and
+directions. No inferred pin, measured endpoint, new player input or CoachHelm
+insight change is introduced. The local fixture harness verifies the real
+components/styles without publishing course geometry. Implementation evidence
+and remaining gates live in the existing course-geometry plan, Section 19.

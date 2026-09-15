@@ -1,0 +1,726 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-09-13",
+  "sourceBaseline": "f5d994b01 (task working changes included)",
+  "harness": "Real Fairway components and app styles in local Vite fixture with inert external adapters; not authenticated production or native container",
+  "sourceAcceptance": "Cacapon 7 partial reviewed draft; Winchester 7 source candidate; no production activation",
+  "tests": {
+    "scopedVitest": {
+      "files": 29,
+      "passed": 584
+    },
+    "finalAffectedVitest": {
+      "files": 3,
+      "passed": 14
+    },
+    "puttingAfterLabelChange": {
+      "files": 1,
+      "passed": 3
+    },
+    "vectorTests": {
+      "passed": 4
+    },
+    "scopedESLint": "passed, 39 TS files plus affected final files",
+    "fullTypecheck": "passed before final UI corrections; Next build verifies final state",
+    "nextBuild": "pending"
+  },
+  "browser": {
+    "golf-premium-qa": {
+      "viewports": [
+        {
+          "width": 375,
+          "height": 812,
+          "initial": {
+            "scale": 1.5911827547480542,
+            "focus": "-129.55616657096846,-273.9196625929289,206.72866850925487",
+            "pitch": 90,
+            "yaw": 0
+          },
+          "dragged": {
+            "scale": 1.5911827547480542,
+            "focus": "-129.55616657096846,-273.9196625929289,206.72866850925487",
+            "pitch": 68,
+            "yaw": 13.2
+          },
+          "pinched": 2,
+          "afterLift": {
+            "scale": 3.1823655094961083,
+            "focus": "-129.55616657096846,-273.9196625929289,206.72866850925487",
+            "pitch": 77.9,
+            "yaw": 8.8
+          },
+          "wheelZoom": 1.1972173631218102,
+          "controls": {
+            "x": 313,
+            "y": 452,
+            "width": 44,
+            "height": 44
+          },
+          "entryHeight": 160,
+          "reviewHeight": 310,
+          "preservedPendingFeet": 12,
+          "ledgerUnchanged": true
+        },
+        {
+          "width": 390,
+          "height": 844,
+          "initial": {
+            "scale": 1.6738713741432225,
+            "focus": "-129.18052116082907,-273.7173144595753,206.83503761944928",
+            "pitch": 90,
+            "yaw": 0
+          },
+          "dragged": {
+            "scale": 1.6738713741432225,
+            "focus": "-129.18052116082907,-273.7173144595753,206.83503761944928",
+            "pitch": 67.99999664306641,
+            "yaw": 13.2
+          },
+          "pinched": 2,
+          "afterLift": {
+            "scale": 3.347742748286445,
+            "focus": "-129.18052116082907,-273.7173144595753,206.83503761944928",
+            "pitch": 77.9,
+            "yaw": 8.8
+          },
+          "wheelZoom": 1.1972173631218102,
+          "controls": {
+            "x": 328,
+            "y": 484,
+            "width": 44,
+            "height": 44
+          },
+          "entryHeight": 160,
+          "reviewHeight": 310,
+          "preservedPendingFeet": 12,
+          "ledgerUnchanged": true
+        },
+        {
+          "width": 430,
+          "height": 932,
+          "initial": {
+            "scale": 1.9782116239874448,
+            "focus": "-129.18052116082907,-273.7173144595753,206.83503761944928",
+            "pitch": 90,
+            "yaw": 0
+          },
+          "dragged": {
+            "scale": 1.9782116239874448,
+            "focus": "-129.18052116082907,-273.7173144595753,206.83503761944928",
+            "pitch": 68,
+            "yaw": 13.2
+          },
+          "pinched": 2,
+          "afterLift": {
+            "scale": 3.9564232479748895,
+            "focus": "-129.18052116082907,-273.7173144595753,206.83503761944928",
+            "pitch": 77.9,
+            "yaw": 8.8
+          },
+          "wheelZoom": 1.1972173631218102,
+          "controls": {
+            "x": 368,
+            "y": 572,
+            "width": 44,
+            "height": 44
+          },
+          "entryHeight": 160,
+          "reviewHeight": 310,
+          "preservedPendingFeet": 12,
+          "ledgerUnchanged": true
+        },
+        {
+          "width": 320,
+          "height": 568,
+          "initial": {
+            "scale": 0.8972474303643121,
+            "focus": "-131.1850626770123,-274.86853939316,206.23353731629967",
+            "pitch": 90,
+            "yaw": 0
+          },
+          "dragged": {
+            "scale": 0.8972474303643121,
+            "focus": "-131.1850626770123,-274.86853939316,206.23353731629967",
+            "pitch": 68.0000016784668,
+            "yaw": 13.2
+          },
+          "pinched": 2,
+          "afterLift": {
+            "scale": 1.7944948607286242,
+            "focus": "-131.1850626770123,-274.86853939316,206.23353731629967",
+            "pitch": 77.9,
+            "yaw": 8.8
+          },
+          "wheelZoom": 1.1972173631218102,
+          "controls": {
+            "x": 258,
+            "y": 208,
+            "width": 44,
+            "height": 44
+          },
+          "entryHeight": 160,
+          "reviewHeight": 310,
+          "preservedPendingFeet": 12,
+          "ledgerUnchanged": true
+        }
+      ],
+      "errors": [],
+      "nativeDevice": false
+    },
+    "golf-geometry-qa-motion": {
+      "errors": [],
+      "presets": [
+        {
+          "preset": "Terrain",
+          "pitch": 50
+        },
+        {
+          "preset": "Side",
+          "pitch": 20
+        },
+        {
+          "preset": "Top",
+          "pitch": 90
+        }
+      ],
+      "frameIntervals": [
+        -6.299999997764644,
+        18,
+        10,
+        10.5,
+        10.399999999999636,
+        10.100000000000364,
+        11,
+        10,
+        8.800000000000182,
+        11.199999999999818,
+        8.699999999999818,
+        11.199999999999818,
+        10.100000000000364,
+        9.899999999999636,
+        10,
+        10,
+        8.100000000000364,
+        12,
+        9.599999999999454,
+        10.300000000000182,
+        9.600000000000364,
+        8.399999999999636,
+        12,
+        10.100000000000364,
+        7.899999999999636,
+        12.100000000000364,
+        9.899999999999636,
+        10,
+        10.100000000000364,
+        9.199999999999818,
+        10.699999999999818,
+        10.100000000000364,
+        10,
+        10,
+        10,
+        8,
+        12,
+        10,
+        9.899999999999636,
+        8.100000000000364,
+        10.599999999999454,
+        9.800000000000182,
+        11.5,
+        10,
+        10,
+        10.100000000000364,
+        8,
+        11.899999999999636,
+        10,
+        9.199999999999818,
+        10.800000000000182,
+        10,
+        8.100000000000364,
+        10,
+        9.899999999999636,
+        12,
+        10,
+        9.100000000000364,
+        10.899999999999636,
+        8,
+        10,
+        12,
+        10.100000000000364,
+        10,
+        9,
+        10.899999999999636,
+        10,
+        10.100000000000364,
+        8,
+        11.199999999999818,
+        10.699999999999818,
+        8.100000000000364,
+        9.899999999999636,
+        12,
+        8,
+        10.100000000000364,
+        9.899999999999636,
+        10,
+        10.600000000000364,
+        9.399999999999636,
+        12,
+        10,
+        10,
+        10.100000000000364,
+        9.199999999999818,
+        10.699999999999818,
+        10,
+        10.100000000000364,
+        7.899999999999636,
+        12.100000000000364,
+        10,
+        10,
+        10,
+        10,
+        8,
+        11.899999999999636,
+        9.600000000000364,
+        10.5,
+        9.899999999999636,
+        10.100000000000364,
+        10,
+        10,
+        9.899999999999636,
+        10,
+        9.199999999999818,
+        10.900000000000546,
+        9.899999999999636,
+        10.100000000000364,
+        9.899999999999636,
+        8.100000000000364,
+        11.899999999999636,
+        10,
+        10.100000000000364,
+        9.899999999999636,
+        10.100000000000364,
+        9.699999999999818,
+        10.300000000000182,
+        9.899999999999636,
+        10,
+        10.100000000000364,
+        10,
+        9.899999999999636,
+        9.400000000000546,
+        10.599999999999454,
+        10.100000000000364,
+        10,
+        10,
+        10,
+        10,
+        8.599999999999454,
+        9.300000000000182,
+        10.100000000000364,
+        10.300000000000182,
+        9.599999999999454,
+        10.100000000000364,
+        11.899999999999636,
+        10,
+        10.100000000000364,
+        10,
+        9.899999999999636,
+        8.100000000000364,
+        12,
+        10,
+        10,
+        9.899999999999636,
+        10.100000000000364,
+        9.899999999999636,
+        9.900000000000546,
+        10.099999999999454,
+        10,
+        10.100000000000364,
+        7.899999999999636,
+        12,
+        10,
+        10,
+        8,
+        12,
+        8.400000000000546,
+        11.599999999999454,
+        10,
+        10,
+        8.699999999999818,
+        11.400000000000546,
+        9.899999999999636
+      ],
+      "gestureInterruptsTransition": true,
+      "blurCancelsGesture": true,
+      "browser": "152.0.7977.83",
+      "environment": "Desktop Chromium on Mac mini M4; RAF intervals during scripted drag, not GPU timing or phone SLO",
+      "reducedMotionImmediate": true,
+      "video": "camera-motion.webm"
+    },
+    "golf-geometry-qa-terrain": {
+      "screens": [
+        {
+          "width": 375,
+          "height": 812,
+          "preset": "Top",
+          "drawing": {
+            "x": 1,
+            "y": 1,
+            "width": 373,
+            "height": 612
+          },
+          "triangles": 7796
+        },
+        {
+          "width": 375,
+          "height": 812,
+          "preset": "Terrain",
+          "drawing": {
+            "x": 1,
+            "y": 1,
+            "width": 373,
+            "height": 612
+          },
+          "triangles": 7796
+        },
+        {
+          "width": 375,
+          "height": 812,
+          "preset": "Side",
+          "drawing": {
+            "x": 1,
+            "y": 1,
+            "width": 373,
+            "height": 612
+          },
+          "triangles": 7796
+        },
+        {
+          "width": 390,
+          "height": 844,
+          "preset": "Top",
+          "drawing": {
+            "x": 1,
+            "y": 1,
+            "width": 388,
+            "height": 644
+          },
+          "triangles": 7796
+        },
+        {
+          "width": 390,
+          "height": 844,
+          "preset": "Terrain",
+          "drawing": {
+            "x": 1,
+            "y": 1,
+            "width": 388,
+            "height": 644
+          },
+          "triangles": 7796
+        },
+        {
+          "width": 390,
+          "height": 844,
+          "preset": "Side",
+          "drawing": {
+            "x": 1,
+            "y": 1,
+            "width": 388,
+            "height": 644
+          },
+          "triangles": 7796
+        },
+        {
+          "width": 430,
+          "height": 932,
+          "preset": "Top",
+          "drawing": {
+            "x": 1,
+            "y": 1,
+            "width": 428,
+            "height": 732
+          },
+          "triangles": 7796
+        },
+        {
+          "width": 430,
+          "height": 932,
+          "preset": "Terrain",
+          "drawing": {
+            "x": 1,
+            "y": 1,
+            "width": 428,
+            "height": 732
+          },
+          "triangles": 7796
+        },
+        {
+          "width": 430,
+          "height": 932,
+          "preset": "Side",
+          "drawing": {
+            "x": 1,
+            "y": 1,
+            "width": 428,
+            "height": 732
+          },
+          "triangles": 7796
+        },
+        {
+          "width": 320,
+          "height": 568,
+          "preset": "Top",
+          "drawing": {
+            "x": 1,
+            "y": 1,
+            "width": 318,
+            "height": 368
+          },
+          "triangles": 7796
+        },
+        {
+          "width": 320,
+          "height": 568,
+          "preset": "Terrain",
+          "drawing": {
+            "x": 1,
+            "y": 1,
+            "width": 318,
+            "height": 368
+          },
+          "triangles": 7796
+        },
+        {
+          "width": 320,
+          "height": 568,
+          "preset": "Side",
+          "drawing": {
+            "x": 1,
+            "y": 1,
+            "width": 318,
+            "height": 368
+          },
+          "triangles": 7796
+        }
+      ],
+      "checks": {
+        "entry-375": {
+          "presets": true,
+          "drag": true,
+          "height": true,
+          "ledgerUnchanged": true,
+          "unsavedInputPreserved": true,
+          "inlineUnchanged": true
+        },
+        "fallbackAndPutting": true,
+        "entry-390": {
+          "presets": true,
+          "drag": true,
+          "height": true,
+          "ledgerUnchanged": true,
+          "unsavedInputPreserved": true,
+          "inlineUnchanged": true
+        },
+        "gpuLossFallback": true,
+        "shortFocusedViewport": {
+          "input": {
+            "x": 36,
+            "y": 282.75,
+            "width": 318,
+            "height": 64
+          },
+          "nativeKeyboardVerified": false
+        },
+        "entry-430": {
+          "presets": true,
+          "drag": true,
+          "height": true,
+          "ledgerUnchanged": true,
+          "unsavedInputPreserved": true,
+          "inlineUnchanged": true
+        },
+        "entry-320": {
+          "presets": true,
+          "drag": true,
+          "height": true,
+          "ledgerUnchanged": true,
+          "unsavedInputPreserved": true,
+          "inlineUnchanged": true
+        }
+      },
+      "errors": [],
+      "animation": {}
+    },
+    "golf-three-qa": {
+      "renderer": "three-webgl2",
+      "nativeDevice": false,
+      "screens": [
+        {
+          "width": 390,
+          "height": 844,
+          "view": "terrain-hole",
+          "drawing": {
+            "x": 1,
+            "y": 1,
+            "width": 388,
+            "height": 699
+          },
+          "inspector": {
+            "x": 1,
+            "y": 700,
+            "width": 388,
+            "height": 143
+          },
+          "metadata": {
+            "terrainHash": "9f0615b6945ac6274a6ddbc46a1a19ef0c0b4b02dea4186173211560d1915f0f",
+            "engine": "three.js r186",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "50",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1.5",
+            "terrainScale": "1.464194797962356",
+            "terrainFocus": "198.8137725804124,564.5117412435483,268.76166522974427",
+            "terrainTriangles": "7796",
+            "terrainTrees": "74",
+            "renderCount": "3",
+            "drawCalls": "6",
+            "renderTriangles": "31180"
+          }
+        },
+        {
+          "width": 320,
+          "height": 568,
+          "view": "terrain-hole",
+          "drawing": {
+            "x": 1,
+            "y": 1,
+            "width": 318,
+            "height": 413
+          },
+          "inspector": {
+            "x": 1,
+            "y": 414,
+            "width": 318,
+            "height": 153
+          },
+          "metadata": {
+            "terrainHash": "9f0615b6945ac6274a6ddbc46a1a19ef0c0b4b02dea4186173211560d1915f0f",
+            "engine": "three.js r186",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "50",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1.5",
+            "terrainScale": "0.7904949034351006",
+            "terrainFocus": "208.53264797813395,565.9967355452242,268.13812081107807",
+            "terrainTriangles": "7796",
+            "terrainTrees": "74",
+            "renderCount": "3",
+            "drawCalls": "6",
+            "renderTriangles": "31180"
+          }
+        },
+        {
+          "width": 1440,
+          "height": 1000,
+          "view": "terrain-hole",
+          "drawing": {
+            "x": 121,
+            "y": 61,
+            "width": 878,
+            "height": 878
+          },
+          "inspector": {
+            "x": 999,
+            "y": 61,
+            "width": 320,
+            "height": 878
+          },
+          "metadata": {
+            "terrainHash": "9f0615b6945ac6274a6ddbc46a1a19ef0c0b4b02dea4186173211560d1915f0f",
+            "engine": "three.js r186",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "50",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1.5",
+            "terrainScale": "2.361911315930521",
+            "terrainFocus": "208.64637633726866,565.9734050870032,268.12983169485926",
+            "terrainTriangles": "7796",
+            "terrainTrees": "74",
+            "renderCount": "3",
+            "drawCalls": "6",
+            "renderTriangles": "31180"
+          }
+        }
+      ],
+      "checks": [
+        {
+          "width": 390,
+          "idleRendersStopped": true,
+          "areaPreservesOrientation": true,
+          "nonmodalInspector": true,
+          "originalFeet": true,
+          "areaPreservesShot": true,
+          "puttingEvidenceMatches": true,
+          "puttingSchematic": true
+        },
+        {
+          "width": 320,
+          "idleRendersStopped": true,
+          "areaPreservesOrientation": true,
+          "nonmodalInspector": true,
+          "originalFeet": true,
+          "areaPreservesShot": true,
+          "puttingEvidenceMatches": true,
+          "puttingSchematic": true
+        },
+        {
+          "width": 1440,
+          "idleRendersStopped": true,
+          "areaPreservesOrientation": true,
+          "nonmodalInspector": true,
+          "originalFeet": true,
+          "areaPreservesShot": true,
+          "puttingEvidenceMatches": true,
+          "puttingSchematic": true
+        }
+      ],
+      "errors": [],
+      "warnings": [
+        "You have Reduced Motion enabled on your device. Animations may not appear as expected.. For more information and steps for solving, visit https://motion.dev/troubleshooting/reduced-motion-disabled",
+        "You have Reduced Motion enabled on your device. Animations may not appear as expected.. For more information and steps for solving, visit https://motion.dev/troubleshooting/reduced-motion-disabled",
+        "You have Reduced Motion enabled on your device. Animations may not appear as expected.. For more information and steps for solving, visit https://motion.dev/troubleshooting/reduced-motion-disabled"
+      ]
+    }
+  },
+  "desktopRecordedDrag": {
+    "frames": 163,
+    "medianMs": 10,
+    "p95Ms": 12,
+    "p99Ms": 12.100000000000364,
+    "maxMs": 18,
+    "interpretation": "RAF intervals with browser automation and video recording. Not GPU completion timing, sustained device benchmark, native WebView cadence, or phone FPS guarantee."
+  },
+  "renderResources": {
+    "terrainTriangles": 7796,
+    "illustrativeTrees": 74,
+    "mainPassDrawCalls": 6,
+    "mainPassTriangles": 31180,
+    "shadowMapPixels": [
+      2048,
+      2048
+    ],
+    "maxPixelRatio": 2,
+    "gpuMemoryMiB": null
+  },
+  "unverified": [
+    "Physical iOS/Android hardware and outdoor brightness",
+    "Native cold-start offline recovery",
+    "GPU memory and sustained thermal behavior",
+    "Production accepted source geometry and registration",
+    "Actual daily pin and geographic player shot observations"
+  ],
+  "export": "SVG has vector-designed shading and the same source/camera/evidence; exact GPU-shadow plus DOM-label PNG export is not implemented"
+}

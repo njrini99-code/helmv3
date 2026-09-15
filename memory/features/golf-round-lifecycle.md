@@ -610,3 +610,96 @@ The completed-round Submit banner lives inside this same measured scorecard
 chrome so it remains reachable while scrolling. A ResizeObserver updates the
 published offset when the banner or save status changes height. The route
 loading placeholder reserves the same inset, context, and editor order.
+
+## Course geometry fixture proof (2026-09-12)
+
+Stages 0–2 of `docs/plans/2026-09-12-golfhelm-course-geometry.md` add an
+optional, local-only shared SVG scene under `src/lib/golf/course-geometry/`
+and `src/components/golf/course-geometry/`. The Cacapon fixture is a partial
+source-reviewed draft, with no production binding. Both review and entry
+compositions consume the same physical package and evidence representation.
+The harness reuses `FairwayShotEntry`; existing production consumers and
+all score, save, edit, undo, statistics and putting behavior remain unchanged.
+
+Explicit before/after unit tags are preserved independently. The adapter
+retains all eight approach directions, original Other results and penalty
+transition state. Legacy `shotDistance` is derived evidence only. Ordinary
+events have unresolved endpoints. A separately marked analytic presentation
+fixture supplies test coordinates to demonstrate marker containment and
+label placement; it is not a reconstruction algorithm or a player location.
+Source acceptance and Stage 3–5 storage, access, wiring and reconstruction
+gates remain in the existing plan.
+
+## Local course-geometry UI proof (September 12, 2026)
+
+The shared course SVG now has optional integration seams in the actual
+Fairway tracking and Round Review components. Course data is read-only display
+context; scene construction catches geometry failures without joining save or
+checkpoint success. The local browser harness mounts the real dashboard shell
+and components with inert external adapters and fixture ledgers. It cannot
+access production data. Geometry binding, publication and historical version
+resolution remain unimplemented; no migration or lifecycle writer changes
+are included. See the existing course-geometry plan, Sections 18–19, for source
+provenance, real-component screenshots and device-verification limitations.
+
+### Shared terrain renderer feasibility (September 13, 2026)
+
+Both optional geometry props now accept the same `terrainByHole` sidecar.
+`buildHoleScene` attaches it only when the physical-hole key and package hash
+match. `CourseHoleScene` uses its existing SVG backend inline and a WebGL
+backend in expanded terrain views; shared metric projection/material functions
+also produce static SVG exports. The runtime remains Next.js/Capacitor.
+Source ingestion, Python triangulation and source fixtures stay outside player
+routes. This is a one-hole source candidate, with no production resolver,
+publication, account/location collection or lifecycle writer change.
+
+### Four-course local source trial (September 13, 2026)
+
+The fixture harness now includes Winchester alongside Cacapon; both reuse the
+same entry/review scene and optional terrain sidecar. Bryan Park and The Cardinal
+are explicitly unassigned green studies in the internal source-review harness.
+A nullable route is accepted only for a labelled, partial `source_candidate`
+with a green; it cannot be relabelled as a reviewed package. These studies have
+no played-hole binding, tee or daily pin claim and expose no Whole hole control.
+They do not participate in saves or statistics. The existing geometry plan
+Section 21 records the non-demo cohort, imagery provenance and remaining gaps.
+
+### Manual evidence and camera refinement (September 13, 2026)
+
+The local shared scene uses `manual-bounds-v1`: one bounded unknown-target
+sequence, all eight directions and original independent unit tags. Partial
+reviewed sources can show possible regions, while source candidates remain
+context only. A complete reviewed fixture can show an estimated point and a
+validated coherent connection. Neither is a measured shot path; derived
+`shotDistance` remains excluded as independent evidence. Overlapping mapped
+hazards constrain the full region cell, not just its centre. Penalty transitions,
+undo/edit/delete, saves, scores and statistics retain existing behavior.
+
+The expanded camera has a fixed world focus/lens through orbit, midpoint-anchored
+pinch, 0.5–4× explicit zoom and button alternatives. Trees, shadows, surfaces and
+shot anchors use the same projection. Inline geometry remains scroll-friendly
+and typing never rebuilds the camera or records a pending map marker. Review
+selection brings one selected detail into view; hover does not scroll the page.
+See the existing geometry plan Section 22 for verification and source limits.
+
+### Premium landscape adapter (September 13, 2026)
+
+The expanded course view loads a Three.js backend behind the existing shared
+scene; inline maps and exports retain the SVG adapter. A normal-flow nonmodal
+inspector reserves actual camera space on phone/desktop. Mutable camera frames
+and projected annotations share one imperative update. Canonical course meters,
+manual evidence, scorecard/units, penalties and local save identities do not
+change. An Estimated pin is a retained manual hypothesis or nominal interior
+green reference, never a measured daily pin or new solver evidence. The revised
+putting diagram replaces cup-reference jargon with an illustrated ball-to-hole
+line using the same feet scale as its remaining-distance ring. See Sections
+22.5 and 23 of the existing geometry plan for source and release boundaries.
+
+### Planned green observations
+
+The actual-green redesign plan (Section 25 of the existing course-geometry plan)
+requires a durable client shot key plus origin/finish role before adding stored
+ball observations. Current snapshot saves can replace database shot rows, so
+row IDs or shot numbers alone must not own future observations. Pin changes must
+share one round/hole revision and invalidate only derived hypotheses. This is a
+planning requirement; current renderer work adds no persistence or RLS changes.

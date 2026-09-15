@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import { act, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { RoundHole } from '@/lib/types/golf';
 import { FairwayScorecardHeader } from './FairwayScorecardHeader';
@@ -129,6 +130,16 @@ describe('FairwayScorecardHeader layout contract', () => {
     expect(header.contains(status)).toBe(true);
     expect(status.parentElement).toBe(header);
     expect(document.documentElement.style.getPropertyValue('--scorecard-height')).toBe('144px');
+  });
+
+  it('keeps putting chrome compact while retaining the scorecard on demand', async () => {
+    const user = userEvent.setup();
+    render(<FairwayScorecardHeader {...baseProps} puttingMode />);
+    const header = screen.getByTestId('round-scorecard-header');
+    expect(header.querySelector('[data-putting-round-chrome="compact"]')).not.toBeNull();
+    expect(header.querySelector('#fw-putting-scorecard')).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Scorecard' }));
+    expect(header.querySelector('#fw-putting-scorecard')).not.toBeNull();
   });
 
   it('remeasures the sticky offset when ResizeObserver reports a height change', () => {
