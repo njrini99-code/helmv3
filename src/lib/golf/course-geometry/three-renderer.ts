@@ -118,6 +118,7 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
   function replaceFlightPaths(scene: HoleScene, camera: TerrainCamera) {
     flightPaths?.dispose();
     flightPaths = buildThreeFlightPaths(scene, mesh, camera, currentSelected);
+    flightPaths.setResolution(width, height);
     world.add(flightPaths.group);
   }
 
@@ -130,6 +131,7 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
       if (width !== previousWidth || height !== previousHeight || ratio !== previousRatio) {
         renderer.setPixelRatio(ratio); renderer.setSize(width, height, false);
         previousWidth = width; previousHeight = height; previousRatio = ratio;
+        flightPaths?.setResolution(width, height);
       }
       if (previousExaggeration !== camera.exaggeration || previousReference !== camera.referenceElevationM) {
         landscape.setExaggeration(camera.exaggeration, camera.referenceElevationM);

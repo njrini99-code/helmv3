@@ -1,8 +1,11 @@
 import {
-  BufferGeometry, CatmullRomCurve3, Color, Float32BufferAttribute, Group, Line, LineDashedMaterial, Material,
+  BufferGeometry, CatmullRomCurve3, Group, Line, LineDashedMaterial, Material,
   Mesh, MeshBasicMaterial, MeshStandardMaterial, SphereGeometry, TorusGeometry,
   TubeGeometry, Vector3,
 } from 'three';
+import { Line2 } from 'three/examples/jsm/lines/Line2.js';
+import { LineGeometry } from 'three/examples/jsm/lines/LineGeometry.js';
+import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js';
 import { terrainHeight, type TerrainCamera, type TerrainMesh } from './terrain';
 import type { HoleScene, PointM } from './types';
 
@@ -12,6 +15,9 @@ export interface ThreeFlightPaths {
   count: number;
   /** Count of display-only ground rolls/ball estimates, never measured putts. */
   puttingCount: number;
+  /** CSS-pixel line widths need the live terrain viewport to stay thin across
+   * the embedded/expanded handoff and resize. */
+  setResolution(width: number, height: number): void;
   dispose(): void;
 }
 
@@ -20,27 +26,6 @@ const markerGroundOffsetM = .16;
 
 function displayMarkerScale(camera: Pick<TerrainCamera, 'scale'>, cssRadius: number): number {
   return Math.max(.45, Math.min(4, cssRadius / Math.max(.1, camera.scale)));
-}
-
-function paintFlightGradient(geometry: TubeGeometry, active: boolean): void {
-  const colors = new Float32Array(geometry.getAttribute('position').count * 3);
-  const uv = geometry.getAttribute('uv');
-  // Selected flights use a clean white core. Its dark backing layer supplies
-  // contrast against fairway, rough, bunkers, and pale sky without making the
-  // path read as a reflective silver tube.
-  const launch = new Color(active ? '#FFFDF7' : '#76906D');
-  const apex = new Color(active ? '#FFFDF7' : '#AAB49D');
-  const finish = new Color(active ? '#FFFDF7' : '#76906D');
-  const color = new Color();
-  for (let index = 0; index < colors.length / 3; index++) {
-    const t = uv.getX(index);
-    if (t < .5) color.copy(launch).lerp(apex, t * 2);
-    else color.copy(apex).lerp(finish, (t - .5) * 2);
-    colors[index * 3] = color.r;
-    colors[index * 3 + 1] = color.g;
-    colors[index * 3 + 2] = color.b;
-  }
-  geometry.setAttribute('color', new Float32BufferAttribute(colors, 3));
 }
 
 function horizontalLength(points: readonly PointM[]): number {
@@ -54,22 +39,22 @@ function displayGroundZ(mesh: TerrainMesh, point: PointM, camera: Pick<TerrainCa
 }
 
 /**
- * Builds a display-only ball-flight arc for the isolated interactive fixture.
- * Its horizontal points are the existing result-derived preview points. The
- * vertical arc makes that estimate intelligible in Terrain/Side while keeping
- * all true terrain, shot locations and distances untouched. It intentionally
- * lives outside the SVG annotation layer so it can be depth-tested as 3D.
+ * Builds display-only ball-flight arcs from the renderer's accepted display
+ * anchors. Their vertical arc makes an estimate intelligible in Terrain/Side
+ * while keeping true terrain, shot locations, and distances untouched. They
+ * intentionally live outside the SVG annotation layer so they depth-test as 3D.
  */
 export function buildThreeFlightPaths(scene: HoleScene, mesh: TerrainMesh,
   camera: Pick<TerrainCamera, 'exaggeration' | 'referenceElevationM' | 'scale'>, selectedShotNumber?: number): ThreeFlightPaths {
   const group = new Group();
   group.name = 'illustrative-shot-flight-paths';
   const geometries: BufferGeometry[] = [], materials: Material[] = [];
+  const lineMaterials: LineMaterial[] = [];
   let count = 0, puttingCount = 0;
   const activeShotNumber = selectedShotNumber ?? [...(scene.illustrativePreviewTrajectories ?? []), ...(scene.illustrativePuttingTracks ?? [])]
     .reduce<number | undefined>((latest, item) => latest == null || item.shotNumber > latest ? item.shotNumber : latest, undefined);
   for (const trajectory of scene.illustrativePreviewTrajectories ?? []) {
-    if (trajectory.source !== 'interactive_preview_fixture' || trajectory.pointsM.length < 2) continue;
+    if (trajectory.pointsM.length < 2) continue;
     const ground = trajectory.pointsM.map(point => displayGroundZ(mesh, point, camera));
     if (ground.some(height => height == null)) continue;
     const length = horizontalLength(trajectory.pointsM);
@@ -84,27 +69,32 @@ export function buildThreeFlightPaths(scene: HoleScene, mesh: TerrainMesh,
     });
     const curve = new CatmullRomCurve3(displayPoints, false, 'centripetal');
     const active = trajectory.shotNumber === activeShotNumber;
-    // TubeGeometry width is in world meters. Derive it from the opening
-    // orthographic scale so the selected trace reads as a restrained 2–3px
-    // stroke in the expanded phone view, not a heavy world-space pipe.
-    const radiusM = Math.max(.24, Math.min(1.3, .72 / camera.scale)) * (active ? 1 : .7);
-    const geometry = new TubeGeometry(curve, 48, radiusM, 6, false);
-    paintFlightGradient(geometry, active);
-    // The flight is a display-only estimate. Use an unlit color trail instead
-    // of a lit metal-like tube, so it remains fresh and legible as the camera
-    // moves through the landscape rather than turning silver in shadow.
-    const material = new MeshBasicMaterial({ vertexColors: true, transparent: !active,
-      opacity: active ? 1 : .48, depthWrite: active, toneMapped: false });
-    const arc = new Mesh(geometry, material);
-    arc.name = `illustrative-shot-flight-${trajectory.shotNumber}`;
-    arc.castShadow = false;
-    arc.receiveShadow = false;
-    arc.renderOrder = 2;
-    arc.userData = {
-      trajectorySource: 'interactive_preview_fixture', shotNumber: trajectory.shotNumber,
-      visualApexM: apexM, visualRadiusM: radiusM, displayPointsM: displayPoints.map(point => [point.x, point.y, point.z]),
+    const linePositions = curve.getPoints(48).flatMap(point => [point.x, point.y, point.z]);
+    const addFlightLine = (name: string, color: string, widthPx: number, opacity: number, order: number) => {
+      const geometry = new LineGeometry();
+      geometry.setPositions(linePositions);
+      const material = new LineMaterial({ color, linewidth: widthPx, worldUnits: false, transparent: opacity < 1,
+        opacity, depthTest: true, depthWrite: false, toneMapped: false });
+      // The runtime replaces this 1×1 bootstrap with its measured CSS viewport
+      // before presenting the canvas; keeping this explicit prevents silver,
+      // world-meter tubes as the camera zoom changes.
+      material.resolution.set(1, 1);
+      const line = new Line2(geometry, material);
+      line.name = name; line.castShadow = false; line.receiveShadow = false; line.renderOrder = order;
+      group.add(line); geometries.push(geometry); materials.push(material); lineMaterials.push(material);
+      return line;
     };
-    group.add(arc); geometries.push(geometry); materials.push(material); count++;
+    // Selected flight: a sharp white core plus a restrained dark support.
+    // Completed history is intentionally thin and does not receive a halo.
+    if (active) addFlightLine(`illustrative-shot-flight-halo-${trajectory.shotNumber}`, '#183425', 3.4, .24, 2);
+    const visualLineWidthPx = active ? 2.5 : 1.15;
+    const arc = addFlightLine(`illustrative-shot-flight-${trajectory.shotNumber}`, active ? '#FFFFFF' : '#D7E1D2',
+      visualLineWidthPx, active ? 1 : .52, 3);
+    arc.userData = {
+      trajectorySource: trajectory.source, estimated: trajectory.source === 'reconstruction_display_estimate', shotNumber: trajectory.shotNumber,
+      visualApexM: apexM, visualLineWidthPx, displayPointsM: displayPoints.map(point => [point.x, point.y, point.z]),
+    };
+    count++;
 
     const groundPoints = trajectory.pointsM.map((point, index) => new Vector3(point[0], point[1], ground[index]! + markerGroundOffsetM));
     if (active) {
@@ -118,7 +108,7 @@ export function buildThreeFlightPaths(scene: HoleScene, mesh: TerrainMesh,
       projection.name = `illustrative-shot-footprint-${trajectory.shotNumber}`;
       projection.computeLineDistances();
       projection.renderOrder = 1;
-      projection.userData = { trajectorySource: 'interactive_preview_fixture', shotNumber: trajectory.shotNumber,
+      projection.userData = { trajectorySource: trajectory.source, estimated: trajectory.source === 'reconstruction_display_estimate', shotNumber: trajectory.shotNumber,
         kind: 'selected_ground_footprint', groundOffsetM: markerGroundOffsetM };
       group.add(projection); geometries.push(projectionGeometry); materials.push(projectionMaterial);
     }
@@ -132,7 +122,7 @@ export function buildThreeFlightPaths(scene: HoleScene, mesh: TerrainMesh,
     origin.position.copy(groundPoints[0]!);
     origin.position.z += originRadius * .82;
     origin.renderOrder = 3;
-    origin.userData = { trajectorySource: 'interactive_preview_fixture', shotNumber: trajectory.shotNumber, kind: 'origin_marker' };
+    origin.userData = { trajectorySource: trajectory.source, estimated: trajectory.source === 'reconstruction_display_estimate', shotNumber: trajectory.shotNumber, kind: 'origin_marker' };
     group.add(origin); geometries.push(originGeometry); materials.push(originMaterial);
 
     // A hollow stop marker makes the inferred finish legible without turning
@@ -145,7 +135,7 @@ export function buildThreeFlightPaths(scene: HoleScene, mesh: TerrainMesh,
     finish.name = `illustrative-shot-finish-${trajectory.shotNumber}`;
     finish.position.copy(groundPoints.at(-1)!);
     finish.renderOrder = 3;
-    finish.userData = { trajectorySource: 'interactive_preview_fixture', shotNumber: trajectory.shotNumber,
+    finish.userData = { trajectorySource: trajectory.source, estimated: trajectory.source === 'reconstruction_display_estimate', shotNumber: trajectory.shotNumber,
       kind: 'estimated_finish_marker', groundOffsetM: markerGroundOffsetM };
     group.add(finish); geometries.push(finishGeometry); materials.push(finishMaterial);
   }
@@ -200,8 +190,10 @@ export function buildThreeFlightPaths(scene: HoleScene, mesh: TerrainMesh,
     } else addBall(points[0]!, `illustrative-putting-ball-${track.shotNumber}`, 'estimated_current_ball');
     puttingCount++;
   }
-  group.userData = { trajectorySource: 'interactive_preview_fixture', count, puttingCount };
-  return { group, count, puttingCount, dispose() {
+  group.userData = { kind: 'display_trajectory_group', count, puttingCount };
+  return { group, count, puttingCount, setResolution(width, height) {
+    for (const material of lineMaterials) material.resolution.set(Math.max(1, width), Math.max(1, height));
+  }, dispose() {
     group.removeFromParent(); group.clear();
     for (const geometry of geometries) geometry.dispose();
     for (const material of materials) material.dispose();

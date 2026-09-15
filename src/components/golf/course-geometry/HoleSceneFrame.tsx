@@ -17,6 +17,7 @@ import { TERRAIN_PRESETS, projectTerrainPoint, terrainHeight, type TerrainFitPro
 import { fitTerrainViewportCamera } from '@/lib/golf/course-geometry/terrain-viewport';
 import type { TerrainRuntimeController } from '@/lib/golf/course-geometry/runtime-controller';
 import { selectedShotFocus } from '@/lib/golf/course-geometry/selected-shot-focus';
+import { interpolateCameraMotion } from '@/lib/golf/course-geometry/camera-motion';
 
 interface CameraMemory { pose: TerrainPose; fitPreset: TerrainFitProfile }
 
@@ -159,6 +160,23 @@ function Drawing({ scene, view, context, events, selectedShotNumber, activeDraft
       if (commit) commitCamera();
     } else commitCamera();
   }
+  function animateCamera(target: typeof live.current) {
+    cancelAnimationFrame(pendingFrame.current);
+    nextState.current = null;
+    const start = live.current;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      update(target, true);
+      return;
+    }
+    const began = performance.now();
+    const tick = (now: number) => {
+      const progress = Math.max(0, Math.min(1, (now - began) / 320));
+      update(interpolateCameraMotion(start, target, progress));
+      if (progress < 1) pendingFrame.current = requestAnimationFrame(tick);
+      else commitCamera();
+    };
+    pendingFrame.current = requestAnimationFrame(tick);
+  }
   const gesture = useRef({ x: 0, y: 0, distance: 0, zoom: 1, pan: { x: 0, y: 0 }, pose, fitPreset, origin: { x: size.width / 2, y: size.height / 2 } });
   // The tracker stays on its compact, familiar SVG course card. Expanding is
   // the explicit opt-in to the live Three.js terrain and elevated flight arc.
@@ -210,7 +228,7 @@ function Drawing({ scene, view, context, events, selectedShotNumber, activeDraft
       const targetX = (left + size.width - right) / 2;
       const targetY = (top + size.height - bottom) / 2;
       autoFocusKey.current = key;
-      update({ ...current, zoom: focus.zoom, pan: boundedPan(targetX - point[0], targetY - point[1]) }, true);
+      animateCamera({ ...current, zoom: focus.zoom, pan: boundedPan(targetX - point[0], targetY - point[1]) });
     } catch {
       // Missing terrain coverage retains the existing hole fit. A camera move
       // must never replace a spatial estimate with a flat or guessed height.

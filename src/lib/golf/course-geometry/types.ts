@@ -124,7 +124,11 @@ export interface IllustrativePreviewTrajectory {
   key: string;
   shotNumber: number;
   pointsM: readonly PointM[];
-  source: 'interactive_preview_fixture';
+  /** `route_reference` uses the course route's start only as a display
+   * origin for the first tee stroke. `compatible_estimate` joins two
+   * reviewed, evidence-compatible representatives. */
+  anchorBasis?: 'route_reference' | 'compatible_estimate';
+  source: 'interactive_preview_fixture' | 'reconstruction_display_estimate';
 }
 /** A display-only putting position or surface roll for the isolated fixture.
  * These points are calculated from a recorded distance-to-pin against the

@@ -1,5 +1,5 @@
-import { Line, Mesh, MeshBasicMaterial } from 'three';
-import { addInteractivePreviewTrajectories, pilotPackage, pilotShots } from '@/test/fixtures/course-geometry/pilot';
+import { Line, Mesh } from 'three';
+import { addInteractivePreviewTrajectories, illustrativeScene, pilotPackage, pilotShots } from '@/test/fixtures/course-geometry/pilot';
 import source from '@/test/fixtures/course-geometry/cacapon-07-terrain.json';
 import { buildHoleScene } from '../build-scene';
 import { buildThreeFlightPaths } from '../three-flight-path';
@@ -25,7 +25,9 @@ describe('Three illustrative flight paths', () => {
       expect(end[2]).toBeCloseTo(mesh.referenceElevationM + (endGround - mesh.referenceElevationM) * 1.5, 6);
       expect(points[Math.floor(points.length / 2)]![2]).toBeGreaterThan(points[0]![2] + 10);
       expect(arc.userData.visualApexM).toBeGreaterThanOrEqual(14);
-      expect(arc.userData.visualRadiusM).toBeCloseTo(1.3, 6);
+      expect(arc.type).toBe('Line2');
+      expect(arc.userData.visualLineWidthPx).toBe(2.5);
+      expect(flightPaths.group.getObjectByName('illustrative-shot-flight-halo-1')).toBeDefined();
       const footprint = flightPaths.group.getObjectByName('illustrative-shot-footprint-1') as Line;
       const origin = flightPaths.group.getObjectByName('illustrative-shot-origin-1') as Mesh;
       const finish = flightPaths.group.getObjectByName('illustrative-shot-finish-1') as Mesh;
@@ -48,9 +50,13 @@ describe('Three illustrative flight paths', () => {
       expect(inactive).toBeDefined();
       if (!active || !inactive) throw new Error('Expected two flight arcs');
       expect(active.material).not.toBe(inactive.material);
-      expect((active.material as MeshBasicMaterial).vertexColors).toBe(true);
-      expect((inactive.material as MeshBasicMaterial).opacity).toBeCloseTo(.48, 6);
-      expect(active.geometry.getAttribute('color')).toBeDefined();
+      expect(active.type).toBe('Line2');
+      expect(active.userData.visualLineWidthPx).toBe(2.5);
+      expect(inactive.userData.visualLineWidthPx).toBe(1.15);
+      expect((active.material as unknown as { color: { getHexString(): string } }).color.getHexString()).toBe('ffffff');
+      expect((inactive.material as unknown as { color: { getHexString(): string } }).color.getHexString()).toBe('d7e1d2');
+      expect(flightPaths.group.getObjectByName('illustrative-shot-flight-halo-1')).toBeDefined();
+      expect(flightPaths.group.getObjectByName('illustrative-shot-flight-halo-2')).toBeUndefined();
       expect(flightPaths.group.getObjectByName('illustrative-shot-footprint-1')).toBeDefined();
       expect(flightPaths.group.getObjectByName('illustrative-shot-footprint-2')).toBeUndefined();
       expect(flightPaths.group.getObjectByName('illustrative-shot-origin-1')).toBeDefined();
@@ -86,5 +92,37 @@ describe('Three illustrative flight paths', () => {
       expect(roll.userData.visualRadiusM).toBeLessThan(.29);
       expect(ball.position.z).toBeGreaterThan(mesh.referenceElevationM + (ground - mesh.referenceElevationM) * 1.5);
     } finally { flightPaths.dispose(); }
+  });
+});
+
+describe('production display trajectories', () => {
+  it('renders a reconstruction display estimate as a 3D flight without upgrading its source status', async () => {
+    const { decorateSceneWithDisplayTrajectories } = await import('../display-trajectories');
+    const scene = decorateSceneWithDisplayTrajectories(illustrativeScene());
+    const flightPaths = buildThreeFlightPaths(scene, mesh, { exaggeration: 1, referenceElevationM: mesh.referenceElevationM, scale: 2 }, 1);
+    try {
+      const flight = flightPaths.group.getObjectByName('illustrative-shot-flight-1') as Mesh | undefined;
+      expect(flight).toBeDefined();
+      expect(flight?.userData.trajectorySource).toBe('reconstruction_display_estimate');
+      expect(flight?.userData.estimated).toBe(true);
+    } finally {
+      flightPaths.dispose();
+    }
+  });
+});
+
+describe('screen-space trajectory sizing', () => {
+  it('updates the flight material resolution when the terrain viewport changes', () => {
+    const scene = addInteractivePreviewTrajectories(buildHoleScene(pilotPackage, 'cacapon-07', [], mesh), [pilotShots[0]!]);
+    const flightPaths = buildThreeFlightPaths(scene, mesh, { exaggeration: 1, referenceElevationM: mesh.referenceElevationM, scale: 2 });
+    try {
+      flightPaths.setResolution(390, 660);
+      const active = flightPaths.group.getObjectByName('illustrative-shot-flight-1') as Mesh;
+      const material = active.material as unknown as { resolution: { x: number; y: number } };
+      expect(material.resolution.x).toBe(390);
+      expect(material.resolution.y).toBe(660);
+    } finally {
+      flightPaths.dispose();
+    }
   });
 });

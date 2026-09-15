@@ -1067,3 +1067,28 @@ start/leave geometry; missing positions retain Whole green. Expanded 3D
 continues to use the same scene and coordinates. Status is shortened to a
 source-aware line such as `Mapped green · estimated positions`; full provenance
 remains in the accessible scene description and expanded inspector.
+
+### Evidence-aware course flights (September 14, 2026)
+
+`FairwayShotTracking` now composes its optional course scene through the shared
+`buildTrackingHoleScene` boundary. That boundary adds a display-only trajectory
+only when reconstruction has already accepted a single reviewed compatible
+landing representative. The first qualifying tee stroke may use the physical
+route start as a plainly estimated display origin; later strokes join only an
+unbroken consecutive chain of compatible representatives. Ambiguous outcomes,
+penalty/drop transitions, unreviewed terrain, putting strokes, and holed
+results do not receive an invented airborne path.
+
+The expanded Three canvas renders those display paths as depth-tested,
+CSS-pixel-width lines: the selected estimated flight has a white 2.5 px core
+and restrained dark support; historical flights use a quiet 1.15 px line. The
+selected path retains a dashed terrain footprint and distinct estimated finish
+marker. Lines resize with the live canvas, so compact/expanded transitions and
+phone orientation changes cannot turn the flight into a world-meter tube.
+
+Selecting or recording a qualifying later shot moves the expanded terrain
+camera toward that shot's displayed landing context over a bounded 320 ms
+interruptible transition. Reduced-motion users receive the final state
+immediately. This remains camera-only presentation: no selection, animation,
+or display estimate writes a shot coordinate, changes a metric, or mutates the
+round's score/save flow.

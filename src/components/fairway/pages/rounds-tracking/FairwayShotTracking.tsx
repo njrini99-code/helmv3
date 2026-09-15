@@ -35,10 +35,8 @@ import { displayToFeet, displayToYards } from '@/lib/golf/distance-units';
 
 import { FairwayScorecardHeader, FairwayDesktopExitHeader } from './FairwayScorecardHeader';
 import { FairwayShotPills } from './FairwayShotPills';
-import type { CourseGeometryPackage, HoleScene } from '@/lib/golf/course-geometry/types';
-import { buildHoleScene } from '@/lib/golf/course-geometry/build-scene';
-import type { TerrainMesh } from '@/lib/golf/course-geometry/terrain';
-import { normalizeLiveShot } from '@/lib/golf/course-geometry/normalize';
+import type { TrackingGeometry } from '@/lib/golf/course-geometry/tracking-scene';
+import { buildTrackingHoleScene } from '@/lib/golf/course-geometry/tracking-scene';
 import { FairwayHoleHero } from './FairwayHoleHero';
 import { FairwayShotEntry } from './FairwayShotEntry';
 import { FairwayCompletedHole } from './FairwayCompletedHole';
@@ -52,13 +50,7 @@ type Hole = RoundHole;
 // Existing tracking props plus optional read-only course display context.
 interface ShotTrackingProps {
   /** Optional reviewed binding context; never part of score persistence. */
-  geometry?: {
-    package: CourseGeometryPackage;
-    holeKeys: readonly string[];
-    terrainByHole?: Readonly<Record<string, TerrainMesh>>;
-    /** Isolated display-only adapter. It cannot alter the shot write path. */
-    decorateScene?: (scene: HoleScene, shots: readonly ShotRecord[]) => HoleScene;
-  };
+  geometry?: TrackingGeometry;
   /** Resume context already occupies the initial status-bar inset. */
   safeAreaHandledAbove?: boolean;
   /** Round-level status stays in the same measured sticky chrome. */
@@ -543,15 +535,9 @@ export default function FairwayShotTracking({
     if (isPutting) setPuttingSelection('draft');
   }, [currentHoleIndex, currentShot, isPutting]);
 
-  const physicalScene = useMemo(() => {
-    const key = geometry?.holeKeys[currentHoleIndex];
-    if (!geometry || !key) return null;
-    try {
-      const scene = buildHoleScene(geometry.package, key, shotHistory.map(normalizeLiveShot), geometry.terrainByHole?.[key]);
-      return geometry.decorateScene?.(scene, shotHistory) ?? scene;
-    }
-    catch { return null; } // Optional visual failure cannot block entry or saving.
-  }, [geometry, currentHoleIndex, shotHistory]);
+  const physicalScene = useMemo(() =>
+    buildTrackingHoleScene(geometry, currentHoleIndex, shotHistory),
+  [geometry, currentHoleIndex, shotHistory]);
 
   // Early return for invalid hole data - must be after all hooks
   if (!currentHole) {

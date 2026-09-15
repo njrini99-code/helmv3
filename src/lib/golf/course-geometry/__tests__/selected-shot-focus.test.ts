@@ -34,3 +34,16 @@ describe('selected shot camera focus', () => {
     expect(selectedShotFocus(scene, 3)).toBeNull();
   });
 });
+
+describe('production display focus', () => {
+  it('moves toward each reconstruction display trajectory while retaining an estimated source label', async () => {
+    const { decorateSceneWithDisplayTrajectories } = await import('../display-trajectories');
+    const scene = decorateSceneWithDisplayTrajectories(illustrativeScene());
+    const first = selectedShotFocus(scene, 1)!;
+    const second = selectedShotFocus(scene, 2)!;
+
+    expect(first.basis).toBe('reconstruction_display_estimate');
+    expect(second.basis).toBe('reconstruction_display_estimate');
+    expect(second.zoom).toBeGreaterThan(first.zoom);
+  });
+});
