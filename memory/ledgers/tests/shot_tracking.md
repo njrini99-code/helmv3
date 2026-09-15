@@ -385,6 +385,10 @@ Each written red first against the pre-fix source; defect descriptions in
   sampling, while an unidentified manifest that omits the conversion is
   rejected. The same focused run keeps the existing no-nodata-substitution,
   normal, topology, and deterministic-asset invariants covered.
+- `src/test/static/rsc-function-prop-boundary.test.ts` now recognizes the
+  Vite-only course-geometry browser fixture as a client entrypoint. Its local
+  save callbacks therefore remain valid test harness behavior and cannot be
+  misreported as Server-to-Client React function props.
 - `src/lib/observability/__tests__/helm-flight-recorder.test.ts`:
   - (finding 2, new case) a `persistStep` dependency that throws
     synchronously (not an async function returning a rejected promise) is

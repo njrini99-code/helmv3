@@ -1,3 +1,5 @@
+'use client';
+
 import { createRoot } from 'react-dom/client';
 import { useEffect, useState } from 'react';
 import '@/app/globals.css';

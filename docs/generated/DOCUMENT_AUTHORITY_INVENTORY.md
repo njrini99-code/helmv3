@@ -38,7 +38,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `PLAN` | 38 | 5 | 19 | 81 |
 | `AUDIT_SNAPSHOT` | 56 | 6 | 30 | 24 |
 | `STATE_SNAPSHOT` | 6 | 2 | 5 | 0 |
-| `HISTORY_LEDGER` | 40 | 0 | 7 | 14 |
+| `HISTORY_LEDGER` | 40 | 0 | 7 | 13 |
 | `INCIDENT` | 28 | 15 | 2 | 0 |
 | `ADR` | 5 | 0 | 3 | 0 |
 | `INDEX` | 23 | 1 | 10 | 5 |
@@ -473,7 +473,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/ledgers/tests/golf_round_lifecycle.md` | current | - | - | - | 2 | 5 | - |
 | `memory/ledgers/tests/observability_sentry.md` | current | - | - | - | 1 | 26 | 2 |
 | `memory/ledgers/tests/qualifiers.md` | current | - | - | - | 1 | 6 | - |
-| `memory/ledgers/tests/shot_tracking.md` | current | - | - | - | 2 | 49 | 1 |
+| `memory/ledgers/tests/shot_tracking.md` | current | - | - | - | 2 | 50 | - |
 | `memory/ledgers/tests/stats_analytics.md` | current | - | - | - | 1 | 1 | - |
 | `memory/ledgers/tests/team_communications.md` | current | - | - | yes | 1 | 12 | - |
 
