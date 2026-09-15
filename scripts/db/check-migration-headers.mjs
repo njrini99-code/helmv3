@@ -10,7 +10,7 @@
  *   -- ROLLBACK:  one or more lines describing how to undo this migration's
  *                 effect (a compensating statement, or a named reason none
  *                 is needed — e.g. "additive only, DROP COLUMN to revert").
- *   -- VERIFY:    one SELECT per line that must return at least one row for
+ *   -- VERIFY:    SELECTs that must each return at least one row for
  *                 the migration to be considered successfully applied.
  *                 scripts/db/apply.mjs runs every line under this block
  *                 after a real `--apply`.

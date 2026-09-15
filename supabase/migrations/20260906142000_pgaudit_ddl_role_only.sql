@@ -61,6 +61,9 @@
 -- Owner step, not run by this file in practice (see step 1 above) — the
 -- IF NOT EXISTS guard makes re-running this line after a dashboard enable a
 -- safe no-op either way.
+
+-- VERIFY: select 1 from pg_extension where extname = 'pgaudit';
+-- VERIFY: select 1 from pg_db_role_setting s join pg_roles r on r.oid = s.setrole where r.rolname = 'postgres' and array_to_string(s.setconfig, ',') ~* 'pgaudit\.log\s*=\s*"?ddl\s*,\s*role';
 create extension if not exists pgaudit schema extensions;
 
 -- Session/database-level default. `ddl` covers CREATE/ALTER/DROP/etc.;

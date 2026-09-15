@@ -3,7 +3,7 @@
 -- byte-identical-signature discipline v2 established.
 --
 -- RISK TIER: R3. HELD — see supabase/migrations/HELD.md. Depends on
--- 20260906120000 (db_statement_samples) and 20260906120100
+-- 20260906120010 (db_statement_samples) and 20260906120100
 -- (db_analysis_samples) applying first — same ordering caveat v2 states
 -- for its own two new tables: CREATE FUNCTION succeeds regardless of
 -- order, calling it before those tables exist fails at execution time.
@@ -22,6 +22,12 @@
 --
 -- ROLLBACK: CREATE OR REPLACE back to v2's body
 -- (20260903191300_helm_debug_observability_retention_v2.sql).
+
+-- VERIFY: select 1 from pg_proc where oid = 'public.helm_debug_prune_observability(integer,integer,integer,integer)'::regprocedure;
+-- VERIFY: select 1 from (select count(*) c from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.proname = 'helm_debug_prune_observability') s where s.c = 1;
+-- VERIFY: select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.proname = 'helm_debug_prune_observability' and p.prosrc like '%db_statement_samples%' and p.prosrc like '%db_analysis_samples%';
+-- VERIFY: select 1 where has_function_privilege('anon', 'public.helm_debug_prune_observability(integer,integer,integer,integer)', 'execute') = false;
+-- VERIFY: select 1 where has_function_privilege('service_role', 'public.helm_debug_prune_observability(integer,integer,integer,integer)', 'execute');
 
 create or replace function public.helm_debug_prune_observability(
     p_error_events_retention_days integer default 30,
