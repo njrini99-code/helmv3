@@ -83,4 +83,11 @@ describe('FairwayCalendarHero — masthead details', () => {
     screen.getByRole('button', { name: 'New event' }).click();
     expect(onPrimaryAction).toHaveBeenCalledTimes(1);
   });
+
+  it('is a matte bar — no backdrop blur over the scrolling stage, no legacy glass chrome', () => {
+    renderHero();
+    const root = screen.getByRole('region', { name: 'Calendar controls' });
+    expect(root).toHaveClass('bg-surface', 'border-b');
+    expect(root.className).not.toMatch(/fw-frost|fw-glass-chrome|backdrop/);
+  });
 });

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildFocusAreaPriorities,
   buildPlayerLedger,
-  buildPlayerStandingTrack,
+  buildPlayerStandingBars,
   buildPredictionVerdict,
   buildStandingPreviewRows,
   buildThemeMagnitudeBars,
@@ -16,6 +16,7 @@ import {
   sgToTrackPct,
   summarizeThemeCauseCounts,
 } from '../buildPlayerHomeViewModel';
+import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 
 describe('formatAreaName', () => {
   it('title-cases a snake_case area', () => {
@@ -88,7 +89,7 @@ describe('buildFocusAreaPriorities', () => {
   });
 });
 
-describe('sgToTrackPct / buildPlayerStandingTrack', () => {
+describe('sgToTrackPct', () => {
   it('centers a null value at 50', () => {
     expect(sgToTrackPct(null)).toBe(50);
     expect(sgToTrackPct(undefined)).toBe(50);
@@ -100,24 +101,65 @@ describe('sgToTrackPct / buildPlayerStandingTrack', () => {
   it('maps 0 SG to the rail center', () => {
     expect(sgToTrackPct(0)).toBe(50);
   });
+});
 
-  it('returns undefined (no track) when sgTotal is not finite', () => {
-    expect(buildPlayerStandingTrack(null, 0.2)).toBeUndefined();
+/**
+ * buildPlayerStandingBars — replaced `buildPlayerStandingTrack` (2026-09-10,
+ * the dot-on-a-rail `StandingTrack` removal). Passes the FULL `sg_total` row
+ * through to `StandingBars`, which derives its own cold-start gate — unlike
+ * the old builder, which drew a Team marker whenever `team_avg` wasn't null,
+ * with no `team_n` check at all.
+ */
+describe('buildPlayerStandingBars', () => {
+  function standingRow(overrides: Partial<PlayerStanding> = {}): PlayerStanding {
+    return {
+      player_id: 'p1',
+      metric_id: 'sg_total',
+      player_value: 0.5,
+      team_avg: -0.2,
+      team_n: 8,
+      team_pct: 60,
+      level_avg: null,
+      level_n: 0,
+      level_pct: null,
+      pga_value: 0,
+      pga_delta: 0.5,
+      computed_at: '2026-01-01T00:00:00.000Z',
+      ...overrides,
+    };
+  }
+
+  it('returns undefined when there is no row, or player_value is not finite', () => {
+    expect(buildPlayerStandingBars(null)).toBeUndefined();
+    expect(buildPlayerStandingBars(undefined)).toBeUndefined();
   });
 
-  it('builds You + Team + Tour benchmarks when both are finite', () => {
-    const track = buildPlayerStandingTrack(0.5, -0.2);
-    expect(track?.subjectLabel).toBe('You');
-    expect(track?.pct).toBe(sgToTrackPct(0.5));
-    expect(track?.benchmarks).toEqual([
-      { label: 'Team', pct: sgToTrackPct(-0.2) },
-      { label: 'Tour', pct: 50, emphasis: true },
-    ]);
+  it('carries the full sg_total row through, filling direction/unit/scale from metric-config', () => {
+    const out = buildPlayerStandingBars(standingRow());
+    expect(out).toMatchObject({
+      metric_id: 'sg_total',
+      metric_label: 'SG: Total',
+      player_value: 0.5,
+      team_avg: -0.2,
+      team_n: 8,
+      team_pct: 60,
+      pga_value: 0,
+      direction: 'higher_better',
+      unit: 'strokes',
+      scale: { min: -2, max: 2 },
+    });
   });
 
-  it('omits the Team benchmark when teamAvg is not finite', () => {
-    const track = buildPlayerStandingTrack(0.5, null);
-    expect(track?.benchmarks).toEqual([{ label: 'Tour', pct: 50, emphasis: true }]);
+  it('passes team_n through untouched (the cold-start fix) — a 2-teammate cohort is not gated here, StandingBars gates it', () => {
+    const out = buildPlayerStandingBars(standingRow({ team_n: 2 }));
+    expect(out?.team_n).toBe(2);
+    expect(out?.team_avg).toBe(-0.2);
+  });
+
+  it('carries pga_omitted / is_womens through when the row sets them', () => {
+    const out = buildPlayerStandingBars(standingRow({ pga_omitted: true, is_womens: true }));
+    expect(out?.pga_omitted).toBe(true);
+    expect(out?.is_womens).toBe(true);
   });
 });
 

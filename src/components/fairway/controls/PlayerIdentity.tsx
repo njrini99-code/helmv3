@@ -69,6 +69,16 @@ export interface PlayerIdentityProps {
   className?: string;
   /** Extra classes on the name text element. */
   nameClassName?: string;
+  /**
+   * How many lines the meta line may wrap to BELOW the `md` breakpoint
+   * before clamping with an ellipsis; always 1 line from `md` up regardless
+   * of this value (a dense desktop board row can't afford the meta line
+   * growing its height). Default `2` (2026-09-10, primitives follow-up) —
+   * an attention-reason meta line (e.g. a roster row's "Trending down,
+   * missed 3 goals this month") no longer clips mid-sentence on a phone
+   * row. Pass `1` for the old single-line-everywhere behavior.
+   */
+  metaLines?: 1 | 2;
 }
 
 /** Avatar size per identity size — sm rows get a compact avatar, md gets the standard. */
@@ -83,8 +93,20 @@ const NAME_CLS: Record<PlayerIdentitySize, string> = {
   md: 'text-body',
 };
 
-/** Meta line stays quiet + small at every size (tertiary, caption). */
-const META_CLS = 'mt-0.5 truncate font-fw-sans text-caption text-text-tertiary';
+/**
+ * Meta line stays quiet + small at every size (tertiary, caption). Was a
+ * bare `truncate` (always 1 line) — clamps to `lines` below `md`, then back
+ * to 1 line from `md` up. `line-clamp-N` subsumes `truncate` for the
+ * single-line case (both single-line variants ellipsize identically), so
+ * this switches entirely to `line-clamp-*` rather than trying to combine it
+ * with the old `truncate` utility.
+ */
+function metaClassName(lines: 1 | 2): string {
+  return cn(
+    'mt-0.5 font-fw-sans text-caption text-text-tertiary',
+    lines === 2 ? 'line-clamp-2 md:line-clamp-1' : 'line-clamp-1',
+  );
+}
 
 export function PlayerIdentity({
   name,
@@ -99,6 +121,7 @@ export function PlayerIdentity({
   trailing,
   className,
   nameClassName,
+  metaLines = 2,
 }: PlayerIdentityProps) {
   return (
     <div className={cn('flex min-w-0 items-center gap-3', className)}>
@@ -138,7 +161,7 @@ export function PlayerIdentity({
             {name}
           </span>
         )}
-        {meta ? <div className={META_CLS}>{meta}</div> : null}
+        {meta ? <div className={metaClassName(metaLines)}>{meta}</div> : null}
       </div>
 
       {trailing ? <div className="flex-shrink-0">{trailing}</div> : null}

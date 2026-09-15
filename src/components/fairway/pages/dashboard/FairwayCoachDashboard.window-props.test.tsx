@@ -32,7 +32,7 @@
  *      symptom, one step earlier in the pipeline than half (1) covers.
  * ========================================================================== */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { FairwayCoachDashboard } from './FairwayCoachDashboard';
@@ -104,66 +104,65 @@ function basePayload(overrides: Partial<CoachDashboardPayload> = {}): CoachDashb
     teamName: 'Rini University',
     joinCode: 'ABC123',
     timezone: 'America/New_York',
+    roster: [],
+    windowStart: null,
+    today: '2026-09-10',
     ...overrides,
   } as CoachDashboardPayload;
 }
 
-describe('FairwayCoachDashboard — window (7D/30D) props actually drive the render', () => {
-  it('Team Pulse renders different improving/stable/declining counts for two different window payloads', () => {
+describe('FairwayCoachDashboard, window (7D/30D) props actually drive the render', () => {
+  it('the readouts and the attention legend change between two window payloads', () => {
     const sevenDay = basePayload({ teamPulse: { improving: 1, stable: 5, declining: 1, roundsThisWeek: 4 } });
     const thirtyDay = basePayload({ teamPulse: { improving: 6, stable: 2, declining: 0, roundsThisWeek: 22 } });
-
     const { unmount } = render(<FairwayCoachDashboard data={baseData()} enhancedData={sevenDay} joinRequests={[]} />);
     expect(screen.getByText('4 this week')).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Who needs attention' })).toHaveTextContent('1 improving');
     unmount();
-
     render(<FairwayCoachDashboard data={baseData()} enhancedData={thirtyDay} joinRequests={[]} />);
     expect(screen.getByText('22 this week')).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Who needs attention' })).toHaveTextContent('6 improving');
     expect(screen.queryByText('4 this week')).not.toBeInTheDocument();
   });
 
-  it('Top Performers renders a different leaderboard for two different window payloads', () => {
-    const sevenDay = baseData({
-      topPlayers: [{ id: 'p1', name: 'Sam Sevener', avg_score: 71.2, rounds: 2 }],
-    });
-    const thirtyDay = baseData({
-      topPlayers: [{ id: 'p2', name: 'Alex Thirtier', avg_score: 73.8, rounds: 9 }],
-    });
-
-    const { unmount } = render(<FairwayCoachDashboard data={sevenDay} enhancedData={basePayload()} joinRequests={[]} />);
-    expect(screen.getByText('Sam Sevener')).toBeInTheDocument();
-    expect(screen.queryByText('Alex Thirtier')).not.toBeInTheDocument();
-    unmount();
-
-    render(<FairwayCoachDashboard data={thirtyDay} enhancedData={basePayload()} joinRequests={[]} />);
-    expect(screen.getByText('Alex Thirtier')).toBeInTheDocument();
-    expect(screen.queryByText('Sam Sevener')).not.toBeInTheDocument();
-  });
-
-  it('Performance Trend region reacts to a different teamScoringTrend (insufficient-data vs a real trend)', () => {
-    // A single-point trend (typical of a narrow 7D window with one round) is
-    // below the `>= 2` gate — this component renders its own synchronous
-    // insufficient-data fallback here (no chart to await).
-    const oneMonthOfData = baseData({ teamScoringTrend: [{ label: 'Jul 26', value: 76 }] });
-    const { unmount } = render(<FairwayCoachDashboard data={oneMonthOfData} enhancedData={basePayload()} joinRequests={[]} />);
-    expect(screen.getByText('Trend appears as rounds build')).toBeInTheDocument();
-    unmount();
-
-    // A wider window's 2+ month trend clears the gate and swaps the whole
-    // region to the real chart — the fallback copy must be gone.
-    const threeMonthsOfData = baseData({
-      teamScoringTrend: [
-        { label: 'May 26', value: 78 },
-        { label: 'Jun 26', value: 76 },
-        { label: 'Jul 26', value: 74 },
+  it('the Score field draws a different roster for two window payloads', () => {
+    const withRounds = baseData({
+      recentRounds: [
+        {
+          id: 'r1', player_id: 'p1', player_name: 'Sam Sevener', player_avatar_url: null, course_name: 'links',
+          total_score: 74, total_to_par: 2, round_date: '2026-09-01', round_type: null, total_putts: null,
+          total_fairways_hit: null, total_fairways: null, total_gir: null, total_gir_possible: null,
+        },
       ],
     });
-    render(<FairwayCoachDashboard data={threeMonthsOfData} enhancedData={basePayload()} joinRequests={[]} />);
-    expect(screen.queryByText('Trend appears as rounds build')).not.toBeInTheDocument();
+    const sevenDay = basePayload({ roster: [{ id: 'p1', name: 'Sam Sevener', avatar_url: null }] });
+    const thirtyDay = basePayload({ roster: [{ id: 'p2', name: 'Alex Thirtier', avatar_url: null }] });
+    const field = () => within(screen.getByRole('table', { name: /rounds by player/i }));
+    const { unmount } = render(<FairwayCoachDashboard data={withRounds} enhancedData={sevenDay} joinRequests={[]} />);
+    expect(field().getByText('Sam Sevener')).toBeInTheDocument();
+    expect(field().queryByText('Alex Thirtier')).not.toBeInTheDocument();
+    unmount();
+    render(<FairwayCoachDashboard data={withRounds} enhancedData={thirtyDay} joinRequests={[]} />);
+    expect(field().getByText('Alex Thirtier')).toBeInTheDocument();
+    expect(field().queryByText('Sam Sevener')).not.toBeInTheDocument();
+  });
+
+  it('the stage falls back to the players seen in the rounds when the payload carries no roster', () => {
+    const data = baseData({
+      recentRounds: [
+        {
+          id: 'r1', player_id: 'p9', player_name: 'Rounds Only', player_avatar_url: null, course_name: 'links',
+          total_score: 70, total_to_par: -2, round_date: '2026-09-01', round_type: null, total_putts: null,
+          total_fairways_hit: null, total_fairways: null, total_gir: null, total_gir_possible: null,
+        },
+      ],
+    });
+    render(<FairwayCoachDashboard data={data} enhancedData={basePayload()} joinRequests={[]} />);
+    expect(screen.getByRole('rowheader', { name: /Rounds Only/ })).toBeInTheDocument();
   });
 });
 
-describe('FairwayCoachDashboard — clicking the window Segmented threads a DISTINCT range to the URL (audit #54)', () => {
+describe('FairwayCoachDashboard, clicking the window Segmented threads a DISTINCT range to the URL (audit #54)', () => {
   beforeEach(() => {
     mockPush.mockClear();
   });

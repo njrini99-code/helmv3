@@ -303,8 +303,8 @@
         "5": false,
         "10": false
       },
-      "irrelevant_chars": 32703,
-      "total_feature_doc_chars": 69237,
+      "irrelevant_chars": 33850,
+      "total_feature_doc_chars": 70384,
       "included_doc_count": 18,
       "stale_doc_count": 0,
       "historical_analogue_hit": false
@@ -754,7 +754,7 @@
     "recall_at_10_full": 0.7,
     "recall_at_5_feature_docs_only": 0.7,
     "recall_at_10_feature_docs_only": 0.7,
-    "irrelevant_token_rate": 0.17104621319173133,
+    "irrelevant_token_rate": 0.17189948255159676,
     "stale_context_rate": 0,
     "historical_analogue_retrieval_rate": 0.5
   }

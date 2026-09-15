@@ -9,8 +9,10 @@ import { Surface } from '@/components/fairway/surfaces/surface';
  * load→content transition jumped from glass chrome to the bg-canvas matte
  * Fairway surfaces. This reserves the ACTUAL FairwayQualifiers layout:
  * a max-w-[1280px] shell with a ViewHeader-shaped title row + action, the
- * soft-lit hero Surface, the status FilterPills + search row, then the two-up
- * Surface card grid. Tokens only (bg-canvas, Surface/Skeleton primitives).
+ * raised hero, the bare Toolbar line (search + status FilterPills over one
+ * hairline), then ONE bordered Surface of seam rows under two section
+ * headings — the live composition since the qualifiers facelift (no card
+ * grid). Tokens only (bg-canvas, Surface/Skeleton primitives).
  *
  * Radius/height audit: the masthead action skeleton stands for the "Create
  * qualifier" Button (FairwayQualifiers.tsx:196, variant="primary", default
@@ -57,32 +59,40 @@ function FairwayQualifiersLoading() {
           </Surface>
         </div>
 
-        {/* Status filter pills + search row */}
-        <div className="mt-8 flex flex-col gap-3">
-          <div className="flex flex-wrap items-center gap-2">
-            {[20, 16, 18, 16].map((w, i) => (
+        {/* Bare Toolbar — search + status pills on one line (phone: search,
+            then pills) over a single hairline, like Toolbar frame="bare". */}
+        <div className="mt-6 flex flex-wrap items-center gap-3 border-b border-border-subtle pb-3">
+          <div className="min-w-0 basis-full sm:basis-auto sm:w-72">
+            <Skeleton className="h-11 w-full" />
+          </div>
+          <div className="flex items-center gap-2">
+            {[14, 18, 24].map((w, i) => (
               <Skeleton key={i} className="h-8 rounded-full" style={{ width: `${w * 4}px` }} />
             ))}
           </div>
-          <div className="max-w-md">
-            <Skeleton className="h-11 w-full" />
-          </div>
         </div>
 
-        {/* Two-up Surface card grid */}
-        <div className="mt-8 grid grid-cols-1 gap-3 md:grid-cols-2">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Surface key={i} elevation="border" padding="lg">
-              <div className="flex flex-col gap-3">
-                <div className="flex items-center justify-between gap-4">
-                  <Skeleton className="h-5 w-40" />
-                  <Skeleton className="h-5 w-16 rounded-full" />
+        {/* ONE Surface: two seam sections (Active · Concluded) of rows. */}
+        <div className="mt-6">
+          <Surface elevation="border" padding="none" className="overflow-hidden">
+            {[2, 2].map((rows, section) => (
+              <div key={section} className={section > 0 ? 'border-t border-border-subtle' : undefined}>
+                <div className="px-4 pt-4 pb-2">
+                  <Skeleton className="h-3 w-20" />
                 </div>
-                <Skeleton className="h-4 w-2/3" />
-                <Skeleton className="h-4 w-1/2" />
+                <div className="divide-y divide-border-subtle border-t border-border-subtle">
+                  {Array.from({ length: rows }).map((_, i) => (
+                    <div key={i} className="flex min-h-11 items-center gap-3 px-4 py-3 sm:gap-4">
+                      <Skeleton className="h-5 flex-1" />
+                      <Skeleton className="hidden h-4 w-36 sm:block" />
+                      <Skeleton className="h-4 w-16 sm:hidden" />
+                      <Skeleton className="h-6 w-20 rounded-full" />
+                    </div>
+                  ))}
+                </div>
               </div>
-            </Surface>
-          ))}
+            ))}
+          </Surface>
         </div>
       </div>
     </div>

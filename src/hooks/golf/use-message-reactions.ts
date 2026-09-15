@@ -102,18 +102,33 @@ export function useMessageReactions(conversationId: string, messageIds: string[]
 
   useEffect(() => { setRows([]); setError(null); }, [conversationId]);
 
+  /**
+   * Row 6 (perf audit) — the realtime channel and the refetch used to share
+   * ONE effect keyed on `refresh`, and `refresh` is recreated every time the
+   * visible id set changes (`ids`, from the idsKey memo above). So every
+   * incoming message — which legitimately adds one id and should trigger a
+   * refetch — was ALSO tearing down and resubscribing the whole
+   * `postgres_changes` channel, on top of a full reload of every reaction in
+   * the thread (chunked in 100s) rather than just the new message's.
+   *
+   * `refreshRef` lets the subscribe effect below call whatever `refresh`
+   * currently is without listing it as a dependency, so the channel's
+   * lifetime is governed ONLY by the conversation, never by the message list.
+   */
+  const refreshRef = useRef(refresh);
+  refreshRef.current = refresh;
+
   useEffect(() => {
-    void refresh();
     if (!conversationId) return;
     // DELETE payloads may contain only the primary key, so reload the visible
     // message set. The session's RLS filters realtime delivery and every read.
     const channel = client.channel(`golf-reactions:${conversationId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'golf_message_reactions' }, () => { void refresh(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'golf_message_reactions' }, () => { void refreshRef.current(); })
       .subscribe();
-    const onFocus = () => { void refresh(); };
+    const onFocus = () => { void refreshRef.current(); };
     window.addEventListener('focus', onFocus);
     const { data: { subscription } } = client.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') void refresh();
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') void refreshRef.current();
     });
     return () => {
       request.current += 1;
@@ -121,7 +136,14 @@ export function useMessageReactions(conversationId: string, messageIds: string[]
       subscription.unsubscribe();
       void client.removeChannel(channel);
     };
-  }, [client, conversationId, refresh]);
+  }, [client, conversationId]);
+
+  // Refetch whenever the visible id set changes (a message loads or the
+  // conversation switches) — deliberately separate from the effect above so
+  // this can never tear down the live subscription.
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
 
   const setReaction = useCallback(async (messageId: string, emoji: string, active: boolean) => {
     if (scope.current !== conversationId || locked.current || !userId || !ids.includes(messageId) || !MESSAGE_REACTIONS.some((option) => option.emoji === emoji)) return false;

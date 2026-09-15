@@ -114,18 +114,18 @@
   --fw-color-warm-950: oklch(0.147 0.005 49);   /* sidebar warm-black #0c0a09 (NOT #000) */
 
   /* ---- Semantic surfaces (warm, matte, OPAQUE at rest — not translucent) ---- */
-  --fw-color-canvas:         oklch(0.953 0.022 83);  /* deeper warm champagne page base — cards now clearly LIFT off it (was 0.978, near-identical to the 0.984 card; the ~0.03 gap is the premium card/page separation the flat-cream look lacked) */
-  --fw-color-surface:        oklch(0.984 0.016 86);  /* THE card: warm CREAM, not white. It lifts off the deeper champagne page via its hairline + soft shadow — never by being a cold white sheet (we keep coming back to this: no white cards). */
+  --fw-color-canvas:         oklch(0.938 0.024 83);  /* champagne page base. Cards LIFT off it by ~0.055 L (was 0.953 against a 0.984 card: 0.03 apart, which read as one flat cream on a phone). */
+  --fw-color-surface:        oklch(0.992 0.011 88);  /* THE card: the brightest warm cream, still not a cold white sheet (hue 88, chroma 0.011). Lifts off the canvas by lightness first, hairline second. */
   --fw-color-surface-tint:   oklch(0.968 0.026 84);  /* a TOASTED warm band — hero plinths (warmer + a touch deeper than the card so the tier reads, not vanishes) */
-  --fw-color-surface-sunken: oklch(0.963 0.021 84);  /* wells, insets, input tracks */
-  --fw-color-elevated:       oklch(0.993 0.016 88);  /* menus / popovers / modal body — the brightest, warmest cream so floating panels read genuinely lifted */
+  --fw-color-surface-sunken: oklch(0.958 0.021 84);  /* wells, insets, input tracks: a visible step below the card */
+  --fw-color-elevated:       oklch(0.997 0.008 90);  /* menus / popovers / modal body — the brightest, warmest cream so floating panels read genuinely lifted */
 
   /* Loading blocks. NOT `surface-sunken`: that well is 1.06:1 against the card
      it sits on — present in the DOM, absent to the eye, so a loading screen
      read as a blank one and the specular sweep had nothing to sweep across.
      1.23:1 on the card is the band the dark UIs people rate as premium use:
      unmistakably a placeholder, still quiet enough not to look like content. */
-  --fw-color-skeleton:       oklch(0.915 0.014 84);
+  --fw-color-skeleton:       oklch(0.905 0.014 84);
 
   /* ---- The sunlit page wash: a WARM CREAM gradient for the canvas, not a flat
           fill. A faint near-white highlight at the top reads as afternoon light;
@@ -135,24 +135,24 @@
           (layer it over the `bg-canvas` color so any overscroll stays warm). ---- */
   --fw-gradient-canvas:
     radial-gradient(132% 92% at 50% -15%,
-      oklch(0.982 0.014 86) 0%,
-      oklch(0.970 0.020 84) 44%,
+      oklch(0.970 0.016 86) 0%,
+      oklch(0.956 0.022 84) 44%,
       transparent 78%),
     linear-gradient(180deg,
-      oklch(0.973 0.018 85) 0%,   /* ≈ #F6EEDF — warm cream even at the top (no white) */
-      oklch(0.955 0.026 83) 52%,  /* ≈ #F1E7D6 — champagne linen, the body of the page */
-      oklch(0.934 0.034 81) 100%); /* ≈ #EBDFCD — soft champagne/sand at the foot (golden-undertone cream) */
+      oklch(0.958 0.020 85) 0%,   /* warm cream at the top, already a clear step below the 0.992 card */
+      oklch(0.938 0.028 83) 52%,  /* champagne linen, the body of the page */
+      oklch(0.916 0.036 81) 100%); /* soft sand at the foot */
 
   /* ---- Semantic text ---- */
   --fw-color-text-primary:   var(--fw-color-warm-900);
   --fw-color-text-secondary: var(--fw-color-warm-600);
-  --fw-color-text-tertiary:  oklch(0.535 0.015 70);  /* P422: darkened from 0.585 (≈3.7-4.0:1, FAILED 4.5:1) so small descriptive/value text using this token clears WCAG 2.2 AA normal-text 4.5:1 on EVERY warm surface — measured ≥4.51:1 on canvas, ≥4.65:1 on sunken, ≥4.95:1 on the card. Still well-separated from text-secondary (~6.7:1). */
+  --fw-color-text-tertiary:  oklch(0.515 0.015 70);  /* P422: darkened from 0.585 (≈3.7-4.0:1, FAILED 4.5:1) so small descriptive/value text using this token clears WCAG 2.2 AA normal-text 4.5:1 on EVERY warm surface — measured ≥4.51:1 on canvas, ≥4.65:1 on sunken, ≥4.95:1 on the card. Still well-separated from text-secondary (~6.7:1). */
   --fw-color-text-on-accent: oklch(0.994 0.006 95); /* cream text on green */
   --fw-color-text-on-dark:   oklch(0.96 0.005 95);  /* sidebar text */
 
   /* ---- Borders / warm hairlines (NOT cool gray) ---- */
-  --fw-color-border-subtle: oklch(0.862 0.013 82 / 0.95); /* a VISIBLE warm hairline — card edges read against the deeper canvas (was 0.90/0.8, invisible) */
-  --fw-color-border-strong: oklch(0.872 0.009 80);      /* emphasis / table head */
+  --fw-color-border-subtle: oklch(0.845 0.016 82 / 0.95); /* a VISIBLE warm hairline against both the card and the deeper canvas */
+  --fw-color-border-strong: oklch(0.790 0.014 80);      /* emphasis / table head: darker than subtle (it used to be lighter) */
   /* accent-600, NOT accent-500. This token names a FOCUS indicator, and a focus
      indicator has to clear WCAG 2.2's 3:1 non-text minimum. accent-500 on the
      warm canvas measures ~2.67:1 on the OKLCH render path — it fails. That was
@@ -201,6 +201,17 @@
   --fw-color-nav-text:     var(--fw-color-text-on-dark);
   --fw-color-nav-text-dim: oklch(0.62 0.007 60);   /* recessive warm nav labels */
   --fw-color-nav-accent:   var(--fw-color-accent-400); /* active marker on black */
+
+  /* ---- Golf rail: structural Fairway green (BRIEF §2 "cream canvas with
+          structural green"). A scoped override of the nav-* tokens so the
+          rail carries the brand while every other dark-rail consumer
+          (admin, baseball) keeps the warm-black recipe. Applied by
+          FairwaySidebar for tone="green". ---- */
+  --fw-color-rail-green-bg:       oklch(0.345 0.078 152);
+  --fw-color-rail-green-surface:  oklch(0.415 0.086 152);
+  --fw-color-rail-green-text:     oklch(0.975 0.012 92);
+  --fw-color-rail-green-text-dim: oklch(0.815 0.040 130);
+  --fw-color-rail-green-accent:   oklch(0.870 0.130 138);
 
   /* ── Helm Bridge sport inks ──────────────────────────────────────────
      Baseball wayfinding accent (infield clay). NOTE: the "Living Annual"
@@ -305,6 +316,55 @@
   --fw-glass-border-bot:  oklch(0.32 0.045 68 / 0.12);       /* deeper warm bottom edge → more depth */
   --fw-glass-highlight:   rgb(255 249 235 / 0.55);           /* WARM cream inner specular line (not white) */
   --fw-glass-accent-ring: oklch(0.648 0.149 149.6 / 0.16);   /* green breath on the focal instrument */
+
+  /* ---- DEPTH LADDER (semantic, 2026-09-10) — the z-axis a screen is read in.
+          depth-0 canvas (no shadow) · depth-1 surface · depth-2 elevated ·
+          depth-3 float · depth-4 modal. Feature code names a depth, never a
+          box-shadow literal; the tiers alias the warm ladder above so the two
+          can never drift. `control` is the tight contact shadow of a physical
+          control (button, dock item, segmented thumb): lit top edge + a 2px
+          contact, nothing wide. ---- */
+  --fw-depth-1: var(--fw-shadow-flat);
+  --fw-depth-2: var(--fw-shadow-soft);
+  --fw-depth-3: var(--fw-shadow-raise);
+  --fw-depth-4: var(--fw-shadow-modal);
+  --fw-shadow-control: inset 0 1px 0 oklch(1 0 0 / 0.55),
+                       0 1px 1px oklch(0.18 0.01 60 / 0.06),
+                       0 2px 6px oklch(0.18 0.01 60 / 0.07);
+
+  /* ---- FAIRWAY FROST (2026-09-10) — the one floating material, three tiers.
+          Five ingredients, always together: real translucency (a gradient the
+          canvas shows through), blur, mild saturation (115–130%, never the
+          glass wash above), edge lighting (bright top rim, quiet sides, a
+          darker foot) and a layered contact shadow. Tiers:
+            subtle   — toolbars, control rails, sticky chrome bars
+            floating — the dock, floating toolbars, command surfaces
+            modal    — sheets and major overlays
+          Recipes live in globals.css (.fw-frost, .fw-frost-{subtle,floating,modal});
+          nothing else may hand-roll a backdrop-filter. ---- */
+  --fw-frost-tint:            255 252 244;                 /* warm ivory highlight end of the gradient */
+  --fw-frost-saturate:        122%;
+  --fw-frost-blur-sm:         14px;
+  --fw-frost-blur-md:         22px;
+  --fw-frost-blur-lg:         30px;
+  --fw-frost-blur-modal:      38px;
+  --fw-frost-bg-subtle:       linear-gradient(180deg, rgb(var(--fw-frost-tint) / 0.58), rgb(var(--fw-glass-tint) / 0.46));
+  --fw-frost-bg-floating:     linear-gradient(180deg, rgb(var(--fw-frost-tint) / 0.70), rgb(var(--fw-glass-tint) / 0.52));
+  --fw-frost-bg-modal:        linear-gradient(180deg, rgb(var(--fw-frost-tint) / 0.86), rgb(var(--fw-glass-tint) / 0.74));
+  --fw-frost-rim:             rgb(255 250 240 / 0.62);     /* the 1px specular rim */
+  --fw-frost-edge-top:        rgb(255 252 244 / 0.74);     /* inset light along the top */
+  --fw-frost-edge-bot:        oklch(0.32 0.045 68 / 0.07); /* inset shade along the foot */
+  --fw-frost-shadow-subtle:   0 1px 2px oklch(0.18 0.01 60 / 0.05),
+                              0 10px 30px oklch(0.18 0.01 60 / 0.08);
+  --fw-frost-shadow-floating: 0 1px 2px oklch(0.15 0.01 55 / 0.06),
+                              0 8px 24px oklch(0.15 0.01 55 / 0.10),
+                              0 24px 70px oklch(0.15 0.01 55 / 0.11);
+  --fw-frost-shadow-modal:    0 -18px 70px oklch(0.12 0.01 55 / 0.14),
+                              0 28px 90px oklch(0.12 0.01 55 / 0.18);
+  /* Tinted-glass selection capsule (the dock's active item): green shows
+     through the frost instead of a solid island. */
+  --fw-frost-selection-bg:    linear-gradient(180deg, oklch(0.648 0.149 149.6 / 0.24), oklch(0.648 0.149 149.6 / 0.14));
+  --fw-frost-selection-rim:   oklch(0.648 0.149 149.6 / 0.30);
 
   /* ---- The 4-step accent RAMP (heatmap cells, band histograms) ----
      Light values are byte-identical to the hardcoded scale these replaced, so
@@ -428,6 +488,16 @@
  * AA (4.5:1 normal) on canvas / surface / sunken. color-scheme:dark makes
  * native controls, scrollbars and form widgets adopt the dark convention.
  * ========================================================================== */
+/* The green golf rail: FairwaySidebar tone="green" re-points the nav tokens
+   for everything inside the rail (rows, popouts, collapse pill). */
+.fw-rail-green {
+  --fw-color-nav-bg:       var(--fw-color-rail-green-bg);
+  --fw-color-nav-surface:  var(--fw-color-rail-green-surface);
+  --fw-color-nav-text:     var(--fw-color-rail-green-text);
+  --fw-color-nav-text-dim: var(--fw-color-rail-green-text-dim);
+  --fw-color-nav-accent:   var(--fw-color-rail-green-accent);
+}
+
 .dark,
 [data-theme='dark'] {
   color-scheme: dark;
@@ -614,6 +684,29 @@
   --fw-glass-border-bot:  oklch(0 0 0 / 0.35);               /* deep bottom edge */
   --fw-glass-highlight:   rgb(255 250 240 / 0.07);           /* whisper inner specular */
   --fw-glass-accent-ring: oklch(0.648 0.149 149.6 / 0.24);
+
+  /* ---- Depth + Frost after dusk: the same ladder, near-black shadows, and a
+          graphite frost whose edge light is a whisper. ---- */
+  --fw-shadow-control: inset 0 1px 0 oklch(1 0 0 / 0.07),
+                       0 1px 1px oklch(0 0 0 / 0.30),
+                       0 2px 6px oklch(0 0 0 / 0.34);
+  --fw-frost-tint:            58 62 60;
+  --fw-frost-saturate:        118%;
+  --fw-frost-bg-subtle:       linear-gradient(180deg, rgb(var(--fw-frost-tint) / 0.56), rgb(var(--fw-glass-tint) / 0.50));
+  --fw-frost-bg-floating:     linear-gradient(180deg, rgb(var(--fw-frost-tint) / 0.68), rgb(var(--fw-glass-tint) / 0.58));
+  --fw-frost-bg-modal:        linear-gradient(180deg, rgb(var(--fw-frost-tint) / 0.86), rgb(var(--fw-glass-tint) / 0.80));
+  --fw-frost-rim:             rgb(255 250 240 / 0.10);
+  --fw-frost-edge-top:        rgb(255 250 240 / 0.09);
+  --fw-frost-edge-bot:        oklch(0 0 0 / 0.35);
+  --fw-frost-shadow-subtle:   0 1px 2px oklch(0 0 0 / 0.30),
+                              0 10px 30px oklch(0 0 0 / 0.40);
+  --fw-frost-shadow-floating: 0 1px 2px oklch(0 0 0 / 0.34),
+                              0 8px 24px oklch(0 0 0 / 0.44),
+                              0 24px 70px oklch(0 0 0 / 0.46);
+  --fw-frost-shadow-modal:    0 -18px 70px oklch(0 0 0 / 0.46),
+                              0 28px 90px oklch(0 0 0 / 0.56);
+  --fw-frost-selection-bg:    linear-gradient(180deg, oklch(0.648 0.149 149.6 / 0.30), oklch(0.648 0.149 149.6 / 0.18));
+  --fw-frost-selection-rim:   oklch(0.648 0.149 149.6 / 0.36);
 
   /* ---- The RAMP RUNS THE OTHER WAY after dusk ----
           On cream, "more" = more ink, so the light ramp darkens as it

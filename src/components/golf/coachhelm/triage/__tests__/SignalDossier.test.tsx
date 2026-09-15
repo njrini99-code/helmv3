@@ -106,7 +106,6 @@ function baseProps() {
     onReview: vi.fn(),
     onDismiss: vi.fn(),
     onPromoted: vi.fn(),
-    onBack: vi.fn(),
   };
 }
 
@@ -122,9 +121,11 @@ describe('SignalDossier — related context', () => {
     );
 
     expect(screen.getByText('Approach proximity slipping')).toBeInTheDocument();
-    // The current signal's own title appears once as the headline, not again
-    // in the "other signals" list.
-    expect(screen.getAllByText('Three-putt rate climbing')).toHaveLength(1);
+    // The current signal's own title must not reappear in the "other signals"
+    // list. It appears ZERO times here now rather than once: the enclosing
+    // `DrillPanel` carries the headline, so repeating it inside would be the
+    // same title twice on one screen.
+    expect(screen.queryByText('Three-putt rate climbing')).toBeNull();
   });
 
   it('renders an honest "no other open signals" line when this is the only one', () => {
@@ -208,14 +209,26 @@ describe('SignalDossier — related context', () => {
     expect(onSelectSignal).toHaveBeenCalledWith('signal-2');
   });
 
-  it('the desktop root fills and independently scrolls (no blank canvas below the action row)', () => {
+  /**
+   * The facelift moved this component INSIDE the Intelligence screen's one
+   * `DrillPanel`, so it no longer owns chrome of its own. The two assertions
+   * it used to make here — that the desktop root stretched and scrolled
+   * independently inside the retired `ResizableWorkspace` pane — are replaced
+   * by the rule that superseded them: no card, no nested panels, no back
+   * control (the DrillPanel draws all three).
+   */
+  it('renders bare inside its drill panel: no card chrome, no nested boxes, no back control', () => {
     const current = makeSignal();
     const { container } = render(
       <SignalDossier {...baseProps()} entry={{ signal: current, group: makeGroup([current]) }} />,
     );
     const root = container.firstElementChild;
-    expect(root?.className).toContain('min-[940px]:h-full');
-    expect(root?.className).toContain('min-[940px]:overflow-y-auto');
+    expect(root?.className).not.toMatch(/rounded-fw-lg|border-border-subtle|bg-surface\b/);
+    // The four `DossierSection` boxes were `rounded-fw-md border ... bg-surface-sunken`.
+    // Nothing in here draws that shape any more (a neutral Badge still uses the
+    // sunken token as a chip fill, which is not a panel).
+    expect(container.querySelectorAll('.rounded-fw-md.border')).toHaveLength(0);
+    expect(screen.queryByText(/back to queue/i)).toBeNull();
   });
   /**
    * The evidence block, and the two things it must get right.

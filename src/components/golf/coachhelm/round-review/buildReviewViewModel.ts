@@ -31,12 +31,19 @@ import {
   type RampCell,
   type TickerItem,
   type FilmstripHole,
+  type ScoringBucket,
+  type DivergingRow,
+  type DrivingDotHole,
 } from '@/components/fairway/modules';
+import type { TrendPoint } from '@/components/fairway/charts/TrendChart';
+import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
+import { formatToPar } from '@/lib/golf/format-to-par';
 import type {
   HoleBreakdown,
   RoundReviewContent,
   StrokesToGainItem,
   HalfStats,
+  RoundReviewTrendRow,
 } from '@/app/golf/actions/round-review-system';
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -73,10 +80,12 @@ export function sanitizeNaN(text: string): string {
  * line up. A player moving from a round card into that round's review saw the
  * same score change glyph one tap apart.
  *
- * Kept as a named re-export so the ~1 call site and its tests are unchanged,
- * and so the next person greps `formatToPar` here and finds the canonical one.
+ * Kept as a named re-export (imported above, alongside this module's other
+ * imports, so this file's OWN functions like `buildFrontBackDiverging` can
+ * call it too) so the ~1 call site and its tests are unchanged, and so the
+ * next person greps `formatToPar` here and finds the canonical one.
  */
-export { formatToPar } from '@/lib/golf/format-to-par';
+export { formatToPar };
 
 export interface ReviewGrade {
   score: 0 | 1 | 2 | 3 | 4 | 5;
@@ -89,9 +98,34 @@ export function buildGrade(scoreToPar: number): ReviewGrade {
   return { score, label: gradeLabel(score) };
 }
 
+const ROUND_TYPE_LABEL: Record<ReturnType<typeof roundTypeFromDb>, string> = {
+  practice: 'Practice',
+  tournament: 'Tournament',
+  qualifier: 'Qualifier',
+};
+
+/** "Qualifier"/"Tournament"/"Practice" — the R0 header's second `StatusPill`
+ *  label, normalized through the SAME `roundTypeFromDb` every other round
+ *  type display already uses. `null`/empty input renders nothing (the
+ *  caller simply omits the pill) rather than a fabricated "Practice". */
+export function buildRoundTypeLabel(roundType: string | null | undefined): string | null {
+  if (!roundType) return null;
+  return ROUND_TYPE_LABEL[roundTypeFromDb(roundType)];
+}
+
 /** "1 birdie · 9 pars · 5 bogeys · 3 doubles+" — skips zero-count buckets
- *  except pars, which always renders (mirrors the approved mockup). */
+ *  except pars, which always renders (mirrors the approved mockup) UNLESS
+ *  every bucket is empty. That all-empty case is a round with no hole rows
+ *  at all (a scorecard-only round the review was generated for without any
+ *  `golf_holes`/`golf_shots` detail) — "0 pars" there isn't a true fact
+ *  about the round's scoring, it's a number derived from data that was
+ *  never entered, so the whole line is honestly omitted instead (the
+ *  desktop capture literally showed "Mix: 0 pars" for exactly this round). */
 export function buildMixLine(dist: RoundReviewContent['scoringDistribution']): string {
+  const totalScored =
+    dist.eagles.length + dist.birdies.length + dist.pars.length + dist.bogeys.length + dist.doublePlus.length;
+  if (totalScored === 0) return '';
+
   const parts: string[] = [];
   if (dist.eagles.length > 0) {
     parts.push(`${dist.eagles.length} eagle${dist.eagles.length > 1 ? 's' : ''}`);
@@ -107,6 +141,28 @@ export function buildMixLine(dist: RoundReviewContent['scoringDistribution']): s
     parts.push(`${dist.doublePlus.length} double${dist.doublePlus.length > 1 ? 's' : ''}+`);
   }
   return parts.join(' · ');
+}
+
+/** Five-bucket scoring histogram (round-review.v2.md R2) — the SAME counts
+ *  `buildMixLine` reads (`scoringDistribution.{eagles,birdies,pars,bogeys,
+ *  doublePlus}`), same `totalScored === 0` gate (empty array, never a
+ *  fabricated all-zero chart), but unlike that text line this returns EVERY
+ *  bucket, including a real zero-count one, once there is at least one
+ *  scored hole — a histogram's whole point is the SHAPE of the distribution,
+ *  and skipping empty buckets would hide that shape rather than reveal it.
+ *  `tone` reuses `TickerItem`'s own sign vocabulary: 'good' for better-than-
+ *  par buckets, 'even' for par, 'over' for worse-than-par. */
+export function buildScoringHistogram(dist: RoundReviewContent['scoringDistribution']): ScoringBucket[] {
+  const totalScored =
+    dist.eagles.length + dist.birdies.length + dist.pars.length + dist.bogeys.length + dist.doublePlus.length;
+  if (totalScored === 0) return [];
+  return [
+    { label: 'Eagle', count: dist.eagles.length, tone: 'good' },
+    { label: 'Birdie', count: dist.birdies.length, tone: 'good' },
+    { label: 'Par', count: dist.pars.length, tone: 'even' },
+    { label: 'Bogey', count: dist.bogeys.length, tone: 'over' },
+    { label: 'Dbl+', count: dist.doublePlus.length, tone: 'over' },
+  ];
 }
 
 /** First word of a miss-direction token ("left_short" -> "left"). Falls back
@@ -157,6 +213,27 @@ export function buildFilmstripHoles(holes: HoleBreakdown[]): FilmstripHole[] {
   }));
 }
 
+/** A miss's left/right side, or `null` for a hit, a no-target hole, or a
+ *  miss whose logged direction isn't left/right (short/long/unparsed) — that
+ *  last case renders centered rather than guessing a side, a named,
+ *  documented simplification (round-review.v2.md Risks). */
+function driveMissSide(driveMiss: string | null): 'left' | 'right' | null {
+  const word = directionWord(driveMiss);
+  return word === 'left' || word === 'right' ? word : null;
+}
+
+/** `HoleBreakdown[]` -> `DrivingDotHole[]` for `DrivingDotStrip` (R6-01).
+ *  Every hole gets a dot, including par-3s: `fairwayHit` is already `null`
+ *  there (no fairway target at all), a distinct state from a miss — never
+ *  coerced to `false` or filtered out of the row. */
+export function buildDrivingDotStripData(holes: HoleBreakdown[]): DrivingDotHole[] {
+  return holes.map((h) => ({
+    n: h.hole,
+    fairwayHit: h.fairwayHit,
+    missSide: h.fairwayHit === false ? driveMissSide(h.driveMiss) : null,
+  }));
+}
+
 /** Narrative fallback, three tiers in priority order:
  *   1. `v2Body` — a FRESH V2 composed-review generation from THIS page load
  *      (only populated when the round had no stored review yet, so
@@ -204,6 +281,53 @@ export function formatReviewDate(dateStr: string | null | undefined): string {
 export function buildCourseDateLine(courseName: string, dateStr: string | null | undefined): string {
   const date = formatReviewDate(dateStr);
   return [courseName, date].filter((s) => s.length > 0).join(' · ');
+}
+
+const HEADER_WEEKDAYS_FULL = [
+  'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday',
+];
+const HEADER_MONTHS_SHORT = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+];
+
+/**
+ * "Monday at Pine Lakes · Cole Bennett · Aug 31" — the Round Review page
+ * header's identity line (round-detail.md: the header carries the round's
+ * own course/date/player under a "Round review" eyebrow, replacing the old
+ * bare course-name-or-"Round Review" title). Every segment is honest-empty:
+ * a missing course/date/player simply drops its own segment (and the
+ * "{weekday} at {course}" pairing degrades to whichever half is present)
+ * rather than rendering a placeholder.
+ *
+ * A dedicated manual y/m/d parse rather than reusing `formatReviewDate` —
+ * this line needs the FULL weekday name plus a separately-joinable short
+ * "Aug 31" segment, not that helper's single combined "Sat, Jun 6" string.
+ * Same UTC-day-shift avoidance as `formatReviewDate` (`new Date("2026-06-01")`
+ * reads as the prior day in US timezones, so the date is parsed as local
+ * y/m/d components instead of handed to the `Date` constructor as a string).
+ */
+export function buildReviewHeaderTitle(
+  courseName: string,
+  dateStr: string | null | undefined,
+  playerName: string | null | undefined,
+): string {
+  let weekday = '';
+  let shortDate = '';
+  const parts = dateStr?.split('T')[0]?.split('-');
+  if (parts && parts.length === 3) {
+    const y = parseInt(parts[0]!, 10);
+    const m = parseInt(parts[1]!, 10) - 1;
+    const d = parseInt(parts[2]!, 10);
+    const date = new Date(y, m, d);
+    weekday = HEADER_WEEKDAYS_FULL[date.getDay()] ?? '';
+    const monthLabel = HEADER_MONTHS_SHORT[m];
+    shortDate = monthLabel ? `${monthLabel} ${d}` : '';
+  }
+
+  const lead = courseName ? (weekday ? `${weekday} at ${courseName}` : courseName) : weekday;
+  const trailing = [playerName?.trim() || '', shortDate].filter((s) => s.length > 0);
+
+  return [lead, ...trailing].filter((s) => s.length > 0).join(' · ');
 }
 
 /** "#7 · Par 4 · 7 (+3)" header + note body — the filmstrip's scrub detail
@@ -261,6 +385,35 @@ export function buildFrontBackRows(split: RoundReviewContent['frontBackSplit']):
     fairways: s.fairwayTotal > 0 ? `${s.fairways}/${s.fairwayTotal}` : '—',
   });
   return [row('Front 9', split.front), row('Back 9', split.back)];
+}
+
+/** Front/back score-to-par as a `DivergingBars` row set (R6-03), replacing
+ *  the old 3-layer nested-card block. `frontPar`/`backPar` are summed from
+ *  the `holes` prop already passed to `FilmstripReview` (holes 1-9 vs
+ *  10-18) — a scorecard-only round with no `holes` rows sums to 0 for both
+ *  halves, and `split.front.score`/`split.back.score` are 0 right alongside
+ *  it (the SAME underlying absence of hole data `hasFrontBackData` already
+ *  reads), so a half with nothing real to show is simply omitted from the
+ *  row set rather than plotting a fabricated "0 (E)" bar. */
+export function buildFrontBackDiverging(
+  split: RoundReviewContent['frontBackSplit'],
+  holes: Array<{ hole_number: number; par: number | null }>,
+): DivergingRow[] {
+  const parSum = (predicate: (holeNumber: number) => boolean): number =>
+    holes.filter((h) => predicate(h.hole_number) && h.par != null).reduce((sum, h) => sum + (h.par ?? 0), 0);
+  const frontPar = parSum((n) => n <= 9);
+  const backPar = parSum((n) => n > 9);
+
+  const rows: DivergingRow[] = [];
+  if (split.front.score > 0 && frontPar > 0) {
+    const delta = split.front.score - frontPar;
+    rows.push({ label: 'Front 9', delta, display: formatToPar(delta) });
+  }
+  if (split.back.score > 0 && backPar > 0) {
+    const delta = split.back.score - backPar;
+    rows.push({ label: 'Back 9', delta, display: formatToPar(delta) });
+  }
+  return rows;
 }
 
 export interface PuttingRamp {
@@ -360,4 +513,63 @@ export function pickPracticePriority(
   if (v2 && v2.length > 0) return v2;
   const v1 = v1CoachHelm?.practicePriority?.trim();
   return v1 && v1.length > 0 ? v1 : null;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * Season trajectory — the ONLY new instrument that survives a scorecard-only
+ * round, because it reads OTHER rounds, never this one's holes/SG (R3)
+ * ──────────────────────────────────────────────────────────────────────── */
+
+export interface RoundTrendSeries {
+  points: TrendPoint[];
+  benchmark: { value: number; label: string } | null;
+}
+
+const ROUND_TREND_MIN_ROUNDS = 4;
+
+/**
+ * `getRoundReviewTrend`'s rows (most-recent-first, per its own query order)
+ * -> a `TrendChart` series, chronological left-to-right. `benchmark` is the
+ * player's own trailing average score-to-par, computed from the OTHER
+ * fetched rounds — comparing this round against a benchmark that includes
+ * itself would be circular and dilute exactly the round being reviewed. If
+ * the reviewed round isn't among the fetched rows (outside the last 12, or
+ * simply not found), the chart still renders informationally — it just
+ * carries no `marker` for a round it can't place, rather than fabricating
+ * one. Gated on `rows.length >= 4` (`TrendChart`'s own registry `avoidFor`);
+ * below that this returns an empty series and the caller omits the chart
+ * entirely, never an empty shell.
+ */
+export function buildRoundTrendSeries(rows: RoundReviewTrendRow[], currentRoundId: string): RoundTrendSeries {
+  if (rows.length < ROUND_TREND_MIN_ROUNDS) return { points: [], benchmark: null };
+
+  // Rows arrive newest-first (the server query's own order) — flip to
+  // chronological for the x-axis.
+  const chronological = [...rows].reverse();
+  const isCurrentRound = chronological.some((r) => r.id === currentRoundId);
+  const otherRows = isCurrentRound ? chronological.filter((r) => r.id !== currentRoundId) : chronological;
+
+  const benchmarkValue =
+    otherRows.length > 0
+      ? Math.round((otherRows.reduce((sum, r) => sum + r.score_to_par, 0) / otherRows.length) * 10) / 10
+      : null;
+
+  const points: TrendPoint[] = chronological.map((r) => {
+    const point: TrendPoint = { x: formatReviewDate(r.round_date), y: r.score_to_par };
+    if (r.id === currentRoundId) {
+      const tone: 'success' | 'neutral' | 'danger' =
+        benchmarkValue === null || r.score_to_par === benchmarkValue
+          ? 'neutral'
+          : r.score_to_par < benchmarkValue
+            ? 'success'
+            : 'danger';
+      point.marker = { tone };
+    }
+    return point;
+  });
+
+  return {
+    points,
+    benchmark: benchmarkValue !== null ? { value: benchmarkValue, label: 'Your avg' } : null,
+  };
 }

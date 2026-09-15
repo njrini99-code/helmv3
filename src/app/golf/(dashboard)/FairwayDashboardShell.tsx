@@ -28,7 +28,7 @@ import { loadFeatures } from '@/lib/motion/load-features';
 
 import { Button } from '@/components/ui/button';
 import { AppShell } from '@/components/fairway/app-shell/AppShell';
-import { useSidebarCollapsed } from '@/components/fairway/app-shell/FairwaySidebar';
+import { useSidebarCollapsed, useSidebarTone } from '@/components/fairway/app-shell/FairwaySidebar';
 import { FairwayBottomNav } from '@/components/fairway/app-shell/FairwayBottomNav';
 import { FairwayHubSubNav } from '@/components/fairway/app-shell/FairwayHubSubNav';
 import { MoreSheetFooter } from '@/components/fairway/app-shell/MoreSheetFooter';
@@ -195,6 +195,7 @@ const ShellLink: ShellLinkComponent = ({ href, children, ...rest }) => (
  */
 function Brand() {
   const collapsed = useSidebarCollapsed();
+  const cream = useSidebarTone() === 'cream';
   return (
     <Link
       href="/golf/dashboard"
@@ -212,8 +213,13 @@ function Brand() {
         unoptimized
       />
       {!collapsed && (
-        <span className="font-fw-display text-body-lg font-medium leading-none tracking-[-0.012em] text-nav-text">
-          Golf<span className="text-nav-accent">Helm</span>
+        <span
+          className={cn(
+            'font-fw-display text-body-lg font-medium leading-none tracking-[-0.012em]',
+            cream ? 'text-text-primary' : 'text-nav-text',
+          )}
+        >
+          Golf<span className={cream ? 'text-accent-700' : 'text-nav-accent'}>Helm</span>
         </span>
       )}
     </Link>
@@ -255,6 +261,7 @@ function ShellFooter() {
   const { setMobileOpen } = useSidebar();
   const { isSigningOut, handleSignOut } = useGolfSignOut();
   const collapsed = useSidebarCollapsed();
+  const cream = useSidebarTone() === 'cream';
   const settingsActive = pathname.startsWith('/golf/dashboard/settings');
 
   const rowBase = cn(
@@ -275,14 +282,21 @@ function ShellFooter() {
         className={cn(
           rowBase,
           settingsActive
-            ? 'bg-nav-surface text-nav-text'
-            : 'text-nav-text-dim hover:bg-nav-surface/60 hover:text-nav-text',
+            ? cream
+              ? 'border fw-frost-selection text-accent-700'
+              : 'bg-nav-surface text-nav-text'
+            : cream
+              ? 'text-text-secondary hover:bg-surface-tint hover:text-text-primary'
+              : 'text-nav-text-dim hover:bg-nav-surface/60 hover:text-nav-text',
         )}
       >
         <IconSettings
           size={18}
           aria-hidden
-          className={cn('flex-shrink-0', settingsActive ? 'text-nav-accent' : 'text-nav-text-dim')}
+          className={cn(
+            'flex-shrink-0',
+            settingsActive ? (cream ? 'text-accent-700' : 'text-nav-accent') : cream ? 'text-text-secondary' : 'text-nav-text-dim',
+          )}
         />
         {!collapsed && <span className="min-w-0 flex-1 truncate">Settings</span>}
       </Link>
@@ -292,9 +306,13 @@ function ShellFooter() {
         disabled={isSigningOut}
         aria-label={collapsed ? (isSigningOut ? 'Signing out…' : 'Sign out') : undefined}
         title={collapsed ? 'Sign out' : undefined}
-        className={cn(rowBase, 'text-nav-text-dim hover:bg-fw-danger/10 hover:text-fw-danger-ink disabled:opacity-50')}
+        className={cn(
+          rowBase,
+          'hover:bg-fw-danger/10 hover:text-fw-danger-ink disabled:opacity-50',
+          cream ? 'text-text-secondary' : 'text-nav-text-dim',
+        )}
       >
-        <IconLogout size={18} aria-hidden className="flex-shrink-0 text-nav-text-dim" />
+        <IconLogout size={18} aria-hidden className={cn('flex-shrink-0', cream ? 'text-text-secondary' : 'text-nav-text-dim')} />
         {!collapsed && (
           <span className="min-w-0 flex-1 truncate text-left">{isSigningOut ? 'Signing out…' : 'Sign out'}</span>
         )}
@@ -623,6 +641,12 @@ function FairwayDashboardContent({
         user={shellUser}
         brand={brand}
         sidebarFooter={sidebarFooter}
+        // Green tone: the golf rail is structural Fairway green beside the
+        // cream canvas (fairway-facelift BRIEF.md §2). The cream rail read as
+        // one flat tone with the page and the cards; the green rail gives the
+        // shell its contrast and carries the brand. Never set by baseball or
+        // admin, which keep FairwaySidebar's default dark `nav-*` rail.
+        sidebarTone="green"
         topBarActions={topBarActions}
         accentColor={accentColor}
         pathname={pathname}
@@ -665,6 +689,14 @@ function FairwayDashboardContent({
           tabIndex={-1}
           className={cn(
             'outline-none',
+            // Bare Toolbars (`frame="bare"`, the facelift default) bleed by
+            // `--fw-toolbar-bleed` so a stuck frost bar runs edge to edge while
+            // its controls stay on the content column. Declared ONCE here at
+            // the page roots' actual gutter — `px-4 md:px-6` on 70+ dashboard
+            // roots (roster, rounds, qualifiers, tasks…). A page with a
+            // different gutter (round review's `px-5 md:px-8`, PageContainer's
+            // `px-4 sm:px-6 lg:px-8` once adopted) re-declares it on its root.
+            '[--fw-toolbar-bleed:1rem] md:[--fw-toolbar-bleed:1.5rem]',
             // #948 follow-up — ChatDrawer's coach-only launcher FAB (v3/Chat/
             // ChatDrawer.tsx) is `fixed bottom-6 right-6` at `md:flex` (desktop
             // only), mounted once for every coach dashboard route. Nothing in

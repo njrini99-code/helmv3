@@ -29,6 +29,9 @@ let nextResults: Array<{ data: unknown[] | null; error: { message: string } | nu
 /** The realtime status callback observeRealtimeChannel registered, so a test
  *  can drive SUBSCRIBED / CHANNEL_ERROR transitions by hand. */
 let capturedStatusCb: ((status: string, err?: Error) => void) | null = null;
+/** The postgres_changes callback the hook registered on the channel, so a
+ *  test can dispatch a fake INSERT/UPDATE/DELETE payload by hand. */
+let capturedChangeCb: ((payload: unknown) => void) | null = null;
 
 function makeChain(record: QueryRecord) {
   const result = nextResults.shift() ?? { data: [], error: null };
@@ -115,7 +118,10 @@ vi.mock('@/lib/supabase/client', () => ({
     },
     channel: () => {
       const channelStub = {
-        on: () => channelStub,
+        on: (_type: string, _filter: unknown, cb: (payload: unknown) => void) => {
+          capturedChangeCb = cb;
+          return channelStub;
+        },
         // observeRealtimeChannel() calls subscribe(cb) and forwards every
         // status to the hook's onStatus. Capturing cb is what lets a test
         // drive a real CHANNEL_ERROR -> SUBSCRIBED reconnect.
@@ -777,6 +783,7 @@ describe('realtime reconnect recovers what the socket missed', () => {
     deferredResolvers = [];
     useDeferredForNextN = 0;
     capturedStatusCb = null;
+    capturedChangeCb = null;
   });
 
   it('refetches on reconnect, and NOT on the first subscribe', async () => {
@@ -847,5 +854,207 @@ describe('realtime reconnect recovers what the socket missed', () => {
     // A flaky mobile connection drops more than once per session; a latch that
     // only recovered the first time would leave every later gap unhealed.
     expect(onRealtimeEvent).toHaveBeenCalledTimes(2);
+  });
+});
+
+/**
+ * Realtime PATCHES a single row from the payload instead of refetching the
+ * whole visible range for every write (2026-09-10 perf audit). The old
+ * handler ignored the payload entirely and always called router.refresh()
+ * (`onRealtimeEvent`) + a full range refetch — for every insert, update and
+ * delete, by anyone on the team.
+ */
+describe('realtime patches a single row from the payload instead of refetching', () => {
+  const DAY_MS = 24 * 60 * 60 * 1000;
+
+  beforeEach(() => {
+    queryLog.length = 0;
+    nextResults = [];
+    deferredResolvers = [];
+    useDeferredForNextN = 0;
+    capturedStatusCb = null;
+    capturedChangeCb = null;
+  });
+
+  function renderRealtime(
+    initialEvents: CalendarEvent[],
+    viewer: { isCoach: boolean; playerId: string | null } = { isCoach: true, playerId: null },
+  ) {
+    const now = Date.now();
+    const onRealtimeEvent = vi.fn();
+    const { result } = renderHook(() =>
+      useCalendarRangeEvents({
+        teamId: 'team-1',
+        initialEvents,
+        visibleStart: new Date(now),
+        visibleEnd: new Date(now + 6 * DAY_MS),
+        loadedStart: new Date(now - 90 * DAY_MS).toISOString(),
+        loadedEnd: new Date(now + 90 * DAY_MS).toISOString(),
+        realtime: true,
+        onRealtimeEvent,
+        viewer,
+      }),
+    );
+    return { result, onRealtimeEvent };
+  }
+
+  it('applies an INSERT directly, with no refetch and no router.refresh()', async () => {
+    const { result, onRealtimeEvent } = renderRealtime([]);
+    await act(async () => {});
+    expect(capturedChangeCb).not.toBeNull();
+
+    await act(async () => {
+      capturedChangeCb!({
+        eventType: 'INSERT',
+        new: makeRow('new-1', new Date(Date.now() + DAY_MS).toISOString()),
+        old: {},
+      });
+    });
+
+    expect(result.current.events.map((e) => e.id)).toEqual(['new-1']);
+    expect(onRealtimeEvent).not.toHaveBeenCalled();
+    expect(queryLog.filter((q) => q.table === 'golf_events')).toHaveLength(0);
+  });
+
+  it('applies an UPDATE directly, changing only the targeted row', async () => {
+    const untouched = makeEvent('keep', new Date(Date.now()).toISOString());
+    const { result, onRealtimeEvent } = renderRealtime([
+      untouched,
+      makeEvent('edit-me', new Date(Date.now() + DAY_MS).toISOString()),
+    ]);
+    await act(async () => {});
+    const untouchedRefBefore = result.current.events.find((e) => e.id === 'keep');
+
+    const newStart = new Date(Date.now() + 5 * DAY_MS).toISOString();
+    await act(async () => {
+      capturedChangeCb!({
+        eventType: 'UPDATE',
+        new: makeRow('edit-me', newStart),
+        old: { id: 'edit-me' },
+      });
+    });
+
+    expect(result.current.events.find((e) => e.id === 'edit-me')?.start_time).toBe(newStart);
+    // The untouched row keeps its exact object reference — a memo keyed on
+    // it still bails out.
+    expect(result.current.events.find((e) => e.id === 'keep')).toBe(untouchedRefBefore);
+    expect(onRealtimeEvent).not.toHaveBeenCalled();
+    expect(queryLog.filter((q) => q.table === 'golf_events')).toHaveLength(0);
+  });
+
+  it('bails out to the SAME object reference when an UPDATE payload is content-identical to what is cached', async () => {
+    const iso = new Date(Date.now() + DAY_MS).toISOString();
+    // Mapped from the SAME row shape the realtime payload will carry, so
+    // this is a genuine content match, not just an id match — `makeEvent`
+    // (used elsewhere in this file for `initialEvents`) fills different
+    // field defaults than `mapGolfEventRow(makeRow(...))` does.
+    const { result } = renderRealtime([mapGolfEventRow(makeRow('same', iso))]);
+    await act(async () => {});
+    const refBefore = result.current.events.find((e) => e.id === 'same');
+
+    await act(async () => {
+      // Same row, same content — simulates a write to a column outside
+      // CALENDAR_EVENT_COLUMNS still notifying this channel.
+      capturedChangeCb!({ eventType: 'UPDATE', new: makeRow('same', iso), old: { id: 'same' } });
+    });
+
+    expect(result.current.events.find((e) => e.id === 'same')).toBe(refBefore);
+  });
+
+  it('applies a DELETE directly, removing only that id', async () => {
+    const { result, onRealtimeEvent } = renderRealtime([
+      makeEvent('keep', new Date(Date.now()).toISOString()),
+      makeEvent('gone', new Date(Date.now() + DAY_MS).toISOString()),
+    ]);
+    await act(async () => {});
+
+    await act(async () => {
+      capturedChangeCb!({ eventType: 'DELETE', new: {}, old: { id: 'gone' } });
+    });
+
+    expect(result.current.events.map((e) => e.id)).toEqual(['keep']);
+    expect(onRealtimeEvent).not.toHaveBeenCalled();
+    expect(queryLog.filter((q) => q.table === 'golf_events')).toHaveLength(0);
+  });
+
+  it('falls back to the filtered refetch for a class-row write when the viewer is a non-coach player (privacy floor)', async () => {
+    nextResults = [
+      { data: [{ id: 'own-class' }], error: null }, // golf_player_classes
+      { data: [], error: null },                    // golf_events refetch
+    ];
+    const { onRealtimeEvent } = renderRealtime([], { isCoach: false, playerId: 'sofia' });
+    await act(async () => {});
+
+    await act(async () => {
+      capturedChangeCb!({
+        eventType: 'INSERT',
+        new: { ...makeRow('class-1', new Date(Date.now() + DAY_MS).toISOString()), event_type: 'class' },
+        old: {},
+      });
+    });
+
+    expect(onRealtimeEvent).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      expect(queryLog.some((q) => q.table === 'golf_events')).toBe(true);
+    });
+  });
+
+  it('patches a class-row write directly for a coach viewer — no fallback needed', async () => {
+    const { result, onRealtimeEvent } = renderRealtime([], { isCoach: true, playerId: null });
+    await act(async () => {});
+
+    await act(async () => {
+      capturedChangeCb!({
+        eventType: 'INSERT',
+        new: { ...makeRow('class-1', new Date(Date.now() + DAY_MS).toISOString()), event_type: 'class' },
+        old: {},
+      });
+    });
+
+    expect(result.current.events.map((e) => e.id)).toEqual(['class-1']);
+    expect(onRealtimeEvent).not.toHaveBeenCalled();
+    expect(queryLog.filter((q) => q.table === 'golf_events')).toHaveLength(0);
+  });
+
+  it('falls back to the filtered refetch when a DELETE payload carries no id at all', async () => {
+    const { onRealtimeEvent } = renderRealtime([]);
+    await act(async () => {});
+
+    await act(async () => {
+      capturedChangeCb!({ eventType: 'DELETE', new: {}, old: {} });
+    });
+
+    expect(onRealtimeEvent).toHaveBeenCalledTimes(1);
+  });
+
+  it('a patched row survives a same-content re-render of initialEvents (router.refresh() no longer runs on every write)', async () => {
+    const iso = new Date(Date.now() + DAY_MS).toISOString();
+    const initialEvents = [makeEvent('a', iso)];
+    const { result, rerender } = renderHook(
+      ({ events }: { events: CalendarEvent[] }) =>
+        useCalendarRangeEvents({
+          teamId: 'team-1',
+          initialEvents: events,
+          visibleStart: new Date(Date.now()),
+          visibleEnd: new Date(Date.now() + 6 * DAY_MS),
+          loadedStart: new Date(Date.now() - 90 * DAY_MS).toISOString(),
+          loadedEnd: new Date(Date.now() + 90 * DAY_MS).toISOString(),
+          realtime: true,
+          viewer: { isCoach: true, playerId: null },
+        }),
+      { initialProps: { events: initialEvents } },
+    );
+    await act(async () => {});
+
+    const patchedIso = new Date(Date.now() + 3 * DAY_MS).toISOString();
+    await act(async () => {
+      capturedChangeCb!({ eventType: 'UPDATE', new: makeRow('a', patchedIso), old: { id: 'a' } });
+    });
+    expect(result.current.events.find((e) => e.id === 'a')?.start_time).toBe(patchedIso);
+
+    // A same-content re-render (no router.refresh() happened, so
+    // `initialEvents` itself never changed) must not revert the patch.
+    rerender({ events: initialEvents });
+    expect(result.current.events.find((e) => e.id === 'a')?.start_time).toBe(patchedIso);
   });
 });

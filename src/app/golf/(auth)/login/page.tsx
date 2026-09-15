@@ -17,7 +17,12 @@ import { useMediaQuery } from '@/hooks/use-media-query';
 import { isNativeApp } from '@/lib/utils/capacitor';
 
 function LoginContent() {
-  const prefersReducedMotion = useReducedMotion();
+  // `?? false` normalizes framer-motion's `boolean | null` to a plain
+  // `boolean`, matching the repo's convention. It does not by itself close
+  // the hydration gap on the `initial` props below for a reduced-motion user
+  // (server sees `null`/falsy, client's first render can resolve `true`) —
+  // that gap is a separate, open issue, not fixed by this normalization.
+  const prefersReducedMotion = useReducedMotion() ?? false;
   const searchParams = useSearchParams();
   const router = useRouter();
   const LOGIN_MESSAGES: Record<string, string> = {

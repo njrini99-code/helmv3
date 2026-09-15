@@ -5,12 +5,13 @@
  * StandingDrill — `?view=standing` (spec §5.3, absorbs `/my-standing`)
  * ----------------------------------------------------------------------------
  * Every tracked metric vs PGA Tour + the team, grouped by category, as reused
- * `StandingStrip` cards plus the per-row F028 counterfactual line — ported
+ * `StandingBars` cards plus the per-row F028 counterfactual line — ported
  * verbatim from `my-standing/page.tsx` (now a redirect shim onto this view).
  * ========================================================================== */
 
 import { DrillPanel, useStage } from '@/components/fairway/modules';
-import { StandingStrip, Surface, EmptyState } from '@/components/fairway';
+import { Surface, EmptyState } from '@/components/fairway';
+import { StandingBars } from '@/components/fairway/charts/StandingBars';
 import {
   METRIC_RENDER_CONFIG,
   type MetricRenderConfig,
@@ -101,7 +102,8 @@ export function StandingDrill({ standingByMetric, playerBaseline }: PlayerStandi
                         );
                     return (
                       <div key={id} className="flex flex-col">
-                        <StandingStrip
+                        <StandingBars
+                          frame="bare"
                           metric_id={id}
                           metric_label={cfg.display_label}
                           player_value={standing.player_value}
@@ -114,7 +116,6 @@ export function StandingDrill({ standingByMetric, playerBaseline }: PlayerStandi
                           direction={cfg.direction}
                           unit={cfg.unit}
                           scale={cfg.default_scale}
-                          size="card"
                         />
                         {counterfactualText ? (
                           <p className="mt-1.5 px-1 font-fw-sans text-caption italic text-text-tertiary">

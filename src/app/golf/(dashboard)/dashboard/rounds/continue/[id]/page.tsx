@@ -11,7 +11,7 @@ import type { Tables } from '@/lib/types/database';
 import type { ApproachMissDirection, PuttMissTag } from '@/lib/types/golf';
 import type { Metadata } from 'next';
 import { logServerError } from '@/lib/server-error-logger';
-import { RoundTypeEditor } from '@/components/fairway/pages/rounds/RoundTypeEditor';
+import { RoundTypeEditorTrigger } from '@/components/fairway/pages/rounds/RoundTypeEditor';
 
 export const metadata: Metadata = {
   title: 'Continue Round | GolfHelm',
@@ -649,7 +649,7 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
     <AnimatedPage>
       <ContinueRoundClient
         roundTypeEditor={
-          <RoundTypeEditor
+          <RoundTypeEditorTrigger
             roundId={id}
             currentType={round.round_type}
             currentQualifierId={round.qualifier_id}

@@ -28,6 +28,14 @@ There are three user surfaces:
 
 - `src/components/golf/qualifiers/**`
 - `src/components/golf/coachhelm/v3/QualifyingBoard/**`
+- `src/components/fairway/pages/qualifiers/FairwayQualifiers.tsx` — the coach
+  list screen, rebuilt as a field sheet (2026-09-10).
+- `src/components/fairway/pages/qualifiers/QualifyingField.tsx` — its stage
+  instrument. Page-local by design; not exported from `modules/`.
+- `src/components/fairway/pages/qualifiers/qualifiers-field-logic.ts` — every
+  derivation the screen needs, with no JSX, so the arithmetic is testable.
+- `src/components/fairway/pages/qualifiers/qualifiers-parts.tsx` — the ledger
+  columns and the dense table.
 - `src/components/fairway/pages/qualifiers/FairwayQualifierDetail.tsx`
 - `src/components/fairway/pages/qualifiers/FairwayQualifierLeaderboard.tsx`
 - `src/components/fairway/pages/my-qualifiers/FairwayMyQualifiers.tsx`
@@ -143,8 +151,46 @@ Leaderboard reads qualifier
   no geometry, and no real `<h1>` for a screen that never mounts.
   Reference implementation: `dashboard/alerts/loading.tsx`.
 
+### The coach list screen (2026-09-10)
+
+- Anatomy, in DOM order: a bare masthead on canvas, then exactly ONE Surface
+  holding the stage, then a bare ledger row of hairline-divided columns, then
+  the dense table. A second Surface above the table is a regression.
+- `today` is a bare `YYYY-MM-DD` string passed from the route. Nothing in the
+  screen reads a clock, which is what keeps the server render and the client's
+  first paint identical.
+- The stage plots every qualifier on one shared date axis. A bar runs from the
+  entry deadline through the last day of play; the pale half is the waiting
+  period and is drawn only when `entry_deadline` was actually recorded.
+- There are no per-row rails. The ground is vertical month gridlines. A rail
+  under every bar turns a short mark into a handle sitting on a slider, which
+  is the one shape this instrument must never produce.
+- A one-day qualifier is a position, not a length: it renders as a stroke
+  carrying its own date. Every mark states its own window in mono beside it.
+- `entry_deadline`, `selection_state`, `selection_slots_total`,
+  `selection_slots_coach_pick` and `num_rounds` have always been selected by
+  the loader; this screen is where they started rendering.
+- The table renders two branches, a `md:hidden` stacked list and a
+  `hidden md:block` table, both always in the DOM with CSS choosing. A
+  nine-column table at 390px either scrolls sideways or truncates the name
+  column. No breakpoint is read at runtime.
+- The search box and filter chips narrow the TABLE only. Narrowing the stage
+  would let an instrument empty itself out from under the reader.
+- A null `spots_available` is never summed as zero. The readout states how many
+  rows it could not count.
+
 ## Known Risk Areas
 
+- **Production carries qualifier rows with impossible dates.** Two rows have
+  `start_date` of `60824-02-02`, which a `date` column accepts. Plotted, they
+  stretched the axis across roughly fifty-eight thousand years, collapsed every
+  real bar to a hairline, and drove the monthly tick loop through about seven
+  hundred thousand iterations. `DOMAIN_LIMIT_YEARS` (5) and `isPlottable()` in
+  `qualifiers-field-logic.ts` keep such a row out of the domain and render it
+  as "Dates outside the plotted range" instead of a bar;
+  `MAX_TICK_STEPS` in `ScoreField.tsx` is the backstop. The rows themselves are
+  still there and still wrong. Any new instrument over `golf_qualifiers` dates
+  must bound its own domain.
 - Leaderboard totals can drift if entry stats are updated outside round submission.
   The aggregate refresh must check both its source read and affected-row write;
   an error-free zero-row PostgREST update is still a failure that must be logged.
@@ -183,6 +229,8 @@ Leaderboard reads qualifier
 
 - `e2e/golf-qualifier.spec.ts`
 - `src/test/coachhelm/v3/qualifying.test.ts`
+- `src/components/fairway/pages/qualifiers/__tests__/qualifiers-field-logic.test.ts`
+- `src/components/fairway/pages/qualifiers/__tests__/FairwayQualifiers.list.test.tsx`
 - Round lifecycle tests when qualifier entry round behavior changes.
 - RLS tests when qualifier tables or policies change.
 

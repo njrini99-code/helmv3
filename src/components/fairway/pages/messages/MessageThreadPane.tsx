@@ -3,7 +3,7 @@
 /** Conversation canvas: grouped messages, delivery state, scrolling and actions.
  * The panel fills the workspace; bubble widths remain independently bounded. */
 
-import { MESSAGE_REACTIONS, summarizeReactions, type MessageReactionsState } from '@/hooks/golf/use-message-reactions';
+import { MESSAGE_REACTIONS, summarizeReactions, type MessageReaction, type MessageReactionsState } from '@/hooks/golf/use-message-reactions';
 import * as React from 'react';
 import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
 import { ArrowLeft, Pencil, Trash2, Check, X, Copy, Paperclip, MessageSquare, Users, FileText, Download, AlertTriangle, RotateCw, Info, SmilePlus } from 'lucide-react';
@@ -224,11 +224,19 @@ function isSameCalendarDay(a: string | null, b: string | null): boolean {
  * Explicit `en-US` per the repo's locale rule — an implicit locale renders
  * differently for the server and the client and shows up as a hydration
  * mismatch.
+ *
+ * `now` is required and nullable, not an internal `new Date()`: which day is
+ * "today" is wall-clock-dependent, so reading it directly here could label a
+ * boundary "Today" on the server and a weekday name on the client's first
+ * paint. `null` (pre-mount) falls back to an explicit absolute date every
+ * pass renders identically.
  */
-function formatDaySeparator(iso: string | null): string {
+function formatDaySeparator(iso: string | null, now: Date | null): string {
   if (!iso) return '';
   const date = new Date(iso);
-  const now = new Date();
+  if (!now) {
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const startOfDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
   const dayDiff = Math.round((startOfToday.getTime() - startOfDate.getTime()) / 86_400_000);
@@ -253,6 +261,20 @@ const EMPTY_REACTIONS: MessageReactionsState = {
   rows: [], error: null, pending: null,
   refresh: async () => {}, setReaction: async () => false,
 };
+
+/** Stable "no reactions" result, shared by every message that has none — see
+ *  the `reactionsByMessageId` memo below for why identity matters here. */
+const NO_REACTIONS: ReturnType<typeof summarizeReactions> = [];
+
+/**
+ * Row 12 (perf audit) shared stand-ins, so a message row NOT in edit mode /
+ * delete-confirm / attachment-failure still receives an IDENTICAL prop every
+ * render instead of a fresh empty array, string, or arrow function. `React.memo`
+ * compares props with `Object.is`, so a `[]` or `() => {}` created fresh per
+ * render would defeat the memo for exactly the rows this fix targets.
+ */
+const NO_ATTACHMENTS: ResolvedAttachment[] = [];
+const NOOP = () => {};
 
 export interface MessageThreadPaneProps {
   reactions?: MessageReactionsState;
@@ -279,6 +301,14 @@ export interface MessageThreadPaneProps {
   onBack: () => void;
   /** Open the New message modal (the no-select prompt CTA). */
   onNewMessage: () => void;
+  /**
+   * The caller's seeded wall-clock reference — REQUIRED, and nullable by
+   * design. `formatDaySeparator` reads it instead of an internal `new Date()`
+   * so the day-boundary chip cannot label a message "Today" on one render
+   * pass and a weekday name on another (React #418). `null` means "not
+   * mounted yet"; the caller (FairwayMessages) owns the mount-gated state.
+   */
+  now: Date | null;
 
   // Edit / delete — driven by FairwayMessages over the unchanged hook actions.
   editingMessageId: string | null;
@@ -536,6 +566,352 @@ function MessageAttachments({
   );
 }
 
+/**
+ * Row 12 (perf audit) — a data-heavy thread renders up to 200 of these, and
+ * before this fix EVERY one of them re-rendered on any pane-level state
+ * change: composer/edit state, the action sheet, an attachment fetch landing
+ * for ANY message, even the minute clock ticking `now` (which this row does
+ * not need at all — see `formatDaySeparator` in the caller's loop; a
+ * bubble's own timestamp is an absolute `formatTime`, not wall-clock-relative).
+ *
+ * `React.memo` only pays off if the props it compares are actually stable, so
+ * the caller (`MessageThreadPane`'s map below) does the work of NOT handing
+ * every row a fresh array/string/function each render:
+ *   - `resolvedAttachments` falls back to the shared `NO_ATTACHMENTS`
+ *     constant, never a fresh `[]`.
+ *   - `reactionsForThisMessage` comes from the Row 8 memoized map, which is
+ *     keyed away from `messages` — a new incoming message does not touch it.
+ *   - Edit / delete / failed-send handlers are page-level (FairwayMessages
+ *     defines them without their own `useCallback`, and this file does not
+ *     own that file), so they are forwarded to a row ONLY while that row is
+ *     the one actually in that state (`isEditingThis`, `isDeletingThis`,
+ *     `msg.sendFailed`); every other row gets the shared `NOOP` instead of
+ *     whatever unstable reference the real handler currently is. A keystroke
+ *     in the edit textarea therefore only re-renders the one row being
+ *     edited, not the other 199.
+ *   - `onSetMobileActions` (a raw `useState` setter) and `setReaction`
+ *     (already a stable `useCallback` in `use-message-reactions.ts`) are
+ *     forwarded as-is; both are stable by construction.
+ *
+ * `reactionsPending` is the one prop this row cannot fully localize: it is
+ * true while ANY reaction save is in flight anywhere in the thread (existing
+ * behaviour — every reaction button disables during any save, not just the
+ * one being saved), so it still causes every row's memo check to run on a
+ * reaction tap. That is pre-existing behaviour this fix does not change.
+ */
+interface MessageRowProps {
+  msg: MessageWithReadStatus;
+  isOwn: boolean;
+  isGroup: boolean;
+  isFirstInGroup: boolean;
+  isLastInGroup: boolean;
+  showTime: boolean;
+  isNew: boolean;
+  reduceMotion: boolean;
+  senderName: string;
+  senderAvatar: string | null;
+  editedAt?: string | null;
+  hasAttachments?: boolean | null;
+  resolvedAttachments: ResolvedAttachment[];
+  hasAttachmentError: boolean;
+  isPhotoMessage: boolean;
+  isEditingThis: boolean;
+  editContent: string;
+  isEditSavingThis: boolean;
+  isDeletingThis: boolean;
+  isActionsOpenThis: boolean;
+  onEditContentChange: (value: string) => void;
+  onCancelEdit: () => void;
+  onSaveEdit: () => void;
+  onConfirmDelete: () => void;
+  onCancelDelete: () => void;
+  onSetMobileActions: (id: string | null) => void;
+  onRetryMessage?: (messageId: string) => void;
+  onDiscardFailedMessage?: (messageId: string) => void;
+  longPressHandlers: (messageId: string) => React.DOMAttributes<HTMLDivElement>;
+  messageRefs: React.MutableRefObject<Map<string, HTMLDivElement | null>>;
+  retryAttachments: () => void;
+  reactionsForThisMessage: ReturnType<typeof summarizeReactions>;
+  reactionsPending: boolean;
+  onSetReaction: (messageId: string, emoji: string, active: boolean) => Promise<boolean>;
+}
+
+const MessageRow = React.memo(function MessageRow({
+  msg,
+  isOwn,
+  isGroup,
+  isFirstInGroup,
+  isLastInGroup,
+  showTime,
+  isNew,
+  reduceMotion,
+  senderName,
+  senderAvatar,
+  editedAt,
+  hasAttachments,
+  resolvedAttachments,
+  hasAttachmentError,
+  isPhotoMessage,
+  isEditingThis,
+  editContent,
+  isEditSavingThis,
+  isDeletingThis,
+  isActionsOpenThis,
+  onEditContentChange,
+  onCancelEdit,
+  onSaveEdit,
+  onConfirmDelete,
+  onCancelDelete,
+  onSetMobileActions,
+  onRetryMessage,
+  onDiscardFailedMessage,
+  longPressHandlers,
+  messageRefs,
+  retryAttachments,
+  reactionsForThisMessage,
+  reactionsPending,
+  onSetReaction,
+}: MessageRowProps) {
+  return (
+    <m.div
+      data-message-row
+      data-message-selected={isActionsOpenThis ? 'true' : undefined}
+      ref={(node: HTMLDivElement | null) => {
+        // P259: register/unregister this message's scroll anchor.
+        if (node) messageRefs.current.set(msg.id, node);
+        else messageRefs.current.delete(msg.id);
+      }}
+      // A message should LAND, not appear. `false` for history and under
+      // reduced motion means no transform is ever applied to an
+      // already-settled bubble — only a genuine arrival moves, and only once.
+      initial={isNew && !reduceMotion ? { opacity: 0, y: 6 } : false}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+      className={cn(
+        'flex items-end gap-2',
+        isOwn ? 'justify-end' : 'justify-start',
+        isLastInGroup ? 'mb-1.5' : 'mb-0.5',
+      )}
+    >
+      {/* Reserve the gutter; the face itself anchors to the bubble. */}
+      {!isOwn && <div aria-hidden="true" className="w-8 flex-shrink-0" />}
+
+      {/* G-50b — bubble max-width is 288px; see the original inline note this
+          row carried before extraction for the full derivation. */}
+      <div className={cn('group relative flex min-w-0 max-w-[288px] flex-col gap-1', isOwn ? 'items-end' : 'items-start')}>
+        {/* Sender name — GROUPS ONLY, once per group. */}
+        {!isOwn && isGroup && isFirstInGroup && (
+          <span className="ml-1 font-fw-sans text-caption font-medium text-text-secondary">
+            {senderName}
+          </span>
+        )}
+
+        {!isEditingThis && !isDeletingThis && (
+          <div className={cn('absolute top-1/2 hidden -translate-y-1/2 items-center opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-within:opacity-100 motion-reduce:transition-none md:flex', isOwn ? 'right-full mr-2' : 'left-full ml-2')}>
+            <IconButton variant="ghost" aria-label="Message actions" title="React or more actions" onClick={() => onSetMobileActions(msg.id)}>
+              <SmilePlus size={18} aria-hidden="true" />
+            </IconButton>
+          </div>
+        )}
+
+        {/* Delete confirmation */}
+        {isDeletingThis && (
+          <Inset padding="none" className="mr-2 flex items-center gap-1 bg-fw-danger-bg px-2.5 py-1.5">
+            <span className="mr-1 font-fw-sans text-eyebrow text-fw-danger-ink">Delete?</span>
+            <IconButton variant="danger" size="sm" aria-label="Confirm delete" onClick={onConfirmDelete}>
+              <Check size={18} aria-hidden="true" />
+            </IconButton>
+            <IconButton variant="ghost" size="sm" aria-label="Cancel delete" onClick={onCancelDelete}>
+              <X size={18} aria-hidden="true" />
+            </IconButton>
+          </Inset>
+        )}
+
+        {/* Bubble — edit mode */}
+        {isEditingThis ? (
+          <div className="w-full rounded-card border border-accent-200 bg-accent-50 px-3 py-2">
+            <Textarea
+              value={editContent}
+              onChange={(e) => onEditContentChange(e.target.value)}
+              className="w-full min-w-0 border-0 bg-transparent p-0 font-fw-sans text-body text-text-primary focus:ring-0"
+              rows={Math.min(5, editContent.split('\n').length || 1)}
+              // eslint-disable-next-line jsx-a11y/no-autofocus
+              autoFocus
+            />
+            <div className="mt-2 flex items-center justify-end gap-1 border-t border-accent-200 pt-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={onCancelEdit}
+                disabled={isEditSavingThis}
+                className="min-h-0 rounded px-2 py-1 font-fw-sans text-eyebrow text-text-tertiary hover:bg-transparent hover:text-text-secondary"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={onSaveEdit}
+                disabled={isEditSavingThis || !editContent.trim()}
+                className={cn(
+                  'min-h-0 rounded px-2 py-1 font-fw-sans text-eyebrow',
+                  isEditSavingThis || !editContent.trim()
+                    ? 'cursor-not-allowed text-text-tertiary hover:bg-transparent'
+                    : 'text-accent-700 hover:bg-accent-100',
+                )}
+              >
+                {isEditSavingThis ? 'Saving…' : 'Save'}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          // Bubble — normal mode. own = accent tint, other = sunken matte.
+          <div
+            data-message-bubble
+            {...longPressHandlers(msg.id)}
+            className={cn(
+              'relative',
+              isPhotoMessage ? 'p-1 pb-2.5' : 'px-4 py-2.5',
+              'select-text [-webkit-touch-callout:default] [@media(pointer:coarse)]:select-none [@media(pointer:coarse)]:[-webkit-touch-callout:none] [@media(pointer:coarse)]:[-webkit-user-select:none]',
+              isActionsOpenThis && '[@media(pointer:coarse)]:relative [@media(pointer:coarse)]:z-20 [@media(pointer:coarse)]:scale-[1.015] [@media(pointer:coarse)]:opacity-100 [@media(pointer:coarse)]:transition-[transform,opacity] [@media(pointer:coarse)]:duration-150 motion-reduce:[@media(pointer:coarse)]:transition-none',
+              isOwn
+                ? 'bg-accent-650 text-text-on-accent'
+                : 'bg-surface text-text-primary',
+              isOwn ? '[box-shadow:var(--fw-shadow-raise)]' : '[box-shadow:var(--fw-shadow-card)]',
+              // G-19: a failed send stays legible but visibly not delivered.
+              msg.sendFailed && 'opacity-60',
+              isFirstInGroup && isLastInGroup && (isOwn ? 'rounded-card rounded-br-sm' : 'rounded-card rounded-bl-sm'),
+              isFirstInGroup && !isLastInGroup && 'rounded-card',
+              !isFirstInGroup && isLastInGroup && (isOwn ? 'rounded-card rounded-tr-md rounded-br-sm' : 'rounded-card rounded-tl-md rounded-bl-sm'),
+              !isFirstInGroup && !isLastInGroup && 'rounded-fw-md',
+            )}
+          >
+            {!isOwn && isLastInGroup && (
+              <span data-message-avatar className="absolute bottom-0 right-full mr-2 flex h-8 w-8 items-center justify-center">
+                <Avatar decorative name={senderName} src={senderAvatar} size="sm" tone="accent" />
+              </span>
+            )}
+            {/* Attachments — DORMANT unless has_attachments. */}
+            {hasAttachments ? (
+              resolvedAttachments.length ? (
+                <MessageAttachments attachments={resolvedAttachments} isOwn={isOwn} />
+              ) : hasAttachmentError ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={retryAttachments}
+                  aria-label="Couldn’t load attachment — tap to retry"
+                  className={cn(
+                    'mt-1 min-h-0 rounded-fw-md px-2 py-1 font-fw-sans text-eyebrow',
+                    'focus-visible:ring-offset-1',
+                    isOwn
+                      ? 'text-text-on-accent/90 hover:bg-text-on-accent/15 focus-visible:ring-offset-accent-500'
+                      : 'text-text-secondary hover:bg-surface focus-visible:ring-offset-surface-sunken',
+                  )}
+                >
+                  <RotateCw size={12} aria-hidden="true" />
+                  Couldn’t load attachment — tap to retry
+                </Button>
+              ) : (
+                <span className={cn('mt-1 inline-flex items-center gap-1 font-fw-sans text-eyebrow', isOwn ? 'text-ink-on-deep' : 'text-text-tertiary')}>
+                  <Paperclip size={12} aria-hidden="true" />
+                  Attachment
+                </span>
+              )
+            ) : null}
+            {msg.content ? (
+              <p
+                className={cn(
+                  'whitespace-pre-wrap break-words font-fw-sans text-body',
+                  isPhotoMessage && 'px-2.5 pt-2',
+                )}
+              >
+                {decodeMessageContent(msg.content)}
+              </p>
+            ) : null}
+            {/* Edited badge — DORMANT unless edited_at. */}
+            {editedAt ? (
+              <span className={cn('mt-1 block font-fw-sans text-eyebrow', isPhotoMessage && 'px-2.5', isOwn ? 'text-ink-on-deep-soft' : 'text-text-tertiary')}>
+                edited
+              </span>
+            ) : null}
+          </div>
+        )}
+        {reactionsForThisMessage.length > 0 && (
+          <div className="relative z-10 -mt-3 flex flex-wrap gap-1 px-1" aria-label="Message reactions">
+            {reactionsForThisMessage.map((reaction) => (
+              <Button
+                key={reaction.emoji}
+                type="button"
+                variant="ghost"
+                aria-label={`${reaction.emoji}: ${reaction.count} ${reaction.count === 1 ? 'reaction' : 'reactions'}${reaction.active ? ', including you' : ''}`}
+                aria-pressed={reaction.active}
+                disabled={reactionsPending}
+                onClick={() => { void onSetReaction(msg.id, reaction.emoji, !reaction.active); }}
+                className="group h-11 min-w-11 rounded-full border-0 bg-transparent p-0 hover:bg-transparent transition-transform duration-200 motion-reduce:transition-none"
+                title={reaction.active ? 'You reacted. Tap to remove your reaction.' : 'Tap to add your reaction.'}
+              >
+                <span className={cn('inline-flex h-7 min-w-10 items-center justify-center gap-1 rounded-full border px-2 shadow-flat transition-colors duration-150 motion-reduce:transition-none', reaction.active ? 'border-accent-600/40 bg-accent-100 text-accent-700' : 'border-border-subtle bg-elevated text-text-primary group-hover:bg-surface')}>
+                  <span className="text-body leading-none" aria-hidden="true">{reaction.emoji}</span>
+                  <m.span key={reaction.count} initial={reduceMotion ? false : { opacity: 0, y: 3 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: reduceMotion ? 0 : 0.16 }} className="text-caption tabular-nums">{reaction.count}</m.span>
+                </span>
+              </Button>
+            ))}
+          </div>
+        )}
+
+        {/* G-19 — a send that failed keeps its message here rather than
+            deleting it. */}
+        {msg.sendFailed && (
+          <div className="flex items-center gap-2 pt-0.5">
+            <span className="font-fw-sans text-eyebrow text-text-tertiary">
+              {msg.sendOutcome === 'unknown' ? 'Not confirmed' : 'Not sent'}
+            </span>
+            {onRetryMessage && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => onRetryMessage(msg.id)}
+                className="min-h-0 rounded-fw-md px-2 py-1 font-fw-sans text-eyebrow text-text-secondary hover:bg-surface"
+              >
+                <RotateCw size={12} aria-hidden="true" />
+                Retry
+              </Button>
+            )}
+            {onDiscardFailedMessage && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => onDiscardFailedMessage(msg.id)}
+                className="min-h-0 rounded-fw-md px-2 py-1 font-fw-sans text-eyebrow text-text-tertiary hover:bg-surface"
+              >
+                Discard
+              </Button>
+            )}
+          </div>
+        )}
+
+        {/* Time + read receipt (last of group, tabular-nums). */}
+        {showTime && !isEditingThis && (
+          <div className={cn('flex items-center gap-1.5', isOwn ? 'flex-row-reverse' : '')}>
+            <span className="font-fw-mono text-eyebrow tabular-nums text-text-tertiary">
+              {formatTime(msg.created_at)}
+            </span>
+            {/* P264 no-data-lies: per-message "Read" is only honest in a 1:1
+                thread — see the pre-extraction comment for why groups suppress it. */}
+            {isOwn && !isGroup && <ReadReceipt isRead={msg.isRead} />}
+          </div>
+        )}
+      </div>
+    </m.div>
+  );
+});
+
 export function MessageThreadPane({
   reactions: reactionProps,
   conversation,
@@ -567,11 +943,40 @@ export function MessageThreadPane({
   onOpenGroupDetails,
   scrollToMessageId,
   onScrolledToMessage,
+  now,
   children,
   className,
 }: MessageThreadPaneProps & { children?: React.ReactNode }) {
   const reduceMotion = useReducedMotion() ?? false;
   const reactions = reactionProps ?? EMPTY_REACTIONS;
+  /**
+   * Row 8 (perf audit) — `summarizeReactions` used to run TWICE per message
+   * per render (once to decide whether to render the reaction row, once to
+   * render it), each a full scan of every reaction row in the thread: 2×N×R
+   * work per render. One pass here groups `reactions.rows` by message id and
+   * summarizes each group once; the map is read by both call sites below.
+   *
+   * Deliberately keyed on `[reactions.rows, currentUserId, userId]` — NOT on
+   * `messages` — so a new incoming message (which doesn't touch
+   * `reactions.rows`) leaves this map's reference, and every existing
+   * message's summarized entry, untouched. That matters once MessageRow is
+   * memoized (Row 12): recomputing this on every new message would hand
+   * every row a "new" reactions prop and defeat the memo for all of them.
+   */
+  const reactionsByMessageId = React.useMemo(() => {
+    const byMessage = new Map<string, MessageReaction[]>();
+    for (const row of reactions.rows) {
+      const existing = byMessage.get(row.message_id);
+      if (existing) existing.push(row);
+      else byMessage.set(row.message_id, [row]);
+    }
+    const uid = currentUserId ?? userId;
+    const summarized = new Map<string, ReturnType<typeof summarizeReactions>>();
+    for (const [messageId, rows] of byMessage) {
+      summarized.set(messageId, summarizeReactions(rows, messageId, uid));
+    }
+    return summarized;
+  }, [reactions.rows, currentUserId, userId]);
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
   const messagesContainerRef = React.useRef<HTMLDivElement>(null);
   /** The message list itself — observed for late growth (images, fonts). */
@@ -1365,7 +1770,11 @@ export function MessageThreadPane({
 
               const editedAt = (msg as MessageWithReadStatus & { edited_at?: string | null }).edited_at;
               const hasAttachments = (msg as MessageWithReadStatus & { has_attachments?: boolean | null }).has_attachments;
-              const resolvedAttachments = attachmentsByMessage[msg.id] ?? [];
+              // Row 12 — NO_ATTACHMENTS, not a fresh `[]`, so a message with no
+              // attachments hands MessageRow the SAME array reference every
+              // render; a fresh empty array here would defeat the memo below
+              // for the common case (most messages carry none).
+              const resolvedAttachments = attachmentsByMessage[msg.id] ?? NO_ATTACHMENTS;
               const hasAttachmentError = attachmentErrors.has(msg.id);
               // G-29b — a photo message is framed differently from a text one:
               // the image IS the object and the caption sits under it, so the
@@ -1394,6 +1803,19 @@ export function MessageThreadPane({
               // as a data fault.
               const senderName = senderInfo?.name ?? 'Former member';
               const senderAvatar = senderInfo?.avatar ?? null;
+
+              // Row 8 — one lookup into the pre-summarized map instead of two
+              // full scans of `reactions.rows`.
+              const messageReactions = reactionsByMessageId.get(msg.id) ?? NO_REACTIONS;
+
+              // Row 12 — page-level handlers (edit/delete/failed-send) are
+              // forwarded to MessageRow ONLY for the one row actually in that
+              // state; every other row gets the shared, stable NOOP so its
+              // memo isn't defeated by FairwayMessages re-rendering with a
+              // fresh (non-`useCallback`) handler on every unrelated update.
+              const isEditingThis = editingMessageId === msg.id;
+              const isDeletingThis = deleteConfirmId === msg.id;
+              const isActionsOpenThis = mobileActionsId === msg.id;
 
               return (
                 <React.Fragment key={msg.id}>
@@ -1441,451 +1863,46 @@ export function MessageThreadPane({
                         '[box-shadow:inset_0_1px_0_var(--fw-glass-border),var(--fw-shadow-pop)]',
                       )}
                     >
-                      {formatDaySeparator(msg.created_at)}
+                      {formatDaySeparator(msg.created_at, now)}
                     </span>
                   </div>
                 )}
-                <m.div
-                  data-message-row
-                  data-message-selected={mobileActionsId === msg.id ? 'true' : undefined}
-                  ref={(node: HTMLDivElement | null) => {
-                    // P259: register/unregister this message's scroll anchor.
-                    if (node) messageRefs.current.set(msg.id, node);
-                    else messageRefs.current.delete(msg.id);
-                  }}
-                  // A message should LAND, not appear. `false` for history and
-                  // under reduced motion means no transform is ever applied to
-                  // an already-settled bubble — only a genuine arrival moves,
-                  // and only once.
-                  //
-                  // Deliberately small: 6px of rise and a fade, on the same
-                  // decelerating curve the shell uses. Anything larger reads as
-                  // the list re-laying-out, which is the opposite of the
-                  // impression it exists to give. Nothing else on screen moves,
-                  // because only this element animates — the history above it
-                  // stays exactly where the reader's eye left it.
-                  initial={isNew && !reduceMotion ? { opacity: 0, y: 6 } : false}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-                  className={cn(
-                    'flex items-end gap-2',
-                    isOwn ? 'justify-end' : 'justify-start',
-                    // Tight inside a group, generous between them — the
-                    // spacing carries the grouping now, rather than every
-                    // message sitting in the same undifferentiated rhythm.
-                    isLastInGroup ? 'mb-1.5' : 'mb-0.5',
-                  )}
-                >
-                  {/* Reserve the gutter; the face itself anchors to the bubble. */}
-                  {!isOwn && <div aria-hidden="true" className="w-8 flex-shrink-0" />}
-
-                  {/* G-50b — bubble max-width is 288px, and it is a RULE, not a
-                      specimen. `Bubbles.dc.html:17` states it as a class rule —
-                      `.bub { font-size: 15px; line-height: 22px; padding: 12px
-                      16px; max-width: 288px; }` — in the artboard whose entire
-                      purpose is bubble grammar. `Thread.dc.html`'s 296px and
-                      `Group.dc.html`'s 268/292px are inline styles on individual
-                      specimens in scene compositions. DECISIONS.md takes the
-                      rule, not the specimens.
-
-                      Group-incoming needs no number of its own: the 32px avatar
-                      column and the row's `gap-2` sit OUTSIDE this element, so
-                      an incoming row's available width is already 40px less than
-                      an outgoing row's. One rule, one derivation, zero magic
-                      numbers — 268 is written nowhere.
-
-                      G-49 — and the cap binds at EVERY width. G-50b left the
-                      `sm:max-w-[70%]` override in place, saying in this comment
-                      that the artboards are 390px phone scenes and supply no
-                      desktop authority. G-49/F13 is that authority: "on the
-                      desktop 720px-capped panel a bubble can reach ~475px — well
-                      past the readable measure §8.3 is protecting." The `sm:`
-                      breakpoint is 640px, so on the 720px pane the percentage
-                      won and 288px never applied at all: 70% of 720 is 504px.
-                      `audit/M03B-thread.md:94` quotes the plan — "D08 annotates
-                      a 288px maximum text measure... constrained by available
-                      row width" — and a maximum narrowed by row width is a
-                      ceiling, not a phone-scene number. There is nothing to
-                      invent here: deleting the override is what makes the
-                      stated rule apply. */}
-                  <div className={cn('group relative flex min-w-0 max-w-[288px] flex-col gap-1', isOwn ? 'items-end' : 'items-start')}>
-                    {/* Sender name — GROUPS ONLY, once per group.
-                        Redundant in a 1:1 (the header already names them) and
-                        it was `text-eyebrow` in tertiary ink, which is the
-                        quietest type in the system: in a busy group thread you
-                        could not scan who was speaking without studying the
-                        avatars. It is the label that makes a group readable, so
-                        it gets caption weight in secondary ink — still calm,
-                        actually legible. */}
-                    {!isOwn && isGroup && isFirstInGroup && (
-                      <span className="ml-1 font-fw-sans text-caption font-medium text-text-secondary">
-                        {senderName}
-                      </span>
-                    )}
-
-                    {editingMessageId !== msg.id && deleteConfirmId !== msg.id && (
-                      <div className={cn('absolute top-1/2 hidden -translate-y-1/2 items-center opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-within:opacity-100 motion-reduce:transition-none md:flex', isOwn ? 'right-full mr-2' : 'left-full ml-2')}>
-                        <IconButton variant="ghost" aria-label="Message actions" title="React or more actions" onClick={() => onSetMobileActions(msg.id)}>
-                          <SmilePlus size={18} aria-hidden="true" />
-                        </IconButton>
-                      </div>
-                    )}
-
-                    {/* Delete confirmation */}
-                    {deleteConfirmId === msg.id && (
-                      <Inset padding="none" className="mr-2 flex items-center gap-1 bg-fw-danger-bg px-2.5 py-1.5">
-                        <span className="mr-1 font-fw-sans text-eyebrow text-fw-danger-ink">Delete?</span>
-                        <IconButton variant="danger" size="sm" aria-label="Confirm delete" onClick={onConfirmDelete}>
-                          <Check size={18} aria-hidden="true" />
-                        </IconButton>
-                        <IconButton variant="ghost" size="sm" aria-label="Cancel delete" onClick={onCancelDelete}>
-                          <X size={18} aria-hidden="true" />
-                        </IconButton>
-                      </Inset>
-                    )}
-
-                    {/* Bubble — edit mode */}
-                    {editingMessageId === msg.id ? (
-                      <div className="w-full rounded-card border border-accent-200 bg-accent-50 px-3 py-2">
-                        <Textarea
-                          value={editContent}
-                          onChange={(e) => onEditContentChange(e.target.value)}
-                          // Moves WITH the bubble (G-29). Left at 13px it
-                          // would shrink the text the moment you tapped edit
-                          // and grow it back on save — the same words at two
-                          // sizes, which reads as a rendering bug.
-                          className="w-full min-w-0 border-0 bg-transparent p-0 font-fw-sans text-body text-text-primary focus:ring-0"
-                          rows={Math.min(5, editContent.split('\n').length || 1)}
-                          // eslint-disable-next-line jsx-a11y/no-autofocus
-                          autoFocus
-                        />
-                        <div className="mt-2 flex items-center justify-end gap-1 border-t border-accent-200 pt-2">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={onCancelEdit}
-                            disabled={isEditSaving}
-                            className="min-h-0 rounded px-2 py-1 font-fw-sans text-eyebrow text-text-tertiary hover:bg-transparent hover:text-text-secondary"
-                          >
-                            Cancel
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={onSaveEdit}
-                            disabled={isEditSaving || !editContent.trim()}
-                            className={cn(
-                              'min-h-0 rounded px-2 py-1 font-fw-sans text-eyebrow',
-                              isEditSaving || !editContent.trim()
-                                ? 'cursor-not-allowed text-text-tertiary hover:bg-transparent'
-                                : 'text-accent-700 hover:bg-accent-100',
-                            )}
-                          >
-                            {isEditSaving ? 'Saving…' : 'Save'}
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      // Bubble — normal mode. own = accent tint, other = sunken matte.
-                      //
-                      // G-42 — the long-press spread below is UNCONDITIONAL. It
-                      // used to be `isOwn ? longPressHandlers(msg.id) : {}`,
-                      // which is a stronger omission than §12.4 asks for: the
-                      // plan says incoming messages drop EDIT AND DELETE, and
-                      // this dropped the whole menu, Copy included. An incoming
-                      // message was the one thing in the thread you could not
-                      // copy.
-                      <div
-                        data-message-bubble
-                        {...longPressHandlers(msg.id)}
-                        className={cn(
-                          'relative',
-                          // G-29b — §8.6: "the image is the message object,
-                          // with a caption below; it is not an image nested
-                          // inside a large padded generic chat card." The
-                          // generic card padding is exactly what made it the
-                          // latter, so a photo message gets a frame instead.
-                          // `Bubbles.dc.html:77` draws that frame at 5px with a
-                          // 10px foot; 5px is not on the 4px spacing scale, and
-                          // 1px on a frame is render noise, so `p-1 pb-2.5`.
-                          isPhotoMessage ? 'p-1 pb-2.5' : 'px-4 py-2.5',
-                          // Long-press is the actions gesture, so the bubble
-                          // opts out of the iOS text-selection callout; Copy in
-                          // that menu replaces what selection provided.
-                          //
-                          // G-42 — this was `isOwn && …` and had to stop being,
-                          // because the long-press spread stopped being. THIS
-                          // pair of properties is what actually suppresses the
-                          // native callout on iOS — `onContextMenu` does not,
-                          // since iOS Safari has not fired `contextmenu` on a
-                          // long press since iOS 13. Attaching the gesture to
-                          // incoming messages without extending the suppression
-                          // would have raced our menu against the native
-                          // callout on exactly the messages the finding was
-                          // about, which is worse than the gap it closed.
-                          'select-text [-webkit-touch-callout:default] [@media(pointer:coarse)]:select-none [@media(pointer:coarse)]:[-webkit-touch-callout:none] [@media(pointer:coarse)]:[-webkit-user-select:none]',
-                          mobileActionsId === msg.id && '[@media(pointer:coarse)]:relative [@media(pointer:coarse)]:z-20 [@media(pointer:coarse)]:scale-[1.015] [@media(pointer:coarse)]:opacity-100 [@media(pointer:coarse)]:transition-[transform,opacity] [@media(pointer:coarse)]:duration-150 motion-reduce:[@media(pointer:coarse)]:transition-none',
-                          // Incoming is `bg-surface`. `Bubbles.dc.html:20` and
-                          // `Thread.dc.html:57` both paint it
-                          // `linear-gradient(180deg, oklch(0.989 …), oklch(0.980 …))`,
-                          // whose mean is 0.9845 — `--fw-color-surface` (0.984)
-                          // to three places, and inside the gradient's own range
-                          // rather than a step past its bright stop.
-                          // `--fw-color-elevated` (0.993) overshoots the whole
-                          // ramp, and `design-tokens.css:118` is pointed about
-                          // exactly that: surface is "warm CREAM, not white …
-                          // never by being a cold white sheet (we keep coming
-                          // back to this: no white cards)". A white slab is what
-                          // it shipped as.
-                          //
-                          // What actually made the thread read flat was the
-                          // GROUND, not the fill: the scroll region was itself
-                          // `bg-surface`, so a 0.984 bubble sat on a 0.984 page
-                          // and no shadow could rescue nine thousandths of
-                          // separation. The artboards float the bubbles over the
-                          // canvas. It is `bg-canvas` now (0.953), which is the
-                          // 0.031 step the shadows were drawn against. Taking the
-                          // flat token at the gradient's mean, not porting the
-                          // gradient — same G-50b logic, and no new machinery two
-                          // rounds after "you're doing too much with the cards".
-                          isOwn
-                            ? 'bg-accent-650 text-text-on-accent'
-                            : 'bg-surface text-text-primary',
-                          // G-49 (F14) — every bubble in the artboard casts a
-                          // shadow; the repo drew them flat. Same systemic gap
-                          // G-32 already closed on the rail's unread rows, which
-                          // the manifest calls out as "one systemic issue across
-                          // two lanes, not two".
-                          //
-                          // Incoming is free: `Bubbles.dc.html:18`'s `.lit` is
-                          // BYTE-IDENTICAL to `--fw-shadow-card` — inset 0 1px 0
-                          // oklch(1 0 0 / 0.55), then 0 1px 2px /0.05 and
-                          // 0 4px 10px /0.06. The arbitrary-property escape is
-                          // the repo idiom for that token because `shadow-card`
-                          // is a TRAP: it is a legacy Tailwind entry with a
-                          // different value, not a bridge to `--fw-shadow-card`.
-                          //
-                          // Own is NOT free. `.lit-accent` (`:19`) is a green
-                          // ambient — 0 8px 20px oklch(0.488 0.124 150 / 0.22) —
-                          // over a much dimmer 0.14 inset, because the surface
-                          // beneath it is dark green. No token expresses a
-                          // hued shadow, so it is A03 request #8. `shadow-soft`
-                          // ships until then: it IS a real bridge to
-                          // `--fw-shadow-soft`, and it carries the two-layer
-                          // ambient without the inset — which matters, since
-                          // `--fw-shadow-card`'s 0.55 white inset on a dark green
-                          // bubble would paint a bright specular rim the artboard
-                          // explicitly dims to 0.14.
-                          //
-                          // Own steps up to `--fw-shadow-raise`. A03 #8 stays
-                          // OPEN — the artboard's `.lit-accent` is a hued ambient
-                          // and no shadow token is hued, so the honest options
-                          // were a neutral token or a hand-typed colour, and this
-                          // suite rightly forbids the second: a literal drifts
-                          // silently the moment the palette moves. `shadow-soft`
-                          // (0 10px 28px / 0.13) read as no lift at all under a
-                          // dark green bubble; `raise` (0 18px 44px / 0.15) is the
-                          // next token up and does carry.
-                          //
-                          // One fact for whoever grants A03 #8, found here and
-                          // worth not re-deriving: the request records that no
-                          // token expresses this shadow, which is true of the
-                          // SHADOW ramp but not of the COLOUR ramp — the
-                          // artboard's ambient `oklch(0.488 0.124 150)` is
-                          // `--fw-color-accent-700` exactly (`design-tokens.css:99`,
-                          // and `:96`'s accent-750 is the same value). So the
-                          // variant can be minted from an existing colour rather
-                          // than a new one.
-                          isOwn ? '[box-shadow:var(--fw-shadow-raise)]' : '[box-shadow:var(--fw-shadow-card)]',
-                          // G-19: a failed send stays legible but visibly not
-                          // delivered — muted, never removed.
-                          (msg as MessageWithReadStatus).sendFailed && 'opacity-60',
-                          isFirstInGroup && isLastInGroup && (isOwn ? 'rounded-card rounded-br-sm' : 'rounded-card rounded-bl-sm'),
-                          isFirstInGroup && !isLastInGroup && 'rounded-card',
-                          !isFirstInGroup && isLastInGroup && (isOwn ? 'rounded-card rounded-tr-md rounded-br-sm' : 'rounded-card rounded-tl-md rounded-bl-sm'),
-                          !isFirstInGroup && !isLastInGroup && 'rounded-fw-md',
-                        )}
-                      >
-                        {!isOwn && isLastInGroup && (
-                          <span data-message-avatar className="absolute bottom-0 right-full mr-2 flex h-8 w-8 items-center justify-center">
-                            <Avatar decorative name={senderName} src={senderAvatar} size="sm" tone="accent" />
-                          </span>
-                        )}
-                        {/* Attachments — DORMANT unless has_attachments. Renders
-                            the resolved (signed) gallery once it loads; falls
-                            back to a quiet "Attachment" placeholder while the
-                            signed URLs are still in flight. P266: on a failed
-                            fetch, show a tap-to-retry chip instead of hanging on
-                            the placeholder forever. */}
-                        {hasAttachments ? (
-                          resolvedAttachments.length ? (
-                            <MessageAttachments attachments={resolvedAttachments} isOwn={isOwn} />
-                          ) : hasAttachmentError ? (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={retryAttachments}
-                              aria-label="Couldn’t load attachment — tap to retry"
-                              className={cn(
-                                'mt-1 min-h-0 rounded-fw-md px-2 py-1 font-fw-sans text-eyebrow',
-                                'focus-visible:ring-offset-1',
-                                isOwn
-                                  ? 'text-text-on-accent/90 hover:bg-text-on-accent/15 focus-visible:ring-offset-accent-500'
-                                  : 'text-text-secondary hover:bg-surface focus-visible:ring-offset-surface-sunken',
-                              )}
-                            >
-                              <RotateCw size={12} aria-hidden="true" />
-                              Couldn’t load attachment — tap to retry
-                            </Button>
-                          ) : (
-                            <span className={cn('mt-1 inline-flex items-center gap-1 font-fw-sans text-eyebrow', isOwn ? 'text-ink-on-deep' : 'text-text-tertiary')}>
-                              <Paperclip size={12} aria-hidden="true" />
-                              Attachment
-                            </span>
-                          )
-                        ) : null}
-                        {/* G-29 — message text is 15px, not 13px.
-                            `.bub { font-size: 15px; line-height: 22px; }` is a
-                            CLASS RULE in both `Bubbles.dc.html:17` and
-                            `Thread.dc.html:16`, and `text-body` is exactly 15px.
-                            M03B's F7 asked for 17px `body-lg`, but it sourced
-                            that from §8.3's prose ("approximately 17px"), not
-                            from an artboard — and the artboards state a rule.
-                            Same call as G-50b: the rule beats the prose.
-
-                            `leading-relaxed` goes with it. The token carries its
-                            own 24px line-height, and stacking a multiplier on
-                            top of a token that already specifies leading is how
-                            the scale stops meaning anything. 24px against the
-                            artboard's 22px is the one value here with no token —
-                            it is an A03 variant request, not a number to
-                            hardcode, and the token's 24px ships until then.
-
-                            G-29b — and it renders AFTER the attachments now.
-                            The order used to be content-then-attachments
-                            unconditionally, which is the "caption above the
-                            image" §8.6 names. On a photo message it carries its
-                            own inset (`Bubbles.dc.html:79` draws it at
-                            `8px 11px 0`, and 11px is not on the 4px scale) so
-                            the caption is inset from the frame while the image
-                            stays flush to it. */}
-                        {msg.content ? (
-                          <p
-                            className={cn(
-                              'whitespace-pre-wrap break-words font-fw-sans text-body',
-                              isPhotoMessage && 'px-2.5 pt-2',
-                            )}
-                          >
-                            {decodeMessageContent(msg.content)}
-                          </p>
-                        ) : null}
-                        {/* Edited badge — DORMANT unless edited_at. */}
-                        {editedAt ? (
-                          <span className={cn('mt-1 block font-fw-sans text-eyebrow', isPhotoMessage && 'px-2.5', isOwn ? 'text-ink-on-deep-soft' : 'text-text-tertiary')}>
-                            edited
-                          </span>
-                        ) : null}
-                      </div>
-                    )}
-                    {summarizeReactions(reactions.rows, msg.id, currentUserId ?? userId).length > 0 && (
-                      <div className="relative z-10 -mt-3 flex flex-wrap gap-1 px-1" aria-label="Message reactions">
-                        {summarizeReactions(reactions.rows, msg.id, currentUserId ?? userId).map((reaction) => (
-                          <Button
-                            key={reaction.emoji}
-                            type="button"
-                            variant="ghost"
-                            aria-label={`${reaction.emoji}: ${reaction.count} ${reaction.count === 1 ? 'reaction' : 'reactions'}${reaction.active ? ', including you' : ''}`}
-                            aria-pressed={reaction.active}
-                            disabled={Boolean(reactions.pending)}
-                            onClick={() => { void reactions.setReaction(msg.id, reaction.emoji, !reaction.active); }}
-                            className="group h-11 min-w-11 rounded-full border-0 bg-transparent p-0 hover:bg-transparent transition-transform duration-200 motion-reduce:transition-none"
-                            title={reaction.active ? 'You reacted. Tap to remove your reaction.' : 'Tap to add your reaction.'}
-                          >
-                            <span className={cn('inline-flex h-7 min-w-10 items-center justify-center gap-1 rounded-full border px-2 shadow-flat transition-colors duration-150 motion-reduce:transition-none', reaction.active ? 'border-accent-600/40 bg-accent-100 text-accent-700' : 'border-border-subtle bg-elevated text-text-primary group-hover:bg-surface')}>
-                              <span className="text-body leading-none" aria-hidden="true">{reaction.emoji}</span>
-                              <m.span key={reaction.count} initial={reduceMotion ? false : { opacity: 0, y: 3 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: reduceMotion ? 0 : 0.16 }} className="text-caption tabular-nums">{reaction.count}</m.span>
-                            </span>
-                          </Button>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* G-19 — a send that failed keeps its message here rather
-                        than deleting it. The bubble above is dimmed via
-                        `sendFailed`, and this row is the only trace that used
-                        to be a toast: what happened, and the two ways out. */}
-                    {(msg as MessageWithReadStatus).sendFailed && (
-                      <div className="flex items-center gap-2 pt-0.5">
-                        {/* G-20b — "Not sent" is a claim, and on a transport
-                            failure it is one we cannot make: the POST may have
-                            committed with only the response lost. §9.5 names
-                            that case exactly — "An unknown commit outcome uses
-                            Checking status or Confirmation unavailable, not a
-                            red definitive failure that invites duplication."
-                            The refused case keeps the definite wording, because
-                            there the server answered and we know. */}
-                        <span className="font-fw-sans text-eyebrow text-text-tertiary">
-                          {(msg as MessageWithReadStatus).sendOutcome === 'unknown'
-                            ? 'Not confirmed'
-                            : 'Not sent'}
-                        </span>
-                        {onRetryMessage && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => onRetryMessage(msg.id)}
-                            className="min-h-0 rounded-fw-md px-2 py-1 font-fw-sans text-eyebrow text-text-secondary hover:bg-surface"
-                          >
-                            <RotateCw size={12} aria-hidden="true" />
-                            Retry
-                          </Button>
-                        )}
-                        {onDiscardFailedMessage && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => onDiscardFailedMessage(msg.id)}
-                            className="min-h-0 rounded-fw-md px-2 py-1 font-fw-sans text-eyebrow text-text-tertiary hover:bg-surface"
-                          >
-                            Discard
-                          </Button>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Time + read receipt (last of group, tabular-nums).
-                        G-26: this belongs INSIDE the message column, not beside
-                        it. The row above is `flex items-end gap-2`, so while
-                        this lived as a sibling of the column it was a third
-                        flex item competing for the same horizontal space —
-                        every message carrying a timestamp had its bubble pushed
-                        inward by the width of "4:31 PM" plus the gap, so it no
-                        longer lined up with its own group-mates. Nested here it
-                        stacks under the bubble and inherits the column's
-                        `items-end`/`items-start`, which is what the artboards
-                        draw. `pb-1` went with it; the row's `items-end` no
-                        longer needs compensating for. */}
-                    {showTime && editingMessageId !== msg.id && (
-                      <div className={cn('flex items-center gap-1.5', isOwn ? 'flex-row-reverse' : '')}>
-                        <span className="font-fw-mono text-eyebrow tabular-nums text-text-tertiary">
-                          {formatTime(msg.created_at)}
-                        </span>
-                        {/* P264 no-data-lies: per-message "Read" is only honest in a
-                            1:1 thread. In a group the hook can only see ONE arbitrary
-                            other participant's last_read_at, so "Read" would imply the
-                            whole group has read when a single (random) member has.
-                            Suppress the receipt in groups rather than imply group-read
-                            off one member. */}
-                        {isOwn && !isGroup && <ReadReceipt isRead={(msg as MessageWithReadStatus).isRead} />}
-                      </div>
-                    )}
-                  </div>
-                </m.div>
+                <MessageRow
+                  msg={msg}
+                  isOwn={isOwn}
+                  isGroup={isGroup}
+                  isFirstInGroup={isFirstInGroup}
+                  isLastInGroup={isLastInGroup}
+                  showTime={showTime}
+                  isNew={isNew}
+                  reduceMotion={reduceMotion}
+                  senderName={senderName}
+                  senderAvatar={senderAvatar}
+                  editedAt={editedAt}
+                  hasAttachments={hasAttachments}
+                  resolvedAttachments={resolvedAttachments}
+                  hasAttachmentError={hasAttachmentError}
+                  isPhotoMessage={isPhotoMessage}
+                  isEditingThis={isEditingThis}
+                  editContent={isEditingThis ? editContent : ''}
+                  isEditSavingThis={isEditingThis ? isEditSaving : false}
+                  isDeletingThis={isDeletingThis}
+                  isActionsOpenThis={isActionsOpenThis}
+                  onEditContentChange={isEditingThis ? onEditContentChange : NOOP}
+                  onCancelEdit={isEditingThis ? onCancelEdit : NOOP}
+                  onSaveEdit={isEditingThis ? onSaveEdit : NOOP}
+                  onConfirmDelete={isDeletingThis ? onConfirmDelete : NOOP}
+                  onCancelDelete={isDeletingThis ? onCancelDelete : NOOP}
+                  onSetMobileActions={onSetMobileActions}
+                  onRetryMessage={msg.sendFailed ? onRetryMessage : undefined}
+                  onDiscardFailedMessage={msg.sendFailed ? onDiscardFailedMessage : undefined}
+                  longPressHandlers={longPressHandlers}
+                  messageRefs={messageRefs}
+                  retryAttachments={retryAttachments}
+                  reactionsForThisMessage={messageReactions}
+                  reactionsPending={Boolean(reactions.pending)}
+                  onSetReaction={reactions.setReaction}
+                />
                 </React.Fragment>
               );
             })}

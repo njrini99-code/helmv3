@@ -78,3 +78,57 @@ describe('Sheet — bottom-sheet `peek` default (audit W2)', () => {
     expect(drawerContent()).toHaveAttribute('data-vaul-snap-points', 'false');
   });
 });
+
+/**
+ * Perf split (2026-09-10): vaul applies its inline transform to
+ * `Drawer.Content` on every open/close/drag frame. A `backdrop-filter` on
+ * that same node gets resampled every one of those frames. The material
+ * (frost/matte) must live on a static inner child instead.
+ */
+describe('Sheet — material split off the vaul-transformed node', () => {
+  it('never puts the frost classes or data-material on the node vaul transforms', () => {
+    render(
+      <Sheet open side="bottom" material="frost" title="Frosted">
+        <Sheet.Body>content</Sheet.Body>
+      </Sheet>,
+    );
+
+    const content = drawerContent();
+    expect(content).not.toBeNull();
+    expect(content).not.toHaveClass('fw-frost');
+    expect(content).not.toHaveClass('fw-frost-modal');
+    expect(content).not.toHaveAttribute('data-material');
+
+    const material = content!.querySelector('[data-material]');
+    expect(material).not.toBeNull();
+    expect(material).toHaveAttribute('data-material', 'frost');
+    expect(material).toHaveClass('fw-frost', 'fw-frost-modal');
+  });
+
+  it('still renders the matte material on the inner child, not the transformed node', () => {
+    render(
+      <Sheet open side="bottom" title="Matte">
+        <Sheet.Body>content</Sheet.Body>
+      </Sheet>,
+    );
+
+    const content = drawerContent();
+    expect(content).not.toHaveClass('bg-elevated');
+    expect(content).not.toHaveAttribute('data-material');
+
+    const material = content!.querySelector('[data-material]');
+    expect(material).toHaveAttribute('data-material', 'matte');
+    expect(material).toHaveClass('bg-elevated');
+  });
+
+  it('keeps the close button reachable and the sheet body content intact after the split', () => {
+    render(
+      <Sheet open side="bottom" material="frost" title="Frosted">
+        <Sheet.Body>content</Sheet.Body>
+      </Sheet>,
+    );
+
+    expect(document.body.querySelector('[aria-label="Close"]')).not.toBeNull();
+    expect(document.body.textContent).toContain('content');
+  });
+});

@@ -295,11 +295,12 @@ describe('resolveActionFilePath', () => {
   });
 
   it('joins multiple ALL candidates instead of guessing when ambiguous', () => {
+    // v3/llm.ts was deleted 2026-09-10 as unreferenced dead code and dropped
+    // from the `round_review_ai` manifest, so it's no longer a candidate here.
     const result = resolveActionFilePath('round_review_ai', 'someUnknownExport');
     expect(result).toContain('src/app/golf/actions/round-reviews.ts');
     expect(result).toContain('src/app/golf/actions/round-review-system.ts');
     expect(result).toContain('src/app/golf/actions/round-recap.ts');
-    expect(result).toContain('src/app/golf/actions/v3/llm.ts');
     expect(result).toContain(' or ');
   });
 

@@ -1,18 +1,23 @@
 /* ============================================================================
- * Fairway · instrument · InstrumentPanel — frosted-glass instrument bezel
+ * Fairway · instrument · InstrumentPanel — flat matte instrument card
  * ----------------------------------------------------------------------------
- * Co-located CSS module for the parts of the warm Liquid Glass instrument
- * recipe Tailwind cannot express cleanly:
- *   1. the prefixed `backdrop-filter` (blur + saturate),
- *   2. the layered specular top/LEFT edge + a faint inner glow (the lit
- *      interior of a cockpit dial bezel),
- *   3. the three depth treatments (base / raised / inset),
- *   4. the `prefers-reduced-transparency` / `forced-colors` OPAQUE fallback.
+ * Co-located CSS module for the parts of the panel recipe Tailwind cannot
+ * express cleanly. The instrument cluster was repointed from a frosted-glass
+ * bezel to a calm, content-first matte card (flat & clean Apple — see the
+ * `.panel` comment below): no blur, no specular sheen, no interior glow.
+ * What's left here:
+ *   1. the three depth treatments (base / raised / inset),
+ *   2. the `forced-colors` OPAQUE fallback (Canvas/CanvasText),
+ *   3. a `prefers-reduced-transparency` fallback kept as a defensive no-op
+ *      (`backdrop-filter: none`) even though no panel sets a backdrop-filter
+ *      today, so a future glass variant can't reintroduce translucency for
+ *      that media query without also being caught here.
  *
- * Reads the locked `--fw-*` Liquid Glass tokens (design-tokens.css §4.3 / the
- * instrument-cluster direction). CSS-Module-scoped, so it cannot collide with
- * the app's global `.glass` utilities or the sibling glass-surface module.
- * NOTHING global is touched — purely additive, opt-in.
+ * Reads the locked `--fw-*` tokens (design-tokens.css §4.3 / the
+ * instrument-cluster direction) for surface, shadow and the accent ring.
+ * CSS-Module-scoped, so it cannot collide with the app's global `.glass`
+ * utilities or the sibling glass-surface module. NOTHING global is touched —
+ * purely additive, opt-in.
  * ========================================================================== */
 
 /* ── Base panel — a clean, calm matte CARD (flat & clean Apple; NOT glass).

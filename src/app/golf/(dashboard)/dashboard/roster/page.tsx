@@ -8,6 +8,7 @@ import { AlertCircle, Users } from 'lucide-react';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { Button, EmptyState, InlineNotice } from '@/components/fairway';
 import { FairwayCoachRoster } from '@/components/fairway/pages/roster/FairwayCoachRoster';
+import type { RosterPlayerRound } from '@/components/fairway/pages/roster/FairwayPlayerCard';
 import { FairwayPlayerRoster } from '@/components/fairway/pages/roster/FairwayPlayerRoster';
 import { getTeamJoinRequests } from '@/app/golf/actions/teams';
 import { loadCoachIntents } from '@/lib/coachhelm/v3/intent/loader';
@@ -63,6 +64,30 @@ interface PlayerWithStats {
   active_focus_areas?: number;
   /** Count of active v3 goals (golf_goals, state='active'). */
   active_goals?: number;
+  /**
+   * Last-10 rounds, 18-hole normalized, oldest→newest. No longer rendered
+   * on this page (the field-sheet stage draws every round in the window
+   * from `rounds` below instead) but left populated, additive, for any
+   * other reader of this shape.
+   */
+  recent_scores?: number[];
+  /**
+   * Split-half delta behind `recent_trend`, computed at the same call site
+   * (below) but thrown away before the facelift — see
+   * docs/design/fairway-facelift/screens/roster.v3.md, Risks. Signed the
+   * way `computeScoringTrendFromRounds` returns it (recentAvg − previousAvg,
+   * NOT direction-adjusted); null exactly when `recent_trend` is null (no
+   * signal yet).
+   */
+  recent_trend_delta?: number | null;
+  /**
+   * Every round this player has logged, oldest→newest, real (unnormalized)
+   * score and to-par — the ScoreField stage's per-round bars. Facelift
+   * addition (roster.v3.md Risks: "every bar on the stage is blocked"
+   * without this). Unlike `recent_scores`, not capped to 10 and not
+   * 18-hole normalized.
+   */
+  rounds?: RosterPlayerRound[];
 }
 
 // `formatHandicap` was removed in the 2026-05-28 IA trim — the roster card
@@ -361,12 +386,18 @@ export default async function GolfRosterPage() {
   const joinRequests = jrRes.success && jrRes.data ? jrRes.data : [];
 
   interface RoundStatRow {
+    /** Facelift addition — the ScoreField stage's per-round bar link. */
+    id: string;
     player_id: string;
     total_score: number | null;
     holes_played: number | null;
     /** Only used to sort each player's rounds most-recent-first for the
      *  trend classifier below — not read by the avg-score/rounds-count math. */
     round_date: string | null;
+    /** Facelift addition — the ScoreField stage's per-round bar height/sign. */
+    score_to_par: number | null;
+    /** Facelift addition — the stage bar's spoken label. */
+    course_name: string | null;
   }
   interface StatsCacheStatRow {
     player_id: string;
@@ -384,6 +415,11 @@ export default async function GolfRosterPage() {
   let focusAreaRows: FocusAreaStatRow[] = [];
   let goalsByPlayerMap = new Map<string, Goal[]>();
   let standingByPlayer = new Map<string, Map<MetricId, PlayerStanding>>();
+  // Facelift addition: a failed rounds read must render as "couldn't load",
+  // never as the honest-looking "No rounds logged yet" empty state the
+  // stage would otherwise show for every player (IMPLEMENTING.md honesty
+  // rule) — see FairwayCoachRoster's `roundsUnavailable` prop.
+  let roundsUnavailable = false;
 
   if (playerIds.length > 0) {
     // ONE parallel batch — rounds (for avg-score/trend), SG:Total cache,
@@ -403,7 +439,7 @@ export default async function GolfRosterPage() {
       fetchAllRowsResult<RoundStatRow>((from, to) =>
         supabase
           .from('golf_rounds')
-          .select('player_id, total_score, holes_played, round_date')
+          .select('id, player_id, total_score, holes_played, round_date, score_to_par, course_name')
           .in('player_id', playerIds)
           .not('total_score', 'is', null)
           .order('id', { ascending: true })
@@ -445,6 +481,7 @@ export default async function GolfRosterPage() {
     }
 
     allRounds = allRoundsResult.data ?? [];
+    roundsUnavailable = Boolean(allRoundsResult.error);
     statsCacheRows = (statsResult.data as StatsCacheStatRow[] | null) ?? [];
     focusAreaRows = (focusResult.data as FocusAreaStatRow[] | null) ?? [];
     goalsByPlayerMap = goalsMap;
@@ -545,21 +582,59 @@ export default async function GolfRosterPage() {
     );
     const trendResult = computeScoringTrendFromRounds(mostRecentFirst);
 
+    // Roster MatrixBoard trend Sparkline — last 10 rounds, 18-hole
+    // normalized, oldest→newest (the query already filters
+    // `total_score is not null`; the extra guard here is just type safety).
+    // Same normalization as stats/team/page.tsx's `recent_scores`.
+    const recentScores = mostRecentFirst
+      .filter((r) => r.total_score !== null)
+      .slice(0, 10)
+      .map((r) => Math.round((r.total_score as number) * (18 / (r.holes_played ?? 18))))
+      .reverse();
+
+    // ScoreField stage — every round, oldest→newest, real (unnormalized)
+    // score/to-par. `.filter(round_date)` drops the one shape the stage
+    // can't place on the date axis; the avg/rounds-count math above never
+    // depended on a round having a date, so this filter is scoped to this
+    // field only, not to `roundsCount`/`avgScore`.
+    const plottedRounds: RosterPlayerRound[] = rounds
+      // `score_to_par` excluded when null rather than defaulted to 0 — a
+      // missing to-par is not a measured even-par round (honesty rule).
+      .filter((r): r is typeof r & { round_date: string; total_score: number; score_to_par: number } =>
+        r.round_date != null && r.total_score != null && r.score_to_par != null,
+      )
+      .sort((a, b) => a.round_date.localeCompare(b.round_date))
+      .map((r) => ({
+        id: r.id,
+        date: r.round_date.slice(0, 10),
+        score: r.total_score,
+        toPar: r.score_to_par,
+        courseName: r.course_name,
+      }));
+
     return {
       ...player,
       rounds_count: roundsCount,
       avg_score: avgScore,
       last_seen: player.last_seen,
       recent_trend: trendResult.hasSignal ? trendResult.trend : null,
+      recent_trend_delta: trendResult.hasSignal ? trendResult.delta : null,
       sg_total: sgTotalByPlayer[player.id] ?? null,
       standing_tier: standingTierByPlayer[player.id] ?? null,
       active_focus_areas: activeFocusAreasByPlayer[player.id] ?? 0,
       active_goals: goalsByPlayerMap.get(player.id)?.length ?? 0,
+      recent_scores: recentScores,
+      rounds: plottedRounds,
     };
   });
 
   const teamName = team?.name || 'Team';
   const inviteCode = team?.join_code || null;
+  // Server-computed once, passed down as a fixed string prop — the
+  // ScoreField stage's shared axis needs a "today" but a client render
+  // reading `new Date()`/`Date.now()` itself would disagree with this
+  // server render (IMPLEMENTING.md's server/client agreement rule).
+  const today = new Date().toISOString().slice(0, 10);
 
   // The same student signing up twice — once personally, once with the school
   // address — lands on the roster as two players with their data split across
@@ -592,6 +667,8 @@ export default async function GolfRosterPage() {
         intents={Object.fromEntries(coachIntents)}
         joinRequests={joinRequests}
         focusAreas={focusAreasForHealth}
+        today={today}
+        roundsUnavailable={roundsUnavailable}
       />
     </div>
   );

@@ -18,7 +18,6 @@
 
 import { cn } from '@/lib/utils';
 import { IconSettings, IconLogout } from '@/components/icons';
-import { Button } from '@/components/ui/button';
 import type { ShellLinkComponent } from './types';
 
 export interface MoreSheetFooterProps {
@@ -74,21 +73,22 @@ export function MoreSheetFooter({
         />
         Settings
       </Link>
-      <Button
+      {/* A quiet danger text action — the same row as Settings, never a
+          tinted pill (the legacy ui/button it used to be gave it one). */}
+      {/* eslint-disable-next-line helm/no-raw-button -- a quiet danger text row with the same geometry as the Settings link beside it; Button would render a pill */}
+      <button
         type="button"
-        variant="ghost"
-        haptic="none"
         onClick={onSignOut}
         disabled={signingOut}
         className={cn(
           rowBase,
-          'justify-start bg-transparent hover:bg-fw-danger/10',
-          'text-text-secondary hover:text-fw-danger-ink disabled:opacity-50',
+          'justify-start bg-transparent outline-none focus-visible:ring-2 focus-visible:ring-border-focus',
+          'text-text-secondary [@media(hover:hover)]:hover:bg-fw-danger/10 [@media(hover:hover)]:hover:text-fw-danger-ink active:text-fw-danger-ink disabled:opacity-50',
         )}
       >
         <IconLogout size={18} aria-hidden className="flex-shrink-0" />
         {signingOut ? 'Signing out…' : 'Sign out'}
-      </Button>
+      </button>
     </>
   );
 }

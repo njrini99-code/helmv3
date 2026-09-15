@@ -8,12 +8,13 @@ import { AddClassModal, type ClassFormData } from '@/components/golf/classes/Add
 import { UploadScheduleModal } from '@/components/golf/classes/UploadScheduleModal';
 import { ConfirmClassesModal } from '@/components/golf/classes/ConfirmClassesModal';
 import { ClassDetailModal } from '@/components/golf/classes/ClassDetailModal';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { formatTimeDisplay, formatDaysDisplay, generateClassColor, detectSemester, type ParsedClass } from '@/lib/utils/schedule-parser';
 import { syncClassToCalendar, removeClassFromCalendar } from '@/app/golf/actions/calendar-sync';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayGolfClasses } from '@/components/fairway/pages/player-game';
 import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
+// Specific path (not the barrel) so barrel-mocking tests don't need to stub it.
+import { ConfirmModal } from '@/components/fairway/overlays/ConfirmModal';
 
 // PlayerClass interface matches the actual golf_player_classes table schema
 interface PlayerClass {
@@ -711,13 +712,13 @@ export default function GolfClassesPage() {
         parsedClasses={parsedClasses}
       />
 
-      <ConfirmDialog
+      <ConfirmModal
         open={showDeleteAllConfirm}
         title="Delete all classes?"
         message={`This will remove all ${classes.length} class${classes.length === 1 ? '' : 'es'} from your schedule and your calendar. This action cannot be undone.`}
         confirmLabel="Delete All"
         cancelLabel="Cancel"
-        variant="danger"
+        tone="danger"
         isLoading={deletingAll}
         onConfirm={confirmDeleteAllClasses}
         onCancel={() => setShowDeleteAllConfirm(false)}

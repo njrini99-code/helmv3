@@ -1,7 +1,8 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Button, IconButton } from './button';
+import { fwHaptic } from '@/lib/fairway/haptics';
 
 vi.mock('@/lib/fairway/haptics', () => ({ fwHaptic: vi.fn() }));
 
@@ -55,5 +56,55 @@ describe('Fairway button depth', () => {
     expect(screen.getByRole('button', { name: 'Add' }).className).toContain('inset_0_1px_0');
     expect(screen.getByRole('button', { name: 'More' }).className).toContain('var(--fw-shadow-card)');
     expect(screen.getByRole('button', { name: 'Close' }).className).not.toMatch(/(^|\s)(shadow-(flat|soft)|\[box-shadow:)/);
+  });
+});
+
+describe('Fairway button haptic prop', () => {
+  // No global `clearMocks` — reset the shared mock so each "not called"
+  // assertion below isn't polluted by a click fired in an earlier test.
+  beforeEach(() => {
+    vi.mocked(fwHaptic).mockClear();
+  });
+
+  it('fires fwHaptic(\'light\') by default, unchanged from today', async () => {
+    const user = userEvent.setup();
+    render(<Button>Save</Button>);
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    expect(fwHaptic).toHaveBeenCalledWith('light');
+  });
+
+  it('suppresses the tap entirely when haptic="none"', async () => {
+    const user = userEvent.setup();
+    render(<Button haptic="none">Save</Button>);
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    expect(fwHaptic).not.toHaveBeenCalled();
+  });
+
+  it('overrides the intensity when a different haptic is passed', async () => {
+    const user = userEvent.setup();
+    render(<Button haptic="heavy">Delete</Button>);
+    await user.click(screen.getByRole('button', { name: 'Delete' }));
+    expect(fwHaptic).toHaveBeenCalledWith('heavy');
+  });
+
+  it('IconButton fires nothing by default (unchanged from today)', async () => {
+    const user = userEvent.setup();
+    render(<IconButton aria-label="Add"><svg /></IconButton>);
+    await user.click(screen.getByRole('button', { name: 'Add' }));
+    expect(fwHaptic).not.toHaveBeenCalled();
+  });
+
+  it('IconButton fires the given intensity when haptic is passed', async () => {
+    const user = userEvent.setup();
+    render(<IconButton aria-label="Add" haptic="selection"><svg /></IconButton>);
+    await user.click(screen.getByRole('button', { name: 'Add' }));
+    expect(fwHaptic).toHaveBeenCalledWith('selection');
+  });
+
+  it('IconButton stays silent when haptic="none" is passed explicitly', async () => {
+    const user = userEvent.setup();
+    render(<IconButton aria-label="Add" haptic="none"><svg /></IconButton>);
+    await user.click(screen.getByRole('button', { name: 'Add' }));
+    expect(fwHaptic).not.toHaveBeenCalled();
   });
 });

@@ -535,6 +535,7 @@ const config: Config = {
         'pop':           'var(--fw-shadow-pop)',    // anchored panels
         'fw-modal':      'var(--fw-shadow-modal)',  // sheets / modals
         'fw-glow-accent':'var(--fw-glow-accent)',   // accent emphasis ring
+        'control':       'var(--fw-shadow-control)', // physical controls: lit top edge + tight contact
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',

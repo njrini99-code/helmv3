@@ -55,6 +55,42 @@ vi.mock('@/components/fairway', () => {
   SheetRoot.Body = function Body({ children }: { children?: React.ReactNode }) {
     return <div>{children}</div>;
   };
+  SheetRoot.Footer = function Footer({ children }: { children?: React.ReactNode }) {
+    return <div>{children}</div>;
+  };
+
+  // InsetGroup / InsetGroup.Row — the real primitive is a `<div>` with
+  // hairline seams between rows; the mock keeps only what tests need to
+  // find text, roles and accessible names through it. `as` renders the row
+  // as the given element (an anchor, `next/link`'s mock, or "button"), and
+  // every extra prop (href, target, rel, aria-label, onClick, type…) is
+  // forwarded so those rows keep their real accessible name/role.
+  function InsetGroupRoot({ children, ...props }: { children?: React.ReactNode } & Record<string, unknown>) {
+    return <div {...props}>{children}</div>;
+  }
+  InsetGroupRoot.Row = function Row({
+    as,
+    icon,
+    trailing,
+    align: _align,
+    children,
+    ...props
+  }: {
+    as?: React.ElementType;
+    icon?: React.ReactNode;
+    trailing?: React.ReactNode;
+    align?: string;
+    children?: React.ReactNode;
+  } & Record<string, unknown>) {
+    const Comp = (as ?? 'div') as React.ElementType;
+    return (
+      <Comp {...props}>
+        {icon}
+        {children}
+        {trailing}
+      </Comp>
+    );
+  };
 
   function ModalShellRoot({ open, title, children }: SheetProps) {
     return open ? (
@@ -146,6 +182,19 @@ vi.mock('@/components/fairway', () => {
     Skeleton: ({ className }: { className?: string }) => <div data-testid="skeleton" className={className} />,
     PopoverPanel: PopoverPanelRoot,
     Segmented,
+    InsetGroup: InsetGroupRoot,
+    Eyebrow: ({
+      as,
+      children,
+      className,
+    }: {
+      as?: React.ElementType;
+      children?: React.ReactNode;
+      className?: string;
+    }) => {
+      const Comp = (as ?? 'span') as React.ElementType;
+      return <Comp className={className}>{children}</Comp>;
+    },
     Inset: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
     Readout: ({ value, label }: { value: number; label: string }) => (
       <div>
@@ -460,6 +509,28 @@ describe('FairwayEventDetailDrawer — coach view', () => {
   it('player view offers "View my attendance" instead', () => {
     renderDrawer({ isCoach: false });
     expect(screen.getByRole('button', { name: 'View my attendance' })).toBeInTheDocument();
+  });
+
+  // calendar.mobile.md item 5 — the hand-rolled RSVP <dl> is replaced by the
+  // shared StatMatrix module (its first consumer). `data-slot="stat-matrix"`
+  // is the real, unmocked primitive's own marker (@/components/fairway/
+  // modules is not mocked by this suite).
+  it('renders the response StatMatrix with all four labels and the invited count', () => {
+    renderDrawer({
+      isCoach: true,
+      onRespond: undefined,
+      rsvpSummary: { accepted: 3, declined: 1, tentative: 0, pending: 2, total: 6 },
+    });
+    const matrix = document.querySelector('[data-slot="stat-matrix"]');
+    expect(matrix).not.toBeNull();
+    const scoped = within(matrix as HTMLElement);
+    expect(scoped.getByText('Responses')).toBeInTheDocument();
+    expect(scoped.getByText('6 invited')).toBeInTheDocument();
+    expect(scoped.getByText('Accepted')).toBeInTheDocument();
+    expect(scoped.getByText('Maybe')).toBeInTheDocument();
+    expect(scoped.getByText('No')).toBeInTheDocument();
+    expect(scoped.getByText('Pending')).toBeInTheDocument();
+    expect(scoped.getByText('3')).toBeInTheDocument();
   });
 });
 

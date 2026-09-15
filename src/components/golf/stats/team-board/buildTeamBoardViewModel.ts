@@ -32,10 +32,10 @@ function finite(n: number | null | undefined): number | null {
   return typeof n === 'number' && Number.isFinite(n) ? n : null;
 }
 
-/** Signed strokes-gained display, e.g. "+1.0" / "−0.3" / "E". Em-dash when null. */
+/** Signed strokes-gained display, e.g. "+1.0" / "−0.3" / "E". En dash when null. */
 export function fmtSg(value: number | null): string {
   const n = finite(value);
-  if (n === null) return '—';
+  if (n === null) return '–';
   const rounded = Math.round(n * 10) / 10;
   if (rounded === 0) return 'E';
   const sign = rounded > 0 ? '+' : '−';
@@ -44,22 +44,22 @@ export function fmtSg(value: number | null): string {
 
 function fmtScoringAvg(value: number | null): string {
   const n = finite(value);
-  return n === null ? '—' : n.toFixed(1);
+  return n === null ? '–' : n.toFixed(1);
 }
 
 function fmtScore(value: number | null): string {
   const n = finite(value);
-  return n === null ? '—' : String(Math.round(n));
+  return n === null ? '–' : String(Math.round(n));
 }
 
 function fmtPercent(value: number | null): string {
   const n = finite(value);
-  return n === null ? '—' : `${n.toFixed(1)}%`;
+  return n === null ? '–' : `${n.toFixed(1)}%`;
 }
 
 function fmtPerRound(value: number | null): string {
   const n = finite(value);
-  return n === null ? '—' : n.toFixed(1);
+  return n === null ? '–' : n.toFixed(1);
 }
 
 function ratioPercent(made: number, attempts: number): number | null {
@@ -282,6 +282,12 @@ export interface TeamBoardRowViewModel {
     putt: RankInfo | null;
     scoring: RankInfo | null;
   };
+  /**
+   * The player's OWN strokes gained per category, formatted — read from the
+   * SAME `standingByPlayer` map `ranks` above is built from. The stage shows
+   * the rank, the table shows the value; that is the whole reason both exist.
+   */
+  sg: Record<'tee' | 'app' | 'short' | 'putt', string>;
   composite: number | null;
   trendSeries: number[];
   signal: { tone: SignalTone; label: string };
@@ -302,6 +308,9 @@ export interface TeamBoardRowViewModel {
 export interface TeamBoardViewModel {
   kpis: {
     teamScoring: string;
+    /** The same figure unformatted, for callers that need to tell a real
+     *  reading from an absent one rather than string-matching the dash. */
+    teamScoringRaw: number | null;
     teamSg: string;
     teamSgRaw: number | null;
     trajectory: { improving: number; steady: number; declining: number };
@@ -395,7 +404,7 @@ export function buildTeamBoardViewModel(input: TeamBoardInput): TeamBoardViewMod
 
     let label: string;
     if (tone === 'hot') {
-      label = isTopPerformer ? 'Top performer' : p.id === mostImprovedId ? '▲ Most improved' : 'Improving';
+      label = isTopPerformer ? 'Top performer' : p.id === mostImprovedId ? 'Most improved' : 'Improving';
     } else if (tone === 'watch') {
       const worstCategory = worstCategoryLabel(ranks);
       label = worstCategory ? `${worstCategory} slump` : (p.topInsightTitle ?? 'Needs attention');
@@ -415,6 +424,12 @@ export function buildTeamBoardViewModel(input: TeamBoardInput): TeamBoardViewMod
       roundsPlayed: p.roundsPlayed,
       scoringAverage: fmtScoringAvg(p.scoringAverage),
       ranks,
+      sg: {
+        tee: fmtSg(standing?.get('sg_ott')?.player_value ?? null),
+        app: fmtSg(standing?.get('sg_approach')?.player_value ?? null),
+        short: fmtSg(standing?.get('sg_around_green')?.player_value ?? null),
+        putt: fmtSg(standing?.get('sg_putting')?.player_value ?? null),
+      },
       composite: p.composite,
       trendSeries: p.recentScores,
       signal: { tone, label },
@@ -459,7 +474,7 @@ export function buildTeamBoardViewModel(input: TeamBoardInput): TeamBoardViewMod
       weight: p.roundsPlayed18,
     })),
   );
-  const teamScoring = teamScoringRaw === null ? '—' : teamScoringRaw.toFixed(1);
+  const teamScoring = teamScoringRaw === null ? '–' : teamScoringRaw.toFixed(1);
 
   const teamSgRaw = weightedMean(
     players.map((p) => ({
@@ -511,7 +526,8 @@ export function buildTeamBoardViewModel(input: TeamBoardInput): TeamBoardViewMod
   return {
     kpis: {
       teamScoring,
-      teamSg: teamSgRaw === null ? '—' : `${fmtSg(teamSgRaw)} / rd`,
+      teamScoringRaw,
+      teamSg: teamSgRaw === null ? '–' : `${fmtSg(teamSgRaw)} / rd`,
       teamSgRaw,
       trajectory: { improving, steady, declining },
       rounds30d,

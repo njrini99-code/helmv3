@@ -5,12 +5,12 @@
  * restyle coverage
  * ----------------------------------------------------------------------------
  * Regression coverage for: (1) all 5 sg_* rows (total + 4 sub-components)
- * render through the SAME aligned instrument group, using the real, fixed
- * `StandingTrack` per row (not a duplicated one-off track), separate from
- * the generic per-category `StandingStrip` grid below it; (2) the "What
- * CoachHelm sees" section renders through the shared `CategoryInsightStrip`
- * instead of the old bespoke `CauseEffectCard` grid, still showing (at most)
- * the top-3 patterns by |strokeImpact|.
+ * render through the SAME dark instrument surface, one bare (chrome-free,
+ * on-dark) `StandingBars` per row — not the old dot-on-a-rail `StandingTrack`
+ * — separate from the generic per-category `StandingBars` grid below it;
+ * (2) the "What CoachHelm sees" section renders through the shared
+ * `CategoryInsightStrip` instead of the old bespoke `CauseEffectCard` grid,
+ * still showing (at most) the top-3 patterns by |strokeImpact|.
  * ========================================================================== */
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
@@ -49,7 +49,7 @@ function sgStandingRows(): PlayerStandingRow[] {
 }
 
 describe('StandingDrill — Strokes Gained instrument group', () => {
-  it('renders all 4 sg_* rows plus the total inside ONE aligned instrument, using the real StandingTrack per row', () => {
+  it('renders all 4 sg_* rows plus the total inside ONE dark instrument, one bare on-dark StandingBars per row', () => {
     const { container } = render(
       <StandingDrill standingRows={sgStandingRows()} standingViewerContext="self" />,
     );
@@ -57,27 +57,44 @@ describe('StandingDrill — Strokes Gained instrument group', () => {
     const instrument = container.querySelector('[data-slot="sg-instrument"]');
     expect(instrument).not.toBeNull();
 
-    // Every SG display label renders inside the instrument, aligned decimals
-    // via formatSgSigned.
+    // Every SG display label renders inside the instrument.
     expect(screen.getByText('SG: Total')).toBeInTheDocument();
     expect(screen.getByText('SG: Off the Tee')).toBeInTheDocument();
     expect(screen.getByText('SG: Approach')).toBeInTheDocument();
     expect(screen.getByText('SG: Around the Green')).toBeInTheDocument();
     expect(screen.getByText('SG: Putting')).toBeInTheDocument();
-    expect(screen.getByText('+0.42')).toBeInTheDocument();
-    expect(screen.getByText('+0.20')).toBeInTheDocument();
-    expect(screen.getByText('−0.30')).toBeInTheDocument();
 
-    // Real `StandingTrack` mounted once per row (its own fixed pin/label
-    // machinery, not a re-implementation) — 5 pins for 5 rows.
-    const pins = instrument!.querySelectorAll('[data-slot="standing-track-pin"]');
-    expect(pins).toHaveLength(5);
+    // StandingBars' own `formatValue('strokes')` — plain fixed-2dp, no
+    // signed "+"/"−" prefix (the same convention every other sg_* consumer
+    // already renders through). Scoped to each figure's VISIBLE rows block
+    // (not `screen.getByText`, which would also match the sr-only data
+    // table's duplicate of the same value and throw on "multiple elements").
+    const rowsBlocks = Array.from(
+      instrument!.querySelectorAll('[data-slot="standing-bars-rows"]'),
+    ) as HTMLElement[];
+    const visibleText = rowsBlocks.map((el) => el.textContent).join(' | ');
+    expect(visibleText).toContain('0.42');
+    expect(visibleText).toContain('0.20');
+    expect(visibleText).toContain('-0.30');
+
+    // One bare `StandingBars` figure per row — 5 figures for 5 rows. (No
+    // dot/pin: the owner asked to remove every dot-on-a-rail marker,
+    // everywhere — this is a real labeled-bar-row component, not a rail.)
+    const figures = instrument!.querySelectorAll('[data-slot="standing-bars"]');
+    expect(figures).toHaveLength(5);
+    // Every one of them is chrome-free (no nested card inside the
+    // instrument's own dark card) and carries the on-dark text override so
+    // labels/values are legible against the accent gradient.
+    for (const figure of Array.from(figures)) {
+      expect(figure.getAttribute('data-frame')).toBe('bare');
+      expect((figure as HTMLElement).className).toContain('text-text-on-accent');
+    }
   });
 
-  it('never renders the SG metrics a second time in the generic per-category StandingStrip grid', () => {
+  it('never renders the SG metrics a second time in the generic per-category StandingBars grid', () => {
     render(<StandingDrill standingRows={sgStandingRows()} standingViewerContext="self" />);
     // "SG: Total" appears exactly once (inside the instrument) — the old
-    // behavior rendered every SG metric a second time as a `StandingStrip`
+    // behavior rendered every SG metric a second time as a `StandingBars`
     // card in the generic per-category grid.
     expect(screen.getAllByText('SG: Total')).toHaveLength(1);
   });

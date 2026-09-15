@@ -189,6 +189,47 @@ describe('GoalsSection — 44px touch targets', () => {
     const accept = screen.getByRole('button', { name: /^accept$/i });
     const dismiss = screen.getByRole('button', { name: /^dismiss$/i });
     expect(accept.className).toMatch(/min-h-\[44px\]/);
-    expect(dismiss.className).toMatch(/min-h-\[44px\]/);
+    // Dismiss is the row's quiet IconButton glyph: its md recipe is a fixed
+    // 44px square (`h-11 w-11`), the same unconditional floor.
+    expect(dismiss.className).toMatch(/min-h-\[44px\]|\bh-11\b/);
+  });
+});
+
+describe('GoalsSection — inline variant (player development v2)', () => {
+  it('renders the empty state as an InlineNotice with a 44px "Set a goal"', () => {
+    render(
+      <GoalsSection
+        // eslint-disable-next-line jsx-a11y/aria-role -- domain prop, not ARIA
+        role="player"
+        variant="inline"
+        canCreate
+        activeGoals={[]}
+        suggestions={[]}
+        focusAreaCount={2}
+      />,
+    );
+    expect(screen.getByRole('status')).toHaveTextContent('No goals set yet');
+    expect(screen.queryByText('Goals in flight')).toBeNull();
+    const btn = screen.getByRole('button', { name: 'Set a goal' });
+    expect(btn.className).toMatch(/min-h-\[44px\]/);
+  });
+
+  it('lists each active goal as one seam row with its rail, and no hero', () => {
+    render(
+      <GoalsSection
+        // eslint-disable-next-line jsx-a11y/aria-role -- domain prop, not ARIA
+        role="player"
+        variant="inline"
+        canCreate
+        activeGoals={[makeGoalData({ id: 'g1' }), makeGoalData({ id: 'g2', current_value: 60 })]}
+        suggestions={[]}
+      />,
+    );
+    const group = screen.getByLabelText('Active goals');
+    const rows = group.querySelectorAll('[data-slot="goal-row"]');
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toHaveTextContent('33%');
+    expect(rows[1]).toHaveTextContent('67%');
+    expect(screen.queryByText('Your one thing')).toBeNull();
   });
 });

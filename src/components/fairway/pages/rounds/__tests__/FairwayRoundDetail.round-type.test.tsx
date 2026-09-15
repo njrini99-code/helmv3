@@ -17,9 +17,20 @@
  * So the assertion here is deliberately about MOUNTING and about WHO, not about
  * the action's logic (which round-type.test.ts already covers): the control
  * renders for the owning player, not only for a coach.
+ *
+ * UPDATED for the facelift's overflow menu (2026-09): "Change round type" is
+ * no longer its own standalone trigger button beside the masthead — it is a
+ * `Menu.Item` (Radix, `role="menuitem"`) inside the header's "More actions"
+ * overflow menu, opened via the `IconButton` trigger. The behavioral
+ * guarantee this file exists to pin — reachability gated on `canChangeType`,
+ * for both the owning player and a coach — is unchanged; only the query
+ * changes: open the menu first, then look for the item. Radix portals menu
+ * content to `document.body`, so queries use `screen` (unscoped), not a
+ * container ref.
  */
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { FairwayRoundDetail } from '../FairwayRoundDetail';
 
 vi.mock('next/navigation', () => ({
@@ -61,23 +72,37 @@ function renderDetail(overrides: Record<string, unknown> = {}) {
   );
 }
 
+/** Opens the masthead's "More actions" overflow menu, where "Change round
+ *  type" now lives as a `Menu.Item` (role="menuitem") rather than its own
+ *  standalone trigger button. */
+async function openOverflowMenu() {
+  const user = userEvent.setup();
+  await user.click(screen.getByRole('button', { name: /more actions/i }));
+  await screen.findByRole('menu');
+}
+
 describe('FairwayRoundDetail — round type editor mounting', () => {
-  it('offers the control to the PLAYER who owns the round', () => {
+  it('offers the control to the PLAYER who owns the round', async () => {
     renderDetail({ isCoach: false, viewerIsOwner: true });
+    await openOverflowMenu();
 
     // The literal ask: "can they edit on their end?" This is the assertion that
     // fails if the editor is ever gated back down to coaches only.
-    expect(screen.getByRole('button', { name: /change round type/i })).toBeTruthy();
+    expect(screen.getByRole('menuitem', { name: /change round type/i })).toBeTruthy();
   });
 
-  it('offers the control to a coach viewing a player\'s round', () => {
+  it('offers the control to a coach viewing a player\'s round', async () => {
     renderDetail({ isCoach: true, viewerIsOwner: false });
-    expect(screen.getByRole('button', { name: /change round type/i })).toBeTruthy();
+    await openOverflowMenu();
+    expect(screen.getByRole('menuitem', { name: /change round type/i })).toBeTruthy();
   });
 
-  it('renders nothing extra when the viewer may not retype the round', () => {
+  it('renders nothing extra when the viewer may not retype the round', async () => {
     renderDetail({ canChangeType: false });
-    expect(screen.queryByRole('button', { name: /change round type/i })).toBeNull();
+    await openOverflowMenu();
+    // The overflow menu itself still exists (it also carries "All stats");
+    // only the "Change round type" item is gated on `canChangeType`.
+    expect(screen.queryByRole('menuitem', { name: /change round type/i })).toBeNull();
   });
 
   it('still shows the round type in the context line either way', () => {

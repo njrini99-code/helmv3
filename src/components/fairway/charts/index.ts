@@ -198,3 +198,6 @@ export {
 
 export { useCanvasLayer, resolveCssColor } from './useCanvasLayer';
 export type { UseCanvasLayer, CanvasSize } from './useCanvasLayer';
+
+export { StandingBars } from './StandingBars';
+export type { StandingBarsProps } from './StandingBars';

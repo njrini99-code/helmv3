@@ -52,6 +52,7 @@ function renderRail(conversations: GolfConversationWithMeta[]) {
       onNewMessage={vi.fn()}
       loading={false}
       error={false}
+      now={new Date()}
     />,
   );
 }

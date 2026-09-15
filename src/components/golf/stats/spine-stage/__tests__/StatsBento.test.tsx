@@ -4,8 +4,11 @@
  * StatsBento — Standing pin preview + Scoring trend mini-viz coverage
  * ----------------------------------------------------------------------------
  * Regression coverage for "no bento cell is ever text-only": the Standing
- * cell (span2, previously headline+sentence with zero visual) now carries a
- * compact `StandingPinPreview`, and the Scoring cell gets a Sparkline+
+ * cell (span2, previously headline+sentence with zero visual) carries a
+ * bare `StandingBars` readout for `sg_total` (`StandingPinPreview` —
+ * replaced 2026-09-10, its own hand-rolled 11px dot marker was the one
+ * dot-on-a-rail render in this sweep no `StandingTrack`/`StandingBar` `rg`
+ * search would have caught), and the Scoring cell gets a Sparkline+
  * TrendChip row ahead of its existing `DivergingBars`. Both are pure-render
  * assertions against real data — no mocked internals beyond `useStage`
  * (StageRouter context isn't mounted in this test, same pattern the module
@@ -22,8 +25,6 @@ vi.mock('@/components/fairway/modules', async () => {
 });
 
 import { StatsBento } from '../StatsBento';
-import { sgToTrackPct } from '../buildStatsViewModel';
-import { layoutTrackLabels, STANDING_TRACK_SUBJECT_KEY } from '@/components/fairway/modules';
 import type { PlayerStandingRow } from '@/app/golf/actions/stats-leak-maps-types';
 import type { TrendAnalysisResponse } from '@/app/golf/actions/stats-data-types';
 import type { StatisticalStrengthWeakness } from '@/lib/golf/strokes-gained';
@@ -40,7 +41,7 @@ function row(overrides: Partial<PlayerStandingRow> & { metric_id: string; player
 }
 
 describe('StatsBento — Standing pin preview', () => {
-  it('renders an honest empty rail (no fabricated pin) when sg_total is missing', () => {
+  it('renders an honest empty state (no fabricated readout) when sg_total is missing', () => {
     render(
       <StatsBento
         detailedStats={null}
@@ -55,7 +56,7 @@ describe('StatsBento — Standing pin preview', () => {
     expect(screen.queryByText('SG: Total')).not.toBeInTheDocument();
   });
 
-  it('renders the You value + You/Team/Tour labels at their real, layout-nudged percentages when sg_total exists', () => {
+  it('renders a bare StandingBars with You/Team/Field Avg rows when sg_total exists', () => {
     const standing = new Map<string, PlayerStandingRow>([
       ['sg_total', row({ metric_id: 'sg_total', player_value: 0.42, team_avg: 0.1, team_n: 8, team_pct: 60 })],
     ]);
@@ -69,34 +70,25 @@ describe('StatsBento — Standing pin preview', () => {
         leakArea="putting"
       />,
     );
+    const preview = container.querySelector('[data-slot="standing-pin-preview"]') as HTMLElement;
+    const figure = preview.querySelector('[data-slot="standing-bars"]') as HTMLElement;
+    expect(figure).toBeTruthy();
+    // Bare (no nested card) — this cell already sits on the bento's own
+    // `bg-surface` tile.
+    expect(figure.getAttribute('data-frame')).toBe('bare');
     expect(screen.getByText('SG: Total')).toBeInTheDocument();
-    expect(screen.getByText('+0.42')).toBeInTheDocument();
 
-    // Expected positions run through the SAME `layoutTrackLabels` collision
-    // pass the component uses internally — asserting against a hand-picked
-    // raw `sgToTrackPct` would be fragile whenever You/Team/Tour land close
-    // enough together to trigger the (correct, intentional) minimum-gap nudge.
-    const expected = layoutTrackLabels([
-      { key: STANDING_TRACK_SUBJECT_KEY, pct: sgToTrackPct(0.42) },
-      { key: 'Team', pct: sgToTrackPct(0.1) },
-      { key: 'Tour', pct: sgToTrackPct(0) },
-    ]);
-    const expectedPct = (key: string) => expected.find((p) => p.key === key)!.pct;
-
-    const subject = container.querySelector('[data-slot="standing-pin-subject-label"]') as HTMLElement;
-    expect(subject.textContent).toBe('You');
-    expect(subject.style.left).toBe(`${expectedPct(STANDING_TRACK_SUBJECT_KEY)}%`);
-
-    const benchLabels = Array.from(
-      container.querySelectorAll('[data-slot="standing-pin-bench-label"]'),
-    ) as HTMLElement[];
-    const team = benchLabels.find((el) => el.textContent === 'Team');
-    const tour = benchLabels.find((el) => el.textContent === 'Tour');
-    expect(team?.style.left).toBe(`${expectedPct('Team')}%`);
-    expect(tour?.style.left).toBe(`${expectedPct('Tour')}%`);
+    const rowsBlock = figure.querySelector('[data-slot="standing-bars-rows"]') as HTMLElement;
+    expect(rowsBlock.textContent).toContain('You');
+    expect(rowsBlock.textContent).toContain('Team');
+    // sg_* metrics always compare against "Field Avg", never "Tour"/"PGA" —
+    // the same `pgaReferenceLabel` convention every other sg_* consumer uses.
+    expect(rowsBlock.textContent).toContain('Field Avg');
+    // formatValue('strokes') is plain fixed-2dp — no signed "+" prefix.
+    expect(rowsBlock.textContent).toContain('0.42');
   });
 
-  it('omits the Team tick when there is no team average, but still renders Tour + the pin', () => {
+  it('omits the Team row when there is no team average (cold-start), but still renders Field Avg', () => {
     const standing = new Map<string, PlayerStandingRow>([
       ['sg_total', row({ metric_id: 'sg_total', player_value: -0.6 })],
     ]);
@@ -110,10 +102,12 @@ describe('StatsBento — Standing pin preview', () => {
         leakArea="putting"
       />,
     );
-    const benchLabels = container.querySelectorAll('[data-slot="standing-pin-bench-label"]');
-    expect(benchLabels).toHaveLength(1);
-    expect(benchLabels[0]?.textContent).toBe('Tour');
-    expect(screen.getByText('−0.60')).toBeInTheDocument();
+    const preview = container.querySelector('[data-slot="standing-pin-preview"]') as HTMLElement;
+    const figure = preview.querySelector('[data-slot="standing-bars"]') as HTMLElement;
+    const rowsBlock = figure.querySelector('[data-slot="standing-bars-rows"]') as HTMLElement;
+    expect(rowsBlock.textContent).not.toContain('Team');
+    expect(rowsBlock.textContent).toContain('Field Avg');
+    expect(rowsBlock.textContent).toContain('-0.60');
   });
 });
 

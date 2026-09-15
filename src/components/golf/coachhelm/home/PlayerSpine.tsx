@@ -6,8 +6,9 @@
  * ----------------------------------------------------------------------------
  * Thin composition over the `Spine` module: the predicted-score hero (falls
  * back to an honest em-dash pre-forecast), the prediction verdict, the
- * you/team/Tour `StandingTrack` (anchored on SG: Total — same rail idiom as
- * the Stats spine), the top-3 focus-area `PriorityList`, and the
+ * you/team/Tour standing readout (anchored on SG: Total — same idiom as the
+ * Stats spine — a bare `StandingBars` row group; was `StandingTrack` before
+ * 2026-09-10), the top-3 focus-area `PriorityList`, and the
  * rounds/fairways/greens/putts `SpineLedger`.
  *
  * The desktop rail (`<Spine>`, ≥940px) is `Spine.tsx`'s own layout —
@@ -22,13 +23,14 @@
 
 import Link from 'next/link';
 import { Spine } from '@/components/fairway/modules';
-import type { PriorityItem, StandingTrackProps } from '@/components/fairway/modules';
+import type { PriorityItem } from '@/components/fairway/modules';
+import type { StandingBarsProps } from '@/components/fairway/charts/StandingBars';
 import { cn } from '@/lib/utils';
 
 export interface PlayerSpineProps {
   hero: { value: string; unit?: string };
   verdict: string;
-  track?: StandingTrackProps;
+  standing?: StandingBarsProps;
   priorities: PriorityItem[];
   ledger: Array<{ label: string; value: string }>;
   className?: string;
@@ -36,7 +38,7 @@ export interface PlayerSpineProps {
   mobileClassName?: string;
 }
 
-export function PlayerSpine({ hero, verdict, track, priorities, ledger, className, mobileClassName }: PlayerSpineProps) {
+export function PlayerSpine({ hero, verdict, standing, priorities, ledger, className, mobileClassName }: PlayerSpineProps) {
   return (
     <>
       <aside className={cn('overflow-clip rounded-fw-lg border border-accent-700 bg-gradient-to-r from-accent-900 to-accent-800 p-4 text-text-on-accent [box-shadow:var(--fw-shadow-card)] min-[940px]:hidden', mobileClassName)}>
@@ -79,7 +81,7 @@ export function PlayerSpine({ hero, verdict, track, priorities, ledger, classNam
         eyebrow="CoachHelm AI"
         hero={hero}
         verdict={verdict}
-        track={track}
+        standing={standing}
         priorities={priorities}
         ledger={ledger}
         cta={{ label: 'Log a round', href: '/golf/dashboard/rounds/new' }}

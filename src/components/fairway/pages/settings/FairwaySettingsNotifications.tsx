@@ -26,8 +26,10 @@
 import { useState } from 'react';
 
 import { Button, Surface, Switch, ViewHeader } from '@/components/fairway';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
+// Specific path (not the barrel) so barrel-mocking tests don't need to stub it
+// — mirrors the same rationale as the Skeleton import in FairwaySettingsGeneral.
+import { ConfirmModal } from '@/components/fairway/overlays/ConfirmModal';
 import {
   setAllChannels,
   setCategoryChannel,
@@ -353,13 +355,13 @@ export function FairwaySettingsNotifications({
 
       {/* Error prevention: Reset defaults discards every per-update channel
           choice, so gate it behind an explicit confirm. */}
-      <ConfirmDialog
+      <ConfirmModal
         open={resetConfirmOpen}
         title="Reset notification preferences?"
         message="This replaces every per-update channel choice with the defaults (in-app on, push and email off). This can't be undone."
         confirmLabel="Reset to defaults"
         cancelLabel="Cancel"
-        variant="warning"
+        tone="warning"
         isLoading={pendingKeys.has(BULK_KEY)}
         onConfirm={() => {
           setResetConfirmOpen(false);

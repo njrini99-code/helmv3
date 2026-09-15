@@ -58,6 +58,22 @@ export function FairwayMessages() {
   // Server-resolved user data — role/team via the same context the legacy used.
   const { userId, role: userRole, teamId } = useGolfUser();
 
+  /**
+   * Wall-clock reference for both children's relative-time formatting
+   * (conversation timestamps, day-boundary chips). `null` until mount so the
+   * server render and the client's first paint agree (both see "no now yet"
+   * and fall back to an absolute date) rather than diverging on whatever
+   * instant each happened to run at (React #418). Ticks every minute after
+   * mount so a thread left open overnight still relabels "Today" to
+   * "Yesterday" without a refresh — mirrors FairwayAgendaView's useMinuteClock.
+   */
+  const [now, setNow] = React.useState<Date | null>(null);
+  React.useEffect(() => {
+    setNow(new Date());
+    const id = window.setInterval(() => setNow(new Date()), 60_000);
+    return () => window.clearInterval(id);
+  }, []);
+
   // ── UNCHANGED hook: conversations + refetch ─────────────────────────────────
   const {
     conversations,
@@ -96,7 +112,23 @@ export function FairwayMessages() {
     sendTypingStatus,
     currentUserId,
   } = useGolfMessages(selectedConversationId || '');
-  const reactions = useMessageReactions(selectedConversationId ?? '', messages.filter((message) => message.conversation_id === selectedConversationId && !message.sendFailed).map((message) => message.id), currentUserId ?? userId);
+  // Row 6 (perf audit) — a stable id array. `messages` gets a new reference on
+  // every incoming/edited message, and a naive `.filter().map()` inline at the
+  // call site would too, on every render regardless of whether the VISIBLE id
+  // set actually changed. useMemo here means the reactions hook only sees a
+  // new array when the underlying ids genuinely differ; combined with the
+  // hook's own content-keyed memo (JSON.stringify/parse) this keeps
+  // `use-message-reactions`'s `refresh` callback — and therefore its refetch
+  // effect — from firing on renders that don't touch this conversation's
+  // message set (e.g. an unrelated conversation's inbox update).
+  const visibleMessageIds = React.useMemo(
+    () =>
+      messages
+        .filter((message) => message.conversation_id === selectedConversationId && !message.sendFailed)
+        .map((message) => message.id),
+    [messages, selectedConversationId],
+  );
+  const reactions = useMessageReactions(selectedConversationId ?? '', visibleMessageIds, currentUserId ?? userId);
 
   // ── UNCHANGED hook: attachment send ─────────────────────────────────────────
   const { sendMessageWithAttachments } = useMessageAttachments();
@@ -248,6 +280,19 @@ export function FairwayMessages() {
     setGroupMemberIds(memberIds);
   }, []);
 
+  // Row 13 (perf audit) — the SCALAR this effect actually reads off
+  // `conversations`, not the array itself. `conversations` gets a new
+  // reference on any inbox change (an unrelated conversation's unread count,
+  // a new message anywhere), and the effect below used to depend on the
+  // whole array, so it refetched every group's participant list on every
+  // such change. `isGroupConversation` only reads participant_count /
+  // participant_ids / is_group, so a primitive boolean is the true
+  // dependency: it only flips when the SELECTED conversation's own kind
+  // actually changes (e.g. a member is added past the 2-person DM boundary).
+  const selectedConversationIsGroup = isGroupConversation(
+    conversations.find((c) => c.id === selectedConversationId),
+  );
+
   // Invalidate in-flight results when the selected conversation changes.
   React.useEffect(() => {
     if (groupSelection.current !== selectedConversationId) {
@@ -260,15 +305,14 @@ export function FairwayMessages() {
       setGroupMemberIds(new Set());
       return;
     }
-    const conv = conversations.find(c => c.id === selectedConversationId);
-    if (isGroupConversation(conv)) {
+    if (selectedConversationIsGroup) {
       fetchGroupParticipants(selectedConversationId);
     } else {
       setGroupParticipants(new Map());
       setGroupMemberIds(new Set());
     }
     return () => { groupFetchVersion.current += 1; };
-  }, [selectedConversationId, conversations, fetchGroupParticipants]);
+  }, [selectedConversationId, selectedConversationIsGroup, fetchGroupParticipants]);
 
   // Thread-count meta — HONEST: count only, NO unread chip in the masthead.
 
@@ -611,6 +655,7 @@ export function FairwayMessages() {
                 onRetry={refetch}
                 teamId={teamId}
                 onOpenMessage={handleOpenFromSearch}
+                now={now}
               />
             </PullToRefresh>
           </aside>
@@ -650,6 +695,7 @@ export function FairwayMessages() {
                 onOpenGroupDetails={() => setShowGroupDetails(true)}
                 scrollToMessageId={pendingScrollMessageId}
                 onScrolledToMessage={() => setPendingScrollMessageId(null)}
+                now={now}
                 className="flex-1 min-h-0"
               >
                 {selectedConversation ? (

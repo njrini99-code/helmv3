@@ -9,14 +9,19 @@
  * overview-failure gate the earlier Spine & Stage build established (an
  * overview FAILURE renders an honest retry notice; a genuinely empty roster
  * keeps the onboarding gate — the two must never be conflated), then hands
- * everything else straight to `TriageDesk`, the ONE new command-desk surface
- * that replaces the old Spine + Bento entirely (Triage Desk spec).
+ * everything else straight to `TriageDesk`, the ONE cockpit + Signals
+ * workspace surface (Fairway Premium Facelift) that replaces the old
+ * Spine + Bento AND the standalone `CommandOpening` "welcome" opening —
+ * that opening's identity line, pulse readouts, one urgent signal, and
+ * "Ask CoachHelm" CTA are now the `TriageDesk`'s own `Spine`.
+ *
+ * `CommandOpening.tsx` itself is left in place (its `relativeDays` export is
+ * still unit-tested directly), simply no longer imported/rendered here.
  * ========================================================================== */
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { ProgramPulse } from '@/lib/coachhelm/v3/chat/program-pulse';
-import { CommandOpening } from './CommandOpening';
 import { RotateCw } from 'lucide-react';
 import { Surface, EmptyState, Button, InlineNotice } from '@/components/fairway';
 import type { PlayersGridViewProps, FairwayEffectivenessProps } from '@/components/fairway';
@@ -46,9 +51,10 @@ export interface CoachIntelligenceHomeProps {
   effectivenessDrillProps: FairwayEffectivenessProps;
 
   /**
-   * The AI-first opening. Null when the chat context could not be resolved —
-   * the Triage Desk below still renders, because Signals/Players/Effectiveness
-   * are not allowed to depend on CoachHelm being reachable.
+   * The chat context. Null when it could not be resolved — the Triage Desk
+   * still renders (only its Spine identity line falls back to a neutral
+   * "Your team" label), because Signals/Players/Effectiveness are not
+   * allowed to depend on CoachHelm being reachable.
    */
   command: {
     teamName: string;
@@ -56,6 +62,12 @@ export interface CoachIntelligenceHomeProps {
     players: { id: string; name: string }[];
     pulse: ProgramPulse;
   } | null;
+
+  /** Server-seeded ISO timestamp (`page.tsx`'s one-time render-time
+   *  `new Date().toISOString()`) — threaded to `TriageDesk` to format its
+   *  Spine date + relative "last scan" caption without reading the ambient
+   *  clock during a client re-render. */
+  now: string;
 }
 
 export function CoachIntelligenceHome({
@@ -68,6 +80,7 @@ export function CoachIntelligenceHome({
   playersDrillProps,
   effectivenessDrillProps,
   command,
+  now,
 }: CoachIntelligenceHomeProps) {
   const router = useRouter();
 
@@ -102,26 +115,11 @@ export function CoachIntelligenceHome({
 
   return (
     <div className="flex flex-col gap-8">
-      {/* ── The AI-first opening. Everything below it is the existing Triage
-            Desk, unchanged — the intelligence system is recomposed here, not
-            replaced by a decorative empty chat. ── */}
-      {command && (
-        <CommandOpening
-          teamName={command.teamName}
-          coachFirstName={command.coachFirstName}
-          players={command.players}
-          pulse={command.pulse}
-          onAsk={(text) =>
-            router.push(`/golf/dashboard/coachhelm/chat?q=${encodeURIComponent(text)}`)
-          }
-        />
-      )}
-
       {overviewFailed && (
         <Surface padding="md">
           <InlineNotice
             tone="danger"
-            title="Couldn't load team intelligence — retry"
+            title="Couldn't load team intelligence"
             action={
               <Button
                 variant="secondary"
@@ -143,7 +141,8 @@ export function CoachIntelligenceHome({
         scannedAt={scannedAt}
         groupsError={groupsError}
         categoryInsights={categoryInsights}
-        teamShotAnalysis={ov?.teamShotAnalysis}
+        teamName={command?.teamName ?? 'Your team'}
+        now={now}
         playersDrillProps={playersDrillProps}
         effectivenessDrillProps={effectivenessDrillProps}
       />
