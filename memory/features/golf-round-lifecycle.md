@@ -59,8 +59,9 @@ As of 2026-09-02, a device that falls behind the server on a round it is
 tracking (a second device/session/tab wrote to it) can no longer silently
 resync its optimistic-lock token and overwrite the newer server state — both
 round screens now block further writes until the player reloads, with one
-narrow self-healing exception for a background beacon save's own unreadable
-response. A round's start date can no longer be set in the future from
+narrow self-healing exception for this device's own unreadable write (a
+background beacon, or — since 2026-09-15 — a foreground save the browser
+killed on phone lock). A round's start date can no longer be set in the future from
 either round-start screen. Full mechanics for both live in
 `memory/features/shot-tracking.md`, since the RPCs and client guards they
 touch are shared with shot tracking, not lifecycle-specific.
@@ -223,9 +224,11 @@ Use `memory/context/golfhelm-database.md` for exact columns.
   `savePartialRound` and `submit_round_atomic` are full-snapshot REPLACE, so
   a stale device that resyncs its lock token can overwrite a genuinely newer
   server round with its own outdated in-memory holes/shots. The one
-  sanctioned exception is a background beacon save's own unreadable response,
-  self-healed exactly once. Full mechanics (the write-blocking flag, the
-  beacon self-heal window, the Reload UI) live in
+  sanctioned exception is this device's own unreadable write — a background
+  beacon, or a foreground save the browser killed on phone lock (2026-09-15)
+  — self-healed exactly once per lock token. Full mechanics (the
+  write-blocking flag, the unreadable-write self-heal window, the Reload UI)
+  live in
   `memory/features/shot-tracking.md`'s Current State — this is the same
   optimistic-lock/RPC surface the lost-round-id bullet above shares, not a
   lifecycle-specific mechanism.

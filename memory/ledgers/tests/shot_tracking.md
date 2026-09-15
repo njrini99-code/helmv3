@@ -443,3 +443,19 @@ date.
   `npm run audit:paginated-reads` (0, 12, matches baseline),
   `npm run lint:duplicate-exports` (0, 27 known remain, no new). Not run:
   `npm run build` (excluded by this task's own instructions).
+
+## 2026-09-15 — unreadable-write self-heal (single-phone false conflict)
+
+- New `src/lib/golf/__tests__/round-write-outcome.test.ts`: transport losses
+  (`Load failed`, `Failed to fetch`, `AbortError`, Next "unexpected
+  response") are unreadable; a Next `digest` error and any unrecognised
+  throw are NOT (so a genuine conflict is never forgiven by accident).
+- `continue-round-client.conflict-block.test.ts` and
+  `new-round-client.hardening.test.ts` (source-inspection, same convention
+  as the file's existing cases): every foreground `savePartialRound` call
+  is the tracked wrapper or a CREATE; checkpoint retries after heal under
+  the live token; beacon is deduped per hidden period, skipped while
+  blocked, and its payload carries NO `expectedUpdatedAt` key (durability
+  pin); pre-submit staleness routes through the heal (continue only).
+- Guarantee still missing: no runtime test drives the iOS kill + beacon
+  sequence end to end; the wiring tests cannot catch a dropped beacon.
