@@ -27,6 +27,24 @@ study JSON is a local azimuthal-equidistant metre frame (`x` east, `y` up,
 terrain/imagery provenance, confidence and limitations. Blender consumes that
 JSON and the source-hashed terrain raster to generate a static GLB; it does
 not receive or bake shot, ball, cup, label, replay, scoring or analytics data.
+It tessellates and terrain-resamples long static source surfaces at no more
+than four-metre horizontal edges, avoiding false visual gaps where a broad
+planar fairway triangle intersects the LiDAR mesh. Runtime camera control and
+all player/round state remain outside the GLB.
+`compile-physical-world.py` now creates `golfhelm-physical-world-v1` between
+the canonical source study and Blender. It is the explicit Metric Truth layer:
+the shared terrain field, source geometry, feature provenance, claim limits,
+and a Visual World contract. With current data, bunker footprints cannot claim
+depth/lip/face/target-visibility and greens cannot claim putting break or a
+daily pin. Blender reads the physical world without receiving a second set of
+coordinates; the GLB validator accepts either source form and proves its
+metric terrain round trip.
+The upstream `course-truth-gate.py` requires reviewed measured/derived tee,
+fairway, green, bunker, water, and route/distance geometry before a hole can
+be called physically ready. The physical-world contract distinguishes
+`measured`, `derived`, `estimated`, and `visual_only`: every class can render,
+but only reviewed measured/derived geometry with recorded boundary uncertainty
+can supply authoritative physical measurements.
 The GLB import validator checks metric spans and axis conversion. NC OneMap
 orthophoto acquisition rejects transparent/downsampled exports; if the
 four-band analysis service is blank, a valid three-band visual export remains

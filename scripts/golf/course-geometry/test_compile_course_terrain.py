@@ -91,6 +91,23 @@ class TerrainCompilerTest(unittest.TestCase):
         self.assertAlmostEqual(by_id['green']['areaM2'], self.shapes['green'].area, places=4)
         self.assertAlmostEqual(by_id['fairway']['areaM2'], self.shapes['fairway'].area, places=4)
 
+    def test_collinear_sliver_parts_cannot_inflate_a_cell_cut(self):
+        # A buffer/difference chain left this near-zero collinear part in a
+        # real surround band; GEOS's float overlay returned the entire 2m cell
+        # for it, breaking area conservation by exactly the cell area.
+        sliver = Polygon([(-1096.314791213845, 1097.1947286982538), (-1097.7095688360787, 1096.8884820883118),
+                          (-1095.8691370968295, 1097.2925794669836)])
+        self.assertLess(sliver.area, 1e-9)
+        band = box(-1100, 1090, -1090, 1091)
+        region = MultiPolygon([band, sliver])
+        cell = box(-1096, 1096, -1094, 1098)
+        bogus = region.intersection(cell)
+        self.assertGreater(bogus.area, 1)  # the GEOS behaviour being guarded against
+        self.assertTrue(compiler.parts_inside_region(region, bogus).is_empty)
+        genuine = region.intersection(box(-1095, 1089, -1093, 1092))
+        self.assertIs(compiler.parts_inside_region(region, genuine), genuine)
+        self.assertAlmostEqual(genuine.area, 2)
+
     def test_context_uses_existing_features_without_synthesizing_missing_tee_or_trees(self):
         self.assertEqual(self.fine['contextFeatureIds'], ['neighbor-bunker'])
         self.assertEqual(self.fine['renderProfile']['teeGeometry'], 'missing')

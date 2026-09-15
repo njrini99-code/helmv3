@@ -9,6 +9,25 @@
   source candidates; they do not bind Cardinal's unassigned green complex to a
   round or change shot reconstruction, scoring, database state or production
   asset delivery.
+- Refined static source-surface export so long polygons are tessellated and
+  sampled against the same LiDAR mesh, avoiding false terrain-intersection
+  gaps; added a distinct tee material role and a clipped, tactical review
+  camera. No live renderer, score, or round-data path changed.
+- Added the offline `golfhelm-physical-world-v1` compiler boundary. It carries
+  metric terrain plus semantic surfaces and feature-specific permitted and
+  forbidden claims into Blender, preserving the distinction between a mapped
+  bunker footprint and a measured bunker cavity, and between macro terrain on
+  a green and a putting-break surface.
+- Added a source-truth gate and four explicit world truth classes: measured,
+  derived, estimated, and visual-only. A failed geometry source gate blocks
+  authoritative physical publication, while still allowing an honestly scoped
+  visual review scene. It requires reviewed tee, fairway, green, bunker,
+  water, and distance-route evidence before a hole is physically ready.
+- Guarded the terrain compiler's cell cuts against a GEOS float-overlay
+  failure: a zero-area collinear sliver part in a surround band made
+  `intersection` return the whole 2m cell, so area conservation failed by
+  exactly one cell (Peek'n Peak hole 5). Cut parts whose interior point the
+  region does not cover are rejected; existing Cacapon artifacts are unchanged.
 
 ## 2026-08-22 — distinguish a real fallback from a confirmed snapshot
 

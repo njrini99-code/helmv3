@@ -41,7 +41,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `HISTORY_LEDGER` | 40 | 0 | 8 | 13 |
 | `INCIDENT` | 28 | 15 | 2 | 0 |
 | `ADR` | 5 | 0 | 3 | 0 |
-| `INDEX` | 23 | 1 | 10 | 5 |
+| `INDEX` | 24 | 1 | 11 | 5 |
 | `UNKNOWN` | 94 | 12 | 40 | 80 |
 
 ## Files
@@ -535,6 +535,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `public/images/README.md` | current | - | - | - | 0 | 0 | - |
 | `replay/README.md` | current | yes | - | yes | 0 | 6 | - |
 | `scripts/README.md` | current | - | - | - | 0 | 2 | - |
+| `scripts/golf/course-geometry/README.md` | current | - | - | yes | 0 | 0 | - |
 | `src/app/golf/README.md` | current | - | - | - | 3 | 8 | - |
 | `src/components/baseball/living-annual/README.md` | current | - | - | - | 2 | 3 | - |
 | `src/contracts/baseball/README.md` | current | - | - | yes | 1 | 5 | - |

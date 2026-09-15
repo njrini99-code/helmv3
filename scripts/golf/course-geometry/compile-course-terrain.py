@@ -24,7 +24,7 @@ import pyproj
 import shapely
 from PIL import Image
 from shapely import constrained_delaunay_triangles
-from shapely.geometry import LineString, Polygon, box
+from shapely.geometry import LineString, MultiPolygon, Polygon, box
 from shapely.ops import unary_union
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -370,6 +370,24 @@ def duplicate_vertex_report(vertices, normals):
             'sourceHeightDuplicatesAgree': height_agree}
 
 
+def parts_inside_region(region, cut):
+    """Reject overlay output that GEOS placed outside the region.
+
+    Buffer/difference chains can leave a collinear sliver (area ~1e-15) as a
+    separate part of a region.  GEOS's float overlay of that sliver against a
+    cell can return the *whole cell* (or the cell minus a triangular hole)
+    instead of nothing, so the cut sum would exceed the region and fail area
+    conservation.  Point-in-polygon predicates do not share that failure: a
+    genuine cut part always has an interior point covered by the region, while
+    the bogus part does not.  Legitimate cuts pass through untouched, so the
+    compiled artifact is unchanged wherever the failure did not occur.
+    """
+    parts = [part for part in getattr(cut, 'geoms', [cut]) if part.geom_type == 'Polygon' and not part.is_empty]
+    kept = [part for part in parts if region.covers(part.representative_point())]
+    if len(kept) == len(parts):
+        return cut
+    return kept[0] if len(kept) == 1 else MultiPolygon(kept) if kept else Polygon()
+
 def compile_hole(hole, pkg, raw_shapes, raw_features, displays, outline_reports, source, outer_step=16):
     tactical_bounds, context_bounds = hole_bounds(hole, raw_shapes, raw_features)
     context = box(*context_bounds)
@@ -415,18 +433,29 @@ def compile_hole(hole, pkg, raw_shapes, raw_features, displays, outline_reports,
             if region.is_empty:
                 continue
             for cell_index in sorted(tree.query(region, predicate='intersects').tolist()):
-                cut = region.intersection(cell_shapes[cell_index])
-                for triangle in constrained_delaunay_triangles(cut).geoms:
-                    if triangle.area < 1e-8:
+                cut = parts_inside_region(region, region.intersection(cell_shapes[cell_index]))
+                # GEOS's constrained triangulation can return a cell-sized triangle
+                # outside one part of a disconnected/cut polygon. Intersect that
+                # exceptional result back to the exact source region before adding
+                # it; do not loosen the per-feature area conservation assertion.
+                for raw_triangle in constrained_delaunay_triangles(cut).geoms:
+                    clipped = raw_triangle if cut.covers(raw_triangle) else raw_triangle.intersection(cut)
+                    if clipped.is_empty:
                         continue
-                    points = list(triangle.exterior.coords)[:3]
-                    # Normals and heights are sampled at these SAME rounded XY
-                    # values, so coincident material/cell vertices cannot crease.
-                    points = [(round(px, 5), round(py, 5)) for px, py in points]
-                    if Polygon(points).area < 1e-10:
-                        continue
-                    xy.extend(points); triangle_features.append(feature_index); triangle_materials.append(material)
-                    area += triangle.area; count += 1
+                    triangles = [clipped] if clipped.geom_type == 'Polygon' and len(clipped.exterior.coords) == 4 else constrained_delaunay_triangles(clipped).geoms
+                    for triangle in triangles:
+                        if triangle.area < 1e-8:
+                            continue
+                        if not cut.covers(triangle):
+                            raise ValueError(f'Triangulation escaped source region: {hole["key"]} {ident}')
+                        points = list(triangle.exterior.coords)[:3]
+                        # Normals and heights are sampled at these SAME rounded XY
+                        # values, so coincident material/cell vertices cannot crease.
+                        points = [(round(px, 5), round(py, 5)) for px, py in points]
+                        if Polygon(points).area < 1e-10:
+                            continue
+                        xy.extend(points); triangle_features.append(feature_index); triangle_materials.append(material)
+                        area += triangle.area; count += 1
         if abs(area-shape.area) > .002:
             raise ValueError(f'Triangulation area mismatch: {hole["key"]} {ident}: {area-shape.area}')
         reports.append({'id': ident, 'kind': kind, 'triangles': count, 'areaM2': round(area, 4),

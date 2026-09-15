@@ -1,11 +1,12 @@
-"""Deterministically compile canonical GolfHelm geometry into a static GLB.
+"""Deterministically compile a GolfHelm metric-world artifact into a static GLB.
 
 Run headlessly:
   blender --background --python scripts/golf/course-geometry/blender/generate_hole.py -- \
-    normalized.json elevation.tiff hole.glb validation.json
+    physical-world.json elevation.tiff hole.glb validation.json
 
-The canonical JSON remains authoritative.  This script deliberately has no
-shot, ball, cup, analytics, or route-reconstruction input.
+Canonical geometry remains authoritative; a physical-world artifact declares
+what the renderer may represent from that geometry. This script deliberately
+has no shot, ball, cup, analytics, or route-reconstruction input.
 """
 import hashlib
 import json
@@ -13,15 +14,15 @@ import math
 import sys
 from pathlib import Path
 
-import bmesh
 import bpy
 from mathutils import Vector
+from mathutils.geometry import tessellate_polygon
 
 
 def args_after_separator():
     values = sys.argv
     if '--' not in values:
-        raise ValueError('Pass normalized JSON, LiDAR TIFF, GLB and report after --')
+        raise ValueError('Pass physical-world JSON, LiDAR TIFF, GLB and report after --')
     return [Path(item) for item in values[values.index('--') + 1:]]
 
 
@@ -51,27 +52,49 @@ def look_at(obj, target):
     obj.rotation_euler = (Vector(target) - obj.location).to_track_quat('-Z', 'Y').to_euler()
 
 
-def triangulated_polygon(name, geometry, mat, surface_height, offset=.035):
+def triangulated_polygon(name, geometry, mat, surface_height, offset=.22, max_edge_m=4):
     if geometry['type'] != 'Polygon' or len(geometry['coordinates']) != 1:
         raise ValueError(f'{name}: only simple source polygons are accepted by the spike compiler')
     ring = geometry['coordinates'][0]
     if len(ring) < 4 or ring[0] != ring[-1]:
         raise ValueError(f'{name}: invalid canonical ring')
-    # A feature vertex's original LiDAR sample and the decimated terrain mesh
-    # can differ between raster centers.  Attach decals to the *exported mesh*
-    # instead of letting its triangles pierce the green/bunker surface.
-    vertices = [(point[0], point[2], surface_height(point[0], point[2]) + offset) for point in ring[:-1]]
+    # A single source polygon may span a steep enough part of the height field
+    # that its planar triangles cut through the terrain.  Tessellate each
+    # polygon then subdivide its triangles in the horizontal plane, sampling
+    # every resulting vertex from the same exported terrain mesh.  This keeps
+    # the static feature draped to real terrain rather than hiding parts of it
+    # beneath an unrelated triangle plane.
+    source = [Vector((point[0], point[2], 0)) for point in ring[:-1]]
+    triangles = tessellate_polygon([source])
+    vertices, faces, indices = [], [], {}
+
+    def index_for(point):
+        key = (round(point.x, 6), round(point.y, 6))
+        if key not in indices:
+            indices[key] = len(vertices)
+            vertices.append((point.x, point.y, surface_height(point.x, point.y) + offset))
+        return indices[key]
+
+    for triangle in triangles:
+        # Blender's tessellator returns indices for this input shape.
+        a, b, c = (source[index] for index in triangle)
+        longest = max((a - b).length, (b - c).length, (c - a).length)
+        divisions = max(1, math.ceil(longest / max_edge_m))
+        for i in range(divisions):
+            for j in range(divisions - i):
+                point = lambda u, v: a + (b - a) * (u / divisions) + (c - a) * (v / divisions)
+                first = index_for(point(i, j))
+                second = index_for(point(i + 1, j))
+                third = index_for(point(i, j + 1))
+                faces.append((first, second, third))
+                if i + j < divisions - 1:
+                    fourth = index_for(point(i + 1, j + 1))
+                    faces.append((second, fourth, third))
     mesh = bpy.data.meshes.new(name + 'Mesh')
-    mesh.from_pydata(vertices, [], [list(range(len(vertices)))])
+    mesh.from_pydata(vertices, [], faces)
     mesh.materials.append(mat)
     obj = bpy.data.objects.new(name, mesh)
     bpy.context.collection.objects.link(obj)
-    bm = bmesh.new()
-    bm.from_mesh(mesh)
-    bmesh.ops.triangulate(bm, faces=bm.faces[:])
-    bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
-    bm.to_mesh(mesh)
-    bm.free()
     mesh.update()
     for polygon in mesh.polygons:
         polygon.use_smooth = True
@@ -109,9 +132,22 @@ def main():
         raise ValueError('Expected normalized JSON, LiDAR TIFF, GLB, report, and optional preview PNG')
     normalized_path, terrain_tif, glb_path, report_path = values[:4]
     preview_path = values[4] if len(values) == 5 else None
-    data = json.loads(normalized_path.read_text())
+    input_data = json.loads(normalized_path.read_text())
+    if input_data.get('kind') == 'golfhelm-physical-world-v1':
+        # The physical world owns metric facts.  Blender sees only its terrain
+        # field and semantic surfaces, never a separate source of coordinates.
+        data = {
+            'kind': 'golfhelm-canonical-local-meter-study',
+            'contentHash': input_data['contentHash'],
+            'coordinateSystem': input_data['coordinateSystem'],
+            'terrain': input_data['terrainField'],
+            'features': input_data['semanticSurfaces'],
+            'limitations': input_data['limitations'],
+        }
+    else:
+        data = input_data
     if data.get('kind') != 'golfhelm-canonical-local-meter-study' or not data['coordinateSystem'].get('oneWorldUnitEqualsMeters'):
-        raise ValueError('Input is not a local-metre GolfHelm canonical study')
+        raise ValueError('Input is not a local-metre GolfHelm canonical study or physical world')
     expected_raster = data['terrain']['source']['rasterSha256']
     actual_raster = hashlib.sha256(terrain_tif.read_bytes()).hexdigest()
     if expected_raster != actual_raster:
@@ -124,7 +160,8 @@ def main():
     bpy.ops.object.delete(use_global=False)
     terrain_material = material('GolfHelmTerrain', (.14, .28, .20))
     materials = {'green': material('GolfHelmGreen', (.48, .68, .34)), 'bunker': material('GolfHelmSand', (.72, .66, .49)),
-                 'fairway': material('GolfHelmFairway', (.32, .53, .27)), 'water': material('GolfHelmWater', (.13, .34, .42))}
+                 'fairway': material('GolfHelmFairway', (.32, .53, .27)), 'tee': material('GolfHelmTee', (.39, .59, .30)),
+                 'water': material('GolfHelmWater', (.13, .34, .42))}
     terrain_vertices = [(point[0], point[2], point[1]) for point in positions]
     terrain_faces = []
     for row in range(height - 1):
@@ -160,13 +197,18 @@ def main():
         target = (sum(point[0] for point in rendered_points) / len(rendered_points),
                   sum(point[2] for point in rendered_points) / len(rendered_points),
                   sum(point[1] for point in rendered_points) / len(rendered_points))
-        camera_span = max(feature_span * 3.6, 55)
+        # Fit to the source-backed tactical features, rather than using a
+        # context multiplier so large that Blender's default far clip clips
+        # the very hole it is meant to review.  The runtime owns interaction;
+        # this is only a useful authored default for static review captures.
+        camera_span = max(feature_span * 1.45, 55)
     else:
         target = ((min_x + max_x) / 2, (min_y + max_y) / 2, (min_z + max_z) / 2)
         camera_span = span * 1.25
     camera_data = bpy.data.cameras.new('GolfHelmCameraDefaults')
     camera_data.type = 'ORTHO'
     camera_data.ortho_scale = camera_span
+    camera_data.clip_end = max(2_000, camera_span * 4)
     camera = bpy.data.objects.new('GolfHelmCameraDefaults', camera_data)
     camera.location = (target[0], target[1] - camera_span * .62, target[2] + camera_span * .9)
     look_at(camera, target)
@@ -197,7 +239,7 @@ def main():
         scene.render.filepath = str(preview_path)
         bpy.ops.render.render(write_still=True)
     report = {
-        'schemaVersion': 1, 'inputCanonicalHash': data['contentHash'], 'terrainRasterSha256': actual_raster,
+        'schemaVersion': 1, 'inputKind': input_data['kind'], 'inputWorldHash': data['contentHash'], 'terrainRasterSha256': actual_raster,
         'outputGlbSha256': hashlib.sha256(glb_path.read_bytes()).hexdigest(), 'objects': [item.name for item in layers],
         'worldUnitMeters': 1, 'canonicalAxes': 'x=east,y=elevation,z=north', 'glbAxes': 'glTF Y-up (Blender export_yup=true)',
         'staticOnly': True, 'previewPath': str(preview_path) if preview_path else None,
