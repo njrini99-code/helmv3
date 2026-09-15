@@ -8,6 +8,19 @@
 
 Shot tracking is the round-entry flow where players record hole-by-hole and shot-by-shot data. It captures the raw evidence used by stats, round reviews, CoachHelm, qualifiers, and future strokes-gained work.
 
+### Course-terrain source contract (2026-09-15)
+
+Course-geometry acquisition is supporting tooling for the same map coordinates
+used by shot tracking; it does not write rounds, shots, or production course
+records. Every elevation source cache declares its raw vertical unit and an
+explicit conversion to meters before a renderer/compiler can consume the
+height field. NC OneMap DEM03 studies retain the raw LiDAR-derived bare-earth
+F32 raster in US survey feet and use `0.3048006096012192` as the only
+feet-to-meters conversion. The importer keeps the service's native 3.125-foot
+grid, records its exact export bounds and file hashes, and records an unknown
+vertical datum as unknown. A source study cannot be bound to a playable hole
+without separately reviewed tee, route, green, and course/hole identity.
+
 The current round flow uses a wizard for setup, hole configuration, shot capture, and submit. Draft save and continue routes support in-progress rounds. Database auto-save and confirmed per-hole checkpoints are the reliable path. The dashboard-level v2 sync engine drains the legacy IndexedDB bridge only for failed final submissions; normal Continue Round auto-saves must not write a second per-shot v1 queue.
 
 As of 2026-08-22, a failed hole or shot child write preserves the parent

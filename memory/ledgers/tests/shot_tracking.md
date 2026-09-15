@@ -373,6 +373,18 @@ Each written red first against the pre-fix source; defect descriptions in
   `finalize`, and that exactly one `finalize` call fires, with status
   `'success'` (guards against a double-finalize regression from the
   restructure).
+
+## 2026-09-15 — terrain source-unit and native-grid acquisition contracts
+
+- `scripts/golf/course-geometry/test_fetch_nc_lidar_study.py` verifies that
+  a Cardinal study request expands onto the NC DEM03 native 3.125-foot grid
+  instead of requesting an arbitrary resampled image, and rejects a service
+  whose foot-unit or native-resolution contract changes.
+- `scripts/golf/course-geometry/test_compile_course_terrain.py` verifies that
+  a declared US-survey-foot raster is converted to meters before bilinear
+  sampling, while an unidentified manifest that omits the conversion is
+  rejected. The same focused run keeps the existing no-nodata-substitution,
+  normal, topology, and deterministic-asset invariants covered.
 - `src/lib/observability/__tests__/helm-flight-recorder.test.ts`:
   - (finding 2, new case) a `persistStep` dependency that throws
     synchronously (not an async function returning a rejected promise) is

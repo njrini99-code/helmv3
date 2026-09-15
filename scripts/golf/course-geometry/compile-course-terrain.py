@@ -41,6 +41,7 @@ ORIGINAL_TRIANGLE_ENVELOPE = 20000
 MAX_TRIANGLES = 40000
 MAX_METRIC_CELLS = 1000000
 SOURCE_CRS = 32617  # WGS84 UTM 17N; horizontal reprojection only, NAVD88 Z retained.
+US_SURVEY_FOOT_TO_METERS = 0.3048006096012192
 
 
 def module(name, filename):
@@ -221,12 +222,28 @@ def acquire_source(directory, pkg, bounds):
                 'acquisitionStart': date_text(attrs['StartDate']), 'acquisitionEnd': date_text(attrs['EndDate']),
                 'nativeResolutionM': 1, 'exportPixelM': [(ex['xmax']-ex['xmin'])/width, (ex['ymax']-ex['ymin'])/height],
                 'horizontalExportCrs': f'EPSG:{SOURCE_CRS}', 'verticalDatum': 'NAVD88',
+                'rawVerticalUnit': 'meter', 'verticalUnitToMeters': 1,
                 'retrievedAt': exported['retrievedAt'], 'sourceSelection': 'single_full_coverage_native_1m_tile',
                 'licenseUrl': 'https://www.usgs.gov/3d-elevation-program/about-3dep-products-services',
                 'fileHashes': {name: hashlib.sha256((directory/name).read_bytes()).hexdigest() for name in names[:-1]}}
     write_json(directory/'source-manifest.json', manifest, True)
     print(json.dumps({'source': attrs['title'], 'pixels': [width, height], 'bytes': len(raster)}), flush=True)
     return manifest
+
+
+def vertical_unit_to_meters(manifest):
+    """Return the declared source Z conversion without guessing source units."""
+    factor = manifest.get('verticalUnitToMeters')
+    if factor is None:
+        # Pre-v2 locked USGS cache manifests contain a well-known meters-only
+        # source identity.  Any other source must state its conversion.
+        if str(manifest.get('selectedTitle', '')).startswith('USGS 1 Meter '):
+            return 1.0
+        raise ValueError('Source manifest omits verticalUnitToMeters; do not assume raw elevations are meters')
+    factor = float(factor)
+    if not math.isfinite(factor) or factor <= 0 or factor > 10:
+        raise ValueError('Invalid verticalUnitToMeters in source manifest')
+    return factor
 
 
 class ElevationSource:
@@ -243,7 +260,9 @@ class ElevationSource:
             self.raster = np.where(self.raster == sentinel, np.nan, self.raster)
         if self.raster.shape != (exported['height'], exported['width']):
             raise ValueError('Raster shape does not match immutable export metadata')
-        self.project = pyproj.Transformer.from_crs(4326, SOURCE_CRS, always_xy=True)
+        self.raster *= vertical_unit_to_meters(manifest)
+        horizontal_crs = manifest.get('horizontalExportCrs', f'EPSG:{SOURCE_CRS}')
+        self.project = pyproj.Transformer.from_crs(4326, horizontal_crs, always_xy=True)
         self.manifest = manifest
 
     def sample(self, x, y):

@@ -986,3 +986,18 @@
 - Verification: every edited file was adversarially re-verified against
   its page's source, twice for the files that failed the first pass.
   typecheck 0, lint 0, build 0.
+
+## 2026-09-15 — terrain source units are explicit before shot-map compilation
+
+- Added a bounded NC OneMap DEM03 acquisition path for course studies. It
+  preserves the native 3.125 US-survey-foot LiDAR-derived bare-earth grid,
+  records exact source bounds and hashes, retains the raw F32 TIFF, and marks
+  an absent vertical datum as unknown rather than inferring NAVD88.
+- The terrain compiler now converts source heights only through a declared
+  `verticalUnitToMeters` manifest value. Existing locked USGS 1m caches retain
+  their known meter compatibility; an unrecognized legacy source without an
+  explicit conversion is rejected. No round, shot, course-library, or
+  production database record is written by this tooling.
+- The Cardinal remains an unassigned source study until its tee, route, green,
+  and played-hole identity are reviewed together; LiDAR acquisition is not
+  permission to invent or bind that geometry.

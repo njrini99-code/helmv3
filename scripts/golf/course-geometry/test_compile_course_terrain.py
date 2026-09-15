@@ -2,6 +2,7 @@
 import gzip
 import hashlib
 import importlib.util
+import json
 import math
 import tempfile
 import unittest
@@ -42,6 +43,14 @@ def fixture():
 
 
 class TerrainCompilerTest(unittest.TestCase):
+    def test_declared_vertical_units_are_converted_without_guessing(self):
+        self.assertEqual(compiler.vertical_unit_to_meters({'verticalUnitToMeters': 1}), 1)
+        self.assertAlmostEqual(compiler.vertical_unit_to_meters({'verticalUnitToMeters': compiler.US_SURVEY_FOOT_TO_METERS}),
+                               compiler.US_SURVEY_FOOT_TO_METERS)
+        self.assertEqual(compiler.vertical_unit_to_meters({'selectedTitle': 'USGS 1 Meter legacy cache'}), 1)
+        with self.assertRaisesRegex(ValueError, 'omits verticalUnitToMeters'):
+            compiler.vertical_unit_to_meters({'selectedTitle': 'Unidentified raster'})
+
     @classmethod
     def setUpClass(cls):
         args = fixture()
@@ -111,6 +120,18 @@ class TerrainCompilerTest(unittest.TestCase):
             source.raster[1, 1] = np.nan
             self.assertTrue(math.isnan(float(source.sample(1., 2.))))
             self.assertTrue(math.isnan(float(source.sample(-1., 2.))))
+
+    def test_elevation_source_converts_declared_us_survey_feet_before_sampling(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source_dir = Path(directory)
+            Image = compiler.Image
+            Image.fromarray(np.array([[0., 10., 20.], [10., 20., 30.], [20., 30., 40.]], dtype=np.float32)).save(source_dir/'elevation.tiff')
+            (source_dir/'export.json').write_text(json.dumps({'width': 3, 'height': 3,
+                                                               'extent': {'xmin': 0, 'xmax': 3, 'ymin': 0, 'ymax': 3}}))
+            source = compiler.ElevationSource(source_dir, {'horizontalExportCrs': 'EPSG:4326',
+                                                            'verticalUnitToMeters': compiler.US_SURVEY_FOOT_TO_METERS})
+            with patch.object(compiler, 'geographic', lambda x, y: (x, y)):
+                self.assertAlmostEqual(float(source.sample(1., 2.)), 10 * compiler.US_SURVEY_FOOT_TO_METERS)
 
     def test_unsupported_context_keeps_null_metrics_and_omits_mesh_faces(self):
         class PartialSource(PlaneSource):
