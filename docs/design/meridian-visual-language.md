@@ -316,10 +316,16 @@ from V1; V4 changes what stands on each centre.
 - **Context (§53).** Ground: real surfaces mixed 58 % toward rough and
   desaturated 15 % (V2). Trees: crowns and mass lobes in shared context woods
   lose 30 % saturation and 8 % light; identity and transforms do not change.
-- **Cart paths and structures (§54–55).** Not drawn: the canonical package has
-  no path or building features yet, and visuals never invent them. They arrive
-  with the outside-world context ingestion (production player-view spec,
-  2026-09-16, §13–14) as source-backed, reviewed features.
+- **Cart paths and structures (§54–55).** Drawn only from the outside-world
+  context layer (production player-view spec, 2026-09-16, §13–14): OSM path
+  ribbons draped per cross vertex and building footprints extruded with
+  source height/levels or a recorded class default. Roof archetype: a small
+  (≤ 320 m²), convex, ≤ 6-vertex footprint gets a hipped roof whose eave inset
+  is 35 % of the centroid's distance to the nearest edge (≤ 2.2 m) and whose
+  rise is 80 % of that inset (≤ 2.4 m); every other footprint stays flat. The archetype is a
+  visual decoration (`userData.roofs.basis = visual_archetype_by_footprint`),
+  never a claim about the real roof; pitch and ridge direction wait for
+  source roof tags.
 - Ground contact (renderer redesign §16): turf within 1.5 m of a building
   footprint darkens up to 10 % toward the wall, and the ground under a path
   ribbon darkens 6 % with a .8 m shoulder fade, so structures and paths sit

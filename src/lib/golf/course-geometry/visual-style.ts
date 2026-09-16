@@ -244,6 +244,13 @@ export const MERIDIAN_STYLE = Object.freeze({
     }),
     lines: Object.freeze({ fence: 1.2, wall: 1, lift_line: 6 }),
     lineColor: '#5C5A56',
+    /** Master §55 / Layer C "simple roof archetype": a small, convex, few-
+     * vertex footprint (house or chalet scale) gets a hipped cap, the eave
+     * ring rising to a ring inset by ≤ `insetMaxM` (≤ `insetShare` of the
+     * centroid's distance to the nearest edge) at ≤ `riseMaxM`
+     * (`riseShare` × inset). Everything else keeps a flat roof. A visual
+     * archetype by footprint, never a claim about the real ridge or pitch. */
+    roof: Object.freeze({ hipMaxAreaM2: 320, hipMaxVertices: 6, insetMaxM: 2.2, insetShare: .35, riseMaxM: 2.4, riseShare: .8 }),
   }),
 });
 /** Structural (widened) style type so a variant style, such as a lab

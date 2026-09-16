@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
-import { ribbon, ribbonVertexHeight, roundCorners } from './three-context';
+import { extrusion, ribbon, ribbonVertexHeight, roofArchetype, roundCorners } from './three-context';
 import type { TerrainMesh } from '@/lib/golf/course-geometry/terrain';
 import { MERIDIAN_STYLE } from '@/lib/golf/course-geometry/visual-style';
 
@@ -55,5 +55,42 @@ describe('context ribbon draping (redesign 12, context-contact-v3)', () => {
     // The outer shoulders sit 2 m across the slope: capped, not at the centreline.
     const shoulderZ = positions.filter((_, i) => i % 3 === 2).filter((_, v) => v % 4 === 3);
     for (const z of shoulderZ) expect(z).toBeCloseTo(102 - cutFillMaxM, 6);
+  });
+});
+
+describe('roof archetype by footprint (master §55, Layer C)', () => {
+  const rect: [number, number][] = [[0, 0], [12, 0], [12, 10], [0, 10]];
+  it('hips a small convex footprint with an inset ring that stays inside it', () => {
+    const roof = roofArchetype(rect);
+    expect(roof.kind).toBe('hip');
+    if (roof.kind !== 'hip') return;
+    expect(roof.inset).toBeCloseTo(1.75, 6);
+    expect(roof.rise).toBeCloseTo(1.4, 6);
+    expect(roof.top).toHaveLength(4);
+    for (const [x, y] of roof.top) { expect(x).toBeGreaterThan(1.7); expect(x).toBeLessThan(10.3); expect(y).toBeGreaterThan(1.7); expect(y).toBeLessThan(8.3); }
+    // Same answer for the clockwise ring.
+    expect(roofArchetype([...rect].reverse())).toMatchObject({ kind: 'hip', inset: roof.inset });
+  });
+  it('keeps large, concave, detailed or tiny footprints flat', () => {
+    expect(roofArchetype([[0, 0], [30, 0], [30, 30], [0, 30]]).kind).toBe('flat');
+    expect(roofArchetype([[0, 0], [12, 0], [12, 4], [6, 4], [6, 10], [0, 10]]).kind).toBe('flat');
+    expect(roofArchetype([[0, 0], [4, 0], [8, 1], [12, 3], [12, 10], [6, 11], [0, 10]]).kind).toBe('flat');
+    expect(roofArchetype([[0, 0], [1, 0], [1, 1], [0, 1]]).kind).toBe('flat');
+    expect(roofArchetype([[0, 0], [12, 0]]).kind).toBe('flat');
+  });
+  it('builds sloped faces up to the eave plus the rise and returns the archetype used', () => {
+    const grid = { originM: [-10, -10] as [number, number], spacingM: 20, columns: 3, rows: 3, heightsM: Array(9).fill(100) as number[] };
+    const mesh = { metricGrid: grid, vertices: [], triangleFeatures: [], featureKinds: [], featureIds: [] } as unknown as TerrainMesh;
+    const positions: number[] = [], colors: number[] = [], groundZ: number[] = [], lift: number[] = [], indices: number[] = [];
+    const wall = new THREE.Color('#ccc'), roof = new THREE.Color('#777');
+    expect(extrusion(mesh, [...rect, rect[0]!], 5, wall, roof, positions, colors, groundZ, lift, indices)).toBe('hip');
+    expect(positions.length / 3).toBe(16 + 16 + 4);
+    expect(Math.max(...lift)).toBeCloseTo(5.3 + 1.4, 6);
+    expect(lift.filter(l => l === 0).length).toBe(8);
+    expect(indices.length / 3).toBe(8 + 8 + 2);
+    const flat: number[] = [], f2: number[] = [], f3: number[] = [], flatLift: number[] = [], f5: number[] = [];
+    expect(extrusion(mesh, [[0, 0], [30, 0], [30, 30], [0, 30], [0, 0]], 5, wall, roof, flat, f2, f3, flatLift, f5)).toBe('flat');
+    expect(flat.length / 3).toBe(16 + 4);
+    expect(Math.max(...flatLift)).toBeCloseTo(5.3, 6);
   });
 });

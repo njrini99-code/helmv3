@@ -19,7 +19,7 @@ const RIBBON_LIFT_M = .06;
 
 export interface ThreeContext {
   group: THREE.Group;
-  counts: { ribbons: number; structures: number; lines: number; zones: number; triangles: number };
+  counts: { ribbons: number; structures: number; hipRoofs: number; lines: number; zones: number; triangles: number };
   setExaggeration(exaggeration: number, referenceElevationM: number): void;
   dispose(): void;
 }
@@ -100,14 +100,51 @@ export function ribbon(mesh: TerrainMesh, line: readonly PointM[], width: number
   }
 }
 
-/** A flat-roofed extrusion of a footprint ring sitting on the lowest terrain
- * height under it (so no corner floats); height from the zone. */
-function extrusion(mesh: TerrainMesh, ring: readonly PointM[], height: number, wall: THREE.Color, roof: THREE.Color,
-  positions: number[], colors: number[], groundZ: number[], lift: number[], indices: number[]): boolean {
+/** Master §55 / Layer C: the roof archetype a footprint gets. A small,
+ * convex, few-vertex ring (house or chalet scale) is hipped: its eave ring
+ * rises to a ring inset toward the centroid; anything larger, concave or
+ * more detailed stays flat. `top` is the inset ring (counter-clockwise like
+ * `points`) and `rise` its height above the eave. A visual archetype by
+ * footprint only; it never claims the real ridge or pitch. */
+export function roofArchetype(points: readonly PointM[], style = MERIDIAN_STYLE.contextObjects.roof): { kind: 'flat' } | { kind: 'hip'; inset: number; rise: number; top: PointM[] } {
+  const n = points.length;
+  if (n < 3 || n > style.hipMaxVertices) return { kind: 'flat' };
+  let area = 0, cx = 0, cy = 0;
+  for (let i = 0; i < n; i++) {
+    const [ax, ay] = points[i]!, [bx, by] = points[(i + 1) % n]!, cross = ax * by - bx * ay;
+    area += cross; cx += (ax + bx) * cross; cy += (ay + by) * cross;
+  }
+  if (Math.abs(area) < 1e-6 || Math.abs(area) / 2 > style.hipMaxAreaM2) return { kind: 'flat' };
+  cx /= 3 * area; cy /= 3 * area;
+  // Convex: every turn has the ring's sign. The hip's inset ring must stay
+  // inside, so the inset is capped by the centroid's distance to the nearest edge.
+  const sign = Math.sign(area);
+  let nearest = Infinity;
+  for (let i = 0; i < n; i++) {
+    const [ax, ay] = points[i]!, [bx, by] = points[(i + 1) % n]!, [qx, qy] = points[(i + 2) % n]!;
+    if (Math.sign((bx - ax) * (qy - by) - (by - ay) * (qx - bx)) * sign < 0) return { kind: 'flat' };
+    const ex = bx - ax, ey = by - ay, length = Math.hypot(ex, ey) || 1;
+    nearest = Math.min(nearest, Math.abs((cx - ax) * ey - (cy - ay) * ex) / length);
+  }
+  const inset = Math.min(style.insetMaxM, style.insetShare * nearest);
+  if (!(inset > .3)) return { kind: 'flat' };
+  const rise = Math.min(style.riseMaxM, style.riseShare * inset);
+  // Scale about the centroid so every edge moves inward by at least `inset`
+  // at the nearest edge and proportionally elsewhere.
+  const scale = 1 - inset / nearest;
+  return { kind: 'hip', inset, rise, top: points.map(([x, y]) => [cx + (x - cx) * scale, cy + (y - cy) * scale] as PointM) };
+}
+
+/** An extrusion of a footprint ring sitting on the lowest terrain height
+ * under it (so no corner floats); height from the zone; roof archetype from
+ * the footprint (`roofArchetype`). Returns the archetype used, null when the
+ * footprint cannot be built. */
+export function extrusion(mesh: TerrainMesh, ring: readonly PointM[], height: number, wall: THREE.Color, roof: THREE.Color,
+  positions: number[], colors: number[], groundZ: number[], lift: number[], indices: number[]): 'flat' | 'hip' | null {
   const points = ring.length > 1 && ring[0]![0] === ring[ring.length - 1]![0] && ring[0]![1] === ring[ring.length - 1]![1] ? ring.slice(0, -1) : ring.slice();
-  if (points.length < 3) return false;
+  if (points.length < 3) return null;
   const heights = points.map(p => terrainHeight(mesh, p)).filter((z): z is number => z != null);
-  if (heights.length < points.length) return false;
+  if (heights.length < points.length) return null;
   const base = Math.min(...heights) - .3;
   // Counter-clockwise for outward-facing walls.
   let area = 0;
@@ -121,11 +158,25 @@ function extrusion(mesh: TerrainMesh, ring: readonly PointM[], height: number, w
     for (let k = 0; k < 4; k++) colors.push(wall.r, wall.g, wall.b);
     indices.push(start, start + 1, start + 2, start, start + 2, start + 3);
   }
+  const archetype = roofArchetype(points);
+  const eave = height + .3;
+  if (archetype.kind === 'hip') {
+    // One sloped face per edge (its own vertices, so it shades flat), then the flat top.
+    for (let i = 0; i < points.length; i++) {
+      const j = (i + 1) % points.length, [ax, ay] = points[i]!, [bx, by] = points[j]!, [tx, ty] = archetype.top[i]!, [ux, uy] = archetype.top[j]!;
+      const start = positions.length / 3;
+      positions.push(ax, ay, base, bx, by, base, ux, uy, base, tx, ty, base);
+      groundZ.push(base, base, base, base); lift.push(eave, eave, eave + archetype.rise, eave + archetype.rise);
+      for (let k = 0; k < 4; k++) colors.push(roof.r, roof.g, roof.b);
+      indices.push(start, start + 1, start + 2, start, start + 2, start + 3);
+    }
+  }
+  const cap = archetype.kind === 'hip' ? archetype.top : points, capLift = archetype.kind === 'hip' ? eave + archetype.rise : eave;
   const roofStart = positions.length / 3;
-  const shape = THREE.ShapeUtils.triangulateShape(points.map(([x, y]) => new THREE.Vector2(x, y)), []);
-  for (const [x, y] of points) { positions.push(x, y, base); groundZ.push(base); lift.push(height + .3); colors.push(roof.r, roof.g, roof.b); }
+  const shape = THREE.ShapeUtils.triangulateShape(cap.map(([x, y]) => new THREE.Vector2(x, y)), []);
+  for (const [x, y] of cap) { positions.push(x, y, base); groundZ.push(base); lift.push(capLift); colors.push(roof.r, roof.g, roof.b); }
   for (const [a = 0, b = 0, c = 0] of shape) indices.push(roofStart + a, roofStart + b, roofStart + c);
-  return true;
+  return archetype.kind;
 }
 
 export function buildThreeContext(scene: HoleScene, mesh: TerrainMesh): ThreeContext {
@@ -135,7 +186,7 @@ export function buildThreeContext(scene: HoleScene, mesh: TerrainMesh): ThreeCon
   const built: Built[] = [];
   const disposables: (THREE.BufferGeometry | THREE.Material)[] = [];
   const zones = scene.contextZones ?? [];
-  const counts: ThreeContext['counts'] = { ribbons: 0, structures: 0, lines: 0, zones: zones.length, triangles: 0 };
+  const counts: ThreeContext['counts'] = { ribbons: 0, structures: 0, hipRoofs: 0, lines: 0, zones: zones.length, triangles: 0 };
   const byClass = new Map<string, LocalContextZone[]>();
   for (const zone of zones) { const list = byClass.get(zone.class) ?? []; list.push(zone); byClass.set(zone.class, list); }
   const addMesh = (name: string, positions: number[], colors: number[], groundZ: number[], lift: number[], indices: number[], material: THREE.Material, shadows: boolean) => {
@@ -173,13 +224,17 @@ export function buildThreeContext(scene: HoleScene, mesh: TerrainMesh): ThreeCon
     for (const zone of byClass.get(cls) ?? []) {
       if (zone.type === 'LineString') continue;
       const height = Math.min(60, zone.attributes.heightM ?? tones.heightM);
-      for (const rings of zone.parts) { const outer = rings[0]; if (outer && extrusion(mesh, outer, height, wall, roof, positions, colors, groundZ, lift, indices)) counts.structures++; }
+      for (const rings of zone.parts) {
+        const outer = rings[0], built = outer ? extrusion(mesh, outer, height, wall, roof, positions, colors, groundZ, lift, indices) : null;
+        if (built) { counts.structures++; if (built === 'hip') counts.hipRoofs++; }
+      }
     }
     const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .92, metalness: 0 });
     material.name = `context-structure-${cls}`;
     addMesh(`context-structures-${cls}`, positions, colors, groundZ, lift, indices, material, true);
     if (!indices.length) material.dispose();
   }
+  group.userData.roofs = { basis: 'visual_archetype_by_footprint', hip: counts.hipRoofs, flat: counts.structures - counts.hipRoofs };
   // Lines: fences and lifts as thin segments lifted to their height.
   {
     const positions: number[] = [], groundZ: number[] = [], lift: number[] = [];
