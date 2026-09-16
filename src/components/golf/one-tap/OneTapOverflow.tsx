@@ -16,7 +16,7 @@ import type { OneTapView } from './use-one-tap';
 export type OneTapSheet = 'penalty' | 'hole';
 export interface OneTapOverflow { items: StageMenuItem[]; sheet: ReactNode; open: OneTapSheet | null }
 
-export function useOneTapOverflow({ view, round, onUseStandardTracking }: { view: OneTapView; round: OneTapRoundView | null; onUseStandardTracking?: () => void }): OneTapOverflow {
+export function useOneTapOverflow({ view, round, onUseStandardTracking, onExitRound }: { view: OneTapView; round: OneTapRoundView | null; onUseStandardTracking?: () => void; onExitRound?: () => void }): OneTapOverflow {
   const [open, setOpen] = useState<OneTapSheet | null>(null);
   const close = useCallback(() => setOpen(null), []);
   const items = useMemo<StageMenuItem[]>(() => {
@@ -30,8 +30,9 @@ export function useOneTapOverflow({ view, round, onUseStandardTracking }: { view
     }
     list.push({ key: 'pause', label: view.paused ? 'Resume tracking' : 'Pause tracking', onSelect: view.paused ? view.resume : view.pause });
     if (onUseStandardTracking) list.push({ key: 'standard', label: 'Use standard tracking', onSelect: onUseStandardTracking });
+    if (onExitRound) list.push({ key: 'exit', label: 'Exit round', onSelect: onExitRound });
     return list;
-  }, [round, view.deleteLastMark, view.canDeleteLastMark, view.paused, view.resume, view.pause, onUseStandardTracking]);
+  }, [round, view.deleteLastMark, view.canDeleteLastMark, view.paused, view.resume, view.pause, onUseStandardTracking, onExitRound]);
   const sheet = open && round ? open === 'penalty' ? <PenaltySheet round={round} onClose={close} /> : <HoleSheet round={round} onClose={close} /> : null;
   return { items, sheet, open };
 }

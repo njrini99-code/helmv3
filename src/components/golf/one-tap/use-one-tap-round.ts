@@ -33,6 +33,9 @@ export interface UseOneTapRoundOptions {
   location: LocationSource | null;
   /** Omitted → localStorage; null → memory only. */
   storage?: StorageLike | null;
+  /** The host owns the hole index (the round ledger's current hole): every
+   * advance goes through `onHoleIndexChange` instead of local state. */
+  controlled?: { holeIndex: number; onHoleIndexChange(index: number): void } | null;
 }
 export interface OneTapScorecardRow {
   holeKey: string; ordinal: number; par: number;
@@ -77,6 +80,8 @@ export interface OneTapRoundView {
   previousHole(): void;
   /** Clears the terminal mark on the current hole (a mistaken hole-out). */
   reopenHole(): void;
+  /** Live anchors on the open hole (the evidence the ledger adapter reads). */
+  anchors: ShotAnchor[];
   /** §58 penalties on the open hole. */
   penalties: PenaltyEvent[];
   penaltyStrokes: number;
@@ -127,13 +132,21 @@ function teesOf(pkg: CourseGeometryPackage, holeKey: string): LocalFeature[] {
 function liveOnHole(anchors: readonly ShotAnchor[], holeKey: string): ShotAnchor[] { return anchors.filter(a => a.holeKey === holeKey && !a.deletedAt); }
 interface PendingCompletion { holeKey: string; ordinal: number; inferred: boolean; review?: boolean }
 
-export function useOneTapRound({ roundId, pkg, holeKeys, location, storage: storageOption }: UseOneTapRoundOptions): OneTapRoundView {
+export function useOneTapRound({ roundId, pkg, holeKeys, location, storage: storageOption, controlled = null }: UseOneTapRoundOptions): OneTapRoundView {
   const storage = storageOption === undefined ? defaultStorage() : storageOption;
   const binding = useMemo(() => ({ courseId: courseIdForSite(pkg.siteId), siteId: pkg.siteId }), [pkg.siteId]);
   const repo = useMemo<AnchorRepository>(() => storage ? new StorageAnchorRepository(storage, [roundId], binding) : new MemoryAnchorRepository(), [storage, roundId, binding]);
   const penaltyRepo = useMemo<PenaltyRepository>(() => storage ? new StoragePenaltyRepository(storage, [roundId]) : new MemoryPenaltyRepository(), [storage, roundId]);
   const [initial] = useState(() => readRoundState(storage, roundId, holeKeys.length));
-  const [holeIndex, setHoleIndex] = useState(initial.holeIndex);
+  const [ownIndex, setOwnIndex] = useState(initial.holeIndex);
+  const holeIndex = controlled ? Math.max(0, Math.min(holeKeys.length - 1, controlled.holeIndex)) : ownIndex;
+  const holeIndexRef = useRef(holeIndex);
+  holeIndexRef.current = holeIndex;
+  const onHoleIndexChange = controlled?.onHoleIndexChange ?? null;
+  const setHoleIndex = useCallback((next: number | ((index: number) => number)) => {
+    const value = typeof next === 'function' ? next(holeIndexRef.current) : next;
+    if (onHoleIndexChange) { if (value !== holeIndexRef.current) onHoleIndexChange(value); } else setOwnIndex(value);
+  }, [onHoleIndexChange]);
   const [skipped, setSkipped] = useState(initial.skipped);
   useEffect(() => { try { storage?.setItem(ROUND_STORAGE_PREFIX + roundId, JSON.stringify({ holeIndex, skipped })); } catch { /* private mode */ } }, [storage, roundId, holeIndex, skipped]);
   const [version, setVersion] = useState(0);
@@ -157,6 +170,7 @@ export function useOneTapRound({ roundId, pkg, holeKeys, location, storage: stor
   }), [holeKeys, pkg, anchors, penaltyEvents, holeIndex, skipped]);
   const current = useMemo<OneTapScorecardRow>(() => scorecard[holeIndex] ?? scorecard[0] ?? { holeKey, ordinal: 1, par: 4, strokes: 0, status: 'OPEN', terminalMethod: null, integrity: assessHoleIntegrity([]), penaltyStrokes: 0, score: 0, unresolvedPenalties: 0, skipped: false }, [scorecard, holeIndex, holeKey]);
   const holePenalties = useMemo(() => livePenalties(penaltyEvents, holeKey), [penaltyEvents, holeKey]);
+  const holeAnchors = useMemo(() => liveOnHole(anchors, holeKey), [anchors, holeKey]);
   const [pending, setPending] = useState<PendingCompletion | null>(null);
 
   // Next-tee fallback: needs a finalized mark on this hole with a green
@@ -183,7 +197,7 @@ export function useOneTapRound({ roundId, pkg, holeKeys, location, storage: stor
       setPending({ holeKey, ordinal: current.ordinal, inferred: true });
       setHoleIndex(index => Math.min(index + 1, holeKeys.length - 1));
     });
-  }, [location, nextKey, nextTees, greenCentre, repo, roundId, holeKey, origin, current.ordinal, holeKeys.length]);
+  }, [location, nextKey, nextTees, greenCentre, repo, roundId, holeKey, origin, current.ordinal, holeKeys.length, setHoleIndex]);
 
   // An explicit close (CUP_MARK through the controller) on the open hole
   // raises the completion card; reopening lowers it.
@@ -214,8 +228,8 @@ export function useOneTapRound({ roundId, pkg, holeKeys, location, storage: stor
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [completionKey]);
 
-  const nextHole = useCallback(() => { setPending(null); setHoleIndex(index => Math.min(index + 1, holeKeys.length - 1)); }, [holeKeys.length]);
-  const previousHole = useCallback(() => { setPending(null); setHoleIndex(index => Math.max(0, index - 1)); }, []);
+  const nextHole = useCallback(() => { setPending(null); setHoleIndex(index => Math.min(index + 1, holeKeys.length - 1)); }, [holeKeys.length, setHoleIndex]);
+  const previousHole = useCallback(() => { setPending(null); setHoleIndex(index => Math.max(0, index - 1)); }, [setHoleIndex]);
   const reopenHole = useCallback(() => {
     for (const a of liveOnHole(repo.list(roundId), holeKey)) if (a.terminal) repo.upsert({ ...a, terminal: false, terminalMethod: null, syncState: 'QUEUED' });
     setPending(null);
@@ -227,7 +241,7 @@ export function useOneTapRound({ roundId, pkg, holeKeys, location, storage: stor
     const back = holeKeys.indexOf(pending.holeKey);
     setPending(null);
     if (back >= 0) setHoleIndex(back);
-  }, [pending, repo, roundId, holeKeys]);
+  }, [pending, repo, roundId, holeKeys, setHoleIndex]);
   const inferredFrom = useMemo(() => completion?.inferred ? { holeKey: completion.holeKey, ordinal: completion.ordinal } : null, [completion]);
   const openReview = useCallback(() => setPending({ holeKey, ordinal: current.ordinal, inferred: current.terminalMethod === 'NEXT_TEE_INFERRED', review: true }), [holeKey, current.ordinal, current.terminalMethod]);
   // §58: the penalty follows the last finalized mark; the drop is the next ordinary mark.
@@ -239,18 +253,18 @@ export function useOneTapRound({ roundId, pkg, holeKeys, location, storage: stor
     const last = livePenalties(penaltyRepo.list(roundId), holeKey).at(-1);
     if (last) penaltyRepo.upsert(tombstonePenalty(last, Date.now()));
   }, [penaltyRepo, roundId, holeKey]);
-  const goToHole = useCallback((index: number) => { setPending(null); setHoleIndex(Math.max(0, Math.min(holeKeys.length - 1, Math.trunc(index)))); }, [holeKeys.length]);
+  const goToHole = useCallback((index: number) => { setPending(null); setHoleIndex(Math.max(0, Math.min(holeKeys.length - 1, Math.trunc(index)))); }, [holeKeys.length, setHoleIndex]);
   const skipHole = useCallback(() => {
     setSkipped(prev => ({ ...prev, [holeKey]: new Date().toISOString() }));
     setPending(null);
     setHoleIndex(index => Math.min(index + 1, holeKeys.length - 1));
-  }, [holeKey, holeKeys.length]);
+  }, [holeKey, holeKeys.length, setHoleIndex]);
 
   return useMemo<OneTapRoundView>(() => ({
     repo, holeIndex, holeKey, holeCount: holeKeys.length, ordinal: current.ordinal, strokes: current.strokes, status: current.status, terminalMethod: current.terminalMethod, integrity: current.integrity,
     scorecard, hasNextHole: holeIndex < holeKeys.length - 1, nextHole, previousHole, reopenHole,
-    penalties: holePenalties, penaltyStrokes: current.penaltyStrokes, score: current.score, unresolvedPenalties: current.unresolvedPenalties, skipped: current.skipped,
+    anchors: holeAnchors, penalties: holePenalties, penaltyStrokes: current.penaltyStrokes, score: current.score, unresolvedPenalties: current.unresolvedPenalties, skipped: current.skipped,
     addPenalty, removeLastPenalty, skipHole, goToHole, openReview,
     completion, dismissCompletion, returnToCompleted, inferredFrom, dismissInferred: dismissCompletion, takeBackInferred: returnToCompleted,
-  }), [repo, holeIndex, holeKey, holeKeys.length, current, scorecard, nextHole, previousHole, reopenHole, holePenalties, addPenalty, removeLastPenalty, skipHole, goToHole, openReview, completion, dismissCompletion, returnToCompleted, inferredFrom]);
+  }), [repo, holeIndex, holeKey, holeKeys.length, current, scorecard, nextHole, previousHole, reopenHole, holeAnchors, holePenalties, addPenalty, removeLastPenalty, skipHole, goToHole, openReview, completion, dismissCompletion, returnToCompleted, inferredFrom]);
 }

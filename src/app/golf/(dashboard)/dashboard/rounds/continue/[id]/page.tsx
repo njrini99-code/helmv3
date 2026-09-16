@@ -12,6 +12,8 @@ import type { ApproachMissDirection, PuttMissTag } from '@/lib/types/golf';
 import type { Metadata } from 'next';
 import { logServerError } from '@/lib/server-error-logger';
 import { RoundTypeEditor } from '@/components/fairway/pages/rounds/RoundTypeEditor';
+import { evaluateFlag } from '@/lib/flags/is-enabled';
+import { PEEK_N_PEAK_ONE_TAP_V1 } from '@/lib/golf/one-tap/peek-n-peak-policy';
 
 export const metadata: Metadata = {
   title: 'Continue Round | GolfHelm',
@@ -648,6 +650,7 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
   return (
     <AnimatedPage>
       <ContinueRoundClient
+        oneTapFlagEnabled={evaluateFlag(PEEK_N_PEAK_ONE_TAP_V1.featureFlag).value}
         roundTypeEditor={
           <RoundTypeEditor
             roundId={id}

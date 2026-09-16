@@ -134,6 +134,13 @@ Redirect to /golf/dashboard/rounds/[id]
 - [ ] Navigate to stats page
 - [ ] Confirm stats include data from saved round
 
+### One-Tap placement (Peek'n Peak Upper only)
+- [ ] Any other course: the tracker renders unchanged (no `one-tap-live-hole` slot)
+- [ ] Peek'n Peak Upper with `peek_n_peak_one_tap_v1` off, or no approved package hash: unchanged
+- [ ] Eligible round: Meridian Live replaces the shot-entry screen on package-mapped holes only
+- [ ] "Use standard tracking" continues the hole in the standard flow with the adapted shots
+- [ ] A cup-marked close writes ordinary shots + hole stats; a flagged close asks to finish by hand
+
 ### Data Verification
 - [ ] Check database for saved round in `golf_rounds`
 - [ ] Verify all comprehensive stat columns are populated

@@ -23,6 +23,13 @@ Every shot taken during a round is captured, stored, and used for comprehensive 
 
 **Component:** `/src/components/golf/ShotTrackingComprehensive.tsx`
 
+> **One-Tap live round (2026-09-16).** For an eligible Peek'n Peak Upper round
+> (`liveRound` on `FairwayShotTracking`), `OneTapLiveHole` replaces the entry
+> screen on package-mapped holes and feeds this same flow: `toRoundShots`
+> (`src/lib/golf/one-tap/to-round-shots.ts`) emits ordinary `ShotRecord`s with
+> `source: 'one_tap_location'` and provenance, and `HoleStats` through
+> `calculateHoleStats` only for a clean cup-marked close. Nothing below changes.
+
 ### Data Captured Per Shot
 ```typescript
 {

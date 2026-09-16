@@ -16,11 +16,26 @@ export const PEEK_N_PEAK_ONE_TAP_V1 = {
   /** Exact production-approved package hashes. Empty until the owner approves
    * a reviewed Upper package: a source-candidate package never activates Live. */
   approvedGeometryHashes: new Set<string>([]),
+  /** GolfHelm course rows (golf_courses ids) that ARE the Upper course. Empty
+   * until the owner binds them; the name pattern below is the interim match
+   * and requires "Upper" so the Lower course can never activate (§22). */
+  dbCourseIds: new Set<string>([]),
+  courseNamePattern: /peek\W*n?\W*peak[\s\S]*\bupper\b/i,
 } as const;
 export type PeekNPeakOneTapPolicy = {
   readonly courseId: string; readonly siteId: string; readonly projection: string; readonly featureFlag: string;
   readonly approvedGeometryHashes: ReadonlySet<string>;
+  readonly dbCourseIds: ReadonlySet<string>;
+  readonly courseNamePattern: RegExp;
 };
+/** The product course id of a GolfHelm round's course, or null for any other
+ * course. A bound golf_courses id wins; otherwise the course name must read
+ * as Peek'n Peak *Upper*. Everything else stays on standard tracking. */
+export function productCourseIdForRound(round: { dbCourseId?: string | null; courseName?: string | null }, policy: PeekNPeakOneTapPolicy = PEEK_N_PEAK_ONE_TAP_V1): string | null {
+  if (round.dbCourseId && policy.dbCourseIds.has(round.dbCourseId)) return policy.courseId;
+  if (round.courseName && policy.courseNamePattern.test(round.courseName)) return policy.courseId;
+  return null;
+}
 
 /** Every reason Live stays off, in the order the gate checks them. */
 export type OneTapIneligibility =

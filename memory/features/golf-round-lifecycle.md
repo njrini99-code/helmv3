@@ -766,3 +766,31 @@ ball observations. Current snapshot saves can replace database shot rows, so
 row IDs or shot numbers alone must not own future observations. Pin changes must
 share one round/hole revision and invalidate only derived hypotheses. This is a
 planning requirement; current renderer work adds no persistence or RLS changes.
+
+### One-Tap live round placement (September 16, 2026)
+
+`FairwayShotTracking` accepts `liveRound?: OneTapLiveRound | null`
+(`src/lib/golf/one-tap/live-round-placement.ts`). When present, and only for
+holes the geometry package maps, it renders `OneTapLiveHole`
+(`src/components/golf/one-tap/OneTapLiveHole.tsx`) in place of the shot-entry
+screen; every other round — every other course, and Peek'n Peak Upper with the
+flag off or no approved package — renders the tracker exactly as before
+(`__tests__/FairwayShotTracking.one-tap-placement.test.tsx`).
+
+- Eligibility is resolved client-side by `useOneTapLiveRound` in
+  `new-round-client.tsx` / `continue-round-client.tsx` from a server-evaluated
+  `peek_n_peak_one_tap_v1` (both pages pass `oneTapFlagEnabled`), the round's
+  course (`productCourseIdForRound`: bound DB row or the course name; the
+  Lower course never matches), an owner-approved package
+  (`loadApprovedCoursePackage`; nothing is fetched while
+  `approvedGeometryHashes` is empty, which is the shipped state) and a device
+  location that is not denied.
+- The ledger seam is `toRoundShots` (`src/lib/golf/one-tap/to-round-shots.ts`):
+  a hole's finalized marks become ordinary `ShotRecord`s (`source:
+  'one_tap_location'`, per-shot provenance, `clubSource: 'unknown'`, penalties
+  as separate `isPenalty` records) and `HoleStats` via `calculateHoleStats`
+  only when the hole is COMPLETE with a clean integrity report. A flagged
+  close shows *Finish by hand*; *Use standard tracking* dispatches
+  `RESET_FOR_HOLE_CHANGE` with the adapted shots so the hole continues in the
+  standard flow. Persistence still goes through the host's `onSaveShot` /
+  `onHoleComplete` / `onHoleStatsUpdate`; no new tables, actions or RLS.

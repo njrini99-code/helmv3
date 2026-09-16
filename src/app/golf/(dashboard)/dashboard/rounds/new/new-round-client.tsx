@@ -58,6 +58,7 @@ import { getRoundRecoverySnapshots } from '@/lib/offline/shot-storage';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayNewRoundEntry } from '@/components/fairway/pages/rounds-new/FairwayNewRoundEntry';
 import { FairwayShotTracking } from '@/components/fairway/pages/rounds-tracking';
+import { useOneTapLiveRound } from '@/components/golf/one-tap/use-one-tap-live-round';
 import { Skeleton } from '@/components/fairway';
 import { Button as FwButton } from '@/components/fairway/controls/button';
 import { ModalShell } from '@/components/fairway/overlays/ModalShell';
@@ -152,9 +153,11 @@ export function decidePostHoleCompleteAction(params: {
 
 interface NewRoundClientProps {
   playerId: string;
+  /** Server-evaluated `peek_n_peak_one_tap_v1`; off (the default) keeps every round on standard tracking. */
+  oneTapFlagEnabled?: boolean;
 }
 
-export default function NewRoundClient({ playerId }: NewRoundClientProps) {
+export default function NewRoundClient({ playerId, oneTapFlagEnabled = false }: NewRoundClientProps) {
   const ExitRoundModal = FairwaySaveRoundModal;
   const SubmitOverlay = FairwayRoundSubmitOverlay;
   const router = useRouter();
@@ -876,6 +879,9 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   // FK to golf_courses (resolved from saved course or server-side fallback)
   const resolvedCourseIdRef = useRef<string | null>(null);
+  // One-Tap master plan §77: only a Peek'n Peak Upper round with the release
+  // flag on and an approved package resolves a live round; everything else is null.
+  const oneTapLiveRound = useOneTapLiveRound({ roundId: savedRoundIdRef.current, dbCourseId: resolvedCourseIdRef.current, courseName: setupData.courseName, featureFlagEnabled: oneTapFlagEnabled });
   // Cloud Course Library tee (golf_course_tees.id) when the round was started
   // from the tee picker. Cleared whenever a non-library course is chosen.
   const selectedTeeIdRef = useRef<string | null>(null);
@@ -2768,6 +2774,7 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
           onAutoSave={handleAutoSave}
           autoSaveInterval={15000}
           autoSaveDisabled={step === 'submitting' || !!completedRoundId}
+          liveRound={oneTapLiveRound}
         />
       </div>
 

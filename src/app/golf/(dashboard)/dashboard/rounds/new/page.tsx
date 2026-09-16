@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation';
 import NewRoundClient from './new-round-client';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { FeatureUnavailable } from '@/components/fairway';
+import { evaluateFlag } from '@/lib/flags/is-enabled';
+import { PEEK_N_PEAK_ONE_TAP_V1 } from '@/lib/golf/one-tap/peek-n-peak-policy';
 
 export default async function NewRoundPage() {
   const session = await getGolfSessionProfile();
@@ -39,7 +41,7 @@ export default async function NewRoundPage() {
   return (
     <AnimatedPage>
       <AnimatedItem>
-        <NewRoundClient playerId={player.id} />
+        <NewRoundClient playerId={player.id} oneTapFlagEnabled={evaluateFlag(PEEK_N_PEAK_ONE_TAP_V1.featureFlag).value} />
       </AnimatedItem>
     </AnimatedPage>
   );

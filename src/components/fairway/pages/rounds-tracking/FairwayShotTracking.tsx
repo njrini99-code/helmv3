@@ -43,6 +43,8 @@ import { FairwayCompletedHole } from './FairwayCompletedHole';
 import { FairwayEditShotModal } from './FairwayEditShotModal';
 import { FairwayPenaltyModal } from './FairwayPenaltyModal';
 import { FairwayUnsavedNavModal } from './FairwayUnsavedNavModal';
+import { OneTapLiveHole } from '@/components/golf/one-tap/OneTapLiveHole';
+import { holeKeyForRoundHole, type OneTapLiveRound } from '@/lib/golf/one-tap/live-round-placement';
 
 // Local alias for the Hole interface used by this component's props
 type Hole = RoundHole;
@@ -51,6 +53,11 @@ type Hole = RoundHole;
 interface ShotTrackingProps {
   /** Optional reviewed binding context; never part of score persistence. */
   geometry?: TrackingGeometry;
+  /** One-Tap master plan §77: an eligible Peek'n Peak Upper live round. When
+   * present, Meridian Live replaces the shot-entry screen for the holes its
+   * package maps; absent (every other course, Peek Upper in standard mode),
+   * nothing below changes. */
+  liveRound?: OneTapLiveRound | null;
   /** Resume context already occupies the initial status-bar inset. */
   safeAreaHandledAbove?: boolean;
   /** Round-level status stays in the same measured sticky chrome. */
@@ -133,6 +140,7 @@ export default function FairwayShotTracking({
   safeAreaHandledAbove = false,
   statusSlot,
   geometry,
+  liveRound = null,
   holes,
   currentHoleIndex,
   onHoleComplete,
@@ -199,6 +207,10 @@ export default function FairwayShotTracking({
   const shotMutationInFlightRef = useRef(false);
   const [holeCheckpointStatus, setHoleCheckpointStatus] = useState<'idle' | 'saving' | 'failed'>('idle');
   const [puttingSelection, setPuttingSelection] = useState<number | 'draft'>('draft');
+  // One-Tap live round (§77): "Use standard tracking" hands the adapted shots
+  // to this state machine for the rest of the hole; the next hole is Live again.
+  const [standardOverride, setStandardOverride] = useState(false);
+  useEffect(() => { setStandardOverride(false); }, [currentHoleIndex]);
 
   // ============================================================================
   // SUB-HOOKS — must be called before any early return (Rules of Hooks)
@@ -545,6 +557,21 @@ export default function FairwayShotTracking({
       <div className="flex min-h-full items-center justify-center bg-canvas">
         <p className="font-fw-sans text-lg text-text-secondary">Invalid hole data</p>
       </div>
+    );
+  }
+
+  // Meridian Live replaces the shot-entry screen only when the round is
+  // eligible and the package maps this hole (§77). All hooks above ran the
+  // same way; the standard tracker below is untouched for every other round.
+  const liveHoleKey = liveRound && !standardOverride ? holeKeyForRoundHole(liveRound, currentHole.number) : null;
+  if (liveRound && liveHoleKey) {
+    return (
+      <OneTapLiveHole live={liveRound} holes={holes} holeIndex={currentHoleIndex} onNavigateToHole={onNavigateToHole}
+        onHoleComplete={onHoleComplete} onHoleStatsUpdate={onHoleStatsUpdate} onSaveShot={onSaveShot} onExit={onExit} statusSlot={statusSlot}
+        onUseStandardTracking={(shots) => {
+          dispatch({ type: 'RESET_FOR_HOLE_CHANGE', payload: { initialShots: shots, initialShotNumber: shots.length + 1, holeYardage: currentHole.yardage } });
+          setStandardOverride(true);
+        }} />
     );
   }
 
