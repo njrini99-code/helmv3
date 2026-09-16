@@ -9,9 +9,9 @@ import type { CalibrationTraceSink } from '@/lib/golf/one-tap/calibration-trace'
 import { initialCameraState, nextHole, observeAnchor, observeGesture, productionStateFor, recenter, tickCamera, type CameraDirectorState, type CameraMode } from '@/lib/golf/one-tap/camera-director';
 import { localOriginFor, wgs84ToEnu } from '@/lib/golf/one-tap/geodesy';
 import { courseIdForSite } from '@/lib/golf/one-tap/peek-n-peak-policy';
-import { greenDistances, type GreenDistances } from '@/lib/golf/one-tap/hole-distances';
+import { greenDistances, greenReadout, type GreenDistances, type GreenReadout } from '@/lib/golf/one-tap/hole-distances';
 import { posteriorGreenProbability } from '@/lib/golf/one-tap/hole-lifecycle';
-import { buildSurfacePartition, LIE_LABELS, type LieClass, type LieDisplay } from '@/lib/golf/one-tap/lie-classifier';
+import { buildSurfacePartition, exactPointInPartition, LIE_LABELS, type LieClass, type LieDisplay } from '@/lib/golf/one-tap/lie-classifier';
 import { presentLie, type LiePresentationContext, type LieRule } from '@/lib/golf/one-tap/presentation-lie';
 import { LocationBuffer, type Covariance2, type LocationSample } from '@/lib/golf/one-tap/location-estimator';
 import type { LocationSource, LocationStatus } from '@/lib/golf/one-tap/location-source';
@@ -66,6 +66,8 @@ export interface OneTapView {
   /** Front / centre / back from the freshest real position. */
   distances: GreenDistances | null;
   distancesBasis: 'live_fix' | 'last_mark' | null;
+  /** §15–16: what the readout prints — F/C/B on the approach, ON GREEN + centre on the green. */
+  readout: GreenReadout | null;
   hasGreen: boolean;
   /** Lie of the last finalized mark on this hole. */
   lie: OneTapLie | null;
@@ -248,16 +250,18 @@ export function useOneTap(options: UseOneTapOptions): OneTapView {
   useEffect(() => { if (camera.mode !== 'MANUAL') lastAutomatic.current = productionStateFor(camera.mode).state; }, [camera.mode]);
 
   const green = useMemo(() => partition.surfaces.find(s => s.lieClass === 'green') ?? null, [partition]);
-  const distances = useMemo<{ value: GreenDistances | null; basis: OneTapView['distancesBasis'] }>(() => {
-    if (!green) return { value: null, basis: null };
+  const distances = useMemo<{ value: GreenDistances | null; basis: OneTapView['distancesBasis']; onGreen: boolean }>(() => {
+    if (!green) return { value: null, basis: null, onGreen: false };
     if (latestFix) {
       const enu = wgs84ToEnu([latestFix.longitude, latestFix.latitude, latestFix.altitudeM], origin);
       const variance = latestFix.horizontalAccuracyM ** 2, cov: Covariance2 = [[variance, 0], [0, variance]];
-      return { value: greenDistances([enu[0], enu[1]], green.feature, cov, green.edgeSigmaM), basis: 'live_fix' };
+      // §15: green mode follows where the golfer stands (the canonical green outline), never a guess.
+      return { value: greenDistances([enu[0], enu[1]], green.feature, cov, green.edgeSigmaM), basis: 'live_fix', onGreen: exactPointInPartition(partition, [enu[0], enu[1]]).lieClass === 'green' };
     }
-    if (lastMark) return { value: greenDistances([lastMark.positionENU[0], lastMark.positionENU[1]], green.feature, lastMark.covarianceENU2D, green.edgeSigmaM), basis: 'last_mark' };
-    return { value: null, basis: null };
-  }, [green, latestFix, lastMark, origin]);
+    if (lastMark) return { value: greenDistances([lastMark.positionENU[0], lastMark.positionENU[1]], green.feature, lastMark.covarianceENU2D, green.edgeSigmaM), basis: 'last_mark', onGreen: lastMark.primaryLie === 'green' };
+    return { value: null, basis: null, onGreen: false };
+  }, [green, latestFix, lastMark, origin, partition]);
+  const readout = useMemo(() => distances.value ? greenReadout(distances.value, distances.onGreen) : null, [distances]);
   const lie = useMemo(() => {
     if (!lastMark) return null;
     const primaryFeatureId = lastMark.liePosterior.find(e => e.lieClass === lastMark.primaryLie)?.featureId ?? null;
@@ -289,9 +293,9 @@ export function useOneTap(options: UseOneTapOptions): OneTapView {
   const recenterCamera = useCallback(() => { setCamera(state => recenter(state, controller?.cameraObservation() ?? null, now())); }, [controller, now]);
 
   return useMemo<OneTapView>(() => ({
-    snapshot, markers, distances: distances.value, distancesBasis: distances.basis, hasGreen: !!green, lie, lastMark,
+    snapshot, markers, distances: distances.value, distancesBasis: distances.basis, readout, hasGreen: !!green, lie, lastMark,
     cameraMode: camera.mode, cameraState, locationKind: location?.kind ?? 'none', latestFix, player, locationQuality, syncIssue, statusToast, finishSuggested,
     canHoleOut: !!lastMark && !lastMark.terminal,
     markBall, undo, holeOut, onGesture, recenterCamera,
-  }), [snapshot, markers, distances, green, lie, lastMark, camera.mode, cameraState, location, latestFix, player, locationQuality, syncIssue, statusToast, finishSuggested, markBall, undo, holeOut, onGesture, recenterCamera]);
+  }), [snapshot, markers, distances, readout, green, lie, lastMark, camera.mode, cameraState, location, latestFix, player, locationQuality, syncIssue, statusToast, finishSuggested, markBall, undo, holeOut, onGesture, recenterCamera]);
 }

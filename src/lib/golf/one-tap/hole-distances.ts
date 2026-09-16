@@ -51,6 +51,35 @@ export function greenDistances(player: PointM, green: LocalFeature, playerCov: C
   return { frontM: Math.min(...projections), centreM: length, backM: Math.max(...projections), centreENU: centre,
     sigmaM: Math.sqrt(sigmaPos * sigmaPos + greenEdgeSigmaM * greenEdgeSigmaM), basis: 'approach_axis_boundary_intersection' };
 }
+/** §15–16 green-aware readout. Off the green complex the golfer reads
+ * front / centre / back; on the green those edges are behind or beside the
+ * ball and the readout is ON GREEN with the centre distance — or, when the
+ * putt is shorter than the uncertainty can resolve, no number at all. The
+ * daily pin is UNSPECIFIED, so there is no pin distance to print; a later
+ * pin estimate would print with a tilde (§15.3), never as exact feet. */
+export type ReadoutMode = 'approach' | 'on_green';
+export interface GreenReadout {
+  mode: ReadoutMode;
+  /** Approach only; null on the green (the edges are not targets there). */
+  frontM: number | null;
+  centreM: number;
+  backM: number | null;
+  sigmaM: number;
+  /** §16: a putt shorter than max(4 m, 2.5 σ) shows no exact number. */
+  centreDisplay: 'exact' | 'suppressed';
+  pin: 'unspecified';
+  basis: GreenDistances['basis'];
+}
+/** PROVISIONAL — TUNE ON PEEK'N PEAK (§16). */
+export const PUTT_SUPPRESSION = Object.freeze({ minM: 4, sigmaMultiple: 2.5 });
+export function shortPuttSuppressed(distanceM: number, sigmaM: number, rule = PUTT_SUPPRESSION): boolean {
+  return distanceM < Math.max(rule.minM, rule.sigmaMultiple * sigmaM);
+}
+export function greenReadout(distances: GreenDistances, onGreen: boolean): GreenReadout {
+  if (!onGreen) return { mode: 'approach', frontM: distances.frontM, centreM: distances.centreM, backM: distances.backM, sigmaM: distances.sigmaM, centreDisplay: 'exact', pin: 'unspecified', basis: distances.basis };
+  return { mode: 'on_green', frontM: null, centreM: distances.centreM, backM: null, sigmaM: distances.sigmaM,
+    centreDisplay: shortPuttSuppressed(distances.centreM, distances.sigmaM) ? 'suppressed' : 'exact', pin: 'unspecified', basis: distances.basis };
+}
 export const YARDS_PER_METRE = 1.0936132983377078;
 export function metresToYards(m: number): number { return m * YARDS_PER_METRE; }
 export function metresToFeet(m: number): number { return m * 3.280839895013123; }

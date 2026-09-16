@@ -71,6 +71,8 @@ describe('One-Tap player screen', () => {
     expect(document.querySelector('[data-slot="one-tap-location"]')).toBeNull();
     const readout = document.querySelector('[data-slot="one-tap-distances"]')!;
     expect(readout.getAttribute('data-basis')).toBe('live_fix');
+    // §15: the approach reads F/C/B from where the golfer stands.
+    expect(readout.getAttribute('data-readout-mode')).toBe('approach');
     expect(readout.textContent).toMatch(/F\d+C\d+B\d+yd to green · ±\d+ yd · from where you stand/);
     fireEvent.click(document.querySelector('[data-slot="one-tap-mark"]')!);
     expect(state()).toBe('CAPTURE_PENDING');
@@ -153,5 +155,13 @@ describe('One-Tap player screen', () => {
     // §14: on the green complex the contextual Finish hole appears.
     expect(document.querySelector('[data-slot="one-tap-holed"]')!.textContent).toBe('At the cup? Finish hole');
     expect(root().getAttribute('data-camera-framing')).toBe('whole_green');
+    // §15–16: standing on the green switches the readout to ON GREEN — no F/C/B,
+    // the centre with honest uncertainty, and the pin is never pretended.
+    const readout = document.querySelector('[data-slot="one-tap-distances"]')!;
+    expect(readout.getAttribute('data-readout-mode')).toBe('on_green');
+    expect(readout.textContent).not.toMatch(/F\d+C\d+B\d+/);
+    expect(readout.textContent).toContain('On green');
+    expect(readout.textContent).toContain('pin not marked');
+    expect(readout.textContent).toMatch(/Center \d+ yd · ±\d+ yd|Short putt · position approximate/);
   });
 });

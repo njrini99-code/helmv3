@@ -19,15 +19,22 @@ function Distance({ label, value, emphasis = false }: { label: string; value: nu
 }
 
 export function OneTapReadout({ view }: { view: OneTapView }) {
-  const { distances, distancesBasis, lie } = view;
-  return <div className="flex items-end justify-between gap-3 pb-2" data-slot="one-tap-distances" data-basis={distancesBasis ?? ''}>
-    {distances ? <div className="min-w-0">
+  const { readout, distancesBasis, lie } = view;
+  const from = distancesBasis === 'live_fix' ? 'from where you stand' : 'from your last mark';
+  return <div className="flex items-end justify-between gap-3 pb-2" data-slot="one-tap-distances" data-basis={distancesBasis ?? ''} data-readout-mode={readout?.mode ?? ''}>
+    {readout?.mode === 'approach' ? <div className="min-w-0">
       <div className="flex items-baseline gap-3 font-fw-display tabular-nums">
-        <Distance label="F" value={distances.frontM > 0 ? yards(distances.frontM) : null} />
-        <Distance label="C" value={yards(distances.centreM)} emphasis />
-        <Distance label="B" value={yards(distances.backM)} />
+        <Distance label="F" value={readout.frontM != null && readout.frontM > 0 ? yards(readout.frontM) : null} />
+        <Distance label="C" value={yards(readout.centreM)} emphasis />
+        <Distance label="B" value={readout.backM != null ? yards(readout.backM) : null} />
       </div>
-      <p className="mt-0.5 text-caption text-text-secondary">yd to green · ±{Math.max(1, yards(distances.sigmaM))} yd · {distancesBasis === 'live_fix' ? 'from where you stand' : 'from your last mark'}</p>
+      <p className="mt-0.5 text-caption text-text-secondary">yd to green · ±{Math.max(1, yards(readout.sigmaM))} yd · {from}</p>
+    </div> : readout ? <div className="min-w-0" data-slot="one-tap-on-green" data-centre-display={readout.centreDisplay}>
+      {/* §15.2/§16: on the green the edges are not targets; the pin is unmarked and a short putt gets no fake number. */}
+      <p className="font-fw-display text-body-lg font-semibold uppercase tracking-[0.08em]">On green</p>
+      {readout.centreDisplay === 'exact'
+        ? <p className="mt-0.5 text-caption text-text-secondary">Center {yards(readout.centreM)} yd · ±{Math.max(1, yards(readout.sigmaM))} yd · pin not marked</p>
+        : <p className="mt-0.5 text-caption text-text-secondary">Short putt · position approximate · pin not marked</p>}
     </div> : <p className="text-caption text-text-secondary">{view.hasGreen ? 'Waiting for a GPS fix' : 'No mapped green on this hole'}</p>}
     {lie && <p className="shrink-0 text-right text-body-sm font-semibold" data-slot="one-tap-lie" data-lie-display={lie.display} data-lie-rule={lie.rule}>
       {lie.label}
