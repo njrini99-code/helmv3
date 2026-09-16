@@ -6,6 +6,7 @@ import { canopySymbols, crownOutline, crownScale } from '@/lib/golf/course-geome
 import { displayOutline } from '@/lib/golf/course-geometry/display-outline';
 import { TERRAIN_LIGHT_DIRECTION, type TerrainCamera } from '@/lib/golf/course-geometry/terrain';
 import { CourseTerrainCanvas } from './CourseTerrainCanvas';
+import type { TerrainDebugView } from './terrain-debug';
 import { CrownGlyph, CrownPaint } from './TerrainCanopyLayer';
 import { CourseShotOverlay } from './CourseShotOverlay';
 
@@ -27,7 +28,7 @@ export function sceneCamera(scene: HoleScene, width: number, height: number, mod
 
 /** Pure SVG: surfaces and anchors share one similarity transform; labels use
  * CSS-pixel dimensions supplied by the measured viewport. No gesture capture. */
-export function CourseHoleScene({ scene, width = 320, height = 380, mode = 'review', view = 'hole', selectedShotNumber, activeDraftShotNumber, camera: override, terrainCamera, onTerrainUnavailable, runtimeRef, showIllustrativeFlightPreviews = true, puttingPlan = false }: {
+export function CourseHoleScene({ scene, width = 320, height = 380, mode = 'review', view = 'hole', selectedShotNumber, activeDraftShotNumber, camera: override, terrainCamera, onTerrainUnavailable, runtimeRef, showIllustrativeFlightPreviews = true, puttingPlan = false, debugView }: {
   scene: HoleScene; width?: number; height?: number; mode?: 'review' | 'compact' | 'strip' | 'source';
   view?: CourseView; selectedShotNumber?: number; activeDraftShotNumber?: number; camera?: SimilarityTransform; terrainCamera?: TerrainCamera;
   onTerrainUnavailable?: () => void; runtimeRef?: RefObject<TerrainRuntimeController | null>;
@@ -35,11 +36,13 @@ export function CourseHoleScene({ scene, width = 320, height = 380, mode = 'revi
   showIllustrativeFlightPreviews?: boolean;
   /** A top-down, quiet compact treatment for the reviewed green complex. */
   puttingPlan?: boolean;
+  /** Development-only faceting diagnostics (Meridian §14); never set by player routes. */
+  debugView?: TerrainDebugView;
 }) {
   const sceneForDisplay = useMemo(() => showIllustrativeFlightPreviews ? scene : { ...scene, illustrativePreviewTrajectories: [] }, [scene, showIllustrativeFlightPreviews]);
   const id = useId();
   if (terrainCamera && scene.terrain) return <CourseTerrainCanvas scene={sceneForDisplay} mesh={scene.terrain} camera={terrainCamera} width={width} height={height}
-    selectedShotNumber={selectedShotNumber}
+    selectedShotNumber={selectedShotNumber} debugView={debugView}
     onUnavailable={onTerrainUnavailable} runtimeRef={runtimeRef}
     fallback={<CourseHoleScene scene={sceneForDisplay} width={width} height={height} mode={mode} view={view} selectedShotNumber={selectedShotNumber} activeDraftShotNumber={activeDraftShotNumber} camera={override} showIllustrativeFlightPreviews={showIllustrativeFlightPreviews} puttingPlan={puttingPlan} />} />;
   const camera = override ?? sceneCamera(scene, width, height, mode, view, puttingPlan);

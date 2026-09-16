@@ -3,7 +3,7 @@ import { allocateCrowns, canopySymbols, crownScale } from './canopy';
 
 const SVG_CROWN_LIMIT = 240;
 import { displayOutline } from './display-outline';
-import { projectTerrainPoint, terrainHeight, TERRAIN_LIGHT_DIRECTION, type Point3M, type TerrainCamera, type TerrainMesh } from './terrain';
+import { projectTerrainPoint, terrainHeight, terrainScaleAt, TERRAIN_LIGHT_DIRECTION, type Point3M, type TerrainCamera, type TerrainMesh } from './terrain';
 
 interface WorldCrown {
   id: string;
@@ -63,20 +63,20 @@ export function terrainCanopy(scene: HoleScene, mesh: TerrainMesh, camera: Terra
   if (!featureCache) { featureCache = new WeakMap(); cache.set(scene.features, featureCache); }
   let world = featureCache.get(mesh);
   if (!world) { world = prepareCanopy(scene, mesh); featureCache.set(mesh, world); }
-  const { right, up, forward, scale } = camera;
+  const { right, up } = camera;
   const light: PointM = [right[0] * TERRAIN_LIGHT_DIRECTION[0] + right[1] * TERRAIN_LIGHT_DIRECTION[1] + right[2] * TERRAIN_LIGHT_DIRECTION[2],
     -(up[0] * TERRAIN_LIGHT_DIRECTION[0] + up[1] * TERRAIN_LIGHT_DIRECTION[1] + up[2] * TERRAIN_LIGHT_DIRECTION[2])];
   const lightLength = Math.hypot(...light);
   const lightScreen: PointM = lightLength > 1e-8 ? [light[0] / lightLength, light[1] / lightLength] : [0, -1];
   const crowns = world.crowns.map(crown => {
-    const [bx, by, baseDepth] = projectTerrainPoint(crown.point, camera);
+    const [bx, by] = projectTerrainPoint(crown.point, camera);
     const base: PointM = [bx, by];
-    // Project displayed ground first, then add a world-up local height using
-    // the camera basis. Feeding tree height into the ground projector would
-    // incorrectly stretch it whenever visual terrain exaggeration changes.
-    const cx = bx + right[2] * crown.illustrativeHeightM * scale;
-    const cy = by - up[2] * crown.illustrativeHeightM * scale;
-    const depth = baseDepth + forward[2] * crown.illustrativeHeightM;
+    // Project displayed ground first, then lift by a world-up local height
+    // after exaggeration. Feeding tree height into the ground projector would
+    // incorrectly stretch it whenever visual terrain exaggeration changes. A
+    // perspective lens sizes each crown by its own depth (Meridian §9).
+    const [cx, cy, depth] = projectTerrainPoint(crown.point, camera, crown.illustrativeHeightM);
+    const scale = terrainScaleAt(crown.point, camera);
     const centre: PointM = [cx, cy];
     const shadow = crown.shadow ? screenPoint(crown.shadow.point, camera) : null;
     const shadowBasis = crown.shadow && shadow ? {
@@ -84,7 +84,7 @@ export function terrainCanopy(scene: HoleScene, mesh: TerrainMesh, camera: Terra
       up: difference(screenPoint(crown.shadow.north, camera), shadow),
     } : null;
     return { id: crown.id, x: base[0], y: base[1], base, centre, shadow, shadowBasis, lightScreen,
-      depth, seed: crown.seed, radius: camera.scale * crown.radiusM,
+      depth, seed: crown.seed, radius: scale * crown.radiusM,
       heightPx: Math.hypot(cx - base[0], cy - base[1]),
       worldBaseM: crown.point, illustrativeHeightM: crown.illustrativeHeightM };
   }).sort((a, b) => b.depth - a.depth);

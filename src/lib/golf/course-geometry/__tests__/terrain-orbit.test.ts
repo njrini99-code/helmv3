@@ -39,7 +39,9 @@ describe('stable orthographic orbit', () => {
       expect(travel).toBeCloseTo(150 * metresPerYard * top.scale, 9);
       expect(travel / length).toBeCloseTo(150 / 350, 12);
     }
-    const tilted = fitTerrainCamera(scene, mesh, 'hole', 390, 480, TERRAIN_PRESETS.side);
+    // The analytic orthographic foreshortening check uses an explicit
+    // orthographic side pose; the shipped Side preset is a perspective lens.
+    const tilted = fitTerrainCamera(scene, mesh, 'hole', 390, 480, { pitch: 20, yawOffset: 30, exaggeration: 1.5, projection: 'orthographic' });
     const flat: Point3M = [tilted.focusM[0], tilted.focusM[1], tilted.focusM[2]];
     const forwardOnGround: Point3M = [flat[0] + Math.sin(Math.atan2(tilted.up[0], tilted.up[1])) * 100,
       flat[1] + Math.cos(Math.atan2(tilted.up[0], tilted.up[1])) * 100, flat[2]];
@@ -81,9 +83,17 @@ describe('world-anchored illustrative canopy', () => {
       for (const crown of canopy.crowns) {
         const base = projectTerrainPoint(crown.worldBaseM, camera);
         expect(crown.base).toEqual(base.slice(0, 2));
+        expect(crown.depth).toBeCloseTo(base[2] - Math.sin(pose.pitch * Math.PI / 180) * crown.illustrativeHeightM, 9);
+        if (pose.projection === 'perspective') {
+          // A perspective crown is the projected lifted world point, sized by its own depth.
+          const lifted = projectTerrainPoint(crown.worldBaseM, camera, crown.illustrativeHeightM);
+          expect(crown.centre[0]).toBeCloseTo(lifted[0], 9); expect(crown.centre[1]).toBeCloseTo(lifted[1], 9);
+          expect(crown.heightPx).toBeCloseTo(Math.hypot(lifted[0] - base[0], lifted[1] - base[1]), 9);
+          expect(crown.radius).toBeGreaterThan(0);
+          continue;
+        }
         expect(crown.centre[0]).toBeCloseTo(base[0], 10); // Z-up crown stays directly above its world base.
         expect(crown.centre[1]).toBeCloseTo(base[1] - crown.illustrativeHeightM * Math.cos(pose.pitch * Math.PI / 180) * camera.scale, 9);
-        expect(crown.depth).toBeCloseTo(base[2] - Math.sin(pose.pitch * Math.PI / 180) * crown.illustrativeHeightM, 9);
         expect(crown.heightPx).toBeCloseTo(crown.illustrativeHeightM * Math.cos(pose.pitch * Math.PI / 180) * camera.scale, 9);
       }
     }

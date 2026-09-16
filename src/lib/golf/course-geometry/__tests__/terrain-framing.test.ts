@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { buildHoleScene } from '../build-scene';
 import { contextPoints } from '../camera';
 import { parseGeometryPackage } from '../schema';
-import { courseFramingMetadata, fitTerrainCamera, parseTerrainMesh, projectTerrainPoint, terrainHeight,
+import { courseFramingMetadata, fitTerrainCamera, parseTerrainMesh, projectTerrainPoint, terrainHeight, terrainScaleAt,
   TERRAIN_PRESETS, type TerrainFitProfile, type TerrainPreset } from '../terrain';
 import course from '@/test/fixtures/course-geometry/cacapon.json';
 import source from '@/test/fixtures/course-geometry/cacapon-07-terrain.json';
@@ -70,7 +70,18 @@ describe('deterministic tactical framing across the real Cacapon layout', () => 
     }
     const top = fitTerrainCamera(scene, mesh, 'hole', 390, 640, TERRAIN_PRESETS.top, 1, [0, 0], 'top');
     const terrain = fitTerrainCamera(scene, mesh, 'hole', 390, 640, TERRAIN_PRESETS.terrain, 1, [0, 0], 'terrain');
-    expect(terrain.scale).toBeGreaterThan(top.scale * 1.1);
+    // A perspective Terrain is a closer look than Top at its near edge and
+    // genuinely foreshortens toward the far edge (Meridian §3, §9).
+    expect(terrain.projection).toBe('perspective');
+    expect(terrain.framing!.eyeDistanceM).toBeGreaterThan(0);
+    expect(terrain.framing!.targetBasis).toBe('route_green_weighted');
+    const depths = contextPoints(scene, 'hole').map(point => {
+      const world = [point[0], point[1], terrainHeight(mesh, point)!] as const;
+      return { world, depth: projectTerrainPoint(world, terrain)[2] };
+    }).sort((a, b) => a.depth - b.depth);
+    const nearScale = terrainScaleAt(depths[0]!.world, terrain), farScale = terrainScaleAt(depths.at(-1)!.world, terrain);
+    expect(nearScale).toBeGreaterThan(top.scale * 1.1);
+    expect(farScale).toBeLessThan(nearScale * .8);
     expect(mesh.vertices).toEqual(snapshot);
   });
 

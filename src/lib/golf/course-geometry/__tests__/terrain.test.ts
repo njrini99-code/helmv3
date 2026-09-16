@@ -122,10 +122,16 @@ describe('source-linked terrain and camera', () => {
       for (let i = 0; i < mesh.vertices.length; i += 180) {
         const p = mesh.vertices.slice(i, i + 3) as unknown as Point3M;
         const m = camera.matrix, cpu = projectTerrainPoint(p, camera);
-        const clipX = m[0]!*p[0]+m[4]!*p[1]+m[8]!*p[2]+m[12]!;
-        const clipY = m[1]!*p[0]+m[5]!*p[1]+m[9]!*p[2]+m[13]!;
-        expect((clipX + 1) * 390 / 2).toBeCloseTo(cpu[0], 8);
-        expect((1 - clipY) * 460 / 2).toBeCloseTo(cpu[1], 8);
+        // Homogeneous clip coordinates: w is 1 for orthographic and the eye
+        // depth for perspective, so one check covers both projections.
+        const clipW = m[3]!*p[0]+m[7]!*p[1]+m[11]!*p[2]+m[15]!;
+        const clipX = (m[0]!*p[0]+m[4]!*p[1]+m[8]!*p[2]+m[12]!) / clipW;
+        const clipY = (m[1]!*p[0]+m[5]!*p[1]+m[9]!*p[2]+m[13]!) / clipW;
+        // Relative tolerance: a perspective lens sends a vertex behind the eye to
+        // millions of pixels, where absolute 1e-8 agreement is below Float64.
+        const close = (actual: number, expected: number) => expect(Math.abs(actual - expected)).toBeLessThanOrEqual(5e-9 * Math.max(1, Math.abs(expected)));
+        close((clipX + 1) * 390 / 2, cpu[0]);
+        close((1 - clipY) * 460 / 2, cpu[1]);
       }
     }
   });

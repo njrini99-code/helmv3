@@ -1,6 +1,7 @@
 /** Real-course verification only. Never shipped as an authenticated route. */
 import { useEffect, useState } from 'react';
 import { HoleSceneFrame } from '@/components/golf/course-geometry/HoleSceneFrame';
+import { TERRAIN_DEBUG_VIEWS } from '@/components/golf/course-geometry/terrain-debug';
 import { buildHoleScene } from '@/lib/golf/course-geometry/build-scene';
 import type { TerrainMesh } from '@/lib/golf/course-geometry/terrain';
 import { compiledCourses, loadCompiledFixture, type CompiledCourse } from './fixture-assets';
@@ -20,7 +21,9 @@ export function CourseMatrixFixture({ course, holeNumber }: { course: CompiledCo
   if (!hole || failure) return <p role="alert">{failure ?? 'Unknown hole'}</p>;
   if (!mesh) return <p role="status">Loading source terrain</p>;
   const scene = buildHoleScene(pkg, hole.key, [], mesh);
+  // `debug=<view>` swaps in a faceting diagnostic (Meridian §14) for captures.
+  const debugView = TERRAIN_DEBUG_VIEWS.find(mode => mode === new URLSearchParams(location.search).get('debug'));
   return <main className="font-fw-sans" data-matrix-course={course} data-matrix-hole={holeNumber} data-source-quality={JSON.stringify(mesh.renderProfile)}>
-    <HoleSceneFrame key={hole.key} scene={scene} context="review" />
+    <HoleSceneFrame key={hole.key} scene={scene} context="review" debugView={debugView} />
   </main>;
 }

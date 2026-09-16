@@ -5,18 +5,30 @@ import { sampleMetricTerrain, terrainSourceFields } from './terrain-source';
 
 export type Point3M = readonly [number, number, number];
 /** Art-directed world-space light, shared by terrain and illustrative canopy. */
-export const TERRAIN_LIGHT_DIRECTION: Point3M = [.4, -.45, .799];
+/** Sun elevation ≈45° (was ≈53°): a slightly lower presentation sun lengthens
+ * shadows and reads relief without inventing detail (Meridian §47, §121). */
+export const TERRAIN_LIGHT_DIRECTION: Point3M = [.47, -.53, .706];
 export type TerrainPreset = 'top' | 'terrain' | 'side';
+export type TerrainProjection = 'orthographic' | 'perspective';
 /** A baseline changes only on explicit preset/area selection. An interrupted
  * preset animation may retain its blend without refitting during the drag. */
 export type TerrainFitProfile = TerrainPreset | {
   from: TerrainFitProfile; to: TerrainPreset; progress: number;
 };
-export interface TerrainPose { pitch: number; yawOffset: number; exaggeration: number }
+export interface TerrainPose {
+  pitch: number; yawOffset: number; exaggeration: number;
+  /** Top stays orthographic so on-screen distance remains measurable. Terrain
+   * and Side use a real perspective lens (Meridian §9). A blend pose during a
+   * preset transition may carry any field of view inside PERSPECTIVE_FOV. */
+  projection?: TerrainProjection; fovDegrees?: number;
+}
+/** Vertical field of view in degrees: preset range per Meridian §9.2, and the
+ * wider limits a transition may pass through (a tiny FOV approximates Top). */
+export const PERSPECTIVE_FOV = Object.freeze({ min: .5, max: 60, presetMin: 28, presetMax: 34, transitionStart: .5 });
 export const TERRAIN_PRESETS: Record<TerrainPreset, TerrainPose> = {
-  top: { pitch: 90, yawOffset: 0, exaggeration: 1 },
-  terrain: { pitch: 50, yawOffset: 0, exaggeration: 1.5 },
-  side: { pitch: 20, yawOffset: 30, exaggeration: 1.5 },
+  top: { pitch: 90, yawOffset: 0, exaggeration: 1, projection: 'orthographic' },
+  terrain: { pitch: 44, yawOffset: 0, exaggeration: 1, projection: 'perspective', fovDegrees: 32 },
+  side: { pitch: 20, yawOffset: 30, exaggeration: 1, projection: 'perspective', fovDegrees: 32 },
 };
 /** Bounded per-hole detail budget. The current format stores three XYZ
  * vertices per triangle; source normals use the identical component count. */
@@ -93,10 +105,19 @@ export function terrainHeight(mesh: TerrainMesh, [x, y]: PointM): number | null 
 
 export interface TerrainCamera {
   right: Point3M; up: Point3M; forward: Point3M;
-  referenceElevationM: number; exaggeration: number; scale: number;
+  referenceElevationM: number; exaggeration: number;
+  /** CSS pixels per metre: exact for orthographic, at the focus depth for perspective. */
+  scale: number;
+  /** Screen position of camera-space origin (orthographic) or the principal
+   * point through which the eye axis passes (perspective), in CSS pixels. */
   translation: PointM; matrix: readonly number[]; pitch: number; yawOffset: number;
   /** Stable world-space orbit target; never a ball or pin observation. */
   focusM: Point3M;
+  projection: TerrainProjection;
+  /** Perspective lens only. `eyeM` is in display space (course-local XY
+   * metres, displayed elevation Z after exaggeration); `focalPx` is the CSS
+   * pixel focal length. Orthographic cameras carry neither. */
+  fovDegrees?: number; focalPx?: number; eyeM?: Point3M;
   framing?: TerrainFramingMetadata;
 }
 
@@ -111,7 +132,13 @@ export interface TerrainFramingMetadata {
   baselineBoundsPx: { x: number; y: number; width: number; height: number };
   occupancy: { width: number; height: number; area: number };
   orientationBasis: 'hole_route' | 'source_orientation';
-  fitVersion: 'tactical-presets-v2';
+  projection: TerrainProjection;
+  /** Perspective fit results (Meridian §10): null for orthographic frames. */
+  fovDegrees: number | null; eyeDistanceM: number | null;
+  /** Orbit target basis: the tactical centre (orthographic) or the
+   * route-mid 45% / green 55% weighted target (perspective, §10.3). */
+  targetBasis: 'tactical_centre' | 'route_green_weighted';
+  fitVersion: 'tactical-presets-v3';
 }
 export function terrainBasis(angle: number, pitch: number) {
   const p = pitch * Math.PI / 180, c = Math.cos(angle), s = Math.sin(angle);
@@ -125,13 +152,34 @@ function cameraComponents(point: Point3M, camera: Pick<TerrainCamera, 'right' | 
   const { right: r, up: u, forward: f } = camera;
   return [r[0] * x + r[1] * y + r[2] * z, u[0] * x + u[1] * y + u[2] * z, f[0] * x + f[1] * y + f[2] * z];
 }
-export function projectTerrainPoint(point: Point3M, camera: TerrainCamera): Point3M {
+/** Screen position (CSS px) and camera depth of a source point. `liftM` adds a
+ * world-up offset AFTER display exaggeration, for illustrative canopy height
+ * that must not stretch with the terrain relief setting. The same math drives
+ * the SVG overlay, the SVG canopy and (through applyTerrainCamera) the GPU. */
+export function projectTerrainPoint(point: Point3M, camera: TerrainCamera, liftM = 0): Point3M {
+  if (camera.projection === 'perspective') {
+    const eye = camera.eyeM!, focal = camera.focalPx!;
+    const dx = point[0] - eye[0], dy = point[1] - eye[1];
+    const dz = camera.referenceElevationM + (point[2] - camera.referenceElevationM) * camera.exaggeration + liftM - eye[2];
+    const { right: r, up: u, forward: f } = camera;
+    const x = r[0] * dx + r[1] * dy + r[2] * dz, y = u[0] * dx + u[1] * dy + u[2] * dz, depth = f[0] * dx + f[1] * dy + f[2] * dz;
+    const k = focal / depth;
+    return [camera.translation[0] + x * k, camera.translation[1] - y * k, depth];
+  }
   const [x, y, depth] = cameraComponents(point, camera);
-  return [camera.translation[0] + x * camera.scale, camera.translation[1] - y * camera.scale, depth];
+  const { right: r, up: u, forward: f } = camera;
+  return [camera.translation[0] + (x + r[2] * liftM) * camera.scale, camera.translation[1] - (y + u[2] * liftM) * camera.scale, depth + f[2] * liftM];
+}
+/** CSS pixels per metre at a point's depth: constant for orthographic cameras. */
+export function terrainScaleAt(point: Point3M, camera: TerrainCamera): number {
+  if (camera.projection !== 'perspective') return camera.scale;
+  const depth = projectTerrainPoint(point, camera)[2];
+  return depth > 1e-6 ? camera.focalPx! / depth : camera.scale;
 }
 const fitPoints = new WeakMap<TerrainMesh, Map<CourseView, Point3M[]>>();
 const orientations = new WeakMap<TerrainMesh, Map<string, number>>();
-interface TerrainFrame { angle: number; focusM: Point3M; scale: number; metadata: TerrainFramingMetadata }
+interface PerspectiveLens { fovDegrees: number; focalPx: number; distanceM: number; principal: PointM }
+interface TerrainFrame { angle: number; focusM: Point3M; scale: number; lens: PerspectiveLens | null; metadata: TerrainFramingMetadata }
 const frames = new WeakMap<TerrainMesh, Map<string, TerrainFrame>>();
 const FIT_PADDING = 24;
 const PRESETS: readonly TerrainPreset[] = ['top', 'terrain', 'side'];
@@ -209,11 +257,79 @@ function wholeHoleOrientation(scene: HoleScene, mesh: TerrainMesh, width: number
   return angle;
 }
 
-function frameFromPoints(scene: HoleScene, points: readonly Point3M[], referenceElevationM: number,
+/** Perspective fit (Meridian §10). The eye sits on the axis through `focus`
+ * (display space) along the basis forward vector. The smallest eye distance
+ * whose projected tactical footprint fits the padded viewport is found by
+ * bisection: moving the eye back along the axis only ever shrinks the
+ * footprint, so the search is monotone and deterministic. The residual
+ * off-centre of that footprint becomes a principal-point offset (a shift
+ * lens), never a change of the orbit target. */
+function perspectiveFit(points: readonly Point3M[], basis: Parameters<typeof cameraComponents>[1], focus: Point3M,
+  width: number, height: number, fovDegrees: number): PerspectiveLens {
+  const focalPx = height / 2 / Math.tan(fovDegrees * Math.PI / 360);
+  const { right: r, up: u, forward: f, referenceElevationM: ref, exaggeration } = basis;
+  const display = points.map(p => [p[0], p[1], ref + (p[2] - ref) * exaggeration] as Point3M);
+  let radius = 0;
+  for (const p of display) radius = Math.max(radius, Math.hypot(p[0] - focus[0], p[1] - focus[1], p[2] - focus[2]));
+  const spans = (distance: number) => {
+    const ex = focus[0] - f[0] * distance, ey = focus[1] - f[1] * distance, ez = focus[2] - f[2] * distance;
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    for (const p of display) {
+      const dx = p[0] - ex, dy = p[1] - ey, dz = p[2] - ez;
+      const depth = f[0] * dx + f[1] * dy + f[2] * dz;
+      if (depth <= 1e-6) return null;
+      const nx = (r[0] * dx + r[1] * dy + r[2] * dz) / depth, ny = (u[0] * dx + u[1] * dy + u[2] * dz) / depth;
+      minX = Math.min(minX, nx); maxX = Math.max(maxX, nx); minY = Math.min(minY, ny); maxY = Math.max(maxY, ny);
+    }
+    return { minX, maxX, minY, maxY };
+  };
+  const fits = (distance: number) => {
+    const s = spans(distance);
+    return s != null && (s.maxX - s.minX) * focalPx <= width - FIT_PADDING * 2 && (s.maxY - s.minY) * focalPx <= height - FIT_PADDING * 2;
+  };
+  let low = Math.max(1, radius * .05), high = Math.max(low * 2, 2 * radius / Math.sin(fovDegrees * Math.PI / 360));
+  for (let i = 0; i < 40 && !fits(high); i++) high *= 2;
+  if (!fits(high)) throw new Error('Perspective fit failed');
+  // The bracket must straddle the boundary, so the result is where the
+  // footprint actually meets the padding rather than an arbitrary bound.
+  for (let i = 0; i < 40 && low > 1e-3 && fits(low); i++) low /= 2;
+  if (fits(low)) throw new Error('Perspective fit failed');
+  for (let i = 0; i < 64; i++) { const mid = (low + high) / 2; if (fits(mid)) high = mid; else low = mid; }
+  const s = spans(high)!;
+  return { fovDegrees, focalPx, distanceM: high, principal: [(s.minX + s.maxX) / 2, (s.minY + s.maxY) / 2] };
+}
+
+/** Meridian §10.3 orbit target for the whole hole: 45% route midpoint, 55%
+ * green centre, on the source terrain. Area views (approach, green) and holes
+ * without a route or green keep the tactical centre of the fitted points. */
+function weightedTarget(scene: HoleScene, view: CourseView, points: readonly Point3M[], fallback: Point3M): { point: Point3M; basis: TerrainFramingMetadata['targetBasis'] } {
+  const route = scene.features.find(f => f.id === scene.hole.routeFeatureId)?.parts[0]?.[0];
+  const green = scene.features.find(f => f.id === scene.hole.greenFeatureId && f.kind === 'green');
+  if (view !== 'hole' || !route || route.length < 2 || !green) return { point: fallback, basis: 'tactical_centre' };
+  let length = 0;
+  const cumulative = [0];
+  for (let i = 1; i < route.length; i++) { length += Math.hypot(route[i]![0] - route[i - 1]![0], route[i]![1] - route[i - 1]![1]); cumulative.push(length); }
+  let mid: PointM = route[0]!;
+  for (let i = 1; i < route.length; i++) if (cumulative[i]! >= length / 2) {
+    const t = (length / 2 - cumulative[i - 1]!) / Math.max(1e-9, cumulative[i]! - cumulative[i - 1]!);
+    mid = [route[i - 1]![0] + (route[i]![0] - route[i - 1]![0]) * t, route[i - 1]![1] + (route[i]![1] - route[i - 1]![1]) * t];
+    break;
+  }
+  const ring = green.parts.flat(2);
+  const centre: PointM = [ring.reduce((n, p) => n + p[0], 0) / ring.length, ring.reduce((n, p) => n + p[1], 0) / ring.length];
+  const xy: PointM = [mid[0] * .45 + centre[0] * .55, mid[1] * .45 + centre[1] * .55];
+  // Height comes from the nearest fitted tactical point: the target is a
+  // pivot inside the source envelope, never a sampled or claimed position.
+  let best = fallback, bestDistance = Infinity;
+  for (const p of points) { const d = Math.hypot(p[0] - xy[0], p[1] - xy[1]); if (d < bestDistance) { bestDistance = d; best = p; } }
+  return { point: [xy[0], xy[1], best[2]], basis: 'route_green_weighted' };
+}
+
+function frameFromPoints(scene: HoleScene, view: CourseView, points: readonly Point3M[], referenceElevationM: number,
   width: number, height: number, preset: TerrainPreset, angle: number): TerrainFrame {
   const pose = TERRAIN_PRESETS[preset], heading = angle + pose.yawOffset * Math.PI / 180;
   const basis = { ...terrainBasis(heading, pose.pitch), referenceElevationM, exaggeration: pose.exaggeration };
-  const bounds = projectedBounds(points, basis), scale = fitScale(bounds, width, height);
+  const bounds = projectedBounds(points, basis);
   const x = (bounds.minX + bounds.maxX) / 2, y = (bounds.minY + bounds.maxY) / 2;
   let minZ = Infinity, maxZ = -Infinity;
   for (const point of points) { minZ = Math.min(minZ, point[2]); maxZ = Math.max(maxZ, point[2]); }
@@ -224,15 +340,37 @@ function frameFromPoints(scene: HoleScene, points: readonly Point3M[], reference
   const z = (focusZ - referenceElevationM) * pose.exaggeration;
   const projectedX = x - basis.right[2] * z, projectedY = y - basis.up[2] * z;
   const determinant = basis.right[0] * basis.up[1] - basis.right[1] * basis.up[0];
-  const focusM: Point3M = [(projectedX * basis.up[1] - basis.right[1] * projectedY) / determinant,
+  const centred: Point3M = [(projectedX * basis.up[1] - basis.right[1] * projectedY) / determinant,
     (basis.right[0] * projectedY - projectedX * basis.up[0]) / determinant, focusZ];
-  const spanX = (bounds.maxX - bounds.minX) * scale, spanY = (bounds.maxY - bounds.minY) * scale;
   const profileWeights = { top: 0, terrain: 0, side: 0 }; profileWeights[preset] = 1;
-  return { angle, focusM, scale, metadata: { profile: preset, profileWeights,
-    baselineHeadingRadians: heading, baselineScale: scale, tacticalBoundsM: bounds,
+  const metadata = (scale: number, spanX: number, spanY: number, lens: PerspectiveLens | null, targetBasis: TerrainFramingMetadata['targetBasis']): TerrainFramingMetadata => ({
+    profile: preset, profileWeights, baselineHeadingRadians: heading, baselineScale: scale, tacticalBoundsM: bounds,
     baselineBoundsPx: { x: (width - spanX) / 2, y: (height - spanY) / 2, width: spanX, height: spanY },
     occupancy: { width: spanX / width, height: spanY / height, area: spanX * spanY / (width * height) },
-    orientationBasis: scene.hole.routeFeatureId ? 'hole_route' : 'source_orientation', fitVersion: 'tactical-presets-v2' } };
+    orientationBasis: scene.hole.routeFeatureId ? 'hole_route' : 'source_orientation',
+    projection: lens ? 'perspective' : 'orthographic', fovDegrees: lens?.fovDegrees ?? null, eyeDistanceM: lens?.distanceM ?? null,
+    targetBasis, fitVersion: 'tactical-presets-v3' });
+  if (pose.projection === 'perspective') {
+    const target = weightedTarget(scene, view, points, centred);
+    const focusM = target.point;
+    const display: Point3M = [focusM[0], focusM[1], referenceElevationM + (focusM[2] - referenceElevationM) * pose.exaggeration];
+    const lens = perspectiveFit(points, basis, display, width, height, pose.fovDegrees ?? 32);
+    const scale = lens.focalPx / lens.distanceM;
+    // Footprint in pixels at the fitted lens; the bisection leaves the larger
+    // side touching the padding exactly as the orthographic fit does.
+    const eye: Point3M = [display[0] - basis.forward[0] * lens.distanceM, display[1] - basis.forward[1] * lens.distanceM, display[2] - basis.forward[2] * lens.distanceM];
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    for (const p of points) {
+      const dx = p[0] - eye[0], dy = p[1] - eye[1], dz = referenceElevationM + (p[2] - referenceElevationM) * pose.exaggeration - eye[2];
+      const depth = basis.forward[0] * dx + basis.forward[1] * dy + basis.forward[2] * dz;
+      const nx = (basis.right[0] * dx + basis.right[1] * dy + basis.right[2] * dz) / depth, ny = (basis.up[0] * dx + basis.up[1] * dy + basis.up[2] * dz) / depth;
+      minX = Math.min(minX, nx); maxX = Math.max(maxX, nx); minY = Math.min(minY, ny); maxY = Math.max(maxY, ny);
+    }
+    return { angle, focusM, scale, lens, metadata: metadata(scale, (maxX - minX) * lens.focalPx, (maxY - minY) * lens.focalPx, lens, target.basis) };
+  }
+  const scale = fitScale(bounds, width, height);
+  const spanX = (bounds.maxX - bounds.minX) * scale, spanY = (bounds.maxY - bounds.minY) * scale;
+  return { angle, focusM: centred, scale, lens: null, metadata: metadata(scale, spanX, spanY, null, 'tactical_centre') };
 }
 
 function terrainFrame(scene: HoleScene, mesh: TerrainMesh, view: CourseView, width: number, height: number, preset: TerrainPreset): TerrainFrame {
@@ -245,7 +383,7 @@ function terrainFrame(scene: HoleScene, mesh: TerrainMesh, view: CourseView, wid
   // Areas inherit the SAME physical-hole heading. Selecting Green must not
   // silently swivel to the source package's unrelated editorial orientation.
   const angle = wholeHoleOrientation(scene, mesh, width, height, preset);
-  const frame = frameFromPoints(scene, points, mesh.referenceElevationM, width, height, preset, angle);
+  const frame = frameFromPoints(scene, view, points, mesh.referenceElevationM, width, height, preset, angle);
   if (frameCache.size >= 16) frameCache.clear();
   frameCache.set(key, frame);
   return frame;
@@ -274,10 +412,21 @@ function fittedFrame(scene: HoleScene, mesh: TerrainMesh, view: CourseView, widt
     minY: mix(f => f.metadata.tacticalBoundsM.minY), maxY: mix(f => f.metadata.tacticalBoundsM.maxY) };
   const screenBounds = { x: mix(f => f.metadata.baselineBoundsPx.x), y: mix(f => f.metadata.baselineBoundsPx.y),
     width: mix(f => f.metadata.baselineBoundsPx.width), height: mix(f => f.metadata.baselineBoundsPx.height) };
-  return { angle: mix(f => f.angle), focusM: [mix(f => f.focusM[0]), mix(f => f.focusM[1]), mix(f => f.focusM[2])], scale,
+  // A lens blends toward orthographic as its weight fades: the principal
+  // offset mixes to zero and the field of view stays that of the perspective
+  // contributors, while the caller's transition pose supplies the actual FOV.
+  const perspective = contributing.filter(item => item.frame.lens);
+  const perspectiveWeight = perspective.reduce((sum, item) => sum + item.weight, 0);
+  const lens: PerspectiveLens | null = perspective.length ? {
+    fovDegrees: perspective.reduce((sum, item) => sum + item.frame.lens!.fovDegrees * item.weight, 0) / perspectiveWeight,
+    focalPx: perspective.reduce((sum, item) => sum + item.frame.lens!.focalPx * item.weight, 0) / perspectiveWeight,
+    distanceM: Math.exp(perspective.reduce((sum, item) => sum + Math.log(item.frame.lens!.distanceM) * item.weight, 0) / perspectiveWeight),
+    principal: [mix(f => f.lens?.principal[0] ?? 0), mix(f => f.lens?.principal[1] ?? 0)] } : null;
+  return { angle: mix(f => f.angle), focusM: [mix(f => f.focusM[0]), mix(f => f.focusM[1]), mix(f => f.focusM[2])], scale, lens,
     metadata: { ...contributing[0]!.frame.metadata, profile: 'blend', profileWeights: weights,
       baselineHeadingRadians: mix(f => f.metadata.baselineHeadingRadians), baselineScale: scale,
       tacticalBoundsM: bounds, baselineBoundsPx: screenBounds,
+      projection: lens ? 'perspective' : 'orthographic', fovDegrees: lens?.fovDegrees ?? null, eyeDistanceM: lens?.distanceM ?? null,
       occupancy: { width: screenBounds.width / width, height: screenBounds.height / height, area: screenBounds.width * screenBounds.height / (width * height) } } };
 }
 
@@ -304,7 +453,7 @@ export function courseFramingMetadata(scene: HoleScene, width: number, height: n
   // elevation, TerrainMesh, or basis for a Terrain/Side drawing.
   const points = tacticalPoints(scene, 'hole').map(point => [point[0], point[1], 0] as Point3M);
   const angle = orientation(scene, points, 0, width, height, 'top');
-  const frame = frameFromPoints(scene, points, 0, width, height, 'top', angle);
+  const frame = frameFromPoints(scene, 'hole', points, 0, width, height, 'top', angle);
   return { physicalHoleKey: scene.physicalHoleKey, geometryHash: scene.packageHash, terrainHash: available && mesh ? mesh.contentHash : null,
     status: 'outline_only' as const, reason: available ? 'missing_tactical_elevation' : mesh ? 'terrain_version_mismatch' : 'terrain_missing',
     presets: { top: { ...frame.metadata, focusXYM: [frame.focusM[0], frame.focusM[1]] as PointM, elevation: 'unavailable' as const }, terrain: null, side: null } };
@@ -316,19 +465,44 @@ export function fitTerrainCamera(scene: HoleScene, mesh: TerrainMesh, view: Cour
   if (![width, height, pose.pitch, pose.yawOffset, pose.exaggeration, zoom, ...pan].every(Number.isFinite) ||
     width <= 48 || height <= 48 || pose.pitch < 20 || pose.pitch > 90 || Math.abs(pose.yawOffset) > 45 ||
     pose.exaggeration < 1 || pose.exaggeration > 1.5 || zoom < .5 || zoom > 4) throw new Error('Invalid terrain camera');
-  const { angle, focusM, scale: baseScale, metadata } = fittedFrame(scene, mesh, view, width, height, fitPreset);
+  const projection: TerrainProjection = pose.projection ?? 'orthographic';
+  const { angle, focusM, scale: baseScale, lens, metadata } = fittedFrame(scene, mesh, view, width, height, fitPreset);
+  const fovDegrees = pose.fovDegrees ?? lens?.fovDegrees ?? 32;
+  if (projection === 'perspective' && (!Number.isFinite(fovDegrees) || fovDegrees < PERSPECTIVE_FOV.min || fovDegrees > PERSPECTIVE_FOV.max)) throw new Error('Invalid terrain camera');
   const basis = { ...terrainBasis(angle + pose.yawOffset * Math.PI / 180, pose.pitch),
     referenceElevationM: mesh.referenceElevationM, exaggeration: pose.exaggeration };
-  const [focusX, focusY] = cameraComponents(focusM, basis);
   // A drag changes viewing direction only. Refitting each projected bounding
   // box would silently zoom and move the orbit target on every frame.
   const scale = baseScale * zoom;
-  const translation: PointM = [width / 2 - focusX * scale + pan[0], height / 2 + focusY * scale + pan[1]];
   const { right: r, up: u, forward: f, exaggeration: ez, referenceElevationM: ref } = basis;
-  const sx = 2 * scale / width, sy = 2 * scale / height, dz = 10000;
+  const dz = 10000;
+  if (projection === 'perspective') {
+    // Zoom narrows the lens about the focus rather than dollying the eye, so
+    // a pinch can never push the eye through the terrain. A transition pose
+    // with a smaller FOV keeps the focus size constant by moving the eye back
+    // (the dolly-zoom law), which is exactly how Top's orthographic look is
+    // approached continuously.
+    const focal = height / 2 / Math.tan(fovDegrees * Math.PI / 360), distance = focal / baseScale, focalPx = focal * zoom;
+    const principal: PointM = lens?.principal ?? [0, 0];
+    const display: Point3M = [focusM[0], focusM[1], ref + (focusM[2] - ref) * ez];
+    const eyeM: Point3M = [display[0] - f[0] * distance, display[1] - f[1] * distance, display[2] - f[2] * distance];
+    const translation: PointM = [width / 2 - principal[0] * focalPx + pan[0], height / 2 + principal[1] * focalPx + pan[1]];
+    // Column-major clip = M · [x, y, sourceZ, 1]; divide by w (= depth) to reach
+    // NDC. The constant column folds display exaggeration and the eye offset.
+    const ax = 2 * focalPx / width, ay = 2 * focalPx / height, px = 2 * translation[0] / width - 1, py = 1 - 2 * translation[1] / height;
+    const constant: Point3M = [r[2] * ref * (1 - ez) - (r[0] * eyeM[0] + r[1] * eyeM[1] + r[2] * eyeM[2]),
+      u[2] * ref * (1 - ez) - (u[0] * eyeM[0] + u[1] * eyeM[1] + u[2] * eyeM[2]),
+      f[2] * ref * (1 - ez) - (f[0] * eyeM[0] + f[1] * eyeM[1] + f[2] * eyeM[2])];
+    const column = (cx: number, cy: number, cd: number) => [ax * cx + px * cd, ay * cy + py * cd, cd / dz, cd];
+    const matrix = [...column(r[0], u[0], f[0]), ...column(r[1], u[1], f[1]), ...column(r[2] * ez, u[2] * ez, f[2] * ez), ...column(constant[0], constant[1], constant[2])];
+    return { ...basis, scale, translation, matrix, pitch: pose.pitch, yawOffset: pose.yawOffset, focusM, projection, fovDegrees, focalPx, eyeM, framing: metadata };
+  }
+  const [focusX, focusY] = cameraComponents(focusM, basis);
+  const translation: PointM = [width / 2 - focusX * scale + pan[0], height / 2 + focusY * scale + pan[1]];
+  const sx = 2 * scale / width, sy = 2 * scale / height;
   // Column-major WebGL matrix, identical to projectTerrainPoint. Lower depth is nearer.
   const matrix = [sx*r[0], sy*u[0], f[0]/dz, 0, sx*r[1], sy*u[1], f[1]/dz, 0,
     sx*r[2]*ez, sy*u[2]*ez, f[2]*ez/dz, 0,
     2*translation[0]/width-1-sx*r[2]*ez*ref, 1-2*translation[1]/height-sy*u[2]*ez*ref, -f[2]*ez*ref/dz, 1];
-  return { ...basis, scale, translation, matrix, pitch: pose.pitch, yawOffset: pose.yawOffset, focusM, framing: metadata };
+  return { ...basis, scale, translation, matrix, pitch: pose.pitch, yawOffset: pose.yawOffset, focusM, projection, framing: metadata };
 }

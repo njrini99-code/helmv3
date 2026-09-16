@@ -22,6 +22,7 @@ import { parseGeometryPackage } from '@/lib/golf/course-geometry/schema';
 import { SourceStudy } from './source-study';
 import { CourseMatrixFixture } from './course-matrix';
 import { PlayRoundFixture } from './play-round';
+import { MeridianLabFixture } from './meridian-lab';
 import { compiledCourses, isCompiledCourse, loadCompiledFixture } from './fixture-assets';
 
 const params = new URLSearchParams(location.search);
@@ -101,6 +102,6 @@ function PlayScreen() {
     <CapacitorProvider />
   </FairwayDashboardShell>;
 }
-createRoot(document.getElementById('root')!).render(params.has('play') ? <PlayScreen /> : params.has('matrix') ? <CourseMatrixFixture course={compiledCourse ?? 'cacapon'} holeNumber={Number(params.get('hole') ?? 7)} /> : sourceStudy === 'bryan' || sourceStudy === 'cardinal'
+createRoot(document.getElementById('root')!).render(params.has('lab') ? <MeridianLabFixture course={compiledCourse ?? 'cacapon'} /> : params.has('play') ? <PlayScreen /> : params.has('matrix') ? <CourseMatrixFixture course={compiledCourse ?? 'cacapon'} holeNumber={Number(params.get('hole') ?? 7)} /> : sourceStudy === 'bryan' || sourceStudy === 'cardinal'
   ? <SourceStudy course={sourceStudy} /> : exportPreset === 'top' || exportPreset === 'terrain' || exportPreset === 'side'
     ? <TerrainExportFixture preset={exportPreset} /> : <Screens />);

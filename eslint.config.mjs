@@ -117,6 +117,26 @@ export default tseslint.config(
     },
   },
   {
+    // Meridian §7 visual code boundary: canonical (reconstruction) modules of
+    // the course-geometry library describe truth and may never depend on the
+    // visual layer, Three, or React components. The mirror-image rule (visual
+    // reads canonical, never mutates) is enforced by visual-boundary.test.ts.
+    files: [
+      "src/lib/golf/course-geometry/{build-scene,camera,canopy,describe-position,display-outline,display-trajectories,normalize,project,quality,reconstruct,schema,selected-shot-focus,spatial,surface-compatibility,terrain,terrain-source,tracking-scene,types,visual-artifact}.ts",
+    ],
+    rules: {
+      "no-restricted-imports": ["error", {
+        paths: [{ name: "three", message: "Canonical geometry modules must not depend on the renderer (Meridian §7)." }],
+        patterns: [
+          { group: ["three/*"], message: "Canonical geometry modules must not depend on the renderer (Meridian §7)." },
+          { group: ["@/components/*"], message: "Canonical geometry modules must not depend on React components (Meridian §7)." },
+          { group: ["./three-*", "./shadow-bounds", "./terrain-canopy", "./terrain-material", "./terrain-viewport", "./shot-overlay-*", "./runtime-controller", "./camera-motion", "./visual-style"],
+            message: "Canonical geometry modules must not import the visual layer (Meridian §7)." },
+        ],
+      }],
+    },
+  },
+  {
     // The GolfHelm Engineering OS's hooks (P2) are plain Node scripts, same
     // shape as scripts/** above — `npm run lint` doesn't reach .claude/ (it
     // targets src/**/*.{ts,tsx} only), but ad-hoc/future linting of these

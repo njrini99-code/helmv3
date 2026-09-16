@@ -69,9 +69,10 @@ function terrainAlbedo(mesh: TerrainMesh, triangle: number, palette: ThreeLandsc
   return base;
 }
 
-function terrainMaterial(scene: HoleScene): THREE.MeshStandardMaterial {
-  const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .96, metalness: 0 });
-  material.name = 'course-lit-albedo';
+/** Attach the illustrative turf treatment (mowing bands + turf field) to any
+ * material that includes `color_fragment`, so the unlit albedo debug view and
+ * the lit production material share exactly one colour pipeline. */
+export function attachTurfStyle(material: THREE.Material & { onBeforeCompile: THREE.Material['onBeforeCompile']; customProgramCacheKey: THREE.Material['customProgramCacheKey'] }, scene: HoleScene): void {
   // Mowing is an art treatment in course-local meters. It does not describe
   // observed mowing directions, move an edge, or participate in reconstruction.
   const route = scene.features.find(feature => feature.id === scene.hole.routeFeatureId)?.parts[0]?.[0];
@@ -105,8 +106,14 @@ float golfTurfField = 0.5 * sin(dot(vGolfWorldXY, vec2(0.035, 0.018)))
 diffuseColor.rgb *= 1.0 + golfBand * golfVisible * vGolfMowingWeight * 0.035
   + golfTurfField * vGolfTurfWeight * 0.014;`);
   };
-  material.customProgramCacheKey = () => 'golf-landscape-turf-v3';
+  material.customProgramCacheKey = () => `golf-landscape-turf-v3:${material.type}`;
   material.userData.mowing = { basis: 'illustrative_style', bandWidthM: 6 };
+}
+
+function terrainMaterial(scene: HoleScene): THREE.MeshStandardMaterial {
+  const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .96, metalness: 0 });
+  material.name = 'course-lit-albedo';
+  attachTurfStyle(material, scene);
   return material;
 }
 

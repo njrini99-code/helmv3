@@ -12,12 +12,13 @@ import type { HoleScene, ShotEvidence } from '@/lib/golf/course-geometry/types';
 import { puttingFocusCamera, puttingPlanCamera, type SceneView } from '@/lib/golf/course-geometry/camera';
 import { CourseHoleScene, sceneCamera } from './CourseHoleScene';
 import { CourseTerrainProfile } from './CourseTerrainProfile';
-import { TERRAIN_PRESETS, projectTerrainPoint, terrainHeight, type TerrainFitProfile, type TerrainPose, type TerrainPreset } from '@/lib/golf/course-geometry/terrain';
+import { PERSPECTIVE_FOV, TERRAIN_PRESETS, projectTerrainPoint, terrainHeight, type TerrainFitProfile, type TerrainPose, type TerrainPreset } from '@/lib/golf/course-geometry/terrain';
 
 import { fitTerrainViewportCamera } from '@/lib/golf/course-geometry/terrain-viewport';
 import type { TerrainRuntimeController } from '@/lib/golf/course-geometry/runtime-controller';
 import { selectedShotFocus } from '@/lib/golf/course-geometry/selected-shot-focus';
 import { interpolateCameraMotion } from '@/lib/golf/course-geometry/camera-motion';
+import type { TerrainDebugView } from './terrain-debug';
 
 interface CameraMemory { pose: TerrainPose; fitPreset: TerrainFitProfile }
 
@@ -36,11 +37,13 @@ interface FrameProps {
   currentPuttingDistanceM?: number | null;
   header?: ReactNode;
   children?: ReactNode;
+  /** Development-only faceting diagnostics (Meridian §14); player routes never set it. */
+  debugView?: TerrainDebugView;
 }
 
 /** One reusable viewing container. Its caller keys by hole identity; a manual
  * view persists through typing and committed shots, until a different hole. */
-export function HoleSceneFrame({ scene, context, defaultView = 'hole', selectedShotNumber, activeDraftShotNumber, evidence, currentPuttingDistanceM, header, children }: FrameProps) {
+export function HoleSceneFrame({ scene, context, defaultView = 'hole', selectedShotNumber, activeDraftShotNumber, evidence, currentPuttingDistanceM, header, children, debugView }: FrameProps) {
   const [choice, setChoice] = useState<SceneView | null>(null);
   const [expanded, setExpanded] = useState(false);
   const [detailSelection, setDetailSelection] = useState<number | null>(null);
@@ -81,7 +84,7 @@ export function HoleSceneFrame({ scene, context, defaultView = 'hole', selectedS
       {view === 'putting' && <span>3D</span>}<Maximize2 size={17} aria-hidden />
     </Button>}>
     <Drawing key={view} scene={scene} view={view} context={context} events={events} selectedShotNumber={detailSelection ?? selectedShotNumber} activeDraftShotNumber={activeDraftShotNumber} puttingScope={puttingScope} onSelectEvent={setDetailSelection}
-      currentPuttingDistanceM={currentPuttingDistanceM} expanded poseMemory={poseMemory} onClose={() => setExpanded(false)}
+      currentPuttingDistanceM={currentPuttingDistanceM} expanded poseMemory={poseMemory} onClose={() => setExpanded(false)} debugView={debugView}
       heading={<><span className="font-fw-display text-body-lg font-semibold">{view === 'putting' || view === 'green' || scene?.hole.displayLabel ? 'Green complex' : scene ? `Hole ${scene.hole.ordinal}` : 'Course view'}</span>
         <span className="text-caption text-text-secondary">{scene && !unassignedStudy ? `Par ${scene.hole.par} · ${scene.hole.scorecardYards ?? '—'} yd` : 'Source review'}</span></>}
       areaControls={closeArea => <div className="flex flex-wrap gap-1" role="group" aria-label="Expanded course views">
@@ -113,11 +116,11 @@ export function HoleSceneFrame({ scene, context, defaultView = 'hole', selectedS
   </div>;
 }
 
-function Drawing({ scene, view, context, events, selectedShotNumber, activeDraftShotNumber, puttingScope = 'whole_green', currentPuttingDistanceM, expanded = false, heading, areaControls, onClose, poseMemory, onSelectEvent }: {
+function Drawing({ scene, view, context, events, selectedShotNumber, activeDraftShotNumber, puttingScope = 'whole_green', currentPuttingDistanceM, expanded = false, heading, areaControls, onClose, poseMemory, onSelectEvent, debugView }: {
   scene?: HoleScene | null; view: SceneView; context: 'entry' | 'review'; events: readonly ShotEvidence[];
   selectedShotNumber?: number; activeDraftShotNumber?: number; puttingScope?: 'whole_green' | 'focus_putt'; currentPuttingDistanceM?: number | null; expanded?: boolean;
   heading?: ReactNode; areaControls?: (close: () => void) => ReactNode; onClose?: () => void; poseMemory?: RefObject<CameraMemory>;
-  onSelectEvent?: (shotNumber: number) => void;
+  onSelectEvent?: (shotNumber: number) => void; debugView?: TerrainDebugView;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: 320, height: context === 'entry' ? (view === 'putting' && hasReviewedGreen(scene) ? 272 : 160) : 310 });
@@ -191,7 +194,8 @@ function Drawing({ scene, view, context, events, selectedShotNumber, activeDraft
   const boundedPan = (x: number, y: number) => ({ x: Math.max(-size.width / 2, Math.min(size.width / 2, x)),
     y: Math.max(-size.height / 2, Math.min(size.height / 2, y)) });
   const isPreset = (preset: TerrainPreset) => Math.abs(pose.pitch - TERRAIN_PRESETS[preset].pitch) < .01 &&
-    Math.abs(pose.yawOffset - TERRAIN_PRESETS[preset].yawOffset) < .01;
+    Math.abs(pose.yawOffset - TERRAIN_PRESETS[preset].yawOffset) < .01 &&
+    (pose.projection ?? 'orthographic') === (TERRAIN_PRESETS[preset].projection ?? 'orthographic');
   useEffect(() => () => cancelAnimationFrame(pendingFrame.current), []);
   function cameraOrigin(current: typeof live.current) {
     if (scene?.terrain && courseView) {
@@ -286,14 +290,21 @@ function Drawing({ scene, view, context, events, selectedShotNumber, activeDraft
     const target = TERRAIN_PRESETS[preset], start = live.current.pose, fromFit = live.current.fitPreset;
     const startZoom = live.current.zoom, startPan = live.current.pan;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { update({ ...live.current, pose: target, fitPreset: preset, zoom: 1, pan: { x: 0, y: 0 } }, true); rebase(); return; }
+    // An orthographic endpoint is approached through a near-zero field of
+    // view: the lens narrows while the eye retreats, keeping the focus size
+    // constant, so Top ↔ Terrain never pops between projections (Meridian §12).
+    const anyPerspective = start.projection === 'perspective' || target.projection === 'perspective';
+    const fovOf = (candidate: TerrainPose) => candidate.projection === 'perspective' ? candidate.fovDegrees ?? 32 : PERSPECTIVE_FOV.transitionStart;
+    const startFov = fovOf(start), targetFov = fovOf(target);
     const began = performance.now();
     const tick = (now: number) => {
       // A RAF timestamp may precede the event's performance.now() within the
       // same refresh interval. Never extrapolate past exact Top/height bounds.
-      const t = Math.max(0, Math.min(1, (now - began) / 240)), eased = 1 - (1 - t) ** 3;
-      update({ zoom: startZoom + (1 - startZoom) * eased, pan: { x: startPan.x * (1 - eased), y: startPan.y * (1 - eased) }, fitPreset: t < 1 ? { from: fromFit, to: preset, progress: eased } : preset, pose: { pitch: start.pitch + (target.pitch - start.pitch) * eased,
+      const t = Math.max(0, Math.min(1, (now - began) / 260)), eased = 1 - (1 - t) ** 3;
+      update({ zoom: startZoom + (1 - startZoom) * eased, pan: { x: startPan.x * (1 - eased), y: startPan.y * (1 - eased) }, fitPreset: t < 1 ? { from: fromFit, to: preset, progress: eased } : preset, pose: t < 1 ? { pitch: start.pitch + (target.pitch - start.pitch) * eased,
         yawOffset: start.yawOffset + (target.yawOffset - start.yawOffset) * eased,
-        exaggeration: start.exaggeration + (target.exaggeration - start.exaggeration) * eased } });
+        exaggeration: start.exaggeration + (target.exaggeration - start.exaggeration) * eased,
+        ...(anyPerspective ? { projection: 'perspective' as const, fovDegrees: startFov + (targetFov - startFov) * eased } : { projection: 'orthographic' as const }) } : target });
       rebase();
       if (t < 1) pendingFrame.current = requestAnimationFrame(tick); else commitCamera();
     };
@@ -373,7 +384,7 @@ function Drawing({ scene, view, context, events, selectedShotNumber, activeDraft
       <div key={`${scene?.physicalHoleKey ?? 'missing'}-${view}`} className="fw-course-view-enter h-full w-full">
       {showProfile && scene ? <div className="h-full overflow-y-auto bg-surface pt-24"><CourseTerrainProfile scene={scene} selectedShotNumber={currentSelection} width={size.width} height={size.height - 96} /></div> : scene && transformed && courseView ? <CourseHoleScene scene={scene} width={size.width} height={size.height}
         mode={context === 'entry' ? 'compact' : 'review'} view={courseView} selectedShotNumber={currentSelection} activeDraftShotNumber={activeDraftShotNumber} camera={transformed} terrainCamera={terrainCamera}
-        runtimeRef={runtime} onTerrainUnavailable={() => setTerrainFailed(true)} showIllustrativeFlightPreviews={view !== 'putting'} puttingPlan={compactPuttingPlan} /> : view === 'putting' ? <PuttingZoom width={size.width} height={size.height} distanceView={{
+        runtimeRef={runtime} onTerrainUnavailable={() => setTerrainFailed(true)} showIllustrativeFlightPreviews={view !== 'putting'} puttingPlan={compactPuttingPlan} debugView={debugView} /> : view === 'putting' ? <PuttingZoom width={size.width} height={size.height} distanceView={{
         beforeFeet: before == null ? null : before / .3048, afterFeet: after == null ? null : after / .3048,
         made: currentPuttingDistanceM == null && putt?.putt.made === true,
         rolledOff: putt != null && putt.result !== 'green' && putt.result !== 'hole',

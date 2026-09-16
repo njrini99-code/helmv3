@@ -12,10 +12,21 @@ export function fitTerrainViewportCamera(scene: HoleScene, mesh: TerrainMesh, vi
   const safeWidth = width - left - right, safeHeight = height - top - bottom;
   const camera = fitTerrainCamera(scene, mesh, view, safeWidth, safeHeight, pose, zoom, pan, fitPreset);
   const matrix = [...camera.matrix], rx = safeWidth / width, ry = safeHeight / height;
-  for (const i of [0, 4, 8]) matrix[i] = matrix[i]! * rx;
-  for (const i of [1, 5, 9]) matrix[i] = matrix[i]! * ry;
-  matrix[12] = (matrix[12]! + 1) * rx - 1 + 2 * left / width;
-  matrix[13] = (matrix[13]! - 1) * ry + 1 - 2 * top / height;
+  if (camera.projection === 'perspective') {
+    // Homogeneous clip: an NDC offset must scale with w (the depth row), so the
+    // x/y rows take rx·row + offset·wRow. The orthographic branch below is the
+    // same identity with w ≡ 1, kept verbatim so Top output does not change.
+    const ox = rx - 1 + 2 * left / width, oy = 1 - ry - 2 * top / height;
+    for (const column of [0, 4, 8, 12]) {
+      matrix[column] = matrix[column]! * rx + ox * matrix[column + 3]!;
+      matrix[column + 1] = matrix[column + 1]! * ry + oy * matrix[column + 3]!;
+    }
+  } else {
+    for (const i of [0, 4, 8]) matrix[i] = matrix[i]! * rx;
+    for (const i of [1, 5, 9]) matrix[i] = matrix[i]! * ry;
+    matrix[12] = (matrix[12]! + 1) * rx - 1 + 2 * left / width;
+    matrix[13] = (matrix[13]! - 1) * ry + 1 - 2 * top / height;
+  }
   return { ...camera, matrix, translation: [camera.translation[0] + left, camera.translation[1] + top],
     ...(camera.framing ? { framing: { ...camera.framing,
       baselineBoundsPx: { ...camera.framing.baselineBoundsPx, x: camera.framing.baselineBoundsPx.x + left, y: camera.framing.baselineBoundsPx.y + top },

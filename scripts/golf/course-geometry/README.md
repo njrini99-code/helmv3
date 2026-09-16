@@ -238,3 +238,23 @@ compiled terrain for the current and next hole resident. Shots, scores and the
 current hole persist in this browser only (`localStorage`); nothing reaches
 Supabase, a real round or statistics, positions remain estimates, and a
 two-tap control clears the local round.
+
+## Meridian visual system (September 16, 2026)
+
+Master plan status: `docs/plans/2026-09-16-meridian-visual-master-plan-status.md`.
+Visual language: `docs/design/meridian-visual-language.md`. Processes, checklist,
+observability codes and risks: `docs/plans/2026-09-16-meridian-operations.md`.
+
+```bash
+# Visual canaries (§8): 8 holes × Top/Terrain/Side × 4 viewports + canaries.json
+node scripts/golf/course-geometry/capture-visual-canaries.cjs --label=v1-perspective
+python3 scripts/golf/course-geometry/build-canary-sheet.py \
+  output/playwright/course-geometry/visual-system/canaries/v1-perspective 390x844 sheet.png
+# Faceting debug views (§14) on the matrix page: ?matrix=1&course=peek-n-peak-upper&hole=7&debug=slope
+node scripts/golf/course-geometry/capture-visual-canaries.cjs --label=debug-slope --holes=7 \
+  --presets=Terrain --viewports=390x844 --debug=slope --out=output/playwright/course-geometry/visual-system/debug-meridian/slope
+# Normal continuity audit (§16)
+node scripts/golf/course-geometry/audit-normal-continuity.mjs \
+  src/test/fixtures/course-geometry/compiled-peek-n-peak-upper/peek-n-peak-upper-07-terrain.json.gz --out report.json
+# Render-quality lab (§94–95): http://127.0.0.1:8768/?lab=1&course=peek-n-peak-upper&hole=7
+```

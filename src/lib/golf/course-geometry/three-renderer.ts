@@ -1,10 +1,10 @@
 import {
   ACESFilmicToneMapping, Box3, Color, DirectionalLight, HemisphereLight,
-  OrthographicCamera, PCFShadowMap, Raycaster, Scene, SRGBColorSpace, Vector3, WebGLRenderer,
+  OrthographicCamera, PCFShadowMap, PerspectiveCamera, Raycaster, Scene, SRGBColorSpace, Vector3, WebGLRenderer,
 } from 'three';
 import { installTerrainDebugView, type TerrainDebugView } from '@/components/golf/course-geometry/terrain-debug';
 import { buildThreeLandscape, DEFAULT_THREE_LANDSCAPE_PALETTE } from '@/components/golf/course-geometry/three-landscape';
-import { applyTerrainCamera, pickTerrainPoint } from './three-camera';
+import { applyTerrainCamera, pickTerrainPoint, type TerrainThreeCamera } from './three-camera';
 import { buildThreeFlightPaths, type ThreeFlightPaths } from './three-flight-path';
 import { createShotOverlayController } from './shot-overlay-controller';
 import { TERRAIN_LIGHT_DIRECTION, type Point3M, type TerrainCamera, type TerrainMesh } from './terrain';
@@ -37,7 +37,11 @@ interface RuntimeOptions {
 export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrainRuntime {
   const { canvas, overlay, mesh } = options;
   const renderer = new WebGLRenderer({ canvas, alpha: false, antialias: true, depth: true, powerPreference: 'default' });
-  const world = new Scene(), view = new OrthographicCamera(), raycaster = new Raycaster();
+  const world = new Scene(), raycaster = new Raycaster();
+  // One real camera per projection. Programs do not depend on the camera
+  // type, so a preset transition between them costs no recompilation.
+  const orthographicView = new OrthographicCamera(), perspectiveView = new PerspectiveCamera();
+  let view: TerrainThreeCamera = orthographicView;
   let landscape: ReturnType<typeof buildThreeLandscape> | null = null;
   let flightPaths: ThreeFlightPaths | null = null;
   let evidence: ReturnType<typeof createShotOverlayController> | null = null;
@@ -149,8 +153,11 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
         crownDetail = nextDetail; detailFocus = camera.focusM;
         if (landscape.setDetail(nextDetail, [camera.focusM[0], camera.focusM[1]])) { fitSun(); renderer.shadowMap.needsUpdate = true; }
       }
+      view = camera.projection === 'perspective' ? perspectiveView : orthographicView;
       applyTerrainCamera(view, camera, width, height, viewDistance);
+      const began = performance.now();
       renderer.render(world, view);
+      const frameMs = performance.now() - began;
       if (shaderFailed || renderer.getContext().isContextLost()) { fail(); return; }
       // All world overlays update in the same synchronous paint as the GPU.
       // They intentionally remain readable through crowns (estimated evidence
@@ -158,6 +165,17 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
       evidence.setCamera(camera, width, height);
       Object.assign(canvas.dataset, {
         terrainRenderer: 'three-webgl2', terrainState: 'ready', terrainHash: mesh.contentHash,
+        terrainProjection: camera.projection ?? 'orthographic',
+        // Design FOV spans the HUD-safe fit height; the frame FOV is what the
+        // full canvas actually sees through the shift lens.
+        terrainFov: camera.projection === 'perspective' ? String(camera.fovDegrees ?? '') : '',
+        terrainFovFrame: camera.projection === 'perspective' && camera.focalPx ? (2 * Math.atan(height / 2 / camera.focalPx) * 180 / Math.PI).toFixed(2) : '',
+        terrainEyeDistanceM: camera.projection === 'perspective' && camera.eyeM ? Math.hypot(camera.eyeM[0] - camera.focusM[0], camera.eyeM[1] - camera.focusM[1]).toFixed(1) : '',
+        visualStyleVersion: String(landscape.group.userData.styleVersion ?? ''),
+        qualityTier: 'standard',
+        shadowMapSize: `${sun?.shadow.mapSize.x ?? 0}`, shadowMapType: 'pcf',
+        lightDirection: TERRAIN_LIGHT_DIRECTION.map(v => v.toFixed(3)).join(','),
+        frameMs: frameMs.toFixed(2),
         terrainPitch: String(camera.pitch), terrainYaw: String(camera.yawOffset),
         terrainExaggeration: String(camera.exaggeration), terrainScale: String(camera.scale),
         terrainFocus: camera.focusM.join(','), terrainTriangles: String(landscape.counts.terrainTriangles),
@@ -206,8 +224,9 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
     const sky = new HemisphereLight('#DDEBFF', '#5C7050', 1.2);
     sky.position.set(0, 0, 1); world.add(sky);
     evidence = createShotOverlayController(overlay, options.overlayId, mesh, options.scene, options.selectedShotNumber, false);
-    releaseDebug = installTerrainDebugView(world, landscape, mesh, options.debugView ?? 'final', renderer);
+    releaseDebug = installTerrainDebugView(world, landscape, mesh, options.debugView ?? 'final', renderer, options.scene);
     if (options.debugView && options.debugView !== 'final') overlay.style.display = 'none';
+    view = currentCamera.projection === 'perspective' ? perspectiveView : orthographicView;
     applyTerrainCamera(view, currentCamera, width, height, viewDistance);
   } catch (error) { dispose(); throw error; }
 

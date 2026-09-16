@@ -1,0 +1,51 @@
+{
+  "file": "src/test/fixtures/course-geometry/compiled-peek-n-peak-upper/peek-n-peak-upper-11-terrain.json.gz",
+  "terrainHash": "3621660506ec117b54c30a00785a78e0e97502615b8535722b7c78810939900d",
+  "physicalHoleKey": "peek-n-peak-upper-11",
+  "triangles": 27402,
+  "exaggeration": 1,
+  "normalSource": "source_dem_gradient",
+  "edges": {
+    "shared": 40409,
+    "boundary": 1384,
+    "nonManifold": 1
+  },
+  "dihedralDegreesByEdgeClass": {
+    "interior": {
+      "count": 32661,
+      "p50": 1.214,
+      "p95": 8.086,
+      "p99": 16.202,
+      "max": 84.614
+    },
+    "material-boundary": {
+      "count": 2793,
+      "p50": 1.13,
+      "p95": 7.327,
+      "p99": 11.576,
+      "max": 22.163
+    },
+    "feature-boundary": {
+      "count": 503,
+      "p50": 2.454,
+      "p95": 13.974,
+      "p99": 22.525,
+      "max": 71.452
+    },
+    "context-boundary": {
+      "count": 4452,
+      "p50": 2.623,
+      "p95": 14.777,
+      "p99": 23.669,
+      "max": 78.661
+    }
+  },
+  "vertexNormalSeamDegrees": {
+    "count": 14043,
+    "p50": 0,
+    "p95": 0,
+    "p99": 0,
+    "max": 0
+  },
+  "interpretation": "Dihedral angles are terrain shape (real slope changes plus tessellation). Vertex-normal seams are lighting discontinuities: with source DEM normals they must be ~0 at every shared vertex."
+}

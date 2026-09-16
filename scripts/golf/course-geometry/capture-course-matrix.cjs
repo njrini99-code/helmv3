@@ -16,7 +16,7 @@ async page => {
         if(preset==='Profile') {
           await dialog.locator('[data-slot=terrain-profile]').waitFor();
           if(await dialog.locator('canvas').count())throw new Error(`Profile retained a live canvas on ${hole}`);
-        } else await p.waitForFunction(pitch=>+document.querySelector('canvas[data-terrain-state=ready]')?.dataset.terrainPitch===pitch,preset==='Top'?90:50);
+        } else await p.waitForFunction(pitch=>+document.querySelector('canvas[data-terrain-state=ready]')?.dataset.terrainPitch===pitch,preset==='Top'?90:44);
         const file=`hole-${String(hole).padStart(2,'0')}-${preset.toLowerCase()}.png`;
         await p.screenshot({path:`output/playwright/course-geometry/visual-system/${dir}/${file}`});
         entry.captures.push({preset,file,canvas:preset==='Profile'?null:await dialog.locator('canvas').evaluate(e=>({...e.dataset}))});
