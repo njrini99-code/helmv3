@@ -31,6 +31,8 @@ export interface UseOneTapOptions {
   location: LocationSource | null;
   /** Anchor persistence. Omitted → localStorage; null → memory only. */
   storage?: StorageLike | null;
+  /** A round-level repository (shared across holes) replaces the per-hook one. */
+  repo?: AnchorRepository;
   transport?: SyntheticTransport | SyncTransport | null;
   reducedMotion?: boolean;
   now?: () => number;
@@ -103,7 +105,8 @@ export function useOneTap(options: UseOneTapOptions): OneTapView {
   const partition = useMemo(() => buildSurfacePartition(pkg, holeKey), [pkg, holeKey]);
   const holeId = pkg.holes.find(h => h.key === holeKey)?.ordinal ?? 1;
   const storage = options.storage === undefined ? defaultStorage() : options.storage;
-  const repo = useMemo<AnchorRepository>(() => storage ? new StorageAnchorRepository(storage, [roundId]) : new MemoryAnchorRepository(), [storage, roundId]);
+  const ownRepo = useMemo<AnchorRepository>(() => options.repo ? options.repo : storage ? new StorageAnchorRepository(storage, [roundId]) : new MemoryAnchorRepository(), [options.repo, storage, roundId]);
+  const repo = options.repo ?? ownRepo;
   const sync = useMemo(() => new SyncQueue(repo, transport, roundId), [repo, transport, roundId]);
   const [buffer] = useState(() => new LocationBuffer());
 

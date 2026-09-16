@@ -12,6 +12,7 @@ import { OneTapButton } from './OneTapButton';
 import { OneTapHud } from './OneTapHud';
 import { OneTapReadout } from './OneTapReadout';
 import { useOneTap, type OneTapView } from './use-one-tap';
+import type { OneTapRoundView } from './use-one-tap-round';
 
 export interface OneTapPlayerScreenProps {
   roundId: string;
@@ -26,16 +27,18 @@ export interface OneTapPlayerScreenProps {
   now?: () => number;
   /** Lab and tests observe the view model without reaching into the DOM. */
   onView?: (view: OneTapView) => void;
+  /** The round around this hole (strokes, hole advance, next-tee inference). */
+  round?: OneTapRoundView | null;
 }
 
 /** The course is the screen (One-Tap master plan "Player-facing design"):
  * the production HoleSceneFrame in stage presentation with the marks painted
  * on the terrain, the readout floating over it and MARK BALL beneath. */
-export function OneTapPlayerScreen({ roundId, pkg, holeKey, terrain, contextLayer, location, storage, transport, reducedMotion, now, onView }: OneTapPlayerScreenProps) {
+export function OneTapPlayerScreen({ roundId, pkg, holeKey, terrain, contextLayer, location, storage, transport, reducedMotion, now, onView, round }: OneTapPlayerScreenProps) {
   const scene = useMemo(() => {
     try { return buildHoleScene(pkg, holeKey, [], terrain ?? undefined, contextLayer); } catch { return null; }
   }, [pkg, holeKey, terrain, contextLayer]);
-  const view = useOneTap({ roundId, pkg, holeKey, terrain, location, storage, transport, reducedMotion, now });
+  const view = useOneTap({ roundId, pkg, holeKey, terrain, location, storage, transport, reducedMotion, now, repo: round?.repo });
   const cameraRef = useRef<((state: ProductionCameraState) => void) | null>(null);
   const framed = useRef<ProductionCameraState>('tee');
   useEffect(() => {
@@ -44,9 +47,9 @@ export function OneTapPlayerScreen({ roundId, pkg, holeKey, terrain, contextLaye
     cameraRef.current?.(view.cameraState);
   }, [view.cameraState]);
   useEffect(() => { onView?.(view); }, [view, onView]);
-  return <div className="flex h-full min-h-0 flex-1 flex-col" data-slot="one-tap-screen" data-one-tap-state={view.snapshot.state} data-camera-mode={view.cameraMode} data-camera-state={view.cameraState}>
+  return <div className="flex h-full min-h-0 flex-1 flex-col" data-slot="one-tap-screen" data-one-tap-state={view.snapshot.state} data-camera-mode={view.cameraMode} data-camera-state={view.cameraState} data-hole-key={holeKey} data-hole-status={round?.status ?? ''}>
     <HoleSceneFrame scene={scene} context="entry" presentation="stage" markers={view.markers}
-      stageOverlay={<OneTapHud view={view} />} stageFooter={<><OneTapReadout view={view} /><OneTapButton view={view} /></>}
+      stageOverlay={<OneTapHud view={view} round={round} />} stageFooter={<><OneTapReadout view={view} /><OneTapButton view={view} round={round} /></>}
       stageCameraRef={cameraRef} onStageGesture={view.onGesture} />
   </div>;
 }

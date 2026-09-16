@@ -39,7 +39,7 @@ const outDir = path.resolve(String(args['out-dir'] || `output/playwright/course-
   const read = () => page.evaluate(() => {
     const screen = document.querySelector('[data-slot=one-tap-screen]'), canvas = document.querySelector('canvas[data-terrain-state=ready]');
     const text = selector => document.querySelector(selector)?.textContent?.trim() ?? null;
-    return { state: screen?.dataset.oneTapState ?? null, cameraMode: screen?.dataset.cameraMode ?? null, cameraState: screen?.dataset.cameraState ?? null,
+    return { state: screen?.dataset.oneTapState ?? null, holeKey: screen?.dataset.holeKey ?? null, holeStatus: screen?.dataset.holeStatus ?? null, strokes: text('[data-slot=one-tap-strokes]'), cameraMode: screen?.dataset.cameraMode ?? null, cameraState: screen?.dataset.cameraState ?? null,
       currentView: screen?.querySelector('[data-current-view]')?.getAttribute('data-current-view') ?? null,
       status: text('[data-slot=one-tap-status]'), gps: text('[data-slot=one-tap-gps]'), distances: text('[data-slot=one-tap-distances]'), lie: text('[data-slot=one-tap-lie]'),
       markers: document.querySelectorAll('[data-marked-position]').length, links: document.querySelectorAll('[data-marked-link]').length,
@@ -54,7 +54,7 @@ const outDir = path.resolve(String(args['out-dir'] || `output/playwright/course-
     await page.screenshot({ path: file });
     const record = { name, file: path.basename(file), ...(await read()) };
     steps.push(record);
-    process.stdout.write(`${record.file} state=${record.state} camera=${record.cameraState}/${record.currentView} markers=${record.markers} links=${record.links} lie=${record.lie ?? '-'} draw=${record.drawCalls}\n`);
+    process.stdout.write(`${record.file} hole=${record.holeKey} ${record.holeStatus} strokes=${record.strokes ?? '-'} state=${record.state} camera=${record.cameraState}/${record.currentView} markers=${record.markers} links=${record.links} lie=${record.lie ?? '-'} draw=${record.drawCalls}\n`);
   };
   const mark = async () => {
     await page.locator('[data-slot=one-tap-mark]').click();
@@ -65,10 +65,18 @@ const outDir = path.resolve(String(args['out-dir'] || `output/playwright/course-
   await page.waitForTimeout(2200);
   await snap('ready');
   await mark(); await snap('tee-marked');
-  const length = await page.evaluate(() => window.__oneTapWalker.routeLengthM);
+  // The walker route runs tee → green → next tee; the green sits at greenAtM.
+  const length = await page.evaluate(() => Number(document.querySelector('[data-walker-green-m]')?.dataset.walkerGreenM ?? window.__oneTapWalker.routeLengthM));
   await walkTo(Math.max(0, Math.min(length * .55, length - 40))); await mark(); await snap('approach-marked');
   await walkTo(Math.max(0, length - 6)); await mark(); await snap('green-marked');
   await page.locator('[data-slot=one-tap-holed]').click(); await snap('holed');
+  // Explicit hole advance: NEXT HOLE becomes the primary action once the hole is closed.
+  const before = await page.evaluate(() => document.querySelector('[data-slot=one-tap-screen]')?.dataset.holeKey ?? null);
+  await page.locator('[data-slot=one-tap-next-hole]').click();
+  await page.waitForFunction(prev => document.querySelector('[data-slot=one-tap-screen]')?.dataset.holeKey !== prev, before, { timeout: 10000 });
+  await page.waitForFunction(() => document.querySelector('canvas[data-terrain-state=ready]'), null, { timeout: 90000 });
+  await page.waitForTimeout(2200);
+  await snap('next-hole-ready');
   const summary = { course, hole, viewport, routeLengthM: length, steps, errors };
   fs.writeFileSync(path.join(outDir, 'capture.json'), JSON.stringify(summary, null, 2) + '\n');
   if (errors.length) process.stdout.write(`ERRORS ${errors.join(' | ')}\n`);
