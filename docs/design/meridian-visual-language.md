@@ -202,6 +202,12 @@ from V1; V4 changes what stands on each centre.
   interior vertex support (`bunker.bowlSupportVertices`, profile
   `bowlSupport`): a pot triangulated as a fan from its rim stays a flat pot
   under its lip rather than a bowl the mesh cannot carry.
+- **Terrain-biased fairway edge (fidelity §10.3).** The fairway lip shade
+  (`fairwayEdge`, .8 m field) is scaled by the canonical cross-slope along
+  the outward direction to the fairway's own edge, from the smoothed vertex
+  normals: up to 1.8× where the ground falls away (a shoulder) and down to
+  .2× where it rises, full effect at a 12 % slope. A flat mesh biases
+  nothing, so the edge never claims a break the terrain does not have.
 - **Ribbon corners.** Context ribbons round every bend sharper than about
   20° with a quadratic fillet within 2 m of the corner (`roundCorners`), so
   the strip never folds back on itself at a sharp source node; the zone

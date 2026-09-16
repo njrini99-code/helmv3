@@ -119,7 +119,11 @@ export const MERIDIAN_STYLE = Object.freeze({
   /** Fidelity §10: fairway edge types. Crisp within `crispNearM` of a bunker
    * or green (maintained boundary), soft elsewhere; each is a short albedo
    * lip inside the fairway edge over `fieldM`. */
-  fairwayEdge: Object.freeze({ crispNearM: 8, crispShade: .045, softShade: .015, fieldM: .8 }),
+  /** Fidelity §10: crisp lip near bunkers/greens, soft elsewhere; §10.3 the
+   * lip follows landform: where the ground falls away from the fairway the
+   * lip strengthens by up to `terrainBias`, where it rises it softens by as
+   * much, reaching full effect at a cross-slope of `terrainSlopeFull`. */
+  fairwayEdge: Object.freeze({ crispNearM: 8, crispShade: .045, softShade: .015, fieldM: .8, terrainBias: .8, terrainSlopeFull: .12 }),
   /** §35–41: seven silhouette families over the authored crown atlas. Each
    * family sets proportion, colour and where it may stand: `edge` families
    * only within `edgeBandM` of the woods boundary (what a golfer sees),

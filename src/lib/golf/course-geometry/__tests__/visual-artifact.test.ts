@@ -286,8 +286,12 @@ describe('Green complex, fairway edges and bunker lips (fidelity §10, §13–21
   });
   it('types fairway edges by neighbour (crisp near bunkers and greens, soft elsewhere) without moving the outline', () => {
     const artifact = compileVisualArtifact(scene, mesh), a = artifact.attributes, edges = artifact.layers.fairwayEdges;
-    expect(edges).toMatchObject({ basis: 'visual_only', version: 'edge-types-v1' });
+    expect(edges).toMatchObject({ basis: 'visual_only', version: 'edge-types-v2', terrainBasis: 'canonical_slope' });
     expect(edges.crispVertices + edges.softVertices).toBeGreaterThan(0);
+    // §10.3: the lip follows the canonical cross-slope; a flat mesh biases nothing.
+    expect(edges.terrainVertices).toBeGreaterThan(0);
+    const flat = compileVisualArtifact(scene, { ...mesh, vertices: mesh.vertices.map((c, i) => i % 3 === 2 ? 100 : c), sourceNormals: undefined });
+    expect(flat.layers.fairwayEdges.terrainVertices).toBe(0);
     const neighbours = [...scene.features, ...(scene.contextFeatures ?? [])].filter(f => f.kind === 'bunker' || f.kind === 'green').flatMap(f => f.parts.flat());
     const plain = compileVisualArtifact(scene, mesh, { ...MERIDIAN_STYLE, fairwayEdge: { ...MERIDIAN_STYLE.fairwayEdge, crispShade: 0, softShade: 0 } });
     let crisp = 0, soft = 0, untouched = 0;

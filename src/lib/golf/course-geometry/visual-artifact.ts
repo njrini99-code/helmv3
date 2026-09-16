@@ -15,7 +15,7 @@ import { inRing } from './spatial';
 import type { HoleScene, LocalFeature, PointM, SurfaceKind } from './types';
 import { hexToRgb, MERIDIAN_STYLE, srgbToLinear, styleHash, type MeridianPaletteKey, type MeridianStyle } from './visual-style';
 
-export const MERIDIAN_VISUAL_COMPILER_VERSION = 'meridian-visual-compiler-5';
+export const MERIDIAN_VISUAL_COMPILER_VERSION = 'meridian-visual-compiler-6';
 export const MERIDIAN_CODES = Object.freeze({
   mismatch: 'MERIDIAN_ARTIFACT_MISMATCH', missing: 'MERIDIAN_ARTIFACT_MISSING', contextLost: 'MERIDIAN_CONTEXT_LOST',
   shaderFailed: 'MERIDIAN_SHADER_FAILED', budgetExceeded: 'MERIDIAN_BUDGET_EXCEEDED', fitFailed: 'MERIDIAN_FIT_FAILED',
@@ -132,7 +132,7 @@ export interface MeridianVisualArtifact {
     /** Fidelity §13–21: derived apron neck, green/collar edge lip, pad setting shade. */
     greenComplex: { basis: 'visual_only'; version: 'green-complex-v2'; apronBasis: 'derived_neck'; runoffBasis: 'canonical_slope'; runoffVertices: number; apronVertices: number; edgeVertices: number; settingVertices: number };
     /** Fidelity §10: fairway edge types by neighbour. */
-    fairwayEdges: { basis: 'visual_only'; version: 'edge-types-v1'; crispVertices: number; softVertices: number };
+    fairwayEdges: { basis: 'visual_only'; version: 'edge-types-v2'; terrainBasis: 'canonical_slope'; crispVertices: number; softVertices: number; terrainVertices: number };
     /** Renderer redesign §16: ground contact shade under context structures and path shoulders. */
     contextContact: { basis: 'visual_only'; version: 'context-contact-v2'; structures: number; ribbons: number; vertices: number; levelled: number };
   };
@@ -346,7 +346,7 @@ export function compileVisualArtifact(scene: HoleScene, mesh: TerrainMesh, style
   }
   const hierarchy = compileRoughHierarchy(scene, mesh, style, attributes, featuresById, ringsFor);
   const greenComplex = compileGreenComplex(scene, mesh, style, attributes, contextIds, ringsFor);
-  const fairwayEdges = compileFairwayEdges(scene, mesh, style, attributes, contextIds, ringsFor);
+  const fairwayEdges = compileFairwayEdges(scene, mesh, style, attributes, contextIds, ringsFor, smoothVertexNormals(mesh));
   const greenRings = [...scene.features, ...(scene.contextFeatures ?? [])].filter(f => f.kind === 'green')
     .flatMap(f => f.parts.map(part => part[0]).filter((ring): ring is PointM[] => !!ring && ring.length >= 3)).map(ring => ({ ring, box: ringBbox(ring) }));
   const profiles = compileBunkerBowls(mesh, style, attributes, featuresById, contextIds, ringsFor, greenRings);
@@ -369,7 +369,7 @@ export function compileVisualArtifact(scene: HoleScene, mesh: TerrainMesh, style
         secondaryVertices: hierarchy.secondary, outerVertices: hierarchy.outer },
       groundZones: { basis: 'visual_only', version: 'context-zones-v1', painted: hierarchy.painted, classes: hierarchy.classes, skippedUncertain: hierarchy.skippedUncertain },
       greenComplex: { basis: 'visual_only', version: 'green-complex-v2', apronBasis: 'derived_neck', runoffBasis: 'canonical_slope', ...greenComplex },
-      fairwayEdges: { basis: 'visual_only', version: 'edge-types-v1', ...fairwayEdges },
+      fairwayEdges: { basis: 'visual_only', version: 'edge-types-v2', terrainBasis: 'canonical_slope', ...fairwayEdges },
       contextContact: { basis: 'visual_only', version: 'context-contact-v2', ...contextContact },
     },
     attributes,
@@ -517,13 +517,15 @@ function compileGreenComplex(scene: HoleScene, mesh: TerrainMesh, style: Meridia
  * other fairway edge gets the soft one. Both are albedo-only over `fieldM`
  * inside the reviewed outline, which never moves. */
 function compileFairwayEdges(scene: HoleScene, mesh: TerrainMesh, style: MeridianStyle, attributes: MeridianVisualAttributes,
-  contextIds: Set<string>, ringsFor: (id: string) => { ring: readonly PointM[]; box: Bbox }[]): { crispVertices: number; softVertices: number } {
-  const cfg = style.fairwayEdge, v = mesh.vertices, counts = { crispVertices: 0, softVertices: 0 };
+  contextIds: Set<string>, ringsFor: (id: string) => { ring: readonly PointM[]; box: Bbox }[], vertexNormals: Float32Array): { crispVertices: number; softVertices: number; terrainVertices: number } {
+  const cfg = style.fairwayEdge, v = mesh.vertices, counts = { crispVertices: 0, softVertices: 0, terrainVertices: 0 };
   const neighbours = [...(scene.contextFeatures ?? []), ...scene.features].filter(feature => feature.kind === 'bunker' || feature.kind === 'green').flatMap(feature => ringsFor(feature.id));
-  const fairwayId = SURFACE_CLASS_IDS.indexOf('fairway');
+  const fairwayId = SURFACE_CLASS_IDS.indexOf('fairway'), ownRings = new Map<string, { ring: readonly PointM[]; box: Bbox }[]>();
   for (let t = 0; t < mesh.triangleFeatures.length; t++) {
     const featureIndex = mesh.triangleFeatures[t]!, id = mesh.featureIds[featureIndex]!;
     if (mesh.featureKinds[featureIndex] !== 'fairway' || contextIds.has(id)) continue;
+    let rings = ownRings.get(id);
+    if (!rings) { rings = ringsFor(id); ownRings.set(id, rings); }
     for (let corner = 0; corner < 3; corner++) {
       const vertex = t * 3 + corner;
       if (attributes.surfaceClass[vertex] !== fairwayId) continue;
@@ -531,8 +533,21 @@ function compileFairwayEdges(scene: HoleScene, mesh: TerrainMesh, style: Meridia
       if (d >= cfg.fieldM) continue;
       const point: PointM = [v[vertex * 3]!, v[vertex * 3 + 1]!];
       const crisp = nearestRingDistance(point, neighbours, cfg.crispNearM + 1) <= cfg.crispNearM;
-      shadeAlbedo(attributes, vertex, 1 - (crisp ? cfg.crispShade : cfg.softShade) * (1 - d / cfg.fieldM));
+      // §10.3 terrain-biased edge: the lip follows landform. `outward` points
+      // from the fairway to its own edge; the canonical cross-slope along it
+      // (smoothed vertex normal, never an invented break) strengthens the
+      // lip where the ground falls away and softens it where it rises.
+      let bias = 0;
+      const nearest = nearestOnRings(point, rings);
+      if (nearest.distance > 1e-3) {
+        const ox = (nearest.point[0] - point[0]) / nearest.distance, oy = (nearest.point[1] - point[1]) / nearest.distance;
+        const downhill = -(ox * vertexNormals[vertex * 3]! + oy * vertexNormals[vertex * 3 + 1]!);
+        bias = Math.max(-1, Math.min(1, downhill / cfg.terrainSlopeFull));
+      }
+      const shade = (crisp ? cfg.crispShade : cfg.softShade) * (1 + cfg.terrainBias * bias);
+      shadeAlbedo(attributes, vertex, 1 - shade * (1 - d / cfg.fieldM));
       if (crisp) counts.crispVertices++; else counts.softVertices++;
+      if (Math.abs(bias) >= .25) counts.terrainVertices++;
     }
   }
   return counts;
