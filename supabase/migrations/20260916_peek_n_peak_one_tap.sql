@@ -69,6 +69,7 @@
 -- VERIFY: select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='can_read_golf_round' and p.prosecdef;
 -- VERIFY: select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='owns_golf_round' and p.prosecdef;
 -- VERIFY: select 1 where not exists (select 1 from pg_policy p join pg_class c on c.oid=p.polrelid join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relname in ('golf_shot_anchors','golf_penalty_events','golf_round_course_bindings') and p.polcmd='d');
+-- VERIFY: select 1 where not exists (select 1 from information_schema.role_table_grants where table_schema='public' and table_name in ('golf_shot_anchors','golf_penalty_events','golf_round_course_bindings') and grantee='authenticated' and privilege_type in ('DELETE','TRUNCATE'));
 -- ===========================================================================
 
 -- --- RLS helpers ------------------------------------------------------------
@@ -453,9 +454,15 @@ revoke all on public.golf_shot_anchors from anon;
 revoke all on public.golf_penalty_events from anon;
 revoke all on public.golf_round_course_bindings from anon;
 
-revoke delete on public.golf_shot_anchors from authenticated;
-revoke delete on public.golf_penalty_events from authenticated;
-revoke delete on public.golf_round_course_bindings from authenticated;
+-- TRUNCATE is revoked alongside DELETE. Supabase's default privileges hand
+-- authenticated TRUNCATE on every new public table (golf_shots and golf_rounds
+-- both carry it), and TRUNCATE ignores RLS entirely — it would empty a round's
+-- evidence past every policy above. Leaving it would make "no hard-delete path
+-- for a client" untrue at the privilege level, so it goes. service_role keeps
+-- both, for retention work that runs server-side.
+revoke delete, truncate on public.golf_shot_anchors from authenticated;
+revoke delete, truncate on public.golf_penalty_events from authenticated;
+revoke delete, truncate on public.golf_round_course_bindings from authenticated;
 
 grant select, insert, update on public.golf_shot_anchors to authenticated;
 grant select, insert, update on public.golf_penalty_events to authenticated;

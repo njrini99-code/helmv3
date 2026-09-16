@@ -45,7 +45,7 @@
 BEGIN;
 \ir _helpers.sql
 
-SELECT plan(40);
+SELECT plan(42);
 
 -- ============================================================================
 -- Seed as service_role (RLS bypassed for setup).
@@ -263,6 +263,22 @@ SELECT is(
    FROM unnest(ARRAY['public.golf_shot_anchors', 'public.golf_penalty_events', 'public.golf_round_course_bindings']) AS t),
   false,
   'authenticated holds no DELETE privilege, so a future permissive policy still cannot hard-delete'
+);
+
+-- TRUNCATE ignores RLS completely, so the tombstone contract is only true at
+-- the privilege level if this is revoked too. Supabase grants it by default.
+SELECT is(
+  (SELECT bool_or(has_table_privilege('authenticated', t, 'TRUNCATE'))
+   FROM unnest(ARRAY['public.golf_shot_anchors', 'public.golf_penalty_events', 'public.golf_round_course_bindings']) AS t),
+  false,
+  'authenticated holds no TRUNCATE privilege — RLS-bypassing wipe is not available'
+);
+
+SELECT is(
+  (SELECT bool_and(has_table_privilege('service_role', t, 'SELECT') AND has_table_privilege('service_role', t, 'INSERT'))
+   FROM unnest(ARRAY['public.golf_shot_anchors', 'public.golf_penalty_events', 'public.golf_round_course_bindings']) AS t),
+  true,
+  'service_role keeps read/write, so a server-side backfill or adapter still works'
 );
 
 SELECT is(
