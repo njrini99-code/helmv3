@@ -99,6 +99,9 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
   let currentScene = options.scene, currentSelected = options.selectedShotNumber;
   let previousWidth = 0, previousHeight = 0, previousRatio = 0;
   let previousExaggeration = NaN, previousReference = NaN, renderCount = 0;
+  // §72: bakes since ready, not renders — one per relevant change, however
+  // many of setCamera's checks asked for one. §20: first-paint precompile time.
+  let shadowUpdates = 0, shaderCompileMs = 0;
   let viewDistance = 1_000;
   let releaseDebug: (() => void) | undefined;
   let crownDetail: 'near' | 'distant' = 'distant';
@@ -213,6 +216,9 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
     currentCamera = camera; width = w; height = h;
     if (disposed || failed || !ready || !landscape || !evidence) return;
     try {
+      // §72: set once below, however many checks in this function ask for a
+      // bake — three.js consumes both `needsUpdate` flags on the next render.
+      let dirtyShadow = false;
       const ratio = profilePixelRatio(quality, canvas.ownerDocument.defaultView?.devicePixelRatio || 1, width, height);
       if (width !== previousWidth || height !== previousHeight || ratio !== previousRatio) {
         renderer.setPixelRatio(ratio); renderer.setSize(width, height, false);
@@ -223,7 +229,7 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
         landscape.setExaggeration(camera.exaggeration, camera.referenceElevationM);
         replaceFlightPaths(currentScene, camera);
         fitSun();
-        renderer.shadowMap.needsUpdate = true;
+        dirtyShadow = true;
         previousExaggeration = camera.exaggeration; previousReference = camera.referenceElevationM;
       }
       // A perspective view always grants the near band: the per-tree distance
@@ -242,11 +248,16 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
         : `o:${Math.round(camera.focusM[0] / 12)},${Math.round(camera.focusM[1] / 12)}`;
       if (nextDetail !== crownDetail || lodSignature !== detailSignature) {
         crownDetail = nextDetail; detailSignature = lodSignature;
-        if (landscape.setDetail(nextDetail, [camera.focusM[0], camera.focusM[1]], perspectiveLod)) { fitSun(); renderer.shadowMap.needsUpdate = true; geometryBytes = estimateGeometryBytes(world); }
+        if (landscape.setDetail(nextDetail, [camera.focusM[0], camera.focusM[1]], perspectiveLod)) { fitSun(); dirtyShadow = true; geometryBytes = estimateGeometryBytes(world); }
       }
       view = camera.projection === 'perspective' ? perspectiveView : orthographicView;
       applyAtmosphere(camera.projection);
       applyTerrainCamera(view, camera, width, height, viewDistance);
+      // §72: renderer- and light-level gates are independent (three.js
+      // WebGLShadowMap.render() early-returns on the first, `continue`s past
+      // a light on the second) — a bake sets both `needsUpdate`s together.
+      // One counted bake per call, however many checks above asked for one.
+      if (dirtyShadow && sun) { renderer.shadowMap.needsUpdate = true; sun.shadow.needsUpdate = true; shadowUpdates++; }
       const gl = renderer.getContext() as WebGL2RenderingContext;
       pollGpuTimers(gl);
       const query = timerExt && pendingQueries.length < 4 ? gl.createQuery() : null;
@@ -277,11 +288,18 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
         visualHaze: world.fog ? hazeMix.toFixed(2) : '0', visualSky: skyDome?.visible ? 'gradient' : 'ground',
         contextZones: String(landscape.counts.contextZones), contextMassLobes: String(landscape.counts.contextMassLobes), understory: String(landscape.counts.understory), contextRibbons: String(landscape.counts.contextRibbons), contextStructures: String(landscape.counts.contextStructures), contextLayerHash: currentScene.contextLayerHash ?? '',
         qualityTier: quality.tier, qualityBasis,
-        shadowMapSize: `${sun?.shadow.mapSize.x ?? 0}`, shadowMapType: 'pcf',
+        // §72: bakes since ready (renderer + sun.shadow needsUpdate set
+        // together, never on their own) — captures can compare against
+        // renderCount to see the updates the discipline saved.
+        shadowMapSize: `${sun?.shadow.mapSize.x ?? 0}`, shadowMapType: 'pcf', shadowUpdates: String(shadowUpdates),
         // §68 budgets: frame P95 over the last 30 renders, draw calls against
         // the view's target, triangles by category, and a memory estimate.
         frameP95Ms: percentile(frameTimes, 95).toFixed(2), frameBudgetMs: String(quality.targetFrameMs),
         gpuFrameP95Ms: gpuTimes.length ? percentile(gpuTimes, 95).toFixed(2) : '', gpuTimerBasis: timerBasis,
+        // §20: first-paint shader precompile time, covering every material in
+        // `world` at ready-time — including whichever debug view (v2-lod0/1/2,
+        // v2-hero, v2-world) installed its own materials before this resolved.
+        shaderCompileMs: shaderCompileMs.toFixed(2),
         drawCallBudget: String(RENDER_BUDGETS.drawCalls[budgetViewFor(camera.pitch)]),
         drawCallStatus: renderer.info.render.calls <= RENDER_BUDGETS.drawCalls[budgetViewFor(camera.pitch)] ? 'within' : 'over',
         triangleBreakdown: `terrain:${landscape.counts.terrainTriangles} crownNear:${landscape.counts.crownNearTriangles} crownDistant:${landscape.counts.crownDistantTriangles} crownFar:${landscape.counts.crownFarTriangles} trunks:${landscape.counts.trunkTriangles} mass:${landscape.counts.massTriangles} flight:${flightPaths?.count ?? 0}`,
@@ -315,6 +333,9 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
     renderer.shadowMap.enabled = true; renderer.shadowMap.type = PCFShadowMap;
     timerExt = (renderer.getContext().getExtension('EXT_disjoint_timer_query_webgl2') as typeof timerExt) ?? null;
     timerBasis = timerExt ? 'ext_disjoint_timer_query' : 'unavailable';
+    // §72: paired with `sun.shadow.autoUpdate` below (also false) — three.js
+    // gates a bake on both, and `setCamera`'s single `dirtyShadow` bake sets
+    // both `needsUpdate`s together, or the sun would never re-shadow.
     renderer.shadowMap.autoUpdate = false;
     renderer.debug.checkShaderErrors = true;
     renderer.debug.onShaderError = () => { shaderFailed = true; };
@@ -353,6 +374,7 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
     sun.shadow.mapSize.set(quality.shadowMapSize, quality.shadowMapSize);
     sun.shadow.bias = MERIDIAN_STYLE.shadow.bias; sun.shadow.normalBias = MERIDIAN_STYLE.shadow.normalBias;
     sun.shadow.radius = MERIDIAN_STYLE.shadow.radius;
+    sun.shadow.autoUpdate = false;
     sun.shadow.camera.updateProjectionMatrix();
     world.add(sun, sun.target);
     const sky = new HemisphereLight(MERIDIAN_STYLE.light.skyColor, MERIDIAN_STYLE.light.groundColor, MERIDIAN_STYLE.light.hemisphereIntensity);
@@ -374,7 +396,17 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
     dispose(); throw error;
   }
 
-  const compiled = Promise.resolve().then(() => disposed ? undefined : renderer.compileAsync(world, view)).then(() => {
+  // §20: first-paint precompile. `world` already carries whichever debug view
+  // (v2-lod0/1/2, v2-hero, the forthcoming v2-world) installed its materials
+  // above — installTerrainDebugView ran before this promise was built, and
+  // WebGLRenderer.compile() gathers materials via a plain `traverse` (not
+  // `traverseVisible`), so the initially-hidden sky dome compiles here too.
+  // The elapsed time lands in the dataset via the first setCamera below.
+  const compiled = Promise.resolve().then(() => {
+    if (disposed) return undefined;
+    const began = performance.now();
+    return renderer.compileAsync(world, view).then(() => { shaderCompileMs = performance.now() - began; });
+  }).then(() => {
     if (disposed) return;
     if (shaderFailed) { fail(); return; }
     ready = true;

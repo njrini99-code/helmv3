@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { attachTurfStyle, type ThreeLandscape } from './three-landscape';
+import { assembleV2World, buildV2World } from './three-world-v2';
 import { compileBaseDisplayLods, weldAndCleanTerrainMesh, type DisplayLodName } from '@/lib/golf/course-geometry/display-mesh-v2';
 import { compileHeroPatches } from '@/lib/golf/course-geometry/bunker-display-mesh';
 import { compileHeroRegions } from '@/lib/golf/course-geometry/hero-patches';
@@ -18,7 +19,7 @@ export const TERRAIN_DEBUG_VIEWS = [
   'normals', 'source-normals', 'display-normals', 'flat-normals', 'slope', 'curvature',
   'lit-no-shadows', 'no-shadow', 'shadows', 'shadow-only',
   'feature-ids', 'triangle-ids', 'material-ids', 'crop', 'context-mask', 'bunker-depth',
-  'v2-lod0', 'v2-lod1', 'v2-lod2', 'v2-hero',
+  'v2-lod0', 'v2-lod1', 'v2-lod2', 'v2-hero', 'v2-world',
 ] as const;
 export type TerrainDebugView = typeof TERRAIN_DEBUG_VIEWS[number];
 export const TERRAIN_DEBUG_LABELS: Record<TerrainDebugView, string> = {
@@ -30,6 +31,7 @@ export const TERRAIN_DEBUG_LABELS: Record<TerrainDebugView, string> = {
   'material-ids': 'Material IDs', crop: 'Context mask', 'context-mask': 'Context mask', 'bunker-depth': 'Bunker bowl depth (render-only)',
   'v2-lod0': 'V2 base LOD0 (refined) + wire', 'v2-lod1': 'V2 base LOD1 (welded canonical) + wire', 'v2-lod2': 'V2 base LOD2 (simplified) + wire',
   'v2-hero': 'V2 base LOD0 + green/bunker hero patches (purple wire, bowl shaded)',
+  'v2-world': 'V2 ground shader (lit, shadowed, one material)',
 };
 const V2_LOD_VIEWS: Partial<Record<TerrainDebugView, DisplayLodName>> = { 'v2-lod0': 'lod0', 'v2-lod1': 'lod1', 'v2-lod2': 'lod2' };
 /** Diagnostic surface-class tints for the V2 LOD views (not the Meridian palette). */
@@ -126,6 +128,24 @@ export function installTerrainDebugView(world: THREE.Scene, landscape: ThreeLand
       lodGeometry.dispose();
       for (const geometry of patchGeometries) geometry.dispose();
       for (const material of owned) material.dispose();
+    };
+  }
+  if (mode === 'v2-world') {
+    // Task 11: the actual V2 render world — one ground material, lit and
+    // shadowed like `final`, in place of the whole V1 terrain. R7 fallback:
+    // no scene, no metricGrid, or any compiler step throwing leaves the V1
+    // terrain visible and this view a no-op, exactly like a real V1/V2
+    // runtime switch would.
+    const input = scene ? assembleV2World(scene, mesh) : null;
+    if (!input) return () => {};
+    const built = buildV2World(input);
+    landscape.terrain.visible = false;
+    landscape.group.add(built.group);
+    landscape.terrain.userData.debugV2 = { view: 'world', draws: built.stats.draws, triangles: built.stats.triangles, patches: built.stats.patches };
+    return () => {
+      landscape.group.remove(built.group);
+      landscape.terrain.visible = true;
+      built.dispose();
     };
   }
   const geometry = landscape.terrain.geometry;

@@ -59,7 +59,7 @@ function terrainOcclusion(grid: MetricTerrainGrid, layout: { originM: readonly [
   const dx = sun[0] / horizontal, dy = sun[1] / horizontal, rise = sun[2] / horizontal;
   const step = layout.spacingM / 2, steps = Math.ceil(reachM / step);
   let top = -Infinity;
-  for (const h of grid.heightsM) if (Number.isFinite(h) && h > top) top = h;
+  for (const h of grid.heightsM) if (h != null && Number.isFinite(h) && h > top) top = h;
   for (let row = 0; row < layout.rows; row++) for (let column = 0; column < layout.columns; column++) {
     const x0 = layout.originM[0] + column * layout.spacingM, y0 = layout.originM[1] + row * layout.spacingM;
     const z0 = sampleMetricTerrain(grid, [x0, y0]);
