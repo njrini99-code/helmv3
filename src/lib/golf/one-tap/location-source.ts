@@ -13,6 +13,7 @@ export interface LocationSource {
 interface GeolocationLike {
   watchPosition(success: (position: GeolocationPosition) => void, error?: (error: GeolocationPositionError) => void, options?: PositionOptions): number;
   clearWatch(id: number): void;
+  getCurrentPosition?(success: (position: GeolocationPosition) => void, error?: (error: GeolocationPositionError) => void, options?: PositionOptions): void;
 }
 export function sampleFromPosition(position: GeolocationPosition, nowMs = Date.now()): LocationSample {
   const c = position.coords;
@@ -20,20 +21,103 @@ export function sampleFromPosition(position: GeolocationPosition, nowMs = Date.n
     altitudeM: c.altitude ?? null, horizontalAccuracyM: c.accuracy, verticalAccuracyM: c.altitudeAccuracy ?? null,
     speedMps: c.speed ?? null, headingDegrees: c.heading ?? null, source: 'device' };
 }
-/** The platform watcher, highest accuracy, no cached fixes. An error (denied,
- * unavailable) simply stops samples: the controller then reports
- * GPS_UNAVAILABLE on the next tap instead of inventing a position. */
+
+/** Master design §67: `navigation` runs while the course screen is open;
+ * `capture` is the short burst around a tap. The web Geolocation API inside
+ * the mobile shell has no energy tiers, so both watch at high accuracy with
+ * no cached fixes; capture additionally asks for one fresh fix at once and
+ * gives up sooner, so a tap never waits on a stale watch. */
+export type LocationWatchMode = 'navigation' | 'capture';
+export type LocationStatus = 'idle' | 'watching' | 'paused' | 'reacquiring' | 'denied' | 'unavailable' | 'timeout';
+export const WATCH_OPTIONS: Readonly<Record<LocationWatchMode, PositionOptions>> = Object.freeze({
+  navigation: { enableHighAccuracy: true, maximumAge: 0, timeout: 15_000 },
+  capture: { enableHighAccuracy: true, maximumAge: 0, timeout: 8_000 },
+});
+export interface DeviceLocationSource extends LocationSource {
+  readonly kind: 'device';
+  status(): LocationStatus;
+  subscribeStatus(listener: (status: LocationStatus) => void): () => void;
+  setMode(mode: LocationWatchMode): void;
+  mode(): LocationWatchMode;
+  /** §67 "app backgrounded": drop the watch; `resume` reacquires and reports
+   * `reacquiring` until the first new fix, so the UI can say Locating… instead
+   * of pretending the path continued. */
+  pause(): void;
+  resume(): void;
+}
+/** The platform watcher, highest accuracy, no cached fixes. A denial stops
+ * the watch and reports `denied`; a timeout or an unavailable fix keeps the
+ * watch and reports the state, and the controller reports GPS_UNAVAILABLE on
+ * the next tap instead of inventing a position. */
 export function deviceLocationSource(geolocation: GeolocationLike | null | undefined = typeof navigator === 'undefined' ? null : navigator.geolocation,
-  onError?: (error: GeolocationPositionError) => void): LocationSource | null {
+  onError?: (error: GeolocationPositionError) => void): DeviceLocationSource | null {
   if (!geolocation) return null;
+  const listeners = new Set<(sample: LocationSample) => void>(), statusListeners = new Set<(status: LocationStatus) => void>();
+  let watchId: number | null = null, status: LocationStatus = 'idle', mode: LocationWatchMode = 'navigation', paused = false;
+  const setStatus = (next: LocationStatus) => { if (status === next) return; status = next; for (const l of statusListeners) l(next); };
+  const onFix = (position: GeolocationPosition) => {
+    // A fix from a cleared watch (paused, unsubscribed) never becomes a sample.
+    if (paused || watchId == null) return;
+    const sample = sampleFromPosition(position);
+    for (const l of listeners) l(sample);
+    if (status !== 'paused') setStatus('watching');
+  };
+  const onErr = (error: GeolocationPositionError) => {
+    onError?.(error);
+    if (error.code === 1) { clear(); setStatus('denied'); }
+    else if (error.code === 2) setStatus('unavailable');
+    else setStatus('timeout');
+  };
+  const clear = () => { if (watchId != null) { geolocation.clearWatch(watchId); watchId = null; } };
+  const watch = () => { clear(); watchId = geolocation.watchPosition(onFix, onErr, WATCH_OPTIONS[mode]); };
   return {
     kind: 'device',
+    status: () => status,
+    mode: () => mode,
+    subscribeStatus(listener) { statusListeners.add(listener); return () => { statusListeners.delete(listener); }; },
     subscribe(listener) {
-      const id = geolocation.watchPosition(position => listener(sampleFromPosition(position)), error => onError?.(error),
-        { enableHighAccuracy: true, maximumAge: 0, timeout: 15_000 });
-      return () => geolocation.clearWatch(id);
+      listeners.add(listener);
+      if (listeners.size === 1 && !paused) { watch(); setStatus('watching'); }
+      return () => { listeners.delete(listener); if (!listeners.size) { clear(); setStatus('idle'); } };
+    },
+    setMode(next) {
+      if (next === mode) return;
+      mode = next;
+      if (watchId == null || paused) return;
+      watch();
+      // A tap wants a fresh fix now, not the next scheduled one.
+      if (next === 'capture') geolocation.getCurrentPosition?.(onFix, onErr, WATCH_OPTIONS.capture);
+    },
+    pause() { if (paused) return; paused = true; clear(); setStatus('paused'); },
+    resume() {
+      if (!paused) return;
+      paused = false;
+      if (!listeners.size) { setStatus('idle'); return; }
+      setStatus('reacquiring'); watch();
     },
   };
+}
+export type LocationPermission = 'granted' | 'prompt' | 'denied' | 'unknown';
+interface PermissionsLike { query(descriptor: { name: 'geolocation' }): Promise<{ state: string }> }
+/** §8.2 without a native bridge: the Permissions API says granted / prompt /
+ * denied where the WebView exposes it; otherwise `unknown`, and the first
+ * watch is the prompt. Reduced accuracy cannot be read from the web API, so a
+ * weak-location state is judged from the fixes' reported accuracy instead. */
+export async function queryLocationPermission(permissions: PermissionsLike | null | undefined = typeof navigator === 'undefined' ? null : (navigator as { permissions?: PermissionsLike }).permissions): Promise<LocationPermission> {
+  if (!permissions?.query) return 'unknown';
+  try {
+    const { state } = await permissions.query({ name: 'geolocation' });
+    return state === 'granted' || state === 'prompt' || state === 'denied' ? state : 'unknown';
+  } catch { return 'unknown'; }
+}
+interface DocumentLike { visibilityState: string; addEventListener(type: 'visibilitychange', listener: () => void): void; removeEventListener(type: 'visibilitychange', listener: () => void): void }
+/** §67: no background location in V1. Hidden pauses the watch; visible
+ * resumes and reacquires. Returns the unbind. */
+export function bindVisibilityLifecycle(source: Pick<DeviceLocationSource, 'pause' | 'resume'>, doc: DocumentLike | null | undefined = typeof document === 'undefined' ? null : document): () => void {
+  if (!doc) return () => {};
+  const onChange = () => { if (doc.visibilityState === 'hidden') source.pause(); else source.resume(); };
+  doc.addEventListener('visibilitychange', onChange);
+  return () => doc.removeEventListener('visibilitychange', onChange);
 }
 
 /** Deterministic PRNG (mulberry32) so a lab capture replays identically. */
