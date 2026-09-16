@@ -46,6 +46,18 @@ const players = [
   { id: 'p2', first_name: 'Grace', last_name: 'Hopper' },
 ];
 
+// The start-date input carries `min={today}` (local day), so a hardcoded
+// date silently expires: this file used START_DATE and every submit here
+// was blocked by the native min constraint from 2026-09-16 on, which read as
+// "createGolfQualifier never called" on every PR. Always use a date that is
+// in the future on the day the test runs.
+function localIsoDaysFromNow(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+const START_DATE = localIsoDaysFromNow(7);
+
 function confirmSingleRoundCap() {
   fireEvent.click(
     screen.getByRole('checkbox', { name: /intentionally allows one 18-hole round/i }),
@@ -67,7 +79,7 @@ describe('FairwayNewQualifier — submit reaches the server action (#1270)', () 
     });
     const startDate = document.querySelector<HTMLInputElement>('input[name="startDate"]');
     expect(startDate).toBeTruthy();
-    fireEvent.change(startDate!, { target: { value: '2026-09-15' } });
+    fireEvent.change(startDate!, { target: { value: START_DATE } });
     confirmSingleRoundCap();
 
     fireEvent.click(screen.getByRole('button', { name: /Create qualifier/i }));
@@ -75,7 +87,7 @@ describe('FairwayNewQualifier — submit reaches the server action (#1270)', () 
     await waitFor(() => expect(createGolfQualifier).toHaveBeenCalledTimes(1));
     expect(createGolfQualifier.mock.calls[0]?.[0]).toMatchObject({
       name: 'Spring Travel Qualifier',
-      startDate: '2026-09-15',
+      startDate: START_DATE,
     });
   });
 
@@ -86,7 +98,7 @@ describe('FairwayNewQualifier — submit reaches the server action (#1270)', () 
       target: { value: 'Squad pick' },
     });
     fireEvent.change(document.querySelector<HTMLInputElement>('input[name="startDate"]')!, {
-      target: { value: '2026-09-15' },
+      target: { value: START_DATE },
     });
     confirmSingleRoundCap();
 
@@ -105,7 +117,7 @@ describe('FairwayNewQualifier — submit reaches the server action (#1270)', () 
     render(<FairwayNewQualifier players={players} />);
 
     fireEvent.change(document.querySelector<HTMLInputElement>('input[name="startDate"]')!, {
-      target: { value: '2026-09-15' },
+      target: { value: START_DATE },
     });
     fireEvent.click(screen.getByRole('button', { name: /Create qualifier/i }));
 
@@ -131,7 +143,7 @@ describe('FairwayNewQualifier — submit reaches the server action (#1270)', () 
       target: { value: 'Fall Qualifying' },
     });
     fireEvent.change(document.querySelector<HTMLInputElement>('input[name="startDate"]')!, {
-      target: { value: '2026-09-15' },
+      target: { value: START_DATE },
     });
 
     fireEvent.click(screen.getByRole('button', { name: /Create qualifier/i }));
