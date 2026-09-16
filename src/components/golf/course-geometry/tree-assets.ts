@@ -158,6 +158,34 @@ function normalizeSet(geometries: readonly THREE.BufferGeometry[]): void {
   }
 }
 
+/** Fidelity §39 / redesign §10: the forest interior beyond the crown budget
+ * is carried by mass clusters, not single domes. One authored five-lobe
+ * cluster at 80 triangles a lobe spans the unit footprint with its top at
+ * z = 1 and every exposed underside below z = -.8, so the sunk placement in
+ * `three-landscape.ts` never shows a lobe belly from Side. Per-instance yaw,
+ * aspect and colour do the rest of the variation (§20.1); 400 triangles per
+ * cluster, well under a near crown. */
+const MASS_LOBES: readonly Lobe[] = [
+  [0, 0, .1, .68, .62, .9],
+  [-.2, -.15, .38, .42, .4, .5, .2],
+  [.46, .18, -.15, .48, .44, .7, .4],
+  [-.42, .26, -.18, .46, .48, .68, -.7],
+  [.08, -.52, -.2, .46, .42, .66, 1.1],
+];
+
+export function createForestMassGeometry(lod: 'near' | 'far' = 'near'): THREE.BufferGeometry {
+  // Far keeps the dominant lobe and top bump at 80 triangles and drops the
+  // three shoulders to 20: the same outline in 220 triangles.
+  const major = new THREE.IcosahedronGeometry(1, 1), minor = new THREE.IcosahedronGeometry(1, 0);
+  try {
+    const geometry = buildCluster(MASS_LOBES, MASS_LOBES.map((_, index) => lod === 'near' || index < 2 ? major : minor));
+    geometry.computeBoundingBox(); geometry.computeBoundingSphere();
+    geometry.name = `forest-mass-cluster-${lod}`;
+    geometry.userData = { basis: 'authored_canopy_art', variant: 'forest-mass-cluster', lod, lobeCount: MASS_LOBES.length };
+    return geometry;
+  } finally { major.dispose(); minor.dispose(); }
+}
+
 /** Create one atlas per landscape owner, then instance its geometries. No
  * source geometry, placement, species, or height is inferred by this library. */
 export function createTreeAssetAtlas(): TreeAssetAtlas {

@@ -169,7 +169,13 @@ export const MERIDIAN_STYLE = Object.freeze({
      * budget: one lobe per grid cell inset from the boundary, sunk into the
      * ground so no underside shows. */
     mass: Object.freeze({ insetM: 16, spacingM: 13, lobeRadiusM: [6.5, 10] as const, canopyHeightM: [8, 12] as const,
-      color: '#34532F', light: '#446A3A', budget: 420,
+      /** Each cell is an authored five-lobe canopy cluster (`createForestMassGeometry`),
+       * not a single dome, so a close view sees canopy tops rather than boulders. */
+      lobeForm: 'five_lobe_cluster', color: '#3B5F33', light: '#517C44', budget: 420,
+      /** Mass LOD: the 400-triangle cluster only where its projected radius
+       * reaches this many CSS px (perspective) or inside twice the near band
+       * (orthographic); the 220-triangle outline elsewhere. */
+      lodScreenPx: 28,
       /** Outside world §10.3: OSM `forest_mass` zones outside every reviewed
        * woods mask are carried by context-toned lobes only, never crowns. */
       contextBudget: 260 }),

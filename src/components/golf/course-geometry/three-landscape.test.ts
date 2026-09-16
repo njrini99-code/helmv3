@@ -263,9 +263,10 @@ describe('Three landscape source and rendering invariants', () => {
     expect(edgeTrees).toBeGreaterThan(0); expect(interiorTrees).toBeGreaterThan(0);
     // Forest mass exists only where a woods polygon has an interior beyond the inset; the copse has none.
     expect(landscape.counts.massLobes).toBeGreaterThan(20);
-    const mass = landscape.group.children.filter(child => child.name.startsWith('source-forest-mass')) as THREE.InstancedMesh[];
+    const mass = landscape.group.children.filter(child => child.name.startsWith('source-forest-mass')) as THREE.BatchedMesh[];
+    expect(mass).toHaveLength(1);
     const lobe = new THREE.Matrix4();
-    for (const batch of mass) for (let i = 0; i < batch.count; i++) {
+    for (const batch of mass) for (let i = 0; i < batch.instanceCount; i++) {
       batch.getMatrixAt(i, lobe);
       const x = lobe.elements[12]!, y = lobe.elements[13]!;
       expect(Math.min(x, y, 320 - x, 320 - y)).toBeGreaterThanOrEqual(MERIDIAN_STYLE.vegetation.mass.insetM - 1e-6);
@@ -282,6 +283,20 @@ describe('Three landscape source and rendering invariants', () => {
     landscape.setDetail('near', [40, 40]);
     expect(trunks[0]!.userData.lods).toContain('near');
     expect(landscape.counts.trunksVisible).toBeGreaterThan(0);
+    // Forest mass LOD: the 400-triangle cluster only where it projects large enough
+    // (perspective) or inside twice the near band (orthographic); each mesh draws
+    // exactly its live instances and the triangle count follows.
+    const massLods = () => mass[0]!.userData.lods as string[];
+    const drawsBefore = landscape.counts.drawCalls;
+    landscape.setDetail('near', [40, 40], { eye: [40, 40, 45], focalPx: 900 });
+    expect(landscape.counts.massLod.near).toBeGreaterThan(0); expect(landscape.counts.massLod.far).toBeGreaterThan(0);
+    expect(landscape.counts.massLod.near + landscape.counts.massLod.far).toBe(landscape.counts.massLobes);
+    expect(massLods().filter(lod => lod === 'near')).toHaveLength(landscape.counts.massLod.near);
+    expect(landscape.counts.massTriangles).toBe(landscape.counts.massLod.near * 400 + landscape.counts.massLod.far * 220);
+    expect(landscape.counts.drawCalls).toBe(drawsBefore);
+    landscape.setDetail('distant', [40, 40]);
+    expect(landscape.counts.massLod.near).toBe(0); expect(massLods()).not.toContain('near');
+    expect(landscape.counts.massTriangles).toBe(landscape.counts.massLobes * 220);
     const budgetless = buildThreeLandscape({ ...base, features: [woods, copse, green] }, mesh, undefined, { overrides: { crowns: 0, mass: 0 } });
     expect(budgetless.counts.trees).toBe(0); expect(budgetless.counts.massLobes).toBe(0);
     budgetless.dispose(); landscape.dispose();

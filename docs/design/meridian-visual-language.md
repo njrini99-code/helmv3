@@ -202,6 +202,13 @@ from V1; V4 changes what stands on each centre.
   interior vertex support (`bunker.bowlSupportVertices`, profile
   `bowlSupport`): a pot triangulated as a fan from its rim stays a flat pot
   under its lip rather than a bowl the mesh cannot carry.
+- **Forest mass clusters (master §39, redesign §10).** The woods interior
+  beyond the crown budget is an authored five-lobe canopy cluster per mass
+  cell, sunk so no belly shows, with per-instance yaw, aspect and colour; a
+  220-triangle far build of the same outline takes over below a projected
+  radius of 28 px, in one BatchedMesh, so close views see canopy tops rather
+  than faceted domes at no draw-call cost. Illustrative like the crowns:
+  `canopyBasis: reviewed_group_illustration`, never a tree count.
 - **Terrain-biased fairway edge (fidelity §10.3).** The fairway lip shade
   (`fairwayEdge`, .8 m field) is scaled by the canonical cross-slope along
   the outward direction to the fairway's own edge, from the smoothed vertex

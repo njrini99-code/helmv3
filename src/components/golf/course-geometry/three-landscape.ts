@@ -7,7 +7,7 @@ import type { HoleScene, LocalFeature, PointM } from '@/lib/golf/course-geometry
 import { assertVisualArtifact, BUNKER_SLOPE_SCALE, compileVisualArtifact, linearAlbedo, MERIDIAN_CODES, SURFACE_CLASS_IDS, type MeridianVisualArtifact } from '@/lib/golf/course-geometry/visual-artifact';
 import { MERIDIAN_PALETTE, MERIDIAN_STYLE, MERIDIAN_STYLE_HASH, MERIDIAN_STYLE_VERSION, type MeridianPaletteKey, type MeridianStyle, type MeridianStyleOverrides } from '@/lib/golf/course-geometry/visual-style';
 import { buildThreeContext } from './three-context';
-import { createTreeAssetAtlas, type TreeCrownAsset } from './tree-assets';
+import { createForestMassGeometry, createTreeAssetAtlas, type TreeCrownAsset } from './tree-assets';
 
 export type ThreeLandscapePalette = Readonly<Record<MeridianPaletteKey, THREE.ColorRepresentation>>;
 
@@ -53,6 +53,8 @@ export interface ThreeLandscape {
     crownNearTriangles: number; crownDistantTriangles: number; crownFarTriangles: number; trunkTriangles: number; massTriangles: number;
     /** Trees per crown LOD, plus trunks hidden beyond twice the near band. */
     lodTrees: { near: number; distant: number; far: number; hidden: number };
+    /** Forest-mass clusters at the 400-triangle (near) and 220-triangle (far) build. */
+    massLod: { near: number; far: number };
     /** How the last LOD pass chose: projected crown size (perspective) or focus-distance bands (orthographic). */
     crownLodBasis: 'screen_px' | 'focus_bands' };
 }
@@ -389,7 +391,7 @@ export function buildThreeLandscape(
 
   interface Tree { id: string; tile: string; x: number; y: number; groundZ: number; radius: number; trunkRadius: number; height: number; yaw: number; aspect: number; lean: number; leanYaw: number; asset: TreeCrownAsset; familyId: string; color: THREE.Color;
     instance: number; trunkInstance: number; lod: CrownLod; trunkLod: 'near' | 'distant' | 'hidden' }
-  interface MassLobe { id: string; tile: string; x: number; y: number; groundZ: number; radius: number; aspect: number; height: number; yaw: number; color: THREE.Color }
+  interface MassLobe { id: string; tile: string; x: number; y: number; groundZ: number; radius: number; aspect: number; height: number; yaw: number; color: THREE.Color; lod: 'near' | 'far'; instance: number }
   const treeAtlas = createTreeAssetAtlas();
   const trees: Tree[] = [], lobes: MassLobe[] = [];
   const crownBudget = Math.max(0, Math.round(TREE_LIMIT * (options.overrides?.crowns ?? 1)));
@@ -512,7 +514,7 @@ export function buildThreeLandscape(
       const height = VEGETATION.mass.canopyHeightM[0] + (VEGETATION.mass.canopyHeightM[1] - VEGETATION.mass.canopyHeightM[0]) * variation(n + 7);
       lobes.push({ id, tile: `${Math.floor(point[0] / CANOPY_TILE_M)},${Math.floor(point[1] / CANOPY_TILE_M)}`, x: point[0], y: point[1], groundZ,
         radius, aspect: .8 + variation(n + 11) * .3, height, yaw: variation(n + 13) * Math.PI * 2,
-        color: contextTone(new THREE.Color(VEGETATION.mass.color).lerp(new THREE.Color(VEGETATION.mass.light), variation(n + 17) * .7), feature) });
+        color: contextTone(new THREE.Color(VEGETATION.mass.color).lerp(new THREE.Color(VEGETATION.mass.light), variation(n + 17) * .7), feature), lod: 'far', instance: -1 });
       if (lobes.length >= massBudget) break;
     }
   }
@@ -554,7 +556,7 @@ export function buildThreeLandscape(
       const height = VEGETATION.mass.canopyHeightM[0] + (VEGETATION.mass.canopyHeightM[1] - VEGETATION.mass.canopyHeightM[0]) * variation(n + 7);
       lobes.push({ id, tile: `${Math.floor(point[0] / CANOPY_TILE_M)},${Math.floor(point[1] / CANOPY_TILE_M)}`, x: point[0], y: point[1], groundZ,
         radius, aspect: .8 + variation(n + 11) * .3, height, yaw: variation(n + 13) * Math.PI * 2,
-        color: contextTone(new THREE.Color(VEGETATION.mass.color).lerp(new THREE.Color(VEGETATION.mass.light), variation(n + 17) * .7), feature) });
+        color: contextTone(new THREE.Color(VEGETATION.mass.color).lerp(new THREE.Color(VEGETATION.mass.light), variation(n + 17) * .7), feature), lod: 'far', instance: -1 });
       contextMassLobes++;
       if (contextMassLobes >= contextMassBudget) break;
     }
@@ -690,22 +692,31 @@ export function buildThreeLandscape(
     for (const tree of trunkTrees) { tree.trunkInstance = trunks.addInstance(trunkGeometryIds.distant); tree.trunkLod = 'distant'; }
     group.add(trunks); instances.push(trunks);
   }
-  const massBatches: { mesh: THREE.InstancedMesh; lobes: MassLobe[] }[] = [];
-  const massGeometry = new THREE.IcosahedronGeometry(1, 1);
-  geometries.add(massGeometry);
+  // §39 / redesign §10: an authored five-lobe canopy cluster per mass cell,
+  // so the interior reads as canopy tops beside the edge crowns rather than
+  // as one large faceted dome. Like the crowns (§68.2), one BatchedMesh holds
+  // both builds of the outline, the 400-triangle cluster and its 220-triangle
+  // far version, and every lobe is one instance pointing at the geometry for
+  // its LOD (`setDetail`), so the layer stays one draw call at every split.
+  const massGeometry = createForestMassGeometry('near'), massFarGeometry = createForestMassGeometry('far');
+  geometries.add(massGeometry); geometries.add(massFarGeometry);
+  const massGeometryIds = { near: -1, far: -1 };
+  let mass: THREE.BatchedMesh | null = null;
   if (lobes.length) {
     const massMaterial = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 1, metalness: 0 });
     massMaterial.name = 'opaque-forest-mass';
     materials.add(massMaterial);
-    const mass = new THREE.InstancedMesh(massGeometry, massMaterial, lobes.length);
+    mass = new THREE.BatchedMesh(lobes.length, massGeometry.getAttribute('position').count + massFarGeometry.getAttribute('position').count, 0, massMaterial);
+    massGeometryIds.near = mass.addGeometry(massGeometry); massGeometryIds.far = mass.addGeometry(massFarGeometry);
     mass.name = 'source-forest-mass';
-    mass.userData = { canopyBasis: 'reviewed_group_illustration', heightBasis: 'illustrative', layer: 'forest_mass', lobeIds: lobes.map(lobe => lobe.id) };
+    mass.userData = { canopyBasis: 'reviewed_group_illustration', heightBasis: 'illustrative', layer: 'forest_mass', lobeIds: lobes.map(lobe => lobe.id), lods: lobes.map(() => 'far') };
     mass.castShadow = true;
     mass.receiveShadow = true;
-    mass.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-    lobes.forEach((lobe, index) => mass.setColorAt(index, lobe.color));
-    if (mass.instanceColor) mass.instanceColor.needsUpdate = true;
-    group.add(mass); instances.push(mass); massBatches.push({ mesh: mass, lobes });
+    for (const lobe of lobes) {
+      lobe.instance = mass.addInstance(massGeometryIds.far);
+      mass.setColorAt(lobe.instance, lobe.color);
+    }
+    group.add(mass); instances.push(mass);
   }
 
   const familyCounts: Record<string, number> = {};
@@ -718,8 +729,8 @@ export function buildThreeLandscape(
     crownInstances: trees.length, crownTriangles: 0, totalTriangles: 0, canopyBatches: crowns ? 1 : 0, drawCalls: 0,
     massLobes: lobes.length, trunksVisible: 0, families: familyCounts, patternCentres, rhythmCleared, contextMassLobes, understory: understoryCount,
     contextRibbons: context.counts.ribbons, contextStructures: context.counts.structures, contextLines: context.counts.lines, contextZones: context.counts.zones,
-    crownNearTriangles: 0, crownDistantTriangles: 0, crownFarTriangles: 0, trunkTriangles: 0, massTriangles: 0, lodTrees: { near: 0, distant: 0, far: 0, hidden: 0 }, crownLodBasis: 'focus_bands' };
-  const massTriangles = trunkTriangleCount(massGeometry) * lobes.length;
+    crownNearTriangles: 0, crownDistantTriangles: 0, crownFarTriangles: 0, trunkTriangles: 0, massTriangles: 0, lodTrees: { near: 0, distant: 0, far: 0, hidden: 0 }, massLod: { near: 0, far: 0 }, crownLodBasis: 'focus_bands' };
+  const massNearTriangles = trunkTriangleCount(massGeometry), massFarTriangles = trunkTriangleCount(massFarGeometry);
   const updateTriangleCounts = () => {
     let near = 0, distant = 0, far = 0, nearTrees = 0, distantTrees = 0, farTrees = 0, trunkTriangles = 0, trunksVisible = 0, hiddenTrunks = 0;
     for (const tree of trees) {
@@ -732,14 +743,31 @@ export function buildThreeLandscape(
     }
     counts.crownNearTriangles = near; counts.crownDistantTriangles = distant; counts.crownFarTriangles = far;
     counts.crownTriangles = near + distant + far;
+    let massNear = 0;
+    for (const lobe of lobes) if (lobe.lod === 'near') massNear++;
+    const massTriangles = massNear * massNearTriangles + (lobes.length - massNear) * massFarTriangles;
     counts.trunkTriangles = trunkTriangles; counts.massTriangles = massTriangles;
     counts.lodTrees = { near: nearTrees, distant: distantTrees, far: farTrees, hidden: hiddenTrunks };
+    counts.massLod = { near: massNear, far: lobes.length - massNear };
     counts.trunksVisible = trunksVisible;
     counts.totalTriangles = counts.terrainTriangles + counts.crownTriangles + trunkTriangles + massTriangles;
-    counts.drawCalls = 1 + (crowns ? 1 : 0) + (trunks && trunksVisible ? 1 : 0) + massBatches.length;
+    counts.drawCalls = 1 + (crowns ? 1 : 0) + (trunks && trunksVisible ? 1 : 0) + (mass ? 1 : 0);
   };
   updateTriangleCounts();
   const transform = new THREE.Matrix4(), translation = new THREE.Vector3(), rotation = new THREE.Quaternion(), scale = new THREE.Vector3();
+  /** Place every mass lobe: cluster top at groundZ + height, and every lobe
+   * underside (cluster z <= -.8) at least .12 * height below ground so no
+   * belly shows from Side. */
+  function layoutMass(displayZ: (z: number) => number) {
+    if (!mass) return;
+    for (const lobe of lobes) {
+      translation.set(lobe.x, lobe.y, displayZ(lobe.groundZ) + lobe.height * .38);
+      rotation.setFromAxisAngle(Z_AXIS, lobe.yaw);
+      scale.set(lobe.radius, lobe.radius * lobe.aspect, lobe.height * .62);
+      mass.setMatrixAt(lobe.instance, transform.compose(translation, rotation, scale));
+    }
+    mass.computeBoundingBox(); mass.computeBoundingSphere();
+  }
   const tilt = new THREE.Quaternion(), leanAxis = new THREE.Vector3(), up = new THREE.Vector3();
   let lastExaggeration = NaN, lastReference = NaN, disposed = false;
   function setDetail(next: 'distant' | 'near', focusM?: PointM, view?: PerspectiveLodView): boolean {
@@ -787,6 +815,26 @@ export function buildThreeLandscape(
       (trunks.userData.lods as string[])[tree.trunkInstance] = trunkLod;
       tree.trunkLod = trunkLod; changed = true;
     }
+    // Forest mass (§39): the full cluster only where it projects at least
+    // `mass.lodScreenPx` (perspective) or inside twice the near band
+    // (orthographic), and only when the tier grants near detail at all.
+    let massChanged = false;
+    for (const lobe of lobes) {
+      let lod: 'near' | 'far';
+      if (view) {
+        const topZ = reference + (lobe.groundZ - reference) * exaggeration + lobe.height * .6;
+        const px = view.focalPx * lobe.radius / Math.max(1, Math.hypot(lobe.x - view.eye[0], lobe.y - view.eye[1], topZ - view.eye[2]));
+        lod = next === 'near' && px >= VEGETATION.mass.lodScreenPx ? 'near' : 'far';
+      } else {
+        const distance = focusM ? Math.hypot(lobe.x - focusM[0], lobe.y - focusM[1]) : 0;
+        lod = next === 'near' && distance <= NEAR_DETAIL_RADIUS_M * 2 ? 'near' : 'far';
+      }
+      if (!mass || lobe.lod === lod) continue;
+      mass.setGeometryIdAt(lobe.instance, massGeometryIds[lod]);
+      (mass.userData.lods as string[])[lobe.instance] = lod;
+      lobe.lod = lod; massChanged = true;
+    }
+    if (massChanged) { mass?.computeBoundingBox(); mass?.computeBoundingSphere(); changed = true; }
     if (changed) {
       crowns?.computeBoundingBox(); crowns?.computeBoundingSphere();
       trunks?.computeBoundingBox(); trunks?.computeBoundingSphere();
@@ -858,17 +906,7 @@ export function buildThreeLandscape(
     }
     crowns?.computeBoundingBox(); crowns?.computeBoundingSphere();
     trunks?.computeBoundingBox(); trunks?.computeBoundingSphere();
-    for (const batch of massBatches) {
-      batch.lobes.forEach((lobe, index) => {
-        // Sunk a little below ground so no underside ever shows from Side.
-        translation.set(lobe.x, lobe.y, displayZ(lobe.groundZ) + lobe.height * .42);
-        rotation.setFromAxisAngle(Z_AXIS, lobe.yaw);
-        scale.set(lobe.radius, lobe.radius * lobe.aspect, lobe.height * .58);
-        batch.mesh.setMatrixAt(index, transform.compose(translation, rotation, scale));
-      });
-      batch.mesh.instanceMatrix.needsUpdate = true;
-      batch.mesh.computeBoundingBox(); batch.mesh.computeBoundingSphere();
-    }
+    layoutMass(displayZ);
     context.setExaggeration(exaggeration, referenceElevationM);
     lastExaggeration = exaggeration; lastReference = referenceElevationM;
   }

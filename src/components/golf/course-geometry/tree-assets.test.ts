@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
-import { createTreeAssetAtlas } from './tree-assets';
+import { createForestMassGeometry, createTreeAssetAtlas } from './tree-assets';
 
 function fingerprint(geometry: THREE.BufferGeometry): number {
   let hash = 2166136261;
@@ -121,5 +121,39 @@ describe('authored canopy asset atlas', () => {
     atlas.dispose(); atlas.dispose();
     for (const disposal of disposals) expect(disposal).toHaveBeenCalledTimes(1);
     other.dispose();
+  });
+});
+
+describe('forest mass cluster (fidelity §39, redesign §10)', () => {
+  it('is a five-lobe canopy cluster inside the unit footprint, top at z = 1, lowest point sunk below -.8', () => {
+    const geometry = createForestMassGeometry();
+    const positions = geometry.getAttribute('position'), normals = geometry.getAttribute('normal');
+    let radius = 0, minZ = Infinity, maxZ = -Infinity;
+    for (let vertex = 0; vertex < positions.count; vertex++) {
+      radius = Math.max(radius, Math.hypot(positions.getX(vertex), positions.getY(vertex)));
+      minZ = Math.min(minZ, positions.getZ(vertex)); maxZ = Math.max(maxZ, positions.getZ(vertex));
+      expect(Math.hypot(normals.getX(vertex), normals.getY(vertex), normals.getZ(vertex))).toBeCloseTo(1, 3);
+    }
+    expect(radius).toBeLessThanOrEqual(1.000001);
+    expect(maxZ).toBeCloseTo(1, 2);
+    expect(minZ).toBeLessThanOrEqual(-.8);
+    expect(positions.count / 3).toBe(400);
+    expect(geometry.userData).toMatchObject({ basis: 'authored_canopy_art', lobeCount: 5 });
+    // Deterministic: a second build is vertex-identical.
+    const again = createForestMassGeometry();
+    expect(Array.from(again.getAttribute('position').array)).toEqual(Array.from(positions.array));
+    // The far build keeps the same five-lobe outline in 220 triangles, inside the same footprint.
+    const far = createForestMassGeometry('far');
+    const farPositions = far.getAttribute('position');
+    let farRadius = 0, farMaxZ = -Infinity;
+    for (let vertex = 0; vertex < farPositions.count; vertex++) {
+      farRadius = Math.max(farRadius, Math.hypot(farPositions.getX(vertex), farPositions.getY(vertex)));
+      farMaxZ = Math.max(farMaxZ, farPositions.getZ(vertex));
+    }
+    expect(farPositions.count / 3).toBe(220);
+    expect(farRadius).toBeLessThanOrEqual(1.000001);
+    expect(farMaxZ).toBeGreaterThan(.8);
+    expect(far.userData).toMatchObject({ lod: 'far', lobeCount: 5 });
+    geometry.dispose(); again.dispose(); far.dispose();
   });
 });
