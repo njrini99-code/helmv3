@@ -674,6 +674,19 @@ per plan section:
 `docs/design/meridian-visual-language.md`. No lifecycle writer, resolver or
 production binding changed.
 
+Overnight September 16–17: the lit ground now shades every fragment from
+the terrain's metric grid (a half-float DEM slope texture,
+`buildDemSlopeTexture`) instead of interpolated vertex normals, so a steep
+bank on a coarse context triangle reads as a bank; the compiler
+(`course-terrain-v4`) therefore stops emitting the per-vertex
+`sourceNormals` array (37 % of each hole's gzip), with
+`sourceVertexNormals(mesh)` deriving the same normals from the grid for
+every remaining consumer and legacy packages read unchanged. Cut/fill is
+`context-contact-v3` (feathered end caps, blended junctions), context
+ribbons drape on the displayed ground, and the sky dome grades below the
+horizon. All display-only; no canonical geometry, picking, framing or
+persisted state changed.
+
 ### Four-course local source trial (September 13, 2026)
 
 The fixture harness now includes Winchester alongside Cacapon; both reuse the
