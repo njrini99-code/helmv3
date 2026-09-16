@@ -44,7 +44,7 @@ const comprehensiveHoleSchema = z.object({
 const partialRoundSchema = z.object({
   courseName: z.string().min(1).max(200),
   courseCity: z.string().max(100).optional(),
-  courseState: z.string().max(2).optional(),
+  courseState: z.string().max(100).optional(),
   courseRating: z.number().min(50).max(85).optional().nullable(),
   courseSlope: z.number().int().min(55).max(155).optional().nullable(),
   teesPlayed: z.string().max(50).optional(),
@@ -274,6 +274,25 @@ describe('partialRoundSchema', () => {
       qualifierId: null,
     };
     expect(partialRoundSchema.safeParse(full).success).toBe(true);
+  });
+
+  // 2026-09-16 incident: the course library stores a free-text region and the
+  // tee picker copies it into the round verbatim. A `.max(2)` cap rejected
+  // every round at Oviinbyrd GC ("Ontario") during UNCW's tournament, and
+  // the UI surfaced it as "start round does nothing".
+  it('accepts a full province/state name for courseState', () => {
+    expect(
+      partialRoundSchema.safeParse({ ...validPartial, courseState: 'Ontario' }).success,
+    ).toBe(true);
+    expect(
+      partialRoundSchema.safeParse({ ...validPartial, courseState: 'British Columbia' }).success,
+    ).toBe(true);
+  });
+
+  it('still rejects an absurdly long courseState', () => {
+    expect(
+      partialRoundSchema.safeParse({ ...validPartial, courseState: 'x'.repeat(101) }).success,
+    ).toBe(false);
   });
 });
 

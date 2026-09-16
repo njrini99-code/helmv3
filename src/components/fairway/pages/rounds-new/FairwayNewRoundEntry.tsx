@@ -703,7 +703,7 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                         autoComplete="off"
                         className={fwInputCls}
                         placeholder="CA"
-                        maxLength={2}
+                        maxLength={100}
                       />
                     </div>
                   </div>
