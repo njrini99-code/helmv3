@@ -257,10 +257,10 @@ export const MERIDIAN_STYLE = Object.freeze({
     cutFillBankM: 2.5, cutFillMaxM: 1.2 }),
   contextObjects: Object.freeze({
     ribbons: Object.freeze({
-      cart_path: Object.freeze({ color: '#B6AF9F', shoulder: '#8F8A7C', widthM: 2.5, roughness: .88 }),
+      cart_path: Object.freeze({ color: '#A9A395', shoulder: '#837E71', widthM: 2.5, roughness: .88 }),
       service_path: Object.freeze({ color: '#A4A197', shoulder: '#7F7D75', widthM: 3.5, roughness: .9 }),
       road: Object.freeze({ color: '#86847F', shoulder: '#6A6864', widthM: 6, roughness: .92 }),
-      crossing: Object.freeze({ color: '#B6AF9F', shoulder: '#8F8A7C', widthM: 2.5, roughness: .88 }),
+      crossing: Object.freeze({ color: '#A9A395', shoulder: '#837E71', widthM: 2.5, roughness: .88 }),
       bridge: Object.freeze({ color: '#9A8F80', shoulder: '#6E655A', widthM: 3, roughness: .85 }),
       stream: Object.freeze({ color: '#3E5F66', shoulder: '#4E6A58', widthM: 1.5, roughness: .45 }),
       drainage: Object.freeze({ color: '#4F6A55', shoulder: '#566E52', widthM: 1, roughness: .8 }),

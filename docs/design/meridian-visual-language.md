@@ -372,6 +372,16 @@ from V1; V4 changes what stands on each centre.
   visual decoration (`userData.roofs.basis = visual_archetype_by_footprint`),
   never a claim about the real roof; pitch and ridge direction wait for
   source roof tags.
+- Ribbon tone (master §54 "avoid bright lines", 2026-09-17): cart paths and
+  crossings are `#A9A395` with an `#837E71` shoulder (were `#B6AF9F` /
+  `#8F8A7C`), a muted weathered-asphalt tan-grey that still sits well above
+  the rough in luminance but no longer reads as a chalk line on the phone
+  Terrain view; service paths (`#A4A197`) and roads (`#86847F`) are
+  unchanged, so the hierarchy road < service < cart path in lightness holds.
+  The OSM extract tags four cart-path ways `surface=asphalt` and the service
+  roads `paved`, and the context layer carries `attributes.surface` when a
+  way is tagged, so a per-ribbon surface tone is possible once the layer is
+  rebuilt with those ways; the class tone is the course-wide reading today.
 - Ground contact (renderer redesign §16): turf within 1.5 m of a building
   footprint darkens up to 10 % toward the wall, and the ground under a path
   ribbon darkens 6 % with a .8 m shoulder fade, so structures and paths sit
