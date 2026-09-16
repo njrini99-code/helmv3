@@ -64,7 +64,7 @@ export const MERIDIAN_STYLE = Object.freeze({
   /** §23–24: per-surface roughness (MeshStandard) and collar blend. */
   surface: Object.freeze({ roughness: Object.freeze({ green: .78, tee: .88, fairway: .92, fringe: .93, surround: .95, rough: .97, ground: .97,
     // Water keeps a rough, glare-free surface until the V5 static-Fresnel material.
-    woods: 1, bunker: .82, water: .52,
+    woods: 1, bunker: .82, water: .68,
     rough_secondary: .97, rough_outer: .98, native: .98, apron: .92, open_field: .97, wetland: .9, parking: .9, ski_slope: .97, recreation: .95, buffer_grass: .96 }),
     collarMix: .5, woodsUnderstoryMix: .78 }),
   /** Outside-world §21: rough is a hierarchy by distance from the nearest
@@ -179,7 +179,9 @@ export const MERIDIAN_STYLE = Object.freeze({
    * turf contact, a static ripple normal and a Fresnel lift toward the sky
    * colour make it read as water without animation or planar reflection. */
   water: Object.freeze({ shorelineM: .75, shorelineShade: .12, interiorM: 14, deepMix: .55, deepColor: '#2E5561',
-    fresnelPower: 3.2, skyMix: .4, skyColor: '#A9C3DB', rippleM: [1.7, 4.3] as const, rippleAmplitude: .018,
+    /** Sky lift = skyMix × (skyBase + (1 − skyBase) × Fresnel): the base share keeps steep
+     * pitches from reading darker than rough (fidelity §50 grayscale test). */
+    fresnelPower: 2.4, skyMix: .3, skyBase: .6, skyColor: '#A9C3DB', rippleM: [1.7, 4.3] as const, rippleAmplitude: .012,
     contactBandM: .6, contactShade: .08,
     /** Renderer redesign §13: a render-only bank. Turf within `bankLipBandM`
      * of a shoreline rises as a rounded berm (zero on the shared shoreline

@@ -239,7 +239,7 @@ varying vec4 vGolfSurface;`).replace('#include <color_fragment>', `#include <col
     diffuseColor.rgb = mix(diffuseColor.rgb, golfWaterDeep, golfInterior * golfWaterMix.y);
     diffuseColor.rgb *= 1.0 - golfWaterMix.w * (1.0 - smoothstep(0.0, ${style.water.shorelineM.toFixed(3)}, golfBoundary));
 ${lit ? `    float golfFresnel = pow(1.0 - clamp(dot(normalize(vNormal), normalize(vViewPosition)), 0.0, 1.0), ${style.water.fresnelPower.toFixed(3)});
-    diffuseColor.rgb = mix(diffuseColor.rgb, golfWaterSky, golfFresnel * golfWaterMix.x);` : ''}
+    diffuseColor.rgb = mix(diffuseColor.rgb, golfWaterSky, (${style.water.skyBase.toFixed(3)} + ${(1 - style.water.skyBase).toFixed(3)} * golfFresnel) * golfWaterMix.x);` : ''}
   }
   // Canopy contact shade (§50): analytic, from the placed crowns and mass.
   diffuseColor.rgb *= 1.0 - vGolfSurface.z * golfShadeAmount;
@@ -249,8 +249,12 @@ roughnessFactor = vGolfSurface.x;`).replace('#include <normal_fragment_begin>', 
 if (abs(vGolfSurface.y - ${SURFACE_CLASS_WATER}.0) < 0.5) {
   vec2 golfRp = vGolfWorldXY + golfSeed;
   float golfR0 = dot(golfRp, vec2(0.77, 0.64) * ${k(r0)}), golfR1 = dot(golfRp, vec2(-0.55, 0.83) * ${k(r1)});
-  float golfRippleVisible = 1.0 - smoothstep(0.6, 1.4, fwidth(golfR0));
-  vec3 golfRipple = vec3(cos(golfR0) * 0.77 - cos(golfR1) * 0.55, cos(golfR0) * 0.64 + cos(golfR1) * 0.83, 0.0) * golfWaterMix.z * golfRippleVisible;
+  // Each wave fades by its own pixel footprint (a cycle needs ~16 px), so
+  // neither reads as corduroy at desktop or distant scales, and a slow
+  // envelope gathers the ripples into patches instead of one plane wave.
+  float golfRipple0 = 1.0 - smoothstep(0.15, 0.4, fwidth(golfR0)), golfRipple1 = 1.0 - smoothstep(0.15, 0.4, fwidth(golfR1));
+  float golfRippleEnvelope = 0.35 + 0.65 * (0.5 + 0.5 * sin(dot(golfRp, vec2(0.31, 0.95)) * 0.27 + cos(dot(golfRp, vec2(-0.87, 0.49)) * 0.19)));
+  vec3 golfRipple = vec3(cos(golfR0) * 0.77 * golfRipple0 - cos(golfR1) * 0.55 * golfRipple1, cos(golfR0) * 0.64 * golfRipple0 + cos(golfR1) * 0.83 * golfRipple1, 0.0) * golfWaterMix.z * golfRippleEnvelope;
   normal = normalize(normal + mat3(viewMatrix) * golfRipple);
 }`);
   };

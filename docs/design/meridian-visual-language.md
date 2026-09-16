@@ -234,6 +234,12 @@ from V1; V4 changes what stands on each centre.
   `water.skyColor` (power 3.2, up to 50 %). No animation, no planar
   reflection, roughness 0.32. `?water=` scales the sky/interior/ripple/shore
   terms in the lab.
+  v9.2: the sky lift is `skyMix × (skyBase + (1 − skyBase) × Fresnel)` so a
+  steep pitch keeps a base share and water never reads darker than rough in
+  grayscale; water roughness .68 removes the broad sun lobe that lit the
+  phone pitch too brightly; each ripple wave fades by its own pixel
+  footprint (a cycle needs ~16 px) under a slow envelope, so the ripple
+  never reads as corduroy at desktop scale.
 - **Contact shading (§50).** No screen-space AO at the base tier. The
   landscape computes an analytic contact term per display vertex from the
   seeded crown and mass placement (`golfCanopyShade`: soft discs of
