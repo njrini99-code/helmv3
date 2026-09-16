@@ -5,6 +5,7 @@ import { addInteractivePreviewTrajectories, pilotScene, pilotShots } from '@/tes
 import { toScreen } from '@/lib/golf/course-geometry/project';
 import { normalizePersistedShot } from '@/lib/golf/course-geometry/normalize';
 import { inFeature } from '@/lib/golf/course-geometry/spatial';
+import { SHOT_PATH_OPACITY } from '@/lib/golf/course-geometry/scene-markers';
 
 describe('shared SVG proof', () => {
   it('is deterministic and mounts independent accessible IDs across 18 scenes', () => {
@@ -63,6 +64,28 @@ it('keeps display-only full-shot arcs out of the canonical putting surface', () 
   expect(putting).not.toContain('data-illustrative-preview-trajectory');
   expect(putting).toContain('data-surface="green"');
   expect(putting).toContain('data-surface="bunker"');
+});
+
+it('carries the same shot basis, attribution and hierarchy in the static twin as the runtime overlay (§62–63)', () => {
+  const scene = pilotScene('cacapon-07');
+  const a = scene.features.find(f => f.kind === 'tee')!.parts[0]![0]![0]!, b = scene.features.find(f => f.kind === 'green')!.parts[0]![0]![0]!;
+  const markers = {
+    markers: [{ key: 'a', pointM: a, kind: 'anchor' as const, sigmaM: 2, label: '1' }, { key: 'b', pointM: b, kind: 'ball' as const, sigmaM: 2, label: 'BALL' }],
+    links: [
+      { key: 'a>b', fromM: a, toM: b, basis: 'illustrative_endpoint_arc' as const, apexM: 18, opacity: SHOT_PATH_OPACITY.previous },
+      { key: 'b>a', fromM: b, toM: a, basis: 'surface_connector' as const, apexM: 0, opacity: SHOT_PATH_OPACITY.current },
+    ],
+  };
+  const svg = renderToStaticMarkup(<CourseHoleScene scene={scene} markers={markers} />);
+  // A plan view projects §62.2's vertical parabola straight back onto its own
+  // chord, so the arc is the line here — labelled as the art it is either way.
+  expect(svg).toContain('data-trajectory-basis="illustrative_endpoint_arc"');
+  expect(svg).toContain('data-illustrative="endpoint_arc"');
+  // The connector is never labelled art: A → B is the fact the marks recorded.
+  expect(svg).toMatch(/data-trajectory-basis="surface_connector"(?![^>]*data-illustrative)/);
+  // §63: the older shot is dimmer than the shot that was just played.
+  expect(svg).toContain(`opacity="${SHOT_PATH_OPACITY.previous}"`);
+  expect(svg.match(/data-marked-link=/g)).toHaveLength(2);
 });
 
 it('renders the compact putting card as a quiet plan of the canonical green complex', () => {

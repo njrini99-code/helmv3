@@ -1,9 +1,17 @@
+import { MARKER_MOTION } from '../course-geometry/scene-markers';
 import type { ProductionCameraState, TerrainPreset } from '../course-geometry/terrain';
 
 /** Camera director (master plan "Camera states" / "Tap latency"). A pure
  * state machine: anchors and gestures move it, the scene reads the state and
  * maps it onto the existing production presets. Thresholds and envelopes are
- * starting points held in one place. */
+ * starting points held in one place.
+ *
+ * §66 anti-jitter is a property of this module rather than a rule its callers
+ * remember: no entry point here takes a location fix. `observeAnchor` is for
+ * a finalized mark, `observeGesture` and `recenter` are the golfer's own
+ * hands, and `tickCamera` only ends the manual window the golfer opened.
+ * Live GPS therefore cannot reframe the course, however far or fast it moves,
+ * and the frame the golfer is reading stays where they left it. */
 export type CameraMode = 'HOLE_OVERVIEW' | 'PLAYER_FOLLOW' | 'APPROACH' | 'GREEN_COMPLEX' | 'PUTT_CONTEXT' | 'HOLE_TRANSITION' | 'MANUAL';
 export interface CameraEnvelope { fovDegrees: readonly [number, number]; heightM: readonly [number, number]; composition: string }
 export const CAMERA_ENVELOPE: Readonly<Record<Exclude<CameraMode, 'MANUAL'>, CameraEnvelope>> = Object.freeze({
@@ -15,11 +23,18 @@ export const CAMERA_ENVELOPE: Readonly<Record<Exclude<CameraMode, 'MANUAL'>, Cam
   HOLE_TRANSITION: { fovDegrees: [38, 42], heightM: [60, 95], composition: 'lift → translate → settle' },
 });
 export const CAMERA_THRESHOLDS = Object.freeze({ approachM: 180, greenComplexM: 70, puttProbability: .7, idleResumeMs: 8000 });
+/** §64/§66 visual defaults, not physics. `shotRevealMs` and `shotResultMs`
+ * are the drawing's own timings, taken from where the drawing lives so the
+ * two can never drift apart. */
 export const MOTION = Object.freeze({
   pressMs: 90, pressScale: .96, statusMorphMs: 160, rippleMs: 340, reframeMs: 480, greenFocusMs: 540, holeTransitionMs: 760,
   reducedMotionMs: 150, refinementMs: 750, savedHoldMs: 700, chipMs: 160, undoWindowMs: 5000,
+  shotRevealMs: MARKER_MOTION.revealMs, shotResultMs: MARKER_MOTION.resultHoldMs,
   easingLarge: 'cubic-bezier(0.22, 1, 0.36, 1)', easingMicro: 'ease-out',
 });
+/** How long a completed shot takes to draw itself on. Reduced Motion draws
+ * the finished path at once, so there is no duration to wait out. */
+export function shotRevealMs(reducedMotion: boolean): number { return reducedMotion ? 0 : MOTION.shotRevealMs; }
 export const GESTURES = Object.freeze({ yawDegreesPerPoint: .22, pitchDegreesPerPoint: .16, pitchMin: 25, pitchMax: 68 });
 export interface CameraDirectorState { mode: CameraMode; sinceMs: number; lastGestureMs: number | null; anchored: boolean }
 export interface CameraObservation { distanceToGreenM: number | null; greenComplexProbability: number; terminal: boolean }

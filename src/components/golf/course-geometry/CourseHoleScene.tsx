@@ -147,10 +147,19 @@ export function CourseHoleScene({ scene, width = 320, height = 380, mode = 'revi
         {mode !== 'strip' && <CourseShotOverlay scene={sceneForDisplay} width={width} height={height} selectedShotNumber={selectedShotNumber} activeDraftShotNumber={activeDraftShotNumber}
           project={point => toScreen(point, camera)} pathForFeature={feature => featurePath(feature, camera)} appearance={puttingPlan ? 'putting-plan' : 'default'} />}
         {markers && (markers.markers.length > 0 || markers.links.length > 0) && <g data-annotation="marked-positions" aria-hidden="true">
-          {markers.links.map(link => { const a = toScreen(link.fromM, camera), b = toScreen(link.toM, camera); return <g key={link.key} data-marked-link={link.key}>
-            <line x1={a[0]} y1={a[1]} x2={b[0]} y2={b[1]} stroke="var(--fw-diagram-shadow)" strokeWidth="4" strokeLinecap="round" opacity=".35" />
-            <line x1={a[0]} y1={a[1]} x2={b[0]} y2={b[1]} stroke="var(--fw-diagram-event)" strokeWidth="1.8" strokeLinecap="round" />
-          </g>; })}
+          {markers.links.map(link => {
+            // Static twin of the runtime overlay's shots. This is a plan view,
+            // and the straight-down projection of §62.2's vertical parabola is
+            // the chord itself, so the arc is drawn exactly as the line it
+            // becomes from above; a lateral bow would invent shape the shot
+            // never had. The basis, its illustrative attribution and the §63
+            // hierarchy travel with it, so the shape means the same thing here.
+            const a = toScreen(link.fromM, camera), b = toScreen(link.toM, camera);
+            const basis = link.basis ?? 'surface_connector', opacity = link.opacity ?? 1;
+            return <g key={link.key} data-marked-link={link.key} data-trajectory-basis={basis} data-illustrative={basis === 'illustrative_endpoint_arc' ? 'endpoint_arc' : undefined}>
+              <line x1={a[0]} y1={a[1]} x2={b[0]} y2={b[1]} stroke="var(--fw-diagram-shadow)" strokeWidth="4" strokeLinecap="round" opacity={.35 * opacity} />
+              <line x1={a[0]} y1={a[1]} x2={b[0]} y2={b[1]} stroke="var(--fw-diagram-event)" strokeWidth="1.8" strokeLinecap="round" opacity={opacity} />
+            </g>; })}
           {markers.markers.map(marker => {
             // Static twin of the runtime overlay: ◎ YOU with its accuracy halo, ● BALL / marks with the σ ring, ○ provisional.
             const [x, y] = toScreen(marker.pointM, camera), player = marker.kind === 'player', hollow = player || marker.kind === 'provisional';
