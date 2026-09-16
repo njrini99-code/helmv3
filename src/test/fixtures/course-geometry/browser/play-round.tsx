@@ -1,3 +1,5 @@
+'use client';
+
 /** Local play-through of a compiled course. Shots persist in this browser only
  * (localStorage); nothing reaches Supabase, statistics or a real round. */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';

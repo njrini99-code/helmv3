@@ -1,3 +1,5 @@
+'use client';
+
 /** Meridian render-quality lab (master plan §94–95). Internal harness route
  * only (`?lab=1&course=…&hole=…`); never an authenticated player screen.
  * Every control changes the camera, a diagnostic material or the viewport.

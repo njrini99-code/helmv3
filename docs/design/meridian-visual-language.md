@@ -219,6 +219,12 @@ from V1; V4 changes what stands on each centre.
   20° with a quadratic fillet within 2 m of the corner (`roundCorners`), so
   the strip never folds back on itself at a sharp source node; the zone
   geometry itself is untouched.
+- **Conforming terrain mesh (compiler v3).** Every material piece of a hole
+  is noded into one planar arrangement before triangulation, so the two
+  sides of a shared edge always carry the same vertices. A T-junction there
+  is a hairline crack that shows the sky through the ground; the compile
+  report counts them (`noding.tJunctionVertices`) and the fixture carries
+  zero on every hole.
 - **Ribbon breaklines (terrain compiler).** `compile-course-terrain.py
   --context` constrains every hole mesh with the reviewed ground ribbons
   (cart paths, service paths, roads at their source width): vertices sit on

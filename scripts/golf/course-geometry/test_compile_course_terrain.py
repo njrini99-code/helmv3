@@ -79,6 +79,33 @@ class TerrainCompilerTest(unittest.TestCase):
         self.assertGreater(report['triangles'], self.report['triangles'])
         self.assertEqual(self.report['breaklines']['basis'], 'none')
 
+    def test_adjacent_pieces_share_every_boundary_vertex_so_the_mesh_has_no_cracks(self):
+        # A rough polygon overlapping the fairway: the rough piece (rough minus
+        # fairway) gets nodes where its outline crosses the fairway outline, the
+        # fairway piece never sees the rough, so without global noding the two
+        # sides of that shared edge carry different vertices (T-junctions).
+        hole, package, shapes, features, displays, outlines = fixture()
+        shapes = dict(shapes, rough=Polygon([(-5, 3), (5, -2), (13, 9), (3, 14)]))
+        features['rough'] = {'id': 'rough', 'kind': 'rough', 'reviewed': True}
+        package = dict(package, features=package['features']+[features['rough']])
+        displays['rough'] = ({'id': 'rough'}, shapes['rough']); outlines['rough'] = {'id': 'rough', 'boundaryDisplacementM': 0}
+        args = (hole, package, shapes, features, displays, outlines)
+        with patch.object(compiler, 'CONTEXT_MARGIN_M', 16):
+            mesh, report = compiler.compile_hole(*args, PlaneSource(), outer_step=16)
+            with patch.object(compiler, 'node_pieces', lambda pieces: (pieces, {'faces': len(pieces), 'unassignedFaces': 0})):
+                _, unnoded = compiler.compile_hole(*args, PlaneSource(), outer_step=16)
+        self.assertGreater(unnoded['noding']['tJunctionVertices'], 0)
+        self.assertEqual(report['noding']['tJunctionVertices'], 0)
+        self.assertEqual(report['noding']['interiorSingleEdges'], 0)
+        self.assertEqual(report['noding']['basis'], 'global_planar_arrangement')
+        self.assertEqual(report['noding']['unassignedFaces'], 0)
+        self.assertEqual(self.report['noding']['tJunctionVertices'], 0)
+        # Materials and areas are untouched by noding: every feature still conserves its area.
+        by_id = {f['id']: f for f in report['features']}
+        self.assertAlmostEqual(by_id['rough']['areaM2'], shapes['rough'].difference(shapes['fairway']).difference(shapes['green']).area, places=2)
+        triangles = np.array(mesh['vertices']).reshape(-1, 3, 3)
+        self.assertTrue(np.allclose(triangles[:, :, 2], 200+.05*triangles[:, :, 0]+.1*triangles[:, :, 1], atol=1e-3))
+
     def test_metric_grid_is_independent_of_display_lod_and_row_order_is_northward(self):
         self.assertEqual(self.fine['metricGrid'], self.coarse['metricGrid'])
         grid = self.fine['metricGrid']

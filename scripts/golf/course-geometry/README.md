@@ -138,6 +138,10 @@ python3 scripts/golf/course-geometry/prepare-osm-course.py \
 #    --context makes the reviewed ground ribbons (cart paths, service paths,
 #    roads) breaklines: vertices along every ribbon edge and 4 m cells along
 #    the ribbon within 60 m of the played hole. Heights stay source-sampled.
+#    course-terrain-v3 nodes every material piece into one planar arrangement
+#    before triangulating, so neighbouring pieces share their boundary vertices
+#    (report `noding.tJunctionVertices` must be 0: a T-junction is a hairline
+#    crack that shows the sky through the terrain).
 python3 scripts/golf/course-geometry/compile-course-terrain.py --holes all \
   --package src/test/fixtures/course-geometry/peek-n-peak-upper.json \
   --source src/test/fixtures/course-geometry/sources/peek-n-peak-upper-terrain \

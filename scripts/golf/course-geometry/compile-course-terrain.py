@@ -24,11 +24,12 @@ import pyproj
 import shapely
 from shapely import constrained_delaunay_triangles
 from shapely.geometry import LineString, MultiPolygon, Polygon, box
-from shapely.ops import unary_union
+from shapely.ops import polygonize, unary_union
 
 ROOT = Path(__file__).resolve().parents[3]
 FIXTURES = ROOT / 'src/test/fixtures/course-geometry'
-COMPILER_VERSION = 'course-terrain-v2'
+COMPILER_VERSION = 'course-terrain-v3'
+NODING_GRID_M = 1e-6
 STYLE_VERSION = 'narrow-surround-v1'
 CONTEXT_MARGIN_M = 160
 METRIC_STEP_M = 2
@@ -455,6 +456,79 @@ def parts_inside_region(region, cut):
         return cut
     return kept[0] if len(kept) == 1 else MultiPolygon(kept) if kept else Polygon()
 
+def node_pieces(pieces):
+    """Global noding so adjacent pieces share exactly the same boundary vertices.
+
+    Every material piece (region x cell) is cut by its own overlay chain, so a
+    node that one overlay creates on a shared edge (rough minus woods puts a
+    vertex where the rough outline crosses the woods outline) is missing from
+    the other side (the woods piece never saw the rough).  Triangulating the
+    pieces separately then leaves T-junctions: the two sides of the edge are
+    the same line in exact arithmetic but not on the GPU, and hairline cracks
+    show the sky through the terrain along feature and cell borders.  Union
+    every piece boundary into one noded linework, re-polygonize it, and hand
+    each face back to the piece that contains it: the faces of a planar
+    arrangement carry every node on every side.  Heights are still sampled
+    afterwards at the (shared) vertices, so nothing about the surface changes.
+    """
+    if not pieces:
+        return [], {'faces': 0, 'unassignedFaces': 0}
+    # Snap-rounded union: a vertex that float error leaves a hair off the line
+    # it touches is still a node (the 5-decimal vertex rounding below is coarser).
+    linework = shapely.unary_union([piece.boundary for _, _, piece in pieces], grid_size=NODING_GRID_M)
+    tree = shapely.STRtree([piece for _, _, piece in pieces])
+    faces, unassigned = [], 0
+    for face in polygonize(linework):
+        if face.area < 1e-8:
+            continue
+        point = face.representative_point()
+        owners = [i for i in tree.query(point, predicate='intersects').tolist() if pieces[i][2].covers(point)]
+        if not owners:
+            unassigned += 1
+            continue
+        feature_index, material, _ = pieces[min(owners)]
+        faces.append((feature_index, material, face))
+    return faces, {'faces': len(faces), 'unassignedFaces': unassigned}
+
+
+def t_junction_report(xy, bounds):
+    """Count mesh cracks: vertices lying strictly inside an edge that only one
+    triangle uses, away from the context boundary (the hull is open by design)."""
+    key = lambda p: (round(p[0], 4), round(p[1], 4))
+    edges, unique = {}, set()
+    for t in range(0, len(xy), 3):
+        corners = [key(p) for p in xy[t:t+3]]
+        unique.update(corners)
+        for u, v in ((0, 1), (1, 2), (2, 0)):
+            edge = (corners[u], corners[v]) if corners[u] < corners[v] else (corners[v], corners[u])
+            edges[edge] = edges.get(edge, 0)+1
+    def interior(p):
+        return bounds[0]+1e-6 < p[0] < bounds[2]-1e-6 and bounds[1]+1e-6 < p[1] < bounds[3]-1e-6
+    single = [e for e, n in edges.items() if n == 1 and (interior(e[0]) or interior(e[1]))]
+    cell, grid = 8.0, {}
+    for e in single:
+        (x1, y1), (x2, y2) = e
+        for cx in range(int(math.floor(min(x1, x2)/cell)), int(math.floor(max(x1, x2)/cell))+1):
+            for cy in range(int(math.floor(min(y1, y2)/cell)), int(math.floor(max(y1, y2)/cell))+1):
+                grid.setdefault((cx, cy), []).append(e)
+    junctions = 0
+    for x, y in unique:
+        for e in grid.get((int(math.floor(x/cell)), int(math.floor(y/cell))), []):
+            (x1, y1), (x2, y2) = e
+            if (x, y) in e:
+                continue
+            dx, dy = x2-x1, y2-y1
+            length = math.hypot(dx, dy)
+            if length < 1e-9:
+                continue
+            t = ((x-x1)*dx+(y-y1)*dy)/(length*length)
+            if t <= 1e-6 or t >= 1-1e-6 or abs((x-x1)*dy-(y-y1)*dx)/length >= 1e-3:
+                continue
+            junctions += 1
+            break
+    return {'tJunctionVertices': junctions, 'interiorSingleEdges': len(single)}
+
+
 def compile_hole(hole, pkg, raw_shapes, raw_features, displays, outline_reports, source, outer_step=16, ribbons=None):
     tactical_bounds, context_bounds = hole_bounds(hole, raw_shapes, raw_features)
     context = box(*context_bounds)
@@ -487,6 +561,7 @@ def compile_hole(hole, pkg, raw_shapes, raw_features, displays, outline_reports,
     surround = fairways.buffer(.6, quad_segs=2).difference(fairways)
     collar = greens.buffer(.45, quad_segs=2).difference(greens)
     xy, triangle_features, triangle_materials, ids, kinds, reports = [], [], [], [], [], []
+    pieces = []
     for ident, kind, shape in visible:
         feature_index = len(ids)
         ids.append(ident); kinds.append(kind)
@@ -499,34 +574,42 @@ def compile_hole(hole, pkg, raw_shapes, raw_features, displays, outline_reports,
             inset, interior = shape.buffer(-edge, quad_segs=2), shape.buffer(-edge-light, quad_segs=2)
             regions = [(1, shape.difference(inset)), (2, inset.difference(interior)), (0, interior)]
         regions = split_by_ribbons(regions, ribbons)
-        area, count = 0, 0
         for material, region in regions:
             if region.is_empty:
                 continue
             for cell_index in sorted(tree.query(region, predicate='intersects').tolist()):
                 cut = parts_inside_region(region, region.intersection(cell_shapes[cell_index]))
-                # GEOS's constrained triangulation can return a cell-sized triangle
-                # outside one part of a disconnected/cut polygon. Intersect that
-                # exceptional result back to the exact source region before adding
-                # it; do not loosen the per-feature area conservation assertion.
-                for raw_triangle in constrained_delaunay_triangles(cut).geoms:
-                    clipped = raw_triangle if cut.covers(raw_triangle) else raw_triangle.intersection(cut)
-                    if clipped.is_empty:
-                        continue
-                    triangles = [clipped] if clipped.geom_type == 'Polygon' and len(clipped.exterior.coords) == 4 else constrained_delaunay_triangles(clipped).geoms
-                    for triangle in triangles:
-                        if triangle.area < 1e-8:
-                            continue
-                        if not cut.covers(triangle):
-                            raise ValueError(f'Triangulation escaped source region: {hole["key"]} {ident}')
-                        points = list(triangle.exterior.coords)[:3]
-                        # Normals and heights are sampled at these SAME rounded XY
-                        # values, so coincident material/cell vertices cannot crease.
-                        points = [(round(px, 5), round(py, 5)) for px, py in points]
-                        if Polygon(points).area < 1e-10:
-                            continue
-                        xy.extend(points); triangle_features.append(feature_index); triangle_materials.append(material)
-                        area += triangle.area; count += 1
+                for part in getattr(cut, 'geoms', [cut]):
+                    if part.geom_type == 'Polygon' and not part.is_empty and part.area >= 1e-8:
+                        pieces.append((feature_index, material, part))
+    faces, noding = node_pieces(pieces)
+    area_by_feature, count_by_feature = [0.0]*len(visible), [0]*len(visible)
+    for feature_index, material, face in faces:
+        ident = ids[feature_index]
+        # GEOS's constrained triangulation can return a face-sized triangle
+        # outside one part of a polygon with holes. Intersect that exceptional
+        # result back to the exact face before adding it; do not loosen the
+        # per-feature area conservation assertion.
+        for raw_triangle in constrained_delaunay_triangles(face).geoms:
+            clipped = raw_triangle if face.covers(raw_triangle) else raw_triangle.intersection(face)
+            if clipped.is_empty:
+                continue
+            triangles = [clipped] if clipped.geom_type == 'Polygon' and len(clipped.exterior.coords) == 4 else constrained_delaunay_triangles(clipped).geoms
+            for triangle in triangles:
+                if triangle.area < 1e-8:
+                    continue
+                if not face.covers(triangle):
+                    raise ValueError(f'Triangulation escaped source region: {hole["key"]} {ident}')
+                points = list(triangle.exterior.coords)[:3]
+                # Normals and heights are sampled at these SAME rounded XY
+                # values, so coincident material/cell vertices cannot crease.
+                points = [(round(px, 5), round(py, 5)) for px, py in points]
+                if Polygon(points).area < 1e-10:
+                    continue
+                xy.extend(points); triangle_features.append(feature_index); triangle_materials.append(material)
+                area_by_feature[feature_index] += triangle.area; count_by_feature[feature_index] += 1
+    for feature_index, (ident, kind, shape) in enumerate(visible):
+        area, count = area_by_feature[feature_index], count_by_feature[feature_index]
         if abs(area-shape.area) > .002:
             raise ValueError(f'Triangulation area mismatch: {hole["key"]} {ident}: {area-shape.area}')
         reports.append({'id': ident, 'kind': kind, 'triangles': count, 'areaM2': round(area, 4),
@@ -544,7 +627,7 @@ def compile_hole(hole, pkg, raw_shapes, raw_features, displays, outline_reports,
     normals /= np.linalg.norm(normals, axis=1)[:, None]
     valid = np.isfinite(heights) & np.isfinite(normals).all(axis=1)
     lookup = {tuple(point): i for i, point in enumerate(unique)}
-    vertices, source_normals, kept_features, kept_materials = [], [], [], []
+    vertices, source_normals, kept_features, kept_materials, kept_xy = [], [], [], [], []
     omitted, omitted_area = 0, 0
     for t, feature_index in enumerate(triangle_features):
         indices = [lookup[p] for p in xy[t*3:t*3+3]]
@@ -555,7 +638,7 @@ def compile_hole(hole, pkg, raw_shapes, raw_features, displays, outline_reports,
         for i in indices:
             vertices.extend([*unique[i].tolist(), round(float(heights[i]), 4)])
             source_normals.extend(np.round(normals[i], 7).tolist())
-        kept_features.append(feature_index); kept_materials.append(triangle_materials[t])
+        kept_features.append(feature_index); kept_materials.append(triangle_materials[t]); kept_xy.extend(xy[t*3:t*3+3])
     if not kept_features:
         raise ValueError(hole['key'] + ': terrain unavailable from the locked source')
     grid, grid_values = metric_grid(source, context_bounds)
@@ -608,6 +691,7 @@ def compile_hole(hole, pkg, raw_shapes, raw_features, displays, outline_reports,
               'omittedAreaM2': omitted_area,
               'breaklines': {'basis': 'context_ribbons' if not ribbons.is_empty else 'none', 'ribbonAreaM2': round(ribbons.area, 2),
                              'ribbonClasses': list(RIBBON_CLASSES), 'refineBandM': RIBBON_BAND_M, 'refineReachM': RIBBON_REFINE_REACH_M},
+              'noding': {'basis': 'global_planar_arrangement', **noding, **t_junction_report(kept_xy, context_bounds)},
               'contextClippedFeatureIds': [f['id'] for f in selected if not context.covers(displays[f['id']][1])],
               'tacticalDistanceToContextEdgeM': [tactical_bounds[0]-context_bounds[0], tactical_bounds[1]-context_bounds[1],
                                                  context_bounds[2]-tactical_bounds[2], context_bounds[3]-tactical_bounds[3]],
