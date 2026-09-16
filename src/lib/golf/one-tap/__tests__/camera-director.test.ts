@@ -43,7 +43,7 @@ describe('one-tap camera director', () => {
   });
   it('maps every mode onto an existing production camera state', () => {
     expect(productionStateFor('HOLE_OVERVIEW')).toEqual({ state: 'tee', preset: 'tee' });
-    expect(productionStateFor('PLAYER_FOLLOW').state).toBe('approach');
+    expect(productionStateFor('PLAYER_FOLLOW')).toEqual({ state: 'tee', preset: 'tee' });
     expect(productionStateFor('APPROACH').state).toBe('approach');
     expect(productionStateFor('GREEN_COMPLEX').state).toBe('green');
     expect(productionStateFor('PUTT_CONTEXT').state).toBe('putting');

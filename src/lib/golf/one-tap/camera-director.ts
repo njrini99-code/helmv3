@@ -61,7 +61,10 @@ export function productionStateFor(mode: CameraMode, manualPreset: TerrainPreset
     case 'APPROACH': return { state: 'approach', preset: 'approach' };
     case 'GREEN_COMPLEX': return { state: 'green', preset: 'green' };
     case 'PUTT_CONTEXT': return { state: 'putting', preset: 'putting' };
-    case 'PLAYER_FOLLOW': return { state: 'approach', preset: 'approach' };
+    // PLAYER_FOLLOW composes "player in lower third, landing area ahead": the
+    // tee state looks down the whole corridor from the player's end, so a mark
+    // far from the green stays in frame; the approach state would crop it.
+    case 'PLAYER_FOLLOW': return { state: 'tee', preset: 'tee' };
     default: return { state: 'tee', preset: 'tee' };
   }
 }

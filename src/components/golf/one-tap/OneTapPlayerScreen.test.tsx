@@ -87,7 +87,7 @@ describe('One-Tap player screen', () => {
     expect(document.querySelector('[data-slot="one-tap-undo"]')).toBeNull();
   });
 
-  it('joins consecutive marks as the derived shot, frames the approach after the tee shot and never marks without a fix', async () => {
+  it('joins consecutive marks as the derived shot, keeps the whole hole framed while the player is far from the green and never marks without a fix', async () => {
     const phone = manualSource();
     const views: string[] = [];
     render(<OneTapPlayerScreen roundId="r3" pkg={pilotPackage} holeKey={HOLE} terrain={null} location={phone} storage={null} reducedMotion onView={v => { views.push(v.cameraState); }} />);
@@ -95,8 +95,11 @@ describe('One-Tap player screen', () => {
     act(() => { for (let t = -1500; t <= 0; t += 500) phone.at(tee, 1_000_000 + t); });
     fireEvent.click(document.querySelector('[data-slot="one-tap-mark"]')!);
     await act(async () => { await vi.advanceTimersByTimeAsync(800); });
-    expect(document.querySelector('[data-slot="one-tap-screen"]')!.getAttribute('data-camera-state')).toBe('approach');
-    expect(views.at(-1)).toBe('approach');
+    // PLAYER_FOLLOW after a tee shot maps onto the tee state: the mark at the
+    // player's feet stays in frame instead of being cropped by the approach area.
+    expect(document.querySelector('[data-slot="one-tap-screen"]')!.getAttribute('data-camera-mode')).toBe('PLAYER_FOLLOW');
+    expect(document.querySelector('[data-slot="one-tap-screen"]')!.getAttribute('data-camera-state')).toBe('tee');
+    expect(views.at(-1)).toBe('tee');
     await act(async () => { await vi.advanceTimersByTimeAsync(6000); });
     expect(document.querySelector('[data-slot="one-tap-undo"]')).toBeNull();
     act(() => { vi.setSystemTime(1_060_000); for (let t = -1500; t <= 0; t += 500) phone.at(fairway, 1_060_000 + t); });

@@ -43,10 +43,10 @@ on every touched file (exit 0), vitest `unit` one-tap + scene-marker suites
 
 ## Known gaps after phase 2
 
-- After the tee mark the director enters PLAYER_FOLLOW, which maps onto the
-  `approach` production state: that area frames landing zone → green and
-  crops the tee mark out of view (capture step 2). A follow framing that keeps
-  the player and the green in frame is phase 3 camera work (Meridian V6).
+- PLAYER_FOLLOW now maps onto the `tee` production state (whole corridor from
+  the player's end) so a mark far from the green stays in frame; the first
+  capture had it on `approach`, which cropped the tee mark. A true follow fit
+  (player + green framed together) is still phase 3 camera work (Meridian V6).
 - The front distance reads "–" once the player is past the front edge (on the
   green); centre and back stay numeric. No cup distance exists (daily pin
   UNSPECIFIED).
