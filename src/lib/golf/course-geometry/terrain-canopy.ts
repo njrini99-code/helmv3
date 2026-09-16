@@ -1,5 +1,7 @@
 import type { HoleScene, LocalFeature, PointM } from './types';
-import { canopySymbols, crownScale } from './canopy';
+import { allocateCrowns, canopySymbols, crownScale } from './canopy';
+
+const SVG_CROWN_LIMIT = 240;
 import { displayOutline } from './display-outline';
 import { projectTerrainPoint, terrainHeight, TERRAIN_LIGHT_DIRECTION, type Point3M, type TerrainCamera, type TerrainMesh } from './terrain';
 
@@ -21,10 +23,12 @@ const difference = (a: PointM, b: PointM): PointM => [a[0] - b[0], a[1] - b[1]];
 
 function prepareCanopy(scene: HoleScene, mesh: TerrainMesh): CanopyWorld {
   const crowns: WorldCrown[] = [];
-  for (const feature of scene.features.filter(f => f.kind === 'woods')) {
-    for (const [seed, point] of canopySymbols(feature, scene).entries()) {
+  const groups = scene.features.filter(f => f.kind === 'woods');
+  const allocated = allocateCrowns(groups.map(feature => canopySymbols(feature, scene)), SVG_CROWN_LIMIT);
+  for (const [groupIndex, feature] of groups.entries()) {
+    for (const [seed, point] of allocated[groupIndex]!.entries()) {
       const z = terrainHeight(mesh, point);
-      if (z == null || crowns.length >= 240) continue;
+      if (z == null || crowns.length >= SVG_CROWN_LIMIT) continue;
       const radiusM = 3.6 * crownScale(seed), illustrativeHeightM = radiusM * 1.55;
       // A stylistic shadow uses the same world light as the terrain, never an
       // image's detached dark patch. Sample its actual ground; omit it outside

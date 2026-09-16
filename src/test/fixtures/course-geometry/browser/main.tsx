@@ -21,6 +21,7 @@ import winchesterTerrainData from '../winchester-07-terrain.json';
 import { parseGeometryPackage } from '@/lib/golf/course-geometry/schema';
 import { SourceStudy } from './source-study';
 import { CourseMatrixFixture } from './course-matrix';
+import { PlayRoundFixture } from './play-round';
 import { compiledCourses, isCompiledCourse, loadCompiledFixture } from './fixture-assets';
 
 const params = new URLSearchParams(location.search);
@@ -94,6 +95,12 @@ function Screens() {
 }
 const exportPreset = params.get('export');
 const sourceStudy = params.get('study');
-createRoot(document.getElementById('root')!).render(params.has('matrix') ? <CourseMatrixFixture course={compiledCourse ?? 'cacapon'} holeNumber={Number(params.get('hole') ?? 7)} /> : sourceStudy === 'bryan' || sourceStudy === 'cardinal'
+function PlayScreen() {
+  return <FairwayDashboardShell userData={{ role: 'player', userId: 'local-fixture', name: 'Local play', teamId: 'local-team', teamName: 'GolfHelm' }}>
+    <PlayRoundFixture course={compiledCourse ?? 'cacapon'} />
+    <CapacitorProvider />
+  </FairwayDashboardShell>;
+}
+createRoot(document.getElementById('root')!).render(params.has('play') ? <PlayScreen /> : params.has('matrix') ? <CourseMatrixFixture course={compiledCourse ?? 'cacapon'} holeNumber={Number(params.get('hole') ?? 7)} /> : sourceStudy === 'bryan' || sourceStudy === 'cardinal'
   ? <SourceStudy course={sourceStudy} /> : exportPreset === 'top' || exportPreset === 'terrain' || exportPreset === 'side'
     ? <TerrainExportFixture preset={exportPreset} /> : <Screens />);

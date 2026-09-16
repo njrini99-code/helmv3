@@ -2423,8 +2423,25 @@ byte-identical.
   fill, rejects anything above 0.1%, and records the rejection in
   `source-manifest.json`. Both `USGS 1 Meter` and `USGS one meter` product
   titles are accepted as native 1m.
-- Compiled meshes: 18 holes, 8,078–24,122 triangles, zero omitted triangles
-  and zero metric nodata cells (`compiled-peek-n-peak-upper`).
+- Canopy: USDA NAIP four-band imagery (0.6 m native, exported at 1 m on the
+  terrain grid; tiles captured 2024-05-24 and 2024-08-24) classified by
+  `derive-canopy-naip.py` into 144 per-hole canopy groups (417 m² to
+  19.95 ha; 46.9% of the export is canopy). NDVI > 0.28 and a 7 px
+  near-infrared texture threshold separate crowns from turf, roofs, sand and
+  water; every OSM surface is masked with a 3 px buffer; a 6 m vector closing
+  and 2 m opening turn classification speckle into forest masses; groups are
+  clipped to each hole's 160 m compile context. The review fixture
+  (`peek-n-peak-upper-canopy-review.json`) records method, thresholds, tiles,
+  raster hash and reviewer. `prepare-osm-course.py --canopy-review` merges the
+  groups as reviewed woods features (package hash `6db57eff…`, 299
+  features). The reviewer note names the visual comparison performed and the
+  pending independent course review; the groups bound crown artwork only and
+  carry no height, currentness or obstruction claim.
+- Compiled meshes: 18 holes, 10,458–28,605 triangles with woods tessellated
+  as a material, zero omitted triangles and zero metric nodata cells
+  (`compiled-peek-n-peak-upper`). `normalize-study.py` excludes woods from
+  the crop footprint, so canopy never grows the metric grid (hole 18 exceeded
+  the study budget before that rule).
 
 ### 26.3 Per-hole chain
 
@@ -2448,6 +2465,28 @@ each course to its own hash-locked directory and package.
 The 18-hole matrix capture completed with 72 captures, no page errors, idle
 rendering stopped and the canvas released on every hole.
 
+Crown rendering was rebalanced for whole-course forest: `canopySymbols`
+widens its pattern spacing (≤ 6,000 cells, ≤ 600 crowns per group) instead
+of truncating a large group in scan order, `allocateCrowns` shares one budget
+across groups in proportion to their patterns with leftover crowns going
+first to groups the floor left empty, the 3D landscape keeps the 720 crowns
+nearest the played hole's own surfaces and the SVG card keeps 240, and
+near-detail crowns swap in only for batch tiles within 150 m of the camera
+focus. Per hole the landscape places 311–578 trees; captured draw calls run
+36–204 in Top and Terrain and 126–309 in the Green preset, with rendered
+triangles ≤ 261k in Terrain and ≤ 719k in Green (down from 930k before the
+focus rule). Tree centres, pattern spacing and clearance from playing
+surfaces are unchanged by any of this; only which authored crowns are drawn
+within a reviewed group.
+
+`?play=1&course=peek-n-peak-upper` drives the real `FairwayShotTracking`
+screen hole by hole with the compiled terrain for the current and next hole
+resident. Shots, scores and the current hole persist in `localStorage` for
+that browser only; a scripted play-through recorded a drive, an approach and
+a made putt on hole 1, advanced to hole 2 with terrain ready, and restored
+"Hole 2 / 18" after reload. No round, statistic or production record is
+written, positions stay estimates, and a two-tap control clears the round.
+
 - [Entry approach, hole 7](assets/course-geometry-2026-09-15/peek-n-peak-upper-07-entry-approach-390.png)
 - [Expanded Terrain, whole hole 7](assets/course-geometry-2026-09-15/peek-n-peak-upper-07-terrain-whole-hole-390.png)
 - [Expanded Top, whole hole 7](assets/course-geometry-2026-09-15/peek-n-peak-upper-07-top-whole-hole-390.png)
@@ -2459,10 +2498,16 @@ rendering stopped and the canvas released on every hole.
 - [Course world manifest](assets/course-geometry-2026-09-15/course-world-manifest.json)
 - [Truth gate, hole 7](assets/course-geometry-2026-09-15/peek-n-peak-upper-07-course-truth.md)
 - [Matrix capture report](assets/course-geometry-2026-09-15/course-matrix-report.json)
+- [Terrain with derived canopy, hole 16](assets/course-geometry-2026-09-15/peek-n-peak-upper-16-terrain-canopy.png)
+- [Green preset with near crowns, hole 6](assets/course-geometry-2026-09-15/peek-n-peak-upper-06-green-canopy.png)
+- [Play mode, hole 1 putt](assets/course-geometry-2026-09-15/peek-n-peak-upper-play-hole-01-putt.png)
+- [Play mode, hole 2 after hole-out](assets/course-geometry-2026-09-15/peek-n-peak-upper-play-hole-02.png)
 
 ### 26.5 Remaining gaps
 
 Course-familiar review with recorded boundary uncertainty for every OSM
-feature; a reviewed tee/green endpoint pair per hole; canopy groups (none
-reviewed, so no trees render); hole 11 fairway; a real-device capture. None
-of these is a rendering problem, and none may be closed by drawing.
+feature; a reviewed tee/green endpoint pair per hole; an independent course
+review of the derived canopy groups (the current reviewer is a visual
+comparison against the same imagery); hole 11 fairway; a real-device capture
+of play mode. None of these is a rendering problem, and none may be closed
+by drawing.

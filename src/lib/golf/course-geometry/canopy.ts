@@ -41,12 +41,15 @@ export function canopySymbols(feature: LocalFeature, scene: HoleScene): readonly
   if (cached) return cached;
   const vertices = feature.parts.flat(2), xs = vertices.map(p => p[0]), ys = vertices.map(p => p[1]);
   const points: PointM[] = [];
-  const spacing = 9;
+  // A small group keeps the 9m pattern. A large forest mass widens the
+  // pattern instead of dropping out, so its edge still reads as trees while
+  // the cell count stays bounded.
+  const spanX = Math.max(...xs) - Math.min(...xs), spanY = Math.max(...ys) - Math.min(...ys);
+  const spacing = Math.max(9, Math.ceil(Math.sqrt((spanX * spanY) / MAX_PATTERN_CELLS)));
   const minX = Math.floor(Math.min(...xs) / spacing) * spacing, maxX = Math.max(...xs);
   const minY = Math.floor(Math.min(...ys) / spacing) * spacing, maxY = Math.max(...ys);
   const cols = Math.ceil((maxX - minX) / spacing), rows = Math.ceil((maxY - minY) / spacing);
-  if (cols * rows > 6000) return []; // Large source masses stay plain silhouettes.
-  rowsLoop: for (let row = 0; row <= rows; row++) for (let col = 0; col <= cols; col++) {
+  for (let row = 0; row <= rows; row++) for (let col = 0; col <= cols; col++) {
     const seed = Math.imul(col + Math.round(minX), 73856093) ^ Math.imul(row + Math.round(minY), 19349663);
     const jitterX = ((seed >>> 0) % 1024 / 1024 - .5) * 7;
     const jitterY = ((Math.imul(seed, 1664525) >>> 0) % 1024 / 1024 - .5) * 7;
@@ -55,9 +58,40 @@ export function canopySymbols(feature: LocalFeature, scene: HoleScene): readonly
     if (scene.features.some(f => f.kind !== 'woods' && f.kind !== 'route' && (inFeature(point, f) || f.parts.flat().some(ring => boundaryDistance(point, ring) < 4.2)))) continue;
     if (points.some(p => Math.hypot(p[0] - point[0], p[1] - point[1]) < 5.4)) continue;
     points.push(point);
-    if (points.length >= 220) break rowsLoop;
   }
-  sceneCache.set(feature, points);
+  // Over budget: keep an even spread across the whole group rather than the
+  // first rows of the scan, which left large groups bare on one side.
+  const kept = evenSubset(points, MAX_CROWNS_PER_GROUP);
+  sceneCache.set(feature, kept);
   cache.set(scene, sceneCache);
-  return points;
+  return kept;
+}
+const MAX_PATTERN_CELLS = 6000, MAX_CROWNS_PER_GROUP = 600;
+export function evenSubset<T>(items: readonly T[], limit: number): T[] {
+  if (items.length <= limit) return [...items];
+  const stride = items.length / limit;
+  return Array.from({ length: limit }, (_, index) => items[Math.floor(index * stride)]!);
+}
+/** Share one crown budget across several groups in proportion to each group's
+ * own pattern, so a hole lined by forest on both sides gets trees on both.
+ * With a `priority`, the lowest-scoring crowns of each group are kept (for
+ * example the ones nearest the playing surfaces) instead of an even spread. */
+export function allocateCrowns<T>(groups: readonly (readonly T[])[], limit: number, priority?: (item: T) => number): T[][] {
+  const total = groups.reduce((sum, group) => sum + group.length, 0);
+  if (total <= limit) return groups.map(group => [...group]);
+  const exact = groups.map(group => group.length / total * limit);
+  const shares = exact.map(Math.floor);
+  let remaining = limit - shares.reduce((sum, share) => sum + share, 0);
+  // Leftover budget goes first to groups the floor left empty, so a small
+  // copse beside a forest still shows a tree, then by largest remainder.
+  const order = shares.map((_, index) => index).sort((a, b) =>
+    (shares[a]! === 0 ? 0 : 1) - (shares[b]! === 0 ? 0 : 1) || (exact[b]! - shares[b]!) - (exact[a]! - shares[a]!) || a - b);
+  for (const index of order) {
+    if (remaining <= 0) break;
+    if (shares[index]! < groups[index]!.length) { shares[index]!++; remaining--; }
+  }
+  return groups.map((group, index) => priority
+    ? [...group].map((item, order) => ({ item, order, score: priority(item) }))
+      .sort((a, b) => a.score - b.score || a.order - b.order).slice(0, shares[index]!).map(entry => entry.item)
+    : evenSubset(group, shares[index]!));
 }

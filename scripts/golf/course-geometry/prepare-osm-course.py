@@ -47,6 +47,8 @@ def main():
     parser.add_argument('overpass', type=Path)
     parser.add_argument('scorecard', type=Path)
     parser.add_argument('output', type=Path)
+    parser.add_argument('--canopy-review', type=Path, default=None,
+                        help='derive-canopy-naip.py output; adds reviewed decorative woods groups per hole')
     args = parser.parse_args()
 
     raw_bytes = args.overpass.read_bytes()
@@ -187,6 +189,29 @@ def main():
                'holes': holes, 'sources': [{'id': source_id, 'provider': 'OpenStreetMap via Overpass API',
                   'licenseId': 'ODbL-1.0', 'url': 'https://overpass-api.de/api/interpreter', 'capturedAt': None,
                   'retrievedAt': retrieved_at, 'attribution': '© OpenStreetMap contributors · ODbL 1.0'}]}
+    canopy_summary = None
+    if args.canopy_review:
+        # Decorative canopy groups derived from NAIP and visually reviewed. They
+        # bound crown artwork only and never become a physical surface claim.
+        canopy = json.loads(args.canopy_review.read_text())
+        if canopy.get('kind') != 'golfhelm-canopy-review-v1' or canopy.get('siteId') != card['siteId']:
+            raise ValueError('Canopy review does not belong to this course')
+        canopy_source = 'naip-canopy-review-' + canopy['reviewedAt']
+        hole_by_key = {hole['key']: hole for hole in holes}
+        for region in canopy['regions']:
+            coords = region['coordinatesWgs84']
+            if not Polygon(coords).is_valid or region['holeKey'] not in hole_by_key:
+                raise ValueError('Invalid canopy group: ' + region['id'])
+            package['features'].append({'id': 'naip-' + region['id'], 'kind': 'woods', 'sourceIds': [canopy_source],
+                                        'holeKeys': [region['holeKey']], 'reviewed': True, 'accuracyMeters': None,
+                                        'geometryWgs84': {'type': 'Polygon', 'coordinates': [coords]}})
+            hole_by_key[region['holeKey']]['featureIds'].append('naip-' + region['id'])
+        package['sources'].append({'id': canopy_source, 'provider': canopy['source'], 'licenseId': 'US-Public-Domain',
+                                   'url': canopy['sourceUrl'], 'capturedAt': ','.join(canopy['capturedAt']),
+                                   'retrievedAt': canopy['retrievedAt'],
+                                   'attribution': 'USDA NAIP; canopy groups approximate, tree symbols illustrative'})
+        canopy_summary = {'reviewFile': args.canopy_review.name, 'groups': len(canopy['regions']),
+                          'rasterSha256': canopy['rasterSha256'], 'method': canopy['method'], 'reviewer': canopy['reviewer']}
     package['contentHash'] = sha(package)
     report = {'schemaVersion': 1, 'status': 'needs_physical_review', 'course': card['name'],
               'packageHash': package['contentHash'], 'rawOverpassSha256': hashlib.sha256(raw_bytes).hexdigest(),
@@ -194,7 +219,7 @@ def main():
                                  'routeWayIds': card['routeWayIds']},
               'associationPolicy': {'green': 'contains selected route endpoint', 'fairway': 'intersects route by 8m or more',
                                      'tee': 'within 28m of route start', 'bunker_water': 'nearest selected route within 55m'},
-              'holes': association_rows, 'unclaimedSourceFeatureIds': unclaimed,
+              'holes': association_rows, 'unclaimedSourceFeatureIds': unclaimed, 'canopy': canopy_summary,
               'discardedEndpointGreenAlternatives': green_alternatives,
               'limitations': ['OSM plan geometry is retained as a renderable source candidate only',
                               'No independent boundary uncertainty or course-familiar review exists',

@@ -196,10 +196,22 @@ describe('Three landscape source and rendering invariants', () => {
     expect(landscape.setDetail('distant')).toBe(false);
     expect(landscape.setDetail('near')).toBe(true);
     expect(landscape.setDetail('near')).toBe(false);
-    expect(landscape.counts.crownTriangles).toBeGreaterThan(distantTriangles);
+    const nearTriangles = landscape.counts.crownTriangles;
+    expect(nearTriangles).toBeGreaterThan(distantTriangles);
     expect(records(landscape)).toEqual(before);
     expect(landscape.setDetail('distant')).toBe(true);
     expect(landscape.counts.crownTriangles).toBe(distantTriangles);
+    // A focus limits near crowns to the batch tiles around it: nothing changes
+    // for a focus far from every crown, and a focus on one crown upgrades only
+    // its neighbourhood.
+    expect(landscape.setDetail('near', [1e5, 1e5])).toBe(false);
+    expect(landscape.counts.crownTriangles).toBe(distantTriangles);
+    const first = before.values().next().value!.matrix;
+    expect(landscape.setDetail('near', [first[12]!, first[13]!])).toBe(true);
+    expect(landscape.counts.crownTriangles).toBeGreaterThan(distantTriangles);
+    expect(landscape.counts.crownTriangles).toBeLessThanOrEqual(nearTriangles);
+    expect(records(landscape)).toEqual(before);
+    expect(landscape.setDetail('distant')).toBe(true);
     expect(scene).toEqual(snapshot);
     landscape.dispose(); other.dispose();
   });

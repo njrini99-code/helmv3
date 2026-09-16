@@ -1040,3 +1040,12 @@
   hole of a whole-course package instead of refusing it. All Peek'n Peak
   gates fail honestly on unreviewed OSM boundaries; nothing is published or
   bound to a round.
+- Peek'n Peak Upper now carries derived canopy: NAIP four-band imagery
+  classified into per-hole canopy groups with a recorded method and raster
+  hash, merged as reviewed woods features that bound crown artwork only and
+  never size the study grid. Crown rendering shares one budget across groups,
+  favours crowns nearest the played hole, and swaps near-detail crowns in only
+  around the camera focus. The fixture harness gained a local play-through
+  mode (`?play=1`) that drives the real shot-tracking screen hole by hole with
+  browser-only persistence. No round, statistic, or production record is
+  written; all truth gates still fail on unreviewed boundaries.

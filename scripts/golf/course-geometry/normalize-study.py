@@ -134,8 +134,10 @@ def main():
     # decimating existing samples keeps every retained height source-backed.
     first_row, last_row, first_col, last_col = 0, lidar.raster.shape[0] - 1, 0, lidar.raster.shape[1] - 1
     if args.padding_m is not None:
+        # Canopy groups are decoration that can reach far beyond the played
+        # surfaces; they never size the metric grid.
         footprint_source = [lidar.to_source.transform(point[0], point[1]) for feature in selected
-                            for point in points(feature['geometryWgs84']['coordinates'])]
+                            if feature['kind'] != 'woods' for point in points(feature['geometryWgs84']['coordinates'])]
         dx_native = (extent['xmax'] - extent['xmin']) / lidar.raster.shape[1]
         dy_native = (extent['ymax'] - extent['ymin']) / lidar.raster.shape[0]
         min_sx, max_sx = min(p[0] for p in footprint_source) - args.padding_m, max(p[0] for p in footprint_source) + args.padding_m

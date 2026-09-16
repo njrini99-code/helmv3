@@ -1024,6 +1024,27 @@ course is a visual review product, not authoritative geometry, and it does
 not participate in saves or statistics. Section 26 of the geometry plan
 records the terrain-coverage finding and the build evidence.
 
+Canopy on this course is derived, not observed: `derive-canopy-naip.py`
+classifies leaf-on USDA NAIP four-band imagery into per-hole canopy groups
+(NDVI plus near-infrared texture, every OSM golf surface masked, gaps closed
+and strands dropped so a group reads as one forest mass) and records the
+method, tiles, capture dates and raster hash in a canopy review fixture. The
+merged woods features are `reviewed: true` with a reviewer note naming the
+visual comparison performed and the pending independent course review; they
+bound crown artwork only and carry no height, currentness or obstruction
+claim, and the study grid never grows to fit them. Both renderers share one
+crown budget across groups in proportion to their patterns so a small copse
+still shows a tree, the 3D landscape keeps the crowns nearest the played
+hole's own surfaces, and near-detail crowns swap in only around the camera
+focus so a forest never renders at full detail at once.
+
+The harness's `?play=1&course=…` mode drives the real shot-tracking screen
+hole by hole with the compiled terrain for the current and next hole
+resident, persisting shots, scores and the current hole in that browser only.
+It is a local play-through for review on a phone: nothing reaches Supabase, a
+real round, or statistics, positions remain estimates, and a two-tap control
+clears the local round.
+
 ### Manual evidence and camera refinement (September 13, 2026)
 
 The local shared scene uses `manual-bounds-v1`: one bounded unknown-target

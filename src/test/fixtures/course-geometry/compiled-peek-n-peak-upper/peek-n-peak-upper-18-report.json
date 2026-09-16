@@ -1,31 +1,42 @@
 {
   "physicalHoleKey": "peek-n-peak-upper-18",
-  "contentHash": "be127a847b4500ebef45bd7b23aebfa5467814a82a4d0129c52b52e215cffc19",
-  "geometryHash": "eeacfb7bcbe0bd6194666459d83682ebcd3545a8fc362b99581bbbad0901c7a1",
+  "contentHash": "c490c01ba37dafc6053ca25d19dac712758f7464cdf3bf4cda47531db6812926",
+  "geometryHash": "6db57efff0137b2f264c25f79ce94575efd5e90c3ef3304c0f1f35d7d7699fcc",
   "configuredBudget": 40000,
   "originalEnvelope": 20000,
-  "triangles": 22373,
-  "uniqueVertices": 11288,
+  "triangles": 27181,
+  "uniqueVertices": 13972,
   "omittedTriangles": 0,
   "metricCells": 126585,
   "metricNodataCells": 0,
-  "duplicateVertexCount": 55831,
+  "duplicateVertexCount": 67571,
   "sourceNormalDuplicatesAgree": true,
   "sourceHeightDuplicatesAgree": true,
-  "sourceNormalUnitMaxError": 6.281701803168005e-08,
+  "sourceNormalUnitMaxError": 6.354482784409754e-08,
   "slopesDegrees": {
-    "max": 33.19213776841557,
-    "p95": 15.944682951922056,
-    "p50": 4.988885567050272
+    "max": 33.45080295132118,
+    "p95": 16.07059491947023,
+    "p50": 4.992705521479684
   },
   "elevationRangeM": [
     508.26370959058147,
     558.0760137292255
   ],
   "contextAreaM2": 497664.0,
-  "triangulatedAreaM2": 497664.0,
+  "triangulatedAreaM2": 497664.0001,
   "omittedAreaM2": 0,
   "contextClippedFeatureIds": [
+    "naip-peek-n-peak-upper-01-canopy-001",
+    "naip-peek-n-peak-upper-09-canopy-012",
+    "naip-peek-n-peak-upper-10-canopy-001",
+    "naip-peek-n-peak-upper-10-canopy-003",
+    "naip-peek-n-peak-upper-10-canopy-005",
+    "naip-peek-n-peak-upper-11-canopy-001",
+    "naip-peek-n-peak-upper-16-canopy-001",
+    "naip-peek-n-peak-upper-16-canopy-002",
+    "naip-peek-n-peak-upper-17-canopy-001",
+    "naip-peek-n-peak-upper-17-canopy-004",
+    "naip-peek-n-peak-upper-17-canopy-005",
     "osm-way-746365986",
     "osm-way-746383341",
     "osm-way-746383345",
@@ -43,8 +54,246 @@
     {
       "id": "terrain-context",
       "kind": "ground",
-      "triangles": 13286,
-      "areaM2": 463080.05,
+      "triangles": 12690,
+      "areaM2": 222179.0946,
+      "rendererContextOnly": false
+    },
+    {
+      "id": "naip-peek-n-peak-upper-01-canopy-001",
+      "kind": "woods",
+      "triangles": 166,
+      "areaM2": 7094.3753,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "naip-peek-n-peak-upper-01-canopy-003",
+      "kind": "woods",
+      "triangles": 18,
+      "areaM2": 13.6685,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "naip-peek-n-peak-upper-01-canopy-006",
+      "kind": "woods",
+      "triangles": 0,
+      "areaM2": 0,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "naip-peek-n-peak-upper-09-canopy-001",
+      "kind": "woods",
+      "triangles": 207,
+      "areaM2": 5361.1296,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "naip-peek-n-peak-upper-09-canopy-005",
+      "kind": "woods",
+      "triangles": 48,
+      "areaM2": 38.9308,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "naip-peek-n-peak-upper-09-canopy-006",
+      "kind": "woods",
+      "triangles": 62,
+      "areaM2": 20.772,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "naip-peek-n-peak-upper-09-canopy-008",
+      "kind": "woods",
+      "triangles": 7,
+      "areaM2": 1.0855,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "naip-peek-n-peak-upper-09-canopy-012",
+      "kind": "woods",
+      "triangles": 3,
+      "areaM2": 16.5737,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "naip-peek-n-peak-upper-09-canopy-016",
+      "kind": "woods",
+      "triangles": 0,
+      "areaM2": 0,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "naip-peek-n-peak-upper-10-canopy-001",
+      "kind": "woods",
+      "triangles": 150,
+      "areaM2": 1997.6901,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "naip-peek-n-peak-upper-10-canopy-002",
+      "kind": "woods",
+      "triangles": 66,
+      "areaM2": 50.4252,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "naip-peek-n-peak-upper-10-canopy-003",
+      "kind": "woods",
+      "triangles": 70,
+      "areaM2": 1012.7032,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "naip-peek-n-peak-upper-10-canopy-004",
+      "kind": "woods",
+      "triangles": 32,
+      "areaM2": 60.216,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "naip-peek-n-peak-upper-10-canopy-005",
+      "kind": "woods",
+      "triangles": 7,
+      "areaM2": 143.1244,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "naip-peek-n-peak-upper-10-canopy-006",
+      "kind": "woods",
+      "triangles": 0,
+      "areaM2": 0,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "naip-peek-n-peak-upper-10-canopy-007",
+      "kind": "woods",
+      "triangles": 0,
+      "areaM2": 0,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "naip-peek-n-peak-upper-11-canopy-001",
+      "kind": "woods",
+      "triangles": 218,
+      "areaM2": 3952.5492,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "naip-peek-n-peak-upper-11-canopy-002",
+      "kind": "woods",
+      "triangles": 32,
+      "areaM2": 19.5816,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "naip-peek-n-peak-upper-16-canopy-001",
+      "kind": "woods",
+      "triangles": 110,
+      "areaM2": 1881.5603,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "naip-peek-n-peak-upper-16-canopy-002",
+      "kind": "woods",
+      "triangles": 9,
+      "areaM2": 238.8954,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "naip-peek-n-peak-upper-17-canopy-001",
+      "kind": "woods",
+      "triangles": 154,
+      "areaM2": 6643.0926,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "naip-peek-n-peak-upper-17-canopy-002",
+      "kind": "woods",
+      "triangles": 113,
+      "areaM2": 282.5952,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "naip-peek-n-peak-upper-17-canopy-003",
+      "kind": "woods",
+      "triangles": 68,
+      "areaM2": 58.708,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "naip-peek-n-peak-upper-17-canopy-004",
+      "kind": "woods",
+      "triangles": 104,
+      "areaM2": 4771.8111,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "naip-peek-n-peak-upper-17-canopy-005",
+      "kind": "woods",
+      "triangles": 5,
+      "areaM2": 283.6936,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "naip-peek-n-peak-upper-18-canopy-001",
+      "kind": "woods",
+      "triangles": 1787,
+      "areaM2": 96232.407,
+      "rendererContextOnly": false
+    },
+    {
+      "id": "naip-peek-n-peak-upper-18-canopy-002",
+      "kind": "woods",
+      "triangles": 1330,
+      "areaM2": 80776.3328,
+      "rendererContextOnly": false
+    },
+    {
+      "id": "naip-peek-n-peak-upper-18-canopy-003",
+      "kind": "woods",
+      "triangles": 183,
+      "areaM2": 10767.4048,
+      "rendererContextOnly": false
+    },
+    {
+      "id": "naip-peek-n-peak-upper-18-canopy-004",
+      "kind": "woods",
+      "triangles": 106,
+      "areaM2": 8108.7378,
+      "rendererContextOnly": false
+    },
+    {
+      "id": "naip-peek-n-peak-upper-18-canopy-005",
+      "kind": "woods",
+      "triangles": 128,
+      "areaM2": 5152.7876,
+      "rendererContextOnly": false
+    },
+    {
+      "id": "naip-peek-n-peak-upper-18-canopy-006",
+      "kind": "woods",
+      "triangles": 59,
+      "areaM2": 2442.1308,
+      "rendererContextOnly": false
+    },
+    {
+      "id": "naip-peek-n-peak-upper-18-canopy-007",
+      "kind": "woods",
+      "triangles": 71,
+      "areaM2": 2443.3365,
+      "rendererContextOnly": false
+    },
+    {
+      "id": "naip-peek-n-peak-upper-18-canopy-008",
+      "kind": "woods",
+      "triangles": 21,
+      "areaM2": 530.3128,
+      "rendererContextOnly": false
+    },
+    {
+      "id": "naip-peek-n-peak-upper-18-canopy-009",
+      "kind": "woods",
+      "triangles": 70,
+      "areaM2": 504.3241,
       "rendererContextOnly": false
     },
     {
@@ -322,6 +571,31 @@
     }
   ],
   "contextFeatureIds": [
+    "naip-peek-n-peak-upper-01-canopy-001",
+    "naip-peek-n-peak-upper-01-canopy-003",
+    "naip-peek-n-peak-upper-01-canopy-006",
+    "naip-peek-n-peak-upper-09-canopy-001",
+    "naip-peek-n-peak-upper-09-canopy-005",
+    "naip-peek-n-peak-upper-09-canopy-006",
+    "naip-peek-n-peak-upper-09-canopy-008",
+    "naip-peek-n-peak-upper-09-canopy-012",
+    "naip-peek-n-peak-upper-09-canopy-016",
+    "naip-peek-n-peak-upper-10-canopy-001",
+    "naip-peek-n-peak-upper-10-canopy-002",
+    "naip-peek-n-peak-upper-10-canopy-003",
+    "naip-peek-n-peak-upper-10-canopy-004",
+    "naip-peek-n-peak-upper-10-canopy-005",
+    "naip-peek-n-peak-upper-10-canopy-006",
+    "naip-peek-n-peak-upper-10-canopy-007",
+    "naip-peek-n-peak-upper-11-canopy-001",
+    "naip-peek-n-peak-upper-11-canopy-002",
+    "naip-peek-n-peak-upper-16-canopy-001",
+    "naip-peek-n-peak-upper-16-canopy-002",
+    "naip-peek-n-peak-upper-17-canopy-001",
+    "naip-peek-n-peak-upper-17-canopy-002",
+    "naip-peek-n-peak-upper-17-canopy-003",
+    "naip-peek-n-peak-upper-17-canopy-004",
+    "naip-peek-n-peak-upper-17-canopy-005",
     "osm-way-746365986",
     "osm-way-746365998",
     "osm-way-746383341",
@@ -354,6 +628,176 @@
     "osm-way-746365992"
   ],
   "displayOutlines": [
+    {
+      "id": "naip-peek-n-peak-upper-01-canopy-001",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "naip-peek-n-peak-upper-01-canopy-003",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "naip-peek-n-peak-upper-01-canopy-006",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "naip-peek-n-peak-upper-09-canopy-001",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "naip-peek-n-peak-upper-09-canopy-005",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "naip-peek-n-peak-upper-09-canopy-006",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "naip-peek-n-peak-upper-09-canopy-008",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "naip-peek-n-peak-upper-09-canopy-012",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "naip-peek-n-peak-upper-09-canopy-016",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "naip-peek-n-peak-upper-10-canopy-001",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "naip-peek-n-peak-upper-10-canopy-002",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "naip-peek-n-peak-upper-10-canopy-003",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "naip-peek-n-peak-upper-10-canopy-004",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "naip-peek-n-peak-upper-10-canopy-005",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "naip-peek-n-peak-upper-10-canopy-006",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "naip-peek-n-peak-upper-10-canopy-007",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "naip-peek-n-peak-upper-11-canopy-001",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "naip-peek-n-peak-upper-11-canopy-002",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "naip-peek-n-peak-upper-16-canopy-001",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "naip-peek-n-peak-upper-16-canopy-002",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "naip-peek-n-peak-upper-17-canopy-001",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "naip-peek-n-peak-upper-17-canopy-002",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "naip-peek-n-peak-upper-17-canopy-003",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "naip-peek-n-peak-upper-17-canopy-004",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "naip-peek-n-peak-upper-17-canopy-005",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "naip-peek-n-peak-upper-18-canopy-001",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "naip-peek-n-peak-upper-18-canopy-002",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "naip-peek-n-peak-upper-18-canopy-003",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "naip-peek-n-peak-upper-18-canopy-004",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "naip-peek-n-peak-upper-18-canopy-005",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "naip-peek-n-peak-upper-18-canopy-006",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "naip-peek-n-peak-upper-18-canopy-007",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "naip-peek-n-peak-upper-18-canopy-008",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "naip-peek-n-peak-upper-18-canopy-009",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
     {
       "id": "osm-way-746365986",
       "boundaryDisplacementM": 0.358561,
@@ -568,15 +1012,14 @@
     "terrainAvailable": true,
     "contextCoverage": "complete",
     "teeGeometry": "approximate",
-    "treeEvidence": "none",
+    "treeEvidence": "canopy_only",
     "limitations": [
       "Source candidate; independent registration, renovation and boundary review pending",
       "Macro terrain only; no putting-break or bunker-lip accuracy claim",
       "Daily tee markers, actual cup, ball positions and tree heights are unknown",
       "Neutral ground is not classified rough; outward surrounds are illustrative and at most 0.6m",
       "Neighbor features are renderer-only context, not reassigned played-hole surfaces",
-      "2021 terrain may predate current surfaces; currentness remains unverified",
-      "No reviewed canopy for this played hole; no tree groups synthesized"
+      "2021 terrain may predate current surfaces; currentness remains unverified"
     ]
   },
   "source": {
@@ -586,7 +1029,7 @@
     "catalogObjectId": 76329,
     "acquisitionStart": "2017-04-18",
     "acquisitionEnd": "2017-05-09",
-    "retrievedAt": "2026-09-15",
+    "retrievedAt": "2026-09-16",
     "nativeResolutionM": 1,
     "verticalAccuracyM": null,
     "registrationResidualM": null,
@@ -605,15 +1048,15 @@
     "metricSamplingM": 2,
     "normalGradientStepM": 1
   },
-  "compressedBytes": 972150,
+  "compressedBytes": 1138370,
   "asset": {
     "ordinal": 18,
     "fileName": "peek-n-peak-upper-18-terrain.json.gz",
     "encoding": "gzip",
-    "compressedBytes": 972150,
-    "uncompressedBytes": 4901460,
-    "sha256": "fdd3d3d97b692a35b5e437679431bc7609b8753f326028d679d63b1de2615efb",
-    "uncompressedSha256": "e8a6129617a2a66e29df028c5038eff112c1a23fbd5064dd73c982aff5d9dff1",
-    "contentHash": "be127a847b4500ebef45bd7b23aebfa5467814a82a4d0129c52b52e215cffc19"
+    "compressedBytes": 1138370,
+    "uncompressedBytes": 5756755,
+    "sha256": "4b8ae70364af87239b8c23f43699a48340779b2168cca4e799102886f7a85e07",
+    "uncompressedSha256": "9bf856caf4e713d194b920ebe97a2d84117c332695716d7933dd250b023afa48",
+    "contentHash": "c490c01ba37dafc6053ca25d19dac712758f7464cdf3bf4cda47531db6812926"
   }
 }

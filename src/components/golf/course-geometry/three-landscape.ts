@@ -1,8 +1,8 @@
 import * as THREE from 'three';
-import { canopySymbols, crownScale } from '@/lib/golf/course-geometry/canopy';
+import { allocateCrowns, canopySymbols, crownScale } from '@/lib/golf/course-geometry/canopy';
 import { boundaryDistance } from '@/lib/golf/course-geometry/display-outline';
 import { terrainHeight, type TerrainMesh } from '@/lib/golf/course-geometry/terrain';
-import type { HoleScene, LocalFeature } from '@/lib/golf/course-geometry/types';
+import type { HoleScene, LocalFeature, PointM } from '@/lib/golf/course-geometry/types';
 import { createTreeAssetAtlas, type TreeCrownAsset } from './tree-assets';
 
 export type ThreeLandscapePalette = Readonly<Record<
@@ -27,13 +27,18 @@ export interface ThreeLandscape {
   terrain: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>;
   setExaggeration(exaggeration: number, referenceElevationM: number): void;
   /** Swap shared crown assets without changing any instance transform. */
-  setDetail(detail: 'distant' | 'near'): boolean;
+  /** Near crowns are swapped in only for batch tiles around `focusM`; without
+   * a focus every crown takes the requested level. Returns whether anything changed. */
+  setDetail(detail: 'distant' | 'near', focusM?: PointM): boolean;
   dispose(): void;
   counts: { terrainTriangles: number; trees: number; crownInstances: number; crownTriangles: number; totalTriangles: number; canopyBatches: number; drawCalls: number };
 }
 
-const TREE_LIMIT = 480;
+const TREE_LIMIT = 720;
 const CANOPY_TILE_M = 64;
+// Near crowns cost about five times a distant one, so only the tiles within
+// this reach of the camera focus (the green a golfer is reading) take them.
+const NEAR_DETAIL_RADIUS_M = 150;
 const Z_AXIS = new THREE.Vector3(0, 0, 1);
 
 function variation(seed: number): number {
@@ -194,10 +199,15 @@ export function buildThreeLandscape(
   const excludedRings = canopyScene.features.filter(feature => feature.kind !== 'woods' && feature.kind !== 'route')
     .flatMap(feature => feature.parts.flat());
   const courseFrame = mesh.originWgs84.join(',');
-  outer: for (const feature of canopyScene.features) {
-    if (feature.kind !== 'woods' || !feature.reviewed) continue;
+  const canopyGroups = canopyScene.features.filter(feature => feature.kind === 'woods' && feature.reviewed);
+  // Over budget, keep the crowns nearest the played hole's own surfaces: the
+  // forest edge a golfer sees, not the interior of a mass behind it.
+  const ownRings = scene.features.filter(feature => feature.kind !== 'woods' && feature.kind !== 'route').flatMap(feature => feature.parts.flat());
+  const nearness = (point: PointM) => ownRings.reduce((minimum, ring) => Math.min(minimum, boundaryDistance(point, ring)), Infinity);
+  const allocated = allocateCrowns(canopyGroups.map(feature => canopySymbols(feature, canopyScene)), TREE_LIMIT, nearness);
+  for (const [groupIndex, feature] of canopyGroups.entries()) {
     const clearanceRings = [...feature.parts.flat(), ...excludedRings];
-    for (const point of canopySymbols(feature, canopyScene)) {
+    for (const point of allocated[groupIndex]!) {
       if (trees.some(tree => Math.hypot(tree.x - point[0], tree.y - point[1]) < 5.4)) continue;
       const groundZ = terrainHeight(mesh, point);
       if (groundZ == null) continue;
@@ -215,14 +225,14 @@ export function buildThreeLandscape(
       trees.push({ id, tile: `${Math.floor(point[0] / CANOPY_TILE_M)},${Math.floor(point[1] / CANOPY_TILE_M)}`,
         x: point[0], y: point[1], groundZ, radius, trunkRadius: baseRadius * .055, height: baseRadius * (2.4 + variation(n + 19) * .8),
         aspect: .84 + variation(n + 37) * .16, yaw: variation(n + 41) * Math.PI * 2, family, color });
-      if (trees.length >= TREE_LIMIT) break outer;
+      if (trees.length >= TREE_LIMIT) break;
     }
   }
 
   const crownMaterial = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 1, metalness: 0 });
   crownMaterial.name = 'opaque-canopy';
   materials.add(crownMaterial);
-  const crownBatches: { mesh: THREE.InstancedMesh; trees: Tree[]; asset: TreeCrownAsset }[] = [];
+  const crownBatches: { mesh: THREE.InstancedMesh; trees: Tree[]; asset: TreeCrownAsset; center: PointM; lod: 'distant' | 'near' }[] = [];
   const tiles = new Map<string, Tree[]>();
   for (const tree of trees) {
     const tile = tiles.get(tree.tile) ?? [];
@@ -242,7 +252,9 @@ export function buildThreeLandscape(
     crowns.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     familyTrees.forEach((tree, index) => crowns.setColorAt(index, tree.color));
     if (crowns.instanceColor) crowns.instanceColor.needsUpdate = true;
-    group.add(crowns); instances.push(crowns); crownBatches.push({ mesh: crowns, trees: familyTrees, asset });
+    const [column, row] = tile.split(',').map(Number) as [number, number];
+    group.add(crowns); instances.push(crowns);
+    crownBatches.push({ mesh: crowns, trees: familyTrees, asset, lod: 'distant', center: [(column + .5) * CANOPY_TILE_M, (row + .5) * CANOPY_TILE_M] });
   }
   const trunkBatches: { mesh: THREE.InstancedMesh; trees: Tree[] }[] = [];
   let trunkTriangles = 0;
@@ -267,22 +279,28 @@ export function buildThreeLandscape(
 
   const counts = { terrainTriangles: mesh.triangleFeatures.length, trees: trees.length,
     crownInstances: trees.length, crownTriangles: 0, totalTriangles: 0, canopyBatches: crownBatches.length, drawCalls: 1 + instances.length };
-  const updateTriangleCounts = (detail: 'distant' | 'near') => {
-    counts.crownTriangles = crownBatches.reduce((total, batch) => total + batch.asset.triangleCounts[detail] * batch.trees.length, 0);
+  const updateTriangleCounts = () => {
+    counts.crownTriangles = crownBatches.reduce((total, batch) => total + batch.asset.triangleCounts[batch.lod] * batch.trees.length, 0);
     counts.totalTriangles = counts.terrainTriangles + counts.crownTriangles + trunkTriangles;
   };
-  updateTriangleCounts('distant');
+  updateTriangleCounts();
   const transform = new THREE.Matrix4(), translation = new THREE.Vector3(), rotation = new THREE.Quaternion(), scale = new THREE.Vector3();
-  let lastExaggeration = NaN, lastReference = NaN, disposed = false, detail: 'distant' | 'near' = 'distant';
-  function setDetail(next: 'distant' | 'near'): boolean {
-    if (disposed || next === detail) return false;
+  let lastExaggeration = NaN, lastReference = NaN, disposed = false;
+  function setDetail(next: 'distant' | 'near', focusM?: PointM): boolean {
+    if (disposed) return false;
+    const reach = NEAR_DETAIL_RADIUS_M + CANOPY_TILE_M * Math.SQRT1_2;
+    let changed = false;
     for (const batch of crownBatches) {
-      batch.mesh.geometry = batch.asset[next];
-      batch.mesh.userData.lod = next;
+      const near = next === 'near' && (!focusM || Math.hypot(batch.center[0] - focusM[0], batch.center[1] - focusM[1]) <= reach);
+      const lod = near ? 'near' : 'distant';
+      if (batch.lod === lod) continue;
+      batch.mesh.geometry = batch.asset[lod];
+      batch.lod = lod; batch.mesh.userData.lod = lod;
       batch.mesh.computeBoundingBox(); batch.mesh.computeBoundingSphere();
+      changed = true;
     }
-    detail = next; updateTriangleCounts(detail);
-    return true;
+    if (changed) updateTriangleCounts();
+    return changed;
   }
   function setExaggeration(exaggeration: number, referenceElevationM: number) {
     if (disposed) return;

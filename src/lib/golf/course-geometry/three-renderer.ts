@@ -50,6 +50,7 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
   let viewDistance = 1_000;
   let releaseDebug: (() => void) | undefined;
   let crownDetail: 'near' | 'distant' = 'distant';
+  let detailFocus: readonly number[] = [Infinity, Infinity];
 
   function fitSun() {
     if (!landscape || !sun) return;
@@ -141,8 +142,12 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
         previousExaggeration = camera.exaggeration; previousReference = camera.referenceElevationM;
       }
       const nextDetail = camera.scale > 4.5 ? 'near' : camera.scale < 3.7 ? 'distant' : crownDetail;
-      if (nextDetail !== crownDetail && landscape.setDetail(nextDetail)) {
-        crownDetail = nextDetail; fitSun(); renderer.shadowMap.needsUpdate = true;
+      // Near crowns follow the focus: a pan across the green re-evaluates
+      // which batch tiles are close enough to deserve them.
+      const focusMoved = nextDetail === 'near' && Math.hypot(camera.focusM[0] - detailFocus[0]!, camera.focusM[1] - detailFocus[1]!) > 12;
+      if (nextDetail !== crownDetail || focusMoved) {
+        crownDetail = nextDetail; detailFocus = camera.focusM;
+        if (landscape.setDetail(nextDetail, [camera.focusM[0], camera.focusM[1]])) { fitSun(); renderer.shadowMap.needsUpdate = true; }
       }
       applyTerrainCamera(view, camera, width, height, viewDistance);
       renderer.render(world, view);

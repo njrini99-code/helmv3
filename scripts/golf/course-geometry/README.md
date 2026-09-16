@@ -137,6 +137,21 @@ python3 scripts/golf/course-geometry/compile-course-terrain.py --holes all \
   --source src/test/fixtures/course-geometry/sources/peek-n-peak-upper-terrain \
   --output src/test/fixtures/course-geometry/compiled-peek-n-peak-upper
 
+# 3b. Canopy groups from leaf-on NAIP (retained export in ignored output, review
+#     JSON as the fixture), then re-run step 2 with --canopy-review and step 3
+#     so the package carries reviewed woods features and the meshes tessellate
+#     them as a material.
+python3 scripts/golf/course-geometry/derive-canopy-naip.py \
+  src/test/fixtures/course-geometry/peek-n-peak-upper.json \
+  src/test/fixtures/course-geometry/sources/peek-n-peak-upper-terrain \
+  output/course-geometry/peek-n-peak-upper-naip \
+  src/test/fixtures/course-geometry/peek-n-peak-upper-canopy-review.json
+python3 scripts/golf/course-geometry/prepare-osm-course.py \
+  src/test/fixtures/course-geometry/sources/peek-n-peak-upper-osm/overpass.json.gz \
+  scripts/golf/course-geometry/pilots/peek-n-peak-upper-scorecard.json \
+  src/test/fixtures/course-geometry/peek-n-peak-upper.json \
+  --canopy-review src/test/fixtures/course-geometry/peek-n-peak-upper-canopy-review.json
+
 # 4. Per hole: canonical study → physical world → truth gate → GLB → round trip.
 python3 scripts/golf/course-geometry/build-course-world.py \
   src/test/fixtures/course-geometry/peek-n-peak-upper.json \
@@ -158,8 +173,31 @@ and each hole's truth-gate verdict. Unreviewed OSM boundaries fail the gate by
 design; the GLBs and app previews are visual review products until a
 course-familiar review records boundary uncertainty.
 
+Canopy is decoration, never truth. `derive-canopy-naip.py` classifies
+leaf-on NAIP four-band imagery (NDVI plus near-infrared texture) into canopy,
+masks every OSM golf surface with a small buffer, closes gaps under 12 m and
+drops strands under 4 m so each group reads as one forest mass, and clips
+groups to each hole's compile context. The review JSON records the method,
+thresholds, tiles, capture dates and raster hash. Merged woods features are
+`reviewed: true` with the reviewer note naming the comparison performed;
+they bound where crown artwork may render and carry no height, currentness
+or obstruction claim. `normalize-study.py` never lets woods size the metric
+grid. In the renderers, `canopySymbols` widens its pattern spacing rather
+than truncating a large group, `allocateCrowns` shares the crown budget
+across groups in proportion to their patterns (a small copse always keeps a
+tree), the 3D landscape keeps the crowns nearest the played hole's own
+surfaces, and near-detail crowns swap in only for the batch tiles around the
+camera focus.
+
 The browser fixture serves any compiled course: `?course=peek-n-peak-upper`
 on the entry/review pages, `?matrix=1&course=peek-n-peak-upper&hole=N` for the
-per-hole matrix, and `COURSE=peek-n-peak-upper` for
+per-hole matrix, `?play=1&course=peek-n-peak-upper` for a local
+play-through, and `COURSE=peek-n-peak-upper` for
 `capture-course-matrix.cjs`. `render-top-courses.tsx` includes the course in
 its shared-renderer previews and contact sheet.
+
+Play mode drives the real `FairwayShotTracking` screen hole by hole with the
+compiled terrain for the current and next hole resident. Shots, scores and the
+current hole persist in this browser only (`localStorage`); nothing reaches
+Supabase, a real round or statistics, positions remain estimates, and a
+two-tap control clears the local round.
