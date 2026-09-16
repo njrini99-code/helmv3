@@ -132,10 +132,11 @@ export const MERIDIAN_STYLE = Object.freeze({
   vegetation: Object.freeze({
     crownBudget: 720, tileM: 64, trunkBandM: 150, edgeBandM: 24,
     /** Crown LOD in a perspective view by projected crown radius (CSS px):
-     * near crowns and 7-sided trunks at or above `near`, the mid crown and
-     * 3-sided trunk at or above `distant`, the far silhouette and no trunk
-     * below. Orthographic views keep the focus-distance bands. */
-    lodScreenPx: Object.freeze({ near: 30, distant: 6 }),
+     * near crowns and 7-sided trunks at or above `near` (the `nearBudget`
+     * largest on screen), the mid crown and 3-sided trunk at or above
+     * `distant`, the far silhouette and no trunk below. Orthographic views
+     * keep the focus-distance bands. */
+    lodScreenPx: Object.freeze({ near: 16, distant: 6, nearBudget: 120 }),
     /** Renderer redesign §20: seeded lean of crown and trunk together about
      * the ground point, only where the tree stands `clearanceM` inside its
      * mask and clear of playing surfaces; the crown radius gives up the

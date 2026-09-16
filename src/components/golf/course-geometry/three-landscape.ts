@@ -752,13 +752,24 @@ export function buildThreeLandscape(
     // inside twice of it, far beyond.
     const exaggeration = Number.isFinite(lastExaggeration) ? lastExaggeration : 1, reference = Number.isFinite(lastReference) ? lastReference : 0;
     counts.crownLodBasis = view ? 'screen_px' : 'focus_bands';
-    for (const tree of trees) {
+    // Perspective: projected crown radius per tree; the near band goes to the
+    // `nearBudget` largest crowns that clear the near threshold, so the cost
+    // of a view stays bounded whatever the camera does.
+    const projected = view ? trees.map(tree => {
+      const crownZ = reference + (tree.groundZ - reference) * exaggeration + tree.height * .64;
+      return view.focalPx * tree.radius / Math.max(1, Math.hypot(tree.x - view.eye[0], tree.y - view.eye[1], crownZ - view.eye[2]));
+    }) : null;
+    const nearSet = new Set<number>();
+    if (projected && next === 'near') {
+      const candidates = projected.map((px, index) => [px, index] as const).filter(([px]) => px >= VEGETATION.lodScreenPx.near);
+      candidates.sort((a, b) => b[0] - a[0]);
+      for (const [, index] of candidates.slice(0, VEGETATION.lodScreenPx.nearBudget)) nearSet.add(index);
+    }
+    for (const [index, tree] of trees.entries()) {
       let lod: CrownLod;
-      if (view) {
-        const crownZ = reference + (tree.groundZ - reference) * exaggeration + tree.height * .64;
-        const distance = Math.max(1, Math.hypot(tree.x - view.eye[0], tree.y - view.eye[1], crownZ - view.eye[2]));
-        const px = view.focalPx * tree.radius / distance;
-        lod = px >= VEGETATION.lodScreenPx.near ? (next === 'near' ? 'near' : 'distant') : px >= VEGETATION.lodScreenPx.distant ? 'distant' : 'far';
+      if (projected) {
+        const px = projected[index]!;
+        lod = nearSet.has(index) ? 'near' : px >= VEGETATION.lodScreenPx.distant ? 'distant' : 'far';
       } else {
         const distance = focusM ? Math.hypot(tree.x - focusM[0], tree.y - focusM[1]) : 0;
         lod = next === 'near' && distance <= NEAR_DETAIL_RADIUS_M ? 'near' : distance <= NEAR_DETAIL_RADIUS_M * 2 ? 'distant' : 'far';

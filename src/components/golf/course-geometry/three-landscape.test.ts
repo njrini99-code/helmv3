@@ -510,6 +510,7 @@ describe('canopy batching (Meridian §68.2)', () => {
       landscape.setDetail('near', undefined, { eye, focalPx: 1500 });
       expect(landscape.counts.crownLodBasis).toBe('screen_px');
       expect(crowns[0]!.userData.lods[0]).toBe('near');
+      expect(landscape.counts.lodTrees.near).toBeLessThanOrEqual(MERIDIAN_STYLE.vegetation.lodScreenPx.nearBudget);
       landscape.setDetail('near', undefined, { eye: [eye[0] + 50_000, eye[1], eye[2]], focalPx: 1500 });
       expect(landscape.counts.lodTrees.far).toBe(landscape.counts.trees);
       expect(landscape.counts.trunksVisible).toBe(0);

@@ -159,8 +159,9 @@ from V1; V4 changes what stands on each centre.
   batched trunk mesh, following the crown LOD: 7-sided with a near crown,
   3-sided with the mid crown, hidden with the far silhouette. A perspective
   view judges every crown by its projected radius (`vegetation.lodScreenPx`:
-  near at 30 CSS px, far below 6 px) from the lens the renderer hands the
-  landscape; an orthographic view keeps the focus-distance bands (150 m near,
+  near for the 120 largest crowns at or above 16 CSS px, far below 6 px)
+  from the lens the renderer hands the landscape, so the cost of a view
+  stays bounded whatever the camera does; an orthographic view keeps the focus-distance bands (150 m near,
   300 m far). `crownLodBasis` reports which rule ran. `counts.trunksVisible`
   and `terrainTrunks` report what is drawn.
 - **Batching (§68.2).** All crowns are one `THREE.BatchedMesh`: the eight
