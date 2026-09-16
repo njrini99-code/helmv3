@@ -267,7 +267,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/TOOL_AUTHORITY_MATRIX.md` | generated | - | yes | yes | 4 | 3 | - |
 | `docs/audits/COMPLETE_FINDINGS_2026_08_18.md` | current | - | yes | yes | 1 | 38 | - |
 | `docs/generated/ENTRY_POINTS.md` | generated | - | - | - | 0 | 0 | - |
-| `docs/generated/HELM_FEATURE_MAP.md` | generated | - | - | - | 3 | 213 | - |
+| `docs/generated/HELM_FEATURE_MAP.md` | generated | - | - | - | 3 | 214 | - |
 | `docs/generated/RETRIEVAL_BENCH.md` | generated | - | - | - | 1 | 10 | - |
 | `docs/generated/WORLD_MODEL.md` | generated | - | - | - | 0 | 2 | - |
 | `docs/generated/contracts/README.md` | generated | - | - | - | 0 | 7 | - |
@@ -503,7 +503,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/incidents/golf_round_lifecycle/INC-2026-08-25-nondestructive-submit-and-checkpoint-fallback.md` | current | - | - | - | 1 | 0 | - |
 | `memory/incidents/golf_round_lifecycle/INC-2026-08-25-recap-persist-schema-permission.md` | current | - | - | - | 1 | 1 | - |
 | `memory/incidents/golf_round_lifecycle/INC-2026-08-30-account-deletion-still-cascades-golf-history.md` | current | - | - | - | 1 | 4 | - |
-| `memory/incidents/golf_round_lifecycle/INC-2026-09-16-course-state-two-letter-rejection.md` | current | - | - | - | 1 | 1 | - |
+| `memory/incidents/golf_round_lifecycle/INC-2026-09-16-course-state-two-letter-rejection.md` | current | - | - | - | 2 | 1 | - |
 | `memory/incidents/qualifiers/INC-2026-08-22-end-date-closed-qualifier-early.md` | current | - | - | - | 1 | 2 | - |
 | `memory/incidents/shot_tracking/INC-2026-08-22-confirmed-snapshot-recovery-prompt.md` | current | - | - | - | 4 | 2 | - |
 | `memory/incidents/shot_tracking/INC-2026-08-22-delete-shot-stale-id.md` | current | - | - | - | 4 | 2 | - |
