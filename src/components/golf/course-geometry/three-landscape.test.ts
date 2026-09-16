@@ -156,6 +156,11 @@ describe('Three landscape source and rendering invariants', () => {
     const outer = new THREE.Color(MERIDIAN_STYLE.palette.roughOuter);
     expect(colors.slice(0, 3)).toEqual(Array.from(linearAlbedo(artifact).subarray(0, 3)).map(value => Math.fround(value)));
     expect(colors[0]).toBeLessThan(outer.r); expect(colors[0]).toBeGreaterThan(outer.r * .85);
+    // The GPU class attribute interpolates inside a triangle, so it only ever
+    // carries the three ids the shader tests plus the turf id; a hierarchy id
+    // would sweep through green / bunker / water between two vertices.
+    const gpuClasses = new Set(Array.from(geometry.getAttribute('golfSurfaceClass').array as Float32Array));
+    for (const id of gpuClasses) expect([1, 4, 7, 8]).toContain(id);
     expect(mesh).toEqual(original);
     expect(landscape.counts.terrainTriangles).toBe(2);
     expect(landscape.counts.trees).toBe(0);

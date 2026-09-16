@@ -63,7 +63,11 @@ function featureSeed(id: string): number {
 }
 
 /** Indices into SURFACE_CLASS_IDS; the shader compares the class attribute. */
-const SURFACE_CLASS_GREEN = 4, SURFACE_CLASS_BUNKER = 7, SURFACE_CLASS_WATER = 8;
+const SURFACE_CLASS_GREEN = 4, SURFACE_CLASS_BUNKER = 7, SURFACE_CLASS_WATER = 8, SURFACE_CLASS_TURF = 1;
+/** GPU class id: the three ids the shader tests, everything else the turf id. */
+export function shaderSurfaceClass(id: number): number {
+  return id === SURFACE_CLASS_GREEN || id === SURFACE_CLASS_BUNKER || id === SURFACE_CLASS_WATER ? id : SURFACE_CLASS_TURF;
+}
 
 export interface TurfStyleTarget extends THREE.Material { onBeforeCompile: THREE.Material['onBeforeCompile']; customProgramCacheKey: THREE.Material['customProgramCacheKey'] }
 export interface TurfStyleHandle { setOverrides(overrides: MeridianStyleOverrides): void }
@@ -265,7 +269,13 @@ export function buildThreeLandscape(
       turf[vertex] = attributes.turfWeight[from]! / 255;
       contextWeight[vertex] = attributes.contextWeight[from]! / 255;
       roughness[vertex] = attributes.roughness[from]! / 255;
-      surfaceClass[vertex] = attributes.surfaceClass[from]!;
+      // The class attribute interpolates across a triangle. Since the rough
+      // hierarchy and ground zones change class per vertex inside one feature,
+      // a raw id would sweep through the green / bunker / water ids between
+      // rough (1) and rough_secondary (10) and paint water fragments along
+      // band edges. Only those three ids matter to the shader, so every other
+      // class uploads as the turf id; interpolation then never crosses them.
+      surfaceClass[vertex] = shaderSurfaceClass(attributes.surfaceClass[from]!);
       boundary[vertex] = attributes.boundaryDistanceCm[from]! / 100;
       surround[vertex] = attributes.surroundDistanceCm[from]! / 100;
       routeST[vertex * 2] = attributes.routeST[from * 2]!; routeST[vertex * 2 + 1] = attributes.routeST[from * 2 + 1]!;
