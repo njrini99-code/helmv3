@@ -2437,6 +2437,28 @@ byte-identical.
   features). The reviewer note names the visual comparison performed and the
   pending independent course review; the groups bound crown artwork only and
   carry no height, currentness or obstruction claim.
+- Imagery review (plan 6.3, 6.4, 13.7): `review-course-imagery.py` draws
+  every package feature over the same NAIP export per hole at 3×, writes an
+  18-hole contact sheet, scores each of the 63 OSM bunkers by the share of
+  bright, warm, low-NDVI pixels inside it and in a 6 m ring around it, lists
+  unclaimed sand blobs inside each hole's extent, and measures how much of
+  the played route crosses a mapped tee, fairway or green. Thresholds were
+  calibrated on the bunker set itself (sand warmth median 24 against
+  pavement 8). The overlays confirm OSM outlines register to the imagery
+  within a metre or two on every hole; they also show OSM fairways stopping
+  well short of the mowed corridor on several holes (7 and 16 among them)
+  and no fairway at all on hole 11. Low-sand flags mark shadowed, grass-faced
+  or mis-traced polygons for a course-familiar reviewer; nothing in the
+  dossier moves a polygon or passes a gate.
+- Imagery trace (plan 6.2, preference 3): hole 11's fairway is traced from
+  the NAIP export by visual reading at 3–4×, anchored to the cart path, the
+  five bunkers and the green. Fairway and first cut are not separable at 1 m,
+  so the polygon is the mowed corridor with a stated ±10 m accuracy. It
+  enters the package through `prepare-osm-course.py --traces` as
+  `reviewed: false` with corner smoothing of 6 m inside that band; hole 11
+  stays partial and its truth gate still fails. The terrain source directory
+  serves the revised package after every retained file hash verifies, and
+  its manifest records each package hash it has served.
 - Compiled meshes: 18 holes, 10,458–28,605 triangles with woods tessellated
   as a material, zero omitted triangles and zero metric nodata cells
   (`compiled-peek-n-peak-upper`). `normalize-study.py` excludes woods from
@@ -2473,11 +2495,20 @@ first to groups the floor left empty, the 3D landscape keeps the 720 crowns
 nearest the played hole's own surfaces and the SVG card keeps 240, and
 near-detail crowns swap in only for batch tiles within 150 m of the camera
 focus. Per hole the landscape places 311–578 trees; captured draw calls run
-36–204 in Top and Terrain and 126–309 in the Green preset, with rendered
-triangles ≤ 261k in Terrain and ≤ 719k in Green (down from 930k before the
-focus rule). Tree centres, pattern spacing and clearance from playing
-surfaces are unchanged by any of this; only which authored crowns are drawn
-within a reviewed group.
+38–260 in Top, 36–204 in Terrain and 126–309 in the Green preset, with
+rendered triangles ≤ 242k in Top, ≤ 261k in Terrain and ≤ 719k in Green
+(down from 930k before the focus rule; package fdec6ea8 matrix). Tree
+centres, pattern spacing and clearance from playing surfaces are unchanged by
+any of this; only which authored crowns are drawn within a reviewed group.
+
+Every scene now carries a restrained green-reference glyph when no
+estimated pin exists (plan 5.1, target row): a flag at a roomy interior point
+of the green, labelled "Green", with the accessible title stating that no
+pin or cup position is known. `nominalGreenPin` keeps its reviewed-draft
+gate, so the reference feeds no distance, camera or reconstruction. In the
+3D landscape the forest floor under canopy groups is now a quieter tint of
+the ground and water is muted toward the 2D palette, so a sparse-crown
+interior no longer reads as a dark angular patch.
 
 `?play=1&course=peek-n-peak-upper` drives the real `FairwayShotTracking`
 screen hole by hole with the compiled terrain for the current and next hole
@@ -2502,12 +2533,18 @@ written, positions stay estimates, and a two-tap control clears the round.
 - [Green preset with near crowns, hole 6](assets/course-geometry-2026-09-15/peek-n-peak-upper-06-green-canopy.png)
 - [Play mode, hole 1 putt](assets/course-geometry-2026-09-15/peek-n-peak-upper-play-hole-01-putt.png)
 - [Play mode, hole 2 after hole-out](assets/course-geometry-2026-09-15/peek-n-peak-upper-play-hole-02.png)
+- [Imagery review dossier](assets/course-geometry-2026-09-15/peek-n-peak-upper-imagery-review.json)
+- [Imagery contact sheet](assets/course-geometry-2026-09-15/peek-n-peak-upper-imagery-contact.png)
+- [Imagery overlay, hole 11 with trace](assets/course-geometry-2026-09-15/peek-n-peak-upper-11-naip-overlay.png)
+- [Top view, hole 11 with traced fairway and green reference](assets/course-geometry-2026-09-15/peek-n-peak-upper-11-top-trace.png)
 
 ### 26.5 Remaining gaps
 
 Course-familiar review with recorded boundary uncertainty for every OSM
-feature; a reviewed tee/green endpoint pair per hole; an independent course
-review of the derived canopy groups (the current reviewer is a visual
-comparison against the same imagery); hole 11 fairway; a real-device capture
-of play mode. None of these is a rendering problem, and none may be closed
-by drawing.
+feature, using the imagery dossier as the review aid; a reviewed tee/green
+endpoint pair per hole; an independent course review of the derived canopy
+groups and of the hole 11 fairway trace (the current reviewer is a visual
+comparison against the same imagery); OSM fairways that stop short of the
+mowed corridor on several holes; the low-sand bunker flags; a real-device
+capture of play mode. None of these is a rendering problem, and none may be
+closed by drawing.

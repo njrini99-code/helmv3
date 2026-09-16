@@ -81,7 +81,8 @@ export function createShotOverlayController(svg: SVGSVGElement, prefix: string, 
   const regionNodes = new Map<string, RegionNodes>(), segmentNodes = new Map<string, SegmentNodes>(), flightNodes = new Map<string, FlightNodes>(), puttingNodes = new Map<string, PuttingNodes>();
   const anchorNodes = new Map<string, SVGCircleElement>(), badgeNodes = new Map<string, BadgeNodes>();
   let nextClip = 0;
-  pin.appendChild(element('title', {}, 'Estimated pin. The actual daily cup location is unknown.'));
+  const pinTitle = element('title', {}, 'Estimated pin. The actual daily cup location is unknown.');
+  pin.appendChild(pinTitle);
   const pinLeader = element('line', { stroke: ink, 'stroke-width': .7, 'stroke-dasharray': '2 3', opacity: .65 });
   const pinAnchor = element('circle', { 'data-pin-anchor': 'estimated', r: 2.5, fill: 'var(--fw-diagram-green)', stroke: ink, 'stroke-width': 1.4 });
   const pinGlyph = element('g', { stroke: shadow, 'stroke-width': .6, 'stroke-linejoin': 'round' });
@@ -221,10 +222,14 @@ export function createShotOverlayController(svg: SVGSVGElement, prefix: string, 
     if (layout.pin) {
       const { position: p, label, basis } = layout.pin;
       attributes(pin, { 'data-target-basis': basis });
+      const isReference = basis === 'green_reference';
+      pinTitle.textContent = isReference ? 'Green reference. No pin or cup position is known.' : 'Estimated pin. The actual daily cup location is unknown.';
+      pinText.textContent = isReference ? 'Green' : 'Estimated pin';
+      attributes(pinPill, { width: isReference ? 48 : 88 });
       attributes(pinLeader, { x1: p[0], y1: p[1], x2: label[0], y2: label[1] });
       attributes(pinAnchor, { cx: p[0], cy: p[1] });
       attributes(pinGlyph, { transform: `translate(${p[0]},${p[1]}) scale(${layout.pin.glyphScale})` });
-      attributes(pinPill, { x: label[0] - 44, y: label[1] - 10 });
+      attributes(pinPill, { x: label[0] - (isReference ? 24 : 44), y: label[1] - 10 });
       attributes(pinText, { x: label[0], y: label[1] });
     }
 

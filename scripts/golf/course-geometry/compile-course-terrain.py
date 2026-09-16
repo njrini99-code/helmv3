@@ -160,11 +160,18 @@ def acquire_source(directory, pkg, bounds):
     existing = [(directory / name).exists() for name in names]
     if all(existing):
         manifest = json.loads((directory / 'source-manifest.json').read_text())
-        if manifest['packageHash'] != pkg['contentHash'] or manifest['requestedLocalBoundsM'] != bounds:
-            raise ValueError('Immutable source cache belongs to another package/context; choose a new directory')
+        if manifest['requestedLocalBoundsM'] != bounds:
+            raise ValueError('Immutable source cache belongs to another context; choose a new directory')
         for name in names[:-1]:
             if hashlib.sha256((directory/name).read_bytes()).hexdigest() != manifest['fileHashes'][name]:
                 raise ValueError('Immutable source cache hash mismatch: ' + name)
+        if manifest['packageHash'] != pkg['contentHash']:
+            # Same request bounds and byte-identical evidence serve a revised
+            # package (for example added traces). The raster is never replaced;
+            # the manifest records every package it has served.
+            manifest['previousPackageHashes'] = manifest.get('previousPackageHashes', []) + [manifest['packageHash']]
+            manifest['packageHash'] = pkg['contentHash']
+            (directory / 'source-manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
         return manifest
     if any(existing):
         raise ValueError('Incomplete source cache; preserve evidence and choose a new directory')

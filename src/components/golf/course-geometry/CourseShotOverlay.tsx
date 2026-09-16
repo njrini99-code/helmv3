@@ -115,7 +115,7 @@ export function CourseShotOverlay({ scene, width, height, selectedShotNumber, ac
     {!puttingPlan && anchors.map(({ key, point }) => <circle key={key} data-anchor="estimated"
       cx={point[0]} cy={point[1]} r="2.5" fill="var(--fw-diagram-ground)" stroke="var(--fw-diagram-event)" strokeWidth="1.5" />)}
     {pin && <g data-target="estimated-pin" data-target-basis={pin.basis}>
-      <title>Estimated pin. The actual daily cup location is unknown.</title>
+      <title>{pin.basis === 'green_reference' ? 'Green reference. No pin or cup position is known.' : 'Estimated pin. The actual daily cup location is unknown.'}</title>
       {puttingPlan ? <>
         <circle data-pin-anchor="estimated" cx={pin.position[0]} cy={pin.position[1]} r="3.25" fill="#FFFDF7" stroke="#183B30" strokeWidth="1.25" />
         <g transform={`translate(${pin.position[0]},${pin.position[1]}) scale(${Math.max(.72, pin.glyphScale * .7)})`} stroke="#183B30" strokeWidth=".7" strokeLinejoin="round">
@@ -131,10 +131,10 @@ export function CourseShotOverlay({ scene, width, height, selectedShotNumber, ac
           <path d="M0 -2 V-20" fill="none" stroke="var(--fw-diagram-event)" strokeWidth="1.5" />
           <path d="M0 -20 L11 -16 L0 -12 Z" fill="var(--fw-diagram-event)" />
         </g>
-        <rect x={pin.label[0] - 44} y={pin.label[1] - 10} width="88" height="20" rx="10"
+        <rect x={pin.label[0] - (pin.basis === 'green_reference' ? 24 : 44)} y={pin.label[1] - 10} width={pin.basis === 'green_reference' ? 48 : 88} height="20" rx="10"
           fill="var(--fw-diagram-event)" fillOpacity=".94" />
         <text x={pin.label[0]} y={pin.label[1]} dy=".35em" textAnchor="middle" fontFamily="inherit" fontSize="11"
-          fontWeight="500" fill="var(--fw-diagram-ground)">Estimated pin</text>
+          fontWeight="500" fill="var(--fw-diagram-ground)">{pin.basis === 'green_reference' ? 'Green' : 'Estimated pin'}</text>
       </>}
     </g>}
     {!puttingPlan && badges.map(badge => {

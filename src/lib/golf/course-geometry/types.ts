@@ -150,7 +150,9 @@ export interface HoleScene {
   physicalHoleKey: string;
   sharedGreenHoleOrdinals?: readonly number[];
   algorithmVersion: 'evidence-only-v1' | 'manual-bounds-v1';
-  target: { kind: 'unknown_pin'; greenFeatureId: string | null; estimate?: EstimatedPin };
+  /** `reference` is a layout point inside the green for the restrained target
+   * glyph when no estimate exists (candidate packages). It is never a cup. */
+  target: { kind: 'unknown_pin'; greenFeatureId: string | null; estimate?: EstimatedPin; reference?: PointM };
   hole: PhysicalHole;
   features: LocalFeature[];
   /** Neighboring source geometry for landscape context; excluded from shot inference. */

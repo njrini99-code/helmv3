@@ -14,7 +14,7 @@
           "preset": "Top",
           "file": "hole-01-top.png",
           "canvas": {
-            "terrainHash": "b2ac6510eb642e2256cdba846584ba7c4f9716816c0a062ebb581b390854ad94",
+            "terrainHash": "ac92ba004166ba0d848f5833a0f0d5fbd7ae45395928c4f8e4859a38c5dd74e8",
             "engine": "three.js r186",
             "shadowSpanM": "560.0,493.4",
             "terrainRenderer": "three-webgl2",
@@ -44,7 +44,7 @@
           "preset": "Terrain",
           "file": "hole-01-terrain.png",
           "canvas": {
-            "terrainHash": "b2ac6510eb642e2256cdba846584ba7c4f9716816c0a062ebb581b390854ad94",
+            "terrainHash": "ac92ba004166ba0d848f5833a0f0d5fbd7ae45395928c4f8e4859a38c5dd74e8",
             "engine": "three.js r186",
             "shadowSpanM": "624.5,511.6",
             "terrainRenderer": "three-webgl2",
@@ -79,7 +79,7 @@
           "preset": "Green",
           "file": "hole-01-green.png",
           "canvas": {
-            "terrainHash": "b2ac6510eb642e2256cdba846584ba7c4f9716816c0a062ebb581b390854ad94",
+            "terrainHash": "ac92ba004166ba0d848f5833a0f0d5fbd7ae45395928c4f8e4859a38c5dd74e8",
             "engine": "three.js r186",
             "shadowSpanM": "560.0,493.4",
             "terrainRenderer": "three-webgl2",
@@ -143,7 +143,7 @@
           "preset": "Top",
           "file": "hole-02-top.png",
           "canvas": {
-            "terrainHash": "5195d2dbf6cdbce0d69f378f758bdb22448ac52393b8efad6c9896341efe5147",
+            "terrainHash": "7e9002ca030ed2269a6bbb8d032f1c8f1ac737733b473f829d7cbfa31ddeb070",
             "engine": "three.js r186",
             "shadowSpanM": "669.8,519.6",
             "terrainRenderer": "three-webgl2",
@@ -173,7 +173,7 @@
           "preset": "Terrain",
           "file": "hole-02-terrain.png",
           "canvas": {
-            "terrainHash": "5195d2dbf6cdbce0d69f378f758bdb22448ac52393b8efad6c9896341efe5147",
+            "terrainHash": "7e9002ca030ed2269a6bbb8d032f1c8f1ac737733b473f829d7cbfa31ddeb070",
             "engine": "three.js r186",
             "shadowSpanM": "715.0,584.4",
             "terrainRenderer": "three-webgl2",
@@ -208,7 +208,7 @@
           "preset": "Green",
           "file": "hole-02-green.png",
           "canvas": {
-            "terrainHash": "5195d2dbf6cdbce0d69f378f758bdb22448ac52393b8efad6c9896341efe5147",
+            "terrainHash": "7e9002ca030ed2269a6bbb8d032f1c8f1ac737733b473f829d7cbfa31ddeb070",
             "engine": "three.js r186",
             "shadowSpanM": "669.8,519.6",
             "terrainRenderer": "three-webgl2",
@@ -272,7 +272,7 @@
           "preset": "Top",
           "file": "hole-03-top.png",
           "canvas": {
-            "terrainHash": "111c088b3d6b63252340fb45e41c496b4b6e8740f158bfc9a8d02e4f07ca9bf2",
+            "terrainHash": "dff1632aa7e2e2cfed922b4b1412c1f38e02b0d7e0344508e2927aa37e7f8c02",
             "engine": "three.js r186",
             "shadowSpanM": "466.2,363.0",
             "terrainRenderer": "three-webgl2",
@@ -302,7 +302,7 @@
           "preset": "Terrain",
           "file": "hole-03-terrain.png",
           "canvas": {
-            "terrainHash": "111c088b3d6b63252340fb45e41c496b4b6e8740f158bfc9a8d02e4f07ca9bf2",
+            "terrainHash": "dff1632aa7e2e2cfed922b4b1412c1f38e02b0d7e0344508e2927aa37e7f8c02",
             "engine": "three.js r186",
             "shadowSpanM": "602.4,428.0",
             "terrainRenderer": "three-webgl2",
@@ -337,7 +337,7 @@
           "preset": "Green",
           "file": "hole-03-green.png",
           "canvas": {
-            "terrainHash": "111c088b3d6b63252340fb45e41c496b4b6e8740f158bfc9a8d02e4f07ca9bf2",
+            "terrainHash": "dff1632aa7e2e2cfed922b4b1412c1f38e02b0d7e0344508e2927aa37e7f8c02",
             "engine": "three.js r186",
             "shadowSpanM": "466.2,363.0",
             "terrainRenderer": "three-webgl2",
@@ -401,7 +401,7 @@
           "preset": "Top",
           "file": "hole-04-top.png",
           "canvas": {
-            "terrainHash": "fe21817405a2d1fde1f6f5f586eb585272fc3e071d903b6af2f9dc8aec9cc374",
+            "terrainHash": "1e671a3996fa103a5c9e0698dbb22e8629d2f6b3fd4074d6a12efdf87b3b0f65",
             "engine": "three.js r186",
             "shadowSpanM": "638.9,463.1",
             "terrainRenderer": "three-webgl2",
@@ -431,7 +431,7 @@
           "preset": "Terrain",
           "file": "hole-04-terrain.png",
           "canvas": {
-            "terrainHash": "fe21817405a2d1fde1f6f5f586eb585272fc3e071d903b6af2f9dc8aec9cc374",
+            "terrainHash": "1e671a3996fa103a5c9e0698dbb22e8629d2f6b3fd4074d6a12efdf87b3b0f65",
             "engine": "three.js r186",
             "shadowSpanM": "710.8,509.5",
             "terrainRenderer": "three-webgl2",
@@ -466,7 +466,7 @@
           "preset": "Green",
           "file": "hole-04-green.png",
           "canvas": {
-            "terrainHash": "fe21817405a2d1fde1f6f5f586eb585272fc3e071d903b6af2f9dc8aec9cc374",
+            "terrainHash": "1e671a3996fa103a5c9e0698dbb22e8629d2f6b3fd4074d6a12efdf87b3b0f65",
             "engine": "three.js r186",
             "shadowSpanM": "638.9,463.1",
             "terrainRenderer": "three-webgl2",
@@ -530,7 +530,7 @@
           "preset": "Top",
           "file": "hole-05-top.png",
           "canvas": {
-            "terrainHash": "a9232ec0d440dd9c277ea294d18630bbf304fd03860d684d67156cc90de91b51",
+            "terrainHash": "09b2c8c51d4fef391d11659a8c05fd07a42384604867e0c9fb14e715b01c78de",
             "engine": "three.js r186",
             "shadowSpanM": "420.4,339.5",
             "terrainRenderer": "three-webgl2",
@@ -560,7 +560,7 @@
           "preset": "Terrain",
           "file": "hole-05-terrain.png",
           "canvas": {
-            "terrainHash": "a9232ec0d440dd9c277ea294d18630bbf304fd03860d684d67156cc90de91b51",
+            "terrainHash": "09b2c8c51d4fef391d11659a8c05fd07a42384604867e0c9fb14e715b01c78de",
             "engine": "three.js r186",
             "shadowSpanM": "428.4,335.2",
             "terrainRenderer": "three-webgl2",
@@ -595,7 +595,7 @@
           "preset": "Green",
           "file": "hole-05-green.png",
           "canvas": {
-            "terrainHash": "a9232ec0d440dd9c277ea294d18630bbf304fd03860d684d67156cc90de91b51",
+            "terrainHash": "09b2c8c51d4fef391d11659a8c05fd07a42384604867e0c9fb14e715b01c78de",
             "engine": "three.js r186",
             "shadowSpanM": "420.4,339.6",
             "terrainRenderer": "three-webgl2",
@@ -659,7 +659,7 @@
           "preset": "Top",
           "file": "hole-06-top.png",
           "canvas": {
-            "terrainHash": "2ccab44498c6e0f1736bff0048085fe55e831fb172fa18fe08b5be3c7ec27757",
+            "terrainHash": "272c39b7be03e26b7747d7d265e29e04a8e97a19b5aa4dd625cfb81c64da6cda",
             "engine": "three.js r186",
             "shadowSpanM": "736.5,458.8",
             "terrainRenderer": "three-webgl2",
@@ -689,7 +689,7 @@
           "preset": "Terrain",
           "file": "hole-06-terrain.png",
           "canvas": {
-            "terrainHash": "2ccab44498c6e0f1736bff0048085fe55e831fb172fa18fe08b5be3c7ec27757",
+            "terrainHash": "272c39b7be03e26b7747d7d265e29e04a8e97a19b5aa4dd625cfb81c64da6cda",
             "engine": "three.js r186",
             "shadowSpanM": "758.4,505.4",
             "terrainRenderer": "three-webgl2",
@@ -724,7 +724,7 @@
           "preset": "Green",
           "file": "hole-06-green.png",
           "canvas": {
-            "terrainHash": "2ccab44498c6e0f1736bff0048085fe55e831fb172fa18fe08b5be3c7ec27757",
+            "terrainHash": "272c39b7be03e26b7747d7d265e29e04a8e97a19b5aa4dd625cfb81c64da6cda",
             "engine": "three.js r186",
             "shadowSpanM": "736.5,458.8",
             "terrainRenderer": "three-webgl2",
@@ -788,7 +788,7 @@
           "preset": "Top",
           "file": "hole-07-top.png",
           "canvas": {
-            "terrainHash": "bfd757e4529cfef17eee63831afd641071a7c0641d7a12f37e7e2d66ad17ad80",
+            "terrainHash": "e79ef75b502a52f8790ea428cf37bf7851896db66c57046352775d35c6daac46",
             "engine": "three.js r186",
             "shadowSpanM": "675.5,501.2",
             "terrainRenderer": "three-webgl2",
@@ -818,7 +818,7 @@
           "preset": "Terrain",
           "file": "hole-07-terrain.png",
           "canvas": {
-            "terrainHash": "bfd757e4529cfef17eee63831afd641071a7c0641d7a12f37e7e2d66ad17ad80",
+            "terrainHash": "e79ef75b502a52f8790ea428cf37bf7851896db66c57046352775d35c6daac46",
             "engine": "three.js r186",
             "shadowSpanM": "720.7,549.3",
             "terrainRenderer": "three-webgl2",
@@ -853,7 +853,7 @@
           "preset": "Green",
           "file": "hole-07-green.png",
           "canvas": {
-            "terrainHash": "bfd757e4529cfef17eee63831afd641071a7c0641d7a12f37e7e2d66ad17ad80",
+            "terrainHash": "e79ef75b502a52f8790ea428cf37bf7851896db66c57046352775d35c6daac46",
             "engine": "three.js r186",
             "shadowSpanM": "675.5,501.2",
             "terrainRenderer": "three-webgl2",
@@ -917,7 +917,7 @@
           "preset": "Top",
           "file": "hole-08-top.png",
           "canvas": {
-            "terrainHash": "595af482f642d5f962f35558d3e52d0b3b2f8c01a6512d143335028ecdee3e93",
+            "terrainHash": "7a1c9f3ae60528ae0a1f116a7a13023330271ddab655e6db4f5c88b88cdf5b96",
             "engine": "three.js r186",
             "shadowSpanM": "709.2,587.7",
             "terrainRenderer": "three-webgl2",
@@ -947,7 +947,7 @@
           "preset": "Terrain",
           "file": "hole-08-terrain.png",
           "canvas": {
-            "terrainHash": "595af482f642d5f962f35558d3e52d0b3b2f8c01a6512d143335028ecdee3e93",
+            "terrainHash": "7a1c9f3ae60528ae0a1f116a7a13023330271ddab655e6db4f5c88b88cdf5b96",
             "engine": "three.js r186",
             "shadowSpanM": "792.7,637.5",
             "terrainRenderer": "three-webgl2",
@@ -982,7 +982,7 @@
           "preset": "Green",
           "file": "hole-08-green.png",
           "canvas": {
-            "terrainHash": "595af482f642d5f962f35558d3e52d0b3b2f8c01a6512d143335028ecdee3e93",
+            "terrainHash": "7a1c9f3ae60528ae0a1f116a7a13023330271ddab655e6db4f5c88b88cdf5b96",
             "engine": "three.js r186",
             "shadowSpanM": "709.2,587.8",
             "terrainRenderer": "three-webgl2",
@@ -1046,7 +1046,7 @@
           "preset": "Top",
           "file": "hole-09-top.png",
           "canvas": {
-            "terrainHash": "9e95a418d0a6b26eee72a3b766cfc43441e46914e0373c58faacba5beefca5dc",
+            "terrainHash": "cf022cf89257ce6500974d5ec0d05470d8bbaf612b1f10219218073c304fb7ba",
             "engine": "three.js r186",
             "shadowSpanM": "560.8,466.3",
             "terrainRenderer": "three-webgl2",
@@ -1058,7 +1058,7 @@
             "terrainFocus": "-81.60004627254389,265.93902946715053,534.2302846672676",
             "terrainTriangles": "20535",
             "terrainTrees": "407",
-            "renderCount": "3",
+            "renderCount": "1",
             "flightPaths": "0",
             "puttingTracks": "0",
             "cssWidth": "388",
@@ -1068,15 +1068,15 @@
             "pixelRatio": "2",
             "debugView": "final",
             "crownDetail": "distant",
-            "drawCalls": "66",
-            "renderTriangles": "74079"
+            "drawCalls": "260",
+            "renderTriangles": "242090"
           }
         },
         {
           "preset": "Terrain",
           "file": "hole-09-terrain.png",
           "canvas": {
-            "terrainHash": "9e95a418d0a6b26eee72a3b766cfc43441e46914e0373c58faacba5beefca5dc",
+            "terrainHash": "cf022cf89257ce6500974d5ec0d05470d8bbaf612b1f10219218073c304fb7ba",
             "engine": "three.js r186",
             "shadowSpanM": "636.2,586.2",
             "terrainRenderer": "three-webgl2",
@@ -1088,7 +1088,7 @@
             "terrainFocus": "-91.42572395751743,264.57151603889054,534.2302846672676",
             "terrainTriangles": "20535",
             "terrainTrees": "407",
-            "renderCount": "6",
+            "renderCount": "4",
             "flightPaths": "0",
             "puttingTracks": "0",
             "cssWidth": "388",
@@ -1111,7 +1111,7 @@
           "preset": "Green",
           "file": "hole-09-green.png",
           "canvas": {
-            "terrainHash": "9e95a418d0a6b26eee72a3b766cfc43441e46914e0373c58faacba5beefca5dc",
+            "terrainHash": "cf022cf89257ce6500974d5ec0d05470d8bbaf612b1f10219218073c304fb7ba",
             "engine": "three.js r186",
             "shadowSpanM": "560.8,466.3",
             "terrainRenderer": "three-webgl2",
@@ -1175,7 +1175,7 @@
           "preset": "Top",
           "file": "hole-10-top.png",
           "canvas": {
-            "terrainHash": "029dcda3e8648a1a49333c909d5d8fb3c026f48d7c341bcf907eea8a2f04c79f",
+            "terrainHash": "c574ea5714bcfdd481a2d37e2686cfa186831e2dcec227a72f92304c68781859",
             "engine": "three.js r186",
             "shadowSpanM": "620.8,497.0",
             "terrainRenderer": "three-webgl2",
@@ -1185,7 +1185,7 @@
             "terrainExaggeration": "1",
             "terrainScale": "1.6977897424383275",
             "terrainFocus": "130.97336699490876,-153.87943916085766,526.3950168774601",
-            "terrainTriangles": "21343",
+            "terrainTriangles": "21450",
             "terrainTrees": "452",
             "renderCount": "3",
             "flightPaths": "0",
@@ -1198,14 +1198,14 @@
             "debugView": "final",
             "crownDetail": "distant",
             "drawCalls": "154",
-            "renderTriangles": "152435"
+            "renderTriangles": "152542"
           }
         },
         {
           "preset": "Terrain",
           "file": "hole-10-terrain.png",
           "canvas": {
-            "terrainHash": "029dcda3e8648a1a49333c909d5d8fb3c026f48d7c341bcf907eea8a2f04c79f",
+            "terrainHash": "c574ea5714bcfdd481a2d37e2686cfa186831e2dcec227a72f92304c68781859",
             "engine": "three.js r186",
             "shadowSpanM": "650.7,558.8",
             "terrainRenderer": "three-webgl2",
@@ -1215,7 +1215,7 @@
             "terrainExaggeration": "1.5",
             "terrainScale": "2.109361364913117",
             "terrainFocus": "124.5442885702525,-157.33412795681704,526.3950168774601",
-            "terrainTriangles": "21343",
+            "terrainTriangles": "21450",
             "terrainTrees": "452",
             "renderCount": "6",
             "flightPaths": "0",
@@ -1228,7 +1228,7 @@
             "debugView": "final",
             "crownDetail": "distant",
             "drawCalls": "144",
-            "renderTriangles": "139095"
+            "renderTriangles": "139202"
           }
         },
         {
@@ -1240,7 +1240,7 @@
           "preset": "Green",
           "file": "hole-10-green.png",
           "canvas": {
-            "terrainHash": "029dcda3e8648a1a49333c909d5d8fb3c026f48d7c341bcf907eea8a2f04c79f",
+            "terrainHash": "c574ea5714bcfdd481a2d37e2686cfa186831e2dcec227a72f92304c68781859",
             "engine": "three.js r186",
             "shadowSpanM": "620.8,497.0",
             "terrainRenderer": "three-webgl2",
@@ -1250,7 +1250,7 @@
             "terrainExaggeration": "1",
             "terrainScale": "5.810720772332932",
             "terrainFocus": "178.3874401715601,-320.8348005475182,523.5082090382441",
-            "terrainTriangles": "21343",
+            "terrainTriangles": "21450",
             "terrainTrees": "452",
             "renderCount": "1",
             "flightPaths": "0",
@@ -1263,7 +1263,7 @@
             "debugView": "final",
             "crownDetail": "near",
             "drawCalls": "297",
-            "renderTriangles": "555590"
+            "renderTriangles": "555804"
           }
         }
       ],
@@ -1304,18 +1304,18 @@
           "preset": "Top",
           "file": "hole-11-top.png",
           "canvas": {
-            "terrainHash": "48e25c0a1b80376e28a8d3acedcb196ce1dbb501cbf23bcd1489bfd2a8c28cec",
+            "terrainHash": "3621660506ec117b54c30a00785a78e0e97502615b8535722b7c78810939900d",
             "engine": "three.js r186",
-            "shadowSpanM": "658.4,561.8",
+            "shadowSpanM": "670.4,561.8",
             "terrainRenderer": "three-webgl2",
             "terrainState": "ready",
             "terrainPitch": "90",
             "terrainYaw": "0",
             "terrainExaggeration": "1",
-            "terrainScale": "1.3552162432653527",
-            "terrainFocus": "140.44069302113192,-578.9878860600185,523.6722424117518",
-            "terrainTriangles": "22943",
-            "terrainTrees": "497",
+            "terrainScale": "1.3393781397536404",
+            "terrainFocus": "145.2173148754351,-578.7939131810089,524.4289015311533",
+            "terrainTriangles": "27402",
+            "terrainTrees": "508",
             "renderCount": "3",
             "flightPaths": "0",
             "puttingTracks": "0",
@@ -1326,26 +1326,26 @@
             "pixelRatio": "2",
             "debugView": "final",
             "crownDetail": "distant",
-            "drawCalls": "167",
-            "renderTriangles": "186091"
+            "drawCalls": "188",
+            "renderTriangles": "196350"
           }
         },
         {
           "preset": "Terrain",
           "file": "hole-11-terrain.png",
           "canvas": {
-            "terrainHash": "48e25c0a1b80376e28a8d3acedcb196ce1dbb501cbf23bcd1489bfd2a8c28cec",
+            "terrainHash": "3621660506ec117b54c30a00785a78e0e97502615b8535722b7c78810939900d",
             "engine": "three.js r186",
-            "shadowSpanM": "714.2,662.0",
+            "shadowSpanM": "726.2,668.0",
             "terrainRenderer": "three-webgl2",
             "terrainState": "ready",
             "terrainPitch": "50",
             "terrainYaw": "0",
             "terrainExaggeration": "1.5",
             "terrainScale": "1.6742774349383045",
-            "terrainFocus": "140.51598594987436,-579.6041793628104,523.6722424117518",
-            "terrainTriangles": "22943",
-            "terrainTrees": "497",
+            "terrainFocus": "146.71136888246596,-578.3999738108594,524.4289015311533",
+            "terrainTriangles": "27402",
+            "terrainTrees": "508",
             "renderCount": "6",
             "flightPaths": "0",
             "puttingTracks": "0",
@@ -1356,8 +1356,8 @@
             "pixelRatio": "2",
             "debugView": "final",
             "crownDetail": "distant",
-            "drawCalls": "153",
-            "renderTriangles": "175579"
+            "drawCalls": "163",
+            "renderTriangles": "177558"
           }
         },
         {
@@ -1369,18 +1369,18 @@
           "preset": "Green",
           "file": "hole-11-green.png",
           "canvas": {
-            "terrainHash": "48e25c0a1b80376e28a8d3acedcb196ce1dbb501cbf23bcd1489bfd2a8c28cec",
+            "terrainHash": "3621660506ec117b54c30a00785a78e0e97502615b8535722b7c78810939900d",
             "engine": "three.js r186",
-            "shadowSpanM": "658.4,561.8",
+            "shadowSpanM": "670.4,561.8",
             "terrainRenderer": "three-webgl2",
             "terrainState": "ready",
             "terrainPitch": "90",
             "terrainYaw": "0",
             "terrainExaggeration": "1",
-            "terrainScale": "6.764473533703052",
-            "terrainFocus": "202.90691880201632,-797.1700244086475,520.6885985638922",
-            "terrainTriangles": "22943",
-            "terrainTrees": "497",
+            "terrainScale": "6.795832523683389",
+            "terrainFocus": "202.58561859351198,-797.2373734199141,520.6885985638922",
+            "terrainTriangles": "27402",
+            "terrainTrees": "508",
             "renderCount": "1",
             "flightPaths": "0",
             "puttingTracks": "0",
@@ -1391,8 +1391,8 @@
             "pixelRatio": "2",
             "debugView": "final",
             "crownDetail": "near",
-            "drawCalls": "261",
-            "renderTriangles": "490182"
+            "drawCalls": "282",
+            "renderTriangles": "488356"
           }
         }
       ],
@@ -1402,7 +1402,7 @@
         "tacticalBoundsM": [
           44,
           -828,
-          236,
+          248,
           -328
         ],
         "contextBoundsM": [
@@ -1433,7 +1433,7 @@
           "preset": "Top",
           "file": "hole-12-top.png",
           "canvas": {
-            "terrainHash": "9bb26ef15709aa38b0707d5ba81f2c7e97e06d0ffc54bde5c0c0950ba078b143",
+            "terrainHash": "a14d2070b6bd0a82e367230934dffba5d1ce02a1c05231624b497675e149fac0",
             "engine": "three.js r186",
             "shadowSpanM": "584.0,478.7",
             "terrainRenderer": "three-webgl2",
@@ -1443,7 +1443,7 @@
             "terrainExaggeration": "1",
             "terrainScale": "2.0761761922386324",
             "terrainFocus": "452.413839725984,-856.8354157905575,514.2818144495752",
-            "terrainTriangles": "18589",
+            "terrainTriangles": "18773",
             "terrainTrees": "439",
             "renderCount": "3",
             "flightPaths": "0",
@@ -1456,14 +1456,14 @@
             "debugView": "final",
             "crownDetail": "distant",
             "drawCalls": "94",
-            "renderTriangles": "88249"
+            "renderTriangles": "88433"
           }
         },
         {
           "preset": "Terrain",
           "file": "hole-12-terrain.png",
           "canvas": {
-            "terrainHash": "9bb26ef15709aa38b0707d5ba81f2c7e97e06d0ffc54bde5c0c0950ba078b143",
+            "terrainHash": "a14d2070b6bd0a82e367230934dffba5d1ce02a1c05231624b497675e149fac0",
             "engine": "three.js r186",
             "shadowSpanM": "663.7,568.7",
             "terrainRenderer": "three-webgl2",
@@ -1473,7 +1473,7 @@
             "terrainExaggeration": "1.5",
             "terrainScale": "2.8176418798953464",
             "terrainFocus": "453.292364280798,-856.0543532898503,514.2818144495752",
-            "terrainTriangles": "18589",
+            "terrainTriangles": "18773",
             "terrainTrees": "439",
             "renderCount": "6",
             "flightPaths": "0",
@@ -1486,7 +1486,7 @@
             "debugView": "final",
             "crownDetail": "distant",
             "drawCalls": "71",
-            "renderTriangles": "69165"
+            "renderTriangles": "69349"
           }
         },
         {
@@ -1498,7 +1498,7 @@
           "preset": "Green",
           "file": "hole-12-green.png",
           "canvas": {
-            "terrainHash": "9bb26ef15709aa38b0707d5ba81f2c7e97e06d0ffc54bde5c0c0950ba078b143",
+            "terrainHash": "a14d2070b6bd0a82e367230934dffba5d1ce02a1c05231624b497675e149fac0",
             "engine": "three.js r186",
             "shadowSpanM": "584.0,478.7",
             "terrainRenderer": "three-webgl2",
@@ -1508,7 +1508,7 @@
             "terrainExaggeration": "1",
             "terrainScale": "11.12902518734075",
             "terrainFocus": "572.9131645673051,-924.1978175207321,500.2021382256464",
-            "terrainTriangles": "18589",
+            "terrainTriangles": "18773",
             "terrainTrees": "439",
             "renderCount": "1",
             "flightPaths": "0",
@@ -1521,7 +1521,7 @@
             "debugView": "final",
             "crownDetail": "near",
             "drawCalls": "253",
-            "renderTriangles": "395634"
+            "renderTriangles": "396002"
           }
         }
       ],
@@ -1562,7 +1562,7 @@
           "preset": "Top",
           "file": "hole-13-top.png",
           "canvas": {
-            "terrainHash": "79f5d0c64c584f9fe24f29cba6a7cf9ba221bc932bc89e0d84c675912898827f",
+            "terrainHash": "6af051a1aff20a308e07c947a46e41236baf40a3021eb2901e8236a374347ec0",
             "engine": "three.js r186",
             "shadowSpanM": "480.2,430.6",
             "terrainRenderer": "three-webgl2",
@@ -1592,7 +1592,7 @@
           "preset": "Terrain",
           "file": "hole-13-terrain.png",
           "canvas": {
-            "terrainHash": "79f5d0c64c584f9fe24f29cba6a7cf9ba221bc932bc89e0d84c675912898827f",
+            "terrainHash": "6af051a1aff20a308e07c947a46e41236baf40a3021eb2901e8236a374347ec0",
             "engine": "three.js r186",
             "shadowSpanM": "574.5,535.2",
             "terrainRenderer": "three-webgl2",
@@ -1627,7 +1627,7 @@
           "preset": "Green",
           "file": "hole-13-green.png",
           "canvas": {
-            "terrainHash": "79f5d0c64c584f9fe24f29cba6a7cf9ba221bc932bc89e0d84c675912898827f",
+            "terrainHash": "6af051a1aff20a308e07c947a46e41236baf40a3021eb2901e8236a374347ec0",
             "engine": "three.js r186",
             "shadowSpanM": "480.2,430.7",
             "terrainRenderer": "three-webgl2",
@@ -1691,7 +1691,7 @@
           "preset": "Top",
           "file": "hole-14-top.png",
           "canvas": {
-            "terrainHash": "8297b68179b53f4bae90ace2b2b8fa64305c1a054a68dacba3687da02feecf61",
+            "terrainHash": "712227de51a39a8f52a98a2171201cc9a6f19f7146aa3325a088e4e479267e19",
             "engine": "three.js r186",
             "shadowSpanM": "601.7,533.7",
             "terrainRenderer": "three-webgl2",
@@ -1701,7 +1701,7 @@
             "terrainExaggeration": "1",
             "terrainScale": "1.6929944714273601",
             "terrainFocus": "440.41764536577665,-989.9170514618337,499.49470745985127",
-            "terrainTriangles": "19098",
+            "terrainTriangles": "19170",
             "terrainTrees": "429",
             "renderCount": "3",
             "flightPaths": "0",
@@ -1714,14 +1714,14 @@
             "debugView": "final",
             "crownDetail": "distant",
             "drawCalls": "137",
-            "renderTriangles": "155618"
+            "renderTriangles": "155690"
           }
         },
         {
           "preset": "Terrain",
           "file": "hole-14-terrain.png",
           "canvas": {
-            "terrainHash": "8297b68179b53f4bae90ace2b2b8fa64305c1a054a68dacba3687da02feecf61",
+            "terrainHash": "712227de51a39a8f52a98a2171201cc9a6f19f7146aa3325a088e4e479267e19",
             "engine": "three.js r186",
             "shadowSpanM": "691.6,609.6",
             "terrainRenderer": "three-webgl2",
@@ -1731,7 +1731,7 @@
             "terrainExaggeration": "1.5",
             "terrainScale": "1.9674577462886367",
             "terrainFocus": "439.49911190688454,-998.0988368196136,499.49470745985127",
-            "terrainTriangles": "19098",
+            "terrainTriangles": "19170",
             "terrainTrees": "429",
             "renderCount": "6",
             "flightPaths": "0",
@@ -1744,7 +1744,7 @@
             "debugView": "final",
             "crownDetail": "distant",
             "drawCalls": "138",
-            "renderTriangles": "155286"
+            "renderTriangles": "155358"
           }
         },
         {
@@ -1756,7 +1756,7 @@
           "preset": "Green",
           "file": "hole-14-green.png",
           "canvas": {
-            "terrainHash": "8297b68179b53f4bae90ace2b2b8fa64305c1a054a68dacba3687da02feecf61",
+            "terrainHash": "712227de51a39a8f52a98a2171201cc9a6f19f7146aa3325a088e4e479267e19",
             "engine": "three.js r186",
             "shadowSpanM": "601.7,533.8",
             "terrainRenderer": "three-webgl2",
@@ -1766,7 +1766,7 @@
             "terrainExaggeration": "1",
             "terrainScale": "6.672921197752551",
             "terrainFocus": "267.68293633233776,-940.4941654351805,505.53416364631926",
-            "terrainTriangles": "19098",
+            "terrainTriangles": "19170",
             "terrainTrees": "429",
             "renderCount": "1",
             "flightPaths": "0",
@@ -1779,7 +1779,7 @@
             "debugView": "final",
             "crownDetail": "near",
             "drawCalls": "254",
-            "renderTriangles": "583544"
+            "renderTriangles": "583688"
           }
         }
       ],
@@ -1820,7 +1820,7 @@
           "preset": "Top",
           "file": "hole-15-top.png",
           "canvas": {
-            "terrainHash": "84952c8f2e5891c09c862200314a72f84f6274d26e719effb0d8c19d108392a9",
+            "terrainHash": "d521672c209870c63658772c0a6dd7d921e3b614bc251096ae2bedce4f3ec58e",
             "engine": "three.js r186",
             "shadowSpanM": "377.3,291.1",
             "terrainRenderer": "three-webgl2",
@@ -1830,7 +1830,7 @@
             "terrainExaggeration": "1",
             "terrainScale": "3.7371533316501893",
             "terrainFocus": "215.90813941904653,-872.2387889827115,515.2342580669223",
-            "terrainTriangles": "10667",
+            "terrainTriangles": "10791",
             "terrainTrees": "422",
             "renderCount": "3",
             "flightPaths": "0",
@@ -1843,14 +1843,14 @@
             "debugView": "final",
             "crownDetail": "distant",
             "drawCalls": "53",
-            "renderTriangles": "82143"
+            "renderTriangles": "82267"
           }
         },
         {
           "preset": "Terrain",
           "file": "hole-15-terrain.png",
           "canvas": {
-            "terrainHash": "84952c8f2e5891c09c862200314a72f84f6274d26e719effb0d8c19d108392a9",
+            "terrainHash": "d521672c209870c63658772c0a6dd7d921e3b614bc251096ae2bedce4f3ec58e",
             "engine": "three.js r186",
             "shadowSpanM": "460.3,341.8",
             "terrainRenderer": "three-webgl2",
@@ -1860,7 +1860,7 @@
             "terrainExaggeration": "1.5",
             "terrainScale": "4.805554142037212",
             "terrainFocus": "215.08358509298893,-872.3598036627143,515.2342580669223",
-            "terrainTriangles": "10667",
+            "terrainTriangles": "10791",
             "terrainTrees": "422",
             "renderCount": "6",
             "flightPaths": "0",
@@ -1873,7 +1873,7 @@
             "debugView": "final",
             "crownDetail": "near",
             "drawCalls": "53",
-            "renderTriangles": "213183"
+            "renderTriangles": "213307"
           }
         },
         {
@@ -1885,7 +1885,7 @@
           "preset": "Green",
           "file": "hole-15-green.png",
           "canvas": {
-            "terrainHash": "84952c8f2e5891c09c862200314a72f84f6274d26e719effb0d8c19d108392a9",
+            "terrainHash": "d521672c209870c63658772c0a6dd7d921e3b614bc251096ae2bedce4f3ec58e",
             "engine": "three.js r186",
             "shadowSpanM": "377.4,291.1",
             "terrainRenderer": "three-webgl2",
@@ -1895,7 +1895,7 @@
             "terrainExaggeration": "1",
             "terrainScale": "9.111346963218017",
             "terrainFocus": "147.4221267787894,-891.4094553090413,511.7612512833108",
-            "terrainTriangles": "10667",
+            "terrainTriangles": "10791",
             "terrainTrees": "422",
             "renderCount": "1",
             "flightPaths": "0",
@@ -1908,7 +1908,7 @@
             "debugView": "final",
             "crownDetail": "near",
             "drawCalls": "175",
-            "renderTriangles": "574530"
+            "renderTriangles": "574778"
           }
         }
       ],
@@ -1949,7 +1949,7 @@
           "preset": "Top",
           "file": "hole-16-top.png",
           "canvas": {
-            "terrainHash": "bb3d169aadefc40f556149dfff8863e3666e20e30dacf395b2ebe287feb007cf",
+            "terrainHash": "7cd1d0be54a48b7e5461ad1ac25e378fb4e7a0b465c88334eabd1d43ecb8b0d7",
             "engine": "three.js r186",
             "shadowSpanM": "521.4,502.4",
             "terrainRenderer": "three-webgl2",
@@ -1959,7 +1959,7 @@
             "terrainExaggeration": "1",
             "terrainScale": "2.2247311478515748",
             "terrainFocus": "17.60668814146237,-747.6260677385433,527.0231887996124",
-            "terrainTriangles": "18738",
+            "terrainTriangles": "19022",
             "terrainTrees": "477",
             "renderCount": "3",
             "flightPaths": "0",
@@ -1972,14 +1972,14 @@
             "debugView": "final",
             "crownDetail": "distant",
             "drawCalls": "136",
-            "renderTriangles": "172070"
+            "renderTriangles": "172354"
           }
         },
         {
           "preset": "Terrain",
           "file": "hole-16-terrain.png",
           "canvas": {
-            "terrainHash": "bb3d169aadefc40f556149dfff8863e3666e20e30dacf395b2ebe287feb007cf",
+            "terrainHash": "7cd1d0be54a48b7e5461ad1ac25e378fb4e7a0b465c88334eabd1d43ecb8b0d7",
             "engine": "three.js r186",
             "shadowSpanM": "611.8,557.4",
             "terrainRenderer": "three-webgl2",
@@ -1989,7 +1989,7 @@
             "terrainExaggeration": "1.5",
             "terrainScale": "2.584697060597352",
             "terrainFocus": "19.99948495638233,-748.3165288379847,527.0231887996124",
-            "terrainTriangles": "18738",
+            "terrainTriangles": "19022",
             "terrainTrees": "477",
             "renderCount": "6",
             "flightPaths": "0",
@@ -2002,7 +2002,7 @@
             "debugView": "final",
             "crownDetail": "distant",
             "drawCalls": "126",
-            "renderTriangles": "165182"
+            "renderTriangles": "165466"
           }
         },
         {
@@ -2014,7 +2014,7 @@
           "preset": "Green",
           "file": "hole-16-green.png",
           "canvas": {
-            "terrainHash": "bb3d169aadefc40f556149dfff8863e3666e20e30dacf395b2ebe287feb007cf",
+            "terrainHash": "7cd1d0be54a48b7e5461ad1ac25e378fb4e7a0b465c88334eabd1d43ecb8b0d7",
             "engine": "three.js r186",
             "shadowSpanM": "521.4,502.4",
             "terrainRenderer": "three-webgl2",
@@ -2024,7 +2024,7 @@
             "terrainExaggeration": "1",
             "terrainScale": "4.726506285696274",
             "terrainFocus": "-71.78366827941761,-682.4081400663705,531.6920224648946",
-            "terrainTriangles": "18738",
+            "terrainTriangles": "19022",
             "terrainTrees": "477",
             "renderCount": "1",
             "flightPaths": "0",
@@ -2037,7 +2037,7 @@
             "debugView": "final",
             "crownDetail": "near",
             "drawCalls": "277",
-            "renderTriangles": "718512"
+            "renderTriangles": "719080"
           }
         }
       ],
@@ -2078,7 +2078,7 @@
           "preset": "Top",
           "file": "hole-17-top.png",
           "canvas": {
-            "terrainHash": "f9a3b93e620b5e0fa24c5f89f5a91c3c9fa3f0f70155d9b6705979eeaa1b97f5",
+            "terrainHash": "71967021bfdd7254e8d7e7050ba4e44d1d45b54c9ff29a422cc479063ffe907d",
             "engine": "three.js r186",
             "shadowSpanM": "538.0,472.8",
             "terrainRenderer": "three-webgl2",
@@ -2108,7 +2108,7 @@
           "preset": "Terrain",
           "file": "hole-17-terrain.png",
           "canvas": {
-            "terrainHash": "f9a3b93e620b5e0fa24c5f89f5a91c3c9fa3f0f70155d9b6705979eeaa1b97f5",
+            "terrainHash": "71967021bfdd7254e8d7e7050ba4e44d1d45b54c9ff29a422cc479063ffe907d",
             "engine": "three.js r186",
             "shadowSpanM": "571.0,549.0",
             "terrainRenderer": "three-webgl2",
@@ -2143,7 +2143,7 @@
           "preset": "Green",
           "file": "hole-17-green.png",
           "canvas": {
-            "terrainHash": "f9a3b93e620b5e0fa24c5f89f5a91c3c9fa3f0f70155d9b6705979eeaa1b97f5",
+            "terrainHash": "71967021bfdd7254e8d7e7050ba4e44d1d45b54c9ff29a422cc479063ffe907d",
             "engine": "three.js r186",
             "shadowSpanM": "538.2,472.8",
             "terrainRenderer": "three-webgl2",
@@ -2207,7 +2207,7 @@
           "preset": "Top",
           "file": "hole-18-top.png",
           "canvas": {
-            "terrainHash": "c490c01ba37dafc6053ca25d19dac712758f7464cdf3bf4cda47531db6812926",
+            "terrainHash": "78c65afd429ac6f4a2194511d70c2c74c076c84ca380a310d8cecb7fff065179",
             "engine": "three.js r186",
             "shadowSpanM": "651.1,550.7",
             "terrainRenderer": "three-webgl2",
@@ -2217,7 +2217,7 @@
             "terrainExaggeration": "1",
             "terrainScale": "1.249851049729119",
             "terrainFocus": "-64.06546955841044,-235.94151143192988,538.2436125196489",
-            "terrainTriangles": "27181",
+            "terrainTriangles": "27404",
             "terrainTrees": "533",
             "renderCount": "3",
             "flightPaths": "0",
@@ -2230,14 +2230,14 @@
             "debugView": "final",
             "crownDetail": "distant",
             "drawCalls": "182",
-            "renderTriangles": "186173"
+            "renderTriangles": "186396"
           }
         },
         {
           "preset": "Terrain",
           "file": "hole-18-terrain.png",
           "canvas": {
-            "terrainHash": "c490c01ba37dafc6053ca25d19dac712758f7464cdf3bf4cda47531db6812926",
+            "terrainHash": "78c65afd429ac6f4a2194511d70c2c74c076c84ca380a310d8cecb7fff065179",
             "engine": "three.js r186",
             "shadowSpanM": "783.2,607.6",
             "terrainRenderer": "three-webgl2",
@@ -2247,7 +2247,7 @@
             "terrainExaggeration": "1.5",
             "terrainScale": "1.6038804496477708",
             "terrainFocus": "-45.13474561114486,-241.1976197929126,538.2436125196489",
-            "terrainTriangles": "27181",
+            "terrainTriangles": "27404",
             "terrainTrees": "533",
             "renderCount": "6",
             "flightPaths": "0",
@@ -2260,7 +2260,7 @@
             "debugView": "final",
             "crownDetail": "distant",
             "drawCalls": "195",
-            "renderTriangles": "193077"
+            "renderTriangles": "193300"
           }
         },
         {
@@ -2272,7 +2272,7 @@
           "preset": "Green",
           "file": "hole-18-green.png",
           "canvas": {
-            "terrainHash": "c490c01ba37dafc6053ca25d19dac712758f7464cdf3bf4cda47531db6812926",
+            "terrainHash": "78c65afd429ac6f4a2194511d70c2c74c076c84ca380a310d8cecb7fff065179",
             "engine": "three.js r186",
             "shadowSpanM": "651.1,550.7",
             "terrainRenderer": "three-webgl2",
@@ -2282,7 +2282,7 @@
             "terrainExaggeration": "1",
             "terrainScale": "6.805079543823912",
             "terrainFocus": "23.32379016463652,0.8044952336662092,528.6454754287502",
-            "terrainTriangles": "27181",
+            "terrainTriangles": "27404",
             "terrainTrees": "533",
             "renderCount": "1",
             "flightPaths": "0",
@@ -2295,7 +2295,7 @@
             "debugView": "final",
             "crownDetail": "near",
             "drawCalls": "298",
-            "renderTriangles": "414782"
+            "renderTriangles": "415228"
           }
         }
       ],

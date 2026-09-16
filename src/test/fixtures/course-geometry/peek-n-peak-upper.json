@@ -21041,6 +21041,177 @@
       }
     },
     {
+      "id": "naip-trace-peek-n-peak-upper-11-fairway",
+      "kind": "fairway",
+      "sourceIds": [
+        "naip-trace-2026-09-16"
+      ],
+      "holeKeys": [
+        "peek-n-peak-upper-11"
+      ],
+      "reviewed": false,
+      "accuracyMeters": 10,
+      "geometryWgs84": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -79.7431046,
+              42.0565603
+            ],
+            [
+              -79.7430863,
+              42.0565929
+            ],
+            [
+              -79.7430449,
+              42.0566101
+            ],
+            [
+              -79.7427636,
+              42.0566058
+            ],
+            [
+              -79.7427396,
+              42.0565964
+            ],
+            [
+              -79.7427219,
+              42.056581
+            ],
+            [
+              -79.7426491,
+              42.0564617
+            ],
+            [
+              -79.7426013,
+              42.0561346
+            ],
+            [
+              -79.7424915,
+              42.0556919
+            ],
+            [
+              -79.7423281,
+              42.055322
+            ],
+            [
+              -79.7422879,
+              42.0549194
+            ],
+            [
+              -79.7422701,
+              42.054608
+            ],
+            [
+              -79.7422192,
+              42.0543747
+            ],
+            [
+              -79.7422061,
+              42.0543553
+            ],
+            [
+              -79.7421838,
+              42.0543413
+            ],
+            [
+              -79.7417857,
+              42.0542146
+            ],
+            [
+              -79.7415535,
+              42.0540709
+            ],
+            [
+              -79.7413686,
+              42.0538752
+            ],
+            [
+              -79.7412636,
+              42.0536047
+            ],
+            [
+              -79.7412079,
+              42.0533334
+            ],
+            [
+              -79.7411927,
+              42.0530971
+            ],
+            [
+              -79.7412071,
+              42.0530674
+            ],
+            [
+              -79.7412414,
+              42.0530488
+            ],
+            [
+              -79.7412696,
+              42.053046
+            ],
+            [
+              -79.7416506,
+              42.0530637
+            ],
+            [
+              -79.7416789,
+              42.0530694
+            ],
+            [
+              -79.7417018,
+              42.053083
+            ],
+            [
+              -79.7418389,
+              42.0533236
+            ],
+            [
+              -79.7420252,
+              42.0535752
+            ],
+            [
+              -79.7422074,
+              42.0538563
+            ],
+            [
+              -79.7422285,
+              42.0538728
+            ],
+            [
+              -79.7425263,
+              42.0540338
+            ],
+            [
+              -79.7427375,
+              42.0542686
+            ],
+            [
+              -79.7429454,
+              42.0545634
+            ],
+            [
+              -79.7430591,
+              42.0549687
+            ],
+            [
+              -79.7431004,
+              42.0553766
+            ],
+            [
+              -79.7431318,
+              42.0562314
+            ],
+            [
+              -79.7431046,
+              42.0565603
+            ]
+          ]
+        ]
+      }
+    },
+    {
       "id": "naip-peek-n-peak-upper-01-canopy-001",
       "kind": "woods",
       "sourceIds": [
@@ -54305,6 +54476,7 @@
       "par": 5,
       "scorecardYards": 523,
       "featureIds": [
+        "naip-trace-peek-n-peak-upper-11-fairway",
         "osm-way-746366004",
         "osm-way-746366010",
         "osm-way-746366011",
@@ -54330,7 +54502,7 @@
         "OSM source candidate; independent imagery registration and course-familiar review pending",
         "Boundary uncertainty, daily tee marker, and daily pin are unknown",
         "Macro terrain, bunker lip/depth, tree height, and putting break require separate evidence",
-        "No OSM fairway polygon intersected the selected route by at least 8m"
+        "No OSM fairway; naip-trace-peek-n-peak-upper-11-fairway is an unreviewed imagery trace (±10m)"
       ]
     },
     {
@@ -54590,6 +54762,15 @@
       "attribution": "© OpenStreetMap contributors · ODbL 1.0"
     },
     {
+      "id": "naip-trace-2026-09-16",
+      "provider": "USDA NAIP via FPAC conus_naip ImageServer",
+      "licenseId": "US-Public-Domain",
+      "url": "https://apps.geo.fpac.usda.gov/geo-imagery/rest/services/naip/conus_naip/ImageServer",
+      "capturedAt": "20240524,20240824",
+      "retrievedAt": "2026-09-16",
+      "attribution": "USDA NAIP; traced surface candidates, unreviewed"
+    },
+    {
       "id": "naip-canopy-review-2026-09-16",
       "provider": "USDA NAIP via FPAC conus_naip ImageServer",
       "licenseId": "US-Public-Domain",
@@ -54599,5 +54780,5 @@
       "attribution": "USDA NAIP; canopy groups approximate, tree symbols illustrative"
     }
   ],
-  "contentHash": "6db57efff0137b2f264c25f79ce94575efd5e90c3ef3304c0f1f35d7d7699fcc"
+  "contentHash": "fdec6ea8467dd214372bde680e7b7f9236c06ad5d27bb5ddeadf8ed5e9d3f87a"
 }

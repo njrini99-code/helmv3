@@ -1,22 +1,22 @@
 {
   "physicalHoleKey": "peek-n-peak-upper-16",
-  "contentHash": "bb3d169aadefc40f556149dfff8863e3666e20e30dacf395b2ebe287feb007cf",
-  "geometryHash": "6db57efff0137b2f264c25f79ce94575efd5e90c3ef3304c0f1f35d7d7699fcc",
+  "contentHash": "7cd1d0be54a48b7e5461ad1ac25e378fb4e7a0b465c88334eabd1d43ecb8b0d7",
+  "geometryHash": "fdec6ea8467dd214372bde680e7b7f9236c06ad5d27bb5ddeadf8ed5e9d3f87a",
   "configuredBudget": 40000,
   "originalEnvelope": 20000,
-  "triangles": 18738,
-  "uniqueVertices": 9614,
+  "triangles": 19022,
+  "uniqueVertices": 9760,
   "omittedTriangles": 0,
   "metricCells": 89337,
   "metricNodataCells": 0,
-  "duplicateVertexCount": 46600,
+  "duplicateVertexCount": 47306,
   "sourceNormalDuplicatesAgree": true,
   "sourceHeightDuplicatesAgree": true,
   "sourceNormalUnitMaxError": 6.817675779480226e-08,
   "slopesDegrees": {
     "max": 41.79523730421925,
-    "p95": 23.378258426041047,
-    "p50": 6.896256791112934
+    "p95": 23.277041532380682,
+    "p50": 6.84086543375139
   },
   "elevationRangeM": [
     485.7960094571952,
@@ -40,6 +40,7 @@
     "naip-peek-n-peak-upper-18-canopy-001",
     "naip-peek-n-peak-upper-18-canopy-003",
     "naip-peek-n-peak-upper-18-canopy-004",
+    "naip-trace-peek-n-peak-upper-11-fairway",
     "osm-way-746383322",
     "osm-way-746383352"
   ],
@@ -53,8 +54,8 @@
     {
       "id": "terrain-context",
       "kind": "ground",
-      "triangles": 8266,
-      "areaM2": 124490.7676,
+      "triangles": 8197,
+      "areaM2": 105127.0332,
       "rendererContextOnly": false
     },
     {
@@ -181,6 +182,13 @@
       "kind": "woods",
       "triangles": 8,
       "areaM2": 146.8172,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "naip-trace-peek-n-peak-upper-11-fairway",
+      "kind": "fairway",
+      "triangles": 353,
+      "areaM2": 19363.7344,
       "rendererContextOnly": true
     },
     {
@@ -389,6 +397,7 @@
     "naip-peek-n-peak-upper-18-canopy-001",
     "naip-peek-n-peak-upper-18-canopy-003",
     "naip-peek-n-peak-upper-18-canopy-004",
+    "naip-trace-peek-n-peak-upper-11-fairway",
     "osm-way-746383322",
     "osm-way-746383352",
     "osm-way-746383329",
@@ -499,6 +508,11 @@
       "id": "naip-peek-n-peak-upper-18-canopy-004",
       "boundaryDisplacementM": 0.0,
       "areaChangePercent": 0.0
+    },
+    {
+      "id": "naip-trace-peek-n-peak-upper-11-fairway",
+      "boundaryDisplacementM": 0.12828,
+      "areaChangePercent": -0.004048
     },
     {
       "id": "osm-way-746383322",
@@ -690,15 +704,15 @@
     "metricSamplingM": 2,
     "normalGradientStepM": 1
   },
-  "compressedBytes": 789091,
+  "compressedBytes": 798824,
   "asset": {
     "ordinal": 16,
     "fileName": "peek-n-peak-upper-16-terrain.json.gz",
     "encoding": "gzip",
-    "compressedBytes": 789091,
-    "uncompressedBytes": 4035748,
-    "sha256": "2f0ccd839f99b57829a8be26cd913194211e5208bdcc487d45be420dfe5e325e",
-    "uncompressedSha256": "b93044bd2d96f55eac726da176cb7b659a278f9e5623df74916e2352198c6ddf",
-    "contentHash": "bb3d169aadefc40f556149dfff8863e3666e20e30dacf395b2ebe287feb007cf"
+    "compressedBytes": 798824,
+    "uncompressedBytes": 4087439,
+    "sha256": "4743d0b97bfb378689ad384dd87cd86ea65240d991bf72ec3243319c7a68aea4",
+    "uncompressedSha256": "00103feffcf6130288975e0ca1df6e8e53245f066ab04cd8e92a8724e2841676",
+    "contentHash": "7cd1d0be54a48b7e5461ad1ac25e378fb4e7a0b465c88334eabd1d43ecb8b0d7"
   }
 }

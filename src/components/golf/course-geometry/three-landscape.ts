@@ -16,7 +16,7 @@ export type ThreeLandscapePalette = Readonly<Record<
 export const DEFAULT_THREE_LANDSCAPE_PALETTE: ThreeLandscapePalette = Object.freeze({
   ground: '#607D3D', rough: '#607D3D', surround: '#73964A', fringe: '#82A552',
   fairway: '#83A849', tee: '#88AD55', green: '#9DBB61', bunker: '#DED1AA',
-  water: '#3F7881', woods: '#29482B', tree: '#59852E', treeLight: '#6D9D37',
+  water: '#3B6C77', woods: '#29482B', tree: '#59852E', treeLight: '#6D9D37',
   treeHighlight: '#83B542', treeShadow: '#29482B',
   sandEdge: '#B3A079', sandHighlight: '#F0E4C7',
 });
@@ -61,7 +61,7 @@ function terrainAlbedo(mesh: TerrainMesh, triangle: number, palette: ThreeLandsc
   const base = new THREE.Color(material === 3 ? palette.surround : material === 4 ? palette.fringe : palette[kind]);
   // The polygon is a canopy extent, not a black ground surface. A quieter
   // understory lets actual crown shadows supply the depth inside that extent.
-  if (kind === 'woods') base.lerp(new THREE.Color(palette.rough), .62);
+  if (kind === 'woods') base.lerp(new THREE.Color(palette.rough), .78);
   if (material === 1) return kind === 'bunker' ? new THREE.Color(palette.sandEdge)
     : base.lerp(new THREE.Color(palette.ground), kind === 'green' ? .24 : .14);
   if (material === 2) return kind === 'bunker' ? new THREE.Color(palette.sandHighlight)

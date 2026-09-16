@@ -1045,6 +1045,18 @@ It is a local play-through for review on a phone: nothing reaches Supabase, a
 real round, or statistics, positions remain estimates, and a two-tap control
 clears the local round.
 
+Two further source products follow the geometry plan's review workflow.
+`review-course-imagery.py` writes a per-hole dossier of OSM outlines over the
+retained NAIP export with bunker sand-agreement scores and a contact sheet;
+it flags polygons for a course-familiar reviewer and never moves one or
+passes a gate. `prepare-osm-course.py --traces` merges surfaces traced from
+that imagery where OSM has none, as unreviewed candidates with a stated
+horizontal accuracy (hole 11's fairway, ±10 m); the hole stays partial. Every
+scene now shows a restrained green-reference flag labelled "Green" when no
+estimated pin exists; it is a layout point inside the green with an
+accessible note that no pin or cup position is known, and it feeds no
+distance, camera or reconstruction.
+
 ### Manual evidence and camera refinement (September 13, 2026)
 
 The local shared scene uses `manual-bounds-v1`: one bounded unknown-target

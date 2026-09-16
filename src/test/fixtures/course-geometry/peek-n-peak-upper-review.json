@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "status": "needs_physical_review",
   "course": "Peek’n Peak Resort — Upper Course",
-  "packageHash": "6db57efff0137b2f264c25f79ce94575efd5e90c3ef3304c0f1f35d7d7699fcc",
+  "packageHash": "fdec6ea8467dd214372bde680e7b7f9236c06ad5d27bb5ddeadf8ed5e9d3f87a",
   "retainedExtract": {
     "file": "sources/peek-n-peak-upper-osm/overpass.json.gz",
     "uncompressedSha256": "9157785a781c7d30cf2da16a36631731ad9754686649c520a77bd4da7cad5721",
@@ -393,7 +393,9 @@
       "teeIds": [
         "osm-way-746366004"
       ],
-      "fairwayIds": [],
+      "fairwayIds": [
+        "naip-trace-peek-n-peak-upper-11-fairway"
+      ],
       "bunkerIds": [
         "osm-way-746366010",
         "osm-way-746366011",
@@ -411,6 +413,9 @@
       "parAgreement": true,
       "discardedEndpointGreenAlternatives": [
         "osm-way-746366009"
+      ],
+      "tracedIds": [
+        "naip-trace-peek-n-peak-upper-11-fairway"
       ]
     },
     {
@@ -730,5 +735,14 @@
       "contextMarginM": 160
     },
     "reviewer": "Claude visual comparison of the classification against the same NAIP export; independent course review pending"
+  },
+  "traces": {
+    "traceFile": "peek-n-peak-upper-imagery-traces.json",
+    "features": [
+      "naip-trace-peek-n-peak-upper-11-fairway"
+    ],
+    "rasterSha256": "9d01248d88b76b98d9e67774e118732c280b612f1a6858129951d46196650f05",
+    "tracer": "Claude visual trace of the mowed corridor in the NAIP export at 3-4x, anchored to the OSM cart path, bunkers and green; not a course-supplied vector",
+    "cornerSmoothingM": 6
   }
 }

@@ -1,22 +1,22 @@
 {
   "physicalHoleKey": "peek-n-peak-upper-18",
-  "contentHash": "c490c01ba37dafc6053ca25d19dac712758f7464cdf3bf4cda47531db6812926",
-  "geometryHash": "6db57efff0137b2f264c25f79ce94575efd5e90c3ef3304c0f1f35d7d7699fcc",
+  "contentHash": "78c65afd429ac6f4a2194511d70c2c74c076c84ca380a310d8cecb7fff065179",
+  "geometryHash": "fdec6ea8467dd214372bde680e7b7f9236c06ad5d27bb5ddeadf8ed5e9d3f87a",
   "configuredBudget": 40000,
   "originalEnvelope": 20000,
-  "triangles": 27181,
-  "uniqueVertices": 13972,
+  "triangles": 27404,
+  "uniqueVertices": 14088,
   "omittedTriangles": 0,
   "metricCells": 126585,
   "metricNodataCells": 0,
-  "duplicateVertexCount": 67571,
+  "duplicateVertexCount": 68124,
   "sourceNormalDuplicatesAgree": true,
   "sourceHeightDuplicatesAgree": true,
   "sourceNormalUnitMaxError": 6.354482784409754e-08,
   "slopesDegrees": {
     "max": 33.45080295132118,
-    "p95": 16.07059491947023,
-    "p50": 4.992705521479684
+    "p95": 16.046121030672023,
+    "p50": 4.981045661182069
   },
   "elevationRangeM": [
     508.26370959058147,
@@ -37,6 +37,7 @@
     "naip-peek-n-peak-upper-17-canopy-001",
     "naip-peek-n-peak-upper-17-canopy-004",
     "naip-peek-n-peak-upper-17-canopy-005",
+    "naip-trace-peek-n-peak-upper-11-fairway",
     "osm-way-746365986",
     "osm-way-746383341",
     "osm-way-746383345",
@@ -54,8 +55,8 @@
     {
       "id": "terrain-context",
       "kind": "ground",
-      "triangles": 12690,
-      "areaM2": 222179.0946,
+      "triangles": 12613,
+      "areaM2": 205826.5394,
       "rendererContextOnly": false
     },
     {
@@ -124,8 +125,8 @@
     {
       "id": "naip-peek-n-peak-upper-10-canopy-001",
       "kind": "woods",
-      "triangles": 150,
-      "areaM2": 1997.6901,
+      "triangles": 146,
+      "areaM2": 1997.0868,
       "rendererContextOnly": true
     },
     {
@@ -173,8 +174,8 @@
     {
       "id": "naip-peek-n-peak-upper-11-canopy-001",
       "kind": "woods",
-      "triangles": 218,
-      "areaM2": 3952.5492,
+      "triangles": 217,
+      "areaM2": 3951.5755,
       "rendererContextOnly": true
     },
     {
@@ -257,8 +258,8 @@
     {
       "id": "naip-peek-n-peak-upper-18-canopy-004",
       "kind": "woods",
-      "triangles": 106,
-      "areaM2": 8108.7378,
+      "triangles": 108,
+      "areaM2": 8072.7048,
       "rendererContextOnly": false
     },
     {
@@ -295,6 +296,13 @@
       "triangles": 70,
       "areaM2": 504.3241,
       "rendererContextOnly": false
+    },
+    {
+      "id": "naip-trace-peek-n-peak-upper-11-fairway",
+      "kind": "fairway",
+      "triangles": 303,
+      "areaM2": 16390.1652,
+      "rendererContextOnly": true
     },
     {
       "id": "osm-way-746365986",
@@ -596,6 +604,7 @@
     "naip-peek-n-peak-upper-17-canopy-003",
     "naip-peek-n-peak-upper-17-canopy-004",
     "naip-peek-n-peak-upper-17-canopy-005",
+    "naip-trace-peek-n-peak-upper-11-fairway",
     "osm-way-746365986",
     "osm-way-746365998",
     "osm-way-746383341",
@@ -797,6 +806,11 @@
       "id": "naip-peek-n-peak-upper-18-canopy-009",
       "boundaryDisplacementM": 0.0,
       "areaChangePercent": 0.0
+    },
+    {
+      "id": "naip-trace-peek-n-peak-upper-11-fairway",
+      "boundaryDisplacementM": 0.12828,
+      "areaChangePercent": -0.004048
     },
     {
       "id": "osm-way-746365986",
@@ -1048,15 +1062,15 @@
     "metricSamplingM": 2,
     "normalGradientStepM": 1
   },
-  "compressedBytes": 1138370,
+  "compressedBytes": 1146139,
   "asset": {
     "ordinal": 18,
     "fileName": "peek-n-peak-upper-18-terrain.json.gz",
     "encoding": "gzip",
-    "compressedBytes": 1138370,
-    "uncompressedBytes": 5756755,
-    "sha256": "4b8ae70364af87239b8c23f43699a48340779b2168cca4e799102886f7a85e07",
-    "uncompressedSha256": "9bf856caf4e713d194b920ebe97a2d84117c332695716d7933dd250b023afa48",
-    "contentHash": "c490c01ba37dafc6053ca25d19dac712758f7464cdf3bf4cda47531db6812926"
+    "compressedBytes": 1146139,
+    "uncompressedBytes": 5797075,
+    "sha256": "d50e1f0a505bb477284f900f8ec2c2e2610e8b39c73d099f0539d31638a263b0",
+    "uncompressedSha256": "c6b4ff62e8204c3443fac30f1a67c7e9337ecdd2fa39e37990a59c1dca8bd13f",
+    "contentHash": "78c65afd429ac6f4a2194511d70c2c74c076c84ca380a310d8cecb7fff065179"
   }
 }

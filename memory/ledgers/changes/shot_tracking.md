@@ -1049,3 +1049,9 @@
   mode (`?play=1`) that drives the real shot-tracking screen hole by hole with
   browser-only persistence. No round, statistic, or production record is
   written; all truth gates still fail on unreviewed boundaries.
+- Peek'n Peak review products: a per-hole NAIP imagery dossier with bunker
+  sand agreement and a contact sheet, an imagery-traced fairway candidate for
+  hole 11 (unreviewed, ±10 m, hole stays partial), a terrain source manifest
+  that records each package hash it serves without replacing the raster, a
+  restrained "Green" reference flag on scenes without an estimated pin, and a
+  quieter 3D forest floor and water tone. No gate passes on any of it.

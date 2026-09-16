@@ -374,6 +374,23 @@ export function nominalGreenPin(hole: PhysicalHole, features: readonly LocalFeat
   const allowed = (point: PointM) => point.every(Number.isFinite) && inFeature(point, green) && guard.clearance(point, 'green', 1e-6) > 0;
   if (suppliedReference && allowed(suppliedReference)) return { positionM: suppliedReference, basis: 'nominal_green_reference' };
   const route = features.find(f => f.id === hole.routeFeatureId && f.kind === 'route' && f.reviewed)?.parts[0]?.[0];
+  const point = greenInteriorPoint(green, route, features);
+  return point ? { positionM: point, basis: 'nominal_green_reference' } : undefined;
+}
+
+/** A roomy interior point of the green for target layout on any package,
+ * reviewed or candidate. It is display layout only: never a cup, a daily
+ * pin, or an input to distances. */
+export function greenReferencePoint(hole: PhysicalHole, features: readonly LocalFeature[]): PointM | undefined {
+  const green = features.find(f => f.id === hole.greenFeatureId && f.kind === 'green');
+  if (!green) return undefined;
+  const route = features.find(f => f.id === hole.routeFeatureId && f.kind === 'route')?.parts[0]?.[0];
+  return greenInteriorPoint(green, route, features);
+}
+
+function greenInteriorPoint(green: LocalFeature, route: readonly PointM[] | undefined, features: readonly LocalFeature[]): PointM | undefined {
+  const guard = createSurfaceGuard(features);
+  const allowed = (point: PointM) => point.every(Number.isFinite) && inFeature(point, green) && guard.clearance(point, 'green', 1e-6) > 0;
   const origin = route?.[0] ?? green.parts[0]![0]![0]!, end = route?.at(-1);
   const axis = end ? Math.atan2(end[1] - origin[1], end[0] - origin[0]) : 0;
   const samples = sampleFeature(green, axis, origin, RECONSTRUCTION_LIMITS.samplesPerFeature).filter(sample => allowed(sample.point));
@@ -389,7 +406,6 @@ export function nominalGreenPin(hole: PhysicalHole, features: readonly LocalFeat
     }
     return Math.min(result, guard.clearance(point, 'green'));
   };
-  const point = samples.map(s => ({ point: s.point, clearance: clearance(s.point) }))
+  return samples.map(s => ({ point: s.point, clearance: clearance(s.point) }))
     .sort((a, b) => b.clearance - a.clearance)[0]?.point;
-  return point ? { positionM: point, basis: 'nominal_green_reference' } : undefined;
 }

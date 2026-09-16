@@ -1,7 +1,7 @@
 {
   "physicalHoleKey": "peek-n-peak-upper-08",
-  "contentHash": "595af482f642d5f962f35558d3e52d0b3b2f8c01a6512d143335028ecdee3e93",
-  "geometryHash": "6db57efff0137b2f264c25f79ce94575efd5e90c3ef3304c0f1f35d7d7699fcc",
+  "contentHash": "7a1c9f3ae60528ae0a1f116a7a13023330271ddab655e6db4f5c88b88cdf5b96",
+  "geometryHash": "fdec6ea8467dd214372bde680e7b7f9236c06ad5d27bb5ddeadf8ed5e9d3f87a",
   "configuredBudget": 40000,
   "originalEnvelope": 20000,
   "triangles": 28605,
@@ -1499,15 +1499,15 @@
     "metricSamplingM": 2,
     "normalGradientStepM": 1
   },
-  "compressedBytes": 1163349,
+  "compressedBytes": 1163347,
   "asset": {
     "ordinal": 8,
     "fileName": "peek-n-peak-upper-08-terrain.json.gz",
     "encoding": "gzip",
-    "compressedBytes": 1163349,
+    "compressedBytes": 1163347,
     "uncompressedBytes": 6010016,
-    "sha256": "bcbd7de352bed5dcbd2e97105c1abdafd0c2092a169449f133bbe14ee2a9a2e5",
-    "uncompressedSha256": "7ee8442bb54afdde144770fc4136ca3140bd83e9cc76fc53671af6feab43cd69",
-    "contentHash": "595af482f642d5f962f35558d3e52d0b3b2f8c01a6512d143335028ecdee3e93"
+    "sha256": "daef88986f5596c7aba43bd0c318ceecd64c7c7decbf8464aa7ed60bb1f68271",
+    "uncompressedSha256": "03454f6ecec08b7ebb9a4a0ec16ed28be1f5af853b4f2e64f6b3cd3093a6a1ae",
+    "contentHash": "7a1c9f3ae60528ae0a1f116a7a13023330271ddab655e6db4f5c88b88cdf5b96"
   }
 }

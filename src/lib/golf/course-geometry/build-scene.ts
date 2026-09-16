@@ -3,7 +3,7 @@ import { localFeature } from './schema';
 import { auditContinuity } from './normalize';
 import { fitCamera, projectToLocal } from './project';
 import type { TerrainMesh } from './terrain';
-import { nominalGreenPin, reconstructHoleEvidence } from './reconstruct';
+import { greenReferencePoint, nominalGreenPin, reconstructHoleEvidence } from './reconstruct';
 
 /** The same physical coordinates and bounded evidence reconstruction feed
  * review, compact, strip and export. Camera fitting never changes evidence. */
@@ -28,6 +28,7 @@ export function buildHoleScene(pkg: CourseGeometryPackage, holeKey: string, evid
   if (!route) orientationRadians = 0; // North-up context; no invented tee/route.
   const reconstructed = reconstructHoleEvidence(hole, features, auditContinuity(evidence), pkg.status);
   const events = reconstructed.events;
+  const reference = greenReferencePoint(hole, features);
   const estimate = reconstructed.estimatedPin ?? nominalGreenPin(hole, features, pkg.status,
     hole.nominalTargetWgs84 ? projectToLocal(hole.nominalTargetWgs84, pkg.originWgs84) : undefined);
   return {
@@ -37,7 +38,7 @@ export function buildHoleScene(pkg: CourseGeometryPackage, holeKey: string, evid
     overlayKind: events.some(e => e.regions?.length) ? 'estimated_regions' : 'unresolved',
     packageHash: pkg.contentHash, physicalHoleKey: holeKey, algorithmVersion: 'manual-bounds-v1',
     sharedGreenHoleOrdinals: hole.greenFeatureId ? pkg.holes.filter(h => h.greenFeatureId === hole.greenFeatureId).map(h => h.ordinal) : [],
-    target: { kind: 'unknown_pin', greenFeatureId: hole.greenFeatureId, ...(estimate ? { estimate } : {}) }, hole, features, orientationRadians,
+    target: { kind: 'unknown_pin', greenFeatureId: hole.greenFeatureId, ...(estimate ? { estimate } : {}), ...(reference ? { reference } : {}) }, hole, features, orientationRadians,
     attribution: [...new Set(pkg.sources.map(s => s.attribution))].join(' · '),
     events,
   };

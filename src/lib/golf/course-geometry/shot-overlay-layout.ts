@@ -3,12 +3,16 @@ import { inFeature } from './spatial';
 import { createSurfaceGuard } from './surface-compatibility';
 import type { EstimatedPin, HoleScene, IllustrativePreviewTrajectory, IllustrativePuttingTrack, LocalFeature, PointM } from './types';
 
+/** `green_reference` is the restrained target glyph on a package with no
+ * estimated pin: it marks the green, not a cup. */
+export type PinBasis = EstimatedPin['basis'] | 'green_reference';
+
 export interface PreparedShotOverlay {
   regions: { key: string; shotNumber: number; feature: LocalFeature; rings: PointM[][] }[];
   segments: { key: string; shotNumber: number; active: boolean; fromM: PointM; toM: PointM }[];
   anchors: { key: string; pointM: PointM }[];
   badges: { key: string; shotNumber: number; active: boolean; anchorM: PointM }[];
-  pin: { positionM: PointM; basis: EstimatedPin['basis']; greenFeatureId: string } | null;
+  pin: { positionM: PointM; basis: PinBasis; greenFeatureId: string } | null;
   /** Isolated fixture-only presentation, intentionally separate from inferred
    * endpoint segments and the player shot ledger. */
   illustrativePreviewTrajectories: Array<IllustrativePreviewTrajectory & { active: boolean }>;
@@ -34,7 +38,7 @@ export interface ShotOverlayLayout {
   segments: { key: string; shotNumber: number; active: boolean; from: PointM; to: PointM }[];
   anchors: { key: string; point: PointM }[];
   badges: { key: string; shotNumber: number; active: boolean; anchor: PointM; label: PointM }[];
-  pin: { position: PointM; label: PointM; basis: EstimatedPin['basis']; glyphScale: number } | null;
+  pin: { position: PointM; label: PointM; basis: PinBasis; glyphScale: number } | null;
   illustrativePreviewTrajectories: { key: string; shotNumber: number; active: boolean; points: PointM[] }[];
   illustrativePuttingTracks: { key: string; shotNumber: number; kind: IllustrativePuttingTrack['kind']; active: boolean; points: PointM[] }[];
 }
@@ -74,6 +78,10 @@ export function prepareShotOverlay(scene: HoleScene, selectedShotNumber?: number
     estimate.positionM.every(Number.isFinite) && green && inFeature(estimate.positionM, green) &&
     createSurfaceGuard(scene.features).clearance(estimate.positionM, 'green', 1e-6) > 0
     ? { positionM: estimate.positionM, basis: estimate.basis, greenFeatureId: green.id } : null;
+  const referenceGreen = scene.features.find(feature => feature.id === scene.target.greenFeatureId && feature.kind === 'green');
+  const reference = scene.target.reference;
+  const target = pin ?? (reference && referenceGreen && reference.every(Number.isFinite) && inFeature(reference, referenceGreen)
+    ? { positionM: reference, basis: 'green_reference' as const, greenFeatureId: referenceGreen.id } : null);
   const illustrativePreviewTrajectories = (scene.illustrativePreviewTrajectories ?? []).flatMap(trajectory => {
     const shotExists = scene.events.some(event => event.evidence.shotNumber === trajectory.shotNumber);
     const points = trajectory.pointsM.map(point => [...point] as PointM);
@@ -91,7 +99,7 @@ export function prepareShotOverlay(scene: HoleScene, selectedShotNumber?: number
       ? [{ ...track, pointsM: points, active: track.shotNumber === selected }]
       : [];
   });
-  return { regions, segments, anchors, badges, pin, illustrativePreviewTrajectories, illustrativePuttingTracks,
+  return { regions, segments, anchors, badges, pin: target, illustrativePreviewTrajectories, illustrativePuttingTracks,
     protectedFeatures: scene.features.filter(feature => feature.kind === 'green' || feature.kind === 'bunker') };
 }
 

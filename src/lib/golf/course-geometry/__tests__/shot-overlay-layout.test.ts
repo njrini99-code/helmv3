@@ -28,6 +28,19 @@ function actualCacaponScene() {
 }
 
 describe('camera-independent shot overlay evidence', () => {
+  it('shows a green reference instead of an estimated pin on a source-candidate package', () => {
+    const candidate = { ...pilotPackage, status: 'source_candidate' as const };
+    const scene = buildHoleScene(candidate, 'cacapon-07', [], mesh);
+    const green = scene.features.find(feature => feature.id === scene.target.greenFeatureId)!;
+    expect(scene.target.estimate).toBeUndefined();
+    expect(scene.target.reference && inFeature(scene.target.reference, green)).toBe(true);
+    const prepared = prepareShotOverlay(scene, undefined);
+    expect(prepared.pin).toEqual({ positionM: scene.target.reference, basis: 'green_reference', greenFeatureId: green.id });
+    // The reviewed draft keeps its estimated pin; the reference never replaces it.
+    const reviewed = buildHoleScene(pilotPackage, 'cacapon-07', [], mesh);
+    expect(reviewed.target.estimate?.basis).toBe('nominal_green_reference');
+    expect(prepareShotOverlay(reviewed, undefined).pin?.basis).toBe('nominal_green_reference');
+  });
   it('marks the empty interactive fixture so its compact SVG has no surface dashes', () => {
     const base = buildHoleScene(pilotPackage, 'cacapon-07', [], mesh);
     const scene = addInteractivePreviewTrajectories(base, []);

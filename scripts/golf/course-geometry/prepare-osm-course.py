@@ -18,6 +18,8 @@ from pathlib import Path
 import pyproj
 from shapely.geometry import LineString, Point, Polygon
 
+TRACE_SMOOTHING_M = 6  # corner radius for imagery traces; inside every stated accuracy
+
 
 def canonical(value):
     return json.dumps(value, sort_keys=True, separators=(',', ':'), ensure_ascii=False)
@@ -49,6 +51,8 @@ def main():
     parser.add_argument('output', type=Path)
     parser.add_argument('--canopy-review', type=Path, default=None,
                         help='derive-canopy-naip.py output; adds reviewed decorative woods groups per hole')
+    parser.add_argument('--traces', type=Path, default=None,
+                        help='imagery trace file; adds unreviewed surface candidates where OSM has none')
     args = parser.parse_args()
 
     raw_bytes = args.overpass.read_bytes()
@@ -189,6 +193,58 @@ def main():
                'holes': holes, 'sources': [{'id': source_id, 'provider': 'OpenStreetMap via Overpass API',
                   'licenseId': 'ODbL-1.0', 'url': 'https://overpass-api.de/api/interpreter', 'capturedAt': None,
                   'retrievedAt': retrieved_at, 'attribution': '© OpenStreetMap contributors · ODbL 1.0'}]}
+    trace_summary = None
+    if args.traces:
+        # Surfaces traced from retained orthophotography where OSM has none.
+        # They stay unreviewed candidates with a stated accuracy; the hole
+        # remains partial and every truth gate still sees an unreviewed boundary.
+        traces = json.loads(args.traces.read_text())
+        if traces.get('kind') != 'golfhelm-imagery-traces-v1' or traces.get('siteId') != card['siteId']:
+            raise ValueError('Trace file does not belong to this course')
+        trace_source = 'naip-trace-' + traces['tracedAt']
+        unproject = pyproj.Transformer.from_crs(32617, 4326, always_xy=True)
+        hole_by_key = {hole['key']: hole for hole in package['holes']}
+        row_by_hole = {row['hole']: row for row in association_rows}
+        for trace in traces['features']:
+            hole = hole_by_key[trace['holeKey']]
+            ring = trace['coordinatesWgs84']
+            if trace['kind'] not in ('fairway', 'tee', 'bunker', 'green', 'water') or len(ring) < 4 or ring[0] != ring[-1]:
+                raise ValueError('Invalid trace: ' + trace['id'])
+            if not Polygon(ring).is_valid:
+                raise ValueError('Self-intersecting trace: ' + trace['id'])
+            if any(f['id'] == trace['id'] for f in package['features']):
+                raise ValueError('Duplicate trace id: ' + trace['id'])
+            # A hand trace has straight segments between its picked vertices.
+            # Round every corner by a radius well inside the stated accuracy
+            # (closing then opening), so the candidate reads as a mowed edge
+            # rather than a polygon, without moving any edge beyond that band.
+            radius = TRACE_SMOOTHING_M
+            local = Polygon([project.transform(lon, lat) for lon, lat in ring])
+            smooth = local.buffer(radius, join_style='round').buffer(-2 * radius, join_style='round').buffer(radius, join_style='round')
+            smooth = smooth.simplify(0.4, preserve_topology=True)
+            if smooth.geom_type != 'Polygon' or smooth.is_empty or abs(smooth.area - local.area) > 0.15 * local.area:
+                raise ValueError('Trace smoothing changed the shape too much: ' + trace['id'])
+            ring = [[round(v, 7) for v in unproject.transform(x, y)] for x, y in smooth.exterior.coords]
+            ring[-1] = ring[0]
+            package['features'].append({'id': trace['id'], 'kind': trace['kind'], 'sourceIds': [trace_source],
+                                        'holeKeys': [hole['key']], 'reviewed': False,
+                                        'accuracyMeters': trace['accuracyMeters'],
+                                        'geometryWgs84': {'type': 'Polygon', 'coordinates': [ring]}})
+            hole['featureIds'] = sorted(hole['featureIds'] + [trace['id']])
+            row = row_by_hole[hole['ordinal']]
+            row.setdefault('tracedIds', []).append(trace['id'])
+            if trace['kind'] == 'fairway':
+                row['fairwayIds'] = row['fairwayIds'] + [trace['id']]
+                hole['gaps'] = [gap if not gap.startswith('No OSM fairway') else
+                                f"No OSM fairway; {trace['id']} is an unreviewed imagery trace (±{trace['accuracyMeters']}m)"
+                                for gap in hole['gaps']]
+        package['sources'].append({'id': trace_source, 'provider': traces['source']['provider'], 'licenseId': 'US-Public-Domain',
+                                   'url': traces['source']['service'], 'capturedAt': ','.join(traces['source']['capturedAt']),
+                                   'retrievedAt': traces['tracedAt'],
+                                   'attribution': 'USDA NAIP; traced surface candidates, unreviewed'})
+        trace_summary = {'traceFile': args.traces.name, 'features': [t['id'] for t in traces['features']],
+                         'rasterSha256': traces['source']['rasterSha256'], 'tracer': traces['tracer'],
+                         'cornerSmoothingM': TRACE_SMOOTHING_M}
     canopy_summary = None
     if args.canopy_review:
         # Decorative canopy groups derived from NAIP and visually reviewed. They
@@ -220,6 +276,7 @@ def main():
               'associationPolicy': {'green': 'contains selected route endpoint', 'fairway': 'intersects route by 8m or more',
                                      'tee': 'within 28m of route start', 'bunker_water': 'nearest selected route within 55m'},
               'holes': association_rows, 'unclaimedSourceFeatureIds': unclaimed, 'canopy': canopy_summary,
+              'traces': trace_summary,
               'discardedEndpointGreenAlternatives': green_alternatives,
               'limitations': ['OSM plan geometry is retained as a renderable source candidate only',
                               'No independent boundary uncertainty or course-familiar review exists',

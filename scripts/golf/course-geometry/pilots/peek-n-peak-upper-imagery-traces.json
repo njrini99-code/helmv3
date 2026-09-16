@@ -1,0 +1,145 @@
+{
+  "schemaVersion": 1,
+  "kind": "golfhelm-imagery-traces-v1",
+  "siteId": "osm-way-136097904",
+  "source": {
+    "provider": "USDA NAIP via FPAC conus_naip ImageServer",
+    "service": "https://apps.geo.fpac.usda.gov/geo-imagery/rest/services/naip/conus_naip/ImageServer",
+    "catalogTiles": [
+      "m_4207958_NE_18_60_20240824",
+      "m_4207958_SE_18_60_20240824",
+      "m_4207958_ne_17_060_20240524",
+      "m_4207958_se_17_060_20240524",
+      "m_4207959_nw_17_060_20240524",
+      "m_4207959_sw_17_060_20240524"
+    ],
+    "capturedAt": [
+      "20240524",
+      "20240824"
+    ],
+    "rasterSha256": "9d01248d88b76b98d9e67774e118732c280b612f1a6858129951d46196650f05",
+    "nativeResolutionM": 0.6
+  },
+  "tracer": "Claude visual trace of the mowed corridor in the NAIP export at 3-4x, anchored to the OSM cart path, bunkers and green; not a course-supplied vector",
+  "tracedAt": "2026-09-16",
+  "meaning": "Unreviewed source candidates traced where OSM has no polygon (plan section 6.2, preference 3). Each carries a stated horizontal accuracy and never counts as reviewed geometry.",
+  "features": [
+    {
+      "id": "naip-trace-peek-n-peak-upper-11-fairway",
+      "kind": "fairway",
+      "holeKey": "peek-n-peak-upper-11",
+      "accuracyMeters": 10,
+      "note": "OSM maps no fairway on hole 11. The mowed corridor from the tee between the cart path and the tree line, past the two right-side bunkers, widening right of the three left-side bunkers to the green approach, was traced from the 2024 NAIP export at 3-4x. Fairway and first cut are not separable at 1 m, so the polygon is the mowed corridor.",
+      "coordinatesWgs84": [
+        [
+          -79.7431003,
+          42.0566117
+        ],
+        [
+          -79.7431319,
+          42.0562338
+        ],
+        [
+          -79.7431166,
+          42.0557833
+        ],
+        [
+          -79.7431005,
+          42.0553778
+        ],
+        [
+          -79.7430601,
+          42.0549721
+        ],
+        [
+          -79.7429473,
+          42.0545656
+        ],
+        [
+          -79.7427357,
+          42.0542661
+        ],
+        [
+          -79.7425228,
+          42.0540296
+        ],
+        [
+          -79.7422119,
+          42.053864
+        ],
+        [
+          -79.7420243,
+          42.0535738
+        ],
+        [
+          -79.7418359,
+          42.0533195
+        ],
+        [
+          -79.7416959,
+          42.0530658
+        ],
+        [
+          -79.7411888,
+          42.0530422
+        ],
+        [
+          -79.7412073,
+          42.0533307
+        ],
+        [
+          -79.7412624,
+          42.0536014
+        ],
+        [
+          -79.7413658,
+          42.0538728
+        ],
+        [
+          -79.7415552,
+          42.054073
+        ],
+        [
+          -79.741794,
+          42.0542197
+        ],
+        [
+          -79.7422144,
+          42.0543504
+        ],
+        [
+          -79.7422698,
+          42.0546032
+        ],
+        [
+          -79.7422878,
+          42.0549186
+        ],
+        [
+          -79.7423281,
+          42.0553243
+        ],
+        [
+          -79.7424901,
+          42.0556864
+        ],
+        [
+          -79.7426021,
+          42.0561379
+        ],
+        [
+          -79.7426442,
+          42.0564536
+        ],
+        [
+          -79.7427378,
+          42.0566077
+        ],
+        [
+          -79.7431003,
+          42.0566117
+        ]
+      ]
+    }
+  ]
+}

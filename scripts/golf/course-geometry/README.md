@@ -125,11 +125,14 @@ python3 scripts/golf/course-geometry/fetch-osm-course.py \
   scripts/golf/course-geometry/pilots/peek-n-peak-upper-scorecard.json \
   src/test/fixtures/course-geometry/sources/peek-n-peak-upper-osm
 
-# 2. Build the geometry package and review record from that extract.
+# 2. Build the geometry package and association report from that extract
+#    (an output directory: normalized.json becomes the package fixture, the
+#    association report merges into <course>-review.json with the retained
+#    extract and scorecard sections).
 python3 scripts/golf/course-geometry/prepare-osm-course.py \
   src/test/fixtures/course-geometry/sources/peek-n-peak-upper-osm/overpass.json.gz \
   scripts/golf/course-geometry/pilots/peek-n-peak-upper-scorecard.json \
-  src/test/fixtures/course-geometry/peek-n-peak-upper.json
+  output/course-geometry/peek-n-peak-upper-package
 
 # 3. Acquire one native-1m USGS tile and compile per-hole terrain meshes.
 python3 scripts/golf/course-geometry/compile-course-terrain.py --holes all \
@@ -149,8 +152,17 @@ python3 scripts/golf/course-geometry/derive-canopy-naip.py \
 python3 scripts/golf/course-geometry/prepare-osm-course.py \
   src/test/fixtures/course-geometry/sources/peek-n-peak-upper-osm/overpass.json.gz \
   scripts/golf/course-geometry/pilots/peek-n-peak-upper-scorecard.json \
+  output/course-geometry/peek-n-peak-upper-package \
+  --canopy-review src/test/fixtures/course-geometry/peek-n-peak-upper-canopy-review.json \
+  --traces scripts/golf/course-geometry/pilots/peek-n-peak-upper-imagery-traces.json
+
+# 3c. Imagery review dossier: OSM outlines over the retained NAIP export per
+#     hole, a contact sheet, and bunker sand agreement (plan 6.3, 6.4, 13.7).
+python3 scripts/golf/course-geometry/review-course-imagery.py \
   src/test/fixtures/course-geometry/peek-n-peak-upper.json \
-  --canopy-review src/test/fixtures/course-geometry/peek-n-peak-upper-canopy-review.json
+  output/course-geometry/peek-n-peak-upper-naip \
+  output/course-geometry/peek-n-peak-upper-imagery-review \
+  src/test/fixtures/course-geometry/peek-n-peak-upper-imagery-review.json
 
 # 4. Per hole: canonical study → physical world → truth gate → GLB → round trip.
 python3 scripts/golf/course-geometry/build-course-world.py \
@@ -188,6 +200,31 @@ across groups in proportion to their patterns (a small copse always keeps a
 tree), the 3D landscape keeps the crowns nearest the played hole's own
 surfaces, and near-detail crowns swap in only for the batch tiles around the
 camera focus.
+
+`--traces` merges surfaces traced from the retained orthophotography where
+OSM has none (plan 6.2, source preference 3). Each trace records the imagery
+tiles, capture dates, raster hash, tracer and a stated horizontal accuracy;
+it enters the package as `reviewed: false` with that `accuracyMeters`, the
+hole stays partial, and the truth gate still fails on it. Hole 11's fairway
+is such a trace (±10 m): the mowed corridor is visible in NAIP but fairway
+and first cut are not separable at 1 m. A revised package reuses the same
+terrain source directory when the request bounds and every retained file
+hash match; the source manifest records each package hash it has served and
+the raster is never replaced. Compiled outputs are derived products and are
+regenerated into an empty directory.
+
+`review-course-imagery.py` draws every package feature over the NAIP export
+per hole at 3×, writes a contact sheet, and scores each bunker polygon by the
+share of bright, low-NDVI, warm pixels inside it and in a 6 m ring outside
+it. Low inside shares flag shadowed, grass-faced or mis-traced polygons for a
+course-familiar reviewer; unclaimed sand blobs inside the hole extent are
+listed for the same purpose. Nothing in the dossier moves a polygon, passes a
+gate or classifies a rules penalty area.
+
+Every scene carries a restrained green-reference glyph when no estimated pin
+exists: a flag at a roomy interior point of the green, labelled "Green", with
+the accessible title stating that no pin or cup position is known. It is
+layout only and feeds no distance, camera or reconstruction.
 
 The browser fixture serves any compiled course: `?course=peek-n-peak-upper`
 on the entry/review pages, `?matrix=1&course=peek-n-peak-upper&hole=N` for the
