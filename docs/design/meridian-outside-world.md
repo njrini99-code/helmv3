@@ -114,3 +114,34 @@ The artifact records `contextLayerHash` and `layers.groundZones`
 (painted vertex count, per-class counts, skipped uncertain zones);
 `assertVisualArtifact` refuses an artifact whose context hash differs from the
 scene's, so a context edit always recompiles.
+
+## Production camera states and player chrome (implemented)
+
+`TERRAIN_PRESETS` carries the lab presets (`top`, `terrain`, `side`) and
+the production states (`tee`, `approach`, `green`, `putting`).
+`PRODUCTION_CAMERA_STATES` maps each state to the area it frames and
+`productionCameraState(view)` picks the state for a scene view, so the
+player never chooses a debug preset: opening the course view during a tee
+shot lands in the tee state, an approach in the approach state, and so on.
+
+| State | Pitch | Yaw | Lens | Frames |
+| --- | --- | --- | --- | --- |
+| tee | 36° | 0° | 30° | whole hole down the corridor |
+| approach | 40° | +12° | 30° | landing zone toward the green |
+| green | 50° | −18° | 30° | green complex |
+| putting | 64° | 0° | 28° | green, near overhead, still terrain |
+
+The entry-context chrome is the hole pill (area chooser), Close, the View
+group (Terrain / Top / Green) and an overflow menu (Reset view, Details and
+sources). The zoom rail, Side, Profile and the camera tools render only in
+the review context and the lab. `capture-player-view.cjs` opens the real
+expanded player view from the play fixture and records the chrome it finds.
+
+## Forest edge, understory and context woodland (implemented)
+
+Inside every reviewed woods mask, understory shrub clusters stand between
+1.5 m and 10 m of the boundary on a jittered 7 m grid (budget 220, nearest
+the hole first), reusing the low cluster crown with no trunk. OSM
+`forest_mass` / `forest_interior` zones are drawn as context-toned mass lobes
+only, and only where the zone lies outside every reviewed mask and clear of
+playing surfaces; a hole with no OSM woodland keeps zero context lobes.

@@ -198,7 +198,7 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
         visualStyleHash: MERIDIAN_STYLE_HASH, visualArtifactHash: landscape.artifact.contentHash, visualArtifactSource: landscape.artifactSource,
         visualBunkers: String(landscape.artifact.layers.bunkerBowl.profiles.length),
         visualHaze: world.fog ? hazeMix.toFixed(2) : '0', visualSky: skyDome?.visible ? 'gradient' : 'ground',
-        contextZones: String(landscape.counts.contextZones), contextRibbons: String(landscape.counts.contextRibbons), contextStructures: String(landscape.counts.contextStructures), contextLayerHash: currentScene.contextLayerHash ?? '',
+        contextZones: String(landscape.counts.contextZones), contextMassLobes: String(landscape.counts.contextMassLobes), understory: String(landscape.counts.understory), contextRibbons: String(landscape.counts.contextRibbons), contextStructures: String(landscape.counts.contextStructures), contextLayerHash: currentScene.contextLayerHash ?? '',
         qualityTier: 'standard',
         shadowMapSize: `${sun?.shadow.mapSize.x ?? 0}`, shadowMapType: 'pcf',
         lightDirection: TERRAIN_LIGHT_DIRECTION.map(v => v.toFixed(3)).join(','),

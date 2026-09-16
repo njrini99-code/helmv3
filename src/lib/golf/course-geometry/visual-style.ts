@@ -107,7 +107,14 @@ export const MERIDIAN_STYLE = Object.freeze({
      * budget: one lobe per grid cell inset from the boundary, sunk into the
      * ground so no underside shows. */
     mass: Object.freeze({ insetM: 16, spacingM: 13, lobeRadiusM: [6.5, 10] as const, canopyHeightM: [8, 12] as const,
-      color: '#34532F', light: '#446A3A', budget: 420 }),
+      color: '#34532F', light: '#446A3A', budget: 420,
+      /** Outside world §10.3: OSM `forest_mass` zones outside every reviewed
+       * woods mask are carried by context-toned lobes only, never crowns. */
+      contextBudget: 260 }),
+    /** Outside world §10.4: low shrub clusters inside the reviewed forest edge
+     * so the woods floor reads layered rather than as trunks on lawn. */
+    understory: Object.freeze({ bandM: 10, innerM: 1.5, spacingM: 7, radiusM: [1.1, 1.9] as const, heightM: [1.2, 2.2] as const,
+      budget: 220, base: '#3F6A2C', light: '#5C8A38' }),
   }),
   /** §42–45: static water. The interior darkens with distance from the drawn
    * shoreline (`depthBasis: shoreline_distance`, visual only — never a

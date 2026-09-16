@@ -35,6 +35,8 @@ export interface ThreeLandscape {
   artifactSource: 'supplied' | 'runtime';
   counts: { terrainTriangles: number; trees: number; crownInstances: number; crownTriangles: number; totalTriangles: number; canopyBatches: number; drawCalls: number;
     massLobes: number; trunksVisible: number; families: Record<string, number>;
+    /** Outside-world vegetation: lobes from context `forest_mass` zones and understory shrubs inside reviewed woods. */
+    contextMassLobes: number; understory: number;
     /** Outside-world context objects drawn from the hash-locked layer. */
     contextRibbons: number; contextStructures: number; contextLines: number; contextZones: number };
 }
@@ -414,6 +416,94 @@ export function buildThreeLandscape(
     }
   }
 
+  // Outside world §10.3: OSM woodland (`forest_mass` / `forest_interior`
+  // zones) beyond every reviewed woods mask is carried by context-toned mass
+  // lobes only. Reviewed masks keep their crowns; nothing here adds a crown,
+  // and a zone point inside a reviewed mask or any playing surface is skipped.
+  const contextWoods = (scene.contextZones ?? []).filter(zone => (zone.class === 'forest_mass' || zone.class === 'forest_interior') && zone.type !== 'LineString' && zone.basis !== 'uncertain')
+    .map(zone => ({ id: zone.id, kind: 'woods', type: zone.type, parts: zone.parts, reviewed: false }) as LocalFeature);
+  const contextMassBudget = Math.max(0, Math.round(VEGETATION.mass.contextBudget * (options.overrides?.mass ?? 1)));
+  const contextMassCandidates = contextWoods.map(feature => {
+    const rings = feature.parts.flat(), vertices = feature.parts.flat(2);
+    if (!vertices.length) return [] as PointM[];
+    const spacing = VEGETATION.mass.spacingM;
+    const minX = Math.floor(Math.min(...vertices.map(p => p[0])) / spacing) * spacing, maxX = Math.max(...vertices.map(p => p[0]));
+    const minY = Math.floor(Math.min(...vertices.map(p => p[1])) / spacing) * spacing, maxY = Math.max(...vertices.map(p => p[1]));
+    const points: PointM[] = [];
+    for (let y = minY, row = 0; y <= maxY && points.length < 2000; y += spacing, row++) for (let x = minX + (row % 2 ? spacing / 2 : 0); x <= maxX; x += spacing) {
+      const seed = featureSeed(`${feature.id}:${Math.round(x)}:${Math.round(y)}`);
+      const point: PointM = [x + (variation(seed) - .5) * spacing * .5, y + (variation(seed + 5) - .5) * spacing * .5];
+      if (!inFeature(point, feature)) continue;
+      if (rings.some(ring => boundaryDistance(point, ring) < VEGETATION.mass.lobeRadiusM[0])) continue;
+      if (canopyGroups.some(other => inFeature(point, other))) continue;
+      if (excludedFeatures.some(other => inFeature(point, other)) || excludedRings.some(ring => boundaryDistance(point, ring) < VEGETATION.mass.lobeRadiusM[1])) continue;
+      points.push(point);
+    }
+    return points;
+  });
+  let contextMassLobes = 0;
+  const contextMassAllocated = allocateCrowns(contextMassCandidates, contextMassBudget, nearness);
+  for (const [groupIndex, feature] of contextWoods.entries()) {
+    for (const point of contextMassAllocated[groupIndex]!) {
+      const groundZ = terrainHeight(mesh, point);
+      if (groundZ == null) continue;
+      const id = `mass:${courseFrame}:${scene.packageHash.slice(0, 12)}:${feature.id}:${Math.round(point[0])},${Math.round(point[1])}:${MERIDIAN_STYLE_VERSION}`;
+      const n = featureSeed(id);
+      const radius = VEGETATION.mass.lobeRadiusM[0] + (VEGETATION.mass.lobeRadiusM[1] - VEGETATION.mass.lobeRadiusM[0]) * variation(n + 3);
+      const height = VEGETATION.mass.canopyHeightM[0] + (VEGETATION.mass.canopyHeightM[1] - VEGETATION.mass.canopyHeightM[0]) * variation(n + 7);
+      lobes.push({ id, tile: `${Math.floor(point[0] / CANOPY_TILE_M)},${Math.floor(point[1] / CANOPY_TILE_M)}`, x: point[0], y: point[1], groundZ,
+        radius, aspect: .8 + variation(n + 11) * .3, height, yaw: variation(n + 13) * Math.PI * 2,
+        color: contextTone(new THREE.Color(VEGETATION.mass.color).lerp(new THREE.Color(VEGETATION.mass.light), variation(n + 17) * .7), feature) });
+      contextMassLobes++;
+      if (contextMassLobes >= contextMassBudget) break;
+    }
+  }
+  // Outside world §10.4 understory: low shrub clusters inside the reviewed
+  // forest edge (between `innerM` and `bandM` from the boundary), on a
+  // jittered grid, budgeted nearest the hole first. They reuse the low
+  // cluster crown design with no trunk and never leave their mask.
+  const understory = VEGETATION.understory, shrubAsset = assetById.get('broad-low-cluster') ?? treeAtlas.variants[0]!;
+  const understoryBudget = Math.max(0, Math.round(understory.budget * (options.overrides?.crowns ?? 1)));
+  const understoryCandidates = canopyGroups.map(feature => {
+    const rings = feature.parts.flat(), vertices = feature.parts.flat(2);
+    if (!vertices.length) return [] as PointM[];
+    const spacing = understory.spacingM;
+    const minX = Math.floor(Math.min(...vertices.map(p => p[0])) / spacing) * spacing, maxX = Math.max(...vertices.map(p => p[0]));
+    const minY = Math.floor(Math.min(...vertices.map(p => p[1])) / spacing) * spacing, maxY = Math.max(...vertices.map(p => p[1]));
+    const points: PointM[] = [];
+    for (let y = minY, row = 0; y <= maxY && points.length < 3000; y += spacing, row++) for (let x = minX + (row % 2 ? spacing / 2 : 0); x <= maxX; x += spacing) {
+      const seed = featureSeed(`understory:${feature.id}:${Math.round(x)}:${Math.round(y)}`);
+      const point: PointM = [x + (variation(seed) - .5) * spacing * .6, y + (variation(seed + 5) - .5) * spacing * .6];
+      if (!inFeature(point, feature)) continue;
+      const edgeM = rings.reduce((minimum, ring) => Math.min(minimum, boundaryDistance(point, ring)), Infinity);
+      if (edgeM < understory.innerM || edgeM > understory.bandM) continue;
+      if (excludedFeatures.some(other => inFeature(point, other)) || excludedRings.some(ring => boundaryDistance(point, ring) < understory.radiusM[1])) continue;
+      points.push(point);
+    }
+    return points;
+  });
+  let understoryCount = 0;
+  const understoryAllocated = allocateCrowns(understoryCandidates, understoryBudget, nearness);
+  for (const [groupIndex, feature] of canopyGroups.entries()) {
+    const ownBoundary = feature.parts.flat(), clearanceRings = [...ownBoundary, ...excludedRings];
+    for (const point of understoryAllocated[groupIndex]!) {
+      const groundZ = terrainHeight(mesh, point);
+      if (groundZ == null) continue;
+      const id = `understory:${courseFrame}:${scene.packageHash.slice(0, 12)}:${feature.id}:${Math.round(point[0] * 1000)},${Math.round(point[1] * 1000)}:${MERIDIAN_STYLE_VERSION}`;
+      const n = featureSeed(id);
+      const clearance = clearanceRings.reduce((minimum, ring) => Math.min(minimum, boundaryDistance(point, ring)), Infinity);
+      const designRadius = understory.radiusM[0] + (understory.radiusM[1] - understory.radiusM[0]) * variation(n + 3);
+      const radius = Math.min(designRadius, Math.max(0, clearance - .15));
+      if (radius < .5) continue;
+      const height = understory.heightM[0] + (understory.heightM[1] - understory.heightM[0]) * variation(n + 7);
+      const color = contextTone(new THREE.Color(understory.base).lerp(new THREE.Color(understory.light), variation(n + 17) * .7), feature);
+      trees.push({ id, tile: `${Math.floor(point[0] / CANOPY_TILE_M)},${Math.floor(point[1] / CANOPY_TILE_M)}`, x: point[0], y: point[1], groundZ,
+        radius, trunkRadius: 0, height, aspect: .8 + variation(n + 37) * .3, yaw: variation(n + 41) * Math.PI * 2, asset: shrubAsset, familyId: 'understory', color });
+      understoryCount++;
+      if (understoryCount >= understoryBudget) break;
+    }
+  }
+
   // §50 analytic contact shading: every display vertex accumulates a soft
   // disc under each nearby crown and mass lobe; the ground shader darkens
   // albedo by it. Derived from the seeded placement above, never the DEM,
@@ -524,7 +614,7 @@ export function buildThreeLandscape(
   group.add(context.group);
   const counts: ThreeLandscape['counts'] = { terrainTriangles: mesh.triangleFeatures.length, trees: trees.length,
     crownInstances: trees.length, crownTriangles: 0, totalTriangles: 0, canopyBatches: crownBatches.length, drawCalls: 0,
-    massLobes: lobes.length, trunksVisible: 0, families: familyCounts,
+    massLobes: lobes.length, trunksVisible: 0, families: familyCounts, contextMassLobes, understory: understoryCount,
     contextRibbons: context.counts.ribbons, contextStructures: context.counts.structures, contextLines: context.counts.lines, contextZones: context.counts.zones };
   const massTriangles = trunkTriangleCount(massGeometry) * lobes.length;
   const updateTriangleCounts = () => {

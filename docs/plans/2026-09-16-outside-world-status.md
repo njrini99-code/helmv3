@@ -18,11 +18,11 @@ Proof course: Peek’n Peak Upper (package `fdec6ea8…`).
 | 3 | Add a context/landcover pass to the pipeline | done | `fetch-osm-context.py` (bounded, retained: `sources/peek-n-peak-upper-osm-context`, 607 elements) → `prepare-context-layer.py` → `peek-n-peak-upper-context.json` (`golfhelm-context-layer-v1`, 168 zones, locked to the package hash) + `peek-n-peak-upper-context-report.json`; `parseContextLayer` refuses other packages (`MERIDIAN_CONTEXT_LAYER_MISMATCH`); scenes carry `contextZones` |
 | 4 | Review the worst “anonymous green space” holes first | partial | Report ranks holes by unexplained share of their drawn context (beyond the derived rough bands and every source zone): 2 (49 %), 8 (43 %), 7 (41 %), 4 (39 %), 6 (35 %), 3 (35 %). Rendering of the derived rough hierarchy and zones follows; the human §39 pass stays open |
 | 5 | Add cart path and built-context support | done | `three-context.ts`: terrain-conforming ribbons (cart/service/road/crossing/bridge/stream/drainage, style `contextObjects.ribbons`), building/clubhouse/maintenance extrusions from the terrain, fence/wall/lift lines; counts in telemetry (`contextRibbons`, `contextStructures`, `contextZones`); lab `ow1-*`, `rh1-*` captures. Open: minor ribbon gaps at OSM way ends |
-| 6 | Improve forest-edge generation and understory logic | pending | Edge-first families landed in Meridian V4; understory band and OSM `forest_mass` zones next |
+| 6 | Improve forest-edge generation and understory logic | done | Understory shrub clusters inside the reviewed forest edge (1.5–10 m band, budget 220, `three-landscape.ts`, style `vegetation.understory`); OSM `forest_mass` zones outside every reviewed mask carried by context-toned lobes only (budget 260; hole 9: 49, hole 10: 13; holes without OSM woods stay at 0 — source-only). Telemetry `understory`, `contextMassLobes`; captures `rh2-hole{07,09,10}-*` |
 | 7 | Introduce rough hierarchy materials and masks | done | Compiler `compileRoughHierarchy` (visual-artifact.ts, compiler-2, style meridian-v8): `surroundDistanceCm` per rough/ground vertex, classes `rough_secondary` (≥10 m) / `rough_outer` (≥28 m) with ±3/±6 m blends, slope-only darkening, outer macro ×1.6 in the shader; ground zones painted from source-backed context zones (`GROUND_ZONE_CLASSES`: parking, wetland, ski slope, recreation, open field, buffer grass, native), `uncertain` zones paint nothing; `contextLayerHash` in the artifact + assert gate. Tests: visual-artifact.test.ts (bands, zones, gate). Captures `rh1-hole{02,07,11,17}-*` |
-| 8 | Add production camera presets and state-based framing | pending | Tee / approach / green / putting states (§23) |
-| 9 | Remove permanent debug-style controls from the player view | pending | `HoleSceneFrame` entry context: hole pill + View (Terrain/Top/Green) + overflow; Side/Profile/zoom rail move to review and lab (§36) |
-| 10 | Re-run whole-course signoff (lab + production mode) | pending | Needs 5–9 |
+| 8 | Add production camera presets and state-based framing | done | `TERRAIN_PRESETS.tee/approach/green/putting` + `PRODUCTION_CAMERA_STATES` + `productionCameraState(view)` in terrain.ts; the entry context opens in the state for the current shot view; lab exposes the presets; captures `cs1-hole07-{tee,approach,green,putting}-desktop` |
+| 9 | Remove permanent debug-style controls from the player view | done | Entry context now: hole pill (area chooser) · Close · View group Terrain / Top / Green · overflow (Reset view, Details and sources). Zoom rail, Side, Profile and the camera tools render only in review. `scripts/golf/course-geometry/capture-player-view.cjs` proves the chrome (`pv1-hole07-*-phone.json` → chrome=[Choose course area, Close, Terrain, Top, Green, More]) |
+| 10 | Re-run whole-course signoff (lab + production mode) | partial | Player-mode capture script landed; per-hole matrix + §39 answers + uncertain-share gate still to run. Open: player view on phone draws ~350 calls / 460k tris for hole 7 vs ~145 / 200k in the lab (trunk band + compact-mode overlays) — budget work under Meridian V7 |
 
 ## Spec sections
 
@@ -30,14 +30,14 @@ Proof course: Peek’n Peak Upper (package `fdec6ea8…`).
 | --- | --- | --- | --- |
 | 0–1 | Summary, product direction | done | Encoded in `meridian-outside-world.md` (two products, hybrid immersive view) |
 | 2 | Two products on one world | done | Lab/QA vs `HoleSceneFrame` entry context; separation documented; chrome reduction pending (§36) |
-| 3 | Player UI/UX spec | pending | Default Terrain camera exists for expanded live play; sparse chrome, View control, gestures, bottom sheet pending |
+| 3 | Player UI/UX spec | partial | Sparse chrome + View control + state camera landed (actions 8–9); drag/pinch gestures existed; bottom-sheet details remain the inspector aside (overflow → Details) |
 | 4 | The outside-world problem | done | Measured: per-hole unexplained share in the context report |
 | 5 | Taxonomy | done | `context-taxonomy.ts` |
 | 6 | Do not fill with random stuff | done | Layer zones are source-only (`basis: source`), every default recorded; doctrine in the doc |
 | 7 | What “more full” means | done | Semantic (taxonomy), spatial (zones per hole), textural (rough hierarchy, pending render), environmental (buildings/roads/lifts in the layer) |
 | 8 | Landcover reconstruction pass | done | `prepare-context-layer.py` + report; human review pass open |
 | 9 | Rough hierarchy | done | Action 7: distance bands, blends, slope darkening, outer macro; palette `roughSecondary`/`roughOuter`/`native` |
-| 10 | Forest hierarchy | partial | Mass / edge / edge trees done (Meridian V4); understory + isolated trees pending |
+| 10 | Forest hierarchy | done | Mass / edge / edge trees (V4) + understory band + context forest mass (action 6); isolated trees come from OSM `natural=tree` when present (none retained for this course) |
 | 11 | Forest placement principles | done | Source-backed masks, edge rhythm, taper by depth (V4) |
 | 12 | Adjacent-hole context | done | Context features drawn quieter (Meridian V2/V5) |
 | 13 | Structures | done | Extrusions with source heights/levels or class defaults (§13.3 default recorded per zone); walls + flat roofs, base sunk into the terrain |
@@ -47,12 +47,12 @@ Proof course: Peek’n Peak Upper (package `fdec6ea8…`).
 | 18 | Open rough visual language | done | Three tiers with distinct albedo, roughness and macro scale; blends over metres, never one pixel |
 | 19 | Green-complex exterior context | partial | Surround/fringe rings, bunker bowls, edge trees exist; back bank / run-off zones await the review pass |
 | 20–21 | Hole identity, per-hole context pass | partial | Report per hole; identity audit after rendering |
-| 22–23 | Production camera composition and shot-context states | pending | Action 8 |
+| 22–23 | Production camera composition and shot-context states | done | Action 8 |
 | 24 | Labels and overlays | done | Only Green / shot badges are drawn; no category labels |
 | 25–27 | Surface differentiation, edge treatment, ground breakup | done | Playing surfaces, bunkers, water, woods (Meridian V2–V5) + rough tiers, ground zones, paths and structures (actions 5, 7) |
 | 28–30 | Shadow design, atmospheric depth, colour discipline | done | Fitted shadows, contact shade, capped haze, restrained palette (Meridian V1–V5) |
 | 31–33 | Authoring pass, workflow, fidelity tiers | done | Doc + taxonomy + prep script |
 | 34 | World-detail rule | done | Uncertain share measured per hole |
 | 35 | Quality gates | partial | Gate defined (uncertain < 15 %, sources present, prompts answered); no hole passes yet |
-| 36–37 | Player-mode controls, core promise | pending | Action 9 |
+| 36–37 | Player-mode controls, core promise | done | Action 9 |
 | 38–43 | Priorities, prompts, definition of good, principle, action list, short version | done | This tracker follows §42 in order; prompts coded |

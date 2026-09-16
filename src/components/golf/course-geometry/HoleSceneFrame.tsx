@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type ReactNode, type PointerEvent, type RefObject } from 'react';
-import { Maximize2, RotateCcw, X, SlidersHorizontal, ChevronDown, ChevronLeft, ChevronRight, Info } from 'lucide-react';
+import { Maximize2, RotateCcw, X, SlidersHorizontal, ChevronDown, ChevronLeft, ChevronRight, Info, MoreHorizontal } from 'lucide-react';
 import { ModalShell } from '@/components/fairway/overlays/ModalShell';
 import { Button } from '@/components/fairway/controls/button';
 import { recordedDistance } from '@/lib/golf/course-geometry/normalize';
@@ -12,7 +12,7 @@ import type { HoleScene, ShotEvidence } from '@/lib/golf/course-geometry/types';
 import { puttingFocusCamera, puttingPlanCamera, type SceneView } from '@/lib/golf/course-geometry/camera';
 import { CourseHoleScene, sceneCamera } from './CourseHoleScene';
 import { CourseTerrainProfile } from './CourseTerrainProfile';
-import { PERSPECTIVE_FOV, TERRAIN_PRESETS, projectTerrainPoint, terrainHeight, type TerrainFitProfile, type TerrainPose, type TerrainPreset } from '@/lib/golf/course-geometry/terrain';
+import { PERSPECTIVE_FOV, PRODUCTION_CAMERA_STATES, productionCameraState, TERRAIN_PRESETS, projectTerrainPoint, terrainHeight, type TerrainFitProfile, type TerrainPose, type TerrainPreset } from '@/lib/golf/course-geometry/terrain';
 
 import { fitTerrainViewportCamera } from '@/lib/golf/course-geometry/terrain-viewport';
 import type { TerrainRuntimeController } from '@/lib/golf/course-geometry/runtime-controller';
@@ -71,7 +71,12 @@ export function HoleSceneFrame({ scene, context, defaultView = 'hole', selectedS
       // The card itself is the calm plan view. Opening it is an explicit
       // request to inspect the same canonical green in terrain, rather than
       // a second copy of a 2D putting diagram.
-      if (view === 'putting') {
+      if (context === 'entry') {
+        // Player view (outside-world §22–23): the camera is a state chosen
+        // by the shot context, never a debug preset the player must pick.
+        const state = PRODUCTION_CAMERA_STATES[productionCameraState(view)];
+        poseMemory.current = { pose: TERRAIN_PRESETS[state.preset], fitPreset: state.preset };
+      } else if (view === 'putting') {
         poseMemory.current = { pose: TERRAIN_PRESETS.terrain, fitPreset: 'terrain' };
       } else if (scene?.illustrativePreviewTrajectories?.length) {
         poseMemory.current = { pose: TERRAIN_PRESETS.side, fitPreset: 'side' };
@@ -84,7 +89,7 @@ export function HoleSceneFrame({ scene, context, defaultView = 'hole', selectedS
       {view === 'putting' && <span>3D</span>}<Maximize2 size={17} aria-hidden />
     </Button>}>
     <Drawing key={view} scene={scene} view={view} context={context} events={events} selectedShotNumber={detailSelection ?? selectedShotNumber} activeDraftShotNumber={activeDraftShotNumber} puttingScope={puttingScope} onSelectEvent={setDetailSelection}
-      currentPuttingDistanceM={currentPuttingDistanceM} expanded poseMemory={poseMemory} onClose={() => setExpanded(false)} debugView={debugView}
+      currentPuttingDistanceM={currentPuttingDistanceM} expanded poseMemory={poseMemory} onClose={() => setExpanded(false)} debugView={debugView} onSelectView={setChoice}
       heading={<><span className="font-fw-display text-body-lg font-semibold">{view === 'putting' || view === 'green' || scene?.hole.displayLabel ? 'Green complex' : scene ? `Hole ${scene.hole.ordinal}` : 'Course view'}</span>
         <span className="text-caption text-text-secondary">{scene && !unassignedStudy ? `Par ${scene.hole.par} · ${scene.hole.scorecardYards ?? '—'} yd` : 'Source review'}</span></>}
       areaControls={closeArea => <div className="flex flex-wrap gap-1" role="group" aria-label="Expanded course views">
@@ -116,11 +121,11 @@ export function HoleSceneFrame({ scene, context, defaultView = 'hole', selectedS
   </div>;
 }
 
-function Drawing({ scene, view, context, events, selectedShotNumber, activeDraftShotNumber, puttingScope = 'whole_green', currentPuttingDistanceM, expanded = false, heading, areaControls, onClose, poseMemory, onSelectEvent, debugView }: {
+function Drawing({ scene, view, context, events, selectedShotNumber, activeDraftShotNumber, puttingScope = 'whole_green', currentPuttingDistanceM, expanded = false, heading, areaControls, onClose, poseMemory, onSelectEvent, debugView, onSelectView }: {
   scene?: HoleScene | null; view: SceneView; context: 'entry' | 'review'; events: readonly ShotEvidence[];
   selectedShotNumber?: number; activeDraftShotNumber?: number; puttingScope?: 'whole_green' | 'focus_putt'; currentPuttingDistanceM?: number | null; expanded?: boolean;
   heading?: ReactNode; areaControls?: (close: () => void) => ReactNode; onClose?: () => void; poseMemory?: RefObject<CameraMemory>;
-  onSelectEvent?: (shotNumber: number) => void; debugView?: TerrainDebugView;
+  onSelectEvent?: (shotNumber: number) => void; debugView?: TerrainDebugView; onSelectView?: (view: SceneView) => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: 320, height: context === 'entry' ? (view === 'putting' && hasReviewedGreen(scene) ? 272 : 160) : 310 });
@@ -190,6 +195,12 @@ function Drawing({ scene, view, context, events, selectedShotNumber, activeDraft
     catch { /* Missing source coverage retains the existing 2D view and pan. */ }
   }
   const terrainEnabled = terrainCamera != null;
+  // Player view (§36): hole pill + View (Terrain / Top / Green) + overflow.
+  // Side, Profile, the zoom rail and the camera tools stay in review and lab.
+  const production = context === 'entry';
+  const statePreset = PRODUCTION_CAMERA_STATES[productionCameraState(view)].preset;
+  const [overflowOpen, setOverflowOpen] = useState(false);
+  const homePreset: TerrainPreset = production ? statePreset : 'top';
   const interactive = expanded && courseView != null && !!scene && !showProfile;
   const boundedPan = (x: number, y: number) => ({ x: Math.max(-size.width / 2, Math.min(size.width / 2, x)),
     y: Math.max(-size.height / 2, Math.min(size.height / 2, y)) });
@@ -390,10 +401,10 @@ function Drawing({ scene, view, context, events, selectedShotNumber, activeDraft
         rolledOff: putt != null && putt.result !== 'green' && putt.result !== 'hole',
       }} /> : <UnavailableCourseContext />}
       </div>
-      {expanded && courseView && scene && !showProfile && <div className="absolute bottom-4 right-3 flex flex-col gap-1 rounded-fw-lg border border-white/30 bg-surface p-1 shadow-card" role="group" aria-label="Zoom and pan" onPointerDown={e => e.stopPropagation()}>
+      {expanded && !production && courseView && scene && !showProfile && <div className="absolute bottom-4 right-3 flex flex-col gap-1 rounded-fw-lg border border-white/30 bg-surface p-1 shadow-card" role="group" aria-label="Zoom and pan" onPointerDown={e => e.stopPropagation()}>
         <Button size="sm" variant="ghost" className="min-w-11 px-2" aria-label="Zoom in" disabled={zoom >= 4} onClick={() => changeCamera(current => ({ ...current, zoom: Math.min(4, current.zoom * 1.4) }))}>+</Button>
         <Button size="sm" variant="ghost" className="min-w-11 px-2" aria-label="Zoom out" disabled={zoom <= .5} onClick={() => changeCamera(current => ({ ...current, zoom: Math.max(.5, current.zoom / 1.4) }))}>−</Button>
-        <Button size="sm" variant="ghost" className="min-w-11 px-2" aria-label="Reset view" onClick={() => changeCamera(() => ({ zoom: 1, pan: { x: 0, y: 0 }, pose: TERRAIN_PRESETS.top, fitPreset: 'top' }))}><RotateCcw size={16} aria-hidden /></Button>
+        <Button size="sm" variant="ghost" className="min-w-11 px-2" aria-label="Reset view" onClick={() => changeCamera(() => ({ zoom: 1, pan: { x: 0, y: 0 }, pose: TERRAIN_PRESETS[homePreset], fitPreset: homePreset }))}><RotateCcw size={16} aria-hidden /></Button>
         {!terrainEnabled && <Button size="sm" variant="ghost" className="min-w-11 px-2" aria-label="Camera controls" aria-expanded={toolsOpen} onClick={() => setToolsOpen(v => !v)}><SlidersHorizontal size={17} aria-hidden /></Button>}
       </div>}
       {expanded && courseView && scene && !showProfile && (!terrainEnabled || Math.abs(pose.pitch - 90) < .01) && scaleWidth > 0 && scaleWidth < size.width / 2 &&
@@ -411,15 +422,32 @@ function Drawing({ scene, view, context, events, selectedShotNumber, activeDraft
     </div>
     {expanded && <aside className="z-10 flex max-h-[48dvh] shrink-0 flex-col border-t border-border-subtle bg-surface font-fw-sans sm:max-h-none sm:w-[320px] sm:border-l sm:border-t-0" aria-label="Course inspector" data-slot="course-inspector" data-modal="false" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
       <div className="flex items-center justify-between gap-1 px-3 pt-2">
-        {(terrainEnabled || showProfile) ? <div className="flex items-center rounded-fw-md bg-surface-secondary p-0.5" role="group" aria-label="Terrain camera">
+        {production && terrainEnabled ? <div className="flex items-center rounded-fw-md bg-surface-secondary p-0.5" role="group" aria-label="View">
+          <Button size="sm" className="px-3" variant={isPreset(statePreset) && view !== 'green' ? 'secondary' : 'ghost'} aria-pressed={isPreset(statePreset) && view !== 'green'} onClick={() => presetView(statePreset)}>Terrain</Button>
+          <Button size="sm" className="px-3" variant={isPreset('top') ? 'secondary' : 'ghost'} aria-pressed={isPreset('top')} onClick={() => presetView('top')}>Top</Button>
+          <Button size="sm" className="px-3" variant={view === 'green' ? 'secondary' : 'ghost'} aria-pressed={view === 'green'} onClick={() => {
+            if (view === 'green') { presetView('green'); return; }
+            // Green is an area and a camera state at once: the frame remounts on the new area with the green pose.
+            if (poseMemory) poseMemory.current = { pose: TERRAIN_PRESETS.green, fitPreset: 'green' };
+            onSelectView?.('green');
+          }}>Green</Button>
+        </div> : (terrainEnabled || showProfile) && !production ? <div className="flex items-center rounded-fw-md bg-surface-secondary p-0.5" role="group" aria-label="Terrain camera">
           {(['top', 'terrain', 'side'] as const).map(preset => <Button key={preset} size="sm" className="px-2.5"
             variant={!showProfile && isPreset(preset) ? 'secondary' : 'ghost'} aria-pressed={!showProfile && isPreset(preset)} onClick={() => presetView(preset)}>
             {{ top: 'Top', terrain: 'Terrain', side: 'Side' }[preset]}</Button>)}
           <Button size="sm" className="px-3" variant={showProfile ? 'secondary' : 'ghost'} aria-pressed={showProfile}
             onClick={() => { flush(); commitCamera(); setShowProfile(true); }}>Profile</Button>
         </div> : <span className="px-1 text-caption font-medium">{view === 'putting' ? 'Putting distances' : 'Course outline'}</span>}
-        <Button size="sm" variant="ghost" className="ml-auto min-w-11 px-2" aria-label="Details and sources" aria-expanded={inspectorOpen} onClick={() => setInspectorOpen(v => !v)}><Info size={17} aria-hidden /></Button>
-        <Button size="sm" variant="ghost" className="min-w-11 px-2" aria-label="Camera controls" aria-expanded={toolsOpen} onClick={() => setToolsOpen(v => !v)}><SlidersHorizontal size={17} aria-hidden /></Button>
+        {production ? <div className="relative ml-auto">
+          <Button size="sm" variant="ghost" className="min-w-11 px-2" aria-label="More" aria-expanded={overflowOpen} aria-haspopup="menu" onClick={() => setOverflowOpen(v => !v)}><MoreHorizontal size={17} aria-hidden /></Button>
+          {overflowOpen && <div role="menu" aria-label="More options" className="absolute right-0 top-full z-20 mt-1 flex min-w-[180px] flex-col rounded-fw-lg border border-border-subtle bg-surface p-1 shadow-card">
+            <Button role="menuitem" size="sm" variant="ghost" className="justify-start px-3" leftIcon={<RotateCcw size={15} aria-hidden />} onClick={() => { setOverflowOpen(false); changeCamera(() => ({ zoom: 1, pan: { x: 0, y: 0 }, pose: TERRAIN_PRESETS[homePreset], fitPreset: homePreset })); }}>Reset view</Button>
+            <Button role="menuitem" size="sm" variant="ghost" className="justify-start px-3" leftIcon={<Info size={15} aria-hidden />} aria-expanded={inspectorOpen} onClick={() => { setOverflowOpen(false); setInspectorOpen(v => !v); }}>Details and sources</Button>
+          </div>}
+        </div> : <>
+          <Button size="sm" variant="ghost" className="ml-auto min-w-11 px-2" aria-label="Details and sources" aria-expanded={inspectorOpen} onClick={() => setInspectorOpen(v => !v)}><Info size={17} aria-hidden /></Button>
+          <Button size="sm" variant="ghost" className="min-w-11 px-2" aria-label="Camera controls" aria-expanded={toolsOpen} onClick={() => setToolsOpen(v => !v)}><SlidersHorizontal size={17} aria-hidden /></Button>
+        </>}
       </div>
       <div className="min-h-0 overflow-y-auto overscroll-contain">
         {active && <div className="px-4 pb-2 pt-2" data-slot="expanded-shot-evidence">
@@ -439,7 +467,7 @@ function Drawing({ scene, view, context, events, selectedShotNumber, activeDraft
           : 'Whole green uses the canonical course shape. Mark a ball to add an exact ball position.'}</p>}
         {terrainEnabled && pose.exaggeration !== 1 && <p className="h-6 truncate px-4 pb-2 text-caption text-text-secondary">Relief {pose.exaggeration.toFixed(1)}×</p>}
         {terrainFailed && <p role="status" className="px-4 pb-2 text-caption text-text-secondary">3D view unavailable. Showing the course outline.</p>}
-    {expanded && toolsOpen && <div className="flex flex-wrap items-center gap-1 px-3 py-1" role="group" aria-label="Additional camera controls">
+    {expanded && !production && toolsOpen && <div className="flex flex-wrap items-center gap-1 px-3 py-1" role="group" aria-label="Additional camera controls">
       {(['left', 'up', 'down', 'right'] as const).map(direction => <Button size="sm" variant="ghost" key={direction} aria-label={`Pan ${direction}`}
         onClick={() => changeCamera(current => ({ ...current, pan: boundedPan(current.pan.x + (direction === 'left' ? 40 : direction === 'right' ? -40 : 0), current.pan.y + (direction === 'up' ? 40 : direction === 'down' ? -40 : 0)) }))}>
         {{ left: '←', up: '↑', down: '↓', right: '→' }[direction]}

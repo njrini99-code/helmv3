@@ -19,7 +19,7 @@ import { compiledCourses, contextLayerFor, loadCompiledFixture, type CompiledCou
 
 const VIEWPORTS: Record<string, readonly [number, number]> = { phone: [390, 844], 'phone-large': [430, 932], tablet: [768, 1024], desktop: [1440, 1000] };
 const AREAS: readonly CourseView[] = ['hole', 'approach', 'green'];
-const PRESETS: readonly TerrainPreset[] = ['top', 'terrain', 'side'];
+const PRESETS: readonly TerrainPreset[] = ['top', 'terrain', 'side', 'tee', 'approach', 'green', 'putting'];
 const number = (value: string | null, fallback: number, min: number, max: number) => {
   const parsed = Number(value);
   return value != null && Number.isFinite(parsed) ? Math.max(min, Math.min(max, parsed)) : fallback;

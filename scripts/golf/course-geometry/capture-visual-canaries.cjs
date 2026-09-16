@@ -41,7 +41,7 @@ const pick = (dataset, keys) => Object.fromEntries(keys.map(key => [key, dataset
 const METADATA_KEYS = ['terrainRenderer', 'terrainProjection', 'visualStyleVersion', 'qualityTier', 'drawCalls', 'renderTriangles',
   'terrainTriangles', 'terrainTrees', 'pixelRatio', 'shadowMapSize', 'shadowMapType', 'terrainPitch', 'terrainYaw', 'terrainExaggeration',
   'terrainScale', 'terrainFov', 'crownDetail', 'bufferWidth', 'bufferHeight', 'renderCount', 'terrainHash', 'debugView', 'frameMs',
-  'visualStyleHash', 'visualArtifactHash', 'visualArtifactSource', 'meridianCode', 'visualBunkers', 'terrainMassLobes', 'terrainTrunks', 'treeFamilies', 'visualHaze', 'visualSky', 'contextZones', 'contextRibbons', 'contextStructures', 'contextLayerHash'];
+  'visualStyleHash', 'visualArtifactHash', 'visualArtifactSource', 'meridianCode', 'visualBunkers', 'terrainMassLobes', 'terrainTrunks', 'treeFamilies', 'visualHaze', 'visualSky', 'contextZones', 'contextRibbons', 'contextStructures', 'contextLayerHash', 'contextMassLobes', 'understory'];
 
 async function settled(page, canvas) {
   // Reduced motion applies presets instantly; still wait until the render

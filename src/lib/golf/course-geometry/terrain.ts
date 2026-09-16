@@ -8,7 +8,11 @@ export type Point3M = readonly [number, number, number];
 /** Sun elevation ≈45° (was ≈53°): a slightly lower presentation sun lengthens
  * shadows and reads relief without inventing detail (Meridian §47, §121). */
 export const TERRAIN_LIGHT_DIRECTION: Point3M = [.47, -.53, .706];
-export type TerrainPreset = 'top' | 'terrain' | 'side';
+/** Lab/review presets (`top`, `terrain`, `side`) plus the production camera
+ * states of the player view (outside-world spec §22–23): one composed pose per
+ * shot context, selected by state rather than by a debug control. */
+export type TerrainPreset = 'top' | 'terrain' | 'side' | 'tee' | 'approach' | 'green' | 'putting';
+export type ProductionCameraState = 'tee' | 'approach' | 'green' | 'putting';
 export type TerrainProjection = 'orthographic' | 'perspective';
 /** A baseline changes only on explicit preset/area selection. An interrupted
  * preset animation may retain its blend without refitting during the drag. */
@@ -29,7 +33,24 @@ export const TERRAIN_PRESETS: Record<TerrainPreset, TerrainPose> = {
   top: { pitch: 90, yawOffset: 0, exaggeration: 1, projection: 'orthographic' },
   terrain: { pitch: 44, yawOffset: 0, exaggeration: 1, projection: 'perspective', fovDegrees: 32 },
   side: { pitch: 20, yawOffset: 30, exaggeration: 1, projection: 'perspective', fovDegrees: 32 },
+  // Production states (§23): the tee state looks down the whole hole from a
+  // low elevated position; approach turns a little toward the green from the
+  // landing zone; green is steeper and closer; putting is near-overhead so
+  // the surface reads as a map without leaving the terrain.
+  tee: { pitch: 36, yawOffset: 0, exaggeration: 1, projection: 'perspective', fovDegrees: 30 },
+  approach: { pitch: 40, yawOffset: 12, exaggeration: 1, projection: 'perspective', fovDegrees: 30 },
+  green: { pitch: 50, yawOffset: -18, exaggeration: 1, projection: 'perspective', fovDegrees: 30 },
+  putting: { pitch: 64, yawOffset: 0, exaggeration: 1, projection: 'perspective', fovDegrees: 28 },
 };
+/** Which area each production state frames. `putting` frames the green
+ * complex from nearer overhead; it never becomes a separate 2D diagram. */
+export const PRODUCTION_CAMERA_STATES: Readonly<Record<ProductionCameraState, { preset: TerrainPreset; view: CourseView }>> = Object.freeze({
+  tee: { preset: 'tee', view: 'hole' }, approach: { preset: 'approach', view: 'approach' }, green: { preset: 'green', view: 'green' }, putting: { preset: 'putting', view: 'green' },
+});
+/** The production state for a scene view (player view §23). */
+export function productionCameraState(view: 'hole' | 'approach' | 'green' | 'putting'): ProductionCameraState {
+  return view === 'hole' ? 'tee' : view;
+}
 /** Bounded per-hole detail budget. The current format stores three XYZ
  * vertices per triangle; source normals use the identical component count. */
 export const MAX_TERRAIN_TRIANGLES = 40_000;
@@ -182,7 +203,7 @@ interface PerspectiveLens { fovDegrees: number; focalPx: number; distanceM: numb
 interface TerrainFrame { angle: number; focusM: Point3M; scale: number; lens: PerspectiveLens | null; metadata: TerrainFramingMetadata }
 const frames = new WeakMap<TerrainMesh, Map<string, TerrainFrame>>();
 const FIT_PADDING = 24;
-const PRESETS: readonly TerrainPreset[] = ['top', 'terrain', 'side'];
+const PRESETS: readonly TerrainPreset[] = ['top', 'terrain', 'side', 'tee', 'approach', 'green', 'putting'];
 
 /** Tactical surfaces drive framing. Expanded terrain/woods/rough context can
  * extend well beyond the hole, but that display apron must never shrink it. */
@@ -342,7 +363,7 @@ function frameFromPoints(scene: HoleScene, view: CourseView, points: readonly Po
   const determinant = basis.right[0] * basis.up[1] - basis.right[1] * basis.up[0];
   const centred: Point3M = [(projectedX * basis.up[1] - basis.right[1] * projectedY) / determinant,
     (basis.right[0] * projectedY - projectedX * basis.up[0]) / determinant, focusZ];
-  const profileWeights = { top: 0, terrain: 0, side: 0 }; profileWeights[preset] = 1;
+  const profileWeights = emptyWeights(); profileWeights[preset] = 1;
   const metadata = (scale: number, spanX: number, spanY: number, lens: PerspectiveLens | null, targetBasis: TerrainFramingMetadata['targetBasis']): TerrainFramingMetadata => ({
     profile: preset, profileWeights, baselineHeadingRadians: heading, baselineScale: scale, tacticalBoundsM: bounds,
     baselineBoundsPx: { x: (width - spanX) / 2, y: (height - spanY) / 2, width: spanX, height: spanY },
@@ -389,15 +410,17 @@ function terrainFrame(scene: HoleScene, mesh: TerrainMesh, view: CourseView, wid
   return frame;
 }
 
+const emptyWeights = (): Record<TerrainPreset, number> => ({ top: 0, terrain: 0, side: 0, tee: 0, approach: 0, green: 0, putting: 0 });
 function profileWeights(profile: TerrainFitProfile, depth = 0): Record<TerrainPreset, number> {
   if (depth > 32) throw new Error('Invalid terrain fit profile');
   if (typeof profile === 'string') {
     if (!PRESETS.includes(profile)) throw new Error('Invalid terrain fit profile');
-    return { top: Number(profile === 'top'), terrain: Number(profile === 'terrain'), side: Number(profile === 'side') };
+    const weights = emptyWeights(); weights[profile] = 1; return weights;
   }
   if (!profile || !Number.isFinite(profile.progress) || profile.progress < 0 || profile.progress > 1 || !PRESETS.includes(profile.to)) throw new Error('Invalid terrain fit profile');
   const from = profileWeights(profile.from, depth + 1);
-  const weights = { top: from.top * (1 - profile.progress), terrain: from.terrain * (1 - profile.progress), side: from.side * (1 - profile.progress) };
+  const weights = emptyWeights();
+  for (const key of PRESETS) weights[key] = from[key] * (1 - profile.progress);
   weights[profile.to] += profile.progress;
   return weights;
 }
