@@ -6,7 +6,8 @@ import { wgs84ToEnu, type LocalOrigin } from './geodesy';
 import { markTerminal } from './hole-lifecycle';
 import { classifyLie, greenComplexProbability, type SurfacePartition } from './lie-classifier';
 import { ESTIMATOR_CONFIG, LocationBuffer, anchorConfidence, finalizeEstimate, provisionalLocation, type EstimatorConfig, type LocationSample } from './location-estimator';
-import { deriveShots, finalAnchor, liveAnchors, newAnchorId, provisionalAnchor, tombstoneAnchor, undoable, type DerivedShot, type ShotAnchor } from './shot-anchor';
+import { deriveShots, finalAnchor, liveAnchors, newAnchorId, provisionalAnchor, tombstoneAnchor, undoable, type AnchorCourseBinding, type DerivedShot, type ShotAnchor } from './shot-anchor';
+import type { CalibrationTraceSink } from './calibration-trace';
 import { sampleTerrain } from './terrain-sampler';
 import { largestOuterRing, ringCentroid } from './hole-distances';
 
@@ -32,7 +33,12 @@ export interface OneTapSnapshot {
 export interface OneTapHole { holeKey: string; holeId: number; partition: SurfacePartition; terrain: TerrainMesh | null; terrainVersion: string | null }
 export interface OneTapDeps {
   roundId: string;
+  /** §73: the course this round's anchors belong to. */
+  course: AnchorCourseBinding;
   origin: LocalOrigin;
+  /** §71 debug/calibration only: receives the raw window of every final
+   * anchor. Production passes nothing and no raw sample persists. */
+  trace?: CalibrationTraceSink | null;
   buffer: LocationBuffer;
   repo: AnchorRepository;
   sync?: SyncQueue | null;
@@ -104,7 +110,7 @@ export class OneTapController {
     this.pendingTapMs = tapMs;
     this.setState('CAPTURE_PENDING', null);
     const id = newAnchorId(tapMs), sequence = this.nextSequence();
-    const identity = { id, roundId: this.deps.roundId, holeKey: this.hole.holeKey, holeId: this.hole.holeId, sequence, tapMs };
+    const identity = { id, roundId: this.deps.roundId, courseId: this.deps.course.courseId, siteId: this.deps.course.siteId, holeKey: this.hole.holeKey, holeId: this.hole.holeId, sequence, tapMs };
     const provisional = provisionalLocation(this.deps.buffer, tapMs, this.config);
     let base = provisionalAnchor(identity, provisional, provisional ? wgs84ToEnu([provisional.longitude, provisional.latitude, null], this.deps.origin) : null, this.deps.geometryVersion, this.hole.terrainVersion);
     if (provisional) this.deps.repo.upsert(base);
@@ -129,8 +135,9 @@ export class OneTapController {
     const posterior = classifyLie(this.hole.partition, estimate.positionENU, estimate.covarianceENU2D);
     const confidence = anchorConfidence(estimate.sigmaM, posterior.pMax, this.config, estimate.captureMotion);
     base = this.deps.repo.get(id) ?? base;
-    const anchor = finalAnchor(base, estimate, terrain, posterior, confidence, this.config.kAcc, this.now());
+    const anchor = finalAnchor(base, estimate, terrain, posterior, confidence, this.now());
     this.deps.repo.upsert(anchor);
+    this.deps.trace?.record({ anchorId: anchor.id, roundId: anchor.roundId, tapMs, samples: estimate.windowSamples });
     this.deps.sync?.enqueue(anchor.id);
     const outcome: OneTapOutcome = posterior.primaryLie === 'UNKNOWN' ? 'outside_modeled_area' : confidence === 'LOW' ? 'low_confidence' : 'saved';
     this.setState(outcome === 'outside_modeled_area' ? 'OUTSIDE_MODELED_AREA' : outcome === 'low_confidence' ? 'LOW_CONFIDENCE' : 'ANCHOR_SAVED', outcome);

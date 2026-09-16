@@ -1,4 +1,4 @@
-import { shotAnchorSchema, type ShotAnchor } from './shot-anchor';
+import { migrateAnchorRow, shotAnchorSchema, type AnchorCourseBinding, type ShotAnchor } from './shot-anchor';
 
 /** Local-first persistence (master plan "Local-first persistence"). A tap
  * writes the anchor to local storage before anything else; the anchor id is
@@ -27,11 +27,14 @@ export class MemoryAnchorRepository implements AnchorRepository {
 export interface StorageLike { getItem(key: string): string | null; setItem(key: string, value: string): void; removeItem(key: string): void }
 export const ANCHOR_STORAGE_PREFIX = 'golfhelm-one-tap-anchors:';
 /** Synchronous whole-round snapshot per write: a tap is durable on the
- * device before the estimator even finishes. Rows that no longer parse are
- * dropped and counted, never silently repaired. */
+ * device before the estimator even finishes. V1 lab rows migrate under the
+ * round's course binding (raw windows dropped) and are written back on the
+ * next persist; rows that no longer parse are dropped and counted, never
+ * silently repaired. */
 export class StorageAnchorRepository extends MemoryAnchorRepository {
   invalidRows = 0;
-  constructor(private readonly storage: StorageLike, roundIds: readonly string[]) {
+  migratedRows = 0;
+  constructor(private readonly storage: StorageLike, roundIds: readonly string[], private readonly binding: AnchorCourseBinding) {
     super();
     for (const roundId of roundIds) this.load(roundId);
   }
@@ -39,13 +42,17 @@ export class StorageAnchorRepository extends MemoryAnchorRepository {
     let raw: string | null = null;
     try { raw = this.storage.getItem(ANCHOR_STORAGE_PREFIX + roundId); } catch { return; }
     if (!raw) return;
+    let migrated = false;
     try {
       const rows = JSON.parse(raw) as unknown[];
       for (const row of Array.isArray(rows) ? rows : []) {
-        const parsed = shotAnchorSchema.safeParse(row);
-        if (parsed.success) this.byId.set(parsed.data.id, parsed.data); else this.invalidRows++;
+        const result = migrateAnchorRow(row, this.binding);
+        if (!result) { this.invalidRows++; continue; }
+        this.byId.set(result.anchor.id, result.anchor);
+        if (result.migrated) { this.migratedRows++; migrated = true; }
       }
     } catch { this.invalidRows++; }
+    if (migrated) this.persist(roundId);
   }
   protected override persist(roundId: string): void {
     try { this.storage.setItem(ANCHOR_STORAGE_PREFIX + roundId, JSON.stringify(this.list(roundId))); } catch { /* private mode: memory only */ }

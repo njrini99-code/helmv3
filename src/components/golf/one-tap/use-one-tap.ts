@@ -5,8 +5,10 @@ import type { ProductionCameraState, TerrainMesh } from '@/lib/golf/course-geome
 import type { CourseGeometryPackage } from '@/lib/golf/course-geometry/types';
 import type { SceneMarkers } from '@/lib/golf/course-geometry/scene-markers';
 import { MemoryAnchorRepository, StorageAnchorRepository, SyncQueue, type AnchorRepository, type StorageLike, type SyncTransport } from '@/lib/golf/one-tap/anchor-repository';
+import type { CalibrationTraceSink } from '@/lib/golf/one-tap/calibration-trace';
 import { initialCameraState, nextHole, observeAnchor, observeGesture, productionStateFor, recenter, tickCamera, type CameraDirectorState, type CameraMode } from '@/lib/golf/one-tap/camera-director';
 import { localOriginFor, wgs84ToEnu } from '@/lib/golf/one-tap/geodesy';
+import { courseIdForSite } from '@/lib/golf/one-tap/peek-n-peak-policy';
 import { greenDistances, type GreenDistances } from '@/lib/golf/one-tap/hole-distances';
 import { posteriorGreenProbability } from '@/lib/golf/one-tap/hole-lifecycle';
 import { buildSurfacePartition, LIE_LABELS, lieDisplayPolicy, type LieClass, type LieDisplay } from '@/lib/golf/one-tap/lie-classifier';
@@ -34,6 +36,8 @@ export interface UseOneTapOptions {
   /** A round-level repository (shared across holes) replaces the per-hook one. */
   repo?: AnchorRepository;
   transport?: SyntheticTransport | SyncTransport | null;
+  /** §71 debug/calibration only: raw windows go here and nowhere else. */
+  trace?: CalibrationTraceSink | null;
   reducedMotion?: boolean;
   now?: () => number;
 }
@@ -105,7 +109,8 @@ export function useOneTap(options: UseOneTapOptions): OneTapView {
   const partition = useMemo(() => buildSurfacePartition(pkg, holeKey), [pkg, holeKey]);
   const holeId = pkg.holes.find(h => h.key === holeKey)?.ordinal ?? 1;
   const storage = options.storage === undefined ? defaultStorage() : options.storage;
-  const ownRepo = useMemo<AnchorRepository>(() => options.repo ? options.repo : storage ? new StorageAnchorRepository(storage, [roundId]) : new MemoryAnchorRepository(), [options.repo, storage, roundId]);
+  const course = useMemo(() => ({ courseId: courseIdForSite(pkg.siteId), siteId: pkg.siteId }), [pkg.siteId]);
+  const ownRepo = useMemo<AnchorRepository>(() => options.repo ? options.repo : storage ? new StorageAnchorRepository(storage, [roundId], course) : new MemoryAnchorRepository(), [options.repo, storage, roundId, course]);
   const repo = options.repo ?? ownRepo;
   const sync = useMemo(() => new SyncQueue(repo, transport, roundId), [repo, transport, roundId]);
   const [buffer] = useState(() => new LocationBuffer());
@@ -117,11 +122,11 @@ export function useOneTap(options: UseOneTapOptions): OneTapView {
   holeRef.current = { holeKey, holeId, partition, terrain };
   useEffect(() => {
     const h = holeRef.current;
-    const created = new OneTapController({ roundId, origin, buffer, repo, sync, geometryVersion: pkg.contentHash, now, haptic,
+    const created = new OneTapController({ roundId, course, origin, buffer, repo, sync, geometryVersion: pkg.contentHash, now, haptic, trace: options.trace ?? null,
       hole: { holeKey: h.holeKey, holeId: h.holeId, partition: h.partition, terrain: h.terrain, terrainVersion: h.terrain?.contentHash ?? null } });
     setController(created);
     return () => { created.dispose(); setController(current => current === created ? null : current); };
-  }, [roundId, origin, buffer, repo, sync, pkg.contentHash, now]);
+  }, [roundId, course, origin, buffer, repo, sync, pkg.contentHash, now, options.trace]);
 
   const [camera, setCamera] = useState<CameraDirectorState>(() => initialCameraState(now()));
   useEffect(() => {

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CourseGeometryPackage, LocalFeature, PointM } from '@/lib/golf/course-geometry/types';
 import { MemoryAnchorRepository, StorageAnchorRepository, type AnchorRepository, type StorageLike } from '@/lib/golf/one-tap/anchor-repository';
+import { courseIdForSite } from '@/lib/golf/one-tap/peek-n-peak-policy';
 import { localOriginFor, wgs84ToEnu } from '@/lib/golf/one-tap/geodesy';
 import { largestOuterRing, ringCentroid } from '@/lib/golf/one-tap/hole-distances';
 import { holeStatus, markTerminal, observeNextTee, type HoleStatus, type NextTeeState } from '@/lib/golf/one-tap/hole-lifecycle';
@@ -72,7 +73,7 @@ function liveOnHole(anchors: readonly ShotAnchor[], holeKey: string): ShotAnchor
 
 export function useOneTapRound({ roundId, pkg, holeKeys, location, storage: storageOption }: UseOneTapRoundOptions): OneTapRoundView {
   const storage = storageOption === undefined ? defaultStorage() : storageOption;
-  const repo = useMemo<AnchorRepository>(() => storage ? new StorageAnchorRepository(storage, [roundId]) : new MemoryAnchorRepository(), [storage, roundId]);
+  const repo = useMemo<AnchorRepository>(() => storage ? new StorageAnchorRepository(storage, [roundId], { courseId: courseIdForSite(pkg.siteId), siteId: pkg.siteId }) : new MemoryAnchorRepository(), [storage, roundId, pkg.siteId]);
   const [holeIndex, setHoleIndex] = useState(() => readHoleIndex(storage, roundId, holeKeys.length));
   useEffect(() => { try { storage?.setItem(ROUND_STORAGE_PREFIX + roundId, JSON.stringify({ holeIndex })); } catch { /* private mode */ } }, [storage, roundId, holeIndex]);
   const [version, setVersion] = useState(0);

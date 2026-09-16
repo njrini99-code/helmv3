@@ -3,12 +3,11 @@ import { markersFromAnchors } from '../scene-markers';
 import type { ShotAnchor } from '../shot-anchor';
 
 function anchor(id: string, sequence: number, e: number, n: number, over: Partial<ShotAnchor> = {}): ShotAnchor {
-  return { id, roundId: 'r', holeKey: 'h', holeId: 7, sequence, tapTimestamp: '2026-09-16T12:00:00.000Z', finalizedTimestamp: '2026-09-16T12:00:01.000Z', provisional: false,
-    positionWgs84: [0, 0, null], positionENU: [e, n, 0], covarianceENU2D: [[4, 0], [0, 4]], sigmaM: 2, rawLocationSamples: [],
+  return { schemaVersion: 2, id, roundId: 'r', courseId: 'synthetic-course', siteId: 'synthetic', holeKey: 'h', holeId: 7, sequence, tapTimestamp: '2026-09-16T12:00:00.000Z', finalizedTimestamp: '2026-09-16T12:00:01.000Z', provisional: false,
+    positionWgs84: [0, 0, null], positionENU: [e, n, 0], covarianceENU2D: [[4, 0], [0, 4]], sigmaM: 2, reportedAccuracyMedianM: 2, calibratedUncertaintyM: 2, captureMotion: 'stationary',
     liePosterior: [{ featureId: null, lieClass: 'fairway', p: 1 }], primaryLie: 'fairway', confidence: 'HIGH', terrainElevationMeters: null, terrainSlopeDegrees: null, terrainAspectDegrees: null,
-    geometryVersion: 'g', terrainVersion: null, terminal: false, terminalMethod: null, syncState: 'LOCAL', deletedAt: null, estimator: null, classification: null, ...over };
+    geometryVersion: 'g', terrainVersion: null, terminal: false, terminalMethod: null, syncState: 'LOCAL', deletedAt: null, estimatorSummary: null, classification: null, ...over };
 }
-const sample = { timestampMs: 1, longitude: 0, latitude: 0, altitudeM: null, horizontalAccuracyM: 3, verticalAccuracyM: null, speedMps: null, headingDegrees: null, source: 'synthetic' as const };
 
 describe('markers from anchors', () => {
   it('numbers earlier marks, labels the newest YOU and links consecutive finalized marks', () => {
@@ -19,11 +18,11 @@ describe('markers from anchors', () => {
     expect(out.rippleKey).toBe('c');
   });
   it('draws a provisional mark hollow without a derived shot, and not at all before it has a fix', () => {
-    const withFix = anchor('p', 1, 50, 0, { provisional: true, rawLocationSamples: [sample] });
+    const withFix = anchor('p', 1, 50, 0, { provisional: true, sigmaM: 3, covarianceENU2D: [[9, 0], [0, 9]] });
     const out = markersFromAnchors([anchor('a', 0, 0, 0), withFix]);
     expect(out.markers.map(m => m.kind)).toEqual(['you', 'provisional']);
     expect(out.links).toEqual([]);
-    const blind = markersFromAnchors([anchor('a', 0, 0, 0), anchor('q', 1, 50, 0, { provisional: true })]);
+    const blind = markersFromAnchors([anchor('a', 0, 0, 0), anchor('q', 1, 50, 0, { provisional: true, sigmaM: 0, covarianceENU2D: [[0, 0], [0, 0]], reportedAccuracyMedianM: 0, calibratedUncertaintyM: 0 })]);
     expect(blind.markers.map(m => m.key)).toEqual(['a']);
   });
   it('marks the cup mark as terminal and drops tombstoned anchors', () => {

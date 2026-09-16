@@ -48,11 +48,11 @@ function manualSource() {
   return source;
 }
 function greenAnchor(holeKey: string, point: PointM, over: Partial<ShotAnchor> = {}): ShotAnchor {
-  return { id: `anchor-${holeKey}`, roundId: 'round', holeKey, holeId: 1, sequence: 0, tapTimestamp: '2026-09-16T12:00:00.000Z', finalizedTimestamp: '2026-09-16T12:00:01.000Z', provisional: false,
-    positionWgs84: [0, 0, null], positionENU: [point[0], point[1], 0], covarianceENU2D: [[4, 0], [0, 4]], sigmaM: 2, rawLocationSamples: [],
+  return { schemaVersion: 2, id: `anchor-${holeKey}`, roundId: 'round', courseId: 'synthetic-course', siteId: 'synthetic', holeKey, holeId: 1, sequence: 0, tapTimestamp: '2026-09-16T12:00:00.000Z', finalizedTimestamp: '2026-09-16T12:00:01.000Z', provisional: false,
+    positionWgs84: [0, 0, null], positionENU: [point[0], point[1], 0], covarianceENU2D: [[4, 0], [0, 4]], sigmaM: 2, reportedAccuracyMedianM: 2, calibratedUncertaintyM: 2, captureMotion: 'stationary',
     liePosterior: [{ featureId: null, lieClass: 'green', p: .95 }, { featureId: null, lieClass: 'fringe', p: .05 }], primaryLie: 'green', confidence: 'HIGH',
     terrainElevationMeters: null, terrainSlopeDegrees: null, terrainAspectDegrees: null, geometryVersion: pilotPackage.contentHash, terrainVersion: null,
-    terminal: false, terminalMethod: null, syncState: 'LOCAL', deletedAt: null, estimator: null, classification: null, ...over };
+    terminal: false, terminalMethod: null, syncState: 'LOCAL', deletedAt: null, estimatorSummary: null, classification: null, ...over };
 }
 function memoryStorage() {
   const map = new Map<string, string>();

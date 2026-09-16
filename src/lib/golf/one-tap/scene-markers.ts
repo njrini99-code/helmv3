@@ -1,5 +1,5 @@
 import type { SceneMarker, SceneMarkerLink, SceneMarkers } from '../course-geometry/scene-markers';
-import { liveAnchors, type ShotAnchor } from './shot-anchor';
+import { hasFix, liveAnchors, type ShotAnchor } from './shot-anchor';
 
 /** What the player sees on the course after each tap: every live anchor of
  * the hole as a dot with its σ ring, the newest finalized one labelled YOU,
@@ -8,7 +8,7 @@ import { liveAnchors, type ShotAnchor } from './shot-anchor';
  * anchor (cup mark) is marked as such. Tombstoned anchors are not drawn, and
  * nothing is ever snapped. */
 export function markersFromAnchors(anchors: readonly ShotAnchor[], rippleKey: string | null = null): SceneMarkers {
-  const live = liveAnchors(anchors).filter(a => a.provisional ? a.rawLocationSamples.length > 0 : true);
+  const live = liveAnchors(anchors).filter(a => a.provisional ? hasFix(a) : true);
   const finalized = live.filter(a => !a.provisional), newest = finalized.at(-1) ?? null;
   const markers: SceneMarker[] = live.map(a => {
     const kind = a.provisional ? 'provisional' : a.terminal ? 'terminal' : a === newest ? 'you' : 'anchor';

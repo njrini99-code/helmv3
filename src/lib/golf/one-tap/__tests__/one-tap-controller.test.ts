@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { parseGeometryPackage } from '@/lib/golf/course-geometry/schema';
 import { MemoryAnchorRepository, SyncQueue } from '../anchor-repository';
+import { MemoryCalibrationTraceSink, type CalibrationTraceSink } from '../calibration-trace';
 import { enuToWgs84, localOriginFor } from '../geodesy';
 import { buildSurfacePartition } from '../lie-classifier';
 import { LocationBuffer, type LocationSample } from '../location-estimator';
@@ -25,11 +26,11 @@ function sample(e: number, n: number, tMs: number, acc = 3): LocationSample {
   const [lon, lat] = enuToWgs84([e, n, 0], origin);
   return { timestampMs: tMs, longitude: lon, latitude: lat, altitudeM: null, horizontalAccuracyM: acc, verticalAccuracyM: null, speedMps: null, headingDegrees: null, source: 'synthetic' };
 }
-function build(transport: { upsertAnchors: (a: readonly unknown[]) => Promise<{ acceptedIds: string[] }> } | null = null) {
+function build(transport: { upsertAnchors: (a: readonly unknown[]) => Promise<{ acceptedIds: string[] }> } | null = null, trace: CalibrationTraceSink | null = null) {
   const repo = new MemoryAnchorRepository(), buffer = new LocationBuffer();
   const sync = new SyncQueue(repo, transport as never, 'r');
   const haptics: string[] = [];
-  const controller = new OneTapController({ roundId: 'r', origin, buffer, repo, sync, geometryVersion: pkg.contentHash, haptic: k => { haptics.push(k); },
+  const controller = new OneTapController({ roundId: 'r', course: { courseId: 'synthetic-course', siteId: 'synthetic' }, origin, buffer, repo, sync, geometryVersion: pkg.contentHash, haptic: k => { haptics.push(k); }, trace,
     hole: { holeKey: 'h', holeId: 15, partition: buildSurfacePartition(pkg, 'h'), terrain: null, terrainVersion: null } });
   return { repo, buffer, controller, haptics, sync };
 }
@@ -51,7 +52,9 @@ describe('one-tap controller', () => {
     await vi.advanceTimersByTimeAsync(750);
     const first = await pending;
     expect(first).toMatchObject({ provisional: false, primaryLie: 'tee', confidence: 'HIGH', sequence: 0, syncState: 'QUEUED' });
-    expect(first!.rawLocationSamples.length).toBeGreaterThanOrEqual(4);
+    expect(first!.estimatorSummary!.sampleCount).toBeGreaterThanOrEqual(4);
+    expect(first).not.toHaveProperty('rawLocationSamples');
+    expect(first).toMatchObject({ schemaVersion: 2, courseId: 'synthetic-course', siteId: 'synthetic', captureMotion: 'stationary' });
     expect(controller.snapshot()).toMatchObject({ state: 'ANCHOR_SAVED', outcome: 'saved', undoableId: first!.id });
     await vi.advanceTimersByTimeAsync(700);
     expect(controller.snapshot().state).toBe('HOLE_READY');
@@ -88,10 +91,22 @@ describe('one-tap controller', () => {
     expect(settled).toBe(true);
     // The same fixes standing still would grade HIGH; moving saves as MEDIUM, never rejected.
     expect(anchor).toMatchObject({ provisional: false, primaryLie: 'tee', confidence: 'MEDIUM', syncState: 'QUEUED' });
-    expect(anchor!.rawLocationSamples.length).toBeGreaterThanOrEqual(6);
+    expect(anchor!.estimatorSummary!.sampleCount).toBeGreaterThanOrEqual(6);
+    expect(anchor).toMatchObject({ captureMotion: 'moving' });
     expect(repo.list('r').filter(a => !a.deletedAt)).toHaveLength(1);
     expect(sync.pending()).toHaveLength(1);
     expect(controller.snapshot()).toMatchObject({ state: 'ANCHOR_SAVED', outcome: 'saved' });
+  });
+  it('hands the raw window only to an opted-in calibration sink (§71)', async () => {
+    const sink = new MemoryCalibrationTraceSink();
+    const { controller } = build(null, sink);
+    for (let t = -1000; t <= 0; t += 250) controller.pushSample(sample(-190, 6, 100_000 + t));
+    const pending = controller.markBall();
+    await vi.advanceTimersByTimeAsync(750);
+    const anchor = (await pending)!;
+    expect(sink.get(anchor.id)).toMatchObject({ roundId: 'r', tapMs: 100_000 });
+    expect(sink.get(anchor.id)!.samples.length).toBe(anchor.estimatorSummary!.sampleCount);
+    expect(JSON.stringify(anchor)).not.toContain('"longitude":' + JSON.stringify(sink.get(anchor.id)!.samples[0]!.longitude) + ',"latitude"');
   });
   it('reports GPS_UNAVAILABLE with no fix, fabricates nothing and recovers on the next sample', async () => {
     const { controller, repo, haptics } = build();
