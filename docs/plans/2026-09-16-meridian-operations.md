@@ -16,7 +16,7 @@ than code: §107, §111, §115–120, §123.
 | three-mesh-bvh | not installed; picking is one mesh, one ray per tap on the canonical terrain (≤40k triangles), no measurable cost | `three-camera.ts` `pickTerrainPoint` |
 | glTF Transform, gltfpack, glTF Validator | adopted for the first authored GLB (none today; all materials procedural); order recorded in `docs/design/meridian-visual-language.md` 'Asset pipeline' | `scripts/golf/course-geometry/blender/validate_glb.py` (round-trip check) |
 | KTX2 / Basis | when a texture appears (none today) | deferred |
-| QGIS, GDAL, PROJ, Shapely (pyproj + shapely already drive the Python pipeline) | geometry review kit: per-kind GeoJSON, flags, context, review-adjustments sidecar, PyQGIS loader styled by status | `scripts/golf/course-geometry/build-qgis-review-kit.py` |
+| QGIS, GDAL, PROJ, Shapely (pyproj + shapely already drive the Python pipeline) | geometry review kit: per-kind GeoJSON, flags, context, review-adjustments sidecar, PyQGIS loader styled by status | `scripts/golf/course-geometry/build-qgis-review-kit.py` Round trip: `apply-review-adjustments.py <package> <sidecar> <out-dir> --context=<context>` imports the decisions with provenance. |
 | PDAL, CloudCompare, OpenDroneMap | when a point cloud or drone flight exists | deferred |
 | Blender Geometry Nodes | authored props only | deferred |
 | MapLibre, Cesium / 3D Tiles | not for hole scenes | no |
