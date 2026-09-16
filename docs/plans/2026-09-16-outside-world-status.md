@@ -45,7 +45,7 @@ Proof course: Peek’n Peak Upper (package `fdec6ea8…`).
 | 15–16 | Terrain storytelling, non-playing terrain zones | partial | Slope darkening on secondary/outer rough and zones (slope only, no aspect, so albedo stays light-free); ski slopes painted from OSM `landuse=winter_sports`; terrain-context classes (ridge/swale/…) await the review pass |
 | 17 | “Not basic slop” rule | partial | Rule in the doc; enforced by the uncertain-share gate once rendering lands |
 | 18 | Open rough visual language | done | Three tiers with distinct albedo, roughness and macro scale; blends over metres, never one pixel |
-| 19 | Green-complex exterior context | partial | Surround/fringe rings, bunker bowls, edge trees exist; back bank / run-off zones await the review pass |
+| 19 | Green-complex exterior context | partial | Surround/fringe rings, bunker bowls, edge trees exist; back bank / run-off zones await the review pass Run-off zones now come from slope evidence (fidelity §39–40, `greenComplex.runoff`, hole 18 mound falloff); back banks still await the review pass, and collection hollows need a contour source. |
 | 20–21 | Hole identity, per-hole context pass | partial | Report per hole; identity audit after rendering |
 | 22–23 | Production camera composition and shot-context states | done | Action 8 |
 | 24 | Labels and overlays | done | Only Green / shot badges are drawn; no category labels |

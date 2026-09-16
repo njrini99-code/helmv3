@@ -111,16 +111,18 @@ describe('Three landscape source and rendering invariants', () => {
     const sourceVertices = [...mesh.vertices];
     const landscape = buildThreeLandscape(scene, mesh);
     const profile = landscape.artifact.layers.bunkerBowl.profiles[0]!;
+    // The synthetic square has almost no interior vertices, so the bowl is shallower than its styled depth (support < 1) but still drops.
+    expect(profile.effectiveDepthM).toBeGreaterThan(0); expect(profile.effectiveDepthM).toBeLessThanOrEqual(profile.depthM + 1e-9);
     expect(profile).toMatchObject({ featureId: 'test-bunker', sizeClass: 'large', depthBasis: 'visual_class', contextOnly: false });
     const position = landscape.terrain.geometry.getAttribute('position'), normal = landscape.terrain.geometry.getAttribute('normal');
     for (let i = 0; i < position.count; i++) {
       const centre = position.getX(i) === 50 && position.getY(i) === 50;
-      if (centre) { expect(position.getZ(i)).toBeCloseTo(105 - profile.depthM, 4); expect(normal.getZ(i)).toBeGreaterThan(.9); }
+      if (centre) { expect(position.getZ(i)).toBeCloseTo(105 - profile.effectiveDepthM, 4); expect(normal.getZ(i)).toBeGreaterThan(.9); }
       else expect(position.getZ(i)).toBe(position.getX(i) === 100 ? 110 : 100);
     }
     // Relief scales the bowl like every other display height; source never moves.
     landscape.setExaggeration(2, 100);
-    for (let i = 0; i < position.count; i++) if (position.getX(i) === 50) expect(position.getZ(i)).toBeCloseTo(100 + (105 - 100) * 2 - profile.depthM * 2, 4);
+    for (let i = 0; i < position.count; i++) if (position.getX(i) === 50) expect(position.getZ(i)).toBeCloseTo(100 + (105 - 100) * 2 - profile.effectiveDepthM * 2, 4);
     expect(mesh.vertices).toEqual(sourceVertices);
     expect(terrainHeight(mesh, [50, 50])).toBe(105);
     landscape.dispose();

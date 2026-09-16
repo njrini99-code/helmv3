@@ -11,6 +11,10 @@ import { MERIDIAN_STYLE } from '@/lib/golf/course-geometry/visual-style';
 
 const CONTEXT = MERIDIAN_STYLE.contextObjects;
 const RIBBON_STEP_M = 3;
+/** Corner fillet reach: a sharp bend in a source way is rounded within this
+ * distance of the corner (deviation at most half of it), so the strip never
+ * folds back on itself. Decoration only; the zone geometry is untouched. */
+const RIBBON_CORNER_M = 2;
 const RIBBON_LIFT_M = .06;
 
 export interface ThreeContext {
@@ -21,6 +25,29 @@ export interface ThreeContext {
 }
 
 interface Built { mesh: THREE.Mesh | THREE.LineSegments; groundZ: Float32Array; lift: Float32Array }
+
+/** Round every bend sharper than ~20° with a quadratic fillet that starts
+ * `radius` (or 45 % of the shorter leg) before the corner and ends the same
+ * distance after it. Gentle bends and the end points are kept exactly. */
+export function roundCorners(points: readonly PointM[], radius: number): PointM[] {
+  if (points.length < 3) return points.slice();
+  const out: PointM[] = [points[0]!];
+  for (let i = 1; i < points.length - 1; i++) {
+    const [px, py] = points[i - 1]!, [cx, cy] = points[i]!, [nx, ny] = points[i + 1]!;
+    const l1 = Math.hypot(cx - px, cy - py), l2 = Math.hypot(nx - cx, ny - cy);
+    if (!l1 || !l2) continue;
+    const dot = ((cx - px) * (nx - cx) + (cy - py) * (ny - cy)) / (l1 * l2);
+    if (dot > Math.cos(Math.PI / 9)) { out.push(points[i]!); continue; }
+    const d = Math.min(radius, l1 * .45, l2 * .45);
+    const ax = cx - (cx - px) / l1 * d, ay = cy - (cy - py) / l1 * d, bx = cx + (nx - cx) / l2 * d, by = cy + (ny - cy) / l2 * d;
+    for (let k = 0; k <= 4; k++) {
+      const t = k / 4, u = 1 - t;
+      out.push([u * u * ax + 2 * u * t * cx + t * t * bx, u * u * ay + 2 * u * t * cy + t * t * by]);
+    }
+  }
+  out.push(points[points.length - 1]!);
+  return out;
+}
 
 function resample(points: readonly PointM[], step: number): PointM[] {
   const out: PointM[] = [];
@@ -37,7 +64,7 @@ function resample(points: readonly PointM[], step: number): PointM[] {
  * outside the mesh split the strip; the shoulder darkens the outer 30 %. */
 function ribbon(mesh: TerrainMesh, line: readonly PointM[], width: number, tone: THREE.Color, shoulder: THREE.Color,
   positions: number[], colors: number[], groundZ: number[], indices: number[]) {
-  const samples = resample(line, RIBBON_STEP_M);
+  const samples = resample(roundCorners(line, RIBBON_CORNER_M), RIBBON_STEP_M);
   let previous: number | null = null;
   for (let i = 0; i < samples.length; i++) {
     const [x, y] = samples[i]!;

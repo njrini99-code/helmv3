@@ -183,6 +183,18 @@ from V1; V4 changes what stands on each centre.
   canonical vertex never moves, the ribbon stays where it was, and the bank
   shading follows the offset's gradient. `layers.contextContact.levelled`
   counts the vertices it touched.
+- **Rim facing and bowl support (audit-v3).** The bunker overhang uses the
+  rim's inward normal at the nearest rim point, length-weighted over five
+  segments, so a wiggly source rim gives one steady facing per stretch of
+  edge; the vertex-to-rim direction flipped between neighbouring vertices
+  and painted shading spokes on small pots. A bowl also scales with its
+  interior vertex support (`bunker.bowlSupportVertices`, profile
+  `bowlSupport`): a pot triangulated as a fan from its rim stays a flat pot
+  under its lip rather than a bowl the mesh cannot carry.
+- **Ribbon corners.** Context ribbons round every bend sharper than about
+  20° with a quadratic fillet within 2 m of the corner (`roundCorners`), so
+  the strip never folds back on itself at a sharp source node; the zone
+  geometry itself is untouched.
 - **Identity (§41).** `canopy:<courseFrame>:<packageHash12>:<featureId>:<x>,<y>:<styleVersion>`
   and `mass:<…>` seed every family roll, proportion, colour, yaw and aspect,
   so a tree is the same tree across holes, shared context and sessions, and

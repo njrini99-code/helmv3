@@ -85,6 +85,8 @@ export const MERIDIAN_STYLE = Object.freeze({
    * with depth and the turf within `contactBandM` of the rim darkens too. */
   bunker: Object.freeze({ depthM: Object.freeze({ small: [.30, .45] as const, medium: [.45, .70] as const, large: [.60, .90] as const }),
     smallAreaM2: 60, largeAreaM2: 260, bowlRadiusM: [.6, 3.5] as const, bowlRadiusFraction: .85, contextDepthScale: .6,
+    /** A bowl needs interior vertices to bend; with fewer than this many the depth scales down so a tiny fan-triangulated pot reads as a flat pot with a lip, not as shading spokes. */
+    bowlSupportVertices: 12,
     floorShade: .08, contactBandM: .6, contactShade: .22, sandGrainM: [.15, .35] as const, sandGrainAmplitude: .015,
     /** Fidelity §26–28: a render-only grass lip. The turf within `lipBandM`
      * of a rim rises as a rounded ridge (zero at the shared rim vertex, so the

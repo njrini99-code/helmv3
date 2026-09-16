@@ -64,6 +64,8 @@ export interface VisualBunkerProfile {
   /** Vertex range (inclusive start, exclusive end) is not contiguous, so the
    * profile records the vertex count it touched instead. */
   vertexCount: number;
+  /** 0–1: interior vertex support for the bowl; below 1 the bowl is shallower than `depthM`. */
+  bowlSupport: number;
 }
 export interface MeridianVisualAttributes {
   /** sRGB albedo, 3 bytes per vertex, in the mesh's corner order. */
@@ -165,18 +167,43 @@ function bboxDistance([x, y]: PointM, box: Bbox): number {
 }
 
 /** Nearest point on a ring's boundary (segments), with its distance. */
-function nearestOnRings(p: PointM, rings: readonly { ring: readonly PointM[]; box: Bbox }[]): { distance: number; point: PointM } {
-  let best = Infinity, bx = p[0], by = p[1];
-  for (const { ring, box } of rings) {
-    if (bboxDistance(p, box) >= best) continue;
+function nearestOnRings(p: PointM, rings: readonly { ring: readonly PointM[]; box: Bbox }[]): { distance: number; point: PointM; ringIndex: number; segment: number } {
+  let best = Infinity, bx = p[0], by = p[1], ringIndex = 0, segment = 0;
+  rings.forEach(({ ring, box }, r) => {
+    if (bboxDistance(p, box) >= best) return;
     for (let i = 1; i < ring.length; i++) {
       const a = ring[i - 1]!, b = ring[i]!, dx = b[0] - a[0], dy = b[1] - a[1], length2 = dx * dx + dy * dy;
       const t = length2 ? Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / length2)) : 0;
       const qx = a[0] + t * dx, qy = a[1] + t * dy, d = Math.sqrt((p[0] - qx) ** 2 + (p[1] - qy) ** 2);
-      if (d < best) { best = d; bx = qx; by = qy; }
+      if (d < best) { best = d; bx = qx; by = qy; ringIndex = r; segment = i - 1; }
     }
-  }
-  return { distance: best, point: [bx, by] };
+  });
+  return { distance: best, point: [bx, by], ringIndex, segment };
+}
+/** Inward (toward the sand) unit normal per ring segment, length-weighted
+ * over a five-segment window so a wiggly source rim yields one steady
+ * facing per stretch of edge instead of a facing that flips vertex to
+ * vertex. Ring 0 is the outer boundary; later rings are holes, whose sand
+ * lies on the other side. */
+function smoothedInwardNormals(rings: readonly { ring: readonly PointM[] }[]): PointM[][] {
+  const outer = rings[0]?.ring ?? [];
+  let signedArea = 0;
+  for (let i = 1; i < outer.length; i++) signedArea += outer[i - 1]![0] * outer[i]![1] - outer[i]![0] * outer[i - 1]![1];
+  const leftIsInside = signedArea > 0;
+  return rings.map(({ ring }, r) => {
+    const count = Math.max(0, ring.length - 1), raw: PointM[] = [], weights: number[] = [];
+    const sign = (r === 0) === leftIsInside ? 1 : -1;
+    for (let i = 0; i < count; i++) {
+      const a = ring[i]!, b = ring[i + 1]!, dx = b[0] - a[0], dy = b[1] - a[1], length = Math.hypot(dx, dy) || 1;
+      raw.push([-dy / length * sign, dx / length * sign]); weights.push(length);
+    }
+    return raw.map((_, i) => {
+      let x = 0, y = 0;
+      for (let k = -2; k <= 2; k++) { const j = ((i + k) % count + count) % count; x += raw[j]![0] * weights[j]!; y += raw[j]![1] * weights[j]!; }
+      const length = Math.hypot(x, y) || 1;
+      return [x / length, y / length] as PointM;
+    });
+  });
 }
 /** Quintic smoothstep 6u⁵ − 15u⁴ + 10u³ and its derivative (§28). */
 const smootherstep = (u: number) => u * u * u * (u * (u * 6 - 15) + 10);
@@ -647,17 +674,25 @@ function compileBunkerBowls(mesh: TerrainMesh, style: MeridianStyle, attributes:
     const edgeShade = style.bunker.contactShade * (1 + (featureSeed(`${id}:shade`) - .5) * 2 * style.bunker.edgeVariation);
     // Inradius from the deepest interior vertex; the bowl bottoms out there.
     const nearest = vertices.map(vertex => nearestOnRings([v[vertex * 3]!, v[vertex * 3 + 1]!], rings));
+    const rimNormals = smoothedInwardNormals(rings);
     const inradius = nearest.reduce((max, n) => Math.max(max, n.distance), 0);
     const [radiusMin = .6, radiusMax = 3.5] = style.bunker.bowlRadiusM;
     const bowlRadiusM = Math.min(radiusMax, Math.max(radiusMin, inradius * style.bunker.bowlRadiusFraction));
+    // A bowl is only as smooth as the vertices that carry it: a small bunker
+    // triangulated as a fan from its rim has no interior support, and a full
+    // depth there renders as radial shading spokes. Scale the bowl by the
+    // interior vertex count so such pots stay flat under their lip.
+    const interior = nearest.filter(n => n.distance > .5).length;
+    const bowlSupport = Math.min(1, interior / Math.max(1, style.bunker.bowlSupportVertices));
+    const bowlDepthM = depthM * bowlSupport;
     let effectiveDepthM = 0;
     vertices.forEach((vertex, index) => {
-      const { distance, point } = nearest[index]!;
-      const u = Math.min(1, distance / bowlRadiusM), depth = depthM * smootherstep(u);
+      const { distance, point, ringIndex, segment } = nearest[index]!;
+      const u = Math.min(1, distance / bowlRadiusM), depth = bowlDepthM * smootherstep(u);
       attributes.bunkerDepthMm[vertex] = Math.round(depth * 1000);
       effectiveDepthM = Math.max(effectiveDepthM, attributes.bunkerDepthMm[vertex]! / 1000);
       // Gradient of depth: profile slope × unit vector away from the rim.
-      const slope = u < 1 && distance > 0 ? depthM * smootherstepSlope(u) / bowlRadiusM : 0;
+      const slope = u < 1 && distance > 0 ? bowlDepthM * smootherstepSlope(u) / bowlRadiusM : 0;
       const px = v[vertex * 3]! - point[0], py = v[vertex * 3 + 1]! - point[1];
       const gx = distance > 0 ? slope * px / distance : 0, gy = distance > 0 ? slope * py / distance : 0;
       attributes.bunkerSlope[vertex * 2] = Math.round(Math.max(-8, Math.min(8, gx)) * BUNKER_SLOPE_SCALE);
@@ -665,12 +700,15 @@ function compileBunkerBowls(mesh: TerrainMesh, style: MeridianStyle, attributes:
       // The floor darkens a little with depth (§31); the compiler's rim ribbons
       // keep their sand-edge / highlight albedo.
       // Overhang shadow (renderer redesign §9): sand just inside a rim that
-      // faces the sun sits under the lip. `-(px, py)` points from the vertex
-      // to its nearest rim point; a positive dot with the sun's ground
-      // direction means the rim stands between the sand and the light.
-      const sunFacing = distance > 0 ? Math.max(0, (-px * SUN_GROUND[0] - py * SUN_GROUND[1]) / distance) : 0;
+      // faces the sun sits under the lip. The rim's smoothed inward normal at
+      // the nearest point gives the facing; a positive dot of the outward
+      // direction with the sun's ground direction means the rim stands
+      // between the sand and the light. (The vertex-to-rim direction flips
+      // vertex to vertex on a wiggly rim and painted shading spokes.)
+      const rimNormal = rimNormals[ringIndex]?.[segment] ?? [0, 0];
+      const sunFacing = Math.max(0, -rimNormal[0] * SUN_GROUND[0] - rimNormal[1] * SUN_GROUND[1]);
       const overhang = distance < style.bunker.overhangBandM ? style.bunker.overhangShade * sunFacing * (1 - distance / style.bunker.overhangBandM) : 0;
-      const shade = (1 - style.bunker.floorShade * (depthM > 0 ? depth / depthM : 0)) * (1 - overhang);
+      const shade = (1 - style.bunker.floorShade * (bowlDepthM > 0 ? depth / bowlDepthM : 0)) * (1 - overhang);
       for (let c = 0; c < 3; c++) attributes.albedo[vertex * 3 + c] = Math.round(attributes.albedo[vertex * 3 + c]! * shade);
     });
     const box = rings.reduce((acc, { box: b }) => ({ minX: Math.min(acc.minX, b.minX), minY: Math.min(acc.minY, b.minY), maxX: Math.max(acc.maxX, b.maxX), maxY: Math.max(acc.maxY, b.maxY) }),
@@ -678,7 +716,7 @@ function compileBunkerBowls(mesh: TerrainMesh, style: MeridianStyle, attributes:
     const reachM = Math.max(edgeBandM, style.bunker.lipBandM);
     contactBoxes.push({ rings, edgeBandM, edgeShade, lipM, box: { minX: box.minX - reachM, minY: box.minY - reachM, maxX: box.maxX + reachM, maxY: box.maxY + reachM } });
     profiles.push({ featureId: id, areaM2: Math.round(areaM2 * 10) / 10, sizeClass, family, depthM: Math.round(depthM * 1000) / 1000, effectiveDepthM,
-      bowlRadiusM: Math.round(bowlRadiusM * 1000) / 1000, depthBasis: 'visual_class', contextOnly, vertexCount: vertices.length,
+      bowlRadiusM: Math.round(bowlRadiusM * 1000) / 1000, depthBasis: 'visual_class', contextOnly, vertexCount: vertices.length, bowlSupport: Math.round(bowlSupport * 1000) / 1000,
       lipM: Math.round(lipM * 1000) / 1000, edgeBandM: Math.round(edgeBandM * 1000) / 1000, edgeShade: Math.round(edgeShade * 1000) / 1000 });
   }
   // Contact darkening (§32) and the grass lip (fidelity §26): turf within a
