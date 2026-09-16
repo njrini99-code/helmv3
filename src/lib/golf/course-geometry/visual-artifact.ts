@@ -15,7 +15,7 @@ import { inRing } from './spatial';
 import type { HoleScene, LocalFeature, PointM, SurfaceKind } from './types';
 import { hexToRgb, MERIDIAN_STYLE, srgbToLinear, styleHash, type MeridianPaletteKey, type MeridianStyle } from './visual-style';
 
-export const MERIDIAN_VISUAL_COMPILER_VERSION = 'meridian-visual-compiler-2';
+export const MERIDIAN_VISUAL_COMPILER_VERSION = 'meridian-visual-compiler-3';
 export const MERIDIAN_CODES = Object.freeze({
   mismatch: 'MERIDIAN_ARTIFACT_MISMATCH', missing: 'MERIDIAN_ARTIFACT_MISSING', contextLost: 'MERIDIAN_CONTEXT_LOST',
   shaderFailed: 'MERIDIAN_SHADER_FAILED', budgetExceeded: 'MERIDIAN_BUDGET_EXCEEDED', fitFailed: 'MERIDIAN_FIT_FAILED',
@@ -55,6 +55,10 @@ export interface VisualBunkerProfile {
   bowlRadiusM: number;
   depthBasis: 'visual_class';
   contextOnly: boolean;
+  /** Fidelity §26–28: this bunker's render-only lip height and edge band/shade (seeded). */
+  lipM: number;
+  edgeBandM: number;
+  edgeShade: number;
   /** Vertex range (inclusive start, exclusive end) is not contiguous, so the
    * profile records the vertex count it touched instead. */
   vertexCount: number;
@@ -81,6 +85,8 @@ export interface MeridianVisualAttributes {
   /** Metres to the nearest playing surface (fairway, tee, green, fringe,
    * surround, apron) in cm, capped at 655 m; the rough hierarchy's key. */
   surroundDistanceCm: Uint16Array;
+  /** Render-only rise of the turf around a bunker rim in mm (fidelity §26). */
+  lipLiftMm: Uint16Array;
 }
 export const BUNKER_SLOPE_SCALE = 4096;
 export interface MeridianVisualArtifact {
@@ -112,14 +118,18 @@ export interface MeridianVisualArtifact {
     /** §42–45: interior tone is distance from the drawn shoreline, never depth. */
     water: { basis: 'visual_only'; version: 'static-fresnel-v1'; depthBasis: 'shoreline_distance'; shorelineM: number; interiorM: number; contactVertices: number };
     /** Outside world §21: rough bands by distance from the nearest playing surface. */
-    roughHierarchy: { basis: 'visual_only'; version: 'distance-bands-v1'; secondaryM: number; outerM: number; secondaryVertices: number; outerVertices: number };
+    roughHierarchy: { basis: 'visual_only'; version: 'distance-bands-v2'; firstCutM: number; secondaryM: number; outerM: number; secondaryVertices: number; outerVertices: number };
     /** Outside world §10–16: ground tones painted from classified context zones. */
     groundZones: { basis: 'visual_only'; version: 'context-zones-v1'; painted: number; classes: Record<string, number>; skippedUncertain: number };
+    /** Fidelity §13–21: derived apron neck, green/collar edge lip, pad setting shade. */
+    greenComplex: { basis: 'visual_only'; version: 'green-complex-v1'; apronBasis: 'derived_neck'; apronVertices: number; edgeVertices: number; settingVertices: number };
+    /** Fidelity §10: fairway edge types by neighbour. */
+    fairwayEdges: { basis: 'visual_only'; version: 'edge-types-v1'; crispVertices: number; softVertices: number };
   };
   attributes: MeridianVisualAttributes;
 }
 
-const ATTRIBUTE_ORDER: (keyof MeridianVisualAttributes)[] = ['albedo', 'mowingWeight', 'turfWeight', 'contextWeight', 'roughness', 'surfaceClass', 'routeST', 'boundaryDistanceCm', 'bunkerDepthMm', 'bunkerSlope', 'surroundDistanceCm'];
+const ATTRIBUTE_ORDER: (keyof MeridianVisualAttributes)[] = ['albedo', 'mowingWeight', 'turfWeight', 'contextWeight', 'roughness', 'surfaceClass', 'routeST', 'boundaryDistanceCm', 'bunkerDepthMm', 'bunkerSlope', 'surroundDistanceCm', 'lipLiftMm'];
 
 function fnvBytes(views: ArrayBufferView[]): string {
   let hash = 2166136261;
@@ -234,7 +244,7 @@ export function compileVisualArtifact(scene: HoleScene, mesh: TerrainMesh, style
     albedo: new Uint8Array(vertexCount * 3), mowingWeight: new Uint8Array(vertexCount), turfWeight: new Uint8Array(vertexCount),
     contextWeight: new Uint8Array(vertexCount), roughness: new Uint8Array(vertexCount), surfaceClass: new Uint8Array(vertexCount),
     routeST: new Float32Array(vertexCount * 2), boundaryDistanceCm: new Uint16Array(vertexCount), bunkerDepthMm: new Uint16Array(vertexCount),
-    bunkerSlope: new Int16Array(vertexCount * 2), surroundDistanceCm: new Uint16Array(vertexCount),
+    bunkerSlope: new Int16Array(vertexCount * 2), surroundDistanceCm: new Uint16Array(vertexCount), lipLiftMm: new Uint16Array(vertexCount),
   };
   const featuresById = new Map<string, LocalFeature>();
   for (const feature of scene.contextFeatures ?? []) featuresById.set(feature.id, feature);
@@ -300,6 +310,8 @@ export function compileVisualArtifact(scene: HoleScene, mesh: TerrainMesh, style
     }
   }
   const hierarchy = compileRoughHierarchy(scene, mesh, style, attributes, featuresById, ringsFor);
+  const greenComplex = compileGreenComplex(scene, mesh, style, attributes, contextIds, ringsFor);
+  const fairwayEdges = compileFairwayEdges(scene, mesh, style, attributes, contextIds, ringsFor);
   const profiles = compileBunkerBowls(mesh, style, attributes, featuresById, contextIds, ringsFor);
   const contactVertices = compileShorelines(mesh, style, attributes, featuresById, ringsFor);
   const contentHash = fnvBytes(ATTRIBUTE_ORDER.map(key => attributes[key]));
@@ -315,12 +327,122 @@ export function compileVisualArtifact(scene: HoleScene, mesh: TerrainMesh, style
       context: { basis: 'visual_only', roughMix: style.context.roughMix },
       bunkerBowl: { basis: 'visual_only', version: 'smoothstep-bowl-v1', depthBasis: 'visual_class', profiles },
       water: { basis: 'visual_only', version: 'static-fresnel-v1', depthBasis: 'shoreline_distance', shorelineM: style.water.shorelineM, interiorM: style.water.interiorM, contactVertices },
-      roughHierarchy: { basis: 'visual_only', version: 'distance-bands-v1', secondaryM: style.roughHierarchy.secondaryM, outerM: style.roughHierarchy.outerM,
+      roughHierarchy: { basis: 'visual_only', version: 'distance-bands-v2', firstCutM: style.roughHierarchy.firstCutM, secondaryM: style.roughHierarchy.secondaryM, outerM: style.roughHierarchy.outerM,
         secondaryVertices: hierarchy.secondary, outerVertices: hierarchy.outer },
       groundZones: { basis: 'visual_only', version: 'context-zones-v1', painted: hierarchy.painted, classes: hierarchy.classes, skippedUncertain: hierarchy.skippedUncertain },
+      greenComplex: { basis: 'visual_only', version: 'green-complex-v1', apronBasis: 'derived_neck', ...greenComplex },
+      fairwayEdges: { basis: 'visual_only', version: 'edge-types-v1', ...fairwayEdges },
     },
     attributes,
   };
+}
+
+/** Nearest distance from a point to any ring in a list, capped; bbox-pruned. */
+function nearestRingDistance(point: PointM, rings: readonly { ring: readonly PointM[]; box: Bbox }[], cap: number): number {
+  let best = cap;
+  for (const { ring, box } of rings) {
+    if (bboxDistance(point, box) >= best) continue;
+    best = Math.min(best, boundaryDistance(point, ring));
+  }
+  return best;
+}
+const shadeAlbedo = (attributes: MeridianVisualAttributes, vertex: number, shade: number) => {
+  for (let c = 0; c < 3; c++) attributes.albedo[vertex * 3 + c] = Math.round(Math.min(255, Math.max(0, attributes.albedo[vertex * 3 + c]! * shade)));
+};
+
+/** Green complex (fidelity §13–21). Three render-only refinements around the
+ * hole's own green(s): a derived apron neck where its own fairway runs into
+ * the green, a crisper albedo lip on the green and its collar than any other
+ * edge (§18), and a pad-setting shade on the bank below the green so a
+ * perched or shelved green reads as a landform (§20). Nothing moves; every
+ * shape stays the reviewed outline. */
+function compileGreenComplex(scene: HoleScene, mesh: TerrainMesh, style: MeridianStyle, attributes: MeridianVisualAttributes,
+  contextIds: Set<string>, ringsFor: (id: string) => { ring: readonly PointM[]; box: Bbox }[]): { apronVertices: number; edgeVertices: number; settingVertices: number } {
+  const cfg = style.greenComplex, v = mesh.vertices;
+  const own = scene.features.filter(feature => !contextIds.has(feature.id));
+  const greens = own.filter(feature => feature.kind === 'green'), fairways = own.filter(feature => feature.kind === 'fairway');
+  const greenRings = greens.flatMap(feature => ringsFor(feature.id)), fairwayRings = fairways.flatMap(feature => ringsFor(feature.id));
+  const counts = { apronVertices: 0, edgeVertices: 0, settingVertices: 0 };
+  if (!greenRings.length) return counts;
+  // Pad elevation per green: mean canonical z of its own vertices.
+  const greenIds = new Set(greens.map(feature => feature.id));
+  let padSum = 0, padCount = 0;
+  for (let t = 0; t < mesh.triangleFeatures.length; t++) {
+    const featureIndex = mesh.triangleFeatures[t]!;
+    if (!greenIds.has(mesh.featureIds[featureIndex]!) || mesh.triangleMaterials[t] !== 0) continue;
+    for (let corner = 0; corner < 3; corner++) { padSum += v[(t * 3 + corner) * 3 + 2]!; padCount++; }
+  }
+  const padZ = padCount ? padSum / padCount : 0;
+  const apronAlbedo = hexToRgb(style.palette.apron), apronId = SURFACE_CLASS_IDS.indexOf('apron');
+  const apronRoughness = Math.round(style.surface.roughness.apron * 255);
+  const greenId = SURFACE_CLASS_IDS.indexOf('green'), fringeId = SURFACE_CLASS_IDS.indexOf('fringe');
+  const roughIds = new Set([SURFACE_CLASS_IDS.indexOf('rough'), SURFACE_CLASS_IDS.indexOf('ground'), SURFACE_CLASS_IDS.indexOf('rough_secondary'), SURFACE_CLASS_IDS.indexOf('surround')]);
+  const reach = Math.max(cfg.apronGreenM, cfg.settingReachM);
+  for (let t = 0; t < mesh.triangleFeatures.length; t++) {
+    const featureIndex = mesh.triangleFeatures[t]!, kind = mesh.featureKinds[featureIndex]!, id = mesh.featureIds[featureIndex]!;
+    if (contextIds.has(id)) continue;
+    for (let corner = 0; corner < 3; corner++) {
+      const vertex = t * 3 + corner, cls = attributes.surfaceClass[vertex]!;
+      const point: PointM = [v[vertex * 3]!, v[vertex * 3 + 1]!];
+      if (cls === greenId || cls === fringeId) {
+        // §18 / §16: the cleanest edge in the scene. Boundary distance is the
+        // vertex's own feature edge: the green ring for green vertices, the
+        // shared green edge for the collar ring inside the rough feature.
+        const d = attributes.boundaryDistanceCm[vertex]! / 100;
+        if (d < cfg.edgeFieldM) { shadeAlbedo(attributes, vertex, 1 - (cls === greenId ? cfg.greenEdgeShade : cfg.fringeEdgeShade) * (1 - d / cfg.edgeFieldM)); counts.edgeVertices++; }
+        continue;
+      }
+      if (kind !== 'rough' && kind !== 'ground') continue;
+      if (!roughIds.has(cls)) continue;
+      const dGreen = nearestRingDistance(point, greenRings, reach + 1);
+      if (dGreen > reach) continue;
+      // §21 apron: the neck between this hole's fairway and its green.
+      if (dGreen <= cfg.apronGreenM && fairwayRings.length) {
+        const dFairway = nearestRingDistance(point, fairwayRings, cfg.apronFairwayM + 1);
+        if (dFairway <= cfg.apronFairwayM) {
+          const blend = Math.min(1, (cfg.apronGreenM - dGreen) / cfg.apronBlendM, (cfg.apronFairwayM - dFairway) / cfg.apronBlendM);
+          const base: [number, number, number] = [attributes.albedo[vertex * 3]! / 255, attributes.albedo[vertex * 3 + 1]! / 255, attributes.albedo[vertex * 3 + 2]! / 255];
+          const albedo = mix(base, apronAlbedo, blend);
+          for (let c = 0; c < 3; c++) attributes.albedo[vertex * 3 + c] = Math.round(Math.min(1, Math.max(0, albedo[c]!)) * 255);
+          if (blend >= .5) { attributes.surfaceClass[vertex] = apronId; attributes.roughness[vertex] = apronRoughness; attributes.turfWeight[vertex] = 255; attributes.mowingWeight[vertex] = 0; }
+          counts.apronVertices++;
+          continue;
+        }
+      }
+      // §20 setting: the bank below the pad darkens toward the green.
+      if (dGreen <= cfg.settingReachM) {
+        const drop = Math.min(1, Math.max(0, (padZ - v[vertex * 3 + 2]!) / cfg.settingDropM));
+        if (drop > 0) { shadeAlbedo(attributes, vertex, 1 - cfg.settingShade * drop * (1 - dGreen / cfg.settingReachM)); counts.settingVertices++; }
+      }
+    }
+  }
+  return counts;
+}
+
+/** Fairway edge types (fidelity §10). A fairway edge within `crispNearM` of a
+ * bunker or green is a maintained boundary and gets the crisp lip; every
+ * other fairway edge gets the soft one. Both are albedo-only over `fieldM`
+ * inside the reviewed outline, which never moves. */
+function compileFairwayEdges(scene: HoleScene, mesh: TerrainMesh, style: MeridianStyle, attributes: MeridianVisualAttributes,
+  contextIds: Set<string>, ringsFor: (id: string) => { ring: readonly PointM[]; box: Bbox }[]): { crispVertices: number; softVertices: number } {
+  const cfg = style.fairwayEdge, v = mesh.vertices, counts = { crispVertices: 0, softVertices: 0 };
+  const neighbours = [...(scene.contextFeatures ?? []), ...scene.features].filter(feature => feature.kind === 'bunker' || feature.kind === 'green').flatMap(feature => ringsFor(feature.id));
+  const fairwayId = SURFACE_CLASS_IDS.indexOf('fairway');
+  for (let t = 0; t < mesh.triangleFeatures.length; t++) {
+    const featureIndex = mesh.triangleFeatures[t]!, id = mesh.featureIds[featureIndex]!;
+    if (mesh.featureKinds[featureIndex] !== 'fairway' || contextIds.has(id)) continue;
+    for (let corner = 0; corner < 3; corner++) {
+      const vertex = t * 3 + corner;
+      if (attributes.surfaceClass[vertex] !== fairwayId) continue;
+      const d = attributes.boundaryDistanceCm[vertex]! / 100;
+      if (d >= cfg.fieldM) continue;
+      const point: PointM = [v[vertex * 3]!, v[vertex * 3 + 1]!];
+      const crisp = nearestRingDistance(point, neighbours, cfg.crispNearM + 1) <= cfg.crispNearM;
+      shadeAlbedo(attributes, vertex, 1 - (crisp ? cfg.crispShade : cfg.softShade) * (1 - d / cfg.fieldM));
+      if (crisp) counts.crispVertices++; else counts.softVertices++;
+    }
+  }
+  return counts;
 }
 
 /** Rough hierarchy and ground zones (outside world §10–16, §21). Rough and
@@ -351,9 +473,9 @@ function compileRoughHierarchy(scene: HoleScene, mesh: TerrainMesh, style: Merid
       const rings = zone.parts.flat().map(ring => ({ ring, box: ringBbox(ring) }));
       return { zone, entry, polygons, rings, albedo: hexToRgb(style.palette[entry.palette]), classId: SURFACE_CLASS_IDS.indexOf(entry.surface) };
     });
-  const { secondaryM, secondaryBlendM, outerM, outerBlendM, slopeDarken, slopeFullAt, groundZoneBlendM } = style.roughHierarchy;
+  const { firstCutM, firstCutBlendM, secondaryM, secondaryBlendM, outerM, outerBlendM, slopeDarken, slopeFullAt, groundZoneBlendM } = style.roughHierarchy;
   const roughness = style.surface.roughness;
-  const secondaryAlbedo = hexToRgb(style.palette.roughSecondary), outerAlbedo = hexToRgb(style.palette.roughOuter);
+  const secondaryAlbedo = hexToRgb(style.palette.roughSecondary), outerAlbedo = hexToRgb(style.palette.roughOuter), firstCutAlbedo = hexToRgb(style.palette.roughFirstCut);
   const secondaryId = SURFACE_CLASS_IDS.indexOf('rough_secondary'), outerId = SURFACE_CLASS_IDS.indexOf('rough_outer');
   const v = mesh.vertices, cache = new Map<string, number>();
   const surroundFor = (point: PointM): number => {
@@ -404,9 +526,13 @@ function compileRoughHierarchy(scene: HoleScene, mesh: TerrainMesh, style: Merid
         shade = slopeShade;
         counts.painted++; counts.classes[zone.entry.surface] = (counts.classes[zone.entry.surface] ?? 0) + 1;
       } else {
+        // Fidelity §33/§37: the first cut is the maintained strip of primary
+        // rough beside the short grass; it keeps the rough class and only
+        // lifts the tone toward the surround so the mowing ladder reads.
+        const toPrimary = smoothstep(firstCutM - firstCutBlendM, firstCutM + firstCutBlendM, distance);
         const toSecondary = smoothstep(secondaryM - secondaryBlendM, secondaryM + secondaryBlendM, distance);
         const toOuter = smoothstep(outerM - outerBlendM, outerM + outerBlendM, distance);
-        albedo = mix(mix(base, secondaryAlbedo, toSecondary), outerAlbedo, toOuter);
+        albedo = mix(mix(mix(firstCutAlbedo, base, toPrimary), secondaryAlbedo, toSecondary), outerAlbedo, toOuter);
         if (distance >= outerM) { classId = outerId; counts.outer++; shade = slopeShade; attributes.roughness[vertex] = Math.round(roughness.rough_outer * 255); }
         else if (distance >= secondaryM) { classId = secondaryId; counts.secondary++; shade = slopeShade; attributes.roughness[vertex] = Math.round(roughness.rough_secondary * 255); }
       }
@@ -432,7 +558,7 @@ function compileBunkerBowls(mesh: TerrainMesh, style: MeridianStyle, attributes:
     list.push(t * 3, t * 3 + 1, t * 3 + 2);
     verticesByFeature.set(featureIndex, list);
   }
-  const v = mesh.vertices, contactBoxes: { rings: { ring: readonly PointM[]; box: Bbox }[]; box: Bbox }[] = [];
+  const v = mesh.vertices, contactBoxes: { rings: { ring: readonly PointM[]; box: Bbox }[]; box: Bbox; edgeBandM: number; edgeShade: number; lipM: number }[] = [];
   for (const [featureIndex, vertices] of [...verticesByFeature.entries()].sort((a, b) => a[0] - b[0])) {
     const id = mesh.featureIds[featureIndex]!, feature = featuresById.get(id), rings = ringsFor(id);
     if (!feature || !rings.length) continue;
@@ -440,6 +566,13 @@ function compileBunkerBowls(mesh: TerrainMesh, style: MeridianStyle, attributes:
     const sizeClass: VisualBunkerProfile['sizeClass'] = areaM2 < style.bunker.smallAreaM2 ? 'small' : areaM2 > style.bunker.largeAreaM2 ? 'large' : 'medium';
     const [low = 0, high = 0] = style.bunker.depthM[sizeClass];
     const depthM = (low + (high - low) * featureSeed(id)) * (contextOnly ? style.bunker.contextDepthScale : 1);
+    // Fidelity §26–28: no two bunker edges match. Lip height, contact band
+    // and contact shade each vary per bunker by seed, inside the style range.
+    const edgeSeed = featureSeed(`${id}:edge`), lipSeed = featureSeed(`${id}:lip`);
+    const [lipLow = 0, lipHigh = 0] = style.bunker.lipM;
+    const lipM = (lipLow + (lipHigh - lipLow) * lipSeed) * (contextOnly ? style.bunker.contextDepthScale : 1);
+    const edgeBandM = style.bunker.contactBandM * (1 + (edgeSeed - .5) * 2 * style.bunker.edgeVariation);
+    const edgeShade = style.bunker.contactShade * (1 + (featureSeed(`${id}:shade`) - .5) * 2 * style.bunker.edgeVariation);
     // Inradius from the deepest interior vertex; the bowl bottoms out there.
     const nearest = vertices.map(vertex => nearestOnRings([v[vertex * 3]!, v[vertex * 3 + 1]!], rings));
     const inradius = nearest.reduce((max, n) => Math.max(max, n.distance), 0);
@@ -464,22 +597,30 @@ function compileBunkerBowls(mesh: TerrainMesh, style: MeridianStyle, attributes:
     });
     const box = rings.reduce((acc, { box: b }) => ({ minX: Math.min(acc.minX, b.minX), minY: Math.min(acc.minY, b.minY), maxX: Math.max(acc.maxX, b.maxX), maxY: Math.max(acc.maxY, b.maxY) }),
       { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity });
-    contactBoxes.push({ rings, box: { minX: box.minX - style.bunker.contactBandM, minY: box.minY - style.bunker.contactBandM, maxX: box.maxX + style.bunker.contactBandM, maxY: box.maxY + style.bunker.contactBandM } });
+    const reachM = Math.max(edgeBandM, style.bunker.lipBandM);
+    contactBoxes.push({ rings, edgeBandM, edgeShade, lipM, box: { minX: box.minX - reachM, minY: box.minY - reachM, maxX: box.maxX + reachM, maxY: box.maxY + reachM } });
     profiles.push({ featureId: id, areaM2: Math.round(areaM2 * 10) / 10, sizeClass, depthM: Math.round(depthM * 1000) / 1000, effectiveDepthM,
-      bowlRadiusM: Math.round(bowlRadiusM * 1000) / 1000, depthBasis: 'visual_class', contextOnly, vertexCount: vertices.length });
+      bowlRadiusM: Math.round(bowlRadiusM * 1000) / 1000, depthBasis: 'visual_class', contextOnly, vertexCount: vertices.length,
+      lipM: Math.round(lipM * 1000) / 1000, edgeBandM: Math.round(edgeBandM * 1000) / 1000, edgeShade: Math.round(edgeShade * 1000) / 1000 });
   }
-  // Contact darkening (§32): turf within the contact band of a rim.
+  // Contact darkening (§32) and the grass lip (fidelity §26): turf within a
+  // rim's band darkens toward the sand and rises as a rounded ridge that is
+  // zero on the shared rim vertex and again at the band's outer edge, so the
+  // conforming mesh never opens a crack while the rim reads as a lip.
+  const lipBandM = style.bunker.lipBandM;
   if (contactBoxes.length) for (let t = 0; t < mesh.triangleFeatures.length; t++) {
     if (mesh.featureKinds[mesh.triangleFeatures[t]!] === 'bunker') continue;
     for (let corner = 0; corner < 3; corner++) {
       const vertex = t * 3 + corner, point: PointM = [v[vertex * 3]!, v[vertex * 3 + 1]!];
-      let nearest = Infinity;
+      let nearest = Infinity, band = style.bunker.contactBandM, shadeAmount = style.bunker.contactShade, lipM = 0;
       for (const contact of contactBoxes) {
         if (bboxDistance(point, contact.box) > 0) continue;
-        nearest = Math.min(nearest, nearestOnRings(point, contact.rings).distance);
+        const distance = nearestOnRings(point, contact.rings).distance;
+        if (distance < nearest) { nearest = distance; band = contact.edgeBandM; shadeAmount = contact.edgeShade; lipM = contact.lipM; }
       }
-      if (nearest >= style.bunker.contactBandM) continue;
-      const shade = 1 - style.bunker.contactShade * (1 - nearest / style.bunker.contactBandM);
+      if (nearest < lipBandM) attributes.lipLiftMm[vertex] = Math.round(lipM * Math.sin(Math.PI * nearest / lipBandM) * 1000);
+      if (nearest >= band) continue;
+      const shade = 1 - shadeAmount * (1 - nearest / band);
       for (let c = 0; c < 3; c++) attributes.albedo[vertex * 3 + c] = Math.round(attributes.albedo[vertex * 3 + c]! * shade);
     }
   }
@@ -522,8 +663,11 @@ function compileShorelines(mesh: TerrainMesh, style: MeridianStyle, attributes: 
  * render-only bowl depth at the point. Used only to place drawn markers on
  * drawn sand; `terrainHeight` stays the elevation of record everywhere else. */
 export function createVisualSurfaceSampler(mesh: TerrainMesh, artifact: MeridianVisualArtifact): (point: PointM) => number | null {
-  const depth = artifact.attributes.bunkerDepthMm, triangles: number[] = [];
-  for (let t = 0; t < mesh.triangleFeatures.length; t++) if (depth[t * 3]! || depth[t * 3 + 1]! || depth[t * 3 + 2]!) triangles.push(t);
+  const depth = artifact.attributes.bunkerDepthMm, lift = artifact.attributes.lipLiftMm, triangles: number[] = [];
+  for (let t = 0; t < mesh.triangleFeatures.length; t++) {
+    const a = t * 3;
+    if (depth[a]! || depth[a + 1]! || depth[a + 2]! || lift[a]! || lift[a + 1]! || lift[a + 2]!) triangles.push(t);
+  }
   const v = mesh.vertices;
   return ([x, y]) => {
     const z = terrainHeight(mesh, [x, y]);
@@ -534,7 +678,8 @@ export function createVisualSurfaceSampler(mesh: TerrainMesh, artifact: Meridian
       if (Math.abs(det) < 1e-10) continue;
       const a = ((by - cy) * (x - cx) + (cx - bx) * (y - cy)) / det, b = ((cy - ay) * (x - cx) + (ax - cx) * (y - cy)) / det;
       if (a >= -1e-6 && b >= -1e-6 && a + b <= 1 + 1e-6) {
-        return z - (a * depth[t * 3]! + b * depth[t * 3 + 1]! + (1 - a - b) * depth[t * 3 + 2]!) / 1000;
+        return z - (a * depth[t * 3]! + b * depth[t * 3 + 1]! + (1 - a - b) * depth[t * 3 + 2]!) / 1000
+          + (a * lift[t * 3]! + b * lift[t * 3 + 1]! + (1 - a - b) * lift[t * 3 + 2]!) / 1000;
       }
     }
     return z;
@@ -556,7 +701,7 @@ export function assertVisualArtifact(artifact: MeridianVisualArtifact, scene: Ho
   const a = artifact.attributes;
   if (a.albedo.length !== artifact.vertexCount * 3 || a.routeST.length !== artifact.vertexCount * 2 ||
     a.bunkerSlope.length !== artifact.vertexCount * 2 ||
-    [a.mowingWeight, a.turfWeight, a.contextWeight, a.roughness, a.surfaceClass, a.boundaryDistanceCm, a.bunkerDepthMm, a.surroundDistanceCm].some(view => view.length !== artifact.vertexCount)) problems.push('attributes');
+    [a.mowingWeight, a.turfWeight, a.contextWeight, a.roughness, a.surfaceClass, a.boundaryDistanceCm, a.bunkerDepthMm, a.surroundDistanceCm, a.lipLiftMm].some(view => view.length !== artifact.vertexCount)) problems.push('attributes');
   // Context gate (outside world §35): ground zones painted from another
   // context layer, or from none when the scene now carries one, are stale.
   if ((artifact.contextLayerHash ?? null) !== (scene.contextLayerHash ?? null)) problems.push('context');
@@ -604,7 +749,7 @@ export function parseVisualArtifact(text: string): MeridianVisualArtifact {
     albedo: bytes('albedo'), mowingWeight: bytes('mowingWeight'), turfWeight: bytes('turfWeight'), contextWeight: bytes('contextWeight'),
     roughness: bytes('roughness'), surfaceClass: bytes('surfaceClass'),
     routeST: new Float32Array(aligned('routeST')), boundaryDistanceCm: new Uint16Array(aligned('boundaryDistanceCm')), bunkerDepthMm: new Uint16Array(aligned('bunkerDepthMm')),
-    bunkerSlope: new Int16Array(aligned('bunkerSlope')), surroundDistanceCm: new Uint16Array(aligned('surroundDistanceCm')),
+    bunkerSlope: new Int16Array(aligned('bunkerSlope')), surroundDistanceCm: new Uint16Array(aligned('surroundDistanceCm')), lipLiftMm: new Uint16Array(aligned('lipLiftMm')),
   };
   const { encoding: _encoding, attributes: _attributes, ...header } = raw;
   const artifact = { ...(header as Omit<MeridianVisualArtifact, 'attributes'>), attributes };

@@ -198,6 +198,7 @@ hash; `Math.sqrt` only, millimetre-quantised route coordinates). Cache path:
 - `meridian-v6`: ground material system + visual artifact (V2), bunker bowls (V3), vegetation families, forest mass and trunk bands (V4).
 - `meridian-v7`: static water, contact shade, haze, sky dome, context tree toning (V5); shot storytelling (V6).
 - `meridian-v8`: rough hierarchy (primary/secondary/outer by distance from the nearest playing surface), classified ground zones from the context layer, slope-only darkening of non-playing ground, outer-rough macro scale. Compiler `meridian-visual-compiler-2` adds `surroundDistanceCm` and the context hash gate.
+- `meridian-v8` (fidelity pass, same version, new hash): green complex (`greenComplex` style block: derived apron neck, green/collar edge lip, pad-setting shade), bunker lip/edge variation/floor macro, fairway edge types (`fairwayEdge`), first-cut band, water roughness .52 and calmer sun/sky fill, desaturated fairway/green. Compiler `meridian-visual-compiler-3` adds `lipLiftMm` and the `greenComplex` / `fairwayEdges` layers.
 
 `styleHash()` hashes `MERIDIAN_STYLE` by value (`meridian-v8-<fnv>`); any
 change to a value re-keys the artifact cache and appears in every capture's

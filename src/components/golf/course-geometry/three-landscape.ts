@@ -178,6 +178,7 @@ varying vec4 vGolfSurface;`).replace('#include <color_fragment>', `#include <col
     + golfMacro * golfAmplitudes.x * golfTurfWeight
     + golfMicro * golfAmplitudes.y * golfTurfWeight
     + golfGrain * ${style.bunker.sandGrainAmplitude.toFixed(3)} * golfSand
+    + golfMacro * ${style.bunker.floorMacroAmplitude.toFixed(3)} * golfSand
     + golfBand * golfBandVisible * golfAmplitudes.z * golfMowingWeight
     - golfEdge * golfAmplitudes.w;
   // Context (§53): real surfaces, quieter. Albedo only; never alpha.
@@ -253,7 +254,7 @@ export function buildThreeLandscape(
   const contextWeight = new Float32Array(vertexCount), roughness = new Float32Array(vertexCount), surfaceClass = new Float32Array(vertexCount);
   const boundary = new Float32Array(vertexCount), routeST = new Float32Array(vertexCount * 2), surround = new Float32Array(vertexCount);
   // Render-only bunker bowl (§28): depth and its gradient per display vertex.
-  const bowlDepth = new Float32Array(vertexCount), bowlSlope = new Float32Array(vertexCount * 2);
+  const bowlDepth = new Float32Array(vertexCount), bowlSlope = new Float32Array(vertexCount * 2), lipLift = new Float32Array(vertexCount);
   for (let t = 0; t < mesh.triangleFeatures.length; t++) {
     const offset = t * 9, v = mesh.vertices;
     const winding = (v[offset + 3]! - v[offset]!) * (v[offset + 7]! - v[offset + 1]!) -
@@ -280,6 +281,7 @@ export function buildThreeLandscape(
       surround[vertex] = attributes.surroundDistanceCm[from]! / 100;
       routeST[vertex * 2] = attributes.routeST[from * 2]!; routeST[vertex * 2 + 1] = attributes.routeST[from * 2 + 1]!;
       bowlDepth[vertex] = attributes.bunkerDepthMm[from]! / 1000;
+      lipLift[vertex] = attributes.lipLiftMm[from]! / 1000;
       bowlSlope[vertex * 2] = attributes.bunkerSlope[from * 2]! / BUNKER_SLOPE_SCALE; bowlSlope[vertex * 2 + 1] = attributes.bunkerSlope[from * 2 + 1]! / BUNKER_SLOPE_SCALE;
     }
   }
@@ -673,7 +675,7 @@ export function buildThreeLandscape(
     const displayZ = (z: number) => referenceElevationM + (z - referenceElevationM) * exaggeration;
     // The bowl is a display offset below the canonical surface; it scales
     // with relief like every other display height and never touches `source`.
-    for (let i = 0; i < positions.count; i++) positions.setZ(i, displayZ(source[i * 3 + 2]!) - bowlDepth[i]! * exaggeration);
+    for (let i = 0; i < positions.count; i++) positions.setZ(i, displayZ(source[i * 3 + 2]!) + (lipLift[i]! - bowlDepth[i]!) * exaggeration);
     positions.needsUpdate = true;
     if (sourceNormals) {
       for (let i = 0; i < positions.count; i++) {

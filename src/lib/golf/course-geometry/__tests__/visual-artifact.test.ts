@@ -152,6 +152,7 @@ describe('Rough hierarchy and ground zones (outside world §10–16, §21)', () 
       const kind = mesh.featureKinds[mesh.triangleFeatures[t]!];
       for (let corner = 0; corner < 3; corner++) {
         const vertex = t * 3 + corner, cls = SURFACE_CLASS_IDS[a.surfaceClass[vertex]!], d = a.surroundDistanceCm[vertex]! / 100;
+        if (cls === 'apron') continue; // the green complex claims the neck after banding (tested below)
         if (kind !== 'rough' && kind !== 'ground' || cls === 'surround' || cls === 'fringe') { expect(d).toBe(0); expect(['rough_secondary', 'rough_outer']).not.toContain(cls); continue; }
         const x = mesh.vertices[vertex * 3]!, y = mesh.vertices[vertex * 3 + 1]!;
         const truth = Math.min(60, playing.reduce((min, ring) => Math.min(min, boundaryDistance([x, y], ring)), Infinity));
@@ -195,7 +196,7 @@ describe('Rough hierarchy and ground zones (outside world §10–16, §21)', () 
         if (cls === 'parking') { parking.add(vertex); expect(kind === 'rough' || kind === 'ground').toBe(true); expect(x <= midX && y <= midY).toBe(true); expect(a.turfWeight[vertex]).toBe(0); }
         if (cls === 'open_field') { field.add(vertex); expect(x >= midX && y <= midY).toBe(true); expect(a.turfWeight[vertex]).toBe(255); }
         // The uncertain zone painted nothing: its vertices keep the distance bands.
-        if ((kind === 'rough' || kind === 'ground') && y > midY + 1) expect(['rough', 'ground', 'rough_secondary', 'rough_outer', 'surround', 'fringe']).toContain(cls);
+        if ((kind === 'rough' || kind === 'ground') && y > midY + 1) expect(['rough', 'ground', 'rough_secondary', 'rough_outer', 'surround', 'fringe', 'apron']).toContain(cls);
         expect(cls).not.toBe('ski_slope');
       }
     }
@@ -207,5 +208,97 @@ describe('Rough hierarchy and ground zones (outside world §10–16, §21)', () 
     const parsed = parseVisualArtifact(serializeVisualArtifact(artifact));
     expect(parsed.contentHash).toBe(artifact.contentHash);
     expect(Array.from(parsed.attributes.surroundDistanceCm)).toEqual(Array.from(a.surroundDistanceCm));
+  });
+});
+
+describe('Green complex, fairway edges and bunker lips (fidelity §10, §13–21, §26–28)', () => {
+  const style = MERIDIAN_STYLE;
+  it('derives an apron neck between the hole\'s own fairway and green, lips the green edge, and shades the pad setting', () => {
+    const artifact = compileVisualArtifact(scene, mesh), a = artifact.attributes, complex = artifact.layers.greenComplex;
+    expect(complex).toMatchObject({ basis: 'visual_only', version: 'green-complex-v1', apronBasis: 'derived_neck' });
+    expect(complex.apronVertices).toBeGreaterThan(0); expect(complex.edgeVertices).toBeGreaterThan(0);
+    const greens = scene.features.filter(f => f.kind === 'green').flatMap(f => f.parts.flat());
+    const fairways = scene.features.filter(f => f.kind === 'fairway').flatMap(f => f.parts.flat());
+    const near = (x: number, y: number, rings: readonly (readonly (readonly [number, number])[])[]) => rings.reduce((min, ring) => Math.min(min, boundaryDistance([x, y], ring)), Infinity);
+    let aprons = 0;
+    for (let t = 0; t < mesh.triangleFeatures.length; t++) {
+      const kind = mesh.featureKinds[mesh.triangleFeatures[t]!];
+      for (let corner = 0; corner < 3; corner++) {
+        const vertex = t * 3 + corner, cls = SURFACE_CLASS_IDS[a.surfaceClass[vertex]!];
+        if (cls !== 'apron') continue;
+        aprons++;
+        const x = mesh.vertices[vertex * 3]!, y = mesh.vertices[vertex * 3 + 1]!;
+        // Apron lives only in rough/ground, within reach of both its own green and its own fairway.
+        expect(kind === 'rough' || kind === 'ground').toBe(true);
+        expect(near(x, y, greens)).toBeLessThanOrEqual(style.greenComplex.apronGreenM + .05);
+        expect(near(x, y, fairways)).toBeLessThanOrEqual(style.greenComplex.apronFairwayM + .05);
+        expect(a.roughness[vertex]! / 255).toBeCloseTo(style.surface.roughness.apron, 1);
+        expect(a.turfWeight[vertex]).toBe(255); expect(a.mowingWeight[vertex]).toBe(0);
+      }
+    }
+    expect(aprons).toBeGreaterThan(0); expect(aprons).toBeLessThanOrEqual(complex.apronVertices);
+    // Nothing moved: the green ring vertices are canonical, only albedo changed.
+    const plainStyle = { ...style, greenComplex: { ...style.greenComplex, greenEdgeShade: 0, fringeEdgeShade: 0, settingShade: 0 } };
+    const plain = compileVisualArtifact(scene, mesh, plainStyle);
+    let darker = 0, same = 0;
+    for (let v = 0; v < artifact.vertexCount; v++) {
+      const cls = SURFACE_CLASS_IDS[a.surfaceClass[v]!];
+      if (cls !== 'green') continue;
+      const sum = a.albedo[v * 3]! + a.albedo[v * 3 + 1]! + a.albedo[v * 3 + 2]!, base = plain.attributes.albedo[v * 3]! + plain.attributes.albedo[v * 3 + 1]! + plain.attributes.albedo[v * 3 + 2]!;
+      if (a.boundaryDistanceCm[v]! / 100 < style.greenComplex.edgeFieldM) { expect(sum).toBeLessThanOrEqual(base); if (sum < base) darker++; }
+      else { expect(sum).toBe(base); same++; }
+    }
+    expect(darker).toBeGreaterThan(0); expect(same).toBeGreaterThan(0);
+  });
+  it('types fairway edges by neighbour (crisp near bunkers and greens, soft elsewhere) without moving the outline', () => {
+    const artifact = compileVisualArtifact(scene, mesh), a = artifact.attributes, edges = artifact.layers.fairwayEdges;
+    expect(edges).toMatchObject({ basis: 'visual_only', version: 'edge-types-v1' });
+    expect(edges.crispVertices + edges.softVertices).toBeGreaterThan(0);
+    const neighbours = [...scene.features, ...(scene.contextFeatures ?? [])].filter(f => f.kind === 'bunker' || f.kind === 'green').flatMap(f => f.parts.flat());
+    const plain = compileVisualArtifact(scene, mesh, { ...MERIDIAN_STYLE, fairwayEdge: { ...MERIDIAN_STYLE.fairwayEdge, crispShade: 0, softShade: 0 } });
+    let crisp = 0, soft = 0, untouched = 0;
+    for (let v = 0; v < artifact.vertexCount; v++) {
+      if (SURFACE_CLASS_IDS[a.surfaceClass[v]!] !== 'fairway') continue;
+      const d = a.boundaryDistanceCm[v]! / 100, x = mesh.vertices[v * 3]!, y = mesh.vertices[v * 3 + 1]!;
+      const sum = a.albedo[v * 3]! + a.albedo[v * 3 + 1]! + a.albedo[v * 3 + 2]!, base = plain.attributes.albedo[v * 3]! + plain.attributes.albedo[v * 3 + 1]! + plain.attributes.albedo[v * 3 + 2]!;
+      if (d >= MERIDIAN_STYLE.fairwayEdge.fieldM) { expect(sum).toBe(base); untouched++; continue; }
+      expect(sum).toBeLessThanOrEqual(base);
+      const nearMaintained = neighbours.reduce((min, ring) => Math.min(min, boundaryDistance([x, y], ring)), Infinity) <= MERIDIAN_STYLE.fairwayEdge.crispNearM;
+      if (nearMaintained) crisp++; else soft++;
+    }
+    expect(untouched).toBeGreaterThan(0); expect(crisp + soft).toBe(edges.crispVertices + edges.softVertices);
+    expect(crisp).toBe(edges.crispVertices); expect(soft).toBe(edges.softVertices);
+  });
+  it('raises a seeded grass lip around each bunker rim that is zero on the rim and varies per bunker', () => {
+    const artifact = compileVisualArtifact(scene, mesh), a = artifact.attributes, bowl = artifact.layers.bunkerBowl;
+    const [lipLow, lipHigh] = MERIDIAN_STYLE.bunker.lipM;
+    for (const profile of bowl.profiles) {
+      const scale = profile.contextOnly ? MERIDIAN_STYLE.bunker.contextDepthScale : 1;
+      expect(profile.lipM).toBeGreaterThanOrEqual(lipLow * scale - 1e-3); expect(profile.lipM).toBeLessThanOrEqual(lipHigh * scale + 1e-3);
+      expect(profile.edgeBandM).toBeGreaterThan(0); expect(profile.edgeShade).toBeGreaterThan(0);
+    }
+    expect(new Set(bowl.profiles.map(p => p.lipM)).size).toBeGreaterThan(1);
+    const all = [...scene.features, ...(scene.contextFeatures ?? [])];
+    const rings = bowl.profiles.map(profile => ({ profile, rings: all.find(f => f.id === profile.featureId)!.parts.flat() }));
+    let lifted = 0, maxLift = 0;
+    for (let t = 0; t < mesh.triangleFeatures.length; t++) {
+      const bunker = mesh.featureKinds[mesh.triangleFeatures[t]!] === 'bunker';
+      for (let corner = 0; corner < 3; corner++) {
+        const vertex = t * 3 + corner, lift = a.lipLiftMm[vertex]! / 1000;
+        if (bunker) { expect(lift).toBe(0); continue; }
+        const x = mesh.vertices[vertex * 3]!, y = mesh.vertices[vertex * 3 + 1]!;
+        let nearest = Infinity, lipM = 0;
+        for (const { profile, rings: r } of rings) { const d = r.reduce((min, ring) => Math.min(min, boundaryDistance([x, y], ring)), Infinity); if (d < nearest) { nearest = d; lipM = profile.lipM; } }
+        if (nearest >= MERIDIAN_STYLE.bunker.lipBandM) { expect(lift).toBe(0); continue; }
+        // Zero on the shared rim vertex (no crack), a rounded ridge inside the band.
+        if (nearest < 1e-3) expect(lift).toBe(0);
+        expect(lift).toBeCloseTo(lipM * Math.sin(Math.PI * nearest / MERIDIAN_STYLE.bunker.lipBandM), 2);
+        if (lift > 0) { lifted++; maxLift = Math.max(maxLift, lift); }
+      }
+    }
+    expect(lifted).toBeGreaterThan(0); expect(maxLift).toBeLessThanOrEqual(lipHigh + 1e-3);
+    // The display sampler adds the lip and the round trip keeps it.
+    const parsed = parseVisualArtifact(serializeVisualArtifact(artifact));
+    expect(Array.from(parsed.attributes.lipLiftMm)).toEqual(Array.from(a.lipLiftMm));
   });
 });

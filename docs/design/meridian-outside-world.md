@@ -91,7 +91,8 @@ green, including adjacent holes), capped at the 60 m search radius.
 
 | Band | Distance | Class | Tone | Extra |
 | --- | --- | --- | --- | --- |
-| Primary | < 10 m | `rough` / `ground` | palette `rough` | mowing-adjacent, calm |
+| First cut | < 2.5 m | `rough` / `ground` | palette `roughFirstCut` → `rough` | maintained strip beside the short grass (fidelity §33) |
+| Primary | 2.5–10 m | `rough` / `ground` | palette `rough` | mowing-adjacent, calm |
 | Secondary | 10–28 m | `rough_secondary` | palette `roughSecondary` | slope darkening |
 | Outer | ≥ 28 m | `rough_outer` | palette `roughOuter` | slope darkening, macro field ×1.6 |
 

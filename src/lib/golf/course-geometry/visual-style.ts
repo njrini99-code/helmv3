@@ -9,20 +9,20 @@ export const MERIDIAN_STYLE_VERSION = 'meridian-v8';
 
 export type MeridianPaletteKey = 'ground' | 'rough' | 'fairway' | 'green' | 'tee' | 'bunker' | 'water' | 'woods' |
   'surround' | 'fringe' | 'tree' | 'treeLight' | 'treeHighlight' | 'treeShadow' | 'sandEdge' | 'sandHighlight' |
-  'roughSecondary' | 'roughOuter' | 'native' | 'apron' | 'openField' | 'wetland' | 'parking' | 'skiSlope' | 'recreation' | 'bufferGrass';
+  'roughSecondary' | 'roughOuter' | 'roughFirstCut' | 'native' | 'apron' | 'openField' | 'wetland' | 'parking' | 'skiSlope' | 'recreation' | 'bufferGrass';
 
 /** sRGB surface albedos, separate from Fairway's application UI tokens. No
  * directional illumination is baked into these colours (§56 hierarchy:
  * green → tee → fairway → fringe → surround → rough/ground → woods). */
 export const MERIDIAN_PALETTE: Readonly<Record<MeridianPaletteKey, string>> = Object.freeze({
-  ground: '#607D3D', rough: '#607D3D', surround: '#73964A', fringe: '#82A552',
-  fairway: '#83A849', tee: '#88AD55', green: '#9DBB61', bunker: '#DED1AA',
+  ground: '#607D3D', rough: '#607D3D', surround: '#73964A', fringe: '#7BA04D',
+  fairway: '#7DA24A', tee: '#84A955', green: '#96B45F', bunker: '#DED1AA',
   water: '#3B6C77', woods: '#29482B', tree: '#59852E', treeLight: '#6D9D37',
   treeHighlight: '#83B542', treeShadow: '#29482B',
   sandEdge: '#B3A079', sandHighlight: '#F0E4C7',
   // Rough hierarchy (outside-world §21) and classified ground zones (§10–12,
   // §16): every non-playing region gets a named tone instead of one green.
-  roughSecondary: '#5A7638', roughOuter: '#526D35', native: '#7B8748', apron: '#86AA4E',
+  roughSecondary: '#5A7638', roughOuter: '#526D35', roughFirstCut: '#6A8A42', native: '#7B8748', apron: '#80A650',
   openField: '#6C8A44', wetland: '#4E6A44', parking: '#7E7C77', skiSlope: '#6E8E4B', recreation: '#6F8E48', bufferGrass: '#65813E',
 });
 
@@ -31,9 +31,9 @@ export const MERIDIAN_STYLE = Object.freeze({
   palette: MERIDIAN_PALETTE,
   /** §46–49: one world sun. Direction lives in terrain.ts (it is also the
    * vector-fallback light); intensity, colour and sky are style. */
-  light: Object.freeze({ sunColor: '#FFF4E2', sunIntensity: 2.05, skyColor: '#CFE0FF', groundColor: '#5C7050',
-    hemisphereIntensity: 1.05, exposure: 1.02, sunElevationDeg: 45 }),
-  shadow: Object.freeze({ mapSize: 2048, bias: -.00008, normalBias: .18, radius: 2, type: 'pcf' as const }),
+  light: Object.freeze({ sunColor: '#FFF3DF', sunIntensity: 1.95, skyColor: '#CFE0FF', groundColor: '#5C7050',
+    hemisphereIntensity: 1.12, exposure: 1.02, sunElevationDeg: 45 }),
+  shadow: Object.freeze({ mapSize: 2048, bias: -.00008, normalBias: .18, radius: 3, type: 'pcf' as const }),
   /** §17–21: world-space turf variation. Wavelengths in metres; amplitudes are
    * fractions of albedo luminance. Macro never exceeds 3%, micro 1.2%. */
   turf: Object.freeze({
@@ -55,7 +55,7 @@ export const MERIDIAN_STYLE = Object.freeze({
   /** §23–24: per-surface roughness (MeshStandard) and collar blend. */
   surface: Object.freeze({ roughness: Object.freeze({ green: .78, tee: .88, fairway: .92, fringe: .93, surround: .95, rough: .97, ground: .97,
     // Water keeps a rough, glare-free surface until the V5 static-Fresnel material.
-    woods: 1, bunker: .82, water: .32,
+    woods: 1, bunker: .82, water: .52,
     rough_secondary: .97, rough_outer: .98, native: .98, apron: .92, open_field: .97, wetland: .9, parking: .9, ski_slope: .97, recreation: .95, buffer_grass: .96 }),
     collarMix: .5, woodsUnderstoryMix: .78 }),
   /** Outside-world §21: rough is a hierarchy by distance from the nearest
@@ -64,8 +64,8 @@ export const MERIDIAN_STYLE = Object.freeze({
    * band edge lands on one pixel. Outer rough carries a larger macro field and
    * steep non-playing ground darkens a little (slope only, never aspect, so no
    * directional light is baked into albedo). */
-  roughHierarchy: Object.freeze({ secondaryM: 10, secondaryBlendM: 3, outerM: 28, outerBlendM: 6, outerMacroScale: 1.6,
-    slopeDarken: .12, slopeFullAt: .45, groundZoneBlendM: 1.5 }),
+  roughHierarchy: Object.freeze({ firstCutM: 2.5, firstCutBlendM: .8, secondaryM: 10, secondaryBlendM: 3, outerM: 28, outerBlendM: 6, outerMacroScale: 1.6,
+    slopeDarken: .12, slopeFullAt: .45, groundZoneBlendM: 5 }),
   /** §53: context features keep their real surface but drop toward rough and
    * lose saturation; nearer context loses less than far context. */
   context: Object.freeze({ roughMix: .58, desaturate: .15, treeDesaturate: .3, treeDarken: .08, weightNear: .6, weightFar: .4 }),
@@ -76,7 +76,25 @@ export const MERIDIAN_STYLE = Object.freeze({
    * with depth and the turf within `contactBandM` of the rim darkens too. */
   bunker: Object.freeze({ depthM: Object.freeze({ small: [.30, .45] as const, medium: [.45, .70] as const, large: [.60, .90] as const }),
     smallAreaM2: 60, largeAreaM2: 260, bowlRadiusM: [.6, 3.5] as const, bowlRadiusFraction: .85, contextDepthScale: .6,
-    floorShade: .08, contactBandM: .6, contactShade: .22, sandGrainM: [.15, .35] as const, sandGrainAmplitude: .015 }),
+    floorShade: .08, contactBandM: .6, contactShade: .22, sandGrainM: [.15, .35] as const, sandGrainAmplitude: .015,
+    /** Fidelity §26–28: a render-only grass lip. The turf within `lipBandM`
+     * of a rim rises as a rounded ridge (zero at the shared rim vertex, so the
+     * mesh never cracks), `lipM` chosen per bunker by seed; the contact band
+     * and its shade vary per bunker by `edgeVariation` so no two edges match;
+     * the floor carries the macro field at `floorMacroAmplitude`. */
+    lipM: [.04, .10] as const, lipBandM: .7, edgeVariation: .3, floorMacroAmplitude: .012 }),
+  /** Fidelity §13–21: the green complex. `apron` is a derived close-mown
+   * neck where the hole's own fairway meets its own green (within
+   * `apronFairwayM` of the fairway and `apronGreenM` of the green), blended
+   * over `apronBlendM`; the green and its collar carry a crisper edge lip
+   * than any other surface; the bank below a green pad darkens a little
+   * within `settingReachM` so the pad reads as a landform (§20). */
+  greenComplex: Object.freeze({ apronGreenM: 10, apronFairwayM: 5, apronBlendM: 2, greenEdgeShade: .045, fringeEdgeShade: .025, edgeFieldM: .5,
+    settingReachM: 12, settingDropM: 1.5, settingShade: .05 }),
+  /** Fidelity §10: fairway edge types. Crisp within `crispNearM` of a bunker
+   * or green (maintained boundary), soft elsewhere; each is a short albedo
+   * lip inside the fairway edge over `fieldM`. */
+  fairwayEdge: Object.freeze({ crispNearM: 8, crispShade: .045, softShade: .015, fieldM: .8 }),
   /** §35–41: seven silhouette families over the authored crown atlas. Each
    * family sets proportion, colour and where it may stand: `edge` families
    * only within `edgeBandM` of the woods boundary (what a golfer sees),
@@ -122,7 +140,7 @@ export const MERIDIAN_STYLE = Object.freeze({
    * turf contact, a static ripple normal and a Fresnel lift toward the sky
    * colour make it read as water without animation or planar reflection. */
   water: Object.freeze({ shorelineM: .75, shorelineShade: .12, interiorM: 14, deepMix: .55, deepColor: '#2E5561',
-    fresnelPower: 3.2, skyMix: .5, skyColor: '#BFD4E8', rippleM: [1.7, 4.3] as const, rippleAmplitude: .025,
+    fresnelPower: 3.2, skyMix: .4, skyColor: '#A9C3DB', rippleM: [1.7, 4.3] as const, rippleAmplitude: .018,
     contactBandM: .6, contactShade: .08 }),
   /** §51: distance haze in perspective presets only, capped so the played
    * hole never loses more than this much contrast at `endM`. */
