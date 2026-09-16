@@ -390,9 +390,29 @@ describe('Bunker families, overhang shade and context contact (renderer redesign
     ];
     const withZones = { ...scene, contextZones: zones as never, contextLayerHash: 'b'.repeat(64) };
     const plain = compileVisualArtifact(scene, mesh), artifact = compileVisualArtifact(withZones, mesh);
-    expect(artifact.layers.contextContact).toMatchObject({ basis: 'visual_only', version: 'context-contact-v1', structures: 1, ribbons: 1 });
+    expect(artifact.layers.contextContact).toMatchObject({ basis: 'visual_only', version: 'context-contact-v2', structures: 1, ribbons: 1 });
     expect(artifact.layers.contextContact.vertices).toBeGreaterThan(0);
     expect(plain.layers.contextContact.vertices).toBe(0);
+    // Redesign 12 cut/fill: only ground within the ribbon's bank carries a
+    // display offset; under the ribbon it displays at the ribbon's height.
+    const { cutFillBankM, cutFillMaxM } = MERIDIAN_STYLE.contextContact;
+    expect(plain.layers.contextContact.levelled).toBe(0);
+    expect(artifact.layers.contextContact.levelled).toBeGreaterThan(0);
+    expect(Array.from(plain.attributes.groundLevelMm).every(mm => mm === 0)).toBe(true);
+    let underPath = 0;
+    for (let vertex = 0; vertex < artifact.vertexCount; vertex++) {
+      const mm = artifact.attributes.groundLevelMm[vertex]!, x = mesh.vertices[vertex * 3]!, y = mesh.vertices[vertex * 3 + 1]!, z = mesh.vertices[vertex * 3 + 2]!;
+      const pathD = Math.hypot(Math.max(0, minX + 5 - x, x - (maxX - 5)), y - (midY + 20));
+      if (mm === 0) continue;
+      expect(pathD).toBeLessThan(1.25 + cutFillBankM + 1e-6);
+      expect(Math.abs(mm)).toBeLessThanOrEqual(cutFillMaxM * 1000 + .5);
+      const kind = mesh.featureKinds[mesh.triangleFeatures[Math.floor(vertex / 3)]!];
+      expect(kind === 'bunker' || kind === 'water').toBe(false);
+      if (pathD > 1.25) continue;
+      const target = terrainHeight(mesh, [Math.min(maxX - 5, Math.max(minX + 5, x)), midY + 20])!;
+      if (Math.abs(target - z) < cutFillMaxM) { expect(z + mm / 1000).toBeCloseTo(target, 2); underPath++; }
+    }
+    expect(underPath).toBeGreaterThan(0);
     const { structureBandM, pathShoulderM } = MERIDIAN_STYLE.contextContact;
     const ring = box[0]![0]!;
     for (let t = 0; t < mesh.triangleFeatures.length; t++) {

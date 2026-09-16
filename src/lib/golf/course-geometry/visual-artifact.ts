@@ -89,6 +89,10 @@ export interface MeridianVisualAttributes {
   surroundDistanceCm: Uint16Array;
   /** Render-only rise of the turf around a bunker rim in mm (fidelity §26). */
   lipLiftMm: Uint16Array;
+  /** Signed render-only ground offset in mm: path cut/fill (redesign 12). */
+  groundLevelMm: Int16Array;
+  /** ∂level/∂x, ∂level/∂y in m/m × 4096 so display normals follow the banks. */
+  groundLevelSlope: Int16Array;
 }
 export const BUNKER_SLOPE_SCALE = 4096;
 export interface MeridianVisualArtifact {
@@ -128,12 +132,12 @@ export interface MeridianVisualArtifact {
     /** Fidelity §10: fairway edge types by neighbour. */
     fairwayEdges: { basis: 'visual_only'; version: 'edge-types-v1'; crispVertices: number; softVertices: number };
     /** Renderer redesign §16: ground contact shade under context structures and path shoulders. */
-    contextContact: { basis: 'visual_only'; version: 'context-contact-v1'; structures: number; ribbons: number; vertices: number };
+    contextContact: { basis: 'visual_only'; version: 'context-contact-v2'; structures: number; ribbons: number; vertices: number; levelled: number };
   };
   attributes: MeridianVisualAttributes;
 }
 
-const ATTRIBUTE_ORDER: (keyof MeridianVisualAttributes)[] = ['albedo', 'mowingWeight', 'turfWeight', 'contextWeight', 'roughness', 'surfaceClass', 'routeST', 'boundaryDistanceCm', 'bunkerDepthMm', 'bunkerSlope', 'surroundDistanceCm', 'lipLiftMm'];
+const ATTRIBUTE_ORDER: (keyof MeridianVisualAttributes)[] = ['albedo', 'mowingWeight', 'turfWeight', 'contextWeight', 'roughness', 'surfaceClass', 'routeST', 'boundaryDistanceCm', 'bunkerDepthMm', 'bunkerSlope', 'surroundDistanceCm', 'lipLiftMm', 'groundLevelMm', 'groundLevelSlope'];
 
 function fnvBytes(views: ArrayBufferView[]): string {
   let hash = 2166136261;
@@ -248,7 +252,7 @@ export function compileVisualArtifact(scene: HoleScene, mesh: TerrainMesh, style
     albedo: new Uint8Array(vertexCount * 3), mowingWeight: new Uint8Array(vertexCount), turfWeight: new Uint8Array(vertexCount),
     contextWeight: new Uint8Array(vertexCount), roughness: new Uint8Array(vertexCount), surfaceClass: new Uint8Array(vertexCount),
     routeST: new Float32Array(vertexCount * 2), boundaryDistanceCm: new Uint16Array(vertexCount), bunkerDepthMm: new Uint16Array(vertexCount),
-    bunkerSlope: new Int16Array(vertexCount * 2), surroundDistanceCm: new Uint16Array(vertexCount), lipLiftMm: new Uint16Array(vertexCount),
+    bunkerSlope: new Int16Array(vertexCount * 2), surroundDistanceCm: new Uint16Array(vertexCount), lipLiftMm: new Uint16Array(vertexCount), groundLevelMm: new Int16Array(vertexCount), groundLevelSlope: new Int16Array(vertexCount * 2),
   };
   const featuresById = new Map<string, LocalFeature>();
   for (const feature of scene.contextFeatures ?? []) featuresById.set(feature.id, feature);
@@ -339,7 +343,7 @@ export function compileVisualArtifact(scene: HoleScene, mesh: TerrainMesh, style
       groundZones: { basis: 'visual_only', version: 'context-zones-v1', painted: hierarchy.painted, classes: hierarchy.classes, skippedUncertain: hierarchy.skippedUncertain },
       greenComplex: { basis: 'visual_only', version: 'green-complex-v2', apronBasis: 'derived_neck', runoffBasis: 'canonical_slope', ...greenComplex },
       fairwayEdges: { basis: 'visual_only', version: 'edge-types-v1', ...fairwayEdges },
-      contextContact: { basis: 'visual_only', version: 'context-contact-v1', ...contextContact },
+      contextContact: { basis: 'visual_only', version: 'context-contact-v2', ...contextContact },
     },
     attributes,
   };
@@ -703,14 +707,16 @@ function compileBunkerBowls(mesh: TerrainMesh, style: MeridianStyle, attributes:
 
 const SUN_GROUND: PointM = (() => { const [x, y] = TERRAIN_LIGHT_DIRECTION, n = Math.hypot(x, y) || 1; return [x / n, y / n]; })();
 function expandBbox(box: Bbox, m: number): Bbox { return { minX: box.minX - m, minY: box.minY - m, maxX: box.maxX + m, maxY: box.maxY + m }; }
-function polylineDistance([x, y]: PointM, line: readonly PointM[]): number {
-  let best = Infinity;
+/** Distance to a polyline plus the nearest point on it (into `out`). */
+function nearestOnPolyline(point: PointM, line: readonly PointM[], out: { d: number; x: number; y: number }): void {
+  let best = Infinity, bx = line[0]![0], by = line[0]![1];
   for (let i = 1; i < line.length; i++) {
-    const [ax, ay] = line[i - 1]!, [bx, by] = line[i]!, dx = bx - ax, dy = by - ay;
-    const len2 = dx * dx + dy * dy, t = len2 > 0 ? Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / len2)) : 0;
-    best = Math.min(best, Math.hypot(x - (ax + dx * t), y - (ay + dy * t)));
+    const [ax, ay] = line[i - 1]!, [cx, cy] = line[i]!, dx = cx - ax, dy = cy - ay, l2 = dx * dx + dy * dy;
+    const t = l2 > 0 ? Math.max(0, Math.min(1, ((point[0] - ax) * dx + (point[1] - ay) * dy) / l2)) : 0;
+    const px = ax + t * dx, py = ay + t * dy, d = Math.hypot(point[0] - px, point[1] - py);
+    if (d < best) { best = d; bx = px; by = py; }
   }
-  return best;
+  out.d = best; out.x = bx; out.y = by;
 }
 
 /** Ground contact under context objects (renderer redesign §16): turf beside a
@@ -718,7 +724,7 @@ function polylineDistance([x, y]: PointM, line: readonly PointM[]): number {
  * extrusion and the ribbon read as resting on the ground. Uncertain zones
  * paint nothing; bunker sand and water are never touched. */
 function compileContextContact(scene: HoleScene, mesh: TerrainMesh, style: MeridianStyle, attributes: MeridianVisualAttributes) {
-  const { structureBandM, structureShade, pathShoulderM, pathShade } = style.contextContact;
+  const { structureBandM, structureShade, pathShoulderM, pathShade, cutFillBankM, cutFillMaxM } = style.contextContact;
   const zones = (scene.contextZones ?? []).filter(zone => zone.basis !== 'uncertain');
   const structures = zones.filter(zone => zone.render === 'extrude' && zone.type !== 'LineString')
     .flatMap(zone => zone.parts.map(part => part[0]).filter((ring): ring is PointM[] => !!ring && ring.length >= 3))
@@ -726,11 +732,11 @@ function compileContextContact(scene: HoleScene, mesh: TerrainMesh, style: Merid
   const ribbonWidths = style.contextObjects.ribbons as Record<string, { widthM: number } | undefined>;
   const ribbons = zones.filter(zone => zone.render === 'ribbon' && zone.type === 'LineString').flatMap(zone => {
     const halfM = ((zone.attributes as { widthM?: number }).widthM ?? ribbonWidths[zone.class]?.widthM ?? 2.5) / 2;
-    return zone.parts.flat().filter(line => line.length >= 2).map(line => ({ line, halfM, box: expandBbox(ringBbox(line), halfM + pathShoulderM) }));
+    return zone.parts.flat().filter(line => line.length >= 2).map(line => ({ line, halfM, box: expandBbox(ringBbox(line), halfM + Math.max(pathShoulderM, cutFillBankM)) }));
   });
-  if (!structures.length && !ribbons.length) return { structures: 0, ribbons: 0, vertices: 0 };
-  let touched = 0;
-  const v = mesh.vertices;
+  if (!structures.length && !ribbons.length) return { structures: 0, ribbons: 0, vertices: 0, levelled: 0 };
+  let touched = 0, levelled = 0;
+  const v = mesh.vertices, nearest = { d: 0, x: 0, y: 0 };
   for (let t = 0; t < mesh.triangleFeatures.length; t++) {
     const kind = mesh.featureKinds[mesh.triangleFeatures[t]!];
     if (kind === 'bunker' || kind === 'water') continue;
@@ -742,17 +748,41 @@ function compileContextContact(scene: HoleScene, mesh: TerrainMesh, style: Merid
         const d = boundaryDistance(point, structure.ring);
         if (d < structureBandM) shade *= 1 - structureShade * (1 - d / structureBandM);
       }
+      let level: { d: number; halfM: number; x: number; y: number } | null = null;
       for (const ribbon of ribbons) {
         if (bboxDistance(point, ribbon.box) > 0) continue;
-        const d = polylineDistance(point, ribbon.line);
+        nearestOnPolyline(point, ribbon.line, nearest);
+        const d = nearest.d;
         if (d < ribbon.halfM + pathShoulderM) shade *= 1 - pathShade * (d <= ribbon.halfM ? 1 : 1 - (d - ribbon.halfM) / pathShoulderM);
+        if (d < ribbon.halfM + cutFillBankM && (!level || d - ribbon.halfM < level.d - level.halfM)) level = { d, halfM: ribbon.halfM, x: nearest.x, y: nearest.y };
+      }
+      // Redesign 12 cut/fill: the ground under and beside a ribbon displays
+      // at the ribbon's height (the canonical ground at the nearest centreline
+      // point), feathered over the bank. Uphill that is a cut, downhill a
+      // fill; the canonical vertex never moves.
+      if (level && cutFillBankM > 0) {
+        const target = terrainHeight(mesh, [level.x, level.y]);
+        if (target != null) {
+          const delta = Math.max(-cutFillMaxM, Math.min(cutFillMaxM, target - v[vertex * 3 + 2]!));
+          const t = level.d <= level.halfM ? 0 : Math.min(1, (level.d - level.halfM) / cutFillBankM);
+          const feather = 1 - t * t * (3 - 2 * t), offset = delta * feather;
+          if (Math.abs(offset) >= .005) {
+            attributes.groundLevelMm[vertex] = Math.round(offset * 1000);
+            // Gradient of the offset: the feather's slope away from the ribbon.
+            const dFeather = t > 0 && t < 1 ? -6 * t * (1 - t) / cutFillBankM : 0;
+            const ux = level.d > 0 ? (point[0] - level.x) / level.d : 0, uy = level.d > 0 ? (point[1] - level.y) / level.d : 0;
+            attributes.groundLevelSlope[vertex * 2] = Math.round(Math.max(-8, Math.min(8, delta * dFeather * ux)) * BUNKER_SLOPE_SCALE);
+            attributes.groundLevelSlope[vertex * 2 + 1] = Math.round(Math.max(-8, Math.min(8, delta * dFeather * uy)) * BUNKER_SLOPE_SCALE);
+            levelled++;
+          }
+        }
       }
       if (shade >= 1) continue;
       touched++;
       for (let c = 0; c < 3; c++) attributes.albedo[vertex * 3 + c] = Math.round(attributes.albedo[vertex * 3 + c]! * shade);
     }
   }
-  return { structures: structures.length, ribbons: ribbons.length, vertices: touched };
+  return { structures: structures.length, ribbons: ribbons.length, vertices: touched, levelled };
 }
 
 /** Shoreline contact (§44): turf within the contact band of a drawn shoreline
@@ -831,8 +861,8 @@ export function assertVisualArtifact(artifact: MeridianVisualArtifact, scene: Ho
   if (artifact.vertexCount !== mesh.vertices.length / 3) problems.push('vertices');
   const a = artifact.attributes;
   if (a.albedo.length !== artifact.vertexCount * 3 || a.routeST.length !== artifact.vertexCount * 2 ||
-    a.bunkerSlope.length !== artifact.vertexCount * 2 ||
-    [a.mowingWeight, a.turfWeight, a.contextWeight, a.roughness, a.surfaceClass, a.boundaryDistanceCm, a.bunkerDepthMm, a.surroundDistanceCm, a.lipLiftMm].some(view => view.length !== artifact.vertexCount)) problems.push('attributes');
+    a.bunkerSlope.length !== artifact.vertexCount * 2 || a.groundLevelSlope.length !== artifact.vertexCount * 2 ||
+    [a.mowingWeight, a.turfWeight, a.contextWeight, a.roughness, a.surfaceClass, a.boundaryDistanceCm, a.bunkerDepthMm, a.surroundDistanceCm, a.lipLiftMm, a.groundLevelMm].some(view => view.length !== artifact.vertexCount)) problems.push('attributes');
   // Context gate (outside world §35): ground zones painted from another
   // context layer, or from none when the scene now carries one, are stale.
   if ((artifact.contextLayerHash ?? null) !== (scene.contextLayerHash ?? null)) problems.push('context');
@@ -880,7 +910,7 @@ export function parseVisualArtifact(text: string): MeridianVisualArtifact {
     albedo: bytes('albedo'), mowingWeight: bytes('mowingWeight'), turfWeight: bytes('turfWeight'), contextWeight: bytes('contextWeight'),
     roughness: bytes('roughness'), surfaceClass: bytes('surfaceClass'),
     routeST: new Float32Array(aligned('routeST')), boundaryDistanceCm: new Uint16Array(aligned('boundaryDistanceCm')), bunkerDepthMm: new Uint16Array(aligned('bunkerDepthMm')),
-    bunkerSlope: new Int16Array(aligned('bunkerSlope')), surroundDistanceCm: new Uint16Array(aligned('surroundDistanceCm')), lipLiftMm: new Uint16Array(aligned('lipLiftMm')),
+    bunkerSlope: new Int16Array(aligned('bunkerSlope')), surroundDistanceCm: new Uint16Array(aligned('surroundDistanceCm')), lipLiftMm: new Uint16Array(aligned('lipLiftMm')), groundLevelMm: new Int16Array(aligned('groundLevelMm')), groundLevelSlope: new Int16Array(aligned('groundLevelSlope')),
   };
   const { encoding: _encoding, attributes: _attributes, ...header } = raw;
   const artifact = { ...(header as Omit<MeridianVisualArtifact, 'attributes'>), attributes };

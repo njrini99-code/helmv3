@@ -189,7 +189,12 @@ export const MERIDIAN_STYLE = Object.freeze({
    * `structureBandM` of a building footprint, and within a path's shoulder
    * (`pathShoulderM` beyond its half width), darkens a little so structures
    * and paths sit on the ground instead of floating over it. Display only. */
-  contextContact: Object.freeze({ structureBandM: 1.5, structureShade: .10, pathShoulderM: .8, pathShade: .06 }),
+  contextContact: Object.freeze({ structureBandM: 1.5, structureShade: .10, pathShoulderM: .8, pathShade: .06,
+    /** Renderer redesign 12 cut/fill: ground within a ribbon's half width
+     * displays at the ribbon's own height, feathered to the natural ground
+     * over `cutFillBankM` (the cut bank uphill, the fill slope downhill),
+     * never by more than `cutFillMaxM`. Display-only; canonical z is untouched. */
+    cutFillBankM: 2.5, cutFillMaxM: 1.2 }),
   contextObjects: Object.freeze({
     ribbons: Object.freeze({
       cart_path: Object.freeze({ color: '#B6AF9F', shoulder: '#8F8A7C', widthM: 2.5, roughness: .88 }),

@@ -174,6 +174,15 @@ from V1; V4 changes what stands on each centre.
   hedge. Small copses keep every centre. `counts.patternCentres` and
   `counts.rhythmCleared` report the mask; the seed is the tree identity
   seed, so the gaps are as stable as the trees.
+- **Path cut and fill (redesign §12).** `contextContact` also writes a signed
+  render-only ground offset (`groundLevelMm`, with its gradient in
+  `groundLevelSlope`): ground within a ribbon's half width displays at the
+  ribbon's own height, the canonical ground at the nearest centreline point,
+  feathered to the natural surface over `cutFillBankM` and capped at
+  `cutFillMaxM`. Uphill that is a cut bank, downhill a fill slope; the
+  canonical vertex never moves, the ribbon stays where it was, and the bank
+  shading follows the offset's gradient. `layers.contextContact.levelled`
+  counts the vertices it touched.
 - **Identity (§41).** `canopy:<courseFrame>:<packageHash12>:<featureId>:<x>,<y>:<styleVersion>`
   and `mass:<…>` seed every family roll, proportion, colour, yaw and aspect,
   so a tree is the same tree across holes, shared context and sessions, and
