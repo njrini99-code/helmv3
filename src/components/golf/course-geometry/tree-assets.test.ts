@@ -87,6 +87,28 @@ describe('authored canopy asset atlas', () => {
     atlas.dispose();
   });
 
+  it('carries a crown self-occlusion ramp: open at the top, occluded at the base and on undersides', () => {
+    const atlas = createTreeAssetAtlas();
+    for (const geometry of [atlas.variants[0]!.near, atlas.variants[3]!.distant, atlas.variants[7]!.far, createForestMassGeometry('near'), createForestMassGeometry('far')]) {
+      const positions = geometry.getAttribute('position'), normals = geometry.getAttribute('normal'), occlusion = geometry.getAttribute('crownOcclusion');
+      expect(occlusion.count).toBe(positions.count);
+      expect(occlusion.itemSize).toBe(1);
+      let topMost = -Infinity, topOcclusion = 1, bottomMost = Infinity, bottomOcclusion = 0;
+      for (let vertex = 0; vertex < positions.count; vertex++) {
+        const value = occlusion.getX(vertex), z = positions.getZ(vertex);
+        expect(value).toBeGreaterThanOrEqual(0); expect(value).toBeLessThanOrEqual(1);
+        // A vertex whose normal faces straight down is fully occluded.
+        if (normals.getZ(vertex) < -.99) expect(value).toBeGreaterThan(.99);
+        if (z > topMost) { topMost = z; topOcclusion = value; }
+        if (z < bottomMost) { bottomMost = z; bottomOcclusion = value; }
+      }
+      expect(topOcclusion).toBeLessThan(.05);
+      expect(bottomOcclusion).toBeGreaterThan(.95);
+      expect(geometry.userData.occlusion).toEqual({ basis: 'analytic_height_and_underside' });
+    }
+    atlas.dispose();
+  });
+
   it('supplies finite outward lighting normals and closed opaque lobe surfaces', () => {
     const atlas = createTreeAssetAtlas();
     const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3(), face = new THREE.Vector3(), normal = new THREE.Vector3();

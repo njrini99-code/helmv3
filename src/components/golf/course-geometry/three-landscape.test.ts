@@ -196,6 +196,22 @@ describe('Three landscape source and rendering invariants', () => {
     const scene = { ...pilotScene('cacapon-07', false), features: [woods, green] }, mesh = slopeMesh();
     const landscape = buildThreeLandscape(scene, mesh);
     const crowns = landscape.group.children.filter(child => child.name.startsWith('source-canopy-crowns')) as THREE.BatchedMesh[];
+    // Crown self-occlusion (§50): the batch carries the atlas ramp and the
+    // crown material takes `canopyShade.self` of the albedo away at full
+    // occlusion; the lab override scales it and 0 removes it.
+    for (const batch of crowns) {
+      expect(batch.geometry.getAttribute('crownOcclusion')).toBeDefined();
+      const material = batch.material as THREE.MeshStandardMaterial;
+      const shader = { uniforms: {} as Record<string, { value: unknown }>, vertexShader: '#include <common>\n#include <begin_vertex>', fragmentShader: '#include <common>\n#include <color_fragment>' };
+      (material.onBeforeCompile as (s: typeof shader) => void)(shader);
+      expect(shader.vertexShader).toContain('vCrownOcclusion = crownOcclusion');
+      expect(shader.fragmentShader).toContain('diffuseColor.rgb *= 1.0 - golfCrownShade * vCrownOcclusion');
+      expect(shader.uniforms.golfCrownShade!.value).toBe(MERIDIAN_STYLE.canopyShade.self);
+      landscape.setStyleOverrides({ crownShade: 0 });
+      expect(shader.uniforms.golfCrownShade!.value).toBe(0);
+      landscape.setStyleOverrides({});
+      expect(material.userData.selfShade).toEqual({ basis: 'analytic_height_and_underside', amount: MERIDIAN_STYLE.canopyShade.self });
+    }
     expect(crowns).toHaveLength(1);
     expect(new Set(crowns[0]!.userData.designs).size).toBe(16);
     expect(crowns[0]!.instanceCount).toBe(landscape.counts.trees);

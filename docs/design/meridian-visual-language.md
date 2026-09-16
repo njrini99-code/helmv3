@@ -315,6 +315,19 @@ from V1; V4 changes what stands on each centre.
   so a tree is the same tree across holes, shared context and sessions, and
   changes only when the package or the style version changes
   (`three-landscape.test.ts`).
+- **Crown self-occlusion (master §50, 2026-09-17).** Every crown and mass
+  geometry in the atlas carries a `crownOcclusion` vertex ramp
+  (`attachCrownOcclusion`): 0 at the top of the cluster, rising to 1 at its
+  base by a smoothstep on height, and 1 on any vertex whose normal faces
+  down, so undersides and the shaded base read as such. The crown and mass
+  materials take `canopyShade.self` (30 %) of the albedo away at full
+  occlusion; the sun still makes the highlights (§40). Geometry only, no
+  light or neighbour query, zero draw-call cost (the BatchedMesh carries the
+  attribute). Measured on hole 5 Tee (lab phone, zero tolerance against
+  `crownShade=0`): 6 % of pixels move more than 4 levels, none more than 22;
+  a 45 % amount was tried and read muddy at the base, so 30 % stands. The
+  lab's `crownShade=` override scales it (0 removes it);
+  `material.userData.selfShade` records the basis.
 - **Lab.** `?crowns=` and `?mass=` scale the two budgets (0 removes the
   layer); `treeFamilies` in the telemetry lists the family counts on screen.
 
@@ -479,7 +492,7 @@ it, and `--max` turns the fraction into an exit code for a gate.
 - `meridian-v9` (fidelity §39–40, same version, new hash; compiler `meridian-visual-compiler-5`, `green-complex-v2`): slope-evidenced green run-offs — within `greenComplex.runoff.reachM` of the hole's own green, rough or surround ground whose smoothed canonical normal falls away from the green (downhill · away ≥ `awayDot`) at ≥ `slopeMin` becomes a short-grass `runoff` surface class (apron tone and roughness, mowing off), full strength at `slopeFull`; flat or rising ground gets none.
 - `meridian-v9`: bunker families (pot / greenside / fairway scale depth and lip), overhang shadow inside the sun-facing rim, ground contact shade beside building footprints and along path shoulders (`contextContact`). Compiler `meridian-visual-compiler-4` adds `family` to bunker profiles and the `contextContact` layer.
 - `meridian-v8` (fidelity pass, same version, new hash): green complex (`greenComplex` style block: derived apron neck, green/collar edge lip, pad-setting shade), bunker lip/edge variation/floor macro, fairway edge types (`fairwayEdge`), first-cut band, water roughness .52 and calmer sun/sky fill, desaturated fairway/green. Compiler `meridian-visual-compiler-3` adds `lipLiftMm` and the `greenComplex` / `fairwayEdges` layers.
-- `meridian-v9` (overnight 2026-09-16/17, same version, new hashes): below-horizon sky tone (`sky.below`), hipped roof archetype for small convex footprints (`contextObjects.roof`), DEM landform occlusion (`landform`, the DEM texture's third channel, indirect light only), subtle diagonal green mowing (`mowing.green`) and the DEM shelter/exposure terrain tone on the rough (`terrainTone`, the texture's fourth channel). Compiler `meridian-visual-compiler-7` (`context-contact-v3`: cut/fill end caps and junction blending) and `meridian-visual-compiler-8` (the played green is a mown field). Terrain compiler `course-terrain-v4` drops the per-vertex normals array.
+- `meridian-v9` (overnight 2026-09-16/17, same version, new hashes): below-horizon sky tone (`sky.below`), hipped roof archetype for small convex footprints (`contextObjects.roof`), DEM landform occlusion (`landform`, the DEM texture's third channel, indirect light only), subtle diagonal green mowing (`mowing.green`) the DEM shelter/exposure terrain tone on the rough (`terrainTone`, the texture's fourth channel), the muted cart-path tone and crown self-occlusion (`canopyShade.self`, the atlas `crownOcclusion` ramp). Compiler `meridian-visual-compiler-7` (`context-contact-v3`: cut/fill end caps and junction blending) and `meridian-visual-compiler-8` (the played green is a mown field). Terrain compiler `course-terrain-v4` drops the per-vertex normals array.
 
 `styleHash()` hashes `MERIDIAN_STYLE` by value (`meridian-v8-<fnv>`); any
 change to a value re-keys the artifact cache and appears in every capture's

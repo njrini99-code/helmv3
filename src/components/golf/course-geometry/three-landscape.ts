@@ -813,8 +813,28 @@ export function buildThreeLandscape(
   }
   terrainGeometry.setAttribute('golfCanopyShade', new THREE.BufferAttribute(canopyShade, 1));
 
+  // Crown self-occlusion (§50): the atlas carries a per-vertex occlusion ramp
+  // (base and undersides of every lobe cluster); the material takes that much
+  // albedo away, scaled by the style amount and the lab `crownShade` override.
+  const crownShade: { value: number } = { value: MERIDIAN_STYLE.canopyShade.self * (options.overrides?.crownShade ?? 1) };
+  const attachCrownShade = (material: THREE.MeshStandardMaterial) => {
+    material.onBeforeCompile = shader => {
+      shader.uniforms.golfCrownShade = crownShade;
+      shader.vertexShader = shader.vertexShader.replace('#include <common>', `#include <common>
+attribute float crownOcclusion;
+varying float vCrownOcclusion;`).replace('#include <begin_vertex>', `#include <begin_vertex>
+vCrownOcclusion = crownOcclusion;`);
+      shader.fragmentShader = shader.fragmentShader.replace('#include <common>', `#include <common>
+uniform float golfCrownShade;
+varying float vCrownOcclusion;`).replace('#include <color_fragment>', `#include <color_fragment>
+diffuseColor.rgb *= 1.0 - golfCrownShade * vCrownOcclusion;`);
+    };
+    material.customProgramCacheKey = () => `golf-crown-shade-${MERIDIAN_STYLE_HASH}`;
+    material.userData.selfShade = { basis: 'analytic_height_and_underside', amount: MERIDIAN_STYLE.canopyShade.self };
+  };
   const crownMaterial = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 1, metalness: 0 });
   crownMaterial.name = 'opaque-canopy';
+  attachCrownShade(crownMaterial);
   materials.add(crownMaterial);
   // §68.2: one BatchedMesh holds every crown. Each authored design contributes
   // its three LOD geometries once and every tree is one instance that points
@@ -881,6 +901,7 @@ export function buildThreeLandscape(
   if (lobes.length) {
     const massMaterial = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 1, metalness: 0 });
     massMaterial.name = 'opaque-forest-mass';
+    attachCrownShade(massMaterial);
     materials.add(massMaterial);
     mass = new THREE.BatchedMesh(lobes.length, massGeometry.getAttribute('position').count + massFarGeometry.getAttribute('position').count, 0, massMaterial);
     massGeometryIds.near = mass.addGeometry(massGeometry); massGeometryIds.far = mass.addGeometry(massFarGeometry);
@@ -1091,7 +1112,11 @@ export function buildThreeLandscape(
 
   return {
     group, terrain, setExaggeration, setDetail, counts, artifact, artifactSource, artifactRefusal,
-    setStyleOverrides(overrides) { if (!disposed) turfStyle.setOverrides(overrides); },
+    setStyleOverrides(overrides) {
+      if (disposed) return;
+      turfStyle.setOverrides(overrides);
+      crownShade.value = MERIDIAN_STYLE.canopyShade.self * (overrides.crownShade ?? 1);
+    },
     dispose() {
       if (disposed) return;
       disposed = true;

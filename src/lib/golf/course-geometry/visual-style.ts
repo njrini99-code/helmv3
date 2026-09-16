@@ -218,7 +218,11 @@ export const MERIDIAN_STYLE = Object.freeze({
   sky: Object.freeze({ zenith: '#8FB3DA', horizon: '#DCE6EF', curve: .38, below: '#BFCCCB', belowSpan: .10 }),
   /** §50: analytic contact shading under crowns and forest mass, computed
    * from the seeded placement. No screen-space AO at the base tier. */
-  canopyShade: Object.freeze({ amount: .16, crownRadiusScale: 1.15, massRadiusScale: .95, massWeight: .8 }),
+  canopyShade: Object.freeze({ amount: .16, crownRadiusScale: 1.15, massRadiusScale: .95, massWeight: .8,
+    /** Crown self-occlusion (§50): how much albedo the base and undersides of
+     * a crown or mass lobe lose at full occlusion (`crownOcclusion` attribute,
+     * `attachCrownOcclusion`). Lighting still makes the highlights (§40). */
+    self: .3 }),
   /** Fidelity §5–7 macro landform / master §50: analytic landform occlusion
    * from the source DEM. Each grid node's relative sky occlusion is the mean,
    * over `directions`, of the sine of the horizon elevation *above the local
@@ -295,6 +299,8 @@ export interface MeridianStyleOverrides {
   crowns?: number; mass?: number;
   /** V5 (§42–52): water sky/interior mix, haze strength (renderer) and canopy contact shade. */
   water?: number; haze?: number; shade?: number;
+  /** §50: crown self-occlusion strength on crowns and mass lobes (0 removes it). */
+  crownShade?: number;
   /** Fidelity §5–7: DEM landform occlusion strength (0 removes it). */
   landform?: number;
   /** Fidelity §35: DEM shelter/exposure tint strength on the rough (0 removes it). */

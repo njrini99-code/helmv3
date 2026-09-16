@@ -139,6 +139,28 @@ function buildCluster(lobes: readonly Lobe[], templates: readonly THREE.BufferGe
     .setAttribute('normal', new THREE.BufferAttribute(normals, 3));
 }
 
+/** Master §50 analytic occlusion on the crown itself: a per-vertex occlusion
+ * ramp (0 open, 1 occluded) from two geometric cues that need no light or
+ * neighbour, the vertex's height inside the cluster (the base of a crown sees
+ * less sky than its top) and how far its normal faces down (an underside sees
+ * the ground, not the sky). The material scales it by the style amount, so
+ * the attribute is pure geometry and the atlas stays style-free. */
+export function attachCrownOcclusion(geometry: THREE.BufferGeometry): THREE.BufferGeometry {
+  const positions = geometry.getAttribute('position'), normals = geometry.getAttribute('normal');
+  let minZ = Infinity, maxZ = -Infinity;
+  for (let vertex = 0; vertex < positions.count; vertex++) { const z = positions.getZ(vertex); minZ = Math.min(minZ, z); maxZ = Math.max(maxZ, z); }
+  const span = Math.max(1e-6, maxZ - minZ), occlusion = new Float32Array(positions.count);
+  for (let vertex = 0; vertex < positions.count; vertex++) {
+    const height = (positions.getZ(vertex) - minZ) / span;
+    const base = 1 - height * height * (3 - 2 * height);
+    const underside = Math.max(0, -normals.getZ(vertex));
+    occlusion[vertex] = Math.min(1, Math.max(base, underside));
+  }
+  geometry.setAttribute('crownOcclusion', new THREE.BufferAttribute(occlusion, 1));
+  geometry.userData = { ...geometry.userData, occlusion: { basis: 'analytic_height_and_underside' } };
+  return geometry;
+}
+
 function normalizeSet(geometries: readonly THREE.BufferGeometry[]): void {
   let radius = 0, minZ = Infinity, maxZ = -Infinity;
   for (const geometry of geometries) {
@@ -182,7 +204,7 @@ export function createForestMassGeometry(lod: 'near' | 'far' = 'near'): THREE.Bu
     geometry.computeBoundingBox(); geometry.computeBoundingSphere();
     geometry.name = `forest-mass-cluster-${lod}`;
     geometry.userData = { basis: 'authored_canopy_art', variant: 'forest-mass-cluster', lod, lobeCount: MASS_LOBES.length };
-    return geometry;
+    return attachCrownOcclusion(geometry);
   } finally { major.dispose(); minor.dispose(); }
 }
 
@@ -214,6 +236,7 @@ export function createTreeAssetAtlas(): TreeAssetAtlas {
       near.userData = { basis: 'authored_canopy_art', variant: design.id, lod: 'near', lobeCount: design.lobes.length };
       distant.userData = { basis: 'authored_canopy_art', variant: design.id, lod: 'distant', lobeCount: design.lobes.length };
       far.userData = { basis: 'authored_canopy_art', variant: design.id, lod: 'far', lobeCount: design.lobes.length };
+      for (const geometry of [near, distant, far]) attachCrownOcclusion(geometry);
       const triangles = (geometry: THREE.BufferGeometry) => geometry.getAttribute('position').count / 3;
       variants.push(Object.freeze({ id: design.id, basis: 'authored_canopy_art' as const, near, distant, far,
         lobeCount: Object.freeze({ near: design.lobes.length, distant: design.lobes.length, far: design.lobes.length }),

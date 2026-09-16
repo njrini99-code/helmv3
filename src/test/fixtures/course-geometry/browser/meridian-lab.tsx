@@ -14,7 +14,7 @@ import { buildHoleScene } from '@/lib/golf/course-geometry/build-scene';
 import { compileVisualArtifact, serializeVisualArtifact } from '@/lib/golf/course-geometry/visual-artifact';
 import type { MeridianStyleOverrides } from '@/lib/golf/course-geometry/visual-style';
 
-const STYLE_LAYERS = ['macro', 'micro', 'mowing', 'boundary', 'context', 'crowns', 'mass', 'water', 'haze', 'shade', 'bowl', 'landform', 'terrainTone'] as const;
+const STYLE_LAYERS = ['macro', 'micro', 'mowing', 'boundary', 'context', 'crowns', 'mass', 'water', 'haze', 'shade', 'bowl', 'landform', 'terrainTone', 'crownShade'] as const;
 import type { CourseView } from '@/lib/golf/course-geometry/camera';
 import { PERSPECTIVE_FOV, TERRAIN_PRESETS, type TerrainMesh, type TerrainPose, type TerrainPreset } from '@/lib/golf/course-geometry/terrain';
 import { fitTerrainViewportCamera } from '@/lib/golf/course-geometry/terrain-viewport';
