@@ -56,7 +56,13 @@ export const MERIDIAN_STYLE = Object.freeze({
      * contrast rises by `boost` inside a route-local window centred
      * `driveM` from the tee (never closer than `greenClearM` to the route
      * end), blending over `blendM`. Illustrative style, like the bands. */
-    landing: Object.freeze({ boost: .5, halfWidthM: 30, blendM: 25, driveM: 235, greenClearM: 70 }) }),
+    landing: Object.freeze({ boost: .5, halfWidthM: 30, blendM: 25, driveM: 235, greenClearM: 70 }),
+    /** §23 green material: "extremely subtle mowing". The played green carries
+     * its own bands: narrower, at `angleDeg` to the route-local frame (a
+     * single diagonal, never a checker), at `amplitudeShare` of the fairway
+     * contrast, weight fading over the last `edgeFadeM` inside the green edge.
+     * Art, not physics (§23): it encodes no break, slope or grain. */
+    green: Object.freeze({ bandWidthM: 2.4, amplitudeShare: 1, angleDeg: 45, edgeFadeM: 1 }) }),
   /** §25: boundary softness. A short albedo lip inside every feature edge so
    * a colour step never lands on one pixel; ribbons (§25.1) keep their
    * compiler width, fields (§25.2) soften over `fieldM`. */

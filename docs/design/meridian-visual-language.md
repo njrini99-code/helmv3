@@ -87,6 +87,14 @@ lab exposes each layer as a multiplier (`?macro=0&micro=0&mowing=4…`).
   by surface class (rough ×1.6, surround ×1.25, fairway/tee ×1, apron ×.8,
   fringe ×.7, green ×.55) so taller, denser grass reads rougher than mown
   turf. Amplitude only; it never encodes a real turf condition.
+- Green mowing (master §23, compiler `meridian-visual-compiler-8`): the
+  played green is a mown field too (`mowingWeight`, fading over the last
+  metre inside its edge; context greens stay unmown). The shader gives it
+  its own bands: 2.4 m wide on one 45° diagonal of the route-local frame,
+  at the fairway contrast, never a checker and never the landing boost.
+  The same derivative fade that hides fairway bands at distance removes
+  the green bands at hole-view scale, so they appear at the green state
+  and vanish from the tee. Art, not physics: no break, slope or grain.
 - Landing emphasis (fidelity §8–9): on par 4 and 5 holes the mowing band
   contrast rises by 50 % inside a route-local window (±30 m about 235 m from
   the tee, never within 70 m of the route end, 25 m blend). Illustrative
@@ -424,6 +432,7 @@ it, and `--max` turns the fraction into an exit code for a gate.
 - `meridian-v9` (fidelity §39–40, same version, new hash; compiler `meridian-visual-compiler-5`, `green-complex-v2`): slope-evidenced green run-offs — within `greenComplex.runoff.reachM` of the hole's own green, rough or surround ground whose smoothed canonical normal falls away from the green (downhill · away ≥ `awayDot`) at ≥ `slopeMin` becomes a short-grass `runoff` surface class (apron tone and roughness, mowing off), full strength at `slopeFull`; flat or rising ground gets none.
 - `meridian-v9`: bunker families (pot / greenside / fairway scale depth and lip), overhang shadow inside the sun-facing rim, ground contact shade beside building footprints and along path shoulders (`contextContact`). Compiler `meridian-visual-compiler-4` adds `family` to bunker profiles and the `contextContact` layer.
 - `meridian-v8` (fidelity pass, same version, new hash): green complex (`greenComplex` style block: derived apron neck, green/collar edge lip, pad-setting shade), bunker lip/edge variation/floor macro, fairway edge types (`fairwayEdge`), first-cut band, water roughness .52 and calmer sun/sky fill, desaturated fairway/green. Compiler `meridian-visual-compiler-3` adds `lipLiftMm` and the `greenComplex` / `fairwayEdges` layers.
+- `meridian-v9` (overnight 2026-09-16/17, same version, new hashes): below-horizon sky tone (`sky.below`), hipped roof archetype for small convex footprints (`contextObjects.roof`), DEM landform occlusion (`landform`, the DEM texture's third channel, indirect light only) and subtle diagonal green mowing (`mowing.green`). Compiler `meridian-visual-compiler-7` (`context-contact-v3`: cut/fill end caps and junction blending) and `meridian-visual-compiler-8` (the played green is a mown field). Terrain compiler `course-terrain-v4` drops the per-vertex normals array.
 
 `styleHash()` hashes `MERIDIAN_STYLE` by value (`meridian-v8-<fnv>`); any
 change to a value re-keys the artifact cache and appears in every capture's

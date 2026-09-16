@@ -37,7 +37,7 @@ the visual-language document.
 | 20 | World-space coordinates | done | All fields in world-space XY + package seed (`artifact.seed`); nothing swims under camera motion |
 | 21 | Do not overuse noise | done | Per-layer amplitude caps guarded by `visual-style.test.ts` (macro ≤3%, micro ≤1.5%, mowing ≤3%); greens at 40%/55% of macro/micro |
 | 22 | Fairway mowing redesign (22.1–22.3) | done | 22.1 route-local `(s, t)` attribute from the hole route; 22.2 bands along the play line, 6.5 m, 0.16 skew; 22.3 weight ramps to 0 over the last 3.5 m before the fairway edge, context fairways unmown |
-| 23 | Green material | done | Green: roughness .78, quieter macro/micro, no mowing; class id in `golfSurfaceClass` |
+| 23 | Green material | done | Green: roughness .78, quieter macro/micro, class id in `golfSurfaceClass`; "extremely subtle mowing" (compiler 8, `mowing.green`): the played green carries its own bands, 2.4 m on one 45° diagonal of the route-local frame at the fairway contrast (3 %), weight fading over the last metre inside the edge, no landing boost, context greens unmown. Their derivative fade removes them at hole-view distance, so they are found at the green state, not shouted. Art, not physics: no break, slope or grain is encoded |
 | 24 | Fringe / collar | done | Collar (compiler material 4) keeps the fringe albedo, roughness .93; surround ribbon (material 3) roughness .95 |
 | 25 | Boundary softness (25.1 ribbons, 25.2 fields) | done | 25.1 ribbons keep compiler width and albedo; 25.2 fields get a 0.6 m −5% lip from `golfBoundaryDistance` (cm-packed) |
 | 26 | Bunkers opportunity | done | Bunkers now read as bowls in Terrain/Side (spike sheet `docs/plans/assets/meridian-2026-09-16/spike-122-bunkers-holes-07-11.png`) |
@@ -61,7 +61,7 @@ the visual-language document.
 | 44 | Shoreline integration | done | 0.75 m shoreline band darkens the water edge in the shader; compiler darkens turf within 0.6 m of a shoreline (`layers.water.contactVertices`); canonical shoreline untouched; test in `three-landscape.test.ts` |
 | 45 | Water depth not known | done | `layers.water.depthBasis: shoreline_distance` and `material.userData.water.depthBasis` mark the interior tone as visual only; documented in the visual-language doc |
 | 46 | Lighting base | done | Light block in `MERIDIAN_STYLE.light` (sun colour/intensity, sky, ground, exposure); renderer reads it |
-| 47 | Lower presentation sun | done | `TERRAIN_LIGHT_DIRECTION = [.47, −.53, .706]` (elevation ≈45°, was ≈53°) |
+| 47 | Lower presentation sun | done (40° tested, 45° kept) | `TERRAIN_LIGHT_DIRECTION = [.47, −.53, .706]` (elevation ≈45°, was ≈53°). The recommended lower test was run at 40° on holes 7, 11 and 18 (terrain + side, lab desktop): the scene loses about 3 % mean luma, under 1 % of pixels move more than 16 levels (the longer tree shadows), and bunker/landform readability does not change now that the DEM landform occlusion carries the macro depth (§50), so 45° stays |
 | 48 | Warm sun + cooler sky | done | Warm sun `#FFF4E2` 2.05 + cooler sky `#CFE0FF` |
 | 49 | Reduce ambient flattening | done | Hemisphere intensity 1.2 → 1.05 |
 | 50 | Ambient occlusion | done | Decision: analytic occlusion only at base tier: canopy contact shade (`golfCanopyShade` from seeded crowns/mass, ≤16 %), bunker rim/floor shading in the compiler (V3), and DEM landform occlusion (relative sky view per grid node in the DEM texture's third channel, ≤35 % of indirect light in swales and hollows, `MERIDIAN_STYLE.landform`); GTAO/SSAO stay deferred to the V7 high tier |

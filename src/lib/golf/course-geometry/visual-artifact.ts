@@ -15,7 +15,7 @@ import { inRing } from './spatial';
 import type { HoleScene, LocalFeature, PointM, SurfaceKind } from './types';
 import { hexToRgb, MERIDIAN_STYLE, srgbToLinear, styleHash, type MeridianPaletteKey, type MeridianStyle } from './visual-style';
 
-export const MERIDIAN_VISUAL_COMPILER_VERSION = 'meridian-visual-compiler-7';
+export const MERIDIAN_VISUAL_COMPILER_VERSION = 'meridian-visual-compiler-8';
 export const MERIDIAN_CODES = Object.freeze({
   mismatch: 'MERIDIAN_ARTIFACT_MISMATCH', missing: 'MERIDIAN_ARTIFACT_MISSING', contextLost: 'MERIDIAN_CONTEXT_LOST',
   shaderFailed: 'MERIDIAN_SHADER_FAILED', budgetExceeded: 'MERIDIAN_BUDGET_EXCEEDED', fitFailed: 'MERIDIAN_FIT_FAILED',
@@ -321,7 +321,10 @@ export function compileVisualArtifact(scene: HoleScene, mesh: TerrainMesh, style
     const surface = classOf(kind, material);
     const albedo = albedoFor(kind, material, contextOnly, style);
     const albedoBytes = albedo.map(channel => Math.round(Math.min(1, Math.max(0, channel)) * 255));
-    const mown = kind === 'fairway' && material === 0 && !contextOnly;
+    // Mown fields: the played fairway (§22) and, at its own subtler scale in
+    // the shader, the played green (§23). Context copies stay unmown.
+    const mown = (kind === 'fairway' || kind === 'green') && material === 0 && !contextOnly;
+    const mowingFadeM = kind === 'green' ? style.mowing.green.edgeFadeM : style.mowing.edgeFadeM;
     const turf = kind === 'ground' || kind === 'rough' || kind === 'fairway' || kind === 'tee' || kind === 'green' || surface === 'surround' || surface === 'fringe';
     const classId = SURFACE_CLASS_IDS.indexOf(surface);
     const rough = Math.round(roughnessFor(surface) * 255);
@@ -337,7 +340,7 @@ export function compileVisualArtifact(scene: HoleScene, mesh: TerrainMesh, style
       // boundary pixel (§22.3); the shader applies the route-local pattern.
       const boundary = kind === 'ground' ? 0 : boundaryFor(point, id);
       attributes.boundaryDistanceCm[vertex] = Math.min(65535, Math.round(Math.min(boundary, 655) * 100));
-      const fade = mown ? Math.min(1, boundary / style.mowing.edgeFadeM) : 0;
+      const fade = mown ? Math.min(1, boundary / mowingFadeM) : 0;
       attributes.mowingWeight[vertex] = Math.round(fade * 255);
       const [s, lateral] = frame ? frame.at(point) : [0, 0];
       // Millimetre quantisation keeps the packed bytes identical across engines.

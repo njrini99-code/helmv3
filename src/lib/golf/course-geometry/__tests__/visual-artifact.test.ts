@@ -117,13 +117,24 @@ describe('Meridian visual artifact (§6, §96–102, §106.1)', () => {
     const rings = fairway.parts.flat();
     const route = scene.features.find(feature => feature.id === scene.hole.routeFeatureId)!.parts[0]![0]!;
     const routeLength = route.slice(1).reduce((sum, point, i) => sum + Math.hypot(point[0] - route[i]![0], point[1] - route[i]![1]), 0);
-    let mown = 0, faded = 0, deep = 0;
+    const green = scene.features.find(feature => feature.kind === 'green')!;
+    const greenRings = green.parts.flat();
+    let mown = 0, faded = 0, deep = 0, greenMown = 0, greenDeep = 0;
     for (let t = 0; t < mesh.triangleFeatures.length; t++) {
       const featureIndex = mesh.triangleFeatures[t]!, kind = mesh.featureKinds[featureIndex]!, id = mesh.featureIds[featureIndex]!;
       for (let corner = 0; corner < 3; corner++) {
         const vertex = t * 3 + corner, x = mesh.vertices[vertex * 3]!, y = mesh.vertices[vertex * 3 + 1]!;
         const weight = a.mowingWeight[vertex]!;
         if (a.contextWeight[vertex]) expect(weight).toBe(0);
+        // §23: the played green is mown too, at its own short edge fade; the
+        // shader gives it narrower, fainter, diagonal bands.
+        if (kind === 'green' && mesh.triangleMaterials[t] === 0 && id === green.id && !a.contextWeight[vertex]) {
+          greenMown++;
+          const distance = greenRings.reduce((minimum, ring) => Math.min(minimum, boundaryDistance([x, y], ring)), Infinity);
+          expect(Math.abs(weight - Math.round(Math.min(1, distance / MERIDIAN_STYLE.mowing.green.edgeFadeM) * 255))).toBeLessThanOrEqual(2);
+          if (distance > MERIDIAN_STYLE.mowing.green.edgeFadeM) { greenDeep++; expect(weight).toBe(255); }
+          continue;
+        }
         if (kind !== 'fairway' || mesh.triangleMaterials[t] !== 0 || id !== fairway.id) { if (kind !== 'fairway') expect(weight).toBe(0); continue; }
         mown++;
         const distance = rings.reduce((minimum, ring) => Math.min(minimum, boundaryDistance([x, y], ring)), Infinity);
@@ -140,6 +151,7 @@ describe('Meridian visual artifact (§6, §96–102, §106.1)', () => {
       }
     }
     expect(mown).toBeGreaterThan(100); expect(faded).toBeGreaterThan(0); expect(deep).toBeGreaterThan(0);
+    expect(greenMown).toBeGreaterThan(0); expect(greenDeep).toBeGreaterThan(0);
   });
 });
 

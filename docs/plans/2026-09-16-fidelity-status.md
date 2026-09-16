@@ -38,7 +38,7 @@ Hero hole: Peek’n Peak Upper hole 7.
 | 11–12 | Striping language, material richness | done | Bands scale with the hole, follow the route, fade at edges; macro/micro fields; no pasted texture |
 | 13 | Approach transition | done | Apron neck blends fairway → apron → collar → green over 2 m |
 | 14–16 | Fringe as differentiator, goals, edge relationships | partial | Collar ring with its own tone/roughness and edge lip (§16 green→fringe, fringe→apron via the neck); fringe→bunker edge shares the bunker lip band; fringe→rough stays a soft tone step |
-| 17–19 | Green premium, edge precision, surface behaviour | partial | Source shape preserved; green edge lip (4.5 % over .5 m) is the sharpest edge in the scene; surface tiers/undulation blocked (no green-contour source) |
+| 17–19 | Green premium, edge precision, surface behaviour | partial (tiers source-limited) | Source shape preserved; green edge lip (4.5 % over .5 m) is the sharpest edge in the scene; subtle diagonal green mowing (master §23, `mowing.green`) gives the surface a maintained identity at the green state without implying break or grain; surface tiers/undulation blocked (no green-contour source) |
 | 20 | Green pad / setting | done (v1) | Bank below the pad mean elevation darkens up to 5 % within 12 m (`settingVertices`); reads perch/shelf where the DEM has it, nothing where it does not |
 | 21 | Apron and approach | done | Derived neck (≤ 10 m from the green, ≤ 5 m from the fairway), `basis: visual_only`, `apronBasis: derived_neck` |
 | 22–24 | Bunkers as differentiator, requirements, plan shape | done | Source outlines preserved exactly; rim ribbons from the compiler |

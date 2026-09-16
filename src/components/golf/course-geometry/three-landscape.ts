@@ -309,7 +309,12 @@ float golfLandformAo = 1.0;` : ''}`).replace('#include <color_fragment>', `#incl
     : abs(golfClass - ${classId('fringe')}.0) < 0.5 ? ${style.turf.microByClass.fringe.toFixed(3)} : 1.0;
   // Mowing (§22): bands along the play line in route-local metres with a
   // small skew; derivative-filtered edges; weight already fades at the edge.
-  float golfPhase = (vGolfRouteST.y + vGolfRouteST.x * ${style.mowing.skew.toFixed(3)}) / ${style.mowing.bandWidthM.toFixed(3)};
+  // The green (§23) takes narrower bands on one diagonal of the same frame at
+  // a fraction of the contrast: discovered, not shouted; art, not grain.
+  float golfPhase = golfGreen
+    ? (vGolfRouteST.y * ${Math.cos(style.mowing.green.angleDeg * Math.PI / 180).toFixed(4)} + vGolfRouteST.x * ${Math.sin(style.mowing.green.angleDeg * Math.PI / 180).toFixed(4)}) / ${style.mowing.green.bandWidthM.toFixed(3)}
+    : (vGolfRouteST.y + vGolfRouteST.x * ${style.mowing.skew.toFixed(3)}) / ${style.mowing.bandWidthM.toFixed(3)};
+  float golfBandAmplitude = golfGreen ? ${style.mowing.green.amplitudeShare.toFixed(3)} : 1.0;
   float golfWave = sin(golfPhase * 3.141592653589793);
   float golfFilter = max(fwidth(golfWave), 0.025);
   float golfBand = smoothstep(-golfFilter, golfFilter, golfWave) * 2.0 - 1.0;
@@ -330,7 +335,7 @@ float golfLandformAo = 1.0;` : ''}`).replace('#include <color_fragment>', `#incl
     + golfMicro * golfAmplitudes.y * golfTurfWeight
     + golfGrain * ${style.bunker.sandGrainAmplitude.toFixed(3)} * golfSand
     + golfMacro * ${style.bunker.floorMacroAmplitude.toFixed(3)} * golfSand
-    + golfBand * golfBandVisible * golfAmplitudes.z * golfMowingWeight * (1.0 + golfLanding.z * golfLandingWindow)
+    + golfBand * golfBandVisible * golfAmplitudes.z * golfBandAmplitude * golfMowingWeight * (1.0 + (golfGreen ? 0.0 : golfLanding.z * golfLandingWindow))
     - golfEdge * golfAmplitudes.w;
   // Context (§53): real surfaces, quieter. Albedo only; never alpha.
   float golfLuma = dot(diffuseColor.rgb, vec3(0.2126, 0.7152, 0.0722));
@@ -381,7 +386,7 @@ reflectedLight.indirectDiffuse *= golfLandformAo;`);
   };
   material.customProgramCacheKey = () => `golf-landscape-turf-${MERIDIAN_STYLE_HASH}:${material.type}:${demShading ? 'dem' : 'vertex'}`;
   material.userData.shading = demShading ? { basis: 'dem_slope_texture', spacingM: relief.spacingM, landform: { basis: 'dem_relative_sky_view', radiusM: style.landform.radiusM, gain: style.landform.gain, max: style.landform.max } } : { basis: 'vertex_normals' };
-  material.userData.mowing = { basis: 'illustrative_style', bandWidthM: style.mowing.bandWidthM, frame: 'route_local' };
+  material.userData.mowing = { basis: 'illustrative_style', bandWidthM: style.mowing.bandWidthM, frame: 'route_local', green: { bandWidthM: style.mowing.green.bandWidthM, amplitudeShare: style.mowing.green.amplitudeShare, angleDeg: style.mowing.green.angleDeg } };
   material.userData.turf = { basis: 'visual_only', macroM: style.turf.macro.wavelengthsM, microM: style.turf.micro.wavelengthsM, microByClass: style.turf.microByClass };
   material.userData.landing = landing ? { basis: 'illustrative_style', ...landing } : null;
   material.userData.water = { basis: 'visual_only', depthBasis: 'shoreline_distance', reflection: lit ? 'fresnel_static' : 'none' };
