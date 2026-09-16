@@ -1,0 +1,489 @@
+{
+  "physicalHoleKey": "peek-n-peak-upper-09",
+  "contentHash": "757cc8ed3a3cea12d5901d03bc86d0e30bd0c3f68395a6c34ad5e9e95a27b0ba",
+  "geometryHash": "eeacfb7bcbe0bd6194666459d83682ebcd3545a8fc362b99581bbbad0901c7a1",
+  "configuredBudget": 40000,
+  "originalEnvelope": 20000,
+  "triangles": 16806,
+  "uniqueVertices": 8494,
+  "omittedTriangles": 0,
+  "metricCells": 97625,
+  "metricNodataCells": 0,
+  "duplicateVertexCount": 41924,
+  "sourceNormalDuplicatesAgree": true,
+  "sourceHeightDuplicatesAgree": true,
+  "sourceNormalUnitMaxError": 6.533457286295175e-08,
+  "slopesDegrees": {
+    "max": 41.30103268606522,
+    "p95": 14.582395683011592,
+    "p50": 3.890193529717032
+  },
+  "elevationRangeM": [
+    472.52759617555284,
+    539.6284997806836
+  ],
+  "contextAreaM2": 382976.0,
+  "triangulatedAreaM2": 382976.00009999995,
+  "omittedAreaM2": 0,
+  "contextClippedFeatureIds": [
+    "osm-way-746365976",
+    "osm-way-746365998",
+    "osm-way-746383362",
+    "osm-way-746506450"
+  ],
+  "tacticalDistanceToContextEdgeM": [
+    172,
+    180,
+    176,
+    164
+  ],
+  "features": [
+    {
+      "id": "terrain-context",
+      "kind": "ground",
+      "triangles": 10016,
+      "areaM2": 355122.9945,
+      "rendererContextOnly": false
+    },
+    {
+      "id": "osm-way-746146113",
+      "kind": "fairway",
+      "triangles": 366,
+      "areaM2": 5367.4182,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-746365976",
+      "kind": "fairway",
+      "triangles": 186,
+      "areaM2": 2278.3008,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-746365986",
+      "kind": "fairway",
+      "triangles": 1198,
+      "areaM2": 5619.0192,
+      "rendererContextOnly": false
+    },
+    {
+      "id": "osm-way-746365998",
+      "kind": "fairway",
+      "triangles": 8,
+      "areaM2": 27.7046,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-746383362",
+      "kind": "fairway",
+      "triangles": 84,
+      "areaM2": 1027.805,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-746146110",
+      "kind": "tee",
+      "triangles": 26,
+      "areaM2": 173.4782,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-746269633",
+      "kind": "tee",
+      "triangles": 10,
+      "areaM2": 55.2651,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-746365982",
+      "kind": "tee",
+      "triangles": 104,
+      "areaM2": 136.5087,
+      "rendererContextOnly": false
+    },
+    {
+      "id": "osm-way-746365983",
+      "kind": "tee",
+      "triangles": 80,
+      "areaM2": 95.3639,
+      "rendererContextOnly": false
+    },
+    {
+      "id": "osm-way-746365994",
+      "kind": "tee",
+      "triangles": 18,
+      "areaM2": 74.3968,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-746365995",
+      "kind": "tee",
+      "triangles": 20,
+      "areaM2": 118.8122,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-938593899",
+      "kind": "tee",
+      "triangles": 23,
+      "areaM2": 228.8157,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-746146114",
+      "kind": "green",
+      "triangles": 93,
+      "areaM2": 405.4783,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-746365980",
+      "kind": "green",
+      "triangles": 103,
+      "areaM2": 567.3628,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-746365989",
+      "kind": "green",
+      "triangles": 1015,
+      "areaM2": 592.7241,
+      "rendererContextOnly": false
+    },
+    {
+      "id": "osm-way-746383363",
+      "kind": "green",
+      "triangles": 98,
+      "areaM2": 404.8367,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-746146115",
+      "kind": "bunker",
+      "triangles": 80,
+      "areaM2": 159.8355,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-746146116",
+      "kind": "bunker",
+      "triangles": 66,
+      "areaM2": 118.5535,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-746365977",
+      "kind": "bunker",
+      "triangles": 71,
+      "areaM2": 147.1445,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-746365978",
+      "kind": "bunker",
+      "triangles": 113,
+      "areaM2": 236.7153,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-746365979",
+      "kind": "bunker",
+      "triangles": 68,
+      "areaM2": 135.6626,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-746365987",
+      "kind": "bunker",
+      "triangles": 1556,
+      "areaM2": 386.3832,
+      "rendererContextOnly": false
+    },
+    {
+      "id": "osm-way-746365988",
+      "kind": "bunker",
+      "triangles": 663,
+      "areaM2": 133.59,
+      "rendererContextOnly": false
+    },
+    {
+      "id": "osm-way-746506449",
+      "kind": "bunker",
+      "triangles": 71,
+      "areaM2": 153.5069,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-746506450",
+      "kind": "bunker",
+      "triangles": 119,
+      "areaM2": 302.1813,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-746506451",
+      "kind": "bunker",
+      "triangles": 42,
+      "areaM2": 53.8973,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-746365990",
+      "kind": "water",
+      "triangles": 52,
+      "areaM2": 1114.1899,
+      "rendererContextOnly": true
+    },
+    {
+      "id": "osm-way-746365991",
+      "kind": "water",
+      "triangles": 308,
+      "areaM2": 1747.3242,
+      "rendererContextOnly": false
+    },
+    {
+      "id": "osm-way-746365992",
+      "kind": "water",
+      "triangles": 149,
+      "areaM2": 5990.7311,
+      "rendererContextOnly": true
+    }
+  ],
+  "contextFeatureIds": [
+    "osm-way-746146113",
+    "osm-way-746365976",
+    "osm-way-746365998",
+    "osm-way-746383362",
+    "osm-way-746146110",
+    "osm-way-746269633",
+    "osm-way-746365994",
+    "osm-way-746365995",
+    "osm-way-938593899",
+    "osm-way-746146114",
+    "osm-way-746365980",
+    "osm-way-746383363",
+    "osm-way-746146115",
+    "osm-way-746146116",
+    "osm-way-746365977",
+    "osm-way-746365978",
+    "osm-way-746365979",
+    "osm-way-746506449",
+    "osm-way-746506450",
+    "osm-way-746506451",
+    "osm-way-746365990",
+    "osm-way-746365992"
+  ],
+  "displayOutlines": [
+    {
+      "id": "osm-way-746146113",
+      "boundaryDisplacementM": 0.331064,
+      "areaChangePercent": -0.007832
+    },
+    {
+      "id": "osm-way-746365976",
+      "boundaryDisplacementM": 0.35208,
+      "areaChangePercent": -0.003312
+    },
+    {
+      "id": "osm-way-746365986",
+      "boundaryDisplacementM": 0.358561,
+      "areaChangePercent": -0.002574
+    },
+    {
+      "id": "osm-way-746365998",
+      "boundaryDisplacementM": 0.132287,
+      "areaChangePercent": -0.015192
+    },
+    {
+      "id": "osm-way-746383362",
+      "boundaryDisplacementM": 0.139556,
+      "areaChangePercent": -0.01085
+    },
+    {
+      "id": "osm-way-746146110",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "osm-way-746269633",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "osm-way-746365982",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "osm-way-746365983",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "osm-way-746365994",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "osm-way-746365995",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "osm-way-938593899",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "osm-way-746146114",
+      "boundaryDisplacementM": 0.122922,
+      "areaChangePercent": -0.18931
+    },
+    {
+      "id": "osm-way-746365980",
+      "boundaryDisplacementM": 0.087006,
+      "areaChangePercent": -0.121187
+    },
+    {
+      "id": "osm-way-746365989",
+      "boundaryDisplacementM": 0.09279,
+      "areaChangePercent": -0.124891
+    },
+    {
+      "id": "osm-way-746383363",
+      "boundaryDisplacementM": 0.108665,
+      "areaChangePercent": -0.174327
+    },
+    {
+      "id": "osm-way-746146115",
+      "boundaryDisplacementM": 0.117246,
+      "areaChangePercent": -0.413323
+    },
+    {
+      "id": "osm-way-746146116",
+      "boundaryDisplacementM": 0.109341,
+      "areaChangePercent": -0.573682
+    },
+    {
+      "id": "osm-way-746365977",
+      "boundaryDisplacementM": 0.110507,
+      "areaChangePercent": -0.454697
+    },
+    {
+      "id": "osm-way-746365978",
+      "boundaryDisplacementM": 0.107792,
+      "areaChangePercent": -0.280608
+    },
+    {
+      "id": "osm-way-746365979",
+      "boundaryDisplacementM": 0.100725,
+      "areaChangePercent": -0.535484
+    },
+    {
+      "id": "osm-way-746365987",
+      "boundaryDisplacementM": 0.129059,
+      "areaChangePercent": -0.152153
+    },
+    {
+      "id": "osm-way-746365988",
+      "boundaryDisplacementM": 0.151923,
+      "areaChangePercent": -0.547217
+    },
+    {
+      "id": "osm-way-746506449",
+      "boundaryDisplacementM": 0.106201,
+      "areaChangePercent": -0.443279
+    },
+    {
+      "id": "osm-way-746506450",
+      "boundaryDisplacementM": 0.204852,
+      "areaChangePercent": -0.195474
+    },
+    {
+      "id": "osm-way-746506451",
+      "boundaryDisplacementM": 0.104627,
+      "areaChangePercent": -1.06439
+    },
+    {
+      "id": "osm-way-746365990",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "osm-way-746365991",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    },
+    {
+      "id": "osm-way-746365992",
+      "boundaryDisplacementM": 0.0,
+      "areaChangePercent": 0.0
+    }
+  ],
+  "renderProfile": {
+    "compilerVersion": "course-terrain-v1",
+    "styleVersion": "narrow-surround-v1",
+    "tacticalBoundsM": [
+      -180,
+      84,
+      16,
+      444
+    ],
+    "contextBoundsM": [
+      -352,
+      -96,
+      192,
+      608
+    ],
+    "terrainAvailable": true,
+    "contextCoverage": "complete",
+    "teeGeometry": "approximate",
+    "treeEvidence": "none",
+    "limitations": [
+      "Source candidate; independent registration, renovation and boundary review pending",
+      "Macro terrain only; no putting-break or bunker-lip accuracy claim",
+      "Daily tee markers, actual cup, ball positions and tree heights are unknown",
+      "Neutral ground is not classified rough; outward surrounds are illustrative and at most 0.6m",
+      "Neighbor features are renderer-only context, not reassigned played-hole surfaces",
+      "2021 terrain may predate current surfaces; currentness remains unverified",
+      "No reviewed canopy for this played hole; no tree groups synthesized"
+    ]
+  },
+  "source": {
+    "provider": "USGS 3DEP",
+    "title": "USGS one meter x60y466 NY Southwest East 2017",
+    "url": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/NY_Southwest_East_2017/TIFF/USGS_one_meter_x60y466_NY_Southwest_East_2017.tif",
+    "catalogObjectId": 76329,
+    "acquisitionStart": "2017-04-18",
+    "acquisitionEnd": "2017-05-09",
+    "retrievedAt": "2026-09-15",
+    "nativeResolutionM": 1,
+    "verticalAccuracyM": null,
+    "registrationResidualM": null,
+    "licenseUrl": "https://www.usgs.gov/3d-elevation-program/about-3dep-products-services",
+    "rasterSha256": "ce26e9ad13026889c6571b8a41cbdecebee90e7ef788e5475431be3060b1b08b",
+    "horizontalExportCrs": "EPSG:32617",
+    "exportPixelM": [
+      1.0,
+      1.0
+    ],
+    "renderSamplingM": {
+      "tactical": 4,
+      "detail": 2,
+      "context": 16
+    },
+    "metricSamplingM": 2,
+    "normalGradientStepM": 1
+  },
+  "compressedBytes": 739927,
+  "asset": {
+    "ordinal": 9,
+    "fileName": "peek-n-peak-upper-09-terrain.json.gz",
+    "encoding": "gzip",
+    "compressedBytes": 739927,
+    "uncompressedBytes": 3722769,
+    "sha256": "0c4ee825c831e7b76e465d194f014959c084ec5a2f2109f00bc2def0c5fbefb3",
+    "uncompressedSha256": "0529197946ac059adc9e4b9da5b9bd4b168dfa356df75992ad272ab916b4c907",
+    "contentHash": "757cc8ed3a3cea12d5901d03bc86d0e30bd0c3f68395a6c34ad5e9e95a27b0ba"
+  }
+}

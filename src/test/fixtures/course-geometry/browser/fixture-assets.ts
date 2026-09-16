@@ -1,9 +1,25 @@
 /** Bounded same-origin loader for compiled review fixtures, not offline activation. */
-import manifest from '../compiled-cacapon/asset-manifest.json';
+import cacaponManifest from '../compiled-cacapon/asset-manifest.json';
+import peekManifest from '../compiled-peek-n-peak-upper/asset-manifest.json';
+import peekData from '../peek-n-peak-upper.json';
 import { parseTerrainMesh } from '@/lib/golf/course-geometry/terrain';
+import { parseGeometryPackage } from '@/lib/golf/course-geometry/schema';
 import { pilotPackage } from '../pilot';
 
 const MAX_COMPRESSED_BYTES = 2_000_000, MAX_DECODED_BYTES = 8_000_000;
+type ManifestEntry = { fileName: string; compressedBytes: number; uncompressedBytes: number; sha256: string; uncompressedSha256: string };
+/** Each compiled course keeps its own directory so Vite's URL analysis stays
+ * bounded to that course's assets. The package is the one the terrain was
+ * hash-locked against; the loader refuses a hole the manifest does not list. */
+export const compiledCourses = {
+  cacapon: { pkg: pilotPackage, holes: cacaponManifest.holes as Record<string, ManifestEntry>,
+    url: (name: string) => new URL(`../compiled-cacapon/${name}`, import.meta.url) },
+  'peek-n-peak-upper': { pkg: parseGeometryPackage(peekData), holes: peekManifest.holes as Record<string, ManifestEntry>,
+    url: (name: string) => new URL(`../compiled-peek-n-peak-upper/${name}`, import.meta.url) },
+};
+export type CompiledCourse = keyof typeof compiledCourses;
+export function isCompiledCourse(value: string | null): value is CompiledCourse { return value != null && value in compiledCourses; }
+
 async function hash(bytes: Uint8Array<ArrayBuffer>) {
   return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)), b => b.toString(16).padStart(2, '0')).join('');
 }
@@ -23,11 +39,11 @@ async function boundedBytes(stream: ReadableStream<Uint8Array>, limit: number) {
   for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
   return bytes;
 }
-export async function loadCompiledFixture(holeKey: string, signal: AbortSignal) {
-  const entry = manifest.holes[holeKey as keyof typeof manifest.holes];
+export async function loadCompiledFixture(holeKey: string, signal: AbortSignal, course: CompiledCourse = 'cacapon') {
+  const { pkg, holes, url: assetUrl } = compiledCourses[course];
+  const entry = holes[holeKey];
   if (!entry || entry.compressedBytes > MAX_COMPRESSED_BYTES || entry.uncompressedBytes > MAX_DECODED_BYTES) throw new Error('Unsupported course package');
-  const url = new URL(`../compiled-cacapon/${entry.fileName}`, import.meta.url);
-  const response = await fetch(url, { signal });
+  const response = await fetch(assetUrl(entry.fileName), { signal });
   if (!response.ok || !response.body) throw new Error(`Terrain package ${response.status}`);
   // Vite serves .json.gz with Content-Encoding:gzip; Fetch has already decoded
   // that transport. Raw gzip object delivery instead needs explicit inflation.
@@ -43,5 +59,5 @@ export async function loadCompiledFixture(holeKey: string, signal: AbortSignal) 
   }
   if (decoded.length !== entry.uncompressedBytes || await hash(decoded) !== entry.uncompressedSha256) throw new Error('Terrain decoded integrity mismatch');
   if (signal.aborted) throw new DOMException('Course load canceled', 'AbortError');
-  return parseTerrainMesh(JSON.parse(new TextDecoder().decode(decoded)), pilotPackage);
+  return parseTerrainMesh(JSON.parse(new TextDecoder().decode(decoded)), pkg);
 }

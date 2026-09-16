@@ -2387,3 +2387,82 @@ reduced motion, pointer cancellation and zero score writes from viewing. Record
 real supported-device rendering and native restart evidence separately from
 desktop viewport emulation. Require a coherent result on every representative
 case; a restyled capsule or an attractive crop is not the exit gate.
+
+## 26. Peek'n Peak Upper whole-course build — September 15, 2026
+
+**Status:** Local fixtures, ignored review output and harness wiring only.
+No production write, migration, course binding, merge or deployment is
+implied by this section.
+
+### 26.1 Toolchain
+
+The plan's free toolchain is installed and verified on the build machine:
+Blender 5.2.1, GDAL 3.13.3 with the `osgeo` Python bindings, PDAL, PROJ
+9.9.0, QGIS 4.2.2, mapshaper 0.7.61, ruff 0.16.7; Python numpy 2.5.2,
+shapely 2.1.2 (GEOS 3.13.1), pyproj 3.7.2, Pillow 12.1.1, geopandas, scipy.
+Raster decoding in `compile-course-terrain.py` and `normalize-study.py` now
+goes through `elevation_raster.py`, which prefers GDAL and names the decoder
+in the source manifest. Pillow silently mis-decoded the tiled Float32 3DEP
+export (3.4M of 6.05M pixels differed; values up to 3e38); GDAL and Pillow
+agree on the Cacapon and New York exports, so the Cacapon fixtures remain
+byte-identical.
+
+### 26.2 Sources
+
+- OSM via Overpass, retained once as an immutable gzip with a manifest
+  (`sources/peek-n-peak-upper-osm`): 155 features — 18 routes, 36 tees,
+  16 fairways, 18 greens, 63 bunkers, 4 water. Hole 11 has no fairway way in
+  OSM and stays `partial`. Package hash `eeacfb7b…` matches the earlier
+  ad-hoc extract exactly.
+- Terrain: USGS 3DEP `USGS one meter x60y466 NY Southwest East 2017`
+  (OBJECTID 76329, NAVD88, EPSG:32617, 2279×2656 px at 1 m). Two native-1m
+  catalog tiles cover the bbox on paper. The newer
+  `PA_WesternPA_2019_D20` tile exports 61.5% zero fill because the project
+  stops at the Pennsylvania line and the course is in Clymer, NY. The
+  compiler now exports each covering candidate newest-first, measures empty
+  fill, rejects anything above 0.1%, and records the rejection in
+  `source-manifest.json`. Both `USGS 1 Meter` and `USGS one meter` product
+  titles are accepted as native 1m.
+- Compiled meshes: 18 holes, 8,078–24,122 triangles, zero omitted triangles
+  and zero metric nodata cells (`compiled-peek-n-peak-upper`).
+
+### 26.3 Per-hole chain
+
+`build-course-world.py` runs, for every hole: `normalize-study.py`
+(canonical local-metre study, 2 m grid, 60 m padding) →
+`compile-physical-world.py` → `course-truth-gate.py` → Blender
+`generate_hole.py` (GLB + preview) → `validate_glb.py` (span round trip
+≤ 0.02 m; measured ≤ 3.5e-5 m). `course-world-manifest.json` records every
+hash and verdict. The truth gate now accepts a whole-course package and
+reports each hole; every Peek'n Peak hole fails because OSM boundaries are
+not human reviewed and carry no recorded horizontal uncertainty, and no
+reviewed tee/green endpoint pair backs the hole distance. That is the
+intended outcome: the GLBs and app previews are visual review products.
+
+### 26.4 Harness and evidence
+
+The fixture harness selects compiled courses by `?course=`; the loader keys
+each course to its own hash-locked directory and package.
+`render-top-courses.tsx`, `capture-top-courses.cjs` and
+`capture-course-matrix.cjs` (`COURSE=peek-n-peak-upper`) include the course.
+The 18-hole matrix capture completed with 72 captures, no page errors, idle
+rendering stopped and the canvas released on every hole.
+
+- [Entry approach, hole 7](assets/course-geometry-2026-09-15/peek-n-peak-upper-07-entry-approach-390.png)
+- [Expanded Terrain, whole hole 7](assets/course-geometry-2026-09-15/peek-n-peak-upper-07-terrain-whole-hole-390.png)
+- [Expanded Top, whole hole 7](assets/course-geometry-2026-09-15/peek-n-peak-upper-07-top-whole-hole-390.png)
+- [Review green, hole 7](assets/course-geometry-2026-09-15/peek-n-peak-upper-07-review-green-390.png)
+- [Terrain, hole 1 (pond)](assets/course-geometry-2026-09-15/peek-n-peak-upper-01-terrain-390.png)
+- [Terrain, hole 11 (no OSM fairway)](assets/course-geometry-2026-09-15/peek-n-peak-upper-11-terrain-390.png)
+- [Blender preview, hole 7](assets/course-geometry-2026-09-15/peek-n-peak-upper-07-blender-preview.png)
+- [Shared-renderer contact sheet](assets/course-geometry-2026-09-15/peek-n-peak-upper-contact.png)
+- [Course world manifest](assets/course-geometry-2026-09-15/course-world-manifest.json)
+- [Truth gate, hole 7](assets/course-geometry-2026-09-15/peek-n-peak-upper-07-course-truth.md)
+- [Matrix capture report](assets/course-geometry-2026-09-15/course-matrix-report.json)
+
+### 26.5 Remaining gaps
+
+Course-familiar review with recorded boundary uncertainty for every OSM
+feature; a reviewed tee/green endpoint pair per hole; canopy groups (none
+reviewed, so no trees render); hole 11 fairway; a real-device capture. None
+of these is a rendering problem, and none may be closed by drawing.

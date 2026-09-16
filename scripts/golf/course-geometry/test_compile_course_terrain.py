@@ -141,7 +141,7 @@ class TerrainCompilerTest(unittest.TestCase):
     def test_elevation_source_converts_declared_us_survey_feet_before_sampling(self):
         with tempfile.TemporaryDirectory() as directory:
             source_dir = Path(directory)
-            Image = compiler.Image
+            from PIL import Image
             Image.fromarray(np.array([[0., 10., 20.], [10., 20., 30.], [20., 30., 40.]], dtype=np.float32)).save(source_dir/'elevation.tiff')
             (source_dir/'export.json').write_text(json.dumps({'width': 3, 'height': 3,
                                                                'extent': {'xmin': 0, 'xmax': 3, 'ymin': 0, 'ymax': 3}}))
@@ -149,6 +149,25 @@ class TerrainCompilerTest(unittest.TestCase):
                                                             'verticalUnitToMeters': compiler.US_SURVEY_FOOT_TO_METERS})
             with patch.object(compiler, 'geographic', lambda x, y: (x, y)):
                 self.assertAlmostEqual(float(source.sample(1., 2.)), 10 * compiler.US_SURVEY_FOOT_TO_METERS)
+
+    def test_elevation_reader_masks_declared_nodata_and_reports_empty_fill(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)/'elevation.tiff'
+            from PIL import Image
+            image = Image.fromarray(np.array([[0., 10.], [-9999., 30.]], dtype=np.float32))
+            image.save(path, tiffinfo={42113: '-9999'})
+            raster, nodata, decoder = compiler.elevation_raster.read_elevation(path)
+            self.assertIn(decoder, ('gdal', 'pillow'))
+            self.assertEqual(nodata, -9999.)
+            self.assertTrue(math.isnan(raster[1, 0]))
+            self.assertEqual(raster[0, 1], 10.)
+            # One NaN and one zero-fill pixel out of four.
+            self.assertEqual(compiler.elevation_raster.empty_fraction(raster), 0.5)
+
+    def test_native_1m_titles_accept_both_usgs_spellings(self):
+        self.assertTrue(compiler.is_native_1m_title('USGS 1 Meter 17 x60y466 PA_WesternPA_2019_D20'))
+        self.assertTrue(compiler.is_native_1m_title('USGS one meter x60y466 NY Southwest East 2017'))
+        self.assertFalse(compiler.is_native_1m_title('USGS 1/3 Arc Second n43w080 20211122'))
 
     def test_unsupported_context_keeps_null_metrics_and_omits_mesh_faces(self):
         class PartialSource(PlaneSource):

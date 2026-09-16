@@ -22,7 +22,6 @@ from pathlib import Path
 import numpy as np
 import pyproj
 import shapely
-from PIL import Image
 from shapely import constrained_delaunay_triangles
 from shapely.geometry import LineString, MultiPolygon, Polygon, box
 from shapely.ops import unary_union
@@ -53,6 +52,7 @@ def module(name, filename):
 
 pilot = module('pilot', 'prepare-pilot.py')
 fetch = module('fetch', 'fetch-terrain-pilot.py')
+elevation_raster = module('elevation_raster', 'elevation_raster.py')
 
 
 def canonical_json(value):
@@ -147,6 +147,14 @@ def date_text(value):
     return datetime.fromtimestamp(float(value)/1000, timezone.utc).date().isoformat()
 
 
+MAX_EMPTY_EXPORT_FRACTION = 0.001
+
+
+def is_native_1m_title(title):
+    """3DEP names its 1m products both 'USGS 1 Meter ...' and 'USGS one meter ...'."""
+    return str(title).lower().startswith(('usgs 1 meter ', 'usgs one meter '))
+
+
 def acquire_source(directory, pkg, bounds):
     names = ['catalog.json', 'export.json', 'elevation.tiff', 'source-manifest.json']
     existing = [(directory / name).exists() for name in names]
@@ -178,7 +186,7 @@ def acquire_source(directory, pkg, bounds):
     candidates = []
     for row in catalog.get('features', []):
         attrs = row['attributes']
-        if attrs['title'].startswith('USGS 1 Meter ') and attrs['VerticalDatum'] in ('NAVD88', 'North American Vertical Datum of 1988 (NAVD 88)'):
+        if is_native_1m_title(attrs['title']) and attrs['VerticalDatum'] in ('NAVD88', 'North American Vertical Datum of 1988 (NAVD 88)'):
             footprint = Polygon(row['geometry']['rings'][0], row['geometry']['rings'][1:])
             if footprint.is_valid and footprint.covers(extent_wgs84):
                 candidates.append(row)
@@ -188,8 +196,6 @@ def acquire_source(directory, pkg, bounds):
                   'policy': 'No mixed-date or lower-resolution fallback is imported automatically', 'catalog': catalog}
         write_json(directory / 'coverage-exception.json', report, True)
         raise ValueError(report['reason'])
-    selected = max(candidates, key=lambda row: (date_text(row['attributes']['EndDate']), row['attributes']['title']))
-    attrs = selected['attributes']
     project = pyproj.Transformer.from_crs(4326, SOURCE_CRS, always_xy=True)
     source_x, source_y = project.transform(lon, lat)
     # Snap projected output pixels to a 1m grid. Never describe render grid
@@ -198,25 +204,45 @@ def acquire_source(directory, pkg, bounds):
     width, height = int(c-a), int(d-b)
     if width*height > 8_000_000 or max(width, height) > 8000:
         raise ValueError('Bounded course export exceeds the fixed 8M pixel cap')
-    exported = fetch.request('exportImage', {'bbox': f'{a},{b},{c},{d}', 'bboxSR': SOURCE_CRS, 'imageSR': SOURCE_CRS,
-        'size': f'{width},{height}', 'format': 'tiff', 'pixelType': 'F32', 'interpolation': 'RSP_BilinearInterpolation',
-        'renderingRule': json.dumps({'rasterFunction': 'None'}),
-        'mosaicRule': json.dumps({'mosaicMethod': 'esriMosaicLockRaster', 'lockRasterIds': [attrs['OBJECTID']]})})
-    if (exported['width'], exported['height']) != (width, height):
-        raise ValueError('Export dimensions changed; source resampling requires review')
-    ex = exported['extent']
     inverse = pyproj.Transformer.from_crs(SOURCE_CRS, 4326, always_xy=True)
-    elon, elat = inverse.transform([ex['xmin'], ex['xmax'], ex['xmax'], ex['xmin']],
-                                  [ex['ymin'], ex['ymin'], ex['ymax'], ex['ymax']])
-    footprint = Polygon(selected['geometry']['rings'][0], selected['geometry']['rings'][1:])
-    if not footprint.covers(Polygon(zip(elon, elat))):
-        raise ValueError('Returned export exceeds the selected tile footprint')
-    raster = fetch.read(exported['href'], 40_000_000)
+    # Newest tile first. A catalog footprint is a claim, not evidence: a
+    # project tile clipped at a state line still advertises its full square,
+    # so every export is checked for empty fill before it is retained.
+    rejected = []
+    for selected in sorted(candidates, key=lambda row: (date_text(row['attributes']['EndDate']), row['attributes']['title']), reverse=True):
+        attrs = selected['attributes']
+        exported = fetch.request('exportImage', {'bbox': f'{a},{b},{c},{d}', 'bboxSR': SOURCE_CRS, 'imageSR': SOURCE_CRS,
+            'size': f'{width},{height}', 'format': 'tiff', 'pixelType': 'F32', 'interpolation': 'RSP_BilinearInterpolation',
+            'renderingRule': json.dumps({'rasterFunction': 'None'}),
+            'mosaicRule': json.dumps({'mosaicMethod': 'esriMosaicLockRaster', 'lockRasterIds': [attrs['OBJECTID']]})})
+        if (exported['width'], exported['height']) != (width, height):
+            raise ValueError('Export dimensions changed; source resampling requires review')
+        ex = exported['extent']
+        elon, elat = inverse.transform([ex['xmin'], ex['xmax'], ex['xmax'], ex['xmin']],
+                                      [ex['ymin'], ex['ymin'], ex['ymax'], ex['ymax']])
+        footprint = Polygon(selected['geometry']['rings'][0], selected['geometry']['rings'][1:])
+        if not footprint.covers(Polygon(zip(elon, elat))):
+            raise ValueError('Returned export exceeds the selected tile footprint')
+        raster = fetch.read(exported['href'], 40_000_000)
+        scratch = directory/'elevation.tiff'
+        scratch.write_bytes(raster)
+        decoded, _nodata, decoder = elevation_raster.read_elevation(scratch)
+        empty = elevation_raster.empty_fraction(decoded)
+        if empty <= MAX_EMPTY_EXPORT_FRACTION:
+            break
+        scratch.unlink()
+        rejected.append({'title': attrs['title'], 'objectId': attrs['OBJECTID'], 'emptyFraction': empty,
+                         'reason': 'Catalog footprint covers the context but the locked export is empty fill there'})
+    else:
+        report = {'state': 'needs_source_review', 'reason': 'Every covering native-1m tile exported empty fill over the course context',
+                  'packageHash': pkg['contentHash'], 'bboxWgs84': [west, south, east, north],
+                  'rejectedCandidates': rejected, 'catalog': catalog}
+        write_json(directory / 'coverage-exception.json', report, True)
+        raise ValueError(report['reason'])
     exported.update(selectedObjectId=attrs['OBJECTID'], retrievedAt=datetime.now(timezone.utc).date().isoformat(),
                     sourceProjection=f'EPSG:{SOURCE_CRS}', requestedLocalBoundsM=bounds)
     write_json(directory/'catalog.json', catalog, True)
     write_json(directory/'export.json', exported, True)
-    (directory/'elevation.tiff').write_bytes(raster)
     manifest = {'schemaVersion': 1, 'packageHash': pkg['contentHash'], 'requestedLocalBoundsM': bounds,
                 'selectedTitle': attrs['title'], 'selectedObjectId': attrs['OBJECTID'], 'sourceUrl': attrs['URL'],
                 'acquisitionStart': date_text(attrs['StartDate']), 'acquisitionEnd': date_text(attrs['EndDate']),
@@ -224,6 +250,7 @@ def acquire_source(directory, pkg, bounds):
                 'horizontalExportCrs': f'EPSG:{SOURCE_CRS}', 'verticalDatum': 'NAVD88',
                 'rawVerticalUnit': 'meter', 'verticalUnitToMeters': 1,
                 'retrievedAt': exported['retrievedAt'], 'sourceSelection': 'single_full_coverage_native_1m_tile',
+                'exportEmptyFraction': empty, 'decoder': decoder, 'rejectedCandidates': rejected,
                 'licenseUrl': 'https://www.usgs.gov/3d-elevation-program/about-3dep-products-services',
                 'fileHashes': {name: hashlib.sha256((directory/name).read_bytes()).hexdigest() for name in names[:-1]}}
     write_json(directory/'source-manifest.json', manifest, True)
@@ -237,7 +264,7 @@ def vertical_unit_to_meters(manifest):
     if factor is None:
         # Pre-v2 locked USGS cache manifests contain a well-known meters-only
         # source identity.  Any other source must state its conversion.
-        if str(manifest.get('selectedTitle', '')).startswith('USGS 1 Meter '):
+        if is_native_1m_title(manifest.get('selectedTitle', '')):
             return 1.0
         raise ValueError('Source manifest omits verticalUnitToMeters; do not assume raw elevations are meters')
     factor = float(factor)
@@ -250,14 +277,7 @@ class ElevationSource:
     def __init__(self, directory, manifest):
         exported = json.loads((directory/'export.json').read_text())
         self.extent = exported['extent']
-        with Image.open(directory/'elevation.tiff') as image:
-            self.raster = np.asarray(image, dtype=float)
-            nodata = image.tag_v2.get(42113)
-        if nodata is not None:
-            # Honor an explicit GDAL nodata tag, including a zero sentinel.
-            # A genuine zero elevation otherwise remains a valid measurement.
-            sentinel = float(str(nodata).strip('\x00'))
-            self.raster = np.where(self.raster == sentinel, np.nan, self.raster)
+        self.raster, _nodata, self.decoder = elevation_raster.read_elevation(directory/'elevation.tiff')
         if self.raster.shape != (exported['height'], exported['width']):
             raise ValueError('Raster shape does not match immutable export metadata')
         self.raster *= vertical_unit_to_meters(manifest)
@@ -595,7 +615,7 @@ def main():
     write_json(asset_path, {'schemaVersion': 1, 'compilerVersion': COMPILER_VERSION,
                           'geometryHash': pkg['contentHash'], 'sourceManifestHash': digest(manifest),
                           'holes': dict(sorted(assets.items()))}, True)
-    readme = f'''# Cacapon whole-course terrain source\n\nOne locked native-1m USGS tile: **{manifest['selectedTitle']}**.\nAcquisition: {manifest['acquisitionStart']} to {manifest['acquisitionEnd']}.\nRetrieved: {manifest['retrievedAt']}. Immutable hashes and exact projected bounds\nare in source-manifest.json and export.json. Do not replace the cached raster.\n\nThe EPSG:{SOURCE_CRS} export is sampled at approximately 1m; the 2m canonical\nmetric grid, 4m tactical mesh, 2m detail cells and coarser outer cells are separate\nrender/query choices, not claims of finer source resolution. Heights remain\nNAVD88 meters. Registration residual and source vertical accuracy are unknown.\n\nNeighbor source features are renderer-only context. No cart paths, rough\nclassification, additional tree areas, daily tee markers or cup positions are\ncreated. Canopy evidence remains limited to the existing reviewed hole7 groups.\n\n[USGS 3DEP products and use terms](https://www.usgs.gov/3d-elevation-program/about-3dep-products-services).\nSource geometry attribution remains © OpenStreetMap contributors, ODbL1.0.\n'''
+    readme = f'''# {pkg['name']} whole-course terrain source\n\nOne locked native-1m USGS tile: **{manifest['selectedTitle']}**.\nAcquisition: {manifest['acquisitionStart']} to {manifest['acquisitionEnd']}.\nRetrieved: {manifest['retrievedAt']}. Immutable hashes and exact projected bounds\nare in source-manifest.json and export.json. Do not replace the cached raster.\n\nThe EPSG:{SOURCE_CRS} export is sampled at approximately 1m; the 2m canonical\nmetric grid, 4m tactical mesh, 2m detail cells and coarser outer cells are separate\nrender/query choices, not claims of finer source resolution. Heights remain\nNAVD88 meters. Registration residual and source vertical accuracy are unknown.\n\nNeighbor source features are renderer-only context. No cart paths, rough\nclassification, additional tree areas, daily tee markers or cup positions are\ncreated. Canopy evidence is limited to explicitly reviewed groups, if any.\n\n[USGS 3DEP products and use terms](https://www.usgs.gov/3d-elevation-program/about-3dep-products-services).\nSource geometry attribution remains © OpenStreetMap contributors, ODbL1.0.\n'''
     (args.source/'README.md').write_text(readme)
 
 

@@ -1,0 +1,188 @@
+{
+  "schemaVersion": 1,
+  "compilerVersion": "course-terrain-v1",
+  "geometryHash": "eeacfb7bcbe0bd6194666459d83682ebcd3545a8fc362b99581bbbad0901c7a1",
+  "sourceManifestHash": "c75dcde88710bde1a3b07184c52a0c5769d61b407ac2d9dae3e3222edc532e3f",
+  "holes": {
+    "peek-n-peak-upper-01": {
+      "ordinal": 1,
+      "fileName": "peek-n-peak-upper-01-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 752178,
+      "uncompressedBytes": 3882820,
+      "sha256": "12643867236d74ea240a2e1d4537c71e2e2563af35c49f131cf72050e262e6d1",
+      "uncompressedSha256": "7ec4f055495e2bdaa62cb28705d189382f5e1853c2400337c2f4b2d7f425b0f1",
+      "contentHash": "c990cd6c8be3b9c69f7f0b98e47b9a2901279fce776e84202e854c353b92ac43"
+    },
+    "peek-n-peak-upper-02": {
+      "ordinal": 2,
+      "fileName": "peek-n-peak-upper-02-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 912100,
+      "uncompressedBytes": 4679788,
+      "sha256": "f9ddcc74265f74096850d159c9ade7c3aa765ccfd7a10eba727f6e737621cace",
+      "uncompressedSha256": "99625ffe6d54a743d3c7bf7a927813fc60d70413f67203017c65b7a19c581d18",
+      "contentHash": "069ed13ffd8ac152d829ea18066c5c33f172539990d30351a5daadf6871d5a7a"
+    },
+    "peek-n-peak-upper-03": {
+      "ordinal": 3,
+      "fileName": "peek-n-peak-upper-03-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 607475,
+      "uncompressedBytes": 3020769,
+      "sha256": "ab57e1cd0ddd919bc8db5deb055c9d5559397b18a42b08307053bc3843a73426",
+      "uncompressedSha256": "f98bb441bea28bc7beefa349dfa9157213823d0bb2345a4918a830996d7d5535",
+      "contentHash": "b6bdd3e95e58b8c9b7e2f298d69386f4e9852a660d2d4a1dfab3736e12a7417d"
+    },
+    "peek-n-peak-upper-04": {
+      "ordinal": 4,
+      "fileName": "peek-n-peak-upper-04-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 927624,
+      "uncompressedBytes": 4738854,
+      "sha256": "6db2326bc9d288e624e32ad8a9d697b874656ab3fca7a7ef1e90cfd736cb9f3f",
+      "uncompressedSha256": "bc13eeb552b58ffe8544280030e4ef78bacfac8bcc788b65924ef13461cf71b1",
+      "contentHash": "128024acafc73de1e827dd5d0feb871a6f707d0782ab56892ab740f7214d48c7"
+    },
+    "peek-n-peak-upper-05": {
+      "ordinal": 5,
+      "fileName": "peek-n-peak-upper-05-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 396565,
+      "uncompressedBytes": 1962267,
+      "sha256": "422e33d575bba4deb4de09e4453f8e8301a8d7422c53b6c8f763de40476d0bb1",
+      "uncompressedSha256": "c664771b291b6c7841945a2e19e65eb630c387ef351f16fc1818cad31c2455cf",
+      "contentHash": "8771065c80a5b3a6d4d78e4617cf97dd2de186417cebce49946ed68eea1964ce"
+    },
+    "peek-n-peak-upper-06": {
+      "ordinal": 6,
+      "fileName": "peek-n-peak-upper-06-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 771751,
+      "uncompressedBytes": 3898215,
+      "sha256": "01e2bf01b438d1cc56e77413ca866dc30ab4db807b204945d7347b1973bbd3df",
+      "uncompressedSha256": "f9fcf29eef53c15413a2c853bd82e029cc8e643e96cbca98f339b0332bc7c52b",
+      "contentHash": "5d209bc1ba34dacc8c39011433d81b6a40ef8735657692253e520cf7c1fbedd7"
+    },
+    "peek-n-peak-upper-07": {
+      "ordinal": 7,
+      "fileName": "peek-n-peak-upper-07-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 789351,
+      "uncompressedBytes": 4086003,
+      "sha256": "4e4b652f79a6340f3d7c4e4a5329ddb04da98d60caf4f19c7823951d86c1f566",
+      "uncompressedSha256": "9d0086b7027697723ac515c4c2f41f8fd37a07f58ec8d98806732491b2a82d3f",
+      "contentHash": "af6539733fae20033d1553a32be3165071e9ea4837778f147c860ee062731a4e"
+    },
+    "peek-n-peak-upper-08": {
+      "ordinal": 8,
+      "fileName": "peek-n-peak-upper-08-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 1004557,
+      "uncompressedBytes": 5200869,
+      "sha256": "5816303e6f2c0996e3b05488271cae8d74175724fac7241e0e62f62a49a615e6",
+      "uncompressedSha256": "678befd23a645377429bbe218193333bea81b9741b3f62c5f13ce2716cd42cd0",
+      "contentHash": "540209e18d1e423dffc96a74800ce5cb1bb9862984138eca80bd97460c96f19a"
+    },
+    "peek-n-peak-upper-09": {
+      "ordinal": 9,
+      "fileName": "peek-n-peak-upper-09-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 739927,
+      "uncompressedBytes": 3722769,
+      "sha256": "0c4ee825c831e7b76e465d194f014959c084ec5a2f2109f00bc2def0c5fbefb3",
+      "uncompressedSha256": "0529197946ac059adc9e4b9da5b9bd4b168dfa356df75992ad272ab916b4c907",
+      "contentHash": "757cc8ed3a3cea12d5901d03bc86d0e30bd0c3f68395a6c34ad5e9e95a27b0ba"
+    },
+    "peek-n-peak-upper-10": {
+      "ordinal": 10,
+      "fileName": "peek-n-peak-upper-10-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 785582,
+      "uncompressedBytes": 3922652,
+      "sha256": "65336fb6e11f236b6aab29b4ac77c60bd435ed5b76f64a13369b1b2978314b79",
+      "uncompressedSha256": "eff81c7700941d967b4ddab70450be4ada8d7fc33c051e70756bd12ee89a7bde",
+      "contentHash": "9e85c741a4e86fc42a50f4174f9e852643eb351346ad470b126a507e0d1f6f9a"
+    },
+    "peek-n-peak-upper-11": {
+      "ordinal": 11,
+      "fileName": "peek-n-peak-upper-11-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 877233,
+      "uncompressedBytes": 4418486,
+      "sha256": "6fdaf6cb8c6cc851e0ba7d9352241cfed493b99f061bbee11a66e5c32a511167",
+      "uncompressedSha256": "a7c4d3fbde632c1e43048ea959383e437188da5d60ab920cec7613b5ab335114",
+      "contentHash": "31c01b76d320e10e301e59256a3025b5d0accc52f783cfe11f78f973572522ec"
+    },
+    "peek-n-peak-upper-12": {
+      "ordinal": 12,
+      "fileName": "peek-n-peak-upper-12-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 723349,
+      "uncompressedBytes": 3522902,
+      "sha256": "3646361e207b9808e2c40ecc826f09e2df4538b47c4d8492ad201d5540e916c7",
+      "uncompressedSha256": "3690e2c31d1b7d9eea917df1e5dc5cb43af62418d63ddaea381e5a42af2265f4",
+      "contentHash": "3182fbf95868a338886a128e058a789648d456d1f362e5b7f7691bf903fc693f"
+    },
+    "peek-n-peak-upper-13": {
+      "ordinal": 13,
+      "fileName": "peek-n-peak-upper-13-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 554386,
+      "uncompressedBytes": 2666057,
+      "sha256": "bf5175061702bd4aba39f8f4de152bdb37b5599adeb1457b7e5c05c59573282c",
+      "uncompressedSha256": "106d3c04fb0450572f8f9d53ab4c27d71d5a93622d52be7cd205fb5d24b911cc",
+      "contentHash": "2a5dcc2c9598cead2d100bf8764ed71c5cec9e656f5b615ae0229dee18858a50"
+    },
+    "peek-n-peak-upper-14": {
+      "ordinal": 14,
+      "fileName": "peek-n-peak-upper-14-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 731003,
+      "uncompressedBytes": 3638648,
+      "sha256": "d8124da64e8a898b862ff60413a9a7c0fe55541e0d21e258635cc9cae905d9a7",
+      "uncompressedSha256": "4ee461a57eb5dd086a9c18e6fd3b7f4ee05640f199f5eeb776db16cfd2bcb888",
+      "contentHash": "53558962283deb0a929c5fdc423e90b500120d701093075fd41eb1e0facaa6fc"
+    },
+    "peek-n-peak-upper-15": {
+      "ordinal": 15,
+      "fileName": "peek-n-peak-upper-15-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 418679,
+      "uncompressedBytes": 2020777,
+      "sha256": "d7a0e6ac283f051f1ab8520e9c04fbec1cddf4e2cb865677b0140464fda25b0d",
+      "uncompressedSha256": "ae8858c4bc3b680b2b62b0f92934a48c5500976b84ce7c8d72a1e21fe21acb15",
+      "contentHash": "a836accd2029c230694e8f75de90e1a356b321325ba7dd90bf23e1208d69572b"
+    },
+    "peek-n-peak-upper-16": {
+      "ordinal": 16,
+      "fileName": "peek-n-peak-upper-16-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 699784,
+      "uncompressedBytes": 3566449,
+      "sha256": "1ef00917afd42d0c26461afda1669d7409e76d5d9b59c784bc285719ce0878fc",
+      "uncompressedSha256": "4e77248462ddcfc0c69b051f2ec95806a797d6d5d3081e7697e618c5b6cd6150",
+      "contentHash": "cc50169807005cb9e19fed3c626127cdb7bec678b4145d0584c4c2f1016f84ad"
+    },
+    "peek-n-peak-upper-17": {
+      "ordinal": 17,
+      "fileName": "peek-n-peak-upper-17-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 619550,
+      "uncompressedBytes": 3140848,
+      "sha256": "2ee08f9a7a8e670d3a44ed6012b855170b6bada5ad18a2de01b87977e1952361",
+      "uncompressedSha256": "698f37c916c0f7e04c5792f32c1fe46bbfb1d316b9e62bcdf39fe8c3ce5fb261",
+      "contentHash": "7b29a0e3df2e3e0151ea11dd710130e1f7fb3a27b820b6a606d66688d91b26ef"
+    },
+    "peek-n-peak-upper-18": {
+      "ordinal": 18,
+      "fileName": "peek-n-peak-upper-18-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 972150,
+      "uncompressedBytes": 4901460,
+      "sha256": "fdd3d3d97b692a35b5e437679431bc7609b8753f326028d679d63b1de2615efb",
+      "uncompressedSha256": "e8a6129617a2a66e29df028c5038eff112c1a23fbd5064dd73c982aff5d9dff1",
+      "contentHash": "be127a847b4500ebef45bd7b23aebfa5467814a82a4d0129c52b52e215cffc19"
+    }
+  }
+}

@@ -10,6 +10,7 @@ Usage:
     /path/to/overpass.json scripts/golf/course-geometry/pilots/<course>.json output/course-geometry/<course>
 """
 import argparse
+import gzip
 import hashlib
 import json
 from pathlib import Path
@@ -49,8 +50,19 @@ def main():
     args = parser.parse_args()
 
     raw_bytes = args.overpass.read_bytes()
+    if args.overpass.suffix == '.gz':
+        raw_bytes = gzip.decompress(raw_bytes)
     raw = json.loads(raw_bytes)
+    retained = args.overpass.with_name('manifest.json')
+    if retained.exists():
+        manifest = json.loads(retained.read_text())
+        if manifest.get('uncompressedSha256') != hashlib.sha256(raw_bytes).hexdigest():
+            raise ValueError('Overpass extract does not match its retained manifest hash')
     card = json.loads(args.scorecard.read_text())
+    retrieved_at = card['retrievedAt']
+    if retained.exists():
+        retrieved_at = manifest.get('retrievedAt', retrieved_at)
+    source_id = f'osm-overpass-{retrieved_at}'
     if not (len(card['routeWayIds']) == len(card['pars']) == len(card['scorecardYards']) == 18):
         raise ValueError('The selected course must supply exactly 18 route IDs, pars, and scorecard yardages')
 
@@ -126,13 +138,13 @@ def main():
     route_by_id = {route['id']: route for route in routes}
     features = []
     for route in routes:
-        features.append({'id': route['id'], 'kind': 'route', 'sourceIds': ['osm-overpass-2026-09-15'],
+        features.append({'id': route['id'], 'kind': 'route', 'sourceIds': [source_id],
                          'holeKeys': [f"{card['slug']}-{route['ordinal']:02}"], 'reviewed': False, 'accuracyMeters': None,
                          'geometryWgs84': {'type': 'LineString', 'coordinates': route['coordinates']}})
     for feature in candidates:
         if feature['id'] not in owners:
             continue
-        features.append({'id': feature['id'], 'kind': feature['kind'], 'sourceIds': ['osm-overpass-2026-09-15'],
+        features.append({'id': feature['id'], 'kind': feature['kind'], 'sourceIds': [source_id],
                          'holeKeys': [f"{card['slug']}-{route_by_id[identifier]['ordinal']:02}" for identifier in owners[feature['id']]],
                          'reviewed': False, 'accuracyMeters': None,
                          'geometryWgs84': {'type': 'Polygon', 'coordinates': [feature['coordinates']]}})
@@ -172,9 +184,9 @@ def main():
 
     package = {'schemaVersion': 1, 'siteId': card['siteId'], 'name': card['name'], 'status': 'source_candidate',
                'originWgs84': card['originWgs84'], 'projection': 'wgs84-local-enu-v1', 'features': features,
-               'holes': holes, 'sources': [{'id': 'osm-overpass-2026-09-15', 'provider': 'OpenStreetMap via Overpass API',
+               'holes': holes, 'sources': [{'id': source_id, 'provider': 'OpenStreetMap via Overpass API',
                   'licenseId': 'ODbL-1.0', 'url': 'https://overpass-api.de/api/interpreter', 'capturedAt': None,
-                  'retrievedAt': card['retrievedAt'], 'attribution': '© OpenStreetMap contributors · ODbL 1.0'}]}
+                  'retrievedAt': retrieved_at, 'attribution': '© OpenStreetMap contributors · ODbL 1.0'}]}
     package['contentHash'] = sha(package)
     report = {'schemaVersion': 1, 'status': 'needs_physical_review', 'course': card['name'],
               'packageHash': package['contentHash'], 'rawOverpassSha256': hashlib.sha256(raw_bytes).hexdigest(),

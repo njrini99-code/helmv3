@@ -13,7 +13,7 @@ const out = 'output/course-geometry/top-courses';
 await fs.mkdir(out, { recursive: true });
 const css = await fs.readFile('src/styles/design-tokens.css', 'utf8');
 const report = [];
-for (const name of ['cacapon', 'winchester', 'bryan-study', 'cardinal-study']) {
+for (const name of ['cacapon', 'peek-n-peak-upper', 'winchester', 'bryan-study', 'cardinal-study']) {
   const pkg = parseGeometryPackage(JSON.parse(await fs.readFile(`src/test/fixtures/course-geometry/${name}.json`, 'utf8')));
   const cells = [];
   const cellHeight = 414;

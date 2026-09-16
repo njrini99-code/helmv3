@@ -11,7 +11,7 @@ import FairwayShotTracking from '@/components/fairway/pages/rounds-tracking/Fair
 import { ReviewHero } from '@/components/golf/coachhelm/round-review/ReviewHero';
 import type { ReviewShotInput } from '@/components/golf/coachhelm/round-review/round-review-shots';
 import type { ShotRecord, RoundHole } from '@/lib/types/golf';
-import { addInteractivePreviewTrajectories, pilotPackage, pilotShots } from '../pilot';
+import { addInteractivePreviewTrajectories, pilotShots } from '../pilot';
 import terrainData from '../cacapon-07-terrain.json';
 import { parseTerrainMesh } from '@/lib/golf/course-geometry/terrain';
 import { normalizeLiveShot } from '@/lib/golf/course-geometry/normalize';
@@ -21,14 +21,20 @@ import winchesterTerrainData from '../winchester-07-terrain.json';
 import { parseGeometryPackage } from '@/lib/golf/course-geometry/schema';
 import { SourceStudy } from './source-study';
 import { CourseMatrixFixture } from './course-matrix';
-import { loadCompiledFixture } from './fixture-assets';
+import { compiledCourses, isCompiledCourse, loadCompiledFixture } from './fixture-assets';
 
 const params = new URLSearchParams(location.search);
-const winchester = params.get('course') === 'winchester';
-const currentPackage = winchester ? parseGeometryPackage(winchesterData) : pilotPackage;
-const terrain = parseTerrainMesh(winchester ? winchesterTerrainData : terrainData, currentPackage);
-const geometry = { package: currentPackage, holeKeys: currentPackage.holes.map(h => h.key), terrainByHole: { [terrain.physicalHoleKey]: terrain },
-  ...(!winchester ? { decorateScene: addInteractivePreviewTrajectories } : {}) };
+const courseParam = params.get('course');
+const winchester = courseParam === 'winchester';
+// Compiled courses (Cacapon, Peek'n Peak) fetch hash-locked per-hole terrain;
+// Winchester keeps its single static hole-7 mesh. Only Cacapon carries the
+// illustrative preview trajectories.
+const compiledCourse = isCompiledCourse(courseParam) ? courseParam : winchester ? null : 'cacapon';
+const currentPackage = compiledCourse ? compiledCourses[compiledCourse].pkg : parseGeometryPackage(winchesterData);
+const terrain = compiledCourse === 'peek-n-peak-upper' ? null : parseTerrainMesh(winchester ? winchesterTerrainData : terrainData, currentPackage);
+const geometry = { package: currentPackage, holeKeys: currentPackage.holes.map(h => h.key), terrainByHole: terrain ? { [terrain.physicalHoleKey]: terrain } : {},
+  ...(compiledCourse === 'cacapon' ? { decorateScene: addInteractivePreviewTrajectories } : {}) };
+const currentHoleKey = currentPackage.holes[6]!.key;
 const holes: RoundHole[] = currentPackage.holes.map(h => {
   if (h.scorecardYards == null) throw new Error('Pilot scorecard yardage required');
   return { number: h.ordinal, par: h.par, yardage: h.scorecardYards, score: null };
@@ -60,11 +66,11 @@ const holeMeta = new Map(holes.map(h => [h.number, { par: h.par, yardage: h.yard
 function Screens() {
   const [saved, setSaved] = useState<ShotRecord[]>(initial);
   const [activeGeometry, setActiveGeometry] = useState(geometry);
-  const [compiledState, setCompiledState] = useState(winchester ? 'not-applicable' : 'loading');
+  const [compiledState, setCompiledState] = useState(compiledCourse ? 'loading' : 'not-applicable');
   useEffect(() => {
-    if (winchester) return;
+    if (!compiledCourse) return;
     const controller = new AbortController();
-    loadCompiledFixture('cacapon-07', controller.signal).then(mesh => {
+    loadCompiledFixture(currentHoleKey, controller.signal, compiledCourse).then(mesh => {
       if (!controller.signal.aborted) {
         setActiveGeometry({ ...geometry, terrainByHole: { [mesh.physicalHoleKey]: mesh } });
         setCompiledState('ready');
@@ -88,6 +94,6 @@ function Screens() {
 }
 const exportPreset = params.get('export');
 const sourceStudy = params.get('study');
-createRoot(document.getElementById('root')!).render(params.has('matrix') ? <CourseMatrixFixture holeNumber={Number(params.get('hole') ?? 7)} /> : sourceStudy === 'bryan' || sourceStudy === 'cardinal'
+createRoot(document.getElementById('root')!).render(params.has('matrix') ? <CourseMatrixFixture course={compiledCourse ?? 'cacapon'} holeNumber={Number(params.get('hole') ?? 7)} /> : sourceStudy === 'bryan' || sourceStudy === 'cardinal'
   ? <SourceStudy course={sourceStudy} /> : exportPreset === 'top' || exportPreset === 'terrain' || exportPreset === 'side'
     ? <TerrainExportFixture preset={exportPreset} /> : <Screens />);

@@ -1030,3 +1030,13 @@
 - The Cardinal remains an unassigned source study until its tee, route, green,
   and played-hole identity are reviewed together; LiDAR acquisition is not
   permission to invent or bind that geometry.
+- Built Peek'n Peak Upper as a full 18-hole local fixture: retained Overpass
+  extract and package, coverage-checked USGS 1m terrain, compiled per-hole
+  meshes, per-hole study/physical-world/truth-gate/GLB chain, and fixture
+  harness selection by `?course=`. The terrain compiler now decodes rasters
+  with GDAL and rejects a catalog tile whose locked export is empty fill over
+  the course (the PA project tile stops at the state line), recording the
+  rejection in the immutable source manifest. The truth gate reports every
+  hole of a whole-course package instead of refusing it. All Peek'n Peak
+  gates fail honestly on unreviewed OSM boundaries; nothing is published or
+  bound to a round.

@@ -113,3 +113,53 @@ large planar fairway or green triangle from cutting through real terrain in a
 static review render. Tee surfaces have their own material role. The bundled
 camera is only an authored review default with an explicit far clip; it is not
 the runtime interaction controller.
+
+## Whole-course build (Peek'n Peak Upper)
+
+The same chain runs for a full 18-hole OSM course. Every stage is
+reproducible from retained evidence; nothing is fetched twice.
+
+```sh
+# 1. Retain the Overpass extract once (immutable gzip + manifest with hashes).
+python3 scripts/golf/course-geometry/fetch-osm-course.py \
+  scripts/golf/course-geometry/pilots/peek-n-peak-upper-scorecard.json \
+  src/test/fixtures/course-geometry/sources/peek-n-peak-upper-osm
+
+# 2. Build the geometry package and review record from that extract.
+python3 scripts/golf/course-geometry/prepare-osm-course.py \
+  src/test/fixtures/course-geometry/sources/peek-n-peak-upper-osm/overpass.json.gz \
+  scripts/golf/course-geometry/pilots/peek-n-peak-upper-scorecard.json \
+  src/test/fixtures/course-geometry/peek-n-peak-upper.json
+
+# 3. Acquire one native-1m USGS tile and compile per-hole terrain meshes.
+python3 scripts/golf/course-geometry/compile-course-terrain.py --holes all \
+  --package src/test/fixtures/course-geometry/peek-n-peak-upper.json \
+  --source src/test/fixtures/course-geometry/sources/peek-n-peak-upper-terrain \
+  --output src/test/fixtures/course-geometry/compiled-peek-n-peak-upper
+
+# 4. Per hole: canonical study → physical world → truth gate → GLB → round trip.
+python3 scripts/golf/course-geometry/build-course-world.py \
+  src/test/fixtures/course-geometry/peek-n-peak-upper.json \
+  src/test/fixtures/course-geometry/sources/peek-n-peak-upper-terrain \
+  output/course-geometry/peek-n-peak-upper-world
+```
+
+Tile selection checks the export, not just the catalog footprint. A 3DEP
+project tile advertises its full square even where it is clipped at a state
+line: the newer `PA_WesternPA_2019_D20` tile covers this bbox on paper but
+exports 61.5% empty fill because the course is in New York, so the compiler
+records it under `rejectedCandidates` and retains `NY Southwest East 2017`
+instead. Both `USGS 1 Meter …` and `USGS one meter …` product names are
+native-1m 3DEP tiles. Rasters are decoded with GDAL; Pillow mis-decodes some
+tiled Float32 exports and remains only a fallback that the manifest names.
+
+`course-world-manifest.json` records the study, physical-world and GLB hashes
+and each hole's truth-gate verdict. Unreviewed OSM boundaries fail the gate by
+design; the GLBs and app previews are visual review products until a
+course-familiar review records boundary uncertainty.
+
+The browser fixture serves any compiled course: `?course=peek-n-peak-upper`
+on the entry/review pages, `?matrix=1&course=peek-n-peak-upper&hole=N` for the
+per-hole matrix, and `COURSE=peek-n-peak-upper` for
+`capture-course-matrix.cjs`. `render-top-courses.tsx` includes the course in
+its shared-renderer previews and contact sheet.

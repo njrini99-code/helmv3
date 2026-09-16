@@ -1,7 +1,8 @@
 """Reject incomplete course geometry before it can become a playable GolfHelm hole.
 
-This source-truth gate is intentionally upstream of Blender.  It accepts the
-canonical local-metre package and writes both a machine-readable report and a
+This source-truth gate is intentionally upstream of Blender.  It accepts either
+a canonical local-metre study (one physical study) or a whole-course source
+package (every played hole) and writes both a machine-readable report and a
 Markdown review table.  A feature may be rendered even when it fails this gate;
 only measured/derived, reviewed physical geometry may support authoritative
 course-world or analytics claims.
@@ -77,16 +78,16 @@ def row(kind, features):
     for feature in features:
         invalid.extend(requirements(feature, kind))
     provenance = first.get('provenance', {})
-    truths = sorted(set(feature_truth(feature) for feature in features))
+    truths = sorted({feature_truth(feature) for feature in features})
     resolutions = sorted({feature.get('sourceResolutionMeters') or provenance.get('sourceResolutionMeters') for feature in features} - {None})
     return {
         'feature': kind,
-        'source': '; '.join(sorted(set(source_label(feature) for feature in features))),
+        'source': '; '.join(sorted({source_label(feature) for feature in features})),
         'resolutionMeters': resolutions or None,
         'truthClass': ', '.join(truths),
         'confidence': 'physical_candidate' if not invalid else 'not_physical',
         'reviewStatus': 'reviewed' if all(feature.get('provenance', {}).get('humanReviewed') for feature in features) else 'review_required',
-        'geometryExtractionMethod': '; '.join(sorted(set(str(feature.get('provenance', {}).get('extraction', 'unspecified')) for feature in features))),
+        'geometryExtractionMethod': '; '.join(sorted({str(feature.get('provenance', {}).get('extraction', 'unspecified')) for feature in features})),
         'validation': sorted(set(invalid)) or ['passes feature source contract'],
         'canRender': True,
         'canMeasure': not invalid,
@@ -130,6 +131,37 @@ def distance_row(source):
     }
 
 
+def study_feature(feature):
+    """Present a whole-course package feature with the study provenance shape.
+
+    A package feature records `reviewed` and `accuracyMeters` directly; the
+    study form nests them under `provenance`.  Nothing is inferred here: a
+    package feature with no declared truth class stays undeclared and the
+    existing source-id rules decide.
+    """
+    if 'provenance' in feature:
+        return feature
+    return {**feature, 'provenance': {'sourceIds': feature.get('sourceIds', []), 'humanReviewed': bool(feature.get('reviewed')),
+                                      'boundaryAccuracyMeters': feature.get('accuracyMeters'), 'extraction': 'OSM source candidate; not imagery-derived'}}
+
+
+def hole_report(label, features, distance_source):
+    by_kind = {kind: [study_feature(item) for item in features if item.get('kind') == kind] for kind in CORE_FEATURES}
+    rows = [row(kind, by_kind[kind]) for kind in CORE_FEATURES]
+    rows.append(distance_row(distance_source))
+    return {'hole': label, 'passed': all(item['canMeasure'] for item in rows), 'features': rows}
+
+
+def package_holes(source):
+    features = {item['id']: item for item in source.get('features', [])}
+    for hole in source.get('holes', []):
+        owned = [features[identifier] for identifier in hole.get('featureIds', []) if identifier in features]
+        # A package hole has a route and a scorecard yardage, but no reviewed
+        # tee/green endpoint measurement; that is exactly what the distance row
+        # must report rather than silently treating route length as measured.
+        yield hole_report(hole['key'], owned, {'holeDistanceGeometry': hole.get('holeDistanceGeometry')})
+
+
 def markdown(report):
     lines = [
         '# GolfHelm Course Truth Gate', '',
@@ -137,10 +169,15 @@ def markdown(report):
         '| Feature | Source | Resolution | Truth class | Confidence | Review | Validation |',
         '| --- | --- | --- | --- | --- | --- | --- |',
     ]
-    for item in report['features']:
-        resolution = ', '.join(f'{v:g} m' for v in item['resolutionMeters']) if item['resolutionMeters'] else '—'
-        validation = '; '.join([*item['validation'], *item.get('measurementLimitations', [])])
-        lines.append(f"| {item['feature']} | {item['source']} | {resolution} | {item['truthClass']} | {item['confidence']} | {item['reviewStatus']} | {validation} |")
+    header = lines[4:6]
+    lines = lines[:4]
+    for hole in report['holes']:
+        lines.extend([f"## {hole['hole']} — {'PASS' if hole['passed'] else 'FAIL'}", '', *header])
+        for item in hole['features']:
+            resolution = ', '.join(f'{v:g} m' for v in item['resolutionMeters']) if item['resolutionMeters'] else '—'
+            validation = '; '.join([*item['validation'], *item.get('measurementLimitations', [])])
+            lines.append(f"| {item['feature']} | {item['source']} | {resolution} | {item['truthClass']} | {item['confidence']} | {item['reviewStatus']} | {validation} |")
+        lines.append('')
     lines.extend(['', 'A failing source truth gate blocks authoritative physical-world publication and analytics. It does not prohibit visual rendering; estimated and visual-only render geometry must remain non-authoritative.'])
     return '\n'.join(lines) + '\n'
 
@@ -153,25 +190,31 @@ def main():
     parser.add_argument('--require-pass', action='store_true', help='Exit nonzero after writing reports when any physical requirement fails')
     args = parser.parse_args()
     source = json.loads(args.canonical_study.read_text())
-    if source.get('kind') != 'golfhelm-canonical-local-meter-study':
-        raise ValueError('Course truth gate requires canonical local-metre source geometry')
-    by_kind = {kind: [item for item in source.get('features', []) if item.get('kind') == kind] for kind in CORE_FEATURES}
-    features = [row(kind, by_kind[kind]) for kind in CORE_FEATURES]
-    features.append(distance_row(source))
+    if source.get('kind') == 'golfhelm-canonical-local-meter-study':
+        holes = [hole_report(source.get('physicalStudyKey', 'study'), source.get('features', []), source)]
+        input_kind = source['kind']
+    elif source.get('schemaVersion') == 1 and 'holes' in source and 'features' in source and source.get('status') == 'source_candidate':
+        holes = list(package_holes(source))
+        input_kind = 'golfhelm-course-package-v1'
+    else:
+        raise ValueError('Course truth gate requires canonical local-metre source geometry or a whole-course source package')
     report = {
-        'schemaVersion': 1,
+        'schemaVersion': 2,
         'kind': 'golfhelm-course-truth-gate-v1',
+        'inputKind': input_kind,
         'siteId': source.get('siteId'),
         'sourceCanonicalHash': source.get('contentHash'),
-        'passed': all(item['canMeasure'] for item in features),
-        'features': features,
+        'passed': all(hole['passed'] for hole in holes),
+        'holes': holes,
+        # Flat view retained for one-study callers and the existing tests.
+        'features': holes[0]['features'] if len(holes) == 1 else [],
         'publicationRule': 'No failing candidate may be called production-ready or become authoritative physical geometry.',
         'renderingRule': 'All truth classes may render; only measured/derived approved geometry may become physical measurement input.',
     }
     write_json(args.json_report, report)
     args.markdown_report.parent.mkdir(parents=True, exist_ok=True)
     args.markdown_report.write_text(markdown(report))
-    print(json.dumps({'passed': report['passed'], 'failedFeatures': [item['feature'] for item in features if not item['canMeasure']]}))
+    print(json.dumps({'passed': report['passed'], 'holes': len(holes), 'failedHoles': [hole['hole'] for hole in holes if not hole['passed']]}))
     if args.require_pass and not report['passed']:
         sys.exit(2)
 

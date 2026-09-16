@@ -1008,6 +1008,22 @@ no played-hole binding, tee or daily pin claim and expose no Whole hole control.
 They do not participate in saves or statistics. The existing geometry plan
 Section 21 records the non-demo cohort, imagery provenance and remaining gaps.
 
+### Whole-course build: Peek'n Peak Upper (September 15, 2026)
+
+Peek'n Peak Resort Upper Course is the first course after Cacapon compiled as
+a full 18-hole local fixture: a retained Overpass extract, an OSM-derived
+`source_candidate` package (18 routes, 36 tees, 16 fairways, 18 greens, 63
+bunkers, 4 water), hash-locked USGS 3DEP native-1m terrain, and per-hole
+compiled meshes served by the fixture harness (`?course=peek-n-peak-upper`)
+through the same entry/review scene and optional terrain sidecar. It carries
+no illustrative preview trajectories; positions stay unresolved. Every hole
+also has a canonical local-metre study, a physical world, a truth-gate report
+and a Blender GLB in ignored output. All eighteen truth gates fail by design
+because no OSM boundary is human reviewed with recorded uncertainty, so the
+course is a visual review product, not authoritative geometry, and it does
+not participate in saves or statistics. Section 26 of the geometry plan
+records the terrain-coverage finding and the build evidence.
+
 ### Manual evidence and camera refinement (September 13, 2026)
 
 The local shared scene uses `manual-bounds-v1`: one bounded unknown-target

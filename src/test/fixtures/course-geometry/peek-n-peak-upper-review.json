@@ -1,0 +1,825 @@
+{
+  "schemaVersion": 1,
+  "status": "needs_physical_review",
+  "course": "Peek’n Peak Resort — Upper Course",
+  "packageHash": "eeacfb7bcbe0bd6194666459d83682ebcd3545a8fc362b99581bbbad0901c7a1",
+  "retainedExtract": {
+    "file": "sources/peek-n-peak-upper-osm/overpass.json.gz",
+    "uncompressedSha256": "9157785a781c7d30cf2da16a36631731ad9754686649c520a77bd4da7cad5721",
+    "osm3sTimestamp": "2026-09-15T23:20:58Z",
+    "retrievedAt": "2026-09-15",
+    "elementCount": 276
+  },
+  "scorecard": {
+    "siteId": "osm-way-136097904",
+    "name": "Peek’n Peak Resort — Upper Course",
+    "slug": "peek-n-peak-upper",
+    "originWgs84": [
+      -79.744,
+      42.06
+    ],
+    "scorecardYards": [
+      409,
+      483,
+      201,
+      563,
+      200,
+      430,
+      400,
+      555,
+      398,
+      414,
+      523,
+      345,
+      190,
+      439,
+      200,
+      330,
+      403,
+      575
+    ],
+    "pars": [
+      4,
+      4,
+      3,
+      5,
+      3,
+      4,
+      4,
+      5,
+      4,
+      4,
+      5,
+      4,
+      3,
+      4,
+      3,
+      4,
+      4,
+      5
+    ],
+    "routeWayIds": [
+      746146117,
+      746146123,
+      746269632,
+      746269646,
+      746146129,
+      746269658,
+      746269671,
+      746365981,
+      746365993,
+      746366003,
+      746366018,
+      746383309,
+      746383317,
+      746383328,
+      746383335,
+      746383346,
+      746383357,
+      746383364
+    ],
+    "officialScorecardUrl": "https://www.pknpk.com/golf-at-the-peak/upper-golf-course/",
+    "retrievedAt": "2026-09-15"
+  },
+  "routeSelection": {
+    "method": "explicit selected OSM golf=hole way IDs; ref checked, source par compared against retained scorecard",
+    "routeWayIds": [
+      746146117,
+      746146123,
+      746269632,
+      746269646,
+      746146129,
+      746269658,
+      746269671,
+      746365981,
+      746365993,
+      746366003,
+      746366018,
+      746383309,
+      746383317,
+      746383328,
+      746383335,
+      746383346,
+      746383357,
+      746383364
+    ]
+  },
+  "associationPolicy": {
+    "green": "contains selected route endpoint",
+    "fairway": "intersects route by 8m or more",
+    "tee": "within 28m of route start",
+    "bunker_water": "nearest selected route within 55m"
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "routeId": "osm-way-746146117",
+      "greenIds": [
+        "osm-way-746146114"
+      ],
+      "teeIds": [
+        "osm-way-746146110",
+        "osm-way-746269633"
+      ],
+      "fairwayIds": [
+        "osm-way-746146113"
+      ],
+      "bunkerIds": [
+        "osm-way-746146115",
+        "osm-way-746146116"
+      ],
+      "waterIds": [
+        "osm-way-746365990",
+        "osm-way-746365992"
+      ],
+      "routeLengthM": 376.136,
+      "scorecardYards": 409,
+      "scorecardPar": 4,
+      "osmRoutePar": 4,
+      "parAgreement": true,
+      "discardedEndpointGreenAlternatives": []
+    },
+    {
+      "hole": 2,
+      "routeId": "osm-way-746146123",
+      "greenIds": [
+        "osm-way-746146122"
+      ],
+      "teeIds": [
+        "osm-way-938593899"
+      ],
+      "fairwayIds": [
+        "osm-way-746146121"
+      ],
+      "bunkerIds": [
+        "osm-way-746269617",
+        "osm-way-746269619",
+        "osm-way-746269620",
+        "osm-way-746269621",
+        "osm-way-746269622"
+      ],
+      "waterIds": [],
+      "routeLengthM": 433.698,
+      "scorecardYards": 483,
+      "scorecardPar": 4,
+      "osmRoutePar": 4,
+      "parAgreement": true,
+      "discardedEndpointGreenAlternatives": []
+    },
+    {
+      "hole": 3,
+      "routeId": "osm-way-746269632",
+      "greenIds": [
+        "osm-way-746269629"
+      ],
+      "teeIds": [
+        "osm-way-746269623",
+        "osm-way-746269672",
+        "osm-way-746365971",
+        "osm-way-746365972"
+      ],
+      "fairwayIds": [
+        "osm-way-746269628"
+      ],
+      "bunkerIds": [
+        "osm-way-746269630",
+        "osm-way-746269631"
+      ],
+      "waterIds": [
+        "osm-way-746269627"
+      ],
+      "routeLengthM": 188.009,
+      "scorecardYards": 201,
+      "scorecardPar": 3,
+      "osmRoutePar": 3,
+      "parAgreement": true,
+      "discardedEndpointGreenAlternatives": []
+    },
+    {
+      "hole": 4,
+      "routeId": "osm-way-746269646",
+      "greenIds": [
+        "osm-way-746269645"
+      ],
+      "teeIds": [
+        "osm-way-746269634",
+        "osm-way-938593901"
+      ],
+      "fairwayIds": [
+        "osm-way-746269641"
+      ],
+      "bunkerIds": [
+        "osm-way-746269639",
+        "osm-way-746269642",
+        "osm-way-746269643",
+        "osm-way-746269644"
+      ],
+      "waterIds": [],
+      "routeLengthM": 512.708,
+      "scorecardYards": 563,
+      "scorecardPar": 5,
+      "osmRoutePar": 5,
+      "parAgreement": true,
+      "discardedEndpointGreenAlternatives": []
+    },
+    {
+      "hole": 5,
+      "routeId": "osm-way-746146129",
+      "greenIds": [
+        "osm-way-746146127"
+      ],
+      "teeIds": [
+        "osm-way-938593902"
+      ],
+      "fairwayIds": [
+        "osm-way-1372791715"
+      ],
+      "bunkerIds": [
+        "osm-way-746146130"
+      ],
+      "waterIds": [],
+      "routeLengthM": 171.081,
+      "scorecardYards": 200,
+      "scorecardPar": 3,
+      "osmRoutePar": 3,
+      "parAgreement": true,
+      "discardedEndpointGreenAlternatives": []
+    },
+    {
+      "hole": 6,
+      "routeId": "osm-way-746269658",
+      "greenIds": [
+        "osm-way-746269657"
+      ],
+      "teeIds": [
+        "osm-way-746146124",
+        "osm-way-746269649"
+      ],
+      "fairwayIds": [
+        "osm-way-746269654"
+      ],
+      "bunkerIds": [
+        "osm-way-746269653",
+        "osm-way-746269655",
+        "osm-way-746269656"
+      ],
+      "waterIds": [],
+      "routeLengthM": 386.822,
+      "scorecardYards": 430,
+      "scorecardPar": 4,
+      "osmRoutePar": 4,
+      "parAgreement": true,
+      "discardedEndpointGreenAlternatives": []
+    },
+    {
+      "hole": 7,
+      "routeId": "osm-way-746269671",
+      "greenIds": [
+        "osm-way-746269670"
+      ],
+      "teeIds": [
+        "osm-way-746269659",
+        "osm-way-746269660"
+      ],
+      "fairwayIds": [
+        "osm-way-746269663"
+      ],
+      "bunkerIds": [
+        "osm-way-746269664",
+        "osm-way-746269665",
+        "osm-way-746269666",
+        "osm-way-746269667",
+        "osm-way-746269668",
+        "osm-way-746269669"
+      ],
+      "waterIds": [],
+      "routeLengthM": 363.129,
+      "scorecardYards": 400,
+      "scorecardPar": 4,
+      "osmRoutePar": 4,
+      "parAgreement": true,
+      "discardedEndpointGreenAlternatives": []
+    },
+    {
+      "hole": 8,
+      "routeId": "osm-way-746365981",
+      "greenIds": [
+        "osm-way-746365980"
+      ],
+      "teeIds": [
+        "osm-way-746269623",
+        "osm-way-746365971",
+        "osm-way-938601464"
+      ],
+      "fairwayIds": [
+        "osm-way-746365976"
+      ],
+      "bunkerIds": [
+        "osm-way-746269618",
+        "osm-way-746365974",
+        "osm-way-746365975",
+        "osm-way-746365977",
+        "osm-way-746365978",
+        "osm-way-746365979"
+      ],
+      "waterIds": [],
+      "routeLengthM": 507.75,
+      "scorecardYards": 555,
+      "scorecardPar": 5,
+      "osmRoutePar": 5,
+      "parAgreement": true,
+      "discardedEndpointGreenAlternatives": []
+    },
+    {
+      "hole": 9,
+      "routeId": "osm-way-746365993",
+      "greenIds": [
+        "osm-way-746365989"
+      ],
+      "teeIds": [
+        "osm-way-746365982",
+        "osm-way-746365983"
+      ],
+      "fairwayIds": [
+        "osm-way-746365986"
+      ],
+      "bunkerIds": [
+        "osm-way-746365987",
+        "osm-way-746365988"
+      ],
+      "waterIds": [
+        "osm-way-746365991"
+      ],
+      "routeLengthM": 363.346,
+      "scorecardYards": 398,
+      "scorecardPar": 4,
+      "osmRoutePar": 4,
+      "parAgreement": true,
+      "discardedEndpointGreenAlternatives": []
+    },
+    {
+      "hole": 10,
+      "routeId": "osm-way-746366003",
+      "greenIds": [
+        "osm-way-746366000"
+      ],
+      "teeIds": [
+        "osm-way-746365994",
+        "osm-way-746365995"
+      ],
+      "fairwayIds": [
+        "osm-way-746365998",
+        "osm-way-938596889"
+      ],
+      "bunkerIds": [
+        "osm-way-746365999",
+        "osm-way-746366001",
+        "osm-way-746366002"
+      ],
+      "waterIds": [],
+      "routeLengthM": 380.143,
+      "scorecardYards": 414,
+      "scorecardPar": 4,
+      "osmRoutePar": 4,
+      "parAgreement": true,
+      "discardedEndpointGreenAlternatives": []
+    },
+    {
+      "hole": 11,
+      "routeId": "osm-way-746366018",
+      "greenIds": [
+        "osm-way-746366017"
+      ],
+      "teeIds": [
+        "osm-way-746366004"
+      ],
+      "fairwayIds": [],
+      "bunkerIds": [
+        "osm-way-746366010",
+        "osm-way-746366011",
+        "osm-way-746366012",
+        "osm-way-746366013",
+        "osm-way-746366014",
+        "osm-way-746366015",
+        "osm-way-746366016"
+      ],
+      "waterIds": [],
+      "routeLengthM": 468.955,
+      "scorecardYards": 523,
+      "scorecardPar": 5,
+      "osmRoutePar": 5,
+      "parAgreement": true,
+      "discardedEndpointGreenAlternatives": [
+        "osm-way-746366009"
+      ]
+    },
+    {
+      "hole": 12,
+      "routeId": "osm-way-746383309",
+      "greenIds": [
+        "osm-way-746383308"
+      ],
+      "teeIds": [
+        "osm-way-746383300",
+        "osm-way-746383301"
+      ],
+      "fairwayIds": [
+        "osm-way-746383303"
+      ],
+      "bunkerIds": [
+        "osm-way-746383304",
+        "osm-way-746383305",
+        "osm-way-938602809"
+      ],
+      "waterIds": [],
+      "routeLengthM": 314.763,
+      "scorecardYards": 345,
+      "scorecardPar": 4,
+      "osmRoutePar": 3,
+      "parAgreement": false,
+      "discardedEndpointGreenAlternatives": []
+    },
+    {
+      "hole": 13,
+      "routeId": "osm-way-746383317",
+      "greenIds": [
+        "osm-way-746383316"
+      ],
+      "teeIds": [
+        "osm-way-746383310",
+        "osm-way-746383313",
+        "osm-way-746383318"
+      ],
+      "fairwayIds": [],
+      "bunkerIds": [
+        "osm-way-746146131",
+        "osm-way-746383307"
+      ],
+      "waterIds": [],
+      "routeLengthM": 182.696,
+      "scorecardYards": 190,
+      "scorecardPar": 3,
+      "osmRoutePar": 3,
+      "parAgreement": true,
+      "discardedEndpointGreenAlternatives": []
+    },
+    {
+      "hole": 14,
+      "routeId": "osm-way-746383328",
+      "greenIds": [
+        "osm-way-746383327"
+      ],
+      "teeIds": [
+        "osm-way-746146132",
+        "osm-way-746383319"
+      ],
+      "fairwayIds": [
+        "osm-way-746383322"
+      ],
+      "bunkerIds": [
+        "osm-way-746383323",
+        "osm-way-746383324",
+        "osm-way-746383325",
+        "osm-way-746383326"
+      ],
+      "waterIds": [],
+      "routeLengthM": 398.565,
+      "scorecardYards": 439,
+      "scorecardPar": 4,
+      "osmRoutePar": 4,
+      "parAgreement": true,
+      "discardedEndpointGreenAlternatives": []
+    },
+    {
+      "hole": 15,
+      "routeId": "osm-way-746383335",
+      "greenIds": [
+        "osm-way-746383334"
+      ],
+      "teeIds": [
+        "osm-way-746383329",
+        "osm-way-746383330",
+        "osm-way-746383331",
+        "osm-way-746383332"
+      ],
+      "fairwayIds": [],
+      "bunkerIds": [],
+      "waterIds": [],
+      "routeLengthM": 134.928,
+      "scorecardYards": 200,
+      "scorecardPar": 3,
+      "osmRoutePar": 3,
+      "parAgreement": true,
+      "discardedEndpointGreenAlternatives": []
+    },
+    {
+      "hole": 16,
+      "routeId": "osm-way-746383346",
+      "greenIds": [
+        "osm-way-746383345"
+      ],
+      "teeIds": [
+        "osm-way-746383336",
+        "osm-way-746383337"
+      ],
+      "fairwayIds": [
+        "osm-way-746383341"
+      ],
+      "bunkerIds": [
+        "osm-way-746383342",
+        "osm-way-746383343",
+        "osm-way-746383344",
+        "osm-way-746383347"
+      ],
+      "waterIds": [],
+      "routeLengthM": 296.224,
+      "scorecardYards": 330,
+      "scorecardPar": 4,
+      "osmRoutePar": 4,
+      "parAgreement": true,
+      "discardedEndpointGreenAlternatives": []
+    },
+    {
+      "hole": 17,
+      "routeId": "osm-way-746383357",
+      "greenIds": [
+        "osm-way-746383353"
+      ],
+      "teeIds": [
+        "osm-way-746383348",
+        "osm-way-746383349"
+      ],
+      "fairwayIds": [
+        "osm-way-746383352"
+      ],
+      "bunkerIds": [
+        "osm-way-746383354",
+        "osm-way-746383355",
+        "osm-way-746383356"
+      ],
+      "waterIds": [],
+      "routeLengthM": 363.774,
+      "scorecardYards": 403,
+      "scorecardPar": 4,
+      "osmRoutePar": 4,
+      "parAgreement": true,
+      "discardedEndpointGreenAlternatives": []
+    },
+    {
+      "hole": 18,
+      "routeId": "osm-way-746383364",
+      "greenIds": [
+        "osm-way-746383363"
+      ],
+      "teeIds": [
+        "osm-way-938596893"
+      ],
+      "fairwayIds": [
+        "osm-way-746383362"
+      ],
+      "bunkerIds": [
+        "osm-way-746506446",
+        "osm-way-746506447",
+        "osm-way-746506448",
+        "osm-way-746506449",
+        "osm-way-746506450",
+        "osm-way-746506451"
+      ],
+      "waterIds": [],
+      "routeLengthM": 514.731,
+      "scorecardYards": 575,
+      "scorecardPar": 5,
+      "osmRoutePar": 5,
+      "parAgreement": true,
+      "discardedEndpointGreenAlternatives": []
+    }
+  ],
+  "unclaimedSourceFeatureIds": [
+    "osm-way-405403515",
+    "osm-way-405403517",
+    "osm-way-744778436",
+    "osm-way-744778437",
+    "osm-way-744778438",
+    "osm-way-744778439",
+    "osm-way-744778440",
+    "osm-way-744778441",
+    "osm-way-744778442",
+    "osm-way-744778443",
+    "osm-way-744778445",
+    "osm-way-744778446",
+    "osm-way-744778447",
+    "osm-way-744778448",
+    "osm-way-744778449",
+    "osm-way-744778450",
+    "osm-way-744778452",
+    "osm-way-744778453",
+    "osm-way-744778454",
+    "osm-way-744778455",
+    "osm-way-744778456",
+    "osm-way-744778457",
+    "osm-way-744778459",
+    "osm-way-744778460",
+    "osm-way-744778461",
+    "osm-way-744778462",
+    "osm-way-744778463",
+    "osm-way-744778464",
+    "osm-way-744778466",
+    "osm-way-744778467",
+    "osm-way-744778468",
+    "osm-way-744778469",
+    "osm-way-744778470",
+    "osm-way-744778471",
+    "osm-way-744778472",
+    "osm-way-744778473",
+    "osm-way-744778475",
+    "osm-way-744778476",
+    "osm-way-744778477",
+    "osm-way-744778478",
+    "osm-way-744778479",
+    "osm-way-744778480",
+    "osm-way-744778481",
+    "osm-way-744778482",
+    "osm-way-744778483",
+    "osm-way-744778484",
+    "osm-way-744778486",
+    "osm-way-744778487",
+    "osm-way-744778488",
+    "osm-way-744778489",
+    "osm-way-744778490",
+    "osm-way-744778491",
+    "osm-way-744778492",
+    "osm-way-744778493",
+    "osm-way-744778494",
+    "osm-way-744778496",
+    "osm-way-744778497",
+    "osm-way-744778498",
+    "osm-way-744778499",
+    "osm-way-744778500",
+    "osm-way-744778502",
+    "osm-way-744778503",
+    "osm-way-744778504",
+    "osm-way-744778505",
+    "osm-way-744778506",
+    "osm-way-744778507",
+    "osm-way-744778510",
+    "osm-way-744778511",
+    "osm-way-744778512",
+    "osm-way-744778513",
+    "osm-way-744778514",
+    "osm-way-744778516",
+    "osm-way-744778517",
+    "osm-way-744778518",
+    "osm-way-744778519",
+    "osm-way-744778520",
+    "osm-way-744778522",
+    "osm-way-744778523",
+    "osm-way-744778524",
+    "osm-way-744778525",
+    "osm-way-744778526",
+    "osm-way-744778527",
+    "osm-way-744778528",
+    "osm-way-744778529",
+    "osm-way-744778531",
+    "osm-way-744778532",
+    "osm-way-744778533",
+    "osm-way-744778534",
+    "osm-way-744778535",
+    "osm-way-744778536",
+    "osm-way-744778537",
+    "osm-way-744778538",
+    "osm-way-744778540",
+    "osm-way-744778541",
+    "osm-way-744778542",
+    "osm-way-744778543",
+    "osm-way-744782646",
+    "osm-way-744782647",
+    "osm-way-744782648",
+    "osm-way-744782649",
+    "osm-way-744782650",
+    "osm-way-744782651",
+    "osm-way-744782652",
+    "osm-way-744782653",
+    "osm-way-744782654",
+    "osm-way-744782656",
+    "osm-way-744782657",
+    "osm-way-744782659",
+    "osm-way-744782660",
+    "osm-way-744782661",
+    "osm-way-744782662",
+    "osm-way-744782664",
+    "osm-way-744782665",
+    "osm-way-744782666",
+    "osm-way-744782667",
+    "osm-way-744782668",
+    "osm-way-744782669",
+    "osm-way-744782671",
+    "osm-way-744782672",
+    "osm-way-744782673",
+    "osm-way-744782674",
+    "osm-way-744782675",
+    "osm-way-744782676",
+    "osm-way-744782677",
+    "osm-way-744782678",
+    "osm-way-744782680",
+    "osm-way-744782681",
+    "osm-way-746012843",
+    "osm-way-746146111",
+    "osm-way-746146112",
+    "osm-way-746146118",
+    "osm-way-746146120",
+    "osm-way-746146125",
+    "osm-way-746146126",
+    "osm-way-746269624",
+    "osm-way-746269625",
+    "osm-way-746269626",
+    "osm-way-746269635",
+    "osm-way-746269636",
+    "osm-way-746269637",
+    "osm-way-746269638",
+    "osm-way-746269640",
+    "osm-way-746269648",
+    "osm-way-746269650",
+    "osm-way-746269651",
+    "osm-way-746269652",
+    "osm-way-746269661",
+    "osm-way-746269662",
+    "osm-way-746365973",
+    "osm-way-746365984",
+    "osm-way-746365985",
+    "osm-way-746365996",
+    "osm-way-746365997",
+    "osm-way-746366005",
+    "osm-way-746366006",
+    "osm-way-746366007",
+    "osm-way-746366008",
+    "osm-way-746366009",
+    "osm-way-746383302",
+    "osm-way-746383311",
+    "osm-way-746383312",
+    "osm-way-746383314",
+    "osm-way-746383320",
+    "osm-way-746383321",
+    "osm-way-746383333",
+    "osm-way-746383338",
+    "osm-way-746383339",
+    "osm-way-746383340",
+    "osm-way-746383350",
+    "osm-way-746383351",
+    "osm-way-746383358",
+    "osm-way-746383359",
+    "osm-way-746383360",
+    "osm-way-746383361",
+    "osm-way-746506452",
+    "osm-way-746506453",
+    "osm-way-746506454",
+    "osm-way-938593897",
+    "osm-way-938593898",
+    "osm-way-938593900",
+    "osm-way-938593903",
+    "osm-way-938596891",
+    "osm-way-938596892",
+    "osm-way-938602810",
+    "osm-way-938602811",
+    "osm-way-1011898176",
+    "osm-way-1011898177",
+    "osm-way-1034328500",
+    "osm-way-1034328501",
+    "osm-way-1034328502",
+    "osm-way-1034328503",
+    "osm-way-1034328504",
+    "osm-way-1034328505",
+    "osm-way-1252642921",
+    "osm-way-1252642923",
+    "osm-way-1252642928",
+    "osm-way-1252642930"
+  ],
+  "discardedEndpointGreenAlternatives": {
+    "osm-way-746146117": [],
+    "osm-way-746146123": [],
+    "osm-way-746269632": [],
+    "osm-way-746269646": [],
+    "osm-way-746146129": [],
+    "osm-way-746269658": [],
+    "osm-way-746269671": [],
+    "osm-way-746365981": [],
+    "osm-way-746365993": [],
+    "osm-way-746366003": [],
+    "osm-way-746366018": [
+      "osm-way-746366009"
+    ],
+    "osm-way-746383309": [],
+    "osm-way-746383317": [],
+    "osm-way-746383328": [],
+    "osm-way-746383335": [],
+    "osm-way-746383346": [],
+    "osm-way-746383357": [],
+    "osm-way-746383364": []
+  },
+  "limitations": [
+    "OSM plan geometry is retained as a renderable source candidate only",
+    "No independent boundary uncertainty or course-familiar review exists",
+    "No imagery or terrain source is used by this preparation step",
+    "OSM route par disagreements are retained as source conflicts; the official scorecard remains the round-scoring authority",
+    "No inferred feature may be used for authoritative physical measurement"
+  ]
+}

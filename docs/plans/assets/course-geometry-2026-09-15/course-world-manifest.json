@@ -1,0 +1,429 @@
+{
+  "schemaVersion": 1,
+  "kind": "golfhelm-course-world-manifest-v1",
+  "siteId": "osm-way-136097904",
+  "course": "Peek’n Peak Resort — Upper Course",
+  "packageHash": "eeacfb7bcbe0bd6194666459d83682ebcd3545a8fc362b99581bbbad0901c7a1",
+  "terrainRasterSha256": "ce26e9ad13026889c6571b8a41cbdecebee90e7ef788e5475431be3060b1b08b",
+  "builtAt": "2026-09-15T23:37:07.811344+00:00",
+  "terrainStepMeters": 2,
+  "paddingMeters": 60,
+  "holes": [
+    {
+      "key": "peek-n-peak-upper-01",
+      "ordinal": 1,
+      "par": 4,
+      "scorecardYards": 409,
+      "studyHash": "a9930735e243a0692a4e1c4e0e2c1c9d514b058359ddb0bc65356a2ea77f289b",
+      "physicalWorldHash": "916815425ab96c5acd6b2032fb68c3c7abaf435f960fa971cef5f8dc56816336",
+      "truthGatePassed": false,
+      "terrainGrid": {
+        "width": 144,
+        "height": 252,
+        "stepMeters": 2.0
+      },
+      "glb": "peek-n-peak-upper-01.glb",
+      "glbSha256": "073924f6f2f96be9fb74baf3259ff1a3ae1eabe6093208eb7df46ace46051223",
+      "glbBytes": 1682416,
+      "roundTripAbsoluteErrorMeters": [
+        8.613281238467607e-06,
+        2.5600432991268463e-06,
+        6.542968776557245e-06
+      ],
+      "preview": "peek-n-peak-upper-01-preview.png"
+    },
+    {
+      "key": "peek-n-peak-upper-02",
+      "ordinal": 2,
+      "par": 4,
+      "scorecardYards": 483,
+      "studyHash": "3c4bfe5647ce1c7979bf44b3532349728a55cd2ecbade56a23458261e73e98fe",
+      "physicalWorldHash": "b2c45baafbaaa81210cabfdea9d06d04a1fd0d514c0098b20735103e918c327c",
+      "truthGatePassed": false,
+      "terrainGrid": {
+        "width": 144,
+        "height": 275,
+        "stepMeters": 2.0
+      },
+      "glb": "peek-n-peak-upper-02.glb",
+      "glbSha256": "a3a486d23aa500b2dc04e46e1c8d3055bc0a5356a279a4b999693cdf7cc9b29e",
+      "glbBytes": 1570244,
+      "roundTripAbsoluteErrorMeters": [
+        3.828124931715138e-06,
+        7.148437475734681e-06,
+        7.871093714584276e-06
+      ],
+      "preview": "peek-n-peak-upper-02-preview.png"
+    },
+    {
+      "key": "peek-n-peak-upper-03",
+      "ordinal": 3,
+      "par": 3,
+      "scorecardYards": 201,
+      "studyHash": "b408b58ef15fdc5e9a08ec94593c6bc638a463cf6572ea608d358748ff221066",
+      "physicalWorldHash": "ba5a834844f57c31c966cf2298feb3ec3e70826b9f0bc89f8670096a3c079435",
+      "truthGatePassed": false,
+      "terrainGrid": {
+        "width": 148,
+        "height": 143,
+        "stepMeters": 2.0
+      },
+      "glb": "peek-n-peak-upper-03.glb",
+      "glbSha256": "c5290f716860cafa4e10e3ff7b10746c2a923e97853a2aa9f282a3f8f2ac49b6",
+      "glbBytes": 894492,
+      "roundTripAbsoluteErrorMeters": [
+        2.6562500067939254e-05,
+        3.490234382752533e-05,
+        3.945312471387297e-06
+      ],
+      "preview": "peek-n-peak-upper-03-preview.png"
+    },
+    {
+      "key": "peek-n-peak-upper-04",
+      "ordinal": 4,
+      "par": 5,
+      "scorecardYards": 563,
+      "studyHash": "37e9a9c8d4db625130adbdc6281754e6dd055d022691e1c07871c4dff805b186",
+      "physicalWorldHash": "dea998ec8067c537ba9711ee91f22df76b291f331c32607ee6eeb982ac08179b",
+      "truthGatePassed": false,
+      "terrainGrid": {
+        "width": 324,
+        "height": 113,
+        "stepMeters": 2.0
+      },
+      "glb": "peek-n-peak-upper-04.glb",
+      "glbSha256": "bef610a99a8b4f34013371ab9bf5ce95ba5062fd886f4b1ae418f7a13f740349",
+      "glbBytes": 2291004,
+      "roundTripAbsoluteErrorMeters": [
+        4.315429691814643e-05,
+        7.738281260571966e-05,
+        3.1835937761570676e-06
+      ],
+      "preview": "peek-n-peak-upper-04-preview.png"
+    },
+    {
+      "key": "peek-n-peak-upper-05",
+      "ordinal": 5,
+      "par": 3,
+      "scorecardYards": 200,
+      "studyHash": "55f23b6455bd9481c06f68f3c18b9b0bfcf036e729a13b6d1b6151156ce2bddb",
+      "physicalWorldHash": "52a5042401b5d125038c8b9412bf88e3c5b82f987d15b3cc814d83469c817d5d",
+      "truthGatePassed": false,
+      "terrainGrid": {
+        "width": 85,
+        "height": 157,
+        "stepMeters": 2.0
+      },
+      "glb": "peek-n-peak-upper-05.glb",
+      "glbSha256": "3835a1310e75d247aaa83420cc2459e173290d0c742c597013d67fccb509f7cc",
+      "glbBytes": 511544,
+      "roundTripAbsoluteErrorMeters": [
+        2.605468762340024e-05,
+        3.246093763209501e-05,
+        1.8945312945106707e-06
+      ],
+      "preview": "peek-n-peak-upper-05-preview.png"
+    },
+    {
+      "key": "peek-n-peak-upper-06",
+      "ordinal": 6,
+      "par": 4,
+      "scorecardYards": 430,
+      "studyHash": "1364d021100ed2e380621887f93ac68369a5a8107af2759eb470632e7305e2bd",
+      "physicalWorldHash": "4b5713daeb415cfb9eb312c4df6b8b5be1b5ec470f6fd6c88ea5e7f4d42ffb16",
+      "truthGatePassed": false,
+      "terrainGrid": {
+        "width": 266,
+        "height": 149,
+        "stepMeters": 2.0
+      },
+      "glb": "peek-n-peak-upper-06.glb",
+      "glbSha256": "89216b192f96f19bd80d8afe1faef98e3aa66ebddce446a57e085ebe68f3787e",
+      "glbBytes": 1935136,
+      "roundTripAbsoluteErrorMeters": [
+        5.123046867083758e-05,
+        1.1640624961728463e-05,
+        8.98437463092705e-07
+      ],
+      "preview": "peek-n-peak-upper-06-preview.png"
+    },
+    {
+      "key": "peek-n-peak-upper-07",
+      "ordinal": 7,
+      "par": 4,
+      "scorecardYards": 400,
+      "studyHash": "fd03ef3c9e4d51cd79f068b753c2eaf8103a5e90fbd8c272eb0701a570da5eac",
+      "physicalWorldHash": "90b3e395cf1ead0cb1649bae17a0c22b070226fe9eca29fc33600bf22a7e6129",
+      "truthGatePassed": false,
+      "terrainGrid": {
+        "width": 226,
+        "height": 153,
+        "stepMeters": 2.0
+      },
+      "glb": "peek-n-peak-upper-07.glb",
+      "glbSha256": "843cd3bf17b043146895fa60b1c4c06fd8f7f43b70f9a6a913ac6c33fcbca2c0",
+      "glbBytes": 1473912,
+      "roundTripAbsoluteErrorMeters": [
+        3.681640623653948e-05,
+        2.0117187546020432e-05,
+        8.59374949868652e-07
+      ],
+      "preview": "peek-n-peak-upper-07-preview.png"
+    },
+    {
+      "key": "peek-n-peak-upper-08",
+      "ordinal": 8,
+      "par": 5,
+      "scorecardYards": 555,
+      "studyHash": "8cdaa48561ae9b1c13a1b5b917e14ea6679feba506ce4c14e9c29d93c6f55807",
+      "physicalWorldHash": "f32687dab881e0b03353f9cd91529b9c0da793c883a8cf49cde83e466be6edbb",
+      "truthGatePassed": false,
+      "terrainGrid": {
+        "width": 152,
+        "height": 310,
+        "stepMeters": 2.0
+      },
+      "glb": "peek-n-peak-upper-08.glb",
+      "glbSha256": "87309efa38fe33ffd8b7863184ce8945d53bc03ebd09b49c138616d72f5dd7f8",
+      "glbBytes": 1845220,
+      "roundTripAbsoluteErrorMeters": [
+        9.785156294128683e-06,
+        3.443359366883669e-05,
+        4.374999946321623e-06
+      ],
+      "preview": "peek-n-peak-upper-08-preview.png"
+    },
+    {
+      "key": "peek-n-peak-upper-09",
+      "ordinal": 9,
+      "par": 4,
+      "scorecardYards": 398,
+      "studyHash": "f60be06d58b72d134f1a897ace04c5791c84b278e2a5060497c6a157e4fbc798",
+      "physicalWorldHash": "35a1c1444346cf3221b6df8e5e87c6150f58abbfaa6e7f2c584bb177672155a2",
+      "truthGatePassed": false,
+      "terrainGrid": {
+        "width": 147,
+        "height": 227,
+        "stepMeters": 2.0
+      },
+      "glb": "peek-n-peak-upper-09.glb",
+      "glbSha256": "fc73dbe21177b378f73d215d7db9cde6d1c7f0a93955877d963484996edaa63b",
+      "glbBytes": 1441036,
+      "roundTripAbsoluteErrorMeters": [
+        5.1269523737573763e-08,
+        1.5888671896391315e-05,
+        2.9003905979152478e-06
+      ],
+      "preview": "peek-n-peak-upper-09-preview.png"
+    },
+    {
+      "key": "peek-n-peak-upper-10",
+      "ordinal": 10,
+      "par": 4,
+      "scorecardYards": 414,
+      "studyHash": "838344fc5c6cd778b8831dbf9089e24b81c7a580f2797081e9492c9b5d3b8448",
+      "physicalWorldHash": "363b422c9fd84d5d6c4b37f09b8361ba156cf9e6459768554c8f383d51ca7dbc",
+      "truthGatePassed": false,
+      "terrainGrid": {
+        "width": 129,
+        "height": 252,
+        "stepMeters": 2.0
+      },
+      "glb": "peek-n-peak-upper-10.glb",
+      "glbSha256": "9bdc35cdfb7a2a4a0fb5f73758ca6e062b267972f69f6cc65a4a36bb08bcc4b9",
+      "glbBytes": 1337040,
+      "roundTripAbsoluteErrorMeters": [
+        4.169006388110574e-06,
+        5.229492217040388e-06,
+        2.0507812905634637e-06
+      ],
+      "preview": "peek-n-peak-upper-10-preview.png"
+    },
+    {
+      "key": "peek-n-peak-upper-11",
+      "ordinal": 11,
+      "par": 5,
+      "scorecardYards": 523,
+      "studyHash": "88f502e5e1cd83fe474444d7dca58cdf1f2945c668b984dcded57ce6fb25f2cb",
+      "physicalWorldHash": "b5f4af71c3532c6a75757642d4bab761d47e623c639d3b8b455c7dec63df922d",
+      "truthGatePassed": false,
+      "terrainGrid": {
+        "width": 146,
+        "height": 296,
+        "stepMeters": 2.0
+      },
+      "glb": "peek-n-peak-upper-11.glb",
+      "glbSha256": "cbf8bd882a29a20c5bd5d8d3c5c24bd46d162b715d5cd3797c4e1e359de5956e",
+      "glbBytes": 1608092,
+      "roundTripAbsoluteErrorMeters": [
+        2.235107444903406e-06,
+        1.5927734466458787e-05,
+        1.6894531427169568e-06
+      ],
+      "preview": "peek-n-peak-upper-11-preview.png"
+    },
+    {
+      "key": "peek-n-peak-upper-12",
+      "ordinal": 12,
+      "par": 4,
+      "scorecardYards": 345,
+      "studyHash": "1fef993a58d55f06949d74ef309af1d4e86030e88f999026bc1692cba9d5ddc7",
+      "physicalWorldHash": "112af0ddd135e82f03021cd2bd86f9c8cbd6ae522d6ee42fd4b91c3a9ce8c852",
+      "truthGatePassed": false,
+      "terrainGrid": {
+        "width": 202,
+        "height": 147,
+        "stepMeters": 2.0
+      },
+      "glb": "peek-n-peak-upper-12.glb",
+      "glbSha256": "c7467c602ae9b56bd3eb6ccb9bc275dac5c66d83fea2da28ac3a1a4bf2327476",
+      "glbBytes": 1264452,
+      "roundTripAbsoluteErrorMeters": [
+        8.266601525974693e-06,
+        2.359375002924935e-05,
+        7.910156227808329e-07
+      ],
+      "preview": "peek-n-peak-upper-12-preview.png"
+    },
+    {
+      "key": "peek-n-peak-upper-13",
+      "ordinal": 13,
+      "par": 3,
+      "scorecardYards": 190,
+      "studyHash": "3476d75b8148fce1896ebe165fb780a74aae29131d6578f14cfd1cfcf97e0af1",
+      "physicalWorldHash": "cf3204b4b56a347b4258dc60ca2f27960e3e5074621cbbc8bdb36d8015c2f09b",
+      "truthGatePassed": false,
+      "terrainGrid": {
+        "width": 140,
+        "height": 141,
+        "stepMeters": 2.0
+      },
+      "glb": "peek-n-peak-upper-13.glb",
+      "glbSha256": "88eea3bc893d2717c50fc28a1f87bad2b0fabc8890182bfdd349284cc823c80f",
+      "glbBytes": 742540,
+      "roundTripAbsoluteErrorMeters": [
+        3.8964843781741365e-05,
+        2.169921867789526e-05,
+        1.718749956580723e-06
+      ],
+      "preview": "peek-n-peak-upper-13-preview.png"
+    },
+    {
+      "key": "peek-n-peak-upper-14",
+      "ordinal": 14,
+      "par": 4,
+      "scorecardYards": 439,
+      "studyHash": "42e0a7cd5a58613f0e071c47c2ff0ccf117ae99b1563b0c343610d7c6aa91a9c",
+      "physicalWorldHash": "e88671b0eaec3c58727c46673e50e16669549f309ad306e2a7ef10620c1b1516",
+      "truthGatePassed": false,
+      "terrainGrid": {
+        "width": 249,
+        "height": 132,
+        "stepMeters": 2.0
+      },
+      "glb": "peek-n-peak-upper-14.glb",
+      "glbSha256": "695812c587568c8ef096db5b8f96a20e947c3354b16922db91e550dd0c709bd8",
+      "glbBytes": 1508864,
+      "roundTripAbsoluteErrorMeters": [
+        5.517578074432095e-07,
+        6.705078135382792e-05,
+        7.050781277939677e-06
+      ],
+      "preview": "peek-n-peak-upper-14-preview.png"
+    },
+    {
+      "key": "peek-n-peak-upper-15",
+      "ordinal": 15,
+      "par": 3,
+      "scorecardYards": 200,
+      "studyHash": "e3772143dc963010aff073a4fbf4bc481677e967fcecca70fcc46efef971bacf",
+      "physicalWorldHash": "878a472fb2118abbcab8eb87b164844b64b77ea33299b123d6ac2a5c47e6ee07",
+      "truthGatePassed": false,
+      "terrainGrid": {
+        "width": 148,
+        "height": 95,
+        "stepMeters": 2.0
+      },
+      "glb": "peek-n-peak-upper-15.glb",
+      "glbSha256": "bec409d090fcfcea795c5c8c7e8b154dcb38c0c4ed68c3bdad80e8b0d51e7956",
+      "glbBytes": 546572,
+      "roundTripAbsoluteErrorMeters": [
+        1.5551757996945526e-06,
+        1.0390624993306119e-05,
+        8.671874979881977e-06
+      ],
+      "preview": "peek-n-peak-upper-15-preview.png"
+    },
+    {
+      "key": "peek-n-peak-upper-16",
+      "ordinal": 16,
+      "par": 4,
+      "scorecardYards": 330,
+      "studyHash": "7b5a8d1f5a58230e043b0820f4f200ddce49698e5701b8c175894de3437b4ac0",
+      "physicalWorldHash": "1d4255a9373a9c753b809dbbb71de5e8797ce6b8916ce4630e78bdbcbdcd2c8e",
+      "truthGatePassed": false,
+      "terrainGrid": {
+        "width": 160,
+        "height": 184,
+        "stepMeters": 2.0
+      },
+      "glb": "peek-n-peak-upper-16.glb",
+      "glbSha256": "e1381b366fd58e9e4a146aecb16171cd013207ac4b8485dbbbad2ed8c8426d44",
+      "glbBytes": 1189384,
+      "roundTripAbsoluteErrorMeters": [
+        3.647460971478722e-06,
+        2.660156246747647e-05,
+        2.597656191483111e-06
+      ],
+      "preview": "peek-n-peak-upper-16-preview.png"
+    },
+    {
+      "key": "peek-n-peak-upper-17",
+      "ordinal": 17,
+      "par": 4,
+      "scorecardYards": 403,
+      "studyHash": "7f6059046cd1cf3f17f90d4422a5978df83cf36153aeeef822949dae7e6ac197",
+      "physicalWorldHash": "565049a65737272f1c16de4ef1c8a7972e99a84dbceb27f6b78469541d5c8b22",
+      "truthGatePassed": false,
+      "terrainGrid": {
+        "width": 98,
+        "height": 257,
+        "stepMeters": 2.0
+      },
+      "glb": "peek-n-peak-upper-17.glb",
+      "glbSha256": "620cef638e3f7b0ea451055dd599eea315b3a184ec11061cd84d25eeec209473",
+      "glbBytes": 1001000,
+      "roundTripAbsoluteErrorMeters": [
+        1.0759277358829422e-05,
+        2.6093749966094038e-05,
+        4.3750000031650416e-06
+      ],
+      "preview": "peek-n-peak-upper-17-preview.png"
+    },
+    {
+      "key": "peek-n-peak-upper-18",
+      "ordinal": 18,
+      "par": 5,
+      "scorecardYards": 575,
+      "studyHash": "20df1fe7e1c19c92fd56478baef7bffbc53b8329d4a3709de893412a9bcedd74",
+      "physicalWorldHash": "db0983d6a7fdf79734dffd501c921962b76ce256065a96bd6c1280092084c957",
+      "truthGatePassed": false,
+      "terrainGrid": {
+        "width": 159,
+        "height": 314,
+        "stepMeters": 2.0
+      },
+      "glb": "peek-n-peak-upper-18.glb",
+      "glbSha256": "69220762704f1eca165865635bc392bc3bb8c38c8802734cd6ee3fcde3df3b3f",
+      "glbBytes": 1952224,
+      "roundTripAbsoluteErrorMeters": [
+        4.3139648369106e-06,
+        2.891845701924467e-05,
+        7.382812441392161e-06
+      ],
+      "preview": "peek-n-peak-upper-18-preview.png"
+    }
+  ],
+  "truthGatePassed": false,
+  "publicationRule": "No hole below passes the course truth gate unless its row says so; GLBs are visual review products only."
+}

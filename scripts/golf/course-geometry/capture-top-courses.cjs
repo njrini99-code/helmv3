@@ -1,6 +1,6 @@
 async page => {
   const report={courses:[],errors:[],nativeKeyboardVerified:false};
-  for(const course of ['cacapon','winchester']) {
+  for(const course of ['cacapon','peek-n-peak-upper','winchester']) {
     const context=await page.context().browser().newContext({viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true,hasTouch:true,reducedMotion:'reduce'});
     const p=await context.newPage();
     p.on('pageerror',e=>report.errors.push(e.message));
