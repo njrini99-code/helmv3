@@ -195,6 +195,13 @@ from V1; V4 changes what stands on each centre.
   20° with a quadratic fillet within 2 m of the corner (`roundCorners`), so
   the strip never folds back on itself at a sharp source node; the zone
   geometry itself is untouched.
+- **Ribbon breaklines (terrain compiler).** `compile-course-terrain.py
+  --context` constrains every hole mesh with the reviewed ground ribbons
+  (cart paths, service paths, roads at their source width): vertices sit on
+  both ribbon edges and cells refine to 4 m along a ribbon within 60 m of the
+  played hole. Heights are still sampled from the source raster at those
+  vertices, so a breakline adds resolution where a real edge is, never
+  relief. Lift lines, fences and polygon zones stay out of the mesh.
 - **Identity (§41).** `canopy:<courseFrame>:<packageHash12>:<featureId>:<x>,<y>:<styleVersion>`
   and `mass:<…>` seed every family roll, proportion, colour, yaw and aspect,
   so a tree is the same tree across holes, shared context and sessions, and

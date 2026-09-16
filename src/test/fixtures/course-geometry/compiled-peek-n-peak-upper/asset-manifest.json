@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "compilerVersion": "course-terrain-v1",
+  "compilerVersion": "course-terrain-v2",
   "geometryHash": "fdec6ea8467dd214372bde680e7b7f9236c06ad5d27bb5ddeadf8ed5e9d3f87a",
   "sourceManifestHash": "e7c638ef3e0b2316367b01a2eccef764bf88d3547c093831e66c67bf095d9ef2",
   "holes": {
@@ -8,181 +8,181 @@
       "ordinal": 1,
       "fileName": "peek-n-peak-upper-01-terrain.json.gz",
       "encoding": "gzip",
-      "compressedBytes": 888208,
-      "uncompressedBytes": 4567176,
-      "sha256": "b7245027473dd3c529e8ab4f236b10e27584f9802d840122bfb512dc99db1f34",
-      "uncompressedSha256": "9821147cc71760925a8ecdab5cdf0e23e3c39f5beb057d9a80eee73aadee6f5d",
-      "contentHash": "ac92ba004166ba0d848f5833a0f0d5fbd7ae45395928c4f8e4859a38c5dd74e8"
+      "compressedBytes": 1048589,
+      "uncompressedBytes": 5535492,
+      "sha256": "d7c648a6e052d98f1d2d1c82cdbd8b4d835e1f79660c6d9e22749b1c179d0ad1",
+      "uncompressedSha256": "23decb454933aeab293e2b21943570ad0c0e6ab7fd78cce7e394d8f4ba6cad83",
+      "contentHash": "812727cc1f8080cf710c9fda8643c254b7a22774b0d334cc7124c65147dbd20f"
     },
     "peek-n-peak-upper-02": {
       "ordinal": 2,
       "fileName": "peek-n-peak-upper-02-terrain.json.gz",
       "encoding": "gzip",
-      "compressedBytes": 1045583,
-      "uncompressedBytes": 5355906,
-      "sha256": "097b771b035dc93c77dac9916907de059e16456dfe80eefdb1ad50756857cfb6",
-      "uncompressedSha256": "734b9c1440c280377671c63a693c0948d3c270ae89e8be785d8e266e931cf98b",
-      "contentHash": "7e9002ca030ed2269a6bbb8d032f1c8f1ac737733b473f829d7cbfa31ddeb070"
+      "compressedBytes": 1270266,
+      "uncompressedBytes": 6736897,
+      "sha256": "c81e1bddf3cb06a1d356157c354e2cc5f4471ab5a390f6d1b7ae497570912013",
+      "uncompressedSha256": "908f9ca3307c846c4999ca16fb0569b3fc20cafc71439b0a1a5837da5d56f4cd",
+      "contentHash": "0e90fd66a2dc85e3668a4678d6ffa6d0c6f264bd506cbefe71d724f5c7cb7954"
     },
     "peek-n-peak-upper-03": {
       "ordinal": 3,
       "fileName": "peek-n-peak-upper-03-terrain.json.gz",
       "encoding": "gzip",
-      "compressedBytes": 682760,
-      "uncompressedBytes": 3389343,
-      "sha256": "08433114423eb4c91fc8c5a0db9407cafaad865439af62cc23a013f0e14a2ad0",
-      "uncompressedSha256": "7a4d73163f649210f5aaab3760c08f754dd331d3be7a4ad61839aef930c35158",
-      "contentHash": "dff1632aa7e2e2cfed922b4b1412c1f38e02b0d7e0344508e2927aa37e7f8c02"
+      "compressedBytes": 861950,
+      "uncompressedBytes": 4470857,
+      "sha256": "789e710d5a3578b7ce6e15cbd9a281993a37b01eafb4f3f289561aba78c9e4b2",
+      "uncompressedSha256": "c51e2e2a70874510a268f4314cebef6aa81265ad07a8149d769f82b7792acc9e",
+      "contentHash": "1cbd5e5925b4a34eedf4db5d05f468e2216d296483f978523127a2be5c56ca4f"
     },
     "peek-n-peak-upper-04": {
       "ordinal": 4,
       "fileName": "peek-n-peak-upper-04-terrain.json.gz",
       "encoding": "gzip",
-      "compressedBytes": 1084100,
-      "uncompressedBytes": 5515683,
-      "sha256": "30dcd82b3fe60daaa18360e4c6e0fa5b41eaedd9e16e8edc4af21257169cf677",
-      "uncompressedSha256": "8915204f9664bfb78a35142d34a7b5941b8233bf6a1055dadc6b8345c0d411e7",
-      "contentHash": "1e671a3996fa103a5c9e0698dbb22e8629d2f6b3fd4074d6a12efdf87b3b0f65"
+      "compressedBytes": 1268109,
+      "uncompressedBytes": 6616393,
+      "sha256": "b24c0b5199bb37e19574dbfbbcb00666fead75d5dd4cdb102c2c100416d8b1ce",
+      "uncompressedSha256": "6931602e49a907925687fb4f9a6128c7716811e3a21b20f90e7f94178ee2ad3b",
+      "contentHash": "040a3ff70edfdfaf02d71495773b053cb1ce1a3380ff4efce2fc72b0dd00da03"
     },
     "peek-n-peak-upper-05": {
       "ordinal": 5,
       "fileName": "peek-n-peak-upper-05-terrain.json.gz",
       "encoding": "gzip",
-      "compressedBytes": 483319,
-      "uncompressedBytes": 2395403,
-      "sha256": "450b5f4d26f27d639baf3a4e92c303a049f44b08c8905d5749d768f2d9024640",
-      "uncompressedSha256": "ac5dc2a87d650c84a6b7594b4be935137217a41bc185bed815ee4db230f51852",
-      "contentHash": "09b2c8c51d4fef391d11659a8c05fd07a42384604867e0c9fb14e715b01c78de"
+      "compressedBytes": 535204,
+      "uncompressedBytes": 2710304,
+      "sha256": "8a5ad441b4cfa85919fba062f78d6b89bae7553eac3fe8f058f573c18169facf",
+      "uncompressedSha256": "3350c1ff075d71f103f29728e8063bfd6fcded87485bb7c8d223c1822632eb02",
+      "contentHash": "5614c64a53109a421a7fdb9c3abae4768fdbc53494f17f7aad26823e0a91d76d"
     },
     "peek-n-peak-upper-06": {
       "ordinal": 6,
       "fileName": "peek-n-peak-upper-06-terrain.json.gz",
       "encoding": "gzip",
-      "compressedBytes": 896570,
-      "uncompressedBytes": 4511950,
-      "sha256": "f6865918aa6253685d2afa37bded6ddca6ae783e337724e24046484864fc8822",
-      "uncompressedSha256": "f0ad9cc808d6ac06b52e3fda55fd3fd1ce57d254c10e3425432524079107d13d",
-      "contentHash": "272c39b7be03e26b7747d7d265e29e04a8e97a19b5aa4dd625cfb81c64da6cda"
+      "compressedBytes": 1052569,
+      "uncompressedBytes": 5458836,
+      "sha256": "dae3d1de9994a8874e29858efad862722474aa87ccf9ea193d6c2d9df214a04c",
+      "uncompressedSha256": "fa2ce6a58798c26fd508d11b8832ee2c7fc7f375198ec56a5fb8c795a849e6d3",
+      "contentHash": "24aabc0caf77beba1c052817606b77385f1cfe069b8bd328fc2adf06717c9972"
     },
     "peek-n-peak-upper-07": {
       "ordinal": 7,
       "fileName": "peek-n-peak-upper-07-terrain.json.gz",
       "encoding": "gzip",
-      "compressedBytes": 899218,
-      "uncompressedBytes": 4631066,
-      "sha256": "26c586de42da01bfe7d620a8e9f728c8a8e481c580eb7d6ea6fc3f7f40693124",
-      "uncompressedSha256": "d381261c7577d68b75ec4b4b3a21ee4a9ecde72f09a3e508cf63f06e337ff957",
-      "contentHash": "e79ef75b502a52f8790ea428cf37bf7851896db66c57046352775d35c6daac46"
+      "compressedBytes": 1053599,
+      "uncompressedBytes": 5529106,
+      "sha256": "2c0ea928d82a6734a4b1ad99ec51bd5ffa871fe9491588c427c2e86a36093412",
+      "uncompressedSha256": "10056b3ba720c319b8d408d661e6ca129860d05933f802f9dfbd406e493f275a",
+      "contentHash": "c41bd2fd7480ffa7378210d620de0fc6c747ce9caed48e20b9663b4918a78166"
     },
     "peek-n-peak-upper-08": {
       "ordinal": 8,
       "fileName": "peek-n-peak-upper-08-terrain.json.gz",
       "encoding": "gzip",
-      "compressedBytes": 1163347,
-      "uncompressedBytes": 6010016,
-      "sha256": "daef88986f5596c7aba43bd0c318ceecd64c7c7decbf8464aa7ed60bb1f68271",
-      "uncompressedSha256": "03454f6ecec08b7ebb9a4a0ec16ed28be1f5af853b4f2e64f6b3cd3093a6a1ae",
-      "contentHash": "7a1c9f3ae60528ae0a1f116a7a13023330271ddab655e6db4f5c88b88cdf5b96"
+      "compressedBytes": 1439117,
+      "uncompressedBytes": 7693965,
+      "sha256": "7baf531a252250801660c8d64ba451bb9085c5f1595ee9b1acccb563a96da45c",
+      "uncompressedSha256": "8ab10a15a58e539f0841c56e218267c6d5e9c1014ef49bcaca9051c2738f4fda",
+      "contentHash": "6bfb1701c8f77e418e4a6f1305e5d8cb0bd0c37f2f732fc95ab1a6307ff9459c"
     },
     "peek-n-peak-upper-09": {
       "ordinal": 9,
       "fileName": "peek-n-peak-upper-09-terrain.json.gz",
       "encoding": "gzip",
-      "compressedBytes": 873382,
-      "uncompressedBytes": 4382272,
-      "sha256": "d3e0108a1db7fa8c4a61cfa3104183d57d1c6d1b497b99a13c60f5f35b8e5838",
-      "uncompressedSha256": "d826324235b0eae515161cab7fc55c88c7dc31ab522162a510826370604a6099",
-      "contentHash": "cf022cf89257ce6500974d5ec0d05470d8bbaf612b1f10219218073c304fb7ba"
+      "compressedBytes": 1064952,
+      "uncompressedBytes": 5580715,
+      "sha256": "7fd87a918236f51384f955c309f5dad02dbd58343c5f6de30b639ac276054117",
+      "uncompressedSha256": "9ad7b44770b37e3c221e7eb5a1bea14fe40be9890cb24e838f7a221f6c2a3e7e",
+      "contentHash": "332a239047c4171f631afe817506508126c543f0cb2e4a6b4fb76b3c9cae3e3e"
     },
     "peek-n-peak-upper-10": {
       "ordinal": 10,
       "fileName": "peek-n-peak-upper-10-terrain.json.gz",
       "encoding": "gzip",
-      "compressedBytes": 908969,
-      "uncompressedBytes": 4553828,
-      "sha256": "7eab8a5c5d473e482c046c1a7442d68891848c245a62b0ab6aec319993eabe59",
-      "uncompressedSha256": "4fbc15a4b24cf03b1544f793786a06564ddda60e3f118cbb2b8d313753ac4b04",
-      "contentHash": "c574ea5714bcfdd481a2d37e2686cfa186831e2dcec227a72f92304c68781859"
+      "compressedBytes": 1105495,
+      "uncompressedBytes": 5716561,
+      "sha256": "85dff6d6022cd9a165d7d24065e3834e3e58d5042b75d94f7ff6bf3755d7bf64",
+      "uncompressedSha256": "b1dcbfeccdde34eaad4737842b2818d5b2702ba3b2bf50bfb8d11084d797eba3",
+      "contentHash": "08c70b7886791fab14afb981fd8acfb8aaef4caa132e8f99e1e65da90b60994c"
     },
     "peek-n-peak-upper-11": {
       "ordinal": 11,
       "fileName": "peek-n-peak-upper-11-terrain.json.gz",
       "encoding": "gzip",
-      "compressedBytes": 1103001,
-      "uncompressedBytes": 5757847,
-      "sha256": "621d5876f7254c9d397ae05941457528417f55ed9cdac027e57ca77fce4a4938",
-      "uncompressedSha256": "c54e9918abee79fd669aad3eb165984b41a20b69d48fbe48657e1e6f38ece9bb",
-      "contentHash": "3621660506ec117b54c30a00785a78e0e97502615b8535722b7c78810939900d"
+      "compressedBytes": 1315609,
+      "uncompressedBytes": 6984184,
+      "sha256": "8f1fff3e87da375bd08373a16b9ec9a6ae6b2c87f55ceb3afb52532fbab61382",
+      "uncompressedSha256": "2aa1fbd4fafd8e5ff6874ff711a183cb071d62abb21ae3a6dc8e4dfdb7009427",
+      "contentHash": "176d9b326802a3f1c9a25cf8a8c3b9749c16f63fef70727ef24752b0f541080a"
     },
     "peek-n-peak-upper-12": {
       "ordinal": 12,
       "fileName": "peek-n-peak-upper-12-terrain.json.gz",
       "encoding": "gzip",
-      "compressedBytes": 838171,
-      "uncompressedBytes": 4093757,
-      "sha256": "2978ece98b1bfdbd5130695d334ae29a5f4e60558afd51537384d72e99424b29",
-      "uncompressedSha256": "859b0ffbc0fbf3a341a4f73d8640c06d4147bb8319540aeb75b05105c672657f",
-      "contentHash": "a14d2070b6bd0a82e367230934dffba5d1ce02a1c05231624b497675e149fac0"
+      "compressedBytes": 991615,
+      "uncompressedBytes": 5017252,
+      "sha256": "be0200f86c57fd1c25884d9485c19cbf9305406ee08295029d359255d1c88a42",
+      "uncompressedSha256": "0335c84036f361a52e0941e1557daa07deaf6c053ef011e34162ae439f48ccb0",
+      "contentHash": "3a1784d76b34046231e79562df20bd9c5bd4fd83bc2837aa8f48a89d3de0d776"
     },
     "peek-n-peak-upper-13": {
       "ordinal": 13,
       "fileName": "peek-n-peak-upper-13-terrain.json.gz",
       "encoding": "gzip",
-      "compressedBytes": 633670,
-      "uncompressedBytes": 3064546,
-      "sha256": "7e4a3d767f0dc139b635c9376bffb80f7d74de2bee6c8d79faba9344f2be6f91",
-      "uncompressedSha256": "72b72312abb7cb6fdecb1a8c8e372a0b1f9a7ea3ed7b38a8646e307c292417c5",
-      "contentHash": "6af051a1aff20a308e07c947a46e41236baf40a3021eb2901e8236a374347ec0"
+      "compressedBytes": 728445,
+      "uncompressedBytes": 3654807,
+      "sha256": "6820c89d895234151ae64a91811bc37399e2c2589b0d116b8b1e10beb5786c96",
+      "uncompressedSha256": "4828ec3838a29fc1471b69b988bcc4c5df73f3924b38215b84ce0fc3bf40f7d4",
+      "contentHash": "a5b13c75613fa774c47bde8952d4ac5f97e62cab736e560bfb38c720806ecc80"
     },
     "peek-n-peak-upper-14": {
       "ordinal": 14,
       "fileName": "peek-n-peak-upper-14-terrain.json.gz",
       "encoding": "gzip",
-      "compressedBytes": 844718,
-      "uncompressedBytes": 4200678,
-      "sha256": "2606f01f06edaa912cd7f283be52a319947984221dfc2a100c3e3d9af22f5ea6",
-      "uncompressedSha256": "bae38d6a53a45425f14800ae7fa6151e518ee2f958ea1ea026d5c0393e206277",
-      "contentHash": "712227de51a39a8f52a98a2171201cc9a6f19f7146aa3325a088e4e479267e19"
+      "compressedBytes": 1002921,
+      "uncompressedBytes": 5139342,
+      "sha256": "1486536f1bb0a5f6ac116bedac6e2aea8330d844a1c7f94e13f285d9e231e59c",
+      "uncompressedSha256": "f1cc85da973928402396ef14224989cbf3ef3515c758a9a15dd8977697b4ec4e",
+      "contentHash": "ffc9e2f55dae6ff12cfa3288911297b9d34fa382c47a0485699b3a7fe0369d16"
     },
     "peek-n-peak-upper-15": {
       "ordinal": 15,
       "fileName": "peek-n-peak-upper-15-terrain.json.gz",
       "encoding": "gzip",
-      "compressedBytes": 492878,
-      "uncompressedBytes": 2391888,
-      "sha256": "672c330f114ecc36f39b8c40a9e8169a84ded68a352b7165bae7605e2bc5fc71",
-      "uncompressedSha256": "3360a395ff8d3c93f90564b9f8e2cbf82878176d58eb4d80452cb2d0d3659505",
-      "contentHash": "d521672c209870c63658772c0a6dd7d921e3b614bc251096ae2bedce4f3ec58e"
+      "compressedBytes": 612917,
+      "uncompressedBytes": 3097508,
+      "sha256": "ad9665b1e7eb5e2666beb2b6de862da4003d786f9583e3df9f14e9d69f264c56",
+      "uncompressedSha256": "49a149d2e58732d398b0295422b3284268cd90c5158c9639b74126e61c94649a",
+      "contentHash": "3873652ade421c7618fa06c054522ec232152bfc13e027e8f17242e658e8c68c"
     },
     "peek-n-peak-upper-16": {
       "ordinal": 16,
       "fileName": "peek-n-peak-upper-16-terrain.json.gz",
       "encoding": "gzip",
-      "compressedBytes": 798824,
-      "uncompressedBytes": 4087439,
-      "sha256": "4743d0b97bfb378689ad384dd87cd86ea65240d991bf72ec3243319c7a68aea4",
-      "uncompressedSha256": "00103feffcf6130288975e0ca1df6e8e53245f066ab04cd8e92a8724e2841676",
-      "contentHash": "7cd1d0be54a48b7e5461ad1ac25e378fb4e7a0b465c88334eabd1d43ecb8b0d7"
+      "compressedBytes": 929933,
+      "uncompressedBytes": 4850140,
+      "sha256": "fd2f7c8d7f9d5dcf46078d34539c18ae30a488584bc14418d6d8ef138d619a65",
+      "uncompressedSha256": "1798a9abd62d9f79b5133785d4687ea6d567ba6d6c86bad5b444ccbc0b1fbfaf",
+      "contentHash": "4ac75866458b47959b7e1282d5995c0e562283d9b55f46dd5a11d4c7ebb8790e"
     },
     "peek-n-peak-upper-17": {
       "ordinal": 17,
       "fileName": "peek-n-peak-upper-17-terrain.json.gz",
       "encoding": "gzip",
-      "compressedBytes": 705493,
-      "uncompressedBytes": 3587961,
-      "sha256": "1ffec7ee9fcc543841d51643b0023f62c1071d4f189b1fd896e9e2bd4b3da385",
-      "uncompressedSha256": "e8442540a068a6638fe7249988099ab78c036dfc42b3d638b8ba455a27168dfd",
-      "contentHash": "71967021bfdd7254e8d7e7050ba4e44d1d45b54c9ff29a422cc479063ffe907d"
+      "compressedBytes": 836323,
+      "uncompressedBytes": 4433393,
+      "sha256": "8a4f5b0f119bbaf4bdf84346a0e993e90748745c4129a298ce1107d246300ad0",
+      "uncompressedSha256": "05941831368c0166b183eb61b9425e437e149ee859aec8ab8997bd94686429b1",
+      "contentHash": "9185d6722a0282c166b0bdef1d73c2db153f7e77e346a198569eca740cd7d94d"
     },
     "peek-n-peak-upper-18": {
       "ordinal": 18,
       "fileName": "peek-n-peak-upper-18-terrain.json.gz",
       "encoding": "gzip",
-      "compressedBytes": 1146139,
-      "uncompressedBytes": 5797075,
-      "sha256": "d50e1f0a505bb477284f900f8ec2c2e2610e8b39c73d099f0539d31638a263b0",
-      "uncompressedSha256": "c6b4ff62e8204c3443fac30f1a67c7e9337ecdd2fa39e37990a59c1dca8bd13f",
-      "contentHash": "78c65afd429ac6f4a2194511d70c2c74c076c84ca380a310d8cecb7fff065179"
+      "compressedBytes": 1362345,
+      "uncompressedBytes": 7050129,
+      "sha256": "07c88ecf49f9b20864505e9884b57381c944282758f75acfa17abf28cd55aeeb",
+      "uncompressedSha256": "c077c0322fa55d0c67b60bb83107fd5ae83f04c8ee25150b4b163794b0a74fc7",
+      "contentHash": "6e80dffc15684280835b5289347d53a7291096ec444893171c7c25d1704735b9"
     }
   }
 }

@@ -1,22 +1,22 @@
 {
   "physicalHoleKey": "peek-n-peak-upper-04",
-  "contentHash": "1e671a3996fa103a5c9e0698dbb22e8629d2f6b3fd4074d6a12efdf87b3b0f65",
+  "contentHash": "040a3ff70edfdfaf02d71495773b053cb1ce1a3380ff4efce2fc72b0dd00da03",
   "geometryHash": "fdec6ea8467dd214372bde680e7b7f9236c06ad5d27bb5ddeadf8ed5e9d3f87a",
   "configuredBudget": 40000,
   "originalEnvelope": 20000,
-  "triangles": 25792,
-  "uniqueVertices": 13277,
+  "triangles": 32103,
+  "uniqueVertices": 16441,
   "omittedTriangles": 0,
   "metricCells": 113481,
   "metricNodataCells": 0,
-  "duplicateVertexCount": 64099,
+  "duplicateVertexCount": 79868,
   "sourceNormalDuplicatesAgree": true,
   "sourceHeightDuplicatesAgree": true,
   "sourceNormalUnitMaxError": 7.295649240290913e-08,
   "slopesDegrees": {
-    "max": 48.080839880488185,
-    "p95": 20.26105368021653,
-    "p50": 5.958850501604912
+    "max": 58.035432995314444,
+    "p95": 19.678005743155357,
+    "p50": 5.644976143580035
   },
   "elevationRangeM": [
     478.32513789823196,
@@ -25,6 +25,17 @@
   "contextAreaM2": 445440.0,
   "triangulatedAreaM2": 445440.0003,
   "omittedAreaM2": 0,
+  "breaklines": {
+    "basis": "context_ribbons",
+    "ribbonAreaM2": 9906.22,
+    "ribbonClasses": [
+      "cart_path",
+      "service_path",
+      "road"
+    ],
+    "refineBandM": 4,
+    "refineReachM": 60
+  },
   "contextClippedFeatureIds": [
     "naip-peek-n-peak-upper-02-canopy-002",
     "naip-peek-n-peak-upper-02-canopy-003",
@@ -54,7 +65,7 @@
     {
       "id": "terrain-context",
       "kind": "ground",
-      "triangles": 12340,
+      "triangles": 16717,
       "areaM2": 250227.9206,
       "rendererContextOnly": false
     },
@@ -75,7 +86,7 @@
     {
       "id": "naip-peek-n-peak-upper-02-canopy-004",
       "kind": "woods",
-      "triangles": 19,
+      "triangles": 21,
       "areaM2": 38.4183,
       "rendererContextOnly": true
     },
@@ -145,7 +156,7 @@
     {
       "id": "naip-peek-n-peak-upper-04-canopy-001",
       "kind": "woods",
-      "triangles": 672,
+      "triangles": 700,
       "areaM2": 23944.6565,
       "rendererContextOnly": false
     },
@@ -159,7 +170,7 @@
     {
       "id": "naip-peek-n-peak-upper-04-canopy-003",
       "kind": "woods",
-      "triangles": 28,
+      "triangles": 34,
       "areaM2": 39.8598,
       "rendererContextOnly": false
     },
@@ -194,14 +205,14 @@
     {
       "id": "naip-peek-n-peak-upper-05-canopy-001",
       "kind": "woods",
-      "triangles": 785,
+      "triangles": 854,
       "areaM2": 30272.1134,
       "rendererContextOnly": true
     },
     {
       "id": "naip-peek-n-peak-upper-06-canopy-001",
       "kind": "woods",
-      "triangles": 2197,
+      "triangles": 3590,
       "areaM2": 76295.414,
       "rendererContextOnly": true
     },
@@ -236,14 +247,14 @@
     {
       "id": "naip-peek-n-peak-upper-07-canopy-001",
       "kind": "woods",
-      "triangles": 148,
+      "triangles": 150,
       "areaM2": 8417.5582,
       "rendererContextOnly": true
     },
     {
       "id": "naip-peek-n-peak-upper-07-canopy-002",
       "kind": "woods",
-      "triangles": 445,
+      "triangles": 572,
       "areaM2": 10347.8122,
       "rendererContextOnly": true
     },
@@ -257,14 +268,14 @@
     {
       "id": "naip-peek-n-peak-upper-07-canopy-004",
       "kind": "woods",
-      "triangles": 37,
+      "triangles": 49,
       "areaM2": 65.8388,
       "rendererContextOnly": true
     },
     {
       "id": "naip-peek-n-peak-upper-07-canopy-006",
       "kind": "woods",
-      "triangles": 68,
+      "triangles": 74,
       "areaM2": 443.7549,
       "rendererContextOnly": true
     },
@@ -285,14 +296,14 @@
     {
       "id": "naip-peek-n-peak-upper-08-canopy-001",
       "kind": "woods",
-      "triangles": 26,
+      "triangles": 58,
       "areaM2": 927.4081,
       "rendererContextOnly": true
     },
     {
       "id": "naip-peek-n-peak-upper-08-canopy-004",
       "kind": "woods",
-      "triangles": 109,
+      "triangles": 171,
       "areaM2": 5112.4965,
       "rendererContextOnly": true
     },
@@ -306,14 +317,14 @@
     {
       "id": "naip-peek-n-peak-upper-08-canopy-011",
       "kind": "woods",
-      "triangles": 111,
+      "triangles": 185,
       "areaM2": 1845.4992,
       "rendererContextOnly": true
     },
     {
       "id": "naip-peek-n-peak-upper-08-canopy-012",
       "kind": "woods",
-      "triangles": 34,
+      "triangles": 82,
       "areaM2": 1283.2236,
       "rendererContextOnly": true
     },
@@ -334,7 +345,7 @@
     {
       "id": "osm-way-746269628",
       "kind": "fairway",
-      "triangles": 110,
+      "triangles": 115,
       "areaM2": 337.8408,
       "rendererContextOnly": true
     },
@@ -362,7 +373,7 @@
     {
       "id": "osm-way-746146124",
       "kind": "tee",
-      "triangles": 19,
+      "triangles": 46,
       "areaM2": 186.4606,
       "rendererContextOnly": true
     },
@@ -383,7 +394,7 @@
     {
       "id": "osm-way-746269649",
       "kind": "tee",
-      "triangles": 14,
+      "triangles": 31,
       "areaM2": 73.2077,
       "rendererContextOnly": true
     },
@@ -432,7 +443,7 @@
     {
       "id": "osm-way-938593902",
       "kind": "tee",
-      "triangles": 19,
+      "triangles": 32,
       "areaM2": 167.3246,
       "rendererContextOnly": true
     },
@@ -600,7 +611,7 @@
     {
       "id": "osm-way-746269627",
       "kind": "water",
-      "triangles": 88,
+      "triangles": 99,
       "areaM2": 3281.3158,
       "rendererContextOnly": true
     }
@@ -1063,7 +1074,7 @@
     }
   ],
   "renderProfile": {
-    "compilerVersion": "course-terrain-v1",
+    "compilerVersion": "course-terrain-v2",
     "styleVersion": "narrow-surround-v1",
     "tacticalBoundsM": [
       -1092,
@@ -1116,15 +1127,15 @@
     "metricSamplingM": 2,
     "normalGradientStepM": 1
   },
-  "compressedBytes": 1084100,
+  "compressedBytes": 1268109,
   "asset": {
     "ordinal": 4,
     "fileName": "peek-n-peak-upper-04-terrain.json.gz",
     "encoding": "gzip",
-    "compressedBytes": 1084100,
-    "uncompressedBytes": 5515683,
-    "sha256": "30dcd82b3fe60daaa18360e4c6e0fa5b41eaedd9e16e8edc4af21257169cf677",
-    "uncompressedSha256": "8915204f9664bfb78a35142d34a7b5941b8233bf6a1055dadc6b8345c0d411e7",
-    "contentHash": "1e671a3996fa103a5c9e0698dbb22e8629d2f6b3fd4074d6a12efdf87b3b0f65"
+    "compressedBytes": 1268109,
+    "uncompressedBytes": 6616393,
+    "sha256": "b24c0b5199bb37e19574dbfbbcb00666fead75d5dd4cdb102c2c100416d8b1ce",
+    "uncompressedSha256": "6931602e49a907925687fb4f9a6128c7716811e3a21b20f90e7f94178ee2ad3b",
+    "contentHash": "040a3ff70edfdfaf02d71495773b053cb1ce1a3380ff4efce2fc72b0dd00da03"
   }
 }

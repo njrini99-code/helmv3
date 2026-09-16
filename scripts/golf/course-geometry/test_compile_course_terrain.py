@@ -10,7 +10,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import numpy as np
-from shapely.geometry import MultiPolygon, Polygon, box
+from shapely.geometry import LineString, MultiPolygon, Polygon, box
 
 spec = importlib.util.spec_from_file_location('compiler', Path(__file__).with_name('compile-course-terrain.py'))
 compiler = importlib.util.module_from_spec(spec)
@@ -58,6 +58,26 @@ class TerrainCompilerTest(unittest.TestCase):
             cls.fine, cls.report = compiler.compile_hole(*args, PlaneSource(), outer_step=16)
             cls.coarse, _ = compiler.compile_hole(*args, PlaneSource(), outer_step=32)
         cls.shapes = args[2]
+
+    def test_context_ribbons_become_breaklines_without_editing_heights(self):
+        args = fixture()
+        ribbon = LineString([(-6, 6), (12, 7)]).buffer(1.5, quad_segs=2)
+        with patch.object(compiler, 'CONTEXT_MARGIN_M', 16):
+            mesh, report = compiler.compile_hole(*args, PlaneSource(), outer_step=16, ribbons=ribbon)
+        triangles = np.array(mesh['vertices']).reshape(-1, 3, 3)
+        straddling = 0
+        for triangle in triangles:
+            poly = Polygon(triangle[:, :2])
+            inside = poly.intersection(ribbon).area
+            # 5-decimal vertex rounding leaves slivers of ~1e-5 m2; a real straddle is >= 1e-2 m2.
+            if inside > 1e-3 and abs(inside-poly.area) > 1e-3:
+                straddling += 1
+        self.assertEqual(straddling, 0)
+        self.assertTrue(np.allclose(triangles[:, :, 2], 200+.05*triangles[:, :, 0]+.1*triangles[:, :, 1], atol=1e-3))
+        self.assertEqual(report['breaklines']['basis'], 'context_ribbons')
+        self.assertGreater(report['breaklines']['ribbonAreaM2'], 0)
+        self.assertGreater(report['triangles'], self.report['triangles'])
+        self.assertEqual(self.report['breaklines']['basis'], 'none')
 
     def test_metric_grid_is_independent_of_display_lod_and_row_order_is_northward(self):
         self.assertEqual(self.fine['metricGrid'], self.coarse['metricGrid'])

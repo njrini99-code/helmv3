@@ -28,7 +28,7 @@ from shapely.ops import unary_union
 
 ROOT = Path(__file__).resolve().parents[3]
 FIXTURES = ROOT / 'src/test/fixtures/course-geometry'
-COMPILER_VERSION = 'course-terrain-v1'
+COMPILER_VERSION = 'course-terrain-v2'
 STYLE_VERSION = 'narrow-surround-v1'
 CONTEXT_MARGIN_M = 160
 METRIC_STEP_M = 2
@@ -41,6 +41,14 @@ MAX_TRIANGLES = 40000
 MAX_METRIC_CELLS = 1000000
 SOURCE_CRS = 32617  # WGS84 UTM 17N; horizontal reprojection only, NAVD88 Z retained.
 US_SURVEY_FOOT_TO_METERS = 0.3048006096012192
+# Ground ribbons from the reviewed context layer become breaklines: the mesh
+# gets vertices exactly along each ribbon edge (heights still sampled from the
+# source raster, never edited) and 4 m cells along the ribbon near the played
+# hole so a display cut/fill bank has vertices to shape. Lines that are not
+# ground (lift lines, fences) and every polygon zone stay out of the mesh.
+RIBBON_CLASSES = ('cart_path', 'service_path', 'road')
+RIBBON_BAND_M = 4
+RIBBON_REFINE_REACH_M = 60
 
 
 def module(name, filename):
@@ -99,6 +107,38 @@ def local_geometry(feature):
                                  [[pilot.local(p) for p in ring] for ring in rings[1:]]) for rings in parts])
     if result.is_empty or not result.is_valid:
         raise ValueError('Invalid canonical source shape: ' + feature['id'])
+    return result
+
+
+def context_ribbons(path, pkg):
+    """Ribbon polygons (line buffered by its source width) per hole key."""
+    if path is None:
+        return {}, None
+    layer = json.loads(Path(path).read_text())
+    if layer.get('packageHash') != pkg['contentHash']:
+        raise ValueError('Context layer belongs to another package')
+    shapes = {}
+    for zone in layer['zones']:
+        raw = zone['geometryWgs84']
+        if zone['class'] not in RIBBON_CLASSES or raw['type'] != 'LineString':
+            continue
+        width = (zone.get('attributes') or {}).get('widthM')
+        if not width:
+            raise ValueError('Context ribbon without a width: ' + zone['id'])
+        shape = LineString([pilot.local(p) for p in raw['coordinates']]).buffer(width/2, quad_segs=2)
+        for key in zone['holeKeys']:
+            shapes.setdefault(key, []).append(shape)
+    return {key: unary_union(parts) for key, parts in shapes.items()}, layer['contentHash']
+
+
+def split_by_ribbons(regions, ribbons):
+    """Constrain every region with the ribbon edges; materials are unchanged."""
+    if ribbons.is_empty:
+        return regions
+    result = []
+    for material, region in regions:
+        result.append((material, region.difference(ribbons)))
+        result.append((material, region.intersection(ribbons)))
     return result
 
 
@@ -415,9 +455,10 @@ def parts_inside_region(region, cut):
         return cut
     return kept[0] if len(kept) == 1 else MultiPolygon(kept) if kept else Polygon()
 
-def compile_hole(hole, pkg, raw_shapes, raw_features, displays, outline_reports, source, outer_step=16):
+def compile_hole(hole, pkg, raw_shapes, raw_features, displays, outline_reports, source, outer_step=16, ribbons=None):
     tactical_bounds, context_bounds = hole_bounds(hole, raw_shapes, raw_features)
     context = box(*context_bounds)
+    ribbons = (ribbons if ribbons is not None else Polygon()).intersection(context)
     selected = [f for f in pkg['features'] if f['kind'] != 'route' and raw_shapes[f['id']].intersects(context)]
     order = ['woods', 'rough', 'fairway', 'tee', 'green', 'bunker', 'water']
     selected.sort(key=lambda f: (order.index(f['kind']), f['id']))
@@ -433,6 +474,8 @@ def compile_hole(hole, pkg, raw_shapes, raw_features, displays, outline_reports,
     # remain actual polygons, rendered in context without changing ownership.
     own = [raw_shapes[i] for i in hole['featureIds'] if raw_features[i]['kind'] != 'woods']
     tactical = unary_union(own).buffer(12).intersection(context)
+    if not ribbons.is_empty:
+        tactical = tactical.union(ribbons.buffer(RIBBON_BAND_M).intersection(unary_union(own).buffer(RIBBON_REFINE_REACH_M)).intersection(context))
     detail = unary_union([raw_shapes[i] for i in hole['featureIds'] if raw_features[i]['kind'] in ('green', 'bunker', 'tee')]).buffer(3)
     cells = leaf_cells(context_bounds, tactical, detail, outer_step)
     cell_shapes = [cell for cell, _ in cells]
@@ -455,6 +498,7 @@ def compile_hole(hole, pkg, raw_shapes, raw_features, displays, outline_reports,
             edge, light = widths[kind]
             inset, interior = shape.buffer(-edge, quad_segs=2), shape.buffer(-edge-light, quad_segs=2)
             regions = [(1, shape.difference(inset)), (2, inset.difference(interior)), (0, interior)]
+        regions = split_by_ribbons(regions, ribbons)
         area, count = 0, 0
         for material, region in regions:
             if region.is_empty:
@@ -489,7 +533,7 @@ def compile_hole(hole, pkg, raw_shapes, raw_features, displays, outline_reports,
                         'rendererContextOnly': ident not in hole['featureIds'] and ident != 'terrain-context'})
     if len(triangle_features) > MAX_TRIANGLES:
         if outer_step == 16:
-            return compile_hole(hole, pkg, raw_shapes, raw_features, displays, outline_reports, source, 32)
+            return compile_hole(hole, pkg, raw_shapes, raw_features, displays, outline_reports, source, 32, ribbons)
         raise ValueError(f'{hole["key"]}: {len(triangle_features)} triangles exceeds {MAX_TRIANGLES}; explicit LOD review required')
     unique = np.array(sorted(set(xy)), dtype=float)
     heights = source.sample(unique[:, 0], unique[:, 1])
@@ -562,6 +606,8 @@ def compile_hole(hole, pkg, raw_shapes, raw_features, displays, outline_reports,
               'elevationRangeM': [float(min(heights[valid])), float(max(heights[valid]))],
               'contextAreaM2': context.area, 'triangulatedAreaM2': sum(f['areaM2'] for f in reports)-omitted_area,
               'omittedAreaM2': omitted_area,
+              'breaklines': {'basis': 'context_ribbons' if not ribbons.is_empty else 'none', 'ribbonAreaM2': round(ribbons.area, 2),
+                             'ribbonClasses': list(RIBBON_CLASSES), 'refineBandM': RIBBON_BAND_M, 'refineReachM': RIBBON_REFINE_REACH_M},
               'contextClippedFeatureIds': [f['id'] for f in selected if not context.covers(displays[f['id']][1])],
               'tacticalDistanceToContextEdgeM': [tactical_bounds[0]-context_bounds[0], tactical_bounds[1]-context_bounds[1],
                                                  context_bounds[2]-tactical_bounds[2], context_bounds[3]-tactical_bounds[3]],
@@ -577,6 +623,7 @@ def main():
     parser.add_argument('--package', type=Path, default=FIXTURES/'cacapon.json')
     parser.add_argument('--source', type=Path, default=FIXTURES/'sources/cacapon-course-terrain')
     parser.add_argument('--output', type=Path, default=FIXTURES/'compiled-cacapon')
+    parser.add_argument('--context', type=Path, default=None, help='reviewed context layer whose ground ribbons become breaklines')
     args = parser.parse_args()
     pkg = json.loads(args.package.read_text())
     pilot.ORIGIN = pkg['originWgs84']
@@ -588,6 +635,7 @@ def main():
     manifest = acquire_source(args.source, pkg, bounds)
     source = ElevationSource(args.source, manifest)
     displays, outlines = display_surfaces(args.package, pkg, args.source)
+    ribbons, context_hash = context_ribbons(args.context, pkg)
     wanted = {hole['ordinal'] for hole in pkg['holes']} if args.holes == 'all' else {int(n) for n in args.holes.split(',')}
     unknown = wanted.difference(hole['ordinal'] for hole in pkg['holes'])
     if unknown:
@@ -602,7 +650,7 @@ def main():
     for hole in pkg['holes']:
         if hole['ordinal'] not in wanted:
             continue
-        result, report = compile_hole(hole, pkg, raw_shapes, raw_features, displays, outlines, source)
+        result, report = compile_hole(hole, pkg, raw_shapes, raw_features, displays, outlines, source, ribbons=ribbons.get(hole['key']))
         asset = write_asset(args.output, hole, result)
         assets[hole['key']] = asset
         report['asset'] = asset
@@ -612,7 +660,7 @@ def main():
                           'contextFeatures': len(report['contextFeatureIds']), 'tee': report['renderProfile']['teeGeometry'],
                           'hash': report['contentHash']}), flush=True)
     summary = {'compilerVersion': COMPILER_VERSION, 'styleVersion': STYLE_VERSION, 'packageHash': pkg['contentHash'],
-               'sourceManifestHash': digest(manifest), 'source': manifest,
+               'sourceManifestHash': digest(manifest), 'source': manifest, 'contextLayerHash': context_hash,
                'requestedOrdinals': sorted(wanted), 'compiledHoleCount': len(reports),
                'runtimeVersions': {'python': sys.version.split()[0], 'numpy': np.__version__, 'shapely': shapely.__version__, 'pyproj': pyproj.__version__},
                'holes': reports, 'limitations': ['All artifacts are local source candidates; no production publication or geographic acceptance implied',

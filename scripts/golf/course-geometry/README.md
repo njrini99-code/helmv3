@@ -135,10 +135,14 @@ python3 scripts/golf/course-geometry/prepare-osm-course.py \
   output/course-geometry/peek-n-peak-upper-package
 
 # 3. Acquire one native-1m USGS tile and compile per-hole terrain meshes.
+#    --context makes the reviewed ground ribbons (cart paths, service paths,
+#    roads) breaklines: vertices along every ribbon edge and 4 m cells along
+#    the ribbon within 60 m of the played hole. Heights stay source-sampled.
 python3 scripts/golf/course-geometry/compile-course-terrain.py --holes all \
   --package src/test/fixtures/course-geometry/peek-n-peak-upper.json \
   --source src/test/fixtures/course-geometry/sources/peek-n-peak-upper-terrain \
-  --output src/test/fixtures/course-geometry/compiled-peek-n-peak-upper
+  --output src/test/fixtures/course-geometry/compiled-peek-n-peak-upper \
+  --context src/test/fixtures/course-geometry/peek-n-peak-upper-context.json
 
 # 3b. Canopy groups from leaf-on NAIP (retained export in ignored output, review
 #     JSON as the fixture), then re-run step 2 with --canopy-review and step 3
