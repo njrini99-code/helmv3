@@ -18,15 +18,15 @@ bunker complex, tree line, pond, buildings, road, ski slope beside it).
 | --- | --- | --- | --- |
 | 1–5 | Summary, failure modes, philosophy, north star | done | Encoded here and in `docs/design/meridian-outside-world.md`; the world model (package + terrain + context layer) is the source of truth, the renderer reveals it |
 | 3.1 / 7 | Turf as a material system | partial | Turf roughness, macro/micro fields, mowing, edge types, first cut + three rough tiers, apron; blade-height/density cues and worn turf pending |
-| 3.2 / 9 | Volumetric bunkers (shoulder → rim → lip → face → floor) | partial | Bowl, rim ribbons, render-only turf lip (4–10 cm, seeded), per-bunker edge variation, floor macro; overhang shadow and bunker families pending |
+| 3.2 / 9 | Volumetric bunkers (shoulder → rim → lip → face → floor) | done (v1) | Bowl, rim ribbons, render-only turf lip (4–10 cm, seeded), per-bunker edge variation, floor macro; families (pot < 40 m², greenside within 25 m of a green ring, fairway) scale depth ×1.25/1/.85 and lip ×1.2/1.1/.9; overhang shadow: sand within 1.6 m inside the sun-facing rim darkens up to 32 % (hole 7 green state: 5 % of sand pixels ≥ 22 levels darker, all in rim crescents) (`SUN_GROUND` from the terrain light direction, display only). Compiler `meridian-visual-compiler-4`, style `meridian-v9` |
 | 3.3 / 8 | Greens as landforms | partial | Green from DEM, collar ring, apron neck, edge lip, pad-setting shade; tier reading blocked without green-contour source |
 | 3.4 / 10 | Vegetation hierarchy | partial | Seven families, edge/interior placement, mass, trunks, understory, context woodland; landmark-tree records and dead-space rhythm pending |
 | 3.5 / 11 | Buildings as landmarks | partial | Footprint extrusions with source height/levels; roof form/ridge/pitch pending (needs source roof tags or a correction layer, never guessed) |
 | 3.6 / 13 | Water basin and banks | partial | Static Fresnel, shoreline band, contact shade, water roughness .52 (no sun mirror); basin shaping and bank vegetation pending |
 | 3.7 / 6 | Terrain breaklines and multi-scale terrain | pending | Terrain compiler preserves feature edges; breakline conformance for paths/banks and meso mounding pending (compile-course-terrain.py) |
-| 3.8 / 16 | Contact and shadow | partial | Fitted shadow map, canopy contact shade, bunker/shore contact bands; AO around structures and path edges pending |
+| 3.8 / 16 | Contact and shadow | done (v1) | Fitted shadow map, canopy contact shade, bunker/shore contact bands; ground contact under context objects (`contextContact`: 10 % within 1.5 m of a building footprint, 6 % under a path and fading over a .8 m shoulder; sand, water and uncertain zones untouched) |
 | 3.9 / 18 | Camera modes | done (states) | Tee / approach / green / putting states + review flythrough pending (Meridian V6 storytelling) |
-| 12 | Roads, paths, hardscape | partial | Class-typed ribbons with widths; cut/fill and shoulders pending |
+| 12 | Roads, paths, hardscape | partial | Class-typed ribbons with widths; shoulder shade on the ground beside every ribbon (`contextContact.pathShoulderM`); cut/fill pending (needs terrain breaklines, 3.7) |
 | 14 | Native ground and secondary materials | partial | native / open field / wetland / parking / ski slope classes painted from source zones; soil, mulch, pine straw pending (need source) |
 | 15 | Small assets | pending | Only tee markers/flag today; course-specific only, never clutter |
 | 17 | Atmosphere | done | Capped haze, sky dome, distance desaturation (Meridian V5) |

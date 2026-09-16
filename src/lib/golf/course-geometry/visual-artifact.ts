@@ -10,12 +10,12 @@
  * refuses (MERIDIAN_ARTIFACT_MISMATCH) any artifact whose keys disagree with
  * the scene in front of it. */
 import { boundaryDistance } from './display-outline';
-import { terrainHeight, type TerrainMesh } from './terrain';
+import { TERRAIN_LIGHT_DIRECTION, terrainHeight, type TerrainMesh } from './terrain';
 import { inRing } from './spatial';
 import type { HoleScene, LocalFeature, PointM, SurfaceKind } from './types';
 import { hexToRgb, MERIDIAN_STYLE, srgbToLinear, styleHash, type MeridianPaletteKey, type MeridianStyle } from './visual-style';
 
-export const MERIDIAN_VISUAL_COMPILER_VERSION = 'meridian-visual-compiler-3';
+export const MERIDIAN_VISUAL_COMPILER_VERSION = 'meridian-visual-compiler-4';
 export const MERIDIAN_CODES = Object.freeze({
   mismatch: 'MERIDIAN_ARTIFACT_MISMATCH', missing: 'MERIDIAN_ARTIFACT_MISSING', contextLost: 'MERIDIAN_CONTEXT_LOST',
   shaderFailed: 'MERIDIAN_SHADER_FAILED', budgetExceeded: 'MERIDIAN_BUDGET_EXCEEDED', fitFailed: 'MERIDIAN_FIT_FAILED',
@@ -55,6 +55,8 @@ export interface VisualBunkerProfile {
   bowlRadiusM: number;
   depthBasis: 'visual_class';
   contextOnly: boolean;
+  /** Renderer redesign §9: pot (small), greenside (near a green ring) or fairway; scales depth and lip. */
+  family: 'pot' | 'greenside' | 'fairway';
   /** Fidelity §26–28: this bunker's render-only lip height and edge band/shade (seeded). */
   lipM: number;
   edgeBandM: number;
@@ -125,6 +127,8 @@ export interface MeridianVisualArtifact {
     greenComplex: { basis: 'visual_only'; version: 'green-complex-v1'; apronBasis: 'derived_neck'; apronVertices: number; edgeVertices: number; settingVertices: number };
     /** Fidelity §10: fairway edge types by neighbour. */
     fairwayEdges: { basis: 'visual_only'; version: 'edge-types-v1'; crispVertices: number; softVertices: number };
+    /** Renderer redesign §16: ground contact shade under context structures and path shoulders. */
+    contextContact: { basis: 'visual_only'; version: 'context-contact-v1'; structures: number; ribbons: number; vertices: number };
   };
   attributes: MeridianVisualAttributes;
 }
@@ -312,8 +316,11 @@ export function compileVisualArtifact(scene: HoleScene, mesh: TerrainMesh, style
   const hierarchy = compileRoughHierarchy(scene, mesh, style, attributes, featuresById, ringsFor);
   const greenComplex = compileGreenComplex(scene, mesh, style, attributes, contextIds, ringsFor);
   const fairwayEdges = compileFairwayEdges(scene, mesh, style, attributes, contextIds, ringsFor);
-  const profiles = compileBunkerBowls(mesh, style, attributes, featuresById, contextIds, ringsFor);
+  const greenRings = [...scene.features, ...(scene.contextFeatures ?? [])].filter(f => f.kind === 'green')
+    .flatMap(f => f.parts.map(part => part[0]).filter((ring): ring is PointM[] => !!ring && ring.length >= 3)).map(ring => ({ ring, box: ringBbox(ring) }));
+  const profiles = compileBunkerBowls(mesh, style, attributes, featuresById, contextIds, ringsFor, greenRings);
   const contactVertices = compileShorelines(mesh, style, attributes, featuresById, ringsFor);
+  const contextContact = compileContextContact(scene, mesh, style, attributes);
   const contentHash = fnvBytes(ATTRIBUTE_ORDER.map(key => attributes[key]));
   return {
     schemaVersion: 1, kind: 'meridian_visual_artifact', basis: 'visual_only', compilerVersion: MERIDIAN_VISUAL_COMPILER_VERSION,
@@ -332,6 +339,7 @@ export function compileVisualArtifact(scene: HoleScene, mesh: TerrainMesh, style
       groundZones: { basis: 'visual_only', version: 'context-zones-v1', painted: hierarchy.painted, classes: hierarchy.classes, skippedUncertain: hierarchy.skippedUncertain },
       greenComplex: { basis: 'visual_only', version: 'green-complex-v1', apronBasis: 'derived_neck', ...greenComplex },
       fairwayEdges: { basis: 'visual_only', version: 'edge-types-v1', ...fairwayEdges },
+      contextContact: { basis: 'visual_only', version: 'context-contact-v1', ...contextContact },
     },
     attributes,
   };
@@ -548,7 +556,8 @@ function compileRoughHierarchy(scene: HoleScene, mesh: TerrainMesh, style: Merid
  * elevation and the reviewed outline. Every boundary vertex stays at depth
  * zero so the bowl meets the surrounding turf without a crack. */
 function compileBunkerBowls(mesh: TerrainMesh, style: MeridianStyle, attributes: MeridianVisualAttributes,
-  featuresById: Map<string, LocalFeature>, contextIds: Set<string>, ringsFor: (id: string) => { ring: readonly PointM[]; box: Bbox }[]): VisualBunkerProfile[] {
+  featuresById: Map<string, LocalFeature>, contextIds: Set<string>, ringsFor: (id: string) => { ring: readonly PointM[]; box: Bbox }[],
+  greenRings: readonly { ring: readonly PointM[]; box: Bbox }[] = []): VisualBunkerProfile[] {
   const profiles: VisualBunkerProfile[] = [];
   const verticesByFeature = new Map<number, number[]>();
   for (let t = 0; t < mesh.triangleFeatures.length; t++) {
@@ -564,13 +573,18 @@ function compileBunkerBowls(mesh: TerrainMesh, style: MeridianStyle, attributes:
     if (!feature || !rings.length) continue;
     const contextOnly = contextIds.has(id), areaM2 = polygonArea(feature);
     const sizeClass: VisualBunkerProfile['sizeClass'] = areaM2 < style.bunker.smallAreaM2 ? 'small' : areaM2 > style.bunker.largeAreaM2 ? 'large' : 'medium';
+    // Renderer redesign §9: family from size and distance to the nearest green ring.
+    const outer = rings[0]?.ring ?? [];
+    const centroid: PointM = outer.length ? [outer.reduce((sum, q) => sum + q[0], 0) / outer.length, outer.reduce((sum, q) => sum + q[1], 0) / outer.length] : [0, 0];
+    const family: VisualBunkerProfile['family'] = areaM2 < style.bunker.potAreaM2 ? 'pot'
+      : nearestRingDistance(centroid, greenRings, Infinity) < style.bunker.greensideReachM ? 'greenside' : 'fairway';
     const [low = 0, high = 0] = style.bunker.depthM[sizeClass];
-    const depthM = (low + (high - low) * featureSeed(id)) * (contextOnly ? style.bunker.contextDepthScale : 1);
+    const depthM = (low + (high - low) * featureSeed(id)) * (contextOnly ? style.bunker.contextDepthScale : 1) * style.bunker.familyDepthScale[family];
     // Fidelity §26–28: no two bunker edges match. Lip height, contact band
     // and contact shade each vary per bunker by seed, inside the style range.
     const edgeSeed = featureSeed(`${id}:edge`), lipSeed = featureSeed(`${id}:lip`);
     const [lipLow = 0, lipHigh = 0] = style.bunker.lipM;
-    const lipM = (lipLow + (lipHigh - lipLow) * lipSeed) * (contextOnly ? style.bunker.contextDepthScale : 1);
+    const lipM = (lipLow + (lipHigh - lipLow) * lipSeed) * (contextOnly ? style.bunker.contextDepthScale : 1) * style.bunker.familyLipScale[family];
     const edgeBandM = style.bunker.contactBandM * (1 + (edgeSeed - .5) * 2 * style.bunker.edgeVariation);
     const edgeShade = style.bunker.contactShade * (1 + (featureSeed(`${id}:shade`) - .5) * 2 * style.bunker.edgeVariation);
     // Inradius from the deepest interior vertex; the bowl bottoms out there.
@@ -592,14 +606,20 @@ function compileBunkerBowls(mesh: TerrainMesh, style: MeridianStyle, attributes:
       attributes.bunkerSlope[vertex * 2 + 1] = Math.round(Math.max(-8, Math.min(8, gy)) * BUNKER_SLOPE_SCALE);
       // The floor darkens a little with depth (§31); the compiler's rim ribbons
       // keep their sand-edge / highlight albedo.
-      const shade = 1 - style.bunker.floorShade * (depthM > 0 ? depth / depthM : 0);
+      // Overhang shadow (renderer redesign §9): sand just inside a rim that
+      // faces the sun sits under the lip. `-(px, py)` points from the vertex
+      // to its nearest rim point; a positive dot with the sun's ground
+      // direction means the rim stands between the sand and the light.
+      const sunFacing = distance > 0 ? Math.max(0, (-px * SUN_GROUND[0] - py * SUN_GROUND[1]) / distance) : 0;
+      const overhang = distance < style.bunker.overhangBandM ? style.bunker.overhangShade * sunFacing * (1 - distance / style.bunker.overhangBandM) : 0;
+      const shade = (1 - style.bunker.floorShade * (depthM > 0 ? depth / depthM : 0)) * (1 - overhang);
       for (let c = 0; c < 3; c++) attributes.albedo[vertex * 3 + c] = Math.round(attributes.albedo[vertex * 3 + c]! * shade);
     });
     const box = rings.reduce((acc, { box: b }) => ({ minX: Math.min(acc.minX, b.minX), minY: Math.min(acc.minY, b.minY), maxX: Math.max(acc.maxX, b.maxX), maxY: Math.max(acc.maxY, b.maxY) }),
       { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity });
     const reachM = Math.max(edgeBandM, style.bunker.lipBandM);
     contactBoxes.push({ rings, edgeBandM, edgeShade, lipM, box: { minX: box.minX - reachM, minY: box.minY - reachM, maxX: box.maxX + reachM, maxY: box.maxY + reachM } });
-    profiles.push({ featureId: id, areaM2: Math.round(areaM2 * 10) / 10, sizeClass, depthM: Math.round(depthM * 1000) / 1000, effectiveDepthM,
+    profiles.push({ featureId: id, areaM2: Math.round(areaM2 * 10) / 10, sizeClass, family, depthM: Math.round(depthM * 1000) / 1000, effectiveDepthM,
       bowlRadiusM: Math.round(bowlRadiusM * 1000) / 1000, depthBasis: 'visual_class', contextOnly, vertexCount: vertices.length,
       lipM: Math.round(lipM * 1000) / 1000, edgeBandM: Math.round(edgeBandM * 1000) / 1000, edgeShade: Math.round(edgeShade * 1000) / 1000 });
   }
@@ -625,6 +645,60 @@ function compileBunkerBowls(mesh: TerrainMesh, style: MeridianStyle, attributes:
     }
   }
   return profiles;
+}
+
+const SUN_GROUND: PointM = (() => { const [x, y] = TERRAIN_LIGHT_DIRECTION, n = Math.hypot(x, y) || 1; return [x / n, y / n]; })();
+function expandBbox(box: Bbox, m: number): Bbox { return { minX: box.minX - m, minY: box.minY - m, maxX: box.maxX + m, maxY: box.maxY + m }; }
+function polylineDistance([x, y]: PointM, line: readonly PointM[]): number {
+  let best = Infinity;
+  for (let i = 1; i < line.length; i++) {
+    const [ax, ay] = line[i - 1]!, [bx, by] = line[i]!, dx = bx - ax, dy = by - ay;
+    const len2 = dx * dx + dy * dy, t = len2 > 0 ? Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / len2)) : 0;
+    best = Math.min(best, Math.hypot(x - (ax + dx * t), y - (ay + dy * t)));
+  }
+  return best;
+}
+
+/** Ground contact under context objects (renderer redesign §16): turf beside a
+ * building footprint and along a path's shoulder darkens a little so the
+ * extrusion and the ribbon read as resting on the ground. Uncertain zones
+ * paint nothing; bunker sand and water are never touched. */
+function compileContextContact(scene: HoleScene, mesh: TerrainMesh, style: MeridianStyle, attributes: MeridianVisualAttributes) {
+  const { structureBandM, structureShade, pathShoulderM, pathShade } = style.contextContact;
+  const zones = (scene.contextZones ?? []).filter(zone => zone.basis !== 'uncertain');
+  const structures = zones.filter(zone => zone.render === 'extrude' && zone.type !== 'LineString')
+    .flatMap(zone => zone.parts.map(part => part[0]).filter((ring): ring is PointM[] => !!ring && ring.length >= 3))
+    .map(ring => ({ ring, box: expandBbox(ringBbox(ring), structureBandM) }));
+  const ribbonWidths = style.contextObjects.ribbons as Record<string, { widthM: number } | undefined>;
+  const ribbons = zones.filter(zone => zone.render === 'ribbon' && zone.type === 'LineString').flatMap(zone => {
+    const halfM = ((zone.attributes as { widthM?: number }).widthM ?? ribbonWidths[zone.class]?.widthM ?? 2.5) / 2;
+    return zone.parts.flat().filter(line => line.length >= 2).map(line => ({ line, halfM, box: expandBbox(ringBbox(line), halfM + pathShoulderM) }));
+  });
+  if (!structures.length && !ribbons.length) return { structures: 0, ribbons: 0, vertices: 0 };
+  let touched = 0;
+  const v = mesh.vertices;
+  for (let t = 0; t < mesh.triangleFeatures.length; t++) {
+    const kind = mesh.featureKinds[mesh.triangleFeatures[t]!];
+    if (kind === 'bunker' || kind === 'water') continue;
+    for (let corner = 0; corner < 3; corner++) {
+      const vertex = t * 3 + corner, point: PointM = [v[vertex * 3]!, v[vertex * 3 + 1]!];
+      let shade = 1;
+      for (const structure of structures) {
+        if (bboxDistance(point, structure.box) > 0 || inRing(point, structure.ring)) continue;
+        const d = boundaryDistance(point, structure.ring);
+        if (d < structureBandM) shade *= 1 - structureShade * (1 - d / structureBandM);
+      }
+      for (const ribbon of ribbons) {
+        if (bboxDistance(point, ribbon.box) > 0) continue;
+        const d = polylineDistance(point, ribbon.line);
+        if (d < ribbon.halfM + pathShoulderM) shade *= 1 - pathShade * (d <= ribbon.halfM ? 1 : 1 - (d - ribbon.halfM) / pathShoulderM);
+      }
+      if (shade >= 1) continue;
+      touched++;
+      for (let c = 0; c < 3; c++) attributes.albedo[vertex * 3 + c] = Math.round(attributes.albedo[vertex * 3 + c]! * shade);
+    }
+  }
+  return { structures: structures.length, ribbons: ribbons.length, vertices: touched };
 }
 
 /** Shoreline contact (§44): turf within the contact band of a drawn shoreline

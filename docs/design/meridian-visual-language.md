@@ -111,6 +111,12 @@ render-only bowl per bunker (`layers.bunkerBowl`, `basis: 'visual_only'`,
   drawn sand; `terrainHeight` answers every pick, outline, framing and metric.
   A future source-supported depth would arrive as a new `depthBasis` with its
   provenance, never by editing the class table.
+- Families and overhang (renderer redesign §9): a bunker under 40 m² is a
+  pot, one whose centroid lies within 25 m of a green ring is greenside, the
+  rest are fairway bunkers; depth scales ×1.25 / 1 / .85 and lip ×1.2 / 1.1 /
+  .9 inside the class ranges. The sand within 1.6 m inside a rim that faces the
+  sun darkens up to 32 % (falling to zero at the band), so the lip reads as
+  casting a shadow. Nothing here changes the canonical rim or any metric.
 
 ## Vegetation (§35–41)
 
@@ -188,6 +194,10 @@ from V1; V4 changes what stands on each centre.
   no path or building features yet, and visuals never invent them. They arrive
   with the outside-world context ingestion (production player-view spec,
   2026-09-16, §13–14) as source-backed, reviewed features.
+- Ground contact (renderer redesign §16): turf within 1.5 m of a building
+  footprint darkens up to 10 % toward the wall, and the ground under a path
+  ribbon darkens 6 % with a .8 m shoulder fade, so structures and paths sit
+  on the ground. Sand, water and uncertain zones are never touched.
 
 ## Visual artifact (§6, §96–102)
 
@@ -260,6 +270,7 @@ it, and `--max` turns the fraction into an exit code for a gate.
 - `meridian-v6`: ground material system + visual artifact (V2), bunker bowls (V3), vegetation families, forest mass and trunk bands (V4).
 - `meridian-v7`: static water, contact shade, haze, sky dome, context tree toning (V5); shot storytelling (V6).
 - `meridian-v8`: rough hierarchy (primary/secondary/outer by distance from the nearest playing surface), classified ground zones from the context layer, slope-only darkening of non-playing ground, outer-rough macro scale. Compiler `meridian-visual-compiler-2` adds `surroundDistanceCm` and the context hash gate.
+- `meridian-v9`: bunker families (pot / greenside / fairway scale depth and lip), overhang shadow inside the sun-facing rim, ground contact shade beside building footprints and along path shoulders (`contextContact`). Compiler `meridian-visual-compiler-4` adds `family` to bunker profiles and the `contextContact` layer.
 - `meridian-v8` (fidelity pass, same version, new hash): green complex (`greenComplex` style block: derived apron neck, green/collar edge lip, pad-setting shade), bunker lip/edge variation/floor macro, fairway edge types (`fairwayEdge`), first-cut band, water roughness .52 and calmer sun/sky fill, desaturated fairway/green. Compiler `meridian-visual-compiler-3` adds `lipLiftMm` and the `greenComplex` / `fairwayEdges` layers.
 
 `styleHash()` hashes `MERIDIAN_STYLE` by value (`meridian-v8-<fnv>`); any

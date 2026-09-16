@@ -27,7 +27,7 @@ describe('Meridian visual kit (§112–114)', () => {
     expect(MERIDIAN_STYLE.haze.maxMix).toBeLessThanOrEqual(.3);
     expect(MERIDIAN_STYLE.canopyShade.amount).toBeLessThanOrEqual(.2);
     expect(MERIDIAN_STYLE.context.treeDesaturate).toBeLessThanOrEqual(.45);
-    expect(MERIDIAN_STYLE.version).toBe('meridian-v8');
+    expect(MERIDIAN_STYLE.version).toBe('meridian-v9');
   });
   it('hashes the style by value so any taste change re-keys the artifact cache (§100–101, §113)', () => {
     expect(MERIDIAN_STYLE_HASH).toMatch(new RegExp(`^${MERIDIAN_STYLE_VERSION}-[0-9a-f]{8}$`));

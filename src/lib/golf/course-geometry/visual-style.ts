@@ -5,7 +5,7 @@
  * surface condition; it is art direction only. The prose reference is
  * docs/design/meridian-visual-language.md. */
 
-export const MERIDIAN_STYLE_VERSION = 'meridian-v8';
+export const MERIDIAN_STYLE_VERSION = 'meridian-v9';
 
 export type MeridianPaletteKey = 'ground' | 'rough' | 'fairway' | 'green' | 'tee' | 'bunker' | 'water' | 'woods' |
   'surround' | 'fringe' | 'tree' | 'treeLight' | 'treeHighlight' | 'treeShadow' | 'sandEdge' | 'sandHighlight' |
@@ -82,7 +82,16 @@ export const MERIDIAN_STYLE = Object.freeze({
      * mesh never cracks), `lipM` chosen per bunker by seed; the contact band
      * and its shade vary per bunker by `edgeVariation` so no two edges match;
      * the floor carries the macro field at `floorMacroAmplitude`. */
-    lipM: [.04, .10] as const, lipBandM: .7, edgeVariation: .3, floorMacroAmplitude: .012 }),
+    lipM: [.04, .10] as const, lipBandM: .7, edgeVariation: .3, floorMacroAmplitude: .012,
+    /** Renderer redesign §9: bunker families. A bunker smaller than
+     * `potAreaM2` is a pot; one within `greensideReachM` of a green ring is
+     * greenside; the rest are fairway bunkers. Depth and lip scale per family
+     * inside the class ranges. The sand just inside the sun-facing rim darkens
+     * within `overhangBandM` as the lip's overhang shadow (display only). */
+    greensideReachM: 25, potAreaM2: 40,
+    familyDepthScale: Object.freeze({ pot: 1.25, greenside: 1, fairway: .85 }),
+    familyLipScale: Object.freeze({ pot: 1.2, greenside: 1.1, fairway: .9 }),
+    overhangBandM: 1.6, overhangShade: .32 }),
   /** Fidelity §13–21: the green complex. `apron` is a derived close-mown
    * neck where the hole's own fairway meets its own green (within
    * `apronFairwayM` of the fairway and `apronGreenM` of the green), blended
@@ -154,6 +163,11 @@ export const MERIDIAN_STYLE = Object.freeze({
    * mineral ribbons with a darker shoulder, restrained flat-roofed
    * structures, faint lines for fences and lifts. Widths/heights here are
    * fallbacks behind the zone's own attributes. */
+  /** Renderer redesign §16: ground contact under context objects. Turf within
+   * `structureBandM` of a building footprint, and within a path's shoulder
+   * (`pathShoulderM` beyond its half width), darkens a little so structures
+   * and paths sit on the ground instead of floating over it. Display only. */
+  contextContact: Object.freeze({ structureBandM: 1.5, structureShade: .10, pathShoulderM: .8, pathShade: .06 }),
   contextObjects: Object.freeze({
     ribbons: Object.freeze({
       cart_path: Object.freeze({ color: '#B6AF9F', shoulder: '#8F8A7C', widthM: 2.5, roughness: .88 }),

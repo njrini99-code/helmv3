@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import source from '@/test/fixtures/course-geometry/cacapon-07-terrain.json';
 import { pilotPackage, pilotScene } from '@/test/fixtures/course-geometry/pilot';
-import { parseTerrainMesh, terrainHeight } from '../terrain';
+import { parseTerrainMesh, terrainHeight, TERRAIN_LIGHT_DIRECTION } from '../terrain';
+import { inRing } from '../spatial';
 import { boundaryDistance } from '../display-outline';
 import {
   assertVisualArtifact, compileVisualArtifact, createVisualSurfaceSampler, MERIDIAN_CODES, MERIDIAN_VISUAL_COMPILER_VERSION, offlinePackManifest,
@@ -68,7 +69,7 @@ describe('Meridian visual artifact (§6, §96–102, §106.1)', () => {
     const all = [...scene.features, ...(scene.contextFeatures ?? [])];
     for (const profile of bowl.profiles) {
       const [low, high] = MERIDIAN_STYLE.bunker.depthM[profile.sizeClass];
-      const scale = profile.contextOnly ? MERIDIAN_STYLE.bunker.contextDepthScale : 1;
+      const scale = (profile.contextOnly ? MERIDIAN_STYLE.bunker.contextDepthScale : 1) * MERIDIAN_STYLE.bunker.familyDepthScale[profile.family];
       expect(profile.depthM).toBeGreaterThanOrEqual(low * scale - 1e-3); expect(profile.depthM).toBeLessThanOrEqual(high * scale + 1e-3);
       expect(profile.depthBasis).toBe('visual_class');
       const feature = all.find(f => f.id === profile.featureId)!, rings = feature.parts.flat();
@@ -273,7 +274,7 @@ describe('Green complex, fairway edges and bunker lips (fidelity §10, §13–21
     const artifact = compileVisualArtifact(scene, mesh), a = artifact.attributes, bowl = artifact.layers.bunkerBowl;
     const [lipLow, lipHigh] = MERIDIAN_STYLE.bunker.lipM;
     for (const profile of bowl.profiles) {
-      const scale = profile.contextOnly ? MERIDIAN_STYLE.bunker.contextDepthScale : 1;
+      const scale = (profile.contextOnly ? MERIDIAN_STYLE.bunker.contextDepthScale : 1) * MERIDIAN_STYLE.bunker.familyLipScale[profile.family];
       expect(profile.lipM).toBeGreaterThanOrEqual(lipLow * scale - 1e-3); expect(profile.lipM).toBeLessThanOrEqual(lipHigh * scale + 1e-3);
       expect(profile.edgeBandM).toBeGreaterThan(0); expect(profile.edgeShade).toBeGreaterThan(0);
     }
@@ -296,9 +297,85 @@ describe('Green complex, fairway edges and bunker lips (fidelity §10, §13–21
         if (lift > 0) { lifted++; maxLift = Math.max(maxLift, lift); }
       }
     }
-    expect(lifted).toBeGreaterThan(0); expect(maxLift).toBeLessThanOrEqual(lipHigh + 1e-3);
+    expect(lifted).toBeGreaterThan(0); expect(maxLift).toBeLessThanOrEqual(lipHigh * Math.max(...Object.values(MERIDIAN_STYLE.bunker.familyLipScale)) + 1e-3);
     // The display sampler adds the lip and the round trip keeps it.
     const parsed = parseVisualArtifact(serializeVisualArtifact(artifact));
     expect(Array.from(parsed.attributes.lipLiftMm)).toEqual(Array.from(a.lipLiftMm));
+  });
+});
+
+describe('Bunker families, overhang shade and context contact (renderer redesign §9, §16)', () => {
+  it('classifies each bunker as pot, greenside or fairway and scales depth and lip per family', () => {
+    const artifact = compileVisualArtifact(scene, mesh);
+    const all = [...scene.features, ...(scene.contextFeatures ?? [])];
+    const greens = all.filter(f => f.kind === 'green').flatMap(f => f.parts.map(p => p[0]!));
+    for (const profile of artifact.layers.bunkerBowl.profiles) {
+      expect(['pot', 'greenside', 'fairway']).toContain(profile.family);
+      const ring = all.find(f => f.id === profile.featureId)!.parts[0]![0]!;
+      const centroid: [number, number] = [ring.reduce((s, q) => s + q[0], 0) / ring.length, ring.reduce((s, q) => s + q[1], 0) / ring.length];
+      const greenDistance = Math.min(...greens.map(g => boundaryDistance(centroid, g)));
+      const expected = profile.areaM2 < MERIDIAN_STYLE.bunker.potAreaM2 ? 'pot' : greenDistance < MERIDIAN_STYLE.bunker.greensideReachM ? 'greenside' : 'fairway';
+      expect(profile.family).toBe(expected);
+    }
+  });
+  it('darkens the sand just inside the sun-facing rim more than the rim facing away (overhang shadow)', () => {
+    const artifact = compileVisualArtifact(scene, mesh), a = artifact.attributes;
+    const all = [...scene.features, ...(scene.contextFeatures ?? [])];
+    const [sx, sy] = [TERRAIN_LIGHT_DIRECTION[0], TERRAIN_LIGHT_DIRECTION[1]], n = Math.hypot(sx, sy);
+    const sunSide: number[] = [], shadeSide: number[] = [];
+    for (let t = 0; t < mesh.triangleFeatures.length; t++) {
+      const featureIndex = mesh.triangleFeatures[t]!;
+      if (mesh.featureKinds[featureIndex] !== 'bunker') continue;
+      const rings = all.find(f => f.id === mesh.featureIds[featureIndex])!.parts.flat();
+      for (let corner = 0; corner < 3; corner++) {
+        const vertex = t * 3 + corner, x = mesh.vertices[vertex * 3]!, y = mesh.vertices[vertex * 3 + 1]!;
+        let best = Infinity, bx = 0, by = 0;
+        for (const ring of rings) for (let i = 0; i < ring.length; i++) {
+          const [px, py] = ring[i]!, d = Math.hypot(px - x, py - y);
+          if (d < best) { best = d; bx = px; by = py; }
+        }
+        if (best <= 0.05 || best >= MERIDIAN_STYLE.bunker.overhangBandM * .6) continue;
+        const facing = ((bx - x) * sx + (by - y) * sy) / (best * n);
+        const lum = a.albedo[vertex * 3]! + a.albedo[vertex * 3 + 1]! + a.albedo[vertex * 3 + 2]!;
+        if (facing > .8) sunSide.push(lum); else if (facing < -.8) shadeSide.push(lum);
+      }
+    }
+    expect(sunSide.length).toBeGreaterThan(0); expect(shadeSide.length).toBeGreaterThan(0);
+    const mean = (xs: number[]) => xs.reduce((s, v) => s + v, 0) / xs.length;
+    expect(mean(sunSide)).toBeLessThan(mean(shadeSide));
+  });
+  it('shades the ground beside context structures and along path shoulders, never sand or water, never uncertain zones', () => {
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (let i = 0; i < mesh.vertices.length; i += 3) { minX = Math.min(minX, mesh.vertices[i]!); maxX = Math.max(maxX, mesh.vertices[i]!); minY = Math.min(minY, mesh.vertices[i + 1]!); maxY = Math.max(maxY, mesh.vertices[i + 1]!); }
+    const midX = (minX + maxX) / 2, midY = (minY + maxY) / 2;
+    const box = [[[[midX - 6, midY - 6], [midX + 6, midY - 6], [midX + 6, midY + 6], [midX - 6, midY + 6], [midX - 6, midY - 6]]]] as [number, number][][][];
+    const line = [[[[minX + 5, midY + 20], [maxX - 5, midY + 20]]]] as [number, number][][][];
+    const zones = [
+      { id: 'z-house', class: 'building', type: 'Polygon', parts: box, basis: 'source', reviewed: false, fidelity: 'medium', render: 'extrude', attributes: { heightM: 5 } },
+      { id: 'z-path', class: 'cart_path', type: 'LineString', parts: line, basis: 'source', reviewed: false, fidelity: 'medium', render: 'ribbon', attributes: { widthM: 2.5 } },
+      { id: 'z-unsure', class: 'building', type: 'Polygon', parts: [[[[minX + 2, minY + 2], [minX + 14, minY + 2], [minX + 14, minY + 14], [minX + 2, minY + 14], [minX + 2, minY + 2]]]], basis: 'uncertain', reviewed: false, fidelity: 'low', render: 'extrude', attributes: {} },
+    ];
+    const withZones = { ...scene, contextZones: zones as never, contextLayerHash: 'b'.repeat(64) };
+    const plain = compileVisualArtifact(scene, mesh), artifact = compileVisualArtifact(withZones, mesh);
+    expect(artifact.layers.contextContact).toMatchObject({ basis: 'visual_only', version: 'context-contact-v1', structures: 1, ribbons: 1 });
+    expect(artifact.layers.contextContact.vertices).toBeGreaterThan(0);
+    expect(plain.layers.contextContact.vertices).toBe(0);
+    const { structureBandM, pathShoulderM } = MERIDIAN_STYLE.contextContact;
+    const ring = box[0]![0]!;
+    for (let t = 0; t < mesh.triangleFeatures.length; t++) {
+      const kind = mesh.featureKinds[mesh.triangleFeatures[t]!];
+      for (let corner = 0; corner < 3; corner++) {
+        const vertex = t * 3 + corner, x = mesh.vertices[vertex * 3]!, y = mesh.vertices[vertex * 3 + 1]!;
+        const before = plain.attributes.albedo[vertex * 3]!, after = artifact.attributes.albedo[vertex * 3]!;
+        const houseD = inRing([x, y], ring) ? -1 : boundaryDistance([x, y], ring);
+        const pathD = Math.abs(y - (midY + 20)) <= 0 && x >= minX + 5 && x <= maxX - 5 ? 0 : Math.hypot(Math.max(0, minX + 5 - x, x - (maxX - 5)), y - (midY + 20));
+        const nearHouse = houseD >= 0 && houseD < structureBandM, nearPath = pathD < 1.25 + pathShoulderM;
+        const nearUnsure = x < minX + 16 && y < minY + 16;
+        if (kind === 'bunker' || kind === 'water') { expect(after).toBe(before); continue; }
+        if (nearUnsure && !nearHouse && !nearPath) { expect(after).toBe(before); continue; }
+        if (!nearHouse && !nearPath) expect(after).toBe(before);
+        else if (before > 8) expect(after).toBeLessThanOrEqual(before);
+      }
+    }
   });
 });
