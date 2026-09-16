@@ -153,7 +153,9 @@ describe('FairwayCalendarSubscriptionsSheet — create / regenerate / remove', (
 
     fireEvent.click(screen.getByRole('button', { name: 'Remove feed' }));
     expect(mockDeleteCalendarFeed).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole('button', { name: 'Remove' }));
+    // The inline confirm renders on the next commit; query it asynchronously
+    // (a synchronous getByRole raced it and failed on loaded CI runners).
+    fireEvent.click(await screen.findByRole('button', { name: 'Remove' }));
 
     expect(await screen.findByText('Not added yet')).toBeInTheDocument();
     expect(mockDeleteCalendarFeed).toHaveBeenCalledWith('team');
