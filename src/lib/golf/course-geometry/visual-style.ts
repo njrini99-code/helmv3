@@ -62,8 +62,38 @@ export const MERIDIAN_STYLE = Object.freeze({
   bunker: Object.freeze({ depthM: Object.freeze({ small: [.30, .45] as const, medium: [.45, .70] as const, large: [.60, .90] as const }),
     smallAreaM2: 60, largeAreaM2: 260, bowlRadiusM: [.6, 3.5] as const, bowlRadiusFraction: .85, contextDepthScale: .6,
     floorShade: .08, contactBandM: .6, contactShade: .22, sandGrainM: [.15, .35] as const, sandGrainAmplitude: .015 }),
-  /** §35–41 */
-  vegetation: Object.freeze({ families: 7, trunkBandM: 150, crownBudget: 720, tileM: 64 }),
+  /** §35–41: seven silhouette families over the authored crown atlas. Each
+   * family sets proportion, colour and where it may stand: `edge` families
+   * only within `edgeBandM` of the woods boundary (what a golfer sees),
+   * `interior` families only beyond it, `any` everywhere. Trunks are drawn
+   * only within `trunkBandM` of the camera focus; beyond the edge band a
+   * forest is carried by the mass layer rather than by more crowns. */
+  vegetation: Object.freeze({
+    crownBudget: 720, tileM: 64, trunkBandM: 150, edgeBandM: 24,
+    families: Object.freeze([
+      Object.freeze({ id: 'broad-oak', designs: ['staggered-shoulders', 'broad-low-cluster'] as const, weight: 3, placement: 'any' as const,
+        radius: [1.15, 1.5] as const, heightRatio: [2.0, 2.4] as const, trunkRatio: .055, base: '#4F7F2C', light: '#79A83C' }),
+      Object.freeze({ id: 'maple-dome', designs: ['scalloped-dome', 'offset-crest'] as const, weight: 3, placement: 'any' as const,
+        radius: [.9, 1.2] as const, heightRatio: [2.4, 2.8] as const, trunkRatio: .05, base: '#5D8A2E', light: '#8DB544' }),
+      Object.freeze({ id: 'tall-poplar', designs: ['stepped-spire'] as const, weight: 1.5, placement: 'any' as const,
+        radius: [.65, .85] as const, heightRatio: [3.4, 4.2] as const, trunkRatio: .06, base: '#4C7D33', light: '#6F9E45' }),
+      Object.freeze({ id: 'pine-spire', designs: ['stepped-spire', 'asymmetric-tier'] as const, weight: 2, placement: 'any' as const,
+        radius: [.8, 1.0] as const, heightRatio: [3.0, 3.6] as const, trunkRatio: .05, base: '#3A6A3A', light: '#4C8046' }),
+      Object.freeze({ id: 'young-tree', designs: ['uneven-fork', 'swept-shoulder'] as const, weight: 2, placement: 'edge' as const,
+        radius: [.55, .8] as const, heightRatio: [2.2, 2.6] as const, trunkRatio: .06, base: '#6C9A34', light: '#98C34C' }),
+      Object.freeze({ id: 'shrub-cluster', designs: ['broad-low-cluster'] as const, weight: 1.5, placement: 'edge' as const,
+        radius: [.7, 1.0] as const, heightRatio: [1.2, 1.6] as const, trunkRatio: 0, base: '#5B7E2F', light: '#7FA23C' }),
+      Object.freeze({ id: 'forest-body', designs: ['swept-shoulder', 'offset-crest', 'asymmetric-tier'] as const, weight: 3, placement: 'interior' as const,
+        radius: [1.2, 1.6] as const, heightRatio: [2.2, 2.6] as const, trunkRatio: .05, base: '#37582C', light: '#4E7335' }),
+    ]),
+    /** Crowns within this distance of the woods edge lean toward the family's lit colour (§40). */
+    edgeLightM: 12, edgeLightMix: .35,
+    /** §39: low-poly canopy lobes carry the forest interior beyond the crown
+     * budget: one lobe per grid cell inset from the boundary, sunk into the
+     * ground so no underside shows. */
+    mass: Object.freeze({ insetM: 16, spacingM: 13, lobeRadiusM: [6.5, 10] as const, canopyHeightM: [8, 12] as const,
+      color: '#34532F', light: '#446A3A', budget: 420 }),
+  }),
   /** §42–45, §51 */
   water: Object.freeze({ shorelineM: .75, fresnelPower: 3.2, color: '#3B6C77', deepColor: '#2E5561' }),
   haze: Object.freeze({ color: '#C9D8E6', startM: 180, endM: 900, maxMix: .28 }),
@@ -78,7 +108,10 @@ export type MeridianStyle = Widen<typeof MERIDIAN_STYLE>;
  * the style value; the artifact and its hash never change under an override. */
 export interface MeridianStyleOverrides {
   macro?: number; micro?: number; mowing?: number; boundary?: number; context?: number;
+  /** Build-time multipliers for the lab (§95): crown budget and forest mass (0 hides). */
+  crowns?: number; mass?: number;
 }
+export type TreeFamily = typeof MERIDIAN_STYLE.vegetation.families[number];
 
 /** FNV-1a over the canonical JSON of the style. Synchronous so the cache key
  * exists before any async boundary; collisions here only cost a recompile. */

@@ -11,7 +11,7 @@ import { buildHoleScene } from '@/lib/golf/course-geometry/build-scene';
 import { compileVisualArtifact, serializeVisualArtifact } from '@/lib/golf/course-geometry/visual-artifact';
 import type { MeridianStyleOverrides } from '@/lib/golf/course-geometry/visual-style';
 
-const STYLE_LAYERS = ['macro', 'micro', 'mowing', 'boundary', 'context'] as const;
+const STYLE_LAYERS = ['macro', 'micro', 'mowing', 'boundary', 'context', 'crowns', 'mass'] as const;
 import type { CourseView } from '@/lib/golf/course-geometry/camera';
 import { PERSPECTIVE_FOV, TERRAIN_PRESETS, type TerrainMesh, type TerrainPose, type TerrainPreset } from '@/lib/golf/course-geometry/terrain';
 import { fitTerrainViewportCamera } from '@/lib/golf/course-geometry/terrain-viewport';
@@ -111,7 +111,7 @@ export function MeridianLabFixture({ course }: { course: CompiledCourse }) {
       {range('Zoom', zoom, .5, 4, .1, setZoom)}
       {field('Debug view', <NativeSelect value={debugView} onChange={e => setDebugView(e.target.value as TerrainDebugView)} aria-label="Debug view">{TERRAIN_DEBUG_VIEWS.map(mode => <option key={mode} value={mode}>{TERRAIN_DEBUG_LABELS[mode]} ({mode})</option>)}</NativeSelect>)}
       {field('Viewport', <NativeSelect value={viewport} onChange={e => setViewport(e.target.value)} aria-label="Viewport">{Object.entries(VIEWPORTS).map(([key, [w, h]]) => <option key={key} value={key}>{key} {w}×{h}</option>)}</NativeSelect>)}
-      <h2 className="mt-2 text-caption font-semibold">Material layers ×</h2>
+      <h2 className="mt-2 text-caption font-semibold">Material / vegetation layers ×</h2>
       {STYLE_LAYERS.map(layer => range(layer, overrides[layer], 0, 4, .25, v => setOverrides({ ...overrides, [layer]: v })))}
       <h2 className="mt-2 text-caption font-semibold">Telemetry</h2>
       <dl className="grid grid-cols-[auto_1fr] gap-x-2 text-eyebrow" data-slot="lab-telemetry">

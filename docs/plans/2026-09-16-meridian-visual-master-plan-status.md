@@ -14,7 +14,7 @@ the visual-language document.
 
 | § | Title | Status | Evidence / remaining |
 | --- | --- | --- | --- |
-| 0 | Executive directive | partial | V0–V3 landed (`95792455e` → `7d83a11c4` → `ea34cdb63` → this commit); V4–V7 in progress. Tracker rows below are the per-section record. |
+| 0 | Executive directive | partial | V0–V4 landed (`95792455e` → `7d83a11c4` → `ea34cdb63` → `0d9e2ab50` → this commit); V5–V7 in progress. Tracker rows below are the per-section record. |
 | 1 | What the current plan gets right (1.1–1.5) | done | Doctrine encoded in `docs/design/meridian-visual-language.md` (Layer A/B/C) and enforced by §7 guard |
 | 2 | What the screenshots say | done | Baseline canaries `output/playwright/course-geometry/visual-system/canaries/v0-baseline` (96 captures) + sheet `docs/plans/assets/meridian-2026-09-16/canaries-v0-390x844.png` |
 | 3 | Terrain is not truly perspective | done | Confirmed: V0 Terrain was orthographic pitch 50 / relief 1.5. Replaced by perspective in `terrain.ts` (`TERRAIN_PRESETS.terrain`) |
@@ -49,13 +49,13 @@ the visual-language document.
 | 32 | Bunker contact darkening | done | Turf within 0.6 m of a rim darkens ≤22% (baked into artifact albedo) |
 | 33 | Visual surface sampler | done | `createVisualSurfaceSampler(mesh, artifact)`: elevation − bowl depth; `terrainHeight` unchanged for picks, outlines, framing |
 | 34 | Shot marker rule | done | Markers, badges, segments and tracks project through the surface sampler (`projectSurface` in `shot-overlay-layout`; flight paths take the sampler); regions/outlines stay canonical |
-| 35 | Trees too uniform | pending | |
-| 36 | Visual tree families | pending | |
-| 37 | Trunks where they matter | pending | |
-| 38 | Forest-edge-first rendering | pending | |
-| 39 | Forest mass layer | pending | |
-| 40 | Tree color redesign | pending | |
-| 41 | Tree deterministic seed | pending | |
+| 35 | Trees too uniform | done | Seven families with distinct designs, proportions, height ratios and colours replace the single crown recipe; hole 11 Terrain and hole 7 Side captures under `output/playwright/course-geometry/visual-system/lab/v4b-*` and canary set `v4-vegetation` |
+| 36 | Visual tree families | done | `MERIDIAN_STYLE.vegetation.families` (broad-oak, maple-dome, tall-poplar, pine-spire, young-tree, shrub-cluster, forest-body) with `placement` any/edge/interior; `pickFamily()` weights by distance to the woods edge; test "mixes seven families by depth" in `three-landscape.test.ts` |
+| 37 | Trunks where they matter | done | Instanced trunks per tile: 7-sided within 150 m of the focus, 3-sided within 300 m, hidden beyond; shrubs have none; `counts.trunksVisible` / `terrainTrunks` telemetry; `setDetail()` test |
+| 38 | Forest-edge-first rendering | done | Crown budget allocated edge-first by nearness to the played hole; edge band 24 m gets young/shrub families and the lit colour lift; interior beyond the budget falls to the mass layer instead of vanishing |
+| 39 | Forest mass layer | done | Forest mass: staggered 13 m grid of sunk icosahedron lobes (6.5–10 m) inset 16 m from every woods boundary and excluded from playing surfaces, budget 420 nearest the hole first; `counts.massLobes` / `terrainMassLobes`; `?mass=` lab scale. Cost vs V3 canaries: median +9 draw calls / +15k triangles, worst hole 17 Terrain phone 250 draws (413 lobes, 538 trunks) → V7 budget work (§64–66) |
+| 40 | Tree color redesign | done | Family base → light colours by seed with an edge lift (12 m, 35 %); mass olive `#34532F`; all crowns below fairway luminance (`visual-style.test.ts` hierarchy order); style hash `meridian-v6-aa889886` |
+| 41 | Tree deterministic seed | done | Tree id = course frame + package hash + feature id + pattern centre + style version seeds family, design, proportion, colour, yaw and aspect; identity/transform stability test across hole order and shared context |
 | 42 | Water system | pending | |
 | 43 | Static water | pending | |
 | 44 | Shoreline integration | pending | |
@@ -109,7 +109,7 @@ the visual-language document.
 | 92 | WebGPU experiment route | pending | |
 | 93 | Post-processing | pending | |
 | 94 | Render-quality lab | done | Lab route `?lab=1&course=&hole=` (`src/test/fixtures/course-geometry/browser/meridian-lab.tsx`), URL-scriptable state, telemetry panel |
-| 95 | Inspector controls | partial | Inspector: hole, area, preset, projection, FOV, pitch, yaw, relief, zoom, debug view (+ bunker-depth), viewport, material layer multipliers, telemetry; light/seed/budget/tree toggles arrive with V4–V7 |
+| 95 | Inspector controls | partial | Inspector: hole, area, preset, projection, FOV, pitch, yaw, relief, zoom, debug view (+ bunker-depth), viewport, material layer multipliers, crown/mass budget scales (`?crowns=`, `?mass=`), telemetry incl. tree families; light/seed toggles arrive with V5–V7 |
 | 96 | Visual artifact compiler | done | `scripts/golf/course-geometry/compile-visual-artifacts.mts` (tsx): 18 holes, determinism check, cache round-trip, pack manifest |
 | 97 | Packed render attributes | done | Packed attributes: Uint8 albedo/weights/roughness/class, Uint16 boundary cm + bunker mm, Float32 route (s,t); 19 B/vertex, 160–460 KB gzip per hole |
 | 98 | Field textures vs attributes | done | Decision recorded in the operations doc: attributes now; field textures only if bunker rims / shorelines need sub-triangle detail |
@@ -139,5 +139,5 @@ the visual-language document.
 | 122 | Follow-up experiment (bunker spike) | done | Bunker spike: hole 7 and 11 Terrain/Side before (v2-material) vs after (v3-bunkers), sheet `spike-122-bunkers-holes-07-11.png`; profiles printed by the compiler |
 | 123 | Source and tool notes | done | Operations doc |
 | 124 | Final success definition | pending | |
-| 125 | Agent implementation brief A–I | partial | A (baseline + lab), B (perspective camera, all holes), C (faceting kit + audit), D (ground material + artifact), E (bunker bowls) done; F–I pending |
+| 125 | Agent implementation brief A–I | partial | A (baseline + lab), B (perspective camera, all holes), C (faceting kit + audit), D (ground material + artifact), E (bunker bowls), F (vegetation families, mass, trunks) done; G–I pending |
 | 126 | Closing product thesis | pending | |

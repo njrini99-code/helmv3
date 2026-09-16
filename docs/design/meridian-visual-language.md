@@ -105,10 +105,44 @@ render-only bowl per bunker (`layers.bunkerBowl`, `basis: 'visual_only'`,
 
 ## Vegetation (§35–41)
 
-Seven silhouette families; trunks only within the near band; forest mass
-beyond the edge-first crown budget; palette from deep forest olive at the
-mass to cooler green at the lit edge; seed = package hash + feature id +
-instance id + style version.
+Trees are Layer B illustration placed only inside reviewed `woods` masks
+(`three-landscape.ts`, values in `MERIDIAN_STYLE.vegetation`). Placement
+centres, clearance from playing surfaces and the crown budget are unchanged
+from V1; V4 changes what stands on each centre.
+
+- **Families (§36, §40).** Seven silhouette families, each with its own
+  designs, proportion range, height ratio, trunk ratio and base → lit colour:
+  `broad-oak`, `maple-dome`, `tall-poplar`, `pine-spire` (any depth),
+  `young-tree`, `shrub-cluster` (edge only, shrubs have no trunk) and
+  `forest-body` (interior only). `pickFamily(edgeM, roll)` weights families by
+  distance from the woods edge, so the edge band (24 m) reads as light young
+  growth and shrubs, the interior as darker forest body. Crowns within 12 m
+  of the edge lean up to 35 % toward the family's lit colour; the interior
+  keeps the deep olive base. The palette runs from forest-mass olive
+  `#34532F` through forest-body `#37582C` to lit young-tree `#98C34C`, all
+  below fairway luminance so the playing surfaces stay the brightest greens.
+- **Edge-first crowns (§38).** The crown budget (720) goes edge-first: the
+  allocation ranks candidates by nearness to the played hole's surfaces, and
+  the forest interior beyond the budget is carried by the mass layer rather
+  than by dropped crowns.
+- **Forest mass (§39).** Beyond a 16 m inset from every woods boundary, a
+  13 m staggered grid places low-poly canopy lobes (`IcosahedronGeometry(1,
+  1)`, radius 6.5–10 m, height 8–12 m, sunk 42 % into the ground so no
+  underside shows). Lobes never stand inside or within a lobe radius of a
+  non-woods feature. Budget 420 lobes, allocated nearest the hole first;
+  `counts.massLobes` and the `terrainMassLobes` telemetry field report the
+  live count.
+- **Trunks (§37).** Every trunked crown carries an instanced cylinder per
+  tile: 7-sided within the near band (150 m of the camera focus), 3-sided
+  within twice the band, hidden beyond. `counts.trunksVisible` and
+  `terrainTrunks` report what is drawn.
+- **Identity (§41).** `canopy:<courseFrame>:<packageHash12>:<featureId>:<x>,<y>:<styleVersion>`
+  and `mass:<…>` seed every family roll, proportion, colour, yaw and aspect,
+  so a tree is the same tree across holes, shared context and sessions, and
+  changes only when the package or the style version changes
+  (`three-landscape.test.ts`).
+- **Lab.** `?crowns=` and `?mass=` scale the two budgets (0 removes the
+  layer); `treeFamilies` in the telemetry lists the family counts on screen.
 
 ## Water and context (§42–45, §51–55)
 
@@ -131,8 +165,8 @@ hash; `Math.sqrt` only, millimetre-quantised route coordinates). Cache path:
 ## Style versions (§113)
 
 - `meridian-v5`: perspective camera, lower sun, faceting kit (this plan V0–V1).
-- `meridian-v6`: ground material system + visual artifact (V2), bunker bowls (V3).
-- `meridian-v7`: vegetation families, water, context, shot storytelling (V4–V6).
+- `meridian-v6`: ground material system + visual artifact (V2), bunker bowls (V3), vegetation families, forest mass and trunk bands (V4).
+- `meridian-v7`: water, context, lighting and shot storytelling (V5–V6).
 
 `styleHash()` hashes `MERIDIAN_STYLE` by value (`meridian-v6-<fnv>`); any
 change to a value re-keys the artifact cache and appears in every capture's

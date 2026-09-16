@@ -663,7 +663,10 @@ distance compiled from the hash-locked package + terrain + frozen style
 (`visual-style.ts`). The artifact carries `basis: 'visual_only'`, is refused
 when its package/terrain/style hashes disagree with the scene
 (`MERIDIAN_ARTIFACT_MISMATCH`), and never feeds picking, framing, shot
-reconstruction or persisted state. Status and evidence per plan section:
+reconstruction or persisted state. Trees stay inside reviewed woods masks
+and come in seven seeded silhouette families with trunks in the near band
+and a low-poly forest-mass layer for the interior (V4). Status and evidence
+per plan section:
 `docs/plans/2026-09-16-meridian-visual-master-plan-status.md`; art direction:
 `docs/design/meridian-visual-language.md`. No lifecycle writer, resolver or
 production binding changed.

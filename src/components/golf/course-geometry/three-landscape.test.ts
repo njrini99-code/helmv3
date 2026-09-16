@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
 import { buildThreeLandscape, DEFAULT_THREE_LANDSCAPE_PALETTE } from './three-landscape';
+import { MERIDIAN_STYLE } from '@/lib/golf/course-geometry/visual-style';
 import { installTerrainDebugView } from './terrain-debug';
 import { pilotPackage, pilotScene } from '@/test/fixtures/course-geometry/pilot';
 import source from '@/test/fixtures/course-geometry/cacapon-07-terrain.json';
@@ -199,6 +200,51 @@ describe('Three landscape source and rendering invariants', () => {
     unreviewed.dispose(); landscape.dispose();
   });
 
+  it('mixes seven families by depth into the woods, carries the interior with a forest mass, and keeps trunks to the near band (§36–39)', () => {
+    const woods = square('big-woods', 'woods', 0, 320), copse = square('copse', 'woods', 400, 440), green = square('green', 'green', 140, 180);
+    const base = pilotScene('cacapon-07', false), mesh = slopeMesh();
+    mesh.vertices = [0, 0, 100, 500, 0, 100, 0, 500, 100, 500, 0, 100, 500, 500, 100, 0, 500, 100];
+    const landscape = buildThreeLandscape({ ...base, features: [woods, copse, green] }, mesh);
+    const families = landscape.counts.families;
+    expect(Object.keys(families).length).toBeGreaterThanOrEqual(4);
+    const edgeBand = MERIDIAN_STYLE.vegetation.edgeBandM, byPlacement = new Map(MERIDIAN_STYLE.vegetation.families.map(f => [f.id, f.placement]));
+    let edgeTrees = 0, interiorTrees = 0;
+    for (const child of landscape.group.children) if (child.name.startsWith('source-canopy-crowns')) {
+      const batch = child as THREE.InstancedMesh, matrix = new THREE.Matrix4();
+      for (let i = 0; i < batch.count; i++) {
+        batch.getMatrixAt(i, matrix);
+        const x = matrix.elements[12]!, y = matrix.elements[13]!;
+        const inBig = x >= 0 && x <= 320 && y >= 0 && y <= 320;
+        const edge = inBig ? Math.min(x, y, 320 - x, 320 - y) : Math.min(x - 400, y - 400, 440 - x, 440 - y);
+        const placement = byPlacement.get(batch.userData.families[i])!;
+        if (edge < edgeBand) { edgeTrees++; expect(placement).not.toBe('interior'); } else { interiorTrees++; expect(placement).not.toBe('edge'); }
+      }
+    }
+    expect(edgeTrees).toBeGreaterThan(0); expect(interiorTrees).toBeGreaterThan(0);
+    // Forest mass exists only where a woods polygon has an interior beyond the inset; the copse has none.
+    expect(landscape.counts.massLobes).toBeGreaterThan(20);
+    const mass = landscape.group.children.filter(child => child.name.startsWith('source-forest-mass')) as THREE.InstancedMesh[];
+    const lobe = new THREE.Matrix4();
+    for (const batch of mass) for (let i = 0; i < batch.count; i++) {
+      batch.getMatrixAt(i, lobe);
+      const x = lobe.elements[12]!, y = lobe.elements[13]!;
+      expect(Math.min(x, y, 320 - x, 320 - y)).toBeGreaterThanOrEqual(MERIDIAN_STYLE.vegetation.mass.insetM - 1e-6);
+      expect(Math.hypot(Math.max(0, Math.max(140 - x, x - 180)), Math.max(0, Math.max(140 - y, y - 180)))).toBeGreaterThan(5);
+    }
+    // Trunks: cheap everywhere within twice the band, hidden beyond, detailed near the focus.
+    const trunkBatches = () => landscape.group.children.filter(child => child.name.startsWith('source-canopy-trunks')) as THREE.InstancedMesh[];
+    // Focus at the woods corner: the copse (~530 m away) sits beyond twice the band.
+    landscape.setDetail('distant', [40, 40]);
+    const visibleFar = trunkBatches().filter(batch => batch.visible).length, hiddenFar = trunkBatches().filter(batch => !batch.visible).length;
+    expect(hiddenFar).toBeGreaterThan(0); expect(visibleFar).toBeGreaterThan(0);
+    landscape.setDetail('near', [40, 40]);
+    expect(trunkBatches().some(batch => batch.userData.lod === 'near')).toBe(true);
+    expect(landscape.counts.trunksVisible).toBeGreaterThan(0);
+    const budgetless = buildThreeLandscape({ ...base, features: [woods, copse, green] }, mesh, undefined, { overrides: { crowns: 0, mass: 0 } });
+    expect(budgetless.counts.trees).toBe(0); expect(budgetless.counts.massLobes).toBe(0);
+    budgetless.dispose(); landscape.dispose();
+  });
+
   it('keeps source tree identities and transforms stable across hole order and shared context, then changes LOD without moving trees', () => {
     const woods = square('reviewed-canopy', 'woods', 0, 100), green = square('green', 'green', 35, 65);
     const base = pilotScene('cacapon-07', false), mesh = slopeMesh();
@@ -236,8 +282,10 @@ describe('Three landscape source and rendering invariants', () => {
     // A focus limits near crowns to the batch tiles around it: nothing changes
     // for a focus far from every crown, and a focus on one crown upgrades only
     // its neighbourhood.
-    expect(landscape.setDetail('near', [1e5, 1e5])).toBe(false);
+    // (§37: trunks beyond twice the band hide, so the call itself reports a change.)
+    landscape.setDetail('near', [1e5, 1e5]);
     expect(landscape.counts.crownTriangles).toBe(distantTriangles);
+    expect(landscape.counts.trunksVisible).toBe(0);
     const first = before.values().next().value!.matrix;
     expect(landscape.setDetail('near', [first[12]!, first[13]!])).toBe(true);
     expect(landscape.counts.crownTriangles).toBeGreaterThan(distantTriangles);
