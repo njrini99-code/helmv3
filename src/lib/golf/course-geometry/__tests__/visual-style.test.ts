@@ -18,6 +18,16 @@ describe('Meridian visual kit (§112–114)', () => {
     expect(Math.min(...MERIDIAN_STYLE.turf.micro.wavelengthsM)).toBeGreaterThanOrEqual(.25);
     expect(Math.max(...MERIDIAN_STYLE.turf.micro.wavelengthsM)).toBeLessThanOrEqual(1.5);
     expect(MERIDIAN_STYLE.mowing.bandWidthM).toBeGreaterThanOrEqual(5); expect(MERIDIAN_STYLE.mowing.bandWidthM).toBeLessThanOrEqual(8);
+    // V5 (§42–52): water, haze and contact shade stay restrained so nothing
+    // reads as depth, weather or a surface condition.
+    expect(MERIDIAN_STYLE.water.skyMix).toBeLessThanOrEqual(.6);
+    expect(MERIDIAN_STYLE.water.shorelineShade).toBeLessThanOrEqual(.15);
+    expect(MERIDIAN_STYLE.water.shorelineM).toBeLessThanOrEqual(.75);
+    expect(MERIDIAN_STYLE.water.rippleAmplitude).toBeLessThanOrEqual(.05);
+    expect(MERIDIAN_STYLE.haze.maxMix).toBeLessThanOrEqual(.3);
+    expect(MERIDIAN_STYLE.canopyShade.amount).toBeLessThanOrEqual(.2);
+    expect(MERIDIAN_STYLE.context.treeDesaturate).toBeLessThanOrEqual(.45);
+    expect(MERIDIAN_STYLE.version).toBe('meridian-v7');
   });
   it('hashes the style by value so any taste change re-keys the artifact cache (§100–101, §113)', () => {
     expect(MERIDIAN_STYLE_HASH).toMatch(new RegExp(`^${MERIDIAN_STYLE_VERSION}-[0-9a-f]{8}$`));

@@ -259,6 +259,7 @@ node scripts/golf/course-geometry/audit-normal-continuity.mjs \
 # Render-quality lab (§94–95): http://127.0.0.1:8768/?lab=1&course=peek-n-peak-upper&hole=7
 #   material layer multipliers: &macro=0&micro=0&mowing=4&boundary=0&context=0 (1 = style value)
 #   vegetation budget scales:   &crowns=0&mass=0 (1 = style budget; 0 removes the layer)
+#   atmosphere/water scales:    &water=0&haze=0&shade=0 (1 = style value; haze/sky only in perspective presets)
 node scripts/golf/course-geometry/capture-lab.cjs --out=output/playwright/course-geometry/visual-system/lab/hole07.png \
   --params="course=peek-n-peak-upper&hole=7&preset=terrain&viewport=desktop&mowing=0"
 # Bunker spike sheet (§122): before/after rows for two labels

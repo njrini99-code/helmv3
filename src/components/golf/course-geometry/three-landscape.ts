@@ -58,7 +58,7 @@ function featureSeed(id: string): number {
 }
 
 /** Indices into SURFACE_CLASS_IDS; the shader compares the class attribute. */
-const SURFACE_CLASS_GREEN = 4, SURFACE_CLASS_BUNKER = 7;
+const SURFACE_CLASS_GREEN = 4, SURFACE_CLASS_BUNKER = 7, SURFACE_CLASS_WATER = 8;
 
 export interface TurfStyleTarget extends THREE.Material { onBeforeCompile: THREE.Material['onBeforeCompile']; customProgramCacheKey: THREE.Material['customProgramCacheKey'] }
 export interface TurfStyleHandle { setOverrides(overrides: MeridianStyleOverrides): void }
@@ -75,18 +75,32 @@ export function attachTurfStyle(material: TurfStyleTarget, seed: readonly [numbe
   const style = MERIDIAN_STYLE;
   const amplitudes = new THREE.Vector4(style.turf.macro.amplitude, style.turf.micro.amplitude, style.mowing.amplitude, style.boundary.shade);
   const contextMix: { value: number } = { value: style.context.desaturate };
+  // §42–45 water terms (sky mix, interior mix, ripple, shoreline shade) and the §50 contact shade.
+  const waterMix = new THREE.Vector4(style.water.skyMix, style.water.deepMix, style.water.rippleAmplitude, style.water.shorelineShade);
+  const shadeAmount: { value: number } = { value: style.canopyShade.amount };
   const apply = (next: MeridianStyleOverrides) => {
     amplitudes.set(style.turf.macro.amplitude * (next.macro ?? 1), style.turf.micro.amplitude * (next.micro ?? 1),
       style.mowing.amplitude * (next.mowing ?? 1), style.boundary.shade * (next.boundary ?? 1));
     contextMix.value = style.context.desaturate * (next.context ?? 1);
+    const water = next.water ?? 1;
+    waterMix.set(style.water.skyMix * water, style.water.deepMix * water, style.water.rippleAmplitude * water, style.water.shorelineShade * water);
+    shadeAmount.value = style.canopyShade.amount * (next.shade ?? 1);
   };
   apply(overrides);
   const [m0, m1, m2] = style.turf.macro.wavelengthsM, [u0, u1] = style.turf.micro.wavelengthsM, [g0, g1] = style.bunker.sandGrainM;
+  const [r0, r1] = style.water.rippleM;
   const k = (wavelength: number) => (2 * Math.PI / wavelength).toFixed(6);
+  // Fresnel and the ripple normal need view-space normals, which only the lit
+  // materials carry; the unlit albedo view keeps the flat water gradient.
+  const lit = material.type === 'MeshStandardMaterial' || material.type === 'MeshPhysicalMaterial';
   material.onBeforeCompile = shader => {
     shader.uniforms.golfSeed = { value: new THREE.Vector2(seed[0], seed[1]) };
     shader.uniforms.golfAmplitudes = { value: amplitudes };
     shader.uniforms.golfContextDesaturate = contextMix;
+    shader.uniforms.golfWaterMix = { value: waterMix };
+    shader.uniforms.golfWaterDeep = { value: new THREE.Color(style.water.deepColor) };
+    shader.uniforms.golfWaterSky = { value: new THREE.Color(style.water.skyColor) };
+    shader.uniforms.golfShadeAmount = shadeAmount;
     shader.vertexShader = shader.vertexShader.replace('#include <common>', `#include <common>
 attribute float golfMowingWeight;
 attribute float golfTurfWeight;
@@ -95,6 +109,7 @@ attribute float golfRoughness;
 attribute float golfSurfaceClass;
 attribute float golfBoundaryDistance;
 attribute vec2 golfRouteST;
+attribute float golfCanopyShade;
 varying vec2 vGolfWorldXY;
 varying vec2 vGolfRouteST;
 varying vec4 vGolfWeights;
@@ -102,11 +117,15 @@ varying vec3 vGolfSurface;`).replace('#include <begin_vertex>', `#include <begin
 vGolfWorldXY = (modelMatrix * vec4(position, 1.0)).xy;
 vGolfRouteST = golfRouteST;
 vGolfWeights = vec4(golfMowingWeight, golfTurfWeight, golfContextWeight, golfBoundaryDistance);
-vGolfSurface = vec3(golfRoughness, golfSurfaceClass, 0.0);`);
+vGolfSurface = vec3(golfRoughness, golfSurfaceClass, golfCanopyShade);`);
     shader.fragmentShader = shader.fragmentShader.replace('#include <common>', `#include <common>
 uniform vec2 golfSeed;
 uniform vec4 golfAmplitudes;
 uniform float golfContextDesaturate;
+uniform vec4 golfWaterMix;
+uniform vec3 golfWaterDeep;
+uniform vec3 golfWaterSky;
+uniform float golfShadeAmount;
 varying vec2 vGolfWorldXY;
 varying vec2 vGolfRouteST;
 varying vec4 vGolfWeights;
@@ -151,12 +170,34 @@ varying vec3 vGolfSurface;`).replace('#include <color_fragment>', `#include <col
   // Context (§53): real surfaces, quieter. Albedo only; never alpha.
   float golfLuma = dot(diffuseColor.rgb, vec3(0.2126, 0.7152, 0.0722));
   diffuseColor.rgb = mix(diffuseColor.rgb, vec3(golfLuma), golfContextWeight * golfContextDesaturate);
+  // Water (§42–45): the interior darkens with distance from the drawn
+  // shoreline (visual only, never depth), the shoreline band darkens the
+  // edge, and lit materials lift toward the sky colour by Fresnel (§43).
+  if (abs(vGolfSurface.y - ${SURFACE_CLASS_WATER}.0) < 0.5) {
+    float golfInterior = smoothstep(0.0, ${style.water.interiorM.toFixed(3)}, golfBoundary);
+    diffuseColor.rgb = mix(diffuseColor.rgb, golfWaterDeep, golfInterior * golfWaterMix.y);
+    diffuseColor.rgb *= 1.0 - golfWaterMix.w * (1.0 - smoothstep(0.0, ${style.water.shorelineM.toFixed(3)}, golfBoundary));
+${lit ? `    float golfFresnel = pow(1.0 - clamp(dot(normalize(vNormal), normalize(vViewPosition)), 0.0, 1.0), ${style.water.fresnelPower.toFixed(3)});
+    diffuseColor.rgb = mix(diffuseColor.rgb, golfWaterSky, golfFresnel * golfWaterMix.x);` : ''}
+  }
+  // Canopy contact shade (§50): analytic, from the placed crowns and mass.
+  diffuseColor.rgb *= 1.0 - vGolfSurface.z * golfShadeAmount;
 }`).replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
-roughnessFactor = vGolfSurface.x;`);
+roughnessFactor = vGolfSurface.x;`).replace('#include <normal_fragment_begin>', `#include <normal_fragment_begin>
+// Static water ripple (§43): a small world-space normal field, filtered out at distance.
+if (abs(vGolfSurface.y - ${SURFACE_CLASS_WATER}.0) < 0.5) {
+  vec2 golfRp = vGolfWorldXY + golfSeed;
+  float golfR0 = dot(golfRp, vec2(0.77, 0.64) * ${k(r0)}), golfR1 = dot(golfRp, vec2(-0.55, 0.83) * ${k(r1)});
+  float golfRippleVisible = 1.0 - smoothstep(0.6, 1.4, fwidth(golfR0));
+  vec3 golfRipple = vec3(cos(golfR0) * 0.77 - cos(golfR1) * 0.55, cos(golfR0) * 0.64 + cos(golfR1) * 0.83, 0.0) * golfWaterMix.z * golfRippleVisible;
+  normal = normalize(normal + mat3(viewMatrix) * golfRipple);
+}`);
   };
   material.customProgramCacheKey = () => `golf-landscape-turf-${MERIDIAN_STYLE_HASH}:${material.type}`;
   material.userData.mowing = { basis: 'illustrative_style', bandWidthM: style.mowing.bandWidthM, frame: 'route_local' };
   material.userData.turf = { basis: 'visual_only', macroM: style.turf.macro.wavelengthsM, microM: style.turf.micro.wavelengthsM };
+  material.userData.water = { basis: 'visual_only', depthBasis: 'shoreline_distance', reflection: lit ? 'fresnel_static' : 'none' };
+  material.userData.canopyShade = { basis: 'analytic_contact', amount: style.canopyShade.amount };
   material.userData.styleVersion = MERIDIAN_STYLE_VERSION; material.userData.styleHash = MERIDIAN_STYLE_HASH;
   return { setOverrides: apply };
 }
@@ -274,6 +315,14 @@ export function buildThreeLandscape(
   const excludedRings = excludedFeatures.flatMap(feature => feature.parts.flat());
   const courseFrame = mesh.originWgs84.join(',');
   const canopyGroups = canopyScene.features.filter(feature => feature.kind === 'woods' && feature.reviewed);
+  // §53: context woods keep their trees but lose saturation and a little
+  // light so they never compete with the played hole. Colour only.
+  const ownIds = new Set(scene.features.map(feature => feature.id));
+  const contextTone = (color: THREE.Color, feature: LocalFeature) => {
+    if (ownIds.has(feature.id)) return color;
+    const luma = color.r * .2126 + color.g * .7152 + color.b * .0722;
+    return color.lerp(new THREE.Color(luma, luma, luma), MERIDIAN_STYLE.context.treeDesaturate).multiplyScalar(1 - MERIDIAN_STYLE.context.treeDarken);
+  };
   // Over budget, keep the crowns nearest the played hole's own surfaces: the
   // forest edge a golfer sees, not the interior of a mass behind it (§38).
   const ownRings = scene.features.filter(feature => feature.kind !== 'woods' && feature.kind !== 'route').flatMap(feature => feature.parts.flat());
@@ -314,7 +363,7 @@ export function buildThreeLandscape(
       const radius = Math.min(designRadius, Math.max(0, clearance - .15));
       // §40: family base → light by seed, lifted toward the lit colour at the edge.
       const edgeLift = Math.max(0, 1 - edgeM / VEGETATION.edgeLightM) * VEGETATION.edgeLightMix;
-      const color = new THREE.Color(family.base).lerp(new THREE.Color(family.light), Math.min(1, variation(n + 233) * .6 + edgeLift));
+      const color = contextTone(new THREE.Color(family.base).lerp(new THREE.Color(family.light), Math.min(1, variation(n + 233) * .6 + edgeLift)), feature);
       trees.push({ id, tile: `${Math.floor(point[0] / CANOPY_TILE_M)},${Math.floor(point[1] / CANOPY_TILE_M)}`,
         x: point[0], y: point[1], groundZ, radius, trunkRadius: designRadius * family.trunkRatio, height: designRadius * heightRatio,
         aspect: .84 + variation(n + 37) * .16, yaw: variation(n + 41) * Math.PI * 2, asset, familyId: family.id, color });
@@ -351,10 +400,40 @@ export function buildThreeLandscape(
       const height = VEGETATION.mass.canopyHeightM[0] + (VEGETATION.mass.canopyHeightM[1] - VEGETATION.mass.canopyHeightM[0]) * variation(n + 7);
       lobes.push({ id, tile: `${Math.floor(point[0] / CANOPY_TILE_M)},${Math.floor(point[1] / CANOPY_TILE_M)}`, x: point[0], y: point[1], groundZ,
         radius, aspect: .8 + variation(n + 11) * .3, height, yaw: variation(n + 13) * Math.PI * 2,
-        color: new THREE.Color(VEGETATION.mass.color).lerp(new THREE.Color(VEGETATION.mass.light), variation(n + 17) * .7) });
+        color: contextTone(new THREE.Color(VEGETATION.mass.color).lerp(new THREE.Color(VEGETATION.mass.light), variation(n + 17) * .7), feature) });
       if (lobes.length >= massBudget) break;
     }
   }
+
+  // §50 analytic contact shading: every display vertex accumulates a soft
+  // disc under each nearby crown and mass lobe; the ground shader darkens
+  // albedo by it. Derived from the seeded placement above, never the DEM,
+  // and never a screen-space pass at the base tier.
+  const canopyShade = new Float32Array(vertexCount);
+  {
+    const cellM = 32, cells = new Map<string, { x: number; y: number; r: number; w: number }[]>();
+    const put = (x: number, y: number, r: number, w: number) => {
+      if (r <= 0) return;
+      const key = `${Math.floor(x / cellM)},${Math.floor(y / cellM)}`;
+      const list = cells.get(key) ?? []; list.push({ x, y, r, w }); cells.set(key, list);
+    };
+    for (const tree of trees) put(tree.x, tree.y, tree.radius * MERIDIAN_STYLE.canopyShade.crownRadiusScale, 1);
+    for (const lobe of lobes) put(lobe.x, lobe.y, lobe.radius * MERIDIAN_STYLE.canopyShade.massRadiusScale, MERIDIAN_STYLE.canopyShade.massWeight);
+    if (cells.size) for (let vertex = 0; vertex < vertexCount; vertex++) {
+      const x = source[vertex * 3]!, y = source[vertex * 3 + 1]!, cx = Math.floor(x / cellM), cy = Math.floor(y / cellM);
+      let total = 0;
+      for (let dx = -1; dx <= 1 && total < 1; dx++) for (let dy = -1; dy <= 1 && total < 1; dy++) {
+        for (const item of cells.get(`${cx + dx},${cy + dy}`) ?? []) {
+          const u = Math.sqrt((item.x - x) ** 2 + (item.y - y) ** 2) / item.r;
+          if (u >= 1) continue;
+          const t = Math.min(1, Math.max(0, (u - .3) / .7));
+          total += (1 - t * t * (3 - 2 * t)) * item.w;
+        }
+      }
+      canopyShade[vertex] = Math.min(1, total);
+    }
+  }
+  terrainGeometry.setAttribute('golfCanopyShade', new THREE.BufferAttribute(canopyShade, 1));
 
   const crownMaterial = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 1, metalness: 0 });
   crownMaterial.name = 'opaque-canopy';

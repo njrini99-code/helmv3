@@ -245,6 +245,31 @@ describe('Three landscape source and rendering invariants', () => {
     budgetless.dispose(); landscape.dispose();
   });
 
+  it('darkens turf at the drawn shoreline, marks water as shoreline-distance only, and shades the ground under placed crowns (§44–45, §50)', () => {
+    const woods = square('woods', 'woods', 0, 60), pond = square('pond', 'water', 200, 260), rough = square('rough', 'rough', 150, 310);
+    const base = pilotScene('cacapon-07', false), mesh = slopeMesh();
+    // Extra ground triangles put one display vertex 0.3 m outside the pond
+    // and three inside the woods interior.
+    mesh.vertices = [0, 0, 100, 500, 0, 100, 0, 500, 100, 500, 0, 100, 500, 500, 100, 0, 500, 100,
+      199.7, 230, 100, 150, 200, 100, 150, 260, 100, 30, 30, 100, 40, 30, 100, 30, 40, 100];
+    mesh.triangleFeatures = [0, 0, 0, 0]; mesh.triangleMaterials = [0, 0, 0, 0];
+    const landscape = buildThreeLandscape({ ...base, features: [woods, pond, rough] }, mesh);
+    const water = landscape.artifact.layers.water;
+    expect(water).toMatchObject({ basis: 'visual_only', depthBasis: 'shoreline_distance', version: 'static-fresnel-v1' });
+    // The pond's ribbon vertices are turf inside the contact band: they darken.
+    expect(water.contactVertices).toBeGreaterThan(0);
+    expect(landscape.terrain.material.userData.water).toMatchObject({ basis: 'visual_only', depthBasis: 'shoreline_distance', reflection: 'fresnel_static' });
+    const shade = landscape.terrain.geometry.getAttribute('golfCanopyShade') as THREE.BufferAttribute, positions = landscape.terrain.geometry.getAttribute('position');
+    expect(shade.count).toBe(positions.count);
+    let underCrowns = 0, farFromCrowns = 0;
+    for (let v = 0; v < shade.count; v++) {
+      const x = positions.getX(v), y = positions.getY(v);
+      if (x > 100 || y > 100) { expect(shade.getX(v)).toBe(0); farFromCrowns++; } else if (shade.getX(v) > 0) underCrowns++;
+    }
+    expect(farFromCrowns).toBeGreaterThan(0); expect(underCrowns).toBeGreaterThan(0);
+    landscape.dispose();
+  });
+
   it('keeps source tree identities and transforms stable across hole order and shared context, then changes LOD without moving trees', () => {
     const woods = square('reviewed-canopy', 'woods', 0, 100), green = square('green', 'green', 35, 65);
     const base = pilotScene('cacapon-07', false), mesh = slopeMesh();
@@ -254,14 +279,16 @@ describe('Three landscape source and rendering invariants', () => {
     // second scene keeps that hash; tree identity comes from the course frame.
     const other = buildThreeLandscape({ ...base, hole: { ...base.hole, ordinal: 18 },
       features: [woods], contextFeatures: [green] }, mesh);
+    const colors = new Map<string, number[]>();
     const records = (model: typeof landscape) => {
-      const result = new Map<string, { matrix: number[]; family: string; color: number[] }>();
+      const result = new Map<string, { matrix: number[]; family: string }>();
       for (const child of model.group.children) if (child.name.startsWith('source-canopy-crowns')) {
         const batch = child as THREE.InstancedMesh;
         for (let i = 0; i < batch.count; i++) {
           const matrix = new THREE.Matrix4(), color = new THREE.Color();
           batch.getMatrixAt(i, matrix); batch.getColorAt(i, color);
-          result.set(batch.userData.treeIds[i], { matrix: matrix.toArray(), family: batch.userData.family, color: color.toArray() });
+          result.set(batch.userData.treeIds[i], { matrix: matrix.toArray(), family: batch.userData.family });
+          colors.set(`${model === landscape ? 'context' : 'own'}:${batch.userData.treeIds[i]}`, color.toArray());
         }
       }
       return result;
@@ -269,6 +296,15 @@ describe('Three landscape source and rendering invariants', () => {
     const before = records(landscape), distantTriangles = landscape.counts.crownTriangles;
     expect(before.size).toBeGreaterThan(30);
     expect(before).toEqual(records(other));
+    // §53: the same tree is quieter (less saturated, a little darker) when its
+    // woods is shared context rather than the played hole's own feature.
+    const saturation = ([r = 0, g = 0, b = 0]: number[]) => Math.max(r, g, b) - Math.min(r, g, b);
+    for (const id of before.keys()) {
+      const own = colors.get(`own:${id}`)!, context = colors.get(`context:${id}`)!;
+      expect(saturation(context)).toBeLessThan(saturation(own));
+      const luma = ([r = 0, g = 0, b = 0]: number[]) => r * .2126 + g * .7152 + b * .0722;
+      expect(luma(context)).toBeLessThan(luma(own));
+    }
     expect(landscape.counts.drawCalls).toBeLessThan(100);
     expect(landscape.counts.totalTriangles).toBeLessThan(150000);
     expect(landscape.setDetail('distant')).toBe(false);

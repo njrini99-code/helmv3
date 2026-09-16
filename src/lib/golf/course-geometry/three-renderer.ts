@@ -1,6 +1,6 @@
 import {
-  ACESFilmicToneMapping, Box3, Color, DirectionalLight, HemisphereLight,
-  OrthographicCamera, PCFShadowMap, PerspectiveCamera, Raycaster, Scene, SRGBColorSpace, Vector3, WebGLRenderer,
+  ACESFilmicToneMapping, BackSide, Box3, Color, DirectionalLight, Fog, HemisphereLight, Mesh,
+  OrthographicCamera, PCFShadowMap, PerspectiveCamera, Raycaster, Scene, ShaderMaterial, SphereGeometry, SRGBColorSpace, Vector3, WebGLRenderer,
 } from 'three';
 import { installTerrainDebugView, type TerrainDebugView } from '@/components/golf/course-geometry/terrain-debug';
 import { buildThreeLandscape, DEFAULT_THREE_LANDSCAPE_PALETTE } from '@/components/golf/course-geometry/three-landscape';
@@ -55,6 +55,16 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
   let flightPaths: ThreeFlightPaths | null = null;
   let evidence: ReturnType<typeof createShotOverlayController> | null = null;
   let sun: DirectionalLight | null = null;
+  // §51–52 atmosphere: distance haze and a sky/horizon dome exist only behind
+  // the perspective presets; Top keeps the map-like ground background.
+  let haze: Fog | null = null, hazeMix = 0, skyDome: Mesh<SphereGeometry, ShaderMaterial> | null = null;
+  const groundBackground = new Color(DEFAULT_THREE_LANDSCAPE_PALETTE.ground), hazeBackground = new Color(MERIDIAN_STYLE.haze.color);
+  function applyAtmosphere(projection: TerrainCamera['projection']) {
+    const perspective = projection === 'perspective';
+    world.fog = perspective ? haze : null;
+    if (skyDome) skyDome.visible = perspective;
+    world.background = perspective ? hazeBackground : groundBackground;
+  }
   let disposed = false, failed = false, ready = false, shaderFailed = false;
   let currentCamera = options.camera, width = options.width, height = options.height;
   let currentScene = options.scene, currentSelected = options.selectedShotNumber;
@@ -113,6 +123,7 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
     disposed = true;
     canvas.removeEventListener('webglcontextlost', lost);
     releaseDebug?.(); evidence?.dispose(); flightPaths?.dispose(); landscape?.dispose(); sun?.shadow.dispose();
+    skyDome?.geometry.dispose(); skyDome?.material.dispose();
     world.clear(); renderer.dispose();
     // React may replace the runtime while retaining the canvas (new geometry,
     // review eligibility or Strict Mode). Dispose GPU resources every time,
@@ -164,6 +175,7 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
         if (landscape.setDetail(nextDetail, [camera.focusM[0], camera.focusM[1]])) { fitSun(); renderer.shadowMap.needsUpdate = true; }
       }
       view = camera.projection === 'perspective' ? perspectiveView : orthographicView;
+      applyAtmosphere(camera.projection);
       applyTerrainCamera(view, camera, width, height, viewDistance);
       const began = performance.now();
       renderer.render(world, view);
@@ -185,6 +197,7 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
         visualStyleVersion: String(landscape.group.userData.styleVersion ?? ''),
         visualStyleHash: MERIDIAN_STYLE_HASH, visualArtifactHash: landscape.artifact.contentHash, visualArtifactSource: landscape.artifactSource,
         visualBunkers: String(landscape.artifact.layers.bunkerBowl.profiles.length),
+        visualHaze: world.fog ? hazeMix.toFixed(2) : '0', visualSky: skyDome?.visible ? 'gradient' : 'ground',
         qualityTier: 'standard',
         shadowMapSize: `${sun?.shadow.mapSize.x ?? 0}`, shadowMapType: 'pcf',
         lightDirection: TERRAIN_LIGHT_DIRECTION.map(v => v.toFixed(3)).join(','),
@@ -226,6 +239,13 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
     const centre = bounds.getCenter(new Vector3()), size = bounds.getSize(new Vector3());
     const radius = Math.max(40, size.length() / 2 + 32);
     viewDistance = radius * 4;
+    // §51 haze: a linear ramp from startM that reaches maxMix at endM; the
+    // package never extends far enough for the ramp to hide anything.
+    hazeMix = MERIDIAN_STYLE.haze.maxMix * (options.styleOverrides?.haze ?? 1);
+    haze = hazeMix > 0 ? new Fog(hazeBackground, MERIDIAN_STYLE.haze.startM, MERIDIAN_STYLE.haze.startM + (MERIDIAN_STYLE.haze.endM - MERIDIAN_STYLE.haze.startM) / hazeMix) : null;
+    skyDome = buildSkyDome(viewDistance * .9);
+    skyDome.position.copy(centre);
+    world.add(skyDome);
     const sunlight = new Vector3(...TERRAIN_LIGHT_DIRECTION).normalize();
     sun = new DirectionalLight(MERIDIAN_STYLE.light.sunColor, MERIDIAN_STYLE.light.sunIntensity);
     sun.position.copy(centre).addScaledVector(sunlight, radius * 3);
@@ -246,6 +266,7 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
     releaseDebug = installTerrainDebugView(world, landscape, mesh, options.debugView ?? 'final', renderer);
     if (options.debugView && options.debugView !== 'final') overlay.style.display = 'none';
     view = currentCamera.projection === 'perspective' ? perspectiveView : orthographicView;
+    applyAtmosphere(currentCamera.projection);
     applyTerrainCamera(view, currentCamera, width, height, viewDistance);
   } catch (error) {
     if (error instanceof Error && error.message.startsWith(MERIDIAN_CODES.mismatch)) canvas.dataset.meridianCode = MERIDIAN_CODES.mismatch;
@@ -275,4 +296,28 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
     },
     dispose,
   };
+}
+
+/** §52: a sky/horizon gradient dome behind perspective presets. It is drawn
+ * first without depth, ignores fog and shadows, and carries no course data. */
+function buildSkyDome(radius: number): Mesh<SphereGeometry, ShaderMaterial> {
+  const material = new ShaderMaterial({
+    side: BackSide, depthWrite: false, fog: false,
+    uniforms: { zenith: { value: new Color(MERIDIAN_STYLE.sky.zenith) }, horizon: { value: new Color(MERIDIAN_STYLE.sky.horizon) }, ground: { value: new Color(MERIDIAN_STYLE.haze.color) } },
+    vertexShader: `varying vec3 vDir;
+void main() { vDir = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+    fragmentShader: `uniform vec3 zenith; uniform vec3 horizon; uniform vec3 ground; varying vec3 vDir;
+void main() {
+  vec3 sky = mix(horizon, zenith, pow(clamp(vDir.z, 0.0, 1.0), 0.55));
+  gl_FragColor = vec4(mix(sky, ground, clamp(-vDir.z * 3.0, 0.0, 1.0)), 1.0);
+  #include <tonemapping_fragment>
+  #include <colorspace_fragment>
+}`,
+  });
+  material.name = 'meridian-sky';
+  const dome = new Mesh(new SphereGeometry(radius, 32, 12), material);
+  dome.name = 'meridian-sky-dome';
+  dome.renderOrder = -1; dome.frustumCulled = false; dome.visible = false;
+  dome.userData = { basis: 'visual_only', layer: 'sky' };
+  return dome;
 }

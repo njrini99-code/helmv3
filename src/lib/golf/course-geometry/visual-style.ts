@@ -5,7 +5,7 @@
  * surface condition; it is art direction only. The prose reference is
  * docs/design/meridian-visual-language.md. */
 
-export const MERIDIAN_STYLE_VERSION = 'meridian-v6';
+export const MERIDIAN_STYLE_VERSION = 'meridian-v7';
 
 export type MeridianPaletteKey = 'ground' | 'rough' | 'fairway' | 'green' | 'tee' | 'bunker' | 'water' | 'woods' |
   'surround' | 'fringe' | 'tree' | 'treeLight' | 'treeHighlight' | 'treeShadow' | 'sandEdge' | 'sandHighlight';
@@ -50,10 +50,10 @@ export const MERIDIAN_STYLE = Object.freeze({
   /** §23–24: per-surface roughness (MeshStandard) and collar blend. */
   surface: Object.freeze({ roughness: Object.freeze({ green: .78, tee: .88, fairway: .92, fringe: .93, surround: .95, rough: .97, ground: .97,
     // Water keeps a rough, glare-free surface until the V5 static-Fresnel material.
-    woods: 1, bunker: .82, water: .9 }), collarMix: .5, woodsUnderstoryMix: .78 }),
+    woods: 1, bunker: .82, water: .32 }), collarMix: .5, woodsUnderstoryMix: .78 }),
   /** §53: context features keep their real surface but drop toward rough and
    * lose saturation; nearer context loses less than far context. */
-  context: Object.freeze({ roughMix: .58, desaturate: .15, weightNear: .6, weightFar: .4 }),
+  context: Object.freeze({ roughMix: .58, desaturate: .15, treeDesaturate: .3, treeDarken: .08, weightNear: .6, weightFar: .4 }),
   /** §28–32: render-only bunker bowl. Depth by size class (metres, chosen
    * deterministically inside the range per feature id); the bowl reaches full
    * depth at `bowlRadiusFraction` of the bunker's inradius, clamped to
@@ -94,9 +94,22 @@ export const MERIDIAN_STYLE = Object.freeze({
     mass: Object.freeze({ insetM: 16, spacingM: 13, lobeRadiusM: [6.5, 10] as const, canopyHeightM: [8, 12] as const,
       color: '#34532F', light: '#446A3A', budget: 420 }),
   }),
-  /** §42–45, §51 */
-  water: Object.freeze({ shorelineM: .75, fresnelPower: 3.2, color: '#3B6C77', deepColor: '#2E5561' }),
+  /** §42–45: static water. The interior darkens with distance from the drawn
+   * shoreline (`depthBasis: shoreline_distance`, visual only — never a
+   * measured depth), a short shoreline band darkens the water edge and the
+   * turf contact, a static ripple normal and a Fresnel lift toward the sky
+   * colour make it read as water without animation or planar reflection. */
+  water: Object.freeze({ shorelineM: .75, shorelineShade: .12, interiorM: 14, deepMix: .55, deepColor: '#2E5561',
+    fresnelPower: 3.2, skyMix: .5, skyColor: '#BFD4E8', rippleM: [1.7, 4.3] as const, rippleAmplitude: .025,
+    contactBandM: .6, contactShade: .08 }),
+  /** §51: distance haze in perspective presets only, capped so the played
+   * hole never loses more than this much contrast at `endM`. */
   haze: Object.freeze({ color: '#C9D8E6', startM: 180, endM: 900, maxMix: .28 }),
+  /** §52: sky/horizon gradient behind perspective presets; Top keeps the map ground. */
+  sky: Object.freeze({ zenith: '#8FB3DA', horizon: '#DCE6EF' }),
+  /** §50: analytic contact shading under crowns and forest mass, computed
+   * from the seeded placement. No screen-space AO at the base tier. */
+  canopyShade: Object.freeze({ amount: .16, crownRadiusScale: 1.15, massRadiusScale: .95, massWeight: .8 }),
 });
 /** Structural (widened) style type so a variant style, such as a lab
  * experiment or a test, can carry different values under the same shape. */
@@ -110,6 +123,8 @@ export interface MeridianStyleOverrides {
   macro?: number; micro?: number; mowing?: number; boundary?: number; context?: number;
   /** Build-time multipliers for the lab (§95): crown budget and forest mass (0 hides). */
   crowns?: number; mass?: number;
+  /** V5 (§42–52): water sky/interior mix, haze strength (renderer) and canopy contact shade. */
+  water?: number; haze?: number; shade?: number;
 }
 export type TreeFamily = typeof MERIDIAN_STYLE.vegetation.families[number];
 

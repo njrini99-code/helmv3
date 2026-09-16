@@ -665,7 +665,10 @@ when its package/terrain/style hashes disagree with the scene
 (`MERIDIAN_ARTIFACT_MISMATCH`), and never feeds picking, framing, shot
 reconstruction or persisted state. Trees stay inside reviewed woods masks
 and come in seven seeded silhouette families with trunks in the near band
-and a low-poly forest-mass layer for the interior (V4). Status and evidence
+and a low-poly forest-mass layer for the interior (V4). Water is a class of the
+same ground material with a shoreline-distance tone (never depth), perspective
+presets add capped distance haze and a sky dome, and crowns cast an analytic
+contact shade (V5). Status and evidence
 per plan section:
 `docs/plans/2026-09-16-meridian-visual-master-plan-status.md`; art direction:
 `docs/design/meridian-visual-language.md`. No lifecycle writer, resolver or

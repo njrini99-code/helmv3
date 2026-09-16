@@ -14,7 +14,7 @@ the visual-language document.
 
 | § | Title | Status | Evidence / remaining |
 | --- | --- | --- | --- |
-| 0 | Executive directive | partial | V0–V4 landed (`95792455e` → `7d83a11c4` → `ea34cdb63` → `0d9e2ab50` → this commit); V5–V7 in progress. Tracker rows below are the per-section record. |
+| 0 | Executive directive | partial | V0–V5 landed (`95792455e` → `7d83a11c4` → `ea34cdb63` → `0d9e2ab50` → `efb805701` → this commit); V6–V7 in progress. Tracker rows below are the per-section record. |
 | 1 | What the current plan gets right (1.1–1.5) | done | Doctrine encoded in `docs/design/meridian-visual-language.md` (Layer A/B/C) and enforced by §7 guard |
 | 2 | What the screenshots say | done | Baseline canaries `output/playwright/course-geometry/visual-system/canaries/v0-baseline` (96 captures) + sheet `docs/plans/assets/meridian-2026-09-16/canaries-v0-390x844.png` |
 | 3 | Terrain is not truly perspective | done | Confirmed: V0 Terrain was orthographic pitch 50 / relief 1.5. Replaced by perspective in `terrain.ts` (`TERRAIN_PRESETS.terrain`) |
@@ -56,20 +56,20 @@ the visual-language document.
 | 39 | Forest mass layer | done | Forest mass: staggered 13 m grid of sunk icosahedron lobes (6.5–10 m) inset 16 m from every woods boundary and excluded from playing surfaces, budget 420 nearest the hole first; `counts.massLobes` / `terrainMassLobes`; `?mass=` lab scale. Cost vs V3 canaries: median +9 draw calls / +15k triangles, worst hole 17 Terrain phone 250 draws (413 lobes, 538 trunks) → V7 budget work (§64–66) |
 | 40 | Tree color redesign | done | Family base → light colours by seed with an edge lift (12 m, 35 %); mass olive `#34532F`; all crowns below fairway luminance (`visual-style.test.ts` hierarchy order); style hash `meridian-v6-aa889886` |
 | 41 | Tree deterministic seed | done | Tree id = course frame + package hash + feature id + pattern centre + style version seeds family, design, proportion, colour, yaw and aspect; identity/transform stability test across hole order and shared context |
-| 42 | Water system | pending | |
-| 43 | Static water | pending | |
-| 44 | Shoreline integration | pending | |
-| 45 | Water depth not known | pending | |
+| 42 | Water system | done | Water branch of the ground material: shoreline-distance interior gradient, shoreline band, Fresnel sky lift, static ripple normal, roughness .32 (`attachTurfStyle`, `MERIDIAN_STYLE.water`); lab captures `lab/v5-hole01-*`, canary set `v5-water-atmosphere` |
+| 43 | Static water | done | No animation or planar reflection: view-dependent Fresnel + a static two-wave ripple normal filtered by `fwidth`; event-driven rendering preserved |
+| 44 | Shoreline integration | done | 0.75 m shoreline band darkens the water edge in the shader; compiler darkens turf within 0.6 m of a shoreline (`layers.water.contactVertices`); canonical shoreline untouched; test in `three-landscape.test.ts` |
+| 45 | Water depth not known | done | `layers.water.depthBasis: shoreline_distance` and `material.userData.water.depthBasis` mark the interior tone as visual only; documented in the visual-language doc |
 | 46 | Lighting base | done | Light block in `MERIDIAN_STYLE.light` (sun colour/intensity, sky, ground, exposure); renderer reads it |
 | 47 | Lower presentation sun | done | `TERRAIN_LIGHT_DIRECTION = [.47, −.53, .706]` (elevation ≈45°, was ≈53°) |
 | 48 | Warm sun + cooler sky | done | Warm sun `#FFF4E2` 2.05 + cooler sky `#CFE0FF` |
 | 49 | Reduce ambient flattening | done | Hemisphere intensity 1.2 → 1.05 |
-| 50 | Ambient occlusion | pending | |
-| 51 | Atmospheric perspective | pending | |
-| 52 | Background behavior | pending | |
-| 53 | Context rendering | done | Context features keep real surfaces, mixed 58% toward rough and desaturated 15% via `golfContextWeight` (albedo only, opaque) |
-| 54 | Cart paths | pending | |
-| 55 | Structures | pending | |
+| 50 | Ambient occlusion | done | Decision: analytic contact shading only at base tier (`golfCanopyShade` from seeded crowns/mass, ≤16 %); bunker rim/floor shading in the compiler (V3); GTAO/SSAO deferred to the V7 high tier |
+| 51 | Atmospheric perspective | done | Linear haze in perspective presets: 180 → 900 m reaching 28 % of `#C9D8E6`, off in Top; `?haze=` scale; `visualHaze` telemetry |
+| 52 | Background behavior | done | Top: ground background. Terrain/Side: `meridian-sky-dome` horizon→zenith gradient (+1 draw call) with haze-coloured background; `visualSky` telemetry. V5 cost vs V4 canaries: median +3 draw calls, triangles unchanged; style `meridian-v7-86534d44`; sheet `canaries-v5-390x844.png` |
+| 53 | Context rendering | done | Ground: context features keep real surfaces, mixed 58% toward rough and desaturated 15% via `golfContextWeight` (albedo only, opaque). Trees: context crowns and mass lobes lose 30% saturation / 8% light, identity unchanged (V5 test) |
+| 54 | Cart paths | pending | No source-backed path features in the canonical package; visuals never invent them. Scheduled under the production player-view spec (2026-09-16 §14, action 5): ingest reviewed cart/service paths, then render centreline+width, terrain-conforming, muted mineral material |
+| 55 | Structures | pending | No building footprints in the canonical package. Scheduled with §54 (player-view spec §13): reviewed footprints + estimated heights + simple roof archetypes |
 | 56 | Surface hierarchy | done | Brightness hierarchy green → tee → fairway → fringe → surround → rough → woods guarded by `visual-style.test.ts` |
 | 57 | Shot evidence in 3D | pending | |
 | 58 | Resolved shot marker | pending | |
@@ -109,7 +109,7 @@ the visual-language document.
 | 92 | WebGPU experiment route | pending | |
 | 93 | Post-processing | pending | |
 | 94 | Render-quality lab | done | Lab route `?lab=1&course=&hole=` (`src/test/fixtures/course-geometry/browser/meridian-lab.tsx`), URL-scriptable state, telemetry panel |
-| 95 | Inspector controls | partial | Inspector: hole, area, preset, projection, FOV, pitch, yaw, relief, zoom, debug view (+ bunker-depth), viewport, material layer multipliers, crown/mass budget scales (`?crowns=`, `?mass=`), telemetry incl. tree families; light/seed toggles arrive with V5–V7 |
+| 95 | Inspector controls | partial | Inspector: hole, area, preset, projection, FOV, pitch, yaw, relief, zoom, debug view (+ bunker-depth), viewport, material layer multipliers, crown/mass budget scales (`?crowns=`, `?mass=`), water/haze/contact-shade scales (`?water=`, `?haze=`, `?shade=`), telemetry incl. tree families, haze and sky; light/seed toggles arrive with V6–V7 |
 | 96 | Visual artifact compiler | done | `scripts/golf/course-geometry/compile-visual-artifacts.mts` (tsx): 18 holes, determinism check, cache round-trip, pack manifest |
 | 97 | Packed render attributes | done | Packed attributes: Uint8 albedo/weights/roughness/class, Uint16 boundary cm + bunker mm, Float32 route (s,t); 19 B/vertex, 160–460 KB gzip per hole |
 | 98 | Field textures vs attributes | done | Decision recorded in the operations doc: attributes now; field textures only if bunker rims / shorelines need sub-triangle detail |
@@ -139,5 +139,5 @@ the visual-language document.
 | 122 | Follow-up experiment (bunker spike) | done | Bunker spike: hole 7 and 11 Terrain/Side before (v2-material) vs after (v3-bunkers), sheet `spike-122-bunkers-holes-07-11.png`; profiles printed by the compiler |
 | 123 | Source and tool notes | done | Operations doc |
 | 124 | Final success definition | pending | |
-| 125 | Agent implementation brief A–I | partial | A (baseline + lab), B (perspective camera, all holes), C (faceting kit + audit), D (ground material + artifact), E (bunker bowls), F (vegetation families, mass, trunks) done; G–I pending |
+| 125 | Agent implementation brief A–I | partial | A (baseline + lab), B (perspective camera, all holes), C (faceting kit + audit), D (ground material + artifact), E (bunker bowls), F (vegetation families, mass, trunks), G (water, contact shade, haze, sky, context toning) done; H–I pending |
 | 126 | Closing product thesis | pending | |

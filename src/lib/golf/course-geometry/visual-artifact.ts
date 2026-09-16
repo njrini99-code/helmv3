@@ -90,6 +90,8 @@ export interface MeridianVisualArtifact {
     boundary: { basis: 'visual_only'; fieldM: number };
     context: { basis: 'visual_only'; roughMix: number };
     bunkerBowl: { basis: 'visual_only'; version: 'smoothstep-bowl-v1'; depthBasis: 'visual_class'; profiles: VisualBunkerProfile[] };
+    /** §42–45: interior tone is distance from the drawn shoreline, never depth. */
+    water: { basis: 'visual_only'; version: 'static-fresnel-v1'; depthBasis: 'shoreline_distance'; shorelineM: number; interiorM: number; contactVertices: number };
   };
   attributes: MeridianVisualAttributes;
 }
@@ -275,6 +277,7 @@ export function compileVisualArtifact(scene: HoleScene, mesh: TerrainMesh, style
     }
   }
   const profiles = compileBunkerBowls(mesh, style, attributes, featuresById, contextIds, ringsFor);
+  const contactVertices = compileShorelines(mesh, style, attributes, featuresById, ringsFor);
   const contentHash = fnvBytes(ATTRIBUTE_ORDER.map(key => attributes[key]));
   return {
     schemaVersion: 1, kind: 'meridian_visual_artifact', basis: 'visual_only', compilerVersion: MERIDIAN_VISUAL_COMPILER_VERSION,
@@ -286,6 +289,7 @@ export function compileVisualArtifact(scene: HoleScene, mesh: TerrainMesh, style
       boundary: { basis: 'visual_only', fieldM: style.boundary.fieldM },
       context: { basis: 'visual_only', roughMix: style.context.roughMix },
       bunkerBowl: { basis: 'visual_only', version: 'smoothstep-bowl-v1', depthBasis: 'visual_class', profiles },
+      water: { basis: 'visual_only', version: 'static-fresnel-v1', depthBasis: 'shoreline_distance', shorelineM: style.water.shorelineM, interiorM: style.water.interiorM, contactVertices },
     },
     attributes,
   };
@@ -358,6 +362,38 @@ function compileBunkerBowls(mesh: TerrainMesh, style: MeridianStyle, attributes:
     }
   }
   return profiles;
+}
+
+/** Shoreline contact (§44): turf within the contact band of a drawn shoreline
+ * darkens a little toward the water. The canonical shoreline never moves; the
+ * water's own interior gradient is a shader term over boundary distance (§45). */
+function compileShorelines(mesh: TerrainMesh, style: MeridianStyle, attributes: MeridianVisualAttributes,
+  featuresById: Map<string, LocalFeature>, ringsFor: (id: string) => { ring: readonly PointM[]; box: Bbox }[]): number {
+  const band = style.water.contactBandM;
+  const shores = [...featuresById.values()].filter(feature => feature.kind === 'water')
+    .sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0)
+    .map(feature => ringsFor(feature.id)).filter(rings => rings.length)
+    .map(rings => ({ rings, box: rings.reduce((acc, { box: b }) => ({ minX: Math.min(acc.minX, b.minX - band), minY: Math.min(acc.minY, b.minY - band), maxX: Math.max(acc.maxX, b.maxX + band), maxY: Math.max(acc.maxY, b.maxY + band) }),
+      { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity }) }));
+  if (!shores.length) return 0;
+  const v = mesh.vertices;
+  let shaded = 0;
+  for (let t = 0; t < mesh.triangleFeatures.length; t++) {
+    if (mesh.featureKinds[mesh.triangleFeatures[t]!] === 'water') continue;
+    for (let corner = 0; corner < 3; corner++) {
+      const vertex = t * 3 + corner, point: PointM = [v[vertex * 3]!, v[vertex * 3 + 1]!];
+      let nearest = Infinity;
+      for (const shore of shores) {
+        if (bboxDistance(point, shore.box) > 0) continue;
+        nearest = Math.min(nearest, nearestOnRings(point, shore.rings).distance);
+      }
+      if (nearest >= band) continue;
+      const shade = 1 - style.water.contactShade * (1 - nearest / band);
+      for (let c = 0; c < 3; c++) attributes.albedo[vertex * 3 + c] = Math.round(attributes.albedo[vertex * 3 + c]! * shade);
+      shaded++;
+    }
+  }
+  return shaded;
 }
 
 /** Display-surface height sampler (§33): canonical elevation minus the

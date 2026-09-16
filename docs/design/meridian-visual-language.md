@@ -144,11 +144,41 @@ from V1; V4 changes what stands on each centre.
 - **Lab.** `?crowns=` and `?mass=` scale the two budgets (0 removes the
   layer); `treeFamilies` in the telemetry lists the family counts on screen.
 
-## Water and context (§42–45, §51–55)
+## Water and context (§42–45, §50–55)
 
-Static Fresnel water with a 0–0.75 m shoreline band; atmospheric haze by
-depth in perspective presets; a sky/horizon gradient behind Terrain and
-Side; cart paths and simple structures as quiet context.
+- **Water (§42–45).** Water stays a surface class of the one ground material
+  (`SURFACE_CLASS_WATER`), so its outline is the canonical polygon and never a
+  separate mesh. The artifact's `layers.water` carries
+  `depthBasis: 'shoreline_distance'`: the interior darkens toward
+  `water.deepColor` with distance from the drawn shoreline (14 m ramp), which
+  is a tone convention and never a measured depth. A 0.75 m shoreline band
+  darkens the water edge; turf within 0.6 m of a shoreline darkens 8 % in the
+  compiler (`contactVertices`). Lit materials add a static ripple normal
+  (1.7 m / 4.3 m, 2.5 %, filtered out at distance) and a Fresnel lift toward
+  `water.skyColor` (power 3.2, up to 50 %). No animation, no planar
+  reflection, roughness 0.32. `?water=` scales the sky/interior/ripple/shore
+  terms in the lab.
+- **Contact shading (§50).** No screen-space AO at the base tier. The
+  landscape computes an analytic contact term per display vertex from the
+  seeded crown and mass placement (`golfCanopyShade`: soft discs of
+  1.15 × crown radius and 0.95 × lobe radius) and the ground shader darkens
+  albedo by up to 16 %. Bunker rim/floor shading stays in the compiler (§31–32).
+  GTAO/SSAO remain an optional high-tier addition (V7 quality tiers).
+- **Haze (§51).** Perspective presets only: linear fog from 180 m that reaches
+  28 % of `haze.color` at 900 m and never more inside the package extent.
+  Top stays haze-free. `?haze=` scales it (0 removes it); `visualHaze` telemetry
+  reports the active mix.
+- **Background (§52).** Top keeps the map ground colour. Terrain and Side draw a
+  sky dome (`meridian-sky-dome`, horizon → zenith gradient, fog-free, depth-free,
+  one draw call) so the world ends in air rather than a flat green void.
+  `visualSky` telemetry reports `gradient` or `ground`.
+- **Context (§53).** Ground: real surfaces mixed 58 % toward rough and
+  desaturated 15 % (V2). Trees: crowns and mass lobes in shared context woods
+  lose 30 % saturation and 8 % light; identity and transforms do not change.
+- **Cart paths and structures (§54–55).** Not drawn: the canonical package has
+  no path or building features yet, and visuals never invent them. They arrive
+  with the outside-world context ingestion (production player-view spec,
+  2026-09-16, §13–14) as source-backed, reviewed features.
 
 ## Visual artifact (§6, §96–102)
 
@@ -166,8 +196,8 @@ hash; `Math.sqrt` only, millimetre-quantised route coordinates). Cache path:
 
 - `meridian-v5`: perspective camera, lower sun, faceting kit (this plan V0–V1).
 - `meridian-v6`: ground material system + visual artifact (V2), bunker bowls (V3), vegetation families, forest mass and trunk bands (V4).
-- `meridian-v7`: water, context, lighting and shot storytelling (V5–V6).
+- `meridian-v7`: static water, contact shade, haze, sky dome, context tree toning (V5); shot storytelling (V6).
 
-`styleHash()` hashes `MERIDIAN_STYLE` by value (`meridian-v6-<fnv>`); any
+`styleHash()` hashes `MERIDIAN_STYLE` by value (`meridian-v7-<fnv>`); any
 change to a value re-keys the artifact cache and appears in every capture's
 `visualStyleHash`. Bump the version string when the look changes on purpose.
