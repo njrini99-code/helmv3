@@ -34,7 +34,8 @@ interface RuntimeOptions {
   onUnavailable: () => void;
   debugView?: TerrainDebugView;
   /** Cached visual world for this hole (§6). Absent → compiled at runtime and
-   * reported as MERIDIAN_ARTIFACT_MISSING; mismatched → MERIDIAN_ARTIFACT_MISMATCH. */
+   * reported as MERIDIAN_ARTIFACT_MISSING; mismatched → refused, recompiled at
+   * runtime and reported as MERIDIAN_ARTIFACT_MISMATCH (§105). */
   visualArtifact?: MeridianVisualArtifact;
   styleOverrides?: MeridianStyleOverrides;
   /** §64: rendering tier. `auto` (default) detects from device capability. */
@@ -98,6 +99,26 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
   const qualityBasis = options.quality && options.quality !== 'auto' ? 'override' : 'detected';
   const quality = RENDER_QUALITY_PROFILES[qualityBasis === 'override' ? options.quality as MeridianRenderQuality : detectRenderQuality(capabilities)];
   const frameTimes: number[] = [];
+  // §68.1: GPU time per frame through EXT_disjoint_timer_query_webgl2 when the
+  // context offers it (Chrome/ANGLE; absent on most WebViews). CPU submit time
+  // alone hides fill-bound frames on phones, so both are reported.
+  const gpuTimes: number[] = [];
+  const pendingQueries: WebGLQuery[] = [];
+  let timerExt: { TIME_ELAPSED_EXT: number; GPU_DISJOINT_EXT: number } | null = null;
+  let timerBasis: 'ext_disjoint_timer_query' | 'unavailable' = 'unavailable';
+  const pollGpuTimers = (gl: WebGL2RenderingContext) => {
+    if (!timerExt) return;
+    while (pendingQueries.length) {
+      const query = pendingQueries[0]!;
+      if (!gl.getQueryParameter(query, gl.QUERY_RESULT_AVAILABLE)) break;
+      pendingQueries.shift();
+      if (!gl.getParameter(timerExt.GPU_DISJOINT_EXT)) {
+        gpuTimes.push(Number(gl.getQueryParameter(query, gl.QUERY_RESULT)) / 1e6);
+        if (gpuTimes.length > 30) gpuTimes.shift();
+      }
+      gl.deleteQuery(query);
+    }
+  };
   let geometryBytes = 0;
 
   function fitSun() {
@@ -144,6 +165,10 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
   }
 
   function dispose() {
+    if (renderer && pendingQueries.length) {
+      const gl = renderer.getContext() as WebGL2RenderingContext;
+      for (const query of pendingQueries.splice(0)) gl.deleteQuery(query);
+    }
     if (disposed) return;
     disposed = true;
     canvas.removeEventListener('webglcontextlost', lost);
@@ -201,9 +226,14 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
       view = camera.projection === 'perspective' ? perspectiveView : orthographicView;
       applyAtmosphere(camera.projection);
       applyTerrainCamera(view, camera, width, height, viewDistance);
+      const gl = renderer.getContext() as WebGL2RenderingContext;
+      pollGpuTimers(gl);
+      const query = timerExt && pendingQueries.length < 4 ? gl.createQuery() : null;
+      if (query && timerExt) gl.beginQuery(timerExt.TIME_ELAPSED_EXT, query);
       const began = performance.now();
       renderer.render(world, view);
       const frameMs = performance.now() - began;
+      if (query && timerExt) { gl.endQuery(timerExt.TIME_ELAPSED_EXT); pendingQueries.push(query); }
       frameTimes.push(frameMs); if (frameTimes.length > 30) frameTimes.shift();
       if (shaderFailed) { fail(MERIDIAN_CODES.shaderFailed); return; }
       if (renderer.getContext().isContextLost()) { fail(MERIDIAN_CODES.contextLost); return; }
@@ -229,6 +259,7 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
         // §68 budgets: frame P95 over the last 30 renders, draw calls against
         // the view's target, triangles by category, and a memory estimate.
         frameP95Ms: percentile(frameTimes, 95).toFixed(2), frameBudgetMs: String(quality.targetFrameMs),
+        gpuFrameP95Ms: gpuTimes.length ? percentile(gpuTimes, 95).toFixed(2) : '', gpuTimerBasis: timerBasis,
         drawCallBudget: String(RENDER_BUDGETS.drawCalls[budgetViewFor(camera.pitch)]),
         drawCallStatus: renderer.info.render.calls <= RENDER_BUDGETS.drawCalls[budgetViewFor(camera.pitch)] ? 'within' : 'over',
         triangleBreakdown: `terrain:${landscape.counts.terrainTriangles} crownNear:${landscape.counts.crownNearTriangles} crownDistant:${landscape.counts.crownDistantTriangles} trunks:${landscape.counts.trunkTriangles} mass:${landscape.counts.massTriangles} flight:${flightPaths?.count ?? 0}`,
@@ -258,14 +289,18 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
     renderer.outputColorSpace = SRGBColorSpace;
     renderer.toneMapping = ACESFilmicToneMapping; renderer.toneMappingExposure = MERIDIAN_STYLE.light.exposure;
     renderer.shadowMap.enabled = true; renderer.shadowMap.type = PCFShadowMap;
+    timerExt = (renderer.getContext().getExtension('EXT_disjoint_timer_query_webgl2') as typeof timerExt) ?? null;
+    timerBasis = timerExt ? 'ext_disjoint_timer_query' : 'unavailable';
     renderer.shadowMap.autoUpdate = false;
     renderer.debug.checkShaderErrors = true;
     renderer.debug.onShaderError = () => { shaderFailed = true; };
     world.background = new Color(DEFAULT_THREE_LANDSCAPE_PALETTE.ground);
     landscape = buildThreeLandscape(options.scene, mesh, DEFAULT_THREE_LANDSCAPE_PALETTE, { artifact: options.visualArtifact, overrides: qualityOverrides(quality, options.styleOverrides) });
-    // A cached artifact from another package or style is refused (§6) and the
-    // hole falls back to the static view instead of drawing stale colours.
+    // A cached artifact from another package or style is refused (§6). The
+    // hole still draws its canonical terrain visual from a runtime compile
+    // (§105); the refusal is reported here rather than as a schematic fallback.
     if (landscape.artifactSource === 'runtime') canvas.dataset.meridianCode = MERIDIAN_CODES.missing;
+    else if (landscape.artifactSource === 'recompiled') canvas.dataset.meridianCode = MERIDIAN_CODES.mismatch;
     surface = createVisualSurfaceSampler(mesh, landscape.artifact);
     world.add(landscape.group);
     replaceFlightPaths(options.scene, options.camera);

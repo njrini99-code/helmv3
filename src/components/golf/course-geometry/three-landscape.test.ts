@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
 import { buildThreeLandscape, DEFAULT_THREE_LANDSCAPE_PALETTE } from './three-landscape';
 import { MERIDIAN_STYLE } from '@/lib/golf/course-geometry/visual-style';
-import { compileVisualArtifact, linearAlbedo, SURFACE_CLASS_IDS } from '@/lib/golf/course-geometry/visual-artifact';
+import { compileVisualArtifact, linearAlbedo, MERIDIAN_CODES, SURFACE_CLASS_IDS } from '@/lib/golf/course-geometry/visual-artifact';
 import { installTerrainDebugView } from './terrain-debug';
 import { pilotPackage, pilotScene } from '@/test/fixtures/course-geometry/pilot';
 import source from '@/test/fixtures/course-geometry/cacapon-07-terrain.json';
@@ -75,6 +75,28 @@ describe('Three landscape source and rendering invariants', () => {
     landscape.setStyleOverrides({ macro: 0, context: 0 });
     expect(landscape.terrain.material.transparent).toBe(false);
     expect(landscape.terrain.material.depthWrite).toBe(true);
+    landscape.dispose();
+  });
+
+  it('refuses a stale cached artifact but keeps the canonical terrain visual by recompiling (Meridian §105)', () => {
+    const scene = { ...pilotScene('cacapon-07', false), features: [] }, mesh = slopeMesh();
+    mesh.vertices = [0, 0, 100, 100, 0, 110, 50, 50, 105,
+      100, 0, 110, 100, 100, 110, 50, 50, 105,
+      100, 100, 110, 0, 100, 100, 50, 50, 105,
+      0, 100, 100, 0, 0, 100, 50, 50, 105];
+    mesh.triangleFeatures = [0, 1, 0, 0]; mesh.triangleMaterials = [0, 0, 0, 0];
+    mesh.featureKinds = ['ground', 'green']; mesh.featureIds = ['terrain-context', 'test-green'];
+    const fresh = compileVisualArtifact(scene, mesh);
+    const supplied = buildThreeLandscape(scene, mesh, undefined, { artifact: fresh });
+    expect(supplied.artifactSource).toBe('supplied');
+    expect(supplied.artifactRefusal).toBeNull();
+    supplied.dispose();
+    const stale = { ...fresh, terrainHash: 'e'.repeat(64) };
+    const landscape = buildThreeLandscape(scene, mesh, undefined, { artifact: stale });
+    expect(landscape.artifactSource).toBe('recompiled');
+    expect(landscape.artifactRefusal).toMatch(new RegExp(`^${MERIDIAN_CODES.mismatch}: terrain`));
+    expect(landscape.artifact.contentHash).toBe(fresh.contentHash);
+    expect(landscape.artifact.terrainHash).toBe(mesh.contentHash);
     landscape.dispose();
   });
 

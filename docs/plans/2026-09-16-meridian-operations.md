@@ -12,15 +12,15 @@ than code: §107, §111, §115–120, §123.
 | Tool | Decision | Where |
 | --- | --- | --- |
 | Direct Three.js (r186) | keep; no R3F (§72) | `three-renderer.ts` |
-| Spector.js | dev only, lab `?spector=1` | `meridian-lab.tsx` |
-| three-mesh-bvh | benchmark only; picking is one mesh, one ray per tap | see status §74 |
-| glTF Transform, gltfpack, glTF Validator | asset pipeline for Blender GLBs | `scripts/golf/course-geometry/optimize-glb.mjs` |
+| Spector.js | dev only, lab `?spector=1` loads the bundle from a CDN at request time | `meridian-lab.tsx` |
+| three-mesh-bvh | not installed; picking is one mesh, one ray per tap on the canonical terrain (≤40k triangles), no measurable cost | `three-camera.ts` `pickTerrainPoint` |
+| glTF Transform, gltfpack, glTF Validator | adopted for the first authored GLB (none today; all materials procedural); order recorded in `docs/design/meridian-visual-language.md` 'Asset pipeline' | `scripts/golf/course-geometry/blender/validate_glb.py` (round-trip check) |
 | KTX2 / Basis | when a texture appears (none today) | deferred |
-| QGIS 4.2, GDAL 3.13, PROJ 9.9, mapshaper, Shapely | geometry review kit | `scripts/golf/course-geometry/build-qgis-review-kit.py` |
+| QGIS, GDAL, PROJ, Shapely (pyproj + shapely already drive the Python pipeline) | geometry review kit: per-kind GeoJSON, flags, context, review-adjustments sidecar, PyQGIS loader styled by status | `scripts/golf/course-geometry/build-qgis-review-kit.py` |
 | PDAL, CloudCompare, OpenDroneMap | when a point cloud or drone flight exists | deferred |
 | Blender Geometry Nodes | authored props only | deferred |
 | MapLibre, Cesium / 3D Tiles | not for hole scenes | no |
-| WebGPU | experiment route `?meridianRenderer=webgpu` | deferred until Three's WebGPU path is stable on WebView |
+| WebGPU | no experiment route yet; deferred until Three's WebGPU path is stable on WebView | — |
 | Unity / Unreal | no | — |
 
 ## Per-course tooling process (§115)
@@ -103,7 +103,7 @@ record the code beside every image.
 
 | Code | Meaning | Action |
 | --- | --- | --- |
-| `MERIDIAN_ARTIFACT_MISMATCH` | visual artifact hash ≠ loaded package | drop the artifact, render from canonical only |
+| `MERIDIAN_ARTIFACT_MISMATCH` | visual artifact hash ≠ loaded package | refuse the artifact, recompile the canonical terrain visual at runtime, report the code (§105) |
 | `MERIDIAN_ARTIFACT_MISSING` | no artifact for package + style | compile at runtime or render plain |
 | `MERIDIAN_CONTEXT_LOST` | WebGL context lost | fall back to the SVG outline |
 | `MERIDIAN_SHADER_FAILED` | program compile failure | fall back to the SVG outline |

@@ -12,7 +12,7 @@ import { buildHoleScene } from '@/lib/golf/course-geometry/build-scene';
 import { compileVisualArtifact, serializeVisualArtifact } from '@/lib/golf/course-geometry/visual-artifact';
 import type { MeridianStyleOverrides } from '@/lib/golf/course-geometry/visual-style';
 
-const STYLE_LAYERS = ['macro', 'micro', 'mowing', 'boundary', 'context', 'crowns', 'mass', 'water', 'haze', 'shade'] as const;
+const STYLE_LAYERS = ['macro', 'micro', 'mowing', 'boundary', 'context', 'crowns', 'mass', 'water', 'haze', 'shade', 'bowl'] as const;
 import type { CourseView } from '@/lib/golf/course-geometry/camera';
 import { PERSPECTIVE_FOV, TERRAIN_PRESETS, type TerrainMesh, type TerrainPose, type TerrainPreset } from '@/lib/golf/course-geometry/terrain';
 import { fitTerrainViewportCamera } from '@/lib/golf/course-geometry/terrain-viewport';
@@ -51,6 +51,19 @@ export function MeridianLabFixture({ course }: { course: CompiledCourse }) {
   const [failure, setFailure] = useState<string | null>(null);
   const [telemetry, setTelemetry] = useState<Record<string, string>>({});
   const hole = pkg.holes.find(h => h.ordinal === holeNumber);
+  // §73: Spector.js frame inspection, dev only, opt-in with ?spector=1. The
+  // bundle comes from a CDN at request time so it never ships with the app.
+  useEffect(() => {
+    if (new URLSearchParams(location.search).get('spector') !== '1' || document.getElementById('meridian-spector')) return;
+    const script = document.createElement('script');
+    script.id = 'meridian-spector';
+    script.src = 'https://cdn.jsdelivr.net/npm/spectorjs@0.9.30/dist/spector.bundle.js';
+    script.onload = () => {
+      const spector = (window as unknown as { SPECTOR?: { Spector: new () => { displayUI(): void } } }).SPECTOR;
+      if (spector) new spector.Spector().displayUI();
+    };
+    document.head.appendChild(script);
+  }, []);
   useEffect(() => {
     if (!hole) return;
     const controller = new AbortController();

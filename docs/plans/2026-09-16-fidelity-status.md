@@ -25,7 +25,7 @@ Hero hole: Peek’n Peak Upper hole 7.
 | 4 | Rough hierarchy (primary / secondary / outer / native) | done | Outside-world action 7: distance bands with blends, slope darkening, outer macro; native from source zones; first cut (2.5 m) lifts primary rough toward the surround (`distance-bands-v2`) |
 | 5 | Outside-world context (paths, adjacent holes, terrain zones, structures) | done | Outside-world actions 5–7; terrain-context classes await the review pass |
 | 6 | Forest system (edge, mass, understory, identity) | done | Meridian V4 + outside-world action 6 (understory band, context woodland) |
-| 7 | Lighting / composition (shadow tuning, atmosphere, per-hole camera) | partial | Tuning pass: sun 1.95 / sky fill 1.12 / shadow radius 3 (§48 calm, no crush), water roughness .52 so the pond no longer mirrors the sun into a white sheet at approach pitch, palette desaturated (fairway `#7DA24A`, green `#96B45F`, fringe/apron ordered inside the ladder); per-hole framing polish next |
+| 7 | Lighting / composition (shadow tuning, atmosphere, per-hole camera) | done (v1) | Tuning pass: sun 1.95 / sky fill 1.12 / shadow radius 3 (§48 calm, no crush), water roughness .52 so the pond no longer mirrors the sun into a white sheet at approach pitch, palette desaturated (fairway `#7DA24A`, green `#96B45F`, fringe/apron ordered inside the ladder); per-hole framing: the orientation search now penalises woods standing between the camera and the green/tee (Meridian §11 `woodsOcclusion`), re-audited all 18 tee frames (`lab/audit-v2`, pixel-diffed against `lab/audit`: hole 18 re-yawed away from the tree wall by the green, other holes within 3 %) |
 
 ## Spec sections
 

@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { CourseGeometryPackage, HoleScene, PointM } from './types';
 import { contextPoints, type CourseView } from './camera';
 import { sampleMetricTerrain, terrainSourceFields } from './terrain-source';
+import { inRing } from './spatial';
 
 export type Point3M = readonly [number, number, number];
 /** Art-directed world-space light, shared by terrain and illustrative canopy. */
@@ -243,6 +244,62 @@ function fitScale(bounds: ReturnType<typeof projectedBounds>, width: number, hei
     (height - FIT_PADDING * 2) / Math.max(.01, bounds.maxY - bounds.minY));
 }
 
+/** Meridian §11: a yaw that hides the green (or the tee) behind a wall of
+ * woods is a worse camera than a slightly larger bounding box. For elevated
+ * perspective presets the sight line to a ground target clears a canopy of
+ * `WOODS_CANOPY_M` once the woods sit farther than `canopy / tan(pitch)` in
+ * front of the target, so only that ground strip toward the camera is probed.
+ * Woods rings are the reviewed source polygons (own hole plus context); the
+ * probe is a display concern and never feeds shot or stat calculations. */
+const WOODS_CANOPY_M = 12;
+const VISIBILITY_WEIGHTS = { green: .3, tee: .1 } as const;
+function ringCentroid(ring: readonly PointM[]): PointM {
+  let x = 0, y = 0;
+  for (const point of ring) { x += point[0]; y += point[1]; }
+  return [x / ring.length, y / ring.length];
+}
+function woodsRings(scene: HoleScene): readonly (readonly PointM[])[] {
+  const rings: (readonly PointM[])[] = [];
+  for (const feature of [...scene.features, ...(scene.contextFeatures ?? [])]) {
+    if (feature.kind !== 'woods') continue;
+    for (const part of feature.parts) if (part[0] && part[0].length >= 3) rings.push(part[0]);
+  }
+  return rings;
+}
+/** Fraction of the probe strip from `target` toward the camera that lies
+ * inside woods. `angle` and `pitch` follow terrainBasis; the camera sits on
+ * the -forward side of the target, so the ground probe walks [-sin, -cos]. */
+export function woodsOcclusion(rings: readonly (readonly PointM[])[], target: PointM, angle: number, pitch: number): number {
+  if (pitch >= 89 || rings.length === 0) return 0;
+  const reach = WOODS_CANOPY_M / Math.tan(pitch * Math.PI / 180);
+  const steps = Math.max(4, Math.ceil(reach));
+  const dx = -Math.sin(angle), dy = -Math.cos(angle);
+  let inside = 0;
+  for (let i = 1; i <= steps; i++) {
+    const t = reach * i / steps;
+    const point: PointM = [target[0] + dx * t, target[1] + dy * t];
+    if (rings.some(ring => inRing(point, ring))) inside++;
+  }
+  return inside / steps;
+}
+const visibilityTargets = new WeakMap<HoleScene, { rings: readonly (readonly PointM[])[]; green: PointM | null; tee: PointM | null }>();
+function visibilityPenalty(scene: HoleScene, angle: number, pitch: number): number {
+  if (pitch >= 89) return 0;
+  let targets = visibilityTargets.get(scene);
+  if (!targets) {
+    const greenRing = scene.features.find(f => f.id === scene.target.greenFeatureId)?.parts[0]?.[0]
+      ?? scene.features.find(f => f.kind === 'green')?.parts[0]?.[0];
+    const teeRing = scene.features.find(f => f.kind === 'tee')?.parts[0]?.[0];
+    targets = { rings: woodsRings(scene), green: greenRing ? ringCentroid(greenRing) : null, tee: teeRing ? ringCentroid(teeRing) : null };
+    visibilityTargets.set(scene, targets);
+  }
+  if (targets.rings.length === 0) return 0;
+  let penalty = 0;
+  if (targets.green) penalty += VISIBILITY_WEIGHTS.green * woodsOcclusion(targets.rings, targets.green, angle, pitch);
+  if (targets.tee) penalty += VISIBILITY_WEIGHTS.tee * woodsOcclusion(targets.rings, targets.tee, angle, pitch);
+  return penalty;
+}
+
 function orientation(scene: HoleScene, points: readonly Point3M[], referenceElevationM: number,
   width: number, height: number, preset: TerrainPreset): number {
   const route = scene.features.find(f => f.id === scene.hole.routeFeatureId)?.parts[0]?.[0];
@@ -258,7 +315,7 @@ function orientation(scene: HoleScene, points: readonly Point3M[], referenceElev
     const angle = upright + offset * Math.PI / 180;
     const basis = { ...terrainBasis(angle, pose.pitch), referenceElevationM, exaggeration: pose.exaggeration };
     const scale = fitScale(projectedBounds(points, basis), width, height);
-    const score = scale * (1 - .012 * Math.abs(offset) / 70);
+    const score = scale * (1 - .012 * Math.abs(offset) / 70) * (1 - visibilityPenalty(scene, angle, pose.pitch));
     if (score > bestScore + 1e-9 || Math.abs(score - bestScore) <= 1e-9 && Math.abs(offset) < Math.abs(bestOffset)) {
       bestScore = score; bestOffset = offset;
     }

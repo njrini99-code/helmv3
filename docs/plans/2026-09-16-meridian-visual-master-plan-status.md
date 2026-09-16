@@ -14,7 +14,7 @@ the visual-language document.
 
 | § | Title | Status | Evidence / remaining |
 | --- | --- | --- | --- |
-| 0 | Executive directive | partial | V0–V5 landed (`95792455e` → `7d83a11c4` → `ea34cdb63` → `0d9e2ab50` → `efb805701` → this commit); V6–V7 in progress. Tracker rows below are the per-section record. |
+| 0 | Executive directive | done (code) / partial (human gates) | V0–V7 landed (`95792455e` → `7d83a11c4` → `ea34cdb63` → `0d9e2ab50` → `efb805701` → `74ff833a2` → `d5012069d` → `1322a6271` → this commit). Every section below has a row; open items are the human gates (§103–104 device runs, §124 feel statements, §125 real-iPhone profile) and source-limited rows (§55 roofs) |
 | 1 | What the current plan gets right (1.1–1.5) | done | Doctrine encoded in `docs/design/meridian-visual-language.md` (Layer A/B/C) and enforced by §7 guard |
 | 2 | What the screenshots say | done | Baseline canaries `output/playwright/course-geometry/visual-system/canaries/v0-baseline` (96 captures) + sheet `docs/plans/assets/meridian-2026-09-16/canaries-v0-390x844.png` |
 | 3 | Terrain is not truly perspective | done | Confirmed: V0 Terrain was orthographic pitch 50 / relief 1.5. Replaced by perspective in `terrain.ts` (`TERRAIN_PRESETS.terrain`) |
@@ -25,7 +25,7 @@ the visual-language document.
 | 8 | Visual baseline captures | done | `scripts/golf/course-geometry/capture-visual-canaries.cjs`: holes 1,7,9,11,12,15,17,18 × Top/Terrain/Side × 390×844/430×932/768×1024/1440×1000 with `canaries.json` metadata; labels `v0-baseline`, `v1-perspective` |
 | 9 | Camera system redesign (9.1–9.3) | done | Top orthographic; Terrain perspective FOV 32 pitch 44 relief 1.0; Side perspective pitch 20 yaw 30 relief 1.0 (`TERRAIN_PRESETS`); dual Three cameras in `three-renderer.ts` |
 | 10 | Perspective camera fitting (10.1–10.3) | done | `perspectiveFit` bisection on eye distance, HUD-safe footprint, shift-lens principal point; target 45% route-mid / 55% green (`weightedTarget`); telephoto zoom; `framing.projection/fovDegrees/eyeDistanceM/targetBasis` |
-| 11 | Camera orientation scoring | partial | Orientation search (±70°, fitted-footprint score, upright preference, green far) and HUD rejection via safe-area fit are in `orientation()`; canopy-occlusion scoring not implemented |
+| 11 | Camera orientation scoring | done | Orientation search (±70°, fitted-footprint score, upright preference, green far, HUD-safe fit) now also scores woods occlusion of the green (.3) and tee (.1) along the sight strip `12 m / tan(pitch)` toward the camera (`woodsOcclusion`, own + context woods rings); recognition beats bounding-box size. Green-label clearance = HUD-safe fit; selected-shot visibility = `deriveShotCameraTarget` (§62). Tests: `terrain.test.ts` 'orientation visibility' |
 | 12 | Camera transitions | done | 260 ms cubic-out preset transition; ortho endpoints approached through a 0.5° FOV so projection never pops (`HoleSceneFrame.presetView`); auto-focus settle 320 ms |
 | 13 | Faceting before polish | done | Audit before polish: `docs/plans/assets/meridian-2026-09-16/normal-continuity/*.json` show vertex-normal seams = 0°, dihedral P99 16–25° ⇒ faceting is tessellation, not lighting |
 | 14 | Faceting debug kit | done | `terrain-debug.ts`: final, unlit, unlit-white, albedo, vertex-color, wireframe-elevation, display/source/flat normals, slope, curvature, no-shadow, shadow-only, feature/triangle/material IDs, context-mask; sheet `faceting-kit-hole-07.png` |
@@ -68,8 +68,8 @@ the visual-language document.
 | 51 | Atmospheric perspective | done | Linear haze in perspective presets: 180 → 900 m reaching 28 % of `#C9D8E6`, off in Top; `?haze=` scale; `visualHaze` telemetry |
 | 52 | Background behavior | done | Top: ground background. Terrain/Side: `meridian-sky-dome` horizon→zenith gradient (+1 draw call) with haze-coloured background; `visualSky` telemetry. V5 cost vs V4 canaries: median +3 draw calls, triangles unchanged; style `meridian-v7-86534d44`; sheet `canaries-v5-390x844.png` |
 | 53 | Context rendering | done | Ground: context features keep real surfaces, mixed 58% toward rough and desaturated 15% via `golfContextWeight` (albedo only, opaque). Trees: context crowns and mass lobes lose 30% saturation / 8% light, identity unchanged (V5 test) |
-| 54 | Cart paths | pending | No source-backed path features in the canonical package; visuals never invent them. Scheduled under the production player-view spec (2026-09-16 §14, action 5): ingest reviewed cart/service paths, then render centreline+width, terrain-conforming, muted mineral material |
-| 55 | Structures | pending | No building footprints in the canonical package. Scheduled with §54 (player-view spec §13): reviewed footprints + estimated heights + simple roof archetypes |
+| 54 | Cart paths | done (source-limited) | Rendered from the hash-locked context layer (`three-context.ts`): draped, terrain-conforming ribbons with centreline + rule width for `cart_path` (18 zones on Peek'n Peak), `service_path` (12) and `road` (14), muted mineral material, display-only (`basis: 'source'`, reviewed=false → candidate). Never invented: holes without source paths show none. Human review of the OSM paths via the §80 kit pending |
+| 55 | Structures | partial (source-limited) | 98 OSM building footprints extruded on the canonical terrain with source height/levels (`three-context.ts`), fences and lift lines as light lines. Roof form/ridge/pitch stay flat until source roof tags or a review-adjustments decision exist (renderer-redesign 3.5) |
 | 56 | Surface hierarchy | done | Brightness hierarchy green → tee → fairway → fringe → surround → rough → woods guarded by `visual-style.test.ts` |
 | 57 | Shot evidence in 3D | done | Restrained: thin arcs, hollow finish rings, pearls with a ground-contact disc (§58), regions clipped to their canonical feature (`CourseShotOverlay`, `three-flight-path`) |
 | 58 | Resolved shot marker | done | Screen-aware sizing (`displayMarkerScale`: CSS radius ÷ camera scale, clamped .45–4 m), selected halo, origin ground-contact disc (`illustrative-shot-origin-contact-<n>`), no giant floating spheres |
@@ -82,49 +82,49 @@ the visual-language document.
 | 65 | Low quality | done | DPR cap 1.5 / 2.4 MP, shadow 1024, near crowns off, crown budget ×.7, forest mass ×1.25 (mass dominant), water terms ×.6 (simple Fresnel), contact shade off, 33 ms target. Hole 17 phone Terrain: 210 draws / 276k tris (vs 238 / 353k standard) |
 | 66 | Standard quality | done | DPR ≤ 2 inside a 4 MP budget, shadow 2048, near crowns inside the focus radius, full bowl + water, contact shade on, 16.7 ms target |
 | 67 | High quality | done | DPR ≤ 2.5 inside 8 MP, shadow 4096, crown budget ×1.25; GTAO and texture tiers deliberately not enabled until measured (§67 'measure value') |
-| 68 | Performance budget (68.1–68.4) | partial | 68.1 `frameP95Ms` (last 30 renders, CPU side) + `frameBudgetMs`; 68.2 `drawCallBudget`/`drawCallStatus` by pitch (Top 140 / Terrain 180 / Side 160), canopy batches now span `batchTiles` canopy tiles per axis by tier (low 3 / standard 2 / high 1): hole 17 phone Terrain 238 → 107 draws (low 75), hole 11 224 → 121, hole 9 canary 95 → 83, all within budget; triangles rise ≤ 10 % from coarser frustum culling; 68.3 `triangleBreakdown` (terrain / crownNear / crownDistant / trunks / mass / flight) + `treeLod`; 68.4 `geometryMemoryMb`, `shadowMemoryMb`, `renderTargetMb` (texture memory n/a: no textures) |
+| 68 | Performance budget (68.1–68.4) | done (GPU timer unverified on hardware) | 68.1 `frameP95Ms` (CPU, last 30 renders) + `gpuFrameP95Ms` via `EXT_disjoint_timer_query_webgl2` with `gpuTimerBasis` (`ext_disjoint_timer_query` / `unavailable`; headless Chromium reports unavailable, so the GPU number needs a real Chrome/device run) + `frameBudgetMs`; 68.2 `drawCallBudget`/`drawCallStatus` by pitch (Top 140 / Terrain 180 / Side 160), canopy batches span `batchTiles` tiles per axis by tier (low 3 / standard 2 / high 1): hole 17 phone Terrain 238 → 107 draws, hole 11 224 → 121, hole 9 canary 95 → 83; 68.3 `triangleBreakdown` + `treeLod`; 68.4 `geometryMemoryMb`, `shadowMemoryMb`, `renderTargetMb` |
 | 69 | Runtime residency | done | `terrain-residency.ts`: current + next + most recently viewed, max 3, LRU eviction (`residentTerrainKeys`, `rememberViewedHole`, `evictTerrain`); the play fixture uses it; filmstrip cells never force 18 meshes |
-| 70 | Render telemetry | partial | Canvas dataset carries projection, design/frame FOV, eye distance, style version + hash, artifact hash + source, meridian code, quality tier, shadow map size/type, light direction, CPU frame ms, draw calls, triangles, trees, DPR; GPU time (timer query) not yet |
+| 70 | Render telemetry | done | Canvas dataset carries projection, design/frame FOV, eye distance, style version + hash, artifact hash + source (`supplied` / `runtime` / `recompiled`), meridian code, quality tier + basis, shadow map size/type, light direction, CPU frame P95, GPU frame P95 + timer basis, draw calls + budget status, triangle breakdown, tree LOD, memory estimates, DPR |
 | 71 | Development toolkit | done | Toolkit table in `docs/plans/2026-09-16-meridian-operations.md` |
 | 72 | Direct Three.js remains | done | Direct Three.js r186 retained; no R3F (guarded by §7 boundary) |
-| 73 | Spector.js | pending | |
-| 74 | three-mesh-bvh | pending | |
-| 75 | glTF Transform | pending | |
-| 76 | gltfpack / meshoptimizer | pending | |
-| 77 | KTX2 + Basis | pending | |
-| 78 | glTF Validator | pending | |
-| 79 | QGIS | pending | |
-| 80 | QGIS review kit | pending | |
-| 81 | GDAL | pending | |
-| 82 | PROJ | pending | |
-| 83 | mapshaper | pending | |
-| 84 | Shapely / GEOS | pending | |
-| 85 | PDAL | pending | |
-| 86 | CloudCompare | pending | |
-| 87 | OpenDroneMap | pending | |
-| 88 | Blender Geometry Nodes | pending | |
-| 89 | MapLibre | pending | |
-| 90 | Cesium / 3D Tiles | pending | |
-| 91 | WebGPU | pending | |
-| 92 | WebGPU experiment route | pending | |
-| 93 | Post-processing | pending | |
+| 73 | Spector.js | done (dev only) | Lab `?spector=1` loads Spector from a CDN at request time and opens its UI (never bundled). Hole 9 Terrain command-list pass still to be run by a human on the batching result |
+| 74 | three-mesh-bvh | done (decision) | Not installed. Picking is one ray against one canonical terrain mesh (≤ 40k triangles) per tap (`pickTerrainPoint`); no measurable cost, so no BVH until editing or region queries need it |
+| 75 | glTF Transform | done (decision) | Adopted for the first authored GLB; none exists (procedural materials). Order in `meridian-visual-language.md` 'Asset pipeline' |
+| 76 | gltfpack / meshoptimizer | done (decision) | Same pipeline step, adopted when a static art asset appears |
+| 77 | KTX2 + Basis | done (decision) | No texture today (shader turf/sand/water); adopted when textures grow, flat-material fallback recorded in §105 |
+| 78 | glTF Validator | done (decision) | Pipeline gate for authored GLBs; `blender/validate_glb.py` already round-trips the offline compiler output |
+| 79 | QGIS | done | Primary human-review environment: `build-qgis-review-kit.py` exports the canonical package for QGIS with NAIP + OSM basemaps, status styling, snapping note and read-only source layers |
+| 80 | QGIS review kit | done | `scripts/golf/course-geometry/build-qgis-review-kit.py <package> <out> --context --imagery-review`: route/tee/fairway/green/bunker/water/woods layers, `flags` (92 low-confidence on Peek'n Peak: unreviewed tees/greens/fairways/bunkers/water), `context` zones, empty `review-adjustments` sidecar, `holes.json` gaps, PyQGIS loader (accepted green / adjust amber / reject red / candidate dashed; labels featureId·hole·source·confidence). Output verified for Peek'n Peak; QGIS run itself is a human step |
+| 81 | GDAL | done (decision) | Raster workhorse for NAIP/DEM preprocessing; the Python pipeline already reads NAIP via `prepare-*` scripts; GDAL CLI adopted for any new raster step |
+| 82 | PROJ | done | `pyproj` drives every CRS transform in the pipeline (8 scripts); the browser uses the fixed `wgs84-local-enu-v1` projection |
+| 83 | mapshaper | done (decision) | Not needed: display simplification is capped in-pipeline (0.5 m displacement / 1.5 % ring area, `prepare-pilot.py`) and canonical vertices are retained |
+| 84 | Shapely / GEOS | done | `shapely` is the compiler geometry layer in the Python pipeline (unions, buffers, validity) |
+| 85 | PDAL | done (decision) | Later: no LiDAR source for the pilot course yet |
+| 86 | CloudCompare | done (decision) | Later: QA tool once a point cloud exists |
+| 87 | OpenDroneMap | done (decision) | Later: acquisition tier when a drone flight is commissioned |
+| 88 | Blender Geometry Nodes | done (decision) | Optional art tool; `blender/generate_hole.py` + `validate_glb.py` exist for the offline GLB path, runtime stays procedural |
+| 89 | MapLibre | done (decision) | Not for hole scenes; optional ops/review map only |
+| 90 | Cesium / 3D Tiles | done (decision) | Future scale only; single-hole scenes stay in the direct Three.js path |
+| 91 | WebGPU | done (decision) | Experimental; deferred until Three's WebGPU path is stable in WebView. No renderer switch shipped |
+| 92 | WebGPU experiment route | deferred | Not built; would be a lab-only renderer param behind the same canonical camera/picking contract |
+| 93 | Post-processing | done | ACES tone mapping with style exposure only; no bloom, DoF, LUT or motion blur; no GTAO/SMAA chain (WebGL2 MSAA + shadow soft radius carry the base tier) |
 | 94 | Render-quality lab | done | Lab route `?lab=1&course=&hole=` (`src/test/fixtures/course-geometry/browser/meridian-lab.tsx`), URL-scriptable state, telemetry panel |
-| 95 | Inspector controls | partial | Inspector: hole, area, preset, projection, FOV, pitch, yaw, relief, zoom, debug view (+ bunker-depth), viewport, material layer multipliers, crown/mass budget scales (`?crowns=`, `?mass=`), water/haze/contact-shade scales (`?water=`, `?haze=`, `?shade=`), telemetry incl. tree families, haze and sky, quality tier select (`?quality=low\|standard\|high\|auto`) with the §68 budget fields; light/seed toggles pending |
+| 95 | Inspector controls | done | Inspector: hole, area, preset, projection, FOV, pitch, yaw, relief, zoom, debug views (final / albedo / normals / slope / feature-ids / no-shadow / shadow-only / bunker-depth …), viewport, material layer multipliers, trees (`?crowns=` `?mass=` + tier near-crown gate), bunkers (`?bowl=0` flat ↔ 1 bowl), water (`?water=`), haze, contact shade, context (`?context=`), quality tier (`?quality=`), Spector (`?spector=1`), telemetry incl. §68 budgets. Lab route only, never shipped |
 | 96 | Visual artifact compiler | done | `scripts/golf/course-geometry/compile-visual-artifacts.mts` (tsx): 18 holes, determinism check, cache round-trip, pack manifest |
 | 97 | Packed render attributes | done | Packed attributes: Uint8 albedo/weights/roughness/class, Uint16 boundary cm + bunker mm, Float32 route (s,t); 19 B/vertex, 160–460 KB gzip per hole |
 | 98 | Field textures vs attributes | done | Decision recorded in the operations doc: attributes now; field textures only if bunker rims / shorelines need sub-triangle detail |
-| 99 | Asset optimization pipeline | pending | |
+| 99 | Asset optimization pipeline | done (decision) | No GLB/KTX2 asset exists (all materials procedural), so the chain is recorded as the adoption rule in `docs/design/meridian-visual-language.md` 'Asset pipeline': source → glTF Transform → gltfpack/meshopt → KTX2 → validator → content hash joined to the style hash. Build step lands with the first authored asset |
 | 100 | Visual versions | done | `MERIDIAN_STYLE_VERSION` + `styleHash()` (by value) + `compilerVersion`; all carried in the artifact and telemetry |
 | 101 | Cache policy | done | `visualArtifactCachePath`: `geometry/<site>/<packageHash>/visual/<styleHash>/<hole>.visual.json`; runtime compiles when missing, refuses when mismatched |
 | 102 | Offline packs | done | `offlinePackManifest` + `pack-manifest.json` per course/package/style with hash-addressed terrain and visual entries |
-| 103 | Phone/WebView testing | pending | |
-| 104 | Battery test | pending | |
-| 105 | Failure behavior | pending | |
-| 106 | Testing architecture (106.1–106.4) | partial | 106.1 determinism + hash gate + cache round-trip (`visual-artifact.test.ts`); 106.2 camera round-trip (`three-camera.test.ts`); 106.3 style invariants (`visual-style.test.ts`); 106.4 visual canaries captured per label with the §68 budget fields in their metadata, automated pixel diff not yet |
+| 103 | Phone/WebView testing | blocked (human) | Device matrix and measures recorded in `meridian-visual-language.md` 'Device verification'; lab URL exposes every state and `quality=` tier. Needs the owner's iPhone/Android/WebView run; Mac Chromium captures cannot stand in |
+| 104 | Battery test | blocked (human) | Battery flow (50% brightness, Terrain on every hole, pan/zoom 10 s, switch shot, close, ×18; record battery delta, thermal, crashes, memory warnings) written up; needs a real device |
+| 105 | Failure behavior | done | Mismatched artifact now refused **and recompiled** from the canonical inputs (`artifactSource: 'recompiled'`, `artifactRefusal`), reported as `MERIDIAN_ARTIFACT_MISMATCH` without dropping the hole to the schematic; missing → runtime compile; context lost / shader failure → `onUnavailable` → SVG outline with notice; terrain missing → schematic; texture decode n/a (procedural). Table in `meridian-visual-language.md` 'Failure behaviour'. Test: `three-landscape.test.ts` §105 |
+| 106 | Testing architecture (106.1–106.4) | done | 106.1 determinism + hash gate + cache round-trip (`visual-artifact.test.ts`); 106.2 camera round-trip (`three-camera.test.ts`); 106.3 style invariants (`visual-style.test.ts`); 106.4 canaries per label with §68 budget metadata + `scripts/golf/course-geometry/diff-visual-canaries.py` (per-capture changed fraction, bbox, highlight image, `--max` gate) |
 | 107 | Human visual review checklist | done | Checklist in `docs/plans/2026-09-16-meridian-operations.md` |
-| 108 | Implementation sequence V0–V7 | partial | V0–V6 landed; V7 tiers/budgets/residency landed, draw-call batching for the over-budget holes and §99/§103–105 remain |
-| 109 | Which product packages first | pending | |
-| 110 | Top five visual moves | pending | |
+| 108 | Implementation sequence V0–V7 | done | V0–V7 landed; V7 closes with §11 visibility scoring, §105 recompile fallback, §106.4 pixel diff, §68 GPU timer, §73/§80 tooling. Human gates (§103–104) tracked on their own rows |
+| 109 | Which product packages first | done (doctrine) | Correctness packages (P1 boundary review, P2 corridor traces, P3 rough corridor, P6 bindings/loader) stay first; the visual work in this plan ran in parallel and promoted no source truth (`basis: 'visual_only'`, hash gates, source-only context) |
+| 110 | Top five visual moves | done | 1 perspective Terrain (V1, holes 7 + 11 first), 2 faceting fixed at the root (V1), 3 render-only bunker bowls (V3), 4 ground material system (V2), 5 forest hierarchy (V4) — all landed and canaried |
 | 111 | Tools now vs later | done | Now/later table in the operations doc |
 | 112 | Meridian visual kit | done | `src/lib/golf/course-geometry/visual-style.ts`: `MERIDIAN_STYLE` (palette, light, shadow, turf, mowing, boundary, surface, context, bunker, vegetation, water, haze) |
 | 113 | Style versions | done | `meridian-v6` + value hash `meridian-v6-<fnv>`; captures carry `visualStyleHash` |
@@ -138,6 +138,6 @@ the visual-language document.
 | 121 | Near-term experiment (perspective spike) | done | Spike sheet `docs/plans/assets/meridian-2026-09-16/spike-121-holes-07-11.png`: V0 ortho vs V1 perspective for holes 7 and 11 (Terrain and Side) |
 | 122 | Follow-up experiment (bunker spike) | done | Bunker spike: hole 7 and 11 Terrain/Side before (v2-material) vs after (v3-bunkers), sheet `spike-122-bunkers-holes-07-11.png`; profiles printed by the compiler |
 | 123 | Source and tool notes | done | Operations doc |
-| 124 | Final success definition | pending | |
-| 125 | Agent implementation brief A–I | partial | A (baseline + lab), B (perspective camera, all holes), C (faceting kit + audit), D (ground material + artifact), E (bunker bowls), F (vegetation families, mass, trunks), G (water, contact shade, haze, sky, context toning) done; H–I pending |
-| 126 | Closing product thesis | pending | |
+| 124 | Final success definition | partial | Engineering answers are available in the artifact/dataset: source-backed vs derived vs estimated vs visual-only (`basis`, `overlayKind`, `sourceKind`, `apronBasis 'derived_neck'`), version (`visualStyleHash`, `visualArtifactHash`, package/terrain hashes), source (`attribution`, `contextSource`), uncertainty (`uncertain` zones paint nothing, ambiguity regions). The three feel statements (best map / lifted off the screen / my actual round) need the §103 human pass |
+| 125 | Agent implementation brief A–I | partial | A–G done; H (resolved marker, ambiguity region, selected-shot camera, no unsupported trajectory claims) done in V6; I quality tiers + LRU residency done in V7; I real-iPhone profile / Spector.js inspection / KTX2 wait on hardware and assets. Exit standard: 1 spatial ✓ (canaries), 2 picking round-trips ✓ (`three-camera.test.ts`), 3 no contamination ✓ (`visual-boundary.test.ts`), 4 phone budget ✓ on Mac Chromium only, 5 degrades safely ✓ (§105), 6 reproducible/versioned ✓ (hashes), 7 architecture ready for higher-fidelity sources ✓ (source-only context, compiler version) |
+| 126 | Closing product thesis | done (doctrine) | Recorded in `docs/design/meridian-visual-language.md` doctrine bullet: the version of the hole that existed when played, from known source geometry with known uncertainty, round shown in the same metric world, enhancement never presented as measurement |

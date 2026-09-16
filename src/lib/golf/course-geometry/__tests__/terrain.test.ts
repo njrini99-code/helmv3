@@ -3,7 +3,7 @@ import fc from 'fast-check';
 import { parseGeometryPackage } from '../schema';
 import { buildHoleScene } from '../build-scene';
 import { normalizePersistedShot } from '../normalize';
-import { fitTerrainCamera, MAX_TERRAIN_TRIANGLES, MAX_TERRAIN_VERTEX_COMPONENTS, parseTerrainMesh, projectTerrainPoint, terrainBasis, terrainHeight, TERRAIN_PRESETS } from '../terrain';
+import { fitTerrainCamera, MAX_TERRAIN_TRIANGLES, MAX_TERRAIN_VERTEX_COMPONENTS, parseTerrainMesh, projectTerrainPoint, terrainBasis, terrainHeight, TERRAIN_PRESETS, woodsOcclusion } from '../terrain';
 import type { Point3M, TerrainMesh } from '../terrain';
 import data from '@/test/fixtures/course-geometry/cacapon.json';
 import terrainData from '@/test/fixtures/course-geometry/cacapon-07-terrain.json';
@@ -170,5 +170,33 @@ describe('source-linked terrain and camera', () => {
     expect(side.crowns.map(c => c.id).sort()).toEqual(canopy.crowns.map(c => c.id).sort());
     expect(canopy.guardPaths.length).toBeGreaterThan(0);
     expect(scene.events.every(e => e.anchorM == null)).toBe(true);
+  });
+});
+
+describe('orientation visibility (Meridian §11)', () => {
+  it('woods in front of a target toward the camera count as occlusion, woods behind it do not', () => {
+    const block: [number, number][] = [[10, -5], [30, -5], [30, 5], [10, 5]];
+    const towardBlock = -Math.PI / 2;    // probe walks +x
+    const awayFromBlock = Math.PI / 2;   // probe walks -x
+    expect(woodsOcclusion([block], [0, 0], towardBlock, 44)).toBeGreaterThan(.15);
+    expect(woodsOcclusion([block], [0, 0], awayFromBlock, 44)).toBe(0);
+    expect(woodsOcclusion([block], [0, 0], towardBlock, 90)).toBe(0);
+    expect(woodsOcclusion([], [0, 0], towardBlock, 44)).toBe(0);
+  });
+  it('a lower pitch probes farther, so distant woods start to matter', () => {
+    const block: [number, number][] = [[20, -5], [40, -5], [40, 5], [20, 5]];
+    expect(woodsOcclusion([block], [0, 0], -Math.PI / 2, 44)).toBe(0);
+    expect(woodsOcclusion([block], [0, 0], -Math.PI / 2, 20)).toBeGreaterThan(0);
+  });
+  it('whole-hole framing still fits every tactical point after the visibility term', () => {
+    const camera = fitTerrainCamera(scene, mesh, 'hole', 390, 700, TERRAIN_PRESETS.terrain, 1, [0, 0], 'terrain');
+    expect(camera.forward.every(Number.isFinite)).toBe(true);
+    const green = scene.features.find(f => f.kind === 'green')!.parts[0]![0]!;
+    for (const [x, y] of green) {
+      const z = terrainHeight(mesh, [x, y])!;
+      const [sx, sy] = projectTerrainPoint([x, y, z], camera);
+      expect(sx).toBeGreaterThanOrEqual(0); expect(sx).toBeLessThanOrEqual(390);
+      expect(sy).toBeGreaterThanOrEqual(0); expect(sy).toBeLessThanOrEqual(700);
+    }
   });
 });

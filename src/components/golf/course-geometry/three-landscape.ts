@@ -4,7 +4,7 @@ import { boundaryDistance } from '@/lib/golf/course-geometry/display-outline';
 import { inFeature } from '@/lib/golf/course-geometry/spatial';
 import { terrainHeight, type TerrainMesh } from '@/lib/golf/course-geometry/terrain';
 import type { HoleScene, LocalFeature, PointM } from '@/lib/golf/course-geometry/types';
-import { assertVisualArtifact, BUNKER_SLOPE_SCALE, compileVisualArtifact, linearAlbedo, type MeridianVisualArtifact } from '@/lib/golf/course-geometry/visual-artifact';
+import { assertVisualArtifact, BUNKER_SLOPE_SCALE, compileVisualArtifact, linearAlbedo, MERIDIAN_CODES, type MeridianVisualArtifact } from '@/lib/golf/course-geometry/visual-artifact';
 import { MERIDIAN_PALETTE, MERIDIAN_STYLE, MERIDIAN_STYLE_HASH, MERIDIAN_STYLE_VERSION, type MeridianPaletteKey, type MeridianStyleOverrides } from '@/lib/golf/course-geometry/visual-style';
 import { buildThreeContext } from './three-context';
 import { createTreeAssetAtlas, type TreeCrownAsset } from './tree-assets';
@@ -32,7 +32,11 @@ export interface ThreeLandscape {
   dispose(): void;
   /** The visual world this landscape was built from (§6). */
   artifact: MeridianVisualArtifact;
-  artifactSource: 'supplied' | 'runtime';
+  /** `runtime` = no cache supplied (MERIDIAN_ARTIFACT_MISSING); `recompiled`
+   * = the supplied cache failed the §6 hash gate and was replaced (§105). */
+  artifactSource: 'supplied' | 'runtime' | 'recompiled';
+  /** The MERIDIAN_ARTIFACT_MISMATCH message when `artifactSource` is `recompiled`. */
+  artifactRefusal: string | null;
   counts: { terrainTriangles: number; trees: number; crownInstances: number; crownTriangles: number; totalTriangles: number; canopyBatches: number; drawCalls: number;
     massLobes: number; trunksVisible: number; families: Record<string, number>;
     /** Outside-world vegetation: lobes from context `forest_mass` zones and understory shrubs inside reviewed woods. */
@@ -236,9 +240,18 @@ export function buildThreeLandscape(
   // The visual world (§6): supplied from the cache and hash-gated, or compiled
   // now from the same canonical inputs. Either way it decorates; it never
   // becomes a source for picking, framing or shot math.
-  let artifact = options.artifact, artifactSource: ThreeLandscape['artifactSource'] = 'supplied';
-  if (artifact) assertVisualArtifact(artifact, scene, mesh);
-  else { artifact = compileVisualArtifact(scene, mesh); artifactSource = 'runtime'; }
+  // A stale cache (§105) is refused, but the hole keeps its canonical terrain
+  // visual: the same compiler runs now from the canonical inputs and the
+  // refusal is reported instead of dropping to the schematic.
+  let artifact = options.artifact, artifactSource: ThreeLandscape['artifactSource'] = 'supplied', artifactRefusal: string | null = null;
+  if (artifact) {
+    try { assertVisualArtifact(artifact, scene, mesh); }
+    catch (error) {
+      if (!(error instanceof Error && error.message.startsWith(MERIDIAN_CODES.mismatch))) throw error;
+      artifactRefusal = error.message; artifact = undefined;
+    }
+  }
+  if (!artifact) { artifact = compileVisualArtifact(scene, mesh); artifactSource = artifactRefusal ? 'recompiled' : 'runtime'; }
   const group = new THREE.Group();
   group.name = 'golf-course-landscape';
   group.userData = { geometryHash: mesh.geometryHash, terrainHash: mesh.contentHash,
@@ -683,6 +696,7 @@ export function buildThreeLandscape(
     if (changed) updateTriangleCounts();
     return changed;
   }
+  const bowlScale = Math.max(0, options.overrides?.bowl ?? 1);
   function setExaggeration(exaggeration: number, referenceElevationM: number) {
     if (disposed) return;
     if (!Number.isFinite(exaggeration) || exaggeration <= 0 || exaggeration > 3 || !Number.isFinite(referenceElevationM)) {
@@ -692,7 +706,7 @@ export function buildThreeLandscape(
     const displayZ = (z: number) => referenceElevationM + (z - referenceElevationM) * exaggeration;
     // The bowl is a display offset below the canonical surface; it scales
     // with relief like every other display height and never touches `source`.
-    for (let i = 0; i < positions.count; i++) positions.setZ(i, displayZ(source[i * 3 + 2]!) + (lipLift[i]! - bowlDepth[i]!) * exaggeration);
+    for (let i = 0; i < positions.count; i++) positions.setZ(i, displayZ(source[i * 3 + 2]!) + (lipLift[i]! - bowlDepth[i]!) * bowlScale * exaggeration);
     positions.needsUpdate = true;
     if (sourceNormals) {
       for (let i = 0; i < positions.count; i++) {
@@ -758,7 +772,7 @@ export function buildThreeLandscape(
   setExaggeration(1, mesh.referenceElevationM);
 
   return {
-    group, terrain, setExaggeration, setDetail, counts, artifact, artifactSource,
+    group, terrain, setExaggeration, setDetail, counts, artifact, artifactSource, artifactRefusal,
     setStyleOverrides(overrides) { if (!disposed) turfStyle.setOverrides(overrides); },
     dispose() {
       if (disposed) return;

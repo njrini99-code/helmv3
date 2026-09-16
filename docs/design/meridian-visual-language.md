@@ -40,6 +40,15 @@ and everything else quietly supporting it. Not a satellite map, not a game.
   through a 0.5° field of view so projection never pops (§12).
 - Orientation: ±70° search about the tee→green upright, maximising fitted
   footprint with a mild upright preference; the green is always the far end.
+- Visibility term (§11): every perspective candidate is also scored by the
+  woods that would stand between the camera and the green (weight .3) or the
+  tee (weight .1). Only the ground strip `12 m / tan(pitch)` in front of the
+  target toward the camera is probed against reviewed woods rings (own hole
+  plus context), because a 12 m canopy farther away sits under an elevated
+  sight line. Recognition wins over bounding-box size; the probe is display
+  math and never feeds shot or stat calculations (`woodsOcclusion`).
+  Green-label clearance and selected-shot visibility are handled by the
+  HUD-safe fit and by `deriveShotCameraTarget` respectively.
 
 ## Light (§46–49)
 
@@ -191,6 +200,59 @@ keys disagree with the scene (`MERIDIAN_ARTIFACT_MISMATCH`). The compile is
 deterministic across engines (Node and Chromium produce the same content
 hash; `Math.sqrt` only, millimetre-quantised route coordinates). Cache path:
 `geometry/<site>/<packageHash>/visual/<styleHash>/<hole>.visual.json`.
+
+## Failure behaviour (§105)
+
+| Failure | Behaviour | Where |
+| --- | --- | --- |
+| Visual artifact missing | compiled at runtime from the canonical inputs; `MERIDIAN_ARTIFACT_MISSING` in the canvas dataset | `buildThreeLandscape` → `artifactSource: 'runtime'` |
+| Visual artifact mismatch (package, terrain, style, context or content hash) | the stale cache is refused, the hole keeps its canonical terrain visual from a runtime compile; `MERIDIAN_ARTIFACT_MISMATCH` reported, never drawn | `buildThreeLandscape` → `artifactSource: 'recompiled'`, `artifactRefusal` |
+| WebGL context lost / shader failure | runtime reports `MERIDIAN_CONTEXT_LOST` / `MERIDIAN_SHADER_FAILED` and calls `onUnavailable`; the frame shows the SVG course outline with "3D view unavailable" | `three-renderer.ts`, `HoleSceneFrame` |
+| Terrain missing | the honest schematic (SVG scene) renders; no terrain, no invented relief | `HoleSceneFrame` |
+| Texture decode failure | not applicable today: every material is procedural (no KTX2/GLB textures); when assets arrive the flat material path is the fallback | — |
+
+Score entry never depends on the visual layer.
+
+## Asset pipeline (§99)
+
+The current visual system is fully procedural (shader turf, instanced canopy
+families, analytic water); there is no GLB or KTX2 asset yet, so the
+optimisation chain is a decision, not a build step. When authored assets
+arrive they follow: Blender/procedural source → source GLB → glTF Transform
+→ gltfpack/meshopt → KTX2 → glTF Validator → content hash → cache under
+`geometry/<site>/<packageHash>/visual/<styleHash>/assets/<hash>.glb`. The
+content hash joins the style hash so any asset change re-keys captures the
+same way a style value does. Until then, the `families` counts and
+`geometryMemoryMb` telemetry are the budget line.
+
+## Device verification (§103–104)
+
+Mac Chromium captures prove the pipeline, not the product. Before a real
+player binding the following runs on hardware (a human step; the lab URL
+`/?lab=1&course=peek-n-peak-upper&hole=<n>&preset=<preset>&quality=<tier>`
+exposes every state and the tier override):
+
+- devices: current iPhone, one older supported iPhone, current Android if
+  supported, the Capacitor WebView, Safari and desktop Chrome;
+- measures: first open, repeated hole switch, background/resume, low
+  battery, thermal after 18 holes, forced context loss, memory after
+  repeated holes (the `geometryMemoryMb` / `shadowMemoryMb` / `renderTargetMb`
+  dataset fields give the expected order of magnitude);
+- battery flow: 50% brightness, open Terrain on every hole, pan/zoom 10 s,
+  switch shot, close, repeat for 18 holes; record battery delta, thermal
+  state, crashes and memory warnings.
+
+The result belongs in the master-plan tracker rows 103–104; the lab and the
+canaries cannot stand in for it.
+
+## Canary pixel diff (§106.4)
+
+`scripts/golf/course-geometry/diff-visual-canaries.py <before> <after>
+[--out=<dir>] [--tolerance=24] [--max=0.02] [--json=<summary>]` compares two
+canary labels (or two lab audit folders, or two files) capture by capture:
+changed-pixel fraction, bounding box and a red-highlight image per capture.
+It is a review aid; a change is acceptable only when the label note explains
+it, and `--max` turns the fraction into an exit code for a gate.
 
 ## Style versions (§113)
 
