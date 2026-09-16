@@ -2,6 +2,7 @@ import type { ContextLayer } from '../course-geometry/context-layer';
 import type { TerrainMesh } from '../course-geometry/terrain';
 import type { CourseGeometryPackage, PointM } from '../course-geometry/types';
 import type { StorageLike, SyncTransport } from './anchor-repository';
+import { defaultFetch, loadCourseAssets, type CourseAssetCache, type FetchLike, type PreflightStatus } from './course-assets';
 import { largestOuterRing, ringCentroid } from './hole-distances';
 import { buildSurfacePartition } from './lie-classifier';
 import type { LocationSource } from './location-source';
@@ -25,7 +26,11 @@ export interface OneTapLiveRound {
   /** Omitted → localStorage; null → memory only. */
   storage?: StorageLike | null;
   transport?: SyncTransport | null;
+  /** Task 15 preflight verdict: `ready` plays fully offline, `partial` draws
+   * un-cached holes in 2D; absent when no preflight ran (the lab). */
+  readiness?: PreflightStatus;
 }
+interface CoursePackageAssets { pkg: CourseGeometryPackage; terrainByHole?: Readonly<Record<string, TerrainMesh>>; contextLayer?: ContextLayer; geometryVersion?: string }
 export interface ResolveLiveRoundInput {
   roundId: string;
   /** Product course id of the round's course (`productCourseIdForRound`), null for any other course. */
@@ -38,6 +43,7 @@ export interface ResolveLiveRoundInput {
   storage?: StorageLike | null;
   transport?: SyncTransport | null;
   policy?: PeekNPeakOneTapPolicy;
+  readiness?: PreflightStatus;
 }
 export function resolveOneTapLiveRound(input: ResolveLiveRoundInput): { live: OneTapLiveRound | null; eligibility: OneTapEligibility } {
   const policy = input.policy ?? PEEK_N_PEAK_ONE_TAP_V1;
@@ -47,7 +53,7 @@ export function resolveOneTapLiveRound(input: ResolveLiveRoundInput): { live: On
   if (!eligibility.eligible) return { live: null, eligibility };
   const holeKeys = [...input.pkg.holes].sort((a, b) => a.ordinal - b.ordinal).map(h => h.key);
   return { eligibility, live: { roundId: input.roundId, courseId: eligibility.courseId, geometryVersion: eligibility.geometryVersion, pkg: input.pkg, holeKeys,
-    terrainByHole: input.terrainByHole, contextLayer: input.contextLayer, location: input.location, storage: input.storage, transport: input.transport } };
+    terrainByHole: input.terrainByHole, contextLayer: input.contextLayer, location: input.location, storage: input.storage, transport: input.transport, readiness: input.readiness } };
 }
 /** The package hole for a round hole number, or null when the package does not map it (that hole stays on standard tracking). */
 export function holeKeyForRoundHole(live: Pick<OneTapLiveRound, 'pkg'>, holeNumber: number): string | null {
@@ -61,25 +67,15 @@ export function greenCentreENU(pkg: CourseGeometryPackage, holeKey: string): Poi
   } catch { return null; }
 }
 
-/** The published, owner-approved package for a course: `<base>/<courseId>/manifest.json`
- * names the geometry version and the package file. Nothing is fetched while
- * no hash is approved, and a package whose hash or site disagrees with the
- * policy is refused — a source-candidate package never reaches a player. */
-export interface ApprovedPackageManifestFile { geometryVersion: string; packageUrl: string }
-export interface CoursePackageAssets { pkg: CourseGeometryPackage; terrainByHole?: Readonly<Record<string, TerrainMesh>>; contextLayer?: ContextLayer }
-type FetchLike = (url: string) => Promise<{ ok: boolean; json(): Promise<unknown> }>;
+/** The published, owner-approved package for a course, through the offline
+ * asset cache (task 15): the manifest is read network-first, hashed assets
+ * cache-first, so a round that was preflighted plays with no signal. Nothing
+ * is fetched while no hash is approved, and a package whose hash or site
+ * disagrees with the policy is refused — a source-candidate package never
+ * reaches a player. */
+export type { CoursePackageAssets };
 export async function loadApprovedCoursePackage(courseId: string, policy: PeekNPeakOneTapPolicy = PEEK_N_PEAK_ONE_TAP_V1,
-  fetchImpl: FetchLike | null = typeof fetch === 'function' ? (url => fetch(url)) : null, baseUrl = '/course-geometry'): Promise<CoursePackageAssets | null> {
-  if (!fetchImpl || policy.approvedGeometryHashes.size === 0 || courseId !== policy.courseId) return null;
-  try {
-    const manifestResponse = await fetchImpl(`${baseUrl}/${courseId}/manifest.json`);
-    if (!manifestResponse.ok) return null;
-    const manifest = await manifestResponse.json() as Partial<ApprovedPackageManifestFile> | null;
-    if (!manifest || typeof manifest.geometryVersion !== 'string' || typeof manifest.packageUrl !== 'string' || !policy.approvedGeometryHashes.has(manifest.geometryVersion)) return null;
-    const packageResponse = await fetchImpl(manifest.packageUrl);
-    if (!packageResponse.ok) return null;
-    const pkg = await packageResponse.json() as CourseGeometryPackage | null;
-    if (!pkg || pkg.contentHash !== manifest.geometryVersion || pkg.siteId !== policy.siteId || pkg.status === 'source_candidate') return null;
-    return { pkg };
-  } catch { return null; }
+  fetchImpl: FetchLike | null = defaultFetch, baseUrl = '/course-geometry', cache: CourseAssetCache | null = null): Promise<CoursePackageAssets | null> {
+  const loaded = await loadCourseAssets({ courseId, policy, cache, fetchImpl, baseUrl });
+  return loaded ? { pkg: loaded.pkg, terrainByHole: loaded.terrainByHole, geometryVersion: loaded.geometryVersion } : null;
 }

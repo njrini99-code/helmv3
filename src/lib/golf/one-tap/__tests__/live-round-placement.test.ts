@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { pilotPackage } from '@/test/fixtures/course-geometry/pilot';
+import { MemoryCourseAssetCache } from '../course-assets';
 import { greenCentreENU, holeKeyForRoundHole, loadApprovedCoursePackage, resolveOneTapLiveRound } from '../live-round-placement';
 import type { LocationSource } from '../location-source';
 import { PEEK_N_PEAK_ONE_TAP_V1, productCourseIdForRound, type PeekNPeakOneTapPolicy } from '../peek-n-peak-policy';
@@ -36,20 +37,27 @@ describe('live round placement (§77)', () => {
   });
 
   it('fetches nothing while no package is approved, and refuses a package whose hash or site disagrees', async () => {
+    const body = (value: unknown) => ({ ok: true, text: async () => JSON.stringify(value) });
     const fetchImpl = vi.fn(async (url: string) => {
-      if (url.endsWith('/manifest.json')) return { ok: true, json: async () => ({ geometryVersion: pilotPackage.contentHash, packageUrl: '/course-geometry/peek-n-peak-upper/package.json' }) };
-      return { ok: true, json: async () => pilotPackage };
+      if (url.endsWith('/manifest.json')) return body({ geometryVersion: pilotPackage.contentHash, packageUrl: '/course-geometry/peek-n-peak-upper/package.json' });
+      return body(pilotPackage);
     });
     expect(await loadApprovedCoursePackage('peek-n-peak-upper', PEEK_N_PEAK_ONE_TAP_V1, fetchImpl)).toBeNull();
     expect(fetchImpl).not.toHaveBeenCalled();
     const loaded = await loadApprovedCoursePackage('peek-n-peak-upper', approved, fetchImpl);
     expect(loaded?.pkg.contentHash).toBe(pilotPackage.contentHash);
+    expect(loaded?.geometryVersion).toBe(pilotPackage.contentHash);
     expect(fetchImpl.mock.calls.map(c => c[0])).toEqual(['/course-geometry/peek-n-peak-upper/manifest.json', '/course-geometry/peek-n-peak-upper/package.json']);
     expect(await loadApprovedCoursePackage('other-course', approved, fetchImpl)).toBeNull();
     const stale: PeekNPeakOneTapPolicy = { ...approved, approvedGeometryHashes: new Set(['some-other-hash']) };
     expect(await loadApprovedCoursePackage('peek-n-peak-upper', stale, fetchImpl)).toBeNull();
     const wrongSite: PeekNPeakOneTapPolicy = { ...approved, siteId: 'osm-way-000' };
     expect(await loadApprovedCoursePackage('peek-n-peak-upper', wrongSite, fetchImpl)).toBeNull();
-    expect(await loadApprovedCoursePackage('peek-n-peak-upper', approved, async () => ({ ok: false, json: async () => null }))).toBeNull();
+    expect(await loadApprovedCoursePackage('peek-n-peak-upper', approved, async () => ({ ok: false, text: async () => '' }))).toBeNull();
+    // Task 15: a preflighted cache serves the whole course with no signal.
+    const cache = new MemoryCourseAssetCache();
+    await loadApprovedCoursePackage('peek-n-peak-upper', approved, fetchImpl, '/course-geometry', cache);
+    const offline = await loadApprovedCoursePackage('peek-n-peak-upper', approved, async () => { throw new TypeError('Failed to fetch'); }, '/course-geometry', cache);
+    expect(offline?.pkg.contentHash).toBe(pilotPackage.contentHash);
   });
 });

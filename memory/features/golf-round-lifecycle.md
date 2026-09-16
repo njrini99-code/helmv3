@@ -794,3 +794,10 @@ flag off or no approved package — renders the tracker exactly as before
   `RESET_FOR_HOLE_CHANGE` with the adapted shots so the hole continues in the
   standard flow. Persistence still goes through the host's `onSaveShot` /
   `onHoleComplete` / `onHoleStatsUpdate`; no new tables, actions or RLS.
+- Offline (task 15): `useOneTapLiveRound` preflights the course into the
+  device cache (`src/lib/golf/one-tap/course-assets.ts`, Cache API name
+  `golfhelm-course-geometry-v1`: manifest network-first, hashed package and
+  per-hole terrain cache-first) before resolving, so a round that started with
+  signal keeps its course through a loss; marks stay in device storage and
+  sync once when the signal returns. With no signal and an empty cache the
+  round stays on standard tracking.
