@@ -434,6 +434,25 @@ describe('Three landscape source and rendering invariants', () => {
   });
 });
 
+describe('dead-space rhythm (renderer redesign §3.4)', () => {
+  it('clears a stable seeded share of pattern centres in large woods and none in a small copse', () => {
+    const woods = square('big-woods', 'woods', 0, 320), copse = square('copse', 'woods', 400, 440);
+    const base = pilotScene('cacapon-07', false), mesh = slopeMesh();
+    mesh.vertices = [0, 0, 100, 500, 0, 100, 0, 500, 100, 500, 0, 100, 500, 500, 100, 0, 500, 100];
+    const big = buildThreeLandscape({ ...base, features: [woods] }, mesh), again = buildThreeLandscape({ ...base, features: [woods] }, mesh);
+    const small = buildThreeLandscape({ ...base, features: [copse] }, mesh);
+    try {
+      expect(big.counts.patternCentres).toBeGreaterThan(200);
+      const share = big.counts.rhythmCleared / big.counts.patternCentres;
+      expect(share).toBeGreaterThan(.05); expect(share).toBeLessThan(.25);
+      expect(again.counts.rhythmCleared).toBe(big.counts.rhythmCleared);
+      expect(small.counts.patternCentres).toBeGreaterThan(0);
+      expect(small.counts.rhythmCleared).toBe(0);
+      expect(small.counts.trees).toBeGreaterThanOrEqual(small.counts.patternCentres); // plus understory shrubs
+    } finally { big.dispose(); again.dispose(); small.dispose(); }
+  });
+});
+
 describe('canopy batching (Meridian §68.2)', () => {
   it('draws every crown in one batched mesh and every trunk in another, whatever the LOD split', () => {
     const scene = pilotScene('cacapon-07', false), terrain = parseTerrainMesh(source, pilotPackage);

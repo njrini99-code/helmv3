@@ -118,9 +118,13 @@ export const MERIDIAN_STYLE = Object.freeze({
    * only within `edgeBandM` of the woods boundary (what a golfer sees),
    * `interior` families only beyond it, `any` everywhere. Trunks are drawn
    * only within `trunkBandM` of the camera focus; beyond the edge band a
-   * forest is carried by the mass layer rather than by more crowns. */
+   * forest is carried by the mass layer rather than by more crowns.
+   * `rhythm` (renderer redesign §3.4): a seeded mask of `cellM` cells clears
+   * `share` of the pattern centres in groups of at least `minGroup`, so a
+   * woods edge gets notches and an interior gets dips instead of one hedge. */
   vegetation: Object.freeze({
     crownBudget: 720, tileM: 64, trunkBandM: 150, edgeBandM: 24,
+    rhythm: Object.freeze({ cellM: 30, share: .14, minGroup: 40 }),
     families: Object.freeze([
       Object.freeze({ id: 'broad-oak', designs: ['staggered-shoulders', 'broad-low-cluster'] as const, weight: 3, placement: 'any' as const,
         radius: [1.15, 1.5] as const, heightRatio: [2.0, 2.4] as const, trunkRatio: .055, base: '#4F7F2C', light: '#79A83C' }),

@@ -39,6 +39,8 @@ export interface ThreeLandscape {
   artifactRefusal: string | null;
   counts: { terrainTriangles: number; trees: number; crownInstances: number; crownTriangles: number; totalTriangles: number; canopyBatches: number; drawCalls: number;
     massLobes: number; trunksVisible: number; families: Record<string, number>;
+    /** Pattern centres before the dead-space mask, and how many it cleared (§3.4). */
+    patternCentres: number; rhythmCleared: number;
     /** Outside-world vegetation: lobes from context `forest_mass` zones and understory shrubs inside reviewed woods. */
     contextMassLobes: number; understory: number;
     /** Outside-world context objects drawn from the hash-locked layer. */
@@ -411,7 +413,23 @@ export function buildThreeLandscape(
     for (const family of eligible) { cursor -= family.weight; if (cursor <= 0) return family; }
     return eligible.at(-1) ?? families[0]!;
   };
-  const allocated = allocateCrowns(canopyGroups.map(feature => canopySymbols(feature, canopyScene)), crownBudget, nearness);
+  // Renderer redesign §3.4: dead-space rhythm. A seeded cell mask clears a
+  // share of the pattern centres in larger groups, so a woods edge gets
+  // notches and an interior gets dips (the forest mass still stands there)
+  // instead of one uniform hedge. Seeded like the trees, so gaps are stable.
+  const rhythm = VEGETATION.rhythm;
+  let patternCentres = 0, rhythmCleared = 0;
+  const clearing = (point: PointM) => variation(featureSeed(
+    `clearing:${courseFrame}:${scene.packageHash.slice(0, 12)}:${Math.floor(point[0] / rhythm.cellM)},${Math.floor(point[1] / rhythm.cellM)}:${MERIDIAN_STYLE_VERSION}`)) < rhythm.share;
+  const patterns = canopyGroups.map(feature => {
+    const points = canopySymbols(feature, canopyScene);
+    patternCentres += points.length;
+    if (points.length < rhythm.minGroup) return points;
+    const kept = points.filter(point => !clearing(point));
+    rhythmCleared += points.length - kept.length;
+    return kept;
+  });
+  const allocated = allocateCrowns(patterns, crownBudget, nearness);
   for (const [groupIndex, feature] of canopyGroups.entries()) {
     const ownBoundary = feature.parts.flat();
     const clearanceRings = [...ownBoundary, ...excludedRings];
@@ -677,7 +695,7 @@ export function buildThreeLandscape(
   group.add(context.group);
   const counts: ThreeLandscape['counts'] = { terrainTriangles: mesh.triangleFeatures.length, trees: trees.length,
     crownInstances: trees.length, crownTriangles: 0, totalTriangles: 0, canopyBatches: crowns ? 1 : 0, drawCalls: 0,
-    massLobes: lobes.length, trunksVisible: 0, families: familyCounts, contextMassLobes, understory: understoryCount,
+    massLobes: lobes.length, trunksVisible: 0, families: familyCounts, patternCentres, rhythmCleared, contextMassLobes, understory: understoryCount,
     contextRibbons: context.counts.ribbons, contextStructures: context.counts.structures, contextLines: context.counts.lines, contextZones: context.counts.zones,
     crownNearTriangles: 0, crownDistantTriangles: 0, crownFarTriangles: 0, trunkTriangles: 0, massTriangles: 0, lodTrees: { near: 0, distant: 0, far: 0, hidden: 0 } };
   const massTriangles = trunkTriangleCount(massGeometry) * lobes.length;

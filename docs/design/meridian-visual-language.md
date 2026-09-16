@@ -167,6 +167,13 @@ from V1; V4 changes what stands on each centre.
   calls plus two in the shadow pass. The single call needs
   `WEBGL_multi_draw` (Safari 15+, Chrome 86+); the renderer's
   `multiDrawBasis` reports `per_instance_fallback` where it is missing.
+- **Dead-space rhythm (redesign §3.4).** Before the crown budget is
+  allocated, a seeded mask of 30 m cells clears 14 % of the pattern centres
+  in any group of 40 or more, so a woods edge gets notches and an interior
+  gets dips (the forest mass still stands there) instead of one uniform
+  hedge. Small copses keep every centre. `counts.patternCentres` and
+  `counts.rhythmCleared` report the mask; the seed is the tree identity
+  seed, so the gaps are as stable as the trees.
 - **Identity (§41).** `canopy:<courseFrame>:<packageHash12>:<featureId>:<x>,<y>:<styleVersion>`
   and `mass:<…>` seed every family roll, proportion, colour, yaw and aspect,
   so a tree is the same tree across holes, shared context and sessions, and
