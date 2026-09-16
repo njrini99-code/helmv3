@@ -249,6 +249,14 @@ from V1; V4 changes what stands on each centre.
   4 m context triangles and now shades as the bank it is. Meshes without a
   metric grid keep their vertex normals; the debug views are unaffected
   (`material.userData.shading.basis`, `group.userData.shadingBasis`).
+- **One gradient source (compiler v4).** The per-vertex `sourceNormals`
+  array is no longer emitted (opt-in `--source-normals`): it duplicated the
+  metric grid's gradient and cost 37 % of every hole's gzipped payload
+  (about 380 KB of 1 MB at Peek'n Peak). `sourceVertexNormals(mesh)` derives
+  the same normals from the grid for the vertex attribute, the run-off
+  detector (`smoothVertexNormals`), the source-normals debug view and the
+  continuity audit; the lit ground samples the grid per fragment. A legacy
+  package that still carries the array is read unchanged.
 - **Ribbon breaklines (terrain compiler).** `compile-course-terrain.py
   --context` constrains every hole mesh with the reviewed ground ribbons
   (cart paths, service paths, roads at their source width): vertices sit on

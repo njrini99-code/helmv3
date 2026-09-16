@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { CourseGeometryPackage, HoleScene, PointM } from './types';
 import { contextPoints, type CourseView } from './camera';
-import { sampleMetricTerrain, terrainSourceFields } from './terrain-source';
+import { metricTerrainNormal, sampleMetricTerrain, terrainSourceFields } from './terrain-source';
 import { inRing } from './spatial';
 
 export type Point3M = readonly [number, number, number];
@@ -105,6 +105,26 @@ export function parseTerrainMesh(value: unknown, pkg: CourseGeometryPackage): Te
     if (Math.abs((v[i + 3]! - v[i]!) * (v[i + 7]! - v[i + 1]!) - (v[i + 6]! - v[i]!) * (v[i + 4]! - v[i + 1]!)) < 1e-10) throw new Error('Degenerate terrain triangle');
   }
   return mesh;
+}
+
+/** Per-vertex source normals for a mesh: the legacy `sourceNormals` array
+ * when the package carries one, otherwise the metric grid's gradient sampled
+ * at every vertex (`metricTerrainNormal`, the same DEM slope the renderer
+ * samples per fragment). Vertices the grid cannot answer point up. Null only
+ * when the mesh has neither, so callers fall back to triangle normals. The
+ * array is laid out like `vertices`, three components per vertex. */
+export function sourceVertexNormals(mesh: TerrainMesh): Float32Array | null {
+  if (mesh.sourceNormals && mesh.sourceNormals.length === mesh.vertices.length) return Float32Array.from(mesh.sourceNormals);
+  const grid = mesh.metricGrid;
+  if (!grid) return null;
+  const v = mesh.vertices, normals = new Float32Array(v.length), cache = new Map<string, readonly [number, number, number]>();
+  for (let i = 0; i < v.length; i += 3) {
+    const key = `${v[i]},${v[i + 1]}`;
+    let n = cache.get(key);
+    if (!n) { n = metricTerrainNormal(grid, [v[i]!, v[i + 1]!]) ?? [0, 0, 1]; cache.set(key, n); }
+    normals[i] = n[0]; normals[i + 1] = n[1]; normals[i + 2] = n[2];
+  }
+  return normals;
 }
 
 /** Prefer the independent metric source grid when present. Its nodata stays

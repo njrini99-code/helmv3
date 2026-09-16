@@ -142,6 +142,10 @@ python3 scripts/golf/course-geometry/prepare-osm-course.py \
 #    before triangulating, so neighbouring pieces share their boundary vertices
 #    (report `noding.tJunctionVertices` must be 0: a T-junction is a hairline
 #    crack that shows the sky through the terrain).
+#    course-terrain-v4 stops emitting the per-vertex sourceNormals array by
+#    default: the renderer shades every fragment from the metric grid's slope
+#    (the same DEM gradient), and the array was 37 % of each hole's gzip.
+#    Pass --source-normals to emit it for a legacy consumer.
 python3 scripts/golf/course-geometry/compile-course-terrain.py --holes all \
   --package src/test/fixtures/course-geometry/peek-n-peak-upper.json \
   --source src/test/fixtures/course-geometry/sources/peek-n-peak-upper-terrain \

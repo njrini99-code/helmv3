@@ -64,7 +64,29 @@ for (const list of edges.values()) {
 }
 // Vertex-normal discontinuity: coincident vertices with different normals.
 const vertexNormals = new Map();
-const source = mesh.sourceNormals;
+// course-terrain-v4 packages carry no per-vertex array: sample the metric
+// grid's gradient at each vertex (central differences over one spacing).
+function gridNormals(grid) {
+  if (!grid) return null;
+  const sample = (x, y) => {
+    const gx = (x - grid.originM[0]) / grid.spacingM, gy = (y - grid.originM[1]) / grid.spacingM;
+    if (gx < 0 || gy < 0 || gx > grid.columns - 1 || gy > grid.rows - 1) return null;
+    const ix = Math.min(Math.floor(gx), grid.columns - 2), iy = Math.min(Math.floor(gy), grid.rows - 2), fx = gx - ix, fy = gy - iy, i = iy * grid.columns + ix;
+    const a = grid.heightsM[i], b = grid.heightsM[i + 1], c = grid.heightsM[i + grid.columns], d = grid.heightsM[i + grid.columns + 1];
+    if (a == null || b == null || c == null || d == null) return null;
+    return (1 - fx) * ((1 - fy) * a + fy * c) + fx * ((1 - fy) * b + fy * d);
+  };
+  const out = new Float64Array(v.length), s = grid.spacingM;
+  for (let i = 0; i < v.length; i += 3) {
+    const x = v[i], y = v[i + 1], z = sample(x, y), l = sample(x - s, y), r = sample(x + s, y), b = sample(x, y - s), t = sample(x, y + s);
+    const dx = l != null && r != null ? (r - l) / (2 * s) : r != null && z != null ? (r - z) / s : l != null && z != null ? (z - l) / s : 0;
+    const dy = b != null && t != null ? (t - b) / (2 * s) : t != null && z != null ? (t - z) / s : b != null && z != null ? (z - b) / s : 0;
+    const length = Math.hypot(dx, dy, 1);
+    out[i] = -dx / length; out[i + 1] = -dy / length; out[i + 2] = 1 / length;
+  }
+  return out;
+}
+const source = mesh.sourceNormals ?? gridNormals(mesh.metricGrid);
 for (let i = 0; i < v.length; i += 3) {
   const k = key(v[i], v[i + 1]);
   const n = source ? [source[i], source[i + 1], source[i + 2] / exaggeration] : faceNormals.slice(Math.floor(i / 9) * 3, Math.floor(i / 9) * 3 + 3);
@@ -89,7 +111,7 @@ const stats = values => {
 };
 const report = {
   file, terrainHash: mesh.contentHash, physicalHoleKey: mesh.physicalHoleKey, triangles, exaggeration,
-  normalSource: source ? 'source_dem_gradient' : 'triangle_area_weighted',
+  normalSource: mesh.sourceNormals ? 'source_dem_gradient' : source ? 'metric_grid_gradient' : 'triangle_area_weighted',
   edges: { shared: [...edges.values()].filter(l => l.length === 2).length, boundary, nonManifold },
   dihedralDegreesByEdgeClass: Object.fromEntries(Object.entries(classes).map(([cls, values]) => [cls, stats(values)])),
   vertexNormalSeamDegrees: stats(vertexSeams),

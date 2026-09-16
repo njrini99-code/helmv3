@@ -27,7 +27,7 @@ than code: §107, §111, §115–120, §123.
 
 1. Retain the OSM extract, USGS 1 m tile, NAIP export (immutable, hashed).
 2. `prepare-osm-course` → package fixture + association report.
-3. `compile-course-terrain --context <layer>` → per-hole meshes with source normals and metric grid; the context layer's ground ribbons constrain the triangulation (breaklines); re-run this step whenever a ribbon in the layer changes. `course-terrain-v3` nodes all material pieces into one planar arrangement before triangulating (report `noding`: `tJunctionVertices` and `interiorSingleEdges` are 0 on every hole), so no hairline cracks open between features or cells.
+3. `compile-course-terrain --context <layer>` → per-hole meshes with the metric grid (`course-terrain-v4`: no per-vertex `sourceNormals` array unless `--source-normals`; vertex normals derive from the grid, lit shading samples it per fragment); the context layer's ground ribbons constrain the triangulation (breaklines); re-run this step whenever a ribbon in the layer changes. `course-terrain-v3` nodes all material pieces into one planar arrangement before triangulating (report `noding`: `tJunctionVertices` and `interiorSingleEdges` are 0 on every hole), so no hairline cracks open between features or cells.
 4. `derive-canopy-naip` → reviewed woods; re-run 2 and 3.
 5. `review-course-imagery` → dossier and contact sheet.
 6. `build-course-world` → normalized study, physical world, truth gate, GLB.

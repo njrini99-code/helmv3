@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { allocateCrowns, canopySymbols, crownScale } from '@/lib/golf/course-geometry/canopy';
 import { boundaryDistance } from '@/lib/golf/course-geometry/display-outline';
 import { inFeature } from '@/lib/golf/course-geometry/spatial';
-import { terrainHeight, type TerrainMesh } from '@/lib/golf/course-geometry/terrain';
+import { sourceVertexNormals, terrainHeight, type TerrainMesh } from '@/lib/golf/course-geometry/terrain';
 import type { MetricTerrainGrid } from '@/lib/golf/course-geometry/terrain-source';
 import type { HoleScene, LocalFeature, PointM } from '@/lib/golf/course-geometry/types';
 import { assertVisualArtifact, BUNKER_SLOPE_SCALE, compileVisualArtifact, linearAlbedo, MERIDIAN_CODES, SURFACE_CLASS_IDS, type MeridianVisualArtifact } from '@/lib/golf/course-geometry/visual-artifact';
@@ -372,8 +372,13 @@ export function buildThreeLandscape(
   // Conforming triangles already preserve multipart features and polygon holes.
   // Normalize winding on this display copy, without triangulating again.
   const source = new Float64Array(mesh.vertices.length);
-  const sourceNormals = mesh.sourceNormals ? new Float32Array(source.length) : null;
-  if (mesh.sourceNormals && mesh.sourceNormals.length !== source.length) throw new Error('Terrain normal/source vertex mismatch');
+  // Per-vertex DEM normals: the legacy array, or the metric grid's gradient
+  // at every vertex (course-terrain-v4 packages carry no array). They feed
+  // the vertex `normal` attribute (water Fresnel, debug views, the no-grid
+  // fallback); lit ground shading samples the grid per fragment instead.
+  const gridNormals = sourceVertexNormals(mesh);
+  const sourceNormals = gridNormals ? new Float32Array(source.length) : null;
+  if (gridNormals && gridNormals.length !== source.length) throw new Error('Terrain normal/source vertex mismatch');
   const vertexCount = mesh.vertices.length / 3, albedo = linearAlbedo(artifact), attributes = artifact.attributes;
   const colors = new Float32Array(mesh.vertices.length), mowing = new Float32Array(vertexCount), turf = new Float32Array(vertexCount);
   const contextWeight = new Float32Array(vertexCount), roughness = new Float32Array(vertexCount), surfaceClass = new Float32Array(vertexCount);
@@ -390,7 +395,7 @@ export function buildThreeLandscape(
     for (let corner = 0; corner < 3; corner++) {
       const index = offset + corner * 3, original = offset + order[corner]! * 3, vertex = index / 3, from = original / 3;
       source.set(v.slice(original, original + 3), index);
-      if (sourceNormals) sourceNormals.set(mesh.sourceNormals!.slice(original, original + 3), index);
+      if (sourceNormals) sourceNormals.set(gridNormals!.subarray(original, original + 3), index);
       // Artifact attributes follow the same corner permutation as the positions.
       colors.set(albedo.subarray(original, original + 3), index);
       mowing[vertex] = attributes.mowingWeight[from]! / 255;
@@ -443,6 +448,7 @@ export function buildThreeLandscape(
   const { material, turf: turfStyle } = terrainMaterial(artifact.seed, options.overrides ?? {}, landingWindow(scene), relief);
   materials.add(material);
   group.userData.shadingBasis = relief ? 'dem_slope_texture' : sourceNormals ? 'vertex_source_normals' : 'vertex_face_normals';
+  group.userData.vertexNormalBasis = mesh.sourceNormals ? 'package_array' : gridNormals ? 'metric_grid' : 'triangles';
   const terrain = new THREE.Mesh(terrainGeometry, material);
   terrain.name = 'course-terrain';
   terrain.castShadow = true;

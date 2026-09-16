@@ -1,6 +1,6 @@
 {
   "physicalHoleKey": "peek-n-peak-upper-13",
-  "contentHash": "6da81f937d4d8a1493b75af2b751d2696b6b7be86a9a363db69fc232c36d8c9f",
+  "contentHash": "e73d3f7f9cc4d68f1c9dae746da9e950eceaba60abe42e8bf404d7f122075645",
   "geometryHash": "fdec6ea8467dd214372bde680e7b7f9236c06ad5d27bb5ddeadf8ed5e9d3f87a",
   "configuredBudget": 40000,
   "originalEnvelope": 20000,
@@ -10,8 +10,8 @@
   "metricCells": 71225,
   "metricNodataCells": 0,
   "duplicateVertexCount": 44420,
-  "sourceNormalDuplicatesAgree": true,
   "sourceHeightDuplicatesAgree": true,
+  "sourceNormals": "metric_grid_slope",
   "sourceNormalUnitMaxError": 6.637196769965215e-08,
   "slopesDegrees": {
     "max": 46.686601298337656,
@@ -637,7 +637,7 @@
     }
   ],
   "renderProfile": {
-    "compilerVersion": "course-terrain-v3",
+    "compilerVersion": "course-terrain-v4",
     "styleVersion": "narrow-surround-v1",
     "tacticalBoundsM": [
       556,
@@ -690,15 +690,15 @@
     "metricSamplingM": 2,
     "normalGradientStepM": 1
   },
-  "compressedBytes": 694272,
+  "compressedBytes": 450447,
   "asset": {
     "ordinal": 13,
     "fileName": "peek-n-peak-upper-13-terrain.json.gz",
     "encoding": "gzip",
-    "compressedBytes": 694272,
-    "uncompressedBytes": 3695326,
-    "sha256": "0208a945827f7231da87dc5b1290a68097c0ea0b78a799c973a5ea6fc6380a71",
-    "uncompressedSha256": "e7ce14592bed6f6134700a94590d14ae8a527add8794af601e7e91a423c514f7",
-    "contentHash": "6da81f937d4d8a1493b75af2b751d2696b6b7be86a9a363db69fc232c36d8c9f"
+    "compressedBytes": 450447,
+    "uncompressedBytes": 2080125,
+    "sha256": "2a377c0257eeb67183598f7c502f38357fb0d43d1d62ab5a83595e44a914c2ee",
+    "uncompressedSha256": "3b90f10329106d904211ca7d5cf560eef97c849fd75724bb94bcafc017d213da",
+    "contentHash": "e73d3f7f9cc4d68f1c9dae746da9e950eceaba60abe42e8bf404d7f122075645"
   }
 }

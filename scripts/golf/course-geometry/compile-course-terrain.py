@@ -28,7 +28,7 @@ from shapely.ops import polygonize, unary_union
 
 ROOT = Path(__file__).resolve().parents[3]
 FIXTURES = ROOT / 'src/test/fixtures/course-geometry'
-COMPILER_VERSION = 'course-terrain-v3'
+COMPILER_VERSION = 'course-terrain-v4'
 NODING_GRID_M = 1e-6
 STYLE_VERSION = 'narrow-surround-v1'
 CONTEXT_MARGIN_M = 160
@@ -421,12 +421,12 @@ def metric_grid(source, bounds):
             'heightsM': [round(float(value), 4) if np.isfinite(value) else None for value in values]}, values
 
 
-def duplicate_vertex_report(vertices, normals):
+def duplicate_vertex_report(vertices, normals=None):
     seen = {}
     agree, height_agree, duplicates = True, True, 0
     for i in range(0, len(vertices), 3):
         xy = tuple(vertices[i:i+2])
-        normal = tuple(normals[i:i+3])
+        normal = tuple(normals[i:i+3]) if normals is not None else None
         if xy in seen:
             duplicates += 1
             previous_z, previous_normal = seen[xy]
@@ -434,8 +434,10 @@ def duplicate_vertex_report(vertices, normals):
             height_agree &= vertices[i+2] == previous_z
         else:
             seen[xy] = (vertices[i+2], normal)
-    return {'duplicateVertexCount': duplicates, 'sourceNormalDuplicatesAgree': agree,
-            'sourceHeightDuplicatesAgree': height_agree}
+    report = {'duplicateVertexCount': duplicates, 'sourceHeightDuplicatesAgree': height_agree}
+    if normals is not None:
+        report['sourceNormalDuplicatesAgree'] = agree
+    return report
 
 
 def parts_inside_region(region, cut):
@@ -529,7 +531,13 @@ def t_junction_report(xy, bounds):
     return {'tJunctionVertices': junctions, 'interiorSingleEdges': len(single)}
 
 
-def compile_hole(hole, pkg, raw_shapes, raw_features, displays, outline_reports, source, outer_step=16, ribbons=None):
+def compile_hole(hole, pkg, raw_shapes, raw_features, displays, outline_reports, source, outer_step=16, ribbons=None,
+                 source_normals=False):
+    """course-terrain-v4: the per-vertex `sourceNormals` array is opt-in. The
+    renderer shades every fragment from the metric grid's slope (the same
+    DEM gradient, sampled per pixel), so the array only duplicated 37 % of
+    the gzipped hole payload; legacy packages that still carry it are read
+    unchanged."""
     tactical_bounds, context_bounds = hole_bounds(hole, raw_shapes, raw_features)
     context = box(*context_bounds)
     ribbons = (ribbons if ribbons is not None else Polygon()).intersection(context)
@@ -616,7 +624,7 @@ def compile_hole(hole, pkg, raw_shapes, raw_features, displays, outline_reports,
                         'rendererContextOnly': ident not in hole['featureIds'] and ident != 'terrain-context'})
     if len(triangle_features) > MAX_TRIANGLES:
         if outer_step == 16:
-            return compile_hole(hole, pkg, raw_shapes, raw_features, displays, outline_reports, source, 32, ribbons)
+            return compile_hole(hole, pkg, raw_shapes, raw_features, displays, outline_reports, source, 32, ribbons, source_normals)
         raise ValueError(f'{hole["key"]}: {len(triangle_features)} triangles exceeds {MAX_TRIANGLES}; explicit LOD review required')
     unique = np.array(sorted(set(xy)), dtype=float)
     heights = source.sample(unique[:, 0], unique[:, 1])
@@ -627,7 +635,7 @@ def compile_hole(hole, pkg, raw_shapes, raw_features, displays, outline_reports,
     normals /= np.linalg.norm(normals, axis=1)[:, None]
     valid = np.isfinite(heights) & np.isfinite(normals).all(axis=1)
     lookup = {tuple(point): i for i, point in enumerate(unique)}
-    vertices, source_normals, kept_features, kept_materials, kept_xy = [], [], [], [], []
+    vertices, vertex_normals, kept_features, kept_materials, kept_xy = [], [], [], [], []
     omitted, omitted_area = 0, 0
     for t, feature_index in enumerate(triangle_features):
         indices = [lookup[p] for p in xy[t*3:t*3+3]]
@@ -637,7 +645,7 @@ def compile_hole(hole, pkg, raw_shapes, raw_features, displays, outline_reports,
             continue
         for i in indices:
             vertices.extend([*unique[i].tolist(), round(float(heights[i]), 4)])
-            source_normals.extend(np.round(normals[i], 7).tolist())
+            vertex_normals.extend(np.round(normals[i], 7).tolist())
         kept_features.append(feature_index); kept_materials.append(triangle_materials[t]); kept_xy.extend(xy[t*3:t*3+3])
     if not kept_features:
         raise ValueError(hole['key'] + ': terrain unavailable from the locked source')
@@ -674,17 +682,20 @@ def compile_hole(hole, pkg, raw_shapes, raw_features, displays, outline_reports,
               'displayRevision': 'bounded-outline-v1', 'surfaceManifestHash': digest([displays[f['id']][0] for f in selected]),
               'status': 'source_candidate', 'horizontalFrame': 'wgs84-local-enu-v1', 'originWgs84': pkg['originWgs84'],
               'verticalDatum': 'NAVD88', 'verticalUnits': 'meters', 'referenceElevationM': round(float(np.min(heights[valid])), 4),
-              'vertices': vertices, 'sourceNormals': source_normals, 'triangleFeatures': kept_features, 'triangleMaterials': kept_materials,
+              'vertices': vertices, 'triangleFeatures': kept_features, 'triangleMaterials': kept_materials,
               'featureIds': ids, 'featureKinds': kinds, 'contextFeatureIds': context_ids, 'metricGrid': grid,
               'renderProfile': profile, 'source': source_meta, 'limitations': limitations}
+    if source_normals:
+        result['sourceNormals'] = vertex_normals
     result['contentHash'] = digest(result)
     slopes = np.degrees(np.arctan(np.hypot(dzdx[valid], dzdy[valid])))
     report = {'physicalHoleKey': hole['key'], 'contentHash': result['contentHash'], 'geometryHash': pkg['contentHash'],
               'configuredBudget': MAX_TRIANGLES, 'originalEnvelope': ORIGINAL_TRIANGLE_ENVELOPE,
               'triangles': len(kept_features), 'uniqueVertices': len(unique), 'omittedTriangles': omitted,
               'metricCells': len(grid_values), 'metricNodataCells': int(np.count_nonzero(~np.isfinite(grid_values))),
-              **duplicate_vertex_report(vertices, source_normals),
-              'sourceNormalUnitMaxError': float(np.max(np.abs(np.linalg.norm(np.array(source_normals).reshape(-1, 3), axis=1)-1))),
+              **duplicate_vertex_report(vertices, vertex_normals if source_normals else None),
+              'sourceNormals': 'per_vertex' if source_normals else 'metric_grid_slope',
+              'sourceNormalUnitMaxError': float(np.max(np.abs(np.linalg.norm(np.array(vertex_normals).reshape(-1, 3), axis=1)-1))),
               'slopesDegrees': {'max': float(max(slopes)), 'p95': float(np.percentile(slopes, 95)), 'p50': float(np.median(slopes))},
               'elevationRangeM': [float(min(heights[valid])), float(max(heights[valid]))],
               'contextAreaM2': context.area, 'triangulatedAreaM2': sum(f['areaM2'] for f in reports)-omitted_area,
@@ -708,6 +719,8 @@ def main():
     parser.add_argument('--source', type=Path, default=FIXTURES/'sources/cacapon-course-terrain')
     parser.add_argument('--output', type=Path, default=FIXTURES/'compiled-cacapon')
     parser.add_argument('--context', type=Path, default=None, help='reviewed context layer whose ground ribbons become breaklines')
+    parser.add_argument('--source-normals', action='store_true',
+                        help='also emit the per-vertex sourceNormals array (legacy; the renderer shades from the metric grid)')
     args = parser.parse_args()
     pkg = json.loads(args.package.read_text())
     pilot.ORIGIN = pkg['originWgs84']
@@ -734,7 +747,8 @@ def main():
     for hole in pkg['holes']:
         if hole['ordinal'] not in wanted:
             continue
-        result, report = compile_hole(hole, pkg, raw_shapes, raw_features, displays, outlines, source, ribbons=ribbons.get(hole['key']))
+        result, report = compile_hole(hole, pkg, raw_shapes, raw_features, displays, outlines, source, ribbons=ribbons.get(hole['key']),
+                                      source_normals=args.source_normals)
         asset = write_asset(args.output, hole, result)
         assets[hole['key']] = asset
         report['asset'] = asset

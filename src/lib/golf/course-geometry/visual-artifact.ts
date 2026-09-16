@@ -10,7 +10,7 @@
  * refuses (MERIDIAN_ARTIFACT_MISMATCH) any artifact whose keys disagree with
  * the scene in front of it. */
 import { boundaryDistance } from './display-outline';
-import { TERRAIN_LIGHT_DIRECTION, terrainHeight, type TerrainMesh } from './terrain';
+import { TERRAIN_LIGHT_DIRECTION, terrainHeight, type TerrainMesh, sourceVertexNormals } from './terrain';
 import { inRing } from './spatial';
 import type { HoleScene, LocalFeature, PointM, SurfaceKind } from './types';
 import { hexToRgb, MERIDIAN_STYLE, srgbToLinear, styleHash, type MeridianPaletteKey, type MeridianStyle } from './visual-style';
@@ -394,7 +394,8 @@ const shadeAlbedo = (attributes: MeridianVisualAttributes, vertex: number, shade
  * position, so a slope test follows the landform, not one triangle. */
 export function smoothVertexNormals(mesh: TerrainMesh): Float32Array {
   const v = mesh.vertices, count = v.length / 3, normals = new Float32Array(v.length);
-  if (mesh.sourceNormals && mesh.sourceNormals.length === v.length) { normals.set(mesh.sourceNormals); return normals; }
+  const source = sourceVertexNormals(mesh);
+  if (source) return source;
   const groups = new Int32Array(count), keys = new Map<string, number>();
   for (let i = 0; i < count; i++) {
     const key = `${Math.round(v[i * 3]! * 1000)},${Math.round(v[i * 3 + 1]! * 1000)}`;

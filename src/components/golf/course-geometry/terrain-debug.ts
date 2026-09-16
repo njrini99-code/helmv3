@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { attachTurfStyle, type ThreeLandscape } from './three-landscape';
 import { metricTerrainNormal } from '@/lib/golf/course-geometry/terrain-source';
-import type { TerrainMesh } from '@/lib/golf/course-geometry/terrain';
+import { sourceVertexNormals, type TerrainMesh } from '@/lib/golf/course-geometry/terrain';
 
 /** Faceting debug kit (Meridian §14). Every view is a diagnostic material or
  * vertex-colour substitution on the same display geometry: source positions
@@ -78,7 +78,7 @@ export function installTerrainDebugView(world: THREE.Scene, landscape: ThreeLand
     case 'flat-normals': override(new THREE.MeshNormalMaterial({ flatShading: true })); break;
     case 'source-normals': {
       // Landscape construction rewinds clockwise triangles; match that order.
-      const source = mesh.sourceNormals;
+      const source = sourceVertexNormals(mesh);
       paintTriangles((_, color) => color.set('#FF00AA'));
       if (source) for (let t = 0; t < mesh.triangleFeatures.length; t++) {
         const offset = t * 9, v = mesh.vertices;
@@ -89,7 +89,7 @@ export function installTerrainDebugView(world: THREE.Scene, landscape: ThreeLand
           colors.set([source[from]! * .5 + .5, source[from + 1]! * .5 + .5, source[from + 2]! * .5 + .5], to);
         }
       }
-      landscape.terrain.userData.debugSourceNormals = source ? 'source' : 'missing';
+      landscape.terrain.userData.debugSourceNormals = mesh.sourceNormals ? 'source' : source ? 'metric_grid' : 'missing';
       applyVertexColors();
       break;
     }

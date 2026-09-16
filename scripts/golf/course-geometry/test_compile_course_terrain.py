@@ -57,6 +57,7 @@ class TerrainCompilerTest(unittest.TestCase):
         with patch.object(compiler, 'CONTEXT_MARGIN_M', 16):
             cls.fine, cls.report = compiler.compile_hole(*args, PlaneSource(), outer_step=16)
             cls.coarse, _ = compiler.compile_hole(*args, PlaneSource(), outer_step=32)
+            cls.with_normals, cls.normals_report = compiler.compile_hole(*args, PlaneSource(), outer_step=16, source_normals=True)
         cls.shapes = args[2]
 
     def test_context_ribbons_become_breaklines_without_editing_heights(self):
@@ -112,15 +113,30 @@ class TerrainCompilerTest(unittest.TestCase):
         self.assertAlmostEqual(grid['heightsM'][grid['columns']]-grid['heightsM'][0], .1*grid['spacingM'])
         self.assertAlmostEqual(grid['heightsM'][1]-grid['heightsM'][0], .05*grid['spacingM'])
 
+    def test_per_vertex_source_normals_are_opt_in_because_the_renderer_shades_from_the_metric_grid(self):
+        self.assertNotIn('sourceNormals', self.fine)
+        self.assertEqual(self.report['sourceNormals'], 'metric_grid_slope')
+        self.assertNotIn('sourceNormalDuplicatesAgree', self.report)
+        self.assertTrue(self.report['sourceHeightDuplicatesAgree'])
+        self.assertEqual(self.report['renderProfile']['compilerVersion'], 'course-terrain-v4')
+        # The grid carries the same gradient the array would: z = 100 + .05x + .1y.
+        grid = self.fine['metricGrid']
+        self.assertAlmostEqual((grid['heightsM'][1]-grid['heightsM'][0])/grid['spacingM'], .05)
+        self.assertAlmostEqual((grid['heightsM'][grid['columns']]-grid['heightsM'][0])/grid['spacingM'], .1)
+        # Everything else about the mesh is unchanged by the flag.
+        self.assertEqual(self.with_normals['vertices'], self.fine['vertices'])
+        self.assertEqual(self.with_normals['triangleFeatures'], self.fine['triangleFeatures'])
+
     def test_source_normals_use_real_elevation_and_match_on_every_duplicate(self):
         expected = np.array([-.05, -.1, 1])/math.sqrt(1+.05**2+.1**2)
-        actual = np.array(self.fine['sourceNormals']).reshape(-1, 3)
+        actual = np.array(self.with_normals['sourceNormals']).reshape(-1, 3)
         np.testing.assert_allclose(actual, np.broadcast_to(expected, actual.shape), atol=1e-7)
-        self.assertTrue(self.report['sourceNormalDuplicatesAgree'])
-        self.assertTrue(self.report['sourceHeightDuplicatesAgree'])
-        self.assertGreater(self.report['duplicateVertexCount'], 0)
-        altered = list(self.fine['sourceNormals'])
-        vertices = self.fine['vertices']
+        self.assertEqual(self.normals_report['sourceNormals'], 'per_vertex')
+        self.assertTrue(self.normals_report['sourceNormalDuplicatesAgree'])
+        self.assertTrue(self.normals_report['sourceHeightDuplicatesAgree'])
+        self.assertGreater(self.normals_report['duplicateVertexCount'], 0)
+        altered = list(self.with_normals['sourceNormals'])
+        vertices = self.with_normals['vertices']
         first = tuple(vertices[:2])
         duplicate = next(i for i in range(3, len(vertices), 3) if tuple(vertices[i:i+2]) == first)
         altered[duplicate] += .01

@@ -3,7 +3,7 @@ import fc from 'fast-check';
 import { parseGeometryPackage } from '../schema';
 import { buildHoleScene } from '../build-scene';
 import { normalizePersistedShot } from '../normalize';
-import { fitTerrainCamera, MAX_TERRAIN_TRIANGLES, MAX_TERRAIN_VERTEX_COMPONENTS, parseTerrainMesh, projectTerrainPoint, terrainBasis, terrainHeight, TERRAIN_PRESETS, woodsOcclusion } from '../terrain';
+import { fitTerrainCamera, MAX_TERRAIN_TRIANGLES, MAX_TERRAIN_VERTEX_COMPONENTS, parseTerrainMesh, projectTerrainPoint, sourceVertexNormals, terrainBasis, terrainHeight, TERRAIN_PRESETS, woodsOcclusion } from '../terrain';
 import type { Point3M, TerrainMesh } from '../terrain';
 import data from '@/test/fixtures/course-geometry/cacapon.json';
 import terrainData from '@/test/fixtures/course-geometry/cacapon-07-terrain.json';
@@ -75,6 +75,21 @@ describe('source-linked terrain and camera', () => {
     expect(terrainHeight(triangle, [2, 3])).toBeNull();
     expect(terrainHeight(triangle, [11, 0])).toBeNull();
   });
+  it('derives per-vertex source normals from the metric grid when the package carries no array', () => {
+    // z = 100 + .5x + .2y on a 10 m grid: every vertex normal is the plane normal.
+    const grid = { originM: [0, 0] as [number, number], spacingM: 10, columns: 3, rows: 3,
+      heightsM: [100, 105, 110, 102, 107, 112, 104, 109, 114] };
+    const plane: TerrainMesh = { ...mesh, vertices: [0, 0, 100, 10, 0, 105, 0, 10, 102, 10, 10, 107, 20, 20, 114, 20, 0, 110], triangleFeatures: [0, 0], triangleMaterials: [0, 0], metricGrid: grid, sourceNormals: undefined };
+    const normals = sourceVertexNormals(plane)!;
+    const expected = [-.5, -.2, 1].map(c => c / Math.hypot(.5, .2, 1));
+    expect(normals.length).toBe(plane.vertices.length);
+    for (let i = 0; i < normals.length; i += 3) for (let c = 0; c < 3; c++) expect(normals[i + c]).toBeCloseTo(expected[c]!, 5);
+    // A package array still wins; a mesh with neither answers null.
+    const legacy = { ...plane, sourceNormals: Array.from({ length: plane.vertices.length }, (_, i) => i % 3 === 2 ? 1 : 0) };
+    expect(Array.from(sourceVertexNormals(legacy)!.slice(0, 3))).toEqual([0, 0, 1]);
+    expect(sourceVertexNormals({ ...plane, metricGrid: undefined })).toBeNull();
+  });
+
   it('validates source normals and additional context associations without assigning them to the played hole', () => {
     const expanded = structuredClone(mesh);
     expanded.sourceNormals = Array.from({ length: mesh.vertices.length }, (_, index) => index % 3 === 2 ? 1 : 0);
