@@ -213,6 +213,15 @@ export const MERIDIAN_STYLE = Object.freeze({
   /** §50: analytic contact shading under crowns and forest mass, computed
    * from the seeded placement. No screen-space AO at the base tier. */
   canopyShade: Object.freeze({ amount: .16, crownRadiusScale: 1.15, massRadiusScale: .95, massWeight: .8 }),
+  /** Fidelity §5–7 macro landform / master §50: analytic landform occlusion
+   * from the source DEM. Each grid node's relative sky occlusion is the mean,
+   * over `directions`, of the sine of the horizon elevation *above the local
+   * tangent plane* within `radiusM`; a uniform slope scores 0, a swale,
+   * hollow or valley floor scores by how far the ground around it rises. The
+   * renderer scales it by `gain`, caps it at `max`, and takes that much
+   * indirect (sky) light away, so broad depressions read as hollows under the
+   * same sun. Derived from the DEM only: no landform is invented. */
+  landform: Object.freeze({ radiusM: 120, directions: 8, gain: 4, max: .35 }),
   /** Outside-world context objects (player-view spec §13–14, §25): muted
    * mineral ribbons with a darker shoulder, restrained flat-roofed
    * structures, faint lines for fences and lifts. Widths/heights here are
@@ -267,6 +276,8 @@ export interface MeridianStyleOverrides {
   crowns?: number; mass?: number;
   /** V5 (§42–52): water sky/interior mix, haze strength (renderer) and canopy contact shade. */
   water?: number; haze?: number; shade?: number;
+  /** Fidelity §5–7: DEM landform occlusion strength (0 removes it). */
+  landform?: number;
   /** §95 lab toggle: render-only bunker bowl depth scale (0 = flat canonical rim). */
   bowl?: number;
 }

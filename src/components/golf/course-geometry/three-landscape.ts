@@ -116,31 +116,77 @@ export function landingWindow(scene: HoleScene, style: MeridianStyle = MERIDIAN_
 
 /** Per-fragment shading source (master §14–15 faceting, redesign §12): the
  * DEM's slope (dz/dx, dz/dy at every grid node; central differences over one
- * spacing, one-sided at nulls and edges) uploaded once as a half-float RG
- * texture in the terrain's local metres. Lighting then follows the source
- * grid instead of the display triangle size, so a steep road bank stays a
- * bank instead of fanning across a 4 m context triangle from one vertex
- * normal. Display only: it never moves a vertex or feeds picking. */
+ * spacing, one-sided at nulls and edges) uploaded once as a half-float RGBA
+ * texture in the terrain's local metres (RG slope, B the relative sky
+ * occlusion below, A unused). Lighting then follows the source grid instead
+ * of the display triangle size, so a steep road bank stays a bank instead of
+ * fanning across a 4 m context triangle from one vertex normal. Display
+ * only: it never moves a vertex or feeds picking. */
 export interface DemSlopeRelief { texture: THREE.DataTexture; frame: THREE.Vector4; texel: THREE.Vector2; exaggeration: { value: number }; spacingM: number }
-export function buildDemSlopeTexture(grid: MetricTerrainGrid): DemSlopeRelief {
+export function buildDemSlopeTexture(grid: MetricTerrainGrid, landform: { radiusM: number; directions: number } = MERIDIAN_STYLE.landform): DemSlopeRelief {
   const { columns, rows, spacingM, heightsM } = grid;
-  const data = new Uint16Array(columns * rows * 2);
+  const data = new Uint16Array(columns * rows * 4);
   const at = (c: number, r: number) => c < 0 || r < 0 || c >= columns || r >= rows ? null : heightsM[r * columns + c] ?? null;
   const gradient = (a: number | null, z: number | null, b: number | null) =>
     a != null && b != null ? (b - a) / (2 * spacingM) : z != null && b != null ? (b - z) / spacingM : z != null && a != null ? (z - a) / spacingM : 0;
   const half = (value: number) => THREE.DataUtils.toHalfFloat(Math.max(-16, Math.min(16, value)));
+  const slopeX = new Float32Array(columns * rows), slopeY = new Float32Array(columns * rows);
   for (let r = 0; r < rows; r++) for (let c = 0; c < columns; c++) {
-    const z = at(c, r), i = (r * columns + c) * 2;
-    data[i] = half(gradient(at(c - 1, r), z, at(c + 1, r)));
-    data[i + 1] = half(gradient(at(c, r - 1), z, at(c, r + 1)));
+    const z = at(c, r), n = r * columns + c;
+    slopeX[n] = gradient(at(c - 1, r), z, at(c + 1, r));
+    slopeY[n] = gradient(at(c, r - 1), z, at(c, r + 1));
   }
-  const texture = new THREE.DataTexture(data, columns, rows, THREE.RGFormat, THREE.HalfFloatType);
+  const occlusion = relativeSkyOcclusion(grid, slopeX, slopeY, landform);
+  const one = THREE.DataUtils.toHalfFloat(1);
+  for (let n = 0; n < columns * rows; n++) {
+    data[n * 4] = half(slopeX[n]!); data[n * 4 + 1] = half(slopeY[n]!);
+    data[n * 4 + 2] = half(occlusion[n]!); data[n * 4 + 3] = one;
+  }
+  const texture = new THREE.DataTexture(data, columns, rows, THREE.RGBAFormat, THREE.HalfFloatType);
   texture.name = 'dem-slope';
   texture.magFilter = texture.minFilter = THREE.LinearFilter; texture.generateMipmaps = false;
   texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping; texture.needsUpdate = true;
-  texture.userData = { basis: 'source_gradient', spacingM, columns, rows };
+  texture.userData = { basis: 'source_gradient', spacingM, columns, rows, occlusion: { basis: 'dem_relative_sky_view', radiusM: landform.radiusM, directions: landform.directions } };
   return { texture, frame: new THREE.Vector4(grid.originM[0], grid.originM[1], 1 / (columns * spacingM), 1 / (rows * spacingM)),
     texel: new THREE.Vector2(.5 / columns, .5 / rows), exaggeration: { value: 1 }, spacingM };
+}
+
+/** Relative sky occlusion per grid node (fidelity §5–7, `MERIDIAN_STYLE.landform`):
+ * the mean over `directions` of sin(horizon elevation above the node's own
+ * tangent plane) within `radiusM`. A uniform slope scores 0 because its
+ * horizon *is* its plane; a swale or hollow scores by how far the ground
+ * around it rises above that plane. Samples step geometrically (1, 2, 3, 4,
+ * 6, 8, 12 … nodes) so a 2 m grid costs about a hundred reads a node.
+ * Unsupported nodes and the grid edge simply end a ray. */
+export function relativeSkyOcclusion(grid: MetricTerrainGrid, slopeX: Float32Array, slopeY: Float32Array, landform: { radiusM: number; directions: number }): Float32Array {
+  const { columns, rows, spacingM, heightsM } = grid;
+  const out = new Float32Array(columns * rows);
+  const radiusNodes = Math.max(1, Math.round(landform.radiusM / spacingM));
+  const steps: number[] = [];
+  for (let d = 1; d < radiusNodes; d = d < 4 ? d + 1 : Math.round(d * 1.5)) steps.push(d);
+  steps.push(radiusNodes);
+  const directions = Array.from({ length: landform.directions }, (_, k) => { const a = 2 * Math.PI * k / landform.directions; return [Math.cos(a), Math.sin(a)] as const; });
+  for (let r = 0; r < rows; r++) for (let c = 0; c < columns; c++) {
+    const n = r * columns + c, z0 = heightsM[n];
+    if (z0 == null) continue;
+    let total = 0;
+    for (const [ux, uy] of directions) {
+      const plane = slopeX[n]! * ux + slopeY[n]! * uy;
+      let maxTan = 0;
+      for (const d of steps) {
+        const cc = c + Math.round(ux * d), rr = r + Math.round(uy * d);
+        if (cc < 0 || rr < 0 || cc >= columns || rr >= rows) break;
+        const z = heightsM[rr * columns + cc];
+        if (z == null) continue;
+        const distance = Math.hypot(cc - c, rr - r) * spacingM;
+        if (distance <= 0) continue;
+        maxTan = Math.max(maxTan, (z - z0) / distance - plane);
+      }
+      total += maxTan / Math.sqrt(1 + maxTan * maxTan);
+    }
+    out[n] = total / landform.directions;
+  }
+  return out;
 }
 
 export function attachTurfStyle(material: TurfStyleTarget, seed: readonly [number, number], overrides: MeridianStyleOverrides = {}, landing: LandingWindow | null = null, relief: DemSlopeRelief | null = null): TurfStyleHandle {
@@ -154,6 +200,8 @@ export function attachTurfStyle(material: TurfStyleTarget, seed: readonly [numbe
   // §42–45 water terms (sky mix, interior mix, ripple, shoreline shade) and the §50 contact shade.
   const waterMix = new THREE.Vector4(style.water.skyMix, style.water.deepMix, style.water.rippleAmplitude, style.water.shorelineShade);
   const shadeAmount: { value: number } = { value: style.canopyShade.amount };
+  // Fidelity §5–7 landform occlusion: gain (scaled by the lab override) and cap.
+  const landformAmount = new THREE.Vector2(style.landform.gain, style.landform.max);
   const apply = (next: MeridianStyleOverrides) => {
     amplitudes.set(style.turf.macro.amplitude * (next.macro ?? 1), style.turf.micro.amplitude * (next.micro ?? 1),
       style.mowing.amplitude * (next.mowing ?? 1), style.boundary.shade * (next.boundary ?? 1));
@@ -161,6 +209,7 @@ export function attachTurfStyle(material: TurfStyleTarget, seed: readonly [numbe
     const water = next.water ?? 1;
     waterMix.set(style.water.skyMix * water, style.water.deepMix * water, style.water.rippleAmplitude * water, style.water.shorelineShade * water);
     shadeAmount.value = style.canopyShade.amount * (next.shade ?? 1);
+    landformAmount.set(style.landform.gain * (next.landform ?? 1), style.landform.max);
   };
   apply(overrides);
   const [m0, m1, m2] = style.turf.macro.wavelengthsM, [u0, u1] = style.turf.micro.wavelengthsM, [g0, g1] = style.bunker.sandGrainM;
@@ -179,6 +228,7 @@ export function attachTurfStyle(material: TurfStyleTarget, seed: readonly [numbe
       shader.uniforms.golfDemFrame = { value: relief.frame };
       shader.uniforms.golfDemTexel = { value: relief.texel };
       shader.uniforms.golfRelief = relief.exaggeration;
+      shader.uniforms.golfLandform = { value: landformAmount };
     }
     shader.uniforms.golfAmplitudes = { value: amplitudes };
     shader.uniforms.golfContextDesaturate = contextMix;
@@ -227,8 +277,10 @@ uniform sampler2D golfDemSlope;
 uniform vec4 golfDemFrame;
 uniform vec2 golfDemTexel;
 uniform float golfRelief;
+uniform vec2 golfLandform;
 varying vec2 vGolfDisplaySlope;
-varying vec2 vGolfLocalXY;` : ''}`).replace('#include <color_fragment>', `#include <color_fragment>
+varying vec2 vGolfLocalXY;
+float golfLandformAo = 1.0;` : ''}`).replace('#include <color_fragment>', `#include <color_fragment>
 {
   vec2 golfP = vGolfWorldXY + golfSeed;
   float golfMowingWeight = vGolfWeights.x, golfTurfWeight = vGolfWeights.y, golfContextWeight = vGolfWeights.z, golfBoundary = vGolfWeights.w;
@@ -303,10 +355,14 @@ roughnessFactor = vGolfSurface.x;`).replace('#include <normal_fragment_begin>', 
 // display heights. Replaces the interpolated vertex normal.
 {
   vec2 golfDemUv = (vGolfLocalXY - golfDemFrame.xy) * golfDemFrame.zw + golfDemTexel;
-  vec2 golfSlope = texture2D(golfDemSlope, golfDemUv).xy + vGolfDisplaySlope;
+  vec3 golfDem = texture2D(golfDemSlope, golfDemUv).xyz;
+  vec2 golfSlope = golfDem.xy + vGolfDisplaySlope;
   vec3 golfGround = normalize(vec3(-golfSlope * golfRelief, 1.0));
   normal = normalize(mat3(viewMatrix) * golfGround);
   nonPerturbedNormal = normal;
+  // Landform occlusion (fidelity §5–7): the DEM's relative sky view takes
+  // indirect light away in swales and hollows; applied at <aomap_fragment>.
+  golfLandformAo = 1.0 - min(golfLandform.y, golfDem.z * golfLandform.x);
 }` : ''}
 // Static water ripple (§43): a small world-space normal field, filtered out at distance.
 if (abs(vGolfSurface.y - ${SURFACE_CLASS_WATER}.0) < 0.5) {
@@ -320,9 +376,11 @@ if (abs(vGolfSurface.y - ${SURFACE_CLASS_WATER}.0) < 0.5) {
   vec3 golfRipple = vec3(cos(golfR0) * 0.77 * golfRipple0 - cos(golfR1) * 0.55 * golfRipple1, cos(golfR0) * 0.64 * golfRipple0 + cos(golfR1) * 0.83 * golfRipple1, 0.0) * golfWaterMix.z * golfRippleEnvelope;
   normal = normalize(normal + mat3(viewMatrix) * golfRipple);
 }`);
+    if (demShading) shader.fragmentShader = shader.fragmentShader.replace('#include <aomap_fragment>', `#include <aomap_fragment>
+reflectedLight.indirectDiffuse *= golfLandformAo;`);
   };
   material.customProgramCacheKey = () => `golf-landscape-turf-${MERIDIAN_STYLE_HASH}:${material.type}:${demShading ? 'dem' : 'vertex'}`;
-  material.userData.shading = demShading ? { basis: 'dem_slope_texture', spacingM: relief.spacingM } : { basis: 'vertex_normals' };
+  material.userData.shading = demShading ? { basis: 'dem_slope_texture', spacingM: relief.spacingM, landform: { basis: 'dem_relative_sky_view', radiusM: style.landform.radiusM, gain: style.landform.gain, max: style.landform.max } } : { basis: 'vertex_normals' };
   material.userData.mowing = { basis: 'illustrative_style', bandWidthM: style.mowing.bandWidthM, frame: 'route_local' };
   material.userData.turf = { basis: 'visual_only', macroM: style.turf.macro.wavelengthsM, microM: style.turf.micro.wavelengthsM, microByClass: style.turf.microByClass };
   material.userData.landing = landing ? { basis: 'illustrative_style', ...landing } : null;

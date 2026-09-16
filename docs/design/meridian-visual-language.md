@@ -249,6 +249,20 @@ from V1; V4 changes what stands on each centre.
   4 m context triangles and now shades as the bank it is. Meshes without a
   metric grid keep their vertex normals; the debug views are unaffected
   (`material.userData.shading.basis`, `group.userData.shadingBasis`).
+- **Landform occlusion (fidelity §5–7, master §50).** The same DEM texture
+  carries, in its third channel, each grid node's *relative sky occlusion*:
+  the mean over eight directions of sin(horizon elevation above the node's
+  own tangent plane) within 120 m (`MERIDIAN_STYLE.landform`,
+  `relativeSkyOcclusion`). A uniform slope scores nothing, because its
+  horizon is its own plane; a swale, hollow or valley floor scores by how
+  far the ground around it rises. The lit ground scales that by `gain` (4),
+  caps it at `max` (35 %) and takes that much *indirect* light away after
+  Three's own `aomap_fragment`, so broad depressions read as hollows under
+  the same sun and direct light never changes (Peek'n Peak 7: the swale the
+  pond sits in darkens a few percent along its floor; 18: the low ground
+  behind the greenside bunkers). It is derived from the source DEM only and
+  never moves a vertex; the lab's `landform=` override scales it (0 removes
+  it) and `material.userData.shading.landform` records the basis.
 - **One gradient source (compiler v4).** The per-vertex `sourceNormals`
   array is no longer emitted (opt-in `--source-normals`): it duplicated the
   metric grid's gradient and cost 37 % of every hole's gzipped payload
