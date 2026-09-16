@@ -8,10 +8,11 @@ import type { TerrainDebugView } from './terrain-debug';
 import type { HoleScene } from '@/lib/golf/course-geometry/types';
 import type { MeridianVisualArtifact } from '@/lib/golf/course-geometry/visual-artifact';
 import type { MeridianStyleOverrides } from '@/lib/golf/course-geometry/visual-style';
+import type { MeridianRenderQuality } from '@/lib/golf/course-geometry/render-quality';
 
 /** The Three backend is loaded only for an expanded terrain scene. Static
  * review/filmstrip SVG does not import Three or initialize a GPU context. */
-export function CourseTerrainCanvas({ scene, mesh, camera, width, height, fallback, onUnavailable, selectedShotNumber, runtimeRef, debugView, visualArtifact, styleOverrides }: {
+export function CourseTerrainCanvas({ scene, mesh, camera, width, height, fallback, onUnavailable, selectedShotNumber, runtimeRef, debugView, visualArtifact, styleOverrides, quality }: {
   scene: HoleScene; mesh: TerrainMesh; camera: TerrainCamera; width: number; height: number; fallback: ReactNode;
   onUnavailable?: () => void; selectedShotNumber?: number;
   runtimeRef?: RefObject<TerrainRuntimeController | null>;
@@ -20,6 +21,8 @@ export function CourseTerrainCanvas({ scene, mesh, camera, width, height, fallba
   visualArtifact?: MeridianVisualArtifact;
   /** Lab-only amplitude overrides (§95); production never passes them. */
   styleOverrides?: MeridianStyleOverrides;
+  /** §64 rendering tier; production leaves it on `auto` (capability-detected). */
+  quality?: MeridianRenderQuality | 'auto';
 }) {
   const canvas = useRef<HTMLCanvasElement>(null), overlay = useRef<SVGSVGElement>(null);
   const runtime = useRef<ThreeTerrainRuntime | null>(null);
@@ -59,7 +62,7 @@ export function CourseTerrainCanvas({ scene, mesh, camera, width, height, fallba
       const input = latest.current;
       owned = module.createThreeTerrainRuntime({ canvas: element, overlay: annotations, overlayId: id,
         mesh, scene: input.scene, camera: input.camera, width: input.width, height: input.height,
-        selectedShotNumber: input.selectedShotNumber, debugView, visualArtifact, styleOverrides, onUnavailable: unavailable });
+        selectedShotNumber: input.selectedShotNumber, debugView, visualArtifact, styleOverrides, quality, onUnavailable: unavailable });
       runtime.current = owned;
       if (runtimeRef) runtimeRef.current = owned;
       await owned.ready;
@@ -72,7 +75,7 @@ export function CourseTerrainCanvas({ scene, mesh, camera, width, height, fallba
       if (runtimeRef?.current === owned) runtimeRef.current = null;
       owned?.dispose();
     };
-  }, [geometryKey, mesh, id, runtimeRef, debugView, visualArtifact, styleOverrides]);
+  }, [geometryKey, mesh, id, runtimeRef, debugView, visualArtifact, styleOverrides, quality]);
 
   return <div className="relative h-full w-full" data-terrain-view-state={state}>
     <canvas ref={canvas} role="img" aria-label="Course terrain with illustrative trees and estimated shot annotations. Actual pin location unknown."

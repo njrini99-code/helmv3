@@ -187,6 +187,10 @@ export interface MeridianStyleOverrides {
   crowns?: number; mass?: number;
   /** V5 (§42–52): water sky/interior mix, haze strength (renderer) and canopy contact shade. */
   water?: number; haze?: number; shade?: number;
+  /** V7 (§68.2): how many canopy tiles share one instanced batch per axis
+   * (1 = one batch per tile and family). Larger values cut draw calls and
+   * coarsen frustum culling and the near-crown swap; never a visual change. */
+  batchTiles?: number;
 }
 export type TreeFamily = typeof MERIDIAN_STYLE.vegetation.families[number];
 

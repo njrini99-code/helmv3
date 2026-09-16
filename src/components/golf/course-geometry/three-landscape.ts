@@ -38,7 +38,10 @@ export interface ThreeLandscape {
     /** Outside-world vegetation: lobes from context `forest_mass` zones and understory shrubs inside reviewed woods. */
     contextMassLobes: number; understory: number;
     /** Outside-world context objects drawn from the hash-locked layer. */
-    contextRibbons: number; contextStructures: number; contextLines: number; contextZones: number };
+    contextRibbons: number; contextStructures: number; contextLines: number; contextZones: number;
+    /** §68.3: one total hides the bottleneck; these split it by category. */
+    crownNearTriangles: number; crownDistantTriangles: number; trunkTriangles: number; massTriangles: number;
+    lodBatches: { near: number; distant: number; hidden: number } };
 }
 
 const VEGETATION = MERIDIAN_STYLE.vegetation;
@@ -550,14 +553,23 @@ export function buildThreeLandscape(
   crownMaterial.name = 'opaque-canopy';
   materials.add(crownMaterial);
   const crownBatches: { mesh: THREE.InstancedMesh; trees: Tree[]; asset: TreeCrownAsset; center: PointM; lod: 'distant' | 'near' }[] = [];
+  // §68.2: a batch spans `batchFactor` canopy tiles per axis. Placement and
+  // LOD reach still use the canopy tile; only the instanced grouping widens.
+  const batchFactor = Math.max(1, Math.min(4, Math.round(options.overrides?.batchTiles ?? 1)));
+  const batchTile = (tile: string): string => {
+    if (batchFactor === 1) return tile;
+    const [column, row] = tile.split(',').map(Number) as [number, number];
+    return `${Math.floor(column / batchFactor)},${Math.floor(row / batchFactor)}`;
+  };
   const tiles = new Map<string, Tree[]>();
   for (const tree of trees) {
-    const tile = tiles.get(tree.tile) ?? [];
-    tile.push(tree); tiles.set(tree.tile, tile);
+    const key = batchTile(tree.tile);
+    const tile = tiles.get(key) ?? [];
+    tile.push(tree); tiles.set(key, tile);
   }
   const tileCenter = (tile: string): PointM => {
     const [column, row] = tile.split(',').map(Number) as [number, number];
-    return [(column + .5) * CANOPY_TILE_M, (row + .5) * CANOPY_TILE_M];
+    return [(column + .5) * CANOPY_TILE_M * batchFactor, (row + .5) * CANOPY_TILE_M * batchFactor];
   };
   // Spatial batches let the normal Three frustum cull off-screen canopy. The
   // same authored asset is shared across all tiles and all its instances.
@@ -604,7 +616,7 @@ export function buildThreeLandscape(
     massMaterial.name = 'opaque-forest-mass';
     materials.add(massMaterial);
     const massTiles = new Map<string, MassLobe[]>();
-    for (const lobe of lobes) { const tile = massTiles.get(lobe.tile) ?? []; tile.push(lobe); massTiles.set(lobe.tile, tile); }
+    for (const lobe of lobes) { const key = batchTile(lobe.tile); const tile = massTiles.get(key) ?? []; tile.push(lobe); massTiles.set(key, tile); }
     for (const [tile, tileLobes] of massTiles) {
       const mass = new THREE.InstancedMesh(massGeometry, massMaterial, tileLobes.length);
       mass.name = `source-forest-mass-${tile}`;
@@ -627,11 +639,16 @@ export function buildThreeLandscape(
   const counts: ThreeLandscape['counts'] = { terrainTriangles: mesh.triangleFeatures.length, trees: trees.length,
     crownInstances: trees.length, crownTriangles: 0, totalTriangles: 0, canopyBatches: crownBatches.length, drawCalls: 0,
     massLobes: lobes.length, trunksVisible: 0, families: familyCounts, contextMassLobes, understory: understoryCount,
-    contextRibbons: context.counts.ribbons, contextStructures: context.counts.structures, contextLines: context.counts.lines, contextZones: context.counts.zones };
+    contextRibbons: context.counts.ribbons, contextStructures: context.counts.structures, contextLines: context.counts.lines, contextZones: context.counts.zones,
+    crownNearTriangles: 0, crownDistantTriangles: 0, trunkTriangles: 0, massTriangles: 0, lodBatches: { near: 0, distant: 0, hidden: 0 } };
   const massTriangles = trunkTriangleCount(massGeometry) * lobes.length;
   const updateTriangleCounts = () => {
-    counts.crownTriangles = crownBatches.reduce((total, batch) => total + batch.asset.triangleCounts[batch.lod] * batch.trees.length, 0);
+    counts.crownNearTriangles = crownBatches.reduce((total, batch) => total + (batch.lod === 'near' ? batch.asset.triangleCounts.near * batch.trees.length : 0), 0);
+    counts.crownDistantTriangles = crownBatches.reduce((total, batch) => total + (batch.lod === 'distant' ? batch.asset.triangleCounts.distant * batch.trees.length : 0), 0);
+    counts.crownTriangles = counts.crownNearTriangles + counts.crownDistantTriangles;
     const trunkTriangles = trunkBatches.reduce((total, batch) => total + (batch.lod === 'hidden' ? 0 : trunkTriangleCount(trunkGeometry[batch.lod]) * batch.trees.length), 0);
+    counts.trunkTriangles = trunkTriangles; counts.massTriangles = massTriangles;
+    counts.lodBatches = { near: crownBatches.filter(batch => batch.lod === 'near').length, distant: crownBatches.filter(batch => batch.lod === 'distant').length, hidden: trunkBatches.filter(batch => batch.lod === 'hidden').length };
     counts.trunksVisible = trunkBatches.reduce((total, batch) => total + (batch.lod === 'hidden' ? 0 : batch.trees.length), 0);
     counts.totalTriangles = counts.terrainTriangles + counts.crownTriangles + trunkTriangles + massTriangles;
     counts.drawCalls = 1 + crownBatches.length + trunkBatches.filter(batch => batch.lod !== 'hidden').length + massBatches.length;
@@ -641,7 +658,7 @@ export function buildThreeLandscape(
   let lastExaggeration = NaN, lastReference = NaN, disposed = false;
   function setDetail(next: 'distant' | 'near', focusM?: PointM): boolean {
     if (disposed) return false;
-    const reach = NEAR_DETAIL_RADIUS_M + CANOPY_TILE_M * Math.SQRT1_2;
+    const reach = NEAR_DETAIL_RADIUS_M + CANOPY_TILE_M * batchFactor * Math.SQRT1_2;
     let changed = false;
     for (const batch of crownBatches) {
       const near = next === 'near' && (!focusM || Math.hypot(batch.center[0] - focusM[0], batch.center[1] - focusM[1]) <= reach);

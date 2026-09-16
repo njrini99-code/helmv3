@@ -11,6 +11,7 @@ import { buildThreeFlightPaths, type ThreeFlightPaths } from './three-flight-pat
 import { createShotOverlayController } from './shot-overlay-controller';
 import { TERRAIN_LIGHT_DIRECTION, type Point3M, type TerrainCamera, type TerrainMesh } from './terrain';
 import { fitShadowBounds } from './shadow-bounds';
+import { budgetViewFor, detectRenderQuality, percentile, profilePixelRatio, qualityOverrides, readRenderCapabilities, RENDER_BUDGETS, RENDER_QUALITY_PROFILES, type MeridianRenderQuality } from './render-quality';
 import type { TerrainRuntimeController } from './runtime-controller';
 import type { HoleScene } from './types';
 
@@ -36,6 +37,22 @@ interface RuntimeOptions {
    * reported as MERIDIAN_ARTIFACT_MISSING; mismatched → MERIDIAN_ARTIFACT_MISMATCH. */
   visualArtifact?: MeridianVisualArtifact;
   styleOverrides?: MeridianStyleOverrides;
+  /** §64: rendering tier. `auto` (default) detects from device capability. */
+  quality?: MeridianRenderQuality | 'auto';
+}
+
+/** §68.4 / §70: bytes held by every distinct geometry in the world. */
+function estimateGeometryBytes(world: Scene): number {
+  const seen = new Set<object>();
+  let bytes = 0;
+  world.traverse(object => {
+    const geometry = (object as Mesh).geometry;
+    if (!geometry || seen.has(geometry)) return;
+    seen.add(geometry);
+    for (const attribute of Object.values(geometry.attributes)) bytes += (attribute as { array: ArrayLike<number> & { byteLength?: number } }).array.byteLength ?? 0;
+    if (geometry.index) bytes += geometry.index.array.byteLength;
+  });
+  return bytes;
 }
 
 /** Lazy, scene-owned Three backend. It renders on camera/evidence changes only;
@@ -74,6 +91,14 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
   let releaseDebug: (() => void) | undefined;
   let crownDetail: 'near' | 'distant' = 'distant';
   let detailFocus: readonly number[] = [Infinity, Infinity];
+  // §64: one tier per runtime; chosen once so the scene never flickers
+  // between budgets mid-session. Lab and tests may override it.
+  const capabilities = readRenderCapabilities(canvas.ownerDocument.defaultView);
+  capabilities.maxTextureSize = renderer.capabilities.maxTextureSize;
+  const qualityBasis = options.quality && options.quality !== 'auto' ? 'override' : 'detected';
+  const quality = RENDER_QUALITY_PROFILES[qualityBasis === 'override' ? options.quality as MeridianRenderQuality : detectRenderQuality(capabilities)];
+  const frameTimes: number[] = [];
+  let geometryBytes = 0;
 
   function fitSun() {
     if (!landscape || !sun) return;
@@ -152,8 +177,7 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
     currentCamera = camera; width = w; height = h;
     if (disposed || failed || !ready || !landscape || !evidence) return;
     try {
-      const ratio = Math.min(canvas.ownerDocument.defaultView?.devicePixelRatio || 1, 2,
-        Math.sqrt(4_000_000 / Math.max(1, width * height)));
+      const ratio = profilePixelRatio(quality, canvas.ownerDocument.defaultView?.devicePixelRatio || 1, width, height);
       if (width !== previousWidth || height !== previousHeight || ratio !== previousRatio) {
         renderer.setPixelRatio(ratio); renderer.setSize(width, height, false);
         previousWidth = width; previousHeight = height; previousRatio = ratio;
@@ -166,13 +190,13 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
         renderer.shadowMap.needsUpdate = true;
         previousExaggeration = camera.exaggeration; previousReference = camera.referenceElevationM;
       }
-      const nextDetail = camera.scale > 4.5 ? 'near' : camera.scale < 3.7 ? 'distant' : crownDetail;
+      const nextDetail = !quality.nearCrowns ? 'distant' : camera.scale > 4.5 ? 'near' : camera.scale < 3.7 ? 'distant' : crownDetail;
       // Near crowns follow the focus: a pan across the green re-evaluates
       // which batch tiles are close enough to deserve them.
       const focusMoved = nextDetail === 'near' && Math.hypot(camera.focusM[0] - detailFocus[0]!, camera.focusM[1] - detailFocus[1]!) > 12;
       if (nextDetail !== crownDetail || focusMoved) {
         crownDetail = nextDetail; detailFocus = camera.focusM;
-        if (landscape.setDetail(nextDetail, [camera.focusM[0], camera.focusM[1]])) { fitSun(); renderer.shadowMap.needsUpdate = true; }
+        if (landscape.setDetail(nextDetail, [camera.focusM[0], camera.focusM[1]])) { fitSun(); renderer.shadowMap.needsUpdate = true; geometryBytes = estimateGeometryBytes(world); }
       }
       view = camera.projection === 'perspective' ? perspectiveView : orthographicView;
       applyAtmosphere(camera.projection);
@@ -180,6 +204,7 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
       const began = performance.now();
       renderer.render(world, view);
       const frameMs = performance.now() - began;
+      frameTimes.push(frameMs); if (frameTimes.length > 30) frameTimes.shift();
       if (shaderFailed) { fail(MERIDIAN_CODES.shaderFailed); return; }
       if (renderer.getContext().isContextLost()) { fail(MERIDIAN_CODES.contextLost); return; }
       // All world overlays update in the same synchronous paint as the GPU.
@@ -199,8 +224,18 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
         visualBunkers: String(landscape.artifact.layers.bunkerBowl.profiles.length),
         visualHaze: world.fog ? hazeMix.toFixed(2) : '0', visualSky: skyDome?.visible ? 'gradient' : 'ground',
         contextZones: String(landscape.counts.contextZones), contextMassLobes: String(landscape.counts.contextMassLobes), understory: String(landscape.counts.understory), contextRibbons: String(landscape.counts.contextRibbons), contextStructures: String(landscape.counts.contextStructures), contextLayerHash: currentScene.contextLayerHash ?? '',
-        qualityTier: 'standard',
+        qualityTier: quality.tier, qualityBasis,
         shadowMapSize: `${sun?.shadow.mapSize.x ?? 0}`, shadowMapType: 'pcf',
+        // §68 budgets: frame P95 over the last 30 renders, draw calls against
+        // the view's target, triangles by category, and a memory estimate.
+        frameP95Ms: percentile(frameTimes, 95).toFixed(2), frameBudgetMs: String(quality.targetFrameMs),
+        drawCallBudget: String(RENDER_BUDGETS.drawCalls[budgetViewFor(camera.pitch)]),
+        drawCallStatus: renderer.info.render.calls <= RENDER_BUDGETS.drawCalls[budgetViewFor(camera.pitch)] ? 'within' : 'over',
+        triangleBreakdown: `terrain:${landscape.counts.terrainTriangles} crownNear:${landscape.counts.crownNearTriangles} crownDistant:${landscape.counts.crownDistantTriangles} trunks:${landscape.counts.trunkTriangles} mass:${landscape.counts.massTriangles} flight:${flightPaths?.count ?? 0}`,
+        treeLod: `near:${landscape.counts.lodBatches.near} distant:${landscape.counts.lodBatches.distant} hiddenTrunks:${landscape.counts.lodBatches.hidden}`,
+        geometryMemoryMb: (geometryBytes / 1_048_576).toFixed(1),
+        shadowMemoryMb: (((sun?.shadow.mapSize.x ?? 0) ** 2 * 4) / 1_048_576).toFixed(1),
+        renderTargetMb: ((canvas.width * canvas.height * 8) / 1_048_576).toFixed(1),
         lightDirection: TERRAIN_LIGHT_DIRECTION.map(v => v.toFixed(3)).join(','),
         frameMs: frameMs.toFixed(2),
         terrainPitch: String(camera.pitch), terrainYaw: String(camera.yawOffset),
@@ -227,7 +262,7 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
     renderer.debug.checkShaderErrors = true;
     renderer.debug.onShaderError = () => { shaderFailed = true; };
     world.background = new Color(DEFAULT_THREE_LANDSCAPE_PALETTE.ground);
-    landscape = buildThreeLandscape(options.scene, mesh, DEFAULT_THREE_LANDSCAPE_PALETTE, { artifact: options.visualArtifact, overrides: options.styleOverrides });
+    landscape = buildThreeLandscape(options.scene, mesh, DEFAULT_THREE_LANDSCAPE_PALETTE, { artifact: options.visualArtifact, overrides: qualityOverrides(quality, options.styleOverrides) });
     // A cached artifact from another package or style is refused (§6) and the
     // hole falls back to the static view instead of drawing stale colours.
     if (landscape.artifactSource === 'runtime') canvas.dataset.meridianCode = MERIDIAN_CODES.missing;
@@ -256,7 +291,7 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
     shadowCamera.left = -radius; shadowCamera.right = radius;
     shadowCamera.top = radius; shadowCamera.bottom = -radius;
     shadowCamera.near = .1; shadowCamera.far = radius * 6;
-    sun.shadow.mapSize.set(MERIDIAN_STYLE.shadow.mapSize, MERIDIAN_STYLE.shadow.mapSize);
+    sun.shadow.mapSize.set(quality.shadowMapSize, quality.shadowMapSize);
     sun.shadow.bias = MERIDIAN_STYLE.shadow.bias; sun.shadow.normalBias = MERIDIAN_STYLE.shadow.normalBias;
     sun.shadow.radius = MERIDIAN_STYLE.shadow.radius;
     sun.shadow.camera.updateProjectionMatrix();
@@ -269,6 +304,7 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
     view = currentCamera.projection === 'perspective' ? perspectiveView : orthographicView;
     applyAtmosphere(currentCamera.projection);
     applyTerrainCamera(view, currentCamera, width, height, viewDistance);
+    geometryBytes = estimateGeometryBytes(world);
   } catch (error) {
     if (error instanceof Error && error.message.startsWith(MERIDIAN_CODES.mismatch)) canvas.dataset.meridianCode = MERIDIAN_CODES.mismatch;
     dispose(); throw error;

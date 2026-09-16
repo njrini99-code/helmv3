@@ -401,3 +401,22 @@ describe('Three landscape source and rendering invariants', () => {
     expect(landscape.group.children).toHaveLength(0);
   });
 });
+
+describe('canopy batch tiles (Meridian §68.2)', () => {
+  it('cuts draw calls with wider batches while drawing the same trees, crowns and mass', () => {
+    const scene = pilotScene('cacapon-07', false), terrain = parseTerrainMesh(source, pilotPackage);
+    const one = buildThreeLandscape(scene, terrain, DEFAULT_THREE_LANDSCAPE_PALETTE, { overrides: { batchTiles: 1 } });
+    const two = buildThreeLandscape(scene, terrain, DEFAULT_THREE_LANDSCAPE_PALETTE, { overrides: { batchTiles: 2 } });
+    try {
+      expect(two.counts.trees).toBe(one.counts.trees);
+      expect(two.counts.massLobes).toBe(one.counts.massLobes);
+      expect(two.counts.crownTriangles).toBe(one.counts.crownTriangles);
+      expect(two.counts.drawCalls).toBeLessThan(one.counts.drawCalls);
+      expect(two.counts.canopyBatches).toBeLessThan(one.counts.canopyBatches);
+      // Every tree is still instanced exactly once.
+      const instanced = (landscape: typeof one) => landscape.group.children.filter(child => child.name.startsWith('source-canopy-crowns-'))
+        .reduce((total, child) => total + (child as { count: number }).count, 0);
+      expect(instanced(two)).toBe(instanced(one));
+    } finally { one.dispose(); two.dispose(); }
+  });
+});

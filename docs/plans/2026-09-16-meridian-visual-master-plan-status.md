@@ -78,12 +78,12 @@ the visual-language document.
 | 61 | Round Review filmstrip + active hole | done | Existing architecture kept: 18 static SVG filmstrip cells + one active 3D hole (`CourseTerrainCanvas` never loads Three for the filmstrip) |
 | 62 | Selected-shot camera | done | `deriveShotCameraTarget()` (`shot-camera-target.ts`): tee → landing, ball → green complex, greenside → ball + green + hazards within 30 m, putt → whole green; outputs target, fit points, bearing, zoom, input flags; `HoleSceneFrame` fits the region in the safe area (zoom .9–2.4) instead of centring one point; unresolved shots return null |
 | 63 | Putting visuals (63.1, 63.2) | done (63.1) / blocked (63.2) | 63.1: reviewed green outline + 'Mapped green · ball not marked' status when no coordinates exist; 63.2 needs the user-confirmed pin/ball entry flow (product surface, not renderer) |
-| 64 | Quality tiers | pending | |
-| 65 | Low quality | pending | |
-| 66 | Standard quality | pending | |
-| 67 | High quality | pending | |
-| 68 | Performance budget (68.1–68.4) | pending | |
-| 69 | Runtime residency | pending | |
+| 64 | Quality tiers | done | `render-quality.ts`: `MeridianRenderQuality = 'low' \| 'standard' \| 'high'`, capability-based `detectRenderQuality()` (data saver, texture limit, memory ≤ 2 GB, ≤ 4 cores on touch → low; fine pointer + ≥ 8 cores + ≥ 8 GB or unreported + ≥ 1.5 MP screen → high; else standard); runtime option `quality` (`auto` default), lab `?quality=`; telemetry `qualityTier` + `qualityBasis` |
+| 65 | Low quality | done | DPR cap 1.5 / 2.4 MP, shadow 1024, near crowns off, crown budget ×.7, forest mass ×1.25 (mass dominant), water terms ×.6 (simple Fresnel), contact shade off, 33 ms target. Hole 17 phone Terrain: 210 draws / 276k tris (vs 238 / 353k standard) |
+| 66 | Standard quality | done | DPR ≤ 2 inside a 4 MP budget, shadow 2048, near crowns inside the focus radius, full bowl + water, contact shade on, 16.7 ms target |
+| 67 | High quality | done | DPR ≤ 2.5 inside 8 MP, shadow 4096, crown budget ×1.25; GTAO and texture tiers deliberately not enabled until measured (§67 'measure value') |
+| 68 | Performance budget (68.1–68.4) | partial | 68.1 `frameP95Ms` (last 30 renders, CPU side) + `frameBudgetMs`; 68.2 `drawCallBudget`/`drawCallStatus` by pitch (Top 140 / Terrain 180 / Side 160), canopy batches now span `batchTiles` canopy tiles per axis by tier (low 3 / standard 2 / high 1): hole 17 phone Terrain 238 → 107 draws (low 75), hole 11 224 → 121, hole 9 canary 95 → 83, all within budget; triangles rise ≤ 10 % from coarser frustum culling; 68.3 `triangleBreakdown` (terrain / crownNear / crownDistant / trunks / mass / flight) + `treeLod`; 68.4 `geometryMemoryMb`, `shadowMemoryMb`, `renderTargetMb` (texture memory n/a: no textures) |
+| 69 | Runtime residency | done | `terrain-residency.ts`: current + next + most recently viewed, max 3, LRU eviction (`residentTerrainKeys`, `rememberViewedHole`, `evictTerrain`); the play fixture uses it; filmstrip cells never force 18 meshes |
 | 70 | Render telemetry | partial | Canvas dataset carries projection, design/frame FOV, eye distance, style version + hash, artifact hash + source, meridian code, quality tier, shadow map size/type, light direction, CPU frame ms, draw calls, triangles, trees, DPR; GPU time (timer query) not yet |
 | 71 | Development toolkit | done | Toolkit table in `docs/plans/2026-09-16-meridian-operations.md` |
 | 72 | Direct Three.js remains | done | Direct Three.js r186 retained; no R3F (guarded by §7 boundary) |
@@ -109,7 +109,7 @@ the visual-language document.
 | 92 | WebGPU experiment route | pending | |
 | 93 | Post-processing | pending | |
 | 94 | Render-quality lab | done | Lab route `?lab=1&course=&hole=` (`src/test/fixtures/course-geometry/browser/meridian-lab.tsx`), URL-scriptable state, telemetry panel |
-| 95 | Inspector controls | partial | Inspector: hole, area, preset, projection, FOV, pitch, yaw, relief, zoom, debug view (+ bunker-depth), viewport, material layer multipliers, crown/mass budget scales (`?crowns=`, `?mass=`), water/haze/contact-shade scales (`?water=`, `?haze=`, `?shade=`), telemetry incl. tree families, haze and sky; light/seed toggles arrive with V6–V7 |
+| 95 | Inspector controls | partial | Inspector: hole, area, preset, projection, FOV, pitch, yaw, relief, zoom, debug view (+ bunker-depth), viewport, material layer multipliers, crown/mass budget scales (`?crowns=`, `?mass=`), water/haze/contact-shade scales (`?water=`, `?haze=`, `?shade=`), telemetry incl. tree families, haze and sky, quality tier select (`?quality=low\|standard\|high\|auto`) with the §68 budget fields; light/seed toggles pending |
 | 96 | Visual artifact compiler | done | `scripts/golf/course-geometry/compile-visual-artifacts.mts` (tsx): 18 holes, determinism check, cache round-trip, pack manifest |
 | 97 | Packed render attributes | done | Packed attributes: Uint8 albedo/weights/roughness/class, Uint16 boundary cm + bunker mm, Float32 route (s,t); 19 B/vertex, 160–460 KB gzip per hole |
 | 98 | Field textures vs attributes | done | Decision recorded in the operations doc: attributes now; field textures only if bunker rims / shorelines need sub-triangle detail |
@@ -120,9 +120,9 @@ the visual-language document.
 | 103 | Phone/WebView testing | pending | |
 | 104 | Battery test | pending | |
 | 105 | Failure behavior | pending | |
-| 106 | Testing architecture (106.1–106.4) | partial | 106.1 determinism + hash gate + cache round-trip (`visual-artifact.test.ts`); 106.2 camera round-trip (`three-camera.test.ts`); 106.3 style invariants (`visual-style.test.ts`); 106.4 visual canaries captured per label, automated pixel diff not yet |
+| 106 | Testing architecture (106.1–106.4) | partial | 106.1 determinism + hash gate + cache round-trip (`visual-artifact.test.ts`); 106.2 camera round-trip (`three-camera.test.ts`); 106.3 style invariants (`visual-style.test.ts`); 106.4 visual canaries captured per label with the §68 budget fields in their metadata, automated pixel diff not yet |
 | 107 | Human visual review checklist | done | Checklist in `docs/plans/2026-09-16-meridian-operations.md` |
-| 108 | Implementation sequence V0–V7 | pending | |
+| 108 | Implementation sequence V0–V7 | partial | V0–V6 landed; V7 tiers/budgets/residency landed, draw-call batching for the over-budget holes and §99/§103–105 remain |
 | 109 | Which product packages first | pending | |
 | 110 | Top five visual moves | pending | |
 | 111 | Tools now vs later | done | Now/later table in the operations doc |

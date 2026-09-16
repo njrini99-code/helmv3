@@ -1,6 +1,7 @@
 /** Local play-through of a compiled course. Shots persist in this browser only
  * (localStorage); nothing reaches Supabase, statistics or a real round. */
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { evictTerrain, rememberViewedHole, residentTerrainKeys } from '@/lib/golf/course-geometry/terrain-residency';
 import FairwayShotTracking from '@/components/fairway/pages/rounds-tracking/FairwayShotTracking';
 import type { HoleStats, RoundHole, ShotRecord } from '@/lib/types/golf';
 import type { TerrainMesh } from '@/lib/golf/course-geometry/terrain';
@@ -42,13 +43,16 @@ export function PlayRoundFixture({ course }: { course: CompiledCourse }) {
     try { localStorage.setItem(storageKey(course), JSON.stringify(stamped)); } catch { /* private mode: in-memory only */ }
   }, [course]);
 
-  // Keep the current and next hole's terrain resident; drop the rest so a
-  // phone never holds eighteen decoded meshes at once.
+  // §69 residency: current + next + most recently viewed, at most three
+  // decoded meshes; the rest are evicted least-recently-used.
+  const recentHoles = useRef<string[]>([]);
   useEffect(() => {
     const controller = new AbortController();
-    const wanted = [currentKey, holeKeys[holeIndex + 1]].filter((key): key is string => key != null);
+    recentHoles.current = rememberViewedHole(recentHoles.current, currentKey);
+    const resident = residentTerrainKeys({ current: currentKey, next: holeKeys[holeIndex + 1], recent: recentHoles.current });
+    const wanted = resident.slice(0, 2);
     setTerrainState(terrainByHole[currentKey] ? 'ready' : 'loading');
-    setTerrainByHole(current => Object.fromEntries(Object.entries(current).filter(([key]) => wanted.includes(key))));
+    setTerrainByHole(current => evictTerrain(current, resident) as Record<string, TerrainMesh>);
     for (const key of wanted) {
       if (terrainByHole[key]) continue;
       loadCompiledFixture(key, controller.signal, course).then(mesh => {

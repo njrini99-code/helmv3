@@ -3,6 +3,7 @@
  * Every control changes the camera, a diagnostic material or the viewport.
  * None of them edits geometry, evidence or the geometry package. */
 import { useEffect, useMemo, useState } from 'react';
+import type { MeridianRenderQuality } from '@/lib/golf/course-geometry/render-quality';
 import { Button } from '@/components/fairway/controls/button';
 import { NativeSelect } from '@/components/ui/native-select';
 import { CourseTerrainCanvas } from '@/components/golf/course-geometry/CourseTerrainCanvas';
@@ -42,6 +43,7 @@ export function MeridianLabFixture({ course }: { course: CompiledCourse }) {
   const [zoom, setZoom] = useState(number(params.get('zoom'), 1, .5, 4));
   const [debugView, setDebugView] = useState<TerrainDebugView>(TERRAIN_DEBUG_VIEWS.find(mode => mode === params.get('debug')) ?? 'final');
   const [viewport, setViewport] = useState(Object.keys(VIEWPORTS).find(key => key === params.get('viewport')) ?? 'phone');
+  const [quality, setQuality] = useState<MeridianRenderQuality | 'auto'>((['low', 'standard', 'high', 'auto'] as const).find(tier => tier === params.get('quality')) ?? 'auto');
   // Material amplitude multipliers (§95): 0 isolates a layer away, >1 exaggerates it for review.
   const [overrides, setOverrides] = useState<Required<MeridianStyleOverrides>>(() => Object.fromEntries(STYLE_LAYERS.map(layer =>
     [layer, number(params.get(layer), 1, 0, 4)])) as Required<MeridianStyleOverrides>);
@@ -111,6 +113,7 @@ export function MeridianLabFixture({ course }: { course: CompiledCourse }) {
       {range('Zoom', zoom, .5, 4, .1, setZoom)}
       {field('Debug view', <NativeSelect value={debugView} onChange={e => setDebugView(e.target.value as TerrainDebugView)} aria-label="Debug view">{TERRAIN_DEBUG_VIEWS.map(mode => <option key={mode} value={mode}>{TERRAIN_DEBUG_LABELS[mode]} ({mode})</option>)}</NativeSelect>)}
       {field('Viewport', <NativeSelect value={viewport} onChange={e => setViewport(e.target.value)} aria-label="Viewport">{Object.entries(VIEWPORTS).map(([key, [w, h]]) => <option key={key} value={key}>{key} {w}×{h}</option>)}</NativeSelect>)}
+      {field('Quality', <NativeSelect value={quality} onChange={e => setQuality(e.target.value as MeridianRenderQuality | 'auto')} aria-label="Quality">{(['auto', 'low', 'standard', 'high'] as const).map(tier => <option key={tier} value={tier}>{tier}</option>)}</NativeSelect>)}
       <h2 className="mt-2 text-caption font-semibold">Material / vegetation layers ×</h2>
       {STYLE_LAYERS.map(layer => range(layer, overrides[layer], 0, 4, .25, v => setOverrides({ ...overrides, [layer]: v })))}
       <h2 className="mt-2 text-caption font-semibold">Telemetry</h2>
@@ -122,7 +125,7 @@ export function MeridianLabFixture({ course }: { course: CompiledCourse }) {
     </aside>
     <section className="flex-1 overflow-hidden p-3" aria-label="Lab stage">
       <div data-slot="lab-stage" style={{ width, height, transform: `scale(${stageScale})`, transformOrigin: 'top left', position: 'relative', background: '#607D3D' }}>
-        {scene && mesh && camera && <CourseTerrainCanvas key={`${hole?.key}:${debugView}`} scene={scene} mesh={mesh} camera={camera} width={width} height={height} debugView={debugView} styleOverrides={overrides}
+        {scene && mesh && camera && <CourseTerrainCanvas key={`${hole?.key}:${debugView}:${quality}`} scene={scene} mesh={mesh} camera={camera} width={width} height={height} debugView={debugView} styleOverrides={overrides} quality={quality}
           fallback={<p role="status" className="p-3">Loading terrain</p>} />}
         {!mesh && !failure && <p role="status" className="p-3">Loading source terrain</p>}
       </div>

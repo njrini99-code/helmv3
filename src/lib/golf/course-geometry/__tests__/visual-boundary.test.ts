@@ -9,10 +9,10 @@ import { describe, expect, it } from 'vitest';
  * rule for editors; this test is the merge gate. */
 const root = join(__dirname, '..');
 const CANONICAL = ['build-scene', 'camera', 'canopy', 'context-layer', 'context-taxonomy', 'describe-position', 'display-outline', 'display-trajectories', 'normalize',
-  'project', 'quality', 'reconstruct', 'schema', 'selected-shot-focus', 'shot-camera-target', 'spatial', 'surface-compatibility', 'terrain', 'terrain-source',
+  'project', 'quality', 'reconstruct', 'schema', 'selected-shot-focus', 'shot-camera-target', 'spatial', 'surface-compatibility', 'terrain', 'terrain-residency', 'terrain-source',
   'tracking-scene', 'types'];
 const VISUAL = ['three-camera', 'three-flight-path', 'three-renderer', 'shadow-bounds', 'terrain-canopy', 'terrain-material',
-  'terrain-viewport', 'shot-overlay-controller', 'shot-overlay-layout', 'runtime-controller', 'camera-motion', 'visual-style', 'visual-artifact'];
+  'terrain-viewport', 'shot-overlay-controller', 'shot-overlay-layout', 'runtime-controller', 'camera-motion', 'visual-style', 'visual-artifact', 'render-quality'];
 const imports = (file: string) => [...readFileSync(join(root, file), 'utf8').matchAll(/from\s+'([^']+)'/g)].map(match => match[1]!);
 
 describe('Meridian visual code boundary', () => {
