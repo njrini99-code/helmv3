@@ -171,6 +171,12 @@ from V1; V4 changes what stands on each centre.
   calls plus two in the shadow pass. The single call needs
   `WEBGL_multi_draw` (Safari 15+, Chrome 86+); the renderer's
   `multiDrawBasis` reports `per_instance_fallback` where it is missing.
+- **Asset breakup (redesign §20).** Each authored crown design also ships
+  mirrored across its local X axis, and a tree takes the mirror by seed, so
+  the eight designs give sixteen silhouettes. Trees ≥ 3 m inside their mask
+  and clear of playing surfaces lean up to 3.5° (`vegetation.lean`), crown
+  and trunk together about the ground point; the crown radius gives up the
+  horizontal shift so a leaning crown still clears the mask.
 - **Dead-space rhythm (redesign §3.4).** Before the crown budget is
   allocated, a seeded mask of 30 m cells clears 14 % of the pattern centres
   in any group of 40 or more, so a woods edge gets notches and an interior
