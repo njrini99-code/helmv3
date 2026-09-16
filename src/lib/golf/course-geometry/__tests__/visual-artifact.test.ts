@@ -394,7 +394,7 @@ describe('Bunker families, overhang shade and context contact (renderer redesign
     ];
     const withZones = { ...scene, contextZones: zones as never, contextLayerHash: 'b'.repeat(64) };
     const plain = compileVisualArtifact(scene, mesh), artifact = compileVisualArtifact(withZones, mesh);
-    expect(artifact.layers.contextContact).toMatchObject({ basis: 'visual_only', version: 'context-contact-v2', structures: 1, ribbons: 1 });
+    expect(artifact.layers.contextContact).toMatchObject({ basis: 'visual_only', version: 'context-contact-v3', structures: 1, ribbons: 1 });
     expect(artifact.layers.contextContact.vertices).toBeGreaterThan(0);
     expect(plain.layers.contextContact.vertices).toBe(0);
     // Redesign 12 cut/fill: only ground within the ribbon's bank carries a
@@ -409,6 +409,8 @@ describe('Bunker families, overhang shade and context contact (renderer redesign
       const pathD = Math.hypot(Math.max(0, minX + 5 - x, x - (maxX - 5)), y - (midY + 20));
       if (mm === 0) continue;
       expect(pathD).toBeLessThan(1.25 + cutFillBankM + 1e-6);
+      // v3: the end caps feather along the line, so nothing is levelled past an end by the bank or more.
+      expect(Math.max(0, minX + 5 - x, x - (maxX - 5))).toBeLessThan(cutFillBankM);
       expect(Math.abs(mm)).toBeLessThanOrEqual(cutFillMaxM * 1000 + .5);
       const kind = mesh.featureKinds[mesh.triangleFeatures[Math.floor(vertex / 3)]!];
       expect(kind === 'bunker' || kind === 'water').toBe(false);

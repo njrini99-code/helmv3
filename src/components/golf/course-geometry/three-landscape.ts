@@ -3,6 +3,7 @@ import { allocateCrowns, canopySymbols, crownScale } from '@/lib/golf/course-geo
 import { boundaryDistance } from '@/lib/golf/course-geometry/display-outline';
 import { inFeature } from '@/lib/golf/course-geometry/spatial';
 import { terrainHeight, type TerrainMesh } from '@/lib/golf/course-geometry/terrain';
+import type { MetricTerrainGrid } from '@/lib/golf/course-geometry/terrain-source';
 import type { HoleScene, LocalFeature, PointM } from '@/lib/golf/course-geometry/types';
 import { assertVisualArtifact, BUNKER_SLOPE_SCALE, compileVisualArtifact, linearAlbedo, MERIDIAN_CODES, SURFACE_CLASS_IDS, type MeridianVisualArtifact } from '@/lib/golf/course-geometry/visual-artifact';
 import { MERIDIAN_PALETTE, MERIDIAN_STYLE, MERIDIAN_STYLE_HASH, MERIDIAN_STYLE_VERSION, type MeridianPaletteKey, type MeridianStyle, type MeridianStyleOverrides } from '@/lib/golf/course-geometry/visual-style';
@@ -113,7 +114,36 @@ export function landingWindow(scene: HoleScene, style: MeridianStyle = MERIDIAN_
   return centreM < 60 ? null : { centreM: Math.round(centreM * 10) / 10, halfWidthM, boost };
 }
 
-export function attachTurfStyle(material: TurfStyleTarget, seed: readonly [number, number], overrides: MeridianStyleOverrides = {}, landing: LandingWindow | null = null): TurfStyleHandle {
+/** Per-fragment shading source (master §14–15 faceting, redesign §12): the
+ * DEM's slope (dz/dx, dz/dy at every grid node; central differences over one
+ * spacing, one-sided at nulls and edges) uploaded once as a half-float RG
+ * texture in the terrain's local metres. Lighting then follows the source
+ * grid instead of the display triangle size, so a steep road bank stays a
+ * bank instead of fanning across a 4 m context triangle from one vertex
+ * normal. Display only: it never moves a vertex or feeds picking. */
+export interface DemSlopeRelief { texture: THREE.DataTexture; frame: THREE.Vector4; texel: THREE.Vector2; exaggeration: { value: number }; spacingM: number }
+export function buildDemSlopeTexture(grid: MetricTerrainGrid): DemSlopeRelief {
+  const { columns, rows, spacingM, heightsM } = grid;
+  const data = new Uint16Array(columns * rows * 2);
+  const at = (c: number, r: number) => c < 0 || r < 0 || c >= columns || r >= rows ? null : heightsM[r * columns + c] ?? null;
+  const gradient = (a: number | null, z: number | null, b: number | null) =>
+    a != null && b != null ? (b - a) / (2 * spacingM) : z != null && b != null ? (b - z) / spacingM : z != null && a != null ? (z - a) / spacingM : 0;
+  const half = (value: number) => THREE.DataUtils.toHalfFloat(Math.max(-16, Math.min(16, value)));
+  for (let r = 0; r < rows; r++) for (let c = 0; c < columns; c++) {
+    const z = at(c, r), i = (r * columns + c) * 2;
+    data[i] = half(gradient(at(c - 1, r), z, at(c + 1, r)));
+    data[i + 1] = half(gradient(at(c, r - 1), z, at(c, r + 1)));
+  }
+  const texture = new THREE.DataTexture(data, columns, rows, THREE.RGFormat, THREE.HalfFloatType);
+  texture.name = 'dem-slope';
+  texture.magFilter = texture.minFilter = THREE.LinearFilter; texture.generateMipmaps = false;
+  texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping; texture.needsUpdate = true;
+  texture.userData = { basis: 'source_gradient', spacingM, columns, rows };
+  return { texture, frame: new THREE.Vector4(grid.originM[0], grid.originM[1], 1 / (columns * spacingM), 1 / (rows * spacingM)),
+    texel: new THREE.Vector2(.5 / columns, .5 / rows), exaggeration: { value: 1 }, spacingM };
+}
+
+export function attachTurfStyle(material: TurfStyleTarget, seed: readonly [number, number], overrides: MeridianStyleOverrides = {}, landing: LandingWindow | null = null, relief: DemSlopeRelief | null = null): TurfStyleHandle {
   const style = MERIDIAN_STYLE;
   const landingUniform = new THREE.Vector3(landing?.centreM ?? 0, landing?.halfWidthM ?? 0, landing?.boost ?? 0);
   const classId = (name: string) => SURFACE_CLASS_IDS.indexOf(name as never);
@@ -139,8 +169,17 @@ export function attachTurfStyle(material: TurfStyleTarget, seed: readonly [numbe
   // Fresnel and the ripple normal need view-space normals, which only the lit
   // materials carry; the unlit albedo view keeps the flat water gradient.
   const lit = material.type === 'MeshStandardMaterial' || material.type === 'MeshPhysicalMaterial';
+  // Per-fragment DEM shading needs the lit normal path; the unlit views keep
+  // their vertex normals, as does a mesh without a metric grid.
+  const demShading = lit && relief != null;
   material.onBeforeCompile = shader => {
     shader.uniforms.golfSeed = { value: new THREE.Vector2(seed[0], seed[1]) };
+    if (demShading) {
+      shader.uniforms.golfDemSlope = { value: relief.texture };
+      shader.uniforms.golfDemFrame = { value: relief.frame };
+      shader.uniforms.golfDemTexel = { value: relief.texel };
+      shader.uniforms.golfRelief = relief.exaggeration;
+    }
     shader.uniforms.golfAmplitudes = { value: amplitudes };
     shader.uniforms.golfContextDesaturate = contextMix;
     shader.uniforms.golfWaterMix = { value: waterMix };
@@ -161,8 +200,13 @@ attribute float golfCanopyShade;
 varying vec2 vGolfWorldXY;
 varying vec2 vGolfRouteST;
 varying vec4 vGolfWeights;
-varying vec4 vGolfSurface;`).replace('#include <begin_vertex>', `#include <begin_vertex>
-vGolfWorldXY = (modelMatrix * vec4(position, 1.0)).xy;
+varying vec4 vGolfSurface;${demShading ? `
+attribute vec2 golfDisplaySlope;
+varying vec2 vGolfDisplaySlope;
+varying vec2 vGolfLocalXY;` : ''}`).replace('#include <begin_vertex>', `#include <begin_vertex>
+vGolfWorldXY = (modelMatrix * vec4(position, 1.0)).xy;${demShading ? `
+vGolfLocalXY = position.xy;
+vGolfDisplaySlope = golfDisplaySlope;` : ''}
 vGolfRouteST = golfRouteST;
 vGolfWeights = vec4(golfMowingWeight, golfTurfWeight, golfContextWeight, golfBoundaryDistance);
 vGolfSurface = vec4(golfRoughness, golfSurfaceClass, golfCanopyShade, golfSurroundDistance);`);
@@ -178,7 +222,13 @@ uniform vec3 golfLanding;
 varying vec2 vGolfWorldXY;
 varying vec2 vGolfRouteST;
 varying vec4 vGolfWeights;
-varying vec4 vGolfSurface;`).replace('#include <color_fragment>', `#include <color_fragment>
+varying vec4 vGolfSurface;${demShading ? `
+uniform sampler2D golfDemSlope;
+uniform vec4 golfDemFrame;
+uniform vec2 golfDemTexel;
+uniform float golfRelief;
+varying vec2 vGolfDisplaySlope;
+varying vec2 vGolfLocalXY;` : ''}`).replace('#include <color_fragment>', `#include <color_fragment>
 {
   vec2 golfP = vGolfWorldXY + golfSeed;
   float golfMowingWeight = vGolfWeights.x, golfTurfWeight = vGolfWeights.y, golfContextWeight = vGolfWeights.z, golfBoundary = vGolfWeights.w;
@@ -246,7 +296,18 @@ ${lit ? `    float golfFresnel = pow(1.0 - clamp(dot(normalize(vNormal), normali
   // Canopy contact shade (§50): analytic, from the placed crowns and mass.
   diffuseColor.rgb *= 1.0 - vGolfSurface.z * golfShadeAmount;
 }`).replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
-roughnessFactor = vGolfSurface.x;`).replace('#include <normal_fragment_begin>', `#include <normal_fragment_begin>
+roughnessFactor = vGolfSurface.x;`).replace('#include <normal_fragment_begin>', `#include <normal_fragment_begin>${demShading ? `
+// Source-gradient shading: the DEM slope sampled per fragment in local
+// metres (bilinear across the grid), plus the render-only bowl and cut/fill
+// gradients carried per vertex, under the same relief exaggeration as the
+// display heights. Replaces the interpolated vertex normal.
+{
+  vec2 golfDemUv = (vGolfLocalXY - golfDemFrame.xy) * golfDemFrame.zw + golfDemTexel;
+  vec2 golfSlope = texture2D(golfDemSlope, golfDemUv).xy + vGolfDisplaySlope;
+  vec3 golfGround = normalize(vec3(-golfSlope * golfRelief, 1.0));
+  normal = normalize(mat3(viewMatrix) * golfGround);
+  nonPerturbedNormal = normal;
+}` : ''}
 // Static water ripple (§43): a small world-space normal field, filtered out at distance.
 if (abs(vGolfSurface.y - ${SURFACE_CLASS_WATER}.0) < 0.5) {
   vec2 golfRp = vGolfWorldXY + golfSeed;
@@ -260,7 +321,8 @@ if (abs(vGolfSurface.y - ${SURFACE_CLASS_WATER}.0) < 0.5) {
   normal = normalize(normal + mat3(viewMatrix) * golfRipple);
 }`);
   };
-  material.customProgramCacheKey = () => `golf-landscape-turf-${MERIDIAN_STYLE_HASH}:${material.type}`;
+  material.customProgramCacheKey = () => `golf-landscape-turf-${MERIDIAN_STYLE_HASH}:${material.type}:${demShading ? 'dem' : 'vertex'}`;
+  material.userData.shading = demShading ? { basis: 'dem_slope_texture', spacingM: relief.spacingM } : { basis: 'vertex_normals' };
   material.userData.mowing = { basis: 'illustrative_style', bandWidthM: style.mowing.bandWidthM, frame: 'route_local' };
   material.userData.turf = { basis: 'visual_only', macroM: style.turf.macro.wavelengthsM, microM: style.turf.micro.wavelengthsM, microByClass: style.turf.microByClass };
   material.userData.landing = landing ? { basis: 'illustrative_style', ...landing } : null;
@@ -269,10 +331,10 @@ if (abs(vGolfSurface.y - ${SURFACE_CLASS_WATER}.0) < 0.5) {
   material.userData.styleVersion = MERIDIAN_STYLE_VERSION; material.userData.styleHash = MERIDIAN_STYLE_HASH;
   return { setOverrides: apply };
 }
-function terrainMaterial(seed: readonly [number, number], overrides: MeridianStyleOverrides, landing: LandingWindow | null = null): { material: THREE.MeshStandardMaterial; turf: TurfStyleHandle } {
+function terrainMaterial(seed: readonly [number, number], overrides: MeridianStyleOverrides, landing: LandingWindow | null = null, relief: DemSlopeRelief | null = null): { material: THREE.MeshStandardMaterial; turf: TurfStyleHandle } {
   const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, metalness: 0 });
   material.name = 'course-lit-albedo';
-  return { material, turf: attachTurfStyle(material, seed, overrides, landing) };
+  return { material, turf: attachTurfStyle(material, seed, overrides, landing, relief) };
 }
 
 /** Build a scene-owned landscape once. Camera gestures only move the camera;
@@ -358,6 +420,15 @@ export function buildThreeLandscape(
   const normals = new THREE.BufferAttribute(new Float32Array(source.length), 3).setUsage(THREE.DynamicDrawUsage);
   terrainGeometry.setAttribute('position', positions);
   terrainGeometry.setAttribute('normal', normals);
+  // Per-fragment DEM shading when the source grid is present: the vertex
+  // carries only the render-only bowl and cut/fill gradients (the display
+  // surface is z_dem − depth + level); the DEM slope comes from the texture.
+  const relief = mesh.metricGrid ? buildDemSlopeTexture(mesh.metricGrid) : null;
+  if (relief) {
+    const displaySlope = new Float32Array(vertexCount * 2);
+    for (let i = 0; i < vertexCount * 2; i++) displaySlope[i] = -bowlSlope[i]! + levelSlope[i]!;
+    terrainGeometry.setAttribute('golfDisplaySlope', new THREE.BufferAttribute(displaySlope, 2));
+  }
   terrainGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
   terrainGeometry.setAttribute('golfMowingWeight', new THREE.BufferAttribute(mowing, 1));
   terrainGeometry.setAttribute('golfTurfWeight', new THREE.BufferAttribute(turf, 1));
@@ -369,8 +440,9 @@ export function buildThreeLandscape(
   terrainGeometry.setAttribute('golfRouteST', new THREE.BufferAttribute(routeST, 2));
   terrainGeometry.setAttribute('golfBunkerDepth', new THREE.BufferAttribute(bowlDepth, 1));
   geometries.add(terrainGeometry);
-  const { material, turf: turfStyle } = terrainMaterial(artifact.seed, options.overrides ?? {}, landingWindow(scene));
+  const { material, turf: turfStyle } = terrainMaterial(artifact.seed, options.overrides ?? {}, landingWindow(scene), relief);
   materials.add(material);
+  group.userData.shadingBasis = relief ? 'dem_slope_texture' : sourceNormals ? 'vertex_source_normals' : 'vertex_face_normals';
   const terrain = new THREE.Mesh(terrainGeometry, material);
   terrain.name = 'course-terrain';
   terrain.castShadow = true;
@@ -850,6 +922,7 @@ export function buildThreeLandscape(
     }
     if (exaggeration === lastExaggeration && referenceElevationM === lastReference) return;
     const displayZ = (z: number) => referenceElevationM + (z - referenceElevationM) * exaggeration;
+    if (relief) relief.exaggeration.value = exaggeration;
     // The bowl is a display offset below the canonical surface; it scales
     // with relief like every other display height and never touches `source`.
     for (let i = 0; i < positions.count; i++) positions.setZ(i, displayZ(source[i * 3 + 2]!) + ((lipLift[i]! - bowlDepth[i]!) * bowlScale + groundLevel[i]!) * exaggeration);
@@ -923,6 +996,7 @@ export function buildThreeLandscape(
       treeAtlas.dispose();
       for (const geometry of geometries) geometry.dispose();
       for (const ownedMaterial of materials) ownedMaterial.dispose();
+      relief?.texture.dispose();
       group.removeFromParent(); group.clear();
     },
   };

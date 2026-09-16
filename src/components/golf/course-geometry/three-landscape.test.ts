@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
-import { buildThreeLandscape, DEFAULT_THREE_LANDSCAPE_PALETTE, landingWindow } from './three-landscape';
+import { buildDemSlopeTexture, buildThreeLandscape, DEFAULT_THREE_LANDSCAPE_PALETTE, landingWindow } from './three-landscape';
 import { MERIDIAN_STYLE } from '@/lib/golf/course-geometry/visual-style';
 import { compileVisualArtifact, linearAlbedo, MERIDIAN_CODES, SURFACE_CLASS_IDS } from '@/lib/golf/course-geometry/visual-artifact';
 import { installTerrainDebugView } from './terrain-debug';
@@ -557,5 +557,52 @@ describe('landing-area emphasis and turf density cue (fidelity §8–9, renderer
     expect(shader.fragmentShader).toContain(MERIDIAN_STYLE.turf.microByClass.rough.toFixed(3));
     expect(shader.fragmentShader).toContain(MERIDIAN_STYLE.turf.microByClass.fringe.toFixed(3));
     landscape.dispose();
+  });
+});
+
+describe('DEM slope shading (per-fragment source normals)', () => {
+  it('encodes the grid gradient per node, one-sided at edges and beside nulls', () => {
+    // z = 2x + 3y on a 2 m grid, with one unsupported corner.
+    const grid = { originM: [10, 20] as [number, number], spacingM: 2, columns: 3, rows: 3, heightsM: [0, 4, 8, 6, 10, 14, 12, 16, null] };
+    const relief = buildDemSlopeTexture(grid);
+    const data = relief.texture.image.data as Uint16Array;
+    const at = (c: number, r: number) => [THREE.DataUtils.fromHalfFloat(data[(r * 3 + c) * 2]!), THREE.DataUtils.fromHalfFloat(data[(r * 3 + c) * 2 + 1]!)];
+    expect(at(1, 1)).toEqual([2, 3]);
+    expect(at(0, 0)).toEqual([2, 3]);
+    expect(at(1, 2)).toEqual([2, 3]);
+    expect(at(2, 1)).toEqual([2, 3]);
+    expect(at(2, 2)).toEqual([0, 0]);
+    expect(relief.frame.toArray()).toEqual([10, 20, 1 / 6, 1 / 6]);
+    expect(relief.texel.toArray()).toEqual([.5 / 3, .5 / 3]);
+    expect(relief.texture.type).toBe(THREE.HalfFloatType);
+    expect(relief.texture.format).toBe(THREE.RGFormat);
+    expect(relief.texture.flipY).toBe(false);
+    expect(relief.texture.userData).toEqual({ basis: 'source_gradient', spacingM: 2, columns: 3, rows: 3 });
+  });
+
+  it('shades the lit terrain from the DEM slope texture when the mesh carries a metric grid', () => {
+    const mesh = slopeMesh();
+    mesh.metricGrid = { originM: [0, 0], spacingM: 50, columns: 3, rows: 3, heightsM: [100, 105, 110, 100, 105, 110, 100, 105, 110] };
+    const landscape = buildThreeLandscape(pilotScene('cacapon-07', false), mesh);
+    const material = landscape.terrain.material;
+    const shader = { uniforms: {} as Record<string, { value: unknown }>, vertexShader: '#include <common>\n#include <begin_vertex>',
+      fragmentShader: '#include <common>\n#include <color_fragment>\n#include <normal_fragment_begin>' };
+    (material.onBeforeCompile as (s: typeof shader) => void)(shader);
+    expect(shader.uniforms.golfDemSlope!.value).toBeInstanceOf(THREE.DataTexture);
+    expect(shader.vertexShader).toContain('vGolfLocalXY = position.xy');
+    expect(shader.fragmentShader).toContain('texture2D(golfDemSlope');
+    // The water ripple perturbs the DEM normal, not the vertex normal.
+    expect(shader.fragmentShader.indexOf('golfDemSlope')).toBeLessThan(shader.fragmentShader.indexOf('golfRipple'));
+    expect(landscape.terrain.geometry.getAttribute('golfDisplaySlope').count).toBe(6);
+    expect(material.customProgramCacheKey()).toContain(':dem');
+    expect(material.userData.shading).toEqual({ basis: 'dem_slope_texture', spacingM: 50 });
+    expect(landscape.group.userData.shadingBasis).toBe('dem_slope_texture');
+    landscape.setExaggeration(2, 100);
+    expect(shader.uniforms.golfRelief!.value).toBe(2);
+    const plain = buildThreeLandscape(pilotScene('cacapon-07', false), slopeMesh());
+    expect(plain.terrain.material.userData.shading).toEqual({ basis: 'vertex_normals' });
+    expect(plain.terrain.material.customProgramCacheKey()).toContain(':vertex');
+    expect(plain.terrain.geometry.getAttribute('golfDisplaySlope')).toBeUndefined();
+    landscape.dispose(); plain.dispose();
   });
 });

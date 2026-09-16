@@ -225,6 +225,22 @@ from V1; V4 changes what stands on each centre.
   is a hairline crack that shows the sky through the ground; the compile
   report counts them (`noding.tJunctionVertices`) and the fixture carries
   zero on every hole.
+- **Cut/fill end caps and junctions (`context-contact-v3`).** A ribbon's
+  cut/fill feathers along its own axis past each end cap (no levelled disc
+  past the end), and where several ribbons reach one vertex, a cart path
+  meeting a road, their heights blend by feather weight instead of the
+  nearest one winning, so a junction is a ramp rather than a step. The
+  slope attribute follows the dominant ribbon.
+- **Per-fragment DEM shading.** The lit ground material samples the source
+  grid's slope (dz/dx, dz/dy per grid node, a half-float RG texture in the
+  terrain's local metres) at every fragment and builds the display normal
+  there, adding the render-only bowl and cut/fill gradients from the vertex
+  under the same relief exaggeration. Lighting therefore follows the 2 m
+  source grid, not the display triangle: a 56° road bank at Peek'n Peak 7
+  used to fan out as a dark jagged wedge from one vertex normal across two
+  4 m context triangles and now shades as the bank it is. Meshes without a
+  metric grid keep their vertex normals; the debug views are unaffected
+  (`material.userData.shading.basis`, `group.userData.shadingBasis`).
 - **Ribbon breaklines (terrain compiler).** `compile-course-terrain.py
   --context` constrains every hole mesh with the reviewed ground ribbons
   (cart paths, service paths, roads at their source width): vertices sit on
