@@ -155,6 +155,15 @@ Use `memory/context/golfhelm-database.md` for exact columns.
   choices from the authenticated server and asks the player to select one at
   final submit; it never invents a qualifier result from a browser backup.
 - Authenticated users must only create or modify rounds they are allowed to own or coach.
+- Round-start validation must accept whatever the course library stores for
+  the course's city and state. The library's `golf_courses.state` is free text
+  (Canadian courses carry "Ontario", not "ON") and the tee picker copies it into
+  the round verbatim, so both round schemas allow `courseState` up to 100
+  characters — the same cap as `courseCity`; the `golf_rounds.course_state`
+  column is `text`. A fresh round's first save carries no holes, so a
+  validation failure on any top-level field is unsalvageable and reaches the
+  player as a bare `retry` ("start round does nothing"). See
+  `memory/incidents/golf_round_lifecycle/INC-2026-09-16-course-state-two-letter-rejection.md`.
 - Direct database writes cannot create, mutate, or delete a completed round
   or its child shots. Only the postgres-owned SECURITY DEFINER round RPCs may
   carry the transaction-local lifecycle marker needed for their atomic write.

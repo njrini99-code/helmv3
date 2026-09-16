@@ -15958,7 +15958,7 @@
         {
           "kind": "rpc_call",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 7271
+          "line": 7278
         }
       ]
     },
@@ -16033,12 +16033,12 @@
         {
           "kind": "rpc_call",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 2327
+          "line": 2334
         },
         {
           "kind": "rpc_call",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 2561
+          "line": 2568
         }
       ]
     },
