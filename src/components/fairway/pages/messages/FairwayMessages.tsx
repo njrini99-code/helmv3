@@ -58,13 +58,15 @@ export function FairwayMessages() {
   // Server-resolved user data — role/team via the same context the legacy used.
   const { userId, role: userRole, teamId } = useGolfUser();
 
-  // ── UNCHANGED hook: conversations + refetch ─────────────────────────────────
+  // ── conversations + refetch ─────────────────────────────────────────────────
+  // The viewer id is handed in so the rail paints from the session cache on
+  // the first render and never waits on an auth round trip.
   const {
     conversations,
     loading: conversationsLoading,
     error: conversationsError,
     refetch,
-  } = useGolfConversations();
+  } = useGolfConversations(userId);
 
   const handleConversationsRefresh = async () => {
     await refetch();
@@ -95,7 +97,7 @@ export function FairwayMessages() {
     isOtherTyping,
     sendTypingStatus,
     currentUserId,
-  } = useGolfMessages(selectedConversationId || '');
+  } = useGolfMessages(selectedConversationId || '', userId);
   const reactions = useMessageReactions(selectedConversationId ?? '', messages.filter((message) => message.conversation_id === selectedConversationId && !message.sendFailed).map((message) => message.id), currentUserId ?? userId);
 
   // ── UNCHANGED hook: attachment send ─────────────────────────────────────────

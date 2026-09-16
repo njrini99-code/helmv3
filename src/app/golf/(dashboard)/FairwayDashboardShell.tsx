@@ -65,6 +65,8 @@ import { TeamSwitcher } from '@/components/golf/TeamSwitcher';
 import { normalizeTeamGender, teamAccentVar, type TeamGender } from '@/lib/golf/team-theme';
 import { useAppearancePreferences } from '@/hooks/golf/use-appearance-preferences';
 import { usePresence } from '@/hooks/use-presence';
+import { useGolfSurfacePrewarm } from '@/hooks/golf/use-surface-prewarm';
+import { clearAllCachedResources } from '@/lib/golf/client-resource-cache';
 import { createClient } from '@/lib/supabase/client';
 import { clearActiveTeam } from '@/app/golf/actions/team-switcher';
 import { triggerHaptic } from '@/lib/utils/capacitor';
@@ -240,6 +242,8 @@ function useGolfSignOut() {
     teardownDeviceTokenOnSignOut();
     const supabase = createClient();
     await clearActiveTeam();
+    // Cached rails/threads are per-viewer; none may outlive the session.
+    clearAllCachedResources();
     await supabase.auth.signOut();
     router.push('/golf/login');
   }, [router, isSigningOut]);
@@ -459,6 +463,9 @@ function FairwayDashboardContent({
 
   // Track presence (deferred internally so it doesn't compete with page load).
   usePresence();
+  // Warm Calendar + Messages (route payload + conversation rail) on idle so the
+  // first tap is instant, not just the second.
+  useGolfSurfacePrewarm(userData.userId);
 
   // WAVE W2: 8-hub rail (see src/lib/golf/nav-registry.ts — the single source
   // of truth for both roles' rail/bottom-nav/sub-nav definitions).

@@ -172,6 +172,17 @@ const nextConfig = {
 
   // Experimental features
   experimental: {
+    // Client router cache for DYNAMIC segments. Next's default is 0, which
+    // throws away a visited tab's RSC payload the moment you leave it — every
+    // bottom-nav tap re-ran the server page (calendar's two-phase waterfall,
+    // the messages layout) and re-showed the skeleton: "it loads separately
+    // each tab I click" (2026-09-10). 30s keeps a return visit instant; it
+    // matches calendar's own `revalidate = 30`, and server actions'
+    // `revalidatePath` / `router.refresh()` still invalidate it on mutation.
+    staleTimes: {
+      dynamic: 30,
+      static: 300,
+    },
     // Build workers and memory, bounded for a shared machine (see the webpack
     // hook above and docs/operations/GATES.md).
     cpus: 3,

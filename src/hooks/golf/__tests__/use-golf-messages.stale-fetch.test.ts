@@ -52,7 +52,9 @@ describe('use-golf-messages — a stale fetch cannot overwrite the open thread (
   });
 
   it('guards the messages setter specifically — the write that caused the defect', () => {
-    const idx = code.indexOf('setMessages(((data || []) as MessageWithReadStatus[]).reverse());');
+    // `fresh` is the reversed fetch page; it is written to the session cache
+    // and then to state on the same guarded path.
+    const idx = code.indexOf('setMessages(fresh);');
     expect(idx).toBeGreaterThan(-1);
     const preceding = code.slice(Math.max(0, idx - 400), idx);
     expect(preceding).toContain('liveConversationIdRef.current !== conversationId');
