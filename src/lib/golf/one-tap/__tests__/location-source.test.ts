@@ -9,7 +9,7 @@ function timers() {
   const handles: { fn: () => void; ms: number }[] = [];
   return { handles, setInterval: (fn: () => void, ms: number) => { handles.push({ fn, ms }); return handles.length; }, clearInterval: vi.fn() };
 }
-function enu(sample: LocationSample) { const p = wgs84ToEnu([sample.longitude, sample.latitude, null], origin); return [p[0], p[1]]; }
+function enu(sample: LocationSample): [number, number] { const p = wgs84ToEnu([sample.longitude, sample.latitude, null], origin); return [p[0], p[1]]; }
 
 describe('synthetic walker', () => {
   it('walks the route, clamps to its length and scatters fixes around the truth by the stated accuracy', () => {
@@ -62,7 +62,7 @@ describe('device location source', () => {
   it('is absent without platform geolocation', () => { expect(deviceLocationSource(null)).toBeNull(); });
   it('watches at high accuracy, maps positions to samples and clears the watch on unsubscribe', () => {
     let success: ((p: GeolocationPosition) => void) | null = null;
-    const geo = { watchPosition: vi.fn((ok: (p: GeolocationPosition) => void) => { success = ok; return 9; }), clearWatch: vi.fn() };
+    const geo = { watchPosition: vi.fn((ok: (p: GeolocationPosition) => void, _error?: (e: GeolocationPositionError) => void, _options?: PositionOptions) => { success = ok; return 9; }), clearWatch: vi.fn() };
     const source = deviceLocationSource(geo)!;
     expect(source.kind).toBe('device');
     const seen: LocationSample[] = [];
