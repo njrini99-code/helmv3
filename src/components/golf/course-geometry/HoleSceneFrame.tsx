@@ -16,7 +16,7 @@ import { PERSPECTIVE_FOV, PRODUCTION_CAMERA_STATES, productionCameraState, TERRA
 
 import { fitTerrainViewportCamera } from '@/lib/golf/course-geometry/terrain-viewport';
 import type { TerrainRuntimeController } from '@/lib/golf/course-geometry/runtime-controller';
-import { selectedShotFocus } from '@/lib/golf/course-geometry/selected-shot-focus';
+import { deriveShotCameraTarget } from '@/lib/golf/course-geometry/shot-camera-target';
 import { interpolateCameraMotion } from '@/lib/golf/course-geometry/camera-motion';
 import type { TerrainDebugView } from './terrain-debug';
 
@@ -228,22 +228,38 @@ function Drawing({ scene, view, context, events, selectedShotNumber, activeDraft
     // geometry needs its own recorded coordinates; an earlier approach arc
     // must not pull the camera away from the actual green by default.
     if (!expanded || view === 'putting' || showProfile || !scene?.terrain || !courseView || currentSelection == null || size.width <= 48 || size.height <= 48) return;
-    const focus = selectedShotFocus(scene, currentSelection);
-    if (!focus) return;
+    const target = deriveShotCameraTarget(scene, currentSelection);
+    if (!target) return;
     const key = `${scene.packageHash}:${courseView}:${currentSelection}:${size.width}:${size.height}`;
     if (autoFocusKey.current === key) return;
     try {
       const current = live.current;
-      const base = fitTerrainViewportCamera(scene, scene.terrain, courseView, size.width, size.height,
-        current.pose, focus.zoom, [0, 0], current.fitPreset);
-      const z = terrainHeight(scene.terrain, focus.pointM);
-      if (z == null) return;
-      const point = projectTerrainPoint([focus.pointM[0], focus.pointM[1], z], base);
+      const mesh = scene.terrain;
       const left = 12, right = 64, top = Math.min(88, size.height * .24), bottom = 24;
-      const targetX = (left + size.width - right) / 2;
-      const targetY = (top + size.height - bottom) / 2;
+      const safeWidth = size.width - left - right, safeHeight = size.height - top - bottom;
+      const targetX = (left + size.width - right) / 2, targetY = (top + size.height - bottom) / 2;
+      // §62: fit the framing region (tee→landing, ball→green complex, ball +
+      // green + hazards) inside the safe area; fall back to the single target.
+      const unit = fitTerrainViewportCamera(scene, mesh, courseView, size.width, size.height, current.pose, 1, [0, 0], current.fitPreset);
+      const projected = target.fitPointsM.flatMap(point => { const z = terrainHeight(mesh, point); return z == null ? [] : [projectTerrainPoint([point[0], point[1], z], unit)]; });
+      let zoom = target.zoom, centre: [number, number] | null = null;
+      if (projected.length >= 2) {
+        const xs = projected.map(point => point[0]), ys = projected.map(point => point[1]);
+        const spanX = Math.max(1, Math.max(...xs) - Math.min(...xs)), spanY = Math.max(1, Math.max(...ys) - Math.min(...ys));
+        zoom = Math.max(.9, Math.min(2.4, Math.min(safeWidth / spanX, safeHeight / spanY) * .82));
+        centre = [(Math.max(...xs) + Math.min(...xs)) / 2, (Math.max(...ys) + Math.min(...ys)) / 2];
+      }
+      const base = fitTerrainViewportCamera(scene, mesh, courseView, size.width, size.height, current.pose, zoom, [0, 0], current.fitPreset);
+      const z = terrainHeight(mesh, target.targetM);
+      if (z == null) return;
+      const focusPoint = projectTerrainPoint([target.targetM[0], target.targetM[1], z], base);
+      // Re-project the fit at the chosen zoom and centre its extent.
+      const fitted = centre ? target.fitPointsM.flatMap(p => { const h = terrainHeight(mesh, p); return h == null ? [] : [projectTerrainPoint([p[0], p[1], h], base)]; }) : [];
+      const point = fitted.length >= 2
+        ? [(Math.max(...fitted.map(p => p[0])) + Math.min(...fitted.map(p => p[0]))) / 2, (Math.max(...fitted.map(p => p[1])) + Math.min(...fitted.map(p => p[1]))) / 2]
+        : focusPoint;
       autoFocusKey.current = key;
-      animateCamera({ ...current, zoom: focus.zoom, pan: boundedPan(targetX - point[0], targetY - point[1]) });
+      animateCamera({ ...current, zoom, pan: boundedPan(targetX - point[0], targetY - point[1]) });
     } catch {
       // Missing terrain coverage retains the existing hole fit. A camera move
       // must never replace a spatial estimate with a flat or guessed height.

@@ -1,5 +1,5 @@
 import {
-  BufferGeometry, CatmullRomCurve3, Group, Line, LineDashedMaterial, Material,
+  BufferGeometry, CatmullRomCurve3, CircleGeometry, Group, Line, LineDashedMaterial, Material,
   Mesh, MeshBasicMaterial, MeshStandardMaterial, SphereGeometry, TorusGeometry,
   TubeGeometry, Vector3,
 } from 'three';
@@ -96,6 +96,8 @@ export function buildThreeFlightPaths(scene: HoleScene, mesh: TerrainMesh,
       visualLineWidthPx, active ? 1 : .52, 3);
     arc.userData = {
       trajectorySource: trajectory.source, estimated: trajectory.source === 'reconstruction_display_estimate', shotNumber: trajectory.shotNumber,
+      // §60: the arc is a chord with a stylised lift, never a measured flight.
+      trajectoryBasis: trajectory.trajectoryBasis ?? 'illustrative_chord_arc',
       visualApexM: apexM, visualLineWidthPx, displayPointsM: displayPoints.map(point => [point.x, point.y, point.z]),
     };
     count++;
@@ -128,6 +130,17 @@ export function buildThreeFlightPaths(scene: HoleScene, mesh: TerrainMesh,
     origin.renderOrder = 3;
     origin.userData = { trajectorySource: trajectory.source, estimated: trajectory.source === 'reconstruction_display_estimate', shotNumber: trajectory.shotNumber, kind: 'origin_marker' };
     group.add(origin); geometries.push(originGeometry); materials.push(originMaterial);
+    // §58: a subtle ground contact under the pearl so it sits on the turf
+    // instead of floating; a flat disc, not a sun shadow.
+    const contactGeometry = new CircleGeometry(originRadius * 1.45, 18);
+    const contactMaterial = new MeshBasicMaterial({ color: '#14261B', transparent: true, opacity: active ? .3 : .18,
+      depthTest: true, depthWrite: false, toneMapped: false });
+    const contact = new Mesh(contactGeometry, contactMaterial);
+    contact.name = `illustrative-shot-origin-contact-${trajectory.shotNumber}`;
+    contact.position.copy(groundPoints[0]!); contact.position.z -= markerGroundOffsetM * .5;
+    contact.renderOrder = 2;
+    contact.userData = { shotNumber: trajectory.shotNumber, kind: 'origin_ground_contact' };
+    group.add(contact); geometries.push(contactGeometry); materials.push(contactMaterial);
 
     // A hollow stop marker makes the inferred finish legible without turning
     // an unresolved result into a solid, authoritative ball observation.

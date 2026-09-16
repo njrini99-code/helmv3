@@ -59,10 +59,40 @@ Hero hole: Peek’n Peak Upper hole 7.
 | 52 | QA vs production | done | Lab vs entry context (outside-world action 9) |
 | 53 | Rendering tiers | partial | Tier 1 done; tier 2 landed (fringe/apron, lip, setting, edge types); tier 3 pending |
 | 54 | Source-backed vs visual-only | done | `basis` markers on every layer |
-| 55–56 | Mirrored-in-3D test, hole-by-hole checklist | pending | Priorities 1–3 landed; per-hole run next |
+| 55–56 | Mirrored-in-3D test, hole-by-hole checklist | partial | First run on all 18 holes (`lab/audit/hNN-{tee-hole,putting-green}.png`, 2026-09-16); table below |
 | 57–58 | Layer architecture, data model | done | Compiler layers + `SURFACE_CLASS_IDS` carry fringe, apron, rough tiers, zones; paths/structures in the context layer |
 | 59 | Camera as quality multiplier | done | Production states (outside-world action 8) |
-| 60 | No dead zones | partial | Every ground vertex classified (rough tiers, zones); per-hole review pending |
+| 60 | No dead zones | partial | Every ground vertex classified; the audit still finds source-limited anonymous rough on 2, 3, 4 (long open flanks) and the par-3 carries on 5, 13, 15 — the context layer marks them `uncertain`, so nothing is painted (honest); needs the §39 human classification pass |
 | 61–64 | Hero / signature / intelligence / outside-world rules | partial | Green-complex hero and bunker signature have their v1 (apron neck, lips, edge variation); per-hole audit next |
 | 65 | Priority order | done | This tracker |
 | 66–70 | Quality targets, standard, summary, checklist, thesis | partial | Checklist §69 items 1–6 done (v1), 7–10 pending |
+
+## §56 hole-by-hole audit (Peek’n Peak Upper, tee state + putting state, 2026-09-16)
+
+Legend: ✓ reads as intended · ~ reads but weak · ✗ fails · src = source-limited (needs data or the §39 review pass, never invented).
+
+| Hole | Terrain | Fairway / edges | Approach → green | Green + setting | Bunkers | Rough / outer | Vegetation | Context | Composition | Notes |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ ponds, houses, road | ✓ | — |
+| 2 | ✓ | ✓ | ✓ | ✓ | ✓ | ~ src | ~ | ✓ pond | ✓ | Open flank left is unclassified (uncertain 49 %) |
+| 3 | ✓ | ✓ | ✓ | ✓ | ✓ | ~ src | ~ src | ✓ big pond | ✓ | Few woods polygons in source; 49 draws |
+| 4 | ✓ | ✓ | ✓ | ✓ | ✓ | ~ src | ✓ | ✓ | ✓ | Long open flank right |
+| 5 | ✓ | n/a par 3 | ✓ | ✓ | ✓ | ~ src | ✓ | ✓ | ✓ | Carry rough reads as one tone; 558k tris (near crowns → V7 LOD) |
+| 6 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| 7 | ✓ | ✓ | ✓ apron neck | ✓ | ✓ | ✓ first cut visible | ✓ | ✓ pond, houses, path | ✓ | Hero hole |
+| 8 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ houses, pond | ✓ | — |
+| 9 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ ponds, houses | ✓ | — |
+| 10 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ forest wall | ✓ | ✓ | — |
+| 11 | ✓ | ✓ stripes | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ houses, forest | ✓ | — |
+| 12 | ✓ | ✓ | ✓ | ✓ large green | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| 13 | ✓ | n/a par 3 | ✓ | ✓ | ✓ crescent | ~ src | ✓ | ✓ path | ✓ | Lower half open rough |
+| 14 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| 15 | ✓ | n/a par 3 | ✓ | ✓ | n/a | ~ src | ✓ | ~ | ✓ | Tee-to-green carry is one rough tone; 489k tris (near crowns → V7 LOD) |
+| 16 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| 17 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | Heaviest draws (227) |
+| 18 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+
+Findings carried forward: (1) V7 LOD must cap near-crown detail on short holes
+(5, 15 exceed 480k triangles at 80 draws); (2) the anonymous-rough holes need
+the §39 human pass on the context layer before any tone can be painted there;
+(3) green surfaces stay flat pads without a contour source (§19 blocked).

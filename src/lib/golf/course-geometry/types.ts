@@ -130,6 +130,11 @@ export interface IllustrativePreviewTrajectory {
    * reviewed, evidence-compatible representatives. */
   anchorBasis?: 'route_reference' | 'compatible_estimate';
   source: 'interactive_preview_fixture' | 'reconstruction_display_estimate';
+  /** Meridian §60: Helm knows start and end only, never launch, apex,
+   * curvature, spin or the actual flight. Every drawn arc is an illustrative
+   * chord arc; a physical flight label needs launch-monitor evidence, which
+   * no scene carries today. */
+  trajectoryBasis?: 'illustrative_chord_arc';
 }
 /** A display-only putting position or surface roll for the isolated fixture.
  * These points are calculated from a recorded distance-to-pin against the

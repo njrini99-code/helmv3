@@ -71,13 +71,13 @@ the visual-language document.
 | 54 | Cart paths | pending | No source-backed path features in the canonical package; visuals never invent them. Scheduled under the production player-view spec (2026-09-16 §14, action 5): ingest reviewed cart/service paths, then render centreline+width, terrain-conforming, muted mineral material |
 | 55 | Structures | pending | No building footprints in the canonical package. Scheduled with §54 (player-view spec §13): reviewed footprints + estimated heights + simple roof archetypes |
 | 56 | Surface hierarchy | done | Brightness hierarchy green → tee → fairway → fringe → surround → rough → woods guarded by `visual-style.test.ts` |
-| 57 | Shot evidence in 3D | pending | |
-| 58 | Resolved shot marker | pending | |
-| 59 | Ambiguous position | pending | |
-| 60 | Shot lines | pending | |
-| 61 | Round Review filmstrip + active hole | pending | |
-| 62 | Selected-shot camera | pending | |
-| 63 | Putting visuals (63.1, 63.2) | pending | |
+| 57 | Shot evidence in 3D | done | Restrained: thin arcs, hollow finish rings, pearls with a ground-contact disc (§58), regions clipped to their canonical feature (`CourseShotOverlay`, `three-flight-path`) |
+| 58 | Resolved shot marker | done | Screen-aware sizing (`displayMarkerScale`: CSS radius ÷ camera scale, clamped .45–4 m), selected halo, origin ground-contact disc (`illustrative-shot-origin-contact-<n>`), no giant floating spheres |
+| 59 | Ambiguous position | done | `checkedRegions` → clipped translucent fill + thin dashed boundary + halo in the SVG layer (`data-possible-area`), projected through the display surface sampler; never collapsed to a point |
+| 60 | Shot lines | done | `IllustrativePreviewTrajectory.trajectoryBasis: 'illustrative_chord_arc'` on every production display arc; the 3D arc carries it in `userData.trajectoryBasis`; a low stylised lift (≤ 52 m); no physical-flight label exists because no launch-monitor evidence exists |
+| 61 | Round Review filmstrip + active hole | done | Existing architecture kept: 18 static SVG filmstrip cells + one active 3D hole (`CourseTerrainCanvas` never loads Three for the filmstrip) |
+| 62 | Selected-shot camera | done | `deriveShotCameraTarget()` (`shot-camera-target.ts`): tee → landing, ball → green complex, greenside → ball + green + hazards within 30 m, putt → whole green; outputs target, fit points, bearing, zoom, input flags; `HoleSceneFrame` fits the region in the safe area (zoom .9–2.4) instead of centring one point; unresolved shots return null |
+| 63 | Putting visuals (63.1, 63.2) | done (63.1) / blocked (63.2) | 63.1: reviewed green outline + 'Mapped green · ball not marked' status when no coordinates exist; 63.2 needs the user-confirmed pin/ball entry flow (product surface, not renderer) |
 | 64 | Quality tiers | pending | |
 | 65 | Low quality | pending | |
 | 66 | Standard quality | pending | |

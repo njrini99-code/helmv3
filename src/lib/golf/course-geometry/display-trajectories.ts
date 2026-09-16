@@ -47,6 +47,7 @@ export function decorateSceneWithDisplayTrajectories(scene: HoleScene): HoleScen
         pointsM: [fromM, pointAlong(fromM, toM, .5), toM],
         source: 'reconstruction_display_estimate',
         anchorBasis: previous ? 'compatible_estimate' : 'route_reference',
+        trajectoryBasis: 'illustrative_chord_arc',
       });
     }
     previous = { shotNumber: evidence.shotNumber, pointM: toM, evidence };
