@@ -42,12 +42,49 @@ on every touched file (exit 0), vitest `unit` one-tap + scene-marker suites
 (63 + 12 tests) and `unit-dom` (`OneTapPlayerScreen`, `HoleSceneFrame`,
 `CourseTerrainCanvas`, `CourseHoleScene`: 16 tests), all passing.
 
+## Phase 3 camera evidence (2026-09-16, fifth run `-v5`)
+
+Same capture, `output/playwright/course-geometry/one-tap/peek-n-peak-upper-07-v5/`,
+with the follow fit. `camera` now records framing and the settled zoom
+(`data-camera-framing`, `data-camera-zoom`):
+
+| Step | Camera state / area | Framing @ zoom | What the frame shows |
+| --- | --- | --- | --- |
+| ready | tee / hole | – @ 1 | the state's own fit (no mark yet) |
+| tee marked | tee / hole | ball_to_green @ 0.93 | YOU at the tee (bottom-left), green complex at the top; whole corridor |
+| approach marked | approach / approach | ball_to_green @ 1.06 | YOU on the fairway (left), green + bunkers ahead (upper right) |
+| green marked | putting / green | whole_green @ 1.46 | the whole green with YOU and the pin marker |
+| holed | putting / green | whole_green @ 1.46 | unchanged (terminal mark on the green) |
+| next hole | tee / hole | – @ 1 | hole 8 from its tee, no marks |
+
+Regression: canaries `visual-system/canaries/v22-follow-fit` (96 captures) are
+pixel-identical to `v21-one-tap` (0 changed), and the player-view phone matrix
+`visual-system/player/audit-v7` (18 holes × terrain/green, 36 captures) is
+pixel-identical to `audit-v6`; the shared frame's selected-shot auto-fit and
+preset motion moved into one `fitTo` helper without a visible change. Checks: `tsc --noEmit` exit 0, eslint on every touched file exit 0,
+vitest `unit` (`shot-camera-target` 7, `visual-boundary` 3) and `unit-dom`
+(`one-tap` + `HoleSceneFrame`: 11) passing.
+
+HUD keep-out (same run, hole 8 `peek-n-peak-upper-08-v5/01-ready.png`): the
+stage HUD's chip column is marked `data-hud-reserve`; the frame measures it
+after every commit and hands the rectangles to the evidence overlay
+(`setReservedRects` on the runtime and the overlay controller), so the scene's
+"Green" label re-places below the chips with its leader instead of under the
+strokes chip. Canaries `v23-hud-reserve` are pixel-identical to `v22` (96 of
+96): production passes reserve nothing (no stage overlay).
+
 ## Known gaps after phase 2
 
-- PLAYER_FOLLOW now maps onto the `tee` production state (whole corridor from
-  the player's end) so a mark far from the green stays in frame; the first
-  capture had it on `approach`, which cropped the tee mark. A true follow fit
-  (player + green framed together) is still phase 3 camera work (Meridian V6).
+- Follow fit (done, v5): the stage frame takes a `stageFocus` (Meridian §62
+  rules applied to the player's last mark, `derivePositionCameraTarget`), so
+  every automatic state settles on the mark and the green together
+  (ball→green while the ball is out, around-green inside 45 m, whole green on
+  it). The preset motion ends on that fit instead of the bare preset, a new
+  mark re-fits, a gesture hands the camera over and Recenter refits. The
+  live GPS fix never moves the camera on its own. The fit follows the green
+  the scene draws (the hole's own outline, reviewed or source-imported): on
+  Peek'n Peak Upper the greens are unreviewed OSM outlines, and a
+  reviewed-only rule left the camera on the bare state.
 - The distance readout and lie live in the footer above MARK BALL, not over
   the course: the second capture showed the floating card hiding the YOU mark
   at the tee (tee framing puts the player at the bottom of the frame). The

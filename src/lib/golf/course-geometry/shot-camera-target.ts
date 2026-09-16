@@ -1,4 +1,5 @@
 import { checkedAnchor, checkedConnection, checkedRegions } from './quality';
+import { inFeature } from './spatial';
 import { selectedShotFocus, type SelectedShotFocus } from './selected-shot-focus';
 import type { HoleScene, LocalFeature, PointM } from './types';
 
@@ -94,4 +95,34 @@ export function deriveShotCameraTarget(scene: HoleScene, shotNumber: number | un
   return { shotNumber, framing, targetM: [...focus.pointM] as PointM, basis: focus.basis, fitPointsM: fit,
     preferredBearingDeg: bearing, zoom: focus.zoom,
     inputs: { start: !!start, finish: !!finish, region: regionPoints.length > 0, green: greenPoints.length > 0, hazards: hazards.length } };
+}
+
+/** The subset of a camera target a viewport needs to settle on it. */
+export type CameraFitTarget = Pick<ShotCameraTarget, 'framing' | 'targetM' | 'fitPointsM' | 'zoom'>;
+
+/**
+ * The §62 rules applied to a known player position (an accepted One-Tap
+ * mark, never a live GPS guess): on the green → the whole green; within
+ * GREEN_NEAR_M → the position, the green and the hazards beside it; otherwise
+ * the position and the green complex. The fit is display-only: it follows the
+ * green the scene already draws (the hole's own green outline, reviewed or
+ * source-imported, plus any reviewed green), so it frames nothing the player
+ * cannot see. A hole with no green returns null and the camera keeps the
+ * state's default fit.
+ */
+export function derivePositionCameraTarget(scene: HoleScene, positionM: PointM): CameraFitTarget | null {
+  const greens = scene.features.filter(feature => feature.kind === 'green' && (feature.reviewed || feature.id === scene.hole.greenFeatureId));
+  const greenPoints = greens.flatMap(ringPoints);
+  if (!greenPoints.length || !Number.isFinite(positionM[0]) || !Number.isFinite(positionM[1])) return null;
+  const position: PointM = [positionM[0], positionM[1]];
+  const onGreen = greens.some(green => inFeature(position, green));
+  const nearGreen = onGreen || distanceToPoints(position, greenPoints) <= GREEN_NEAR_M;
+  const framing: ShotCameraFraming = onGreen ? 'whole_green' : nearGreen ? 'around_green' : 'ball_to_green';
+  const hazards = framing === 'around_green'
+    ? [...scene.features, ...(scene.contextFeatures ?? [])].filter(feature => (feature.kind === 'bunker' || feature.kind === 'water') &&
+      distanceToPoints(position, ringPoints(feature)) <= HAZARD_REACH_M)
+    : [];
+  const fit: PointM[] = framing === 'whole_green' ? corners(greenPoints) : [position, ...corners(greenPoints)];
+  for (const hazard of hazards) fit.push(...corners(ringPoints(hazard)));
+  return { framing, targetM: position, fitPointsM: fit, zoom: 1 };
 }

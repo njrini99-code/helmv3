@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, type ReactNode, type PointerEvent, type RefObject } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type PointerEvent, type RefObject } from 'react';
 import { Maximize2, RotateCcw, X, SlidersHorizontal, ChevronDown, ChevronLeft, ChevronRight, Info, MoreHorizontal } from 'lucide-react';
 import { ModalShell } from '@/components/fairway/overlays/ModalShell';
 import { Sheet } from '@/components/fairway/overlays/Sheet';
@@ -17,12 +17,16 @@ import { PERSPECTIVE_FOV, PRODUCTION_CAMERA_STATES, productionCameraState, TERRA
 
 import { fitTerrainViewportCamera } from '@/lib/golf/course-geometry/terrain-viewport';
 import type { TerrainRuntimeController } from '@/lib/golf/course-geometry/runtime-controller';
-import { deriveShotCameraTarget } from '@/lib/golf/course-geometry/shot-camera-target';
+import { deriveShotCameraTarget, type CameraFitTarget } from '@/lib/golf/course-geometry/shot-camera-target';
 import { interpolateCameraMotion } from '@/lib/golf/course-geometry/camera-motion';
 import type { TerrainDebugView } from './terrain-debug';
 import type { SceneMarkers } from '@/lib/golf/course-geometry/scene-markers';
+import type { OverlayReservedRect } from '@/lib/golf/course-geometry/shot-overlay-controller';
 
 interface CameraMemory { pose: TerrainPose; fitPreset: TerrainFitProfile }
+/** A stage director's fit: the points the camera keeps on screen and the key
+ * whose change asks for a fresh settle (a new mark, a recenter). */
+export interface StageCameraFocus { key: string; target: CameraFitTarget }
 
 const LABELS: Record<SceneView, string> = { hole: 'Whole hole', approach: 'Approach', green: 'Green', putting: 'Putting' };
 function hasReviewedGreen(scene: HoleScene | null | undefined): boolean {
@@ -57,11 +61,15 @@ interface FrameProps {
   stageCameraRef?: RefObject<((state: ProductionCameraState) => void) | null>;
   /** Stage only: fires when the player takes the camera by gesture (MANUAL_CAMERA). */
   onStageGesture?: () => void;
+  /** Stage only: the fit the director keeps on screen (the player's mark and
+   * the green, Meridian §62 applied to a known position). The preset motion
+   * settles on it and a changed key re-fits; null leaves the state's own fit. */
+  stageFocus?: StageCameraFocus | null;
 }
 
 /** One reusable viewing container. Its caller keys by hole identity; a manual
  * view persists through typing and committed shots, until a different hole. */
-export function HoleSceneFrame({ scene, context, defaultView = 'hole', selectedShotNumber, activeDraftShotNumber, evidence, currentPuttingDistanceM, header, children, debugView, markers, presentation = 'card', stageOverlay, stageFooter, stageCameraRef, onStageGesture }: FrameProps) {
+export function HoleSceneFrame({ scene, context, defaultView = 'hole', selectedShotNumber, activeDraftShotNumber, evidence, currentPuttingDistanceM, header, children, debugView, markers, presentation = 'card', stageOverlay, stageFooter, stageCameraRef, onStageGesture, stageFocus }: FrameProps) {
   const [choice, setChoice] = useState<SceneView | null>(null);
   const [expanded, setExpanded] = useState(false);
   const [detailSelection, setDetailSelection] = useState<number | null>(null);
@@ -135,7 +143,7 @@ export function HoleSceneFrame({ scene, context, defaultView = 'hole', selectedS
     return <div className="relative flex h-full min-h-0 flex-1 flex-col" data-scene-context={context} data-current-view={view} data-presentation="stage">
       <Drawing key={view} scene={scene} view={view} context={context} events={events} selectedShotNumber={selectedShotNumber} activeDraftShotNumber={activeDraftShotNumber} puttingScope={puttingScope}
         currentPuttingDistanceM={currentPuttingDistanceM} expanded poseMemory={poseMemory} debugView={debugView} onSelectView={setChoice} markers={markers}
-        heading={heading} areaControls={areaControls} stageOverlay={stageOverlay} stageFooter={stageFooter} presetRef={stagePreset} onStageGesture={onStageGesture} />
+        heading={heading} areaControls={areaControls} stageOverlay={stageOverlay} stageFooter={stageFooter} presetRef={stagePreset} onStageGesture={onStageGesture} stageFocus={stageFocus} />
     </div>;
   }
   return <div className="min-w-0" data-scene-context={context} data-current-view={view}>
@@ -163,12 +171,13 @@ export function HoleSceneFrame({ scene, context, defaultView = 'hole', selectedS
   </div>;
 }
 
-function Drawing({ scene, view, context, events, selectedShotNumber, activeDraftShotNumber, puttingScope = 'whole_green', currentPuttingDistanceM, expanded = false, heading, areaControls, onClose, poseMemory, onSelectEvent, debugView, onSelectView, markers, stageOverlay, stageFooter, presetRef, onStageGesture }: {
+function Drawing({ scene, view, context, events, selectedShotNumber, activeDraftShotNumber, puttingScope = 'whole_green', currentPuttingDistanceM, expanded = false, heading, areaControls, onClose, poseMemory, onSelectEvent, debugView, onSelectView, markers, stageOverlay, stageFooter, presetRef, onStageGesture, stageFocus }: {
   scene?: HoleScene | null; view: SceneView; context: 'entry' | 'review'; events: readonly ShotEvidence[];
   selectedShotNumber?: number; activeDraftShotNumber?: number; puttingScope?: 'whole_green' | 'focus_putt'; currentPuttingDistanceM?: number | null; expanded?: boolean;
   heading?: ReactNode; areaControls?: (close: () => void) => ReactNode; onClose?: () => void; poseMemory?: RefObject<CameraMemory>;
   onSelectEvent?: (shotNumber: number) => void; debugView?: TerrainDebugView; onSelectView?: (view: SceneView) => void;
   markers?: SceneMarkers | null; stageOverlay?: ReactNode; stageFooter?: ReactNode; presetRef?: RefObject<((preset: TerrainPreset) => void) | null>; onStageGesture?: () => void;
+  stageFocus?: StageCameraFocus | null;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: 320, height: context === 'entry' ? (view === 'putting' && hasReviewedGreen(scene) ? 272 : 160) : 310 });
@@ -195,6 +204,24 @@ function Drawing({ scene, view, context, events, selectedShotNumber, activeDraft
   const live = useRef({ zoom, pan, pose, fitPreset });
   const nextState = useRef<typeof live.current | null>(null);
   const autoFocusKey = useRef<string | null>(null);
+  // Stage chrome over the course (`data-hud-reserve` inside the overlay) is
+  // measured after every commit so the evidence labels (Green, pin, badges)
+  // re-place around the chips instead of under them. Zero-size boxes (jsdom,
+  // hidden chrome) reserve nothing.
+  const [reservedRects, setReservedRects] = useState<OverlayReservedRect[]>([]);
+  useLayoutEffect(() => {
+    const host = ref.current;
+    if (!host || !expanded || !stageOverlay) return;
+    const origin = host.getBoundingClientRect(), margin = 6;
+    // The overlay is the drawing's sibling inside the same positioned wrapper.
+    const next = [...(host.parentElement ?? host).querySelectorAll('[data-hud-reserve]')].flatMap(node => {
+      const box = node.getBoundingClientRect();
+      return box.width > 0 && box.height > 0 ? [{ x: box.left - origin.left - margin, y: box.top - origin.top - margin, width: box.width + margin * 2, height: box.height + margin * 2 }] : [];
+    });
+    setReservedRects(current => JSON.stringify(current) === JSON.stringify(next) ? current : next);
+    // A fresh overlay element arrives with every host render, so chip text
+    // changes re-measure; the equality guard keeps the state stable.
+  }, [expanded, stageOverlay, size.width, size.height]);
   function commitCamera() {
     const next = live.current; if (poseMemory) poseMemory.current = { pose: next.pose, fitPreset: next.fitPreset }; setZoom(next.zoom); setPan(next.pan); setPose(next.pose); setFitPreset(next.fitPreset);
     if (scaleBar.current) scaleBar.current.style.visibility = Math.abs(next.pose.pitch - 90) < .01 ? 'visible' : 'hidden';
@@ -277,24 +304,19 @@ function Drawing({ scene, view, context, events, selectedShotNumber, activeDraft
     gesture.current = { x: p.reduce((n, a) => n + a.x, 0) / p.length, y: p.reduce((n, a) => n + a.y, 0) / p.length,
       distance: p.length > 1 ? Math.hypot(p[0]!.x - p[1]!.x, p[0]!.y - p[1]!.y) : 0, ...live.current, origin: cameraOrigin(live.current) };
   }
-  useEffect(() => {
-    // Putting keeps its whole-green overview after selection. Its ball/roll
-    // geometry needs its own recorded coordinates; an earlier approach arc
-    // must not pull the camera away from the actual green by default.
-    if (!expanded || view === 'putting' || showProfile || !scene?.terrain || !courseView || currentSelection == null || size.width <= 48 || size.height <= 48) return;
-    const target = deriveShotCameraTarget(scene, currentSelection);
-    if (!target) return;
-    const key = `${scene.packageHash}:${courseView}:${currentSelection}:${size.width}:${size.height}`;
-    if (autoFocusKey.current === key) return;
+  /** §62 fit: the zoom and pan that keep `target.fitPointsM` inside the safe
+   * area for a pose, or null when the terrain has no height there (a camera
+   * move must never replace a spatial estimate with a flat or guessed height). */
+  function fitTo(target: CameraFitTarget, at: { pose: TerrainPose; fitPreset: TerrainFitProfile }): { zoom: number; pan: { x: number; y: number } } | null {
+    if (!scene?.terrain || !courseView) return null;
     try {
-      const current = live.current;
       const mesh = scene.terrain;
       const left = 12, right = 64, top = Math.min(88, size.height * .24), bottom = 24;
       const safeWidth = size.width - left - right, safeHeight = size.height - top - bottom;
       const targetX = (left + size.width - right) / 2, targetY = (top + size.height - bottom) / 2;
-      // §62: fit the framing region (tee→landing, ball→green complex, ball +
-      // green + hazards) inside the safe area; fall back to the single target.
-      const unit = fitTerrainViewportCamera(scene, mesh, courseView, size.width, size.height, current.pose, 1, [0, 0], current.fitPreset);
+      // Fit the framing region (tee→landing, ball→green complex, ball + green +
+      // hazards) inside the safe area; fall back to the single target.
+      const unit = fitTerrainViewportCamera(scene, mesh, courseView, size.width, size.height, at.pose, 1, [0, 0], at.fitPreset);
       const projected = target.fitPointsM.flatMap(point => { const z = terrainHeight(mesh, point); return z == null ? [] : [projectTerrainPoint([point[0], point[1], z], unit)]; });
       let zoom = target.zoom, centre: [number, number] | null = null;
       if (projected.length >= 2) {
@@ -303,24 +325,39 @@ function Drawing({ scene, view, context, events, selectedShotNumber, activeDraft
         zoom = Math.max(.9, Math.min(2.4, Math.min(safeWidth / spanX, safeHeight / spanY) * .82));
         centre = [(Math.max(...xs) + Math.min(...xs)) / 2, (Math.max(...ys) + Math.min(...ys)) / 2];
       }
-      const base = fitTerrainViewportCamera(scene, mesh, courseView, size.width, size.height, current.pose, zoom, [0, 0], current.fitPreset);
+      const base = fitTerrainViewportCamera(scene, mesh, courseView, size.width, size.height, at.pose, zoom, [0, 0], at.fitPreset);
       const z = terrainHeight(mesh, target.targetM);
-      if (z == null) return;
+      if (z == null) return null;
       const focusPoint = projectTerrainPoint([target.targetM[0], target.targetM[1], z], base);
       // Re-project the fit at the chosen zoom and centre its extent.
       const fitted = centre ? target.fitPointsM.flatMap(p => { const h = terrainHeight(mesh, p); return h == null ? [] : [projectTerrainPoint([p[0], p[1], h], base)]; }) : [];
       const point = fitted.length >= 2
         ? [(Math.max(...fitted.map(p => p[0])) + Math.min(...fitted.map(p => p[0]))) / 2, (Math.max(...fitted.map(p => p[1])) + Math.min(...fitted.map(p => p[1]))) / 2]
         : focusPoint;
-      autoFocusKey.current = key;
-      animateCamera({ ...current, zoom, pan: boundedPan(targetX - point[0], targetY - point[1]) });
+      return { zoom, pan: boundedPan(targetX - point[0], targetY - point[1]) };
     } catch {
-      // Missing terrain coverage retains the existing hole fit. A camera move
-      // must never replace a spatial estimate with a flat or guessed height.
+      // Missing terrain coverage retains the existing hole fit.
+      return null;
     }
+  }
+  useEffect(() => {
+    // Putting keeps its whole-green overview after selection. Its ball/roll
+    // geometry needs its own recorded coordinates; an earlier approach arc
+    // must not pull the camera away from the actual green by default.
+    // A stage director's focus (the player's own mark) takes the same path.
+    if (!expanded || view === 'putting' || showProfile || !scene?.terrain || !courseView || (currentSelection == null && !stageFocus) || size.width <= 48 || size.height <= 48) return;
+    const target = stageFocus?.target ?? deriveShotCameraTarget(scene, currentSelection);
+    if (!target) return;
+    const key = `${scene.packageHash}:${courseView}:${stageFocus ? `stage:${stageFocus.key}` : currentSelection}:${size.width}:${size.height}`;
+    if (autoFocusKey.current === key) return;
+    const current = live.current;
+    const fit = fitTo(target, current);
+    if (!fit) return;
+    autoFocusKey.current = key;
+    animateCamera({ ...current, ...fit });
     // The event key, not transient render state, owns this one camera settle.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [courseView, currentSelection, expanded, scene, showProfile, size.height, size.width, view]);
+  }, [courseView, currentSelection, expanded, scene, showProfile, size.height, size.width, view, stageFocus]);
   function flush() {
     cancelAnimationFrame(pendingFrame.current);
     if (nextState.current) { update(nextState.current); nextState.current = null; }
@@ -380,7 +417,10 @@ function Drawing({ scene, view, context, events, selectedShotNumber, activeDraft
     nextState.current = null;
     const target = TERRAIN_PRESETS[preset], start = live.current.pose, fromFit = live.current.fitPreset;
     const startZoom = live.current.zoom, startPan = live.current.pan;
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { update({ ...live.current, pose: target, fitPreset: preset, zoom: 1, pan: { x: 0, y: 0 } }, true); rebase(); return; }
+    // A stage focus settles on its fit at the new pose instead of the bare preset.
+    const settled = stageFocus ? fitTo(stageFocus.target, { pose: target, fitPreset: preset }) : null;
+    const endZoom = settled?.zoom ?? 1, endPan = settled?.pan ?? { x: 0, y: 0 };
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { update({ ...live.current, pose: target, fitPreset: preset, zoom: endZoom, pan: endPan }, true); rebase(); return; }
     // An orthographic endpoint is approached through a near-zero field of
     // view: the lens narrows while the eye retreats, keeping the focus size
     // constant, so Top ↔ Terrain never pops between projections (Meridian §12).
@@ -392,7 +432,7 @@ function Drawing({ scene, view, context, events, selectedShotNumber, activeDraft
       // A RAF timestamp may precede the event's performance.now() within the
       // same refresh interval. Never extrapolate past exact Top/height bounds.
       const t = Math.max(0, Math.min(1, (now - began) / 260)), eased = 1 - (1 - t) ** 3;
-      update({ zoom: startZoom + (1 - startZoom) * eased, pan: { x: startPan.x * (1 - eased), y: startPan.y * (1 - eased) }, fitPreset: t < 1 ? { from: fromFit, to: preset, progress: eased } : preset, pose: t < 1 ? { pitch: start.pitch + (target.pitch - start.pitch) * eased,
+      update({ zoom: startZoom + (endZoom - startZoom) * eased, pan: { x: startPan.x + (endPan.x - startPan.x) * eased, y: startPan.y + (endPan.y - startPan.y) * eased }, fitPreset: t < 1 ? { from: fromFit, to: preset, progress: eased } : preset, pose: t < 1 ? { pitch: start.pitch + (target.pitch - start.pitch) * eased,
         yawOffset: start.yawOffset + (target.yawOffset - start.yawOffset) * eased,
         exaggeration: start.exaggeration + (target.exaggeration - start.exaggeration) * eased,
         ...(anyPerspective ? { projection: 'perspective' as const, fovDegrees: startFov + (targetFov - startFov) * eased } : { projection: 'orthographic' as const }) } : target });
@@ -485,7 +525,7 @@ function Drawing({ scene, view, context, events, selectedShotNumber, activeDraft
       <div key={`${scene?.physicalHoleKey ?? 'missing'}-${view}`} className="fw-course-view-enter h-full w-full">
       {showProfile && scene ? <div className="h-full overflow-y-auto bg-surface pt-24"><CourseTerrainProfile scene={scene} selectedShotNumber={currentSelection} width={size.width} height={size.height - 96} /></div> : scene && transformed && courseView ? <CourseHoleScene scene={scene} width={size.width} height={size.height}
         mode={context === 'entry' ? 'compact' : 'review'} view={courseView} selectedShotNumber={currentSelection} activeDraftShotNumber={activeDraftShotNumber} camera={transformed} terrainCamera={terrainCamera}
-        runtimeRef={runtime} onTerrainUnavailable={() => setTerrainFailed(true)} showIllustrativeFlightPreviews={view !== 'putting'} puttingPlan={compactPuttingPlan} debugView={debugView} markers={markers} /> : view === 'putting' ? <PuttingZoom width={size.width} height={size.height} distanceView={{
+        runtimeRef={runtime} onTerrainUnavailable={() => setTerrainFailed(true)} showIllustrativeFlightPreviews={view !== 'putting'} puttingPlan={compactPuttingPlan} debugView={debugView} markers={markers} reservedRects={reservedRects} /> : view === 'putting' ? <PuttingZoom width={size.width} height={size.height} distanceView={{
         beforeFeet: before == null ? null : before / .3048, afterFeet: after == null ? null : after / .3048,
         made: currentPuttingDistanceM == null && putt?.putt.made === true,
         rolledOff: putt != null && putt.result !== 'green' && putt.result !== 'hole',

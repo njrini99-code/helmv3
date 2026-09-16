@@ -21,7 +21,7 @@ export function OneTapHud({ view, round }: { view: OneTapView; round?: OneTapRou
   const tone = snapshot.state === 'GPS_UNAVAILABLE' || snapshot.state === 'OUTSIDE_MODELED_AREA' ? 'warning' : snapshot.state === 'LOW_CONFIDENCE' ? 'caution' : 'neutral';
   const strokesLabel = round ? round.status === 'COMPLETE' ? `Holed · ${round.strokes}` : `${round.strokes} ${round.strokes === 1 ? 'stroke' : 'strokes'}` : null;
   return <div className="pointer-events-none absolute inset-0 font-fw-sans" data-slot="one-tap-hud">
-    <div className="absolute right-3 flex flex-col items-end gap-1.5" style={{ top: 'max(12px, env(safe-area-inset-top))' }} role="status" aria-live="polite">
+    <div className="absolute right-3 flex flex-col items-end gap-1.5" style={{ top: 'max(12px, env(safe-area-inset-top))' }} role="status" aria-live="polite" data-hud-reserve>
       <span className={chip} data-slot="one-tap-status" data-tone={tone}>
         {ONE_TAP_STATE_LABELS[snapshot.state]}
         {snapshot.syncPending > 0 && <span className="font-normal text-text-secondary">{' '}· {snapshot.syncPending} to sync</span>}

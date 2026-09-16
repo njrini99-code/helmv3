@@ -116,4 +116,30 @@ describe('One-Tap player screen', () => {
     expect(document.querySelector('[data-slot="one-tap-status"]')!.textContent).toMatch(/^No GPS fix/);
     expect(markers()).toEqual(['anchor', 'you']);
   });
+
+  it('follows the player: mark + green framed together, a gesture hands over the camera, Recenter refits, the green frames whole', async () => {
+    const proto = HTMLElement.prototype as unknown as Record<string, unknown>;
+    proto.setPointerCapture ??= () => {}; proto.releasePointerCapture ??= () => {}; proto.hasPointerCapture ??= () => false;
+    const phone = manualSource();
+    render(<OneTapPlayerScreen roundId="r4" pkg={pilotPackage} holeKey={HOLE} terrain={null} location={phone} storage={null} reducedMotion />);
+    const root = () => document.querySelector('[data-slot="one-tap-screen"]')!;
+    expect(root().getAttribute('data-camera-framing')).toBe('');
+    const tee = pointOn('tee'), green = pointOn('green');
+    act(() => { for (let t = -1500; t <= 0; t += 500) phone.at(tee, 1_000_000 + t); });
+    fireEvent.click(document.querySelector('[data-slot="one-tap-mark"]')!);
+    await act(async () => { await vi.advanceTimersByTimeAsync(800); });
+    expect(root().getAttribute('data-camera-framing')).toBe('ball_to_green');
+    fireEvent.pointerDown(document.querySelector('[data-slot="course-drawing"]')!, { button: 0, pointerId: 1, clientX: 40, clientY: 40 });
+    expect(root().getAttribute('data-camera-mode')).toBe('MANUAL');
+    expect(root().getAttribute('data-camera-framing')).toBe('');
+    fireEvent.click(document.querySelector('[data-slot="one-tap-recenter"]')!);
+    expect(root().getAttribute('data-camera-mode')).toBe('PLAYER_FOLLOW');
+    expect(root().getAttribute('data-camera-framing')).toBe('ball_to_green');
+    await act(async () => { await vi.advanceTimersByTimeAsync(6000); });
+    act(() => { vi.setSystemTime(1_060_000); for (let t = -1500; t <= 0; t += 500) phone.at(green, 1_060_000 + t); });
+    fireEvent.click(document.querySelector('[data-slot="one-tap-mark"]')!);
+    await act(async () => { await vi.advanceTimersByTimeAsync(800); });
+    expect(document.querySelector('[data-slot="one-tap-lie"]')!.textContent).toMatch(/^Green/);
+    expect(root().getAttribute('data-camera-framing')).toBe('whole_green');
+  });
 });

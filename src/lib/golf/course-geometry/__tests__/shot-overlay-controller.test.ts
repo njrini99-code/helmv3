@@ -107,3 +107,25 @@ describe('imperative evidence camera', () => {
     } finally { controller.dispose(); }
   });
 });
+
+describe('host reserved rects (stage chrome over the course)', () => {
+  it('re-places the green label out of a rectangle the host reserves, and back once it is released', () => {
+    const scene = illustrativeScene(), drawing = svg();
+    const controller = createShotOverlayController(drawing, 'reserve-test', mesh, scene, undefined);
+    try {
+      const camera = fitTerrainCamera(scene, mesh, 'hole', 390, 620, TERRAIN_PRESETS.tee);
+      controller.setCamera(camera, 390, 620);
+      const label = () => [...drawing.querySelectorAll('text')].find(node => /^(Green|Estimated pin)$/.test(node.textContent ?? ''))!;
+      const at = () => ({ x: Number(label().getAttribute('x')), y: Number(label().getAttribute('y')) });
+      const before = at();
+      expect(Number.isFinite(before.x) && Number.isFinite(before.y)).toBe(true);
+      const rect = { x: before.x - 40, y: before.y - 20, width: 80, height: 40 };
+      controller.setReservedRects([rect]);
+      const after = at();
+      const inside = after.x > rect.x && after.x < rect.x + rect.width && after.y > rect.y && after.y < rect.y + rect.height;
+      expect(inside).toBe(false);
+      controller.setReservedRects([]);
+      expect(at()).toEqual(before);
+    } finally { controller.dispose(); }
+  });
+});

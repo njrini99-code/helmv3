@@ -8,7 +8,7 @@ import { createVisualSurfaceSampler, MERIDIAN_CODES, type MeridianVisualArtifact
 import { MERIDIAN_STYLE, MERIDIAN_STYLE_HASH, type MeridianStyleOverrides } from './visual-style';
 import { applyTerrainCamera, pickTerrainPoint, type TerrainThreeCamera } from './three-camera';
 import { buildThreeFlightPaths, type ThreeFlightPaths } from './three-flight-path';
-import { createShotOverlayController } from './shot-overlay-controller';
+import { createShotOverlayController, type OverlayReservedRect } from './shot-overlay-controller';
 import { createSceneMarkerOverlayController, type SceneMarkerOverlayController, type SceneMarkers } from './scene-markers';
 import { TERRAIN_LIGHT_DIRECTION, type Point3M, type TerrainCamera, type TerrainMesh } from './terrain';
 import { fitShadowBounds } from './shadow-bounds';
@@ -21,6 +21,8 @@ export interface ThreeTerrainRuntime extends TerrainRuntimeController {
   setEvidence(scene: HoleScene, selectedShotNumber?: number): void;
   /** Player-marked positions (One-Tap), painted with the evidence overlay in the same frame. */
   setMarkers(markers: SceneMarkers | null): void;
+  /** Host chrome drawn over the course (stage HUD); evidence labels keep clear of it. */
+  setReservedRects(rects: readonly OverlayReservedRect[]): void;
   dispose(): void;
 }
 
@@ -384,6 +386,10 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
     setMarkers(markers) {
       if (disposed || failed) return;
       markersOverlay?.setMarkers(markers);
+    },
+    setReservedRects(rects) {
+      if (disposed || failed) return;
+      evidence?.setReservedRects(rects);
     },
     pick(x, y) {
       return ready && !disposed && !failed && landscape

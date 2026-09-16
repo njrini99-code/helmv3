@@ -16,6 +16,10 @@ function attributes(node: SVGElement, values: Attributes): void {
 /** A retained DOM view of the SAME validated layout as CourseShotOverlay.
  * Construction/evidence changes allocate nodes. A camera frame only projects
  * cached world points and updates existing attributes, with no React commit. */
+/** A screen rectangle (canvas pixels) the evidence labels must stay out of:
+ * the host's own chrome drawn over the course (a stage HUD, a banner). */
+export interface OverlayReservedRect { x: number; y: number; width: number; height: number }
+
 export function createShotOverlayController(svg: SVGSVGElement, prefix: string, mesh: TerrainMesh,
   initialScene: HoleScene, initialSelected?: number, renderIllustrativePreviewFlights = true,
   /** §34: markers sit on the drawn surface (bunker bowls); outlines and picking do not. */
@@ -31,6 +35,7 @@ export function createShotOverlayController(svg: SVGSVGElement, prefix: string, 
   let prepared = prepareShotOverlay(initialScene, initialSelected);
   let currentScene = initialScene, currentSelected = initialSelected;
   let camera: TerrainCamera | null = null, width = 0, height = 0, disposed = false;
+  let hostReserved: readonly OverlayReservedRect[] = [];
   const points = new Map<string, Point3M | null>();
   let features = new WeakMap<LocalFeature, (Point3M | null)[][][]>();
   const point = ([x, y]: PointM, onSurface = false): Point3M | null => {
@@ -265,11 +270,13 @@ export function createShotOverlayController(svg: SVGSVGElement, prefix: string, 
     attributes(svg, { viewBox: `0 0 ${width} ${height}` });
     const layout = layoutShotOverlay(prepared, { width, height, project, projectSurface, pathForFeature,
       reservedRects: [{ x: 0, y: 0, width, height: Math.min(88, height * .24) },
-        { x: width - 64, y: height - 164, width: 64, height: 164 }] });
+        { x: width - 64, y: height - 164, width: 64, height: 164 }, ...hostReserved] });
     paint(layout);
   }
   return {
     setCamera(next: TerrainCamera, w: number, h: number) { camera = next; width = w; height = h; render(); },
+    /** Host chrome over the course; labels re-place around it in the same frame. */
+    setReservedRects(rects: readonly OverlayReservedRect[]) { if (disposed) return; hostReserved = rects; render(); },
     setEvidence(scene: HoleScene, selectedShotNumber?: number) {
       if (disposed || currentScene === scene && currentSelected === selectedShotNumber) return;
       prepared = prepareShotOverlay(scene, selectedShotNumber);

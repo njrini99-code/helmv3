@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useMemo, useRef } from 'react';
-import { HoleSceneFrame } from '@/components/golf/course-geometry/HoleSceneFrame';
+import { HoleSceneFrame, type StageCameraFocus } from '@/components/golf/course-geometry/HoleSceneFrame';
 import { buildHoleScene } from '@/lib/golf/course-geometry/build-scene';
 import type { ContextLayer } from '@/lib/golf/course-geometry/context-layer';
+import { derivePositionCameraTarget } from '@/lib/golf/course-geometry/shot-camera-target';
 import type { ProductionCameraState, TerrainMesh } from '@/lib/golf/course-geometry/terrain';
 import type { CourseGeometryPackage } from '@/lib/golf/course-geometry/types';
 import type { StorageLike, SyncTransport } from '@/lib/golf/one-tap/anchor-repository';
@@ -40,15 +41,30 @@ export function OneTapPlayerScreen({ roundId, pkg, holeKey, terrain, contextLaye
   }, [pkg, holeKey, terrain, contextLayer]);
   const view = useOneTap({ roundId, pkg, holeKey, terrain, location, storage, transport, reducedMotion, now, repo: round?.repo });
   const cameraRef = useRef<((state: ProductionCameraState) => void) | null>(null);
-  const framed = useRef<ProductionCameraState>('tee');
+  // Meridian §62 applied to the player's own mark: while the camera follows,
+  // the last mark and the green complex stay on screen together (whole green
+  // once the ball is on it). A gesture hands the camera to the player until
+  // Recenter; the live GPS fix never moves the camera on its own.
+  const lastMark = view.lastMark;
+  const stageFocus = useMemo<StageCameraFocus | null>(() => {
+    if (!scene || !lastMark || view.cameraMode === 'MANUAL') return null;
+    const target = derivePositionCameraTarget(scene, [lastMark.positionENU[0], lastMark.positionENU[1]]);
+    return target ? { key: lastMark.id, target } : null;
+  }, [scene, lastMark, view.cameraMode]);
+  const framed = useRef<{ state: ProductionCameraState; manual: boolean }>({ state: 'tee', manual: false });
   useEffect(() => {
-    if (framed.current === view.cameraState) return;
-    framed.current = view.cameraState;
+    // The director frames on a state change and when the player hands the
+    // camera back (Recenter). While the player holds it, nothing moves.
+    const manual = view.cameraMode === 'MANUAL';
+    const previous = framed.current;
+    framed.current = { state: view.cameraState, manual };
+    if (manual || (previous.state === view.cameraState && !previous.manual)) return;
     cameraRef.current?.(view.cameraState);
-  }, [view.cameraState]);
+  }, [view.cameraState, view.cameraMode]);
   useEffect(() => { onView?.(view); }, [view, onView]);
-  return <div className="flex h-full min-h-0 flex-1 flex-col" data-slot="one-tap-screen" data-one-tap-state={view.snapshot.state} data-camera-mode={view.cameraMode} data-camera-state={view.cameraState} data-hole-key={holeKey} data-hole-status={round?.status ?? ''}>
-    <HoleSceneFrame scene={scene} context="entry" presentation="stage" markers={view.markers}
+  return <div className="flex h-full min-h-0 flex-1 flex-col" data-slot="one-tap-screen" data-one-tap-state={view.snapshot.state} data-camera-mode={view.cameraMode} data-camera-state={view.cameraState}
+    data-camera-framing={stageFocus?.target.framing ?? ''} data-hole-key={holeKey} data-hole-status={round?.status ?? ''}>
+    <HoleSceneFrame scene={scene} context="entry" presentation="stage" markers={view.markers} stageFocus={stageFocus}
       stageOverlay={<OneTapHud view={view} round={round} />} stageFooter={<><OneTapReadout view={view} /><OneTapButton view={view} round={round} /></>}
       stageCameraRef={cameraRef} onStageGesture={view.onGesture} />
   </div>;

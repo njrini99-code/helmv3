@@ -12,6 +12,7 @@ import { CourseShotOverlay } from './CourseShotOverlay';
 
 import type { TerrainRuntimeController } from '@/lib/golf/course-geometry/runtime-controller';
 import type { SceneMarkers } from '@/lib/golf/course-geometry/scene-markers';
+import type { OverlayReservedRect } from '@/lib/golf/course-geometry/shot-overlay-controller';
 
 export const SCENE_STYLE_VERSION = 'fairway-vector-v10';
 const ORDER: LocalFeature['kind'][] = ['woods', 'rough', 'water', 'fairway', 'tee', 'green', 'bunker', 'route'];
@@ -29,7 +30,7 @@ export function sceneCamera(scene: HoleScene, width: number, height: number, mod
 
 /** Pure SVG: surfaces and anchors share one similarity transform; labels use
  * CSS-pixel dimensions supplied by the measured viewport. No gesture capture. */
-export function CourseHoleScene({ scene, width = 320, height = 380, mode = 'review', view = 'hole', selectedShotNumber, activeDraftShotNumber, camera: override, terrainCamera, onTerrainUnavailable, runtimeRef, showIllustrativeFlightPreviews = true, puttingPlan = false, debugView, markers }: {
+export function CourseHoleScene({ scene, width = 320, height = 380, mode = 'review', view = 'hole', selectedShotNumber, activeDraftShotNumber, camera: override, terrainCamera, onTerrainUnavailable, runtimeRef, showIllustrativeFlightPreviews = true, puttingPlan = false, debugView, markers, reservedRects }: {
   scene: HoleScene; width?: number; height?: number; mode?: 'review' | 'compact' | 'strip' | 'source';
   view?: CourseView; selectedShotNumber?: number; activeDraftShotNumber?: number; camera?: SimilarityTransform; terrainCamera?: TerrainCamera;
   onTerrainUnavailable?: () => void; runtimeRef?: RefObject<TerrainRuntimeController | null>;
@@ -41,11 +42,13 @@ export function CourseHoleScene({ scene, width = 320, height = 380, mode = 'revi
   debugView?: TerrainDebugView;
   /** Player-marked positions (One-Tap): dots with true-scale σ rings, joined by derived shots. */
   markers?: SceneMarkers | null;
+  /** Host chrome over the terrain canvas (canvas pixels) that evidence labels avoid. */
+  reservedRects?: readonly OverlayReservedRect[];
 }) {
   const sceneForDisplay = useMemo(() => showIllustrativeFlightPreviews ? scene : { ...scene, illustrativePreviewTrajectories: [] }, [scene, showIllustrativeFlightPreviews]);
   const id = useId();
   if (terrainCamera && scene.terrain) return <CourseTerrainCanvas scene={sceneForDisplay} mesh={scene.terrain} camera={terrainCamera} width={width} height={height}
-    selectedShotNumber={selectedShotNumber} debugView={debugView} markers={markers}
+    selectedShotNumber={selectedShotNumber} debugView={debugView} markers={markers} reservedRects={reservedRects}
     onUnavailable={onTerrainUnavailable} runtimeRef={runtimeRef}
     fallback={<CourseHoleScene scene={sceneForDisplay} width={width} height={height} mode={mode} view={view} selectedShotNumber={selectedShotNumber} activeDraftShotNumber={activeDraftShotNumber} camera={override} showIllustrativeFlightPreviews={showIllustrativeFlightPreviews} puttingPlan={puttingPlan} markers={markers} />} />;
   const camera = override ?? sceneCamera(scene, width, height, mode, view, puttingPlan);

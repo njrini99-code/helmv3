@@ -44,6 +44,7 @@ const outDir = path.resolve(String(args['out-dir'] || `output/playwright/course-
       status: text('[data-slot=one-tap-status]'), gps: text('[data-slot=one-tap-gps]'), distances: text('[data-slot=one-tap-distances]'), lie: text('[data-slot=one-tap-lie]'),
       markers: document.querySelectorAll('[data-marked-position]').length, links: document.querySelectorAll('[data-marked-link]').length,
       sigmaRings: Array.from(document.querySelectorAll('[data-marked-sigma]')).filter(n => n.getAttribute('display') !== 'none').length,
+      cameraFraming: screen?.dataset.cameraFraming || null, cameraZoom: document.querySelector('[data-camera-zoom]')?.getAttribute('data-camera-zoom') ?? null,
       drawCalls: canvas?.dataset.drawCalls ?? null, projection: canvas?.dataset.projection ?? null };
   });
   const steps = [];
@@ -54,7 +55,7 @@ const outDir = path.resolve(String(args['out-dir'] || `output/playwright/course-
     await page.screenshot({ path: file });
     const record = { name, file: path.basename(file), ...(await read()) };
     steps.push(record);
-    process.stdout.write(`${record.file} hole=${record.holeKey} ${record.holeStatus} strokes=${record.strokes ?? '-'} state=${record.state} camera=${record.cameraState}/${record.currentView} markers=${record.markers} links=${record.links} lie=${record.lie ?? '-'} draw=${record.drawCalls}\n`);
+    process.stdout.write(`${record.file} hole=${record.holeKey} ${record.holeStatus} strokes=${record.strokes ?? '-'} state=${record.state} camera=${record.cameraState}/${record.currentView}/${record.cameraFraming ?? "-"}@${record.cameraZoom ?? "-"} markers=${record.markers} links=${record.links} lie=${record.lie ?? '-'} draw=${record.drawCalls}\n`);
   };
   const mark = async () => {
     await page.locator('[data-slot=one-tap-mark]').click();
