@@ -44,23 +44,36 @@ and everything else quietly supporting it. Not a satellite map, not a game.
 ## Light (§46–49)
 
 - One world sun, direction `[.47, −.53, .706]` (elevation ≈45°, from the
-  south-west of the course frame), warm white, intensity 2.0.
-- Hemisphere sky `#DDEBFF` over ground `#5C7050`, intensity 1.2.
+  south-west of the course frame), warm white `#FFF4E2`, intensity 2.05.
+- Hemisphere sky `#CFE0FF` over ground `#5C7050`, intensity 1.05 (cooler,
+  slightly lower ambient so shadow sides keep shape, §48–49).
 - ACES filmic tone mapping, exposure 1.02. Shadows: PCF 2048, bias −8e−5,
   normal bias .18, radius 2, fitted to the tactical bounds.
 
-## Ground (§17–25, §56)
+## Ground (§17–25, §53, §56)
 
-Surface hierarchy from most to least saturated: green → tee → fairway →
-fringe/collar → surround → rough/ground → woods understory. Context holes
-are dimmed toward rough. Palette (sRGB albedo, no light baked in) is in
-`DEFAULT_THREE_LANDSCAPE_PALETTE`.
+Surface hierarchy from brightest to darkest: green → tee → fairway →
+fringe/collar → surround → rough/ground → woods understory (guarded by
+`visual-style.test.ts`). Context holes keep their real surface but are mixed
+58% toward rough and desaturated 15%; albedo only, never alpha. The palette
+(sRGB albedo, no light baked in) is `MERIDIAN_PALETTE` in `visual-style.ts`.
 
-Variation rules: macro turf variation 25–70 m at 2–4% luminance; micro
-0.25–1.5 m at ≤1.5%; mowing bands 5–8 m at 1.5–2.5% along the route
-bearing; all seeded from package hash + style version, all in world-space
-XY so nothing swims under camera motion. Noise never appears on greens at
-Top, never exceeds 4%, and never encodes a real surface condition.
+The ground material is one shader (`attachTurfStyle`) shared by the lit
+production material and the unlit `albedo` debug view, fed by the per-vertex
+visual artifact (§6):
+
+| Layer | Frame | Scale | Amplitude | Notes |
+| --- | --- | --- | --- | --- |
+| Macro turf | world XY + package seed | 28 / 44 / 66 m | 2.5% | three directions; greens at 40% |
+| Micro turf | world XY + package seed | 0.4 / 1.2 m | 1.2% | fades out by screen derivative before it can shimmer; greens at 55% |
+| Mowing | route-local (s along route, t lateral) | 6.5 m bands, 0.16 skew | 3% | played fairway field only; weight ramps to zero over the last 3.5 m before the edge |
+| Boundary lip | metres to own feature edge | 0.6 m | −5% | replaces a one-pixel colour step at every feature boundary |
+| Roughness | per surface class | — | green .78 … rough .97, water .9 until V5 | MeshStandard roughness attribute |
+
+The seed is derived from the canonical package hash, so every hole of a
+course shares one turf world and nothing swims under camera motion. Noise
+never exceeds 3% per layer and never encodes a real surface condition. The
+lab exposes each layer as a multiplier (`?macro=0&micro=0&mowing=4…`).
 
 ## Bunkers (§26–34)
 
@@ -83,11 +96,24 @@ Static Fresnel water with a 0–0.75 m shoreline band; atmospheric haze by
 depth in perspective presets; a sky/horizon gradient behind Terrain and
 Side; cart paths and simple structures as quiet context.
 
+## Visual artifact (§6, §96–102)
+
+`compileVisualArtifact(scene, mesh)` derives, per terrain vertex: sRGB
+albedo, mowing/turf/context weights, surface class, roughness, route-local
+`(s, t)`, boundary distance (cm) and the render-only bunker depth (mm, V3).
+It is keyed by canonical package hash + terrain hash + style hash, carries
+`basis: 'visual_only'`, and `assertVisualArtifact` refuses any artifact whose
+keys disagree with the scene (`MERIDIAN_ARTIFACT_MISMATCH`). The compile is
+deterministic across engines (Node and Chromium produce the same content
+hash; `Math.sqrt` only, millimetre-quantised route coordinates). Cache path:
+`geometry/<site>/<packageHash>/visual/<styleHash>/<hole>.visual.json`.
+
 ## Style versions (§113)
 
 - `meridian-v5`: perspective camera, lower sun, faceting kit (this plan V0–V1).
-- `meridian-v6`: ground material system + bunker bowls (V2–V3).
+- `meridian-v6`: ground material system + visual artifact (V2); bunker bowls (V3).
 - `meridian-v7`: vegetation families, water, context, shot storytelling (V4–V6).
 
-Any change to a value in `visual-style.ts` bumps the version; captures and
-cache keys carry it.
+`styleHash()` hashes `MERIDIAN_STYLE` by value (`meridian-v6-<fnv>`); any
+change to a value re-keys the artifact cache and appears in every capture's
+`visualStyleHash`. Bump the version string when the look changes on purpose.

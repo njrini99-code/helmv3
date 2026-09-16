@@ -65,8 +65,12 @@ describe('Three landscape source and rendering invariants', () => {
     mesh.triangleFeatures = [0, 1, 0, 0]; mesh.triangleMaterials = [0, 0, 0, 0];
     mesh.featureKinds = ['ground', 'green']; mesh.featureIds = ['terrain-context', 'test-green'];
     const landscape = buildThreeLandscape(scene, mesh);
-    expect(landscape.terrain.geometry.getAttribute('golfContextWeight')).toBeUndefined();
+    // Context weight dims and desaturates albedo only; it is never an alpha.
+    expect(landscape.terrain.geometry.getAttribute('golfContextWeight')).toBeDefined();
     expect(landscape.terrain.material.userData.contextFade).toBeUndefined();
+    expect(landscape.terrain.material.userData.styleHash).toBe(landscape.artifact.styleHash);
+    expect(landscape.artifactSource).toBe('runtime');
+    landscape.setStyleOverrides({ macro: 0, context: 0 });
     expect(landscape.terrain.material.transparent).toBe(false);
     expect(landscape.terrain.material.depthWrite).toBe(true);
     landscape.dispose();
@@ -174,8 +178,10 @@ describe('Three landscape source and rendering invariants', () => {
     const base = pilotScene('cacapon-07', false), mesh = slopeMesh();
     const scene = { ...base, features: [green], contextFeatures: [woods] };
     const snapshot = structuredClone(scene), landscape = buildThreeLandscape(scene, mesh);
+    // The visual artifact is hash-locked to the mesh's package (§6), so the
+    // second scene keeps that hash; tree identity comes from the course frame.
     const other = buildThreeLandscape({ ...base, hole: { ...base.hole, ordinal: 18 },
-      packageHash: 'a'.repeat(64), features: [woods], contextFeatures: [green] }, mesh);
+      features: [woods], contextFeatures: [green] }, mesh);
     const records = (model: typeof landscape) => {
       const result = new Map<string, { matrix: number[]; family: string; color: number[] }>();
       for (const child of model.group.children) if (child.name.startsWith('source-canopy-crowns')) {

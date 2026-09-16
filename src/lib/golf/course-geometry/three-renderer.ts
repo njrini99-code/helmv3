@@ -4,6 +4,8 @@ import {
 } from 'three';
 import { installTerrainDebugView, type TerrainDebugView } from '@/components/golf/course-geometry/terrain-debug';
 import { buildThreeLandscape, DEFAULT_THREE_LANDSCAPE_PALETTE } from '@/components/golf/course-geometry/three-landscape';
+import { MERIDIAN_CODES, type MeridianVisualArtifact } from './visual-artifact';
+import { MERIDIAN_STYLE, MERIDIAN_STYLE_HASH, type MeridianStyleOverrides } from './visual-style';
 import { applyTerrainCamera, pickTerrainPoint, type TerrainThreeCamera } from './three-camera';
 import { buildThreeFlightPaths, type ThreeFlightPaths } from './three-flight-path';
 import { createShotOverlayController } from './shot-overlay-controller';
@@ -30,6 +32,10 @@ interface RuntimeOptions {
   selectedShotNumber?: number;
   onUnavailable: () => void;
   debugView?: TerrainDebugView;
+  /** Cached visual world for this hole (§6). Absent → compiled at runtime and
+   * reported as MERIDIAN_ARTIFACT_MISSING; mismatched → MERIDIAN_ARTIFACT_MISMATCH. */
+  visualArtifact?: MeridianVisualArtifact;
+  styleOverrides?: MeridianStyleOverrides;
 }
 
 /** Lazy, scene-owned Three backend. It renders on camera/evidence changes only;
@@ -110,10 +116,11 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
     // but force loss only after final DOM removal so replacements can reuse it.
     if (!canvas.isConnected) renderer.forceContextLoss();
   }
-  function fail() {
+  function fail(code?: string) {
     if (failed || disposed) return;
     failed = true;
     canvas.dataset.terrainState = 'unavailable';
+    if (code) canvas.dataset.meridianCode = code;
     options.onUnavailable();
     dispose();
   }
@@ -158,7 +165,8 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
       const began = performance.now();
       renderer.render(world, view);
       const frameMs = performance.now() - began;
-      if (shaderFailed || renderer.getContext().isContextLost()) { fail(); return; }
+      if (shaderFailed) { fail(MERIDIAN_CODES.shaderFailed); return; }
+      if (renderer.getContext().isContextLost()) { fail(MERIDIAN_CODES.contextLost); return; }
       // All world overlays update in the same synchronous paint as the GPU.
       // They intentionally remain readable through crowns (estimated evidence
       // is an annotation, not an opaque physical object in the landscape).
@@ -172,6 +180,7 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
         terrainFovFrame: camera.projection === 'perspective' && camera.focalPx ? (2 * Math.atan(height / 2 / camera.focalPx) * 180 / Math.PI).toFixed(2) : '',
         terrainEyeDistanceM: camera.projection === 'perspective' && camera.eyeM ? Math.hypot(camera.eyeM[0] - camera.focusM[0], camera.eyeM[1] - camera.focusM[1]).toFixed(1) : '',
         visualStyleVersion: String(landscape.group.userData.styleVersion ?? ''),
+        visualStyleHash: MERIDIAN_STYLE_HASH, visualArtifactHash: landscape.artifact.contentHash, visualArtifactSource: landscape.artifactSource,
         qualityTier: 'standard',
         shadowMapSize: `${sun?.shadow.mapSize.x ?? 0}`, shadowMapType: 'pcf',
         lightDirection: TERRAIN_LIGHT_DIRECTION.map(v => v.toFixed(3)).join(','),
@@ -192,13 +201,16 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
 
   try {
     renderer.outputColorSpace = SRGBColorSpace;
-    renderer.toneMapping = ACESFilmicToneMapping; renderer.toneMappingExposure = 1.02;
+    renderer.toneMapping = ACESFilmicToneMapping; renderer.toneMappingExposure = MERIDIAN_STYLE.light.exposure;
     renderer.shadowMap.enabled = true; renderer.shadowMap.type = PCFShadowMap;
     renderer.shadowMap.autoUpdate = false;
     renderer.debug.checkShaderErrors = true;
     renderer.debug.onShaderError = () => { shaderFailed = true; };
     world.background = new Color(DEFAULT_THREE_LANDSCAPE_PALETTE.ground);
-    landscape = buildThreeLandscape(options.scene, mesh);
+    landscape = buildThreeLandscape(options.scene, mesh, DEFAULT_THREE_LANDSCAPE_PALETTE, { artifact: options.visualArtifact, overrides: options.styleOverrides });
+    // A cached artifact from another package or style is refused (§6) and the
+    // hole falls back to the static view instead of drawing stale colours.
+    if (landscape.artifactSource === 'runtime') canvas.dataset.meridianCode = MERIDIAN_CODES.missing;
     world.add(landscape.group);
     replaceFlightPaths(options.scene, options.camera);
     // Fixed lighting uses the whole physical package, not the moving camera
@@ -208,7 +220,7 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
     const radius = Math.max(40, size.length() / 2 + 32);
     viewDistance = radius * 4;
     const sunlight = new Vector3(...TERRAIN_LIGHT_DIRECTION).normalize();
-    sun = new DirectionalLight('#FFFFFF', 2.0);
+    sun = new DirectionalLight(MERIDIAN_STYLE.light.sunColor, MERIDIAN_STYLE.light.sunIntensity);
     sun.position.copy(centre).addScaledVector(sunlight, radius * 3);
     sun.target.position.copy(centre);
     sun.castShadow = true;
@@ -216,19 +228,22 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
     shadowCamera.left = -radius; shadowCamera.right = radius;
     shadowCamera.top = radius; shadowCamera.bottom = -radius;
     shadowCamera.near = .1; shadowCamera.far = radius * 6;
-    sun.shadow.mapSize.set(2048, 2048);
-    sun.shadow.bias = -.00008; sun.shadow.normalBias = .18;
-    sun.shadow.radius = 2;
+    sun.shadow.mapSize.set(MERIDIAN_STYLE.shadow.mapSize, MERIDIAN_STYLE.shadow.mapSize);
+    sun.shadow.bias = MERIDIAN_STYLE.shadow.bias; sun.shadow.normalBias = MERIDIAN_STYLE.shadow.normalBias;
+    sun.shadow.radius = MERIDIAN_STYLE.shadow.radius;
     sun.shadow.camera.updateProjectionMatrix();
     world.add(sun, sun.target);
-    const sky = new HemisphereLight('#DDEBFF', '#5C7050', 1.2);
+    const sky = new HemisphereLight(MERIDIAN_STYLE.light.skyColor, MERIDIAN_STYLE.light.groundColor, MERIDIAN_STYLE.light.hemisphereIntensity);
     sky.position.set(0, 0, 1); world.add(sky);
     evidence = createShotOverlayController(overlay, options.overlayId, mesh, options.scene, options.selectedShotNumber, false);
-    releaseDebug = installTerrainDebugView(world, landscape, mesh, options.debugView ?? 'final', renderer, options.scene);
+    releaseDebug = installTerrainDebugView(world, landscape, mesh, options.debugView ?? 'final', renderer);
     if (options.debugView && options.debugView !== 'final') overlay.style.display = 'none';
     view = currentCamera.projection === 'perspective' ? perspectiveView : orthographicView;
     applyTerrainCamera(view, currentCamera, width, height, viewDistance);
-  } catch (error) { dispose(); throw error; }
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith(MERIDIAN_CODES.mismatch)) canvas.dataset.meridianCode = MERIDIAN_CODES.mismatch;
+    dispose(); throw error;
+  }
 
   const compiled = Promise.resolve().then(() => disposed ? undefined : renderer.compileAsync(world, view)).then(() => {
     if (disposed) return;

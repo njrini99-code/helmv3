@@ -10,9 +10,9 @@ import { describe, expect, it } from 'vitest';
 const root = join(__dirname, '..');
 const CANONICAL = ['build-scene', 'camera', 'canopy', 'describe-position', 'display-outline', 'display-trajectories', 'normalize',
   'project', 'quality', 'reconstruct', 'schema', 'selected-shot-focus', 'spatial', 'surface-compatibility', 'terrain', 'terrain-source',
-  'tracking-scene', 'types', 'visual-artifact'];
+  'tracking-scene', 'types'];
 const VISUAL = ['three-camera', 'three-flight-path', 'three-renderer', 'shadow-bounds', 'terrain-canopy', 'terrain-material',
-  'terrain-viewport', 'shot-overlay-controller', 'shot-overlay-layout', 'runtime-controller', 'camera-motion', 'visual-style'];
+  'terrain-viewport', 'shot-overlay-controller', 'shot-overlay-layout', 'runtime-controller', 'camera-motion', 'visual-style', 'visual-artifact'];
 const imports = (file: string) => [...readFileSync(join(root, file), 'utf8').matchAll(/from\s+'([^']+)'/g)].map(match => match[1]!);
 
 describe('Meridian visual code boundary', () => {

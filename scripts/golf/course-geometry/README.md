@@ -257,4 +257,16 @@ node scripts/golf/course-geometry/capture-visual-canaries.cjs --label=debug-slop
 node scripts/golf/course-geometry/audit-normal-continuity.mjs \
   src/test/fixtures/course-geometry/compiled-peek-n-peak-upper/peek-n-peak-upper-07-terrain.json.gz --out report.json
 # Render-quality lab (§94–95): http://127.0.0.1:8768/?lab=1&course=peek-n-peak-upper&hole=7
+#   material layer multipliers: &macro=0&micro=0&mowing=4&boundary=0&context=0 (1 = style value)
+node scripts/golf/course-geometry/capture-lab.cjs --out=output/playwright/course-geometry/visual-system/lab/hole07.png \
+  --params="course=peek-n-peak-upper&hole=7&preset=terrain&viewport=desktop&mowing=0"
+# Visual artifact compiler (§96–102): one hash-gated artifact per hole + offline pack manifest
+node_modules/.bin/tsx scripts/golf/course-geometry/compile-visual-artifacts.mts --course peek-n-peak-upper \
+  [--holes 1,7,11] [--out output/course-geometry/visual]
 ```
+
+Visual artifact cache layout (§101): `geometry/<siteId>/<packageHash>/visual/<styleHash>/<holeKey>.visual.json[.gz]`
+with `pack-manifest.json` (§102) beside the holes. The runtime compiles the
+artifact itself when none is supplied (`data-meridian-code="MERIDIAN_ARTIFACT_MISSING"`)
+and refuses one whose package, terrain, hole, style or vertex layout disagree
+(`MERIDIAN_ARTIFACT_MISMATCH`, static fallback).

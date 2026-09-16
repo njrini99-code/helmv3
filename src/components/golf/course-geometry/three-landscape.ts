@@ -3,23 +3,18 @@ import { allocateCrowns, canopySymbols, crownScale } from '@/lib/golf/course-geo
 import { boundaryDistance } from '@/lib/golf/course-geometry/display-outline';
 import { terrainHeight, type TerrainMesh } from '@/lib/golf/course-geometry/terrain';
 import type { HoleScene, LocalFeature, PointM } from '@/lib/golf/course-geometry/types';
+import { assertVisualArtifact, compileVisualArtifact, linearAlbedo, type MeridianVisualArtifact } from '@/lib/golf/course-geometry/visual-artifact';
+import { MERIDIAN_PALETTE, MERIDIAN_STYLE, MERIDIAN_STYLE_HASH, MERIDIAN_STYLE_VERSION, type MeridianPaletteKey, type MeridianStyleOverrides } from '@/lib/golf/course-geometry/visual-style';
 import { createTreeAssetAtlas, type TreeCrownAsset } from './tree-assets';
 
-export type ThreeLandscapePalette = Readonly<Record<
-  'ground' | 'rough' | 'fairway' | 'green' | 'tee' | 'bunker' | 'water' | 'woods' |
-  'surround' | 'fringe' | 'tree' | 'treeLight' | 'treeHighlight' | 'treeShadow' |
-  'sandEdge' | 'sandHighlight', THREE.ColorRepresentation
->>;
+export type ThreeLandscapePalette = Readonly<Record<MeridianPaletteKey, THREE.ColorRepresentation>>;
 
 /** sRGB surface albedos, separate from Fairway's application UI tokens.
- * No directional illumination is baked into these colors. */
-export const DEFAULT_THREE_LANDSCAPE_PALETTE: ThreeLandscapePalette = Object.freeze({
-  ground: '#607D3D', rough: '#607D3D', surround: '#73964A', fringe: '#82A552',
-  fairway: '#83A849', tee: '#88AD55', green: '#9DBB61', bunker: '#DED1AA',
-  water: '#3B6C77', woods: '#29482B', tree: '#59852E', treeLight: '#6D9D37',
-  treeHighlight: '#83B542', treeShadow: '#29482B',
-  sandEdge: '#B3A079', sandHighlight: '#F0E4C7',
-});
+ * No directional illumination is baked into these colors. The values live in
+ * the Meridian visual kit (§112); the terrain's per-vertex albedo is compiled
+ * from them into the visual artifact, so this palette drives crowns and trunks
+ * here and the artifact compiler everywhere else. */
+export const DEFAULT_THREE_LANDSCAPE_PALETTE: ThreeLandscapePalette = MERIDIAN_PALETTE;
 
 export interface ThreeLandscape {
   group: THREE.Group;
@@ -30,7 +25,12 @@ export interface ThreeLandscape {
   /** Near crowns are swapped in only for batch tiles around `focusM`; without
    * a focus every crown takes the requested level. Returns whether anything changed. */
   setDetail(detail: 'distant' | 'near', focusM?: PointM): boolean;
+  /** Runtime amplitude overrides for the lab; never part of the artifact. */
+  setStyleOverrides(overrides: MeridianStyleOverrides): void;
   dispose(): void;
+  /** The visual world this landscape was built from (§6). */
+  artifact: MeridianVisualArtifact;
+  artifactSource: 'supplied' | 'runtime';
   counts: { terrainTriangles: number; trees: number; crownInstances: number; crownTriangles: number; totalTriangles: number; canopyBatches: number; drawCalls: number };
 }
 
@@ -53,68 +53,106 @@ function featureSeed(id: string): number {
   return seed;
 }
 
-function terrainAlbedo(mesh: TerrainMesh, triangle: number, palette: ThreeLandscapePalette): THREE.Color {
-  const kind = mesh.featureKinds[mesh.triangleFeatures[triangle]!]!;
-  const material = mesh.triangleMaterials[triangle];
-  // The compiler has already partitioned all color ribbons into the same
-  // terrain. Material 3/4 are illustrative surrounds, never lie evidence.
-  const base = new THREE.Color(material === 3 ? palette.surround : material === 4 ? palette.fringe : palette[kind]);
-  // The polygon is a canopy extent, not a black ground surface. A quieter
-  // understory lets actual crown shadows supply the depth inside that extent.
-  if (kind === 'woods') base.lerp(new THREE.Color(palette.rough), .78);
-  if (material === 1) return kind === 'bunker' ? new THREE.Color(palette.sandEdge)
-    : base.lerp(new THREE.Color(palette.ground), kind === 'green' ? .24 : .14);
-  if (material === 2) return kind === 'bunker' ? new THREE.Color(palette.sandHighlight)
-    : base.lerp(new THREE.Color('#D5DEA9'), .1);
-  return base;
-}
+/** Index of 'green' in SURFACE_CLASS_IDS; the shader compares the class attribute. */
+const SURFACE_CLASS_GREEN = 4;
 
-/** Attach the illustrative turf treatment (mowing bands + turf field) to any
- * material that includes `color_fragment`, so the unlit albedo debug view and
- * the lit production material share exactly one colour pipeline. */
-export function attachTurfStyle(material: THREE.Material & { onBeforeCompile: THREE.Material['onBeforeCompile']; customProgramCacheKey: THREE.Material['customProgramCacheKey'] }, scene: HoleScene): void {
-  // Mowing is an art treatment in course-local meters. It does not describe
-  // observed mowing directions, move an edge, or participate in reconstruction.
-  const route = scene.features.find(feature => feature.id === scene.hole.routeFeatureId)?.parts[0]?.[0];
-  const first = route?.[0], last = route?.at(-1);
-  const bearing = first && last ? Math.atan2(last[1] - first[1], last[0] - first[0]) : 0;
-  const direction = new THREE.Vector2(Math.cos(bearing + Math.PI / 6), Math.sin(bearing + Math.PI / 6));
+export interface TurfStyleTarget extends THREE.Material { onBeforeCompile: THREE.Material['onBeforeCompile']; customProgramCacheKey: THREE.Material['customProgramCacheKey'] }
+export interface TurfStyleHandle { setOverrides(overrides: MeridianStyleOverrides): void }
+
+/** Attach the Meridian ground material (§17–25, §53, §56) to any material that
+ * includes `color_fragment`, so the unlit albedo debug view and the lit
+ * production material share exactly one colour pipeline. Everything here is
+ * decoration in world-space metres: macro turf variation (25–70 m), micro
+ * turf response (0.25–1.5 m, filtered out at distance), route-local mowing
+ * bands that fade before the fairway edge, a short boundary lip, context
+ * desaturation, and per-surface roughness. None of it moves an edge, encodes
+ * a real surface condition, or participates in picking or reconstruction. */
+export function attachTurfStyle(material: TurfStyleTarget, seed: readonly [number, number], overrides: MeridianStyleOverrides = {}): TurfStyleHandle {
+  const style = MERIDIAN_STYLE;
+  const amplitudes = new THREE.Vector4(style.turf.macro.amplitude, style.turf.micro.amplitude, style.mowing.amplitude, style.boundary.shade);
+  const contextMix: { value: number } = { value: style.context.desaturate };
+  const apply = (next: MeridianStyleOverrides) => {
+    amplitudes.set(style.turf.macro.amplitude * (next.macro ?? 1), style.turf.micro.amplitude * (next.micro ?? 1),
+      style.mowing.amplitude * (next.mowing ?? 1), style.boundary.shade * (next.boundary ?? 1));
+    contextMix.value = style.context.desaturate * (next.context ?? 1);
+  };
+  apply(overrides);
+  const [m0, m1, m2] = style.turf.macro.wavelengthsM, [u0, u1] = style.turf.micro.wavelengthsM;
+  const k = (wavelength: number) => (2 * Math.PI / wavelength).toFixed(6);
   material.onBeforeCompile = shader => {
-    shader.uniforms.golfMowingDirection = { value: direction };
+    shader.uniforms.golfSeed = { value: new THREE.Vector2(seed[0], seed[1]) };
+    shader.uniforms.golfAmplitudes = { value: amplitudes };
+    shader.uniforms.golfContextDesaturate = contextMix;
     shader.vertexShader = shader.vertexShader.replace('#include <common>', `#include <common>
 attribute float golfMowingWeight;
 attribute float golfTurfWeight;
+attribute float golfContextWeight;
+attribute float golfRoughness;
+attribute float golfSurfaceClass;
+attribute float golfBoundaryDistance;
+attribute vec2 golfRouteST;
 varying vec2 vGolfWorldXY;
-varying float vGolfMowingWeight;
-varying float vGolfTurfWeight;`).replace('#include <begin_vertex>', `#include <begin_vertex>
+varying vec2 vGolfRouteST;
+varying vec4 vGolfWeights;
+varying vec3 vGolfSurface;`).replace('#include <begin_vertex>', `#include <begin_vertex>
 vGolfWorldXY = (modelMatrix * vec4(position, 1.0)).xy;
-vGolfMowingWeight = golfMowingWeight;
-vGolfTurfWeight = golfTurfWeight;`);
+vGolfRouteST = golfRouteST;
+vGolfWeights = vec4(golfMowingWeight, golfTurfWeight, golfContextWeight, golfBoundaryDistance);
+vGolfSurface = vec3(golfRoughness, golfSurfaceClass, 0.0);`);
     shader.fragmentShader = shader.fragmentShader.replace('#include <common>', `#include <common>
-uniform vec2 golfMowingDirection;
+uniform vec2 golfSeed;
+uniform vec4 golfAmplitudes;
+uniform float golfContextDesaturate;
 varying vec2 vGolfWorldXY;
-varying float vGolfMowingWeight;
-varying float vGolfTurfWeight;`).replace('#include <color_fragment>', `#include <color_fragment>
-// Six-meter art bands. Derivatives filter the edges and suppress distant shimmer.
-float golfPhase = dot(vGolfWorldXY, golfMowingDirection) / 6.0;
-float golfWave = sin(golfPhase * 3.141592653589793);
-float golfFilter = max(fwidth(golfWave), 0.025);
-float golfBand = smoothstep(-golfFilter, golfFilter, golfWave) * 2.0 - 1.0;
-float golfVisible = 1.0 - smoothstep(0.3, 0.7, fwidth(golfPhase));
-float golfTurfField = 0.5 * sin(dot(vGolfWorldXY, vec2(0.035, 0.018)))
-  + 0.5 * sin(dot(vGolfWorldXY, vec2(-0.011, 0.027)) + 1.7);
-diffuseColor.rgb *= 1.0 + golfBand * golfVisible * vGolfMowingWeight * 0.035
-  + golfTurfField * vGolfTurfWeight * 0.014;`);
+varying vec2 vGolfRouteST;
+varying vec4 vGolfWeights;
+varying vec3 vGolfSurface;`).replace('#include <color_fragment>', `#include <color_fragment>
+{
+  vec2 golfP = vGolfWorldXY + golfSeed;
+  float golfMowingWeight = vGolfWeights.x, golfTurfWeight = vGolfWeights.y, golfContextWeight = vGolfWeights.z, golfBoundary = vGolfWeights.w;
+  bool golfGreen = abs(vGolfSurface.y - ${SURFACE_CLASS_GREEN}.0) < 0.5;
+  // Macro turf variation (§18): three world-space wavelengths, 25–70 m,
+  // seeded per package so the same course always shows the same field.
+  float golfMacro = (sin(dot(golfP, vec2(0.87, 0.49) * ${k(m0)}))
+    + sin(dot(golfP, vec2(-0.32, 0.95) * ${k(m1)}) + 1.3)
+    + sin(dot(golfP, vec2(0.61, -0.79) * ${k(m2)}) + 2.1)) / 3.0;
+  golfMacro *= golfGreen ? ${style.turf.greenMacroScale.toFixed(3)} : 1.0;
+  // Micro turf response (§19): 0.25–1.5 m, filtered by screen-space
+  // derivative so it fades before it can shimmer at distance.
+  float golfMicroPhase = dot(golfP, vec2(0.71, 0.70) * ${k(u0)});
+  float golfMicro = 0.5 * sin(golfMicroPhase) + 0.5 * sin(dot(golfP, vec2(-0.44, 0.90) * ${k(u1)}) + 0.7);
+  float golfMicroVisible = 1.0 - smoothstep(${style.turf.microFadeFwidth[0].toFixed(3)}, ${style.turf.microFadeFwidth[1].toFixed(3)}, fwidth(golfMicroPhase));
+  golfMicro *= golfMicroVisible * (golfGreen ? ${style.turf.greenMicroScale.toFixed(3)} : 1.0);
+  // Mowing (§22): bands along the play line in route-local metres with a
+  // small skew; derivative-filtered edges; weight already fades at the edge.
+  float golfPhase = (vGolfRouteST.y + vGolfRouteST.x * ${style.mowing.skew.toFixed(3)}) / ${style.mowing.bandWidthM.toFixed(3)};
+  float golfWave = sin(golfPhase * 3.141592653589793);
+  float golfFilter = max(fwidth(golfWave), 0.025);
+  float golfBand = smoothstep(-golfFilter, golfFilter, golfWave) * 2.0 - 1.0;
+  float golfBandVisible = 1.0 - smoothstep(${style.mowing.fadeFwidth[0].toFixed(3)}, ${style.mowing.fadeFwidth[1].toFixed(3)}, fwidth(golfPhase));
+  // Boundary softness (§25): a short darker lip inside every feature edge.
+  float golfEdge = 1.0 - smoothstep(0.0, ${style.boundary.fieldM.toFixed(3)}, golfBoundary);
+  diffuseColor.rgb *= 1.0
+    + golfMacro * golfAmplitudes.x * golfTurfWeight
+    + golfMicro * golfAmplitudes.y * golfTurfWeight
+    + golfBand * golfBandVisible * golfAmplitudes.z * golfMowingWeight
+    - golfEdge * golfAmplitudes.w;
+  // Context (§53): real surfaces, quieter. Albedo only; never alpha.
+  float golfLuma = dot(diffuseColor.rgb, vec3(0.2126, 0.7152, 0.0722));
+  diffuseColor.rgb = mix(diffuseColor.rgb, vec3(golfLuma), golfContextWeight * golfContextDesaturate);
+}`).replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
+roughnessFactor = vGolfSurface.x;`);
   };
-  material.customProgramCacheKey = () => `golf-landscape-turf-v3:${material.type}`;
-  material.userData.mowing = { basis: 'illustrative_style', bandWidthM: 6 };
+  material.customProgramCacheKey = () => `golf-landscape-turf-${MERIDIAN_STYLE_HASH}:${material.type}`;
+  material.userData.mowing = { basis: 'illustrative_style', bandWidthM: style.mowing.bandWidthM, frame: 'route_local' };
+  material.userData.turf = { basis: 'visual_only', macroM: style.turf.macro.wavelengthsM, microM: style.turf.micro.wavelengthsM };
+  material.userData.styleVersion = MERIDIAN_STYLE_VERSION; material.userData.styleHash = MERIDIAN_STYLE_HASH;
+  return { setOverrides: apply };
 }
-
-function terrainMaterial(scene: HoleScene): THREE.MeshStandardMaterial {
-  const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .96, metalness: 0 });
+function terrainMaterial(seed: readonly [number, number], overrides: MeridianStyleOverrides): { material: THREE.MeshStandardMaterial; turf: TurfStyleHandle } {
+  const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, metalness: 0 });
   material.name = 'course-lit-albedo';
-  attachTurfStyle(material, scene);
-  return material;
+  return { material, turf: attachTurfStyle(material, seed, overrides) };
 }
 
 /** Build a scene-owned landscape once. Camera gestures only move the camera;
@@ -124,11 +162,19 @@ export function buildThreeLandscape(
   scene: HoleScene,
   mesh: TerrainMesh,
   palette: ThreeLandscapePalette = DEFAULT_THREE_LANDSCAPE_PALETTE,
+  options: { artifact?: MeridianVisualArtifact; overrides?: MeridianStyleOverrides } = {},
 ): ThreeLandscape {
+  // The visual world (§6): supplied from the cache and hash-gated, or compiled
+  // now from the same canonical inputs. Either way it decorates; it never
+  // becomes a source for picking, framing or shot math.
+  let artifact = options.artifact, artifactSource: ThreeLandscape['artifactSource'] = 'supplied';
+  if (artifact) assertVisualArtifact(artifact, scene, mesh);
+  else { artifact = compileVisualArtifact(scene, mesh); artifactSource = 'runtime'; }
   const group = new THREE.Group();
   group.name = 'golf-course-landscape';
   group.userData = { geometryHash: mesh.geometryHash, terrainHash: mesh.contentHash,
-    styleVersion: 'three-landscape-v4', canopyHeightBasis: 'illustrative', mowingBasis: 'illustrative_style' };
+    styleVersion: MERIDIAN_STYLE_VERSION, styleHash: MERIDIAN_STYLE_HASH, artifactHash: artifact.contentHash, artifactSource,
+    canopyHeightBasis: 'illustrative', mowingBasis: 'illustrative_style' };
   const geometries = new Set<THREE.BufferGeometry>(), materials = new Set<THREE.Material>();
   const instances: THREE.InstancedMesh[] = [];
 
@@ -137,30 +183,28 @@ export function buildThreeLandscape(
   const source = new Float64Array(mesh.vertices.length);
   const sourceNormals = mesh.sourceNormals ? new Float32Array(source.length) : null;
   if (mesh.sourceNormals && mesh.sourceNormals.length !== source.length) throw new Error('Terrain normal/source vertex mismatch');
-  const colors = new Float32Array(mesh.vertices.length), mowing = new Float32Array(mesh.vertices.length / 3), turf = new Float32Array(mowing.length);
-  const contextIds = new Set(scene.contextFeatures?.map(feature => feature.id));
-  const contextRough = new THREE.Color(palette.rough);
+  const vertexCount = mesh.vertices.length / 3, albedo = linearAlbedo(artifact), attributes = artifact.attributes;
+  const colors = new Float32Array(mesh.vertices.length), mowing = new Float32Array(vertexCount), turf = new Float32Array(vertexCount);
+  const contextWeight = new Float32Array(vertexCount), roughness = new Float32Array(vertexCount), surfaceClass = new Float32Array(vertexCount);
+  const boundary = new Float32Array(vertexCount), routeST = new Float32Array(vertexCount * 2);
   for (let t = 0; t < mesh.triangleFeatures.length; t++) {
     const offset = t * 9, v = mesh.vertices;
     const winding = (v[offset + 3]! - v[offset]!) * (v[offset + 7]! - v[offset + 1]!) -
       (v[offset + 6]! - v[offset]!) * (v[offset + 4]! - v[offset + 1]!);
     const order = winding < 0 ? [0, 2, 1] : [0, 1, 2];
-    const albedo = terrainAlbedo(mesh, t, palette);
-    const kind = mesh.featureKinds[mesh.triangleFeatures[t]!]!;
-    // Verified neighboring surfaces provide context without competing with the
-    // played hole. This changes albedo only, never feature geometry or picking.
-    const contextOnly = contextIds.has(mesh.featureIds[mesh.triangleFeatures[t]!]!);
-    if (contextOnly && (kind === 'fairway' || kind === 'tee' || kind === 'green')) albedo.lerp(contextRough, .58);
-    // Context retains real playable surfaces but drops decorative mowing, so
-    // the selected hole remains readable without a fake edge or crop.
-    const mown = kind === 'fairway' && mesh.triangleMaterials[t] === 0 && !contextOnly;
     for (let corner = 0; corner < 3; corner++) {
-      const index = offset + corner * 3, original = offset + order[corner]! * 3;
+      const index = offset + corner * 3, original = offset + order[corner]! * 3, vertex = index / 3, from = original / 3;
       source.set(v.slice(original, original + 3), index);
       if (sourceNormals) sourceNormals.set(mesh.sourceNormals!.slice(original, original + 3), index);
-      colors.set([albedo.r, albedo.g, albedo.b], index);
-      mowing[index / 3] = mown ? 1 : 0;
-      turf[index / 3] = kind === 'ground' || kind === 'rough' || kind === 'fairway' ? 1 : 0;
+      // Artifact attributes follow the same corner permutation as the positions.
+      colors.set(albedo.subarray(original, original + 3), index);
+      mowing[vertex] = attributes.mowingWeight[from]! / 255;
+      turf[vertex] = attributes.turfWeight[from]! / 255;
+      contextWeight[vertex] = attributes.contextWeight[from]! / 255;
+      roughness[vertex] = attributes.roughness[from]! / 255;
+      surfaceClass[vertex] = attributes.surfaceClass[from]!;
+      boundary[vertex] = attributes.boundaryDistanceCm[from]! / 100;
+      routeST[vertex * 2] = attributes.routeST[from * 2]!; routeST[vertex * 2 + 1] = attributes.routeST[from * 2 + 1]!;
     }
   }
 
@@ -172,8 +216,13 @@ export function buildThreeLandscape(
   terrainGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
   terrainGeometry.setAttribute('golfMowingWeight', new THREE.BufferAttribute(mowing, 1));
   terrainGeometry.setAttribute('golfTurfWeight', new THREE.BufferAttribute(turf, 1));
+  terrainGeometry.setAttribute('golfContextWeight', new THREE.BufferAttribute(contextWeight, 1));
+  terrainGeometry.setAttribute('golfRoughness', new THREE.BufferAttribute(roughness, 1));
+  terrainGeometry.setAttribute('golfSurfaceClass', new THREE.BufferAttribute(surfaceClass, 1));
+  terrainGeometry.setAttribute('golfBoundaryDistance', new THREE.BufferAttribute(boundary, 1));
+  terrainGeometry.setAttribute('golfRouteST', new THREE.BufferAttribute(routeST, 2));
   geometries.add(terrainGeometry);
-  const material = terrainMaterial(scene);
+  const { material, turf: turfStyle } = terrainMaterial(artifact.seed, options.overrides ?? {});
   materials.add(material);
   const terrain = new THREE.Mesh(terrainGeometry, material);
   terrain.name = 'course-terrain';
@@ -368,7 +417,8 @@ export function buildThreeLandscape(
   setExaggeration(1, mesh.referenceElevationM);
 
   return {
-    group, terrain, setExaggeration, setDetail, counts,
+    group, terrain, setExaggeration, setDetail, counts, artifact, artifactSource,
+    setStyleOverrides(overrides) { if (!disposed) turfStyle.setOverrides(overrides); },
     dispose() {
       if (disposed) return;
       disposed = true;

@@ -653,6 +653,21 @@ Source ingestion, Python triangulation and source fixtures stay outside player
 routes. This is a one-hole source candidate, with no production resolver,
 publication, account/location collection or lifecycle writer change.
 
+### Meridian visual system (September 16, 2026)
+
+The expanded WebGL terrain view now renders Terrain and Side through a real
+perspective camera (Top stays orthographic) and draws its ground from a
+`MeridianVisualArtifact` (`src/lib/golf/course-geometry/visual-artifact.ts`):
+per-vertex albedo, turf/mowing weights, route-local coordinates and boundary
+distance compiled from the hash-locked package + terrain + frozen style
+(`visual-style.ts`). The artifact carries `basis: 'visual_only'`, is refused
+when its package/terrain/style hashes disagree with the scene
+(`MERIDIAN_ARTIFACT_MISMATCH`), and never feeds picking, framing, shot
+reconstruction or persisted state. Status and evidence per plan section:
+`docs/plans/2026-09-16-meridian-visual-master-plan-status.md`; art direction:
+`docs/design/meridian-visual-language.md`. No lifecycle writer, resolver or
+production binding changed.
+
 ### Four-course local source trial (September 13, 2026)
 
 The fixture harness now includes Winchester alongside Cacapon; both reuse the

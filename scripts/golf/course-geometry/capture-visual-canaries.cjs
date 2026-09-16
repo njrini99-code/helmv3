@@ -40,7 +40,8 @@ const pkg = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
 const pick = (dataset, keys) => Object.fromEntries(keys.map(key => [key, dataset[key] ?? null]));
 const METADATA_KEYS = ['terrainRenderer', 'terrainProjection', 'visualStyleVersion', 'qualityTier', 'drawCalls', 'renderTriangles',
   'terrainTriangles', 'terrainTrees', 'pixelRatio', 'shadowMapSize', 'shadowMapType', 'terrainPitch', 'terrainYaw', 'terrainExaggeration',
-  'terrainScale', 'terrainFov', 'crownDetail', 'bufferWidth', 'bufferHeight', 'renderCount', 'terrainHash', 'debugView', 'frameMs'];
+  'terrainScale', 'terrainFov', 'crownDetail', 'bufferWidth', 'bufferHeight', 'renderCount', 'terrainHash', 'debugView', 'frameMs',
+  'visualStyleHash', 'visualArtifactHash', 'visualArtifactSource', 'meridianCode'];
 
 async function settled(page, canvas) {
   // Reduced motion applies presets instantly; still wait until the render

@@ -48,9 +48,26 @@ than code: §107, §111, §115–120, §123.
 - Input: package (hash), terrain mesh (hash), style (version + hash).
 - Output: `MeridianVisualArtifact` with `canonicalPackageHash`,
   `terrainHash`, `styleHash`, packed attributes, and `basis: 'visual_only'`.
-- Gate: the runtime refuses an artifact whose `canonicalPackageHash` differs
-  from the loaded package (`MERIDIAN_ARTIFACT_MISMATCH`).
+- Gate: the runtime refuses an artifact whose package, terrain, hole, style
+  or vertex layout differ from the loaded scene (`MERIDIAN_ARTIFACT_MISMATCH`).
 - Cache: `geometry/<site>/<packageHash>/visual/<styleHash>/` (§101).
+- Command: `node_modules/.bin/tsx scripts/golf/course-geometry/compile-visual-artifacts.mts --course <course>`
+  compiles every hole twice (determinism check), round-trips the cache
+  encoding, and writes `pack-manifest.json` (§102). Peek'n Peak Upper:
+  18 holes, 15–47 ms each, 160–460 KB gzip per hole.
+- Determinism: content hashes match between Node and Chromium (verified on
+  hole 7 after replacing `Math.hypot` with `Math.sqrt` and quantising route
+  coordinates to millimetres; `Math.hypot` differed by one ulp in 60 of
+  129k values).
+- Packing (§97): albedo Uint8×3, weights/roughness/class Uint8, boundary
+  distance Uint16 cm, bunker depth Uint16 mm, route `(s, t)` Float32×2:
+  19 bytes per vertex before gzip.
+- Attributes over field textures (§98): at ≤40k triangles per hole the
+  per-vertex packing is 160–460 KB gzip, needs no texture upload, and
+  follows the compiler's own boundary ribbons exactly. A field texture
+  (≈1 m/px, 512² RGBA ≈ 1 MB raw per hole) only pays off for sub-triangle
+  detail; revisit for bunker rims (V3) and shorelines (V5) if the vertex
+  density there proves insufficient.
 
 ## Human visual review checklist (§107)
 
@@ -77,8 +94,12 @@ Soft lines:
 
 ## Observability (§118)
 
-Every code is emitted through the canvas dataset (`data-meridian-code`) in
-the harness and through the runtime's `onUnavailable` reason in the app.
+Every code is emitted through the canvas dataset (`data-meridian-code`):
+`MERIDIAN_ARTIFACT_MISSING` while the runtime compiles its own artifact,
+`MERIDIAN_ARTIFACT_MISMATCH` / `MERIDIAN_SHADER_FAILED` /
+`MERIDIAN_CONTEXT_LOST` alongside `data-terrain-state="unavailable"` when
+the hole falls back to the static view. The canary and lab capture scripts
+record the code beside every image.
 
 | Code | Meaning | Action |
 | --- | --- | --- |

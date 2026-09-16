@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import { attachTurfStyle, type ThreeLandscape } from './three-landscape';
 import { metricTerrainNormal } from '@/lib/golf/course-geometry/terrain-source';
 import type { TerrainMesh } from '@/lib/golf/course-geometry/terrain';
-import type { HoleScene } from '@/lib/golf/course-geometry/types';
 
 /** Faceting debug kit (Meridian §14). Every view is a diagnostic material or
  * vertex-colour substitution on the same display geometry: source positions
@@ -36,7 +35,7 @@ const MATERIAL_COLORS = ['#3F7A3A', '#D8B45B', '#E6E9F0', '#8E5BB7', '#3A9AD0'];
 /** Diagnostic-only material substitution. Source positions are never modified.
  * AO/skirt passes do not exist in this renderer; the crop view exposes context. */
 export function installTerrainDebugView(world: THREE.Scene, landscape: ThreeLandscape, mesh: TerrainMesh,
-  mode: TerrainDebugView, renderer: THREE.WebGLRenderer, scene?: HoleScene): () => void {
+  mode: TerrainDebugView, renderer: THREE.WebGLRenderer): () => void {
   if (mode === 'final') return () => {};
   const owned: THREE.Material[] = [];
   const override = (material: THREE.Material) => { owned.push(material); world.overrideMaterial = material; };
@@ -71,7 +70,7 @@ export function installTerrainDebugView(world: THREE.Scene, landscape: ThreeLand
       // The production colour pipeline without lighting: vertex albedo plus
       // the mowing/turf style, exactly as the lit material composes it.
       const material = new THREE.MeshBasicMaterial({ vertexColors: true });
-      if (scene) attachTurfStyle(material, scene);
+      attachTurfStyle(material, landscape.artifact.seed);
       override(material);
       break;
     }

@@ -8,6 +8,10 @@ import { NativeSelect } from '@/components/ui/native-select';
 import { CourseTerrainCanvas } from '@/components/golf/course-geometry/CourseTerrainCanvas';
 import { TERRAIN_DEBUG_LABELS, TERRAIN_DEBUG_VIEWS, type TerrainDebugView } from '@/components/golf/course-geometry/terrain-debug';
 import { buildHoleScene } from '@/lib/golf/course-geometry/build-scene';
+import { compileVisualArtifact, serializeVisualArtifact } from '@/lib/golf/course-geometry/visual-artifact';
+import type { MeridianStyleOverrides } from '@/lib/golf/course-geometry/visual-style';
+
+const STYLE_LAYERS = ['macro', 'micro', 'mowing', 'boundary', 'context'] as const;
 import type { CourseView } from '@/lib/golf/course-geometry/camera';
 import { PERSPECTIVE_FOV, TERRAIN_PRESETS, type TerrainMesh, type TerrainPose, type TerrainPreset } from '@/lib/golf/course-geometry/terrain';
 import { fitTerrainViewportCamera } from '@/lib/golf/course-geometry/terrain-viewport';
@@ -38,6 +42,9 @@ export function MeridianLabFixture({ course }: { course: CompiledCourse }) {
   const [zoom, setZoom] = useState(number(params.get('zoom'), 1, .5, 4));
   const [debugView, setDebugView] = useState<TerrainDebugView>(TERRAIN_DEBUG_VIEWS.find(mode => mode === params.get('debug')) ?? 'final');
   const [viewport, setViewport] = useState(Object.keys(VIEWPORTS).find(key => key === params.get('viewport')) ?? 'phone');
+  // Material amplitude multipliers (§95): 0 isolates a layer away, >1 exaggerates it for review.
+  const [overrides, setOverrides] = useState<Required<MeridianStyleOverrides>>(() => Object.fromEntries(STYLE_LAYERS.map(layer =>
+    [layer, number(params.get(layer), 1, 0, 4)])) as Required<MeridianStyleOverrides>);
   const [mesh, setMesh] = useState<TerrainMesh | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
   const [telemetry, setTelemetry] = useState<Record<string, string>>({});
@@ -53,9 +60,10 @@ export function MeridianLabFixture({ course }: { course: CompiledCourse }) {
   useEffect(() => {
     // Keep the URL scriptable: a capture can reproduce any lab state by link.
     const next = new URLSearchParams({ lab: '1', course, hole: String(holeNumber), area, preset, pitch: String(pose.pitch), yaw: String(pose.yawOffset),
-      relief: String(pose.exaggeration), projection: pose.projection, fov: String(pose.fovDegrees), zoom: String(zoom), debug: debugView, viewport });
+      relief: String(pose.exaggeration), projection: pose.projection, fov: String(pose.fovDegrees), zoom: String(zoom), debug: debugView, viewport,
+      ...Object.fromEntries(STYLE_LAYERS.filter(layer => overrides[layer] !== 1).map(layer => [layer, String(overrides[layer])])) });
     history.replaceState(null, '', `?${next}`);
-  }, [course, holeNumber, area, preset, pose, zoom, debugView, viewport]);
+  }, [course, holeNumber, area, preset, pose, zoom, debugView, viewport, overrides]);
   useEffect(() => {
     const timer = setInterval(() => {
       const canvas = document.querySelector<HTMLCanvasElement>('[data-slot=lab-stage] canvas');
@@ -67,6 +75,12 @@ export function MeridianLabFixture({ course }: { course: CompiledCourse }) {
   }, []);
   const [width, height] = VIEWPORTS[viewport]!;
   const scene = useMemo(() => hole && mesh ? buildHoleScene(pkg, hole.key, [], mesh) : null, [pkg, hole, mesh]);
+  useEffect(() => {
+    // Lab-only: expose the compiled visual world so a capture script can diff
+    // it against the Node compiler (§96 determinism across engines).
+    if (!scene || !mesh) return;
+    (window as unknown as { meridianArtifact?: string }).meridianArtifact = serializeVisualArtifact(compileVisualArtifact(scene, mesh));
+  }, [scene, mesh]);
   let camera = null, cameraError: string | null = null;
   if (scene && mesh) {
     try { camera = fitTerrainViewportCamera(scene, mesh, area, width, height, pose, zoom, [0, 0], preset); }
@@ -97,6 +111,8 @@ export function MeridianLabFixture({ course }: { course: CompiledCourse }) {
       {range('Zoom', zoom, .5, 4, .1, setZoom)}
       {field('Debug view', <NativeSelect value={debugView} onChange={e => setDebugView(e.target.value as TerrainDebugView)} aria-label="Debug view">{TERRAIN_DEBUG_VIEWS.map(mode => <option key={mode} value={mode}>{TERRAIN_DEBUG_LABELS[mode]} ({mode})</option>)}</NativeSelect>)}
       {field('Viewport', <NativeSelect value={viewport} onChange={e => setViewport(e.target.value)} aria-label="Viewport">{Object.entries(VIEWPORTS).map(([key, [w, h]]) => <option key={key} value={key}>{key} {w}×{h}</option>)}</NativeSelect>)}
+      <h2 className="mt-2 text-caption font-semibold">Material layers ×</h2>
+      {STYLE_LAYERS.map(layer => range(layer, overrides[layer], 0, 4, .25, v => setOverrides({ ...overrides, [layer]: v })))}
       <h2 className="mt-2 text-caption font-semibold">Telemetry</h2>
       <dl className="grid grid-cols-[auto_1fr] gap-x-2 text-eyebrow" data-slot="lab-telemetry">
         {Object.entries(telemetry).sort().map(([key, value]) => <div key={key} className="contents"><dt className="opacity-70">{key}</dt><dd className="truncate">{value}</dd></div>)}
@@ -106,7 +122,7 @@ export function MeridianLabFixture({ course }: { course: CompiledCourse }) {
     </aside>
     <section className="flex-1 overflow-hidden p-3" aria-label="Lab stage">
       <div data-slot="lab-stage" style={{ width, height, transform: `scale(${stageScale})`, transformOrigin: 'top left', position: 'relative', background: '#607D3D' }}>
-        {scene && mesh && camera && <CourseTerrainCanvas key={`${hole?.key}:${debugView}`} scene={scene} mesh={mesh} camera={camera} width={width} height={height} debugView={debugView}
+        {scene && mesh && camera && <CourseTerrainCanvas key={`${hole?.key}:${debugView}`} scene={scene} mesh={mesh} camera={camera} width={width} height={height} debugView={debugView} styleOverrides={overrides}
           fallback={<p role="status" className="p-3">Loading terrain</p>} />}
         {!mesh && !failure && <p role="status" className="p-3">Loading source terrain</p>}
       </div>
