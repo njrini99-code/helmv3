@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { attachTurfStyle, type ThreeLandscape } from './three-landscape';
 import { compileBaseDisplayLods, weldAndCleanTerrainMesh, type DisplayLodName } from '@/lib/golf/course-geometry/display-mesh-v2';
-import { compileGreenComplexPatches } from '@/lib/golf/course-geometry/green-display-mesh';
+import { compileHeroPatches } from '@/lib/golf/course-geometry/bunker-display-mesh';
 import { compileHeroRegions } from '@/lib/golf/course-geometry/hero-patches';
 import { metricTerrainNormal } from '@/lib/golf/course-geometry/terrain-source';
 import { sourceVertexNormals, type TerrainMesh } from '@/lib/golf/course-geometry/terrain';
@@ -29,7 +29,7 @@ export const TERRAIN_DEBUG_LABELS: Record<TerrainDebugView, string> = {
   shadows: 'Shadow only', 'shadow-only': 'Shadow only', 'feature-ids': 'Feature IDs', 'triangle-ids': 'Triangle IDs',
   'material-ids': 'Material IDs', crop: 'Context mask', 'context-mask': 'Context mask', 'bunker-depth': 'Bunker bowl depth (render-only)',
   'v2-lod0': 'V2 base LOD0 (refined) + wire', 'v2-lod1': 'V2 base LOD1 (welded canonical) + wire', 'v2-lod2': 'V2 base LOD2 (simplified) + wire',
-  'v2-hero': 'V2 base LOD0 + green-complex hero patch (purple wire)',
+  'v2-hero': 'V2 base LOD0 + green/bunker hero patches (purple wire, bowl shaded)',
 };
 const V2_LOD_VIEWS: Partial<Record<TerrainDebugView, DisplayLodName>> = { 'v2-lod0': 'lod0', 'v2-lod1': 'lod1', 'v2-lod2': 'lod2' };
 /** Diagnostic surface-class tints for the V2 LOD views (not the Meridian palette). */
@@ -61,12 +61,12 @@ export function installTerrainDebugView(world: THREE.Scene, landscape: ThreeLand
     // V2 plan Task 5b: the base display LOD compiled now from the same
     // canonical mesh, tinted by surface class with its wire on top, in place
     // of the V1 terrain. Source Z, no relief exaggeration, diagnostic only.
-    // Task 7 (`v2-hero`): the hero regions are planned too, the base is drawn
-    // with the green-complex footprint excluded, and the compiled patch is
-    // drawn in its place with a purple wire so its density reads on screen.
+    // Tasks 7–8 (`v2-hero`): the hero regions are planned too, the base is
+    // drawn with every patched footprint excluded, and the compiled patches
+    // (green complexes, bunkers) are drawn in their place with a purple wire.
     const hero = mode === 'v2-hero' && scene ? (() => {
       const base = weldAndCleanTerrainMesh(mesh), plan = compileHeroRegions(scene, mesh, base);
-      return { base, plan, patches: compileGreenComplexPatches(mesh, base, plan.regions) };
+      return { plan, patches: compileHeroPatches(scene, mesh, base, plan) };
     })() : null;
     const compiled = compileBaseDisplayLods(mesh, hero ? { heroPlan: { triangleRegion: hero.plan.triangleRegion, regionIds: hero.plan.regionIds } } : {}), packed = compiled[v2Lod];
     const lodGeometry = new THREE.BufferGeometry();
@@ -95,16 +95,16 @@ export function installTerrainDebugView(world: THREE.Scene, landscape: ThreeLand
       const patchFill = new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide });
       const patchWire = new THREE.MeshBasicMaterial({ color: '#5B2E91', wireframe: true, transparent: true, opacity: .75 });
       owned.push(patchFill, patchWire);
-      const base = hero.base;
-      for (const { patch, triangleSource } of hero.patches) {
-        // Flat per-triangle class tint from the source base triangle, so the
-        // patch is de-indexed here (diagnostic copy; the packed patch is indexed).
+      for (const { patch, triangleClass } of hero.patches) {
+        // Flat per-triangle class tint, darkened by the render-only bowl
+        // depth and lightened by the lip, so the patch is de-indexed here
+        // (diagnostic copy; the packed patch is indexed).
         const count = patch.indices.length, flat = new Float32Array(count * 3), flatTint = new Float32Array(count * 3);
         for (let i = 0; i < count; i++) {
-          flat.set(patch.positions.subarray(patch.indices[i]! * 3, patch.indices[i]! * 3 + 3), i * 3);
-          const sourceTriangle = triangleSource[Math.floor(i / 3)]!, material = base.triangleMaterials[sourceTriangle]!;
-          const kind = material === 3 ? 'surround' : material === 4 ? 'fringe' : mesh.featureKinds[base.triangleFeatures[sourceTriangle]!]!;
-          tint.set(V2_CLASS_COLORS[kind as typeof SURFACE_CLASS_IDS[number]] ?? '#9AA39A').offsetHSL(0, 0, .12);
+          const vertex = patch.indices[i]!;
+          flat.set(patch.positions.subarray(vertex * 3, vertex * 3 + 3), i * 3);
+          const offset = patch.visualOffsetMm[vertex]! / 1000;
+          tint.set(V2_CLASS_COLORS[SURFACE_CLASS_IDS[triangleClass[Math.floor(i / 3)]!]!] ?? '#9AA39A').offsetHSL(0, 0, .12 + Math.max(-.35, Math.min(.2, offset * .6)));
           flatTint.set([tint.r, tint.g, tint.b], i * 3);
         }
         const geometry = new THREE.BufferGeometry();

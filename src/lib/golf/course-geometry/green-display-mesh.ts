@@ -39,7 +39,7 @@ import type { HeroRegion } from './hero-patches';
 import type { TerrainMesh } from './terrain';
 import { compileCurvatureFields, type CurvatureFields } from './terrain-curvature';
 import { sampleMetricTerrain } from './terrain-source';
-import type { SurfaceClass } from './visual-artifact';
+import { SURFACE_CLASS_IDS, type SurfaceClass } from './visual-artifact';
 import type { PackedHeroPatch } from './visual-artifact-v2';
 
 /** §28–29 display spacing, metres. `edge` applies to an edge between two
@@ -69,6 +69,24 @@ export const GREEN_PATCH_SPACING: Readonly<PatchSpacing> = Object.freeze({
   scaleShare: Object.freeze({ green: .3, bunker: .4, fringe: .6, surround: .8, default: 1 }),
   sliverAngleDeg: 5,
 });
+/** A standalone bunker region is 3–10 m across: a green-scale taper would
+ * flatten and coarsen the whole patch, so the band is one metre. */
+export const BUNKER_PATCH_SPACING: Readonly<PatchSpacing> = Object.freeze({ ...GREEN_PATCH_SPACING, rimTaper: 1, rimTaperM: 1,
+  scaleShare: Object.freeze({ bunker: .4, green: .4, fringe: .7, surround: .8, default: 1 }) });
+export const patchSpacingFor = (kind: HeroRegion['kind']): Readonly<PatchSpacing> => (kind === 'bunker' ? BUNKER_PATCH_SPACING : GREEN_PATCH_SPACING);
+
+/** Hooks a patch kind adds to the subdivision (Task 8 bunkers): a spacing
+ * cap by position (§35 ring density, metres; Infinity = none), a render-only
+ * displacement by position (§37–39 bowl and lip, metres, carried in
+ * `visualOffsetMm`), and the classes whose slivers are subdivided anyway
+ * because a flat needle across a bowl would show. */
+export interface RegionPatchOptions {
+  spacing?: Readonly<PatchSpacing>;
+  spacingCap?: (x: number, y: number) => number;
+  displacement?: (x: number, y: number) => number;
+  subdivideSliverClasses?: ReadonlySet<SurfaceClass>;
+}
+const SUBDIVIDE_SLIVER_CLASSES: ReadonlySet<SurfaceClass> = new Set<SurfaceClass>(['bunker']);
 
 export interface HeroPatchReport {
   id: string;
@@ -91,9 +109,12 @@ export interface HeroPatchReport {
   topology: TopologyReport;
   /** §115: rim vertices are exact base vertices, so 0 by construction; measured anyway. */
   seamHeightMaxM: number;
+  /** Render-only displacement range over the patch, metres (bowl below 0, lip above). */
+  offsetMinM: number;
+  offsetMaxM: number;
 }
-/** `triangleSource` names the base triangle each patch triangle subdivides (diagnostics, not packed). */
-export interface CompiledHeroPatch { patch: PackedHeroPatch; report: HeroPatchReport; orientation: Int8Array; triangleSource: Uint32Array }
+/** `triangleClass` is each patch triangle's surface class (SURFACE_CLASS_IDS index) from the base triangle it subdivides — diagnostics, not packed. */
+export interface CompiledHeroPatch { patch: PackedHeroPatch; report: HeroPatchReport; orientation: Int8Array; triangleClass: Uint8Array }
 
 type FeatureKind = TerrainMesh['featureKinds'][number];
 const classOf = (kind: FeatureKind, material: number): SurfaceClass => (material === 3 ? 'surround' : material === 4 ? 'fringe' : kind);
@@ -120,8 +141,10 @@ function rimDistanceField(base: DisplayMesh, region: HeroRegion): (x: number, y:
 /** Per-edge sample counts for a region, consistent across the triangles sharing each edge. */
 interface EdgePlan { counts: Map<number, number>; rim: Set<number>; scale: number; estimate: number; slivers: number }
 
-function planEdges(mesh: TerrainMesh, base: DisplayMesh, region: HeroRegion, spacing: PatchSpacing, curvature: CurvatureFields | null, rimDistance: (x: number, y: number) => number): EdgePlan {
+function planEdges(mesh: TerrainMesh, base: DisplayMesh, region: HeroRegion, spacing: PatchSpacing, curvature: CurvatureFields | null, rimDistance: (x: number, y: number) => number,
+  hooks: Pick<RegionPatchOptions, 'spacingCap' | 'subdivideSliverClasses'>): EdgePlan {
   const p = base.positions, grid = mesh.metricGrid;
+  const sliverClasses = hooks.subdivideSliverClasses ?? SUBDIVIDE_SLIVER_CLASSES;
   const classes = new Map<number, SurfaceClass>();
   const sides = new Map<number, number[]>();
   for (const t of region.triangles) {
@@ -149,8 +172,8 @@ function planEdges(mesh: TerrainMesh, base: DisplayMesh, region: HeroRegion, spa
     planeError.set(t, ga != null && gb != null && gc != null && gm != null ? Math.abs(gm - (ga + gb + gc) / 3) : 0);
   }
   const slivers = new Set<number>();
-  for (const t of region.triangles) if (smallestAngle(p, base.indices[t * 3]!, base.indices[t * 3 + 1]!, base.indices[t * 3 + 2]!) < spacing.sliverAngleDeg) slivers.add(t);
-  const baseSpacing = new Map<number, number>(), share = new Map<number, number>();
+  for (const t of region.triangles) if (!sliverClasses.has(classes.get(t)!) && smallestAngle(p, base.indices[t * 3]!, base.indices[t * 3 + 1]!, base.indices[t * 3 + 2]!) < spacing.sliverAngleDeg) slivers.add(t);
+  const baseSpacing = new Map<number, number>(), share = new Map<number, number>(), caps = new Map<number, number>();
   const rim = new Set<number>();
   for (const [key, list] of sides) {
     if (list.length === 1 || list.some(t => slivers.has(t))) { rim.add(key); continue; }
@@ -163,13 +186,17 @@ function planEdges(mesh: TerrainMesh, base: DisplayMesh, region: HeroRegion, spa
     if (Math.max(planeError.get(list[0]!)!, planeError.get(list[1]!)!) > spacing.errorM) target *= 1 - spacing.errorBoost;
     target *= 1 + spacing.rimTaper * Math.max(0, 1 - rimDistance(mx, my) / spacing.rimTaperM);
     baseSpacing.set(key, target);
+    if (hooks.spacingCap) caps.set(key, hooks.spacingCap(mx, my));
   }
+  const capShare = spacing.scaleShare.bunker ?? spacing.scaleShare.default;
   const countsFor = (scale: number): Map<number, number> => {
     const counts = new Map<number, number>();
     for (const [key, target] of baseSpacing) {
       const a = Math.floor(key / VERTEX_KEY_BASE), b = key % VERTEX_KEY_BASE;
       const length = Math.hypot(p[b * 3]! - p[a * 3]!, p[b * 3 + 1]! - p[a * 3 + 1]!);
-      counts.set(key, Math.max(1, Math.min(spacing.maxSamples, Math.ceil(length / (target * (1 + (scale - 1) * share.get(key)!))))));
+      const cap = caps.get(key) ?? Infinity;
+      const effective = Math.min(target * (1 + (scale - 1) * share.get(key)!), cap * (1 + (scale - 1) * capShare));
+      counts.set(key, Math.max(1, Math.min(spacing.maxSamples, Math.ceil(length / effective))));
     }
     for (const key of rim) counts.set(key, 1);
     return counts;
@@ -192,11 +219,12 @@ function planEdges(mesh: TerrainMesh, base: DisplayMesh, region: HeroRegion, spa
 }
 
 /** Compile one hero patch by subdividing a region's canonical triangles. */
-export function compileRegionPatch(mesh: TerrainMesh, base: DisplayMesh, region: HeroRegion, spacing: PatchSpacing = GREEN_PATCH_SPACING): CompiledHeroPatch {
+export function compileRegionPatch(mesh: TerrainMesh, base: DisplayMesh, region: HeroRegion, options: RegionPatchOptions = {}): CompiledHeroPatch {
+  const spacing = options.spacing ?? patchSpacingFor(region.kind);
   const p = base.positions, grid = mesh.metricGrid;
   const curvature = grid ? compileCurvatureFields(grid) : null;
   const rimDistance = rimDistanceField(base, region);
-  const plan = planEdges(mesh, base, region, spacing, curvature, rimDistance);
+  const plan = planEdges(mesh, base, region, spacing, curvature, rimDistance, options);
   // Vertices: base vertices first (by base index), then edge samples, then lattice points.
   const positions: number[] = [], reference: number[] = [];
   const baseIndex = new Map<number, number>();
@@ -246,14 +274,15 @@ export function compileRegionPatch(mesh: TerrainMesh, base: DisplayMesh, region:
     }
     return from < to ? chain : chain.slice().reverse();
   };
-  const indices: number[] = [], orientation: number[] = [], source: number[] = [];
+  const indices: number[] = [], orientation: number[] = [], triangleClass: number[] = [];
   for (const t of region.triangles) {
     const corners = [base.indices[t * 3]!, base.indices[t * 3 + 1]!, base.indices[t * 3 + 2]!];
     const counts = [0, 1, 2].map(k => plan.counts.get(edgeKey(corners[k]!, corners[(k + 1) % 3]!))!);
     const L = Math.max(...counts);
     // Sub-triangles are built in the base's own corner order; the affine map
     // from the reference triangle keeps the base winding, so they inherit its sign.
-    const push = (a: number, b: number, c: number) => { indices.push(a, b, c); orientation.push(base.orientation[t]!); source.push(t); };
+    const classIndex = Math.max(0, SURFACE_CLASS_IDS.indexOf(classOf(mesh.featureKinds[base.triangleFeatures[t]!]!, base.triangleMaterials[t]!)));
+    const push = (a: number, b: number, c: number) => { indices.push(a, b, c); orientation.push(base.orientation[t]!); triangleClass.push(classIndex); };
     if (L <= 2) {
       // No inner point: the outer polygon (corners plus at most one midpoint per
       // edge) is convex, so fan it from a midpoint, or keep the base triangle.
@@ -303,9 +332,19 @@ export function compileRegionPatch(mesh: TerrainMesh, base: DisplayMesh, region:
     }
   }
   const vertexCount = positions.length / 3, triangleCount = indices.length / 3;
+  // Render-only displacement (V): quantised to millimetres, added to the
+  // drawn height and carried separately so canonical and display stay apart.
+  const visualOffsetMm = new Int16Array(vertexCount);
+  let offsetMin = 0, offsetMax = 0;
+  if (options.displacement) for (let v = 0; v < vertexCount; v++) {
+    const mm = Math.max(-32767, Math.min(32767, Math.round(options.displacement(positions[v * 3]!, positions[v * 3 + 1]!) * 1000)));
+    visualOffsetMm[v] = mm;
+    positions[v * 3 + 2] = positions[v * 3 + 2]! + mm / 1000;
+    offsetMin = Math.min(offsetMin, mm / 1000); offsetMax = Math.max(offsetMax, mm / 1000);
+  }
   const packed: PackedHeroPatch = {
     id: region.id, kind: region.kind, boundsM: region.boundsM, basis: 'interpolated_canonical',
-    positions: Float32Array.from(positions), indices: Uint32Array.from(indices), canonicalHeightReference: Float32Array.from(reference), visualOffsetMm: new Int16Array(vertexCount),
+    positions: Float32Array.from(positions), indices: Uint32Array.from(indices), canonicalHeightReference: Float32Array.from(reference), visualOffsetMm,
     edgeErrorMaxM: 0,
   };
   // Quality.
@@ -332,8 +371,8 @@ export function compileRegionPatch(mesh: TerrainMesh, base: DisplayMesh, region:
     seam = Math.max(seam, Math.abs(packed.positions[index * 3 + 2]! - Math.fround(p[loop[i]! * 3 + 2]!)));
   }
   return {
-    patch: packed, orientation: Int8Array.from(orientation), triangleSource: Uint32Array.from(source),
-    report: { id: region.id, triangles: triangleCount, vertices: vertexCount, budgetTriangles: region.budgetTriangles, spacingScale: plan.scale, greenSpacingM: (spacing.interior.green ?? spacing.interior.default) * (1 + (plan.scale - 1) * (spacing.scaleShare.green ?? spacing.scaleShare.default)), borderEdges, rimVertices, baseSlivers: plan.slivers, maxReliefM: maxRelief, minAngleDeg: minAngle, needles, topology, seamHeightMaxM: seam },
+    patch: packed, orientation: Int8Array.from(orientation), triangleClass: Uint8Array.from(triangleClass),
+    report: { id: region.id, triangles: triangleCount, vertices: vertexCount, budgetTriangles: region.budgetTriangles, spacingScale: plan.scale, greenSpacingM: (spacing.interior.green ?? spacing.interior.default) * (1 + (plan.scale - 1) * (spacing.scaleShare.green ?? spacing.scaleShare.default)), borderEdges, rimVertices, baseSlivers: plan.slivers, maxReliefM: maxRelief, minAngleDeg: minAngle, needles, topology, seamHeightMaxM: seam, offsetMinM: offsetMin, offsetMaxM: offsetMax },
   };
 }
 function smallestAngle(p: ArrayLike<number>, a: number, b: number, c: number): number {
@@ -344,9 +383,9 @@ function smallestAngle(p: ArrayLike<number>, a: number, b: number, c: number): n
   return Math.min(angle(la, lb, lc), angle(lb, la, lc), angle(lc, la, lb));
 }
 
-/** Compile every green-complex region of a plan. */
-export function compileGreenComplexPatches(mesh: TerrainMesh, base: DisplayMesh, regions: readonly HeroRegion[], spacing: PatchSpacing = GREEN_PATCH_SPACING): CompiledHeroPatch[] {
-  return regions.filter(r => r.kind === 'green_complex').map(r => compileRegionPatch(mesh, base, r, spacing));
+/** Compile every green-complex region of a plan (no bunker displacement; bunker-display-mesh.ts adds it). */
+export function compileGreenComplexPatches(mesh: TerrainMesh, base: DisplayMesh, regions: readonly HeroRegion[], options: RegionPatchOptions = {}): CompiledHeroPatch[] {
+  return regions.filter(r => r.kind === 'green_complex').map(r => compileRegionPatch(mesh, base, r, options));
 }
 
 /** §113 / §115 gates for a compiled patch against its region and base. */

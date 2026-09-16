@@ -61,6 +61,10 @@ export const HERO_REGION_OPTIONS: Readonly<HeroRegionOptions> = Object.freeze({
 export const HERO_BUDGETS: Readonly<Record<HeroPatchKind, number>> = Object.freeze({
   green_complex: 14_000, bunker: 8_000, water_edge: 2_000, path: 1_500, landing_edge: 0, structure_pad: 0,
 });
+/** A green complex that absorbed bunkers carries their §35 ring density
+ * too: each absorbed bunker moves this much of the bunker pool into the
+ * complex, capped at §11's 20k upper target. */
+export const ABSORBED_BUNKER_BUDGET = 1_500, GREEN_COMPLEX_BUDGET_CAP = 20_000;
 const MIN_REGION_BUDGET = 200;
 
 export interface HeroRegion {
@@ -246,40 +250,70 @@ export function compileHeroRegions(scene: HoleScene, mesh: TerrainMesh, base: Di
   const clip = mesh.renderProfile ? mesh.renderProfile.tacticalBoundsM.map((v, i) => v + (i < 2 ? -opts.clipMarginM : opts.clipMarginM)) as [number, number, number, number] : null;
   const insideClip = (p: PointM) => !clip || (p[0] >= clip[0] && p[1] >= clip[1] && p[0] <= clip[2] && p[1] <= clip[3]);
   const trianglesOf = (featureId: string): number[] => { const out: number[] = []; for (let t = 0; t < n; t++) if (featureOf(t) === featureId) out.push(t); return out; };
+  // A triangle joins when its centroid or any corner lies within reach, so
+  // no rim vertex can sit nearer the outline than `reach` (Task 8 needs the
+  // bunker lip band, 0.7 m, to close inside the region).
   const within = (feature: LocalFeature, reach: number, member: Uint8Array): void => {
-    const box = bboxOf(feature);
+    const box = bboxOf(feature), p = base.positions;
     for (let t = 0; t < n; t++) {
       if (member[t]) continue;
       const c = work.centroid(t);
-      if (outsideBox(c, box, reach)) continue;
-      if (featureDistance(c, feature) <= reach) member[t] = 1;
+      if (!outsideBox(c, box, reach) && featureDistance(c, feature) <= reach) { member[t] = 1; continue; }
+      for (let k = 0; k < 3; k++) {
+        const v = base.indices[t * 3 + k]!, q: PointM = [p[v * 3]!, p[v * 3 + 1]!];
+        if (!outsideBox(q, box, reach) && featureDistance(q, feature) <= reach) { member[t] = 1; break; }
+      }
     }
   };
 
   const candidates: Candidate[] = [];
   const greens = scene.features.filter(f => f.kind === 'green' && played(f)).sort((a, b) => a.id.localeCompare(b.id));
   const bunkers = scene.features.filter(f => f.kind === 'bunker' && played(f)).sort((a, b) => a.id.localeCompare(b.id));
+  /** A bunker's own triangles plus its margin band. */
+  const bunkerBand = (bunker: LocalFeature): Uint8Array => {
+    const band = new Uint8Array(n);
+    for (const t of trianglesOf(bunker.id)) band[t] = 1;
+    within(bunker, opts.bunkerMarginM, band);
+    return band;
+  };
   const absorbed = new Set<string>();
   for (const green of greens) {
     const member = new Uint8Array(n);
     within(green, opts.greenInfluenceM, member);
     for (let t = 0; t < n; t++) if (member[t] && !insideClip(work.centroid(t)) && featureDistance(work.centroid(t), green) > 0) member[t] = 0;
     const featureIds = [green.id];
+    // A bunker whose own triangles or margin band touch the complex is
+    // absorbed whole, so a standalone bunker region never borders the
+    // complex with a rim inside its own lip band (Task 8 seam).
     for (const bunker of bunkers) {
-      const own = trianglesOf(bunker.id);
-      if (!own.some(t => member[t])) continue;
+      if (absorbed.has(bunker.id)) continue;
+      const band = bunkerBand(bunker);
+      let touches = false;
+      for (let t = 0; t < n && !touches; t++) touches = band[t] === 1 && member[t] === 1;
+      if (!touches) continue;
       absorbed.add(bunker.id); featureIds.push(bunker.id);
-      for (const t of own) member[t] = 1;
-      within(bunker, opts.bunkerMarginM, member);
+      for (let t = 0; t < n; t++) if (band[t]) member[t] = 1;
     }
     candidates.push({ id: `green_complex:${green.id}`, kind: 'green_complex', featureIds, seeds: new Set(trianglesOf(green.id)), member });
   }
-  for (const bunker of bunkers) {
-    if (absorbed.has(bunker.id)) continue;
-    const member = new Uint8Array(n);
-    for (const t of trianglesOf(bunker.id)) member[t] = 1;
-    within(bunker, opts.bunkerMarginM, member);
-    candidates.push({ id: `bunker:${bunker.id}`, kind: 'bunker', featureIds: [bunker.id], seeds: new Set(trianglesOf(bunker.id)), member });
+  // Standalone bunkers whose bands overlap merge into one region for the
+  // same reason: a shared rim inside either lip band would carry two
+  // different displacements.
+  const bands = bunkers.filter(b => !absorbed.has(b.id)).map(b => ({ featureIds: [b.id], member: bunkerBand(b), seeds: new Set(trianglesOf(b.id)) }));
+  const parent = bands.map((_, i) => i);
+  const find = (i: number): number => (parent[i] === i ? i : (parent[i] = find(parent[i]!)));
+  const overlaps = (a: Uint8Array, b: Uint8Array): boolean => { for (let t = 0; t < n; t++) if (a[t] && b[t]) return true; return false; };
+  for (let i = 0; i < bands.length; i++) for (let j = i + 1; j < bands.length; j++) if (find(i) !== find(j) && overlaps(bands[i]!.member, bands[j]!.member)) parent[find(j)] = find(i);
+  const groups = new Map<number, { featureIds: string[]; member: Uint8Array; seeds: Set<number> }>();
+  bands.forEach((band, i) => {
+    const root = find(i), group = groups.get(root);
+    if (!group) { groups.set(root, band); return; }
+    for (let t = 0; t < n; t++) if (band.member[t]) group.member[t] = 1;
+    group.featureIds.push(...band.featureIds); for (const s of band.seeds) group.seeds.add(s);
+  });
+  for (const group of groups.values()) {
+    group.featureIds.sort((a, b) => a.localeCompare(b));
+    candidates.push({ id: `bunker:${group.featureIds.join('+')}`, kind: 'bunker', featureIds: group.featureIds, seeds: group.seeds, member: group.member });
   }
   const seen = new Set<string>();
   const waters = [...scene.features, ...(scene.contextFeatures ?? [])].filter(f => f.kind === 'water' && !seen.has(f.id) && seen.add(f.id)).sort((a, b) => a.id.localeCompare(b.id));
@@ -344,6 +378,7 @@ export function compileHeroRegions(scene: HoleScene, mesh: TerrainMesh, base: Di
   for (const kind of new Set(regions.map(r => r.kind))) {
     const same = regions.filter(r => r.kind === kind), total = same.reduce((sum, r) => sum + r.areaM2, 0);
     for (const r of same) r.budgetTriangles = Math.max(MIN_REGION_BUDGET, Math.round(HERO_BUDGETS[kind] * (total ? r.areaM2 / total : 1 / same.length)));
+    if (kind === 'green_complex') for (const r of same) r.budgetTriangles = Math.min(GREEN_COMPLEX_BUDGET_CAP, r.budgetTriangles + ABSORBED_BUNKER_BUDGET * (r.featureIds.length - 1));
   }
   const triangleRegion = new Uint16Array(n);
   regions.forEach((r, i) => { for (const t of r.triangles) triangleRegion[t] = i + 1; });

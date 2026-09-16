@@ -171,7 +171,8 @@ describe('green-complex hero mesh (§27–29, §107, §113, §115; Task 7)', () 
     expect(green!.report.triangles).toBeLessThanOrEqual(greenRegion.budgetTriangles);
     expect(green!.report.triangles).toBeGreaterThan(greenRegion.budgetTriangles * 0.8);
     expect(green!.report.seamHeightMaxM).toBe(0);
-    expect(green!.report.needles).toBeLessThan(green!.report.baseSlivers * 2);
+    // Bunker-class slivers are subdivided on purpose (a flat needle across a bowl would show), so needles may exceed the kept slivers.
+    expect(green!.report.needles).toBeLessThan(green!.report.triangles * 0.08);
     expect(green!.report.greenSpacingM).toBeLessThan(1.5);
   });
 });

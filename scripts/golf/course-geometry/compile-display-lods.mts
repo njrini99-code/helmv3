@@ -1,10 +1,11 @@
 #!/usr/bin/env -S node_modules/.bin/tsx
 /**
  * Meridian V2 base display LOD compiler (V2 plan §10, §13–15, §27–29, §113,
- * §115; Tasks 5–7). For every hole of a compiled course fixture it plans the
+ * §115; Tasks 5–8). For every hole of a compiled course fixture it plans the
  * hero regions over the cleaned canonical mesh (green complex, bunkers, water
  * edges, cart paths from the context layer), derives LOD0/1/2 with those
- * regions locked and ordered last, compiles the green-complex hero patches,
+ * regions locked and ordered last, compiles the green-complex and bunker
+ * hero patches (bowl and lip displacement),
  * proves the compiles are deterministic (two runs, identical output),
  * enforces the region, patch, topology and Hausdorff gates, and writes one
  * JSON report per hole plus a course summary:
@@ -22,7 +23,8 @@ import { gunzipSync } from 'node:zlib';
 import { buildHoleScene } from '../../../src/lib/golf/course-geometry/build-scene';
 import { parseContextLayer } from '../../../src/lib/golf/course-geometry/context-layer';
 import { assertBaseDisplayLods, compileBaseDisplayLods, weldAndCleanTerrainMesh } from '../../../src/lib/golf/course-geometry/display-mesh-v2';
-import { assertHeroPatch, compileGreenComplexPatches } from '../../../src/lib/golf/course-geometry/green-display-mesh';
+import { assertBunkerPatch, compileHeroPatches } from '../../../src/lib/golf/course-geometry/bunker-display-mesh';
+import { assertHeroPatch } from '../../../src/lib/golf/course-geometry/green-display-mesh';
 import { assertHeroRegionPlan, compileHeroRegions } from '../../../src/lib/golf/course-geometry/hero-patches';
 import { parseGeometryPackage } from '../../../src/lib/golf/course-geometry/schema';
 import { parseTerrainMesh } from '../../../src/lib/golf/course-geometry/terrain';
@@ -62,20 +64,21 @@ for (const [holeKey, entry] of Object.entries(manifest.holes).sort((a, b) => a[1
     if (!same(result[lod].positions, again[lod].positions) || !same(result[lod].indices, again[lod].indices)) throw new Error(`${holeKey}: ${lod} compile is not deterministic`);
   }
   const patchBegan = performance.now();
-  const patches = compileGreenComplexPatches(mesh, base, plan.regions);
+  const patches = compileHeroPatches(scene, mesh, base, plan);
   const patchMs = performance.now() - patchBegan;
-  const patchesAgain = compileGreenComplexPatches(mesh, base, plan.regions);
+  const patchesAgain = compileHeroPatches(scene, mesh, base, plan);
   patches.forEach((compiled, i) => {
     if (!same(compiled.patch.positions, patchesAgain[i]!.patch.positions) || !same(compiled.patch.indices, patchesAgain[i]!.patch.indices)) throw new Error(`${holeKey}: patch ${compiled.patch.id} compile is not deterministic`);
   });
   let gate = 'pass';
   try {
     assertHeroRegionPlan(plan, base); assertBaseDisplayLods(result);
-    for (const compiled of patches) assertHeroPatch(compiled, base, plan.regions.find(r => r.id === compiled.patch.id)!);
+    for (const compiled of patches) { assertHeroPatch(compiled, base, plan.regions.find(r => r.id === compiled.patch.id)!); assertBunkerPatch(compiled); }
   } catch (error) { gate = (error as Error).message; failures++; }
   const { report } = result;
   const regions = plan.regions.map(r => ({ id: r.id, kind: r.kind, featureIds: r.featureIds, triangles: r.triangles.length, rimLoops: r.rimLoops.length, rimEdges: r.rimEdges, areaM2: r.areaM2, budgetTriangles: r.budgetTriangles, boundsM: r.boundsM }));
-  const heroPatches = patches.map(c => c.report);
+  const heroPatches = patches.map(c => ({ ...c.report, bunkers: c.profiles.map(p => ({ featureId: p.featureId, family: p.family, sizeClass: p.sizeClass, depthM: p.depthM, lipM: p.lipM, bowlRadiusM: p.bowlRadiusM, inradiusM: p.inradiusM, basis: p.basis })) }));
+  const greenPatches = heroPatches.filter(r => r.id.startsWith('green_complex')), bunkerPatches = heroPatches.filter(r => r.id.startsWith('bunker'));
   writeFileSync(join(out, `${holeKey}.display-lods.json`), JSON.stringify({ physicalHoleKey: holeKey, terrainHash: mesh.contentHash, contextLayerHash: scene.contextLayerHash ?? null, canonicalTriangles: mesh.triangleFeatures.length, ms, planMs, patchMs, gate, heroRegions: regions, heroPatches, report }, null, 2));
   const worst = Math.max(...report.hausdorff.flatMap(h => [h.distancesM.lod0, h.distancesM.lod1, h.distancesM.lod2]));
   const kinds = { green_complex: 0, bunker: 0, water_edge: 0, path: 0 } as Record<string, number>;
@@ -85,11 +88,13 @@ for (const [holeKey, entry] of Object.entries(manifest.holes).sort((a, b) => a[1
     budgets: ['lod0', 'lod1', 'lod2'].map(lod => (report.lods[lod as 'lod0'].withinBudget ? '✓' : '·')).join(''),
     heroes: `g${kinds.green_complex}/b${kinds.bunker}/w${kinds.water_edge}/p${kinds.path}`, heroTris: plan.regions.reduce((sum, r) => sum + r.triangles.length, 0), heroBudget: plan.regions.reduce((sum, r) => sum + r.budgetTriangles, 0),
     slivers: report.weld.sliverTriangles, needles: report.weld.needles, lod2ErrM: report.lods.lod2.maxHeightErrorM.toFixed(3), hausdorffM: worst.toFixed(3),
-    greenTris: heroPatches.reduce((sum, r) => sum + r.triangles, 0), greenM: heroPatches.map(r => r.greenSpacingM.toFixed(2)).join('/') || '·', reliefM: heroPatches.length ? Math.max(...heroPatches.map(r => r.maxReliefM)).toFixed(2) : '·', seamM: heroPatches.length ? Math.max(...heroPatches.map(r => r.seamHeightMaxM)) : '·',
+    greenTris: greenPatches.reduce((sum, r) => sum + r.triangles, 0), greenM: greenPatches.map(r => r.greenSpacingM.toFixed(2)).join('/') || '·', bunkerTris: bunkerPatches.reduce((sum, r) => sum + r.triangles, 0),
+    bowlM: heroPatches.length ? (-Math.min(...heroPatches.map(r => r.offsetMinM))).toFixed(2) : '·', lipM: heroPatches.length ? Math.max(...heroPatches.map(r => r.offsetMaxM)).toFixed(3) : '·',
+    reliefM: heroPatches.length ? Math.max(...heroPatches.map(r => r.maxReliefM)).toFixed(2) : '·', seamM: heroPatches.length ? Math.max(...heroPatches.map(r => r.seamHeightMaxM)) : '·',
     gate: gate === 'pass' ? 'pass' : 'FAIL', ms: (ms + patchMs).toFixed(0),
   });
 }
 writeFileSync(join(out, 'summary.json'), JSON.stringify({ course, packageHash: pkg.contentHash, compiledAt: new Date().toISOString(), holes: rows }, null, 2));
-console.log(`package ${pkg.contentHash.slice(0, 12)} · ${rows.length} holes → ${out} (budgets: lod0 lod1 lod2, · = outside the §10 starting budget; heroes: green/bunker/water/path regions; greenTris/greenM/reliefM/seamM: green-complex patch triangles, green interior spacing, interpolated relief, rim seam)`);
+console.log(`package ${pkg.contentHash.slice(0, 12)} · ${rows.length} holes → ${out} (budgets: lod0 lod1 lod2, · = outside the §10 starting budget; heroes: green/bunker/water/path regions; greenTris/greenM: green-complex patch triangles and green interior spacing; bunkerTris: standalone bunker patches; bowlM/lipM: deepest render-only bowl and highest lip; reliefM: interpolated relief; seamM: rim seam)`);
 console.table(rows);
 if (failures) { console.error(`${failures} hole(s) failed the display LOD gates`); process.exit(1); }

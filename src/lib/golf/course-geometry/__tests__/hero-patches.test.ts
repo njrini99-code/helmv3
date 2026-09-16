@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { buildHoleScene } from '../build-scene';
 import { parseContextLayer, type LocalContextZone } from '../context-layer';
 import { assertBaseDisplayLods, compileBaseDisplayLods, weldAndCleanTerrainMesh } from '../display-mesh-v2';
-import { assertHeroRegionPlan, compileHeroRegions, featureDistance, HERO_BUDGETS, HERO_REGION_OPTIONS, type HeroRegionPlan } from '../hero-patches';
+import { ABSORBED_BUNKER_BUDGET, assertHeroRegionPlan, compileHeroRegions, featureDistance, HERO_BUDGETS, HERO_REGION_OPTIONS, type HeroRegionPlan } from '../hero-patches';
 import { parseGeometryPackage } from '../schema';
 import { parseTerrainMesh, type TerrainMesh } from '../terrain';
 import type { MetricTerrainGrid } from '../terrain-source';
@@ -144,7 +144,7 @@ describe('hero patch regions (§5, §11, §27, §35; Task 6)', () => {
 
   it('shares §11 budgets by area with a floor, and is deterministic', () => {
     const [complex] = byKind('green_complex');
-    expect(complex!.budgetTriangles).toBe(HERO_BUDGETS.green_complex);
+    expect(complex!.budgetTriangles).toBe(HERO_BUDGETS.green_complex + ABSORBED_BUNKER_BUDGET * (complex!.featureIds.length - 1));
     const [far] = byKind('bunker');
     expect(far!.budgetTriangles).toBe(HERO_BUDGETS.bunker);
     const again = compileHeroRegions(scene, mesh, base);
@@ -212,7 +212,7 @@ describe('hero patch regions (§5, §11, §27, §35; Task 6)', () => {
     const complex = hole7Plan.regions.find(r => r.kind === 'green_complex')!;
     expect(complex.featureIds.length).toBeGreaterThan(1);
     expect(complex.triangles.length).toBeGreaterThan(3000);
-    expect(complex.budgetTriangles).toBe(HERO_BUDGETS.green_complex);
+    expect(complex.budgetTriangles).toBe(HERO_BUDGETS.green_complex + ABSORBED_BUNKER_BUDGET * (complex.featureIds.length - 1));
     const lods = compileBaseDisplayLods(hole7, { heroPlan: { triangleRegion: hole7Plan.triangleRegion, regionIds: hole7Plan.regionIds } });
     assertBaseDisplayLods(lods);
     expect(lods.lod2.heroRanges).toHaveLength(hole7Plan.regions.length);
