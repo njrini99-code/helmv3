@@ -80,7 +80,7 @@ describe('One-Tap player screen', () => {
     expect([...document.querySelectorAll('[data-marker-label]')].map(n => n.textContent)).toEqual(['BALL']);
     expect(document.querySelector('[data-marker-kind="player"]')).not.toBeNull();
     expect(document.querySelector('[data-slot="one-tap-status"]')!.textContent).toBe('Marked · 1 to sync');
-    expect(document.querySelector('[data-slot="one-tap-lie"]')!.textContent).toMatch(/^Tee/);
+    expect(document.querySelector('[data-slot="one-tap-lie"]')!.textContent).toMatch(/^(Tee|Near tee edge|Likely tee)/);
     expect(document.querySelector('[data-slot="one-tap-undo"]')).not.toBeNull();
     expect(document.querySelector('[data-slot="one-tap-holed"]')).not.toBeNull();
     fireEvent.click(document.querySelector('[data-slot="one-tap-undo"]')!);
@@ -109,7 +109,7 @@ describe('One-Tap player screen', () => {
     await act(async () => { await vi.advanceTimersByTimeAsync(800); });
     expect(markers()).toEqual(['anchor', 'ball', 'player']);
     expect(document.querySelectorAll('[data-marked-link]').length).toBe(1);
-    expect(document.querySelector('[data-slot="one-tap-lie"]')!.textContent).toMatch(/^Fairway/);
+    expect(document.querySelector('[data-slot="one-tap-lie"]')!.textContent).toMatch(/^(Fairway|Likely fairway)/);
     // No fix inside the window: the tap reports GPS_UNAVAILABLE instead of inventing a position.
     await act(async () => { await vi.advanceTimersByTimeAsync(6000); vi.setSystemTime(1_200_000); });
     fireEvent.click(document.querySelector('[data-slot="one-tap-mark"]')!);
@@ -141,7 +141,7 @@ describe('One-Tap player screen', () => {
     act(() => { vi.setSystemTime(1_060_000); for (let t = -1500; t <= 0; t += 500) phone.at(green, 1_060_000 + t); });
     fireEvent.click(document.querySelector('[data-slot="one-tap-mark"]')!);
     await act(async () => { await vi.advanceTimersByTimeAsync(800); });
-    expect(document.querySelector('[data-slot="one-tap-lie"]')!.textContent).toMatch(/^Green/);
+    expect(document.querySelector('[data-slot="one-tap-lie"]')!.textContent).toMatch(/^(Green|Likely green)/);
     expect(root().getAttribute('data-camera-framing')).toBe('whole_green');
   });
 });

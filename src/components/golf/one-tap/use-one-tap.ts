@@ -11,7 +11,8 @@ import { localOriginFor, wgs84ToEnu } from '@/lib/golf/one-tap/geodesy';
 import { courseIdForSite } from '@/lib/golf/one-tap/peek-n-peak-policy';
 import { greenDistances, type GreenDistances } from '@/lib/golf/one-tap/hole-distances';
 import { posteriorGreenProbability } from '@/lib/golf/one-tap/hole-lifecycle';
-import { buildSurfacePartition, LIE_LABELS, lieDisplayPolicy, type LieClass, type LieDisplay } from '@/lib/golf/one-tap/lie-classifier';
+import { buildSurfacePartition, LIE_LABELS, type LieClass, type LieDisplay } from '@/lib/golf/one-tap/lie-classifier';
+import { presentLie, type LiePresentationContext, type LieRule } from '@/lib/golf/one-tap/presentation-lie';
 import { LocationBuffer, type Covariance2, type LocationSample } from '@/lib/golf/one-tap/location-estimator';
 import type { LocationSource } from '@/lib/golf/one-tap/location-source';
 import { OneTapController, type OneTapSnapshot } from '@/lib/golf/one-tap/one-tap-controller';
@@ -46,10 +47,14 @@ export interface UseOneTapOptions {
 type SyntheticTransport = SyncTransport;
 export interface OneTapLie {
   primary: LieClass;
+  /** Presentation copy (§45–48): "Green", "Likely green", "Green / fringe", "Near tee edge", "Near water". */
   label: string;
-  /** Second class shown on a boundary posterior ("Fairway / Rough"). */
+  /** Second class named beside the first on a boundary posterior. */
   secondaryLabel: string | null;
   display: LieDisplay;
+  rule: LieRule;
+  /** §47: the mark needs the penalty/drop workflow before it is a lie. */
+  needsPenaltyWorkflow: boolean;
   pMax: number;
   greenProbability: number;
 }
@@ -95,12 +100,12 @@ function lastFinal(anchors: readonly ShotAnchor[]): ShotAnchor | null {
   for (let i = live.length - 1; i >= 0; i--) if (!live[i]!.provisional) return live[i]!;
   return null;
 }
-export function describeLie(anchor: ShotAnchor): OneTapLie {
-  const sorted = [...anchor.liePosterior].sort((a, b) => b.p - a.p);
-  const pMax = sorted[0]?.p ?? 0, display = lieDisplayPolicy(pMax);
-  const second = sorted.find(entry => entry.lieClass !== anchor.primaryLie) ?? null;
-  return { primary: anchor.primaryLie, label: LIE_LABELS[anchor.primaryLie], secondaryLabel: display === 'boundary' && second ? LIE_LABELS[second.lieClass] : null,
-    display, pMax, greenProbability: posteriorGreenProbability(anchor) };
+/** The lie a golfer reads for a mark: the stored posterior through the
+ * presentation rules, with the hole context (shots so far, feature review). */
+export function describeLie(anchor: ShotAnchor, context: LiePresentationContext): OneTapLie {
+  const presentation = presentLie(anchor.liePosterior, anchor.primaryLie, context);
+  return { primary: presentation.primary, label: presentation.label, secondaryLabel: presentation.secondary ? LIE_LABELS[presentation.secondary] : null,
+    display: presentation.display, rule: presentation.rule, needsPenaltyWorkflow: presentation.needsPenaltyWorkflow, pMax: presentation.pMax, greenProbability: posteriorGreenProbability(anchor) };
 }
 function sameCamera(a: CameraDirectorState, b: CameraDirectorState): boolean {
   return a.mode === b.mode && a.sinceMs === b.sinceMs && a.lastGestureMs === b.lastGestureMs && a.anchored === b.anchored;
@@ -227,7 +232,12 @@ export function useOneTap(options: UseOneTapOptions): OneTapView {
     if (lastMark) return { value: greenDistances([lastMark.positionENU[0], lastMark.positionENU[1]], green.feature, lastMark.covarianceENU2D, green.edgeSigmaM), basis: 'last_mark' };
     return { value: null, basis: null };
   }, [green, latestFix, lastMark, origin]);
-  const lie = useMemo(() => lastMark ? describeLie(lastMark) : null, [lastMark]);
+  const lie = useMemo(() => {
+    if (!lastMark) return null;
+    const primaryFeatureId = lastMark.liePosterior.find(e => e.lieClass === lastMark.primaryLie)?.featureId ?? null;
+    const primaryReviewed = primaryFeatureId ? partition.surfaces.find(s => s.feature.id === primaryFeatureId)?.feature.reviewed ?? null : null;
+    return describeLie(lastMark, { completedShots: snapshot.shots.length, primaryReviewed });
+  }, [lastMark, partition, snapshot.shots.length]);
   const markers = useMemo(() => markersFromAnchors(snapshot.anchors, rippleKey, player ? { positionENU: player.positionENU, accuracyM: player.accuracyM, stale: playerStale } : null),
     [snapshot.anchors, rippleKey, player, playerStale]);
 

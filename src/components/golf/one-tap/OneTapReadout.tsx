@@ -3,7 +3,8 @@
 import { metresToYards } from '@/lib/golf/one-tap/hole-distances';
 import type { OneTapView } from './use-one-tap';
 
-/** Green distances with their honest ± and the lie of the last mark. It sits
+/** Green distances with their honest ± and the lie of the last mark in its
+ * presentation copy (§45–48: "Likely green", "Near tee edge", "Near water"). It sits
  * in the footer above MARK BALL, never over the course, so a mark at the
  * player's feet (the bottom of the tee framing) is never hidden by it. */
 const yards = (metres: number) => Math.round(metresToYards(metres));
@@ -28,8 +29,8 @@ export function OneTapReadout({ view }: { view: OneTapView }) {
       </div>
       <p className="mt-0.5 text-caption text-text-secondary">yd to green · ±{Math.max(1, yards(distances.sigmaM))} yd · {distancesBasis === 'live_fix' ? 'from where you stand' : 'from your last mark'}</p>
     </div> : <p className="text-caption text-text-secondary">{view.hasGreen ? 'Waiting for a GPS fix' : 'No mapped green on this hole'}</p>}
-    {lie && <p className="shrink-0 text-right text-body-sm font-semibold" data-slot="one-tap-lie" data-lie-display={lie.display}>
-      {lie.label}{lie.display === 'cue' ? ' · likely' : lie.secondaryLabel ? ` / ${lie.secondaryLabel}` : ''}
+    {lie && <p className="shrink-0 text-right text-body-sm font-semibold" data-slot="one-tap-lie" data-lie-display={lie.display} data-lie-rule={lie.rule}>
+      {lie.label}
     </p>}
   </div>;
 }
