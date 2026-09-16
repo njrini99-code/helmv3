@@ -387,13 +387,16 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
 function buildSkyDome(radius: number): Mesh<SphereGeometry, ShaderMaterial> {
   const material = new ShaderMaterial({
     side: BackSide, depthWrite: false, fog: false,
-    uniforms: { zenith: { value: new Color(MERIDIAN_STYLE.sky.zenith) }, horizon: { value: new Color(MERIDIAN_STYLE.sky.horizon) }, ground: { value: new Color(MERIDIAN_STYLE.haze.color) } },
+    uniforms: { zenith: { value: new Color(MERIDIAN_STYLE.sky.zenith) }, horizon: { value: new Color(MERIDIAN_STYLE.sky.horizon) }, below: { value: new Color(MERIDIAN_STYLE.sky.below) }, curve: { value: MERIDIAN_STYLE.sky.curve }, belowSpan: { value: MERIDIAN_STYLE.sky.belowSpan } },
     vertexShader: `varying vec3 vDir;
 void main() { vDir = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
-    fragmentShader: `uniform vec3 zenith; uniform vec3 horizon; uniform vec3 ground; varying vec3 vDir;
+    fragmentShader: `uniform vec3 zenith; uniform vec3 horizon; uniform vec3 below; uniform float curve; uniform float belowSpan; varying vec3 vDir;
 void main() {
-  vec3 sky = mix(horizon, zenith, pow(clamp(vDir.z, 0.0, 1.0), 0.55));
-  gl_FragColor = vec4(mix(sky, ground, clamp(-vDir.z * 3.0, 0.0, 1.0)), 1.0);
+  // Above the horizon: horizon → zenith by sin(elevation)^curve. Below it
+  // (where the package ends before the horizon): horizon → distant-land haze.
+  vec3 sky = mix(horizon, zenith, pow(clamp(vDir.z, 0.0, 1.0), curve));
+  vec3 land = mix(horizon, below, smoothstep(0.0, belowSpan, -vDir.z));
+  gl_FragColor = vec4(vDir.z >= 0.0 ? sky : land, 1.0);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
 }`,

@@ -297,7 +297,14 @@ from V1; V4 changes what stands on each centre.
 - **Background (§52).** Top keeps the map ground colour. Terrain and Side draw a
   sky dome (`meridian-sky-dome`, horizon → zenith gradient, fog-free, depth-free,
   one draw call) so the world ends in air rather than a flat green void.
-  `visualSky` telemetry reports `gradient` or `ground`.
+  `visualSky` telemetry reports `gradient` or `ground`. The package ends well
+  before the true horizon, so most of what a Side preset sees behind the far
+  edge is below it: there the dome fades from the horizon tone to a hazy
+  distant-land grey-green (`sky.below`, reached about 6° down,
+  `sky.belowSpan`), so the far edge meets hazed ground rather than a hard
+  silhouette against white. Above the horizon `sky.curve` (< 1) pulls the
+  zenith tone down so the low band the camera sees still grades. No landform
+  is drawn there.
 - **Context (§53).** Ground: real surfaces mixed 58 % toward rough and
   desaturated 15 % (V2). Trees: crowns and mass lobes in shared context woods
   lose 30 % saturation and 8 % light; identity and transforms do not change.

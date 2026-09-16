@@ -201,8 +201,15 @@ export const MERIDIAN_STYLE = Object.freeze({
   /** §51: distance haze in perspective presets only, capped so the played
    * hole never loses more than this much contrast at `endM`. */
   haze: Object.freeze({ color: '#C9D8E6', startM: 180, endM: 900, maxMix: .28 }),
-  /** §52: sky/horizon gradient behind perspective presets; Top keeps the map ground. */
-  sky: Object.freeze({ zenith: '#8FB3DA', horizon: '#DCE6EF' }),
+  /** §52: sky/horizon gradient behind perspective presets; Top keeps the map
+   * ground. `curve` is the exponent on sin(elevation): below 1 it pulls the
+   * zenith tone down toward the horizon. Because the terrain package ends
+   * well before the true horizon, most of what a Side preset sees behind the
+   * far edge is *below* the horizon: `below` is the hazy distant-land tone the
+   * dome fades to there (reached about 6° down), so the far edge meets a
+   * hazed ground tone instead of a hard silhouette against white sky. No
+   * landform is drawn there: it is a gradient, not terrain. */
+  sky: Object.freeze({ zenith: '#8FB3DA', horizon: '#DCE6EF', curve: .38, below: '#BFCCCB', belowSpan: .10 }),
   /** §50: analytic contact shading under crowns and forest mass, computed
    * from the seeded placement. No screen-space AO at the base tier. */
   canopyShade: Object.freeze({ amount: .16, crownRadiusScale: 1.15, massRadiusScale: .95, massWeight: .8 }),
