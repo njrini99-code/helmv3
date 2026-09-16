@@ -59,7 +59,7 @@ Hero hole: Peek’n Peak Upper hole 7.
 | 52 | QA vs production | done | Lab vs entry context (outside-world action 9) |
 | 53 | Rendering tiers | partial (tier 3 source-limited) | Tier 1 done; tier 2 done (fringe/apron, lip, setting, edge types, path integration with shoulder shade, forest hierarchy, open-rough bands, adjacent-hole context); tier 3: understory ✓, structures (footprint extrusions + contact shade, roofs source-limited), hole-specific composition (§11 visibility scoring, state cameras) ✓, atmosphere/light tuning ✓, runoffs/collection areas only where a source exists (none yet) |
 | 54 | Source-backed vs visual-only | done | `basis` markers on every layer |
-| 55–56 | Mirrored-in-3D test, hole-by-hole checklist | partial | First run on all 18 holes (`lab/audit/hNN-{tee-hole,putting-green}.png`, 2026-09-16); table below Third run after v9 (`lab/audit-v3/hNN-{tee-hole,putting-green}.png`, phone, 2026-09-16, all 18 holes): found and fixed a shading-spoke artifact on small bunkers (overhang facing now comes from the smoothed rim normal; tiny fan-triangulated bowls flatten by `bowlSupport`) and zigzag cart-path ribbons at sharp source bends (2 m centreline fillets). Per-hole notes: 15 boxy source green and open tee side (source-limited); 4, 5, 13, 15 open flanks / par-3 carries stay `uncertain` (nothing painted); 12 oversized source bunker below the green; 10 clipped green edge (source). Hero and signature read on 1, 2, 7, 8, 9, 11, 16, 17, 18. Fourth run after v17 (`scratchpad/audit-v5`, phone terrain + green states, 36 captures, 0 errors): roofs, landform occlusion and green mowing read on every hole; the green bands show on 2, 3, 5–7, 9–12, 14–18 and stay hidden from the tee; hole 10's fairway end is a straight-sided source polygon abutting the green (an apron-blend test at 4 m changed nothing, so 2 m stays), a source shape, not a render rule. |
+| 55–56 | Mirrored-in-3D test, hole-by-hole checklist | partial | First run on all 18 holes (`lab/audit/hNN-{tee-hole,putting-green}.png`, 2026-09-16); table below Third run after v9 (`lab/audit-v3/hNN-{tee-hole,putting-green}.png`, phone, 2026-09-16, all 18 holes): found and fixed a shading-spoke artifact on small bunkers (overhang facing now comes from the smoothed rim normal; tiny fan-triangulated bowls flatten by `bowlSupport`) and zigzag cart-path ribbons at sharp source bends (2 m centreline fillets). Per-hole notes: 15 boxy source green and open tee side (source-limited); 4, 5, 13, 15 open flanks / par-3 carries stay `uncertain` (nothing painted); 12 oversized source bunker below the green; 10 clipped green edge (source). Hero and signature read on 1, 2, 7, 8, 9, 11, 16, 17, 18. Fourth run after v17 (`scratchpad/audit-v5`, phone terrain + green states, 36 captures, 0 errors): roofs, landform occlusion and green mowing read on every hole; the green bands show on 2, 3, 5–7, 9–12, 14–18 and stay hidden from the tee; hole 10's fairway end is a straight-sided source polygon abutting the green (an apron-blend test at 4 m changed nothing, so 2 m stays), a source shape, not a render rule. Fifth run after v18 (`scratchpad/audit-v6`, phone terrain + green, 36 captures, 0 errors, 13–15 draws, frame p95 median 27 ms on the Mac): the terrain tone reads on every hole with no halo or seam; the open flanks (2, 4) and par-3 carries (5, 13, 15) now vary with the land (olive ridges, richer hollows) while staying unclassified. |
 | 57–58 | Layer architecture, data model | done | Compiler layers + `SURFACE_CLASS_IDS` carry fringe, apron, rough tiers, zones; paths/structures in the context layer |
 | 59 | Camera as quality multiplier | done | Production states (outside-world action 8) |
 | 60 | No dead zones | partial | Every ground vertex classified; the audit still finds source-limited anonymous rough on 2, 3, 4 (long open flanks) and the par-3 carries on 5, 13, 15 — the context layer marks them `uncertain`, so nothing is painted (honest); needs the §39 human classification pass Terrain response (`terrainTone`, §35, 2026-09-17) tints that unclaimed ground by DEM shelter/exposure, so the carries and flanks vary with the land while staying unclassified. |
@@ -74,10 +74,10 @@ Legend: ✓ reads as intended · ~ reads but weak · ✗ fails · src = source-l
 | Hole | Terrain | Fairway / edges | Approach → green | Green + setting | Bunkers | Rough / outer | Vegetation | Context | Composition | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 1 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ ponds, houses, road | ✓ | — |
-| 2 | ✓ | ✓ | ✓ | ✓ | ✓ | ~ src | ~ | ✓ pond | ✓ | Open flank left is unclassified (uncertain 49 %) |
+| 2 | ✓ | ✓ | ✓ | ✓ | ✓ | ~ src | ~ | ✓ pond | ✓ | Open flank left is unclassified (uncertain 49 %); since v18 it varies by DEM shelter/exposure |
 | 3 | ✓ | ✓ | ✓ | ✓ | ✓ | ~ src | ~ src | ✓ big pond | ✓ | Few woods polygons in source; 49 draws |
-| 4 | ✓ | ✓ | ✓ | ✓ | ✓ | ~ src | ✓ | ✓ | ✓ | Long open flank right |
-| 5 | ✓ | n/a par 3 | ✓ | ✓ | ✓ | ~ src | ✓ | ✓ | ✓ | Carry rough reads as one tone; 558k tris (near crowns → V7 LOD) |
+| 4 | ✓ | ✓ | ✓ | ✓ | ✓ | ~ src | ✓ | ✓ | ✓ | Long open flank right; since v18 it varies by DEM shelter/exposure |
+| 5 | ✓ | n/a par 3 | ✓ | ✓ | ✓ | ~ src | ✓ | ✓ | ✓ | Carry rough read as one tone until v18 (now an olive ridge across the carry, richer hollow below the green); 558k tris (near crowns → V7 LOD) |
 | 6 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — |
 | 7 | ✓ | ✓ | ✓ apron neck | ✓ | ✓ | ✓ first cut visible | ✓ | ✓ pond, houses, path | ✓ | Hero hole |
 | 8 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ houses, pond | ✓ | — |
@@ -85,9 +85,9 @@ Legend: ✓ reads as intended · ~ reads but weak · ✗ fails · src = source-l
 | 10 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ forest wall | ✓ | ✓ | — |
 | 11 | ✓ | ✓ stripes | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ houses, forest | ✓ | — |
 | 12 | ✓ | ✓ | ✓ | ✓ large green | ✓ | ✓ | ✓ | ✓ | ✓ | — |
-| 13 | ✓ | n/a par 3 | ✓ | ✓ | ✓ crescent | ~ src | ✓ | ✓ path | ✓ | Lower half open rough |
+| 13 | ✓ | n/a par 3 | ✓ | ✓ | ✓ crescent | ~ src | ✓ | ✓ path | ✓ | Lower half open rough; since v18 the bunker mounds and the low ground read by DEM shelter/exposure |
 | 14 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — |
-| 15 | ✓ | n/a par 3 | ✓ | ✓ | n/a | ~ src | ✓ | ~ | ✓ | Tee-to-green carry is one rough tone; 489k tris (near crowns → V7 LOD) |
+| 15 | ✓ | n/a par 3 | ✓ | ✓ | n/a | ~ src | ✓ | ~ | ✓ | Tee-to-green carry was one rough tone until v18 (now terrain-following tone); 489k tris (near crowns → V7 LOD) |
 | 16 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — |
 | 17 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | Heaviest draws (227) |
 | 18 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — |
