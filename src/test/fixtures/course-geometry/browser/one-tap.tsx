@@ -85,7 +85,8 @@ export function OneTapFixture({ course, holeNumber, showBar = false, playMode = 
       <Button variant="ghost" size="sm" onClick={round.previousHole}>Prev hole</Button>
       <Button variant="ghost" size="sm" onClick={reset}>Reset round</Button>
     </div>}
-    <OneTapPlayerScreen roundId={roundId} pkg={pkg} holeKey={hole.key} terrain={terrain} contextLayer={contextLayerFor(course) ?? undefined} location={hub.source} round={round} />
+    <OneTapPlayerScreen roundId={roundId} pkg={pkg} holeKey={hole.key} terrain={terrain} contextLayer={contextLayerFor(course) ?? undefined} location={hub.source} round={round}
+      reducedMotion={typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches} />
     <output hidden data-terrain-fixture-state={terrainState} data-walker-route-m={Math.round(walker.routeLengthM)} data-walker-green-m={Math.round(route.greenAtM)} data-scorecard={JSON.stringify(round.scorecard.map(r => [r.ordinal, r.strokes, r.status]))} />
   </div>;
 }

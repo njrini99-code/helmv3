@@ -77,11 +77,15 @@ const outDir = path.resolve(String(args['out-dir'] || `output/playwright/course-
   await page.locator('[data-slot=one-tap-holed]').click(); await page.waitForTimeout(350); await snap('holed', { settled: false });
   // Explicit hole advance: NEXT HOLE becomes the primary action once the hole is closed.
   const before = await page.evaluate(() => document.querySelector('[data-slot=one-tap-screen]')?.dataset.holeKey ?? null);
-  await page.locator('[data-slot=one-tap-next-hole]').click();
-  await page.waitForFunction(prev => document.querySelector('[data-slot=one-tap-screen]')?.dataset.holeKey !== prev, before, { timeout: 10000 });
-  await page.waitForFunction(() => document.querySelector('canvas[data-terrain-state=ready]'), null, { timeout: 90000 });
-  await page.waitForTimeout(2200);
-  await snap('next-hole-ready');
+  // The last hole has no NEXT HOLE: the round is over and the capture ends on the completion card.
+  const nextHole = page.locator('[data-slot=one-tap-next-hole]');
+  if (await nextHole.count()) {
+    await nextHole.click();
+    await page.waitForFunction(prev => document.querySelector('[data-slot=one-tap-screen]')?.dataset.holeKey !== prev, before, { timeout: 10000 });
+    await page.waitForFunction(() => document.querySelector('canvas[data-terrain-state=ready]'), null, { timeout: 90000 });
+    await page.waitForTimeout(2200);
+    await snap('next-hole-ready');
+  }
   const summary = { course, hole, viewport, routeLengthM: length, steps, errors };
   fs.writeFileSync(path.join(outDir, 'capture.json'), JSON.stringify(summary, null, 2) + '\n');
   if (errors.length) process.stdout.write(`ERRORS ${errors.join(' | ')}\n`);

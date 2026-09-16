@@ -5,6 +5,7 @@ import type { ProductionCameraState, TerrainMesh } from '@/lib/golf/course-geome
 import type { CourseGeometryPackage } from '@/lib/golf/course-geometry/types';
 import type { SceneMarkers } from '@/lib/golf/course-geometry/scene-markers';
 import { MemoryAnchorRepository, StorageAnchorRepository, SyncQueue, type AnchorRepository, type StorageLike, type SyncTransport } from '@/lib/golf/one-tap/anchor-repository';
+import type { PenaltyRepository } from '@/lib/golf/one-tap/penalty-event';
 import type { CalibrationTraceSink } from '@/lib/golf/one-tap/calibration-trace';
 import { initialCameraState, nextHole, observeAnchor, observeGesture, productionStateFor, recenter, tickCamera, type CameraDirectorState, type CameraMode } from '@/lib/golf/one-tap/camera-director';
 import { localOriginFor, wgs84ToEnu } from '@/lib/golf/one-tap/geodesy';
@@ -41,6 +42,8 @@ export interface UseOneTapOptions {
   storage?: StorageLike | null;
   /** A round-level repository (shared across holes) replaces the per-hook one. */
   repo?: AnchorRepository;
+  /** The round's penalty events flush through the same outbox (task 13). */
+  penaltyRepo?: PenaltyRepository | null;
   transport?: SyntheticTransport | SyncTransport | null;
   /** §71 debug/calibration only: raw windows go here and nowhere else. */
   trace?: CalibrationTraceSink | null;
@@ -109,7 +112,10 @@ export interface OneTapView {
 }
 
 const EMPTY_SNAPSHOT: OneTapSnapshot = Object.freeze({ state: 'HOLE_READY', outcome: null, lastAnchor: null, anchors: [], shots: [], undoableId: null, syncPending: 0, syncErrors: 0, paused: false, manualCamera: false, pendingTapMs: null });
-export const RIPPLE_MS = 500;
+/** The fresh-mark key must outlive the 520 ms shot reveal (task 12,
+ * `MARKER_MOTION.revealMs`) and a preset overlay rebuild, or a rebuilt
+ * controller never sees `reveal` and the stroke is lost. */
+export const RIPPLE_MS = 900;
 const CAMERA_TICK_MS = 1000;
 /** §37: YOU eases at animation cadence; the tick is a no-op once settled. */
 const PLAYER_TICK_MS = 100;
@@ -137,7 +143,7 @@ function sameCamera(a: CameraDirectorState, b: CameraDirectorState): boolean {
 }
 
 export function useOneTap(options: UseOneTapOptions): OneTapView {
-  const { roundId, pkg, holeKey, terrain, location, transport = null, reducedMotion = false, playMode = 'practice' } = options;
+  const { roundId, pkg, holeKey, terrain, location, transport = null, reducedMotion = false, playMode = 'practice', penaltyRepo = null } = options;
   const nowRef = useRef(options.now ?? Date.now);
   nowRef.current = options.now ?? Date.now;
   const now = useCallback(() => nowRef.current(), []);
@@ -148,7 +154,7 @@ export function useOneTap(options: UseOneTapOptions): OneTapView {
   const course = useMemo(() => ({ courseId: courseIdForSite(pkg.siteId), siteId: pkg.siteId }), [pkg.siteId]);
   const ownRepo = useMemo<AnchorRepository>(() => options.repo ? options.repo : storage ? new StorageAnchorRepository(storage, [roundId], course) : new MemoryAnchorRepository(), [options.repo, storage, roundId, course]);
   const repo = options.repo ?? ownRepo;
-  const sync = useMemo(() => new SyncQueue(repo, transport, roundId), [repo, transport, roundId]);
+  const sync = useMemo(() => new SyncQueue(repo, transport, roundId, penaltyRepo ?? null), [repo, transport, roundId, penaltyRepo]);
   const [buffer] = useState(() => new LocationBuffer());
 
   // The controller is created in an effect (not a memo) so Strict Mode's

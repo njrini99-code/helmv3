@@ -47,7 +47,7 @@ export function OneTapPlayerScreen({ roundId, pkg, holeKey, terrain, contextLaye
   const scene = useMemo(() => {
     try { return buildHoleScene(pkg, holeKey, [], terrain ?? undefined, contextLayer); } catch { return null; }
   }, [pkg, holeKey, terrain, contextLayer]);
-  const view = useOneTap({ roundId, pkg, holeKey, terrain, location, storage, transport, reducedMotion, now, repo: round?.repo, playMode: round?.playMode ?? playMode });
+  const view = useOneTap({ roundId, pkg, holeKey, terrain, location, storage, transport, reducedMotion, now, repo: round?.repo, penaltyRepo: round?.penaltyRepo ?? null, playMode: round?.playMode ?? playMode });
   const cameraRef = useRef<((state: ProductionCameraState) => void) | null>(null);
   // Meridian §62 applied to the player's own mark: while the camera follows,
   // the last mark and the green complex stay on screen together (whole green

@@ -68,6 +68,8 @@ export interface OneTapHoleCompletion {
 }
 export interface OneTapRoundView {
   repo: AnchorRepository;
+  /** The round's penalty outbox, flushed by the view hook's sync queue (task 13). */
+  penaltyRepo: PenaltyRepository;
   holeIndex: number;
   holeKey: string;
   holeCount: number;
@@ -272,10 +274,10 @@ export function useOneTapRound({ roundId, pkg, holeKeys, location, storage: stor
   }, [holeKey, holeKeys.length, setHoleIndex]);
 
   return useMemo<OneTapRoundView>(() => ({
-    repo, holeIndex, holeKey, holeCount: holeKeys.length, ordinal: current.ordinal, strokes: current.strokes, status: current.status, terminalMethod: current.terminalMethod, integrity: current.integrity,
+    repo, penaltyRepo, holeIndex, holeKey, holeCount: holeKeys.length, ordinal: current.ordinal, strokes: current.strokes, status: current.status, terminalMethod: current.terminalMethod, integrity: current.integrity,
     scorecard, hasNextHole: holeIndex < holeKeys.length - 1, nextHole, previousHole, reopenHole,
     anchors: holeAnchors, penalties: holePenalties, penaltyStrokes: current.penaltyStrokes, score: current.score, unresolvedPenalties: current.unresolvedPenalties, skipped: current.skipped,
     addPenalty, removeLastPenalty, skipHole, goToHole, openReview, playMode: playModeResolution.mode, playModeLocked: playModeResolution.locked, setPlayMode,
     completion, dismissCompletion, returnToCompleted, inferredFrom, dismissInferred: dismissCompletion, takeBackInferred: returnToCompleted,
-  }), [repo, holeIndex, holeKey, holeKeys.length, current, scorecard, nextHole, previousHole, reopenHole, holeAnchors, holePenalties, addPenalty, removeLastPenalty, skipHole, goToHole, openReview, playModeResolution.mode, playModeResolution.locked, setPlayMode, completion, dismissCompletion, returnToCompleted, inferredFrom]);
+  }), [repo, penaltyRepo, holeIndex, holeKey, holeKeys.length, current, scorecard, nextHole, previousHole, reopenHole, holeAnchors, holePenalties, addPenalty, removeLastPenalty, skipHole, goToHole, openReview, playModeResolution.mode, playModeResolution.locked, setPlayMode, completion, dismissCompletion, returnToCompleted, inferredFrom]);
 }
