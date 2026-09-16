@@ -69,7 +69,10 @@ const outDir = path.resolve(String(args['out-dir'] || `output/playwright/course-
   // The walker route runs tee → green → next tee; the green sits at greenAtM.
   const length = await page.evaluate(() => Number(document.querySelector('[data-walker-green-m]')?.dataset.walkerGreenM ?? window.__oneTapWalker.routeLengthM));
   await walkTo(Math.max(0, Math.min(length * .55, length - 40))); await mark(); await snap('approach-marked');
-  await walkTo(Math.max(0, length - 6)); await mark(); await snap('green-marked');
+  // §79: the ••• menu carries the exceptions; the primary screen stays clean.
+  await page.locator('button[aria-label="More"]').click(); await page.waitForTimeout(250); await snap('overflow', { settled: false });
+  await page.locator('button[aria-label="More"]').click(); await page.waitForTimeout(250);
+  await walkTo(Math.max(0, length - 3)); await mark(); await snap('green-marked');
   // The completion card (§19) fades after two seconds on a clean hole: snapshot it while it is up.
   await page.locator('[data-slot=one-tap-holed]').click(); await page.waitForTimeout(350); await snap('holed', { settled: false });
   // Explicit hole advance: NEXT HOLE becomes the primary action once the hole is closed.

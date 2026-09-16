@@ -10,14 +10,13 @@ import { initialCameraState, nextHole, observeAnchor, observeGesture, production
 import { localOriginFor, wgs84ToEnu } from '@/lib/golf/one-tap/geodesy';
 import { courseIdForSite } from '@/lib/golf/one-tap/peek-n-peak-policy';
 import { greenDistances, greenReadout, type GreenDistances, type GreenReadout } from '@/lib/golf/one-tap/hole-distances';
-import { posteriorGreenProbability } from '@/lib/golf/one-tap/hole-lifecycle';
+import { FINISH_HOLE_RULE, posteriorGreenProbability } from '@/lib/golf/one-tap/hole-lifecycle';
 import { buildSurfacePartition, exactPointInPartition, LIE_LABELS, type LieClass, type LieDisplay } from '@/lib/golf/one-tap/lie-classifier';
 import { presentLie, type LiePresentationContext, type LieRule } from '@/lib/golf/one-tap/presentation-lie';
 import { LocationBuffer, type Covariance2, type LocationSample } from '@/lib/golf/one-tap/location-estimator';
 import type { LocationSource, LocationStatus } from '@/lib/golf/one-tap/location-source';
 import { OneTapController, type OneTapSnapshot } from '@/lib/golf/one-tap/one-tap-controller';
 import { QUALITY_CONFIG, gradeLocationQuality, type LocationQuality } from '@/lib/golf/one-tap/location-quality';
-import { NEXT_TEE_RULE } from '@/lib/golf/one-tap/hole-lifecycle';
 import { acceptPlayerFix, playerFixFromSample, tickPlayerPresentation, type PlayerPresentation } from '@/lib/golf/one-tap/player-presentation';
 import { markersFromAnchors } from '@/lib/golf/one-tap/scene-markers';
 import { liveAnchors, UNDO_WINDOW_MS, type ShotAnchor } from '@/lib/golf/one-tap/shot-anchor';
@@ -88,9 +87,15 @@ export interface OneTapView {
   /** §14: the last mark sits in the green complex, so "Finish hole" is offered. */
   finishSuggested: boolean;
   canHoleOut: boolean;
+  /** §79 overflow: a finalized mark on this hole can be deleted at any age. */
+  canDeleteLastMark: boolean;
+  paused: boolean;
   markBall(): void;
   undo(): void;
   holeOut(): void;
+  deleteLastMark(): void;
+  pause(): void;
+  resume(): void;
   onGesture(): void;
   recenterCamera(): void;
 }
@@ -284,18 +289,21 @@ export function useOneTap(options: UseOneTapOptions): OneTapView {
     if (snapshot.state === 'GPS_UNAVAILABLE') return { kind: 'no_fix', undoable: false };
     return null;
   }, [snapshot.undoableId, snapshot.outcome, snapshot.state]);
-  const finishSuggested = !!lastMark && !lastMark.terminal && (lie?.greenProbability ?? 0) >= NEXT_TEE_RULE.greenProbability;
+  const finishSuggested = !!lastMark && !lastMark.terminal && (lie?.greenProbability ?? 0) >= FINISH_HOLE_RULE.greenComplexProbability;
 
   const markBall = useCallback(() => { void controller?.markBall(); }, [controller]);
   const undo = useCallback(() => { controller?.undo(); }, [controller]);
   const holeOut = useCallback(() => { controller?.holeOut(); }, [controller]);
+  const deleteLastMark = useCallback(() => { controller?.deleteLast(); }, [controller]);
+  const pause = useCallback(() => { controller?.pause(); }, [controller]);
+  const resume = useCallback(() => { controller?.resume(); }, [controller]);
   const onGesture = useCallback(() => { setCamera(state => observeGesture(state, now())); }, [now]);
   const recenterCamera = useCallback(() => { setCamera(state => recenter(state, controller?.cameraObservation() ?? null, now())); }, [controller, now]);
 
   return useMemo<OneTapView>(() => ({
     snapshot, markers, distances: distances.value, distancesBasis: distances.basis, readout, hasGreen: !!green, lie, lastMark,
     cameraMode: camera.mode, cameraState, locationKind: location?.kind ?? 'none', latestFix, player, locationQuality, syncIssue, statusToast, finishSuggested,
-    canHoleOut: !!lastMark && !lastMark.terminal,
-    markBall, undo, holeOut, onGesture, recenterCamera,
-  }), [snapshot, markers, distances, readout, green, lie, lastMark, camera.mode, cameraState, location, latestFix, player, locationQuality, syncIssue, statusToast, finishSuggested, markBall, undo, holeOut, onGesture, recenterCamera]);
+    canHoleOut: !!lastMark && !lastMark.terminal, canDeleteLastMark: !!lastMark && snapshot.state !== 'CAPTURE_PENDING', paused: snapshot.paused,
+    markBall, undo, holeOut, deleteLastMark, pause, resume, onGesture, recenterCamera,
+  }), [snapshot, markers, distances, readout, green, lie, lastMark, camera.mode, cameraState, location, latestFix, player, locationQuality, syncIssue, statusToast, finishSuggested, markBall, undo, holeOut, deleteLastMark, pause, resume, onGesture, recenterCamera]);
 }

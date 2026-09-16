@@ -56,6 +56,8 @@ interface FrameProps {
   stageOverlay?: ReactNode;
   /** Stage only: the bar beneath the View control (the persistent primary action). */
   stageFooter?: ReactNode;
+  /** Stage only: extra entries at the top of the ••• menu (One-Tap master plan §79). */
+  stageMenuItems?: readonly StageMenuItem[];
   /** Stage only: receives a production camera-state setter so a director can
    * frame the course (area + preset) the way the View control does. */
   stageCameraRef?: RefObject<((state: ProductionCameraState) => void) | null>;
@@ -69,7 +71,9 @@ interface FrameProps {
 
 /** One reusable viewing container. Its caller keys by hole identity; a manual
  * view persists through typing and committed shots, until a different hole. */
-export function HoleSceneFrame({ scene, context, defaultView = 'hole', selectedShotNumber, activeDraftShotNumber, evidence, currentPuttingDistanceM, header, children, debugView, markers, presentation = 'card', stageOverlay, stageFooter, stageCameraRef, onStageGesture, stageFocus }: FrameProps) {
+/** An entry the host adds to the production ••• menu; the frame closes the menu before `onSelect`. */
+export interface StageMenuItem { key: string; label: string; onSelect(): void; disabled?: boolean }
+export function HoleSceneFrame({ scene, context, defaultView = 'hole', selectedShotNumber, activeDraftShotNumber, evidence, currentPuttingDistanceM, header, children, debugView, markers, presentation = 'card', stageOverlay, stageFooter, stageMenuItems, stageCameraRef, onStageGesture, stageFocus }: FrameProps) {
   const [choice, setChoice] = useState<SceneView | null>(null);
   const [expanded, setExpanded] = useState(false);
   const [detailSelection, setDetailSelection] = useState<number | null>(null);
@@ -143,7 +147,7 @@ export function HoleSceneFrame({ scene, context, defaultView = 'hole', selectedS
     return <div className="relative flex h-full min-h-0 flex-1 flex-col" data-scene-context={context} data-current-view={view} data-presentation="stage">
       <Drawing key={view} scene={scene} view={view} context={context} events={events} selectedShotNumber={selectedShotNumber} activeDraftShotNumber={activeDraftShotNumber} puttingScope={puttingScope}
         currentPuttingDistanceM={currentPuttingDistanceM} expanded poseMemory={poseMemory} debugView={debugView} onSelectView={setChoice} markers={markers}
-        heading={heading} areaControls={areaControls} stageOverlay={stageOverlay} stageFooter={stageFooter} presetRef={stagePreset} onStageGesture={onStageGesture} stageFocus={stageFocus} />
+        heading={heading} areaControls={areaControls} stageOverlay={stageOverlay} stageFooter={stageFooter} stageMenuItems={stageMenuItems} presetRef={stagePreset} onStageGesture={onStageGesture} stageFocus={stageFocus} />
     </div>;
   }
   return <div className="min-w-0" data-scene-context={context} data-current-view={view}>
@@ -171,12 +175,12 @@ export function HoleSceneFrame({ scene, context, defaultView = 'hole', selectedS
   </div>;
 }
 
-function Drawing({ scene, view, context, events, selectedShotNumber, activeDraftShotNumber, puttingScope = 'whole_green', currentPuttingDistanceM, expanded = false, heading, areaControls, onClose, poseMemory, onSelectEvent, debugView, onSelectView, markers, stageOverlay, stageFooter, presetRef, onStageGesture, stageFocus }: {
+function Drawing({ scene, view, context, events, selectedShotNumber, activeDraftShotNumber, puttingScope = 'whole_green', currentPuttingDistanceM, expanded = false, heading, areaControls, onClose, poseMemory, onSelectEvent, debugView, onSelectView, markers, stageOverlay, stageFooter, stageMenuItems, presetRef, onStageGesture, stageFocus }: {
   scene?: HoleScene | null; view: SceneView; context: 'entry' | 'review'; events: readonly ShotEvidence[];
   selectedShotNumber?: number; activeDraftShotNumber?: number; puttingScope?: 'whole_green' | 'focus_putt'; currentPuttingDistanceM?: number | null; expanded?: boolean;
   heading?: ReactNode; areaControls?: (close: () => void) => ReactNode; onClose?: () => void; poseMemory?: RefObject<CameraMemory>;
   onSelectEvent?: (shotNumber: number) => void; debugView?: TerrainDebugView; onSelectView?: (view: SceneView) => void;
-  markers?: SceneMarkers | null; stageOverlay?: ReactNode; stageFooter?: ReactNode; presetRef?: RefObject<((preset: TerrainPreset) => void) | null>; onStageGesture?: () => void;
+  markers?: SceneMarkers | null; stageOverlay?: ReactNode; stageFooter?: ReactNode; stageMenuItems?: readonly StageMenuItem[]; presetRef?: RefObject<((preset: TerrainPreset) => void) | null>; onStageGesture?: () => void;
   stageFocus?: StageCameraFocus | null;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -571,7 +575,10 @@ function Drawing({ scene, view, context, events, selectedShotNumber, activeDraft
         </div> : <span className="px-1 text-caption font-medium">{view === 'putting' ? 'Putting distances' : 'Course outline'}</span>}
         {production ? <div className="relative ml-auto">
           <Button size="sm" variant="ghost" className="min-w-11 px-2" aria-label="More" aria-expanded={overflowOpen} aria-haspopup="menu" onClick={() => setOverflowOpen(v => !v)}><MoreHorizontal size={17} aria-hidden /></Button>
-          {overflowOpen && <div role="menu" aria-label="More options" className="absolute right-0 top-full z-20 mt-1 flex min-w-[180px] flex-col rounded-fw-lg border border-border-subtle bg-surface p-1 shadow-card">
+          {overflowOpen && <div role="menu" aria-label="More options" className={`absolute right-0 z-20 flex min-w-[180px] flex-col rounded-fw-lg border border-border-subtle bg-surface p-1 shadow-card ${stageFooter ? 'bottom-full mb-1' : 'top-full mt-1'}`}>
+            {stageMenuItems?.map(item => <Button key={item.key} role="menuitem" size="sm" variant="ghost" className="justify-start px-3" disabled={item.disabled} data-menu-item={item.key}
+              onClick={() => { setOverflowOpen(false); item.onSelect(); }}>{item.label}</Button>)}
+            {stageMenuItems?.length ? <div role="separator" className="my-1 border-t border-border-subtle" /> : null}
             <Button role="menuitem" size="sm" variant="ghost" className="justify-start px-3" leftIcon={<RotateCcw size={15} aria-hidden />} onClick={() => { setOverflowOpen(false); changeCamera(() => ({ zoom: 1, pan: { x: 0, y: 0 }, pose: TERRAIN_PRESETS[homePreset], fitPreset: homePreset })); }}>Reset view</Button>
             <Button role="menuitem" size="sm" variant="ghost" className="justify-start px-3" leftIcon={<Info size={15} aria-hidden />} aria-expanded={inspectorOpen} onClick={() => { setOverflowOpen(false); setInspectorOpen(v => !v); }}>Details and sources</Button>
           </div>}

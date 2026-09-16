@@ -156,6 +156,16 @@ export class OneTapController {
     this.setState('HOLE_READY');
     return this.deps.repo.get(last.id);
   }
+  /** Overflow "Delete last mark" (§79): tombstones the latest finalized mark on
+   * the hole at any age — the golfer's own correction, no branching. */
+  deleteLast(): ShotAnchor | null {
+    const now = this.now(), last = liveAnchors(this.holeAnchors()).at(-1);
+    if (!last || last.provisional || this.state === 'CAPTURE_PENDING') return null;
+    for (const a of tombstoneAnchor(this.holeAnchors(), last.id, now)) if (a.id === last.id) { this.deps.repo.upsert(a); this.deps.sync?.enqueue(a.id); }
+    this.outcome = null;
+    this.setState('HOLE_READY');
+    return this.deps.repo.get(last.id);
+  }
   /** CUP_MARK: the final MARK BALL was at the cup. Never a green-centre substitute. */
   holeOut(anchorId?: string): ShotAnchor | null {
     const live = liveAnchors(this.holeAnchors()), target = anchorId ? live.find(a => a.id === anchorId) : live.at(-1);

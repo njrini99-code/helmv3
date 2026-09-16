@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/fairway/controls/button';
 import type { OneTapState } from '@/lib/golf/one-tap/one-tap-controller';
-import { OneTapHoleComplete } from './OneTapHoleComplete';
+import { OneTapHoleComplete, penaltyLabel } from './OneTapHoleComplete';
 import { OneTapStatusToast } from './OneTapStatusToast';
 import type { OneTapRoundView } from './use-one-tap-round';
 import type { OneTapView } from './use-one-tap';
@@ -31,6 +31,7 @@ export function OneTapHud({ view, round }: { view: OneTapView; round?: OneTapRou
       {location && <span className={`${chip} font-normal text-text-secondary`} data-slot="one-tap-location" data-quality={locationQuality}>{location}</span>}
       {snapshot.paused && <span className={chip} data-slot="one-tap-paused">Paused</span>}
       {round && shots && <span className={chip} data-slot="one-tap-shots" data-hole-status={round.status}>{shots}</span>}
+      {round && round.penaltyStrokes > 0 && <span className={chip} data-slot="one-tap-penalty" data-tone="caution">{penaltyLabel(round.penaltyStrokes)}</span>}
     </div>
     {round && <OneTapHoleComplete round={round} />}
     <OneTapStatusToast view={view} />

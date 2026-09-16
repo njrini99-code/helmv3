@@ -9,6 +9,11 @@ import type { ShotAnchor, TerminalMethod } from './shot-anchor';
  * operational fallback and never invents a final exact distance. */
 export const NEXT_TEE_RULE = Object.freeze({ greenProbability: .7, minDistanceFromGreenM: 60, dwellMs: 10_000 });
 export const DAILY_PIN = 'UNSPECIFIED' as const;
+/** §14: "At the cup? Finish hole" is offered once the last mark plausibly sits
+ * in the green complex. Lower than the inference bar on purpose: a pin cut
+ * near the edge gives a boundary posterior, and the golfer's explicit tap
+ * costs nothing when wrong, while a missing offer blocks the hole. */
+export const FINISH_HOLE_RULE = Object.freeze({ greenComplexProbability: .35 });
 export function markTerminal(anchors: readonly ShotAnchor[], id: string, method: TerminalMethod): ShotAnchor[] {
   return anchors.map(a => a.id === id ? { ...a, terminal: true, terminalMethod: method } : a.terminal && a.holeKey === anchors.find(x => x.id === id)?.holeKey ? { ...a, terminal: false, terminalMethod: null } : a);
 }

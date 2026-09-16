@@ -44,9 +44,9 @@ export function createPenaltyEvent(identity: PenaltyIdentity, kind: PenaltyKind,
 export function tombstonePenalty(event: PenaltyEvent, nowMs: number): PenaltyEvent {
   return event.deletedAt ? event : { ...event, deletedAt: new Date(nowMs).toISOString(), syncState: event.syncState === 'LOCAL' ? 'LOCAL' : 'QUEUED' };
 }
-/** Live penalties on a hole (or the round), oldest first. */
+/** Live penalties on a hole (or the round), oldest first; equal timestamps keep record order. */
 export function livePenalties(events: readonly PenaltyEvent[], holeKey?: string): PenaltyEvent[] {
-  return events.filter(e => !e.deletedAt && (holeKey == null || e.holeKey === holeKey)).sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt) || a.id.localeCompare(b.id));
+  return events.filter(e => !e.deletedAt && (holeKey == null || e.holeKey === holeKey)).sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt));
 }
 export function penaltyStrokes(events: readonly PenaltyEvent[], holeKey?: string): number {
   return livePenalties(events, holeKey).reduce((s, e) => s + e.strokes, 0);
@@ -84,7 +84,7 @@ export class MemoryPenaltyRepository implements PenaltyRepository {
   protected persist(_roundId: string): void { /* memory only */ }
 }
 function livePenaltiesAndTombstones(events: PenaltyEvent[]): PenaltyEvent[] {
-  return events.sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt) || a.id.localeCompare(b.id));
+  return events.sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt));
 }
 export const PENALTY_STORAGE_PREFIX = 'golfhelm-one-tap-penalties:';
 /** Device-durable like the anchors: every event persists per round; an

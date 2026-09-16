@@ -11,6 +11,7 @@ import type { StorageLike, SyncTransport } from '@/lib/golf/one-tap/anchor-repos
 import type { LocationSource } from '@/lib/golf/one-tap/location-source';
 import { OneTapButton } from './OneTapButton';
 import { OneTapHud } from './OneTapHud';
+import { useOneTapOverflow } from './OneTapOverflow';
 import { OneTapReadout } from './OneTapReadout';
 import { useOneTap, type OneTapView } from './use-one-tap';
 import type { OneTapRoundView } from './use-one-tap-round';
@@ -30,12 +31,14 @@ export interface OneTapPlayerScreenProps {
   onView?: (view: OneTapView) => void;
   /** The round around this hole (strokes, hole advance, next-tee inference). */
   round?: OneTapRoundView | null;
+  /** §79 "Use standard tracking": the host swaps the tracker; absent in the lab. */
+  onUseStandardTracking?: () => void;
 }
 
 /** The course is the screen (One-Tap master plan "Player-facing design"):
  * the production HoleSceneFrame in stage presentation with the marks painted
  * on the terrain, the readout floating over it and MARK BALL beneath. */
-export function OneTapPlayerScreen({ roundId, pkg, holeKey, terrain, contextLayer, location, storage, transport, reducedMotion, now, onView, round }: OneTapPlayerScreenProps) {
+export function OneTapPlayerScreen({ roundId, pkg, holeKey, terrain, contextLayer, location, storage, transport, reducedMotion, now, onView, round, onUseStandardTracking }: OneTapPlayerScreenProps) {
   const scene = useMemo(() => {
     try { return buildHoleScene(pkg, holeKey, [], terrain ?? undefined, contextLayer); } catch { return null; }
   }, [pkg, holeKey, terrain, contextLayer]);
@@ -62,10 +65,11 @@ export function OneTapPlayerScreen({ roundId, pkg, holeKey, terrain, contextLaye
     cameraRef.current?.(view.cameraState);
   }, [view.cameraState, view.cameraMode]);
   useEffect(() => { onView?.(view); }, [view, onView]);
+  const overflow = useOneTapOverflow({ view, round: round ?? null, onUseStandardTracking });
   return <div className="flex h-full min-h-0 flex-1 flex-col" data-slot="one-tap-screen" data-one-tap-state={view.snapshot.state} data-camera-mode={view.cameraMode} data-camera-state={view.cameraState}
     data-camera-framing={stageFocus?.target.framing ?? ''} data-hole-key={holeKey} data-hole-status={round?.status ?? ''}>
     <HoleSceneFrame scene={scene} context="entry" presentation="stage" markers={view.markers} stageFocus={stageFocus}
-      stageOverlay={<OneTapHud view={view} round={round} />} stageFooter={<><OneTapReadout view={view} /><OneTapButton view={view} round={round} /></>}
-      stageCameraRef={cameraRef} onStageGesture={view.onGesture} />
+      stageOverlay={<><OneTapHud view={view} round={round} />{overflow.sheet}</>} stageFooter={<><OneTapReadout view={view} /><OneTapButton view={view} round={round} /></>}
+      stageMenuItems={overflow.items} stageCameraRef={cameraRef} onStageGesture={view.onGesture} />
   </div>;
 }

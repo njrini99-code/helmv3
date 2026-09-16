@@ -77,7 +77,7 @@ describe('One-Tap round', () => {
     expect(result.current).toMatchObject({ strokes: 1, status: 'COMPLETE', terminalMethod: 'CUP_MARK' });
     act(() => result.current.nextHole());
     expect(result.current.holeIndex).toBe(1);
-    expect(JSON.parse(storage.map.get(ROUND_STORAGE_PREFIX + 'round')!)).toEqual({ holeIndex: 1 });
+    expect(JSON.parse(storage.map.get(ROUND_STORAGE_PREFIX + 'round')!)).toMatchObject({ holeIndex: 1 });
     unmount();
     const again = renderHook(() => useOneTapRound({ roundId: 'round', pkg: pilotPackage, holeKeys, location: null, storage }));
     expect(again.result.current.holeIndex).toBe(1);
@@ -117,6 +117,52 @@ describe('One-Tap round', () => {
     act(() => { phone.at(nextTee, 2_030_000); phone.at(green, 2_035_000); phone.at(nextTee, 2_040_000); phone.at(nextTee, 2_040_000 + NEXT_TEE_RULE.dwellMs - 1000); });
     expect(result.current.status).toBe('OPEN');
     expect(result.current.holeIndex).toBe(index);
+  });
+
+  it('adds a penalty to the score without a shot segment, resolves it with an ordinary drop mark, and skips or changes holes as round state (§58, §79)', () => {
+    const phone = manualSource();
+    const storage = memoryStorage();
+    const { result } = renderHook(() => useOneTapRound({ roundId: 'round-pen', pkg: pilotPackage, holeKeys, location: phone, storage }));
+    const tee = pointOn(holeKeys[0]!, 'tee');
+    act(() => result.current.repo.upsert(greenAnchor(holeKeys[0]!, tee, { id: 'tee-mark', roundId: 'round-pen', tapTimestamp: '2026-09-16T12:00:00.000Z', liePosterior: [{ featureId: null, lieClass: 'tee', p: 1 }], primaryLie: 'tee' })));
+    vi.setSystemTime(Date.parse('2026-09-16T12:10:00.000Z'));
+    act(() => result.current.addPenalty('penalty_area'));
+    expect(result.current).toMatchObject({ strokes: 0, penaltyStrokes: 1, score: 1, unresolvedPenalties: 1 });
+    expect(result.current.penalties).toHaveLength(1);
+    expect(result.current.penalties[0]).toMatchObject({ kind: 'penalty_area', strokes: 1, relatedAnchorId: 'tee-mark', holeKey: holeKeys[0], syncState: 'QUEUED' });
+    expect(result.current.integrity.flags).toEqual(['PENALTY_UNRESOLVED']);
+    // No anchor was created or moved by the penalty.
+    expect(result.current.repo.list('round-pen').map(a => a.id)).toEqual(['tee-mark']);
+    // The drop is the next ordinary mark: one more shot segment, penalty resolved.
+    act(() => result.current.repo.upsert(greenAnchor(holeKeys[0]!, pointOn(holeKeys[0]!, 'fairway'), { id: 'drop-mark', roundId: 'round-pen', sequence: 1, tapTimestamp: '2026-09-16T12:20:00.000Z', liePosterior: [{ featureId: null, lieClass: 'fairway', p: 1 }], primaryLie: 'fairway' })));
+    expect(result.current).toMatchObject({ strokes: 1, penaltyStrokes: 1, score: 2, unresolvedPenalties: 0 });
+    expect(result.current.integrity.flags).toEqual([]);
+    expect(result.current.repo.get('drop-mark')).toMatchObject({ provisional: false, terminal: false, terminalMethod: null });
+    // Persisted on the device with the anchors; a two-stroke penalty adds two; removal is a tombstone.
+    expect(new (Object.getPrototypeOf(result.current.repo).constructor)(storage, ['round-pen'], { courseId: 'synthetic-course', siteId: 'synthetic' }).list('round-pen')).toHaveLength(2);
+    act(() => result.current.addPenalty('other', 2));
+    expect(result.current).toMatchObject({ penaltyStrokes: 3, score: 4 });
+    act(() => result.current.removeLastPenalty());
+    expect(result.current).toMatchObject({ penaltyStrokes: 1, score: 2 });
+    expect(JSON.parse(storage.map.get('golfhelm-one-tap-penalties:round-pen')!)).toHaveLength(2);
+    // Skip hole: round state, no score, no integrity flags on the hole left behind; a mark after the skip plays it again.
+    act(() => result.current.goToHole(2));
+    expect(result.current.holeIndex).toBe(2);
+    act(() => result.current.skipHole());
+    expect(result.current.holeIndex).toBe(3);
+    expect(result.current.scorecard[2]).toMatchObject({ skipped: true, status: 'OPEN', score: 0 });
+    expect(result.current.scorecard[2]!.integrity.flags).toEqual([]);
+    expect(JSON.parse(storage.map.get(ROUND_STORAGE_PREFIX + 'round-pen')!)).toMatchObject({ holeIndex: 3, skipped: { [holeKeys[2]!]: expect.any(String) } });
+    act(() => result.current.goToHole(2));
+    act(() => result.current.repo.upsert(greenAnchor(holeKeys[2]!, pointOn(holeKeys[2]!, 'tee'), { id: 'late-tee', roundId: 'round-pen', tapTimestamp: '2026-09-16T13:00:00.000Z', liePosterior: [{ featureId: null, lieClass: 'tee', p: 1 }], primaryLie: 'tee' })));
+    expect(result.current.scorecard[2]!.skipped).toBe(false);
+    // Review hole on demand: the card shows the open hole's verdict and stays until closed.
+    act(() => result.current.openReview());
+    expect(result.current.completion).toMatchObject({ holeKey: holeKeys[2], review: true, clean: true, shots: 0 });
+    act(() => { vi.advanceTimersByTime(HOLE_COMPLETION_FADE_MS * 2); });
+    expect(result.current.completion).not.toBeNull();
+    act(() => result.current.dismissCompletion());
+    expect(result.current.completion).toBeNull();
   });
 
   it('turns NEXT HOLE into the primary action once the hole is holed out, and moves the screen to the next hole', async () => {
@@ -193,5 +239,71 @@ describe('One-Tap round', () => {
     expect(card()!.getAttribute('data-integrity')).toBe('CLEAN');
     await act(async () => { await vi.advanceTimersByTimeAsync(HOLE_COMPLETION_FADE_MS + 100); });
     expect(card()).toBeNull();
+  });
+
+  it('keeps the exceptions in the ••• menu: penalty sheet, delete last mark, pause, review, skip and change hole (§79)', async () => {
+    const phone = manualSource();
+    if (!window.matchMedia) Object.defineProperty(window, 'matchMedia', { writable: true, value: () => ({ matches: true, addEventListener() {}, removeEventListener() {} }) });
+    function Harness() {
+      const round = useOneTapRound({ roundId: 'round-menu', pkg: pilotPackage, holeKeys, location: phone, storage: null });
+      return <OneTapPlayerScreen roundId="round-menu" pkg={pilotPackage} holeKey={round.holeKey} terrain={null} location={phone} storage={null} reducedMotion round={round} />;
+    }
+    render(<Harness />);
+    const screen = () => document.querySelector('[data-slot="one-tap-screen"]')!;
+    const more = () => document.querySelector<HTMLButtonElement>('button[aria-label="More"]')!;
+    const item = (key: string) => document.querySelector<HTMLButtonElement>(`[data-menu-item="${key}"]`);
+    // Nothing of this sits on the primary screen.
+    expect(document.querySelector('[data-menu-item]')).toBeNull();
+    fireEvent.click(more());
+    expect([...document.querySelectorAll('[data-menu-item]')].map(b => b.getAttribute('data-menu-item'))).toEqual(['penalty', 'delete-last', 'review', 'change-hole', 'skip', 'pause']);
+    expect(item('delete-last')!.disabled).toBe(true);
+    // Penalty / drop: a separate score event, then the drop is an ordinary mark.
+    fireEvent.click(item('penalty')!);
+    expect(document.querySelector('[data-menu-item]')).toBeNull();
+    expect(document.querySelector('[data-sheet="penalty"]')).not.toBeNull();
+    fireEvent.click(document.querySelector('[data-penalty-kind="penalty_area"]')!);
+    expect(document.querySelector('[data-sheet="penalty"]')).toBeNull();
+    expect(document.querySelector('[data-slot="one-tap-penalty"]')!.textContent).toBe('+1 penalty');
+    expect(document.querySelector('[data-slot="one-tap-shots"]')).toBeNull();
+    const tee = pointOn(holeKeys[0]!, 'tee');
+    act(() => { for (let t = -1500; t <= 0; t += 500) phone.at(tee, 2_000_000 + t); });
+    fireEvent.click(document.querySelector('[data-slot="one-tap-mark"]')!);
+    await act(async () => { await vi.advanceTimersByTimeAsync(800); });
+    expect(document.querySelectorAll('[data-marked-position]:not([data-marker-kind="player"])').length).toBe(1);
+    // Delete last mark: a tombstone at any age.
+    await act(async () => { await vi.advanceTimersByTimeAsync(10_000); });
+    fireEvent.click(more());
+    expect(item('delete-last')!.disabled).toBe(false);
+    fireEvent.click(item('delete-last')!);
+    expect(document.querySelectorAll('[data-marked-position]:not([data-marker-kind="player"])').length).toBe(0);
+    // Pause tracking: the chip appears and MARK BALL waits.
+    fireEvent.click(more());
+    fireEvent.click(item('pause')!);
+    expect(document.querySelector('[data-slot="one-tap-paused"]')).not.toBeNull();
+    expect(document.querySelector<HTMLButtonElement>('[data-slot="one-tap-mark"]')!.disabled).toBe(true);
+    fireEvent.click(more());
+    expect(item('pause')!.textContent).toBe('Resume tracking');
+    fireEvent.click(item('pause')!);
+    expect(document.querySelector('[data-slot="one-tap-paused"]')).toBeNull();
+    // Review hole on demand: the open hole's verdict, closed by the golfer.
+    fireEvent.click(more());
+    fireEvent.click(item('review')!);
+    const card = document.querySelector('[data-slot="one-tap-hole-complete"]')!;
+    expect(card.getAttribute('data-review')).toBe('true');
+    expect(card.textContent).toContain('Hole 1 · 0 shots · +1 penalty · check 1 item');
+    expect(card.querySelector('[data-flag="PENALTY_UNRESOLVED"]')).not.toBeNull();
+    fireEvent.click(document.querySelector('[data-slot="one-tap-review-keep"]')!);
+    expect(document.querySelector('[data-slot="one-tap-hole-complete"]')).toBeNull();
+    // Skip hole moves on; Change hole comes back.
+    fireEvent.click(more());
+    fireEvent.click(item('skip')!);
+    expect(screen().getAttribute('data-hole-key')).toBe(holeKeys[1]);
+    fireEvent.click(more());
+    fireEvent.click(item('change-hole')!);
+    expect(document.querySelector('[data-sheet="hole"]')).not.toBeNull();
+    expect(document.querySelector('[data-hole-index="0"]')!.textContent).toContain('skipped');
+    fireEvent.click(document.querySelector('[data-hole-index="0"]')!);
+    expect(document.querySelector('[data-sheet="hole"]')).toBeNull();
+    expect(screen().getAttribute('data-hole-key')).toBe(holeKeys[0]);
   });
 });

@@ -10,7 +10,8 @@ import { assessHoleIntegrity, type HoleIntegrityReport } from '@/lib/golf/one-ta
 import { HOLE_COMPLETION_FADE_MS, holeStatus, markTerminal, observeNextTee, type HoleStatus, type NextTeeState } from '@/lib/golf/one-tap/hole-lifecycle';
 import { buildSurfacePartition } from '@/lib/golf/one-tap/lie-classifier';
 import type { LocationSource } from '@/lib/golf/one-tap/location-source';
-import type { ShotAnchor, TerminalMethod } from '@/lib/golf/one-tap/shot-anchor';
+import { MemoryPenaltyRepository, PENALTY_COPY, StoragePenaltyRepository, createPenaltyEvent, holeScore, livePenalties, penaltyStrokes as sumPenaltyStrokes, tombstonePenalty, unresolvedPenalties, type PenaltyEvent, type PenaltyKind, type PenaltyRepository, type PenaltyStrokes } from '@/lib/golf/one-tap/penalty-event';
+import { newAnchorId, type ShotAnchor, type TerminalMethod } from '@/lib/golf/one-tap/shot-anchor';
 
 /** The round around the hole (One-Tap master plan "Hole completion", §19,
  * §80): which hole is open, shots per hole from the anchors on record, the
@@ -19,7 +20,10 @@ import type { ShotAnchor, TerminalMethod } from '@/lib/golf/one-tap/shot-anchor'
  * dwells on the next tee, the hole closes with NEXT_TEE_INFERRED (never an
  * invented cup, so it reports MISSING_CUP). A completion card follows every
  * close: a clean hole fades after two seconds, a flagged hole stays with
- * Review. The hole index and every anchor persist on the device per round. */
+ * Review. Exceptions (§58, §79) never branch the record: a penalty is a
+ * separate score event resolved by the next ordinary mark, a skipped hole
+ * is round state, and Change hole only moves the golfer. The hole index,
+ * skips, every anchor and every penalty persist on the device per round. */
 export const ROUND_STORAGE_PREFIX = 'golfhelm-one-tap-round:';
 export interface UseOneTapRoundOptions {
   roundId: string;
@@ -30,7 +34,18 @@ export interface UseOneTapRoundOptions {
   /** Omitted → localStorage; null → memory only. */
   storage?: StorageLike | null;
 }
-export interface OneTapScorecardRow { holeKey: string; ordinal: number; par: number; strokes: number; status: HoleStatus; terminalMethod: TerminalMethod | null; integrity: HoleIntegrityReport }
+export interface OneTapScorecardRow {
+  holeKey: string; ordinal: number; par: number;
+  /** Shots between marks (the live UI says shots, never strokes). */
+  strokes: number;
+  status: HoleStatus; terminalMethod: TerminalMethod | null; integrity: HoleIntegrityReport;
+  /** §58: penalty strokes on record and the score they make with the shots. */
+  penaltyStrokes: number;
+  score: number;
+  unresolvedPenalties: number;
+  /** §79 Skip hole: no marks after the skip, so no score and no integrity flags. */
+  skipped: boolean;
+}
 /** The post-hole completion card (§19), derived live from the record. */
 export interface OneTapHoleCompletion {
   holeKey: string;
@@ -39,6 +54,9 @@ export interface OneTapHoleCompletion {
   terminalMethod: TerminalMethod | null;
   /** Closed by the next-tee fallback rather than a cup mark. */
   inferred: boolean;
+  /** Opened from the overflow (Review hole) rather than by a close: stays until dismissed. */
+  review: boolean;
+  penaltyStrokes: number;
   report: HoleIntegrityReport;
   clean: boolean;
 }
@@ -59,6 +77,19 @@ export interface OneTapRoundView {
   previousHole(): void;
   /** Clears the terminal mark on the current hole (a mistaken hole-out). */
   reopenHole(): void;
+  /** §58 penalties on the open hole. */
+  penalties: PenaltyEvent[];
+  penaltyStrokes: number;
+  score: number;
+  unresolvedPenalties: number;
+  skipped: boolean;
+  addPenalty(kind: PenaltyKind, strokes?: PenaltyStrokes): void;
+  removeLastPenalty(): void;
+  /** §79 overflow: leave this hole without a score and move on. */
+  skipHole(): void;
+  goToHole(index: number): void;
+  /** §79 overflow: the integrity review of the open hole, on demand. */
+  openReview(): void;
   /** The completion card for the hole that just closed, until it fades or is reviewed. */
   completion: OneTapHoleCompletion | null;
   dismissCompletion(): void;
@@ -74,13 +105,16 @@ export interface OneTapRoundView {
 function defaultStorage(): StorageLike | null {
   try { return typeof window === 'undefined' ? null : window.localStorage; } catch { return null; }
 }
-function readHoleIndex(storage: StorageLike | null, roundId: string, holeCount: number): number {
+interface RoundState { holeIndex: number; skipped: Record<string, string> }
+function readRoundState(storage: StorageLike | null, roundId: string, holeCount: number): RoundState {
   try {
     const raw = storage?.getItem(ROUND_STORAGE_PREFIX + roundId);
-    const parsed = raw ? (JSON.parse(raw) as { holeIndex?: unknown }) : null;
+    const parsed = raw ? (JSON.parse(raw) as { holeIndex?: unknown; skipped?: unknown }) : null;
     const index = typeof parsed?.holeIndex === 'number' ? parsed.holeIndex : 0;
-    return Number.isInteger(index) && index >= 0 && index < holeCount ? index : 0;
-  } catch { return 0; }
+    const skipped: Record<string, string> = {};
+    if (parsed?.skipped && typeof parsed.skipped === 'object') for (const [key, at] of Object.entries(parsed.skipped as Record<string, unknown>)) if (typeof at === 'string' && Number.isFinite(Date.parse(at))) skipped[key] = at;
+    return { holeIndex: Number.isInteger(index) && index >= 0 && index < holeCount ? index : 0, skipped };
+  } catch { return { holeIndex: 0, skipped: {} }; }
 }
 function greenCentreOf(pkg: CourseGeometryPackage, holeKey: string): PointM | null {
   const green = buildSurfacePartition(pkg, holeKey).surfaces.find(s => s.lieClass === 'green');
@@ -91,26 +125,38 @@ function teesOf(pkg: CourseGeometryPackage, holeKey: string): LocalFeature[] {
   return buildSurfacePartition(pkg, holeKey).surfaces.filter(s => s.lieClass === 'tee').map(s => s.feature);
 }
 function liveOnHole(anchors: readonly ShotAnchor[], holeKey: string): ShotAnchor[] { return anchors.filter(a => a.holeKey === holeKey && !a.deletedAt); }
-interface PendingCompletion { holeKey: string; ordinal: number; inferred: boolean }
+interface PendingCompletion { holeKey: string; ordinal: number; inferred: boolean; review?: boolean }
 
 export function useOneTapRound({ roundId, pkg, holeKeys, location, storage: storageOption }: UseOneTapRoundOptions): OneTapRoundView {
   const storage = storageOption === undefined ? defaultStorage() : storageOption;
-  const repo = useMemo<AnchorRepository>(() => storage ? new StorageAnchorRepository(storage, [roundId], { courseId: courseIdForSite(pkg.siteId), siteId: pkg.siteId }) : new MemoryAnchorRepository(), [storage, roundId, pkg.siteId]);
-  const [holeIndex, setHoleIndex] = useState(() => readHoleIndex(storage, roundId, holeKeys.length));
-  useEffect(() => { try { storage?.setItem(ROUND_STORAGE_PREFIX + roundId, JSON.stringify({ holeIndex })); } catch { /* private mode */ } }, [storage, roundId, holeIndex]);
+  const binding = useMemo(() => ({ courseId: courseIdForSite(pkg.siteId), siteId: pkg.siteId }), [pkg.siteId]);
+  const repo = useMemo<AnchorRepository>(() => storage ? new StorageAnchorRepository(storage, [roundId], binding) : new MemoryAnchorRepository(), [storage, roundId, binding]);
+  const penaltyRepo = useMemo<PenaltyRepository>(() => storage ? new StoragePenaltyRepository(storage, [roundId]) : new MemoryPenaltyRepository(), [storage, roundId]);
+  const [initial] = useState(() => readRoundState(storage, roundId, holeKeys.length));
+  const [holeIndex, setHoleIndex] = useState(initial.holeIndex);
+  const [skipped, setSkipped] = useState(initial.skipped);
+  useEffect(() => { try { storage?.setItem(ROUND_STORAGE_PREFIX + roundId, JSON.stringify({ holeIndex, skipped })); } catch { /* private mode */ } }, [storage, roundId, holeIndex, skipped]);
   const [version, setVersion] = useState(0);
   useEffect(() => repo.subscribe(() => setVersion(v => v + 1)), [repo]);
-  // `version` is the repository change counter that invalidates this read.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => penaltyRepo.subscribe(() => setVersion(v => v + 1)), [penaltyRepo]);
+  // `version` is the repository change counter that invalidates these reads.
+  /* eslint-disable react-hooks/exhaustive-deps */
   const anchors = useMemo(() => repo.list(roundId), [repo, roundId, version]);
+  const penaltyEvents = useMemo(() => penaltyRepo.list(roundId), [penaltyRepo, roundId, version]);
+  /* eslint-enable react-hooks/exhaustive-deps */
   const holeKey = holeKeys[Math.min(holeIndex, holeKeys.length - 1)] ?? holeKeys[0] ?? '';
-  // A hole behind the golfer that is still open has no cup on record (§80).
+  // A hole behind the golfer that is still open has no cup on record (§80),
+  // unless it was skipped; a mark after the skip plays the hole again.
   const scorecard = useMemo<OneTapScorecardRow[]>(() => holeKeys.map((key, index) => {
     const hole = pkg.holes.find(h => h.key === key), live = liveOnHole(anchors, key), s = holeStatus(live);
+    const skippedAt = skipped[key], isSkipped = !!skippedAt && !live.some(a => Date.parse(a.tapTimestamp) > Date.parse(skippedAt));
+    const penalties = sumPenaltyStrokes(penaltyEvents, key), unresolved = unresolvedPenalties(penaltyEvents, live, key).length;
     return { holeKey: key, ordinal: hole?.ordinal ?? index + 1, par: hole?.par ?? 4, strokes: s.strokes, status: s.status, terminalMethod: s.terminalMethod,
-      integrity: assessHoleIntegrity(live, { expectClosed: index < holeIndex }) };
-  }), [holeKeys, pkg, anchors, holeIndex]);
-  const current = useMemo<OneTapScorecardRow>(() => scorecard[holeIndex] ?? scorecard[0] ?? { holeKey, ordinal: 1, par: 4, strokes: 0, status: 'OPEN', terminalMethod: null, integrity: assessHoleIntegrity([]) }, [scorecard, holeIndex, holeKey]);
+      integrity: assessHoleIntegrity(live, { expectClosed: index < holeIndex && !isSkipped, unresolvedPenalties: unresolved }),
+      penaltyStrokes: penalties, score: holeScore(s.strokes, penalties), unresolvedPenalties: unresolved, skipped: isSkipped };
+  }), [holeKeys, pkg, anchors, penaltyEvents, holeIndex, skipped]);
+  const current = useMemo<OneTapScorecardRow>(() => scorecard[holeIndex] ?? scorecard[0] ?? { holeKey, ordinal: 1, par: 4, strokes: 0, status: 'OPEN', terminalMethod: null, integrity: assessHoleIntegrity([]), penaltyStrokes: 0, score: 0, unresolvedPenalties: 0, skipped: false }, [scorecard, holeIndex, holeKey]);
+  const holePenalties = useMemo(() => livePenalties(penaltyEvents, holeKey), [penaltyEvents, holeKey]);
   const [pending, setPending] = useState<PendingCompletion | null>(null);
 
   // Next-tee fallback: needs a finalized mark on this hole with a green
@@ -153,13 +199,15 @@ export function useOneTapRound({ roundId, pkg, holeKeys, location, storage: stor
   const completion = useMemo<OneTapHoleCompletion | null>(() => {
     if (!pending) return null;
     const row = scorecard.find(r => r.holeKey === pending.holeKey);
-    if (!row || row.status !== 'COMPLETE') return null;
-    return { holeKey: row.holeKey, ordinal: pending.ordinal, shots: row.strokes, terminalMethod: row.terminalMethod, inferred: pending.inferred, report: row.integrity, clean: row.integrity.flags.length === 0 };
+    if (!row || (row.status !== 'COMPLETE' && !pending.review)) return null;
+    return { holeKey: row.holeKey, ordinal: pending.ordinal, shots: row.strokes, terminalMethod: row.terminalMethod, inferred: pending.inferred, review: !!pending.review,
+      penaltyStrokes: row.penaltyStrokes, report: row.integrity, clean: row.integrity.flags.length === 0 };
   }, [pending, scorecard]);
-  // §19: a clean hole needs no attention — the card fades on its own.
-  const completionKey = completion ? `${completion.holeKey}:${completion.clean}` : null;
+  // §19: a clean hole needs no attention — the card fades on its own. A
+  // review the golfer opened stays until they close it.
+  const completionKey = completion ? `${completion.holeKey}:${completion.clean}:${completion.review}` : null;
   useEffect(() => {
-    if (!completion?.clean) return;
+    if (!completion?.clean || completion.review) return;
     const handle = setTimeout(() => setPending(p => p?.holeKey === completion.holeKey ? null : p), HOLE_COMPLETION_FADE_MS);
     return () => clearTimeout(handle);
     // The key changes only when a different hole closes or its verdict changes.
@@ -181,10 +229,28 @@ export function useOneTapRound({ roundId, pkg, holeKeys, location, storage: stor
     if (back >= 0) setHoleIndex(back);
   }, [pending, repo, roundId, holeKeys]);
   const inferredFrom = useMemo(() => completion?.inferred ? { holeKey: completion.holeKey, ordinal: completion.ordinal } : null, [completion]);
+  const openReview = useCallback(() => setPending({ holeKey, ordinal: current.ordinal, inferred: current.terminalMethod === 'NEXT_TEE_INFERRED', review: true }), [holeKey, current.ordinal, current.terminalMethod]);
+  // §58: the penalty follows the last finalized mark; the drop is the next ordinary mark.
+  const addPenalty = useCallback((kind: PenaltyKind, strokes: PenaltyStrokes = PENALTY_COPY[kind].strokes) => {
+    const last = liveOnHole(repo.list(roundId), holeKey).filter(a => !a.provisional).at(-1) ?? null;
+    penaltyRepo.upsert(createPenaltyEvent({ id: newAnchorId(), roundId, courseId: binding.courseId, siteId: binding.siteId, holeKey, holeId: current.ordinal }, kind, strokes, last?.id ?? null, Date.now()));
+  }, [repo, penaltyRepo, roundId, holeKey, binding, current.ordinal]);
+  const removeLastPenalty = useCallback(() => {
+    const last = livePenalties(penaltyRepo.list(roundId), holeKey).at(-1);
+    if (last) penaltyRepo.upsert(tombstonePenalty(last, Date.now()));
+  }, [penaltyRepo, roundId, holeKey]);
+  const goToHole = useCallback((index: number) => { setPending(null); setHoleIndex(Math.max(0, Math.min(holeKeys.length - 1, Math.trunc(index)))); }, [holeKeys.length]);
+  const skipHole = useCallback(() => {
+    setSkipped(prev => ({ ...prev, [holeKey]: new Date().toISOString() }));
+    setPending(null);
+    setHoleIndex(index => Math.min(index + 1, holeKeys.length - 1));
+  }, [holeKey, holeKeys.length]);
 
   return useMemo<OneTapRoundView>(() => ({
     repo, holeIndex, holeKey, holeCount: holeKeys.length, ordinal: current.ordinal, strokes: current.strokes, status: current.status, terminalMethod: current.terminalMethod, integrity: current.integrity,
     scorecard, hasNextHole: holeIndex < holeKeys.length - 1, nextHole, previousHole, reopenHole,
+    penalties: holePenalties, penaltyStrokes: current.penaltyStrokes, score: current.score, unresolvedPenalties: current.unresolvedPenalties, skipped: current.skipped,
+    addPenalty, removeLastPenalty, skipHole, goToHole, openReview,
     completion, dismissCompletion, returnToCompleted, inferredFrom, dismissInferred: dismissCompletion, takeBackInferred: returnToCompleted,
-  }), [repo, holeIndex, holeKey, holeKeys.length, current, scorecard, nextHole, previousHole, reopenHole, completion, dismissCompletion, returnToCompleted, inferredFrom]);
+  }), [repo, holeIndex, holeKey, holeKeys.length, current, scorecard, nextHole, previousHole, reopenHole, holePenalties, addPenalty, removeLastPenalty, skipHole, goToHole, openReview, completion, dismissCompletion, returnToCompleted, inferredFrom]);
 }
