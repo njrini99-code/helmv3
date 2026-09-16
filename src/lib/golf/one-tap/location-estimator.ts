@@ -66,7 +66,7 @@ export interface LocationEstimate {
   medianAccuracyM: number;
   kAcc: number;
   kAccCalibration: EstimatorConfig['kAccCalibration'];
-  /** §36 motion during the window, judged before residual rejection. */
+  /** §36 motion across the fixes the estimate used. */
   captureMotion: CaptureMotion;
   motion: MotionEvidence;
   /** Every sample inside the window (retained on the anchor, never discarded). */
@@ -137,7 +137,11 @@ export function finalizeEstimate(buffer: LocationBuffer, tapMs: number, origin: 
   const anchor = floorCovariance(addCovariance(scatter, device), config.minSigmaM);
   const sigmaScatter = Math.sqrt((cee + cnn) / 2);
   const sigma = Math.sqrt(maxEigenvalue2(anchor));
-  const motion = classifyCaptureMotion(samples.map((s, i) => ({ timestampMs: s.timestampMs, positionENU: [points[i]![0], points[i]![1]], speedMps: s.speedMps })), medianAccuracy, config.motion);
+  // §36 motion is judged on the fixes the estimate used: a rejected far
+  // cluster (the walk up before stopping, a lab teleport) is not motion at
+  // the tap, while a rolling cart's track stays inside the residual limit
+  // and reads as displacement; reported speed is read on the same fixes.
+  const motion = classifyCaptureMotion(kept.map(i => ({ timestampMs: samples[i]!.timestampMs, positionENU: [points[i]![0], points[i]![1]], speedMps: samples[i]!.speedMps })), medianAccuracy, config.motion);
   const altitude = kept.map(i => samples[i]!.altitudeM).filter((a): a is number => a != null);
   const lon = kept.reduce((s, i, k) => s + samples[i]!.longitude * weights[k]! / total, 0), lat = kept.reduce((s, i, k) => s + samples[i]!.latitude * weights[k]! / total, 0);
   return { positionENU: mean, positionWgs84: [lon, lat, altitude.length ? median(altitude) : null],

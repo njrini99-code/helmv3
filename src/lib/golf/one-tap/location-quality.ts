@@ -15,9 +15,12 @@ export interface MotionConfig {
   motionMinSpanMs: number;
   /** Net displacement under this floor is jitter, not motion (metres). */
   displacementFloorM: number;
+  /** The floor also scales with the reported radius: two fixes of radius a
+   * scatter about a·√2 apart at rest, so the floor is this multiple of a. */
+  displacementAccuracyMultiple: number;
 }
 /** PROVISIONAL — CALIBRATE ON PEEK'N PEAK (§36 initial tunables). */
-export const MOTION_CONFIG: Readonly<MotionConfig> = Object.freeze({ stationarySpeedMps: .8, settlingSpeedMps: 1.8, motionMinSpanMs: 500, displacementFloorM: 3 });
+export const MOTION_CONFIG: Readonly<MotionConfig> = Object.freeze({ stationarySpeedMps: .8, settlingSpeedMps: 1.8, motionMinSpanMs: 500, displacementFloorM: 3, displacementAccuracyMultiple: 1.5 });
 export interface MotionEvidence {
   captureMotion: CaptureMotion;
   /** Median of the finite reported speeds in the window; null with none. */
@@ -36,7 +39,7 @@ function median(values: number[]): number {
  * so both are read and the larger wins: reported speed catches a rolling
  * cart with tight fixes, displacement catches motion the receiver does not
  * report. Displacement only counts beyond the jitter floor, which is the
- * larger of the configured floor and the window's median reported accuracy. */
+ * larger of the configured floor and 1.5 × the window's median reported radius. */
 export function classifyCaptureMotion(points: readonly TimedPoint[], medianAccuracyM: number, config: MotionConfig = MOTION_CONFIG): MotionEvidence {
   const speeds = points.map(p => p.speedMps).filter((v): v is number => v != null && Number.isFinite(v) && v >= 0);
   const reportedSpeedMps = speeds.length ? median(speeds) : null;
@@ -46,7 +49,7 @@ export function classifyCaptureMotion(points: readonly TimedPoint[], medianAccur
   let displacementM: number | null = null, displacementSpeedMps: number | null = null;
   if (first && last && spanMs >= config.motionMinSpanMs) {
     displacementM = Math.hypot(last.positionENU[0] - first.positionENU[0], last.positionENU[1] - first.positionENU[1]);
-    const floor = Math.max(config.displacementFloorM, Number.isFinite(medianAccuracyM) ? medianAccuracyM : 0);
+    const floor = Math.max(config.displacementFloorM, Number.isFinite(medianAccuracyM) ? config.displacementAccuracyMultiple * medianAccuracyM : 0);
     displacementSpeedMps = displacementM > floor ? displacementM / (spanMs / 1000) : 0;
   }
   const evidence = [reportedSpeedMps, displacementSpeedMps].filter((v): v is number => v != null);

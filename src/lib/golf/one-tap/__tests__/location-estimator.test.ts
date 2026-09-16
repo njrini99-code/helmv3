@@ -82,6 +82,11 @@ describe('one-tap location estimator', () => {
     expect(e.motion.displacementM).toBeCloseTo(6, 2);
     expect(e.motion.displacementSpeedMps).toBeCloseTo(6 / 2.1, 2);
     expect(e.motion.reportedSpeedMps).toBeNull();
+    // The walk up before stopping is rejected as a residual outlier and is not motion at the tap.
+    const stopped = buffer([sample(20, 30, tap - 1400, 3), sample(49.8, 30.1, tap - 600, 3), sample(50.1, 29.9, tap - 100, 3), sample(50, 30.2, tap + 400, 3)]);
+    const f = finalizeEstimate(stopped, tap, origin)!;
+    expect(f.rejectedResiduals).toBe(1);
+    expect(f.captureMotion).toBe('stationary');
   });
   it('drops stale, non-positive-accuracy and out-of-window samples, and rejects residual outliers', () => {
     const b = buffer([sample(500, 500, tap - 1900, 3), sample(50, 30, tap - 1400, 3, { horizontalAccuracyM: 0 }), sample(50, 30, tap - 1000, 3), sample(50.5, 30, tap - 200, 3),

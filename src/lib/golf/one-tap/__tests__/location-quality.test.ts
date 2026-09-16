@@ -15,18 +15,20 @@ describe('one-tap location quality', () => {
     expect(classifyCaptureMotion([point(0, 0, 0, .2), point(1000, 0, 0, 5), point(2000, 0, 0, .3), point(2500, 0, 0, -1), point(2600, 0, 0, Number.NaN)], 3).captureMotion).toBe('stationary');
   });
   it('reads displacement beyond the jitter floor when the receiver reports no speed', () => {
-    // 1.5 m of drift inside the 3 m floor over 2 s: stationary, not settling.
-    const drift = classifyCaptureMotion([point(0, 0, 0), point(2000, 1.5, 0)], 3);
-    expect(drift).toEqual({ captureMotion: 'stationary', reportedSpeedMps: null, displacementSpeedMps: 0, displacementM: 1.5 });
-    // 4 m over 2 s clears the floor: 2 m/s is moving.
-    expect(classifyCaptureMotion([point(0, 0, 0), point(2000, 4, 0)], 3)).toMatchObject({ captureMotion: 'moving', displacementSpeedMps: 2, displacementM: 4 });
-    // A poor fix raises the floor to its own radius, so the same 4 m is jitter at 10 m accuracy.
-    expect(classifyCaptureMotion([point(0, 0, 0), point(2000, 4, 0)], 10).captureMotion).toBe('stationary');
+    // 4 m of drift inside the 4.5 m floor (1.5 × a 3 m radius) over 2 s: stationary, not settling.
+    const drift = classifyCaptureMotion([point(0, 0, 0), point(2000, 4, 0)], 3);
+    expect(drift).toEqual({ captureMotion: 'stationary', reportedSpeedMps: null, displacementSpeedMps: 0, displacementM: 4 });
+    // 6 m over 2 s clears the floor: 3 m/s is moving.
+    expect(classifyCaptureMotion([point(0, 0, 0), point(2000, 6, 0)], 3)).toMatchObject({ captureMotion: 'moving', displacementSpeedMps: 3, displacementM: 6 });
+    // A poor fix raises the floor with its radius, so the same 6 m is jitter at 10 m accuracy.
+    expect(classifyCaptureMotion([point(0, 0, 0), point(2000, 6, 0)], 10).captureMotion).toBe('stationary');
+    // A sharp fix keeps the 3 m floor.
+    expect(classifyCaptureMotion([point(0, 0, 0), point(2000, 3.5, 0)], 1).captureMotion).toBe('settling');
     // Under the minimum span there is no positional evidence at all.
     expect(classifyCaptureMotion([point(0, 0, 0), point(400, 4, 0)], 3)).toEqual({ captureMotion: 'unknown', reportedSpeedMps: null, displacementSpeedMps: null, displacementM: null });
     expect(classifyCaptureMotion([], 3).captureMotion).toBe('unknown');
     // Reported speed and displacement are both read; the larger wins.
-    expect(classifyCaptureMotion([point(0, 0, 0, .1), point(2000, 4, 0, .1)], 3).captureMotion).toBe('moving');
+    expect(classifyCaptureMotion([point(0, 0, 0, .1), point(2000, 6, 0, .1)], 3).captureMotion).toBe('moving');
     expect(classifyCaptureMotion([point(0, 0, 0, 2.5), point(2000, 0, 0, 2.5)], 3).captureMotion).toBe('moving');
   });
   it('drops a moving capture one confidence grade and leaves the rest alone', () => {
