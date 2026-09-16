@@ -167,7 +167,13 @@ export function createTreeAssetAtlas(): TreeAssetAtlas {
   const owned: THREE.BufferGeometry[] = [];
   const variants: TreeCrownAsset[] = [];
   try {
-    for (const design of DESIGNS) {
+    // Renderer redesign §20.1: every authored design also ships mirrored
+    // across its local X axis (positions and lobe yaws negated), doubling the
+    // silhouettes without a second set of artwork. A mirrored ellipsoid keeps
+    // its outward normals because only the lobe placement is mirrored.
+    const mirrored = DESIGNS.map(design => ({ id: `${design.id}-mirror`, dominant: design.dominant,
+      lobes: design.lobes.map(lobe => [-lobe[0], lobe[1], lobe[2], lobe[3], lobe[4], lobe[5], -(lobe[6] ?? 0)] as const) }));
+    for (const design of DESIGNS.flatMap((base, index) => [base, mirrored[index]!])) {
       const near = buildCluster(design.lobes, design.lobes.map(() => nearTemplate)); owned.push(near);
       // Five major volumes at 80 triangles plus three at 20 retain the complete
       // authored silhouette in 460 triangles, instead of dropping whole lobes.

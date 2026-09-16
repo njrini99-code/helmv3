@@ -136,6 +136,11 @@ export const MERIDIAN_STYLE = Object.freeze({
      * 3-sided trunk at or above `distant`, the far silhouette and no trunk
      * below. Orthographic views keep the focus-distance bands. */
     lodScreenPx: Object.freeze({ near: 30, distant: 6 }),
+    /** Renderer redesign §20: seeded lean of crown and trunk together about
+     * the ground point, only where the tree stands `clearanceM` inside its
+     * mask and clear of playing surfaces; the crown radius gives up the
+     * horizontal shift so the leaning crown still stays inside the mask. */
+    lean: Object.freeze({ maxDegrees: 3.5, clearanceM: 3 }),
     rhythm: Object.freeze({ cellM: 30, share: .14, minGroup: 40 }),
     families: Object.freeze([
       Object.freeze({ id: 'broad-oak', designs: ['staggered-shoulders', 'broad-low-cluster'] as const, weight: 3, placement: 'any' as const,

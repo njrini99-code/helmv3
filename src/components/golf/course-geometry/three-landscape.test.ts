@@ -197,7 +197,7 @@ describe('Three landscape source and rendering invariants', () => {
     const landscape = buildThreeLandscape(scene, mesh);
     const crowns = landscape.group.children.filter(child => child.name.startsWith('source-canopy-crowns')) as THREE.BatchedMesh[];
     expect(crowns).toHaveLength(1);
-    expect(new Set(crowns[0]!.userData.designs).size).toBe(8);
+    expect(new Set(crowns[0]!.userData.designs).size).toBe(16);
     expect(crowns[0]!.instanceCount).toBe(landscape.counts.trees);
     expect(landscape.counts.trees).toBeGreaterThan(30);
     const matrices = new Map<THREE.BatchedMesh, THREE.Matrix4[]>();
@@ -228,7 +228,11 @@ describe('Three landscape source and rendering invariants', () => {
       const original = matrices.get(batch)![i]!;
       // Scale, rotation and horizontal position are unchanged. Only ground Z moves.
       expect(next.elements.slice(0, 14)).toEqual(original.elements.slice(0, 14));
-      const groundZ = terrainHeight(mesh, [original.elements[12]!, original.elements[13]!]!)!;
+      // A leaning crown (§20) sits beside its ground point: recover the point under the trunk from the lean.
+      const position = new THREE.Vector3(), rotation = new THREE.Quaternion(), scale = new THREE.Vector3();
+      original.decompose(position, rotation, scale);
+      const upward = new THREE.Vector3(0, 0, 1).applyQuaternion(rotation), lift = scale.z / .72 * .64;
+      const groundZ = terrainHeight(mesh, [position.x - upward.x * lift, position.y - upward.y * lift])!;
       expect(next.elements[14]! - original.elements[14]!).toBeCloseTo(groundZ - 100, 4);
     }
     const unreviewed = buildThreeLandscape({ ...scene, features: [{ ...woods, reviewed: false }, green] }, mesh);
@@ -452,6 +456,31 @@ describe('dead-space rhythm (renderer redesign §3.4)', () => {
       expect(small.counts.rhythmCleared).toBe(0);
       expect(small.counts.trees).toBeGreaterThanOrEqual(small.counts.patternCentres); // plus understory shrubs
     } finally { big.dispose(); again.dispose(); small.dispose(); }
+  });
+});
+
+describe('asset-level breakup (renderer redesign §20)', () => {
+  it('mixes mirrored silhouettes into every family and leans trees a few degrees about their ground point', () => {
+    const scene = pilotScene('cacapon-07', false), terrain = parseTerrainMesh(source, pilotPackage);
+    const landscape = buildThreeLandscape(scene, terrain, DEFAULT_THREE_LANDSCAPE_PALETTE);
+    try {
+      const crowns = landscape.group.children.find(child => child.name.startsWith('source-canopy-crowns')) as THREE.BatchedMesh;
+      const designs = crowns.userData.designs as string[];
+      expect(designs.some(id => id.endsWith('-mirror'))).toBe(true);
+      expect(designs.some(id => !id.endsWith('-mirror'))).toBe(true);
+      const matrix = new THREE.Matrix4(), rotation = new THREE.Quaternion(), upward = new THREE.Vector3();
+      const maxLean = MERIDIAN_STYLE.vegetation.lean.maxDegrees * Math.PI / 180;
+      let leaning = 0;
+      for (let i = 0; i < crowns.instanceCount; i++) {
+        crowns.getMatrixAt(i, matrix); matrix.decompose(new THREE.Vector3(), rotation, new THREE.Vector3());
+        upward.set(0, 0, 1).applyQuaternion(rotation);
+        const tilt = Math.acos(Math.min(1, upward.z));
+        expect(tilt).toBeLessThanOrEqual(maxLean + 1e-6);
+        if (tilt > 1e-4) leaning++;
+      }
+      expect(leaning).toBeGreaterThan(0);
+      expect(leaning).toBeLessThan(crowns.instanceCount);
+    } finally { landscape.dispose(); }
   });
 });
 

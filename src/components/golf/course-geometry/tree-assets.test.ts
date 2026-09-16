@@ -15,9 +15,9 @@ function fingerprint(geometry: THREE.BufferGeometry): number {
 describe('authored canopy asset atlas', () => {
   it('provides distinct deterministic multi-lobed assets within the shared source-safe size and triangle budgets', () => {
     const atlas = createTreeAssetAtlas(), repeat = createTreeAssetAtlas();
-    expect(atlas.variants).toHaveLength(8);
-    expect(new Set(atlas.variants.map(asset => asset.id)).size).toBe(8);
-    expect(new Set(atlas.variants.map(asset => fingerprint(asset.near))).size).toBe(8);
+    expect(atlas.variants).toHaveLength(16);
+    expect(new Set(atlas.variants.map(asset => asset.id)).size).toBe(16);
+    expect(new Set(atlas.variants.map(asset => fingerprint(asset.near))).size).toBe(16);
     for (const [index, asset] of atlas.variants.entries()) {
       expect(asset.basis).toBe('authored_canopy_art');
       expect(asset.lobeCount.near).toBeGreaterThanOrEqual(6);
@@ -65,6 +65,24 @@ describe('authored canopy asset atlas', () => {
         support.push(maximum);
       }
       expect(Math.max(...support) - Math.min(...support)).toBeGreaterThan(.1);
+    }
+    atlas.dispose();
+  });
+
+  it('mirrors every authored design across X so the silhouette set doubles without new artwork (redesign §20.1)', () => {
+    const atlas = createTreeAssetAtlas();
+    const bases = atlas.variants.filter(asset => !asset.id.endsWith('-mirror'));
+    expect(bases).toHaveLength(8);
+    for (const base of bases) {
+      const mirror = atlas.variants.find(asset => asset.id === `${base.id}-mirror`)!;
+      expect(mirror).toBeDefined();
+      for (const lod of ['near', 'distant', 'far'] as const) {
+        const a = base[lod].boundingBox!, b = mirror[lod].boundingBox!;
+        expect(Math.abs(a.min.x + b.max.x)).toBeLessThan(1e-4); expect(Math.abs(a.max.x + b.min.x)).toBeLessThan(1e-4);
+        for (const axis of ['y', 'z'] as const) { expect(Math.abs(a.min[axis] - b.min[axis])).toBeLessThan(1e-4); expect(Math.abs(a.max[axis] - b.max[axis])).toBeLessThan(1e-4); }
+        expect(fingerprint(base[lod])).not.toBe(fingerprint(mirror[lod]));
+      }
+      expect(mirror.triangleCounts).toEqual(base.triangleCounts);
     }
     atlas.dispose();
   });

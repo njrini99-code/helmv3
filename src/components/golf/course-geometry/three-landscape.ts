@@ -383,7 +383,7 @@ export function buildThreeLandscape(
   }
   const summedNormals = new Float64Array(normalKeys.size * 3);
 
-  interface Tree { id: string; tile: string; x: number; y: number; groundZ: number; radius: number; trunkRadius: number; height: number; yaw: number; aspect: number; asset: TreeCrownAsset; familyId: string; color: THREE.Color;
+  interface Tree { id: string; tile: string; x: number; y: number; groundZ: number; radius: number; trunkRadius: number; height: number; yaw: number; aspect: number; lean: number; leanYaw: number; asset: TreeCrownAsset; familyId: string; color: THREE.Color;
     instance: number; trunkInstance: number; lod: CrownLod; trunkLod: 'near' | 'distant' | 'hidden' }
   interface MassLobe { id: string; tile: string; x: number; y: number; groundZ: number; radius: number; aspect: number; height: number; yaw: number; color: THREE.Color }
   const treeAtlas = createTreeAssetAtlas();
@@ -452,7 +452,9 @@ export function buildThreeLandscape(
       const n = featureSeed(id), baseRadius = 3.6 * crownScale(n);
       const edgeM = ownBoundary.reduce((minimum, ring) => Math.min(minimum, boundaryDistance(point, ring)), Infinity);
       const family = pickFamily(edgeM, variation(n + 71));
-      const asset = assetById.get(family.designs[Math.floor(variation(n + 97) * family.designs.length) % family.designs.length]!) ?? treeAtlas.variants[0]!;
+      const design = family.designs[Math.floor(variation(n + 97) * family.designs.length) % family.designs.length]!;
+      // §20.1: half the trees take the mirrored silhouette of their design.
+      const asset = assetById.get(variation(n + 131) < .5 ? `${design}-mirror` : design) ?? assetById.get(design) ?? treeAtlas.variants[0]!;
       const proportion = family.radius[0] + (family.radius[1] - family.radius[0]) * variation(n + 83);
       const heightRatio = family.heightRatio[0] + (family.heightRatio[1] - family.heightRatio[0]) * variation(n + 19);
       // Broaden the artwork at the same accepted pattern centers. The complete
@@ -460,14 +462,19 @@ export function buildThreeLandscape(
       // playing surfaces. Width never changes the illustrative height or trunk.
       const clearance = clearanceRings.reduce((minimum, ring) =>
         Math.min(minimum, boundaryDistance(point, ring)), Infinity);
-      const designRadius = baseRadius * proportion * 1.25;
-      const radius = Math.min(designRadius, Math.max(0, clearance - .15));
+      const designRadius = baseRadius * proportion * 1.25, height = designRadius * heightRatio;
+      // §20: a seeded lean (crown and trunk together, pivot at the ground)
+      // only well inside the mask; the crown radius gives up the shift.
+      const lean = clearance > VEGETATION.lean.clearanceM && edgeM > VEGETATION.lean.clearanceM ? VEGETATION.lean.maxDegrees * Math.PI / 180 * variation(n + 151) : 0;
+      const leanShift = Math.sin(lean) * height * .64;
+      const radius = Math.min(designRadius, Math.max(0, clearance - .15 - leanShift));
       // §40: family base → light by seed, lifted toward the lit colour at the edge.
       const edgeLift = Math.max(0, 1 - edgeM / VEGETATION.edgeLightM) * VEGETATION.edgeLightMix;
       const color = contextTone(new THREE.Color(family.base).lerp(new THREE.Color(family.light), Math.min(1, variation(n + 233) * .6 + edgeLift)), feature);
       trees.push({ id, tile: `${Math.floor(point[0] / CANOPY_TILE_M)},${Math.floor(point[1] / CANOPY_TILE_M)}`,
-        x: point[0], y: point[1], groundZ, radius, trunkRadius: designRadius * family.trunkRatio, height: designRadius * heightRatio,
-        aspect: .84 + variation(n + 37) * .16, yaw: variation(n + 41) * Math.PI * 2, asset, familyId: family.id, color, instance: -1, trunkInstance: -1, lod: 'distant', trunkLod: 'hidden' });
+        x: point[0], y: point[1], groundZ, radius, trunkRadius: designRadius * family.trunkRatio, height,
+        aspect: .84 + variation(n + 37) * .16, yaw: variation(n + 41) * Math.PI * 2, lean, leanYaw: variation(n + 157) * Math.PI * 2,
+        asset, familyId: family.id, color, instance: -1, trunkInstance: -1, lod: 'distant', trunkLod: 'hidden' });
       if (trees.length >= crownBudget) break;
     }
   }
@@ -588,7 +595,7 @@ export function buildThreeLandscape(
       const height = understory.heightM[0] + (understory.heightM[1] - understory.heightM[0]) * variation(n + 7);
       const color = contextTone(new THREE.Color(understory.base).lerp(new THREE.Color(understory.light), variation(n + 17) * .7), feature);
       trees.push({ id, tile: `${Math.floor(point[0] / CANOPY_TILE_M)},${Math.floor(point[1] / CANOPY_TILE_M)}`, x: point[0], y: point[1], groundZ,
-        radius, trunkRadius: 0, height, aspect: .8 + variation(n + 37) * .3, yaw: variation(n + 41) * Math.PI * 2, asset: shrubAsset, familyId: 'understory', color, instance: -1, trunkInstance: -1, lod: 'distant', trunkLod: 'hidden' });
+        radius, trunkRadius: 0, height, aspect: .8 + variation(n + 37) * .3, lean: 0, leanYaw: 0, yaw: variation(n + 41) * Math.PI * 2, asset: shrubAsset, familyId: 'understory', color, instance: -1, trunkInstance: -1, lod: 'distant', trunkLod: 'hidden' });
       understoryCount++;
       if (understoryCount >= understoryBudget) break;
     }
@@ -729,6 +736,7 @@ export function buildThreeLandscape(
   };
   updateTriangleCounts();
   const transform = new THREE.Matrix4(), translation = new THREE.Vector3(), rotation = new THREE.Quaternion(), scale = new THREE.Vector3();
+  const tilt = new THREE.Quaternion(), leanAxis = new THREE.Vector3(), up = new THREE.Vector3();
   let lastExaggeration = NaN, lastReference = NaN, disposed = false;
   function setDetail(next: 'distant' | 'near', focusM?: PointM, view?: PerspectiveLodView): boolean {
     if (disposed) return false;
@@ -812,13 +820,23 @@ export function buildThreeLandscape(
     terrainGeometry.computeBoundingSphere();
     for (const tree of trees) {
       rotation.setFromAxisAngle(Z_AXIS, tree.yaw);
+      // §20: crown and trunk share one lean about the ground point, so the
+      // trunk still meets the ground where the tree stands.
+      if (tree.lean > 0) {
+        leanAxis.set(Math.cos(tree.leanYaw), Math.sin(tree.leanYaw), 0);
+        tilt.setFromAxisAngle(leanAxis, tree.lean); rotation.premultiply(tilt);
+        up.set(0, 0, 1).applyQuaternion(tilt);
+      } else up.set(0, 0, 1);
+      const base = displayZ(tree.groundZ);
       if (crowns) {
-        translation.set(tree.x, tree.y, displayZ(tree.groundZ) + tree.height * .64);
+        const lift = tree.height * .64;
+        translation.set(tree.x + up.x * lift, tree.y + up.y * lift, base + up.z * lift);
         scale.set(tree.radius, tree.radius * tree.aspect, tree.height * .72);
         crowns.setMatrixAt(tree.instance, transform.compose(translation, rotation, scale));
       }
       if (trunks && tree.trunkInstance >= 0) {
-        translation.set(tree.x, tree.y, displayZ(tree.groundZ) + tree.height * .18);
+        const lift = tree.height * .18;
+        translation.set(tree.x + up.x * lift, tree.y + up.y * lift, base + up.z * lift);
         scale.set(tree.trunkRadius, tree.trunkRadius, tree.height * .36);
         trunks.setMatrixAt(tree.trunkInstance, transform.compose(translation, rotation, scale));
       }
