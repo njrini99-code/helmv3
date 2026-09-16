@@ -259,6 +259,8 @@ observability codes and risks: `docs/plans/2026-09-16-meridian-operations.md`.
 
 ```bash
 # Visual canaries (§8): 8 holes × Top/Terrain/Side × 4 viewports + canaries.json
+# (each capture also carries the hole's unexplained-context share and its
+# pass/fail against the outside-world uncertain gate, < 15 %, from the context report)
 node scripts/golf/course-geometry/capture-visual-canaries.cjs --label=v1-perspective
 python3 scripts/golf/course-geometry/build-canary-sheet.py \
   output/playwright/course-geometry/visual-system/canaries/v1-perspective 390x844 sheet.png

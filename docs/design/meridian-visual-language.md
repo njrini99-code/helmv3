@@ -456,6 +456,16 @@ canary labels (or two lab audit folders, or two files) capture by capture:
 changed-pixel fraction, bounding box and a red-highlight image per capture.
 It is a review aid; a change is acceptable only when the label note explains
 it, and `--max` turns the fraction into an exit code for a gate.
+- Tolerance (2026-09-17): the default 24-level tolerance is for regressions,
+  not for reading subtle style steps; both overnight steps register as
+  identical there. At `--tolerance=6` the terrain tone (`v17` → `v18`) moves
+  a median 2.4 % of pixels per capture (max 13.2 %, hole 15 Top phone) and
+  the muted cart-path tone (`v18` → `v19`) a median 1.4 % (max 4.8 %). Use
+  the low tolerance to confirm a style step landed, the default to gate.
+- Uncertain gate: each capture carries `uncertainShare` and `uncertainGate`
+  (pass < 15 %) from the course's context report, and the report lists the
+  passing and failing holes, so a signoff states the outside-world gate
+  alongside the draw-call budget.
 
 ## Style versions (§113)
 

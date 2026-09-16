@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable @typescript-eslint/no-require-imports -- repo-local capture script, same shape as capture-lab.cjs */
 /**
  * Meridian visual canaries (master plan §8, §125.A).
  *
@@ -15,7 +16,9 @@
  * Output: output/playwright/course-geometry/visual-system/canaries/<label>/
  *   hole-NN-<preset>-<w>x<h>.png and canaries.json (one entry per capture with
  *   package hash, style version, renderer, projection, quality tier, draw calls,
- *   triangles, trees, pixel ratio and shadow-map size read from the canvas).
+ *   triangles, trees, pixel ratio and shadow-map size read from the canvas,
+ *   plus the hole's unexplained-context share and its pass/fail against the
+ *   outside-world uncertain gate when the course has a context report).
  * Read-only against the geometry package; nothing is written to src.
  */
 const { chromium } = require('playwright');
@@ -36,6 +39,18 @@ const debugView = typeof args.debug === 'string' ? args.debug : null;
 const outDir = path.resolve(String(args.out || `output/playwright/course-geometry/visual-system/canaries/${label}`));
 const packagePath = path.resolve(`src/test/fixtures/course-geometry/${course}.json`);
 const pkg = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
+// Outside-world quality gate (player-view spec §17, §35): each hole's share of
+// drawn context that no source or derived rule explains, read from the
+// retained context report when the course has one. A hole passes under
+// UNCERTAIN_GATE; the number is reported per capture and never changes a pixel.
+const UNCERTAIN_GATE = 0.15;
+const contextReportPath = path.resolve(`src/test/fixtures/course-geometry/${course}-context-report.json`);
+const contextReport = fs.existsSync(contextReportPath) ? JSON.parse(fs.readFileSync(contextReportPath, 'utf8')) : null;
+const uncertainByHole = new Map((contextReport?.holes ?? []).map(entry => [entry.ordinal, entry.uncertainShare]));
+const gateFor = hole => {
+  const share = uncertainByHole.get(hole);
+  return share == null ? { uncertainShare: null, uncertainGate: 'unavailable' } : { uncertainShare: share, uncertainGate: share < UNCERTAIN_GATE ? 'pass' : 'fail' };
+};
 
 const pick = (dataset, keys) => Object.fromEntries(keys.map(key => [key, dataset[key] ?? null]));
 const METADATA_KEYS = ['terrainRenderer', 'terrainProjection', 'visualStyleVersion', 'qualityTier', 'drawCalls', 'renderTriangles',
@@ -59,7 +74,11 @@ async function settled(page, canvas) {
 (async () => {
   fs.mkdirSync(outDir, { recursive: true });
   const report = { label, course, packageHash: pkg.contentHash, base, capturedAt: new Date().toISOString(),
-    debugView, holes, presets, viewports: viewports.map(([w, h]) => `${w}x${h}`), captures: [], errors: [] };
+    debugView, holes, presets, viewports: viewports.map(([w, h]) => `${w}x${h}`),
+    uncertainGate: { max: UNCERTAIN_GATE, contextLayerHash: contextReport?.layerHash ?? null,
+      pass: holes.filter(hole => gateFor(hole).uncertainGate === 'pass'), fail: holes.filter(hole => gateFor(hole).uncertainGate === 'fail'),
+      unavailable: holes.filter(hole => gateFor(hole).uncertainGate === 'unavailable') },
+    captures: [], errors: [] };
   const browser = await chromium.launch();
   try {
     for (const [width, height] of viewports) {
@@ -85,7 +104,7 @@ async function settled(page, canvas) {
           const dataset = await canvas.evaluate(el => ({ ...el.dataset }));
           const frame = await dialog.locator('[data-slot=course-drawing]').evaluate(el => ({ ...el.dataset }));
           report.captures.push({ hole, preset, viewport: `${width}x${height}`, file,
-            metadata: { packageHash: pkg.contentHash, ...pick(dataset, METADATA_KEYS), cameraZoom: frame.cameraZoom ?? null, worldScale: frame.worldScale ?? null } });
+            metadata: { packageHash: pkg.contentHash, ...pick(dataset, METADATA_KEYS), cameraZoom: frame.cameraZoom ?? null, worldScale: frame.worldScale ?? null, ...gateFor(hole) } });
           process.stdout.write(`${file} draw=${dataset.drawCalls} tri=${dataset.renderTriangles} proj=${dataset.terrainProjection ?? 'n/a'}\n`);
         }
         await dialog.getByRole('button', { name: 'Close', exact: true }).click();
@@ -99,4 +118,6 @@ async function settled(page, canvas) {
   }
   if (report.errors.length) { console.error(JSON.stringify(report.errors, null, 2)); process.exitCode = 1; }
   console.log(`${report.captures.length} captures → ${outDir}`);
+  const gate = report.uncertainGate;
+  console.log(`uncertain gate (< ${Math.round(UNCERTAIN_GATE * 100)} % unexplained context): ${gate.pass.length} of ${holes.length} holes pass` + (gate.fail.length ? `; failing: ${gate.fail.join(', ')}` : '') + (gate.unavailable.length ? `; no report: ${gate.unavailable.join(', ')}` : ''));
 })().catch(error => { console.error(error); process.exit(1); });
