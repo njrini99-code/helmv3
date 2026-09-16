@@ -1,8 +1,11 @@
 import * as THREE from 'three';
 import { attachTurfStyle, type ThreeLandscape } from './three-landscape';
-import { compileBaseDisplayLods, type DisplayLodName } from '@/lib/golf/course-geometry/display-mesh-v2';
+import { compileBaseDisplayLods, weldAndCleanTerrainMesh, type DisplayLodName } from '@/lib/golf/course-geometry/display-mesh-v2';
+import { compileGreenComplexPatches } from '@/lib/golf/course-geometry/green-display-mesh';
+import { compileHeroRegions } from '@/lib/golf/course-geometry/hero-patches';
 import { metricTerrainNormal } from '@/lib/golf/course-geometry/terrain-source';
 import { sourceVertexNormals, type TerrainMesh } from '@/lib/golf/course-geometry/terrain';
+import type { HoleScene } from '@/lib/golf/course-geometry/types';
 import { SURFACE_CLASS_IDS } from '@/lib/golf/course-geometry/visual-artifact';
 
 /** Faceting debug kit (Meridian §14). Every view is a diagnostic material or
@@ -15,7 +18,7 @@ export const TERRAIN_DEBUG_VIEWS = [
   'normals', 'source-normals', 'display-normals', 'flat-normals', 'slope', 'curvature',
   'lit-no-shadows', 'no-shadow', 'shadows', 'shadow-only',
   'feature-ids', 'triangle-ids', 'material-ids', 'crop', 'context-mask', 'bunker-depth',
-  'v2-lod0', 'v2-lod1', 'v2-lod2',
+  'v2-lod0', 'v2-lod1', 'v2-lod2', 'v2-hero',
 ] as const;
 export type TerrainDebugView = typeof TERRAIN_DEBUG_VIEWS[number];
 export const TERRAIN_DEBUG_LABELS: Record<TerrainDebugView, string> = {
@@ -26,6 +29,7 @@ export const TERRAIN_DEBUG_LABELS: Record<TerrainDebugView, string> = {
   shadows: 'Shadow only', 'shadow-only': 'Shadow only', 'feature-ids': 'Feature IDs', 'triangle-ids': 'Triangle IDs',
   'material-ids': 'Material IDs', crop: 'Context mask', 'context-mask': 'Context mask', 'bunker-depth': 'Bunker bowl depth (render-only)',
   'v2-lod0': 'V2 base LOD0 (refined) + wire', 'v2-lod1': 'V2 base LOD1 (welded canonical) + wire', 'v2-lod2': 'V2 base LOD2 (simplified) + wire',
+  'v2-hero': 'V2 base LOD0 + green-complex hero patch (purple wire)',
 };
 const V2_LOD_VIEWS: Partial<Record<TerrainDebugView, DisplayLodName>> = { 'v2-lod0': 'lod0', 'v2-lod1': 'lod1', 'v2-lod2': 'lod2' };
 /** Diagnostic surface-class tints for the V2 LOD views (not the Meridian palette). */
@@ -45,22 +49,36 @@ const MATERIAL_COLORS = ['#3F7A3A', '#D8B45B', '#E6E9F0', '#8E5BB7', '#3A9AD0'];
 /** Diagnostic-only material substitution. Source positions are never modified.
  * AO/skirt passes do not exist in this renderer; the crop view exposes context. */
 export function installTerrainDebugView(world: THREE.Scene, landscape: ThreeLandscape, mesh: TerrainMesh,
-  mode: TerrainDebugView, renderer: THREE.WebGLRenderer): () => void {
+  mode: TerrainDebugView, renderer: THREE.WebGLRenderer, scene?: HoleScene): () => void {
   if (mode === 'final') return () => {};
   const owned: THREE.Material[] = [];
   const override = (material: THREE.Material) => { owned.push(material); world.overrideMaterial = material; };
   const shadowMode = mode === 'shadows' || mode === 'shadow-only';
   if (!shadowMode) for (const child of landscape.group.children) if (child !== landscape.terrain) child.visible = false;
   renderer.shadowMap.enabled = shadowMode;
-  const v2Lod = V2_LOD_VIEWS[mode];
+  const v2Lod = V2_LOD_VIEWS[mode] ?? (mode === 'v2-hero' ? 'lod0' : undefined);
   if (v2Lod) {
     // V2 plan Task 5b: the base display LOD compiled now from the same
     // canonical mesh, tinted by surface class with its wire on top, in place
     // of the V1 terrain. Source Z, no relief exaggeration, diagnostic only.
-    const compiled = compileBaseDisplayLods(mesh), packed = compiled[v2Lod];
+    // Task 7 (`v2-hero`): the hero regions are planned too, the base is drawn
+    // with the green-complex footprint excluded, and the compiled patch is
+    // drawn in its place with a purple wire so its density reads on screen.
+    const hero = mode === 'v2-hero' && scene ? (() => {
+      const base = weldAndCleanTerrainMesh(mesh), plan = compileHeroRegions(scene, mesh, base);
+      return { base, plan, patches: compileGreenComplexPatches(mesh, base, plan.regions) };
+    })() : null;
+    const compiled = compileBaseDisplayLods(mesh, hero ? { heroPlan: { triangleRegion: hero.plan.triangleRegion, regionIds: hero.plan.regionIds } } : {}), packed = compiled[v2Lod];
     const lodGeometry = new THREE.BufferGeometry();
     lodGeometry.setAttribute('position', new THREE.BufferAttribute(packed.positions, 3));
     lodGeometry.setIndex(new THREE.BufferAttribute(packed.indices, 1));
+    const patched = new Set(hero?.patches.map(c => c.patch.id));
+    if (hero && packed.heroRanges?.length) {
+      // Index groups: everything before the first region, then each run of a
+      // region that has no patch yet (bunkers, water, paths await Tasks 8–14).
+      lodGeometry.addGroup(0, packed.heroRanges[0]!.start * 3, 0);
+      for (const range of packed.heroRanges) if (!patched.has(range.id)) lodGeometry.addGroup(range.start * 3, range.count * 3, 0);
+    }
     const tints = new Float32Array(packed.vertexCount * 3), tint = new THREE.Color();
     for (let v = 0; v < packed.vertexCount; v++) {
       tint.set(V2_CLASS_COLORS[SURFACE_CLASS_IDS[packed.surfaceClass[v]!]!] ?? '#9AA39A');
@@ -70,16 +88,43 @@ export function installTerrainDebugView(world: THREE.Scene, landscape: ThreeLand
     const fill = new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide });
     const wireMaterial = new THREE.MeshBasicMaterial({ color: '#1B2A1E', wireframe: true, transparent: true, opacity: .6 });
     owned.push(fill, wireMaterial);
-    const surface = new THREE.Mesh(lodGeometry, fill), wire = new THREE.Mesh(lodGeometry, wireMaterial);
+    const surface = new THREE.Mesh(lodGeometry, hero ? [fill] : fill), wire = new THREE.Mesh(lodGeometry, hero ? [wireMaterial] : wireMaterial);
     wire.renderOrder = 1;
-    landscape.terrain.visible = false; landscape.group.add(surface, wire);
+    const patchMeshes: THREE.Mesh[] = [], patchGeometries: THREE.BufferGeometry[] = [];
+    if (hero) {
+      const patchFill = new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide });
+      const patchWire = new THREE.MeshBasicMaterial({ color: '#5B2E91', wireframe: true, transparent: true, opacity: .75 });
+      owned.push(patchFill, patchWire);
+      const base = hero.base;
+      for (const { patch, triangleSource } of hero.patches) {
+        // Flat per-triangle class tint from the source base triangle, so the
+        // patch is de-indexed here (diagnostic copy; the packed patch is indexed).
+        const count = patch.indices.length, flat = new Float32Array(count * 3), flatTint = new Float32Array(count * 3);
+        for (let i = 0; i < count; i++) {
+          flat.set(patch.positions.subarray(patch.indices[i]! * 3, patch.indices[i]! * 3 + 3), i * 3);
+          const sourceTriangle = triangleSource[Math.floor(i / 3)]!, material = base.triangleMaterials[sourceTriangle]!;
+          const kind = material === 3 ? 'surround' : material === 4 ? 'fringe' : mesh.featureKinds[base.triangleFeatures[sourceTriangle]!]!;
+          tint.set(V2_CLASS_COLORS[kind as typeof SURFACE_CLASS_IDS[number]] ?? '#9AA39A').offsetHSL(0, 0, .12);
+          flatTint.set([tint.r, tint.g, tint.b], i * 3);
+        }
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.BufferAttribute(flat, 3));
+        geometry.setAttribute('color', new THREE.BufferAttribute(flatTint, 3));
+        const patchSurface = new THREE.Mesh(geometry, patchFill), patchWireMesh = new THREE.Mesh(geometry, patchWire);
+        patchWireMesh.renderOrder = 2;
+        patchGeometries.push(geometry); patchMeshes.push(patchSurface, patchWireMesh);
+      }
+    }
+    landscape.terrain.visible = false; landscape.group.add(surface, wire, ...patchMeshes);
     const { lods, weld, pass } = compiled.report;
     landscape.terrain.userData.debugV2 = { lod: v2Lod, triangles: packed.triangleCount, vertices: packed.vertexCount, withinBudget: lods[v2Lod].withinBudget,
-      sliverTriangles: weld.sliverTriangles, needles: weld.needles, gates: pass ? 'pass' : 'fail' };
+      sliverTriangles: weld.sliverTriangles, needles: weld.needles, gates: pass ? 'pass' : 'fail',
+      ...(hero ? { heroRegions: hero.plan.regions.length, patches: hero.patches.map(c => ({ id: c.patch.id, triangles: c.report.triangles, vertices: c.report.vertices, greenSpacingM: c.report.greenSpacingM, seamHeightMaxM: c.report.seamHeightMaxM, pass: c.report.topology.pass })) } : {}) };
     return () => {
-      landscape.group.remove(surface, wire);
+      landscape.group.remove(surface, wire, ...patchMeshes);
       landscape.terrain.visible = true;
       lodGeometry.dispose();
+      for (const geometry of patchGeometries) geometry.dispose();
       for (const material of owned) material.dispose();
     };
   }

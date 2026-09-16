@@ -92,7 +92,8 @@ export interface HeroPatchReport {
   /** §115: rim vertices are exact base vertices, so 0 by construction; measured anyway. */
   seamHeightMaxM: number;
 }
-export interface CompiledHeroPatch { patch: PackedHeroPatch; report: HeroPatchReport; orientation: Int8Array }
+/** `triangleSource` names the base triangle each patch triangle subdivides (diagnostics, not packed). */
+export interface CompiledHeroPatch { patch: PackedHeroPatch; report: HeroPatchReport; orientation: Int8Array; triangleSource: Uint32Array }
 
 type FeatureKind = TerrainMesh['featureKinds'][number];
 const classOf = (kind: FeatureKind, material: number): SurfaceClass => (material === 3 ? 'surround' : material === 4 ? 'fringe' : kind);
@@ -245,14 +246,14 @@ export function compileRegionPatch(mesh: TerrainMesh, base: DisplayMesh, region:
     }
     return from < to ? chain : chain.slice().reverse();
   };
-  const indices: number[] = [], orientation: number[] = [];
+  const indices: number[] = [], orientation: number[] = [], source: number[] = [];
   for (const t of region.triangles) {
     const corners = [base.indices[t * 3]!, base.indices[t * 3 + 1]!, base.indices[t * 3 + 2]!];
     const counts = [0, 1, 2].map(k => plan.counts.get(edgeKey(corners[k]!, corners[(k + 1) % 3]!))!);
     const L = Math.max(...counts);
     // Sub-triangles are built in the base's own corner order; the affine map
     // from the reference triangle keeps the base winding, so they inherit its sign.
-    const push = (a: number, b: number, c: number) => { indices.push(a, b, c); orientation.push(base.orientation[t]!); };
+    const push = (a: number, b: number, c: number) => { indices.push(a, b, c); orientation.push(base.orientation[t]!); source.push(t); };
     if (L <= 2) {
       // No inner point: the outer polygon (corners plus at most one midpoint per
       // edge) is convex, so fan it from a midpoint, or keep the base triangle.
@@ -331,7 +332,7 @@ export function compileRegionPatch(mesh: TerrainMesh, base: DisplayMesh, region:
     seam = Math.max(seam, Math.abs(packed.positions[index * 3 + 2]! - Math.fround(p[loop[i]! * 3 + 2]!)));
   }
   return {
-    patch: packed, orientation: Int8Array.from(orientation),
+    patch: packed, orientation: Int8Array.from(orientation), triangleSource: Uint32Array.from(source),
     report: { id: region.id, triangles: triangleCount, vertices: vertexCount, budgetTriangles: region.budgetTriangles, spacingScale: plan.scale, greenSpacingM: (spacing.interior.green ?? spacing.interior.default) * (1 + (plan.scale - 1) * (spacing.scaleShare.green ?? spacing.scaleShare.default)), borderEdges, rimVertices, baseSlivers: plan.slivers, maxReliefM: maxRelief, minAngleDeg: minAngle, needles, topology, seamHeightMaxM: seam },
   };
 }

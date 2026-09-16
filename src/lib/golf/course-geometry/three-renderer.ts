@@ -363,7 +363,7 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
     // ripple, no settle or crossfade, and no shot draws itself on — the
     // finished state is painted immediately instead.
     markersOverlay = createSceneMarkerOverlayController(overlay, mesh, surface, prefersReducedMotion(canvas.ownerDocument.defaultView));
-    releaseDebug = installTerrainDebugView(world, landscape, mesh, options.debugView ?? 'final', renderer);
+    releaseDebug = installTerrainDebugView(world, landscape, mesh, options.debugView ?? 'final', renderer, options.scene);
     if (options.debugView && options.debugView !== 'final') overlay.style.display = 'none';
     view = currentCamera.projection === 'perspective' ? perspectiveView : orthographicView;
     applyAtmosphere(currentCamera.projection);
