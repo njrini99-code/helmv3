@@ -4,11 +4,14 @@ export interface TreeCrownAsset {
   /** Describes an authored shape, never an observed tree or a measured species. */
   readonly id: string;
   readonly basis: 'authored_canopy_art';
-  /** Both LODs share one origin, XY radius <= 1, and Z bounds within [-.5, .5]. */
+  /** All LODs share one origin, XY radius <= 1, and Z bounds within [-.5, .5]. */
   readonly near: THREE.BufferGeometry;
   readonly distant: THREE.BufferGeometry;
-  readonly lobeCount: { readonly near: number; readonly distant: number };
-  readonly triangleCounts: { readonly near: number; readonly distant: number };
+  /** Every lobe at the coarsest icosahedron: the silhouette for tiles beyond
+   * twice the trunk band, where a crown covers a few pixels on a phone. */
+  readonly far: THREE.BufferGeometry;
+  readonly lobeCount: { readonly near: number; readonly distant: number; readonly far: number };
+  readonly triangleCounts: { readonly near: number; readonly distant: number; readonly far: number };
 }
 
 export interface TreeAssetAtlas {
@@ -136,9 +139,9 @@ function buildCluster(lobes: readonly Lobe[], templates: readonly THREE.BufferGe
     .setAttribute('normal', new THREE.BufferAttribute(normals, 3));
 }
 
-function normalizePair(near: THREE.BufferGeometry, distant: THREE.BufferGeometry): void {
+function normalizeSet(geometries: readonly THREE.BufferGeometry[]): void {
   let radius = 0, minZ = Infinity, maxZ = -Infinity;
-  for (const geometry of [near, distant]) {
+  for (const geometry of geometries) {
     const positions = geometry.getAttribute('position');
     for (let vertex = 0; vertex < positions.count; vertex++) {
       radius = Math.max(radius, Math.hypot(positions.getX(vertex), positions.getY(vertex)));
@@ -149,7 +152,7 @@ function normalizePair(near: THREE.BufferGeometry, distant: THREE.BufferGeometry
   // crown. The tiny radial margin also contains Float32 rounding at radius 1.
   const matrix = new THREE.Matrix4().makeScale(1 / (radius * 1.000001), 1 / (radius * 1.000001), 1 / (maxZ - minZ));
   matrix.setPosition(0, 0, -(maxZ + minZ) / 2 / (maxZ - minZ));
-  for (const geometry of [near, distant]) {
+  for (const geometry of geometries) {
     geometry.applyMatrix4(matrix);
     geometry.computeBoundingBox(); geometry.computeBoundingSphere();
   }
@@ -170,13 +173,17 @@ export function createTreeAssetAtlas(): TreeAssetAtlas {
       // authored silhouette in 460 triangles, instead of dropping whole lobes.
       const dominant = new Set(design.dominant.slice(0, 5));
       const distant = buildCluster(design.lobes, design.lobes.map((_, index) => dominant.has(index) ? distantTemplate : minorTemplate)); owned.push(distant);
-      normalizePair(near, distant);
-      near.name = `${design.id}-near`; distant.name = `${design.id}-distant`;
+      // Far keeps every lobe at 20 triangles: the same outline in ~160 triangles.
+      const far = buildCluster(design.lobes, design.lobes.map(() => minorTemplate)); owned.push(far);
+      normalizeSet([near, distant, far]);
+      near.name = `${design.id}-near`; distant.name = `${design.id}-distant`; far.name = `${design.id}-far`;
       near.userData = { basis: 'authored_canopy_art', variant: design.id, lod: 'near', lobeCount: design.lobes.length };
       distant.userData = { basis: 'authored_canopy_art', variant: design.id, lod: 'distant', lobeCount: design.lobes.length };
-      variants.push(Object.freeze({ id: design.id, basis: 'authored_canopy_art' as const, near, distant,
-        lobeCount: Object.freeze({ near: design.lobes.length, distant: design.lobes.length }),
-        triangleCounts: Object.freeze({ near: near.getAttribute('position').count / 3, distant: distant.getAttribute('position').count / 3 }) }));
+      far.userData = { basis: 'authored_canopy_art', variant: design.id, lod: 'far', lobeCount: design.lobes.length };
+      const triangles = (geometry: THREE.BufferGeometry) => geometry.getAttribute('position').count / 3;
+      variants.push(Object.freeze({ id: design.id, basis: 'authored_canopy_art' as const, near, distant, far,
+        lobeCount: Object.freeze({ near: design.lobes.length, distant: design.lobes.length, far: design.lobes.length }),
+        triangleCounts: Object.freeze({ near: triangles(near), distant: triangles(distant), far: triangles(far) }) }));
     }
   } catch (error) {
     for (const geometry of owned) geometry.dispose();

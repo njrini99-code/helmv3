@@ -44,8 +44,9 @@ export interface ThreeLandscape {
     /** Outside-world context objects drawn from the hash-locked layer. */
     contextRibbons: number; contextStructures: number; contextLines: number; contextZones: number;
     /** §68.3: one total hides the bottleneck; these split it by category. */
-    crownNearTriangles: number; crownDistantTriangles: number; trunkTriangles: number; massTriangles: number;
-    lodBatches: { near: number; distant: number; hidden: number } };
+    crownNearTriangles: number; crownDistantTriangles: number; crownFarTriangles: number; trunkTriangles: number; massTriangles: number;
+    /** Trees per crown LOD, plus trunks hidden beyond twice the near band. */
+    lodTrees: { near: number; distant: number; far: number; hidden: number } };
 }
 
 const VEGETATION = MERIDIAN_STYLE.vegetation;
@@ -55,6 +56,8 @@ const CANOPY_TILE_M = VEGETATION.tileM;
 // this reach of the camera focus (the green a golfer is reading) take them;
 // trunks follow the same band (§37) and vanish beyond twice of it.
 const NEAR_DETAIL_RADIUS_M = VEGETATION.trunkBandM;
+const CROWN_LODS = ['near', 'distant', 'far'] as const;
+type CrownLod = typeof CROWN_LODS[number];
 const Z_AXIS = new THREE.Vector3(0, 0, 1);
 
 function variation(seed: number): number {
@@ -288,7 +291,7 @@ export function buildThreeLandscape(
     styleVersion: MERIDIAN_STYLE_VERSION, styleHash: MERIDIAN_STYLE_HASH, artifactHash: artifact.contentHash, artifactSource,
     canopyHeightBasis: 'illustrative', mowingBasis: 'illustrative_style' };
   const geometries = new Set<THREE.BufferGeometry>(), materials = new Set<THREE.Material>();
-  const instances: THREE.InstancedMesh[] = [];
+  const instances: (THREE.InstancedMesh | THREE.BatchedMesh)[] = [];
 
   // Conforming triangles already preserve multipart features and polygon holes.
   // Normalize winding on this display copy, without triangulating again.
@@ -368,7 +371,8 @@ export function buildThreeLandscape(
   }
   const summedNormals = new Float64Array(normalKeys.size * 3);
 
-  interface Tree { id: string; tile: string; x: number; y: number; groundZ: number; radius: number; trunkRadius: number; height: number; yaw: number; aspect: number; asset: TreeCrownAsset; familyId: string; color: THREE.Color }
+  interface Tree { id: string; tile: string; x: number; y: number; groundZ: number; radius: number; trunkRadius: number; height: number; yaw: number; aspect: number; asset: TreeCrownAsset; familyId: string; color: THREE.Color;
+    instance: number; trunkInstance: number; lod: CrownLod; trunkLod: 'near' | 'distant' | 'hidden' }
   interface MassLobe { id: string; tile: string; x: number; y: number; groundZ: number; radius: number; aspect: number; height: number; yaw: number; color: THREE.Color }
   const treeAtlas = createTreeAssetAtlas();
   const trees: Tree[] = [], lobes: MassLobe[] = [];
@@ -435,7 +439,7 @@ export function buildThreeLandscape(
       const color = contextTone(new THREE.Color(family.base).lerp(new THREE.Color(family.light), Math.min(1, variation(n + 233) * .6 + edgeLift)), feature);
       trees.push({ id, tile: `${Math.floor(point[0] / CANOPY_TILE_M)},${Math.floor(point[1] / CANOPY_TILE_M)}`,
         x: point[0], y: point[1], groundZ, radius, trunkRadius: designRadius * family.trunkRatio, height: designRadius * heightRatio,
-        aspect: .84 + variation(n + 37) * .16, yaw: variation(n + 41) * Math.PI * 2, asset, familyId: family.id, color });
+        aspect: .84 + variation(n + 37) * .16, yaw: variation(n + 41) * Math.PI * 2, asset, familyId: family.id, color, instance: -1, trunkInstance: -1, lod: 'distant', trunkLod: 'hidden' });
       if (trees.length >= crownBudget) break;
     }
   }
@@ -556,7 +560,7 @@ export function buildThreeLandscape(
       const height = understory.heightM[0] + (understory.heightM[1] - understory.heightM[0]) * variation(n + 7);
       const color = contextTone(new THREE.Color(understory.base).lerp(new THREE.Color(understory.light), variation(n + 17) * .7), feature);
       trees.push({ id, tile: `${Math.floor(point[0] / CANOPY_TILE_M)},${Math.floor(point[1] / CANOPY_TILE_M)}`, x: point[0], y: point[1], groundZ,
-        radius, trunkRadius: 0, height, aspect: .8 + variation(n + 37) * .3, yaw: variation(n + 41) * Math.PI * 2, asset: shrubAsset, familyId: 'understory', color });
+        radius, trunkRadius: 0, height, aspect: .8 + variation(n + 37) * .3, yaw: variation(n + 41) * Math.PI * 2, asset: shrubAsset, familyId: 'understory', color, instance: -1, trunkInstance: -1, lod: 'distant', trunkLod: 'hidden' });
       understoryCount++;
       if (understoryCount >= understoryBudget) break;
     }
@@ -595,61 +599,57 @@ export function buildThreeLandscape(
   const crownMaterial = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 1, metalness: 0 });
   crownMaterial.name = 'opaque-canopy';
   materials.add(crownMaterial);
-  const crownBatches: { mesh: THREE.InstancedMesh; trees: Tree[]; asset: TreeCrownAsset; center: PointM; lod: 'distant' | 'near' }[] = [];
-  // §68.2: a batch spans `batchFactor` canopy tiles per axis. Placement and
-  // LOD reach still use the canopy tile; only the instanced grouping widens.
-  const batchFactor = Math.max(1, Math.min(4, Math.round(options.overrides?.batchTiles ?? 1)));
-  const batchTile = (tile: string): string => {
-    if (batchFactor === 1) return tile;
-    const [column, row] = tile.split(',').map(Number) as [number, number];
-    return `${Math.floor(column / batchFactor)},${Math.floor(row / batchFactor)}`;
-  };
-  const tiles = new Map<string, Tree[]>();
-  for (const tree of trees) {
-    const key = batchTile(tree.tile);
-    const tile = tiles.get(key) ?? [];
-    tile.push(tree); tiles.set(key, tile);
+  // §68.2: one BatchedMesh holds every crown. Each authored design contributes
+  // its three LOD geometries once and every tree is one instance that points
+  // at the geometry for its current LOD. Three culls and depth-sorts the
+  // instances itself, so the crown layer costs one draw call (plus one in the
+  // shadow pass) instead of tiles × designs × 2. The single call needs
+  // WEBGL_multi_draw (Safari 15+, Chrome 86+); without it Three issues one
+  // call per visible instance and the renderer reports it as `multiDrawBasis`.
+  const crownGeometryIds = new Map<TreeCrownAsset, Record<CrownLod, number>>();
+  let crownVertexCount = 0, crownIndexCount = 0;
+  for (const asset of treeAtlas.variants) for (const lod of CROWN_LODS) {
+    crownVertexCount += asset[lod].getAttribute('position').count; crownIndexCount += asset[lod].getIndex()?.count ?? 0;
   }
-  const tileCenter = (tile: string): PointM => {
-    const [column, row] = tile.split(',').map(Number) as [number, number];
-    return [(column + .5) * CANOPY_TILE_M * batchFactor, (row + .5) * CANOPY_TILE_M * batchFactor];
-  };
-  // Spatial batches let the normal Three frustum cull off-screen canopy. The
-  // same authored asset is shared across all tiles and all its instances.
-  for (const [tile, tileTrees] of tiles) for (const asset of treeAtlas.variants) {
-    const familyTrees = tileTrees.filter(tree => tree.asset === asset);
-    if (!familyTrees.length) continue;
-    const crowns = new THREE.InstancedMesh(asset.distant, crownMaterial, familyTrees.length);
-    crowns.name = `source-canopy-crowns-${tile}-${asset.id}`;
-    crowns.userData = { canopyBasis: 'reviewed_group_illustration', heightBasis: 'illustrative',
-      family: asset.id, families: familyTrees.map(tree => tree.familyId), tile, treeIds: familyTrees.map(tree => tree.id), lod: 'distant' };
+  let crowns: THREE.BatchedMesh | null = null;
+  if (trees.length) {
+    crowns = new THREE.BatchedMesh(trees.length, crownVertexCount, crownIndexCount, crownMaterial);
+    for (const asset of treeAtlas.variants) {
+      crownGeometryIds.set(asset, { near: crowns.addGeometry(asset.near), distant: crowns.addGeometry(asset.distant), far: crowns.addGeometry(asset.far) });
+    }
+    crowns.name = 'source-canopy-crowns';
+    crowns.userData = { canopyBasis: 'reviewed_group_illustration', heightBasis: 'illustrative', treeIds: trees.map(tree => tree.id),
+      families: trees.map(tree => tree.familyId), designs: trees.map(tree => tree.asset.id), lods: trees.map(() => 'distant') };
     crowns.castShadow = true;
     crowns.receiveShadow = true;
-    crowns.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-    familyTrees.forEach((tree, index) => crowns.setColorAt(index, tree.color));
-    if (crowns.instanceColor) crowns.instanceColor.needsUpdate = true;
+    for (const tree of trees) {
+      tree.instance = crowns.addInstance(crownGeometryIds.get(tree.asset)!.distant);
+      crowns.setColorAt(tree.instance, tree.color);
+    }
     group.add(crowns); instances.push(crowns);
-    crownBatches.push({ mesh: crowns, trees: familyTrees, asset, lod: 'distant', center: tileCenter(tile) });
   }
-  const trunkBatches: { mesh: THREE.InstancedMesh; trees: Tree[]; center: PointM; lod: 'near' | 'distant' | 'hidden' }[] = [];
   const trunkGeometry = { near: new THREE.CylinderGeometry(.7, 1, 1, 7, 1), distant: new THREE.CylinderGeometry(.7, 1, 1, 3, 1) };
   const trunkTriangleCount = (geometry: THREE.BufferGeometry) => (geometry.index ? geometry.index.count : geometry.getAttribute('position').count) / 3;
   for (const geometry of Object.values(trunkGeometry)) { geometry.rotateX(Math.PI / 2); geometries.add(geometry); }
-  if (trees.some(tree => tree.trunkRadius > 0)) {
+  // Trunks batch the same way: two cylinder geometries, one instance per
+  // trunked tree, hidden instances beyond twice the near band (§37).
+  const trunkTrees = trees.filter(tree => tree.trunkRadius > 0);
+  const trunkGeometryIds = { near: -1, distant: -1 };
+  let trunks: THREE.BatchedMesh | null = null;
+  if (trunkTrees.length) {
     const trunkMaterial = new THREE.MeshStandardMaterial({ color: palette.treeShadow, roughness: 1, metalness: 0 });
     trunkMaterial.name = 'opaque-canopy-trunk';
     materials.add(trunkMaterial);
-    for (const [tile, tileTrees] of tiles) {
-      const trunkTrees = tileTrees.filter(tree => tree.trunkRadius > 0);
-      if (!trunkTrees.length) continue;
-      const trunks = new THREE.InstancedMesh(trunkGeometry.distant, trunkMaterial, trunkTrees.length);
-      trunks.name = `source-canopy-trunks-${tile}`;
-      trunks.userData = { tile, treeIds: trunkTrees.map(tree => tree.id), heightBasis: 'illustrative', lod: 'distant' };
-      trunks.castShadow = true;
-      trunks.receiveShadow = true;
-      trunks.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-      group.add(trunks); instances.push(trunks); trunkBatches.push({ mesh: trunks, trees: trunkTrees, center: tileCenter(tile), lod: 'distant' });
-    }
+    const vertexCount = trunkGeometry.near.getAttribute('position').count + trunkGeometry.distant.getAttribute('position').count;
+    const indexCount = (trunkGeometry.near.getIndex()?.count ?? 0) + (trunkGeometry.distant.getIndex()?.count ?? 0);
+    trunks = new THREE.BatchedMesh(trunkTrees.length, vertexCount, indexCount, trunkMaterial);
+    trunkGeometryIds.near = trunks.addGeometry(trunkGeometry.near); trunkGeometryIds.distant = trunks.addGeometry(trunkGeometry.distant);
+    trunks.name = 'source-canopy-trunks';
+    trunks.userData = { treeIds: trunkTrees.map(tree => tree.id), heightBasis: 'illustrative', lods: trunkTrees.map(() => 'distant') };
+    trunks.castShadow = true;
+    trunks.receiveShadow = true;
+    for (const tree of trunkTrees) { tree.trunkInstance = trunks.addInstance(trunkGeometryIds.distant); tree.trunkLod = 'distant'; }
+    group.add(trunks); instances.push(trunks);
   }
   const massBatches: { mesh: THREE.InstancedMesh; lobes: MassLobe[] }[] = [];
   const massGeometry = new THREE.IcosahedronGeometry(1, 1);
@@ -658,19 +658,15 @@ export function buildThreeLandscape(
     const massMaterial = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 1, metalness: 0 });
     massMaterial.name = 'opaque-forest-mass';
     materials.add(massMaterial);
-    const massTiles = new Map<string, MassLobe[]>();
-    for (const lobe of lobes) { const key = batchTile(lobe.tile); const tile = massTiles.get(key) ?? []; tile.push(lobe); massTiles.set(key, tile); }
-    for (const [tile, tileLobes] of massTiles) {
-      const mass = new THREE.InstancedMesh(massGeometry, massMaterial, tileLobes.length);
-      mass.name = `source-forest-mass-${tile}`;
-      mass.userData = { canopyBasis: 'reviewed_group_illustration', heightBasis: 'illustrative', layer: 'forest_mass', tile, lobeIds: tileLobes.map(lobe => lobe.id) };
-      mass.castShadow = true;
-      mass.receiveShadow = true;
-      mass.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-      tileLobes.forEach((lobe, index) => mass.setColorAt(index, lobe.color));
-      if (mass.instanceColor) mass.instanceColor.needsUpdate = true;
-      group.add(mass); instances.push(mass); massBatches.push({ mesh: mass, lobes: tileLobes });
-    }
+    const mass = new THREE.InstancedMesh(massGeometry, massMaterial, lobes.length);
+    mass.name = 'source-forest-mass';
+    mass.userData = { canopyBasis: 'reviewed_group_illustration', heightBasis: 'illustrative', layer: 'forest_mass', lobeIds: lobes.map(lobe => lobe.id) };
+    mass.castShadow = true;
+    mass.receiveShadow = true;
+    mass.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    lobes.forEach((lobe, index) => mass.setColorAt(index, lobe.color));
+    if (mass.instanceColor) mass.instanceColor.needsUpdate = true;
+    group.add(mass); instances.push(mass); massBatches.push({ mesh: mass, lobes });
   }
 
   const familyCounts: Record<string, number> = {};
@@ -680,50 +676,59 @@ export function buildThreeLandscape(
   const context = buildThreeContext(scene, mesh);
   group.add(context.group);
   const counts: ThreeLandscape['counts'] = { terrainTriangles: mesh.triangleFeatures.length, trees: trees.length,
-    crownInstances: trees.length, crownTriangles: 0, totalTriangles: 0, canopyBatches: crownBatches.length, drawCalls: 0,
+    crownInstances: trees.length, crownTriangles: 0, totalTriangles: 0, canopyBatches: crowns ? 1 : 0, drawCalls: 0,
     massLobes: lobes.length, trunksVisible: 0, families: familyCounts, contextMassLobes, understory: understoryCount,
     contextRibbons: context.counts.ribbons, contextStructures: context.counts.structures, contextLines: context.counts.lines, contextZones: context.counts.zones,
-    crownNearTriangles: 0, crownDistantTriangles: 0, trunkTriangles: 0, massTriangles: 0, lodBatches: { near: 0, distant: 0, hidden: 0 } };
+    crownNearTriangles: 0, crownDistantTriangles: 0, crownFarTriangles: 0, trunkTriangles: 0, massTriangles: 0, lodTrees: { near: 0, distant: 0, far: 0, hidden: 0 } };
   const massTriangles = trunkTriangleCount(massGeometry) * lobes.length;
   const updateTriangleCounts = () => {
-    counts.crownNearTriangles = crownBatches.reduce((total, batch) => total + (batch.lod === 'near' ? batch.asset.triangleCounts.near * batch.trees.length : 0), 0);
-    counts.crownDistantTriangles = crownBatches.reduce((total, batch) => total + (batch.lod === 'distant' ? batch.asset.triangleCounts.distant * batch.trees.length : 0), 0);
-    counts.crownTriangles = counts.crownNearTriangles + counts.crownDistantTriangles;
-    const trunkTriangles = trunkBatches.reduce((total, batch) => total + (batch.lod === 'hidden' ? 0 : trunkTriangleCount(trunkGeometry[batch.lod]) * batch.trees.length), 0);
+    let near = 0, distant = 0, far = 0, nearTrees = 0, distantTrees = 0, farTrees = 0, trunkTriangles = 0, trunksVisible = 0, hiddenTrunks = 0;
+    for (const tree of trees) {
+      if (tree.lod === 'near') { near += tree.asset.triangleCounts.near; nearTrees++; }
+      else if (tree.lod === 'distant') { distant += tree.asset.triangleCounts.distant; distantTrees++; }
+      else { far += tree.asset.triangleCounts.far; farTrees++; }
+      if (tree.trunkInstance < 0) continue;
+      if (tree.trunkLod === 'hidden') hiddenTrunks++;
+      else { trunkTriangles += trunkTriangleCount(trunkGeometry[tree.trunkLod]); trunksVisible++; }
+    }
+    counts.crownNearTriangles = near; counts.crownDistantTriangles = distant; counts.crownFarTriangles = far;
+    counts.crownTriangles = near + distant + far;
     counts.trunkTriangles = trunkTriangles; counts.massTriangles = massTriangles;
-    counts.lodBatches = { near: crownBatches.filter(batch => batch.lod === 'near').length, distant: crownBatches.filter(batch => batch.lod === 'distant').length, hidden: trunkBatches.filter(batch => batch.lod === 'hidden').length };
-    counts.trunksVisible = trunkBatches.reduce((total, batch) => total + (batch.lod === 'hidden' ? 0 : batch.trees.length), 0);
+    counts.lodTrees = { near: nearTrees, distant: distantTrees, far: farTrees, hidden: hiddenTrunks };
+    counts.trunksVisible = trunksVisible;
     counts.totalTriangles = counts.terrainTriangles + counts.crownTriangles + trunkTriangles + massTriangles;
-    counts.drawCalls = 1 + crownBatches.length + trunkBatches.filter(batch => batch.lod !== 'hidden').length + massBatches.length;
+    counts.drawCalls = 1 + (crowns ? 1 : 0) + (trunks && trunksVisible ? 1 : 0) + massBatches.length;
   };
   updateTriangleCounts();
   const transform = new THREE.Matrix4(), translation = new THREE.Vector3(), rotation = new THREE.Quaternion(), scale = new THREE.Vector3();
   let lastExaggeration = NaN, lastReference = NaN, disposed = false;
   function setDetail(next: 'distant' | 'near', focusM?: PointM): boolean {
     if (disposed) return false;
-    const reach = NEAR_DETAIL_RADIUS_M + CANOPY_TILE_M * batchFactor * Math.SQRT1_2;
     let changed = false;
-    for (const batch of crownBatches) {
-      const near = next === 'near' && (!focusM || Math.hypot(batch.center[0] - focusM[0], batch.center[1] - focusM[1]) <= reach);
-      const lod = near ? 'near' : 'distant';
-      if (batch.lod === lod) continue;
-      batch.mesh.geometry = batch.asset[lod];
-      batch.lod = lod; batch.mesh.userData.lod = lod;
-      batch.mesh.computeBoundingBox(); batch.mesh.computeBoundingSphere();
-      changed = true;
+    // Per tree, by distance from the camera focus: near crowns and 7-sided
+    // trunks inside the band, mid crowns and 3-sided trunks inside twice of
+    // it, the coarse far silhouette and no trunk beyond (§37/§68).
+    for (const tree of trees) {
+      const distance = focusM ? Math.hypot(tree.x - focusM[0], tree.y - focusM[1]) : 0;
+      const lod: CrownLod = next === 'near' && distance <= NEAR_DETAIL_RADIUS_M ? 'near' : distance <= NEAR_DETAIL_RADIUS_M * 2 ? 'distant' : 'far';
+      if (crowns && tree.lod !== lod) {
+        crowns.setGeometryIdAt(tree.instance, crownGeometryIds.get(tree.asset)![lod]);
+        (crowns.userData.lods as string[])[tree.instance] = lod;
+        tree.lod = lod; changed = true;
+      }
+      if (!trunks || tree.trunkInstance < 0) continue;
+      const trunkLod = lod === 'far' ? 'hidden' : lod;
+      if (tree.trunkLod === trunkLod) continue;
+      if (trunkLod !== 'hidden') trunks.setGeometryIdAt(tree.trunkInstance, trunkGeometryIds[trunkLod]);
+      trunks.setVisibleAt(tree.trunkInstance, trunkLod !== 'hidden');
+      (trunks.userData.lods as string[])[tree.trunkInstance] = trunkLod;
+      tree.trunkLod = trunkLod; changed = true;
     }
-    // §37: trunks are detailed inside the near band, cheap inside twice of
-    // it, and absent beyond, where the gap under a crown is sub-pixel anyway.
-    for (const batch of trunkBatches) {
-      const distance = focusM ? Math.hypot(batch.center[0] - focusM[0], batch.center[1] - focusM[1]) : 0;
-      const lod = next === 'near' && distance <= reach ? 'near' : distance <= reach * 2 ? 'distant' : 'hidden';
-      if (batch.lod === lod) continue;
-      if (lod !== 'hidden') batch.mesh.geometry = trunkGeometry[lod];
-      batch.mesh.visible = lod !== 'hidden';
-      batch.lod = lod; batch.mesh.userData.lod = lod;
-      changed = true;
+    if (changed) {
+      crowns?.computeBoundingBox(); crowns?.computeBoundingSphere();
+      trunks?.computeBoundingBox(); trunks?.computeBoundingSphere();
+      updateTriangleCounts();
     }
-    if (changed) updateTriangleCounts();
     return changed;
   }
   const bowlScale = Math.max(0, options.overrides?.bowl ?? 1);
@@ -765,26 +770,21 @@ export function buildThreeLandscape(
     normals.needsUpdate = true;
     terrainGeometry.computeBoundingBox();
     terrainGeometry.computeBoundingSphere();
-    for (const batch of crownBatches) {
-      batch.trees.forEach((tree, index) => {
+    for (const tree of trees) {
+      rotation.setFromAxisAngle(Z_AXIS, tree.yaw);
+      if (crowns) {
         translation.set(tree.x, tree.y, displayZ(tree.groundZ) + tree.height * .64);
-        rotation.setFromAxisAngle(Z_AXIS, tree.yaw);
         scale.set(tree.radius, tree.radius * tree.aspect, tree.height * .72);
-        batch.mesh.setMatrixAt(index, transform.compose(translation, rotation, scale));
-      });
-      batch.mesh.instanceMatrix.needsUpdate = true;
-      batch.mesh.computeBoundingBox(); batch.mesh.computeBoundingSphere();
-    }
-    for (const batch of trunkBatches) {
-      batch.trees.forEach((tree, index) => {
+        crowns.setMatrixAt(tree.instance, transform.compose(translation, rotation, scale));
+      }
+      if (trunks && tree.trunkInstance >= 0) {
         translation.set(tree.x, tree.y, displayZ(tree.groundZ) + tree.height * .18);
-        rotation.setFromAxisAngle(Z_AXIS, tree.yaw);
         scale.set(tree.trunkRadius, tree.trunkRadius, tree.height * .36);
-        batch.mesh.setMatrixAt(index, transform.compose(translation, rotation, scale));
-      });
-      batch.mesh.instanceMatrix.needsUpdate = true;
-      batch.mesh.computeBoundingBox(); batch.mesh.computeBoundingSphere();
+        trunks.setMatrixAt(tree.trunkInstance, transform.compose(translation, rotation, scale));
+      }
     }
+    crowns?.computeBoundingBox(); crowns?.computeBoundingSphere();
+    trunks?.computeBoundingBox(); trunks?.computeBoundingSphere();
     for (const batch of massBatches) {
       batch.lobes.forEach((lobe, index) => {
         // Sunk a little below ground so no underside ever shows from Side.

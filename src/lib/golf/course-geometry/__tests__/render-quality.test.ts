@@ -12,7 +12,6 @@ describe('Meridian render quality tiers (§64–68)', () => {
     expect(low.pixelBudget).toBeLessThan(standard.pixelBudget); expect(standard.pixelBudget).toBeLessThan(high.pixelBudget);
     expect(low.shadowMapSize).toBeLessThan(standard.shadowMapSize); expect(standard.shadowMapSize).toBeLessThan(high.shadowMapSize);
     expect(low.nearCrowns).toBe(false); expect(standard.nearCrowns).toBe(true);
-    expect(low.batchTiles).toBeGreaterThan(standard.batchTiles); expect(standard.batchTiles).toBeGreaterThan(high.batchTiles);
     expect(low.massScale).toBeGreaterThan(low.crownScale); // §65: forest is mass dominant
     expect(low.targetFrameMs).toBe(33); expect(standard.targetFrameMs).toBeCloseTo(16.7);
   });
@@ -38,8 +37,7 @@ describe('Meridian render quality tiers (§64–68)', () => {
     expect(profilePixelRatio(RENDER_QUALITY_PROFILES.low, .5, ...phone)).toBe(1);
   });
   it('folds a profile into the landscape multipliers without discarding lab overrides', () => {
-    expect(qualityOverrides(RENDER_QUALITY_PROFILES.low, { crowns: 2, macro: 0 })).toMatchObject({ crowns: 1.4, mass: 1.25, water: .6, shade: 0, macro: 0, batchTiles: 4 });
-    expect(qualityOverrides(RENDER_QUALITY_PROFILES.standard, { batchTiles: 1 })).toMatchObject({ batchTiles: 1 });
+    expect(qualityOverrides(RENDER_QUALITY_PROFILES.low, { crowns: 2, macro: 0 })).toMatchObject({ crowns: 1.4, mass: 1.25, water: .6, shade: 0, macro: 0 });
     expect(qualityOverrides(RENDER_QUALITY_PROFILES.standard)).toMatchObject({ crowns: 1, mass: 1, water: 1, shade: 1 });
     expect(qualityOverrides(RENDER_QUALITY_PROFILES.high, { shade: .5 })).toMatchObject({ crowns: 1.25, shade: .5 });
   });

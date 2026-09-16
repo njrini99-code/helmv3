@@ -155,10 +155,18 @@ from V1; V4 changes what stands on each centre.
   non-woods feature. Budget 420 lobes, allocated nearest the hole first;
   `counts.massLobes` and the `terrainMassLobes` telemetry field report the
   live count.
-- **Trunks (§37).** Every trunked crown carries an instanced cylinder per
-  tile: 7-sided within the near band (150 m of the camera focus), 3-sided
-  within twice the band, hidden beyond. `counts.trunksVisible` and
-  `terrainTrunks` report what is drawn.
+- **Trunks (§37).** Every trunked crown carries a cylinder instance in one
+  batched trunk mesh: 7-sided within the near band (150 m of the camera
+  focus), 3-sided within twice the band, hidden beyond. `counts.trunksVisible`
+  and `terrainTrunks` report what is drawn.
+- **Batching (§68.2).** All crowns are one `THREE.BatchedMesh`: the eight
+  authored designs contribute their near / distant / far geometries once and
+  every tree is an instance pointing at the geometry for its LOD
+  (`setGeometryIdAt`), so a LOD change never moves a tree or adds a draw.
+  Three culls and depth-sorts the instances; the whole canopy is two draw
+  calls plus two in the shadow pass. The single call needs
+  `WEBGL_multi_draw` (Safari 15+, Chrome 86+); the renderer's
+  `multiDrawBasis` reports `per_instance_fallback` where it is missing.
 - **Identity (§41).** `canopy:<courseFrame>:<packageHash12>:<featureId>:<x>,<y>:<styleVersion>`
   and `mass:<…>` seed every family roll, proportion, colour, yaw and aspect,
   so a tree is the same tree across holes, shared context and sessions, and

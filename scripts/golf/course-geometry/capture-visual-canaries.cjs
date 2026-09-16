@@ -42,7 +42,7 @@ const METADATA_KEYS = ['terrainRenderer', 'terrainProjection', 'visualStyleVersi
   'terrainTriangles', 'terrainTrees', 'pixelRatio', 'shadowMapSize', 'shadowMapType', 'terrainPitch', 'terrainYaw', 'terrainExaggeration',
   'terrainScale', 'terrainFov', 'crownDetail', 'bufferWidth', 'bufferHeight', 'renderCount', 'terrainHash', 'debugView', 'frameMs',
   'visualStyleHash', 'visualArtifactHash', 'visualArtifactSource', 'meridianCode', 'visualBunkers', 'terrainMassLobes', 'terrainTrunks', 'treeFamilies', 'visualHaze', 'visualSky', 'contextZones', 'contextRibbons', 'contextStructures', 'contextLayerHash', 'contextMassLobes', 'understory', 'qualityTier', 'qualityBasis', 'frameP95Ms', 'drawCallBudget', 'drawCallStatus', 'triangleBreakdown', 'treeLod', 'geometryMemoryMb', 'shadowMemoryMb',
-  'gpuFrameP95Ms', 'gpuTimerBasis'];
+  'gpuFrameP95Ms', 'gpuTimerBasis', 'multiDrawBasis'];
 
 async function settled(page, canvas) {
   // Reduced motion applies presets instantly; still wait until the render

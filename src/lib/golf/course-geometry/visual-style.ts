@@ -216,10 +216,6 @@ export interface MeridianStyleOverrides {
   water?: number; haze?: number; shade?: number;
   /** §95 lab toggle: render-only bunker bowl depth scale (0 = flat canonical rim). */
   bowl?: number;
-  /** V7 (§68.2): how many canopy tiles share one instanced batch per axis
-   * (1 = one batch per tile and family). Larger values cut draw calls and
-   * coarsen frustum culling and the near-crown swap; never a visual change. */
-  batchTiles?: number;
 }
 export type TreeFamily = typeof MERIDIAN_STYLE.vegetation.families[number];
 

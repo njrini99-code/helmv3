@@ -57,7 +57,7 @@ Hero hole: Peek’n Peak Upper hole 7.
 | 48–50 | Lighting, shadow as modelling, haze | partial | Tuned with the green complex (sun 1.95, sky 1.12, shadow radius 3); grayscale test on hole 7 separates green/fairway/bunker/tee/path, rough tiers visible, water vs rough weakest |
 | 51 | Hole identity | partial | Emerges from the layers; per-hole audit after §56 |
 | 52 | QA vs production | done | Lab vs entry context (outside-world action 9) |
-| 53 | Rendering tiers | partial | Tier 1 done; tier 2 landed (fringe/apron, lip, setting, edge types); tier 3 pending |
+| 53 | Rendering tiers | partial (tier 3 source-limited) | Tier 1 done; tier 2 done (fringe/apron, lip, setting, edge types, path integration with shoulder shade, forest hierarchy, open-rough bands, adjacent-hole context); tier 3: understory ✓, structures (footprint extrusions + contact shade, roofs source-limited), hole-specific composition (§11 visibility scoring, state cameras) ✓, atmosphere/light tuning ✓, runoffs/collection areas only where a source exists (none yet) |
 | 54 | Source-backed vs visual-only | done | `basis` markers on every layer |
 | 55–56 | Mirrored-in-3D test, hole-by-hole checklist | partial | First run on all 18 holes (`lab/audit/hNN-{tee-hole,putting-green}.png`, 2026-09-16); table below |
 | 57–58 | Layer architecture, data model | done | Compiler layers + `SURFACE_CLASS_IDS` carry fringe, apron, rough tiers, zones; paths/structures in the context layer |
@@ -65,7 +65,7 @@ Hero hole: Peek’n Peak Upper hole 7.
 | 60 | No dead zones | partial | Every ground vertex classified; the audit still finds source-limited anonymous rough on 2, 3, 4 (long open flanks) and the par-3 carries on 5, 13, 15 — the context layer marks them `uncertain`, so nothing is painted (honest); needs the §39 human classification pass |
 | 61–64 | Hero / signature / intelligence / outside-world rules | partial | Green-complex hero and bunker signature have their v1 (apron neck, lips, edge variation); per-hole audit next |
 | 65 | Priority order | done | This tracker |
-| 66–70 | Quality targets, standard, summary, checklist, thesis | partial | Checklist §69 items 1–6 done (v1), 7–10 pending |
+| 66–70 | Quality targets, standard, summary, checklist, thesis | partial (item 10 human) | Checklist §69: 1–6 done (v1); 7 lighting/shadow tuned (sun 1.95, sky 1.12, radius 3, overhang and contact shade); 8 every hole reframed with the production camera states + §11 visibility term (`lab/audit-v2`); 9 no-dead-zones review run on all 18 (source-limited zones listed in §56/§60); 10 sign-off is the owner's call after the device pass |
 
 ## §56 hole-by-hole audit (Peek’n Peak Upper, tee state + putting state, 2026-09-16)
 

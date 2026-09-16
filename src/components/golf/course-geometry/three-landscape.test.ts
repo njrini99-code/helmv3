@@ -193,11 +193,12 @@ describe('Three landscape source and rendering invariants', () => {
     const woods = square('reviewed-canopy', 'woods', 0, 100), green = square('green', 'green', 35, 65);
     const scene = { ...pilotScene('cacapon-07', false), features: [woods, green] }, mesh = slopeMesh();
     const landscape = buildThreeLandscape(scene, mesh);
-    const crowns = landscape.group.children.filter(child => child.name.startsWith('source-canopy-crowns')) as THREE.InstancedMesh[];
-    expect(new Set(crowns.map(batch => batch.userData.family)).size).toBe(8);
-    expect(new Set(crowns.map(batch => batch.userData.tile)).size).toBeGreaterThan(1);
+    const crowns = landscape.group.children.filter(child => child.name.startsWith('source-canopy-crowns')) as THREE.BatchedMesh[];
+    expect(crowns).toHaveLength(1);
+    expect(new Set(crowns[0]!.userData.designs).size).toBe(8);
+    expect(crowns[0]!.instanceCount).toBe(landscape.counts.trees);
     expect(landscape.counts.trees).toBeGreaterThan(30);
-    const matrices = new Map<THREE.InstancedMesh, THREE.Matrix4[]>();
+    const matrices = new Map<THREE.BatchedMesh, THREE.Matrix4[]>();
     for (const batch of crowns) {
       const material = batch.material as THREE.MeshStandardMaterial;
       expect(material.transparent).toBe(false);
@@ -207,7 +208,7 @@ describe('Three landscape source and rendering invariants', () => {
       const positions = batch.geometry.getAttribute('position');
       for (let i = 0; i < positions.count; i++) expect(Math.hypot(positions.getX(i), positions.getY(i))).toBeLessThanOrEqual(1.000001);
       const originals: THREE.Matrix4[] = [];
-      for (let i = 0; i < batch.count; i++) {
+      for (let i = 0; i < batch.instanceCount; i++) {
         const matrix = new THREE.Matrix4(), scale = new THREE.Vector3();
         batch.getMatrixAt(i, matrix); originals.push(matrix.clone());
         matrix.decompose(new THREE.Vector3(), new THREE.Quaternion(), scale);
@@ -220,7 +221,7 @@ describe('Three landscape source and rendering invariants', () => {
       matrices.set(batch, originals);
     }
     landscape.setExaggeration(2, 100);
-    for (const batch of crowns) for (let i = 0; i < batch.count; i++) {
+    for (const batch of crowns) for (let i = 0; i < batch.instanceCount; i++) {
       const next = new THREE.Matrix4(); batch.getMatrixAt(i, next);
       const original = matrices.get(batch)![i]!;
       // Scale, rotation and horizontal position are unchanged. Only ground Z moves.
@@ -243,8 +244,8 @@ describe('Three landscape source and rendering invariants', () => {
     const edgeBand = MERIDIAN_STYLE.vegetation.edgeBandM, byPlacement = new Map(MERIDIAN_STYLE.vegetation.families.map(f => [f.id, f.placement]));
     let edgeTrees = 0, interiorTrees = 0;
     for (const child of landscape.group.children) if (child.name.startsWith('source-canopy-crowns')) {
-      const batch = child as THREE.InstancedMesh, matrix = new THREE.Matrix4();
-      for (let i = 0; i < batch.count; i++) {
+      const batch = child as THREE.BatchedMesh, matrix = new THREE.Matrix4();
+      for (let i = 0; i < batch.instanceCount; i++) {
         batch.getMatrixAt(i, matrix);
         const x = matrix.elements[12]!, y = matrix.elements[13]!;
         const inBig = x >= 0 && x <= 320 && y >= 0 && y <= 320;
@@ -265,13 +266,15 @@ describe('Three landscape source and rendering invariants', () => {
       expect(Math.hypot(Math.max(0, Math.max(140 - x, x - 180)), Math.max(0, Math.max(140 - y, y - 180)))).toBeGreaterThan(5);
     }
     // Trunks: cheap everywhere within twice the band, hidden beyond, detailed near the focus.
-    const trunkBatches = () => landscape.group.children.filter(child => child.name.startsWith('source-canopy-trunks')) as THREE.InstancedMesh[];
+    const trunks = landscape.group.children.filter(child => child.name.startsWith('source-canopy-trunks')) as THREE.BatchedMesh[];
+    expect(trunks).toHaveLength(1);
     // Focus at the woods corner: the copse (~530 m away) sits beyond twice the band.
     landscape.setDetail('distant', [40, 40]);
-    const visibleFar = trunkBatches().filter(batch => batch.visible).length, hiddenFar = trunkBatches().filter(batch => !batch.visible).length;
-    expect(hiddenFar).toBeGreaterThan(0); expect(visibleFar).toBeGreaterThan(0);
+    expect(landscape.counts.lodTrees.hidden).toBeGreaterThan(0); expect(landscape.counts.trunksVisible).toBeGreaterThan(0);
+    expect(trunks[0]!.userData.lods.filter((lod: string) => lod === 'hidden')).toHaveLength(landscape.counts.lodTrees.hidden);
+    expect(trunks[0]!.userData.lods.filter((lod: string) => lod === 'distant')).toHaveLength(landscape.counts.trunksVisible);
     landscape.setDetail('near', [40, 40]);
-    expect(trunkBatches().some(batch => batch.userData.lod === 'near')).toBe(true);
+    expect(trunks[0]!.userData.lods).toContain('near');
     expect(landscape.counts.trunksVisible).toBeGreaterThan(0);
     const budgetless = buildThreeLandscape({ ...base, features: [woods, copse, green] }, mesh, undefined, { overrides: { crowns: 0, mass: 0 } });
     expect(budgetless.counts.trees).toBe(0); expect(budgetless.counts.massLobes).toBe(0);
@@ -316,11 +319,11 @@ describe('Three landscape source and rendering invariants', () => {
     const records = (model: typeof landscape) => {
       const result = new Map<string, { matrix: number[]; family: string }>();
       for (const child of model.group.children) if (child.name.startsWith('source-canopy-crowns')) {
-        const batch = child as THREE.InstancedMesh;
-        for (let i = 0; i < batch.count; i++) {
+        const batch = child as THREE.BatchedMesh;
+        for (let i = 0; i < batch.instanceCount; i++) {
           const matrix = new THREE.Matrix4(), color = new THREE.Color();
           batch.getMatrixAt(i, matrix); batch.getColorAt(i, color);
-          result.set(batch.userData.treeIds[i], { matrix: matrix.toArray(), family: batch.userData.family });
+          result.set(batch.userData.treeIds[i], { matrix: matrix.toArray(), family: batch.userData.designs[i] });
           colors.set(`${model === landscape ? 'context' : 'own'}:${batch.userData.treeIds[i]}`, color.toArray());
         }
       }
@@ -351,13 +354,20 @@ describe('Three landscape source and rendering invariants', () => {
     // A focus limits near crowns to the batch tiles around it: nothing changes
     // for a focus far from every crown, and a focus on one crown upgrades only
     // its neighbourhood.
-    // (§37: trunks beyond twice the band hide, so the call itself reports a change.)
+    // (§37/§68: beyond twice the band trunks hide and crowns drop to the far
+    // silhouette without casting shadows, so the call itself reports a change.)
     landscape.setDetail('near', [1e5, 1e5]);
-    expect(landscape.counts.crownTriangles).toBe(distantTriangles);
+    expect(landscape.counts.crownTriangles).toBeLessThan(distantTriangles);
+    expect(landscape.counts.crownFarTriangles).toBe(landscape.counts.crownTriangles);
+    expect(landscape.counts.lodTrees.far).toBe(landscape.counts.trees);
+    expect(landscape.counts.lodTrees.near + landscape.counts.lodTrees.distant).toBe(0);
     expect(landscape.counts.trunksVisible).toBe(0);
+    expect(landscape.setDetail('distant')).toBe(true);
+    expect(landscape.counts.crownTriangles).toBe(distantTriangles);
     const first = before.values().next().value!.matrix;
     expect(landscape.setDetail('near', [first[12]!, first[13]!])).toBe(true);
-    expect(landscape.counts.crownTriangles).toBeGreaterThan(distantTriangles);
+    expect(landscape.counts.lodTrees.near).toBeGreaterThan(0);
+    expect(landscape.counts.crownNearTriangles).toBeGreaterThan(0);
     expect(landscape.counts.crownTriangles).toBeLessThanOrEqual(nearTriangles);
     expect(records(landscape)).toEqual(before);
     expect(landscape.setDetail('distant')).toBe(true);
@@ -374,8 +384,8 @@ describe('Three landscape source and rendering invariants', () => {
     const records = (model: typeof full) => {
       const result = new Map<string, { position: THREE.Vector3; scale: THREE.Vector3 }>();
       for (const child of model.group.children) if (child.name.startsWith('source-canopy-crowns')) {
-        const batch = child as THREE.InstancedMesh;
-        for (let i = 0; i < batch.count; i++) {
+        const batch = child as THREE.BatchedMesh;
+        for (let i = 0; i < batch.instanceCount; i++) {
           const matrix = new THREE.Matrix4(), position = new THREE.Vector3(), scale = new THREE.Vector3();
           batch.getMatrixAt(i, matrix); matrix.decompose(position, new THREE.Quaternion(), scale);
           result.set(batch.userData.treeIds[i], { position, scale });
@@ -424,22 +434,26 @@ describe('Three landscape source and rendering invariants', () => {
   });
 });
 
-describe('canopy batch tiles (Meridian §68.2)', () => {
-  it('cuts draw calls with wider batches while drawing the same trees, crowns and mass', () => {
+describe('canopy batching (Meridian §68.2)', () => {
+  it('draws every crown in one batched mesh and every trunk in another, whatever the LOD split', () => {
     const scene = pilotScene('cacapon-07', false), terrain = parseTerrainMesh(source, pilotPackage);
-    const one = buildThreeLandscape(scene, terrain, DEFAULT_THREE_LANDSCAPE_PALETTE, { overrides: { batchTiles: 1 } });
-    const two = buildThreeLandscape(scene, terrain, DEFAULT_THREE_LANDSCAPE_PALETTE, { overrides: { batchTiles: 2 } });
+    const landscape = buildThreeLandscape(scene, terrain, DEFAULT_THREE_LANDSCAPE_PALETTE);
     try {
-      expect(two.counts.trees).toBe(one.counts.trees);
-      expect(two.counts.massLobes).toBe(one.counts.massLobes);
-      expect(two.counts.crownTriangles).toBe(one.counts.crownTriangles);
-      expect(two.counts.drawCalls).toBeLessThan(one.counts.drawCalls);
-      expect(two.counts.canopyBatches).toBeLessThan(one.counts.canopyBatches);
-      // Every tree is still instanced exactly once.
-      const instanced = (landscape: typeof one) => landscape.group.children.filter(child => child.name.startsWith('source-canopy-crowns-'))
-        .reduce((total, child) => total + (child as { count: number }).count, 0);
-      expect(instanced(two)).toBe(instanced(one));
-    } finally { one.dispose(); two.dispose(); }
+      expect(landscape.counts.trees).toBeGreaterThan(100);
+      const crowns = landscape.group.children.filter(child => child.name.startsWith('source-canopy-crowns')) as THREE.BatchedMesh[];
+      const trunks = landscape.group.children.filter(child => child.name.startsWith('source-canopy-trunks')) as THREE.BatchedMesh[];
+      expect(crowns).toHaveLength(1); expect(trunks).toHaveLength(1);
+      expect(crowns[0]!.instanceCount).toBe(landscape.counts.trees);
+      expect(trunks[0]!.instanceCount).toBe(landscape.counts.trunksVisible);
+      expect(crowns[0]!.perObjectFrustumCulled && crowns[0]!.castShadow).toBe(true);
+      expect(landscape.counts.canopyBatches).toBe(1);
+      expect(landscape.counts.drawCalls).toBeLessThanOrEqual(4);
+      const before = landscape.counts.drawCalls, first = new THREE.Matrix4();
+      crowns[0]!.getMatrixAt(0, first);
+      landscape.setDetail('near', [first.elements[12]!, first.elements[13]!]);
+      expect(landscape.counts.drawCalls).toBe(before);
+      expect(crowns[0]!.userData.lods).toContain('near'); expect(landscape.counts.lodTrees.near).toBeGreaterThan(0);
+    } finally { landscape.dispose(); }
   });
 });
 

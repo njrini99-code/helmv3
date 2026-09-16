@@ -218,7 +218,10 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
       const nextDetail = !quality.nearCrowns ? 'distant' : camera.scale > 4.5 ? 'near' : camera.scale < 3.7 ? 'distant' : crownDetail;
       // Near crowns follow the focus: a pan across the green re-evaluates
       // which batch tiles are close enough to deserve them.
-      const focusMoved = nextDetail === 'near' && Math.hypot(camera.focusM[0] - detailFocus[0]!, camera.focusM[1] - detailFocus[1]!) > 12;
+      // The far crown band and trunk hiding (§37/§68) follow the focus in
+      // every detail mode, so a focus move re-evaluates the batches even when
+      // the near band is off.
+      const focusMoved = Math.hypot(camera.focusM[0] - detailFocus[0]!, camera.focusM[1] - detailFocus[1]!) > 12;
       if (nextDetail !== crownDetail || focusMoved) {
         crownDetail = nextDetail; detailFocus = camera.focusM;
         if (landscape.setDetail(nextDetail, [camera.focusM[0], camera.focusM[1]])) { fitSun(); renderer.shadowMap.needsUpdate = true; geometryBytes = estimateGeometryBytes(world); }
@@ -262,8 +265,9 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
         gpuFrameP95Ms: gpuTimes.length ? percentile(gpuTimes, 95).toFixed(2) : '', gpuTimerBasis: timerBasis,
         drawCallBudget: String(RENDER_BUDGETS.drawCalls[budgetViewFor(camera.pitch)]),
         drawCallStatus: renderer.info.render.calls <= RENDER_BUDGETS.drawCalls[budgetViewFor(camera.pitch)] ? 'within' : 'over',
-        triangleBreakdown: `terrain:${landscape.counts.terrainTriangles} crownNear:${landscape.counts.crownNearTriangles} crownDistant:${landscape.counts.crownDistantTriangles} trunks:${landscape.counts.trunkTriangles} mass:${landscape.counts.massTriangles} flight:${flightPaths?.count ?? 0}`,
-        treeLod: `near:${landscape.counts.lodBatches.near} distant:${landscape.counts.lodBatches.distant} hiddenTrunks:${landscape.counts.lodBatches.hidden}`,
+        triangleBreakdown: `terrain:${landscape.counts.terrainTriangles} crownNear:${landscape.counts.crownNearTriangles} crownDistant:${landscape.counts.crownDistantTriangles} crownFar:${landscape.counts.crownFarTriangles} trunks:${landscape.counts.trunkTriangles} mass:${landscape.counts.massTriangles} flight:${flightPaths?.count ?? 0}`,
+        treeLod: `near:${landscape.counts.lodTrees.near} distant:${landscape.counts.lodTrees.distant} far:${landscape.counts.lodTrees.far} hiddenTrunks:${landscape.counts.lodTrees.hidden}`,
+        multiDrawBasis: renderer.extensions.has('WEBGL_multi_draw') ? 'webgl_multi_draw' : 'per_instance_fallback',
         geometryMemoryMb: (geometryBytes / 1_048_576).toFixed(1),
         shadowMemoryMb: (((sun?.shadow.mapSize.x ?? 0) ** 2 * 4) / 1_048_576).toFixed(1),
         renderTargetMb: ((canvas.width * canvas.height * 8) / 1_048_576).toFixed(1),

@@ -22,11 +22,14 @@ describe('authored canopy asset atlas', () => {
       expect(asset.basis).toBe('authored_canopy_art');
       expect(asset.lobeCount.near).toBeGreaterThanOrEqual(6);
       expect(asset.lobeCount.distant).toBe(asset.lobeCount.near);
+      expect(asset.lobeCount.far).toBe(asset.lobeCount.near);
       expect(asset.triangleCounts.near).toBeLessThanOrEqual(1500);
       expect(asset.triangleCounts.distant).toBeGreaterThanOrEqual(250);
       expect(asset.triangleCounts.distant).toBeLessThanOrEqual(500);
       expect(asset.triangleCounts.distant).toBeLessThan(asset.triangleCounts.near);
-      for (const lod of ['near', 'distant'] as const) {
+      expect(asset.triangleCounts.far).toBe(asset.lobeCount.far * 20);
+      expect(asset.triangleCounts.far).toBeLessThan(asset.triangleCounts.distant);
+      for (const lod of ['near', 'distant', 'far'] as const) {
         const positions = asset[lod].getAttribute('position');
         expect(fingerprint(asset[lod])).toBe(fingerprint(repeat.variants[index]![lod]));
         for (let vertex = 0; vertex < positions.count; vertex++) {
@@ -41,13 +44,15 @@ describe('authored canopy asset atlas', () => {
     atlas.dispose(); repeat.dispose();
   });
 
-  it('keeps both LODs in the same frame and retains their asymmetric crown outline', () => {
+  it('keeps all LODs in the same frame and retains their asymmetric crown outline', () => {
     const atlas = createTreeAssetAtlas();
     for (const asset of atlas.variants) {
-      const near = asset.near.boundingBox!, distant = asset.distant.boundingBox!;
-      for (const axis of ['x', 'y', 'z'] as const) {
-        expect(Math.abs(near.min[axis] - distant.min[axis])).toBeLessThan(.2);
-        expect(Math.abs(near.max[axis] - distant.max[axis])).toBeLessThan(.2);
+      const near = asset.near.boundingBox!;
+      for (const coarse of [asset.distant.boundingBox!, asset.far.boundingBox!]) {
+        for (const axis of ['x', 'y', 'z'] as const) {
+          expect(Math.abs(near.min[axis] - coarse.min[axis])).toBeLessThan(.2);
+          expect(Math.abs(near.max[axis] - coarse.max[axis])).toBeLessThan(.2);
+        }
       }
       // An irregular crown has materially different horizontal extent around
       // its anchor; it cannot collapse into the old unit-sphere silhouette.

@@ -6,7 +6,7 @@ import FairwayShotTracking from '@/components/fairway/pages/rounds-tracking/Fair
 import type { HoleStats, RoundHole, ShotRecord } from '@/lib/types/golf';
 import type { TerrainMesh } from '@/lib/golf/course-geometry/terrain';
 import { Button } from '@/components/ui/button';
-import { compiledCourses, loadCompiledFixture, type CompiledCourse } from './fixture-assets';
+import { compiledCourses, contextLayerFor, loadCompiledFixture, type CompiledCourse } from './fixture-assets';
 
 interface SavedRound {
   holeIndex: number;
@@ -68,7 +68,9 @@ export function PlayRoundFixture({ course }: { course: CompiledCourse }) {
   const holes: RoundHole[] = useMemo(() => pkg.holes.map((h, index) => ({
     number: h.ordinal, par: h.par, yardage: h.scorecardYards ?? 0, score: saved.scores[index] ?? null,
   })), [pkg, saved.scores]);
-  const geometry = useMemo(() => ({ package: pkg, holeKeys, terrainByHole }), [pkg, holeKeys, terrainByHole]);
+  // The outside world (context layer) is part of the production player view:
+  // the fixture binds it exactly as the app's geometry bundle would.
+  const geometry = useMemo(() => ({ package: pkg, holeKeys, terrainByHole, contextLayer: contextLayerFor(course) ?? undefined }), [pkg, holeKeys, terrainByHole, course]);
   const initialShots = saved.shotsByHole[holeIndex] ?? [];
 
   const onHoleComplete = useCallback(async (index: number, stats: HoleStats) => {
