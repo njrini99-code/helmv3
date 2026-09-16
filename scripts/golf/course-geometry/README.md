@@ -258,6 +258,13 @@ Visual language: `docs/design/meridian-visual-language.md`. Processes, checklist
 observability codes and risks: `docs/plans/2026-09-16-meridian-operations.md`.
 
 ```bash
+# §39 review prompt sheet: per-hole evidence + draft answers for the outside-world review pass
+python3 scripts/golf/course-geometry/build-context-prompt-sheet.py \
+  src/test/fixtures/course-geometry/peek-n-peak-upper.json \
+  src/test/fixtures/course-geometry/peek-n-peak-upper-context.json \
+  src/test/fixtures/course-geometry/peek-n-peak-upper-context-report.json \
+  src/test/fixtures/course-geometry/compiled-peek-n-peak-upper \
+  docs/plans/2026-09-16-outside-world-review-prompts.md
 # Visual canaries (§8): 8 holes × Top/Terrain/Side × 4 viewports + canaries.json
 # (each capture also carries the hole's unexplained-context share and its
 # pass/fail against the outside-world uncertain gate, < 15 %, from the context report)

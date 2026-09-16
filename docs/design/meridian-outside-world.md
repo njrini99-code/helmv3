@@ -41,7 +41,10 @@ ground tone, draped ribbon, extruded footprint, vegetation, line, none).
    ("uncertain") share of the context bounds, and the worst-first ranking the
    spec asks for (§42.4).
 4. **Review.** Zones start `reviewed: false`, `basis: source`. A reviewer
-   walks §39 prompts per hole (`CONTEXT_REVIEW_PROMPTS`), corrects classes,
+   walks §39 prompts per hole (`CONTEXT_REVIEW_PROMPTS`; the sheet
+   `build-context-prompt-sheet.py` writes puts the evidence and a
+   data-derived draft answer beside every prompt, marking which ones only a
+   reviewer can answer), corrects classes,
    adds `derived` zones for terrain-context classes the sources cannot give
    (ridge, swale, bank …) and marks the layer `partial` or `reviewed`.
    Nothing is added because a space looks empty (§6).

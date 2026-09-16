@@ -378,10 +378,13 @@ from V1; V4 changes what stands on each centre.
   the rough in luminance but no longer reads as a chalk line on the phone
   Terrain view; service paths (`#A4A197`) and roads (`#86847F`) are
   unchanged, so the hierarchy road < service < cart path in lightness holds.
-  The OSM extract tags four cart-path ways `surface=asphalt` and the service
-  roads `paved`, and the context layer carries `attributes.surface` when a
-  way is tagged, so a per-ribbon surface tone is possible once the layer is
-  rebuilt with those ways; the class tone is the course-wide reading today.
+  The OSM extract tags four cart-path ways `surface=asphalt`, but all four
+  (and the other four cart paths the layer drops) lie 370–470 m outside the
+  Upper course's hole bounds on the Lower course, so the layer is right to
+  skip them; none of the Upper course's 18 cart paths carries a surface tag.
+  The layer keeps `attributes.surface` when a way is tagged, so a per-ribbon
+  surface tone can follow real tags later; the class tone is the reading
+  today.
 - Ground contact (renderer redesign §16): turf within 1.5 m of a building
   footprint darkens up to 10 % toward the wall, and the ground under a path
   ribbon darkens 6 % with a .8 m shoulder fade, so structures and paths sit
