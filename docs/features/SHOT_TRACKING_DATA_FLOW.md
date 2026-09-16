@@ -457,3 +457,90 @@ The complete flow is verified:
 4. ✅ Stats display shows all categories with proper formatting
 
 **No data loss occurs** - every shot taken is preserved in the database for comprehensive analysis.
+
+---
+
+<!-- BEGIN One-Tap anchors (Peek'n Peak) — added 2026-09-16, Task 13.
+     Everything above this marker describes the STANDARD shot tracker and is
+     unchanged. This section is additive and describes a separate, parallel
+     evidence path that does not alter any of it. -->
+
+## One-Tap anchors (Peek'n Peak)
+
+The One-Tap Live Round pilot is **evidence collection, not a second round
+ledger**. Score still lives in `golf_rounds` / `golf_holes` / `golf_shots`
+exactly as described above. One-Tap adds three tables that record *where the
+ball was*, and an adapter (Task 14) that feeds the existing shot model from
+them. Every course other than Peek'n Peak Upper is untouched.
+
+Migration: `supabase/migrations/20260916_peek_n_peak_one_tap.sql`.
+**Branch only — not applied to any remote project.**
+
+### Tables
+
+- **`golf_shot_anchors`** — primary key `id`, the client-generated anchor id.
+  One tap = one anchor = "the ball is here now". Holds the resolved WGS84 and
+  ENU position, the 2x2 ENU covariance, sigma, the calibrated and reported
+  uncertainty terms, capture motion, the lie posterior and primary lie, the
+  terrain sample, the geometry and terrain versions, the terminal flag and
+  method, and the estimator summary.
+- **`golf_penalty_events`** — primary key `id`. Penalty strokes as separate
+  score facts (section 58). Carries no position data of any kind.
+- **`golf_round_course_bindings`** — primary key `round_id`. Which course
+  package and geometry version a round's anchors were captured against, and
+  whether the round ran in One-Tap mode.
+
+Shots are **derived** between consecutive live anchors and are not stored in
+these tables.
+
+### Privacy contract (§71)
+
+**No raw GNSS samples are stored.** The durable record keeps the resolved
+position, its covariance and a *summary* of the estimator's evidence — sample
+count, rejected residuals, scatter axes, kAcc and its calibration state. There
+is no raw-sample column, no breadcrumb, no heading or speed trace, and no code
+path that would send one: `ANCHOR_SYNC_COLUMNS` in
+`src/lib/golf/one-tap/supabase-sync-transport.ts` is the exact column set the
+client sends, and both the transport unit test and the pgTAP suite assert the
+column set by equality so any new column fails review. Raw fixes reach only an
+opt-in, in-memory calibration sink on the device.
+
+### Sync contract
+
+1. **Local durability precedes "Saved."** The tap writes the anchor to device
+   storage first; the outbox only mirrors it. Nothing on the sync path can make
+   a mark disappear.
+2. **`id` is the only idempotency key.** Every attempt re-sends the whole row
+   as an upsert `on conflict (id)`, so N retries converge on one row with one
+   final state. `acceptedIds` comes from the ids the server returns, so a
+   partial accept leaves the rest queued.
+3. **Tombstones synchronize as updates.** Undo sets `deleted_at` and re-queues
+   the row. There is no delete call, no delete policy, and `DELETE` is revoked
+   from `authenticated` on all three tables.
+4. **Retry ladder:** `SYNC_BACKOFF_MS` = 1s / 2s / 5s / 15s / 60s, then the row
+   is marked `ERROR` and still retried on the next flush. The ladder is
+   in-memory, so a relaunch starts it over — the durable record is the
+   repository's.
+5. **Anchors flush before penalties**, so the mark a penalty refers to is on
+   the server first. `related_anchor_id` is deliberately *not* a foreign key: a
+   penalty that could never sync would be a lost stroke.
+
+### Access
+
+Read and write follow the round; One-Tap does not create a second auth domain.
+
+- `public.can_read_golf_round(uuid)` — read. Mirrors the union of
+  `golf_rounds`' SELECT policies: the player, a coach who staffs the round's
+  team, an **active teammate** on that team, and admin.
+- `public.owns_golf_round(uuid)` — write. The player only. A staffing coach can
+  read a player's anchors and can never write them.
+
+Both are `STABLE SECURITY DEFINER` with a pinned `search_path` and are not
+executable by `anon`. Behavioral coverage:
+`supabase/tests/rls/golf_one_tap_anchor_access.sql` (40 assertions).
+
+Unlike `golf_holes` / `golf_shots`, these tables carry **no completed-round
+lifecycle guard**: an offline flush that lands after the round is submitted
+must still persist, or the outbox loses marks.
+
+<!-- END One-Tap anchors (Peek'n Peak) -->
