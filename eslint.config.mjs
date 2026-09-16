@@ -130,7 +130,7 @@ export default tseslint.config(
         patterns: [
           { group: ["three/*"], message: "Canonical geometry modules must not depend on the renderer (Meridian §7)." },
           { group: ["@/components/*"], message: "Canonical geometry modules must not depend on React components (Meridian §7)." },
-          { group: ["./three-*", "./shadow-bounds", "./terrain-canopy", "./terrain-material", "./terrain-viewport", "./shot-overlay-*", "./runtime-controller", "./camera-motion", "./visual-style", "./visual-artifact", "./visual-artifact-v2", "./terrain-curvature", "./terrain-sky-field", "./surface-distance-field", "./display-mesh-v2", "./hero-patches", "./green-display-mesh", "./bunker-profile", "./bunker-display-mesh"],
+          { group: ["./three-*", "./shadow-bounds", "./terrain-canopy", "./terrain-material", "./terrain-viewport", "./shot-overlay-*", "./runtime-controller", "./camera-motion", "./visual-style", "./visual-artifact", "./visual-artifact-v2", "./terrain-curvature", "./terrain-sky-field", "./surface-distance-field", "./display-mesh-v2", "./hero-patches", "./green-display-mesh", "./bunker-profile", "./bunker-display-mesh", "./bunker-normal-field", "./field-atlas", "./compile-visual-artifact-v2", "./ground-shader-v2", "./path-ribbon", "./forest-edge-v2", "./static-shadow-field", "./glb-writer", "./v2-budgets"],
             message: "Canonical geometry modules must not import the visual layer (Meridian §7)." },
         ],
       }],
