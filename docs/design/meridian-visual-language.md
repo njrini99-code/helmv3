@@ -156,8 +156,12 @@ from V1; V4 changes what stands on each centre.
   `counts.massLobes` and the `terrainMassLobes` telemetry field report the
   live count.
 - **Trunks (§37).** Every trunked crown carries a cylinder instance in one
-  batched trunk mesh: 7-sided within the near band (150 m of the camera
-  focus), 3-sided within twice the band, hidden beyond. `counts.trunksVisible`
+  batched trunk mesh, following the crown LOD: 7-sided with a near crown,
+  3-sided with the mid crown, hidden with the far silhouette. A perspective
+  view judges every crown by its projected radius (`vegetation.lodScreenPx`:
+  near at 30 CSS px, far below 6 px) from the lens the renderer hands the
+  landscape; an orthographic view keeps the focus-distance bands (150 m near,
+  300 m far). `crownLodBasis` reports which rule ran. `counts.trunksVisible`
   and `terrainTrunks` report what is drawn.
 - **Batching (§68.2).** All crowns are one `THREE.BatchedMesh`: the eight
   authored designs contribute their near / distant / far geometries once and

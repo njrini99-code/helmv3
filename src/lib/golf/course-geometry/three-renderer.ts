@@ -91,7 +91,7 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
   let viewDistance = 1_000;
   let releaseDebug: (() => void) | undefined;
   let crownDetail: 'near' | 'distant' = 'distant';
-  let detailFocus: readonly number[] = [Infinity, Infinity];
+  let detailSignature = '';
   // §64: one tier per runtime; chosen once so the scene never flickers
   // between budgets mid-session. Lab and tests may override it.
   const capabilities = readRenderCapabilities(canvas.ownerDocument.defaultView);
@@ -215,16 +215,23 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
         renderer.shadowMap.needsUpdate = true;
         previousExaggeration = camera.exaggeration; previousReference = camera.referenceElevationM;
       }
-      const nextDetail = !quality.nearCrowns ? 'distant' : camera.scale > 4.5 ? 'near' : camera.scale < 3.7 ? 'distant' : crownDetail;
-      // Near crowns follow the focus: a pan across the green re-evaluates
-      // which batch tiles are close enough to deserve them.
-      // The far crown band and trunk hiding (§37/§68) follow the focus in
-      // every detail mode, so a focus move re-evaluates the batches even when
-      // the near band is off.
-      const focusMoved = Math.hypot(camera.focusM[0] - detailFocus[0]!, camera.focusM[1] - detailFocus[1]!) > 12;
-      if (nextDetail !== crownDetail || focusMoved) {
-        crownDetail = nextDetail; detailFocus = camera.focusM;
-        if (landscape.setDetail(nextDetail, [camera.focusM[0], camera.focusM[1]])) { fitSun(); renderer.shadowMap.needsUpdate = true; geometryBytes = estimateGeometryBytes(world); }
+      // A perspective view always grants the near band: the per-tree distance
+      // from the eye bounds how many crowns take it. An orthographic view has
+      // one scale for every tree, so the scale decides with hysteresis.
+      const nextDetail = !quality.nearCrowns ? 'distant' : camera.projection === 'perspective' ? 'near' : camera.scale > 4.5 ? 'near' : camera.scale < 3.7 ? 'distant' : crownDetail;
+      // Crown LOD (§37/§68): a perspective view hands the landscape its lens so
+      // every crown is judged by projected size (a side view stands the eye
+      // among the foreground trees, which keep their full crowns while the far
+      // end of the hole drops to the silhouette); an orthographic view keeps
+      // the focus-distance bands. A 12 m eye/focus move or a 4 % focal change
+      // re-evaluates every tree in every mode.
+      const perspectiveLod = camera.projection === 'perspective' && camera.eyeM && camera.focalPx ? { eye: camera.eyeM, focalPx: camera.focalPx } : undefined;
+      const lodSignature = perspectiveLod
+        ? `p:${Math.round(perspectiveLod.eye[0] / 12)},${Math.round(perspectiveLod.eye[1] / 12)},${Math.round(perspectiveLod.eye[2] / 12)},${Math.round(perspectiveLod.focalPx / 25)}`
+        : `o:${Math.round(camera.focusM[0] / 12)},${Math.round(camera.focusM[1] / 12)}`;
+      if (nextDetail !== crownDetail || lodSignature !== detailSignature) {
+        crownDetail = nextDetail; detailSignature = lodSignature;
+        if (landscape.setDetail(nextDetail, [camera.focusM[0], camera.focusM[1]], perspectiveLod)) { fitSun(); renderer.shadowMap.needsUpdate = true; geometryBytes = estimateGeometryBytes(world); }
       }
       view = camera.projection === 'perspective' ? perspectiveView : orthographicView;
       applyAtmosphere(camera.projection);
@@ -267,6 +274,7 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
         drawCallStatus: renderer.info.render.calls <= RENDER_BUDGETS.drawCalls[budgetViewFor(camera.pitch)] ? 'within' : 'over',
         triangleBreakdown: `terrain:${landscape.counts.terrainTriangles} crownNear:${landscape.counts.crownNearTriangles} crownDistant:${landscape.counts.crownDistantTriangles} crownFar:${landscape.counts.crownFarTriangles} trunks:${landscape.counts.trunkTriangles} mass:${landscape.counts.massTriangles} flight:${flightPaths?.count ?? 0}`,
         treeLod: `near:${landscape.counts.lodTrees.near} distant:${landscape.counts.lodTrees.distant} far:${landscape.counts.lodTrees.far} hiddenTrunks:${landscape.counts.lodTrees.hidden}`,
+        crownLodBasis: landscape.counts.crownLodBasis,
         multiDrawBasis: renderer.extensions.has('WEBGL_multi_draw') ? 'webgl_multi_draw' : 'per_instance_fallback',
         geometryMemoryMb: (geometryBytes / 1_048_576).toFixed(1),
         shadowMemoryMb: (((sun?.shadow.mapSize.x ?? 0) ** 2 * 4) / 1_048_576).toFixed(1),

@@ -131,6 +131,11 @@ export const MERIDIAN_STYLE = Object.freeze({
    * woods edge gets notches and an interior gets dips instead of one hedge. */
   vegetation: Object.freeze({
     crownBudget: 720, tileM: 64, trunkBandM: 150, edgeBandM: 24,
+    /** Crown LOD in a perspective view by projected crown radius (CSS px):
+     * near crowns and 7-sided trunks at or above `near`, the mid crown and
+     * 3-sided trunk at or above `distant`, the far silhouette and no trunk
+     * below. Orthographic views keep the focus-distance bands. */
+    lodScreenPx: Object.freeze({ near: 30, distant: 6 }),
     rhythm: Object.freeze({ cellM: 30, share: .14, minGroup: 40 }),
     families: Object.freeze([
       Object.freeze({ id: 'broad-oak', designs: ['staggered-shoulders', 'broad-low-cluster'] as const, weight: 3, placement: 'any' as const,

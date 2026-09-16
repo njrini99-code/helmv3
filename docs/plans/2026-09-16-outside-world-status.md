@@ -46,7 +46,7 @@ Proof course: Peek’n Peak Upper (package `fdec6ea8…`).
 | 17 | “Not basic slop” rule | partial | Rule in the doc; enforced by the uncertain-share gate once rendering lands |
 | 18 | Open rough visual language | done | Three tiers with distinct albedo, roughness and macro scale; blends over metres, never one pixel |
 | 19 | Green-complex exterior context | partial | Surround/fringe rings, bunker bowls, edge trees exist; back bank / run-off zones await the review pass Run-off zones now come from slope evidence (fidelity §39–40, `greenComplex.runoff`, hole 18 mound falloff); back banks still await the review pass, and collection hollows need a contour source. |
-| 20–21 | Hole identity, per-hole context pass | partial | Report per hole; identity audit after rendering |
+| 20–21 | Hole identity, per-hole context pass | partial (human §39 open) | Report per hole; identity audit after rendering done three times on all 18 holes (fidelity 55–56, latest audit-v3 2026-09-16): hero/signature read on 1, 2, 7, 8, 9, 11, 16, 17, 18; 4, 5, 13, 15 keep open flanks and par-3 carries marked `uncertain`; 15 tee side and 12/10 bunker/green shapes are source-limited. The human classification pass (§39) is what closes the remaining anonymous share |
 | 22–23 | Production camera composition and shot-context states | done | Action 8 |
 | 24 | Labels and overlays | done | Only Green / shot badges are drawn; no category labels |
 | 25–27 | Surface differentiation, edge treatment, ground breakup | done | Playing surfaces, bunkers, water, woods (Meridian V2–V5) + rough tiers, ground zones, paths and structures (actions 5, 7) |

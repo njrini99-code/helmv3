@@ -18,15 +18,19 @@ export type ThreeLandscapePalette = Readonly<Record<MeridianPaletteKey, THREE.Co
  * here and the artifact compiler everywhere else. */
 export const DEFAULT_THREE_LANDSCAPE_PALETTE: ThreeLandscapePalette = MERIDIAN_PALETTE;
 
+/** A perspective lens in display space: the eye and the focal length in CSS px. */
+export interface PerspectiveLodView { readonly eye: readonly [number, number, number]; readonly focalPx: number }
+
 export interface ThreeLandscape {
   group: THREE.Group;
   /** The read-only inspection ray targets the terrain, never decorative crowns. */
   terrain: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>;
   setExaggeration(exaggeration: number, referenceElevationM: number): void;
   /** Swap shared crown assets without changing any instance transform. */
-  /** Near crowns are swapped in only for batch tiles around `focusM`; without
-   * a focus every crown takes the requested level. Returns whether anything changed. */
-  setDetail(detail: 'distant' | 'near', focusM?: PointM): boolean;
+  /** Choose every crown's LOD. In a perspective `view` the projected crown
+   * radius decides (`VEGETATION.lodScreenPx`); otherwise distance bands
+   * around `focusM` do. Near crowns are granted only when `detail` is near. */
+  setDetail(detail: 'distant' | 'near', focusM?: PointM, view?: PerspectiveLodView): boolean;
   /** Runtime amplitude overrides for the lab; never part of the artifact. */
   setStyleOverrides(overrides: MeridianStyleOverrides): void;
   dispose(): void;
@@ -48,7 +52,9 @@ export interface ThreeLandscape {
     /** §68.3: one total hides the bottleneck; these split it by category. */
     crownNearTriangles: number; crownDistantTriangles: number; crownFarTriangles: number; trunkTriangles: number; massTriangles: number;
     /** Trees per crown LOD, plus trunks hidden beyond twice the near band. */
-    lodTrees: { near: number; distant: number; far: number; hidden: number } };
+    lodTrees: { near: number; distant: number; far: number; hidden: number };
+    /** How the last LOD pass chose: projected crown size (perspective) or focus-distance bands (orthographic). */
+    crownLodBasis: 'screen_px' | 'focus_bands' };
 }
 
 const VEGETATION = MERIDIAN_STYLE.vegetation;
@@ -701,7 +707,7 @@ export function buildThreeLandscape(
     crownInstances: trees.length, crownTriangles: 0, totalTriangles: 0, canopyBatches: crowns ? 1 : 0, drawCalls: 0,
     massLobes: lobes.length, trunksVisible: 0, families: familyCounts, patternCentres, rhythmCleared, contextMassLobes, understory: understoryCount,
     contextRibbons: context.counts.ribbons, contextStructures: context.counts.structures, contextLines: context.counts.lines, contextZones: context.counts.zones,
-    crownNearTriangles: 0, crownDistantTriangles: 0, crownFarTriangles: 0, trunkTriangles: 0, massTriangles: 0, lodTrees: { near: 0, distant: 0, far: 0, hidden: 0 } };
+    crownNearTriangles: 0, crownDistantTriangles: 0, crownFarTriangles: 0, trunkTriangles: 0, massTriangles: 0, lodTrees: { near: 0, distant: 0, far: 0, hidden: 0 }, crownLodBasis: 'focus_bands' };
   const massTriangles = trunkTriangleCount(massGeometry) * lobes.length;
   const updateTriangleCounts = () => {
     let near = 0, distant = 0, far = 0, nearTrees = 0, distantTrees = 0, farTrees = 0, trunkTriangles = 0, trunksVisible = 0, hiddenTrunks = 0;
@@ -724,15 +730,27 @@ export function buildThreeLandscape(
   updateTriangleCounts();
   const transform = new THREE.Matrix4(), translation = new THREE.Vector3(), rotation = new THREE.Quaternion(), scale = new THREE.Vector3();
   let lastExaggeration = NaN, lastReference = NaN, disposed = false;
-  function setDetail(next: 'distant' | 'near', focusM?: PointM): boolean {
+  function setDetail(next: 'distant' | 'near', focusM?: PointM, view?: PerspectiveLodView): boolean {
     if (disposed) return false;
     let changed = false;
-    // Per tree, by distance from the camera focus: near crowns and 7-sided
-    // trunks inside the band, mid crowns and 3-sided trunks inside twice of
-    // it, the coarse far silhouette and no trunk beyond (§37/§68).
+    // Per tree (§37/§68). Perspective: by the crown's projected radius, so a
+    // tree beside the eye keeps its full crown and 7-sided trunk while the
+    // far end of the hole drops to the coarse silhouette with no trunk.
+    // Orthographic: by distance from the focus, near inside the band, mid
+    // inside twice of it, far beyond.
+    const exaggeration = Number.isFinite(lastExaggeration) ? lastExaggeration : 1, reference = Number.isFinite(lastReference) ? lastReference : 0;
+    counts.crownLodBasis = view ? 'screen_px' : 'focus_bands';
     for (const tree of trees) {
-      const distance = focusM ? Math.hypot(tree.x - focusM[0], tree.y - focusM[1]) : 0;
-      const lod: CrownLod = next === 'near' && distance <= NEAR_DETAIL_RADIUS_M ? 'near' : distance <= NEAR_DETAIL_RADIUS_M * 2 ? 'distant' : 'far';
+      let lod: CrownLod;
+      if (view) {
+        const crownZ = reference + (tree.groundZ - reference) * exaggeration + tree.height * .64;
+        const distance = Math.max(1, Math.hypot(tree.x - view.eye[0], tree.y - view.eye[1], crownZ - view.eye[2]));
+        const px = view.focalPx * tree.radius / distance;
+        lod = px >= VEGETATION.lodScreenPx.near ? (next === 'near' ? 'near' : 'distant') : px >= VEGETATION.lodScreenPx.distant ? 'distant' : 'far';
+      } else {
+        const distance = focusM ? Math.hypot(tree.x - focusM[0], tree.y - focusM[1]) : 0;
+        lod = next === 'near' && distance <= NEAR_DETAIL_RADIUS_M ? 'near' : distance <= NEAR_DETAIL_RADIUS_M * 2 ? 'distant' : 'far';
+      }
       if (crowns && tree.lod !== lod) {
         crowns.setGeometryIdAt(tree.instance, crownGeometryIds.get(tree.asset)![lod]);
         (crowns.userData.lods as string[])[tree.instance] = lod;

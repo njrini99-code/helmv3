@@ -474,6 +474,16 @@ describe('canopy batching (Meridian §68.2)', () => {
       landscape.setDetail('near', [first.elements[12]!, first.elements[13]!]);
       expect(landscape.counts.drawCalls).toBe(before);
       expect(crowns[0]!.userData.lods).toContain('near'); expect(landscape.counts.lodTrees.near).toBeGreaterThan(0);
+      expect(landscape.counts.crownLodBasis).toBe('focus_bands');
+      // A perspective lens judges by projected crown size: right above the
+      // first crown it is near; from fifty kilometres away every crown is far.
+      const eye = [first.elements[12]!, first.elements[13]!, first.elements[14]! + 30] as const;
+      landscape.setDetail('near', undefined, { eye, focalPx: 1500 });
+      expect(landscape.counts.crownLodBasis).toBe('screen_px');
+      expect(crowns[0]!.userData.lods[0]).toBe('near');
+      landscape.setDetail('near', undefined, { eye: [eye[0] + 50_000, eye[1], eye[2]], focalPx: 1500 });
+      expect(landscape.counts.lodTrees.far).toBe(landscape.counts.trees);
+      expect(landscape.counts.trunksVisible).toBe(0);
     } finally { landscape.dispose(); }
   });
 });
