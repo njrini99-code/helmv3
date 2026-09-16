@@ -17,7 +17,10 @@ export function posteriorGreenProbability(anchor: Pick<ShotAnchor, 'liePosterior
 }
 export interface NextTeeObservation { position: PointM; nowMs: number }
 export interface NextTeeState { insideSinceMs: number | null }
-/** Returns the updated dwell state and whether the fallback fired. */
+/** Returns the updated dwell state and whether the fallback fired. The
+ * fallback only ever marks the existing green-side anchor terminal
+ * (NEXT_TEE_INFERRED); it creates no anchor and moves none, so the record
+ * carries no invented cup and the hole reports MISSING_CUP for review. */
 export function observeNextTee(state: NextTeeState, previousAnchor: ShotAnchor | null, nextTees: readonly LocalFeature[], previousGreenCentre: PointM | null, observation: NextTeeObservation): { state: NextTeeState; inferred: boolean } {
   const inside = nextTees.some(t => inFeature(observation.position, t));
   const farEnough = previousGreenCentre ? Math.hypot(observation.position[0] - previousGreenCentre[0], observation.position[1] - previousGreenCentre[1]) >= NEXT_TEE_RULE.minDistanceFromGreenM : false;
@@ -27,8 +30,21 @@ export function observeNextTee(state: NextTeeState, previousAnchor: ShotAnchor |
   return { state: { insideSinceMs: since }, inferred: observation.nowMs - since >= NEXT_TEE_RULE.dwellMs };
 }
 export type HoleStatus = 'OPEN' | 'COMPLETE';
-export function holeStatus(anchors: readonly ShotAnchor[]): { status: HoleStatus; terminalMethod: TerminalMethod | null; strokes: number } {
+export interface HoleStatusSummary {
+  status: HoleStatus;
+  terminalMethod: TerminalMethod | null;
+  /** Segments between consecutive live marks — the live UI says shots, never strokes. */
+  strokes: number;
+  /** True only for an explicit CUP_MARK; an inferred close never claims the cup. */
+  cupMarked: boolean;
+  terminalAnchorId: string | null;
+}
+export function holeStatus(anchors: readonly ShotAnchor[]): HoleStatusSummary {
   const live = anchors.filter(a => !a.deletedAt);
   const terminal = live.find(a => a.terminal);
-  return { status: terminal ? 'COMPLETE' : 'OPEN', terminalMethod: terminal?.terminalMethod ?? null, strokes: Math.max(0, live.length - 1) };
+  return { status: terminal ? 'COMPLETE' : 'OPEN', terminalMethod: terminal?.terminalMethod ?? null, strokes: Math.max(0, live.length - 1),
+    cupMarked: terminal?.terminalMethod === 'CUP_MARK', terminalAnchorId: terminal?.id ?? null };
 }
+/** Master design "Hole completion" (§19) visual default: a clean completion
+ * card lingers this long, then fades. A flagged hole stays until reviewed. */
+export const HOLE_COMPLETION_FADE_MS = 2000;

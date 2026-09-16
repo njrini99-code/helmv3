@@ -5,7 +5,7 @@ import { useOneTapRound, ROUND_STORAGE_PREFIX } from './use-one-tap-round';
 import { pilotPackage } from '@/test/fixtures/course-geometry/pilot';
 import { enuToWgs84, localOriginFor } from '@/lib/golf/one-tap/geodesy';
 import { largestOuterRing, ringCentroid } from '@/lib/golf/one-tap/hole-distances';
-import { NEXT_TEE_RULE } from '@/lib/golf/one-tap/hole-lifecycle';
+import { HOLE_COMPLETION_FADE_MS, NEXT_TEE_RULE } from '@/lib/golf/one-tap/hole-lifecycle';
 import { buildSurfacePartition, distanceToBoundary, exactPointInPartition, type LieClass } from '@/lib/golf/one-tap/lie-classifier';
 import type { LocationSample } from '@/lib/golf/one-tap/location-estimator';
 import type { LocationSource } from '@/lib/golf/one-tap/location-source';
@@ -104,9 +104,16 @@ describe('One-Tap round', () => {
     expect(result.current.scorecard[index]).toMatchObject({ status: 'COMPLETE', terminalMethod: 'NEXT_TEE_INFERRED', strokes: 0 });
     expect(result.current.inferredFrom).toEqual({ holeKey: holeKeys[index], ordinal: pilotPackage.holes[index]!.ordinal });
     expect(result.current.repo.get(`anchor-${holeKeys[index]}`)?.syncState).toBe('QUEUED');
+    // §80: an inferred close never invents a cup — the hole reports MISSING_CUP
+    // (and, with only a green mark, MISSING_START) and the card waits for Review.
+    expect(result.current.completion).toMatchObject({ holeKey: holeKeys[index], inferred: true, clean: false, shots: 0, terminalMethod: 'NEXT_TEE_INFERRED' });
+    expect(result.current.completion!.report.flags).toEqual(['MISSING_CUP', 'MISSING_START']);
+    expect(result.current.repo.list('round').filter(a => a.holeKey === holeKeys[index])).toHaveLength(1);
+    act(() => { vi.advanceTimersByTime(HOLE_COMPLETION_FADE_MS * 3); });
+    expect(result.current.completion).not.toBeNull();
     // Leaving the tee resets the dwell: a walk-through never closes a hole.
     act(() => result.current.takeBackInferred());
-    expect(result.current).toMatchObject({ holeIndex: index, status: 'OPEN', terminalMethod: null, inferredFrom: null });
+    expect(result.current).toMatchObject({ holeIndex: index, status: 'OPEN', terminalMethod: null, inferredFrom: null, completion: null });
     act(() => { phone.at(nextTee, 2_030_000); phone.at(green, 2_035_000); phone.at(nextTee, 2_040_000); phone.at(nextTee, 2_040_000 + NEXT_TEE_RULE.dwellMs - 1000); });
     expect(result.current.status).toBe('OPEN');
     expect(result.current.holeIndex).toBe(index);
@@ -132,11 +139,59 @@ describe('One-Tap round', () => {
     expect(screen().getAttribute('data-hole-status')).toBe('COMPLETE');
     expect(document.querySelector('[data-slot="one-tap-shots"]')!.textContent).toBe('Holed · 0 shots');
     expect(document.querySelector('[data-slot="one-tap-mark"]')).toBeNull();
+    // §19 problem hole: a cup mark with no tee mark is flagged, and Review names it.
+    const card = () => document.querySelector('[data-slot="one-tap-hole-complete"]');
+    expect(card()!.getAttribute('data-integrity')).toBe('MISSING_START');
+    expect(card()!.textContent).toContain('Hole 1 · check 1 item');
+    expect(document.querySelector('[data-slot="one-tap-review-panel"]')).toBeNull();
+    fireEvent.click(document.querySelector('[data-slot="one-tap-review"]')!);
+    expect(document.querySelector('[data-slot="one-tap-review-panel"] [data-flag="MISSING_START"]')!.textContent).toContain('No tee mark');
+    expect(document.querySelector('[data-slot="one-tap-review-back"]')!.textContent).toBe('Reopen hole');
+    await act(async () => { await vi.advanceTimersByTimeAsync(HOLE_COMPLETION_FADE_MS * 2); });
+    expect(card()).not.toBeNull();
     fireEvent.click(document.querySelector('[data-slot="one-tap-next-hole"]')!);
+    expect(card()).toBeNull();
     expect(screen().getAttribute('data-hole-key')).toBe(holeKeys[1]);
     expect(screen().getAttribute('data-hole-status')).toBe('OPEN');
     expect(document.querySelector('[data-slot="one-tap-mark"]')).not.toBeNull();
     // The next hole starts with no marks; YOU stays on the course.
     expect(document.querySelectorAll('[data-marked-position]:not([data-marker-kind="player"])').length).toBe(0);
+  });
+
+  it('shows a clean completion for a tee-to-cup hole and fades it after two seconds (§19), again after a reopen', async () => {
+    const phone = manualSource();
+    if (!window.matchMedia) Object.defineProperty(window, 'matchMedia', { writable: true, value: () => ({ matches: true, addEventListener() {}, removeEventListener() {} }) });
+    function Harness() {
+      const round = useOneTapRound({ roundId: 'round-clean', pkg: pilotPackage, holeKeys, location: phone, storage: null });
+      return <OneTapPlayerScreen roundId="round-clean" pkg={pilotPackage} holeKey={round.holeKey} terrain={null} location={phone} storage={null} reducedMotion round={round} />;
+    }
+    render(<Harness />);
+    const screen = () => document.querySelector('[data-slot="one-tap-screen"]')!, card = () => document.querySelector('[data-slot="one-tap-hole-complete"]');
+    const tee = pointOn(holeKeys[0]!, 'tee'), green = pointOn(holeKeys[0]!, 'green');
+    act(() => { for (let t = -1500; t <= 0; t += 500) phone.at(tee, 2_000_000 + t); });
+    fireEvent.click(document.querySelector('[data-slot="one-tap-mark"]')!);
+    await act(async () => { await vi.advanceTimersByTimeAsync(800); });
+    act(() => { vi.setSystemTime(2_060_000); for (let t = -1500; t <= 0; t += 500) phone.at(green, 2_060_000 + t); });
+    fireEvent.click(document.querySelector('[data-slot="one-tap-mark"]')!);
+    await act(async () => { await vi.advanceTimersByTimeAsync(800); });
+    expect(card()).toBeNull();
+    fireEvent.click(document.querySelector('[data-slot="one-tap-holed"]')!);
+    expect(screen().getAttribute('data-hole-status')).toBe('COMPLETE');
+    expect(card()!.getAttribute('data-integrity')).toBe('CLEAN');
+    expect(card()!.textContent).toBe('Hole 1 · 1 shot · complete ✓');
+    expect(document.querySelector('[data-slot="one-tap-review"]')).toBeNull();
+    await act(async () => { await vi.advanceTimersByTimeAsync(HOLE_COMPLETION_FADE_MS - 100); });
+    expect(card()).not.toBeNull();
+    await act(async () => { await vi.advanceTimersByTimeAsync(200); });
+    expect(card()).toBeNull();
+    expect(screen().getAttribute('data-hole-status')).toBe('COMPLETE');
+    // Reopen (a mistaken hole-out), then hole out again: a fresh clean card
+    // that fades on its own, the tee mark still on record.
+    fireEvent.click(document.querySelector('[data-slot="one-tap-reopen"]')!);
+    expect(screen().getAttribute('data-hole-status')).toBe('OPEN');
+    fireEvent.click(document.querySelector('[data-slot="one-tap-holed"]')!);
+    expect(card()!.getAttribute('data-integrity')).toBe('CLEAN');
+    await act(async () => { await vi.advanceTimersByTimeAsync(HOLE_COMPLETION_FADE_MS + 100); });
+    expect(card()).toBeNull();
   });
 });

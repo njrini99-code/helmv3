@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/fairway/controls/button';
 import type { OneTapState } from '@/lib/golf/one-tap/one-tap-controller';
+import { OneTapHoleComplete } from './OneTapHoleComplete';
 import { OneTapStatusToast } from './OneTapStatusToast';
 import type { OneTapRoundView } from './use-one-tap-round';
 import type { OneTapView } from './use-one-tap';
@@ -10,8 +11,8 @@ import type { OneTapView } from './use-one-tap';
  * shows nothing in the corner: no Ready, no GPS ±3 m, no "N to sync", no
  * 0 shots. A chip appears only for something the golfer should know —
  * Offline · saved, Sync issue, Location weak, Locating…, Paused — plus the
- * shot count once there is one, the next-tee banner, and Recenter while the
- * player holds the camera. The transient "✓ Saved … Undo" status sits at the
+ * shot count once there is one, the post-hole completion card (§19), and
+ * Recenter while the player holds the camera. The transient "✓ Saved … Undo" status sits at the
  * bottom of the stage. Pointer-transparent; the readout lives in the footer. */
 export const ONE_TAP_STATE_LABELS: Readonly<Record<OneTapState, string>> = Object.freeze({
   HOLE_READY: 'Ready', CAPTURE_PENDING: 'Marking…', ANCHOR_SAVED: 'Marked', LOW_CONFIDENCE: 'Marked · low confidence', OUTSIDE_MODELED_AREA: 'Marked · outside mapped area',
@@ -31,11 +32,7 @@ export function OneTapHud({ view, round }: { view: OneTapView; round?: OneTapRou
       {snapshot.paused && <span className={chip} data-slot="one-tap-paused">Paused</span>}
       {round && shots && <span className={chip} data-slot="one-tap-shots" data-hole-status={round.status}>{shots}</span>}
     </div>
-    {round?.inferredFrom && <div className="pointer-events-auto absolute inset-x-3 flex items-center justify-between gap-2 rounded-control border border-border-subtle bg-surface px-3 py-2 shadow-card"
-      style={{ top: 'calc(max(12px, env(safe-area-inset-top)) + 96px)' }} data-slot="one-tap-inferred" role="status">
-      <span className="text-caption text-text-primary">Hole {round.inferredFrom.ordinal} closed at the next tee (no cup mark).</span>
-      <Button variant="ghost" size="sm" onClick={round.takeBackInferred} data-slot="one-tap-inferred-back">Back</Button>
-    </div>}
+    {round && <OneTapHoleComplete round={round} />}
     <OneTapStatusToast view={view} />
     {cameraMode === 'MANUAL' && <div className="absolute bottom-3 right-3">
       <Button variant="secondary" size="sm" className="pointer-events-auto shadow-card" onClick={view.recenterCamera} data-slot="one-tap-recenter">Recenter</Button>

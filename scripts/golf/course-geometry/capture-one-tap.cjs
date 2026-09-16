@@ -41,7 +41,7 @@ const outDir = path.resolve(String(args['out-dir'] || `output/playwright/course-
     const text = selector => document.querySelector(selector)?.textContent?.trim() ?? null;
     return { state: screen?.dataset.oneTapState ?? null, holeKey: screen?.dataset.holeKey ?? null, holeStatus: screen?.dataset.holeStatus ?? null, strokes: text('[data-slot=one-tap-shots]'), cameraMode: screen?.dataset.cameraMode ?? null, cameraState: screen?.dataset.cameraState ?? null,
       currentView: screen?.querySelector('[data-current-view]')?.getAttribute('data-current-view') ?? null,
-      status: text('[data-slot=one-tap-toast]'), gps: text('[data-slot=one-tap-location]'), distances: text('[data-slot=one-tap-distances]'), lie: text('[data-slot=one-tap-lie]'),
+      status: text('[data-slot=one-tap-toast]'), gps: text('[data-slot=one-tap-location]'), completion: text('[data-slot=one-tap-hole-complete]'), distances: text('[data-slot=one-tap-distances]'), lie: text('[data-slot=one-tap-lie]'),
       markers: document.querySelectorAll('[data-marked-position]').length, links: document.querySelectorAll('[data-marked-link]').length,
       sigmaRings: Array.from(document.querySelectorAll('[data-marked-sigma]')).filter(n => n.getAttribute('display') !== 'none').length,
       cameraFraming: screen?.dataset.cameraFraming || null, cameraZoom: document.querySelector('[data-camera-zoom]')?.getAttribute('data-camera-zoom') ?? null,
@@ -49,8 +49,8 @@ const outDir = path.resolve(String(args['out-dir'] || `output/playwright/course-
   });
   const steps = [];
   let index = 0;
-  const snap = async name => {
-    await settle();
+  const snap = async (name, { settled = true } = {}) => {
+    if (settled) await settle();
     const file = path.join(outDir, `${String(++index).padStart(2, '0')}-${name}.png`);
     await page.screenshot({ path: file });
     const record = { name, file: path.basename(file), ...(await read()) };
@@ -70,7 +70,8 @@ const outDir = path.resolve(String(args['out-dir'] || `output/playwright/course-
   const length = await page.evaluate(() => Number(document.querySelector('[data-walker-green-m]')?.dataset.walkerGreenM ?? window.__oneTapWalker.routeLengthM));
   await walkTo(Math.max(0, Math.min(length * .55, length - 40))); await mark(); await snap('approach-marked');
   await walkTo(Math.max(0, length - 6)); await mark(); await snap('green-marked');
-  await page.locator('[data-slot=one-tap-holed]').click(); await snap('holed');
+  // The completion card (§19) fades after two seconds on a clean hole: snapshot it while it is up.
+  await page.locator('[data-slot=one-tap-holed]').click(); await page.waitForTimeout(350); await snap('holed', { settled: false });
   // Explicit hole advance: NEXT HOLE becomes the primary action once the hole is closed.
   const before = await page.evaluate(() => document.querySelector('[data-slot=one-tap-screen]')?.dataset.holeKey ?? null);
   await page.locator('[data-slot=one-tap-next-hole]').click();

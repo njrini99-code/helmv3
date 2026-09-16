@@ -150,7 +150,7 @@ describe('one-tap controller', () => {
     const onGreen = await mark;
     expect(onGreen!.primaryLie).toBe('green');
     expect(controller.holeOut()).toMatchObject({ terminal: true, terminalMethod: 'CUP_MARK' });
-    expect(holeStatus(repo.list('r'))).toEqual({ status: 'COMPLETE', terminalMethod: 'CUP_MARK', strokes: 1 });
+    expect(holeStatus(repo.list('r'))).toMatchObject({ status: 'COMPLETE', terminalMethod: 'CUP_MARK', strokes: 1 });
     expect(controller.cameraObservation()!.terminal).toBe(true);
     const undone = controller.undo();
     expect(undone?.deletedAt).not.toBeNull();
