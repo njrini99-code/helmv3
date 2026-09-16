@@ -163,10 +163,8 @@ them would have broken those routes, not the dead one.
 ### Actions And Services
 
 - `src/app/golf/actions/admin-data.ts`
-- `src/app/golf/actions/admin-people-data.ts`
 - `src/app/golf/actions/admin-system-data.ts`
 - `src/app/golf/actions/admin-tracer-data.ts`
-- `src/app/golf/actions/admin-bi-data.ts`
 - `src/app/golf/actions/admin/**`
 - `src/app/golf/actions/crm-*.ts`
 - `src/app/golf/actions/resend-activity.ts`

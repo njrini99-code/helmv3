@@ -24,8 +24,8 @@
  */
 
 import * as React from 'react';
-import { m, useReducedMotion } from 'framer-motion';
-import { DURATION, EASE_CINEMATIC, STAGGER_STEP } from '@/lib/coachhelm/v3/motion';
+import { m } from 'framer-motion';
+import { DURATION, EASE_CINEMATIC, STAGGER_STEP, useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 type RevealProps = Omit<
   React.HTMLAttributes<HTMLDivElement>,
@@ -58,7 +58,10 @@ export function Reveal({
   children,
   ...props
 }: RevealProps) {
-  const reduce = useReducedMotion();
+  // `useReducedMotionGuard` (repo convention) normalizes framer-motion's
+  // `boolean | null` to a plain `boolean`, matching every other v3 motion
+  // consumer instead of the raw framer-motion hook.
+  const reduce = useReducedMotionGuard();
 
   return (
     <m.div

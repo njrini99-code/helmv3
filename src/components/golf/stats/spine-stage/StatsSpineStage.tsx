@@ -61,7 +61,7 @@ export type CoachHelmPattern = NonNullable<
   Awaited<ReturnType<typeof getPlayerPatterns>>['patterns']
 >[number];
 
-import { biggestLeakArea, buildLedger, buildPriorities, buildStandingTrack, buildVerdict } from './buildStatsViewModel';
+import { biggestLeakArea, buildLedger, buildPriorities, buildStandingBars, buildVerdict } from './buildStatsViewModel';
 import { StatsSpine } from './StatsSpine';
 import { StatsBento } from './StatsBento';
 import { PuttingDrill } from './PuttingDrill';
@@ -337,7 +337,6 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
   }, [standingRows]);
 
   const sgTotal = finite(standingByMetric.get('sg_total')?.player_value ?? null);
-  const sgTeamAvg = finite(standingByMetric.get('sg_total')?.team_avg ?? null);
 
   const sgRows = useMemo(
     () =>
@@ -385,9 +384,9 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
     [weaknesses],
   );
 
-  const track = useMemo(
-    () => buildStandingTrack(sgTotal, sgTeamAvg, standingViewerContext, playerName),
-    [sgTotal, sgTeamAvg, standingViewerContext, playerName],
+  const standing = useMemo(
+    () => buildStandingBars(standingByMetric.get('sg_total') ?? null, standingViewerContext, playerName),
+    [standingByMetric, standingViewerContext, playerName],
   );
   const verdict = useMemo(() => buildVerdict(sgTotal, leakLabel), [sgTotal, leakLabel]);
 
@@ -719,7 +718,7 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
           sgTotal={sgTotal}
           scoringAverage={finite(detailedStats?.scoringAverage)}
           verdict={verdict}
-          track={track}
+          standing={standing}
           priorities={priorities}
           ledger={ledger}
           viewerContext={standingViewerContext}

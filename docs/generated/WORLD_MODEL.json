@@ -437,6 +437,11 @@
         "category": "routes"
       },
       {
+        "id": "routes:src/app/golf/(dashboard)/dashboard/page.tsx",
+        "pattern": "src/app/golf/(dashboard)/dashboard/page.tsx",
+        "category": "routes"
+      },
+      {
         "id": "routes:src/app/golf/(dashboard)/dashboard/patterns/**",
         "pattern": "src/app/golf/(dashboard)/dashboard/patterns/**",
         "category": "routes"
@@ -586,6 +591,11 @@
       {
         "id": "components:src/components/fairway/pages/coachhelm/**",
         "pattern": "src/components/fairway/pages/coachhelm/**",
+        "category": "components"
+      },
+      {
+        "id": "components:src/components/fairway/pages/dashboard/**",
+        "pattern": "src/components/fairway/pages/dashboard/**",
         "category": "components"
       },
       {
@@ -5075,22 +5085,22 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 175
+          "line": 173
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 388
+          "line": 386
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 408
+          "line": 406
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 613
+          "line": 611
         },
         {
           "kind": "import_graph",
@@ -5334,12 +5344,12 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 251
+          "line": 249
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 407
+          "line": 405
         }
       ]
     },
@@ -5361,22 +5371,22 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 176
+          "line": 174
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 252
+          "line": 250
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 417
+          "line": 415
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 499
+          "line": 497
         },
         {
           "kind": "import_graph",
@@ -5634,18 +5644,8 @@
         },
         {
           "kind": "import_graph",
-          "path": "src/app/golf/actions/admin-bi-data.ts",
-          "line": 3
-        },
-        {
-          "kind": "import_graph",
           "path": "src/app/golf/actions/admin-data.ts",
           "line": 4
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/admin-people-data.ts",
-          "line": 3
         },
         {
           "kind": "import_graph",
@@ -5908,7 +5908,7 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 1178
+          "line": 1176
         },
         {
           "kind": "import_graph",
@@ -5969,7 +5969,7 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 755
+          "line": 753
         }
       ]
     },
@@ -6252,7 +6252,7 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 756
+          "line": 754
         },
         {
           "kind": "import_graph",
@@ -13449,11 +13449,6 @@
         },
         {
           "kind": "import_graph",
-          "path": "src/app/golf/actions/player-effectiveness.ts",
-          "line": 47
-        },
-        {
-          "kind": "import_graph",
           "path": "src/app/golf/actions/player-feedback.ts",
           "line": 22
         },
@@ -13476,21 +13471,6 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/v3/intent.ts",
           "line": 16
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/v3/llm.ts",
-          "line": 25
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/v3/practice-rx.ts",
-          "line": 14
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/v3/team-practice-rx.ts",
-          "line": 21
         }
       ]
     },
@@ -13655,16 +13635,6 @@
         },
         {
           "kind": "import_graph",
-          "path": "src/app/golf/actions/player-effectiveness.ts",
-          "line": 43
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/player-effectiveness.ts",
-          "line": 44
-        },
-        {
-          "kind": "import_graph",
           "path": "src/app/golf/actions/player-feedback.ts",
           "line": 18
         },
@@ -13707,31 +13677,6 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/v3/intent.ts",
           "line": 18
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/v3/llm.ts",
-          "line": 14
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/v3/llm.ts",
-          "line": 27
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/v3/llm.ts",
-          "line": 28
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/v3/practice-rx.ts",
-          "line": 11
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/v3/team-practice-rx.ts",
-          "line": 16
         }
       ]
     },
@@ -13951,23 +13896,8 @@
         },
         {
           "kind": "import_graph",
-          "path": "src/app/golf/actions/player-effectiveness.ts",
-          "line": 45
-        },
-        {
-          "kind": "import_graph",
           "path": "src/app/golf/actions/v3/goals.ts",
           "line": 28
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/v3/llm.ts",
-          "line": 20
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/v3/team-practice-rx.ts",
-          "line": 18
         }
       ]
     },
@@ -14085,11 +14015,6 @@
         },
         {
           "kind": "import_graph",
-          "path": "src/app/golf/actions/player-effectiveness.ts",
-          "line": 42
-        },
-        {
-          "kind": "import_graph",
           "path": "src/app/golf/actions/v3/goals.ts",
           "line": 19
         },
@@ -14127,41 +14052,6 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/v3/intent.ts",
           "line": 15
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/v3/llm.ts",
-          "line": 21
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/v3/llm.ts",
-          "line": 22
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/v3/llm.ts",
-          "line": 23
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/v3/llm.ts",
-          "line": 24
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/v3/practice-rx.ts",
-          "line": 13
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/v3/team-practice-rx.ts",
-          "line": 19
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/v3/team-practice-rx.ts",
-          "line": 20
         },
         {
           "kind": "import_graph",
@@ -18018,8 +17908,8 @@
       "evidence": [
         {
           "kind": "rpc_call",
-          "path": "src/components/golf/coachhelm/round-review/FilmstripReview.tsx",
-          "line": 167
+          "path": "src/components/golf/coachhelm/round-review/RoundReviewFieldSheet.tsx",
+          "line": 218
         }
       ]
     },
@@ -18413,7 +18303,7 @@
         {
           "kind": "rpc_call",
           "path": "src/app/golf/actions/dashboard-data.ts",
-          "line": 339
+          "line": 406
         }
       ]
     },
@@ -20016,16 +19906,6 @@
         },
         {
           "kind": "import_graph",
-          "path": "src/app/golf/actions/team-sg-baseline.ts",
-          "line": 18
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/team-sg-baseline.ts",
-          "line": 22
-        },
-        {
-          "kind": "import_graph",
           "path": "src/lib/cache/golf-stats-calculator.ts",
           "line": 10
         }
@@ -20095,11 +19975,6 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/stats.ts",
           "line": 10
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/team-sg-baseline.ts",
-          "line": 17
         },
         {
           "kind": "import_graph",
@@ -20227,16 +20102,6 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/stats.ts",
           "line": 26
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/team-sg-baseline.ts",
-          "line": 19
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/team-sg-baseline.ts",
-          "line": 28
         }
       ]
     },
@@ -20273,18 +20138,6 @@
           "kind": "rpc_call",
           "path": "src/lib/cache/golf-stats-calculator.ts",
           "line": 409
-        }
-      ]
-    },
-    {
-      "source": "stats_analytics",
-      "target": "recompute_team_sg",
-      "kind": "feature_rpc",
-      "evidence": [
-        {
-          "kind": "rpc_call",
-          "path": "src/app/golf/actions/team-sg-baseline.ts",
-          "line": 130
         }
       ]
     },
@@ -21448,6 +21301,18 @@
     },
     {
       "source": "team_operations",
+      "target": "components:src/components/fairway/pages/dashboard/**",
+      "kind": "feature_component",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/components/fairway/pages/dashboard/**"
+        }
+      ]
+    },
+    {
+      "source": "team_operations",
       "target": "components:src/components/fairway/pages/tasks/**",
       "kind": "feature_component",
       "evidence": [
@@ -21611,6 +21476,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/app/golf/(dashboard)/dashboard/hub/**"
+        }
+      ]
+    },
+    {
+      "source": "team_operations",
+      "target": "routes:src/app/golf/(dashboard)/dashboard/page.tsx",
+      "kind": "feature_route",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/golf/(dashboard)/dashboard/page.tsx"
         }
       ]
     },

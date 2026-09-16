@@ -133,7 +133,9 @@ const CATEGORIES: CategoryDef[] = [
     label: 'Scoring',
     primaryMetric: 'scoring_average_vs_par',
     primaryLabel: 'Avg vs Par',
-    format: (v: number) => (v > 0 ? `+${v.toFixed(1)}` : v.toFixed(1)),
+    // "vs par" so the band's value/unit split has a unit here too (every
+    // other category's label already carries one).
+    format: (v: number) => `${v > 0 ? '+' : ''}${v.toFixed(1)} vs par`,
     lowerIsBetter: true,
   },
 ];

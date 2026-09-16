@@ -16,6 +16,23 @@
  * iOS home indicator. Sits at `--fw-z-nav` (below the sheet/modal/toast so the
  * More sheet's scrim and any overlay always cover it).
  *
+ * FLOATING DOCK (2026-09-10): the bar is the Fairway Frost `floating` tier —
+ * a 60px capsule inset 16px from the sides, floating 10px above the safe
+ * area, with a contact zone (`.fw-dock-fade`) that fades content into the
+ * canvas beneath it so it reads as hovering above the page, not pasted on.
+ * The active destination is a tinted-glass capsule (green shows through the
+ * frost) capped at about a third of the dock, never a solid island. The
+ * geometry is shared through `--fw-mobile-nav-height` (globals.css).
+ *
+ * MOBILE PASS (2026-09-10, facelift): all five dock controls are the same
+ * native control — the tabs are Links, More is a plain <button> — sharing one
+ * class, one 44px floor and one haptic (`fwHaptic('selection')`, fired only
+ * when the tap actually changes the selection; re-tapping the active tab is
+ * silent). Active-match comes from `more-nav.ts`, the single implementation
+ * MoreNavSheet also uses. The pill radius is the brief's deliberate exception
+ * for a compact floating dock (§3 "compact pills"); the active island is
+ * capped at a third of the dock.
+ *
  * Active-state mirrors FairwaySidebar's `matchActive` (segment-boundary) and
  * honors a per-item `activeMatch` predicate for cluster rows (e.g. CoachHelm).
  * Each tab is a >=44px touch target (full-height column) with a visible 2px
@@ -37,17 +54,9 @@ import { useMediaQuery } from '@/hooks/use-media-query';
 import { cn } from '@/lib/utils';
 import { NavPendingDot } from './NavPending';
 import { IconLayoutGrid } from '@/components/icons';
-import { Button } from '@/components/ui/button';
 import { fwHaptic } from '@/lib/fairway/haptics';
+import { matchActive } from './more-nav';
 import type { FairwayIcon, NavItem, ShellLinkComponent } from './types';
-
-/** Segment-boundary active match (mirrors FairwaySidebar's `matchActive`). */
-function matchActive(href: string, pathname?: string): boolean {
-  if (!pathname) return false;
-  const segments = href.split('/').filter(Boolean);
-  if (segments.length <= 2) return pathname === href;
-  return pathname === href || pathname.startsWith(href + '/');
-}
 
 export interface FairwayBottomNavProps {
   /** The role's 4 daily-loop destinations (docs/MOBILE_DOCTRINE.md Rule 10). */
@@ -106,7 +115,7 @@ export const FairwayBottomNav = memo(function FairwayBottomNav({
   const spring = reduced ? { duration: 0 } : { type: 'spring' as const, stiffness: 420, damping: 36, mass: 0.8 };
   const pill = (active: boolean) => active && (
     <m.span aria-hidden data-slot="nav-active-pill" layoutId={`${layoutId}-selection`}
-      className="pointer-events-none absolute inset-0 rounded-full fw-nav-selection border shadow-soft"
+      className="pointer-events-none absolute inset-0 rounded-full fw-frost-selection border"
       transition={spring} />
   );
   const badge = (count: number | undefined, cap = 99) => Boolean(count && count > 0) && (
@@ -114,23 +123,25 @@ export const FairwayBottomNav = memo(function FairwayBottomNav({
       {count! > cap ? `${cap}+` : count}
     </span>
   );
-  const control = 'group relative m-0 flex h-12 min-h-[44px] w-full min-w-0 items-center justify-center gap-1.5 rounded-full px-2 outline-none transition-colors motion-reduce:transition-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-focus';
+  const control = 'group relative m-0 flex h-full min-h-[44px] w-full min-w-0 items-center justify-center gap-1.5 rounded-full px-2 outline-none transition-colors motion-reduce:transition-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-focus';
 
   return (
     <nav data-slot="fw-bottom-nav" aria-label="Primary"
-      className={cn('pointer-events-none fixed inset-x-0 bottom-0 z-[var(--fw-z-nav)] px-3 pt-2 pb-[max(8px,env(safe-area-inset-bottom,0px))] md:hidden', className)}>
+      className={cn('pointer-events-none fixed inset-x-0 bottom-0 z-[var(--fw-z-nav)] px-4 pt-2.5 pb-[calc(10px+env(safe-area-inset-bottom,0px))] md:hidden', className)}>
+      {/* Contact zone: the page fades into the canvas under the dock. */}
+      <span aria-hidden data-slot="fw-dock-fade" className="fw-dock-fade pointer-events-none absolute inset-x-0 -top-7 bottom-0 -z-10" />
       <LayoutGroup id={layoutId}>
-        <ul className="pointer-events-auto relative flex h-14 items-stretch gap-0.5 rounded-full fw-glass-chrome border p-1 shadow-raise">
+        <ul className="pointer-events-auto relative flex h-[60px] items-stretch gap-0.5 rounded-full fw-frost fw-frost-floating p-1.5">
           {items.map((item) => {
             const routeActive = item.active ?? (item.activeMatch && pathname ? item.activeMatch(pathname) : matchActive(item.href, pathname));
             const active = Boolean(routeActive && !moreSelected);
             const Icon = item.icon;
             return (
               <m.li key={item.href} layout={reduced ? false : 'position'} transition={spring} whileTap={reduced ? undefined : { scale: 0.97 }}
-                className={active ? 'min-w-max' : 'min-w-[44px]'} style={{ flex: active ? '1 0 auto' : '1 1 0' }}>
+                className={active ? 'min-w-max max-w-[33%]' : 'min-w-[44px]'} style={{ flex: active ? '1 0 auto' : '1 1 0' }}>
                 <Link href={item.href} aria-current={routeActive ? 'page' : undefined} aria-label={item.label}
-                  onClick={() => fwHaptic('selection')}
-                  className={cn(control, active ? 'text-text-on-accent' : 'text-text-tertiary hover:text-text-secondary')}>
+                  onClick={() => { if (!routeActive) fwHaptic('selection'); }}
+                  className={cn(control, active ? 'text-accent-700' : 'text-text-tertiary hover:text-text-secondary')}>
                   {pill(active)}
                   <m.span layout={reduced ? false : 'position'} transition={spring} className="relative z-10 inline-flex shrink-0 motion-reduce:transition-none">
                     <Icon size={21} aria-hidden className="flex-shrink-0" />
@@ -145,17 +156,19 @@ export const FairwayBottomNav = memo(function FairwayBottomNav({
             );
           })}
           {onMoreOpen && (
-            <m.li layout={reduced ? false : 'position'} transition={spring} whileTap={reduced ? undefined : { scale: 0.97 }} className={moreSelected ? 'min-w-max' : 'min-w-[44px]'} style={{ flex: moreSelected ? '1 0 auto' : '1 1 0' }}>
-              <Button type="button" variant="ghost" haptic="light" aria-haspopup="dialog" aria-expanded={moreOpen ?? false}
-                aria-label={moreLabel} onClick={onMoreOpen}
-                className={cn(control, 'bg-transparent hover:bg-transparent', moreSelected ? 'text-text-on-accent' : 'text-text-tertiary')}>
+            <m.li layout={reduced ? false : 'position'} transition={spring} whileTap={reduced ? undefined : { scale: 0.97 }} className={moreSelected ? 'min-w-max max-w-[33%]' : 'min-w-[44px]'} style={{ flex: moreSelected ? '1 0 auto' : '1 1 0' }}>
+              {/* eslint-disable-next-line helm/no-raw-button -- the dock is five identical native controls sharing one class, one 44px floor and one selection haptic; a Button here would carry its own light haptic, focus ring and padding and break the row */}
+              <button type="button" aria-haspopup="dialog" aria-expanded={moreOpen ?? false}
+                aria-label={moreLabel}
+                onClick={() => { if (!moreSelected) fwHaptic('selection'); onMoreOpen(); }}
+                className={cn(control, 'bg-transparent', moreSelected ? 'text-accent-700' : 'text-text-tertiary hover:text-text-secondary')}>
                 {pill(moreSelected)}
                 <m.span layout={reduced ? false : 'position'} transition={spring} className="relative z-10 inline-flex shrink-0">
                   <MoreIcon size={21} aria-hidden className="flex-shrink-0" />
                   {badge(moreBadge, 9)}
                 </m.span>
                 <span className={cn('relative z-10 min-w-0 max-w-full truncate font-fw-sans text-caption font-semibold', !moreSelected && 'sr-only')}>{moreLabel}</span>
-              </Button>
+              </button>
             </m.li>
           )}
         </ul>

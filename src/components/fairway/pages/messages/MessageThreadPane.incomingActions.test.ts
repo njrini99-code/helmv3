@@ -81,6 +81,7 @@ function baseProps(own: boolean, overrides: Partial<MessageThreadPaneProps> = {}
     userId: reader,
     currentUserId: reader,
     isOtherTyping: false,
+    now: new Date('2026-08-22T12:00:00.000Z'),
     onBack: vi.fn(),
     onNewMessage: vi.fn(),
     editingMessageId: null,

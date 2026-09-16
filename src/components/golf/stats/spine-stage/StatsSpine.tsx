@@ -6,13 +6,15 @@
  * ----------------------------------------------------------------------------
  * Thin composition over the `Spine` module: SG: Total as the hero (falls back
  * to scoring average when SG hasn't computed yet), the synthesized verdict,
- * the you/team/Tour `StandingTrack`, the top-3 weakness `PriorityList`, and
+ * the you/team/Tour standing readout (a bare `StandingBars` — replaced
+ * 2026-09-10, was `StandingTrack`), the top-3 weakness `PriorityList`, and
  * the Rounds/Fairways/Greens/Putts `SpineLedger` — the ONLY place the 30d
  * ledger numbers render on this surface (see `buildStatsViewModel`).
  * ========================================================================== */
 
 import { Spine } from '@/components/fairway/modules';
-import type { PriorityItem, StandingTrackProps } from '@/components/fairway/modules';
+import type { PriorityItem } from '@/components/fairway/modules';
+import type { StandingBarsProps } from '@/components/fairway/charts/StandingBars';
 import { surfaceHref } from '@/lib/golf/surface-registry';
 import { formatSgSigned } from './buildStatsViewModel';
 
@@ -20,7 +22,7 @@ export interface StatsSpineProps {
   sgTotal: number | null;
   scoringAverage: number | null;
   verdict: string;
-  track?: StandingTrackProps;
+  standing?: StandingBarsProps;
   priorities: PriorityItem[];
   ledger: Array<{ label: string; value: string }>;
   /**
@@ -38,7 +40,7 @@ export function StatsSpine({
   sgTotal,
   scoringAverage,
   verdict,
-  track,
+  standing,
   priorities,
   ledger,
   viewerContext = 'self',
@@ -71,7 +73,7 @@ export function StatsSpine({
       eyebrow="Strokes Gained"
       hero={hero}
       verdict={verdict}
-      track={track}
+      standing={standing}
       priorities={priorities}
       ledger={ledger}
       cta={{ label: 'Ask CoachHelm', href: askHref }}

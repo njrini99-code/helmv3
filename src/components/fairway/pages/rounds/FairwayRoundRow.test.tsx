@@ -165,3 +165,56 @@ describe('FairwayRoundRow — #139 date-only display agrees across surfaces (non
     expect(rowDate).toBe(dashboardShortDate('2026-02-01'));
   });
 });
+
+/**
+ * ============================================================================
+ * v2 facelift — the row's `MicroBar` (this round's to-par vs. the player's
+ * own season average), honesty-gated on `seasonAvgToPar`.
+ * ========================================================================== */
+describe('FairwayRoundRow — MicroBar (v2 facelift)', () => {
+  it('renders no MicroBar when seasonAvgToPar is not supplied (existing callers, unchanged)', () => {
+    const { container } = render(
+      <FairwayRoundRow round={makeRound()} isBestOfPeriod={false} userRole="coach" />,
+    );
+    expect(container.querySelector('[data-slot="micro-bar"]')).toBeNull();
+  });
+
+  it('renders no MicroBar for a player with fewer than 2 scored rounds (seasonAvgToPar null)', () => {
+    const { container } = render(
+      <FairwayRoundRow
+        round={makeRound()}
+        isBestOfPeriod={false}
+        userRole="coach"
+        seasonAvgToPar={null}
+      />,
+    );
+    expect(container.querySelector('[data-slot="micro-bar"]')).toBeNull();
+  });
+
+  it('renders a MicroBar comparing this round to the player\'s season average when qualifying', () => {
+    // round score_to_par = 2 (see makeRound); season average of 0 → +2.0
+    // shots worse than average.
+    render(
+      <FairwayRoundRow
+        round={makeRound()}
+        isBestOfPeriod={false}
+        userRole="coach"
+        seasonAvgToPar={0}
+      />,
+    );
+    const bars = screen.getAllByLabelText("2.0 shots worse than Alexandria Montgomery-Whitfield's season average");
+    expect(bars.length).toBeGreaterThan(0);
+  });
+
+  it('omits the MicroBar when the round itself has no score_to_par, even when the player qualifies', () => {
+    const { container } = render(
+      <FairwayRoundRow
+        round={makeRound({ score_to_par: null })}
+        isBestOfPeriod={false}
+        userRole="coach"
+        seasonAvgToPar={0}
+      />,
+    );
+    expect(container.querySelector('[data-slot="micro-bar"]')).toBeNull();
+  });
+});

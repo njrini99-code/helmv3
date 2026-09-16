@@ -381,6 +381,23 @@ describe('global tripwire', () => {
     // — in src/app/golf/actions/{attendance,scheduling,conflict-inbox,
     // class-detail}.ts, all wrapped with feature `calendar_events`. The three
     // reads carry no demoSafe. Total 432 -> 436.
-    expect(total).toBe(436);
+    // 2026-09-10 (-9), dead-code sweep: deleted 9 unreferenced action-file
+    // exports (zero importers anywhere in src, independently re-verified) —
+    // admin-bi-data.ts:getEnhancedBIData, admin-people-data.ts:getPeopleTabData,
+    // player-effectiveness.ts:getPlayerEffectiveness,
+    // team-sg-baseline.ts:{getTeamSgBaseline,setTeamSgBaseline},
+    // v3/llm.ts:{generateLlmRoundReview,generateHeroNarrative},
+    // v3/practice-rx.ts:generatePracticeRx,
+    // v3/team-practice-rx.ts:generateTeamPracticeRx. The files themselves
+    // (and their feature-registry.ts manifest entries) were deleted too, so
+    // this walk no longer discovers them. v3/goal-progress.ts and
+    // v3/focus-area-progress.ts were also deleted but were already-empty
+    // `export {}` relocation stubs contributing 0 to this count. Total 436 -> 427.
+    // 2026-09-10 (+1), round review v3: getRoundReviewTrend added to the
+    // 'ALL'-mapped round-review-system.ts, so the walk discovers it with no
+    // manifest edit. It lands in the same window as the dead-code sweep
+    // above, which is why the sweep's arithmetic (436 -> 427) was correct on
+    // its own terms and still one short of what the tree now holds.
+    expect(total).toBe(428);
   });
 });

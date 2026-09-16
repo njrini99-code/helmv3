@@ -116,9 +116,7 @@ const EXPECTED_KEYS: FeatureKey[] = [
 // construction — they are simply not in this list.
 const NON_CRM_ACTION_FILES = [
   'access-code.ts',
-  'admin-bi-data.ts',
   'admin-data.ts',
-  'admin-people-data.ts',
   'admin-system-data.ts',
   'admin-tracer-data.ts',
   'admin/rollup-c.ts',
@@ -153,7 +151,6 @@ const NON_CRM_ACTION_FILES = [
   'message-attachments.ts',
   'onboarding.ts',
   'pattern-management.ts',
-  'player-effectiveness.ts',
   'player-feedback.ts',
   'player-fingerprint.ts',
   'player-notifications.ts',
@@ -176,19 +173,13 @@ const NON_CRM_ACTION_FILES = [
   'task-reminders.ts',
   'tasks.ts',
   'team-category-insights.ts',
-  'team-sg-baseline.ts',
   'team-switcher.ts',
   'teams.ts',
   'travel.ts',
-  'v3/focus-area-progress.ts',
-  'v3/goal-progress.ts',
   'v3/goals.ts',
   'v3/intent.ts',
-  'v3/llm.ts',
   'v3/notification-prefs.ts',
-  'v3/practice-rx.ts',
   'v3/qualifying.ts',
-  'v3/team-practice-rx.ts',
   'whats-new.ts',
 ].map((f) => `src/app/golf/actions/${f}`);
 
@@ -388,7 +379,19 @@ describe('FEATURE_REGISTRY completeness', () => {
     // 'ALL'-mapped attendance.ts (+1), and scheduling.ts, conflict-inbox.ts
     // and class-detail.ts (one read each) join `calendar_events` as 'ALL'
     // (+3). Matches 432 -> 436 in coverage-contract.foundation.
-    expect(total).toBe(428);
+    // 2026-09-10 (-9), dead-code sweep: deleted 9 unreferenced action files
+    // (zero importers anywhere in src, independently re-verified) and their
+    // manifest entries — admin-bi-data.ts (-1), admin-people-data.ts (-1),
+    // player-effectiveness.ts (-1), team-sg-baseline.ts (-2), v3/llm.ts (-2),
+    // v3/practice-rx.ts (-1), v3/team-practice-rx.ts (-1). v3/goal-progress.ts
+    // and v3/focus-area-progress.ts were already-empty `export {}` relocation
+    // stubs (0 real exports each, per the 2026-07-09 note above) so their
+    // removal contributes no further delta.
+    // 2026-09-10 (+1), round review v3: getRoundReviewTrend added to
+    // round-review-system.ts, which is an 'ALL'-mapped manifest entry, so it
+    // needs no explicit name here. Matches 427 -> 428 in
+    // coverage-contract.foundation.
+    expect(total).toBe(420);
   });
 
   it('the CRM row lists no files (never a wrap target)', () => {

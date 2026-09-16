@@ -33,7 +33,14 @@ Native surface today:
   (`src/lib/utils/capacitor.ts`, honors the user preference for all callers)
   and the semantic layer `src/lib/fairway/haptics.ts` (`fwHaptic`). Wired at
   primitives: Button → light, Segmented → selection, bottom-nav tabs →
-  selection.
+  selection. Button/IconButton take an optional `haptic` prop (2026-09-10,
+  `controls/button.tsx`) to override the intensity or suppress it entirely
+  (`haptic="none"`) — e.g. a caller that fires its own sequence, or the
+  dev "feel lab" (`dashboard/dev/haptics`) demonstrating raw patterns.
+  IconButton fires nothing unless `haptic` is passed (unchanged default).
+  `overlays/ConfirmModal` uses the override to restore the legacy
+  `ui/confirm-dialog`'s feel: `warning` on open + `heavy` on confirm for
+  `tone="danger"`, `light`/`medium` otherwise.
 - **Push**: `src/lib/utils/push-registration.ts` park-then-flush token state
   machine (persistence deferred until an authenticated session), value-first
   pre-prompt `src/components/golf/PushPermissionSoftAsk.tsx`, deep links

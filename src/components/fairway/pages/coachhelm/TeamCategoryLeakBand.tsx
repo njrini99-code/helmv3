@@ -17,24 +17,30 @@
  * exist on `TeamCategory[]`, so rather than force LeakBoard's shape to fit,
  * this is a fresh, decoupled presentation component over the actual data.
  *
- * Every category card carries at least two visual channels (a trend glyph +
- * an attention-share bar), never text-only, per the CoachHelm design bar.
+ * Every category segment carries at least two visual channels (a trend glyph
+ * + an attention-share bar), never text-only, per the CoachHelm design bar.
  * Honest degrade: a category with zero players scored (`players.length===0`)
  * shows "Awaiting rounds" instead of a fabricated 0%; the band itself renders
  * nothing when the fetch failed or the team genuinely has no categories yet
  * (CoachIntelligenceHome's own onboarding gate already covers a truly empty
  * roster before this ever mounts).
+ *
+ * ONE SEAMED BAND (facelift, 2026-09): previously five separate `Surface`
+ * cards in a wrapped grid, each with its own framer-motion entrance staggered
+ * by index — a card-soup + a banned staggered-entrance (BRIEF.md §6.5, §11).
+ * Now a single hairline-divided row (`divide-x`) inside the ONE `InstrumentPanel`
+ * bezel, no per-segment surface, no motion. Categories that don't fit the
+ * viewport scroll horizontally as one strip rather than wrapping into a second
+ * seamed row (which would need its own divider treatment).
  * ========================================================================== */
 
-import { m } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/fairway/controls/badge';
-import { Surface } from '@/components/fairway/surfaces/surface';
 import { TrendGlyph } from '@/components/fairway/charts/TrendChip';
 import { InstrumentPanel } from '@/components/fairway/instrument/InstrumentPanel';
 import { RingGauge } from '@/components/fairway/modules/RingGauge';
+import { useScrollFade } from '@/lib/fairway/use-scroll-fade';
 import type { TeamCategory } from '@/app/golf/actions/team-category-insights';
-import { enterTransition, stagger, useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 export interface TeamCategoryLeakBandProps {
   categories: TeamCategory[];
@@ -42,10 +48,16 @@ export interface TeamCategoryLeakBandProps {
   className?: string;
 }
 
-function CategoryCard({ category, index }: { category: TeamCategory; index: number }) {
-  const prefersReducedMotion = useReducedMotionGuard();
+/** "35% Scramble" → ["35%", "Scramble"]; "+3.8 vs par" → ["+3.8", "vs par"]; "42" → ["42", null]. */
+function splitAvgLabel(label: string): [string, string | null] {
+  const i = label.indexOf(' ');
+  return i > 0 ? [label.slice(0, i), label.slice(i + 1)] : [label, null];
+}
+
+function CategorySegment({ category }: { category: TeamCategory }) {
   const scored = category.players.length;
   const hasData = scored > 0;
+  const [avgValue, avgUnit] = hasData ? splitAvgLabel(category.teamAvgLabel) : [category.teamAvgLabel, null];
 
   // Worst-first: `players` is already sorted best→worst by the source
   // action, so reversing + filtering to the flagged (>1 stddev off-average)
@@ -59,29 +71,34 @@ function CategoryCard({ category, index }: { category: TeamCategory; index: numb
     )
     .slice(0, 2);
 
-  const hiddenState = prefersReducedMotion
-    ? (false as const)
-    : { opacity: 0, y: 8 };
-
   return (
-    <m.div
-      initial={hiddenState}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ ...enterTransition, delay: stagger(index) }}
-    >
-      <Surface padding="md" className="flex h-full flex-col gap-3">
-        {/* flex-wrap: on tight phone widths (long label + long trend word,
-            e.g. APPROACH + Declining) the glyph must wrap under the label —
-            with shrink-0 alone it escapes past the card edge (iOS 2026-07-24). */}
-        <div className="flex flex-wrap items-start justify-between gap-x-2 gap-y-1">
-          <p className="font-fw-display text-eyebrow font-semibold uppercase tracking-[0.12em] text-text-tertiary">
-            {category.label}
-          </p>
-          <TrendGlyph direction={category.trend} className="shrink-0 text-caption" />
-        </div>
+    // Equal-share columns (`flex-1` from a 0 basis) with a 144px floor: when
+    // the band has room every category gets the same width and the row fills
+    // the panel edge to edge; when it doesn't (five categories in a ~500px
+    // stage) the floor pushes the row into the horizontal scroller above
+    // rather than squeezing the mono readouts. The old `min-w-[164px]
+    // max-w-[220px] shrink-0` pair could never fill the panel and, with the
+    // cockpit's three panes at 1440, left the fourth column half inside the
+    // scroll fade reading as text cut mid-word (facelift REVIEW.md item 6).
+    <div className="flex h-full min-w-[144px] flex-1 flex-col gap-3 px-4 py-3.5 first:pl-0 last:pr-0">
+      {/* flex-wrap: on tight phone widths (long label + long trend word,
+          e.g. APPROACH + Declining) the glyph must wrap under the label —
+          with shrink-0 alone it escapes past the card edge (iOS 2026-07-24). */}
+      <div className="flex flex-wrap items-start justify-between gap-x-2 gap-y-1">
+        <p className="font-fw-display text-eyebrow font-semibold uppercase tracking-[0.12em] text-text-tertiary">
+          {category.label}
+        </p>
+        <TrendGlyph direction={category.trend} className="shrink-0 text-caption" />
+      </div>
 
-        <p className="font-fw-mono text-h3 font-semibold tabular-nums text-text-primary">
-          {category.teamAvgLabel}
+        {/* Value and unit as two type sizes on one baseline ("35%" + "Scramble")
+            rather than one h3 string: at the band's column floor a mono
+            "35% Scramble" wrapped to two lines and pushed that column's tick
+            rail below its siblings'. The unit is whatever follows the first
+            space in the formatted label; a label with no space renders whole. */}
+        <p className="flex items-baseline gap-1.5 whitespace-nowrap">
+          <span className="font-fw-mono text-h3 font-semibold tabular-nums text-text-primary">{avgValue}</span>
+          {avgUnit ? <span className="text-caption text-text-tertiary">{avgUnit}</span> : null}
         </p>
 
         {hasData ? (
@@ -169,39 +186,51 @@ function CategoryCard({ category, index }: { category: TeamCategory; index: numb
             ))}
           </div>
         ) : null}
-      </Surface>
-    </m.div>
+    </div>
   );
 }
 
 export function TeamCategoryLeakBand({ categories, teamHealth, className }: TeamCategoryLeakBandProps) {
-  const prefersReducedMotion = useReducedMotionGuard();
+  // Premium scroll-edge fade (the same primitive `ViewHeaderSegments` uses
+  // for its own horizontally-scrollable row) — at 1440px five categories can
+  // still exceed the panel's available width, and this strip is DESIGNED to
+  // scroll rather than wrap into a second row (see the file docblock). A
+  // hard-clipped hidden edge with no visual cue reads as a broken layout
+  // (facelift REVIEW.md item 6, "columns clip at 1440"); the fade signals
+  // "more this way" instead.
+  //
+  // Called BEFORE the `categories.length === 0` guard below — Rules of Hooks
+  // forbids a conditional/early-return call (caught by
+  // react-hooks/rules-of-hooks), and there is nothing unsafe about running
+  // this on the empty-categories render anyway (the ref just never attaches
+  // to a DOM node in that case).
+  const { ref: scrollFadeRef, fadeStyle } = useScrollFade<HTMLDivElement>('x');
+
   if (categories.length === 0) return null;
 
-  const hiddenState = prefersReducedMotion ? (false as const) : { opacity: 0, y: 8 };
-
   return (
-    <m.div initial={hiddenState} animate={{ opacity: 1, y: 0 }} transition={enterTransition}>
-      <InstrumentPanel
-        depth="base"
-        className={className}
-        eyebrow="CoachHelm · team"
-        header="Where the team is bleeding strokes"
-        readout={
-          <div className="flex items-center gap-2.5">
-            <RingGauge value={teamHealth} size={44} />
-            <div className="flex flex-col">
-              <span className="font-fw-mono text-caption tabular-nums text-text-tertiary">Team health</span>
-            </div>
-          </div>
-        }
-      >
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-          {categories.map((category, i) => (
-            <CategoryCard key={category.id} category={category} index={i} />
+    <InstrumentPanel
+      depth="base"
+      className={className}
+      eyebrow="CoachHelm · team"
+      header="Where the team is bleeding strokes"
+      readout={
+        <div className="flex items-center gap-2.5">
+          <RingGauge value={teamHealth} size={44} />
+          <span className="font-fw-mono text-caption tabular-nums text-text-tertiary">Team health</span>
+        </div>
+      }
+    >
+      {/* ONE seamed row (hairline `divide-x`), not a wrapped grid of cards —
+          overflows into its own horizontal scroller on narrow viewports
+          rather than wrapping into a second seamed row. */}
+      <div ref={scrollFadeRef} style={fadeStyle} className="overflow-x-auto">
+        <div className="flex divide-x divide-border-subtle">
+          {categories.map((category) => (
+            <CategorySegment key={category.id} category={category} />
           ))}
         </div>
-      </InstrumentPanel>
-    </m.div>
+      </div>
+    </InstrumentPanel>
   );
 }

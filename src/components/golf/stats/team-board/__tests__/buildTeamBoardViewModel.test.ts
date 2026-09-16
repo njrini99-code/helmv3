@@ -409,8 +409,8 @@ describe('buildTeamBoardViewModel', () => {
       intelligenceSampleSize: 0,
       rounds30d: 0,
     });
-    expect(vm.kpis.teamScoring).toBe('—');
-    expect(vm.kpis.teamSg).toBe('—');
+    expect(vm.kpis.teamScoring).toBe('–');
+    expect(vm.kpis.teamSg).toBe('–');
   });
 
   it('pools raw attempts for team fundamentals and exposes player drill-in values', () => {

@@ -2,22 +2,25 @@
 
 /**
  * ============================================================================
- * Fairway · Rounds · FairwayUnfinishedBanner — the in-progress resume strip
+ * Fairway · Rounds · FairwayUnfinishedBanner — the in-progress resume group
  * ----------------------------------------------------------------------------
  * The PLAYER-ONLY "In progress" section that sits directly above the library
  * when there are unfinished rounds. A re-skin of the legacy
- * UnfinishedRoundsSection + UnfinishedRoundModal, collapsed into one calm
- * Fairway Surface banner per round:
+ * UnfinishedRoundsSection + UnfinishedRoundModal as ONE matte InsetGroup of
+ * seam rows (player-rounds.mobile.md #1 — it used to be one bordered card
+ * per round with two buttons each: five rounds meant ten buttons above the
+ * page's own content):
  *
- *   • a warning-tone StatusPill "In progress"
- *   • an HONEST hole-progress readout (current_hole / holes_played from real
+ *   • an HONEST hole-progress tile (current_hole / holes_played from real
  *     columns) — "Setup" when no hole has been started yet
- *   • the course name + city
- *   • a PRIMARY "Continue" CTA (→ /rounds/continue/[id]) and a QUIET "Discard"
+ *   • the course name, then city · "9d ago"
+ *   • ONE visible action per row: a primary "Continue" (→ /rounds/continue/[id]);
+ *     "Discard round" lives in the row's overflow Menu and still runs the
+ *     two-step confirm in place (Cancel · Confirm discard)
  *
  * Discard reuses the EXISTING non-destructive server action
  * `deleteInProgressRound` UNCHANGED (no delete-then-reinsert; the action owns
- * the safe delete + emergency-save clear). A two-step confirm guards it.
+ * the safe delete + emergency-save clear).
  *
  * Coaches NEVER see this — the parent only renders it for `userRole === 'player'`
  * when `rounds.length > 0`.
@@ -28,10 +31,10 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { Play } from 'lucide-react';
-import { Surface, Inset } from '@/components/fairway/surfaces/surface';
-import { StatusPill } from '@/components/fairway/controls/status-pill';
-import { Button } from '@/components/fairway/controls/button';
+import { MoreHorizontal, Play } from 'lucide-react';
+import { InsetGroup } from '@/components/fairway/surfaces/inset-group';
+import { Button, IconButton } from '@/components/fairway/controls/button';
+import { Menu } from '@/components/fairway/overlays/Menu';
 import { deleteInProgressRound } from '@/app/golf/actions/golf';
 import { clearEmergencySave } from '@/lib/utils/emergency-save';
 import type { RoundLibraryRound } from './FairwayRoundsLibrary';
@@ -41,10 +44,16 @@ export interface FairwayUnfinishedBannerProps {
   playerId: string;
 }
 
-function relativeTime(round: RoundLibraryRound): string {
+/**
+ * "9d ago" from a MOUNTED clock. `now` is null on the server and on the first
+ * client render, so both paint the same markup (no relative time) and the
+ * label appears after hydration — never a server/client text mismatch
+ * (AUDIT.md Mobile, hydration hazards).
+ */
+function relativeTime(round: RoundLibraryRound, now: number | null): string {
   const ts = round.updated_at ?? round.created_at;
-  if (!ts) return '';
-  const diff = Date.now() - new Date(ts).getTime();
+  if (!ts || now == null) return '';
+  const diff = now - new Date(ts).getTime();
   const hours = Math.floor(diff / (1000 * 60 * 60));
   const days = Math.floor(hours / 24);
   if (days > 0) return `${days}d ago`;
@@ -52,13 +61,15 @@ function relativeTime(round: RoundLibraryRound): string {
   return 'just now';
 }
 
-/** The player-only "In progress" resume strip. */
+/** The player-only "In progress" resume group. */
 export function FairwayUnfinishedBanner({ rounds, playerId }: FairwayUnfinishedBannerProps) {
   const router = useRouter();
   const [localRounds, setLocalRounds] = React.useState(rounds);
+  const [now, setNow] = React.useState<number | null>(null);
 
   // Keep local state in sync if the server passes a fresh list.
   React.useEffect(() => setLocalRounds(rounds), [rounds]);
+  React.useEffect(() => setNow(Date.now()), []);
 
   if (localRounds.length === 0) return null;
 
@@ -73,19 +84,20 @@ export function FairwayUnfinishedBanner({ rounds, playerId }: FairwayUnfinishedB
         </span>
       </div>
 
-      <div className="flex flex-col gap-2.5">
+      <InsetGroup variant="matte">
         {localRounds.map((round) => (
           <UnfinishedRow
             key={round.id}
             round={round}
             playerId={playerId}
+            timeAgo={relativeTime(round, now)}
             onDiscarded={() => {
               setLocalRounds((prev) => prev.filter((r) => r.id !== round.id));
               router.refresh();
             }}
           />
         ))}
-      </div>
+      </InsetGroup>
     </section>
   );
 }
@@ -93,10 +105,12 @@ export function FairwayUnfinishedBanner({ rounds, playerId }: FairwayUnfinishedB
 function UnfinishedRow({
   round,
   playerId,
+  timeAgo,
   onDiscarded,
 }: {
   round: RoundLibraryRound;
   playerId: string;
+  timeAgo: string;
   onDiscarded: () => void;
 }) {
   const router = useRouter();
@@ -107,13 +121,14 @@ function UnfinishedRow({
   const holesTarget = round.holes_played ?? 18;
   const currentHole = round.current_hole ?? 0;
   const isSetup = !currentHole;
+  const courseName = round.course_name ?? 'Unknown course';
   // A bare state code with no city ("Va") reads as a stray, unlabeled
   // fragment — only render a location when there's an actual city to anchor
   // it (course_state alone is dropped, not shown bare).
   const city = round.course_city
     ? [round.course_city, round.course_state].filter(Boolean).join(', ')
     : null;
-  const timeAgo = relativeTime(round);
+  const meta = [city, timeAgo].filter(Boolean).join(' · ');
 
   const handleContinue = () => {
     router.push(`/golf/dashboard/rounds/continue/${round.id}`);
@@ -136,97 +151,78 @@ function UnfinishedRow({
   };
 
   return (
-    <Surface
-      padding="none"
-      className="overflow-hidden"
+    <InsetGroup.Row
+      align="center"
+      trailing={
+        confirming ? (
+          <span className="inline-flex items-center gap-1">
+            <Button variant="ghost" size="sm" onClick={() => setConfirming(false)} disabled={discarding}>
+              Cancel
+            </Button>
+            <Button variant="danger" size="sm" onClick={handleConfirmDiscard} busy={discarding}>
+              {discarding ? 'Discarding' : 'Confirm discard'}
+            </Button>
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1">
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={handleContinue}
+              leftIcon={<Play className="h-4 w-4" aria-hidden="true" />}
+            >
+              Continue
+            </Button>
+            <Menu
+              align="end"
+              trigger={
+                <IconButton variant="ghost" size="sm" aria-label={`More actions for ${courseName}`}>
+                  <MoreHorizontal className="h-4 w-4" aria-hidden />
+                </IconButton>
+              }
+            >
+              <Menu.Item destructive onSelect={() => setConfirming(true)}>
+                Discard round
+              </Menu.Item>
+            </Menu>
+          </span>
+        )
+      }
     >
-      <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-        {/* Left: status + progress readout + course */}
-        <div className="flex min-w-0 items-center gap-4">
-          <Inset
-            padding="none"
-            className="flex h-14 w-14 flex-shrink-0 flex-col items-center justify-center gap-0.5"
-          >
-            {isSetup ? (
-              <span className="font-fw-sans text-caption font-medium text-fw-warning-ink">Setup</span>
-            ) : (
-              <>
-                <span className="font-fw-mono text-h3 font-medium leading-none tabular-nums text-fw-warning-ink">
-                  {currentHole}
-                </span>
-                <span className="font-fw-mono text-eyebrow tabular-nums text-text-tertiary">
-                  / {holesTarget}
-                </span>
-              </>
-            )}
-          </Inset>
-
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <StatusPill tone="warning" size="sm">
-                In progress
-              </StatusPill>
-              {timeAgo && (
-                <span className="font-fw-sans text-eyebrow text-text-tertiary">{timeAgo}</span>
-              )}
-            </div>
-            <p className="mt-1 truncate font-fw-sans text-body-sm font-medium text-text-primary">
-              {round.course_name ?? 'Unknown course'}
-            </p>
-            {city && (
-              <p className="truncate font-fw-sans text-caption text-text-tertiary">{city}</p>
-            )}
-          </div>
-        </div>
-
-        {/* Right: actions */}
-        <div className="flex flex-shrink-0 items-center gap-2 sm:flex-col-reverse sm:items-stretch sm:gap-2 md:flex-row">
-          {confirming ? (
-            <>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setConfirming(false)}
-                disabled={discarding}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="danger"
-                size="sm"
-                onClick={handleConfirmDiscard}
-                busy={discarding}
-              >
-                {discarding ? 'Discarding' : 'Confirm discard'}
-              </Button>
-            </>
+      <span className="flex min-w-0 items-center gap-3">
+        {/* Honest hole progress — real columns, "Setup" before the first hole. */}
+        <span
+          aria-hidden
+          className="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-fw-sm bg-surface-sunken"
+        >
+          {isSetup ? (
+            <span className="font-fw-sans text-caption font-medium text-fw-warning-ink">Setup</span>
           ) : (
             <>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setConfirming(true)}
-              >
-                Discard
-              </Button>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={handleContinue}
-                leftIcon={<Play className="h-4 w-4" aria-hidden="true" />}
-              >
-                Continue
-              </Button>
+              <span className="font-fw-mono text-body-sm font-medium leading-none tabular-nums text-fw-warning-ink">
+                {currentHole}
+              </span>
+              <span className="font-fw-mono text-eyebrow tabular-nums text-text-tertiary">/{holesTarget}</span>
             </>
           )}
-        </div>
-      </div>
-
-      {error && (
-        <p className="px-4 pb-3 font-fw-sans text-caption text-fw-danger-ink" role="alert">
-          {error}
-        </p>
-      )}
-    </Surface>
+        </span>
+        <span className="min-w-0">
+          <span className="block truncate font-fw-sans text-body-sm font-medium text-text-primary">
+            {courseName}
+            <span className="sr-only">
+              {isSetup ? ', not started' : `, hole ${currentHole} of ${holesTarget}`}
+            </span>
+          </span>
+          {meta ? (
+            <span className="block truncate font-fw-sans text-caption text-text-tertiary">{meta}</span>
+          ) : null}
+          {error ? (
+            <span className="block font-fw-sans text-caption text-fw-danger-ink" role="alert">
+              {error}
+            </span>
+          ) : null}
+        </span>
+      </span>
+    </InsetGroup.Row>
   );
 }

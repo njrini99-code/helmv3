@@ -21,6 +21,16 @@
  * getRoundTypeLabel) from FairwayRoundCard.tsx so the score grading + labels
  * stay consistent across every rounds surface. Rendered only inside
  * FairwayRoundsLibrary's month blocks (.fairway-ds).
+ *
+ * ── MicroBar (v2 facelift) ───────────────────────────────────────────────--
+ * Beside the score/StatusPill cluster, each row also carries a `MicroBar`:
+ * this round's score-to-par against THAT PLAYER's own season average
+ * score-to-par (`seasonAvgToPar`, computed once in the parent's
+ * `playerSeasonStats` memo and passed down here) — a fact nothing else on
+ * the row states, and deliberately NOT a re-encoding of the raw score-to-par
+ * the StatusPill already shows. Honesty gate: `seasonAvgToPar` is `null`
+ * whenever that player has fewer than 2 scored rounds — the row then renders
+ * exactly as it always has, no bar.
  * ========================================================================== */
 
 import Link from 'next/link';
@@ -30,6 +40,7 @@ import { cn } from '@/lib/utils';
 import { StatusPill } from '@/components/fairway/controls/status-pill';
 import { Badge, Chip } from '@/components/fairway/controls/badge';
 import { Avatar } from '@/components/fairway/controls/avatar';
+import { MicroBar } from '@/components/fairway/modules/MicroBar';
 import type { RoundLibraryRound } from './FairwayRoundsLibrary';
 import { scoreToParTone, formatToPar, getRoundTypeLabel } from './FairwayRoundCard';
 import { formatDateOnlyWeekdayShort, formatDateOnlyShort } from '@/lib/golf/date-only';
@@ -39,6 +50,14 @@ export interface FairwayRoundRowProps {
   /** Lowest score-to-par of its month — gets the accent rail + Best badge. */
   isBestOfPeriod: boolean;
   userRole: 'coach' | 'player';
+  /**
+   * This player's season-average score-to-par, or `null` when they have
+   * fewer than 2 scored rounds (the honesty gate — computed once in the
+   * parent). When present, the row shows a `MicroBar` comparing this
+   * round's to-par against it. Optional/defaults to `null` so existing
+   * callers (and the pinned tests) that don't pass it render unchanged.
+   */
+  seasonAvgToPar?: number | null;
 }
 
 // round_date is a DATE column ('YYYY-MM-DD') — parsed + formatted through the
@@ -53,7 +72,12 @@ function dateParts(iso: string): { weekday: string; md: string } {
 }
 
 /** One round, as a clickable ledger row. */
-export function FairwayRoundRow({ round, isBestOfPeriod, userRole }: FairwayRoundRowProps) {
+export function FairwayRoundRow({
+  round,
+  isBestOfPeriod,
+  userRole,
+  seasonAvgToPar = null,
+}: FairwayRoundRowProps) {
   const stp = round.score_to_par ?? 0;
   const hasToPar = round.score_to_par !== null;
   const tone = scoreToParTone(stp);
@@ -62,6 +86,17 @@ export function FairwayRoundRow({ round, isBestOfPeriod, userRole }: FairwayRoun
   const playerName = round.player
     ? `${round.player.first_name || ''} ${round.player.last_name || ''}`.trim()
     : '';
+
+  // MicroBar — this round's to-par against the player's own season average.
+  // Gated on BOTH a real to-par for this round AND a qualifying season
+  // average (≥2 scored rounds) for this player; otherwise no bar at all.
+  const microBarValue = hasToPar && seasonAvgToPar !== null ? stp - seasonAvgToPar : null;
+  const microBarLabel =
+    microBarValue !== null
+      ? `${Math.abs(microBarValue).toFixed(1)} shot${Math.abs(microBarValue) === 1 ? '' : 's'} ${
+          microBarValue < 0 ? 'better than' : microBarValue > 0 ? 'worse than' : 'even with'
+        } ${playerName ? `${playerName}'s` : 'their'} season average`
+      : null;
 
   // Quick stats — HONEST: FIR/GIR only when the denominator is real and > 0.
   const fir =
@@ -91,10 +126,8 @@ export function FairwayRoundRow({ round, isBestOfPeriod, userRole }: FairwayRoun
         'focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-focus',
       )}
     >
-      {/* Best-of-month accent rail */}
-      {isBestOfPeriod && (
-        <span aria-hidden="true" className="absolute inset-y-0 left-0 w-[3px] bg-accent-500" />
-      )}
+      {/* #rounds-polish row 28: the "Best" Badge below already carries this —
+          no side-stripe accent (banned in the facelift). */}
 
       {/* Date */}
       <div className="w-12 flex-shrink-0 leading-tight">
@@ -191,6 +224,23 @@ export function FairwayRoundRow({ round, isBestOfPeriod, userRole }: FairwayRoun
           </StatusPill>
         )}
       </div>
+
+      {/* MicroBar — this round's to-par against the player's own season
+          average (v2 facelift, honesty-gated: no bar when `seasonAvgToPar`
+          is null). Two sized instances, one per breakpoint (same pattern as
+          the Month/Week Segmented/Menu split above) rather than a
+          responsive prop, since the fill's own math is percentage-based and
+          only the rail's own pixel width needs to change. */}
+      {microBarValue !== null && microBarLabel !== null && (
+        <>
+          <span className="flex-shrink-0 md:hidden">
+            <MicroBar value={microBarValue} domain={6} goodDirection="low" width={28} label={microBarLabel} />
+          </span>
+          <span className="hidden flex-shrink-0 md:inline-flex">
+            <MicroBar value={microBarValue} domain={6} goodDirection="low" label={microBarLabel} />
+          </span>
+        </>
+      )}
 
       {/* Coach: player avatar + name. The name text is `md:`-only — on mobile
           this block is `flex-shrink-0` (it never yields width to its

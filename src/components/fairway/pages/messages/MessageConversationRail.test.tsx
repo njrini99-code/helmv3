@@ -33,6 +33,7 @@ describe('MessageConversationRail — no duplicate count readout', () => {
         onNewMessage={vi.fn()}
         loading={false}
         error={false}
+        now={new Date()}
       />,
     );
 
@@ -65,6 +66,7 @@ describe('MessageConversationRail — no duplicate count readout', () => {
         onNewMessage={vi.fn()}
         loading={false}
         error={false}
+        now={new Date()}
       />,
     );
 
@@ -82,7 +84,7 @@ describe('conversation filters', () => {
       { id: 'dm', participant_count: 2, unread_count: 1, other_participant: { name: 'Jordan Lee' } },
       { id: 'group', participant_count: 8, is_group: true, title: 'Travel team', unread_count: 0 },
     ] as GolfConversationWithMeta[];
-    render(<MessageConversationRail conversations={conversations} selectedId={null} onSelect={onSelect} onNewMessage={vi.fn()} />);
+    render(<MessageConversationRail conversations={conversations} selectedId={null} onSelect={onSelect} onNewMessage={vi.fn()} now={new Date()} />);
     fireEvent.click(screen.getByRole('radio', { name: 'Groups' }));
     expect(screen.getByText('Travel team')).toBeVisible();
     expect(screen.queryByRole('button', { name: /Jordan Lee/ })).toBeNull();
@@ -98,7 +100,7 @@ describe('conversation filters', () => {
   it('explains an empty unread filter and lets the reader return to all messages', () => {
     render(<MessageConversationRail conversations={[
       { id: 'dm', participant_count: 2, unread_count: 0, other_participant: { name: 'Jordan Lee' } } as GolfConversationWithMeta,
-    ]} selectedId={null} onSelect={vi.fn()} onNewMessage={vi.fn()} />);
+    ]} selectedId={null} onSelect={vi.fn()} onNewMessage={vi.fn()} now={new Date()} />);
     fireEvent.click(screen.getByRole('radio', { name: 'Unread' }));
     expect(screen.getByText('You’re all caught up')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Show all messages' }));
@@ -110,7 +112,7 @@ describe('conversation filters', () => {
 describe('background inbox refresh', () => {
   it('keeps existing rows mounted while read receipts refresh and after a refresh error', () => {
     const conversations = [{ id: 'dm', participant_count: 2, unread_count: 0, other_participant: { name: 'Jordan Lee' } }] as GolfConversationWithMeta[];
-    const props = { conversations, selectedId: 'dm', onSelect: vi.fn(), onNewMessage: vi.fn() };
+    const props = { conversations, selectedId: 'dm', onSelect: vi.fn(), onNewMessage: vi.fn(), now: new Date() };
     const { rerender } = render(<MessageConversationRail {...props} loading={false} />);
     const row = screen.getByRole('button', { name: /Jordan Lee/ });
     rerender(<MessageConversationRail {...props} loading />);

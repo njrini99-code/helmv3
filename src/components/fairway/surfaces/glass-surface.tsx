@@ -31,8 +31,16 @@
  *     animate `backdrop-filter` blur (jank) — only opacity/transform.
  *   • Honors prefers-reduced-motion (snap, no transform) via useReducedMotion.
  *
- * ADDITIVE ONLY — imported by nothing existing. Renders correctly inside a
- * `.fairway-ds` scope on a bg-canvas page.
+ * ── Fairway Frost tiers (2026-09-10) ──
+ * The material itself is the shared `.fw-frost` recipe in globals.css (five
+ * ingredients: translucency, blur, saturation, edge lighting, contact shadow)
+ * in three tiers — `subtle` (toolbars, chrome bars), `floating` (dock, floating
+ * toolbars, command surfaces), `modal` (sheets, major overlays). `surface`
+ * still names the approved use; `tier` picks the strength (defaults per
+ * surface). `edgeHighlight` and `tint` are the only decoration knobs;
+ * `interactive` adds the float-hover lift.
+ *
+ * Renders correctly inside a `.fairway-ds` scope on a bg-canvas page.
  * ========================================================================== */
 
 import { forwardRef } from 'react';
@@ -60,15 +68,24 @@ export type GlassSurfaceKind =
  *   hero     — paint the faint green accent ring (the one editorial flourish).
  *   radius   — default corner radius for the surface (callers can override).
  */
+/** Frost strength. Maps to `.fw-frost-{tier}` in globals.css. */
+export type GlassSurfaceTier = 'subtle' | 'floating' | 'modal';
+
 const KIND_RECIPE: Record<
   GlassSurfaceKind,
-  { strength: 'regular' | 'strong'; hero: boolean; radius: string }
+  { tier: GlassSurfaceTier; hero: boolean; radius: string }
 > = {
-  'top-bar': { strength: 'regular', hero: false, radius: 'rounded-fw-lg' },
-  command: { strength: 'strong', hero: false, radius: 'rounded-fw-lg' },
-  hero: { strength: 'regular', hero: true, radius: 'rounded-card' },
-  overlay: { strength: 'strong', hero: false, radius: 'rounded-fw-lg' },
-  chrome: { strength: 'regular', hero: false, radius: 'rounded-full' },
+  'top-bar': { tier: 'subtle', hero: false, radius: 'rounded-fw-lg' },
+  command: { tier: 'modal', hero: false, radius: 'rounded-fw-lg' },
+  hero: { tier: 'floating', hero: true, radius: 'rounded-card' },
+  overlay: { tier: 'modal', hero: false, radius: 'rounded-fw-lg' },
+  chrome: { tier: 'subtle', hero: false, radius: 'rounded-full' },
+};
+
+const TIER_CLASS: Record<GlassSurfaceTier, string> = {
+  subtle: 'fw-frost fw-frost-subtle',
+  floating: 'fw-frost fw-frost-floating',
+  modal: 'fw-frost fw-frost-modal',
 };
 
 export interface GlassSurfaceProps
@@ -86,6 +103,16 @@ export interface GlassSurfaceProps
   animateIn?: boolean;
   /** Inner padding. Defaults to `p-6` (24px). Pass `null` for edge-to-edge. */
   padding?: 'none' | 'sm' | 'md' | 'lg' | null;
+  /** Frost strength. Defaults per `surface` (top-bar/chrome → subtle, hero →
+   *  floating, command/overlay → modal). */
+  tier?: GlassSurfaceTier;
+  /** Paint the lit top rim. Default `true`; off for a bar that touches the
+   *  viewport edge. */
+  edgeHighlight?: boolean;
+  /** `accent` adds the faint green ring (the hero's one flourish). */
+  tint?: 'neutral' | 'accent';
+  /** Hover lift for a floating control surface (pointer devices only). */
+  interactive?: boolean;
   children?: ReactNode;
 }
 
@@ -102,11 +129,25 @@ const PADDING: Record<'none' | 'sm' | 'md' | 'lg', string> = {
  */
 export const GlassSurface = forwardRef<HTMLDivElement, GlassSurfaceProps>(
   function GlassSurface(
-    { surface, animateIn = true, padding = 'md', className, children, style, ...props },
+    {
+      surface,
+      animateIn = true,
+      padding = 'md',
+      tier,
+      edgeHighlight = true,
+      tint,
+      interactive = false,
+      className,
+      children,
+      style,
+      ...props
+    },
     ref,
   ) {
     const prefersReducedMotion = useReducedMotion();
     const recipe = KIND_RECIPE[surface];
+    const resolvedTier = tier ?? recipe.tier;
+    const accent = tint === 'accent' || (tint === undefined && recipe.hero);
     const shouldAnimate = animateIn && !prefersReducedMotion;
 
     return (
@@ -122,10 +163,12 @@ export const GlassSurface = forwardRef<HTMLDivElement, GlassSurfaceProps>(
             ? { duration: 0.52, ease: [0.32, 0.72, 0, 1] /* --fw-ease-emph */ }
             : { duration: 0 }
         }
+        data-tier={resolvedTier}
         className={cn(
-          styles.glass,
-          recipe.strength === 'strong' && styles.glassStrong,
-          recipe.hero && styles.glassHero,
+          TIER_CLASS[resolvedTier],
+          !edgeHighlight && styles.noEdge,
+          accent && styles.glassHero,
+          interactive && styles.interactive,
           recipe.radius,
           'text-text-primary',
           padding ? PADDING[padding] : undefined,

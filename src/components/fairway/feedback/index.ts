@@ -15,6 +15,8 @@
  *   OnboardingStep    — numbered progressive step card (+ OnboardingSteps stepper).
  *   ReportProblemButton — opens Sentry's programmatic feedback form (no
  *                        floating widget); falls back to mailto + toast.
+ *   Progress          — completion of a PROCESS (role="progressbar").
+ *   Meter             — a static MEASURE against a range (role="meter").
  * ========================================================================== */
 
 export { ToastStack, fairwayToast } from './ToastStack';
@@ -55,3 +57,9 @@ export type { FeedbackTone, ToneStyle } from './tone';
 
 export { ReportProblemButton } from './ReportProblemButton';
 export type { ReportProblemButtonProps } from './ReportProblemButton';
+
+export { Progress } from './Progress';
+export type { ProgressProps, ProgressSize, ProgressTone } from './Progress';
+
+export { Meter } from './Meter';
+export type { MeterProps, MeterSize } from './Meter';

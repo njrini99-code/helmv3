@@ -262,12 +262,22 @@ export const ViewHeader = React.forwardRef<HTMLElement, ViewHeaderProps>(
         {/* ── Masthead: eyebrow + title + actions + description + meta ─────── */}
         <div
           className={cn(
-            "flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between",
-            compact ? "gap-3" : "gap-5",
+            // Phone: a two-column grid. The eyebrow and the action cluster
+            // share row one (icons top-right, where a phone expects them);
+            // the title, description and meta span both columns below. The
+            // title column is `contents` there so its children place
+            // themselves on the grid. A lone icon button used to render on
+            // its own line under the title with the full masthead gap above
+            // it (round review, the cockpit). From `sm` up: the original
+            // two-column flex row.
+            "max-sm:grid max-sm:grid-cols-[minmax(0,1fr)_auto] max-sm:items-start max-sm:gap-x-3",
+            compact ? "max-sm:gap-y-1" : "max-sm:gap-y-1.5",
+            "sm:flex sm:flex-row sm:items-start sm:justify-between",
+            compact ? "sm:gap-3" : "sm:gap-5",
           )}
         >
           {/* Title column */}
-          <div className={cn("flex min-w-0 flex-col", compact ? "gap-1" : "gap-1.5")}>
+          <div className={cn("flex min-w-0 flex-col max-sm:contents", compact ? "gap-1" : "gap-1.5")}>
             {eyebrow != null
               ? motionItem(
                   "eyebrow",
@@ -277,6 +287,7 @@ export const ViewHeader = React.forwardRef<HTMLElement, ViewHeaderProps>(
                   >
                     {eyebrow}
                   </p>,
+                  "max-sm:col-start-1 max-sm:row-start-1 max-sm:self-center",
                 )
               : null}
 
@@ -296,6 +307,10 @@ export const ViewHeader = React.forwardRef<HTMLElement, ViewHeaderProps>(
               >
                 {title}
               </TitleTag>,
+              // With an eyebrow the title spans both phone columns under the
+              // eyebrow/actions row; without one it shares row one with the
+              // actions.
+              eyebrow != null ? "max-sm:col-span-2" : "max-sm:col-start-1 max-sm:row-start-1",
             )}
 
             {description != null
@@ -318,6 +333,7 @@ export const ViewHeader = React.forwardRef<HTMLElement, ViewHeaderProps>(
                   >
                     {description}
                   </p>,
+                  "max-sm:col-span-2",
                 )
               : null}
 
@@ -330,6 +346,7 @@ export const ViewHeader = React.forwardRef<HTMLElement, ViewHeaderProps>(
                   >
                     {meta}
                   </div>,
+                  "max-sm:col-span-2",
                 )
               : null}
           </div>
@@ -366,7 +383,7 @@ export const ViewHeader = React.forwardRef<HTMLElement, ViewHeaderProps>(
                     </PrimarySlot>
                   ) : null}
                 </div>,
-                "sm:ml-auto",
+                "max-sm:col-start-2 max-sm:row-start-1 max-sm:justify-self-end sm:ml-auto",
               )
             : null}
         </div>

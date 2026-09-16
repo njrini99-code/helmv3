@@ -353,9 +353,14 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
     command = null;
   }
 
+  // Seeded once, server-side — `CoachIntelligenceHome`/`TriageDesk` format
+  // dates from this ISO string rather than reading the ambient clock during a
+  // client re-render (hydration-safety; see `formatRelativeScanTime`).
+  const now = new Date().toISOString();
+
   return (
     <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
-      <div className="mx-auto w-full max-w-[1200px] px-4 py-6 md:px-6">
+      <div className="mx-auto w-full max-w-[1440px] px-4 py-6 md:px-6">
         <CoachIntelligenceHome
           command={command}
           overview={overviewResult}
@@ -364,6 +369,7 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
           groups={signalGroups}
           scannedAt={signalGroupsResult.scannedAt}
           groupsError={signalGroupsError}
+          now={now}
           playersDrillProps={{
             players,
             focusAreas: focusAreasWithPlayers,

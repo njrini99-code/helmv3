@@ -79,6 +79,15 @@ Team page
   no geometry, and no real `<h1>` for a screen that never mounts.
   Reference implementation: `dashboard/alerts/loading.tsx`.
 
+Fairway Premium Facelift (2026-09, golf only): the coach roster page
+(`FairwayCoachRoster.tsx`) opens with one header `Surface`: a four-number
+`StatMatrix` strip (Players, Active focus, Completed, With recent rounds) across
+the top and the "Who needs your attention" seam rows under a hairline, computed
+by `roster-health.ts`. Below it a bare `Toolbar` (search, Needs attention
+filter, sort `Segmented`, export) and a `MatrixBoard` with row selection. The
+page keeps the shell's symmetric `md:px-6` gutter; launcher clearance is the
+shell's `md:pb-28`, not a page gutter.
+
 ## Known Risk Areas
 
 - Joining, approval, and active membership can drift if `golf_team_join_requests` and `golf_team_members` are not updated intentionally.

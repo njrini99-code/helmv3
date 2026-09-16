@@ -1,3 +1,5 @@
+import { formatRelativeTime } from '@/lib/utils';
+
 export interface TeamStatsFreshness {
   roundRefreshMinutes: number;
   statsCacheAsOf: string | null;
@@ -9,6 +11,31 @@ export interface TeamStatsFreshness {
 function formatUtc(timestamp: string): string {
   const match = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/.exec(timestamp);
   return match ? `${match[1]} ${match[2]} UTC` : timestamp;
+}
+
+function mostRecentTimestamp(timestamps: Array<string | null | undefined>): string | null {
+  const valid = timestamps.filter((timestamp): timestamp is string => {
+    if (!timestamp) return false;
+    return Number.isFinite(Date.parse(timestamp));
+  });
+  if (valid.length === 0) return null;
+  return valid.reduce((latest, timestamp) => (timestamp > latest ? timestamp : latest));
+}
+
+/**
+ * ONE relative line for a coach glancing at a phone ("Updated 2h ago") — a
+ * coach reads none of four raw UTC timestamps in a row (facelift
+ * REVIEW.md "Team stats, phone"). Built from the two sources that carry a
+ * genuine "as of" moment (stats cache, rank snapshot); the round-refresh
+ * cadence is a policy line, not a timestamp, and `oldestSignalInsightAsOf`
+ * is deliberately the OLDEST contributing source, so neither belongs in a
+ * "how fresh is this" headline — both still appear in the full detail line
+ * (`formatTeamStatsFreshness`) behind a Tooltip/Menu item.
+ */
+export function formatTeamStatsFreshnessHeadline(freshness: TeamStatsFreshness): string {
+  const latest = mostRecentTimestamp([freshness.statsCacheAsOf, freshness.standingAsOf]);
+  if (!latest) return `Refreshes within ${freshness.roundRefreshMinutes} min`;
+  return `Updated ${formatRelativeTime(latest)}`;
 }
 
 export function earliestTimestamp(timestamps: Array<string | null | undefined>): string | null {

@@ -96,9 +96,10 @@
 
   /* Shared Golf mobile shell sizing */
   --golf-mobile-header-offset: calc(4.5rem + env(safe-area-inset-top, 0px));
-  /* Floating navigation: 56px capsule, 8px top gap, and home-indicator clearance.
-     Share this measurement with content padding and fixed action offsets. */
-  --fw-mobile-nav-height: calc(64px + max(8px, env(safe-area-inset-bottom, 0px)));
+  /* Floating dock: a 60px frost capsule, a 10px float gap above the safe area,
+     and the home-indicator clearance. Share this measurement with content
+     padding and fixed action offsets (FairwayBottomNav owns the geometry). */
+  --fw-mobile-nav-height: calc(80px + env(safe-area-inset-bottom, 0px));
   --golf-mobile-bottom-nav-offset: var(--fw-mobile-nav-height);
 
   /* ── IMMERSIVE SURFACES ────────────────────────────────────────────────
@@ -1829,11 +1830,20 @@
     transition-property: transform, border-color, box-shadow, background-color;
     transition-duration: 220ms;
     transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* will-change scoped to the states that actually transform (2026-09-10
+     audit) — a permanent `will-change: transform` kept every card on this
+     class promoted to its own compositor layer for the whole page's life,
+     not just while hovered/focused. Keyboard focus needs its own rule since
+     it isn't gated by `(hover: hover)`. */
+  .surface-tile-hover:focus-visible {
     will-change: transform;
   }
 
   @media (hover: hover) {
     .surface-tile-hover:hover {
+      will-change: transform;
       transform: translateY(-1px);
       border-color: rgba(22, 163, 74, 0.22);
       box-shadow:
@@ -1848,7 +1858,9 @@
       transition: none;
     }
 
-    .surface-tile-hover:hover {
+    .surface-tile-hover:hover,
+    .surface-tile-hover:focus-visible {
+      will-change: auto;
       transform: none;
     }
   }
@@ -1965,9 +1977,19 @@
   }
 
   /* ===== PAGE TRANSITION ANIMATIONS ===== */
+  /* No `will-change` here (2026-09-10 audit): the CSSWG resolved will-change
+     itself is not animatable, so it cannot be cleared via @keyframes once
+     this one-shot animation ends — and `forwards` holds the class (and any
+     static will-change on it) forever after. A browser already promotes an
+     element to its own compositor layer for the DURATION of an actively-
+     running transform/opacity CSS animation without needing the hint (the
+     animation is declared right here, so the engine already knows); the
+     hint's only remaining effect on a class like this would be to keep that
+     promotion alive indefinitely post-animation, which is the leak this
+     removes. See `.surface-tile-hover` above for a case that legitimately
+     needs the hint (an anticipated, repeated hover/focus transform). */
   .animate-page-enter {
     animation: page-enter var(--fw-dur-base, 280ms) var(--fw-ease-glide, cubic-bezier(0.16, 1, 0.3, 1)) forwards;
-    will-change: opacity, transform;
   }
 
   @keyframes page-enter {
@@ -1996,9 +2018,9 @@
     }
   }
 
+  /* No `will-change` — see .animate-page-enter above. */
   .animate-fade-in-up {
     animation: fade-in-up var(--fw-dur-base, 280ms) var(--fw-ease-soft, ease-out) forwards;
-    will-change: opacity, transform;
   }
 
   @keyframes fade-in-up {
@@ -2026,9 +2048,9 @@
     }
   }
 
+  /* No `will-change` — see .animate-page-enter above. */
   .animate-slide-in-up {
     animation: slide-in-up var(--fw-dur-base, 280ms) var(--fw-ease-soft, ease-out) forwards;
-    will-change: opacity, transform;
   }
 
   @keyframes slide-in-up {
@@ -2067,6 +2089,10 @@
     .animate-scale-in {
       animation-duration: 1ms;
       animation-timing-function: linear;
+      /* auto is the initial value — none of these classes declare
+         will-change any more (2026-09-10), so this line is now a no-op.
+         Left in place rather than removed: harmless, and it's the correct
+         value should a future edit reintroduce one above. */
       will-change: auto;
     }
   }
@@ -3219,13 +3245,179 @@ html[data-baseball-branded='true'] .baseball-shell .nav-item-active-icon {
   animation: fw-message-actions-out 120ms ease-in forwards;
 }
 
-/* Navigation and message controls share one fixed glass treatment. */
+/* Navigation and message controls share one fixed glass treatment.
+   2026-09-10: this is now an ALIAS of the Fairway Frost subtle tier (same
+   tint, saturation, blur and edge light as `.fw-frost-subtle`) so the 19
+   existing consumers stop carrying a second recipe. It deliberately sets only
+   paint properties (no `position`/`isolation`) so consumer layout is
+   untouched. New chrome uses `.fw-frost fw-frost-subtle` or GlassSurface. */
 .fw-glass-chrome {
-  background-color: var(--fw-glass-bg-strong);
-  background-image: linear-gradient(160deg, var(--fw-glass-highlight), transparent 48%);
-  border-color: var(--fw-glass-border);
-  -webkit-backdrop-filter: blur(16px) saturate(var(--fw-glass-saturate));
-  backdrop-filter: blur(16px) saturate(var(--fw-glass-saturate));
+  background: var(--fw-frost-bg-subtle);
+  border-color: var(--fw-frost-rim);
+  -webkit-backdrop-filter: blur(var(--fw-frost-blur-sm)) saturate(var(--fw-frost-saturate));
+  backdrop-filter: blur(var(--fw-frost-blur-sm)) saturate(var(--fw-frost-saturate));
+  box-shadow: inset 0 1px 0 0 var(--fw-frost-edge-top);
+}
+
+/* ── FAIRWAY FROST — the floating material (design-tokens.css, "FAIRWAY FROST").
+   `.fw-frost` carries the five ingredients; a tier class picks the strength.
+   A frosted object is a LAYER above content: chrome, dock, toolbar, sheet,
+   popover. Resting content stays matte (Surface). Never glass-on-glass. */
+.fw-frost {
+  isolation: isolate;
+  background: var(--fw-frost-bg-floating);
+  border: 1px solid var(--fw-frost-rim);
+  -webkit-backdrop-filter: blur(var(--fw-frost-blur-md)) saturate(var(--fw-frost-saturate));
+  backdrop-filter: blur(var(--fw-frost-blur-md)) saturate(var(--fw-frost-saturate));
+  box-shadow:
+    inset 0 1px 0 0 var(--fw-frost-edge-top),
+    inset 0 -1px 0 0 var(--fw-frost-edge-bot),
+    var(--fw-frost-shadow-floating);
+}
+.fw-frost-subtle {
+  background: var(--fw-frost-bg-subtle);
+  -webkit-backdrop-filter: blur(var(--fw-frost-blur-sm)) saturate(var(--fw-frost-saturate));
+  backdrop-filter: blur(var(--fw-frost-blur-sm)) saturate(var(--fw-frost-saturate));
+  box-shadow:
+    inset 0 1px 0 0 var(--fw-frost-edge-top),
+    inset 0 -1px 0 0 var(--fw-frost-edge-bot),
+    var(--fw-frost-shadow-subtle);
+}
+.fw-frost-floating {
+  background: var(--fw-frost-bg-floating);
+  -webkit-backdrop-filter: blur(var(--fw-frost-blur-lg)) saturate(var(--fw-frost-saturate));
+  backdrop-filter: blur(var(--fw-frost-blur-lg)) saturate(var(--fw-frost-saturate));
+}
+.fw-frost-modal {
+  background: var(--fw-frost-bg-modal);
+  -webkit-backdrop-filter: blur(var(--fw-frost-blur-modal)) saturate(var(--fw-frost-saturate));
+  backdrop-filter: blur(var(--fw-frost-blur-modal)) saturate(var(--fw-frost-saturate));
+  box-shadow:
+    inset 0 1px 0 0 var(--fw-frost-edge-top),
+    var(--fw-frost-shadow-modal);
+}
+/* A full-bleed bar (sticky chrome) keeps the rim only on its foot. */
+.fw-frost-bar {
+  border-width: 0 0 1px 0;
+  border-bottom-color: var(--fw-glass-border-bot);
+  box-shadow:
+    inset 0 1px 0 0 var(--fw-frost-edge-top),
+    var(--fw-frost-shadow-subtle);
+}
+/* `.fw-frost-static` — the subtle frost tier's bg/border/edge-light recipe
+   with NO `backdrop-filter` at all (2026-09-10 audit). For a sticky header
+   or footer that scrolls WITH the content underneath it (unlike a resting
+   overlay), the compositor re-samples any backdrop-filter on it every
+   scroll frame — the blur itself is the cost there, not just its size, so
+   the mobile downshift on `.fw-glass-chrome`/`.fw-frost-subtle` isn't
+   enough. Use this instead of `.fw-glass-chrome`/`.fw-frost-subtle` for
+   sticky chrome that scrolls; it never needs the mobile-blur or reduced-
+   transparency `backdrop-filter: none` overrides below since it never sets
+   one. */
+.fw-frost-static {
+  background: var(--fw-frost-bg-subtle);
+  border: 1px solid var(--fw-frost-rim);
+  box-shadow:
+    inset 0 1px 0 0 var(--fw-frost-edge-top),
+    inset 0 -1px 0 0 var(--fw-frost-edge-bot),
+    var(--fw-frost-shadow-subtle);
+}
+/* Tinted-glass selection capsule: green shows through the frost. */
+/* Frost surfaces need a positioned box for their edge light, but this file
+   sits outside Tailwind's layers, so a bare `position: relative` here beat
+   the `fixed`/`sticky`/`absolute` utilities on any element carrying the
+   class directly: a frost Sheet panel rendered at the bottom of the
+   document and a sticky frost toolbar never stuck (2026-09-10). Elements
+   that position themselves keep their own value. */
+.fw-frost:where(:not(.fixed, .sticky, .absolute)),
+.fw-frost-static:where(:not(.fixed, .sticky, .absolute)) {
+  position: relative;
+}
+
+.fw-frost-selection {
+  background: var(--fw-frost-selection-bg);
+  border-color: var(--fw-frost-selection-rim);
+  box-shadow:
+    inset 0 1px 0 0 rgb(255 255 255 / 0.30),
+    var(--fw-shadow-control);
+}
+/* Contact zone under a floating dock: content fades into the canvas before it
+   reaches the dock, so the dock reads as hovering above the page. */
+.fw-dock-fade {
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    color-mix(in oklch, var(--fw-color-canvas) 78%, transparent) 55%,
+    color-mix(in oklch, var(--fw-color-canvas) 94%, transparent) 100%
+  );
+}
+/* Phones: cheaper blur, same material. */
+@media (max-width: 768px) {
+  .fw-frost,
+  .fw-frost-floating {
+    -webkit-backdrop-filter: blur(var(--fw-frost-blur-md)) saturate(var(--fw-frost-saturate));
+    backdrop-filter: blur(var(--fw-frost-blur-md)) saturate(var(--fw-frost-saturate));
+  }
+  .fw-frost-modal {
+    -webkit-backdrop-filter: blur(var(--fw-frost-blur-lg)) saturate(var(--fw-frost-saturate));
+    backdrop-filter: blur(var(--fw-frost-blur-lg)) saturate(var(--fw-frost-saturate));
+  }
+  /* `.fw-glass-chrome` is used on STICKY headers/footers inside scrolling
+     sheet bodies (FairwayHubSubNav, MessageThreadPane's header, the
+     calendar drawers' sticky chrome, …) — a surface the compositor
+     re-touches on every scroll frame, not a resting overlay. It already
+     sits at the cheapest defined frost tier (`--fw-frost-blur-sm`, 14px —
+     `--fw-blur-mobile` is 16px, i.e. LARGER, so that token doesn't help
+     here). There is no smaller named tier, so this is a literal rather
+     than a token; a `--fw-frost-blur-xs` token would be the better long-
+     term home for it if a second consumer needs the same value.
+     2026-09-10 audit. */
+  .fw-glass-chrome {
+    -webkit-backdrop-filter: blur(8px) saturate(var(--fw-frost-saturate));
+    backdrop-filter: blur(8px) saturate(var(--fw-frost-saturate));
+  }
+}
+/* Apple's accessibility lesson: collapse to an opaque matte plane; depth then
+   comes from the shadow, never from translucency. */
+@media (prefers-reduced-transparency: reduce) {
+  .fw-frost,
+  .fw-frost-subtle,
+  .fw-frost-floating,
+  .fw-frost-modal,
+  .fw-frost-static {
+    background: var(--fw-color-surface);
+    border-color: var(--fw-color-border-subtle);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: var(--fw-shadow-soft);
+  }
+  .fw-frost-selection {
+    background: var(--fw-color-accent-500);
+    color: var(--fw-color-text-on-accent);
+  }
+  .fw-dock-fade {
+    background: linear-gradient(180deg, transparent, var(--fw-color-canvas) 60%);
+  }
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .fw-frost,
+  .fw-frost-subtle,
+  .fw-frost-floating,
+  .fw-frost-modal {
+    background: var(--fw-glass-bg-strong);
+  }
+}
+@media (forced-colors: active) {
+  .fw-frost,
+  .fw-frost-subtle,
+  .fw-frost-floating,
+  .fw-frost-modal,
+  .fw-frost-static {
+    background: Canvas;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: none;
+  }
 }
 .fw-nav-selection,
 .fw-message-filters [data-slot='fw-segment-pill'] {

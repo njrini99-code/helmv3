@@ -9,6 +9,14 @@
  * `emphasis` marks the standout column (best round, current hole) in full
  * accent-500; the rest sit in a dim accent-200 wash.
  *
+ * `tone` (home.v2.md §6, additive): when an item carries a sign-colored
+ * `tone` ('good'/'even'/'over'), it wins over the plain `emphasis` wash —
+ * the strip reads by SIGN (better/worse/even than the window's baseline)
+ * rather than "one bar highlighted, nine identical dim bars". Omitting
+ * `tone` (every item, on every item) renders BYTE-IDENTICAL to before —
+ * this is what keeps `FairwayRoundsLibrary`'s own call site, which never
+ * passes `tone`, unchanged.
+ *
  * Entrance: each chip slides/fades up from the baseline on mount, staggered
  * left→right. This can carry as many items as there are holes (18), so —
  * like `Filmstrip` — it uses a compressed, capped stagger step rather than
@@ -20,7 +28,7 @@ import { loadFeatures } from '@/lib/motion/load-features';
 import { cn } from '@/lib/utils';
 import { clampPct } from './logic';
 import { EASE_CINEMATIC, DURATION, useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
-import type { TickerStripProps } from './types';
+import type { TickerItem, TickerStripProps } from './types';
 
 // See Filmstrip.tsx for the same reasoning — a wide row of siblings needs a
 // tighter step than the canonical 70ms one to keep the whole reveal fast.
@@ -30,11 +38,23 @@ function tickerStagger(i: number): number {
   return Math.min(i, TICKER_STAGGER_CAP) * TICKER_STAGGER_STEP;
 }
 
+/** Sign-colored fill for a `tone`d item — wins over the plain `emphasis` wash. */
+const TONE_FILL: Record<NonNullable<TickerItem['tone']>, string> = {
+  good: 'bg-accent-500',
+  over: 'bg-fw-warning',
+  even: 'bg-surface-sunken',
+};
+
 export function TickerStrip({ items }: TickerStripProps) {
   const prefersReducedMotion = useReducedMotionGuard();
   return (
     <LazyMotion features={loadFeatures}>
-      <div data-slot="ticker-strip" className="mt-1 flex h-14 items-end gap-1.5">
+      {/* `pt-5` (was `mt-1`): the label is absolutely positioned `-top-4`
+          relative to each bar, so it needs room INSIDE this container —
+          `mt-1` only pushed the container itself down 4px, which was not
+          enough clearance and let the topmost labels collide with the
+          card edge above them (REVIEW.md coach-home/26). */}
+      <div data-slot="ticker-strip" className="pt-5 flex h-14 items-end gap-1.5">
         {items.map((item, i) => (
           <m.div
             key={`${item.label}-${i}`}
@@ -43,7 +63,7 @@ export function TickerStrip({ items }: TickerStripProps) {
             transition={{ duration: DURATION.short, delay: tickerStagger(i), ease: EASE_CINEMATIC }}
             className={cn(
               'relative flex-1 rounded-t-fw-sm',
-              item.emphasis ? 'bg-accent-500' : 'bg-accent-200',
+              item.tone ? TONE_FILL[item.tone] : item.emphasis ? 'bg-accent-500' : 'bg-accent-200',
             )}
             style={{ height: `${Math.max(4, clampPct(item.heightPct))}%` }}
           >

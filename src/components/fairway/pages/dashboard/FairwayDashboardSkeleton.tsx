@@ -2,78 +2,22 @@
 
 /**
  * ============================================================================
- * Fairway · pages/dashboard · FairwayDashboardSkeleton  (ADDITIVE · FLAG-GATED)
+ * Fairway · pages/dashboard · FairwayDashboardSkeleton
  * ----------------------------------------------------------------------------
- * Shared `loading.tsx` shell for BOTH `/golf/dashboard` roles. Role isn't known
- * until the async page component resolves `getGolfSessionProfile()` server-side
- * (see session.ts), so this skeleton renders before the coach/player fork and
- * must not commit to either FairwayCoachDashboard's or FairwayPlayerDashboard's
- * exact section list.
- *
- * Composition (deliberately GENERIC, not a section-by-section mirror):
- *   1. Masthead — ViewHeader-shaped: eyebrow + Fraunces title + description +
- *      the promoted action cluster. Both dashboards render a ViewHeader here,
- *      so this part IS a safe shape-match for either role.
- *   2. Schedule band — a day-strip + reserved day panel standing in for the
- *      schedule block BOTH roles render before their KPI row (player:
- *      DayScheduleSwipe; coach: TodayPanel). This region used to be absent,
- *      so the skeleton put KPI directly under the masthead while both real
- *      layouts put a schedule there — every single load paid a structural
- *      swap, on the one region the two roles actually agree about. The 132px
- *      body height is DayScheduleSwipe's own reserved min-height, so the real
- *      card lands on these pixels rather than near them.
- *   3. KPI row  — a neutral 2/4-up MetricCard `loading` grid. Both dashboards
- *      render exactly four MetricCard tiles in their KPI row (coach: Scoring
- *      Avg / GIR % / Putts / Roster; player: Scoring avg / GIR / Putts /
- *      Handicap) — same tile COUNT and shape either way.
- *
- *      KNOWN, ACCEPTED SWAP: a player with zero rounds played renders no KPI
- *      grid at all (FairwayPlayerDashboard's cold-start branch), so for that
- *      one account state these four shells are never fulfilled. The skeleton
- *      cannot tell — role AND round count are both server-resolved after this
- *      renders — and dropping the grid would trade one account state's swap
- *      for every other account's. Keeping it is the deliberate choice.
- *   4. Two balanced content columns — a generic pair of matte Panel groups
- *      (one "chart/list" block + one row-list block per column) standing in
- *      for whatever the resolved role actually renders below the KPI row
- *      (coach: Today / Recent Rounds / Action Items / Team region; player:
- *      hero / trend / genome / standing / Today / recent rounds / focus
- *      areas). Neither role's real layout is reproduced exactly — that would
- *      require knowing the role before the page has resolved it — but the
- *      two-column, evenly-weighted shape reads as a calm placeholder for
- *      either outcome instead of visibly "coach-shaped" chrome flashing on a
- *      player's first load (or vice versa).
- *
- * Previously (pre-2026-07-22) this skeleton mirrored FairwayCoachDashboard's
- * exact 7-region layout 1:1, including a `<InsightCard variant="hero" loading>`
- * slot for the coach "CoachHelm signal" hero. That hero was removed from
- * FairwayCoachDashboard (coach-signal.ts is now dead code, deleted) — the old
- * skeleton kept reserving its space, so first paint on the coach dashboard
- * shifted once the real (hero-less) page took over. This rewrite drops that
- * slot, and the rest of the coach-only section mirroring, in the same pass.
- *
- * Tokens only (bg-canvas / bg-surface / border-border-subtle / rounded-card),
- * Skeleton primitives for the shimmer (banned: spinners, arbitrary hex). The
- * whole group carries the loading a11y contract via the Skeleton groups.
+ * Shared `loading.tsx` shell for BOTH `/golf/dashboard` roles (and, via
+ * `golf/loading.tsx`, several other routes' parent boundary). Role isn't
+ * known until the async page resolves the session, so this paints the
+ * field-sheet silhouette both homes now share
+ * (docs/design/fairway-facelift/LANGUAGE.md): a bare masthead (eyebrow,
+ * title, verdict, facts), one stage Surface with an instrument on the left
+ * and readouts on the right, a three column ledger row, then a table.
+ * Widths and vertical rhythm match FairwayCoachDashboard so the resolved
+ * page lands on these pixels instead of reflowing past them.
  * ========================================================================== */
 
-import { Skeleton, MetricCard } from '@/components/fairway';
+import { Skeleton } from '@/components/fairway';
 
-/** A matte Fairway Surface-shaped block (border elevation, rounded-card). */
-function Panel({
-  className,
-  children,
-  ...rest
-}: { className?: string; children?: React.ReactNode } & React.HTMLAttributes<HTMLDivElement>) {
-  return (
-    <div
-      {...rest}
-      className={`rounded-card border border-border-subtle bg-surface ${className ?? ''}`}
-    >
-      {children}
-    </div>
-  );
-}
+const ROW_WIDTHS = [72, 64, 80, 58, 70, 66, 76, 60];
 
 export function FairwayDashboardSkeleton() {
   return (
@@ -81,120 +25,109 @@ export function FairwayDashboardSkeleton() {
       role="status"
       aria-busy="true"
       aria-live="polite"
-      className="mx-auto flex w-full max-w-[1200px] flex-col gap-8 px-5 py-8 md:gap-10 md:px-8 md:py-10"
+      className="mx-auto flex w-full max-w-[1200px] flex-col px-5 pt-6 pb-10 md:px-8 md:pt-8 md:pb-28"
     >
       <span className="sr-only">Loading dashboard…</span>
 
-      {/* ── 1 · Masthead — ViewHeader PLINTH silhouette (shared by both roles)
-          Every class here is copied from what ViewHeader actually renders with
-          `plinth` at default size, so the real header lands on exactly these
-          pixels rather than near them:
-            plinth band   `rounded-fw-lg bg-surface-tint px-8 py-7` + `gap-4`
-            masthead row  `flex flex-col gap-5 sm:flex-row sm:items-start
-                           sm:justify-between`
-            title column  `flex min-w-0 flex-col gap-1.5`
-          The plinth is rendered as a REAL tinted band, not a shimmer block:
-          `bg-surface-tint` is chrome the resolved header keeps, so painting it
-          here means the band is simply already there when the text arrives. */}
-      <div className="flex w-full flex-col gap-4 rounded-fw-lg bg-surface-tint px-6 py-5 md:px-8 md:py-7">
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-          <div className="flex min-w-0 flex-col gap-1.5">
-            {/* eyebrow → title → description, on the header's own 1.5 rhythm */}
-            <Skeleton className="h-3 w-36" />
-            <Skeleton className="h-9 w-64 max-w-full" />
-            <Skeleton className="h-4 w-48 max-w-full" />
-            {/* meta row — the opener's fact chips */}
-            <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1.5">
-              <Skeleton className="h-3.5 w-20" />
-              <Skeleton className="h-3.5 w-28" />
-              <Skeleton className="h-3.5 w-24" />
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Skeleton className="h-9 w-28 rounded-full" />
-            <Skeleton className="h-9 w-28 rounded-full" />
-            <Skeleton className="h-9 w-32 rounded-full" />
+      {/* Masthead: eyebrow row with actions, title, verdict, facts. */}
+      <div aria-hidden="true" className="flex flex-col gap-3">
+        <div className="flex items-center justify-between gap-3">
+          <Skeleton className="h-3 w-56 max-w-full" />
+          <div className="flex items-center gap-2">
+            <Skeleton circle className="h-10 w-10" />
+            <Skeleton className="h-10 w-32 rounded-full" />
           </div>
         </div>
+        <Skeleton className="h-9 w-72 max-w-full md:h-11" />
+        <Skeleton className="h-6 w-full max-w-[40rem] md:h-7" />
+        <Skeleton className="mt-1 h-3.5 w-80 max-w-full" />
       </div>
 
-      {/* ── 2 · Schedule band — the first region both roles agree on. Player
-          mounts DayScheduleSwipe, coach mounts TodayPanel; both sit ABOVE the
-          KPI row, so the placeholder has to as well or first paint reshuffles
-          on handoff. Day-chip strip + a body reserved at DayScheduleSwipe's
-          own min-h-[132px] (~2 event rows). ──────────────────────────────── */}
-      <Panel aria-hidden="true" className="flex flex-col gap-4 p-4 md:p-5">
-        <div className="flex items-center justify-between gap-3">
-          <Skeleton className="h-4 w-28" />
-          <Skeleton className="h-3.5 w-20" />
+      {/* The stage: header row, then instrument rows beside a readouts column. */}
+      <div aria-hidden="true" className="mt-10 overflow-hidden rounded-card border border-border-subtle bg-surface">
+        <div className="flex flex-wrap items-end justify-between gap-3 border-b border-border-subtle px-5 py-4 md:px-6">
+          <div className="flex flex-col gap-2">
+            <Skeleton className="h-3 w-28" />
+            <Skeleton className="h-7 w-40" />
+            <Skeleton className="h-3 w-80 max-w-full" />
+          </div>
+          <Skeleton className="h-8 w-56 max-w-full rounded-full" />
         </div>
-        <div className="flex items-center gap-1.5">
-          {Array.from({ length: 7 }).map((_, i) => (
-            <Skeleton key={i} className="h-12 flex-1 rounded-fw-sm" />
-          ))}
-        </div>
-        <div className="flex min-h-[132px] flex-col gap-2">
-          {Array.from({ length: 2 }).map((_, i) => (
-            <div key={i} className="flex items-start gap-3 rounded-fw-md bg-surface-sunken px-3 py-3">
-              <Skeleton circle className="mt-0.5 h-4 w-4 shrink-0" />
-              <div className="flex flex-1 flex-col gap-1.5">
-                <Skeleton className="h-3.5 flex-1" style={{ maxWidth: `${68 - i * 16}%` }} />
+        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_15rem] xl:divide-x xl:divide-border-subtle">
+          <div className="order-2 flex flex-col px-5 py-4 md:px-6 md:py-5 xl:order-1">
+            {ROW_WIDTHS.map((w, i) => (
+              <div key={i} className="flex items-center gap-3 border-b border-border-subtle py-2 last:border-b-0 md:py-1.5">
+                <Skeleton circle className="h-6 w-6 shrink-0" />
+                <Skeleton className="h-3.5 w-24 shrink-0" />
+                <div className="relative h-8 flex-1">
+                  <span className="absolute inset-x-0 top-1/2 h-px bg-border-subtle" />
+                </div>
+                <Skeleton className="h-3.5 w-8 shrink-0" />
+                <Skeleton className="h-3.5 shrink-0" style={{ width: `${w / 2}px` }} />
+              </div>
+            ))}
+            <div className="mt-2 flex justify-between">
+              <Skeleton className="h-2.5 w-8" />
+              <Skeleton className="h-2.5 w-8" />
+              <Skeleton className="h-2.5 w-8" />
+              <Skeleton className="h-2.5 w-10" />
+            </div>
+          </div>
+          <div className="order-1 grid grid-cols-2 gap-x-6 border-b border-border-subtle px-5 py-4 md:grid-cols-4 md:px-6 md:py-5 xl:order-2 xl:flex xl:grid-cols-none xl:flex-col xl:divide-y xl:divide-border-subtle xl:border-b-0">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="flex flex-col gap-2 py-2 xl:py-3.5 xl:first:pt-0 xl:last:pb-0">
+                <Skeleton className="h-2.5 w-20" />
+                <div className="flex items-end justify-between gap-3">
+                  <Skeleton className="h-7 w-16" />
+                  <Skeleton className="h-5 w-16" />
+                </div>
                 <Skeleton className="h-3 w-24" />
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </Panel>
-
-      {/* ── 3 · KPI row — neutral 2/4-up MetricCard shells; both roles render
-          exactly four tiles here (see file doc, including the documented
-          cold-start-player exception) ────────────────────────────────────── */}
-      <div aria-hidden="true" className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <MetricCard label="" value={0} loading />
-        <MetricCard label="" value={0} loading />
-        <MetricCard label="" value={0} loading />
-        <MetricCard label="" value={0} loading />
       </div>
 
-      {/* ── 4 · Two balanced content columns — generic, role-agnostic panel
-          groups (see file doc for why this isn't a coach- or player-specific
-          section mirror) ──────────────────────────────────────────────────── */}
-      <div aria-hidden="true" className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="flex flex-col gap-6">
-          <Panel className="flex flex-col gap-4 p-6">
-            <Skeleton className="h-5 w-36" />
-            <Skeleton className="h-44 w-full rounded-fw-md" />
-          </Panel>
-          <Panel className="flex flex-col gap-2 p-4">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div
-                key={i}
-                className="flex items-center gap-3 rounded-fw-md bg-surface-sunken px-4 py-3"
-              >
-                <Skeleton circle className="h-8 w-8" />
-                <Skeleton className="h-3.5 flex-1" style={{ maxWidth: `${62 - i * 10}%` }} />
-                <Skeleton className="h-3.5 w-12" />
+      {/* Ledger row: three bare columns. */}
+      <div aria-hidden="true" className="mt-12 grid grid-cols-1 gap-y-10 md:grid-cols-2 md:gap-x-8 xl:grid-cols-12 xl:gap-x-0 xl:gap-y-0 xl:divide-x xl:divide-border-subtle">
+        {/* Static class strings: Tailwind cannot extract an interpolated `xl:col-span-${n}`. */}
+        {[
+          'xl:col-span-4 xl:pr-8 2xl:col-span-5',
+          'xl:col-span-4 xl:px-8 2xl:col-span-3',
+          'md:col-span-2 xl:col-span-4 xl:pl-8',
+        ].map((span, col) => (
+          <div key={col} className={`flex flex-col gap-3 ${span}`}>
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-5 w-24" />
+              <Skeleton className="h-3.5 w-14" />
+            </div>
+            <div className="h-px w-full bg-border-subtle" />
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-3 py-1.5">
+                <Skeleton className="h-3.5 flex-1" style={{ maxWidth: `${ROW_WIDTHS[(i + col) % ROW_WIDTHS.length] ?? 64}%` }} />
+                <Skeleton className="h-3 w-10" />
               </div>
             ))}
-          </Panel>
+          </div>
+        ))}
+      </div>
+
+      {/* Table. */}
+      <div aria-hidden="true" className="mt-12 flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-5 w-32" />
+          <Skeleton className="h-3.5 w-20" />
         </div>
-        <div className="flex flex-col gap-6">
-          <Panel className="flex flex-col gap-4 p-6">
-            <Skeleton className="h-5 w-32" />
-            <Skeleton className="h-44 w-full rounded-fw-md" />
-          </Panel>
-          <Panel className="flex flex-col gap-2 p-4">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="flex items-start gap-3 rounded-fw-md px-3 py-2.5">
-                <Skeleton circle className="mt-0.5 h-4 w-4 shrink-0" />
-                <div className="flex flex-1 flex-col gap-1.5">
-                  <Skeleton className="h-3.5 flex-1" style={{ maxWidth: `${70 - i * 15}%` }} />
-                  <Skeleton className="h-3 w-16" />
-                </div>
-              </div>
-            ))}
-          </Panel>
-        </div>
+        <div className="h-px w-full bg-border-subtle" />
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="flex items-center gap-4 border-b border-border-subtle py-2.5">
+            <Skeleton className="h-3.5 w-12" />
+            <Skeleton className="h-3.5 flex-1" style={{ maxWidth: `${(ROW_WIDTHS[i % ROW_WIDTHS.length] ?? 64) / 2}%` }} />
+            <Skeleton className="hidden h-3.5 w-32 md:block" />
+            <Skeleton className="h-3.5 w-8" />
+            <Skeleton className="h-3.5 w-8" />
+          </div>
+        ))}
       </div>
     </div>
   );

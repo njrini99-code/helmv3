@@ -27,7 +27,7 @@
 import { useEffect, useState } from 'react';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { Surface } from '@/components/fairway/surfaces';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/fairway/controls/button';
 import { isNativeApp, triggerHaptic } from '@/lib/utils/capacitor';
 import { fwHaptic, fwHapticSequence, type FwHapticSequence } from '@/lib/fairway/haptics';
 import { getNativeAppInfo, hasNativeCapability, type NativeAppInfo } from '@/lib/native/capabilities';

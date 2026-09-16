@@ -44,8 +44,8 @@ vi.mock('../PlayerSpine', () => ({
 vi.mock('../PlayerHomeBento', () => ({
   PlayerHomeBento: () => <div data-testid="player-home-bento" />,
 }));
-vi.mock('../DevelopmentDrill', () => ({
-  DevelopmentDrill: () => <div data-testid="development-drill" />,
+vi.mock('@/components/fairway/pages/coachhelm/FairwayMyDevelopment', () => ({
+  FairwayMyDevelopmentStage: () => <div data-testid="development-drill" />,
 }));
 vi.mock('../ProfileDrill', () => ({
   ProfileDrill: () => <div data-testid="profile-drill" />,
@@ -178,7 +178,7 @@ describe('PlayerCoachHelmHome — hasData empty-state gate (Task D #1)', () => {
   // FIX 3: developmentCompletedAreas was missing from the hasData OR-chain —
   // a player whose only CoachHelm artifact is completed focus areas (every
   // active/proposed area finished) fell through to the whole-page empty
-  // state, even though DevelopmentDrill has a real "Completed" section.
+  // state, even though FairwayMyDevelopment has a real "Completed" section.
   it('renders the stage when only developmentCompletedAreas is populated', () => {
     render(
       <PlayerCoachHelmHome

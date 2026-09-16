@@ -28,9 +28,14 @@
  *   • golf_holes.yardage is NULL → the yardage column is omitted entirely (not
  *     shown as 0).
  *   • A round with no review row yet → the readouts still render from
- *     golf_rounds and the scorecard from golf_holes; only the "areas to work on"
- *     block degrades to an EmptyState with the "Open full review" CTA. We never
+ *     golf_rounds and the scorecard from golf_holes; the "areas to work on"
+ *     RxCard simply does not render (no EmptyState placeholder, no second
+ *     "Open full review" CTA duplicating the header/sticky one). We never
  *     invent highlights or recommendations.
+ *   • A round with no hole data (scorecard-only) collapses the score
+ *     instrument's Filmstrip + StatMatrix breakdown to ONE InlineNotice
+ *     ("Scorecard only — enter holes to unlock the breakdown") — never five
+ *     empty cards of zeros/dashes.
  *
  * Coach vs player: identical surface. A coach viewing a teammate's round sees a
  * subtle "Viewing {PlayerName}'s round" attribution line; there are no coach-
@@ -45,29 +50,39 @@
 import { useMemo, useState } from 'react';
 import { cleanCourseName } from '@/lib/golf/course-name';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion, useReducedMotion } from 'framer-motion';
 
 import {
   ViewHeader,
-  InstrumentCluster,
   InstrumentPanel,
   Readout,
   Surface,
-  Inset,
-  EmptyState,
   Button,
+  IconButton,
+  Menu,
+  RxCard,
+  StatMatrix,
+  Filmstrip,
+  GradeDots,
+  InlineNotice,
+  DeltaChip,
+  gradeDotsForDelta,
+  gradeLabel,
   VIZ_COLOR,
   VIZ_EASE,
   VIZ_REVEAL_MS,
   TABULAR_NUMS,
   formatPercent,
   chartAriaLabel,
+  type FilmstripHole,
   type ChartTableData,
 } from '@/components/fairway';
+import { MoreHorizontal } from 'lucide-react';
 import { InstrumentTable } from '@/components/fairway/charts/InstrumentTable';
 import { classifyTrend, TREND_COLOR } from '@/components/fairway/charts/TrendChip';
 import { cn } from '@/lib/utils';
-import { formatDateOnlyWeekdayLong, formatDateOnlyFull } from '@/lib/golf/date-only';
+import { formatDateOnlyWeekdayLong, formatDateOnly } from '@/lib/golf/date-only';
 import { deriveRoundTotalsFromHoles } from '@/lib/golf/round-total';
 import { formatToPar } from '@/lib/golf/format-to-par';
 import {
@@ -223,7 +238,13 @@ export function FairwayRoundDetail({
   viewerIsCoach = false,
   qualifierReadFailed = false,
 }: FairwayRoundDetailProps) {
+  const router = useRouter();
   const reviewHref = `/golf/dashboard/rounds/${round.id}/review`;
+
+  // Overflow menu's "Change round type" opens this parent-controlled panel
+  // (RoundTypeEditor.tsx) instead of a standalone trigger button living
+  // beside the masthead.
+  const [typeEditorOpen, setTypeEditorOpen] = useState(false);
 
   // ── Masthead copy ──────────────────────────────────────────────────────────
   // round_date is a DATE column ('YYYY-MM-DD'). Parsed + formatted through the
@@ -232,10 +253,19 @@ export function FairwayRoundDetail({
   // row on the calendar day (#916: a sibling surface's un-pinned formatter
   // read the previous day west of UTC).
   const dayOfWeek = formatDateOnlyWeekdayLong(round.round_date);
-  const dateLabel = formatDateOnlyFull(round.round_date);
+  // Short form ("Aug 31, 2026") — this is the DETAIL page's own eyebrow, not
+  // the /review route's "Round Review" masthead; keep it terse (#rounds-polish).
+  const dateLabel = formatDateOnly(round.round_date, { month: 'short', day: 'numeric', year: 'numeric' });
   const heroTitle = `${dayOfWeek} at ${shortCourse(round.course_name)}`;
   const holesPlayed = round.holes_played ?? 18;
-  const contextLine = `${roundTypeLabel(round.round_type)} · ${holesPlayed} holes · ${playerName}`;
+  // ONE meta line under the title (#rounds-polish row 19): the player used to
+  // be named a THIRD time via a separate "Viewing {player}'s round" ViewHeader
+  // `meta` line — folded into this single description line instead so a coach
+  // viewing a teammate's round still gets that framing, without a second row.
+  const contextLine =
+    isCoach && !viewerIsOwner
+      ? `${roundTypeLabel(round.round_type)} · ${holesPlayed} holes · Viewing ${playerName}’s round`
+      : `${roundTypeLabel(round.round_type)} · ${holesPlayed} holes · ${playerName}`;
 
   // ── Hero readouts ────────────────────────────────────────────────────────
   // Finding #1 (AUDIT-0724 stats-visual-accuracy.md): `golf_rounds.total_score`
@@ -264,6 +294,17 @@ export function FairwayRoundDetail({
   const puttsPerHole =
     putts != null && holesPlayed > 0 ? +(putts / holesPlayed).toFixed(2) : null;
 
+  // Grade dots (0-5, from the round's score-to-par) — omitted entirely when
+  // scoreToPar is unknown; a 0 would light zero dots and read as a real
+  // worst-grade result rather than "no score logged" (see gradeDotsForDelta).
+  const gradeScore = scoreToPar != null ? gradeDotsForDelta(scoreToPar) : null;
+
+  // #rounds-polish row 19/20: course, date, and player are ALL already given
+  // by the masthead above (title = "{day} at {course}", eyebrow = the date,
+  // description = round type/holes/player) — a THIRD "course · date · player"
+  // line here would repeat every one of them. The panel below carries only
+  // what the header does not: score, delta, grade.
+
   // ── Scorecard rows (the honest spine, from golf_holes) ──────────────────────
   const orderedHoles = useMemo(
     () => [...holes].sort((a, b) => a.hole_number - b.hole_number),
@@ -272,6 +313,19 @@ export function FairwayRoundDetail({
   const front = useMemo(() => orderedHoles.filter((h) => h.hole_number <= 9), [orderedHoles]);
   const back = useMemo(() => orderedHoles.filter((h) => h.hole_number >= 10), [orderedHoles]);
   const hasHoles = orderedHoles.length > 0;
+
+  // Filmstrip's `FilmstripHole` requires non-nullable par/score — a hole
+  // missing either (a partially-logged scorecard) is excluded rather than
+  // coerced to a fabricated 0.
+  const filmstripHoles = useMemo<FilmstripHole[]>(
+    () =>
+      orderedHoles
+        .map((h) => ({ n: h.hole_number, par: finite(h.par), score: finite(h.score) }))
+        .filter(
+          (h): h is FilmstripHole => h.par != null && h.score != null,
+        ),
+    [orderedHoles],
+  );
 
   // ── Scoring distribution (recomputed honestly from golf_holes) ──────────────
   const distribution = useMemo(() => {
@@ -358,61 +412,73 @@ export function FairwayRoundDetail({
     <div className="mx-auto w-full max-w-[1100px] px-4 py-6 md:px-6">
       <div className="flex flex-col gap-10">
         {/* ════════════════ 1 · MASTHEAD (the ONE masthead) ═════════════════ */}
+        {/* #rounds-polish row 18: this is the DETAIL page, not /review — the
+            eyebrow says "Round", never "Round Review" (that copy is reserved
+            for the review route's own masthead). `contextLine` is the single
+            meta line under the title (row 19) — it already folds in the
+            "Viewing {player}'s round" framing for a coach viewing a
+            teammate's round, so there is no separate `meta` line here. */}
         <ViewHeader
-          eyebrow={`Round Review · ${dateLabel}`}
+          eyebrow={`Round · ${dateLabel}`}
           title={heroTitle}
           description={contextLine}
-          meta={
-            isCoach && !viewerIsOwner ? (
-              <span className="font-fw-sans text-caption text-text-tertiary">
-                Viewing {playerName}&rsquo;s round
-              </span>
-            ) : undefined
-          }
           primaryAction={openReviewButton}
           secondaryActions={
-            <Button asChild variant="ghost" size="sm">
-              <Link href="/golf/dashboard/stats">All stats</Link>
-            </Button>
+            <Menu
+              trigger={
+                <IconButton aria-label="More actions" variant="secondary">
+                  <MoreHorizontal />
+                </IconButton>
+              }
+            >
+              <Menu.Item onSelect={() => router.push('/golf/dashboard/stats')}>
+                All stats
+              </Menu.Item>
+              {canChangeType ? (
+                <Menu.Item onSelect={() => setTypeEditorOpen(true)}>Change round type</Menu.Item>
+              ) : null}
+            </Menu>
           }
         />
 
-        {/* Change a mis-tapped round type. Sits directly under the masthead
-            rather than inside `secondaryActions` because its OPEN state is a
-            full panel (segmented control + qualifier picker), which would
-            deform the header's action row. Closed, it is just a small ghost
-            button — so the resting page is unchanged for everyone.
-
-            The context line above already renders `roundTypeLabel(round_type)`,
-            so the control sits next to the thing it edits. */}
+        {/* Change a mis-tapped round type — opened from the overflow menu's
+            "Change round type" item above. The context line already renders
+            `roundTypeLabel(round_type)`, so the control (when open) sits
+            beneath the thing it edits. Parent-controlled: RoundTypeEditor
+            itself renders nothing while `typeEditorOpen` is false. */}
         {canChangeType && (
-          <div className="-mt-6">
-            <RoundTypeEditor
-              roundId={round.id}
-              currentType={round.round_type}
-              currentQualifierId={currentQualifierId}
-              currentQualifierRoundNumber={currentQualifierRoundNumber}
-              qualifierOptions={qualifierOptions}
-              viewerIsCoach={viewerIsCoach}
-              qualifierReadFailed={qualifierReadFailed}
-            />
-          </div>
+          <RoundTypeEditor
+            open={typeEditorOpen}
+            onOpenChange={setTypeEditorOpen}
+            roundId={round.id}
+            currentType={round.round_type}
+            currentQualifierId={currentQualifierId}
+            currentQualifierRoundNumber={currentQualifierRoundNumber}
+            qualifierOptions={qualifierOptions}
+            viewerIsCoach={viewerIsCoach}
+            qualifierReadFailed={qualifierReadFailed}
+          />
         )}
 
         {/* ════════════════ 2 · HERO — the SCORE (one focal instrument) ═════ */}
-        <InstrumentCluster
-          ariaLabel="Round score"
-          balance="focal"
-          tertiaryColumns={3}
-          primary={
-            <InstrumentPanel
-              depth="raised"
-              tone="accent"
-              padding="lg"
-              eyebrow="Final score"
-              as="section"
-              className="flex h-full flex-col gap-6"
-            >
+        {/* #rounds-polish rows 20/32: ONE eyebrow (Readout's own label —
+            the panel no longer ALSO carries "Final score" as a separate
+            InstrumentPanel eyebrow), a tabular-nums display numeral, the
+            delta as a toned DeltaChip (never Readout's mono ▼-glyph delta
+            line), and the recap as plain prose under a hairline (never a
+            sunken Inset well). Two-column at `md`+ — numeral/delta/grade
+            left, recap prose right; stacked on phone, recap under a top
+            hairline. Course/date/player all live in the masthead above
+            (row 19) — this panel carries only what the header does not. */}
+        <InstrumentPanel
+          depth="raised"
+          tone="accent"
+          padding="lg"
+          as="section"
+          aria-label="Round score"
+        >
+          <div className="flex flex-col gap-6 md:flex-row md:items-start md:gap-8">
+            <div className="flex flex-shrink-0 flex-col gap-3 md:w-[220px]">
               <Readout
                 size="hero"
                 display={totalScore != null ? String(totalScore) : undefined}
@@ -420,103 +486,91 @@ export function FairwayRoundDetail({
                 state={totalScore != null ? 'live' : 'awaiting'}
                 samples={totalScore != null ? undefined : { have: 0, need: 1 }}
                 awaitingLabel="No score logged"
-                label="Strokes"
-                delta={
-                  scoreToPar != null
-                    ? {
-                        value: scoreToPar,
-                        // Bug #915: Readout's `direction` is the VERDICT
-                        // ('up' = green/good, 'down' = amber/bad), not the raw
-                        // numeric sign — golf is lower-is-better, so under par
-                        // (scoreToPar < 0) is the GOOD ('up') direction. The
-                        // previous `scoreToPar < 0 ? 'down' : ...` inverted
-                        // this: a great under-par round rendered amber ▼.
-                        direction: scoreToPar < 0 ? 'up' : scoreToPar > 0 ? 'down' : 'flat',
-                        format: () => `${formatToPar(scoreToPar)} vs par`,
-                      }
-                    : undefined
-                }
+                label="Final score"
               />
-
-              {/* ai_recap — the editorial lede. A real persisted string, quoted
-                  verbatim. NOT serif, NOT a skeuomorphic blockquote — a quiet
-                  display-type lede on a recessed inset. */}
-              {aiRecap ? (
-                <Inset padding="md">
-                  <p className="max-w-[58ch] font-fw-display text-body-lg leading-[1.6] text-text-secondary">
-                    {aiRecap}
-                  </p>
-                </Inset>
+              {scoreToPar != null ? (
+                <DeltaChip
+                  value={scoreToPar}
+                  // Bug #915: the VERDICT direction ('up' = green/good,
+                  // 'down' = amber/bad), not the raw numeric sign — golf is
+                  // lower-is-better, so under par (scoreToPar < 0) is the
+                  // GOOD ('up') direction. `scoreToPar < 0 ? 'down' : …`
+                  // inverts this: a great under-par round would render amber.
+                  direction={scoreToPar < 0 ? 'up' : scoreToPar > 0 ? 'down' : 'flat'}
+                  format={() => `${formatToPar(scoreToPar)} vs par`}
+                />
               ) : null}
-            </InstrumentPanel>
-          }
-          secondary={[
-            <InstrumentPanel
-              key="splits"
-              depth="base"
-              header="Front / Back"
-              className="flex h-full flex-col gap-4"
-            >
-              <div className="grid grid-cols-2 gap-3">
-                <Readout
-                  size="md"
-                  display={frontNineTotal != null ? String(frontNineTotal) : undefined}
-                  value={frontNineTotal ?? undefined}
-                  state={frontNineTotal != null ? 'live' : 'awaiting'}
-                  awaitingLabel="—"
-                  label="Front 9"
-                />
-                <Readout
-                  size="md"
-                  display={backNineTotal != null ? String(backNineTotal) : undefined}
-                  value={backNineTotal ?? undefined}
-                  state={backNineTotal != null ? 'live' : 'awaiting'}
-                  awaitingLabel="—"
-                  label="Back 9"
-                />
+
+              {/* This panel is `tone="accent"` — a cream instrument bezel
+                  with a quiet green rim (see InstrumentPanel's own doc), NOT
+                  the dark green fill ReviewHero's bespoke gradient panel
+                  uses. GradeDots defaults to `onGreen` (light dots for a
+                  dark surface), so it is rendered `onGreen={false}` here to
+                  read correctly on the cream bezel. */}
+              {gradeScore != null ? (
+                <GradeDots score={gradeScore} label={gradeLabel(gradeScore)} onGreen={false} />
+              ) : null}
+            </div>
+
+            {/* ai_recap — the editorial lede. A real persisted string, quoted
+                verbatim. NOT serif, NOT a skeuomorphic blockquote, NOT a
+                sunken well — plain prose under a hairline (top hairline on
+                phone; a left hairline instead once it sits beside the score
+                at `md`+). */}
+            {aiRecap ? (
+              <div className="border-t border-border-subtle pt-4 md:flex-1 md:border-l md:border-t-0 md:pl-6 md:pt-0">
+                <p className="max-w-[58ch] font-fw-display text-body-lg leading-[1.6] text-text-secondary">
+                  {aiRecap}
+                </p>
               </div>
-            </InstrumentPanel>,
-          ]}
-          tertiary={[
-            <InstrumentPanel key="gir" depth="base" padding="md" className="h-full">
-              <Readout
-                value={girPct ?? undefined}
-                unit="%"
-                format={{ maximumFractionDigits: 0 }}
-                label={gir != null && girPoss ? `GIR · ${gir}/${girPoss}` : 'GIR'}
-                size="md"
-                state={girPct != null ? 'live' : 'awaiting'}
-                samples={girPct != null ? undefined : { have: 0, need: 1 }}
-                awaitingLabel="No data"
-              />
-            </InstrumentPanel>,
-            <InstrumentPanel key="fw" depth="base" padding="md" className="h-full">
-              <Readout
-                value={fwPct ?? undefined}
-                unit="%"
-                format={{ maximumFractionDigits: 0 }}
-                label={fwHit != null && fwPoss ? `Fairways · ${fwHit}/${fwPoss}` : 'Fairways'}
-                size="md"
-                state={fwPct != null ? 'live' : 'awaiting'}
-                samples={fwPct != null ? undefined : { have: 0, need: 1 }}
-                awaitingLabel="No data"
-              />
-            </InstrumentPanel>,
-            <InstrumentPanel key="putts" depth="base" padding="md" className="h-full">
-              <Readout
-                value={putts ?? undefined}
-                format={{ maximumFractionDigits: 0 }}
-                label={
-                  puttsPerHole != null ? `Putts · ${puttsPerHole.toFixed(2)}/hole` : 'Putts'
-                }
-                size="md"
-                state={putts != null ? 'live' : 'awaiting'}
-                samples={putts != null ? undefined : { have: 0, need: 1 }}
-                awaitingLabel="No data"
-              />
-            </InstrumentPanel>,
-          ]}
-        />
+            ) : null}
+          </div>
+        </InstrumentPanel>
+
+        {/* Filmstrip + the Front/Back/GIR/Fairways/Putts breakdown only when
+            there is real hole data; a scorecard-only round collapses this
+            whole region to ONE honest notice instead of five empty cards. */}
+        {hasHoles ? (
+          <>
+            <Filmstrip holes={filmstripHoles} />
+            <StatMatrix
+              label="Breakdown"
+              columns={5}
+              items={[
+                {
+                  label: 'Front',
+                  value: frontNineTotal ?? '—',
+                  tone: frontNineTotal != null ? 'neutral' : 'muted',
+                },
+                {
+                  label: 'Back',
+                  value: backNineTotal ?? '—',
+                  tone: backNineTotal != null ? 'neutral' : 'muted',
+                },
+                {
+                  label: 'GIR',
+                  value: girPct != null ? `${girPct}%` : '—',
+                  hint: gir != null && girPoss ? `${gir}/${girPoss}` : undefined,
+                  tone: girPct != null ? 'neutral' : 'muted',
+                },
+                {
+                  label: 'Fairways',
+                  value: fwPct != null ? `${fwPct}%` : '—',
+                  hint: fwHit != null && fwPoss ? `${fwHit}/${fwPoss}` : undefined,
+                  tone: fwPct != null ? 'neutral' : 'muted',
+                },
+                {
+                  label: 'Putts',
+                  value: putts ?? '—',
+                  hint: puttsPerHole != null ? `${puttsPerHole.toFixed(2)}/hole` : undefined,
+                  tone: putts != null ? 'neutral' : 'muted',
+                },
+              ]}
+            />
+          </>
+        ) : (
+          <InlineNotice tone="info" title="Scorecard only. Enter holes to unlock the breakdown." />
+        )}
 
         {/* ════════════════ 3 · SCORECARD — the real spine (golf_holes) ═════ */}
         {hasHoles ? (
@@ -594,51 +648,44 @@ export function FairwayRoundDetail({
         ) : null}
 
         {/* ════════════════ 5 · WHAT'S-NEXT — areas to work on ══════════════ */}
-        <section className="flex flex-col gap-3">
-          <h2 className="px-1 font-fw-display text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">
-            Areas to work on
-          </h2>
-          <Surface padding={hasReview && hasNextWork ? 'md' : 'none'} elevation="border">
-            {hasReview && hasNextWork ? (
-              <div className="flex flex-col gap-5">
-                <div className="flex flex-col gap-2">
-                  {areas.map((a, i) => (
-                    <Inset key={`area-${i}`} padding="md">
-                      <p className="font-fw-sans text-body-sm font-semibold text-text-primary">
-                        {a.area}
-                      </p>
-                      {a.recommendation ? (
-                        <p className="mt-1 font-fw-sans text-caption leading-5 text-text-secondary">
-                          {a.recommendation}
-                        </p>
-                      ) : null}
-                    </Inset>
-                  ))}
-                  {areas.length === 0 &&
-                    recommendations.map((r, i) => (
-                      <Inset key={`rec-${i}`} padding="md">
-                        <p className="font-fw-sans text-caption leading-5 text-text-secondary">
-                          {r}
-                        </p>
-                      </Inset>
-                    ))}
+        {/* RxCard only when the review has actually computed real focus
+            areas — no EmptyState placeholder and no second "Open full
+            review" CTA when it hasn't (the header and the phone sticky bar
+            below already carry that one action). */}
+        {hasReview && hasNextWork ? (
+          <RxCard title="Areas to work on">
+            <div className="flex flex-col gap-3">
+              {areas.map((a, i) => (
+                <div key={`area-${i}`}>
+                  <p className="font-fw-sans text-body-sm font-semibold text-text-primary">
+                    {a.area}
+                  </p>
+                  {a.recommendation ? (
+                    <p className="mt-1 font-fw-sans text-caption leading-5 text-text-secondary">
+                      {a.recommendation}
+                    </p>
+                  ) : null}
                 </div>
-                <div className="flex justify-start">{openReviewButton}</div>
-              </div>
-            ) : (
-              <EmptyState
-                variant="subtle"
-                title={hasReview ? 'No focus areas flagged' : 'Review not generated yet'}
-                description={
-                  hasReview
-                    ? 'CoachHelm did not flag specific areas to work on for this round.'
-                    : 'Generate the full CoachHelm review to see what to work on next.'
-                }
-                action={openReviewButton}
-              />
-            )}
-          </Surface>
-        </section>
+              ))}
+              {areas.length === 0 &&
+                recommendations.map((r, i) => (
+                  <p key={`rec-${i}`} className="font-fw-sans text-caption leading-5 text-text-secondary">
+                    {r}
+                  </p>
+                ))}
+            </div>
+          </RxCard>
+        ) : null}
+      </div>
+
+      {/* Phone-only sticky CTA (md:hidden — matches this file's other
+          phone/desktop split, e.g. ScorecardNine; the header's primary
+          action already covers tablet/desktop). Sticks to the viewport's
+          bottom edge as the page scrolls, the natural thumb zone. */}
+      <div className="sticky bottom-0 z-10 -mx-4 mt-6 border-t border-border-subtle bg-canvas px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 md:hidden">
+        <Button asChild variant="primary" shape="block" fullWidth>
+          <Link href={reviewHref}>Open full review</Link>
+        </Button>
       </div>
     </div>
   );

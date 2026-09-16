@@ -9,6 +9,25 @@
  * all — `round_type` was written once at draft creation and never again, so a
  * mis-tap silently kept the round out of the qualifier's results forever.
  *
+ * PARENT-CONTROLLED OPEN STATE: `FairwayRoundDetail.tsx` now opens this panel
+ * from an overflow `Menu.Item` ("Change round type") rather than a
+ * standalone trigger button living beside it, so `open`/`onOpenChange` are
+ * owned by the caller here — this component no longer renders its own
+ * closed-state trigger and returns `null` while closed. Cancel and a
+ * successful save both call `onOpenChange(false)` so the caller's
+ * Menu-driven state stays in sync.
+ *
+ * There is a SECOND consumer with no menu to open from —
+ * `rounds/continue/[id]/page.tsx` hands a rendered `<RoundTypeEditor>` to
+ * `ContinueRoundClient` as a plain `roundTypeEditor?: ReactNode` prop, which
+ * mounts it directly with no surrounding chrome, and `page.tsx` there is an
+ * async SERVER component (it can't hold the `open` state itself). That
+ * route's chrome is out of scope for this facelift, so `RoundTypeEditorTrigger`
+ * below reproduces the OLD self-toggling behavior byte-for-byte (the same
+ * closed-state "Change round type" button, `useState` for `open`) for that
+ * one call site, while `FairwayRoundDetail` uses the controlled
+ * `RoundTypeEditor` directly.
+ *
  * Deliberately NOT a bare `<select>` that fires on change. Two reasons:
  *
  *  1. Choosing "Qualifier" is not a one-field edit. A round only appears in a
@@ -98,6 +117,11 @@ export function freeRoundNumbers(option: QualifierOption | undefined): number[] 
 }
 
 export interface RoundTypeEditorProps {
+  /** Whether the panel is open. Owned by the caller (see the file doc). */
+  open: boolean;
+  /** Fires on Cancel and on a successful Save, so the caller's trigger
+   *  (e.g. a Menu) stays in sync with the panel's visibility. */
+  onOpenChange: (open: boolean) => void;
   roundId: string;
   currentType: string | null;
   currentQualifierId?: string | null;
@@ -140,6 +164,8 @@ function describeSaved(
 }
 
 export function RoundTypeEditor({
+  open,
+  onOpenChange,
   roundId,
   currentType,
   currentQualifierId,
@@ -150,7 +176,6 @@ export function RoundTypeEditor({
   className,
 }: RoundTypeEditorProps) {
   const router = useRouter();
-  const [open, setOpen] = React.useState(false);
   const [type, setType] = React.useState<EditableRoundType>(
     (EDITABLE_ROUND_TYPES as readonly string[]).includes(currentType ?? '')
       ? (currentType as EditableRoundType)
@@ -205,7 +230,7 @@ export function RoundTypeEditor({
       // has already been told twice is broken — has to say plainly that it
       // worked, and say what it did.
       fairwayToast.success('Round type updated', { description: describeSaved(type, chosen, roundNumber) });
-      setOpen(false);
+      onOpenChange(false);
       router.refresh();
     } catch (err) {
       // The action THROWS as well as returning failures. Its `demoSafe`
@@ -222,23 +247,9 @@ export function RoundTypeEditor({
     }
   }
 
-  // Closed, this is the whole control. It was a small ghost button reading
-  // "Change type"; both reports described the feature as MISSING rather than
-  // broken, so it now names the thing it edits and carries a visible boundary
-  // instead of reading as body text.
-  if (!open) {
-    return (
-      <Button
-        type="button"
-        variant="secondary"
-        size="sm"
-        onClick={() => setOpen(true)}
-        className={className}
-      >
-        Change round type
-      </Button>
-    );
-  }
+  // The caller owns the trigger (an overflow `Menu.Item` in
+  // `FairwayRoundDetail.tsx`) — closed, this panel renders nothing.
+  if (!open) return null;
 
   return (
     <div
@@ -395,7 +406,7 @@ export function RoundTypeEditor({
           variant="secondary"
           size="sm"
           onClick={() => {
-            setOpen(false);
+            onOpenChange(false);
             setError(null);
           }}
           disabled={busy}
@@ -404,5 +415,35 @@ export function RoundTypeEditor({
         </Button>
       </div>
     </div>
+  );
+}
+
+/**
+ * Self-toggling wrapper for the one consumer with no menu/trigger of its own
+ * to open `RoundTypeEditor` from (see the file doc above —
+ * `rounds/continue/[id]/page.tsx`, a server component, handing a rendered
+ * element to a client child with no surrounding chrome). Reproduces the
+ * control's OLD default behavior: closed, a small "Change round type" ghost
+ * button; open, the same panel.
+ */
+export function RoundTypeEditorTrigger(
+  props: Omit<RoundTypeEditorProps, 'open' | 'onOpenChange'>,
+) {
+  const [open, setOpen] = React.useState(false);
+  return (
+    <>
+      {!open && (
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          onClick={() => setOpen(true)}
+          className={props.className}
+        >
+          Change round type
+        </Button>
+      )}
+      <RoundTypeEditor {...props} open={open} onOpenChange={setOpen} />
+    </>
   );
 }

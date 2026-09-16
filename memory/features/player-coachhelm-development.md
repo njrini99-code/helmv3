@@ -88,7 +88,55 @@ Player opens round review
 
 - Player CoachHelm should explain what changed, why it matters, and what action to take next.
 - My Development should show focus area status, progress, target/current values, and trend in a compact way.
+- The development view is ONE component,
+  `fairway/pages/coachhelm/FairwayMyDevelopment.tsx`. The live host is
+  `host="stage"`: PlayerCoachHelmHome's StageRouter mounts
+  `FairwayMyDevelopmentStage` for `/coachhelm?view=development`
+  (`/my-development` redirects there), with the DrillPanel as chrome and the
+  stage's `home()` as the back chip. `host="page"` (default) is the
+  CoachHelmShell variant the fairway preview renders. Its sub-components live
+  in `fairway/pages/coachhelm/development-parts.tsx` (log progress Sheet,
+  prescribed card, the lead-area stage and `pickLeadArea`, `ladderOrder`,
+  `PlanSegmentBar`, phone focus-area rows and sheet).
+  The legacy `components/golf/coachhelm/home/DevelopmentDrill.tsx` (a drifted
+  verbatim port) is deleted; never copy the body into a host again.
+- The body order is stage · plan · ladder · goals · suggestions · why ·
+  completed. The stage ("Your next stroke") is the lead active area
+  (`pickLeadArea`: highest causal `intervention_potential` for its metric,
+  else least progressed, else oldest): its value with the change since the
+  baseline, a verdict, the progress rail, a `Ribbon` of `focusAreaTrendEntries`
+  with the target dashed once two readings exist, and `StandingBars` when the
+  standing resolves; pressing it opens the same FocusAreaSheet the rows open.
+  The plan is one `SegmentBar` (hidden below two areas); the active areas are
+  a ladder (`ladderOrder`, least progressed first, rails in one column);
+  goals use `GoalsSection variant="inline"` (rows, a goal Sheet, a TrendChart
+  per goal from `md` behind a mounted flag, InlineNotice when empty); the
+  causal layer is chains, then a `BarCompare` of strength, then relationship
+  rows carrying the mechanism. From `md`: stage (7) | plan (5), ladder (7) |
+  goals (5), why and completed full width. Log progress is a Fairway Sheet
+  (bottom below `md`, docked right above). Phone and desktop branches are
+  CSS-gated or behind mounted flags; no media-query flip on hydration. Specs
+  and captures: `docs/design/fairway-facelift/screens/player-development.mobile.md`
+  and `player-development.v2.md`.
 - Round review surfaces need clear highlights, areas to review, stats comparison, predictions, and feedback actions.
+- Round review (coach/player, `FilmstripReview.tsx`) v2 (2026-09-10,
+  `docs/design/fairway-facelift/screens/round-review.v2.md`): `ReviewHero`'s
+  green panel renders the scoring mix as `ScoringHistogram` (new Fairway
+  module primitive, five bars, replaces plain "Mix: …" text). A NEW
+  standalone "Season trajectory" `TrendChart` section reads the player's
+  OTHER completed rounds via `getRoundReviewTrend` (`round-review-system.ts`,
+  own effect/loading flag in `page.tsx`, gated on `rounds.length >= 4`) — it
+  is the one instrument that renders fully on a scorecard-only round (no
+  `golf_holes`/`golf_shots`, ~46% of live rounds), since it never reads this
+  round's own holes or Strokes Gained. "Round breakdown" (`ReviewBreakdown.tsx`)
+  is a flat numbered 01–06 bare band, not a card grid: off-the-tee accuracy
+  via the new `DrivingDotStrip` module primitive, two approach `RampMatrix`
+  heat rows from the already-fetched `roundStats`, front/back via
+  `DivergingBars`, short game/putting/momentum unchanged internally, just
+  re-homed out of per-row cards. `RoundStatReport` (shared with
+  `/golf/dashboard/stats`, owned by the stats-polish lane, untouched
+  internally) now renders inside a `Sheet` opened from the header's "Full
+  breakdown" button (R0/R7), not always resting inline at the page's end.
 - Standing/goal/intent/hero narrative UI should be polished but not obscure source data or actionability.
 - Mobile views must follow the shared app shell and avoid oversized top-of-screen chrome.
 - A route's `loading.tsx` reserves the page's paint at t=0 — for a

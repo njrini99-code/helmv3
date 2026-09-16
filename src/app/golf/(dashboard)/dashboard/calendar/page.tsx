@@ -38,12 +38,20 @@ interface GolfCalendarPageProps {
    * `?event=<id>` — the Travel→Calendar cross-link (FairwayTripDetail's "Linked
    * calendar event" chip) deep-links here so the specific event's detail
    * drawer auto-opens instead of landing on the general calendar hub.
+   *
+   * `?new=1` — the coach-home "New event" link's entry point: opens the
+   * create editor on arrival instead of landing on the general hub. Any
+   * value is accepted (checked for presence, not compared to "1"), matching
+   * `event`'s own "just show up" contract above. `FairwayCalendar` strips it
+   * via `router.replace` right after opening the editor, so a refresh (or
+   * closing the editor and reloading) never reopens it.
    */
-  searchParams: Promise<{ event?: string }>;
+  searchParams: Promise<{ event?: string; new?: string }>;
 }
 
 export default async function GolfCalendarPage({ searchParams }: GolfCalendarPageProps) {
-  const { event: initialEventId } = await searchParams;
+  const { event: initialEventId, new: newParam } = await searchParams;
+  const initialComposeNew = newParam !== undefined;
   // React.cache() dedupes getUser() + profile queries — free after layout runs them
   const session = await getGolfSessionProfile();
   if (!session) redirect('/golf/login');
@@ -145,6 +153,7 @@ export default async function GolfCalendarPage({ searchParams }: GolfCalendarPag
           coachId={coach?.id ?? null}
           playerId={playerId}
           initialEventId={initialEventId}
+          initialComposeNew={initialComposeNew}
         />
       </Suspense>
     </div>
@@ -159,6 +168,7 @@ interface CalendarEventsSectionProps {
   coachId: string | null;
   playerId: string | null;
   initialEventId?: string;
+  initialComposeNew?: boolean;
 }
 
 /**
@@ -189,6 +199,7 @@ export async function CalendarEventsSection({
   coachId,
   playerId,
   initialEventId,
+  initialComposeNew,
 }: CalendarEventsSectionProps) {
   let events: CalendarEvent[] = [];
   let teamMembers: {
@@ -453,6 +464,7 @@ export async function CalendarEventsSection({
       loadedRangeStart={threeMonthsAgo.toISOString()}
       loadedRangeEnd={threeMonthsAhead.toISOString()}
       initialEventId={initialEventId}
+      initialComposeNew={initialComposeNew}
       classOwners={classOwners}
       classOwnersResolved={classOwnersResolved}
       viewerPlayerId={playerId}

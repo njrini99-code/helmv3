@@ -2,15 +2,25 @@
 
 /**
  * EventPeopleSection — "People" (invited + status) in event detail (§2.10,
- * §18 "who is involved"). Self-contained fetch of `getEventRSVP` keyed by
- * `active` + `eventId`, matching the drawer's existing linked-itinerary
- * lookup pattern — no orchestrator threading, failure-silent to a Retry
- * state so a read error never renders as an empty roster.
+ * §18 "who is involved").
+ *
+ * DATA: one `getEventRSVP` per drawer open, not two. The calendar
+ * orchestrator already calls it for a coach (it fills the response
+ * StatMatrix) and its `summary.attendees` is this exact list, so the coach
+ * path hands the attendees down as a prop and this section fetches NOTHING.
+ * A player's orchestrator only fetches their own status, so with no prop the
+ * section fetches for itself, keyed by `active` + `eventId`, failure-silent
+ * to a Retry state so a read error never renders as an empty roster.
+ *
+ * Presentation (calendar.mobile.md "CONTAINERS TO REMOVE / MERGE" item 5):
+ * an eyebrow ("People · N", the same overline recipe StatMatrix's label
+ * uses) above one InsetGroup, a row per person — no per-row bordered <li>,
+ * no wrapper card around the section in the drawer.
  */
 
 import * as React from 'react';
-import { RefreshCw, Users } from 'lucide-react';
-import { Button, StatusPill, Skeleton } from '@/components/fairway';
+import { RefreshCw } from 'lucide-react';
+import { Button, StatusPill, Skeleton, InsetGroup, Eyebrow } from '@/components/fairway';
 import type { FwStatusTone } from '@/components/fairway';
 import { cn } from '@/lib/utils';
 import { getEventRSVP, type RSVPStats } from '@/app/golf/actions/golf';
@@ -24,9 +34,19 @@ const STATUS_META: Record<Attendee['status'], { label: string; tone: FwStatusTon
   pending: { label: 'No response', tone: 'neutral', tint: 'var(--fw-color-text-tertiary)', tintBg: 'var(--fw-color-surface-sunken)' },
 };
 
+export type EventAttendee = Attendee;
+
 export interface EventPeopleSectionProps {
   eventId: string;
   active: boolean;
+  /**
+   * Attendees already fetched by the orchestrator (the coach's single
+   * `getEventRSVP` call). `undefined` = manage the fetch here (player
+   * path, and the orchestrator's own failure fallback); `null` = the
+   * orchestrator is still fetching — render the loading rows, do not fetch;
+   * an array = loaded.
+   */
+  attendees?: Attendee[] | null;
 }
 
 function initials(name: string): string {
@@ -43,30 +63,31 @@ type LoadState =
   | { status: 'loaded'; attendees: Attendee[] }
   | { status: 'failed'; error: string };
 
-export function EventPeopleSection({ eventId, active }: EventPeopleSectionProps) {
-  const [state, setState] = React.useState<LoadState>({ status: 'loading' });
+export function EventPeopleSection({ eventId, active, attendees: provided }: EventPeopleSectionProps) {
+  const [ownState, setOwnState] = React.useState<LoadState>({ status: 'loading' });
   const requestRef = React.useRef(0);
+  const managed = provided !== undefined;
 
   const load = React.useCallback(() => {
-    if (!active || !eventId) return;
+    if (!active || !eventId || managed) return;
     const requestId = ++requestRef.current;
-    setState({ status: 'loading' });
+    setOwnState({ status: 'loading' });
     void (async () => {
       try {
         const result = await getEventRSVP(eventId);
         if (requestId !== requestRef.current) return;
         if (!result.success) {
-          setState({ status: 'failed', error: result.error || 'Could not load who’s invited.' });
+          setOwnState({ status: 'failed', error: result.error || 'Could not load who’s invited.' });
           return;
         }
-        setState({ status: 'loaded', attendees: result.data.summary.attendees });
+        setOwnState({ status: 'loaded', attendees: result.data.summary.attendees });
       } catch {
         if (requestId === requestRef.current) {
-          setState({ status: 'failed', error: 'Could not load who’s invited.' });
+          setOwnState({ status: 'failed', error: 'Could not load who’s invited.' });
         }
       }
     })();
-  }, [active, eventId]);
+  }, [active, eventId, managed]);
 
   React.useEffect(() => {
     load();
@@ -77,18 +98,18 @@ export function EventPeopleSection({ eventId, active }: EventPeopleSectionProps)
 
   if (!active) return null;
 
+  const state: LoadState = managed
+    ? provided === null
+      ? { status: 'loading' }
+      : { status: 'loaded', attendees: provided }
+    : ownState;
   const attendees = state.status === 'loaded' ? state.attendees : [];
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-3">
-        <span aria-hidden className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-accent-700">
-          <Users className="h-[18px] w-[18px]" aria-hidden />
-        </span>
-        <p className="font-fw-sans text-body-sm font-semibold text-text-primary">
-          People{state.status === 'loaded' ? ` · ${attendees.length}` : ''}
-        </p>
-      </div>
+    <div className="flex flex-col">
+      <Eyebrow as="p" className="mb-2">
+        People{state.status === 'loaded' ? ` · ${attendees.length}` : ''}
+      </Eyebrow>
       {state.status === 'loading' ? (
         <div className="space-y-2" aria-hidden>
           {[0, 1, 2].map((i) => (
@@ -105,13 +126,17 @@ export function EventPeopleSection({ eventId, active }: EventPeopleSectionProps)
       ) : attendees.length === 0 ? (
         <p className="font-fw-sans text-body-sm text-text-tertiary">No one invited yet.</p>
       ) : (
-        <ul className="flex flex-col gap-2">
+        <InsetGroup variant="inset">
           {attendees.map((a) => {
             const meta = STATUS_META[a.status] ?? STATUS_META.pending;
             return (
-              <li
+              <InsetGroup.Row
                 key={a.playerId}
-                className={cn('flex min-h-12 items-center justify-between gap-3 rounded-fw-md py-2 pl-4 pr-3', 'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]')}
+                trailing={
+                  <StatusPill tone={meta.tone} size="sm" dot={false}>
+                    {meta.label}
+                  </StatusPill>
+                }
               >
                 <span className="flex min-w-0 items-center gap-2.5">
                   <span
@@ -125,13 +150,10 @@ export function EventPeopleSection({ eventId, active }: EventPeopleSectionProps)
                     {a.playerName}
                   </span>
                 </span>
-                <StatusPill tone={meta.tone} size="sm" dot={false}>
-                  {meta.label}
-                </StatusPill>
-              </li>
+              </InsetGroup.Row>
             );
           })}
-        </ul>
+        </InsetGroup>
       )}
     </div>
   );

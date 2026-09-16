@@ -2,50 +2,98 @@
 
 /**
  * ============================================================================
- * TeamStatsBoard — the roster-as-one-instrument Team Stats surface
- * (spec §5.2 / §3.3 Matrix Board; mockup `.board`)
+ * TeamStatsBoard — team stats as a field sheet
+ * (docs/design/fairway-facelift/screens/team-stats.v3.md + LANGUAGE.md)
  * ----------------------------------------------------------------------------
- * Replaces the per-player InstrumentPanel tile grid with ONE `MatrixBoard`:
- * a sticky KPI band, then a ranked row per player — five `RankCell`s
- * (green-ramp, darker = stronger), a composite `RingGauge`, a scoring-trend
- * `Sparkline`, and a `SignalChip`. A row click expands an inline detail band
- * in place (worst metric / SG putt / last round + triage links) — no
- * navigation for a coach's daily scan.
+ * The question this page answers: where is this team leaking strokes against
+ * Tour, and which players are carrying the leak. The leak first, the names
+ * second.
  *
- * Order (spec §5.2): masthead → roster board FIRST → team Strokes Gained +
- * leak maps BELOW (still real, still reused chart components, just demoted
- * from the page's opening hero). CSV export drops to an icon button in the
- * masthead. Cold-start renders the board with `quiet` chips immediately —
- * the tornado/leak-map charts never block it.
+ * Composition:
+ *   1. Masthead, bare on the canvas: team eyebrow with the actions, the title,
+ *      the verdict sentence built from the payload, a facts line, then the
+ *      three-flag load-failure notice.
+ *   2. The stage, the ONE Surface: `CategoryField`, two registers sharing one
+ *      column grid — the team's signed strokes gained per category above, the
+ *      roster's ranks in the same five columns below — with the three team
+ *      readouts in a right rail from xl.
+ *   3. The ledger row, bare hairline columns: where it leaks, who leads each,
+ *      fundamentals.
+ *   4. The category-detail table, dense, where a row opens.
+ *   5. The leak maps as a bare diptych — a different subject (distance bands,
+ *      not players), so they keep their charts and lose their boxes.
  *
- * Reuse: `MatrixBoard`/`RankCell`/`RingGauge`/`SignalChip` (module kit),
- * `Sparkline`/`StrokesGainedTornado`/`LeakMap`/`Readout`/`InstrumentPanel`/
- * `ViewHeader`/`InlineNotice`/`Button`/`IconButton` (Fairway primitives +
- * charts). All ranking/tone/formatting logic lives in
- * `buildTeamBoardViewModel` — this file only composes JSX.
+ * What this replaced, and why: a `ViewHeader`, a sticky four-cell `StatMatrix`
+ * band, a bordered `MatrixBoard` bezel and a four-cell `Bento` of charts. Five
+ * regions, four of them boxes, and the roster board came BEFORE the strokes-
+ * gained chart, so a coach read nine rank columns before learning which column
+ * mattered. Sharing one column grid between the team's bars and the players'
+ * ranks removes that memory step entirely.
+ *
+ * HYDRATION: no clock is read in a render path and no breakpoint is read at
+ * runtime. The header label switch and every responsive reflow are CSS; the
+ * stage's default sort is derived from the data, so the server render and the
+ * first client paint agree. Freshness timestamps arrive as props.
  * ========================================================================== */
 
 import * as React from 'react';
 import Link from 'next/link';
-import { Download } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Download, MoreVertical } from 'lucide-react';
 
-import { ViewHeader, StrokesGainedTornado, type SGCategory, LeakMap, type LeakMapBucket, InstrumentPanel, Readout, Button, IconButton, InlineNotice, Sparkline, fairwayToast } from '@/components/fairway';
-import { MatrixBoard, RankCell, RailBars, RingGauge, SignalChip } from '@/components/fairway/modules';
-import type { MatrixColumn, MatrixBoardRow as MatrixBoardRowData, RailBarRow } from '@/components/fairway/modules';
+import { ViewHeader, LeakMap, InstrumentPanel, Menu, Button, IconButton, InlineNotice, Surface, fairwayToast } from '@/components/fairway';
 
 import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 import type { TeamPlayerStats } from '@/app/golf/(dashboard)/dashboard/stats/team/page';
-import type { TeamLeakMaps, LeakBucket } from '@/app/golf/actions/stats-leak-maps-types';
+import type { TeamLeakMaps } from '@/app/golf/actions/stats-leak-maps-types';
+import { SectionHead, VerdictLine } from '@/components/fairway/pages/dashboard/coach-home-parts';
 
-import { buildTeamBoardViewModel, fmtSg, TREND_SIGNAL_MIN_ROUNDS, weightedMean, type TeamBoardPlayerInput, type TeamBoardRowViewModel } from './buildTeamBoardViewModel';
-import { formatTeamStatsFreshness, type TeamStatsFreshness } from './teamStatsFreshness';
+import { buildTeamBoardViewModel, fmtSg, type TeamBoardPlayerInput } from './buildTeamBoardViewModel';
+import { formatTeamStatsFreshness, formatTeamStatsFreshnessHeadline, type TeamStatsFreshness } from './teamStatsFreshness';
+import { CategoryField, type CategoryFieldPlayerRow, type CategoryFieldTeamCell } from './CategoryField';
+import {
+  CategoryDetailTable,
+  FundamentalsList,
+  LeadersList,
+  LeakList,
+  LedgerColumn,
+  LedgerNote,
+  ReadoutNumber,
+  TeamReadouts,
+  TrajectoryKpi,
+  type TeamReadoutItem,
+} from './team-stats-parts';
+import {
+  buildBoardCsv,
+  buildTeamStatsVerdict,
+  CATEGORY_COLUMNS,
+  defaultSortKey,
+  EN_DASH,
+  fundamentalRows,
+  hasAnySg,
+  hasFundamentals as rosterHasFundamentals,
+  hasTrajectorySignal as trajectoryHasSignal,
+  isWomensRoster,
+  leadersByCategory,
+  leakOrder,
+  SG_COLD_START_FULL,
+  sgDomain,
+  sortPlayerRows,
+  STAGE_ROW_CAP,
+  statsLoadErrorMessage,
+  teamSgByCategory,
+  teamSlug,
+  toLeakMapBuckets,
+  tourLabel,
+  worstLeakTakeaway,
+  type CategoryKey,
+  type StageSortKey,
+} from './team-stats-logic';
 
 // ============================================================================
-// PROPS — same shapes the route already resolves (page.tsx reuses its
-// existing fetches verbatim. Raw make/attempt totals and the recent-score
-// fields are all derived from rounds/holes the page already fetched, with no
-// extra query.
+// PROPS — unchanged. Every field this page reads is already resolved by
+// `stats/team/page.tsx` and passed in; the facelift added no query.
 // ============================================================================
 
 export interface TeamStatsBoardPlayerIntelligence {
@@ -79,87 +127,23 @@ export interface TeamStatsBoardProps {
   freshness: TeamStatsFreshness;
 }
 
-const SG_CATEGORY_BARS: ReadonlyArray<{ metric: MetricId; label: string }> = [
-  { metric: 'sg_ott', label: 'Off the Tee' },
-  { metric: 'sg_approach', label: 'Approach' },
-  { metric: 'sg_around_green', label: 'Around the Green' },
-  { metric: 'sg_putting', label: 'Putting' },
-];
+const OVERLINE = 'font-fw-sans text-eyebrow uppercase tracking-[0.07em] text-text-tertiary';
 
-function tourLabel(isWomens: boolean): string {
-  return isWomens ? 'LPGA Tour' : 'PGA Tour';
-}
+export function TeamStatsBoard({
+  teamName,
+  players,
+  intelligenceByPlayer,
+  intelligenceError = false,
+  intelligenceSampleSize = 0,
+  leakMaps,
+  leakError = false,
+  roundsError = false,
+  standingByPlayer,
+  teamRounds30d,
+  freshness,
+}: TeamStatsBoardProps) {
+  const router = useRouter();
 
-function toLeakMapBuckets(buckets: LeakBucket[] | undefined): LeakMapBucket[] {
-  return (buckets ?? []).map((b) => ({
-    label: b.label,
-    teamValue: b.team_value,
-    pgaValue: b.pga_value,
-    sampleN: b.sample_n,
-  }));
-}
-
-/** Worst wrong-side gap in a leak family → drives the chart takeaway honestly. */
-function worstLeakTakeaway(buckets: LeakBucket[], direction: 'higher_better' | 'lower_better', unit: 'percent' | 'feet'): string | undefined {
-  let worst: { label: string; mag: number } | null = null;
-  for (const b of buckets) {
-    if (b.team_value === null || b.pga_value === null || b.sample_n === 0) continue;
-    const raw = b.team_value - b.pga_value;
-    const oriented = direction === 'higher_better' ? raw : -raw;
-    if (oriented >= 0) continue;
-    const mag = Math.abs(Math.round(raw));
-    if (!worst || mag > worst.mag) worst = { label: b.label, mag };
-  }
-  if (!worst) return undefined;
-  const suffix = unit === 'percent' ? 'pp below Tour' : ' ft farther than Tour';
-  return `${worst.label} is ${worst.mag}${suffix}.`;
-}
-
-/**
- * Combine the three independent fetch-failure flags into one honest sentence
- * for the masthead `InlineNotice` — extends the original intelligence/leak
- * two-flag ternary to a third (`roundsError`) without the branch count
- * doubling per flag.
- */
-function statsLoadErrorMessage(roundsError: boolean, intelligenceError: boolean, leakError: boolean): string {
-  const failed: string[] = [];
-  if (roundsError) failed.push('Round scoring and per-player stats');
-  if (intelligenceError) failed.push('team intelligence (composite ratings)');
-  if (leakError) failed.push('strokes-gained leak maps');
-  if (failed.length === 0) return '';
-  if (failed.length === 1) return `${failed[0]} failed to load. Reload to try again.`;
-  const [head, ...rest] = failed;
-  const tail = rest.length === 1 ? rest[0] : `${rest.slice(0, -1).join(', ')}, and ${rest[rest.length - 1]}`;
-  return `${head} and ${tail} failed to load. The figures below may be incomplete — reload to try again.`;
-}
-
-function csvCell(value: string): string {
-  return /[",\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
-}
-
-function buildBoardCsv(rows: TeamBoardRowViewModel[]): string {
-  const header = ['Player', 'Rounds', 'Scoring Avg', 'Tee Rank', 'App Rank', 'Short Rank', 'Putt Rank', 'Scoring Rank', 'Composite', 'Signal'];
-  const fmtRank = (r: { rank: number; of: number } | null) => (r ? `${r.rank}/${r.of}` : '');
-  const lines = [header.join(',')];
-  for (const r of rows) {
-    lines.push([r.name, String(r.roundsPlayed), r.scoringAverage, fmtRank(r.ranks.tee), fmtRank(r.ranks.app), fmtRank(r.ranks.short), fmtRank(r.ranks.putt), fmtRank(r.ranks.scoring), r.composite === null ? '' : String(Math.round(r.composite)), r.signal.label].map(csvCell).join(','));
-  }
-  return lines.join('\n');
-}
-
-const COLUMNS: MatrixColumn[] = [
-  { key: 'who', label: 'Player' },
-  { key: 'tee', label: 'Tee', align: 'center' },
-  { key: 'app', label: 'App', align: 'center' },
-  { key: 'short', label: 'Shrt', align: 'center' },
-  { key: 'putt', label: 'Putt', align: 'center' },
-  { key: 'scor', label: 'Scor', align: 'center' },
-  { key: 'composite', label: 'Composite' },
-  { key: 'trend', label: 'Trend' },
-  { key: 'signal', label: 'Signal' },
-];
-
-export function TeamStatsBoard({ teamName, players, intelligenceByPlayer, intelligenceError = false, intelligenceSampleSize = 0, leakMaps, leakError = false, roundsError = false, standingByPlayer, teamRounds30d, freshness }: TeamStatsBoardProps) {
   const boardInput = React.useMemo(() => {
     const boardPlayers: TeamBoardPlayerInput[] = players.map((p) => ({
       id: p.id,
@@ -201,20 +185,27 @@ export function TeamStatsBoard({ teamName, players, intelligenceByPlayer, intell
 
   const vm = React.useMemo(() => buildTeamBoardViewModel(boardInput), [boardInput]);
 
+  const sgWeights = React.useMemo(() => players.map((p) => ({ id: p.id, roundsPlayed: p.rounds_played })), [players]);
+  const readings = React.useMemo(() => teamSgByCategory(sgWeights, standingByPlayer), [sgWeights, standingByPlayer]);
+  const hasSg = hasAnySg(readings);
+  const domain = React.useMemo(() => sgDomain(readings), [readings]);
+  const tour = React.useMemo(() => tourLabel(isWomensRoster(standingByPlayer)), [standingByPlayer]);
+
+  /* ── Stage sort. Client state, but its INITIAL value is derived from the
+        data, so the server render and the first client paint agree and no
+        breakpoint or clock is consulted anywhere in the path. ───────────── */
+  const [sort, setSort] = React.useState<StageSortKey>(() => defaultSortKey(readings, vm.rows));
+  const [stageVisible, setStageVisible] = React.useState(STAGE_ROW_CAP);
+  const sortedRows = React.useMemo(() => sortPlayerRows(vm.rows, sort), [vm.rows, sort]);
+
   const handleExport = React.useCallback(() => {
     try {
       const csv = buildBoardCsv(vm.rows);
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      const slug =
-        teamName
-          .trim()
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/^-+|-+$/g, '') || 'team';
       a.href = url;
-      a.download = `${slug}-team-stats.csv`;
+      a.download = `${teamSlug(teamName)}-team-stats.csv`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -229,63 +220,88 @@ export function TeamStatsBoard({ teamName, players, intelligenceByPlayer, intell
     }
   }, [vm.rows, teamName]);
 
-  const isWomens = React.useMemo(() => {
-    for (const map of standingByPlayer.values()) {
-      for (const row of map.values()) {
-        if (row.is_womens) return true;
-      }
-    }
-    return false;
-  }, [standingByPlayer]);
-
-  const sgData: SGCategory[] = React.useMemo(
+  const verdict = React.useMemo(
     () =>
-      SG_CATEGORY_BARS.map(({ metric, label }) => ({
-        label,
-        value: weightedMean(
-          players.map((p) => ({
-            value: standingByPlayer.get(p.id)?.get(metric)?.player_value ?? null,
-            weight: p.rounds_played,
-          })),
-        ),
-      })).filter((d): d is { label: string; value: number } => d.value !== null),
-    [players, standingByPlayer],
+      buildTeamStatsVerdict({
+        readings,
+        rows: vm.rows,
+        trajectory: vm.kpis.trajectory,
+        tourLabel: tour,
+        roundsError,
+      }),
+    [readings, vm.rows, vm.kpis.trajectory, tour, roundsError],
   );
-  const hasSg = sgData.length > 0;
 
-  const fundamentalsRows: RailBarRow[] = React.useMemo(
-    () => [
-      {
-        label: 'Fairways',
-        pct: vm.fundamentals.fairwayPct ?? 0,
-        value: fmtPct(vm.fundamentals.fairwayPct),
-        dim: vm.fundamentals.fairwayPct === null,
-      },
-      {
-        label: 'GIR',
-        pct: vm.fundamentals.girPct ?? 0,
-        value: fmtPct(vm.fundamentals.girPct),
-        dim: vm.fundamentals.girPct === null,
-      },
-      {
-        label: 'Scrambling',
-        pct: vm.fundamentals.scramblingPct ?? 0,
-        value: fmtPct(vm.fundamentals.scramblingPct),
-        dim: vm.fundamentals.scramblingPct === null,
-      },
-    ],
-    [vm.fundamentals],
-  );
-  const hasFundamentals = fundamentalsRows.some((row) => !row.dim);
+  const hasTrajectory = trajectoryHasSignal(vm.kpis.trajectory);
 
-  const sgTakeaway = React.useMemo(() => {
-    if (!hasSg) return undefined;
-    let worst = sgData[0]!;
-    for (const d of sgData) if (d.value < worst.value) worst = d;
-    if (worst.value >= 0) return undefined;
-    return `${worst.label} is the team's biggest leak, ${fmtSg(worst.value)} strokes vs Tour.`;
-  }, [sgData, hasSg]);
+  const readouts: TeamReadoutItem[] = [
+    {
+      key: 'sg',
+      label: 'Team SG / rd',
+      // The label carries the unit, so the value carries only the number.
+      // `vm.kpis.teamSg` bakes in a "/ rd" suffix that printed the unit twice.
+      value: <ReadoutNumber>{fmtSg(vm.kpis.teamSgRaw)}</ReadoutNumber>,
+      note: `versus ${tour}`,
+    },
+    {
+      key: 'trajectory',
+      label: 'Trajectory',
+      // A count of zero across all three buckets is not "0 climbing, 0 flat,
+      // 0 sliding" — nobody has cleared the trend gate yet, which is a
+      // different statement. The verdict above already explains the gate, so
+      // this says only that there is no reading.
+      value: hasTrajectory ? <TrajectoryKpi trajectory={vm.kpis.trajectory} /> : <span className="font-fw-mono text-h3 font-medium text-text-tertiary">Not yet</span>,
+      note: hasTrajectory ? 'climbing · flat · sliding' : ' ',
+    },
+    { key: 'rounds', label: 'Rounds · 30d', value: <ReadoutNumber>{vm.kpis.rounds30d}</ReadoutNumber>, note: ' ' },
+  ];
 
+  /* ── Stage cells ─────────────────────────────────────────────────────── */
+  // `hasSg === false` and `roundsError === true` are two different states that
+  // would otherwise render identically: `vm.rows` does not go empty when a
+  // fetch fails, only the values inside it do. The cold-start sentence asserts
+  // a data-collection gap, so it is gated strictly on a cold start; a failure
+  // dashes the cells and lets the notice above carry the explanation.
+  const showColdStart = !hasSg && !roundsError;
+  const teamCells: CategoryFieldTeamCell[] = [
+    ...readings.map((r) => ({
+      key: r.key,
+      value: r.value,
+      display: r.value === null ? EN_DASH : fmtSg(r.value),
+      bar: true,
+      label: r.value === null ? `${r.prose}: no reading yet` : `${r.prose}: ${fmtSg(r.value)} strokes a round versus ${tour}`,
+    })),
+    {
+      key: 'scoring',
+      // Scoring has no strokes-gained figure and no baseline to draw off, so
+      // it states the team average as a plain number rather than inventing a
+      // zero line to hang a bar on.
+      value: vm.kpis.teamScoringRaw,
+      display: vm.kpis.teamScoring,
+      bar: false,
+      label: `Team scoring average ${vm.kpis.teamScoring}`,
+    },
+  ];
+
+  const playerRows: CategoryFieldPlayerRow[] = sortedRows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    meta: `${row.classYear ? `${row.classYear} · ` : ''}${row.roundsPlayed} rds · ${row.scoringAverage}`,
+    href: `/golf/dashboard/roster/${row.id}`,
+    ranks: CATEGORY_COLUMNS.map((c) => row.ranks[c.key]),
+  }));
+
+  /* ── Ledger ──────────────────────────────────────────────────────────── */
+  const leakRows = React.useMemo(() => {
+    const ranked = leakOrder(readings);
+    const missing = readings.filter((r) => r.value === null);
+    return [...ranked, ...missing];
+  }, [readings]);
+  const leaders = React.useMemo(() => leadersByCategory(vm.rows), [vm.rows]);
+  const fundamentals = React.useMemo(() => fundamentalRows(vm.fundamentals), [vm.fundamentals]);
+  const fundamentalsKnown = rosterHasFundamentals(vm.fundamentals);
+
+  /* ── Coda ────────────────────────────────────────────────────────────── */
   const puttBuckets = toLeakMapBuckets(leakMaps?.putting);
   const approachBuckets = toLeakMapBuckets(leakMaps?.approach);
   const puttTakeaway = leakMaps ? worstLeakTakeaway(leakMaps.putting, 'higher_better', 'percent') : undefined;
@@ -293,210 +309,217 @@ export function TeamStatsBoard({ teamName, players, intelligenceByPlayer, intell
   const leakRoundsIncluded = leakMaps?.roundsIncluded ?? 0;
   const hasPuttSamples = puttBuckets.some((b) => b.sampleN > 0);
   const hasApproachSamples = approachBuckets.some((b) => b.sampleN > 0);
-  const leakColdStartMessage = 'Leak maps appear once players log rounds with shot-level tracking (putts and approach distances). Have players enter rounds shot by shot to populate this.';
+  const leakColdStartMessage =
+    'Leak maps appear once players log rounds with shot-level tracking (putts and approach distances). Have players enter rounds shot by shot to populate this.';
+  const roundsTracked = leakMaps && leakRoundsIncluded > 0 ? ` · ${leakRoundsIncluded} round${leakRoundsIncluded !== 1 ? 's' : ''} tracked` : '';
 
-  const rows: MatrixBoardRowData[] = vm.rows.map((row) => ({
-    id: row.id,
-    ariaLabel: `${row.name}, expandable row`,
-    cells: [
-      <div key="who" className="min-w-0">
-        <b className="block truncate font-fw-sans text-body-sm font-semibold text-text-primary">{row.name}</b>
-        <span className="font-fw-sans text-caption text-text-tertiary">
-          {row.classYear ? `${row.classYear} · ` : ''}
-          {row.roundsPlayed} rds · {row.scoringAverage}
-        </span>
-      </div>,
-      <RankOrDash key="tee" rank={row.ranks.tee} />,
-      <RankOrDash key="app" rank={row.ranks.app} />,
-      <RankOrDash key="short" rank={row.ranks.short} />,
-      <RankOrDash key="putt" rank={row.ranks.putt} />,
-      <RankOrDash key="scor" rank={row.ranks.scoring} />,
-      row.composite !== null ? (
-        <RingGauge key="composite" value={row.composite} />
-      ) : (
-        <span key="composite" className="font-fw-mono text-body-sm text-text-tertiary">
-          —
-        </span>
-      ),
-      <Sparkline key="trend" data={row.trendSeries} goodDirection="down" label={`${row.name} scoring trend`} />,
-      <SignalChip key="signal" tone={row.signal.tone}>
-        {row.signal.label}
-      </SignalChip>,
-    ],
-    expand: <ExpandBand row={row} />,
-  }));
-
-  const kpis = [
-    { label: 'Team scoring', value: vm.kpis.teamScoring },
-    { label: 'Team SG', value: <TeamSgKpi display={vm.kpis.teamSg} /> },
-    {
-      label: 'Trajectory',
-      value: <TrajectoryKpi trajectory={vm.kpis.trajectory} />,
-    },
-    { label: 'Rounds · 30d', value: vm.kpis.rounds30d },
-  ];
-
-  return (
-    <div className="mx-auto w-full max-w-[1536px] px-4 py-6 md:px-6 md:py-8 pb-24">
-      {/* ── MASTHEAD ────────────────────────────────────────────────────────── */}
-      <ViewHeader
-        eyebrow="Team Stats"
-        title="Team Stats"
-        description={`Every player on ${teamName}'s roster: ranked, tracked, and measured against Tour.`}
-        meta={<p className="max-w-[90ch] font-fw-sans text-caption leading-relaxed text-text-secondary">{formatTeamStatsFreshness(freshness)}</p>}
-        secondaryActions={
-          <div className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
-            <Button asChild variant="secondary" size="md" className="min-w-0 flex-1 sm:flex-none">
-              <Link href="/golf/dashboard/coachhelm/chat">Ask CoachHelm</Link>
-            </Button>
-            <Button asChild variant="ghost" size="md" className="min-w-0 flex-1 sm:flex-none">
-              <Link href="/golf/dashboard/intelligence">Open team intelligence</Link>
-            </Button>
-            <IconButton className="shrink-0" variant="secondary" size="md" aria-label="Export team stats as CSV" onClick={handleExport} disabled={vm.rows.length === 0}>
-              <Download className="h-4 w-4" aria-hidden />
-            </IconButton>
-          </div>
+  const actions = (
+    <div className="flex items-center gap-2">
+      <IconButton
+        className="hidden sm:inline-flex"
+        variant="secondary"
+        size="md"
+        aria-label="Export team stats as CSV"
+        onClick={handleExport}
+        disabled={vm.rows.length === 0}
+      >
+        <Download className="h-4 w-4" aria-hidden />
+      </IconButton>
+      <Menu
+        trigger={
+          <IconButton variant="secondary" size="md" aria-label="More actions">
+            <MoreVertical className="h-4 w-4" aria-hidden />
+          </IconButton>
         }
-      />
+      >
+        {/* `Menu.Item asChild` can't wrap a bare `<Link>` here — MenuItem
+            always wraps its own `children` in a fixed icon/content/shortcut
+            span structure before handing off to Radix's `DropdownMenu.Item`,
+            so an `asChild` Slot sees multiple sibling children instead of the
+            single element it requires ("Primitive.div failed to slot onto its
+            children", caught by TeamStatsBoard.freshness.test.tsx).
+            `onSelect` + `router.push` is the same navigate-from-a-menu idiom
+            FairwayPlayerActionsMenu already uses. */}
+        <Menu.Item onSelect={() => router.push('/golf/dashboard/coachhelm/chat')}>Ask CoachHelm</Menu.Item>
+        <Menu.Item onSelect={handleExport} disabled={vm.rows.length === 0}>
+          Export as CSV
+        </Menu.Item>
+        {/* The full multi-source freshness sentence (raw UTC stats-cache/
+            rank-snapshot/oldest-signal-insight timestamps) — a coach reads
+            none of that at a glance, so the masthead only shows the ONE
+            relative headline; this is the detail behind a Menu item. */}
+        <Menu.Item onSelect={() => fairwayToast.info('Data freshness', { description: formatTeamStatsFreshness(freshness) })}>Freshness details</Menu.Item>
+      </Menu>
+    </div>
+  );
 
-      {roundsError || intelligenceError || leakError ? (
-        <InlineNotice tone={roundsError ? 'danger' : 'warning'} title="Some stats couldn't load" className="mt-6">
-          {statsLoadErrorMessage(roundsError, intelligenceError, leakError)}
-        </InlineNotice>
-      ) : null}
+  const primaryAction = (
+    <Button asChild variant="primary" size="md">
+      <Link href="/golf/dashboard/intelligence">Open team intelligence</Link>
+    </Button>
+  );
 
-      {/* ── ROSTER BOARD — first, per spec §5.2 (roster before tornado/leak-map) ── */}
-      <section className="mt-8">
-        <p className="mb-3 font-fw-sans text-caption text-text-secondary">
-          Trend signals begin after {TREND_SIGNAL_MIN_ROUNDS} completed rounds: five recent rounds compared with at least three prior rounds.
-        </p>
-        {vm.rows.length === 0 ? (
+  const loadFailed = roundsError || intelligenceError || leakError;
+  const notice = loadFailed ? (
+    <InlineNotice tone={roundsError ? 'danger' : 'warning'} title="Some stats couldn't load" className="mt-6">
+      {statsLoadErrorMessage(roundsError, intelligenceError, leakError)}
+    </InlineNotice>
+  ) : null;
+
+  // ── The true zero state keeps the old masthead: there is no field to draw,
+  //    no ledger to fill and no table to head. ──────────────────────────────
+  if (vm.rows.length === 0) {
+    return (
+      <div className="mx-auto w-full max-w-[1536px] px-4 py-6 pb-24 md:px-6 md:py-8">
+        <ViewHeader
+          title="Team Stats"
+          description={`Every player on ${teamName}, ranked against ${tour}.`}
+          meta={<p className="max-w-[90ch] font-fw-sans text-caption leading-relaxed text-text-secondary">{formatTeamStatsFreshnessHeadline(freshness)}</p>}
+          primaryAction={primaryAction}
+          secondaryActions={actions}
+        />
+        {notice}
+        <div className="mt-8">
           <InstrumentPanel depth="base">
             <p className="font-fw-sans text-body-sm text-text-secondary">No players on your roster yet.</p>
           </InstrumentPanel>
-        ) : (
-          <MatrixBoard kpis={kpis} columns={COLUMNS} rows={rows} />
-        )}
-      </section>
+        </div>
+      </div>
+    );
+  }
 
-      {/* ── TEAM FUNDAMENTALS — pooled raw outcomes, visible without opening a player ── */}
-      <section className="mt-10">
-        <InstrumentPanel depth="raised" eyebrow="Core scoring profile" header="Team fundamentals">
-          <div className="grid gap-8 xl:grid-cols-[minmax(0,1.65fr)_minmax(21rem,0.85fr)] xl:items-center">
-            <div>
-              <p className="mb-5 max-w-[62ch] font-fw-sans text-body-sm leading-relaxed text-text-secondary">The team’s repeatable outcomes, pooled from every recorded opportunity—not averaged player percentages.</p>
-              {hasFundamentals ? <RailBars rows={fundamentalsRows} labelWidth={84} /> : <p className="font-fw-sans text-body-sm text-text-secondary">Fairways, GIR, and scrambling appear once hole outcomes are recorded.</p>}
+  return (
+    <div className="mx-auto w-full max-w-[1536px] px-4 py-6 pb-24 md:px-6 md:py-8">
+      {/* ── 1 · MASTHEAD, bare on the canvas ────────────────────────────── */}
+      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+        <p className={OVERLINE}>{teamName}</p>
+        <div className="flex items-center gap-2">
+          {actions}
+          {primaryAction}
+        </div>
+      </div>
+      <h1 className="mt-2 font-fw-display text-display font-semibold leading-[1.05] tracking-[-0.02em] text-text-primary">Team Stats.</h1>
+      <div className="mt-3">
+        <VerdictLine parts={verdict} />
+      </div>
+      <p className="mt-3 font-fw-mono text-caption tabular-nums text-text-tertiary">
+        {vm.rows.length} {vm.rows.length === 1 ? 'player' : 'players'}
+        {' · '}
+        {formatTeamStatsFreshnessHeadline(freshness)}
+      </p>
+
+      {notice}
+
+      {/* ── 2 · THE STAGE, the one Surface ──────────────────────────────── */}
+      <Surface elevation="shadow" padding="none" className="mt-10 overflow-hidden">
+        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_15rem] xl:divide-x xl:divide-border-subtle">
+          <div className="min-w-0 p-4 md:p-6">
+            <div className="min-w-0">
+              <p className={OVERLINE}>
+                The roster <span aria-hidden="true">·</span> versus {tour}
+              </p>
+              <h2 className="mt-1 font-fw-display text-h2 font-semibold text-text-primary">Category field</h2>
+              <p className="mt-1 max-w-[62ch] font-fw-sans text-body-sm text-text-secondary">
+                The team&rsquo;s strokes gained per category on top, the roster&rsquo;s ranks in the same five columns below.
+                Bars drop amber below the Tour baseline and rise green above it; darker swatches are stronger. Choose a
+                category header to sort the roster by it.
+              </p>
             </div>
-
-            <div className="border-t border-border-subtle pt-6 xl:border-l xl:border-t-0 xl:pl-8 xl:pt-0">
-              <div className="grid grid-cols-3 divide-x divide-border-subtle">
-                <FundamentalReadout label="Score avg" value={vm.kpis.teamScoring} />
-                <FundamentalReadout label="Putts / 18" value={fmtOneDecimal(vm.fundamentals.puttsPerRound)} />
-                <FundamentalReadout label="Birdies / 18" value={fmtOneDecimal(vm.fundamentals.birdiesPerRound)} />
-              </div>
-              <p className="mt-5 font-fw-sans text-caption leading-relaxed text-text-tertiary xl:text-right">Per-18 figures normalize every valid recorded hole.</p>
+            <div className="mt-5">
+              <CategoryField
+                cols={CATEGORY_COLUMNS.map((c) => ({ key: c.key, headerWide: c.headerWide, headerShort: c.headerShort }))}
+                teamName="Team"
+                teamMeta="Season to date"
+                teamCells={teamCells}
+                teamNotice={showColdStart ? SG_COLD_START_FULL : undefined}
+                domain={domain}
+                playerRows={playerRows}
+                sort={sort === 'name' ? null : sort}
+                onSortChange={(key) => setSort(key as CategoryKey)}
+                visibleRows={stageVisible}
+                onShowAll={() => setStageVisible(playerRows.length)}
+                ariaLabel="Category field by player"
+              />
             </div>
           </div>
-        </InstrumentPanel>
-      </section>
-
-      {/* ── TEAM STROKES GAINED — demoted below the board ──────────────────────── */}
-      <section className="mt-10 grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <StrokesGainedTornado overline="Strokes Gained" title="Team Strokes Gained" subtitle={`vs ${tourLabel(isWomens)} baseline · season to date`} takeaway={sgTakeaway} data={sgData} state={hasSg ? undefined : 'insufficient-data'} stateMessage={hasSg ? undefined : 'Strokes Gained appears once players log rounds with shot-level tracking. Add players to your roster and have them enter rounds shot by shot.'} />
-        <InstrumentPanel depth="raised" tone="accent" eyebrow="Season to date" header="SG: Total" className="flex flex-col justify-center">
-          {vm.kpis.teamSgRaw !== null ? <Readout size="hero" label="Team SG · per round" display={fmtSg(vm.kpis.teamSgRaw)} unit="sg" /> : <Readout size="hero" label="Team SG · per round" state="awaiting" awaitingLabel="Awaiting standing" />}
-          <p className="mt-4 font-fw-sans text-caption text-text-tertiary">The sum of every category vs the {tourLabel(isWomens)} baseline. Negative means the team is losing strokes to Tour over a round.</p>
-        </InstrumentPanel>
-      </section>
-
-      {/* ── LEAK MAPS — demoted below the board ─────────────────────────────────── */}
-      <section className="mt-10">
-        <div className="mb-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-          <h2 className="font-fw-display text-h3 font-medium tracking-[-0.005em] text-text-primary">Where the strokes leak</h2>
-          {leakMaps && leakRoundsIncluded > 0 ? (
-            <span className="font-fw-sans text-caption text-text-secondary">
-              {leakRoundsIncluded} round{leakRoundsIncluded !== 1 ? 's' : ''} with shot tracking
-            </span>
-          ) : null}
+          {/* Below xl the readouts read first, the way the coach home orders
+              them on a phone: the numbers are the glance, the field is what
+              you scroll into. At xl they take the rail on the right. */}
+          <div className="order-first border-b border-border-subtle p-4 md:p-6 xl:order-none xl:border-b-0">
+            <TeamReadouts items={readouts} />
+          </div>
         </div>
-        <div className="grid gap-6 lg:grid-cols-2">
-          <LeakMap overline="Putting" title="Putts Made by Distance" subtitle={`Team make% vs ${tourLabel(isWomens)}`} takeaway={puttTakeaway} data={puttBuckets} direction="higher_better" unit="percent" state={leakMaps && hasPuttSamples ? undefined : 'insufficient-data'} stateMessage={leakMaps && hasPuttSamples ? undefined : leakColdStartMessage} />
-          <LeakMap overline="Approach" title="Approach Proximity by Distance" subtitle={`Avg proximity to hole vs ${tourLabel(isWomens)}`} takeaway={approachTakeaway} data={approachBuckets} direction="lower_better" unit="feet" state={leakMaps && hasApproachSamples ? undefined : 'insufficient-data'} stateMessage={leakMaps && hasApproachSamples ? undefined : leakColdStartMessage} />
-        </div>
-      </section>
-    </div>
-  );
-}
+      </Surface>
 
-function RankOrDash({ rank }: { rank: { rank: number; of: number } | null }) {
-  if (!rank) {
-    return <span className="mx-auto grid h-[26px] w-[34px] place-items-center font-fw-mono text-caption text-text-tertiary">—</span>;
-  }
-  return <RankCell rank={rank.rank} of={rank.of} />;
-}
+      {/* ── 3 · THE LEDGER ROW, bare, hairline-divided ──────────────────── */}
+      {/* Spans run even thirds at xl and take their 5/3/4 shape from 2xl, the
+          same concession the coach home makes: at 1280 a 3-span column clips
+          the names inside it, and rhythm loses to whole words. */}
+      <div className="mt-12 grid grid-cols-1 gap-y-10 md:grid-cols-2 md:gap-x-8 xl:grid-cols-12 xl:gap-x-0 xl:gap-y-0 xl:divide-x xl:divide-border-subtle">
+        <LedgerColumn title="Where it leaks" className="xl:col-span-4 xl:pr-8 2xl:col-span-5">
+          {hasSg ? <LeakList readings={leakRows} domain={domain} tourLabel={tour} /> : <LedgerNote>{SG_COLD_START_FULL}</LedgerNote>}
+        </LedgerColumn>
 
-function TeamSgKpi({ display }: { display: string }) {
-  return <span className="font-fw-mono text-h2 tracking-[-0.02em] tabular-nums text-text-primary">{display}</span>;
-}
+        <LedgerColumn title="Who leads each" className="xl:col-span-4 xl:px-8 2xl:col-span-3">
+          {leaders.length === 0 ? (
+            <LedgerNote>No category has a ranked player yet.</LedgerNote>
+          ) : (
+            <LeadersList leaders={leaders} />
+          )}
+        </LedgerColumn>
 
-function TrajectoryKpi({ trajectory }: { trajectory: { improving: number; steady: number; declining: number } }) {
-  return (
-    <span className="inline-flex items-baseline gap-2.5 font-fw-mono text-h3 tabular-nums">
-      <span className="text-accent-600">{trajectory.improving}▲</span>
-      <span className="text-text-tertiary">{trajectory.steady}→</span>
-      <span className="text-fw-warning-ink">{trajectory.declining}▼</span>
-    </span>
-  );
-}
-
-function ExpandBand({ row }: { row: TeamBoardRowViewModel }) {
-  return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-8">
-      <ExpandStat label="Fairways" value={row.expand.fairways} />
-      <ExpandStat label="GIR" value={row.expand.gir} />
-      <ExpandStat label="Scrambling" value={row.expand.scrambling} />
-      <ExpandStat label="Putts / 18" value={row.expand.puttsPerRound} />
-      <ExpandStat label="Birdies / 18" value={row.expand.birdiesPerRound} />
-      <ExpandStat label={row.expand.worstMetricLabel ?? 'Worst metric'} value={row.expand.worstMetricValue ?? '—'} />
-      <ExpandStat label="SG Putt" value={row.expand.sgPutt} />
-      <ExpandStat label="Last round" value={row.expand.lastRound} />
-      <div className="col-span-full mt-1 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-border-subtle pt-3 font-fw-sans text-caption text-text-secondary">
-        <Link href={row.expand.links.fullStats} className="font-semibold text-accent-700 hover:underline">
-          Full stats
-        </Link>
-        <Link href={row.expand.links.fingerprint} className="font-semibold text-accent-700 hover:underline">
-          Fingerprint
-        </Link>
-        <Link href={row.expand.links.prescribe} className="font-semibold text-accent-700 hover:underline">
-          Prescribe focus area
-        </Link>
+        <LedgerColumn title="Fundamentals" className="md:col-span-2 xl:col-span-4 xl:pl-8">
+          <FundamentalsList rows={fundamentals} />
+          <p className="mt-3 font-fw-sans text-caption text-text-tertiary">
+            {fundamentalsKnown
+              ? 'Pooled from every recorded opportunity, not averaged player percentages.'
+              : 'Fairways, GIR, and scrambling appear once hole outcomes are recorded.'}
+          </p>
+        </LedgerColumn>
       </div>
-    </div>
-  );
-}
 
-function fmtPct(value: number | null): string {
-  return value === null || !Number.isFinite(value) ? '—' : `${value.toFixed(1)}%`;
-}
+      {/* ── 4 · THE TABLE — the values behind the stage's ranks ─────────── */}
+      <section aria-label="Category detail" className="mt-12 flex flex-col gap-3">
+        <SectionHead title="Category detail" count={vm.rows.length} />
+        <CategoryDetailTable rows={sortedRows} />
+      </section>
 
-function fmtOneDecimal(value: number | null): string {
-  return value === null || !Number.isFinite(value) ? '—' : value.toFixed(1);
-}
-
-function FundamentalReadout({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="min-w-0 px-3 first:pl-0 last:pr-0 sm:px-5 xl:text-right">
-      <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.1em] text-text-tertiary">{label}</p>
-      <strong className="mt-1 block truncate font-fw-mono text-h2 font-normal tracking-[-0.03em] tabular-nums text-text-primary">{value}</strong>
-    </div>
-  );
-}
-
-function ExpandStat({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <div className="font-fw-display text-caption font-bold uppercase tracking-[0.09em] text-text-tertiary">{label}</div>
-      <b className="block font-fw-mono text-body font-semibold tabular-nums text-text-primary">{value}</b>
+      {/* ── 5 · THE CODA — a different subject: distance bands, not players ─ */}
+      <div className="mt-12 grid grid-cols-1 gap-y-10 xl:grid-cols-2 xl:gap-x-0 xl:gap-y-0 xl:divide-x xl:divide-border-subtle">
+        <section className="flex min-w-0 flex-col gap-3 xl:pr-8">
+          <SectionHead title="Putts made by distance" />
+          {/* `ChartFrame` takes `takeaway` for the chart's spoken label only and
+              never prints it, so the finding stayed invisible to a coach
+              reading the page. State it in words above the plot. */}
+          {puttTakeaway ? <p className="font-fw-sans text-body-sm text-text-secondary">{puttTakeaway}</p> : null}
+          <LeakMap
+            title="Putts made by distance"
+            subtitle={`Team make% versus ${tour}${roundsTracked}`}
+            takeaway={puttTakeaway}
+            data={puttBuckets}
+            direction="higher_better"
+            unit="percent"
+            state={leakMaps && hasPuttSamples ? undefined : 'insufficient-data'}
+            stateMessage={leakMaps && hasPuttSamples ? undefined : leakColdStartMessage}
+            className="border-0 bg-transparent p-0 [&>header>div>h3]:sr-only"
+          />
+        </section>
+        <section className="flex min-w-0 flex-col gap-3 xl:pl-8">
+          <SectionHead title="Approach proximity by distance" />
+          {approachTakeaway ? <p className="font-fw-sans text-body-sm text-text-secondary">{approachTakeaway}</p> : null}
+          <LeakMap
+            title="Approach proximity by distance"
+            subtitle={`Average proximity to hole versus ${tour}${roundsTracked}`}
+            takeaway={approachTakeaway}
+            data={approachBuckets}
+            direction="lower_better"
+            unit="feet"
+            state={leakMaps && hasApproachSamples ? undefined : 'insufficient-data'}
+            stateMessage={leakMaps && hasApproachSamples ? undefined : leakColdStartMessage}
+            className="border-0 bg-transparent p-0 [&>header>div>h3]:sr-only"
+          />
+        </section>
+      </div>
     </div>
   );
 }

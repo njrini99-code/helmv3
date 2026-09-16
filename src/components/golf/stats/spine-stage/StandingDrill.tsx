@@ -5,27 +5,20 @@
  * StandingDrill — `?area=standing` (spec §5.1, "Detailed Standings, promoted")
  * ----------------------------------------------------------------------------
  * Every metric vs PGA Tour and the team, grouped by category, as reused
- * `StandingStrip` cards. ALWAYS visible (no collapsed-by-default toggle — the
- * legacy cockpit hid this behind a disclosure; the stage IS the drill door
- * now, so the content behind it opens straight to the full board).
+ * `StandingBars` cards (bar rows, not the old dot-on-a-rail `StandingStrip`).
+ * ALWAYS visible (no collapsed-by-default toggle — the legacy cockpit hid
+ * this behind a disclosure; the stage IS the drill door now, so the content
+ * behind it opens straight to the full board).
  * ========================================================================== */
 
 import { Fragment } from 'react';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 
-import { DrillPanel, StandingTrack, useStage } from '@/components/fairway/modules';
-import { StandingStrip } from '@/components/fairway';
-import { TABULAR_NUMS } from '@/components/fairway/charts/theme';
-import { cn } from '@/lib/utils';
+import { DrillPanel, useStage } from '@/components/fairway/modules';
+import { StandingBars } from '@/components/fairway/charts/StandingBars';
 import { getMetricRenderConfig, type MetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import { METRIC_IDS, type MetricId } from '@/lib/coachhelm/v3/metrics/registry';
-import {
-  toScalePct,
-  shouldShowTeamMarker,
-  pgaReferenceLabel,
-} from '@/components/golf/coachhelm/v3/StandingBar';
-import { formatSgSigned } from './buildStatsViewModel';
 import { CategoryInsightStrip } from './CategoryInsightStrip';
 import type { PlayerStandingRow } from '@/app/golf/actions/stats-leak-maps-types';
 
@@ -57,72 +50,59 @@ const SG_INSTRUMENT_HAIRLINE = 'oklch(1 0 0 / 0.14)';
 
 /**
  * StrokesGainedInstrument — the "grouped visually apart from traditional
- * stats" SG cluster: all 4 sg_* rows plus sg_total, in ONE shared CSS grid
- * (so the label / You-value / rail columns align pixel-for-pixel across
- * every row — the plain generic `StandingStrip` cards below can't do this,
- * each is its OWN box with its own internal layout) mounted on the SAME
+ * stats" SG cluster: all 4 sg_* rows plus sg_total, mounted on the SAME
  * dark accent-gradient surface `Spine` uses for exactly this "you vs
- * benchmarks" read. Each row's You/Team/Tour reference ticks are drawn by
- * the REAL, fixed `StandingTrack` (not a reimplementation) — the component
- * doc on `StandingTrack.tsx` calls out standalone reuse outside `Spine` as
- * the intended pattern.
+ * benchmarks" read. Each row is its own bare (chrome-free) `StandingBars`
+ * instance — real labeled bar rows, replacing the old shared-grid
+ * `StandingTrack` pin rail entirely (owner: "get rid of these slider
+ * things... replace it with an actual component"). `className`
+ * ("text-text-on-accent") is what makes a `StandingBars` mounted on this
+ * dark surface legible — every label/value inside inherits it via
+ * `text-current`, and the rail track itself swaps to the matching on-dark
+ * token, both keyed off that one prop (see `StandingBars.tsx`).
  */
 function StrokesGainedInstrument({
   rows,
+  standingViewerContext,
+  playerName,
 }: {
   rows: ReadonlyArray<{ id: MetricId; row: PlayerStandingRow; cfg: MetricRenderConfig }>;
+  standingViewerContext: 'self' | 'coach';
+  playerName?: string;
 }) {
   if (rows.length === 0) return null;
 
   return (
     <div
       data-slot="sg-instrument"
-      // overflow-clip: containment safety net for the StandingTrack rows
-      // below — see the `edgeMarginPct` note on each row for the actual fix.
       className="overflow-clip rounded-fw-lg border border-accent-700 bg-gradient-to-b from-accent-900 via-accent-800 to-accent-800 p-5 shadow-raise"
     >
-      <div className="grid grid-cols-[1fr_4.25rem] items-baseline gap-x-3 gap-y-1.5">
+      <div className="flex flex-col gap-3">
         {rows.map(({ id, row, cfg }) => {
           const isTotal = id === 'sg_total';
-          const youPct = toScalePct(row.player_value, cfg.default_scale);
-          const showTeam = shouldShowTeamMarker({ team_avg: row.team_avg, team_n: row.team_n });
-          const refLabel = pgaReferenceLabel(id, row.is_womens).short;
-          const benchmarks: { label: string; pct: number; emphasis?: boolean }[] = [
-            ...(showTeam && row.team_avg !== null
-              ? [{ label: 'Team', pct: toScalePct(row.team_avg, cfg.default_scale) }]
-              : []),
-            { label: refLabel, pct: toScalePct(row.pga_value, cfg.default_scale), emphasis: true },
-          ];
           return (
             <Fragment key={id}>
-              <span
-                className={cn(
-                  'truncate font-fw-sans text-body-sm',
-                  isTotal ? 'font-semibold text-text-on-accent' : 'text-ink-on-deep',
-                )}
-              >
-                {cfg.display_label}
-              </span>
-              <span
-                style={TABULAR_NUMS}
-                className="text-right font-fw-mono text-body-sm font-semibold tabular-nums text-text-on-accent"
-              >
-                {formatSgSigned(row.player_value)}
-              </span>
-              <div className={cn('col-span-2', isTotal ? 'pb-2.5' : 'pb-1')}>
-                {/* Every row here anchors to `refLabel`, which for every
-                    sg_* metric is ALWAYS "Field Avg" (9 chars) —
-                    `StandingTrack`'s default edge margin (6%, calibrated for
-                    short "You"/"Team"/"Tour" labels) clips that label at
-                    narrow widths (390px card ≈ 310px track → 6% ≈ 18px of
-                    clearance, well under "Field Avg"'s ~29px half-width).
-                    Widen it here, at the one call site that actually needs
-                    it — Spine's own (short-label) use of StandingTrack on
-                    the home dashboard is untouched. */}
-                <StandingTrack pct={youPct} subjectLabel="You" benchmarks={benchmarks} edgeMarginPct={13} />
-              </div>
+              <StandingBars
+                frame="bare"
+                size="sm"
+                layout="compact"
+                className="text-text-on-accent"
+                metric_id={id}
+                metric_label={cfg.display_label}
+                player_value={row.player_value}
+                team_avg={row.team_avg}
+                team_n={row.team_n}
+                team_pct={row.team_pct}
+                pga_value={row.pga_value}
+                is_womens={row.is_womens}
+                direction={cfg.direction}
+                unit={cfg.unit}
+                scale={cfg.default_scale}
+                viewer_context={standingViewerContext}
+                player_name={playerName}
+              />
               {isTotal ? (
-                <div aria-hidden="true" className="col-span-2 mb-1 border-t" style={{ borderTopColor: SG_INSTRUMENT_HAIRLINE }} />
+                <div aria-hidden="true" className="border-t" style={{ borderTopColor: SG_INSTRUMENT_HAIRLINE }} />
               ) : null}
             </Fragment>
           );
@@ -193,7 +173,7 @@ export function StandingDrill({
   }
 
   // Strokes Gained renders as its own aligned instrument group (below),
-  // separate from the generic per-category `StandingStrip` grids — excluded
+  // separate from the generic per-category `StandingBars` grids — excluded
   // from `groups` so it's never ALSO rendered as a plain card row.
   const sgRows = byCategory.get('sg') ?? [];
   const groups = CATEGORY_ORDER.filter((g) => (byCategory.get(g.category) ?? []).length > 0);
@@ -215,7 +195,11 @@ export function StandingDrill({
                   round.
                 </p>
               </div>
-              <StrokesGainedInstrument rows={sgRows} />
+              <StrokesGainedInstrument
+                rows={sgRows}
+                standingViewerContext={standingViewerContext}
+                playerName={playerName}
+              />
             </div>
           ) : null}
           {groups.map((group) => {
@@ -228,8 +212,9 @@ export function StandingDrill({
                 </div>
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                   {rows.map(({ id, row, cfg }) => (
-                    <StandingStrip
+                    <StandingBars
                       key={id}
+                      frame="bare"
                       metric_id={id}
                       metric_label={cfg.display_label}
                       player_value={row.player_value}
@@ -241,7 +226,6 @@ export function StandingDrill({
                       direction={cfg.direction}
                       unit={cfg.unit}
                       scale={cfg.default_scale}
-                      size="card"
                       viewer_context={standingViewerContext}
                       player_name={playerName}
                     />

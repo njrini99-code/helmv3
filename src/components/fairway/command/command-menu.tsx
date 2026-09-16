@@ -12,7 +12,8 @@
  * Behavior is headless via `cmdk` (Command): it owns the fuzzy matcher, the
  * roving keyboard navigation (↑/↓ / Home / End / Enter), scroll-into-view of the
  * active item, and the empty state. We own ONLY the warm chrome: the dim scrim,
- * the glass panel (local GlassSurface), the grouped/recent/zero-state layout,
+ * the glass panel (CommandGlassSurface, a thin wrapper over the canonical
+ * surfaces GlassSurface), the grouped/recent/zero-state layout,
  * the cinematic materialize motion, focus restore, scroll-lock, and Escape.
  *
  * Composable, data-driven API (a reusable primitive — NOT wired to any route):
@@ -59,7 +60,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useScrollFade } from '@/lib/fairway/use-scroll-fade';
 import { Skeleton } from '@/components/fairway/feedback';
-import { GlassSurface } from './glass-surface';
+import { CommandGlassSurface } from './glass-surface';
 import {
   SearchGlyph,
   ArrowUpDownGlyph,
@@ -232,7 +233,7 @@ function CommandRow({ item, onPick }: RowProps) {
 
 /**
  * CommandMenu — the summoned ⌘K palette. Controlled via `open`/`onOpenChange`;
- * composes the warm GlassSurface + cmdk engine into a keyboardable global
+ * composes the warm CommandGlassSurface + cmdk engine into a keyboardable global
  * find-and-act surface. Reusable: pass any groups/recent/suggestions + handle
  * selection yourself.
  */
@@ -411,7 +412,7 @@ export function CommandMenu({
               }
             }}
           >
-            <GlassSurface
+            <CommandGlassSurface
               intensity="strong"
               className={cn('overflow-hidden', className)}
             >
@@ -552,7 +553,7 @@ export function CommandMenu({
                 }
                 .fw-cmd-group:not(:first-child){margin-top:0.25rem;}
               `}</style>
-            </GlassSurface>
+            </CommandGlassSurface>
           </motion.div>
         </motion.div>
       ) : null}

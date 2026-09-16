@@ -16,6 +16,7 @@
  * agrees with the detail drawer and across server/client renders.
  * ========================================================================== */
 
+import * as React from 'react';
 import { ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PressTarget, StatusPill } from '@/components/fairway';
@@ -76,7 +77,10 @@ function splitClock(label: string): { clock: string; meridiem: string } {
   return match ? { clock: match[1]!, meridiem: match[2]!.toUpperCase() } : { clock: label, meridiem: '' };
 }
 
-export function FairwayEventCard({
+/** Memoized: a list of these re-renders only the rows whose props changed
+ *  (the agenda's minute tick, a parent re-render, a scroll-driven state
+ *  update elsewhere on the page all leave untouched rows alone). */
+export const FairwayEventCard = React.memo(function FairwayEventCard({
   event,
   rsvpStatus,
   showRsvp = false,
@@ -185,4 +189,4 @@ export function FairwayEventCard({
       </span>
     </PressTarget>
   );
-}
+});

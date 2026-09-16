@@ -13,13 +13,13 @@
  *                       its own button) or everyone (People menu), and
  *                       overlay their availability.
  *
- * The row is ONE raised line: a pressable summary (avatar stack · status ·
- * detail · chevron) that IS the People menu trigger, then Clear (while
- * comparing) and Compare — an icon on a phone (the People menu names it
- * "Compare schedules…" too), labelled from md up. It reads like a native
- * list row that opens a menu, not a status line with a second line of
- * buttons under it. When comparing, the legend of who is in the overlay sits
- * beneath in the overlay's colors.
+ * The row is ONE hairline line on the canvas — no card, no shadow: a
+ * pressable summary (avatar stack · status · detail · chevron) that IS the
+ * People menu trigger, then Clear (while comparing) and Compare — an icon on
+ * a phone (the People menu names it "Compare schedules…" too), labelled from
+ * md up. It reads like a native list row that opens a menu, not a status
+ * line with a second line of buttons under it. When comparing, the legend of
+ * who is in the overlay sits beneath in the overlay's colors.
  *
  * It renders no portrait carousel: the schedule is the content of the
  * calendar home, not the roster. Selection state is parent-owned.
@@ -107,11 +107,11 @@ export function FairwayCalendarMemberRail({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2">
-        {/* One raised row on the canvas: the summary IS the People menu. On a
+        {/* One hairline row on the canvas: the summary IS the People menu. On a
             phone it is the only control here — "Compare schedules…" lives in
             the menu — so nothing sits nested inside it. From `md` up the
             labelled Compare button stands beside the row, never inside it. */}
-        <div className="flex min-w-0 flex-1 items-center gap-1 rounded-xl border border-border-subtle bg-surface p-1 [box-shadow:var(--fw-shadow-card)]">
+        <div className="flex min-h-11 min-w-0 flex-1 items-center gap-3 border-b border-border-subtle">
         {/* The summary is the menu: one press opens People. */}
         <PopoverPanel
           open={menuOpen}

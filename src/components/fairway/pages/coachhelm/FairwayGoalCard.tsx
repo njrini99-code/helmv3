@@ -51,7 +51,8 @@ import { CheckCircle2 } from 'lucide-react';
 // flagged by npm run check:cycles.
 import { Surface } from '@/components/fairway/surfaces';
 import { StatusPill, Button, type StatusPillProps } from '@/components/fairway/controls';
-import { StandingStrip, Sparkline } from '@/components/fairway/charts';
+import { Sparkline } from '@/components/fairway/charts';
+import { StandingBars } from '@/components/fairway/charts/StandingBars';
 import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import { isWindowedMetric } from '@/lib/coachhelm/v3/goals/window-metric-ids';
@@ -84,6 +85,16 @@ export interface FairwayGoalCardProps {
   role: 'coach' | 'player';
   /** Coach view only — the owning player's display name. */
   playerName?: string;
+  /**
+   * `card` (default): the card owns its own bordered Surface, exactly as
+   * before. `bare`: drops that chrome (border, background, radius, shadow)
+   * and keeps only its padding rhythm, for hosting inside another container
+   * that already supplies the matte plane — mirrors `StandingBars`' and
+   * `FocusAreaCard`'s `frame="bare"`. Never nest two bordered boxes. No
+   * current call site sets this; it is available for whoever converts
+   * `GoalsSection`'s card grid to a seam list.
+   */
+  frame?: 'card' | 'bare';
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
@@ -169,7 +180,7 @@ export function progressPct(g: Goal): number | null {
  * Component
  * ────────────────────────────────────────────────────────────────────────── */
 
-export function FairwayGoalCard({ data, role, playerName }: FairwayGoalCardProps) {
+export function FairwayGoalCard({ data, role, playerName, frame = 'card' }: FairwayGoalCardProps) {
   const { goal, standing } = data;
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -233,13 +244,8 @@ export function FairwayGoalCard({ data, role, playerName }: FairwayGoalCardProps
     });
   }
 
-  return (
-    <Surface
-      elevation="border"
-      padding="md"
-      data-slot="fairway-goal-card"
-      data-goal-id={goal.id}
-    >
+  const content = (
+    <>
       {/* Header — title + state pill */}
       <div className="mb-2 flex items-start justify-between gap-3">
         {/* line-clamp (not truncate) — a truncated single line clipped titles
@@ -305,7 +311,7 @@ export function FairwayGoalCard({ data, role, playerName }: FairwayGoalCardProps
                   Hit {achievedAt} · validated on rounds
                 </span>
               ) : notStarted ? (
-                'Not started — baseline captured'
+                'Not started, baseline captured'
               ) : (
                 <>
                   {pct}% to target
@@ -333,7 +339,8 @@ export function FairwayGoalCard({ data, role, playerName }: FairwayGoalCardProps
           Rendered ONLY when a standing snapshot exists for the goal's metric. */}
       {showStanding ? (
         <div className="mt-4">
-          <StandingStrip
+          <StandingBars
+            frame="bare"
             metric_id={standing.metric_id}
             metric_label={cfg.display_label}
             player_value={standing.player_value}
@@ -345,12 +352,13 @@ export function FairwayGoalCard({ data, role, playerName }: FairwayGoalCardProps
             direction={cfg.direction}
             unit={cfg.unit}
             scale={cfg.default_scale}
-            size="inline"
+            size="sm"
+            layout="compact"
             show_cohort_text={false}
           />
           {windowed ? (
             <p className="mt-1.5 font-fw-sans text-eyebrow text-text-tertiary">
-              Career average vs team &amp; Tour — your progress above tracks rounds since you set this goal.
+              Career average vs team &amp; Tour. Your progress above tracks rounds since you set this goal.
             </p>
           ) : null}
         </div>
@@ -387,6 +395,25 @@ export function FairwayGoalCard({ data, role, playerName }: FairwayGoalCardProps
           </div>
         ) : null}
       </div>
+    </>
+  );
+
+  if (frame === 'bare') {
+    return (
+      <div className="p-6 text-text-primary" data-slot="fairway-goal-card" data-goal-id={goal.id}>
+        {content}
+      </div>
+    );
+  }
+
+  return (
+    <Surface
+      elevation="border"
+      padding="md"
+      data-slot="fairway-goal-card"
+      data-goal-id={goal.id}
+    >
+      {content}
     </Surface>
   );
 }

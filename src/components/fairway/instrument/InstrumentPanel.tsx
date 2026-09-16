@@ -2,31 +2,32 @@
 
 /**
  * ============================================================================
- * Fairway · instrument · InstrumentPanel — the signature frosted-glass PANEL
+ * Fairway · instrument · InstrumentPanel — the signature flat matte PANEL
  * ----------------------------------------------------------------------------
- * The "instrument cluster" creative direction leans INTO warm Liquid Glass for
- * CoachHelm: layered frosted instrument panels are THE signature surface. A
- * panel is the bezel a hero gauge / ribbon / readout mounts into — it FLOATS
- * above the bg-canvas wash with real depth:
+ * The "instrument cluster" was repointed from a frosted-glass bezel to a
+ * calm, content-first matte card (flat & clean Apple, per the co-located
+ * `instrument-panel.module.css`): no blur, no specular sheen, no interior
+ * glow. A panel is the bezel a hero gauge / ribbon / readout mounts into —
+ * depth now comes from a quiet surface + hairline (base), a soft warm drop
+ * shadow (raised), or a sunken inner shadow (inset), never from translucency:
  *
- *   • backdrop-blur + warm CREAM tint (--fw-glass-*) + saturate  → frosted glass
- *   • a bright specular top/left edge (inset highlights)          → "light source"
- *   • a faint inner glow (radial wash, top-left)                  → lit interior
- *   • a soft WARM drop shadow (--fw-shadow-raise / -modal)        → it floats
- *   • optional green accent breath on the rim (tone="accent")     → the ONE focal
+ *   • a quiet matte surface (--fw-color-surface) + a single hairline border
+ *   • a soft WARM drop shadow (--fw-shadow-raise) on `depth="raised"`        → it floats
+ *   • a sunken well (--fw-color-surface-sunken) on `depth="inset"`          → recessed sub-display
+ *   • optional green accent hairline on the rim (tone="accent")             → the ONE focal
  *
  * Depth model (the `depth` prop):
- *   base   — a calm seated panel (raise shadow, regular glass).
- *   raised — the focal instrument: deeper modal-grade shadow + stronger blur,
- *            it sits PROUD of the cluster.
- *   inset  — a smaller READOUT panel layered INSIDE a larger instrument: the
- *            glass recedes (sunken inner shadow, no drop shadow) so it reads as
- *            a recessed sub-display rather than a second floating card.
+ *   base   — a calm seated panel (quiet surface + hairline, no shadow).
+ *   raised — the focal instrument: it sits PROUD of the cluster (soft warm
+ *            drop shadow).
+ *   inset  — a smaller READOUT panel layered INSIDE a larger instrument: a
+ *            sunken inner shadow, no drop shadow, so it reads as a recessed
+ *            sub-display rather than a second floating card.
  *
- * Honesty / a11y: collapses to an OPAQUE warm matte surface under
- * prefers-reduced-transparency + forced-colors (Apple's own lesson) — depth then
- * comes from a soft shadow, text stays WCAG-legible. Honors prefers-reduced-
- * motion (the parent owns any sweep; this panel never animates backdrop-filter).
+ * Honesty / a11y: already opaque, so `forced-colors` just swaps to system
+ * Canvas/CanvasText; there is no translucency to collapse. Honors
+ * prefers-reduced-motion (the parent owns any sweep; this panel never
+ * animates backdrop-filter, which it also never sets).
  *
  * ADDITIVE ONLY — imported by nothing existing. Renders inside a `.fairway-ds`
  * scope on a bg-canvas page. This REPLACES bespoke glass for CoachHelm heroes.
@@ -43,7 +44,7 @@ export type InstrumentPanelTone = 'neutral' | 'accent';
 /**
  * Layering depth:
  *   base   — seated panel (floats gently).
- *   raised — the proud focal instrument (deeper shadow, stronger blur).
+ *   raised — the proud focal instrument (soft warm drop shadow).
  *   inset  — a recessed readout panel layered INSIDE a larger instrument.
  */
 export type InstrumentPanelDepth = 'base' | 'raised' | 'inset';
@@ -77,7 +78,7 @@ export interface InstrumentPanelProps
 }
 
 /**
- * The layered frosted-glass instrument panel. Compose a hero gauge / ribbon as
+ * The flat matte instrument panel. Compose a hero gauge / ribbon as
  * `children`, an `eyebrow` + `header` for the bezel label, and a `readout` for
  * the top-right corner display. Nest a `depth="inset"` panel inside for a
  * recessed sub-readout (a small panel inset on a larger instrument).

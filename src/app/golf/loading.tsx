@@ -26,7 +26,7 @@ import { FairwayDashboardSkeleton } from '@/components/fairway/pages/dashboard/F
  */
 export default function GolfLoading() {
   return (
-    <FairwayShellSkeleton>
+    <FairwayShellSkeleton tone="green">
       <FairwayDashboardSkeleton />
     </FairwayShellSkeleton>
   );

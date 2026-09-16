@@ -8,6 +8,8 @@ import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { Metadata } from 'next';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayPlayerProfile } from '@/components/fairway/pages/roster/FairwayPlayerProfile';
+import { getDetailedStats } from '@/app/golf/actions/stats-data';
+import { getPlayerStandingRows } from '@/app/golf/actions/stats-leak-maps';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -115,9 +117,79 @@ export default async function PlayerProfilePage({ params }: PageProps) {
     notFound();
   }
 
+  // ---------------------------------------------------------------------
+  // Masthead snapshot reads — headline numbers (StatMatrix), SG standing
+  // (StandingBars), focus areas and recent rounds (seam rows). Each is an
+  // ADDITIVE enrichment of an already-loaded page: a failure degrades that
+  // one section to its honest empty state rather than throwing, matching
+  // the pattern `/players/[playerId]/game` already uses for its optional
+  // panels. `getDetailedStats`/`getPlayerStandingRows` are the SAME single-
+  // purpose actions `StatsSpineStage` calls (via the heavier dashboard
+  // bundle) — reused here directly rather than the full 8-read bundle,
+  // since the masthead only needs five numbers and one standing row, not
+  // trend/leak/spray/pattern data.
+  // ---------------------------------------------------------------------
+  const [detailedStatsResult, standingResult, focusAreasResult, roundsResult] = await Promise.all([
+    getDetailedStats(id, 'overall').catch((err) => {
+      void logServerError(
+        `[player detail] headline stats read failed (StatMatrix will show placeholders): ${describeError(err)}`,
+        { action: 'playerDetail.detailedStats', featureArea: 'roster', playerId: id },
+        'warning',
+      );
+      return null;
+    }),
+    getPlayerStandingRows(id).catch((err) => {
+      void logServerError(
+        `[player detail] standing rows read failed (StandingBars will show insufficient-data): ${describeError(err)}`,
+        { action: 'playerDetail.standingRows', featureArea: 'roster', playerId: id },
+        'warning',
+      );
+      return null;
+    }),
+    supabase
+      .from('golf_player_focus_areas')
+      .select('id, title, area_type, status, current_value, target_value, created_at')
+      .eq('player_id', id)
+      .neq('status', 'completed')
+      .order('created_at', { ascending: false })
+      .limit(3),
+    supabase
+      .from('golf_rounds')
+      .select('id, round_date, course_name, total_score, score_to_par')
+      .eq('player_id', id)
+      .not('total_score', 'is', null)
+      .order('round_date', { ascending: false })
+      .limit(4),
+  ]);
+
+  if (focusAreasResult.error) {
+    void logServerError(
+      `[player detail] focus areas read failed (that section will render empty): ${describeError(focusAreasResult.error)}`,
+      { action: 'playerDetail.focusAreas', featureArea: 'roster', playerId: id },
+      'warning',
+    );
+  }
+  if (roundsResult.error) {
+    void logServerError(
+      `[player detail] recent rounds read failed (that section will render empty): ${describeError(roundsResult.error)}`,
+      { action: 'playerDetail.recentRounds', featureArea: 'roster', playerId: id },
+      'warning',
+    );
+  }
+
+  const standingRows = standingResult?.success ? (standingResult.data ?? []) : [];
+
   return (
     <div className={fairwayScope('min-h-full bg-canvas')}>
-      <FairwayPlayerProfile player={player} membershipStatus={membership.status} />
+      <FairwayPlayerProfile
+        player={player}
+        membershipStatus={membership.status}
+        detailedStats={detailedStatsResult}
+        standingRows={standingRows}
+        focusAreas={focusAreasResult.data ?? []}
+        recentRounds={roundsResult.data ?? []}
+        serverNowMs={Date.now()}
+      />
     </div>
   );
 }

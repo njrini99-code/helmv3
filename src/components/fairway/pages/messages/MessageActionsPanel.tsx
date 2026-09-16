@@ -19,7 +19,12 @@ export function MessageActionsPanel({ open, anchor, own, onClose, children }: {
   children: ReactNode;
 }) {
   const desktop = useMediaQuery('(min-width: 768px) and (pointer: fine)');
-  const reduced = useReducedMotion();
+  // `?? false` normalizes framer-motion's `boolean | null` to a plain
+  // `boolean`, matching the repo's convention. It does not by itself close
+  // the hydration gap on the `initial` prop below for a reduced-motion user
+  // (server sees `null`/falsy, client's first render can resolve `true`) —
+  // that gap is a separate, open issue, not fixed by this normalization.
+  const reduced = useReducedMotion() ?? false;
   const safeArea = useSafeAreaInsets();
   const collisionPadding = {
     top: Math.max(12, safeArea.top + 8),

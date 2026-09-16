@@ -89,7 +89,16 @@ interface TopPlayer {
 }
 
 interface ScoringTrend {
+    /** Display text only: "Sep 10", no year. Never parse this back into a
+     *  date — two rounds twelve months apart produce the same label, so any
+     *  axis built from it is fabricated. Use `date`. */
     label: string;
+    /** A bare YYYY-MM-DD for the point: the round's own `round_date` for a
+     *  per-round series, the first of the month for the monthly team series.
+     *  Added 2026-09-10 so a consumer can plot this on a real date axis;
+     *  `label` had already formatted the year away. Parse it at LOCAL
+     *  midnight, not through `new Date(str)`, which reads a bare date as UTC. */
+    date: string;
     value: number;
 }
 
@@ -123,6 +132,20 @@ export interface CoachDashboardPayload {
         puttsPerRound: SparklineStatCard;
         rosterSize: SparklineStatCard;
     };
+    /**
+     * Team-level readout series — the window's rounds cut into up to five
+     * consecutive chronological buckets, each aggregated the same way the
+     * headline value is. Distinct from `sparklines[].sparkline`, which is the
+     * last five individual rounds and carries no team-level meaning. Empty
+     * when there is too little data to bucket honestly.
+     */
+    teamSeries: {
+        scoringAvg: number[];
+        girPct: number[];
+        puttsPerRound: number[];
+        /** Rounds in the window that fed the buckets, for the readout caption. */
+        roundsInWindow: number;
+    };
     teamPulse: TeamPulseData;
     actionItems: ActionItem[];
     recentRounds: RecentRound[];
@@ -143,6 +166,12 @@ export interface CoachDashboardPayload {
     teamName: string | null;
     joinCode: string | null;
     timezone: string;
+    /** Every active player on the roster, so the home stage can draw a row for a player with no rounds in the window. */
+    roster: Array<{ id: string; name: string; avatar_url: string | null }>;
+    /** First day of the selected window (`YYYY-MM-DD`), null for `all`. */
+    windowStart: string | null;
+    /** Today in the team timezone (`YYYY-MM-DD`): the right edge of the home stage axis. */
+    today: string;
 }
 
 export interface PlayerDashboardPayload {
@@ -246,6 +275,44 @@ function buildSparkline(
         .slice(0, count)
         .reverse(); // oldest → newest for sparkline
     return values;
+}
+
+/**
+ * Team-level series for the coach home readouts.
+ *
+ * `buildSparkline` returns the last five INDIVIDUAL rounds, by whoever logged
+ * them. A first-to-last delta across that is not a team movement — it is the
+ * gap between two unrelated rounds by two different players, which is how the
+ * home readout came to claim the team had gained 44.5 percentage points of GIR
+ * "last 5 rounds". These buckets are the honest version: the window's rounds
+ * in chronological order, cut into up to five consecutive groups, each
+ * aggregated exactly the way the headline value above it is aggregated.
+ *
+ * Returns `[]` rather than a short series when there is not enough to say
+ * anything — the caller then prints no delta at all. A thin series would still
+ * render as an authoritative arrow.
+ */
+const TEAM_SERIES_MAX_BUCKETS = 5;
+const TEAM_SERIES_MIN_PER_BUCKET = 3;
+
+function bucketTeamSeries<T>(
+    roundsOldestFirst: readonly T[],
+    aggregate: (bucket: readonly T[]) => number | null,
+): number[] {
+    const n = roundsOldestFirst.length;
+    const buckets = Math.min(TEAM_SERIES_MAX_BUCKETS, Math.floor(n / TEAM_SERIES_MIN_PER_BUCKET));
+    if (buckets < 2) return [];
+    const out: number[] = [];
+    for (let i = 0; i < buckets; i += 1) {
+        const start = Math.floor((i * n) / buckets);
+        const end = Math.floor(((i + 1) * n) / buckets);
+        const value = aggregate(roundsOldestFirst.slice(start, end));
+        // One unusable bucket makes the whole series dishonest — a gap would be
+        // drawn as a straight line between the points either side of it.
+        if (value === null || !Number.isFinite(value)) return [];
+        out.push(Number(value.toFixed(1)));
+    }
+    return out;
 }
 
 // ============================================================================
@@ -453,6 +520,12 @@ async function getCoachDashboardDataImpl(
         puttsPerRound: { label: 'Team Putts/Rd', value: null, sparkline: [] },
         rosterSize: { label: 'Roster Size', value: rosterSize, sparkline: [] },
     };
+    let teamSeries: CoachDashboardPayload['teamSeries'] = {
+        scoringAvg: [],
+        girPct: [],
+        puttsPerRound: [],
+        roundsInWindow: 0,
+    };
     const teamPulse: TeamPulseData = { improving: 0, stable: 0, declining: 0, roundsThisWeek: 0 };
     /** True when a read behind the team KPIs failed — see teamStatsUnavailable. */
     let roundsFetchError = false;
@@ -640,8 +713,12 @@ async function getCoachDashboardDataImpl(
             });
             teamScoringTrend = Object.entries(roundsByYearMonth)
                 .sort(([a], [b]) => a.localeCompare(b))
-                .map(([, { label, scores: s }]) => ({
+                .map(([sortKey, { label, scores: s }]) => ({
                     label,
+                    // A month bucket has no single round date, so `date` is the
+                    // first of the bucket month — enough to place the point on a
+                    // real axis, which the year-less `label` cannot do.
+                    date: `${sortKey}-01`,
                     value: Number((s.reduce((a, b) => a + b, 0) / s.length).toFixed(1))
                 }));
 
@@ -658,6 +735,50 @@ async function getCoachDashboardDataImpl(
             const scoringSparkline = buildSparkline(scoringSparkRounds);
             const puttsSparkline = buildSparkline(puttsSparkRounds);
             const girSparkline = buildSparkline(girSparkRounds);
+
+            // Team readout buckets. `allRounds` is newest-first; the buckets read
+            // oldest → newest so a rising line means the team got better at the
+            // thing, in the direction the readout's own goodDirection declares.
+            const roundsOldestFirst = [...allRounds].reverse();
+            const normalizeScore = (r: (typeof allRounds)[number]): number | null => {
+                if (r.total_score === null || r.total_score <= 0) return null;
+                const holes = (r as { holes_played?: number | null }).holes_played ?? 18;
+                if (holes <= 0) return null;
+                return holes < 18 ? (r.total_score / holes) * 18 : r.total_score;
+            };
+            teamSeries = {
+                // Mean of 18-normalized scores, matching teamScoringAverage above.
+                scoringAvg: bucketTeamSeries(roundsOldestFirst, (bucket) => {
+                    const scores = bucket.map(normalizeScore).filter((v): v is number => v !== null);
+                    if (scores.length === 0) return null;
+                    return scores.reduce((a, b) => a + b, 0) / scores.length;
+                }),
+                // Weighted: sum made ÷ sum opportunities, matching avgGir below.
+                girPct: bucketTeamSeries(roundsOldestFirst, (bucket) => {
+                    let made = 0;
+                    let possible = 0;
+                    for (const r of bucket) {
+                        if (r.total_gir !== null && r.total_gir_possible && r.total_gir_possible > 0) {
+                            made += r.total_gir;
+                            possible += r.total_gir_possible;
+                        }
+                    }
+                    return possible > 0 ? (made / possible) * 100 : null;
+                }),
+                // Hole-weighted: (sum putts ÷ sum holes) × 18, matching avgPutts below.
+                puttsPerRound: bucketTeamSeries(roundsOldestFirst, (bucket) => {
+                    let putts = 0;
+                    let holes = 0;
+                    for (const r of bucket) {
+                        if (r.total_putts !== null) {
+                            putts += r.total_putts;
+                            holes += (r as { holes_played?: number | null }).holes_played ?? 18;
+                        }
+                    }
+                    return holes > 0 ? (putts / holes) * 18 : null;
+                }),
+                roundsInWindow: allRounds.length,
+            };
 
             // Compute current KPI values over the FULL windowed round set.
             // `allRounds` already respects the selected window (via dateCutoff).
@@ -853,6 +974,14 @@ async function getCoachDashboardDataImpl(
         teamName: team?.name || null,
         joinCode: team?.join_code || null,
         timezone: teamTimezone,
+        roster: players.map(p => ({
+            id: p.id,
+            name: `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Unknown',
+            avatar_url: p.avatar_url || null,
+        })),
+        teamSeries,
+        windowStart: dateCutoff,
+        today: todayStart.split('T')[0] ?? '',
     };
 }
 
@@ -1180,6 +1309,7 @@ async function getPlayerDashboardDataImpl(
         .filter(r => r.total_score !== null)
         .map(r => ({
             label: new Date(r.round_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+            date: String(r.round_date).split('T')[0]!,
             value: r.total_score!
         }));
 

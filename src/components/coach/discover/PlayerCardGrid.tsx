@@ -107,7 +107,12 @@ function PlayerCardGridComponent({
   onCardLeave,
 }: PlayerCardGridProps) {
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const reduceMotion = useReducedMotion();
+  // `?? false` normalizes framer-motion's `boolean | null` to a plain
+  // `boolean`, matching the repo's convention. It does not by itself close
+  // the hydration gap on the `initial` prop below for a reduced-motion user
+  // (server sees `null`/falsy, client's first render can resolve `true`) —
+  // that gap is a separate, open issue, not fixed by this normalization.
+  const reduceMotion = useReducedMotion() ?? false;
 
   const gridCols = {
     2: 'grid-cols-1 md:grid-cols-2',

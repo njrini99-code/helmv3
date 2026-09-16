@@ -2,38 +2,39 @@
 
 /**
  * ============================================================================
- * SignalDossier — the triage detail pane (Triage Desk spec §3)
+ * SignalDossier — the body of the Intelligence screen's drill panel
  * ----------------------------------------------------------------------------
- * Claim headline, severity + category chips, an evidence block, stroke
- * impact in mono, a WORKING action row (Mark reviewed, Dismiss, Prescribe via
- * `PromoteToFocusAreaButton`, "View stats"), then a RELATED CONTEXT region:
- * this player's other open signals, active focus areas, active goals, and a
- * recent-trend chip. Never dead-ends: every action is wired to
+ * Claim headline, the evidence block, stroke impact in mono, a WORKING action
+ * row (Mark reviewed, Dismiss, Prescribe via `PromoteToFocusAreaButton`, View
+ * stats), then the related context: this player's recent trend, their other
+ * open signals, their active focus areas and their active goals. Never
+ * dead-ends: every action is wired to
  * `reviewSignal`/`dismissSignal`/`createFocusAreaFromInsight` with an
- * optimistic update owned by `TriageDesk`, this component only renders state
- * + fires callbacks.
+ * optimistic update owned by `TriageDesk`; this component only renders state
+ * and fires callbacks.
  *
- * Layout: on the desktop split (`min-[940px]:`) `TriageDesk`'s grid stretches
- * this column to match the queue's height (`items-stretch`, the CSS Grid
- * default) — this root fills that stretched height (`h-full`) and scrolls
- * its OWN content independently of the queue instead of leaving a blank
- * canvas gap below the action row (the live-QA "~700-800px dead space"
- * finding). Below the breakpoint only one pane shows at a time full-width,
- * so there's no sibling to match height against — the root falls back to its
- * natural content height and the page scrolls normally, same as before.
+ * ── CHROME (facelift, LANGUAGE.md) ─────────────────────────────────────────
+ * This used to be a bordered `bg-surface` card holding four more bordered
+ * `bg-surface-sunken` boxes — a panel whose only content is a list, four times
+ * over, nested inside a card. It now renders BARE: `TriageDesk` mounts it
+ * inside the one `DrillPanel` under the Signals table, and every section here
+ * is plain type separated by a hairline rule. The back control belongs to that
+ * `DrillPanel`, so this component no longer draws its own.
+ *
+ * The trade is real and deliberate: four separately-scannable boxes become one
+ * continuous reading. The evidence a coach acts on is unchanged, but it is now
+ * read down rather than picked out of a grid.
  * ========================================================================== */
 
 import type { ReactNode } from 'react';
 import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
 import { Badge, Button, EmptyState, PressTarget, StatusPill, TrendGlyph } from '@/components/fairway';
 import type { PlayersGridFocusArea, PlayersGridStats } from '@/components/fairway';
 import type { FairwayGoalCardData } from '@/components/fairway/pages/coachhelm/FairwayGoalCard';
 import type { GroupedSignal, SignalGroup } from '@/lib/coachhelm/signal-grouping';
 import { EvidencePanel } from '@/components/golf/coachhelm/insights/EvidencePanel';
-import type { InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
-import { formatCategoryLabel } from './buildTriageViewModel';
-import { SeverityChip } from './SignalRow';
+import { formatCategoryLabel, resolveSignalEvidence } from './buildTriageViewModel';
+import { SeverityChip } from './intelligence-parts';
 import { PromoteToFocusAreaButton } from './PromoteToFocusAreaButton';
 import { toCoachVoice } from '@/lib/golf/claim-voice';
 import { formatScoringAverage } from '@/lib/golf/format-scoring-average';
@@ -50,10 +51,9 @@ export interface SignalDossierProps {
   onReview: (signal: GroupedSignal) => void;
   onDismiss: (signal: GroupedSignal) => void;
   onPromoted: (signal: GroupedSignal) => void;
-  onBack: () => void;
   /** Fires when the coach picks one of the "other open signals" rows below —
    *  same signal-id contract `TriageDesk.navigate({ signal: id })` uses for
-   *  the queue itself. Omitted (row still renders, just non-interactive) if
+   *  the table itself. Omitted (row still renders, just non-interactive) if
    *  the caller doesn't wire it. */
   onSelectSignal?: (id: string) => void;
   /** This player's OTHER open focus areas (active/in_progress), filtered by
@@ -63,16 +63,26 @@ export interface SignalDossierProps {
    *  reads. Defaults to []. */
   playerGoals?: FairwayGoalCardData[];
   /** This player's roster-row stats (recent_trend, avg_score) for the
-   *  "recent trend" chip. `null`/omitted when there's no player scope. */
+   *  "recent trend" line. `null`/omitted when there's no player scope. */
   playerStats?: PlayersGridStats | null;
+  /**
+   * Shown in place of the generic "pick a row" prompt when the queue is
+   * genuinely empty (`entry` is null because there is nothing to select, not
+   * merely because nothing is selected yet). Omit to keep the generic copy.
+   */
+  emptyLeakBandExplanation?: ReactNode;
 }
 
-function DossierSection({ title, children }: { title: string; children: ReactNode }) {
+const OVERLINE = 'font-fw-display text-eyebrow uppercase tracking-[0.13em] text-text-tertiary';
+
+/** A section of the drill: a rule, an overline, then the content. No box —
+ *  the one `DrillPanel` around this component is the only surface here. */
+function DrillSection({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="flex flex-col gap-2 rounded-fw-md border border-border-subtle bg-surface-sunken p-4">
-      <p className="font-fw-display text-eyebrow uppercase tracking-[0.13em] text-text-tertiary">{title}</p>
+    <section className="flex flex-col gap-2 border-t border-border-subtle pt-3.5">
+      <h4 className={OVERLINE}>{title}</h4>
       {children}
-    </div>
+    </section>
   );
 }
 
@@ -91,20 +101,25 @@ export function SignalDossier({
   onReview,
   onDismiss,
   onPromoted,
-  onBack,
   onSelectSignal,
   playerFocusAreas = [],
   playerGoals = [],
   playerStats = null,
+  emptyLeakBandExplanation,
 }: SignalDossierProps) {
   if (!entry) {
     return (
-      <div className="flex items-center justify-center rounded-fw-lg border border-border-subtle bg-surface p-6 min-[940px]:h-full">
+      <div className="flex flex-col items-center justify-center gap-4 py-6">
         <EmptyState
           variant="subtle"
           title="Select a signal"
-          description="Pick a row from the queue to see the full evidence and act on it."
+          description="Pick a row from the table to see the full evidence and act on it."
         />
+        {emptyLeakBandExplanation ? (
+          <div className="w-full max-w-md font-fw-sans text-body-sm text-text-secondary">
+            {emptyLeakBandExplanation}
+          </div>
+        ) : null}
       </div>
     );
   }
@@ -116,15 +131,7 @@ export function SignalDossier({
   );
 
   return (
-    <div className="flex flex-col gap-4 rounded-fw-lg border border-border-subtle bg-surface p-5 sm:p-6 min-[940px]:h-full min-[940px]:overflow-y-auto">
-      <PressTarget
-        onClick={onBack}
-        className="inline-flex w-fit items-center gap-1.5 rounded-full border border-accent-200 bg-accent-50 px-3 py-1.5 text-caption font-bold text-accent-700 transition-colors [transition-duration:150ms] hover:bg-accent-100 min-[940px]:hidden"
-      >
-        <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
-        Back to queue
-      </PressTarget>
-
+    <div data-slot="signal-dossier" className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-2">
         <SeverityChip severity={signal.severity} />
         <Badge tone="neutral" size="sm">
@@ -157,11 +164,9 @@ export function SignalDossier({
         */}
       </div>
 
-      <h3 className="font-fw-display text-h3 font-semibold text-text-primary">{signal.title}</h3>
-
-      <div className="flex flex-col gap-2 rounded-fw-md border border-border-subtle bg-surface-sunken p-4">
-        <p className="font-fw-display text-eyebrow uppercase tracking-[0.13em] text-text-tertiary">Evidence</p>
-        <p className="font-fw-sans text-body-sm text-text-secondary">
+      <div className="flex flex-col gap-2">
+        <h4 className={OVERLINE}>Evidence</h4>
+        <p className="max-w-[72ch] font-fw-sans text-body-sm text-text-secondary">
           {/* Retold in the third person — the coach is the reader, the
               player is the subject (audit M12). */}
           {signal.claim ? toCoachVoice(signal.claim, group.playerName) : 'No further detail recorded.'}
@@ -178,7 +183,7 @@ export function SignalDossier({
           "too few to read reliably" handling. Renders nothing for patterns and
           for pre-evidence v2 rows, which is why it needs no guard here.
         */}
-        <EvidencePanel evidence={signal.evidence as InsightEvidence | null} compact />
+        <EvidencePanel evidence={resolveSignalEvidence(signal.evidence)} compact />
         <div className="mt-1 flex flex-wrap gap-x-5 gap-y-1 font-fw-mono text-caption tabular-nums text-text-tertiary">
           <span>
             Status <span className="text-text-secondary">{signal.status}</span>
@@ -192,7 +197,7 @@ export function SignalDossier({
       </div>
 
       {signal.strokeImpact !== null ? (
-        <p className="font-fw-mono text-body-lg font-semibold tabular-nums text-text-primary">
+        <p className="font-fw-mono text-body-lg font-semibold tabular-nums text-fw-warning-ink">
           {signal.strokeImpact > 0 ? '+' : ''}
           {signal.strokeImpact.toFixed(2)} strokes
         </p>
@@ -202,8 +207,8 @@ export function SignalDossier({
         {/* A roster roll-up has no row to acknowledge. Its id is a synthetic
             `team:<metric>`, so the server actions cannot act on it — and there
             is nothing coherent for them to mean, since dismissing the summary
-            would not touch any of the leaks it summarizes (each of which has
-            its own card below). Rendering disabled-looking buttons that
+            would not touch any of the per-player leaks it summarizes (each is
+            its own row in the table). Rendering disabled-looking buttons that
             silently no-op is worse than not rendering them. */}
         {signal.kind !== 'team_synthesis' ? (
           <>
@@ -229,11 +234,11 @@ export function SignalDossier({
         ) : null}
       </div>
 
-      {/* Related context — fills the height the action row used to leave
-          blank instead of a real signal-to-player narrative. */}
+      {/* Related context — what this signal means for this player, so the
+          drill answers "and then what" without a second navigation. */}
       {group.playerId ? (
-        <div className="flex flex-col gap-3 border-t border-border-subtle pt-4">
-          <DossierSection title="Recent trend">
+        <div className="mt-1 grid grid-cols-1 gap-x-8 gap-y-4 md:grid-cols-2">
+          <DrillSection title="Recent trend">
             {playerStats?.recent_trend ? (
               <div className="flex items-center gap-2">
                 <TrendGlyph direction={playerStats.recent_trend} />
@@ -248,18 +253,18 @@ export function SignalDossier({
                 Not enough recent rounds for a trend yet.
               </p>
             )}
-          </DossierSection>
+          </DrillSection>
 
-          <DossierSection title={`Other open signals for ${group.playerName}`}>
+          <DrillSection title={`Other open signals for ${group.playerName}`}>
             {otherSignals.length === 0 ? (
               <p className="font-fw-sans text-body-sm text-text-tertiary">No other open signals for this player.</p>
             ) : (
-              <ul className="flex flex-col gap-1.5">
+              <ul className="flex flex-col">
                 {otherSignals.map((s) => (
-                  <li key={s.id}>
+                  <li key={s.id} className="border-b border-border-subtle last:border-b-0">
                     <PressTarget
                       onClick={() => onSelectSignal?.(s.id)}
-                      className="flex w-full items-center gap-2 rounded-fw-sm px-2 py-1.5 text-left hover:bg-surface"
+                      className="flex w-full items-center gap-2 py-2 text-left transition-colors [transition-duration:150ms] hover:bg-surface-hover/60"
                     >
                       <SeverityChip severity={s.severity} />
                       <span className="min-w-0 flex-1 truncate font-fw-sans text-body-sm text-text-secondary">
@@ -270,9 +275,9 @@ export function SignalDossier({
                 ))}
               </ul>
             )}
-          </DossierSection>
+          </DrillSection>
 
-          <DossierSection title="Focus areas">
+          <DrillSection title="Focus areas">
             {activeFocusAreas.length === 0 ? (
               <p className="font-fw-sans text-body-sm text-text-tertiary">No active focus areas yet.</p>
             ) : (
@@ -289,9 +294,9 @@ export function SignalDossier({
                 ))}
               </ul>
             )}
-          </DossierSection>
+          </DrillSection>
 
-          <DossierSection title="Active goals">
+          <DrillSection title="Active goals">
             {playerGoals.length === 0 ? (
               <p className="font-fw-sans text-body-sm text-text-tertiary">No active goals yet.</p>
             ) : (
@@ -308,7 +313,7 @@ export function SignalDossier({
                 ))}
               </ul>
             )}
-          </DossierSection>
+          </DrillSection>
         </div>
       ) : null}
     </div>

@@ -72,6 +72,7 @@ const props: MessageThreadPaneProps = {
   userId: 'coach-1',
   currentUserId: 'coach-1',
   isOtherTyping: false,
+  now: new Date('2026-08-22T12:00:00.000Z'),
   onBack: vi.fn(),
   onNewMessage: vi.fn(),
   editingMessageId: null,

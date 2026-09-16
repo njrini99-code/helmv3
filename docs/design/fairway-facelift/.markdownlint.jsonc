@@ -1,0 +1,7 @@
+{
+  // These are design specs: prose paragraphs, wide ASCII layout diagrams
+  // and inline Tailwind class strings that a hard 80-column wrap would
+  // make harder to read, not easier. AGENTS.md declares the same thing
+  // for itself at the top of the file. Every other rule still applies.
+  "MD013": false
+}

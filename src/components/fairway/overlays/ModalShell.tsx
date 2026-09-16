@@ -23,6 +23,15 @@
  *
  * Escalation: PopoverPanel < Sheet < ModalShell. Use this ONLY when the user
  * must deal with the overlay before continuing.
+ *
+ * Perf split (2026-09-10): the material (`fw-glass-strong` — bg + a 36px
+ * backdrop-filter + border) lives on a STATIC inner child, never on the
+ * `motion.div` framer-motion animates. That div carries an inline
+ * `transform` (scale/y) for the entire materialize/exit tween, and a
+ * transform forces the browser to resample any `backdrop-filter` on the
+ * SAME element every frame of the animation. The motion.div keeps only
+ * layout, the radius clip (`overflow-hidden` + rounding) and the outward
+ * shadow; the inner child carries `fw-glass-strong` and the text color.
  * ============================================================================
  */
 
@@ -340,11 +349,18 @@ function ModalShellRoot({
                 // global keyboardWillShow scroll must leave the page alone.
                 data-fw-keyboard-aware
                 className={cn(
+                  // Layout + radius clip + shadow ONLY — framer-motion's
+                  // inline transform lives on THIS node, so its own paint
+                  // stays cheap. `overflow-hidden` is the radius clip: it
+                  // crops the inner material child (below) to this node's
+                  // rounded corners. `fw-glass-strong`'s own shadow has a
+                  // non-inset component that would otherwise be clipped
+                  // away by that same overflow-hidden if left on the inner
+                  // child, so it's restated here explicitly.
                   'fixed inset-x-0 m-auto',
                   'overflow-hidden',
-                  'text-text-primary',
                   'flex flex-col',
-                  GLASS_STRONG_CLASS,
+                  'shadow-fw-modal',
                   workspace
                     ? // Phone: edge to edge, full height (the inline top/bottom
                       // pin it; h-auto lets them size it). sm+: a wide stage.
@@ -359,50 +375,61 @@ function ModalShellRoot({
                 exit="hidden"
                 transition={panelTransition(reduced, true)}
               >
-                {/* Provide our own DOM node so floating popups mounted inside
-                    (fairway/forms/Select.tsx et al.) can portal INTO this
-                    subtree instead of document.body — see _shared.ts's
-                    ModalPortalContext docblock for why that's required. */}
-                <ModalPortalContext.Provider value={contentNode}>
-                  {/* Always render a Dialog.Title for a11y; visually hide if asked. */}
-                  {hideTitle || !titleIsString ? (
-                    <Dialog.Title className="sr-only">
-                      {titleIsString ? title : 'Dialog'}
-                    </Dialog.Title>
-                  ) : null}
+                {/* Static material child — never transformed, so its
+                    backdrop-filter is painted once and left alone through
+                    the entire materialize/exit tween. */}
+                <div
+                  data-slot={`${dataSlot}-material`}
+                  className={cn(
+                    'flex min-h-0 flex-1 flex-col rounded-[inherit] text-text-primary',
+                    GLASS_STRONG_CLASS,
+                  )}
+                >
+                  {/* Provide our own DOM node so floating popups mounted inside
+                      (fairway/forms/Select.tsx et al.) can portal INTO this
+                      subtree instead of document.body — see _shared.ts's
+                      ModalPortalContext docblock for why that's required. */}
+                  <ModalPortalContext.Provider value={contentNode}>
+                    {/* Always render a Dialog.Title for a11y; visually hide if asked. */}
+                    {hideTitle || !titleIsString ? (
+                      <Dialog.Title className="sr-only">
+                        {titleIsString ? title : 'Dialog'}
+                      </Dialog.Title>
+                    ) : null}
 
-                  {!hideTitle && (titleIsString || description) ? (
-                    <ModalHeader>
-                      {titleIsString ? <ModalTitle>{title}</ModalTitle> : null}
-                      {description ? (
-                        <ModalDescription>{description}</ModalDescription>
-                      ) : null}
-                    </ModalHeader>
-                  ) : description ? (
-                    <Dialog.Description className="sr-only">
-                      {description}
-                    </Dialog.Description>
-                  ) : null}
+                    {!hideTitle && (titleIsString || description) ? (
+                      <ModalHeader>
+                        {titleIsString ? <ModalTitle>{title}</ModalTitle> : null}
+                        {description ? (
+                          <ModalDescription>{description}</ModalDescription>
+                        ) : null}
+                      </ModalHeader>
+                    ) : description ? (
+                      <Dialog.Description className="sr-only">
+                        {description}
+                      </Dialog.Description>
+                    ) : null}
 
-                  {children}
+                    {children}
 
-                  {!hideClose ? (
-                    <Dialog.Close
-                      aria-label="Close"
-                      className={cn(
-                        CLOSE_BUTTON_CLASS,
-                        // Invisible hit-slop expands the tap target to 44px
-                        // without changing the 36px visual (iOS touch floor,
-                        // §7.4). The button is already `absolute`, so it is the
-                        // positioning context for `::before` — no `relative` needed.
-                        "before:absolute before:-inset-1.5 before:content-['']",
-                        'absolute right-4 top-4',
-                      )}
-                    >
-                      <X className="h-4 w-4" strokeWidth={1.5} aria-hidden />
-                    </Dialog.Close>
-                  ) : null}
-                </ModalPortalContext.Provider>
+                    {!hideClose ? (
+                      <Dialog.Close
+                        aria-label="Close"
+                        className={cn(
+                          CLOSE_BUTTON_CLASS,
+                          // Invisible hit-slop expands the tap target to 44px
+                          // without changing the 36px visual (iOS touch floor,
+                          // §7.4). The button is already `absolute`, so it is the
+                          // positioning context for `::before` — no `relative` needed.
+                          "before:absolute before:-inset-1.5 before:content-['']",
+                          'absolute right-4 top-4',
+                        )}
+                      >
+                        <X className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+                      </Dialog.Close>
+                    ) : null}
+                  </ModalPortalContext.Provider>
+                </div>
               </motion.div>
             </Dialog.Content>
           </Dialog.Portal>

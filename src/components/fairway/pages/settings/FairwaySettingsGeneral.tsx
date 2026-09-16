@@ -18,7 +18,9 @@
  *   • fromUntyped                         — '@/lib/supabase/untyped'
  *     (team panels bind to useGolfUser().teamId — the cookie-aware ACTIVE team)
  *   • BENCHMARK_* (sg benchmark)          — '@/lib/golf/sg-benchmarks'
- *   • AvatarUpload / ConfirmDialog        — '@/components/ui/*'
+ *   • AvatarUpload                        — '@/components/ui/*'
+ *     (destructive/warning confirms use the shared `overlays/ConfirmModal`,
+ *     not the legacy ui/confirm-dialog)
  *   • JoinTeamSection / CoachHelmToggle   — '@/components/golf/*'
  *   • account delete  → DELETE /api/account/delete   (identical to legacy)
  *
@@ -64,7 +66,6 @@ import {
   type DeliveryNotificationPreferences,
 } from '@/lib/coachhelm/v3/notifications/types';
 import { AvatarUpload } from '@/components/ui/avatar-upload';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { JoinTeamSection } from '@/components/golf/settings/JoinTeamSection';
 import { CoachHelmToggle } from '@/components/golf/coachhelm/v2';
 import {
@@ -105,8 +106,9 @@ import {
   resolveEventReminderSettings,
   formatLead,
 } from '@/lib/golf/event-reminder-settings';
-// Specific path (not the barrel) so barrel-mocking tests don't need to stub it.
+// Specific paths (not the barrel) so barrel-mocking tests don't need to stub them.
 import { Skeleton } from '@/components/fairway/feedback/Skeleton';
+import { ConfirmModal } from '@/components/fairway/overlays/ConfirmModal';
 
 const EM_DASH = '—';
 
@@ -161,7 +163,9 @@ function useReportDirty(id: string, dirty: boolean) {
  * it (1) arms the native `beforeunload` prompt (covers refresh / tab close /
  * external nav) and (2) intercepts same-origin in-app link clicks + the back
  * gesture, showing a "Discard unsaved changes?" confirm before allowing the
- * navigation to proceed. Reduced-motion / token-safe (confirm is ConfirmDialog).
+ * navigation to proceed. Reduced-motion / token-safe (confirm is the shared
+ * `overlays/ConfirmModal`, `tone="warning"` — a passive nav-intercept, not an
+ * explicit destructive click, so it gets the lighter open tap).
  */
 function UnsavedChangesGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -265,13 +269,13 @@ function UnsavedChangesGuard({ children }: { children: React.ReactNode }) {
   return (
     <DirtyRegistryContext.Provider value={registry}>
       {children}
-      <ConfirmDialog
+      <ConfirmModal
         open={pendingHref !== null}
         title="Discard unsaved changes?"
         message="You have unsaved edits on this screen. If you leave now, those changes will be lost."
         confirmLabel="Discard & leave"
         cancelLabel="Keep editing"
-        variant="danger"
+        tone="warning"
         onConfirm={confirmLeave}
         onCancel={() => setPendingHref(null)}
       />
@@ -836,10 +840,11 @@ export function FairwaySettingsGeneral() {
             <Button
               variant="danger"
               busy={deletingAccount}
-              onClick={() => {
-                void triggerHaptic('warning');
-                setDeleteConfirmOpen(true);
-              }}
+              // No haptic here — opening ConfirmModal (tone="danger") below
+              // already fires the 'warning' tap on open; firing it here too
+              // double-buzzed (this call used the raw, throttle-bypassing
+              // triggerHaptic, so nothing swallowed the second one).
+              onClick={() => setDeleteConfirmOpen(true)}
             >
               Delete account
             </Button>
@@ -861,13 +866,13 @@ export function FairwaySettingsGeneral() {
         </p>
       </div>
 
-      <ConfirmDialog
+      <ConfirmModal
         open={deleteConfirmOpen}
         title="Delete account?"
         message="This will permanently delete your account and all associated data. This action cannot be undone."
         confirmLabel="Delete Account"
         cancelLabel="Cancel"
-        variant="danger"
+        tone="danger"
         isLoading={deletingAccount}
         onConfirm={confirmDeleteAccount}
         onCancel={() => setDeleteConfirmOpen(false)}
