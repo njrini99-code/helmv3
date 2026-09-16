@@ -225,6 +225,14 @@ from V1; V4 changes what stands on each centre.
   is a hairline crack that shows the sky through the ground; the compile
   report counts them (`noding.tJunctionVertices`) and the fixture carries
   zero on every hole.
+- **Ribbon draping.** Every strip vertex (shoulder, core, core, shoulder)
+  displays at the centreline height as the ground's cut/fill shows it,
+  capped at `cutFillMaxM` from the canonical ground under that vertex
+  (`ribbonVertexHeight`), so across a bank steeper than the cap the strip
+  follows the displayed ground instead of floating out of it or sinking
+  under it. A path that ends at a bank (hole 7's cart-path stubs beside the
+  road, where the source has no bridge) still climbs it; that is the
+  source, not the renderer.
 - **Cut/fill end caps and junctions (`context-contact-v3`).** A ribbon's
   cut/fill feathers along its own axis past each end cap (no levelled disc
   past the end), and where several ribbons reach one vertex, a cart path

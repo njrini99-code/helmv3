@@ -60,9 +60,21 @@ function resample(points: readonly PointM[], step: number): PointM[] {
   return out;
 }
 
+/** The height a ribbon vertex displays at: the centreline height, as the
+ * ground's cut/fill levelling shows it (redesign 12, `context-contact-v3`),
+ * capped at `cutFillMaxM` above or below the canonical ground under the
+ * vertex. Across a bank steeper than the cap the strip therefore follows
+ * the displayed ground instead of floating out of it or sinking under it,
+ * and an end cap on a slope no longer reads as a torn shelf. */
+export function ribbonVertexHeight(mesh: TerrainMesh, point: PointM, centreZ: number, cutFillMaxM: number = MERIDIAN_STYLE.contextContact.cutFillMaxM): number {
+  const ground = terrainHeight(mesh, point);
+  if (ground == null || !(cutFillMaxM > 0)) return centreZ;
+  return ground + Math.max(-cutFillMaxM, Math.min(cutFillMaxM, centreZ - ground));
+}
+
 /** A triangle strip of `width` along the line, sampled on the terrain. Runs
  * outside the mesh split the strip; the shoulder darkens the outer 30 %. */
-function ribbon(mesh: TerrainMesh, line: readonly PointM[], width: number, tone: THREE.Color, shoulder: THREE.Color,
+export function ribbon(mesh: TerrainMesh, line: readonly PointM[], width: number, tone: THREE.Color, shoulder: THREE.Color,
   positions: number[], colors: number[], groundZ: number[], indices: number[]) {
   const samples = resample(roundCorners(line, RIBBON_CORNER_M), RIBBON_STEP_M);
   let previous: number | null = null;
@@ -75,9 +87,11 @@ function ribbon(mesh: TerrainMesh, line: readonly PointM[], width: number, tone:
     const length = Math.sqrt(tx * tx + ty * ty) || 1; tx /= length; ty /= length;
     const ox = -ty * width / 2, oy = tx * width / 2;
     const base = positions.length / 3;
-    // Four vertices across: shoulder, core, core, shoulder.
+    // Four vertices across: shoulder, core, core, shoulder, each on the
+    // displayed (levelled) ground under it.
     for (const [f, color] of [[-1, shoulder], [-.4, tone], [.4, tone], [1, shoulder]] as const) {
-      positions.push(x + ox * f, y + oy * f, z); groundZ.push(z); colors.push(color.r, color.g, color.b);
+      const vx = x + ox * f, vy = y + oy * f, vz = ribbonVertexHeight(mesh, [vx, vy], z);
+      positions.push(vx, vy, vz); groundZ.push(vz); colors.push(color.r, color.g, color.b);
     }
     if (previous != null) for (let k = 0; k < 3; k++) {
       indices.push(previous + k, base + k, base + k + 1, previous + k, base + k + 1, previous + k + 1);
