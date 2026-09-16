@@ -15,6 +15,8 @@ import { buildSurfacePartition, LIE_LABELS, lieDisplayPolicy, type LieClass, typ
 import { LocationBuffer, type Covariance2, type LocationSample } from '@/lib/golf/one-tap/location-estimator';
 import type { LocationSource } from '@/lib/golf/one-tap/location-source';
 import { OneTapController, type OneTapSnapshot } from '@/lib/golf/one-tap/one-tap-controller';
+import { QUALITY_CONFIG } from '@/lib/golf/one-tap/location-quality';
+import { acceptPlayerFix, playerFixFromSample, tickPlayerPresentation, type PlayerPresentation } from '@/lib/golf/one-tap/player-presentation';
 import { markersFromAnchors } from '@/lib/golf/one-tap/scene-markers';
 import { liveAnchors, UNDO_WINDOW_MS, type ShotAnchor } from '@/lib/golf/one-tap/shot-anchor';
 
@@ -66,6 +68,8 @@ export interface OneTapView {
   cameraState: ProductionCameraState;
   locationKind: 'device' | 'synthetic' | 'none';
   latestFix: LocationSample | null;
+  /** §37 presentation position of the live device (YOU); never evidence. */
+  player: PlayerPresentation | null;
   canHoleOut: boolean;
   markBall(): void;
   undo(): void;
@@ -77,6 +81,8 @@ export interface OneTapView {
 const EMPTY_SNAPSHOT: OneTapSnapshot = Object.freeze({ state: 'HOLE_READY', outcome: null, lastAnchor: null, anchors: [], shots: [], undoableId: null, syncPending: 0, paused: false, manualCamera: false, pendingTapMs: null });
 export const RIPPLE_MS = 500;
 const CAMERA_TICK_MS = 1000;
+/** §37: YOU eases at animation cadence; the tick is a no-op once settled. */
+const PLAYER_TICK_MS = 100;
 
 function defaultStorage(): StorageLike | null {
   try { return typeof window === 'undefined' ? null : window.localStorage; } catch { return null; }
@@ -142,10 +148,27 @@ export function useOneTap(options: UseOneTapOptions): OneTapView {
   }, [controller]);
 
   const [latestFix, setLatestFix] = useState<LocationSample | null>(null);
+  // §5/§37: YOU is the live device, eased for presentation; it is never
+  // evidence. The estimator buffer gets the raw sample, the marker gets the fix.
+  const [player, setPlayer] = useState<PlayerPresentation | null>(null);
+  const [playerStale, setPlayerStale] = useState(false);
   useEffect(() => {
-    if (!controller || !location) return;
-    return location.subscribe(sample => { controller.pushSample(sample); setLatestFix(sample); });
-  }, [controller, location]);
+    if (!controller || !location) { setPlayer(null); setLatestFix(null); return; }
+    return location.subscribe(sample => {
+      controller.pushSample(sample); setLatestFix(sample);
+      const fix = playerFixFromSample(sample, origin);
+      if (fix) { setPlayer(previous => acceptPlayerFix(previous, fix)); setPlayerStale(false); }
+    });
+  }, [controller, location, origin]);
+  useEffect(() => {
+    if (!player) return;
+    const handle = setInterval(() => {
+      const at = now();
+      setPlayer(current => current ? tickPlayerPresentation(current, at) : current);
+      setPlayerStale(at - player.fixMs > QUALITY_CONFIG.staleAfterMs);
+    }, PLAYER_TICK_MS);
+    return () => clearInterval(handle);
+  }, [player, now]);
 
   const lastMark = useMemo(() => lastFinal(snapshot.anchors), [snapshot.anchors]);
   const lastMarkId = lastMark?.id ?? null;
@@ -205,7 +228,8 @@ export function useOneTap(options: UseOneTapOptions): OneTapView {
     return { value: null, basis: null };
   }, [green, latestFix, lastMark, origin]);
   const lie = useMemo(() => lastMark ? describeLie(lastMark) : null, [lastMark]);
-  const markers = useMemo(() => markersFromAnchors(snapshot.anchors, rippleKey), [snapshot.anchors, rippleKey]);
+  const markers = useMemo(() => markersFromAnchors(snapshot.anchors, rippleKey, player ? { positionENU: player.positionENU, accuracyM: player.accuracyM, stale: playerStale } : null),
+    [snapshot.anchors, rippleKey, player, playerStale]);
 
   const markBall = useCallback(() => { void controller?.markBall(); }, [controller]);
   const undo = useCallback(() => { controller?.undo(); }, [controller]);
@@ -215,8 +239,8 @@ export function useOneTap(options: UseOneTapOptions): OneTapView {
 
   return useMemo<OneTapView>(() => ({
     snapshot, markers, distances: distances.value, distancesBasis: distances.basis, hasGreen: !!green, lie, lastMark,
-    cameraMode: camera.mode, cameraState, locationKind: location?.kind ?? 'none', latestFix,
+    cameraMode: camera.mode, cameraState, locationKind: location?.kind ?? 'none', latestFix, player,
     canHoleOut: !!lastMark && !lastMark.terminal,
     markBall, undo, holeOut, onGesture, recenterCamera,
-  }), [snapshot, markers, distances, green, lie, lastMark, camera.mode, cameraState, location, latestFix, markBall, undo, holeOut, onGesture, recenterCamera]);
+  }), [snapshot, markers, distances, green, lie, lastMark, camera.mode, cameraState, location, latestFix, player, markBall, undo, holeOut, onGesture, recenterCamera]);
 }

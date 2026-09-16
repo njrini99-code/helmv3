@@ -135,6 +135,7 @@ describe('One-Tap round', () => {
     expect(screen().getAttribute('data-hole-key')).toBe(holeKeys[1]);
     expect(screen().getAttribute('data-hole-status')).toBe('OPEN');
     expect(document.querySelector('[data-slot="one-tap-mark"]')).not.toBeNull();
-    expect(document.querySelectorAll('[data-marked-position]').length).toBe(0);
+    // The next hole starts with no marks; YOU stays on the course.
+    expect(document.querySelectorAll('[data-marked-position]:not([data-marker-kind="player"])').length).toBe(0);
   });
 });

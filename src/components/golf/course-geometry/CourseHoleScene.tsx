@@ -11,7 +11,7 @@ import { CrownGlyph, CrownPaint } from './TerrainCanopyLayer';
 import { CourseShotOverlay } from './CourseShotOverlay';
 
 import type { TerrainRuntimeController } from '@/lib/golf/course-geometry/runtime-controller';
-import type { SceneMarkers } from '@/lib/golf/course-geometry/scene-markers';
+import { playerLabelPlacement, type SceneMarkers } from '@/lib/golf/course-geometry/scene-markers';
 import type { OverlayReservedRect } from '@/lib/golf/course-geometry/shot-overlay-controller';
 
 export const SCENE_STYLE_VERSION = 'fairway-vector-v10';
@@ -151,12 +151,21 @@ export function CourseHoleScene({ scene, width = 320, height = 380, mode = 'revi
             <line x1={a[0]} y1={a[1]} x2={b[0]} y2={b[1]} stroke="var(--fw-diagram-shadow)" strokeWidth="4" strokeLinecap="round" opacity=".35" />
             <line x1={a[0]} y1={a[1]} x2={b[0]} y2={b[1]} stroke="var(--fw-diagram-event)" strokeWidth="1.8" strokeLinecap="round" />
           </g>; })}
-          {markers.markers.map(marker => { const [x, y] = toScreen(marker.pointM, camera), r = marker.kind === 'you' ? 5 : marker.kind === 'provisional' ? 4 : 3.2, sigma = marker.sigmaM * camera.scale; return <g key={marker.key}>
-            {sigma > r && <circle cx={x} cy={y} r={sigma} fill="var(--fw-diagram-event)" fillOpacity=".08" stroke="var(--fw-diagram-event)" strokeWidth="1" strokeDasharray="3 3" opacity=".85" data-marked-sigma={marker.key} />}
-            <circle cx={x} cy={y + 1.2} r={r + 1.5} fill="var(--fw-diagram-shadow)" opacity=".35" />
-            <circle cx={x} cy={y} r={r} fill={marker.kind === 'provisional' ? 'var(--fw-diagram-ground-light)' : 'var(--fw-diagram-event)'} stroke={marker.kind === 'provisional' ? 'var(--fw-diagram-event)' : 'var(--fw-diagram-ground-light)'} strokeWidth={marker.kind === 'you' ? 2 : 1.4} data-marked-position={marker.key} data-marker-kind={marker.kind} />
-            {marker.label && <text x={x} y={y - r - 5} fill="var(--fw-diagram-event)" fontSize="10" fontWeight="600" textAnchor="middle" letterSpacing=".6" paintOrder="stroke" stroke="var(--fw-diagram-ground-light)" strokeWidth="3" data-marker-label={marker.key}>{marker.label}</text>}
-          </g>; })}
+          {markers.markers.map(marker => {
+            // Static twin of the runtime overlay: ◎ YOU with its accuracy halo, ● BALL / marks with the σ ring, ○ provisional.
+            const [x, y] = toScreen(marker.pointM, camera), player = marker.kind === 'player', hollow = player || marker.kind === 'provisional';
+            const r = player ? 5.5 : marker.kind === 'ball' ? 4.2 : marker.kind === 'provisional' ? 4 : 3.2, sigma = marker.sigmaM * camera.scale, opacity = marker.dimmed ? .45 : 1;
+            const placement = player ? playerLabelPlacement([x, y], markers.markers.filter(m => m.kind !== 'player').map(m => toScreen(m.pointM, camera))) : 'above';
+            return <g key={marker.key}>
+              {sigma > r && (player
+                ? <circle cx={x} cy={y} r={sigma} fill="var(--fw-diagram-event)" fillOpacity=".1" stroke="var(--fw-diagram-event)" strokeOpacity=".3" strokeWidth="1" data-marked-sigma={marker.key} data-marker-halo="accuracy" />
+                : <circle cx={x} cy={y} r={sigma} fill="var(--fw-diagram-event)" fillOpacity=".08" stroke="var(--fw-diagram-event)" strokeWidth="1" strokeDasharray="3 3" opacity=".85" data-marked-sigma={marker.key} />)}
+              <circle cx={x} cy={y + 1.2} r={r + 1.5} fill="var(--fw-diagram-shadow)" opacity={.35 * opacity} />
+              <circle cx={x} cy={y} r={r} fill={hollow ? 'var(--fw-diagram-ground-light)' : 'var(--fw-diagram-event)'} stroke={hollow ? 'var(--fw-diagram-event)' : 'var(--fw-diagram-ground-light)'}
+                strokeWidth={player ? 2 : marker.kind === 'ball' ? 1.6 : 1.4} opacity={opacity} data-marked-position={marker.key} data-marker-kind={marker.kind} />
+              {player && <circle cx={x} cy={y} r={r * .4} fill="var(--fw-diagram-event)" opacity={opacity} data-marker-core={marker.key} />}
+              {marker.label && placement !== 'hidden' && <text x={x} y={placement === 'below' ? y + r + 13 : y - r - 5} fill="var(--fw-diagram-event)" fontSize="10" fontWeight="600" textAnchor="middle" letterSpacing=".6" paintOrder="stroke" stroke="var(--fw-diagram-ground-light)" strokeWidth="3" opacity={opacity} data-marker-label={marker.key} data-label-placement={placement}>{marker.label}</text>}
+            </g>; })}
         </g>}
       </g>
     </svg>

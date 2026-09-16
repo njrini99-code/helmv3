@@ -71,18 +71,20 @@ describe('One-Tap player screen', () => {
     expect(readout.textContent).toMatch(/F\d+C\d+B\d+yd to green · ±\d+ yd · from where you stand/);
     fireEvent.click(document.querySelector('[data-slot="one-tap-mark"]')!);
     expect(state()).toBe('CAPTURE_PENDING');
-    expect(markers()).toEqual(['provisional']);
+    expect(markers()).toEqual(['provisional', 'player']);
     act(() => { phone.at(tee, 1_000_300); });
     await act(async () => { await vi.advanceTimersByTimeAsync(800); });
     expect(state()).toBe('ANCHOR_SAVED');
-    expect(markers()).toEqual(['you']);
-    expect(document.querySelector('[data-marker-label]')!.textContent).toBe('YOU');
+    expect(markers()).toEqual(['ball', 'player']);
+    // §5: the mark is the BALL; YOU is the live device standing on it, so its label yields until the golfer walks off.
+    expect([...document.querySelectorAll('[data-marker-label]')].map(n => n.textContent)).toEqual(['BALL']);
+    expect(document.querySelector('[data-marker-kind="player"]')).not.toBeNull();
     expect(document.querySelector('[data-slot="one-tap-status"]')!.textContent).toBe('Marked · 1 to sync');
     expect(document.querySelector('[data-slot="one-tap-lie"]')!.textContent).toMatch(/^Tee/);
     expect(document.querySelector('[data-slot="one-tap-undo"]')).not.toBeNull();
     expect(document.querySelector('[data-slot="one-tap-holed"]')).not.toBeNull();
     fireEvent.click(document.querySelector('[data-slot="one-tap-undo"]')!);
-    expect(markers()).toEqual([]);
+    expect(markers()).toEqual(['player']);
     expect(state()).toBe('HOLE_READY');
     expect(document.querySelector('[data-slot="one-tap-undo"]')).toBeNull();
   });
@@ -105,7 +107,7 @@ describe('One-Tap player screen', () => {
     act(() => { vi.setSystemTime(1_060_000); for (let t = -1500; t <= 0; t += 500) phone.at(fairway, 1_060_000 + t); });
     fireEvent.click(document.querySelector('[data-slot="one-tap-mark"]')!);
     await act(async () => { await vi.advanceTimersByTimeAsync(800); });
-    expect(markers()).toEqual(['anchor', 'you']);
+    expect(markers()).toEqual(['anchor', 'ball', 'player']);
     expect(document.querySelectorAll('[data-marked-link]').length).toBe(1);
     expect(document.querySelector('[data-slot="one-tap-lie"]')!.textContent).toMatch(/^Fairway/);
     // No fix inside the window: the tap reports GPS_UNAVAILABLE instead of inventing a position.
@@ -114,7 +116,7 @@ describe('One-Tap player screen', () => {
     await act(async () => { await vi.advanceTimersByTimeAsync(800); });
     expect(state()).toBe('GPS_UNAVAILABLE');
     expect(document.querySelector('[data-slot="one-tap-status"]')!.textContent).toMatch(/^No GPS fix/);
-    expect(markers()).toEqual(['anchor', 'you']);
+    expect(markers()).toEqual(['anchor', 'ball', 'player']);
   });
 
   it('follows the player: mark + green framed together, a gesture hands over the camera, Recenter refits, the green frames whole', async () => {
