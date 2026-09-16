@@ -47,6 +47,11 @@ interface RuntimeOptions {
   quality?: MeridianRenderQuality | 'auto';
 }
 
+/** A view that cannot answer the query is never treated as asking for motion. */
+function prefersReducedMotion(view: Window | null): boolean {
+  try { return typeof view?.matchMedia === 'function' && view.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; }
+}
+
 /** §68.4 / §70: bytes held by every distinct geometry in the world. */
 function estimateGeometryBytes(world: Scene): number {
   const seen = new Set<object>();
@@ -353,8 +358,11 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
     const sky = new HemisphereLight(MERIDIAN_STYLE.light.skyColor, MERIDIAN_STYLE.light.groundColor, MERIDIAN_STYLE.light.hemisphereIntensity);
     sky.position.set(0, 0, 1); world.add(sky);
     evidence = createShotOverlayController(overlay, options.overlayId, mesh, options.scene, options.selectedShotNumber, false, surface);
-    markersOverlay = createSceneMarkerOverlayController(overlay, mesh, surface,
-      typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    // §64 Reduced Motion, read from the window this canvas actually lives in
+    // (the lab and the capture harness set it per page, not per global): no
+    // ripple, no settle or crossfade, and no shot draws itself on — the
+    // finished state is painted immediately instead.
+    markersOverlay = createSceneMarkerOverlayController(overlay, mesh, surface, prefersReducedMotion(canvas.ownerDocument.defaultView));
     releaseDebug = installTerrainDebugView(world, landscape, mesh, options.debugView ?? 'final', renderer);
     if (options.debugView && options.debugView !== 'final') overlay.style.display = 'none';
     view = currentCamera.projection === 'perspective' ? perspectiveView : orthographicView;

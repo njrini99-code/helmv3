@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { SHOT_PATH_OPACITY } from '../../course-geometry/scene-markers';
 import { PLAYER_MARKER_KEY, markersFromAnchors } from '../scene-markers';
 import type { ShotAnchor } from '../shot-anchor';
 
@@ -38,6 +39,27 @@ describe('markers from anchors', () => {
     expect(after.links.some(l => l.toM[0] === 160 || l.fromM[0] === 160)).toBe(false);
     expect(markersFromAnchors([], null, { positionENU: [5, 5], accuracyM: 3 })).toMatchObject({ markers: [{ kind: 'player' }], links: [] });
     expect(markersFromAnchors(anchors).markers.some(m => m.kind === 'player')).toBe(false);
+  });
+  it('gives each shot its drawn shape, its place in the hierarchy and one reveal (§62–63)', () => {
+    const anchors = [anchor('a', 0, 0, 0, { primaryLie: 'tee' }), anchor('b', 1, 0, 180), anchor('c', 2, 0, 210, { primaryLie: 'green' }), anchor('d', 3, 0, 214, { primaryLie: 'green' })];
+    const out = markersFromAnchors(anchors, 'd');
+    expect(out.links.map(l => [l.basis, l.apexM])).toEqual([
+      ['illustrative_endpoint_arc', 14.4], // H = clamp(0.08 × 180, 4, 24)
+      ['illustrative_endpoint_arc', 4],    // a 30 m pitch sits on the clamp's floor
+      ['surface_connector', 0],            // green → green: a putt never flies
+    ]);
+    // §63: the shot just played is fully lit, the one before it falls back, the rest go quiet.
+    expect(out.links.map(l => l.opacity)).toEqual([SHOT_PATH_OPACITY.older, SHOT_PATH_OPACITY.previous, SHOT_PATH_OPACITY.current]);
+    // Only the newest shot reveals, and only because its closing mark is the fresh one.
+    expect(out.links.map(l => l.reveal)).toEqual([false, false, true]);
+    // Restored from storage (nothing rippling) the hole is drawn, never replayed.
+    expect(markersFromAnchors(anchors).links.some(l => l.reveal)).toBe(false);
+    // A ripple on an older mark is not this shot's reveal either.
+    expect(markersFromAnchors(anchors, 'b').links.some(l => l.reveal)).toBe(false);
+    // One shot: it is the current one and it reveals.
+    const first = markersFromAnchors([anchors[0]!, anchors[1]!], 'b');
+    expect(first.links).toHaveLength(1);
+    expect(first.links[0]).toMatchObject({ opacity: SHOT_PATH_OPACITY.current, reveal: true });
   });
   it('marks the cup mark as terminal and drops tombstoned anchors', () => {
     const out = markersFromAnchors([anchor('a', 0, 0, 0), anchor('gone', 1, 10, 0, { deletedAt: '2026-09-16T12:00:05.000Z' }), anchor('cup', 2, 300, 0, { terminal: true, terminalMethod: 'CUP_MARK' })]);

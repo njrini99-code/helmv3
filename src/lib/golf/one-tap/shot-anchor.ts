@@ -118,6 +118,36 @@ export function migrateAnchorRow(row: unknown, binding: AnchorCourseBinding): { 
   const parsed = shotAnchorSchema.safeParse(candidate);
   return parsed.success ? { anchor: parsed.data, migrated: true } : null;
 }
+/** §62 shot visualization. The only measured facts about a shot are its two
+ * endpoints; the shape drawn between them is art. A full shot gets the
+ * illustrative endpoint arc `p(t) = A + t(B−A) + ẑ·4H·t(1−t)`; a green-to-
+ * green shot (a putt, §62.3) gets a surface connector that never leaves the
+ * ground, and so does a chord too short for an arc to read as anything but a
+ * spike. `trajectoryBasis` travels with every derived shot so nothing
+ * downstream can mistake the drawing for measured ball flight, and §62.2 is
+ * explicit that it is never used for analytics. */
+export type TrajectoryBasis = 'illustrative_endpoint_arc' | 'surface_connector';
+export const ILLUSTRATIVE_ARC = Object.freeze({
+  /** §62.2, art-only: `H = clamp(0.08·d, 4, 24)` metres. */
+  heightFactor: .08, minApexM: 4, maxApexM: 24,
+  /** §62.2 scopes the arc to "full shots". Below this chord the floored apex
+   * draws a vertical spike rather than a flight, so the connector stands in.
+   * Provisional, like every constant here: calibrate it visually. */
+  minChordM: 12,
+});
+/** §62.2 apex above the chord (metres). Art, not physics. */
+export function illustrativeApexM(horizontalM: number): number {
+  return Math.min(ILLUSTRATIVE_ARC.maxApexM, Math.max(ILLUSTRATIVE_ARC.minApexM, ILLUSTRATIVE_ARC.heightFactor * Math.max(0, horizontalM)));
+}
+export interface ShotTrajectory { basis: TrajectoryBasis; apexM: number }
+/** Which shape the shot between two marks is drawn with. A putt is decided by
+ * the two marks' own lie posteriors, never by how short the shot was. */
+export function shotTrajectory(startLie: LieClass, endLie: LieClass, horizontalM: number): ShotTrajectory {
+  const putt = startLie === 'green' && endLie === 'green';
+  return putt || !(horizontalM >= ILLUSTRATIVE_ARC.minChordM)
+    ? { basis: 'surface_connector', apexM: 0 }
+    : { basis: 'illustrative_endpoint_arc', apexM: illustrativeApexM(horizontalM) };
+}
 /** Shot math (master plan "Shot distance" / "Shot distance uncertainty"). */
 export interface DerivedShot {
   sequence: number;
@@ -136,6 +166,10 @@ export interface DerivedShot {
   terminal: boolean;
   terminalMethod: TerminalMethod | null;
   basis: 'enu_between_anchors';
+  /** §62: what the shape drawn between the two marks is. Art, never measured. */
+  trajectoryBasis: TrajectoryBasis;
+  /** §62.2 apex of the illustrative arc above the chord (metres); 0 on a connector. */
+  illustrativeApexM: number;
 }
 export function distanceSigma(c1: Covariance2, c2: Covariance2, r: readonly [number, number]): number {
   const length = Math.hypot(r[0], r[1]);
@@ -153,10 +187,12 @@ export function deriveShots(anchors: readonly ShotAnchor[]): DerivedShot[] {
     const dE = b.positionENU[0] - a.positionENU[0], dN = b.positionENU[1] - a.positionENU[1];
     const dU = a.terrainElevationMeters != null && b.terrainElevationMeters != null ? b.terrainElevationMeters - a.terrainElevationMeters : null;
     const dh = Math.hypot(dE, dN);
+    const trajectory = shotTrajectory(a.primaryLie, b.primaryLie, dh);
     shots.push({ sequence: i, fromAnchorId: a.id, toAnchorId: b.id, horizontalM: dh, threeDM: dU == null ? null : Math.hypot(dE, dN, dU),
       bearingDegrees: (Math.atan2(dE, dN) * 180 / Math.PI + 360) % 360, elevationDeltaM: dU, gradePercent: dU == null || dh === 0 ? null : 100 * dU / dh,
       verticalAngleDegrees: dU == null ? null : Math.atan2(dU, dh) * 180 / Math.PI, sigmaDistanceM: distanceSigma(a.covarianceENU2D, b.covarianceENU2D, [dE, dN]),
-      startLie: a.primaryLie, endLie: b.primaryLie, terminal: b.terminal, terminalMethod: b.terminalMethod, basis: 'enu_between_anchors' });
+      startLie: a.primaryLie, endLie: b.primaryLie, terminal: b.terminal, terminalMethod: b.terminalMethod, basis: 'enu_between_anchors',
+      trajectoryBasis: trajectory.basis, illustrativeApexM: trajectory.apexM });
   }
   return shots;
 }

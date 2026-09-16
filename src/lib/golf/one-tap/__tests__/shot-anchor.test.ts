@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { UNDO_WINDOW_MS, deriveShots, distanceSigma, finalAnchor, hasFix, liveAnchors, migrateAnchorRow, newAnchorId, provisionalAnchor, shotAnchorSchema, tombstoneAnchor, undoable, type ShotAnchor } from '../shot-anchor';
+import { ILLUSTRATIVE_ARC, UNDO_WINDOW_MS, deriveShots, distanceSigma, finalAnchor, hasFix, illustrativeApexM, liveAnchors, migrateAnchorRow, newAnchorId, provisionalAnchor, shotAnchorSchema, shotTrajectory, tombstoneAnchor, undoable, type ShotAnchor } from '../shot-anchor';
 
 // SYNTHETIC TEST VECTOR: three anchors in a made-up ENU frame.
 function anchor(id: string, sequence: number, e: number, n: number, z: number | null, lie: ShotAnchor['primaryLie'] = 'fairway', sigma = 2): ShotAnchor {
@@ -21,6 +21,26 @@ describe('one-tap shot anchors', () => {
     expect(s.sigmaDistanceM).toBeCloseTo(2 * Math.SQRT2, 9);
     expect(s).toMatchObject({ startLie: 'tee', endLie: 'fairway', basis: 'enu_between_anchors' });
     expect(shots[1]).toMatchObject({ horizontalM: 0, threeDM: null, gradePercent: null, elevationDeltaM: null });
+  });
+  it('carries the drawn shape of every shot as art: the §62.2 arc for a full shot, the connector for a putt', () => {
+    const shots = deriveShots([anchor('a', 0, 0, 0, 100, 'tee'), anchor('b', 1, 0, 200, 100), anchor('c', 2, 0, 230, 100, 'green'), anchor('d', 3, 0, 234, 100, 'green')]);
+    expect(shots.map(s => s.trajectoryBasis)).toEqual(['illustrative_endpoint_arc', 'illustrative_endpoint_arc', 'surface_connector']);
+    // H = clamp(0.08 d, 4, 24): a 200 m drive peaks at 16 m of pure drawing.
+    expect(shots[0]!.illustrativeApexM).toBeCloseTo(16, 9);
+    // The pitch is inside the clamp's floor; the putt never leaves the ground.
+    expect(shots[1]!.illustrativeApexM).toBeCloseTo(ILLUSTRATIVE_ARC.minApexM, 9);
+    expect(shots[2]).toMatchObject({ trajectoryBasis: 'surface_connector', illustrativeApexM: 0 });
+    // The distance basis is untouched: the shape is decoration beside it.
+    expect(shots.every(s => s.basis === 'enu_between_anchors')).toBe(true);
+    expect([0, 49, 50, 150, 300, 1e4].map(illustrativeApexM)).toEqual([4, 4, 4, 12, 24, 24]);
+    // A putt is two green marks, however long the putt is...
+    expect(shotTrajectory('green', 'green', 300)).toEqual({ basis: 'surface_connector', apexM: 0 });
+    // ...and a chord too short to arc keeps the connector rather than a spike.
+    expect(shotTrajectory('fairway', 'green', ILLUSTRATIVE_ARC.minChordM - .001).basis).toBe('surface_connector');
+    expect(shotTrajectory('fairway', 'green', ILLUSTRATIVE_ARC.minChordM).basis).toBe('illustrative_endpoint_arc');
+    // Fringe → green is a chip, not a putt: the ball did leave the ground.
+    expect(shotTrajectory('fringe', 'green', 20).basis).toBe('illustrative_endpoint_arc');
+    expect(shotTrajectory('green', 'fringe', 20).basis).toBe('illustrative_endpoint_arc');
   });
   it('projects the summed covariance on the displacement axis', () => {
     expect(distanceSigma([[4, 0], [0, 1]], [[4, 0], [0, 1]], [10, 0])).toBeCloseTo(Math.sqrt(8), 9);

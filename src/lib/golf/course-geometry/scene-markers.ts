@@ -21,10 +21,25 @@ export interface SceneMarker {
   /** Drawn at reduced opacity (a player without a fresh fix). */
   dimmed?: boolean;
 }
+/** §62: the drawn shape of one shot. `surface_connector` is §62.1's truth
+ * connector — A → B along the ground, and the ground is the only thing it
+ * follows; it is also what a putt gets (§62.3), revealed like a roll rather
+ * than a flight. `illustrative_endpoint_arc` is §62.2's art: a parabola over
+ * the chord whose apex comes from a clamp on the distance, not from physics.
+ * Nothing here is measured ball flight and nothing here feeds analytics. */
+export type SceneLinkBasis = 'illustrative_endpoint_arc' | 'surface_connector';
 export interface SceneMarkerLink {
   key: string;
   fromM: PointM;
   toM: PointM;
+  /** Absent → the truth connector (§62.1). */
+  basis?: SceneLinkBasis;
+  /** §62.2 apex above the chord (metres); ignored by a connector. */
+  apexM?: number;
+  /** §63 hierarchy; absent → fully lit. */
+  opacity?: number;
+  /** Draw this shot on once, now (the shot that was just completed). */
+  reveal?: boolean;
 }
 export interface SceneMarkers {
   markers: readonly SceneMarker[];
@@ -33,9 +48,16 @@ export interface SceneMarkers {
   rippleKey?: string | null;
 }
 export const EMPTY_SCENE_MARKERS: SceneMarkers = Object.freeze({ markers: [], links: [] });
-/** §38/§85 visual defaults, not physics: a finalized mark eases to a small
- * shift and crossfades a large one (never a "ball rolled there" animation). */
-export const MARKER_MOTION = Object.freeze({ settleMs: 180, settleMaxM: 2.5, crossfadeMs: 180, dimmedOpacity: .45 });
+/** §38/§64/§85 visual defaults, not physics: a finalized mark eases to a small
+ * shift and crossfades a large one (never a "ball rolled there" animation),
+ * and a completed shot draws itself on over `revealMs`. Reduced Motion skips
+ * every one of them and paints the final state instead. */
+export const MARKER_MOTION = Object.freeze({ settleMs: 180, settleMaxM: 2.5, crossfadeMs: 180, dimmedOpacity: .45, revealMs: 520, resultHoldMs: 1200 });
+/** §63 previous-shot hierarchy, so a played hole never becomes spaghetti. */
+export const SHOT_PATH_OPACITY = Object.freeze({ current: 1, previous: .35, older: .2 });
+/** Segments along a drawn shot. The arc is sampled so perspective bends it
+ * correctly; the connector is sampled so it rides the ground it crosses. */
+const PATH_SEGMENTS = 24;
 /** YOU standing on a mark: under `hidePx` the YOU label yields to the mark's
  * (the player is at the ball); under `belowPx` it moves under the dot. */
 export const PLAYER_LABEL_CLEARANCE = Object.freeze({ hidePx: 8, belowPx: 24 });
@@ -106,9 +128,49 @@ export function createSceneMarkerOverlayController(svg: SVGSVGElement, mesh: Ter
     /** Nodes of the transition in flight (animations and a ghost), cleared by the next one. */
     transient: SVGElement[] };
   const markerNodes = new Map<string, MarkerNodes>();
-  const linkNodes = new Map<string, { shadow: SVGLineElement; line: SVGLineElement }>();
+  type LinkNodes = { link: SceneMarkerLink; shadow: SVGPathElement; path: SVGPathElement;
+    /** A shot draws itself on once, when it is completed; never again. */
+    revealed: boolean; reveals: SVGElement[] };
+  const linkNodes = new Map<string, LinkNodes>();
   const timers = new Set<ReturnType<typeof setTimeout>>();
   const later = (fn: () => void, ms: number) => { const handle = setTimeout(() => { timers.delete(handle); if (!disposed) fn(); }, ms); timers.add(handle); };
+  /** §62 geometry between two marks. The arc is exactly the plan's curve,
+   * `p(t) = A + t(B−A) + ẑ·4H·t(1−t)`: linear between the two drawn positions
+   * plus a parabola, with nothing sampled in between, because there is
+   * nothing in between that anyone knows. The connector keeps the same chord
+   * in plan and takes its height from the ground under each sample, so a putt
+   * rolls over the green instead of through it; where the ground is unknown
+   * it falls back to the straight line between the ends and invents no relief. */
+  function linkPath(link: SceneMarkerLink, a: Point3M, b: Point3M, view: TerrainCamera): string {
+    const apexM = link.basis === 'illustrative_endpoint_arc' ? Math.max(0, link.apexM ?? 0) : 0;
+    let path = '';
+    for (let i = 0; i <= PATH_SEGMENTS; i++) {
+      const t = i / PATH_SEGMENTS;
+      const x = a[0] + t * (b[0] - a[0]), y = a[1] + t * (b[1] - a[1]), chord = a[2] + t * (b[2] - a[2]);
+      const z = apexM > 0 ? chord + 4 * apexM * t * (1 - t)
+        : i === 0 ? a[2] : i === PATH_SEGMENTS ? b[2] : world([x, y])?.[2] ?? chord;
+      const q = projectTerrainPoint([x, y, z], view);
+      path += `${i ? ' L' : 'M'}${q[0].toFixed(2)},${q[1].toFixed(2)}`;
+    }
+    return path;
+  }
+  /** §64: the completed shot draws on over `revealMs` and then holds. The
+   * dash is expressed against `pathLength="1"`, so a camera frame may rewrite
+   * `d` mid-reveal without the stroke jumping, and no length is measured. */
+  function attachReveal(nodes: LinkNodes) {
+    if (reducedMotion) return;
+    nodes.revealed = true;
+    for (const node of [nodes.shadow, nodes.path]) {
+      attributes(node, { pathLength: 1, 'stroke-dasharray': '1 1', 'stroke-dashoffset': 1 });
+      const animate = element('animate', { attributeName: 'stroke-dashoffset', from: 1, to: 0, dur: `${MARKER_MOTION.revealMs / 1000}s`, fill: 'freeze', 'data-shot-reveal': nodes.link.key });
+      node.appendChild(animate);
+      nodes.reveals.push(animate);
+    }
+    later(() => {
+      for (const animate of nodes.reveals.splice(0)) animate.remove();
+      for (const node of [nodes.shadow, nodes.path]) for (const name of ['stroke-dasharray', 'stroke-dashoffset', 'pathLength']) node.removeAttribute(name);
+    }, MARKER_MOTION.revealMs + 40);
+  }
   const visible = (nodes: MarkerNodes): SVGElement[] => {
     const all: (SVGElement | null)[] = [nodes.ring, nodes.haloDot, nodes.dot, nodes.core, nodes.label, nodes.ripple];
     return all.filter((n): n is SVGElement => n != null);
@@ -179,15 +241,30 @@ export function createSceneMarkerOverlayController(svg: SVGSVGElement, mesh: Ter
     const wanted = new Set(next?.markers.map(m => m.key));
     for (const [key, nodes] of markerNodes) if (!wanted.has(key)) { removeMarker(nodes); markerNodes.delete(key); }
     const wantedLinks = new Set(next?.links.map(l => l.key));
-    for (const [key, nodes] of linkNodes) if (!wantedLinks.has(key)) { nodes.shadow.remove(); nodes.line.remove(); linkNodes.delete(key); }
+    for (const [key, nodes] of linkNodes) if (!wantedLinks.has(key)) { nodes.shadow.remove(); nodes.path.remove(); linkNodes.delete(key); }
     if (!next) { rippleKey = null; return; }
+    // Shots are re-appended in play order, so the newest lies over the older
+    // ones, and their §63 opacity is re-applied on every pass: a shot that
+    // was the current one falls back as the next shot is completed.
     for (const link of next.links) {
-      if (linkNodes.has(link.key)) continue;
-      const shadow = element('line', { stroke: halo, 'stroke-width': 4, 'stroke-linecap': 'round', opacity: .35 });
-      const line = element('line', { stroke: ink, 'stroke-width': 1.8, 'stroke-linecap': 'round', 'data-marked-link': link.key });
-      linkNodes.set(link.key, { shadow, line });
+      let nodes = linkNodes.get(link.key);
+      if (!nodes) {
+        const shadow = element('path', { fill: 'none', stroke: halo, 'stroke-width': 4, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' });
+        const path = element('path', { fill: 'none', stroke: ink, 'stroke-width': 1.8, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'data-marked-link': link.key });
+        nodes = { link, shadow, path, revealed: false, reveals: [] };
+        linkNodes.set(link.key, nodes);
+      }
+      nodes.link = link;
+      const basis = link.basis ?? 'surface_connector', opacity = link.opacity ?? 1;
+      attributes(nodes.path, { opacity, 'data-trajectory-basis': basis });
+      attributes(nodes.shadow, { opacity: .35 * opacity });
+      // The DOM says what the shape is: an arc is labelled art wherever it is
+      // read, and the connector is left unlabelled because A → B is the fact.
+      if (basis === 'illustrative_endpoint_arc') attributes(nodes.path, { 'data-illustrative': 'endpoint_arc' });
+      else nodes.path.removeAttribute('data-illustrative');
+      if (link.reveal && !nodes.revealed) attachReveal(nodes);
+      links.append(nodes.shadow, nodes.path);
     }
-    for (const link of next.links) { const n = linkNodes.get(link.key)!; links.append(n.shadow, n.line); }
     const nextRipple = next.rippleKey ?? null;
     for (const marker of next.markers) {
       let nodes = markerNodes.get(marker.key);
@@ -210,10 +287,10 @@ export function createSceneMarkerOverlayController(svg: SVGSVGElement, mesh: Ter
     for (const link of current.links) {
       const nodes = linkNodes.get(link.key); if (!nodes) continue;
       const a = world(link.fromM), b = world(link.toM);
-      if (!a || !b) { attributes(nodes.line, { display: 'none' }); attributes(nodes.shadow, { display: 'none' }); continue; }
-      const p = projectTerrainPoint(a, camera), q = projectTerrainPoint(b, camera);
-      const coords = { x1: p[0].toFixed(2), y1: p[1].toFixed(2), x2: q[0].toFixed(2), y2: q[1].toFixed(2), display: 'inline' };
-      attributes(nodes.line, coords); attributes(nodes.shadow, coords);
+      // No ground under an end: the shot is not drawn. A height is never guessed.
+      if (!a || !b) { attributes(nodes.path, { display: 'none' }); attributes(nodes.shadow, { display: 'none' }); continue; }
+      const shape = { d: linkPath(link, a, b, camera), display: 'inline' };
+      attributes(nodes.path, shape); attributes(nodes.shadow, shape);
     }
     const markScreen: [number, number][] = [];
     for (const marker of current.markers) {

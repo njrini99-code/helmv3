@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { CAMERA_ENVELOPE, CAMERA_THRESHOLDS, GESTURES, MOTION, clampPitch, initialCameraState, observeAnchor, observeGesture, productionStateFor, recenter, tickCamera, transitionMs } from '../camera-director';
+import { MARKER_MOTION } from '../../course-geometry/scene-markers';
+import { CAMERA_ENVELOPE, CAMERA_THRESHOLDS, GESTURES, MOTION, clampPitch, initialCameraState, observeAnchor, observeGesture, productionStateFor, recenter, shotRevealMs, tickCamera, transitionMs } from '../camera-director';
 
 describe('one-tap camera director', () => {
   it('moves through the automatic states by green distance and green probability', () => {
@@ -40,6 +41,39 @@ describe('one-tap camera director', () => {
     expect(GESTURES).toEqual({ yawDegreesPerPoint: .22, pitchDegreesPerPoint: .16, pitchMin: 25, pitchMax: 68 });
     expect(clampPitch(10)).toBe(25);
     expect(clampPitch(80)).toBe(68);
+  });
+  it('never reframes on an ordinary live fix, and reframes when a mark finalizes (§66)', () => {
+    // A golfer walks 400 m to the green with the phone reporting constantly.
+    // Every one of those fixes reaches the director as a tick observation.
+    let s = observeAnchor(initialCameraState(0), { distanceToGreenM: 400, greenComplexProbability: 0, terminal: false }, 10);
+    const framed = s;
+    expect(s.mode).toBe('PLAYER_FOLLOW');
+    for (let i = 0; i <= 400; i++) {
+      const walked = 400 - i;
+      // The whole live range: past every threshold, on and off the green, and
+      // through fixes wild enough that chasing one would throw the frame away.
+      const observation = { distanceToGreenM: i % 37 === 0 ? 9_999 : walked, greenComplexProbability: walked < 20 ? .99 : 0, terminal: false };
+      s = tickCamera(s, observation, 1000 + i * 250);
+      // Reference-identical, not merely equal: no new framing state is even built.
+      expect(s).toBe(framed);
+    }
+    // A mark finalizes on the green: that, and only that, moves the framing.
+    const after = observeAnchor(s, { distanceToGreenM: 6, greenComplexProbability: .95, terminal: false }, 200_000);
+    expect(after).not.toBe(s);
+    expect(after.mode).toBe('PUTT_CONTEXT');
+    expect(productionStateFor(after.mode).state).toBe('putting');
+    // The only tick that reframes is the end of a window the golfer opened.
+    const manual = observeGesture(after, 200_100);
+    expect(tickCamera(manual, { distanceToGreenM: 300, greenComplexProbability: 0, terminal: false }, 200_100 + CAMERA_THRESHOLDS.idleResumeMs).mode).toBe('PLAYER_FOLLOW');
+  });
+  it('keeps the shot reveal and result hold with the drawing they belong to (§64)', () => {
+    expect(MOTION.shotRevealMs).toBe(MARKER_MOTION.revealMs);
+    expect(MOTION.shotRevealMs).toBe(520);
+    expect(MOTION.shotResultMs).toBe(1200);
+    expect(MOTION.reframeMs).toBe(480);
+    expect(shotRevealMs(false)).toBe(520);
+    // Reduced Motion has no reveal to wait out: the finished shot is just there.
+    expect(shotRevealMs(true)).toBe(0);
   });
   it('maps every mode onto an existing production camera state', () => {
     expect(productionStateFor('HOLE_OVERVIEW')).toEqual({ state: 'tee', preset: 'tee' });
