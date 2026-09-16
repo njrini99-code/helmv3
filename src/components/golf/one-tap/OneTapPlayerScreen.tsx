@@ -10,6 +10,7 @@ import type { StorageLike, SyncTransport } from '@/lib/golf/one-tap/anchor-repos
 import type { LocationSource } from '@/lib/golf/one-tap/location-source';
 import { OneTapButton } from './OneTapButton';
 import { OneTapHud } from './OneTapHud';
+import { OneTapReadout } from './OneTapReadout';
 import { useOneTap, type OneTapView } from './use-one-tap';
 
 export interface OneTapPlayerScreenProps {
@@ -45,7 +46,7 @@ export function OneTapPlayerScreen({ roundId, pkg, holeKey, terrain, contextLaye
   useEffect(() => { onView?.(view); }, [view, onView]);
   return <div className="flex h-full min-h-0 flex-1 flex-col" data-slot="one-tap-screen" data-one-tap-state={view.snapshot.state} data-camera-mode={view.cameraMode} data-camera-state={view.cameraState}>
     <HoleSceneFrame scene={scene} context="entry" presentation="stage" markers={view.markers}
-      stageOverlay={<OneTapHud view={view} />} stageFooter={<OneTapButton view={view} />}
+      stageOverlay={<OneTapHud view={view} />} stageFooter={<><OneTapReadout view={view} /><OneTapButton view={view} /></>}
       stageCameraRef={cameraRef} onStageGesture={view.onGesture} />
   </div>;
 }

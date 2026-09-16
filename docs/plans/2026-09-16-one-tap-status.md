@@ -25,13 +25,13 @@ idempotent and the phone is durable before the server is.
 ## Phase 2 evidence (2026-09-16)
 
 `node scripts/golf/course-geometry/capture-one-tap.cjs --course=peek-n-peak-upper --hole=7`
-against the lab (`output/playwright/course-geometry/one-tap/peek-n-peak-upper-07/`,
+against the lab (`output/playwright/course-geometry/one-tap/peek-n-peak-upper-07-v3/`, third run: tee-state follow framing + footer readout;
 phone viewport, synthetic walker along the package route, 3 m accuracy):
 
 | Step | State | Camera state / area | Marks | Links | Lie shown | Draws |
 | --- | --- | --- | --- | --- | --- | --- |
 | ready | HOLE_READY | tee / hole | 0 | 0 | – | 9 |
-| tee marked | HOLE_READY (after ANCHOR_SAVED hold) | approach / approach | 1 | 0 | Rough / Tee (boundary posterior: the route starts on the tee edge) | 9 |
+| tee marked | HOLE_READY (after ANCHOR_SAVED hold) | tee / hole (PLAYER_FOLLOW; YOU visible at the tee) | 1 | 0 | Rough / Tee (boundary posterior: the route starts on the tee edge) | 9 |
 | approach marked | HOLE_READY | approach / approach | 2 | 1 | Fairway | 9 |
 | green marked | HOLE_READY | putting / green | 3 | 2 | Green · likely | 9 |
 | holed | HOLE_READY | putting / green | 3 (last = HOLED) | 2 | Green · likely | 9 |
@@ -47,7 +47,10 @@ on every touched file (exit 0), vitest `unit` one-tap + scene-marker suites
   the player's end) so a mark far from the green stays in frame; the first
   capture had it on `approach`, which cropped the tee mark. A true follow fit
   (player + green framed together) is still phase 3 camera work (Meridian V6).
-- The front distance reads "–" once the player is past the front edge (on the
+- The distance readout and lie live in the footer above MARK BALL, not over
+  the course: the second capture showed the floating card hiding the YOU mark
+  at the tee (tee framing puts the player at the bottom of the frame). The
+  front distance reads "–" once the player is past the front edge (on the
   green); centre and back stay numeric. No cup distance exists (daily pin
   UNSPECIFIED).
 - The lab has no sync transport, so the status chip honestly reports
