@@ -270,7 +270,10 @@ from V1; V4 changes what stands on each centre.
   pond sits in darkens a few percent along its floor; 18: the low ground
   behind the greenside bunkers). It is derived from the source DEM only and
   never moves a vertex; the lab's `landform=` override scales it (0 removes
-  it) and `material.userData.shading.landform` records the basis.
+  it) and `material.userData.shading.landform` records the basis. Cost: the
+  march samples geometrically (1, 2, 3, 4, 6, 9 … nodes), about 130 ms once
+  per hole build for hole 7's 339 × 291 grid, and the texture grows from RG
+  to RGBA half floats (790 KB for that grid).
 - **One gradient source (compiler v4).** The per-vertex `sourceNormals`
   array is no longer emitted (opt-in `--source-normals`): it duplicated the
   metric grid's gradient and cost 37 % of every hole's gzipped payload

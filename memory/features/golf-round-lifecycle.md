@@ -687,6 +687,19 @@ ribbons drape on the displayed ground, and the sky dome grades below the
 horizon. All display-only; no canonical geometry, picking, framing or
 persisted state changed.
 
+Later the same night (compiler `meridian-visual-compiler-8`, style hash
+changes only): small convex building footprints carry a hipped roof
+archetype (`contextObjects.roof`, `userData.roofs.basis =
+visual_archetype_by_footprint`, never a source claim); the DEM slope texture
+carries a third channel with each grid node's relative sky occlusion and the
+lit ground takes up to 35 % of the indirect light away in swales and hollows
+(`MERIDIAN_STYLE.landform`, `material.userData.shading.landform`); and the
+played green is a mown field with its own faint 2.4 m diagonal bands
+(`mowing.green`) that fade out at hole-view distance. Canaries `v15-roofs`,
+`v16-landform` and `v17-green-mowing` (96 captures each, 0 errors, all within
+budget) are recorded in the outside-world tracker; the 40° sun test (master
+§47) was run and 45° kept.
+
 ### Four-course local source trial (September 13, 2026)
 
 The fixture harness now includes Winchester alongside Cacapon; both reuse the
