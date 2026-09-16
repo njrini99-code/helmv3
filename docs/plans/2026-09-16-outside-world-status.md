@@ -30,7 +30,7 @@ Proof course: Peek’n Peak Upper (package `fdec6ea8…`).
 | --- | --- | --- | --- |
 | 0–1 | Summary, product direction | done | Encoded in `meridian-outside-world.md` (two products, hybrid immersive view) |
 | 2 | Two products on one world | done | Lab/QA vs `HoleSceneFrame` entry context; separation documented; chrome reduction pending (§36) |
-| 3 | Player UI/UX spec | partial | Sparse chrome + View control + state camera landed (actions 8–9); drag/pinch gestures existed; bottom-sheet details remain the inspector aside (overflow → Details) |
+| 3 | Player UI/UX spec | done (v1) | Sparse chrome + View control + state camera landed (actions 8–9); drag/pinch gestures existed. §3.6 bottom-sheet principle: in production the overflow's Details and sources open in the shared `Sheet` (bottom, handle, scrim) over the course instead of expanding the inspector aside, so the default state stays course-first (`data-slot="player-details-sheet"`, `HoleSceneFrame.test.tsx`); review and lab keep the inline inspector. §3.4 double tap: two clean taps within 350 ms and 24 px reset the view to the state camera (verified on the phone player view: pitch 20 → 36 after a tilt drag), so no zoom rail or reset button sits on the canvas. Long-press inspect stays optional (not built) |
 | 4 | The outside-world problem | done | Measured: per-hole unexplained share in the context report |
 | 5 | Taxonomy | done | `context-taxonomy.ts` |
 | 6 | Do not fill with random stuff | done | Layer zones are source-only (`basis: source`), every default recorded; doctrine in the doc |

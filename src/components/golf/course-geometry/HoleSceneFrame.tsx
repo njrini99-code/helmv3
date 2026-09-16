@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode, type PointerEvent, type RefObject } from 'react';
 import { Maximize2, RotateCcw, X, SlidersHorizontal, ChevronDown, ChevronLeft, ChevronRight, Info, MoreHorizontal } from 'lucide-react';
 import { ModalShell } from '@/components/fairway/overlays/ModalShell';
+import { Sheet } from '@/components/fairway/overlays/Sheet';
 import { Button } from '@/components/fairway/controls/button';
 import { recordedDistance } from '@/lib/golf/course-geometry/normalize';
 import { describePosition } from '@/lib/golf/course-geometry/describe-position';
@@ -200,6 +201,10 @@ function Drawing({ scene, view, context, events, selectedShotNumber, activeDraft
   const production = context === 'entry';
   const statePreset = PRODUCTION_CAMERA_STATES[productionCameraState(view)].preset;
   const [overflowOpen, setOverflowOpen] = useState(false);
+  // Outside-world §3.4 gestures: a clean double tap resets the view, so the
+  // production view needs no zoom rail or reset button on the canvas.
+  const tapStart = useRef<{ x: number; y: number } | null>(null);
+  const lastTap = useRef<{ time: number; x: number; y: number } | null>(null);
   const homePreset: TerrainPreset = production ? statePreset : 'top';
   const interactive = expanded && courseView != null && !!scene && !showProfile;
   const boundedPan = (x: number, y: number) => ({ x: Math.max(-size.width / 2, Math.min(size.width / 2, x)),
@@ -278,6 +283,7 @@ function Drawing({ scene, view, context, events, selectedShotNumber, activeDraft
     if (!interactive || event.button > 0 || pointers.current.size >= 2 || (event.target as Element).closest('button')) return;
     flush(); commitCamera();
     event.currentTarget.setPointerCapture(event.pointerId);
+    tapStart.current = pointers.current.size ? null : { x: event.clientX, y: event.clientY };
     pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
     setDragging(true); rebase();
   }
@@ -309,6 +315,14 @@ function Drawing({ scene, view, context, events, selectedShotNumber, activeDraft
     pointers.current.delete(event.pointerId);
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
     setDragging(pointers.current.size > 0); commitCamera(); rebase();
+    if (event.type !== 'pointerup' || pointers.current.size) return;
+    const start = tapStart.current; tapStart.current = null;
+    if (!start || Math.hypot(event.clientX - start.x, event.clientY - start.y) > 8) { lastTap.current = null; return; }
+    const previous = lastTap.current, now = performance.now();
+    if (previous && now - previous.time < 350 && Math.hypot(event.clientX - previous.x, event.clientY - previous.y) < 24) {
+      lastTap.current = null;
+      changeCamera(() => ({ zoom: 1, pan: { x: 0, y: 0 }, pose: TERRAIN_PRESETS[homePreset], fitPreset: homePreset }));
+    } else lastTap.current = { time: now, x: event.clientX, y: event.clientY };
   }
   function presetView(preset: TerrainPreset) {
     setShowProfile(false);
@@ -401,6 +415,16 @@ function Drawing({ scene, view, context, events, selectedShotNumber, activeDraft
   const mapScale = terrainCamera?.scale ?? transformed?.scale ?? 0;
   const scaleYards = [5, 10, 20, 50, 100].filter(y => y * .9144 * mapScale <= 90).at(-1) ?? 5;
   const scaleWidth = scaleYards * .9144 * mapScale;
+  // Details and sources: review and lab keep them inline in the inspector;
+  // the production view shows them in a bottom sheet (outside-world §3.6) so
+  // its default state stays course-first.
+  const detailHint = terrainEnabled && <p>{production ? 'Drag to tilt, pinch to zoom, double-tap to reset the view.' : 'Drag to tilt; pinch to zoom.'} Outlined hazards are possible surfaces, not recorded ball positions.</p>;
+  const detailFacts = <>
+    {active && <p>{recordedDistance(active.before)} before{active.rawMiss ? ` · ${active.rawMiss.replaceAll('_', ' ')}` : ''}. {describePosition(scene, active).detail}</p>}
+    <p>{scene?.attribution ?? 'Course geometry unavailable.'}</p>
+    <p>{scene?.terrain ? `${scene.terrain.source.acquisitionStart.slice(0, 4)} USGS terrain study. ` : ''}Estimated pin; the daily hole location is unverified. Trees and heights are illustrative.</p>
+    {(scene?.sharedGreenHoleOrdinals?.length ?? 0) > 1 && <p>Shared green: holes {scene!.sharedGreenHoleOrdinals!.join(' and ')}.</p>}
+  </>;
   return <div className={expanded ? 'flex min-h-0 flex-1 flex-col overflow-hidden sm:flex-row' : undefined} data-slot={expanded ? 'course-explorer' : undefined} data-putting-overview={compactPuttingPlan || undefined} data-putting-scope={compactPuttingPlan ? puttingScope : undefined}>
     <div className={expanded ? 'relative min-h-[180px] min-w-0 flex-1' : undefined}>
     <div ref={ref} data-slot="course-drawing" data-putting-mode={view === 'putting' ? courseBackedPutting ? 'course-green' : 'abstract' : undefined} className={`fw-course-motion w-full overflow-clip ${expanded ? 'absolute inset-0' : 'relative'}`}
@@ -497,18 +521,17 @@ function Drawing({ scene, view, context, events, selectedShotNumber, activeDraft
         <Button size="sm" variant="ghost" onClick={() => changeCamera(current => ({ ...current, pose: { ...current.pose, exaggeration: current.pose.exaggeration === 1 ? 1.5 : 1 } }))}>Height {pose.exaggeration.toFixed(1)}×</Button>
       </>}
     </div>}
-        {inspectorOpen && <div className="space-y-2 px-4 pb-4 text-caption text-text-secondary">
-          {terrainEnabled && <p>Drag to tilt; pinch to zoom. Outlined hazards are possible surfaces, not recorded ball positions.</p>}
+        {inspectorOpen && !production && <div className="space-y-2 px-4 pb-4 text-caption text-text-secondary">
+          {detailHint}
         {context === 'review' && events.length > 1 && <div className="flex gap-1 overflow-x-auto px-3 pb-2" role="group" aria-label="Review shots">
           {reviewEvents.map(event => <Button key={event.shotNumber} size="sm" className="min-w-11 shrink-0 px-2" variant={active?.shotNumber === event.shotNumber ? 'secondary' : 'ghost'} aria-label={`Select shot ${event.shotNumber}`} aria-pressed={active?.shotNumber === event.shotNumber} onClick={() => onSelectEvent?.(event.shotNumber)}>{event.penalty ? `P${event.shotNumber}` : event.shotNumber}</Button>)}
         </div>}
-
-          {active && <p>{recordedDistance(active.before)} before{active.rawMiss ? ` · ${active.rawMiss.replaceAll('_', ' ')}` : ''}. {describePosition(scene, active).detail}</p>}
-          <p>{scene?.attribution ?? 'Course geometry unavailable.'}</p>
-          <p>{scene?.terrain ? `${scene.terrain.source.acquisitionStart.slice(0, 4)} USGS terrain study. ` : ''}Estimated pin; the daily hole location is unverified. Trees and heights are illustrative.</p>
-          {(scene?.sharedGreenHoleOrdinals?.length ?? 0) > 1 && <p>Shared green: holes {scene!.sharedGreenHoleOrdinals!.join(' and ')}.</p>}
+          {detailFacts}
         </div>}
       </div>
     </aside>}
+    {expanded && production && <Sheet open={inspectorOpen} onOpenChange={setInspectorOpen} side="bottom" title="Details and sources" showHandle>
+      <Sheet.Body><div className="space-y-2 text-caption text-text-secondary" data-slot="player-details-sheet">{detailHint}{detailFacts}</div></Sheet.Body>
+    </Sheet>}
   </div>;
 }
