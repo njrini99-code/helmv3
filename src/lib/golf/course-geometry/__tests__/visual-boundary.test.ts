@@ -13,7 +13,7 @@ const CANONICAL = ['build-scene', 'camera', 'canopy', 'context-layer', 'context-
   'tracking-scene', 'types'];
 const VISUAL = ['three-camera', 'three-flight-path', 'three-renderer', 'shadow-bounds', 'terrain-canopy', 'terrain-material',
   'terrain-viewport', 'shot-overlay-controller', 'shot-overlay-layout', 'runtime-controller', 'camera-motion', 'visual-style', 'visual-artifact', 'render-quality',
-  'scene-markers', 'visual-artifact-v2', 'terrain-curvature', 'terrain-sky-field'];
+  'scene-markers', 'visual-artifact-v2', 'terrain-curvature', 'terrain-sky-field', 'surface-distance-field'];
 const imports = (file: string) => [...readFileSync(join(root, file), 'utf8').matchAll(/from\s+'([^']+)'/g)].map(match => match[1]!);
 
 describe('Meridian visual code boundary', () => {
