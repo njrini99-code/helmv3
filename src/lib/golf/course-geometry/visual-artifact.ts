@@ -992,6 +992,10 @@ export function parseVisualArtifact(text: string): MeridianVisualArtifact {
   return artifact;
 }
 
+/** Shared with the V2 display artifact (visual-artifact-v2.ts): one wire
+ * encoding and one content digest for every Meridian artifact. */
+export { decode as decodeBase64LE, encode as encodeBase64LE, fnvBytes };
+
 /** Linear-space albedo for the renderer; the artifact stays sRGB bytes. */
 export function linearAlbedo(artifact: MeridianVisualArtifact): Float32Array {
   const out = new Float32Array(artifact.attributes.albedo.length), table = new Float32Array(256);
