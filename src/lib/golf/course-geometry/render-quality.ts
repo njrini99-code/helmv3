@@ -27,13 +27,13 @@ export interface RenderQualityProfile {
 export const RENDER_QUALITY_PROFILES: Readonly<Record<MeridianRenderQuality, RenderQualityProfile>> = Object.freeze({
   // §65: older / thermally constrained phones. Mass-dominant forest, no near
   // crowns, simple Fresnel water, no contact shade, 30 fps target.
-  low: Object.freeze({ tier: 'low', dprCap: 1.5, pixelBudget: 2_400_000, shadowMapSize: 1024, nearCrowns: false, crownScale: .7, massScale: 1.25, waterScale: .6, contactShade: false, batchTiles: 3, targetFrameMs: 33 }),
+  low: Object.freeze({ tier: 'low', dprCap: 1.5, pixelBudget: 2_400_000, shadowMapSize: 1024, nearCrowns: false, crownScale: .7, massScale: 1.25, waterScale: .6, contactShade: false, batchTiles: 4, targetFrameMs: 33 }),
   // §66: modern phone default. Adaptive 4 MP budget, 2048 shadows, near crowns
   // inside the focus radius, full bowl and water, contact AO, 60 fps target.
-  standard: Object.freeze({ tier: 'standard', dprCap: 2, pixelBudget: 4_000_000, shadowMapSize: 2048, nearCrowns: true, crownScale: 1, massScale: 1, waterScale: 1, contactShade: true, batchTiles: 2, targetFrameMs: 16.7 }),
+  standard: Object.freeze({ tier: 'standard', dprCap: 2, pixelBudget: 4_000_000, shadowMapSize: 2048, nearCrowns: true, crownScale: 1, massScale: 1, waterScale: 1, contactShade: true, batchTiles: 3, targetFrameMs: 16.7 }),
   // §67: desktop / powerful tablet. Higher DPR inside a memory cap, more tree
   // detail and a larger shadow map; GTAO stays off until it is measured.
-  high: Object.freeze({ tier: 'high', dprCap: 2.5, pixelBudget: 8_000_000, shadowMapSize: 4096, nearCrowns: true, crownScale: 1.25, massScale: 1, waterScale: 1, contactShade: true, batchTiles: 1, targetFrameMs: 16.7 }),
+  high: Object.freeze({ tier: 'high', dprCap: 2.5, pixelBudget: 8_000_000, shadowMapSize: 4096, nearCrowns: true, crownScale: 1.25, massScale: 1, waterScale: 1, contactShade: true, batchTiles: 2, targetFrameMs: 16.7 }),
 });
 
 export interface RenderCapabilities {

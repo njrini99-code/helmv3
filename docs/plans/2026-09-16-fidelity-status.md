@@ -50,7 +50,7 @@ Hero hole: Peek’n Peak Upper hole 7.
 | 32–36 | Rough tiers | done | First cut / primary / secondary / outer + native from source zones |
 | 37–38 | Mowing hierarchy, ground transitions | done (v1) | green → fringe → apron → fairway → first cut → primary → secondary → outer → native/zones → woods, all present with ordered tones; edge types per transition (crisp/soft/lip) |
 | 39–40 | Depth around the green, collection areas | pending | Only where terrain supports it; no invented runoffs |
-| 41 | Water edges | partial | Shoreline contact band, interior gradient, Fresnel (sky lift `#A9C3DB` × .4), roughness .52 (no sun mirror); bank vegetation pending (needs source) |
+| 41 | Water edges | done (v1, bank vegetation source-limited) | Shoreline contact band, interior gradient, Fresnel (sky lift `#A9C3DB` × .4), roughness .52 (no sun mirror), render-only bank berm (10 cm over 1.2 m, zero on the shoreline vertex) so the pond sits in its basin; bank vegetation needs a shoreline source |
 | 42–43 | Cart paths, adjacent-hole context | done | Outside-world actions 5 and 12 |
 | 44–46 | Vegetation structure, forest edge, distant mass | done | Seven families, edge/interior placement, understory, mass, context woodland |
 | 47 | Built context | done | Extrusions from OSM footprints; roof forms blocked (no roof tags in source) |

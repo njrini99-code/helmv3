@@ -379,3 +379,32 @@ describe('Bunker families, overhang shade and context contact (renderer redesign
     }
   });
 });
+
+describe('Water bank berm (renderer redesign §13)', () => {
+  it('raises a render-only berm beside a shoreline that is zero on the shoreline vertex and never on water', () => {
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (let i = 0; i < mesh.vertices.length; i += 3) { minX = Math.min(minX, mesh.vertices[i]!); maxX = Math.max(maxX, mesh.vertices[i]!); minY = Math.min(minY, mesh.vertices[i + 1]!); maxY = Math.max(maxY, mesh.vertices[i + 1]!); }
+    const midX = (minX + maxX) / 2, midY = (minY + maxY) / 2;
+    const ring: [number, number][] = [[midX - 8, midY - 8], [midX + 8, midY - 8], [midX + 8, midY + 8], [midX - 8, midY + 8], [midX - 8, midY - 8]];
+    const pond = { id: 'test-pond', kind: 'water', type: 'Polygon', parts: [[ring]], reviewed: true };
+    const withPond = { ...scene, features: [...scene.features, pond as never] };
+    const artifact = compileVisualArtifact(withPond, mesh), a = artifact.attributes, plain = compileVisualArtifact(scene, mesh);
+    const { bankLipM, bankLipBandM } = MERIDIAN_STYLE.water;
+    let lifted = 0, maxLift = 0;
+    for (let t = 0; t < mesh.triangleFeatures.length; t++) {
+      const kind = mesh.featureKinds[mesh.triangleFeatures[t]!];
+      for (let corner = 0; corner < 3; corner++) {
+        const vertex = t * 3 + corner, x = mesh.vertices[vertex * 3]!, y = mesh.vertices[vertex * 3 + 1]!;
+        const lift = a.lipLiftMm[vertex]! / 1000, before = plain.attributes.lipLiftMm[vertex]! / 1000;
+        const d = boundaryDistance([x, y], ring);
+        if (kind === 'water') { expect(lift).toBe(0); continue; }
+        if (d >= bankLipBandM) { expect(lift).toBe(before); continue; }
+        if (d < 1e-3) { expect(lift).toBe(before); continue; }
+        expect(lift).toBeGreaterThanOrEqual(Math.max(before, bankLipM * Math.sin(Math.PI * d / bankLipBandM)) - 2e-3);
+        if (lift > before) { lifted++; maxLift = Math.max(maxLift, lift); }
+      }
+    }
+    expect(lifted).toBeGreaterThan(0);
+    expect(maxLift).toBeLessThanOrEqual(Math.max(bankLipM, MERIDIAN_STYLE.bunker.lipM[1] * 1.2) + 1e-3);
+  });
+});

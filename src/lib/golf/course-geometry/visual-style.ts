@@ -150,7 +150,11 @@ export const MERIDIAN_STYLE = Object.freeze({
    * colour make it read as water without animation or planar reflection. */
   water: Object.freeze({ shorelineM: .75, shorelineShade: .12, interiorM: 14, deepMix: .55, deepColor: '#2E5561',
     fresnelPower: 3.2, skyMix: .4, skyColor: '#A9C3DB', rippleM: [1.7, 4.3] as const, rippleAmplitude: .018,
-    contactBandM: .6, contactShade: .08 }),
+    contactBandM: .6, contactShade: .08,
+    /** Renderer redesign §13: a render-only bank. Turf within `bankLipBandM`
+     * of a shoreline rises as a rounded berm (zero on the shared shoreline
+     * vertex, crest at half the band) so the water sits in a basin. */
+    bankLipM: .10, bankLipBandM: 1.2 }),
   /** §51: distance haze in perspective presets only, capped so the played
    * hole never loses more than this much contrast at `endM`. */
   haze: Object.freeze({ color: '#C9D8E6', startM: 180, endM: 900, maxMix: .28 }),

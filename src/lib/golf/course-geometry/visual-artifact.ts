@@ -706,11 +706,11 @@ function compileContextContact(scene: HoleScene, mesh: TerrainMesh, style: Merid
  * water's own interior gradient is a shader term over boundary distance (§45). */
 function compileShorelines(mesh: TerrainMesh, style: MeridianStyle, attributes: MeridianVisualAttributes,
   featuresById: Map<string, LocalFeature>, ringsFor: (id: string) => { ring: readonly PointM[]; box: Bbox }[]): number {
-  const band = style.water.contactBandM;
+  const band = style.water.contactBandM, bankBand = style.water.bankLipBandM, reach = Math.max(band, bankBand);
   const shores = [...featuresById.values()].filter(feature => feature.kind === 'water')
     .sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0)
     .map(feature => ringsFor(feature.id)).filter(rings => rings.length)
-    .map(rings => ({ rings, box: rings.reduce((acc, { box: b }) => ({ minX: Math.min(acc.minX, b.minX - band), minY: Math.min(acc.minY, b.minY - band), maxX: Math.max(acc.maxX, b.maxX + band), maxY: Math.max(acc.maxY, b.maxY + band) }),
+    .map(rings => ({ rings, box: rings.reduce((acc, { box: b }) => ({ minX: Math.min(acc.minX, b.minX - reach), minY: Math.min(acc.minY, b.minY - reach), maxX: Math.max(acc.maxX, b.maxX + reach), maxY: Math.max(acc.maxY, b.maxY + reach) }),
       { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity }) }));
   if (!shores.length) return 0;
   const v = mesh.vertices;
@@ -724,6 +724,9 @@ function compileShorelines(mesh: TerrainMesh, style: MeridianStyle, attributes: 
         if (bboxDistance(point, shore.box) > 0) continue;
         nearest = Math.min(nearest, nearestOnRings(point, shore.rings).distance);
       }
+      // Render-only bank berm (renderer redesign §13): zero on the shoreline
+      // vertex so the water plane never opens a crack, crest at half the band.
+      if (nearest < bankBand) attributes.lipLiftMm[vertex] = Math.max(attributes.lipLiftMm[vertex]!, Math.round(style.water.bankLipM * Math.sin(Math.PI * nearest / bankBand) * 1000));
       if (nearest >= band) continue;
       const shade = 1 - style.water.contactShade * (1 - nearest / band);
       for (let c = 0; c < 3; c++) attributes.albedo[vertex * 3 + c] = Math.round(attributes.albedo[vertex * 3 + c]! * shade);

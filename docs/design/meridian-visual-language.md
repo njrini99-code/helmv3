@@ -198,6 +198,11 @@ from V1; V4 changes what stands on each centre.
   footprint darkens up to 10 % toward the wall, and the ground under a path
   ribbon darkens 6 % with a .8 m shoulder fade, so structures and paths sit
   on the ground. Sand, water and uncertain zones are never touched.
+- Bank berm (renderer redesign §13): turf within 1.2 m of a shoreline rises
+  as a rounded berm of up to 10 cm (zero on the shared shoreline vertex, so
+  the water plane never cracks) and shares the render-only `lipLiftMm`
+  attribute with the bunker lip. The canonical shoreline and the water level
+  never move.
 
 ## Visual artifact (§6, §96–102)
 
