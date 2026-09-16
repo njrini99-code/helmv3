@@ -12,7 +12,8 @@ const CANONICAL = ['build-scene', 'camera', 'canopy', 'context-layer', 'context-
   'project', 'quality', 'reconstruct', 'schema', 'selected-shot-focus', 'shot-camera-target', 'spatial', 'surface-compatibility', 'terrain', 'terrain-residency', 'terrain-source',
   'tracking-scene', 'types'];
 const VISUAL = ['three-camera', 'three-flight-path', 'three-renderer', 'shadow-bounds', 'terrain-canopy', 'terrain-material',
-  'terrain-viewport', 'shot-overlay-controller', 'shot-overlay-layout', 'runtime-controller', 'camera-motion', 'visual-style', 'visual-artifact', 'render-quality'];
+  'terrain-viewport', 'shot-overlay-controller', 'shot-overlay-layout', 'runtime-controller', 'camera-motion', 'visual-style', 'visual-artifact', 'render-quality',
+  'scene-markers'];
 const imports = (file: string) => [...readFileSync(join(root, file), 'utf8').matchAll(/from\s+'([^']+)'/g)].map(match => match[1]!);
 
 describe('Meridian visual code boundary', () => {
