@@ -43,11 +43,20 @@ export const MERIDIAN_STYLE = Object.freeze({
     microFadeFwidth: [.35, .9] as const,
     /** Greens keep a tighter, quieter micro field (§23) and never show macro at Top. */
     greenMicroScale: .55, greenMacroScale: .4,
+    /** Renderer redesign §7: blade-height / density cue. Taller, denser rough
+     * carries a stronger micro response than mown turf; apron and fringe are
+     * quieter still, the green quietest. Amplitude only, never a real condition. */
+    microByClass: Object.freeze({ rough: 1.6, surround: 1.25, apron: .8, fringe: .7 }),
   }),
   /** §22: mowing bands run along the play line in route-local coordinates
    * (s along the route, t lateral); a small skew keeps them from reading as a
    * ruler. Bands fade before the fairway edge (§22.3). */
-  mowing: Object.freeze({ bandWidthM: 6.5, amplitude: .03, skew: .16, edgeFadeM: 3.5, fadeFwidth: [.3, .7] as const }),
+  mowing: Object.freeze({ bandWidthM: 6.5, amplitude: .03, skew: .16, edgeFadeM: 3.5, fadeFwidth: [.3, .7] as const,
+    /** Fidelity §8–9: landing-area emphasis. On par 4/5 holes the mowing
+     * contrast rises by `boost` inside a route-local window centred
+     * `driveM` from the tee (never closer than `greenClearM` to the route
+     * end), blending over `blendM`. Illustrative style, like the bands. */
+    landing: Object.freeze({ boost: .5, halfWidthM: 30, blendM: 25, driveM: 235, greenClearM: 70 }) }),
   /** §25: boundary softness. A short albedo lip inside every feature edge so
    * a colour step never lands on one pixel; ribbons (§25.1) keep their
    * compiler width, fields (§25.2) soften over `fieldM`. */

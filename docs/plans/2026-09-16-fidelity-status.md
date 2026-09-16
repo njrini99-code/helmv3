@@ -33,7 +33,7 @@ Hero hole: Peek’n Peak Upper hole 7.
 | --- | --- | --- | --- |
 | 0–4 | Purpose, thesis, differentiator, what feels special, visual stack | done | Adopted; the stack maps to the compiler layers (turf, mowing, boundary, context, bunkerBowl, water, roughHierarchy, groundZones) and the landscape/context groups |
 | 5–7 | Terrain depth, principles, depth cues | partial | Canonical DEM terrain, slope darkening, canopy shade, haze; macro landform is source-limited (§6.3 honoured: no invented relief) |
-| 8–9 | Fairway as storytelling, fidelity standard | partial | Route-local mowing reads direction; width rhythm is source geometry; landing-area emphasis pending (Meridian V6) |
+| 8–9 | Fairway as storytelling, fidelity standard | done (v1) | Route-local mowing reads direction; width rhythm, pinches and approach character are the source geometry (crisp/soft edge types, apron neck); landing-area emphasis: on par 4/5 the band contrast rises 50 % inside a route-local window 30 m either side of the drive distance (235 m, never within 70 m of the route end), blending over 25 m — illustrative style like the bands, none on par 3s (`landingWindow`) |
 | 10 | Fairway edge treatment (crisp / soft / terrain-biased) | partial | Crisp near bunkers/greens, soft elsewhere (`fairwayEdges` layer, `edge-types-v1`); terrain-biased pending (breaklines) |
 | 11–12 | Striping language, material richness | done | Bands scale with the hole, follow the route, fade at edges; macro/micro fields; no pasted texture |
 | 13 | Approach transition | done | Apron neck blends fairway → apron → collar → green over 2 m |

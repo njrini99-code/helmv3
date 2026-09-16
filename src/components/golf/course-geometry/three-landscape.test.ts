@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
-import { buildThreeLandscape, DEFAULT_THREE_LANDSCAPE_PALETTE } from './three-landscape';
+import { buildThreeLandscape, DEFAULT_THREE_LANDSCAPE_PALETTE, landingWindow } from './three-landscape';
 import { MERIDIAN_STYLE } from '@/lib/golf/course-geometry/visual-style';
 import { compileVisualArtifact, linearAlbedo, MERIDIAN_CODES, SURFACE_CLASS_IDS } from '@/lib/golf/course-geometry/visual-artifact';
 import { installTerrainDebugView } from './terrain-debug';
@@ -440,5 +440,32 @@ describe('canopy batch tiles (Meridian §68.2)', () => {
         .reduce((total, child) => total + (child as { count: number }).count, 0);
       expect(instanced(two)).toBe(instanced(one));
     } finally { one.dispose(); two.dispose(); }
+  });
+});
+
+describe('landing-area emphasis and turf density cue (fidelity §8–9, renderer redesign §7)', () => {
+  it('derives a route-local landing window on par 4/5 holes and none on par 3s', () => {
+    const scene = pilotScene('cacapon-07', false);
+    const window = landingWindow(scene);
+    expect(window).not.toBeNull();
+    expect(window!.centreM).toBeLessThanOrEqual(MERIDIAN_STYLE.mowing.landing.driveM);
+    expect(window!.centreM).toBeGreaterThanOrEqual(60);
+    expect(window!.boost).toBe(MERIDIAN_STYLE.mowing.landing.boost);
+    expect(landingWindow({ ...scene, hole: { ...scene.hole, par: 3 } })).toBeNull();
+    expect(landingWindow({ ...scene, hole: { ...scene.hole, routeFeatureId: 'missing' } })).toBeNull();
+  });
+  it('injects the landing uniform and per-class micro scales into the terrain shader as illustrative style', () => {
+    const scene = pilotScene('cacapon-07', false), mesh = slopeMesh();
+    const landscape = buildThreeLandscape(scene, mesh);
+    const material = landscape.terrain.material;
+    expect(material.userData.landing).toMatchObject({ basis: 'illustrative_style', boost: MERIDIAN_STYLE.mowing.landing.boost });
+    expect(material.userData.turf.microByClass).toEqual(MERIDIAN_STYLE.turf.microByClass);
+    const shader = { uniforms: {} as Record<string, { value: unknown }>, vertexShader: '#include <common>\n#include <begin_vertex>', fragmentShader: '#include <common>\n#include <color_fragment>' };
+    (material.onBeforeCompile as (s: typeof shader) => void)(shader);
+    expect(shader.uniforms.golfLanding).toBeDefined();
+    expect(shader.fragmentShader).toContain('golfLandingWindow');
+    expect(shader.fragmentShader).toContain(MERIDIAN_STYLE.turf.microByClass.rough.toFixed(3));
+    expect(shader.fragmentShader).toContain(MERIDIAN_STYLE.turf.microByClass.fringe.toFixed(3));
+    landscape.dispose();
   });
 });

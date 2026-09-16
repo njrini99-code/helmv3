@@ -83,6 +83,14 @@ The seed is derived from the canonical package hash, so every hole of a
 course shares one turf world and nothing swims under camera motion. Noise
 never exceeds 3% per layer and never encodes a real surface condition. The
 lab exposes each layer as a multiplier (`?macro=0&micro=0&mowing=4…`).
+- Density cue (renderer redesign §7): the micro field's amplitude scales
+  by surface class (rough ×1.6, surround ×1.25, fairway/tee ×1, apron ×.8,
+  fringe ×.7, green ×.55) so taller, denser grass reads rougher than mown
+  turf. Amplitude only; it never encodes a real turf condition.
+- Landing emphasis (fidelity §8–9): on par 4 and 5 holes the mowing band
+  contrast rises by 50 % inside a route-local window (±30 m about 235 m from
+  the tee, never within 70 m of the route end, 25 m blend). Illustrative
+  style like the bands themselves; par 3s get none (`landingWindow`).
 
 ## Bunkers (§26–34)
 

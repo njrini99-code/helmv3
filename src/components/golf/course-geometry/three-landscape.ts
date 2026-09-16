@@ -4,8 +4,8 @@ import { boundaryDistance } from '@/lib/golf/course-geometry/display-outline';
 import { inFeature } from '@/lib/golf/course-geometry/spatial';
 import { terrainHeight, type TerrainMesh } from '@/lib/golf/course-geometry/terrain';
 import type { HoleScene, LocalFeature, PointM } from '@/lib/golf/course-geometry/types';
-import { assertVisualArtifact, BUNKER_SLOPE_SCALE, compileVisualArtifact, linearAlbedo, MERIDIAN_CODES, type MeridianVisualArtifact } from '@/lib/golf/course-geometry/visual-artifact';
-import { MERIDIAN_PALETTE, MERIDIAN_STYLE, MERIDIAN_STYLE_HASH, MERIDIAN_STYLE_VERSION, type MeridianPaletteKey, type MeridianStyleOverrides } from '@/lib/golf/course-geometry/visual-style';
+import { assertVisualArtifact, BUNKER_SLOPE_SCALE, compileVisualArtifact, linearAlbedo, MERIDIAN_CODES, SURFACE_CLASS_IDS, type MeridianVisualArtifact } from '@/lib/golf/course-geometry/visual-artifact';
+import { MERIDIAN_PALETTE, MERIDIAN_STYLE, MERIDIAN_STYLE_HASH, MERIDIAN_STYLE_VERSION, type MeridianPaletteKey, type MeridianStyle, type MeridianStyleOverrides } from '@/lib/golf/course-geometry/visual-style';
 import { buildThreeContext } from './three-context';
 import { createTreeAssetAtlas, type TreeCrownAsset } from './tree-assets';
 
@@ -87,8 +87,25 @@ export interface TurfStyleHandle { setOverrides(overrides: MeridianStyleOverride
  * bands that fade before the fairway edge, a short boundary lip, context
  * desaturation, and per-surface roughness. None of it moves an edge, encodes
  * a real surface condition, or participates in picking or reconstruction. */
-export function attachTurfStyle(material: TurfStyleTarget, seed: readonly [number, number], overrides: MeridianStyleOverrides = {}): TurfStyleHandle {
+/** Fidelity §8–9: the route-local mowing emphasis window for one hole. */
+export interface LandingWindow { centreM: number; halfWidthM: number; boost: number }
+export function landingWindow(scene: HoleScene, style: MeridianStyle = MERIDIAN_STYLE): LandingWindow | null {
+  if (scene.hole.par < 4) return null;
+  const route = scene.features.find(f => f.id === scene.hole.routeFeatureId)?.parts[0]?.[0];
+  if (!route || route.length < 2) return null;
+  let length = 0;
+  for (let i = 1; i < route.length; i++) length += Math.hypot(route[i]![0] - route[i - 1]![0], route[i]![1] - route[i - 1]![1]);
+  const { driveM, greenClearM, halfWidthM, boost } = style.mowing.landing;
+  const centreM = Math.min(driveM, length - greenClearM);
+  return centreM < 60 ? null : { centreM: Math.round(centreM * 10) / 10, halfWidthM, boost };
+}
+
+export function attachTurfStyle(material: TurfStyleTarget, seed: readonly [number, number], overrides: MeridianStyleOverrides = {}, landing: LandingWindow | null = null): TurfStyleHandle {
   const style = MERIDIAN_STYLE;
+  const landingUniform = new THREE.Vector3(landing?.centreM ?? 0, landing?.halfWidthM ?? 0, landing?.boost ?? 0);
+  const classId = (name: string) => SURFACE_CLASS_IDS.indexOf(name as never);
+  const roughClasses = ['rough', 'rough_secondary', 'rough_outer', 'native', 'open_field', 'buffer_grass'].map(classId).filter(id => id >= 0);
+  const isClass = (ids: readonly number[]) => ids.map(id => `abs(golfClass - ${id}.0) < 0.5`).join(' || ');
   const amplitudes = new THREE.Vector4(style.turf.macro.amplitude, style.turf.micro.amplitude, style.mowing.amplitude, style.boundary.shade);
   const contextMix: { value: number } = { value: style.context.desaturate };
   // §42–45 water terms (sky mix, interior mix, ripple, shoreline shade) and the §50 contact shade.
@@ -117,6 +134,7 @@ export function attachTurfStyle(material: TurfStyleTarget, seed: readonly [numbe
     shader.uniforms.golfWaterDeep = { value: new THREE.Color(style.water.deepColor) };
     shader.uniforms.golfWaterSky = { value: new THREE.Color(style.water.skyColor) };
     shader.uniforms.golfShadeAmount = shadeAmount;
+    shader.uniforms.golfLanding = { value: landingUniform };
     shader.vertexShader = shader.vertexShader.replace('#include <common>', `#include <common>
 attribute float golfMowingWeight;
 attribute float golfTurfWeight;
@@ -143,6 +161,7 @@ uniform vec4 golfWaterMix;
 uniform vec3 golfWaterDeep;
 uniform vec3 golfWaterSky;
 uniform float golfShadeAmount;
+uniform vec3 golfLanding;
 varying vec2 vGolfWorldXY;
 varying vec2 vGolfRouteST;
 varying vec4 vGolfWeights;
@@ -166,6 +185,13 @@ varying vec4 vGolfSurface;`).replace('#include <color_fragment>', `#include <col
   float golfMicro = 0.5 * sin(golfMicroPhase) + 0.5 * sin(dot(golfP, vec2(-0.44, 0.90) * ${k(u1)}) + 0.7);
   float golfMicroVisible = 1.0 - smoothstep(${style.turf.microFadeFwidth[0].toFixed(3)}, ${style.turf.microFadeFwidth[1].toFixed(3)}, fwidth(golfMicroPhase));
   golfMicro *= golfMicroVisible * (golfGreen ? ${style.turf.greenMicroScale.toFixed(3)} : 1.0);
+  // Blade-height / density cue (renderer redesign §7): rough carries a
+  // stronger micro response than mown turf; apron and fringe are quieter.
+  float golfClass = vGolfSurface.y;
+  golfMicro *= (${isClass(roughClasses)}) ? ${style.turf.microByClass.rough.toFixed(3)}
+    : abs(golfClass - ${classId('surround')}.0) < 0.5 ? ${style.turf.microByClass.surround.toFixed(3)}
+    : abs(golfClass - ${classId('apron')}.0) < 0.5 ? ${style.turf.microByClass.apron.toFixed(3)}
+    : abs(golfClass - ${classId('fringe')}.0) < 0.5 ? ${style.turf.microByClass.fringe.toFixed(3)} : 1.0;
   // Mowing (§22): bands along the play line in route-local metres with a
   // small skew; derivative-filtered edges; weight already fades at the edge.
   float golfPhase = (vGolfRouteST.y + vGolfRouteST.x * ${style.mowing.skew.toFixed(3)}) / ${style.mowing.bandWidthM.toFixed(3)};
@@ -173,6 +199,9 @@ varying vec4 vGolfSurface;`).replace('#include <color_fragment>', `#include <col
   float golfFilter = max(fwidth(golfWave), 0.025);
   float golfBand = smoothstep(-golfFilter, golfFilter, golfWave) * 2.0 - 1.0;
   float golfBandVisible = 1.0 - smoothstep(${style.mowing.fadeFwidth[0].toFixed(3)}, ${style.mowing.fadeFwidth[1].toFixed(3)}, fwidth(golfPhase));
+  // Landing-area emphasis (fidelity §8–9): stronger band contrast inside the
+  // route-local window; zero boost on par 3s. Illustrative, like the bands.
+  float golfLandingWindow = golfLanding.z > 0.0 ? 1.0 - smoothstep(golfLanding.y, golfLanding.y + ${style.mowing.landing.blendM.toFixed(3)}, abs(vGolfRouteST.x - golfLanding.x)) : 0.0;
   // Boundary softness (§25): a short darker lip inside every feature edge.
   float golfEdge = 1.0 - smoothstep(0.0, ${style.boundary.fieldM.toFixed(3)}, golfBoundary);
   // Sand grain (§31): a fine world-space field on bunker vertices only,
@@ -186,7 +215,7 @@ varying vec4 vGolfSurface;`).replace('#include <color_fragment>', `#include <col
     + golfMicro * golfAmplitudes.y * golfTurfWeight
     + golfGrain * ${style.bunker.sandGrainAmplitude.toFixed(3)} * golfSand
     + golfMacro * ${style.bunker.floorMacroAmplitude.toFixed(3)} * golfSand
-    + golfBand * golfBandVisible * golfAmplitudes.z * golfMowingWeight
+    + golfBand * golfBandVisible * golfAmplitudes.z * golfMowingWeight * (1.0 + golfLanding.z * golfLandingWindow)
     - golfEdge * golfAmplitudes.w;
   // Context (§53): real surfaces, quieter. Albedo only; never alpha.
   float golfLuma = dot(diffuseColor.rgb, vec3(0.2126, 0.7152, 0.0722));
@@ -216,16 +245,17 @@ if (abs(vGolfSurface.y - ${SURFACE_CLASS_WATER}.0) < 0.5) {
   };
   material.customProgramCacheKey = () => `golf-landscape-turf-${MERIDIAN_STYLE_HASH}:${material.type}`;
   material.userData.mowing = { basis: 'illustrative_style', bandWidthM: style.mowing.bandWidthM, frame: 'route_local' };
-  material.userData.turf = { basis: 'visual_only', macroM: style.turf.macro.wavelengthsM, microM: style.turf.micro.wavelengthsM };
+  material.userData.turf = { basis: 'visual_only', macroM: style.turf.macro.wavelengthsM, microM: style.turf.micro.wavelengthsM, microByClass: style.turf.microByClass };
+  material.userData.landing = landing ? { basis: 'illustrative_style', ...landing } : null;
   material.userData.water = { basis: 'visual_only', depthBasis: 'shoreline_distance', reflection: lit ? 'fresnel_static' : 'none' };
   material.userData.canopyShade = { basis: 'analytic_contact', amount: style.canopyShade.amount };
   material.userData.styleVersion = MERIDIAN_STYLE_VERSION; material.userData.styleHash = MERIDIAN_STYLE_HASH;
   return { setOverrides: apply };
 }
-function terrainMaterial(seed: readonly [number, number], overrides: MeridianStyleOverrides): { material: THREE.MeshStandardMaterial; turf: TurfStyleHandle } {
+function terrainMaterial(seed: readonly [number, number], overrides: MeridianStyleOverrides, landing: LandingWindow | null = null): { material: THREE.MeshStandardMaterial; turf: TurfStyleHandle } {
   const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, metalness: 0 });
   material.name = 'course-lit-albedo';
-  return { material, turf: attachTurfStyle(material, seed, overrides) };
+  return { material, turf: attachTurfStyle(material, seed, overrides, landing) };
 }
 
 /** Build a scene-owned landscape once. Camera gestures only move the camera;
@@ -318,7 +348,7 @@ export function buildThreeLandscape(
   terrainGeometry.setAttribute('golfRouteST', new THREE.BufferAttribute(routeST, 2));
   terrainGeometry.setAttribute('golfBunkerDepth', new THREE.BufferAttribute(bowlDepth, 1));
   geometries.add(terrainGeometry);
-  const { material, turf: turfStyle } = terrainMaterial(artifact.seed, options.overrides ?? {});
+  const { material, turf: turfStyle } = terrainMaterial(artifact.seed, options.overrides ?? {}, landingWindow(scene));
   materials.add(material);
   const terrain = new THREE.Mesh(terrainGeometry, material);
   terrain.name = 'course-terrain';
