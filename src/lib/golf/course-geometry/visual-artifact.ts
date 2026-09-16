@@ -10,7 +10,7 @@
  * refuses (MERIDIAN_ARTIFACT_MISMATCH) any artifact whose keys disagree with
  * the scene in front of it. */
 import { boundaryDistance } from './display-outline';
-import type { TerrainMesh } from './terrain';
+import { terrainHeight, type TerrainMesh } from './terrain';
 import type { HoleScene, LocalFeature, PointM, SurfaceKind } from './types';
 import { hexToRgb, MERIDIAN_STYLE, srgbToLinear, styleHash, type MeridianStyle } from './visual-style';
 
@@ -27,6 +27,25 @@ export type SurfaceClass = SurfaceKind | 'ground' | 'surround' | 'fringe';
  * ribbon, 2 highlight ribbon, 3 surround, 4 collar. */
 export const SURFACE_CLASS_IDS: readonly SurfaceClass[] = ['ground', 'rough', 'fairway', 'tee', 'green', 'fringe', 'surround', 'bunker', 'water', 'woods'];
 
+/** One bunker's render-only bowl (§27–30). `depthBasis` names where the depth
+ * came from: today always a size-class default; a future source-supported
+ * depth (survey, lidar cross-section) would say so and carry its provenance. */
+export interface VisualBunkerProfile {
+  featureId: string;
+  areaM2: number;
+  sizeClass: 'small' | 'medium' | 'large';
+  /** Class depth the profile asks for, and the deepest vertex actually
+   * lowered: a coarsely triangulated (context) bunker with no interior vertex
+   * stays flat, and says so here. */
+  depthM: number;
+  effectiveDepthM: number;
+  bowlRadiusM: number;
+  depthBasis: 'visual_class';
+  contextOnly: boolean;
+  /** Vertex range (inclusive start, exclusive end) is not contiguous, so the
+   * profile records the vertex count it touched instead. */
+  vertexCount: number;
+}
 export interface MeridianVisualAttributes {
   /** sRGB albedo, 3 bytes per vertex, in the mesh's corner order. */
   albedo: Uint8Array;
@@ -42,9 +61,12 @@ export interface MeridianVisualAttributes {
   routeST: Float32Array;
   /** Metres to the nearest boundary of the vertex's own feature (cm, ≤655 m). */
   boundaryDistanceCm: Uint16Array;
-  /** Render-only bunker bowl depth in mm; zero until V3 fills it. */
+  /** Render-only bunker bowl depth in mm (§28); zero outside bunkers. */
   bunkerDepthMm: Uint16Array;
+  /** ∂depth/∂x, ∂depth/∂y in m/m × 4096 so display normals follow the bowl. */
+  bunkerSlope: Int16Array;
 }
+export const BUNKER_SLOPE_SCALE = 4096;
 export interface MeridianVisualArtifact {
   schemaVersion: 1;
   kind: 'meridian_visual_artifact';
@@ -67,12 +89,12 @@ export interface MeridianVisualArtifact {
     mowing: { basis: 'illustrative_style'; bandWidthM: number; frame: 'route_local' };
     boundary: { basis: 'visual_only'; fieldM: number };
     context: { basis: 'visual_only'; roughMix: number };
-    bunkerBowl: { basis: 'visual_only'; version: 'none' | 'smoothstep-bowl-v1' };
+    bunkerBowl: { basis: 'visual_only'; version: 'smoothstep-bowl-v1'; depthBasis: 'visual_class'; profiles: VisualBunkerProfile[] };
   };
   attributes: MeridianVisualAttributes;
 }
 
-const ATTRIBUTE_ORDER: (keyof MeridianVisualAttributes)[] = ['albedo', 'mowingWeight', 'turfWeight', 'contextWeight', 'roughness', 'surfaceClass', 'routeST', 'boundaryDistanceCm', 'bunkerDepthMm'];
+const ATTRIBUTE_ORDER: (keyof MeridianVisualAttributes)[] = ['albedo', 'mowingWeight', 'turfWeight', 'contextWeight', 'roughness', 'surfaceClass', 'routeST', 'boundaryDistanceCm', 'bunkerDepthMm', 'bunkerSlope'];
 
 function fnvBytes(views: ArrayBufferView[]): string {
   let hash = 2166136261;
@@ -97,6 +119,38 @@ function ringBbox(ring: readonly PointM[]): Bbox {
 function bboxDistance([x, y]: PointM, box: Bbox): number {
   const dx = Math.max(box.minX - x, 0, x - box.maxX), dy = Math.max(box.minY - y, 0, y - box.maxY);
   return Math.sqrt(dx * dx + dy * dy);
+}
+
+/** Nearest point on a ring's boundary (segments), with its distance. */
+function nearestOnRings(p: PointM, rings: readonly { ring: readonly PointM[]; box: Bbox }[]): { distance: number; point: PointM } {
+  let best = Infinity, bx = p[0], by = p[1];
+  for (const { ring, box } of rings) {
+    if (bboxDistance(p, box) >= best) continue;
+    for (let i = 1; i < ring.length; i++) {
+      const a = ring[i - 1]!, b = ring[i]!, dx = b[0] - a[0], dy = b[1] - a[1], length2 = dx * dx + dy * dy;
+      const t = length2 ? Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / length2)) : 0;
+      const qx = a[0] + t * dx, qy = a[1] + t * dy, d = Math.sqrt((p[0] - qx) ** 2 + (p[1] - qy) ** 2);
+      if (d < best) { best = d; bx = qx; by = qy; }
+    }
+  }
+  return { distance: best, point: [bx, by] };
+}
+/** Quintic smoothstep 6u⁵ − 15u⁴ + 10u³ and its derivative (§28). */
+const smootherstep = (u: number) => u * u * u * (u * (u * 6 - 15) + 10);
+const smootherstepSlope = (u: number) => 30 * u * u * (u - 1) * (u - 1);
+function featureSeed(id: string): number {
+  let seed = 2166136261;
+  for (let i = 0; i < id.length; i++) seed = Math.imul(seed ^ id.charCodeAt(i), 16777619);
+  let n = Math.imul(seed ^ (seed >>> 16), 0x45d9f3b);
+  n = Math.imul(n ^ (n >>> 16), 0x45d9f3b);
+  return ((n ^ (n >>> 16)) >>> 0) / 0xffffffff;
+}
+function polygonArea(feature: LocalFeature): number {
+  if (feature.type === 'LineString') return 0;
+  return feature.parts.reduce((total, rings) => total + rings.reduce((sum, ring, index) => {
+    const area = Math.abs(ring.reduce((acc, a, i) => { const b = ring[(i + 1) % ring.length]!; return acc + a[0] * b[1] - b[0] * a[1]; }, 0) / 2);
+    return index === 0 ? sum + area : sum - area;
+  }, 0), 0);
 }
 
 class RouteFrame {
@@ -155,6 +209,7 @@ export function compileVisualArtifact(scene: HoleScene, mesh: TerrainMesh, style
     albedo: new Uint8Array(vertexCount * 3), mowingWeight: new Uint8Array(vertexCount), turfWeight: new Uint8Array(vertexCount),
     contextWeight: new Uint8Array(vertexCount), roughness: new Uint8Array(vertexCount), surfaceClass: new Uint8Array(vertexCount),
     routeST: new Float32Array(vertexCount * 2), boundaryDistanceCm: new Uint16Array(vertexCount), bunkerDepthMm: new Uint16Array(vertexCount),
+    bunkerSlope: new Int16Array(vertexCount * 2),
   };
   const featuresById = new Map<string, LocalFeature>();
   for (const feature of scene.contextFeatures ?? []) featuresById.set(feature.id, feature);
@@ -219,6 +274,7 @@ export function compileVisualArtifact(scene: HoleScene, mesh: TerrainMesh, style
       attributes.routeST[vertex * 2] = Math.round(s * 1000) / 1000; attributes.routeST[vertex * 2 + 1] = Math.round(lateral * 1000) / 1000;
     }
   }
+  const profiles = compileBunkerBowls(mesh, style, attributes, featuresById, contextIds, ringsFor);
   const contentHash = fnvBytes(ATTRIBUTE_ORDER.map(key => attributes[key]));
   return {
     schemaVersion: 1, kind: 'meridian_visual_artifact', basis: 'visual_only', compilerVersion: MERIDIAN_VISUAL_COMPILER_VERSION,
@@ -229,9 +285,101 @@ export function compileVisualArtifact(scene: HoleScene, mesh: TerrainMesh, style
       mowing: { basis: 'illustrative_style', bandWidthM: style.mowing.bandWidthM, frame: 'route_local' },
       boundary: { basis: 'visual_only', fieldM: style.boundary.fieldM },
       context: { basis: 'visual_only', roughMix: style.context.roughMix },
-      bunkerBowl: { basis: 'visual_only', version: 'none' },
+      bunkerBowl: { basis: 'visual_only', version: 'smoothstep-bowl-v1', depthBasis: 'visual_class', profiles },
     },
     attributes,
+  };
+}
+
+/** Render-only bunker bowls (§27–32). Depth is a display convention chosen by
+ * size class, never a measured hazard depth; the canonical mesh keeps the DEM
+ * elevation and the reviewed outline. Every boundary vertex stays at depth
+ * zero so the bowl meets the surrounding turf without a crack. */
+function compileBunkerBowls(mesh: TerrainMesh, style: MeridianStyle, attributes: MeridianVisualAttributes,
+  featuresById: Map<string, LocalFeature>, contextIds: Set<string>, ringsFor: (id: string) => { ring: readonly PointM[]; box: Bbox }[]): VisualBunkerProfile[] {
+  const profiles: VisualBunkerProfile[] = [];
+  const verticesByFeature = new Map<number, number[]>();
+  for (let t = 0; t < mesh.triangleFeatures.length; t++) {
+    const featureIndex = mesh.triangleFeatures[t]!;
+    if (mesh.featureKinds[featureIndex] !== 'bunker') continue;
+    const list = verticesByFeature.get(featureIndex) ?? [];
+    list.push(t * 3, t * 3 + 1, t * 3 + 2);
+    verticesByFeature.set(featureIndex, list);
+  }
+  const v = mesh.vertices, contactBoxes: { rings: { ring: readonly PointM[]; box: Bbox }[]; box: Bbox }[] = [];
+  for (const [featureIndex, vertices] of [...verticesByFeature.entries()].sort((a, b) => a[0] - b[0])) {
+    const id = mesh.featureIds[featureIndex]!, feature = featuresById.get(id), rings = ringsFor(id);
+    if (!feature || !rings.length) continue;
+    const contextOnly = contextIds.has(id), areaM2 = polygonArea(feature);
+    const sizeClass: VisualBunkerProfile['sizeClass'] = areaM2 < style.bunker.smallAreaM2 ? 'small' : areaM2 > style.bunker.largeAreaM2 ? 'large' : 'medium';
+    const [low = 0, high = 0] = style.bunker.depthM[sizeClass];
+    const depthM = (low + (high - low) * featureSeed(id)) * (contextOnly ? style.bunker.contextDepthScale : 1);
+    // Inradius from the deepest interior vertex; the bowl bottoms out there.
+    const nearest = vertices.map(vertex => nearestOnRings([v[vertex * 3]!, v[vertex * 3 + 1]!], rings));
+    const inradius = nearest.reduce((max, n) => Math.max(max, n.distance), 0);
+    const [radiusMin = .6, radiusMax = 3.5] = style.bunker.bowlRadiusM;
+    const bowlRadiusM = Math.min(radiusMax, Math.max(radiusMin, inradius * style.bunker.bowlRadiusFraction));
+    let effectiveDepthM = 0;
+    vertices.forEach((vertex, index) => {
+      const { distance, point } = nearest[index]!;
+      const u = Math.min(1, distance / bowlRadiusM), depth = depthM * smootherstep(u);
+      attributes.bunkerDepthMm[vertex] = Math.round(depth * 1000);
+      effectiveDepthM = Math.max(effectiveDepthM, attributes.bunkerDepthMm[vertex]! / 1000);
+      // Gradient of depth: profile slope × unit vector away from the rim.
+      const slope = u < 1 && distance > 0 ? depthM * smootherstepSlope(u) / bowlRadiusM : 0;
+      const px = v[vertex * 3]! - point[0], py = v[vertex * 3 + 1]! - point[1];
+      const gx = distance > 0 ? slope * px / distance : 0, gy = distance > 0 ? slope * py / distance : 0;
+      attributes.bunkerSlope[vertex * 2] = Math.round(Math.max(-8, Math.min(8, gx)) * BUNKER_SLOPE_SCALE);
+      attributes.bunkerSlope[vertex * 2 + 1] = Math.round(Math.max(-8, Math.min(8, gy)) * BUNKER_SLOPE_SCALE);
+      // The floor darkens a little with depth (§31); the compiler's rim ribbons
+      // keep their sand-edge / highlight albedo.
+      const shade = 1 - style.bunker.floorShade * (depthM > 0 ? depth / depthM : 0);
+      for (let c = 0; c < 3; c++) attributes.albedo[vertex * 3 + c] = Math.round(attributes.albedo[vertex * 3 + c]! * shade);
+    });
+    const box = rings.reduce((acc, { box: b }) => ({ minX: Math.min(acc.minX, b.minX), minY: Math.min(acc.minY, b.minY), maxX: Math.max(acc.maxX, b.maxX), maxY: Math.max(acc.maxY, b.maxY) }),
+      { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity });
+    contactBoxes.push({ rings, box: { minX: box.minX - style.bunker.contactBandM, minY: box.minY - style.bunker.contactBandM, maxX: box.maxX + style.bunker.contactBandM, maxY: box.maxY + style.bunker.contactBandM } });
+    profiles.push({ featureId: id, areaM2: Math.round(areaM2 * 10) / 10, sizeClass, depthM: Math.round(depthM * 1000) / 1000, effectiveDepthM,
+      bowlRadiusM: Math.round(bowlRadiusM * 1000) / 1000, depthBasis: 'visual_class', contextOnly, vertexCount: vertices.length });
+  }
+  // Contact darkening (§32): turf within the contact band of a rim.
+  if (contactBoxes.length) for (let t = 0; t < mesh.triangleFeatures.length; t++) {
+    if (mesh.featureKinds[mesh.triangleFeatures[t]!] === 'bunker') continue;
+    for (let corner = 0; corner < 3; corner++) {
+      const vertex = t * 3 + corner, point: PointM = [v[vertex * 3]!, v[vertex * 3 + 1]!];
+      let nearest = Infinity;
+      for (const contact of contactBoxes) {
+        if (bboxDistance(point, contact.box) > 0) continue;
+        nearest = Math.min(nearest, nearestOnRings(point, contact.rings).distance);
+      }
+      if (nearest >= style.bunker.contactBandM) continue;
+      const shade = 1 - style.bunker.contactShade * (1 - nearest / style.bunker.contactBandM);
+      for (let c = 0; c < 3; c++) attributes.albedo[vertex * 3 + c] = Math.round(attributes.albedo[vertex * 3 + c]! * shade);
+    }
+  }
+  return profiles;
+}
+
+/** Display-surface height sampler (§33): canonical elevation minus the
+ * render-only bowl depth at the point. Used only to place drawn markers on
+ * drawn sand; `terrainHeight` stays the elevation of record everywhere else. */
+export function createVisualSurfaceSampler(mesh: TerrainMesh, artifact: MeridianVisualArtifact): (point: PointM) => number | null {
+  const depth = artifact.attributes.bunkerDepthMm, triangles: number[] = [];
+  for (let t = 0; t < mesh.triangleFeatures.length; t++) if (depth[t * 3]! || depth[t * 3 + 1]! || depth[t * 3 + 2]!) triangles.push(t);
+  const v = mesh.vertices;
+  return ([x, y]) => {
+    const z = terrainHeight(mesh, [x, y]);
+    if (z == null) return null;
+    for (const t of triangles) {
+      const i = t * 9, ax = v[i]!, ay = v[i + 1]!, bx = v[i + 3]!, by = v[i + 4]!, cx = v[i + 6]!, cy = v[i + 7]!;
+      const det = (by - cy) * (ax - cx) + (cx - bx) * (ay - cy);
+      if (Math.abs(det) < 1e-10) continue;
+      const a = ((by - cy) * (x - cx) + (cx - bx) * (y - cy)) / det, b = ((cy - ay) * (x - cx) + (ax - cx) * (y - cy)) / det;
+      if (a >= -1e-6 && b >= -1e-6 && a + b <= 1 + 1e-6) {
+        return z - (a * depth[t * 3]! + b * depth[t * 3 + 1]! + (1 - a - b) * depth[t * 3 + 2]!) / 1000;
+      }
+    }
+    return z;
   };
 }
 
@@ -249,6 +397,7 @@ export function assertVisualArtifact(artifact: MeridianVisualArtifact, scene: Ho
   if (artifact.vertexCount !== mesh.vertices.length / 3) problems.push('vertices');
   const a = artifact.attributes;
   if (a.albedo.length !== artifact.vertexCount * 3 || a.routeST.length !== artifact.vertexCount * 2 ||
+    a.bunkerSlope.length !== artifact.vertexCount * 2 ||
     [a.mowingWeight, a.turfWeight, a.contextWeight, a.roughness, a.surfaceClass, a.boundaryDistanceCm, a.bunkerDepthMm].some(view => view.length !== artifact.vertexCount)) problems.push('attributes');
   if (problems.length) throw new Error(`${MERIDIAN_CODES.mismatch}: ${problems.join(',')}`);
 }
@@ -294,6 +443,7 @@ export function parseVisualArtifact(text: string): MeridianVisualArtifact {
     albedo: bytes('albedo'), mowingWeight: bytes('mowingWeight'), turfWeight: bytes('turfWeight'), contextWeight: bytes('contextWeight'),
     roughness: bytes('roughness'), surfaceClass: bytes('surfaceClass'),
     routeST: new Float32Array(aligned('routeST')), boundaryDistanceCm: new Uint16Array(aligned('boundaryDistanceCm')), bunkerDepthMm: new Uint16Array(aligned('bunkerDepthMm')),
+    bunkerSlope: new Int16Array(aligned('bunkerSlope')),
   };
   const { encoding: _encoding, attributes: _attributes, ...header } = raw;
   const artifact = { ...(header as Omit<MeridianVisualArtifact, 'attributes'>), attributes };

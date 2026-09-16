@@ -4,7 +4,7 @@ import {
 } from 'three';
 import { installTerrainDebugView, type TerrainDebugView } from '@/components/golf/course-geometry/terrain-debug';
 import { buildThreeLandscape, DEFAULT_THREE_LANDSCAPE_PALETTE } from '@/components/golf/course-geometry/three-landscape';
-import { MERIDIAN_CODES, type MeridianVisualArtifact } from './visual-artifact';
+import { createVisualSurfaceSampler, MERIDIAN_CODES, type MeridianVisualArtifact } from './visual-artifact';
 import { MERIDIAN_STYLE, MERIDIAN_STYLE_HASH, type MeridianStyleOverrides } from './visual-style';
 import { applyTerrainCamera, pickTerrainPoint, type TerrainThreeCamera } from './three-camera';
 import { buildThreeFlightPaths, type ThreeFlightPaths } from './three-flight-path';
@@ -49,6 +49,9 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
   const orthographicView = new OrthographicCamera(), perspectiveView = new PerspectiveCamera();
   let view: TerrainThreeCamera = orthographicView;
   let landscape: ReturnType<typeof buildThreeLandscape> | null = null;
+  // §33–34: drawn markers sit on the drawn surface (bunker bowls); the
+  // canonical `terrainHeight` still answers every pick and every metric.
+  let surface: ((point: readonly [number, number]) => number | null) | undefined;
   let flightPaths: ThreeFlightPaths | null = null;
   let evidence: ReturnType<typeof createShotOverlayController> | null = null;
   let sun: DirectionalLight | null = null;
@@ -129,7 +132,7 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
 
   function replaceFlightPaths(scene: HoleScene, camera: TerrainCamera) {
     flightPaths?.dispose();
-    flightPaths = buildThreeFlightPaths(scene, mesh, camera, currentSelected);
+    flightPaths = buildThreeFlightPaths(scene, mesh, camera, currentSelected, surface);
     flightPaths.setResolution(width, height);
     world.add(flightPaths.group);
   }
@@ -181,6 +184,7 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
         terrainEyeDistanceM: camera.projection === 'perspective' && camera.eyeM ? Math.hypot(camera.eyeM[0] - camera.focusM[0], camera.eyeM[1] - camera.focusM[1]).toFixed(1) : '',
         visualStyleVersion: String(landscape.group.userData.styleVersion ?? ''),
         visualStyleHash: MERIDIAN_STYLE_HASH, visualArtifactHash: landscape.artifact.contentHash, visualArtifactSource: landscape.artifactSource,
+        visualBunkers: String(landscape.artifact.layers.bunkerBowl.profiles.length),
         qualityTier: 'standard',
         shadowMapSize: `${sun?.shadow.mapSize.x ?? 0}`, shadowMapType: 'pcf',
         lightDirection: TERRAIN_LIGHT_DIRECTION.map(v => v.toFixed(3)).join(','),
@@ -211,6 +215,7 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
     // A cached artifact from another package or style is refused (§6) and the
     // hole falls back to the static view instead of drawing stale colours.
     if (landscape.artifactSource === 'runtime') canvas.dataset.meridianCode = MERIDIAN_CODES.missing;
+    surface = createVisualSurfaceSampler(mesh, landscape.artifact);
     world.add(landscape.group);
     replaceFlightPaths(options.scene, options.camera);
     // Fixed lighting uses the whole physical package, not the moving camera
@@ -235,7 +240,7 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
     world.add(sun, sun.target);
     const sky = new HemisphereLight(MERIDIAN_STYLE.light.skyColor, MERIDIAN_STYLE.light.groundColor, MERIDIAN_STYLE.light.hemisphereIntensity);
     sky.position.set(0, 0, 1); world.add(sky);
-    evidence = createShotOverlayController(overlay, options.overlayId, mesh, options.scene, options.selectedShotNumber, false);
+    evidence = createShotOverlayController(overlay, options.overlayId, mesh, options.scene, options.selectedShotNumber, false, surface);
     releaseDebug = installTerrainDebugView(world, landscape, mesh, options.debugView ?? 'final', renderer);
     if (options.debugView && options.debugView !== 'final') overlay.style.display = 'none';
     view = currentCamera.projection === 'perspective' ? perspectiveView : orthographicView;

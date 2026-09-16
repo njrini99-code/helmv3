@@ -3,7 +3,7 @@ import { allocateCrowns, canopySymbols, crownScale } from '@/lib/golf/course-geo
 import { boundaryDistance } from '@/lib/golf/course-geometry/display-outline';
 import { terrainHeight, type TerrainMesh } from '@/lib/golf/course-geometry/terrain';
 import type { HoleScene, LocalFeature, PointM } from '@/lib/golf/course-geometry/types';
-import { assertVisualArtifact, compileVisualArtifact, linearAlbedo, type MeridianVisualArtifact } from '@/lib/golf/course-geometry/visual-artifact';
+import { assertVisualArtifact, BUNKER_SLOPE_SCALE, compileVisualArtifact, linearAlbedo, type MeridianVisualArtifact } from '@/lib/golf/course-geometry/visual-artifact';
 import { MERIDIAN_PALETTE, MERIDIAN_STYLE, MERIDIAN_STYLE_HASH, MERIDIAN_STYLE_VERSION, type MeridianPaletteKey, type MeridianStyleOverrides } from '@/lib/golf/course-geometry/visual-style';
 import { createTreeAssetAtlas, type TreeCrownAsset } from './tree-assets';
 
@@ -53,8 +53,8 @@ function featureSeed(id: string): number {
   return seed;
 }
 
-/** Index of 'green' in SURFACE_CLASS_IDS; the shader compares the class attribute. */
-const SURFACE_CLASS_GREEN = 4;
+/** Indices into SURFACE_CLASS_IDS; the shader compares the class attribute. */
+const SURFACE_CLASS_GREEN = 4, SURFACE_CLASS_BUNKER = 7;
 
 export interface TurfStyleTarget extends THREE.Material { onBeforeCompile: THREE.Material['onBeforeCompile']; customProgramCacheKey: THREE.Material['customProgramCacheKey'] }
 export interface TurfStyleHandle { setOverrides(overrides: MeridianStyleOverrides): void }
@@ -77,7 +77,7 @@ export function attachTurfStyle(material: TurfStyleTarget, seed: readonly [numbe
     contextMix.value = style.context.desaturate * (next.context ?? 1);
   };
   apply(overrides);
-  const [m0, m1, m2] = style.turf.macro.wavelengthsM, [u0, u1] = style.turf.micro.wavelengthsM;
+  const [m0, m1, m2] = style.turf.macro.wavelengthsM, [u0, u1] = style.turf.micro.wavelengthsM, [g0, g1] = style.bunker.sandGrainM;
   const k = (wavelength: number) => (2 * Math.PI / wavelength).toFixed(6);
   material.onBeforeCompile = shader => {
     shader.uniforms.golfSeed = { value: new THREE.Vector2(seed[0], seed[1]) };
@@ -132,9 +132,16 @@ varying vec3 vGolfSurface;`).replace('#include <color_fragment>', `#include <col
   float golfBandVisible = 1.0 - smoothstep(${style.mowing.fadeFwidth[0].toFixed(3)}, ${style.mowing.fadeFwidth[1].toFixed(3)}, fwidth(golfPhase));
   // Boundary softness (§25): a short darker lip inside every feature edge.
   float golfEdge = 1.0 - smoothstep(0.0, ${style.boundary.fieldM.toFixed(3)}, golfBoundary);
+  // Sand grain (§31): a fine world-space field on bunker vertices only,
+  // filtered out at distance like the turf micro field.
+  float golfSand = abs(vGolfSurface.y - ${SURFACE_CLASS_BUNKER}.0) < 0.5 ? 1.0 : 0.0;
+  float golfGrainPhase = dot(golfP, vec2(0.83, 0.56) * ${k(g0)});
+  float golfGrain = 0.5 * sin(golfGrainPhase) + 0.5 * sin(dot(golfP, vec2(-0.37, 0.93) * ${k(g1)}) + 1.1);
+  golfGrain *= 1.0 - smoothstep(${style.turf.microFadeFwidth[0].toFixed(3)}, ${style.turf.microFadeFwidth[1].toFixed(3)}, fwidth(golfGrainPhase));
   diffuseColor.rgb *= 1.0
     + golfMacro * golfAmplitudes.x * golfTurfWeight
     + golfMicro * golfAmplitudes.y * golfTurfWeight
+    + golfGrain * ${style.bunker.sandGrainAmplitude.toFixed(3)} * golfSand
     + golfBand * golfBandVisible * golfAmplitudes.z * golfMowingWeight
     - golfEdge * golfAmplitudes.w;
   // Context (§53): real surfaces, quieter. Albedo only; never alpha.
@@ -187,6 +194,8 @@ export function buildThreeLandscape(
   const colors = new Float32Array(mesh.vertices.length), mowing = new Float32Array(vertexCount), turf = new Float32Array(vertexCount);
   const contextWeight = new Float32Array(vertexCount), roughness = new Float32Array(vertexCount), surfaceClass = new Float32Array(vertexCount);
   const boundary = new Float32Array(vertexCount), routeST = new Float32Array(vertexCount * 2);
+  // Render-only bunker bowl (§28): depth and its gradient per display vertex.
+  const bowlDepth = new Float32Array(vertexCount), bowlSlope = new Float32Array(vertexCount * 2);
   for (let t = 0; t < mesh.triangleFeatures.length; t++) {
     const offset = t * 9, v = mesh.vertices;
     const winding = (v[offset + 3]! - v[offset]!) * (v[offset + 7]! - v[offset + 1]!) -
@@ -205,6 +214,8 @@ export function buildThreeLandscape(
       surfaceClass[vertex] = attributes.surfaceClass[from]!;
       boundary[vertex] = attributes.boundaryDistanceCm[from]! / 100;
       routeST[vertex * 2] = attributes.routeST[from * 2]!; routeST[vertex * 2 + 1] = attributes.routeST[from * 2 + 1]!;
+      bowlDepth[vertex] = attributes.bunkerDepthMm[from]! / 1000;
+      bowlSlope[vertex * 2] = attributes.bunkerSlope[from * 2]! / BUNKER_SLOPE_SCALE; bowlSlope[vertex * 2 + 1] = attributes.bunkerSlope[from * 2 + 1]! / BUNKER_SLOPE_SCALE;
     }
   }
 
@@ -221,6 +232,7 @@ export function buildThreeLandscape(
   terrainGeometry.setAttribute('golfSurfaceClass', new THREE.BufferAttribute(surfaceClass, 1));
   terrainGeometry.setAttribute('golfBoundaryDistance', new THREE.BufferAttribute(boundary, 1));
   terrainGeometry.setAttribute('golfRouteST', new THREE.BufferAttribute(routeST, 2));
+  terrainGeometry.setAttribute('golfBunkerDepth', new THREE.BufferAttribute(bowlDepth, 1));
   geometries.add(terrainGeometry);
   const { material, turf: turfStyle } = terrainMaterial(artifact.seed, options.overrides ?? {});
   materials.add(material);
@@ -365,13 +377,17 @@ export function buildThreeLandscape(
     }
     if (exaggeration === lastExaggeration && referenceElevationM === lastReference) return;
     const displayZ = (z: number) => referenceElevationM + (z - referenceElevationM) * exaggeration;
-    for (let i = 0; i < positions.count; i++) positions.setZ(i, displayZ(source[i * 3 + 2]!));
+    // The bowl is a display offset below the canonical surface; it scales
+    // with relief like every other display height and never touches `source`.
+    for (let i = 0; i < positions.count; i++) positions.setZ(i, displayZ(source[i * 3 + 2]!) - bowlDepth[i]! * exaggeration);
     positions.needsUpdate = true;
     if (sourceNormals) {
       for (let i = 0; i < positions.count; i++) {
-        const j = i * 3, nx = sourceNormals[j]!, ny = sourceNormals[j + 1]!, nz = sourceNormals[j + 2]! / exaggeration;
-        const length = Math.hypot(nx, ny, nz);
-        normals.setXYZ(i, nx / length, ny / length, nz / length);
+        const j = i * 3, nx = sourceNormals[j]!, ny = sourceNormals[j + 1]!, nz0 = Math.max(1e-3, sourceNormals[j + 2]!);
+        // DEM slope, then the bowl gradient (z = z_dem − depth), then relief.
+        const zx = -nx / nz0 - bowlSlope[i * 2]!, zy = -ny / nz0 - bowlSlope[i * 2 + 1]!;
+        const x = -zx, y = -zy, nz = 1 / exaggeration, length = Math.hypot(x, y, nz);
+        normals.setXYZ(i, x / length, y / length, nz / length);
       }
     } else {
       summedNormals.fill(0);

@@ -33,8 +33,12 @@ function horizontalLength(points: readonly PointM[]): number {
     total + Math.hypot(point[0] - points[index]![0], point[1] - points[index]![1]), 0);
 }
 
-function displayGroundZ(mesh: TerrainMesh, point: PointM, camera: Pick<TerrainCamera, 'exaggeration' | 'referenceElevationM'>): number | null {
-  const sourceZ = terrainHeight(mesh, point);
+/** A drawn marker sits on the drawn surface (§34): the sampler may lower a
+ * point onto a render-only bunker bowl. It never changes the shot's XY, its
+ * evidence, or the canonical elevation used anywhere else. */
+export type DisplaySurfaceSampler = (point: PointM) => number | null;
+function displayGroundZ(mesh: TerrainMesh, point: PointM, camera: Pick<TerrainCamera, 'exaggeration' | 'referenceElevationM'>, surface?: DisplaySurfaceSampler): number | null {
+  const sourceZ = surface ? surface(point) : terrainHeight(mesh, point);
   return sourceZ == null ? null : camera.referenceElevationM + (sourceZ - camera.referenceElevationM) * camera.exaggeration;
 }
 
@@ -45,7 +49,7 @@ function displayGroundZ(mesh: TerrainMesh, point: PointM, camera: Pick<TerrainCa
  * intentionally live outside the SVG annotation layer so they depth-test as 3D.
  */
 export function buildThreeFlightPaths(scene: HoleScene, mesh: TerrainMesh,
-  camera: Pick<TerrainCamera, 'exaggeration' | 'referenceElevationM' | 'scale'>, selectedShotNumber?: number): ThreeFlightPaths {
+  camera: Pick<TerrainCamera, 'exaggeration' | 'referenceElevationM' | 'scale'>, selectedShotNumber?: number, surface?: DisplaySurfaceSampler): ThreeFlightPaths {
   const group = new Group();
   group.name = 'illustrative-shot-flight-paths';
   const geometries: BufferGeometry[] = [], materials: Material[] = [];
@@ -55,7 +59,7 @@ export function buildThreeFlightPaths(scene: HoleScene, mesh: TerrainMesh,
     .reduce<number | undefined>((latest, item) => latest == null || item.shotNumber > latest ? item.shotNumber : latest, undefined);
   for (const trajectory of scene.illustrativePreviewTrajectories ?? []) {
     if (trajectory.pointsM.length < 2) continue;
-    const ground = trajectory.pointsM.map(point => displayGroundZ(mesh, point, camera));
+    const ground = trajectory.pointsM.map(point => displayGroundZ(mesh, point, camera, surface));
     if (ground.some(height => height == null)) continue;
     const length = horizontalLength(trajectory.pointsM);
     if (!Number.isFinite(length) || length < .01) continue;
@@ -142,7 +146,7 @@ export function buildThreeFlightPaths(scene: HoleScene, mesh: TerrainMesh,
   for (const track of scene.illustrativePuttingTracks ?? []) {
     const minimumPoints = track.kind === 'surface_roll' ? 2 : 1;
     if (track.source !== 'interactive_preview_fixture' || track.pointsM.length < minimumPoints) continue;
-    const ground = track.pointsM.map(point => displayGroundZ(mesh, point, camera));
+    const ground = track.pointsM.map(point => displayGroundZ(mesh, point, camera, surface));
     if (ground.some(height => height == null)) continue;
     const active = track.shotNumber === activeShotNumber;
     const points = track.pointsM.map((point, index) => new Vector3(point[0], point[1], ground[index]! + markerGroundOffsetM));

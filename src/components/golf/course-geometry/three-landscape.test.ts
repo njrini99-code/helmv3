@@ -76,6 +76,32 @@ describe('Three landscape source and rendering invariants', () => {
     landscape.dispose();
   });
 
+  it('draws a render-only bunker bowl: interior display vertices drop, rim and source stay, picks stay canonical', () => {
+    const scene = { ...pilotScene('cacapon-07', false), features: [square('test-bunker', 'bunker', 0, 100)] }, mesh = slopeMesh();
+    mesh.vertices = [0, 0, 100, 100, 0, 110, 50, 50, 105,
+      100, 0, 110, 100, 100, 110, 50, 50, 105,
+      100, 100, 110, 0, 100, 100, 50, 50, 105,
+      0, 100, 100, 0, 0, 100, 50, 50, 105];
+    mesh.triangleFeatures = [0, 0, 0, 0]; mesh.triangleMaterials = [0, 0, 0, 0];
+    mesh.featureKinds = ['bunker']; mesh.featureIds = ['test-bunker'];
+    const sourceVertices = [...mesh.vertices];
+    const landscape = buildThreeLandscape(scene, mesh);
+    const profile = landscape.artifact.layers.bunkerBowl.profiles[0]!;
+    expect(profile).toMatchObject({ featureId: 'test-bunker', sizeClass: 'large', depthBasis: 'visual_class', contextOnly: false });
+    const position = landscape.terrain.geometry.getAttribute('position'), normal = landscape.terrain.geometry.getAttribute('normal');
+    for (let i = 0; i < position.count; i++) {
+      const centre = position.getX(i) === 50 && position.getY(i) === 50;
+      if (centre) { expect(position.getZ(i)).toBeCloseTo(105 - profile.depthM, 4); expect(normal.getZ(i)).toBeGreaterThan(.9); }
+      else expect(position.getZ(i)).toBe(position.getX(i) === 100 ? 110 : 100);
+    }
+    // Relief scales the bowl like every other display height; source never moves.
+    landscape.setExaggeration(2, 100);
+    for (let i = 0; i < position.count; i++) if (position.getX(i) === 50) expect(position.getZ(i)).toBeCloseTo(100 + (105 - 100) * 2 - profile.depthM * 2, 4);
+    expect(mesh.vertices).toEqual(sourceVertices);
+    expect(terrainHeight(mesh, [50, 50])).toBe(105);
+    landscape.dispose();
+  });
+
   it('uses DEM source normals across triangle rewinding and applies the inverse-Z normal transform', () => {
     const scene = { ...pilotScene('cacapon-07', false), features: [] }, mesh = slopeMesh();
     // Reverse one face; the imported normals still correspond to its original vertices.

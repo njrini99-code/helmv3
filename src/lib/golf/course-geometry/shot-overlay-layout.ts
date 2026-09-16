@@ -25,6 +25,9 @@ export interface ShotOverlayProjection {
   width: number;
   height: number;
   project: (point: PointM) => PointM | null;
+  /** §34: markers, badges, segments and tracks sit on the drawn surface
+   * (bunker bowls); feature outlines and regions stay on canonical ground. */
+  projectSurface?: (point: PointM) => PointM | null;
   pathForFeature: (feature: LocalFeature) => string | null;
   /** Camera controls and HUD occupy CSS-pixel rectangles. Labels avoid them;
    * geographic anchors and connections keep their physical coordinates. */
@@ -148,8 +151,12 @@ export function layoutShotOverlay(prepared: PreparedShotOverlay, projection: Sho
     const projected = projection.project(point);
     return projected?.every(Number.isFinite) ? projected : null;
   };
+  const projectSurface = (point: PointM): PointM | null => {
+    const projected = (projection.projectSurface ?? projection.project)(point);
+    return projected?.every(Number.isFinite) ? projected : null;
+  };
   const anchors = prepared.anchors.flatMap(anchor => {
-    const point = project(anchor.pointM);
+    const point = projectSurface(anchor.pointM);
     return point ? [{ key: anchor.key, point }] : [];
   });
   const pin = prepared.pin && project(prepared.pin.positionM);
@@ -165,7 +172,7 @@ export function layoutShotOverlay(prepared: PreparedShotOverlay, projection: Sho
   const glyphScale = pinGreen && Math.min(pinGreen.maxX - pinGreen.minX, pinGreen.maxY - pinGreen.minY) < 56 ? .8 : 1;
   const labels: PointM[] = [];
   const badges = prepared.badges.flatMap(badge => {
-    const anchor = project(badge.anchorM);
+    const anchor = projectSurface(badge.anchorM);
     if (!anchor || anchor[0] < 0 || anchor[0] > width || anchor[1] < 0 || anchor[1] > height) return [];
     const candidates: PointM[] = [];
     for (const radius of [24, 40, 56, 72]) for (const angle of [-Math.PI / 4, -3 * Math.PI / 4, Math.PI / 4, 3 * Math.PI / 4, 0, Math.PI]) {
@@ -211,16 +218,16 @@ export function layoutShotOverlay(prepared: PreparedShotOverlay, projection: Sho
     return [{ key: region.key, shotNumber: region.shotNumber, featureId: region.feature.id, clip, d }];
   });
   const segments = prepared.segments.flatMap(segment => {
-    const from = project(segment.fromM), to = project(segment.toM);
+    const from = projectSurface(segment.fromM), to = projectSurface(segment.toM);
     return from && to ? [{ key: segment.key, shotNumber: segment.shotNumber, active: segment.active, from, to }] : [];
   });
   const illustrativePreviewTrajectories = prepared.illustrativePreviewTrajectories.flatMap(trajectory => {
-    const points = trajectory.pointsM.map(project);
+    const points = trajectory.pointsM.map(projectSurface);
     return points.some(point => point == null) ? [] : [{ key: trajectory.key, shotNumber: trajectory.shotNumber,
       active: trajectory.active, points: points as PointM[] }];
   });
   const illustrativePuttingTracks = prepared.illustrativePuttingTracks.flatMap(track => {
-    const points = track.pointsM.map(project);
+    const points = track.pointsM.map(projectSurface);
     return points.some(point => point == null) ? [] : [{ key: track.key, shotNumber: track.shotNumber,
       kind: track.kind, active: track.active, points: points as PointM[] }];
   });

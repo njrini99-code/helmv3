@@ -77,11 +77,31 @@ lab exposes each layer as a multiplier (`?macro=0&micro=0&mowing=4…`).
 
 ## Bunkers (§26–34)
 
-Render-only bowl: smoothstep depth from the boundary inward, zero at the
-boundary, `visualDepthM` by size class (small .30–.45, medium .45–.70,
-large .60–.90 m), sand material with contact darkening. The visual sampler
-`visualSurfaceHeight` exists only to place markers on the drawn sand;
-`terrainHeight` remains the canonical elevation everywhere else.
+The canonical mesh keeps the reviewed outline and the DEM elevation; nothing
+in the source says how deep a bunker is. The visual artifact adds a
+render-only bowl per bunker (`layers.bunkerBowl`, `basis: 'visual_only'`,
+`depthBasis: 'visual_class'`), recorded as a `VisualBunkerProfile`:
+
+- **Depth by size class** (§29): small < 60 m² → .30–.45 m, medium →
+  .45–.70 m, large > 260 m² → .60–.90 m, chosen deterministically inside the
+  range from the feature id. Context bunkers take 60% of the class depth.
+- **Profile** (§28): `depth(p) = depthM × S(min(1, d(p) / bowlRadius))` with
+  `S(u) = 6u⁵ − 15u⁴ + 10u³`, `d` the distance to the bunker's own boundary
+  and `bowlRadius = clamp(.85 × inradius, .6, 3.5 m)`. Depth is exactly zero
+  on every boundary vertex, so the bowl meets the turf without a crack; the
+  profile's gradient is packed too, so display normals follow the bowl under
+  one world light.
+- **Sand** (§31): palette sand, roughness .82, a 0.15–0.35 m grain field at
+  1.5% that fades with distance, the floor darkened up to 8% with depth; the
+  compiler's rim ribbons keep their sand-edge and highlight albedo.
+- **Contact** (§32): turf within 0.6 m of a rim darkens up to 22%.
+- **Honesty** (§30, §33–34): a profile records `effectiveDepthM` (the deepest
+  vertex actually lowered; a coarse context bunker with no interior vertex
+  stays flat). `createVisualSurfaceSampler` returns elevation minus bowl depth
+  and is used only to place drawn markers, badges, segments and tracks on the
+  drawn sand; `terrainHeight` answers every pick, outline, framing and metric.
+  A future source-supported depth would arrive as a new `depthBasis` with its
+  provenance, never by editing the class table.
 
 ## Vegetation (§35–41)
 
@@ -111,7 +131,7 @@ hash; `Math.sqrt` only, millimetre-quantised route coordinates). Cache path:
 ## Style versions (§113)
 
 - `meridian-v5`: perspective camera, lower sun, faceting kit (this plan V0–V1).
-- `meridian-v6`: ground material system + visual artifact (V2); bunker bowls (V3).
+- `meridian-v6`: ground material system + visual artifact (V2), bunker bowls (V3).
 - `meridian-v7`: vegetation families, water, context, shot storytelling (V4–V6).
 
 `styleHash()` hashes `MERIDIAN_STYLE` by value (`meridian-v6-<fnv>`); any

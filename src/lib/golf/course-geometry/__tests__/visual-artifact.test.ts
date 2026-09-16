@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import source from '@/test/fixtures/course-geometry/cacapon-07-terrain.json';
 import { pilotPackage, pilotScene } from '@/test/fixtures/course-geometry/pilot';
-import { parseTerrainMesh } from '../terrain';
+import { parseTerrainMesh, terrainHeight } from '../terrain';
 import { boundaryDistance } from '../display-outline';
 import {
-  assertVisualArtifact, compileVisualArtifact, MERIDIAN_CODES, MERIDIAN_VISUAL_COMPILER_VERSION, offlinePackManifest,
+  assertVisualArtifact, compileVisualArtifact, createVisualSurfaceSampler, MERIDIAN_CODES, MERIDIAN_VISUAL_COMPILER_VERSION, offlinePackManifest,
   parseVisualArtifact, serializeVisualArtifact, SURFACE_CLASS_IDS, visualArtifactCachePath,
 } from '../visual-artifact';
 import { MERIDIAN_STYLE, MERIDIAN_STYLE_HASH, MERIDIAN_STYLE_VERSION, styleHash } from '../visual-style';
@@ -60,6 +60,56 @@ describe('Meridian visual artifact (§6, §96–102, §106.1)', () => {
     expect(pack.entries[1]!.hash).toBe(artifact.contentHash);
   });
 
+  it('lowers bunkers into render-only bowls: zero at the rim, class depth inside, never in the canonical mesh (§27–33)', () => {
+    const before = [...mesh.vertices];
+    const artifact = compileVisualArtifact(scene, mesh), a = artifact.attributes, bowl = artifact.layers.bunkerBowl;
+    expect(bowl).toMatchObject({ basis: 'visual_only', version: 'smoothstep-bowl-v1', depthBasis: 'visual_class' });
+    expect(bowl.profiles.length).toBeGreaterThan(0);
+    const all = [...scene.features, ...(scene.contextFeatures ?? [])];
+    for (const profile of bowl.profiles) {
+      const [low, high] = MERIDIAN_STYLE.bunker.depthM[profile.sizeClass];
+      const scale = profile.contextOnly ? MERIDIAN_STYLE.bunker.contextDepthScale : 1;
+      expect(profile.depthM).toBeGreaterThanOrEqual(low * scale - 1e-3); expect(profile.depthM).toBeLessThanOrEqual(high * scale + 1e-3);
+      expect(profile.depthBasis).toBe('visual_class');
+      const feature = all.find(f => f.id === profile.featureId)!, rings = feature.parts.flat();
+      const featureIndex = mesh.featureIds.indexOf(profile.featureId);
+      let deepest = 0;
+      for (let t = 0; t < mesh.triangleFeatures.length; t++) {
+        if (mesh.triangleFeatures[t] !== featureIndex) continue;
+        for (let corner = 0; corner < 3; corner++) {
+          const vertex = t * 3 + corner, x = mesh.vertices[vertex * 3]!, y = mesh.vertices[vertex * 3 + 1]!;
+          const distance = rings.reduce((minimum, ring) => Math.min(minimum, boundaryDistance([x, y], ring)), Infinity);
+          const depth = a.bunkerDepthMm[vertex]! / 1000;
+          if (distance < .01) expect(depth).toBe(0);
+          expect(depth).toBeLessThanOrEqual(profile.depthM + 1e-3);
+          const u = Math.min(1, distance / profile.bowlRadiusM);
+          expect(depth).toBeCloseTo(profile.depthM * u * u * u * (u * (u * 6 - 15) + 10), 2);
+          deepest = Math.max(deepest, depth);
+          expect(SURFACE_CLASS_IDS[a.surfaceClass[vertex]!]).toBe('bunker');
+        }
+      }
+      expect(deepest).toBeCloseTo(profile.effectiveDepthM, 3);
+      if (!profile.contextOnly) expect(deepest).toBeGreaterThan(0);
+    }
+    // Non-bunker vertices carry no depth or slope.
+    for (let t = 0; t < mesh.triangleFeatures.length; t++) {
+      if (mesh.featureKinds[mesh.triangleFeatures[t]!] === 'bunker') continue;
+      for (let corner = 0; corner < 3; corner++) { const v = t * 3 + corner; expect(a.bunkerDepthMm[v]).toBe(0); expect(a.bunkerSlope[v * 2]).toBe(0); }
+    }
+    expect(mesh.vertices).toEqual(before);
+    // The display sampler lowers a point inside a bowl and leaves everything else canonical.
+    const sample = createVisualSurfaceSampler(mesh, artifact);
+    const profile = bowl.profiles.find(p => !p.contextOnly) ?? bowl.profiles[0]!;
+    const featureIndex = mesh.featureIds.indexOf(profile.featureId);
+    let deepestVertex = -1;
+    for (let v = 0; v < artifact.vertexCount; v++) if (mesh.triangleFeatures[Math.floor(v / 3)] === featureIndex && (deepestVertex < 0 || a.bunkerDepthMm[v]! > a.bunkerDepthMm[deepestVertex]!)) deepestVertex = v;
+    const inside: [number, number] = [mesh.vertices[deepestVertex * 3]!, mesh.vertices[deepestVertex * 3 + 1]!];
+    expect(sample(inside)).toBeCloseTo(terrainHeight(mesh, inside)! - a.bunkerDepthMm[deepestVertex]! / 1000, 3);
+    const fairway = scene.features.find(f => f.kind === 'fairway')!.parts[0]![0]!;
+    const centroid: [number, number] = [fairway.reduce((sum, p) => sum + p[0], 0) / fairway.length, fairway.reduce((sum, p) => sum + p[1], 0) / fairway.length];
+    if (terrainHeight(mesh, centroid) != null) expect(sample(centroid)).toBe(terrainHeight(mesh, centroid));
+  });
+
   it('keeps mowing inside the played fairway, fading before its edge, in route-local metres', () => {
     const artifact = compileVisualArtifact(scene, mesh), a = artifact.attributes;
     const fairway = scene.features.find(feature => feature.kind === 'fairway')!;
@@ -89,6 +139,5 @@ describe('Meridian visual artifact (§6, §96–102, §106.1)', () => {
       }
     }
     expect(mown).toBeGreaterThan(100); expect(faded).toBeGreaterThan(0); expect(deep).toBeGreaterThan(0);
-    expect(Array.from(a.bunkerDepthMm).every(depth => depth === 0)).toBe(true);
   });
 });

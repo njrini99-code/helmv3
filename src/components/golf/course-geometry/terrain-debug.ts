@@ -12,7 +12,7 @@ export const TERRAIN_DEBUG_VIEWS = [
   'wireframe-elevation',
   'normals', 'source-normals', 'display-normals', 'flat-normals', 'slope', 'curvature',
   'lit-no-shadows', 'no-shadow', 'shadows', 'shadow-only',
-  'feature-ids', 'triangle-ids', 'material-ids', 'crop', 'context-mask',
+  'feature-ids', 'triangle-ids', 'material-ids', 'crop', 'context-mask', 'bunker-depth',
 ] as const;
 export type TerrainDebugView = typeof TERRAIN_DEBUG_VIEWS[number];
 export const TERRAIN_DEBUG_LABELS: Record<TerrainDebugView, string> = {
@@ -21,7 +21,7 @@ export const TERRAIN_DEBUG_LABELS: Record<TerrainDebugView, string> = {
   'source-normals': 'Source normals', 'display-normals': 'Display normals', 'flat-normals': 'Flat (face) normals',
   slope: 'Slope', curvature: 'Curvature', 'lit-no-shadows': 'Lit, no shadow', 'no-shadow': 'Lit, no shadow',
   shadows: 'Shadow only', 'shadow-only': 'Shadow only', 'feature-ids': 'Feature IDs', 'triangle-ids': 'Triangle IDs',
-  'material-ids': 'Material IDs', crop: 'Context mask', 'context-mask': 'Context mask',
+  'material-ids': 'Material IDs', crop: 'Context mask', 'context-mask': 'Context mask', 'bunker-depth': 'Bunker bowl depth (render-only)',
 };
 
 function hashColor(index: number, color: THREE.Color): THREE.Color {
@@ -145,6 +145,16 @@ export function installTerrainDebugView(world: THREE.Scene, landscape: ThreeLand
       paintTriangles((t, color) => color.set(mesh.featureKinds[mesh.triangleFeatures[t]!] === 'ground' ? '#DF2CAB' : '#DBE2DA'));
       applyVertexColors();
       break;
+    case 'bunker-depth': {
+      // Render-only bowl depth: sand (0) → deep umber (1 m); turf grey.
+      const depth = geometry.getAttribute('golfBunkerDepth');
+      paintVertices((vertex, color) => {
+        const d = depth ? depth.getX(vertex) : 0;
+        if (d <= 0) color.set('#6E7A66'); else color.setHSL(.09, .6, .78 - .55 * Math.min(1, d));
+      });
+      applyVertexColors();
+      break;
+    }
     case 'wireframe-elevation': {
       paintVertices((vertex, color) => color.setHSL(.68 - .6 * (positions.getZ(vertex) - low) / Math.max(.001, high - low), .7, .5));
       geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));

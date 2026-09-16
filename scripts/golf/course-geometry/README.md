@@ -260,6 +260,10 @@ node scripts/golf/course-geometry/audit-normal-continuity.mjs \
 #   material layer multipliers: &macro=0&micro=0&mowing=4&boundary=0&context=0 (1 = style value)
 node scripts/golf/course-geometry/capture-lab.cjs --out=output/playwright/course-geometry/visual-system/lab/hole07.png \
   --params="course=peek-n-peak-upper&hole=7&preset=terrain&viewport=desktop&mowing=0"
+# Bunker spike sheet (§122): before/after rows for two labels
+python3 scripts/golf/course-geometry/build-spike-sheet.py output/playwright/course-geometry/visual-system/canaries 390x844 \
+  spike.png v2-material,v3-bunkers 7,11 Terrain,Side
+# Bunker bowl depth debug view (render-only): ?lab=1&course=peek-n-peak-upper&hole=7&area=green&debug=bunker-depth
 # Visual artifact compiler (§96–102): one hash-gated artifact per hole + offline pack manifest
 node_modules/.bin/tsx scripts/golf/course-geometry/compile-visual-artifacts.mts --course peek-n-peak-upper \
   [--holes 1,7,11] [--out output/course-geometry/visual]

@@ -17,7 +17,9 @@ function attributes(node: SVGElement, values: Attributes): void {
  * Construction/evidence changes allocate nodes. A camera frame only projects
  * cached world points and updates existing attributes, with no React commit. */
 export function createShotOverlayController(svg: SVGSVGElement, prefix: string, mesh: TerrainMesh,
-  initialScene: HoleScene, initialSelected?: number, renderIllustrativePreviewFlights = true) {
+  initialScene: HoleScene, initialSelected?: number, renderIllustrativePreviewFlights = true,
+  /** §34: markers sit on the drawn surface (bunker bowls); outlines and picking do not. */
+  surface?: (point: PointM) => number | null) {
   const element = <K extends keyof SVGElementTagNameMap>(tag: K, attrs: Attributes = {}, text?: string): SVGElementTagNameMap[K] => {
     const node = svg.ownerDocument.createElementNS(NS, tag);
     attributes(node, attrs);
@@ -31,10 +33,10 @@ export function createShotOverlayController(svg: SVGSVGElement, prefix: string, 
   let camera: TerrainCamera | null = null, width = 0, height = 0, disposed = false;
   const points = new Map<string, Point3M | null>();
   let features = new WeakMap<LocalFeature, (Point3M | null)[][][]>();
-  const point = ([x, y]: PointM): Point3M | null => {
-    const key = `${x}:${y}`;
+  const point = ([x, y]: PointM, onSurface = false): Point3M | null => {
+    const key = `${x}:${y}:${onSurface ? 's' : 'c'}`;
     if (points.has(key)) return points.get(key)!;
-    const z = terrainHeight(mesh, [x, y]);
+    const z = onSurface && surface ? surface([x, y]) : terrainHeight(mesh, [x, y]);
     const result: Point3M | null = z == null ? null : [x, y, z];
     points.set(key, result);
     return result;
@@ -47,9 +49,13 @@ export function createShotOverlayController(svg: SVGSVGElement, prefix: string, 
     const world = point(p);
     return world ? projected(world) : null;
   };
+  const projectSurface = (p: PointM): PointM | null => {
+    const world = point(p, true);
+    return world ? projected(world) : null;
+  };
   const pathForFeature = (feature: LocalFeature): string | null => {
     let parts = features.get(feature);
-    if (!parts) { parts = feature.parts.map(part => part.map(ring => ring.map(point))); features.set(feature, parts); }
+    if (!parts) { parts = feature.parts.map(part => part.map(ring => ring.map(p => point(p)))); features.set(feature, parts); }
     if (parts.some(part => part.some(ring => ring.some(p => p == null)))) return null;
     return parts.map(part => part.map(ring => ring.map((p, index) => {
       const [x, y] = projected(p!);
@@ -257,7 +263,7 @@ export function createShotOverlayController(svg: SVGSVGElement, prefix: string, 
   function render() {
     if (!camera || disposed) return;
     attributes(svg, { viewBox: `0 0 ${width} ${height}` });
-    const layout = layoutShotOverlay(prepared, { width, height, project, pathForFeature,
+    const layout = layoutShotOverlay(prepared, { width, height, project, projectSurface, pathForFeature,
       reservedRects: [{ x: 0, y: 0, width, height: Math.min(88, height * .24) },
         { x: width - 64, y: height - 164, width: 64, height: 164 }] });
     paint(layout);

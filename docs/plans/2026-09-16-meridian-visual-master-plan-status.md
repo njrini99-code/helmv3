@@ -14,7 +14,7 @@ the visual-language document.
 
 | § | Title | Status | Evidence / remaining |
 | --- | --- | --- | --- |
-| 0 | Executive directive | partial | V0–V2 landed (`95792455e` → `7d83a11c4` → this commit); V3–V7 in progress. Tracker rows below are the per-section record. |
+| 0 | Executive directive | partial | V0–V3 landed (`95792455e` → `7d83a11c4` → `ea34cdb63` → this commit); V4–V7 in progress. Tracker rows below are the per-section record. |
 | 1 | What the current plan gets right (1.1–1.5) | done | Doctrine encoded in `docs/design/meridian-visual-language.md` (Layer A/B/C) and enforced by §7 guard |
 | 2 | What the screenshots say | done | Baseline canaries `output/playwright/course-geometry/visual-system/canaries/v0-baseline` (96 captures) + sheet `docs/plans/assets/meridian-2026-09-16/canaries-v0-390x844.png` |
 | 3 | Terrain is not truly perspective | done | Confirmed: V0 Terrain was orthographic pitch 50 / relief 1.5. Replaced by perspective in `terrain.ts` (`TERRAIN_PRESETS.terrain`) |
@@ -40,15 +40,15 @@ the visual-language document.
 | 23 | Green material | done | Green: roughness .78, quieter macro/micro, no mowing; class id in `golfSurfaceClass` |
 | 24 | Fringe / collar | done | Collar (compiler material 4) keeps the fringe albedo, roughness .93; surround ribbon (material 3) roughness .95 |
 | 25 | Boundary softness (25.1 ribbons, 25.2 fields) | done | 25.1 ribbons keep compiler width and albedo; 25.2 fields get a 0.6 m −5% lip from `golfBoundaryDistance` (cm-packed) |
-| 26 | Bunkers opportunity | pending | |
-| 27 | Bunker truth architecture | pending | |
-| 28 | Render-only bunker bowl math | pending | |
-| 29 | Bunker visual depth policy | pending | |
-| 30 | Future source-supported depth | pending | |
-| 31 | Sand material | pending | |
-| 32 | Bunker contact darkening | pending | |
-| 33 | Visual surface sampler | pending | |
-| 34 | Shot marker rule | pending | |
+| 26 | Bunkers opportunity | done | Bunkers now read as bowls in Terrain/Side (spike sheet `docs/plans/assets/meridian-2026-09-16/spike-122-bunkers-holes-07-11.png`) |
+| 27 | Bunker truth architecture | done | Canonical outline + DEM stay; bowl lives in `artifact.layers.bunkerBowl` (`basis: visual_only`, `depthBasis: visual_class`) with a `VisualBunkerProfile` per bunker |
+| 28 | Render-only bunker bowl math | done | Quintic smoothstep 6u⁵−15u⁴+10u³ of boundary distance / bowl radius (clamp .85×inradius to .6–3.5 m); zero on boundary vertices; gradient packed for normals (`compileBunkerBowls`) |
+| 29 | Bunker visual depth policy | done | Size classes small <60 m² .30–.45, medium .45–.70, large >260 m² .60–.90 m, deterministic per feature id; context bunkers ×0.6 (`MERIDIAN_STYLE.bunker`) |
+| 30 | Future source-supported depth | done | `depthBasis` field + `effectiveDepthM` honesty; a source-supported depth arrives as a new basis with provenance (visual-language doc) |
+| 31 | Sand material | done | Sand roughness .82, 0.15–0.35 m grain at 1.5% (distance-filtered), floor darkens ≤8% with depth; rim ribbons keep sand-edge/highlight albedo |
+| 32 | Bunker contact darkening | done | Turf within 0.6 m of a rim darkens ≤22% (baked into artifact albedo) |
+| 33 | Visual surface sampler | done | `createVisualSurfaceSampler(mesh, artifact)`: elevation − bowl depth; `terrainHeight` unchanged for picks, outlines, framing |
+| 34 | Shot marker rule | done | Markers, badges, segments and tracks project through the surface sampler (`projectSurface` in `shot-overlay-layout`; flight paths take the sampler); regions/outlines stay canonical |
 | 35 | Trees too uniform | pending | |
 | 36 | Visual tree families | pending | |
 | 37 | Trunks where they matter | pending | |
@@ -109,7 +109,7 @@ the visual-language document.
 | 92 | WebGPU experiment route | pending | |
 | 93 | Post-processing | pending | |
 | 94 | Render-quality lab | done | Lab route `?lab=1&course=&hole=` (`src/test/fixtures/course-geometry/browser/meridian-lab.tsx`), URL-scriptable state, telemetry panel |
-| 95 | Inspector controls | partial | Inspector: hole, area, preset, projection, FOV, pitch, yaw, relief, zoom, debug view, viewport, material layer multipliers (macro/micro/mowing/boundary/context), telemetry; light/seed/budget/tree toggles arrive with V4–V7 |
+| 95 | Inspector controls | partial | Inspector: hole, area, preset, projection, FOV, pitch, yaw, relief, zoom, debug view (+ bunker-depth), viewport, material layer multipliers, telemetry; light/seed/budget/tree toggles arrive with V4–V7 |
 | 96 | Visual artifact compiler | done | `scripts/golf/course-geometry/compile-visual-artifacts.mts` (tsx): 18 holes, determinism check, cache round-trip, pack manifest |
 | 97 | Packed render attributes | done | Packed attributes: Uint8 albedo/weights/roughness/class, Uint16 boundary cm + bunker mm, Float32 route (s,t); 19 B/vertex, 160–460 KB gzip per hole |
 | 98 | Field textures vs attributes | done | Decision recorded in the operations doc: attributes now; field textures only if bunker rims / shorelines need sub-triangle detail |
@@ -136,8 +136,8 @@ the visual-language document.
 | 119 | Risk register | done | Risk register in the operations doc |
 | 120 | Things not to do | done | Don'ts in the operations doc |
 | 121 | Near-term experiment (perspective spike) | done | Spike sheet `docs/plans/assets/meridian-2026-09-16/spike-121-holes-07-11.png`: V0 ortho vs V1 perspective for holes 7 and 11 (Terrain and Side) |
-| 122 | Follow-up experiment (bunker spike) | pending | |
+| 122 | Follow-up experiment (bunker spike) | done | Bunker spike: hole 7 and 11 Terrain/Side before (v2-material) vs after (v3-bunkers), sheet `spike-122-bunkers-holes-07-11.png`; profiles printed by the compiler |
 | 123 | Source and tool notes | done | Operations doc |
 | 124 | Final success definition | pending | |
-| 125 | Agent implementation brief A–I | partial | A (baseline + lab), B (perspective camera, all holes), C (faceting kit + audit), D (ground material + artifact) done; E–I pending |
+| 125 | Agent implementation brief A–I | partial | A (baseline + lab), B (perspective camera, all holes), C (faceting kit + audit), D (ground material + artifact), E (bunker bowls) done; F–I pending |
 | 126 | Closing product thesis | pending | |

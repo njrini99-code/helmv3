@@ -54,9 +54,14 @@ export const MERIDIAN_STYLE = Object.freeze({
   /** §53: context features keep their real surface but drop toward rough and
    * lose saturation; nearer context loses less than far context. */
   context: Object.freeze({ roughMix: .58, desaturate: .15, weightNear: .6, weightFar: .4 }),
-  /** §28–31: render-only bunker bowl depths by size class (metres) and sand. */
+  /** §28–32: render-only bunker bowl. Depth by size class (metres, chosen
+   * deterministically inside the range per feature id); the bowl reaches full
+   * depth at `bowlRadiusFraction` of the bunker's inradius, clamped to
+   * `bowlRadiusM`; context bunkers are shallower; the floor darkens a little
+   * with depth and the turf within `contactBandM` of the rim darkens too. */
   bunker: Object.freeze({ depthM: Object.freeze({ small: [.30, .45] as const, medium: [.45, .70] as const, large: [.60, .90] as const }),
-    smallAreaM2: 60, largeAreaM2: 260, contactBandM: .6, contactShade: .22, rimM: .35 }),
+    smallAreaM2: 60, largeAreaM2: 260, bowlRadiusM: [.6, 3.5] as const, bowlRadiusFraction: .85, contextDepthScale: .6,
+    floorShade: .08, contactBandM: .6, contactShade: .22, sandGrainM: [.15, .35] as const, sandGrainAmplitude: .015 }),
   /** §35–41 */
   vegetation: Object.freeze({ families: 7, trunkBandM: 150, crownBudget: 720, tileM: 64 }),
   /** §42–45, §51 */
