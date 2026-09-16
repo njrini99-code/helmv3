@@ -47,6 +47,23 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     cleanup_plan: "No planned removal — permanent ops tooling. This registry entry documents the existing toggle; it does not wire the call sites, which sit outside this PR's file-ownership boundary. Wiring is left to the Sentry session that owns those two files.",
   },
   {
+    feature_id: "peek_n_peak_one_tap_v1",
+    owner: "golf/course-geometry",
+    purpose: "Enables the Peek'n Peak Upper One-Tap live round (MARK BALL on the Meridian 3D course) for eligible rounds; off returns those rounds to standard GolfHelm shot tracking. It only selects which tracker screen an eligible Upper round shows; no other course is affected.",
+    type: "release",
+    status: "active",
+    created_at: "2026-09-16",
+    expires_at: null,
+    default: false,
+    environment: {
+      production: false,
+      preview: false,
+      development: true,
+    },
+    kill_switch_behavior: null,
+    cleanup_plan: "Removed when the Upper pilot either graduates to a general Meridian Live launch (a separate architectural project) or is withdrawn; either way the flag row is deleted and the eligibility gate keeps the course/site/hash/capability checks.",
+  },
+  {
     feature_id: "verification_ensemble",
     owner: "platform (Bridge)",
     purpose: "Runs a multi-pass adversarial/security/product review chain over an already-produced root-cause analysis before it reaches the repair queue; default off, no recurring cost.",

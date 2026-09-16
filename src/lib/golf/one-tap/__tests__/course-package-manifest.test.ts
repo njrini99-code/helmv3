@@ -10,6 +10,7 @@ describe('one-tap course package manifest and competition policy', () => {
     const pkg = parseGeometryPackage(packageJson);
     const manifest = buildCoursePackageManifest(pkg, { [pkg.holes[0]!.key]: { contentHash: 'b'.repeat(64) }, [pkg.holes[14]!.key]: { contentHash: 'c'.repeat(64) } }, '2026-09-17T00:00:00Z');
     expect(manifest.geometryVersion).toBe(pkg.contentHash);
+    expect(manifest).toMatchObject({ courseId: 'peek-n-peak-upper', siteId: 'osm-way-136097904' });
     expect(Object.keys(manifest.terrainByHole)).toEqual([pkg.holes[0]!.key, pkg.holes[14]!.key].sort());
     expect(manifest.terrainVersion).toMatch(/^[a-f0-9]+$/);
     expect(manifest.renderVersion).toMatch(/^meridian-visual-compiler-\d+:meridian-v/);

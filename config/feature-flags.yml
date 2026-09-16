@@ -147,3 +147,33 @@ flags:
     cleanup_plan: >-
       No planned removal — permanent ops lever gating a genuinely optional
       verification pass, not a migration bridge.
+
+  # Peek'n Peak Upper — One-Tap Live Round (master design §1 rule 20, §21).
+  # The course-specific live tracker activates only when this flag is on AND
+  # the round's course is the Upper product course AND the loaded package is
+  # the exact approved Upper geometry (src/lib/golf/one-tap/peek-n-peak-policy.ts)
+  # AND precise device location is available in the shell WebView. Off
+  # everywhere until the internal iPhone phase; flipping it on never affects
+  # another course.
+  - feature_id: peek_n_peak_one_tap_v1
+    owner: golf/course-geometry
+    purpose: >-
+      Enables the Peek'n Peak Upper One-Tap live round (MARK BALL on the
+      Meridian 3D course) for eligible rounds; off returns those rounds to
+      standard GolfHelm shot tracking. It only selects which tracker screen
+      an eligible Upper round shows; no other course is affected.
+    type: release
+    status: active
+    created_at: "2026-09-16"
+    expires_at: null
+    default: false
+    environment:
+      production: false
+      preview: false
+      development: true
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      Removed when the Upper pilot either graduates to a general Meridian
+      Live launch (a separate architectural project) or is withdrawn; either
+      way the flag row is deleted and the eligibility gate keeps the
+      course/site/hash/capability checks.
