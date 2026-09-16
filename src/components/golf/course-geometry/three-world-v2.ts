@@ -13,19 +13,31 @@
  * R7: this module owns the only runtime decision between V1 and V2 — a
  * `null` from `assembleV2World` (no `metricGrid`, or any compiler step
  * throwing) means "render V1", and the V1 path in three-landscape.ts is
- * untouched by this file. */
+ * untouched by this file.
+ *
+ * Task 11 follow-up: this module also compiles the hole's whole-hole field
+ * atlas (field-atlas.ts, Task 10) and uploads its tracked SDF layers as one
+ * `DataTexture` (`buildGroundSdfTexture`), so `ground-shader-v2.ts` can
+ * classify fragments from it instead of the per-vertex class alone. Atlas
+ * compile failure (a degenerate mesh bounding box; realistically never on a
+ * real hole) does not fall back to V1 the way the rest of the pipeline
+ * does — it degrades to `atlas: null`, and the ground material simply never
+ * sets `GOLF_V2_ATLAS`, leaving the pre-atlas vertex-colour path exactly as
+ * it was (ground-shader-v2.ts's own fallback contract). */
 import * as THREE from 'three';
 import { compileHeroPatches, type CompiledBunkerPatch } from '@/lib/golf/course-geometry/bunker-display-mesh';
 import { compileBaseDisplayLods, weldAndCleanTerrainMesh } from '@/lib/golf/course-geometry/display-mesh-v2';
+import { compileFieldAtlas, fieldAtlasBytes } from '@/lib/golf/course-geometry/field-atlas';
 import {
-  classAlbedoLinear, classRoughness, dominantClass, GROUND_SHADER_V2_VERSION, groundShaderV2Chunks,
-  GROUND_V2_ATTRIBUTES, seedFromPackageHash,
+  classAlbedoLinear, classRoughness, dominantClass, GROUND_ATLAS_TRACKED_CLASSES, GROUND_SDF_ATLAS_LAYERS,
+  GROUND_SHADER_V2_VERSION, groundShaderV2Chunks, GROUND_V2_ATTRIBUTES, seedFromPackageHash,
 } from '@/lib/golf/course-geometry/ground-shader-v2';
 import { compileHeroRegions } from '@/lib/golf/course-geometry/hero-patches';
+import { dequantizeSignedDistance, SDF_RANGE_M } from '@/lib/golf/course-geometry/surface-distance-field';
 import type { TerrainMesh } from '@/lib/golf/course-geometry/terrain';
 import type { HoleScene } from '@/lib/golf/course-geometry/types';
 import { SURFACE_CLASS_IDS, type SurfaceClass } from '@/lib/golf/course-geometry/visual-artifact';
-import type { PackedDisplayMesh, PackedHeroPatch } from '@/lib/golf/course-geometry/visual-artifact-v2';
+import type { PackedDisplayMesh, PackedFieldAtlas, PackedHeroPatch } from '@/lib/golf/course-geometry/visual-artifact-v2';
 import { MERIDIAN_STYLE, MERIDIAN_STYLE_HASH, type MeridianStyle } from '@/lib/golf/course-geometry/visual-style';
 
 /** The geometry bundle `buildV2World` needs: base LOD0 (with the hero
@@ -46,6 +58,10 @@ export interface V2WorldInput {
   seed: readonly [number, number];
   /** XY bounds of the base mesh, metres, `[minX, minY, maxX, maxY]`. */
   boundsM: [number, number, number, number];
+  /** Whole-hole field atlas (field-atlas.ts) over `boundsM`, or `null` when
+   * it could not be compiled — the ground material then keeps its pre-atlas
+   * vertex-colour classification (ground-shader-v2.ts's own fallback). */
+  atlas: PackedFieldAtlas | null;
 }
 
 let warnedFallback = false;
@@ -56,6 +72,16 @@ function warnFallbackOnce(reason: string, error?: unknown): void {
   if (warnedFallback) return;
   warnedFallback = true;
   console.warn(`[golf/three-world-v2] falling back to V1 terrain: ${reason}`, error ?? '');
+}
+
+let warnedAtlasFallback = false;
+/** Logs once that the field atlas is unavailable for this process — unlike
+ * `warnFallbackOnce`, this never sends the hole back to V1: the V2 world
+ * still renders, just with the pre-atlas vertex-colour classification. */
+function warnAtlasFallbackOnce(reason: string, error?: unknown): void {
+  if (warnedAtlasFallback) return;
+  warnedAtlasFallback = true;
+  console.warn(`[golf/three-world-v2] rendering V2 without a field atlas: ${reason}`, error ?? '');
 }
 
 function boundsOfPositions(positions: Float32Array): [number, number, number, number] {
@@ -83,9 +109,13 @@ export function assembleV2World(scene: HoleScene, mesh: TerrainMesh): V2WorldInp
     const lods = compileBaseDisplayLods(mesh, { heroPlan: { triangleRegion: plan.triangleRegion, regionIds: plan.regionIds } });
     const patches = compileHeroPatches(scene, mesh, welded, plan);
     const base = lods.lod0;
+    const boundsM = boundsOfPositions(base.positions);
+    let atlas: PackedFieldAtlas | null = null;
+    try { atlas = compileFieldAtlas(scene, mesh, boundsM); }
+    catch (error) { warnAtlasFallbackOnce('field atlas compile threw', error); }
     return {
       base, patches, patchedRangeIds: new Set(patches.map(compiled => compiled.patch.id)),
-      seed: seedFromPackageHash(mesh.geometryHash), boundsM: boundsOfPositions(base.positions),
+      seed: seedFromPackageHash(mesh.geometryHash), boundsM, atlas,
     };
   } catch (error) {
     warnFallbackOnce('V2 compile pipeline threw', error);
@@ -118,6 +148,46 @@ export function rewindTrianglesCCW(positions: ArrayLike<number>, indices: Uint32
   return out;
 }
 
+/** Uploads the field atlas's tracked SDF layers (`GROUND_SDF_ATLAS_LAYERS`:
+ * green, bunker, fairway, water) as one RGBA `DataTexture`, decoded from
+ * their fixed-point Uint16 codes into metres exactly as `sampleFieldAtlas`
+ * does (`dequantizeSignedDistance`, §108) — the raw per-texel value, not a
+ * bilinear resample of it, so the texture itself carries the same numbers a
+ * CPU-side `sampleFieldAtlas` call would answer for the same texel.
+ * `HalfFloatType` (not `FloatType`): WebGL2 filters 16-bit float textures
+ * natively (`LinearFilter` below needs no `OES_texture_float_linear`
+ * extension the way 32-bit float would), and half-float precision near zero
+ * — where every classification boundary actually lives — is a few
+ * millimetres; the same choice `buildDemSlopeTexture` (three-landscape.ts)
+ * already made for this codebase's other DEM field texture. `frame` maps a
+ * world XY straight to a normalized [0,1] UV (`(xy - frame.xy) * frame.zw`):
+ * unlike that DEM texture's node-grid frame, the atlas's own bounds already
+ * span exactly `width` × `height` texels (field-atlas.ts's `texelM`), so no
+ * half-texel nudge is needed for the UV to land on the same texel centres
+ * `sampleFieldAtlas`'s manual bilinear does. */
+function buildGroundSdfTexture(atlas: PackedFieldAtlas): { texture: THREE.DataTexture; frame: THREE.Vector4 } {
+  const { width, height, boundsM, sdfLayers } = atlas;
+  const texels = width * height;
+  const layerIndex = GROUND_SDF_ATLAS_LAYERS.map(name => sdfLayers?.layerNames.indexOf(name) ?? -1);
+  const half = (value: number) => THREE.DataUtils.toHalfFloat(value);
+  const data = new Uint16Array(texels * 4);
+  for (let n = 0; n < texels; n++) for (let c = 0; c < 4; c++) {
+    const index = layerIndex[c]!;
+    // No layer (should not happen: compileFieldAtlas always packs all five)
+    // decodes to a fully-outside distance, so it can never win a fragment.
+    const code = index >= 0 && sdfLayers ? sdfLayers.data[index * texels + n]! : 1;
+    data[n * 4 + c] = half(dequantizeSignedDistance(code, SDF_RANGE_M));
+  }
+  const texture = new THREE.DataTexture(data, width, height, THREE.RGBAFormat, THREE.HalfFloatType);
+  texture.name = 'golf-v2-ground-sdf';
+  texture.magFilter = texture.minFilter = THREE.LinearFilter; texture.generateMipmaps = false;
+  texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping; texture.needsUpdate = true;
+  texture.userData = { basis: 'source_derived_visual', layers: [...GROUND_SDF_ATLAS_LAYERS] };
+  const [x0, y0, x1, y1] = boundsM;
+  const frame = new THREE.Vector4(x0, y0, 1 / (x1 - x0), 1 / (y1 - y0));
+  return { texture, frame };
+}
+
 /** One class per patch vertex, resolved from the classes of the triangles
  * touching it by `GROUND_CLASS_PRIORITY` (`dominantClass`) — the same
  * vertex-level resolution `packDisplayMesh` already applies to the base
@@ -142,16 +212,25 @@ function resolvePatchVertexClasses(patch: PackedHeroPatch, triangleClass: Uint8A
   return out;
 }
 
-function classAttributes(classIds: Uint8Array, style: MeridianStyle): { classFloat: Float32Array; color: Float32Array; roughness: Float32Array } {
+/** Per-vertex class attributes. With an atlas the tracked classes (green,
+ * bunker, fairway, water, fringe) are painted by the SDF path, so their
+ * vertices bake the *rough* albedo instead of their own: a mixed-class base
+ * triangle then never interpolates sand or green into the fragments outside
+ * the true outline (the "spiky rim" halo of the first v2-world capture).
+ * Without an atlas every class keeps its own colour (the V1-equivalent path). */
+function classAttributes(classIds: Uint8Array, style: MeridianStyle, atlasPainted = false): { classFloat: Float32Array; color: Float32Array; roughness: Float32Array; atlasTrust: Float32Array } {
   const vertexCount = classIds.length;
   const classFloat = new Float32Array(vertexCount), color = new Float32Array(vertexCount * 3), roughness = new Float32Array(vertexCount);
+  const atlasTrust = new Float32Array(vertexCount);
   for (let v = 0; v < vertexCount; v++) {
     const cls = SURFACE_CLASS_IDS[classIds[v]!] ?? 'ground';
+    const tracked = GROUND_ATLAS_TRACKED_CLASSES.has(cls);
     classFloat[v] = classIds[v]!;
-    color.set(classAlbedoLinear(cls, style), v * 3);
-    roughness[v] = classRoughness(cls, style);
+    color.set(classAlbedoLinear(atlasPainted && tracked ? 'rough' : cls, style), v * 3);
+    roughness[v] = classRoughness(atlasPainted && tracked ? 'rough' : cls, style);
+    atlasTrust[v] = tracked ? 1 : 0;
   }
-  return { classFloat, color, roughness };
+  return { classFloat, color, roughness, atlasTrust };
 }
 
 /** The one ground `MeshStandardMaterial` shared by the base mesh and every
@@ -164,13 +243,32 @@ function classAttributes(classIds: Uint8Array, style: MeridianStyle): { classFlo
  * holes (shader version + style hash only, no per-hole seed or geometry
  * number), so three can still reuse one compiled program across every hole
  * that shares this shader structure even though each gets its own seed
- * uniform value. */
-function createGroundMaterialV2(seed: readonly [number, number], style: MeridianStyle): THREE.MeshStandardMaterial {
+ * uniform value.
+ *
+ * Task 11 follow-up: `atlas`, when present, becomes one `golfV2Sdf`
+ * `DataTexture` uniform (`buildGroundSdfTexture`) and sets the
+ * `GOLF_V2_ATLAS` define that unlocks `ground-shader-v2.ts`'s atlas
+ * classification block — a genuine shader-structure switch (§77 permits
+ * this in `customProgramCacheKey`; it changes which GLSL exists, not a
+ * per-hole number), so the cache key folds in whether it is set. Returns the
+ * texture alongside the material purely so `buildV2World` can dispose it;
+ * the material does not otherwise expose it. */
+function createGroundMaterialV2(seed: readonly [number, number], style: MeridianStyle, atlas: PackedFieldAtlas | null): { material: THREE.MeshStandardMaterial; sdfTexture: THREE.DataTexture | null } {
   const chunks = groundShaderV2Chunks(style);
+  const sdf = atlas ? buildGroundSdfTexture(atlas) : null;
   const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, metalness: 0, side: THREE.FrontSide });
   material.name = 'meridian-ground-v2';
+  // Merge, never overwrite: MeshStandardMaterial's constructor already sets
+  // `defines = { STANDARD: '' }`, which a shared lighting chunk
+  // (lights_fragment_begin) reads to pick the standard (not physical)
+  // branch — losing it would silently mis-light every V2 ground fragment.
+  if (sdf) material.defines = { ...material.defines, GOLF_V2_ATLAS: 1 };
   material.onBeforeCompile = shader => {
     shader.uniforms.golfV2Seed = { value: new THREE.Vector2(seed[0], seed[1]) };
+    if (sdf) {
+      shader.uniforms.golfV2Sdf = { value: sdf.texture };
+      shader.uniforms.golfV2SdfFrame = { value: sdf.frame };
+    }
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', `#include <common>\n${chunks.vertexHead}`)
       .replace('#include <begin_vertex>', `#include <begin_vertex>\n${chunks.vertexMain}`);
@@ -179,20 +277,21 @@ function createGroundMaterialV2(seed: readonly [number, number], style: Meridian
       .replace('#include <color_fragment>', `#include <color_fragment>\n${chunks.fragmentColor}`)
       .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>\n${chunks.fragmentRoughness}`);
   };
-  material.customProgramCacheKey = () => `${GROUND_SHADER_V2_VERSION}:${MERIDIAN_STYLE_HASH}`;
-  return material;
+  material.customProgramCacheKey = () => `${GROUND_SHADER_V2_VERSION}:${MERIDIAN_STYLE_HASH}:atlas=${sdf ? 1 : 0}`;
+  return { material, sdfTexture: sdf?.texture ?? null };
 }
 
-function buildBaseGeometry(base: PackedDisplayMesh, patchedRangeIds: ReadonlySet<string>, style: MeridianStyle): { geometry: THREE.BufferGeometry; drawnTriangles: number } {
+function buildBaseGeometry(base: PackedDisplayMesh, patchedRangeIds: ReadonlySet<string>, style: MeridianStyle, atlasPainted: boolean): { geometry: THREE.BufferGeometry; drawnTriangles: number } {
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.BufferAttribute(base.positions, 3));
   geometry.setIndex(new THREE.BufferAttribute(rewindTrianglesCCW(base.positions, base.indices), 1));
   geometry.computeVertexNormals();
-  const { classFloat, color, roughness } = classAttributes(base.surfaceClass, style);
+  const { classFloat, color, roughness, atlasTrust } = classAttributes(base.surfaceClass, style, atlasPainted);
   geometry.setAttribute('color', new THREE.BufferAttribute(color, 3));
   geometry.setAttribute(GROUND_V2_ATTRIBUTES.surfaceClass, new THREE.BufferAttribute(classFloat, 1));
   geometry.setAttribute(GROUND_V2_ATTRIBUTES.visualOffset, new THREE.BufferAttribute(new Float32Array(base.vertexCount), 1));
   geometry.setAttribute(GROUND_V2_ATTRIBUTES.roughness, new THREE.BufferAttribute(roughness, 1));
+  geometry.setAttribute(GROUND_V2_ATTRIBUTES.atlasTrust, new THREE.BufferAttribute(atlasTrust, 1));
   // Index groups: everything before the first hero range, then each range
   // that has no compiled patch (water/path regions today). `orderHeroRegionsLast`
   // guarantees every hero-range triangle sorts after every base triangle, so
@@ -217,20 +316,21 @@ function buildBaseGeometry(base: PackedDisplayMesh, patchedRangeIds: ReadonlySet
   return { geometry, drawnTriangles };
 }
 
-function buildPatchGeometry(compiled: CompiledBunkerPatch, style: MeridianStyle): THREE.BufferGeometry {
+function buildPatchGeometry(compiled: CompiledBunkerPatch, style: MeridianStyle, atlasPainted: boolean): THREE.BufferGeometry {
   const { patch, triangleClass } = compiled;
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.BufferAttribute(patch.positions, 3));
   geometry.setIndex(new THREE.BufferAttribute(rewindTrianglesCCW(patch.positions, patch.indices), 1));
   geometry.computeVertexNormals();
   const classIds = resolvePatchVertexClasses(patch, triangleClass);
-  const { classFloat, color, roughness } = classAttributes(classIds, style);
+  const { classFloat, color, roughness, atlasTrust } = classAttributes(classIds, style, atlasPainted);
   const vertexCount = patch.positions.length / 3, offset = new Float32Array(vertexCount);
   for (let v = 0; v < vertexCount; v++) offset[v] = patch.visualOffsetMm[v]! / 1000;
   geometry.setAttribute('color', new THREE.BufferAttribute(color, 3));
   geometry.setAttribute(GROUND_V2_ATTRIBUTES.surfaceClass, new THREE.BufferAttribute(classFloat, 1));
   geometry.setAttribute(GROUND_V2_ATTRIBUTES.visualOffset, new THREE.BufferAttribute(offset, 1));
   geometry.setAttribute(GROUND_V2_ATTRIBUTES.roughness, new THREE.BufferAttribute(roughness, 1));
+  geometry.setAttribute(GROUND_V2_ATTRIBUTES.atlasTrust, new THREE.BufferAttribute(atlasTrust, 1));
   geometry.computeBoundingBox();
   geometry.computeBoundingSphere();
   return geometry;
@@ -248,6 +348,9 @@ export interface V2WorldStats {
   baseTriangles: number;
   /** Triangles drawn across every hero patch. */
   patchTriangles: number;
+  /** Packed bytes of the whole-hole field atlas (`fieldAtlasBytes`, §94), 0
+   * when no atlas was compiled for this hole. */
+  atlasBytes: number;
 }
 
 /** Build the V2 render world for one hole: one ground material (constraint),
@@ -260,8 +363,9 @@ export interface V2WorldStats {
  * and a disposer, nothing here schedules a frame. */
 export function buildV2World(input: V2WorldInput, options: V2WorldOptions = {}): { group: THREE.Group; dispose(): void; stats: V2WorldStats } {
   const style = options.style ?? MERIDIAN_STYLE;
-  const material = createGroundMaterialV2(input.seed, style);
-  const { geometry: baseGeometry, drawnTriangles: baseTriangles } = buildBaseGeometry(input.base, input.patchedRangeIds, style);
+  const { material, sdfTexture } = createGroundMaterialV2(input.seed, style, input.atlas);
+  const atlasPainted = sdfTexture !== null;
+  const { geometry: baseGeometry, drawnTriangles: baseTriangles } = buildBaseGeometry(input.base, input.patchedRangeIds, style, atlasPainted);
   const baseMesh = new THREE.Mesh(baseGeometry, [material]);
   baseMesh.castShadow = true; baseMesh.receiveShadow = true; baseMesh.name = 'golf-v2-base';
 
@@ -269,7 +373,7 @@ export function buildV2World(input: V2WorldInput, options: V2WorldOptions = {}):
   const patchMeshes: THREE.Mesh[] = [];
   let patchTriangles = 0;
   for (const compiled of input.patches) {
-    const geometry = buildPatchGeometry(compiled, style);
+    const geometry = buildPatchGeometry(compiled, style, atlasPainted);
     patchGeometries.push(geometry);
     patchTriangles += compiled.patch.indices.length / 3;
     const mesh = new THREE.Mesh(geometry, material);
@@ -284,11 +388,13 @@ export function buildV2World(input: V2WorldInput, options: V2WorldOptions = {}):
   const stats: V2WorldStats = {
     draws: 1 + patchMeshes.length, triangles: baseTriangles + patchTriangles,
     patches: patchMeshes.length, baseTriangles, patchTriangles,
+    atlasBytes: input.atlas ? fieldAtlasBytes(input.atlas) : 0,
   };
   const dispose = () => {
     baseGeometry.dispose();
     for (const geometry of patchGeometries) geometry.dispose();
     material.dispose();
+    sdfTexture?.dispose();
   };
   return { group, dispose, stats };
 }
