@@ -1,7 +1,9 @@
 import * as THREE from 'three';
 import { attachTurfStyle, type ThreeLandscape } from './three-landscape';
+import { compileBaseDisplayLods, type DisplayLodName } from '@/lib/golf/course-geometry/display-mesh-v2';
 import { metricTerrainNormal } from '@/lib/golf/course-geometry/terrain-source';
 import { sourceVertexNormals, type TerrainMesh } from '@/lib/golf/course-geometry/terrain';
+import { SURFACE_CLASS_IDS } from '@/lib/golf/course-geometry/visual-artifact';
 
 /** Faceting debug kit (Meridian §14). Every view is a diagnostic material or
  * vertex-colour substitution on the same display geometry: source positions
@@ -13,6 +15,7 @@ export const TERRAIN_DEBUG_VIEWS = [
   'normals', 'source-normals', 'display-normals', 'flat-normals', 'slope', 'curvature',
   'lit-no-shadows', 'no-shadow', 'shadows', 'shadow-only',
   'feature-ids', 'triangle-ids', 'material-ids', 'crop', 'context-mask', 'bunker-depth',
+  'v2-lod0', 'v2-lod1', 'v2-lod2',
 ] as const;
 export type TerrainDebugView = typeof TERRAIN_DEBUG_VIEWS[number];
 export const TERRAIN_DEBUG_LABELS: Record<TerrainDebugView, string> = {
@@ -22,6 +25,13 @@ export const TERRAIN_DEBUG_LABELS: Record<TerrainDebugView, string> = {
   slope: 'Slope', curvature: 'Curvature', 'lit-no-shadows': 'Lit, no shadow', 'no-shadow': 'Lit, no shadow',
   shadows: 'Shadow only', 'shadow-only': 'Shadow only', 'feature-ids': 'Feature IDs', 'triangle-ids': 'Triangle IDs',
   'material-ids': 'Material IDs', crop: 'Context mask', 'context-mask': 'Context mask', 'bunker-depth': 'Bunker bowl depth (render-only)',
+  'v2-lod0': 'V2 base LOD0 (refined) + wire', 'v2-lod1': 'V2 base LOD1 (welded canonical) + wire', 'v2-lod2': 'V2 base LOD2 (simplified) + wire',
+};
+const V2_LOD_VIEWS: Partial<Record<TerrainDebugView, DisplayLodName>> = { 'v2-lod0': 'lod0', 'v2-lod1': 'lod1', 'v2-lod2': 'lod2' };
+/** Diagnostic surface-class tints for the V2 LOD views (not the Meridian palette). */
+const V2_CLASS_COLORS: Partial<Record<typeof SURFACE_CLASS_IDS[number], string>> = {
+  ground: '#6B8E5A', rough: '#7FA05C', fairway: '#8FC46A', tee: '#A6D07A', green: '#B9E68A', fringe: '#A3D97A', surround: '#93B96A',
+  bunker: '#E3D3A1', water: '#6FA8DC', woods: '#3E6B3F',
 };
 
 function hashColor(index: number, color: THREE.Color): THREE.Color {
@@ -42,6 +52,37 @@ export function installTerrainDebugView(world: THREE.Scene, landscape: ThreeLand
   const shadowMode = mode === 'shadows' || mode === 'shadow-only';
   if (!shadowMode) for (const child of landscape.group.children) if (child !== landscape.terrain) child.visible = false;
   renderer.shadowMap.enabled = shadowMode;
+  const v2Lod = V2_LOD_VIEWS[mode];
+  if (v2Lod) {
+    // V2 plan Task 5b: the base display LOD compiled now from the same
+    // canonical mesh, tinted by surface class with its wire on top, in place
+    // of the V1 terrain. Source Z, no relief exaggeration, diagnostic only.
+    const compiled = compileBaseDisplayLods(mesh), packed = compiled[v2Lod];
+    const lodGeometry = new THREE.BufferGeometry();
+    lodGeometry.setAttribute('position', new THREE.BufferAttribute(packed.positions, 3));
+    lodGeometry.setIndex(new THREE.BufferAttribute(packed.indices, 1));
+    const tints = new Float32Array(packed.vertexCount * 3), tint = new THREE.Color();
+    for (let v = 0; v < packed.vertexCount; v++) {
+      tint.set(V2_CLASS_COLORS[SURFACE_CLASS_IDS[packed.surfaceClass[v]!]!] ?? '#9AA39A');
+      tints.set([tint.r, tint.g, tint.b], v * 3);
+    }
+    lodGeometry.setAttribute('color', new THREE.BufferAttribute(tints, 3));
+    const fill = new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide });
+    const wireMaterial = new THREE.MeshBasicMaterial({ color: '#1B2A1E', wireframe: true, transparent: true, opacity: .6 });
+    owned.push(fill, wireMaterial);
+    const surface = new THREE.Mesh(lodGeometry, fill), wire = new THREE.Mesh(lodGeometry, wireMaterial);
+    wire.renderOrder = 1;
+    landscape.terrain.visible = false; landscape.group.add(surface, wire);
+    const { lods, weld, pass } = compiled.report;
+    landscape.terrain.userData.debugV2 = { lod: v2Lod, triangles: packed.triangleCount, vertices: packed.vertexCount, withinBudget: lods[v2Lod].withinBudget,
+      sliverTriangles: weld.sliverTriangles, needles: weld.needles, gates: pass ? 'pass' : 'fail' };
+    return () => {
+      landscape.group.remove(surface, wire);
+      landscape.terrain.visible = true;
+      lodGeometry.dispose();
+      for (const material of owned) material.dispose();
+    };
+  }
   const geometry = landscape.terrain.geometry;
   const positions = geometry.getAttribute('position');
   const originalColor = geometry.getAttribute('color');
