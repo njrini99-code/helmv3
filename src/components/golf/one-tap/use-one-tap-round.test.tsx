@@ -122,14 +122,15 @@ describe('One-Tap round', () => {
     render(<Harness />);
     const screen = () => document.querySelector('[data-slot="one-tap-screen"]')!;
     expect(screen().getAttribute('data-hole-key')).toBe(holeKeys[0]);
-    expect(document.querySelector('[data-slot="one-tap-strokes"]')!.textContent).toBe('0 strokes');
+    // §12: zero shots is not a chip.
+    expect(document.querySelector('[data-slot="one-tap-shots"]')).toBeNull();
     const green = pointOn(holeKeys[0]!, 'green');
     act(() => { for (let t = -1500; t <= 0; t += 500) phone.at(green, 2_000_000 + t); });
     fireEvent.click(document.querySelector('[data-slot="one-tap-mark"]')!);
     await act(async () => { await vi.advanceTimersByTimeAsync(800); });
     fireEvent.click(document.querySelector('[data-slot="one-tap-holed"]')!);
     expect(screen().getAttribute('data-hole-status')).toBe('COMPLETE');
-    expect(document.querySelector('[data-slot="one-tap-strokes"]')!.textContent).toBe('Holed · 0');
+    expect(document.querySelector('[data-slot="one-tap-shots"]')!.textContent).toBe('Holed · 0 shots');
     expect(document.querySelector('[data-slot="one-tap-mark"]')).toBeNull();
     fireEvent.click(document.querySelector('[data-slot="one-tap-next-hole"]')!);
     expect(screen().getAttribute('data-hole-key')).toBe(holeKeys[1]);

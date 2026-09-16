@@ -54,8 +54,11 @@ describe('One-Tap player screen', () => {
     expect(screen.queryByRole('button', { name: /Expand course view|Open green in 3D/ })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Close' })).toBeNull();
     expect(document.querySelector('[data-slot="stage-footer"] [data-slot="one-tap-mark"]')).not.toBeNull();
-    expect(document.querySelector('[data-slot="one-tap-status"]')!.textContent).toBe('Ready');
-    expect(document.querySelector('[data-slot="one-tap-gps"]')!.textContent).toBe('No GPS');
+    // §11/§70: healthy play shows nothing in the corner; before the first fix the only chip is Locating….
+    expect(document.querySelector('[data-slot="one-tap-sync"]')).toBeNull();
+    expect(document.querySelector('[data-slot="one-tap-toast"]')).toBeNull();
+    expect(document.querySelector('[data-slot="one-tap-shots"]')).toBeNull();
+    expect(document.querySelector('[data-slot="one-tap-location"]')!.textContent).toBe('Locating…');
     expect(document.querySelector('[data-slot="one-tap-distances"]')!.textContent).toContain('Waiting for a GPS fix');
     expect(state()).toBe('HOLE_READY');
   });
@@ -65,7 +68,7 @@ describe('One-Tap player screen', () => {
     render(<OneTapPlayerScreen roundId="r2" pkg={pilotPackage} holeKey={HOLE} terrain={null} location={phone} storage={null} reducedMotion />);
     const tee = pointOn('tee');
     act(() => { for (let t = -1500; t <= 0; t += 500) phone.at(tee, 1_000_000 + t); });
-    expect(document.querySelector('[data-slot="one-tap-gps"]')!.textContent).toBe('GPS ±3 m');
+    expect(document.querySelector('[data-slot="one-tap-location"]')).toBeNull();
     const readout = document.querySelector('[data-slot="one-tap-distances"]')!;
     expect(readout.getAttribute('data-basis')).toBe('live_fix');
     expect(readout.textContent).toMatch(/F\d+C\d+B\d+yd to green · ±\d+ yd · from where you stand/);
@@ -79,10 +82,14 @@ describe('One-Tap player screen', () => {
     // §5: the mark is the BALL; YOU is the live device standing on it, so its label yields until the golfer walks off.
     expect([...document.querySelectorAll('[data-marker-label]')].map(n => n.textContent)).toEqual(['BALL']);
     expect(document.querySelector('[data-marker-kind="player"]')).not.toBeNull();
-    expect(document.querySelector('[data-slot="one-tap-status"]')!.textContent).toBe('Marked · 1 to sync');
+    // §13: "✓ Saved … Undo" for the undo window; a queued sync is not a chip (§70).
+    expect(document.querySelector('[data-slot="one-tap-toast"]')!.getAttribute('data-kind')).toBe('saved');
+    expect(document.querySelector('[data-slot="one-tap-toast"]')!.textContent).toContain('✓ Saved');
+    expect(document.querySelector('[data-slot="one-tap-sync"]')).toBeNull();
     expect(document.querySelector('[data-slot="one-tap-lie"]')!.textContent).toMatch(/^(Tee|Near tee edge|Likely tee)/);
     expect(document.querySelector('[data-slot="one-tap-undo"]')).not.toBeNull();
-    expect(document.querySelector('[data-slot="one-tap-holed"]')).not.toBeNull();
+    // §14: no Finish hole from the tee.
+    expect(document.querySelector('[data-slot="one-tap-holed"]')).toBeNull();
     fireEvent.click(document.querySelector('[data-slot="one-tap-undo"]')!);
     expect(markers()).toEqual(['player']);
     expect(state()).toBe('HOLE_READY');
@@ -115,7 +122,8 @@ describe('One-Tap player screen', () => {
     fireEvent.click(document.querySelector('[data-slot="one-tap-mark"]')!);
     await act(async () => { await vi.advanceTimersByTimeAsync(800); });
     expect(state()).toBe('GPS_UNAVAILABLE');
-    expect(document.querySelector('[data-slot="one-tap-status"]')!.textContent).toMatch(/^No GPS fix/);
+    expect(document.querySelector('[data-slot="one-tap-toast"]')!.getAttribute('data-kind')).toBe('no_fix');
+    expect(document.querySelector('[data-slot="one-tap-toast"]')!.textContent).toBe('No location · not saved');
     expect(markers()).toEqual(['anchor', 'ball', 'player']);
   });
 
@@ -142,6 +150,8 @@ describe('One-Tap player screen', () => {
     fireEvent.click(document.querySelector('[data-slot="one-tap-mark"]')!);
     await act(async () => { await vi.advanceTimersByTimeAsync(800); });
     expect(document.querySelector('[data-slot="one-tap-lie"]')!.textContent).toMatch(/^(Green|Likely green)/);
+    // §14: on the green complex the contextual Finish hole appears.
+    expect(document.querySelector('[data-slot="one-tap-holed"]')!.textContent).toBe('At the cup? Finish hole');
     expect(root().getAttribute('data-camera-framing')).toBe('whole_green');
   });
 });

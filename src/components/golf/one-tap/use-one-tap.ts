@@ -14,9 +14,10 @@ import { posteriorGreenProbability } from '@/lib/golf/one-tap/hole-lifecycle';
 import { buildSurfacePartition, LIE_LABELS, type LieClass, type LieDisplay } from '@/lib/golf/one-tap/lie-classifier';
 import { presentLie, type LiePresentationContext, type LieRule } from '@/lib/golf/one-tap/presentation-lie';
 import { LocationBuffer, type Covariance2, type LocationSample } from '@/lib/golf/one-tap/location-estimator';
-import type { LocationSource } from '@/lib/golf/one-tap/location-source';
+import type { LocationSource, LocationStatus } from '@/lib/golf/one-tap/location-source';
 import { OneTapController, type OneTapSnapshot } from '@/lib/golf/one-tap/one-tap-controller';
-import { QUALITY_CONFIG } from '@/lib/golf/one-tap/location-quality';
+import { QUALITY_CONFIG, gradeLocationQuality, type LocationQuality } from '@/lib/golf/one-tap/location-quality';
+import { NEXT_TEE_RULE } from '@/lib/golf/one-tap/hole-lifecycle';
 import { acceptPlayerFix, playerFixFromSample, tickPlayerPresentation, type PlayerPresentation } from '@/lib/golf/one-tap/player-presentation';
 import { markersFromAnchors } from '@/lib/golf/one-tap/scene-markers';
 import { liveAnchors, UNDO_WINDOW_MS, type ShotAnchor } from '@/lib/golf/one-tap/shot-anchor';
@@ -45,6 +46,7 @@ export interface UseOneTapOptions {
   now?: () => number;
 }
 type SyntheticTransport = SyncTransport;
+export interface OneTapStatusToast { kind: 'saved' | 'saved_low' | 'saved_outside' | 'no_fix'; undoable: boolean }
 export interface OneTapLie {
   primary: LieClass;
   /** Presentation copy (§45–48): "Green", "Likely green", "Green / fringe", "Near tee edge", "Near water". */
@@ -75,6 +77,14 @@ export interface OneTapView {
   latestFix: LocationSample | null;
   /** §37 presentation position of the live device (YOU); never evidence. */
   player: PlayerPresentation | null;
+  /** §8.2/§11.3: `good` is silent; the rest earn the single location chip. */
+  locationQuality: LocationQuality;
+  /** §70: healthy sync is invisible; only an outage or a stuck queue speaks. */
+  syncIssue: 'offline' | 'error' | null;
+  /** §13: the transient "✓ Saved … Undo" status after a tap; null when nothing to say. */
+  statusToast: OneTapStatusToast | null;
+  /** §14: the last mark sits in the green complex, so "Finish hole" is offered. */
+  finishSuggested: boolean;
   canHoleOut: boolean;
   markBall(): void;
   undo(): void;
@@ -83,7 +93,7 @@ export interface OneTapView {
   recenterCamera(): void;
 }
 
-const EMPTY_SNAPSHOT: OneTapSnapshot = Object.freeze({ state: 'HOLE_READY', outcome: null, lastAnchor: null, anchors: [], shots: [], undoableId: null, syncPending: 0, paused: false, manualCamera: false, pendingTapMs: null });
+const EMPTY_SNAPSHOT: OneTapSnapshot = Object.freeze({ state: 'HOLE_READY', outcome: null, lastAnchor: null, anchors: [], shots: [], undoableId: null, syncPending: 0, syncErrors: 0, paused: false, manualCamera: false, pendingTapMs: null });
 export const RIPPLE_MS = 500;
 const CAMERA_TICK_MS = 1000;
 /** §37: YOU eases at animation cadence; the tick is a no-op once settled. */
@@ -165,6 +175,22 @@ export function useOneTap(options: UseOneTapOptions): OneTapView {
       if (fix) { setPlayer(previous => acceptPlayerFix(previous, fix)); setPlayerStale(false); }
     });
   }, [controller, location, origin]);
+  // §70/§8.2: the shell reports connectivity and the device source its status;
+  // neither is shown while healthy.
+  const [online, setOnline] = useState(() => typeof navigator === 'undefined' || navigator.onLine !== false);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const up = () => setOnline(true), down = () => setOnline(false);
+    window.addEventListener('online', up); window.addEventListener('offline', down);
+    return () => { window.removeEventListener('online', up); window.removeEventListener('offline', down); };
+  }, []);
+  const [locationStatus, setLocationStatus] = useState<LocationStatus | null>(null);
+  useEffect(() => {
+    if (!location || !('subscribeStatus' in location)) { setLocationStatus(null); return; }
+    const source = location as LocationSource & { status(): LocationStatus; subscribeStatus(l: (s: LocationStatus) => void): () => void };
+    setLocationStatus(source.status());
+    return source.subscribeStatus(setLocationStatus);
+  }, [location]);
   useEffect(() => {
     if (!player) return;
     const handle = setInterval(() => {
@@ -241,6 +267,21 @@ export function useOneTap(options: UseOneTapOptions): OneTapView {
   const markers = useMemo(() => markersFromAnchors(snapshot.anchors, rippleKey, player ? { positionENU: player.positionENU, accuracyM: player.accuracyM, stale: playerStale } : null),
     [snapshot.anchors, rippleKey, player, playerStale]);
 
+  const locationQuality = useMemo<LocationQuality>(() => {
+    if (!location) return 'none';
+    if (playerStale) return gradeLocationQuality(latestFix, Number.POSITIVE_INFINITY, locationStatus);
+    return gradeLocationQuality(latestFix, latestFix?.timestampMs ?? 0, locationStatus);
+  }, [location, latestFix, playerStale, locationStatus]);
+  const syncIssue = snapshot.syncErrors > 0 ? 'error' : !online && snapshot.syncPending > 0 ? 'offline' : null;
+  const statusToast = useMemo<OneTapStatusToast | null>(() => {
+    if (snapshot.undoableId && snapshot.outcome && snapshot.outcome !== 'gps_unavailable') {
+      return { kind: snapshot.outcome === 'low_confidence' ? 'saved_low' : snapshot.outcome === 'outside_modeled_area' ? 'saved_outside' : 'saved', undoable: true };
+    }
+    if (snapshot.state === 'GPS_UNAVAILABLE') return { kind: 'no_fix', undoable: false };
+    return null;
+  }, [snapshot.undoableId, snapshot.outcome, snapshot.state]);
+  const finishSuggested = !!lastMark && !lastMark.terminal && (lie?.greenProbability ?? 0) >= NEXT_TEE_RULE.greenProbability;
+
   const markBall = useCallback(() => { void controller?.markBall(); }, [controller]);
   const undo = useCallback(() => { controller?.undo(); }, [controller]);
   const holeOut = useCallback(() => { controller?.holeOut(); }, [controller]);
@@ -249,8 +290,8 @@ export function useOneTap(options: UseOneTapOptions): OneTapView {
 
   return useMemo<OneTapView>(() => ({
     snapshot, markers, distances: distances.value, distancesBasis: distances.basis, hasGreen: !!green, lie, lastMark,
-    cameraMode: camera.mode, cameraState, locationKind: location?.kind ?? 'none', latestFix, player,
+    cameraMode: camera.mode, cameraState, locationKind: location?.kind ?? 'none', latestFix, player, locationQuality, syncIssue, statusToast, finishSuggested,
     canHoleOut: !!lastMark && !lastMark.terminal,
     markBall, undo, holeOut, onGesture, recenterCamera,
-  }), [snapshot, markers, distances, green, lie, lastMark, camera.mode, cameraState, location, latestFix, player, markBall, undo, holeOut, onGesture, recenterCamera]);
+  }), [snapshot, markers, distances, green, lie, lastMark, camera.mode, cameraState, location, latestFix, player, locationQuality, syncIssue, statusToast, finishSuggested, markBall, undo, holeOut, onGesture, recenterCamera]);
 }

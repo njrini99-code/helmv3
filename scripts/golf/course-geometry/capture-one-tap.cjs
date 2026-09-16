@@ -39,9 +39,9 @@ const outDir = path.resolve(String(args['out-dir'] || `output/playwright/course-
   const read = () => page.evaluate(() => {
     const screen = document.querySelector('[data-slot=one-tap-screen]'), canvas = document.querySelector('canvas[data-terrain-state=ready]');
     const text = selector => document.querySelector(selector)?.textContent?.trim() ?? null;
-    return { state: screen?.dataset.oneTapState ?? null, holeKey: screen?.dataset.holeKey ?? null, holeStatus: screen?.dataset.holeStatus ?? null, strokes: text('[data-slot=one-tap-strokes]'), cameraMode: screen?.dataset.cameraMode ?? null, cameraState: screen?.dataset.cameraState ?? null,
+    return { state: screen?.dataset.oneTapState ?? null, holeKey: screen?.dataset.holeKey ?? null, holeStatus: screen?.dataset.holeStatus ?? null, strokes: text('[data-slot=one-tap-shots]'), cameraMode: screen?.dataset.cameraMode ?? null, cameraState: screen?.dataset.cameraState ?? null,
       currentView: screen?.querySelector('[data-current-view]')?.getAttribute('data-current-view') ?? null,
-      status: text('[data-slot=one-tap-status]'), gps: text('[data-slot=one-tap-gps]'), distances: text('[data-slot=one-tap-distances]'), lie: text('[data-slot=one-tap-lie]'),
+      status: text('[data-slot=one-tap-toast]'), gps: text('[data-slot=one-tap-location]'), distances: text('[data-slot=one-tap-distances]'), lie: text('[data-slot=one-tap-lie]'),
       markers: document.querySelectorAll('[data-marked-position]').length, links: document.querySelectorAll('[data-marked-link]').length,
       sigmaRings: Array.from(document.querySelectorAll('[data-marked-sigma]')).filter(n => n.getAttribute('display') !== 'none').length,
       cameraFraming: screen?.dataset.cameraFraming || null, cameraZoom: document.querySelector('[data-camera-zoom]')?.getAttribute('data-camera-zoom') ?? null,

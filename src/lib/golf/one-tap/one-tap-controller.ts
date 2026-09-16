@@ -26,6 +26,8 @@ export interface OneTapSnapshot {
   shots: DerivedShot[];
   undoableId: string | null;
   syncPending: number;
+  /** Anchors whose retries are exhausted (§70 "Sync issue"); still retried on the next flush. */
+  syncErrors: number;
   paused: boolean;
   manualCamera: boolean;
   pendingTapMs: number | null;
@@ -76,7 +78,7 @@ export class OneTapController {
   snapshot(): OneTapSnapshot {
     const anchors = this.holeAnchors(), live = liveAnchors(anchors), last = live.at(-1) ?? null, now = this.now();
     return { state: this.paused ? 'ROUND_PAUSED' : this.manualCamera && this.state === 'HOLE_READY' ? 'MANUAL_CAMERA' : this.state, outcome: this.outcome, lastAnchor: last, anchors, shots: deriveShots(anchors),
-      undoableId: last && !last.provisional && undoable(last, now) ? last.id : null, syncPending: anchors.filter(a => a.syncState === 'QUEUED' || a.syncState === 'ERROR').length,
+      undoableId: last && !last.provisional && undoable(last, now) ? last.id : null, syncPending: anchors.filter(a => a.syncState === 'QUEUED' || a.syncState === 'ERROR').length, syncErrors: anchors.filter(a => a.syncState === 'ERROR').length,
       paused: this.paused, manualCamera: this.manualCamera, pendingTapMs: this.pendingTapMs };
   }
   greenCentre(): PointM | null {
