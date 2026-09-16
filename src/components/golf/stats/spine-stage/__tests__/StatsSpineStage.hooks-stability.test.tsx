@@ -23,7 +23,7 @@
  * stop (an error-boundary-swallowed crash would otherwise read as a false
  * pass here, matching the "renders nothing below the ViewHeader" symptom).
  * ========================================================================== */
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { StatsSpineStage } from '../StatsSpineStage';
@@ -160,6 +160,27 @@ function fixtureTrend(): TrendAnalysisResponse {
   } as unknown as TrendAnalysisResponse;
 }
 
+/**
+ * The production action always returns a complete group, including the empty
+ * points and sector arrays. Keep the stage fixture truthful: the Driving and
+ * Approach drills render SprayField even when nothing is plotted.
+ */
+function fixtureEmptySprayGroup(family: 'driving' | 'approach') {
+  return {
+    family,
+    totalShots: 0,
+    plottedShots: 0,
+    averageForwardDistance: null,
+    averageRemainingDistance: null,
+    playableCount: 0,
+    troubleCount: 0,
+    penaltyCount: 0,
+    dominantSector: null,
+    points: [],
+    summaryBands: [],
+  };
+}
+
 function mockHealthyBundle() {
   getPlayerStatsDashboardBundle.mockResolvedValue({
     detailed: ok(fixtureStats()),
@@ -169,7 +190,11 @@ function mockHealthyBundle() {
       success: true,
       data: { playerId: 'p-1', putting: [], approach: [], roundsIncluded: 6 },
     }),
-    spray: ok({ shots: [] }),
+    spray: ok({
+      driving: fixtureEmptySprayGroup('driving'),
+      approach: fixtureEmptySprayGroup('approach'),
+      scope: { roundId: 'overall', roundsIncluded: 12, filterApplied: false },
+    }),
     strengthsWeaknesses: ok({ strengths: [], weaknesses: [] }),
     worstHoles: ok({ holes: [], worstHoles: [], bestHoles: [], par3Average: null, par4Average: null, par5Average: null, closingHolesAverage: null }),
     patterns: ok({ success: true, patterns: [] }),
@@ -272,6 +297,47 @@ describe('StatsSpineStage — hooks-order stability across ?area= switches', { t
     render(<StatsSpineStage playerId="p-1" />);
 
     expect(await screen.findByText('Core ball striking')).toBeInTheDocument();
+  });
+
+  it('loads a qualifier as a coach-adjustable multi-round scope', async () => {
+    getPlayerRoundOptions.mockResolvedValue([
+      {
+        id: 'qualifier-1',
+        date: '2026-07-01',
+        courseName: 'North Course',
+        totalScore: 72,
+        roundType: 'qualifier',
+        qualifierId: 'fall-qualifier',
+        qualifierName: 'Fall qualifier',
+        qualifierRoundNumber: 1,
+      },
+      {
+        id: 'qualifier-2',
+        date: '2026-07-08',
+        courseName: 'South Course',
+        totalScore: 74,
+        roundType: 'qualifier',
+        qualifierId: 'fall-qualifier',
+        qualifierName: 'Fall qualifier',
+        qualifierRoundNumber: 2,
+      },
+    ]);
+
+    render(<StatsSpineStage playerId="p-1" />);
+    await screen.findByText('Core ball striking');
+
+    fireEvent.click(screen.getByRole('combobox', { name: "Load a qualifier's rounds" }));
+    fireEvent.click(await screen.findByText('Fall qualifier · 2 rounds'));
+
+    await waitFor(() => {
+      expect(getPlayerStatsDashboardBundle).toHaveBeenLastCalledWith('p-1', ['qualifier-1', 'qualifier-2']);
+    });
+    expect(await screen.findByText('Selected-round stats')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /remove 7\/1\/26 · north course/i }));
+    await waitFor(() => {
+      expect(getPlayerStatsDashboardBundle).toHaveBeenLastCalledWith('p-1', ['qualifier-2']);
+    });
   });
 
   it('cycles through every real area view (and back home) on ONE mounted instance without a hooks-order crash', async () => {

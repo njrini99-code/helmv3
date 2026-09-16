@@ -1055,3 +1055,22 @@
   that records each package hash it serves without replacing the raster, a
   restrained "Green" reference flag on scenes without an estimated pin, and a
   quieter 3D forest floor and water tone. No gate passes on any of it.
+
+## 2026-09-15 — single phone no longer falsely blocked as "updated on another device"
+
+- SHA: this PR (`agent/round-conflict-self-heal`); not deployed at the time of writing.
+- Incident: `memory/incidents/shot_tracking/INC-2026-09-15-single-phone-false-conflict-block.md`.
+- Change: foreground saves route through `savePartialRoundTracked`, which
+  marks a pending unreadable write on a recognised transport loss (new
+  `src/lib/golf/round-write-outcome.ts`); the pagehide/hidden beacon marks
+  it too and is sent once per hidden period; `handleRoundSyncConflict`
+  adopts the server's current `updated_at` and callers retry instead of
+  blocking when that flag is set, and races (poll and save under the same
+  token) are guarded by comparing the known value to the live token. The
+  beacon deliberately carries no lock token; B2's block for a device proven
+  behind is unchanged.
+- Why: iOS kills in-flight saves on lock/app switch (`TypeError: Load
+  failed`) and fires two beacons per backgrounding; each landed write bumped
+  `updated_at` without telling the client, and the B9 boolean forgave only
+  one, so every Hampden-Sydney phone escalated to the permanent block during
+  post-round stat entry.

@@ -44,6 +44,8 @@ export interface RoundStatReportProps {
   title?: string;
   /** One line under the title — typically the course and date of the round. */
   subtitle?: string;
+  /** `selection` keeps aggregate reports honest when coaches choose several rounds. */
+  scope?: 'single' | 'selection';
   className?: string;
 }
 
@@ -225,9 +227,11 @@ export function RoundStatReport({
   stats,
   title = 'Full round stats',
   subtitle,
+  scope = 'single',
   className,
 }: RoundStatReportProps) {
   const report = buildRoundStatReport(stats);
+  const isSelection = scope === 'selection';
 
   if (!report) return null;
 
@@ -236,9 +240,10 @@ export function RoundStatReport({
   if (report.isEmpty) {
     return (
       <Surface padding="lg" className={className}>
-        <InlineNotice tone="info" title="No shot detail for this round">
-          These breakdowns are computed from logged shots. This round was saved as a scorecard
-          only, so there is nothing to break down.
+        <InlineNotice tone="info" title={isSelection ? 'No shot detail for selected rounds' : 'No shot detail for this round'}>
+          These breakdowns are computed from logged shots. {isSelection
+            ? 'The selected rounds were saved as scorecards only, so there is nothing to break down.'
+            : 'This round was saved as a scorecard only, so there is nothing to break down.'}
         </InlineNotice>
       </Surface>
     );
@@ -249,7 +254,7 @@ export function RoundStatReport({
       <div className="flex flex-col gap-6">
         <header>
           <Eyebrow as="p" tone="accent">
-            Single round
+            {isSelection ? 'Selected rounds' : 'Single round'}
           </Eyebrow>
           {/* h2 over the sections' h3 — the document title has to outrank the
               five category headers for the structure to read at a glance. */}
@@ -258,9 +263,9 @@ export function RoundStatReport({
             <p className="mt-0.5 font-fw-sans text-body-sm text-text-secondary">{subtitle}</p>
           ) : null}
           <p className="mt-2 max-w-prose font-fw-sans text-caption text-text-tertiary">
-            Every figure below is from this round alone. A dimmed tile means this round produced no
-            sample for that metric — not a zero. Where the calculator reports an exact count, it is
-            printed under the figure.
+            Every figure below is from {isSelection ? 'the selected rounds' : 'this round alone'}. A dimmed tile means{' '}
+            {isSelection ? 'those rounds produced' : 'this round produced'} no sample for that metric — not a zero.
+            Where the calculator reports an exact count, it is printed under the figure.
           </p>
         </header>
 

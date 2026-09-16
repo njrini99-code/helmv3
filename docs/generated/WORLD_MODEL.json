@@ -15980,7 +15980,7 @@
         {
           "kind": "rpc_call",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 7271
+          "line": 7278
         }
       ]
     },
@@ -16055,12 +16055,12 @@
         {
           "kind": "rpc_call",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 2327
+          "line": 2334
         },
         {
           "kind": "rpc_call",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 2561
+          "line": 2568
         }
       ]
     },
@@ -20026,7 +20026,7 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/stats-data.ts",
-          "line": 49
+          "line": 50
         },
         {
           "kind": "import_graph",
@@ -20093,12 +20093,12 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/stats-data.ts",
-          "line": 48
+          "line": 49
         },
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/stats-data.ts",
-          "line": 52
+          "line": 53
         },
         {
           "kind": "import_graph",
@@ -20190,7 +20190,7 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/__tests__/stats-data.test.ts",
-          "line": 151
+          "line": 152
         },
         {
           "kind": "import_graph",
@@ -20225,12 +20225,12 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/stats-data.ts",
-          "line": 50
+          "line": 51
         },
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/stats-data.ts",
-          "line": 51
+          "line": 52
         },
         {
           "kind": "import_graph",
@@ -20400,7 +20400,7 @@
         {
           "kind": "rpc_call",
           "path": "src/app/golf/actions/stats-data.ts",
-          "line": 1103
+          "line": 1120
         }
       ]
     },

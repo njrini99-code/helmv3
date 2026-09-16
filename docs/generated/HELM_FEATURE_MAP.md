@@ -82,7 +82,7 @@ is a second thing to keep true.
 - **Behaviour:** `memory/features/golf-round-lifecycle.md`
 - **Code:** `src/app/golf/(dashboard)/dashboard/rounds/**`, `src/components/golf/course-geometry/**`, `src/components/fairway/pages/rounds/**`, `src/components/fairway/pages/rounds-new/**`, `src/components/fairway/pages/rounds-recover/**`, `src/components/fairway/pages/rounds-tracking/**` … and 33 more in the registry
 - **Telemetry:** `round_tracking` (golfhelm, high), `course_library` (golfhelm, med)
-- **Incidents:** `memory/incidents/golf_round_lifecycle/INC-2026-08-19-assistant-coach-cascade-delete-round-history.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-25-completed-round-sg-capability.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-25-nondestructive-submit-and-checkpoint-fallback.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-25-recap-persist-schema-permission.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-30-account-deletion-still-cascades-golf-history.md`
+- **Incidents:** `memory/incidents/golf_round_lifecycle/INC-2026-08-19-assistant-coach-cascade-delete-round-history.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-25-completed-round-sg-capability.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-25-nondestructive-submit-and-checkpoint-fallback.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-25-recap-persist-schema-permission.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-30-account-deletion-still-cascades-golf-history.md`, `memory/incidents/golf_round_lifecycle/INC-2026-09-16-course-state-two-letter-rejection.md`
 - **Repair units:** none in the queue
 - **History:** `memory/ledgers/changes/golf_round_lifecycle.md`, `memory/ledgers/tests/golf_round_lifecycle.md`
 
@@ -115,7 +115,7 @@ is a second thing to keep true.
 - **Behaviour:** `memory/features/shot-tracking.md`
 - **Code:** `src/app/golf/(dashboard)/dashboard/rounds/new/**`, `src/app/golf/(dashboard)/dashboard/rounds/continue/**`, `src/app/golf/(dashboard)/dashboard/rounds/recover/**`, `src/components/fairway/pages/rounds-tracking/**`, `src/components/fairway/pages/rounds/**`, `src/components/fairway/pages/rounds-new/**` … and 25 more in the registry
 - **Telemetry:** none — covered by `golf_round_lifecycle`. Shot entry is instrumented as part of round_tracking; no separate FeatureKey exists. High criticality with no key of its own is a real observability limit, recorded here rather than hidden by inventing one.
-- **Incidents:** `memory/incidents/shot_tracking/INC-2026-08-22-confirmed-snapshot-recovery-prompt.md`, `memory/incidents/shot_tracking/INC-2026-08-22-delete-shot-stale-id.md`, `memory/incidents/shot_tracking/INC-2026-08-22-partial-save-round-deletion.md`, `memory/incidents/shot_tracking/INC-2026-08-25-atomic-snapshot-hole-mismatch.md`
+- **Incidents:** `memory/incidents/shot_tracking/INC-2026-08-22-confirmed-snapshot-recovery-prompt.md`, `memory/incidents/shot_tracking/INC-2026-08-22-delete-shot-stale-id.md`, `memory/incidents/shot_tracking/INC-2026-08-22-partial-save-round-deletion.md`, `memory/incidents/shot_tracking/INC-2026-08-25-atomic-snapshot-hole-mismatch.md`, `memory/incidents/shot_tracking/INC-2026-09-15-single-phone-false-conflict-block.md`
 - **Repair units:** `confirmed-snapshot-recovery-prompt-2026-08-22` (verified_in_production)
 - **History:** `memory/ledgers/changes/shot_tracking.md`, `memory/ledgers/tests/shot_tracking.md`
 

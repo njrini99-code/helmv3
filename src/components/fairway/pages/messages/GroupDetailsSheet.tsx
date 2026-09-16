@@ -179,7 +179,9 @@ export interface GroupDetailsSheetProps {
 function formatCreatedOn(iso: string): string | null {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return null;
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  // A conversation has no team-timezone field. Use its stored UTC calendar
+  // date so SSR and every client describe the same creation day.
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
 }
 
 /**
