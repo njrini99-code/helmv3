@@ -47,7 +47,7 @@ import { compileCurvatureFields } from './terrain-curvature';
 import type { MetricTerrainGrid } from './terrain-source';
 import { metricTerrainNormal, sampleMetricTerrain } from './terrain-source';
 import { SURFACE_CLASS_IDS, type SurfaceClass } from './visual-artifact';
-import type { PackedDisplayMesh } from './visual-artifact-v2';
+import type { HeroRange, PackedDisplayMesh } from './visual-artifact-v2';
 
 type FeatureKind = TerrainMesh['featureKinds'][number];
 export type DisplayLodName = 'lod0' | 'lod1' | 'lod2';
@@ -83,6 +83,10 @@ export interface DisplayLodOptions {
   minRefineEdgeM: number;
   /** Canonical edges shorter than this are noding slivers, collapsed for display. */
   weldToleranceM: number;
+  /** Hero regions (Task 6): their rim edges are never split or moved, their
+   * triangles are never refined (the patch replaces them), and each LOD
+   * orders base triangles first, then one contiguous run per region. */
+  heroPlan?: HeroPlanInput;
 }
 export const DISPLAY_LOD_OPTIONS: Readonly<DisplayLodOptions> = Object.freeze({ collapseToleranceM: 0.15, minRefineEdgeM: 1, weldToleranceM: 0.02 });
 
@@ -94,9 +98,14 @@ export interface DisplayMesh {
   triangleMaterials: Uint8Array;
   /** Sign of each triangle's XY area when it was created; flips are measured against it. */
   orientation: Int8Array;
+  /** Per triangle: hero region index + 1 (hero-patches.ts), 0 for the base. Absent before a plan is applied. */
+  triangleRegion?: Uint16Array;
   vertexCount: number;
   triangleCount: number;
 }
+/** A hero region plan applied to the base LODs: `triangleRegion` is per
+ * triangle of the cleaned canonical mesh (`weldAndCleanTerrainMesh`). */
+export interface HeroPlanInput { triangleRegion: Uint16Array; regionIds: readonly string[] }
 
 export interface LodReport { triangles: number; vertices: number; budget: readonly [number, number]; withinBudget: boolean; refined: number; collapsed: number; maxHeightErrorM: number }
 export interface HausdorffReport { class: string; canonicalSegments: number; toleranceM: number; distancesM: Record<DisplayLodName, number>; pass: boolean }
@@ -163,6 +172,8 @@ export interface EdgeTable {
   locked: Uint8Array;
   /** Edge key → boundary class ('' when the edge is interior to one surface). */
   boundaryClass: Map<number, string>;
+  /** 1 for hero region triangles and the base triangles on their rims: never red in refinement. */
+  frozen: Uint8Array;
 }
 
 const SEMANTIC_CLASSES: readonly string[] = ['green', 'bunker', 'fringe', 'surround', 'fairway', 'water', 'tee'];
@@ -191,15 +202,23 @@ export function buildEdgeTable(mesh: TerrainMesh, welded: DisplayMesh): EdgeTabl
     const list = triangles.get(key);
     if (list) list.push(t); else triangles.set(key, [t]);
   }
-  const locked = new Uint8Array(welded.vertexCount), boundaryClass = new Map<number, string>();
+  const locked = new Uint8Array(welded.vertexCount), boundaryClass = new Map<number, string>(), frozen = new Uint8Array(welded.triangleCount);
+  const region = welded.triangleRegion;
   for (const [key, list] of triangles) {
     const cls = boundaryClassOf(mesh, welded, list);
-    if (!cls) continue;
-    boundaryClass.set(key, cls);
+    // A hero region edge (region change, or a region triangle on the border)
+    // is locked like a feature boundary so patches stitch to every LOD.
+    const hero = region != null && (list.length === 1 ? region[list[0]!]! > 0 : list.length === 2 ? region[list[0]!] !== region[list[1]!] : true);
+    if (hero) for (const t of list) frozen[t] = 1;
+    if (!cls && !hero) continue;
+    boundaryClass.set(key, cls || 'hero');
     const a = Math.floor(key / VERTEX_KEY_BASE), b = key % VERTEX_KEY_BASE;
     locked[a] = 1; locked[b] = 1;
   }
-  return { triangles, locked, boundaryClass };
+  // Hero footprints are replaced by their patches, so refining them is waste:
+  // the base-only fallback keeps them at canonical density.
+  if (region) for (let t = 0; t < welded.triangleCount; t++) if (region[t]) frozen[t] = 1;
+  return { triangles, locked, boundaryClass, frozen };
 }
 
 /** Height along an edge from the source grid: the linear midpoint plus the
@@ -239,7 +258,7 @@ export function refinementImportance(mesh: TerrainMesh, welded: DisplayMesh, tab
         if (ga != null && gb != null && gm != null) heightError = Math.max(heightError, Math.abs(gm - (ga + gb) / 2));
       }
     }
-    if (longest < options.minRefineEdgeM) continue;
+    if (longest < options.minRefineEdgeM || table.frozen[t]) continue;
     const cx = (p[ia * 3]! + p[ib * 3]! + p[ic * 3]!) / 3, cy = (p[ia * 3 + 1]! + p[ib * 3 + 1]! + p[ic * 3 + 1]!) / 3;
     let normalError = 0;
     if (grid) {
@@ -290,9 +309,10 @@ export function refineDisplayMesh(mesh: TerrainMesh, welded: DisplayMesh, red: U
     if (!red[t]) continue;
     for (let k = 0; k < 3; k++) midpoint(welded.indices[t * 3 + k]!, welded.indices[t * 3 + ((k + 1) % 3)]!);
   }
-  const indices: number[] = [], features: number[] = [], materials: number[] = [], orientation: number[] = [];
+  const indices: number[] = [], features: number[] = [], materials: number[] = [], orientation: number[] = [], regions: number[] = [];
   const emit = (t: number, a: number, b: number, c: number) => {
     indices.push(a, b, c); features.push(welded.triangleFeatures[t]!); materials.push(welded.triangleMaterials[t]!); orientation.push(welded.orientation[t]!);
+    if (welded.triangleRegion) regions.push(welded.triangleRegion[t]!);
   };
   let refined = 0;
   for (let t = 0; t < welded.triangleCount; t++) {
@@ -322,7 +342,7 @@ export function refineDisplayMesh(mesh: TerrainMesh, welded: DisplayMesh, red: U
   return {
     mesh: {
       positions: Float64Array.from(positions), indices: Uint32Array.from(indices), triangleFeatures: Uint16Array.from(features), triangleMaterials: Uint8Array.from(materials),
-      orientation: Int8Array.from(orientation), vertexCount, triangleCount: indices.length / 3,
+      orientation: Int8Array.from(orientation), ...(welded.triangleRegion ? { triangleRegion: Uint16Array.from(regions) } : {}), vertexCount, triangleCount: indices.length / 3,
     },
     refined,
   };
@@ -366,12 +386,13 @@ class CollapseMesh {
   readonly features: number[];
   readonly materials: number[];
   readonly orientation: number[];
+  readonly regions: number[] | null;
   readonly vertexAlive: Uint8Array;
   readonly incident: number[][];
   triangleCount: number;
   constructor(readonly source: DisplayMesh) {
     this.p = Float64Array.from(source.positions); this.tri = Array.from(source.indices); this.orientation = Array.from(source.orientation);
-    this.features = Array.from(source.triangleFeatures); this.materials = Array.from(source.triangleMaterials);
+    this.features = Array.from(source.triangleFeatures); this.materials = Array.from(source.triangleMaterials); this.regions = source.triangleRegion ? Array.from(source.triangleRegion) : null;
     this.alive = new Array<number>(source.triangleCount).fill(1); this.vertexAlive = new Uint8Array(source.vertexCount).fill(1);
     this.incident = Array.from({ length: source.vertexCount }, () => []);
     for (let t = 0; t < source.triangleCount; t++) for (let k = 0; k < 3; k++) this.incident[this.tri[t * 3 + k]!]!.push(t);
@@ -423,6 +444,7 @@ class CollapseMesh {
   add(a: number, b: number, c: number, like: number): number {
     const t = this.tri.length / 3;
     this.tri.push(a, b, c); this.alive.push(1); this.features.push(this.features[like]!); this.materials.push(this.materials[like]!); this.orientation.push(this.orientation[like]!);
+    if (this.regions) this.regions.push(this.regions[like]!);
     this.incident[a]!.push(t); this.incident[b]!.push(t); this.incident[c]!.push(t);
     this.triangleCount++;
     return t;
@@ -464,7 +486,7 @@ class CollapseMesh {
   }
   compact(): DisplayMesh {
     const { source, p, tri } = this, remap = new Int32Array(source.vertexCount).fill(-1);
-    const positions: number[] = [], indices: number[] = [], features: number[] = [], materials: number[] = [], orientation: number[] = [];
+    const positions: number[] = [], indices: number[] = [], features: number[] = [], materials: number[] = [], orientation: number[] = [], regions: number[] = [];
     let vertexCount = 0;
     for (let t = 0; t < tri.length / 3; t++) {
       if (!this.alive[t]) continue;
@@ -474,10 +496,11 @@ class CollapseMesh {
         indices.push(remap[v]!);
       }
       features.push(this.features[t]!); materials.push(this.materials[t]!); orientation.push(this.orientation[t]!);
+      if (this.regions) regions.push(this.regions[t]!);
     }
     return {
       positions: Float64Array.from(positions), indices: Uint32Array.from(indices), triangleFeatures: Uint16Array.from(features), triangleMaterials: Uint8Array.from(materials),
-      orientation: Int8Array.from(orientation), vertexCount, triangleCount: indices.length / 3,
+      orientation: Int8Array.from(orientation), ...(this.regions ? { triangleRegion: Uint16Array.from(regions) } : {}), vertexCount, triangleCount: indices.length / 3,
     };
   }
 }
@@ -561,9 +584,47 @@ export function simplifyDisplayMesh(welded: DisplayMesh, locked: Uint8Array, tar
   return { mesh: editable.compact(), collapsed, maxHeightErrorM: maxError };
 }
 
+/** The cleaned canonical base every LOD and hero plan derives from. */
+export function weldAndCleanTerrainMesh(mesh: TerrainMesh, weldToleranceM = DISPLAY_LOD_OPTIONS.weldToleranceM): DisplayMesh {
+  return cleanDisplayMesh(weldTerrainMesh(mesh), weldToleranceM).mesh;
+}
+
+/** Neighbour across each triangle edge k (corners k, k+1), −1 on the border
+ * or a non-manifold edge. */
+export function triangleAdjacency(mesh: Pick<DisplayMesh, 'indices' | 'triangleCount'>): Int32Array {
+  const edges = new Map<number, number[]>();
+  for (let t = 0; t < mesh.triangleCount; t++) for (let k = 0; k < 3; k++) {
+    const key = edgeKey(mesh.indices[t * 3 + k]!, mesh.indices[t * 3 + ((k + 1) % 3)]!), list = edges.get(key);
+    if (list) list.push(t); else edges.set(key, [t]);
+  }
+  const adjacency = new Int32Array(mesh.triangleCount * 3).fill(-1);
+  for (let t = 0; t < mesh.triangleCount; t++) for (let k = 0; k < 3; k++) {
+    const list = edges.get(edgeKey(mesh.indices[t * 3 + k]!, mesh.indices[t * 3 + ((k + 1) % 3)]!))!;
+    if (list.length === 2) adjacency[t * 3 + k] = list[0] === t ? list[1]! : list[0]!;
+  }
+  return adjacency;
+}
+
+/** Reorder triangles so the base comes first, then one contiguous run per
+ * hero region in region order; vertices are untouched. */
+export function orderHeroRegionsLast(working: DisplayMesh): DisplayMesh {
+  const region = working.triangleRegion;
+  if (!region) return working;
+  const order = Array.from({ length: working.triangleCount }, (_, t) => t).sort((a, b) => region[a]! - region[b]! || a - b);
+  const indices = new Uint32Array(working.triangleCount * 3), features = new Uint16Array(working.triangleCount), materials = new Uint8Array(working.triangleCount);
+  const orientation = new Int8Array(working.triangleCount), regions = new Uint16Array(working.triangleCount);
+  order.forEach((t, i) => {
+    indices.set(working.indices.subarray(t * 3, t * 3 + 3), i * 3);
+    features[i] = working.triangleFeatures[t]!; materials[i] = working.triangleMaterials[t]!; orientation[i] = working.orientation[t]!; regions[i] = region[t]!;
+  });
+  return { ...working, indices, triangleFeatures: features, triangleMaterials: materials, orientation, triangleRegion: regions };
+}
+
 /** Pack a working mesh into the V2 artifact contract. Surface class per
- * vertex takes the highest-priority class among its triangles. */
-export function packDisplayMesh(mesh: TerrainMesh, working: DisplayMesh): PackedDisplayMesh {
+ * vertex takes the highest-priority class among its triangles. With a hero
+ * plan the triangles must already be ordered (`orderHeroRegionsLast`) and
+ * `heroRanges` names each region's run. */
+export function packDisplayMesh(mesh: TerrainMesh, working: DisplayMesh, regionIds?: readonly string[]): PackedDisplayMesh {
   const surfaceClass = new Uint8Array(working.vertexCount), rank = new Uint8Array(working.vertexCount).fill(255);
   for (let t = 0; t < working.triangleCount; t++) {
     const cls = classOf(mesh.featureKinds[working.triangleFeatures[t]!]!, semanticMaterial(working.triangleMaterials[t]!));
@@ -573,10 +634,24 @@ export function packDisplayMesh(mesh: TerrainMesh, working: DisplayMesh): Packed
       if (priority < rank[v]!) { rank[v] = priority; surfaceClass[v] = id; }
     }
   }
-  return {
+  const packed: PackedDisplayMesh = {
     basis: 'interpolated_canonical', positions: Float32Array.from(working.positions), indices: Uint32Array.from(working.indices),
     triangleFeatures: Uint16Array.from(working.triangleFeatures), surfaceClass, vertexCount: working.vertexCount, triangleCount: working.triangleCount,
   };
+  const region = working.triangleRegion;
+  if (region && regionIds) {
+    const ranges: HeroRange[] = [];
+    for (let t = 0; t < working.triangleCount; t++) {
+      const r = region[t]!;
+      if (!r) continue;
+      if (t > 0 && region[t - 1]! > r) throw new Error('Hero regions must be ordered before packing');
+      const last = ranges.at(-1);
+      if (last && last.id === regionIds[r - 1]) last.count++;
+      else ranges.push({ id: regionIds[r - 1] ?? `region-${r}`, start: t, count: 1 });
+    }
+    packed.heroRanges = ranges;
+  }
+  return packed;
 }
 
 /** Boundary segments per class of a packed mesh, using the canonical mesh's
@@ -715,14 +790,21 @@ export function compileBaseDisplayLods(mesh: TerrainMesh, options: Partial<Displ
   const raw = weldTerrainMesh(mesh);
   const cleaned = cleanDisplayMesh(raw, opts.weldToleranceM);
   const welded = cleaned.mesh;
+  if (opts.heroPlan) {
+    if (opts.heroPlan.triangleRegion.length !== welded.triangleCount) throw new Error('Hero plan does not match the cleaned canonical mesh');
+    welded.triangleRegion = opts.heroPlan.triangleRegion;
+  }
   const table = buildEdgeTable(mesh, welded);
   const targets = lodTargets(welded.triangleCount, opts);
   const importance = refinementImportance(mesh, welded, table, opts);
   const red = selectRedTriangles(welded, importance, targets.lod0);
   const refinedResult = refineDisplayMesh(mesh, welded, red);
   const simplified = simplifyDisplayMesh(welded, table.locked, targets.lod2, opts.collapseToleranceM);
-  const working: Record<DisplayLodName, DisplayMesh> = { lod0: refinedResult.mesh, lod1: welded, lod2: simplified.mesh };
-  const packed: Record<DisplayLodName, PackedDisplayMesh> = { lod0: packDisplayMesh(mesh, working.lod0), lod1: packDisplayMesh(mesh, working.lod1), lod2: packDisplayMesh(mesh, working.lod2) };
+  const regionIds = opts.heroPlan?.regionIds;
+  const working: Record<DisplayLodName, DisplayMesh> = { lod0: orderHeroRegionsLast(refinedResult.mesh), lod1: orderHeroRegionsLast(welded), lod2: orderHeroRegionsLast(simplified.mesh) };
+  const packed: Record<DisplayLodName, PackedDisplayMesh> = {
+    lod0: packDisplayMesh(mesh, working.lod0, regionIds), lod1: packDisplayMesh(mesh, working.lod1, regionIds), lod2: packDisplayMesh(mesh, working.lod2, regionIds),
+  };
 
   const grid = mesh.metricGrid;
   let residualSum = 0, residualCount = 0, residualMax = 0;

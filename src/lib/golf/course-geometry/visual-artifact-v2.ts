@@ -56,7 +56,14 @@ export interface PackedDisplayMesh {
   surfaceClass: Uint8Array;
   vertexCount: number;
   triangleCount: number;
+  /** Hero regions (Task 6): base triangles come first, then one contiguous
+   * run per region, so drawing `[0, ranges[0].start)` shows the base with
+   * every patch footprint excluded, and the full buffer shows the base
+   * covering the footprints too (the no-patch fallback). */
+  heroRanges?: HeroRange[];
 }
+/** A hero region's triangle run inside a base LOD's index buffer. */
+export interface HeroRange { id: string; start: number; count: number }
 /** §107. `positions` are the display vertices `basis` describes;
  * `canonicalHeightReference` is the canonical (S0) height under each vertex
  * and `visualOffsetMm` the render-only (V) offset above it, so canonical and
@@ -152,9 +159,11 @@ const packed = z.string().max(64_000_000);
 const sha256 = z.string().regex(/^[a-f0-9]{64}$/);
 const count = z.number().int().nonnegative();
 const boundsM = z.tuple([z.number().finite(), z.number().finite(), z.number().finite(), z.number().finite()]);
+const heroRangeWire = z.object({ id: z.string().min(1).max(160), start: count, count: z.number().int().min(1) });
 const displayMeshWire = z.object({
   basis: z.literal('interpolated_canonical'), vertexCount: z.number().int().min(3), triangleCount: z.number().int().min(1),
   positions: packed, indices: packed, triangleFeatures: packed, surfaceClass: packed,
+  heroRanges: z.array(heroRangeWire).max(256).optional(),
 });
 const heroPatchWire = z.object({
   id: z.string().min(1).max(160), kind: z.enum(HERO_PATCH_KINDS), boundsM, basis: z.enum(HERO_PATCH_BASES), edgeErrorMaxM: z.number().finite().nonnegative(),
@@ -192,6 +201,7 @@ type WireArtifact = z.infer<typeof wireSchema>;
 const packMesh = (m: PackedDisplayMesh): WireArtifact['meshes']['base']['lod0'] => ({
   basis: m.basis, vertexCount: m.vertexCount, triangleCount: m.triangleCount,
   positions: encodeBase64LE(m.positions), indices: encodeBase64LE(m.indices), triangleFeatures: encodeBase64LE(m.triangleFeatures), surfaceClass: encodeBase64LE(m.surfaceClass),
+  ...(m.heroRanges ? { heroRanges: m.heroRanges.map(r => ({ ...r })) } : {}),
 });
 const packPatch = (p: PackedHeroPatch): WireArtifact['meshes']['heroPatches'][number] => ({
   id: p.id, kind: p.kind, boundsM: p.boundsM, basis: p.basis, edgeErrorMaxM: p.edgeErrorMaxM,
@@ -245,7 +255,7 @@ function unpack<T>(path: string, text: string, Ctor: PackedCtor<T>): T {
 const unpackMesh = (path: string, m: WireArtifact['meshes']['base']['lod0']): PackedDisplayMesh => ({
   basis: m.basis, positions: unpack(`${path}.positions`, m.positions, Float32Array), indices: unpack(`${path}.indices`, m.indices, Uint32Array),
   triangleFeatures: unpack(`${path}.triangleFeatures`, m.triangleFeatures, Uint16Array), surfaceClass: unpack(`${path}.surfaceClass`, m.surfaceClass, Uint8Array),
-  vertexCount: m.vertexCount, triangleCount: m.triangleCount,
+  vertexCount: m.vertexCount, triangleCount: m.triangleCount, ...(m.heroRanges ? { heroRanges: m.heroRanges.map(r => ({ ...r })) } : {}),
 });
 const unpackPatch = (path: string, p: WireArtifact['meshes']['heroPatches'][number]): PackedHeroPatch => ({
   id: p.id, kind: p.kind, boundsM: p.boundsM, basis: p.basis,
@@ -317,6 +327,13 @@ function structuralProblems(artifact: MeridianVisualArtifactV2): string[] {
     if (lod.indices.length !== lod.triangleCount * 3 || lod.triangleFeatures.length !== lod.triangleCount) problems.push(`${name} triangles`);
     if (exceeds(lod.indices, lod.vertexCount)) problems.push(`${name} indices`);
     if (exceeds(lod.surfaceClass, SURFACE_CLASS_IDS.length)) problems.push(`${name} surface classes`);
+    // Hero runs are disjoint, ascending and inside the buffer; ids are unique per LOD.
+    let end = -1;
+    const runIds = new Set<string>();
+    for (const range of lod.heroRanges ?? []) {
+      if (range.start < Math.max(end, 0) || range.start + range.count > lod.triangleCount || runIds.has(range.id)) { problems.push(`${name} hero ranges`); break; }
+      runIds.add(range.id); end = range.start + range.count;
+    }
   }
   const { lod0, lod1, lod2 } = artifact.meshes.base;
   if (lod0.triangleCount < lod1.triangleCount || lod1.triangleCount < lod2.triangleCount) problems.push('lod order');
