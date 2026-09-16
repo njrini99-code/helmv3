@@ -281,6 +281,11 @@ python3 scripts/golf/course-geometry/build-spike-sheet.py output/playwright/cour
 # Visual artifact compiler (§96–102): one hash-gated artifact per hole + offline pack manifest
 node_modules/.bin/tsx scripts/golf/course-geometry/compile-visual-artifacts.mts --course peek-n-peak-upper \
   [--holes 1,7,11] [--out output/course-geometry/visual]
+# Review flythrough (renderer redesign §18): one hole through tee → approach →
+# green → putting in the lab with the camera transitions playing; writes the
+# video, a still + telemetry per state and a four-frame strip.
+node scripts/golf/course-geometry/capture-flythrough.cjs --hole=7 --viewport=phone \
+  --out=output/playwright/course-geometry/visual-system/flythrough
 ```
 
 Visual artifact cache layout (§101): `geometry/<siteId>/<packageHash>/visual/<styleHash>/<holeKey>.visual.json[.gz]`
