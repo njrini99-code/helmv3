@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import type { RoundTypeLike } from '@/lib/golf/one-tap/competition-policy';
 import { cacheStorageCourseAssetCache, loadCourseAssets, preflightCourseAssets, type CourseAssetCache } from '@/lib/golf/one-tap/course-assets';
 import { resolveOneTapLiveRound, type OneTapLiveRound } from '@/lib/golf/one-tap/live-round-placement';
 import { deviceLocationSource, queryLocationPermission } from '@/lib/golf/one-tap/location-source';
@@ -22,8 +23,10 @@ export interface UseOneTapLiveRoundOptions {
   policy?: PeekNPeakOneTapPolicy;
   /** Test seam; production uses the Cache API where the WebView has it. */
   cache?: CourseAssetCache | null;
+  /** Task 16: tournament and qualifier rounds lock Competition Mode on. */
+  roundType?: RoundTypeLike;
 }
-export function useOneTapLiveRound({ roundId, dbCourseId, courseName, featureFlagEnabled, policy = PEEK_N_PEAK_ONE_TAP_V1, cache }: UseOneTapLiveRoundOptions): OneTapLiveRound | null {
+export function useOneTapLiveRound({ roundId, dbCourseId, courseName, featureFlagEnabled, policy = PEEK_N_PEAK_ONE_TAP_V1, cache, roundType }: UseOneTapLiveRoundOptions): OneTapLiveRound | null {
   const productCourseId = productCourseIdForRound({ dbCourseId, courseName }, policy);
   const [live, setLive] = useState<OneTapLiveRound | null>(null);
   useEffect(() => {
@@ -36,10 +39,10 @@ export function useOneTapLiveRound({ roundId, dbCourseId, courseName, featureFla
       if (cancelled || !assets) { if (!cancelled) setLive(null); return; }
       const permission = await queryLocationPermission();
       const location = permission === 'denied' ? null : deviceLocationSource();
-      const { live: resolved } = resolveOneTapLiveRound({ roundId, roundCourseId: productCourseId, featureFlagEnabled, pkg: assets.pkg, terrainByHole: assets.terrainByHole, location, policy, readiness: preflight.status });
+      const { live: resolved } = resolveOneTapLiveRound({ roundId, roundCourseId: productCourseId, featureFlagEnabled, pkg: assets.pkg, terrainByHole: assets.terrainByHole, location, policy, readiness: preflight.status, roundType });
       if (!cancelled) setLive(resolved);
     })();
     return () => { cancelled = true; };
-  }, [roundId, featureFlagEnabled, productCourseId, policy, cache]);
+  }, [roundId, featureFlagEnabled, productCourseId, policy, cache, roundType]);
   return live;
 }

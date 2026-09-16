@@ -46,7 +46,7 @@ export function OneTapLiveHole({ live, holes, holeIndex, onNavigateToHole, onHol
       if (roundIndex >= 0) onNavigateRef.current?.(roundIndex);
     },
   }), [keyIndex, live.holeKeys, keyByRoundIndex]);
-  const round = useOneTapRound({ roundId: live.roundId, pkg: live.pkg, holeKeys: live.holeKeys, location: live.location, storage: live.storage, controlled });
+  const round = useOneTapRound({ roundId: live.roundId, pkg: live.pkg, holeKeys: live.holeKeys, location: live.location, storage: live.storage, controlled, roundType: live.roundType });
   const greenCentre = useMemo(() => holeKey ? greenCentreENU(live.pkg, holeKey) : null, [live.pkg, holeKey]);
   const adapted = useMemo<RoundShotsResult | null>(() => hole ? toRoundShots({ anchors: round.anchors, penalties: round.penalties, hole: { number: hole.number, par: hole.par, yardage: hole.yardage }, greenCentreENU: greenCentre }) : null,
     [round.anchors, round.penalties, hole, greenCentre]);

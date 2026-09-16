@@ -33,3 +33,31 @@ export function stoppingDistanceM(v0: number, slopeRadians: number, mu: number |
   const denominator = 2 * g * (mu * Math.cos(slopeRadians) - Math.sin(slopeRadians));
   return denominator > 0 ? v0 * v0 / denominator : null;
 }
+
+/** Task 16 — the round setting. Tournament and qualifier rounds play in
+ * Competition Mode and cannot opt out; a practice round may opt in. */
+export type RoundTypeLike = 'practice' | 'tournament' | 'qualifier' | (string & {}) | null | undefined;
+export interface PlayModeResolution { mode: PlayMode; locked: boolean; basis: 'round_type' | 'player_choice' | 'default' }
+export function playModeForRound(roundType: RoundTypeLike, override: PlayMode | null | undefined = null): PlayModeResolution {
+  if (roundType === 'tournament' || roundType === 'qualifier') return { mode: 'competition', locked: true, basis: 'round_type' };
+  if (override === 'competition' || override === 'practice') return { mode: override, locked: false, basis: 'player_choice' };
+  return { mode: 'practice', locked: false, basis: 'default' };
+}
+/** Shown wherever the mode is set or explained. The app never asserts that a
+ * device is permitted: a Local Rule (Model Local Rule G-5) can prohibit
+ * distance-measuring devices altogether. */
+export const LOCAL_RULE_CAVEAT = Object.freeze({
+  title: 'Competition Mode',
+  body: 'Distance and direction only — no elevation, plays-like, club or line advice. A Local Rule may still prohibit distance-measuring devices; check with the Committee before play.',
+  locked: 'On for tournament and qualifier rounds.',
+  practice: 'Practice rounds may show elevation to the green.',
+});
+/** Everything a readout could add beyond distance and direction. Each field
+ * exists only so the policy can be applied to it; a field the policy forbids
+ * is null before it reaches any component. */
+export interface ReadoutAdvice { elevationDeltaM: number | null; playsLikeM: number | null; club: string | null; line: string | null }
+export const NO_ADVICE: Readonly<ReadoutAdvice> = Object.freeze({ elevationDeltaM: null, playsLikeM: null, club: null, line: null });
+export function permittedAdvice(advice: ReadoutAdvice, policy: CompetitionPolicy): ReadoutAdvice {
+  return { elevationDeltaM: policy.elevationDelta ? advice.elevationDeltaM : null, playsLikeM: policy.playsLike ? advice.playsLikeM : null,
+    club: policy.clubRecommendation ? advice.club : null, line: policy.targetLineAdvice ? advice.line : null };
+}

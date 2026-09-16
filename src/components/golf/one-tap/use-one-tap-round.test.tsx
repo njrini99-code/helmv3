@@ -255,7 +255,7 @@ describe('One-Tap round', () => {
     // Nothing of this sits on the primary screen.
     expect(document.querySelector('[data-menu-item]')).toBeNull();
     fireEvent.click(more());
-    expect([...document.querySelectorAll('[data-menu-item]')].map(b => b.getAttribute('data-menu-item'))).toEqual(['penalty', 'delete-last', 'review', 'change-hole', 'skip', 'pause']);
+    expect([...document.querySelectorAll('[data-menu-item]')].map(b => b.getAttribute('data-menu-item'))).toEqual(['penalty', 'delete-last', 'review', 'change-hole', 'skip', 'pause', 'mode']);
     expect(item('delete-last')!.disabled).toBe(true);
     // Penalty / drop: a separate score event, then the drop is an ordinary mark.
     fireEvent.click(item('penalty')!);

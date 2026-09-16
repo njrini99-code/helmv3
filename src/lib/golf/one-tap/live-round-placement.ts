@@ -2,6 +2,7 @@ import type { ContextLayer } from '../course-geometry/context-layer';
 import type { TerrainMesh } from '../course-geometry/terrain';
 import type { CourseGeometryPackage, PointM } from '../course-geometry/types';
 import type { StorageLike, SyncTransport } from './anchor-repository';
+import type { RoundTypeLike } from './competition-policy';
 import { defaultFetch, loadCourseAssets, type CourseAssetCache, type FetchLike, type PreflightStatus } from './course-assets';
 import { largestOuterRing, ringCentroid } from './hole-distances';
 import { buildSurfacePartition } from './lie-classifier';
@@ -29,6 +30,8 @@ export interface OneTapLiveRound {
   /** Task 15 preflight verdict: `ready` plays fully offline, `partial` draws
    * un-cached holes in 2D; absent when no preflight ran (the lab). */
   readiness?: PreflightStatus;
+  /** Task 16: tournament and qualifier rounds lock Competition Mode on. */
+  roundType?: RoundTypeLike;
 }
 interface CoursePackageAssets { pkg: CourseGeometryPackage; terrainByHole?: Readonly<Record<string, TerrainMesh>>; contextLayer?: ContextLayer; geometryVersion?: string }
 export interface ResolveLiveRoundInput {
@@ -44,6 +47,7 @@ export interface ResolveLiveRoundInput {
   transport?: SyncTransport | null;
   policy?: PeekNPeakOneTapPolicy;
   readiness?: PreflightStatus;
+  roundType?: RoundTypeLike;
 }
 export function resolveOneTapLiveRound(input: ResolveLiveRoundInput): { live: OneTapLiveRound | null; eligibility: OneTapEligibility } {
   const policy = input.policy ?? PEEK_N_PEAK_ONE_TAP_V1;
@@ -53,7 +57,7 @@ export function resolveOneTapLiveRound(input: ResolveLiveRoundInput): { live: On
   if (!eligibility.eligible) return { live: null, eligibility };
   const holeKeys = [...input.pkg.holes].sort((a, b) => a.ordinal - b.ordinal).map(h => h.key);
   return { eligibility, live: { roundId: input.roundId, courseId: eligibility.courseId, geometryVersion: eligibility.geometryVersion, pkg: input.pkg, holeKeys,
-    terrainByHole: input.terrainByHole, contextLayer: input.contextLayer, location: input.location, storage: input.storage, transport: input.transport, readiness: input.readiness } };
+    terrainByHole: input.terrainByHole, contextLayer: input.contextLayer, location: input.location, storage: input.storage, transport: input.transport, readiness: input.readiness, roundType: input.roundType } };
 }
 /** The package hole for a round hole number, or null when the package does not map it (that hole stays on standard tracking). */
 export function holeKeyForRoundHole(live: Pick<OneTapLiveRound, 'pkg'>, holeNumber: number): string | null {

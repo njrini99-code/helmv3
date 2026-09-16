@@ -14,6 +14,7 @@ import { OneTapHud } from './OneTapHud';
 import { useOneTapOverflow } from './OneTapOverflow';
 import { OneTapReadout } from './OneTapReadout';
 import { useOneTap, type OneTapView } from './use-one-tap';
+import type { PlayMode } from '@/lib/golf/one-tap/competition-policy';
 import type { OneTapRoundView } from './use-one-tap-round';
 
 export interface OneTapPlayerScreenProps {
@@ -26,6 +27,8 @@ export interface OneTapPlayerScreenProps {
   storage?: StorageLike | null;
   transport?: SyncTransport | null;
   reducedMotion?: boolean;
+  /** Task 16: the mode when no round governs it (the lab); a round's setting wins. */
+  playMode?: PlayMode;
   now?: () => number;
   /** Lab and tests observe the view model without reaching into the DOM. */
   onView?: (view: OneTapView) => void;
@@ -40,11 +43,11 @@ export interface OneTapPlayerScreenProps {
 /** The course is the screen (One-Tap master plan "Player-facing design"):
  * the production HoleSceneFrame in stage presentation with the marks painted
  * on the terrain, the readout floating over it and MARK BALL beneath. */
-export function OneTapPlayerScreen({ roundId, pkg, holeKey, terrain, contextLayer, location, storage, transport, reducedMotion, now, onView, round, onUseStandardTracking, onExitRound }: OneTapPlayerScreenProps) {
+export function OneTapPlayerScreen({ roundId, pkg, holeKey, terrain, contextLayer, location, storage, transport, reducedMotion, playMode, now, onView, round, onUseStandardTracking, onExitRound }: OneTapPlayerScreenProps) {
   const scene = useMemo(() => {
     try { return buildHoleScene(pkg, holeKey, [], terrain ?? undefined, contextLayer); } catch { return null; }
   }, [pkg, holeKey, terrain, contextLayer]);
-  const view = useOneTap({ roundId, pkg, holeKey, terrain, location, storage, transport, reducedMotion, now, repo: round?.repo });
+  const view = useOneTap({ roundId, pkg, holeKey, terrain, location, storage, transport, reducedMotion, now, repo: round?.repo, playMode: round?.playMode ?? playMode });
   const cameraRef = useRef<((state: ProductionCameraState) => void) | null>(null);
   // Meridian §62 applied to the player's own mark: while the camera follows,
   // the last mark and the green complex stay on screen together (whole green

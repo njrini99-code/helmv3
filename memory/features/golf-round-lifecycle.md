@@ -801,3 +801,8 @@ flag off or no approved package — renders the tracker exactly as before
   signal keeps its course through a loss; marks stay in device storage and
   sync once when the signal returns. With no signal and an empty cache the
   round stays on standard tracking.
+- Competition Mode (task 16): the round's type decides the One-Tap policy —
+  tournament and qualifier rounds are locked to distance and direction only
+  (`src/lib/golf/one-tap/competition-policy.ts`, `playModeForRound`); a
+  practice round may opt in from the ••• sheet, which carries the Local Rule
+  caveat. Elevation to the green (practice only) is the only advice V1 shows.

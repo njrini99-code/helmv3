@@ -11,6 +11,7 @@ import { HOLE_COMPLETION_FADE_MS, holeStatus, markTerminal, observeNextTee, type
 import { buildSurfacePartition } from '@/lib/golf/one-tap/lie-classifier';
 import type { LocationSource } from '@/lib/golf/one-tap/location-source';
 import { MemoryPenaltyRepository, PENALTY_COPY, StoragePenaltyRepository, createPenaltyEvent, holeScore, livePenalties, penaltyStrokes as sumPenaltyStrokes, tombstonePenalty, unresolvedPenalties, type PenaltyEvent, type PenaltyKind, type PenaltyRepository, type PenaltyStrokes } from '@/lib/golf/one-tap/penalty-event';
+import { playModeForRound, type PlayMode, type RoundTypeLike } from '@/lib/golf/one-tap/competition-policy';
 import { newAnchorId, type ShotAnchor, type TerminalMethod } from '@/lib/golf/one-tap/shot-anchor';
 
 /** The round around the hole (One-Tap master plan "Hole completion", §19,
@@ -36,6 +37,8 @@ export interface UseOneTapRoundOptions {
   /** The host owns the hole index (the round ledger's current hole): every
    * advance goes through `onHoleIndexChange` instead of local state. */
   controlled?: { holeIndex: number; onHoleIndexChange(index: number): void } | null;
+  /** Task 16: tournament and qualifier rounds lock Competition Mode on. */
+  roundType?: RoundTypeLike;
 }
 export interface OneTapScorecardRow {
   holeKey: string; ordinal: number; par: number;
@@ -105,21 +108,26 @@ export interface OneTapRoundView {
   dismissInferred(): void;
   /** Reopens the hole the inference closed and returns to it. */
   takeBackInferred(): void;
+  /** Task 16: the round setting — locked for tournament and qualifier rounds. */
+  playMode: PlayMode;
+  playModeLocked: boolean;
+  setPlayMode(mode: PlayMode): void;
 }
 
 function defaultStorage(): StorageLike | null {
   try { return typeof window === 'undefined' ? null : window.localStorage; } catch { return null; }
 }
-interface RoundState { holeIndex: number; skipped: Record<string, string> }
+interface RoundState { holeIndex: number; skipped: Record<string, string>; playMode: PlayMode | null }
 function readRoundState(storage: StorageLike | null, roundId: string, holeCount: number): RoundState {
   try {
     const raw = storage?.getItem(ROUND_STORAGE_PREFIX + roundId);
-    const parsed = raw ? (JSON.parse(raw) as { holeIndex?: unknown; skipped?: unknown }) : null;
+    const parsed = raw ? (JSON.parse(raw) as { holeIndex?: unknown; skipped?: unknown; playMode?: unknown }) : null;
     const index = typeof parsed?.holeIndex === 'number' ? parsed.holeIndex : 0;
     const skipped: Record<string, string> = {};
     if (parsed?.skipped && typeof parsed.skipped === 'object') for (const [key, at] of Object.entries(parsed.skipped as Record<string, unknown>)) if (typeof at === 'string' && Number.isFinite(Date.parse(at))) skipped[key] = at;
-    return { holeIndex: Number.isInteger(index) && index >= 0 && index < holeCount ? index : 0, skipped };
-  } catch { return { holeIndex: 0, skipped: {} }; }
+    const playMode = parsed?.playMode === 'competition' || parsed?.playMode === 'practice' ? parsed.playMode : null;
+    return { holeIndex: Number.isInteger(index) && index >= 0 && index < holeCount ? index : 0, skipped, playMode };
+  } catch { return { holeIndex: 0, skipped: {}, playMode: null }; }
 }
 function greenCentreOf(pkg: CourseGeometryPackage, holeKey: string): PointM | null {
   const green = buildSurfacePartition(pkg, holeKey).surfaces.find(s => s.lieClass === 'green');
@@ -132,7 +140,7 @@ function teesOf(pkg: CourseGeometryPackage, holeKey: string): LocalFeature[] {
 function liveOnHole(anchors: readonly ShotAnchor[], holeKey: string): ShotAnchor[] { return anchors.filter(a => a.holeKey === holeKey && !a.deletedAt); }
 interface PendingCompletion { holeKey: string; ordinal: number; inferred: boolean; review?: boolean }
 
-export function useOneTapRound({ roundId, pkg, holeKeys, location, storage: storageOption, controlled = null }: UseOneTapRoundOptions): OneTapRoundView {
+export function useOneTapRound({ roundId, pkg, holeKeys, location, storage: storageOption, controlled = null , roundType }: UseOneTapRoundOptions): OneTapRoundView {
   const storage = storageOption === undefined ? defaultStorage() : storageOption;
   const binding = useMemo(() => ({ courseId: courseIdForSite(pkg.siteId), siteId: pkg.siteId }), [pkg.siteId]);
   const repo = useMemo<AnchorRepository>(() => storage ? new StorageAnchorRepository(storage, [roundId], binding) : new MemoryAnchorRepository(), [storage, roundId, binding]);
@@ -148,7 +156,10 @@ export function useOneTapRound({ roundId, pkg, holeKeys, location, storage: stor
     if (onHoleIndexChange) { if (value !== holeIndexRef.current) onHoleIndexChange(value); } else setOwnIndex(value);
   }, [onHoleIndexChange]);
   const [skipped, setSkipped] = useState(initial.skipped);
-  useEffect(() => { try { storage?.setItem(ROUND_STORAGE_PREFIX + roundId, JSON.stringify({ holeIndex, skipped })); } catch { /* private mode */ } }, [storage, roundId, holeIndex, skipped]);
+  const [playModeChoice, setPlayModeChoice] = useState<PlayMode | null>(initial.playMode);
+  const playModeResolution = playModeForRound(roundType, playModeChoice);
+  const setPlayMode = useCallback((mode: PlayMode) => { if (!playModeForRound(roundType).locked) setPlayModeChoice(mode); }, [roundType]);
+  useEffect(() => { try { storage?.setItem(ROUND_STORAGE_PREFIX + roundId, JSON.stringify({ holeIndex, skipped, playMode: playModeChoice })); } catch { /* private mode */ } }, [storage, roundId, holeIndex, skipped, playModeChoice]);
   const [version, setVersion] = useState(0);
   useEffect(() => repo.subscribe(() => setVersion(v => v + 1)), [repo]);
   useEffect(() => penaltyRepo.subscribe(() => setVersion(v => v + 1)), [penaltyRepo]);
@@ -264,7 +275,7 @@ export function useOneTapRound({ roundId, pkg, holeKeys, location, storage: stor
     repo, holeIndex, holeKey, holeCount: holeKeys.length, ordinal: current.ordinal, strokes: current.strokes, status: current.status, terminalMethod: current.terminalMethod, integrity: current.integrity,
     scorecard, hasNextHole: holeIndex < holeKeys.length - 1, nextHole, previousHole, reopenHole,
     anchors: holeAnchors, penalties: holePenalties, penaltyStrokes: current.penaltyStrokes, score: current.score, unresolvedPenalties: current.unresolvedPenalties, skipped: current.skipped,
-    addPenalty, removeLastPenalty, skipHole, goToHole, openReview,
+    addPenalty, removeLastPenalty, skipHole, goToHole, openReview, playMode: playModeResolution.mode, playModeLocked: playModeResolution.locked, setPlayMode,
     completion, dismissCompletion, returnToCompleted, inferredFrom, dismissInferred: dismissCompletion, takeBackInferred: returnToCompleted,
-  }), [repo, holeIndex, holeKey, holeKeys.length, current, scorecard, nextHole, previousHole, reopenHole, holeAnchors, holePenalties, addPenalty, removeLastPenalty, skipHole, goToHole, openReview, completion, dismissCompletion, returnToCompleted, inferredFrom]);
+  }), [repo, holeIndex, holeKey, holeKeys.length, current, scorecard, nextHole, previousHole, reopenHole, holeAnchors, holePenalties, addPenalty, removeLastPenalty, skipHole, goToHole, openReview, playModeResolution.mode, playModeResolution.locked, setPlayMode, completion, dismissCompletion, returnToCompleted, inferredFrom]);
 }

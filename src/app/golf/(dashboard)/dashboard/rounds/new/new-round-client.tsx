@@ -881,7 +881,7 @@ export default function NewRoundClient({ playerId, oneTapFlagEnabled = false }: 
   const resolvedCourseIdRef = useRef<string | null>(null);
   // One-Tap master plan §77: only a Peek'n Peak Upper round with the release
   // flag on and an approved package resolves a live round; everything else is null.
-  const oneTapLiveRound = useOneTapLiveRound({ roundId: savedRoundIdRef.current, dbCourseId: resolvedCourseIdRef.current, courseName: setupData.courseName, featureFlagEnabled: oneTapFlagEnabled });
+  const oneTapLiveRound = useOneTapLiveRound({ roundId: savedRoundIdRef.current, dbCourseId: resolvedCourseIdRef.current, courseName: setupData.courseName, featureFlagEnabled: oneTapFlagEnabled, roundType: setupData.roundType });
   // Cloud Course Library tee (golf_course_tees.id) when the round was started
   // from the tee picker. Cleared whenever a non-library course is chosen.
   const selectedTeeIdRef = useRef<string | null>(null);

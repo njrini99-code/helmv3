@@ -44,7 +44,7 @@ export function walkerRoute(pkg: CourseGeometryPackage, holeKey: string, nextHol
   return { routeM: nextTee ? [...points, nextTee] : points, greenAtM: routeLength(points) };
 }
 
-export function OneTapFixture({ course, holeNumber, showBar = false }: { course: CompiledCourse; holeNumber: number; showBar?: boolean }) {
+export function OneTapFixture({ course, holeNumber, showBar = false, playMode = 'practice' }: { course: CompiledCourse; holeNumber: number; showBar?: boolean; playMode?: 'practice' | 'competition' }) {
   const pkg = compiledCourses[course].pkg;
   const holeKeys = useMemo(() => pkg.holes.map(h => h.key), [pkg]);
   const roundId = `local-one-tap:${course}`;
@@ -56,7 +56,8 @@ export function OneTapFixture({ course, holeNumber, showBar = false }: { course:
   // One stable source for the screen and the round: the current hole's walker
   // feeds it, so a hole change swaps the walker without re-subscribing anyone.
   const hub = useState(() => { const listeners = new Set<(s: LocationSample) => void>(); const source: LocationSource = { kind: 'synthetic', subscribe(l) { listeners.add(l); return () => { listeners.delete(l); }; } }; return { listeners, source }; })[0];
-  const round = useOneTapRound({ roundId, pkg, holeKeys, location: hub.source });
+  // `?mode=competition` plays the lab round as a tournament (task 16).
+  const round = useOneTapRound({ roundId, pkg, holeKeys, location: hub.source, roundType: playMode === 'competition' ? 'tournament' : 'practice' });
   const hole = pkg.holes.find(h => h.key === round.holeKey) ?? pkg.holes[0]!;
   useEffect(() => {
     const controller = new AbortController();

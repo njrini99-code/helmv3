@@ -9,7 +9,10 @@ import type { CalibrationTraceSink } from '@/lib/golf/one-tap/calibration-trace'
 import { initialCameraState, nextHole, observeAnchor, observeGesture, productionStateFor, recenter, tickCamera, type CameraDirectorState, type CameraMode } from '@/lib/golf/one-tap/camera-director';
 import { localOriginFor, wgs84ToEnu } from '@/lib/golf/one-tap/geodesy';
 import { courseIdForSite } from '@/lib/golf/one-tap/peek-n-peak-policy';
-import { greenDistances, greenReadout, type GreenDistances, type GreenReadout } from '@/lib/golf/one-tap/hole-distances';
+import { largestOuterRing, ringCentroid, greenDistances, greenReadout, type GreenDistances, type GreenReadout } from '@/lib/golf/one-tap/hole-distances';
+import { competitionPolicy, permittedAdvice, NO_ADVICE, type CompetitionPolicy, type PlayMode, type ReadoutAdvice } from '@/lib/golf/one-tap/competition-policy';
+import { sampleTerrain } from '@/lib/golf/one-tap/terrain-sampler';
+import type { PointM } from '@/lib/golf/course-geometry/types';
 import { FINISH_HOLE_RULE, posteriorGreenProbability } from '@/lib/golf/one-tap/hole-lifecycle';
 import { buildSurfacePartition, exactPointInPartition, LIE_LABELS, type LieClass, type LieDisplay } from '@/lib/golf/one-tap/lie-classifier';
 import { presentLie, type LiePresentationContext, type LieRule } from '@/lib/golf/one-tap/presentation-lie';
@@ -42,6 +45,8 @@ export interface UseOneTapOptions {
   /** §71 debug/calibration only: raw windows go here and nowhere else. */
   trace?: CalibrationTraceSink | null;
   reducedMotion?: boolean;
+  /** Task 16: competition hides elevation and every kind of advice; distance and direction stay. */
+  playMode?: PlayMode;
   now?: () => number;
 }
 type SyntheticTransport = SyncTransport;
@@ -67,6 +72,9 @@ export interface OneTapView {
   distancesBasis: 'live_fix' | 'last_mark' | null;
   /** §15–16: what the readout prints — F/C/B on the approach, ON GREEN + centre on the green. */
   readout: GreenReadout | null;
+  /** Task 16: the policy in force and what it lets the readout add beyond distance and direction. */
+  policy: CompetitionPolicy;
+  advice: ReadoutAdvice;
   hasGreen: boolean;
   /** Lie of the last finalized mark on this hole. */
   lie: OneTapLie | null;
@@ -129,7 +137,7 @@ function sameCamera(a: CameraDirectorState, b: CameraDirectorState): boolean {
 }
 
 export function useOneTap(options: UseOneTapOptions): OneTapView {
-  const { roundId, pkg, holeKey, terrain, location, transport = null, reducedMotion = false } = options;
+  const { roundId, pkg, holeKey, terrain, location, transport = null, reducedMotion = false, playMode = 'practice' } = options;
   const nowRef = useRef(options.now ?? Date.now);
   nowRef.current = options.now ?? Date.now;
   const now = useCallback(() => nowRef.current(), []);
@@ -267,6 +275,18 @@ export function useOneTap(options: UseOneTapOptions): OneTapView {
     return { value: null, basis: null, onGreen: false };
   }, [green, latestFix, lastMark, origin, partition]);
   const readout = useMemo(() => distances.value ? greenReadout(distances.value, distances.onGreen) : null, [distances]);
+  const policy = useMemo(() => competitionPolicy(playMode), [playMode]);
+  const advice = useMemo<ReadoutAdvice>(() => {
+    // Elevation to the green centre from the terrain the renderer already has
+    // (practice only — the policy nulls it in competition). No plays-like,
+    // club or line: no calibrated model exists, and the policy governs them too.
+    if (!terrain || !green) return permittedAdvice(NO_ADVICE, policy);
+    const ring = largestOuterRing(green.feature), centre = ring ? ringCentroid(ring) : null;
+    const here: PointM | null = latestFix ? (([e, n]) => [e, n] as PointM)(wgs84ToEnu([latestFix.longitude, latestFix.latitude, latestFix.altitudeM], origin)) : lastMark ? [lastMark.positionENU[0], lastMark.positionENU[1]] : null;
+    if (!centre || !here) return permittedAdvice(NO_ADVICE, policy);
+    const from = sampleTerrain(terrain, here), to = sampleTerrain(terrain, centre);
+    return permittedAdvice({ ...NO_ADVICE, elevationDeltaM: from && to ? to.elevationM - from.elevationM : null }, policy);
+  }, [terrain, green, latestFix, lastMark, origin, policy]);
   const lie = useMemo(() => {
     if (!lastMark) return null;
     const primaryFeatureId = lastMark.liePosterior.find(e => e.lieClass === lastMark.primaryLie)?.featureId ?? null;
@@ -301,9 +321,9 @@ export function useOneTap(options: UseOneTapOptions): OneTapView {
   const recenterCamera = useCallback(() => { setCamera(state => recenter(state, controller?.cameraObservation() ?? null, now())); }, [controller, now]);
 
   return useMemo<OneTapView>(() => ({
-    snapshot, markers, distances: distances.value, distancesBasis: distances.basis, readout, hasGreen: !!green, lie, lastMark,
+    snapshot, markers, distances: distances.value, distancesBasis: distances.basis, readout, policy, advice, hasGreen: !!green, lie, lastMark,
     cameraMode: camera.mode, cameraState, locationKind: location?.kind ?? 'none', latestFix, player, locationQuality, syncIssue, statusToast, finishSuggested,
     canHoleOut: !!lastMark && !lastMark.terminal, canDeleteLastMark: !!lastMark && snapshot.state !== 'CAPTURE_PENDING', paused: snapshot.paused,
     markBall, undo, holeOut, deleteLastMark, pause, resume, onGesture, recenterCamera,
-  }), [snapshot, markers, distances, readout, green, lie, lastMark, camera.mode, cameraState, location, latestFix, player, locationQuality, syncIssue, statusToast, finishSuggested, markBall, undo, holeOut, deleteLastMark, pause, resume, onGesture, recenterCamera]);
+  }), [snapshot, markers, distances, readout, policy, advice, green, lie, lastMark, camera.mode, cameraState, location, latestFix, player, locationQuality, syncIssue, statusToast, finishSuggested, markBall, undo, holeOut, deleteLastMark, pause, resume, onGesture, recenterCamera]);
 }

@@ -25,7 +25,7 @@ const outDir = path.resolve(String(args['out-dir'] || `output/playwright/course-
   page.on('pageerror', error => errors.push(error.message));
   // Every capture starts from an empty hole: clear this course's local marks.
   await page.addInitScript(key => { try { localStorage.removeItem(key); } catch { /* private mode */ } }, `golfhelm-one-tap-anchors:local-one-tap:${course}`);
-  await page.goto(`${base}/?onetap=1&course=${course}&hole=${hole}`);
+  await page.goto(`${base}/?onetap=1&course=${course}&hole=${hole}${args.mode ? `&mode=${args.mode}` : ''}`);
   await page.waitForFunction(() => document.querySelector('canvas[data-terrain-state=ready]'), null, { timeout: 90000 });
   const settle = async () => {
     let previous = null;

@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import { Button } from '@/components/fairway/controls/button';
 import type { StageMenuItem } from '@/components/golf/course-geometry/HoleSceneFrame';
+import { LOCAL_RULE_CAVEAT } from '@/lib/golf/one-tap/competition-policy';
 import { PENALTY_COPY, PENALTY_KINDS, type PenaltyKind, type PenaltyStrokes } from '@/lib/golf/one-tap/penalty-event';
 import type { OneTapRoundView } from './use-one-tap-round';
 import type { OneTapView } from './use-one-tap';
@@ -13,7 +14,7 @@ import type { OneTapView } from './use-one-tap';
  * tracking. Nothing here branches the record: a penalty is a separate
  * score event (§58) whose drop is the next ordinary mark, a deleted mark
  * is a tombstone, a skip is round state. */
-export type OneTapSheet = 'penalty' | 'hole';
+export type OneTapSheet = 'penalty' | 'hole' | 'mode';
 export interface OneTapOverflow { items: StageMenuItem[]; sheet: ReactNode; open: OneTapSheet | null }
 
 export function useOneTapOverflow({ view, round, onUseStandardTracking, onExitRound }: { view: OneTapView; round: OneTapRoundView | null; onUseStandardTracking?: () => void; onExitRound?: () => void }): OneTapOverflow {
@@ -29,11 +30,12 @@ export function useOneTapOverflow({ view, round, onUseStandardTracking, onExitRo
       list.push({ key: 'skip', label: 'Skip hole', onSelect: round.skipHole, disabled: !round.hasNextHole || round.status === 'COMPLETE' });
     }
     list.push({ key: 'pause', label: view.paused ? 'Resume tracking' : 'Pause tracking', onSelect: view.paused ? view.resume : view.pause });
+    if (round) list.push({ key: 'mode', label: `Competition Mode · ${round.playMode === 'competition' ? 'on' : 'off'}`, onSelect: () => setOpen('mode') });
     if (onUseStandardTracking) list.push({ key: 'standard', label: 'Use standard tracking', onSelect: onUseStandardTracking });
     if (onExitRound) list.push({ key: 'exit', label: 'Exit round', onSelect: onExitRound });
     return list;
   }, [round, view.deleteLastMark, view.canDeleteLastMark, view.paused, view.resume, view.pause, onUseStandardTracking, onExitRound]);
-  const sheet = open && round ? open === 'penalty' ? <PenaltySheet round={round} onClose={close} /> : <HoleSheet round={round} onClose={close} /> : null;
+  const sheet = open && round ? open === 'penalty' ? <PenaltySheet round={round} onClose={close} /> : open === 'mode' ? <ModeSheet round={round} onClose={close} /> : <HoleSheet round={round} onClose={close} /> : null;
   return { items, sheet, open };
 }
 
@@ -74,5 +76,23 @@ function HoleSheet({ round, onClose }: { round: OneTapRoundView; onClose: () => 
       </Button>)}
     </div>
     <div className="flex justify-end"><Button variant="ghost" size="sm" onClick={onClose} data-slot="one-tap-sheet-close">Cancel</Button></div>
+  </div>;
+}
+/** Task 16 — the round setting and its Local Rule caveat. Tournament and
+ * qualifier rounds are locked on; a practice round toggles. */
+function ModeSheet({ round, onClose }: { round: OneTapRoundView; onClose: () => void }) {
+  const on = round.playMode === 'competition';
+  return <div className={panel} role="dialog" aria-label="Competition Mode" data-slot="one-tap-sheet" data-sheet="mode" data-play-mode={round.playMode} data-locked={round.playModeLocked}>
+    <div>
+      <p className="text-body font-semibold text-text-primary">{LOCAL_RULE_CAVEAT.title} · {on ? 'on' : 'off'}</p>
+      <p className="text-caption text-text-secondary">{LOCAL_RULE_CAVEAT.body}</p>
+      <p className="mt-1 text-caption text-text-secondary" data-slot="one-tap-mode-note">{round.playModeLocked ? LOCAL_RULE_CAVEAT.locked : LOCAL_RULE_CAVEAT.practice}</p>
+    </div>
+    <div className="flex items-center justify-between gap-2">
+      {round.playModeLocked ? <span /> : <Button variant="secondary" size="sm" onClick={() => { round.setPlayMode(on ? 'practice' : 'competition'); onClose(); }} data-slot="one-tap-mode-toggle">
+        {on ? 'Turn off for this practice round' : 'Turn on for this round'}
+      </Button>}
+      <Button variant="ghost" size="sm" onClick={onClose} data-slot="one-tap-sheet-close">Close</Button>
+    </div>
   </div>;
 }

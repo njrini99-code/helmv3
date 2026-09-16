@@ -147,7 +147,7 @@ export default function ContinueRoundClient({
   const roundId = recreatedRoundIdRef.current ?? routeRoundId;
   // One-Tap master plan §77: only a Peek'n Peak Upper round with the release
   // flag on and an approved package resolves a live round; everything else is null.
-  const oneTapLiveRound = useOneTapLiveRound({ roundId, dbCourseId: setupData.courseId ?? null, courseName: setupData.courseName, featureFlagEnabled: oneTapFlagEnabled });
+  const oneTapLiveRound = useOneTapLiveRound({ roundId, dbCourseId: setupData.courseId ?? null, courseName: setupData.courseName, featureFlagEnabled: oneTapFlagEnabled, roundType: setupData.roundType });
   /** The id a save must target at call time, not at render time. */
   const liveRoundId = useCallback(
     () => recreatedRoundIdRef.current ?? routeRoundId,

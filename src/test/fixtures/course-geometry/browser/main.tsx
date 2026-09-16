@@ -104,6 +104,6 @@ function PlayScreen() {
     <CapacitorProvider />
   </FairwayDashboardShell>;
 }
-createRoot(document.getElementById('root')!).render(params.has('onetap') ? <OneTapFixture course={compiledCourse ?? 'cacapon'} holeNumber={Number(params.get('hole') ?? 7)} showBar={params.has('bar')} /> : params.has('lab') ? <MeridianLabFixture course={compiledCourse ?? 'cacapon'} /> : params.has('play') ? <PlayScreen /> : params.has('matrix') ? <CourseMatrixFixture course={compiledCourse ?? 'cacapon'} holeNumber={Number(params.get('hole') ?? 7)} /> : sourceStudy === 'bryan' || sourceStudy === 'cardinal'
+createRoot(document.getElementById('root')!).render(params.has('onetap') ? <OneTapFixture course={compiledCourse ?? 'cacapon'} holeNumber={Number(params.get('hole') ?? 7)} showBar={params.has('bar')} playMode={params.get('mode') === 'competition' ? 'competition' : 'practice'} /> : params.has('lab') ? <MeridianLabFixture course={compiledCourse ?? 'cacapon'} /> : params.has('play') ? <PlayScreen /> : params.has('matrix') ? <CourseMatrixFixture course={compiledCourse ?? 'cacapon'} holeNumber={Number(params.get('hole') ?? 7)} /> : sourceStudy === 'bryan' || sourceStudy === 'cardinal'
   ? <SourceStudy course={sourceStudy} /> : exportPreset === 'top' || exportPreset === 'terrain' || exportPreset === 'side'
     ? <TerrainExportFixture preset={exportPreset} /> : <Screens />);
