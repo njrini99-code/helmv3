@@ -2,6 +2,8 @@
 import cacaponManifest from '../compiled-cacapon/asset-manifest.json';
 import peekManifest from '../compiled-peek-n-peak-upper/asset-manifest.json';
 import peekData from '../peek-n-peak-upper.json';
+import peekContext from '../peek-n-peak-upper-context.json';
+import { parseContextLayer, type ContextLayer } from '@/lib/golf/course-geometry/context-layer';
 import { parseTerrainMesh } from '@/lib/golf/course-geometry/terrain';
 import { parseGeometryPackage } from '@/lib/golf/course-geometry/schema';
 import { pilotPackage } from '../pilot';
@@ -18,6 +20,17 @@ export const compiledCourses = {
     url: (name: string) => new URL(`../compiled-peek-n-peak-upper/${name}`, import.meta.url) },
 };
 export type CompiledCourse = keyof typeof compiledCourses;
+/** Outside-world context layers retained beside the packages (player-view
+ * spec §8). Parsed once per course; a layer for another package is refused. */
+const contextSources: Partial<Record<CompiledCourse, unknown>> = { 'peek-n-peak-upper': peekContext };
+const contextCache = new Map<CompiledCourse, ContextLayer | null>();
+export function contextLayerFor(course: CompiledCourse): ContextLayer | null {
+  if (!contextCache.has(course)) {
+    const raw = contextSources[course];
+    contextCache.set(course, raw ? parseContextLayer(raw, compiledCourses[course].pkg) : null);
+  }
+  return contextCache.get(course) ?? null;
+}
 export function isCompiledCourse(value: string | null): value is CompiledCourse { return value != null && value in compiledCourses; }
 
 async function hash(bytes: Uint8Array<ArrayBuffer>) {

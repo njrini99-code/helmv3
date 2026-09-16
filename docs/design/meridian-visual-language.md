@@ -197,7 +197,8 @@ hash; `Math.sqrt` only, millimetre-quantised route coordinates). Cache path:
 - `meridian-v5`: perspective camera, lower sun, faceting kit (this plan V0–V1).
 - `meridian-v6`: ground material system + visual artifact (V2), bunker bowls (V3), vegetation families, forest mass and trunk bands (V4).
 - `meridian-v7`: static water, contact shade, haze, sky dome, context tree toning (V5); shot storytelling (V6).
+- `meridian-v8`: rough hierarchy (primary/secondary/outer by distance from the nearest playing surface), classified ground zones from the context layer, slope-only darkening of non-playing ground, outer-rough macro scale. Compiler `meridian-visual-compiler-2` adds `surroundDistanceCm` and the context hash gate.
 
-`styleHash()` hashes `MERIDIAN_STYLE` by value (`meridian-v7-<fnv>`); any
+`styleHash()` hashes `MERIDIAN_STYLE` by value (`meridian-v8-<fnv>`); any
 change to a value re-keys the artifact cache and appears in every capture's
 `visualStyleHash`. Bump the version string when the look changes on purpose.

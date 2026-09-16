@@ -15,7 +15,7 @@ const STYLE_LAYERS = ['macro', 'micro', 'mowing', 'boundary', 'context', 'crowns
 import type { CourseView } from '@/lib/golf/course-geometry/camera';
 import { PERSPECTIVE_FOV, TERRAIN_PRESETS, type TerrainMesh, type TerrainPose, type TerrainPreset } from '@/lib/golf/course-geometry/terrain';
 import { fitTerrainViewportCamera } from '@/lib/golf/course-geometry/terrain-viewport';
-import { compiledCourses, loadCompiledFixture, type CompiledCourse } from './fixture-assets';
+import { compiledCourses, contextLayerFor, loadCompiledFixture, type CompiledCourse } from './fixture-assets';
 
 const VIEWPORTS: Record<string, readonly [number, number]> = { phone: [390, 844], 'phone-large': [430, 932], tablet: [768, 1024], desktop: [1440, 1000] };
 const AREAS: readonly CourseView[] = ['hole', 'approach', 'green'];
@@ -74,7 +74,7 @@ export function MeridianLabFixture({ course }: { course: CompiledCourse }) {
     return () => clearInterval(timer);
   }, []);
   const [width, height] = VIEWPORTS[viewport]!;
-  const scene = useMemo(() => hole && mesh ? buildHoleScene(pkg, hole.key, [], mesh) : null, [pkg, hole, mesh]);
+  const scene = useMemo(() => hole && mesh ? buildHoleScene(pkg, hole.key, [], mesh, contextLayerFor(course) ?? undefined) : null, [pkg, hole, mesh, course]);
   useEffect(() => {
     // Lab-only: expose the compiled visual world so a capture script can diff
     // it against the Node compiler (§96 determinism across engines).

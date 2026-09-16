@@ -11,10 +11,11 @@
  * the scene in front of it. */
 import { boundaryDistance } from './display-outline';
 import { terrainHeight, type TerrainMesh } from './terrain';
+import { inRing } from './spatial';
 import type { HoleScene, LocalFeature, PointM, SurfaceKind } from './types';
-import { hexToRgb, MERIDIAN_STYLE, srgbToLinear, styleHash, type MeridianStyle } from './visual-style';
+import { hexToRgb, MERIDIAN_STYLE, srgbToLinear, styleHash, type MeridianPaletteKey, type MeridianStyle } from './visual-style';
 
-export const MERIDIAN_VISUAL_COMPILER_VERSION = 'meridian-visual-compiler-1';
+export const MERIDIAN_VISUAL_COMPILER_VERSION = 'meridian-visual-compiler-2';
 export const MERIDIAN_CODES = Object.freeze({
   mismatch: 'MERIDIAN_ARTIFACT_MISMATCH', missing: 'MERIDIAN_ARTIFACT_MISSING', contextLost: 'MERIDIAN_CONTEXT_LOST',
   shaderFailed: 'MERIDIAN_SHADER_FAILED', budgetExceeded: 'MERIDIAN_BUDGET_EXCEEDED', fitFailed: 'MERIDIAN_FIT_FAILED',
@@ -22,10 +23,22 @@ export const MERIDIAN_CODES = Object.freeze({
 });
 export type MeridianCode = typeof MERIDIAN_CODES[keyof typeof MERIDIAN_CODES];
 
-export type SurfaceClass = SurfaceKind | 'ground' | 'surround' | 'fringe';
+/** Ground zone classes the compiler paints from the context layer (outside
+ * world §10–16): each is a named, source-backed tone, never invented filler. */
+export type GroundZoneClass = 'open_field' | 'wetland' | 'parking' | 'ski_slope' | 'recreation' | 'buffer_grass' | 'native' | 'rough_secondary';
+export type SurfaceClass = SurfaceKind | 'ground' | 'surround' | 'fringe' | 'rough_outer' | 'apron' | GroundZoneClass;
 /** Compiler ribbon materials (compile-course-terrain.py): 0 field, 1 edge
- * ribbon, 2 highlight ribbon, 3 surround, 4 collar. */
-export const SURFACE_CLASS_IDS: readonly SurfaceClass[] = ['ground', 'rough', 'fairway', 'tee', 'green', 'fringe', 'surround', 'bunker', 'water', 'woods'];
+ * ribbon, 2 highlight ribbon, 3 surround, 4 collar. Ids 0–9 are the V1–V5
+ * classes and never move; 10+ are the rough hierarchy and ground zones. */
+export const SURFACE_CLASS_IDS: readonly SurfaceClass[] = ['ground', 'rough', 'fairway', 'tee', 'green', 'fringe', 'surround', 'bunker', 'water', 'woods',
+  'rough_secondary', 'rough_outer', 'native', 'apron', 'open_field', 'wetland', 'parking', 'ski_slope', 'recreation', 'buffer_grass'];
+/** Context zone classes that paint a ground tone, and the palette key each uses. */
+export const GROUND_ZONE_CLASSES: Readonly<Record<string, { surface: GroundZoneClass; palette: MeridianPaletteKey; turf: boolean }>> = Object.freeze({
+  open_field: { surface: 'open_field', palette: 'openField', turf: true }, wetland: { surface: 'wetland', palette: 'wetland', turf: true },
+  parking: { surface: 'parking', palette: 'parking', turf: false }, ski_slope: { surface: 'ski_slope', palette: 'skiSlope', turf: true },
+  recreation: { surface: 'recreation', palette: 'recreation', turf: true }, buffer_grass: { surface: 'buffer_grass', palette: 'bufferGrass', turf: true },
+  rough_native: { surface: 'native', palette: 'native', turf: true }, rough_secondary: { surface: 'rough_secondary', palette: 'roughSecondary', turf: true },
+});
 
 /** One bunker's render-only bowl (§27–30). `depthBasis` names where the depth
  * came from: today always a size-class default; a future source-supported
@@ -65,6 +78,9 @@ export interface MeridianVisualAttributes {
   bunkerDepthMm: Uint16Array;
   /** ∂depth/∂x, ∂depth/∂y in m/m × 4096 so display normals follow the bowl. */
   bunkerSlope: Int16Array;
+  /** Metres to the nearest playing surface (fairway, tee, green, fringe,
+   * surround, apron) in cm, capped at 655 m; the rough hierarchy's key. */
+  surroundDistanceCm: Uint16Array;
 }
 export const BUNKER_SLOPE_SCALE = 4096;
 export interface MeridianVisualArtifact {
@@ -84,6 +100,9 @@ export interface MeridianVisualArtifact {
   /** Seed for world-space fields: derived from the package hash so two holes
    * of the same course share one turf world and never swim under the camera. */
   seed: readonly [number, number];
+  /** Context layer the ground zones were painted from (null when the scene
+   * carried none). Part of the hash gate: a context edit recompiles. */
+  contextLayerHash: string | null;
   layers: {
     turf: { basis: 'visual_only'; macroM: readonly number[]; microM: readonly number[] };
     mowing: { basis: 'illustrative_style'; bandWidthM: number; frame: 'route_local' };
@@ -92,11 +111,15 @@ export interface MeridianVisualArtifact {
     bunkerBowl: { basis: 'visual_only'; version: 'smoothstep-bowl-v1'; depthBasis: 'visual_class'; profiles: VisualBunkerProfile[] };
     /** §42–45: interior tone is distance from the drawn shoreline, never depth. */
     water: { basis: 'visual_only'; version: 'static-fresnel-v1'; depthBasis: 'shoreline_distance'; shorelineM: number; interiorM: number; contactVertices: number };
+    /** Outside world §21: rough bands by distance from the nearest playing surface. */
+    roughHierarchy: { basis: 'visual_only'; version: 'distance-bands-v1'; secondaryM: number; outerM: number; secondaryVertices: number; outerVertices: number };
+    /** Outside world §10–16: ground tones painted from classified context zones. */
+    groundZones: { basis: 'visual_only'; version: 'context-zones-v1'; painted: number; classes: Record<string, number>; skippedUncertain: number };
   };
   attributes: MeridianVisualAttributes;
 }
 
-const ATTRIBUTE_ORDER: (keyof MeridianVisualAttributes)[] = ['albedo', 'mowingWeight', 'turfWeight', 'contextWeight', 'roughness', 'surfaceClass', 'routeST', 'boundaryDistanceCm', 'bunkerDepthMm', 'bunkerSlope'];
+const ATTRIBUTE_ORDER: (keyof MeridianVisualAttributes)[] = ['albedo', 'mowingWeight', 'turfWeight', 'contextWeight', 'roughness', 'surfaceClass', 'routeST', 'boundaryDistanceCm', 'bunkerDepthMm', 'bunkerSlope', 'surroundDistanceCm'];
 
 function fnvBytes(views: ArrayBufferView[]): string {
   let hash = 2166136261;
@@ -211,7 +234,7 @@ export function compileVisualArtifact(scene: HoleScene, mesh: TerrainMesh, style
     albedo: new Uint8Array(vertexCount * 3), mowingWeight: new Uint8Array(vertexCount), turfWeight: new Uint8Array(vertexCount),
     contextWeight: new Uint8Array(vertexCount), roughness: new Uint8Array(vertexCount), surfaceClass: new Uint8Array(vertexCount),
     routeST: new Float32Array(vertexCount * 2), boundaryDistanceCm: new Uint16Array(vertexCount), bunkerDepthMm: new Uint16Array(vertexCount),
-    bunkerSlope: new Int16Array(vertexCount * 2),
+    bunkerSlope: new Int16Array(vertexCount * 2), surroundDistanceCm: new Uint16Array(vertexCount),
   };
   const featuresById = new Map<string, LocalFeature>();
   for (const feature of scene.contextFeatures ?? []) featuresById.set(feature.id, feature);
@@ -276,6 +299,7 @@ export function compileVisualArtifact(scene: HoleScene, mesh: TerrainMesh, style
       attributes.routeST[vertex * 2] = Math.round(s * 1000) / 1000; attributes.routeST[vertex * 2 + 1] = Math.round(lateral * 1000) / 1000;
     }
   }
+  const hierarchy = compileRoughHierarchy(scene, mesh, style, attributes, featuresById, ringsFor);
   const profiles = compileBunkerBowls(mesh, style, attributes, featuresById, contextIds, ringsFor);
   const contactVertices = compileShorelines(mesh, style, attributes, featuresById, ringsFor);
   const contentHash = fnvBytes(ATTRIBUTE_ORDER.map(key => attributes[key]));
@@ -283,6 +307,7 @@ export function compileVisualArtifact(scene: HoleScene, mesh: TerrainMesh, style
     schemaVersion: 1, kind: 'meridian_visual_artifact', basis: 'visual_only', compilerVersion: MERIDIAN_VISUAL_COMPILER_VERSION,
     canonicalPackageHash: scene.packageHash, terrainHash: mesh.contentHash, physicalHoleKey: scene.physicalHoleKey,
     styleVersion: style.version, styleHash: styleHash(style), vertexCount, contentHash, seed: seedFromHash(scene.packageHash),
+    contextLayerHash: scene.contextLayerHash ?? null,
     layers: {
       turf: { basis: 'visual_only', macroM: style.turf.macro.wavelengthsM, microM: style.turf.micro.wavelengthsM },
       mowing: { basis: 'illustrative_style', bandWidthM: style.mowing.bandWidthM, frame: 'route_local' },
@@ -290,9 +315,106 @@ export function compileVisualArtifact(scene: HoleScene, mesh: TerrainMesh, style
       context: { basis: 'visual_only', roughMix: style.context.roughMix },
       bunkerBowl: { basis: 'visual_only', version: 'smoothstep-bowl-v1', depthBasis: 'visual_class', profiles },
       water: { basis: 'visual_only', version: 'static-fresnel-v1', depthBasis: 'shoreline_distance', shorelineM: style.water.shorelineM, interiorM: style.water.interiorM, contactVertices },
+      roughHierarchy: { basis: 'visual_only', version: 'distance-bands-v1', secondaryM: style.roughHierarchy.secondaryM, outerM: style.roughHierarchy.outerM,
+        secondaryVertices: hierarchy.secondary, outerVertices: hierarchy.outer },
+      groundZones: { basis: 'visual_only', version: 'context-zones-v1', painted: hierarchy.painted, classes: hierarchy.classes, skippedUncertain: hierarchy.skippedUncertain },
     },
     attributes,
   };
+}
+
+/** Rough hierarchy and ground zones (outside world §10–16, §21). Rough and
+ * unfeatured ground are never one flat green: a vertex inside a classified,
+ * source-backed context zone takes that zone's tone; everything else banks
+ * by distance from the nearest playing surface into primary, secondary and
+ * outer rough. Steeper non-playing ground darkens a little by slope alone
+ * (no aspect, so nothing directional is baked into albedo). `uncertain`
+ * zones paint nothing: an unexplained region stays honestly unexplained. */
+const PLAYING_KINDS = new Set<string>(['fairway', 'tee', 'green']);
+/** When two zones overlap, the more specific class wins. */
+const GROUND_ZONE_PRIORITY = ['parking', 'wetland', 'ski_slope', 'recreation', 'open_field', 'buffer_grass', 'rough_native', 'rough_secondary'];
+const SURROUND_SEARCH_M = 60;
+const SURFACE_CLASS_GROUND = SURFACE_CLASS_IDS.indexOf('ground'), SURFACE_CLASS_ROUGH = SURFACE_CLASS_IDS.indexOf('rough');
+const smoothstep = (a: number, b: number, x: number) => { const u = Math.min(1, Math.max(0, (x - a) / (b - a))); return u * u * (3 - 2 * u); };
+function compileRoughHierarchy(scene: HoleScene, mesh: TerrainMesh, style: MeridianStyle, attributes: MeridianVisualAttributes,
+  featuresById: Map<string, LocalFeature>, ringsFor: (id: string) => { ring: readonly PointM[]; box: Bbox }[]):
+  { secondary: number; outer: number; painted: number; classes: Record<string, number>; skippedUncertain: number } {
+  const playing = [...featuresById.values()].filter(feature => PLAYING_KINDS.has(feature.kind))
+    .sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0).flatMap(feature => ringsFor(feature.id));
+  const zones = (scene.contextZones ?? []).filter(zone => zone.render === 'ground' && zone.type !== 'LineString' && zone.class in GROUND_ZONE_CLASSES);
+  const skippedUncertain = zones.filter(zone => zone.basis === 'uncertain').length;
+  const painted = zones.filter(zone => zone.basis !== 'uncertain')
+    .sort((a, b) => (GROUND_ZONE_PRIORITY.indexOf(a.class) - GROUND_ZONE_PRIORITY.indexOf(b.class)) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
+    .map(zone => {
+      const entry = GROUND_ZONE_CLASSES[zone.class]!;
+      const polygons = zone.parts.map(rings => ({ outer: rings[0] ?? [], holes: rings.slice(1), box: ringBbox(rings[0] ?? []) })).filter(p => p.outer.length >= 4);
+      const rings = zone.parts.flat().map(ring => ({ ring, box: ringBbox(ring) }));
+      return { zone, entry, polygons, rings, albedo: hexToRgb(style.palette[entry.palette]), classId: SURFACE_CLASS_IDS.indexOf(entry.surface) };
+    });
+  const { secondaryM, secondaryBlendM, outerM, outerBlendM, slopeDarken, slopeFullAt, groundZoneBlendM } = style.roughHierarchy;
+  const roughness = style.surface.roughness;
+  const secondaryAlbedo = hexToRgb(style.palette.roughSecondary), outerAlbedo = hexToRgb(style.palette.roughOuter);
+  const secondaryId = SURFACE_CLASS_IDS.indexOf('rough_secondary'), outerId = SURFACE_CLASS_IDS.indexOf('rough_outer');
+  const v = mesh.vertices, cache = new Map<string, number>();
+  const surroundFor = (point: PointM): number => {
+    const key = `${point[0]}|${point[1]}`;
+    const cached = cache.get(key);
+    if (cached != null) return cached;
+    let best = SURROUND_SEARCH_M;
+    for (const { ring, box } of playing) {
+      if (bboxDistance(point, box) >= best) continue;
+      best = Math.min(best, boundaryDistance(point, ring));
+    }
+    cache.set(key, best);
+    return best;
+  };
+  const counts = { secondary: 0, outer: 0, painted: 0, classes: {} as Record<string, number>, skippedUncertain };
+  for (let t = 0; t < mesh.triangleFeatures.length; t++) {
+    const kind = mesh.featureKinds[mesh.triangleFeatures[t]!];
+    if (kind !== 'ground' && kind !== 'rough') continue;
+    const i = t * 9;
+    // Triangle slope from the canonical vertices: 1 − |n·z|.
+    const ux = v[i + 3]! - v[i]!, uy = v[i + 4]! - v[i + 1]!, uz = v[i + 5]! - v[i + 2]!;
+    const wx = v[i + 6]! - v[i]!, wy = v[i + 7]! - v[i + 1]!, wz = v[i + 8]! - v[i + 2]!;
+    const nx = uy * wz - uz * wy, ny = uz * wx - ux * wz, nz = ux * wy - uy * wx, length = Math.sqrt(nx * nx + ny * ny + nz * nz);
+    const slope = length > 0 ? 1 - Math.abs(nz) / length : 0;
+    const slopeShade = 1 - slopeDarken * Math.min(1, slope / slopeFullAt);
+    for (let corner = 0; corner < 3; corner++) {
+      const vertex = t * 3 + corner, point: PointM = [v[vertex * 3]!, v[vertex * 3 + 1]!];
+      // Surround and collar ribbons (materials 3/4) belong to the green
+      // complex, not to the rough hierarchy.
+      const current = attributes.surfaceClass[vertex];
+      if (current !== SURFACE_CLASS_ROUGH && current !== SURFACE_CLASS_GROUND) continue;
+      attributes.surroundDistanceCm[vertex] = Math.min(65535, Math.round(Math.min(surroundFor(point), 655) * 100));
+      // Bands read the quantised value so the class and the stored distance
+      // can never disagree by a rounding step.
+      const distance = attributes.surroundDistanceCm[vertex]! / 100;
+      const base: [number, number, number] = [attributes.albedo[vertex * 3]! / 255, attributes.albedo[vertex * 3 + 1]! / 255, attributes.albedo[vertex * 3 + 2]! / 255];
+      let albedo = base, classId = -1, shade = 1;
+      const zone = painted.find(z => z.polygons.some(p => bboxDistance(point, p.box) === 0 && inRing(point, p.outer) && !p.holes.some(hole => inRing(point, hole))));
+      if (zone) {
+        // Zone tone, blended in over a short band from the zone edge.
+        let edge = Infinity;
+        for (const { ring, box } of zone.rings) { if (bboxDistance(point, box) >= edge) continue; edge = Math.min(edge, boundaryDistance(point, ring)); }
+        albedo = mix(base, zone.albedo, Math.min(1, edge / groundZoneBlendM));
+        classId = zone.classId;
+        attributes.turfWeight[vertex] = zone.entry.turf ? 255 : 0;
+        attributes.roughness[vertex] = Math.round((roughness[zone.entry.surface] ?? roughness.ground) * 255);
+        attributes.mowingWeight[vertex] = 0;
+        shade = slopeShade;
+        counts.painted++; counts.classes[zone.entry.surface] = (counts.classes[zone.entry.surface] ?? 0) + 1;
+      } else {
+        const toSecondary = smoothstep(secondaryM - secondaryBlendM, secondaryM + secondaryBlendM, distance);
+        const toOuter = smoothstep(outerM - outerBlendM, outerM + outerBlendM, distance);
+        albedo = mix(mix(base, secondaryAlbedo, toSecondary), outerAlbedo, toOuter);
+        if (distance >= outerM) { classId = outerId; counts.outer++; shade = slopeShade; attributes.roughness[vertex] = Math.round(roughness.rough_outer * 255); }
+        else if (distance >= secondaryM) { classId = secondaryId; counts.secondary++; shade = slopeShade; attributes.roughness[vertex] = Math.round(roughness.rough_secondary * 255); }
+      }
+      if (classId >= 0) attributes.surfaceClass[vertex] = classId;
+      for (let c = 0; c < 3; c++) attributes.albedo[vertex * 3 + c] = Math.round(Math.min(1, Math.max(0, albedo[c]! * shade)) * 255);
+    }
+  }
+  return counts;
 }
 
 /** Render-only bunker bowls (§27–32). Depth is a display convention chosen by
@@ -434,7 +556,10 @@ export function assertVisualArtifact(artifact: MeridianVisualArtifact, scene: Ho
   const a = artifact.attributes;
   if (a.albedo.length !== artifact.vertexCount * 3 || a.routeST.length !== artifact.vertexCount * 2 ||
     a.bunkerSlope.length !== artifact.vertexCount * 2 ||
-    [a.mowingWeight, a.turfWeight, a.contextWeight, a.roughness, a.surfaceClass, a.boundaryDistanceCm, a.bunkerDepthMm].some(view => view.length !== artifact.vertexCount)) problems.push('attributes');
+    [a.mowingWeight, a.turfWeight, a.contextWeight, a.roughness, a.surfaceClass, a.boundaryDistanceCm, a.bunkerDepthMm, a.surroundDistanceCm].some(view => view.length !== artifact.vertexCount)) problems.push('attributes');
+  // Context gate (outside world §35): ground zones painted from another
+  // context layer, or from none when the scene now carries one, are stale.
+  if ((artifact.contextLayerHash ?? null) !== (scene.contextLayerHash ?? null)) problems.push('context');
   if (problems.length) throw new Error(`${MERIDIAN_CODES.mismatch}: ${problems.join(',')}`);
 }
 
@@ -479,7 +604,7 @@ export function parseVisualArtifact(text: string): MeridianVisualArtifact {
     albedo: bytes('albedo'), mowingWeight: bytes('mowingWeight'), turfWeight: bytes('turfWeight'), contextWeight: bytes('contextWeight'),
     roughness: bytes('roughness'), surfaceClass: bytes('surfaceClass'),
     routeST: new Float32Array(aligned('routeST')), boundaryDistanceCm: new Uint16Array(aligned('boundaryDistanceCm')), bunkerDepthMm: new Uint16Array(aligned('bunkerDepthMm')),
-    bunkerSlope: new Int16Array(aligned('bunkerSlope')),
+    bunkerSlope: new Int16Array(aligned('bunkerSlope')), surroundDistanceCm: new Uint16Array(aligned('surroundDistanceCm')),
   };
   const { encoding: _encoding, attributes: _attributes, ...header } = raw;
   const artifact = { ...(header as Omit<MeridianVisualArtifact, 'attributes'>), attributes };

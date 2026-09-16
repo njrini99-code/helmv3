@@ -5,10 +5,11 @@
  * surface condition; it is art direction only. The prose reference is
  * docs/design/meridian-visual-language.md. */
 
-export const MERIDIAN_STYLE_VERSION = 'meridian-v7';
+export const MERIDIAN_STYLE_VERSION = 'meridian-v8';
 
 export type MeridianPaletteKey = 'ground' | 'rough' | 'fairway' | 'green' | 'tee' | 'bunker' | 'water' | 'woods' |
-  'surround' | 'fringe' | 'tree' | 'treeLight' | 'treeHighlight' | 'treeShadow' | 'sandEdge' | 'sandHighlight';
+  'surround' | 'fringe' | 'tree' | 'treeLight' | 'treeHighlight' | 'treeShadow' | 'sandEdge' | 'sandHighlight' |
+  'roughSecondary' | 'roughOuter' | 'native' | 'apron' | 'openField' | 'wetland' | 'parking' | 'skiSlope' | 'recreation' | 'bufferGrass';
 
 /** sRGB surface albedos, separate from Fairway's application UI tokens. No
  * directional illumination is baked into these colours (§56 hierarchy:
@@ -19,6 +20,10 @@ export const MERIDIAN_PALETTE: Readonly<Record<MeridianPaletteKey, string>> = Ob
   water: '#3B6C77', woods: '#29482B', tree: '#59852E', treeLight: '#6D9D37',
   treeHighlight: '#83B542', treeShadow: '#29482B',
   sandEdge: '#B3A079', sandHighlight: '#F0E4C7',
+  // Rough hierarchy (outside-world §21) and classified ground zones (§10–12,
+  // §16): every non-playing region gets a named tone instead of one green.
+  roughSecondary: '#5A7638', roughOuter: '#526D35', native: '#7B8748', apron: '#86AA4E',
+  openField: '#6C8A44', wetland: '#4E6A44', parking: '#7E7C77', skiSlope: '#6E8E4B', recreation: '#6F8E48', bufferGrass: '#65813E',
 });
 
 export const MERIDIAN_STYLE = Object.freeze({
@@ -50,7 +55,17 @@ export const MERIDIAN_STYLE = Object.freeze({
   /** §23–24: per-surface roughness (MeshStandard) and collar blend. */
   surface: Object.freeze({ roughness: Object.freeze({ green: .78, tee: .88, fairway: .92, fringe: .93, surround: .95, rough: .97, ground: .97,
     // Water keeps a rough, glare-free surface until the V5 static-Fresnel material.
-    woods: 1, bunker: .82, water: .32 }), collarMix: .5, woodsUnderstoryMix: .78 }),
+    woods: 1, bunker: .82, water: .32,
+    rough_secondary: .97, rough_outer: .98, native: .98, apron: .92, open_field: .97, wetland: .9, parking: .9, ski_slope: .97, recreation: .95, buffer_grass: .96 }),
+    collarMix: .5, woodsUnderstoryMix: .78 }),
+  /** Outside-world §21: rough is a hierarchy by distance from the nearest
+   * playing surface, never one flat green. Primary rough within `secondaryM`,
+   * secondary to `outerM`, outer beyond; albedo blends over `±blendM` so no
+   * band edge lands on one pixel. Outer rough carries a larger macro field and
+   * steep non-playing ground darkens a little (slope only, never aspect, so no
+   * directional light is baked into albedo). */
+  roughHierarchy: Object.freeze({ secondaryM: 10, secondaryBlendM: 3, outerM: 28, outerBlendM: 6, outerMacroScale: 1.6,
+    slopeDarken: .12, slopeFullAt: .45, groundZoneBlendM: 1.5 }),
   /** §53: context features keep their real surface but drop toward rough and
    * lose saturation; nearer context loses less than far context. */
   context: Object.freeze({ roughMix: .58, desaturate: .15, treeDesaturate: .3, treeDarken: .08, weightNear: .6, weightFar: .4 }),
@@ -110,6 +125,28 @@ export const MERIDIAN_STYLE = Object.freeze({
   /** §50: analytic contact shading under crowns and forest mass, computed
    * from the seeded placement. No screen-space AO at the base tier. */
   canopyShade: Object.freeze({ amount: .16, crownRadiusScale: 1.15, massRadiusScale: .95, massWeight: .8 }),
+  /** Outside-world context objects (player-view spec §13–14, §25): muted
+   * mineral ribbons with a darker shoulder, restrained flat-roofed
+   * structures, faint lines for fences and lifts. Widths/heights here are
+   * fallbacks behind the zone's own attributes. */
+  contextObjects: Object.freeze({
+    ribbons: Object.freeze({
+      cart_path: Object.freeze({ color: '#B6AF9F', shoulder: '#8F8A7C', widthM: 2.5, roughness: .88 }),
+      service_path: Object.freeze({ color: '#A4A197', shoulder: '#7F7D75', widthM: 3.5, roughness: .9 }),
+      road: Object.freeze({ color: '#86847F', shoulder: '#6A6864', widthM: 6, roughness: .92 }),
+      crossing: Object.freeze({ color: '#B6AF9F', shoulder: '#8F8A7C', widthM: 2.5, roughness: .88 }),
+      bridge: Object.freeze({ color: '#9A8F80', shoulder: '#6E655A', widthM: 3, roughness: .85 }),
+      stream: Object.freeze({ color: '#3E5F66', shoulder: '#4E6A58', widthM: 1.5, roughness: .45 }),
+      drainage: Object.freeze({ color: '#4F6A55', shoulder: '#566E52', widthM: 1, roughness: .8 }),
+    }),
+    structures: Object.freeze({
+      building: Object.freeze({ wall: '#D3CBBE', roof: '#8C8377', heightM: 4.5 }),
+      clubhouse: Object.freeze({ wall: '#E1D8C7', roof: '#7E7468', heightM: 7 }),
+      maintenance: Object.freeze({ wall: '#C4BFB4', roof: '#7A7670', heightM: 5 }),
+    }),
+    lines: Object.freeze({ fence: 1.2, wall: 1, lift_line: 6 }),
+    lineColor: '#5C5A56',
+  }),
 });
 /** Structural (widened) style type so a variant style, such as a lab
  * experiment or a test, can carry different values under the same shape. */

@@ -1,4 +1,5 @@
 import type { ShotRecord } from '@/lib/types/golf';
+import type { ContextLayer } from './context-layer';
 import { buildHoleScene } from './build-scene';
 import { decorateSceneWithDisplayTrajectories } from './display-trajectories';
 import { normalizeLiveShot } from './normalize';
@@ -11,6 +12,8 @@ export interface TrackingGeometry {
   package: CourseGeometryPackage;
   holeKeys: readonly string[];
   terrainByHole?: Readonly<Record<string, TerrainMesh>>;
+  /** Outside-world context zones, hash-locked to `package` (display only). */
+  contextLayer?: ContextLayer;
   /** Test/demo-only display decoration. Production scenes already receive the
    * evidence-aware adapter below. */
   decorateScene?: (scene: HoleScene, shots: readonly ShotRecord[]) => HoleScene;
@@ -21,7 +24,7 @@ export function buildTrackingHoleScene(geometry: TrackingGeometry | undefined, h
   const holeKey = geometry?.holeKeys[holeIndex];
   if (!geometry || !holeKey) return null;
   try {
-    const scene = buildHoleScene(geometry.package, holeKey, shots.map(normalizeLiveShot), geometry.terrainByHole?.[holeKey]);
+    const scene = buildHoleScene(geometry.package, holeKey, shots.map(normalizeLiveShot), geometry.terrainByHole?.[holeKey], geometry.contextLayer);
     const decorated = decorateSceneWithDisplayTrajectories(scene);
     return geometry.decorateScene?.(decorated, shots) ?? decorated;
   } catch {

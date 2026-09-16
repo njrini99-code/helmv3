@@ -1,6 +1,7 @@
 'use client';
 
 import { createRoot } from 'react-dom/client';
+import type { TrackingGeometry } from '@/lib/golf/course-geometry/tracking-scene';
 import { useEffect, useState } from 'react';
 import '@/app/globals.css';
 import '@/styles/design-tokens.css';
@@ -23,7 +24,7 @@ import { SourceStudy } from './source-study';
 import { CourseMatrixFixture } from './course-matrix';
 import { PlayRoundFixture } from './play-round';
 import { MeridianLabFixture } from './meridian-lab';
-import { compiledCourses, isCompiledCourse, loadCompiledFixture } from './fixture-assets';
+import { compiledCourses, isCompiledCourse, loadCompiledFixture, contextLayerFor } from './fixture-assets';
 
 const params = new URLSearchParams(location.search);
 const courseParam = params.get('course');
@@ -34,7 +35,7 @@ const winchester = courseParam === 'winchester';
 const compiledCourse = isCompiledCourse(courseParam) ? courseParam : winchester ? null : 'cacapon';
 const currentPackage = compiledCourse ? compiledCourses[compiledCourse].pkg : parseGeometryPackage(winchesterData);
 const terrain = compiledCourse === 'peek-n-peak-upper' ? null : parseTerrainMesh(winchester ? winchesterTerrainData : terrainData, currentPackage);
-const geometry = { package: currentPackage, holeKeys: currentPackage.holes.map(h => h.key), terrainByHole: terrain ? { [terrain.physicalHoleKey]: terrain } : {},
+const geometry: TrackingGeometry = { package: currentPackage, holeKeys: currentPackage.holes.map(h => h.key), terrainByHole: terrain ? { [terrain.physicalHoleKey]: terrain } : {},
   ...(compiledCourse === 'cacapon' ? { decorateScene: addInteractivePreviewTrajectories } : {}) };
 const currentHoleKey = currentPackage.holes[6]!.key;
 const holes: RoundHole[] = currentPackage.holes.map(h => {
@@ -74,7 +75,7 @@ function Screens() {
     const controller = new AbortController();
     loadCompiledFixture(currentHoleKey, controller.signal, compiledCourse).then(mesh => {
       if (!controller.signal.aborted) {
-        setActiveGeometry({ ...geometry, terrainByHole: { [mesh.physicalHoleKey]: mesh } });
+        setActiveGeometry({ ...geometry, terrainByHole: { [mesh.physicalHoleKey]: mesh }, contextLayer: contextLayerFor(compiledCourse) ?? undefined });
         setCompiledState('ready');
       }
     }).catch(() => { if (!controller.signal.aborted) setCompiledState('unavailable'); });

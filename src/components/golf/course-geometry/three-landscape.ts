@@ -6,6 +6,7 @@ import { terrainHeight, type TerrainMesh } from '@/lib/golf/course-geometry/terr
 import type { HoleScene, LocalFeature, PointM } from '@/lib/golf/course-geometry/types';
 import { assertVisualArtifact, BUNKER_SLOPE_SCALE, compileVisualArtifact, linearAlbedo, type MeridianVisualArtifact } from '@/lib/golf/course-geometry/visual-artifact';
 import { MERIDIAN_PALETTE, MERIDIAN_STYLE, MERIDIAN_STYLE_HASH, MERIDIAN_STYLE_VERSION, type MeridianPaletteKey, type MeridianStyleOverrides } from '@/lib/golf/course-geometry/visual-style';
+import { buildThreeContext } from './three-context';
 import { createTreeAssetAtlas, type TreeCrownAsset } from './tree-assets';
 
 export type ThreeLandscapePalette = Readonly<Record<MeridianPaletteKey, THREE.ColorRepresentation>>;
@@ -33,7 +34,9 @@ export interface ThreeLandscape {
   artifact: MeridianVisualArtifact;
   artifactSource: 'supplied' | 'runtime';
   counts: { terrainTriangles: number; trees: number; crownInstances: number; crownTriangles: number; totalTriangles: number; canopyBatches: number; drawCalls: number;
-    massLobes: number; trunksVisible: number; families: Record<string, number> };
+    massLobes: number; trunksVisible: number; families: Record<string, number>;
+    /** Outside-world context objects drawn from the hash-locked layer. */
+    contextRibbons: number; contextStructures: number; contextLines: number; contextZones: number };
 }
 
 const VEGETATION = MERIDIAN_STYLE.vegetation;
@@ -108,16 +111,17 @@ attribute float golfContextWeight;
 attribute float golfRoughness;
 attribute float golfSurfaceClass;
 attribute float golfBoundaryDistance;
+attribute float golfSurroundDistance;
 attribute vec2 golfRouteST;
 attribute float golfCanopyShade;
 varying vec2 vGolfWorldXY;
 varying vec2 vGolfRouteST;
 varying vec4 vGolfWeights;
-varying vec3 vGolfSurface;`).replace('#include <begin_vertex>', `#include <begin_vertex>
+varying vec4 vGolfSurface;`).replace('#include <begin_vertex>', `#include <begin_vertex>
 vGolfWorldXY = (modelMatrix * vec4(position, 1.0)).xy;
 vGolfRouteST = golfRouteST;
 vGolfWeights = vec4(golfMowingWeight, golfTurfWeight, golfContextWeight, golfBoundaryDistance);
-vGolfSurface = vec3(golfRoughness, golfSurfaceClass, golfCanopyShade);`);
+vGolfSurface = vec4(golfRoughness, golfSurfaceClass, golfCanopyShade, golfSurroundDistance);`);
     shader.fragmentShader = shader.fragmentShader.replace('#include <common>', `#include <common>
 uniform vec2 golfSeed;
 uniform vec4 golfAmplitudes;
@@ -129,7 +133,7 @@ uniform float golfShadeAmount;
 varying vec2 vGolfWorldXY;
 varying vec2 vGolfRouteST;
 varying vec4 vGolfWeights;
-varying vec3 vGolfSurface;`).replace('#include <color_fragment>', `#include <color_fragment>
+varying vec4 vGolfSurface;`).replace('#include <color_fragment>', `#include <color_fragment>
 {
   vec2 golfP = vGolfWorldXY + golfSeed;
   float golfMowingWeight = vGolfWeights.x, golfTurfWeight = vGolfWeights.y, golfContextWeight = vGolfWeights.z, golfBoundary = vGolfWeights.w;
@@ -140,6 +144,9 @@ varying vec3 vGolfSurface;`).replace('#include <color_fragment>', `#include <col
     + sin(dot(golfP, vec2(-0.32, 0.95) * ${k(m1)}) + 1.3)
     + sin(dot(golfP, vec2(0.61, -0.79) * ${k(m2)}) + 2.1)) / 3.0;
   golfMacro *= golfGreen ? ${style.turf.greenMacroScale.toFixed(3)} : 1.0;
+  // Outer rough (outside world §21) carries a larger macro field than the
+  // rough beside the play line, by distance from the nearest playing surface.
+  golfMacro *= mix(1.0, ${style.roughHierarchy.outerMacroScale.toFixed(3)}, smoothstep(${(style.roughHierarchy.outerM - style.roughHierarchy.outerBlendM).toFixed(3)}, ${(style.roughHierarchy.outerM + style.roughHierarchy.outerBlendM).toFixed(3)}, vGolfSurface.w));
   // Micro turf response (§19): 0.25–1.5 m, filtered by screen-space
   // derivative so it fades before it can shimmer at distance.
   float golfMicroPhase = dot(golfP, vec2(0.71, 0.70) * ${k(u0)});
@@ -238,7 +245,7 @@ export function buildThreeLandscape(
   const vertexCount = mesh.vertices.length / 3, albedo = linearAlbedo(artifact), attributes = artifact.attributes;
   const colors = new Float32Array(mesh.vertices.length), mowing = new Float32Array(vertexCount), turf = new Float32Array(vertexCount);
   const contextWeight = new Float32Array(vertexCount), roughness = new Float32Array(vertexCount), surfaceClass = new Float32Array(vertexCount);
-  const boundary = new Float32Array(vertexCount), routeST = new Float32Array(vertexCount * 2);
+  const boundary = new Float32Array(vertexCount), routeST = new Float32Array(vertexCount * 2), surround = new Float32Array(vertexCount);
   // Render-only bunker bowl (§28): depth and its gradient per display vertex.
   const bowlDepth = new Float32Array(vertexCount), bowlSlope = new Float32Array(vertexCount * 2);
   for (let t = 0; t < mesh.triangleFeatures.length; t++) {
@@ -258,6 +265,7 @@ export function buildThreeLandscape(
       roughness[vertex] = attributes.roughness[from]! / 255;
       surfaceClass[vertex] = attributes.surfaceClass[from]!;
       boundary[vertex] = attributes.boundaryDistanceCm[from]! / 100;
+      surround[vertex] = attributes.surroundDistanceCm[from]! / 100;
       routeST[vertex * 2] = attributes.routeST[from * 2]!; routeST[vertex * 2 + 1] = attributes.routeST[from * 2 + 1]!;
       bowlDepth[vertex] = attributes.bunkerDepthMm[from]! / 1000;
       bowlSlope[vertex * 2] = attributes.bunkerSlope[from * 2]! / BUNKER_SLOPE_SCALE; bowlSlope[vertex * 2 + 1] = attributes.bunkerSlope[from * 2 + 1]! / BUNKER_SLOPE_SCALE;
@@ -276,6 +284,7 @@ export function buildThreeLandscape(
   terrainGeometry.setAttribute('golfRoughness', new THREE.BufferAttribute(roughness, 1));
   terrainGeometry.setAttribute('golfSurfaceClass', new THREE.BufferAttribute(surfaceClass, 1));
   terrainGeometry.setAttribute('golfBoundaryDistance', new THREE.BufferAttribute(boundary, 1));
+  terrainGeometry.setAttribute('golfSurroundDistance', new THREE.BufferAttribute(surround, 1));
   terrainGeometry.setAttribute('golfRouteST', new THREE.BufferAttribute(routeST, 2));
   terrainGeometry.setAttribute('golfBunkerDepth', new THREE.BufferAttribute(bowlDepth, 1));
   geometries.add(terrainGeometry);
@@ -509,9 +518,14 @@ export function buildThreeLandscape(
 
   const familyCounts: Record<string, number> = {};
   for (const tree of trees) familyCounts[tree.familyId] = (familyCounts[tree.familyId] ?? 0) + 1;
+  // Outside-world context objects (paths, structures, lines) ride in the same
+  // group so exaggeration and disposal flow through one landscape.
+  const context = buildThreeContext(scene, mesh);
+  group.add(context.group);
   const counts: ThreeLandscape['counts'] = { terrainTriangles: mesh.triangleFeatures.length, trees: trees.length,
     crownInstances: trees.length, crownTriangles: 0, totalTriangles: 0, canopyBatches: crownBatches.length, drawCalls: 0,
-    massLobes: lobes.length, trunksVisible: 0, families: familyCounts };
+    massLobes: lobes.length, trunksVisible: 0, families: familyCounts,
+    contextRibbons: context.counts.ribbons, contextStructures: context.counts.structures, contextLines: context.counts.lines, contextZones: context.counts.zones };
   const massTriangles = trunkTriangleCount(massGeometry) * lobes.length;
   const updateTriangleCounts = () => {
     counts.crownTriangles = crownBatches.reduce((total, batch) => total + batch.asset.triangleCounts[batch.lod] * batch.trees.length, 0);
@@ -619,6 +633,7 @@ export function buildThreeLandscape(
       batch.mesh.instanceMatrix.needsUpdate = true;
       batch.mesh.computeBoundingBox(); batch.mesh.computeBoundingSphere();
     }
+    context.setExaggeration(exaggeration, referenceElevationM);
     lastExaggeration = exaggeration; lastReference = referenceElevationM;
   }
   setExaggeration(1, mesh.referenceElevationM);
@@ -629,6 +644,7 @@ export function buildThreeLandscape(
     dispose() {
       if (disposed) return;
       disposed = true;
+      context.dispose();
       for (const instance of instances) instance.dispose();
       treeAtlas.dispose();
       for (const geometry of geometries) geometry.dispose();

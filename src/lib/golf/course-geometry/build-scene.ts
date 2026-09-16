@@ -3,11 +3,12 @@ import { localFeature } from './schema';
 import { auditContinuity } from './normalize';
 import { fitCamera, projectToLocal } from './project';
 import type { TerrainMesh } from './terrain';
+import { contextZonesForHole, type ContextLayer } from './context-layer';
 import { greenReferencePoint, nominalGreenPin, reconstructHoleEvidence } from './reconstruct';
 
 /** The same physical coordinates and bounded evidence reconstruction feed
  * review, compact, strip and export. Camera fitting never changes evidence. */
-export function buildHoleScene(pkg: CourseGeometryPackage, holeKey: string, evidence: readonly ShotEvidence[] = [], terrain?: TerrainMesh): HoleScene {
+export function buildHoleScene(pkg: CourseGeometryPackage, holeKey: string, evidence: readonly ShotEvidence[] = [], terrain?: TerrainMesh, contextLayer?: ContextLayer): HoleScene {
   const hole = pkg.holes.find(h => h.key === holeKey);
   if (!hole) throw new Error('Unknown physical hole');
   const features = pkg.features.filter(f => hole.featureIds.includes(f.id)).map(f => localFeature(f, pkg));
@@ -34,6 +35,9 @@ export function buildHoleScene(pkg: CourseGeometryPackage, holeKey: string, evid
   return {
     ...(terrain?.geometryHash === pkg.contentHash && terrain.physicalHoleKey === holeKey ? { terrain,
       contextFeatures: pkg.features.filter(f => terrain.contextFeatureIds?.includes(f.id) && !hole.featureIds.includes(f.id)).map(f => localFeature(f, pkg)),
+      // The context layer is already hash-locked by its parser; it only ever
+      // rides along with a terrain of the same package.
+      ...(contextLayer && contextLayer.packageHash === pkg.contentHash ? { contextZones: contextZonesForHole(contextLayer, pkg, holeKey, terrain), contextLayerHash: contextLayer.contentHash } : {}),
     } : {}),
     overlayKind: events.some(e => e.regions?.length) ? 'estimated_regions' : 'unresolved',
     packageHash: pkg.contentHash, physicalHoleKey: holeKey, algorithmVersion: 'manual-bounds-v1',

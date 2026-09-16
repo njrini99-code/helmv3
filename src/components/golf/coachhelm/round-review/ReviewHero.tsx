@@ -35,6 +35,7 @@
  * ========================================================================== */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import type { ContextLayer } from '@/lib/golf/course-geometry/context-layer';
 import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
@@ -209,7 +210,7 @@ export interface ReviewHoleMeta {
 }
 
 export interface ReviewHeroProps {
-  geometry?: { package: CourseGeometryPackage; holeKeys: readonly string[]; terrainByHole?: Readonly<Record<string, TerrainMesh>> };
+  geometry?: { package: CourseGeometryPackage; holeKeys: readonly string[]; terrainByHole?: Readonly<Record<string, TerrainMesh>>; contextLayer?: ContextLayer };
   totalScore: number;
   scoreToPar: number;
   courseDateLine: string;
@@ -340,7 +341,7 @@ export function ReviewHero({
     if (!geometry) return map;
     geometry.holeKeys.forEach((key, index) => {
       const ledger = (shotsByHole?.get(index + 1) ?? []).map(shot => normalizePersistedShot({ ...shot, putt_details: { miss_tags: shot.miss_tags } }));
-      try { map.set(index + 1, buildHoleScene(geometry.package, key, ledger, geometry.terrainByHole?.[key])); }
+      try { map.set(index + 1, buildHoleScene(geometry.package, key, ledger, geometry.terrainByHole?.[key], geometry.contextLayer)); }
       catch { /* Optional geometry cannot block review. */ }
     });
     return map;

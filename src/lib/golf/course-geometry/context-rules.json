@@ -1,0 +1,234 @@
+[
+ {
+  "tag": "golf",
+  "value": "cartpath",
+  "class": "cart_path",
+  "geometry": "line",
+  "widthM": 2.5
+ },
+ {
+  "tag": "golf",
+  "value": "path",
+  "class": "cart_path",
+  "geometry": "line",
+  "widthM": 2.5
+ },
+ {
+  "tag": "building",
+  "value": "commercial",
+  "class": "clubhouse",
+  "geometry": "area",
+  "heightM": 7.0
+ },
+ {
+  "tag": "building",
+  "value": "industrial",
+  "class": "maintenance",
+  "geometry": "area",
+  "heightM": 5.0
+ },
+ {
+  "tag": "building",
+  "value": "*",
+  "class": "building",
+  "geometry": "area",
+  "heightM": 4.5
+ },
+ {
+  "tag": "man_made",
+  "value": "bridge",
+  "class": "bridge",
+  "geometry": "any",
+  "widthM": 3.0
+ },
+ {
+  "tag": "barrier",
+  "value": "wall",
+  "class": "wall",
+  "geometry": "line",
+  "heightM": 1.0
+ },
+ {
+  "tag": "barrier",
+  "value": "retaining_wall",
+  "class": "wall",
+  "geometry": "line",
+  "heightM": 1.2
+ },
+ {
+  "tag": "barrier",
+  "value": "fence",
+  "class": "fence",
+  "geometry": "line",
+  "heightM": 1.2
+ },
+ {
+  "tag": "amenity",
+  "value": "parking",
+  "class": "parking",
+  "geometry": "area"
+ },
+ {
+  "tag": "aerialway",
+  "value": "*",
+  "class": "lift_line",
+  "geometry": "line",
+  "widthM": 1.0
+ },
+ {
+  "tag": "leisure",
+  "value": "pitch",
+  "class": "recreation",
+  "geometry": "area"
+ },
+ {
+  "tag": "leisure",
+  "value": "miniature_golf",
+  "class": "recreation",
+  "geometry": "area"
+ },
+ {
+  "tag": "highway",
+  "value": "residential",
+  "class": "road",
+  "geometry": "line",
+  "widthM": 6.0
+ },
+ {
+  "tag": "highway",
+  "value": "unclassified",
+  "class": "road",
+  "geometry": "line",
+  "widthM": 5.5
+ },
+ {
+  "tag": "highway",
+  "value": "tertiary",
+  "class": "road",
+  "geometry": "line",
+  "widthM": 6.5
+ },
+ {
+  "tag": "highway",
+  "value": "secondary",
+  "class": "road",
+  "geometry": "line",
+  "widthM": 7.0
+ },
+ {
+  "tag": "highway",
+  "value": "primary",
+  "class": "road",
+  "geometry": "line",
+  "widthM": 8.0
+ },
+ {
+  "tag": "highway",
+  "value": "service",
+  "class": "service_path",
+  "geometry": "line",
+  "widthM": 3.5
+ },
+ {
+  "tag": "highway",
+  "value": "track",
+  "class": "service_path",
+  "geometry": "line",
+  "widthM": 3.0
+ },
+ {
+  "tag": "highway",
+  "value": "path",
+  "class": "cart_path",
+  "geometry": "line",
+  "widthM": 2.0
+ },
+ {
+  "tag": "highway",
+  "value": "footway",
+  "class": "cart_path",
+  "geometry": "line",
+  "widthM": 1.8
+ },
+ {
+  "tag": "waterway",
+  "value": "stream",
+  "class": "stream",
+  "geometry": "line",
+  "widthM": 1.5
+ },
+ {
+  "tag": "waterway",
+  "value": "ditch",
+  "class": "drainage",
+  "geometry": "line",
+  "widthM": 1.0
+ },
+ {
+  "tag": "waterway",
+  "value": "drain",
+  "class": "drainage",
+  "geometry": "line",
+  "widthM": 1.0
+ },
+ {
+  "tag": "natural",
+  "value": "wetland",
+  "class": "wetland",
+  "geometry": "area"
+ },
+ {
+  "tag": "natural",
+  "value": "wood",
+  "class": "forest_mass",
+  "geometry": "area"
+ },
+ {
+  "tag": "natural",
+  "value": "scrub",
+  "class": "understory",
+  "geometry": "area"
+ },
+ {
+  "tag": "natural",
+  "value": "grassland",
+  "class": "open_field",
+  "geometry": "area"
+ },
+ {
+  "tag": "landuse",
+  "value": "forest",
+  "class": "forest_mass",
+  "geometry": "area"
+ },
+ {
+  "tag": "landuse",
+  "value": "meadow",
+  "class": "open_field",
+  "geometry": "area"
+ },
+ {
+  "tag": "landuse",
+  "value": "farmland",
+  "class": "open_field",
+  "geometry": "area"
+ },
+ {
+  "tag": "landuse",
+  "value": "grass",
+  "class": "buffer_grass",
+  "geometry": "area"
+ },
+ {
+  "tag": "landuse",
+  "value": "recreation_ground",
+  "class": "recreation",
+  "geometry": "area"
+ },
+ {
+  "tag": "landuse",
+  "value": "winter_sports",
+  "class": "ski_slope",
+  "geometry": "area"
+ }
+]

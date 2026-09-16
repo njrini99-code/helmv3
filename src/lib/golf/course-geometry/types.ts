@@ -1,5 +1,6 @@
 /** Stage 0–2 display contracts. No field here is a new player measurement. */
 import type { TerrainMesh } from './terrain';
+import type { LocalContextZone } from './context-layer';
 export type PointM = readonly [number, number];
 export type PositionWgs84 = readonly [number, number];
 export type Direction8 = 'short' | 'short_left' | 'left' | 'long_left' |
@@ -157,6 +158,11 @@ export interface HoleScene {
   features: LocalFeature[];
   /** Neighboring source geometry for landscape context; excluded from shot inference. */
   contextFeatures?: LocalFeature[];
+  /** Outside-world zones (paths, structures, woods, water, open land) from the
+   * hash-locked context layer; display and orientation only. */
+  contextZones?: LocalContextZone[];
+  /** Content hash of the context layer the zones came from (artifact gate). */
+  contextLayerHash?: string;
   events: DiagramEvent[];
   /** Never supplied by the course compiler or player-record reconstruction. */
   illustrativePreviewTrajectories?: readonly IllustrativePreviewTrajectory[];

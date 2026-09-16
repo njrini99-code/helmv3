@@ -141,3 +141,71 @@ describe('Meridian visual artifact (§6, §96–102, §106.1)', () => {
     expect(mown).toBeGreaterThan(100); expect(faded).toBeGreaterThan(0); expect(deep).toBeGreaterThan(0);
   });
 });
+
+describe('Rough hierarchy and ground zones (outside world §10–16, §21)', () => {
+  const style = MERIDIAN_STYLE, bands = style.roughHierarchy;
+  it('banks rough by distance from the nearest playing surface and blends the tones', () => {
+    const artifact = compileVisualArtifact(scene, mesh), a = artifact.attributes;
+    const playing = scene.features.filter(f => f.kind === 'fairway' || f.kind === 'tee' || f.kind === 'green').flatMap(f => f.parts.flat());
+    let primary = 0, secondary = 0, outer = 0;
+    for (let t = 0; t < mesh.triangleFeatures.length; t++) {
+      const kind = mesh.featureKinds[mesh.triangleFeatures[t]!];
+      for (let corner = 0; corner < 3; corner++) {
+        const vertex = t * 3 + corner, cls = SURFACE_CLASS_IDS[a.surfaceClass[vertex]!], d = a.surroundDistanceCm[vertex]! / 100;
+        if (kind !== 'rough' && kind !== 'ground' || cls === 'surround' || cls === 'fringe') { expect(d).toBe(0); expect(['rough_secondary', 'rough_outer']).not.toContain(cls); continue; }
+        const x = mesh.vertices[vertex * 3]!, y = mesh.vertices[vertex * 3 + 1]!;
+        const truth = Math.min(60, playing.reduce((min, ring) => Math.min(min, boundaryDistance([x, y], ring)), Infinity));
+        expect(d).toBeCloseTo(truth, 1);
+        if (d >= bands.outerM) { outer++; expect(cls).toBe('rough_outer'); expect(a.roughness[vertex]! / 255).toBeCloseTo(style.surface.roughness.rough_outer, 1); }
+        else if (d >= bands.secondaryM) { secondary++; expect(cls).toBe('rough_secondary'); }
+        else { primary++; expect(cls).toBe(kind); }
+      }
+    }
+    expect(primary).toBeGreaterThan(0); expect(secondary).toBeGreaterThan(0); expect(outer).toBeGreaterThan(0);
+    expect(artifact.layers.roughHierarchy).toMatchObject({ basis: 'visual_only', secondaryM: bands.secondaryM, outerM: bands.outerM, secondaryVertices: secondary, outerVertices: outer });
+    expect(artifact.layers.groundZones).toMatchObject({ basis: 'visual_only', painted: 0, classes: {}, skippedUncertain: 0 });
+    expect(artifact.contextLayerHash).toBeNull();
+  });
+  it('paints classified ground zones from the context layer, skips uncertain ones, and gates on the layer hash', () => {
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (let i = 0; i < mesh.vertices.length; i += 3) { minX = Math.min(minX, mesh.vertices[i]!); maxX = Math.max(maxX, mesh.vertices[i]!); minY = Math.min(minY, mesh.vertices[i + 1]!); maxY = Math.max(maxY, mesh.vertices[i + 1]!); }
+    const box = (x0: number, y0: number, x1: number, y1: number) => [[[[x0, y0], [x1, y0], [x1, y1], [x0, y1], [x0, y0]]]] as [number, number][][][];
+    const zone = (id: string, cls: string, basis: 'source' | 'uncertain', parts: [number, number][][][]) => ({
+      id, class: cls, type: 'Polygon' as const, parts, basis, reviewed: false, fidelity: 'medium' as const, render: 'ground' as const, attributes: {},
+    });
+    const midX = (minX + maxX) / 2, midY = (minY + maxY) / 2;
+    const contextZones = [
+      zone('z-parking', 'parking', 'source', box(minX, minY, midX, midY)),
+      zone('z-field', 'open_field', 'source', box(midX, minY, maxX, midY)),
+      zone('z-unsure', 'ski_slope', 'uncertain', box(minX, midY, maxX, maxY)),
+    ];
+    const withZones = { ...scene, contextZones: contextZones as never, contextLayerHash: 'a'.repeat(64) };
+    const artifact = compileVisualArtifact(withZones, mesh), a = artifact.attributes, plain = compileVisualArtifact(scene, mesh);
+    expect(artifact.contextLayerHash).toBe('a'.repeat(64));
+    expect(artifact.contentHash).not.toBe(plain.contentHash);
+    expect(artifact.layers.groundZones.skippedUncertain).toBe(1);
+    expect(artifact.layers.groundZones.painted).toBeGreaterThan(0);
+    expect(Object.keys(artifact.layers.groundZones.classes).sort()).toEqual(['open_field', 'parking']);
+    const parking = new Set<number>(), field = new Set<number>();
+    for (let t = 0; t < mesh.triangleFeatures.length; t++) {
+      const kind = mesh.featureKinds[mesh.triangleFeatures[t]!];
+      for (let corner = 0; corner < 3; corner++) {
+        const vertex = t * 3 + corner, cls = SURFACE_CLASS_IDS[a.surfaceClass[vertex]!];
+        const x = mesh.vertices[vertex * 3]!, y = mesh.vertices[vertex * 3 + 1]!;
+        if (cls === 'parking') { parking.add(vertex); expect(kind === 'rough' || kind === 'ground').toBe(true); expect(x <= midX && y <= midY).toBe(true); expect(a.turfWeight[vertex]).toBe(0); }
+        if (cls === 'open_field') { field.add(vertex); expect(x >= midX && y <= midY).toBe(true); expect(a.turfWeight[vertex]).toBe(255); }
+        // The uncertain zone painted nothing: its vertices keep the distance bands.
+        if ((kind === 'rough' || kind === 'ground') && y > midY + 1) expect(['rough', 'ground', 'rough_secondary', 'rough_outer', 'surround', 'fringe']).toContain(cls);
+        expect(cls).not.toBe('ski_slope');
+      }
+    }
+    expect(parking.size + field.size).toBe(artifact.layers.groundZones.painted);
+    // Hash gate: an artifact compiled without the context layer must not serve a scene that carries one, and vice versa.
+    expect(() => assertVisualArtifact(plain, withZones, mesh)).toThrow(/context/);
+    expect(() => assertVisualArtifact(artifact, scene, mesh)).toThrow(/context/);
+    assertVisualArtifact(artifact, withZones, mesh);
+    const parsed = parseVisualArtifact(serializeVisualArtifact(artifact));
+    expect(parsed.contentHash).toBe(artifact.contentHash);
+    expect(Array.from(parsed.attributes.surroundDistanceCm)).toEqual(Array.from(a.surroundDistanceCm));
+  });
+});

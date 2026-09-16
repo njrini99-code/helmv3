@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
 import { buildThreeLandscape, DEFAULT_THREE_LANDSCAPE_PALETTE } from './three-landscape';
 import { MERIDIAN_STYLE } from '@/lib/golf/course-geometry/visual-style';
+import { compileVisualArtifact, linearAlbedo, SURFACE_CLASS_IDS } from '@/lib/golf/course-geometry/visual-artifact';
 import { installTerrainDebugView } from './terrain-debug';
 import { pilotPackage, pilotScene } from '@/test/fixtures/course-geometry/pilot';
 import source from '@/test/fixtures/course-geometry/cacapon-07-terrain.json';
@@ -148,8 +149,13 @@ describe('Three landscape source and rendering invariants', () => {
       }
       expect(Array.from(geometry.getAttribute('color').array)).toEqual(colors);
     }
-    const ground = new THREE.Color(DEFAULT_THREE_LANDSCAPE_PALETTE.ground);
-    expect(colors.slice(0, 3)).toEqual([ground.r, ground.g, ground.b].map(value => Math.fround(value)));
+    // No playing surface anywhere in this scene, so bare ground is outer rough
+    // (outside world §21): the outer tone, darkened a little by the slope.
+    const artifact = compileVisualArtifact(scene, mesh);
+    expect(SURFACE_CLASS_IDS[artifact.attributes.surfaceClass[0]!]).toBe('rough_outer');
+    const outer = new THREE.Color(MERIDIAN_STYLE.palette.roughOuter);
+    expect(colors.slice(0, 3)).toEqual(Array.from(linearAlbedo(artifact).subarray(0, 3)).map(value => Math.fround(value)));
+    expect(colors[0]).toBeLessThan(outer.r); expect(colors[0]).toBeGreaterThan(outer.r * .85);
     expect(mesh).toEqual(original);
     expect(landscape.counts.terrainTriangles).toBe(2);
     expect(landscape.counts.trees).toBe(0);
@@ -374,7 +380,8 @@ describe('Three landscape source and rendering invariants', () => {
     const scene = { ...pilotScene('cacapon-07', false), features: [square('canopy', 'woods', 0, 100)] };
     const landscape = buildThreeLandscape(scene, slopeMesh());
     const owned = new Set<THREE.BufferGeometry | THREE.Material | THREE.InstancedMesh>();
-    for (const child of landscape.group.children as THREE.Mesh[]) {
+    // Context objects live in a nested group; walk one level into it.
+    for (const child of landscape.group.children.flatMap(c => c instanceof THREE.Group ? c.children : [c]) as THREE.Mesh[]) {
       owned.add(child.geometry);
       for (const material of Array.isArray(child.material) ? child.material : [child.material]) owned.add(material);
       if (child instanceof THREE.InstancedMesh) owned.add(child);
