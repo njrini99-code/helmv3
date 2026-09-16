@@ -698,7 +698,11 @@ played green is a mown field with its own faint 2.4 m diagonal bands
 (`mowing.green`) that fade out at hole-view distance. Canaries `v15-roofs`,
 `v16-landform` and `v17-green-mowing` (96 captures each, 0 errors, all within
 budget) are recorded in the outside-world tracker; the 40° sun test (master
-§47) was run and 45° kept.
+§47) was run and 45° kept. The same horizon march then gained a fourth
+channel, relative sky exposure, and the rough hierarchy takes a DEM
+shelter/exposure tint (`MERIDIAN_STYLE.terrainTone`, fidelity §35 "visible
+terrain response": hollows richer, knolls and embankments warmer, albedo
+only, `material.userData.shading.terrainTone`, canary `v18-terrain-tone`).
 
 ### Four-course local source trial (September 13, 2026)
 

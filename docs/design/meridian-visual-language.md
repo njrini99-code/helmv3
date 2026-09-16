@@ -274,6 +274,27 @@ from V1; V4 changes what stands on each centre.
   march samples geometrically (1, 2, 3, 4, 6, 9 … nodes), about 130 ms once
   per hole build for hole 7's 339 × 291 grid, and the texture grows from RG
   to RGBA half floats (790 KB for that grid).
+- **Terrain response (fidelity §35).** The DEM texture's fourth channel
+  carries relative sky *exposure*, the mirror of occlusion from the same
+  horizon march (`relativeSkyRelief`): where every ray's ground falls away
+  below the node's tangent plane (a knoll, a convex shoulder, a fill
+  embankment) the node is exposed. The rough hierarchy and the plain ground
+  class, never fairway, green, tee, bunker, water or context, take two
+  albedo tints from those channels (`MERIDIAN_STYLE.terrainTone`): sheltered
+  ground leans richer and cooler (× .7, .94, 1.06), exposed ground warmer
+  and drier (× 1.2, 1.03, .68). Each channel subtracts its noise floor first
+  (.03 / .004: a 2 m DEM scores a little occlusion everywhere, about .03 at
+  the median on Peek'n Peak), scales by its own gain (10 / 36: exposure is
+  structurally the smaller number, because a crest scores by how far the
+  ground has dropped at the end of the ray) and caps at .8. Measured on
+  Peek'n Peak 7 (lab desktop Terrain, zero tolerance against
+  `terrainTone=0`): 18 % of pixels move more than 4 levels, none more than
+  14; the swale below the pond and the low ground inside the dogleg go a
+  richer green, the bunker mounds, the green pad's edges and the road
+  embankment go olive. The lab's `terrainTone=` override scales both gains
+  (0 removes it) and `material.userData.shading.terrainTone` records the
+  basis (`visual_only`, evidence `dem_relative_sky_view`). It says where the
+  land shelters or sheds, never what grows there.
 - **One gradient source (compiler v4).** The per-vertex `sourceNormals`
   array is no longer emitted (opt-in `--source-normals`): it duplicated the
   metric grid's gradient and cost 37 % of every hole's gzipped payload
@@ -435,7 +456,7 @@ it, and `--max` turns the fraction into an exit code for a gate.
 - `meridian-v9` (fidelity §39–40, same version, new hash; compiler `meridian-visual-compiler-5`, `green-complex-v2`): slope-evidenced green run-offs — within `greenComplex.runoff.reachM` of the hole's own green, rough or surround ground whose smoothed canonical normal falls away from the green (downhill · away ≥ `awayDot`) at ≥ `slopeMin` becomes a short-grass `runoff` surface class (apron tone and roughness, mowing off), full strength at `slopeFull`; flat or rising ground gets none.
 - `meridian-v9`: bunker families (pot / greenside / fairway scale depth and lip), overhang shadow inside the sun-facing rim, ground contact shade beside building footprints and along path shoulders (`contextContact`). Compiler `meridian-visual-compiler-4` adds `family` to bunker profiles and the `contextContact` layer.
 - `meridian-v8` (fidelity pass, same version, new hash): green complex (`greenComplex` style block: derived apron neck, green/collar edge lip, pad-setting shade), bunker lip/edge variation/floor macro, fairway edge types (`fairwayEdge`), first-cut band, water roughness .52 and calmer sun/sky fill, desaturated fairway/green. Compiler `meridian-visual-compiler-3` adds `lipLiftMm` and the `greenComplex` / `fairwayEdges` layers.
-- `meridian-v9` (overnight 2026-09-16/17, same version, new hashes): below-horizon sky tone (`sky.below`), hipped roof archetype for small convex footprints (`contextObjects.roof`), DEM landform occlusion (`landform`, the DEM texture's third channel, indirect light only) and subtle diagonal green mowing (`mowing.green`). Compiler `meridian-visual-compiler-7` (`context-contact-v3`: cut/fill end caps and junction blending) and `meridian-visual-compiler-8` (the played green is a mown field). Terrain compiler `course-terrain-v4` drops the per-vertex normals array.
+- `meridian-v9` (overnight 2026-09-16/17, same version, new hashes): below-horizon sky tone (`sky.below`), hipped roof archetype for small convex footprints (`contextObjects.roof`), DEM landform occlusion (`landform`, the DEM texture's third channel, indirect light only), subtle diagonal green mowing (`mowing.green`) and the DEM shelter/exposure terrain tone on the rough (`terrainTone`, the texture's fourth channel). Compiler `meridian-visual-compiler-7` (`context-contact-v3`: cut/fill end caps and junction blending) and `meridian-visual-compiler-8` (the played green is a mown field). Terrain compiler `course-terrain-v4` drops the per-vertex normals array.
 
 `styleHash()` hashes `MERIDIAN_STYLE` by value (`meridian-v8-<fnv>`); any
 change to a value re-keys the artifact cache and appears in every capture's

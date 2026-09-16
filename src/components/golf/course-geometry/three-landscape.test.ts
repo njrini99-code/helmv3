@@ -577,9 +577,11 @@ describe('DEM slope shading (per-fragment source normals)', () => {
     expect(relief.texture.type).toBe(THREE.HalfFloatType);
     expect(relief.texture.format).toBe(THREE.RGBAFormat);
     expect(relief.texture.flipY).toBe(false);
-    expect(relief.texture.userData).toEqual({ basis: 'source_gradient', spacingM: 2, columns: 3, rows: 3, occlusion: { basis: 'dem_relative_sky_view', radiusM: 120, directions: 8 } });
-    // A plane occludes nothing relative to its own tangent plane.
+    expect(relief.texture.userData).toEqual({ basis: 'source_gradient', spacingM: 2, columns: 3, rows: 3, occlusion: { basis: 'dem_relative_sky_view', radiusM: 120, directions: 8 },
+      exposure: { basis: 'dem_relative_sky_view', radiusM: 120, directions: 8, channel: 'a' } });
+    // A plane neither occludes nor exposes relative to its own tangent plane.
     expect(THREE.DataUtils.fromHalfFloat(data[(1 * 3 + 1) * 4 + 2]!)).toBe(0);
+    expect(THREE.DataUtils.fromHalfFloat(data[(1 * 3 + 1) * 4 + 3]!)).toBe(0);
   });
 
   it('scores relative sky occlusion in a swale and none on a uniform slope', () => {
@@ -602,6 +604,28 @@ describe('DEM slope shading (per-fragment source normals)', () => {
     // The uniform fall along y never scores: the horizon along y is the plane itself.
     expect(occlusion(10, 3)).toBeCloseTo(occlusion(10, 17), 2);
     expect(relief.texture.userData.occlusion).toEqual({ basis: 'dem_relative_sky_view', radiusM: 90, directions: 8 });
+    // Exposure is the mirror and never fires here: the floor sheds nothing,
+    // and the rim sits on a uniform flank whose downhill ray is its own plane.
+    const exposure = (c: number, r: number) => THREE.DataUtils.fromHalfFloat(data[(r * columns + c) * 4 + 3]!);
+    expect(exposure(10, 10)).toBe(0);
+    expect(exposure(20, 10)).toBe(0);
+  });
+
+  it('scores relative sky exposure on a knoll and none on its skirt', () => {
+    // 21 × 21 nodes at 10 m: a cone 6 m high at the centre falling to the
+    // plain 60 m out (a knoll), on a level plain.
+    const columns = 21, rows = 21, spacingM = 10, heightsM: (number | null)[] = [];
+    for (let r = 0; r < rows; r++) for (let c = 0; c < columns; c++) heightsM.push(100 + Math.max(0, 6 - .1 * Math.hypot((c - 10) * spacingM, (r - 10) * spacingM)));
+    const grid = { originM: [0, 0] as [number, number], spacingM, columns, rows, heightsM };
+    const relief = buildDemSlopeTexture(grid, { radiusM: 90, directions: 8 });
+    const data = relief.texture.image.data as Uint16Array;
+    const channel = (c: number, r: number, k: number) => THREE.DataUtils.fromHalfFloat(data[(r * columns + c) * 4 + k]!);
+    // The crest sheds in every direction and is occluded by nothing.
+    expect(channel(10, 10, 3)).toBeGreaterThan(.05);
+    expect(channel(10, 10, 2)).toBe(0);
+    // The plain beyond the skirt sees the knoll rise: occluded, not exposed.
+    expect(channel(3, 10, 2)).toBeGreaterThan(0);
+    expect(channel(3, 10, 3)).toBe(0);
   });
 
   it('shades the lit terrain from the DEM slope texture when the mesh carries a metric grid', () => {
@@ -623,6 +647,15 @@ describe('DEM slope shading (per-fragment source normals)', () => {
     expect((shader.uniforms.golfLandform!.value as THREE.Vector2).toArray()).toEqual([MERIDIAN_STYLE.landform.gain, MERIDIAN_STYLE.landform.max]);
     landscape.setStyleOverrides({ landform: 0 });
     expect((shader.uniforms.golfLandform!.value as THREE.Vector2).x).toBe(0);
+    // Terrain response (fidelity §35): the sheltered/exposed tints sit in the
+    // colour block on the rough classes; the lab override scales the gain.
+    expect(shader.fragmentShader).toContain('golfShelter = min(golfTerrainTone.z, max(0.0, golfToneDem.z - 0.0300) * golfTerrainTone.x)');
+    expect(shader.fragmentShader).toContain('golfExposure = min(golfTerrainTone.z, max(0.0, golfToneDem.w - 0.0040) * golfTerrainTone.y)');
+    expect(shader.fragmentShader.indexOf('golfToneDem')).toBeLessThan(shader.fragmentShader.indexOf('#include <normal_fragment_begin>'));
+    expect((shader.uniforms.golfTerrainTone!.value as THREE.Vector3).toArray()).toEqual([...MERIDIAN_STYLE.terrainTone.gain, MERIDIAN_STYLE.terrainTone.max]);
+    landscape.setStyleOverrides({ terrainTone: 0 });
+    expect((shader.uniforms.golfTerrainTone!.value as THREE.Vector3).toArray()).toEqual([0, 0, MERIDIAN_STYLE.terrainTone.max]);
+    expect(material.userData.shading.terrainTone).toMatchObject({ basis: 'visual_only', evidence: 'dem_relative_sky_view', floor: [.03, .004], gain: [10, 36], max: MERIDIAN_STYLE.terrainTone.max });
     expect(material.userData.shading.landform).toEqual({ basis: 'dem_relative_sky_view', radiusM: 120, gain: MERIDIAN_STYLE.landform.gain, max: MERIDIAN_STYLE.landform.max });
     // The water ripple perturbs the DEM normal, not the vertex normal.
     expect(shader.fragmentShader.indexOf('golfDemSlope')).toBeLessThan(shader.fragmentShader.indexOf('golfRipple'));

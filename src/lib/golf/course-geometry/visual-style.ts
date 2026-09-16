@@ -228,6 +228,19 @@ export const MERIDIAN_STYLE = Object.freeze({
    * indirect (sky) light away, so broad depressions read as hollows under the
    * same sun. Derived from the DEM only: no landform is invented. */
   landform: Object.freeze({ radiusM: 120, directions: 8, gain: 4, max: .35 }),
+  /** Fidelity §35 "visible terrain response" for the rough hierarchy: the
+   * same DEM relative sky view tints the rough by shelter and exposure.
+   * Sheltered ground (swale floors, hollows: sky occlusion) leans richer and
+   * cooler; exposed ground (knolls, convex shoulders: the ground falls away
+   * in every direction) leans warmer and drier. Multiplicative albedo tints
+   * on the rough classes only: never on the playing surfaces, water or
+   * context. Each channel subtracts its `floor` (the 2 m DEM's own texture
+   * scores a little occlusion everywhere, about .03 at the median on Peek'n
+   * Peak, and a trace of exposure), scales by its `gain` (exposure is
+   * structurally the smaller signal: a crest scores by how far the ground
+   * has dropped at the end of the ray) and caps at `max`. Derived from the
+   * DEM alone: it says where the land shelters or sheds, never what grows. */
+  terrainTone: Object.freeze({ sheltered: [.7, .94, 1.06] as const, exposed: [1.2, 1.03, .68] as const, floor: [.03, .004] as const, gain: [10, 36] as const, max: .8 }),
   /** Outside-world context objects (player-view spec §13–14, §25): muted
    * mineral ribbons with a darker shoulder, restrained flat-roofed
    * structures, faint lines for fences and lifts. Widths/heights here are
@@ -284,6 +297,8 @@ export interface MeridianStyleOverrides {
   water?: number; haze?: number; shade?: number;
   /** Fidelity §5–7: DEM landform occlusion strength (0 removes it). */
   landform?: number;
+  /** Fidelity §35: DEM shelter/exposure tint strength on the rough (0 removes it). */
+  terrainTone?: number;
   /** §95 lab toggle: render-only bunker bowl depth scale (0 = flat canonical rim). */
   bowl?: number;
 }
