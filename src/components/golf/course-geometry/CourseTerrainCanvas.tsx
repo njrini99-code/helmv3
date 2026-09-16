@@ -9,13 +9,16 @@ import type { HoleScene } from '@/lib/golf/course-geometry/types';
 import type { MeridianVisualArtifact } from '@/lib/golf/course-geometry/visual-artifact';
 import type { MeridianStyleOverrides } from '@/lib/golf/course-geometry/visual-style';
 import type { MeridianRenderQuality } from '@/lib/golf/course-geometry/render-quality';
+import type { SceneMarkers } from '@/lib/golf/course-geometry/scene-markers';
 
 /** The Three backend is loaded only for an expanded terrain scene. Static
  * review/filmstrip SVG does not import Three or initialize a GPU context. */
-export function CourseTerrainCanvas({ scene, mesh, camera, width, height, fallback, onUnavailable, selectedShotNumber, runtimeRef, debugView, visualArtifact, styleOverrides, quality }: {
+export function CourseTerrainCanvas({ scene, mesh, camera, width, height, fallback, onUnavailable, selectedShotNumber, runtimeRef, debugView, visualArtifact, styleOverrides, quality, markers }: {
   scene: HoleScene; mesh: TerrainMesh; camera: TerrainCamera; width: number; height: number; fallback: ReactNode;
   onUnavailable?: () => void; selectedShotNumber?: number;
   runtimeRef?: RefObject<TerrainRuntimeController | null>;
+  /** Player-marked positions (One-Tap) painted in the runtime's annotation SVG. */
+  markers?: SceneMarkers | null;
   debugView?: TerrainDebugView;
   /** Cached Meridian visual world for this hole; compiled at runtime when absent. */
   visualArtifact?: MeridianVisualArtifact;
@@ -26,7 +29,7 @@ export function CourseTerrainCanvas({ scene, mesh, camera, width, height, fallba
 }) {
   const canvas = useRef<HTMLCanvasElement>(null), overlay = useRef<SVGSVGElement>(null);
   const runtime = useRef<ThreeTerrainRuntime | null>(null);
-  const latest = useRef({ scene, camera, width, height, selectedShotNumber });
+  const latest = useRef({ scene, camera, width, height, selectedShotNumber, markers });
   const onFailure = useRef(onUnavailable);
   const id = useId();
   // Accepted coordinates are immutable under their hash. Review eligibility
@@ -36,13 +39,14 @@ export function CourseTerrainCanvas({ scene, mesh, camera, width, height, fallba
   const state = status?.key === geometryKey && status.mesh === mesh ? status.state : 'loading';
 
   useLayoutEffect(() => {
-    latest.current = { scene, camera, width, height, selectedShotNumber };
+    latest.current = { scene, camera, width, height, selectedShotNumber, markers };
     onFailure.current = onUnavailable;
     const active = runtime.current;
     if (!active) return;
     active.setEvidence(scene, selectedShotNumber);
+    active.setMarkers(markers ?? null);
     active.setCamera(camera, width, height);
-  }, [scene, selectedShotNumber, camera, width, height, onUnavailable]);
+  }, [scene, selectedShotNumber, camera, width, height, onUnavailable, markers]);
 
   useEffect(() => {
     const element = canvas.current, annotations = overlay.current;
@@ -65,6 +69,7 @@ export function CourseTerrainCanvas({ scene, mesh, camera, width, height, fallba
         selectedShotNumber: input.selectedShotNumber, debugView, visualArtifact, styleOverrides, quality, onUnavailable: unavailable });
       runtime.current = owned;
       if (runtimeRef) runtimeRef.current = owned;
+      owned.setMarkers(latest.current.markers ?? null);
       await owned.ready;
       if (cancelled) { owned.dispose(); return; }
       if (element.dataset.terrainState === 'ready') setStatus({ key: geometryKey, mesh, state: 'ready' });

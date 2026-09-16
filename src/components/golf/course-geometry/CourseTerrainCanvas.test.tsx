@@ -18,7 +18,7 @@ beforeEach(() => {
   vi.mocked(createThreeTerrainRuntime).mockReset().mockImplementation(options => {
     let resolve!: () => void;
     const ready = new Promise<void>(done => { resolve = done; });
-    const controller: ThreeTerrainRuntime = { ready, setCamera: vi.fn(), pick: vi.fn(() => null), setEvidence: vi.fn(), dispose: vi.fn() };
+    const controller: ThreeTerrainRuntime = { ready, setCamera: vi.fn(), pick: vi.fn(() => null), setEvidence: vi.fn(), setMarkers: vi.fn(), dispose: vi.fn() };
     builds.push({ controller, complete() { options.canvas.dataset.terrainState = 'ready'; resolve(); }, fail: options.onUnavailable });
     return controller;
   });

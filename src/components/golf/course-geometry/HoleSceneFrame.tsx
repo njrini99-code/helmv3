@@ -13,13 +13,14 @@ import type { HoleScene, ShotEvidence } from '@/lib/golf/course-geometry/types';
 import { puttingFocusCamera, puttingPlanCamera, type SceneView } from '@/lib/golf/course-geometry/camera';
 import { CourseHoleScene, sceneCamera } from './CourseHoleScene';
 import { CourseTerrainProfile } from './CourseTerrainProfile';
-import { PERSPECTIVE_FOV, PRODUCTION_CAMERA_STATES, productionCameraState, TERRAIN_PRESETS, projectTerrainPoint, terrainHeight, type TerrainFitProfile, type TerrainPose, type TerrainPreset } from '@/lib/golf/course-geometry/terrain';
+import { PERSPECTIVE_FOV, PRODUCTION_CAMERA_STATES, productionCameraState, TERRAIN_PRESETS, projectTerrainPoint, terrainHeight, type ProductionCameraState, type TerrainFitProfile, type TerrainPose, type TerrainPreset } from '@/lib/golf/course-geometry/terrain';
 
 import { fitTerrainViewportCamera } from '@/lib/golf/course-geometry/terrain-viewport';
 import type { TerrainRuntimeController } from '@/lib/golf/course-geometry/runtime-controller';
 import { deriveShotCameraTarget } from '@/lib/golf/course-geometry/shot-camera-target';
 import { interpolateCameraMotion } from '@/lib/golf/course-geometry/camera-motion';
 import type { TerrainDebugView } from './terrain-debug';
+import type { SceneMarkers } from '@/lib/golf/course-geometry/scene-markers';
 
 interface CameraMemory { pose: TerrainPose; fitPreset: TerrainFitProfile }
 
@@ -40,17 +41,47 @@ interface FrameProps {
   children?: ReactNode;
   /** Development-only faceting diagnostics (Meridian §14); player routes never set it. */
   debugView?: TerrainDebugView;
+  /** Player-marked positions (One-Tap) drawn on the course in every camera. */
+  markers?: SceneMarkers | null;
+  /** `card` (default): the compact card with an expand trigger into the
+   * workspace modal. `stage`: the expanded course fills its container at once,
+   * with no trigger and no Close — the course itself is the screen (One-Tap
+   * master plan "Player-facing design"). */
+  presentation?: 'card' | 'stage';
+  /** Stage only: floating HUD rendered over the course, above the top chrome. */
+  stageOverlay?: ReactNode;
+  /** Stage only: the bar beneath the View control (the persistent primary action). */
+  stageFooter?: ReactNode;
+  /** Stage only: receives a production camera-state setter so a director can
+   * frame the course (area + preset) the way the View control does. */
+  stageCameraRef?: RefObject<((state: ProductionCameraState) => void) | null>;
+  /** Stage only: fires when the player takes the camera by gesture (MANUAL_CAMERA). */
+  onStageGesture?: () => void;
 }
 
 /** One reusable viewing container. Its caller keys by hole identity; a manual
  * view persists through typing and committed shots, until a different hole. */
-export function HoleSceneFrame({ scene, context, defaultView = 'hole', selectedShotNumber, activeDraftShotNumber, evidence, currentPuttingDistanceM, header, children, debugView }: FrameProps) {
+export function HoleSceneFrame({ scene, context, defaultView = 'hole', selectedShotNumber, activeDraftShotNumber, evidence, currentPuttingDistanceM, header, children, debugView, markers, presentation = 'card', stageOverlay, stageFooter, stageCameraRef, onStageGesture }: FrameProps) {
   const [choice, setChoice] = useState<SceneView | null>(null);
   const [expanded, setExpanded] = useState(false);
   const [detailSelection, setDetailSelection] = useState<number | null>(null);
   const [puttingScope, setPuttingScope] = useState<'whole_green' | 'focus_putt'>('whole_green');
-  const poseMemory = useRef<CameraMemory>({ pose: TERRAIN_PRESETS.top, fitPreset: 'top' });
+  const poseMemory = useRef<CameraMemory>(presentation === 'stage' && context === 'entry'
+    ? { pose: TERRAIN_PRESETS[PRODUCTION_CAMERA_STATES[productionCameraState(defaultView)].preset], fitPreset: PRODUCTION_CAMERA_STATES[productionCameraState(defaultView)].preset }
+    : { pose: TERRAIN_PRESETS.top, fitPreset: 'top' });
   const view = choice ?? defaultView;
+  // Stage director: a different area remounts the drawing from the remembered
+  // production pose (as the modal does); the same area animates the preset.
+  const stagePreset = useRef<((preset: TerrainPreset) => void) | null>(null);
+  useEffect(() => {
+    if (!stageCameraRef) return;
+    stageCameraRef.current = state => {
+      const { preset, view: area } = PRODUCTION_CAMERA_STATES[state];
+      if (area !== view) { poseMemory.current = { pose: TERRAIN_PRESETS[preset], fitPreset: preset }; setChoice(area); }
+      else stagePreset.current?.(preset);
+    };
+    return () => { stageCameraRef.current = null; };
+  });
   const events = evidence ?? scene?.events.map(e => e.evidence) ?? [];
   const putting = currentPuttingDistanceM != null || events.some(e => e.shotType === 'putting');
   const unassignedStudy = !!scene?.hole.displayLabel && !scene.hole.routeFeatureId;
@@ -66,6 +97,11 @@ export function HoleSceneFrame({ scene, context, defaultView = 'hole', selectedS
     // selection remains in control until the outside selection actually changes.
     if (expanded) setDetailSelection(selectedShotNumber ?? null);
   }, [expanded, selectedShotNumber]);
+  const heading = <><span className="font-fw-display text-body-lg font-semibold">{view === 'putting' || view === 'green' || scene?.hole.displayLabel ? 'Green complex' : scene ? `Hole ${scene.hole.ordinal}` : 'Course view'}</span>
+    <span className="text-caption text-text-secondary">{scene && !unassignedStudy ? `Par ${scene.hole.par} · ${scene.hole.scorecardYards ?? '—'} yd` : 'Source review'}</span></>;
+  const areaControls = (closeArea: () => void) => <div className="flex flex-wrap gap-1" role="group" aria-label="Expanded course views">
+    {views.map(v => <Button variant={view === v ? 'secondary' : 'ghost'} size="sm" key={v} aria-pressed={view === v} onClick={() => { setChoice(v); closeArea(); }}>{LABELS[v]}</Button>)}
+  </div>;
   const expand = <ModalShell open={expanded} onOpenChange={open => {
     if (open) {
       setDetailSelection(selectedShotNumber ?? null);
@@ -90,13 +126,18 @@ export function HoleSceneFrame({ scene, context, defaultView = 'hole', selectedS
       {view === 'putting' && <span>3D</span>}<Maximize2 size={17} aria-hidden />
     </Button>}>
     <Drawing key={view} scene={scene} view={view} context={context} events={events} selectedShotNumber={detailSelection ?? selectedShotNumber} activeDraftShotNumber={activeDraftShotNumber} puttingScope={puttingScope} onSelectEvent={setDetailSelection}
-      currentPuttingDistanceM={currentPuttingDistanceM} expanded poseMemory={poseMemory} onClose={() => setExpanded(false)} debugView={debugView} onSelectView={setChoice}
-      heading={<><span className="font-fw-display text-body-lg font-semibold">{view === 'putting' || view === 'green' || scene?.hole.displayLabel ? 'Green complex' : scene ? `Hole ${scene.hole.ordinal}` : 'Course view'}</span>
-        <span className="text-caption text-text-secondary">{scene && !unassignedStudy ? `Par ${scene.hole.par} · ${scene.hole.scorecardYards ?? '—'} yd` : 'Source review'}</span></>}
-      areaControls={closeArea => <div className="flex flex-wrap gap-1" role="group" aria-label="Expanded course views">
-        {views.map(v => <Button variant={view === v ? 'secondary' : 'ghost'} size="sm" key={v} aria-pressed={view === v} onClick={() => { setChoice(v); closeArea(); }}>{LABELS[v]}</Button>)}
-      </div>} />
+      currentPuttingDistanceM={currentPuttingDistanceM} expanded poseMemory={poseMemory} onClose={() => setExpanded(false)} debugView={debugView} onSelectView={setChoice} markers={markers}
+      heading={heading} areaControls={areaControls} />
   </ModalShell>;
+  if (presentation === 'stage') {
+    // The course is the screen: no card, no trigger, no Close. The caller owns
+    // the surrounding chrome and hands in its HUD and primary action.
+    return <div className="relative flex h-full min-h-0 flex-1 flex-col" data-scene-context={context} data-current-view={view} data-presentation="stage">
+      <Drawing key={view} scene={scene} view={view} context={context} events={events} selectedShotNumber={selectedShotNumber} activeDraftShotNumber={activeDraftShotNumber} puttingScope={puttingScope}
+        currentPuttingDistanceM={currentPuttingDistanceM} expanded poseMemory={poseMemory} debugView={debugView} onSelectView={setChoice} markers={markers}
+        heading={heading} areaControls={areaControls} stageOverlay={stageOverlay} stageFooter={stageFooter} presetRef={stagePreset} onStageGesture={onStageGesture} />
+    </div>;
+  }
   return <div className="min-w-0" data-scene-context={context} data-current-view={view}>
     <div className="flex min-h-14 items-center justify-between gap-1 px-3 py-1" data-slot="scene-header">
       {context === 'review' ? <div className="flex min-w-0 flex-wrap gap-1" role="group" aria-label="Course views">
@@ -122,11 +163,12 @@ export function HoleSceneFrame({ scene, context, defaultView = 'hole', selectedS
   </div>;
 }
 
-function Drawing({ scene, view, context, events, selectedShotNumber, activeDraftShotNumber, puttingScope = 'whole_green', currentPuttingDistanceM, expanded = false, heading, areaControls, onClose, poseMemory, onSelectEvent, debugView, onSelectView }: {
+function Drawing({ scene, view, context, events, selectedShotNumber, activeDraftShotNumber, puttingScope = 'whole_green', currentPuttingDistanceM, expanded = false, heading, areaControls, onClose, poseMemory, onSelectEvent, debugView, onSelectView, markers, stageOverlay, stageFooter, presetRef, onStageGesture }: {
   scene?: HoleScene | null; view: SceneView; context: 'entry' | 'review'; events: readonly ShotEvidence[];
   selectedShotNumber?: number; activeDraftShotNumber?: number; puttingScope?: 'whole_green' | 'focus_putt'; currentPuttingDistanceM?: number | null; expanded?: boolean;
   heading?: ReactNode; areaControls?: (close: () => void) => ReactNode; onClose?: () => void; poseMemory?: RefObject<CameraMemory>;
   onSelectEvent?: (shotNumber: number) => void; debugView?: TerrainDebugView; onSelectView?: (view: SceneView) => void;
+  markers?: SceneMarkers | null; stageOverlay?: ReactNode; stageFooter?: ReactNode; presetRef?: RefObject<((preset: TerrainPreset) => void) | null>; onStageGesture?: () => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: 320, height: context === 'entry' ? (view === 'putting' && hasReviewedGreen(scene) ? 272 : 160) : 310 });
@@ -213,6 +255,13 @@ function Drawing({ scene, view, context, events, selectedShotNumber, activeDraft
     Math.abs(pose.yawOffset - TERRAIN_PRESETS[preset].yawOffset) < .01 &&
     (pose.projection ?? 'orthographic') === (TERRAIN_PRESETS[preset].projection ?? 'orthographic');
   useEffect(() => () => cancelAnimationFrame(pendingFrame.current), []);
+  useEffect(() => {
+    // A stage director frames the course through the same preset motion the
+    // View control uses; it never gets the raw pose.
+    if (!presetRef) return;
+    presetRef.current = presetView;
+    return () => { presetRef.current = null; };
+  });
   function cameraOrigin(current: typeof live.current) {
     if (scene?.terrain && courseView) {
       const camera = fitTerrainViewportCamera(scene, scene.terrain, courseView, size.width, size.height, current.pose, current.zoom,
@@ -286,6 +335,7 @@ function Drawing({ scene, view, context, events, selectedShotNumber, activeDraft
     tapStart.current = pointers.current.size ? null : { x: event.clientX, y: event.clientY };
     pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
     setDragging(true); rebase();
+    onStageGesture?.();
   }
   function moveGesture(event: PointerEvent<HTMLDivElement>) {
     if (!interactive || !pointers.current.has(event.pointerId)) return;
@@ -435,7 +485,7 @@ function Drawing({ scene, view, context, events, selectedShotNumber, activeDraft
       <div key={`${scene?.physicalHoleKey ?? 'missing'}-${view}`} className="fw-course-view-enter h-full w-full">
       {showProfile && scene ? <div className="h-full overflow-y-auto bg-surface pt-24"><CourseTerrainProfile scene={scene} selectedShotNumber={currentSelection} width={size.width} height={size.height - 96} /></div> : scene && transformed && courseView ? <CourseHoleScene scene={scene} width={size.width} height={size.height}
         mode={context === 'entry' ? 'compact' : 'review'} view={courseView} selectedShotNumber={currentSelection} activeDraftShotNumber={activeDraftShotNumber} camera={transformed} terrainCamera={terrainCamera}
-        runtimeRef={runtime} onTerrainUnavailable={() => setTerrainFailed(true)} showIllustrativeFlightPreviews={view !== 'putting'} puttingPlan={compactPuttingPlan} debugView={debugView} /> : view === 'putting' ? <PuttingZoom width={size.width} height={size.height} distanceView={{
+        runtimeRef={runtime} onTerrainUnavailable={() => setTerrainFailed(true)} showIllustrativeFlightPreviews={view !== 'putting'} puttingPlan={compactPuttingPlan} debugView={debugView} markers={markers} /> : view === 'putting' ? <PuttingZoom width={size.width} height={size.height} distanceView={{
         beforeFeet: before == null ? null : before / .3048, afterFeet: after == null ? null : after / .3048,
         made: currentPuttingDistanceM == null && putt?.putt.made === true,
         rolledOff: putt != null && putt.result !== 'green' && putt.result !== 'hole',
@@ -457,8 +507,9 @@ function Drawing({ scene, view, context, events, selectedShotNumber, activeDraft
         <Button variant="secondary" aria-label="Choose course area" aria-expanded={areasOpen} rightIcon={<ChevronDown size={15} aria-hidden />} className="h-auto rounded-fw-lg px-3 py-2 shadow-card" onClick={() => setAreasOpen(v => !v)}><span className="flex flex-col items-start">{heading}</span></Button>
         {areasOpen && <div className="mt-2 rounded-fw-lg bg-surface p-2 shadow-card">{areaControls?.(() => setAreasOpen(false))}</div>}
       </div>
-      <Button variant="secondary" className="pointer-events-auto h-11 min-w-11 rounded-full px-2 shadow-card" aria-label="Close" onClick={onClose}><X size={19} aria-hidden /></Button>
+      {onClose && <Button variant="secondary" className="pointer-events-auto h-11 min-w-11 rounded-full px-2 shadow-card" aria-label="Close" onClick={onClose}><X size={19} aria-hidden /></Button>}
     </div>}
+    {expanded && stageOverlay}
     </div>
     {expanded && <aside className="z-10 flex max-h-[48dvh] shrink-0 flex-col border-t border-border-subtle bg-surface font-fw-sans sm:max-h-none sm:w-[320px] sm:border-l sm:border-t-0" aria-label="Course inspector" data-slot="course-inspector" data-modal="false" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
       <div className="flex items-center justify-between gap-1 px-3 pt-2">
@@ -489,6 +540,7 @@ function Drawing({ scene, view, context, events, selectedShotNumber, activeDraft
           <Button size="sm" variant="ghost" className="min-w-11 px-2" aria-label="Camera controls" aria-expanded={toolsOpen} onClick={() => setToolsOpen(v => !v)}><SlidersHorizontal size={17} aria-hidden /></Button>
         </>}
       </div>
+      {stageFooter && <div data-slot="stage-footer" className="px-3 pb-2 pt-2">{stageFooter}</div>}
       <div className="min-h-0 overflow-y-auto overscroll-contain">
         {active && <div className="px-4 pb-2 pt-2" data-slot="expanded-shot-evidence">
           <div className="flex items-center gap-3">

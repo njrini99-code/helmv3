@@ -9,6 +9,7 @@ import { MERIDIAN_STYLE, MERIDIAN_STYLE_HASH, type MeridianStyleOverrides } from
 import { applyTerrainCamera, pickTerrainPoint, type TerrainThreeCamera } from './three-camera';
 import { buildThreeFlightPaths, type ThreeFlightPaths } from './three-flight-path';
 import { createShotOverlayController } from './shot-overlay-controller';
+import { createSceneMarkerOverlayController, type SceneMarkerOverlayController, type SceneMarkers } from './scene-markers';
 import { TERRAIN_LIGHT_DIRECTION, type Point3M, type TerrainCamera, type TerrainMesh } from './terrain';
 import { fitShadowBounds } from './shadow-bounds';
 import { budgetViewFor, detectRenderQuality, percentile, profilePixelRatio, qualityOverrides, readRenderCapabilities, RENDER_BUDGETS, RENDER_QUALITY_PROFILES, type MeridianRenderQuality } from './render-quality';
@@ -18,6 +19,8 @@ import type { HoleScene } from './types';
 export interface ThreeTerrainRuntime extends TerrainRuntimeController {
   ready: Promise<void>;
   setEvidence(scene: HoleScene, selectedShotNumber?: number): void;
+  /** Player-marked positions (One-Tap), painted with the evidence overlay in the same frame. */
+  setMarkers(markers: SceneMarkers | null): void;
   dispose(): void;
 }
 
@@ -72,6 +75,7 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
   let surface: ((point: readonly [number, number]) => number | null) | undefined;
   let flightPaths: ThreeFlightPaths | null = null;
   let evidence: ReturnType<typeof createShotOverlayController> | null = null;
+  let markersOverlay: SceneMarkerOverlayController | null = null;
   let sun: DirectionalLight | null = null;
   // §51–52 atmosphere: distance haze and a sky/horizon dome exist only behind
   // the perspective presets; Top keeps the map-like ground background.
@@ -172,7 +176,7 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
     if (disposed) return;
     disposed = true;
     canvas.removeEventListener('webglcontextlost', lost);
-    releaseDebug?.(); evidence?.dispose(); flightPaths?.dispose(); landscape?.dispose(); sun?.shadow.dispose();
+    releaseDebug?.(); evidence?.dispose(); markersOverlay?.dispose(); flightPaths?.dispose(); landscape?.dispose(); sun?.shadow.dispose();
     skyDome?.geometry.dispose(); skyDome?.material.dispose();
     world.clear(); renderer.dispose();
     // React may replace the runtime while retaining the canvas (new geometry,
@@ -251,6 +255,7 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
       // They intentionally remain readable through crowns (estimated evidence
       // is an annotation, not an opaque physical object in the landscape).
       evidence.setCamera(camera, width, height);
+      markersOverlay?.setCamera(camera, width, height);
       Object.assign(canvas.dataset, {
         terrainRenderer: 'three-webgl2', terrainState: 'ready', terrainHash: mesh.contentHash,
         terrainProjection: camera.projection ?? 'orthographic',
@@ -346,6 +351,8 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
     const sky = new HemisphereLight(MERIDIAN_STYLE.light.skyColor, MERIDIAN_STYLE.light.groundColor, MERIDIAN_STYLE.light.hemisphereIntensity);
     sky.position.set(0, 0, 1); world.add(sky);
     evidence = createShotOverlayController(overlay, options.overlayId, mesh, options.scene, options.selectedShotNumber, false, surface);
+    markersOverlay = createSceneMarkerOverlayController(overlay, mesh, surface,
+      typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
     releaseDebug = installTerrainDebugView(world, landscape, mesh, options.debugView ?? 'final', renderer);
     if (options.debugView && options.debugView !== 'final') overlay.style.display = 'none';
     view = currentCamera.projection === 'perspective' ? perspectiveView : orthographicView;
@@ -373,6 +380,10 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
       replaceFlightPaths(scene, currentCamera);
       evidence?.setEvidence(scene, selectedShotNumber);
       setCamera(currentCamera, width, height);
+    },
+    setMarkers(markers) {
+      if (disposed || failed) return;
+      markersOverlay?.setMarkers(markers);
     },
     pick(x, y) {
       return ready && !disposed && !failed && landscape

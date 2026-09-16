@@ -1,0 +1,62 @@
+# One-Tap round tracking: execution status
+
+Tracks the One-Tap master plan (deep research report, 2026-09-16: "MARK BALL
+means the ball is here now") on `agent/golf-course-geometry`. It sits beside
+the renderer trackers (`2026-09-16-renderer-redesign-status.md`,
+`2026-09-16-fidelity-status.md`, `2026-09-16-meridian-visual-master-plan-status.md`,
+`2026-09-16-outside-world-status.md`); the course the player taps on is the
+one those trackers make accurate.
+
+Doctrine that does not change: a tap writes a real position with its real σ
+and never snaps, invents, or substitutes a green centre for a cup; an empty
+location window is GPS_UNAVAILABLE; the daily pin is UNSPECIFIED; sync is
+idempotent and the phone is durable before the server is.
+
+## Phases
+
+| Phase | Scope | Status | Where |
+| --- | --- | --- | --- |
+| 1 · Library | Geodesy (WGS84 ↔ local ENU), location estimator (weighted window, residual gating, σ floor), lie classifier (canonical partition, Monte Carlo posterior, edge σ), terrain sampler, shot anchor schema + derived shots + undo/tombstone, hole lifecycle (cup mark, next-tee inference, status), green distances (F/C/B on the approach axis), camera director, anchor repository (memory + storage) and sync queue (backoff ladder), competition policy, course package manifest, evidence catalog, one-tap controller | done (f8ef33301, pushed) | `src/lib/golf/one-tap/**` with `__tests__/` (63 tests) |
+| 2 · MARK BALL UI | Marks painted on the terrain by the Three runtime in the same frame as the evidence overlay (σ ring at true scale, YOU label, derived-shot links, hollow provisional, HOLED terminal, one ripple); SVG fallback draws the same; `HoleSceneFrame presentation="stage"` (the course is the screen: no card, no trigger, no Close; HUD slot over the course, footer slot under the View control, production camera-state director, gesture → MANUAL_CAMERA); `useOneTap` view model (location source → buffer → controller → snapshot; storage-backed anchors per round; camera director tick/anchor/gesture/recenter; F/C/B ± from the live fix or the last mark; lie label with the boundary policy); HUD, MARK BALL button with Undo (5 s window) and Holed out; synthetic walker + platform watcher location sources; lab fixture `?onetap=1&course=…&hole=…[&bar=1]`; capture script | done (this commit) | `src/lib/golf/course-geometry/scene-markers.ts`, `src/lib/golf/one-tap/{scene-markers,location-source}.ts`, `src/components/golf/one-tap/**`, `HoleSceneFrame.tsx`, `CourseHoleScene.tsx`, `CourseTerrainCanvas.tsx`, `three-renderer.ts`, `src/test/fixtures/course-geometry/browser/one-tap.tsx`, `scripts/golf/course-geometry/capture-one-tap.cjs` |
+| 3 · Round integration | A real round: hole advance (next-tee inference + explicit), scorecard from `holeStatus`, pause/resume, competition policy gating (practice vs competition), the tracked round feeding the existing shot ledger (`normalizeLiveShot`) so stats keep working | next | `FairwayShotTracking` / rounds-tracking pages |
+| 4 · Sync transport | `SyncTransport` against Supabase (`golf_*` anchor table + RLS, idempotent upsert by id, geometry/terrain version stamped), offline queue proven with airplane-mode capture | open | needs a migration (RLS review) |
+| 5 · Device proof | On-phone walk of Peek'n Peak Upper hole 7 with the platform watcher: σ honesty, tap latency (provisional ≤ 1 frame, final ≤ 750 ms), battery over 18 holes | open | human, on course |
+
+## Phase 2 evidence (2026-09-16)
+
+`node scripts/golf/course-geometry/capture-one-tap.cjs --course=peek-n-peak-upper --hole=7`
+against the lab (`output/playwright/course-geometry/one-tap/peek-n-peak-upper-07/`,
+phone viewport, synthetic walker along the package route, 3 m accuracy):
+
+| Step | State | Camera state / area | Marks | Links | Lie shown | Draws |
+| --- | --- | --- | --- | --- | --- | --- |
+| ready | HOLE_READY | tee / hole | 0 | 0 | – | 9 |
+| tee marked | HOLE_READY (after ANCHOR_SAVED hold) | approach / approach | 1 | 0 | Rough / Tee (boundary posterior: the route starts on the tee edge) | 9 |
+| approach marked | HOLE_READY | approach / approach | 2 | 1 | Fairway | 9 |
+| green marked | HOLE_READY | putting / green | 3 | 2 | Green · likely | 9 |
+| holed | HOLE_READY | putting / green | 3 (last = HOLED) | 2 | Green · likely | 9 |
+
+No page errors. Checks run for this phase: `tsc --noEmit` (exit 0), eslint
+on every touched file (exit 0), vitest `unit` one-tap + scene-marker suites
+(63 + 12 tests) and `unit-dom` (`OneTapPlayerScreen`, `HoleSceneFrame`,
+`CourseTerrainCanvas`, `CourseHoleScene`: 16 tests), all passing.
+
+## Known gaps after phase 2
+
+- After the tee mark the director enters PLAYER_FOLLOW, which maps onto the
+  `approach` production state: that area frames landing zone → green and
+  crops the tee mark out of view (capture step 2). A follow framing that keeps
+  the player and the green in frame is phase 3 camera work (Meridian V6).
+- The front distance reads "–" once the player is past the front edge (on the
+  green); centre and back stay numeric. No cup distance exists (daily pin
+  UNSPECIFIED).
+- The lab has no sync transport, so the status chip honestly reports
+  "N to sync"; phase 4 adds the server.
+
+## Open questions for the owner
+
+- Where MARK BALL lives in the real round flow: replace the shot ledger entry
+  screen for a "tracked" round, or sit beside it (phase 3 decision).
+- Anchor table shape and retention (phase 4) — the anchor schema is in
+  `src/lib/golf/one-tap/shot-anchor.ts`; raw samples are retained on the
+  anchor (≤ 400) and would go to the server as JSON.

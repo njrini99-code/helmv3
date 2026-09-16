@@ -11,6 +11,7 @@ import { CrownGlyph, CrownPaint } from './TerrainCanopyLayer';
 import { CourseShotOverlay } from './CourseShotOverlay';
 
 import type { TerrainRuntimeController } from '@/lib/golf/course-geometry/runtime-controller';
+import type { SceneMarkers } from '@/lib/golf/course-geometry/scene-markers';
 
 export const SCENE_STYLE_VERSION = 'fairway-vector-v10';
 const ORDER: LocalFeature['kind'][] = ['woods', 'rough', 'water', 'fairway', 'tee', 'green', 'bunker', 'route'];
@@ -28,7 +29,7 @@ export function sceneCamera(scene: HoleScene, width: number, height: number, mod
 
 /** Pure SVG: surfaces and anchors share one similarity transform; labels use
  * CSS-pixel dimensions supplied by the measured viewport. No gesture capture. */
-export function CourseHoleScene({ scene, width = 320, height = 380, mode = 'review', view = 'hole', selectedShotNumber, activeDraftShotNumber, camera: override, terrainCamera, onTerrainUnavailable, runtimeRef, showIllustrativeFlightPreviews = true, puttingPlan = false, debugView }: {
+export function CourseHoleScene({ scene, width = 320, height = 380, mode = 'review', view = 'hole', selectedShotNumber, activeDraftShotNumber, camera: override, terrainCamera, onTerrainUnavailable, runtimeRef, showIllustrativeFlightPreviews = true, puttingPlan = false, debugView, markers }: {
   scene: HoleScene; width?: number; height?: number; mode?: 'review' | 'compact' | 'strip' | 'source';
   view?: CourseView; selectedShotNumber?: number; activeDraftShotNumber?: number; camera?: SimilarityTransform; terrainCamera?: TerrainCamera;
   onTerrainUnavailable?: () => void; runtimeRef?: RefObject<TerrainRuntimeController | null>;
@@ -38,13 +39,15 @@ export function CourseHoleScene({ scene, width = 320, height = 380, mode = 'revi
   puttingPlan?: boolean;
   /** Development-only faceting diagnostics (Meridian §14); never set by player routes. */
   debugView?: TerrainDebugView;
+  /** Player-marked positions (One-Tap): dots with true-scale σ rings, joined by derived shots. */
+  markers?: SceneMarkers | null;
 }) {
   const sceneForDisplay = useMemo(() => showIllustrativeFlightPreviews ? scene : { ...scene, illustrativePreviewTrajectories: [] }, [scene, showIllustrativeFlightPreviews]);
   const id = useId();
   if (terrainCamera && scene.terrain) return <CourseTerrainCanvas scene={sceneForDisplay} mesh={scene.terrain} camera={terrainCamera} width={width} height={height}
-    selectedShotNumber={selectedShotNumber} debugView={debugView}
+    selectedShotNumber={selectedShotNumber} debugView={debugView} markers={markers}
     onUnavailable={onTerrainUnavailable} runtimeRef={runtimeRef}
-    fallback={<CourseHoleScene scene={sceneForDisplay} width={width} height={height} mode={mode} view={view} selectedShotNumber={selectedShotNumber} activeDraftShotNumber={activeDraftShotNumber} camera={override} showIllustrativeFlightPreviews={showIllustrativeFlightPreviews} puttingPlan={puttingPlan} />} />;
+    fallback={<CourseHoleScene scene={sceneForDisplay} width={width} height={height} mode={mode} view={view} selectedShotNumber={selectedShotNumber} activeDraftShotNumber={activeDraftShotNumber} camera={override} showIllustrativeFlightPreviews={showIllustrativeFlightPreviews} puttingPlan={puttingPlan} markers={markers} />} />;
   const camera = override ?? sceneCamera(scene, width, height, mode, view, puttingPlan);
   const features = [...scene.features].sort((a, b) => ORDER.indexOf(a.kind) - ORDER.indexOf(b.kind) || a.id.localeCompare(b.id)).filter(feature => {
     // A bunker that leaks only a few pixels into the plan reads as a seam, not
@@ -140,6 +143,18 @@ export function CourseHoleScene({ scene, width = 320, height = 380, mode = 'revi
         </g>)}
         {mode !== 'strip' && <CourseShotOverlay scene={sceneForDisplay} width={width} height={height} selectedShotNumber={selectedShotNumber} activeDraftShotNumber={activeDraftShotNumber}
           project={point => toScreen(point, camera)} pathForFeature={feature => featurePath(feature, camera)} appearance={puttingPlan ? 'putting-plan' : 'default'} />}
+        {markers && (markers.markers.length > 0 || markers.links.length > 0) && <g data-annotation="marked-positions" aria-hidden="true">
+          {markers.links.map(link => { const a = toScreen(link.fromM, camera), b = toScreen(link.toM, camera); return <g key={link.key} data-marked-link={link.key}>
+            <line x1={a[0]} y1={a[1]} x2={b[0]} y2={b[1]} stroke="var(--fw-diagram-shadow)" strokeWidth="4" strokeLinecap="round" opacity=".35" />
+            <line x1={a[0]} y1={a[1]} x2={b[0]} y2={b[1]} stroke="var(--fw-diagram-event)" strokeWidth="1.8" strokeLinecap="round" />
+          </g>; })}
+          {markers.markers.map(marker => { const [x, y] = toScreen(marker.pointM, camera), r = marker.kind === 'you' ? 5 : marker.kind === 'provisional' ? 4 : 3.2, sigma = marker.sigmaM * camera.scale; return <g key={marker.key}>
+            {sigma > r && <circle cx={x} cy={y} r={sigma} fill="var(--fw-diagram-event)" fillOpacity=".08" stroke="var(--fw-diagram-event)" strokeWidth="1" strokeDasharray="3 3" opacity=".85" data-marked-sigma={marker.key} />}
+            <circle cx={x} cy={y + 1.2} r={r + 1.5} fill="var(--fw-diagram-shadow)" opacity=".35" />
+            <circle cx={x} cy={y} r={r} fill={marker.kind === 'provisional' ? 'var(--fw-diagram-ground-light)' : 'var(--fw-diagram-event)'} stroke={marker.kind === 'provisional' ? 'var(--fw-diagram-event)' : 'var(--fw-diagram-ground-light)'} strokeWidth={marker.kind === 'you' ? 2 : 1.4} data-marked-position={marker.key} data-marker-kind={marker.kind} />
+            {marker.label && <text x={x} y={y - r - 5} fill="var(--fw-diagram-event)" fontSize="10" fontWeight="600" textAnchor="middle" letterSpacing=".6" paintOrder="stroke" stroke="var(--fw-diagram-ground-light)" strokeWidth="3" data-marker-label={marker.key}>{marker.label}</text>}
+          </g>; })}
+        </g>}
       </g>
     </svg>
   );

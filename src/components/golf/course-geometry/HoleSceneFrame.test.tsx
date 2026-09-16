@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { HoleSceneFrame } from './HoleSceneFrame';
 import { pilotScene } from '@/test/fixtures/course-geometry/pilot';
+import { Button } from '@/components/fairway/controls/button';
 
 describe('course-backed putting overview', () => {
   it('uses the reviewed canonical green instead of the abstract oval', () => {
@@ -40,5 +41,20 @@ describe('player view details (outside-world §3.6)', () => {
     expect(sheet!.closest('[data-vaul-drawer]')).not.toBeNull();
     expect(sheet!.textContent).toContain('Estimated pin');
     expect(document.querySelector('[data-slot="course-inspector"]')?.textContent ?? '').not.toContain('Estimated pin');
+  });
+});
+
+describe('stage presentation (One-Tap "the course is the screen")', () => {
+  it('fills its container with the expanded course, no trigger, no Close, and hosts the caller\'s HUD and footer', () => {
+    render(<HoleSceneFrame scene={pilotScene('cacapon-07', false)} context="entry" presentation="stage"
+      stageOverlay={<span data-testid="hud">HUD</span>} stageFooter={<Button variant="primary">Mark ball</Button>} />);
+    const stage = document.querySelector('[data-presentation="stage"]')!;
+    expect(stage).not.toBeNull();
+    expect(stage.getAttribute('data-current-view')).toBe('hole');
+    expect(screen.queryByRole('button', { name: /Expand course view|Open green in 3D/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Close' })).toBeNull();
+    expect(screen.getByTestId('hud').textContent).toBe('HUD');
+    expect(document.querySelector('[data-slot="stage-footer"]')!.textContent).toBe('Mark ball');
+    expect(screen.getByRole('button', { name: 'Choose course area' })).not.toBeNull();
   });
 });
