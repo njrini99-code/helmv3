@@ -73,6 +73,20 @@ after every commit and hands the rectangles to the evidence overlay
 strokes chip. Canaries `v23-hud-reserve` are pixel-identical to `v22` (96 of
 96): production passes reserve nothing (no stage overlay).
 
+## Master plan tasks (2026-09-16, "One-Tap Live Round Master Design")
+
+The owner's implementation plan (Tasks 1–18) runs on this branch only; nothing
+lands or deploys from it. The Swift/Capacitor plugin (Task 2) is skipped per
+the owner: the shell's WebView Geolocation API is the device source.
+
+| Task | Status | What changed |
+| --- | --- | --- |
+| 1 · Gate to Peek'n Peak Upper | done (3485d87e5) | `peek-n-peak-policy.ts`: courseId ↔ siteId `osm-way-136097904`, approved-hash set, `peek_n_peak_one_tap_v1` flag (dev on, preview/prod off), modelled-area check; manifest carries `courseId`/`siteId`. |
+| 2 · Native location | skipped (owner) | No plugin; no `UIBackgroundModes` change. |
+| 3 · Shell location source | done (cd6a53d59) | `location-source.ts`: navigation/capture watch modes, pause/reacquire on visibility, denied/timeout/unavailable status, Permissions API query; Info.plist When-In-Use purpose string only. |
+| 4 · Estimator covariance + motion | done | `location-estimator.ts`: full weighted 2×2 scatter, `C_device = (kAcc·a_median)²I`, anchor = scatter + device floored at 1.5 m on the smallest axis, σ = largest axis; reported radius kept apart from the calibrated term; `kAcc = 1` flagged `provisional`. New `location-quality.ts`: `captureMotion` from median reported speed and net displacement beyond the jitter floor (≤ 0.8 stationary, ≤ 1.8 settling, else moving), a moving mark refines to 1.4 s then saves one grade lower (never "stand still"); live-fix grade for the HUD (good silent; fair/poor/stale/none). |
+| 5–18 | open | Anchor V2, YOU/BALL markers, lie presentation, HUD, green readout, hole integrity, penalties, shot reveal, sync + migration (branch only), ledger adapter + placement, offline, competition, trace matrix, calibration doc. |
+
 ## Known gaps after phase 2
 
 - Follow fit (done, v5): the stage frame takes a `stageFocus` (Meridian §62

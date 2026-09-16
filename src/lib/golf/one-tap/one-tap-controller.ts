@@ -110,7 +110,14 @@ export class OneTapController {
     if (provisional) this.deps.repo.upsert(base);
     const wait = Math.max(0, tapMs + this.config.refinementMs - this.now());
     await new Promise<void>(resolve => { this.schedule(resolve, wait); });
-    const estimate = finalizeEstimate(this.deps.buffer, tapMs, this.deps.origin, this.config);
+    let estimate = finalizeEstimate(this.deps.buffer, tapMs, this.deps.origin, this.config);
+    // §36 moving capture: keep refining a little longer; if the fixes never
+    // settle the mark still saves, one confidence grade lower. Never "stand still".
+    if (estimate?.captureMotion === 'moving' && this.config.movingRefinementMs > this.config.refinementMs) {
+      const extra = Math.max(0, tapMs + this.config.movingRefinementMs - this.now());
+      await new Promise<void>(resolve => { this.schedule(resolve, extra); });
+      estimate = finalizeEstimate(this.deps.buffer, tapMs, this.deps.origin, { ...this.config, refinementMs: this.config.movingRefinementMs }) ?? estimate;
+    }
     this.pendingTapMs = null;
     if (!estimate) {
       if (provisional) this.deps.repo.upsert({ ...base, deletedAt: new Date(this.now()).toISOString() });
@@ -120,7 +127,7 @@ export class OneTapController {
     }
     const terrain = this.hole.terrain ? sampleTerrain(this.hole.terrain, estimate.positionENU) : null;
     const posterior = classifyLie(this.hole.partition, estimate.positionENU, estimate.covarianceENU2D);
-    const confidence = anchorConfidence(estimate.sigmaM, posterior.pMax, this.config);
+    const confidence = anchorConfidence(estimate.sigmaM, posterior.pMax, this.config, estimate.captureMotion);
     base = this.deps.repo.get(id) ?? base;
     const anchor = finalAnchor(base, estimate, terrain, posterior, confidence, this.config.kAcc, this.now());
     this.deps.repo.upsert(anchor);

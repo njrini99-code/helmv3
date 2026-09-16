@@ -71,6 +71,28 @@ describe('one-tap controller', () => {
     expect(controller.cameraObservation()).toMatchObject({ terminal: false });
     expect(controller.cameraObservation()!.distanceToGreenM).toBeCloseTo(Math.hypot(50, 2), 0);
   });
+  it('saves a moving mark after the longer refinement, one confidence grade lower (§36)', async () => {
+    const { controller, repo, sync } = build();
+    // Tight tee fixes reported at 2.5 m/s: a cart still rolling as the player taps.
+    for (let t = -1500; t <= 0; t += 500) controller.pushSample({ ...sample(-190, 6, 100_000 + t), speedMps: 2.5 });
+    let settled = false;
+    const pending = controller.markBall().then(a => { settled = true; return a; });
+    controller.pushSample({ ...sample(-190.1, 6.1, 100_400), speedMps: 2.5 });
+    await vi.advanceTimersByTimeAsync(750);
+    expect(settled).toBe(false);
+    expect(controller.snapshot().state).toBe('CAPTURE_PENDING');
+    controller.pushSample({ ...sample(-189.9, 6, 100_900), speedMps: 2.4 });
+    controller.pushSample({ ...sample(-190, 5.9, 101_300), speedMps: 2.4 });
+    await vi.advanceTimersByTimeAsync(650);
+    const anchor = await pending;
+    expect(settled).toBe(true);
+    // The same fixes standing still would grade HIGH; moving saves as MEDIUM, never rejected.
+    expect(anchor).toMatchObject({ provisional: false, primaryLie: 'tee', confidence: 'MEDIUM', syncState: 'QUEUED' });
+    expect(anchor!.rawLocationSamples.length).toBeGreaterThanOrEqual(6);
+    expect(repo.list('r').filter(a => !a.deletedAt)).toHaveLength(1);
+    expect(sync.pending()).toHaveLength(1);
+    expect(controller.snapshot()).toMatchObject({ state: 'ANCHOR_SAVED', outcome: 'saved' });
+  });
   it('reports GPS_UNAVAILABLE with no fix, fabricates nothing and recovers on the next sample', async () => {
     const { controller, repo, haptics } = build();
     const result = controller.markBall();

@@ -43,7 +43,9 @@ describe('one-tap shot anchors', () => {
     const sample = { timestampMs: 900, longitude: -79.744, latitude: 42.06, altitudeM: null, horizontalAccuracyM: 3, verticalAccuracyM: null, speedMps: null, headingDegrees: null, source: 'synthetic' as const };
     const provisional = provisionalAnchor(identity, sample, [1, 2, 0], 'g1', 't1');
     expect(shotAnchorSchema.parse(provisional)).toMatchObject({ provisional: true, sigmaM: 3, geometryVersion: 'g1', terrainVersion: 't1', primaryLie: 'UNKNOWN' });
-    const final = finalAnchor(provisional, { positionENU: [1.5, 2.5], positionWgs84: [-79.744, 42.06, null], covarianceENU2D: [[4, 0], [0, 4]], sigmaM: 2, sigmaDeviceM: 2, sigmaScatterM: .4, medianAccuracyM: 2,
+    const final = finalAnchor(provisional, { positionENU: [1.5, 2.5], positionWgs84: [-79.744, 42.06, null], covarianceENU2D: [[4, 0], [0, 4]], covarianceScatterENU2D: [[.16, 0], [0, .16]], covarianceDeviceENU2D: [[4, 0], [0, 4]],
+      sigmaM: 2, sigmaDeviceM: 2, sigmaScatterM: .4, reportedRadiusM: 2, medianAccuracyM: 2, kAcc: 1, kAccCalibration: 'provisional', captureMotion: 'stationary',
+      motion: { captureMotion: 'stationary', reportedSpeedMps: null, displacementSpeedMps: 0, displacementM: 0 },
       windowSamples: [sample], usedSamples: 1, rejectedResiduals: 0, poorAccuracy: false, basis: 'weighted_mean_of_window' },
     { elevationM: 480, slopeDegrees: 3, aspectDegrees: 90, gradient: [0, 0], normal: [0, 0, 1], deltaM: 2, elevationQuality: 'LIDAR', verticalDatum: 'NAVD88', basis: 'central_differences_metric_grid' },
     { classes: [{ featureId: 'g', lieClass: 'green', p: .8 }, { featureId: null, lieClass: 'primary_rough', p: .2 }], primaryLie: 'green', primaryFeatureId: 'g', pMax: .8, method: 'monte_carlo', sampleCount: 128, edgeSigmaM: 2.5, queryRadiusM: 9, basis: 'canonical_partition' },
