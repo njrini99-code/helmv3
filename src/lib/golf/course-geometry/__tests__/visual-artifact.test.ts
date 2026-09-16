@@ -7,7 +7,7 @@ import { boundaryDistance } from '../display-outline';
 import {
   assertVisualArtifact, compileVisualArtifact, createVisualSurfaceSampler, MERIDIAN_CODES, MERIDIAN_VISUAL_COMPILER_VERSION, offlinePackManifest,
   parseVisualArtifact, serializeVisualArtifact, SURFACE_CLASS_IDS, visualArtifactCachePath,
-} from '../visual-artifact';
+ smoothVertexNormals } from '../visual-artifact';
 import { MERIDIAN_STYLE, MERIDIAN_STYLE_HASH, MERIDIAN_STYLE_VERSION, styleHash } from '../visual-style';
 
 const mesh = parseTerrainMesh(source, pilotPackage);
@@ -153,7 +153,7 @@ describe('Rough hierarchy and ground zones (outside world §10–16, §21)', () 
       const kind = mesh.featureKinds[mesh.triangleFeatures[t]!];
       for (let corner = 0; corner < 3; corner++) {
         const vertex = t * 3 + corner, cls = SURFACE_CLASS_IDS[a.surfaceClass[vertex]!], d = a.surroundDistanceCm[vertex]! / 100;
-        if (cls === 'apron') continue; // the green complex claims the neck after banding (tested below)
+        if (cls === 'apron' || cls === 'runoff') continue; // the green complex claims the neck and run-offs after banding (tested below)
         if (kind !== 'rough' && kind !== 'ground' || cls === 'surround' || cls === 'fringe') { expect(d).toBe(0); expect(['rough_secondary', 'rough_outer']).not.toContain(cls); continue; }
         const x = mesh.vertices[vertex * 3]!, y = mesh.vertices[vertex * 3 + 1]!;
         const truth = Math.min(60, playing.reduce((min, ring) => Math.min(min, boundaryDistance([x, y], ring)), Infinity));
@@ -213,10 +213,43 @@ describe('Rough hierarchy and ground zones (outside world §10–16, §21)', () 
 });
 
 describe('Green complex, fairway edges and bunker lips (fidelity §10, §13–21, §26–28)', () => {
+  it('paints a run-off only where the canonical ground falls away from the green (fidelity §39–40)', () => {
+    const cfg = MERIDIAN_STYLE.greenComplex.runoff;
+    const artifact = compileVisualArtifact(scene, mesh), a = artifact.attributes;
+    const none = compileVisualArtifact(scene, mesh, { ...MERIDIAN_STYLE, greenComplex: { ...MERIDIAN_STYLE.greenComplex, runoff: { ...cfg, reachM: 0 } } });
+    expect(none.layers.greenComplex.runoffVertices).toBe(0);
+    const greens = scene.features.filter(f => f.kind === 'green'), greenRings = greens.flatMap(f => f.parts.flat());
+    const centres = greens.map(f => { const ring = f.parts[0]![0]!; return [ring.reduce((s, p) => s + p[0], 0) / ring.length, ring.reduce((s, p) => s + p[1], 0) / ring.length] as const; });
+    let runoffs = 0, changed = 0;
+    const normals = smoothVertexNormals(mesh), v = mesh.vertices;
+    for (let t = 0; t < mesh.triangleFeatures.length; t++) {
+      const kind = mesh.featureKinds[mesh.triangleFeatures[t]!];
+      for (let corner = 0; corner < 3; corner++) {
+        const vertex = t * 3 + corner;
+        const nx = normals[vertex * 3]!, ny = normals[vertex * 3 + 1]!, nz = normals[vertex * 3 + 2]!, slope = Math.hypot(nx, ny) / Math.max(1e-9, nz);
+        const differs = [0, 1, 2].some(c => a.albedo[vertex * 3 + c] !== none.attributes.albedo[vertex * 3 + c]);
+        if (!differs) continue;
+        changed++;
+        // Any vertex the run-off touched sits in rough/ground within reach of a green, on ground that slopes down away from it.
+        const x = v[vertex * 3]!, y = v[vertex * 3 + 1]!;
+        expect(kind === 'rough' || kind === 'ground').toBe(true);
+        expect(greenRings.reduce((min, ring) => Math.min(min, boundaryDistance([x, y], ring)), Infinity)).toBeLessThanOrEqual(cfg.reachM + .05);
+        expect(slope).toBeGreaterThanOrEqual(cfg.slopeMin - 1e-9);
+        const centre = centres.reduce((best, c) => Math.hypot(x - c[0], y - c[1]) < Math.hypot(x - best[0], y - best[1]) ? c : best);
+        const d = Math.hypot(x - centre[0], y - centre[1]), dot = (nx * (x - centre[0]) / d + ny * (y - centre[1]) / d) / Math.hypot(nx, ny);
+        expect(dot).toBeGreaterThanOrEqual(cfg.awayDot - 1e-9);
+        if (SURFACE_CLASS_IDS[a.surfaceClass[vertex]!] === 'runoff') { runoffs++; expect(a.roughness[vertex]! / 255).toBeCloseTo(MERIDIAN_STYLE.surface.roughness.apron, 1); expect(a.mowingWeight[vertex]).toBe(0); }
+      }
+    }
+    expect(changed).toBeLessThanOrEqual(artifact.layers.greenComplex.runoffVertices);
+    expect(runoffs).toBeLessThanOrEqual(artifact.layers.greenComplex.runoffVertices);
+  });
+
   const style = MERIDIAN_STYLE;
   it('derives an apron neck between the hole\'s own fairway and green, lips the green edge, and shades the pad setting', () => {
     const artifact = compileVisualArtifact(scene, mesh), a = artifact.attributes, complex = artifact.layers.greenComplex;
-    expect(complex).toMatchObject({ basis: 'visual_only', version: 'green-complex-v1', apronBasis: 'derived_neck' });
+    expect(complex).toMatchObject({ basis: 'visual_only', version: 'green-complex-v2', apronBasis: 'derived_neck', runoffBasis: 'canonical_slope' });
+    expect(complex.runoffVertices).toBeGreaterThanOrEqual(0);
     expect(complex.apronVertices).toBeGreaterThan(0); expect(complex.edgeVertices).toBeGreaterThan(0);
     const greens = scene.features.filter(f => f.kind === 'green').flatMap(f => f.parts.flat());
     const fairways = scene.features.filter(f => f.kind === 'fairway').flatMap(f => f.parts.flat());

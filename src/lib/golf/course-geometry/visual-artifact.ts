@@ -15,7 +15,7 @@ import { inRing } from './spatial';
 import type { HoleScene, LocalFeature, PointM, SurfaceKind } from './types';
 import { hexToRgb, MERIDIAN_STYLE, srgbToLinear, styleHash, type MeridianPaletteKey, type MeridianStyle } from './visual-style';
 
-export const MERIDIAN_VISUAL_COMPILER_VERSION = 'meridian-visual-compiler-4';
+export const MERIDIAN_VISUAL_COMPILER_VERSION = 'meridian-visual-compiler-5';
 export const MERIDIAN_CODES = Object.freeze({
   mismatch: 'MERIDIAN_ARTIFACT_MISMATCH', missing: 'MERIDIAN_ARTIFACT_MISSING', contextLost: 'MERIDIAN_CONTEXT_LOST',
   shaderFailed: 'MERIDIAN_SHADER_FAILED', budgetExceeded: 'MERIDIAN_BUDGET_EXCEEDED', fitFailed: 'MERIDIAN_FIT_FAILED',
@@ -26,12 +26,12 @@ export type MeridianCode = typeof MERIDIAN_CODES[keyof typeof MERIDIAN_CODES];
 /** Ground zone classes the compiler paints from the context layer (outside
  * world §10–16): each is a named, source-backed tone, never invented filler. */
 export type GroundZoneClass = 'open_field' | 'wetland' | 'parking' | 'ski_slope' | 'recreation' | 'buffer_grass' | 'native' | 'rough_secondary';
-export type SurfaceClass = SurfaceKind | 'ground' | 'surround' | 'fringe' | 'rough_outer' | 'apron' | GroundZoneClass;
+export type SurfaceClass = SurfaceKind | 'ground' | 'surround' | 'fringe' | 'rough_outer' | 'apron' | 'runoff' | GroundZoneClass;
 /** Compiler ribbon materials (compile-course-terrain.py): 0 field, 1 edge
  * ribbon, 2 highlight ribbon, 3 surround, 4 collar. Ids 0–9 are the V1–V5
  * classes and never move; 10+ are the rough hierarchy and ground zones. */
 export const SURFACE_CLASS_IDS: readonly SurfaceClass[] = ['ground', 'rough', 'fairway', 'tee', 'green', 'fringe', 'surround', 'bunker', 'water', 'woods',
-  'rough_secondary', 'rough_outer', 'native', 'apron', 'open_field', 'wetland', 'parking', 'ski_slope', 'recreation', 'buffer_grass'];
+  'rough_secondary', 'rough_outer', 'native', 'apron', 'open_field', 'wetland', 'parking', 'ski_slope', 'recreation', 'buffer_grass', 'runoff'];
 /** Context zone classes that paint a ground tone, and the palette key each uses. */
 export const GROUND_ZONE_CLASSES: Readonly<Record<string, { surface: GroundZoneClass; palette: MeridianPaletteKey; turf: boolean }>> = Object.freeze({
   open_field: { surface: 'open_field', palette: 'openField', turf: true }, wetland: { surface: 'wetland', palette: 'wetland', turf: true },
@@ -124,7 +124,7 @@ export interface MeridianVisualArtifact {
     /** Outside world §10–16: ground tones painted from classified context zones. */
     groundZones: { basis: 'visual_only'; version: 'context-zones-v1'; painted: number; classes: Record<string, number>; skippedUncertain: number };
     /** Fidelity §13–21: derived apron neck, green/collar edge lip, pad setting shade. */
-    greenComplex: { basis: 'visual_only'; version: 'green-complex-v1'; apronBasis: 'derived_neck'; apronVertices: number; edgeVertices: number; settingVertices: number };
+    greenComplex: { basis: 'visual_only'; version: 'green-complex-v2'; apronBasis: 'derived_neck'; runoffBasis: 'canonical_slope'; runoffVertices: number; apronVertices: number; edgeVertices: number; settingVertices: number };
     /** Fidelity §10: fairway edge types by neighbour. */
     fairwayEdges: { basis: 'visual_only'; version: 'edge-types-v1'; crispVertices: number; softVertices: number };
     /** Renderer redesign §16: ground contact shade under context structures and path shoulders. */
@@ -337,7 +337,7 @@ export function compileVisualArtifact(scene: HoleScene, mesh: TerrainMesh, style
       roughHierarchy: { basis: 'visual_only', version: 'distance-bands-v2', firstCutM: style.roughHierarchy.firstCutM, secondaryM: style.roughHierarchy.secondaryM, outerM: style.roughHierarchy.outerM,
         secondaryVertices: hierarchy.secondary, outerVertices: hierarchy.outer },
       groundZones: { basis: 'visual_only', version: 'context-zones-v1', painted: hierarchy.painted, classes: hierarchy.classes, skippedUncertain: hierarchy.skippedUncertain },
-      greenComplex: { basis: 'visual_only', version: 'green-complex-v1', apronBasis: 'derived_neck', ...greenComplex },
+      greenComplex: { basis: 'visual_only', version: 'green-complex-v2', apronBasis: 'derived_neck', runoffBasis: 'canonical_slope', ...greenComplex },
       fairwayEdges: { basis: 'visual_only', version: 'edge-types-v1', ...fairwayEdges },
       contextContact: { basis: 'visual_only', version: 'context-contact-v1', ...contextContact },
     },
@@ -358,6 +358,33 @@ const shadeAlbedo = (attributes: MeridianVisualAttributes, vertex: number, shade
   for (let c = 0; c < 3; c++) attributes.albedo[vertex * 3 + c] = Math.round(Math.min(255, Math.max(0, attributes.albedo[vertex * 3 + c]! * shade)));
 };
 
+/** Smooth per-vertex normals for slope evidence: the package's DEM normals
+ * when present, else triangle normals summed over every vertex that shares a
+ * position, so a slope test follows the landform, not one triangle. */
+export function smoothVertexNormals(mesh: TerrainMesh): Float32Array {
+  const v = mesh.vertices, count = v.length / 3, normals = new Float32Array(v.length);
+  if (mesh.sourceNormals && mesh.sourceNormals.length === v.length) { normals.set(mesh.sourceNormals); return normals; }
+  const groups = new Int32Array(count), keys = new Map<string, number>();
+  for (let i = 0; i < count; i++) {
+    const key = `${Math.round(v[i * 3]! * 1000)},${Math.round(v[i * 3 + 1]! * 1000)}`;
+    let index = keys.get(key); if (index === undefined) { index = keys.size; keys.set(key, index); }
+    groups[i] = index;
+  }
+  const summed = new Float64Array(keys.size * 3);
+  for (let t = 0; t < count / 3; t++) {
+    const i0 = t * 9, ax = v[i0 + 3]! - v[i0]!, ay = v[i0 + 4]! - v[i0 + 1]!, az = v[i0 + 5]! - v[i0 + 2]!;
+    const bx = v[i0 + 6]! - v[i0]!, by = v[i0 + 7]! - v[i0 + 1]!, bz = v[i0 + 8]! - v[i0 + 2]!;
+    let nx = ay * bz - az * by, ny = az * bx - ax * bz, nz = ax * by - ay * bx;
+    if (nz < 0) { nx = -nx; ny = -ny; nz = -nz; }
+    for (let corner = 0; corner < 3; corner++) { const j = groups[t * 3 + corner]! * 3; summed[j] = summed[j]! + nx; summed[j + 1] = summed[j + 1]! + ny; summed[j + 2] = summed[j + 2]! + nz; }
+  }
+  for (let i = 0; i < count; i++) {
+    const j = groups[i]! * 3, length = Math.hypot(summed[j]!, summed[j + 1]!, summed[j + 2]!) || 1;
+    normals[i * 3] = summed[j]! / length; normals[i * 3 + 1] = summed[j + 1]! / length; normals[i * 3 + 2] = summed[j + 2]! / length;
+  }
+  return normals;
+}
+
 /** Green complex (fidelity §13–21). Three render-only refinements around the
  * hole's own green(s): a derived apron neck where its own fairway runs into
  * the green, a crisper albedo lip on the green and its collar than any other
@@ -365,13 +392,25 @@ const shadeAlbedo = (attributes: MeridianVisualAttributes, vertex: number, shade
  * perched or shelved green reads as a landform (§20). Nothing moves; every
  * shape stays the reviewed outline. */
 function compileGreenComplex(scene: HoleScene, mesh: TerrainMesh, style: MeridianStyle, attributes: MeridianVisualAttributes,
-  contextIds: Set<string>, ringsFor: (id: string) => { ring: readonly PointM[]; box: Bbox }[]): { apronVertices: number; edgeVertices: number; settingVertices: number } {
+  contextIds: Set<string>, ringsFor: (id: string) => { ring: readonly PointM[]; box: Bbox }[]): { apronVertices: number; edgeVertices: number; settingVertices: number; runoffVertices: number } {
   const cfg = style.greenComplex, v = mesh.vertices;
   const own = scene.features.filter(feature => !contextIds.has(feature.id));
   const greens = own.filter(feature => feature.kind === 'green'), fairways = own.filter(feature => feature.kind === 'fairway');
   const greenRings = greens.flatMap(feature => ringsFor(feature.id)), fairwayRings = fairways.flatMap(feature => ringsFor(feature.id));
-  const counts = { apronVertices: 0, edgeVertices: 0, settingVertices: 0 };
+  const counts = { apronVertices: 0, edgeVertices: 0, settingVertices: 0, runoffVertices: 0 };
   if (!greenRings.length) return counts;
+  // §39–40 run-off evidence: the direction away from the nearest green centre
+  // and, per vertex, the canonical downhill direction and slope.
+  const runoff = cfg.runoff, vertexNormals = smoothVertexNormals(mesh);
+  const greenCentres = greenRings.map(({ ring }) => {
+    let sx = 0, sy = 0; for (const [x, y] of ring) { sx += x; sy += y; }
+    return [sx / ring.length, sy / ring.length] as PointM;
+  });
+  const awayFromGreen = (point: PointM): PointM => {
+    let best = greenCentres[0]!, bestD = Infinity;
+    for (const centre of greenCentres) { const d = Math.hypot(point[0] - centre[0], point[1] - centre[1]); if (d < bestD) { bestD = d; best = centre; } }
+    return bestD > 0 ? [(point[0] - best[0]) / bestD, (point[1] - best[1]) / bestD] : [0, 0];
+  };
   // Pad elevation per green: mean canonical z of its own vertices.
   const greenIds = new Set(greens.map(feature => feature.id));
   let padSum = 0, padCount = 0;
@@ -382,7 +421,7 @@ function compileGreenComplex(scene: HoleScene, mesh: TerrainMesh, style: Meridia
   }
   const padZ = padCount ? padSum / padCount : 0;
   const apronAlbedo = hexToRgb(style.palette.apron), apronId = SURFACE_CLASS_IDS.indexOf('apron');
-  const apronRoughness = Math.round(style.surface.roughness.apron * 255);
+  const apronRoughness = Math.round(style.surface.roughness.apron * 255), runoffId = SURFACE_CLASS_IDS.indexOf('runoff');
   const greenId = SURFACE_CLASS_IDS.indexOf('green'), fringeId = SURFACE_CLASS_IDS.indexOf('fringe');
   const roughIds = new Set([SURFACE_CLASS_IDS.indexOf('rough'), SURFACE_CLASS_IDS.indexOf('ground'), SURFACE_CLASS_IDS.indexOf('rough_secondary'), SURFACE_CLASS_IDS.indexOf('surround')]);
   const reach = Math.max(cfg.apronGreenM, cfg.settingReachM);
@@ -392,6 +431,8 @@ function compileGreenComplex(scene: HoleScene, mesh: TerrainMesh, style: Meridia
     for (let corner = 0; corner < 3; corner++) {
       const vertex = t * 3 + corner, cls = attributes.surfaceClass[vertex]!;
       const point: PointM = [v[vertex * 3]!, v[vertex * 3 + 1]!];
+      const nx = vertexNormals[vertex * 3]!, ny = vertexNormals[vertex * 3 + 1]!, nz = vertexNormals[vertex * 3 + 2]!;
+      const horizontal = Math.hypot(nx, ny), slope = horizontal / Math.max(1e-9, nz);
       if (cls === greenId || cls === fringeId) {
         // §18 / §16: the cleanest edge in the scene. Boundary distance is the
         // vertex's own feature edge: the green ring for green vertices, the
@@ -415,6 +456,19 @@ function compileGreenComplex(scene: HoleScene, mesh: TerrainMesh, style: Meridia
           if (blend >= .5) { attributes.surfaceClass[vertex] = apronId; attributes.roughness[vertex] = apronRoughness; attributes.turfWeight[vertex] = 255; attributes.mowingWeight[vertex] = 0; }
           counts.apronVertices++;
           continue;
+        }
+      }
+      // §39–40 run-off: short grass where the ground falls away from the
+      // green steeply enough. Flat or rising ground gets none.
+      if (runoff.reachM > 0 && dGreen <= runoff.reachM && slope >= runoff.slopeMin && horizontal > 0) {
+        const away = awayFromGreen(point), dot = (nx * away[0] + ny * away[1]) / horizontal;
+        if (dot >= runoff.awayDot) {
+          const strength = Math.min(1, (slope - runoff.slopeMin) / Math.max(1e-6, runoff.slopeFull - runoff.slopeMin)) * (1 - dGreen / runoff.reachM);
+          const base: [number, number, number] = [attributes.albedo[vertex * 3]! / 255, attributes.albedo[vertex * 3 + 1]! / 255, attributes.albedo[vertex * 3 + 2]! / 255];
+          const albedo = mix(base, apronAlbedo, runoff.mix * strength);
+          for (let c = 0; c < 3; c++) attributes.albedo[vertex * 3 + c] = Math.round(Math.min(1, Math.max(0, albedo[c]!)) * 255);
+          if (strength >= .5) { attributes.surfaceClass[vertex] = runoffId; attributes.roughness[vertex] = apronRoughness; attributes.turfWeight[vertex] = 255; attributes.mowingWeight[vertex] = 0; }
+          counts.runoffVertices++;
         }
       }
       // §20 setting: the bank below the pad darkens toward the green.

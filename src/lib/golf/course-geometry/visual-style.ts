@@ -108,7 +108,12 @@ export const MERIDIAN_STYLE = Object.freeze({
    * than any other surface; the bank below a green pad darkens a little
    * within `settingReachM` so the pad reads as a landform (§20). */
   greenComplex: Object.freeze({ apronGreenM: 10, apronFairwayM: 5, apronBlendM: 2, greenEdgeShade: .045, fringeEdgeShade: .025, edgeFieldM: .5,
-    settingReachM: 12, settingDropM: 1.5, settingShade: .05 }),
+    settingReachM: 12, settingDropM: 1.5, settingShade: .05,
+    /** Fidelity §39–40: a short-grass run-off where the canonical ground
+     * within `reachM` of the green falls away from it (downhill · away ≥
+     * `awayDot`) at a slope of at least `slopeMin` (full strength at
+     * `slopeFull`). Flat or rising ground gets none: never invented. */
+    runoff: Object.freeze({ reachM: 16, slopeMin: .05, slopeFull: .11, awayDot: .35, mix: .6 }) }),
   /** Fidelity §10: fairway edge types. Crisp within `crispNearM` of a bunker
    * or green (maintained boundary), soft elsewhere; each is a short albedo
    * lip inside the fairway edge over `fieldM`. */
