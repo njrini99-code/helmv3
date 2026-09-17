@@ -71,7 +71,10 @@ import { hexToRgb, MERIDIAN_STYLE, srgbToLinear, type MeridianPaletteKey, type M
 //     and shade vary like V1's per-bunker seeds.
 // -10: §10 fairway edge types (crisp near sand/green, soft elsewhere) with
 //      the §10.3 terrain bias from the relief slope across the edge.
-export const GROUND_SHADER_V2_VERSION = 'meridian-ground-v2-10';
+// -11: outside-world context per vertex (golfV2Context / golfV2Zone): §53
+//      context rough-mix and desaturation, §48 ground zones replacing the
+//      rough hierarchy inside them.
+export const GROUND_SHADER_V2_VERSION = 'meridian-ground-v2-11';
 
 /** Attribute names the component layer must upload on every V2 ground
  * geometry (base and hero patches alike, so the one material fits both). */
@@ -80,6 +83,15 @@ export const GROUND_V2_ATTRIBUTES = Object.freeze({
   /** Metres; the render-only bunker bowl/lip offset (0 elsewhere). */
   visualOffset: 'golfV2Offset',
   roughness: 'golfV2Roughness',
+  /** 1 on a vertex inside a neighbouring hole's feature (V1 contextWeight,
+   * §53): its atlas fairway/green colour mixes toward rough by
+   * context.roughMix and the fragment desaturates by context.desaturate. */
+  context: 'golfV2Context',
+  /** Signed ground-zone weight (ground-context-v2.ts): |value| is V1's edge
+   * blend into a painted context zone whose tone the vertex colour already
+   * carries, the sign its turf switch (negative = no turf fields, e.g.
+   * parking). The rough hierarchy and the setting shade give way by it. */
+  zone: 'golfV2Zone',
   /** 1 when this vertex's own class is one the field atlas can classify
    * (`GROUND_ATLAS_TRACKED_CLASSES`), 0 otherwise. Interpolated like every
    * other attribute, so a ribbon triangle with one tracked and one untracked
@@ -555,7 +567,7 @@ export function groundShaderV2Chunks(style: MeridianStyle = MERIDIAN_STYLE): Gro
   const macroAmp = style.turf.macro.amplitude.toFixed(4), microAmp = style.turf.micro.amplitude.toFixed(4);
   const greenMacro = style.turf.greenMacroScale.toFixed(3), greenMicro = style.turf.greenMicroScale.toFixed(3);
   const norm = BUNKER_SHADE_NORM;
-  const { surfaceClass, visualOffset, roughness, atlasTrust } = GROUND_V2_ATTRIBUTES;
+  const { surfaceClass, visualOffset, roughness, atlasTrust, context: contextAttr, zone: zoneAttr } = GROUND_V2_ATTRIBUTES;
   // Task 11 follow-up: atlas SDF classification (see the file header and
   // `classifySurfaceFromAtlas`, which this GLSL block mirrors term for term).
   const bands = edgeBandsM(style);
@@ -593,16 +605,22 @@ export function groundShaderV2Chunks(style: MeridianStyle = MERIDIAN_STYLE): Gro
 attribute float ${visualOffset};
 attribute float ${roughness};
 attribute float ${atlasTrust};
+attribute float ${contextAttr};
+attribute float ${zoneAttr};
 varying float vGolfV2Class;
 varying float vGolfV2Offset;
 varying float vGolfV2Roughness;
 varying float vGolfV2AtlasTrust;
+varying float vGolfV2Context;
+varying float vGolfV2Zone;
 varying vec2 vGolfV2WorldXY;
 varying float vGolfV2WorldZ;`;
   const vertexMain = `vGolfV2Class = ${surfaceClass};
 vGolfV2Offset = ${visualOffset};
 vGolfV2Roughness = ${roughness};
 vGolfV2AtlasTrust = ${atlasTrust};
+vGolfV2Context = ${contextAttr};
+vGolfV2Zone = ${zoneAttr};
 vec3 golfV2WorldPos = (modelMatrix * vec4(position, 1.0)).xyz;
 vGolfV2WorldXY = golfV2WorldPos.xy;
 vGolfV2WorldZ = golfV2WorldPos.z;`;
@@ -617,6 +635,8 @@ varying float vGolfV2Class;
 varying float vGolfV2Offset;
 varying float vGolfV2Roughness;
 varying float vGolfV2AtlasTrust;
+varying float vGolfV2Context;
+varying float vGolfV2Zone;
 varying vec2 vGolfV2WorldXY;
 varying float vGolfV2WorldZ;
 #ifdef GOLF_V2_ATLAS
@@ -805,6 +825,10 @@ float golfV2ResolvedRoughness;`;
       float golfFresnel = pow(1.0 - clamp(dot(normalize(vNormal), normalize(vViewPosition)), 0.0, 1.0), ${water.fresnelPower.toFixed(3)});
       golfAtlasCol = mix(golfAtlasCol, ${paletteGlsl(water.skyColor)}, (${water.skyBase.toFixed(3)} + ${(1 - water.skyBase).toFixed(3)} * golfFresnel) * ${water.skyMix.toFixed(3)});
     }
+    // §53 context (V1 albedoFor): a neighbouring hole's fairway, green and
+    // its collar/surround mix toward rough by context.roughMix — real, but
+    // not this hole's; sand and water keep their own.
+    if (golfWin == 0 || golfWin == 2 || golfWin == 4 || golfWin == 5) golfAtlasCol = mix(golfAtlasCol, ${atlasColorGlsl('rough')}, ${style.context.roughMix.toFixed(4)} * vGolfV2Context);
     // The vertex colour is the background: tracked-class vertices bake the
     // rough albedo when an atlas paints them, so nothing sand- or
     // green-tinted can leak in from outside the true outline.
@@ -877,7 +901,12 @@ float golfV2ResolvedRoughness;`;
     // darker/cooler, convex a touch lighter/warmer, on the same share.
     float golfTeeIn = smoothstep(-${(CRISP_EDGE_BAND_M / 2).toFixed(4)}, ${(CRISP_EDGE_BAND_M / 2).toFixed(4)}, golfDTee);
     float golfWoodsIn = clamp(golfClass - ${(SURFACE_CLASS_IDS.indexOf('woods') - 1).toFixed(1)}, 0.0, 1.0);
-    float golfRoughShare = (1.0 - golfWeight) * (1.0 - golfTeeIn) * (1.0 - golfWoodsIn);
+    // A painted context zone (§48; vGolfV2Zone, ground-context-v2.ts) has
+    // its own tone in the vertex colour and takes no band: the hierarchy's
+    // share gives way by the zone weight, and the zone keeps V1's full
+    // slope darkening instead (compileRoughHierarchy's zone branch).
+    float golfZoneW = abs(vGolfV2Zone);
+    float golfRoughShare = (1.0 - golfWeight) * (1.0 - golfTeeIn) * (1.0 - golfWoodsIn) * (1.0 - golfZoneW);
     vec2 golfOutsideM = max(vec2(0.0), max(-golfSdfUv, golfSdfUv - 1.0)) / golfV2SdfFrame.zw;
     float golfDPlay = max(0.0, -max(max(golfDFairway, golfDGreen), golfDTee)) + max(golfOutsideM.x, golfOutsideM.y);
     float golfToPrimary = smoothstep(${(rh.firstCutM - rh.firstCutBlendM).toFixed(4)}, ${(rh.firstCutM + rh.firstCutBlendM).toFixed(4)}, golfDPlay);
@@ -889,6 +918,7 @@ float golfV2ResolvedRoughness;`;
     float golfCurv = clamp(golfRelief.a, -1.0, 1.0);
     vec3 golfCurvTone = mix(vec3(1.0), ${vec3Glsl(tone.concave)}, max(0.0, golfCurv)) * mix(vec3(1.0), ${vec3Glsl(tone.convex)}, max(0.0, -golfCurv));
     diffuseColor.rgb *= mix(vec3(1.0), golfTier * golfSlopeShade * golfCurvTone, golfRoughShare);
+    diffuseColor.rgb *= 1.0 - ${rh.slopeDarken.toFixed(4)} * min(1.0, golfSlopeV1 / ${rh.slopeFullAt.toFixed(4)}) * golfZoneW * (1.0 - golfWeight);
     golfV2ResolvedRoughness = mix(golfV2ResolvedRoughness, ${style.surface.roughness.rough_outer.toFixed(5)}, golfRoughShare * golfToOuter);
     golfMacroScale = mix(1.0, ${rh.outerMacroScale.toFixed(4)}, golfRoughShare * golfToOuter);
     golfMicroScale = mix(1.0, ${micro.rough.toFixed(4)}, golfRoughShare);
@@ -972,7 +1002,8 @@ float golfV2ResolvedRoughness;`;
 #endif
   }
 #endif
-  float golfTurfWeight = (golfBunker || golfWater || golfWoods) ? 0.0 : 1.0;
+  // A non-turf zone (parking: negative vGolfV2Zone) carries no turf fields (V1 turfWeight 0).
+  float golfTurfWeight = ((golfBunker || golfWater || golfWoods) ? 0.0 : 1.0) * (1.0 - max(0.0, -vGolfV2Zone));
   vec2 golfP = vGolfV2WorldXY + golfV2Seed;
   // §17–21 world-space turf variation (copied from the V1 ground material).
   float golfMacro = (sin(dot(golfP, vec2(0.87, 0.49) * ${k(m0)}))
@@ -1021,6 +1052,10 @@ float golfV2ResolvedRoughness;`;
     float golfDepthShade = clamp(-vGolfV2Offset / ${norm.depthM.toFixed(3)}, 0.0, 1.0) * ${norm.floorShade.toFixed(4)};
     diffuseColor.rgb *= 1.0 - golfDepthShade;
   }
+  // §53 context desaturation (V1, albedo only, never alpha): a neighbouring
+  // hole's surfaces lose context.desaturate of their saturation.
+  float golfLuma = dot(diffuseColor.rgb, vec3(0.2126, 0.7152, 0.0722));
+  diffuseColor.rgb = mix(diffuseColor.rgb, vec3(golfLuma), vGolfV2Context * ${style.context.desaturate.toFixed(4)});
 }`;
   const fragmentRoughness = `roughnessFactor = golfV2ResolvedRoughness;`;
   // §31: the green's quiet micro-normal, world-space XY tilt turned into

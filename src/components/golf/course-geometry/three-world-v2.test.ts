@@ -5,9 +5,10 @@ import * as THREE from 'three';
 import type { CompiledBunkerPatch } from '@/lib/golf/course-geometry/bunker-display-mesh';
 import { compileBunkerNormalField } from '@/lib/golf/course-geometry/bunker-normal-field';
 import { buildHoleScene } from '@/lib/golf/course-geometry/build-scene';
+import { parseContextLayer } from '@/lib/golf/course-geometry/context-layer';
 import { fieldAtlasBytes, sampleFieldAtlas } from '@/lib/golf/course-geometry/field-atlas';
 import { greenBandsAt } from '@/lib/golf/course-geometry/green-surface-v2';
-import { classifySurfaceFromAtlas, pickFinestAtlas, RELIEF_FIELD_BINDING } from '@/lib/golf/course-geometry/ground-shader-v2';
+import { classAlbedoLinear, classifySurfaceFromAtlas, GROUND_V2_ATTRIBUTES, pickFinestAtlas, RELIEF_FIELD_BINDING } from '@/lib/golf/course-geometry/ground-shader-v2';
 import { parseGeometryPackage } from '@/lib/golf/course-geometry/schema';
 import { parseTerrainMesh, type TerrainMesh } from '@/lib/golf/course-geometry/terrain';
 import type { MetricTerrainGrid } from '@/lib/golf/course-geometry/terrain-source';
@@ -21,15 +22,17 @@ import { assembleV2World, buildV2World, greenPadSetting, rewindTrianglesCCW, typ
 // bunkers plus three standalone fairway bunkers, so `compileHeroPatches`
 // always returns exactly 4 patches for it (no context layer needed).
 const fixtures = new URL('../../../test/fixtures/course-geometry/', import.meta.url);
-function loadHole7(): { mesh: TerrainMesh; scene: HoleScene } {
+function loadHole(key = 'peek-n-peak-upper-07', withContextLayer = false): { mesh: TerrainMesh; scene: HoleScene } {
   const pkg = parseGeometryPackage(JSON.parse(readFileSync(new URL('peek-n-peak-upper.json', fixtures), 'utf8')));
   const manifest = JSON.parse(readFileSync(new URL('compiled-peek-n-peak-upper/asset-manifest.json', fixtures), 'utf8')) as { holes: Record<string, { fileName: string }> };
-  const fileName = manifest.holes['peek-n-peak-upper-07']!.fileName;
+  const fileName = manifest.holes[key]!.fileName;
   const raw = readFileSync(new URL(`compiled-peek-n-peak-upper/${fileName}`, fixtures));
   const mesh = parseTerrainMesh(JSON.parse((fileName.endsWith('.gz') ? gunzipSync(raw) : raw).toString('utf8')), pkg);
-  const scene = buildHoleScene(pkg, 'peek-n-peak-upper-07', [], mesh);
+  const context = withContextLayer ? parseContextLayer(JSON.parse(readFileSync(new URL('peek-n-peak-upper-context.json', fixtures), 'utf8')), pkg) : undefined;
+  const scene = buildHoleScene(pkg, key, [], mesh, context);
   return { mesh, scene };
 }
+const loadHole7 = (): { mesh: TerrainMesh; scene: HoleScene } => loadHole();
 
 // A flat 10x10 m grid, for the synthetic `V2WorldInput` literals below —
 // `metricTerrainNormal` on it always answers `[0, 0, 1]`, which is enough to
@@ -621,5 +624,53 @@ describe('Meridian V2 runtime world (Task 11)', () => {
     const positions = new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0]); // (0,0),(1,0),(0,1): CCW, signed area > 0
     expect(rewindTrianglesCCW(positions, new Uint32Array([0, 1, 2]))).toEqual(new Uint32Array([0, 1, 2]));
     expect(rewindTrianglesCCW(positions, new Uint32Array([0, 2, 1]))).toEqual(new Uint32Array([0, 1, 2]));
+  });
+});
+
+describe('outside-world context attributes on the V2 ground (ground-context-v2.ts; meridian-ground-v2-11)', () => {
+  it('uploads golfV2Context / golfV2Zone on the base and every hero patch, marks hole 1\'s neighbouring features and bakes its ski-slope zone into the vertex colour', () => {
+    const { mesh, scene } = loadHole('peek-n-peak-upper-01', true);
+    const input = assembleV2World(scene, mesh)!;
+    expect(input.scene).toBe(scene);
+    expect(input.featureIds).toBe(mesh.featureIds);
+    const built = buildV2World(input);
+    try {
+      const meshes = built.group.children as THREE.Mesh[];
+      expect(meshes.length).toBeGreaterThan(1);
+      for (const m of meshes) {
+        const geometry = m.geometry as THREE.BufferGeometry;
+        const context = geometry.getAttribute(GROUND_V2_ATTRIBUTES.context), zone = geometry.getAttribute(GROUND_V2_ATTRIBUTES.zone);
+        expect(context.count).toBe(geometry.getAttribute('position').count);
+        expect(zone.count).toBe(context.count);
+        for (let v = 0; v < zone.count; v++) { expect(zone.getX(v)).toBeGreaterThanOrEqual(-1); expect(zone.getX(v)).toBeLessThanOrEqual(1); }
+      }
+      const base = meshes[0]!.geometry as THREE.BufferGeometry;
+      const context = base.getAttribute(GROUND_V2_ATTRIBUTES.context), zone = base.getAttribute(GROUND_V2_ATTRIBUTES.zone), color = base.getAttribute('color');
+      let contextVertices = 0, zoneVertices = 0, fullZone = -1;
+      for (let v = 0; v < context.count; v++) {
+        if (context.getX(v) === 1) contextVertices++;
+        if (zone.getX(v) !== 0) { zoneVertices++; if (zone.getX(v) === 1 && fullZone < 0) fullZone = v; }
+      }
+      expect(contextVertices).toBeGreaterThan(100); // hole 1's context mesh carries neighbouring fairways, greens, tees
+      expect(zoneVertices).toBeGreaterThan(100); // the Upper context layer's ski slope reaches hole 1's mesh (708 vertices in the census)
+      expect(fullZone).toBeGreaterThanOrEqual(0);
+      // A fully-inside ski-slope vertex carries the zone's own albedo (turf zone: positive weight).
+      const [r, g, b] = classAlbedoLinear('ski_slope', MERIDIAN_STYLE);
+      expect(color.getX(fullZone)).toBeCloseTo(r, 5); expect(color.getY(fullZone)).toBeCloseTo(g, 5); expect(color.getZ(fullZone)).toBeCloseTo(b, 5);
+    } finally { built.dispose(); }
+  });
+
+  it('gives a synthetic input without a scene all-zero context and zone attributes', () => {
+    const base: PackedDisplayMesh = {
+      basis: 'interpolated_canonical', positions: new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0]),
+      indices: new Uint32Array([0, 1, 2]), triangleFeatures: new Uint16Array([0]), surfaceClass: new Uint8Array([1, 1, 1]),
+      vertexCount: 3, triangleCount: 1,
+    };
+    const built = buildV2World({ base, patches: [], patchedRangeIds: new Set(), seed: [0, 0], boundsM: [0, 0, 1, 1], atlas: null, heroAtlases: [], metricGrid: FLAT_METRIC_GRID, heroNormals: [] });
+    try {
+      const geometry = (built.group.children[0] as THREE.Mesh).geometry as THREE.BufferGeometry;
+      expect([...(geometry.getAttribute(GROUND_V2_ATTRIBUTES.context).array as Float32Array)]).toEqual([0, 0, 0]);
+      expect([...(geometry.getAttribute(GROUND_V2_ATTRIBUTES.zone).array as Float32Array)]).toEqual([0, 0, 0]);
+    } finally { built.dispose(); }
   });
 });

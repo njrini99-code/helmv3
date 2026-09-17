@@ -18,7 +18,7 @@ import { compileFieldAtlas } from '../field-atlas';
 import { GREEN_SDF_GRADIENT_STEP_M, GREEN_SURFACE_GLSL_NAMES } from '../green-surface-v2';
 import {
   BUNKER_EDGE_VARIATION_WAVELENGTHS_M, BUNKER_RIM_GRADIENT_STEP_M, bunkerContactAt, bunkerOverhangAt, classAlbedoLinear, classifySurfaceFromAtlas, FAIRWAY_EDGE_GRADIENT_STEP_M,
-  FAIRWAY_GRAIN_BINDING, fairwayEdgeAt, fairwayGrainFactorAt, GROUND_ATLAS_TRACKED_CLASSES, GROUND_SDF_ATLAS_LAYERS, GROUND_SHADER_V2_VERSION, groundShaderV2Chunks, maxGroundEdgeBandM,
+  FAIRWAY_GRAIN_BINDING, fairwayEdgeAt, fairwayGrainFactorAt, GROUND_ATLAS_TRACKED_CLASSES, GROUND_SDF_ATLAS_LAYERS, GROUND_SHADER_V2_VERSION, GROUND_V2_ATTRIBUTES, groundShaderV2Chunks, maxGroundEdgeBandM,
   pickFinestAtlas, RELIEF_FIELD_BINDING, roughHierarchyAt, SUN_GROUND_XY, type GroundAtlasClass, type RoughTier,
 } from '../ground-shader-v2';
 import { parseGeometryPackage } from '../schema';
@@ -449,7 +449,7 @@ describe('GOLF_V2_RELIEF rough hierarchy (fidelity §32–36, plan §48–50; me
   };
 
   it('bumps the shader version for the new program structure', () => {
-    expect(GROUND_SHADER_V2_VERSION).toBe('meridian-ground-v2-10');
+    expect(GROUND_SHADER_V2_VERSION).toBe('meridian-ground-v2-11');
   });
 
   it('§20 pad setting: the bank below the hole\'s own green pad darkens toward the green on V1\'s rough classes (rough share + the fairway surround), gated to the own green like the run-off', () => {
@@ -489,7 +489,7 @@ describe('GOLF_V2_RELIEF rough hierarchy (fidelity §32–36, plan §48–50; me
   it('applies the hierarchy to the fragment\'s untracked share only, minus the tee band (from the SDF) and the woods share (continuous in the interpolated class, no mid-triangle step)', () => {
     expect(block).toContain('float golfTeeIn = smoothstep(-0.0600, 0.0600, golfDTee);');
     expect(block).toContain(`float golfWoodsIn = clamp(golfClass - ${(SURFACE_CLASS_IDS.indexOf('woods') - 1).toFixed(1)}, 0.0, 1.0);`);
-    expect(block).toContain('float golfRoughShare = (1.0 - golfWeight) * (1.0 - golfTeeIn) * (1.0 - golfWoodsIn);');
+    expect(block).toContain('float golfRoughShare = (1.0 - golfWeight) * (1.0 - golfTeeIn) * (1.0 - golfWoodsIn) * (1.0 - golfZoneW);');
     expect(block).not.toContain('vGolfV2AtlasTrust'); // never gated on the tracked flag (the opposite set) or a discrete class test
   });
 
@@ -694,5 +694,32 @@ describe('fairway edge types in V2 (fidelity §10 / §10.3; meridian-ground-v2-1
     expect(crisp).toBeGreaterThan(20); expect(soft).toBeGreaterThan(20);
     expect(soft).toBeGreaterThan(crisp); // most of a fairway's edge is not beside sand or green
     expect(shoulder).toBeGreaterThan(10); expect(fallaway).toBeGreaterThan(10); // V1's terrainVertices analogue, both ways
+  });
+});
+
+describe('outside-world context in the V2 shader (§53 context, §48 zones; meridian-ground-v2-11)', () => {
+  const chunks = groundShaderV2Chunks();
+  const ctx = MERIDIAN_STYLE.context, rh = MERIDIAN_STYLE.roughHierarchy;
+
+  it('declares the two per-vertex attributes and their varyings', () => {
+    expect(GROUND_V2_ATTRIBUTES.context).toBe('golfV2Context'); expect(GROUND_V2_ATTRIBUTES.zone).toBe('golfV2Zone');
+    expect(chunks.vertexHead).toContain('attribute float golfV2Context;'); expect(chunks.vertexHead).toContain('attribute float golfV2Zone;');
+    expect(chunks.vertexMain).toContain('vGolfV2Context = golfV2Context;'); expect(chunks.vertexMain).toContain('vGolfV2Zone = golfV2Zone;');
+    expect(chunks.fragmentHead).toContain('varying float vGolfV2Context;'); expect(chunks.fragmentHead).toContain('varying float vGolfV2Zone;');
+  });
+
+  it("mixes a context fairway/green's atlas colour toward rough by context.roughMix and desaturates by context.desaturate last (V1 §53), never sand or water", () => {
+    const [r, g, b] = classAlbedoLinear('rough');
+    expect(chunks.fragmentColor).toContain(`if (golfWin == 0 || golfWin == 2 || golfWin == 4 || golfWin == 5) golfAtlasCol = mix(golfAtlasCol, vec3(${r.toFixed(6)}, ${g.toFixed(6)}, ${b.toFixed(6)}), ${ctx.roughMix.toFixed(4)} * vGolfV2Context);`);
+    const tail = chunks.fragmentColor.slice(chunks.fragmentColor.lastIndexOf('float golfLuma'));
+    expect(tail).toContain(`diffuseColor.rgb = mix(diffuseColor.rgb, vec3(golfLuma), vGolfV2Context * ${ctx.desaturate.toFixed(4)});`);
+    expect(tail.indexOf('diffuseColor.rgb *=')).toBe(-1); // nothing shades after the desaturation
+  });
+
+  it('lets a painted zone take the place of the rough hierarchy by its weight, keeps V1\'s full slope darkening there, and drops the turf fields in a non-turf zone', () => {
+    expect(chunks.fragmentColor).toContain('float golfZoneW = abs(vGolfV2Zone);');
+    expect(chunks.fragmentColor).toContain('float golfRoughShare = (1.0 - golfWeight) * (1.0 - golfTeeIn) * (1.0 - golfWoodsIn) * (1.0 - golfZoneW);');
+    expect(chunks.fragmentColor).toContain(`diffuseColor.rgb *= 1.0 - ${rh.slopeDarken.toFixed(4)} * min(1.0, golfSlopeV1 / ${rh.slopeFullAt.toFixed(4)}) * golfZoneW * (1.0 - golfWeight);`);
+    expect(chunks.fragmentColor).toContain('float golfTurfWeight = ((golfBunker || golfWater || golfWoods) ? 0.0 : 1.0) * (1.0 - max(0.0, -vGolfV2Zone));');
   });
 });

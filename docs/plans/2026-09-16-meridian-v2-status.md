@@ -197,8 +197,9 @@ repeated here as they land.
   outer, exactly as V1's own frame of the same view shows
   (`hierarchy-v1ref`); a palette question, not this term's. Tee mow-grain
   stays off (V1 never mows the tee: `mown` is fairway/green only). Still
-  missing from the V2 ground versus V1: context ground zones (§48
-  classes), context desaturation (fairway edge types landed in v2-10).
+  missing from the V2 ground versus V1 after v2-11: nothing on this list
+  (fairway edge types landed in v2-10, context zones and desaturation in
+  v2-11).
 - §20 pad setting in V2 (`meridian-ground-v2-8`, 2026-09-17): `greenPadSetting`
   packs the hole's own green pad (mean canonical z of the green's field
   triangles, V1 compileGreenComplex) with a centre and reach radius into the
@@ -239,6 +240,26 @@ repeated here as they land.
   as quiet as V1's: a 1–3 level line along the whole outline (0.14 % of a
   phone frame's pixels move by > 1 level, none by > 4), so no before/after
   sheet was sent.
+- Outside-world context in V2 (`meridian-ground-v2-11`, 2026-09-17, fidelity
+  §65 #5, master §53, outside-world §10–16/§21): `ground-context-v2.ts`
+  compiles two per-vertex floats at world build (no V2 artifact change) —
+  `golfV2Context` = V1's `contextWeight` by feature identity (the base
+  mesh's `triangleFeatures` against `scene.contextFeatures`; a hero patch,
+  which has no features, falls back to point-in-polygon minus woods), and
+  `golfV2Zone` = V1's zone blend `min(1, edge / 5 m)` for rough/ground
+  vertices inside a painted context zone (`GROUND_ZONE_PRIORITY`, uncertain
+  skipped), negative for a non-turf zone (parking). The vertex colour and
+  roughness take the zone's own by that weight. Shader: a context
+  fairway/green/collar's atlas colour mixes `context.roughMix` (58 %) toward
+  rough, every context fragment desaturates `context.desaturate` (15 %) as
+  the last colour step, the rough hierarchy's share and the §20 setting give
+  way by the zone weight (the zone keeps V1's full slope darkening), and a
+  non-turf zone drops the turf fields. `V2WorldInput` gains `scene` and
+  `featureIds` (optional; synthetic inputs get zeros). Tests:
+  `ground-context-v2.test.ts` (synthetic + Upper holes), shader structure,
+  and a hole-1 world test (ski-slope vertex carries the zone albedo).
+  Frames `context-after` vs `fwedge-after`: neighbouring holes' greens and
+  fairways go quiet on 7/1/5 while the hole's own stay.
 - Task 22: run the CSM protocol on a real desktop GPU; Task 23's visual
   judgment likewise.
 - Task 27: blocked on the owner's phone.

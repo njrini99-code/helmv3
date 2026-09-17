@@ -489,8 +489,8 @@ function compileFairwayEdges(scene: HoleScene, mesh: TerrainMesh, style: Meridia
  * (no aspect, so nothing directional is baked into albedo). `uncertain`
  * zones paint nothing: an unexplained region stays honestly unexplained. */
 const PLAYING_KINDS = new Set<string>(['fairway', 'tee', 'green']);
-/** When two zones overlap, the more specific class wins. */
-const GROUND_ZONE_PRIORITY = ['parking', 'wetland', 'ski_slope', 'recreation', 'open_field', 'buffer_grass', 'rough_native', 'rough_secondary'];
+/** When two zones overlap, the more specific class wins (shared with the V2 world, ground-context-v2.ts). */
+export const GROUND_ZONE_PRIORITY = ['parking', 'wetland', 'ski_slope', 'recreation', 'open_field', 'buffer_grass', 'rough_native', 'rough_secondary'];
 const SURROUND_SEARCH_M = 60;
 const SURFACE_CLASS_GROUND = SURFACE_CLASS_IDS.indexOf('ground'), SURFACE_CLASS_ROUGH = SURFACE_CLASS_IDS.indexOf('rough');
 const smoothstep = (a: number, b: number, x: number) => { const u = Math.min(1, Math.max(0, (x - a) / (b - a))); return u * u * (3 - 2 * u); };

@@ -35,6 +35,7 @@ import {
   classAlbedoLinear, classRoughness, dominantClass, FAIRWAY_GRAIN_BINDING, GROUND_ATLAS_TRACKED_CLASSES, GROUND_SDF_ATLAS_LAYERS,
   GROUND_SHADER_V2_VERSION, groundShaderV2Chunks, GROUND_V2_ATTRIBUTES, maxGroundEdgeBandM, RELIEF_FIELD_BINDING, seedFromPackageHash, SKY_FIELD_BINDING, STATIC_SHADOW_BINDING,
 } from '@/lib/golf/course-geometry/ground-shader-v2';
+import { compileGroundContextAttributes, type GroundContextTriangles } from '@/lib/golf/course-geometry/ground-context-v2';
 import { compileHeroRegions } from '@/lib/golf/course-geometry/hero-patches';
 import { compileStaticShadowField, staticShadowLayer, type StaticShadowField } from '@/lib/golf/course-geometry/static-shadow-field';
 import { dequantizeSignedDistance, SDF_RANGE_M } from '@/lib/golf/course-geometry/surface-distance-field';
@@ -115,6 +116,15 @@ export interface V2WorldInput {
    * the setting/run-off reach. Null without an own green (then no setting
    * shade and no own-green gate on the run-off). */
   greenPad?: readonly [number, number, number, number] | null;
+  /** The hole scene the meshes were compiled from — `buildV2World` reads its
+   * context features and zones for the per-vertex context/zone attributes
+   * (`compileGroundContextAttributes`, outside-world §10–16 / §53). Absent
+   * (synthetic inputs), every vertex is own-hole ground with no zone. */
+  scene?: HoleScene | null;
+  /** The terrain mesh's `featureIds` (what `base.triangleFeatures` indexes),
+   * for the by-identity context rule; absent, the base falls back to the
+   * polygon rule like a hero patch. */
+  featureIds?: readonly string[];
 }
 
 let warnedFallback = false;
@@ -291,7 +301,7 @@ export function assembleV2World(scene: HoleScene, mesh: TerrainMesh, options: As
 
     return {
       base, patches, patchedRangeIds: new Set(patches.map(compiled => compiled.patch.id)),
-      seed: seedFromPackageHash(mesh.geometryHash), boundsM, atlas, heroAtlases, metricGrid, heroNormals, fairwayField, shadowField, skyField, greenMowDir, greenPad,
+      seed: seedFromPackageHash(mesh.geometryHash), boundsM, atlas, heroAtlases, metricGrid, heroNormals, fairwayField, shadowField, skyField, greenMowDir, greenPad, scene, featureIds: mesh.featureIds,
     };
   } catch (error) {
     warnFallbackOnce('V2 compile pipeline threw', error);
@@ -560,20 +570,37 @@ function resolvePatchVertexClasses(patch: PackedHeroPatch, triangleClass: Uint8A
  * vertices bake the *rough* albedo instead of their own: a mixed-class base
  * triangle then never interpolates sand or green into the fragments outside
  * the true outline (the "spiky rim" halo of the first v2-world capture).
- * Without an atlas every class keeps its own colour (the V1-equivalent path). */
-function classAttributes(classIds: Uint8Array, style: MeridianStyle, atlasPainted = false): { classFloat: Float32Array; color: Float32Array; roughness: Float32Array; atlasTrust: Float32Array } {
+ * Without an atlas every class keeps its own colour (the V1-equivalent path).
+ *
+ * Outside-world / §53 (`compileGroundContextAttributes`): a rough/ground
+ * vertex inside a painted context zone takes the zone's colour and
+ * roughness by V1's edge blend, and every vertex carries its context and
+ * zone weights for the shader (`GROUND_V2_ATTRIBUTES.context` / `.zone`). */
+function classAttributes(classIds: Uint8Array, style: MeridianStyle, atlasPainted: boolean, positions: Float32Array, scene: HoleScene | null, triangles: GroundContextTriangles | null = null):
+  { classFloat: Float32Array; color: Float32Array; roughness: Float32Array; atlasTrust: Float32Array; context: Float32Array; zone: Float32Array } {
   const vertexCount = classIds.length;
   const classFloat = new Float32Array(vertexCount), color = new Float32Array(vertexCount * 3), roughness = new Float32Array(vertexCount);
   const atlasTrust = new Float32Array(vertexCount);
+  const ground = scene ? compileGroundContextAttributes(scene, positions, classIds, style, triangles)
+    : { context: new Float32Array(vertexCount), zone: new Float32Array(vertexCount), zoneSurface: [] as SurfaceClass[] };
   for (let v = 0; v < vertexCount; v++) {
     const cls = SURFACE_CLASS_IDS[classIds[v]!] ?? 'ground';
     const tracked = GROUND_ATLAS_TRACKED_CLASSES.has(cls);
     classFloat[v] = classIds[v]!;
-    color.set(classAlbedoLinear(atlasPainted && tracked ? 'rough' : cls, style), v * 3);
-    roughness[v] = classRoughness(atlasPainted && tracked ? 'rough' : cls, style);
+    const own = atlasPainted && tracked ? 'rough' : cls;
+    const albedo = classAlbedoLinear(own, style);
+    let rough = classRoughness(own, style);
+    const zoneWeight = Math.abs(ground.zone[v]!);
+    if (zoneWeight > 0) {
+      const zoneAlbedo = classAlbedoLinear(ground.zoneSurface[v]!, style);
+      for (let c = 0; c < 3; c++) albedo[c] = albedo[c]! + (zoneAlbedo[c]! - albedo[c]!) * zoneWeight;
+      rough += (classRoughness(ground.zoneSurface[v]!, style) - rough) * zoneWeight;
+    }
+    color.set(albedo, v * 3);
+    roughness[v] = rough;
     atlasTrust[v] = tracked ? 1 : 0;
   }
-  return { classFloat, color, roughness, atlasTrust };
+  return { classFloat, color, roughness, atlasTrust, context: ground.context, zone: ground.zone };
 }
 
 /** The one ground `MeshStandardMaterial` shared by the base mesh and every
@@ -671,7 +698,7 @@ interface GroundSdfBinding { texture: THREE.DataTexture; frame: THREE.Vector4; r
 /** One uploaded fairway-direction field (`buildFairwayDirectionTexture`). */
 interface FairwayGrainBinding { texture: THREE.DataTexture; frame: THREE.Vector4; texelM: THREE.Vector2 }
 
-function buildBaseGeometry(base: PackedDisplayMesh, patchedRangeIds: ReadonlySet<string>, style: MeridianStyle, atlasPainted: boolean, metricGrid: MetricTerrainGrid): { geometry: THREE.BufferGeometry; drawnTriangles: number } {
+function buildBaseGeometry(base: PackedDisplayMesh, patchedRangeIds: ReadonlySet<string>, style: MeridianStyle, atlasPainted: boolean, metricGrid: MetricTerrainGrid, scene: HoleScene | null, featureIds: readonly string[]): { geometry: THREE.BufferGeometry; drawnTriangles: number } {
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.BufferAttribute(base.positions, 3));
   geometry.setIndex(new THREE.BufferAttribute(rewindTrianglesCCW(base.positions, base.indices), 1));
@@ -679,12 +706,14 @@ function buildBaseGeometry(base: PackedDisplayMesh, patchedRangeIds: ReadonlySet
   // grid can answer it (sawtooth fix — see `applyMetricGridNormals`).
   geometry.computeVertexNormals();
   applyMetricGridNormals(geometry, base.positions, metricGrid);
-  const { classFloat, color, roughness, atlasTrust } = classAttributes(base.surfaceClass, style, atlasPainted);
+  const { classFloat, color, roughness, atlasTrust, context, zone } = classAttributes(base.surfaceClass, style, atlasPainted, base.positions, scene, { indices: base.indices, triangleFeatures: base.triangleFeatures, featureIds });
   geometry.setAttribute('color', new THREE.BufferAttribute(color, 3));
   geometry.setAttribute(GROUND_V2_ATTRIBUTES.surfaceClass, new THREE.BufferAttribute(classFloat, 1));
   geometry.setAttribute(GROUND_V2_ATTRIBUTES.visualOffset, new THREE.BufferAttribute(new Float32Array(base.vertexCount), 1));
   geometry.setAttribute(GROUND_V2_ATTRIBUTES.roughness, new THREE.BufferAttribute(roughness, 1));
   geometry.setAttribute(GROUND_V2_ATTRIBUTES.atlasTrust, new THREE.BufferAttribute(atlasTrust, 1));
+  geometry.setAttribute(GROUND_V2_ATTRIBUTES.context, new THREE.BufferAttribute(context, 1));
+  geometry.setAttribute(GROUND_V2_ATTRIBUTES.zone, new THREE.BufferAttribute(zone, 1));
   // Index groups: everything before the first hero range, then each range
   // that has no compiled patch (water/path regions today). `orderHeroRegionsLast`
   // guarantees every hero-range triangle sorts after every base triangle, so
@@ -709,7 +738,7 @@ function buildBaseGeometry(base: PackedDisplayMesh, patchedRangeIds: ReadonlySet
   return { geometry, drawnTriangles };
 }
 
-function buildPatchGeometry(compiled: CompiledBunkerPatch, style: MeridianStyle, atlasPainted: boolean, normals: Float32Array): THREE.BufferGeometry {
+function buildPatchGeometry(compiled: CompiledBunkerPatch, style: MeridianStyle, atlasPainted: boolean, normals: Float32Array, scene: HoleScene | null): THREE.BufferGeometry {
   const { patch, triangleClass } = compiled;
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.BufferAttribute(patch.positions, 3));
@@ -722,7 +751,7 @@ function buildPatchGeometry(compiled: CompiledBunkerPatch, style: MeridianStyle,
   // base (the same sawtooth this fixes there).
   geometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
   const classIds = resolvePatchVertexClasses(patch, triangleClass);
-  const { classFloat, color, roughness, atlasTrust } = classAttributes(classIds, style, atlasPainted);
+  const { classFloat, color, roughness, atlasTrust, context, zone } = classAttributes(classIds, style, atlasPainted, patch.positions, scene);
   const vertexCount = patch.positions.length / 3, offset = new Float32Array(vertexCount);
   for (let v = 0; v < vertexCount; v++) offset[v] = patch.visualOffsetMm[v]! / 1000;
   geometry.setAttribute('color', new THREE.BufferAttribute(color, 3));
@@ -730,6 +759,8 @@ function buildPatchGeometry(compiled: CompiledBunkerPatch, style: MeridianStyle,
   geometry.setAttribute(GROUND_V2_ATTRIBUTES.visualOffset, new THREE.BufferAttribute(offset, 1));
   geometry.setAttribute(GROUND_V2_ATTRIBUTES.roughness, new THREE.BufferAttribute(roughness, 1));
   geometry.setAttribute(GROUND_V2_ATTRIBUTES.atlasTrust, new THREE.BufferAttribute(atlasTrust, 1));
+  geometry.setAttribute(GROUND_V2_ATTRIBUTES.context, new THREE.BufferAttribute(context, 1));
+  geometry.setAttribute(GROUND_V2_ATTRIBUTES.zone, new THREE.BufferAttribute(zone, 1));
   geometry.computeBoundingBox();
   geometry.computeBoundingSphere();
   return geometry;
@@ -806,7 +837,7 @@ export function buildV2World(input: V2WorldInput, options: V2WorldOptions = {}):
   const greenMowDir = input.greenMowDir ?? null, greenPad = input.greenPad ?? null;
   const material = createGroundMaterialV2(input.seed, style, wholeHoleSdf, fairway, shadow, sky, greenMowDir, greenPad);
   const atlasPainted = wholeHoleSdf !== null;
-  const { geometry: baseGeometry, drawnTriangles: baseTriangles } = buildBaseGeometry(input.base, input.patchedRangeIds, style, atlasPainted, input.metricGrid);
+  const { geometry: baseGeometry, drawnTriangles: baseTriangles } = buildBaseGeometry(input.base, input.patchedRangeIds, style, atlasPainted, input.metricGrid, input.scene ?? null, input.featureIds ?? []);
   const baseMesh = new THREE.Mesh(baseGeometry, [material]);
   baseMesh.castShadow = true; baseMesh.receiveShadow = true; baseMesh.name = 'golf-v2-base';
 
@@ -831,7 +862,7 @@ export function buildV2World(input: V2WorldInput, options: V2WorldOptions = {}):
   // `input.heroNormals` is index-aligned with `input.patches` (same order,
   // both produced by one `.map()` over `patches` in `assembleV2World`).
   input.patches.forEach((compiled, i) => {
-    const geometry = buildPatchGeometry(compiled, style, atlasPainted, input.heroNormals[i]!);
+    const geometry = buildPatchGeometry(compiled, style, atlasPainted, input.heroNormals[i]!, input.scene ?? null);
     patchGeometries.push(geometry);
     patchTriangles += compiled.patch.indices.length / 3;
     const mesh = new THREE.Mesh(geometry, heroMaterialByPatchId.get(compiled.patch.id) ?? material);
