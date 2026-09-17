@@ -3,7 +3,9 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { pilotPackage } from '@/test/fixtures/course-geometry/pilot';
 import { MemoryCourseAssetCache, manifestUrl } from '@/lib/golf/one-tap/course-assets';
 import { PEEK_N_PEAK_ONE_TAP_V1, type PeekNPeakOneTapPolicy } from '@/lib/golf/one-tap/peek-n-peak-policy';
-import { useOneTapLiveRound } from './use-one-tap-live-round';
+import { useOneTapLiveRound, useOneTapLiveRoundState } from './use-one-tap-live-round';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 // SYNTHETIC POLICY: the pilot fixture stands in for an approved Upper package.
 const policy: PeekNPeakOneTapPolicy = { ...PEEK_N_PEAK_ONE_TAP_V1, siteId: pilotPackage.siteId, approvedGeometryHashes: new Set([pilotPackage.contentHash]) };
@@ -49,5 +51,58 @@ describe('useOneTapLiveRound', () => {
     const cold = renderHook(() => useOneTapLiveRound({ ...base, roundId: 'r3', cache: new MemoryCourseAssetCache() }));
     await new Promise(r => setTimeout(r, 20));
     expect(cold.result.current).toBeNull();
+  });
+
+  it('reports why Live is not up: inactive off-course or unsaved, the flag, the course files, a denied location', async () => {
+    arm();
+    const cache = new MemoryCourseAssetCache();
+    expect(renderHook(() => useOneTapLiveRoundState({ ...base, courseName: 'Elsewhere GC', cache })).result.current.status).toEqual({ phase: 'inactive' });
+    expect(renderHook(() => useOneTapLiveRoundState({ ...base, roundId: null, cache })).result.current.status).toEqual({ phase: 'inactive' });
+    const off = renderHook(() => useOneTapLiveRoundState({ ...base, featureFlagEnabled: false, cache }));
+    await waitFor(() => expect(off.result.current.status).toEqual({ phase: 'off', reason: 'feature_flag_off' }));
+    online.value = false;
+    const empty = new MemoryCourseAssetCache();
+    const noFiles = renderHook(() => useOneTapLiveRoundState({ ...base, cache: empty }));
+    await waitFor(() => expect(noFiles.result.current.status).toEqual({ phase: 'off', reason: 'course_unavailable' }));
+    online.value = true;
+    Object.defineProperty(navigator, 'permissions', { configurable: true, value: { query: async () => ({ state: 'denied' }) } });
+    const denied = renderHook(() => useOneTapLiveRoundState({ ...base, roundId: 'r4', cache }));
+    await waitFor(() => expect(denied.result.current.status).toEqual({ phase: 'off', reason: 'location_unavailable' }));
+    expect(denied.result.current.live).toBeNull();
+    Object.defineProperty(navigator, 'permissions', { configurable: true, value: undefined });
+  });
+
+  it('goes live after the current hole\'s terrain and streams the rest without re-creating the round', async () => {
+    arm();
+    // Two mapped holes: the round is on the second, so its terrain loads first.
+    const terrainBody = readFileSync(join(process.cwd(), 'src/test/fixtures/course-geometry/cacapon-07-terrain.json'), 'utf8');
+    const T1 = `/course-geometry/${policy.courseId}/${pilotPackage.contentHash}/terrain/h1.json`, T7 = `/course-geometry/${policy.courseId}/${pilotPackage.contentHash}/terrain/cacapon-07.json`;
+    const holeKeys = pilotPackage.holes.map(h => h.key);
+    const [k0, k1] = [holeKeys[0] ?? 'h1', holeKeys[1] ?? 'cacapon-07'];
+    const gate = { release: null as null | (() => void) };
+    const slowFetch = vi.fn(async (url: string) => {
+      if (url === T1) await new Promise<void>(resolve => { gate.release = resolve; });
+      const body = url === T1 || url === T7 ? terrainBody : bodies[url];
+      return new Response(body ?? '', { status: body ? 200 : 404 });
+    });
+    vi.stubGlobal('fetch', slowFetch);
+    bodies[manifestUrl(policy.courseId)] = JSON.stringify({ geometryVersion: pilotPackage.contentHash, packageUrl: PKG_URL, terrainByHole: { [k0]: T1, [k1]: T7 } });
+    const current = pilotPackage.holes[1]?.ordinal ?? pilotPackage.holes[0]?.ordinal ?? 1;
+    const cache = new MemoryCourseAssetCache();
+    const hook = renderHook(() => useOneTapLiveRoundState({ ...base, roundId: 'r5', cache, holeNumber: current }));
+    await waitFor(() => expect(hook.result.current.status.phase).toBe('live'));
+    const first = hook.result.current.live!;
+    expect(first.readiness).toBe('partial');
+    expect(hook.result.current.status).toEqual({ phase: 'live', loaded: 1, total: 2 });
+    expect(Object.keys(first.terrainByHole ?? {})).toEqual([k1]);
+    gate.release!();
+    await waitFor(() => expect(hook.result.current.status).toEqual({ phase: 'live', loaded: 2, total: 2 }));
+    const second = hook.result.current.live!;
+    expect(second.readiness).toBe('ready');
+    expect(Object.keys(second.terrainByHole ?? {})).toHaveLength(2);
+    // Same round: identity of everything but the terrain map is preserved.
+    expect(second.pkg).toBe(first.pkg); expect(second.holeKeys).toBe(first.holeKeys); expect(second.location).toBe(first.location);
+    delete bodies[manifestUrl(policy.courseId)];
+    bodies[manifestUrl(policy.courseId)] = JSON.stringify({ geometryVersion: pilotPackage.contentHash, packageUrl: PKG_URL });
   });
 });

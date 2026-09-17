@@ -44,6 +44,8 @@ import { FairwayEditShotModal } from './FairwayEditShotModal';
 import { FairwayPenaltyModal } from './FairwayPenaltyModal';
 import { FairwayUnsavedNavModal } from './FairwayUnsavedNavModal';
 import { OneTapLiveHole } from '@/components/golf/one-tap/OneTapLiveHole';
+import { OneTapLiveStatusRow } from '@/components/golf/one-tap/OneTapLiveStatusRow';
+import type { OneTapLiveStatus } from '@/components/golf/one-tap/use-one-tap-live-round';
 import { holeKeyForRoundHole, type OneTapLiveRound } from '@/lib/golf/one-tap/live-round-placement';
 
 // Local alias for the Hole interface used by this component's props
@@ -58,6 +60,9 @@ interface ShotTrackingProps {
    * package maps; absent (every other course, Peek Upper in standard mode),
    * nothing below changes. */
   liveRound?: OneTapLiveRound | null;
+  /** Where the Live gate stands for an Upper round whose Live is not up yet
+   * (loading, or off with a reason); shown as one line in the chrome. */
+  liveStatus?: OneTapLiveStatus;
   /** Resume context already occupies the initial status-bar inset. */
   safeAreaHandledAbove?: boolean;
   /** Round-level status stays in the same measured sticky chrome. */
@@ -141,6 +146,7 @@ export default function FairwayShotTracking({
   statusSlot,
   geometry,
   liveRound = null,
+  liveStatus,
   holes,
   currentHoleIndex,
   onHoleComplete,
@@ -642,6 +648,7 @@ export default function FairwayShotTracking({
         belowSlot={
           <>
             {statusSlot}
+            {liveStatus && <OneTapLiveStatusRow status={liveStatus} />}
             {!isPutting && <FairwayShotPills
               currentShot={currentShot}
               recordedShotCount={shotHistory.length}

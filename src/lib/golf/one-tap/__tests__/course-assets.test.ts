@@ -1,9 +1,9 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { pilotPackage } from '@/test/fixtures/course-geometry/pilot';
-import { MemoryCourseAssetCache, cacheStorageCourseAssetCache, fetchAsset, loadCourseAssets, manifestUrl, preflightCourseAssets, pruneCourseAssets } from '../course-assets';
-import { PEEK_N_PEAK_ONE_TAP_V1, type PeekNPeakOneTapPolicy } from '../peek-n-peak-policy';
+import { MemoryCourseAssetCache, cacheStorageCourseAssetCache, fetchAsset, loadCourseAssets, loadCoursePackage, loadHoleTerrain, manifestUrl, preflightCourseAssets, pruneCourseAssets } from '../course-assets';
+import { isPeekNPeakOneTapEligible, PEEK_N_PEAK_ONE_TAP_V1, type PeekNPeakOneTapPolicy } from '../peek-n-peak-policy';
 
 // SYNTHETIC POLICY: the pilot fixture stands in for an approved Upper package.
 const policy: PeekNPeakOneTapPolicy = { ...PEEK_N_PEAK_ONE_TAP_V1, siteId: pilotPackage.siteId, approvedGeometryHashes: new Set([pilotPackage.contentHash]), pilotAcceptsSourceCandidate: false };
@@ -135,5 +135,22 @@ describe('course assets (task 15 — offline readiness)', () => {
     const dropped = await loadCourseAssets({ courseId: COURSE, policy: upperPolicy, cache: new MemoryCourseAssetCache(), fetchImpl: foreignLayer.fetchImpl });
     expect(dropped?.pkg.contentHash).toBe(upper.contentHash);
     expect(dropped?.contextLayer).toBeUndefined();
+  });
+
+  it('accepts the SHIPPED Upper manifest and package under the SHIPPED policy — no override', async () => {
+    // What the phone runs: public/course-geometry/<course>/manifest.json and
+    // the package it names, gated by PEEK_N_PEAK_ONE_TAP_V1 as committed.
+    // Terrain is answered 404 to keep the test off the 52 MB of meshes.
+    const root = join(process.cwd(), 'public');
+    const fetchImpl = vi.fn(async (url: string) => { const ok = !url.includes('/terrain/') && existsSync(join(root, url)); return { ok, text: async () => ok ? readFileSync(join(root, url), 'utf8') : '' }; });
+    const courseId = PEEK_N_PEAK_ONE_TAP_V1.courseId;
+    const loaded = await loadCoursePackage({ courseId, cache: new MemoryCourseAssetCache(), fetchImpl });
+    expect(loaded?.pkg.siteId).toBe(PEEK_N_PEAK_ONE_TAP_V1.siteId);
+    expect(loaded?.manifest.geometryVersion).toBe(loaded?.pkg.contentHash);
+    expect(Object.keys(loaded!.manifest.terrainByHole ?? {})).toHaveLength(18);
+    expect(loaded?.contextLayer?.zones.length).toBeGreaterThan(0);
+    expect(isPeekNPeakOneTapEligible({ roundCourseId: courseId, pkg: loaded!.pkg, featureFlagEnabled: true, preciseLocationAvailable: true })).toMatchObject({ eligible: true, geometryVersion: loaded!.pkg.contentHash });
+    // A terrain that is not there is null, never a throw.
+    expect(await loadHoleTerrain(Object.values(loaded!.manifest.terrainByHole!)[0] ?? '', loaded!.pkg, { cache: null, fetchImpl })).toBeNull();
   });
 });

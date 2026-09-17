@@ -58,7 +58,7 @@ import { getRoundRecoverySnapshots } from '@/lib/offline/shot-storage';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayNewRoundEntry } from '@/components/fairway/pages/rounds-new/FairwayNewRoundEntry';
 import { FairwayShotTracking } from '@/components/fairway/pages/rounds-tracking';
-import { useOneTapLiveRound } from '@/components/golf/one-tap/use-one-tap-live-round';
+import { useOneTapLiveRoundState } from '@/components/golf/one-tap/use-one-tap-live-round';
 import { Skeleton } from '@/components/fairway';
 import { Button as FwButton } from '@/components/fairway/controls/button';
 import { ModalShell } from '@/components/fairway/overlays/ModalShell';
@@ -881,7 +881,7 @@ export default function NewRoundClient({ playerId, oneTapFlagEnabled = false }: 
   const resolvedCourseIdRef = useRef<string | null>(null);
   // One-Tap master plan §77: only a Peek'n Peak Upper round with the release
   // flag on and an approved package resolves a live round; everything else is null.
-  const oneTapLiveRound = useOneTapLiveRound({ roundId: savedRoundIdRef.current, dbCourseId: resolvedCourseIdRef.current, courseName: setupData.courseName, featureFlagEnabled: oneTapFlagEnabled, roundType: setupData.roundType });
+  const { live: oneTapLiveRound, status: oneTapLiveStatus } = useOneTapLiveRoundState({ roundId: savedRoundIdRef.current, dbCourseId: resolvedCourseIdRef.current, courseName: setupData.courseName, featureFlagEnabled: oneTapFlagEnabled, roundType: setupData.roundType, holeNumber: holes[currentHoleIndex]?.number ?? currentHoleIndex + 1 });
   // Cloud Course Library tee (golf_course_tees.id) when the round was started
   // from the tee picker. Cleared whenever a non-library course is chosen.
   const selectedTeeIdRef = useRef<string | null>(null);
@@ -2775,6 +2775,7 @@ export default function NewRoundClient({ playerId, oneTapFlagEnabled = false }: 
           autoSaveInterval={15000}
           autoSaveDisabled={step === 'submitting' || !!completedRoundId}
           liveRound={oneTapLiveRound}
+          liveStatus={oneTapLiveStatus}
         />
       </div>
 

@@ -144,7 +144,12 @@ export interface LoadedCourseAssets { geometryVersion: string; pkg: CourseGeomet
 /** What the live round consumes: the approved package and whichever terrain
  * is present, from the cache when there is no signal. Null when no approved
  * package can be had either way. */
-export async function loadCourseAssets({ courseId, policy = PEEK_N_PEAK_ONE_TAP_V1, cache, fetchImpl = defaultFetch, baseUrl = '/course-geometry' }: CourseAssetOptions): Promise<LoadedCourseAssets | null> {
+export interface LoadedCoursePackage { manifest: EssentialCourseManifest; pkg: CourseGeometryPackage; contextLayer?: ContextLayer; sources: Record<string, AssetSource> }
+/** The approved package (and the optional context layer) alone — the part a
+ * live round needs before it can start. Terrain follows per hole through
+ * `loadHoleTerrain`, so the first hole is on screen after ~1.5 MB instead of
+ * after the whole course. Null when no approved package can be had. */
+export async function loadCoursePackage({ courseId, policy = PEEK_N_PEAK_ONE_TAP_V1, cache, fetchImpl = defaultFetch, baseUrl = '/course-geometry' }: CourseAssetOptions): Promise<LoadedCoursePackage | null> {
   if (policy.approvedGeometryHashes.size === 0 || courseId !== policy.courseId) return null;
   const manifestHit = await fetchAsset(manifestUrl(courseId, baseUrl), { cache, fetchImpl, strategy: 'network_first' });
   const manifest = manifestHit ? parseManifest(manifestHit.body, courseId) : null;
@@ -153,12 +158,6 @@ export async function loadCourseAssets({ courseId, policy = PEEK_N_PEAK_ONE_TAP_
   const pkg = packageHit ? parseApprovedPackage(packageHit.body, manifest.geometryVersion, policy) : null;
   if (!pkg) return null;
   const sources: Record<string, AssetSource> = { [manifestUrl(courseId, baseUrl)]: manifestHit!.source, [manifest.packageUrl]: packageHit!.source };
-  const terrainByHole: Record<string, TerrainMesh> = {};
-  for (const [holeKey, url] of Object.entries(manifest.terrainByHole ?? {})) {
-    const hit = await fetchAsset(url, { cache, fetchImpl, strategy: 'cache_first' });
-    if (!hit) continue;
-    try { terrainByHole[holeKey] = parseTerrainMesh(JSON.parse(hit.body), pkg); sources[url] = hit.source; } catch { await cache?.delete(url); }
-  }
   // The outside-world layer (woods, paths, structures) is optional: the
   // course plays without it, so a missing or unparseable layer is dropped
   // rather than failing the round.
@@ -166,6 +165,24 @@ export async function loadCourseAssets({ courseId, policy = PEEK_N_PEAK_ONE_TAP_
   if (manifest.contextLayerUrl) {
     const hit = await fetchAsset(manifest.contextLayerUrl, { cache, fetchImpl, strategy: 'cache_first' });
     if (hit) { try { contextLayer = parseContextLayer(JSON.parse(hit.body), pkg); sources[manifest.contextLayerUrl] = hit.source; } catch { await cache?.delete(manifest.contextLayerUrl); } }
+  }
+  return { manifest, pkg, contextLayer, sources };
+}
+/** One hole's terrain, cache-first; null (and the cached body dropped) when
+ * it is missing or does not parse against the package. */
+export async function loadHoleTerrain(url: string, pkg: CourseGeometryPackage, { cache, fetchImpl = defaultFetch }: Pick<CourseAssetOptions, 'cache' | 'fetchImpl'>): Promise<{ mesh: TerrainMesh; source: AssetSource } | null> {
+  const hit = await fetchAsset(url, { cache, fetchImpl, strategy: 'cache_first' });
+  if (!hit) return null;
+  try { return { mesh: parseTerrainMesh(JSON.parse(hit.body), pkg), source: hit.source }; } catch { await cache?.delete(url); return null; }
+}
+export async function loadCourseAssets(options: CourseAssetOptions): Promise<LoadedCourseAssets | null> {
+  const loaded = await loadCoursePackage(options);
+  if (!loaded) return null;
+  const { manifest, pkg, contextLayer, sources } = loaded;
+  const terrainByHole: Record<string, TerrainMesh> = {};
+  for (const [holeKey, url] of Object.entries(manifest.terrainByHole ?? {})) {
+    const terrain = await loadHoleTerrain(url, pkg, options);
+    if (terrain) { terrainByHole[holeKey] = terrain.mesh; sources[url] = terrain.source; }
   }
   return { geometryVersion: manifest.geometryVersion, pkg, terrainByHole, contextLayer, sources };
 }
