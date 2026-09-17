@@ -103,6 +103,12 @@ describe('one-tap location estimator', () => {
     expect(e.sigmaM).toBeGreaterThanOrEqual(40);
     expect(finalizeEstimate(new LocationBuffer(), tap, origin)).toBeNull();
     expect(finalizeEstimate(buffer([sample(50, 30, tap - 5000, 3)]), tap, origin)).toBeNull();
+    // A reduced-precision fix (±3 km) is a region, not a measurement: alone it
+    // is no usable sample, and beside a real fix it carries no weight.
+    expect(finalizeEstimate(buffer([sample(50, 30, tap - 300, 3200)]), tap, origin)).toBeNull();
+    const mixed = finalizeEstimate(buffer([sample(50, 30, tap - 300, 3200), sample(52, 31, tap + 300, 4)]), tap, origin)!;
+    expect(mixed.usedSamples).toBe(1);
+    expect(mixed.positionENU[0]).toBeCloseTo(52, 6);
   });
   it('replays deterministically from the same raw packet', () => {
     const samples = [sample(50.3, 30.1, tap - 900, 4), sample(49.8, 30.4, tap - 300, 3), sample(50.0, 29.7, tap + 500, 3)];
@@ -112,6 +118,7 @@ describe('one-tap location estimator', () => {
     const b = buffer([sample(50, 30, tap - 1400, 6), sample(50, 30, tap - 900, 2), sample(50, 30, tap - 100, 2), sample(50, 30, tap - 3000, 1)]);
     expect(provisionalLocation(b, tap)?.timestampMs).toBe(tap - 100);
     expect(provisionalLocation(new LocationBuffer(), tap)).toBeNull();
+    expect(provisionalLocation(buffer([sample(50, 30, tap - 100, 3200)]), tap)).toBeNull();
   });
   it('grades confidence from sigma and the lie posterior', () => {
     expect(anchorConfidence(3, .95)).toBe('HIGH');

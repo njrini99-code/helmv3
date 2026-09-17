@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MOTION_CONFIG, QUALITY_CONFIG, classifyCaptureMotion, confidenceForMotion, gradeLocationQuality, type TimedPoint } from '../location-quality';
+import { MOTION_CONFIG, QUALITY_CONFIG, classifyCaptureMotion, confidenceForMotion, gradeLocationQuality, isApproximateFix, type TimedPoint } from '../location-quality';
 
 const point = (t: number, e: number, n: number, speed: number | null = null): TimedPoint => ({ timestampMs: t, positionENU: [e, n], speedMps: speed });
 
@@ -56,5 +56,17 @@ describe('one-tap location quality', () => {
     expect(gradeLocationQuality(null, now, 'watching')).toBe('none');
     expect(gradeLocationQuality(fix(0), now, null)).toBe('none');
     expect(gradeLocationQuality(fix(5), now)).toBe('good');
+  });
+  it('a reduced-precision fix is approximate at any age, never weak or stale (Peek\u2019n Peak 2026-09-17: Precise Location off on the 9th green)', () => {
+    const now = 50_000;
+    const fix = (acc: number, ageMs = 1000) => ({ timestampMs: now - ageMs, horizontalAccuracyM: acc });
+    expect(isApproximateFix(fix(QUALITY_CONFIG.approximateAccuracyM))).toBe(false);
+    expect(isApproximateFix(fix(QUALITY_CONFIG.approximateAccuracyM + 1))).toBe(true);
+    expect(gradeLocationQuality(fix(3200), now, 'watching')).toBe('approximate');
+    // Reduced precision arrives a few times an hour: an old coarse fix is still coarse, not "weak".
+    expect(gradeLocationQuality(fix(3200, 20 * 60_000), now, 'watching')).toBe('approximate');
+    expect(gradeLocationQuality(fix(3200), now, 'paused')).toBe('approximate');
+    expect(gradeLocationQuality(fix(3200), now, 'denied')).toBe('none');
+    expect(gradeLocationQuality(fix(QUALITY_CONFIG.approximateAccuracyM), now, 'watching')).toBe('poor');
   });
 });

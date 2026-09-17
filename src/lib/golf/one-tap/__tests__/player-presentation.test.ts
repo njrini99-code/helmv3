@@ -58,5 +58,7 @@ describe('YOU presentation position (§37)', () => {
     expect(playerFixFromSample({ ...sample, horizontalAccuracyM: 0 }, origin)).toBeNull();
     // Still on the road 15 km north: no YOU marker, and no thrown frame error.
     expect(playerFixFromSample({ ...sample, latitude: 42.2 }, origin)).toBeNull();
+    // Reduced precision (±3 km) in the frame: no YOU marker somewhere in the county either.
+    expect(playerFixFromSample({ ...sample, horizontalAccuracyM: 3200 }, origin)).toBeNull();
   });
 });

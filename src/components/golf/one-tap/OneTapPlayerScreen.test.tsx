@@ -63,6 +63,23 @@ describe('One-Tap player screen', () => {
     expect(state()).toBe('HOLE_READY');
   });
 
+  it('names a reduced-precision fix for what it is: the chip carries the radius, the readout the setting that fixes it', () => {
+    // Peek'n Peak 2026-09-17: Precise Location off on the 9th green read "Not at the course yet".
+    const phone = manualSource();
+    render(<OneTapPlayerScreen roundId="r-approx" pkg={pilotPackage} holeKey={HOLE} terrain={null} location={phone} storage={null} reducedMotion />);
+    const tee = pointOn('tee');
+    act(() => { phone.at([tee[0] + 400, tee[1]], 1_000_000, 3200); });
+    const chip = document.querySelector('[data-slot="one-tap-location"]')!;
+    expect(chip.textContent).toBe('Location approximate ±3.2 km');
+    expect(chip.getAttribute('data-quality')).toBe('approximate');
+    expect(document.querySelector('[data-slot="one-tap-distances"]')!.textContent).toContain('turn on Precise Location');
+    expect(markers()).toEqual([]);
+    // Precise Location on: real fixes take over, the chip goes quiet.
+    act(() => { for (let t = -1500; t <= 0; t += 500) phone.at(tee, 1_000_000 + t); });
+    expect(document.querySelector('[data-slot="one-tap-location"]')).toBeNull();
+    expect(document.querySelector('[data-slot="one-tap-distances"]')!.getAttribute('data-basis')).toBe('live_fix');
+  });
+
   it('marks the ball where the phone is: provisional at the tap, final after 750 ms, distances and lie from real data, undo inside the window', async () => {
     const phone = manualSource();
     render(<OneTapPlayerScreen roundId="r2" pkg={pilotPackage} holeKey={HOLE} terrain={null} location={phone} storage={null} reducedMotion />);

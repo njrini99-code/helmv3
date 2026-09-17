@@ -82,7 +82,7 @@ describe('useOneTap: YOU is not BALL (§5, §37)', () => {
     const { result } = renderHook(() => useOneTap({ roundId: 'r', pkg: pilotPackage, holeKey, terrain: null, location: source, storage: null, now: () => Date.now() }));
     await act(async () => { await vi.advanceTimersByTimeAsync(0); });
     const far: PointM = [tee[0] + 15_000, tee[1]];
-    expect(() => act(() => { source.at(far, Date.now(), 1500); })).not.toThrow();
+    expect(() => act(() => { source.at(far, Date.now(), 30); })).not.toThrow();
     expect(result.current.player).toBeNull();
     expect(result.current.markers.markers.find(m => m.key === PLAYER_MARKER_KEY)).toBeUndefined();
     expect(result.current.locationQuality).toBe('off_course');
@@ -95,6 +95,33 @@ describe('useOneTap: YOU is not BALL (§5, §37)', () => {
     // Arriving at the tee: the same round, no reload, YOU appears.
     for (let t = -1500; t <= 0; t += 500) act(() => { source.at(tee, Date.now() + t); });
     expect(result.current.locationQuality).toBe('good');
+    expect(result.current.player?.positionENU[0]).toBeCloseTo(tee[0], 6);
+  });
+  it('a reduced-precision fix (Precise Location off) is approximate wherever it lands: no YOU, no distances, no mark, never "not at the course"', async () => {
+    // Peek'n Peak, 2026-09-17: standing on the 9th green with Safari's
+    // Precise Location off, the phone reported ±3 km and the chip said
+    // "Not at the course yet". The radius, not the frame, is the fact.
+    const source = manualSource(), tee = pointOn('tee');
+    const { result } = renderHook(() => useOneTap({ roundId: 'r', pkg: pilotPackage, holeKey, terrain: null, location: source, storage: null, now: () => Date.now() }));
+    await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+    // Inside the frame, 400 m off the tee, radius 3.2 km.
+    act(() => { source.at([tee[0] + 400, tee[1]], Date.now(), 3200); });
+    expect(result.current.locationQuality).toBe('approximate');
+    expect(result.current.latestFix?.horizontalAccuracyM).toBe(3200);
+    expect(result.current.player).toBeNull();
+    expect(result.current.markers.markers.find(m => m.key === PLAYER_MARKER_KEY)).toBeUndefined();
+    expect(result.current.distancesBasis).toBeNull();
+    // Outside the frame with the same radius: still approximate, not "not at the course".
+    act(() => { source.at([tee[0] + 15_000, tee[1]], Date.now(), 3200); });
+    expect(result.current.locationQuality).toBe('approximate');
+    act(() => { result.current.markBall(); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(2000); });
+    expect(result.current.snapshot.anchors).toEqual([]);
+    expect(result.current.snapshot.state).toBe('GPS_UNAVAILABLE');
+    // Precise Location switched on: the next real fixes take over at once.
+    for (let t = -1500; t <= 0; t += 500) act(() => { source.at(tee, Date.now() + t); });
+    expect(result.current.locationQuality).toBe('good');
+    expect(result.current.distancesBasis).toBe('live_fix');
     expect(result.current.player?.positionENU[0]).toBeCloseTo(tee[0], 6);
   });
 });

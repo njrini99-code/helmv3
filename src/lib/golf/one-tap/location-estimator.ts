@@ -1,5 +1,5 @@
 import { wgs84ToEnuInFrame, type LocalOrigin } from './geodesy';
-import { MOTION_CONFIG, classifyCaptureMotion, confidenceForMotion, type CaptureMotion, type MotionConfig, type MotionEvidence } from './location-quality';
+import { MOTION_CONFIG, classifyCaptureMotion, confidenceForMotion, isApproximateFix, type CaptureMotion, type MotionConfig, type MotionEvidence } from './location-quality';
 
 /** Live tap estimator (master plan "Live tap estimator"). Pure functions over
  * a retained sample stream so the same raw packet always replays to the same
@@ -94,7 +94,7 @@ export class LocationBuffer {
 /** Best recent fix for the provisional anchor: the most accurate sample no
  * older than the lookback, ties to the freshest. Null → no provisional. */
 export function provisionalLocation(buffer: LocationBuffer, tapMs: number, config = ESTIMATOR_CONFIG): LocationSample | null {
-  const recent = buffer.between(tapMs - config.lookbackMs, tapMs).filter(s => s.horizontalAccuracyM > 0);
+  const recent = buffer.between(tapMs - config.lookbackMs, tapMs).filter(s => s.horizontalAccuracyM > 0 && !isApproximateFix(s));
   return recent.reduce<LocationSample | null>((best, s) => !best || s.horizontalAccuracyM < best.horizontalAccuracyM ||
     (s.horizontalAccuracyM === best.horizontalAccuracyM && s.timestampMs > best.timestampMs) ? s : best, null);
 }
@@ -112,8 +112,10 @@ function weightedMedian(values: number[], weights: number[]): number {
 /** Finalize the estimate for a tap from the retained buffer. Null means no
  * usable sample: the controller reports GPS_UNAVAILABLE and fabricates nothing. */
 export function finalizeEstimate(buffer: LocationBuffer, tapMs: number, origin: LocalOrigin, config = ESTIMATOR_CONFIG): LocationEstimate | null {
+  // A reduced-precision fix (±3 km) is a region, not a measurement: it is
+  // never a ball on the map, so a tap with nothing better has no usable sample.
   const window = buffer.between(tapMs - config.lookbackMs, tapMs + config.refinementMs)
-    .filter(s => tapMs - s.timestampMs <= config.maxSampleAgeMs && s.horizontalAccuracyM > 0);
+    .filter(s => tapMs - s.timestampMs <= config.maxSampleAgeMs && s.horizontalAccuracyM > 0 && !isApproximateFix(s));
   if (!window.length) return null;
   // A fix outside the local frame is not evidence of anything on this
   // course; with none left the tap has no usable sample, and never throws.

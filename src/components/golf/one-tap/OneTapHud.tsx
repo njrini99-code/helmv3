@@ -19,11 +19,21 @@ export const ONE_TAP_STATE_LABELS: Readonly<Record<OneTapState, string>> = Objec
   GPS_UNAVAILABLE: 'No GPS fix', SYNC_QUEUED: 'Saved on phone', MANUAL_CAMERA: 'Your view', ROUND_PAUSED: 'Paused',
 });
 const chip = 'inline-flex items-center gap-1 rounded-full border border-border-subtle bg-surface px-2.5 py-1 text-caption font-semibold text-text-primary shadow-card';
-const LOCATION_CHIP: Partial<Record<OneTapView['locationQuality'], string>> = { poor: 'Location weak', stale: 'Location weak', none: 'Locating…', off_course: 'Not at the course yet' };
+const LOCATION_CHIP: Record<OneTapView['locationQuality'], string | null> = { good: null, fair: null, poor: 'Location weak', stale: 'Location weak', none: 'Locating…', approximate: 'Location approximate', off_course: 'Not at the course yet' };
+/** The reduced-precision chip carries the radius the phone admitted to
+ * ("±3 km"), so the golfer on the green knows the phone, not the course, is
+ * what is off; the readout says which setting fixes it. */
+function locationChip(view: OneTapView): string | null {
+  if (view.locationKind === 'none') return 'No location';
+  const label = LOCATION_CHIP[view.locationQuality];
+  if (view.locationQuality !== 'approximate' || !view.latestFix) return label;
+  const km = view.latestFix.horizontalAccuracyM / 1000;
+  return `${label} ±${km >= 10 ? Math.round(km) : Number(km.toFixed(1))} km`;
+}
 
 export function OneTapHud({ view, round }: { view: OneTapView; round?: OneTapRoundView | null }) {
   const { snapshot, cameraMode, locationQuality, syncIssue } = view;
-  const location = view.locationKind === 'none' ? 'No location' : LOCATION_CHIP[locationQuality] ?? null;
+  const location = locationChip(view);
   const shots = round ? round.status === 'COMPLETE' ? `Holed · ${round.strokes} ${round.strokes === 1 ? 'shot' : 'shots'}` : round.strokes > 0 ? `${round.strokes} ${round.strokes === 1 ? 'shot' : 'shots'}` : null : null;
   return <div className="pointer-events-none absolute inset-0 font-fw-sans" data-slot="one-tap-hud">
     <div className="absolute right-3 flex flex-col items-end gap-1.5" style={{ top: 'max(12px, env(safe-area-inset-top))' }} role="status" aria-live="polite" data-hud-reserve>

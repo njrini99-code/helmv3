@@ -67,16 +67,30 @@ export function confidenceForMotion(confidence: AnchorConfidence, motion: Captur
 
 /** Live fix quality for the HUD (§8.2). `good` stays silent; the others
  * earn the single location chip. Age uses the fix timestamp, so a paused or
- * stalled watch decays to `stale` without a status event. `off_course` is a
- * healthy fix outside the course's local frame (the drive in, a coarse first
- * cell fix): the phone knows where it is, and it is not here. */
-export type LocationQuality = 'good' | 'fair' | 'poor' | 'stale' | 'none' | 'off_course';
-export interface QualityConfig { goodAccuracyM: number; fairAccuracyM: number; staleAfterMs: number }
-/** PROVISIONAL — CALIBRATE ON PEEK'N PEAK. `fairAccuracyM` matches the estimator's poor-accuracy threshold. */
-export const QUALITY_CONFIG: Readonly<QualityConfig> = Object.freeze({ goodAccuracyM: 8, fairAccuracyM: 25, staleAfterMs: 6000 });
+ * stalled watch decays to `stale` without a status event. `approximate` is a
+ * fix whose radius is kilometres, not metres: a browser sharing reduced
+ * precision (iOS "Precise Location" off) or a first cell-tower fix. It says
+ * nothing about where the phone is, so it outranks `off_course` and never
+ * feeds a marker or a distance. `off_course` is a healthy fix outside the
+ * course's local frame (the drive in): the phone knows where it is, and it
+ * is not here. */
+export type LocationQuality = 'good' | 'fair' | 'poor' | 'stale' | 'none' | 'approximate' | 'off_course';
+export interface QualityConfig { goodAccuracyM: number; fairAccuracyM: number; staleAfterMs: number; approximateAccuracyM: number }
+/** PROVISIONAL — CALIBRATE ON PEEK'N PEAK. `fairAccuracyM` matches the
+ * estimator's poor-accuracy threshold. `approximateAccuracyM`: iOS reduced
+ * precision reports roughly 1–5 km; a GPS or Wi‑Fi fix never reaches it. */
+export const QUALITY_CONFIG: Readonly<QualityConfig> = Object.freeze({ goodAccuracyM: 8, fairAccuracyM: 25, staleAfterMs: 6000, approximateAccuracyM: 1000 });
+/** A fix too coarse to be a position on the course (2026-09-17 Peek'n Peak:
+ * a phone on the 9th green read "Not at the course yet"). */
+export function isApproximateFix(sample: Pick<LocationSample, 'horizontalAccuracyM'>, config: Pick<QualityConfig, 'approximateAccuracyM'> = QUALITY_CONFIG): boolean {
+  return sample.horizontalAccuracyM > config.approximateAccuracyM;
+}
 export function gradeLocationQuality(latest: Pick<LocationSample, 'timestampMs' | 'horizontalAccuracyM'> | null, nowMs: number, status: LocationStatus | null = null, config: QualityConfig = QUALITY_CONFIG): LocationQuality {
   if (status === 'denied' || status === 'unavailable' || status === 'idle') return 'none';
   if (!latest || !(latest.horizontalAccuracyM > 0)) return 'none';
+  // Coarse is coarse at any age: reduced precision arrives a few times an
+  // hour, and "Location weak" would send the golfer looking at the sky.
+  if (isApproximateFix(latest, config)) return 'approximate';
   if (status === 'paused' || status === 'reacquiring' || nowMs - latest.timestampMs > config.staleAfterMs) return 'stale';
   if (latest.horizontalAccuracyM <= config.goodAccuracyM) return 'good';
   return latest.horizontalAccuracyM <= config.fairAccuracyM ? 'fair' : 'poor';

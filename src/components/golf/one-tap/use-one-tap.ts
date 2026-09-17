@@ -20,7 +20,7 @@ import { presentLie, type LiePresentationContext, type LieRule } from '@/lib/gol
 import { LocationBuffer, type Covariance2, type LocationSample } from '@/lib/golf/one-tap/location-estimator';
 import type { LocationSource, LocationStatus } from '@/lib/golf/one-tap/location-source';
 import { OneTapController, type OneTapSnapshot } from '@/lib/golf/one-tap/one-tap-controller';
-import { QUALITY_CONFIG, gradeLocationQuality, type LocationQuality } from '@/lib/golf/one-tap/location-quality';
+import { QUALITY_CONFIG, gradeLocationQuality, isApproximateFix, type LocationQuality } from '@/lib/golf/one-tap/location-quality';
 import { acceptPlayerFix, playerFixFromSample, tickPlayerPresentation, type PlayerPresentation } from '@/lib/golf/one-tap/player-presentation';
 import { markersFromAnchors } from '@/lib/golf/one-tap/scene-markers';
 import { liveAnchors, UNDO_WINDOW_MS, type ShotAnchor } from '@/lib/golf/one-tap/shot-anchor';
@@ -269,19 +269,22 @@ export function useOneTap(options: UseOneTapOptions): OneTapView {
   useEffect(() => { if (camera.mode !== 'MANUAL') lastAutomatic.current = productionStateFor(camera.mode).state; }, [camera.mode]);
 
   const green = useMemo(() => partition.surfaces.find(s => s.lieClass === 'green') ?? null, [partition]);
+  // A reduced-precision fix is a region, not a position: nothing reads from it.
+  const usableFix = useMemo(() => latestFix && !isApproximateFix(latestFix) ? latestFix : null, [latestFix]);
   const distances = useMemo<{ value: GreenDistances | null; basis: OneTapView['distancesBasis']; onGreen: boolean }>(() => {
     if (!green) return { value: null, basis: null, onGreen: false };
-    // A fix outside the local frame (not at the course yet) reads like no
-    // fix: the last mark speaks, or nothing does — never a thrown render.
-    const enu = latestFix ? wgs84ToEnuInFrame([latestFix.longitude, latestFix.latitude, latestFix.altitudeM], origin) : null;
-    if (latestFix && enu) {
-      const variance = latestFix.horizontalAccuracyM ** 2, cov: Covariance2 = [[variance, 0], [0, variance]];
+    // A fix outside the local frame (not at the course yet) or too coarse to
+    // be a position (reduced precision, ±3 km) reads like no fix: the last
+    // mark speaks, or nothing does — never a thrown render or a ±3000 yd number.
+    const enu = usableFix ? wgs84ToEnuInFrame([usableFix.longitude, usableFix.latitude, usableFix.altitudeM], origin) : null;
+    if (usableFix && enu) {
+      const variance = usableFix.horizontalAccuracyM ** 2, cov: Covariance2 = [[variance, 0], [0, variance]];
       // §15: green mode follows where the golfer stands (the canonical green outline), never a guess.
       return { value: greenDistances([enu[0], enu[1]], green.feature, cov, green.edgeSigmaM), basis: 'live_fix', onGreen: exactPointInPartition(partition, [enu[0], enu[1]]).lieClass === 'green' };
     }
     if (lastMark) return { value: greenDistances([lastMark.positionENU[0], lastMark.positionENU[1]], green.feature, lastMark.covarianceENU2D, green.edgeSigmaM), basis: 'last_mark', onGreen: lastMark.primaryLie === 'green' };
     return { value: null, basis: null, onGreen: false };
-  }, [green, latestFix, lastMark, origin, partition]);
+  }, [green, usableFix, lastMark, origin, partition]);
   const readout = useMemo(() => distances.value ? greenReadout(distances.value, distances.onGreen) : null, [distances]);
   const policy = useMemo(() => competitionPolicy(playMode), [playMode]);
   const advice = useMemo<ReadoutAdvice>(() => {
@@ -290,12 +293,12 @@ export function useOneTap(options: UseOneTapOptions): OneTapView {
     // club or line: no calibrated model exists, and the policy governs them too.
     if (!terrain || !green) return permittedAdvice(NO_ADVICE, policy);
     const ring = largestOuterRing(green.feature), centre = ring ? ringCentroid(ring) : null;
-    const fixEnu = latestFix ? wgs84ToEnuInFrame([latestFix.longitude, latestFix.latitude, latestFix.altitudeM], origin) : null;
+    const fixEnu = usableFix ? wgs84ToEnuInFrame([usableFix.longitude, usableFix.latitude, usableFix.altitudeM], origin) : null;
     const here: PointM | null = fixEnu ? [fixEnu[0], fixEnu[1]] : lastMark ? [lastMark.positionENU[0], lastMark.positionENU[1]] : null;
     if (!centre || !here) return permittedAdvice(NO_ADVICE, policy);
     const from = sampleTerrain(terrain, here), to = sampleTerrain(terrain, centre);
     return permittedAdvice({ ...NO_ADVICE, elevationDeltaM: from && to ? to.elevationM - from.elevationM : null }, policy);
-  }, [terrain, green, latestFix, lastMark, origin, policy]);
+  }, [terrain, green, usableFix, lastMark, origin, policy]);
   const lie = useMemo(() => {
     if (!lastMark) return null;
     const primaryFeatureId = lastMark.liePosterior.find(e => e.lieClass === lastMark.primaryLie)?.featureId ?? null;
@@ -307,9 +310,13 @@ export function useOneTap(options: UseOneTapOptions): OneTapView {
 
   const locationQuality = useMemo<LocationQuality>(() => {
     if (!location) return 'none';
+    const graded = gradeLocationQuality(latestFix, playerStale ? Number.POSITIVE_INFINITY : latestFix?.timestampMs ?? 0, locationStatus);
+    // A ±3 km fix cannot say the phone is away from the course; only a real
+    // fix outside the frame does (2026-09-17: standing on the 9th green,
+    // Precise Location off, the chip read "Not at the course yet").
+    if (graded === 'approximate') return graded;
     if (latestFix && !wgs84ToEnuInFrame([latestFix.longitude, latestFix.latitude, null], origin)) return 'off_course';
-    if (playerStale) return gradeLocationQuality(latestFix, Number.POSITIVE_INFINITY, locationStatus);
-    return gradeLocationQuality(latestFix, latestFix?.timestampMs ?? 0, locationStatus);
+    return graded;
   }, [location, latestFix, playerStale, locationStatus, origin]);
   const syncIssue = snapshot.syncErrors > 0 ? 'error' : !online && snapshot.syncPending > 0 ? 'offline' : null;
   const statusToast = useMemo<OneTapStatusToast | null>(() => {

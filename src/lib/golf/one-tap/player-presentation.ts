@@ -1,5 +1,6 @@
 import { wgs84ToEnuInFrame, type LocalOrigin } from './geodesy';
 import type { LocationSample } from './location-estimator';
+import { isApproximateFix } from './location-quality';
 
 /** YOU on the course (master plan §5, §37). The live device marker shows a
  * presentation position: the receiver's fixes eased with a small deadband
@@ -42,8 +43,10 @@ export const PRESENTATION_CONFIG: Readonly<PresentationConfig> = Object.freeze({
 const dist = (a: readonly [number, number], b: readonly [number, number]) => Math.hypot(a[0] - b[0], a[1] - b[1]);
 export function playerFixFromSample(sample: LocationSample, origin: LocalOrigin): PlayerFix | null {
   if (!(sample.horizontalAccuracyM > 0) || !Number.isFinite(sample.timestampMs)) return null;
-  // A fix outside the local frame (still driving in, a coarse first cell
-  // fix) is no YOU marker, not a thrown frame error.
+  // A fix outside the local frame (still driving in) is no YOU marker, not a
+  // thrown frame error; a reduced-precision fix (±3 km) is no YOU either,
+  // rather than a marker somewhere in the county with a halo over the course.
+  if (isApproximateFix(sample)) return null;
   const enu = wgs84ToEnuInFrame([sample.longitude, sample.latitude, null], origin);
   if (!enu) return null;
   return { positionENU: [enu[0], enu[1]], accuracyM: sample.horizontalAccuracyM, timestampMs: sample.timestampMs };
