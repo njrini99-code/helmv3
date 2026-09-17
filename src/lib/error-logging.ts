@@ -21,6 +21,13 @@ export interface ErrorContext {
   route?: string;
   component?: string;
   action?: string;
+  /**
+   * A caller that must know about stale-server-action failures even though
+   * the auto-recovery path swallows them (round-start, tee-pick — a player
+   * who lost their pick to a reload is what we cannot see without this).
+   * Downgrades to `low` and still writes the row.
+   */
+  bypassStaleActionFilter?: boolean;
   [key: string]: unknown;
 }
 
@@ -372,7 +379,11 @@ export function logError(
       staleActionWarnedThisSession = true;
       console.warn('[error-logging] stale server action detected — client will reload to pick up the new bundle');
     }
-    return;
+    if (!context?.bypassStaleActionFilter) return;
+    // Otherwise fall through: a critical flow (round-start, tee-pick) asked
+    // to be recorded even here. Force `low` so this never pages, and continue
+    // to the normal enrich/send path — the row is what we need, not a page.
+    requestedSeverity = 'low';
   }
 
   // Benign browser noise — filter before Sentry AND before the Bridge write,

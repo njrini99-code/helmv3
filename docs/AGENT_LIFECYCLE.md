@@ -168,10 +168,9 @@ installed at project scope also load in worktrees of the same repo.
 | --- | --- |
 | `buildCommand` | `npm run build` |
 | `installCommand` | `npm ci` |
-| `ignoreCommand` | `bash scripts/vercel-ignore-build.sh` |
+| `ignoreCommand` | `bash scripts/vercel-ignore-build.sh` (builds `main` only) |
 | `framework` | nextjs |
 | `regions` | `iad1` |
-| `git.deploymentEnabled` | `{"*": false}` |
 
 **Production cron jobs are declared in `vercel.json`**, not in code — e.g.
 `/api/cron/coachhelm-validation` hourly at :15. They run against
@@ -447,9 +446,12 @@ gh pr list --state merged --limit 20 \
 9. **Squash merge** — one new commit on main; remote branch auto-deleted.
 10. **`git fetch`** — local main catches up.
 
-A push to `main` deploys nothing. `vercel.json` carries
-`"git": {"deploymentEnabled": {"*": false}}`. Production is an on-demand
-CLI promote a human runs. Merging is not shipping.
+11. **Vercel Git integration** — the merge commit on `main` builds and
+    promotes to production (since 2026-09-17; `vercel.json` no longer
+    disables Git deploys, and `scripts/vercel-ignore-build.sh` skips every
+    branch but `main`). Vercel sets `VERCEL_GIT_COMMIT_SHA`, so the Sentry
+    release is the merge commit. Merging IS shipping — land only what may
+    go live. Confirm the deployment is READY before calling it live.
 
 ---
 
@@ -788,11 +790,14 @@ Standing rules that no hook enforces:
   they are R3 under the engineering OS, meaning prepare only; the owner
   executes.
 
-### Vercel — pushing is not deploying
+### Vercel — merging to main is deploying; the CLI is not
 
-**`vercel.json` carries `"git": {"deploymentEnabled": {"*": false}}`.**
-No branch auto-deploys. Production is an on-demand CLI promote a human
-runs. Any doc claiming "production serves main" is stale.
+**Production deploys from the Vercel Git integration** (since 2026-09-17).
+Every commit on `main` builds and promotes; `scripts/vercel-ignore-build.sh`
+skips every other branch. `scripts/deploy-prod.sh` is retired and refuses to
+run: a CLI deploy beside the Git integration created duplicate and failed
+production deploys (2026-09-15) and stale Sentry release tags. Production
+serves the latest READY `main` deployment.
 
 Denied at the permission layer in four spellings each: `vercel deploy
 --prod`, `vercel --prod`, `vercel promote`, `vercel rollback`,

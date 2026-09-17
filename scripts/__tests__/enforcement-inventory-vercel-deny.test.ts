@@ -153,16 +153,21 @@ describe('vercelMutatingDenyHits — the Supabase exclusion is derived from the 
 });
 
 describe('the live configuration', () => {
-  it('purchases and project controls ask while ordinary deployment tools stay usable', () => {
+  it('purchases and project controls ask, and CLI production deploys are denied because deploys go through the Vercel Git integration', () => {
     // Production mutators remain subject to native authorization, including
-    // tools addressed by the account connector UUID.
+    // tools addressed by the account connector UUID. Since 2026-09-17 the
+    // CLI `vercel --prod` / `vercel deploy --prod` spellings are denied
+    // outright rather than asked — the intended production path is the
+    // Vercel Git integration, not a local upload from an agent's checkout.
     const settings = JSON.parse(readFileSync(resolve(REPO, '.claude/settings.json'), 'utf-8'));
     const connectors: Connector[] = JSON.parse(
       readFileSync(resolve(REPO, 'config/mcp-connector-ids.json'), 'utf-8'),
     ).connectors;
     const vercelIds = connectors.filter((c) => c.service === 'Vercel').map((c) => c.id);
     expect(vercelIds.length).toBeGreaterThan(0);
-    expect(settings.permissions.ask).toContain('Bash(vercel --prod:*)');
+    expect(settings.permissions.deny).toContain('Bash(vercel --prod:*)');
+    expect(settings.permissions.deny).toContain('Bash(vercel deploy --prod:*)');
+    expect(settings.permissions.ask).not.toContain('Bash(vercel --prod:*)');
     expect(settings.permissions.ask).not.toContain('mcp__claude_ai_Vercel__deploy_to_vercel');
     for (const id of vercelIds) {
       for (const tool of MUTATING_TOOLS.filter((name) => name !== 'deploy_to_vercel')) {

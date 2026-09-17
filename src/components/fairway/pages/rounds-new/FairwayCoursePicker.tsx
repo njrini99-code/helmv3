@@ -142,7 +142,7 @@ export function FairwayCoursePicker({
       // picker was swallowed here — a stale server action, a killed fetch —
       // and the field report was "it won't let them pick the course, no
       // error" with nothing in error_logs to go on.
-      logError(err instanceof Error ? err : new Error(String(err)), { component: 'FairwayCoursePicker', action: 'load course library', featureArea: 'round_tracking' }, 'medium');
+      logError(err instanceof Error ? err : new Error(String(err)), { component: 'FairwayCoursePicker', action: 'load course library', featureArea: 'round_tracking', bypassStaleActionFilter: true }, 'medium');
       fairwayToast.danger('Could not load the course library');
       return [];
     } finally {
@@ -183,8 +183,10 @@ export function FairwayCoursePicker({
       if (teeReqRef.current !== req) return; // superseded by a newer selection
       setTees(detail?.tees ?? []);
     } catch (err) {
+      // The row is recorded either way (#1947); a stale action id then gets the
+      // reload it needs instead of a toast the player can only keep tapping.
+      logError(err instanceof Error ? err : new Error(String(err)), { component: 'FairwayCoursePicker', action: 'load tees', featureArea: 'round_tracking', courseId: course.id, bypassStaleActionFilter: true }, 'medium');
       if (recoverFromStaleServerAction(err)) return;
-      logError(err instanceof Error ? err : new Error(String(err)), { component: 'FairwayCoursePicker', action: 'load tees', featureArea: 'round_tracking', courseId: course.id }, 'medium');
       if (teeReqRef.current === req) fairwayToast.danger('Could not load tees for that course');
     } finally {
       if (teeReqRef.current === req) setLoadingTees(false);
@@ -213,7 +215,7 @@ export function FairwayCoursePicker({
       if (!defaults) {
         // The tee exists in the list but the server returned nothing for it —
         // a data gap (deleted tee, RLS, missing holes), not a transport loss.
-        logError(new Error('Tee defaults unavailable'), { component: 'FairwayCoursePicker', action: 'pick tee', featureArea: 'round_tracking', courseId: selected?.id ?? null, teeId: tee.id }, 'medium');
+        logError(new Error('Tee defaults unavailable'), { component: 'FairwayCoursePicker', action: 'pick tee', featureArea: 'round_tracking', courseId: selected?.id ?? null, teeId: tee.id, bypassStaleActionFilter: true }, 'medium');
         fairwayToast.danger('Could not load that tee');
         return;
       }
@@ -221,17 +223,36 @@ export function FairwayCoursePicker({
       // golf_courses row this picker already loaded to build the tee list, so
       // this costs nothing — and it lets the setup screen show the actual
       // course photo instead of a name-derived stock scene.
-      onPick({
-        ...defaults,
-        courseImageUrl: selected?.image_url ?? null,
-        courseNormalizedName: selected?.normalized_name ?? null,
-      });
+      try {
+        onPick({
+          ...defaults,
+          courseImageUrl: selected?.image_url ?? null,
+          courseNormalizedName: selected?.normalized_name ?? null,
+        });
+      } catch (onPickErr) {
+        // Anything the parent's onPick throws — a cache-write exception,
+        // a bad state update — used to fall through to the outer catch and
+        // be misreported as "could not load that tee". Log it as itself.
+        logError(
+          onPickErr instanceof Error ? onPickErr : new Error(String(onPickErr)),
+          {
+            component: 'FairwayCoursePicker',
+            action: 'onPick threw',
+            featureArea: 'round_tracking',
+            courseId: selected?.id ?? null,
+            teeId: tee.id,
+            bypassStaleActionFilter: true,
+          },
+          'medium',
+        );
+        throw onPickErr;
+      }
       onOpenChange(false);
     } catch (err) {
+      logError(err instanceof Error ? err : new Error(String(err)), { component: 'FairwayCoursePicker', action: 'pick tee', featureArea: 'round_tracking', courseId: selected?.id ?? null, teeId: tee.id, bypassStaleActionFilter: true }, 'medium');
       // A tab open across a deploy calls an action id the new build no longer
       // has; the reload it needs is requested here, not hidden behind a toast.
       if (recoverFromStaleServerAction(err)) return;
-      logError(err instanceof Error ? err : new Error(String(err)), { component: 'FairwayCoursePicker', action: 'pick tee', featureArea: 'round_tracking', courseId: selected?.id ?? null, teeId: tee.id }, 'medium');
       fairwayToast.danger('Could not load that tee');
     } finally {
       setPicking(false);

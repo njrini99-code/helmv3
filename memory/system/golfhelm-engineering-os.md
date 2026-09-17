@@ -125,10 +125,12 @@ America/New_York) — a ceiling, not a target. Every release, once the release
 scripts land: exact candidate SHA on main → `release:budget` →
 `release:prepare` → `release:check -- --sha <sha>` → **owner approval** → one
 deploy → post-deploy verification → `memory/ledgers/deployments.md` +
-release-queue state updates. Until then, any production promote is a manual,
-owner-run CLI action outside this workflow — see `memory/ledgers/deployments.md`
-for the current backfilled history. Merging to main never implies
-deployment; production pins to the last released SHA. If the budget is spent
+release-queue state updates. Until then, production deploys from the Vercel
+Git integration: the owner-authorized merge to `main` is the release
+(2026-09-17; `scripts/deploy-prod.sh` is retired) — see
+`memory/ledgers/deployments.md` for history. Production serves the latest
+READY `main` deployment; a merge is not proven live until Vercel reports the
+deployment for that commit READY. If the budget is spent
 and a P0 lands, prepare everything and present it — the owner decides on any
 override, never the system.
 

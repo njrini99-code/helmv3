@@ -4,11 +4,6 @@
   "installCommand": "npm ci",
   "framework": "nextjs",
   "ignoreCommand": "bash scripts/vercel-ignore-build.sh",
-  "git": {
-    "deploymentEnabled": {
-      "*": false
-    }
-  },
   "regions": [
     "iad1"
   ],
