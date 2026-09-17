@@ -41,7 +41,7 @@ export default async function NewRoundPage() {
   return (
     <AnimatedPage>
       <AnimatedItem>
-        <NewRoundClient playerId={player.id} oneTapFlagEnabled={evaluateFlag(PEEK_N_PEAK_ONE_TAP_V1.featureFlag).value} />
+        <NewRoundClient playerId={player.id} oneTapFlagEnabled={evaluateFlag(PEEK_N_PEAK_ONE_TAP_V1.featureFlag).value} oneTapSyncEnabled={evaluateFlag(PEEK_N_PEAK_ONE_TAP_V1.syncFeatureFlag).value} />
       </AnimatedItem>
     </AnimatedPage>
   );

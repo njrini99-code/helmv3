@@ -68,12 +68,23 @@ describe('device location source', () => {
     const seen: LocationSample[] = [];
     const off = source.subscribe(s => seen.push(s));
     expect(geo.watchPosition.mock.calls[0]![2]).toMatchObject({ enableHighAccuracy: true, maximumAge: 0 });
-    const position = { timestamp: 123, coords: { longitude: -79.7, latitude: 42.1, accuracy: 4, altitude: 300, altitudeAccuracy: 6, speed: null, heading: 90 } } as unknown as GeolocationPosition;
+    const fixMs = Date.now() - 500;
+    const position = { timestamp: fixMs, coords: { longitude: -79.7, latitude: 42.1, accuracy: 4, altitude: 300, altitudeAccuracy: 6, speed: null, heading: 90 } } as unknown as GeolocationPosition;
     success!(position);
-    expect(seen[0]).toMatchObject({ timestampMs: 123, longitude: -79.7, latitude: 42.1, horizontalAccuracyM: 4, altitudeM: 300, verticalAccuracyM: 6, speedMps: null, headingDegrees: 90, source: 'device' });
+    expect(seen[0]).toMatchObject({ timestampMs: fixMs, longitude: -79.7, latitude: 42.1, horizontalAccuracyM: 4, altitudeM: 300, verticalAccuracyM: 6, speedMps: null, headingDegrees: 90, source: 'device' });
     off();
     expect(geo.clearWatch).toHaveBeenCalledWith(9);
-    expect(sampleFromPosition({ timestamp: NaN, coords: { longitude: 1, latitude: 2, accuracy: 5, altitude: null, altitudeAccuracy: null, speed: null, heading: null } } as unknown as GeolocationPosition, 77).timestampMs).toBe(77);
+    const coords = { longitude: 1, latitude: 2, accuracy: 5, altitude: null, altitudeAccuracy: null, speed: null, heading: null };
+    const at = (timestamp: number, nowMs: number) => sampleFromPosition({ timestamp, coords } as unknown as GeolocationPosition, nowMs).timestampMs;
+    expect(at(NaN, 77)).toBe(77);
+    // A fix time on another clock is not a time on ours: WebKit's microsecond
+    // timestamp (2026-09-17, every tap read GPS_UNAVAILABLE) and a phone set
+    // two minutes off both take the arrival time; a fix 30 s old keeps its own.
+    const now = 1_789_677_431_633;
+    expect(at(now * 1000, now)).toBe(now);
+    expect(at(now - 120_000, now)).toBe(now);
+    expect(at(now - 30_000, now)).toBe(now - 30_000);
+    expect(at(now + 5_000, now)).toBe(now + 5_000);
   });
 });
 

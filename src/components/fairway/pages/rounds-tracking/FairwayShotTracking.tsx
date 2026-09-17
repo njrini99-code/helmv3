@@ -60,6 +60,8 @@ interface ShotTrackingProps {
    * package maps; absent (every other course, Peek Upper in standard mode),
    * nothing below changes. */
   liveRound?: OneTapLiveRound | null;
+  /** The round's Meridian Live switch (`live-opt-in.ts`): the status row turns it on, the ••• menu off. */
+  onLiveOptIn?: (on: boolean) => void;
   /** Where the Live gate stands for an Upper round whose Live is not up yet
    * (loading, or off with a reason); shown as one line in the chrome. */
   liveStatus?: OneTapLiveStatus;
@@ -146,6 +148,7 @@ export default function FairwayShotTracking({
   statusSlot,
   geometry,
   liveRound = null,
+  onLiveOptIn,
   liveStatus,
   holes,
   currentHoleIndex,
@@ -574,6 +577,7 @@ export default function FairwayShotTracking({
     return (
       <OneTapLiveHole live={liveRound} holes={holes} holeIndex={currentHoleIndex} onNavigateToHole={onNavigateToHole}
         onHoleComplete={onHoleComplete} onHoleStatsUpdate={onHoleStatsUpdate} onSaveShot={onSaveShot} onExit={onExit} statusSlot={statusSlot}
+        onTurnOffLive={onLiveOptIn ? () => onLiveOptIn(false) : undefined}
         onUseStandardTracking={(shots) => {
           dispatch({ type: 'RESET_FOR_HOLE_CHANGE', payload: { initialShots: shots, initialShotNumber: shots.length + 1, holeYardage: currentHole.yardage } });
           setStandardOverride(true);
@@ -648,7 +652,7 @@ export default function FairwayShotTracking({
         belowSlot={
           <>
             {statusSlot}
-            {liveStatus && <OneTapLiveStatusRow status={liveStatus} />}
+            {liveStatus && <OneTapLiveStatusRow status={liveStatus} onTurnOn={onLiveOptIn ? () => onLiveOptIn(true) : undefined} />}
             {!isPutting && <FairwayShotPills
               currentShot={currentShot}
               recordedShotCount={shotHistory.length}

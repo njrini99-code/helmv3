@@ -25,6 +25,13 @@ export interface UseOneTapLiveRoundOptions {
   dbCourseId?: string | null;
   courseName?: string | null;
   featureFlagEnabled: boolean;
+  /** The player's own switch for this round (`live-opt-in.ts`): `false` keeps
+   * an eligible round on standard tracking with the row offering "Turn on";
+   * omitted (the lab, tests) means no switch governs the round. */
+  optIn?: boolean;
+  /** Server-evaluated `peek_n_peak_one_tap_sync_v1`: off (the default) plays
+   * device-only, never posting to outbox tables that may not exist yet. */
+  syncEnabled?: boolean;
   /** The hole the player is on; its terrain loads first. */
   holeNumber?: number;
   policy?: PeekNPeakOneTapPolicy;
@@ -40,10 +47,10 @@ export type OneTapLiveStatus =
   | { phase: 'inactive' }
   | { phase: 'loading'; step: 'course' | 'terrain'; loaded: number; total: number }
   | { phase: 'live'; loaded: number; total: number }
-  | { phase: 'off'; reason: OneTapIneligibility | 'course_unavailable' | 'error'; detail?: string };
+  | { phase: 'off'; reason: OneTapIneligibility | 'opt_in_off' | 'course_unavailable' | 'error'; detail?: string };
 export interface OneTapLiveRoundState { live: OneTapLiveRound | null; status: OneTapLiveStatus }
 
-export function useOneTapLiveRoundState({ roundId, dbCourseId, courseName, featureFlagEnabled, holeNumber, policy = PEEK_N_PEAK_ONE_TAP_V1, cache, roundType, transport }: UseOneTapLiveRoundOptions): OneTapLiveRoundState {
+export function useOneTapLiveRoundState({ roundId, dbCourseId, courseName, featureFlagEnabled, optIn, syncEnabled = false, holeNumber, policy = PEEK_N_PEAK_ONE_TAP_V1, cache, roundType, transport }: UseOneTapLiveRoundOptions): OneTapLiveRoundState {
   const productCourseId = productCourseIdForRound({ dbCourseId, courseName }, policy);
   const [state, setRawState] = useState<OneTapLiveRoundState>({ live: null, status: { phase: 'inactive' } });
   // Idempotent: an unchanged state keeps its identity, so a caller that
@@ -55,6 +62,9 @@ export function useOneTapLiveRoundState({ roundId, dbCourseId, courseName, featu
   useEffect(() => {
     if (productCourseId !== policy.courseId || !roundId) { setState({ live: null, status: { phase: 'inactive' } }); return; }
     if (!featureFlagEnabled) { setState({ live: null, status: { phase: 'off', reason: 'feature_flag_off' } }); return; }
+    // The flag makes the round eligible; the player's tap starts it. Nothing
+    // downloads for a round that has not been switched on.
+    if (optIn === false) { setState({ live: null, status: { phase: 'off', reason: 'opt_in_off' } }); return; }
     let cancelled = false;
     const off = (reason: Extract<OneTapLiveStatus, { phase: 'off' }>['reason'], detail?: string) => { if (!cancelled) setState({ live: null, status: { phase: 'off', reason, detail } }); };
     setState({ live: null, status: { phase: 'loading', step: 'course', loaded: 0, total: 0 } });
@@ -68,8 +78,11 @@ export function useOneTapLiveRoundState({ roundId, dbCourseId, courseName, featu
         const permission = await queryLocationPermission();
         const location = permission === 'denied' ? null : deviceLocationSource();
         // The outbox mirrors the device record (task 13); it exists only for a
-        // resolved live round, so no production round ever posts to these tables.
-        const outbox = transport === undefined ? browserSyncTransport() : transport;
+        // resolved live round with the sync flag on, so no round posts to
+        // outbox tables an environment does not have (the migration is applied
+        // by db:apply, never by a deploy). Off, marks stay on the device and
+        // the scorecard is written through the standard ledger (§77).
+        const outbox = transport !== undefined ? transport : syncEnabled ? browserSyncTransport() : null;
         const terrainByHole: Record<string, TerrainMesh> = {};
         const { live: resolved, eligibility } = resolveOneTapLiveRound({ roundId, roundCourseId: productCourseId, featureFlagEnabled, pkg, terrainByHole, contextLayer, location, policy, readiness: 'partial', roundType, transport: outbox });
         if (cancelled) return;
@@ -104,7 +117,7 @@ export function useOneTapLiveRoundState({ roundId, dbCourseId, courseName, featu
       }
     })();
     return () => { cancelled = true; };
-  }, [roundId, featureFlagEnabled, productCourseId, policy, cache, roundType, transport]);
+  }, [roundId, featureFlagEnabled, optIn, syncEnabled, productCourseId, policy, cache, roundType, transport]);
   return state;
 }
 function sameStatus(a: OneTapLiveStatus, b: OneTapLiveStatus): boolean {

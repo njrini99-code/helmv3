@@ -15,9 +15,18 @@ interface GeolocationLike {
   clearWatch(id: number): void;
   getCurrentPosition?(success: (position: GeolocationPosition) => void, error?: (error: GeolocationPositionError) => void, options?: PositionOptions): void;
 }
+/** A fix time this far from the arrival clock is not a time on our clock:
+ * WebKit has reported `position.timestamp` in microseconds (2026-09-17, the
+ * preview under Playwright's WebKit: every tap read GPS_UNAVAILABLE because
+ * no sample sat inside the window), and a phone's clock can be set wrong.
+ * The receiver's fix precedes its arrival by well under a minute, so the
+ * arrival time is the honest fallback. */
+export const FIX_CLOCK_TOLERANCE_MS = 60_000;
 export function sampleFromPosition(position: GeolocationPosition, nowMs = Date.now()): LocationSample {
   const c = position.coords;
-  return { timestampMs: Number.isFinite(position.timestamp) ? position.timestamp : nowMs, longitude: c.longitude, latitude: c.latitude,
+  const reported = position.timestamp;
+  const timestampMs = Number.isFinite(reported) && Math.abs(reported - nowMs) <= FIX_CLOCK_TOLERANCE_MS ? reported : nowMs;
+  return { timestampMs, longitude: c.longitude, latitude: c.latitude,
     altitudeM: c.altitude ?? null, horizontalAccuracyM: c.accuracy, verticalAccuracyM: c.altitudeAccuracy ?? null,
     speedMps: c.speed ?? null, headingDegrees: c.heading ?? null, source: 'device' };
 }

@@ -37,6 +37,7 @@ import { useToast } from '@/components/ui/sonner';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayShotTracking } from '@/components/fairway/pages/rounds-tracking';
 import { useOneTapLiveRoundState } from '@/components/golf/one-tap/use-one-tap-live-round';
+import { useLiveOptIn } from '@/lib/golf/one-tap/live-opt-in';
 import { Skeleton } from '@/components/fairway';
 import { Button as FwButton } from '@/components/fairway/controls/button';
 import { ModalShell } from '@/components/fairway/overlays/ModalShell';
@@ -102,6 +103,8 @@ interface ContinueRoundClientProps {
   roundTypeEditor?: ReactNode;
   /** Server-evaluated `peek_n_peak_one_tap_v1`; off (the default) keeps every round on standard tracking. */
   oneTapFlagEnabled?: boolean;
+  /** Server-evaluated `peek_n_peak_one_tap_sync_v1`; off (the default) keeps a live round's marks on the device. */
+  oneTapSyncEnabled?: boolean;
   roundId: string;
   playerId: string;
   setupData: RoundSetupData;
@@ -122,6 +125,7 @@ export default function ContinueRoundClient({
   roundTypeEditor,
   roundId: routeRoundId,
   oneTapFlagEnabled = false,
+  oneTapSyncEnabled = false,
   playerId,
   setupData,
   qualifierRoundNumberOptions = [],
@@ -164,7 +168,10 @@ export default function ContinueRoundClient({
   const [holes, setHoles] = useState<Hole[]>(initialHoles);
   // One-Tap master plan §77: only a Peek'n Peak Upper round with the release
   // flag on and an approved package resolves a live round; everything else is null.
-  const { live: oneTapLiveRound, status: oneTapLiveStatus } = useOneTapLiveRoundState({ roundId, dbCourseId: setupData.courseId ?? null, courseName: setupData.courseName, featureFlagEnabled: oneTapFlagEnabled, roundType: setupData.roundType, holeNumber: holes[currentHoleIndex]?.number ?? currentHoleIndex + 1 });
+  // The player's own Live switch for this round (the status row turns it on, the ••• menu off).
+  const [oneTapOptIn, setOneTapOptIn] = useLiveOptIn(roundId);
+  const { live: oneTapLiveRound, status: oneTapLiveStatus } = useOneTapLiveRoundState({ roundId, dbCourseId: setupData.courseId ?? null, courseName: setupData.courseName, featureFlagEnabled: oneTapFlagEnabled, optIn: oneTapOptIn === 'on', syncEnabled: oneTapSyncEnabled, roundType: setupData.roundType, holeNumber: holes[currentHoleIndex]?.number ?? currentHoleIndex + 1 });
+  const onOneTapOptIn = useCallback((on: boolean) => setOneTapOptIn(on ? 'on' : 'off'), [setOneTapOptIn]);
   const [completedHoleStats, setCompletedHoleStats] = useState<HoleStats[]>(initialCompletedStats);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -1728,6 +1735,7 @@ export default function ContinueRoundClient({
           autoSaveDisabled={submitting || !!completedRoundId}
           liveRound={oneTapLiveRound}
           liveStatus={oneTapLiveStatus}
+          onLiveOptIn={onOneTapOptIn}
         />
       </div>
 

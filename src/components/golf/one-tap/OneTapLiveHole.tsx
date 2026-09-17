@@ -26,11 +26,13 @@ export interface OneTapLiveHoleProps {
   onHoleStatsUpdate?: (holeIndex: number, stats: HoleStats | null) => void | Promise<void>;
   onSaveShot?: (shot: ShotRecord) => void;
   onUseStandardTracking: (shots: ShotRecord[]) => void;
+  /** The round's Live switch off (`live-opt-in.ts`): back to standard tracking for the rest of the round. */
+  onTurnOffLive?: () => void;
   onExit?: () => void;
   statusSlot?: ReactNode;
   reducedMotion?: boolean;
 }
-export function OneTapLiveHole({ live, holes, holeIndex, onNavigateToHole, onHoleComplete, onHoleStatsUpdate, onSaveShot, onUseStandardTracking, onExit, statusSlot, reducedMotion }: OneTapLiveHoleProps) {
+export function OneTapLiveHole({ live, holes, holeIndex, onNavigateToHole, onHoleComplete, onHoleStatsUpdate, onSaveShot, onUseStandardTracking, onTurnOffLive, onExit, statusSlot, reducedMotion }: OneTapLiveHoleProps) {
   const hole = holes[holeIndex];
   // The round hook plays the package's holes; the host's index is the round's.
   const keyByRoundIndex = useMemo(() => holes.map(h => holeKeyForRoundHole(live, h.number)), [holes, live]);
@@ -80,6 +82,6 @@ export function OneTapLiveHole({ live, holes, holeIndex, onNavigateToHole, onHol
     </div>}
     <OneTapPlayerScreen roundId={live.roundId} pkg={live.pkg} holeKey={holeKey} terrain={live.terrainByHole?.[holeKey] ?? null} contextLayer={live.contextLayer} world={live.world}
       location={live.location} storage={live.storage} transport={live.transport} reducedMotion={reducedMotion} round={round}
-      onUseStandardTracking={() => onUseStandardTracking(adapted.shots)} onExitRound={onExit} />
+      onUseStandardTracking={() => onUseStandardTracking(adapted.shots)} onTurnOffLive={onTurnOffLive} onExitRound={onExit} />
   </div>;
 }

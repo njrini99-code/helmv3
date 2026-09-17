@@ -651,6 +651,7 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
     <AnimatedPage>
       <ContinueRoundClient
         oneTapFlagEnabled={evaluateFlag(PEEK_N_PEAK_ONE_TAP_V1.featureFlag).value}
+        oneTapSyncEnabled={evaluateFlag(PEEK_N_PEAK_ONE_TAP_V1.syncFeatureFlag).value}
         roundTypeEditor={
           <RoundTypeEditor
             roundId={id}

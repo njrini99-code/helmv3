@@ -17,7 +17,7 @@ import type { OneTapView } from './use-one-tap';
 export type OneTapSheet = 'penalty' | 'hole' | 'mode';
 export interface OneTapOverflow { items: StageMenuItem[]; sheet: ReactNode; open: OneTapSheet | null }
 
-export function useOneTapOverflow({ view, round, onUseStandardTracking, onExitRound }: { view: OneTapView; round: OneTapRoundView | null; onUseStandardTracking?: () => void; onExitRound?: () => void }): OneTapOverflow {
+export function useOneTapOverflow({ view, round, onUseStandardTracking, onTurnOffLive, onExitRound }: { view: OneTapView; round: OneTapRoundView | null; onUseStandardTracking?: () => void; onTurnOffLive?: () => void; onExitRound?: () => void }): OneTapOverflow {
   const [open, setOpen] = useState<OneTapSheet | null>(null);
   const close = useCallback(() => setOpen(null), []);
   const items = useMemo<StageMenuItem[]>(() => {
@@ -34,9 +34,10 @@ export function useOneTapOverflow({ view, round, onUseStandardTracking, onExitRo
     list.push({ key: 'pause', label: view.paused ? 'Resume tracking' : 'Pause tracking', onSelect: view.paused ? view.resume : view.pause });
     if (round) list.push({ key: 'mode', label: `Competition Mode · ${round.playMode === 'competition' ? 'on' : 'off'}`, onSelect: () => setOpen('mode') });
     if (onUseStandardTracking) list.push({ key: 'standard', label: 'Use standard tracking', onSelect: onUseStandardTracking });
+    if (onTurnOffLive) list.push({ key: 'live-off', label: 'Turn off Meridian Live', onSelect: onTurnOffLive });
     if (onExitRound) list.push({ key: 'exit', label: 'Exit round', onSelect: onExitRound });
     return list;
-  }, [round, view.deleteLastMark, view.canDeleteLastMark, view.finishSuggested, view.holeOut, view.paused, view.resume, view.pause, onUseStandardTracking, onExitRound]);
+  }, [round, view.deleteLastMark, view.canDeleteLastMark, view.finishSuggested, view.holeOut, view.paused, view.resume, view.pause, onUseStandardTracking, onTurnOffLive, onExitRound]);
   const sheet = open && round ? open === 'penalty' ? <PenaltySheet round={round} onClose={close} /> : open === 'mode' ? <ModeSheet round={round} onClose={close} /> : <HoleSheet round={round} onClose={close} /> : null;
   return { items, sheet, open };
 }

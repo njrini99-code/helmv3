@@ -32,6 +32,25 @@ describe('FairwayShotTracking one-tap placement', () => {
     expect(container.querySelectorAll('button').length).toBeGreaterThan(0);
   });
 
+  it('offers the round\u2019s Live switch in the standard chrome, only for an eligible round the phone has not turned on', () => {
+    const onLiveOptIn = vi.fn();
+    const { container, rerender } = render(<FairwayShotTracking {...base} currentHoleIndex={0} liveStatus={{ phase: 'off', reason: 'opt_in_off' }} onLiveOptIn={onLiveOptIn} />);
+    expect(liveHole()).toBeNull();
+    const row = container.querySelector('[data-slot="one-tap-live-status"]')!;
+    expect(row.getAttribute('data-reason')).toBe('opt_in_off');
+    expect(row.textContent).toContain('off for this round');
+    const turnOn = container.querySelector<HTMLButtonElement>('[data-slot="one-tap-live-turn-on"]')!;
+    expect(turnOn.textContent).toBe('Turn on');
+    turnOn.click();
+    expect(onLiveOptIn).toHaveBeenCalledWith(true);
+    // The kill switch (flag off) offers nothing; another course shows no row at all.
+    rerender(<FairwayShotTracking {...base} currentHoleIndex={0} liveStatus={{ phase: 'off', reason: 'feature_flag_off' }} onLiveOptIn={onLiveOptIn} />);
+    expect(container.querySelector('[data-slot="one-tap-live-turn-on"]')).toBeNull();
+    expect(container.querySelector('[data-slot="one-tap-live-status"]')!.textContent).toContain('not enabled in this environment');
+    rerender(<FairwayShotTracking {...base} currentHoleIndex={0} liveStatus={{ phase: 'inactive' }} onLiveOptIn={onLiveOptIn} />);
+    expect(container.querySelector('[data-slot="one-tap-live-status"]')).toBeNull();
+  });
+
   it('replaces the shot-entry screen with Meridian Live on a hole the package maps, keeping the host status slot', () => {
     const { container } = render(<FairwayShotTracking {...base} liveRound={live} currentHoleIndex={0} />);
     expect(liveHole()?.getAttribute('data-hole-number')).toBe(String(holes[0]!.number));

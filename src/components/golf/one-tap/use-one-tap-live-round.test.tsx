@@ -42,6 +42,13 @@ describe('useOneTapLiveRound', () => {
     await waitFor(() => expect(withSignal.result.current).not.toBeNull());
     expect(withSignal.result.current).toMatchObject({ roundId: 'r1', courseId: policy.courseId, geometryVersion: pilotPackage.contentHash, readiness: 'ready' });
     expect(withSignal.result.current?.location?.kind).toBe('device');
+    // Sync off (the default until the outbox migration is applied): the round
+    // plays device-only, no transport posts to tables that may not exist.
+    expect(withSignal.result.current?.transport ?? null).toBeNull();
+    const outbox = { upsertAnchors: async () => ({ acceptedIds: [] }), upsertPenalties: async () => ({ acceptedIds: [] }) };
+    const withOutbox = renderHook(() => useOneTapLiveRound({ ...base, roundId: 'r1-sync', cache, transport: outbox }));
+    await waitFor(() => expect(withOutbox.result.current).not.toBeNull());
+    expect(withOutbox.result.current?.transport).toBe(outbox);
     expect((await cache.keys()).sort()).toEqual([manifestUrl(policy.courseId), PKG_URL].sort());
     online.value = false;
     const noSignal = renderHook(() => useOneTapLiveRound({ ...base, roundId: 'r2', cache }));
@@ -60,6 +67,15 @@ describe('useOneTapLiveRound', () => {
     expect(renderHook(() => useOneTapLiveRoundState({ ...base, roundId: null, cache })).result.current.status).toEqual({ phase: 'inactive' });
     const off = renderHook(() => useOneTapLiveRoundState({ ...base, featureFlagEnabled: false, cache }));
     await waitFor(() => expect(off.result.current.status).toEqual({ phase: 'off', reason: 'feature_flag_off' }));
+    // The player's switch (owner ask, 2026-09-17): an eligible round the phone
+    // has not turned on stays on standard tracking and downloads nothing;
+    // the flag off still wins over a switch left on.
+    fetchMock.mockClear();
+    const notOn = renderHook(() => useOneTapLiveRoundState({ ...base, optIn: false, cache }));
+    await waitFor(() => expect(notOn.result.current.status).toEqual({ phase: 'off', reason: 'opt_in_off' }));
+    expect(fetchMock).not.toHaveBeenCalled();
+    const killed = renderHook(() => useOneTapLiveRoundState({ ...base, featureFlagEnabled: false, optIn: true, cache }));
+    await waitFor(() => expect(killed.result.current.status).toEqual({ phase: 'off', reason: 'feature_flag_off' }));
     online.value = false;
     const empty = new MemoryCourseAssetCache();
     const noFiles = renderHook(() => useOneTapLiveRoundState({ ...base, cache: empty }));

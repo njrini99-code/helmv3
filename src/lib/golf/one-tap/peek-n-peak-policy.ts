@@ -13,6 +13,10 @@ export const PEEK_N_PEAK_ONE_TAP_V1 = {
   siteId: 'osm-way-136097904',
   projection: 'wgs84-local-enu-v1',
   featureFlag: 'peek_n_peak_one_tap_v1',
+  /** The server outbox (task 13) posts to `golf_shot_anchors` & co., which
+   * exist only where that migration has been applied through `db:apply`; off,
+   * the round plays device-only and the ledger still scores it (§77). */
+  syncFeatureFlag: 'peek_n_peak_one_tap_sync_v1',
   /** Exact owner-approved package hashes. The 2026-09-16 Upper package
    * (`src/test/fixtures/course-geometry/peek-n-peak-upper.json`, the one every
    * compiled terrain under `compiled-peek-n-peak-upper/` is hash-locked to)
@@ -37,7 +41,7 @@ export const PEEK_N_PEAK_ONE_TAP_V1 = {
   renderWorld: 'v2',
 } as const;
 export type PeekNPeakOneTapPolicy = {
-  readonly courseId: string; readonly siteId: string; readonly projection: string; readonly featureFlag: string;
+  readonly courseId: string; readonly siteId: string; readonly projection: string; readonly featureFlag: string; readonly syncFeatureFlag: string;
   readonly approvedGeometryHashes: ReadonlySet<string>;
   readonly pilotAcceptsSourceCandidate: boolean;
   readonly dbCourseIds: ReadonlySet<string>;

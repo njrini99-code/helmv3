@@ -59,6 +59,7 @@ import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayNewRoundEntry } from '@/components/fairway/pages/rounds-new/FairwayNewRoundEntry';
 import { FairwayShotTracking } from '@/components/fairway/pages/rounds-tracking';
 import { useOneTapLiveRoundState } from '@/components/golf/one-tap/use-one-tap-live-round';
+import { useLiveOptIn } from '@/lib/golf/one-tap/live-opt-in';
 import { Skeleton } from '@/components/fairway';
 import { Button as FwButton } from '@/components/fairway/controls/button';
 import { ModalShell } from '@/components/fairway/overlays/ModalShell';
@@ -157,9 +158,11 @@ interface NewRoundClientProps {
   playerId: string;
   /** Server-evaluated `peek_n_peak_one_tap_v1`; off (the default) keeps every round on standard tracking. */
   oneTapFlagEnabled?: boolean;
+  /** Server-evaluated `peek_n_peak_one_tap_sync_v1`; off (the default) keeps a live round's marks on the device. */
+  oneTapSyncEnabled?: boolean;
 }
 
-export default function NewRoundClient({ playerId, oneTapFlagEnabled = false }: NewRoundClientProps) {
+export default function NewRoundClient({ playerId, oneTapFlagEnabled = false, oneTapSyncEnabled = false }: NewRoundClientProps) {
   const ExitRoundModal = FairwaySaveRoundModal;
   const SubmitOverlay = FairwayRoundSubmitOverlay;
   const router = useRouter();
@@ -883,7 +886,10 @@ export default function NewRoundClient({ playerId, oneTapFlagEnabled = false }: 
   const resolvedCourseIdRef = useRef<string | null>(null);
   // One-Tap master plan §77: only a Peek'n Peak Upper round with the release
   // flag on and an approved package resolves a live round; everything else is null.
-  const { live: oneTapLiveRound, status: oneTapLiveStatus } = useOneTapLiveRoundState({ roundId: savedRoundIdRef.current, dbCourseId: resolvedCourseIdRef.current, courseName: setupData.courseName, featureFlagEnabled: oneTapFlagEnabled, roundType: setupData.roundType, holeNumber: holes[currentHoleIndex]?.number ?? currentHoleIndex + 1 });
+  // The player's own Live switch for this round (the status row turns it on, the ••• menu off).
+  const [oneTapOptIn, setOneTapOptIn] = useLiveOptIn(savedRoundIdRef.current);
+  const { live: oneTapLiveRound, status: oneTapLiveStatus } = useOneTapLiveRoundState({ roundId: savedRoundIdRef.current, dbCourseId: resolvedCourseIdRef.current, courseName: setupData.courseName, featureFlagEnabled: oneTapFlagEnabled, optIn: oneTapOptIn === 'on', syncEnabled: oneTapSyncEnabled, roundType: setupData.roundType, holeNumber: holes[currentHoleIndex]?.number ?? currentHoleIndex + 1 });
+  const onOneTapOptIn = useCallback((on: boolean) => setOneTapOptIn(on ? 'on' : 'off'), [setOneTapOptIn]);
   // Cloud Course Library tee (golf_course_tees.id) when the round was started
   // from the tee picker. Cleared whenever a non-library course is chosen.
   const selectedTeeIdRef = useRef<string | null>(null);
@@ -2860,6 +2866,7 @@ export default function NewRoundClient({ playerId, oneTapFlagEnabled = false }: 
           autoSaveDisabled={step === 'submitting' || !!completedRoundId}
           liveRound={oneTapLiveRound}
           liveStatus={oneTapLiveStatus}
+          onLiveOptIn={onOneTapOptIn}
         />
       </div>
 
