@@ -81,8 +81,11 @@ const outDir = path.resolve(String(args['out-dir'] || `output/playwright/course-
   await page.locator('button[aria-label="More"]').click(); await page.waitForTimeout(250); await snap('overflow', { settled: false });
   await page.locator('button[aria-label="More"]').click(); await page.waitForTimeout(250);
   await walkTo(Math.max(0, length - 3)); await mark(); await snap('green-marked');
-  // The completion card (§19) fades after two seconds on a clean hole: snapshot it while it is up.
-  await page.locator('[data-slot=one-tap-holed]').click(); await page.waitForTimeout(350); await snap('holed', { settled: false });
+  // Putt made marks the cup where the phone is and closes the hole. The
+  // completion card (§19) fades after two seconds on a clean hole: snapshot it while it is up.
+  await page.locator('[data-slot=one-tap-putt-made]').click();
+  await page.waitForFunction(() => document.querySelector('[data-slot=one-tap-screen]')?.dataset.holeStatus === 'COMPLETE', null, { timeout: 10000 });
+  await page.waitForTimeout(350); await snap('holed', { settled: false });
   // Explicit hole advance: NEXT HOLE becomes the primary action once the hole is closed.
   const before = await page.evaluate(() => document.querySelector('[data-slot=one-tap-screen]')?.dataset.holeKey ?? null);
   // On the last hole NEXT HOLE stays rendered but disabled: the round is over

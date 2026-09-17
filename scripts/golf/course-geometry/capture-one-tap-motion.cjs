@@ -153,7 +153,9 @@ const REVEAL_FRAME_FRACTION = .65;
   // A second mark on the green: green → green is a putt, and a putt never flies.
   await walkTo(greenM);
   await markAndWatch('putt');
-  await page.locator('[data-slot=one-tap-holed]').click();
+  // Putt made: the cup mark where the phone is, and the hole closes on it.
+  await page.locator('[data-slot=one-tap-putt-made]').click();
+  await page.waitForFunction(() => document.querySelector('[data-slot=one-tap-screen]')?.dataset.holeStatus === 'COMPLETE', null, { timeout: 10000 });
   await page.waitForTimeout(350);
   await snap('holed', { settled: false });
   const summary = { course, hole, viewport, motion, greenAtM: greenM, revealWaitMs: REVEAL_WAIT_MS, steps, errors };

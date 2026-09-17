@@ -61,6 +61,10 @@ describe('One-Tap player screen', () => {
     expect(document.querySelector('[data-slot="one-tap-location"]')!.textContent).toBe('Locating…');
     expect(document.querySelector('[data-slot="one-tap-distances"]')!.textContent).toContain('Waiting for a GPS fix');
     expect(state()).toBe('HOLE_READY');
+    // On the tee the first mark is "Start hole"; Putt made waits for the green.
+    expect(document.querySelector('[data-slot="one-tap-actions"]')!.getAttribute('data-stage')).toBe('tee');
+    expect(document.querySelector('[data-slot="one-tap-mark"]')!.textContent).toBe('Start hole');
+    expect(document.querySelector('[data-slot="one-tap-putt-made"]')).toBeNull();
   });
 
   it('names a reduced-precision fix for what it is: the chip carries the radius, the readout the setting that fixes it', () => {
@@ -107,12 +111,15 @@ describe('One-Tap player screen', () => {
     expect(document.querySelector('[data-slot="one-tap-sync"]')).toBeNull();
     expect(document.querySelector('[data-slot="one-tap-lie"]')!.textContent).toMatch(/^(Tee|Near tee edge|Likely tee)/);
     expect(document.querySelector('[data-slot="one-tap-undo"]')).not.toBeNull();
-    // §14: no Finish hole from the tee.
-    expect(document.querySelector('[data-slot="one-tap-holed"]')).toBeNull();
+    // §14: no Putt made from the tee; after the first mark the button reads Mark ball.
+    expect(document.querySelector('[data-slot="one-tap-putt-made"]')).toBeNull();
+    expect(document.querySelector('[data-slot="one-tap-actions"]')!.getAttribute('data-stage')).toBe('play');
+    expect(document.querySelector('[data-slot="one-tap-mark"]')!.textContent).toBe('Mark ball');
     fireEvent.click(document.querySelector('[data-slot="one-tap-undo"]')!);
     expect(markers()).toEqual(['player']);
     expect(state()).toBe('HOLE_READY');
     expect(document.querySelector('[data-slot="one-tap-undo"]')).toBeNull();
+    expect(document.querySelector('[data-slot="one-tap-mark"]')!.textContent).toBe('Start hole');
   });
 
   it('joins consecutive marks as the derived shot, keeps the whole hole framed while the player is far from the green and never marks without a fix', async () => {
@@ -169,8 +176,10 @@ describe('One-Tap player screen', () => {
     fireEvent.click(document.querySelector('[data-slot="one-tap-mark"]')!);
     await act(async () => { await vi.advanceTimersByTimeAsync(800); });
     expect(document.querySelector('[data-slot="one-tap-lie"]')!.textContent).toMatch(/^(Green|Likely green)/);
-    // §14: on the green complex the contextual Finish hole appears.
-    expect(document.querySelector('[data-slot="one-tap-holed"]')!.textContent).toBe('At the cup? Finish hole');
+    // §14: on the green Putt made joins Mark ball.
+    expect(document.querySelector('[data-slot="one-tap-actions"]')!.getAttribute('data-stage')).toBe('green');
+    expect(document.querySelector('[data-slot="one-tap-mark"]')!.textContent).toBe('Mark ball');
+    expect(document.querySelector('[data-slot="one-tap-putt-made"]')!.textContent).toBe('Putt made');
     expect(root().getAttribute('data-camera-framing')).toBe('whole_green');
     // §15–16: standing on the green switches the readout to ON GREEN — no F/C/B,
     // the centre with honest uncertainty, and the pin is never pretended.

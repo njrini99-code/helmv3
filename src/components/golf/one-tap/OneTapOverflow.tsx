@@ -24,6 +24,8 @@ export function useOneTapOverflow({ view, round, onUseStandardTracking, onExitRo
     const list: StageMenuItem[] = [];
     if (round) list.push({ key: 'penalty', label: 'Penalty / drop', onSelect: () => setOpen('penalty'), disabled: round.status === 'COMPLETE' });
     list.push({ key: 'delete-last', label: 'Delete last mark', onSelect: view.deleteLastMark, disabled: !view.canDeleteLastMark });
+    // The last mark was made at the cup itself: close on it instead of adding a Putt made mark.
+    if (view.finishSuggested) list.push({ key: 'finish', label: 'Finish hole at last mark', onSelect: view.holeOut });
     if (round) {
       list.push({ key: 'review', label: 'Review hole', onSelect: round.openReview });
       list.push({ key: 'change-hole', label: 'Change hole', onSelect: () => setOpen('hole') });
@@ -34,7 +36,7 @@ export function useOneTapOverflow({ view, round, onUseStandardTracking, onExitRo
     if (onUseStandardTracking) list.push({ key: 'standard', label: 'Use standard tracking', onSelect: onUseStandardTracking });
     if (onExitRound) list.push({ key: 'exit', label: 'Exit round', onSelect: onExitRound });
     return list;
-  }, [round, view.deleteLastMark, view.canDeleteLastMark, view.paused, view.resume, view.pause, onUseStandardTracking, onExitRound]);
+  }, [round, view.deleteLastMark, view.canDeleteLastMark, view.finishSuggested, view.holeOut, view.paused, view.resume, view.pause, onUseStandardTracking, onExitRound]);
   const sheet = open && round ? open === 'penalty' ? <PenaltySheet round={round} onClose={close} /> : open === 'mode' ? <ModeSheet round={round} onClose={close} /> : <HoleSheet round={round} onClose={close} /> : null;
   return { items, sheet, open };
 }

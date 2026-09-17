@@ -159,6 +159,35 @@ describe('one-tap controller', () => {
     await vi.advanceTimersByTimeAsync(6000);
     expect(controller.undo()).toBeNull();
   });
+  it('"Putt made" marks the cup where the phone is and closes the hole in one tap; with no fix it marks nothing and the hole stays open', async () => {
+    const { controller, repo } = build();
+    controller.pushSample(sample(-190, 6, 99_900));
+    let mark = controller.markBall();
+    await vi.advanceTimersByTimeAsync(750);
+    await mark;
+    // On the green, 4 m from where the ball was marked: the putt from that mark counts.
+    vi.setSystemTime(130_000);
+    controller.pushSample(sample(10, 10, 129_900));
+    mark = controller.markBall();
+    await vi.advanceTimersByTimeAsync(750);
+    await mark;
+    vi.setSystemTime(160_000);
+    controller.pushSample(sample(13, 12, 159_900));
+    const holed = controller.holeOutHere();
+    await vi.advanceTimersByTimeAsync(750);
+    expect(await holed).toMatchObject({ terminal: true, terminalMethod: 'CUP_MARK', primaryLie: 'green' });
+    expect(holeStatus(repo.list('r'))).toMatchObject({ status: 'COMPLETE', terminalMethod: 'CUP_MARK', strokes: 2 });
+    // Undo takes the cup mark back and reopens the hole.
+    expect(controller.undo()?.deletedAt).not.toBeNull();
+    expect(holeStatus(repo.list('r'))).toMatchObject({ status: 'OPEN', strokes: 1 });
+    // No usable fix at the tap: nothing marked, nothing closed.
+    vi.setSystemTime(200_000);
+    const dry = controller.holeOutHere();
+    await vi.advanceTimersByTimeAsync(750);
+    expect(await dry).toBeNull();
+    expect(controller.snapshot().state).toBe('GPS_UNAVAILABLE');
+    expect(holeStatus(repo.list('r'))).toMatchObject({ status: 'OPEN', strokes: 1 });
+  });
   it('ignores taps while paused or mid-capture and syncs through the queue idempotently', async () => {
     const sent: string[] = [];
     const { controller, sync } = build({ upsertAnchors: async anchors => { sent.push(...(anchors as { id: string }[]).map(a => a.id)); return { acceptedIds: (anchors as { id: string }[]).map(a => a.id) }; } });

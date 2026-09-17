@@ -170,6 +170,14 @@ export class OneTapController {
     this.setState('HOLE_READY');
     return this.deps.repo.get(last.id);
   }
+  /** "Putt made" (2026-09-17 on-course ask): the ball is in the cup and the
+   * phone is at it, so one tap marks the cup and closes the hole. The putt
+   * from the last mark counts; with no usable fix nothing is marked and the
+   * hole stays open, exactly like a tap of MARK BALL. */
+  async holeOutHere(tapMs = this.now()): Promise<ShotAnchor | null> {
+    const anchor = await this.markBall(tapMs);
+    return anchor ? this.holeOut(anchor.id) : null;
+  }
   /** CUP_MARK: the final MARK BALL was at the cup. Never a green-centre substitute. */
   holeOut(anchorId?: string): ShotAnchor | null {
     const live = liveAnchors(this.holeAnchors()), target = anchorId ? live.find(a => a.id === anchorId) : live.at(-1);

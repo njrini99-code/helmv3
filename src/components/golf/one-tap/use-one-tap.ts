@@ -98,12 +98,19 @@ export interface OneTapView {
   /** §14: the last mark sits in the green complex, so "Finish hole" is offered. */
   finishSuggested: boolean;
   canHoleOut: boolean;
+  /** The stage of play behind the primary action (on-course ask, 2026-09-17):
+   * `tee` until the first mark ("Start hole"), `play` between marks, `green`
+   * once the golfer or the last mark is on the green complex ("Putt made" joins
+   * "Mark ball"), `holed` once the hole is closed. */
+  stage: OneTapStage;
   /** §79 overflow: a finalized mark on this hole can be deleted at any age. */
   canDeleteLastMark: boolean;
   paused: boolean;
   markBall(): void;
   undo(): void;
   holeOut(): void;
+  /** "Putt made": marks the cup where the phone is and closes the hole. */
+  puttMade(): void;
   deleteLastMark(): void;
   pause(): void;
   resume(): void;
@@ -111,6 +118,7 @@ export interface OneTapView {
   recenterCamera(): void;
 }
 
+export type OneTapStage = 'tee' | 'play' | 'green' | 'holed';
 const EMPTY_SNAPSHOT: OneTapSnapshot = Object.freeze({ state: 'HOLE_READY', outcome: null, lastAnchor: null, anchors: [], shots: [], undoableId: null, syncPending: 0, syncErrors: 0, paused: false, manualCamera: false, pendingTapMs: null });
 /** The fresh-mark key must outlive the 520 ms shot reveal (task 12,
  * `MARKER_MOTION.revealMs`) and a preset overlay rebuild, or a rebuilt
@@ -327,10 +335,14 @@ export function useOneTap(options: UseOneTapOptions): OneTapView {
     return null;
   }, [snapshot.undoableId, snapshot.outcome, snapshot.state]);
   const finishSuggested = !!lastMark && !lastMark.terminal && (lie?.greenProbability ?? 0) >= FINISH_HOLE_RULE.greenComplexProbability;
+  // The live fix on the green counts as much as the last mark: the golfer
+  // who marked in the fringe and walked onto the green is putting.
+  const stage: OneTapStage = lastMark?.terminal ? 'holed' : !lastMark ? 'tee' : distances.onGreen || finishSuggested ? 'green' : 'play';
 
   const markBall = useCallback(() => { void controller?.markBall(); }, [controller]);
   const undo = useCallback(() => { controller?.undo(); }, [controller]);
   const holeOut = useCallback(() => { controller?.holeOut(); }, [controller]);
+  const puttMade = useCallback(() => { void controller?.holeOutHere(); }, [controller]);
   const deleteLastMark = useCallback(() => { controller?.deleteLast(); }, [controller]);
   const pause = useCallback(() => { controller?.pause(); }, [controller]);
   const resume = useCallback(() => { controller?.resume(); }, [controller]);
@@ -340,7 +352,7 @@ export function useOneTap(options: UseOneTapOptions): OneTapView {
   return useMemo<OneTapView>(() => ({
     snapshot, markers, distances: distances.value, distancesBasis: distances.basis, readout, policy, advice, hasGreen: !!green, lie, lastMark,
     cameraMode: camera.mode, cameraState, locationKind: location?.kind ?? 'none', latestFix, player, locationQuality, syncIssue, statusToast, finishSuggested,
-    canHoleOut: !!lastMark && !lastMark.terminal, canDeleteLastMark: !!lastMark && snapshot.state !== 'CAPTURE_PENDING', paused: snapshot.paused,
-    markBall, undo, holeOut, deleteLastMark, pause, resume, onGesture, recenterCamera,
-  }), [snapshot, markers, distances, readout, policy, advice, green, lie, lastMark, camera.mode, cameraState, location, latestFix, player, locationQuality, syncIssue, statusToast, finishSuggested, markBall, undo, holeOut, deleteLastMark, pause, resume, onGesture, recenterCamera]);
+    canHoleOut: !!lastMark && !lastMark.terminal, stage, canDeleteLastMark: !!lastMark && snapshot.state !== 'CAPTURE_PENDING', paused: snapshot.paused,
+    markBall, undo, holeOut, puttMade, deleteLastMark, pause, resume, onGesture, recenterCamera,
+  }), [snapshot, markers, distances, readout, policy, advice, green, lie, lastMark, camera.mode, cameraState, location, latestFix, player, locationQuality, syncIssue, statusToast, finishSuggested, stage, markBall, undo, holeOut, puttMade, deleteLastMark, pause, resume, onGesture, recenterCamera]);
 }
