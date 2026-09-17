@@ -52,10 +52,10 @@
  * uses (`terrain-canopy.ts`, `three-landscape.ts`); a point the terrain
  * cannot answer for is dropped rather than guessed (no floating trunks,
  * §63). Three-free (R12): this module is consumed by a renderer, never one. */
-import { bboxDistance, featureSeed, ringBbox, smootherstep, type Ring } from './bunker-profile';
+import { bboxDistance, featureSeed, smootherstep } from './bunker-profile';
 import { allocateCrowns } from './canopy';
 import { CONTEXT_CLASS_GROUPS, type ContextClass } from './context-taxonomy';
-import { boundaryDistance } from './display-outline';
+import { featureBoundaryDistance, featureContains, indexDistance, indexFeature, indexRing, type FeatureIndex, type RingIndex } from './ring-index';
 import { inFeature } from './spatial';
 import { terrainHeight, type TerrainMesh } from './terrain';
 import { MERIDIAN_STYLE } from './visual-style';
@@ -154,6 +154,10 @@ export interface ForestEdgeV2Result {
  * branch. `context_zone` regions are never `heroEligible` (§62 "important
  * near trees" means the golfer's own reviewed hole, not an OSM extract). */
 interface ForestRegion extends LocalFeature {
+  /** The region's rings on a cell grid: every candidate, edge sample and
+   * band probe below asks "inside?" and "how far from the edge?", and a
+   * context woods polygon can run to thousands of vertices. */
+  index: FeatureIndex;
   basis: ForestBasis;
   crownEligible: boolean;
   shrubEligible: boolean;
@@ -196,7 +200,7 @@ function collectForestRegions(scene: HoleScene, options: ForestEdgeV2Options): F
   const regions: ForestRegion[] = [];
   for (const feature of merged.values()) {
     if (feature.kind !== 'woods' || !feature.reviewed) continue;
-    regions.push({ ...feature, basis: 'reviewed_feature',
+    regions.push({ ...feature, index: indexFeature(feature), basis: 'reviewed_feature',
       crownEligible: true, shrubEligible: true, shrubUngated: false, massEligible: true, massUngated: false, heroEligible: true });
   }
   for (const zone of scene.contextZones ?? []) {
@@ -206,7 +210,8 @@ function collectForestRegions(scene: HoleScene, options: ForestEdgeV2Options): F
       : zone.parts;
     if (!parts.length || !parts.some(component => component.some(ring => ring.length >= 4))) continue;
     const massOnly = MASS_ONLY_CLASSES.has(zone.class), understoryOnly = UNDERSTORY_ONLY_CLASSES.has(zone.class);
-    regions.push({ id: zone.id, kind: 'woods', type: parts.length > 1 ? 'MultiPolygon' : 'Polygon', parts, reviewed: false,
+    const type = parts.length > 1 ? 'MultiPolygon' : 'Polygon';
+    regions.push({ id: zone.id, kind: 'woods', type, parts, reviewed: false, index: indexFeature({ type, parts }),
       basis: 'context_zone', crownEligible: !massOnly && !understoryOnly, shrubEligible: !massOnly,
       shrubUngated: understoryOnly, massEligible: !understoryOnly, massUngated: massOnly, heroEligible: false });
   }
@@ -216,17 +221,15 @@ function collectForestRegions(scene: HoleScene, options: ForestEdgeV2Options): F
 /** Distance to the region's own boundary, every ring (outer and holes: a
  * clearing cut into a forest is an edge too, not deep interior). */
 function edgeDistanceM(point: PointM, region: ForestRegion): number {
-  let min = Infinity;
-  for (const component of region.parts) for (const ring of component) min = Math.min(min, boundaryDistance(point, ring));
-  return min;
+  return featureBoundaryDistance(region.index, point);
 }
-/** The same minimum over rings that carry their bounding box: a ring whose
- * box is already farther than the best so far cannot improve it
- * (`bboxDistance` never exceeds the boundary distance), so its segments are
- * skipped. Exact — only the work changes. */
-function nearestRingDistanceM(point: PointM, rings: readonly Ring[]): number {
+/** The same minimum over indexed rings: a ring whose box is already farther
+ * than the best so far cannot improve it (`bboxDistance` never exceeds the
+ * boundary distance), so its cells are never read, and the best so far caps
+ * the walk of the rings that are read. Exact — only the work changes. */
+function nearestRingDistanceM(point: PointM, rings: readonly RingIndex[]): number {
   let min = Infinity;
-  for (const { ring, box } of rings) if (bboxDistance(point, box) < min + BOX_SLACK_M) min = Math.min(min, boundaryDistance(point, ring));
+  for (const index of rings) if (bboxDistance(point, index.box) < min + BOX_SLACK_M) min = Math.min(min, indexDistance(index, point, min));
   return min;
 }
 /** A box distance can round one ulp above the boundary distance it bounds
@@ -280,7 +283,7 @@ function scatterGrid(region: ForestRegion, spacingM: number, maxCandidates: numb
     for (let x = minX + (row % 2 ? spacing / 2 : 0); x <= maxX && points.length < maxCandidates; x += spacing) {
       const cell = `${region.id}:${Math.round(x)}:${Math.round(y)}`;
       const point: PointM = [x + (featureSeed(`${cell}:jx`) - .5) * spacing * .7, y + (featureSeed(`${cell}:jy`) - .5) * spacing * .7];
-      if (inFeature(point, region)) points.push(point);
+      if (featureContains(region.index, point)) points.push(point);
     }
   }
   return points;
@@ -293,11 +296,11 @@ function scatterGrid(region: ForestRegion, spacingM: number, maxCandidates: numb
 function inwardBandDepth(point: PointM, tangent: PointM, region: ForestRegion, maxM: number): number {
   const candidateNormals: PointM[] = [[-tangent[1], tangent[0]], [tangent[1], -tangent[0]]];
   const probe = Math.max(maxM * .02, .05);
-  const normal = candidateNormals.find(([nx, ny]) => inFeature([point[0] + nx * probe, point[1] + ny * probe], region)) ?? candidateNormals[0]!;
+  const normal = candidateNormals.find(([nx, ny]) => featureContains(region.index, [point[0] + nx * probe, point[1] + ny * probe])) ?? candidateNormals[0]!;
   const at = (d: number): PointM => [point[0] + normal[0] * d, point[1] + normal[1] * d];
-  if (inFeature(at(maxM), region)) return maxM;
+  if (featureContains(region.index, at(maxM))) return maxM;
   let lo = 0, hi = maxM;
-  for (let i = 0; i < 12; i++) { const mid = (lo + hi) / 2; if (inFeature(at(mid), region)) lo = mid; else hi = mid; }
+  for (let i = 0; i < 12; i++) { const mid = (lo + hi) / 2; if (featureContains(region.index, at(mid))) lo = mid; else hi = mid; }
   return lo;
 }
 
@@ -344,16 +347,16 @@ export function compileForestEdgeV2(scene: HoleScene, mesh: TerrainMesh, options
   for (const feature of scene.contextFeatures ?? []) allFeatures.set(feature.id, feature);
   for (const feature of scene.features) allFeatures.set(feature.id, feature);
   const playFeatures = [...allFeatures.values()].filter(f => f.kind !== 'woods' && f.kind !== 'route');
-  // Every play ring with its bounding box: the clearance and nearness tests
-  // below run for every candidate of every region, and the box lets each
-  // one skip the rings that cannot matter (exact: a box is never farther
-  // than its ring's boundary, and a point outside a feature's box is
-  // outside the feature).
-  const playRings: Ring[] = playFeatures.flatMap(f => f.parts.flat().map(ring => ({ ring, box: ringBbox(ring) })));
-  const playFeatureBoxes = playFeatures.map(f => ({ feature: f, box: ringBbox(f.parts.flat(2)) }));
+  // Every play ring indexed with its bounding box: the clearance and
+  // nearness tests below run for every candidate of every region, and the
+  // box lets each one skip the rings that cannot matter (exact: a box is
+  // never farther than its ring's boundary, and a point outside a feature's
+  // box is outside the feature).
+  const playRings: RingIndex[] = playFeatures.flatMap(f => f.parts.flat().map(indexRing));
+  const playFeatureIndexes = playFeatures.map(indexFeature);
   const isClear = (point: PointM, clearanceM: number) =>
-    !playFeatureBoxes.some(({ feature, box }) => bboxDistance(point, box) === 0 && inFeature(point, feature))
-    && !playRings.some(({ ring, box }) => bboxDistance(point, box) < clearanceM + BOX_SLACK_M && boundaryDistance(point, ring) < clearanceM);
+    !playFeatureIndexes.some(index => bboxDistance(point, index.box) === 0 && featureContains(index, point))
+    && !playRings.some(index => bboxDistance(point, index.box) < clearanceM + BOX_SLACK_M && indexDistance(index, point, clearanceM) < clearanceM);
   const nearnessToPlay = (point: PointM) => nearestRingDistanceM(point, playRings);
 
   const extent = terrainExtent(mesh);
