@@ -20,12 +20,15 @@ describe('measureOrigin: the best position the round actually holds', () => {
       { key: 'shot-1', kind: 'anchor', pointM: [tee[0] + 100, tee[1]], sigmaM: 4 },
       { key: 'ball', kind: 'ball', pointM: [tee[0] + 200, tee[1]], sigmaM: 4, label: 'BALL' },
     ], links: [] };
-    expect(measureOrigin(scene, { ...you, markers: [...ball.markers, ...you.markers] })).toEqual({ pointM: you.markers[0]!.pointM, basis: 'you' });
-    expect(measureOrigin(scene, ball)).toEqual({ pointM: [tee[0] + 200, tee[1]], basis: 'ball' });
+    expect(measureOrigin(scene, { ...you, markers: [...ball.markers, ...you.markers] })).toEqual({ pointM: you.markers[0]!.pointM, basis: 'you', sigmaM: 3 });
+    expect(measureOrigin(scene, ball)).toEqual({ pointM: [tee[0] + 200, tee[1]], basis: 'ball', sigmaM: 4 });
     const typed = illustrativeScene();
-    expect(measureOrigin(typed, null)).toEqual({ pointM: typed.events[1]!.anchorM, basis: 'last_shot' });
-    expect(measureOrigin(scene, null)).toEqual({ pointM: [tee[0], tee[1]], basis: 'tee' });
+    expect(measureOrigin(typed, null)).toEqual({ pointM: typed.events[1]!.anchorM, basis: 'last_shot', sigmaM: 0 });
+    expect(measureOrigin(scene, null)).toEqual({ pointM: [tee[0], tee[1]], basis: 'tee', sigmaM: 0 });
     expect(measureOrigin(null, null)).toBeNull();
+    // No fresh fix: YOU is dimmed where it last was, and the ruler says so instead of "from you".
+    const stale: SceneMarkers = { markers: [{ ...you.markers[0]!, dimmed: true }], links: [] };
+    expect(measureOrigin(scene, stale)).toEqual({ pointM: you.markers[0]!.pointM, basis: 'last_fix', sigmaM: 3 });
   });
 });
 
@@ -63,12 +66,15 @@ describe('measureMarkers and the caption', () => {
     expect(measureMarkers(null, null)).toBeNull();
   });
   it('captions the yards, the rise when there is one, and where the ruler starts', () => {
-    const base = { pointM: [0, 0] as [number, number], origin: { pointM: [0, 0] as [number, number], basis: 'you' as const }, distanceM: 100, yards: 109 };
+    const base = { pointM: [0, 0] as [number, number], origin: { pointM: [0, 0] as [number, number], basis: 'you' as const, sigmaM: 0 }, distanceM: 100, yards: 109 };
     expect(measureCaption({ ...base, elevationDeltaM: 4 })).toBe('109 yd · ↑ 13 ft · from you');
     expect(measureCaption({ ...base, elevationDeltaM: -2.5 })).toBe('109 yd · ↓ 8 ft · from you');
     expect(measureCaption({ ...base, elevationDeltaM: .1 })).toBe('109 yd · from you');
-    expect(measureCaption({ ...base, elevationDeltaM: null, origin: { pointM: [0, 0], basis: 'tee' } })).toBe('109 yd · from the tee');
-    expect(measureCaption({ ...base, elevationDeltaM: null, origin: { pointM: [0, 0], basis: 'ball' } })).toBe('109 yd · from your ball');
-    expect(measureCaption({ ...base, elevationDeltaM: null, origin: { pointM: [0, 0], basis: 'last_shot' } })).toBe('109 yd · from your last shot');
+    // The origin's own radius rides along, as the readout's ± does; a typed position has none.
+    expect(measureCaption({ ...base, elevationDeltaM: 4, origin: { pointM: [0, 0], basis: 'you', sigmaM: 4 } })).toBe('109 yd · ±4 yd · ↑ 13 ft · from you');
+    expect(measureCaption({ ...base, elevationDeltaM: null, origin: { pointM: [0, 0], basis: 'last_fix', sigmaM: 3 } })).toBe('109 yd · ±3 yd · from your last fix');
+    expect(measureCaption({ ...base, elevationDeltaM: null, origin: { pointM: [0, 0], basis: 'tee', sigmaM: 0 } })).toBe('109 yd · from the tee');
+    expect(measureCaption({ ...base, elevationDeltaM: null, origin: { pointM: [0, 0], basis: 'ball', sigmaM: .3 } })).toBe('109 yd · from your ball');
+    expect(measureCaption({ ...base, elevationDeltaM: null, origin: { pointM: [0, 0], basis: 'last_shot', sigmaM: 0 } })).toBe('109 yd · from your last shot');
   });
 });
