@@ -155,6 +155,8 @@ create table if not exists public.golf_round_course_bindings (
   geometry_version text not null,
   terrain_version text,
   one_tap_mode boolean not null default false,
+  -- Schema discriminator: a handful of versions, never near 16 bits.
+  -- squawk-ignore prefer-bigint-over-smallint
   schema_version smallint not null default 1,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -193,7 +195,11 @@ create table if not exists public.golf_shot_anchors (
   site_id text not null,
 
   hole_key text not null,
+  -- Bounded by the check constraint; never near 16 bits.
+  -- squawk-ignore prefer-bigint-over-smallint
   hole_id smallint not null check (hole_id between 1 and 36),
+  -- Marks per hole: dozens in a round, never near 32 bits.
+  -- squawk-ignore prefer-bigint-over-int
   sequence integer not null check (sequence >= 0),
 
   tap_at timestamptz not null,
@@ -247,6 +253,8 @@ create table if not exists public.golf_shot_anchors (
   estimator_summary jsonb,
   classification jsonb,
 
+  -- Schema discriminator: a handful of versions, never near 16 bits.
+  -- squawk-ignore prefer-bigint-over-smallint
   schema_version smallint not null default 2,
   deleted_at timestamptz,
   created_at timestamptz not null default now(),
@@ -329,6 +337,8 @@ create table if not exists public.golf_penalty_events (
   site_id text not null,
 
   hole_key text not null,
+  -- Bounded by the check constraint; never near 16 bits.
+  -- squawk-ignore prefer-bigint-over-smallint
   hole_id smallint not null check (hole_id between 1 and 36),
 
   -- The client's own clock at the moment the penalty was recorded. Distinct
@@ -337,6 +347,8 @@ create table if not exists public.golf_penalty_events (
   -- mark the penalty follows) is the client's.
   occurred_at timestamptz not null,
 
+  -- Bounded by the check constraint; never near 16 bits.
+  -- squawk-ignore prefer-bigint-over-smallint
   strokes smallint not null check (strokes in (1, 2)),
   kind text not null
     check (kind in ('penalty_area', 'lost_ball', 'out_of_bounds', 'unplayable', 'other')),
@@ -348,6 +360,8 @@ create table if not exists public.golf_penalty_events (
   -- unsyncable penalty is a lost stroke.
   related_anchor_id text,
 
+  -- Schema discriminator: a handful of versions, never near 16 bits.
+  -- squawk-ignore prefer-bigint-over-smallint
   schema_version smallint not null default 1,
   deleted_at timestamptz,
   created_at timestamptz not null default now(),
