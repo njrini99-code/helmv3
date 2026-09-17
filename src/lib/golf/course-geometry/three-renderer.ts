@@ -352,8 +352,8 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
     renderer.debug.onShaderError = () => { shaderFailed = true; };
     world.background = new Color(DEFAULT_THREE_LANDSCAPE_PALETTE.ground);
     const landscapeBegan = performance.now();
-    const debugView = options.debugView ?? (options.world === 'v2' ? 'v2-world' : 'final');
-    landscape = buildThreeLandscape(options.scene, mesh, DEFAULT_THREE_LANDSCAPE_PALETTE, { artifact: options.visualArtifact, overrides: qualityOverrides(quality, options.styleOverrides), underV2: debugView === 'v2-world' });
+    const debugView = options.debugView ?? (options.world === 'v2' ? 'v2-world' : 'final'), underV2 = debugView === 'v2-world';
+    landscape = buildThreeLandscape(options.scene, mesh, DEFAULT_THREE_LANDSCAPE_PALETTE, { artifact: options.visualArtifact, overrides: qualityOverrides(quality, options.styleOverrides), underV2 });
     landscapeBuildMs = performance.now() - landscapeBegan;
     // A cached artifact from another package or style is refused (§6). The
     // hole still draws its canonical terrain visual from a runtime compile
@@ -402,6 +402,20 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
     // R7: the V2 world is the same installer as the `v2-world` lab view, but as
     // a render mode the overlay stays — only an explicit debug view hides it.
     releaseDebug = installTerrainDebugView(world, landscape, mesh, debugView, renderer, options.scene);
+    if (underV2 && !landscape.terrain.userData.debugV2) {
+      // R7 fallback: the V2 compile declined (no metric grid, or a compiler
+      // threw) and the V1 terrain is what the player sees — but the build
+      // above skipped its shading texture and vegetation for the world that
+      // never came. Rebuild it whole from the same artifact, so the fallback
+      // is the real V1 hole and not a flat, treeless one.
+      const rebuildBegan = performance.now(), previous = landscape;
+      releaseDebug(); releaseDebug = () => {};
+      world.remove(previous.group);
+      landscape = buildThreeLandscape(options.scene, mesh, DEFAULT_THREE_LANDSCAPE_PALETTE, { artifact: previous.artifact, overrides: qualityOverrides(quality, options.styleOverrides) });
+      previous.dispose();
+      world.add(landscape.group);
+      landscapeBuildMs += performance.now() - rebuildBegan;
+    }
     if (options.debugView && options.debugView !== 'final') overlay.style.display = 'none';
     view = currentCamera.projection === 'perspective' ? perspectiveView : orthographicView;
     applyAtmosphere(currentCamera.projection);

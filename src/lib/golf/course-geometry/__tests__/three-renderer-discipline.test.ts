@@ -83,4 +83,30 @@ describe('three-renderer shadow-bake and precompile discipline (Tasks 20â€“21, Â
       host.remove();
     }
   });
+
+  it('rebuilds the whole V1 landscape when the V2 world falls back (R7), so the fallback is not a flat, treeless hole', async () => {
+    // This fixture carries no metric grid, so `assembleV2World` declines and
+    // the V1 terrain is what the player sees. The fast build under V2 skips
+    // the shading texture and every crown; the runtime must notice and build
+    // the real landscape, reporting the whole cost as `landscapeBuildMs`.
+    const host = document.createElement('div'), canvas = document.createElement('canvas');
+    const overlay = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    host.append(canvas, overlay);
+    document.body.append(host);
+    const v1 = createThreeTerrainRuntime({ canvas, overlay, overlayId: 'fallback-v1', scene, mesh, camera, width: 390, height: 640, quality: 'standard', onUnavailable: () => {} });
+    let trees = 0;
+    try { await v1.ready; trees = Number(canvas.dataset.terrainTrees); } finally { v1.dispose(); }
+    expect(trees).toBeGreaterThan(0);
+    const runtime = createThreeTerrainRuntime({ canvas, overlay, overlayId: 'fallback-v2', scene, mesh, camera, width: 390, height: 640, quality: 'standard', world: 'v2', onUnavailable: () => {} });
+    try {
+      await runtime.ready;
+      expect(canvas.dataset.renderWorld).toBe('v2');
+      expect(canvas.dataset.v2BuildMs).toBe('');
+      expect(Number(canvas.dataset.terrainTrees)).toBe(trees);
+      expect(Number(canvas.dataset.landscapeBuildMs)).toBeGreaterThan(0);
+    } finally {
+      runtime.dispose();
+      host.remove();
+    }
+  });
 });
