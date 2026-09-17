@@ -306,9 +306,14 @@ pushed, `output/` uncommitted:
 - The branch's CI gates cleared: registry glob for the held migration,
   generated docs, dead-ref baseline, lint ratchet, the semgrep RLS rule
   (529ce7c28); the markdownlint ratchet, exactly at baseline (617efba5f);
-  squawk on the held migration and the World Model (41dbaef7f). Before
-  41dbaef7f the run's only other red was the edge-functions Deno check, a
-  minimum-dependency-age transient unrelated to this branch.
+  squawk on the held migration and the World Model (41dbaef7f); CodeQL's
+  one alert on the PR, a `--course`-built RegExp in
+  `validate-v2-budgets.mts`, replaced by prefix/suffix matching (8d57b1020).
+  On 8d57b1020 the CI aggregate, the Review Gate aggregate, Static checks,
+  Supabase lint + RLS, TypeScript, Lint, the three unit-test shards and the
+  Next build all pass and CodeQL reports no open alert for the PR. The only
+  red seen overnight that this branch did not cause was the edge-functions
+  Deno check on one earlier run (a minimum-dependency-age transient).
 - Whole-front-nine V2 run `v2-12-front9` recorded in row 26.
 - Task 20 carries the per-stage mount-compile split and a Web Worker
   proposal; nothing of it is built.
