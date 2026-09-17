@@ -54,8 +54,9 @@ describe('V2 world objects (§52–62; Task 18)', () => {
     let meshes = 0, instanced = 0, batched = 0;
     objects.group.traverse(o => { if (o instanceof THREE.InstancedMesh) instanced++; else if (o instanceof THREE.BatchedMesh) batched++; else if (o instanceof THREE.Mesh) meshes++; });
     expect(meshes).toBe(1 + objects.stats.draws.context - (objects.group.getObjectByName('golf-course-context')!.children.filter(c => c instanceof THREE.LineSegments).length)); // paths + context meshes
-    expect(batched).toBe(2); // crowns, trunks
-    expect(instanced).toBe(draws - 3 - objects.stats.draws.context);
+    // Every forest family is a BatchedMesh (per-instance frustum culling, §11); nothing is an InstancedMesh.
+    expect(batched).toBe(draws - 1 - objects.stats.draws.context); // crowns, trunks, shrubs, mass near/far
+    expect(instanced).toBe(0);
     // Every crown LOD is a deterministic function of the focus: the same input builds the same split.
     const again = buildV2Objects({ ribbon, forest, scene, mesh, focusBoundsM });
     expect(again.forestStats).toEqual(objects.forestStats);

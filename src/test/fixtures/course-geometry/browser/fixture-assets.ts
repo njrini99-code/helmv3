@@ -58,18 +58,16 @@ export async function loadCompiledFixture(holeKey: string, signal: AbortSignal, 
   if (!entry || entry.compressedBytes > MAX_COMPRESSED_BYTES || entry.uncompressedBytes > MAX_DECODED_BYTES) throw new Error('Unsupported course package');
   const response = await fetch(assetUrl(entry.fileName), { signal });
   if (!response.ok || !response.body) throw new Error(`Terrain package ${response.status}`);
-  // Vite serves .json.gz with Content-Encoding:gzip; Fetch has already decoded
-  // that transport. Raw gzip object delivery instead needs explicit inflation.
+  // Vite serves .json.gz with Content-Encoding:gzip, so Fetch hands back the
+  // inflated JSON; a static host (or one that re-compresses in transport)
+  // hands back the stored gzip bytes. The body itself says which: the gzip
+  // magic (1f 8b) means the stored object arrived and needs explicit inflation.
+  const body = await boundedBytes(response.body, MAX_DECODED_BYTES);
   let decoded: Uint8Array<ArrayBuffer>;
-  if (response.headers.get('content-encoding') === 'gzip') {
-    const length = response.headers.get('content-length');
-    if (length != null && Number(length) !== entry.compressedBytes) throw new Error('Terrain transfer size mismatch');
-    decoded = await boundedBytes(response.body, MAX_DECODED_BYTES);
-  } else {
-    const compressed = await boundedBytes(response.body, MAX_COMPRESSED_BYTES);
-    if (compressed.length !== entry.compressedBytes || await hash(compressed) !== entry.sha256) throw new Error('Terrain download integrity mismatch');
-    decoded = await boundedBytes(new Blob([compressed]).stream().pipeThrough(new DecompressionStream('gzip')), MAX_DECODED_BYTES);
-  }
+  if (body.length >= 2 && body[0] === 0x1f && body[1] === 0x8b) {
+    if (body.length > MAX_COMPRESSED_BYTES || body.length !== entry.compressedBytes || await hash(body) !== entry.sha256) throw new Error('Terrain download integrity mismatch');
+    decoded = await boundedBytes(new Blob([body]).stream().pipeThrough(new DecompressionStream('gzip')), MAX_DECODED_BYTES);
+  } else decoded = body;
   if (decoded.length !== entry.uncompressedBytes || await hash(decoded) !== entry.uncompressedSha256) throw new Error('Terrain decoded integrity mismatch');
   if (signal.aborted) throw new DOMException('Course load canceled', 'AbortError');
   return parseTerrainMesh(JSON.parse(new TextDecoder().decode(decoded)), pkg);

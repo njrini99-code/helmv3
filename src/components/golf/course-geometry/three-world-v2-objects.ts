@@ -228,11 +228,15 @@ export function buildForestEdgeObjects(forest: ForestEdgeV2Result, style: Meridi
       stats.draws.trunks = 1; stats.instances.trunks = trunked.length;
     }
   }
+  // One geometry, many instances, as a BatchedMesh rather than an
+  // InstancedMesh: same single draw, but three culls each instance against
+  // the frustum (§11 close frame — an InstancedMesh draws every interior
+  // mass cluster behind the camera at the green).
   const instanced = (geometry: THREE.BufferGeometry, material: THREE.Material, items: ForestInstance[], name: string, matrixOf: (i: ForestInstance) => THREE.Matrix4, colorOf: (i: ForestInstance) => THREE.Color) => {
-    const mesh = new THREE.InstancedMesh(geometry, material, items.length);
-    mesh.name = name; mesh.castShadow = true; mesh.receiveShadow = true; mesh.frustumCulled = true;
-    items.forEach((inst, i) => { mesh.setMatrixAt(i, matrixOf(inst)); mesh.setColorAt(i, colorOf(inst)); });
-    mesh.instanceMatrix.needsUpdate = true; if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    const mesh = new THREE.BatchedMesh(items.length, geometry.getAttribute('position').count, geometry.index ? geometry.index.count : undefined, material);
+    mesh.name = name; mesh.castShadow = true; mesh.receiveShadow = true; mesh.frustumCulled = true; mesh.perObjectFrustumCulled = true; mesh.sortObjects = false;
+    const geometryId = mesh.addGeometry(geometry);
+    for (const inst of items) { const id = mesh.addInstance(geometryId); mesh.setMatrixAt(id, matrixOf(inst)); mesh.setColorAt(id, colorOf(inst)); }
     mesh.computeBoundingSphere();
     group.add(mesh); disposables.push({ dispose: () => mesh.dispose() });
     stats.triangles += triangleCount(geometry) * items.length;

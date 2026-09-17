@@ -38,12 +38,14 @@ export interface OneTapPlayerScreenProps {
   onUseStandardTracking?: () => void;
   /** The host's round exit (save for later / delete), reached through the ••• menu. */
   onExitRound?: () => void;
+  /** Meridian V2 world (R7 runtime switch); absent = the shipped V1 world. */
+  world?: 'v1' | 'v2';
 }
 
 /** The course is the screen (One-Tap master plan "Player-facing design"):
  * the production HoleSceneFrame in stage presentation with the marks painted
  * on the terrain, the readout floating over it and MARK BALL beneath. */
-export function OneTapPlayerScreen({ roundId, pkg, holeKey, terrain, contextLayer, location, storage, transport, reducedMotion, playMode, now, onView, round, onUseStandardTracking, onExitRound }: OneTapPlayerScreenProps) {
+export function OneTapPlayerScreen({ roundId, pkg, holeKey, terrain, contextLayer, location, storage, transport, reducedMotion, playMode, now, onView, round, onUseStandardTracking, onExitRound, world }: OneTapPlayerScreenProps) {
   const scene = useMemo(() => {
     try { return buildHoleScene(pkg, holeKey, [], terrain ?? undefined, contextLayer); } catch { return null; }
   }, [pkg, holeKey, terrain, contextLayer]);
@@ -73,7 +75,7 @@ export function OneTapPlayerScreen({ roundId, pkg, holeKey, terrain, contextLaye
   const overflow = useOneTapOverflow({ view, round: round ?? null, onUseStandardTracking, onExitRound });
   return <div className="flex h-full min-h-0 flex-1 flex-col" data-slot="one-tap-screen" data-one-tap-state={view.snapshot.state} data-camera-mode={view.cameraMode} data-camera-state={view.cameraState}
     data-camera-framing={stageFocus?.target.framing ?? ''} data-hole-key={holeKey} data-hole-status={round?.status ?? ''}>
-    <HoleSceneFrame scene={scene} context="entry" presentation="stage" markers={view.markers} stageFocus={stageFocus}
+    <HoleSceneFrame scene={scene} context="entry" presentation="stage" markers={view.markers} stageFocus={stageFocus} world={world}
       stageOverlay={<><OneTapHud view={view} round={round} />{overflow.sheet}</>} stageFooter={<><OneTapReadout view={view} /><OneTapButton view={view} round={round} /></>}
       stageMenuItems={overflow.items} stageCameraRef={cameraRef} onStageGesture={view.onGesture} />
   </div>;

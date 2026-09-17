@@ -6,7 +6,7 @@
  * out — one screenshot per step plus a JSON record of what the screen said.
  *
  *   node scripts/golf/course-geometry/capture-one-tap.cjs --out-dir=<dir> \
- *     [--base=http://127.0.0.1:8768] [--course=peek-n-peak-upper] [--hole=7] [--viewport=phone|desktop]
+ *     [--base=http://127.0.0.1:8768] [--course=peek-n-peak-upper] [--hole=7] [--viewport=phone|desktop] [--world=v2]
  */
 const fs = require('node:fs');
 const path = require('node:path');
@@ -25,7 +25,7 @@ const outDir = path.resolve(String(args['out-dir'] || `output/playwright/course-
   page.on('pageerror', error => errors.push(error.message));
   // Every capture starts from an empty hole: clear this course's local marks.
   await page.addInitScript(key => { try { localStorage.removeItem(key); } catch { /* private mode */ } }, `golfhelm-one-tap-anchors:local-one-tap:${course}`);
-  await page.goto(`${base}/?onetap=1&course=${course}&hole=${hole}${args.mode ? `&mode=${args.mode}` : ''}`);
+  await page.goto(`${base}/?onetap=1&course=${course}&hole=${hole}${args.mode ? `&mode=${args.mode}` : ''}${args.world ? `&world=${args.world}` : ''}`);
   await page.waitForFunction(() => document.querySelector('canvas[data-terrain-state=ready]'), null, { timeout: 90000 });
   const settle = async () => {
     let previous = null;

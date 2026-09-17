@@ -45,6 +45,8 @@ interface FrameProps {
   children?: ReactNode;
   /** Development-only faceting diagnostics (Meridian §14); player routes never set it. */
   debugView?: TerrainDebugView;
+  /** Meridian V2 world (R7 runtime switch); absent = the shipped V1 world. */
+  world?: 'v1' | 'v2';
   /** Player-marked positions (One-Tap) drawn on the course in every camera. */
   markers?: SceneMarkers | null;
   /** `card` (default): the compact card with an expand trigger into the
@@ -73,7 +75,7 @@ interface FrameProps {
  * view persists through typing and committed shots, until a different hole. */
 /** An entry the host adds to the production ••• menu; the frame closes the menu before `onSelect`. */
 export interface StageMenuItem { key: string; label: string; onSelect(): void; disabled?: boolean }
-export function HoleSceneFrame({ scene, context, defaultView = 'hole', selectedShotNumber, activeDraftShotNumber, evidence, currentPuttingDistanceM, header, children, debugView, markers, presentation = 'card', stageOverlay, stageFooter, stageMenuItems, stageCameraRef, onStageGesture, stageFocus }: FrameProps) {
+export function HoleSceneFrame({ scene, context, defaultView = 'hole', selectedShotNumber, activeDraftShotNumber, evidence, currentPuttingDistanceM, header, children, debugView, world, markers, presentation = 'card', stageOverlay, stageFooter, stageMenuItems, stageCameraRef, onStageGesture, stageFocus }: FrameProps) {
   const [choice, setChoice] = useState<SceneView | null>(null);
   const [expanded, setExpanded] = useState(false);
   const [detailSelection, setDetailSelection] = useState<number | null>(null);
@@ -138,7 +140,7 @@ export function HoleSceneFrame({ scene, context, defaultView = 'hole', selectedS
       {view === 'putting' && <span>3D</span>}<Maximize2 size={17} aria-hidden />
     </Button>}>
     <Drawing key={view} scene={scene} view={view} context={context} events={events} selectedShotNumber={detailSelection ?? selectedShotNumber} activeDraftShotNumber={activeDraftShotNumber} puttingScope={puttingScope} onSelectEvent={setDetailSelection}
-      currentPuttingDistanceM={currentPuttingDistanceM} expanded poseMemory={poseMemory} onClose={() => setExpanded(false)} debugView={debugView} onSelectView={setChoice} markers={markers}
+      currentPuttingDistanceM={currentPuttingDistanceM} expanded poseMemory={poseMemory} onClose={() => setExpanded(false)} debugView={debugView} world={world} onSelectView={setChoice} markers={markers}
       heading={heading} areaControls={areaControls} />
   </ModalShell>;
   if (presentation === 'stage') {
@@ -146,7 +148,7 @@ export function HoleSceneFrame({ scene, context, defaultView = 'hole', selectedS
     // the surrounding chrome and hands in its HUD and primary action.
     return <div className="relative flex h-full min-h-0 flex-1 flex-col" data-scene-context={context} data-current-view={view} data-presentation="stage">
       <Drawing key={view} scene={scene} view={view} context={context} events={events} selectedShotNumber={selectedShotNumber} activeDraftShotNumber={activeDraftShotNumber} puttingScope={puttingScope}
-        currentPuttingDistanceM={currentPuttingDistanceM} expanded poseMemory={poseMemory} debugView={debugView} onSelectView={setChoice} markers={markers}
+        currentPuttingDistanceM={currentPuttingDistanceM} expanded poseMemory={poseMemory} debugView={debugView} world={world} onSelectView={setChoice} markers={markers}
         heading={heading} areaControls={areaControls} stageOverlay={stageOverlay} stageFooter={stageFooter} stageMenuItems={stageMenuItems} presetRef={stagePreset} onStageGesture={onStageGesture} stageFocus={stageFocus} />
     </div>;
   }
@@ -175,11 +177,11 @@ export function HoleSceneFrame({ scene, context, defaultView = 'hole', selectedS
   </div>;
 }
 
-function Drawing({ scene, view, context, events, selectedShotNumber, activeDraftShotNumber, puttingScope = 'whole_green', currentPuttingDistanceM, expanded = false, heading, areaControls, onClose, poseMemory, onSelectEvent, debugView, onSelectView, markers, stageOverlay, stageFooter, stageMenuItems, presetRef, onStageGesture, stageFocus }: {
+function Drawing({ scene, view, context, events, selectedShotNumber, activeDraftShotNumber, puttingScope = 'whole_green', currentPuttingDistanceM, expanded = false, heading, areaControls, onClose, poseMemory, onSelectEvent, debugView, world, onSelectView, markers, stageOverlay, stageFooter, stageMenuItems, presetRef, onStageGesture, stageFocus }: {
   scene?: HoleScene | null; view: SceneView; context: 'entry' | 'review'; events: readonly ShotEvidence[];
   selectedShotNumber?: number; activeDraftShotNumber?: number; puttingScope?: 'whole_green' | 'focus_putt'; currentPuttingDistanceM?: number | null; expanded?: boolean;
   heading?: ReactNode; areaControls?: (close: () => void) => ReactNode; onClose?: () => void; poseMemory?: RefObject<CameraMemory>;
-  onSelectEvent?: (shotNumber: number) => void; debugView?: TerrainDebugView; onSelectView?: (view: SceneView) => void;
+  onSelectEvent?: (shotNumber: number) => void; debugView?: TerrainDebugView; world?: 'v1' | 'v2'; onSelectView?: (view: SceneView) => void;
   markers?: SceneMarkers | null; stageOverlay?: ReactNode; stageFooter?: ReactNode; stageMenuItems?: readonly StageMenuItem[]; presetRef?: RefObject<((preset: TerrainPreset) => void) | null>; onStageGesture?: () => void;
   stageFocus?: StageCameraFocus | null;
 }) {
@@ -529,7 +531,7 @@ function Drawing({ scene, view, context, events, selectedShotNumber, activeDraft
       <div key={`${scene?.physicalHoleKey ?? 'missing'}-${view}`} className="fw-course-view-enter h-full w-full">
       {showProfile && scene ? <div className="h-full overflow-y-auto bg-surface pt-24"><CourseTerrainProfile scene={scene} selectedShotNumber={currentSelection} width={size.width} height={size.height - 96} /></div> : scene && transformed && courseView ? <CourseHoleScene scene={scene} width={size.width} height={size.height}
         mode={context === 'entry' ? 'compact' : 'review'} view={courseView} selectedShotNumber={currentSelection} activeDraftShotNumber={activeDraftShotNumber} camera={transformed} terrainCamera={terrainCamera}
-        runtimeRef={runtime} onTerrainUnavailable={() => setTerrainFailed(true)} showIllustrativeFlightPreviews={view !== 'putting'} puttingPlan={compactPuttingPlan} debugView={debugView} markers={markers} reservedRects={reservedRects} /> : view === 'putting' ? <PuttingZoom width={size.width} height={size.height} distanceView={{
+        runtimeRef={runtime} onTerrainUnavailable={() => setTerrainFailed(true)} showIllustrativeFlightPreviews={view !== 'putting'} puttingPlan={compactPuttingPlan} debugView={debugView} world={world} markers={markers} reservedRects={reservedRects} /> : view === 'putting' ? <PuttingZoom width={size.width} height={size.height} distanceView={{
         beforeFeet: before == null ? null : before / .3048, afterFeet: after == null ? null : after / .3048,
         made: currentPuttingDistanceM == null && putt?.putt.made === true,
         rolledOff: putt != null && putt.result !== 'green' && putt.result !== 'hole',

@@ -30,7 +30,7 @@ export function sceneCamera(scene: HoleScene, width: number, height: number, mod
 
 /** Pure SVG: surfaces and anchors share one similarity transform; labels use
  * CSS-pixel dimensions supplied by the measured viewport. No gesture capture. */
-export function CourseHoleScene({ scene, width = 320, height = 380, mode = 'review', view = 'hole', selectedShotNumber, activeDraftShotNumber, camera: override, terrainCamera, onTerrainUnavailable, runtimeRef, showIllustrativeFlightPreviews = true, puttingPlan = false, debugView, markers, reservedRects }: {
+export function CourseHoleScene({ scene, width = 320, height = 380, mode = 'review', view = 'hole', selectedShotNumber, activeDraftShotNumber, camera: override, terrainCamera, onTerrainUnavailable, runtimeRef, showIllustrativeFlightPreviews = true, puttingPlan = false, debugView, world, markers, reservedRects }: {
   scene: HoleScene; width?: number; height?: number; mode?: 'review' | 'compact' | 'strip' | 'source';
   view?: CourseView; selectedShotNumber?: number; activeDraftShotNumber?: number; camera?: SimilarityTransform; terrainCamera?: TerrainCamera;
   onTerrainUnavailable?: () => void; runtimeRef?: RefObject<TerrainRuntimeController | null>;
@@ -40,6 +40,8 @@ export function CourseHoleScene({ scene, width = 320, height = 380, mode = 'revi
   puttingPlan?: boolean;
   /** Development-only faceting diagnostics (Meridian §14); never set by player routes. */
   debugView?: TerrainDebugView;
+  /** Meridian V2 world switch (R7); absent = the V1 world. */
+  world?: 'v1' | 'v2';
   /** Player-marked positions (One-Tap): dots with true-scale σ rings, joined by derived shots. */
   markers?: SceneMarkers | null;
   /** Host chrome over the terrain canvas (canvas pixels) that evidence labels avoid. */
@@ -48,7 +50,7 @@ export function CourseHoleScene({ scene, width = 320, height = 380, mode = 'revi
   const sceneForDisplay = useMemo(() => showIllustrativeFlightPreviews ? scene : { ...scene, illustrativePreviewTrajectories: [] }, [scene, showIllustrativeFlightPreviews]);
   const id = useId();
   if (terrainCamera && scene.terrain) return <CourseTerrainCanvas scene={sceneForDisplay} mesh={scene.terrain} camera={terrainCamera} width={width} height={height}
-    selectedShotNumber={selectedShotNumber} debugView={debugView} markers={markers} reservedRects={reservedRects}
+    selectedShotNumber={selectedShotNumber} debugView={debugView} world={world} markers={markers} reservedRects={reservedRects}
     onUnavailable={onTerrainUnavailable} runtimeRef={runtimeRef}
     fallback={<CourseHoleScene scene={sceneForDisplay} width={width} height={height} mode={mode} view={view} selectedShotNumber={selectedShotNumber} activeDraftShotNumber={activeDraftShotNumber} camera={override} showIllustrativeFlightPreviews={showIllustrativeFlightPreviews} puttingPlan={puttingPlan} markers={markers} />} />;
   const camera = override ?? sceneCamera(scene, width, height, mode, view, puttingPlan);

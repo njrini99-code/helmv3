@@ -14,7 +14,7 @@ import type { OverlayReservedRect } from '@/lib/golf/course-geometry/shot-overla
 
 /** The Three backend is loaded only for an expanded terrain scene. Static
  * review/filmstrip SVG does not import Three or initialize a GPU context. */
-export function CourseTerrainCanvas({ scene, mesh, camera, width, height, fallback, onUnavailable, selectedShotNumber, runtimeRef, debugView, visualArtifact, styleOverrides, quality, markers, reservedRects }: {
+export function CourseTerrainCanvas({ scene, mesh, camera, width, height, fallback, onUnavailable, selectedShotNumber, runtimeRef, debugView, world, visualArtifact, styleOverrides, quality, markers, reservedRects }: {
   scene: HoleScene; mesh: TerrainMesh; camera: TerrainCamera; width: number; height: number; fallback: ReactNode;
   onUnavailable?: () => void; selectedShotNumber?: number;
   runtimeRef?: RefObject<TerrainRuntimeController | null>;
@@ -23,6 +23,8 @@ export function CourseTerrainCanvas({ scene, mesh, camera, width, height, fallba
   /** Host chrome over the course (canvas pixels); evidence labels keep clear of it. */
   reservedRects?: readonly OverlayReservedRect[];
   debugView?: TerrainDebugView;
+  /** Meridian V2 world switch (R7); absent = the V1 world. */
+  world?: 'v1' | 'v2';
   /** Cached Meridian visual world for this hole; compiled at runtime when absent. */
   visualArtifact?: MeridianVisualArtifact;
   /** Lab-only amplitude overrides (§95); production never passes them. */
@@ -70,7 +72,7 @@ export function CourseTerrainCanvas({ scene, mesh, camera, width, height, fallba
       const input = latest.current;
       owned = module.createThreeTerrainRuntime({ canvas: element, overlay: annotations, overlayId: id,
         mesh, scene: input.scene, camera: input.camera, width: input.width, height: input.height,
-        selectedShotNumber: input.selectedShotNumber, debugView, visualArtifact, styleOverrides, quality, onUnavailable: unavailable });
+        selectedShotNumber: input.selectedShotNumber, debugView, world, visualArtifact, styleOverrides, quality, onUnavailable: unavailable });
       runtime.current = owned;
       if (runtimeRef) runtimeRef.current = owned;
       owned.setMarkers(latest.current.markers ?? null);
@@ -85,7 +87,7 @@ export function CourseTerrainCanvas({ scene, mesh, camera, width, height, fallba
       if (runtimeRef?.current === owned) runtimeRef.current = null;
       owned?.dispose();
     };
-  }, [geometryKey, mesh, id, runtimeRef, debugView, visualArtifact, styleOverrides, quality]);
+  }, [geometryKey, mesh, id, runtimeRef, debugView, world, visualArtifact, styleOverrides, quality]);
 
   return <div className="relative h-full w-full" data-terrain-view-state={state}>
     <canvas ref={canvas} role="img" aria-label="Course terrain with illustrative trees and estimated shot annotations. Actual pin location unknown."

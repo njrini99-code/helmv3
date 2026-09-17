@@ -38,6 +38,11 @@ interface RuntimeOptions {
   selectedShotNumber?: number;
   onUnavailable: () => void;
   debugView?: TerrainDebugView;
+  /** Meridian V2 world (master plan R7): `v2` draws the V2 ground, patches
+   * and objects in place of the V1 terrain and canopy, with the shot overlay
+   * and markers intact; `v1` (default) is the shipped V1 world. A V2 compile
+   * failure falls back to V1 in place (`installTerrainDebugView`). */
+  world?: 'v1' | 'v2';
   /** Cached visual world for this hole (§6). Absent → compiled at runtime and
    * reported as MERIDIAN_ARTIFACT_MISSING; mismatched → refused, recompiled at
    * runtime and reported as MERIDIAN_ARTIFACT_MISMATCH (§105). */
@@ -321,6 +326,7 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
         puttingTracks: String(flightPaths?.puttingCount ?? 0),
         cssWidth: String(width), cssHeight: String(height), bufferWidth: String(canvas.width), bufferHeight: String(canvas.height), pixelRatio: String(ratio),
         debugView: options.debugView ?? 'final',
+        renderWorld: options.world ?? 'v1',
         crownDetail,
         drawCalls: String(renderer.info.render.calls), renderTriangles: String(renderer.info.render.triangles),
       });
@@ -385,7 +391,9 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
     // ripple, no settle or crossfade, and no shot draws itself on — the
     // finished state is painted immediately instead.
     markersOverlay = createSceneMarkerOverlayController(overlay, mesh, surface, prefersReducedMotion(canvas.ownerDocument.defaultView));
-    releaseDebug = installTerrainDebugView(world, landscape, mesh, options.debugView ?? 'final', renderer, options.scene);
+    // R7: the V2 world is the same installer as the `v2-world` lab view, but as
+    // a render mode the overlay stays — only an explicit debug view hides it.
+    releaseDebug = installTerrainDebugView(world, landscape, mesh, options.debugView ?? (options.world === 'v2' ? 'v2-world' : 'final'), renderer, options.scene);
     if (options.debugView && options.debugView !== 'final') overlay.style.display = 'none';
     view = currentCamera.projection === 'perspective' ? perspectiveView : orthographicView;
     applyAtmosphere(currentCamera.projection);

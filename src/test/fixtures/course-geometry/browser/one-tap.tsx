@@ -44,7 +44,7 @@ export function walkerRoute(pkg: CourseGeometryPackage, holeKey: string, nextHol
   return { routeM: nextTee ? [...points, nextTee] : points, greenAtM: routeLength(points) };
 }
 
-export function OneTapFixture({ course, holeNumber, showBar = false, playMode = 'practice' }: { course: CompiledCourse; holeNumber: number; showBar?: boolean; playMode?: 'practice' | 'competition' }) {
+export function OneTapFixture({ course, holeNumber, showBar = false, playMode = 'practice', world }: { course: CompiledCourse; holeNumber: number; showBar?: boolean; playMode?: 'practice' | 'competition'; world?: 'v1' | 'v2' }) {
   const pkg = compiledCourses[course].pkg;
   const holeKeys = useMemo(() => pkg.holes.map(h => h.key), [pkg]);
   const roundId = `local-one-tap:${course}`;
@@ -75,6 +75,12 @@ export function OneTapFixture({ course, holeNumber, showBar = false, playMode = 
     return () => { off(); if (window.__oneTapWalker === walker) delete window.__oneTapWalker; };
   }, [walker, hub]);
   const reset = () => { try { localStorage.removeItem(ANCHOR_STORAGE_PREFIX + roundId); localStorage.removeItem(ROUND_STORAGE_PREFIX + roundId); } catch { /* private mode */ } location.reload(); };
+  /** Reload this fixture with some query params changed (null removes one). */
+  const navigateWith = (changes: Record<string, string | null>) => {
+    const next = new URLSearchParams(location.search);
+    for (const [key, value] of Object.entries(changes)) { if (value == null) next.delete(key); else next.set(key, value); }
+    location.assign(`${location.pathname}?${next.toString()}`);
+  };
   return <div className="flex h-dvh min-h-0 flex-col bg-surface font-fw-sans" data-seeded={seeded}>
     {showBar && <div className="flex flex-wrap items-center gap-1 border-b border-border-subtle px-3 py-1 text-caption text-text-secondary" data-slot="one-tap-lab-bar">
       <span className="mr-1">Walker · {course} · hole {hole.ordinal} · {round.strokes} strokes</span>
@@ -84,8 +90,11 @@ export function OneTapFixture({ course, holeNumber, showBar = false, playMode = 
       <Button variant="ghost" size="sm" onClick={() => walker.setAccuracy(12)}>Poor GPS</Button>
       <Button variant="ghost" size="sm" onClick={round.previousHole}>Prev hole</Button>
       <Button variant="ghost" size="sm" onClick={reset}>Reset round</Button>
+      {/* Meridian R7: the same screen over the V1 or V2 world, and the render lab on this hole. */}
+      <Button variant={world === 'v2' ? 'secondary' : 'ghost'} size="sm" aria-pressed={world === 'v2'} onClick={() => navigateWith({ world: world === 'v2' ? null : 'v2' })}>{world === 'v2' ? 'World V2' : 'World V1'}</Button>
+      <Button variant="ghost" size="sm" onClick={() => navigateWith({ onetap: null, bar: null, world: null, lab: '1', hole: String(hole.ordinal), debug: world === 'v2' ? 'v2-world' : 'final', preset: 'green', area: 'green' })}>Lab</Button>
     </div>}
-    <OneTapPlayerScreen roundId={roundId} pkg={pkg} holeKey={hole.key} terrain={terrain} contextLayer={contextLayerFor(course) ?? undefined} location={hub.source} round={round}
+    <OneTapPlayerScreen roundId={roundId} pkg={pkg} holeKey={hole.key} terrain={terrain} contextLayer={contextLayerFor(course) ?? undefined} location={hub.source} round={round} world={world}
       reducedMotion={typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches} />
     <output hidden data-terrain-fixture-state={terrainState} data-walker-route-m={Math.round(walker.routeLengthM)} data-walker-green-m={Math.round(route.greenAtM)} data-scorecard={JSON.stringify(round.scorecard.map(r => [r.ordinal, r.strokes, r.status]))} />
   </div>;
