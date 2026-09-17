@@ -25,8 +25,11 @@ const outDir = path.resolve(String(args['out-dir'] || `output/playwright/course-
   page.on('pageerror', error => errors.push(error.message));
   // Every capture starts from an empty hole: clear this course's local marks.
   await page.addInitScript(key => { try { localStorage.removeItem(key); } catch { /* private mode */ } }, `golfhelm-one-tap-anchors:local-one-tap:${course}`);
+  const navigatedAt = Date.now();
   await page.goto(`${base}/?onetap=1&course=${course}&hole=${hole}${args.mode ? `&mode=${args.mode}` : ''}${args.world ? `&world=${args.world}` : ''}`);
   await page.waitForFunction(() => document.querySelector('canvas[data-terrain-state=ready]'), null, { timeout: 90000 });
+  // Navigation → first ready canvas, wall clock: the load, the V1 build and (world=v2) the V2 compile together.
+  const readyAfterMs = Date.now() - navigatedAt;
   const settle = async () => {
     let previous = null;
     for (let i = 0; i < 30; i++) {
@@ -45,7 +48,10 @@ const outDir = path.resolve(String(args['out-dir'] || `output/playwright/course-
       markers: document.querySelectorAll('[data-marked-position]').length, links: document.querySelectorAll('[data-marked-link]').length,
       sigmaRings: Array.from(document.querySelectorAll('[data-marked-sigma]')).filter(n => n.getAttribute('display') !== 'none').length,
       cameraFraming: screen?.dataset.cameraFraming || null, cameraZoom: document.querySelector('[data-camera-zoom]')?.getAttribute('data-camera-zoom') ?? null,
-      drawCalls: canvas?.dataset.drawCalls ?? null, projection: canvas?.dataset.projection ?? null };
+      drawCalls: canvas?.dataset.drawCalls ?? null, projection: canvas?.dataset.projection ?? null,
+      // Master plan Task 20 / §11: the render world, its mount compile, the shader precompile and the frame P95 the runtime reports.
+      renderWorld: canvas?.dataset.renderWorld ?? null, v2BuildMs: canvas?.dataset.v2BuildMs || null, shaderCompileMs: canvas?.dataset.shaderCompileMs ?? null,
+      frameP95Ms: canvas?.dataset.frameP95Ms ?? null, renderTriangles: canvas?.dataset.renderTriangles ?? null, drawCallStatus: canvas?.dataset.drawCallStatus ?? null, geometryMemoryMb: canvas?.dataset.geometryMemoryMb ?? null };
   });
   const steps = [];
   let index = 0;
@@ -55,7 +61,7 @@ const outDir = path.resolve(String(args['out-dir'] || `output/playwright/course-
     await page.screenshot({ path: file });
     const record = { name, file: path.basename(file), ...(await read()) };
     steps.push(record);
-    process.stdout.write(`${record.file} hole=${record.holeKey} ${record.holeStatus} strokes=${record.strokes ?? '-'} state=${record.state} camera=${record.cameraState}/${record.currentView}/${record.cameraFraming ?? "-"}@${record.cameraZoom ?? "-"} markers=${record.markers} links=${record.links} lie=${record.lie ?? '-'} draw=${record.drawCalls}\n`);
+    process.stdout.write(`${record.file} hole=${record.holeKey} ${record.holeStatus} strokes=${record.strokes ?? '-'} state=${record.state} camera=${record.cameraState}/${record.currentView}/${record.cameraFraming ?? "-"}@${record.cameraZoom ?? "-"} markers=${record.markers} links=${record.links} lie=${record.lie ?? '-'} draw=${record.drawCalls} world=${record.renderWorld ?? '-'} build=${record.v2BuildMs ?? '-'}ms shader=${record.shaderCompileMs ?? '-'}ms p95=${record.frameP95Ms ?? '-'}ms\n`);
   };
   const mark = async () => {
     await page.locator('[data-slot=one-tap-mark]').click();
@@ -86,7 +92,7 @@ const outDir = path.resolve(String(args['out-dir'] || `output/playwright/course-
     await page.waitForTimeout(2200);
     await snap('next-hole-ready');
   }
-  const summary = { course, hole, viewport, routeLengthM: length, steps, errors };
+  const summary = { course, hole, viewport, world: args.world ? String(args.world) : 'v1', readyAfterMs, routeLengthM: length, steps, errors };
   fs.writeFileSync(path.join(outDir, 'capture.json'), JSON.stringify(summary, null, 2) + '\n');
   if (errors.length) process.stdout.write(`ERRORS ${errors.join(' | ')}\n`);
   await browser.close();

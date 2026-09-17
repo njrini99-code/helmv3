@@ -327,6 +327,8 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
         cssWidth: String(width), cssHeight: String(height), bufferWidth: String(canvas.width), bufferHeight: String(canvas.height), pixelRatio: String(ratio),
         debugView: options.debugView ?? 'final',
         renderWorld: options.world ?? 'v1',
+        // Task 20: the V2 world's synchronous compile time at mount ('' on V1).
+        v2BuildMs: String((landscape.terrain.userData.debugV2 as { buildMs?: number } | undefined)?.buildMs ?? ''),
         crownDetail,
         drawCalls: String(renderer.info.render.calls), renderTriangles: String(renderer.info.render.triangles),
       });

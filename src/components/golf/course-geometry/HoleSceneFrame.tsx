@@ -84,14 +84,19 @@ export function HoleSceneFrame({ scene, context, defaultView = 'hole', selectedS
     ? { pose: TERRAIN_PRESETS[PRODUCTION_CAMERA_STATES[productionCameraState(defaultView)].preset], fitPreset: PRODUCTION_CAMERA_STATES[productionCameraState(defaultView)].preset }
     : { pose: TERRAIN_PRESETS.top, fitPreset: 'top' });
   const view = choice ?? defaultView;
-  // Stage director: a different area remounts the drawing from the remembered
-  // production pose (as the modal does); the same area animates the preset.
+  // Stage director: the same area animates the preset; a different area snaps
+  // the drawing to the production pose and lets the §62 fit settle from
+  // there. The drawing stays mounted across areas (unlike the modal, which
+  // remounts from the remembered pose): remounting rebuilt the terrain runtime
+  // per state, and with the V2 world that was an 8–10 s compile on every
+  // MARK BALL (Meridian V2 Task 20).
   const stagePreset = useRef<((preset: TerrainPreset) => void) | null>(null);
+  const stageArea = useRef<((preset: TerrainPreset) => void) | null>(null);
   useEffect(() => {
     if (!stageCameraRef) return;
     stageCameraRef.current = state => {
       const { preset, view: area } = PRODUCTION_CAMERA_STATES[state];
-      if (area !== view) { poseMemory.current = { pose: TERRAIN_PRESETS[preset], fitPreset: preset }; setChoice(area); }
+      if (area !== view) { poseMemory.current = { pose: TERRAIN_PRESETS[preset], fitPreset: preset }; stageArea.current?.(preset); setChoice(area); }
       else stagePreset.current?.(preset);
     };
     return () => { stageCameraRef.current = null; };
@@ -147,9 +152,9 @@ export function HoleSceneFrame({ scene, context, defaultView = 'hole', selectedS
     // The course is the screen: no card, no trigger, no Close. The caller owns
     // the surrounding chrome and hands in its HUD and primary action.
     return <div className="relative flex h-full min-h-0 flex-1 flex-col" data-scene-context={context} data-current-view={view} data-presentation="stage">
-      <Drawing key={view} scene={scene} view={view} context={context} events={events} selectedShotNumber={selectedShotNumber} activeDraftShotNumber={activeDraftShotNumber} puttingScope={puttingScope}
+      <Drawing scene={scene} view={view} context={context} events={events} selectedShotNumber={selectedShotNumber} activeDraftShotNumber={activeDraftShotNumber} puttingScope={puttingScope}
         currentPuttingDistanceM={currentPuttingDistanceM} expanded poseMemory={poseMemory} debugView={debugView} world={world} onSelectView={setChoice} markers={markers}
-        heading={heading} areaControls={areaControls} stageOverlay={stageOverlay} stageFooter={stageFooter} stageMenuItems={stageMenuItems} presetRef={stagePreset} onStageGesture={onStageGesture} stageFocus={stageFocus} />
+        heading={heading} areaControls={areaControls} stageOverlay={stageOverlay} stageFooter={stageFooter} stageMenuItems={stageMenuItems} presetRef={stagePreset} areaRef={stageArea} onStageGesture={onStageGesture} stageFocus={stageFocus} />
     </div>;
   }
   return <div className="min-w-0" data-scene-context={context} data-current-view={view}>
@@ -177,12 +182,14 @@ export function HoleSceneFrame({ scene, context, defaultView = 'hole', selectedS
   </div>;
 }
 
-function Drawing({ scene, view, context, events, selectedShotNumber, activeDraftShotNumber, puttingScope = 'whole_green', currentPuttingDistanceM, expanded = false, heading, areaControls, onClose, poseMemory, onSelectEvent, debugView, world, onSelectView, markers, stageOverlay, stageFooter, stageMenuItems, presetRef, onStageGesture, stageFocus }: {
+function Drawing({ scene, view, context, events, selectedShotNumber, activeDraftShotNumber, puttingScope = 'whole_green', currentPuttingDistanceM, expanded = false, heading, areaControls, onClose, poseMemory, onSelectEvent, debugView, world, onSelectView, markers, stageOverlay, stageFooter, stageMenuItems, presetRef, areaRef, onStageGesture, stageFocus }: {
   scene?: HoleScene | null; view: SceneView; context: 'entry' | 'review'; events: readonly ShotEvidence[];
   selectedShotNumber?: number; activeDraftShotNumber?: number; puttingScope?: 'whole_green' | 'focus_putt'; currentPuttingDistanceM?: number | null; expanded?: boolean;
   heading?: ReactNode; areaControls?: (close: () => void) => ReactNode; onClose?: () => void; poseMemory?: RefObject<CameraMemory>;
   onSelectEvent?: (shotNumber: number) => void; debugView?: TerrainDebugView; world?: 'v1' | 'v2'; onSelectView?: (view: SceneView) => void;
-  markers?: SceneMarkers | null; stageOverlay?: ReactNode; stageFooter?: ReactNode; stageMenuItems?: readonly StageMenuItem[]; presetRef?: RefObject<((preset: TerrainPreset) => void) | null>; onStageGesture?: () => void;
+  markers?: SceneMarkers | null; stageOverlay?: ReactNode; stageFooter?: ReactNode; stageMenuItems?: readonly StageMenuItem[]; presetRef?: RefObject<((preset: TerrainPreset) => void) | null>;
+  /** Stage director, area change: snap to the production pose (what a remount used to do). */
+  areaRef?: RefObject<((preset: TerrainPreset) => void) | null>; onStageGesture?: () => void;
   stageFocus?: StageCameraFocus | null;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -294,6 +301,11 @@ function Drawing({ scene, view, context, events, selectedShotNumber, activeDraft
     if (!presetRef) return;
     presetRef.current = presetView;
     return () => { presetRef.current = null; };
+  });
+  useEffect(() => {
+    if (!areaRef) return;
+    areaRef.current = snapPreset;
+    return () => { areaRef.current = null; };
   });
   function cameraOrigin(current: typeof live.current) {
     if (scene?.terrain && courseView) {
@@ -417,6 +429,17 @@ function Drawing({ scene, view, context, events, selectedShotNumber, activeDraft
       changeCamera(() => ({ zoom: 1, pan: { x: 0, y: 0 }, pose: TERRAIN_PRESETS[homePreset], fitPreset: homePreset }));
     } else lastTap.current = { time: now, x: event.clientX, y: event.clientY };
   }
+  /** Stage director, area change: the drawing (and the terrain runtime with
+   * it) stays mounted, so everything a remount used to reset is reset here —
+   * the production pose, no zoom, no pan, no open sheet — and the §62 fit for
+   * the new area then settles from exactly the state a fresh mount started in. */
+  function snapPreset(preset: TerrainPreset) {
+    setShowProfile(false); setToolsOpen(false); setAreasOpen(false); setOverflowOpen(false);
+    cancelAnimationFrame(pendingFrame.current);
+    nextState.current = null;
+    update({ pose: TERRAIN_PRESETS[preset], fitPreset: preset, zoom: 1, pan: { x: 0, y: 0 } }, true);
+    rebase();
+  }
   function presetView(preset: TerrainPreset) {
     setShowProfile(false);
     cancelAnimationFrame(pendingFrame.current);
@@ -528,7 +551,11 @@ function Drawing({ scene, view, context, events, selectedShotNumber, activeDraft
       onPointerDown={startGesture} onPointerMove={moveGesture} onPointerUp={endGesture} onPointerCancel={endGesture} onLostPointerCapture={endGesture}
       data-camera-zoom={zoom} data-world-scale={mapScale} data-dragging={dragging}
       style={{ height: expanded ? '100%' : compactHeight, touchAction: interactive ? 'none' : 'auto', cursor: interactive ? (dragging ? 'grabbing' : 'grab') : undefined }}>
-      <div key={`${scene?.physicalHoleKey ?? 'missing'}-${view}`} className="fw-course-view-enter h-full w-full">
+      {/* The reveal re-keys on the view for the 2D drawings. With the terrain
+          runtime on, a view change is a camera move (`setCamera`), never a
+          remount: remounting rebuilt the whole world per state — with the V2
+          world that was an 8–10 s compile on every MARK BALL (Task 20). */}
+      <div key={`${scene?.physicalHoleKey ?? 'missing'}-${terrainEnabled ? 'terrain' : view}`} className="fw-course-view-enter h-full w-full">
       {showProfile && scene ? <div className="h-full overflow-y-auto bg-surface pt-24"><CourseTerrainProfile scene={scene} selectedShotNumber={currentSelection} width={size.width} height={size.height - 96} /></div> : scene && transformed && courseView ? <CourseHoleScene scene={scene} width={size.width} height={size.height}
         mode={context === 'entry' ? 'compact' : 'review'} view={courseView} selectedShotNumber={currentSelection} activeDraftShotNumber={activeDraftShotNumber} camera={transformed} terrainCamera={terrainCamera}
         runtimeRef={runtime} onTerrainUnavailable={() => setTerrainFailed(true)} showIllustrativeFlightPreviews={view !== 'putting'} puttingPlan={compactPuttingPlan} debugView={debugView} world={world} markers={markers} reservedRects={reservedRects} /> : view === 'putting' ? <PuttingZoom width={size.width} height={size.height} distanceView={{

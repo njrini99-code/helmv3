@@ -260,6 +260,11 @@ export function installTerrainDebugView(world: THREE.Scene, landscape: ThreeLand
     // instanced shrubs/mass/trunks) replace V1's canopy while the view is on;
     // the forest compiles first so the ground's static shadow bake (Task 16)
     // shadows exactly the crowns drawn.
+    // Master plan Task 20: the whole synchronous compile (forest, assembly,
+    // ground, objects) is the first-frame hitch a phone pays at mount; it is
+    // reported as `buildMs` (canvas `data-v2-build-ms`) so a capture can
+    // record it per hole instead of guessing from the ready latency.
+    const started = performance.now();
     const forest = scene ? compileForestEdgeV2(scene, mesh) : null;
     const input = scene ? assembleV2World(scene, mesh, { forest }) : null;
     if (!input) return () => {};
@@ -271,7 +276,7 @@ export function installTerrainDebugView(world: THREE.Scene, landscape: ThreeLand
     landscape.terrain.visible = false;
     landscape.group.add(built.group, objects.group);
     const objectDraws = Object.values(objects.stats.draws).reduce((sum, n) => sum + n, 0);
-    landscape.terrain.userData.debugV2 = { view: 'world', draws: built.stats.draws + objectDraws, triangles: built.stats.triangles + objects.stats.triangles, patches: built.stats.patches, objects: objects.stats, forest: objects.forestStats };
+    landscape.terrain.userData.debugV2 = { view: 'world', draws: built.stats.draws + objectDraws, triangles: built.stats.triangles + objects.stats.triangles, patches: built.stats.patches, objects: objects.stats, forest: objects.forestStats, buildMs: Math.round(performance.now() - started) };
     return () => {
       landscape.group.remove(built.group, objects.group);
       for (const child of v1Canopy) child.visible = true;
