@@ -21,7 +21,7 @@
  * Deterministic from scene + mesh (13); three-free (R12). */
 import type { DisplayMesh } from './display-mesh-v2';
 import { compileRegionPatch, type CompiledHeroPatch, type RegionPatchOptions } from './green-display-mesh';
-import { bunkerProfileNumbers, featureRings, featureSeed, nearestRingDistance, smootherstep, type BunkerProfileNumbers, type Ring } from './bunker-profile';
+import { bboxDistance, bunkerProfileNumbers, featureRings, featureSeed, nearestRingDistance, smootherstep, type BunkerProfileNumbers, type Ring } from './bunker-profile';
 import type { HeroRegion, HeroRegionPlan } from './hero-patches';
 import { inRing } from './spatial';
 import type { TerrainMesh } from './terrain';
@@ -131,8 +131,19 @@ export function bunkerShape(point: PointM, profile: BunkerHeroProfile, spacing: 
   if (profile.downhill) shape += spacing.downhill * (dx * profile.downhill[0] + dy * profile.downhill[1]) / Math.max(.5, Math.hypot(dx, dy));
   return Math.min(spacing.shapeMax, Math.max(spacing.shapeMin, shape));
 }
+/** Whether `point` is at least `bandM` outside every ring's bounding box
+ * of every profile — then it is outside every bunker by at least that
+ * much (a box is never farther than its ring), and a caller whose answer
+ * is fixed beyond the band can give it without a signed distance. The
+ * micron covers the box distance rounding an ulp above the ring's. */
+function beyondBand(point: PointM, profiles: readonly BunkerHeroProfile[], bandM: number): boolean {
+  for (const profile of profiles) for (const ring of profile.rings) if (bboxDistance(point, ring.box) < bandM + 1e-6) return false;
+  return true;
+}
 /** Render-only displacement at a point from the nearest of the region's bunkers (metres). */
 export function bunkerDisplacement(point: PointM, profiles: readonly BunkerHeroProfile[], style: MeridianStyle = MERIDIAN_STYLE, spacing: BunkerRingSpacing = BUNKER_RING_SPACING): number {
+  // Beyond the lip band outside every bunker the displacement is 0.
+  if (profiles.length && beyondBand(point, profiles, style.bunker.lipBandM)) return 0;
   let best: BunkerHeroProfile | null = null, bestD = -Infinity;
   for (const profile of profiles) {
     const d = bunkerSignedDistance(point, profile);
@@ -150,6 +161,8 @@ export function bunkerDisplacement(point: PointM, profiles: readonly BunkerHeroP
 }
 /** §35 spacing cap by band: finest on the rim, then the lip and wall bands, then the floor; none beyond the lip outside. */
 export function bunkerSpacingCap(point: PointM, profiles: readonly BunkerHeroProfile[], spacing: BunkerRingSpacing = BUNKER_RING_SPACING): number {
+  // Beyond the outer band outside every bunker no band caps the spacing.
+  if (beyondBand(point, profiles, spacing.outerBandM)) return Infinity;
   let cap = Infinity;
   for (const profile of profiles) {
     const d = bunkerSignedDistance(point, profile), a = Math.abs(d);

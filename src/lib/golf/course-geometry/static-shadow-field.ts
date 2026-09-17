@@ -20,7 +20,7 @@
  * moved (4). */
 import { canopySymbols, crownScale } from './canopy';
 import { TERRAIN_LIGHT_DIRECTION, type TerrainMesh } from './terrain';
-import { sampleMetricTerrain, sampleMetricTerrainAt, type MetricTerrainGrid } from './terrain-source';
+import { sampleMetricTerrain, sampleMetricTerrainAt, typedGridHeights, type MetricTerrainGrid } from './terrain-source';
 import type { HoleScene } from './types';
 
 export interface StaticShadowOptions {
@@ -66,15 +66,17 @@ function terrainOcclusion(grid: MetricTerrainGrid, layout: { originM: readonly [
   for (const h of grid.heightsM) if (h != null && Number.isFinite(h) && h > top) top = h;
   // The march samples the grid millions of times per hole: this is
   // `sampleMetricTerrain` inlined (same arithmetic, same null rules) without
-  // the per-call point tuple, which was most of the compile's garbage.
-  const { columns, rows, spacingM, heightsM } = grid, ox = grid.originM[0], oy = grid.originM[1];
+  // the per-call point tuple, which was most of the compile's garbage, and
+  // over the grid's typed heights rather than its boxed `number | null`.
+  const { columns, rows, spacingM } = grid, ox = grid.originM[0], oy = grid.originM[1];
+  const { heights, support } = typedGridHeights(grid);
   const sample = (x: number, y: number): number | null => {
     const gx = (x - ox) / spacingM, gy = (y - oy) / spacingM;
     if (gx < 0 || gy < 0 || gx > columns - 1 || gy > rows - 1) return null;
     const ix = Math.min(Math.floor(gx), columns - 2), iy = Math.min(Math.floor(gy), rows - 2);
     const fx = gx - ix, fy = gy - iy, i = iy * columns + ix;
-    const a = heightsM[i], b = heightsM[i + 1], c = heightsM[i + columns], d = heightsM[i + columns + 1];
-    if (a == null || b == null || c == null || d == null) return null;
+    if (!support[i] || !support[i + 1] || !support[i + columns] || !support[i + columns + 1]) return null;
+    const a = heights[i]!, b = heights[i + 1]!, c = heights[i + columns]!, d = heights[i + columns + 1]!;
     return (1 - fx) * ((1 - fy) * a + fy * c) + fx * ((1 - fy) * b + fy * d);
   };
   for (let row = 0; row < layout.rows; row++) for (let column = 0; column < layout.columns; column++) {
