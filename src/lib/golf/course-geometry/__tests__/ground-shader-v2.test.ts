@@ -448,7 +448,24 @@ describe('GOLF_V2_RELIEF rough hierarchy (fidelity §32–36, plan §48–50; me
   };
 
   it('bumps the shader version for the new program structure', () => {
-    expect(GROUND_SHADER_V2_VERSION).toBe('meridian-ground-v2-7');
+    expect(GROUND_SHADER_V2_VERSION).toBe('meridian-ground-v2-8');
+  });
+
+  it('§20 pad setting: the bank below the hole\'s own green pad darkens toward the green on V1\'s rough classes (rough share + the fairway surround), gated to the own green like the run-off', () => {
+    const gc = MERIDIAN_STYLE.greenComplex;
+    expect(chunks.fragmentHead).toContain('uniform vec4 golfV2GreenPad;');
+    expect(chunks.fragmentHead).toContain('varying float vGolfV2WorldZ;');
+    expect(chunks.vertexHead).toContain('varying float vGolfV2WorldZ;');
+    expect(chunks.vertexMain).toContain('vGolfV2WorldZ = golfV2WorldPos.z;');
+    const body = chunks.fragmentColor;
+    expect(body).toContain('float golfOwnGreen = golfV2GreenPad.w > 0.0 && distance(vGolfV2WorldXY, golfV2GreenPad.xy) <= golfV2GreenPad.w ? 1.0 : 0.0;');
+    expect(body).toContain('golfRunoffShare *= golfOwnGreen;');
+    expect(body).toContain(`float golfPadDrop = clamp((golfV2GreenPad.z - vGolfV2WorldZ) / ${gc.settingDropM.toFixed(4)}, 0.0, 1.0);`);
+    expect(body).toContain(`float golfPadReach = 1.0 - clamp(-golfDGreen / ${gc.settingReachM.toFixed(4)}, 0.0, 1.0);`);
+    expect(body).toContain('float golfPadShare = golfRoughShare + (golfWin == 5 ? golfWeight * (1.0 - golfTeeIn) * (1.0 - golfWoodsIn) : 0.0);');
+    expect(body).toContain(`diffuseColor.rgb *= 1.0 - ${gc.settingShade.toFixed(4)} * golfPadDrop * golfPadReach * golfOwnGreen * golfPadShare;`);
+    // Declared after the run-off (V1 order: apron → run-off → setting) and inside the relief block.
+    expect(body.indexOf('float golfPadDrop')).toBeGreaterThan(body.indexOf('golfV2GreenRunoff(3.0'));
   });
 
   it('measures the play distance from the nearest fairway/green/tee (own + context, via the SDFs) and adds the metres outside the atlas, so clamped edge texels never smear a band across far ground', () => {

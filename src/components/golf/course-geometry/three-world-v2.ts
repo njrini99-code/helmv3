@@ -108,6 +108,13 @@ export interface V2WorldInput {
    * `style.mowing.green.angleDeg`, unit XY, or null without a route (then no
    * green stripes — never a guessed direction). */
   greenMowDir?: readonly [number, number] | null;
+  /** Fidelity §20 pad setting (`greenPadSetting`): the hole's own green(s)
+   * as `[centreX, centreY, padZ, reachRadiusM]` — pad elevation is the
+   * mean canonical z of the green's own field triangles (V1
+   * compileGreenComplex), the reach radius spans every own green ring plus
+   * the setting/run-off reach. Null without an own green (then no setting
+   * shade and no own-green gate on the run-off). */
+  greenPad?: readonly [number, number, number, number] | null;
 }
 
 let warnedFallback = false;
@@ -273,6 +280,7 @@ export function assembleV2World(scene: HoleScene, mesh: TerrainMesh, options: As
     let fairwayField: FairwayDirectionField | null = null;
     try { fairwayField = compileFairwayDirectionField(mesh, scene); } catch (error) { warnAtlasFallbackOnce('fairway direction field compile threw', error); }
     const greenMowDir = greenMowDirection(scene, MERIDIAN_STYLE);
+    const greenPad = greenPadSetting(scene, mesh, MERIDIAN_STYLE);
     let skyField: SkyField | null = null;
     try { skyField = compileSkyField(metricGrid, { radiusM: MERIDIAN_STYLE.landform.radiusM, directions: MERIDIAN_STYLE.landform.directions }); } catch (error) { warnAtlasFallbackOnce('sky field compile threw', error); }
     let shadowField: StaticShadowField | null = null;
@@ -283,7 +291,7 @@ export function assembleV2World(scene: HoleScene, mesh: TerrainMesh, options: As
 
     return {
       base, patches, patchedRangeIds: new Set(patches.map(compiled => compiled.patch.id)),
-      seed: seedFromPackageHash(mesh.geometryHash), boundsM, atlas, heroAtlases, metricGrid, heroNormals, fairwayField, shadowField, skyField, greenMowDir,
+      seed: seedFromPackageHash(mesh.geometryHash), boundsM, atlas, heroAtlases, metricGrid, heroNormals, fairwayField, shadowField, skyField, greenMowDir, greenPad,
     };
   } catch (error) {
     warnFallbackOnce('V2 compile pipeline threw', error);
@@ -478,6 +486,36 @@ function greenMowDirection(scene: HoleScene, style: MeridianStyle): readonly [nu
   return [tx * c - ty * sn, tx * sn + ty * c];
 }
 
+/** Fidelity §20 (V1 compileGreenComplex's pad setting, per fragment): the
+ * hole's own greens' pad elevation — the mean canonical z over their field
+ * triangles (material 0, never a rim ribbon) — with the centre and reach
+ * radius of the shader's own-green gate: every own green ring point lies
+ * inside `radius - reach`, so any fragment the §20 setting or the §34
+ * run-off could touch (within `reach` of an own green) passes the gate,
+ * and a context green elsewhere in the atlas does not. Null without an
+ * own green or without any green triangle in the mesh. */
+export function greenPadSetting(scene: HoleScene, mesh: TerrainMesh, style: MeridianStyle): readonly [number, number, number, number] | null {
+  const greens = scene.features.filter(feature => feature.kind === 'green' && feature.type !== 'LineString');
+  const ids = new Set(greens.map(feature => feature.id));
+  if (!ids.size) return null;
+  const v = mesh.vertices;
+  let padSum = 0, padCount = 0;
+  for (let t = 0; t < mesh.triangleFeatures.length; t++) {
+    if (!ids.has(mesh.featureIds[mesh.triangleFeatures[t]!]!) || mesh.triangleMaterials[t] !== 0) continue;
+    for (let corner = 0; corner < 3; corner++) { padSum += v[(t * 3 + corner) * 3 + 2]!; padCount++; }
+  }
+  if (!padCount) return null;
+  const points = greens.flatMap(feature => feature.parts.flatMap(rings => rings[0] ?? []));
+  if (!points.length) return null;
+  let sx = 0, sy = 0;
+  for (const [x, y] of points) { sx += x; sy += y; }
+  const cx = sx / points.length, cy = sy / points.length;
+  let extent = 0;
+  for (const [x, y] of points) extent = Math.max(extent, Math.hypot(x - cx, y - cy));
+  const reach = Math.max(style.greenComplex.settingReachM, style.greenComplex.runoff.reachM);
+  return [cx, cy, padSum / padCount, extent + reach + 1];
+}
+
 /** Task 20 wiring (`SKY_FIELD_BINDING`): sky visibility on the metric grid
  * as one R8 texture, bilinear, frame nudged by half a node. */
 function buildSkyTexture(field: SkyField, grid: MetricTerrainGrid): { texture: THREE.DataTexture; frame: THREE.Vector4 } {
@@ -573,7 +611,7 @@ function classAttributes(classIds: Uint8Array, style: MeridianStyle, atlasPainte
  * draw uploaded — the green-complex patch rendered with a bunker patch's
  * 20 m atlas, clamped to its edge texels, as one beige rectangle. Distinct
  * ids are exactly what make three upload each mesh's own atlas. */
-function createGroundMaterialV2(seed: readonly [number, number], style: MeridianStyle, sdf: GroundSdfBinding | null, fairway: FairwayGrainBinding | null = null, shadow: GroundSdfBinding | null = null, sky: GroundSdfBinding | null = null, greenMowDir: readonly [number, number] | null = null): THREE.MeshStandardMaterial {
+function createGroundMaterialV2(seed: readonly [number, number], style: MeridianStyle, sdf: GroundSdfBinding | null, fairway: FairwayGrainBinding | null = null, shadow: GroundSdfBinding | null = null, sky: GroundSdfBinding | null = null, greenMowDir: readonly [number, number] | null = null, greenPad: readonly [number, number, number, number] | null = null): THREE.MeshStandardMaterial {
   const chunks = groundShaderV2Chunks(style);
   const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, metalness: 0, side: THREE.FrontSide });
   material.name = 'meridian-ground-v2';
@@ -598,6 +636,8 @@ function createGroundMaterialV2(seed: readonly [number, number], style: Meridian
     shader.uniforms.golfV2Seed = { value: new THREE.Vector2(seed[0], seed[1]) };
     // §23 green mowing direction (zero vector = no route = no stripes).
     shader.uniforms.golfV2GreenMow = { value: new THREE.Vector2(greenMowDir?.[0] ?? 0, greenMowDir?.[1] ?? 0) };
+    // §20 pad setting / own-green gate (w = 0 = no own green = term off).
+    shader.uniforms.golfV2GreenPad = { value: greenPad ? new THREE.Vector4(greenPad[0], greenPad[1], greenPad[2], greenPad[3]) : new THREE.Vector4(0, 0, 0, 0) };
     if (sdfUniforms) Object.assign(shader.uniforms, sdfUniforms);
     if (reliefUniforms) Object.assign(shader.uniforms, reliefUniforms);
     if (fairwayUniforms) Object.assign(shader.uniforms, fairwayUniforms);
@@ -763,8 +803,8 @@ export function buildV2World(input: V2WorldInput, options: V2WorldOptions = {}):
   const fairway = wholeHoleSdf && input.fairwayField ? buildFairwayDirectionTexture(input.fairwayField) : null;
   const shadow = input.shadowField ? buildStaticShadowTexture(input.shadowField) : null;
   const sky = input.skyField ? buildSkyTexture(input.skyField, input.metricGrid) : null;
-  const greenMowDir = input.greenMowDir ?? null;
-  const material = createGroundMaterialV2(input.seed, style, wholeHoleSdf, fairway, shadow, sky, greenMowDir);
+  const greenMowDir = input.greenMowDir ?? null, greenPad = input.greenPad ?? null;
+  const material = createGroundMaterialV2(input.seed, style, wholeHoleSdf, fairway, shadow, sky, greenMowDir, greenPad);
   const atlasPainted = wholeHoleSdf !== null;
   const { geometry: baseGeometry, drawnTriangles: baseTriangles } = buildBaseGeometry(input.base, input.patchedRangeIds, style, atlasPainted, input.metricGrid);
   const baseMesh = new THREE.Mesh(baseGeometry, [material]);
@@ -782,7 +822,7 @@ export function buildV2World(input: V2WorldInput, options: V2WorldOptions = {}):
   if (wholeHoleSdf) for (const hero of input.heroAtlases) {
     const sdf = buildGroundSdfTexture(hero.atlas);
     heroSdfByPatchId.set(hero.patchId, sdf);
-    heroMaterialByPatchId.set(hero.patchId, createGroundMaterialV2(input.seed, style, sdf, fairway, shadow, sky, greenMowDir));
+    heroMaterialByPatchId.set(hero.patchId, createGroundMaterialV2(input.seed, style, sdf, fairway, shadow, sky, greenMowDir, greenPad));
   }
 
   const patchGeometries: THREE.BufferGeometry[] = [];

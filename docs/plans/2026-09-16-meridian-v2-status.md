@@ -197,9 +197,21 @@ repeated here as they land.
   outer, exactly as V1's own frame of the same view shows
   (`hierarchy-v1ref`); a palette question, not this term's. Tee mow-grain
   stays off (V1 never mows the tee: `mown` is fairway/green only). Still
-  missing from the V2 ground versus V1: §20 pad-setting shade, context
-  ground zones (§48 classes), fairway edge types/terrain bias, context
-  desaturation.
+  missing from the V2 ground versus V1: context ground zones (§48
+  classes), fairway edge types/terrain bias, context desaturation.
+- §20 pad setting in V2 (`meridian-ground-v2-8`, 2026-09-17): `greenPadSetting`
+  packs the hole's own green pad (mean canonical z of the green's field
+  triangles, V1 compileGreenComplex) with a centre and reach radius into the
+  per-hole `golfV2GreenPad` uniform; a new `vGolfV2WorldZ` varying gives the
+  fragment its canonical height, and the bank below the pad darkens up to
+  5 % (full at 1.5 m below), fading over 12 m of the atlas green SDF, on the
+  rough share plus the fairway surround. The same uniform gates the §34
+  run-off to the hole's OWN green (V1's rule) — the atlas green SDF also
+  holds context greens, and hole 1's approach frame carried a run-off
+  streak beside a neighbouring green (top-left of `hierarchy-after`), gone
+  in `setting-after`. Evidence: fidelity tracker §20 row (census per hole);
+  `three-world-v2.test.ts` drives `onBeforeCompile` with a stand-in shader
+  and checks the uniform's four numbers on hole 7.
 - Task 22: run the CSM protocol on a real desktop GPU; Task 23's visual
   judgment likewise.
 - Task 27: blocked on the owner's phone.

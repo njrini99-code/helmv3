@@ -64,7 +64,8 @@ import { hexToRgb, MERIDIAN_STYLE, srgbToLinear, type MeridianPaletteKey, type M
 // same as `GOLF_V2_ATLAS` before it), so the version string changes too.
 // -6: the §34 run-off term went live under GOLF_V2_RELIEF (`RELIEF_FIELD_BINDING`).
 // -7: the rough hierarchy (fidelity §32–36, plan §48–50) under the same define.
-export const GROUND_SHADER_V2_VERSION = 'meridian-ground-v2-7';
+// -8: §20 pad setting and the own-green gate (golfV2GreenPad, vGolfV2WorldZ).
+export const GROUND_SHADER_V2_VERSION = 'meridian-ground-v2-8';
 
 /** Attribute names the component layer must upload on every V2 ground
  * geometry (base and hero patches alike, so the one material fits both). */
@@ -481,6 +482,7 @@ export function groundShaderV2Chunks(style: MeridianStyle = MERIDIAN_STYLE): Gro
   // `roughHierarchy`), the §50 curvature tone and the §7 blade-height micro
   // scale, all per fragment behind GOLF_V2_RELIEF (see the block below).
   const rh = style.roughHierarchy, tone = style.curvatureTone, micro = style.turf.microByClass;
+  const gc = style.greenComplex;
   const vec3Glsl = (v: readonly number[]) => `vec3(${(v[0] ?? 1).toFixed(4)}, ${(v[1] ?? 1).toFixed(4)}, ${(v[2] ?? 1).toFixed(4)})`;
   const roughLinear = classAlbedoLinear('rough', style);
   const tierRatioGlsl = (key: MeridianPaletteKey) => { const [r, g, b] = hexToRgb(style.palette[key]); return vec3Glsl([srgbToLinear(r) / roughLinear[0], srgbToLinear(g) / roughLinear[1], srgbToLinear(b) / roughLinear[2]]); };
@@ -493,20 +495,28 @@ varying float vGolfV2Class;
 varying float vGolfV2Offset;
 varying float vGolfV2Roughness;
 varying float vGolfV2AtlasTrust;
-varying vec2 vGolfV2WorldXY;`;
+varying vec2 vGolfV2WorldXY;
+varying float vGolfV2WorldZ;`;
   const vertexMain = `vGolfV2Class = ${surfaceClass};
 vGolfV2Offset = ${visualOffset};
 vGolfV2Roughness = ${roughness};
 vGolfV2AtlasTrust = ${atlasTrust};
-vGolfV2WorldXY = (modelMatrix * vec4(position, 1.0)).xy;`;
+vec3 golfV2WorldPos = (modelMatrix * vec4(position, 1.0)).xyz;
+vGolfV2WorldXY = golfV2WorldPos.xy;
+vGolfV2WorldZ = golfV2WorldPos.z;`;
   const greenMow = style.mowing.green;
   const fragmentHead = `uniform vec2 golfV2Seed;
 uniform vec2 golfV2GreenMow;
+// §20 / own-green gate: xy = the hole's own green centre, z = its pad
+// elevation (mean canonical z of the green's field triangles), w = the
+// reach radius around that centre (0 = no own green: both terms off).
+uniform vec4 golfV2GreenPad;
 varying float vGolfV2Class;
 varying float vGolfV2Offset;
 varying float vGolfV2Roughness;
 varying float vGolfV2AtlasTrust;
 varying vec2 vGolfV2WorldXY;
+varying float vGolfV2WorldZ;
 #ifdef GOLF_V2_ATLAS
 uniform sampler2D golfV2Sdf;
 uniform vec4 golfV2SdfFrame;
@@ -776,6 +786,13 @@ float golfV2ResolvedRoughness;`;
     // reads it.
     float golfRunoffClaim = golfGB.band > 2.5 ? 1.0 : 1.0 - golfGB.weight;
     float golfRunoffShare = golfWoods ? 0.0 : (golfWin == 5 ? 1.0 : 1.0 - golfWeight);
+    // The hole's OWN green only (V1: "within reach of the hole's own
+    // green"): the atlas green SDF also holds context greens, so the terms
+    // that belong to this hole's green complex are gated by distance to its
+    // centre (golfV2GreenPad.w reaches every own green ring plus the
+    // terms' reach, so nothing they could touch is cut off).
+    float golfOwnGreen = golfV2GreenPad.w > 0.0 && distance(vGolfV2WorldXY, golfV2GreenPad.xy) <= golfV2GreenPad.w ? 1.0 : 0.0;
+    golfRunoffShare *= golfOwnGreen;
     if (golfDGreen <= 0.0 && golfDGreen >= -${cfgRunoff.reachM.toFixed(4)} && golfRunoffClaim * golfRunoffShare > 0.0) {
       vec2 golfSlopeXY = golfRelief.rg;
       vec2 golfGradUv = vec2(${GREEN_SDF_GRADIENT_STEP_M.toFixed(4)}) * golfV2SdfFrame.zw;
@@ -788,6 +805,17 @@ float golfV2ResolvedRoughness;`;
       diffuseColor.rgb = mix(diffuseColor.rgb, ${atlasColorGlsl('apron')}, ${cfgRunoff.mix.toFixed(4)} * golfRunoff);
       golfV2ResolvedRoughness = mix(golfV2ResolvedRoughness, ${green.names.roughness}(2.0), golfRunoff);
     }
+    // Fidelity §20 pad setting (V1 compileGreenComplex, per fragment): the
+    // bank below the hole's own green pad darkens toward the green — up to
+    // settingShade where the ground sits settingDropM or more below the pad
+    // elevation, fading to nothing at settingReachM — on V1's rough classes
+    // (rough, ground, secondary, the fairway's surround band), never on
+    // fairway, sand, water, woods or the green complex's own bands. Reads
+    // perch/shelf where the DEM has one, nothing where it does not.
+    float golfPadDrop = clamp((golfV2GreenPad.z - vGolfV2WorldZ) / ${gc.settingDropM.toFixed(4)}, 0.0, 1.0);
+    float golfPadReach = 1.0 - clamp(-golfDGreen / ${gc.settingReachM.toFixed(4)}, 0.0, 1.0);
+    float golfPadShare = golfRoughShare + (golfWin == 5 ? golfWeight * (1.0 - golfTeeIn) * (1.0 - golfWoodsIn) : 0.0);
+    diffuseColor.rgb *= 1.0 - ${gc.settingShade.toFixed(4)} * golfPadDrop * golfPadReach * golfOwnGreen * golfPadShare;
 #endif
   }
 #endif

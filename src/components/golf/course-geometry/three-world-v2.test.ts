@@ -13,7 +13,8 @@ import { parseTerrainMesh, type TerrainMesh } from '@/lib/golf/course-geometry/t
 import type { MetricTerrainGrid } from '@/lib/golf/course-geometry/terrain-source';
 import type { HoleScene, PointM } from '@/lib/golf/course-geometry/types';
 import type { PackedDisplayMesh, PackedFieldAtlas, PackedHeroPatch } from '@/lib/golf/course-geometry/visual-artifact-v2';
-import { assembleV2World, buildV2World, rewindTrianglesCCW, type V2WorldInput } from './three-world-v2';
+import { MERIDIAN_STYLE } from '@/lib/golf/course-geometry/visual-style';
+import { assembleV2World, buildV2World, greenPadSetting, rewindTrianglesCCW, type V2WorldInput } from './three-world-v2';
 
 // Same hole-7 fixture bunker-display-mesh.test.ts and hero-patches.test.ts
 // use: a real compiled course with a green complex owning three greenside
@@ -398,6 +399,44 @@ describe('Meridian V2 runtime world (Task 11)', () => {
     built.dispose();
     expect(textureDispose.mock.instances).toEqual(expect.arrayContaining([...seen]));
     textureDispose.mockRestore();
+  });
+
+  it('carries the hole\'s own green pad (fidelity §20) — mean canonical z of its field triangles, a reach radius covering every green ring — into every ground material as golfV2GreenPad', () => {
+    const { mesh, scene } = loadHole7();
+    const pad = greenPadSetting(scene, mesh, MERIDIAN_STYLE)!;
+    expect(pad).not.toBeNull();
+    const [cx, cy, padZ, radius] = pad;
+    const greens = scene.features.filter(f => f.kind === 'green');
+    expect(greens.length).toBeGreaterThan(0);
+    const ids = new Set(greens.map(f => f.id));
+    let zMin = Infinity, zMax = -Infinity, extent = 0;
+    for (let t = 0; t < mesh.triangleFeatures.length; t++) {
+      if (!ids.has(mesh.featureIds[mesh.triangleFeatures[t]!]!) || mesh.triangleMaterials[t] !== 0) continue;
+      for (let c = 0; c < 3; c++) { const z = mesh.vertices[(t * 3 + c) * 3 + 2]!; zMin = Math.min(zMin, z); zMax = Math.max(zMax, z); }
+    }
+    expect(padZ).toBeGreaterThanOrEqual(zMin); expect(padZ).toBeLessThanOrEqual(zMax);
+    for (const feature of greens) for (const rings of feature.parts) for (const [x, y] of rings[0] ?? []) extent = Math.max(extent, Math.hypot(x - cx, y - cy));
+    const reach = Math.max(MERIDIAN_STYLE.greenComplex.settingReachM, MERIDIAN_STYLE.greenComplex.runoff.reachM);
+    expect(radius).toBeGreaterThanOrEqual(extent + reach); // nothing the setting or run-off could touch is outside the gate
+    expect(radius).toBeLessThan(extent + reach + 2);
+    const input = assembleV2World(scene, mesh)!;
+    expect(input.greenPad).toEqual(pad);
+    const built = buildV2World(input);
+    const [base, ...patchMeshes] = built.group.children as THREE.Mesh[];
+    const materials = [((base!.material as THREE.Material[])[0]!), ...patchMeshes.map(m => m.material as THREE.Material)] as THREE.MeshStandardMaterial[];
+    for (const material of materials) {
+      // Drive onBeforeCompile the way three would, with a stand-in shader object.
+      const shader = { uniforms: {} as Record<string, { value: unknown }>, vertexShader: '#include <common>\n#include <begin_vertex>', fragmentShader: '#include <common>\n#include <color_fragment>\n#include <roughnessmap_fragment>\n#include <normal_fragment_maps>' };
+      material.onBeforeCompile(shader as unknown as THREE.WebGLProgramParametersWithUniforms, null as unknown as THREE.WebGLRenderer);
+      const value = shader.uniforms.golfV2GreenPad!.value as THREE.Vector4;
+      expect([value.x, value.y, value.z, value.w]).toEqual([cx, cy, padZ, radius]);
+      expect(shader.fragmentShader).toContain('uniform vec4 golfV2GreenPad;');
+      expect(shader.fragmentShader).toContain('golfPadDrop * golfPadReach * golfOwnGreen * golfPadShare');
+      expect(shader.vertexShader).toContain('vGolfV2WorldZ = golfV2WorldPos.z;');
+    }
+    built.dispose();
+    // Without an own green the gate is off (w = 0): a scene with no green feature.
+    expect(greenPadSetting({ ...scene, features: scene.features.filter(f => f.kind !== 'green') }, mesh, MERIDIAN_STYLE)).toBeNull();
   });
 
   it('renders without an atlas (fallback path) and reports zero atlas bytes', () => {
