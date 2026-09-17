@@ -165,8 +165,27 @@ export function isStaleServerActionError(error: unknown): boolean {
 
   return (
     /Server Action ".*" was not found on the server/.test(msg) ||
-    msg.includes('was not found on the server')
+    msg.includes('was not found on the server') ||
+    // Next 16: the server answers a stale action id with a 404 text/plain
+    // body of exactly "Server action not found." and the client throws it
+    // verbatim; the dev/server-side wording is "Failed to find Server Action".
+    /^server action not found\.?$/i.test(msg.trim()) ||
+    /failed to find server action/i.test(msg)
   );
+}
+
+/**
+ * For code that catches its own server-action failures (a picker that toasts
+ * "Could not load…" and stays put): true when the failure is a stale action
+ * id and the one-per-session reload has been requested, so the caller shows
+ * nothing of its own; false for every other error, which the caller handles
+ * as before. Without this, a caught stale-action error never reaches the
+ * global handlers and the player keeps tapping into the same dead action.
+ */
+export function recoverFromStaleServerAction(error: unknown): boolean {
+  if (!isStaleServerActionError(error)) return false;
+  softReloadForStaleServerAction(error instanceof Error ? error.message : error);
+  return true;
 }
 
 /** Track suppressed stale-action warnings so we still emit one per session. */
