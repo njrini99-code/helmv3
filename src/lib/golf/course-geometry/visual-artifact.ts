@@ -281,8 +281,10 @@ export function compileVisualArtifact(scene: HoleScene, mesh: TerrainMesh, style
     }
   }
   const hierarchy = compileRoughHierarchy(scene, mesh, style, attributes, featuresById, ringsFor);
-  const greenComplex = compileGreenComplex(scene, mesh, style, attributes, contextIds, ringsFor);
-  const fairwayEdges = compileFairwayEdges(scene, mesh, style, attributes, contextIds, ringsFor, smoothVertexNormals(mesh));
+  // One normal per corner, shared by the green complex and the fairway edges.
+  const vertexNormals = smoothVertexNormals(mesh);
+  const greenComplex = compileGreenComplex(scene, mesh, style, attributes, contextIds, ringsFor, vertexNormals);
+  const fairwayEdges = compileFairwayEdges(scene, mesh, style, attributes, contextIds, ringsFor, vertexNormals);
   const greenRings = [...scene.features, ...(scene.contextFeatures ?? [])].filter(f => f.kind === 'green')
     .flatMap(f => f.parts.map(part => part[0]).filter((ring): ring is PointM[] => !!ring && ring.length >= 3)).map(ring => ({ ring, box: ringBbox(ring) }));
   const profiles = compileBunkerBowls(mesh, style, attributes, featuresById, contextIds, ringsFor, greenRings);
@@ -351,7 +353,7 @@ export function smoothVertexNormals(mesh: TerrainMesh): Float32Array {
  * perched or shelved green reads as a landform (§20). Nothing moves; every
  * shape stays the reviewed outline. */
 function compileGreenComplex(scene: HoleScene, mesh: TerrainMesh, style: MeridianStyle, attributes: MeridianVisualAttributes,
-  contextIds: Set<string>, ringsFor: (id: string) => { ring: readonly PointM[]; box: Bbox }[]): { apronVertices: number; edgeVertices: number; settingVertices: number; runoffVertices: number } {
+  contextIds: Set<string>, ringsFor: (id: string) => { ring: readonly PointM[]; box: Bbox }[], vertexNormals: Float32Array): { apronVertices: number; edgeVertices: number; settingVertices: number; runoffVertices: number } {
   const cfg = style.greenComplex, v = mesh.vertices;
   const own = scene.features.filter(feature => !contextIds.has(feature.id));
   const greens = own.filter(feature => feature.kind === 'green'), fairways = own.filter(feature => feature.kind === 'fairway');
@@ -360,7 +362,7 @@ function compileGreenComplex(scene: HoleScene, mesh: TerrainMesh, style: Meridia
   if (!greenRings.length) return counts;
   // §39–40 run-off evidence: the direction away from the nearest green centre
   // and, per vertex, the canonical downhill direction and slope.
-  const runoff = cfg.runoff, vertexNormals = smoothVertexNormals(mesh);
+  const runoff = cfg.runoff;
   const greenCentres = greenRings.map(({ ring }) => {
     let sx = 0, sy = 0; for (const [x, y] of ring) { sx += x; sy += y; }
     return [sx / ring.length, sy / ring.length] as PointM;
@@ -652,12 +654,14 @@ function compileBunkerBowls(mesh: TerrainMesh, style: MeridianStyle, attributes:
   // zero on the shared rim vertex and again at the band's outer edge, so the
   // conforming mesh never opens a crack while the rim reads as a lip.
   const lipBandM = style.bunker.lipBandM;
+  const contactCells = boxGrid(contactBoxes.map(contact => contact.box));
   if (contactBoxes.length) for (let t = 0; t < mesh.triangleFeatures.length; t++) {
     if (mesh.featureKinds[mesh.triangleFeatures[t]!] === 'bunker') continue;
     for (let corner = 0; corner < 3; corner++) {
       const vertex = t * 3 + corner, point: PointM = [v[vertex * 3]!, v[vertex * 3 + 1]!];
       let nearest = Infinity, band = style.bunker.contactBandM, shadeAmount = style.bunker.contactShade, lipM = 0;
-      for (const contact of contactBoxes) {
+      for (const index of contactCells(point)) {
+        const contact = contactBoxes[index]!;
         if (bboxDistance(point, contact.box) > 0) continue;
         const distance = nearestOnRings(point, contact.rings).distance;
         if (distance < nearest) { nearest = distance; band = contact.edgeBandM; shadeAmount = contact.edgeShade; lipM = contact.lipM; }
@@ -673,6 +677,26 @@ function compileBunkerBowls(mesh: TerrainMesh, style: MeridianStyle, attributes:
 
 const SUN_GROUND: PointM = (() => { const [x, y] = TERRAIN_LIGHT_DIRECTION, n = Math.hypot(x, y) || 1; return [x / n, y / n]; })();
 function expandBbox(box: Bbox, m: number): Bbox { return { minX: box.minX - m, minY: box.minY - m, maxX: box.maxX + m, maxY: box.maxY + m }; }
+const NO_BOXES: readonly number[] = [];
+/** The boxes on a coarse cell grid, so a point asks only the boxes over its
+ * own cell instead of every box. Exact for the callers' inside-the-box test:
+ * a box is listed in every cell it overlaps, and the same floor puts a point
+ * inside the box into one of those cells. Outside the grid nothing is near. */
+function boxGrid(boxes: readonly Bbox[], cellM = 25): (point: PointM) => readonly number[] {
+  if (!boxes.length) return () => NO_BOXES;
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const box of boxes) { minX = Math.min(minX, box.minX); minY = Math.min(minY, box.minY); maxX = Math.max(maxX, box.maxX); maxY = Math.max(maxY, box.maxY); }
+  const columns = Math.max(1, Math.floor((maxX - minX) / cellM) + 1), rows = Math.max(1, Math.floor((maxY - minY) / cellM) + 1);
+  const cells: number[][] = Array.from({ length: columns * rows }, () => []);
+  boxes.forEach((box, index) => {
+    const c0 = Math.floor((box.minX - minX) / cellM), c1 = Math.floor((box.maxX - minX) / cellM), r0 = Math.floor((box.minY - minY) / cellM), r1 = Math.floor((box.maxY - minY) / cellM);
+    for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) cells[r * columns + c]!.push(index);
+  });
+  return ([x, y]) => {
+    if (!(x >= minX && x <= maxX && y >= minY && y <= maxY)) return NO_BOXES;
+    return cells[Math.floor((y - minY) / cellM) * columns + Math.floor((x - minX) / cellM)]!;
+  };
+}
 /** Distance to a polyline plus the nearest point on it (into `out`). */
 /** Nearest point on a polyline. `beyond` is how far the query point overshoots
  * the line past an end cap along the line's direction (0 inside the run), and
@@ -732,6 +756,15 @@ function nearestOnPolyline(point: PointM, line: readonly PointM[], out: { d: num
   out.d = best; out.x = bx; out.y = by; out.beyond = beyond; out.across = across;
 }
 
+/** Whether any run of the polyline can come within `reachM` of the point: a
+ * run's box is never farther than its segments (one ulp of slack for the
+ * square root), so a point past every box is past every segment. */
+function withinChunks(point: PointM, chunks: PolylineChunks, reachM: number): boolean {
+  const limit = reachM + 1e-9;
+  for (const box of chunks.boxes) if (bboxDistance(point, box) <= limit) return true;
+  return false;
+}
+
 /** Ground contact under context objects (renderer redesign §16): turf beside a
  * building footprint and along a path's shoulder darkens a little so the
  * extrusion and the ribbon read as resting on the ground. Uncertain zones
@@ -745,62 +778,85 @@ function compileContextContact(scene: HoleScene, mesh: TerrainMesh, style: Merid
   const ribbonWidths = style.contextObjects.ribbons as Record<string, { widthM: number } | undefined>;
   const ribbons = zones.filter(zone => zone.render === 'ribbon' && zone.type === 'LineString').flatMap(zone => {
     const halfM = ((zone.attributes as { widthM?: number }).widthM ?? ribbonWidths[zone.class]?.widthM ?? 2.5) / 2;
-    return zone.parts.flat().filter(line => line.length >= 2).map(line => ({ line, halfM, box: expandBbox(ringBbox(line), halfM + Math.max(pathShoulderM, cutFillBankM)), chunks: chunkPolyline(line) }));
+    // Past this distance from the line a point takes neither the shoulder
+    // shade (needs d < halfM + shoulder) nor the cut/fill (needs the across
+    // and beyond components both short, so d below their hypotenuse).
+    const reachM = Math.max(halfM + pathShoulderM, cutFillBankM > 0 ? Math.hypot(halfM + cutFillBankM, cutFillBankM) : 0);
+    return zone.parts.flat().filter(line => line.length >= 2).map(line => ({ line, halfM, reachM, box: expandBbox(ringBbox(line), halfM + Math.max(pathShoulderM, cutFillBankM)), chunks: chunkPolyline(line) }));
   });
   if (!structures.length && !ribbons.length) return { structures: 0, ribbons: 0, vertices: 0, levelled: 0 };
   let touched = 0, levelled = 0;
   const v = mesh.vertices, nearest = { d: 0, x: 0, y: 0, beyond: 0, across: 0 };
   const smooth = (t: number) => 1 - t * t * (3 - 2 * t);
+  /** What one position earns, before the per-corner albedo multiply: the
+   * shade and, when the cut/fill moves it, the display offset and its slope.
+   * Every corner welded to the position gets the same answer, so it is
+   * computed once per (x, y, z) instead of once per triangle corner. */
+  interface Contact { z: number; shade: number; levelMm: number; slopeX: number; slopeY: number }
+  const contacts = new Map<number, Map<number, Contact>>();
+  const contactAt = (point: PointM, z: number): Contact => {
+    let shade = 1;
+    for (const structure of structures) {
+      if (bboxDistance(point, structure.box) > 0 || inRing(point, structure.ring)) continue;
+      const d = boundaryDistance(point, structure.ring);
+      if (d < structureBandM) shade *= 1 - structureShade * (1 - d / structureBandM);
+    }
+    // Redesign 12 cut/fill (context-contact-v3): the ground under and beside
+    // a ribbon displays at the ribbon's height (the canonical ground at the
+    // nearest centreline point), feathered over the bank. Uphill that is a
+    // cut, downhill a fill; the canonical vertex never moves. A ribbon's
+    // end cap feathers along the line too (no levelled disc past the end),
+    // and where several ribbons reach a vertex (a path meeting a road)
+    // their heights blend by feather weight instead of the nearest one
+    // winning, so a junction is a ramp rather than a step.
+    let weight = 0, targetSum = 0, lead: { feather: number; t: number; d: number; x: number; y: number; delta: number } | null = null;
+    for (const ribbon of ribbons) {
+      if (bboxDistance(point, ribbon.box) > 0 || !withinChunks(point, ribbon.chunks, ribbon.reachM)) continue;
+      nearestOnPolyline(point, ribbon.line, nearest, ribbon.chunks);
+      const d = nearest.d;
+      if (d < ribbon.halfM + pathShoulderM) shade *= 1 - pathShade * (d <= ribbon.halfM ? 1 : 1 - (d - ribbon.halfM) / pathShoulderM);
+      if (cutFillBankM <= 0 || nearest.across >= ribbon.halfM + cutFillBankM || nearest.beyond >= cutFillBankM) continue;
+      const t = nearest.across <= ribbon.halfM ? 0 : Math.min(1, (nearest.across - ribbon.halfM) / cutFillBankM);
+      const feather = smooth(t) * smooth(Math.min(1, nearest.beyond / cutFillBankM));
+      if (feather <= 0) continue;
+      const target = terrainHeight(mesh, [nearest.x, nearest.y]);
+      if (target == null) continue;
+      weight += feather; targetSum += feather * target;
+      if (!lead || feather > lead.feather) lead = { feather, t, d, x: nearest.x, y: nearest.y, delta: 0 };
+    }
+    const contact: Contact = { z, shade, levelMm: 0, slopeX: 0, slopeY: 0 };
+    if (lead && weight > 0) {
+      const delta = Math.max(-cutFillMaxM, Math.min(cutFillMaxM, targetSum / weight - z));
+      const offset = delta * lead.feather;
+      if (Math.abs(offset) >= .005) {
+        contact.levelMm = Math.round(offset * 1000);
+        // Gradient of the offset: the leading ribbon's feather slope away from it.
+        const dFeather = lead.t > 0 && lead.t < 1 ? -6 * lead.t * (1 - lead.t) / cutFillBankM : 0;
+        const ux = lead.d > 0 ? (point[0] - lead.x) / lead.d : 0, uy = lead.d > 0 ? (point[1] - lead.y) / lead.d : 0;
+        contact.slopeX = Math.round(Math.max(-8, Math.min(8, delta * dFeather * ux)) * BUNKER_SLOPE_SCALE);
+        contact.slopeY = Math.round(Math.max(-8, Math.min(8, delta * dFeather * uy)) * BUNKER_SLOPE_SCALE);
+      }
+    }
+    return contact;
+  };
   for (let t = 0; t < mesh.triangleFeatures.length; t++) {
     const kind = mesh.featureKinds[mesh.triangleFeatures[t]!];
     if (kind === 'bunker' || kind === 'water') continue;
     for (let corner = 0; corner < 3; corner++) {
-      const vertex = t * 3 + corner, point: PointM = [v[vertex * 3]!, v[vertex * 3 + 1]!];
-      let shade = 1;
-      for (const structure of structures) {
-        if (bboxDistance(point, structure.box) > 0 || inRing(point, structure.ring)) continue;
-        const d = boundaryDistance(point, structure.ring);
-        if (d < structureBandM) shade *= 1 - structureShade * (1 - d / structureBandM);
+      const vertex = t * 3 + corner, x = v[vertex * 3]!, y = v[vertex * 3 + 1]!, z = v[vertex * 3 + 2]!;
+      let column = contacts.get(x);
+      if (!column) contacts.set(x, column = new Map());
+      let contact = column.get(y);
+      if (!contact || contact.z !== z) column.set(y, contact = contactAt([x, y], z));
+      if (contact.levelMm !== 0) {
+        attributes.groundLevelMm[vertex] = contact.levelMm;
+        attributes.groundLevelSlope[vertex * 2] = contact.slopeX;
+        attributes.groundLevelSlope[vertex * 2 + 1] = contact.slopeY;
+        levelled++;
       }
-      // Redesign 12 cut/fill (context-contact-v3): the ground under and beside
-      // a ribbon displays at the ribbon's height (the canonical ground at the
-      // nearest centreline point), feathered over the bank. Uphill that is a
-      // cut, downhill a fill; the canonical vertex never moves. A ribbon's
-      // end cap feathers along the line too (no levelled disc past the end),
-      // and where several ribbons reach a vertex (a path meeting a road)
-      // their heights blend by feather weight instead of the nearest one
-      // winning, so a junction is a ramp rather than a step.
-      let weight = 0, targetSum = 0, lead: { feather: number; t: number; d: number; x: number; y: number; delta: number } | null = null;
-      for (const ribbon of ribbons) {
-        if (bboxDistance(point, ribbon.box) > 0) continue;
-        nearestOnPolyline(point, ribbon.line, nearest, ribbon.chunks);
-        const d = nearest.d;
-        if (d < ribbon.halfM + pathShoulderM) shade *= 1 - pathShade * (d <= ribbon.halfM ? 1 : 1 - (d - ribbon.halfM) / pathShoulderM);
-        if (cutFillBankM <= 0 || nearest.across >= ribbon.halfM + cutFillBankM || nearest.beyond >= cutFillBankM) continue;
-        const t = nearest.across <= ribbon.halfM ? 0 : Math.min(1, (nearest.across - ribbon.halfM) / cutFillBankM);
-        const feather = smooth(t) * smooth(Math.min(1, nearest.beyond / cutFillBankM));
-        if (feather <= 0) continue;
-        const target = terrainHeight(mesh, [nearest.x, nearest.y]);
-        if (target == null) continue;
-        weight += feather; targetSum += feather * target;
-        if (!lead || feather > lead.feather) lead = { feather, t, d, x: nearest.x, y: nearest.y, delta: 0 };
-      }
-      if (lead && weight > 0) {
-        const delta = Math.max(-cutFillMaxM, Math.min(cutFillMaxM, targetSum / weight - v[vertex * 3 + 2]!));
-        const offset = delta * lead.feather;
-        if (Math.abs(offset) >= .005) {
-          attributes.groundLevelMm[vertex] = Math.round(offset * 1000);
-          // Gradient of the offset: the leading ribbon's feather slope away from it.
-          const dFeather = lead.t > 0 && lead.t < 1 ? -6 * lead.t * (1 - lead.t) / cutFillBankM : 0;
-          const ux = lead.d > 0 ? (point[0] - lead.x) / lead.d : 0, uy = lead.d > 0 ? (point[1] - lead.y) / lead.d : 0;
-          attributes.groundLevelSlope[vertex * 2] = Math.round(Math.max(-8, Math.min(8, delta * dFeather * ux)) * BUNKER_SLOPE_SCALE);
-          attributes.groundLevelSlope[vertex * 2 + 1] = Math.round(Math.max(-8, Math.min(8, delta * dFeather * uy)) * BUNKER_SLOPE_SCALE);
-          levelled++;
-        }
-      }
-      if (shade >= 1) continue;
+      if (contact.shade >= 1) continue;
       touched++;
-      for (let c = 0; c < 3; c++) attributes.albedo[vertex * 3 + c] = Math.round(attributes.albedo[vertex * 3 + c]! * shade);
+      for (let c = 0; c < 3; c++) attributes.albedo[vertex * 3 + c] = Math.round(attributes.albedo[vertex * 3 + c]! * contact.shade);
     }
   }
   return { structures: structures.length, ribbons: ribbons.length, vertices: touched, levelled };
