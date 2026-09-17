@@ -51,13 +51,17 @@
  * hole (or the compile failed — a hole with a degenerate bounding box), the
  * material never sets `GOLF_V2_ATLAS` and this file's original vertex-colour
  * path is the only path — the fallback the class comment above describes. */
+import { FAIRWAY_DIRECTION_UNIFORMS, fairwayDirectionShaderChunk, fairwayGrainAt, type FairwayDirectionField } from './fairway-direction-field';
 import { sampleFieldAtlas } from './field-atlas';
 import type { SurfaceDistanceLayer } from './surface-distance-field';
 import { SURFACE_CLASS_IDS, type SurfaceClass } from './visual-artifact';
 import type { PackedFieldAtlas } from './visual-artifact-v2';
 import { hexToRgb, MERIDIAN_STYLE, srgbToLinear, type MeridianPaletteKey, type MeridianStyle } from './visual-style';
 
-export const GROUND_SHADER_V2_VERSION = 'meridian-ground-v2-2';
+// Task 12 wiring bumped the shader structure (GOLF_V2_FAIRWAY, below) — a
+// genuine program-shape change (§77 permits this in `customProgramCacheKey`,
+// same as `GOLF_V2_ATLAS` before it), so the version string changes too.
+export const GROUND_SHADER_V2_VERSION = 'meridian-ground-v2-4';
 
 /** Attribute names the component layer must upload on every V2 ground
  * geometry (base and hero patches alike, so the one material fits both). */
@@ -78,11 +82,68 @@ export const GROUND_V2_ATTRIBUTES = Object.freeze({
  * the derived fringe/apron collar); anything else — woods, tee, surround,
  * ground, rough and the context ground-zone classes — has no SDF and always
  * keeps its baked vertex colour, atlas or not (see `atlasTrust` above). */
-export const GROUND_ATLAS_TRACKED_CLASSES: ReadonlySet<SurfaceClass> = new Set<SurfaceClass>(['green', 'bunker', 'fairway', 'water', 'fringe']);
+export const GROUND_ATLAS_TRACKED_CLASSES: ReadonlySet<SurfaceClass> = new Set<SurfaceClass>(['green', 'bunker', 'fairway', 'water', 'fringe', 'surround']);
 /** The field atlas's tracked SDF layers this shader actually samples, and
  * the RGBA channel order `three-world-v2.ts` must pack them into (path is
  * left out: cart paths render as their own hero ribbon, not a ground class). */
 export const GROUND_SDF_ATLAS_LAYERS: readonly SurfaceDistanceLayer[] = ['green', 'bunker', 'fairway', 'water'];
+
+/** Task 12 wiring: the binding contract `three-world-v2.ts` must satisfy for
+ * `groundShaderV2Chunks`'s `GOLF_V2_FAIRWAY` block — fairway-direction-
+ * field.ts's own `fairwayDirectionShaderChunk` GLSL, spliced in unmodified —
+ * to compile and sample correctly. `sampler`/`frame`/`texelM` are re-exports
+ * of that module's own `FAIRWAY_DIRECTION_UNIFORMS` (its GLSL text declares
+ * all three uniforms itself; nothing here re-declares or renames them) so
+ * the two modules can never drift out of agreement about what the compiled
+ * program actually expects — deliberately NOT the shorter `golfV2Fairway` /
+ * `golfV2FairwayFrame` names an earlier version of this task's brief guessed
+ * at, before the field module's real GLSL existed to read.
+ *
+ * `encode` mirrors `buildGroundSdfTexture`'s own DataTexture convention
+ * (three-world-v2.ts) wherever the two agree, and calls out the two places
+ * they must not, because this layer is a direct per-node grid rather than a
+ * pre-resampled atlas:
+ *   - the frame needs the texel-CENTRE half-spacing nudge fairway-direction-
+ *     field.ts's own header spells out (`frame.xy = originM - 0.5*spacingM`,
+ *     not the atlas's own already-nudged `boundsM`), and a separate texelM
+ *     uniform the SDF texture has no equivalent of;
+ *   - an odd `columns` (the metric grid's own `floor(...) + 1`) leaves each
+ *     row's byte length (`columns * 2`, one R+G byte pair per texel) not a
+ *     multiple of 4, so WebGL's default 4-byte row alignment would skew
+ *     every row after the first; the RGBA SDF texture never hits this
+ *     (4 bytes/texel is always aligned) so `buildGroundSdfTexture` has no
+ *     precedent for it. */
+export const FAIRWAY_GRAIN_BINDING = Object.freeze({
+  define: 'GOLF_V2_FAIRWAY',
+  sampler: FAIRWAY_DIRECTION_UNIFORMS.sampler,
+  frame: FAIRWAY_DIRECTION_UNIFORMS.frame,
+  texelM: FAIRWAY_DIRECTION_UNIFORMS.texelM,
+  encode: 'new THREE.DataTexture(fairwayDirectionLayer(field).values, field.columns, field.rows, THREE.RGFormat, '
+    + 'THREE.UnsignedByteType); magFilter = minFilter = THREE.NearestFilter (never Linear: both channels wrap, mod '
+    + 'π / mod 1 — bilinear across the seam is a visible streak, fairway-direction-field.ts file header); '
+    + 'generateMipmaps = false; wrapS = wrapT = THREE.ClampToEdgeWrapping (matches buildGroundSdfTexture); '
+    + 'unpackAlignment = 1 (RG8 rows are not 4-byte aligned when columns is odd — see this constant\'s own '
+    + 'header). frame = vec4(originM[0] - 0.5*spacingM, originM[1] - 0.5*spacingM, 1/(columns*spacingM), '
+    + '1/(rows*spacingM)) — NOT boundsM like golfV2SdfFrame. texelM = vec2(spacingM, spacingM).',
+} as const);
+
+/** CPU mirror of the one GLSL line `groundShaderV2Chunks` emits under
+ * `GOLF_V2_FAIRWAY` to blend the mow-grain into the fragment's albedo —
+ * `diffuseColor.rgb *= mix(1.0, golfFwGrain.x, golfFwWeight)` — where
+ * `golfFwGrain` is fairway-direction-field.ts's own `golfV2FairwayGrain`
+ * (mirrored on the CPU by that module's `fairwayGrainAt`, reused here
+ * unchanged) and `golfFwWeight` is the field atlas's own fairway soft-edge
+ * weight (`classifySurfaceFromAtlas`'s `weight` when `surfaceClass ===
+ * 'fairway'`) — never a duplicate of that edge, per the field module's own
+ * "deliberately out of scope" note on edge fade. `weight` defaults to 1 (the
+ * unfaded value) so a caller with no atlas handy can still probe the raw
+ * on/off factor. Returns exactly 1 at `weight = 0` (no visible effect) and
+ * off-fairway or inactive nodes (`fairwayGrainAt`'s own neutral `albedo: 1`),
+ * regardless of `weight`. */
+export function fairwayGrainFactorAt(field: FairwayDirectionField, x: number, y: number, viewDir: readonly [number, number, number], weight = 1): number {
+  const { albedo } = fairwayGrainAt(field, x, y, viewDir);
+  return 1 + weight * (albedo - 1);
+}
 
 /** Priority a shared vertex resolves to when the triangles touching it carry
  * different classes — copied from display-mesh-v2.ts's private
@@ -152,13 +213,22 @@ function edgeBandsM(style: MeridianStyle): Record<'green' | 'fringe' | 'bunker' 
     bunker: style.bunker.lipBandM, fairway: style.fairwayEdge.fieldM, water: style.greenComplex.edgeFieldM,
   };
 }
+/** Largest of the per-class soft-edge bands above (`edgeBandsM`) — the
+ * margin `three-world-v2.ts` pads around the whole-hole atlas's own bounds
+ * (the hole's tactical/hero-patch bounds, plan §17) so a fragment sitting
+ * right at that boundary still finds its *entire* soft-edge band inside the
+ * atlas, rather than being clamped to whatever the edge texel says
+ * (`ClampToEdgeWrapping`). */
+export function maxGroundEdgeBandM(style: MeridianStyle = MERIDIAN_STYLE): number {
+  return Math.max(...Object.values(edgeBandsM(style)));
+}
 /** Clamped Hermite smoothstep (GLSL's own definition), 0 at/below `lo`, 1 at/above `hi`. */
 function smoothstepEdge(lo: number, hi: number, x: number): number {
   const t = Math.min(1, Math.max(0, (x - lo) / (hi - lo)));
   return t * t * (3 - 2 * t);
 }
 
-export type GroundAtlasClass = 'green' | 'bunker' | 'fairway' | 'water' | 'fringe' | 'rough';
+export type GroundAtlasClass = 'green' | 'bunker' | 'fairway' | 'water' | 'fringe' | 'surround' | 'rough';
 export interface GroundAtlasClassification {
   surfaceClass: GroundAtlasClass;
   /** 0 at the losing edge of `surfaceClass`'s own soft-edge band, 1 once
@@ -192,15 +262,39 @@ export function classifySurfaceFromAtlas(atlas: PackedFieldAtlas, x: number, y: 
   const dFairway = sampleFieldAtlas(atlas, 'fairway', x, y) ?? -Infinity;
   const dWater = sampleFieldAtlas(atlas, 'water', x, y) ?? -Infinity;
   const dFringe = Math.min(dGreen + bands.fringe, -dGreen);
+  // The fairway's first-cut surround is the same kind of derived slab, over
+  // `[-surroundBandM, 0]` of the fairway distance (style `fairwayEdge`).
+  const dSurround = Math.min(dFairway + style.fairwayEdge.surroundBandM, -dFairway);
   const candidates: readonly (readonly [GroundAtlasClass, number, number])[] = [
     ['green', dGreen, bands.green], ['bunker', dBunker, bands.bunker], ['fairway', dFairway, bands.fairway],
-    ['water', dWater, bands.water], ['fringe', dFringe, bands.fringe],
+    ['water', dWater, bands.water], ['fringe', dFringe, bands.fringe], ['surround', dSurround, bands.fairway],
   ];
   let best = candidates[0]!;
   for (const candidate of candidates) if (candidate[1] > best[1]) best = candidate;
   const [surfaceClass, distanceM, bandM] = best;
   const weight = smoothstepEdge(-bandM / 2, bandM / 2, distanceM);
   return weight > 0 ? { surfaceClass, weight } : { surfaceClass: 'rough', weight: 0 };
+}
+
+/** Task 11 follow-up (hero atlases, §17): the whole-hole atlas and every
+ * hero patch atlas each cover their own `boundsM` independently and can
+ * overlap (a hero patch's finer atlas sits "inside" the coarser whole-hole
+ * one that also spans that area). `classifySurfaceFromAtlas` itself still
+ * takes exactly one atlas — the GPU path never needs to choose, since each
+ * mesh is simply drawn with its own atlas bound (three-world-v2.ts's
+ * per-mesh `onBeforeRender`) — but a CPU caller holding several (tests,
+ * debug tooling) wants whichever containing atlas has the smallest texel
+ * (finest), since that is always at least as accurate as a coarser one over
+ * the same point. Returns null when no given atlas contains (x, y). */
+export function pickFinestAtlas(atlases: readonly PackedFieldAtlas[], x: number, y: number): PackedFieldAtlas | null {
+  let best: PackedFieldAtlas | null = null, bestTexelM = Infinity;
+  for (const atlas of atlases) {
+    const [x0, y0, x1, y1] = atlas.boundsM;
+    if (x < x0 || x > x1 || y < y0 || y > y1) continue;
+    const texelM = Math.max((x1 - x0) / atlas.width, (y1 - y0) / atlas.height);
+    if (texelM < bestTexelM) { bestTexelM = texelM; best = atlas; }
+  }
+  return best;
 }
 
 /** A stable per-package world-space offset for the macro/micro turf fields,
@@ -262,6 +356,10 @@ export function groundShaderV2Chunks(style: MeridianStyle = MERIDIAN_STYLE): Gro
   const bands = edgeBandsM(style);
   const atlasColorGlsl = (cls: SurfaceClass) => { const [r, g, b] = classAlbedoLinear(cls, style); return `vec3(${r.toFixed(6)}, ${g.toFixed(6)}, ${b.toFixed(6)})`; };
   const atlasRoughGlsl = (cls: SurfaceClass) => classRoughness(cls, style).toFixed(5);
+  // Task 12 wiring: fairway-direction-field.ts's own self-contained GLSL
+  // (golfV2-prefixed, declares its own sampler/frame/texelM uniforms —
+  // FAIRWAY_GRAIN_BINDING) spliced in behind GOLF_V2_FAIRWAY, below.
+  const fairway = fairwayDirectionShaderChunk(style);
 
   const vertexHead = `attribute float ${surfaceClass};
 attribute float ${visualOffset};
@@ -291,6 +389,7 @@ vec3 golfAtlasClassColor(int golfI) {
   if (golfI == 1) return ${atlasColorGlsl('bunker')};
   if (golfI == 2) return ${atlasColorGlsl('fairway')};
   if (golfI == 3) return ${atlasColorGlsl('water')};
+  if (golfI == 5) return ${atlasColorGlsl('surround')};
   return ${atlasColorGlsl('fringe')};
 }
 float golfAtlasClassRoughness(int golfI) {
@@ -298,8 +397,17 @@ float golfAtlasClassRoughness(int golfI) {
   if (golfI == 1) return ${atlasRoughGlsl('bunker')};
   if (golfI == 2) return ${atlasRoughGlsl('fairway')};
   if (golfI == 3) return ${atlasRoughGlsl('water')};
+  if (golfI == 5) return ${atlasRoughGlsl('surround')};
   return ${atlasRoughGlsl('fringe')};
 }
+#endif
+// Task 12 wiring: the fairway/tee mow-grain function. Declared independently
+// of GOLF_V2_ATLAS (it has its own sampler, not the SDF one) — fragmentColor
+// below only ever calls it under GOLF_V2_FAIRWAY, and only ever blends it in
+// where GOLF_V2_ATLAS also classified the fragment as fairway, but the
+// function/uniform declarations themselves don't need that atlas to exist.
+#ifdef GOLF_V2_FAIRWAY
+${fairway.glsl}
 #endif
 float golfV2ResolvedRoughness;`;
   const fragmentColor = `{
@@ -309,6 +417,27 @@ float golfV2ResolvedRoughness;`;
   bool golfWater = abs(golfClass - ${WATER}) < 0.5;
   bool golfWoods = abs(golfClass - ${WOODS}) < 0.5;
   golfV2ResolvedRoughness = vGolfV2Roughness;
+#ifdef GOLF_V2_FAIRWAY
+  // Sampled unconditionally (never inside an \`if\`): golfV2FairwayGrain uses
+  // fwidth() internally, and derivatives inside non-uniform control flow are
+  // undefined in GLSL ES. Only the blend weight below is conditional.
+  // transformDirectionByInverseViewMatrix is three's own <common> helper
+  // (upper-left 3x3 of viewMatrix is orthogonal, so its transpose is its
+  // inverse — the standard trick, applied by three's own name for it rather
+  // than hand-rolled) turning MeshStandardMaterial's own view-space
+  // vViewPosition into the world-space view vector golfV2FairwayGrain wants.
+  vec2 golfFwGrain = golfV2FairwayGrain(vGolfV2WorldXY, transformDirectionByInverseViewMatrix(vViewPosition, viewMatrix));
+  // No SDF exists for tee (GROUND_ATLAS_TRACKED_CLASSES), so unlike fairway
+  // below this can only ever be resolved from the interpolated per-vertex
+  // class — and that class is unsafe to test directly here: a rough(1)-to-
+  // bunker(7) or rough-to-water(8) ribbon triangle interpolates *through*
+  // 3.0 (tee's own id) at some interior point with no tee anywhere nearby,
+  // the same "spiky chord" hazard GOLF_V2_ATLAS exists to fix for the
+  // classes that have an SDF (file header) — tee just doesn't have one to
+  // fix it with. Left at 0 (no grain) until a tee SDF layer makes this safe;
+  // "and tee if the field covers tee" is deliberately not done here.
+  float golfFwWeight = 0.0;
+#endif
 #ifdef GOLF_V2_ATLAS
   // Every fragment consults the atlas; the baked vertex colour (sand-free
   // for tracked classes, see three-world-v2.ts classAttributes) is the
@@ -321,6 +450,11 @@ float golfV2ResolvedRoughness;`;
     // §27–33 fringe/apron: a slab SDF over [-fringeBandM, 0] of the green
     // distance itself (the same interval trick §36's bunker SDF generalizes).
     float golfDFringe = min(golfDGreen + ${bands.fringe.toFixed(4)}, -golfDGreen);
+    // The fairway's 0.6 m first-cut surround, the same slab trick over the
+    // fairway distance (style fairwayEdge.surroundBandM; the canonical mesh
+    // cuts the identical band as material 3, whose sliver triangles this
+    // atlas-painted band replaces).
+    float golfDSurround = min(golfDFairway + ${style.fairwayEdge.surroundBandM.toFixed(4)}, -golfDFairway);
     // Dominance: whichever tracked boundary this fragment is nearest to
     // being inside (field-atlas.ts's own per-texel rule, made continuous).
     int golfWin = 0; float golfWinD = golfDGreen, golfWinBand = ${bands.green.toFixed(4)};
@@ -328,6 +462,7 @@ float golfV2ResolvedRoughness;`;
     if (golfDFairway > golfWinD) { golfWinD = golfDFairway; golfWin = 2; golfWinBand = ${bands.fairway.toFixed(4)}; }
     if (golfDWaterAtlas > golfWinD) { golfWinD = golfDWaterAtlas; golfWin = 3; golfWinBand = ${bands.water.toFixed(4)}; }
     if (golfDFringe > golfWinD) { golfWinD = golfDFringe; golfWin = 4; golfWinBand = ${bands.fringe.toFixed(4)}; }
+    if (golfDSurround > golfWinD) { golfWinD = golfDSurround; golfWin = 5; golfWinBand = ${bands.fairway.toFixed(4)}; }
     // Soft edge (§28 green edge / §39 bunker lip band / §46 fairway edge
     // SDF): 0 at the losing edge of the winner's own band, 1 once fully
     // inside it, straddling the true SDF boundary symmetrically for
@@ -336,6 +471,11 @@ float golfV2ResolvedRoughness;`;
     // place, so the two are deliberately different shapes over the same idea.
     float golfWeight = clamp(golfWinD / golfWinBand + 0.5, 0.0, 1.0);
     golfWeight = golfWeight * golfWeight * (3.0 - 2.0 * golfWeight);
+#ifdef GOLF_V2_FAIRWAY
+    // Reuse the fairway SDF's own soft edge rather than invent a second one
+    // (fairway-direction-field.ts's own "deliberately out of scope" note).
+    if (golfWin == 2) golfFwWeight = golfWeight;
+#endif
     vec3 golfAtlasCol = golfAtlasClassColor(golfWin);
     // The vertex colour is the background: tracked-class vertices bake the
     // rough albedo when an atlas paints them, so nothing sand- or
@@ -357,6 +497,14 @@ float golfV2ResolvedRoughness;`;
   float golfMicroVisible = 1.0 - smoothstep(${fade0.toFixed(3)}, ${fade1.toFixed(3)}, fwidth(golfMicroPhase));
   golfMicro *= golfMicroVisible * (golfGreen ? ${greenMicro} : 1.0);
   diffuseColor.rgb *= 1.0 + golfMacro * ${macroAmp} * golfTurfWeight + golfMicro * ${microAmp} * golfTurfWeight;
+#ifdef GOLF_V2_FAIRWAY
+  // §43–44 fairway/tee mow-grain, after the class (golfWin) and its soft
+  // edge (golfWeight -> golfFwWeight) are both resolved above: 0 at the
+  // losing edge of the fairway SDF band (no visible effect), 1 once fully
+  // inside it — the same shape classifySurfaceFromAtlas's own weight has.
+  diffuseColor.rgb *= mix(1.0, golfFwGrain.x, golfFwWeight);
+  golfV2ResolvedRoughness = clamp(golfV2ResolvedRoughness + golfFwGrain.y * golfFwWeight, 0.0, 1.0);
+#endif
   // §37–39 render-only bunker bowl/lip shade from the offset alone (no field
   // atlas or analytic gradient reaches the shader yet — Task 9/10 replace this).
   if (golfBunker) {

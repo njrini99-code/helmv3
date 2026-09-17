@@ -7,6 +7,7 @@ import { parseContextLayer } from '../context-layer';
 import { parseGeometryPackage } from '../schema';
 import { parseTerrainMesh, type TerrainMesh } from '../terrain';
 import type { HoleScene } from '../types';
+import { planV2Batches } from '../v2-batching';
 import { parseVisualArtifactV2, serializeVisualArtifactV2, visualArtifactV2ContentHash, type MeridianVisualArtifactV2 } from '../visual-artifact-v2';
 
 const fixtures = new URL('../../../../test/fixtures/course-geometry/', import.meta.url);
@@ -48,20 +49,38 @@ describe('V2 artifact compiler (§105–108; Ruling R6; Task 10)', () => {
     expect(artifact.meshes.heroPatches.filter(p => p.kind === 'bunker').length).toBe(3);
   });
 
-  it('leaves hero field atlases and object sets as the documented, not-yet-filled placeholders', () => {
+  it('leaves hero field atlases and structures as documented placeholders, and fills vegetation/ribbons from Tasks 15/14', () => {
     expect(artifact.fields.heroes).toEqual([]);
     expect(artifact.fields.wholeHole.sdfLayers?.layerNames.length).toBe(5);
-    for (const set of [artifact.objects.vegetation, artifact.objects.structures, artifact.objects.ribbons]) expect(set.count).toBe(0);
+    expect(artifact.objects.structures).toEqual({ basis: 'unfilled_task17', count: 0, contentHash: expect.any(String), items: [] });
     expect(artifact.provenance.highResolutionTerrainSources).toEqual([]); // §8 S2 unavailable for Peek'n Peak.
+    // Task 18b: hole 7 carries both real woods and real cart paths.
+    const vegetation = artifact.objects.vegetation;
+    expect(vegetation.basis).toBe('canonical_woods_and_context');
+    expect(vegetation.count).toBe(vegetation.instances.length);
+    expect(vegetation.count).toBeGreaterThan(0);
+    expect(vegetation.edges.length).toBeGreaterThan(0);
+    expect(vegetation.budget.hero.used).toBeGreaterThan(0);
+    expect(vegetation.budget.hero.used).toBeLessThanOrEqual(vegetation.budget.hero.cap);
+    const ribbons = artifact.objects.ribbons;
+    expect(ribbons.count).toBe(ribbons.runs.length);
+    expect(ribbons.count).toBeGreaterThan(0);
+    expect(ribbons.triangleCount).toBeGreaterThan(0);
+    expect(ribbons.positions.length).toBe(ribbons.vertexCount * 3);
   });
 
-  it('reports a nonzero, self-consistent budget', () => {
+  it('reports a nonzero, self-consistent budget whose draw count matches planV2Batches at the phone tier', () => {
     expect(artifact.budget.downloadBytes).toBeGreaterThan(0);
     expect(artifact.budget.geometryBytes).toBeGreaterThan(0);
     expect(artifact.budget.textureBytesEstimate).toBeGreaterThan(0);
     expect(artifact.budget.gzipBytesEstimate).toBeNull();
     expect(Object.values(artifact.budget.trianglesByClass).reduce((sum, n) => sum + n, 0)).toBeGreaterThan(0);
-    expect(artifact.budget.expectedDrawCalls).toBe(1 + artifact.meshes.heroPatches.length);
+    const plan = planV2Batches({
+      baseLod: artifact.meshes.base.lod0, heroPatches: artifact.meshes.heroPatches, pathRibbon: artifact.objects.ribbons,
+      forestInstances: artifact.objects.vegetation.instances, staticObjects: [],
+    }, 'phone');
+    expect(artifact.budget.expectedDrawCalls).toBe(plan.draws);
+    expect(plan.withinBudget).toBe(true);
   });
 
   it('round-trips serialize -> parse byte-identical', () => {
@@ -80,5 +99,10 @@ describe('V2 artifact compiler (§105–108; Ruling R6; Task 10)', () => {
   it('is deterministic across two compiles', () => {
     const again = compileVisualArtifactV2(scene, mesh);
     expect(again.contentHash).toBe(artifact.contentHash);
+    // contentHash covers meshes/fields only (Ruling R1); vegetation and
+    // ribbons carry their own digest, so a full serialize compares those too.
+    expect(again.objects.vegetation.contentHash).toBe(artifact.objects.vegetation.contentHash);
+    expect(again.objects.ribbons.contentHash).toBe(artifact.objects.ribbons.contentHash);
+    expect(serializeVisualArtifactV2(again)).toBe(serializeVisualArtifactV2(artifact));
   }, 15_000);
 });

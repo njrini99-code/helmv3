@@ -71,7 +71,7 @@ export const MERIDIAN_STYLE = Object.freeze({
   surface: Object.freeze({ roughness: Object.freeze({ green: .78, tee: .88, fairway: .92, fringe: .93, surround: .95, rough: .97, ground: .97,
     // Water keeps a rough, glare-free surface until the V5 static-Fresnel material.
     woods: 1, bunker: .82, water: .68,
-    rough_secondary: .97, rough_outer: .98, native: .98, apron: .92, open_field: .97, wetland: .9, parking: .9, ski_slope: .97, recreation: .95, buffer_grass: .96 }),
+    rough_secondary: .97, rough_outer: .98, native: .98, apron: .92, runoff: .93, open_field: .97, wetland: .9, parking: .9, ski_slope: .97, recreation: .95, buffer_grass: .96 }),
     collarMix: .5, woodsUnderstoryMix: .78 }),
   /** Outside-world §21: rough is a hierarchy by distance from the nearest
    * playing surface, never one flat green. Primary rough within `secondaryM`,
@@ -129,7 +129,11 @@ export const MERIDIAN_STYLE = Object.freeze({
    * lip follows landform: where the ground falls away from the fairway the
    * lip strengthens by up to `terrainBias`, where it rises it softens by as
    * much, reaching full effect at a cross-slope of `terrainSlopeFull`. */
-  fairwayEdge: Object.freeze({ crispNearM: 8, crispShade: .045, softShade: .015, fieldM: .8, terrainBias: .8, terrainSlopeFull: .12 }),
+  /** `surroundBandM`: the illustrative first-cut band outside every fairway
+   * — the same 0.6 m outward surround compile-course-terrain.py cuts into
+   * the canonical mesh (material 3), so the V2 atlas paints it as a slab of
+   * the fairway SDF rather than through the mesh's sliver triangles. */
+  fairwayEdge: Object.freeze({ crispNearM: 8, crispShade: .045, softShade: .015, fieldM: .8, terrainBias: .8, terrainSlopeFull: .12, surroundBandM: .6 }),
   /** §35–41: seven silhouette families over the authored crown atlas. Each
    * family sets proportion, colour and where it may stand: `edge` families
    * only within `edgeBandM` of the woods boundary (what a golfer sees),

@@ -13,8 +13,24 @@
  * candidate — and packing one per patch today would multiply an
  * already phone-budget-reported artifact for no consumer (field-atlas.ts's
  * `compileFieldAtlas` takes any bounds, so a later task fills this by
- * calling it again per patch). `objects` (vegetation/structures/ribbons)
- * stay empty placeholders: Tasks 14, 15 and 17 fill them.
+ * calling it again per patch). `objects.vegetation` and `objects.ribbons`
+ * run Task 15's forest edge compiler and Task 14's path ribbon compiler
+ * over the same scene/mesh/base and pack their real output; `objects.structures`
+ * stays `emptyPackedSet('unfilled_task17')` — Task 17's structure GLB
+ * pipeline has no authored-asset catalog to compile from here yet (Ruling R8:
+ * no Peek'n Peak models are authored, so `buildStructurePlacements` would
+ * skip every context zone regardless).
+ *
+ * `budget.expectedDrawCalls` (§93) comes from `planV2Batches`
+ * (v2-batching.ts) run at the 'phone' tier over this same compile (LOD0
+ * with hero footprints excluded, the merged hero patches, the vegetation
+ * instances and the ribbon). `planV2Batches` is NOT the master plan's Task
+ * 18 (see its own header for the disclaimer) — it is this dispatch's
+ * three-free §93 accounting only; the plan's actual Task 18
+ * (InstancedMesh/BatchedMesh allocation, `static-object-batches.ts`,
+ * measured draw calls) is unimplemented and separate. `structures`
+ * contributes no static-object placements yet (Task 17 unfilled), so the
+ * plan's `staticObjects` input is always `[]` here.
  *
  * `budget.downloadBytes` is measured by serializing the artifact once with
  * `downloadBytes: 0` and taking that string's length — a documented
@@ -36,13 +52,17 @@
 import { assertBunkerPatch, compileHeroPatches, type CompiledBunkerPatch } from './bunker-display-mesh';
 import { assertBaseDisplayLods, compileBaseDisplayLods, weldAndCleanTerrainMesh, type DisplayLodOptions } from './display-mesh-v2';
 import { compileFieldAtlas, fieldAtlasBytes, type FieldAtlasOptions } from './field-atlas';
+import { assertForestEdgeV2, compileForestEdgeV2, FOREST_EDGE_V2_OPTIONS, type ForestEdgeV2Options } from './forest-edge-v2';
 import { assertHeroPatch } from './green-display-mesh';
 import { assertHeroRegionPlan, compileHeroRegions, type HeroRegionOptions } from './hero-patches';
+import { assertPathRibbon, compilePathRibbon, type PathRibbonOptions } from './path-ribbon';
 import type { TerrainMesh } from './terrain';
 import type { HoleScene } from './types';
+import { planV2Batches } from './v2-batching';
 import {
-  assertVisualArtifactV2, emptyPackedSet, MERIDIAN_VISUAL_COMPILER_V2_VERSION, serializeVisualArtifactV2, visualArtifactV2ContentHash,
-  type MeridianVisualArtifactV2, type PackedFieldAtlas, type PackedHeroPatch,
+  assertVisualArtifactV2, emptyPackedSet, emptyRibbonSet, MERIDIAN_VISUAL_COMPILER_V2_VERSION, ribbonSetContentHash, serializeVisualArtifactV2,
+  vegetationSetContentHash, visualArtifactV2ContentHash,
+  type MeridianVisualArtifactV2, type PackedFieldAtlas, type PackedHeroPatch, type PackedRibbonSet, type PackedVegetationSet,
 } from './visual-artifact-v2';
 import { MERIDIAN_CODES, SURFACE_CLASS_IDS } from './visual-artifact';
 import { MERIDIAN_STYLE, styleHash, type MeridianStyle } from './visual-style';
@@ -55,6 +75,13 @@ export interface CompileVisualArtifactV2Options {
   displayLods: Partial<DisplayLodOptions>;
   /** Whole-hole field atlas options (field-atlas.ts). */
   fieldAtlas: Partial<FieldAtlasOptions>;
+  /** Forest edge V2 options (forest-edge-v2.ts); merged onto
+   * `FOREST_EDGE_V2_OPTIONS` once and reused for both `compileForestEdgeV2`
+   * and `assertForestEdgeV2` — the assert takes the full options type, not a
+   * Partial, so the two calls must agree on what they were compiled with. */
+  forestEdge: Partial<ForestEdgeV2Options>;
+  /** Cart-path ribbon options (path-ribbon.ts). */
+  pathRibbon: Partial<PathRibbonOptions>;
   /** Fallback margin (m) around the mesh's own vertices when `mesh.renderProfile` carries no context bounds. */
   contextMarginM: number;
 }
@@ -77,8 +104,17 @@ type BaseLods = MeridianVisualArtifactV2['meshes']['base'];
  * every hero footprint (the buffer's base-only prefix, `heroRanges[0].start`)
  * plus each compiled hero patch's own triangles, by surface class —
  * never the LOD0 buffer's hero-footprint duplicate tail (the no-patch
- * fallback, unused whenever a patch exists). */
-function budgetOf(lods: BaseLods, heroPatches: readonly PackedHeroPatch[], compiledPatches: readonly CompiledBunkerPatch[], wholeHole: PackedFieldAtlas): MeridianVisualArtifactV2['budget'] {
+ * fallback, unused whenever a patch exists). `expectedDrawCalls` is
+ * `planV2Batches`'s own count at the phone tier (§93; v2-batching.ts — not
+ * the master plan's Task 18, see that module's header): one draw for LOD0
+ * with hero footprints excluded, hero patches merged into one
+ * ground-material draw, one draw for the whole-hole path ribbon, and one
+ * instanced draw per forest kind/variant actually present — never a
+ * hand-counted approximation that could drift from the real planner. */
+function budgetOf(
+  lods: BaseLods, heroPatches: readonly PackedHeroPatch[], compiledPatches: readonly CompiledBunkerPatch[], wholeHole: PackedFieldAtlas,
+  vegetation: PackedVegetationSet, ribbons: PackedRibbonSet,
+): MeridianVisualArtifactV2['budget'] {
   const trianglesByClass: Record<string, number> = {};
   const bump = (id: number) => { const name = SURFACE_CLASS_IDS[id] ?? 'ground'; trianglesByClass[name] = (trianglesByClass[name] ?? 0) + 1; };
   const lod0 = lods.lod0, prefix = lod0.heroRanges?.[0]?.start ?? lod0.triangleCount;
@@ -86,10 +122,10 @@ function budgetOf(lods: BaseLods, heroPatches: readonly PackedHeroPatch[], compi
   for (const compiled of compiledPatches) for (const cls of compiled.triangleClass) bump(cls);
   const meshBytes = (['lod0', 'lod1', 'lod2'] as const).reduce((sum, name) => { const m = lods[name]; return sum + m.positions.byteLength + m.indices.byteLength + m.triangleFeatures.byteLength + m.surfaceClass.byteLength; }, 0)
     + heroPatches.reduce((sum, p) => sum + p.positions.byteLength + p.indices.byteLength + p.canonicalHeightReference.byteLength + p.visualOffsetMm.byteLength, 0);
+  const plan = planV2Batches({ baseLod: lod0, heroPatches, pathRibbon: ribbons, forestInstances: vegetation.instances, staticObjects: [] }, 'phone');
   return {
     trianglesByClass, geometryBytes: meshBytes, textureBytesEstimate: fieldAtlasBytes(wholeHole),
-    // One draw for the base LOD in use, one more per hero patch (each its own indexed mesh).
-    expectedDrawCalls: 1 + heroPatches.length, downloadBytes: 0, gzipBytesEstimate: null,
+    expectedDrawCalls: plan.draws, downloadBytes: 0, gzipBytesEstimate: null,
   };
 }
 
@@ -118,15 +154,29 @@ export function compileVisualArtifactV2(scene: HoleScene, mesh: TerrainMesh, opt
   const wholeHole = compileFieldAtlas(scene, mesh, boundsM, options.fieldAtlas);
   const fields: MeridianVisualArtifactV2['fields'] = { wholeHole, heroes: [] };
 
-  const objects: MeridianVisualArtifactV2['objects'] = {
-    vegetation: emptyPackedSet('unfilled_task15'), structures: emptyPackedSet('unfilled_task17'), ribbons: emptyPackedSet('unfilled_task14'),
+  // Forest edge (Task 15) and path ribbon (Task 14) are both already-committed
+  // compilers; wire their real output into the artifact rather than leaving
+  // vegetation/ribbons as placeholders. `assertForestEdgeV2` takes the full
+  // options type, so the merged options are computed once and reused for
+  // both calls (a Partial override must be checked against itself).
+  const forestOptions: ForestEdgeV2Options = { ...FOREST_EDGE_V2_OPTIONS, ...options.forestEdge };
+  const forestEdge = compileForestEdgeV2(scene, mesh, forestOptions);
+  assertForestEdgeV2(forestEdge, scene, forestOptions);
+  const vegetation: PackedVegetationSet = {
+    basis: forestEdge.basis, count: forestEdge.instances.length, contentHash: vegetationSetContentHash(forestEdge),
+    instances: forestEdge.instances, edges: forestEdge.edges, understory: forestEdge.understory, budget: forestEdge.budget,
   };
+  const ribbon = compilePathRibbon(scene, mesh, base, options.pathRibbon);
+  if (ribbon) assertPathRibbon(ribbon, options.pathRibbon);
+  const ribbons: PackedRibbonSet = ribbon ? { count: ribbon.runs.length, contentHash: ribbonSetContentHash(ribbon), ...ribbon } : emptyRibbonSet();
+
+  const objects: MeridianVisualArtifactV2['objects'] = { vegetation, structures: emptyPackedSet('unfilled_task17'), ribbons };
   const provenance: MeridianVisualArtifactV2['provenance'] = {
     canonicalBasis: 'source_backed', displayBasis: 'derived_visual', highResolutionTerrainSources: [],
     sourceResolutionM: mesh.source.nativeResolutionM, displayGridSpacingM: mesh.metricGrid?.spacingM ?? mesh.source.nativeResolutionM,
   };
   const meshes: MeridianVisualArtifactV2['meshes'] = { base: { lod0: lods.lod0, lod1: lods.lod1, lod2: lods.lod2 }, heroPatches };
-  const budget = budgetOf(meshes.base, heroPatches, compiledPatches, wholeHole);
+  const budget = budgetOf(meshes.base, heroPatches, compiledPatches, wholeHole, vegetation, ribbons);
 
   const header = {
     schemaVersion: 2 as const, kind: 'meridian_visual_artifact_v2' as const, compilerVersion: MERIDIAN_VISUAL_COMPILER_V2_VERSION,

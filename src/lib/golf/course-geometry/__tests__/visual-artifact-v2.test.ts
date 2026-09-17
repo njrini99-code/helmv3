@@ -4,7 +4,7 @@ import { pilotPackage, pilotScene } from '@/test/fixtures/course-geometry/pilot'
 import { parseTerrainMesh } from '../terrain';
 import { MERIDIAN_CODES, SURFACE_CLASS_IDS } from '../visual-artifact';
 import {
-  assertVisualArtifactV2, emptyPackedSet, HERO_PATCH_BASES, HERO_PATCH_KINDS, MERIDIAN_VISUAL_COMPILER_V2_VERSION, parseVisualArtifactV2,
+  assertVisualArtifactV2, emptyPackedSet, emptyRibbonSet, emptyVegetationSet, HERO_PATCH_BASES, HERO_PATCH_KINDS, MERIDIAN_VISUAL_COMPILER_V2_VERSION, parseVisualArtifactV2,
   serializeVisualArtifactV2, visualArtifactV2CachePath, visualArtifactV2ContentHash,
   type MeridianVisualArtifactV2, type PackedDisplayMesh, type PackedFieldAtlas, type PackedHeroPatch,
 } from '../visual-artifact-v2';
@@ -49,7 +49,7 @@ function unhashed(overrides: Partial<Unhashed> = {}): Unhashed {
     canonicalPackageHash: scene.packageHash, terrainHash: mesh.contentHash, physicalHoleKey: 'cacapon-07', contextLayerHash: null, styleHash: MERIDIAN_STYLE_HASH,
     meshes: { base: { lod0: displayMesh(2), lod1: displayMesh(2, 1), lod2: displayMesh(1) }, heroPatches: [heroPatch('green-complex-7')] },
     fields: { wholeHole: fieldAtlas(), heroes: [{ patchId: 'green-complex-7', atlas: fieldAtlas(1, 1, ['green']) }] },
-    objects: { vegetation: emptyPackedSet('not_compiled'), structures: emptyPackedSet('not_compiled'), ribbons: emptyPackedSet('not_compiled') },
+    objects: { vegetation: emptyVegetationSet(), structures: emptyPackedSet('not_compiled'), ribbons: emptyRibbonSet() },
     provenance: { canonicalBasis: 'source_backed', displayBasis: 'derived_visual', highResolutionTerrainSources: [], sourceResolutionM: 1, displayGridSpacingM: 2 },
     budget: { trianglesByClass: { base_lod0: 2, hero_green_complex: 2 }, geometryBytes: 640, textureBytesEstimate: 96, expectedDrawCalls: 3, downloadBytes: 2048, gzipBytesEstimate: null },
     ...overrides,

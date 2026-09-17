@@ -38,8 +38,20 @@
  * middle quad is a degenerate (bowtie) quadrilateral contributing exactly
  * one real triangle, found by trying both of its diagonals. A defensive
  * positive-area check still gates every emitted triangle
- * (`droppedTriangles`); it should read zero for these joins, and the tests
- * assert that rather than trusting the filter to hide a fold.
+ * (`droppedTriangles`) rather than trusting the construction to hide a
+ * fold: single-corner joins (mitre and bevel alike) are proven fold-free
+ * and the synthetic tests assert `droppedTriangles === 0` for them. Every
+ * straight-run quad between two rows also gets a second chance at its
+ * *other* diagonal before being dropped (only one diagonal of a simple
+ * concave quad lies inside it; trying both is what turns a spurious drop
+ * into a correct pair of triangles). A residual can still arise when
+ * several individually-modest turns (each <= `bevelTurnRad`) chain
+ * together, on a wide cross-section, faster than the arc-length between
+ * them allows — the offset's concave side then overtakes the previous
+ * row and the quad self-intersects (a true bowtie: both diagonals fail).
+ * No per-corner join or local retriangulation can resolve that; those
+ * triangles are dropped rather than emitted inverted, which is what keeps
+ * `assertPathRibbon`'s winding check meaningful instead of vacuous.
  *
  * Heights come from the V2 display surface `base` (a uniform-grid triangle
  * locator + barycentric interpolation), falling back to
@@ -59,8 +71,24 @@ import { sampleMetricTerrain, type MetricTerrainGrid } from './terrain-source';
 import type { HoleScene, PointM } from './types';
 
 export interface PathRibbonOptions {
-  /** Longest arc-length step between resampled rows. */
+  /** Longest arc-length step the adaptive resampler may use on a straight,
+   * flat run — an upper bound it only reaches once every finer candidate
+   * step already passes `chordToleranceM`/`heightToleranceM` (§11 budget
+   * follow-up: curvature-adaptive resampling, Task 14). */
   maxSegmentM: number;
+  /** Shortest arc-length step the adaptive resampler will refine down to,
+   * and the spacing its probe points use when testing a candidate step
+   * against the tolerances below. This is "the current 1 m result" those
+   * tolerances are defined relative to, so it stays 1 by default. */
+  minSegmentM: number;
+  /** Max planar drift, in metres, a candidate step's straight row-to-row
+   * chord may have from the true centreline (probed every `minSegmentM`)
+   * before the resampler must halve the step and try again. */
+  chordToleranceM: number;
+  /** Max drift, in metres, a candidate step's linear inter-row height
+   * interpolation may have from the sampled surface (also probed every
+   * `minSegmentM`) before the resampler must halve the step and try again. */
+  heightToleranceM: number;
   /** A source vertex turning by more than this always gets its own row. */
   turnSampleRad: number;
   /** Above this turn a corner bevels instead of mitring. */
@@ -69,9 +97,14 @@ export interface PathRibbonOptions {
   featherM: number;
   /** Render-only height added above the sampled surface (constraint 5). */
   visualLiftM: number;
+  /** §11 "path/water hero edges" per-hole ribbon triangle budget:
+   * `assertPathRibbon`'s default hard ceiling (its own options can raise it). */
+  triangleBudget: number;
 }
 export const PATH_RIBBON_OPTIONS: Readonly<PathRibbonOptions> = Object.freeze({
-  maxSegmentM: 1, turnSampleRad: (10 * Math.PI) / 180, bevelTurnRad: (60 * Math.PI) / 180, featherM: 0.25, visualLiftM: 0.015,
+  maxSegmentM: 32, minSegmentM: 1, chordToleranceM: 0.05, heightToleranceM: 0.03,
+  turnSampleRad: (10 * Math.PI) / 180, bevelTurnRad: (60 * Math.PI) / 180, featherM: 0.25, visualLiftM: 0.015,
+  triangleBudget: 5000,
 });
 
 export interface PathRibbonRun { zoneId: string; start: number; count: number }
@@ -91,7 +124,9 @@ export interface PathRibbon {
   boundsM: [number, number, number, number];
   /** Vertices the triangle locator could not answer directly (fell back to the metric grid or the nearest display vertex). */
   surfaceFallbacks: number;
-  /** Triangles a defensive area/winding check rejected; should be 0 (see module doc). */
+  /** Triangles a defensive area/winding check rejected: 0 for any single
+   * corner join (synthetic tests assert this); a small positive count can
+   * still arise from chained turns on a wide cross-section (see module doc). */
   droppedTriangles: number;
 }
 
@@ -171,23 +206,33 @@ class SurfaceLocator {
     const wa = ((by - cy) * (x - cx) + (cx - bx) * (y - cy)) / det, wb = ((cy - ay) * (x - cx) + (ax - cx) * (y - cy)) / det, wc = 1 - wa - wb, eps = 1e-4;
     return wa >= -eps && wb >= -eps && wc >= -eps ? wa * az + wb * bz + wc * cz : null;
   }
-  height(x: number, y: number): number {
+  private locate(x: number, y: number): { z: number; fellBack: boolean } {
     const c = this.column(x), r = this.row(y), maxRing = 8;
     for (let ring = 0; ring <= maxRing; ring++) {
       for (let dr = -ring; dr <= ring; dr++) for (let dc = -ring; dc <= ring; dc++) {
         if (Math.max(Math.abs(dr), Math.abs(dc)) !== ring) continue;
         const rr = r + dr, cc = c + dc;
         if (rr < 0 || cc < 0 || rr >= this.rows || cc >= this.columns) continue;
-        for (const t of this.cells.get(rr * this.columns + cc) ?? []) { const h = this.barycentricHeight(x, y, t); if (h != null) return h; }
+        for (const t of this.cells.get(rr * this.columns + cc) ?? []) { const h = this.barycentricHeight(x, y, t); if (h != null) return { z: h, fellBack: false }; }
       }
     }
-    this.fallbackCount++;
-    if (this.grid) { const h = sampleMetricTerrain(this.grid, [x, y]); if (h != null) return h; }
+    if (this.grid) { const h = sampleMetricTerrain(this.grid, [x, y]); if (h != null) return { z: h, fellBack: true }; }
     let best = Infinity, bestZ = 0;
     const p = this.mesh.positions;
     for (let v = 0; v < this.mesh.vertexCount; v++) { const d = Math.hypot(p[v * 3]! - x, p[v * 3 + 1]! - y); if (d < best) { best = d; bestZ = p[v * 3 + 2]!; } }
-    return bestZ;
+    return { z: bestZ, fellBack: true };
   }
+  height(x: number, y: number): number {
+    const { z, fellBack } = this.locate(x, y);
+    if (fellBack) this.fallbackCount++;
+    return z;
+  }
+  /** Same lookup as `height`, for the adaptive resampler to probe candidate
+   * rows that may never be emitted — must not perturb `surfaceFallbacks`,
+   * which counts only actual output vertices, and must expose `fellBack` so
+   * a probe outside the triangulated footprint can be treated as untrusted
+   * rather than silently compared against the display surface. */
+  peek(x: number, y: number): { z: number; fellBack: boolean } { return this.locate(x, y); }
   get surfaceFallbacks(): number { return this.fallbackCount; }
 }
 
@@ -199,8 +244,7 @@ const MIN_SIGNED_AREA2_M2 = 2e-4; // 2x the 1e-4 m^2 floor `assertPathRibbon` ga
 /** Resample one clipped centreline piece into a batched cross-section strip
  * (module doc: mitre <= bevelTurnRad, one-sided bevel above it). XY only;
  * height is sampled by the caller once every zone's strips are assembled. */
-function buildPolylineStrip(points: readonly PointM[], halfWidthM: number, opts: PathRibbonOptions, debugZoneId = ''): Strip {
-  const DEBUG = process.env.PATH_RIBBON_DEBUG === '1';
+function buildPolylineStrip(points: readonly PointM[], halfWidthM: number, opts: PathRibbonOptions, heightAt: (x: number, y: number) => { z: number; fellBack: boolean }): Strip {
   const feather = opts.featherM, outer = halfWidthM + feather;
   const xy: number[] = [], sArr: number[] = [], tArr: number[] = [], edgeArr: number[] = [], indices: number[] = [];
   let dropped = 0;
@@ -212,27 +256,43 @@ function buildPolylineStrip(points: readonly PointM[], halfWidthM: number, opts:
     const ax = xy[a * 2]!, ay = xy[a * 2 + 1]!, bx = xy[b * 2]!, by = xy[b * 2 + 1]!, cx = xy[c * 2]!, cy = xy[c * 2 + 1]!;
     return (bx - ax) * (cy - ay) - (cx - ax) * (by - ay);
   };
-  // Emitted triangles are always meant to be positive (module doc); this is
-  // the one hard gate, not a mask — real problems show up as `dropped`.
-  const dbg = (tag: string, a: number, b: number, c: number): void => {
-    if (!DEBUG) return;
-    console.error('DROP', debugZoneId, tag, 'area2=', area2(a, b, c), [xy[a * 2], xy[a * 2 + 1]], [xy[b * 2], xy[b * 2 + 1]], [xy[c * 2], xy[c * 2 + 1]]);
-  };
-  const emit = (a: number, b: number, c: number, tag = ''): void => { if (area2(a, b, c) > MIN_SIGNED_AREA2_M2) indices.push(a, b, c); else { dropped++; dbg(tag, a, b, c); } };
   // The bevel's middle triangle (shared concave point + the two differing
   // inner points) is the one place either winding is legitimately correct
   // depending on turn direction (module doc); try both before counting it lost.
-  const emitEither = (a: number, b: number, c: number, tag = ''): void => {
-    if (area2(a, b, c) > MIN_SIGNED_AREA2_M2) indices.push(a, b, c); else if (area2(a, c, b) > MIN_SIGNED_AREA2_M2) indices.push(a, c, b); else { dropped++; dbg(tag, a, b, c); }
+  const emitEither = (a: number, b: number, c: number): void => {
+    if (area2(a, b, c) > MIN_SIGNED_AREA2_M2) indices.push(a, b, c); else if (area2(a, c, b) > MIN_SIGNED_AREA2_M2) indices.push(a, c, b); else dropped++;
   };
   const mitreRow = (s: number, x: number, y: number, cx: number, cy: number): Cols => [push(x, y, cx, cy, outer, s), push(x, y, cx, cy, halfWidthM, s), push(x, y, cx, cy, -halfWidthM, s), push(x, y, cx, cy, -outer, s)];
-  const connect = (a: Cols, b: Cols, tag = 'connect'): void => { for (let k = 0; k < 3; k++) { emit(a[k]!, a[k + 1]!, b[k + 1]!, tag); emit(a[k]!, b[k + 1]!, b[k]!, tag); } };
+  // A run of individually-modest turns (each well under bevelTurnRad) can still
+  // chain together, on a wide cross-section, faster than the arc-length between
+  // them — the offset's concave side then advances past where the previous row
+  // already put it, and the quad a0,a1,b1,b0 (boundary order) turns concave at
+  // one of its corners. The fixed diagonal (a0,b1) used to split every quad
+  // still works for the ordinary case (checked first, so nothing changes when
+  // it already holds) but produces one negative-area triangle there; the
+  // quad's *other* diagonal (a1,b0) is then the one that lies inside it and
+  // splits it correctly (a fact of simple, non-self-intersecting polygons).
+  // Only a true self-crossing (bowtie) quad — the offset radius exceeding the
+  // centreline's local curvature radius over several corners at once, seen on
+  // real OSM-digitised roads/paths — fails both and is still dropped.
+  const quad = (a0: number, a1: number, b0: number, b1: number): void => {
+    if (area2(a0, a1, b1) > MIN_SIGNED_AREA2_M2 && area2(a0, b1, b0) > MIN_SIGNED_AREA2_M2) { indices.push(a0, a1, b1, a0, b1, b0); return; }
+    if (area2(a0, a1, b0) > MIN_SIGNED_AREA2_M2 && area2(a1, b1, b0) > MIN_SIGNED_AREA2_M2) { indices.push(a0, a1, b0, a1, b1, b0); return; }
+    dropped += 2;
+  };
+  const connect = (a: Cols, b: Cols): void => { for (let k = 0; k < 3; k++) quad(a[k]!, a[k + 1]!, b[k]!, b[k + 1]!); };
 
   const tangents: [number, number][] = [];
   for (let i = 1; i < points.length; i++) tangents.push(norm(points[i]![0] - points[i - 1]![0], points[i]![1] - points[i - 1]![1]));
   const cumulative = [0];
   for (let i = 1; i < points.length; i++) cumulative.push(cumulative[i - 1]! + Math.hypot(points[i]![0] - points[i - 1]![0], points[i]![1] - points[i - 1]![1]));
   const total = cumulative.at(-1)!;
+  const positionAt = (s: number): PointM => {
+    let i = 1; while (i < cumulative.length - 1 && cumulative[i]! < s) i++;
+    const s0 = cumulative[i - 1]!, s1 = cumulative[i]!, f = s1 > s0 ? (s - s0) / (s1 - s0) : 0, a = points[i - 1]!, b = points[i]!;
+    return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f];
+  };
+  const tangentAt = (s: number): [number, number] => { let i = 1; while (i < cumulative.length - 1 && cumulative[i]! < s) i++; return tangents[i - 1]!; };
   // Mandatory rows: both ends, plus any interior vertex turning past turnSampleRad.
   const breakVertex = new Map<number, number>([[0, 0], [total, points.length - 1]]);
   for (let i = 1; i < points.length - 1; i++) {
@@ -240,18 +300,111 @@ function buildPolylineStrip(points: readonly PointM[], halfWidthM: number, opts:
     if (Math.acos(Math.min(1, Math.max(-1, inX * outX + inY * outY))) > opts.turnSampleRad) breakVertex.set(cumulative[i]!, i);
   }
   const breaks = Array.from(breakVertex.keys()).sort((a, b) => a - b);
+
+  // Curvature-adaptive row spacing between two mandatory breaks (§11 budget
+  // follow-up, Task 14): a greedy forward walk, not a uniform subdivision —
+  // an interval-wide uniform step means one tight spot anywhere in a long
+  // interval halves *every* row in it, which measured out to throwing away
+  // most of the budget for no fidelity gain (raising maxSegmentM alone
+  // plateaued around 14k triangles on hole 7 no matter how high, because
+  // the interval-uniform rule re-refined stretches that were already fine).
+  // From the last accepted row at `s`, `stepFrom` finds the largest next row
+  // `s' <= min(s + maxSegmentM, b)` whose straight chord and linear height
+  // interpolation still track the true centreline/surface within
+  // chordToleranceM/heightToleranceM — probed at every original vertex in
+  // range (the only place the piecewise-linear centreline can actually bend
+  // between two mandatory breaks) and every minSegmentM along it (matching
+  // "the current 1 m result" those tolerances are defined against) — or
+  // `s + minSegmentM` unconditionally, the floor below which the resampler
+  // defers to that same reference rather than second-guessing it. A
+  // dead-straight, flat run walks in maxSegmentM hops; a bend or a slope
+  // change shortens the hop on its own, same as the historical fixed step
+  // did everywhere, but only exactly where it is needed.
+  const EPS_M = 1e-9;
+  const probeArcLengths = (s0: number, s1: number, interior: readonly number[]): number[] => {
+    const probes: number[] = [];
+    for (const c of interior) if (c > s0 + EPS_M && c < s1 - EPS_M) probes.push(c);
+    const steps = Math.max(1, Math.round((s1 - s0) / opts.minSegmentM));
+    for (let k = 1; k < steps; k++) probes.push(s0 + ((s1 - s0) * k) / steps);
+    return probes;
+  };
+  // A candidate row's cross-section perpendicular rotates with the local
+  // tangent (`tangentAt`, same as every ordinary emitted row — mitre/bevel
+  // corners are mandatory breaks and never fall inside a candidate span),
+  // so a gradual bend the centreline's own chord deviation barely notices
+  // can still swing the *outer* rail — the widest, most visible edge —
+  // further than chordToleranceM: a small angle times the outer radius, not
+  // times the much smaller sagitta a centreline-only check would see. The
+  // two outer rails bound every inner column's *rotation* term (a smaller
+  // offset on the same rotating perpendicular swings less), but not its
+  // height: `±halfWidthM` sits at its own (x, y), and cross-sloped terrain
+  // can vary differently there than at `±outer` — so all four emitted
+  // columns are checked, not just the widest two.
+  const railAt = (s: number, lateral: number): PointM => {
+    const [x, y] = positionAt(s), [cx, cy] = perp(...tangentAt(s));
+    return [x + cx * lateral, y + cy * lateral];
+  };
+  const railLaterals: readonly number[] = [0, outer, -outer, halfWidthM, -halfWidthM];
+  // A probe that fell back to the metric grid or nearest vertex (outside the
+  // triangulated footprint) is not comparable to the display-surface height
+  // the tolerance is meant to bound — a different source can legitimately
+  // differ by far more than heightToleranceM without the surface itself
+  // changing quickly. Treat any fallback as an automatic fail so the budget
+  // is never bought with that noise; it only ever forces *more* refinement,
+  // matching what `compilePathRibbon` already does at 1 m today.
+  const segmentOk = (s0: number, s1: number, interior: readonly number[]): boolean => {
+    for (const lateral of railLaterals) {
+      const p0 = railAt(s0, lateral), p1 = railAt(s1, lateral);
+      const dx = p1[0] - p0[0], dy = p1[1] - p0[1], len2 = Math.max(1e-12, dx * dx + dy * dy);
+      const height0 = heightAt(p0[0], p0[1]), height1 = heightAt(p1[0], p1[1]);
+      if (height0.fellBack || height1.fellBack) return false;
+      const h0 = height0.z, h1 = height1.z;
+      for (const s of probeArcLengths(s0, s1, interior)) {
+        const [px, py] = railAt(s, lateral);
+        const t = ((px - p0[0]) * dx + (py - p0[1]) * dy) / len2;
+        if (Math.hypot(px - (p0[0] + t * dx), py - (p0[1] + t * dy)) > opts.chordToleranceM) return false;
+        const probeHeight = heightAt(px, py);
+        if (probeHeight.fellBack || Math.abs(probeHeight.z - (h0 + (h1 - h0) * t)) > opts.heightToleranceM) return false;
+      }
+    }
+    return true;
+  };
+  // Largest next row from `s`: exponential probing outward (minSegmentM,
+  // 2x, 4x, ...) to bracket the failure point cheaply, then a fixed 6-step
+  // bisection between the last accepted probe and the first failed one — a
+  // bounded, deterministic search, not a fixed-precision one. The result is
+  // then snapped down to a whole minSegmentM multiple from `s` (re-verified,
+  // falling back to the last exponentially-probed point if the snap itself
+  // somehow fails) so the row grid stays legible and stable against tiny
+  // numerical jitter in the surface sample, rather than landing on an
+  // arbitrary bisected fraction of a metre.
+  const stepFrom = (s: number, b: number, interior: readonly number[]): number => {
+    const cap = Math.min(s + opts.maxSegmentM, b);
+    if (cap - s <= opts.minSegmentM + EPS_M) return cap;
+    let lastOk = s + opts.minSegmentM, mult = 2, probe = Math.min(s + opts.minSegmentM * mult, cap);
+    for (;;) {
+      if (!segmentOk(s, probe, interior)) break;
+      lastOk = probe;
+      if (probe >= cap - EPS_M) return cap;
+      mult *= 2;
+      probe = Math.min(s + opts.minSegmentM * mult, cap);
+    }
+    let lo = lastOk, hi = probe;
+    for (let i = 0; i < 6; i++) {
+      const mid = (lo + hi) / 2;
+      if (segmentOk(s, mid, interior)) lo = mid; else hi = mid;
+    }
+    const snappedSteps = Math.max(1, Math.floor((lo - s + EPS_M) / opts.minSegmentM));
+    const snapped = Math.min(cap, s + snappedSteps * opts.minSegmentM);
+    return segmentOk(s, snapped, interior) ? snapped : lastOk;
+  };
   const sampleS: number[] = [];
   for (let i = 0; i < breaks.length - 1; i++) {
-    const a = breaks[i]!, b = breaks[i + 1]!, n = Math.max(1, Math.ceil((b - a) / opts.maxSegmentM));
-    for (let k = 0; k < n; k++) sampleS.push(a + ((b - a) * k) / n);
+    const a = breaks[i]!, b = breaks[i + 1]!, ia = breakVertex.get(a)!, ib = breakVertex.get(b)!;
+    const interior = cumulative.slice(ia + 1, ib);
+    for (let s = a; s < b - EPS_M; s = stepFrom(s, b, interior)) sampleS.push(s);
   }
   sampleS.push(total);
-  const positionAt = (s: number): PointM => {
-    let i = 1; while (i < cumulative.length - 1 && cumulative[i]! < s) i++;
-    const s0 = cumulative[i - 1]!, s1 = cumulative[i]!, f = s1 > s0 ? (s - s0) / (s1 - s0) : 0, a = points[i - 1]!, b = points[i]!;
-    return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f];
-  };
-  const tangentAt = (s: number): [number, number] => { let i = 1; while (i < cumulative.length - 1 && cumulative[i]! < s) i++; return tangents[i - 1]!; };
 
   let previous: Cols | null = null;
   for (const s of sampleS) {
@@ -260,7 +413,7 @@ function buildPolylineStrip(points: readonly PointM[], halfWidthM: number, opts:
     if (vertex == null || vertex === 0 || vertex === points.length - 1) {
       const [cx, cy] = perp(...tangentAt(s));
       const row = mitreRow(s, x, y, cx, cy);
-      if (previous) connect(previous, row, 'uniform');
+      if (previous) connect(previous, row);
       previous = row;
       continue;
     }
@@ -270,7 +423,7 @@ function buildPolylineStrip(points: readonly PointM[], halfWidthM: number, opts:
     if (turn <= opts.bevelTurnRad) {
       const [bx, by] = norm(cInX + cOutX, cInY + cOutY), scale = 1 / Math.cos(turn / 2);
       const row = mitreRow(s, x, y, bx * scale, by * scale);
-      if (previous) connect(previous, row, 'mitre');
+      if (previous) connect(previous, row);
       previous = row;
       continue;
     }
@@ -287,9 +440,9 @@ function buildPolylineStrip(points: readonly PointM[], halfWidthM: number, opts:
     // against straight/90-degree/hairpin synthetic cases — see the test).
     const leftIsConcave = cInX * cOutY - cInY * cOutX > 0;
     const rowIn = mitreRow(s, x, y, cInX, cInY), rowOut = mitreRow(s, x, y, cOutX, cOutY);
-    if (previous) connect(previous, rowIn, 'pre-bevel');
-    if (leftIsConcave) { emitEither(rowIn[1]!, rowIn[2]!, rowOut[2]!, 'bevel-mid'); emit(rowIn[2]!, rowIn[3]!, rowOut[3]!, 'bevel-convex-a'); emit(rowIn[2]!, rowOut[3]!, rowOut[2]!, 'bevel-convex-b'); }
-    else { emit(rowIn[0]!, rowIn[1]!, rowOut[1]!, 'bevel-convex-a'); emit(rowIn[0]!, rowOut[1]!, rowOut[0]!, 'bevel-convex-b'); emitEither(rowIn[2]!, rowIn[1]!, rowOut[1]!, 'bevel-mid'); }
+    if (previous) connect(previous, rowIn);
+    if (leftIsConcave) { emitEither(rowIn[1]!, rowIn[2]!, rowOut[2]!); quad(rowIn[2]!, rowIn[3]!, rowOut[2]!, rowOut[3]!); }
+    else { quad(rowIn[0]!, rowIn[1]!, rowOut[0]!, rowOut[1]!); emitEither(rowIn[2]!, rowIn[1]!, rowOut[1]!); }
     previous = rowOut;
   }
   return { xy, s: sArr, t: tArr, edge: edgeArr, indices, dropped };
@@ -312,7 +465,7 @@ export function compilePathRibbon(scene: HoleScene, mesh: TerrainMesh, base: Dis
       const halfWidthM = line.widthM / 2;
       for (const piece of clipPolyline(distinctPoints(line.points), box)) {
         if (piece.length < 2) continue;
-        const strip = buildPolylineStrip(piece, halfWidthM, opts, zone.id);
+        const strip = buildPolylineStrip(piece, halfWidthM, opts, (x, y) => locator.peek(x, y));
         if (!strip.indices.length) { dropped += strip.dropped; continue; }
         const vertexBase = positions.length / 3;
         for (let v = 0; v < strip.xy.length / 2; v++) {
@@ -335,10 +488,25 @@ export function compilePathRibbon(scene: HoleScene, mesh: TerrainMesh, base: Dis
   };
 }
 
+export interface PathRibbonBudgetReport {
+  triangleCount: number;
+  /** §11 "path/water hero edges" hard ceiling this ribbon was checked against. */
+  triangleBudget: number;
+  /** Below the hard ceiling but past this, `assertPathRibbon` still passes — it only sets `warn`. */
+  warnBudget: number;
+  withinBudget: boolean;
+  warn: boolean;
+}
+
 /** §113-style gates: finite buffers, indices in range, no degenerate
  * triangle, no flipped winding within a run, and the runs partition every
- * triangle exactly once. */
-export function assertPathRibbon(ribbon: PathRibbon): void {
+ * triangle exactly once — plus the §11 "path/water hero edges" triangle
+ * budget (Task 14 follow-up): a hard error above `triangleBudget` (default
+ * `PATH_RIBBON_OPTIONS.triangleBudget`, 5 000 — pass a larger one to raise
+ * it deliberately) and a non-throwing `warn` in the returned report once
+ * the count passes 80% of whichever budget applies, so a hole trending
+ * toward the ceiling shows up before it actually crosses it. */
+export function assertPathRibbon(ribbon: PathRibbon, options: Partial<Pick<PathRibbonOptions, 'triangleBudget'>> = {}): PathRibbonBudgetReport {
   const { positions, indices, uv, edge, runs, triangleCount, vertexCount } = ribbon;
   const problems: string[] = [];
   if (positions.length !== vertexCount * 3 || uv.length !== vertexCount * 2 || edge.length !== vertexCount || indices.length !== triangleCount * 3) problems.push('buffer length mismatch');
@@ -368,5 +536,9 @@ export function assertPathRibbon(ribbon: PathRibbon): void {
   let covered = 0;
   for (const run of [...runs].sort((a, b) => a.start - b.start)) { if (run.start !== covered) problems.push('runs do not cover all indices'); covered = run.start + run.count; }
   if (covered !== triangleCount) problems.push('runs do not cover all indices');
+  const triangleBudget = options.triangleBudget ?? PATH_RIBBON_OPTIONS.triangleBudget;
+  const warnBudget = Math.round(triangleBudget * 0.8);
+  if (triangleCount > triangleBudget) problems.push(`${triangleCount} triangles exceed the ${triangleBudget}-triangle path-ribbon budget (§11)`);
   if (problems.length) throw new Error(`Path ribbon failed: ${Array.from(new Set(problems)).slice(0, 8).join('; ')}`);
+  return { triangleCount, triangleBudget, warnBudget, withinBudget: triangleCount <= triangleBudget, warn: triangleCount > warnBudget };
 }

@@ -15,6 +15,8 @@
  * bytes disagree with the scene in front of it. V1 (`visual-artifact.ts`)
  * is untouched and remains the production/fallback path. */
 import { z } from 'zod';
+import type { ForestEdge, ForestEdgeV2Budget, ForestInstance, UnderstorySample } from './forest-edge-v2';
+import type { PathRibbonRun } from './path-ribbon';
 import type { TerrainMesh } from './terrain';
 import type { HoleScene } from './types';
 import { decodeBase64LE, encodeBase64LE, fnvBytes, MERIDIAN_CODES, SURFACE_CLASS_IDS } from './visual-artifact';
@@ -96,18 +98,74 @@ export interface PackedFieldAtlas {
 }
 /** A hero patch's own atlas, keyed by the patch it shades. */
 export interface PackedHeroField { patchId: string; atlas: PackedFieldAtlas }
-/** Object sets are typed placeholders until their compilers land; each
- * carries its own digest of `items`, which the artifact digest does not cover. */
+/** A generic object set with no dedicated typed contract yet. `structures`
+ * (Task 17, structure GLB pipeline) stays this shape until that task lands
+ * its own contract — the same placeholder vegetation/ribbons used before
+ * this task typed them; each carries its own digest of `items`, which the
+ * artifact digest does not cover (Ruling R1). */
 export interface PackedObjectSet { basis: string; count: number; contentHash: string; items: unknown[] }
-/** Filled by Task 15 (forest edge V2). */
-export type PackedVegetationSet = PackedObjectSet;
-/** Filled by Task 17 (structure GLB pipeline). */
 export type PackedStaticObjectSet = PackedObjectSet;
-/** Filled by Task 14 (cart-path hero ribbon). */
-export type PackedRibbonSet = PackedObjectSet;
 /** An object set no compiler has filled yet. */
 export function emptyPackedSet(basis: string): PackedObjectSet {
   return { basis, count: 0, contentHash: fnvBytes([]), items: [] };
+}
+
+/** §106 `objects.vegetation` (Task 15's `ForestEdgeV2Result`, forest-edge-v2.ts
+ * §59–68): every crown/shrub/mass instance, woods edge polyline and interior
+ * darkening sample this hole compiled, plus that compiler's own budget
+ * report. `count` is the drawable-instance count; `edges`/`understory` are
+ * shading/placement support, not separately drawn objects. */
+export interface PackedVegetationSet {
+  basis: 'canonical_woods_and_context';
+  count: number;
+  contentHash: string;
+  instances: ForestInstance[];
+  edges: ForestEdge[];
+  understory: UnderstorySample[];
+  budget: ForestEdgeV2Budget;
+}
+/** §106 `objects.ribbons` (Task 14's `PathRibbon`, path-ribbon.ts §52–54):
+ * one hole's cart-path ribbon, already merged into a single indexed mesh
+ * with one `PathRibbonRun` per contributing zone — never one ribbon per run
+ * (progress.md note for Tasks 14/18: that would break the draw-call budget).
+ * `count` is the run count, the ribbon's own "items". */
+export interface PackedRibbonSet {
+  count: number;
+  contentHash: string;
+  runs: PathRibbonRun[];
+  positions: Float32Array;
+  indices: Uint32Array;
+  uv: Float32Array;
+  edge: Float32Array;
+  visualLiftM: number;
+  triangleCount: number;
+  vertexCount: number;
+  boundsM: [number, number, number, number];
+  surfaceFallbacks: number;
+  droppedTriangles: number;
+}
+/** Deterministic content digest for a filled vegetation or ribbon set,
+ * independent of the top-level artifact digest (`visualArtifactV2ContentHash`
+ * covers meshes/fields only; Ruling R1: object sets carry their own).
+ * Vegetation has no typed-array buffers, so it hashes its canonical JSON
+ * text; ribbons hash their buffers, like every other packed geometry here. */
+export function vegetationSetContentHash(set: Pick<PackedVegetationSet, 'instances' | 'edges' | 'understory'>): string {
+  return fnvBytes([new TextEncoder().encode(JSON.stringify([set.instances, set.edges, set.understory]))]);
+}
+export function ribbonSetContentHash(set: Pick<PackedRibbonSet, 'positions' | 'indices' | 'uv' | 'edge'>): string {
+  return fnvBytes([set.positions, set.indices, set.uv, set.edge]);
+}
+/** No woods on this hole, or not yet compiled. */
+export function emptyVegetationSet(): PackedVegetationSet {
+  const base: Omit<PackedVegetationSet, 'contentHash'> = { basis: 'canonical_woods_and_context', count: 0, instances: [], edges: [], understory: [],
+    budget: { instances: { used: 0, target: 0 }, hero: { used: 0, cap: 0 }, understory: { used: 0, target: 0 } } };
+  return { ...base, contentHash: vegetationSetContentHash(base) };
+}
+/** No cart-path context zones on this hole (`compilePathRibbon` returned null). */
+export function emptyRibbonSet(): PackedRibbonSet {
+  const base: Omit<PackedRibbonSet, 'contentHash'> = { count: 0, runs: [], positions: new Float32Array(0), indices: new Uint32Array(0), uv: new Float32Array(0), edge: new Float32Array(0),
+    visualLiftM: 0, triangleCount: 0, vertexCount: 0, boundsM: [0, 0, 0, 0], surfaceFallbacks: 0, droppedTriangles: 0 };
+  return { ...base, contentHash: ribbonSetContentHash(base) };
 }
 
 export interface MeridianVisualArtifactV2 {
@@ -175,6 +233,38 @@ const fieldAtlasWire = z.object({
   sdfLayers: z.object({ layerNames: z.array(z.string().min(1).max(100)).min(1).max(16), data: packed }).optional(),
 });
 const objectSetWire = z.object({ basis: z.string().min(1).max(100), count, contentHash: z.string().min(1).max(100), items: z.array(z.unknown()) });
+// Field order below mirrors each source interface exactly (forest-edge-v2.ts,
+// path-ribbon.ts), which is also the order those compilers construct their
+// objects in: pack functions further down copy those objects with a plain
+// spread, so schema order and construction order must stay in lockstep for
+// the wire to stay byte-identical across a parse -> serialize round trip.
+// zod needs literal values for kind/basis, not the exported type aliases.
+const forestInstanceWire = z.object({
+  id: z.string().min(1).max(300), featureId: z.string().min(1).max(200), basis: z.enum(['reviewed_feature', 'context_zone']),
+  kind: z.enum(['crown', 'shrub', 'mass']), x: z.number().finite(), y: z.number().finite(), z: z.number().finite(),
+  scale: z.number().finite(), heightM: z.number().finite(), rotationRadians: z.number().finite(), seed: z.number().finite(), edgeDistanceM: z.number().finite(),
+  hero: z.literal(true).optional(), branchSeed: z.number().finite().optional(), branchCount: z.number().int().nonnegative().optional(),
+});
+const forestEdgeSampleWire = z.object({
+  x: z.number().finite(), y: z.number().finite(), z: z.number().finite(), tangentX: z.number().finite(), tangentY: z.number().finite(), bandDepthM: z.number().finite(),
+});
+const forestEdgeWire = z.object({ featureId: z.string().min(1).max(200), basis: z.enum(['reviewed_feature', 'context_zone']), samples: z.array(forestEdgeSampleWire).max(20_000) });
+const understorySampleWire = z.object({ featureId: z.string().min(1).max(200), x: z.number().finite(), y: z.number().finite(), z: z.number().finite(), edgeDistanceM: z.number().finite(), darken: z.number().finite() });
+const forestBudgetWire = z.object({
+  instances: z.object({ used: count, target: count }), hero: z.object({ used: count, cap: count }), understory: z.object({ used: count, target: count }),
+});
+const vegetationSetWire = z.object({
+  basis: z.literal('canonical_woods_and_context'), count, contentHash: z.string().min(1).max(100),
+  instances: z.array(forestInstanceWire).max(20_000), edges: z.array(forestEdgeWire).max(2000), understory: z.array(understorySampleWire).max(20_000),
+  budget: forestBudgetWire,
+});
+const pathRibbonRunWire = z.object({ zoneId: z.string().min(1).max(200), start: count, count: z.number().int().min(1) });
+const ribbonSetWire = z.object({
+  count, contentHash: z.string().min(1).max(100), runs: z.array(pathRibbonRunWire).max(256),
+  positions: packed, indices: packed, uv: packed, edge: packed,
+  visualLiftM: z.number().finite().nonnegative(), triangleCount: z.number().int().nonnegative(), vertexCount: z.number().int().nonnegative(),
+  boundsM, surfaceFallbacks: z.number().int().nonnegative(), droppedTriangles: z.number().int().nonnegative(),
+});
 const sourceRefWire = z.object({
   provider: z.string().min(1).max(100), title: z.string().max(300), url: z.string().url().max(2000), nativeResolutionM: z.number().positive(),
   acquisitionStart: z.string().max(20), acquisitionEnd: z.string().max(20),
@@ -185,7 +275,7 @@ const wireSchema = z.object({
   contextLayerHash: sha256.nullable(), styleHash: z.string().min(1).max(100),
   meshes: z.object({ base: z.object({ lod0: displayMeshWire, lod1: displayMeshWire, lod2: displayMeshWire }), heroPatches: z.array(heroPatchWire).max(512) }),
   fields: z.object({ wholeHole: fieldAtlasWire, heroes: z.array(z.object({ patchId: z.string().min(1).max(160), atlas: fieldAtlasWire })).max(512) }),
-  objects: z.object({ vegetation: objectSetWire, structures: objectSetWire, ribbons: objectSetWire }),
+  objects: z.object({ vegetation: vegetationSetWire, structures: objectSetWire, ribbons: ribbonSetWire }),
   provenance: z.object({
     canonicalBasis: z.literal('source_backed'), displayBasis: z.literal('derived_visual'), highResolutionTerrainSources: z.array(sourceRefWire).max(16),
     sourceResolutionM: z.number().positive(), displayGridSpacingM: z.number().positive(),
@@ -212,7 +302,23 @@ const packAtlas = (a: PackedFieldAtlas): WireArtifact['fields']['wholeHole'] => 
   reliefRGBA16F: encodeBase64LE(a.reliefRGBA16F), bentRGBA8: encodeBase64LE(a.bentRGBA8), semanticRGBA8: encodeBase64LE(a.semanticRGBA8),
   ...(a.sdfLayers ? { sdfLayers: { layerNames: a.sdfLayers.layerNames, data: encodeBase64LE(a.sdfLayers.data) } } : {}),
 });
-const packSet = (set: PackedObjectSet): WireArtifact['objects']['vegetation'] => ({ basis: set.basis, count: set.count, contentHash: set.contentHash, items: set.items });
+const packSet = (set: PackedObjectSet): WireArtifact['objects']['structures'] => ({ basis: set.basis, count: set.count, contentHash: set.contentHash, items: set.items });
+// Plain spreads: each source object's own key order already matches the
+// wire schema declared above (see the comment there), so this never needs
+// to re-list every field to stay byte-identical across a round trip.
+const packVegetation = (set: PackedVegetationSet): WireArtifact['objects']['vegetation'] => ({
+  basis: set.basis, count: set.count, contentHash: set.contentHash,
+  instances: set.instances.map(instance => ({ ...instance })),
+  edges: set.edges.map(edgeItem => ({ ...edgeItem, samples: edgeItem.samples.map(sample => ({ ...sample })) })),
+  understory: set.understory.map(sample => ({ ...sample })),
+  budget: { instances: { ...set.budget.instances }, hero: { ...set.budget.hero }, understory: { ...set.budget.understory } },
+});
+const packRibbon = (set: PackedRibbonSet): WireArtifact['objects']['ribbons'] => ({
+  count: set.count, contentHash: set.contentHash, runs: set.runs.map(run => ({ ...run })),
+  positions: encodeBase64LE(set.positions), indices: encodeBase64LE(set.indices), uv: encodeBase64LE(set.uv), edge: encodeBase64LE(set.edge),
+  visualLiftM: set.visualLiftM, triangleCount: set.triangleCount, vertexCount: set.vertexCount, boundsM: set.boundsM,
+  surfaceFallbacks: set.surfaceFallbacks, droppedTriangles: set.droppedTriangles,
+});
 const packSource = (source: SourceRef): WireArtifact['provenance']['highResolutionTerrainSources'][number] => ({
   provider: source.provider, title: source.title, url: source.url, nativeResolutionM: source.nativeResolutionM, acquisitionStart: source.acquisitionStart, acquisitionEnd: source.acquisitionEnd,
 });
@@ -228,7 +334,7 @@ export function serializeVisualArtifactV2(artifact: MeridianVisualArtifactV2): s
     contextLayerHash: artifact.contextLayerHash, styleHash: artifact.styleHash,
     meshes: { base: { lod0: packMesh(artifact.meshes.base.lod0), lod1: packMesh(artifact.meshes.base.lod1), lod2: packMesh(artifact.meshes.base.lod2) }, heroPatches: artifact.meshes.heroPatches.map(packPatch) },
     fields: { wholeHole: packAtlas(artifact.fields.wholeHole), heroes: artifact.fields.heroes.map(hero => ({ patchId: hero.patchId, atlas: packAtlas(hero.atlas) })) },
-    objects: { vegetation: packSet(artifact.objects.vegetation), structures: packSet(artifact.objects.structures), ribbons: packSet(artifact.objects.ribbons) },
+    objects: { vegetation: packVegetation(artifact.objects.vegetation), structures: packSet(artifact.objects.structures), ribbons: packRibbon(artifact.objects.ribbons) },
     provenance: {
       canonicalBasis: artifact.provenance.canonicalBasis, displayBasis: artifact.provenance.displayBasis, highResolutionTerrainSources: artifact.provenance.highResolutionTerrainSources.map(packSource),
       sourceResolutionM: artifact.provenance.sourceResolutionM, displayGridSpacingM: artifact.provenance.displayGridSpacingM,
@@ -263,6 +369,13 @@ const unpackPatch = (path: string, p: WireArtifact['meshes']['heroPatches'][numb
   canonicalHeightReference: unpack(`${path}.canonicalHeightReference`, p.canonicalHeightReference, Float32Array), visualOffsetMm: unpack(`${path}.visualOffsetMm`, p.visualOffsetMm, Int16Array),
   edgeErrorMaxM: p.edgeErrorMaxM,
 });
+const unpackRibbon = (path: string, r: WireArtifact['objects']['ribbons']): PackedRibbonSet => ({
+  count: r.count, contentHash: r.contentHash, runs: r.runs.map(run => ({ ...run })),
+  positions: unpack(`${path}.positions`, r.positions, Float32Array), indices: unpack(`${path}.indices`, r.indices, Uint32Array),
+  uv: unpack(`${path}.uv`, r.uv, Float32Array), edge: unpack(`${path}.edge`, r.edge, Float32Array),
+  visualLiftM: r.visualLiftM, triangleCount: r.triangleCount, vertexCount: r.vertexCount, boundsM: r.boundsM,
+  surfaceFallbacks: r.surfaceFallbacks, droppedTriangles: r.droppedTriangles,
+});
 const unpackAtlas = (path: string, a: WireArtifact['fields']['wholeHole']): PackedFieldAtlas => ({
   width: a.width, height: a.height, boundsM: a.boundsM,
   reliefRGBA16F: unpack(`${path}.reliefRGBA16F`, a.reliefRGBA16F, Uint16Array), bentRGBA8: unpack(`${path}.bentRGBA8`, a.bentRGBA8, Uint8Array), semanticRGBA8: unpack(`${path}.semanticRGBA8`, a.semanticRGBA8, Uint8Array),
@@ -279,7 +392,7 @@ export function parseVisualArtifactV2(text: string): MeridianVisualArtifactV2 {
     const issue = result.error.issues[0]!;
     throw new Error(`${MERIDIAN_CODES.mismatch}: schema ${issue.path.join('.')}: ${issue.message}`);
   }
-  const { encoding: _encoding, meshes, fields, ...header } = result.data;
+  const { encoding: _encoding, meshes, fields, objects, ...header } = result.data;
   const artifact: MeridianVisualArtifactV2 = {
     ...header,
     meshes: {
@@ -287,6 +400,8 @@ export function parseVisualArtifactV2(text: string): MeridianVisualArtifactV2 {
       heroPatches: meshes.heroPatches.map((patch, i) => unpackPatch(`meshes.heroPatches.${i}`, patch)),
     },
     fields: { wholeHole: unpackAtlas('fields.wholeHole', fields.wholeHole), heroes: fields.heroes.map((hero, i) => ({ patchId: hero.patchId, atlas: unpackAtlas(`fields.heroes.${i}.atlas`, hero.atlas) })) },
+    // Vegetation has no typed-array buffers to decode; only ribbons does.
+    objects: { vegetation: objects.vegetation, structures: objects.structures, ribbons: unpackRibbon('objects.ribbons', objects.ribbons) },
   };
   const problems = structuralProblems(artifact);
   if (problems.length) throw new Error(`${MERIDIAN_CODES.mismatch}: ${problems.join(',')}`);
@@ -355,9 +470,13 @@ function structuralProblems(artifact: MeridianVisualArtifactV2): string[] {
   }
   artifact.fields.heroes.forEach((hero, i) => { if (!ids.has(hero.patchId)) problems.push(`heroes[${i}] patch`); });
   if (new Set(artifact.fields.heroes.map(hero => hero.patchId)).size !== artifact.fields.heroes.length) problems.push('hero field ids');
-  for (const name of ['vegetation', 'structures', 'ribbons'] as const) {
-    if (artifact.objects[name].count !== artifact.objects[name].items.length) problems.push(`${name} count`);
-  }
+  if (artifact.objects.structures.count !== artifact.objects.structures.items.length) problems.push('structures count');
+  const vegetation = artifact.objects.vegetation;
+  if (vegetation.count !== vegetation.instances.length) problems.push('vegetation count');
+  const ribbons = artifact.objects.ribbons;
+  if (ribbons.count !== ribbons.runs.length) problems.push('ribbons count');
+  if (ribbons.positions.length !== ribbons.vertexCount * 3 || ribbons.uv.length !== ribbons.vertexCount * 2 || ribbons.edge.length !== ribbons.vertexCount) problems.push('ribbons vertices');
+  if (ribbons.indices.length !== ribbons.triangleCount * 3 || exceeds(ribbons.indices, ribbons.vertexCount)) problems.push('ribbons indices');
   return problems;
 }
 
