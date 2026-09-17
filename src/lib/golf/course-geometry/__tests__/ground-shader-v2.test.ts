@@ -17,9 +17,9 @@ import { compileFairwayDirectionField, type FairwayDirectionField } from '../fai
 import { compileFieldAtlas } from '../field-atlas';
 import { GREEN_SDF_GRADIENT_STEP_M, GREEN_SURFACE_GLSL_NAMES } from '../green-surface-v2';
 import {
-  BUNKER_EDGE_VARIATION_WAVELENGTHS_M, BUNKER_RIM_GRADIENT_STEP_M, bunkerContactAt, bunkerOverhangAt, classAlbedoLinear, classifySurfaceFromAtlas, FAIRWAY_GRAIN_BINDING, fairwayGrainFactorAt,
-  GROUND_ATLAS_TRACKED_CLASSES, GROUND_SDF_ATLAS_LAYERS, GROUND_SHADER_V2_VERSION, groundShaderV2Chunks, maxGroundEdgeBandM, pickFinestAtlas, RELIEF_FIELD_BINDING, roughHierarchyAt,
-  SUN_GROUND_XY, type GroundAtlasClass, type RoughTier,
+  BUNKER_EDGE_VARIATION_WAVELENGTHS_M, BUNKER_RIM_GRADIENT_STEP_M, bunkerContactAt, bunkerOverhangAt, classAlbedoLinear, classifySurfaceFromAtlas, FAIRWAY_EDGE_GRADIENT_STEP_M,
+  FAIRWAY_GRAIN_BINDING, fairwayEdgeAt, fairwayGrainFactorAt, GROUND_ATLAS_TRACKED_CLASSES, GROUND_SDF_ATLAS_LAYERS, GROUND_SHADER_V2_VERSION, groundShaderV2Chunks, maxGroundEdgeBandM,
+  pickFinestAtlas, RELIEF_FIELD_BINDING, roughHierarchyAt, SUN_GROUND_XY, type GroundAtlasClass, type RoughTier,
 } from '../ground-shader-v2';
 import { parseGeometryPackage } from '../schema';
 import { quantizeSignedDistance, SDF_RANGE_M } from '../surface-distance-field';
@@ -449,7 +449,7 @@ describe('GOLF_V2_RELIEF rough hierarchy (fidelity §32–36, plan §48–50; me
   };
 
   it('bumps the shader version for the new program structure', () => {
-    expect(GROUND_SHADER_V2_VERSION).toBe('meridian-ground-v2-9');
+    expect(GROUND_SHADER_V2_VERSION).toBe('meridian-ground-v2-10');
   });
 
   it('§20 pad setting: the bank below the hole\'s own green pad darkens toward the green on V1\'s rough classes (rough share + the fairway surround), gated to the own green like the run-off', () => {
@@ -637,5 +637,62 @@ describe('bunker system in V2 (fidelity §26–28, renderer redesign §9; meridi
     expect(shaded).toBeGreaterThan(30);
     expect(litInBand).toBeGreaterThan(30);
     expect(shaded / sand).toBeLessThan(.5); // a shadow under one side of the lip, not a darker bunker
+  });
+});
+
+describe('fairway edge types in V2 (fidelity §10 / §10.3; meridian-ground-v2-10)', () => {
+  const chunks = groundShaderV2Chunks();
+  const fe = MERIDIAN_STYLE.fairwayEdge;
+  const block = chunks.fragmentColor.slice(chunks.fragmentColor.indexOf('if (golfWin == 2 && golfDFairway <'), chunks.fragmentColor.indexOf('// §37 contact shade'));
+
+  it('shades the fairway lip by neighbour (crisp within crispNearM of sand or green, soft elsewhere) over fieldM inside the outline, full on the outline itself', () => {
+    expect(block).toContain(`if (golfWin == 2 && golfDFairway < ${fe.fieldM.toFixed(3)}) {`);
+    expect(block).toContain(`float golfEdgeCrisp = min(abs(golfDBunker), abs(golfDGreen)) <= ${fe.crispNearM.toFixed(3)} ? 1.0 : 0.0;`);
+    expect(block).toContain(`mix(${fe.softShade.toFixed(4)}, ${fe.crispShade.toFixed(4)}, golfEdgeCrisp) * (1.0 + ${fe.terrainBias.toFixed(3)} * golfEdgeBias)`);
+    expect(block).toContain(`diffuseColor.rgb *= 1.0 - golfEdgeStrength * (1.0 - max(0.0, golfDFairway) / ${fe.fieldM.toFixed(3)});`);
+  });
+
+  it('biases the lip by the relief slope across the edge from a four-tap fairway SDF gradient at explicit LOD, only under GOLF_V2_RELIEF', () => {
+    const relief = block.slice(block.indexOf(`#ifdef ${RELIEF_FIELD_BINDING.define}`), block.indexOf('#endif'));
+    expect(relief).toContain(`vec2(${FAIRWAY_EDGE_GRADIENT_STEP_M.toFixed(4)}) * golfV2SdfFrame.zw`);
+    expect((relief.match(/texture2DLodEXT\(golfV2Sdf,[^;]*?\)\.b/g) ?? []).length).toBe(4);
+    expect(relief).toContain('dot(-golfFwEdgeGrad / golfFwEdgeLen, golfRelief.rg) * inversesqrt(1.0 + dot(golfRelief.rg, golfRelief.rg))');
+    expect(relief).toContain(`clamp(golfFwRise / ${fe.terrainSlopeFull.toFixed(4)}, -1.0, 1.0)`);
+    expect(block).not.toMatch(/texture2D\(/);
+    expect(block).toContain('float golfEdgeBias = 0.0;');
+  });
+
+  it('fairwayEdgeAt: crisp beside a bunker, soft on the far edge, nothing past fieldM, no bias on flat ground, null off the fairway', () => {
+    const scene = sceneWith([feature('f', 'fairway', circle(0, 0, 30)), feature('b', 'bunker', circle(38, 0, 4))]);
+    const atlas = compileFieldAtlas(scene, meshWithNoGrid(), [-50, -50, 50, 50], { targetSize: 400 }); // 0.25 m/texel
+    const crisp = fairwayEdgeAt(atlas, 29.6, 0)!, soft = fairwayEdgeAt(atlas, -29.6, 0)!;
+    expect(crisp.crisp).toBe(true); expect(soft.crisp).toBe(false);
+    expect(crisp.bias).toBeCloseTo(0, 9); expect(soft.bias).toBeCloseTo(0, 9); // flat ground biases nothing
+    expect(crisp.shade).toBeCloseTo(1 - fe.crispShade * (1 - crisp.distanceM / fe.fieldM), 3);
+    expect(soft.shade).toBeCloseTo(1 - fe.softShade * (1 - soft.distanceM / fe.fieldM), 3);
+    expect(crisp.shade).toBeLessThan(soft.shade);
+    expect(fairwayEdgeAt(atlas, 0, 0)!.shade).toBe(1); // the middle of the fairway
+    expect(fairwayEdgeAt(atlas, 31, 0)).toBeNull(); // rough
+    expect(fairwayEdgeAt(atlas, 38, 0)).toBeNull(); // sand
+  });
+
+  it("finds crisp and soft lips on hole 7's real fairway, and a terrain bias of both signs from its relief", () => {
+    const { hole, holeScene } = loadHole7();
+    const atlas = compileFieldAtlas(holeScene, hole, hole.renderProfile!.tacticalBoundsM!, { targetSize: 512 });
+    let edge = 0, crisp = 0, soft = 0, shoulder = 0, fallaway = 0;
+    const [x0, y0, x1, y1] = atlas.boundsM;
+    for (let y = y0 + .25; y < y1; y += .5) for (let x = x0 + .25; x < x1; x += .5) {
+      const sample = fairwayEdgeAt(atlas, x, y);
+      if (!sample || sample.distanceM >= fe.fieldM) continue;
+      edge++;
+      if (sample.crisp) crisp++; else soft++;
+      if (sample.bias >= .25) shoulder++; else if (sample.bias <= -.25) fallaway++;
+      expect(sample.shade).toBeLessThanOrEqual(1);
+      expect(sample.shade).toBeGreaterThanOrEqual(1 - fe.crispShade * (1 + fe.terrainBias));
+    }
+    expect(edge).toBeGreaterThan(200);
+    expect(crisp).toBeGreaterThan(20); expect(soft).toBeGreaterThan(20);
+    expect(soft).toBeGreaterThan(crisp); // most of a fairway's edge is not beside sand or green
+    expect(shoulder).toBeGreaterThan(10); expect(fallaway).toBeGreaterThan(10); // V1's terrainVertices analogue, both ways
   });
 });

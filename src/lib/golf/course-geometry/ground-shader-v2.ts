@@ -69,7 +69,9 @@ import { hexToRgb, MERIDIAN_STYLE, srgbToLinear, type MeridianPaletteKey, type M
 // -9: the bunker system's V1 terms (fidelity §26–28, redesign §9): the lip's
 //     overhang shadow, the floor macro, a turf-only contact ramp whose band
 //     and shade vary like V1's per-bunker seeds.
-export const GROUND_SHADER_V2_VERSION = 'meridian-ground-v2-9';
+// -10: §10 fairway edge types (crisp near sand/green, soft elsewhere) with
+//      the §10.3 terrain bias from the relief slope across the edge.
+export const GROUND_SHADER_V2_VERSION = 'meridian-ground-v2-10';
 
 /** Attribute names the component layer must upload on every V2 ground
  * geometry (base and hero patches alike, so the one material fits both). */
@@ -425,6 +427,47 @@ export function bunkerOverhangAt(atlas: PackedFieldAtlas, x: number, y: number, 
   const shade = d < band ? 1 - style.bunker.overhangShade * sunFacing * (1 - d / band) : 1;
   return { distanceM: d, outward, sunFacing, shade };
 }
+export interface FairwayEdgeSample {
+  /** Metres inside the fairway outline (the fairway SDF). */
+  distanceM: number;
+  /** True within `fairwayEdge.crispNearM` of a bunker or green outline (a maintained boundary). */
+  crisp: boolean;
+  /** §10.3 terrain bias in [-1, 1]: +1 where the ground rises `terrainSlopeFull` per metre outward from the fairway (the shoulder), -1 where it falls away; 0 without relief. */
+  bias: number;
+  /** Linear albedo multiplier of the lip (1 = no shade; 1 at and beyond `fieldM`). */
+  shade: number;
+}
+/** Three-free CPU mirror of the fairway-edge block (V1 `compileFairwayEdges`,
+ * fidelity §10 / §10.3) from the atlas: the lip's strength by neighbour and
+ * by the canonical cross-slope across the edge (outward = minus the fairway
+ * SDF's gradient; the rise along it from the relief slope, as V1 reads it
+ * from the smoothed vertex normal). Null off the fairway or outside the
+ * atlas. Tests and censuses only. */
+export function fairwayEdgeAt(atlas: PackedFieldAtlas, x: number, y: number, style: MeridianStyle = MERIDIAN_STYLE): FairwayEdgeSample | null {
+  const d = sampleFieldAtlas(atlas, 'fairway', x, y);
+  if (d == null || d < 0) return null;
+  const cfg = style.fairwayEdge;
+  const dBunker = sampleFieldAtlas(atlas, 'bunker', x, y) ?? -Infinity, dGreen = sampleFieldAtlas(atlas, 'green', x, y) ?? -Infinity;
+  const crisp = Math.min(Math.abs(dBunker), Math.abs(dGreen)) <= cfg.crispNearM;
+  let bias = 0;
+  const dzdx = sampleFieldAtlas(atlas, 'dzdx', x, y), dzdy = sampleFieldAtlas(atlas, 'dzdy', x, y);
+  if (dzdx != null && dzdy != null) {
+    const h = FAIRWAY_EDGE_GRADIENT_STEP_M;
+    const gx = (sampleFieldAtlas(atlas, 'fairway', x + h, y) ?? d) - (sampleFieldAtlas(atlas, 'fairway', x - h, y) ?? d);
+    const gy = (sampleFieldAtlas(atlas, 'fairway', x, y + h) ?? d) - (sampleFieldAtlas(atlas, 'fairway', x, y - h) ?? d);
+    const len = Math.hypot(gx, gy);
+    if (len > 1e-4) {
+      const rise = (-gx / len * dzdx - gy / len * dzdy) / Math.sqrt(1 + dzdx * dzdx + dzdy * dzdy);
+      bias = Math.max(-1, Math.min(1, rise / cfg.terrainSlopeFull));
+    }
+  }
+  const strength = (crisp ? cfg.crispShade : cfg.softShade) * (1 + cfg.terrainBias * bias);
+  return { distanceM: d, crisp, bias, shade: d < cfg.fieldM ? 1 - strength * (1 - d / cfg.fieldM) : 1 };
+}
+/** Metres either side of a fairway-edge fragment for the fairway SDF's
+ * central difference (its gradient is the edge's inward normal); the same
+ * baseline as the bunker rim's. */
+export const FAIRWAY_EDGE_GRADIENT_STEP_M = BUNKER_RIM_GRADIENT_STEP_M;
 /** The contact band and shade the V2 fragment at world (x, y) uses (V1's
  * per-bunker ±`edgeVariation`, carried by `BUNKER_EDGE_VARIATION_WAVELENGTHS_M`
  * here); `seed` is the material's `golfV2Seed`. */
@@ -541,7 +584,7 @@ export function groundShaderV2Chunks(style: MeridianStyle = MERIDIAN_STYLE): Gro
   // `roughHierarchy`), the §50 curvature tone and the §7 blade-height micro
   // scale, all per fragment behind GOLF_V2_RELIEF (see the block below).
   const rh = style.roughHierarchy, tone = style.curvatureTone, micro = style.turf.microByClass;
-  const gc = style.greenComplex;
+  const gc = style.greenComplex, fe = style.fairwayEdge;
   const vec3Glsl = (v: readonly number[]) => `vec3(${(v[0] ?? 1).toFixed(4)}, ${(v[1] ?? 1).toFixed(4)}, ${(v[2] ?? 1).toFixed(4)})`;
   const roughLinear = classAlbedoLinear('rough', style);
   const tierRatioGlsl = (key: MeridianPaletteKey) => { const [r, g, b] = hexToRgb(style.palette[key]); return vec3Glsl([srgbToLinear(r) / roughLinear[0], srgbToLinear(g) / roughLinear[1], srgbToLinear(b) / roughLinear[2]]); };
@@ -766,6 +809,34 @@ float golfV2ResolvedRoughness;`;
     // rough albedo when an atlas paints them, so nothing sand- or
     // green-tinted can leak in from outside the true outline.
     diffuseColor.rgb = mix(diffuseColor.rgb, golfAtlasCol, golfWeight);
+    // §10 fairway edge types (V1 compileFairwayEdges, albedo only over
+    // fairwayEdge.fieldM inside the outline, which never moves): an edge
+    // within crispNearM of a bunker or green is a maintained boundary and
+    // gets the crisp lip, every other edge the soft one. §10.3 terrain bias:
+    // the lip follows landform — stronger where the canonical ground rises
+    // outward from the fairway (the shoulder), softer where it falls away;
+    // outward is minus the fairway SDF's gradient (four explicit-LOD taps in
+    // this branch), the rise along it from the relief slope. Mirror: fairwayEdgeAt.
+    if (golfWin == 2 && golfDFairway < ${fe.fieldM.toFixed(3)}) {
+      float golfEdgeCrisp = min(abs(golfDBunker), abs(golfDGreen)) <= ${fe.crispNearM.toFixed(3)} ? 1.0 : 0.0;
+      float golfEdgeBias = 0.0;
+#ifdef ${RELIEF_FIELD_BINDING.define}
+      vec2 golfFwEdgeUv = vec2(${FAIRWAY_EDGE_GRADIENT_STEP_M.toFixed(4)}) * golfV2SdfFrame.zw;
+      vec2 golfFwEdgeGrad = vec2(
+        texture2DLodEXT(golfV2Sdf, golfSdfUv + vec2(golfFwEdgeUv.x, 0.0), 0.0).b - texture2DLodEXT(golfV2Sdf, golfSdfUv - vec2(golfFwEdgeUv.x, 0.0), 0.0).b,
+        texture2DLodEXT(golfV2Sdf, golfSdfUv + vec2(0.0, golfFwEdgeUv.y), 0.0).b - texture2DLodEXT(golfV2Sdf, golfSdfUv - vec2(0.0, golfFwEdgeUv.y), 0.0).b);
+      float golfFwEdgeLen = length(golfFwEdgeGrad);
+      if (golfFwEdgeLen > 1e-4) {
+        float golfFwRise = dot(-golfFwEdgeGrad / golfFwEdgeLen, golfRelief.rg) * inversesqrt(1.0 + dot(golfRelief.rg, golfRelief.rg));
+        golfEdgeBias = clamp(golfFwRise / ${fe.terrainSlopeFull.toFixed(4)}, -1.0, 1.0);
+      }
+#endif
+      float golfEdgeStrength = mix(${fe.softShade.toFixed(4)}, ${fe.crispShade.toFixed(4)}, golfEdgeCrisp) * (1.0 + ${fe.terrainBias.toFixed(3)} * golfEdgeBias);
+      // Full strength on the outline itself, as V1's outline-ring vertices
+      // carry it (the soft class blend already crosses the outline; the lip
+      // is the step that reads as a cut edge).
+      diffuseColor.rgb *= 1.0 - golfEdgeStrength * (1.0 - max(0.0, golfDFairway) / ${fe.fieldM.toFixed(3)});
+    }
     // §37 contact shade (V1 bunker.contactBandM/contactShade, the turf side
     // only as V1 paints it — the sand side has its rings, boundary shade and
     // overhang): the turf beside a rim darkens toward it on V1's linear
