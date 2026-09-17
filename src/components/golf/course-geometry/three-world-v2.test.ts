@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
-import type { CompiledBunkerPatch } from '@/lib/golf/course-geometry/bunker-display-mesh';
+import { bunkerSignedDistance, type BunkerHeroProfile, type CompiledBunkerPatch } from '@/lib/golf/course-geometry/bunker-display-mesh';
 import { compileBunkerNormalField } from '@/lib/golf/course-geometry/bunker-normal-field';
 import { buildHoleScene } from '@/lib/golf/course-geometry/build-scene';
 import { parseContextLayer } from '@/lib/golf/course-geometry/context-layer';
@@ -15,7 +15,7 @@ import type { MetricTerrainGrid } from '@/lib/golf/course-geometry/terrain-sourc
 import type { HoleScene, PointM } from '@/lib/golf/course-geometry/types';
 import type { PackedDisplayMesh, PackedFieldAtlas, PackedHeroPatch } from '@/lib/golf/course-geometry/visual-artifact-v2';
 import { MERIDIAN_STYLE } from '@/lib/golf/course-geometry/visual-style';
-import { assembleV2World, buildV2World, greenPadSetting, rewindTrianglesCCW, type V2WorldInput } from './three-world-v2';
+import { assembleV2World, buildV2World, bunkerFloorShares, greenPadSetting, rewindTrianglesCCW, type V2WorldInput } from './three-world-v2';
 
 // Same hole-7 fixture bunker-display-mesh.test.ts and hero-patches.test.ts
 // use: a real compiled course with a green complex owning three greenside
@@ -674,5 +674,55 @@ describe('outside-world context attributes on the V2 ground (ground-context-v2.t
       expect([...(geometry.getAttribute(GROUND_V2_ATTRIBUTES.context).array as Float32Array)]).toEqual([0, 0, 0]);
       expect([...(geometry.getAttribute(GROUND_V2_ATTRIBUTES.zone).array as Float32Array)]).toEqual([0, 0, 0]);
     } finally { built.dispose(); }
+  });
+});
+
+describe('bunker floor share on the V2 ground (golfV2Floor; meridian-ground-v2-12)', () => {
+  it('bakes each bowl vertex\'s depth as a share of its own bunker\'s profile depth, 0 on lips, rims and the base', () => {
+    const { mesh, scene } = loadHole7();
+    const input = assembleV2World(scene, mesh)!;
+    const built = buildV2World(input);
+    try {
+      const [base, ...patchMeshes] = built.group.children as THREE.Mesh[];
+      expect([...(base!.geometry.getAttribute(GROUND_V2_ATTRIBUTES.floor).array as Float32Array)].every(f => f === 0)).toBe(true);
+      let bowls = 0;
+      for (const [i, compiled] of input.patches.entries()) {
+        const geometry = patchMeshes[i]!.geometry;
+        const floor = geometry.getAttribute(GROUND_V2_ATTRIBUTES.floor).array as Float32Array, offset = geometry.getAttribute(GROUND_V2_ATTRIBUTES.visualOffset).array as Float32Array;
+        expect(floor.length).toBe(offset.length);
+        let deepest = 0;
+        for (let v = 0; v < floor.length; v++) {
+          if (offset[v]! >= 0) { expect(floor[v]).toBe(0); continue; }
+          // The share is the offset over the owning profile's depth: the bunker the vertex lies deepest inside.
+          const point: PointM = [compiled.patch.positions[v * 3]!, compiled.patch.positions[v * 3 + 1]!];
+          const owner = compiled.profiles.reduce((best, p) => bunkerSignedDistance(point, p) > bunkerSignedDistance(point, best) ? p : best);
+          expect(floor[v]).toBeCloseTo(-offset[v]! / owner.depthM, 5);
+          deepest = Math.max(deepest, floor[v]!);
+        }
+        if (compiled.profiles.length && deepest > 0) {
+          // §37's quintic reaches the full profile depth at the bowl centre (the §38 shape field scales it within its clamp).
+          bowls++;
+          expect(deepest).toBeGreaterThan(0.6);
+          expect(deepest).toBeLessThan(1.5);
+        }
+      }
+      expect(bowls).toBeGreaterThan(0);
+    } finally { built.dispose(); }
+  });
+  it('gives a shallow pot and a deep pit the same share at the same relative depth (V1\'s floorShade · depth / bowlDepthM)', () => {
+    const square = (cx: number, cy: number, r: number): [number, number][] => [[cx - r, cy - r], [cx + r, cy - r], [cx + r, cy + r], [cx - r, cy + r], [cx - r, cy - r]];
+    const profile = (featureId: string, cx: number, depthM: number): BunkerHeroProfile => ({
+      featureId, rings: [{ ring: square(cx, 0, 5), box: { minX: cx - 5, minY: -5, maxX: cx + 5, maxY: 5 } }], centroid: [cx, 0], axisAngle: 0, downhill: null, inradiusM: 5, variationSeed: [0, 0, 0], basis: 'visual_only',
+      areaM2: 100, sizeClass: 'small', family: 'pot', depthM, lipM: .08, edgeBandM: .6, edgeShade: .2, bowlRadiusM: 5,
+    });
+    const pot = profile('bunker:pot', 0, 0.3), pit = profile('bunker:pit', 100, 0.9);
+    const positions = new Float32Array([0, 0, 0, 100, 0, 0, 60, 0, 0, 2, 0, 0]);
+    const offset = new Float32Array([-0.3, -0.9, -0.1, 0.05]);
+    const floor = bunkerFloorShares(positions, offset, [pot, pit]);
+    expect(floor[0]).toBeCloseTo(1, 6); expect(floor[1]).toBeCloseTo(1, 6);
+    // Between the two, the nearer bunker (the less negative signed distance) owns the vertex: the pit at 35 m over the pot at 55 m.
+    expect(floor[2]).toBeCloseTo(0.1 / 0.9, 6);
+    expect(floor[3]).toBe(0); // a lip vertex (positive offset) carries no share
+    expect([...bunkerFloorShares(positions, offset, [])]).toEqual([0, 0, 0, 0]);
   });
 });

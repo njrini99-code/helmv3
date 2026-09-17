@@ -74,7 +74,9 @@ import { hexToRgb, MERIDIAN_STYLE, srgbToLinear, type MeridianPaletteKey, type M
 // -11: outside-world context per vertex (golfV2Context / golfV2Zone): §53
 //      context rough-mix and desaturation, §48 ground zones replacing the
 //      rough hierarchy inside them.
-export const GROUND_SHADER_V2_VERSION = 'meridian-ground-v2-11';
+// -12: the bunker floor shade normalises by each bunker's own profile depth
+//      (golfV2Floor, V1's rule) instead of one 0.7 m range for every bunker.
+export const GROUND_SHADER_V2_VERSION = 'meridian-ground-v2-12';
 
 /** Attribute names the component layer must upload on every V2 ground
  * geometry (base and hero patches alike, so the one material fits both). */
@@ -82,6 +84,11 @@ export const GROUND_V2_ATTRIBUTES = Object.freeze({
   surfaceClass: 'golfV2Class',
   /** Metres; the render-only bunker bowl/lip offset (0 elsewhere). */
   visualOffset: 'golfV2Offset',
+  /** The bowl depth at this vertex as a share of its own bunker's profile
+   * depth (`BunkerHeroProfile.depthM`; the §38 shape field can push it past
+   * 1), 0 outside every bowl: V1's floor shade normalises per bunker, so a
+   * shallow pot darkens to its floor like a deep one does. */
+  floor: 'golfV2Floor',
   roughness: 'golfV2Roughness',
   /** 1 on a vertex inside a neighbouring hole's feature (V1 contextWeight,
    * §53): its atlas fairway/green colour mixes toward rough by
@@ -521,12 +528,13 @@ export function seedFromPackageHash(hash: string): readonly [number, number] {
 }
 
 /** §37–39 normalization for the bunker offset shading below: how many metres
- * of bowl depth / lip lift reach full shade. The shader only has the offset
- * at each fragment, not the owning bunker's own profile, so this is a single
- * reasonable range across every bunker rather than a per-bunker normalized
- * one; Task 9's analytic gradient can replace it with the real field. */
+ * of lip lift reach full lighten, and the floor's full shade. The floor
+ * itself normalises per bunker through the `golfV2Floor` attribute (the
+ * component layer divides each vertex's bowl offset by its own bunker's
+ * profile depth, V1's `floorShade · depth / bowlDepthM`), so a 0.3 m pot
+ * and a 0.9 m pit both reach full shade at their own floors. */
 export const BUNKER_SHADE_NORM = Object.freeze({
-  depthM: 0.7, lipM: 0.08, floorShade: MERIDIAN_STYLE.bunker.floorShade, lipLighten: 0.4,
+  lipM: 0.08, floorShade: MERIDIAN_STYLE.bunker.floorShade, lipLighten: 0.4,
 });
 
 export interface GroundShaderV2Chunks {
@@ -567,7 +575,7 @@ export function groundShaderV2Chunks(style: MeridianStyle = MERIDIAN_STYLE): Gro
   const macroAmp = style.turf.macro.amplitude.toFixed(4), microAmp = style.turf.micro.amplitude.toFixed(4);
   const greenMacro = style.turf.greenMacroScale.toFixed(3), greenMicro = style.turf.greenMicroScale.toFixed(3);
   const norm = BUNKER_SHADE_NORM;
-  const { surfaceClass, visualOffset, roughness, atlasTrust, context: contextAttr, zone: zoneAttr } = GROUND_V2_ATTRIBUTES;
+  const { surfaceClass, visualOffset, floor: floorAttr, roughness, atlasTrust, context: contextAttr, zone: zoneAttr } = GROUND_V2_ATTRIBUTES;
   // Task 11 follow-up: atlas SDF classification (see the file header and
   // `classifySurfaceFromAtlas`, which this GLSL block mirrors term for term).
   const bands = edgeBandsM(style);
@@ -603,12 +611,14 @@ export function groundShaderV2Chunks(style: MeridianStyle = MERIDIAN_STYLE): Gro
 
   const vertexHead = `attribute float ${surfaceClass};
 attribute float ${visualOffset};
+attribute float ${floorAttr};
 attribute float ${roughness};
 attribute float ${atlasTrust};
 attribute float ${contextAttr};
 attribute float ${zoneAttr};
 varying float vGolfV2Class;
 varying float vGolfV2Offset;
+varying float vGolfV2Floor;
 varying float vGolfV2Roughness;
 varying float vGolfV2AtlasTrust;
 varying float vGolfV2Context;
@@ -617,6 +627,7 @@ varying vec2 vGolfV2WorldXY;
 varying float vGolfV2WorldZ;`;
   const vertexMain = `vGolfV2Class = ${surfaceClass};
 vGolfV2Offset = ${visualOffset};
+vGolfV2Floor = ${floorAttr};
 vGolfV2Roughness = ${roughness};
 vGolfV2AtlasTrust = ${atlasTrust};
 vGolfV2Context = ${contextAttr};
@@ -633,6 +644,7 @@ uniform vec2 golfV2GreenMow;
 uniform vec4 golfV2GreenPad;
 varying float vGolfV2Class;
 varying float vGolfV2Offset;
+varying float vGolfV2Floor;
 varying float vGolfV2Roughness;
 varying float vGolfV2AtlasTrust;
 varying float vGolfV2Context;
@@ -1049,7 +1061,9 @@ float golfV2ResolvedRoughness;`;
   float golfLipLighten = clamp(vGolfV2Offset / ${norm.lipM.toFixed(3)}, 0.0, 1.0) * ${norm.lipLighten.toFixed(3)};
   diffuseColor.rgb *= 1.0 + golfLipLighten * (golfBunker ? 0.25 : 0.6);
   if (golfBunker) {
-    float golfDepthShade = clamp(-vGolfV2Offset / ${norm.depthM.toFixed(3)}, 0.0, 1.0) * ${norm.floorShade.toFixed(4)};
+    // §31 / V1: the floor darkens with depth as a share of its own bunker's
+    // bowl depth (golfV2Floor), full shade at every bunker's floor.
+    float golfDepthShade = clamp(vGolfV2Floor, 0.0, 1.0) * ${norm.floorShade.toFixed(4)};
     diffuseColor.rgb *= 1.0 - golfDepthShade;
   }
   // §53 context desaturation (V1, albedo only, never alpha): a neighbouring

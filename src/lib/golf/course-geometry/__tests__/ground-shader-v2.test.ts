@@ -18,7 +18,7 @@ import { compileFieldAtlas } from '../field-atlas';
 import { GREEN_SDF_GRADIENT_STEP_M, GREEN_SURFACE_GLSL_NAMES } from '../green-surface-v2';
 import {
   BUNKER_EDGE_VARIATION_WAVELENGTHS_M, BUNKER_RIM_GRADIENT_STEP_M, bunkerContactAt, bunkerOverhangAt, classAlbedoLinear, classifySurfaceFromAtlas, FAIRWAY_EDGE_GRADIENT_STEP_M,
-  FAIRWAY_GRAIN_BINDING, fairwayEdgeAt, fairwayGrainFactorAt, GROUND_ATLAS_TRACKED_CLASSES, GROUND_SDF_ATLAS_LAYERS, GROUND_SHADER_V2_VERSION, GROUND_V2_ATTRIBUTES, groundShaderV2Chunks, maxGroundEdgeBandM,
+  BUNKER_SHADE_NORM, FAIRWAY_GRAIN_BINDING, fairwayEdgeAt, fairwayGrainFactorAt, GROUND_ATLAS_TRACKED_CLASSES, GROUND_SDF_ATLAS_LAYERS, GROUND_SHADER_V2_VERSION, GROUND_V2_ATTRIBUTES, groundShaderV2Chunks, maxGroundEdgeBandM,
   pickFinestAtlas, RELIEF_FIELD_BINDING, roughHierarchyAt, SUN_GROUND_XY, type GroundAtlasClass, type RoughTier,
 } from '../ground-shader-v2';
 import { parseGeometryPackage } from '../schema';
@@ -449,7 +449,7 @@ describe('GOLF_V2_RELIEF rough hierarchy (fidelity §32–36, plan §48–50; me
   };
 
   it('bumps the shader version for the new program structure', () => {
-    expect(GROUND_SHADER_V2_VERSION).toBe('meridian-ground-v2-11');
+    expect(GROUND_SHADER_V2_VERSION).toBe('meridian-ground-v2-12');
   });
 
   it('§20 pad setting: the bank below the hole\'s own green pad darkens toward the green on V1\'s rough classes (rough share + the fairway surround), gated to the own green like the run-off', () => {
@@ -559,6 +559,18 @@ describe('bunker system in V2 (fidelity §26–28, renderer redesign §9; meridi
   const chunks = groundShaderV2Chunks();
   const bunker = MERIDIAN_STYLE.bunker;
   const sandBranch = chunks.fragmentColor.slice(chunks.fragmentColor.indexOf('if (golfWin == 1) {'), chunks.fragmentColor.indexOf('} else if (golfWin == 0) {'));
+
+  it('normalises the floor shade by each bunker\'s own profile depth through the golfV2Floor attribute (V1\'s rule; meridian-ground-v2-12)', () => {
+    expect(GROUND_V2_ATTRIBUTES.floor).toBe('golfV2Floor');
+    expect(chunks.vertexHead).toContain('attribute float golfV2Floor;');
+    expect(chunks.vertexHead).toContain('varying float vGolfV2Floor;');
+    expect(chunks.vertexMain).toContain('vGolfV2Floor = golfV2Floor;');
+    expect(chunks.fragmentHead).toContain('varying float vGolfV2Floor;');
+    expect(chunks.fragmentColor).toContain(`float golfDepthShade = clamp(vGolfV2Floor, 0.0, 1.0) * ${bunker.floorShade.toFixed(4)};`);
+    // No fixed metre range divides the offset any more: the share is baked per vertex by the component layer.
+    expect(chunks.fragmentColor).not.toMatch(/-vGolfV2Offset \/ 0\.7/);
+    expect('depthM' in BUNKER_SHADE_NORM).toBe(false);
+  });
 
   it('shades the sand under a sun-facing rim from a four-tap bunker SDF gradient at explicit LOD, V1 numbers, inside the sand branch only', () => {
     expect(sandBranch).toContain(`if (golfDBunker < ${bunker.overhangBandM.toFixed(3)}) {`);

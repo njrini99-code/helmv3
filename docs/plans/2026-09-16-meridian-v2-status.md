@@ -249,7 +249,13 @@ repeated here as they land.
   (V1 + V2) vs `bunker-after` on holes 7/1/5 green/approach — ≤ 0.45 % of
   pixels move by > 24 levels, all at bunker rims; the shaded side matches
   V1's (upper-right inner rim on hole 7's left greenside bunker at the green
-  preset).
+  preset). `meridian-ground-v2-12`: the floor shade divides each bowl
+  vertex's offset by its own bunker's profile depth (`golfV2Floor`,
+  `bunkerFloorShares` in three-world-v2.ts, owner = the profile the vertex
+  lies deepest inside, as `bunkerDisplacement` chose) instead of one 0.7 m
+  range, V1's `floorShade · depth / bowlDepthM`; `lod-final` vs
+  `floor-after` on 7/1/5 green/approach moves ≤ 1.1 % of pixels by > 1
+  level and none by > 3, all on bunker floors.
 - Fairway edge types in V2 (`meridian-ground-v2-10`, 2026-09-17, fidelity §65
   #3 / §10 / §10.3): fairway fragments within `fairwayEdge.fieldM` (0.8 m) of
   the outline darken by V1's crisp lip (4.5 %) within 8 m of a bunker or

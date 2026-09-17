@@ -25,7 +25,7 @@
  * sets `GOLF_V2_ATLAS`, leaving the pre-atlas vertex-colour path exactly as
  * it was (ground-shader-v2.ts's own fallback contract). */
 import * as THREE from 'three';
-import { compileHeroPatches, type CompiledBunkerPatch } from '@/lib/golf/course-geometry/bunker-display-mesh';
+import { bunkerSignedDistance, compileHeroPatches, type BunkerHeroProfile, type CompiledBunkerPatch } from '@/lib/golf/course-geometry/bunker-display-mesh';
 import { compileBunkerNormalField } from '@/lib/golf/course-geometry/bunker-normal-field';
 import { compileBaseDisplayLod0, weldAndCleanTerrainMesh } from '@/lib/golf/course-geometry/display-mesh-v2';
 import { compileFairwayDirectionField, fairwayDirectionLayer, type FairwayDirectionField } from '@/lib/golf/course-geometry/fairway-direction-field';
@@ -710,6 +710,7 @@ function buildBaseGeometry(base: PackedDisplayMesh, patchedRangeIds: ReadonlySet
   geometry.setAttribute('color', new THREE.BufferAttribute(color, 3));
   geometry.setAttribute(GROUND_V2_ATTRIBUTES.surfaceClass, new THREE.BufferAttribute(classFloat, 1));
   geometry.setAttribute(GROUND_V2_ATTRIBUTES.visualOffset, new THREE.BufferAttribute(new Float32Array(base.vertexCount), 1));
+  geometry.setAttribute(GROUND_V2_ATTRIBUTES.floor, new THREE.BufferAttribute(new Float32Array(base.vertexCount), 1));
   geometry.setAttribute(GROUND_V2_ATTRIBUTES.roughness, new THREE.BufferAttribute(roughness, 1));
   geometry.setAttribute(GROUND_V2_ATTRIBUTES.atlasTrust, new THREE.BufferAttribute(atlasTrust, 1));
   geometry.setAttribute(GROUND_V2_ATTRIBUTES.context, new THREE.BufferAttribute(context, 1));
@@ -738,6 +739,26 @@ function buildBaseGeometry(base: PackedDisplayMesh, patchedRangeIds: ReadonlySet
   return { geometry, drawnTriangles };
 }
 
+/** V1's per-bunker floor normalisation for the shader's `golfV2Floor`: a
+ * vertex sunk into a bowl (negative offset) carries that depth as a share of
+ * the profile depth of the bunker that owns it — the one it lies deepest
+ * inside by signed distance, the same choice `bunkerDisplacement` made when
+ * it sank the vertex — so every bunker reaches full floor shade at its own
+ * floor. 0 on the lip, the rim and everywhere with no bowl. */
+export function bunkerFloorShares(positions: Float32Array, offsetM: Float32Array, profiles: readonly BunkerHeroProfile[]): Float32Array {
+  const floor = new Float32Array(offsetM.length);
+  if (!profiles.length) return floor;
+  for (let v = 0; v < offsetM.length; v++) {
+    const depth = -offsetM[v]!;
+    if (depth <= 0) continue;
+    const point: [number, number] = [positions[v * 3]!, positions[v * 3 + 1]!];
+    let owner = profiles[0]!, ownerD = -Infinity;
+    for (const profile of profiles) { const d = bunkerSignedDistance(point, profile); if (d > ownerD) { owner = profile; ownerD = d; } }
+    floor[v] = owner.depthM > 0 ? depth / owner.depthM : 0;
+  }
+  return floor;
+}
+
 function buildPatchGeometry(compiled: CompiledBunkerPatch, style: MeridianStyle, atlasPainted: boolean, normals: Float32Array, scene: HoleScene | null): THREE.BufferGeometry {
   const { patch, triangleClass } = compiled;
   const geometry = new THREE.BufferGeometry();
@@ -757,6 +778,7 @@ function buildPatchGeometry(compiled: CompiledBunkerPatch, style: MeridianStyle,
   geometry.setAttribute('color', new THREE.BufferAttribute(color, 3));
   geometry.setAttribute(GROUND_V2_ATTRIBUTES.surfaceClass, new THREE.BufferAttribute(classFloat, 1));
   geometry.setAttribute(GROUND_V2_ATTRIBUTES.visualOffset, new THREE.BufferAttribute(offset, 1));
+  geometry.setAttribute(GROUND_V2_ATTRIBUTES.floor, new THREE.BufferAttribute(bunkerFloorShares(patch.positions, offset, compiled.profiles ?? []), 1));
   geometry.setAttribute(GROUND_V2_ATTRIBUTES.roughness, new THREE.BufferAttribute(roughness, 1));
   geometry.setAttribute(GROUND_V2_ATTRIBUTES.atlasTrust, new THREE.BufferAttribute(atlasTrust, 1));
   geometry.setAttribute(GROUND_V2_ATTRIBUTES.context, new THREE.BufferAttribute(context, 1));
