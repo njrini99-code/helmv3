@@ -27,7 +27,7 @@
 import * as THREE from 'three';
 import { compileHeroPatches, type CompiledBunkerPatch } from '@/lib/golf/course-geometry/bunker-display-mesh';
 import { compileBunkerNormalField } from '@/lib/golf/course-geometry/bunker-normal-field';
-import { compileBaseDisplayLods, weldAndCleanTerrainMesh } from '@/lib/golf/course-geometry/display-mesh-v2';
+import { compileBaseDisplayLod0, weldAndCleanTerrainMesh } from '@/lib/golf/course-geometry/display-mesh-v2';
 import { compileFairwayDirectionField, fairwayDirectionLayer, type FairwayDirectionField } from '@/lib/golf/course-geometry/fairway-direction-field';
 import { compileFieldAtlas, fieldAtlasBytes, type FieldAtlasSources } from '@/lib/golf/course-geometry/field-atlas';
 import type { ForestEdgeV2Result } from '@/lib/golf/course-geometry/forest-edge-v2';
@@ -222,9 +222,11 @@ export function assembleV2World(scene: HoleScene, mesh: TerrainMesh, options: As
   try {
     const welded = weldAndCleanTerrainMesh(mesh);
     const plan = compileHeroRegions(scene, mesh, welded);
-    const lods = compileBaseDisplayLods(mesh, { heroPlan: { triangleRegion: plan.triangleRegion, regionIds: plan.regionIds } });
+    // LOD0 only: the runtime draws it under the hero patches and never reads
+    // LOD1/2 or the compile report (the view-dependent base LOD was tried and
+    // reverted — the patch rims are stitched against LOD0).
+    const base = compileBaseDisplayLod0(mesh, { heroPlan: { triangleRegion: plan.triangleRegion, regionIds: plan.regionIds } });
     const patches = compileHeroPatches(scene, mesh, welded, plan);
-    const base = lods.lod0;
     const boundsM = boundsOfPositions(base.positions);
 
     // The curvature and (atlas-default) sky fields are grid-wide and identical

@@ -75,19 +75,35 @@ export function compileSkyField(grid: MetricTerrainGrid, options: SkyFieldOption
   const steps = marchSteps(radiusNodes);
   const directions = Math.max(1, Math.round(options.directions));
   const azimuths = Array.from({ length: directions }, (_, k) => { const a = 2 * Math.PI * k / directions; return [Math.cos(a), Math.sin(a)] as const; });
+  // The march is the same integer offset pattern from every node, so the
+  // rounded (column, row) offsets and their sample distances are computed
+  // once per direction and step rather than once per node and sample (the
+  // compile's largest single cost before this). Zero-distance steps (a
+  // step that rounds onto the node itself) are dropped here exactly as the
+  // per-node loop skipped them.
+  const rayColumns: Int32Array[] = [], rayRows: Int32Array[] = [], rayDistances: Float64Array[] = [];
+  for (const [ux, uy] of azimuths) {
+    const dcs: number[] = [], drs: number[] = [], distances: number[] = [];
+    for (const d of steps) {
+      const dc = Math.round(ux * d), dr = Math.round(uy * d), distance = Math.hypot(dc, dr) * spacingM;
+      dcs.push(dc); drs.push(dr); distances.push(distance);
+    }
+    rayColumns.push(Int32Array.from(dcs)); rayRows.push(Int32Array.from(drs)); rayDistances.push(Float64Array.from(distances));
+  }
   for (let r = 0; r < rows; r++) for (let c = 0; c < columns; c++) {
     const n = r * columns + c, z0 = heightsM[n];
     if (z0 == null) continue;
     support[n] = 1;
     let rays = 0, open = 0, fall = 0, bx = 0, by = 0, bz = 0;
-    for (const [ux, uy] of azimuths) {
+    for (let k = 0; k < directions; k++) {
+      const [ux, uy] = azimuths[k]!, dcs = rayColumns[k]!, drs = rayRows[k]!, distances = rayDistances[k]!;
       let maxTan = Number.NEGATIVE_INFINITY, minTan = Number.POSITIVE_INFINITY;
-      for (const d of steps) {
-        const cc = c + Math.round(ux * d), rr = r + Math.round(uy * d);
+      for (let i = 0; i < dcs.length; i++) {
+        const cc = c + dcs[i]!, rr = r + drs[i]!;
         if (cc < 0 || rr < 0 || cc >= columns || rr >= rows) break;
         const z = heightsM[rr * columns + cc];
         if (z == null) continue;
-        const distance = Math.hypot(cc - c, rr - r) * spacingM;
+        const distance = distances[i]!;
         if (distance <= 0) continue;
         const tan = (z - z0) / distance;
         if (tan > maxTan) maxTan = tan;

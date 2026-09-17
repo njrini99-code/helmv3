@@ -64,14 +64,27 @@ function terrainOcclusion(grid: MetricTerrainGrid, layout: { originM: readonly [
   const step = layout.spacingM / 2, steps = Math.ceil(reachM / step);
   let top = -Infinity;
   for (const h of grid.heightsM) if (h != null && Number.isFinite(h) && h > top) top = h;
+  // The march samples the grid millions of times per hole: this is
+  // `sampleMetricTerrain` inlined (same arithmetic, same null rules) without
+  // the per-call point tuple, which was most of the compile's garbage.
+  const { columns, rows, spacingM, heightsM } = grid, ox = grid.originM[0], oy = grid.originM[1];
+  const sample = (x: number, y: number): number | null => {
+    const gx = (x - ox) / spacingM, gy = (y - oy) / spacingM;
+    if (gx < 0 || gy < 0 || gx > columns - 1 || gy > rows - 1) return null;
+    const ix = Math.min(Math.floor(gx), columns - 2), iy = Math.min(Math.floor(gy), rows - 2);
+    const fx = gx - ix, fy = gy - iy, i = iy * columns + ix;
+    const a = heightsM[i], b = heightsM[i + 1], c = heightsM[i + columns], d = heightsM[i + columns + 1];
+    if (a == null || b == null || c == null || d == null) return null;
+    return (1 - fx) * ((1 - fy) * a + fy * c) + fx * ((1 - fy) * b + fy * d);
+  };
   for (let row = 0; row < layout.rows; row++) for (let column = 0; column < layout.columns; column++) {
     const x0 = layout.originM[0] + column * layout.spacingM, y0 = layout.originM[1] + row * layout.spacingM;
-    const z0 = sampleMetricTerrain(grid, [x0, y0]);
+    const z0 = sample(x0, y0);
     if (z0 == null) continue;
     for (let s = 1; s <= steps; s++) {
       const d = s * step, z = z0 + rise * d;
       if (z > top) break;
-      const ground = sampleMetricTerrain(grid, [x0 + dx * d, y0 + dy * d]);
+      const ground = sample(x0 + dx * d, y0 + dy * d);
       if (ground == null) break;
       if (ground > z + 0.02) { out[row * layout.columns + column] = 0; break; }
     }
@@ -96,19 +109,36 @@ function canopyOcclusion(scene: HoleScene, grid: MetricTerrainGrid, layout: { or
     });
   }
   if (!crowns.length) return { shadow: out, crowns: 0 };
-  // Bucket crowns by the ground cell their shadow can reach: a crown at
-  // height h throws its shadow up to (h + r) / tan(elevation) away.
+  // Bucket crowns by the ground cells their shadow can reach. A node is
+  // shadowed only if its sun ray meets the sphere, so the footprint of a
+  // crown's shadow is a strip running down-sun from the crown: at most
+  // (crown top − lowest ground) / tan(elevation) long plus the radius, and
+  // no wider than the radius either side. (Heights are absolute metres, so
+  // the earlier "(z + r) / tan" reach was the whole hole and every node
+  // tested every crown.) The strip is a conservative bound, so the
+  // per-node test below sees every crown that can shadow it.
   const horizontal = Math.hypot(sun[0], sun[1]), elevation = Math.atan2(sun[2], horizontal);
-  const reach = Math.max(...crowns.map(c => (c.z + c.r) / Math.tan(elevation))) + Math.max(...crowns.map(c => c.r));
+  let lowest = Infinity;
+  for (const h of grid.heightsM) if (h != null && h < lowest) lowest = h;
+  if (!Number.isFinite(lowest)) return { shadow: out, crowns: crowns.length };
+  const hx = sun[0] / horizontal, hy = sun[1] / horizontal, tanElevation = Math.tan(elevation);
   const cell = Math.max(layout.spacingM, 4), cols = Math.ceil(layout.columns * layout.spacingM / cell) + 1, rowsB = Math.ceil(layout.rows * layout.spacingM / cell) + 1;
   const buckets = new Map<number, number[]>();
+  const stamp = new Int32Array(cols * rowsB).fill(-1);
   crowns.forEach((c, i) => {
-    const cx = Math.floor((c.x - layout.originM[0]) / cell), cy = Math.floor((c.y - layout.originM[1]) / cell);
-    const span = Math.ceil(reach / cell);
-    for (let by = cy - span; by <= cy + span; by++) for (let bx = cx - span; bx <= cx + span; bx++) {
-      if (bx < 0 || by < 0 || bx >= cols || by >= rowsB) continue;
-      const key = by * cols + bx, list = buckets.get(key);
-      if (list) list.push(i); else buckets.set(key, [i]);
+    const along = Math.max(0, c.z - lowest + c.r) / tanElevation + c.r, half = c.r + cell;
+    for (let s = 0; ; s += cell / 2) {
+      const d = Math.min(s, along), px = c.x - hx * d, py = c.y - hy * d;
+      const x0 = Math.max(0, Math.floor((px - half - layout.originM[0]) / cell)), x1 = Math.min(cols - 1, Math.floor((px + half - layout.originM[0]) / cell));
+      const y0 = Math.max(0, Math.floor((py - half - layout.originM[1]) / cell)), y1 = Math.min(rowsB - 1, Math.floor((py + half - layout.originM[1]) / cell));
+      for (let by = y0; by <= y1; by++) for (let bx = x0; bx <= x1; bx++) {
+        const key = by * cols + bx;
+        if (stamp[key] === i) continue;
+        stamp[key] = i;
+        const list = buckets.get(key);
+        if (list) list.push(i); else buckets.set(key, [i]);
+      }
+      if (s >= along) break;
     }
   });
   for (let row = 0; row < layout.rows; row++) for (let column = 0; column < layout.columns; column++) {

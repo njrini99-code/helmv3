@@ -784,9 +784,8 @@ function lodTargets(canonical: number, options: DisplayLodOptions): { lod0: numb
   return { lod0, lod2 };
 }
 
-/** Compile LOD0/1/2 from the canonical mesh and its source grid. */
-export function compileBaseDisplayLods(mesh: TerrainMesh, options: Partial<DisplayLodOptions> = {}): BaseDisplayLods {
-  const opts: DisplayLodOptions = { ...DISPLAY_LOD_OPTIONS, ...options };
+/** The shared front half of the LOD compile: weld, clean, plan, refine LOD0. */
+function compileLod0(mesh: TerrainMesh, opts: DisplayLodOptions) {
   const raw = weldTerrainMesh(mesh);
   const cleaned = cleanDisplayMesh(raw, opts.weldToleranceM);
   const welded = cleaned.mesh;
@@ -799,6 +798,23 @@ export function compileBaseDisplayLods(mesh: TerrainMesh, options: Partial<Displ
   const importance = refinementImportance(mesh, welded, table, opts);
   const red = selectRedTriangles(welded, importance, targets.lod0);
   const refinedResult = refineDisplayMesh(mesh, welded, red);
+  return { raw, cleaned, welded, table, targets, refinedResult };
+}
+
+/** LOD0 alone, packed exactly as `compileBaseDisplayLods(...).lod0` — for the
+ * runtime, which draws LOD0 under the hero patches and never reads LOD1/2
+ * or the report (the offline compiler and the lab keep the full compile;
+ * the report's Hausdorff and topology checks are a third of its cost). */
+export function compileBaseDisplayLod0(mesh: TerrainMesh, options: Partial<DisplayLodOptions> = {}): PackedDisplayMesh {
+  const opts: DisplayLodOptions = { ...DISPLAY_LOD_OPTIONS, ...options };
+  const { refinedResult } = compileLod0(mesh, opts);
+  return packDisplayMesh(mesh, orderHeroRegionsLast(refinedResult.mesh), opts.heroPlan?.regionIds);
+}
+
+/** Compile LOD0/1/2 from the canonical mesh and its source grid. */
+export function compileBaseDisplayLods(mesh: TerrainMesh, options: Partial<DisplayLodOptions> = {}): BaseDisplayLods {
+  const opts: DisplayLodOptions = { ...DISPLAY_LOD_OPTIONS, ...options };
+  const { raw, cleaned, welded, table, targets, refinedResult } = compileLod0(mesh, opts);
   const simplified = simplifyDisplayMesh(welded, table.locked, targets.lod2, opts.collapseToleranceM);
   const regionIds = opts.heroPlan?.regionIds;
   const working: Record<DisplayLodName, DisplayMesh> = { lod0: orderHeroRegionsLast(refinedResult.mesh), lod1: orderHeroRegionsLast(welded), lod2: orderHeroRegionsLast(simplified.mesh) };

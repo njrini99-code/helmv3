@@ -28,7 +28,7 @@ export const terrainSourceFields = {
 };
 
 export function sampleMetricTerrain(grid: MetricTerrainGrid, [x, y]: PointM): number | null {
-  if (![x, y].every(Number.isFinite)) return null;
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
   const gx = (x - grid.originM[0]) / grid.spacingM, gy = (y - grid.originM[1]) / grid.spacingM;
   if (gx < 0 || gy < 0 || gx > grid.columns - 1 || gy > grid.rows - 1) return null;
   const ix = Math.min(Math.floor(gx), grid.columns - 2), iy = Math.min(Math.floor(gy), grid.rows - 2);

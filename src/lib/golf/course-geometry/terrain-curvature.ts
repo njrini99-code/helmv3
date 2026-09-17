@@ -113,10 +113,12 @@ export function compileCurvature(grid: MetricTerrainGrid, radiusM: number): Floa
  * range (p95 − p05 < 1e-9) gives every node. */
 export function normalizeCurvature(values: Float32Array, support: Uint8Array | null, percentiles = { low: 5, high: 95 }): Float32Array {
   const normalized = new Float32Array(values.length);
-  const supported: number[] = [];
-  for (let node = 0; node < values.length; node++) if (support == null || support[node] === 1) supported.push(values[node] ?? 0);
-  if (supported.length === 0) return normalized;
-  supported.sort((a, b) => a - b);
+  const collected: number[] = [];
+  for (let node = 0; node < values.length; node++) if (support == null || support[node] === 1) collected.push(values[node] ?? 0);
+  if (collected.length === 0) return normalized;
+  // Typed-array sort: numeric ascending without a comparator call per pair
+  // (the comparator sort was a fifth of the whole curvature compile).
+  const supported = Float64Array.from(collected).sort();
   const low = percentileOf(supported, percentiles.low), range = percentileOf(supported, percentiles.high) - low;
   if (!(range >= 1e-9)) return normalized;
   for (let node = 0; node < values.length; node++) {
@@ -126,7 +128,7 @@ export function normalizeCurvature(values: Float32Array, support: Uint8Array | n
   return normalized;
 }
 
-function percentileOf(ascending: readonly number[], percentile: number): number {
+function percentileOf(ascending: ArrayLike<number>, percentile: number): number {
   const rank = Math.max(0, Math.min(ascending.length - 1, (ascending.length - 1) * percentile / 100));
   const lower = Math.floor(rank), upper = Math.min(lower + 1, ascending.length - 1);
   return (ascending[lower] ?? 0) + (rank - lower) * ((ascending[upper] ?? 0) - (ascending[lower] ?? 0));

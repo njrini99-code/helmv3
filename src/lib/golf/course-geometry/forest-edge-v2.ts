@@ -52,7 +52,7 @@
  * uses (`terrain-canopy.ts`, `three-landscape.ts`); a point the terrain
  * cannot answer for is dropped rather than guessed (no floating trunks,
  * §63). Three-free (R12): this module is consumed by a renderer, never one. */
-import { featureSeed, smootherstep } from './bunker-profile';
+import { bboxDistance, featureSeed, ringBbox, smootherstep, type Ring } from './bunker-profile';
 import { allocateCrowns } from './canopy';
 import { CONTEXT_CLASS_GROUPS, type ContextClass } from './context-taxonomy';
 import { boundaryDistance } from './display-outline';
@@ -220,6 +220,15 @@ function edgeDistanceM(point: PointM, region: ForestRegion): number {
   for (const component of region.parts) for (const ring of component) min = Math.min(min, boundaryDistance(point, ring));
   return min;
 }
+/** The same minimum over rings that carry their bounding box: a ring whose
+ * box is already farther than the best so far cannot improve it
+ * (`bboxDistance` never exceeds the boundary distance), so its segments are
+ * skipped. Exact — only the work changes. */
+function nearestRingDistanceM(point: PointM, rings: readonly Ring[]): number {
+  let min = Infinity;
+  for (const { ring, box } of rings) if (bboxDistance(point, box) < min) min = Math.min(min, boundaryDistance(point, ring));
+  return min;
+}
 
 /** §65: crowns are densest at the boundary and thin inward, but never to
  * zero (mass carries the rest, §66) — an explicit rule so the gradient
@@ -331,10 +340,17 @@ export function compileForestEdgeV2(scene: HoleScene, mesh: TerrainMesh, options
   for (const feature of scene.contextFeatures ?? []) allFeatures.set(feature.id, feature);
   for (const feature of scene.features) allFeatures.set(feature.id, feature);
   const playFeatures = [...allFeatures.values()].filter(f => f.kind !== 'woods' && f.kind !== 'route');
-  const playRings = playFeatures.flatMap(f => f.parts.flat());
+  // Every play ring with its bounding box: the clearance and nearness tests
+  // below run for every candidate of every region, and the box lets each
+  // one skip the rings that cannot matter (exact: a box is never farther
+  // than its ring's boundary, and a point outside a feature's box is
+  // outside the feature).
+  const playRings: Ring[] = playFeatures.flatMap(f => f.parts.flat().map(ring => ({ ring, box: ringBbox(ring) })));
+  const playFeatureBoxes = playFeatures.map(f => ({ feature: f, box: ringBbox(f.parts.flat(2)) }));
   const isClear = (point: PointM, clearanceM: number) =>
-    !playFeatures.some(f => inFeature(point, f)) && !playRings.some(ring => boundaryDistance(point, ring) < clearanceM);
-  const nearnessToPlay = (point: PointM) => playRings.reduce((min, ring) => Math.min(min, boundaryDistance(point, ring)), Infinity);
+    !playFeatureBoxes.some(({ feature, box }) => bboxDistance(point, box) === 0 && inFeature(point, feature))
+    && !playRings.some(({ ring, box }) => bboxDistance(point, box) < clearanceM && boundaryDistance(point, ring) < clearanceM);
+  const nearnessToPlay = (point: PointM) => nearestRingDistanceM(point, playRings);
 
   const extent = terrainExtent(mesh);
   const draftsFor = (predicate: (region: ForestRegion) => boolean, spacingM: number, clearanceM: number, gate: (draft: Draft) => boolean): Draft[][] =>
