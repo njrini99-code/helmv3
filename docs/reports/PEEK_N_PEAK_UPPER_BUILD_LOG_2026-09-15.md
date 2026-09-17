@@ -354,8 +354,8 @@ In the order they happened.
    `share` became `_`.
 
 9. **Vite `--outDir` resolved relative to the fixture root**, leaving a
-   stray `src/test/fixtures/course-geometry/browser/output`. Used an absolute
-   path and removed the stray directory.
+   stray `output/` directory under `src/test/fixtures/course-geometry/browser/`.
+   Used an absolute path and removed the stray directory.
 
 10. **`vercel deploy` is denied to me.** The permission classifier treats it
     as a production deploy. You also rejected a follow-up cleanup command

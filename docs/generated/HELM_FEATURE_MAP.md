@@ -80,7 +80,7 @@ is a second thing to keep true.
 **Golf Round Lifecycle** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/golf-round-lifecycle.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/rounds/**`, `src/components/golf/course-geometry/**`, `src/components/fairway/pages/rounds/**`, `src/components/fairway/pages/rounds-new/**`, `src/components/fairway/pages/rounds-recover/**`, `src/components/fairway/pages/rounds-tracking/**` … and 33 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/rounds/**`, `src/components/golf/course-geometry/**`, `src/components/fairway/pages/rounds/**`, `src/components/fairway/pages/rounds-new/**`, `src/components/fairway/pages/rounds-recover/**`, `src/components/fairway/pages/rounds-tracking/**` … and 34 more in the registry
 - **Telemetry:** `round_tracking` (golfhelm, high), `course_library` (golfhelm, med)
 - **Incidents:** `memory/incidents/golf_round_lifecycle/INC-2026-08-19-assistant-coach-cascade-delete-round-history.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-25-completed-round-sg-capability.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-25-nondestructive-submit-and-checkpoint-fallback.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-25-recap-persist-schema-permission.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-30-account-deletion-still-cascades-golf-history.md`, `memory/incidents/golf_round_lifecycle/INC-2026-09-16-course-state-two-letter-rejection.md`
 - **Repair units:** none in the queue

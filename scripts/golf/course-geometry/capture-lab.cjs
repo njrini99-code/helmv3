@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable @typescript-eslint/no-require-imports -- repo-local capture script, same shape as capture-player-view.cjs */
 /**
  * Meridian lab capture (§94–95). Opens the render-quality lab with a URL
  * state, waits for a settled render, and writes the stage screenshot plus

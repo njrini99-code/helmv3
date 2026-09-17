@@ -468,6 +468,9 @@ features:
         - supabase/migrations/*ncaa_division*.sql
         - supabase/migrations/*integrity_completed_round*.sql
         - supabase/migrations/*blind_check*.sql
+        # One-Tap Live Round anchor store (Peek'n Peak Upper pilot; HELD,
+        # owner-gated, branch-only until an explicit migrate).
+        - supabase/migrations/*peek_n_peak_one_tap*.sql
         - supabase/migrations/*golf_attachments*.sql
       tests:
         - src/app/golf/actions/__tests__/golf-schemas.test.ts

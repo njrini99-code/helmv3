@@ -159,6 +159,9 @@ create table if not exists public.golf_round_course_bindings (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+-- RLS on from the first statement after creation (policies follow below);
+-- nothing can read or write the table through PostgREST before they exist.
+alter table public.golf_round_course_bindings enable row level security;
 
 comment on table public.golf_round_course_bindings is
   'One-Tap §73 round-course binding: the course, site and geometry/terrain '
@@ -249,6 +252,9 @@ create table if not exists public.golf_shot_anchors (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+-- RLS on from the first statement after creation (policies follow below);
+-- nothing can read or write the table through PostgREST before they exist.
+alter table public.golf_shot_anchors enable row level security;
 
 comment on table public.golf_shot_anchors is
   'One-Tap Live Round shot anchors (master design §72/§76). One tap = one '
@@ -347,6 +353,9 @@ create table if not exists public.golf_penalty_events (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+-- RLS on from the first statement after creation (policies follow below);
+-- nothing can read or write the table through PostgREST before they exist.
+alter table public.golf_penalty_events enable row level security;
 
 comment on table public.golf_penalty_events is
   'One-Tap penalty strokes (master design §58). A penalty is a SCORE fact tied '
@@ -391,9 +400,7 @@ create trigger golf_round_course_bindings_set_updated_at
 -- all three are present, which is what makes the second sync of the same
 -- anchor succeed instead of silently failing after the first.
 
-alter table public.golf_shot_anchors enable row level security;
-alter table public.golf_penalty_events enable row level security;
-alter table public.golf_round_course_bindings enable row level security;
+-- (RLS itself was enabled right after each CREATE TABLE above.)
 
 drop policy if exists "golf_shot_anchors_select" on public.golf_shot_anchors;
 create policy "golf_shot_anchors_select" on public.golf_shot_anchors
