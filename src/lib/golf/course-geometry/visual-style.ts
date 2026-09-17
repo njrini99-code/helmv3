@@ -253,6 +253,16 @@ export const MERIDIAN_STYLE = Object.freeze({
    * has dropped at the end of the ray) and caps at `max`. Derived from the
    * DEM alone: it says where the land shelters or sheds, never what grows. */
   terrainTone: Object.freeze({ sheltered: [.7, .94, 1.06] as const, exposed: [1.2, 1.03, .68] as const, floor: [.03, .004] as const, gain: [10, 36] as const, max: .8 }),
+  /** V2 plan §50 curvature-aware ground, the per-fragment counterpart of
+   * `terrainTone` for the V2 world (whose field atlas carries the landform
+   * curvature, ±1 over the hole's own 5th–95th percentile, positive =
+   * concave): concave ground takes a tiny dark/cool shift, convex/exposed
+   * ground a tiny light/warm one — multiplicative albedo tints reaching
+   * `concave`/`convex` at |curvature| = 1, about −3 % / +3 % luminance
+   * (the plan's 1–4 %), on the rough hierarchy only, never on the playing
+   * surfaces, sand, water or woods. Derived from the DEM alone; it says
+   * where the land is sculpted, never what grows there. */
+  curvatureTone: Object.freeze({ concave: [.955, .97, 1] as const, convex: [1.04, 1.03, .99] as const }),
   /** Outside-world context objects (player-view spec §13–14, §25): muted
    * mineral ribbons with a darker shoulder, restrained flat-roofed
    * structures, faint lines for fences and lifts. Widths/heights here are

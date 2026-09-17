@@ -17,15 +17,16 @@ import { compileFairwayDirectionField, type FairwayDirectionField } from '../fai
 import { compileFieldAtlas } from '../field-atlas';
 import { GREEN_SDF_GRADIENT_STEP_M, GREEN_SURFACE_GLSL_NAMES } from '../green-surface-v2';
 import {
-  classifySurfaceFromAtlas, FAIRWAY_GRAIN_BINDING, fairwayGrainFactorAt, GROUND_ATLAS_TRACKED_CLASSES, GROUND_SDF_ATLAS_LAYERS,
-  groundShaderV2Chunks, maxGroundEdgeBandM, pickFinestAtlas, RELIEF_FIELD_BINDING, type GroundAtlasClass,
+  classAlbedoLinear, classifySurfaceFromAtlas, FAIRWAY_GRAIN_BINDING, fairwayGrainFactorAt, GROUND_ATLAS_TRACKED_CLASSES, GROUND_SDF_ATLAS_LAYERS,
+  GROUND_SHADER_V2_VERSION, groundShaderV2Chunks, maxGroundEdgeBandM, pickFinestAtlas, RELIEF_FIELD_BINDING, roughHierarchyAt, type GroundAtlasClass, type RoughTier,
 } from '../ground-shader-v2';
 import { parseGeometryPackage } from '../schema';
 import { quantizeSignedDistance, SDF_RANGE_M } from '../surface-distance-field';
 import { parseTerrainMesh, type TerrainMesh } from '../terrain';
 import type { HoleScene, LocalFeature, PointM } from '../types';
 import type { PackedFieldAtlas } from '../visual-artifact-v2';
-import { MERIDIAN_STYLE } from '../visual-style';
+import { SURFACE_CLASS_IDS } from '../visual-artifact';
+import { hexToRgb, MERIDIAN_STYLE, srgbToLinear } from '../visual-style';
 
 const circle = (cx: number, cy: number, r: number, sides = 96): PointM[] => {
   const ring: PointM[] = [];
@@ -339,9 +340,17 @@ describe('GOLF_V2_RELIEF wiring (Task 13 §34 run-off)', () => {
     expect(chunks.fragmentHead).not.toContain('golfV2ReliefFrame');
   });
 
+  it('samples the relief texture once, outside any branch, through golfV2SdfFrame\'s uv, and shares the tap between the hierarchy and the run-off', () => {
+    expect((chunks.fragmentColor.match(new RegExp(`texture2D(?:LodEXT)?\\(${RELIEF_FIELD_BINDING.sampler}`, 'g')) ?? []).length).toBe(1);
+    expect(chunks.fragmentColor).toContain(`vec4 golfRelief = texture2D(${RELIEF_FIELD_BINDING.sampler}, golfSdfUv);`);
+    expect(chunks.fragmentColor).toContain('float golfDTee = golfRelief.b;');
+    expect(chunks.fragmentColor).toContain('vec2 golfSlopeXY = golfRelief.rg;');
+    expect(chunks.fragmentColor).toContain('clamp(golfRelief.a, -1.0, 1.0)');
+  });
+
   it('calls the green-surface run-off function with the relief slope and a four-tap SDF gradient at GREEN_SDF_GRADIENT_STEP_M, then applies runoff.mix toward apron and the apron roughness', () => {
-    const block = chunks.fragmentColor.slice(chunks.fragmentColor.indexOf(`#ifdef ${RELIEF_FIELD_BINDING.define}`));
-    expect(block).toContain(`texture2DLodEXT(${RELIEF_FIELD_BINDING.sampler}, golfSdfUv, 0.0).rg`);
+    const block = chunks.fragmentColor.slice(chunks.fragmentColor.indexOf('float golfRunoffClaim'));
+    expect(block).toContain('vec2 golfSlopeXY = golfRelief.rg;');
     expect(block).toContain(`vec2(${GREEN_SDF_GRADIENT_STEP_M.toFixed(4)}) * golfV2SdfFrame.zw`);
     expect(block).toContain(`/ ${(2 * GREEN_SDF_GRADIENT_STEP_M).toFixed(4)}`);
     expect((block.match(/texture2DLodEXT\(golfV2Sdf,/g) ?? []).length).toBe(4);
@@ -417,7 +426,113 @@ describe('GLSL structural sanity for GOLF_V2_FAIRWAY (Task 12 wiring)', () => {
       expect(stripped.includes(`${GREEN_SURFACE_GLSL_NAMES.runoff}(3.0, golfDGreen`)).toBe(live);
       // The sampler is declared exactly when the define is set, and only ever read inside the atlas block.
       expect(stripped.includes(`uniform sampler2D ${RELIEF_FIELD_BINDING.sampler}`)).toBe(combo.includes('GOLF_V2_RELIEF'));
-      expect(stripped.includes(`texture2DLodEXT(${RELIEF_FIELD_BINDING.sampler}`)).toBe(live);
+      expect(stripped.includes(`texture2D(${RELIEF_FIELD_BINDING.sampler}`)).toBe(live);
+      // The rough hierarchy (meridian-ground-v2-7) rides the same pair of defines.
+      expect(stripped.includes('float golfDPlay')).toBe(live);
+      expect(stripped.includes('golfRoughShare')).toBe(live);
+      // The turf-field scales it raises always exist (declared outside every define) so the turf line compiles in every combination.
+      expect(stripped).toContain('float golfMacroScale = 1.0, golfMicroScale = 1.0;');
+      expect(stripped).toContain('golfMacroScale * golfTurfWeight');
     });
   }
+});
+
+describe('GOLF_V2_RELIEF rough hierarchy (fidelity §32–36, plan §48–50; meridian-ground-v2-7)', () => {
+  const chunks = groundShaderV2Chunks();
+  const rh = MERIDIAN_STYLE.roughHierarchy, tone = MERIDIAN_STYLE.curvatureTone;
+  const block = chunks.fragmentColor.slice(chunks.fragmentColor.indexOf('float golfTeeIn'), chunks.fragmentColor.indexOf('GolfV2GreenBand golfGB'));
+  const v3 = (v: readonly [number, number, number]) => `vec3(${v[0].toFixed(4)}, ${v[1].toFixed(4)}, ${v[2].toFixed(4)})`;
+  const ratio = (key: 'roughFirstCut' | 'roughSecondary' | 'roughOuter'): [number, number, number] => {
+    const rough = classAlbedoLinear('rough'), [r, g, b] = hexToRgb(MERIDIAN_STYLE.palette[key]);
+    return [srgbToLinear(r) / rough[0], srgbToLinear(g) / rough[1], srgbToLinear(b) / rough[2]];
+  };
+
+  it('bumps the shader version for the new program structure', () => {
+    expect(GROUND_SHADER_V2_VERSION).toBe('meridian-ground-v2-7');
+  });
+
+  it('measures the play distance from the nearest fairway/green/tee (own + context, via the SDFs) and adds the metres outside the atlas, so clamped edge texels never smear a band across far ground', () => {
+    expect(block).toContain('float golfDPlay = max(0.0, -max(max(golfDFairway, golfDGreen), golfDTee)) + max(golfOutsideM.x, golfOutsideM.y);');
+    expect(block).toContain('vec2 golfOutsideM = max(vec2(0.0), max(-golfSdfUv, golfSdfUv - 1.0)) / golfV2SdfFrame.zw;');
+  });
+
+  it('banks the rough with V1\'s own bands and blends, as ratios to the rough albedo (first cut lifts, secondary and outer darken)', () => {
+    expect(block).toContain(`smoothstep(${(rh.firstCutM - rh.firstCutBlendM).toFixed(4)}, ${(rh.firstCutM + rh.firstCutBlendM).toFixed(4)}, golfDPlay)`);
+    expect(block).toContain(`smoothstep(${(rh.secondaryM - rh.secondaryBlendM).toFixed(4)}, ${(rh.secondaryM + rh.secondaryBlendM).toFixed(4)}, golfDPlay)`);
+    expect(block).toContain(`smoothstep(${(rh.outerM - rh.outerBlendM).toFixed(4)}, ${(rh.outerM + rh.outerBlendM).toFixed(4)}, golfDPlay)`);
+    const firstCut = ratio('roughFirstCut'), secondary = ratio('roughSecondary'), outer = ratio('roughOuter');
+    expect(block).toContain(`vec3 golfTier = mix(mix(mix(${v3(firstCut)}, vec3(1.0), golfToPrimary), ${v3(secondary)}, golfToSecondary), ${v3(outer)}, golfToOuter);`);
+    expect(Math.min(...firstCut)).toBeGreaterThan(1); // #6A8A42 over #607D3D
+    expect(Math.max(...secondary)).toBeLessThan(1);
+    expect(Math.max(...outer)).toBeLessThan(Math.min(...secondary));
+    expect(block).toContain('diffuseColor.rgb *= mix(vec3(1.0), golfTier * golfSlopeShade * golfCurvTone, golfRoughShare);');
+  });
+
+  it('applies the hierarchy to the fragment\'s untracked share only, minus the tee band (from the SDF) and the woods share (continuous in the interpolated class, no mid-triangle step)', () => {
+    expect(block).toContain('float golfTeeIn = smoothstep(-0.0600, 0.0600, golfDTee);');
+    expect(block).toContain(`float golfWoodsIn = clamp(golfClass - ${(SURFACE_CLASS_IDS.indexOf('woods') - 1).toFixed(1)}, 0.0, 1.0);`);
+    expect(block).toContain('float golfRoughShare = (1.0 - golfWeight) * (1.0 - golfTeeIn) * (1.0 - golfWoodsIn);');
+    expect(block).not.toContain('vGolfV2AtlasTrust'); // never gated on the tracked flag (the opposite set) or a discrete class test
+  });
+
+  it('darkens steeper secondary/outer ground by slope alone (V1 slopeDarken/slopeFullAt) and tints by landform curvature within the plan\'s 1–4 % luminance', () => {
+    expect(block).toContain('float golfSlopeV1 = 1.0 - inversesqrt(1.0 + dot(golfRelief.rg, golfRelief.rg));');
+    expect(block).toContain(`float golfSlopeShade = 1.0 - ${rh.slopeDarken.toFixed(4)} * min(1.0, golfSlopeV1 / ${rh.slopeFullAt.toFixed(4)}) * golfToSecondary;`);
+    expect(block).toContain(`vec3 golfCurvTone = mix(vec3(1.0), ${v3(tone.concave)}, max(0.0, golfCurv)) * mix(vec3(1.0), ${v3(tone.convex)}, max(0.0, -golfCurv));`);
+    const luminance = (v: readonly [number, number, number]) => .2126 * v[0] + .7152 * v[1] + .0722 * v[2];
+    expect(1 - luminance(tone.concave)).toBeGreaterThanOrEqual(.01); expect(1 - luminance(tone.concave)).toBeLessThanOrEqual(.04);
+    expect(luminance(tone.convex) - 1).toBeGreaterThanOrEqual(.01); expect(luminance(tone.convex) - 1).toBeLessThanOrEqual(.04);
+  });
+
+  it('raises the outer rough\'s macro field and the rough/surround/fringe/apron micro cue by class (V1 outerMacroScale, microByClass)', () => {
+    const micro = MERIDIAN_STYLE.turf.microByClass;
+    expect(block).toContain(`golfMacroScale = mix(1.0, ${rh.outerMacroScale.toFixed(4)}, golfRoughShare * golfToOuter);`);
+    expect(block).toContain(`golfMicroScale = mix(1.0, ${micro.rough.toFixed(4)}, golfRoughShare);`);
+    expect(block).toContain(`if (golfWin == 5) golfMicroScale = mix(golfMicroScale, ${micro.surround.toFixed(4)}, golfWeight);`);
+    expect(block).toContain(`if (golfWin == 4) golfMicroScale = mix(golfMicroScale, ${micro.fringe.toFixed(4)}, golfWeight);`);
+    expect(chunks.fragmentColor).toContain(`golfMicroScale = mix(golfMicroScale, ${micro.apron.toFixed(4)}, golfGB.weight * golfWeight);`);
+    expect(block).toContain(`golfV2ResolvedRoughness = mix(golfV2ResolvedRoughness, ${MERIDIAN_STYLE.surface.roughness.rough_outer.toFixed(5)}, golfRoughShare * golfToOuter);`);
+  });
+
+  it('roughHierarchyAt mirrors the block: inside a playing surface nothing, first cut beside it, primary, secondary and outer by distance, tee excluded by its own band', () => {
+    const scene = sceneWith([feature('fairway-1', 'fairway', circle(0, 0, 20)), feature('tee-1', 'tee', circle(60, 0, 4))]);
+    const wide = compileFieldAtlas(scene, meshWithNoGrid(), [-70, -70, 70, 70], { targetSize: 560 }); // 0.25 m/texel
+    expect(roughHierarchyAt(wide, 0, 0)!.share).toBe(0); // inside the fairway: the winner owns it
+    expect(roughHierarchyAt(wide, 60, 0)!.share).toBe(0); // inside the tee: the tee band owns it
+    const beside = roughHierarchyAt(wide, 0, -21.5)!; // 1.5 m outside the fairway: first cut, lifted
+    expect(beside.tier).toBe('first_cut'); expect(beside.share).toBeCloseTo(1, 2); expect(Math.min(...beside.tint)).toBeGreaterThan(1.1);
+    const primary = roughHierarchyAt(wide, 0, -25)!;
+    expect(primary.tier).toBe('primary'); expect(primary.tint.every(c => Math.abs(c - 1) < 1e-6)).toBe(true); // no slope, no curvature: the rough albedo itself
+    const secondary = roughHierarchyAt(wide, 0, -36)!;
+    expect(secondary.tier).toBe('secondary'); expect(secondary.toSecondary).toBeCloseTo(1, 2); expect(Math.max(...secondary.tint)).toBeLessThan(.9);
+    const outer = roughHierarchyAt(wide, 0, -60)!;
+    expect(outer.tier).toBe('outer'); expect(outer.toOuter).toBeCloseTo(1, 2); expect(Math.max(...outer.tint)).toBeLessThan(Math.min(...secondary.tint));
+    const teeSide = roughHierarchyAt(wide, 60, -5.5)!; // 1.5 m outside the tee: first cut again — tee is a playing surface
+    expect(teeSide.tier).toBe('first_cut'); expect(teeSide.share).toBeCloseTo(1, 2);
+    const onEdge = roughHierarchyAt(wide, 60, -4)!.share; // on the tee outline: half way through the 12 cm band
+    expect(onEdge).toBeGreaterThan(.3); expect(onEdge).toBeLessThan(.7);
+    expect(roughHierarchyAt(wide, 60, -3.9)!.share).toBe(0); // 10 cm inside: the tee's own
+    expect(roughHierarchyAt(wide, 60, -5.5, MERIDIAN_STYLE, 1)!.share).toBe(0); // a woods fragment takes none
+    expect(roughHierarchyAt(wide, 200, 200)).toBeNull();
+  });
+
+  it('finds every tier on hole 7\'s real whole-hole atlas, on the rough share only', () => {
+    const { hole, holeScene } = loadHole7();
+    const atlas = compileFieldAtlas(holeScene, hole, hole.renderProfile!.tacticalBoundsM!, { targetSize: 256 });
+    const counts: Record<RoughTier, number> = { first_cut: 0, primary: 0, secondary: 0, outer: 0 };
+    let rough = 0, total = 0, tinted = 0;
+    const [x0, y0, x1, y1] = atlas.boundsM;
+    for (let y = y0 + 1; y < y1; y += 2) for (let x = x0 + 1; x < x1; x += 2) {
+      const sample = roughHierarchyAt(atlas, x, y);
+      if (!sample) continue;
+      total++;
+      if (sample.share < .5) continue;
+      rough++; counts[sample.tier]++;
+      if (Math.abs(sample.tint[1]! - 1) > .02) tinted++;
+    }
+    expect(total).toBeGreaterThan(1000);
+    expect(rough / total).toBeGreaterThan(.3); // most of a hole's frame is not fairway/green/sand/water
+    for (const tier of Object.keys(counts) as RoughTier[]) expect(counts[tier]).toBeGreaterThan(20);
+    expect(tinted / rough).toBeGreaterThan(.3); // the hierarchy is not decorative: a third or more of the rough moves by > 2 %
+  });
 });

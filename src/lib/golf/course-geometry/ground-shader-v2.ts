@@ -63,7 +63,8 @@ import { hexToRgb, MERIDIAN_STYLE, srgbToLinear, type MeridianPaletteKey, type M
 // genuine program-shape change (§77 permits this in `customProgramCacheKey`,
 // same as `GOLF_V2_ATLAS` before it), so the version string changes too.
 // -6: the §34 run-off term went live under GOLF_V2_RELIEF (`RELIEF_FIELD_BINDING`).
-export const GROUND_SHADER_V2_VERSION = 'meridian-ground-v2-6';
+// -7: the rough hierarchy (fidelity §32–36, plan §48–50) under the same define.
+export const GROUND_SHADER_V2_VERSION = 'meridian-ground-v2-7';
 
 /** Attribute names the component layer must upload on every V2 ground
  * geometry (base and hero patches alike, so the one material fits both). */
@@ -323,6 +324,57 @@ export function classifySurfaceFromAtlas(atlas: PackedFieldAtlas, x: number, y: 
   return weight > 0 ? { surfaceClass, weight } : { surfaceClass: 'rough', weight: 0 };
 }
 
+export type RoughTier = 'first_cut' | 'primary' | 'secondary' | 'outer';
+export interface RoughHierarchySample {
+  /** Metres from the nearest playing surface (fairway, tee, green — own and context), 0 inside one. */
+  distanceM: number;
+  /** The band the distance lands in (the GLSL blends continuously; this names the dominant one). */
+  tier: RoughTier;
+  /** The three V1 blends, `smoothstep(band ± blend, distance)`. */
+  toPrimary: number; toSecondary: number; toOuter: number;
+  /** How much of a rough/ground fragment here the hierarchy tints: the
+   * untracked remainder of the atlas winner minus the tee band — the shader
+   * additionally removes the fragment's own woods share, which has no
+   * atlas field (pass `woodsWeight`). */
+  share: number;
+  /** Linear multiplier on the rough albedo at full share: tier ratio × slope
+   * shade × curvature tone (`diffuse *= mix(1, tint, share)` in GLSL). */
+  tint: [number, number, number];
+}
+/** Three-free CPU mirror of the `GOLF_V2_RELIEF` rough-hierarchy block in
+ * `groundShaderV2Chunks` (V1 `compileRoughHierarchy` per fragment: fidelity
+ * §32–36, plan §48–50), term for term, from the same atlas channels the
+ * shader samples (`sampleFieldAtlas`: the fairway/green/tee SDFs, the
+ * relief slope, the landform curvature). Answers only inside `atlas.boundsM`
+ * (null outside: the shader's own outside-the-atlas rule adds the metres
+ * beyond the edge to the play distance, which a CPU caller with the atlas
+ * in hand never needs). For tests and censuses; the runtime never calls it. */
+export function roughHierarchyAt(atlas: PackedFieldAtlas, x: number, y: number, style: MeridianStyle = MERIDIAN_STYLE, woodsWeight = 0): RoughHierarchySample | null {
+  const dFairway = sampleFieldAtlas(atlas, 'fairway', x, y), dGreen = sampleFieldAtlas(atlas, 'green', x, y), dTee = sampleFieldAtlas(atlas, 'tee', x, y);
+  const dzdx = sampleFieldAtlas(atlas, 'dzdx', x, y), dzdy = sampleFieldAtlas(atlas, 'dzdy', x, y), curvature = sampleFieldAtlas(atlas, 'curvature', x, y);
+  if (dFairway == null || dGreen == null || dzdx == null || dzdy == null || curvature == null) return null;
+  const rh = style.roughHierarchy, tone = style.curvatureTone;
+  const teeIn = dTee == null ? 0 : smoothstepEdge(-CRISP_EDGE_BAND_M / 2, CRISP_EDGE_BAND_M / 2, dTee);
+  const share = (1 - classifySurfaceFromAtlas(atlas, x, y, style).weight) * (1 - teeIn) * (1 - Math.min(1, Math.max(0, woodsWeight)));
+  const distanceM = Math.max(0, -Math.max(dFairway, dGreen, dTee ?? -Infinity));
+  const toPrimary = smoothstepEdge(rh.firstCutM - rh.firstCutBlendM, rh.firstCutM + rh.firstCutBlendM, distanceM);
+  const toSecondary = smoothstepEdge(rh.secondaryM - rh.secondaryBlendM, rh.secondaryM + rh.secondaryBlendM, distanceM);
+  const toOuter = smoothstepEdge(rh.outerM - rh.outerBlendM, rh.outerM + rh.outerBlendM, distanceM);
+  const rough = classAlbedoLinear('rough', style);
+  const ratio = (key: MeridianPaletteKey): [number, number, number] => { const [r, g, b] = hexToRgb(style.palette[key]); return [srgbToLinear(r) / rough[0], srgbToLinear(g) / rough[1], srgbToLinear(b) / rough[2]]; };
+  const firstCut = ratio('roughFirstCut'), secondary = ratio('roughSecondary'), outer = ratio('roughOuter');
+  const slope = 1 - 1 / Math.sqrt(1 + dzdx * dzdx + dzdy * dzdy);
+  const slopeShade = 1 - rh.slopeDarken * Math.min(1, slope / rh.slopeFullAt) * toSecondary;
+  const curv = Math.max(-1, Math.min(1, curvature)), concave = Math.max(0, curv), convex = Math.max(0, -curv);
+  const tint = [0, 1, 2].map(c => {
+    const tier = mix1(mix1(mix1(firstCut[c]!, 1, toPrimary), secondary[c]!, toSecondary), outer[c]!, toOuter);
+    return tier * slopeShade * mix1(1, tone.concave[c] ?? 1, concave) * mix1(1, tone.convex[c] ?? 1, convex);
+  }) as [number, number, number];
+  const tier: RoughTier = distanceM >= rh.outerM ? 'outer' : distanceM >= rh.secondaryM ? 'secondary' : distanceM >= rh.firstCutM ? 'primary' : 'first_cut';
+  return { distanceM, tier, toPrimary, toSecondary, toOuter, share, tint };
+}
+const mix1 = (a: number, b: number, t: number): number => a + (b - a) * t;
+
 /** Task 11 follow-up (hero atlases, §17): the whole-hole atlas and every
  * hero patch atlas each cover their own `boundsM` independently and can
  * overlap (a hero patch's finer atlas sits "inside" the coarser whole-hole
@@ -425,6 +477,13 @@ export function groundShaderV2Chunks(style: MeridianStyle = MERIDIAN_STYLE): Gro
   // site (GOLF_V2_RELIEF block) applies the same config's `mix` and reach.
   const cfgRunoff = style.greenComplex.runoff;
   const water = style.water;
+  // Rough hierarchy (V1 compileRoughHierarchy's numbers, visual-style.ts
+  // `roughHierarchy`), the §50 curvature tone and the §7 blade-height micro
+  // scale, all per fragment behind GOLF_V2_RELIEF (see the block below).
+  const rh = style.roughHierarchy, tone = style.curvatureTone, micro = style.turf.microByClass;
+  const vec3Glsl = (v: readonly number[]) => `vec3(${(v[0] ?? 1).toFixed(4)}, ${(v[1] ?? 1).toFixed(4)}, ${(v[2] ?? 1).toFixed(4)})`;
+  const roughLinear = classAlbedoLinear('rough', style);
+  const tierRatioGlsl = (key: MeridianPaletteKey) => { const [r, g, b] = hexToRgb(style.palette[key]); return vec3Glsl([srgbToLinear(r) / roughLinear[0], srgbToLinear(g) / roughLinear[1], srgbToLinear(b) / roughLinear[2]]); };
 
   const vertexHead = `attribute float ${surfaceClass};
 attribute float ${visualOffset};
@@ -500,6 +559,9 @@ float golfV2ResolvedRoughness;`;
   bool golfWoods = abs(golfClass - ${WOODS}) < 0.5;
   golfV2ResolvedRoughness = vGolfV2Roughness;
   golfV2GreenMicroWeight = 0.0;
+  // Turf-field scales the atlas block below may raise (outer rough's larger
+  // macro field, §49; the §7 blade-height micro cue by class); 1 elsewhere.
+  float golfMacroScale = 1.0, golfMicroScale = 1.0;
 #ifdef GOLF_V2_FAIRWAY
   // Sampled unconditionally (never inside an \`if\`): golfV2FairwayGrain uses
   // fwidth() internally, and derivatives inside non-uniform control flow are
@@ -510,15 +572,15 @@ float golfV2ResolvedRoughness;`;
   // than hand-rolled) turning MeshStandardMaterial's own view-space
   // vViewPosition into the world-space view vector golfV2FairwayGrain wants.
   vec2 golfFwGrain = golfV2FairwayGrain(vGolfV2WorldXY, transformDirectionByInverseViewMatrix(vViewPosition, viewMatrix));
-  // No SDF exists for tee (GROUND_ATLAS_TRACKED_CLASSES), so unlike fairway
-  // below this can only ever be resolved from the interpolated per-vertex
-  // class — and that class is unsafe to test directly here: a rough(1)-to-
+  // Tee gets no grain. The tee SDF now exists (the relief texture's B
+  // channel, used by the rough hierarchy below) so it would be safe to
+  // gate on — the interpolated per-vertex class never was: a rough(1)-to-
   // bunker(7) or rough-to-water(8) ribbon triangle interpolates *through*
-  // 3.0 (tee's own id) at some interior point with no tee anywhere nearby,
-  // the same "spiky chord" hazard GOLF_V2_ATLAS exists to fix for the
-  // classes that have an SDF (file header) — tee just doesn't have one to
-  // fix it with. Left at 0 (no grain) until a tee SDF layer makes this safe;
-  // "and tee if the field covers tee" is deliberately not done here.
+  // 3.0 (tee's own id) with no tee anywhere nearby, the "spiky chord"
+  // hazard GOLF_V2_ATLAS exists to fix — but V1 never mows the tee either
+  // (visual-artifact.ts: 'mown' is fairway and green only), so V2 keeps
+  // that parity rather than adding a mowing pattern the reference world
+  // does not show.
   float golfFwWeight = 0.0;
 #endif
 #ifdef GOLF_V2_ATLAS
@@ -530,6 +592,15 @@ float golfV2ResolvedRoughness;`;
     vec2 golfSdfUv = (vGolfV2WorldXY - golfV2SdfFrame.xy) * golfV2SdfFrame.zw;
     vec4 golfSdf = texture2D(golfV2Sdf, golfSdfUv);
     float golfDGreen = golfSdf.r, golfDBunker = golfSdf.g, golfDFairway = golfSdf.b, golfDWaterAtlas = golfSdf.a;
+#ifdef ${RELIEF_FIELD_BINDING.define}
+    // One relief tap (RELIEF_FIELD_BINDING: rg = ground slope dz/dx, dz/dy;
+    // b = tee SDF, metres, positive inside; a = landform curvature, ±1,
+    // positive concave), taken here outside any branch (implicit
+    // derivatives stay defined) and shared by the rough hierarchy and the
+    // run-off below.
+    vec4 golfRelief = texture2D(${RELIEF_FIELD_BINDING.sampler}, golfSdfUv);
+    float golfDTee = golfRelief.b;
+#endif
     // §27–33 fringe/apron: a slab SDF over [-fringeBandM, 0] of the green
     // distance itself (the same interval trick §36's bunker SDF generalizes).
     float golfDFringe = min(golfDGreen + ${bands.fringe.toFixed(4)}, -golfDGreen);
@@ -616,6 +687,53 @@ float golfV2ResolvedRoughness;`;
     diffuseColor.rgb *= 1.0 - ${style.bunker.contactShade.toFixed(4)} * golfContact * golfContact;
     golfV2ResolvedRoughness = mix(vGolfV2Roughness, golfAtlasClassRoughness(golfWin), golfWeight);
     if (golfWeight > 0.5) { golfGreen = golfWin == 0; golfBunker = golfWin == 1; golfWater = golfWin == 3; }
+#ifdef ${RELIEF_FIELD_BINDING.define}
+    // Fidelity §32–36 / plan §48–50 rough hierarchy — V1's
+    // compileRoughHierarchy (visual-artifact.ts) per fragment, in V1's own
+    // order (before the green complex, whose apron/run-off then blend over
+    // it). Distance from the nearest playing surface (V1's PLAYING_KINDS:
+    // fairway, tee, green — own and context, exactly the polygons the SDF
+    // layers hold) banks the rough into first cut (lifted toward the
+    // surround), primary, secondary and outer with V1's blends; steeper
+    // secondary/outer ground darkens a little by slope alone (no aspect,
+    // nothing directional). Applied as a tint relative to the rough albedo
+    // rather than V1's absolute vertex colours, so a fragment that is only
+    // partly rough (a ribbon triangle interpolating toward woods or tee, the
+    // fairway's soft edge) keeps its own blend and no seam forms where the
+    // share changes. The share is the fragment's untracked remainder
+    // (1 - golfWeight of whatever tracked class wins, so nothing inside a
+    // green/fairway/sand/water outline), minus the tee (untracked, hence
+    // the SDF: a crisp band like the other authored edges) and minus woods
+    // (V1 skips woods vertices; here the interpolated class's own approach
+    // to woods, continuous, so the exclusion never steps mid-triangle).
+    // Beyond the atlas the SDF texture clamps to its edge texel, which would
+    // smear the edge's own band radially; the metres outside the atlas are
+    // added to the play distance instead, so far ground settles into outer
+    // rough within one outer blend of the edge (far ground *is* outer).
+    // Curvature tone (§50, style curvatureTone): concave ground a touch
+    // darker/cooler, convex a touch lighter/warmer, on the same share.
+    float golfTeeIn = smoothstep(-${(CRISP_EDGE_BAND_M / 2).toFixed(4)}, ${(CRISP_EDGE_BAND_M / 2).toFixed(4)}, golfDTee);
+    float golfWoodsIn = clamp(golfClass - ${(SURFACE_CLASS_IDS.indexOf('woods') - 1).toFixed(1)}, 0.0, 1.0);
+    float golfRoughShare = (1.0 - golfWeight) * (1.0 - golfTeeIn) * (1.0 - golfWoodsIn);
+    vec2 golfOutsideM = max(vec2(0.0), max(-golfSdfUv, golfSdfUv - 1.0)) / golfV2SdfFrame.zw;
+    float golfDPlay = max(0.0, -max(max(golfDFairway, golfDGreen), golfDTee)) + max(golfOutsideM.x, golfOutsideM.y);
+    float golfToPrimary = smoothstep(${(rh.firstCutM - rh.firstCutBlendM).toFixed(4)}, ${(rh.firstCutM + rh.firstCutBlendM).toFixed(4)}, golfDPlay);
+    float golfToSecondary = smoothstep(${(rh.secondaryM - rh.secondaryBlendM).toFixed(4)}, ${(rh.secondaryM + rh.secondaryBlendM).toFixed(4)}, golfDPlay);
+    float golfToOuter = smoothstep(${(rh.outerM - rh.outerBlendM).toFixed(4)}, ${(rh.outerM + rh.outerBlendM).toFixed(4)}, golfDPlay);
+    vec3 golfTier = mix(mix(mix(${tierRatioGlsl('roughFirstCut')}, vec3(1.0), golfToPrimary), ${tierRatioGlsl('roughSecondary')}, golfToSecondary), ${tierRatioGlsl('roughOuter')}, golfToOuter);
+    float golfSlopeV1 = 1.0 - inversesqrt(1.0 + dot(golfRelief.rg, golfRelief.rg));
+    float golfSlopeShade = 1.0 - ${rh.slopeDarken.toFixed(4)} * min(1.0, golfSlopeV1 / ${rh.slopeFullAt.toFixed(4)}) * golfToSecondary;
+    float golfCurv = clamp(golfRelief.a, -1.0, 1.0);
+    vec3 golfCurvTone = mix(vec3(1.0), ${vec3Glsl(tone.concave)}, max(0.0, golfCurv)) * mix(vec3(1.0), ${vec3Glsl(tone.convex)}, max(0.0, -golfCurv));
+    diffuseColor.rgb *= mix(vec3(1.0), golfTier * golfSlopeShade * golfCurvTone, golfRoughShare);
+    golfV2ResolvedRoughness = mix(golfV2ResolvedRoughness, ${style.surface.roughness.rough_outer.toFixed(5)}, golfRoughShare * golfToOuter);
+    golfMacroScale = mix(1.0, ${rh.outerMacroScale.toFixed(4)}, golfRoughShare * golfToOuter);
+    golfMicroScale = mix(1.0, ${micro.rough.toFixed(4)}, golfRoughShare);
+#endif
+    // Renderer redesign §7 blade-height cue (V1 microByClass): the surround
+    // and fringe bands take their own micro scale by the winner's weight.
+    if (golfWin == 5) golfMicroScale = mix(golfMicroScale, ${micro.surround.toFixed(4)}, golfWeight);
+    if (golfWin == 4) golfMicroScale = mix(golfMicroScale, ${micro.fringe.toFixed(4)}, golfWeight);
     // Task 13 (§27–34): the green complex's own bands from the same two
     // SDFs. Apron: the close-mown neck between fringe and fairway takes the
     // apron albedo; every close-mown band takes its quiet-BRDF roughness;
@@ -625,7 +743,10 @@ float golfV2ResolvedRoughness;`;
     // fairway winner, inside its soft edge): letting it reach the rough
     // within apronFairwayM drew a lighter wedge with a hard seam at the
     // hero-patch rim on hole 7.
-    if (golfGB.band > 1.5 && golfGB.band < 2.5 && golfWin == 2) diffuseColor.rgb = mix(diffuseColor.rgb, ${atlasColorGlsl('apron')}, golfGB.weight * golfWeight);
+    if (golfGB.band > 1.5 && golfGB.band < 2.5 && golfWin == 2) {
+      diffuseColor.rgb = mix(diffuseColor.rgb, ${atlasColorGlsl('apron')}, golfGB.weight * golfWeight);
+      golfMicroScale = mix(golfMicroScale, ${micro.apron.toFixed(4)}, golfGB.weight * golfWeight);
+    }
     if (golfGB.band < 2.5 && golfWin != 1 && golfWin != 3) golfV2ResolvedRoughness = mix(golfV2ResolvedRoughness, ${green.names.roughness}(golfGB.band), golfGB.weight);
     if (golfGB.band < 0.5) golfV2GreenMicroWeight = golfGB.weight;
 #ifdef ${RELIEF_FIELD_BINDING.define}
@@ -648,14 +769,15 @@ float golfV2ResolvedRoughness;`;
     // of whatever tracked class wins here (fairway, sand, water, green,
     // fringe: none inside their own outline), the fairway's 0.6 m first-cut
     // surround in full (V1 counts surround among its rough classes), and
-    // none on woods. Every tap is textureLod (no implicit derivative inside
-    // this branch); the four SDF taps at GREEN_SDF_GRADIENT_STEP_M give the
+    // none on woods. The slope is the block's shared relief tap; every tap
+    // inside the branch is textureLod (no implicit derivative inside a
+    // branch): the four SDF taps at GREEN_SDF_GRADIENT_STEP_M give the
     // green SDF's own unnormalized gradient exactly as greenSdfAwayDirection
     // reads it.
     float golfRunoffClaim = golfGB.band > 2.5 ? 1.0 : 1.0 - golfGB.weight;
     float golfRunoffShare = golfWoods ? 0.0 : (golfWin == 5 ? 1.0 : 1.0 - golfWeight);
     if (golfDGreen <= 0.0 && golfDGreen >= -${cfgRunoff.reachM.toFixed(4)} && golfRunoffClaim * golfRunoffShare > 0.0) {
-      vec2 golfSlopeXY = texture2DLodEXT(${RELIEF_FIELD_BINDING.sampler}, golfSdfUv, 0.0).rg;
+      vec2 golfSlopeXY = golfRelief.rg;
       vec2 golfGradUv = vec2(${GREEN_SDF_GRADIENT_STEP_M.toFixed(4)}) * golfV2SdfFrame.zw;
       float golfGradL = texture2DLodEXT(golfV2Sdf, golfSdfUv - vec2(golfGradUv.x, 0.0), 0.0).r;
       float golfGradR = texture2DLodEXT(golfV2Sdf, golfSdfUv + vec2(golfGradUv.x, 0.0), 0.0).r;
@@ -680,7 +802,7 @@ float golfV2ResolvedRoughness;`;
   float golfMicro = 0.5 * sin(golfMicroPhase) + 0.5 * sin(dot(golfP, vec2(-0.44, 0.90) * ${k(u1)}) + 0.7);
   float golfMicroVisible = 1.0 - smoothstep(${fade0.toFixed(3)}, ${fade1.toFixed(3)}, fwidth(golfMicroPhase));
   golfMicro *= golfMicroVisible * (golfGreen ? ${greenMicro} : 1.0);
-  diffuseColor.rgb *= 1.0 + golfMacro * ${macroAmp} * golfTurfWeight + golfMicro * ${microAmp} * golfTurfWeight;
+  diffuseColor.rgb *= 1.0 + golfMacro * ${macroAmp} * golfMacroScale * golfTurfWeight + golfMicro * ${microAmp} * golfMicroScale * golfTurfWeight;
 #ifdef GOLF_V2_FAIRWAY
   // §43–44 fairway/tee mow-grain, after the class (golfWin) and its soft
   // edge (golfWeight -> golfFwWeight) are both resolved above: 0 at the
