@@ -31,7 +31,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `AGENT_SKILL` | 87 | 0 | 4 | 0 |
 | `CURRENT_FEATURE` | 27 | 27 | 12 | 0 |
 | `REFERENCE` | 52 | 15 | 19 | 0 |
-| `GENERATED_TRUTH` | 25 | 3 | 7 | 4 |
+| `GENERATED_TRUTH` | 27 | 3 | 7 | 4 |
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 0 |
 | `RUNBOOK` | 5 | 2 | 1 | 0 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
@@ -180,8 +180,8 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/features/coachhelm-ai.md` | current | yes | - | yes | 5 | 28 | - |
 | `memory/features/crm_outreach.md` | current | yes | - | - | 2 | 24 | - |
 | `memory/features/email_outbound.md` | current | yes | - | - | 2 | 18 | - |
-| `memory/features/golf-round-lifecycle.md` | current | yes | - | yes | 3 | 41 | - |
-| `memory/features/ios-native-shell.md` | current | yes | - | - | 1 | 12 | - |
+| `memory/features/golf-round-lifecycle.md` | current | yes | - | yes | 3 | 42 | - |
+| `memory/features/ios-native-shell.md` | current | yes | - | - | 1 | 14 | - |
 | `memory/features/observability-sentry.md` | current | yes | - | - | 6 | 32 | - |
 | `memory/features/observability-supabase.md` | current | yes | - | yes | 5 | 45 | - |
 | `memory/features/player-coachhelm-development.md` | current | yes | - | - | 1 | 28 | - |
@@ -269,6 +269,8 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/generated/ENTRY_POINTS.md` | generated | - | - | - | 0 | 0 | - |
 | `docs/generated/HELM_FEATURE_MAP.md` | generated | - | - | - | 3 | 214 | - |
 | `docs/generated/RETRIEVAL_BENCH.md` | generated | - | - | - | 1 | 10 | - |
+| `docs/generated/WORLD_MODEL.md` | generated | - | - | - | 0 | 2 | - |
+| `docs/generated/WORLD_MODEL.md` | generated | - | - | - | 0 | 2 | - |
 | `docs/generated/WORLD_MODEL.md` | generated | - | - | - | 0 | 2 | - |
 | `docs/generated/contracts/README.md` | generated | - | - | - | 0 | 7 | - |
 | `docs/generated/contracts/admin_platform.md` | generated | - | - | yes | 0 | 153 | 4 |

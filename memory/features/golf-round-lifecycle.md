@@ -466,6 +466,31 @@ reload (`lieFromShotResult`) restore position from.
   round saves exactly the holes on screen. Before 2026-09-01 the editor seeded
   once on mount, so "9 holes · Front 9" tapped after the course was confirmed
   still started an 18-hole round (Shenandoah field report).
+- A tee picked from the course library survives a document reload before the
+  round exists on the server. `handleTeePick` writes the `TeeRoundDefaults` to
+  `src/lib/golf/new-round-pick-cache.ts` (localStorage, per player, 12 h TTL);
+  on mount, the auto-open effect restores it through the same handler instead
+  of reopening the picker, and the record is dropped once `persistRoundStart`
+  succeeds or the player clears the cloud pick. Before 2026-09-17 a reload at
+  the setup stage (WKWebView content-process kill, stale-asset recovery)
+  remounted an empty form and auto-opened the picker — "it loaded, then reset
+  to the course screen" with no message (UNCW, Oviinbyrd GC). Rounds with
+  shots are still owned by the emergency-save / recovery path, not this cache.
+- A round-start failure is shown beside the control that started the round.
+  On the confirmed-course path that control is `FairwayHoleConfig`'s own
+  "Start round" dock, so the parent's error travels down as `submitError`
+  (rendered directly above the dock, scrolled into view) and `submitting`
+  disables/relabels the dock while `persistRoundStart` runs. Before
+  2026-09-17 the notice rendered above the 18-hole scorecard — off-screen on
+  a phone — so any start failure read as "it tries to load, then resets, no
+  error" (UNCW, Oviinbyrd GC). Every start failure is also reported through
+  `logError` (`component: NewRoundClient`, `action: round start`, `reason`
+  offline / server_rejected / transport, with `navigatorOnLine` and the
+  health-probe state) so a start that never reaches the server is visible in
+  `error_logs`. The offline gate refuses only when `navigator.onLine` is false
+  AND the last `/api/health` probe failed (`connectionStatus.isConnected`;
+  `isOnline` merely mirrors `navigator.onLine`) — WKWebView's
+  `navigator.onLine` alone is not trusted.
 - A route's `loading.tsx` reserves the page's paint at t=0 — for a
   `'use client'` page holding its own `loading` state that is that
   component's loading branch, not its settled layout. A route whose

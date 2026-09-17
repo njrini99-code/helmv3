@@ -36,8 +36,23 @@ function isNativeUserAgent(request: NextRequest): boolean {
   return ua.includes(NATIVE_UA_MARKER);
 }
 
+// App-shell resources the native web view loads from the origin root. They are
+// not pages, so they must never be caught by the marketing redirect: a service
+// worker script or manifest that answers with a 307 to /golf/login is simply
+// dropped by WebKit ("not allowed to follow a redirection while loading
+// sw.js"), which left the iOS app with no service worker, no manifest and no
+// offline page from 2026-07-01 until 2026-09-17. `/monitoring` is the Sentry
+// tunnel — the app's client error reports.
+const NATIVE_SHELL_RESOURCES = ['/sw.js', '/manifest.json', '/offline.html', '/monitoring'];
+
 function isMarketingRoute(pathname: string): boolean {
   if (pathname === '/') return true;
+  if (NATIVE_SHELL_RESOURCES.some((path) => pathname === path || pathname.startsWith(`${path}/`))) {
+    return false;
+  }
+  // A path with a file extension is an asset (icon, font, script), not a
+  // marketing page; the matcher already skips the common image types.
+  if (/\.[a-z0-9]+$/i.test(pathname)) return false;
   return !APP_ROUTE_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   );

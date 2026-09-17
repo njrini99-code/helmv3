@@ -1873,6 +1873,11 @@
         "id": "services:src/lib/utils/push-registration.ts",
         "pattern": "src/lib/utils/push-registration.ts",
         "category": "services"
+      },
+      {
+        "id": "services:src/proxy.ts",
+        "pattern": "src/proxy.ts",
+        "category": "services"
       }
     ],
     "tests": [
@@ -16252,6 +16257,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/lib/utils/push-registration.ts"
+        }
+      ]
+    },
+    {
+      "source": "ios_native_shell",
+      "target": "services:src/proxy.ts",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/proxy.ts"
         }
       ]
     },

@@ -333,7 +333,7 @@ is a second thing to keep true.
 **iOS Native Shell** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/ios-native-shell.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/dev/**`, `src/components/golf/PushPermissionSoftAsk.tsx`, `src/components/providers/CapacitorProvider.tsx`, `src/lib/native/**`, `src/lib/utils/capacitor.ts`, `src/lib/utils/push-registration.ts` … and 8 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/dev/**`, `src/components/golf/PushPermissionSoftAsk.tsx`, `src/components/providers/CapacitorProvider.tsx`, `src/lib/native/**`, `src/lib/utils/capacitor.ts`, `src/proxy.ts` … and 9 more in the registry
 - **Telemetry:** none. The Capacitor shell wraps the web app. Telemetry attributes to whichever feature the user is in, so a shell-specific key would double-count rather than measure anything new.
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
