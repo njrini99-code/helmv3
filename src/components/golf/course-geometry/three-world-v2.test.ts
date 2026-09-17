@@ -46,7 +46,7 @@ describe('Meridian V2 runtime world (Task 11)', () => {
     // Task 11 follow-up: the atlas compiles alongside the mesh, and carries
     // the four tracked SDF layers plus path.
     expect(input!.atlas).not.toBeNull();
-    expect(input!.atlas!.sdfLayers?.layerNames).toEqual(['green', 'bunker', 'fairway', 'path', 'water']);
+    expect(input!.atlas!.sdfLayers?.layerNames).toEqual(['green', 'bunker', 'fairway', 'path', 'water', 'tee']);
     expect(fieldAtlasBytes(input!.atlas!)).toBeGreaterThan(0);
   });
 
@@ -330,7 +330,7 @@ describe('Meridian V2 runtime world (Task 11)', () => {
     built.dispose();
   });
 
-  it('binds each atlas\'s own relief slope texture beside its SDF texture (Task 13 §34 run-off), decoded to the same numbers sampleFieldAtlas answers, and the term fires on hole 7\'s real green surround', () => {
+  it('binds each atlas\'s own relief texture (slope, tee SDF, curvature) beside its SDF texture (Task 13 §34 run-off), decoded to the same numbers sampleFieldAtlas answers, and the term fires on hole 7\'s real green surround', () => {
     const { mesh, scene } = loadHole7();
     const input = assembleV2World(scene, mesh)!;
     const built = buildV2World(input);
@@ -342,7 +342,7 @@ describe('Meridian V2 runtime world (Task 11)', () => {
     for (const material of materials) {
       expect(material.defines?.[RELIEF_FIELD_BINDING.define]).toBe(1);
       const relief = (material.userData.golfV2ReliefBinding as Relief).golfV2Relief.value;
-      expect(relief.format).toBe(THREE.RGFormat);
+      expect(relief.format).toBe(THREE.RGBAFormat);
       expect(relief.type).toBe(THREE.HalfFloatType);
       expect(relief.image.width).toBe((material.userData.golfV2AtlasBinding as { golfV2Sdf: { value: THREE.DataTexture } }).golfV2Sdf.value.image.width);
       seen.add(relief);
@@ -350,21 +350,36 @@ describe('Meridian V2 runtime world (Task 11)', () => {
     expect(seen.size).toBe(1 + input.heroAtlases.length); // one relief texture per atlas, like the SDF textures
     // The texel values are the decoded slopes, not the packed fixed-point
     // codes (raw upload would read slope 0 as -0 and steep codes as NaN):
-    // every texel centre must round-trip to sampleFieldAtlas within half-float precision.
+    // every texel centre must round-trip to sampleFieldAtlas within half-float
+    // precision; B is the tee SDF in metres and A the landform curvature, the
+    // same way (the rough hierarchy's play distance and §50 tone read them).
     const atlas = input.atlas!, data = (((base!.material as THREE.Material[])[0]!).userData.golfV2ReliefBinding as Relief).golfV2Relief.value.image.data as Uint16Array;
     const [x0, y0, x1, y1] = atlas.boundsM, texelW = (x1 - x0) / atlas.width, texelH = (y1 - y0) / atlas.height;
-    let checked = 0, steep = 0;
+    let checked = 0, steep = 0, insideTee = 0, curved = 0;
     for (let row = 0; row < atlas.height; row += 37) for (let col = 0; col < atlas.width; col += 41) {
       const n = row * atlas.width + col, x = x0 + (col + .5) * texelW, y = y0 + (row + .5) * texelH;
-      const dzdx = THREE.DataUtils.fromHalfFloat(data[n * 2]!), dzdy = THREE.DataUtils.fromHalfFloat(data[n * 2 + 1]!);
+      const dzdx = THREE.DataUtils.fromHalfFloat(data[n * 4]!), dzdy = THREE.DataUtils.fromHalfFloat(data[n * 4 + 1]!);
       const wantX = sampleFieldAtlas(atlas, 'dzdx', x, y)!, wantY = sampleFieldAtlas(atlas, 'dzdy', x, y)!;
       expect(Math.abs(dzdx - wantX)).toBeLessThanOrEqual(Math.abs(wantX) * 1e-3 + 1e-4);
       expect(Math.abs(dzdy - wantY)).toBeLessThanOrEqual(Math.abs(wantY) * 1e-3 + 1e-4);
+      const tee = THREE.DataUtils.fromHalfFloat(data[n * 4 + 2]!), wantTee = sampleFieldAtlas(atlas, 'tee', x, y)!;
+      expect(Math.abs(tee - wantTee)).toBeLessThanOrEqual(Math.abs(wantTee) * 1e-3 + 1e-3);
+      const curvature = THREE.DataUtils.fromHalfFloat(data[n * 4 + 3]!), wantCurvature = sampleFieldAtlas(atlas, 'curvature', x, y)!;
+      expect(Math.abs(curvature - wantCurvature)).toBeLessThanOrEqual(Math.abs(wantCurvature) * 1e-3 + 1e-3);
       if (Math.hypot(wantX, wantY) >= 0.05) steep++;
+      if (wantTee > 0) insideTee++;
+      if (Math.abs(wantCurvature) > 0.25) curved++;
       checked++;
     }
     expect(checked).toBeGreaterThan(20);
     expect(steep).toBeGreaterThan(0); // hole 7 is not flat: the term has real slope to read
+    expect(curved).toBeGreaterThan(0); // and its landform curvature is not all zero
+    // Hole 7's tees are small (the strided sample may miss them), so the tee
+    // channel is checked at every texel instead: exactly the atlas layer.
+    const teeLayer = atlas.sdfLayers!.layerNames.indexOf('tee'), texels = atlas.width * atlas.height;
+    expect(teeLayer).toBeGreaterThanOrEqual(0);
+    for (let n = 0; n < texels; n++) if (atlas.sdfLayers!.data[teeLayer * texels + n]! > 32768) insideTee++;
+    expect(insideTee).toBeGreaterThan(0);
     // The CPU mirror of the shader term finds run-off on the real hero atlas
     // (green-surface-v2.ts runoffWeightAt) — the wiring is not decorative.
     const hero = input.heroAtlases.find(h => h.patchId.startsWith('green_complex'))!;

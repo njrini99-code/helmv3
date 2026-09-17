@@ -42,13 +42,13 @@ function meshWith(grid?: MetricTerrainGrid, tacticalBoundsM?: [number, number, n
 const BOUNDS: [number, number, number, number] = [-40, -40, 40, 40];
 
 describe('field atlas packer (§16–19, §108)', () => {
-  it('sizes the grid from bounds and target size and reports the five sdf layers', () => {
+  it('sizes the grid from bounds and target size and reports the six sdf layers', () => {
     const atlas = compileFieldAtlas(sceneWith([]), meshWith(), BOUNDS, { targetSize: 64 });
     expect(atlas.width).toBe(64); expect(atlas.height).toBe(64);
     expect(atlas.boundsM).toEqual(BOUNDS);
     expect(atlas.basis).toBe('source_derived_visual');
     expect(atlas.sdfLayers?.layerNames).toEqual([...SURFACE_DISTANCE_LAYERS]);
-    expect(atlas.sdfLayers?.data.length).toBe(64 * 64 * 5);
+    expect(atlas.sdfLayers?.data.length).toBe(64 * 64 * 6);
     expect(atlas.reliefRGBA16F.length).toBe(64 * 64 * 4);
     expect(atlas.bentRGBA8.length).toBe(64 * 64 * 4);
     expect(atlas.semanticRGBA8.length).toBe(64 * 64 * 4);

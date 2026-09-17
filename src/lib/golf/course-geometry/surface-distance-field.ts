@@ -62,8 +62,13 @@ export interface DistanceLayerInput { polygons?: readonly PolygonRings[]; lines?
 /** §108 packing range: ±64 m in Uint16 keeps the step under 2 mm. */
 export const SDF_RANGE_M = 64;
 export const SDF_ZERO = 32768;
-/** The five §18–19 layers, in packing order. */
-export const SURFACE_DISTANCE_LAYERS = ['green', 'bunker', 'fairway', 'path', 'water'] as const;
+/** The §18–19 layers, in packing order. `tee` (2026-09-17) is appended
+ * after the original five so every earlier layer keeps its index (the
+ * semantic channel's class ids, `GROUND_SDF_ATLAS_LAYERS`' channel picks):
+ * the V2 rough hierarchy measures distance from the nearest *playing*
+ * surface, and tee is the one playing kind V1's `PLAYING_KINDS` counts
+ * that had no field yet. */
+export const SURFACE_DISTANCE_LAYERS = ['green', 'bunker', 'fairway', 'path', 'water', 'tee'] as const;
 export type SurfaceDistanceLayer = typeof SURFACE_DISTANCE_LAYERS[number];
 /** Context classes that are path centrelines, with the width used when the zone carries none. */
 export const PATH_CLASSES: Readonly<Record<string, number>> = Object.freeze({ cart_path: 2.4, service_path: 3, road: 6 });
@@ -286,7 +291,7 @@ export function buildSurfaceDistanceLayers(scene: HoleScene, frame: FieldFrame, 
   const inputs: Record<SurfaceDistanceLayer, DistanceLayerInput> = {
     green: { polygons: polygonsOfKind(scene, 'green') }, bunker: { polygons: polygonsOfKind(scene, 'bunker') },
     fairway: { polygons: polygonsOfKind(scene, 'fairway') }, path: { lines: pathLines(scene.contextZones) },
-    water: { polygons: polygonsOfKind(scene, 'water') },
+    water: { polygons: polygonsOfKind(scene, 'water') }, tee: { polygons: polygonsOfKind(scene, 'tee') },
   };
   return { layerNames: [...SURFACE_DISTANCE_LAYERS], layers: SURFACE_DISTANCE_LAYERS.map(name => buildSignedDistanceField(inputs[name], frame, resolution, maxDistanceM)) };
 }

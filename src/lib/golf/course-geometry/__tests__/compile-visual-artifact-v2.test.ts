@@ -51,7 +51,7 @@ describe('V2 artifact compiler (§105–108; Ruling R6; Task 10)', () => {
 
   it('leaves hero field atlases and structures as documented placeholders, and fills vegetation/ribbons from Tasks 15/14', () => {
     expect(artifact.fields.heroes).toEqual([]);
-    expect(artifact.fields.wholeHole.sdfLayers?.layerNames.length).toBe(5);
+    expect(artifact.fields.wholeHole.sdfLayers?.layerNames.length).toBe(6);
     expect(artifact.objects.structures).toEqual({ basis: 'unfilled_task17', count: 0, contentHash: expect.any(String), items: [] });
     expect(artifact.provenance.highResolutionTerrainSources).toEqual([]); // §8 S2 unavailable for Peek'n Peak.
     // Task 18b: hole 7 carries both real woods and real cart paths.

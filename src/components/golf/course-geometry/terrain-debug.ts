@@ -84,7 +84,8 @@ const V2_FIELD_NO_DATA_COLOR = '#FF00AA';
  * channel: none, then `SURFACE_DISTANCE_LAYERS` order) — saturated and
  * distinct from `V2_CLASS_COLORS` (the real ground palette) so nobody
  * mistakes a raw atlas texel boundary for the shaded material boundary. */
-const ATLAS_CLASS_COLORS: readonly string[] = ['#5B6B57', '#3DDC5A', '#E0A93D', '#B8E23D', '#8A5A2B', '#3D9BE0'];
+/** One entry per `['none', ...SURFACE_DISTANCE_LAYERS]` (none, green, bunker, fairway, path, water, tee). */
+const ATLAS_CLASS_COLORS: readonly string[] = ['#5B6B57', '#3DDC5A', '#E0A93D', '#B8E23D', '#8A5A2B', '#3D9BE0', '#E86FB5'];
 const FOREST_KIND_COLORS: Record<ForestInstanceKind, string> = { crown: '#2F6B3A', shrub: '#8FA23E', mass: '#1F4A29' };
 const FOREST_HERO_COLOR = '#D4A017';
 

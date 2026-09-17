@@ -136,12 +136,15 @@ export const SKY_FIELD_BINDING = Object.freeze({
 
 /** Task 13 §34 wiring: the field atlas's own relief channels (`dzdx`,
  * `dzdy` — the metric grid's central-difference gradient resampled per
- * atlas texel, field-atlas.ts) as one RG16F texture per atlas, sampled
+ * atlas texel, field-atlas.ts) as one RGBA16F texture per atlas, sampled
  * through the SAME `golfV2SdfFrame` as the SDF texture (both are the same
  * atlas's texel grid, so one frame serves both; there is deliberately no
- * second frame uniform). This is the smooth per-fragment ground slope the
- * run-off gate needs: it is a bilinear field over the 2 m grid, independent
- * of how the display mesh happens to be triangulated, where the interpolated
+ * second frame uniform). Channels: R/G = dz/dx, dz/dy; B = the atlas's
+ * `tee` SDF in metres (positive inside — the playing surface the RGBA SDF
+ * texture has no channel left for); A = landform curvature (±1, positive
+ * concave). The slope is the smooth per-fragment ground slope the run-off
+ * gate needs: it is a bilinear field over the 2 m grid, independent of how
+ * the display mesh happens to be triangulated, where the interpolated
  * vertex normal (the earlier attempt) changes slope at every decimated
  * triangle edge and faceted the on/off gate. `three-world-v2.ts` builds it
  * from `fieldAtlasChannelTexels` (decoded values, never the raw fixed-point

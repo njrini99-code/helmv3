@@ -389,30 +389,45 @@ function buildGroundSdfTexture(atlas: PackedFieldAtlas): GroundSdfBinding {
 }
 
 /** Task 13 §34 wiring (`RELIEF_FIELD_BINDING`): the same atlas's `dzdx`/
- * `dzdy` relief channels as one RG16F texture over the same texel grid —
- * so it samples through `golfV2SdfFrame` with no frame of its own — decoded
- * through `fieldAtlasChannelTexels` (the packed `reliefRGBA16F` holds
- * fixed-point codes, not half floats: uploaded raw, slope 0 would read as
- * -0 and steep codes as NaN). Half float for the same reason as the SDF
- * texture (filterable without an extension); a slope of 0.05–0.5 m/m keeps
- * three significant figures at that precision, far inside the run-off
- * ramp's 0.06 m/m width. Null only if the atlas somehow lacks the channel
- * (it never does: `compileFieldAtlas` always packs relief) — then the
- * material simply leaves the run-off term compiled out. */
+ * `dzdy` relief channels, its tee SDF and its landform curvature as one
+ * RGBA16F texture over the same texel grid — so it samples through
+ * `golfV2SdfFrame` with no frame of its own. Channels: R/G = dz/dx, dz/dy
+ * (m/m), decoded through `fieldAtlasChannelTexels` (the packed
+ * `reliefRGBA16F` holds fixed-point codes, not half floats: uploaded raw,
+ * slope 0 would read as -0 and steep codes as NaN); B = the `tee` SDF in
+ * metres, positive inside, exactly as `buildGroundSdfTexture` decodes the
+ * four tracked layers (the fifth playing-surface distance the V2 rough
+ * hierarchy needs, which the RGBA SDF texture has no channel left for — a
+ * missing layer decodes to the same fully-outside distance as there); A =
+ * the landform curvature (`landformNormalized`, ±1, positive concave —
+ * terrain-curvature.ts) for the §50 curvature tone. Half float for the
+ * same reason as the SDF texture (filterable without an extension); a
+ * slope of 0.05–0.5 m/m keeps three significant figures at that
+ * precision, far inside the run-off ramp's 0.06 m/m width, and a tee
+ * distance under 64 m keeps ~3 cm. Null only if the atlas somehow lacks
+ * the relief channels (it never does: `compileFieldAtlas` always packs
+ * relief) — then the material simply leaves the relief terms compiled
+ * out. */
 function buildGroundReliefTexture(atlas: PackedFieldAtlas): THREE.DataTexture | null {
   const dzdx = fieldAtlasChannelTexels(atlas, 'dzdx'), dzdy = fieldAtlasChannelTexels(atlas, 'dzdy');
   if (!dzdx || !dzdy) return null;
-  const { width, height } = atlas, texels = width * height;
-  const data = new Uint16Array(texels * 2);
+  const curvature = fieldAtlasChannelTexels(atlas, 'curvature');
+  const { width, height, sdfLayers } = atlas, texels = width * height;
+  const teeIndex = sdfLayers?.layerNames.indexOf('tee') ?? -1;
+  const half = (value: number) => THREE.DataUtils.toHalfFloat(value);
+  const data = new Uint16Array(texels * 4);
   for (let n = 0; n < texels; n++) {
-    data[n * 2] = THREE.DataUtils.toHalfFloat(dzdx[n]!);
-    data[n * 2 + 1] = THREE.DataUtils.toHalfFloat(dzdy[n]!);
+    data[n * 4] = half(dzdx[n]!);
+    data[n * 4 + 1] = half(dzdy[n]!);
+    const teeCode = teeIndex >= 0 && sdfLayers ? sdfLayers.data[teeIndex * texels + n]! : 1;
+    data[n * 4 + 2] = half(dequantizeSignedDistance(teeCode, SDF_RANGE_M));
+    data[n * 4 + 3] = half(curvature ? curvature[n]! : 0);
   }
-  const texture = new THREE.DataTexture(data, width, height, THREE.RGFormat, THREE.HalfFloatType);
+  const texture = new THREE.DataTexture(data, width, height, THREE.RGBAFormat, THREE.HalfFloatType);
   texture.name = 'golf-v2-ground-relief';
   texture.magFilter = texture.minFilter = THREE.LinearFilter; texture.generateMipmaps = false;
   texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping; texture.needsUpdate = true;
-  texture.userData = { basis: atlas.basis, layers: ['dzdx', 'dzdy'] };
+  texture.userData = { basis: atlas.basis, layers: ['dzdx', 'dzdy', 'tee', 'curvature'] };
   return texture;
 }
 
@@ -708,8 +723,8 @@ export interface V2WorldStats {
    * (`fieldAtlasBytes`, §94 — the same estimator `compileVisualArtifactV2`'s
    * own budget uses), 0 when no atlas was compiled for this hole. This is
    * the packed-struct estimate, not the smaller amount actually uploaded to
-   * the GPU today (the four tracked SDF layers and the two relief slope
-   * channels become textures, `buildGroundSdfTexture`/
+   * the GPU today (the four tracked SDF layers, and the two relief slope
+   * channels + tee SDF + curvature, become textures, `buildGroundSdfTexture`/
    * `buildGroundReliefTexture`); see the Task 11 hero-atlas report for both
    * numbers on hole 7. */
   atlasBytes: number;

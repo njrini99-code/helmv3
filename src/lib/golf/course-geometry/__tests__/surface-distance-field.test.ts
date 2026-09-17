@@ -132,7 +132,7 @@ describe('signed distance fields (§36 convention)', () => {
     expect(a.distanceM).toEqual(b.distanceM);
   });
 
-  it('builds the five hole layers from the scene, own and context features, paths from zones', () => {
+  it('builds the six hole layers from the scene, own and context features, paths from zones', () => {
     const feature = (id: string, kind: LocalFeature['kind'], ring: PointM[]): LocalFeature => ({ id, kind, type: 'Polygon', parts: [[ring]], reviewed: true });
     const zone = (id: string, cls: LocalContextZone['class'], line: PointM[], widthM?: number): LocalContextZone => ({
       id, class: cls, type: 'LineString', parts: [[line]], basis: 'source_geometry' as LocalContextZone['basis'], reviewed: true,
@@ -143,13 +143,13 @@ describe('signed distance fields (§36 convention)', () => {
       target: { kind: 'unknown_pin', greenFeatureId: 'green' },
       hole: { key: 'h', ordinal: 1, par: 4, scorecardYards: 400, featureIds: ['green', 'bunker', 'fairway'], routeFeatureId: null, greenFeatureId: 'green', nominalTargetWgs84: null, completeness: 'reviewed_surfaces', gaps: [] },
       features: [feature('green', 'green', circle(30, 30, 10)), feature('bunker', 'bunker', circle(15, 30, 4)), feature('fairway', 'fairway', square(-10, 0, 20))],
-      contextFeatures: [feature('pond', 'water', circle(-30, -30, 8))],
+      contextFeatures: [feature('pond', 'water', circle(-30, -30, 8)), feature('tee', 'tee', circle(-40, 30, 3))],
       contextZones: [zone('path', 'cart_path', [[-45, 40], [45, 40]]), zone('road', 'road', [[-45, -45], [45, -45]], 8), zone('wall', 'wall', [[0, 0], [1, 1]])],
       events: [], orientationRadians: 0, attribution: '',
     } as unknown as HoleScene;
     const { layerNames, layers } = buildSurfaceDistanceLayers(scene, FRAME, RES);
     expect(layerNames).toEqual([...SURFACE_DISTANCE_LAYERS]);
-    expect(layers).toHaveLength(5);
+    expect(layers).toHaveLength(6);
     const at = (name: string, x: number, y: number) => layers[layerNames.indexOf(name as never)]!.distanceM[texel(x, y)]!;
     const quarter = Math.hypot(.25, .25);
     expect(at('green', 30, 30)).toBeCloseTo(10 - quarter, 1);
@@ -157,6 +157,8 @@ describe('signed distance fields (§36 convention)', () => {
     expect(at('bunker', 15, 30)).toBeCloseTo(4 - quarter, 1);
     expect(at('fairway', -10, 0)).toBeCloseTo(19.75, 5);
     expect(at('water', -30, -30)).toBeCloseTo(8 - quarter, 1);
+    expect(at('tee', -40, 30)).toBeCloseTo(3 - quarter, 1); // a context tee counts, like every other context feature
+    expect(at('tee', 30, 30)).toBeLessThan(-40);
     expect(at('path', 0, 40)).toBeCloseTo(1.2 - .25, 5);
     expect(at('path', 0, -45)).toBeCloseTo(4 - .25, 5);
     expect(pathLines(scene.contextZones)).toHaveLength(2);
