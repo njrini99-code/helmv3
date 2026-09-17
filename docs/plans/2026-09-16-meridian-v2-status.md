@@ -212,6 +212,21 @@ repeated here as they land.
   in `setting-after`. Evidence: fidelity tracker §20 row (census per hole);
   `three-world-v2.test.ts` drives `onBeforeCompile` with a stand-in shader
   and checks the uniform's four numbers on hole 7.
+- Bunker system in V2 (`meridian-ground-v2-9`, 2026-09-17, fidelity §65 #2 /
+  §26–28, redesign §9): the sand branch adds V1's lip overhang shadow — the
+  rim's inward normal is the bunker SDF's central-difference gradient
+  (`BUNKER_RIM_GRADIENT_STEP_M` 0.4 m, four `texture2DLodEXT` taps inside the
+  branch), `sunFacing = max(0, outward · SUN_GROUND_XY)`, 32 % over 1.6 m;
+  the sand floor carries the macro field at 1.2 % (V1 `golfSand`); the §37
+  contact shade becomes V1's turf-only linear ramp (the sand side keeps its
+  rings, boundary shade and now the overhang), with band and shade spread
+  ±30 % on two slow world sines (`bunkerContactAt`) in place of V1's
+  per-feature seeds. Mirrors `bunkerOverhangAt` / `bunkerContactAt` plus the
+  hole-7 census live in `ground-shader-v2.test.ts`. Frames: `bunker-before`
+  (V1 + V2) vs `bunker-after` on holes 7/1/5 green/approach — ≤ 0.45 % of
+  pixels move by > 24 levels, all at bunker rims; the shaded side matches
+  V1's (upper-right inner rim on hole 7's left greenside bunker at the green
+  preset).
 - Task 22: run the CSM protocol on a real desktop GPU; Task 23's visual
   judgment likewise.
 - Task 27: blocked on the owner's phone.

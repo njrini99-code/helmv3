@@ -55,6 +55,7 @@ import { FAIRWAY_DIRECTION_UNIFORMS, fairwayDirectionShaderChunk, fairwayGrainAt
 import { sampleFieldAtlas } from './field-atlas';
 import { GREEN_SDF_GRADIENT_STEP_M, greenSurfaceShaderChunk } from './green-surface-v2';
 import type { SurfaceDistanceLayer } from './surface-distance-field';
+import { TERRAIN_LIGHT_DIRECTION } from './terrain';
 import { SURFACE_CLASS_IDS, type SurfaceClass } from './visual-artifact';
 import type { PackedFieldAtlas } from './visual-artifact-v2';
 import { hexToRgb, MERIDIAN_STYLE, srgbToLinear, type MeridianPaletteKey, type MeridianStyle } from './visual-style';
@@ -65,7 +66,10 @@ import { hexToRgb, MERIDIAN_STYLE, srgbToLinear, type MeridianPaletteKey, type M
 // -6: the §34 run-off term went live under GOLF_V2_RELIEF (`RELIEF_FIELD_BINDING`).
 // -7: the rough hierarchy (fidelity §32–36, plan §48–50) under the same define.
 // -8: §20 pad setting and the own-green gate (golfV2GreenPad, vGolfV2WorldZ).
-export const GROUND_SHADER_V2_VERSION = 'meridian-ground-v2-8';
+// -9: the bunker system's V1 terms (fidelity §26–28, redesign §9): the lip's
+//     overhang shadow, the floor macro, a turf-only contact ramp whose band
+//     and shade vary like V1's per-bunker seeds.
+export const GROUND_SHADER_V2_VERSION = 'meridian-ground-v2-9';
 
 /** Attribute names the component layer must upload on every V2 ground
  * geometry (base and hero patches alike, so the one material fits both). */
@@ -376,6 +380,60 @@ export function roughHierarchyAt(atlas: PackedFieldAtlas, x: number, y: number, 
 }
 const mix1 = (a: number, b: number, t: number): number => a + (b - a) * t;
 
+/** Metres either side of a sand fragment for the bunker SDF's central
+ * difference: its gradient is the rim's inward normal at the nearest rim
+ * point (the overhang shadow needs the rim's facing, as V1 reads it from
+ * `smoothedInwardNormals`). Wider than the green's step on purpose — the
+ * whole-hole atlas texel is 0.75 m, and a wider baseline smooths the
+ * bilinear cells the way V1 smooths its ring normals. */
+export const BUNKER_RIM_GRADIENT_STEP_M = 0.4;
+/** The sun's ground direction (unit XY of `TERRAIN_LIGHT_DIRECTION`), the
+ * same vector V1's compiler dots the rim normal against. */
+export const SUN_GROUND_XY: readonly [number, number] = (() => { const [x, y] = TERRAIN_LIGHT_DIRECTION, n = Math.hypot(x, y) || 1; return [x / n, y / n]; })();
+/** V1 varies each bunker's contact band and shade by ±`edgeVariation`
+ * through per-feature seeds; a fragment has no bunker identity, so the same
+ * spread rides two slow world-space sines (wavelengths in metres, chosen
+ * longer than any bunker so one rim sees a near-constant value while the
+ * next bunker draws a different one). */
+export const BUNKER_EDGE_VARIATION_WAVELENGTHS_M: readonly [number, number] = [37, 43];
+
+export interface BunkerOverhangSample {
+  /** Metres inside the rim (the bunker SDF); 0 on the outline. */
+  distanceM: number;
+  /** Unit outward direction at the nearest rim point (minus the SDF gradient). */
+  outward: [number, number];
+  /** max(0, outward · sun ground direction): 1 where the rim stands squarely between the sand and the sun. */
+  sunFacing: number;
+  /** Linear albedo multiplier of the overhang shadow (1 = no shade). */
+  shade: number;
+}
+/** Three-free CPU mirror of the sand branch's overhang shadow (V1
+ * `compileBunkerBowls`: sand just inside a rim that faces the sun sits under
+ * the lip; renderer redesign §9, fidelity §26–28) from the same bunker SDF
+ * the shader samples. Null off the sand (outline or beyond) or outside the
+ * atlas; `shade` is 1 beyond `overhangBandM`. Tests and censuses only. */
+export function bunkerOverhangAt(atlas: PackedFieldAtlas, x: number, y: number, style: MeridianStyle = MERIDIAN_STYLE): BunkerOverhangSample | null {
+  const d = sampleFieldAtlas(atlas, 'bunker', x, y);
+  if (d == null || d < 0) return null;
+  const h = BUNKER_RIM_GRADIENT_STEP_M;
+  const gx = (sampleFieldAtlas(atlas, 'bunker', x + h, y) ?? d) - (sampleFieldAtlas(atlas, 'bunker', x - h, y) ?? d);
+  const gy = (sampleFieldAtlas(atlas, 'bunker', x, y + h) ?? d) - (sampleFieldAtlas(atlas, 'bunker', x, y - h) ?? d);
+  const len = Math.hypot(gx, gy);
+  const outward: [number, number] = len > 1e-4 ? [-gx / len, -gy / len] : [0, 0];
+  const sunFacing = Math.max(0, outward[0] * SUN_GROUND_XY[0] + outward[1] * SUN_GROUND_XY[1]);
+  const band = style.bunker.overhangBandM;
+  const shade = d < band ? 1 - style.bunker.overhangShade * sunFacing * (1 - d / band) : 1;
+  return { distanceM: d, outward, sunFacing, shade };
+}
+/** The contact band and shade the V2 fragment at world (x, y) uses (V1's
+ * per-bunker ±`edgeVariation`, carried by `BUNKER_EDGE_VARIATION_WAVELENGTHS_M`
+ * here); `seed` is the material's `golfV2Seed`. */
+export function bunkerContactAt(x: number, y: number, seed: readonly [number, number] = [0, 0], style: MeridianStyle = MERIDIAN_STYLE): { bandM: number; shade: number } {
+  const [w0, w1] = BUNKER_EDGE_VARIATION_WAVELENGTHS_M, px = x + seed[0], py = y + seed[1];
+  const vBand = Math.sin((0.66 * px + 0.75 * py) * 2 * Math.PI / w0), vShade = Math.sin((-0.80 * px + 0.60 * py) * 2 * Math.PI / w1 + 2);
+  return { bandM: style.bunker.contactBandM * (1 + style.bunker.edgeVariation * vBand), shade: style.bunker.contactShade * (1 + style.bunker.edgeVariation * vShade) };
+}
+
 /** Task 11 follow-up (hero atlases, §17): the whole-hole atlas and every
  * hero patch atlas each cover their own `boundsM` independently and can
  * overlap (a hero patch's finer atlas sits "inside" the coarser whole-hole
@@ -465,6 +523,7 @@ export function groundShaderV2Chunks(style: MeridianStyle = MERIDIAN_STYLE): Gro
   // bands of the atlas SDF instead of mesh rings — the same look, no slivers.
   const RING_EDGE_M = 0.2, RING_LIGHT_M = 0.35, RING_SOFT_M = 0.05;
   const [g0 = .15, g1 = .35] = style.bunker.sandGrainM;
+  const [edgeVarW0, edgeVarW1] = BUNKER_EDGE_VARIATION_WAVELENGTHS_M;
   const atlasRoughGlsl = (cls: SurfaceClass) => classRoughness(cls, style).toFixed(5);
   // Task 12 wiring: fairway-direction-field.ts's own self-contained GLSL
   // (golfV2-prefixed, declares its own sampler/frame/texelM uniforms —
@@ -661,6 +720,22 @@ float golfV2ResolvedRoughness;`;
       golfAtlasCol = mix(golfAtlasCol, ${paletteGlsl(style.palette.sandHighlight)}, golfRingLight);
       golfAtlasCol *= 1.0 - ${style.boundary.sandShade.toFixed(4)} * (1.0 - smoothstep(0.0, ${style.boundary.fieldM.toFixed(3)}, golfDBunker));
       golfAtlasCol *= 1.0 + golfGrain * ${style.bunker.sandGrainAmplitude.toFixed(4)};
+      // Overhang shadow (renderer redesign §9, V1 compileBunkerBowls): sand
+      // just inside a rim that faces the sun sits under the lip. The rim's
+      // inward normal at the nearest rim point is the bunker SDF's gradient
+      // (central differences at explicit LOD — this is a branch); a positive
+      // dot of the outward direction with the sun's ground direction means
+      // the rim stands between the sand and the light. Mirror: bunkerOverhangAt.
+      if (golfDBunker < ${style.bunker.overhangBandM.toFixed(3)}) {
+        vec2 golfRimUv = vec2(${BUNKER_RIM_GRADIENT_STEP_M.toFixed(4)}) * golfV2SdfFrame.zw;
+        vec2 golfRimGrad = vec2(
+          texture2DLodEXT(golfV2Sdf, golfSdfUv + vec2(golfRimUv.x, 0.0), 0.0).g - texture2DLodEXT(golfV2Sdf, golfSdfUv - vec2(golfRimUv.x, 0.0), 0.0).g,
+          texture2DLodEXT(golfV2Sdf, golfSdfUv + vec2(0.0, golfRimUv.y), 0.0).g - texture2DLodEXT(golfV2Sdf, golfSdfUv - vec2(0.0, golfRimUv.y), 0.0).g);
+        float golfRimLen = length(golfRimGrad);
+        vec2 golfRimOut = golfRimLen > 1e-4 ? -golfRimGrad / golfRimLen : vec2(0.0);
+        float golfSunFacing = max(0.0, dot(golfRimOut, vec2(${SUN_GROUND_XY[0].toFixed(5)}, ${SUN_GROUND_XY[1].toFixed(5)})));
+        golfAtlasCol *= 1.0 - ${style.bunker.overhangShade.toFixed(4)} * golfSunFacing * (1.0 - max(0.0, golfDBunker) / ${style.bunker.overhangBandM.toFixed(3)});
+      }
     } else if (golfWin == 0) {
       // §23 green mowing (V1's rule): diagonal bands at green.angleDeg to
       // the route, bandWidthM period, full fairway amplitude × amplitudeShare,
@@ -691,10 +766,17 @@ float golfV2ResolvedRoughness;`;
     // rough albedo when an atlas paints them, so nothing sand- or
     // green-tinted can leak in from outside the true outline.
     diffuseColor.rgb = mix(diffuseColor.rgb, golfAtlasCol, golfWeight);
-    // §37 contact shade (V1 bunker.contactBandM/contactShade): the sand and
-    // the turf beside it darken toward the rim, the lip's own shadow.
-    float golfContact = 1.0 - clamp(abs(golfDBunker) / ${style.bunker.contactBandM.toFixed(3)}, 0.0, 1.0);
-    diffuseColor.rgb *= 1.0 - ${style.bunker.contactShade.toFixed(4)} * golfContact * golfContact;
+    // §37 contact shade (V1 bunker.contactBandM/contactShade, the turf side
+    // only as V1 paints it — the sand side has its rings, boundary shade and
+    // overhang): the turf beside a rim darkens toward it on V1's linear
+    // ramp. V1 varies band and shade ±edgeVariation per bunker by seed ("no
+    // two edges match"); the fragment has no bunker identity, so the same
+    // spread rides two slow world-space sines instead (bunkerContactAt).
+    vec2 golfEdgeVar = vec2(sin(dot(golfSandP, vec2(0.66, 0.75) * ${k(edgeVarW0)})), sin(dot(golfSandP, vec2(-0.80, 0.60) * ${k(edgeVarW1)}) + 2.0));
+    float golfContactBand = ${style.bunker.contactBandM.toFixed(3)} * (1.0 + ${style.bunker.edgeVariation.toFixed(3)} * golfEdgeVar.x);
+    float golfContactShade = ${style.bunker.contactShade.toFixed(4)} * (1.0 + ${style.bunker.edgeVariation.toFixed(3)} * golfEdgeVar.y);
+    float golfContact = 1.0 - clamp(max(0.0, -golfDBunker) / golfContactBand, 0.0, 1.0);
+    diffuseColor.rgb *= 1.0 - golfContactShade * golfContact;
     golfV2ResolvedRoughness = mix(vGolfV2Roughness, golfAtlasClassRoughness(golfWin), golfWeight);
     if (golfWeight > 0.5) { golfGreen = golfWin == 0; golfBunker = golfWin == 1; golfWater = golfWin == 3; }
 #ifdef ${RELIEF_FIELD_BINDING.define}
@@ -830,7 +912,11 @@ float golfV2ResolvedRoughness;`;
   float golfMicro = 0.5 * sin(golfMicroPhase) + 0.5 * sin(dot(golfP, vec2(-0.44, 0.90) * ${k(u1)}) + 0.7);
   float golfMicroVisible = 1.0 - smoothstep(${fade0.toFixed(3)}, ${fade1.toFixed(3)}, fwidth(golfMicroPhase));
   golfMicro *= golfMicroVisible * (golfGreen ? ${greenMicro} : 1.0);
-  diffuseColor.rgb *= 1.0 + golfMacro * ${macroAmp} * golfMacroScale * golfTurfWeight + golfMicro * ${microAmp} * golfMicroScale * golfTurfWeight;
+  // The sand floor carries the macro field at bunker.floorMacroAmplitude
+  // (V1 §31 golfSand), the turf its own amplitudes.
+  float golfSandWeight = golfBunker ? 1.0 : 0.0;
+  diffuseColor.rgb *= 1.0 + golfMacro * ${macroAmp} * golfMacroScale * golfTurfWeight + golfMicro * ${microAmp} * golfMicroScale * golfTurfWeight
+    + golfMacro * ${style.bunker.floorMacroAmplitude.toFixed(4)} * golfSandWeight;
 #ifdef GOLF_V2_FAIRWAY
   // §43–44 fairway/tee mow-grain, after the class (golfWin) and its soft
   // edge (golfWeight -> golfFwWeight) are both resolved above: 0 at the

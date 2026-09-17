@@ -17,8 +17,9 @@ import { compileFairwayDirectionField, type FairwayDirectionField } from '../fai
 import { compileFieldAtlas } from '../field-atlas';
 import { GREEN_SDF_GRADIENT_STEP_M, GREEN_SURFACE_GLSL_NAMES } from '../green-surface-v2';
 import {
-  classAlbedoLinear, classifySurfaceFromAtlas, FAIRWAY_GRAIN_BINDING, fairwayGrainFactorAt, GROUND_ATLAS_TRACKED_CLASSES, GROUND_SDF_ATLAS_LAYERS,
-  GROUND_SHADER_V2_VERSION, groundShaderV2Chunks, maxGroundEdgeBandM, pickFinestAtlas, RELIEF_FIELD_BINDING, roughHierarchyAt, type GroundAtlasClass, type RoughTier,
+  BUNKER_EDGE_VARIATION_WAVELENGTHS_M, BUNKER_RIM_GRADIENT_STEP_M, bunkerContactAt, bunkerOverhangAt, classAlbedoLinear, classifySurfaceFromAtlas, FAIRWAY_GRAIN_BINDING, fairwayGrainFactorAt,
+  GROUND_ATLAS_TRACKED_CLASSES, GROUND_SDF_ATLAS_LAYERS, GROUND_SHADER_V2_VERSION, groundShaderV2Chunks, maxGroundEdgeBandM, pickFinestAtlas, RELIEF_FIELD_BINDING, roughHierarchyAt,
+  SUN_GROUND_XY, type GroundAtlasClass, type RoughTier,
 } from '../ground-shader-v2';
 import { parseGeometryPackage } from '../schema';
 import { quantizeSignedDistance, SDF_RANGE_M } from '../surface-distance-field';
@@ -448,7 +449,7 @@ describe('GOLF_V2_RELIEF rough hierarchy (fidelity §32–36, plan §48–50; me
   };
 
   it('bumps the shader version for the new program structure', () => {
-    expect(GROUND_SHADER_V2_VERSION).toBe('meridian-ground-v2-8');
+    expect(GROUND_SHADER_V2_VERSION).toBe('meridian-ground-v2-9');
   });
 
   it('§20 pad setting: the bank below the hole\'s own green pad darkens toward the green on V1\'s rough classes (rough share + the fairway surround), gated to the own green like the run-off', () => {
@@ -551,5 +552,90 @@ describe('GOLF_V2_RELIEF rough hierarchy (fidelity §32–36, plan §48–50; me
     expect(rough / total).toBeGreaterThan(.3); // most of a hole's frame is not fairway/green/sand/water
     for (const tier of Object.keys(counts) as RoughTier[]) expect(counts[tier]).toBeGreaterThan(20);
     expect(tinted / rough).toBeGreaterThan(.3); // the hierarchy is not decorative: a third or more of the rough moves by > 2 %
+  });
+});
+
+describe('bunker system in V2 (fidelity §26–28, renderer redesign §9; meridian-ground-v2-9)', () => {
+  const chunks = groundShaderV2Chunks();
+  const bunker = MERIDIAN_STYLE.bunker;
+  const sandBranch = chunks.fragmentColor.slice(chunks.fragmentColor.indexOf('if (golfWin == 1) {'), chunks.fragmentColor.indexOf('} else if (golfWin == 0) {'));
+
+  it('shades the sand under a sun-facing rim from a four-tap bunker SDF gradient at explicit LOD, V1 numbers, inside the sand branch only', () => {
+    expect(sandBranch).toContain(`if (golfDBunker < ${bunker.overhangBandM.toFixed(3)}) {`);
+    expect(sandBranch).toContain(`vec2(${BUNKER_RIM_GRADIENT_STEP_M.toFixed(4)}) * golfV2SdfFrame.zw`);
+    expect((sandBranch.match(/texture2DLodEXT\(golfV2Sdf,[^;]*?\)\.g/g) ?? []).length).toBe(4);
+    expect(sandBranch).not.toMatch(/texture2D\(/); // no implicit derivatives in a branch
+    expect(sandBranch).toContain(`vec2(${SUN_GROUND_XY[0].toFixed(5)}, ${SUN_GROUND_XY[1].toFixed(5)})`);
+    expect(sandBranch).toContain(`${bunker.overhangShade.toFixed(4)} * golfSunFacing * (1.0 - max(0.0, golfDBunker) / ${bunker.overhangBandM.toFixed(3)})`);
+    // Outward = minus the inside-positive SDF's gradient; the sun's ground direction is the unit XY of the fixed light.
+    expect(sandBranch).toContain('vec2 golfRimOut = golfRimLen > 1e-4 ? -golfRimGrad / golfRimLen : vec2(0.0);');
+    expect(Math.hypot(SUN_GROUND_XY[0], SUN_GROUND_XY[1])).toBeCloseTo(1, 9);
+    expect(SUN_GROUND_XY[0]).toBeGreaterThan(0); expect(SUN_GROUND_XY[1]).toBeLessThan(0);
+  });
+
+  it("paints V1's contact shade on the turf side only, as a linear ramp whose band and shade vary by ±edgeVariation on slow world fields", () => {
+    const [w0, w1] = BUNKER_EDGE_VARIATION_WAVELENGTHS_M;
+    expect(chunks.fragmentColor).toContain(`vec2 golfEdgeVar = vec2(sin(dot(golfSandP, vec2(0.66, 0.75) * ${(2 * Math.PI / w0).toFixed(6)})), sin(dot(golfSandP, vec2(-0.80, 0.60) * ${(2 * Math.PI / w1).toFixed(6)}) + 2.0));`);
+    expect(chunks.fragmentColor).toContain(`float golfContactBand = ${bunker.contactBandM.toFixed(3)} * (1.0 + ${bunker.edgeVariation.toFixed(3)} * golfEdgeVar.x);`);
+    expect(chunks.fragmentColor).toContain(`float golfContactShade = ${bunker.contactShade.toFixed(4)} * (1.0 + ${bunker.edgeVariation.toFixed(3)} * golfEdgeVar.y);`);
+    expect(chunks.fragmentColor).toContain('float golfContact = 1.0 - clamp(max(0.0, -golfDBunker) / golfContactBand, 0.0, 1.0);');
+    expect(chunks.fragmentColor).toContain('diffuseColor.rgb *= 1.0 - golfContactShade * golfContact;');
+    expect(chunks.fragmentColor).not.toContain('golfContact * golfContact');
+    // The wavelengths are longer than any bunker, so one rim sees a near-constant value.
+    expect(Math.min(w0, w1)).toBeGreaterThan(30);
+    let minBand = Infinity, maxBand = -Infinity, minShade = Infinity, maxShade = -Infinity;
+    for (let y = -100; y <= 100; y += 3) for (let x = -100; x <= 100; x += 3) {
+      const { bandM, shade } = bunkerContactAt(x, y, [12.5, 3.25]);
+      minBand = Math.min(minBand, bandM); maxBand = Math.max(maxBand, bandM); minShade = Math.min(minShade, shade); maxShade = Math.max(maxShade, shade);
+    }
+    expect(minBand).toBeGreaterThanOrEqual(bunker.contactBandM * (1 - bunker.edgeVariation) - 1e-9);
+    expect(maxBand).toBeLessThanOrEqual(bunker.contactBandM * (1 + bunker.edgeVariation) + 1e-9);
+    expect(minShade).toBeGreaterThanOrEqual(bunker.contactShade * (1 - bunker.edgeVariation) - 1e-9);
+    expect(maxShade).toBeLessThanOrEqual(bunker.contactShade * (1 + bunker.edgeVariation) + 1e-9);
+    expect(maxBand - minBand).toBeGreaterThan(bunker.contactBandM * bunker.edgeVariation * 1.5); // the spread is used, not a constant
+    // Along one 8 m rim the band moves by a few centimetres, not the full spread.
+    const a = bunkerContactAt(20, 20).bandM, b = bunkerContactAt(28, 20).bandM;
+    expect(Math.abs(a - b)).toBeLessThan(bunker.contactBandM * bunker.edgeVariation);
+  });
+
+  it('carries the macro field onto the sand floor at floorMacroAmplitude (V1 §31) alongside the turf amplitudes', () => {
+    expect(chunks.fragmentColor).toContain('float golfSandWeight = golfBunker ? 1.0 : 0.0;');
+    expect(chunks.fragmentColor).toContain(`+ golfMacro * ${bunker.floorMacroAmplitude.toFixed(4)} * golfSandWeight;`);
+  });
+
+  it('bunkerOverhangAt: full shade half a metre inside the sun-side rim, none on the far side, none past the band, null off the sand', () => {
+    const scene = sceneWith([feature('b', 'bunker', circle(0, 0, 6))]);
+    const atlas = compileFieldAtlas(scene, meshWithNoGrid(), [-20, -20, 20, 20], { targetSize: 160 }); // 0.25 m/texel
+    const [sx, sy] = SUN_GROUND_XY;
+    const sunSide = bunkerOverhangAt(atlas, 5.5 * sx, 5.5 * sy)!;
+    expect(sunSide.distanceM).toBeGreaterThan(.3); expect(sunSide.distanceM).toBeLessThan(.7);
+    expect(sunSide.sunFacing).toBeGreaterThan(.97);
+    expect(sunSide.shade).toBeCloseTo(1 - bunker.overhangShade * (1 - sunSide.distanceM / bunker.overhangBandM), 2);
+    const farSide = bunkerOverhangAt(atlas, -5.5 * sx, -5.5 * sy)!;
+    expect(farSide.sunFacing).toBe(0); expect(farSide.shade).toBe(1);
+    // Side-on rims: half-facing.
+    const side = bunkerOverhangAt(atlas, 5.5 * Math.cos(Math.atan2(sy, sx) + Math.PI / 3), 5.5 * Math.sin(Math.atan2(sy, sx) + Math.PI / 3))!;
+    expect(side.sunFacing).toBeGreaterThan(.4); expect(side.sunFacing).toBeLessThan(.6);
+    expect(bunkerOverhangAt(atlas, 3 * sx, 3 * sy)!.shade).toBe(1); // 3 m in: past overhangBandM
+    expect(bunkerOverhangAt(atlas, 7, 0)).toBeNull(); // turf
+    expect(bunkerOverhangAt(atlas, 30, 30)).toBeNull(); // outside the atlas
+  });
+
+  it("finds sun-facing and shaded rims on hole 7's real bunkers, and leaves their far sides alone", () => {
+    const { hole, holeScene } = loadHole7();
+    const atlas = compileFieldAtlas(holeScene, hole, hole.renderProfile!.tacticalBoundsM!, { targetSize: 256 });
+    let sand = 0, shaded = 0, litInBand = 0;
+    const [x0, y0, x1, y1] = atlas.boundsM;
+    for (let y = y0 + .5; y < y1; y += 1) for (let x = x0 + .5; x < x1; x += 1) {
+      const sample = bunkerOverhangAt(atlas, x, y);
+      if (!sample) continue;
+      sand++;
+      if (sample.shade < .9) shaded++;
+      if (sample.distanceM < bunker.overhangBandM && sample.sunFacing === 0) litInBand++;
+    }
+    expect(sand).toBeGreaterThan(200);
+    expect(shaded).toBeGreaterThan(30);
+    expect(litInBand).toBeGreaterThan(30);
+    expect(shaded / sand).toBeLessThan(.5); // a shadow under one side of the lip, not a darker bunker
   });
 });
