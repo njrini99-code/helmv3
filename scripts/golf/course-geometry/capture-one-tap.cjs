@@ -83,9 +83,10 @@ const outDir = path.resolve(String(args['out-dir'] || `output/playwright/course-
   await page.locator('[data-slot=one-tap-holed]').click(); await page.waitForTimeout(350); await snap('holed', { settled: false });
   // Explicit hole advance: NEXT HOLE becomes the primary action once the hole is closed.
   const before = await page.evaluate(() => document.querySelector('[data-slot=one-tap-screen]')?.dataset.holeKey ?? null);
-  // The last hole has no NEXT HOLE: the round is over and the capture ends on the completion card.
+  // On the last hole NEXT HOLE stays rendered but disabled: the round is over
+  // and the capture ends on the completion card.
   const nextHole = page.locator('[data-slot=one-tap-next-hole]');
-  if (await nextHole.count()) {
+  if (await nextHole.count() && await nextHole.isEnabled()) {
     await nextHole.click();
     await page.waitForFunction(prev => document.querySelector('[data-slot=one-tap-screen]')?.dataset.holeKey !== prev, before, { timeout: 10000 });
     await page.waitForFunction(() => document.querySelector('canvas[data-terrain-state=ready]'), null, { timeout: 90000 });

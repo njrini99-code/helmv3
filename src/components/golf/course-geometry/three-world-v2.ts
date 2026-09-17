@@ -29,7 +29,7 @@ import { compileHeroPatches, type CompiledBunkerPatch } from '@/lib/golf/course-
 import { compileBunkerNormalField } from '@/lib/golf/course-geometry/bunker-normal-field';
 import { compileBaseDisplayLods, weldAndCleanTerrainMesh } from '@/lib/golf/course-geometry/display-mesh-v2';
 import { compileFairwayDirectionField, fairwayDirectionLayer, type FairwayDirectionField } from '@/lib/golf/course-geometry/fairway-direction-field';
-import { compileFieldAtlas, fieldAtlasBytes } from '@/lib/golf/course-geometry/field-atlas';
+import { compileFieldAtlas, fieldAtlasBytes, type FieldAtlasSources } from '@/lib/golf/course-geometry/field-atlas';
 import type { ForestEdgeV2Result } from '@/lib/golf/course-geometry/forest-edge-v2';
 import {
   classAlbedoLinear, classRoughness, dominantClass, FAIRWAY_GRAIN_BINDING, GROUND_ATLAS_TRACKED_CLASSES, GROUND_SDF_ATLAS_LAYERS,
@@ -39,6 +39,7 @@ import { compileHeroRegions } from '@/lib/golf/course-geometry/hero-patches';
 import { compileStaticShadowField, staticShadowLayer, type StaticShadowField } from '@/lib/golf/course-geometry/static-shadow-field';
 import { dequantizeSignedDistance, SDF_RANGE_M } from '@/lib/golf/course-geometry/surface-distance-field';
 import type { TerrainMesh } from '@/lib/golf/course-geometry/terrain';
+import { compileCurvatureFields } from '@/lib/golf/course-geometry/terrain-curvature';
 import { compileSkyField, type SkyField } from '@/lib/golf/course-geometry/terrain-sky-field';
 import { metricTerrainNormal, type MetricTerrainGrid } from '@/lib/golf/course-geometry/terrain-source';
 import type { HoleScene } from '@/lib/golf/course-geometry/types';
@@ -226,12 +227,18 @@ export function assembleV2World(scene: HoleScene, mesh: TerrainMesh, options: As
     const base = lods.lod0;
     const boundsM = boundsOfPositions(base.positions);
 
+    // The curvature and (atlas-default) sky fields are grid-wide and identical
+    // for every atlas below: compile them once instead of once per atlas
+    // (five times per hole — ~1.9 s of the mount compile on a laptop).
+    let sources: FieldAtlasSources = {};
+    try { sources = { curvature: compileCurvatureFields(metricGrid), sky: compileSkyField(metricGrid) }; } catch (error) { warnAtlasFallbackOnce('atlas source fields compile threw', error); }
+
     let atlas: PackedFieldAtlas | null = null;
     try {
       const atlasBoundsM = wholeHoleAtlasBoundsM(mesh, boundsM, patches);
       const longAxisM = Math.max(atlasBoundsM[2] - atlasBoundsM[0], atlasBoundsM[3] - atlasBoundsM[1]);
       const targetSize = targetTexelCount(longAxisM, WHOLE_HOLE_ATLAS_TEXEL_TARGET_M, WHOLE_HOLE_ATLAS_MAX_TEXELS);
-      atlas = compileFieldAtlas(scene, mesh, atlasBoundsM, { targetSize });
+      atlas = compileFieldAtlas(scene, mesh, atlasBoundsM, { targetSize }, sources);
     } catch (error) { warnAtlasFallbackOnce('field atlas compile threw', error); }
 
     // Task 11 follow-up: one finer atlas per hero patch (plan §17 hero
@@ -246,7 +253,7 @@ export function assembleV2World(scene: HoleScene, mesh: TerrainMesh, options: As
         const heroBoundsM = padBoundsM(patch.boundsM, HERO_ATLAS_PAD_M);
         const longAxisM = Math.max(heroBoundsM[2] - heroBoundsM[0], heroBoundsM[3] - heroBoundsM[1]);
         const targetSize = targetTexelCount(longAxisM, HERO_ATLAS_TEXEL_TARGET_M, HERO_ATLAS_MAX_TEXELS);
-        const heroAtlas = compileFieldAtlas(scene, mesh, heroBoundsM, { targetSize });
+        const heroAtlas = compileFieldAtlas(scene, mesh, heroBoundsM, { targetSize }, sources);
         const texelM = atlasTexelSizeM(heroAtlas);
         if (texelM > HERO_ATLAS_MAX_TEXEL_SIZE_M) warnHeroTexelTooCoarseOnce(patch.id, texelM);
         heroAtlases.push({ patchId: patch.id, atlas: heroAtlas });
