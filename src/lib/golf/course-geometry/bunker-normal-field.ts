@@ -41,7 +41,7 @@
 import { BUNKER_RING_SPACING, bunkerShape, bunkerSignedDistance, type BunkerHeroProfile, type BunkerRingSpacing, type CompiledBunkerPatch } from './bunker-display-mesh';
 import { nearestOnRings, smootherstepSlope } from './bunker-profile';
 import type { TerrainMesh } from './terrain';
-import { sampleMetricTerrain, type MetricTerrainGrid } from './terrain-source';
+import { sampleMetricTerrainAt, type MetricTerrainGrid } from './terrain-source';
 import type { PointM } from './types';
 import { MERIDIAN_STYLE, type MeridianStyle } from './visual-style';
 
@@ -72,8 +72,8 @@ export interface BunkerNormalField {
 function terrainSlopeAt(grid: MetricTerrainGrid | null | undefined, point: PointM): readonly [number, number] {
   if (!grid) return [0, 0];
   const h = grid.spacingM;
-  const zx0 = sampleMetricTerrain(grid, [point[0] - h, point[1]]), zx1 = sampleMetricTerrain(grid, [point[0] + h, point[1]]);
-  const zy0 = sampleMetricTerrain(grid, [point[0], point[1] - h]), zy1 = sampleMetricTerrain(grid, [point[0], point[1] + h]);
+  const zx0 = sampleMetricTerrainAt(grid, point[0] - h, point[1]), zx1 = sampleMetricTerrainAt(grid, point[0] + h, point[1]);
+  const zy0 = sampleMetricTerrainAt(grid, point[0], point[1] - h), zy1 = sampleMetricTerrainAt(grid, point[0], point[1] + h);
   if (zx0 == null || zx1 == null || zy0 == null || zy1 == null) return [0, 0];
   return [(zx1 - zx0) / (2 * h), (zy1 - zy0) / (2 * h)];
 }

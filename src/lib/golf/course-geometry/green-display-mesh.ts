@@ -38,7 +38,7 @@ import { checkDisplayTopology, type DisplayMesh, type TopologyReport } from './d
 import type { HeroRegion } from './hero-patches';
 import type { TerrainMesh } from './terrain';
 import { compileCurvatureFields, type CurvatureFields } from './terrain-curvature';
-import { sampleMetricTerrain } from './terrain-source';
+import { sampleMetricTerrainAt } from './terrain-source';
 import { SURFACE_CLASS_IDS, type SurfaceClass } from './visual-artifact';
 import type { PackedHeroPatch } from './visual-artifact-v2';
 
@@ -180,8 +180,8 @@ function planEdges(mesh: TerrainMesh, base: DisplayMesh, region: HeroRegion, spa
     if (!grid) { planeError.set(t, 0); continue; }
     const a = base.indices[t * 3]!, b = base.indices[t * 3 + 1]!, c = base.indices[t * 3 + 2]!;
     const cx = (p[a * 3]! + p[b * 3]! + p[c * 3]!) / 3, cy = (p[a * 3 + 1]! + p[b * 3 + 1]! + p[c * 3 + 1]!) / 3;
-    const ga = sampleMetricTerrain(grid, [p[a * 3]!, p[a * 3 + 1]!]), gb = sampleMetricTerrain(grid, [p[b * 3]!, p[b * 3 + 1]!]), gc = sampleMetricTerrain(grid, [p[c * 3]!, p[c * 3 + 1]!]);
-    const gm = sampleMetricTerrain(grid, [cx, cy]);
+    const ga = sampleMetricTerrainAt(grid, p[a * 3]!, p[a * 3 + 1]!), gb = sampleMetricTerrainAt(grid, p[b * 3]!, p[b * 3 + 1]!), gc = sampleMetricTerrainAt(grid, p[c * 3]!, p[c * 3 + 1]!);
+    const gm = sampleMetricTerrainAt(grid, cx, cy);
     planeError.set(t, ga != null && gb != null && gc != null && gm != null ? Math.abs(gm - (ga + gb + gc) / 3) : 0);
   }
   const slivers = new Set<number>();
@@ -259,8 +259,8 @@ export function compileRegionPatch(mesh: TerrainMesh, base: DisplayMesh, region:
     const linear = u * p[a * 3 + 2]! + v * p[b * 3 + 2]! + w * p[c * 3 + 2]!;
     let z = linear;
     if (grid) {
-      const ga = sampleMetricTerrain(grid, [p[a * 3]!, p[a * 3 + 1]!]), gb = sampleMetricTerrain(grid, [p[b * 3]!, p[b * 3 + 1]!]), gc = sampleMetricTerrain(grid, [p[c * 3]!, p[c * 3 + 1]!]);
-      const g = sampleMetricTerrain(grid, [x, y]);
+      const ga = sampleMetricTerrainAt(grid, p[a * 3]!, p[a * 3 + 1]!), gb = sampleMetricTerrainAt(grid, p[b * 3]!, p[b * 3 + 1]!), gc = sampleMetricTerrainAt(grid, p[c * 3]!, p[c * 3 + 1]!);
+      const g = sampleMetricTerrainAt(grid, x, y);
       if (ga != null && gb != null && gc != null && g != null) z = linear + (g - (u * ga + v * gb + w * gc)) * Math.min(1, rimDistance(x, y) / spacing.rimTaperM);
     }
     maxRelief = Math.max(maxRelief, Math.abs(z - linear));

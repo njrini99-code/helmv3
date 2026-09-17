@@ -83,7 +83,7 @@
  *
  * Visual only (constraint 6); canonical geometry untouched; deterministic
  * from the scene + mesh + options alone (13); three-free (R12). */
-import { inFeature } from './spatial';
+import { inFeature, pointBox } from './spatial';
 import type { TerrainMesh } from './terrain';
 import type { HoleScene, LocalFeature, PointM } from './types';
 import { MERIDIAN_STYLE, type MeridianStyle } from './visual-style';
@@ -200,9 +200,12 @@ export function compileFairwayDirectionField(mesh: TerrainMesh, scene: HoleScene
   // (constraint 15).
   if (line && line.length >= 2 && rings.length) {
     const cumulative = cumulativeLengths(line);
+    // A node outside a feature's bounding box is outside the feature, so
+    // only the features whose box holds the node pay the ring test.
+    const boxed = rings.map(feature => ({ feature, box: pointBox(feature.parts.flat(2)) }));
     for (let row = 0; row < rows; row++) for (let column = 0; column < columns; column++) {
       const point: PointM = [originM[0] + column * spacingM, originM[1] + row * spacingM];
-      if (!rings.some(feature => inFeature(point, feature))) continue;
+      if (!boxed.some(({ feature, box }) => point[0] >= box.minX && point[0] <= box.maxX && point[1] >= box.minY && point[1] <= box.maxY && inFeature(point, feature))) continue;
       const { sM, tM, tangent } = projectToRoute(line, cumulative, point);
       const [tx, ty] = tangent;
       // D = T − skew·B, B = (−ty, tx): D = (tx + skew·ty, ty − skew·tx).

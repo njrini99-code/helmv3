@@ -68,7 +68,7 @@
 import { buildSurfaceDistanceLayers, quantizeSignedDistance, dequantizeSignedDistance, SDF_RANGE_M, type SurfaceDistanceLayer } from './surface-distance-field';
 import { compileCurvatureFields, type CurvatureFields } from './terrain-curvature';
 import { compileSkyField, type SkyField } from './terrain-sky-field';
-import { sampleMetricTerrain, type MetricTerrainGrid } from './terrain-source';
+import { sampleMetricTerrainAt, type MetricTerrainGrid } from './terrain-source';
 import type { TerrainMesh } from './terrain';
 import type { HoleScene } from './types';
 import { MAX_FIELD_ATLAS_SIZE, type PackedFieldAtlas } from './visual-artifact-v2';
@@ -107,14 +107,20 @@ function componentOf(interleaved: Float32Array, stride: number, index: number): 
   for (let i = 0; i < count; i++) out[i] = interleaved[i * stride + index]!;
   return out;
 }
-/** Bilinear sample of a grid-shaped field aligned 1:1 with `grid` (same
+/** Bilinear sampling of grid-shaped fields aligned 1:1 with `grid` (same
  * columns/rows/spacing/origin — terrain-curvature.ts and terrain-sky-field.ts
- * both produce these). null outside the grid's own extent. */
-function sampleGridField(grid: MetricTerrainGrid, field: Float32Array, x: number, y: number): number | null {
+ * both produce these): the footprint of a point — the node index of its
+ * cell's lower corner and the fractions across it, null outside the grid's
+ * own extent — is computed once per texel and shared by every field
+ * sampled there. */
+interface GridCell { i: number; fx: number; fy: number }
+function gridCell(grid: MetricTerrainGrid, x: number, y: number): GridCell | null {
   const gx = (x - grid.originM[0]) / grid.spacingM, gy = (y - grid.originM[1]) / grid.spacingM;
   if (gx < 0 || gy < 0 || gx > grid.columns - 1 || gy > grid.rows - 1) return null;
   const ix = Math.min(Math.floor(gx), grid.columns - 2), iy = Math.min(Math.floor(gy), grid.rows - 2);
-  const fx = gx - ix, fy = gy - iy, i = iy * grid.columns + ix;
+  return { i: iy * grid.columns + ix, fx: gx - ix, fy: gy - iy };
+}
+function sampleGridCell(grid: MetricTerrainGrid, field: Float32Array, { i, fx, fy }: GridCell): number {
   const a = field[i]!, b = field[i + 1]!, c = field[i + grid.columns]!, d = field[i + grid.columns + 1]!;
   return (1 - fx) * ((1 - fy) * a + fy * c) + fx * ((1 - fy) * b + fy * d);
 }
@@ -122,10 +128,10 @@ function sampleGridField(grid: MetricTerrainGrid, field: Float32Array, x: number
  * difference at the grid's own spacing, returning dz/dx, dz/dy rather than
  * the normalized normal). null where the grid cannot answer. */
 function terrainGradient(grid: MetricTerrainGrid, x: number, y: number): readonly [number, number] | null {
-  const step = grid.spacingM, z = sampleMetricTerrain(grid, [x, y]);
+  const step = grid.spacingM, z = sampleMetricTerrainAt(grid, x, y);
   if (z == null) return null;
-  const l = sampleMetricTerrain(grid, [x - step, y]), r = sampleMetricTerrain(grid, [x + step, y]);
-  const b = sampleMetricTerrain(grid, [x, y - step]), t = sampleMetricTerrain(grid, [x, y + step]);
+  const l = sampleMetricTerrainAt(grid, x - step, y), r = sampleMetricTerrainAt(grid, x + step, y);
+  const b = sampleMetricTerrainAt(grid, x, y - step), t = sampleMetricTerrainAt(grid, x, y + step);
   const dzdx = l != null && r != null ? (r - l) / (2 * step) : r != null ? (r - z) / step : l != null ? (z - l) / step : null;
   const dzdy = b != null && t != null ? (t - b) / (2 * step) : t != null ? (t - z) / step : b != null ? (z - b) / step : null;
   return dzdx == null || dzdy == null ? null : [dzdx, dzdy];
@@ -145,7 +151,6 @@ export function compileFieldAtlas(scene: HoleScene, mesh: TerrainMesh, boundsM: 
   if (!(x1 > x0 && y1 > y0)) throw new Error('Field atlas needs ordered, nondegenerate bounds');
   const { width, height } = atlasSize(boundsM, opts.targetSize), texels = width * height;
   const texelM: [number, number] = [(x1 - x0) / width, (y1 - y0) / height];
-  const at = (col: number, row: number): [number, number] => [x0 + (col + .5) * texelM[0], y0 + (row + .5) * texelM[1]];
 
   const sdf = buildSurfaceDistanceLayers(scene, { boundsM: [x0, y0, x1, y1] }, { width, height }, SDF_RANGE_M);
   const sdfData = new Uint16Array(texels * sdf.layers.length);
@@ -160,7 +165,7 @@ export function compileFieldAtlas(scene: HoleScene, mesh: TerrainMesh, boundsM: 
       if (d > bestClassD) { bestClassD = d; bestClass = k + 1; }
       if (Math.abs(d) < bestNearD) { bestNearD = Math.abs(d); bestNear = k; }
     }
-    const [x, y] = at(n % width, Math.floor(n / width));
+    const x = x0 + (n % width + .5) * texelM[0], y = y0 + (Math.floor(n / width) + .5) * texelM[1];
     const outside = clip ? !(x >= clip[0]! && y >= clip[1]! && x <= clip[2]! && y <= clip[3]!) : false;
     semanticRGBA8[n * 4] = bestClassD > 0 ? bestClass : 0;
     semanticRGBA8[n * 4 + 1] = bestNear;
@@ -174,17 +179,20 @@ export function compileFieldAtlas(scene: HoleScene, mesh: TerrainMesh, boundsM: 
   const bentXField = sky ? componentOf(sky.bentXY, 2, 0) : null, bentYField = sky ? componentOf(sky.bentXY, 2, 1) : null;
   const reliefRGBA16F = new Uint16Array(texels * 4), bentRGBA8 = new Uint8Array(texels * 4);
   for (let row = 0; row < height; row++) for (let col = 0; col < width; col++) {
-    const n = row * width + col, [x, y] = at(col, row);
+    const n = row * width + col, x = x0 + (col + .5) * texelM[0], y = y0 + (row + .5) * texelM[1];
     let dzdx = 0, dzdy = 0, curv = 0, visibility = 1, bentX = 0, bentY = 0, exposure = 0;
     if (grid) {
       const gradient = terrainGradient(grid, x, y);
       if (gradient) { dzdx = gradient[0]; dzdy = gradient[1]; }
-      if (curvature) curv = sampleGridField(grid, curvature.landformNormalized, x, y) ?? 0;
-      if (sky) {
-        visibility = sampleGridField(grid, sky.visibility, x, y) ?? 1;
-        exposure = sampleGridField(grid, sky.exposure, x, y) ?? 0;
-        bentX = sampleGridField(grid, bentXField!, x, y) ?? 0;
-        bentY = sampleGridField(grid, bentYField!, x, y) ?? 0;
+      const cell = curvature || sky ? gridCell(grid, x, y) : null;
+      if (cell) {
+        if (curvature) curv = sampleGridCell(grid, curvature.landformNormalized, cell);
+        if (sky) {
+          visibility = sampleGridCell(grid, sky.visibility, cell);
+          exposure = sampleGridCell(grid, sky.exposure, cell);
+          bentX = sampleGridCell(grid, bentXField!, cell);
+          bentY = sampleGridCell(grid, bentYField!, cell);
+        }
       }
     }
     reliefRGBA16F[n * 4] = encodeSigned16(dzdx, RELIEF_SLOPE_RANGE_M);

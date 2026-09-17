@@ -79,40 +79,56 @@ export function compileSkyField(grid: MetricTerrainGrid, options: SkyFieldOption
   const azimuthX = new Float64Array(directions), azimuthY = new Float64Array(directions);
   for (let k = 0; k < directions; k++) { const a = 2 * Math.PI * k / directions; azimuthX[k] = Math.cos(a); azimuthY[k] = Math.sin(a); }
   // The march is the same integer offset pattern from every node, so the
-  // rounded (column, row) offsets and their sample distances are computed
-  // once per direction and step rather than once per node and sample (the
-  // compile's largest single cost before this). Zero-distance steps (a
-  // step that rounds onto the node itself) are dropped here exactly as the
-  // per-node loop skipped them.
-  const rayColumns: Int32Array[] = [], rayRows: Int32Array[] = [], rayDistances: Float64Array[] = [];
+  // rounded (column, row) offsets, their flat node offsets and their sample
+  // distances are computed once per direction and step rather than once
+  // per node and sample (the compile's largest single cost before this).
+  // Zero-distance steps (a step that rounds onto the node itself) are
+  // dropped here exactly as the per-node loop skipped them.
+  const rayColumns: Int32Array[] = [], rayRows: Int32Array[] = [], rayOffsets: Int32Array[] = [], rayDistances: Float64Array[] = [];
+  let reachColumns = 0, reachRows = 0;
   for (let k = 0; k < directions; k++) {
     const ux = azimuthX[k]!, uy = azimuthY[k]!;
-    const dcs: number[] = [], drs: number[] = [], distances: number[] = [];
+    const dcs: number[] = [], drs: number[] = [], offsets: number[] = [], distances: number[] = [];
     for (const d of steps) {
       const dc = Math.round(ux * d), dr = Math.round(uy * d), distance = Math.hypot(dc, dr) * spacingM;
-      dcs.push(dc); drs.push(dr); distances.push(distance);
+      if (distance <= 0) continue;
+      dcs.push(dc); drs.push(dr); offsets.push(dr * columns + dc); distances.push(distance);
+      reachColumns = Math.max(reachColumns, Math.abs(dc)); reachRows = Math.max(reachRows, Math.abs(dr));
     }
-    rayColumns.push(Int32Array.from(dcs)); rayRows.push(Int32Array.from(drs)); rayDistances.push(Float64Array.from(distances));
+    rayColumns.push(Int32Array.from(dcs)); rayRows.push(Int32Array.from(drs)); rayOffsets.push(Int32Array.from(offsets)); rayDistances.push(Float64Array.from(distances));
   }
   for (let r = 0; r < rows; r++) for (let c = 0; c < columns; c++) {
     const n = r * columns + c;
     if (!supported[n]) continue;
     const z0 = heights[n]!;
     support[n] = 1;
+    // A node the whole march fits around samples by flat offset with no
+    // edge test; one near an edge walks each ray until it leaves the grid.
+    const interior = c >= reachColumns && c + reachColumns < columns && r >= reachRows && r + reachRows < rows;
     let rays = 0, open = 0, fall = 0, bx = 0, by = 0, bz = 0;
     for (let k = 0; k < directions; k++) {
-      const dcs = rayColumns[k]!, drs = rayRows[k]!, distances = rayDistances[k]!;
+      const distances = rayDistances[k]!;
       let maxTan = Number.NEGATIVE_INFINITY, minTan = Number.POSITIVE_INFINITY;
-      for (let i = 0; i < dcs.length; i++) {
-        const cc = c + dcs[i]!, rr = r + drs[i]!;
-        if (cc < 0 || rr < 0 || cc >= columns || rr >= rows) break;
-        const m = rr * columns + cc;
-        if (!supported[m]) continue;
-        const distance = distances[i]!;
-        if (distance <= 0) continue;
-        const tan = (heights[m]! - z0) / distance;
-        if (tan > maxTan) maxTan = tan;
-        if (tan < minTan) minTan = tan;
+      if (interior) {
+        const offsets = rayOffsets[k]!;
+        for (let i = 0; i < offsets.length; i++) {
+          const m = n + offsets[i]!;
+          if (!supported[m]) continue;
+          const tan = (heights[m]! - z0) / distances[i]!;
+          if (tan > maxTan) maxTan = tan;
+          if (tan < minTan) minTan = tan;
+        }
+      } else {
+        const dcs = rayColumns[k]!, drs = rayRows[k]!;
+        for (let i = 0; i < dcs.length; i++) {
+          const cc = c + dcs[i]!, rr = r + drs[i]!;
+          if (cc < 0 || rr < 0 || cc >= columns || rr >= rows) break;
+          const m = rr * columns + cc;
+          if (!supported[m]) continue;
+          const tan = (heights[m]! - z0) / distances[i]!;
+          if (tan > maxTan) maxTan = tan;
+          if (tan < minTan) minTan = tan;
+        }
       }
       // A ray with no supported sample (grid edge, unsupported neighbours) scores nothing.
       if (!Number.isFinite(maxTan)) continue;

@@ -20,7 +20,7 @@
  * moved (4). */
 import { canopySymbols, crownScale } from './canopy';
 import { TERRAIN_LIGHT_DIRECTION, type TerrainMesh } from './terrain';
-import { sampleMetricTerrain, type MetricTerrainGrid } from './terrain-source';
+import { sampleMetricTerrain, sampleMetricTerrainAt, type MetricTerrainGrid } from './terrain-source';
 import type { HoleScene } from './types';
 
 export interface StaticShadowOptions {
@@ -143,7 +143,7 @@ function canopyOcclusion(scene: HoleScene, grid: MetricTerrainGrid, layout: { or
   });
   for (let row = 0; row < layout.rows; row++) for (let column = 0; column < layout.columns; column++) {
     const x = layout.originM[0] + column * layout.spacingM, y = layout.originM[1] + row * layout.spacingM;
-    const z = sampleMetricTerrain(grid, [x, y]);
+    const z = sampleMetricTerrainAt(grid, x, y);
     if (z == null) continue;
     const list = buckets.get(Math.floor(row * layout.spacingM / cell) * cols + Math.floor(column * layout.spacingM / cell));
     if (!list) continue;

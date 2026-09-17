@@ -42,6 +42,11 @@ export function typedGridHeights(grid: MetricTerrainGrid): TypedGridHeights {
 }
 
 export function sampleMetricTerrain(grid: MetricTerrainGrid, [x, y]: PointM): number | null {
+  return sampleMetricTerrainAt(grid, x, y);
+}
+/** `sampleMetricTerrain` on plain coordinates, for a loop that would
+ * otherwise allocate a point per sample. */
+export function sampleMetricTerrainAt(grid: MetricTerrainGrid, x: number, y: number): number | null {
   if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
   const gx = (x - grid.originM[0]) / grid.spacingM, gy = (y - grid.originM[1]) / grid.spacingM;
   if (gx < 0 || gy < 0 || gx > grid.columns - 1 || gy > grid.rows - 1) return null;
@@ -56,8 +61,8 @@ export function sampleMetricTerrain(grid: MetricTerrainGrid, [x, y]: PointM): nu
 export function metricTerrainNormal(grid: MetricTerrainGrid, point: PointM): readonly [number, number, number] | null {
   const step = grid.spacingM, z = sampleMetricTerrain(grid, point);
   if (z == null) return null;
-  const l = sampleMetricTerrain(grid, [point[0] - step, point[1]]), r = sampleMetricTerrain(grid, [point[0] + step, point[1]]);
-  const b = sampleMetricTerrain(grid, [point[0], point[1] - step]), t = sampleMetricTerrain(grid, [point[0], point[1] + step]);
+  const l = sampleMetricTerrainAt(grid, point[0] - step, point[1]), r = sampleMetricTerrainAt(grid, point[0] + step, point[1]);
+  const b = sampleMetricTerrainAt(grid, point[0], point[1] - step), t = sampleMetricTerrainAt(grid, point[0], point[1] + step);
   const dx = l != null && r != null ? (r - l) / (2 * step) : r != null ? (r - z) / step : l != null ? (z - l) / step : null;
   const dy = b != null && t != null ? (t - b) / (2 * step) : t != null ? (t - z) / step : b != null ? (z - b) / step : null;
   if (dx == null || dy == null) return null;

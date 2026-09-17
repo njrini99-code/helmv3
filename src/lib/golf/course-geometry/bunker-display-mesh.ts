@@ -25,7 +25,7 @@ import { bunkerProfileNumbers, featureRings, featureSeed, nearestRingDistance, s
 import type { HeroRegion, HeroRegionPlan } from './hero-patches';
 import { inRing } from './spatial';
 import type { TerrainMesh } from './terrain';
-import { sampleMetricTerrain } from './terrain-source';
+import { sampleMetricTerrainAt } from './terrain-source';
 import type { HoleScene, LocalFeature, PointM } from './types';
 import { MERIDIAN_STYLE, type MeridianStyle } from './visual-style';
 
@@ -101,8 +101,8 @@ export function bunkerHeroProfiles(scene: HoleScene, mesh: TerrainMesh, region: 
     let downhill: PointM | null = null;
     const grid = mesh.metricGrid;
     if (grid) {
-      const h = grid.spacingM, zx0 = sampleMetricTerrain(grid, [centroid[0] - h, centroid[1]]), zx1 = sampleMetricTerrain(grid, [centroid[0] + h, centroid[1]]);
-      const zy0 = sampleMetricTerrain(grid, [centroid[0], centroid[1] - h]), zy1 = sampleMetricTerrain(grid, [centroid[0], centroid[1] + h]);
+      const h = grid.spacingM, zx0 = sampleMetricTerrainAt(grid, centroid[0] - h, centroid[1]), zx1 = sampleMetricTerrainAt(grid, centroid[0] + h, centroid[1]);
+      const zy0 = sampleMetricTerrainAt(grid, centroid[0], centroid[1] - h), zy1 = sampleMetricTerrainAt(grid, centroid[0], centroid[1] + h);
       if (zx0 != null && zx1 != null && zy0 != null && zy1 != null) {
         const gx = (zx1 - zx0) / (2 * h), gy = (zy1 - zy0) / (2 * h), slope = Math.hypot(gx, gy);
         if (slope > 1e-3) downhill = [-gx / slope, -gy / slope];

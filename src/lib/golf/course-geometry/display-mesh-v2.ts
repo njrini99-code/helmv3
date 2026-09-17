@@ -45,7 +45,7 @@
 import type { TerrainMesh } from './terrain';
 import { compileCurvatureFields, type CurvatureFields } from './terrain-curvature';
 import type { MetricTerrainGrid } from './terrain-source';
-import { metricTerrainNormal, sampleMetricTerrain } from './terrain-source';
+import { metricTerrainNormal, sampleMetricTerrainAt } from './terrain-source';
 import { SURFACE_CLASS_IDS, type SurfaceClass } from './visual-artifact';
 import type { HeroRange, PackedDisplayMesh } from './visual-artifact-v2';
 
@@ -235,7 +235,7 @@ export function buildEdgeTable(mesh: TerrainMesh, welded: DisplayMesh): EdgeTabl
 function midpointHeight(grid: MetricTerrainGrid | undefined, ax: number, ay: number, az: number, bx: number, by: number, bz: number): number {
   const linear = (az + bz) / 2;
   if (!grid) return linear;
-  const ga = sampleMetricTerrain(grid, [ax, ay]), gb = sampleMetricTerrain(grid, [bx, by]), gm = sampleMetricTerrain(grid, [(ax + bx) / 2, (ay + by) / 2]);
+  const ga = sampleMetricTerrainAt(grid, ax, ay), gb = sampleMetricTerrainAt(grid, bx, by), gm = sampleMetricTerrainAt(grid, (ax + bx) / 2, (ay + by) / 2);
   if (ga == null || gb == null || gm == null) return linear;
   return linear + (gm - (ga + gb) / 2);
 }
@@ -263,7 +263,7 @@ export function refinementImportance(mesh: TerrainMesh, welded: DisplayMesh, tab
       const cls = table.boundaryClass.get(edgeKey(corners[k]!, corners[(k + 1) % 3]!));
       if (cls) boundary = Math.max(boundary, BOUNDARY_CLASS_WEIGHTS[cls] ?? 1);
       if (grid) {
-        const ga = sampleMetricTerrain(grid, [p[a]!, p[a + 1]!]), gb = sampleMetricTerrain(grid, [p[b]!, p[b + 1]!]), gm = sampleMetricTerrain(grid, [(p[a]! + p[b]!) / 2, (p[a + 1]! + p[b + 1]!) / 2]);
+        const ga = sampleMetricTerrainAt(grid, p[a]!, p[a + 1]!), gb = sampleMetricTerrainAt(grid, p[b]!, p[b + 1]!), gm = sampleMetricTerrainAt(grid, (p[a]! + p[b]!) / 2, (p[a + 1]! + p[b + 1]!) / 2);
         if (ga != null && gb != null && gm != null) heightError = Math.max(heightError, Math.abs(gm - (ga + gb) / 2));
       }
     }
@@ -361,24 +361,29 @@ export function refineDisplayMesh(mesh: TerrainMesh, welded: DisplayMesh, red: U
  * the most important triangles first, count chosen by bisection. */
 export function selectRedTriangles(welded: DisplayMesh, importance: Float64Array, target: number): Uint8Array {
   const order = Array.from(importance.keys()).filter(t => importance[t]! > 0).sort((a, b) => importance[b]! - importance[a]! || a - b);
-  const countAfter = (n: number): number => {
-    const split = new Set<number>();
-    for (let i = 0; i < n; i++) {
-      const t = order[i]!;
-      for (let k = 0; k < 3; k++) split.add(edgeKey(welded.indices[t * 3 + k]!, welded.indices[t * 3 + ((k + 1) % 3)]!));
+  // The triangle count after splitting the first n of `order`: each
+  // triangle becomes 1, 2, 3 or 4 by how many of its three edges the split
+  // set holds. Marking a triangle's edges only ever raises that, so the
+  // count is non-decreasing in n and the largest n within `target` is
+  // found by one incremental sweep — every edge slot of every triangle
+  // sharing a newly marked edge steps its triangle's share — rather than
+  // recounting the whole mesh at each step of a binary search.
+  const slots = new Map<number, number[]>();
+  for (let t = 0; t < welded.triangleCount; t++) for (let k = 0; k < 3; k++) {
+    const key = edgeKey(welded.indices[t * 3 + k]!, welded.indices[t * 3 + ((k + 1) % 3)]!), list = slots.get(key);
+    if (list) list.push(t); else slots.set(key, [t]);
+  }
+  const splits = new Uint8Array(welded.triangleCount), marked = new Set<number>();
+  let total = welded.triangleCount, low = 0;
+  for (let i = 0; i < order.length && total <= target; i++) {
+    const t = order[i]!;
+    for (let k = 0; k < 3; k++) {
+      const key = edgeKey(welded.indices[t * 3 + k]!, welded.indices[t * 3 + ((k + 1) % 3)]!);
+      if (marked.has(key)) continue;
+      marked.add(key);
+      for (const u of slots.get(key)!) { const before = splits[u]!; splits[u] = before + 1; total += before < 3 ? 1 : 0; }
     }
-    let total = 0;
-    for (let t = 0; t < welded.triangleCount; t++) {
-      let splits = 0;
-      for (let k = 0; k < 3; k++) if (split.has(edgeKey(welded.indices[t * 3 + k]!, welded.indices[t * 3 + ((k + 1) % 3)]!))) splits++;
-      total += splits === 0 ? 1 : splits === 1 ? 2 : splits === 2 ? 3 : 4;
-    }
-    return total;
-  };
-  let low = 0, high = order.length;
-  while (low < high) {
-    const mid = Math.ceil((low + high) / 2);
-    if (countAfter(mid) <= target) low = mid; else high = mid - 1;
+    if (total <= target) low = i + 1;
   }
   const red = new Uint8Array(welded.triangleCount);
   for (let i = 0; i < low; i++) red[order[i]!] = 1;
@@ -839,7 +844,7 @@ export function compileBaseDisplayLods(mesh: TerrainMesh, options: Partial<Displ
   const grid = mesh.metricGrid;
   let residualSum = 0, residualCount = 0, residualMax = 0;
   if (grid) for (let v = 0; v < raw.vertexCount; v++) {
-    const z = sampleMetricTerrain(grid, [raw.positions[v * 3]!, raw.positions[v * 3 + 1]!]);
+    const z = sampleMetricTerrainAt(grid, raw.positions[v * 3]!, raw.positions[v * 3 + 1]!);
     if (z == null) continue;
     const d = Math.abs(z - raw.positions[v * 3 + 2]!);
     residualSum += d * d; residualCount++; residualMax = Math.max(residualMax, d);
