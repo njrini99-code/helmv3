@@ -113,7 +113,10 @@ repeated here as they land.
   mode, world=v2) shows 10–29 draws across all 18 holes (hole 7: 22, build
   2.3 s; after the forest re-LOD and the compile passes, `audit-v2-compile3`:
   10–28 draws, hole 7: 21, build 1.2 s). Within the 160 target / 180 hard
-  budget; nothing left to do here short of the §103 device run.
+  budget; nothing left to do here short of the §103 device run. The
+  production player view (`capture-player-view.cjs`, phone, Terrain + Green,
+  all 18 holes) reads 9–15 draws on every whole-course audit since `audit-v6`
+  (`player/audit-v10`, 2026-09-17 late evening, 1049be462).
 
 ## Product wiring (R7 in the app, 2026-09-16 late)
 
