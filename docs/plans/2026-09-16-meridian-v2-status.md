@@ -84,10 +84,26 @@ repeated here as they land.
 
 ## Open items after the front-nine pass
 
-- §11 close-frame triangle budget (4 warnings): the forest families are
-  BatchedMesh with per-instance culling (a0d485d2b); the view-dependent base
-  LOD was tried and reverted — the hero-patch rims are stitched against
-  LOD0, so a coarser base under the green would open seams. Still open.
+- §11 close-frame triangle budget: the forest families are BatchedMesh with
+  per-instance culling (a0d485d2b); the view-dependent base LOD was tried
+  and reverted — the hero-patch rims are stitched against LOD0, so a
+  coarser base under the green would open seams. Re-read 2026-09-17
+  (`validate-v2-budgets.mts --tier phone` over the current display-LOD
+  reports): on the *visible* reading (LOD0 minus the placeholders a patch
+  replaces, plus the patches) every hole is inside §11's 90 k — hole 8 the
+  highest at 81,483 (90.5 %), then 4 at 80,393, 2 at 80,078, 18 at 78,010,
+  11 at 78,185, 7 at 72,653; the conservative envelope (LOD0 + every hero
+  budget, a double count by design) warns only on hole 8 at 90,800 (101 %).
+  The other twelve warnings are §10 LOD1/LOD2 *lower*-range advisories on
+  small holes (a par 3 has fewer triangles than the range floor), not
+  overruns. Closed on the visible reading; the envelope warn stays advisory.
+- Player-view draw budget (§93): the "~350 draws" figure predates the
+  batching work — renderer-redesign status row 26 recorded 14 draws for the
+  hole 7/11/17 player view at the standard tier, and the One-Tap audit
+  (`output/playwright/course-geometry/one-tap/audit-v2-fast.log`, player
+  mode, world=v2) shows 10–29 draws across all 18 holes (hole 7: 22, build
+  2.3 s). Within the 160 target / 180 hard budget; nothing left to do here
+  short of the §103 device run.
 
 ## Product wiring (R7 in the app, 2026-09-16 late)
 
