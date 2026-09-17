@@ -120,6 +120,17 @@ the owner: the shell's WebView Geolocation API is the device source.
   UNSPECIFIED).
 - The lab has no sync transport, so the status chip honestly reports
   "N to sync"; phase 4 adds the server.
+- Mount hitch (2026-09-17): the V2 world compiles synchronously when a hole
+  mounts. It ran three times per hole (the stage presentation remounted the
+  terrain per camera state; fixed, c1f293a2f) and took 4.6–13.4 s per hole
+  on the Mac; after the compile pass (bd010b92a … 4b49cd033, all
+  output-identical) it is 1.1–2.9 s (median 2.1 s) with the V1 landscape
+  under it at .13–.77 s, ready 2.4–5.1 s after navigation on all 18 holes.
+  Phone numbers are Task 27 (owner's device); the compile is still on the
+  main thread, so the HUD is frozen for that long at each hole change. The
+  capture script records `v2BuildMs` and `landscapeBuildMs` per step and
+  ends on the completion card on the last hole (NEXT HOLE is disabled
+  there).
 
 ## Open questions for the owner
 
