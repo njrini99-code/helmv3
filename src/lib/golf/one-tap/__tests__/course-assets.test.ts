@@ -6,7 +6,9 @@ import { MemoryCourseAssetCache, cacheStorageCourseAssetCache, fetchAsset, loadC
 import { PEEK_N_PEAK_ONE_TAP_V1, type PeekNPeakOneTapPolicy } from '../peek-n-peak-policy';
 
 // SYNTHETIC POLICY: the pilot fixture stands in for an approved Upper package.
-const policy: PeekNPeakOneTapPolicy = { ...PEEK_N_PEAK_ONE_TAP_V1, siteId: pilotPackage.siteId, approvedGeometryHashes: new Set([pilotPackage.contentHash]) };
+const policy: PeekNPeakOneTapPolicy = { ...PEEK_N_PEAK_ONE_TAP_V1, siteId: pilotPackage.siteId, approvedGeometryHashes: new Set([pilotPackage.contentHash]), pilotAcceptsSourceCandidate: false };
+/** The gate outside the pilot: nothing approved, no source-candidate exception. */
+const dark: PeekNPeakOneTapPolicy = { ...policy, approvedGeometryHashes: new Set() };
 const COURSE = policy.courseId, HASH = pilotPackage.contentHash;
 const PKG_URL = `/course-geometry/${COURSE}/${HASH}/package.json`, TERRAIN_URL = `/course-geometry/${COURSE}/${HASH}/terrain/cacapon-07.json`;
 const terrainBody = readFileSync(join(process.cwd(), 'src/test/fixtures/course-geometry/cacapon-07-terrain.json'), 'utf8');
@@ -26,8 +28,8 @@ function server(bodies: Record<string, string> = { [manifestUrl(COURSE)]: manife
 describe('course assets (task 15 — offline readiness)', () => {
   it('fetches nothing while no package hash is approved', async () => {
     const { state, fetchImpl } = server();
-    expect(await preflightCourseAssets({ courseId: COURSE, cache: new MemoryCourseAssetCache(), fetchImpl })).toMatchObject({ status: 'not_approved' });
-    expect(await loadCourseAssets({ courseId: COURSE, cache: new MemoryCourseAssetCache(), fetchImpl })).toBeNull();
+    expect(await preflightCourseAssets({ courseId: COURSE, policy: dark, cache: new MemoryCourseAssetCache(), fetchImpl })).toMatchObject({ status: 'not_approved' });
+    expect(await loadCourseAssets({ courseId: COURSE, policy: dark, cache: new MemoryCourseAssetCache(), fetchImpl })).toBeNull();
     expect(state.calls).toEqual([]);
   });
 

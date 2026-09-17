@@ -42,7 +42,8 @@ describe('live round placement (§77)', () => {
       if (url.endsWith('/manifest.json')) return body({ geometryVersion: pilotPackage.contentHash, packageUrl: '/course-geometry/peek-n-peak-upper/package.json' });
       return body(pilotPackage);
     });
-    expect(await loadApprovedCoursePackage('peek-n-peak-upper', PEEK_N_PEAK_ONE_TAP_V1, fetchImpl)).toBeNull();
+    // A policy that approves nothing (the gate outside the pilot) fetches nothing.
+    expect(await loadApprovedCoursePackage('peek-n-peak-upper', { ...PEEK_N_PEAK_ONE_TAP_V1, approvedGeometryHashes: new Set() }, fetchImpl)).toBeNull();
     expect(fetchImpl).not.toHaveBeenCalled();
     const loaded = await loadApprovedCoursePackage('peek-n-peak-upper', approved, fetchImpl);
     expect(loaded?.pkg.contentHash).toBe(pilotPackage.contentHash);

@@ -169,7 +169,10 @@ flags:
     default: false
     environment:
       production: false
-      preview: false
+      # Preview deployments are the owner's on-course pilot surface
+      # (approved 2026-09-16): on there so a preview URL on the phone plays
+      # Meridian Live; production stays off until the owner releases it.
+      preview: true
       development: true
     kill_switch_behavior: null
     cleanup_plan: >-

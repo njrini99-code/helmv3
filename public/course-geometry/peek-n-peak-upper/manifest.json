@@ -1,0 +1,26 @@
+{
+ "courseId": "peek-n-peak-upper",
+ "geometryVersion": "fdec6ea8467dd214372bde680e7b7f9236c06ad5d27bb5ddeadf8ed5e9d3f87a",
+ "packageUrl": "/course-geometry/peek-n-peak-upper/package-fdec6ea8467d.json",
+ "terrainByHole": {
+  "peek-n-peak-upper-01": "/course-geometry/peek-n-peak-upper/terrain/peek-n-peak-upper-01-65b6131c756f.json",
+  "peek-n-peak-upper-02": "/course-geometry/peek-n-peak-upper/terrain/peek-n-peak-upper-02-85ca5e6da89f.json",
+  "peek-n-peak-upper-03": "/course-geometry/peek-n-peak-upper/terrain/peek-n-peak-upper-03-ef9a950af0e2.json",
+  "peek-n-peak-upper-04": "/course-geometry/peek-n-peak-upper/terrain/peek-n-peak-upper-04-5fcf9888b111.json",
+  "peek-n-peak-upper-05": "/course-geometry/peek-n-peak-upper/terrain/peek-n-peak-upper-05-5021ff25f77a.json",
+  "peek-n-peak-upper-06": "/course-geometry/peek-n-peak-upper/terrain/peek-n-peak-upper-06-6e9010495645.json",
+  "peek-n-peak-upper-07": "/course-geometry/peek-n-peak-upper/terrain/peek-n-peak-upper-07-51ff85a365a7.json",
+  "peek-n-peak-upper-08": "/course-geometry/peek-n-peak-upper/terrain/peek-n-peak-upper-08-9c0c60cec783.json",
+  "peek-n-peak-upper-09": "/course-geometry/peek-n-peak-upper/terrain/peek-n-peak-upper-09-118e7ffbc4e9.json",
+  "peek-n-peak-upper-10": "/course-geometry/peek-n-peak-upper/terrain/peek-n-peak-upper-10-2a43e4ec6c83.json",
+  "peek-n-peak-upper-11": "/course-geometry/peek-n-peak-upper/terrain/peek-n-peak-upper-11-9dd1f80fdcc8.json",
+  "peek-n-peak-upper-12": "/course-geometry/peek-n-peak-upper/terrain/peek-n-peak-upper-12-d0d93b00f5d3.json",
+  "peek-n-peak-upper-13": "/course-geometry/peek-n-peak-upper/terrain/peek-n-peak-upper-13-e73d3f7f9cc4.json",
+  "peek-n-peak-upper-14": "/course-geometry/peek-n-peak-upper/terrain/peek-n-peak-upper-14-801fd5aee4b0.json",
+  "peek-n-peak-upper-15": "/course-geometry/peek-n-peak-upper/terrain/peek-n-peak-upper-15-84c71f0f7f57.json",
+  "peek-n-peak-upper-16": "/course-geometry/peek-n-peak-upper/terrain/peek-n-peak-upper-16-1e4bd230230b.json",
+  "peek-n-peak-upper-17": "/course-geometry/peek-n-peak-upper/terrain/peek-n-peak-upper-17-818797a8873f.json",
+  "peek-n-peak-upper-18": "/course-geometry/peek-n-peak-upper/terrain/peek-n-peak-upper-18-26d5565ff6d3.json"
+ },
+ "contextLayerUrl": "/course-geometry/peek-n-peak-upper/context-2ff18c09bcf5.json"
+}

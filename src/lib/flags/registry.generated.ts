@@ -57,7 +57,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     default: false,
     environment: {
       production: false,
-      preview: false,
+      preview: true,
       development: true,
     },
     kill_switch_behavior: null,

@@ -86,11 +86,12 @@ function parseManifest(body: string, courseId: string): EssentialCourseManifest 
   } catch { return null; }
 }
 /** A package is accepted only under the policy's approved hash and site, and
- * never as a source candidate — a cached body is held to the same bar. */
+ * as a source candidate only under the policy's explicit pilot exception —
+ * a cached body is held to the same bar. */
 export function parseApprovedPackage(body: string, geometryVersion: string, policy: PeekNPeakOneTapPolicy): CourseGeometryPackage | null {
   try {
     const pkg = JSON.parse(body) as CourseGeometryPackage | null;
-    if (!pkg || pkg.contentHash !== geometryVersion || !policy.approvedGeometryHashes.has(pkg.contentHash) || pkg.siteId !== policy.siteId || pkg.status === 'source_candidate') return null;
+    if (!pkg || pkg.contentHash !== geometryVersion || !policy.approvedGeometryHashes.has(pkg.contentHash) || pkg.siteId !== policy.siteId || (pkg.status === 'source_candidate' && !policy.pilotAcceptsSourceCandidate)) return null;
     return pkg;
   } catch { return null; }
 }

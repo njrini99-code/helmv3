@@ -20,12 +20,12 @@ describe('useOneTapLiveRound', () => {
     Object.defineProperty(navigator, 'geolocation', { configurable: true, value: { watchPosition: () => 1, clearWatch() {} } });
   }
 
-  it('stays null — and fetches nothing — for another course, the flag off, or the shipped policy with no approved hash', async () => {
+  it('stays null — and fetches nothing — for another course, the flag off, or a policy with no approved hash', async () => {
     arm();
     const cache = new MemoryCourseAssetCache();
     const other = renderHook(() => useOneTapLiveRound({ ...base, courseName: 'Elsewhere GC', cache }));
     const off = renderHook(() => useOneTapLiveRound({ ...base, featureFlagEnabled: false, cache }));
-    const shipped = renderHook(() => useOneTapLiveRound({ ...base, policy: undefined, cache }));
+    const shipped = renderHook(() => useOneTapLiveRound({ ...base, policy: { ...policy, approvedGeometryHashes: new Set() }, cache }));
     await new Promise(r => setTimeout(r, 20));
     expect(other.result.current).toBeNull();
     expect(off.result.current).toBeNull();
