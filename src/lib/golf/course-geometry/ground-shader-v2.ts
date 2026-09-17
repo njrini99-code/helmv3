@@ -123,6 +123,15 @@ export const STATIC_SHADOW_BINDING = Object.freeze({
   frame: 'golfV2StaticShadowFrame',
 } as const);
 
+/** Task 20 wiring: the DEM sky-visibility field (`terrain-sky-field.ts`,
+ * R8, 255 = open sky) — V1's landform occlusion (style `landform`: gain,
+ * cap) applied per fragment instead of per vertex. */
+export const SKY_FIELD_BINDING = Object.freeze({
+  define: 'GOLF_V2_SKY',
+  sampler: 'golfV2SkyVisibility',
+  frame: 'golfV2SkyVisibilityFrame',
+} as const);
+
 export const FAIRWAY_GRAIN_BINDING = Object.freeze({
   define: 'GOLF_V2_FAIRWAY',
   sampler: FAIRWAY_DIRECTION_UNIFORMS.sampler,
@@ -435,6 +444,10 @@ ${fairway.glsl}
 uniform sampler2D ${STATIC_SHADOW_BINDING.sampler};
 uniform vec4 ${STATIC_SHADOW_BINDING.frame};
 #endif
+#ifdef ${SKY_FIELD_BINDING.define}
+uniform sampler2D ${SKY_FIELD_BINDING.sampler};
+uniform vec4 ${SKY_FIELD_BINDING.frame};
+#endif
 float golfV2ResolvedRoughness;`;
   const fragmentColor = `{
   float golfClass = vGolfV2Class;
@@ -562,6 +575,12 @@ float golfV2ResolvedRoughness;`;
 #endif
   // §37–39 render-only bunker bowl/lip shade from the offset alone (no field
   // atlas or analytic gradient reaches the shader yet — Task 9/10 replace this).
+#ifdef ${SKY_FIELD_BINDING.define}
+  // Fidelity §5–7 / master §50 landform occlusion: hollows and valley floors
+  // lose up to landform.max of their light by how much sky the DEM hides.
+  float golfSkyOpen = texture2D(${SKY_FIELD_BINDING.sampler}, (vGolfV2WorldXY - ${SKY_FIELD_BINDING.frame}.xy) * ${SKY_FIELD_BINDING.frame}.zw).r;
+  diffuseColor.rgb *= 1.0 - min(${style.landform.max.toFixed(4)}, ${style.landform.gain.toFixed(3)} * (1.0 - golfSkyOpen));
+#endif
 #ifdef ${STATIC_SHADOW_BINDING.define}
   // §68/§71 baked static shadow (terrain self-shadow × canopy cast shadow,
   // bilinear over the node grid): darkens the ground where the sun is

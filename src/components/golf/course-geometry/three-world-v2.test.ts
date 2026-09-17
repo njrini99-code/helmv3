@@ -231,7 +231,8 @@ describe('Meridian V2 runtime world (Task 11)', () => {
     // geometry disposes above.
     expect(built.stats.fairwayGrain).toBe(true);
     expect(built.stats.staticShadow).toBe(true);
-    expect(textureDispose).toHaveBeenCalledTimes(1 + input.heroAtlases.length + 2); // + fairway direction + static shadow
+    expect(built.stats.skyOcclusion).toBe(true);
+    expect(textureDispose).toHaveBeenCalledTimes(1 + input.heroAtlases.length + 3); // + fairway direction + static shadow + sky
     geometryDispose.mockRestore(); materialDispose.mockRestore(); textureDispose.mockRestore();
   });
 
