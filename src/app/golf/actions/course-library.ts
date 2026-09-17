@@ -723,13 +723,36 @@ export interface TeeRoundDefaults {
 async function getTeeRoundDefaultsImpl(teeId: string): Promise<TeeRoundDefaults | null> {
   const supabase = await createClient();
   const tee = await getTeeWithHoles(teeId);
-  if (!tee || tee.deleted_at) return null;
+  if (!tee || tee.deleted_at) {
+    // The player picked a tee we returned to them and we could not find it —
+    // it was deleted, or RLS blocked it here after showing it in the list.
+    // Silent null used to reach the client as "Could not load that tee" with
+    // nothing on the server to trace (Oviinbyrd GC, MacTier Ontario, 2026-09-17).
+    await logServerError('getTeeRoundDefaults: tee missing or deleted', {
+      action: 'getTeeRoundDefaults',
+      feature: 'course_library',
+      featureArea: 'round_tracking',
+      metadata: { teeId, deleted: !!tee?.deleted_at },
+    }, 'warning');
+    return null;
+  }
 
-  const { data: course } = await supabase
+  const { data: course, error: courseErr } = await supabase
     .from('golf_courses')
     .select('name, city, state')
     .eq('id', tee.course_id)
     .maybeSingle();
+
+  if (courseErr || !course) {
+    await logServerError('getTeeRoundDefaults: course row missing', {
+      action: 'getTeeRoundDefaults',
+      feature: 'course_library',
+      featureArea: 'round_tracking',
+      metadata: { teeId, courseId: tee.course_id, courseErr: courseErr?.message ?? null },
+    }, 'warning');
+    // Fall through — the client can still start the round with an empty
+    // course-state string (see below), we just want a record that it happened.
+  }
 
   return {
     teeId: tee.id,
