@@ -23,17 +23,23 @@
  * layer's segments. A rasterized pass first brackets it — the centrelines
  * are sampled at half-texel steps onto a grid padded by the reach, and an
  * exact Euclidean distance transform to those marked texels puts the true
- * centreline distance within one texel diagonal — so a texel with nothing
+ * centreline distance within a texel diagonal — so a texel with nothing
  * in reach is settled without a search, and every other texel scans only
  * the bucket-grid cells touching its thin annulus (coarser cells once the
- * annulus is wide) for the exact minimum. Same values as the plain
- * outward ring search it replaced (bit-identical over every layer of
- * Peek'n Peak Upper holes 7 and 8 at 0.36–0.75 m texels), at roughly an
- * eighth of the time, which is what the V2 world's mount compile is made
- * of (Meridian V2 Task 20). Distances beyond `maxDistanceM` clamp (a texel
- * with nothing in reach is −maxDistanceM). `quantizeSignedDistance` packs
- * to Uint16 with the boundary at exactly 32768 (§108 sdfLayers), and the
- * quantization step at the default 64 m range is under 2 mm.
+ * annulus is wide, empty runs of cells skipped, the previous texel's own
+ * segment as the starting bound, a bounding-box and squared-distance
+ * rejection before each exact distance) for the exact minimum; the
+ * transform itself sweeps each grid row's marks past the frame's columns
+ * and runs the 1D transform only down the frame's own columns. Same
+ * values as the plain outward ring search this replaced (bit-identical
+ * over every layer of Peek'n Peak Upper holes 3, 7, 8 and 18 at 0.2–0.75 m
+ * texels; `__tests__` brute-forces polygons and mixed-width lines at every
+ * texel), at roughly a twentieth of the time, which is what the V2 world's
+ * mount compile is made of (Meridian V2 Task 20). Distances beyond
+ * `maxDistanceM` clamp (a texel with nothing in reach is −maxDistanceM).
+ * `quantizeSignedDistance` packs to Uint16 with the boundary at exactly
+ * 32768 (§108 sdfLayers), and the quantization step at the default 64 m
+ * range is under 2 mm.
  *
  * Visual only (constraint 6): these fields blend albedo, roughness and
  * micro-normal; they never feed lie truth, distance, picking or analytics,
@@ -79,66 +85,131 @@ function distanceToSegment(px: number, py: number, ax: number, ay: number, bx: n
   return Math.hypot(px - ax - t * dx, py - ay - t * dy);
 }
 
+interface SegmentEntry { a: PointM; b: PointM; halfWidth: number }
 /** One uniform bucket level over the frame (expanded by the reach) holding
- * segment ids by bounding box (plus half width). */
+ * segment ids by bounding box (plus half width), packed CSR-style: the ids
+ * of cell `k` are `ids[start[k] … start[k + 1])`. Most cells a far annulus
+ * touches are empty, so the per-cell cost is what the search pays for. */
 class BucketLevel {
-  readonly cells: number[][]; readonly columns: number; readonly rows: number;
-  constructor(readonly cellM: number, readonly x0: number, readonly y0: number, spanX: number, spanY: number) {
+  readonly columns: number; readonly rows: number;
+  readonly start: Int32Array; readonly ids: Int32Array;
+  constructor(readonly cellM: number, readonly x0: number, readonly y0: number, spanX: number, spanY: number, entries: readonly SegmentEntry[]) {
     this.columns = Math.max(1, Math.ceil(spanX / cellM)); this.rows = Math.max(1, Math.ceil(spanY / cellM));
-    this.cells = Array.from({ length: this.columns * this.rows }, () => []);
+    const cells = this.columns * this.rows, counts = new Int32Array(cells + 1);
+    const boxes = new Int32Array(entries.length * 4);
+    entries.forEach(({ a, b, halfWidth }, id) => {
+      const c0 = this.column(Math.min(a[0], b[0]) - halfWidth), c1 = this.column(Math.max(a[0], b[0]) + halfWidth);
+      const r0 = this.row(Math.min(a[1], b[1]) - halfWidth), r1 = this.row(Math.max(a[1], b[1]) + halfWidth);
+      boxes[id * 4] = c0; boxes[id * 4 + 1] = c1; boxes[id * 4 + 2] = r0; boxes[id * 4 + 3] = r1;
+      for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) counts[r * this.columns + c + 1] = counts[r * this.columns + c + 1]! + 1;
+    });
+    for (let k = 0; k < cells; k++) counts[k + 1]! += counts[k]!;
+    this.start = counts;
+    const fill = counts.slice(0, cells), ids = new Int32Array(counts[cells]!);
+    for (let id = 0; id < entries.length; id++) {
+      const c0 = boxes[id * 4]!, c1 = boxes[id * 4 + 1]!, r0 = boxes[id * 4 + 2]!, r1 = boxes[id * 4 + 3]!;
+      for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) ids[fill[r * this.columns + c]!++] = id;
+    }
+    this.ids = ids;
+    // Most cells a far annulus touches hold nothing: `nextFilled[k]` is the
+    // first cell at or after `k` in its row that holds a segment (or the
+    // row's end), so a scan steps over the empty runs instead of testing
+    // each cell.
+    const nextFilled = new Int32Array(cells + 1);
+    for (let r = 0; r < this.rows; r++) {
+      let next = (r + 1) * this.columns;
+      for (let c = this.columns - 1; c >= 0; c--) { const k = r * this.columns + c; if (counts[k + 1]! > counts[k]!) next = k; nextFilled[k] = next; }
+    }
+    this.nextFilled = nextFilled;
   }
+  readonly nextFilled: Int32Array;
   column(x: number): number { return Math.max(0, Math.min(this.columns - 1, Math.floor((x - this.x0) / this.cellM))); }
   row(y: number): number { return Math.max(0, Math.min(this.rows - 1, Math.floor((y - this.y0) / this.cellM))); }
-  add(id: number, minX: number, minY: number, maxX: number, maxY: number): void {
-    const c0 = this.column(minX), c1 = this.column(maxX), r0 = this.row(minY), r1 = this.row(maxY);
-    for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) this.cells[r * this.columns + c]!.push(id);
-  }
 }
 class SegmentIndex {
-  private readonly segments: number[] = []; private readonly halfWidths: number[] = [];
+  private readonly segments: Float64Array; private readonly halfWidths: Float64Array;
+  /** Per segment, for the cheap rejection before the exact distance: the
+   * centreline's bounding box and the reciprocal of its squared length
+   * (a multiplication where the exact path divides). */
+  private readonly boxes: Float64Array; private readonly invLength2: Float64Array;
   readonly maxHalfWidth: number;
   /** Fine cells for near queries, coarse (4×) cells for far ones: a far annulus touches a quarter as many. */
   private readonly fine: BucketLevel; private readonly coarse: BucketLevel;
   readonly cellM: number;
-  constructor(reachM: number, boundsM: readonly [number, number, number, number], texelM: number, entries: readonly { a: PointM; b: PointM; halfWidth: number }[]) {
+  /** The segment the last query settled on (a valid upper bound for the
+   * texel next door, which usually shares it). */
+  lastId = -1;
+  constructor(reachM: number, boundsM: readonly [number, number, number, number], texelM: number, entries: readonly SegmentEntry[]) {
     this.maxHalfWidth = entries.reduce((max, e) => Math.max(max, e.halfWidth), 0);
     this.cellM = Math.max(texelM * 2, 4);
     const x0 = boundsM[0] - reachM, y0 = boundsM[1] - reachM, spanX = boundsM[2] + reachM - x0, spanY = boundsM[3] + reachM - y0;
-    this.fine = new BucketLevel(this.cellM, x0, y0, spanX, spanY);
-    this.coarse = new BucketLevel(this.cellM * 4, x0, y0, spanX, spanY);
-    for (const { a, b, halfWidth } of entries) {
-      const id = this.segments.length / 4;
-      this.segments.push(a[0], a[1], b[0], b[1]); this.halfWidths.push(halfWidth);
-      const minX = Math.min(a[0], b[0]) - halfWidth, maxX = Math.max(a[0], b[0]) + halfWidth, minY = Math.min(a[1], b[1]) - halfWidth, maxY = Math.max(a[1], b[1]) + halfWidth;
-      this.fine.add(id, minX, minY, maxX, maxY); this.coarse.add(id, minX, minY, maxX, maxY);
-    }
+    this.fine = new BucketLevel(this.cellM, x0, y0, spanX, spanY, entries);
+    this.coarse = new BucketLevel(this.cellM * 4, x0, y0, spanX, spanY, entries);
+    this.segments = new Float64Array(entries.length * 4); this.halfWidths = new Float64Array(entries.length);
+    this.boxes = new Float64Array(entries.length * 4); this.invLength2 = new Float64Array(entries.length);
+    entries.forEach(({ a, b, halfWidth }, id) => {
+      this.segments.set([a[0], a[1], b[0], b[1]], id * 4); this.halfWidths[id] = halfWidth;
+      this.boxes.set([Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[0], b[0]), Math.max(a[1], b[1])], id * 4);
+      const length2 = (b[0] - a[0]) ** 2 + (b[1] - a[1]) ** 2;
+      this.invLength2[id] = length2 ? 1 / length2 : 0;
+    });
   }
   private segmentOffset(px: number, py: number, id: number): number {
     const s = id * 4;
     return distanceToSegment(px, py, this.segments[s]!, this.segments[s + 1]!, this.segments[s + 2]!, this.segments[s + 3]!) - this.halfWidths[id]!;
   }
   /** Exact minimum of (distance − halfWidth) when the nearest centreline
-   * point is known to lie between `lower` and `upper` metres away: only the
-   * cells that touch that annulus are scanned (coarse cells once the annulus
-   * is wide), and `best` starts at the upper bound, which the minimum cannot exceed. */
+   * point is known to lie between `lower` and `upper` metres away. The
+   * minimum cannot exceed `upper` (that nearest point's own segment has a
+   * non-negative half width), and a segment beats a running `best` only if
+   * its centreline comes within `best + halfWidth`: the scan covers the
+   * annulus from `lower` out to `best + maxHalfWidth` (coarse cells once
+   * that is wide), `best` starts at `upper`, tightened by the previous
+   * query's own segment, and shrinks as segments are found, so every cell
+   * lying wholly beyond it is skipped and the minimum over the segments
+   * that remain is the minimum over all of them. */
   nearestWithin(px: number, py: number, lower: number, upper: number): number {
-    const level = upper > 3 * this.cellM ? this.coarse : this.fine, cellM = level.cellM;
-    let best = upper;
-    const rowLo = level.row(py - upper), rowHi = level.row(py + upper);
+    const level = upper + this.maxHalfWidth > 3 * this.cellM ? this.coarse : this.fine, cellM = level.cellM, columns = level.columns;
+    const start = level.start, ids = level.ids, nextFilled = level.nextFilled, segments = this.segments, halfWidths = this.halfWidths, maxHalfWidth = this.maxHalfWidth;
+    const boxes = this.boxes, invLength2 = this.invLength2;
+    let best = upper, bestId = -1;
+    if (this.lastId >= 0) { const d = this.segmentOffset(px, py, this.lastId); if (d < best) { best = d; bestId = this.lastId; } }
+    const rowLo = level.row(py - (best + maxHalfWidth)), rowHi = level.row(py + (best + maxHalfWidth));
     for (let r = rowLo; r <= rowHi; r++) {
+      const reach = best + maxHalfWidth;
       const yb0 = level.y0 + r * cellM, yb1 = yb0 + cellM;
       const dyMin = Math.max(0, yb0 - py, py - yb1);
-      if (dyMin > upper) continue;
-      const half = Math.sqrt(upper * upper - dyMin * dyMin);
+      if (dyMin > reach) continue;
+      const half = Math.sqrt(reach * reach - dyMin * dyMin);
       const dyMax = Math.max(Math.abs(py - yb0), Math.abs(py - yb1));
       // Cells entirely nearer than `lower` hold no centreline point.
       const halfInner = lower > dyMax ? Math.sqrt(lower * lower - dyMax * dyMax) : -1;
-      const c0 = level.column(px - half), c1 = level.column(px + half);
-      for (let c = c0; c <= c1; c++) {
-        if (halfInner > 0) { const xb0 = level.x0 + c * cellM; if (xb0 > px - halfInner && xb0 + cellM < px + halfInner) continue; }
-        for (const id of level.cells[r * level.columns + c]!) { const d = this.segmentOffset(px, py, id); if (d < best) best = d; }
+      const rowStart = r * columns, kEnd = rowStart + level.column(px + half);
+      for (let k = nextFilled[rowStart + level.column(px - half)]!; k <= kEnd; k = nextFilled[k + 1]!) {
+        const from = start[k]!, to = start[k + 1]!;
+        if (halfInner > 0) { const xb0 = level.x0 + (k - rowStart) * cellM; if (xb0 > px - halfInner && xb0 + cellM < px + halfInner) continue; }
+        for (let i = from; i < to; i++) {
+          const id = ids[i]!, s = id * 4;
+          // A segment beats `best` only if its centreline comes within
+          // `best + halfWidth`: reject on the bounding box, then on an
+          // approximate squared distance with slack far wider than its
+          // rounding, and only then pay for the exact distance — the same
+          // number the plain scan computed, for the same winner.
+          const limit = best + halfWidths[id]!;
+          if (limit <= 0) continue;
+          const bx = Math.max(0, boxes[s]! - px, px - boxes[s + 2]!), by = Math.max(0, boxes[s + 1]! - py, py - boxes[s + 3]!);
+          const limit2 = limit * limit;
+          if (bx * bx + by * by > limit2) continue;
+          const ax = segments[s]!, ay = segments[s + 1]!, dx = segments[s + 2]! - ax, dy = segments[s + 3]! - ay;
+          const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) * invLength2[id]!));
+          const ex = px - ax - t * dx, ey = py - ay - t * dy;
+          if (ex * ex + ey * ey > limit2 * (1 + 1e-9)) continue;
+          const d = distanceToSegment(px, py, ax, ay, segments[s + 2]!, segments[s + 3]!) - halfWidths[id]!;
+          if (d < best) { best = d; bestId = id; }
+        }
       }
     }
+    if (bestId >= 0) this.lastId = bestId;
     return best;
   }
 }
@@ -175,20 +246,58 @@ function edt1d(f: Float64Array, n: number, s: number, d: Float64Array, v: Int32A
   k = 0;
   for (let q = 0; q < n; q++) { while (z[k + 1]! < q) k++; const p = v[k]!; d[q] = (q - p) * (q - p) * s2 + f[p]!; }
 }
-/** Exact Euclidean distance (metres) from every texel centre to the nearest marked texel centre. */
-function distanceToMarked(marked: Uint8Array, width: number, height: number, tw: number, th: number): Float32Array {
-  const g = new Float64Array(width * height);
-  const n = Math.max(width, height), f = new Float64Array(n), d = new Float64Array(n), v = new Int32Array(n), z = new Float64Array(n + 1);
-  for (let col = 0; col < width; col++) {
-    for (let row = 0; row < height; row++) f[row] = marked[row * width + col] ? 0 : FAR;
-    edt1d(f, height, th, d, v, z);
-    for (let row = 0; row < height; row++) g[row * width + col] = d[row]!;
+/** The marks of one bracket grid: per grid row, the marked columns in the
+ * order they were marked (sorted and de-duplicated when read). Rows the
+ * centrelines never touch stay empty, which is what makes the bracket
+ * cheap on a small frame with a wide reach — the padded grid is mostly
+ * empty rows. */
+class MarkGrid {
+  readonly rows: number[][];
+  constructor(readonly width: number, readonly height: number) { this.rows = Array.from({ length: height }, () => []); }
+  mark(col: number, row: number): void { if (col >= 0 && col < this.width && row >= 0 && row < this.height) this.rows[row]!.push(col); }
+}
+/** Exact Euclidean distance (metres) from every texel centre of the frame
+ * window `[colOffset, colOffset + width) × [rowOffset, rowOffset + height)`
+ * to the nearest marked texel centre anywhere on the grid. Separable: the
+ * first pass sweeps each grid row's sorted marks past the window's columns
+ * (the row's nearest mark per column, the same `(Δcol · tw)²` the 1D
+ * transform would produce with no envelope to build); the second runs the
+ * exact 1D transform down each window column over every grid row and
+ * keeps the window rows. Same values as a transform over the whole grid in
+ * either axis order (the two squared terms are summed in the other order,
+ * which IEEE addition does not distinguish), for the window's texels alone
+ * and skipping the rows and columns no mark can reach. `undefined` when
+ * nothing is marked at all. */
+function distanceToMarked(marks: MarkGrid, tw: number, th: number, colOffset: number, rowOffset: number, width: number, height: number): Float32Array | undefined {
+  const gridHeight = marks.height, tw2 = tw * tw;
+  const g = new Float64Array(width * gridHeight);
+  let any = false;
+  for (let row = 0; row < gridHeight; row++) {
+    const list = marks.rows[row]!, base = row * width;
+    if (!list.length) { g.fill(FAR, base, base + width); continue; }
+    any = true;
+    list.sort((p, q) => p - q);
+    // Sweep: for each window column, the nearest of the mark just before
+    // and the mark at or after it.
+    let k = 0;
+    for (let c = 0; c < width; c++) {
+      const col = colOffset + c;
+      while (k < list.length && list[k]! < col) k++;
+      let best = Infinity;
+      if (k < list.length) { const d = list[k]! - col; best = d * d * tw2; }
+      if (k > 0) { const d = col - list[k - 1]!; const e = d * d * tw2; if (e < best) best = e; }
+      g[base + c] = best;
+    }
   }
+  if (!any) return undefined;
   const out = new Float32Array(width * height);
-  for (let row = 0; row < height; row++) {
-    for (let col = 0; col < width; col++) f[col] = g[row * width + col]!;
-    edt1d(f, width, tw, d, v, z);
-    for (let col = 0; col < width; col++) out[row * width + col] = Math.sqrt(d[col]!);
+  const f = new Float64Array(gridHeight), d = new Float64Array(gridHeight), v = new Int32Array(gridHeight), z = new Float64Array(gridHeight + 1);
+  for (let c = 0; c < width; c++) {
+    let finite = false;
+    for (let row = 0; row < gridHeight; row++) { const value = g[row * width + c]!; f[row] = value; if (value < FAR) finite = true; }
+    if (!finite) { for (let row = 0; row < height; row++) out[row * width + c] = Math.sqrt(FAR); continue; }
+    edt1d(f, gridHeight, th, d, v, z);
+    for (let row = 0; row < height; row++) out[row * width + c] = Math.sqrt(d[row + rowOffset]!);
   }
   return out;
 }
@@ -200,7 +309,7 @@ export function buildSignedDistanceField(input: DistanceLayerInput | readonly Po
   if (!(x1 > x0 && y1 > y0) || !(maxDistanceM > 0)) throw new Error('Signed distance field needs ordered bounds and a positive reach');
   const field: SignedDistanceField = { width, height, boundsM: [x0, y0, x1, y1], texelM: [(x1 - x0) / width, (y1 - y0) / height],
     distanceM: new Float32Array(width * height), maxDistanceM, basis: 'source_derived_visual' };
-  const entries: { a: PointM; b: PointM; halfWidth: number }[] = [];
+  const entries: SegmentEntry[] = [];
   const polygons = layer.polygons ?? [];
   for (const rings of polygons) for (const ring of rings) {
     if (ring.length < 2) continue;
@@ -219,37 +328,45 @@ export function buildSignedDistanceField(input: DistanceLayerInput | readonly Po
   const index = new SegmentIndex(maxDistanceM, field.boundsM, Math.min(tw, th), entries);
   // Bounding pass: every centreline is sampled at half-texel steps and the
   // texel under each sample marked, so the exact Euclidean transform to the
-  // marked texels brackets each texel's true centreline distance within one
-  // texel diagonal (a sample lies inside the marked texel; every centreline
-  // point is within half a step of a sample). Texels with nothing in reach
-  // are settled from the bracket alone; the rest take the exact minimum over
-  // the annulus the bracket allows. The grid is the frame padded by the
-  // reach, so a centreline outside the frame still marks the texels it is
-  // nearest to, and anything beyond the padding is beyond the reach.
-  const margin = Math.hypot(tw, th);
+  // marked texels brackets each texel's true centreline distance: the
+  // nearest marked centre's own sample is a centreline point at most half
+  // a texel diagonal from it (the upper bound), and the nearest centreline
+  // point is within half a step of a sample lying at most half a diagonal
+  // from the centre it marked (the lower bound). Texels with nothing in
+  // reach are settled from the bracket alone; the rest take the exact
+  // minimum over the annulus the bracket allows. The grid is the frame
+  // padded by the reach, so a centreline outside the frame still marks the
+  // texels it is nearest to, and anything beyond the padding is beyond the
+  // reach.
+  const margin = Math.hypot(tw, th), step = Math.min(tw, th) / 2;
+  // 10 µm of slack covers the bracket's own float32 storage.
+  const marginUpper = margin / 2 + 1e-5, marginLower = margin / 2 + step / 2 + 1e-5;
   const padM = maxDistanceM + index.maxHalfWidth + 2 * margin;
   const padCols = Math.ceil(padM / tw), padRows = Math.ceil(padM / th);
   const gridWidth = width + 2 * padCols, gridHeight = height + 2 * padRows;
   const gx0 = x0 - padCols * tw, gy0 = y0 - padRows * th;
-  const marked = new Uint8Array(gridWidth * gridHeight);
-  const step = Math.min(tw, th) / 2;
-  const markAt = (x: number, y: number) => {
-    const col = Math.floor((x - gx0) / tw), row = Math.floor((y - gy0) / th);
-    if (col >= 0 && col < gridWidth && row >= 0 && row < gridHeight) marked[row * gridWidth + col] = 1;
-  };
+  const marks = new MarkGrid(gridWidth, gridHeight);
   for (const { a, b } of entries) {
     const length = Math.hypot(b[0] - a[0], b[1] - a[1]), samples = Math.max(1, Math.ceil(length / step));
-    for (let i = 0; i <= samples; i++) { const t = i / samples; markAt(a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t); }
+    for (let i = 0; i <= samples; i++) {
+      const t = i / samples, x = a[0] + (b[0] - a[0]) * t, y = a[1] + (b[1] - a[1]) * t;
+      marks.mark(Math.floor((x - gx0) / tw), Math.floor((y - gy0) / th));
+    }
   }
-  const bracket = distanceToMarked(marked, gridWidth, gridHeight, tw, th);
+  const bracket = distanceToMarked(marks, tw, th, padCols, padRows, width, height);
+  if (!bracket) {
+    // Nothing marked within the padding (an empty layer, or one entirely
+    // outside the frame's reach) is nothing in reach: the reach itself,
+    // signed by the fill alone.
+    for (let n = 0; n < width * height; n++) field.distanceM[n] = inside[n] === 1 ? maxDistanceM : -maxDistanceM;
+    return field;
+  }
   for (let row = 0; row < height; row++) {
     const y = y0 + (row + .5) * th;
     for (let column = 0; column < width; column++) {
-      const n = row * width + column, near = bracket[(row + padRows) * gridWidth + column + padCols]!;
-      // Nothing marked within the padding (an empty layer, or one entirely
-      // outside the frame's reach) is nothing in reach.
-      const lower = near >= FAR / 2 ? padM : Math.max(0, Math.min(padM, near - margin));
-      const g = lower - index.maxHalfWidth >= maxDistanceM ? Number.POSITIVE_INFINITY : index.nearestWithin(x0 + (column + .5) * tw, y, lower, near + margin);
+      const n = row * width + column, near = bracket[n]!;
+      const lower = near >= FAR / 2 ? padM : Math.max(0, Math.min(padM, near - marginLower));
+      const g = lower - index.maxHalfWidth >= maxDistanceM ? Number.POSITIVE_INFINITY : index.nearestWithin(x0 + (column + .5) * tw, y, lower, near + marginUpper);
       const within = inside[n] === 1 || g < 0;
       const magnitude = Number.isFinite(g) ? Math.abs(g) : maxDistanceM;
       field.distanceM[n] = (within ? 1 : -1) * Math.min(maxDistanceM, magnitude);

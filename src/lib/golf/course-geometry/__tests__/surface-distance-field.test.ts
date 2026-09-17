@@ -105,6 +105,33 @@ describe('signed distance fields (§36 convention)', () => {
     }
   });
 
+  it('matches a brute-force minimum of (distance − half width) over lines of mixed width at every texel', () => {
+    // A wide road beside narrow paths: the nearest centreline is not always
+    // the nearest edge, so the search must look past the bracket's own
+    // annulus by the widest half width (or it settles on the narrow path
+    // and reads a texel inside the road as outside it).
+    const lines = [
+      { points: [[-45, -20], [45, -14]] as PointM[], widthM: 6 },
+      { points: [[-45, -18.2], [45, -12.2]] as PointM[], widthM: 2.4 },
+      { points: [[-10, -30], [-10, 30], [20, 30]] as PointM[], widthM: 3 },
+      { points: [[12, 5]] as PointM[], widthM: 2.4 },
+    ];
+    const field = buildSignedDistanceField({ lines }, FRAME, RES);
+    let worst = 0;
+    for (let row = 0; row < RES.height; row++) for (let column = 0; column < RES.width; column++) {
+      const p: PointM = [FRAME.boundsM[0] + (column + .5) * TEXEL, FRAME.boundsM[1] + (row + .5) * TEXEL];
+      let g = Infinity;
+      for (const line of lines) {
+        const halfWidth = line.widthM / 2;
+        if (line.points.length === 1) g = Math.min(g, distanceToSegment(p, line.points[0]!, line.points[0]!) - halfWidth);
+        for (let i = 1; i < line.points.length; i++) g = Math.min(g, distanceToSegment(p, line.points[i - 1]!, line.points[i]!) - halfWidth);
+      }
+      const truth = (g < 0 ? 1 : -1) * Math.min(SDF_RANGE_M, Math.abs(g));
+      worst = Math.max(worst, Math.abs(field.distanceM[row * RES.width + column]! - truth));
+    }
+    expect(worst).toBeLessThan(1e-5);
+  });
+
   it('clamps to the reach and reads an empty layer as far outside', () => {
     const empty = buildSignedDistanceField([], FRAME, RES);
     expect(empty.distanceM.every(value => value === -SDF_RANGE_M)).toBe(true);
