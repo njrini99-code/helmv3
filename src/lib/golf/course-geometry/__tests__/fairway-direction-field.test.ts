@@ -115,18 +115,20 @@ describe('fairway direction field (V2 plan §43–47; Task 12)', () => {
     }
   });
 
-  it('fairwayGrainAt: the anisotropic sheen vanishes along the mow line and peaks looking across it or straight down', () => {
+  it('fairwayGrainAt: the anisotropic sheen drops to its floor along the mow line and peaks looking across it or straight down', () => {
     // A hand-built one-node field: direction angle 0 (pointing +x), phase near the band's positive peak.
     const field: FairwayDirectionField = {
       originM: [0, 0], spacingM: 1, columns: 1, rows: 1,
       active: Uint8Array.from([1]), directionAngle: Uint8Array.from([0]), stripePhase: Uint8Array.from([64]),
-      periodWM: 8, skew: 0, sheenPower: 2, albedoAmplitude: 0.015, roughnessAmplitude: 0.03,
+      periodWM: 8, skew: 0, sheenPower: 2, sheenFloor: .75, albedoAmplitude: 0.03, roughnessAmplitude: 0.03,
       stats: { activeShare: 1, ms: 0 }, basis: 'illustrative_style',
     };
     const alongLine = fairwayGrainAt(field, 0, 0, [1, 0, 0]);
-    expect(alongLine).toEqual({ albedo: 1, roughness: 0 });
     const acrossLine = fairwayGrainAt(field, 0, 0, [0, 1, 0]);
-    expect(acrossLine.albedo).toBeGreaterThan(1.01);
+    // Along the line the bands keep their floor (never vanish), across it they peak.
+    expect(alongLine.albedo).toBeGreaterThan(1.01);
+    expect(alongLine.albedo).toBeCloseTo(1 + (acrossLine.albedo - 1) * .75, 6);
+    expect(acrossLine.albedo).toBeGreaterThan(1.02);
     expect(acrossLine.roughness).toBeGreaterThan(0.02);
     const straightDown = fairwayGrainAt(field, 0, 0, [0, 0, 1]);
     // A purely vertical view direction has zero horizontal component, so it
@@ -141,7 +143,7 @@ describe('fairway direction field (V2 plan §43–47; Task 12)', () => {
     const field: FairwayDirectionField = {
       originM: [0, 0], spacingM: 1, columns: 2, rows: 1,
       active: Uint8Array.from([1, 0]), directionAngle: Uint8Array.from([10, 0]), stripePhase: Uint8Array.from([20, 0]),
-      periodWM: 6.5, skew: 0.16, sheenPower: 2, albedoAmplitude: 0.015, roughnessAmplitude: 0.03,
+      periodWM: 6.5, skew: 0.16, sheenPower: 2, sheenFloor: .75, albedoAmplitude: 0.03, roughnessAmplitude: 0.03,
       stats: { activeShare: 0.5, ms: 0 }, basis: 'illustrative_style',
     };
     expect(() => assertFairwayDirectionField(field)).not.toThrow();

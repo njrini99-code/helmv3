@@ -256,13 +256,16 @@ export function installTerrainDebugView(world: THREE.Scene, landscape: ThreeLand
     // no scene, no metricGrid, or any compiler step throwing leaves the V1
     // terrain visible and this view a no-op, exactly like a real V1/V2
     // runtime switch would.
-    const input = scene ? assembleV2World(scene, mesh) : null;
+    // Tasks 14/15/18: the V2 objects (one path-ribbon draw, batched crowns,
+    // instanced shrubs/mass/trunks) replace V1's canopy while the view is on;
+    // the forest compiles first so the ground's static shadow bake (Task 16)
+    // shadows exactly the crowns drawn.
+    const forest = scene ? compileForestEdgeV2(scene, mesh) : null;
+    const input = scene ? assembleV2World(scene, mesh, { forest }) : null;
     if (!input) return () => {};
     const built = buildV2World(input);
-    // Tasks 14/15/18: the V2 objects (one path-ribbon draw, batched crowns,
-    // instanced shrubs/mass/trunks) replace V1's canopy while the view is on.
     const base = weldAndCleanTerrainMesh(mesh);
-    const objects = buildV2Objects({ ribbon: compilePathRibbon(scene!, mesh, base), forest: compileForestEdgeV2(scene!, mesh), scene: scene!, focusBoundsM: mesh.renderProfile?.tacticalBoundsM });
+    const objects = buildV2Objects({ ribbon: compilePathRibbon(scene!, mesh, base), forest, scene: scene!, focusBoundsM: mesh.renderProfile?.tacticalBoundsM });
     const v1Canopy = landscape.group.children.filter(child => child.name.startsWith('source-canopy') || child.name === 'source-forest-mass');
     for (const child of v1Canopy) child.visible = false;
     landscape.terrain.visible = false;

@@ -33,6 +33,10 @@ export interface StaticShadowOptions {
   /** Stylized crown: radius = crownBaseRadiusM × crownScale(seed), sphere centre at crownLiftM × radius above ground. */
   crownBaseRadiusM: number;
   crownLiftRatio: number;
+  /** The crowns actually drawn (forest-edge-v2.ts instances: ground x/y/z,
+   * crown radius `scale`, `heightM`), when the caller has them — then the
+   * bake shadows exactly those trees instead of V1's canopy symbols. */
+  crowns?: readonly { x: number; y: number; z: number; scale: number; heightM: number }[] | null;
 }
 export const STATIC_SHADOW_OPTIONS: Readonly<StaticShadowOptions> = Object.freeze({ spacingM: null, reachM: 160, blurM: 1.5, crownBaseRadiusM: 4.5, crownLiftRatio: 1.6 });
 
@@ -78,7 +82,11 @@ function terrainOcclusion(grid: MetricTerrainGrid, layout: { originM: readonly [
 function canopyOcclusion(scene: HoleScene, grid: MetricTerrainGrid, layout: { originM: readonly [number, number]; spacingM: number; columns: number; rows: number }, sun: readonly [number, number, number], options: StaticShadowOptions): { shadow: Uint8Array; crowns: number } {
   const out = new Uint8Array(layout.columns * layout.rows).fill(1);
   const crowns: { x: number; y: number; z: number; r: number }[] = [];
-  for (const feature of [...scene.features, ...(scene.contextFeatures ?? [])]) {
+  if (options.crowns) {
+    // The drawn crown (three-world-v2-objects.ts): centre at .64 h, radius
+    // as placed — the same sphere the renderer's own silhouette fills.
+    for (const c of options.crowns) crowns.push({ x: c.x, y: c.y, z: c.z + c.heightM * .64, r: c.scale });
+  } else for (const feature of [...scene.features, ...(scene.contextFeatures ?? [])]) {
     if (feature.kind !== 'woods') continue;
     canopySymbols(feature, scene).forEach((point, index) => {
       const ground = sampleMetricTerrain(grid, point);

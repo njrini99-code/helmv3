@@ -226,7 +226,11 @@ export const MERIDIAN_STYLE = Object.freeze({
     /** Crown self-occlusion (§50): how much albedo the base and undersides of
      * a crown or mass lobe lose at full occlusion (`crownOcclusion` attribute,
      * `attachCrownOcclusion`). Lighting still makes the highlights (§40). */
-    self: .3 }),
+    self: .3,
+    /** V2 plan §68/§71: the baked static shadow field (terrain self-shadow ×
+     * canopy cast shadow, `static-shadow-field.ts`) darkens the ground by
+     * this much where fully shadowed — art-directed, not physical. */
+    staticShadow: .34 }),
   /** Fidelity §5–7 macro landform / master §50: analytic landform occlusion
    * from the source DEM. Each grid node's relative sky occlusion is the mean,
    * over `directions`, of the sine of the horizon elevation *above the local

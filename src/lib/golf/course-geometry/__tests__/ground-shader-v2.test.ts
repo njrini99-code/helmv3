@@ -255,7 +255,7 @@ describe('GOLF_V2_FAIRWAY wiring (Task 12)', () => {
     const field: FairwayDirectionField = {
       originM: [0, 0], spacingM: 1, columns: 1, rows: 1,
       active: Uint8Array.from([1]), directionAngle: Uint8Array.from([0]), stripePhase: Uint8Array.from([64]),
-      periodWM: 8, skew: 0, sheenPower: 2, albedoAmplitude: 0.015, roughnessAmplitude: 0.03,
+      periodWM: 8, skew: 0, sheenPower: 2, sheenFloor: .75, albedoAmplitude: 0.03, roughnessAmplitude: 0.03,
       stats: { activeShare: 1, ms: 0 }, basis: 'illustrative_style',
     };
 
@@ -295,7 +295,7 @@ describe('GOLF_V2_FAIRWAY wiring (Task 12)', () => {
         originM: [0, 0], spacingM: 1, columns: 1, rows,
         active: new Uint8Array(rows).fill(1), directionAngle: new Uint8Array(rows),
         stripePhase: Uint8Array.from({ length: rows }, (_, row) => Math.round(((row / periodWM) % 1) * 255)),
-        periodWM, skew: 0, sheenPower: 2, albedoAmplitude: 0.015, roughnessAmplitude: 0.03,
+        periodWM, skew: 0, sheenPower: 2, sheenFloor: .75, albedoAmplitude: 0.03, roughnessAmplitude: 0.03,
         stats: { activeShare: 1, ms: 0 }, basis: 'illustrative_style',
       };
       const wave = (y: number) => fairwayGrainFactorAt(rampField, 0, y, [0, 1, 0], 1) - 1;

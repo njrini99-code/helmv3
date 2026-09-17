@@ -226,9 +226,12 @@ describe('Meridian V2 runtime world (Task 11)', () => {
     expect(geometryDispose).toHaveBeenCalledTimes(1 + input.patches.length);
     expect(materialDispose).toHaveBeenCalledTimes(1 + input.heroAtlases.length); // one instance per atlas, one program
     // One SDF DataTexture upload for the whole-hole atlas plus one per hero
-    // atlas — each a separate GPU resource from the material/geometry
-    // disposes above, and nothing else on this material holds a texture.
-    expect(textureDispose).toHaveBeenCalledTimes(1 + input.heroAtlases.length);
+    // atlas, plus the one fairway-direction texture (Task 12) every material
+    // instance shares — each a separate GPU resource from the material/
+    // geometry disposes above.
+    expect(built.stats.fairwayGrain).toBe(true);
+    expect(built.stats.staticShadow).toBe(true);
+    expect(textureDispose).toHaveBeenCalledTimes(1 + input.heroAtlases.length + 2); // + fairway direction + static shadow
     geometryDispose.mockRestore(); materialDispose.mockRestore(); textureDispose.mockRestore();
   });
 

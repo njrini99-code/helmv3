@@ -97,7 +97,13 @@ export interface FairwayDirectionOptions {
   skew: number;
   /** §43 `p` in `g = pow(1 − |v·t|, p)`. The plan leaves `p` unspecified; a gentle default. */
   sheenPower: number;
-  /** §44 "albedo ±1–2%", expressed as a multiplier amplitude. */
+  /** The sheen's floor: `g = floor + (1 − floor)·pow(1 − |v·t|, p)`, so the
+   * bands never vanish outright looking along the mow line — the view the
+   * approach and green presets actually use, where V1's stripes read
+   * clearly. The response still peaks straight down / across the line. */
+  sheenFloor: number;
+  /** §44 "albedo ±1–2%" as a multiplier amplitude; V1's own mowing
+   * amplitude (`style.mowing.amplitude`) so the two renderers match. */
   albedoAmplitude: number;
   /** §44 "roughness ±0.02–0.04", expressed as an additive amplitude. */
   roughnessAmplitude: number;
@@ -107,7 +113,8 @@ export const FAIRWAY_DIRECTION_OPTIONS: Readonly<FairwayDirectionOptions> = Obje
   periodWM: MERIDIAN_STYLE.mowing.bandWidthM,
   skew: MERIDIAN_STYLE.mowing.skew,
   sheenPower: 2,
-  albedoAmplitude: 0.015,
+  sheenFloor: .75,
+  albedoAmplitude: MERIDIAN_STYLE.mowing.amplitude,
   roughnessAmplitude: 0.03,
 });
 
@@ -126,6 +133,7 @@ export interface FairwayDirectionField {
   periodWM: number;
   skew: number;
   sheenPower: number;
+  sheenFloor: number;
   albedoAmplitude: number;
   roughnessAmplitude: number;
   stats: { activeShare: number; ms: number };
@@ -211,7 +219,7 @@ export function compileFairwayDirectionField(mesh: TerrainMesh, scene: HoleScene
   }
   return {
     originM, spacingM, columns, rows, active, directionAngle, stripePhase,
-    periodWM: opts.periodWM, skew: opts.skew, sheenPower: opts.sheenPower, albedoAmplitude: opts.albedoAmplitude, roughnessAmplitude: opts.roughnessAmplitude,
+    periodWM: opts.periodWM, skew: opts.skew, sheenPower: opts.sheenPower, sheenFloor: opts.sheenFloor, albedoAmplitude: opts.albedoAmplitude, roughnessAmplitude: opts.roughnessAmplitude,
     stats: { activeShare: activeCount / (columns * rows), ms: performance.now() - began }, basis: 'illustrative_style',
   };
 }
@@ -269,7 +277,7 @@ export function fairwayGrainAt(field: FairwayDirectionField, x: number, y: numbe
   const deltaPhase = ((x - nodeX) * crossX + (y - nodeY) * crossY) * kappa;
   let phase = field.stripePhase[i]! / 255 + deltaPhase;
   phase -= Math.floor(phase);
-  const sheen = Math.pow(Math.max(0, 1 - Math.abs(viewDir[0] * dirX + viewDir[1] * dirY)), field.sheenPower);
+  const sheen = field.sheenFloor + (1 - field.sheenFloor) * Math.pow(Math.max(0, 1 - Math.abs(viewDir[0] * dirX + viewDir[1] * dirY)), field.sheenPower);
   const band = Math.sin(2 * Math.PI * phase), wave = sheen * band;
   return { albedo: 1 + wave * field.albedoAmplitude, roughness: wave * field.roughnessAmplitude };
 }
@@ -301,7 +309,7 @@ export function fairwayDirectionShaderChunk(style: MeridianStyle = MERIDIAN_STYL
   const { sampler, frame, texelM } = FAIRWAY_DIRECTION_UNIFORMS;
   const [fade0 = 0, fade1 = 1] = style.mowing.fadeFwidth;
   const kappa = (Math.sqrt(1 + opts.skew * opts.skew) / opts.periodWM).toFixed(8);
-  const sheenPower = opts.sheenPower.toFixed(3), albedoAmp = opts.albedoAmplitude.toFixed(4), roughAmp = opts.roughnessAmplitude.toFixed(4);
+  const sheenPower = opts.sheenPower.toFixed(3), sheenFloor = opts.sheenFloor.toFixed(4), albedoAmp = opts.albedoAmplitude.toFixed(4), roughAmp = opts.roughnessAmplitude.toFixed(4);
   const glsl = `uniform sampler2D ${sampler};
 uniform vec4 ${frame};
 uniform vec2 ${texelM};
@@ -336,7 +344,7 @@ vec2 golfV2FairwayGrain(vec2 golfFwWorldXY, vec3 golfFwViewDirWS) {
   // down (a unit view vector's horizontal part shrinks to 0 there) and
   // weakest looking along the mow line; a stylized response, not a physical
   // BRDF (the plan's own word: "cheap"). golfFwViewDirWS must be unit length.
-  float golfFwSheen = pow(max(0.0, 1.0 - abs(golfFwViewDirWS.x * golfFwDir.x + golfFwViewDirWS.y * golfFwDir.y)), ${sheenPower});
+  float golfFwSheen = ${sheenFloor} + (1.0 - ${sheenFloor}) * pow(max(0.0, 1.0 - abs(golfFwViewDirWS.x * golfFwDir.x + golfFwViewDirWS.y * golfFwDir.y)), ${sheenPower});
   float golfFwBand = sin(golfFwPhase * 6.283185307179586);
   float golfFwFade = 1.0 - smoothstep(${fade0.toFixed(3)}, ${fade1.toFixed(3)}, fwidth(golfFwPhase));
   float golfFwWave = golfFwSheen * golfFwBand * golfFwFade;

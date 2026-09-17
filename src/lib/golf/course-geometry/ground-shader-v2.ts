@@ -113,6 +113,16 @@ export const GROUND_SDF_ATLAS_LAYERS: readonly SurfaceDistanceLayer[] = ['green'
  *     every row after the first; the RGBA SDF texture never hits this
  *     (4 bytes/texel is always aligned) so `buildGroundSdfTexture` has no
  *     precedent for it. */
+/** Task 16/21 wiring: the baked static shadow field (`static-shadow-field.ts`
+ * `staticShadowLayer`, R8, 255 = lit) as one LinearFilter texture whose
+ * frame is nudged by half a node like the fairway field's (a node's value
+ * sits at its centre). `three-world-v2.ts` sets the define and binds both. */
+export const STATIC_SHADOW_BINDING = Object.freeze({
+  define: 'GOLF_V2_SHADOW',
+  sampler: 'golfV2StaticShadow',
+  frame: 'golfV2StaticShadowFrame',
+} as const);
+
 export const FAIRWAY_GRAIN_BINDING = Object.freeze({
   define: 'GOLF_V2_FAIRWAY',
   sampler: FAIRWAY_DIRECTION_UNIFORMS.sampler,
@@ -207,10 +217,16 @@ export function classRoughness(surfaceClass: SurfaceClass, style: MeridianStyle 
  * bunker lip/edge band (`bunker.lipBandM`), §46 fairway edge SDF
  * (`fairwayEdge.fieldM`). No plan section names a water edge width yet, so
  * water reuses the green-edge softness rather than inventing one. */
+/** Width of each tracked class's soft edge, centred on its true outline.
+ * Green, fringe, bunker and water edges are crisp in the authored style
+ * (V1 cuts them as 0.2 m mesh rings), so their band is only an anti-alias
+ * width; the fairway (and its surround) keeps the style's mown-transition
+ * field, the one edge that reads as a blend. */
+const CRISP_EDGE_BAND_M = 0.12;
 function edgeBandsM(style: MeridianStyle): Record<'green' | 'fringe' | 'bunker' | 'fairway' | 'water', number> {
   return {
-    green: style.greenComplex.edgeFieldM, fringe: style.greenComplex.edgeFieldM,
-    bunker: style.bunker.lipBandM, fairway: style.fairwayEdge.fieldM, water: style.greenComplex.edgeFieldM,
+    green: CRISP_EDGE_BAND_M, fringe: CRISP_EDGE_BAND_M,
+    bunker: CRISP_EDGE_BAND_M, fairway: style.fairwayEdge.fieldM, water: CRISP_EDGE_BAND_M,
   };
 }
 /** Largest of the per-class soft-edge bands above (`edgeBandsM`) — the
@@ -355,6 +371,12 @@ export function groundShaderV2Chunks(style: MeridianStyle = MERIDIAN_STYLE): Gro
   // `classifySurfaceFromAtlas`, which this GLSL block mirrors term for term).
   const bands = edgeBandsM(style);
   const atlasColorGlsl = (cls: SurfaceClass) => { const [r, g, b] = classAlbedoLinear(cls, style); return `vec3(${r.toFixed(6)}, ${g.toFixed(6)}, ${b.toFixed(6)})`; };
+  const paletteGlsl = (hex: string) => { const [r, g, b] = hexToRgb(hex); return `vec3(${srgbToLinear(r).toFixed(6)}, ${srgbToLinear(g).toFixed(6)}, ${srgbToLinear(b).toFixed(6)})`; };
+  // V1's authored edge ribbons (compile-course-terrain.py: a 0.2 m outer ring
+  // and a 0.35 m inner ring on every played bunker and green), reproduced as
+  // bands of the atlas SDF instead of mesh rings — the same look, no slivers.
+  const RING_EDGE_M = 0.2, RING_LIGHT_M = 0.35, RING_SOFT_M = 0.05;
+  const [g0 = .15, g1 = .35] = style.bunker.sandGrainM;
   const atlasRoughGlsl = (cls: SurfaceClass) => classRoughness(cls, style).toFixed(5);
   // Task 12 wiring: fairway-direction-field.ts's own self-contained GLSL
   // (golfV2-prefixed, declares its own sampler/frame/texelM uniforms —
@@ -408,6 +430,10 @@ float golfAtlasClassRoughness(int golfI) {
 // function/uniform declarations themselves don't need that atlas to exist.
 #ifdef GOLF_V2_FAIRWAY
 ${fairway.glsl}
+#endif
+#ifdef ${STATIC_SHADOW_BINDING.define}
+uniform sampler2D ${STATIC_SHADOW_BINDING.sampler};
+uniform vec4 ${STATIC_SHADOW_BINDING.frame};
 #endif
 float golfV2ResolvedRoughness;`;
   const fragmentColor = `{
@@ -477,10 +503,39 @@ float golfV2ResolvedRoughness;`;
     if (golfWin == 2) golfFwWeight = golfWeight;
 #endif
     vec3 golfAtlasCol = golfAtlasClassColor(golfWin);
+    // Sand grain (§31), evaluated unconditionally: fwidth() is undefined
+    // inside a divergent branch, so only its use below is branched.
+    vec2 golfSandP = vGolfV2WorldXY + golfV2Seed;
+    float golfGrainPhase = dot(golfSandP, vec2(0.83, 0.56) * ${k(g0)});
+    float golfGrain = 0.5 * sin(golfGrainPhase) + 0.5 * sin(dot(golfSandP, vec2(-0.37, 0.93) * ${k(g1)}) + 1.1);
+    golfGrain *= 1.0 - smoothstep(${fade0.toFixed(3)}, ${fade1.toFixed(3)}, fwidth(golfGrainPhase));
+    if (golfWin == 1) {
+      // Sand: V1's sandEdge ring (0–0.2 m inside the outline) then its
+      // sandHighlight ring (0.2–0.55 m), V1's boundary sand shade over the
+      // same edge field, and the floor's grain/macro fields (§31).
+      float golfRingEdge = 1.0 - smoothstep(${(RING_EDGE_M - RING_SOFT_M).toFixed(3)}, ${(RING_EDGE_M + RING_SOFT_M).toFixed(3)}, golfDBunker);
+      float golfRingLight = smoothstep(${(RING_EDGE_M - RING_SOFT_M).toFixed(3)}, ${(RING_EDGE_M + RING_SOFT_M).toFixed(3)}, golfDBunker)
+        * (1.0 - smoothstep(${(RING_EDGE_M + RING_LIGHT_M - RING_SOFT_M).toFixed(3)}, ${(RING_EDGE_M + RING_LIGHT_M + RING_SOFT_M).toFixed(3)}, golfDBunker));
+      golfAtlasCol = mix(golfAtlasCol, ${paletteGlsl(style.palette.sandEdge)}, golfRingEdge);
+      golfAtlasCol = mix(golfAtlasCol, ${paletteGlsl(style.palette.sandHighlight)}, golfRingLight);
+      golfAtlasCol *= 1.0 - ${style.boundary.sandShade.toFixed(4)} * (1.0 - smoothstep(0.0, ${style.boundary.fieldM.toFixed(3)}, golfDBunker));
+      golfAtlasCol *= 1.0 + golfGrain * ${style.bunker.sandGrainAmplitude.toFixed(4)};
+    } else if (golfWin == 0) {
+      // Green: V1's 0.2 m edge ring (toward ground) and 0.35 m light ring.
+      float golfRingEdge = 1.0 - smoothstep(${(RING_EDGE_M - RING_SOFT_M).toFixed(3)}, ${(RING_EDGE_M + RING_SOFT_M).toFixed(3)}, golfDGreen);
+      float golfRingLight = smoothstep(${(RING_EDGE_M - RING_SOFT_M).toFixed(3)}, ${(RING_EDGE_M + RING_SOFT_M).toFixed(3)}, golfDGreen)
+        * (1.0 - smoothstep(${(RING_EDGE_M + RING_LIGHT_M - RING_SOFT_M).toFixed(3)}, ${(RING_EDGE_M + RING_LIGHT_M + RING_SOFT_M).toFixed(3)}, golfDGreen));
+      golfAtlasCol = mix(golfAtlasCol, ${atlasColorGlsl('ground')}, golfRingEdge * 0.24);
+      golfAtlasCol = mix(golfAtlasCol, ${paletteGlsl('#D5DEA9')}, golfRingLight * 0.1);
+    }
     // The vertex colour is the background: tracked-class vertices bake the
     // rough albedo when an atlas paints them, so nothing sand- or
     // green-tinted can leak in from outside the true outline.
     diffuseColor.rgb = mix(diffuseColor.rgb, golfAtlasCol, golfWeight);
+    // §37 contact shade (V1 bunker.contactBandM/contactShade): the sand and
+    // the turf beside it darken toward the rim, the lip's own shadow.
+    float golfContact = 1.0 - clamp(abs(golfDBunker) / ${style.bunker.contactBandM.toFixed(3)}, 0.0, 1.0);
+    diffuseColor.rgb *= 1.0 - ${style.bunker.contactShade.toFixed(4)} * golfContact * golfContact;
     golfV2ResolvedRoughness = mix(vGolfV2Roughness, golfAtlasClassRoughness(golfWin), golfWeight);
     if (golfWeight > 0.5) { golfGreen = golfWin == 0; golfBunker = golfWin == 1; golfWater = golfWin == 3; }
   }
@@ -507,11 +562,22 @@ float golfV2ResolvedRoughness;`;
 #endif
   // §37–39 render-only bunker bowl/lip shade from the offset alone (no field
   // atlas or analytic gradient reaches the shader yet — Task 9/10 replace this).
+#ifdef ${STATIC_SHADOW_BINDING.define}
+  // §68/§71 baked static shadow (terrain self-shadow × canopy cast shadow,
+  // bilinear over the node grid): darkens the ground where the sun is
+  // blocked, art-directed strength, never moving any Z.
+  float golfStaticLit = texture2D(${STATIC_SHADOW_BINDING.sampler}, (vGolfV2WorldXY - ${STATIC_SHADOW_BINDING.frame}.xy) * ${STATIC_SHADOW_BINDING.frame}.zw).r;
+  diffuseColor.rgb *= 1.0 - ${style.canopyShade.staticShadow.toFixed(4)} * (1.0 - golfStaticLit);
+#endif
+  // The raised grass lip (positive offset, turf side of the rim) catches
+  // light: brighten it in place rather than wash it toward white, and only a
+  // quarter as much where the interpolated offset bleeds onto the sand edge
+  // (the sand rings above already carry the sand's own rim).
+  float golfLipLighten = clamp(vGolfV2Offset / ${norm.lipM.toFixed(3)}, 0.0, 1.0) * ${norm.lipLighten.toFixed(3)};
+  diffuseColor.rgb *= 1.0 + golfLipLighten * (golfBunker ? 0.25 : 0.6);
   if (golfBunker) {
     float golfDepthShade = clamp(-vGolfV2Offset / ${norm.depthM.toFixed(3)}, 0.0, 1.0) * ${norm.floorShade.toFixed(4)};
-    float golfLipLighten = clamp(vGolfV2Offset / ${norm.lipM.toFixed(3)}, 0.0, 1.0) * ${norm.lipLighten.toFixed(3)};
     diffuseColor.rgb *= 1.0 - golfDepthShade;
-    diffuseColor.rgb = mix(diffuseColor.rgb, vec3(1.0), golfLipLighten);
   }
 }`;
   const fragmentRoughness = `roughnessFactor = golfV2ResolvedRoughness;`;

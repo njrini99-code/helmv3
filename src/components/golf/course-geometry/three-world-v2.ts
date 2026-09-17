@@ -28,12 +28,15 @@ import * as THREE from 'three';
 import { compileHeroPatches, type CompiledBunkerPatch } from '@/lib/golf/course-geometry/bunker-display-mesh';
 import { compileBunkerNormalField } from '@/lib/golf/course-geometry/bunker-normal-field';
 import { compileBaseDisplayLods, weldAndCleanTerrainMesh } from '@/lib/golf/course-geometry/display-mesh-v2';
+import { compileFairwayDirectionField, fairwayDirectionLayer, type FairwayDirectionField } from '@/lib/golf/course-geometry/fairway-direction-field';
 import { compileFieldAtlas, fieldAtlasBytes } from '@/lib/golf/course-geometry/field-atlas';
+import type { ForestEdgeV2Result } from '@/lib/golf/course-geometry/forest-edge-v2';
 import {
-  classAlbedoLinear, classRoughness, dominantClass, GROUND_ATLAS_TRACKED_CLASSES, GROUND_SDF_ATLAS_LAYERS,
-  GROUND_SHADER_V2_VERSION, groundShaderV2Chunks, GROUND_V2_ATTRIBUTES, maxGroundEdgeBandM, seedFromPackageHash,
+  classAlbedoLinear, classRoughness, dominantClass, FAIRWAY_GRAIN_BINDING, GROUND_ATLAS_TRACKED_CLASSES, GROUND_SDF_ATLAS_LAYERS,
+  GROUND_SHADER_V2_VERSION, groundShaderV2Chunks, GROUND_V2_ATTRIBUTES, maxGroundEdgeBandM, seedFromPackageHash, STATIC_SHADOW_BINDING,
 } from '@/lib/golf/course-geometry/ground-shader-v2';
 import { compileHeroRegions } from '@/lib/golf/course-geometry/hero-patches';
+import { compileStaticShadowField, staticShadowLayer, type StaticShadowField } from '@/lib/golf/course-geometry/static-shadow-field';
 import { dequantizeSignedDistance, SDF_RANGE_M } from '@/lib/golf/course-geometry/surface-distance-field';
 import type { TerrainMesh } from '@/lib/golf/course-geometry/terrain';
 import { metricTerrainNormal, type MetricTerrainGrid } from '@/lib/golf/course-geometry/terrain-source';
@@ -88,6 +91,14 @@ export interface V2WorldInput {
    * pure green-complex patch (no `profiles`) degenerates to the plain
    * terrain normal, so one code path covers both. */
   heroNormals: readonly Float32Array[];
+  /** Task 12 (§43–44): the hole's fairway/tee mow-direction field, or null
+   * when it could not compile (no metric grid, no route) — then the material
+   * simply never sets `GOLF_V2_FAIRWAY` and draws no mow grain. */
+  fairwayField?: FairwayDirectionField | null;
+  /** Task 16/21 (§68, §71): the baked static shadow field over the drawn
+   * crowns (`assembleV2World`'s `forest` option) and the terrain, or null
+   * when it could not compile — then no `GOLF_V2_SHADOW` and no bake. */
+  shadowField?: StaticShadowField | null;
 }
 
 let warnedFallback = false;
@@ -190,7 +201,13 @@ function warnHeroTexelTooCoarseOnce(patchId: string, texelM: number): void {
  * `metricGrid` (the V2 compilers all need one) or any compiler step throws;
  * either path logs once via `warnFallbackOnce` rather than throwing, so a
  * caller can always fall back to the V1 landscape unconditionally. */
-export function assembleV2World(scene: HoleScene, mesh: TerrainMesh): V2WorldInput | null {
+export interface AssembleV2WorldOptions {
+  /** The forest the world will draw (`compileForestEdgeV2`), so the static
+   * shadow bake shadows exactly those crowns; without it the bake falls
+   * back to V1's canopy symbols. */
+  forest?: ForestEdgeV2Result | null;
+}
+export function assembleV2World(scene: HoleScene, mesh: TerrainMesh, options: AssembleV2WorldOptions = {}): V2WorldInput | null {
   const metricGrid = mesh.metricGrid;
   if (!metricGrid) { warnFallbackOnce('mesh has no metricGrid'); return null; }
   try {
@@ -236,10 +253,17 @@ export function assembleV2World(scene: HoleScene, mesh: TerrainMesh): V2WorldInp
     // own — a hero patch with no bunker `profiles` (a plain green complex)
     // degenerates to the plain terrain normal automatically.
     const heroNormals = patches.map(compiled => compileBunkerNormalField(compiled, mesh).normals);
+    let fairwayField: FairwayDirectionField | null = null;
+    try { fairwayField = compileFairwayDirectionField(mesh, scene); } catch (error) { warnAtlasFallbackOnce('fairway direction field compile threw', error); }
+    let shadowField: StaticShadowField | null = null;
+    try {
+      const crowns = options.forest?.instances.filter(inst => inst.kind === 'crown' || inst.kind === 'mass') ?? null;
+      shadowField = compileStaticShadowField(mesh, scene, { crowns });
+    } catch (error) { warnAtlasFallbackOnce('static shadow field compile threw', error); }
 
     return {
       base, patches, patchedRangeIds: new Set(patches.map(compiled => compiled.patch.id)),
-      seed: seedFromPackageHash(mesh.geometryHash), boundsM, atlas, heroAtlases, metricGrid, heroNormals,
+      seed: seedFromPackageHash(mesh.geometryHash), boundsM, atlas, heroAtlases, metricGrid, heroNormals, fairwayField, shadowField,
     };
   } catch (error) {
     warnFallbackOnce('V2 compile pipeline threw', error);
@@ -344,6 +368,38 @@ function buildGroundSdfTexture(atlas: PackedFieldAtlas): { texture: THREE.DataTe
   return { texture, frame };
 }
 
+/** Task 12 wiring, exactly `FAIRWAY_GRAIN_BINDING.encode` (ground-shader-v2.ts):
+ * the field's direction/phase codes as one RG8 texture sampled NEAREST (both
+ * channels wrap, so bilinear across a seam would streak), rows unpacked at
+ * 1-byte alignment (an odd `columns` leaves RG8 rows unaligned to 4 bytes),
+ * a frame nudged by half a texel so a world XY lands on its node's centre,
+ * and the node spacing as `texelM`. */
+function buildFairwayDirectionTexture(field: FairwayDirectionField): { texture: THREE.DataTexture; frame: THREE.Vector4; texelM: THREE.Vector2 } {
+  const layer = fairwayDirectionLayer(field);
+  const texture = new THREE.DataTexture(layer.values, layer.columns, layer.rows, THREE.RGFormat, THREE.UnsignedByteType);
+  texture.name = 'golf-v2-fairway-direction';
+  texture.magFilter = texture.minFilter = THREE.NearestFilter; texture.generateMipmaps = false;
+  texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping; texture.unpackAlignment = 1; texture.needsUpdate = true;
+  texture.userData = { basis: layer.basis, layer: layer.name };
+  const half = layer.spacingM / 2;
+  const frame = new THREE.Vector4(layer.originM[0] - half, layer.originM[1] - half, 1 / (layer.columns * layer.spacingM), 1 / (layer.rows * layer.spacingM));
+  return { texture, frame, texelM: new THREE.Vector2(layer.spacingM, layer.spacingM) };
+}
+
+/** Task 16/21 wiring (`STATIC_SHADOW_BINDING`): the bake's combined layer
+ * as one R8 texture, bilinear (a smooth penumbra is the point), frame
+ * nudged by half a node so a node's value sits at its centre. */
+function buildStaticShadowTexture(field: StaticShadowField): { texture: THREE.DataTexture; frame: THREE.Vector4 } {
+  const layer = staticShadowLayer(field);
+  const texture = new THREE.DataTexture(layer.values, layer.columns, layer.rows, THREE.RedFormat, THREE.UnsignedByteType);
+  texture.name = 'golf-v2-static-shadow';
+  texture.magFilter = texture.minFilter = THREE.LinearFilter; texture.generateMipmaps = false;
+  texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping; texture.unpackAlignment = 1; texture.needsUpdate = true;
+  texture.userData = { basis: layer.basis, layer: layer.name };
+  const half = layer.spacingM / 2;
+  return { texture, frame: new THREE.Vector4(layer.originM[0] - half, layer.originM[1] - half, 1 / (layer.columns * layer.spacingM), 1 / (layer.rows * layer.spacingM)) };
+}
+
 /** One class per patch vertex, resolved from the classes of the triangles
  * touching it by `GROUND_CLASS_PRIORITY` (`dominantClass`) — the same
  * vertex-level resolution `packDisplayMesh` already applies to the base
@@ -425,7 +481,7 @@ function classAttributes(classIds: Uint8Array, style: MeridianStyle, atlasPainte
  * draw uploaded — the green-complex patch rendered with a bunker patch's
  * 20 m atlas, clamped to its edge texels, as one beige rectangle. Distinct
  * ids are exactly what make three upload each mesh's own atlas. */
-function createGroundMaterialV2(seed: readonly [number, number], style: MeridianStyle, sdf: GroundSdfBinding | null): THREE.MeshStandardMaterial {
+function createGroundMaterialV2(seed: readonly [number, number], style: MeridianStyle, sdf: GroundSdfBinding | null, fairway: FairwayGrainBinding | null = null, shadow: GroundSdfBinding | null = null): THREE.MeshStandardMaterial {
   const chunks = groundShaderV2Chunks(style);
   const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, metalness: 0, side: THREE.FrontSide });
   material.name = 'meridian-ground-v2';
@@ -434,10 +490,18 @@ function createGroundMaterialV2(seed: readonly [number, number], style: Meridian
   // (lights_fragment_begin) reads to pick the standard (not physical)
   // branch — losing it would silently mis-light every V2 ground fragment.
   if (sdf) material.defines = { ...material.defines, GOLF_V2_ATLAS: 1 };
+  if (fairway) material.defines = { ...material.defines, [FAIRWAY_GRAIN_BINDING.define]: 1 };
+  if (shadow) material.defines = { ...material.defines, [STATIC_SHADOW_BINDING.define]: 1 };
+  const shadowUniforms = shadow ? { [STATIC_SHADOW_BINDING.sampler]: { value: shadow.texture }, [STATIC_SHADOW_BINDING.frame]: { value: shadow.frame } } : null;
   const sdfUniforms = sdf ? { golfV2Sdf: { value: sdf.texture }, golfV2SdfFrame: { value: sdf.frame } } : null;
+  const fairwayUniforms = fairway ? {
+    [FAIRWAY_GRAIN_BINDING.sampler]: { value: fairway.texture }, [FAIRWAY_GRAIN_BINDING.frame]: { value: fairway.frame }, [FAIRWAY_GRAIN_BINDING.texelM]: { value: fairway.texelM },
+  } : null;
   material.onBeforeCompile = shader => {
     shader.uniforms.golfV2Seed = { value: new THREE.Vector2(seed[0], seed[1]) };
     if (sdfUniforms) Object.assign(shader.uniforms, sdfUniforms);
+    if (fairwayUniforms) Object.assign(shader.uniforms, fairwayUniforms);
+    if (shadowUniforms) Object.assign(shader.uniforms, shadowUniforms);
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', `#include <common>\n${chunks.vertexHead}`)
       .replace('#include <begin_vertex>', `#include <begin_vertex>\n${chunks.vertexMain}`);
@@ -446,17 +510,20 @@ function createGroundMaterialV2(seed: readonly [number, number], style: Meridian
       .replace('#include <color_fragment>', `#include <color_fragment>\n${chunks.fragmentColor}`)
       .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>\n${chunks.fragmentRoughness}`);
   };
-  material.customProgramCacheKey = () => `${GROUND_SHADER_V2_VERSION}:${MERIDIAN_STYLE_HASH}:atlas=${sdf ? 1 : 0}`;
+  material.customProgramCacheKey = () => `${GROUND_SHADER_V2_VERSION}:${MERIDIAN_STYLE_HASH}:atlas=${sdf ? 1 : 0}:fairway=${fairway ? 1 : 0}:shadow=${shadow ? 1 : 0}`;
   // Exposed for tests/debug tooling only (terrain-debug.ts's own
   // `userData.debugV2` pattern) — the material does not read this back;
   // three reads the identical objects merged into `shader.uniforms` above.
   if (sdfUniforms) material.userData = { ...material.userData, golfV2AtlasBinding: sdfUniforms };
+  if (fairwayUniforms) material.userData = { ...material.userData, golfV2FairwayBinding: fairwayUniforms };
   return material;
 }
 
 /** One uploaded SDF atlas: the texture plus the world→UV frame the shader
  * samples it through (`buildGroundSdfTexture`). */
 interface GroundSdfBinding { texture: THREE.DataTexture; frame: THREE.Vector4 }
+/** One uploaded fairway-direction field (`buildFairwayDirectionTexture`). */
+interface FairwayGrainBinding { texture: THREE.DataTexture; frame: THREE.Vector4; texelM: THREE.Vector2 }
 
 function buildBaseGeometry(base: PackedDisplayMesh, patchedRangeIds: ReadonlySet<string>, style: MeridianStyle, atlasPainted: boolean, metricGrid: MetricTerrainGrid): { geometry: THREE.BufferGeometry; drawnTriangles: number } {
   const geometry = new THREE.BufferGeometry();
@@ -534,6 +601,11 @@ export interface V2WorldStats {
   baseTriangles: number;
   /** Triangles drawn across every hero patch. */
   patchTriangles: number;
+  /** Task 12: whether the ground program draws the fairway/tee mow grain
+   * (`GOLF_V2_FAIRWAY` set: an atlas compiled and the direction field too). */
+  fairwayGrain: boolean;
+  /** Task 16/21: whether the baked static shadow field is bound (`GOLF_V2_SHADOW`). */
+  staticShadow: boolean;
   /** Packed bytes of the whole-hole field atlas plus every hero atlas
    * (`fieldAtlasBytes`, §94 — the same estimator `compileVisualArtifactV2`'s
    * own budget uses), 0 when no atlas was compiled for this hole. This is
@@ -571,7 +643,12 @@ export interface V2WorldStats {
 export function buildV2World(input: V2WorldInput, options: V2WorldOptions = {}): { group: THREE.Group; dispose(): void; stats: V2WorldStats } {
   const style = options.style ?? MERIDIAN_STYLE;
   const wholeHoleSdf = input.atlas ? buildGroundSdfTexture(input.atlas) : null;
-  const material = createGroundMaterialV2(input.seed, style, wholeHoleSdf);
+  // Task 12: the mow grain reads its own field texture, shared by every
+  // material instance (the field is per hole, not per atlas), and only
+  // where the atlas classified the fragment as fairway — no atlas, no grain.
+  const fairway = wholeHoleSdf && input.fairwayField ? buildFairwayDirectionTexture(input.fairwayField) : null;
+  const shadow = input.shadowField ? buildStaticShadowTexture(input.shadowField) : null;
+  const material = createGroundMaterialV2(input.seed, style, wholeHoleSdf, fairway, shadow);
   const atlasPainted = wholeHoleSdf !== null;
   const { geometry: baseGeometry, drawnTriangles: baseTriangles } = buildBaseGeometry(input.base, input.patchedRangeIds, style, atlasPainted, input.metricGrid);
   const baseMesh = new THREE.Mesh(baseGeometry, [material]);
@@ -589,7 +666,7 @@ export function buildV2World(input: V2WorldInput, options: V2WorldOptions = {}):
   if (wholeHoleSdf) for (const hero of input.heroAtlases) {
     const sdf = buildGroundSdfTexture(hero.atlas);
     heroSdfByPatchId.set(hero.patchId, sdf);
-    heroMaterialByPatchId.set(hero.patchId, createGroundMaterialV2(input.seed, style, sdf));
+    heroMaterialByPatchId.set(hero.patchId, createGroundMaterialV2(input.seed, style, sdf, fairway, shadow));
   }
 
   const patchGeometries: THREE.BufferGeometry[] = [];
@@ -616,6 +693,8 @@ export function buildV2World(input: V2WorldInput, options: V2WorldOptions = {}):
     patches: patchMeshes.length, baseTriangles, patchTriangles,
     atlasBytes: (input.atlas ? fieldAtlasBytes(input.atlas) : 0) + heroAtlasBytes,
     heroAtlasCount: input.heroAtlases.length,
+    fairwayGrain: fairway !== null,
+    staticShadow: shadow !== null,
     normalsBasis: 'metric_grid',
   };
   const dispose = () => {
@@ -624,6 +703,8 @@ export function buildV2World(input: V2WorldInput, options: V2WorldOptions = {}):
     material.dispose();
     for (const heroMaterial of heroMaterialByPatchId.values()) heroMaterial.dispose();
     wholeHoleSdf?.texture.dispose();
+    fairway?.texture.dispose();
+    shadow?.texture.dispose();
     for (const { texture } of heroSdfByPatchId.values()) texture.dispose();
   };
   return { group, dispose, stats };
