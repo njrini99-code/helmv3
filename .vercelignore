@@ -30,6 +30,10 @@ playwright-report/
 coverage/
 .turbo/
 *.tsbuildinfo
+# Course-geometry capture and lab output (playwright PNGs, canary runs,
+# static lab builds) — gigabytes in a working checkout, never deployable.
+output/
+.playwright-cli/
 
 # Local-only tooling state — same .gitignore-is-ignored trap as the block
 # above, and the reason the 2026-08-09 deploy was rejected at 19,795 files:
