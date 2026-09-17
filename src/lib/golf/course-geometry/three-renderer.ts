@@ -2,8 +2,8 @@ import {
   ACESFilmicToneMapping, BackSide, Box3, Color, DirectionalLight, Fog, HemisphereLight, Mesh,
   OrthographicCamera, PCFShadowMap, PerspectiveCamera, Raycaster, Scene, ShaderMaterial, SphereGeometry, SRGBColorSpace, Vector3, WebGLRenderer,
 } from 'three';
-import { installTerrainDebugView, type TerrainDebugView } from '@/components/golf/course-geometry/terrain-debug';
-import { buildThreeLandscape, DEFAULT_THREE_LANDSCAPE_PALETTE } from '@/components/golf/course-geometry/three-landscape';
+import { installTerrainDebugView, type TerrainDebugView, type V2WorldDebug } from '@/components/golf/course-geometry/terrain-debug';
+import { buildThreeLandscape, DEFAULT_THREE_LANDSCAPE_PALETTE, type PerspectiveLodView } from '@/components/golf/course-geometry/three-landscape';
 import { createVisualSurfaceSampler, MERIDIAN_CODES, type MeridianVisualArtifact } from './visual-artifact';
 import { MERIDIAN_STYLE, MERIDIAN_STYLE_HASH, type MeridianStyleOverrides } from './visual-style';
 import { applyTerrainCamera, pickTerrainPoint, type TerrainThreeCamera } from './three-camera';
@@ -140,6 +140,11 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
   };
   let geometryBytes = 0;
 
+  /** The V2 world's live accounting when the `v2-world` installer is on (R7: undefined on V1 or after its fallback). */
+  const v2World = (): V2WorldDebug | undefined => {
+    const debug = landscape?.terrain.userData.debugV2 as Partial<V2WorldDebug> | undefined;
+    return debug?.view === 'world' && typeof debug.setDetail === 'function' ? debug as V2WorldDebug : undefined;
+  };
   function fitSun() {
     if (!landscape || !sun) return;
     const tactical = mesh.renderProfile?.tacticalBoundsM ?? options.scene.features
@@ -247,13 +252,24 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
       // end of the hole drops to the silhouette); an orthographic view keeps
       // the focus-distance bands. A 12 m eye/focus move or a 4 % focal change
       // re-evaluates every tree in every mode.
-      const perspectiveLod = camera.projection === 'perspective' && camera.eyeM && camera.focalPx ? { eye: camera.eyeM, focalPx: camera.focalPx } : undefined;
+      const perspectiveLod: PerspectiveLodView | undefined = camera.projection === 'perspective' && camera.eyeM && camera.focalPx ? { eye: camera.eyeM, focalPx: camera.focalPx } : undefined;
+      // The V2 forest also gets the picture frame, so its budget goes to the
+      // crowns in view (a tree at the camera's back projects large but is
+      // never drawn); a 3° turn of the lens re-evaluates it like a 12 m move.
+      // V1's canopy keeps its eye-distance reading unchanged.
+      const framedLod: PerspectiveLodView | undefined = perspectiveLod && { ...perspectiveLod, frame: { right: camera.right, up: camera.up, forward: camera.forward, principalPx: camera.translation, widthPx: width, heightPx: height } };
       const lodSignature = perspectiveLod
-        ? `p:${Math.round(perspectiveLod.eye[0] / 12)},${Math.round(perspectiveLod.eye[1] / 12)},${Math.round(perspectiveLod.eye[2] / 12)},${Math.round(perspectiveLod.focalPx / 25)}`
+        ? `p:${Math.round(perspectiveLod.eye[0] / 12)},${Math.round(perspectiveLod.eye[1] / 12)},${Math.round(perspectiveLod.eye[2] / 12)},${Math.round(perspectiveLod.focalPx / 25)},${camera.forward.map(c => Math.round(c * 20)).join(',')}`
         : `o:${Math.round(camera.focusM[0] / 12)},${Math.round(camera.focusM[1] / 12)}`;
       if (nextDetail !== crownDetail || lodSignature !== detailSignature) {
         crownDetail = nextDetail; detailSignature = lodSignature;
-        if (landscape.setDetail(nextDetail, [camera.focusM[0], camera.focusM[1]], perspectiveLod)) { fitSun(); dirtyShadow = true; geometryBytes = estimateGeometryBytes(world); }
+        // The V2 world's batched forest (`v2-world` installer) is judged by the
+        // same call, so a phone standing among the trees sees full crowns
+        // beside it and silhouettes down the hole in either world.
+        const focus: [number, number] = [camera.focusM[0], camera.focusM[1]];
+        const changedV1 = landscape.setDetail(nextDetail, focus, perspectiveLod);
+        const changedV2 = v2World()?.setDetail(nextDetail, focus, framedLod) ?? false;
+        if (changedV1 || changedV2) { fitSun(); dirtyShadow = true; geometryBytes = estimateGeometryBytes(world); }
       }
       view = camera.projection === 'perspective' ? perspectiveView : orthographicView;
       applyAtmosphere(camera.projection);
@@ -330,7 +346,10 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
         // Task 20: the V2 world's synchronous compile time at mount ('' on V1),
         // and the V1 landscape build every mount pays first (artifact compile
         // when no cache is supplied, terrain geometry, crowns).
-        v2BuildMs: String((landscape.terrain.userData.debugV2 as { buildMs?: number } | undefined)?.buildMs ?? ''),
+        v2BuildMs: String(v2World()?.buildMs ?? ''),
+        // §37/§68: the V2 forest's split as drawn for this camera ('' on V1).
+        v2TreeLod: v2World()?.forest ? `near:${v2World()!.forest!.crownLod.near} distant:${v2World()!.forest!.crownLod.distant} far:${v2World()!.forest!.crownLod.far} trunks:${v2World()!.objects.instances.trunks} massNear:${v2World()!.forest!.massLod.near} basis:${v2World()!.forest!.crownLodBasis}` : '',
+        v2Triangles: String(v2World()?.triangles ?? ''),
         landscapeBuildMs: landscapeBuildMs.toFixed(0),
         crownDetail,
         drawCalls: String(renderer.info.render.calls), renderTriangles: String(renderer.info.render.triangles),

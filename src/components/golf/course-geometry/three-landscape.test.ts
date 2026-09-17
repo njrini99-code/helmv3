@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
-import { buildDemSlopeTexture, buildThreeLandscape, DEFAULT_THREE_LANDSCAPE_PALETTE, landingWindow } from './three-landscape';
+import { buildDemSlopeTexture, buildThreeLandscape, DEFAULT_THREE_LANDSCAPE_PALETTE, landingWindow, projectedCrownPx, type PerspectiveLodView } from './three-landscape';
 import { MERIDIAN_STYLE } from '@/lib/golf/course-geometry/visual-style';
 import { compileVisualArtifact, linearAlbedo, MERIDIAN_CODES, SURFACE_CLASS_IDS } from '@/lib/golf/course-geometry/visual-artifact';
 import { installTerrainDebugView } from './terrain-debug';
@@ -468,6 +468,32 @@ describe('Three landscape source and rendering invariants', () => {
     landscape.dispose(); landscape.dispose();
     for (const disposal of disposals) expect(disposal).toHaveBeenCalledTimes(1);
     expect(landscape.group.children).toHaveLength(0);
+  });
+});
+
+describe('projected crown radius and the picture frame (§37/§68)', () => {
+  // A phone lens 1.7 m over flat ground, looking along +Y and down 10°: the
+  // frame is 390×844 CSS px about its centre.
+  const p = 10 * Math.PI / 180;
+  const frame = { right: [1, 0, 0] as const, up: [0, Math.sin(p), Math.cos(p)] as const, forward: [0, Math.cos(p), -Math.sin(p)] as const, principalPx: [195, 422] as const, widthPx: 390, heightPx: 844 };
+  const eye = [0, 0, 1.7] as const, focalPx = 1575;
+  const lens: PerspectiveLodView = { eye, focalPx }, framed: PerspectiveLodView = { eye, focalPx, frame };
+  it('is the lens rule without a frame: focal length times radius over distance, never dividing by less than a metre', () => {
+    expect(projectedCrownPx(lens, 0, 100, 1.7, 4)).toBeCloseTo(1575 * 4 / 100, 6);
+    expect(projectedCrownPx(lens, 0, 0.2, 1.7, 4)).toBe(1575 * 4);
+  });
+  it('keeps a crown in the picture and zeroes one behind the eye or off screen', () => {
+    // Ahead, on the axis: same radius as the bare lens.
+    expect(projectedCrownPx(framed, 0, 100, 1.7 - 100 * Math.tan(p), 4)).toBeCloseTo(projectedCrownPx(lens, 0, 100, 1.7 - 100 * Math.tan(p), 4), 6);
+    // At the camera's back: huge for the bare lens, nothing for the frame.
+    expect(projectedCrownPx(lens, 0, -20, 3, 6)).toBeGreaterThan(400);
+    expect(projectedCrownPx(framed, 0, -20, 3, 6)).toBe(0);
+    // Far to the right at 60 m: 1575·40/60 = 1050 px right of the axis, well past the 195 px half-width even with its own 105 px radius.
+    expect(projectedCrownPx(framed, 40, 60, 3, 4)).toBe(0);
+    // Just past the edge but overlapping it by its radius still counts: the disc is partly in the picture.
+    const edgeX = 60 * (195 / 1575); // metres to the right edge at 60 m depth
+    expect(projectedCrownPx(framed, edgeX + 3, 60, 1.7 - 60 * Math.tan(p), 4)).toBeGreaterThan(0);
+    expect(projectedCrownPx(framed, edgeX + 5, 60, 1.7 - 60 * Math.tan(p), 4)).toBe(0);
   });
 });
 

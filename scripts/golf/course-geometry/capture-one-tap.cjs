@@ -51,7 +51,9 @@ const outDir = path.resolve(String(args['out-dir'] || `output/playwright/course-
       drawCalls: canvas?.dataset.drawCalls ?? null, projection: canvas?.dataset.projection ?? null,
       // Master plan Task 20 / §11: the render world, its mount compile, the shader precompile and the frame P95 the runtime reports.
       renderWorld: canvas?.dataset.renderWorld ?? null, v2BuildMs: canvas?.dataset.v2BuildMs || null, landscapeBuildMs: canvas?.dataset.landscapeBuildMs ?? null, shaderCompileMs: canvas?.dataset.shaderCompileMs ?? null,
-      frameP95Ms: canvas?.dataset.frameP95Ms ?? null, renderTriangles: canvas?.dataset.renderTriangles ?? null, drawCallStatus: canvas?.dataset.drawCallStatus ?? null, geometryMemoryMb: canvas?.dataset.geometryMemoryMb ?? null };
+      frameP95Ms: canvas?.dataset.frameP95Ms ?? null, renderTriangles: canvas?.dataset.renderTriangles ?? null, drawCallStatus: canvas?.dataset.drawCallStatus ?? null, geometryMemoryMb: canvas?.dataset.geometryMemoryMb ?? null,
+      // §37/§68: the V2 forest's LOD split for the camera of this step ('' on V1).
+      v2TreeLod: canvas?.dataset.v2TreeLod || null };
   });
   const steps = [];
   let index = 0;

@@ -145,7 +145,11 @@ const METADATA_KEYS = ['terrainRenderer', 'terrainProjection', 'visualStyleVersi
   'terrainScale', 'terrainFov', 'crownDetail', 'bufferWidth', 'bufferHeight', 'renderCount', 'terrainHash', 'debugView', 'frameMs',
   'visualStyleHash', 'visualArtifactHash', 'visualArtifactSource', 'meridianCode', 'visualBunkers', 'terrainMassLobes', 'terrainTrunks', 'treeFamilies',
   'frameP95Ms', 'drawCallBudget', 'drawCallStatus', 'triangleBreakdown', 'treeLod', 'geometryMemoryMb', 'shadowMemoryMb',
-  'gpuFrameP95Ms', 'gpuTimerBasis', 'multiDrawBasis', 'crownLodBasis'];
+  'gpuFrameP95Ms', 'gpuTimerBasis', 'multiDrawBasis', 'crownLodBasis',
+  // The V2 world's own accounting (three-renderer.ts, '' on V1): compile hitch
+  // at mount (Task 20), the forest split drawn for this camera (§37/§68), and
+  // the world's triangle total as booked by the installer.
+  'v2BuildMs', 'v2TreeLod', 'v2Triangles'];
 
 let packageHash = null;
 try { packageHash = JSON.parse(fs.readFileSync(path.resolve(`src/test/fixtures/course-geometry/${course}.json`), 'utf8')).contentHash ?? null; }

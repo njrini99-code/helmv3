@@ -2,8 +2,9 @@
  * Meridian V2 world objects (plan §52–54 cart-path ribbons, §55–62 forest
  * edge, Task 18 batching): the THREE side of `path-ribbon.ts` and
  * `forest-edge-v2.ts`. One draw for every cart path of the hole, one
- * instanced draw per forest kind (crown / shrub / mass) reusing V1's authored
- * crown art (`tree-assets.ts`), plus one instanced draw of trunks. Nothing
+ * batched draw per forest kind (crown / shrub / mass) reusing V1's authored
+ * crown art (`tree-assets.ts`), plus one batched draw of trunks, re-LODed
+ * per camera by `setDetail` (V1's projected-radius rule, §37/§68). Nothing
  * here places or invents anything: positions, radii, heights and rotations
  * come from the compilers, which derive them from the reviewed woods outlines
  * and the context layer. Everything is event-driven (built once, disposed
@@ -15,6 +16,7 @@ import type { ForestEdgeV2Result, ForestInstance } from '@/lib/golf/course-geome
 import type { PathRibbon } from '@/lib/golf/course-geometry/path-ribbon';
 import type { TerrainMesh } from '@/lib/golf/course-geometry/terrain';
 import { buildThreeContext } from './three-context';
+import { projectedCrownPx, type PerspectiveLodView } from './three-landscape';
 import type { HoleScene } from '@/lib/golf/course-geometry/types';
 import { MERIDIAN_STYLE, type MeridianStyle } from '@/lib/golf/course-geometry/visual-style';
 import { createForestMassGeometry, createTreeAssetAtlas, type TreeAssetAtlas } from './tree-assets';
@@ -28,7 +30,13 @@ export interface V2ObjectStats {
    * authored models exist; 0 when no `mesh` was given. */
   structures: number;
 }
-export interface V2Objects { group: THREE.Group; stats: V2ObjectStats; forestStats: ForestObjectStats | null; dispose(): void }
+export interface V2Objects {
+  group: THREE.Group; stats: V2ObjectStats; forestStats: ForestObjectStats | null;
+  /** Re-LOD the forest for a view (`ForestObjects.setDetail`); `stats` and
+   * `forestStats` follow. `false` when nothing changed (or there is no forest). */
+  setDetail: ForestObjects['setDetail'];
+  dispose(): void;
+}
 
 const RIBBON_LIFT_M = 0.02;
 
@@ -97,18 +105,50 @@ diffuseColor.rgb *= 1.0 - golfCrownShade * vCrownOcclusion;`);
 }
 
 export type CrownLod = 'near' | 'distant' | 'far';
+export type TrunkLod = 'near' | 'distant' | 'hidden';
+/** The V2 forest's screen-size LOD thresholds (CSS px of projected crown
+ * radius) — V1's rule (`vegetation.lodScreenPx`) retuned for the 2–3× phone
+ * the V2 world is built for, and kept here so V1's numbers stay its own:
+ * the mid crown's minor lobes and the mass outline's shoulders are
+ * 20-triangle icosahedra whose facets read on a phone from about 8 px of
+ * radius (hole 7's tee stands most crowns and its mid-hole mass clusters at
+ * 9–15 px), so `near` is 8 not 16 and the mass lifts at 8 not 28; the
+ * budget, not the threshold, bounds cost, and 240 lets the hero tee view
+ * keep every crown it can see in the picture whole — hole 7 phone tee
+ * 593 k render triangles, inside V1's established phone loads (master §39). */
+export const V2_CROWN_LOD_SCREEN_PX = Object.freeze({ near: 8, distant: 6, nearBudget: 240, mass: 8 });
 export interface ForestObjectOptions {
-  /** World-XY rectangle the view reads (the hole's tactical bounds): crowns
-   * nearest it take the near LOD, trunks vanish beyond twice `nearBandM`. */
+  /** World-XY rectangle the view reads (the hole's tactical bounds): the
+   * build's split puts the crowns nearest it in the near LOD and hides
+   * trunks beyond twice `nearBandM`; `setDetail` re-judges it per camera. */
   focusBoundsM?: readonly [number, number, number, number];
-  /** Near crowns granted, nearest the focus first (`vegetation.lodScreenPx.nearBudget`). */
+  /** Near crowns granted, nearest the focus (or largest in the picture) first (`V2_CROWN_LOD_SCREEN_PX.nearBudget`). */
   nearBudget?: number;
-  /** Metres from the focus rectangle inside which a crown may be near (`vegetation.trunkBandM`). */
+  /** Metres from the focus inside which a crown may be near (`vegetation.trunkBandM`). */
   nearBandM?: number;
+  /** Projected-radius thresholds for `setDetail` (`V2_CROWN_LOD_SCREEN_PX`). */
+  screenPx?: { near: number; distant: number; mass: number };
 }
 export interface ForestObjectStats {
   crownLod: Record<CrownLod, number>;
   massLod: { near: number; far: number };
+  /** What judged the split drawn now: the build's focus bands, or a camera's
+   * projected radii once `setDetail` has run with a lens (§37/§68). */
+  crownLodBasis: 'focus_bands' | 'screen_px';
+}
+export interface ForestObjects {
+  group: THREE.Group; stats: V2ObjectStats; forestStats: ForestObjectStats;
+  /** Re-LOD every crown, trunk and mass lobe for a view — V1's `setDetail`
+   * rule (`three-landscape.ts`) with V2's thresholds (`V2_CROWN_LOD_SCREEN_PX`).
+   * With a lens: by projected crown radius — the `nearBudget` largest crowns
+   * clearing `near` keep the full crown and 7-sided trunk, those clearing
+   * `distant` the silhouette and 3-sided trunk, the rest the far card and no
+   * trunk; a mass lobe keeps its full cluster while it projects at least
+   * `mass`. Without one: by distance from `focusM` in the build's bands.
+   * `next === 'distant'` (a tier without near crowns) grants no near LOD at
+   * all. Returns whether anything changed. */
+  setDetail(next: 'distant' | 'near', focusM?: readonly [number, number], view?: PerspectiveLodView): boolean;
+  dispose(): void;
 }
 
 function rectDistance(x: number, y: number, r: readonly [number, number, number, number]): number {
@@ -116,19 +156,25 @@ function rectDistance(x: number, y: number, r: readonly [number, number, number,
   return Math.hypot(dx, dy);
 }
 
+interface PlacedCrown { inst: ForestInstance; crownId: number; trunkId: number; assetId: string; lod: CrownLod; trunkLod: TrunkLod }
+interface PlacedLobe { inst: ForestInstance; id: number; lod: 'near' | 'far' }
+
 /** Forest edge: crowns in ONE BatchedMesh (every authored variant at all
  * three LODs, each instance pointing at the geometry for its own LOD — V1's
  * canopy structure), trunks in one BatchedMesh (7-sided near, 3-sided
- * distant, none beyond twice the near band, §37), shrubs and interior mass
- * one instanced draw each. Families, art, colour, aspect and lean are V1's
- * authored vegetation style (`vegetation.families`, §20/§40), chosen by each
- * instance's seed; positions, radii and heights are the compiler's. */
-export function buildForestEdgeObjects(forest: ForestEdgeV2Result, style: MeridianStyle = MERIDIAN_STYLE, atlas?: TreeAssetAtlas, options: ForestObjectOptions = {}): { group: THREE.Group; stats: V2ObjectStats; forestStats: ForestObjectStats; dispose(): void } {
+ * distant, hidden under far crowns, §37), shrubs one batched draw and the
+ * interior mass one batched draw holding both cluster builds. Families,
+ * art, colour, aspect and lean are V1's authored vegetation style
+ * (`vegetation.families`, §20/§40), chosen by each instance's seed;
+ * positions, radii and heights are the compiler's. The build's LOD split is
+ * by focus distance (no camera yet); `setDetail` re-judges it per view. */
+export function buildForestEdgeObjects(forest: ForestEdgeV2Result, style: MeridianStyle = MERIDIAN_STYLE, atlas?: TreeAssetAtlas, options: ForestObjectOptions = {}): ForestObjects {
   const group = new THREE.Group(); group.name = 'v2-forest-edge';
   const ownAtlas = atlas ?? createTreeAssetAtlas();
   const vegetation = style.vegetation;
-  const nearBudget = options.nearBudget ?? vegetation.lodScreenPx.nearBudget;
+  const nearBudget = options.nearBudget ?? V2_CROWN_LOD_SCREEN_PX.nearBudget;
   const nearBandM = options.nearBandM ?? vegetation.trunkBandM;
+  const screenPx = options.screenPx ?? V2_CROWN_LOD_SCREEN_PX;
   const focus = options.focusBoundsM;
   const distanceOf = (inst: ForestInstance) => focus ? rectDistance(inst.x, inst.y, focus) : 0;
   const crownMaterial = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 1, metalness: 0 });
@@ -139,20 +185,25 @@ export function buildForestEdgeObjects(forest: ForestEdgeV2Result, style: Meridi
   trunkMaterial.name = 'v2-canopy-trunk';
   const disposables: { dispose(): void }[] = [crownMaterial, massMaterial, trunkMaterial];
   const stats: V2ObjectStats = { draws: { paths: 0, crowns: 0, shrubs: 0, mass: 0, trunks: 0, context: 0 }, triangles: 0, instances: { crown: 0, shrub: 0, mass: 0, trunks: 0 }, pathRuns: 0, structures: 0 };
-  const forestStats: ForestObjectStats = { crownLod: { near: 0, distant: 0, far: 0 }, massLod: { near: 0, far: 0 } };
+  const forestStats: ForestObjectStats = { crownLod: { near: 0, distant: 0, far: 0 }, massLod: { near: 0, far: 0 }, crownLodBasis: 'focus_bands' };
   const byKind = { crown: [] as ForestInstance[], shrub: [] as ForestInstance[], mass: [] as ForestInstance[] };
   for (const inst of forest.instances) byKind[inst.kind].push(inst);
   const triangleCount = (geometry: THREE.BufferGeometry) => (geometry.getIndex()?.count ?? geometry.getAttribute('position').count) / 3;
   const assetById = new Map(ownAtlas.variants.map(v => [v.id, v] as const));
 
-  // LOD: nearest the focus first (ties by id, so the split is deterministic),
-  // near within the band up to the budget, distant to twice the band, far beyond.
-  const lodOf = new Map<ForestInstance, CrownLod>();
-  const ranked = [...byKind.crown].sort((a, b) => distanceOf(a) - distanceOf(b) || (a.id < b.id ? -1 : 1));
-  ranked.forEach((inst, rank) => {
-    const d = distanceOf(inst);
-    lodOf.set(inst, rank < nearBudget && d <= nearBandM ? 'near' : d <= nearBandM * 2 ? 'distant' : 'far');
-  });
+  // Focus bands (the build, and any view without a lens): nearest the focus
+  // first (ties by id, so the split is deterministic), near within the band
+  // up to the budget, distant to twice the band, far beyond.
+  const bandLods = (distance: (inst: ForestInstance) => number, next: 'distant' | 'near') => {
+    const lods = new Map<ForestInstance, CrownLod>();
+    const ranked = [...byKind.crown].sort((a, b) => distance(a) - distance(b) || (a.id < b.id ? -1 : 1));
+    ranked.forEach((inst, rank) => {
+      const d = distance(inst);
+      lods.set(inst, next === 'near' && rank < nearBudget && d <= nearBandM ? 'near' : d <= nearBandM * 2 ? 'distant' : 'far');
+    });
+    return lods;
+  };
+  const lodOf = bandLods(distanceOf, 'near');
 
   // §20/§40: family by weight among those allowed where the crown stands
   // (edge families near the woods boundary, interior ones deep inside);
@@ -183,20 +234,26 @@ export function buildForestEdgeObjects(forest: ForestEdgeV2Result, style: Meridi
     return transform.compose(translation, rotation, scale);
   };
 
+  const placed: PlacedCrown[] = [];
+  let crowns: THREE.BatchedMesh | null = null, trunks: THREE.BatchedMesh | null = null;
+  let geometryIds: Map<string, Record<CrownLod, number>> | null = null, trunkIds: Record<'near' | 'distant', number> | null = null;
+  const trunkTriangles: Record<TrunkLod, number> = { near: 0, distant: 0, hidden: 0 };
   if (byKind.crown.length) {
     const lods: CrownLod[] = ['near', 'distant', 'far'];
     const crownGeometries = ownAtlas.variants.flatMap(v => lods.map(lod => v[lod]));
-    const crowns = new THREE.BatchedMesh(byKind.crown.length, crownGeometries.reduce((n, g) => n + g.getAttribute('position').count, 0),
+    crowns = new THREE.BatchedMesh(byKind.crown.length, crownGeometries.reduce((n, g) => n + g.getAttribute('position').count, 0),
       crownGeometries.reduce((n, g) => n + (g.getIndex()?.count ?? 0), 0), crownMaterial);
     crowns.name = 'v2-crowns'; crowns.castShadow = true; crowns.receiveShadow = true; crowns.frustumCulled = true;
-    const geometryIds = new Map(ownAtlas.variants.map(v => [v.id, { near: crowns.addGeometry(v.near), distant: crowns.addGeometry(v.distant), far: crowns.addGeometry(v.far) }] as const));
-    const trunked = byKind.crown.filter(inst => lodOf.get(inst) !== 'far');
+    geometryIds = new Map(ownAtlas.variants.map(v => [v.id, { near: crowns!.addGeometry(v.near), distant: crowns!.addGeometry(v.distant), far: crowns!.addGeometry(v.far) }] as const));
+    // Trunks sized for every crown: a far crown's trunk is hidden, not
+    // absent, so it stands up again when the camera comes near (§37).
     const trunkGeometry = { near: new THREE.CylinderGeometry(.7, 1, 1, 7, 1), distant: new THREE.CylinderGeometry(.7, 1, 1, 3, 1) };
     for (const g of Object.values(trunkGeometry)) { g.rotateX(Math.PI / 2); disposables.push(g); }
-    const trunks = trunked.length ? new THREE.BatchedMesh(trunked.length, trunkGeometry.near.getAttribute('position').count + trunkGeometry.distant.getAttribute('position').count,
-      (trunkGeometry.near.getIndex()?.count ?? 0) + (trunkGeometry.distant.getIndex()?.count ?? 0), trunkMaterial) : null;
-    const trunkIds = trunks ? { near: trunks.addGeometry(trunkGeometry.near), distant: trunks.addGeometry(trunkGeometry.distant) } : null;
-    if (trunks) { trunks.name = 'v2-trunks'; trunks.castShadow = true; trunks.frustumCulled = true; }
+    trunks = new THREE.BatchedMesh(byKind.crown.length, trunkGeometry.near.getAttribute('position').count + trunkGeometry.distant.getAttribute('position').count,
+      (trunkGeometry.near.getIndex()?.count ?? 0) + (trunkGeometry.distant.getIndex()?.count ?? 0), trunkMaterial);
+    trunkIds = { near: trunks.addGeometry(trunkGeometry.near), distant: trunks.addGeometry(trunkGeometry.distant) };
+    trunkTriangles.near = triangleCount(trunkGeometry.near); trunkTriangles.distant = triangleCount(trunkGeometry.distant);
+    trunks.name = 'v2-trunks'; trunks.castShadow = true; trunks.frustumCulled = true;
     const color = new THREE.Color();
     for (const inst of byKind.crown) {
       const lod = lodOf.get(inst)!, family = pickFamily(inst);
@@ -212,34 +269,27 @@ export function buildForestEdgeObjects(forest: ForestEdgeV2Result, style: Meridi
       const edgeLift = Math.max(0, 1 - inst.edgeDistanceM / vegetation.edgeLightM) * vegetation.edgeLightMix;
       crowns.setColorAt(id, color.set(family.base).lerp(new THREE.Color(family.light), Math.min(1, draw(inst, 7) * .6 + edgeLift)));
       stats.triangles += asset.triangleCounts[lod]; forestStats.crownLod[lod]++;
-      if (trunks && trunkIds && lod !== 'far') {
-        const trunkRadius = Math.max(.12, radius * family.trunkRatio), trunkLod = lod === 'near' ? 'near' : 'distant';
-        const trunkId = trunks.addInstance(trunkIds[trunkLod]);
-        trunks.setMatrixAt(trunkId, place(inst, height * .18, trunkRadius, trunkRadius, height * .36));
-        stats.triangles += triangleCount(trunkGeometry[trunkLod]);
-      }
+      const trunkRadius = Math.max(.12, radius * family.trunkRatio), trunkLod: TrunkLod = lod === 'far' ? 'hidden' : lod;
+      const trunkId = trunks.addInstance(trunkIds[trunkLod === 'hidden' ? 'distant' : trunkLod]);
+      trunks.setMatrixAt(trunkId, place(inst, height * .18, trunkRadius, trunkRadius, height * .36));
+      trunks.setVisibleAt(trunkId, trunkLod !== 'hidden');
+      stats.triangles += trunkTriangles[trunkLod]; if (trunkLod !== 'hidden') stats.instances.trunks++;
+      placed.push({ inst, crownId: id, trunkId, assetId: asset.id, lod, trunkLod });
     }
     crowns.computeBoundingBox(); crowns.computeBoundingSphere();
-    group.add(crowns); disposables.push({ dispose: () => crowns.dispose() });
+    trunks.computeBoundingBox(); trunks.computeBoundingSphere();
+    group.add(crowns, trunks); disposables.push({ dispose: () => { crowns!.dispose(); trunks!.dispose(); } });
     stats.draws.crowns = 1; stats.instances.crown = byKind.crown.length;
-    if (trunks) {
-      trunks.computeBoundingBox(); trunks.computeBoundingSphere();
-      group.add(trunks); disposables.push({ dispose: () => trunks.dispose() });
-      stats.draws.trunks = 1; stats.instances.trunks = trunked.length;
-    }
+    stats.draws.trunks = stats.instances.trunks > 0 ? 1 : 0;
   }
   // One geometry, many instances, as a BatchedMesh rather than an
   // InstancedMesh: same single draw, but three culls each instance against
   // the frustum (§11 close frame — an InstancedMesh draws every interior
   // mass cluster behind the camera at the green).
-  const instanced = (geometry: THREE.BufferGeometry, material: THREE.Material, items: ForestInstance[], name: string, matrixOf: (i: ForestInstance) => THREE.Matrix4, colorOf: (i: ForestInstance) => THREE.Color) => {
-    const mesh = new THREE.BatchedMesh(items.length, geometry.getAttribute('position').count, geometry.index ? geometry.index.count : undefined, material);
+  const batched = (items: ForestInstance[], geometries: THREE.BufferGeometry[], material: THREE.Material, name: string) => {
+    const mesh = new THREE.BatchedMesh(items.length, geometries.reduce((n, g) => n + g.getAttribute('position').count, 0), geometries.reduce((n, g) => n + (g.getIndex()?.count ?? 0), 0), material);
     mesh.name = name; mesh.castShadow = true; mesh.receiveShadow = true; mesh.frustumCulled = true; mesh.perObjectFrustumCulled = true; mesh.sortObjects = false;
-    const geometryId = mesh.addGeometry(geometry);
-    for (const inst of items) { const id = mesh.addInstance(geometryId); mesh.setMatrixAt(id, matrixOf(inst)); mesh.setColorAt(id, colorOf(inst)); }
-    mesh.computeBoundingSphere();
     group.add(mesh); disposables.push({ dispose: () => mesh.dispose() });
-    stats.triangles += triangleCount(geometry) * items.length;
     return mesh;
   };
   if (byKind.shrub.length) {
@@ -248,29 +298,109 @@ export function buildForestEdgeObjects(forest: ForestEdgeV2Result, style: Meridi
     const shrubFamily = vegetation.families.find(f => f.trunkRatio === 0) ?? vegetation.families[0]!;
     const asset = assetById.get(shrubFamily.designs[0]!) ?? ownAtlas.variants[0]!;
     const base = new THREE.Color(shrubFamily.base), light = new THREE.Color(shrubFamily.light);
-    instanced(asset.far, crownMaterial, byKind.shrub, 'v2-shrubs',
-      inst => { orient(inst, 0, 0); return place(inst, inst.heightM * .45, inst.scale, inst.scale * (.8 + draw(inst, 4) * .3), inst.heightM * .9); },
-      inst => base.clone().lerp(light, draw(inst, 7) * .7));
+    const shrubs = batched(byKind.shrub, [asset.far], crownMaterial, 'v2-shrubs');
+    const geometryId = shrubs.addGeometry(asset.far);
+    for (const inst of byKind.shrub) {
+      const id = shrubs.addInstance(geometryId);
+      orient(inst, 0, 0); shrubs.setMatrixAt(id, place(inst, inst.heightM * .45, inst.scale, inst.scale * (.8 + draw(inst, 4) * .3), inst.heightM * .9));
+      shrubs.setColorAt(id, base.clone().lerp(light, draw(inst, 7) * .7));
+    }
+    shrubs.computeBoundingBox(); shrubs.computeBoundingSphere();
+    stats.triangles += asset.triangleCounts.far * byKind.shrub.length;
     stats.draws.shrubs = 1; stats.instances.shrub = byKind.shrub.length;
   }
+  const lobes: PlacedLobe[] = [];
+  let mass: THREE.BatchedMesh | null = null, massIds: Record<'near' | 'far', number> | null = null;
+  const massTriangles = { near: 0, far: 0 };
   if (byKind.mass.length) {
     // §39 / redesign §10: the interior as authored five-lobe clusters, the
     // 400-triangle build inside the near band and the 220-triangle build
     // beyond, sunk so no lobe belly shows from the side (V1's placement).
+    // Both builds live in the one draw; `setDetail` moves a lobe between them.
     const near = createForestMassGeometry('near'), far = createForestMassGeometry('far'); disposables.push(near, far);
+    massTriangles.near = triangleCount(near); massTriangles.far = triangleCount(far);
+    mass = batched(byKind.mass, [near, far], massMaterial, 'v2-forest-mass');
+    massIds = { near: mass.addGeometry(near), far: mass.addGeometry(far) };
     const massBase = new THREE.Color(vegetation.mass.color), massLight = new THREE.Color(vegetation.mass.light);
-    const massLodOf = (inst: ForestInstance) => distanceOf(inst) <= nearBandM ? 'near' : 'far';
-    const groups = { near: byKind.mass.filter(i => massLodOf(i) === 'near'), far: byKind.mass.filter(i => massLodOf(i) === 'far') };
-    for (const lod of ['near', 'far'] as const) {
-      if (!groups[lod].length) continue;
-      instanced(lod === 'near' ? near : far, massMaterial, groups[lod], `v2-forest-mass-${lod}`,
-        inst => { orient(inst, 0, 0); return place(inst, inst.heightM * .38, inst.scale, inst.scale * (.8 + draw(inst, 4) * .3), inst.heightM * .62); },
-        inst => massBase.clone().lerp(massLight, draw(inst, 7) * .7));
-      stats.draws.mass++; forestStats.massLod[lod] = groups[lod].length;
+    for (const inst of byKind.mass) {
+      const lod = distanceOf(inst) <= nearBandM ? 'near' : 'far';
+      const id = mass.addInstance(massIds[lod]);
+      orient(inst, 0, 0); mass.setMatrixAt(id, place(inst, inst.heightM * .38, inst.scale, inst.scale * (.8 + draw(inst, 4) * .3), inst.heightM * .62));
+      mass.setColorAt(id, massBase.clone().lerp(massLight, draw(inst, 7) * .7));
+      stats.triangles += massTriangles[lod]; forestStats.massLod[lod]++;
+      lobes.push({ inst, id, lod });
     }
-    stats.instances.mass = byKind.mass.length;
+    mass.computeBoundingBox(); mass.computeBoundingSphere();
+    stats.draws.mass = 1; stats.instances.mass = byKind.mass.length;
   }
-  return { group, stats, forestStats, dispose: () => { for (const d of disposables) d.dispose(); if (!atlas) ownAtlas.dispose(); } };
+
+  let disposed = false;
+  function setDetail(next: 'distant' | 'near', focusM?: readonly [number, number], view?: PerspectiveLodView): boolean {
+    if (disposed) return false;
+    let changed = false;
+    const distance = focusM ? (inst: ForestInstance) => Math.hypot(inst.x - focusM[0], inst.y - focusM[1]) : distanceOf;
+    // Perspective (§37/§68, V1's rule): the projected crown radius decides;
+    // the near band goes to the `nearBudget` largest crowns clearing the near
+    // threshold, so the cost of a view stays bounded whatever the camera does.
+    // With a frame, a crown outside the picture projects 0 px and leaves the
+    // budget to the trees in view.
+    const projected = view ? placed.map(p => projectedCrownPx(view, p.inst.x, p.inst.y, p.inst.z + p.inst.heightM * .64, p.inst.scale)) : null;
+    let lodAt: (index: number) => CrownLod;
+    if (projected) {
+      const nearSet = new Set<number>();
+      if (next === 'near') {
+        const candidates = projected.map((px, index) => [px, index] as const).filter(([px]) => px >= screenPx.near);
+        candidates.sort((a, b) => b[0] - a[0] || a[1] - b[1]);
+        for (const [, index] of candidates.slice(0, nearBudget)) nearSet.add(index);
+      }
+      lodAt = index => nearSet.has(index) ? 'near' : projected[index]! >= screenPx.distant ? 'distant' : 'far';
+    } else {
+      const bands = bandLods(distance, next);
+      lodAt = index => bands.get(placed[index]!.inst)!;
+    }
+    placed.forEach((p, index) => {
+      const lod = lodAt(index);
+      if (p.lod !== lod) {
+        crowns!.setGeometryIdAt(p.crownId, geometryIds!.get(p.assetId)![lod]);
+        const counts = assetById.get(p.assetId)!.triangleCounts;
+        stats.triangles += counts[lod] - counts[p.lod];
+        forestStats.crownLod[p.lod]--; forestStats.crownLod[lod]++;
+        p.lod = lod; changed = true;
+      }
+      const trunkLod: TrunkLod = lod === 'far' ? 'hidden' : lod;
+      if (p.trunkLod === trunkLod) return;
+      if (trunkLod !== 'hidden') trunks!.setGeometryIdAt(p.trunkId, trunkIds![trunkLod]);
+      trunks!.setVisibleAt(p.trunkId, trunkLod !== 'hidden');
+      stats.triangles += trunkTriangles[trunkLod] - trunkTriangles[p.trunkLod];
+      stats.instances.trunks += (trunkLod === 'hidden' ? 0 : 1) - (p.trunkLod === 'hidden' ? 0 : 1);
+      p.trunkLod = trunkLod; changed = true;
+    });
+    // Forest mass (§39): the full cluster only where a lobe projects at least
+    // `screenPx.mass` (perspective) or stands inside the near band
+    // (orthographic), and only when the tier grants near detail at all.
+    let massChanged = false;
+    for (const lobe of lobes) {
+      let lod: 'near' | 'far';
+      if (view) {
+        const px = projectedCrownPx(view, lobe.inst.x, lobe.inst.y, lobe.inst.z + lobe.inst.heightM * .38, lobe.inst.scale);
+        lod = next === 'near' && px >= screenPx.mass ? 'near' : 'far';
+      } else lod = next === 'near' && distance(lobe.inst) <= nearBandM ? 'near' : 'far';
+      if (lobe.lod === lod) continue;
+      mass!.setGeometryIdAt(lobe.id, massIds![lod]);
+      stats.triangles += massTriangles[lod] - massTriangles[lobe.lod];
+      forestStats.massLod[lobe.lod]--; forestStats.massLod[lod]++;
+      lobe.lod = lod; massChanged = true;
+    }
+    forestStats.crownLodBasis = view ? 'screen_px' : 'focus_bands';
+    if (massChanged) { mass!.computeBoundingBox(); mass!.computeBoundingSphere(); changed = true; }
+    if (changed) {
+      crowns?.computeBoundingBox(); crowns?.computeBoundingSphere();
+      trunks?.computeBoundingBox(); trunks?.computeBoundingSphere();
+      stats.draws.trunks = stats.instances.trunks > 0 ? 1 : 0;
+    }
+    return changed;
+  }
+  return { group, stats, forestStats, setDetail, dispose: () => { disposed = true; for (const d of disposables) d.dispose(); if (!atlas) ownAtlas.dispose(); } };
 }
 
 /** Everything object-like for one hole in one group; `stats` is what the
@@ -280,6 +410,7 @@ export function buildV2Objects(input: { ribbon: PathRibbon | null; forest: Fores
   const disposables: { dispose(): void }[] = [];
   const stats: V2ObjectStats = { draws: { paths: 0, crowns: 0, shrubs: 0, mass: 0, trunks: 0, context: 0 }, triangles: 0, instances: { crown: 0, shrub: 0, mass: 0, trunks: 0 }, pathRuns: 0, structures: 0 };
   let forestStats: ForestObjectStats | null = null;
+  let setDetail: ForestObjects['setDetail'] = () => false;
   if (input.mesh) {
     // Structures and lines come from V1's context builder unchanged (R8:
     // footprint extrusions until models are authored); its path ribbons are
@@ -303,8 +434,14 @@ export function buildV2Objects(input: { ribbon: PathRibbon | null; forest: Fores
   if (input.forest && input.forest.instances.length) {
     const forest = buildForestEdgeObjects(input.forest, style, undefined, { focusBoundsM: input.focusBoundsM });
     group.add(forest.group); disposables.push(forest);
+    const staticTriangles = stats.triangles;
     stats.draws.crowns = forest.stats.draws.crowns; stats.draws.shrubs = forest.stats.draws.shrubs; stats.draws.mass = forest.stats.draws.mass; stats.draws.trunks = forest.stats.draws.trunks;
     stats.instances = forest.stats.instances; stats.triangles += forest.stats.triangles; forestStats = forest.forestStats;
+    setDetail = (next, focusM, view) => {
+      if (!forest.setDetail(next, focusM, view)) return false;
+      stats.draws.trunks = forest.stats.draws.trunks; stats.triangles = staticTriangles + forest.stats.triangles;
+      return true;
+    };
   }
-  return { group, stats, forestStats, dispose: () => { for (const d of disposables) d.dispose(); } };
+  return { group, stats, forestStats, setDetail, dispose: () => { for (const d of disposables) d.dispose(); } };
 }

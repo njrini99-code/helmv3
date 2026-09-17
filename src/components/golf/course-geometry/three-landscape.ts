@@ -19,8 +19,35 @@ export type ThreeLandscapePalette = Readonly<Record<MeridianPaletteKey, THREE.Co
  * here and the artifact compiler everywhere else. */
 export const DEFAULT_THREE_LANDSCAPE_PALETTE: ThreeLandscapePalette = MERIDIAN_PALETTE;
 
-/** A perspective lens in display space: the eye and the focal length in CSS px. */
-export interface PerspectiveLodView { readonly eye: readonly [number, number, number]; readonly focalPx: number }
+/** A perspective lens in display space: the eye and the focal length in CSS
+ * px. `frame`, when given, is the lens basis and the CSS-pixel picture about
+ * its optical axis, so `projectedCrownPx` can tell that a crown lies outside
+ * the picture (behind the eye, or off screen): such a crown never competes
+ * for the near budget, which then goes to the largest crowns actually in
+ * view (§37/§68) rather than to the trees at the camera's back. */
+export interface PerspectiveLodView {
+  readonly eye: readonly [number, number, number];
+  readonly focalPx: number;
+  readonly frame?: {
+    readonly right: readonly [number, number, number]; readonly up: readonly [number, number, number]; readonly forward: readonly [number, number, number];
+    /** Screen position (CSS px, y down) of the optical axis — `TerrainCamera.translation` — and the frame size. */
+    readonly principalPx: readonly [number, number]; readonly widthPx: number; readonly heightPx: number;
+  };
+}
+/** Projected radius in CSS px of a crown of `radiusM` centred at display
+ * (x, y, z); 0 when `view.frame` places the crown's whole disc outside the
+ * picture. Shared by V1's canopy and the V2 forest (`three-world-v2-objects.ts`). */
+export function projectedCrownPx(view: PerspectiveLodView, x: number, y: number, z: number, radiusM: number): number {
+  const dx = x - view.eye[0], dy = y - view.eye[1], dz = z - view.eye[2];
+  const px = view.focalPx * radiusM / Math.max(1, Math.hypot(dx, dy, dz));
+  const frame = view.frame;
+  if (!frame) return px;
+  const depth = dx * frame.forward[0] + dy * frame.forward[1] + dz * frame.forward[2];
+  if (depth <= 0) return 0;
+  const sx = frame.principalPx[0] + view.focalPx * (dx * frame.right[0] + dy * frame.right[1] + dz * frame.right[2]) / depth;
+  const sy = frame.principalPx[1] - view.focalPx * (dx * frame.up[0] + dy * frame.up[1] + dz * frame.up[2]) / depth;
+  return sx + px < 0 || sx - px > frame.widthPx || sy + px < 0 || sy - px > frame.heightPx ? 0 : px;
+}
 
 export interface ThreeLandscape {
   group: THREE.Group;
@@ -989,10 +1016,7 @@ diffuseColor.rgb *= 1.0 - golfCrownShade * vCrownOcclusion;`);
     // Perspective: projected crown radius per tree; the near band goes to the
     // `nearBudget` largest crowns that clear the near threshold, so the cost
     // of a view stays bounded whatever the camera does.
-    const projected = view ? trees.map(tree => {
-      const crownZ = reference + (tree.groundZ - reference) * exaggeration + tree.height * .64;
-      return view.focalPx * tree.radius / Math.max(1, Math.hypot(tree.x - view.eye[0], tree.y - view.eye[1], crownZ - view.eye[2]));
-    }) : null;
+    const projected = view ? trees.map(tree => projectedCrownPx(view, tree.x, tree.y, reference + (tree.groundZ - reference) * exaggeration + tree.height * .64, tree.radius)) : null;
     const nearSet = new Set<number>();
     if (projected && next === 'near') {
       const candidates = projected.map((px, index) => [px, index] as const).filter(([px]) => px >= VEGETATION.lodScreenPx.near);
@@ -1028,8 +1052,7 @@ diffuseColor.rgb *= 1.0 - golfCrownShade * vCrownOcclusion;`);
     for (const lobe of lobes) {
       let lod: 'near' | 'far';
       if (view) {
-        const topZ = reference + (lobe.groundZ - reference) * exaggeration + lobe.height * .6;
-        const px = view.focalPx * lobe.radius / Math.max(1, Math.hypot(lobe.x - view.eye[0], lobe.y - view.eye[1], topZ - view.eye[2]));
+        const px = projectedCrownPx(view, lobe.x, lobe.y, reference + (lobe.groundZ - reference) * exaggeration + lobe.height * .6, lobe.radius);
         lod = next === 'near' && px >= VEGETATION.mass.lodScreenPx ? 'near' : 'far';
       } else {
         const distance = focusM ? Math.hypot(lobe.x - focusM[0], lobe.y - focusM[1]) : 0;

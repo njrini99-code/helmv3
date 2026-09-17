@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { attachTurfStyle, type ThreeLandscape } from './three-landscape';
 import { assembleV2World, buildV2World, type V2WorldInput } from './three-world-v2';
-import { buildV2Objects } from './three-world-v2-objects';
+import { buildV2Objects, type V2Objects } from './three-world-v2-objects';
 import { compileHeroPatches } from '@/lib/golf/course-geometry/bunker-display-mesh';
 import { compileBunkerNormalField } from '@/lib/golf/course-geometry/bunker-normal-field';
 import { compileBaseDisplayLods, weldAndCleanTerrainMesh, type DisplayLodName } from '@/lib/golf/course-geometry/display-mesh-v2';
@@ -31,6 +31,15 @@ export const TERRAIN_DEBUG_VIEWS = [
   'v2-lod0', 'v2-lod1', 'v2-lod2', 'v2-hero', 'v2-world',
   'v2-atlas-class', 'v2-atlas-curvature', 'v2-sky', 'v2-sky-bent', 'v2-static-shadow', 'v2-bunker-normals', 'v2-path-ribbon', 'v2-forest-edge', 'v2-fairway-direction',
 ] as const;
+/** What the `v2-world` installer leaves on `landscape.terrain.userData.debugV2`
+ * for the renderer and the capture dataset. */
+export interface V2WorldDebug {
+  view: 'world'; draws: number; triangles: number; patches: number;
+  objects: V2Objects['stats']; forest: V2Objects['forestStats']; buildMs: number;
+  /** The V2 forest's per-view LOD (`V2Objects.setDetail`): `true` when the split changed. */
+  setDetail: V2Objects['setDetail'];
+}
+
 export type TerrainDebugView = typeof TERRAIN_DEBUG_VIEWS[number];
 export const TERRAIN_DEBUG_LABELS: Record<TerrainDebugView, string> = {
   final: 'Final', unlit: 'Unlit green', 'unlit-white': 'Unlit white', albedo: 'Albedo only (turf style, no light)',
@@ -276,8 +285,19 @@ export function installTerrainDebugView(world: THREE.Scene, landscape: ThreeLand
     for (const child of v1Canopy) child.visible = false;
     landscape.terrain.visible = false;
     landscape.group.add(built.group, objects.group);
-    const objectDraws = Object.values(objects.stats.draws).reduce((sum, n) => sum + n, 0);
-    landscape.terrain.userData.debugV2 = { view: 'world', draws: built.stats.draws + objectDraws, triangles: built.stats.triangles + objects.stats.triangles, patches: built.stats.patches, objects: objects.stats, forest: objects.forestStats, buildMs: Math.round(performance.now() - started) };
+    const objectDraws = () => Object.values(objects.stats.draws).reduce((sum, n) => sum + n, 0);
+    // §37/§68: the renderer re-LODs the forest per camera through `setDetail`
+    // (the same call it makes on the V1 landscape); draws and triangles here
+    // follow, so the canvas dataset reports the split actually drawn.
+    const info: V2WorldDebug = {
+      view: 'world', draws: built.stats.draws + objectDraws(), triangles: built.stats.triangles + objects.stats.triangles, patches: built.stats.patches, objects: objects.stats, forest: objects.forestStats, buildMs: Math.round(performance.now() - started),
+      setDetail: (next, focusM, view) => {
+        if (!objects.setDetail(next, focusM, view)) return false;
+        info.draws = built.stats.draws + objectDraws(); info.triangles = built.stats.triangles + objects.stats.triangles;
+        return true;
+      },
+    };
+    landscape.terrain.userData.debugV2 = info;
     return () => {
       landscape.group.remove(built.group, objects.group);
       for (const child of v1Canopy) child.visible = true;
