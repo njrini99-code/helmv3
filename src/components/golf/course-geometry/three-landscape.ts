@@ -442,7 +442,16 @@ export function buildThreeLandscape(
   scene: HoleScene,
   mesh: TerrainMesh,
   palette: ThreeLandscapePalette = DEFAULT_THREE_LANDSCAPE_PALETTE,
-  options: { artifact?: MeridianVisualArtifact; overrides?: MeridianStyleOverrides } = {},
+  options: { artifact?: MeridianVisualArtifact; overrides?: MeridianStyleOverrides;
+    /** The V2 world (`installTerrainDebugView('v2-world')`) replaces this
+     * landscape's terrain shading and vegetation the moment it is installed,
+     * so under it the DEM shading texture and every crown, trunk, mass lobe
+     * and understory placement are skipped (Task 20: they were a third of
+     * the One-Tap mount). The artifact, the terrain mesh (picking, telemetry)
+     * and the context objects are still built. Should the V2 compile fall
+     * back to V1, the terrain then shows with vertex-normal shading and no
+     * trees until the hole is remounted normally. */
+    underV2?: boolean } = {},
 ): ThreeLandscape {
   // The visual world (§6): supplied from the cache and hash-gated, or compiled
   // now from the same canonical inputs. Either way it decorates; it never
@@ -526,7 +535,7 @@ export function buildThreeLandscape(
   // Per-fragment DEM shading when the source grid is present: the vertex
   // carries only the render-only bowl and cut/fill gradients (the display
   // surface is z_dem − depth + level); the DEM slope comes from the texture.
-  const relief = mesh.metricGrid ? buildDemSlopeTexture(mesh.metricGrid) : null;
+  const relief = mesh.metricGrid && !options.underV2 ? buildDemSlopeTexture(mesh.metricGrid) : null;
   if (relief) {
     const displaySlope = new Float32Array(vertexCount * 2);
     for (let i = 0; i < vertexCount * 2; i++) displaySlope[i] = -bowlSlope[i]! + levelSlope[i]!;
@@ -581,7 +590,7 @@ export function buildThreeLandscape(
   const excludedFeatures = canopyScene.features.filter(feature => feature.kind !== 'woods' && feature.kind !== 'route');
   const excludedRings = excludedFeatures.flatMap(feature => feature.parts.flat());
   const courseFrame = mesh.originWgs84.join(',');
-  const canopyGroups = canopyScene.features.filter(feature => feature.kind === 'woods' && feature.reviewed);
+  const canopyGroups = options.underV2 ? [] : canopyScene.features.filter(feature => feature.kind === 'woods' && feature.reviewed);
   // §53: context woods keep their trees but lose saturation and a little
   // light so they never compete with the played hole. Colour only.
   const ownIds = new Set(scene.features.map(feature => feature.id));
@@ -699,7 +708,7 @@ export function buildThreeLandscape(
   // zones) beyond every reviewed woods mask is carried by context-toned mass
   // lobes only. Reviewed masks keep their crowns; nothing here adds a crown,
   // and a zone point inside a reviewed mask or any playing surface is skipped.
-  const contextWoods = (scene.contextZones ?? []).filter(zone => (zone.class === 'forest_mass' || zone.class === 'forest_interior') && zone.type !== 'LineString' && zone.basis !== 'uncertain')
+  const contextWoods = (options.underV2 ? [] : scene.contextZones ?? []).filter(zone => (zone.class === 'forest_mass' || zone.class === 'forest_interior') && zone.type !== 'LineString' && zone.basis !== 'uncertain')
     .map(zone => ({ id: zone.id, kind: 'woods', type: zone.type, parts: zone.parts, reviewed: false }) as LocalFeature);
   const contextMassBudget = Math.max(0, Math.round(VEGETATION.mass.contextBudget * (options.overrides?.mass ?? 1)));
   const contextMassCandidates = contextWoods.map(feature => {

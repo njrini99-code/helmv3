@@ -106,7 +106,7 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
   let previousExaggeration = NaN, previousReference = NaN, renderCount = 0;
   // §72: bakes since ready, not renders — one per relevant change, however
   // many of setCamera's checks asked for one. §20: first-paint precompile time.
-  let shadowUpdates = 0, shaderCompileMs = 0;
+  let shadowUpdates = 0, shaderCompileMs = 0, landscapeBuildMs = 0;
   let viewDistance = 1_000;
   let releaseDebug: (() => void) | undefined;
   let crownDetail: 'near' | 'distant' = 'distant';
@@ -327,8 +327,11 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
         cssWidth: String(width), cssHeight: String(height), bufferWidth: String(canvas.width), bufferHeight: String(canvas.height), pixelRatio: String(ratio),
         debugView: options.debugView ?? 'final',
         renderWorld: options.world ?? 'v1',
-        // Task 20: the V2 world's synchronous compile time at mount ('' on V1).
+        // Task 20: the V2 world's synchronous compile time at mount ('' on V1),
+        // and the V1 landscape build every mount pays first (artifact compile
+        // when no cache is supplied, terrain geometry, crowns).
         v2BuildMs: String((landscape.terrain.userData.debugV2 as { buildMs?: number } | undefined)?.buildMs ?? ''),
+        landscapeBuildMs: landscapeBuildMs.toFixed(0),
         crownDetail,
         drawCalls: String(renderer.info.render.calls), renderTriangles: String(renderer.info.render.triangles),
       });
@@ -348,7 +351,10 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
     renderer.debug.checkShaderErrors = true;
     renderer.debug.onShaderError = () => { shaderFailed = true; };
     world.background = new Color(DEFAULT_THREE_LANDSCAPE_PALETTE.ground);
-    landscape = buildThreeLandscape(options.scene, mesh, DEFAULT_THREE_LANDSCAPE_PALETTE, { artifact: options.visualArtifact, overrides: qualityOverrides(quality, options.styleOverrides) });
+    const landscapeBegan = performance.now();
+    const debugView = options.debugView ?? (options.world === 'v2' ? 'v2-world' : 'final');
+    landscape = buildThreeLandscape(options.scene, mesh, DEFAULT_THREE_LANDSCAPE_PALETTE, { artifact: options.visualArtifact, overrides: qualityOverrides(quality, options.styleOverrides), underV2: debugView === 'v2-world' });
+    landscapeBuildMs = performance.now() - landscapeBegan;
     // A cached artifact from another package or style is refused (§6). The
     // hole still draws its canonical terrain visual from a runtime compile
     // (§105); the refusal is reported here rather than as a schematic fallback.
@@ -395,7 +401,7 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
     markersOverlay = createSceneMarkerOverlayController(overlay, mesh, surface, prefersReducedMotion(canvas.ownerDocument.defaultView));
     // R7: the V2 world is the same installer as the `v2-world` lab view, but as
     // a render mode the overlay stays — only an explicit debug view hides it.
-    releaseDebug = installTerrainDebugView(world, landscape, mesh, options.debugView ?? (options.world === 'v2' ? 'v2-world' : 'final'), renderer, options.scene);
+    releaseDebug = installTerrainDebugView(world, landscape, mesh, debugView, renderer, options.scene);
     if (options.debugView && options.debugView !== 'final') overlay.style.display = 'none';
     view = currentCamera.projection === 'perspective' ? perspectiveView : orthographicView;
     applyAtmosphere(currentCamera.projection);

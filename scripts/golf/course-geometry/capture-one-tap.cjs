@@ -50,7 +50,7 @@ const outDir = path.resolve(String(args['out-dir'] || `output/playwright/course-
       cameraFraming: screen?.dataset.cameraFraming || null, cameraZoom: document.querySelector('[data-camera-zoom]')?.getAttribute('data-camera-zoom') ?? null,
       drawCalls: canvas?.dataset.drawCalls ?? null, projection: canvas?.dataset.projection ?? null,
       // Master plan Task 20 / §11: the render world, its mount compile, the shader precompile and the frame P95 the runtime reports.
-      renderWorld: canvas?.dataset.renderWorld ?? null, v2BuildMs: canvas?.dataset.v2BuildMs || null, shaderCompileMs: canvas?.dataset.shaderCompileMs ?? null,
+      renderWorld: canvas?.dataset.renderWorld ?? null, v2BuildMs: canvas?.dataset.v2BuildMs || null, landscapeBuildMs: canvas?.dataset.landscapeBuildMs ?? null, shaderCompileMs: canvas?.dataset.shaderCompileMs ?? null,
       frameP95Ms: canvas?.dataset.frameP95Ms ?? null, renderTriangles: canvas?.dataset.renderTriangles ?? null, drawCallStatus: canvas?.dataset.drawCallStatus ?? null, geometryMemoryMb: canvas?.dataset.geometryMemoryMb ?? null };
   });
   const steps = [];
@@ -61,7 +61,7 @@ const outDir = path.resolve(String(args['out-dir'] || `output/playwright/course-
     await page.screenshot({ path: file });
     const record = { name, file: path.basename(file), ...(await read()) };
     steps.push(record);
-    process.stdout.write(`${record.file} hole=${record.holeKey} ${record.holeStatus} strokes=${record.strokes ?? '-'} state=${record.state} camera=${record.cameraState}/${record.currentView}/${record.cameraFraming ?? "-"}@${record.cameraZoom ?? "-"} markers=${record.markers} links=${record.links} lie=${record.lie ?? '-'} draw=${record.drawCalls} world=${record.renderWorld ?? '-'} build=${record.v2BuildMs ?? '-'}ms shader=${record.shaderCompileMs ?? '-'}ms p95=${record.frameP95Ms ?? '-'}ms\n`);
+    process.stdout.write(`${record.file} hole=${record.holeKey} ${record.holeStatus} strokes=${record.strokes ?? '-'} state=${record.state} camera=${record.cameraState}/${record.currentView}/${record.cameraFraming ?? "-"}@${record.cameraZoom ?? "-"} markers=${record.markers} links=${record.links} lie=${record.lie ?? '-'} draw=${record.drawCalls} world=${record.renderWorld ?? '-'} build=${record.v2BuildMs ?? '-'}ms landscape=${record.landscapeBuildMs ?? '-'}ms shader=${record.shaderCompileMs ?? '-'}ms p95=${record.frameP95Ms ?? '-'}ms\n`);
   };
   const mark = async () => {
     await page.locator('[data-slot=one-tap-mark]').click();
