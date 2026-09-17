@@ -13,7 +13,7 @@ import type { HoleScene, ShotEvidence } from '@/lib/golf/course-geometry/types';
 import { puttingFocusCamera, puttingPlanCamera, type SceneView } from '@/lib/golf/course-geometry/camera';
 import { CourseHoleScene, sceneCamera } from './CourseHoleScene';
 import { CourseTerrainProfile } from './CourseTerrainProfile';
-import { PERSPECTIVE_FOV, PRODUCTION_CAMERA_STATES, productionCameraState, TERRAIN_PRESETS, projectTerrainPoint, terrainHeight, type ProductionCameraState, type TerrainFitProfile, type TerrainPose, type TerrainPreset } from '@/lib/golf/course-geometry/terrain';
+import { PERSPECTIVE_FOV, PRODUCTION_CAMERA_STATES, productionCameraState, TERRAIN_PRESETS, projectTerrainPoint, terrainHeight, type ProductionCameraState, type TerrainFitProfile, type TerrainPose, type TerrainPreset, wrapYawDegrees, yawDeltaDegrees } from '@/lib/golf/course-geometry/terrain';
 
 import { fitTerrainViewportCamera } from '@/lib/golf/course-geometry/terrain-viewport';
 import type { TerrainRuntimeController } from '@/lib/golf/course-geometry/runtime-controller';
@@ -244,7 +244,7 @@ function Drawing({ scene, view, context, events, selectedShotNumber, activeDraft
     if (runtime.current && scene?.terrain && courseView) {
       const camera = fitTerrainViewportCamera(scene, scene.terrain, courseView, size.width, size.height, next.pose, next.zoom, [next.pan.x, next.pan.y], next.fitPreset);
       runtime.current.setCamera(camera, size.width, size.height);
-      if (ref.current) { ref.current.dataset.cameraZoom = String(next.zoom); ref.current.dataset.worldScale = String(camera.scale); }
+      if (ref.current) { ref.current.dataset.cameraZoom = String(next.zoom); ref.current.dataset.worldScale = String(camera.scale); ref.current.dataset.cameraPitch = String(next.pose.pitch); ref.current.dataset.cameraYaw = String(next.pose.yawOffset); }
       // A tilted map is foreshortened. Hide the Top-only screen ruler during
       // mutable gestures rather than leaving a stale apparent measurement.
       if (scaleBar.current) scaleBar.current.style.visibility = 'hidden';
@@ -268,7 +268,11 @@ function Drawing({ scene, view, context, events, selectedShotNumber, activeDraft
     };
     pendingFrame.current = requestAnimationFrame(tick);
   }
-  const gesture = useRef({ x: 0, y: 0, distance: 0, zoom: 1, pan: { x: 0, y: 0 }, pose, fitPreset, origin: { x: size.width / 2, y: size.height / 2 } });
+  const gesture = useRef({ x: 0, y: 0, last: { x: 0, y: 0 }, distance: 0, zoom: 1, pan: { x: 0, y: 0 }, pose, fitPreset, origin: { x: size.width / 2, y: size.height / 2 } });
+  // The finger left on the glass when a pinch ends is not an orbit: it drifts
+  // as the hand lifts, and until it lifts too the camera holds (on-course
+  // "glitchy" report, 2026-09-17: every pinch ended with a small unasked tilt).
+  const pinchTail = useRef(false);
   // The tracker stays on its compact, familiar SVG course card. Expanding is
   // the explicit opt-in to the live Three.js terrain and elevated flight arc.
   const terrainRequested = expanded && courseView != null && scene?.terrain != null && !terrainFailed && !showProfile;
@@ -292,7 +296,7 @@ function Drawing({ scene, view, context, events, selectedShotNumber, activeDraft
   const boundedPan = (x: number, y: number) => ({ x: Math.max(-size.width / 2, Math.min(size.width / 2, x)),
     y: Math.max(-size.height / 2, Math.min(size.height / 2, y)) });
   const isPreset = (preset: TerrainPreset) => Math.abs(pose.pitch - TERRAIN_PRESETS[preset].pitch) < .01 &&
-    Math.abs(pose.yawOffset - TERRAIN_PRESETS[preset].yawOffset) < .01 &&
+    Math.abs(yawDeltaDegrees(pose.yawOffset, TERRAIN_PRESETS[preset].yawOffset)) < .01 &&
     (pose.projection ?? 'orthographic') === (TERRAIN_PRESETS[preset].projection ?? 'orthographic');
   useEffect(() => () => cancelAnimationFrame(pendingFrame.current), []);
   useEffect(() => {
@@ -319,7 +323,8 @@ function Drawing({ scene, view, context, events, selectedShotNumber, activeDraft
   function rebase() {
     const p = [...pointers.current.values()];
     if (!p.length) return;
-    gesture.current = { x: p.reduce((n, a) => n + a.x, 0) / p.length, y: p.reduce((n, a) => n + a.y, 0) / p.length,
+    const x = p.reduce((n, a) => n + a.x, 0) / p.length, y = p.reduce((n, a) => n + a.y, 0) / p.length;
+    gesture.current = { x, y, last: { x, y },
       distance: p.length > 1 ? Math.hypot(p[0]!.x - p[1]!.x, p[0]!.y - p[1]!.y) : 0, ...live.current, origin: cameraOrigin(live.current) };
   }
   /** §62 fit: the zoom and pan that keep `target.fitPointsM` inside the safe
@@ -388,6 +393,7 @@ function Drawing({ scene, view, context, events, selectedShotNumber, activeDraft
     flush(); commitCamera();
     event.currentTarget.setPointerCapture(event.pointerId);
     tapStart.current = pointers.current.size ? null : { x: event.clientX, y: event.clientY };
+    pinchTail.current = false;
     pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
     setDragging(true); rebase();
     onStageGesture?.();
@@ -396,12 +402,20 @@ function Drawing({ scene, view, context, events, selectedShotNumber, activeDraft
     if (!interactive || !pointers.current.has(event.pointerId)) return;
     pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
     const p = [...pointers.current.values()], g = gesture.current;
-    const dx = p.reduce((n, a) => n + a.x, 0) / p.length - g.x;
-    const dy = p.reduce((n, a) => n + a.y, 0) / p.length - g.y;
+    const cx = p.reduce((n, a) => n + a.x, 0) / p.length, cy = p.reduce((n, a) => n + a.y, 0) / p.length;
+    const dx = cx - g.x, dy = cy - g.y;
     const next = { zoom: g.zoom, pan: g.pan, pose: g.pose, fitPreset: g.fitPreset };
-    if (p.length === 1 && terrainEnabled) next.pose = { ...g.pose, pitch: Math.max(20, Math.min(90, g.pose.pitch - dy * .22)),
-      yawOffset: Math.max(-45, Math.min(45, g.pose.yawOffset + dx * .22)) };
-    else {
+    if (p.length === 1 && terrainEnabled) {
+      if (pinchTail.current) return;
+      // Orbit integrates from the previous event, so a reversal answers at
+      // once even after the tilt sat on its limit (a drag measured from the
+      // gesture origin had to unwind the whole overshoot first). Yaw is a
+      // full circle; pitch keeps the 20–90° window the terrain is drawn for.
+      const from = nextState.current?.pose ?? live.current.pose;
+      next.pose = { ...from, pitch: Math.max(20, Math.min(90, from.pitch - (cy - g.last.y) * .22)),
+        yawOffset: wrapYawDegrees(from.yawOffset + (cx - g.last.x) * .22) };
+      g.last = { x: cx, y: cy };
+    } else {
       if (p.length === 2) {
         next.zoom = Math.max(.5, Math.min(4, g.zoom * Math.hypot(p[0]!.x - p[1]!.x, p[0]!.y - p[1]!.y) / Math.max(1, g.distance)));
         const rect = event.currentTarget.getBoundingClientRect(), factor = next.zoom / g.zoom;
@@ -417,8 +431,11 @@ function Drawing({ scene, view, context, events, selectedShotNumber, activeDraft
     if (!pointers.current.has(event.pointerId)) return;
     if (event.type === 'pointercancel' || event.type === 'lostpointercapture') { cancelAnimationFrame(pendingFrame.current); nextState.current = null; }
     else flush();
+    const wasPinch = pointers.current.size === 2;
     pointers.current.delete(event.pointerId);
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+    if (wasPinch && pointers.current.size === 1) { pinchTail.current = true; tapStart.current = null; }
+    if (!pointers.current.size) pinchTail.current = false;
     setDragging(pointers.current.size > 0); commitCamera(); rebase();
     if (event.type !== 'pointerup' || pointers.current.size) return;
     const start = tapStart.current; tapStart.current = null;
@@ -426,7 +443,7 @@ function Drawing({ scene, view, context, events, selectedShotNumber, activeDraft
     const previous = lastTap.current, now = performance.now();
     if (previous && now - previous.time < 350 && Math.hypot(event.clientX - previous.x, event.clientY - previous.y) < 24) {
       lastTap.current = null;
-      changeCamera(() => ({ zoom: 1, pan: { x: 0, y: 0 }, pose: TERRAIN_PRESETS[homePreset], fitPreset: homePreset }));
+      presetView(homePreset);
     } else lastTap.current = { time: now, x: event.clientX, y: event.clientY };
   }
   /** Stage director, area change: the drawing (and the terrain runtime with
@@ -462,7 +479,7 @@ function Drawing({ scene, view, context, events, selectedShotNumber, activeDraft
       // same refresh interval. Never extrapolate past exact Top/height bounds.
       const t = Math.max(0, Math.min(1, (now - began) / 260)), eased = 1 - (1 - t) ** 3;
       update({ zoom: startZoom + (endZoom - startZoom) * eased, pan: { x: startPan.x + (endPan.x - startPan.x) * eased, y: startPan.y + (endPan.y - startPan.y) * eased }, fitPreset: t < 1 ? { from: fromFit, to: preset, progress: eased } : preset, pose: t < 1 ? { pitch: start.pitch + (target.pitch - start.pitch) * eased,
-        yawOffset: start.yawOffset + (target.yawOffset - start.yawOffset) * eased,
+        yawOffset: wrapYawDegrees(start.yawOffset + yawDeltaDegrees(start.yawOffset, target.yawOffset) * eased),
         exaggeration: start.exaggeration + (target.exaggeration - start.exaggeration) * eased,
         ...(anyPerspective ? { projection: 'perspective' as const, fovDegrees: startFov + (targetFov - startFov) * eased } : { projection: 'orthographic' as const }) } : target });
       rebase();
@@ -549,7 +566,7 @@ function Drawing({ scene, view, context, events, selectedShotNumber, activeDraft
     <div ref={ref} data-slot="course-drawing" data-putting-mode={view === 'putting' ? courseBackedPutting ? 'course-green' : 'abstract' : undefined} className={`fw-course-motion w-full overflow-clip ${expanded ? 'absolute inset-0' : 'relative'}`}
       aria-label={expanded ? 'Interactive course landscape' : undefined}
       onPointerDown={startGesture} onPointerMove={moveGesture} onPointerUp={endGesture} onPointerCancel={endGesture} onLostPointerCapture={endGesture}
-      data-camera-zoom={zoom} data-world-scale={mapScale} data-dragging={dragging}
+      data-camera-zoom={zoom} data-world-scale={mapScale} data-camera-pitch={pose.pitch} data-camera-yaw={pose.yawOffset} data-dragging={dragging}
       style={{ height: expanded ? '100%' : compactHeight, touchAction: interactive ? 'none' : 'auto', cursor: interactive ? (dragging ? 'grabbing' : 'grab') : undefined }}>
       {/* The reveal re-keys on the view for the 2D drawings. With the terrain
           runtime on, a view change is a camera move (`setCamera`), never a
@@ -643,7 +660,7 @@ function Drawing({ scene, view, context, events, selectedShotNumber, activeDraft
       {terrainEnabled && <>
         {(['Rotate left', 'Rotate right', 'Tilt up', 'Tilt down'] as const).map(action => <Button key={action} size="sm" variant="ghost"
           onClick={() => changeCamera(current => ({ ...current, pose: { ...current.pose,
-            yawOffset: Math.max(-45, Math.min(45, current.pose.yawOffset + (action === 'Rotate left' ? -10 : action === 'Rotate right' ? 10 : 0))),
+            yawOffset: wrapYawDegrees(current.pose.yawOffset + (action === 'Rotate left' ? -10 : action === 'Rotate right' ? 10 : 0)),
             pitch: Math.max(20, Math.min(90, current.pose.pitch + (action === 'Tilt up' ? 10 : action === 'Tilt down' ? -10 : 0))),
           } }))}>{action}</Button>)}
         <Button size="sm" variant="ghost" onClick={() => changeCamera(current => ({ ...current, pose: { ...current.pose, exaggeration: current.pose.exaggeration === 1 ? 1.5 : 1 } }))}>Height {pose.exaggeration.toFixed(1)}×</Button>

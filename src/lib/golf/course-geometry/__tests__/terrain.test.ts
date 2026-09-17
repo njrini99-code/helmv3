@@ -163,7 +163,9 @@ describe('source-linked terrain and camera', () => {
     expect(scene.target.kind).toBe('unknown_pin');
   });
   it('bounds orbit and scale and refuses degenerate viewports', () => {
-    for (const pose of [{ pitch: 0, yawOffset: 0, exaggeration: 1 }, { pitch: 50, yawOffset: 46, exaggeration: 1 },
+    // Yaw is a full circle since 2026-09-17 (terrain-orbit.test.ts); pitch,
+    // exaggeration and a non-finite yaw still bound the camera.
+    for (const pose of [{ pitch: 0, yawOffset: 0, exaggeration: 1 }, { pitch: 50, yawOffset: Infinity, exaggeration: 1 },
       { pitch: 50, yawOffset: 0, exaggeration: 3 }, { pitch: NaN, yawOffset: 0, exaggeration: 1 }]) {
       expect(() => fitTerrainCamera(scene, mesh, 'hole', 390, 460, pose)).toThrow();
     }

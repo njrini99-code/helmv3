@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildHoleScene } from '../build-scene';
 import { parseGeometryPackage } from '../schema';
-import { fitTerrainCamera, parseTerrainMesh, projectTerrainPoint, TERRAIN_PRESETS, type Point3M } from '../terrain';
+import { fitTerrainCamera, parseTerrainMesh, projectTerrainPoint, TERRAIN_PRESETS, wrapYawDegrees, yawDeltaDegrees, type Point3M } from '../terrain';
 import { terrainCanopy } from '../terrain-canopy';
 import { contextPoints } from '../camera';
 import { terrainHeight } from '../terrain';
@@ -71,6 +71,32 @@ describe('stable orthographic orbit', () => {
     }
     expect(() => fitTerrainCamera(scene, mesh, 'hole', 390, 594, pose, .49)).toThrow('Invalid terrain camera');
     expect(() => fitTerrainCamera(scene, mesh, 'hole', 390, 594, pose, 4.01)).toThrow('Invalid terrain camera');
+  });
+});
+
+describe('full-circle orbit (on-course ask, 2026-09-17)', () => {
+  it('accepts any yaw, folds it into (−180, 180] and keeps the focus and scale of the orbit', () => {
+    const home = fitTerrainCamera(scene, mesh, 'hole', 390, 594, TERRAIN_PRESETS.terrain);
+    for (const [yawOffset, folded] of [[46, 46], [180, 180], [-180, 180], [200, -160], [540, 180], [-400, -40], [725, 5]] as const) {
+      const camera = fitTerrainCamera(scene, mesh, 'hole', 390, 594, { ...TERRAIN_PRESETS.terrain, yawOffset });
+      expect(camera.yawOffset).toBeCloseTo(folded, 9);
+      expect(camera.scale).toBe(home.scale);
+      expect(camera.focusM).toEqual(home.focusM);
+      const [x, y] = projectTerrainPoint(home.focusM, camera);
+      expect(x).toBeCloseTo(195, 6); expect(y).toBeCloseTo(297, 6);
+    }
+    // 180 and −180 are one heading: the eye sits at the same place.
+    const a = fitTerrainCamera(scene, mesh, 'hole', 390, 594, { ...TERRAIN_PRESETS.terrain, yawOffset: 180 });
+    const b = fitTerrainCamera(scene, mesh, 'hole', 390, 594, { ...TERRAIN_PRESETS.terrain, yawOffset: -180 });
+    expect(a.eyeM).toEqual(b.eyeM);
+    // Looking back from behind the green mirrors the tee view's forward axis.
+    const front = fitTerrainCamera(scene, mesh, 'hole', 390, 594, { ...TERRAIN_PRESETS.terrain, yawOffset: 0 });
+    expect(a.forward[0]).toBeCloseTo(-front.forward[0], 9); expect(a.forward[1]).toBeCloseTo(-front.forward[1], 9); expect(a.forward[2]).toBeCloseTo(front.forward[2], 9);
+    expect(() => fitTerrainCamera(scene, mesh, 'hole', 390, 594, { ...TERRAIN_PRESETS.terrain, yawOffset: Number.NaN })).toThrow('Invalid terrain camera');
+  });
+  it('turns the short way round', () => {
+    expect(wrapYawDegrees(0)).toBe(0); expect(wrapYawDegrees(180)).toBe(180); expect(wrapYawDegrees(-180)).toBe(180); expect(wrapYawDegrees(190)).toBe(-170);
+    expect(yawDeltaDegrees(170, -170)).toBe(20); expect(yawDeltaDegrees(-170, 170)).toBe(-20); expect(yawDeltaDegrees(0, 180)).toBe(180); expect(yawDeltaDegrees(45, -45)).toBe(-90);
   });
 });
 

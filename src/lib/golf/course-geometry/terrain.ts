@@ -30,6 +30,15 @@ export interface TerrainPose {
 /** Vertical field of view in degrees: preset range per Meridian §9.2, and the
  * wider limits a transition may pass through (a tiny FOV approximates Top). */
 export const PERSPECTIVE_FOV = Object.freeze({ min: .5, max: 60, presetMin: 28, presetMax: 34, transitionStart: .5 });
+/** The orbit is a full circle (on-course ask, 2026-09-17: "going the whole
+ * 360"): any finite yaw offset is a valid heading, folded into (−180, 180]
+ * so a pose never grows without bound and 180 and −180 are the same view. */
+export function wrapYawDegrees(degrees: number): number {
+  const wrapped = ((degrees + 180) % 360 + 360) % 360 - 180;
+  return wrapped === -180 ? 180 : wrapped;
+}
+/** Signed shortest turn from one yaw to another, in (−180, 180]. */
+export function yawDeltaDegrees(from: number, to: number): number { return wrapYawDegrees(to - from); }
 export const TERRAIN_PRESETS: Record<TerrainPreset, TerrainPose> = {
   top: { pitch: 90, yawOffset: 0, exaggeration: 1, projection: 'orthographic' },
   terrain: { pitch: 44, yawOffset: 0, exaggeration: 1, projection: 'perspective', fovDegrees: 32 },
@@ -563,13 +572,14 @@ export function fitTerrainCamera(scene: HoleScene, mesh: TerrainMesh, view: Cour
   pose: TerrainPose, zoom = 1, pan: PointM = [0, 0], fitPreset: TerrainFitProfile = 'top'): TerrainCamera {
   if (mesh.physicalHoleKey !== scene.physicalHoleKey || mesh.geometryHash !== scene.packageHash) throw new Error('Terrain geometry version mismatch');
   if (![width, height, pose.pitch, pose.yawOffset, pose.exaggeration, zoom, ...pan].every(Number.isFinite) ||
-    width <= 48 || height <= 48 || pose.pitch < 20 || pose.pitch > 90 || Math.abs(pose.yawOffset) > 45 ||
+    width <= 48 || height <= 48 || pose.pitch < 20 || pose.pitch > 90 ||
     pose.exaggeration < 1 || pose.exaggeration > 1.5 || zoom < .5 || zoom > 4) throw new Error('Invalid terrain camera');
+  const yawOffset = wrapYawDegrees(pose.yawOffset);
   const projection: TerrainProjection = pose.projection ?? 'orthographic';
   const { angle, focusM, scale: baseScale, lens, metadata } = fittedFrame(scene, mesh, view, width, height, fitPreset);
   const fovDegrees = pose.fovDegrees ?? lens?.fovDegrees ?? 32;
   if (projection === 'perspective' && (!Number.isFinite(fovDegrees) || fovDegrees < PERSPECTIVE_FOV.min || fovDegrees > PERSPECTIVE_FOV.max)) throw new Error('Invalid terrain camera');
-  const basis = { ...terrainBasis(angle + pose.yawOffset * Math.PI / 180, pose.pitch),
+  const basis = { ...terrainBasis(angle + yawOffset * Math.PI / 180, pose.pitch),
     referenceElevationM: mesh.referenceElevationM, exaggeration: pose.exaggeration };
   // A drag changes viewing direction only. Refitting each projected bounding
   // box would silently zoom and move the orbit target on every frame.
@@ -595,7 +605,7 @@ export function fitTerrainCamera(scene: HoleScene, mesh: TerrainMesh, view: Cour
       f[2] * ref * (1 - ez) - (f[0] * eyeM[0] + f[1] * eyeM[1] + f[2] * eyeM[2])];
     const column = (cx: number, cy: number, cd: number) => [ax * cx + px * cd, ay * cy + py * cd, cd / dz, cd];
     const matrix = [...column(r[0], u[0], f[0]), ...column(r[1], u[1], f[1]), ...column(r[2] * ez, u[2] * ez, f[2] * ez), ...column(constant[0], constant[1], constant[2])];
-    return { ...basis, scale, translation, matrix, pitch: pose.pitch, yawOffset: pose.yawOffset, focusM, projection, fovDegrees, focalPx, eyeM, framing: metadata };
+    return { ...basis, scale, translation, matrix, pitch: pose.pitch, yawOffset, focusM, projection, fovDegrees, focalPx, eyeM, framing: metadata };
   }
   const [focusX, focusY] = cameraComponents(focusM, basis);
   const translation: PointM = [width / 2 - focusX * scale + pan[0], height / 2 + focusY * scale + pan[1]];
@@ -604,5 +614,5 @@ export function fitTerrainCamera(scene: HoleScene, mesh: TerrainMesh, view: Cour
   const matrix = [sx*r[0], sy*u[0], f[0]/dz, 0, sx*r[1], sy*u[1], f[1]/dz, 0,
     sx*r[2]*ez, sy*u[2]*ez, f[2]*ez/dz, 0,
     2*translation[0]/width-1-sx*r[2]*ez*ref, 1-2*translation[1]/height-sy*u[2]*ez*ref, -f[2]*ez*ref/dz, 1];
-  return { ...basis, scale, translation, matrix, pitch: pose.pitch, yawOffset: pose.yawOffset, focusM, projection, framing: metadata };
+  return { ...basis, scale, translation, matrix, pitch: pose.pitch, yawOffset, focusM, projection, framing: metadata };
 }
