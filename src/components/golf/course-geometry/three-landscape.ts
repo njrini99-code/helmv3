@@ -448,9 +448,9 @@ export function buildThreeLandscape(
      * so under it the DEM shading texture and every crown, trunk, mass lobe
      * and understory placement are skipped (Task 20: they were a third of
      * the One-Tap mount). The artifact, the terrain mesh (picking, telemetry)
-     * and the context objects are still built. Should the V2 compile fall
-     * back to V1, the terrain then shows with vertex-normal shading and no
-     * trees until the hole is remounted normally. */
+     * and the context objects are still built. When the V2 compile falls
+     * back to V1 (R7) the renderer rebuilds the landscape without this flag,
+     * so the fallback is the real V1 hole. */
     underV2?: boolean } = {},
 ): ThreeLandscape {
   // The visual world (§6): supplied from the cache and hash-gated, or compiled
