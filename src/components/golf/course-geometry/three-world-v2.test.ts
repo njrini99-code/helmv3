@@ -5,8 +5,9 @@ import * as THREE from 'three';
 import type { CompiledBunkerPatch } from '@/lib/golf/course-geometry/bunker-display-mesh';
 import { compileBunkerNormalField } from '@/lib/golf/course-geometry/bunker-normal-field';
 import { buildHoleScene } from '@/lib/golf/course-geometry/build-scene';
-import { fieldAtlasBytes } from '@/lib/golf/course-geometry/field-atlas';
-import { classifySurfaceFromAtlas, pickFinestAtlas } from '@/lib/golf/course-geometry/ground-shader-v2';
+import { fieldAtlasBytes, sampleFieldAtlas } from '@/lib/golf/course-geometry/field-atlas';
+import { greenBandsAt } from '@/lib/golf/course-geometry/green-surface-v2';
+import { classifySurfaceFromAtlas, pickFinestAtlas, RELIEF_FIELD_BINDING } from '@/lib/golf/course-geometry/ground-shader-v2';
 import { parseGeometryPackage } from '@/lib/golf/course-geometry/schema';
 import { parseTerrainMesh, type TerrainMesh } from '@/lib/golf/course-geometry/terrain';
 import type { MetricTerrainGrid } from '@/lib/golf/course-geometry/terrain-source';
@@ -226,13 +227,15 @@ describe('Meridian V2 runtime world (Task 11)', () => {
     expect(geometryDispose).toHaveBeenCalledTimes(1 + input.patches.length);
     expect(materialDispose).toHaveBeenCalledTimes(1 + input.heroAtlases.length); // one instance per atlas, one program
     // One SDF DataTexture upload for the whole-hole atlas plus one per hero
-    // atlas, plus the one fairway-direction texture (Task 12) every material
+    // atlas, each with its relief (slope) texture beside it (Task 13 §34),
+    // plus the one fairway-direction texture (Task 12) every material
     // instance shares — each a separate GPU resource from the material/
     // geometry disposes above.
     expect(built.stats.fairwayGrain).toBe(true);
     expect(built.stats.staticShadow).toBe(true);
     expect(built.stats.skyOcclusion).toBe(true);
-    expect(textureDispose).toHaveBeenCalledTimes(1 + input.heroAtlases.length + 3); // + fairway direction + static shadow + sky
+    expect(built.stats.runoffRelief).toBe(true);
+    expect(textureDispose).toHaveBeenCalledTimes(2 * (1 + input.heroAtlases.length) + 3); // + fairway direction + static shadow + sky
     geometryDispose.mockRestore(); materialDispose.mockRestore(); textureDispose.mockRestore();
   });
 
@@ -310,7 +313,7 @@ describe('Meridian V2 runtime world (Task 11)', () => {
 
     const textureDispose = vi.spyOn(THREE.Texture.prototype, 'dispose');
     built.dispose();
-    expect(textureDispose).toHaveBeenCalledTimes(1); // only the whole-hole texture was ever created
+    expect(textureDispose).toHaveBeenCalledTimes(2); // only the whole-hole SDF + relief textures were ever created
     textureDispose.mockRestore();
   });
 
@@ -325,6 +328,61 @@ describe('Meridian V2 runtime world (Task 11)', () => {
     // the shared lights_fragment_begin chunk.
     expect(baseMaterial.defines?.STANDARD).toBe('');
     built.dispose();
+  });
+
+  it('binds each atlas\'s own relief slope texture beside its SDF texture (Task 13 §34 run-off), decoded to the same numbers sampleFieldAtlas answers, and the term fires on hole 7\'s real green surround', () => {
+    const { mesh, scene } = loadHole7();
+    const input = assembleV2World(scene, mesh)!;
+    const built = buildV2World(input);
+    expect(built.stats.runoffRelief).toBe(true);
+    const [base, ...patchMeshes] = built.group.children as THREE.Mesh[];
+    type Relief = { golfV2Relief: { value: THREE.DataTexture } };
+    const materials = [((base!.material as THREE.Material[])[0]!), ...patchMeshes.map(m => m.material as THREE.Material)];
+    const seen = new Set<THREE.Texture>();
+    for (const material of materials) {
+      expect(material.defines?.[RELIEF_FIELD_BINDING.define]).toBe(1);
+      const relief = (material.userData.golfV2ReliefBinding as Relief).golfV2Relief.value;
+      expect(relief.format).toBe(THREE.RGFormat);
+      expect(relief.type).toBe(THREE.HalfFloatType);
+      expect(relief.image.width).toBe((material.userData.golfV2AtlasBinding as { golfV2Sdf: { value: THREE.DataTexture } }).golfV2Sdf.value.image.width);
+      seen.add(relief);
+    }
+    expect(seen.size).toBe(1 + input.heroAtlases.length); // one relief texture per atlas, like the SDF textures
+    // The texel values are the decoded slopes, not the packed fixed-point
+    // codes (raw upload would read slope 0 as -0 and steep codes as NaN):
+    // every texel centre must round-trip to sampleFieldAtlas within half-float precision.
+    const atlas = input.atlas!, data = (((base!.material as THREE.Material[])[0]!).userData.golfV2ReliefBinding as Relief).golfV2Relief.value.image.data as Uint16Array;
+    const [x0, y0, x1, y1] = atlas.boundsM, texelW = (x1 - x0) / atlas.width, texelH = (y1 - y0) / atlas.height;
+    let checked = 0, steep = 0;
+    for (let row = 0; row < atlas.height; row += 37) for (let col = 0; col < atlas.width; col += 41) {
+      const n = row * atlas.width + col, x = x0 + (col + .5) * texelW, y = y0 + (row + .5) * texelH;
+      const dzdx = THREE.DataUtils.fromHalfFloat(data[n * 2]!), dzdy = THREE.DataUtils.fromHalfFloat(data[n * 2 + 1]!);
+      const wantX = sampleFieldAtlas(atlas, 'dzdx', x, y)!, wantY = sampleFieldAtlas(atlas, 'dzdy', x, y)!;
+      expect(Math.abs(dzdx - wantX)).toBeLessThanOrEqual(Math.abs(wantX) * 1e-3 + 1e-4);
+      expect(Math.abs(dzdy - wantY)).toBeLessThanOrEqual(Math.abs(wantY) * 1e-3 + 1e-4);
+      if (Math.hypot(wantX, wantY) >= 0.05) steep++;
+      checked++;
+    }
+    expect(checked).toBeGreaterThan(20);
+    expect(steep).toBeGreaterThan(0); // hole 7 is not flat: the term has real slope to read
+    // The CPU mirror of the shader term finds run-off on the real hero atlas
+    // (green-surface-v2.ts runoffWeightAt) — the wiring is not decorative.
+    const hero = input.heroAtlases.find(h => h.patchId.startsWith('green_complex'))!;
+    let runoffTexels = 0, near = 0;
+    const [hx0, hy0, hx1, hy1] = hero.atlas.boundsM;
+    for (let y = hy0 + .5; y < hy1; y += 1) for (let x = hx0 + .5; x < hx1; x += 1) {
+      const d = sampleFieldAtlas(hero.atlas, 'green', x, y);
+      if (d == null || d > 0 || d < -16) continue;
+      near++;
+      if (greenBandsAt(hero.atlas, x, y).runoff > 0) runoffTexels++;
+    }
+    expect(near).toBeGreaterThan(100);
+    expect(runoffTexels / near).toBeGreaterThan(0.1);
+    expect(runoffTexels / near).toBeLessThan(0.9); // never "shaved banks everywhere" (§34)
+    const textureDispose = vi.spyOn(THREE.Texture.prototype, 'dispose');
+    built.dispose();
+    expect(textureDispose.mock.instances).toEqual(expect.arrayContaining([...seen]));
+    textureDispose.mockRestore();
   });
 
   it('renders without an atlas (fallback path) and reports zero atlas bytes', () => {

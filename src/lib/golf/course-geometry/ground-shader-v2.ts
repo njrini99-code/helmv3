@@ -53,7 +53,7 @@
  * path is the only path — the fallback the class comment above describes. */
 import { FAIRWAY_DIRECTION_UNIFORMS, fairwayDirectionShaderChunk, fairwayGrainAt, type FairwayDirectionField } from './fairway-direction-field';
 import { sampleFieldAtlas } from './field-atlas';
-import { greenSurfaceShaderChunk } from './green-surface-v2';
+import { GREEN_SDF_GRADIENT_STEP_M, greenSurfaceShaderChunk } from './green-surface-v2';
 import type { SurfaceDistanceLayer } from './surface-distance-field';
 import { SURFACE_CLASS_IDS, type SurfaceClass } from './visual-artifact';
 import type { PackedFieldAtlas } from './visual-artifact-v2';
@@ -62,7 +62,8 @@ import { hexToRgb, MERIDIAN_STYLE, srgbToLinear, type MeridianPaletteKey, type M
 // Task 12 wiring bumped the shader structure (GOLF_V2_FAIRWAY, below) — a
 // genuine program-shape change (§77 permits this in `customProgramCacheKey`,
 // same as `GOLF_V2_ATLAS` before it), so the version string changes too.
-export const GROUND_SHADER_V2_VERSION = 'meridian-ground-v2-5';
+// -6: the §34 run-off term went live under GOLF_V2_RELIEF (`RELIEF_FIELD_BINDING`).
+export const GROUND_SHADER_V2_VERSION = 'meridian-ground-v2-6';
 
 /** Attribute names the component layer must upload on every V2 ground
  * geometry (base and hero patches alike, so the one material fits both). */
@@ -131,6 +132,23 @@ export const SKY_FIELD_BINDING = Object.freeze({
   define: 'GOLF_V2_SKY',
   sampler: 'golfV2SkyVisibility',
   frame: 'golfV2SkyVisibilityFrame',
+} as const);
+
+/** Task 13 §34 wiring: the field atlas's own relief channels (`dzdx`,
+ * `dzdy` — the metric grid's central-difference gradient resampled per
+ * atlas texel, field-atlas.ts) as one RG16F texture per atlas, sampled
+ * through the SAME `golfV2SdfFrame` as the SDF texture (both are the same
+ * atlas's texel grid, so one frame serves both; there is deliberately no
+ * second frame uniform). This is the smooth per-fragment ground slope the
+ * run-off gate needs: it is a bilinear field over the 2 m grid, independent
+ * of how the display mesh happens to be triangulated, where the interpolated
+ * vertex normal (the earlier attempt) changes slope at every decimated
+ * triangle edge and faceted the on/off gate. `three-world-v2.ts` builds it
+ * from `fieldAtlasChannelTexels` (decoded values, never the raw fixed-point
+ * codes) and sets the define whenever it sets `GOLF_V2_ATLAS`. */
+export const RELIEF_FIELD_BINDING = Object.freeze({
+  define: 'GOLF_V2_RELIEF',
+  sampler: 'golfV2Relief',
 } as const);
 
 export const FAIRWAY_GRAIN_BINDING = Object.freeze({
@@ -400,6 +418,9 @@ export function groundShaderV2Chunks(style: MeridianStyle = MERIDIAN_STYLE): Gro
   // classifier, band roughness, micro-normal, run-off), spliced in behind
   // GOLF_V2_ATLAS since every function takes the SDF samples it already has.
   const green = greenSurfaceShaderChunk(style);
+  // §34 run-off: the chunk's function bakes reach/slope/direction; the call
+  // site (GOLF_V2_RELIEF block) applies the same config's `mix` and reach.
+  const cfgRunoff = style.greenComplex.runoff;
   const water = style.water;
 
   const vertexHead = `attribute float ${surfaceClass};
@@ -463,6 +484,9 @@ uniform vec4 ${STATIC_SHADOW_BINDING.frame};
 #ifdef ${SKY_FIELD_BINDING.define}
 uniform sampler2D ${SKY_FIELD_BINDING.sampler};
 uniform vec4 ${SKY_FIELD_BINDING.frame};
+#endif
+#ifdef ${RELIEF_FIELD_BINDING.define}
+uniform sampler2D ${RELIEF_FIELD_BINDING.sampler};
 #endif
 float golfV2ResolvedRoughness;`;
   const fragmentColor = `{
@@ -601,12 +625,45 @@ float golfV2ResolvedRoughness;`;
     if (golfGB.band > 1.5 && golfGB.band < 2.5 && golfWin == 2) diffuseColor.rgb = mix(diffuseColor.rgb, ${atlasColorGlsl('apron')}, golfGB.weight * golfWeight);
     if (golfGB.band < 2.5 && golfWin != 1 && golfWin != 3) golfV2ResolvedRoughness = mix(golfV2ResolvedRoughness, ${green.names.roughness}(golfGB.band), golfGB.weight);
     if (golfGB.band < 0.5) golfV2GreenMicroWeight = golfGB.weight;
-    // §34 run-off is not evaluated here: ${green.names.runoff} needs a smooth
-    // ground slope, and the only per-fragment slope available (the
-    // interpolated vertex normal) facets the on/off gate triangle by
-    // triangle — tried on hole 7, read as jagged patches. V1 bakes the
-    // weight per vertex from smoothed normals; V2 needs the same as a
-    // patch attribute before the term goes live.
+#ifdef ${RELIEF_FIELD_BINDING.define}
+    // §34 run-off (green-surface-v2.ts runoffWeightAt, mirrored term for
+    // term): within runoff.reachM outside the green, where no close-mown
+    // band claims the fragment, the atlas's own relief slope falling away
+    // from the green turns the ground into short grass — albedo runoff.mix
+    // toward apron, apron roughness (V1's compileGreenComplex: 60 % toward
+    // apron, apron roughness at strength >= .5; here the same strength
+    // blends continuously, the fragment analogue). Two gates, both
+    // continuous: (a) the band claim — greenBandsAt's cascade hands the
+    // ground to run-off only once fringe/apron confidence has reached 0,
+    // which per vertex V1 interpolates across a triangle but per fragment
+    // draws as a hard ring 3 m out (hole 5); so the fading confidence of
+    // the claiming band (1 - weight, the classifier's own blend width)
+    // hands the ground over gradually instead, and the function's hard
+    // band gate is bypassed with band 3 — the rule is the same, its edge
+    // soft; (b) who may take it, V1's rough/ground-only rule in this file's
+    // own terms: the untracked (rough) share of the fragment, 1 - golfWeight
+    // of whatever tracked class wins here (fairway, sand, water, green,
+    // fringe: none inside their own outline), the fairway's 0.6 m first-cut
+    // surround in full (V1 counts surround among its rough classes), and
+    // none on woods. Every tap is textureLod (no implicit derivative inside
+    // this branch); the four SDF taps at GREEN_SDF_GRADIENT_STEP_M give the
+    // green SDF's own unnormalized gradient exactly as greenSdfAwayDirection
+    // reads it.
+    float golfRunoffClaim = golfGB.band > 2.5 ? 1.0 : 1.0 - golfGB.weight;
+    float golfRunoffShare = golfWoods ? 0.0 : (golfWin == 5 ? 1.0 : 1.0 - golfWeight);
+    if (golfDGreen <= 0.0 && golfDGreen >= -${cfgRunoff.reachM.toFixed(4)} && golfRunoffClaim * golfRunoffShare > 0.0) {
+      vec2 golfSlopeXY = texture2DLodEXT(${RELIEF_FIELD_BINDING.sampler}, golfSdfUv, 0.0).rg;
+      vec2 golfGradUv = vec2(${GREEN_SDF_GRADIENT_STEP_M.toFixed(4)}) * golfV2SdfFrame.zw;
+      float golfGradL = texture2DLodEXT(golfV2Sdf, golfSdfUv - vec2(golfGradUv.x, 0.0), 0.0).r;
+      float golfGradR = texture2DLodEXT(golfV2Sdf, golfSdfUv + vec2(golfGradUv.x, 0.0), 0.0).r;
+      float golfGradB = texture2DLodEXT(golfV2Sdf, golfSdfUv - vec2(0.0, golfGradUv.y), 0.0).r;
+      float golfGradT = texture2DLodEXT(golfV2Sdf, golfSdfUv + vec2(0.0, golfGradUv.y), 0.0).r;
+      vec2 golfGreenGrad = vec2(golfGradR - golfGradL, golfGradT - golfGradB) / ${(2 * GREEN_SDF_GRADIENT_STEP_M).toFixed(4)};
+      float golfRunoff = ${green.names.runoff}(3.0, golfDGreen, golfSlopeXY, golfGreenGrad) * golfRunoffClaim * golfRunoffShare;
+      diffuseColor.rgb = mix(diffuseColor.rgb, ${atlasColorGlsl('apron')}, ${cfgRunoff.mix.toFixed(4)} * golfRunoff);
+      golfV2ResolvedRoughness = mix(golfV2ResolvedRoughness, ${green.names.roughness}(2.0), golfRunoff);
+    }
+#endif
   }
 #endif
   float golfTurfWeight = (golfBunker || golfWater || golfWoods) ? 0.0 : 1.0;

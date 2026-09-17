@@ -68,9 +68,10 @@
  * exactly as `compileGreenComplex` does (visual-style.ts's roughness table
  * has no dedicated `runoff` entry).
  *
- * The GLSL chunk (`greenSurfaceShaderChunk`) is deliberately *not* wired
- * into `ground-shader-v2.ts` here (owned by a concurrent task; a later
- * wiring dispatch splices this in). Its functions are self-contained,
+ * The GLSL chunk (`greenSurfaceShaderChunk`) is wired into
+ * `ground-shader-v2.ts` by that file (bands, roughness and micro-normal in
+ * `meridian-ground-v2-5`; run-off in `-6`, once the atlas's own relief
+ * channels reached the shader as a texture). Its functions are self-contained,
  * golfV2-prefixed and take already-sampled SDF values / world XY as plain
  * parameters — no `sampler2D`, no uniform/varying reads — so they can be
  * called from anywhere in the fragment stage once the wiring task has those
@@ -139,8 +140,11 @@ export interface GreenBandSample {
  * than averaging across a curved stretch of boundary; not so small that the
  * SDF's own quantisation (≈2 mm at the packed ±64 m range,
  * surface-distance-field.ts) dominates the numerator — at 0.1 m the
- * quantisation noise is under 1% of the two-tap span (0.2 m). */
-const GREEN_SDF_GRADIENT_STEP_M = 0.1;
+ * quantisation noise is under 1% of the two-tap span (0.2 m). Exported so
+ * the shader wiring (ground-shader-v2.ts's `GOLF_V2_RELIEF` block) takes its
+ * four SDF taps at the same step, keeping the GLSL run-off the exact mirror
+ * of `runoffWeightAt`. */
+export const GREEN_SDF_GRADIENT_STEP_M = 0.1;
 
 /** The green SDF's own local outward direction at `(x, y)` — `normalize(
  * -∇dGreen)`, i.e. away from whichever green boundary point is nearest, not

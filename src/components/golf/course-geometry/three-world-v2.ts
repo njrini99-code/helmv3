@@ -29,11 +29,11 @@ import { compileHeroPatches, type CompiledBunkerPatch } from '@/lib/golf/course-
 import { compileBunkerNormalField } from '@/lib/golf/course-geometry/bunker-normal-field';
 import { compileBaseDisplayLod0, weldAndCleanTerrainMesh } from '@/lib/golf/course-geometry/display-mesh-v2';
 import { compileFairwayDirectionField, fairwayDirectionLayer, type FairwayDirectionField } from '@/lib/golf/course-geometry/fairway-direction-field';
-import { compileFieldAtlas, fieldAtlasBytes, type FieldAtlasSources } from '@/lib/golf/course-geometry/field-atlas';
+import { compileFieldAtlas, fieldAtlasBytes, fieldAtlasChannelTexels, type FieldAtlasSources } from '@/lib/golf/course-geometry/field-atlas';
 import type { ForestEdgeV2Result } from '@/lib/golf/course-geometry/forest-edge-v2';
 import {
   classAlbedoLinear, classRoughness, dominantClass, FAIRWAY_GRAIN_BINDING, GROUND_ATLAS_TRACKED_CLASSES, GROUND_SDF_ATLAS_LAYERS,
-  GROUND_SHADER_V2_VERSION, groundShaderV2Chunks, GROUND_V2_ATTRIBUTES, maxGroundEdgeBandM, seedFromPackageHash, SKY_FIELD_BINDING, STATIC_SHADOW_BINDING,
+  GROUND_SHADER_V2_VERSION, groundShaderV2Chunks, GROUND_V2_ATTRIBUTES, maxGroundEdgeBandM, RELIEF_FIELD_BINDING, seedFromPackageHash, SKY_FIELD_BINDING, STATIC_SHADOW_BINDING,
 } from '@/lib/golf/course-geometry/ground-shader-v2';
 import { compileHeroRegions } from '@/lib/golf/course-geometry/hero-patches';
 import { compileStaticShadowField, staticShadowLayer, type StaticShadowField } from '@/lib/golf/course-geometry/static-shadow-field';
@@ -365,7 +365,7 @@ function applyMetricGridNormals(geometry: THREE.BufferGeometry, positions: Float
  * span exactly `width` × `height` texels (field-atlas.ts's `texelM`), so no
  * half-texel nudge is needed for the UV to land on the same texel centres
  * `sampleFieldAtlas`'s manual bilinear does. */
-function buildGroundSdfTexture(atlas: PackedFieldAtlas): { texture: THREE.DataTexture; frame: THREE.Vector4 } {
+function buildGroundSdfTexture(atlas: PackedFieldAtlas): GroundSdfBinding {
   const { width, height, boundsM, sdfLayers } = atlas;
   const texels = width * height;
   const layerIndex = GROUND_SDF_ATLAS_LAYERS.map(name => sdfLayers?.layerNames.indexOf(name) ?? -1);
@@ -385,7 +385,35 @@ function buildGroundSdfTexture(atlas: PackedFieldAtlas): { texture: THREE.DataTe
   texture.userData = { basis: 'source_derived_visual', layers: [...GROUND_SDF_ATLAS_LAYERS] };
   const [x0, y0, x1, y1] = boundsM;
   const frame = new THREE.Vector4(x0, y0, 1 / (x1 - x0), 1 / (y1 - y0));
-  return { texture, frame };
+  return { texture, frame, relief: buildGroundReliefTexture(atlas) };
+}
+
+/** Task 13 §34 wiring (`RELIEF_FIELD_BINDING`): the same atlas's `dzdx`/
+ * `dzdy` relief channels as one RG16F texture over the same texel grid —
+ * so it samples through `golfV2SdfFrame` with no frame of its own — decoded
+ * through `fieldAtlasChannelTexels` (the packed `reliefRGBA16F` holds
+ * fixed-point codes, not half floats: uploaded raw, slope 0 would read as
+ * -0 and steep codes as NaN). Half float for the same reason as the SDF
+ * texture (filterable without an extension); a slope of 0.05–0.5 m/m keeps
+ * three significant figures at that precision, far inside the run-off
+ * ramp's 0.06 m/m width. Null only if the atlas somehow lacks the channel
+ * (it never does: `compileFieldAtlas` always packs relief) — then the
+ * material simply leaves the run-off term compiled out. */
+function buildGroundReliefTexture(atlas: PackedFieldAtlas): THREE.DataTexture | null {
+  const dzdx = fieldAtlasChannelTexels(atlas, 'dzdx'), dzdy = fieldAtlasChannelTexels(atlas, 'dzdy');
+  if (!dzdx || !dzdy) return null;
+  const { width, height } = atlas, texels = width * height;
+  const data = new Uint16Array(texels * 2);
+  for (let n = 0; n < texels; n++) {
+    data[n * 2] = THREE.DataUtils.toHalfFloat(dzdx[n]!);
+    data[n * 2 + 1] = THREE.DataUtils.toHalfFloat(dzdy[n]!);
+  }
+  const texture = new THREE.DataTexture(data, width, height, THREE.RGFormat, THREE.HalfFloatType);
+  texture.name = 'golf-v2-ground-relief';
+  texture.magFilter = texture.minFilter = THREE.LinearFilter; texture.generateMipmaps = false;
+  texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping; texture.needsUpdate = true;
+  texture.userData = { basis: atlas.basis, layers: ['dzdx', 'dzdy'] };
+  return texture;
 }
 
 /** Task 12 wiring, exactly `FAIRWAY_GRAIN_BINDING.encode` (ground-shader-v2.ts):
@@ -539,12 +567,15 @@ function createGroundMaterialV2(seed: readonly [number, number], style: Meridian
   // (lights_fragment_begin) reads to pick the standard (not physical)
   // branch — losing it would silently mis-light every V2 ground fragment.
   if (sdf) material.defines = { ...material.defines, GOLF_V2_ATLAS: 1 };
+  if (sdf?.relief) material.defines = { ...material.defines, [RELIEF_FIELD_BINDING.define]: 1 };
   if (fairway) material.defines = { ...material.defines, [FAIRWAY_GRAIN_BINDING.define]: 1 };
   if (shadow) material.defines = { ...material.defines, [STATIC_SHADOW_BINDING.define]: 1 };
   if (sky) material.defines = { ...material.defines, [SKY_FIELD_BINDING.define]: 1 };
   const shadowUniforms = shadow ? { [STATIC_SHADOW_BINDING.sampler]: { value: shadow.texture }, [STATIC_SHADOW_BINDING.frame]: { value: shadow.frame } } : null;
   const skyUniforms = sky ? { [SKY_FIELD_BINDING.sampler]: { value: sky.texture }, [SKY_FIELD_BINDING.frame]: { value: sky.frame } } : null;
   const sdfUniforms = sdf ? { golfV2Sdf: { value: sdf.texture }, golfV2SdfFrame: { value: sdf.frame } } : null;
+  // §34 run-off: the relief texture rides the SDF frame (same atlas grid).
+  const reliefUniforms = sdf?.relief ? { [RELIEF_FIELD_BINDING.sampler]: { value: sdf.relief } } : null;
   const fairwayUniforms = fairway ? {
     [FAIRWAY_GRAIN_BINDING.sampler]: { value: fairway.texture }, [FAIRWAY_GRAIN_BINDING.frame]: { value: fairway.frame }, [FAIRWAY_GRAIN_BINDING.texelM]: { value: fairway.texelM },
   } : null;
@@ -553,6 +584,7 @@ function createGroundMaterialV2(seed: readonly [number, number], style: Meridian
     // §23 green mowing direction (zero vector = no route = no stripes).
     shader.uniforms.golfV2GreenMow = { value: new THREE.Vector2(greenMowDir?.[0] ?? 0, greenMowDir?.[1] ?? 0) };
     if (sdfUniforms) Object.assign(shader.uniforms, sdfUniforms);
+    if (reliefUniforms) Object.assign(shader.uniforms, reliefUniforms);
     if (fairwayUniforms) Object.assign(shader.uniforms, fairwayUniforms);
     if (shadowUniforms) Object.assign(shader.uniforms, shadowUniforms);
     if (skyUniforms) Object.assign(shader.uniforms, skyUniforms);
@@ -565,18 +597,22 @@ function createGroundMaterialV2(seed: readonly [number, number], style: Meridian
       .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>\n${chunks.fragmentRoughness}`)
       .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>\n${chunks.fragmentNormal}`);
   };
-  material.customProgramCacheKey = () => `${GROUND_SHADER_V2_VERSION}:${MERIDIAN_STYLE_HASH}:atlas=${sdf ? 1 : 0}:fairway=${fairway ? 1 : 0}:shadow=${shadow ? 1 : 0}:sky=${sky ? 1 : 0}`;
+  material.customProgramCacheKey = () => `${GROUND_SHADER_V2_VERSION}:${MERIDIAN_STYLE_HASH}:atlas=${sdf ? 1 : 0}:relief=${sdf?.relief ? 1 : 0}:fairway=${fairway ? 1 : 0}:shadow=${shadow ? 1 : 0}:sky=${sky ? 1 : 0}`;
   // Exposed for tests/debug tooling only (terrain-debug.ts's own
   // `userData.debugV2` pattern) — the material does not read this back;
   // three reads the identical objects merged into `shader.uniforms` above.
   if (sdfUniforms) material.userData = { ...material.userData, golfV2AtlasBinding: sdfUniforms };
+  if (reliefUniforms) material.userData = { ...material.userData, golfV2ReliefBinding: reliefUniforms };
   if (fairwayUniforms) material.userData = { ...material.userData, golfV2FairwayBinding: fairwayUniforms };
   return material;
 }
 
 /** One uploaded SDF atlas: the texture plus the world→UV frame the shader
- * samples it through (`buildGroundSdfTexture`). */
-interface GroundSdfBinding { texture: THREE.DataTexture; frame: THREE.Vector4 }
+ * samples it through (`buildGroundSdfTexture`), and the same atlas's relief
+ * (slope) texture sampled through that same frame (`buildGroundReliefTexture`;
+ * null only if the atlas lacked the channel). The shadow and sky fields
+ * reuse the two-field shape without a relief. */
+interface GroundSdfBinding { texture: THREE.DataTexture; frame: THREE.Vector4; relief?: THREE.DataTexture | null }
 /** One uploaded fairway-direction field (`buildFairwayDirectionTexture`). */
 interface FairwayGrainBinding { texture: THREE.DataTexture; frame: THREE.Vector4; texelM: THREE.Vector2 }
 
@@ -663,12 +699,18 @@ export interface V2WorldStats {
   staticShadow: boolean;
   /** Task 20: whether the sky-visibility (landform occlusion) field is bound (`GOLF_V2_SKY`). */
   skyOcclusion: boolean;
+  /** Task 13 §34: whether the whole-hole atlas's relief texture is bound
+   * (`GOLF_V2_RELIEF`) — the base mesh's binding; every hero atlas binds
+   * its own relief the same way (`buildGroundSdfTexture`), so with an
+   * atlas at all this is simply whether the run-off term is live. */
+  runoffRelief: boolean;
   /** Packed bytes of the whole-hole field atlas plus every hero atlas
    * (`fieldAtlasBytes`, §94 — the same estimator `compileVisualArtifactV2`'s
    * own budget uses), 0 when no atlas was compiled for this hole. This is
    * the packed-struct estimate, not the smaller amount actually uploaded to
-   * the GPU today (only the four tracked SDF layers become a texture,
-   * `buildGroundSdfTexture`); see the Task 11 hero-atlas report for both
+   * the GPU today (the four tracked SDF layers and the two relief slope
+   * channels become textures, `buildGroundSdfTexture`/
+   * `buildGroundReliefTexture`); see the Task 11 hero-atlas report for both
    * numbers on hole 7. */
   atlasBytes: number;
   /** Hero atlases actually compiled (`V2WorldInput.heroAtlases.length`) —
@@ -755,6 +797,7 @@ export function buildV2World(input: V2WorldInput, options: V2WorldOptions = {}):
     fairwayGrain: fairway !== null,
     staticShadow: shadow !== null,
     skyOcclusion: sky !== null,
+    runoffRelief: wholeHoleSdf?.relief != null,
     normalsBasis: 'metric_grid',
   };
   const dispose = () => {
@@ -762,11 +805,11 @@ export function buildV2World(input: V2WorldInput, options: V2WorldOptions = {}):
     for (const geometry of patchGeometries) geometry.dispose();
     material.dispose();
     for (const heroMaterial of heroMaterialByPatchId.values()) heroMaterial.dispose();
-    wholeHoleSdf?.texture.dispose();
+    wholeHoleSdf?.texture.dispose(); wholeHoleSdf?.relief?.dispose();
     fairway?.texture.dispose();
     shadow?.texture.dispose();
     sky?.texture.dispose();
-    for (const { texture } of heroSdfByPatchId.values()) texture.dispose();
+    for (const { texture, relief } of heroSdfByPatchId.values()) { texture.dispose(); relief?.dispose(); }
   };
   return { group, dispose, stats };
 }

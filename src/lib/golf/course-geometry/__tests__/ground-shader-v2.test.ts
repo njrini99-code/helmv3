@@ -15,9 +15,10 @@ import { describe, expect, it } from 'vitest';
 import { buildHoleScene } from '../build-scene';
 import { compileFairwayDirectionField, type FairwayDirectionField } from '../fairway-direction-field';
 import { compileFieldAtlas } from '../field-atlas';
+import { GREEN_SDF_GRADIENT_STEP_M, GREEN_SURFACE_GLSL_NAMES } from '../green-surface-v2';
 import {
   classifySurfaceFromAtlas, FAIRWAY_GRAIN_BINDING, fairwayGrainFactorAt, GROUND_ATLAS_TRACKED_CLASSES, GROUND_SDF_ATLAS_LAYERS,
-  groundShaderV2Chunks, maxGroundEdgeBandM, pickFinestAtlas, type GroundAtlasClass,
+  groundShaderV2Chunks, maxGroundEdgeBandM, pickFinestAtlas, RELIEF_FIELD_BINDING, type GroundAtlasClass,
 } from '../ground-shader-v2';
 import { parseGeometryPackage } from '../schema';
 import { quantizeSignedDistance, SDF_RANGE_M } from '../surface-distance-field';
@@ -328,6 +329,38 @@ describe('GOLF_V2_FAIRWAY wiring (Task 12)', () => {
   });
 });
 
+describe('GOLF_V2_RELIEF wiring (Task 13 §34 run-off)', () => {
+  const chunks = groundShaderV2Chunks();
+  const runoff = MERIDIAN_STYLE.greenComplex.runoff;
+
+  it('declares the relief sampler behind its own define, with no frame of its own (it rides golfV2SdfFrame)', () => {
+    expect(RELIEF_FIELD_BINDING).toEqual({ define: 'GOLF_V2_RELIEF', sampler: 'golfV2Relief' });
+    expect(chunks.fragmentHead).toContain(`#ifdef ${RELIEF_FIELD_BINDING.define}\nuniform sampler2D ${RELIEF_FIELD_BINDING.sampler};\n#endif`);
+    expect(chunks.fragmentHead).not.toContain('golfV2ReliefFrame');
+  });
+
+  it('calls the green-surface run-off function with the relief slope and a four-tap SDF gradient at GREEN_SDF_GRADIENT_STEP_M, then applies runoff.mix toward apron and the apron roughness', () => {
+    const block = chunks.fragmentColor.slice(chunks.fragmentColor.indexOf(`#ifdef ${RELIEF_FIELD_BINDING.define}`));
+    expect(block).toContain(`texture2DLodEXT(${RELIEF_FIELD_BINDING.sampler}, golfSdfUv, 0.0).rg`);
+    expect(block).toContain(`vec2(${GREEN_SDF_GRADIENT_STEP_M.toFixed(4)}) * golfV2SdfFrame.zw`);
+    expect(block).toContain(`/ ${(2 * GREEN_SDF_GRADIENT_STEP_M).toFixed(4)}`);
+    expect((block.match(/texture2DLodEXT\(golfV2Sdf,/g) ?? []).length).toBe(4);
+    // Band 3 is passed explicitly: the function's own hard band gate is replaced by the continuous claim below.
+    expect(block).toContain(`${GREEN_SURFACE_GLSL_NAMES.runoff}(3.0, golfDGreen, golfSlopeXY, golfGreenGrad) * golfRunoffClaim * golfRunoffShare`);
+    expect(block).toContain(`${runoff.mix.toFixed(4)} * golfRunoff`);
+    expect(block).toContain(`${GREEN_SURFACE_GLSL_NAMES.roughness}(2.0), golfRunoff`); // 2 = apron band
+    expect(block).toContain(`golfDGreen >= -${runoff.reachM.toFixed(4)}`);
+    // No implicit-derivative sampling inside the branch.
+    const branch = block.slice(block.indexOf('if (golfDGreen <= 0.0'), block.indexOf('#endif'));
+    expect(branch).not.toMatch(/texture2D\(/);
+  });
+
+  it('gives run-off only to the untracked rough share of a fragment (V1: rough/ground classes only, surround included, never woods), handed over gradually by the claiming band\'s fading confidence', () => {
+    expect(chunks.fragmentColor).toContain('float golfRunoffShare = golfWoods ? 0.0 : (golfWin == 5 ? 1.0 : 1.0 - golfWeight);');
+    expect(chunks.fragmentColor).toContain('float golfRunoffClaim = golfGB.band > 2.5 ? 1.0 : 1.0 - golfGB.weight;');
+  });
+});
+
 describe('GLSL structural sanity for GOLF_V2_FAIRWAY (Task 12 wiring)', () => {
   /** A minimal `#ifdef NAME` / `#endif` preprocessor simulation — enough to
    * check this file's own nesting, not a general C preprocessor (no `#if`,
@@ -347,7 +380,10 @@ describe('GLSL structural sanity for GOLF_V2_FAIRWAY (Task 12 wiring)', () => {
 
   const chunks = groundShaderV2Chunks();
   const fragment = [chunks.fragmentHead, chunks.fragmentColor, chunks.fragmentRoughness].join('\n');
-  const combos: readonly (readonly string[])[] = [[], ['GOLF_V2_ATLAS'], ['GOLF_V2_FAIRWAY'], ['GOLF_V2_ATLAS', 'GOLF_V2_FAIRWAY']];
+  const combos: readonly (readonly string[])[] = [
+    [], ['GOLF_V2_ATLAS'], ['GOLF_V2_FAIRWAY'], ['GOLF_V2_ATLAS', 'GOLF_V2_FAIRWAY'],
+    ['GOLF_V2_RELIEF'], ['GOLF_V2_ATLAS', 'GOLF_V2_RELIEF'], ['GOLF_V2_ATLAS', 'GOLF_V2_FAIRWAY', 'GOLF_V2_RELIEF'],
+  ];
 
   it('has one #endif per #ifdef in the raw (unstripped) fragment template', () => {
     expect((fragment.match(/#ifdef\b/g) ?? []).length).toBe((fragment.match(/#endif\b/g) ?? []).length);
@@ -373,6 +409,15 @@ describe('GLSL structural sanity for GOLF_V2_FAIRWAY (Task 12 wiring)', () => {
         expect(stripped).not.toContain('golfFwWeight');
         expect(stripped).not.toContain('golfV2FairwayGrain(');
       }
+    });
+
+    it(`evaluates the run-off term only with both the atlas and the relief texture bound, with [${label}]`, () => {
+      const stripped = stripDefines(fragment, new Set(combo));
+      const live = combo.includes('GOLF_V2_ATLAS') && combo.includes('GOLF_V2_RELIEF');
+      expect(stripped.includes(`${GREEN_SURFACE_GLSL_NAMES.runoff}(3.0, golfDGreen`)).toBe(live);
+      // The sampler is declared exactly when the define is set, and only ever read inside the atlas block.
+      expect(stripped.includes(`uniform sampler2D ${RELIEF_FIELD_BINDING.sampler}`)).toBe(combo.includes('GOLF_V2_RELIEF'));
+      expect(stripped.includes(`texture2DLodEXT(${RELIEF_FIELD_BINDING.sampler}`)).toBe(live);
     });
   }
 });

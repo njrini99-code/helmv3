@@ -238,10 +238,28 @@ export function sampleFieldAtlas(atlas: PackedFieldAtlas, channel: FieldAtlasCha
   const gx = (x - x0) / texelW - .5, gy = (y - y0) / texelH - .5;
   const ix0 = Math.min(Math.max(Math.floor(gx), 0), width - 1), iy0 = Math.min(Math.max(Math.floor(gy), 0), height - 1);
   const ix1 = Math.min(ix0 + 1, width - 1), iy1 = Math.min(iy0 + 1, height - 1);
-  const fx = clamp(gx - Math.floor(gx), 0, 1), fy = clamp(gy - Math.floor(gy), 0, 1);
+  // Weights relative to the CLAMPED cell (GPU clamp-to-edge bilinear): at
+  // the first texel's centre a rounding hair below 0 (gx = -5e-14) must
+  // read texel 0, not — via floor(gx) = -1 and a weight of ~1 — texel 1.
+  const fx = clamp(gx - ix0, 0, 1), fy = clamp(gy - iy0, 0, 1);
   const texel = (ix: number, iy: number) => source.data[(iy * width + ix) * source.stride + source.offset]!;
   const code = (1 - fx) * ((1 - fy) * texel(ix0, iy0) + fy * texel(ix0, iy1)) + fx * ((1 - fy) * texel(ix1, iy0) + fy * texel(ix1, iy1));
   return source.decode(code);
+}
+/** One whole channel decoded per texel, in the atlas's own row-major texel
+ * order (row 0 = the south bound, `sampleFieldAtlas`'s convention) — the
+ * exact numbers that function bilinearly interpolates, before any
+ * interpolation. For a runtime uploading a channel as a texture
+ * (three-world-v2.ts's relief texture): the packed codes are fixed-point
+ * (`encodeSigned16`/`encodeUnsigned16` above), not IEEE half floats, so a
+ * texture must carry the decoded values, never the raw `Uint16Array`.
+ * null for an SDF layer the atlas never packed. */
+export function fieldAtlasChannelTexels(atlas: PackedFieldAtlas, channel: FieldAtlasChannel): Float32Array | null {
+  const source = channelSource(atlas, channel);
+  if (!source) return null;
+  const texels = atlas.width * atlas.height, out = new Float32Array(texels);
+  for (let n = 0; n < texels; n++) out[n] = source.decode(source.data[n * source.stride + source.offset]!);
+  return out;
 }
 /** Total packed bytes of an atlas (the §94 texture budget line). */
 export function fieldAtlasBytes(atlas: PackedFieldAtlas): number {
