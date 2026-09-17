@@ -13,15 +13,20 @@
 import * as THREE from 'three';
 import type { ForestEdgeV2Result, ForestInstance } from '@/lib/golf/course-geometry/forest-edge-v2';
 import type { PathRibbon } from '@/lib/golf/course-geometry/path-ribbon';
+import type { TerrainMesh } from '@/lib/golf/course-geometry/terrain';
+import { buildThreeContext } from './three-context';
 import type { HoleScene } from '@/lib/golf/course-geometry/types';
 import { MERIDIAN_STYLE, type MeridianStyle } from '@/lib/golf/course-geometry/visual-style';
 import { createForestMassGeometry, createTreeAssetAtlas, type TreeAssetAtlas } from './tree-assets';
 
 export interface V2ObjectStats {
-  draws: { paths: number; crowns: number; shrubs: number; mass: number; trunks: number };
+  draws: { paths: number; crowns: number; shrubs: number; mass: number; trunks: number; context: number };
   triangles: number;
   instances: { crown: number; shrub: number; mass: number; trunks: number };
   pathRuns: number;
+  /** Task 17 (R8): V1's footprint extrusions and context lines, drawn until
+   * authored models exist; 0 when no `mesh` was given. */
+  structures: number;
 }
 export interface V2Objects { group: THREE.Group; stats: V2ObjectStats; forestStats: ForestObjectStats | null; dispose(): void }
 
@@ -133,7 +138,7 @@ export function buildForestEdgeObjects(forest: ForestEdgeV2Result, style: Meridi
   const trunkMaterial = new THREE.MeshStandardMaterial({ color: style.palette.treeShadow, roughness: 1, metalness: 0 });
   trunkMaterial.name = 'v2-canopy-trunk';
   const disposables: { dispose(): void }[] = [crownMaterial, massMaterial, trunkMaterial];
-  const stats: V2ObjectStats = { draws: { paths: 0, crowns: 0, shrubs: 0, mass: 0, trunks: 0 }, triangles: 0, instances: { crown: 0, shrub: 0, mass: 0, trunks: 0 }, pathRuns: 0 };
+  const stats: V2ObjectStats = { draws: { paths: 0, crowns: 0, shrubs: 0, mass: 0, trunks: 0, context: 0 }, triangles: 0, instances: { crown: 0, shrub: 0, mass: 0, trunks: 0 }, pathRuns: 0, structures: 0 };
   const forestStats: ForestObjectStats = { crownLod: { near: 0, distant: 0, far: 0 }, massLod: { near: 0, far: 0 } };
   const byKind = { crown: [] as ForestInstance[], shrub: [] as ForestInstance[], mass: [] as ForestInstance[] };
   for (const inst of forest.instances) byKind[inst.kind].push(inst);
@@ -266,11 +271,26 @@ export function buildForestEdgeObjects(forest: ForestEdgeV2Result, style: Meridi
 
 /** Everything object-like for one hole in one group; `stats` is what the
  * batching planner should agree with. */
-export function buildV2Objects(input: { ribbon: PathRibbon | null; forest: ForestEdgeV2Result | null; scene: HoleScene; focusBoundsM?: readonly [number, number, number, number] }, style: MeridianStyle = MERIDIAN_STYLE): V2Objects {
+export function buildV2Objects(input: { ribbon: PathRibbon | null; forest: ForestEdgeV2Result | null; scene: HoleScene; mesh?: TerrainMesh | null; focusBoundsM?: readonly [number, number, number, number] }, style: MeridianStyle = MERIDIAN_STYLE): V2Objects {
   const group = new THREE.Group(); group.name = 'v2-objects';
   const disposables: { dispose(): void }[] = [];
-  const stats: V2ObjectStats = { draws: { paths: 0, crowns: 0, shrubs: 0, mass: 0, trunks: 0 }, triangles: 0, instances: { crown: 0, shrub: 0, mass: 0, trunks: 0 }, pathRuns: 0 };
+  const stats: V2ObjectStats = { draws: { paths: 0, crowns: 0, shrubs: 0, mass: 0, trunks: 0, context: 0 }, triangles: 0, instances: { crown: 0, shrub: 0, mass: 0, trunks: 0 }, pathRuns: 0, structures: 0 };
   let forestStats: ForestObjectStats | null = null;
+  if (input.mesh) {
+    // Structures and lines come from V1's context builder unchanged (R8:
+    // footprint extrusions until models are authored); its path ribbons are
+    // dropped because the V2 ribbon above already draws every ribbon class.
+    const context = buildThreeContext(input.scene, input.mesh);
+    // The builder leaves every vertex at ground Z; walls and roofs only rise
+    // once the (exaggeration, reference) pass applies their lift. V2 draws
+    // source Z, so exaggeration 1 with any reference is the identity.
+    context.setExaggeration(1, 0);
+    for (const child of [...context.group.children]) if (child.name.startsWith('context-ribbons-')) context.group.remove(child);
+    let triangles = 0;
+    context.group.traverse(o => { if (o instanceof THREE.Mesh) { const index = o.geometry.index; triangles += index ? index.count / 3 : o.geometry.getAttribute('position').count / 3; } });
+    group.add(context.group); disposables.push(context);
+    stats.draws.context = context.group.children.length; stats.triangles += triangles; stats.structures = context.counts.structures;
+  }
   if (input.ribbon && input.ribbon.indices.length) {
     const paths = buildPathRibbonMesh(input.ribbon, input.scene, style);
     group.add(paths.mesh); disposables.push(paths);

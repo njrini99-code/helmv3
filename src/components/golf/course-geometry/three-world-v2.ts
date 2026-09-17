@@ -103,6 +103,10 @@ export interface V2WorldInput {
   /** Task 20 (§5–7, §50): the DEM sky-visibility field on the metric grid,
    * or null when it could not compile — then no `GOLF_V2_SKY`. */
   skyField?: SkyField | null;
+  /** §23 green mowing: the route's end tangent rotated by
+   * `style.mowing.green.angleDeg`, unit XY, or null without a route (then no
+   * green stripes — never a guessed direction). */
+  greenMowDir?: readonly [number, number] | null;
 }
 
 let warnedFallback = false;
@@ -259,6 +263,7 @@ export function assembleV2World(scene: HoleScene, mesh: TerrainMesh, options: As
     const heroNormals = patches.map(compiled => compileBunkerNormalField(compiled, mesh).normals);
     let fairwayField: FairwayDirectionField | null = null;
     try { fairwayField = compileFairwayDirectionField(mesh, scene); } catch (error) { warnAtlasFallbackOnce('fairway direction field compile threw', error); }
+    const greenMowDir = greenMowDirection(scene, MERIDIAN_STYLE);
     let skyField: SkyField | null = null;
     try { skyField = compileSkyField(metricGrid, { radiusM: MERIDIAN_STYLE.landform.radiusM, directions: MERIDIAN_STYLE.landform.directions }); } catch (error) { warnAtlasFallbackOnce('sky field compile threw', error); }
     let shadowField: StaticShadowField | null = null;
@@ -269,7 +274,7 @@ export function assembleV2World(scene: HoleScene, mesh: TerrainMesh, options: As
 
     return {
       base, patches, patchedRangeIds: new Set(patches.map(compiled => compiled.patch.id)),
-      seed: seedFromPackageHash(mesh.geometryHash), boundsM, atlas, heroAtlases, metricGrid, heroNormals, fairwayField, shadowField, skyField,
+      seed: seedFromPackageHash(mesh.geometryHash), boundsM, atlas, heroAtlases, metricGrid, heroNormals, fairwayField, shadowField, skyField, greenMowDir,
     };
   } catch (error) {
     warnFallbackOnce('V2 compile pipeline threw', error);
@@ -406,6 +411,21 @@ function buildStaticShadowTexture(field: StaticShadowField): { texture: THREE.Da
   return { texture, frame: new THREE.Vector4(layer.originM[0] - half, layer.originM[1] - half, 1 / (layer.columns * layer.spacingM), 1 / (layer.rows * layer.spacingM)) };
 }
 
+/** §23: the green's diagonal mow direction — V1 strikes its green bands at
+ * `angleDeg` to the route-local frame; here the frame is the route's last
+ * segment (tee → green), rotated by that angle. Null without a route. */
+function greenMowDirection(scene: HoleScene, style: MeridianStyle): readonly [number, number] | null {
+  const route = scene.hole.routeFeatureId ? scene.features.find(f => f.id === scene.hole.routeFeatureId) : undefined;
+  const line = route?.parts[0]?.[0];
+  if (!line || line.length < 2) return null;
+  const a = line[line.length - 2]!, b = line[line.length - 1]!;
+  const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+  if (!(len > 1e-6)) return null;
+  const tx = (b[0] - a[0]) / len, ty = (b[1] - a[1]) / len;
+  const rad = style.mowing.green.angleDeg * Math.PI / 180, c = Math.cos(rad), sn = Math.sin(rad);
+  return [tx * c - ty * sn, tx * sn + ty * c];
+}
+
 /** Task 20 wiring (`SKY_FIELD_BINDING`): sky visibility on the metric grid
  * as one R8 texture, bilinear, frame nudged by half a node. */
 function buildSkyTexture(field: SkyField, grid: MetricTerrainGrid): { texture: THREE.DataTexture; frame: THREE.Vector4 } {
@@ -501,7 +521,7 @@ function classAttributes(classIds: Uint8Array, style: MeridianStyle, atlasPainte
  * draw uploaded — the green-complex patch rendered with a bunker patch's
  * 20 m atlas, clamped to its edge texels, as one beige rectangle. Distinct
  * ids are exactly what make three upload each mesh's own atlas. */
-function createGroundMaterialV2(seed: readonly [number, number], style: MeridianStyle, sdf: GroundSdfBinding | null, fairway: FairwayGrainBinding | null = null, shadow: GroundSdfBinding | null = null, sky: GroundSdfBinding | null = null): THREE.MeshStandardMaterial {
+function createGroundMaterialV2(seed: readonly [number, number], style: MeridianStyle, sdf: GroundSdfBinding | null, fairway: FairwayGrainBinding | null = null, shadow: GroundSdfBinding | null = null, sky: GroundSdfBinding | null = null, greenMowDir: readonly [number, number] | null = null): THREE.MeshStandardMaterial {
   const chunks = groundShaderV2Chunks(style);
   const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, metalness: 0, side: THREE.FrontSide });
   material.name = 'meridian-ground-v2';
@@ -521,6 +541,8 @@ function createGroundMaterialV2(seed: readonly [number, number], style: Meridian
   } : null;
   material.onBeforeCompile = shader => {
     shader.uniforms.golfV2Seed = { value: new THREE.Vector2(seed[0], seed[1]) };
+    // §23 green mowing direction (zero vector = no route = no stripes).
+    shader.uniforms.golfV2GreenMow = { value: new THREE.Vector2(greenMowDir?.[0] ?? 0, greenMowDir?.[1] ?? 0) };
     if (sdfUniforms) Object.assign(shader.uniforms, sdfUniforms);
     if (fairwayUniforms) Object.assign(shader.uniforms, fairwayUniforms);
     if (shadowUniforms) Object.assign(shader.uniforms, shadowUniforms);
@@ -531,7 +553,8 @@ function createGroundMaterialV2(seed: readonly [number, number], style: Meridian
     shader.fragmentShader = shader.fragmentShader
       .replace('#include <common>', `#include <common>\n${chunks.fragmentHead}`)
       .replace('#include <color_fragment>', `#include <color_fragment>\n${chunks.fragmentColor}`)
-      .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>\n${chunks.fragmentRoughness}`);
+      .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>\n${chunks.fragmentRoughness}`)
+      .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>\n${chunks.fragmentNormal}`);
   };
   material.customProgramCacheKey = () => `${GROUND_SHADER_V2_VERSION}:${MERIDIAN_STYLE_HASH}:atlas=${sdf ? 1 : 0}:fairway=${fairway ? 1 : 0}:shadow=${shadow ? 1 : 0}:sky=${sky ? 1 : 0}`;
   // Exposed for tests/debug tooling only (terrain-debug.ts's own
@@ -674,7 +697,8 @@ export function buildV2World(input: V2WorldInput, options: V2WorldOptions = {}):
   const fairway = wholeHoleSdf && input.fairwayField ? buildFairwayDirectionTexture(input.fairwayField) : null;
   const shadow = input.shadowField ? buildStaticShadowTexture(input.shadowField) : null;
   const sky = input.skyField ? buildSkyTexture(input.skyField, input.metricGrid) : null;
-  const material = createGroundMaterialV2(input.seed, style, wholeHoleSdf, fairway, shadow, sky);
+  const greenMowDir = input.greenMowDir ?? null;
+  const material = createGroundMaterialV2(input.seed, style, wholeHoleSdf, fairway, shadow, sky, greenMowDir);
   const atlasPainted = wholeHoleSdf !== null;
   const { geometry: baseGeometry, drawnTriangles: baseTriangles } = buildBaseGeometry(input.base, input.patchedRangeIds, style, atlasPainted, input.metricGrid);
   const baseMesh = new THREE.Mesh(baseGeometry, [material]);
@@ -692,7 +716,7 @@ export function buildV2World(input: V2WorldInput, options: V2WorldOptions = {}):
   if (wholeHoleSdf) for (const hero of input.heroAtlases) {
     const sdf = buildGroundSdfTexture(hero.atlas);
     heroSdfByPatchId.set(hero.patchId, sdf);
-    heroMaterialByPatchId.set(hero.patchId, createGroundMaterialV2(input.seed, style, sdf, fairway, shadow, sky));
+    heroMaterialByPatchId.set(hero.patchId, createGroundMaterialV2(input.seed, style, sdf, fairway, shadow, sky, greenMowDir));
   }
 
   const patchGeometries: THREE.BufferGeometry[] = [];

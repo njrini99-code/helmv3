@@ -111,7 +111,7 @@ export const FOREST_EDGE_V2_OPTIONS: Readonly<ForestEdgeV2Options> = Object.free
   understoryInnerM: VEGETATION.understory.innerM, understoryOuterM: VEGETATION.understory.bandM,
   understorySpacingM: VEGETATION.understory.spacingM, darkenGridSpacingM: VEGETATION.understory.spacingM * 1.5,
   crownSpacingM: 6, massSpacingM: VEGETATION.mass.spacingM, edgeSampleSpacingM: 6, rowWidthM: 6,
-  interiorCrownFloor: .12, crownClearanceM: 2, shrubClearanceM: 1, massClearanceM: 8,
+  interiorCrownFloor: .45, crownClearanceM: 2, shrubClearanceM: 1, massClearanceM: 8,
   branchCountRange: [2, 4] as const,
   budgets: Object.freeze({ crowns: VEGETATION.crownBudget, shrubs: VEGETATION.understory.budget,
     mass: VEGETATION.mass.budget, contextMass: VEGETATION.mass.contextBudget, hero: 32, understoryGrid: 240 }),
@@ -229,16 +229,36 @@ export function forestCrownDensity(edgeM: number, options: ForestEdgeV2Options =
   return options.interiorCrownFloor + (1 - options.interiorCrownFloor) * (1 - smootherstep(depth));
 }
 
+interface Extent { minX: number; maxX: number; minY: number; maxY: number }
+
+/** XY extent of the terrain that can carry an instance: the metric grid when
+ * the mesh has one, else the vertex bounds. */
+function terrainExtent(mesh: TerrainMesh): Extent | null {
+  const grid = mesh.metricGrid;
+  if (grid) return { minX: grid.originM[0], minY: grid.originM[1], maxX: grid.originM[0] + (grid.columns - 1) * grid.spacingM, maxY: grid.originM[1] + (grid.rows - 1) * grid.spacingM };
+  const v = mesh.vertices;
+  if (!v.length) return null;
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  for (let i = 0; i < v.length; i += 3) { const x = v[i]!, y = v[i + 1]!; if (x < minX) minX = x; if (x > maxX) maxX = x; if (y < minY) minY = y; if (y > maxY) maxY = y; }
+  return { minX, maxX, minY, maxY };
+}
+
 /** Deterministic offset grid over a region's own bounding box: alternating
  * row offsets plus a seeded sub-cell jitter, exactly the scatter
  * `three-landscape.ts` uses for its mass/understory grids, so the pattern
  * reads as scattered rather than gridded. Spacing widens on a very large
  * region so candidate count stays bounded (mirrors `canopy.ts`). */
-function scatterGrid(region: ForestRegion, spacingM: number, maxCandidates: number): PointM[] {
+function scatterGrid(region: ForestRegion, spacingM: number, maxCandidates: number, extent?: Extent | null): PointM[] {
   const vertices = region.parts.flat(2);
   if (!vertices.length) return [];
   const xs = vertices.map(p => p[0]), ys = vertices.map(p => p[1]);
-  const minX0 = Math.min(...xs), maxX = Math.max(...xs), minY0 = Math.min(...ys), maxY = Math.max(...ys);
+  let minX0 = Math.min(...xs), maxX = Math.max(...xs), minY0 = Math.min(...ys), maxY = Math.max(...ys);
+  // A context woods polygon can run kilometres past the hole's terrain; only
+  // the part over the terrain can carry an instance (terrainHeight is null
+  // elsewhere), so the candidate budget is spent over that part alone rather
+  // than widening the spacing to a sparse scatter over the whole forest.
+  if (extent) { minX0 = Math.max(minX0, extent.minX); maxX = Math.min(maxX, extent.maxX); minY0 = Math.max(minY0, extent.minY); maxY = Math.min(maxY, extent.maxY); }
+  if (minX0 > maxX || minY0 > maxY) return [];
   const area = Math.max(1, (maxX - minX0) * (maxY - minY0));
   const spacing = Math.max(spacingM, Math.sqrt(area / maxCandidates));
   const minX = Math.floor(minX0 / spacing) * spacing, minY = Math.floor(minY0 / spacing) * spacing;
@@ -316,8 +336,9 @@ export function compileForestEdgeV2(scene: HoleScene, mesh: TerrainMesh, options
     !playFeatures.some(f => inFeature(point, f)) && !playRings.some(ring => boundaryDistance(point, ring) < clearanceM);
   const nearnessToPlay = (point: PointM) => playRings.reduce((min, ring) => Math.min(min, boundaryDistance(point, ring)), Infinity);
 
+  const extent = terrainExtent(mesh);
   const draftsFor = (predicate: (region: ForestRegion) => boolean, spacingM: number, clearanceM: number, gate: (draft: Draft) => boolean): Draft[][] =>
-    regions.filter(predicate).map(region => scatterGrid(region, spacingM, options.maxCandidatesPerRegion)
+    regions.filter(predicate).map(region => scatterGrid(region, spacingM, options.maxCandidatesPerRegion, extent)
       .map((point): Draft => ({ region, point, edgeM: edgeDistanceM(point, region) }))
       .filter(draft => isClear(draft.point, clearanceM) && gate(draft)));
 
@@ -326,7 +347,10 @@ export function compileForestEdgeV2(scene: HoleScene, mesh: TerrainMesh, options
   // interior, not the budget trim that follows.
   const crownDrafts = draftsFor(region => region.crownEligible, options.crownSpacingM, options.crownClearanceM, draft =>
     featureSeed(`${instanceId('crown', draft.region, draft.point)}:accept`) < forestCrownDensity(draft.edgeM, options));
-  const crownAllocated = allocateCrowns(crownDrafts, options.budgets.crowns, draft => draft.edgeM).flat();
+  // Over budget, V1's §38 rule: keep the crowns nearest the played hole's
+  // own surfaces (the forest edge a golfer sees), not an even share of every
+  // region's edge — the density gate above already made the edge denser.
+  const crownAllocated = allocateCrowns(crownDrafts, options.budgets.crowns, draft => nearnessToPlay(draft.point)).flat();
 
   const shrubDrafts = draftsFor(region => region.shrubEligible, options.understorySpacingM, options.shrubClearanceM, draft =>
     draft.region.shrubUngated || (draft.edgeM >= options.understoryInnerM && draft.edgeM <= options.understoryOuterM));

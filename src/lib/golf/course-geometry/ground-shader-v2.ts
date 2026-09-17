@@ -53,6 +53,7 @@
  * path is the only path — the fallback the class comment above describes. */
 import { FAIRWAY_DIRECTION_UNIFORMS, fairwayDirectionShaderChunk, fairwayGrainAt, type FairwayDirectionField } from './fairway-direction-field';
 import { sampleFieldAtlas } from './field-atlas';
+import { greenSurfaceShaderChunk } from './green-surface-v2';
 import type { SurfaceDistanceLayer } from './surface-distance-field';
 import { SURFACE_CLASS_IDS, type SurfaceClass } from './visual-artifact';
 import type { PackedFieldAtlas } from './visual-artifact-v2';
@@ -61,7 +62,7 @@ import { hexToRgb, MERIDIAN_STYLE, srgbToLinear, type MeridianPaletteKey, type M
 // Task 12 wiring bumped the shader structure (GOLF_V2_FAIRWAY, below) — a
 // genuine program-shape change (§77 permits this in `customProgramCacheKey`,
 // same as `GOLF_V2_ATLAS` before it), so the version string changes too.
-export const GROUND_SHADER_V2_VERSION = 'meridian-ground-v2-4';
+export const GROUND_SHADER_V2_VERSION = 'meridian-ground-v2-5';
 
 /** Attribute names the component layer must upload on every V2 ground
  * geometry (base and hero patches alike, so the one material fits both). */
@@ -352,6 +353,10 @@ export interface GroundShaderV2Chunks {
   fragmentColor: string;
   /** Appended after `#include <roughnessmap_fragment>` in the fragment shader. */
   fragmentRoughness: string;
+  /** Appended after `#include <normal_fragment_maps>` in the fragment shader
+   * (Task 13 §31: the green micro-normal, once three has its view-space
+   * `normal`). */
+  fragmentNormal: string;
 }
 
 /** Build the GLSL chunks for the one V2 ground program. Colour comes from
@@ -391,6 +396,11 @@ export function groundShaderV2Chunks(style: MeridianStyle = MERIDIAN_STYLE): Gro
   // (golfV2-prefixed, declares its own sampler/frame/texelM uniforms —
   // FAIRWAY_GRAIN_BINDING) spliced in behind GOLF_V2_FAIRWAY, below.
   const fairway = fairwayDirectionShaderChunk(style);
+  // Task 13 wiring: green-surface-v2.ts's own self-contained GLSL (band
+  // classifier, band roughness, micro-normal, run-off), spliced in behind
+  // GOLF_V2_ATLAS since every function takes the SDF samples it already has.
+  const green = greenSurfaceShaderChunk(style);
+  const water = style.water;
 
   const vertexHead = `attribute float ${surfaceClass};
 attribute float ${visualOffset};
@@ -406,7 +416,9 @@ vGolfV2Offset = ${visualOffset};
 vGolfV2Roughness = ${roughness};
 vGolfV2AtlasTrust = ${atlasTrust};
 vGolfV2WorldXY = (modelMatrix * vec4(position, 1.0)).xy;`;
+  const greenMow = style.mowing.green;
   const fragmentHead = `uniform vec2 golfV2Seed;
+uniform vec2 golfV2GreenMow;
 varying float vGolfV2Class;
 varying float vGolfV2Offset;
 varying float vGolfV2Roughness;
@@ -431,7 +443,11 @@ float golfAtlasClassRoughness(int golfI) {
   if (golfI == 5) return ${atlasRoughGlsl('surround')};
   return ${atlasRoughGlsl('fringe')};
 }
+${green.source}
 #endif
+// Task 13 §31: how much of the green micro-normal this fragment takes (the
+// green band's own weight), resolved in fragmentColor, applied in fragmentNormal.
+float golfV2GreenMicroWeight;
 // Task 12 wiring: the fairway/tee mow-grain function. Declared independently
 // of GOLF_V2_ATLAS (it has its own sampler, not the SDF one) — fragmentColor
 // below only ever calls it under GOLF_V2_FAIRWAY, and only ever blends it in
@@ -456,6 +472,7 @@ float golfV2ResolvedRoughness;`;
   bool golfWater = abs(golfClass - ${WATER}) < 0.5;
   bool golfWoods = abs(golfClass - ${WOODS}) < 0.5;
   golfV2ResolvedRoughness = vGolfV2Roughness;
+  golfV2GreenMicroWeight = 0.0;
 #ifdef GOLF_V2_FAIRWAY
   // Sampled unconditionally (never inside an \`if\`): golfV2FairwayGrain uses
   // fwidth() internally, and derivatives inside non-uniform control flow are
@@ -522,6 +539,9 @@ float golfV2ResolvedRoughness;`;
     float golfGrainPhase = dot(golfSandP, vec2(0.83, 0.56) * ${k(g0)});
     float golfGrain = 0.5 * sin(golfGrainPhase) + 0.5 * sin(dot(golfSandP, vec2(-0.37, 0.93) * ${k(g1)}) + 1.1);
     golfGrain *= 1.0 - smoothstep(${fade0.toFixed(3)}, ${fade1.toFixed(3)}, fwidth(golfGrainPhase));
+    // §23 green mow phase, evaluated unconditionally for its derivatives.
+    float golfGreenMowPhase = dot(vGolfV2WorldXY, golfV2GreenMow) / ${greenMow.bandWidthM.toFixed(3)};
+    float golfGreenMowSine = sin(golfGreenMowPhase * 6.283185307179586);
     if (golfWin == 1) {
       // Sand: V1's sandEdge ring (0–0.2 m inside the outline) then its
       // sandHighlight ring (0.2–0.55 m), V1's boundary sand shade over the
@@ -534,12 +554,30 @@ float golfV2ResolvedRoughness;`;
       golfAtlasCol *= 1.0 - ${style.boundary.sandShade.toFixed(4)} * (1.0 - smoothstep(0.0, ${style.boundary.fieldM.toFixed(3)}, golfDBunker));
       golfAtlasCol *= 1.0 + golfGrain * ${style.bunker.sandGrainAmplitude.toFixed(4)};
     } else if (golfWin == 0) {
+      // §23 green mowing (V1's rule): diagonal bands at green.angleDeg to
+      // the route, bandWidthM period, full fairway amplitude × amplitudeShare,
+      // fading over edgeFadeM inside the edge; the same filtered square wave
+      // and fwidth fade as the fairway, and none without a route direction.
+      float golfGreenMowVisible = 1.0 - smoothstep(${fade0.toFixed(3)}, ${fade1.toFixed(3)}, fwidth(golfGreenMowPhase));
+      float golfGreenMowFilter = max(fwidth(golfGreenMowSine), 0.025);
+      float golfGreenMowBand = smoothstep(-golfGreenMowFilter, golfGreenMowFilter, golfGreenMowSine) * 2.0 - 1.0;
+      float golfGreenMowEdge = clamp(golfDGreen / ${greenMow.edgeFadeM.toFixed(3)}, 0.0, 1.0);
+      golfAtlasCol *= 1.0 + golfGreenMowBand * golfGreenMowVisible * golfGreenMowEdge * ${(style.mowing.amplitude * greenMow.amplitudeShare).toFixed(4)} * (length(golfV2GreenMow) > 0.5 ? 1.0 : 0.0);
       // Green: V1's 0.2 m edge ring (toward ground) and 0.35 m light ring.
       float golfRingEdge = 1.0 - smoothstep(${(RING_EDGE_M - RING_SOFT_M).toFixed(3)}, ${(RING_EDGE_M + RING_SOFT_M).toFixed(3)}, golfDGreen);
       float golfRingLight = smoothstep(${(RING_EDGE_M - RING_SOFT_M).toFixed(3)}, ${(RING_EDGE_M + RING_SOFT_M).toFixed(3)}, golfDGreen)
         * (1.0 - smoothstep(${(RING_EDGE_M + RING_LIGHT_M - RING_SOFT_M).toFixed(3)}, ${(RING_EDGE_M + RING_LIGHT_M + RING_SOFT_M).toFixed(3)}, golfDGreen));
       golfAtlasCol = mix(golfAtlasCol, ${atlasColorGlsl('ground')}, golfRingEdge * 0.24);
       golfAtlasCol = mix(golfAtlasCol, ${paletteGlsl('#D5DEA9')}, golfRingLight * 0.1);
+    } else if (golfWin == 3) {
+      // Water (V1 §42–45, same terms): the interior deepens with distance
+      // from the drawn shoreline (visual only, never depth), the shoreline
+      // band darkens the edge, and a Fresnel share lifts toward the sky.
+      float golfInterior = smoothstep(0.0, ${water.interiorM.toFixed(3)}, golfDWaterAtlas);
+      golfAtlasCol = mix(golfAtlasCol, ${paletteGlsl(water.deepColor)}, golfInterior * ${water.deepMix.toFixed(3)});
+      golfAtlasCol *= 1.0 - ${water.shorelineShade.toFixed(3)} * (1.0 - smoothstep(0.0, ${water.shorelineM.toFixed(3)}, golfDWaterAtlas));
+      float golfFresnel = pow(1.0 - clamp(dot(normalize(vNormal), normalize(vViewPosition)), 0.0, 1.0), ${water.fresnelPower.toFixed(3)});
+      golfAtlasCol = mix(golfAtlasCol, ${paletteGlsl(water.skyColor)}, (${water.skyBase.toFixed(3)} + ${(1 - water.skyBase).toFixed(3)} * golfFresnel) * ${water.skyMix.toFixed(3)});
     }
     // The vertex colour is the background: tracked-class vertices bake the
     // rough albedo when an atlas paints them, so nothing sand- or
@@ -551,6 +589,24 @@ float golfV2ResolvedRoughness;`;
     diffuseColor.rgb *= 1.0 - ${style.bunker.contactShade.toFixed(4)} * golfContact * golfContact;
     golfV2ResolvedRoughness = mix(vGolfV2Roughness, golfAtlasClassRoughness(golfWin), golfWeight);
     if (golfWeight > 0.5) { golfGreen = golfWin == 0; golfBunker = golfWin == 1; golfWater = golfWin == 3; }
+    // Task 13 (§27–34): the green complex's own bands from the same two
+    // SDFs. Apron: the close-mown neck between fringe and fairway takes the
+    // apron albedo; every close-mown band takes its quiet-BRDF roughness;
+    // the green band's weight feeds the §31 micro-normal (fragmentNormal).
+    GolfV2GreenBand golfGB = ${green.names.bands}(golfDGreen, golfDFairway);
+    // The apron albedo is confined to the fairway's own last metres (the
+    // fairway winner, inside its soft edge): letting it reach the rough
+    // within apronFairwayM drew a lighter wedge with a hard seam at the
+    // hero-patch rim on hole 7.
+    if (golfGB.band > 1.5 && golfGB.band < 2.5 && golfWin == 2) diffuseColor.rgb = mix(diffuseColor.rgb, ${atlasColorGlsl('apron')}, golfGB.weight * golfWeight);
+    if (golfGB.band < 2.5 && golfWin != 1 && golfWin != 3) golfV2ResolvedRoughness = mix(golfV2ResolvedRoughness, ${green.names.roughness}(golfGB.band), golfGB.weight);
+    if (golfGB.band < 0.5) golfV2GreenMicroWeight = golfGB.weight;
+    // §34 run-off is not evaluated here: ${green.names.runoff} needs a smooth
+    // ground slope, and the only per-fragment slope available (the
+    // interpolated vertex normal) facets the on/off gate triangle by
+    // triangle — tried on hole 7, read as jagged patches. V1 bakes the
+    // weight per vertex from smoothed normals; V2 needs the same as a
+    // patch attribute before the term goes live.
   }
 #endif
   float golfTurfWeight = (golfBunker || golfWater || golfWoods) ? 0.0 : 1.0;
@@ -600,5 +656,18 @@ float golfV2ResolvedRoughness;`;
   }
 }`;
   const fragmentRoughness = `roughnessFactor = golfV2ResolvedRoughness;`;
-  return { vertexHead, vertexMain, fragmentHead, fragmentColor, fragmentRoughness };
+  // §31: the green's quiet micro-normal, world-space XY tilt turned into
+  // three's view-space normal, faded out where a pixel spans more than a
+  // fraction of the finest wavelength (the "fade by fwidth" rule) so it never
+  // aliases at distance. fwidth() is taken unconditionally.
+  const fragmentNormal = `#ifdef GOLF_V2_ATLAS
+{
+  vec2 golfMicroN = ${green.names.microNormal}(vGolfV2WorldXY, golfV2Seed);
+  float golfMicroFw = fwidth(vGolfV2WorldXY.x) + fwidth(vGolfV2WorldXY.y);
+  float golfMicroFade = 1.0 - smoothstep(0.04, 0.1, golfMicroFw);
+  vec3 golfMicroView = (viewMatrix * vec4(golfMicroN.x, golfMicroN.y, 0.0, 0.0)).xyz;
+  normal = normalize(normal + golfMicroView * golfV2GreenMicroWeight * golfMicroFade);
+}
+#endif`;
+  return { vertexHead, vertexMain, fragmentHead, fragmentColor, fragmentRoughness, fragmentNormal };
 }

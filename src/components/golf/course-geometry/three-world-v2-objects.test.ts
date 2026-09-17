@@ -30,8 +30,17 @@ describe('V2 world objects (§52–62; Task 18)', () => {
     const ribbon = compilePathRibbon(scene, mesh, base);
     const forest = compileForestEdgeV2(scene, mesh);
     const focusBoundsM = mesh.renderProfile!.tacticalBoundsM;
-    const objects = buildV2Objects({ ribbon, forest, scene, focusBoundsM });
+    const objects = buildV2Objects({ ribbon, forest, scene, mesh, focusBoundsM });
     expect(objects.stats.draws.paths).toBe(1);
+    // Task 17 (R8): V1's footprint extrusions ride along; its ribbons do not.
+    expect(objects.stats.structures).toBeGreaterThan(0);
+    // ...and stand up: some structure vertex sits above its ground sample (lift applied).
+    const structures = objects.group.getObjectByName('golf-course-context')!.children.find(c => c.name.startsWith('context-structures-')) as THREE.Mesh;
+    const sp = structures.geometry.getAttribute('position');
+    let zMin = Infinity, zMax = -Infinity;
+    for (let i = 0; i < sp.count; i++) { zMin = Math.min(zMin, sp.getZ(i)); zMax = Math.max(zMax, sp.getZ(i)); }
+    expect(zMax - zMin).toBeGreaterThan(2);
+    expect(objects.group.getObjectByName('golf-course-context')!.children.some(c => c.name.startsWith('context-ribbons-'))).toBe(false);
     expect(objects.stats.pathRuns).toBe(ribbon!.runs.length);
     expect(objects.stats.instances.crown + objects.stats.instances.shrub + objects.stats.instances.mass).toBe(forest.instances.length);
     // §37: trunks stand under near and distant crowns only, never far ones.
@@ -41,14 +50,14 @@ describe('V2 world objects (§52–62; Task 18)', () => {
     expect(lod.near).toBeGreaterThan(0);
     expect(lod.near).toBeLessThanOrEqual(120);
     const draws = Object.values(objects.stats.draws).reduce((a, b) => a + b, 0);
-    expect(draws).toBeLessThanOrEqual(12);
+    expect(draws).toBeLessThanOrEqual(12 + objects.stats.draws.context);
     let meshes = 0, instanced = 0, batched = 0;
     objects.group.traverse(o => { if (o instanceof THREE.InstancedMesh) instanced++; else if (o instanceof THREE.BatchedMesh) batched++; else if (o instanceof THREE.Mesh) meshes++; });
-    expect(meshes).toBe(1); // paths
+    expect(meshes).toBe(1 + objects.stats.draws.context - (objects.group.getObjectByName('golf-course-context')!.children.filter(c => c instanceof THREE.LineSegments).length)); // paths + context meshes
     expect(batched).toBe(2); // crowns, trunks
-    expect(instanced).toBe(draws - 3);
+    expect(instanced).toBe(draws - 3 - objects.stats.draws.context);
     // Every crown LOD is a deterministic function of the focus: the same input builds the same split.
-    const again = buildV2Objects({ ribbon, forest, scene, focusBoundsM });
+    const again = buildV2Objects({ ribbon, forest, scene, mesh, focusBoundsM });
     expect(again.forestStats).toEqual(objects.forestStats);
     expect(again.stats.triangles).toBe(objects.stats.triangles);
     again.dispose();

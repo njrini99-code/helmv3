@@ -258,6 +258,7 @@ export function fairwayDirectionLayer(field: FairwayDirectionField): FairwayDire
 }
 
 export interface FairwayGrainSample { albedo: number; roughness: number }
+const smoothstep = (a: number, b: number, x: number): number => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 const NEUTRAL_GRAIN: FairwayGrainSample = { albedo: 1, roughness: 0 };
 /** CPU mirror of the GLSL `golfV2FairwayGrain` (`fairwayDirectionShaderChunk`):
  * nearest-node sample (never bilinear — file header), the same continuous-
@@ -278,7 +279,8 @@ export function fairwayGrainAt(field: FairwayDirectionField, x: number, y: numbe
   let phase = field.stripePhase[i]! / 255 + deltaPhase;
   phase -= Math.floor(phase);
   const sheen = field.sheenFloor + (1 - field.sheenFloor) * Math.pow(Math.max(0, 1 - Math.abs(viewDir[0] * dirX + viewDir[1] * dirY)), field.sheenPower);
-  const band = Math.sin(2 * Math.PI * phase), wave = sheen * band;
+  // CPU mirror of the filtered square band with the GLSL's floor filter (0.025), no screen derivative.
+  const sine = Math.sin(2 * Math.PI * phase), band = smoothstep(-0.025, 0.025, sine) * 2 - 1, wave = sheen * band;
   return { albedo: 1 + wave * field.albedoAmplitude, roughness: wave * field.roughnessAmplitude };
 }
 
@@ -345,7 +347,12 @@ vec2 golfV2FairwayGrain(vec2 golfFwWorldXY, vec3 golfFwViewDirWS) {
   // weakest looking along the mow line; a stylized response, not a physical
   // BRDF (the plan's own word: "cheap"). golfFwViewDirWS must be unit length.
   float golfFwSheen = ${sheenFloor} + (1.0 - ${sheenFloor}) * pow(max(0.0, 1.0 - abs(golfFwViewDirWS.x * golfFwDir.x + golfFwViewDirWS.y * golfFwDir.y)), ${sheenPower});
-  float golfFwBand = sin(golfFwPhase * 6.283185307179586);
+  // V1's band shape (the landscape ground material): a filtered square wave, one
+  // pixel of transition either side of the stripe edge, so alternate passes
+  // read as flat bands rather than a soft sine.
+  float golfFwSine = sin(golfFwPhase * 6.283185307179586);
+  float golfFwFilter = max(fwidth(golfFwSine), 0.025);
+  float golfFwBand = smoothstep(-golfFwFilter, golfFwFilter, golfFwSine) * 2.0 - 1.0;
   float golfFwFade = 1.0 - smoothstep(${fade0.toFixed(3)}, ${fade1.toFixed(3)}, fwidth(golfFwPhase));
   float golfFwWave = golfFwSheen * golfFwBand * golfFwFade;
   return vec2(1.0 + golfFwWave * ${albedoAmp}, golfFwWave * ${roughAmp});

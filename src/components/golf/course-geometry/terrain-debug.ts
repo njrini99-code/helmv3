@@ -265,7 +265,7 @@ export function installTerrainDebugView(world: THREE.Scene, landscape: ThreeLand
     if (!input) return () => {};
     const built = buildV2World(input);
     const base = weldAndCleanTerrainMesh(mesh);
-    const objects = buildV2Objects({ ribbon: compilePathRibbon(scene!, mesh, base), forest, scene: scene!, focusBoundsM: mesh.renderProfile?.tacticalBoundsM });
+    const objects = buildV2Objects({ ribbon: compilePathRibbon(scene!, mesh, base), forest, scene: scene!, mesh, focusBoundsM: mesh.renderProfile?.tacticalBoundsM });
     const v1Canopy = landscape.group.children.filter(child => child.name.startsWith('source-canopy') || child.name === 'source-forest-mass');
     for (const child of v1Canopy) child.visible = false;
     landscape.terrain.visible = false;
