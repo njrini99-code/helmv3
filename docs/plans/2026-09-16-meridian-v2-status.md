@@ -163,8 +163,12 @@ repeated here as they land.
   passes and the forest re-LOD the 00:35 preview predates:
   <https://helmv3-dparkfrkr-nick-rinis-projects.vercel.app>
   (dpl_2VEGmV2oRS3WyiEBSYWeXcfcyDaT, READY; manifest, package and hole 7
-  terrain byte-identical to `public/` through `vercel curl`). The visual
-  artifact pass (c8972408b) landed after that upload and is not in it.
+  terrain byte-identical to `public/` through `vercel curl`). Superseded
+  again at 09:44 EDT by a preview from ce050158c, which adds the visual
+  artifact pass (c8972408b): <https://helmv3-42lran28z-nick-rinis-projects.vercel.app>
+  (dpl_AxTqLE8MWQr5kf3XbsmWHoWSoZpV, READY; manifest, package, hole 7
+  terrain and the context layer byte-identical to `public/`). This is the
+  phone URL; the two earlier previews are stale.
 - Still owner-authorized and not done: the One-Tap sync migration (HUD
   shows "Sync issue" until then) and any production deploy.
 - Whole-course One-Tap V2 audit (2026-09-17, `capture-one-tap.cjs --world=v2`,
@@ -335,8 +339,10 @@ pushed, `output/` uncommitted:
 - The V1 visual artifact still compiled under V2 was the next mount cost
   (`landscapeBuildMs` .13–.77 s); c8972408b cuts it to about a third,
   artifact content hash identical on all 18 holes (hole 8 in-browser
-  769 → 255 ms). A fresh preview from f6e67e6b4 (before that pass) is up
-  for the phone: <https://helmv3-dparkfrkr-nick-rinis-projects.vercel.app>.
+  769 → 255 ms). The phone preview is from ce050158c and carries it:
+  <https://helmv3-42lran28z-nick-rinis-projects.vercel.app> (never
+  production; the One-Tap migration is still unapplied, so the HUD shows
+  "Sync issue" until the owner says migrate).
 
 Not done, and not mine to do: landing PR #1939 (CI green is not
 authorisation), the production deploy, applying the One-Tap migration,
