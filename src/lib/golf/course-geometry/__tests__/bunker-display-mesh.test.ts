@@ -9,6 +9,7 @@ import { assertHeroPatch } from '../green-display-mesh';
 import { compileHeroRegions } from '../hero-patches';
 import { parseGeometryPackage } from '../schema';
 import { parseTerrainMesh, type TerrainMesh } from '../terrain';
+import { compileCurvatureFields } from '../terrain-curvature';
 import type { MetricTerrainGrid } from '../terrain-source';
 import type { HoleScene, LocalFeature, PointM } from '../types';
 import { MERIDIAN_STYLE } from '../visual-style';
@@ -122,6 +123,12 @@ describe('bunker hero displacement (§35–39, §107, §113, §115; Task 8)', ()
     expect(bunkerSpacingCap([75, 76], [profile!])).toBe(BUNKER_RING_SPACING.wallSpacingM);
     expect(bunkerSpacingCap([75, 72], [profile!])).toBe(BUNKER_RING_SPACING.floorSpacingM);
     expect(bunkerSpacingCap([75, 90], [profile!])).toBe(Infinity);
+  });
+
+  it('compiles the same patches from a caller\'s curvature fields as from its own', () => {
+    const own = compileHeroPatches(scene, mesh, base, plan, style);
+    const shared = compileHeroPatches(scene, mesh, base, plan, style, { curvature: compileCurvatureFields(mesh.metricGrid!) });
+    expect(shared).toEqual(own);
   });
 
   it('compiles both regions through the shared engine: gates, zero rim seam, bowls and lips in range, canonical reference kept', () => {

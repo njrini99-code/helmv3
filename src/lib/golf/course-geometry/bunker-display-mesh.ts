@@ -161,8 +161,9 @@ export function bunkerDisplacement(point: PointM, profiles: readonly BunkerHeroP
 }
 /** §35 spacing cap by band: finest on the rim, then the lip and wall bands, then the floor; none beyond the lip outside. */
 export function bunkerSpacingCap(point: PointM, profiles: readonly BunkerHeroProfile[], spacing: BunkerRingSpacing = BUNKER_RING_SPACING): number {
-  // Beyond the outer band outside every bunker no band caps the spacing.
-  if (beyondBand(point, profiles, spacing.outerBandM)) return Infinity;
+  // Beyond the outer band (and the rim band, whichever is wider) outside
+  // every bunker no band caps the spacing.
+  if (beyondBand(point, profiles, Math.max(spacing.outerBandM, spacing.rimBandM))) return Infinity;
   let cap = Infinity;
   for (const profile of profiles) {
     const d = bunkerSignedDistance(point, profile), a = Math.abs(d);

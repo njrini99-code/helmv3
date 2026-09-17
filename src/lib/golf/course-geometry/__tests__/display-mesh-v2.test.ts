@@ -2,9 +2,10 @@ import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
 import {
-  assertBaseDisplayLods, buildEdgeTable, cleanDisplayMesh, compileBaseDisplayLods, DISPLAY_LOD_BUDGETS, DISPLAY_LOD_OPTIONS, hausdorffDistance, HAUSDORFF_TOLERANCES_M,
-  packDisplayMesh, refineDisplayMesh, refinementImportance, selectRedTriangles, simplifyDisplayMesh, weldTerrainMesh, type DisplayMesh,
+  assertBaseDisplayLods, buildEdgeTable, cleanDisplayMesh, compileBaseDisplayLod0, compileBaseDisplayLods, DISPLAY_LOD_BUDGETS, DISPLAY_LOD_OPTIONS, hausdorffDistance, HAUSDORFF_TOLERANCES_M,
+  packDisplayMesh, refineDisplayMesh, refinementImportance, selectRedTriangles, simplifyDisplayMesh, weldAndCleanTerrainMesh, weldTerrainMesh, type DisplayMesh,
 } from '../display-mesh-v2';
+import { compileCurvatureFields } from '../terrain-curvature';
 import { parseGeometryPackage } from '../schema';
 import { parseTerrainMesh, type TerrainMesh } from '../terrain';
 import type { MetricTerrainGrid } from '../terrain-source';
@@ -127,6 +128,54 @@ describe('base display LOD compiler (§10, §13–15, §113)', () => {
     const tinyWelded = weldTerrainMesh(tiny);
     const tinyImportance = refinementImportance(tiny, tinyWelded, buildEdgeTable(tiny, tinyWelded), DISPLAY_LOD_OPTIONS);
     expect(Array.from(tinyImportance).every(v => v === 0)).toBe(true);
+  });
+
+  it('picks the same red prefix as a recount of the whole mesh at every budget', () => {
+    // The incremental sweep replaced a binary search that recounted the
+    // split mesh at each step; the prefix it settles on must be the one
+    // that recount would choose — the largest whose count fits the target.
+    const welded = weldTerrainMesh(mesh);
+    const importance = refinementImportance(mesh, welded, buildEdgeTable(mesh, welded), DISPLAY_LOD_OPTIONS);
+    const order = Array.from(importance.keys()).filter(t => importance[t]! > 0).sort((a, b) => importance[b]! - importance[a]! || a - b);
+    const key = (a: number, b: number) => (a < b ? a * 1e6 + b : b * 1e6 + a);
+    const countAfter = (n: number): number => {
+      const split = new Set<number>();
+      for (let i = 0; i < n; i++) for (let k = 0; k < 3; k++) split.add(key(welded.indices[order[i]! * 3 + k]!, welded.indices[order[i]! * 3 + ((k + 1) % 3)]!));
+      let total = 0;
+      for (let t = 0; t < welded.triangleCount; t++) {
+        let splits = 0;
+        for (let k = 0; k < 3; k++) if (split.has(key(welded.indices[t * 3 + k]!, welded.indices[t * 3 + ((k + 1) % 3)]!))) splits++;
+        total += splits === 0 ? 1 : splits === 1 ? 2 : splits === 2 ? 3 : 4;
+      }
+      return total;
+    };
+    const prefixes = new Set<number>();
+    for (const target of [0, 199, 200, 201, 250, 280, 320, 400, 640, 799, 800, 5000]) {
+      let expected = 0;
+      for (let n = 0; n <= order.length; n++) if (countAfter(n) <= target) expected = n;
+      prefixes.add(expected);
+      const red = selectRedTriangles(welded, importance, target);
+      expect(Array.from(red).filter(v => v === 1).length).toBe(expected);
+      for (let i = 0; i < expected; i++) expect(red[order[i]!]).toBe(1);
+    }
+    // The budgets span nothing refined to everything refined.
+    expect(prefixes.has(0) && prefixes.has(order.length) && prefixes.size >= 5).toBe(true);
+  });
+
+  it('compiles LOD0 the same from a caller\'s welded mesh and curvature fields as from its own', () => {
+    // The runtime welds once and compiles the curvature fields once for the
+    // hero plan, the patches, the base mesh and the atlases; handing them in
+    // must change nothing about the packed LOD0.
+    const own = compileBaseDisplayLod0(mesh);
+    const welded = weldAndCleanTerrainMesh(mesh), curvature = compileCurvatureFields(mesh.metricGrid!);
+    const shared = compileBaseDisplayLod0(mesh, { welded, curvature });
+    expect(shared).toEqual(own);
+    // The caller's mesh is read, never written: the region ids the compile
+    // assigns for a hero plan stay in its own copy.
+    expect(welded.triangleRegion).toBeUndefined();
+    const plan = { triangleRegion: new Uint16Array(welded.triangleCount), regionIds: [] as string[] };
+    expect(compileBaseDisplayLod0(mesh, { heroPlan: plan, welded })).toEqual(compileBaseDisplayLod0(mesh, { heroPlan: plan }));
+    expect(welded.triangleRegion).toBeUndefined();
   });
 
   it('simplifies by boundary-locked collapse within the height tolerance', () => {
