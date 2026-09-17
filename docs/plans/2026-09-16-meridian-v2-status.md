@@ -175,6 +175,27 @@ repeated here as they land.
   (dpl_DP7dZiKLZjVDBMfcLP2G7egRH1vm, READY; manifest, package, hole 7
   terrain and the context layer byte-identical to `public/`). This is the
   phone URL; the earlier previews are stale.
+- First on-course phone run, 2026-09-17 13:31 EDT (Safari, Private tab, the
+  4o21r2jb6 preview): the Upper round (`golf_rounds` 91301a75, course name
+  "Peek’n Peak Resort — Upper Course", pars matching the package) opened on
+  the standard tracker ("Course outline unavailable · Schematic context")
+  and stayed there — no Meridian Live. Ruled out from the machine: the
+  shipped policy accepts the shipped manifest/package (real
+  `PEEK_N_PEAK_ONE_TAP_V1`, no override — now a unit test), the deployed
+  commit carries the approved hash and `preview: true`, `standardOverride`
+  is plain component state. Not distinguishable remotely: a fetch failure
+  under Vercel SSO, a denied location, or simply the load — the hook fetched
+  the package plus all 18 terrain meshes (52 MB raw, ~12 MB brotli)
+  sequentially, twice (preflight, then load), before it could resolve, and
+  dropped the eligibility verdict, so the phone had nothing to say.
+  0b56ac819: Live now resolves after the package and the current hole's
+  terrain (~1.2 MB compressed), streams the other holes behind it (same
+  pkg/holeKeys/location/transport references, so the live hole's round
+  state is never re-initialised), and the standard tracker shows one status
+  line for an Upper round — "loading course…", "loading hole terrain n/18…",
+  or "Meridian Live off · <reason>" (location blocked, course files did not
+  load, flag off, package mismatch, error) — `OneTapLiveStatusRow`. The
+  next phone screenshot names the cause.
 - Still owner-authorized and not done: the One-Tap sync migration (HUD
   shows "Sync issue" until then) and any production deploy.
 - Whole-course One-Tap V2 audit (2026-09-17, `capture-one-tap.cjs --world=v2`,
