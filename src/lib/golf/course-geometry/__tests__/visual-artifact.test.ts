@@ -5,9 +5,11 @@ import { parseTerrainMesh, terrainHeight, TERRAIN_LIGHT_DIRECTION } from '../ter
 import { inRing } from '../spatial';
 import { boundaryDistance } from '../display-outline';
 import {
-  assertVisualArtifact, compileVisualArtifact, createVisualSurfaceSampler, MERIDIAN_CODES, MERIDIAN_VISUAL_COMPILER_VERSION, offlinePackManifest,
+  assertVisualArtifact, boxGrid, chunkPolyline, compileVisualArtifact, createVisualSurfaceSampler, MERIDIAN_CODES, MERIDIAN_VISUAL_COMPILER_VERSION, offlinePackManifest,
   parseVisualArtifact, serializeVisualArtifact, SURFACE_CLASS_IDS, visualArtifactCachePath,
- smoothVertexNormals } from '../visual-artifact';
+ smoothVertexNormals, withinChunks } from '../visual-artifact';
+import { bboxDistance, type Bbox } from '../bunker-profile';
+import type { PointM } from '../types';
 import { MERIDIAN_STYLE, MERIDIAN_STYLE_HASH, MERIDIAN_STYLE_VERSION, styleHash } from '../visual-style';
 
 const mesh = parseTerrainMesh(source, pilotPackage);
@@ -447,6 +449,51 @@ describe('Bunker families, overhang shade and context contact (renderer redesign
         if (!nearHouse && !nearPath) expect(after).toBe(before);
         else if (before > 8) expect(after).toBeLessThanOrEqual(before);
       }
+    }
+  });
+});
+
+describe('Context contact search bounds (exact prefilters)', () => {
+  /** Deterministic LCG so a failure names its seed. */
+  const rng = (seed: number) => { let s = seed >>> 0; return () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; }; };
+
+  it('lists every box that holds a point, on cell boundaries and box edges included', () => {
+    const random = rng(5);
+    const boxes = Array.from({ length: 40 }, (): Bbox => {
+      const minX = random() * 400 - 50, minY = random() * 300 - 50, w = random() < .2 ? 0 : random() * 90, h = random() < .2 ? 0 : random() * 90;
+      return { minX, minY, maxX: minX + w, maxY: minY + h };
+    });
+    for (const cellM of [25, 7, 1000]) {
+      const candidates = boxGrid(boxes, cellM);
+      const points: PointM[] = [];
+      for (let i = 0; i < 3000; i++) points.push([random() * 500 - 100, random() * 400 - 100]);
+      for (const box of boxes) points.push([box.minX, box.minY], [box.maxX, box.maxY], [box.minX, box.maxY], [(box.minX + box.maxX) / 2, box.minY]);
+      // Points exactly on the grid's own cell boundaries.
+      const minX = Math.min(...boxes.map(b => b.minX)), minY = Math.min(...boxes.map(b => b.minY));
+      for (let k = 0; k < 12; k++) points.push([minX + k * cellM, minY + k * cellM], [minX + k * cellM, minY + 3.3]);
+      for (const point of points) {
+        const listed = new Set(candidates(point));
+        boxes.forEach((box, index) => { if (bboxDistance(point, box) === 0) expect(listed.has(index), `box ${index} at ${point} with cell ${cellM}`).toBe(true); });
+      }
+    }
+    expect(boxGrid([])([1, 2])).toEqual([]);
+  });
+
+  it('never rejects a polyline that comes within reach of a point', () => {
+    const random = rng(9);
+    for (let n = 0; n < 20; n++) {
+      const line: PointM[] = [[random() * 100, random() * 100]];
+      const count = 2 + Math.floor(random() * 40);
+      for (let i = 1; i < count; i++) line.push([line[i - 1]![0] + (random() - .5) * 30, line[i - 1]![1] + (random() - .5) * 30]);
+      const chunks = chunkPolyline(line);
+      const distance = (p: PointM) => { let best = Infinity; for (let i = 1; i < line.length; i++) best = Math.min(best, boundaryDistance(p, [line[i - 1]!, line[i]!])); return best; };
+      for (let k = 0; k < 400; k++) {
+        const p: PointM = [random() * 300 - 100, random() * 300 - 100], d = distance(p);
+        for (const reach of [0, 1.25, 4.25, 5.2, d, d + 1e-6, 40]) if (d <= reach) expect(withinChunks(p, chunks, reach), `reach ${reach} at ${d}`).toBe(true);
+        // A run's box is never farther than its segments, so a point past every box is past the line.
+        if (chunks.boxes.every(box => bboxDistance(p, box) > 40 + 1e-9)) { expect(d).toBeGreaterThan(40); expect(withinChunks(p, chunks, 40)).toBe(false); }
+      }
+      for (const vertex of line) expect(withinChunks(vertex, chunks, 0)).toBe(true);
     }
   });
 });

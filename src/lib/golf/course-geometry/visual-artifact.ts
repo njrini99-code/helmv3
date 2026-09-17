@@ -682,7 +682,7 @@ const NO_BOXES: readonly number[] = [];
  * own cell instead of every box. Exact for the callers' inside-the-box test:
  * a box is listed in every cell it overlaps, and the same floor puts a point
  * inside the box into one of those cells. Outside the grid nothing is near. */
-function boxGrid(boxes: readonly Bbox[], cellM = 25): (point: PointM) => readonly number[] {
+export function boxGrid(boxes: readonly Bbox[], cellM = 25): (point: PointM) => readonly number[] {
   if (!boxes.length) return () => NO_BOXES;
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
   for (const box of boxes) { minX = Math.min(minX, box.minX); minY = Math.min(minY, box.minY); maxX = Math.max(maxX, box.maxX); maxY = Math.max(maxY, box.maxY); }
@@ -706,8 +706,8 @@ function boxGrid(boxes: readonly Bbox[], cellM = 25): (point: PointM) => readonl
  * nearest-segment search can skip a whole run that is already farther than
  * the best segment found (a box is never farther than what it holds). */
 const POLYLINE_CHUNK = 8;
-interface PolylineChunks { first: number[]; last: number[]; boxes: Bbox[] }
-function chunkPolyline(line: readonly PointM[]): PolylineChunks {
+export interface PolylineChunks { first: number[]; last: number[]; boxes: Bbox[] }
+export function chunkPolyline(line: readonly PointM[]): PolylineChunks {
   const first: number[] = [], last: number[] = [], boxes: Bbox[] = [];
   for (let start = 1; start < line.length; start += POLYLINE_CHUNK) {
     const end = Math.min(line.length - 1, start + POLYLINE_CHUNK - 1);
@@ -759,7 +759,7 @@ function nearestOnPolyline(point: PointM, line: readonly PointM[], out: { d: num
 /** Whether any run of the polyline can come within `reachM` of the point: a
  * run's box is never farther than its segments (one ulp of slack for the
  * square root), so a point past every box is past every segment. */
-function withinChunks(point: PointM, chunks: PolylineChunks, reachM: number): boolean {
+export function withinChunks(point: PointM, chunks: PolylineChunks, reachM: number): boolean {
   const limit = reachM + 1e-9;
   for (const box of chunks.boxes) if (bboxDistance(point, box) <= limit) return true;
   return false;
