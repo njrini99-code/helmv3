@@ -27,6 +27,20 @@ export const terrainSourceFields = {
   renderProfile: holeRenderProfileSchema.optional(),
 };
 
+/** `heightsM` as typed arrays: the heights (0 where unsupported, never read
+ * there) and a support mask. The parsed grid holds `number | null` in a
+ * plain array, which V8 keeps as boxed elements, so a compiler that walks
+ * it per node (curvature, sky) paid an unbox per read; the same doubles
+ * read from a Float64Array are the same doubles. Extracted per call — a
+ * grid pass, well under a millisecond — rather than cached, so a grid
+ * edited in place (the tests do) is never read stale. */
+export interface TypedGridHeights { heights: Float64Array; support: Uint8Array }
+export function typedGridHeights(grid: MetricTerrainGrid): TypedGridHeights {
+  const count = grid.heightsM.length, heights = new Float64Array(count), support = new Uint8Array(count);
+  for (let i = 0; i < count; i++) { const h = grid.heightsM[i]; if (h != null) { heights[i] = h; support[i] = 1; } }
+  return { heights, support };
+}
+
 export function sampleMetricTerrain(grid: MetricTerrainGrid, [x, y]: PointM): number | null {
   if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
   const gx = (x - grid.originM[0]) / grid.spacingM, gy = (y - grid.originM[1]) / grid.spacingM;
