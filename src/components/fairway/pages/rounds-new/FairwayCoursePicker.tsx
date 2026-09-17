@@ -42,7 +42,7 @@ import { cn } from '@/lib/utils';
 import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import { Button } from '@/components/fairway/controls/button';
 import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
-import { logError } from '@/lib/error-logging';
+import { logError, recoverFromStaleServerAction } from '@/lib/error-logging';
 import {
   IconSearch, IconPlus, IconChevronLeft, IconArrowLeft, IconArrowRight, IconFlag, IconX,
 } from '@/components/icons';
@@ -124,9 +124,9 @@ export function FairwayCoursePicker({
       // failing feed never blanks the others (e.g. a transient library error
       // shouldn't also hide the recent/team shelves that loaded fine).
       const [lib, rec, tm] = await Promise.all([
-        listCourses({ limit: 200 }).catch(() => null),
-        getRecentlyPlayedCourses(12).catch(() => [] as GolfCourse[]),
-        getTeamSavedCourses().then((rows) => rows.map((r) => r.course)).catch(() => [] as GolfCourse[]),
+        listCourses({ limit: 200 }).catch((error: unknown) => { recoverFromStaleServerAction(error); return null; }),
+        getRecentlyPlayedCourses(12).catch((error: unknown) => { recoverFromStaleServerAction(error); return [] as GolfCourse[]; }),
+        getTeamSavedCourses().then((rows) => rows.map((r) => r.course)).catch((error: unknown) => { recoverFromStaleServerAction(error); return [] as GolfCourse[]; }),
       ]);
       // Only the library failing (null) is worth surfacing — recent/team degrade silently.
       if (lib === null && rec.length === 0 && tm.length === 0) {
@@ -184,6 +184,7 @@ export function FairwayCoursePicker({
       setTees(detail?.tees ?? []);
     } catch (err) {
       logError(err instanceof Error ? err : new Error(String(err)), { component: 'FairwayCoursePicker', action: 'load tees', featureArea: 'round_tracking', courseId: course.id, bypassStaleActionFilter: true }, 'medium');
+      if (recoverFromStaleServerAction(err)) return;
       if (teeReqRef.current === req) fairwayToast.danger('Could not load tees for that course');
     } finally {
       if (teeReqRef.current === req) setLoadingTees(false);
@@ -247,6 +248,9 @@ export function FairwayCoursePicker({
       onOpenChange(false);
     } catch (err) {
       logError(err instanceof Error ? err : new Error(String(err)), { component: 'FairwayCoursePicker', action: 'pick tee', featureArea: 'round_tracking', courseId: selected?.id ?? null, teeId: tee.id, bypassStaleActionFilter: true }, 'medium');
+      // A tab open across a deploy calls an action id the new build no longer
+      // has; the reload it needs is requested here, not hidden behind a toast.
+      if (recoverFromStaleServerAction(err)) return;
       fairwayToast.danger('Could not load that tee');
     } finally {
       setPicking(false);
