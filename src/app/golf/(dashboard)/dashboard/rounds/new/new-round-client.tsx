@@ -1209,6 +1209,22 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
     // what a phone reload looked like to the player.
     const pending = loadPendingTeePick(playerId);
     if (pending) {
+      // Not a failure, but the only evidence we get that the page reloaded
+      // mid-setup — the process kill that caused it never reaches JS.
+      logError(
+        new Error('Round setup restored after reload'),
+        {
+          component: 'NewRoundClient',
+          action: 'round setup restore',
+          route: '/golf/dashboard/rounds/new',
+          featureArea: 'round_tracking',
+          courseId: pending.courseId,
+          teeId: pending.teeId,
+          navigatorOnLine: typeof navigator !== 'undefined' ? navigator.onLine : null,
+          isNative: typeof navigator !== 'undefined' && /HelmSportsLabsApp/.test(navigator.userAgent),
+        },
+        'low',
+      );
       handleTeePick(pending);
       return;
     }
