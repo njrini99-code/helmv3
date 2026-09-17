@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD013 MD060 -->
 # Cascaded shadow maps (CSM) — high-tier benchmark protocol
 
 V2 plan Part XIII §69-73, Part XXI Task 22. Sibling of Task 23's light-probe

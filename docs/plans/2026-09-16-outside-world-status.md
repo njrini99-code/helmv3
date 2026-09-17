@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD013 -->
 # Outside-world / production player view: execution status
 
 Tracks the production player-view, outside-world detail and non-playing

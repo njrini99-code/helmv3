@@ -83,6 +83,7 @@ The seed is derived from the canonical package hash, so every hole of a
 course shares one turf world and nothing swims under camera motion. Noise
 never exceeds 3% per layer and never encodes a real surface condition. The
 lab exposes each layer as a multiplier (`?macro=0&micro=0&mowing=4…`).
+
 - Density cue (renderer redesign §7): the micro field's amplitude scales
   by surface class (rough ×1.6, surround ×1.25, fairway/tee ×1, apron ×.8,
   fringe ×.7, green ×.55) so taller, denser grass reads rougher than mown
@@ -472,6 +473,7 @@ canary labels (or two lab audit folders, or two files) capture by capture:
 changed-pixel fraction, bounding box and a red-highlight image per capture.
 It is a review aid; a change is acceptable only when the label note explains
 it, and `--max` turns the fraction into an exit code for a gate.
+
 - Tolerance (2026-09-17): the default 24-level tolerance is for regressions,
   not for reading subtle style steps; both overnight steps register as
   identical there. At `--tolerance=6` the terrain tone (`v17` → `v18`) moves

@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD013 -->
 # Peek'n Peak Upper: enhancement plan and round review integration
 
 Date: September 16, 2026. Scope: the 18-hole Peek'n Peak Upper build on

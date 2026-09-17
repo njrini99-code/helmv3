@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD013 MD060 -->
 # Structure GLB authoring convention
 
 V2 plan §56-58 ("structures"), §100-103 (Blender / GLB optimization / KTX2 /

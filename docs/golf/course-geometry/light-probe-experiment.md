@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD013 -->
 # Light-probe grid — experiment protocol and recommendation
 
 V2 plan Part XIII §70 (bent-sky ambient) + §74 ("Light probe grids —
@@ -71,7 +72,7 @@ the core comparison — geometric openness, not an irradiance color a reviewer
 would have to take on faith — runnable right now, with no lab, no GPU, no
 port 8768:
 
-```
+```text
 grid: 8 x 8 = 64 probes, directionSamples = 128
 reportLightProbeGridCost: probeCount=64 bytesPerProbe=108 totalShBytes=6912
 probeOpenFraction over the grid: min=0.8594 max=1.0000 mean=0.9919

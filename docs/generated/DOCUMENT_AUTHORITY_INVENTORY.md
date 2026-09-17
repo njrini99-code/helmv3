@@ -37,7 +37,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
 | `PLAN` | 49 | 5 | 28 | 83 |
 | `AUDIT_SNAPSHOT` | 56 | 6 | 30 | 24 |
-| `STATE_SNAPSHOT` | 7 | 2 | 6 | 1 |
+| `STATE_SNAPSHOT` | 7 | 2 | 6 | 0 |
 | `HISTORY_LEDGER` | 40 | 0 | 8 | 13 |
 | `INCIDENT` | 30 | 15 | 2 | 0 |
 | `ADR` | 5 | 0 | 3 | 0 |
@@ -334,7 +334,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/plans/2026-09-12-golfhelm-course-geometry.md` | current | - | - | yes | 5 | 54 | 6 |
 | `docs/plans/2026-09-16-fidelity-status.md` | current | - | - | yes | 0 | 0 | - |
 | `docs/plans/2026-09-16-meridian-operations.md` | current | - | - | yes | 2 | 5 | - |
-| `docs/plans/2026-09-16-meridian-v2-master-plan.md` | current | - | - | yes | 1 | 1 | - |
+| `docs/plans/2026-09-16-meridian-v2-master-plan.md` | current | - | - | yes | 1 | 2 | - |
 | `docs/plans/2026-09-16-meridian-v2-status.md` | current | - | - | yes | 1 | 12 | 2 |
 | `docs/plans/2026-09-16-meridian-visual-master-plan-status.md` | current | - | - | yes | 3 | 12 | - |
 | `docs/plans/2026-09-16-one-tap-status.md` | current | - | - | yes | 1 | 10 | - |
@@ -443,7 +443,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/baseball/COHERENCE_RULING_2026-07-08.md` | current | - | - | yes | 0 | 2 | - |
 | `docs/reports/HELM_OS_TRUTH_CONVERGENCE_2026-08-30.md` | current | - | - | yes | 0 | 32 | - |
 | `docs/reports/MIGRATION_REPO_PROD_CLASSIFICATION_2026-08-30.md` | current | - | - | - | 1 | 1 | - |
-| `docs/reports/PEEK_N_PEAK_UPPER_BUILD_LOG_2026-09-15.md` | current | - | - | yes | 0 | 7 | 1 |
+| `docs/reports/PEEK_N_PEAK_UPPER_BUILD_LOG_2026-09-15.md` | current | - | - | yes | 0 | 7 | - |
 
 ### `HISTORY_LEDGER`
 

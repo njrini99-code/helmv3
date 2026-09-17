@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD013 -->
 # Course renderer redesign (digital twin direction): execution status
 
 Tracks the "Helm Course Renderer Redesign — Detailed Visual Direction &

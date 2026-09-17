@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD013 -->
 # Meridian outside world: taxonomy, authoring pass and quality gates
 
 Source: production player-view spec (2026-09-16), §4–§35. This document is

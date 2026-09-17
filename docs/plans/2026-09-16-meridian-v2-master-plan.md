@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD013 -->
 # Meridian V2 — Ultra-High-Fidelity 3D Course Rendering Master Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:subagent-driven-development` (recommended) or `superpowers:executing-plans` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
@@ -2417,7 +2418,7 @@ No fidelity PR ships without before/after numbers.
 Files
 
 • Create: src/lib/golf/course-geometry/visual-artifact-v2.ts
-• Test: src/lib/golf/course-geometry/__tests__/visual-artifact-v2.test.ts
+• Test: `src/lib/golf/course-geometry/__tests__/visual-artifact-v2.test.ts`
 
 Produces
 
@@ -2990,46 +2991,46 @@ The architecture follows the major mobile-WebGL recommendations:
 ## Part XXIV — source links
 
 Three.js DataArrayTexture
-https://threejs.org/docs/pages/DataArrayTexture.html
+<https://threejs.org/docs/pages/DataArrayTexture.html>
 
 Three.js DataTexture
-https://threejs.org/docs/pages/DataTexture.html
+<https://threejs.org/docs/pages/DataTexture.html>
 
 Three.js WebGLRenderer / compileAsync / renderer info
-https://threejs.org/docs/pages/WebGLRenderer.html
+<https://threejs.org/docs/pages/WebGLRenderer.html>
 
 Three.js InstancedMesh
-https://threejs.org/docs/pages/InstancedMesh.html
+<https://threejs.org/docs/pages/InstancedMesh.html>
 
 Three.js BatchedMesh
-https://threejs.org/docs/pages/BatchedMesh.html
+<https://threejs.org/docs/pages/BatchedMesh.html>
 
 Three.js CSM
-https://threejs.org/docs/pages/CSM.html
+<https://threejs.org/docs/pages/CSM.html>
 
 Three.js LightProbeGridWebGL
-https://threejs.org/docs/pages/LightProbeGridWebGL.html
+<https://threejs.org/docs/pages/LightProbeGridWebGL.html>
 
 Three.js LightShadow
-https://threejs.org/docs/pages/LightShadow.html
+<https://threejs.org/docs/pages/LightShadow.html>
 
 Three.js KTX2Loader
-https://threejs.org/docs/pages/KTX2Loader.html
+<https://threejs.org/docs/pages/KTX2Loader.html>
 
 MDN WebGL best practices
-https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/WebGL_best_practices
+<https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/WebGL_best_practices>
 
 meshoptimizer
-https://meshoptimizer.org/
+<https://meshoptimizer.org/>
 
 glTF Transform
-https://gltf-transform.dev/
+<https://gltf-transform.dev/>
 
 KTX 2.0 specification
-https://registry.khronos.org/KTX/specs/2.0/ktxspec.v2.html
+<https://registry.khronos.org/KTX/specs/2.0/ktxspec.v2.html>
 
 three-mesh-bvh
-https://github.com/gkjohnson/three-mesh-bvh
+<https://github.com/gkjohnson/three-mesh-bvh>
 
 ────────
 

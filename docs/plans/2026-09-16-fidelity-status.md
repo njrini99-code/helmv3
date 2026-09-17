@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD013 -->
 # 3D Course Fidelity Master Spec: execution status
 
 Tracks "Peek’n Peak Meridian — 3D Course Fidelity Master Spec" (70 sections,

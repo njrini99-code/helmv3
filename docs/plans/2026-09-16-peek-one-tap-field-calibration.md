@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD013 MD060 -->
 # Peek'n Peak Upper — One-Tap field calibration (task 18)
 
 **Status: protocol and baseline only — the course has not been walked.**

@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD013 -->
 # Meridian visual master plan: execution status
 
 Tracks every numbered section of the Meridian visual master plan

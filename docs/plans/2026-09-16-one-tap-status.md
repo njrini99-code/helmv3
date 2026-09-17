@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD013 -->
 # One-Tap round tracking: execution status
 
 Tracks the One-Tap master plan (deep research report, 2026-09-16: "MARK BALL

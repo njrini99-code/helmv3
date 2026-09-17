@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD013 -->
 # Peek'n Peak Upper: how the course was built
 
 Build log for the first whole-course run of the GolfHelm course-geometry
@@ -36,7 +37,7 @@ the browser only.
 The live Vercel URL still serves Codex's old build. The deploy command is
 denied for me by the session's permission classifier, so it needs you:
 
-```
+```bash
 cd /Users/ricknini/worktrees/helmv3/golf-course-geometry/output/course-geometry/browser-build
 ../../../node_modules/.bin/vercel deploy --yes
 ```
@@ -104,7 +105,7 @@ disagreements are kept as source conflicts, never resolved by the map.
 
 ### 4.2 OSM plan geometry
 
-```
+```bash
 python3 scripts/golf/course-geometry/fetch-osm-course.py …   # once, retained as immutable gzip + manifest
 python3 scripts/golf/course-geometry/prepare-osm-course.py <overpass.gz> <scorecard> <output_dir> [--canopy-review …] [--traces …]
 ```
@@ -143,7 +144,7 @@ cells, height and normal duplicates in agreement.
 
 ### 4.4 Canopy: NAIP four-band imagery
 
-```
+```bash
 python3 scripts/golf/course-geometry/derive-canopy-naip.py <package> <terrain_source> <naip_dir> <canopy-review.json>
 ```
 
@@ -170,7 +171,7 @@ tree height, currentness or obstruction claim.
 
 ### 4.5 Imagery review dossier
 
-```
+```bash
 python3 scripts/golf/course-geometry/review-course-imagery.py <package> <naip_dir> <output_dir> <summary.json>
 ```
 
@@ -212,7 +213,7 @@ fairway" gap text. Hole 11 stays `partial` and still fails the truth gate.
 
 ### 4.7 Blender world and truth gate
 
-```
+```bash
 python3 scripts/golf/course-geometry/build-course-world.py <package> <terrain_source> <output_dir>
 ```
 
@@ -482,7 +483,7 @@ None of these may be closed by drawing.
 
 From the worktree, in order (paths as used in this build):
 
-```
+```bash
 # 1. Retain the Overpass extract once (immutable gzip + manifest)
 python3 scripts/golf/course-geometry/fetch-osm-course.py \
   scripts/golf/course-geometry/pilots/peek-n-peak-upper-scorecard.json \
