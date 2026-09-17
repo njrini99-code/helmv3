@@ -64,7 +64,7 @@ function mount(markers?: SceneMarkers | null) {
   // Moves coalesce onto the next frame; settle it before reading the pose.
   const frame = () => act(async () => { await new Promise<void>(resolve => requestAnimationFrame(() => resolve())); });
   const tap = async (x: number, y: number) => { await down(1, x, y); await up(1, x, y); await frame(); };
-  const rerender = (next?: SceneMarkers | null) => view.rerender(<HoleSceneFrame scene={scene} context="entry" presentation="stage" markers={next} />);
+  const rerender = (next?: SceneMarkers | null, nextScene: typeof scene | null = scene) => view.rerender(<HoleSceneFrame scene={nextScene} context="entry" presentation="stage" markers={next} />);
   return { pose, down, move, up, frame, tap, rerender };
 }
 
@@ -151,6 +151,22 @@ describe('tap-to-measure (on-course ask, 2026-09-17)', () => {
     await tap(180, 260);
     expect(chip()).not.toBeNull();
     await tap(182, 262);
+    expect(chip()).toBeNull();
+  });
+  it('keeps the ruler through a host re-render of the same hole and drops it on another hole', async () => {
+    harness.runtime = true; harness.pickAt = [target[0], target[1], terrainHeight(mesh, target)!];
+    const { tap, rerender } = mount(null);
+    await tap(180, 260);
+    expect(chip()!.dataset.measureYards).toBe('219');
+    rerender(null, { ...scene }); // a new scene object for the same hole (a fix, a save)
+    expect(chip()!.dataset.measureYards).toBe('219');
+    rerender(null, null); // the host mid-load: nothing to draw, nothing forgotten
+    expect(chip()).toBeNull();
+    rerender(null, scene);
+    expect(chip()!.dataset.measureYards).toBe('219');
+    rerender(null, { ...scene, physicalHoleKey: 'cacapon-08' });
+    expect(chip()).toBeNull();
+    rerender(null, scene);
     expect(chip()).toBeNull();
   });
 });

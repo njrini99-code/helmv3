@@ -300,8 +300,15 @@ function Drawing({ scene, view, context, events, selectedShotNumber, activeDraft
   const interactive = expanded && courseView != null && !!scene && !showProfile;
   const measurement = useMemo(() => production && terrainEnabled && measureAt ? measureTap(scene, markers, measureAt) : null, [production, terrainEnabled, measureAt, scene, markers]);
   const drawnMarkers = useMemo(() => measureMarkers(markers, measurement), [markers, measurement]);
-  // Another hole or area is another frame: the ruler does not carry over.
-  useEffect(() => { setMeasureAt(null); }, [scene?.physicalHoleKey, courseView]);
+  // Another hole or area is another frame: the ruler does not carry over. A
+  // scene that is momentarily absent (a host mid-load) is not a hole change.
+  const measureHole = useRef(scene?.physicalHoleKey);
+  useEffect(() => {
+    const key = scene?.physicalHoleKey;
+    if (key && measureHole.current && key !== measureHole.current) setMeasureAt(null);
+    if (key) measureHole.current = key;
+  }, [scene?.physicalHoleKey]);
+  useEffect(() => { setMeasureAt(null); }, [courseView]);
   const boundedPan = (x: number, y: number) => ({ x: Math.max(-size.width / 2, Math.min(size.width / 2, x)),
     y: Math.max(-size.height / 2, Math.min(size.height / 2, y)) });
   const isPreset = (preset: TerrainPreset) => Math.abs(pose.pitch - TERRAIN_PRESETS[preset].pitch) < .01 &&
