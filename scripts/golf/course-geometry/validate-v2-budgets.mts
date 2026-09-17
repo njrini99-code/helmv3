@@ -36,8 +36,13 @@ const maxDownloadBytes = maxBytesArg ? Number(maxBytesArg) : undefined;
 // run, including a `--holes` filtered one, so it can list fewer holes than
 // actually have a report on disk.
 if (!existsSync(reportsDir)) { console.error(`no reports at ${reportsDir} — run compile-display-lods.mts --course ${course} first`); process.exit(2); }
-const holeFile = new RegExp(`^${course}-(.+)\\.display-lods\\.json$`);
-const holes = readdirSync(reportsDir).map(name => holeFile.exec(name)?.[1]).filter((short): short is string => short != null).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+// `<course>-<hole>.display-lods.json`, matched on prefix/suffix rather than
+// a RegExp built from the --course argument (CodeQL js/regex-injection).
+const holePrefix = `${course}-`, holeSuffix = '.display-lods.json';
+const holes = readdirSync(reportsDir)
+  .filter(name => name.startsWith(holePrefix) && name.endsWith(holeSuffix) && name.length > holePrefix.length + holeSuffix.length)
+  .map(name => name.slice(holePrefix.length, -holeSuffix.length))
+  .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 if (!holes.length) { console.error(`no <hole>.display-lods.json files in ${reportsDir}`); process.exit(2); }
 
 let artifactByHole = new Map<string, HoleArtifactSummary>();
