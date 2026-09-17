@@ -193,9 +193,25 @@ repeated here as they land.
   pkg/holeKeys/location/transport references, so the live hole's round
   state is never re-initialised), and the standard tracker shows one status
   line for an Upper round — "loading course…", "loading hole terrain n/18…",
-  or "Meridian Live off · <reason>" (location blocked, course files did not
+  or "Meridian Live off · …reason" (location blocked, course files did not
   load, flag off, package mismatch, error) — `OneTapLiveStatusRow`. The
   next phone screenshot names the cause.
+- Second on-course phone run, 2026-09-17 14:07 EDT (d1mme7h2p preview, screen
+  recording): Meridian Live came up — hole 1 drawn, "Locating…", "Waiting for
+  a GPS fix" — and within a second of Allow the route fell to "Failed to load
+  round entry". The only throw on the live-fix render path is `wgs84ToEnu`'s
+  "Course extent exceeds 5 km local frame", reached from the hook's
+  `distances`/`advice` memos and `playerFixFromSample` when the first fix
+  lands outside the frame (the drive in, or a coarse first cell fix in
+  Clymer); the package origin itself is right (−79.744, 42.06). 561690cf1:
+  live fixes go through `wgs84ToEnuInFrame` (null outside the frame) — no
+  YOU marker, distances fall back to the last mark, the next-tee dwell and
+  the tap estimator ignore such fixes, the HUD says "Not at the course yet"
+  — and `use-one-tap.test.tsx` reproduces the crash on the old code. Not
+  seen from the phone directly: the preview did not persist client error
+  reports and Sentry's tunnel answers 429 (quota), so the m71o11s5a and
+  later previews are deployed with `ADMIN_EVENTS_CAPTURE_PREVIEW=1` and a
+  smoke report landed in `error_logs`; the next crash, if any, is readable.
 - Still owner-authorized and not done: the One-Tap sync migration (HUD
   shows "Sync issue" until then) and any production deploy.
 - Whole-course One-Tap V2 audit (2026-09-17, `capture-one-tap.cjs --world=v2`,
