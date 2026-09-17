@@ -678,9 +678,22 @@ function expandBbox(box: Bbox, m: number): Bbox { return { minX: box.minX - m, m
  * the line past an end cap along the line's direction (0 inside the run), and
  * `across` its distance from the line's axis there, so callers can feather a
  * ribbon's end instead of extending it as a disc. */
-function nearestOnPolyline(point: PointM, line: readonly PointM[], out: { d: number; x: number; y: number; beyond: number; across: number }): void {
+/** Runs of `POLYLINE_CHUNK` segments with the box of their points, so the
+ * nearest-segment search can skip a whole run that is already farther than
+ * the best segment found (a box is never farther than what it holds). */
+const POLYLINE_CHUNK = 8;
+interface PolylineChunks { first: number[]; last: number[]; boxes: Bbox[] }
+function chunkPolyline(line: readonly PointM[]): PolylineChunks {
+  const first: number[] = [], last: number[] = [], boxes: Bbox[] = [];
+  for (let start = 1; start < line.length; start += POLYLINE_CHUNK) {
+    const end = Math.min(line.length - 1, start + POLYLINE_CHUNK - 1);
+    first.push(start); last.push(end); boxes.push(ringBbox(line.slice(start - 1, end + 1)));
+  }
+  return { first, last, boxes };
+}
+function nearestOnPolyline(point: PointM, line: readonly PointM[], out: { d: number; x: number; y: number; beyond: number; across: number }, chunks?: PolylineChunks): void {
   let best = Infinity, bx = line[0]![0], by = line[0]![1], beyond = 0, across = 0;
-  for (let i = 1; i < line.length; i++) {
+  const segment = (i: number): void => {
     const [ax, ay] = line[i - 1]!, [cx, cy] = line[i]!, dx = cx - ax, dy = cy - ay, l2 = dx * dx + dy * dy;
     const raw = l2 > 0 ? ((point[0] - ax) * dx + (point[1] - ay) * dy) / l2 : 0, t = Math.max(0, Math.min(1, raw));
     const px = ax + t * dx, py = ay + t * dy, d = Math.hypot(point[0] - px, point[1] - py);
@@ -690,7 +703,32 @@ function nearestOnPolyline(point: PointM, line: readonly PointM[], out: { d: num
       beyond = over * length;
       across = beyond > 0 ? Math.abs((point[0] - ax) * dy - (point[1] - ay) * dx) / length : d;
     }
-  }
+  };
+  if (chunks) {
+    // Two passes keep the answer identical to the plain in-order scan (ties
+    // go to the lowest segment index): the first finds the true minimum
+    // distance visiting the nearest boxes first, the second is the in-order
+    // scan restricted to the runs whose box can still hold that minimum.
+    const order = chunks.boxes.map((box, k) => [bboxDistance(point, box), k] as const).sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    let bound = Infinity;
+    for (const [boxDistance, k] of order) {
+      if (boxDistance > bound) break;
+      for (let i = chunks.first[k]!; i <= chunks.last[k]!; i++) {
+        const [ax, ay] = line[i - 1]!, [cx, cy] = line[i]!, dx = cx - ax, dy = cy - ay, l2 = dx * dx + dy * dy;
+        const t = l2 > 0 ? Math.max(0, Math.min(1, ((point[0] - ax) * dx + (point[1] - ay) * dy) / l2)) : 0;
+        const d = Math.hypot(point[0] - (ax + t * dx), point[1] - (ay + t * dy));
+        if (d < bound) bound = d;
+      }
+    }
+    // A box distance is a square root of the same offsets `Math.hypot`
+    // combines, so it can round one ulp above the segment distance it
+    // bounds; the slack keeps the run holding the minimum from being skipped.
+    const limit = bound + 1e-9;
+    for (let k = 0; k < chunks.boxes.length; k++) {
+      if (bboxDistance(point, chunks.boxes[k]!) > limit) continue;
+      for (let i = chunks.first[k]!; i <= chunks.last[k]!; i++) segment(i);
+    }
+  } else for (let i = 1; i < line.length; i++) segment(i);
   out.d = best; out.x = bx; out.y = by; out.beyond = beyond; out.across = across;
 }
 
@@ -707,7 +745,7 @@ function compileContextContact(scene: HoleScene, mesh: TerrainMesh, style: Merid
   const ribbonWidths = style.contextObjects.ribbons as Record<string, { widthM: number } | undefined>;
   const ribbons = zones.filter(zone => zone.render === 'ribbon' && zone.type === 'LineString').flatMap(zone => {
     const halfM = ((zone.attributes as { widthM?: number }).widthM ?? ribbonWidths[zone.class]?.widthM ?? 2.5) / 2;
-    return zone.parts.flat().filter(line => line.length >= 2).map(line => ({ line, halfM, box: expandBbox(ringBbox(line), halfM + Math.max(pathShoulderM, cutFillBankM)) }));
+    return zone.parts.flat().filter(line => line.length >= 2).map(line => ({ line, halfM, box: expandBbox(ringBbox(line), halfM + Math.max(pathShoulderM, cutFillBankM)), chunks: chunkPolyline(line) }));
   });
   if (!structures.length && !ribbons.length) return { structures: 0, ribbons: 0, vertices: 0, levelled: 0 };
   let touched = 0, levelled = 0;
@@ -735,7 +773,7 @@ function compileContextContact(scene: HoleScene, mesh: TerrainMesh, style: Merid
       let weight = 0, targetSum = 0, lead: { feather: number; t: number; d: number; x: number; y: number; delta: number } | null = null;
       for (const ribbon of ribbons) {
         if (bboxDistance(point, ribbon.box) > 0) continue;
-        nearestOnPolyline(point, ribbon.line, nearest);
+        nearestOnPolyline(point, ribbon.line, nearest, ribbon.chunks);
         const d = nearest.d;
         if (d < ribbon.halfM + pathShoulderM) shade *= 1 - pathShade * (d <= ribbon.halfM ? 1 : 1 - (d - ribbon.halfM) / pathShoulderM);
         if (cutFillBankM <= 0 || nearest.across >= ribbon.halfM + cutFillBankM || nearest.beyond >= cutFillBankM) continue;

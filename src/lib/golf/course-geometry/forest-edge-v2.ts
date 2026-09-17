@@ -226,9 +226,13 @@ function edgeDistanceM(point: PointM, region: ForestRegion): number {
  * skipped. Exact — only the work changes. */
 function nearestRingDistanceM(point: PointM, rings: readonly Ring[]): number {
   let min = Infinity;
-  for (const { ring, box } of rings) if (bboxDistance(point, box) < min) min = Math.min(min, boundaryDistance(point, ring));
+  for (const { ring, box } of rings) if (bboxDistance(point, box) < min + BOX_SLACK_M) min = Math.min(min, boundaryDistance(point, ring));
   return min;
 }
+/** A box distance can round one ulp above the boundary distance it bounds
+ * (square root of the same offsets `Math.hypot` combines); the slack keeps
+ * every box test conservative. */
+const BOX_SLACK_M = 1e-9;
 
 /** §65: crowns are densest at the boundary and thin inward, but never to
  * zero (mass carries the rest, §66) — an explicit rule so the gradient
@@ -349,7 +353,7 @@ export function compileForestEdgeV2(scene: HoleScene, mesh: TerrainMesh, options
   const playFeatureBoxes = playFeatures.map(f => ({ feature: f, box: ringBbox(f.parts.flat(2)) }));
   const isClear = (point: PointM, clearanceM: number) =>
     !playFeatureBoxes.some(({ feature, box }) => bboxDistance(point, box) === 0 && inFeature(point, feature))
-    && !playRings.some(({ ring, box }) => bboxDistance(point, box) < clearanceM && boundaryDistance(point, ring) < clearanceM);
+    && !playRings.some(({ ring, box }) => bboxDistance(point, box) < clearanceM + BOX_SLACK_M && boundaryDistance(point, ring) < clearanceM);
   const nearnessToPlay = (point: PointM) => nearestRingDistanceM(point, playRings);
 
   const extent = terrainExtent(mesh);

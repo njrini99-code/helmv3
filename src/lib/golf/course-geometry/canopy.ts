@@ -1,8 +1,26 @@
 import type { HoleScene, LocalFeature, PointM } from './types';
-import { inFeature } from './spatial';
+import { inFeature, pointBox, pointBoxDistance, type PointBox } from './spatial';
 import { boundaryDistance } from './display-outline';
 
 const cache = new WeakMap<HoleScene, Map<LocalFeature, readonly PointM[]>>();
+/** The scene's non-woods, non-route features with their boxes (per ring and
+ * whole), computed once per scene: every pattern centre of every woods group
+ * is tested against all of them, and a point farther than the clearance from
+ * a feature's box is neither inside it nor within the clearance of a ring. */
+const clearanceCache = new WeakMap<HoleScene, { feature: LocalFeature; box: PointBox; rings: { ring: readonly PointM[]; box: PointBox }[] }[]>();
+function clearanceFeatures(scene: HoleScene) {
+  let list = clearanceCache.get(scene);
+  if (!list) {
+    list = scene.features.filter(f => f.kind !== 'woods' && f.kind !== 'route')
+      .map(feature => ({ feature, box: pointBox(feature.parts.flat(2)), rings: feature.parts.flat().map(ring => ({ ring, box: pointBox(ring) })) }));
+    clearanceCache.set(scene, list);
+  }
+  return list;
+}
+const CLEARANCE_M = 4.2, MIN_SPACING_M = 5.4;
+/** A box distance can round one ulp above the boundary distance it bounds;
+ * box tests use the clearance plus this slack so they stay conservative. */
+const CLEARANCE_BOX_M = CLEARANCE_M + 1e-9;
 const silhouettes = new Map<number, string>();
 function variation(seed: number): number {
   let n = Math.imul(seed ^ (seed >>> 16), 0x45d9f3b);
@@ -49,15 +67,32 @@ export function canopySymbols(feature: LocalFeature, scene: HoleScene): readonly
   const minX = Math.floor(Math.min(...xs) / spacing) * spacing, maxX = Math.max(...xs);
   const minY = Math.floor(Math.min(...ys) / spacing) * spacing, maxY = Math.max(...ys);
   const cols = Math.ceil((maxX - minX) / spacing), rows = Math.ceil((maxY - minY) / spacing);
+  const ownRings = feature.parts.flat().map(ring => ({ ring, box: pointBox(ring) }));
+  const clearance = clearanceFeatures(scene);
+  // Accepted centres hashed by a cell no smaller than the minimum spacing, so
+  // the spacing test only visits the neighbouring cells (every centre within
+  // the spacing lies in one of them). Same acceptance, less work.
+  const cellM = MIN_SPACING_M, cellsX = Math.ceil((maxX - minX + spacing + 8) / cellM) + 2, occupied = new Map<number, PointM[]>();
+  const cellOf = (p: PointM) => [Math.floor((p[0] - minX + 4) / cellM), Math.floor((p[1] - minY + 4) / cellM)] as const;
+  const tooClose = (point: PointM): boolean => {
+    const [cx, cy] = cellOf(point);
+    for (let y = cy - 1; y <= cy + 1; y++) for (let x = cx - 1; x <= cx + 1; x++) {
+      const list = occupied.get(y * cellsX + x);
+      if (list && list.some(p => Math.hypot(p[0] - point[0], p[1] - point[1]) < MIN_SPACING_M)) return true;
+    }
+    return false;
+  };
   for (let row = 0; row <= rows; row++) for (let col = 0; col <= cols; col++) {
     const seed = Math.imul(col + Math.round(minX), 73856093) ^ Math.imul(row + Math.round(minY), 19349663);
     const jitterX = ((seed >>> 0) % 1024 / 1024 - .5) * 7;
     const jitterY = ((Math.imul(seed, 1664525) >>> 0) % 1024 / 1024 - .5) * 7;
     const point: PointM = [minX + col * spacing + (row % 2 ? spacing / 2 : 0) + jitterX, minY + row * spacing + jitterY];
-    if (!inFeature(point, feature) || feature.parts.flat().some(ring => boundaryDistance(point, ring) < 4.2)) continue;
-    if (scene.features.some(f => f.kind !== 'woods' && f.kind !== 'route' && (inFeature(point, f) || f.parts.flat().some(ring => boundaryDistance(point, ring) < 4.2)))) continue;
-    if (points.some(p => Math.hypot(p[0] - point[0], p[1] - point[1]) < 5.4)) continue;
+    if (!inFeature(point, feature) || ownRings.some(({ ring, box }) => pointBoxDistance(point, box) < CLEARANCE_BOX_M && boundaryDistance(point, ring) < CLEARANCE_M)) continue;
+    if (clearance.some(({ feature: f, box, rings }) => pointBoxDistance(point, box) < CLEARANCE_BOX_M && (inFeature(point, f) || rings.some(r => pointBoxDistance(point, r.box) < CLEARANCE_BOX_M && boundaryDistance(point, r.ring) < CLEARANCE_M)))) continue;
+    if (tooClose(point)) continue;
     points.push(point);
+    const [cx, cy] = cellOf(point), key = cy * cellsX + cx, list = occupied.get(key);
+    if (list) list.push(point); else occupied.set(key, [point]);
   }
   // Over budget: keep an even spread across the whole group rather than the
   // first rows of the scan, which left large groups bare on one side.

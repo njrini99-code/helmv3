@@ -12,6 +12,21 @@ export function inRing([x, y]: PointM, ring: readonly PointM[]): boolean {
   }
   return inside;
 }
+/** Axis-aligned bounds of a point set, and a point's distance to them (0
+ * inside). A box is never farther than any point it holds, so it is a safe
+ * first test before a ring's own boundary distance; its square root can
+ * round one ulp above `Math.hypot` of the same offsets, so callers that
+ * compare it against a boundary distance leave that much slack. */
+export interface PointBox { minX: number; minY: number; maxX: number; maxY: number }
+export function pointBox(points: readonly PointM[]): PointBox {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const [x, y] of points) { if (x < minX) minX = x; if (x > maxX) maxX = x; if (y < minY) minY = y; if (y > maxY) maxY = y; }
+  return { minX, minY, maxX, maxY };
+}
+export function pointBoxDistance([x, y]: PointM, box: PointBox): number {
+  const dx = Math.max(box.minX - x, 0, x - box.maxX), dy = Math.max(box.minY - y, 0, y - box.maxY);
+  return Math.sqrt(dx * dx + dy * dy);
+}
 export function inFeature(point: PointM, feature: LocalFeature): boolean {
   return feature.type !== 'LineString' && feature.parts.some(rings =>
     !!rings[0] && inRing(point, rings[0]) && !rings.slice(1).some(r => inRing(point, r)));
