@@ -198,7 +198,7 @@ repeated here as they land.
   (`hierarchy-v1ref`); a palette question, not this term's. Tee mow-grain
   stays off (V1 never mows the tee: `mown` is fairway/green only). Still
   missing from the V2 ground versus V1: context ground zones (§48
-  classes), fairway edge types/terrain bias, context desaturation.
+  classes), context desaturation (fairway edge types landed in v2-10).
 - §20 pad setting in V2 (`meridian-ground-v2-8`, 2026-09-17): `greenPadSetting`
   packs the hole's own green pad (mean canonical z of the green's field
   triangles, V1 compileGreenComplex) with a centre and reach radius into the
@@ -227,6 +227,18 @@ repeated here as they land.
   pixels move by > 24 levels, all at bunker rims; the shaded side matches
   V1's (upper-right inner rim on hole 7's left greenside bunker at the green
   preset).
+- Fairway edge types in V2 (`meridian-ground-v2-10`, 2026-09-17, fidelity §65
+  #3 / §10 / §10.3): fairway fragments within `fairwayEdge.fieldM` (0.8 m) of
+  the outline darken by V1's crisp lip (4.5 %) within 8 m of a bunker or
+  green outline (either atlas SDF, own and context) and by the soft lip
+  (1.5 %) elsewhere, full on the outline, linear to nothing at 0.8 m; under
+  GOLF_V2_RELIEF the lip strengthens by up to 80 % where the relief slope
+  rises outward from the fairway (the shoulder; outward = minus the fairway
+  SDF's four-tap gradient) and softens where it falls away. Mirror
+  `fairwayEdgeAt` + hole-7 census in `ground-shader-v2.test.ts`. The term is
+  as quiet as V1's: a 1–3 level line along the whole outline (0.14 % of a
+  phone frame's pixels move by > 1 level, none by > 4), so no before/after
+  sheet was sent.
 - Task 22: run the CSM protocol on a real desktop GPU; Task 23's visual
   judgment likewise.
 - Task 27: blocked on the owner's phone.
