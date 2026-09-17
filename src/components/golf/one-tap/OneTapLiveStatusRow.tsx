@@ -13,7 +13,7 @@ const OFF_COPY: Record<Extract<OneTapLiveStatus, { phase: 'off' }>['reason'], st
   location_unavailable: 'location is blocked for this site — allow it in Settings › Safari › Location, then reopen the round',
   course_unavailable: 'the course files did not load — check signal, then reopen the round',
   feature_flag_off: 'not enabled in this environment',
-  opt_in_off: 'off for this round',
+  opt_in_off: 'for this round',
   geometry_hash_not_approved: 'the course package is not approved',
   wrong_course: 'not this course',
   wrong_site: 'the course package is for another site',

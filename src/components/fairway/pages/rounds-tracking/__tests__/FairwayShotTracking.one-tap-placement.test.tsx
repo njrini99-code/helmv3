@@ -38,7 +38,7 @@ describe('FairwayShotTracking one-tap placement', () => {
     expect(liveHole()).toBeNull();
     const row = container.querySelector('[data-slot="one-tap-live-status"]')!;
     expect(row.getAttribute('data-reason')).toBe('opt_in_off');
-    expect(row.textContent).toContain('off for this round');
+    expect(row.textContent).toContain('Meridian Live off · for this round');
     const turnOn = container.querySelector<HTMLButtonElement>('[data-slot="one-tap-live-turn-on"]')!;
     expect(turnOn.textContent).toBe('Turn on');
     turnOn.click();

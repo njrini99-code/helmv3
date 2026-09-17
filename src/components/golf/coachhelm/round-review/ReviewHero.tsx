@@ -48,6 +48,7 @@ import type { Lie } from '@/components/golf/coachhelm/v3/HoleShotPath/types';
 // unlike the two components below. Computed ONCE per open hole and shared by
 // both the emptiness check (does this hole even have a putting zoom?) and
 // the `PuttingZoom` panel itself, instead of each side re-deriving it.
+import { plotHole } from '@/components/golf/coachhelm/v3/HoleShotPath/geometry';
 import type { CourseGeometryPackage, HoleScene } from '@/lib/golf/course-geometry/types';
 import { normalizePersistedShot, recordedDistance } from '@/lib/golf/course-geometry/normalize';
 import { buildHoleScene } from '@/lib/golf/course-geometry/build-scene';
@@ -78,11 +79,27 @@ const HoleShotPath = dynamic(
     // SIZES.review) at this panel's centered-then-left-aligned width (see
     // the render below).
     loading: () => (
-      <Skeleton className="h-[310px] w-full rounded-fw-md" />
+      <Skeleton className="mx-auto aspect-[100/200] w-full max-w-[300px] rounded-fw-md lg:mx-0 lg:max-w-[360px]" />
     ),
   },
 );
 
+// The putting-green zoom — its own side panel (2026-07-22 redesign) in the
+// legacy layout below, which every round without course geometry still gets.
+// Same code-splitting rationale as `HoleShotPath` above.
+const PuttingZoom = dynamic(
+  () => import('@/components/golf/coachhelm/v3/HoleShotPath').then((mod) => mod.PuttingZoom),
+  {
+    ssr: false,
+    loading: () => <Skeleton className="mx-auto aspect-square w-[172px] rounded-fw-md lg:mx-0" />,
+  },
+);
+
+/** Prettified lie label for the compact shot list — deliberately NOT
+ *  imported from `HoleShotPath/index.tsx` (its `LIE_LABEL`): that module is
+ *  dynamically imported specifically to keep framer-motion out of this
+ *  page's first-load JS, and a static import here for one label map would
+ *  quietly defeat that split. */
 const LIE_LABEL: Record<Lie | 'other', string> = {
   tee: 'Tee',
   fairway: 'Fairway',
@@ -329,13 +346,19 @@ export function ReviewHero({
     } else {
       setOpenHole(activeHole);
       setHoleParam(activeHole);
-      setDetailScrollRequest(request => request + 1);
+      if (courseFramed) setDetailScrollRequest(request => request + 1);
     }
   }
 
   const openMeta = openHole != null ? holeMeta.get(openHole) : undefined;
   const openPar = openMeta?.par === 3 || openMeta?.par === 4 || openMeta?.par === 5 ? openMeta.par : undefined;
 
+  // The course-framed review (HoleSceneFrame, shot selector, position copy)
+  // exists only for a round whose caller supplied course geometry. Nothing
+  // constructs that prop yet (plan §unlock 3), and a round without geometry
+  // must keep the review it has today: the legacy shot path, putting zoom and
+  // shot list — never "Course outline unavailable" on every hole of every team.
+  const courseFramed = geometry != null;
   const scenesByHole = useMemo(() => {
     const map = new Map<number, HoleScene>();
     if (!geometry) return map;
@@ -351,6 +374,13 @@ export function ReviewHero({
   const selectedView = selected?.shotType === 'putting' ? 'putting' :
     selected?.shotType === 'around_green' || (selected?.after.valueM != null && selected.after.valueM <= 45.72) ? 'green' : 'hole';
   const seasonBand = selected?.shotType === 'putting' && selected.before.valueM != null ? bandForPuttFeet(selected.before.valueM / .3048) : null;
+  // Legacy layout: computed once per open hole, shared by the putting-zoom
+  // panel AND the "does this hole even have one" check — see the import comment.
+  const openPlot = useMemo(() => {
+    if (courseFramed || !openHoleShots || openHoleShots.length === 0) return null;
+    return plotHole({ shots: openHoleShots, par: openPar, yardage: openMeta?.yardage ?? null });
+  }, [courseFramed, openHoleShots, openPar, openMeta]);
+  const hasPuttingZoom = (openPlot?.greenInset.shots.length ?? 0) > 0;
 
   // Per-hole "expected vs actual" narrative (Wave D) — the open hole's SG
   // sum + category attribution, computed from the SAME per-shot `sg` the
@@ -408,10 +438,10 @@ export function ReviewHero({
           holes={filmstripHoles}
           activeHole={activeHole ?? undefined}
           onScrub={handleScrub}
-          onSelectHole={hole => { if ((shotsByHole?.get(hole.n)?.length ?? 0) > 0) setDetailScrollRequest(request => request + 1); }}
+          onSelectHole={courseFramed ? hole => { if ((shotsByHole?.get(hole.n)?.length ?? 0) > 0) setDetailScrollRequest(request => request + 1); } : undefined}
           shotsByHole={shotsByHole}
-          scenesByHole={scenesByHole}
-          bounded
+          scenesByHole={courseFramed ? scenesByHole : undefined}
+          bounded={courseFramed}
         />
         <div className="mt-3 min-h-[40px] border-t border-border-subtle pt-3">
           {detail ? (
@@ -442,7 +472,7 @@ export function ReviewHero({
           <div className="flex min-w-0 items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="font-fw-display text-body-lg font-semibold text-text-primary">Hole {openHole} shot path</p>
-              <p className="mt-1 font-fw-sans text-caption text-text-tertiary">Select a recorded shot to inspect its distances and course context.</p>
+              <p className="mt-1 font-fw-sans text-caption text-text-tertiary">{courseFramed ? 'Select a recorded shot to inspect its distances and course context.' : 'Hover or focus a numbered shot to inspect it.'}</p>
               {/* Per-hole "expected vs actual" narrative (Wave D) — one
                   honest Strokes-Gained sentence, e.g. "Lost 2.1 strokes
                   here — 1.1 off the tee, 1.0 putting." Omitted entirely
@@ -461,7 +491,7 @@ export function ReviewHero({
             </PressTarget>
           </div>
 
-          <div className="mt-3 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(240px,.85fr)] lg:items-start">
+          {courseFramed ? <div className="mt-3 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(240px,.85fr)] lg:items-start">
             <HoleShotPath hole_number={openHole} par={openPar} yardage={openMeta?.yardage ?? null}
               score={openMeta?.score ?? null} shots={openHoleShots} size="review" bounded
               scene={scenesByHole.get(openHole)} evidence={evidence} defaultView={selectedView} selectedShotNumber={selected?.shotNumber} />
@@ -490,7 +520,89 @@ export function ReviewHero({
                 </ol>
               </details>
             </div>
+          </div> : (
+          /* The STAR diagram (col 1) + a slim companion column (col 2:
+              putting-zoom, then the compact shot list) — 2026-07-22
+              redesign per Nick's verbatim feedback ("markers hard to see",
+              "result vs yardage so far apart", "make it bigger, put the
+              hole aesthetically there"). A real grid (not a flex row) so
+              the diagram gets a genuinely bigger, capped column instead of
+              stretching/shrinking with its neighbors; collapses to one
+              column below `lg` — diagram, then putting zoom, then the list,
+              each centered until `lg` re-introduces the side-by-side row
+              and left-aligns col 1. */
+          <div className="mt-4 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,360px)_minmax(0,1fr)] lg:items-start">
+            <HoleShotPath
+              // Remounts on every scrubbed hole change — the fresh mount is
+              // what makes the shot-by-shot draw-in (segments → traveling
+              // ball → landing dot) replay each time hover/scrub in the
+              // filmstrip above opens a different hole here, instead of only
+              // playing once for whichever hole happened to open first.
+              key={openHole}
+              hole_number={openHole}
+              par={openPar}
+              yardage={openMeta?.yardage ?? null}
+              score={openMeta?.score ?? null}
+              shots={openHoleShots}
+              size="review"
+              className="mx-auto w-full max-w-[300px] lg:mx-0 lg:max-w-[360px]"
+            />
+
+            <div className="flex min-w-0 flex-col gap-4">
+              {hasPuttingZoom && openPlot ? (
+                <div className="mx-auto flex flex-col items-center gap-1.5 lg:mx-0 lg:items-start">
+                  <PuttingZoom
+                    key={openHole}
+                    plot={openPlot}
+                    puttMakePct={puttMakePct}
+                    className="aspect-square w-[172px] shrink-0"
+                  />
+                  <span className="font-fw-mono text-eyebrow uppercase tracking-[0.1em] text-text-tertiary">
+                    On the green
+                  </span>
+                </div>
+              ) : null}
+
+              {/* Compact shot list — the core "result vs yardage so far
+                  apart" fix: no `justify-between`, no `flex-1` on the
+                  transition text, so the distance sits immediately after
+                  it instead of pinned to the row's far edge. Only the
+                  transition text shrinks/truncates (min-w-0); every other
+                  cell is a fixed-width `shrink-0` label. Capped height only
+                  kicks in for genuinely long (blow-up) holes — a normal
+                  hole's rows render fully with no scroll, no dead space. */}
+              <ol className="max-h-[360px] w-full min-w-0 divide-y divide-border-subtle overflow-y-auto rounded-fw-sm border border-border-subtle bg-surface">
+                {openHoleShots.map((shot, index) => {
+                  const row = describeShotRow(openHoleShots, index);
+                  return (
+                    <li
+                      key={`${shot.shot_number}-${index}`}
+                      className="flex items-center gap-2 px-3 py-1.5"
+                    >
+                      <span className="shrink-0 font-fw-mono text-caption tabular-nums text-text-tertiary">
+                        {index + 1}
+                      </span>
+                      <span className="shrink-0 text-caption text-text-tertiary">·</span>
+                      <span
+                        className={`min-w-0 truncate font-fw-sans text-caption ${row.isPutt ? 'font-medium text-accent-700' : 'text-text-primary'}`}
+                      >
+                        {row.transition}
+                      </span>
+                      <span className="shrink-0 font-fw-mono text-caption tabular-nums text-text-secondary">
+                        {row.distance}
+                      </span>
+                      {row.isPenalty ? (
+                        <span className="shrink-0 rounded-full bg-danger/10 px-1.5 py-0.5 text-eyebrow font-semibold uppercase tracking-[0.06em] text-danger">
+                          Penalty
+                        </span>
+                      ) : null}
+                    </li>
+                  );
+                })}
+              </ol>
+            </div>
           </div>
+          )}
         </div>
       ) : null}
     </div>

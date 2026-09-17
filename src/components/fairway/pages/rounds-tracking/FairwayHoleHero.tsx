@@ -7,6 +7,7 @@ import { formatFeet, formatYards, feetToDisplay, yardsToDisplay } from '@/lib/go
 import { entryView } from '@/lib/golf/course-geometry/camera';
 import { HoleSceneFrame } from '@/components/golf/course-geometry/HoleSceneFrame';
 import { Button } from '@/components/fairway/controls/button';
+import { FairwayHoleHeroLegacy } from './FairwayHoleHeroLegacy';
 
 function shotStart(shot: ShotRecord, preference: 'yards' | 'meters') {
   return shot.distanceUnitBefore === 'feet' ? formatFeet(shot.distanceToHoleBefore, preference) : formatYards(shot.distanceToHoleBefore, preference);
@@ -17,8 +18,16 @@ function shotLeave(shot: ShotRecord, preference: 'yards' | 'meters') {
   return shot.distanceUnitAfter === 'feet' ? `${formatFeet(shot.distanceToHoleAfter, preference)} left` : `${formatYards(shot.distanceToHoleAfter, preference)} left`;
 }
 
-/** Read-only course context. Pending input never supplies a camera or anchor. */
-export function FairwayHoleHero({ currentHole, scene, shotType = 'tee', currentShot, shotTypeLabel, currentLie, distanceToHole, distanceUnit, isHoleComplete, holeScore, puttCount, shotHistory, selectedShotNumber, activeDraftShotNumber, puttingSelection, onSelectPuttingContext }: FairwayHoleHeroProps) {
+/** Read-only course context. Pending input never supplies a camera or anchor.
+ * A round with no resolved course package (every course today: nothing
+ * constructs the tracker's `geometry` yet) keeps the hero shipped on main;
+ * the course frame is only ever a replacement for a round it can draw. */
+export function FairwayHoleHero(props: FairwayHoleHeroProps) {
+  if (!props.scene) return <FairwayHoleHeroLegacy {...props} />;
+  return <CourseFramedHoleHero {...props} scene={props.scene} />;
+}
+
+function CourseFramedHoleHero({ currentHole, scene, shotType = 'tee', currentShot, shotTypeLabel, currentLie, distanceToHole, distanceUnit, isHoleComplete, holeScore, puttCount, shotHistory, selectedShotNumber, activeDraftShotNumber, puttingSelection, onSelectPuttingContext }: FairwayHoleHeroProps & { scene: HoleScene }) {
   const { distancePref } = useDistanceUnits();
   const remaining = distanceUnit === 'feet' ? formatFeet(distanceToHole, distancePref) : formatYards(distanceToHole, distancePref);
   const puttingM = distanceUnit === 'feet' ? feetToDisplay(distanceToHole, 'meters', false) : yardsToDisplay(distanceToHole, 'meters', false);
