@@ -637,13 +637,15 @@ describe('outside-world context attributes on the V2 ground (ground-context-v2.t
     try {
       const meshes = built.group.children as THREE.Mesh[];
       expect(meshes.length).toBeGreaterThan(1);
-      for (const m of meshes) {
+      meshes.forEach((m, i) => {
         const geometry = m.geometry as THREE.BufferGeometry;
         const context = geometry.getAttribute(GROUND_V2_ATTRIBUTES.context), zone = geometry.getAttribute(GROUND_V2_ATTRIBUTES.zone);
         expect(context.count).toBe(geometry.getAttribute('position').count);
         expect(zone.count).toBe(context.count);
         for (let v = 0; v < zone.count; v++) { expect(zone.getX(v)).toBeGreaterThanOrEqual(-1); expect(zone.getX(v)).toBeLessThanOrEqual(1); }
-      }
+        // A hero patch is one of this hole's own green complexes or bunkers: the polygon fallback marks none of it as context.
+        if (i > 0) for (let v = 0; v < context.count; v++) expect(context.getX(v)).toBe(0);
+      });
       const base = meshes[0]!.geometry as THREE.BufferGeometry;
       const context = base.getAttribute(GROUND_V2_ATTRIBUTES.context), zone = base.getAttribute(GROUND_V2_ATTRIBUTES.zone), color = base.getAttribute('color');
       let contextVertices = 0, zoneVertices = 0, fullZone = -1;
