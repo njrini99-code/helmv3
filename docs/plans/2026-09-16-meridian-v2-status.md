@@ -167,8 +167,14 @@ repeated here as they land.
   again at 09:44 EDT by a preview from ce050158c, which adds the visual
   artifact pass (c8972408b): <https://helmv3-42lran28z-nick-rinis-projects.vercel.app>
   (dpl_AxTqLE8MWQr5kf3XbsmWHoWSoZpV, READY; manifest, package, hole 7
+  terrain and the context layer byte-identical to `public/`). Superseded
+  at 10:30 EDT by a preview from f655171a9 (adds the forest ring index,
+  e2b90fb7e; the CI workflow completed green on that commit — TypeScript,
+  Lint, Static checks, three unit shards, Supabase lint + RLS, Next build):
+  <https://helmv3-4o21r2jb6-nick-rinis-projects.vercel.app>
+  (dpl_DP7dZiKLZjVDBMfcLP2G7egRH1vm, READY; manifest, package, hole 7
   terrain and the context layer byte-identical to `public/`). This is the
-  phone URL; the two earlier previews are stale.
+  phone URL; the earlier previews are stale.
 - Still owner-authorized and not done: the One-Tap sync migration (HUD
   shows "Sync issue" until then) and any production deploy.
 - Whole-course One-Tap V2 audit (2026-09-17, `capture-one-tap.cjs --world=v2`,
@@ -341,9 +347,8 @@ pushed, `output/` uncommitted:
   artifact content hash identical on all 18 holes (hole 8 in-browser
   769 → 255 ms); e2b90fb7e then halves the forest compile on a ring index
   (hole 18 259 → 90 ms), every compiled array still digest-identical on
-  all 18 holes. The phone preview is from ce050158c (before the forest
-  index) and carries the artifact pass:
-  <https://helmv3-42lran28z-nick-rinis-projects.vercel.app> (never
+  all 18 holes. The phone preview is from f655171a9 and carries both:
+  <https://helmv3-4o21r2jb6-nick-rinis-projects.vercel.app> (never
   production; the One-Tap migration is still unapplied, so the HUD shows
   "Sync issue" until the owner says migrate).
 
