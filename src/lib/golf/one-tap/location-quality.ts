@@ -67,8 +67,10 @@ export function confidenceForMotion(confidence: AnchorConfidence, motion: Captur
 
 /** Live fix quality for the HUD (§8.2). `good` stays silent; the others
  * earn the single location chip. Age uses the fix timestamp, so a paused or
- * stalled watch decays to `stale` without a status event. */
-export type LocationQuality = 'good' | 'fair' | 'poor' | 'stale' | 'none';
+ * stalled watch decays to `stale` without a status event. `off_course` is a
+ * healthy fix outside the course's local frame (the drive in, a coarse first
+ * cell fix): the phone knows where it is, and it is not here. */
+export type LocationQuality = 'good' | 'fair' | 'poor' | 'stale' | 'none' | 'off_course';
 export interface QualityConfig { goodAccuracyM: number; fairAccuracyM: number; staleAfterMs: number }
 /** PROVISIONAL — CALIBRATE ON PEEK'N PEAK. `fairAccuracyM` matches the estimator's poor-accuracy threshold. */
 export const QUALITY_CONFIG: Readonly<QualityConfig> = Object.freeze({ goodAccuracyM: 8, fairAccuracyM: 25, staleAfterMs: 6000 });

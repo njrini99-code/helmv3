@@ -1,4 +1,4 @@
-import { wgs84ToEnu, type LocalOrigin } from './geodesy';
+import { wgs84ToEnuInFrame, type LocalOrigin } from './geodesy';
 import { MOTION_CONFIG, classifyCaptureMotion, confidenceForMotion, type CaptureMotion, type MotionConfig, type MotionEvidence } from './location-quality';
 
 /** Live tap estimator (master plan "Live tap estimator"). Pure functions over
@@ -115,9 +115,13 @@ export function finalizeEstimate(buffer: LocationBuffer, tapMs: number, origin: 
   const window = buffer.between(tapMs - config.lookbackMs, tapMs + config.refinementMs)
     .filter(s => tapMs - s.timestampMs <= config.maxSampleAgeMs && s.horizontalAccuracyM > 0);
   if (!window.length) return null;
-  const good = window.filter(s => s.horizontalAccuracyM <= config.poorAccuracyM);
-  const samples = good.length ? good : window;
-  const points = samples.map(s => wgs84ToEnu([s.longitude, s.latitude, null], origin));
+  // A fix outside the local frame is not evidence of anything on this
+  // course; with none left the tap has no usable sample, and never throws.
+  const framed = window.flatMap(s => { const point = wgs84ToEnuInFrame([s.longitude, s.latitude, null], origin); return point ? [{ sample: s, point }] : []; });
+  if (!framed.length) return null;
+  const good = framed.filter(f => f.sample.horizontalAccuracyM <= config.poorAccuracyM);
+  const chosen = good.length ? good : framed;
+  const samples = chosen.map(f => f.sample), points = chosen.map(f => f.point);
   const centre = [median(points.map(p => p[0])), median(points.map(p => p[1]))] as const;
   const medianAccuracy = median(samples.map(s => s.horizontalAccuracyM));
   const residualLimit = Math.max(config.residualFloorM, config.residualAccuracyMultiple * medianAccuracy);

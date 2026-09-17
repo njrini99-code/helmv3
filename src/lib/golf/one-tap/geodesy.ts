@@ -51,15 +51,31 @@ function rotation(origin: LocalOrigin) {
   const sl = Math.sin(lon), cl = Math.cos(lon), sp = Math.sin(lat), cp = Math.cos(lat);
   return { e: [-sl, cl, 0] as const, n: [-sp * cl, -sp * sl, cp] as const, u: [cp * cl, cp * sl, sp] as const };
 }
+/** The local ENU frame is only trusted this far from the origin (package
+ * geometry never gets near it; a live fix from the drive in or a coarse
+ * first cell fix easily does). */
+export const LOCAL_FRAME_RADIUS_M = 5000;
 /** WGS84 (lon, lat, ellipsoid height) → local ENU metres. A `null` height is
- * evaluated on the ellipsoid frame surface and reported by the caller. */
+ * evaluated on the ellipsoid frame surface and reported by the caller. Throws
+ * for package geometry that does not fit the frame; live device fixes go
+ * through `wgs84ToEnuInFrame`, which reports the same condition as `null`. */
 export function wgs84ToEnu(point: readonly [number, number, number | null], origin: LocalOrigin): Enu {
-  const p = wgs84ToEcef([point[0], point[1], point[2] ?? frameHeight(origin)]), o = wgs84ToEcef([origin.lon, origin.lat, frameHeight(origin)]);
+  const enu = wgs84ToEnuInFrame(point, origin);
+  if (enu) return enu;
+  wgs84ToEcef([point[0], point[1], point[2] ?? frameHeight(origin)]); // a bad position raises its own error first
+  throw new Error('Course extent exceeds 5 km local frame');
+}
+/** Live-fix conversion: `null` for a coordinate that is not a WGS84 position
+ * or lies outside the local frame. A phone that is not at the course yet
+ * must never throw inside a render or a geolocation callback. */
+export function wgs84ToEnuInFrame(point: readonly [number, number, number | null], origin: LocalOrigin): Enu | null {
+  const [lon, lat, h] = point;
+  if (![lon, lat].every(Number.isFinite) || (h != null && !Number.isFinite(h)) || Math.abs(lon) > 180 || Math.abs(lat) > 90) return null;
+  const p = wgs84ToEcef([lon, lat, h ?? frameHeight(origin)]), o = wgs84ToEcef([origin.lon, origin.lat, frameHeight(origin)]);
   const d = [p[0] - o[0], p[1] - o[1], p[2] - o[2]] as const, r = rotation(origin);
   const dot = (v: readonly [number, number, number]) => v[0] * d[0] + v[1] * d[1] + v[2] * d[2];
   const enu: Enu = [dot(r.e), dot(r.n), dot(r.u)];
-  if (Math.hypot(enu[0], enu[1]) > 5000) throw new Error('Course extent exceeds 5 km local frame');
-  return enu;
+  return Math.hypot(enu[0], enu[1]) > LOCAL_FRAME_RADIUS_M ? null : enu;
 }
 export function enuToWgs84([e, n, u]: Enu, origin: LocalOrigin): Wgs84Position3 {
   const o = wgs84ToEcef([origin.lon, origin.lat, frameHeight(origin)]), r = rotation(origin);

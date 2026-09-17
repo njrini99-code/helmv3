@@ -2,7 +2,7 @@ import type { TerrainMesh } from '../course-geometry/terrain';
 import type { PointM } from '../course-geometry/types';
 import type { AnchorRepository, SyncQueue } from './anchor-repository';
 import { MOTION, type CameraObservation } from './camera-director';
-import { wgs84ToEnu, type LocalOrigin } from './geodesy';
+import { wgs84ToEnuInFrame, type LocalOrigin } from './geodesy';
 import { markTerminal } from './hole-lifecycle';
 import { classifyLie, greenComplexProbability, type SurfacePartition } from './lie-classifier';
 import { ESTIMATOR_CONFIG, LocationBuffer, anchorConfidence, finalizeEstimate, provisionalLocation, type EstimatorConfig, type LocationSample } from './location-estimator';
@@ -113,8 +113,12 @@ export class OneTapController {
     this.setState('CAPTURE_PENDING', null);
     const id = newAnchorId(tapMs), sequence = this.nextSequence();
     const identity = { id, roundId: this.deps.roundId, courseId: this.deps.course.courseId, siteId: this.deps.course.siteId, holeKey: this.hole.holeKey, holeId: this.hole.holeId, sequence, tapMs };
-    const provisional = provisionalLocation(this.deps.buffer, tapMs, this.config);
-    let base = provisionalAnchor(identity, provisional, provisional ? wgs84ToEnu([provisional.longitude, provisional.latitude, null], this.deps.origin) : null, this.deps.geometryVersion, this.hole.terrainVersion);
+    // A provisional fix outside the local frame is no provisional mark: the
+    // tap waits for the estimate (which ignores such fixes) and never throws.
+    const candidate = provisionalLocation(this.deps.buffer, tapMs, this.config);
+    const provisionalEnu = candidate ? wgs84ToEnuInFrame([candidate.longitude, candidate.latitude, null], this.deps.origin) : null;
+    const provisional = provisionalEnu ? candidate : null;
+    let base = provisionalAnchor(identity, provisional, provisionalEnu, this.deps.geometryVersion, this.hole.terrainVersion);
     if (provisional) this.deps.repo.upsert(base);
     const wait = Math.max(0, tapMs + this.config.refinementMs - this.now());
     await new Promise<void>(resolve => { this.schedule(resolve, wait); });

@@ -8,7 +8,7 @@ import { MemoryAnchorRepository, StorageAnchorRepository, SyncQueue, type Anchor
 import type { PenaltyRepository } from '@/lib/golf/one-tap/penalty-event';
 import type { CalibrationTraceSink } from '@/lib/golf/one-tap/calibration-trace';
 import { initialCameraState, nextHole, observeAnchor, observeGesture, productionStateFor, recenter, tickCamera, type CameraDirectorState, type CameraMode } from '@/lib/golf/one-tap/camera-director';
-import { localOriginFor, wgs84ToEnu } from '@/lib/golf/one-tap/geodesy';
+import { localOriginFor, wgs84ToEnuInFrame } from '@/lib/golf/one-tap/geodesy';
 import { courseIdForSite } from '@/lib/golf/one-tap/peek-n-peak-policy';
 import { largestOuterRing, ringCentroid, greenDistances, greenReadout, type GreenDistances, type GreenReadout } from '@/lib/golf/one-tap/hole-distances';
 import { competitionPolicy, permittedAdvice, NO_ADVICE, type CompetitionPolicy, type PlayMode, type ReadoutAdvice } from '@/lib/golf/one-tap/competition-policy';
@@ -271,8 +271,10 @@ export function useOneTap(options: UseOneTapOptions): OneTapView {
   const green = useMemo(() => partition.surfaces.find(s => s.lieClass === 'green') ?? null, [partition]);
   const distances = useMemo<{ value: GreenDistances | null; basis: OneTapView['distancesBasis']; onGreen: boolean }>(() => {
     if (!green) return { value: null, basis: null, onGreen: false };
-    if (latestFix) {
-      const enu = wgs84ToEnu([latestFix.longitude, latestFix.latitude, latestFix.altitudeM], origin);
+    // A fix outside the local frame (not at the course yet) reads like no
+    // fix: the last mark speaks, or nothing does — never a thrown render.
+    const enu = latestFix ? wgs84ToEnuInFrame([latestFix.longitude, latestFix.latitude, latestFix.altitudeM], origin) : null;
+    if (latestFix && enu) {
       const variance = latestFix.horizontalAccuracyM ** 2, cov: Covariance2 = [[variance, 0], [0, variance]];
       // §15: green mode follows where the golfer stands (the canonical green outline), never a guess.
       return { value: greenDistances([enu[0], enu[1]], green.feature, cov, green.edgeSigmaM), basis: 'live_fix', onGreen: exactPointInPartition(partition, [enu[0], enu[1]]).lieClass === 'green' };
@@ -288,7 +290,8 @@ export function useOneTap(options: UseOneTapOptions): OneTapView {
     // club or line: no calibrated model exists, and the policy governs them too.
     if (!terrain || !green) return permittedAdvice(NO_ADVICE, policy);
     const ring = largestOuterRing(green.feature), centre = ring ? ringCentroid(ring) : null;
-    const here: PointM | null = latestFix ? (([e, n]) => [e, n] as PointM)(wgs84ToEnu([latestFix.longitude, latestFix.latitude, latestFix.altitudeM], origin)) : lastMark ? [lastMark.positionENU[0], lastMark.positionENU[1]] : null;
+    const fixEnu = latestFix ? wgs84ToEnuInFrame([latestFix.longitude, latestFix.latitude, latestFix.altitudeM], origin) : null;
+    const here: PointM | null = fixEnu ? [fixEnu[0], fixEnu[1]] : lastMark ? [lastMark.positionENU[0], lastMark.positionENU[1]] : null;
     if (!centre || !here) return permittedAdvice(NO_ADVICE, policy);
     const from = sampleTerrain(terrain, here), to = sampleTerrain(terrain, centre);
     return permittedAdvice({ ...NO_ADVICE, elevationDeltaM: from && to ? to.elevationM - from.elevationM : null }, policy);
@@ -304,9 +307,10 @@ export function useOneTap(options: UseOneTapOptions): OneTapView {
 
   const locationQuality = useMemo<LocationQuality>(() => {
     if (!location) return 'none';
+    if (latestFix && !wgs84ToEnuInFrame([latestFix.longitude, latestFix.latitude, null], origin)) return 'off_course';
     if (playerStale) return gradeLocationQuality(latestFix, Number.POSITIVE_INFINITY, locationStatus);
     return gradeLocationQuality(latestFix, latestFix?.timestampMs ?? 0, locationStatus);
-  }, [location, latestFix, playerStale, locationStatus]);
+  }, [location, latestFix, playerStale, locationStatus, origin]);
   const syncIssue = snapshot.syncErrors > 0 ? 'error' : !online && snapshot.syncPending > 0 ? 'offline' : null;
   const statusToast = useMemo<OneTapStatusToast | null>(() => {
     if (snapshot.undoableId && snapshot.outcome && snapshot.outcome !== 'gps_unavailable') {

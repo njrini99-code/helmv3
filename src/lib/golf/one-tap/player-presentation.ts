@@ -1,4 +1,4 @@
-import { wgs84ToEnu, type LocalOrigin } from './geodesy';
+import { wgs84ToEnuInFrame, type LocalOrigin } from './geodesy';
 import type { LocationSample } from './location-estimator';
 
 /** YOU on the course (master plan §5, §37). The live device marker shows a
@@ -42,7 +42,10 @@ export const PRESENTATION_CONFIG: Readonly<PresentationConfig> = Object.freeze({
 const dist = (a: readonly [number, number], b: readonly [number, number]) => Math.hypot(a[0] - b[0], a[1] - b[1]);
 export function playerFixFromSample(sample: LocationSample, origin: LocalOrigin): PlayerFix | null {
   if (!(sample.horizontalAccuracyM > 0) || !Number.isFinite(sample.timestampMs)) return null;
-  const enu = wgs84ToEnu([sample.longitude, sample.latitude, null], origin);
+  // A fix outside the local frame (still driving in, a coarse first cell
+  // fix) is no YOU marker, not a thrown frame error.
+  const enu = wgs84ToEnuInFrame([sample.longitude, sample.latitude, null], origin);
+  if (!enu) return null;
   return { positionENU: [enu[0], enu[1]], accuracyM: sample.horizontalAccuracyM, timestampMs: sample.timestampMs };
 }
 /** Fold a new fix into the presentation. Returns the previous object when

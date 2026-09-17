@@ -74,4 +74,27 @@ describe('useOneTap: YOU is not BALL (§5, §37)', () => {
     expect(you().dimmed).toBe(false);
     void QUALITY_CONFIG;
   });
+  it('a fix from outside the course frame (the drive in, a coarse first cell fix) renders honestly instead of crashing the round', async () => {
+    // Peek'n Peak, 2026-09-17 14:07 EDT: the first fix after "Allow" landed
+    // beyond the 5 km local frame and the conversion threw inside a render,
+    // which took the whole round page down to "Failed to load round entry".
+    const source = manualSource(), tee = pointOn('tee');
+    const { result } = renderHook(() => useOneTap({ roundId: 'r', pkg: pilotPackage, holeKey, terrain: null, location: source, storage: null, now: () => Date.now() }));
+    await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+    const far: PointM = [tee[0] + 15_000, tee[1]];
+    expect(() => act(() => { source.at(far, Date.now(), 1500); })).not.toThrow();
+    expect(result.current.player).toBeNull();
+    expect(result.current.markers.markers.find(m => m.key === PLAYER_MARKER_KEY)).toBeUndefined();
+    expect(result.current.locationQuality).toBe('off_course');
+    expect(result.current.distancesBasis).toBeNull();
+    // A tap out there marks nothing and reports no usable fix rather than a mark at the origin.
+    act(() => { result.current.markBall(); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(2000); });
+    expect(result.current.snapshot.anchors).toEqual([]);
+    expect(result.current.snapshot.state).toBe('GPS_UNAVAILABLE');
+    // Arriving at the tee: the same round, no reload, YOU appears.
+    for (let t = -1500; t <= 0; t += 500) act(() => { source.at(tee, Date.now() + t); });
+    expect(result.current.locationQuality).toBe('good');
+    expect(result.current.player?.positionENU[0]).toBeCloseTo(tee[0], 6);
+  });
 });

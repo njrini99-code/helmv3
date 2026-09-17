@@ -41,7 +41,7 @@ export function OneTapReadout({ view }: { view: OneTapView }) {
       {readout.centreDisplay === 'exact'
         ? <p className="mt-0.5 text-caption text-text-secondary">Center {yards(readout.centreM)} yd · ±{Math.max(1, yards(readout.sigmaM))} yd · pin not marked</p>
         : <p className="mt-0.5 text-caption text-text-secondary">Short putt · position approximate · pin not marked</p>}
-    </div> : <p className="text-caption text-text-secondary">{view.hasGreen ? 'Waiting for a GPS fix' : 'No mapped green on this hole'}</p>}
+    </div> : <p className="text-caption text-text-secondary">{!view.hasGreen ? 'No mapped green on this hole' : view.locationQuality === 'off_course' ? 'Distances start when you reach the course' : 'Waiting for a GPS fix'}</p>}
     {lie && <p className="shrink-0 text-right text-body-sm font-semibold" data-slot="one-tap-lie" data-lie-display={lie.display} data-lie-rule={lie.rule}>
       {lie.label}
     </p>}

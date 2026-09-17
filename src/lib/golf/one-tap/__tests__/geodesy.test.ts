@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { projectToLocal } from '@/lib/golf/course-geometry/project';
-import { UNSPECIFIED, ecefToWgs84, enuToWgs84, localOriginFor, toRenderFloat32, wgs84ToEcef, wgs84ToEnu } from '../geodesy';
+import { UNSPECIFIED, ecefToWgs84, enuToWgs84, localOriginFor, toRenderFloat32, wgs84ToEcef, wgs84ToEnu, wgs84ToEnuInFrame, LOCAL_FRAME_RADIUS_M } from '../geodesy';
 
 // SYNTHETIC TEST VECTOR: the package origin is real, the points are made up.
 const origin = localOriginFor({ originWgs84: [-79.744, 42.06], projection: 'wgs84-local-enu-v1' });
@@ -39,5 +39,16 @@ describe('one-tap geodesy', () => {
     expect(() => wgs84ToEnu([200, 0, null], origin)).toThrow('Invalid WGS84');
     expect(() => wgs84ToEnu([-79.744, 42.2, null], origin)).toThrow('5 km');
     expect(() => localOriginFor({ originWgs84: [0, 0], projection: 'other' as never })).toThrow('projection');
+  });
+  it('reports a live fix outside the frame as null instead of throwing (the drive in must not crash the round)', () => {
+    // 42.2° N is ~15 km north of the origin: a phone still on the road.
+    expect(wgs84ToEnuInFrame([-79.744, 42.2, null], origin)).toBeNull();
+    expect(wgs84ToEnuInFrame([200, 0, null], origin)).toBeNull();
+    expect(wgs84ToEnuInFrame([Number.NaN, 42.06, null], origin)).toBeNull();
+    expect(wgs84ToEnuInFrame([-79.744, 42.06, Number.NaN], origin)).toBeNull();
+    const near = wgs84ToEnuInFrame([-79.744, 42.061, null], origin);
+    expect(near).not.toBeNull();
+    expect(Math.abs(near![1] - 111)).toBeLessThan(1);
+    expect(LOCAL_FRAME_RADIUS_M).toBe(5000);
   });
 });

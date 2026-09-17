@@ -56,5 +56,7 @@ describe('YOU presentation position (§37)', () => {
     expect(f.positionENU[1]).toBeCloseTo(40, 3);
     expect(f).toMatchObject({ accuracyM: 4, timestampMs: 5 });
     expect(playerFixFromSample({ ...sample, horizontalAccuracyM: 0 }, origin)).toBeNull();
+    // Still on the road 15 km north: no YOU marker, and no thrown frame error.
+    expect(playerFixFromSample({ ...sample, latitude: 42.2 }, origin)).toBeNull();
   });
 });

@@ -19,7 +19,7 @@ export const ONE_TAP_STATE_LABELS: Readonly<Record<OneTapState, string>> = Objec
   GPS_UNAVAILABLE: 'No GPS fix', SYNC_QUEUED: 'Saved on phone', MANUAL_CAMERA: 'Your view', ROUND_PAUSED: 'Paused',
 });
 const chip = 'inline-flex items-center gap-1 rounded-full border border-border-subtle bg-surface px-2.5 py-1 text-caption font-semibold text-text-primary shadow-card';
-const LOCATION_CHIP: Partial<Record<OneTapView['locationQuality'], string>> = { poor: 'Location weak', stale: 'Location weak', none: 'Locating…' };
+const LOCATION_CHIP: Partial<Record<OneTapView['locationQuality'], string>> = { poor: 'Location weak', stale: 'Location weak', none: 'Locating…', off_course: 'Not at the course yet' };
 
 export function OneTapHud({ view, round }: { view: OneTapView; round?: OneTapRoundView | null }) {
   const { snapshot, cameraMode, locationQuality, syncIssue } = view;

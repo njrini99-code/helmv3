@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CourseGeometryPackage, LocalFeature, PointM } from '@/lib/golf/course-geometry/types';
 import { MemoryAnchorRepository, StorageAnchorRepository, type AnchorRepository, type StorageLike } from '@/lib/golf/one-tap/anchor-repository';
 import { courseIdForSite } from '@/lib/golf/one-tap/peek-n-peak-policy';
-import { localOriginFor, wgs84ToEnu } from '@/lib/golf/one-tap/geodesy';
+import { localOriginFor, wgs84ToEnuInFrame } from '@/lib/golf/one-tap/geodesy';
 import { largestOuterRing, ringCentroid } from '@/lib/golf/one-tap/hole-distances';
 import { assessHoleIntegrity, type HoleIntegrityReport } from '@/lib/golf/one-tap/hole-integrity';
 import { HOLE_COMPLETION_FADE_MS, holeStatus, markTerminal, observeNextTee, type HoleStatus, type NextTeeState } from '@/lib/golf/one-tap/hole-lifecycle';
@@ -201,7 +201,8 @@ export function useOneTapRound({ roundId, pkg, holeKeys, location, storage: stor
       const live = liveOnHole(repo.list(roundId), holeKey);
       const previous = [...live].reverse().find(a => !a.provisional) ?? null;
       if (!previous || live.some(a => a.terminal)) { dwell.current = { insideSinceMs: null }; return; }
-      const enu = wgs84ToEnu([sample.longitude, sample.latitude, null], origin);
+      const enu = wgs84ToEnuInFrame([sample.longitude, sample.latitude, null], origin);
+      if (!enu) return; // not at the course: no dwell can start or continue
       const result = observeNextTee(dwell.current, previous, nextTees, greenCentre, { position: [enu[0], enu[1]], nowMs: sample.timestampMs });
       dwell.current = result.state;
       if (!result.inferred) return;
