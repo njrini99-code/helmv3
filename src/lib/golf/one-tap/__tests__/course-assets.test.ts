@@ -110,4 +110,28 @@ describe('course assets (task 15 — offline readiness)', () => {
     await cache.delete(PKG_URL);
     expect(await fetchAsset(PKG_URL, { cache, fetchImpl: null, strategy: 'network_first' })).toBeNull();
   });
+
+  it('loads the optional context layer the manifest names and plays on without one', async () => {
+    // The Upper package with its own context layer (woods, paths, structures);
+    // SYNTHETIC POLICY again — the hash is approved for this test only.
+    const upper = JSON.parse(readFileSync(join(process.cwd(), 'src/test/fixtures/course-geometry/peek-n-peak-upper.json'), 'utf8')) as { contentHash: string; siteId: string; status: string };
+    const upperPolicy: PeekNPeakOneTapPolicy = { ...PEEK_N_PEAK_ONE_TAP_V1, siteId: upper.siteId, approvedGeometryHashes: new Set([upper.contentHash]) };
+    const contextBody = readFileSync(join(process.cwd(), 'src/test/fixtures/course-geometry/peek-n-peak-upper-context.json'), 'utf8');
+    const UPPER_PKG = `/course-geometry/${COURSE}/${upper.contentHash}/package.json`, CONTEXT_URL = `/course-geometry/${COURSE}/${upper.contentHash}/context.json`;
+    const withContext = JSON.stringify({ geometryVersion: upper.contentHash, packageUrl: UPPER_PKG, terrainByHole: {}, contextLayerUrl: CONTEXT_URL });
+    const packageBody = JSON.stringify({ ...upper, status: 'reviewed_draft' }); // the gate refuses a source candidate; the layer is what this test is about
+    const { fetchImpl } = server({ [manifestUrl(COURSE)]: withContext, [UPPER_PKG]: packageBody, [CONTEXT_URL]: contextBody });
+    const cache = new MemoryCourseAssetCache();
+    const loaded = await loadCourseAssets({ courseId: COURSE, policy: upperPolicy, cache, fetchImpl });
+    expect(loaded?.contextLayer?.zones.length).toBeGreaterThan(0);
+    expect(loaded!.sources[CONTEXT_URL]).toBe('network');
+    expect((await cache.keys())).toContain(CONTEXT_URL);
+    // The preflight verdict does not depend on the layer: a course without one is still ready.
+    expect(await preflightCourseAssets({ courseId: COURSE, policy: upperPolicy, cache: new MemoryCourseAssetCache(), fetchImpl })).toMatchObject({ status: 'ready', missing: [] });
+    // A layer that fails to parse (here, one for another package) is dropped, not fatal.
+    const foreignLayer = server({ [manifestUrl(COURSE)]: withContext, [UPPER_PKG]: packageBody, [CONTEXT_URL]: JSON.stringify({ ...JSON.parse(contextBody), packageHash: 'not-this-package' }) });
+    const dropped = await loadCourseAssets({ courseId: COURSE, policy: upperPolicy, cache: new MemoryCourseAssetCache(), fetchImpl: foreignLayer.fetchImpl });
+    expect(dropped?.pkg.contentHash).toBe(upper.contentHash);
+    expect(dropped?.contextLayer).toBeUndefined();
+  });
 });

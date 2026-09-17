@@ -78,7 +78,7 @@ export function OneTapLiveHole({ live, holes, holeIndex, onNavigateToHole, onHol
       <p className="text-caption text-text-primary"><span className="font-semibold">{INTEGRITY_COPY[manual].title}.</span> The count is not on record — finish this hole by hand.</p>
       <Button variant="secondary" size="sm" onClick={() => onUseStandardTracking(adapted.shots)} data-slot="one-tap-finish-by-hand">Finish by hand</Button>
     </div>}
-    <OneTapPlayerScreen roundId={live.roundId} pkg={live.pkg} holeKey={holeKey} terrain={live.terrainByHole?.[holeKey] ?? null} contextLayer={live.contextLayer}
+    <OneTapPlayerScreen roundId={live.roundId} pkg={live.pkg} holeKey={holeKey} terrain={live.terrainByHole?.[holeKey] ?? null} contextLayer={live.contextLayer} world={live.world}
       location={live.location} storage={live.storage} transport={live.transport} reducedMotion={reducedMotion} round={round}
       onUseStandardTracking={() => onUseStandardTracking(adapted.shots)} onExitRound={onExit} />
   </div>;

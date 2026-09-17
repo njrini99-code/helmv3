@@ -21,12 +21,16 @@ export const PEEK_N_PEAK_ONE_TAP_V1 = {
    * and requires "Upper" so the Lower course can never activate (§22). */
   dbCourseIds: new Set<string>([]),
   courseNamePattern: /peek\W*n?\W*peak[\s\S]*\bupper\b/i,
+  /** Meridian world the live round renders (master plan R7): the V2 ground,
+   * patches and objects in place of V1, with the marks and readout unchanged. */
+  renderWorld: 'v2',
 } as const;
 export type PeekNPeakOneTapPolicy = {
   readonly courseId: string; readonly siteId: string; readonly projection: string; readonly featureFlag: string;
   readonly approvedGeometryHashes: ReadonlySet<string>;
   readonly dbCourseIds: ReadonlySet<string>;
   readonly courseNamePattern: RegExp;
+  readonly renderWorld: 'v1' | 'v2';
 };
 /** The product course id of a GolfHelm round's course, or null for any other
  * course. A bound golf_courses id wins; otherwise the course name must read

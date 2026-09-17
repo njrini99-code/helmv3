@@ -32,6 +32,8 @@ export interface OneTapLiveRound {
   readiness?: PreflightStatus;
   /** Task 16: tournament and qualifier rounds lock Competition Mode on. */
   roundType?: RoundTypeLike;
+  /** Meridian world for the course drawing (policy `renderWorld`, R7). */
+  world?: 'v1' | 'v2';
 }
 interface CoursePackageAssets { pkg: CourseGeometryPackage; terrainByHole?: Readonly<Record<string, TerrainMesh>>; contextLayer?: ContextLayer; geometryVersion?: string }
 export interface ResolveLiveRoundInput {
@@ -57,7 +59,7 @@ export function resolveOneTapLiveRound(input: ResolveLiveRoundInput): { live: On
   if (!eligibility.eligible) return { live: null, eligibility };
   const holeKeys = [...input.pkg.holes].sort((a, b) => a.ordinal - b.ordinal).map(h => h.key);
   return { eligibility, live: { roundId: input.roundId, courseId: eligibility.courseId, geometryVersion: eligibility.geometryVersion, pkg: input.pkg, holeKeys,
-    terrainByHole: input.terrainByHole, contextLayer: input.contextLayer, location: input.location, storage: input.storage, transport: input.transport, readiness: input.readiness, roundType: input.roundType } };
+    terrainByHole: input.terrainByHole, contextLayer: input.contextLayer, location: input.location, storage: input.storage, transport: input.transport, readiness: input.readiness, roundType: input.roundType, world: policy.renderWorld } };
 }
 /** The package hole for a round hole number, or null when the package does not map it (that hole stays on standard tracking). */
 export function holeKeyForRoundHole(live: Pick<OneTapLiveRound, 'pkg'>, holeNumber: number): string | null {

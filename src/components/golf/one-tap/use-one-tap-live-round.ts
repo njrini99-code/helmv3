@@ -47,7 +47,7 @@ export function useOneTapLiveRound({ roundId, dbCourseId, courseName, featureFla
       // The outbox mirrors the device record (task 13); it exists only for a
       // resolved live round, so no production round ever posts to these tables.
       const outbox = transport === undefined ? browserSyncTransport() : transport;
-      const { live: resolved } = resolveOneTapLiveRound({ roundId, roundCourseId: productCourseId, featureFlagEnabled, pkg: assets.pkg, terrainByHole: assets.terrainByHole, location, policy, readiness: preflight.status, roundType, transport: outbox });
+      const { live: resolved } = resolveOneTapLiveRound({ roundId, roundCourseId: productCourseId, featureFlagEnabled, pkg: assets.pkg, terrainByHole: assets.terrainByHole, contextLayer: assets.contextLayer, location, policy, readiness: preflight.status, roundType, transport: outbox });
       if (!cancelled) setLive(resolved);
     })();
     return () => { cancelled = true; };

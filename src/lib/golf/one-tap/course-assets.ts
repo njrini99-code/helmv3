@@ -1,3 +1,4 @@
+import { parseContextLayer, type ContextLayer } from '../course-geometry/context-layer';
 import { parseTerrainMesh, type TerrainMesh } from '../course-geometry/terrain';
 import type { CourseGeometryPackage } from '../course-geometry/types';
 import { PEEK_N_PEAK_ONE_TAP_V1, type PeekNPeakOneTapPolicy } from './peek-n-peak-policy';
@@ -138,7 +139,7 @@ export async function pruneCourseAssets(cache: CourseAssetCache | null, courseId
   return removed;
 }
 
-export interface LoadedCourseAssets { geometryVersion: string; pkg: CourseGeometryPackage; terrainByHole: Record<string, TerrainMesh>; sources: Record<string, AssetSource> }
+export interface LoadedCourseAssets { geometryVersion: string; pkg: CourseGeometryPackage; terrainByHole: Record<string, TerrainMesh>; contextLayer?: ContextLayer; sources: Record<string, AssetSource> }
 /** What the live round consumes: the approved package and whichever terrain
  * is present, from the cache when there is no signal. Null when no approved
  * package can be had either way. */
@@ -157,5 +158,13 @@ export async function loadCourseAssets({ courseId, policy = PEEK_N_PEAK_ONE_TAP_
     if (!hit) continue;
     try { terrainByHole[holeKey] = parseTerrainMesh(JSON.parse(hit.body), pkg); sources[url] = hit.source; } catch { await cache?.delete(url); }
   }
-  return { geometryVersion: manifest.geometryVersion, pkg, terrainByHole, sources };
+  // The outside-world layer (woods, paths, structures) is optional: the
+  // course plays without it, so a missing or unparseable layer is dropped
+  // rather than failing the round.
+  let contextLayer: ContextLayer | undefined;
+  if (manifest.contextLayerUrl) {
+    const hit = await fetchAsset(manifest.contextLayerUrl, { cache, fetchImpl, strategy: 'cache_first' });
+    if (hit) { try { contextLayer = parseContextLayer(JSON.parse(hit.body), pkg); sources[manifest.contextLayerUrl] = hit.source; } catch { await cache?.delete(manifest.contextLayerUrl); } }
+  }
+  return { geometryVersion: manifest.geometryVersion, pkg, terrainByHole, contextLayer, sources };
 }
