@@ -23,7 +23,9 @@ export interface OverlayReservedRect { x: number; y: number; width: number; heig
 export function createShotOverlayController(svg: SVGSVGElement, prefix: string, mesh: TerrainMesh,
   initialScene: HoleScene, initialSelected?: number, renderIllustrativePreviewFlights = true,
   /** §34: markers sit on the drawn surface (bunker bowls); outlines and picking do not. */
-  surface?: (point: PointM) => number | null) {
+  surface?: (point: PointM) => number | null,
+  /** Boxes another overlay in the same SVG painted this frame (the tap-to-measure ruler), read at every layout. */
+  extraReserved?: () => readonly OverlayReservedRect[]) {
   const element = <K extends keyof SVGElementTagNameMap>(tag: K, attrs: Attributes = {}, text?: string): SVGElementTagNameMap[K] => {
     const node = svg.ownerDocument.createElementNS(NS, tag);
     attributes(node, attrs);
@@ -270,13 +272,15 @@ export function createShotOverlayController(svg: SVGSVGElement, prefix: string, 
     attributes(svg, { viewBox: `0 0 ${width} ${height}` });
     const layout = layoutShotOverlay(prepared, { width, height, project, projectSurface, pathForFeature,
       reservedRects: [{ x: 0, y: 0, width, height: Math.min(88, height * .24) },
-        { x: width - 64, y: height - 164, width: 64, height: 164 }, ...hostReserved] });
+        { x: width - 64, y: height - 164, width: 64, height: 164 }, ...hostReserved, ...(extraReserved?.() ?? [])] });
     paint(layout);
   }
   return {
     setCamera(next: TerrainCamera, w: number, h: number) { camera = next; width = w; height = h; render(); },
     /** Host chrome over the course; labels re-place around it in the same frame. */
     setReservedRects(rects: readonly OverlayReservedRect[]) { if (disposed) return; hostReserved = rects; render(); },
+    /** Re-place the labels for the same camera (the ruler moved or went away). */
+    relayout() { if (disposed) return; render(); },
     setEvidence(scene: HoleScene, selectedShotNumber?: number) {
       if (disposed || currentScene === scene && currentSelected === selectedShotNumber) return;
       prepared = prepareShotOverlay(scene, selectedShotNumber);

@@ -293,8 +293,9 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
       // All world overlays update in the same synchronous paint as the GPU.
       // They intentionally remain readable through crowns (estimated evidence
       // is an annotation, not an opaque physical object in the landscape).
-      evidence.setCamera(camera, width, height);
+      // Markers paint first: the ruler's box is then reserved by the evidence layout.
       markersOverlay?.setCamera(camera, width, height);
+      evidence.setCamera(camera, width, height);
       Object.assign(canvas.dataset, {
         terrainRenderer: 'three-webgl2', terrainState: 'ready', terrainHash: mesh.contentHash,
         terrainProjection: camera.projection ?? 'orthographic',
@@ -412,7 +413,7 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
     world.add(sun, sun.target);
     const sky = new HemisphereLight(MERIDIAN_STYLE.light.skyColor, MERIDIAN_STYLE.light.groundColor, MERIDIAN_STYLE.light.hemisphereIntensity);
     sky.position.set(0, 0, 1); world.add(sky);
-    evidence = createShotOverlayController(overlay, options.overlayId, mesh, options.scene, options.selectedShotNumber, false, surface);
+    evidence = createShotOverlayController(overlay, options.overlayId, mesh, options.scene, options.selectedShotNumber, false, surface, () => markersOverlay?.reservedRects() ?? []);
     // §64 Reduced Motion, read from the window this canvas actually lives in
     // (the lab and the capture harness set it per page, not per global): no
     // ripple, no settle or crossfade, and no shot draws itself on — the
@@ -474,7 +475,10 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
     },
     setMarkers(markers) {
       if (disposed || failed) return;
+      const before = JSON.stringify(markersOverlay?.reservedRects() ?? []);
       markersOverlay?.setMarkers(markers);
+      // Only a ruler change re-places the evidence labels; YOU's fixes do not.
+      if (JSON.stringify(markersOverlay?.reservedRects() ?? []) !== before) evidence?.relayout();
     },
     setReservedRects(rects) {
       if (disposed || failed) return;

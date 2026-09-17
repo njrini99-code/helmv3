@@ -1,5 +1,6 @@
 import { projectTerrainPoint, terrainHeight, type Point3M, type TerrainCamera, type TerrainMesh } from './terrain';
 import type { PointM } from './types';
+import type { OverlayReservedRect } from './shot-overlay-controller';
 
 /** Marked positions on the course (One-Tap master plan §5 "YOU is not
  * BALL", §37–38). A `ball`, `anchor` or `terminal` marker is a position the
@@ -8,8 +9,10 @@ import type { PointM } from './types';
  * marker is the live device with its accuracy halo; it moves continuously
  * and is never shot evidence. A `provisional` marker is hollow until the
  * estimator finalizes it. Links join consecutive finalized marks: the
- * derived shot. Nothing here moves a marker onto a surface. */
-export type SceneMarkerKind = 'player' | 'ball' | 'anchor' | 'provisional' | 'terminal';
+ * derived shot. A `measure` marker is the player's tap-to-measure ruler end
+ * (`tap-measure.ts`): a read-only distance, never a position the round keeps.
+ * Nothing here moves a marker onto a surface. */
+export type SceneMarkerKind = 'player' | 'ball' | 'anchor' | 'provisional' | 'terminal' | 'measure';
 export interface SceneMarker {
   key: string;
   pointM: PointM;
@@ -40,6 +43,8 @@ export interface SceneMarkerLink {
   opacity?: number;
   /** Draw this shot on once, now (the shot that was just completed). */
   reveal?: boolean;
+  /** A dashed ruler (tap-to-measure), never a shot. */
+  dashed?: boolean;
 }
 export interface SceneMarkers {
   markers: readonly SceneMarker[];
@@ -70,7 +75,7 @@ export function playerLabelPlacement(player: readonly [number, number], marks: r
 
 const NS = 'http://www.w3.org/2000/svg';
 const ink = 'var(--fw-diagram-event)', halo = 'var(--fw-diagram-shadow)', paper = 'var(--fw-diagram-ground-light)';
-const DOT_R: Record<SceneMarkerKind, number> = { player: 5.5, ball: 4.2, anchor: 3.2, provisional: 4, terminal: 3.6 };
+const DOT_R: Record<SceneMarkerKind, number> = { player: 5.5, ball: 4.2, anchor: 3.2, provisional: 4, terminal: 3.6, measure: 3.4 };
 type Attributes = Record<string, string | number>;
 function attributes(node: Element, values: Attributes): void {
   for (const [key, value] of Object.entries(values)) {
@@ -93,6 +98,10 @@ export function sigmaScreenRadius(world: Point3M, sigmaM: number, camera: Terrai
 export interface SceneMarkerOverlayController {
   setMarkers(markers: SceneMarkers | null): void;
   setCamera(camera: TerrainCamera, width: number, height: number): void;
+  /** Screen boxes of the tap-to-measure ruler as last painted (its dot and
+   * yardage), for the evidence labels to re-place around. Round markers
+   * (YOU, BALL) reserve nothing: their placement is the round's own. */
+  reservedRects(): readonly OverlayReservedRect[];
   dispose(): void;
 }
 /** Retained-DOM overlay in the runtime's annotation SVG, painted in the same
@@ -114,6 +123,7 @@ export function createSceneMarkerOverlayController(svg: SVGSVGElement, mesh: Ter
   root.append(links, rings, dots, labels);
   svg.appendChild(root);
   let camera: TerrainCamera | null = null, current: SceneMarkers | null = null, disposed = false, rippleKey: string | null = null;
+  let rulerRects: OverlayReservedRect[] = [];
   const heights = new Map<string, Point3M | null>();
   const world = ([x, y]: PointM): Point3M | null => {
     const key = `${x}:${y}`;
@@ -262,6 +272,7 @@ export function createSceneMarkerOverlayController(svg: SVGSVGElement, mesh: Ter
       // read, and the connector is left unlabelled because A → B is the fact.
       if (basis === 'illustrative_endpoint_arc') attributes(nodes.path, { 'data-illustrative': 'endpoint_arc' });
       else nodes.path.removeAttribute('data-illustrative');
+      if (link.dashed) attributes(nodes.path, { 'stroke-dasharray': '4 4', 'data-ruler': 'measure' });
       if (link.reveal && !nodes.revealed) attachReveal(nodes);
       links.append(nodes.shadow, nodes.path);
     }
@@ -283,7 +294,7 @@ export function createSceneMarkerOverlayController(svg: SVGSVGElement, mesh: Ter
     rippleKey = nextRipple;
   }
   function paint() {
-    if (!camera || !current) return;
+    if (!camera || !current) { rulerRects = []; return; }
     for (const link of current.links) {
       const nodes = linkNodes.get(link.key); if (!nodes) continue;
       const a = world(link.fromM), b = world(link.toM);
@@ -293,6 +304,7 @@ export function createSceneMarkerOverlayController(svg: SVGSVGElement, mesh: Ter
       attributes(nodes.path, shape); attributes(nodes.shadow, shape);
     }
     const markScreen: [number, number][] = [];
+    rulerRects = [];
     for (const marker of current.markers) {
       if (marker.kind === 'player') continue;
       const w = world(marker.pointM);
@@ -310,6 +322,11 @@ export function createSceneMarkerOverlayController(svg: SVGSVGElement, mesh: Ter
       if (nodes.core) attributes(nodes.core, { cx: x.toFixed(2), cy: y.toFixed(2), r: (r * .4).toFixed(2), display: 'inline' });
       const placement = marker.kind === 'player' ? playerLabelPlacement([x, y], markScreen) : 'above';
       attributes(nodes.label, { x: x.toFixed(2), y: (placement === 'below' ? y + r + 13 : y - r - 5).toFixed(2), display: marker.label && placement !== 'hidden' ? 'inline' : 'none', 'data-label-placement': placement });
+      if (marker.kind === 'measure') {
+        // The label's box (10 px caps, .6 tracking, 3 px paint stroke) above the dot.
+        const labelWidth = marker.label ? marker.label.length * 7.2 + 6 : 0;
+        rulerRects.push({ x: x - Math.max(labelWidth, r * 2) / 2, y: y - r - 17, width: Math.max(labelWidth, r * 2), height: r * 2 + 17 + 2 });
+      }
       if (nodes.ripple) attributes(nodes.ripple, { cx: x.toFixed(2), cy: y.toFixed(2), display: 'inline' });
     }
   }
@@ -325,6 +342,7 @@ export function createSceneMarkerOverlayController(svg: SVGSVGElement, mesh: Ter
       camera = next;
       paint();
     },
+    reservedRects() { return rulerRects; },
     dispose() {
       disposed = true;
       for (const handle of timers) clearTimeout(handle);

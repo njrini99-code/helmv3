@@ -15,7 +15,7 @@ const VISUAL = ['three-camera', 'three-flight-path', 'three-renderer', 'shadow-b
   'terrain-viewport', 'shot-overlay-controller', 'shot-overlay-layout', 'runtime-controller', 'camera-motion', 'visual-style', 'visual-artifact', 'render-quality',
   'scene-markers', 'visual-artifact-v2', 'terrain-curvature', 'terrain-sky-field', 'surface-distance-field', 'display-mesh-v2', 'hero-patches', 'green-display-mesh', 'bunker-profile', 'bunker-display-mesh',
   'bunker-normal-field', 'field-atlas', 'compile-visual-artifact-v2', 'ground-shader-v2', 'path-ribbon', 'forest-edge-v2', 'static-shadow-field', 'glb-writer', 'v2-budgets',
-  'artifact-residency', 'fairway-direction-field', 'green-surface-v2', 'v2-batching', 'structure-glb', 'canary-compare', 'ground-context-v2', 'ring-index'];
+  'artifact-residency', 'fairway-direction-field', 'green-surface-v2', 'v2-batching', 'structure-glb', 'canary-compare', 'ground-context-v2', 'ring-index', 'tap-measure'];
 const imports = (file: string) => [...readFileSync(join(root, file), 'utf8').matchAll(/from\s+'([^']+)'/g)].map(match => match[1]!);
 
 describe('Meridian visual code boundary', () => {

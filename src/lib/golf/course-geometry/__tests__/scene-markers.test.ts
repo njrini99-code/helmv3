@@ -285,4 +285,32 @@ describe('scene marker overlay', () => {
     expect([...drawing.querySelectorAll('[data-marked-link]')].map(n => n.getAttribute('data-marked-link'))).toEqual(['m1>m2', 'm2>m1']);
     controller.dispose();
   });
+
+  it('draws the tap-to-measure ruler dashed, labels its yardage and reserves that box for the evidence labels', () => {
+    const camera = fitTerrainCamera(scene, mesh, 'hole', 600, 800, TERRAIN_PRESETS.terrain);
+    const drawing = svg(), controller = createSceneMarkerOverlayController(drawing, mesh);
+    controller.setCamera(camera, 600, 800);
+    expect(controller.reservedRects()).toEqual([]);
+    controller.setMarkers({ markers: [...markers.markers, { key: 'tap-measure', kind: 'measure', pointM: a, sigmaM: 0, label: '219 yd' }],
+      links: [{ key: 'tap-measure-link', fromM: b, toM: a, basis: 'surface_connector', dashed: true, opacity: .9 }] });
+    const ruler = drawing.querySelector('[data-marked-link="tap-measure-link"]')!;
+    expect(ruler.getAttribute('stroke-dasharray')).toBe('4 4');
+    expect(ruler.getAttribute('data-ruler')).toBe('measure');
+    expect(drawing.querySelector('[data-marker-label="tap-measure"]')!.textContent).toBe('219 yd');
+    const dot = drawing.querySelector('[data-marked-position="tap-measure"]')!;
+    const [x, y] = [Number(dot.getAttribute('cx')), Number(dot.getAttribute('cy'))];
+    const [box] = controller.reservedRects();
+    expect(box).toBeDefined();
+    // The box covers the label above the dot and the dot itself, centred on it.
+    expect(box!.x + box!.width / 2).toBeCloseTo(x, 2); // the dot attribute is rounded to 2 dp
+    expect(box!.y).toBeLessThan(y - 15);
+    expect(box!.y + box!.height).toBeGreaterThan(y);
+    expect(box!.width).toBeGreaterThan(40);
+    // Only the ruler reserves: the round's marks never did, and without the ruler nothing does.
+    controller.setMarkers(markers);
+    expect(controller.reservedRects()).toEqual([]);
+    controller.setMarkers(null);
+    expect(controller.reservedRects()).toEqual([]);
+    controller.dispose();
+  });
 });

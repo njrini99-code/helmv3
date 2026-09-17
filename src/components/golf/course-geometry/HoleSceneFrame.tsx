@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type PointerEvent, type RefObject } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type PointerEvent, type RefObject } from 'react';
 import { Maximize2, RotateCcw, X, SlidersHorizontal, ChevronDown, ChevronLeft, ChevronRight, Info, MoreHorizontal } from 'lucide-react';
 import { ModalShell } from '@/components/fairway/overlays/ModalShell';
 import { Sheet } from '@/components/fairway/overlays/Sheet';
@@ -13,7 +13,7 @@ import type { HoleScene, ShotEvidence } from '@/lib/golf/course-geometry/types';
 import { puttingFocusCamera, puttingPlanCamera, type SceneView } from '@/lib/golf/course-geometry/camera';
 import { CourseHoleScene, sceneCamera } from './CourseHoleScene';
 import { CourseTerrainProfile } from './CourseTerrainProfile';
-import { PERSPECTIVE_FOV, PRODUCTION_CAMERA_STATES, productionCameraState, TERRAIN_PRESETS, projectTerrainPoint, terrainHeight, type ProductionCameraState, type TerrainFitProfile, type TerrainPose, type TerrainPreset, wrapYawDegrees, yawDeltaDegrees } from '@/lib/golf/course-geometry/terrain';
+import { PERSPECTIVE_FOV, PRODUCTION_CAMERA_STATES, productionCameraState, TERRAIN_PRESETS, projectTerrainPoint, terrainHeight, type Point3M, type ProductionCameraState, type TerrainFitProfile, type TerrainPose, type TerrainPreset, wrapYawDegrees, yawDeltaDegrees } from '@/lib/golf/course-geometry/terrain';
 
 import { fitTerrainViewportCamera } from '@/lib/golf/course-geometry/terrain-viewport';
 import type { TerrainRuntimeController } from '@/lib/golf/course-geometry/runtime-controller';
@@ -21,6 +21,7 @@ import { deriveShotCameraTarget, type CameraFitTarget } from '@/lib/golf/course-
 import { interpolateCameraMotion } from '@/lib/golf/course-geometry/camera-motion';
 import type { TerrainDebugView } from './terrain-debug';
 import type { SceneMarkers } from '@/lib/golf/course-geometry/scene-markers';
+import { measureDetail, measureMarkers, measureTap } from '@/lib/golf/course-geometry/tap-measure';
 import type { OverlayReservedRect } from '@/lib/golf/course-geometry/shot-overlay-controller';
 
 interface CameraMemory { pose: TerrainPose; fitPreset: TerrainFitProfile }
@@ -222,9 +223,13 @@ function Drawing({ scene, view, context, events, selectedShotNumber, activeDraft
   // re-place around the chips instead of under them. Zero-size boxes (jsdom,
   // hidden chrome) reserve nothing.
   const [reservedRects, setReservedRects] = useState<OverlayReservedRect[]>([]);
+  // Tap-to-measure (on-course ask, 2026-09-17): the ground point under a
+  // clean single tap. The distance is derived every render, so the number
+  // follows YOU as the player walks; the point itself never enters the round.
+  const [measureAt, setMeasureAt] = useState<Point3M | null>(null);
   useLayoutEffect(() => {
     const host = ref.current;
-    if (!host || !expanded || !stageOverlay) return;
+    if (!host || !expanded || (!stageOverlay && !measureAt)) return;
     const origin = host.getBoundingClientRect(), margin = 6;
     // The overlay is the drawing's sibling inside the same positioned wrapper.
     const next = [...(host.parentElement ?? host).querySelectorAll('[data-hud-reserve]')].flatMap(node => {
@@ -234,7 +239,7 @@ function Drawing({ scene, view, context, events, selectedShotNumber, activeDraft
     setReservedRects(current => JSON.stringify(current) === JSON.stringify(next) ? current : next);
     // A fresh overlay element arrives with every host render, so chip text
     // changes re-measure; the equality guard keeps the state stable.
-  }, [expanded, stageOverlay, size.width, size.height]);
+  }, [expanded, stageOverlay, measureAt, size.width, size.height]);
   function commitCamera() {
     const next = live.current; if (poseMemory) poseMemory.current = { pose: next.pose, fitPreset: next.fitPreset }; setZoom(next.zoom); setPan(next.pan); setPose(next.pose); setFitPreset(next.fitPreset);
     if (scaleBar.current) scaleBar.current.style.visibility = Math.abs(next.pose.pitch - 90) < .01 ? 'visible' : 'hidden';
@@ -293,6 +298,10 @@ function Drawing({ scene, view, context, events, selectedShotNumber, activeDraft
   const lastTap = useRef<{ time: number; x: number; y: number } | null>(null);
   const homePreset: TerrainPreset = production ? statePreset : 'top';
   const interactive = expanded && courseView != null && !!scene && !showProfile;
+  const measurement = useMemo(() => production && terrainEnabled && measureAt ? measureTap(scene, markers, measureAt) : null, [production, terrainEnabled, measureAt, scene, markers]);
+  const drawnMarkers = useMemo(() => measureMarkers(markers, measurement), [markers, measurement]);
+  // Another hole or area is another frame: the ruler does not carry over.
+  useEffect(() => { setMeasureAt(null); }, [scene?.physicalHoleKey, courseView]);
   const boundedPan = (x: number, y: number) => ({ x: Math.max(-size.width / 2, Math.min(size.width / 2, x)),
     y: Math.max(-size.height / 2, Math.min(size.height / 2, y)) });
   const isPreset = (preset: TerrainPreset) => Math.abs(pose.pitch - TERRAIN_PRESETS[preset].pitch) < .01 &&
@@ -443,8 +452,21 @@ function Drawing({ scene, view, context, events, selectedShotNumber, activeDraft
     const previous = lastTap.current, now = performance.now();
     if (previous && now - previous.time < 350 && Math.hypot(event.clientX - previous.x, event.clientY - previous.y) < 24) {
       lastTap.current = null;
+      setMeasureAt(null);
       presetView(homePreset);
-    } else lastTap.current = { time: now, x: event.clientX, y: event.clientY };
+    } else {
+      lastTap.current = { time: now, x: event.clientX, y: event.clientY };
+      measureAtScreen(event);
+    }
+  }
+  /** A clean single tap on the terrain lays a ruler from where the player is
+   * to the ground under the finger (the runtime pick is read-only: no ball,
+   * pin or shot is recorded). A tap that misses the mesh changes nothing. */
+  function measureAtScreen(event: PointerEvent<HTMLDivElement>) {
+    if (!production || !terrainEnabled || !runtime.current) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    const hit = runtime.current.pick(event.clientX - rect.left, event.clientY - rect.top);
+    if (hit) setMeasureAt(hit);
   }
   /** Stage director, area change: the drawing (and the terrain runtime with
    * it) stays mounted, so everything a remount used to reset is reset here —
@@ -554,7 +576,7 @@ function Drawing({ scene, view, context, events, selectedShotNumber, activeDraft
   // Details and sources: review and lab keep them inline in the inspector;
   // the production view shows them in a bottom sheet (outside-world §3.6) so
   // its default state stays course-first.
-  const detailHint = terrainEnabled && <p>{production ? 'Drag to tilt, pinch to zoom, double-tap to reset the view.' : 'Drag to tilt; pinch to zoom.'} Outlined hazards are possible surfaces, not recorded ball positions.</p>;
+  const detailHint = terrainEnabled && <p>{production ? 'Tap the course for the distance from where you are. Drag to tilt, pinch to zoom, double-tap to reset the view.' : 'Drag to tilt; pinch to zoom.'} Outlined hazards are possible surfaces, not recorded ball positions.</p>;
   const detailFacts = <>
     {active && <p>{recordedDistance(active.before)} before{active.rawMiss ? ` · ${active.rawMiss.replaceAll('_', ' ')}` : ''}. {describePosition(scene, active).detail}</p>}
     <p>{scene?.attribution ?? 'Course geometry unavailable.'}</p>
@@ -575,7 +597,7 @@ function Drawing({ scene, view, context, events, selectedShotNumber, activeDraft
       <div key={`${scene?.physicalHoleKey ?? 'missing'}-${terrainEnabled ? 'terrain' : view}`} className="fw-course-view-enter h-full w-full">
       {showProfile && scene ? <div className="h-full overflow-y-auto bg-surface pt-24"><CourseTerrainProfile scene={scene} selectedShotNumber={currentSelection} width={size.width} height={size.height - 96} /></div> : scene && transformed && courseView ? <CourseHoleScene scene={scene} width={size.width} height={size.height}
         mode={context === 'entry' ? 'compact' : 'review'} view={courseView} selectedShotNumber={currentSelection} activeDraftShotNumber={activeDraftShotNumber} camera={transformed} terrainCamera={terrainCamera}
-        runtimeRef={runtime} onTerrainUnavailable={() => setTerrainFailed(true)} showIllustrativeFlightPreviews={view !== 'putting'} puttingPlan={compactPuttingPlan} debugView={debugView} world={world} markers={markers} reservedRects={reservedRects} /> : view === 'putting' ? <PuttingZoom width={size.width} height={size.height} distanceView={{
+        runtimeRef={runtime} onTerrainUnavailable={() => setTerrainFailed(true)} showIllustrativeFlightPreviews={view !== 'putting'} puttingPlan={compactPuttingPlan} debugView={debugView} world={world} markers={drawnMarkers} reservedRects={reservedRects} /> : view === 'putting' ? <PuttingZoom width={size.width} height={size.height} distanceView={{
         beforeFeet: before == null ? null : before / .3048, afterFeet: after == null ? null : after / .3048,
         made: currentPuttingDistanceM == null && putt?.putt.made === true,
         rolledOff: putt != null && putt.result !== 'green' && putt.result !== 'hole',
@@ -593,9 +615,15 @@ function Drawing({ scene, view, context, events, selectedShotNumber, activeDraft
         </div>}
     </div>
     {expanded && <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between gap-3 p-3" style={{ paddingTop: 'max(12px, env(safe-area-inset-top))' }}>
-      <div className="pointer-events-auto">
+      <div className="pointer-events-auto flex flex-col items-start">
         <Button variant="secondary" aria-label="Choose course area" aria-expanded={areasOpen} rightIcon={<ChevronDown size={15} aria-hidden />} className="h-auto rounded-fw-lg px-3 py-2 shadow-card" onClick={() => setAreasOpen(v => !v)}><span className="flex flex-col items-start">{heading}</span></Button>
         {areasOpen && <div className="mt-2 rounded-fw-lg bg-surface p-2 shadow-card">{areaControls?.(() => setAreasOpen(false))}</div>}
+        {/* The ruler reads under the hole name; the stage's own bottom chrome (toast, Recenter) stays clear. */}
+        {measurement && <div className="mt-2 flex items-center gap-1 rounded-full border border-border-subtle bg-surface py-0.5 pl-3 pr-0.5 font-fw-sans text-body-sm shadow-card" role="status" aria-live="polite"
+          data-slot="tap-measure" data-hud-reserve data-measure-yards={measurement.yards} data-measure-basis={measurement.origin.basis} onPointerDown={e => e.stopPropagation()}>
+          <span className="tabular-nums"><span className="font-semibold">{measurement.yards} yd</span><span className="text-text-secondary">{measureDetail(measurement)}</span></span>
+          <Button size="sm" variant="ghost" className="h-8 min-w-8 rounded-full px-1" aria-label="Clear measurement" onClick={() => setMeasureAt(null)}><X size={15} aria-hidden /></Button>
+        </div>}
       </div>
       {onClose && <Button variant="secondary" className="pointer-events-auto h-11 min-w-11 rounded-full px-2 shadow-card" aria-label="Close" onClick={onClose}><X size={19} aria-hidden /></Button>}
     </div>}
