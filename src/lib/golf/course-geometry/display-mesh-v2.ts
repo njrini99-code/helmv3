@@ -43,7 +43,7 @@
  * resolution, picking and analytics keep using the canonical mesh. Three-free
  * (R12); deterministic from the mesh alone (constraint 13). */
 import type { TerrainMesh } from './terrain';
-import { compileCurvatureFields } from './terrain-curvature';
+import { compileCurvatureFields, type CurvatureFields } from './terrain-curvature';
 import type { MetricTerrainGrid } from './terrain-source';
 import { metricTerrainNormal, sampleMetricTerrain } from './terrain-source';
 import { SURFACE_CLASS_IDS, type SurfaceClass } from './visual-artifact';
@@ -87,6 +87,15 @@ export interface DisplayLodOptions {
    * triangles are never refined (the patch replaces them), and each LOD
    * orders base triangles first, then one contiguous run per region. */
   heroPlan?: HeroPlanInput;
+  /** `compileCurvatureFields(mesh.metricGrid)` at the default scales when
+   * the caller already holds it (the runtime compiles it once for the base
+   * mesh, every hero patch and every atlas); compiled here when absent. */
+  curvature?: CurvatureFields | null;
+  /** The canonical mesh already welded and cleaned at `weldToleranceM`
+   * (`weldAndCleanTerrainMesh`) when the caller holds it — the runtime
+   * welds once for the hero plan, the patches and this compile; welded
+   * here when absent. Never written to. */
+  welded?: DisplayMesh;
 }
 export const DISPLAY_LOD_OPTIONS: Readonly<DisplayLodOptions> = Object.freeze({ collapseToleranceM: 0.15, minRefineEdgeM: 1, weldToleranceM: 0.02 });
 
@@ -234,7 +243,7 @@ function midpointHeight(grid: MetricTerrainGrid | undefined, ax: number, ay: num
 /** §13 importance per triangle of `welded`; 0 for triangles too small to refine. */
 export function refinementImportance(mesh: TerrainMesh, welded: DisplayMesh, table: EdgeTable, options: DisplayLodOptions): Float64Array {
   const grid = mesh.metricGrid, p = welded.positions, importance = new Float64Array(welded.triangleCount);
-  const curvature = grid ? compileCurvatureFields(grid) : null;
+  const curvature = options.curvature !== undefined ? options.curvature : grid ? compileCurvatureFields(grid) : null;
   const contextIds = new Set(mesh.contextFeatureIds ?? []);
   const curvatureAt = (x: number, y: number): number => {
     if (!grid || !curvature) return 0;
@@ -788,7 +797,10 @@ function lodTargets(canonical: number, options: DisplayLodOptions): { lod0: numb
 function compileLod0(mesh: TerrainMesh, opts: DisplayLodOptions) {
   const raw = weldTerrainMesh(mesh);
   const cleaned = cleanDisplayMesh(raw, opts.weldToleranceM);
-  const welded = cleaned.mesh;
+  return { raw, cleaned, ...refineLod0(mesh, cleaned.mesh, opts) };
+}
+/** LOD0 from the welded, cleaned canonical mesh (`welded` takes the hero plan's region ids). */
+function refineLod0(mesh: TerrainMesh, welded: DisplayMesh, opts: DisplayLodOptions) {
   if (opts.heroPlan) {
     if (opts.heroPlan.triangleRegion.length !== welded.triangleCount) throw new Error('Hero plan does not match the cleaned canonical mesh');
     welded.triangleRegion = opts.heroPlan.triangleRegion;
@@ -798,7 +810,7 @@ function compileLod0(mesh: TerrainMesh, opts: DisplayLodOptions) {
   const importance = refinementImportance(mesh, welded, table, opts);
   const red = selectRedTriangles(welded, importance, targets.lod0);
   const refinedResult = refineDisplayMesh(mesh, welded, red);
-  return { raw, cleaned, welded, table, targets, refinedResult };
+  return { welded, table, targets, refinedResult };
 }
 
 /** LOD0 alone, packed exactly as `compileBaseDisplayLods(...).lod0` — for the
@@ -807,7 +819,9 @@ function compileLod0(mesh: TerrainMesh, opts: DisplayLodOptions) {
  * the report's Hausdorff and topology checks are a third of its cost). */
 export function compileBaseDisplayLod0(mesh: TerrainMesh, options: Partial<DisplayLodOptions> = {}): PackedDisplayMesh {
   const opts: DisplayLodOptions = { ...DISPLAY_LOD_OPTIONS, ...options };
-  const { refinedResult } = compileLod0(mesh, opts);
+  // A caller's welded mesh is shared by reference (its arrays are read only)
+  // under a shallow copy, so the region ids the refinement writes stay here.
+  const { refinedResult } = opts.welded ? refineLod0(mesh, { ...opts.welded }, opts) : compileLod0(mesh, opts);
   return packDisplayMesh(mesh, orderHeroRegionsLast(refinedResult.mesh), opts.heroPlan?.regionIds);
 }
 

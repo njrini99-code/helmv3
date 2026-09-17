@@ -239,18 +239,20 @@ export function assembleV2World(scene: HoleScene, mesh: TerrainMesh, options: As
   try {
     const welded = weldAndCleanTerrainMesh(mesh);
     const plan = compileHeroRegions(scene, mesh, welded);
+    // The curvature and (atlas-default) sky fields are grid-wide and identical
+    // for the base mesh, every hero patch and every atlas below: compile them
+    // once instead of per consumer (five atlases alone were ~1.9 s of the
+    // mount compile on a laptop; the base mesh and hole 7's four patches
+    // another ~.15 s). A consumer given no fields compiles its own.
+    let sources: FieldAtlasSources = {};
+    try { sources = { curvature: compileCurvatureFields(metricGrid), sky: compileSkyField(metricGrid) }; } catch (error) { warnAtlasFallbackOnce('atlas source fields compile threw', error); }
+    const shared = sources.curvature ? { curvature: sources.curvature } : {};
     // LOD0 only: the runtime draws it under the hero patches and never reads
     // LOD1/2 or the compile report (the view-dependent base LOD was tried and
     // reverted — the patch rims are stitched against LOD0).
-    const base = compileBaseDisplayLod0(mesh, { heroPlan: { triangleRegion: plan.triangleRegion, regionIds: plan.regionIds } });
-    const patches = compileHeroPatches(scene, mesh, welded, plan);
+    const base = compileBaseDisplayLod0(mesh, { heroPlan: { triangleRegion: plan.triangleRegion, regionIds: plan.regionIds }, welded, ...shared });
+    const patches = compileHeroPatches(scene, mesh, welded, plan, MERIDIAN_STYLE, shared);
     const boundsM = boundsOfPositions(base.positions);
-
-    // The curvature and (atlas-default) sky fields are grid-wide and identical
-    // for every atlas below: compile them once instead of once per atlas
-    // (five times per hole — ~1.9 s of the mount compile on a laptop).
-    let sources: FieldAtlasSources = {};
-    try { sources = { curvature: compileCurvatureFields(metricGrid), sky: compileSkyField(metricGrid) }; } catch (error) { warnAtlasFallbackOnce('atlas source fields compile threw', error); }
 
     let atlas: PackedFieldAtlas | null = null;
     try {

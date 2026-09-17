@@ -112,10 +112,34 @@ export function featureDistance(p: PointM, feature: LocalFeature): number {
   for (const part of feature.parts) for (const ring of part) if (ring.length >= 2) best = Math.min(best, ringDistance(p, ring));
   return best;
 }
-function lineDistance(p: PointM, line: DistanceLine): number {
-  let best = Infinity;
-  for (let i = 1; i < line.points.length; i++) best = Math.min(best, distanceToSegment(p, line.points[i - 1]!, line.points[i]!));
-  return line.points.length === 1 ? Math.hypot(p[0] - line.points[0]![0], p[1] - line.points[0]![1]) : best;
+/** Whether `p` lies within `reach` of segment `a`–`b`: the same test as
+ * `distanceToSegment(p, a, b) <= reach`, after a rejection on the segment's
+ * bounding box (a point more than `reach` — plus a micron over any
+ * rounding — outside the box is further than `reach` from the segment).
+ * The region tests below only ever ask "within reach?", never the
+ * distance, so an outline of hundreds of segments costs four compares a
+ * segment instead of a square root. */
+function segmentWithin(p: PointM, a: PointM, b: PointM, reach: number): boolean {
+  const slack = reach + 1e-6;
+  if (p[0] < Math.min(a[0], b[0]) - slack || p[0] > Math.max(a[0], b[0]) + slack || p[1] < Math.min(a[1], b[1]) - slack || p[1] > Math.max(a[1], b[1]) + slack) return false;
+  return distanceToSegment(p, a, b) <= reach;
+}
+/** `ringDistance(p, ring) <= reach`, by segment. */
+function ringWithin(p: PointM, ring: readonly PointM[], reach: number): boolean {
+  for (let i = 0; i < ring.length; i++) if (segmentWithin(p, ring[i]!, ring[(i + 1) % ring.length]!, reach)) return true;
+  return false;
+}
+/** `featureDistance(p, feature) <= reach`, by segment. */
+function featureWithin(p: PointM, feature: LocalFeature, reach: number): boolean {
+  if (inFeature(p, feature)) return true;
+  for (const part of feature.parts) for (const ring of part) if (ring.length >= 2 && ringWithin(p, ring, reach)) return true;
+  return false;
+}
+/** Whether `p` lies within `reach` of a line (a single point, or its nearest segment). */
+function lineWithin(p: PointM, line: DistanceLine, reach: number): boolean {
+  if (line.points.length === 1) return Math.hypot(p[0] - line.points[0]![0], p[1] - line.points[0]![1]) <= reach;
+  for (let i = 1; i < line.points.length; i++) if (segmentWithin(p, line.points[i - 1]!, line.points[i]!, reach)) return true;
+  return false;
 }
 const bboxOf = (feature: LocalFeature): [number, number, number, number] => {
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
@@ -258,10 +282,10 @@ export function compileHeroRegions(scene: HoleScene, mesh: TerrainMesh, base: Di
     for (let t = 0; t < n; t++) {
       if (member[t]) continue;
       const c = work.centroid(t);
-      if (!outsideBox(c, box, reach) && featureDistance(c, feature) <= reach) { member[t] = 1; continue; }
+      if (!outsideBox(c, box, reach) && featureWithin(c, feature, reach)) { member[t] = 1; continue; }
       for (let k = 0; k < 3; k++) {
         const v = base.indices[t * 3 + k]!, q: PointM = [p[v * 3]!, p[v * 3 + 1]!];
-        if (!outsideBox(q, box, reach) && featureDistance(q, feature) <= reach) { member[t] = 1; break; }
+        if (!outsideBox(q, box, reach) && featureWithin(q, feature, reach)) { member[t] = 1; break; }
       }
     }
   };
@@ -280,7 +304,7 @@ export function compileHeroRegions(scene: HoleScene, mesh: TerrainMesh, base: Di
   for (const green of greens) {
     const member = new Uint8Array(n);
     within(green, opts.greenInfluenceM, member);
-    for (let t = 0; t < n; t++) if (member[t] && !insideClip(work.centroid(t)) && featureDistance(work.centroid(t), green) > 0) member[t] = 0;
+    for (let t = 0; t < n; t++) if (member[t] && !insideClip(work.centroid(t)) && !featureWithin(work.centroid(t), green, 0)) member[t] = 0;
     const featureIds = [green.id];
     // A bunker whose own triangles or margin band touch the complex is
     // absorbed whole, so a standalone bunker region never borders the
@@ -321,9 +345,8 @@ export function compileHeroRegions(scene: HoleScene, mesh: TerrainMesh, base: Di
     const member = new Uint8Array(n), box = bboxOf(water);
     work.markByVertex(member, p => {
       if (outsideBox(p, box, opts.waterEdgeM) || !insideClip(p)) return false;
-      let best = Infinity;
-      for (const part of water.parts) for (const ring of part) if (ring.length >= 2) best = Math.min(best, ringDistance(p, ring));
-      return best <= opts.waterEdgeM;
+      for (const part of water.parts) for (const ring of part) if (ring.length >= 2 && ringWithin(p, ring, opts.waterEdgeM)) return true;
+      return false;
     });
     candidates.push({ id: `water_edge:${water.id}`, kind: 'water_edge', featureIds: [water.id], seeds: new Set(), member });
   }
@@ -332,7 +355,7 @@ export function compileHeroRegions(scene: HoleScene, mesh: TerrainMesh, base: Di
     const lines = pathLines([zone]), member = new Uint8Array(n);
     const reach = Math.max(...lines.map(line => line.widthM / 2 + opts.pathMarginM));
     const box = bboxOf(zone as unknown as LocalFeature);
-    work.markByVertex(member, p => !outsideBox(p, box, reach) && insideClip(p) && lines.some(line => lineDistance(p, line) <= line.widthM / 2 + opts.pathMarginM));
+    work.markByVertex(member, p => !outsideBox(p, box, reach) && insideClip(p) && lines.some(line => lineWithin(p, line, line.widthM / 2 + opts.pathMarginM)));
     candidates.push({ id: `path:${zone.id}`, kind: 'path', featureIds: [zone.id], seeds: new Set(), member });
   }
 

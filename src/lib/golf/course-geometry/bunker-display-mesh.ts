@@ -170,13 +170,16 @@ export function bunkerPatchHooks(profiles: readonly BunkerHeroProfile[], style: 
 
 export interface CompiledBunkerPatch extends CompiledHeroPatch { profiles: BunkerHeroProfile[] }
 /** Compile a bunker-owning region (standalone bunker or green complex) with the bunker hooks. */
-export function compileBunkerAwarePatch(scene: HoleScene, mesh: TerrainMesh, base: DisplayMesh, region: HeroRegion, style: MeridianStyle = MERIDIAN_STYLE): CompiledBunkerPatch {
+export function compileBunkerAwarePatch(scene: HoleScene, mesh: TerrainMesh, base: DisplayMesh, region: HeroRegion, style: MeridianStyle = MERIDIAN_STYLE, options: Pick<RegionPatchOptions, 'curvature'> = {}): CompiledBunkerPatch {
   const profiles = bunkerHeroProfiles(scene, mesh, region, style);
-  return { ...compileRegionPatch(mesh, base, region, bunkerPatchHooks(profiles, style)), profiles };
+  return { ...compileRegionPatch(mesh, base, region, { ...bunkerPatchHooks(profiles, style), ...options }), profiles };
 }
-/** Every green-complex and bunker region of a plan, bunker hooks applied where the region owns bunkers. */
-export function compileHeroPatches(scene: HoleScene, mesh: TerrainMesh, base: DisplayMesh, plan: HeroRegionPlan, style: MeridianStyle = MERIDIAN_STYLE): CompiledBunkerPatch[] {
-  return plan.regions.filter(r => r.kind === 'green_complex' || r.kind === 'bunker').map(r => compileBunkerAwarePatch(scene, mesh, base, r, style));
+/** Every green-complex and bunker region of a plan, bunker hooks applied
+ * where the region owns bunkers. `options.curvature` (the grid's default
+ * curvature fields) is shared by every patch instead of recompiled per
+ * patch. */
+export function compileHeroPatches(scene: HoleScene, mesh: TerrainMesh, base: DisplayMesh, plan: HeroRegionPlan, style: MeridianStyle = MERIDIAN_STYLE, options: Pick<RegionPatchOptions, 'curvature'> = {}): CompiledBunkerPatch[] {
+  return plan.regions.filter(r => r.kind === 'green_complex' || r.kind === 'bunker').map(r => compileBunkerAwarePatch(scene, mesh, base, r, style, options));
 }
 
 /** §37–39 gates on a compiled bunker-owning patch: zero on every outline

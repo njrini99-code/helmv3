@@ -82,6 +82,9 @@ export const patchSpacingFor = (kind: HeroRegion['kind']): Readonly<PatchSpacing
  * because a flat needle across a bowl would show. */
 export interface RegionPatchOptions {
   spacing?: Readonly<PatchSpacing>;
+  /** `compileCurvatureFields(mesh.metricGrid)` at the default scales when
+   * the caller already holds it; compiled here when absent. */
+  curvature?: CurvatureFields | null;
   spacingCap?: (x: number, y: number) => number;
   displacement?: (x: number, y: number) => number;
   subdivideSliverClasses?: ReadonlySet<SurfaceClass>;
@@ -127,13 +130,23 @@ function segmentDistance(x: number, y: number, ax: number, ay: number, bx: numbe
   return Math.hypot(x - (ax + dx * t), y - (ay + dy * t));
 }
 
-/** Planar distance from a point to the region rim. */
-function rimDistanceField(base: DisplayMesh, region: HeroRegion): (x: number, y: number) => number {
-  const p = base.positions, segments: number[] = [];
-  for (const loop of region.rimLoops) for (let i = 0; i < loop.length - 1; i++) segments.push(p[loop[i]! * 3]!, p[loop[i]! * 3 + 1]!, p[loop[i + 1]! * 3]!, p[loop[i + 1]! * 3 + 1]!);
+/** Planar distance from a point to the region rim, capped at `capM`: the
+ * callers fade over the rim taper and read every distance at or beyond it
+ * alike, so a rim segment further than the cap (by its bounding box) is
+ * never measured. Uncapped when `capM` is not a positive number. */
+function rimDistanceField(base: DisplayMesh, region: HeroRegion, capM = Infinity): (x: number, y: number) => number {
+  const p = base.positions, segments: number[] = [], boxes: number[] = [];
+  for (const loop of region.rimLoops) for (let i = 0; i < loop.length - 1; i++) {
+    const ax = p[loop[i]! * 3]!, ay = p[loop[i]! * 3 + 1]!, bx = p[loop[i + 1]! * 3]!, by = p[loop[i + 1]! * 3 + 1]!;
+    segments.push(ax, ay, bx, by); boxes.push(Math.min(ax, bx), Math.min(ay, by), Math.max(ax, bx), Math.max(ay, by));
+  }
+  const cap = capM > 0 ? capM : Infinity, slack = cap + 1e-6;
   return (x, y) => {
-    let best = Infinity;
-    for (let s = 0; s < segments.length; s += 4) best = Math.min(best, segmentDistance(x, y, segments[s]!, segments[s + 1]!, segments[s + 2]!, segments[s + 3]!));
+    let best = cap;
+    for (let s = 0; s < segments.length; s += 4) {
+      if (x < boxes[s]! - slack || y < boxes[s + 1]! - slack || x > boxes[s + 2]! + slack || y > boxes[s + 3]! + slack) continue;
+      best = Math.min(best, segmentDistance(x, y, segments[s]!, segments[s + 1]!, segments[s + 2]!, segments[s + 3]!));
+    }
     return best;
   };
 }
@@ -222,8 +235,8 @@ function planEdges(mesh: TerrainMesh, base: DisplayMesh, region: HeroRegion, spa
 export function compileRegionPatch(mesh: TerrainMesh, base: DisplayMesh, region: HeroRegion, options: RegionPatchOptions = {}): CompiledHeroPatch {
   const spacing = options.spacing ?? patchSpacingFor(region.kind);
   const p = base.positions, grid = mesh.metricGrid;
-  const curvature = grid ? compileCurvatureFields(grid) : null;
-  const rimDistance = rimDistanceField(base, region);
+  const curvature = options.curvature !== undefined ? options.curvature : grid ? compileCurvatureFields(grid) : null;
+  const rimDistance = rimDistanceField(base, region, spacing.rimTaperM);
   const plan = planEdges(mesh, base, region, spacing, curvature, rimDistance, options);
   // Vertices: base vertices first (by base index), then edge samples, then lattice points.
   const positions: number[] = [], reference: number[] = [];

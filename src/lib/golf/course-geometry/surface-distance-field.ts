@@ -169,11 +169,13 @@ class SegmentIndex {
    * lying wholly beyond it is skipped and the minimum over the segments
    * that remain is the minimum over all of them. */
   nearestWithin(px: number, py: number, lower: number, upper: number): number {
-    const level = upper + this.maxHalfWidth > 3 * this.cellM ? this.coarse : this.fine, cellM = level.cellM, columns = level.columns;
+    const level = upper + this.maxHalfWidth > 2 * this.cellM ? this.coarse : this.fine, cellM = level.cellM, columns = level.columns;
     const start = level.start, ids = level.ids, nextFilled = level.nextFilled, segments = this.segments, halfWidths = this.halfWidths, maxHalfWidth = this.maxHalfWidth;
     const boxes = this.boxes, invLength2 = this.invLength2;
     let best = upper, bestId = -1;
-    if (this.lastId >= 0) { const d = this.segmentOffset(px, py, this.lastId); if (d < best) { best = d; bestId = this.lastId; } }
+    // The hint is tested once here and skipped in the scan (it cannot beat itself).
+    const hintId = this.lastId;
+    if (hintId >= 0) { const d = this.segmentOffset(px, py, hintId); if (d < best) { best = d; bestId = hintId; } }
     const rowLo = level.row(py - (best + maxHalfWidth)), rowHi = level.row(py + (best + maxHalfWidth));
     for (let r = rowLo; r <= rowHi; r++) {
       const reach = best + maxHalfWidth;
@@ -190,6 +192,7 @@ class SegmentIndex {
         if (halfInner > 0) { const xb0 = level.x0 + (k - rowStart) * cellM; if (xb0 > px - halfInner && xb0 + cellM < px + halfInner) continue; }
         for (let i = from; i < to; i++) {
           const id = ids[i]!, s = id * 4;
+          if (id === hintId) continue;
           // A segment beats `best` only if its centreline comes within
           // `best + halfWidth`: reject on the bounding box, then on an
           // approximate squared distance with slack far wider than its
