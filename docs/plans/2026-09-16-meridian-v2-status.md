@@ -102,16 +102,39 @@ repeated here as they land.
   into `public/course-geometry/<courseId>/` (hash-named, re-verified).
 - Phone-reachable review page (static build of the browser fixture, One-Tap
   hole 7 over V2): claude.ai artifact 7LQ9uPQ2VmZi1KY8jpq2Hk.
-- Owner decisions still required before a preview deployment can play a
-  real round (each refused by the session's auto-mode gate as a policy
-  change): (1) run the publisher into `public/` (~52 MB, byte-identical to
-  the committed fixtures); (2) approve the Upper package hash
-  `fdec6ea8…` in `peek-n-peak-policy.ts` and accept that it is still
-  `source_candidate` (no reviewed OSM features — lie copy already says
-  "Surface uncertain" on unreviewed boundaries; round-review shot
-  resolution stays off); (3) `peek_n_peak_one_tap_v1` on for `preview`.
-  Then a CLI preview deploy (git deploys are disabled) and, separately, the
-  One-Tap migration and a production deploy — both owner-authorized.
+- Owner approved the pilot on 2026-09-16 ("Yeah I approve. Don't deploy
+  to production yet or do some testing"), and it shipped:
+  599c1ea91 — the Upper package hash `fdec6ea8…` is approved in
+  `peek-n-peak-policy.ts` with `pilotAcceptsSourceCandidate: true` (the
+  package is still `source_candidate`; lie copy reads "Surface uncertain"
+  on unreviewed boundaries and round-review shot resolution stays off);
+  `public/course-geometry/peek-n-peak-upper/` carries the manifest, the
+  package, the context layer and all 18 compiled terrains (51.6 MB,
+  re-verified against the fixtures by the publisher);
+  `peek_n_peak_one_tap_v1` is on for `preview` only — production stays
+  off. 34 test files / 192 tests, tsc, eslint, flags and vercelignore
+  checks green.
+- 46e358357: the first CLI preview upload (908 MB) was rejected for the
+  worktree's `supabase/.temp/pooler-url` symlink. Root cause: the Vercel
+  CLI's `--archive=tgz` walker (ignore@4 + tar-fs) tests directory paths
+  without a trailing slash, so every `dir/` rule in `.vercelignore` only
+  matched children; an all-ignored directory came back empty, was added as
+  an entry, and tar-fs packed its whole contents. Every directory rule is
+  now repeated without the slash (upload 952 MB → 121 MB, verified with
+  `vercel deploy --dry --archive=tgz`), and the docs/ carve-out gained the
+  two no-slash negations it needed. From the canonical checkout the same
+  walk had been shipping `playwright/.auth/`, `momentic/auth/` and
+  `.claude/session-state/` in production archives — reported to the owner.
+- Preview deployment 2026-09-17 00:35 EDT (never production; git deploys
+  are disabled, so CLI `vercel deploy --archive=tgz` from 46e358357):
+  https://helmv3-gzq7z9epz-nick-rinis-projects.vercel.app
+  (dpl_DSoz5v3N1xuJk2gAuzLMVA5rYSwM, READY, 121 MB upload, 7149 files).
+  Verified through `vercel curl`: the manifest, the package, hole 7's
+  terrain and the context layer are served byte-identical to `public/`.
+  Vercel Authentication is on for previews, so the phone browser signs in
+  to Vercel once. Not verified on a phone yet (Task 27).
+- Still owner-authorized and not done: the One-Tap sync migration (HUD
+  shows "Sync issue" until then) and any production deploy.
 - Task 20: record the V2 first-frame hitch before/after `compileAsync`.
 - Task 22: run the CSM protocol on a real desktop GPU; Task 23's visual
   judgment likewise.
