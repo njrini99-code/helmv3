@@ -84,9 +84,34 @@ repeated here as they land.
 
 ## Open items after the front-nine pass
 
-- §11 close-frame triangle budget (4 warnings): view-dependent base LOD and
-  InstancedMesh culling (Task 18/25 follow-up).
+- §11 close-frame triangle budget (4 warnings): the forest families are
+  BatchedMesh with per-instance culling (a0d485d2b); the view-dependent base
+  LOD was tried and reverted — the hero-patch rims are stitched against
+  LOD0, so a coarser base under the green would open seams. Still open.
 - Task 13 run-off term (needs a per-vertex smoothed slope weight).
+
+## Product wiring (R7 in the app, 2026-09-16 late)
+
+- a0d485d2b: `world: 'v2'` is a render mode of the production terrain
+  runtime (overlay and markers intact); threaded through CourseTerrainCanvas
+  → CourseHoleScene → HoleSceneFrame → OneTapPlayerScreen; the One-Tap lab
+  reads `?world=v2` and its bar switches worlds / opens the render lab.
+- 699428f6b: the live One-Tap round renders `policy.renderWorld` ('v2') and
+  `loadCourseAssets` now loads the manifest's context layer;
+  `scripts/golf/course-geometry/publish-course-assets.mts` writes a course
+  into `public/course-geometry/<courseId>/` (hash-named, re-verified).
+- Phone-reachable review page (static build of the browser fixture, One-Tap
+  hole 7 over V2): claude.ai artifact 7LQ9uPQ2VmZi1KY8jpq2Hk.
+- Owner decisions still required before a preview deployment can play a
+  real round (each refused by the session's auto-mode gate as a policy
+  change): (1) run the publisher into `public/` (~52 MB, byte-identical to
+  the committed fixtures); (2) approve the Upper package hash
+  `fdec6ea8…` in `peek-n-peak-policy.ts` and accept that it is still
+  `source_candidate` (no reviewed OSM features — lie copy already says
+  "Surface uncertain" on unreviewed boundaries; round-review shot
+  resolution stays off); (3) `peek_n_peak_one_tap_v1` on for `preview`.
+  Then a CLI preview deploy (git deploys are disabled) and, separately, the
+  One-Tap migration and a production deploy — both owner-authorized.
 - Task 20: record the V2 first-frame hitch before/after `compileAsync`.
 - Task 22: run the CSM protocol on a real desktop GPU; Task 23's visual
   judgment likewise.
