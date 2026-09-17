@@ -63,6 +63,8 @@ import { Button as FwButton } from '@/components/fairway/controls/button';
 import { ModalShell } from '@/components/fairway/overlays/ModalShell';
 import { localDayIso } from '@/lib/golf/local-day';
 import { useActiveWork } from '@/lib/recovery/use-active-work';
+import { logError } from '@/lib/error-logging';
+import { clearPendingTeePick, loadPendingTeePick, savePendingTeePick } from '@/lib/golf/new-round-pick-cache';
 
 function RoundCompletionChunkLoading() {
   return (
@@ -1128,6 +1130,9 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
    * tee only seeds defaults. We leave the user on the setup screen to confirm.
    */
   const handleTeePick = useCallback((d: TeeRoundDefaults) => {
+    // Survive a document reload before the round exists on the server (see
+    // new-round-pick-cache.ts); the restore below replays this same handler.
+    savePendingTeePick(playerId, d);
     setCourseMode('saved');
     setSelectedCourseId(null);
     resolvedCourseIdRef.current = d.courseId;
@@ -1165,7 +1170,17 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
     }
     setPreloadedHoleConfigs(configs);
     if (d.holesCount === 9 || d.holesCount === 18) setHolesPerRound(d.holesCount);
-  }, []);
+  }, [playerId]);
+
+  // Any path that drops the cloud pick (manual course, saved course, "change
+  // course") also drops the reload record, so a cleared course never comes
+  // back on the next mount. Only a true→false transition counts: on a fresh
+  // mount the flag is false before the restore below has had its turn.
+  const cloudPickWasActiveRef = useRef(false);
+  useEffect(() => {
+    if (cloudPickWasActiveRef.current && !cloudPickActive) clearPendingTeePick(playerId);
+    cloudPickWasActiveRef.current = cloudPickActive;
+  }, [cloudPickActive, playerId]);
 
   // The course picker IS the first screen of a new round. Auto-open it once
   // on a fresh start (not resuming, nothing chosen yet) so picking a course
@@ -1187,8 +1202,34 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
     const nothingChosenYet =
       !selectedCourseId && selectedTeeIdRef.current == null && !setupData.courseName;
     autoOpenedPickerRef.current = true;
-    if (nothingChosenYet) setTeePickerOpen(true);
-  }, [step, selectedCourseId, setupData.courseName, connectionStatus.isOnline]);
+    if (!nothingChosenYet) return;
+    // A tee picked before this document was reloaded (WKWebView process
+    // kill, stale-asset recovery) comes back as the setup screen it was on,
+    // not as a fresh course picker — that reset with no message is exactly
+    // what a phone reload looked like to the player.
+    const pending = loadPendingTeePick(playerId);
+    if (pending) {
+      // Not a failure, but the only evidence we get that the page reloaded
+      // mid-setup — the process kill that caused it never reaches JS.
+      logError(
+        new Error('Round setup restored after reload'),
+        {
+          component: 'NewRoundClient',
+          action: 'round setup restore',
+          route: '/golf/dashboard/rounds/new',
+          featureArea: 'round_tracking',
+          courseId: pending.courseId,
+          teeId: pending.teeId,
+          navigatorOnLine: typeof navigator !== 'undefined' ? navigator.onLine : null,
+          isNative: typeof navigator !== 'undefined' && /HelmSportsLabsApp/.test(navigator.userAgent),
+        },
+        'low',
+      );
+      handleTeePick(pending);
+      return;
+    }
+    setTeePickerOpen(true);
+  }, [step, selectedCourseId, setupData.courseName, connectionStatus.isOnline, playerId, handleTeePick]);
 
   // Handle saved course selection
   const handleSavedCourseSelect = (courseId: string | null) => {
@@ -1355,7 +1396,38 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
       })),
     };
 
-    if (!navigator.onLine) {
+    // A start that never reaches the server is invisible to every log we
+    // have, so record why here (UNCW, Oviinbyrd GC, 2026-09-17: "it tries to
+    // load then resets, no error message" — nothing server-side to read).
+    const reportStartFailure = (reason: string, detail?: Record<string, unknown>) => {
+      logError(
+        new Error(`Round start failed: ${reason}`),
+        {
+          component: 'NewRoundClient',
+          action: 'round start',
+          route: '/golf/dashboard/rounds/new',
+          featureArea: 'round_tracking',
+          reason,
+          courseId: resolvedCourseIdRef.current ?? null,
+          teeId: selectedTeeIdRef.current ?? null,
+          roundType: setupData.roundType,
+          roundDate: setupData.roundDate,
+          holeCount: configuredHoles.length,
+          navigatorOnLine: typeof navigator !== 'undefined' ? navigator.onLine : null,
+          probeConnected: connectionStatus.isConnected,
+          ...detail,
+        },
+        'medium',
+      );
+    };
+
+    // `navigator.onLine` alone is not trusted: WKWebView reports false on some
+    // reachable networks, and a false negative here silently blocks every
+    // start without a request. Only refuse when the last /api/health probe
+    // (`isConnected`, not `isOnline`, which mirrors navigator.onLine) also
+    // failed; otherwise attempt the save and let the catch below report it.
+    if (!navigator.onLine && !connectionStatus.isConnected) {
+      reportStartFailure('offline');
       setError('Connect to the internet before starting so this round can be saved and resumed.');
       return false;
     }
@@ -1366,6 +1438,7 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
         // B6: this call always sends `holes: []` (a fresh round), so
         // `conflict`/`round_missing`/`hole_invalid` cannot occur here — but
         // `busy`/`retry` can, and both are bare signal keys, not sentences.
+        reportStartFailure('server_rejected', { serverError: result.error });
         setError(describeRoundWriteFailure(result.error));
         return false;
       }
@@ -1373,6 +1446,8 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
       savedRoundIdRef.current = result.data.roundId;
       setSavedRoundId(result.data.roundId);
       if (result.data.updatedAt) lastServerUpdatedAtRef.current = result.data.updatedAt;
+      // The round now exists server-side; Continue Round owns it from here.
+      clearPendingTeePick(playerId);
       setHoles(initialHoles);
       setCompletedHoleStats([]);
       setInProgressShotsByHole({});
@@ -1390,11 +1465,15 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
         holesPerRound: configuredHoles.length as 9 | 18,
       });
       return true;
-    } catch {
+    } catch (err) {
+      reportStartFailure('transport', {
+        errorName: err instanceof Error ? err.name : typeof err,
+        errorMessage: err instanceof Error ? err.message : String(err),
+      });
       setError('Unable to save this round. Please try again before tracking.');
       return false;
     }
-  }, [playerId, selectedQualifierId, selectedRoundNumber, setupData]);
+  }, [connectionStatus.isConnected, playerId, selectedQualifierId, selectedRoundNumber, setupData]);
 
   const handleSetupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1484,6 +1563,11 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
   const handleConfirmedHolesSave = async (configuredHoles: HoleConfig[]) => {
     const validationError = validateBeforeStart();
     if (validationError) {
+      logError(
+        new Error(`Round start blocked: ${validationError}`),
+        { component: 'NewRoundClient', action: 'round start validation', route: '/golf/dashboard/rounds/new', featureArea: 'round_tracking', roundType: setupData.roundType, roundDate: setupData.roundDate },
+        'low',
+      );
       setError(validationError);
       return;
     }

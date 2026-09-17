@@ -102,3 +102,30 @@ describe('src/proxy.ts — updateSession error handling', () => {
     expect(captureException).not.toHaveBeenCalled();
   });
 });
+
+describe('src/proxy.ts — native user agent: marketing redirect vs app-shell resources', () => {
+  const NATIVE_UA =
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 HelmSportsLabsApp';
+  const nativeRequest = (path: string) =>
+    new NextRequest(`https://app.example.com${path}`, { headers: { 'user-agent': NATIVE_UA } });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    updateSession.mockResolvedValue(NextResponse.next());
+  });
+
+  it('still sends a native request for a marketing page to the golf sign-in', async () => {
+    const result = await proxy(nativeRequest('/products'));
+    expect(result.status).toBe(307);
+    expect(result.headers.get('location')).toBe('https://app.example.com/golf/login');
+  });
+
+  it.each(['/sw.js', '/manifest.json', '/offline.html', '/monitoring', '/icons/icon-192.png', '/fonts/inter.woff2'])(
+    'lets the native web view load %s (a redirected service worker or manifest is dropped by WebKit)',
+    async (path) => {
+      const result = await proxy(nativeRequest(path));
+      expect(result.status).not.toBe(307);
+      expect(updateSession).toHaveBeenCalledTimes(1);
+    },
+  );
+});
