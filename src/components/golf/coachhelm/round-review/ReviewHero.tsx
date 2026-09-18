@@ -228,6 +228,9 @@ export interface ReviewHoleMeta {
 
 export interface ReviewHeroProps {
   geometry?: { package: CourseGeometryPackage; holeKeys: readonly string[]; terrainByHole?: Readonly<Record<string, TerrainMesh>>; contextLayer?: ContextLayer };
+  /** Reports which hole's detail is open (null when closed), so the caller
+   * can bring in that hole's terrain without holding every mesh resident. */
+  onOpenHoleChange?: (holeNumber: number | null) => void;
   totalScore: number;
   scoreToPar: number;
   courseDateLine: string;
@@ -250,6 +253,7 @@ export interface ReviewHeroProps {
 
 export function ReviewHero({
   geometry,
+  onOpenHoleChange,
   totalScore,
   scoreToPar,
   courseDateLine,
@@ -272,6 +276,11 @@ export function ReviewHero({
   const [selectedShot, setSelectedShot] = useState<{ hole: number; number: number } | null>(null);
   const [activeHole, setActiveHole] = useState<number | null>(initialHole);
   const [openHole, setOpenHole] = useState<number | null>(initialHole);
+  // The caller learns which hole is open through a ref'd callback, so a
+  // caller that re-creates the function per render cannot spin this effect.
+  const onOpenHoleChangeRef = useRef(onOpenHoleChange);
+  onOpenHoleChangeRef.current = onOpenHoleChange;
+  useEffect(() => { onOpenHoleChangeRef.current?.(openHole); }, [openHole]);
   const detailRef = useRef<HTMLDivElement>(null);
   const [detailScrollRequest, setDetailScrollRequest] = useState(0);
   useEffect(() => {
@@ -354,8 +363,9 @@ export function ReviewHero({
   const openPar = openMeta?.par === 3 || openMeta?.par === 4 || openMeta?.par === 5 ? openMeta.par : undefined;
 
   // The course-framed review (HoleSceneFrame, shot selector, position copy)
-  // exists only for a round whose caller supplied course geometry. Nothing
-  // constructs that prop yet (plan §unlock 3), and a round without geometry
+  // exists only for a round whose caller supplied course geometry — the
+  // review page does so for a Peek'n Peak Upper round (`useCourseGeometry`,
+  // plan §unlock 3) — and a round without geometry
   // must keep the review it has today: the legacy shot path, putting zoom and
   // shot list — never "Course outline unavailable" on every hole of every team.
   const courseFramed = geometry != null;

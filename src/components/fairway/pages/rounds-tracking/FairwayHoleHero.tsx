@@ -19,9 +19,10 @@ function shotLeave(shot: ShotRecord, preference: 'yards' | 'meters') {
 }
 
 /** Read-only course context. Pending input never supplies a camera or anchor.
- * A round with no resolved course package (every course today: nothing
- * constructs the tracker's `geometry` yet) keeps the hero shipped on main;
- * the course frame is only ever a replacement for a round it can draw. */
+ * A round with no resolved course package (every course but Peek'n Peak
+ * Upper, whose round clients thread `geometry` through `useCourseGeometry`)
+ * keeps the hero shipped on main; the course frame is only ever a
+ * replacement for a round it can draw. */
 export function FairwayHoleHero(props: FairwayHoleHeroProps) {
   if (!props.scene) return <FairwayHoleHeroLegacy {...props} />;
   return <CourseFramedHoleHero {...props} scene={props.scene} />;

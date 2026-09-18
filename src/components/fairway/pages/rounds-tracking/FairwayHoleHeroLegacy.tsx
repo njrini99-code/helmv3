@@ -5,8 +5,8 @@
  * Fairway · Rounds · Tracking — FairwayHoleHeroLegacy  (LIGHT HOLE COCKPIT)
  * ----------------------------------------------------------------------------
  * The hole context every round WITHOUT course geometry still gets — every
- * course and every team today, since nothing constructs the tracker's
- * `geometry` prop yet (course-geometry plan, unlock 3). `FairwayHoleHero`
+ * course but Peek'n Peak Upper, the one course whose round clients resolve
+ * the tracker's `geometry` prop (`useCourseGeometry`, plan unlock 3). `FairwayHoleHero`
  * renders this verbatim when it has no `HoleScene`; the course-framed hero
  * (`HoleSceneFrame`) is for a round whose course package resolved. Kept as
  * the file shipped on main so production entry does not change underneath

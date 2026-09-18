@@ -186,6 +186,10 @@ export default function FairwayShotTracking({
     onAutoSave,
     autoSaveInterval,
     autoSaveDisabled,
+    // Course-framed rounds keep the selection on the latest recorded event so
+    // the landscape and inspector start there. Every round without a course
+    // package keeps the selection behaviour shipped on main.
+    autoSelectLatest: geometry != null,
   });
 
   // Distance-unit preference: 'yards' (default) | 'meters'
@@ -559,6 +563,11 @@ export default function FairwayShotTracking({
   const physicalScene = useMemo(() =>
     buildTrackingHoleScene(geometry, currentHoleIndex, shotHistory),
   [geometry, currentHoleIndex, shotHistory]);
+  // The compact putting chrome (a task header instead of the scorecard, no
+  // shot pills) exists to give the drawn green room. A round whose hole is not
+  // drawn — every course without a package, an unmapped hole — keeps the full
+  // chrome shipped on main, putting included.
+  const courseFramed = physicalScene != null;
 
   // Early return for invalid hole data - must be after all hooks
   if (!currentHole) {
@@ -642,7 +651,7 @@ export default function FairwayShotTracking({
           single element that scrolls, sticks and safe-areas as one thing. */}
       <FairwayScorecardHeader
         safeAreaHandledAbove={safeAreaHandledAbove}
-        puttingMode={isPutting}
+        puttingMode={isPutting && courseFramed}
         holes={holes}
         currentHoleIndex={currentHoleIndex}
         currentHoleNumber={currentHole.number}
@@ -653,7 +662,7 @@ export default function FairwayShotTracking({
           <>
             {statusSlot}
             {liveStatus && <OneTapLiveStatusRow status={liveStatus} onTurnOn={onLiveOptIn ? () => onLiveOptIn(true) : undefined} />}
-            {!isPutting && <FairwayShotPills
+            {!(isPutting && courseFramed) && <FairwayShotPills
               currentShot={currentShot}
               recordedShotCount={shotHistory.length}
               selectedShotNumber={selectedShotNumber}

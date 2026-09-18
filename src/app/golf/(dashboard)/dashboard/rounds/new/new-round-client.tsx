@@ -1,6 +1,6 @@
 'use client';
 
-import { startTransition, useState, useEffect, useCallback, useRef } from 'react';
+import { startTransition, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import type { HoleStats, ShotRecord, RoundHole } from '@/lib/types/golf';
@@ -59,6 +59,7 @@ import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayNewRoundEntry } from '@/components/fairway/pages/rounds-new/FairwayNewRoundEntry';
 import { FairwayShotTracking } from '@/components/fairway/pages/rounds-tracking';
 import { useOneTapLiveRoundState } from '@/components/golf/one-tap/use-one-tap-live-round';
+import { trackingGeometryFromLiveRound, useCourseGeometry } from '@/components/golf/course-geometry/use-course-geometry';
 import { useLiveOptIn } from '@/lib/golf/one-tap/live-opt-in';
 import { Skeleton } from '@/components/fairway';
 import { Button as FwButton } from '@/components/fairway/controls/button';
@@ -890,6 +891,13 @@ export default function NewRoundClient({ playerId, oneTapFlagEnabled = false, on
   const [oneTapOptIn, setOneTapOptIn] = useLiveOptIn(savedRoundIdRef.current);
   const { live: oneTapLiveRound, status: oneTapLiveStatus } = useOneTapLiveRoundState({ roundId: savedRoundIdRef.current, dbCourseId: resolvedCourseIdRef.current, courseName: setupData.courseName, featureFlagEnabled: oneTapFlagEnabled, optIn: oneTapOptIn === 'on', syncEnabled: oneTapSyncEnabled, roundType: setupData.roundType, holeNumber: holes[currentHoleIndex]?.number ?? currentHoleIndex + 1 });
   const onOneTapOptIn = useCallback((on: boolean) => setOneTapOptIn(on ? 'on' : 'off'), [setOneTapOptIn]);
+  // Course-framed tracking (plan §unlock 3): the Upper package draws the hole
+  // scene, the 3D hero and tap-to-measure for a Peek'n Peak Upper round only;
+  // every other course gets no geometry and the tracker shipped on main. While
+  // Meridian Live is loading or up, its assets serve instead of a second load.
+  const roundHoleNumbers = useMemo(() => holes.map(hole => hole.number), [holes]);
+  const { geometry: loadedCourseGeometry } = useCourseGeometry({ dbCourseId: resolvedCourseIdRef.current, courseName: setupData.courseName, holeNumbers: roundHoleNumbers, focusHoleNumber: holes[currentHoleIndex]?.number ?? null, enabled: oneTapLiveStatus.phase !== 'loading' && oneTapLiveStatus.phase !== 'live' });
+  const courseGeometry = useMemo(() => oneTapLiveRound ? trackingGeometryFromLiveRound(oneTapLiveRound, roundHoleNumbers) : loadedCourseGeometry, [oneTapLiveRound, roundHoleNumbers, loadedCourseGeometry]);
   // Cloud Course Library tee (golf_course_tees.id) when the round was started
   // from the tee picker. Cleared whenever a non-library course is chosen.
   const selectedTeeIdRef = useRef<string | null>(null);
@@ -2864,6 +2872,7 @@ export default function NewRoundClient({ playerId, oneTapFlagEnabled = false, on
           onAutoSave={handleAutoSave}
           autoSaveInterval={15000}
           autoSaveDisabled={step === 'submitting' || !!completedRoundId}
+          geometry={courseGeometry}
           liveRound={oneTapLiveRound}
           liveStatus={oneTapLiveStatus}
           onLiveOptIn={onOneTapOptIn}

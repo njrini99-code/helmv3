@@ -11,7 +11,7 @@ function standingState(): ShotTrackingState {
     approachMissDirection: null, approachMissLieType: undefined, distanceAfterShot: '', distanceAfterUnit: 'yards',
     autoSaveStatus: 'idle', pendingSaveCount: 0, showPenaltyModal: false, penaltyType: null, penaltyOrigin: 'here',
     showUndoConfirm: false, undoSaving: false, undoError: null, showEditModal: false, editingShot: null,
-    editFormData: null, editSaving: false, editError: null, showDeleteConfirm: false, selectedShotNumber: null,
+    editFormData: null, editSaving: false, editError: null, showDeleteConfirm: false, selectedShotNumber: null, autoSelectLatest: false,
   } as unknown as ShotTrackingState;
 }
 

@@ -2,8 +2,9 @@
 /**
  * FairwayHoleHero — which hole context a round gets on the entry screen.
  *
- * Nothing constructs the tracker's `geometry` yet, so every course on every
- * team reaches this hero with no scene. That round must keep the hole card
+ * Only a Peek'n Peak Upper round resolves the tracker's `geometry`
+ * (`useCourseGeometry`), so every other course on every team reaches this
+ * hero with no scene. That round must keep the hole card
  * shipped on main (`FairwayHoleHeroLegacy`), never "Course outline
  * unavailable" above the shot entry (caught in the #1939 landing review,
  * 2026-09-17). The course frame is only ever a replacement for a round it

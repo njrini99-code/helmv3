@@ -49,6 +49,7 @@ import { fairwayScope } from '@/lib/redesign/flag';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 import { cleanCourseName } from '@/lib/golf/course-name';
 import { FilmstripReview, type PromoteSuggestion } from '@/components/golf/coachhelm/round-review/FilmstripReview';
+import { useCourseGeometry } from '@/components/golf/course-geometry/use-course-geometry';
 import { sanitizeNaN } from '@/components/golf/coachhelm/round-review/buildReviewViewModel';
 
 // ============================================================================
@@ -58,6 +59,7 @@ import { sanitizeNaN } from '@/components/golf/coachhelm/round-review/buildRevie
 interface RoundData {
   id: string;
   player_id: string;
+  course_id?: string | null;
   course_name: string | null;
   round_date: string;
   total_score: number | null;
@@ -154,6 +156,9 @@ function derivePromoteSuggestion(
   return null;
 }
 
+/** The course-framed review indexes package holes by hole number (1–18). */
+const REVIEW_HOLE_NUMBERS: readonly number[] = Array.from({ length: 18 }, (_, index) => index + 1);
+
 // ============================================================================
 // MAIN COMPONENT
 // ============================================================================
@@ -177,6 +182,11 @@ export default function RoundReviewPage() {
 
   // State
   const [round, setRound] = useState<RoundData | null>(null);
+  // Course-framed review (plan §unlock 3): a Peek'n Peak Upper round draws
+  // its holes on the approved package, with terrain for the hole that is
+  // open. Any other course resolves no geometry and reviews exactly as before.
+  const [openReviewHole, setOpenReviewHole] = useState<number | null>(null);
+  const { geometry: courseGeometry } = useCourseGeometry({ dbCourseId: round?.course_id ?? null, courseName: round?.course_name ?? null, holeNumbers: REVIEW_HOLE_NUMBERS, focusHoleNumber: openReviewHole });
   const [storedReview, setStoredReview] = useState<RoundReviewWithRound | null>(null);
   // Season-level standing (PGA + team + you) keyed by canonical metric_id.
   // Redesign-only: feeds the StandingBar "where this sits" band below the
@@ -723,6 +733,8 @@ export default function RoundReviewPage() {
           strokesGainedApproach={round.strokes_gained_approach}
           strokesGainedAroundGreen={round.strokes_gained_around_green}
           strokesGainedPutting={round.strokes_gained_putting}
+          geometry={courseGeometry}
+          onOpenHoleChange={setOpenReviewHole}
         />
       ) : (
         <FwEmptyState

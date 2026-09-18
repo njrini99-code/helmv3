@@ -48,12 +48,16 @@ function makeInitialState(overrides: Partial<ShotTrackingState> = {}): ShotTrack
     editSaving: false,
     editError: null,
     selectedShotNumber: null,
+    autoSelectLatest: false,
     pendingSaveCount: 0,
     autoSaveRetryAttempt: 0,
     undoError: null,
     ...overrides,
   };
 }
+// A course-framed round (a hole scene is drawn): the selection follows the
+// latest recorded event. Plain rounds keep the selection exactly as before.
+const framed = (overrides: Partial<ShotTrackingState> = {}) => makeInitialState({ autoSelectLatest: true, ...overrides });
 
 // ============================================================================
 // computeRestoredState
@@ -224,13 +228,15 @@ describe('shotReducer', () => {
         type: 'RESET_FOR_HOLE_CHANGE',
         payload: { initialShots: existingShots, initialShotNumber: 3, holeYardage: 400 },
       };
-      const next = shotReducer(makeInitialState(), action);
+      const next = shotReducer(makeInitialState({ selectedShotNumber: 1 }), action);
       expect(next.currentShot).toBe(3);
       expect(next.shotHistory).toEqual(existingShots);
       expect(next.distanceToHole).toBe(20);
       expect(next.currentLie).toBe('green');
       expect(next.distanceAfterUnit).toBe('feet');
-      expect(next.selectedShotNumber).toBe(2);
+      // A plain round starts every hole with nothing selected, as it always has.
+      expect(next.selectedShotNumber).toBeNull();
+      expect(shotReducer(framed(), action).selectedShotNumber).toBe(2);
     });
 
     it('clears input state on reset', () => {
@@ -260,7 +266,8 @@ describe('shotReducer', () => {
       const next = shotReducer(makeInitialState(), action);
       expect(next.shotHistory).toHaveLength(1);
       expect(next.shotHistory[0]).toEqual(shot);
-      expect(next.selectedShotNumber).toBe(1);
+      expect(next.selectedShotNumber).toBeNull();
+      expect(shotReducer(framed(), action).selectedShotNumber).toBe(1);
     });
 
     it('preserves existing history', () => {
@@ -273,7 +280,9 @@ describe('shotReducer', () => {
       };
       const next = shotReducer(state, action);
       expect(next.shotHistory).toHaveLength(2);
-      expect(next.selectedShotNumber).toBe(2);
+      expect(next.selectedShotNumber).toBeNull();
+      expect(shotReducer({ ...state, selectedShotNumber: 1 }, action).selectedShotNumber).toBe(1);
+      expect(shotReducer(framed({ shotHistory: [existing] }), action).selectedShotNumber).toBe(2);
     });
   });
 
@@ -470,7 +479,8 @@ describe('shotReducer', () => {
       expect(next.currentLie).toBe('fairway');
       expect(next.undoSaving).toBe(false);
       expect(next.showUndoConfirm).toBe(false);
-      expect(next.selectedShotNumber).toBe(1);
+      expect(next.selectedShotNumber).toBeNull();
+      expect(shotReducer({ ...state, autoSelectLatest: true }, { type: 'UNDO_COMPLETE', payload: { newHistory: [shot1] } }).selectedShotNumber).toBe(1);
     });
 
     it('UNDO_COMPLETE with empty history resets to tee', () => {
@@ -488,6 +498,7 @@ describe('shotReducer', () => {
       expect(next.distanceToHole).toBe(400);
       expect(next.currentLie).toBe('tee');
       expect(next.selectedShotNumber).toBeNull();
+      expect(shotReducer({ ...state, autoSelectLatest: true, selectedShotNumber: 1 }, { type: 'UNDO_COMPLETE', payload: { newHistory: [] } }).selectedShotNumber).toBeNull();
     });
 
     it('UNDO_FAIL resets saving state', () => {
@@ -579,7 +590,8 @@ describe('shotReducer', () => {
       expect(next.currentShot).toBe(2);
       expect(next.distanceToHole).toBe(150);
       expect(next.currentLie).toBe('fairway');
-      expect(next.selectedShotNumber).toBe(1);
+      expect(next.selectedShotNumber).toBeNull();
+      expect(shotReducer({ ...state, autoSelectLatest: true }, { type: 'DELETE_COMPLETE', payload: { newHistory: [remaining] } }).selectedShotNumber).toBe(1);
     });
   });
 
@@ -593,6 +605,20 @@ describe('shotReducer', () => {
       const state = makeInitialState({ selectedShotNumber: 3 });
       const next = shotReducer(state, { type: 'SELECT_SHOT', payload: null });
       expect(next.selectedShotNumber).toBeNull();
+    });
+  });
+
+  describe('SET_AUTO_SELECT_LATEST', () => {
+    it('is the same state when nothing changes, lands on the latest event when turned on, and keeps the selection when turned off', () => {
+      const plain = makeInitialState({ shotHistory: [makeShotRecord({ shotNumber: 1 }), makeShotRecord({ shotNumber: 2 })], currentShot: 3 });
+      expect(shotReducer(plain, { type: 'SET_AUTO_SELECT_LATEST', payload: false })).toBe(plain);
+      const on = shotReducer(plain, { type: 'SET_AUTO_SELECT_LATEST', payload: true });
+      expect(on).toMatchObject({ autoSelectLatest: true, selectedShotNumber: 2 });
+      expect(shotReducer(on, { type: 'SET_AUTO_SELECT_LATEST', payload: true })).toBe(on);
+      const off = shotReducer({ ...on, selectedShotNumber: 1 }, { type: 'SET_AUTO_SELECT_LATEST', payload: false });
+      expect(off).toMatchObject({ autoSelectLatest: false, selectedShotNumber: 1 });
+      // Turning on with nothing recorded selects nothing.
+      expect(shotReducer(makeInitialState(), { type: 'SET_AUTO_SELECT_LATEST', payload: true }).selectedShotNumber).toBeNull();
     });
   });
 

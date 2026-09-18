@@ -3,8 +3,9 @@
  * ReviewHero — which review a round gets.
  *
  * The course-framed review (HoleSceneFrame, shot selector, position copy)
- * exists only for a round whose caller supplied course geometry. Every other
- * round — every course, every team, today — must keep the legacy shot path,
+ * exists only for a round whose caller supplied course geometry (the review
+ * page does, for a Peek'n Peak Upper round). Every other
+ * round — every other course, every team — must keep the legacy shot path,
  * putting zoom and shot list it has in production, never a filmstrip of
  * "Course outline unavailable" placeholders (caught in the #1939 landing review,
  * 2026-09-17).
@@ -83,5 +84,13 @@ describe('ReviewHero: which review a round gets', () => {
     await waitFor(() => expect(getAllByTestId('hole-shot-path').length).toBeGreaterThanOrEqual(3));
     expect(getAllByTestId('hole-shot-path').every(p => p.getAttribute('data-bounded') === 'true')).toBe(true);
     expect(getByRole('group', { name: 'Recorded shots' }).querySelectorAll('button').length).toBe(3);
+  });
+  it('reports the open hole so the caller can bring in that hole\u2019s terrain, and null once it closes', async () => {
+    const geometry = { package: pilotPackage, holeKeys: pilotPackage.holes.map(h => h.key) };
+    const onOpenHoleChange = vi.fn();
+    const { getByText } = render(<ReviewHero {...base} geometry={geometry} onOpenHoleChange={onOpenHoleChange} />);
+    await waitFor(() => expect(onOpenHoleChange).toHaveBeenLastCalledWith(1));
+    getByText('Close').click();
+    await waitFor(() => expect(onOpenHoleChange).toHaveBeenLastCalledWith(null));
   });
 });
