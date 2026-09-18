@@ -1,0 +1,184 @@
+# Lane A08 — Invitations, authentication, account lifecycle, and native handoffs
+
+Baseline: `3c90f9f174ac103af5fafc600aebecd98243decc`. Evidence labels used throughout: `SOURCE`, `RISK`, `PROPOSAL`, `NOT_RUN`. No device, runtime, test account, or database access was available or used. `OBSERVED`/`REPRODUCED` were never claimed.
+
+## Top 5 actionable findings
+
+1. **A08-001** (P1, SOURCE/RISK) — `ios/App/App/GolfBridgeViewController.swift:87-93` classifies "did the user leave the golf app" with two unanchored `url.contains("/golf/")` / `contains("/about"|"/privacy"|"/terms")` string checks — no host/origin comparison at all. A URL on a different origin that merely contains `/golf/` as a substring is treated as an in-app page (no return-to-login safety net fires); a genuine in-app URL missing that literal substring (e.g. the bare `/golf` root before its server redirect resolves) can trigger `SceneDelegate.swift:20-27`'s hardcoded full-document reload to `https://www.helmsportslabs.com/golf/login`, discarding all SPA state. Still present at this baseline. Owner: A01 (native file); A08 requests the contract.
+2. **A08-003** (P1, SOURCE/RISK) — Every sign-out call site (`FairwayDashboardShell.tsx:229-248`, `FairwaySettingsGeneral.tsx:571-577`) fires `clearActiveTeam()` + `supabase.auth.signOut()` unconditionally with no check against the app's own offline round-draft store (`src/lib/offline/indexed-db.ts`) and no reuse of the "Discard unsaved changes?" `ConfirmDialog` pattern the same Settings file already implements for its own panel edits. Contradicts the plan's explicit "warn before logout when possible."
+3. **A08-002** (P2, SOURCE) — `src/app/auth/callback/route.ts:196-227` discards the `error` from `.single()` reads on `golf_coaches`/`golf_players` (and the baseball equivalents), so a transient read failure is indistinguishable from "no profile" and can route an *already-onboarded* coach/player through first-run onboarding UI. Both onboarding pages self-correct on mount, so this is a flash/extra-round-trip, not data loss — but it is the same bug class the codebase explicitly fixed one file over, in `join/[code]/page.tsx`.
+4. **A08-004** (P2, RISK) — `src/lib/auth/session.ts:141-167` (`getGolfSessionProfile`, the load-bearing identity gate for 40+ dashboard routes) and its own mitigating retry in `layout.tsx:101-119` both discard read errors on the coach/player lookups. Two consecutive transient failures ~300ms apart would misroute an established user to `/golf/signup` (`layout.tsx:276-283`). The retry logic is a real, well-built mitigation — this is the residual gap in it.
+5. **A08-005** (P2, SOURCE) — The identical team join code produces two different outcomes depending only on entry surface: `/golf/join/[code]` auto-joins with no coach approval (`teams.ts:429-437`, `golf_join_team_with_code`), while the same code typed into Settings' "Request to Join" creates a pending request requiring coach approval (`teams.ts:908-1040`). Flagged as an open product question, not a code defect.
+
+## All findings
+
+See `findings.jsonl` in this directory for the full structured record (5 findings, one JSON object per line, fields per the worker brief's finding-record spec). Summarized narratively below.
+
+### A08-001 — Native shell URL classifier is unanchored substring matching (G24, still present)
+
+- **Files/ranges:** `ios/App/App/GolfBridgeViewController.swift:81-97`, `ios/App/App/SceneDelegate.swift:17-28`.
+- **Mechanism:** `GolfBridgeViewController` observes `webView.url` via KVO. `isGolfPage = url.contains("/golf/")`; `isAboutPage = url.contains("/about") || url.contains("/privacy") || url.contains("/terms")`. Neither check inspects `URL.host` or anchors the match to a path prefix — they are raw substring tests against the full absolute URL string. When both are false, `SceneDelegate`'s `onNavigateAway` closure runs `webView.load(URLRequest(url: "https://www.helmsportslabs.com/golf/login"))`, a full document navigation (not an SPA route change), after "a small delay to let the navigation settle."
+- **Consequence:** (a) An off-origin URL containing `/golf/` anywhere (e.g. a redirect target embedding that literal substring in a query string or path segment) is silently accepted as if it were the app, and the native return-to-login safety net never triggers — the WKWebView has no address bar, so the user has no way to notice they have left the real app. (b) The reload itself is a blunt instrument: it is a full document load discarding all in-memory SPA state (any in-progress round, form, or navigation position), not a soft in-app redirect to `/golf/login`.
+- **Verification against baseline:** Read both files in full at the pinned SHA. Confirmed present, unchanged from the described behavior. No fix commit referencing this classifier was found; this is **still present**, not previously fixed.
+- **Requested fix (A01 owns the file):** anchor the classifier on `URL.host` equal to the deployed app's host and `URL.path` starting with `/golf/` (etc.), using `URLComponents`, not string containment. A08 requests this as a shared contract since the failure mode intersects session/redirect integrity, which A08 otherwise verified is well-guarded at the web layer (see "Verified passing" below).
+- **Related negative tests:** T02 (stale chunk / bounded recovery), T19 (native handoff cancel/return), T24 (capability-safe behavior across binary versions).
+
+### A08-002 — OAuth callback treats a failed profile read as "no profile"
+
+- **Files/ranges:** `src/app/auth/callback/route.ts:161-252` (golf branch at 196-227, baseball branch at 230-252); mitigating self-check at `src/app/golf/(onboarding)/player/page.tsx:90-150` and `src/app/golf/(onboarding)/coach/page.tsx:150-210`.
+- **Mechanism:** `supabase.from('golf_coaches')...single()` / `golf_players...single()` results are destructured as `{ data: golfCoach }` / `{ data: golfPlayer }` — the `error` is never read. A transient network/DB failure and a genuine "no row" both present as `data: null`, so the callback's `if (golfCoach)` / `if (golfPlayer)` guards cannot tell them apart and fall through to "No golf profile exists — redirect to golf signup" for a user who may in fact already have a completed profile.
+- **Mitigation already in place:** Both `(onboarding)/player/page.tsx` and `(onboarding)/coach/page.tsx` independently re-check the profile via `.maybeSingle()` on mount and redirect to `/golf/dashboard` if `onboarding_completed` is true. So the actual user-visible consequence at this baseline is a momentary flash of the wrong first-run screen plus a wasted round trip, not stranding or data loss — this is a **P2 continuity defect**, not P0/P1.
+- **Why it's worth fixing anyway:** the exact same anti-pattern was explicitly identified and fixed one file over, in `src/app/golf/join/[code]/page.tsx:38-53,100-106`, whose comments describe this precise failure mode ("a failed read left `coach` null...a coach clicking a team invite was walked through PLAYER onboarding"). The OAuth callback was evidently not covered by that fix.
+- **Related negative tests:** T06 (empty vs. failed read vs. unqueried), T20 (session/membership edge cases at a notification/invite target).
+
+### A08-003 — Sign-out has no unsynced-work warning despite a real offline round-draft store
+
+- **Files/ranges:** `src/app/golf/(dashboard)/FairwayDashboardShell.tsx:223-248` (`useGolfSignOut`, used by both the rail footer and the More-sheet footer), `src/components/fairway/pages/settings/FairwaySettingsGeneral.tsx:571-577` (Settings' own sign-out), `src/lib/offline/indexed-db.ts:34-177` (the `golfhelm_offline` IndexedDB store, keyed by `playerId`), `src/components/fairway/pages/rounds-recover/FairwayRecoverRound.tsx:353-429` (existing recovery UI that already queries this store scoped by the current `playerId`).
+- **Mechanism:** Every sign-out path calls `clearActiveTeam()` then `supabase.auth.signOut()` unconditionally, gated only by an `isSigningOut` double-tap guard. None of them consult the offline round store for a recoverable in-progress round before proceeding, and none reuse the "Discard unsaved changes?" `ConfirmDialog` leave-guard the same Settings file (`FairwaySettingsGeneral.tsx:126-275`) already built for its own dirty-panel tracking.
+- **What actually happens to the data:** Traced `FairwayRecoverRound.tsx` and confirmed it filters strictly by the *current session's* `playerId` (`round.playerId !== playerId` skip at line 389), so this is not a cross-account leak risk — the local IndexedDB rows persist and remain recoverable if the *same* player signs back in on the *same* device. The user consequence is a **confidence/warning gap**, not confirmed destruction of data — labeled `RISK` accordingly (reproduction of an actual loss would need a device).
+- **Why it matters:** the plan's explicit instruction is "protect privacy without silently destroying unsynced work: warn before logout when possible, then enforce the confirmed security policy." At this baseline, privacy wins unconditionally and unsynced work gets no warning at all, even though the machinery to check for it (the recovery query) and to warn about it (the ConfirmDialog pattern) both already exist elsewhere in the same codebase.
+- **Related negative tests:** T04 (logout while a read/realtime callback pending), T10 (offline edits + relaunch/reconnect), T11 (storage/schema failure on local draft store).
+
+### A08-004 — The central golf identity gate has the same discarded-error pattern, mitigated but not closed
+
+- **Files/ranges:** `src/lib/auth/session.ts:141-167` (`getGolfSessionProfile`), `src/app/golf/(dashboard)/layout.tsx:37-133` (consumer + retry), `layout.tsx:276-283` (the fallback redirect).
+- **Mechanism:** `getGolfSessionProfile()` runs `golf_coaches`/`golf_players` reads in parallel and keeps only `.data`. The dashboard layout is the primary (and by import count, near-universal — 40+ files import `getGolfSessionProfile`) consumer. It has real, well-designed protection against the *common* failure mode: when neither profile shows `onboarding_completed`, it re-queries both tables directly (bypassing `React.cache`) and, if still empty, waits 300ms and retries once more (`layout.tsx:101-119`) — explicitly built to survive "post-onboarding eventual consistency," per its own comments.
+- **The residual gap:** that retry *also* only checks `.data`, never `.error`, on both the first and second attempt. So the redirect-to-onboarding branch (`layout.tsx:276-283`) is reachable by an established, fully-onboarded coach or player if the coach/player read fails (not merely returns empty) on *both* the original cached call and the 300ms-later retry — a narrower window than a naive read-error bug would suggest, but not eliminated.
+- **Severity rationale:** downgraded to P2 specifically because of the demonstrated retry mitigation; flagged because this is the single highest-traffic identity gate in the golf app and the class of bug (discarded `.error`, treated as "row doesn't exist") recurs at four separate call sites across this audit (this one, A08-002's OAuth callback, and two already-fixed instances in `join/[code]/page.tsx` and `validateGolfPlayerCanJoinTeamImpl`).
+- **Related negative tests:** T06, T20.
+
+### A08-005 — Same join code, two different approval postures depending on entry surface
+
+- **Files/ranges:** `src/app/golf/actions/teams.ts:320-353` (`validateGolfPlayerCanJoinTeamImpl` — "already on this team" is success, not failure, itself a good fix), `teams.ts:429-437` (`golf_join_team_with_code` RPC insert, no approval step), `teams.ts:551-587` (`processGolfTeamInvitationImpl`, used by the `/golf/join/[code]` deep link), `teams.ts:908-1040` (`createTeamJoinRequestImpl`, used by Settings' "Request to Join a Team"), `src/app/golf/join/[code]/page.tsx:66-148`.
+- **Mechanism:** Both paths resolve the same `golf_teams.join_code` through the same `golf_team_by_join_code` SECURITY DEFINER RPC (confirmed identical by reading both call sites). The link path inserts directly into `golf_team_members` (instant, active membership). The Settings-form path inserts into `golf_team_join_requests` with `status: 'pending'`, which per `JoinTeamSection.tsx`'s own copy requires "your coach will review your request and approve you."
+- **This is a product question, not a code defect** — recorded as an open question for the owner: is auto-join-via-link an intentional convenience (the coach who mints and shares the specific link is presumed to have already vetted whoever receives it), or should every join — regardless of entry surface — go through the same configurable approval gate? The current behavior is internally consistent (same RPC, same authorization check, same "one team only" rule) but the *approval semantics* diverge silently.
+
+## Coach/player first-week maps
+
+### Player, join-link path (existing account, correct email)
+`invite link tapped` → **`/golf/join/[code]`** (`join/[code]/page.tsx:17-180`) → not authenticated → redirect to **`/golf/signup?returnTo=/golf/join/[code]`** → sign up / sign in → **`golf-sign-in-form.tsx`** extracts join code from `returnTo`, threads it through onboarding as `?joinCode=` if the player isn't onboarded yet (lines 169-196) → **`/golf/player`** onboarding (if new) → `completePlayerOnboarding` auto-joins via the stored code, or → **`/golf/join/[code]`** again (if already onboarded) → `GolfJoinTeamClient` "Confirm & Join Team" → `processGolfTeamInvitation` → **`/golf/dashboard`**. Verified: code resolved *before* any onboarding redirect (explicit fix, `join/[code]/page.tsx:66-83` comment), so a bad/expired code fails immediately with an "Invalid Invite Code" screen rather than silently after four onboarding steps.
+
+### Player, join-link path (already a member of a DIFFERENT team)
+Same route to `GolfJoinTeamClient` → tap "Confirm & Join Team" → `processGolfTeamInvitation` → `validateGolfPlayerCanJoinTeamImpl` returns `canJoin: false` with a named-team reason ("You are already on **{team}**. Golf players can only be on one team at a time.") → error renders in the client card. **Gap:** no in-flow "leave your current team" action from this screen — the player must separately navigate to Settings → Team Membership → Leave (`JoinTeamSection.tsx:130-160`) and retry the invite link. Not filed as a defect (the message is accurate and actionable), but noted as a rougher-than-necessary hand-off; would be a good P3 polish candidate (add a direct link to Settings from the error state).
+
+### Player, join-link path (already a member of THIS team)
+`validateGolfPlayerCanJoinTeamImpl` returns `alreadyOnThisTeam: true`, and the caller (`joinGolfTeamImpl:344-346`) explicitly treats this as **success** — verified fix, with a cited production incident (three new players seeing a false "already a member" failure within 67 seconds of signup). Good existing behavior.
+
+### Player, no invite (Settings self-serve)
+`/golf/dashboard/settings` → Team Membership section → enter code → `createTeamJoinRequest` → pending row in `golf_team_join_requests`, visible to the player as "Requested Xm/h/d ago" with a Cancel action (`JoinTeamSection.tsx:240-278`) → coach approves (separate coach-side flow, not traced in this lane — belongs to A04/roster territory) → player becomes an active member. Sparse/pending state is intentional and clear, not an "unavailable feature" tour.
+
+### Coach, staff-invite path
+Head coach mints a signed, non-single-use bearer token (`staff-invite.ts`) scoped to `{team, organization, role}` with a 72h TTL — **deliberately not bound to a specific email** (documented design choice, "KNOWN LIMIT — deliberately accepted": anyone the link is forwarded to can redeem it, same trade as any emailed invite link). `signupWithStaffInviteAction` (`auth.ts:801-915+`) verifies the HMAC-signed token before accepting any signup input, rejects expired/malformed/bad-signature tokens with distinct copy, and reads the role *only* from the signed payload (never from client input) so a recipient cannot escalate `coach` to `admin`. Verified as a resolved, intentional tradeoff — not filed as a new finding.
+
+### Coach entry via a player's team-invite link (misrouting guard)
+`join/[code]/page.tsx:28-64` explicitly checks for an existing coach identity before treating the visitor as a prospective player, and fails closed (throws, does not silently continue) if that coach-identity read itself errors — citing a real prior incident where a discarded read error let a coach get walked through player onboarding and acquire a stray `golf_players` row. Verified fix, present and correct at this baseline.
+
+## Identity matrix — auth user id vs. golf player/coach id vs. team membership
+
+| Concept | Column | Where required | Conflation risk found |
+| --- | --- | --- | --- |
+| Auth identity | `auth.users.id` / `session.userId` | Every RLS policy; `getGolfSessionProfile().userId`; account deletion (`api/account/delete/route.ts:183`) | None found — consistently the join key on `golf_coaches.user_id` / `golf_players.user_id`, never used directly as a `golf_players.id`/`golf_coaches.id` in any call site inspected. |
+| Golf player identity | `golf_players.id` | `golf_team_members.player_id`, `processGolfTeamInvitation(joinCode, playerId)`, `JoinTeamSection` props, offline round store key (`indexed-db.ts:34`) | None found. `ensurePlayerRecordImpl` (`onboarding.ts:391-424`) explicitly guards against minting a stray player row for an existing coach identity — a real conflation risk elsewhere in the industry, deliberately closed here. |
+| Golf coach identity | `golf_coaches.id` | `golf_team_coach_staff`, `resolveGolfCoachEntry`, team-switcher (`team-switcher.ts:45-77`) | None found. Team-switcher's authorization check (`ctx.teams.some(t => t.id === teamId)`) is scoped to the coach's own staffed teams, not by `userId`. |
+| Team membership | `golf_team_members` (player) / `golf_team_coach_staff` (coach) | Gates dashboard team context, roster visibility | Correctly separate tables per role; no evidence either role's membership check reads the other's table. |
+
+**Overall assessment:** the identity model in `src/lib/auth/session.ts` is clean and consistently consumed — this audit did not find a genuine id-conflation bug (auth id used where a player/coach id was required, or vice versa). The real, well-evidenced risk in this area is not conflation but **silently-discarded read errors at the boundary** (A08-002, A08-004), which produce the *same visible symptom* (misrouting to onboarding/signup) that true conflation would, so it is worth distinguishing clearly: this is a fail-open-on-error problem, not an identity-model problem.
+
+## Permission matrix (native handoffs)
+
+| Interaction | Mechanism found | Timing | Cancel/deny handling | Verified |
+| --- | --- | --- | --- | --- |
+| Avatar photo (onboarding + settings) | Plain `<input type="file" accept="image/*">` (`avatar-upload.tsx:181-189`) — OS picker, not a Capacitor plugin | On-demand, at the tap that needs it (not first launch) | File-type and size validated client-side with clear copy; upload abort (`AbortError`) distinguished from a real failure and given a low-severity, non-scary message (`avatar-upload.tsx:107-137`); a prior fixed bug (`getSession` vs. network `getUser`) specifically protects against "logged in" being misreported mid-picker-handoff | SOURCE — good |
+| Calendar subscription (Google/Apple/Outlook quick-add) | `openExternalUrl` → Capacitor `Browser.open()` on native, `window.open` on web (`capacitor.ts:42-52`), invoked from `CalendarSyncButton.tsx:283-317` | Contextual, from an explicit "Subscribe to Calendar" action | `Browser.open` uses a separate native view controller from the app's WKWebView, so it cannot trigger the GolfBridgeViewController navigation classifier (A08-001) — good isolation | RISK (untested) — `Browser.open({url: 'webcal://...'})` passes a non-http(s) custom scheme to what is typically an `SFSafariViewController`-backed plugin; whether iOS actually opens `webcal://` through this path or silently no-ops is a device question, not resolvable from source. Flagged in NOT_RUN ledger, not filed as a finding (no source-level evidence of the actual native behavior). |
+| Push notification tap → in-app navigation | `CapacitorProvider.tsx:29-54` | N/A (system-initiated) | `event.preventDefault()` keeps the SPA alive instead of a cold `window.location.href` fallback — good | SOURCE — good, but this is A09's territory; referenced only for completeness. |
+| Maps / Files / PDF preview from a golf player/coach account-lifecycle screen | **None found.** Searched `src/app/golf` and `src/components/golf` for Maps links, `@capacitor/filesystem`, and PDF-preview consumers reachable from account/settings/onboarding surfaces; found none in this lane's scope (a `LineupBuilder.tsx` Camera/Share usage exists but is outside A08's activation/account-lifecycle mission). | — | — | NOT_RUN — no such feature exists in the reachable code for this mission; recorded as absent, not fabricated. |
+
+## Contracts requested
+
+- **C05 (Viewport/overlay, extended to native navigation classification):** A08-001 needs the native shell's page-boundary classifier to compare `URL.host`/`URL.path` structurally rather than substring-matching the whole URL. Requesting A01 adopt this as part of C05's "exactly one native/web resize model... safe-area owner" scope, or as an adjacent contract if C05 is scoped to viewport only.
+- **C09 (Recovery):** A08-003's sign-out warning needs a shared "does this player have unsynced local work" check. Requesting this live as a small utility A05 (offline round owner) exposes and A08 consumes at the sign-out call sites, rather than A08 reaching directly into A05's IndexedDB schema.
+
+## Shared changes requested
+
+| File | Owning lane | What A08 needs |
+| --- | --- | --- |
+| `ios/App/App/GolfBridgeViewController.swift` | A01 | Anchor the navigation classifier on host + path prefix, not substring containment (A08-001). |
+| `src/lib/offline/indexed-db.ts` / equivalent | A05 | Expose a read-only "has recoverable round progress for playerId" helper for A08-003's sign-out warning. |
+| `src/app/golf/actions/teams.ts` | A08 (own lease already covers this) | No cross-lane change requested; A08-005 is a product-decision request, not a code change request. |
+
+## Open questions for the owner
+
+1. **A08-005:** Should joining a team via a shared deep link require the same coach approval as the Settings "Request to Join" form, or is the current divergence (link = trusted/instant, form = untrusted/pending) the intended model?
+2. Should the "already on another team" error state (`GolfJoinTeamClient`) offer a direct in-flow path to leave the current team, rather than requiring a separate trip to Settings? (P3 polish suggestion, not blocking.)
+
+## Messaging referrals
+
+None. This lane's territory (auth, invitations, account lifecycle, native handoffs) does not intersect the Messages tab, threads, or attachments in any file read. `golf_team_members` notifications-on-join (`teams.ts:453-520`) write to the shared `notifications` table using the service-role client, which is attention/notification infrastructure (A09's territory), not messaging — noted for A09's awareness, not filed as a messaging referral.
+
+## NOT_RUN ledger
+
+| Check | Missing dependency | Next owner |
+| --- | --- | --- |
+| OTP/password-manager autofill behavior, physical keyboard variants, paste behavior on a real device | No iOS device/simulator | A01/A12 (device matrix) |
+| Actual behavior of `Browser.open({url: 'webcal://...'})` on native iOS (silent no-op vs. functioning handoff) | No device | A01 |
+| Rate-limit UX under a real repeated-failed-login sequence (copy exists in `getErrorMessage`, untested end to end) | No test account / running backend | A12 |
+| Coach-side approval UI for `golf_team_join_requests` (only the player-facing request/cancel UI was traced) | Out of this lane's file scope (roster/coach territory — A04) | A04 |
+| Whether `getUserResilient`'s degraded-session fallback is actually exercised correctly under a live Supabase outage | No running database/backend | A10 (per boundary — RLS/DB not running this phase) |
+| RLS enforcement behind `golf_team_by_join_code`, `golf_join_team_with_code`, and every `.maybeSingle()`/`.single()` read cited above | No running database | A10 |
+| Real device confirmation of A08-001's classifier misfire/bypass (both directions) | No device, no controlled fixture | A01/A12 |
+| Google/Outlook calendar quick-add URL correctness in-app (whether `Browser.open` renders a usable OAuth-gated Google Calendar add page inside the in-app browser) | No device | A01 |
+
+## Coverage ledger
+
+| Route/component/data boundary | Status |
+| --- | --- |
+| `src/app/golf/(auth)/login/page.tsx` | PASS |
+| `src/components/auth/golf-sign-in-form.tsx` | PASS |
+| `src/app/golf/(auth)/signup/page.tsx` | NOT_RUN:read-only-lease-time-budget (not opened; login/join/onboarding paths covered instead) |
+| `src/app/golf/(auth)/welcome/page.tsx` | PASS |
+| `src/app/golf/(auth)/forgot-password/page.tsx` | NOT_RUN:read-only-lease-time-budget |
+| `src/app/golf/(auth)/reset-password/page.tsx` | NOT_RUN:read-only-lease-time-budget |
+| `src/app/golf/(auth)/demo/page.tsx` | OUT_OF_SCOPE:demo-gate-not-account-lifecycle |
+| `src/app/auth/callback/route.ts` | FINDING:A08-002 |
+| `src/lib/utils/safe-redirect.ts` (`isSafeInternalPath`) | PASS |
+| `src/lib/auth/post-auth-destination.ts` | PASS |
+| `src/lib/auth/resilient-get-user.ts` (`getUserResilient`) | PASS (exemplary — genuine logout vs. transient failure distinction) |
+| `src/lib/auth/session.ts` (`getGolfSessionProfile`, `getSessionProfile`) | RISK:A08-004 |
+| `src/app/golf/(dashboard)/layout.tsx` | RISK:A08-004 |
+| `src/app/golf/(onboarding)/player/page.tsx` | PASS (self-corrects A08-002's misroute) |
+| `src/app/golf/(onboarding)/coach/page.tsx` | PASS (self-corrects A08-002's misroute) |
+| `src/app/golf/(onboarding)/coach/pending/page.tsx` | NOT_RUN:read-only-lease-time-budget |
+| `src/app/golf/join/page.tsx` (no-code landing) | NOT_RUN:read-only-lease-time-budget |
+| `src/app/golf/join/[code]/page.tsx` | PASS (fail-closed identity resolution, code-checked-before-onboarding-redirect — verified fixes present) |
+| `src/app/golf/join/[code]/golf-join-team-client.tsx` | PASS (with P3 polish note — no in-flow leave-team action) |
+| `src/app/golf/actions/teams.ts` (`validateGolfPlayerCanJoinTeamImpl`, `joinGolfTeamImpl`, `processGolfTeamInvitationImpl`) | PASS (well-hardened; several cited historical fixes verified present) |
+| `src/app/golf/actions/teams.ts` (`createTeamJoinRequestImpl` vs. link-join semantics) | FINDING:A08-005 |
+| `src/components/golf/settings/JoinTeamSection.tsx` | PASS |
+| `src/app/golf/actions/onboarding.ts` (`ensurePlayerRecordImpl`, `completePlayerOnboardingImpl`) | PASS (coach-clobber guard verified) |
+| `src/lib/golf/staff-invite.ts` / `staff-invite-lookup.ts` | PASS (deliberate bearer-token design, documented tradeoff, HMAC-verified role) |
+| `src/app/golf/actions/auth.ts` (`signupWithStaffInviteAction`) | PASS |
+| `src/app/golf/actions/auth.ts` (`loginAction`, `signupAction`, `requestPasswordResetAction`) | NOT_RUN:read-only-lease-time-budget (not opened in full) |
+| `src/components/golf/TeamSwitcher.tsx` | NOT_RUN:read-only-lease-time-budget (server actions behind it were read; the component itself was not) |
+| `src/app/golf/actions/team-switcher.ts` | PASS |
+| `ios/App/App/GolfBridgeViewController.swift` | FINDING:A08-001 |
+| `ios/App/App/SceneDelegate.swift` | FINDING:A08-001 |
+| `src/components/providers/CapacitorProvider.tsx` | PASS (device-token flush on auth state change; not this lane's primary territory but read for the native-boundary question) |
+| `src/components/NativeRedirect.tsx` | PASS (verified fix — no login flash for returning authed users) |
+| `src/app/golf/page.tsx` | PASS (server-side role/onboarding redirect; theoretical KVO interaction with A08-001 noted as RISK, not confirmed) |
+| `src/app/golf/(dashboard)/FairwayDashboardShell.tsx` (sign-out) | FINDING:A08-003 |
+| `src/components/fairway/pages/settings/FairwaySettingsGeneral.tsx` (sign-out, account deletion, unsaved-changes guard) | FINDING:A08-003 (sign-out); PASS (account deletion, unsaved-changes guard for its own panels) |
+| `src/app/api/account/delete/route.ts` | PASS (extensively self-documented, honest 409 on a known residual FK gap already tracked by its own header comment — not a new finding) |
+| `src/components/ui/avatar-upload.tsx` | PASS |
+| `src/components/golf/calendar/CalendarSyncButton.tsx` | RISK:untested-webcal-scheme-on-native (see NOT_RUN ledger) |
+| `src/lib/utils/capacitor.ts` (`openExternalUrl`) | PASS |
+| `src/lib/offline/indexed-db.ts`, `shot-storage.ts` | PASS (correctly playerId-scoped; consumed as evidence for A08-003, not owned by this lane) |
+| `src/components/fairway/pages/rounds-recover/FairwayRecoverRound.tsx` | PASS (correctly scoped by current playerId — no cross-account leak) |
+| `src/app/golf/actions/access-code.ts`, `demo-access.ts`, `demo-tracking.ts` | OUT_OF_SCOPE:demo-gate-not-account-lifecycle |
+| Coach-side join-request approval UI | OUT_OF_SCOPE:A04-roster-territory |
+| Push notification join-team notify (`teams.ts:453-520`) | OUT_OF_SCOPE:A09-attention-territory |
+| Messaging inbox/threads/attachments | OUT_OF_SCOPE:Messaging-program |
+| RLS policies behind every table cited above | OUT_OF_SCOPE:A10, NOT_RUN:no-running-database |
+
+### Dead/non-mounted paths checked
+
+None found to be dead in the files inspected — every route/action read is reachable from a live import chain (`processGolfTeamInvitation`, `createTeamJoinRequest`, `ensurePlayerRecord` are all imported by mounted pages, not orphaned).

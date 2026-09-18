@@ -1,0 +1,29 @@
+{
+  "program": "GolfHelm Master Parallel Audit — mobile UI/UX scope",
+  "phase": "AUDIT (read-only)",
+  "coordinator": "A00 (this session)",
+  "baseline_sha": "3c90f9f174ac103af5fafc600aebecd98243decc",
+  "baseline_note": "Plan document pins 4674b38e (5 commits stale). A00 re-pins to current origin/main. All 30 Section-6/19 entry-point paths verified present at this SHA.",
+  "branch": "agent/mobile-ui-audit",
+  "workspace": "/Users/ricknini/worktrees/helmv3/mobile-ui-audit",
+  "node": "v22.23.2",
+  "npm": "10.9.8",
+  "platform": "darwin 25.3.0",
+  "deployment_sha": "NOT_CAPTURED — 13 commits merged to origin/main are not in production; merging does not ship (vercel.json disables git deploys)",
+  "native_build": "NOT_CAPTURED — no installed-binary version/build available to this session",
+  "schema_ledger": "NOT_CAPTURED — A10 not run in this scope",
+  "unavailable_in_this_session": [
+    "iOS physical device — every device-dependent proof is NOT_RUN",
+    "iOS simulator / release-mode build — launch, keyboard, haptic, frame-pacing evidence is NOT_RUN",
+    "Supplied live screenshots or recordings — the OBSERVED evidence label is UNAVAILABLE this phase",
+    "Authenticated fixtures / running Supabase — REPRODUCED is unavailable; no runtime reproduction",
+    "Production database reads — A10 out of scope for this run"
+  ],
+  "permitted_evidence_labels": ["SOURCE", "RISK", "PROPOSAL", "NOT_RUN", "BLOCKED"],
+  "lanes_run": ["A01","A02","A03","A04","A05","A06","A07","A08","A09","A11","A12"],
+  "lanes_skipped": {
+    "A10": "Database invariants/RLS/migrations — outside the owner's stated 'mobile app ui ux' scope; A10 remains the exclusive SQL gate if any repair packet later needs schema."
+  },
+  "out_of_scope_program": "Messaging (inbox, thread, message queries/actions, message notifications, message attachments) — a separate session and worktree own it. Findings are recorded as referrals, never as repairs here.",
+  "writer_budget_note": "HELM_MAX_MUTATION_WORKTREES default 3; git worktree list shows 6 checkouts. The read phase consumes no mutation slot. Repair scheduling must recheck the budget."
+}
