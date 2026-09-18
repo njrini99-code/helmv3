@@ -370,6 +370,32 @@ versionHash)`) remain the design for a launch beyond one course.
 - Expected effort per course after tooling: pipeline under an hour of
   machine time; review is the human cost and scales with bunker count.
 
+*Library coverage audit (2026-09-18,
+`scripts/golf/course-geometry/audit-library-coverage.py`).* The 64 live
+`golf_courses` rows are 52 facilities. Against OpenStreetMap (the course's own
+polygon) and the USGS 3DEP 1 m catalog (the query `compile-course-terrain.py`
+runs): **22 ready** (holes, greens and fairways mapped, 1 m tile present —
+Pebble Beach, Isleworth, Marsh Landing, PGA National, Sawgrass CC, TPC
+Sawgrass, Savannah Harbor, Pine Lakes Jekyll, Forsyth CC, Pilot Knob,
+Statesville CC, Bethpage, Peek'n Peak Upper, Denison, Harbour Town, Kiawah
+Ocean, Blue Ridge Shadows, Golden Horseshoe Gold, Shenandoah Valley,
+Winchester CC, Whistling Straits, Cacapon); **10 mapped but no 3DEP 1 m tile**
+(nine in North Carolina — Alamance, Benvenue, Cape Fear, Cutter Creek, Duke,
+Forest Oaks, Pinehurst No. 2, Sedgefield, Starmount — plus Oviinbyrd, ON: the
+NC ones can take the state's OneMap DEM03 lidar that the Cardinal study used
+(`fetch-nc-lidar-study.py`), which needs an adapter in the whole-course
+terrain compiler; Ontario has no USGS source); **7 in OSM without golf
+features** (Landfall, Hendersonville, Grande Dunes, Boonsboro, Danville,
+Lakeview, The Manor: someone maps them first, or they wait); **13 not
+matched by name** (World Golf Village, Reynolds Great Waters, Sea Island
+Seaside, UK Blue, Bryan Park ×2, Eagle Point, Forest Creek, Magnolia Greens,
+River Landing, The Cardinal, Poplar Grove) — a name-matching miss or an
+untagged course; each needs a manual OSM look before it is called absent.
+The audit is an inventory, not a review: "ready" means the pipeline can
+start, not that any boundary is trusted. Full table:
+`output/course-geometry/library-coverage/coverage.md` (regenerate with the
+script; the library rows come from `golf_courses`).
+
 ---
 
 ## 5. Sequence
