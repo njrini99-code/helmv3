@@ -248,6 +248,16 @@ All small, all independent of geometry review.
 
 Check: the existing entry tests plus one test per bullet.
 
+*Status (2026-09-18).* "Terrain for pill navigation" is done for the app by
+`useCourseGeometry` (the tapped hole loads on demand, three meshes resident
+at most; the lab harness keeps its own preload). "Sixteenth stroke" is
+confirmed **not** blocked: no shot cap exists in `use-shot-state-machine.ts`,
+the round actions or the schema (`golf_holes.score` carries no check), so
+the notice is the only guard. That fix, the unsaved-distance guard and the
+2D/3D disclosure change reach every course, so they wait for the owner's
+go-ahead under the Upper-only rule (2026-09-17); view memory across holes is
+a round-level preference the owner should choose.
+
 ### P5. Putting on the real green (plan §25.4–25.6)
 
 The green reference glyph (§25.4) is in. The honest next steps, in order:
