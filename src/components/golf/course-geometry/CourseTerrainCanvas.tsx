@@ -93,7 +93,10 @@ export function CourseTerrainCanvas({ scene, mesh, camera, width, height, fallba
     <canvas ref={canvas} role="img" aria-label="Course terrain with illustrative trees and estimated shot annotations. Actual pin location unknown."
       data-terrain-hash={mesh.contentHash}
       style={{ width: '100%', height: '100%', display: 'block', visibility: state === 'ready' ? 'visible' : 'hidden' }} />
-    <svg ref={overlay} aria-hidden="true" className="pointer-events-none absolute inset-0 h-full w-full"
+    {/* `data-slot=terrain-overlay` exempts the overlay from the global reduced-motion
+        transition rule (globals.css): the runtime paints it per frame and nothing in it
+        may lag the visibility flip. */}
+    <svg ref={overlay} aria-hidden="true" className="pointer-events-none absolute inset-0 h-full w-full" data-slot="terrain-overlay"
       style={{ fontFamily: 'var(--fw-font-sans)', visibility: state === 'ready' ? 'visible' : 'hidden' }} />
     {state !== 'ready' && <div className="absolute inset-0">{fallback}
       {state === 'unavailable' && <span className="sr-only">Terrain unavailable. Showing the top-down course outline.</span>}

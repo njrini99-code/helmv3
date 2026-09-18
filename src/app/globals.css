@@ -2593,6 +2593,18 @@ body {
     scroll-behavior: auto !important;
   }
 
+  /* The course terrain overlay (CourseTerrainCanvas) is painted by the WebGL
+     runtime frame by frame and must never transition. The 0.01 ms rule above
+     turns its visibility flip (hidden while the terrain compiles, visible when
+     ready) into a cascade: an inherited transition restarts on every
+     descendant, one DOM level per rendering update, so a still frame can catch
+     the deepest nodes (the pin flag) still hidden — 3–13 % of hole-15 Top phone
+     canaries, 2026-09-17. `transition-property: none` starts no transition. */
+  svg[data-slot='terrain-overlay'],
+  svg[data-slot='terrain-overlay'] * {
+    transition-property: none !important;
+  }
+
   .skeleton-shimmer::after {
     animation: none !important;
   }

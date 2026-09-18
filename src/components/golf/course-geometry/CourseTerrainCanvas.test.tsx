@@ -79,4 +79,19 @@ describe('terrain runtime lifecycle', () => {
     expect(screen.queryByText('Course outline')).toBeNull();
     ui.unmount();
   });
+
+  it('flips the overlay with visibility and carries the slot the reduced-motion exemption keys on', async () => {
+    // globals.css: `svg[data-slot=terrain-overlay] *` never transitions. Without
+    // the slot, the global 0.01 ms reduced-motion transition cascades the
+    // visibility flip one DOM level per frame and a still frame loses the pin flag.
+    const props = { scene, mesh, camera, width: 390, height: 640, fallback: <p>Course outline</p> };
+    const ui = render(<CourseTerrainCanvas {...props} />);
+    await waitFor(() => expect(builds).toHaveLength(1));
+    const overlay = ui.container.querySelector('svg[data-slot="terrain-overlay"]') as SVGSVGElement;
+    expect(overlay.style.visibility).toBe('hidden');
+    expect(vi.mocked(createThreeTerrainRuntime).mock.calls[0]![0].overlay).toBe(overlay);
+    await act(async () => { builds[0]!.complete(); });
+    expect(overlay.style.visibility).toBe('visible');
+    ui.unmount();
+  });
 });
