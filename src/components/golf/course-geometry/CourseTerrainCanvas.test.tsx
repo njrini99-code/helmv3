@@ -1,4 +1,6 @@
 import { act, render, screen, waitFor } from '@testing-library/react';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { createRef } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CourseTerrainCanvas } from './CourseTerrainCanvas';
@@ -93,5 +95,12 @@ describe('terrain runtime lifecycle', () => {
     await act(async () => { builds[0]!.complete(); });
     expect(overlay.style.visibility).toBe('visible');
     ui.unmount();
+    // The stylesheet side of the same contract: the exemption lives inside the
+    // reduced-motion block, where the universal transition rule is.
+    const css = readFileSync(join(__dirname, '../../../app/globals.css'), 'utf8');
+    const reduced = css.slice(css.indexOf('@media (prefers-reduced-motion: reduce)'));
+    const exemption = reduced.indexOf("svg[data-slot='terrain-overlay'] *");
+    expect(exemption).toBeGreaterThan(-1);
+    expect(reduced.slice(exemption, exemption + 200)).toMatch(/transition-property:\s*none\s*!important/);
   });
 });
