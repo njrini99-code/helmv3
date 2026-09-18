@@ -856,7 +856,14 @@ the plan's P6 remains for a launch beyond one course.
   `geometry` to `FairwayShotTracking` (`FairwayHoleHero` → `HoleSceneFrame`,
   compact SVG card, 3D and tap-to-measure on expand). While Meridian Live is
   loading or up the hook is idle and `trackingGeometryFromLiveRound` reuses
-  the live round's assets, so nothing loads twice.
+  the live round's assets, so nothing loads twice; a pause keeps what is
+  loaded (only a course change resets the hook), so the hero never drops to
+  the plain card while Live comes up or hands back (probe: 0 legacy-card
+  frames over both transitions on preview). On a fresh open the plain card
+  shows until the package is parsed — measured 0.4 s cold / 0.24 s warm on
+  preview from WebKit (`output/lab-build/measure-first-frame.mjs`), longer
+  on a phone's first download of the 1.4 MB package + context — and the
+  new-round setup step prefetches the package so hole 1 opens course-framed.
 - Review: `rounds/[id]/review/page.tsx` → `FilmstripReview.geometry` →
   `ReviewHero.geometry` (bounded filmstrip scenes, course-framed hole detail,
   shot selector). `ReviewHero.onOpenHoleChange` reports the open hole so the
