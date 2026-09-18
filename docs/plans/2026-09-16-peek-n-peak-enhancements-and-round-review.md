@@ -372,27 +372,54 @@ versionHash)`) remain the design for a launch beyond one course.
 
 *Library coverage audit (2026-09-18,
 `scripts/golf/course-geometry/audit-library-coverage.py`).* The 64 live
-`golf_courses` rows are 52 facilities. Against OpenStreetMap (the course's own
-polygon) and the USGS 3DEP 1 m catalog (the query `compile-course-terrain.py`
-runs): **22 ready** (holes, greens and fairways mapped, 1 m tile present —
-Pebble Beach, Isleworth, Marsh Landing, PGA National, Sawgrass CC, TPC
-Sawgrass, Savannah Harbor, Pine Lakes Jekyll, Forsyth CC, Pilot Knob,
-Statesville CC, Bethpage, Peek'n Peak Upper, Denison, Harbour Town, Kiawah
-Ocean, Blue Ridge Shadows, Golden Horseshoe Gold, Shenandoah Valley,
-Winchester CC, Whistling Straits, Cacapon); **10 mapped but no 3DEP 1 m tile**
-(nine in North Carolina — Alamance, Benvenue, Cape Fear, Cutter Creek, Duke,
-Forest Oaks, Pinehurst No. 2, Sedgefield, Starmount — plus Oviinbyrd, ON: the
-NC ones can take the state's OneMap DEM03 lidar that the Cardinal study used
-(`fetch-nc-lidar-study.py`), which needs an adapter in the whole-course
-terrain compiler; Ontario has no USGS source); **7 in OSM without golf
-features** (Landfall, Hendersonville, Grande Dunes, Boonsboro, Danville,
-Lakeview, The Manor: someone maps them first, or they wait); **13 not
-matched by name** (World Golf Village, Reynolds Great Waters, Sea Island
-Seaside, UK Blue, Bryan Park ×2, Eagle Point, Forest Creek, Magnolia Greens,
-River Landing, The Cardinal, Poplar Grove) — a name-matching miss or an
-untagged course; each needs a manual OSM look before it is called absent.
+`golf_courses` rows are 52 facilities. Against OpenStreetMap and the USGS
+3DEP 1 m catalog (the query `compile-course-terrain.py` runs), after the
+matcher was widened (30 km from the postal city, `operator`/`brand`/
+`old_name` tags count, one-typo tokens, a way/relation duplicate falls
+through to the one with features, a name that shares one generic word is
+not a match — "Forest Oaks" is not "Starmount Forest"; a facility with no
+`leisure=golf_course` polygon is anchored on its named place through
+Nominatim and its holes and greens counted around it; a loaded Overpass
+answer with a `remark` retries instead of counting): **27 ready** (holes,
+greens and fairways mapped, 1 m tile present — Pebble Beach, Isleworth,
+Marsh Landing, PGA National, Sawgrass CC, TPC Sawgrass, King & Bear,
+Savannah Harbor, Pine Lakes Jekyll, Reynolds Great Waters, UK Blue ×2,
+Forsyth CC, Pilot Knob, Statesville CC, Bethpage, Peek'n Peak Upper,
+Denison, Grande Dunes, Harbour Town, Kiawah Ocean, Blue Ridge Shadows,
+Golden Horseshoe Gold, Shenandoah Valley, Winchester CC, Whistling Straits,
+Cacapon); **1 partial** (Sea Island Seaside: 17 of 18 hole lines);
+**15 mapped but no 3DEP 1 m tile** (fourteen in North Carolina — Alamance,
+Benvenue, Bryan Park ×2, Cutter Creek, Duke, Eagle Point, Forest Creek,
+Forest Oaks, Magnolia Greens, Pinehurst No. 2, Sedgefield, Starmount, The
+Cardinal — plus Oviinbyrd, ON: the NC ones can take the state's OneMap
+DEM03 lidar that the Cardinal study used (`fetch-nc-lidar-study.py`), which
+needs an adapter in the whole-course terrain compiler; Ontario has no USGS
+source); **8 in OSM without hole or green features** (Landfall,
+Hendersonville, Cape Fear CC, Boonsboro, Danville, Lakeview, The Manor,
+Poplar Grove: a polygon or a few features only — someone maps them first,
+or they wait); **1 absent from OSM** (River Landing, Wallace NC: no golf
+feature within 3 km of the course). Every library facility is now placed;
+OSM, not the matcher, is the gap for the last nine. Human pins recorded in
+the library rows (`osm` field; the file is regenerated from `golf_courses`,
+so they are listed here): UK Blue ×2 → `way/258229089` (University Club of
+Kentucky: Big Blue and Wildcat share one polygon, the audit counts 36
+holes); The Cardinal → `relation/6542700` (now "Sedgefield Country Club,
+Dye Course", `old_name` Cardinal Country Club, 5700 Cardinal Way);
+Sedgefield CC → `relation/12580941` (the unnamed multipolygon with the Ross
+course's 18 holes; the named Sedgefield polygon is the Dye course); Poplar
+Grove → `relation/17240231` (an unnamed golf_course multipolygon on Poplar
+Grove Lane, one green mapped). Two rows moved course rather than verdict:
+Cape Fear CC had matched Cape Fear National at Brunswick Forest (a different
+club; the real Cape Fear Country Club polygon carries one hole), and
+Savannah Harbor had matched Savannah Golf Club through the library's
+"Habor" typo. An anchored count is a neighbourhood, not a boundary (Marsh
+Landing's 44 holes include Sawgrass CC next door; the "Marsh Valley Country
+Club" polygon, relation 1784515, at the north end of the community may be
+the course under another name), and the build for such a course starts
+from a hand-set `bboxWgs84`, which `fetch-osm-course.py` already takes.
 The audit is an inventory, not a review: "ready" means the pipeline can
-start, not that any boundary is trusted. Full table:
+start, not that any boundary is trusted. `--only=<name part,…>` re-audits
+named facilities and keeps the rest of the previous table. Full table:
 `output/course-geometry/library-coverage/coverage.md` (regenerate with the
 script; the library rows come from `golf_courses`).
 
