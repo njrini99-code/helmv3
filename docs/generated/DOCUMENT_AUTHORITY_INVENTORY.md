@@ -338,7 +338,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/plans/2026-09-16-meridian-v2-status.md` | current | - | - | yes | 1 | 12 | 2 |
 | `docs/plans/2026-09-16-meridian-visual-master-plan-status.md` | current | - | - | yes | 3 | 12 | - |
 | `docs/plans/2026-09-16-one-tap-status.md` | current | - | - | yes | 1 | 10 | - |
-| `docs/plans/2026-09-16-outside-world-status.md` | current | - | - | - | 0 | 7 | - |
+| `docs/plans/2026-09-16-outside-world-status.md` | current | - | - | - | 0 | 8 | - |
 | `docs/plans/2026-09-16-peek-n-peak-enhancements-and-round-review.md` | current | - | - | yes | 0 | 1 | - |
 | `docs/plans/2026-09-16-peek-one-tap-field-calibration.md` | current | - | - | - | 1 | 0 | - |
 | `docs/plans/2026-09-16-renderer-redesign-status.md` | current | - | - | yes | 0 | 3 | - |
