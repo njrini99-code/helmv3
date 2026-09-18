@@ -380,14 +380,15 @@ through to the one with features, a name that shares one generic word is
 not a match — "Forest Oaks" is not "Starmount Forest"; a facility with no
 `leisure=golf_course` polygon is anchored on its named place through
 Nominatim and its holes and greens counted around it; a loaded Overpass
-answer with a `remark` retries instead of counting): **27 ready** (holes,
-greens and fairways mapped, 1 m tile present — Pebble Beach, Isleworth,
-Marsh Landing, PGA National, Sawgrass CC, TPC Sawgrass, King & Bear,
+answer with a `remark` retries instead of counting): **26 ready** (holes,
+greens and fairways mapped inside the course's own polygon, 1 m tile
+present — Pebble Beach, Isleworth, PGA National, Sawgrass CC, TPC Sawgrass, King & Bear,
 Savannah Harbor, Pine Lakes Jekyll, Reynolds Great Waters, UK Blue ×2,
 Forsyth CC, Pilot Knob, Statesville CC, Bethpage, Peek'n Peak Upper,
 Denison, Grande Dunes, Harbour Town, Kiawah Ocean, Blue Ridge Shadows,
 Golden Horseshoe Gold, Shenandoah Valley, Winchester CC, Whistling Straits,
-Cacapon); **1 partial** (Sea Island Seaside: 17 of 18 hole lines);
+Cacapon); **2 partial** (Sea Island Seaside: 17 of 18 hole lines; Marsh
+Landing: anchored, see below);
 **15 mapped but no 3DEP 1 m tile** (fourteen in North Carolina — Alamance,
 Benvenue, Bryan Park ×2, Cutter Creek, Duke, Eagle Point, Forest Creek,
 Forest Oaks, Magnolia Greens, Pinehurst No. 2, Sedgefield, Starmount, The
@@ -415,8 +416,9 @@ Savannah Harbor had matched Savannah Golf Club through the library's
 "Habor" typo. An anchored count is a neighbourhood, not a boundary (Marsh
 Landing's 44 holes include Sawgrass CC next door; the "Marsh Valley Country
 Club" polygon, relation 1784515, at the north end of the community may be
-the course under another name), and the build for such a course starts
-from a hand-set `bboxWgs84`, which `fetch-osm-course.py` already takes.
+the course under another name), so an anchored row never rates above
+`partial-osm`, and the build for such a course starts from a hand-set
+`bboxWgs84`, which `fetch-osm-course.py` already takes.
 The audit is an inventory, not a review: "ready" means the pipeline can
 start, not that any boundary is trusted. `--only=<name part,…>` re-audits
 named facilities and keeps the rest of the previous table. Full table:

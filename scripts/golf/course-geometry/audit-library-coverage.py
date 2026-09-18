@@ -263,6 +263,17 @@ def pick_course(candidates: list[dict], name: str, near: tuple[float, float] | N
     return ranked[0] if ranked else None
 
 
+def verdict_for(record: dict) -> str:
+    """ready: holes, greens and fairways inside the course's own polygon and a
+    1 m tile. An anchored count (no polygon: a radius around a named place)
+    can include the club next door, so it never rates above partial-osm —
+    the row that someone filters on to pick the next build must be bounded."""
+    mapped = record['holes'] >= 18 and record['greens'] >= 18 and record['fairways'] >= 12 and not record.get('anchor')
+    partial = record['greens'] >= 9 or record['holes'] >= 9
+    dem = bool(record['dem1mTiles'])
+    return ('ready' if mapped and dem else 'partial-osm' if partial and dem else 'no-dem' if mapped or partial else 'no-osm' if record['osmCourse'] else 'not-found')
+
+
 def main() -> int:
     args = [a for a in sys.argv[1:] if not a.startswith('--')]
     options = dict(a[2:].split('=', 1) for a in sys.argv[1:] if a.startswith('--') and '=' in a)
@@ -285,7 +296,8 @@ def main() -> int:
     for index, (key, facility) in enumerate(sorted(facilities.items(), key=lambda item: (item[1]['state'], item[1]['name'] or '')), 1):
         if only and not any(part in (facility['name'] or '').lower() for part in only):
             if facility['name'] in previous:
-                results.append(previous[facility['name']])
+                # Counts are evidence and stay; the verdict is derived, so a rule change reaches every kept row.
+                results.append({**previous[facility['name']], 'verdict': verdict_for(previous[facility['name']])})
             continue
         record = {**facility, 'cityPoint': None, 'osmCourse': None, 'anchor': None, 'golfFeatures': {}, 'featureBasis': None, 'holes': 0, 'greens': 0, 'fairways': 0, 'bunkers': 0, 'tees': 0, 'dem1mTiles': [], 'verdict': 'unknown', 'notes': []}
         try:
@@ -347,10 +359,7 @@ def main() -> int:
                     record['notes'].append('outside USGS 3DEP (not in the US)')
         except Exception as error:  # noqa: BLE001 -- inventory keeps going; the row records the failure
             record['notes'].append(f'lookup failed: {type(error).__name__}: {str(error)[:120]}')
-        mapped = record['holes'] >= 18 and record['greens'] >= 18 and record['fairways'] >= 12
-        partial = record['greens'] >= 9 or record['holes'] >= 9
-        dem = bool(record['dem1mTiles'])
-        record['verdict'] = ('ready' if mapped and dem else 'partial-osm' if partial and dem else 'no-dem' if mapped or partial else 'no-osm' if record['osmCourse'] else 'not-found')
+        record['verdict'] = verdict_for(record)
         results.append(record)
         print(f"{index:2d}/{len(facilities)} {facility['state']:>3} {facility['name'][:40]:40} holes={record['holes']:2d} greens={record['greens']:2d} fairways={record['fairways']:2d} bunkers={record['bunkers']:3d} dem1m={len(record['dem1mTiles'])} → {record['verdict']}{' · ' + '; '.join(record['notes']) if record['notes'] else ''}", flush=True)
     (out / 'coverage.json').write_text(json.dumps({'generatedAt': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'libraryRows': len(rows), 'facilities': results}, indent=2) + '\n')
