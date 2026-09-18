@@ -182,3 +182,5 @@
 {"ts":1788822864445,"gate":"typecheck","waitMs":0,"runMs":68846,"slots":2}
 {"ts":1788822954765,"gate":"test:run","waitMs":0,"runMs":354334,"slots":2}
 {"ts":1788823363300,"gate":"build","waitMs":0,"runMs":109728,"slots":2}
+{"ts":1788838399638,"gate":"typecheck","waitMs":1,"runMs":62917,"slots":2}
+{"ts":1788838494176,"gate":"typecheck","waitMs":1,"runMs":6479,"slots":2}
