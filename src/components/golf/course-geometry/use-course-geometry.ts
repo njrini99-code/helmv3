@@ -50,16 +50,21 @@ export function useCourseGeometry({ dbCourseId, courseName, holeNumbers, focusHo
   const [terrainByHole, setTerrainByHole] = useState<Readonly<Record<string, TerrainMesh>>>({});
   const assetCache = useMemo(() => cache === undefined ? cacheStorageCourseAssetCache() : cache, [cache]);
 
-  // The package, once per course. Nothing runs for any other course.
+  // The package, once per course. Nothing runs for any other course. A course
+  // change drops what was loaded; a pause (`enabled: false`, Meridian Live
+  // taking the assets over) keeps it, so the hero never falls back to the
+  // plain card for the seconds Live takes to come up or go away.
+  const matched = productCourseId === policy.courseId;
   useEffect(() => {
-    if (!active) { setLoaded(null); setTerrainByHole({}); setStatus('inactive'); return; }
+    if (!matched) { setLoaded(null); setTerrainByHole({}); setStatus('inactive'); return; }
+    if (!active) return;
     let cancelled = false;
-    setStatus('loading');
+    setStatus(current => current === 'ready' ? current : 'loading');
     void (async () => {
       try {
         const result = await loadCoursePackage({ courseId: productCourseId!, policy, cache: assetCache, fetchImpl });
         if (cancelled) return;
-        setLoaded(result);
+        setLoaded(current => current && result && current.manifest.geometryVersion === result.manifest.geometryVersion ? current : result);
         setStatus(result ? 'ready' : 'unavailable');
         // One course version in the cache at a time (task 15).
         if (result) await pruneCourseAssets(assetCache, productCourseId!, [manifestUrl(productCourseId!), result.manifest.packageUrl, ...Object.values(result.manifest.terrainByHole ?? {}), ...(result.manifest.contextLayerUrl ? [result.manifest.contextLayerUrl] : [])]);
@@ -68,7 +73,7 @@ export function useCourseGeometry({ dbCourseId, courseName, holeNumbers, focusHo
       }
     })();
     return () => { cancelled = true; };
-  }, [active, productCourseId, policy, assetCache, fetchImpl]);
+  }, [matched, active, productCourseId, policy, assetCache, fetchImpl]);
 
   // Hole numbers are compared by value so a caller may rebuild the array per render.
   const holeNumbersKey = holeNumbers.join(',');
@@ -85,7 +90,7 @@ export function useCourseGeometry({ dbCourseId, courseName, holeNumbers, focusHo
   terrainRef.current = terrainByHole;
   const recent = useRef<string[]>([]);
   useEffect(() => {
-    if (!loaded || focusHoleNumber == null) return;
+    if (!active || !loaded || focusHoleNumber == null) return;
     const { manifest, pkg } = loaded;
     const index = holeKeys.findIndex((key, i) => key !== '' && Number(holeNumbersKey.split(',')[i]) === focusHoleNumber);
     const current = index >= 0 ? holeKeys[index]! : '';
@@ -103,7 +108,7 @@ export function useCourseGeometry({ dbCourseId, courseName, holeNumbers, focusHo
       }
     })();
     return () => { cancelled = true; };
-  }, [loaded, holeKeys, holeNumbersKey, focusHoleNumber, prefetchNext, assetCache, fetchImpl]);
+  }, [active, loaded, holeKeys, holeNumbersKey, focusHoleNumber, prefetchNext, assetCache, fetchImpl]);
 
   const geometry = useMemo<TrackingGeometry | undefined>(() => loaded
     ? { package: loaded.pkg, holeKeys, terrainByHole, contextLayer: loaded.contextLayer }

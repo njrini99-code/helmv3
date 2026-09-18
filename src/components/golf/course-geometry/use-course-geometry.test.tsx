@@ -90,6 +90,30 @@ describe('useCourseGeometry', () => {
     expect(empty.result.current.geometry).toBeUndefined();
   });
 
+  it('keeps the loaded course through a pause (Meridian Live taking over) and requests nothing while paused', async () => {
+    const cache = new MemoryCourseAssetCache();
+    const props = { ...upper, cache, holeNumbers: eighteen, focusHoleNumber: 7, enabled: true };
+    const hook = renderHook((p: typeof props) => useCourseGeometry(p), { initialProps: props });
+    await waitFor(() => expect(Object.keys(hook.result.current.geometry?.terrainByHole ?? {}).sort()).toEqual([keys[6], keys[7]].sort()));
+    const before = hook.result.current.geometry!;
+    const requests = requested.length;
+    hook.rerender({ ...props, enabled: false, focusHoleNumber: 8 });
+    await new Promise(r => setTimeout(r, 30));
+    expect(hook.result.current.geometry).toBe(before);
+    expect(hook.result.current.status).toBe('ready');
+    expect(requested.length).toBe(requests);
+    // Resumed on the hole Live left: the manifest is re-read (network-first, so
+    // a newer approved version would win), the package stays as loaded, and
+    // only that hole's missing neighbour loads.
+    hook.rerender({ ...props, enabled: true, focusHoleNumber: 8 });
+    await waitFor(() => expect(Object.keys(hook.result.current.geometry?.terrainByHole ?? {}).sort()).toEqual([keys[6], keys[7], keys[8]].sort()));
+    expect(hook.result.current.geometry?.package).toBe(before.package);
+    expect(requested.slice(requests).filter(url => url !== manifestUrl(policy.courseId))).toEqual([terrainUrl(keys[8]!)]);
+    // A different course drops everything.
+    hook.rerender({ ...props, courseName: 'Elsewhere GC' });
+    await waitFor(() => expect(hook.result.current).toEqual({ geometry: undefined, status: 'inactive' }));
+  });
+
   it('builds the same geometry from a live round without loading anything', () => {
     const live = { pkg: pilotPackage, terrainByHole: {}, contextLayer: undefined };
     expect(trackingGeometryFromLiveRound(live, [1, 2, 99])).toEqual({ package: pilotPackage, holeKeys: [keys[0], keys[1], ''], terrainByHole: {}, contextLayer: undefined });
