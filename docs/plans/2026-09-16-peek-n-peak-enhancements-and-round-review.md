@@ -338,6 +338,14 @@ versionHash)`) remain the design for a launch beyond one course.
 - Keep the matrix capture as the acceptance record; add draw-call and
   triangle ceilings to `capture-course-matrix.cjs` so a regression fails the
   run rather than a reader.
+  *Status (2026-09-18):* done for draw calls on the acceptance records
+  that are actually kept — `capture-visual-canaries.cjs` (the 96-capture
+  matrix) and `capture-player-view.cjs` exit 1 when a capture's
+  `drawCallStatus` is not `within` (§68.2 budgets by pitch: top 140,
+  terrain 180, side 160). Triangles carry no ceiling in
+  `RENDER_BUDGETS`, so none is enforced; the counts stay in the metadata.
+  The hole-9 Top figure above is historical: since the V7 batching every
+  capture draws 6–10 calls (`v29-package`).
 - Real-device capture of play mode on your phone after deploy: the one
   verification this build lacks.
 

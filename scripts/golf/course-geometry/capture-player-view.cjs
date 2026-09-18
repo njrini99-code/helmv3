@@ -52,4 +52,6 @@ const out = path.resolve(String(args.out || 'output/playwright/course-geometry/v
   process.stdout.write(`${path.basename(out)} draw=${dataset.drawCalls} tri=${dataset.renderTriangles} proj=${dataset.projection ?? ''} chrome=[${chrome.join(', ')}]${errors.length ? ` ERRORS ${errors.join(' | ')}` : ''}\n`);
   await browser.close();
   if (errors.length) process.exitCode = 1;
+  // §106 draw-call budget, the same gate as the canary matrix.
+  if (dataset.drawCallStatus !== 'within') { console.error(`draw-call budget: ${dataset.drawCalls}/${dataset.drawCallBudget ?? 'unknown'} (${dataset.drawCallStatus ?? 'unreported'})`); process.exitCode = 1; }
 })().catch(error => { console.error(error); process.exit(1); });

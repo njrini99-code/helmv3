@@ -118,6 +118,12 @@ async function settled(page, canvas) {
   }
   if (report.errors.length) { console.error(JSON.stringify(report.errors, null, 2)); process.exitCode = 1; }
   console.log(`${report.captures.length} captures → ${outDir}`);
+  // §106 draw-call budget (`RENDER_BUDGETS.drawCalls`, read from the canvas
+  // per capture): a breach fails the run rather than waiting for a reader.
+  const over = report.captures.filter(({ metadata }) => metadata.drawCallStatus !== 'within');
+  const budgeted = report.captures.filter(({ metadata }) => metadata.drawCallStatus != null).length;
+  console.log(`draw-call budget: ${budgeted - over.length} of ${budgeted} captures within budget` + (over.length ? `; over: ${over.map(c => `${c.file} ${c.metadata.drawCalls}/${c.metadata.drawCallBudget}`).join(', ')}` : ''));
+  if (over.length) process.exitCode = 1;
   const gate = report.uncertainGate;
   console.log(`uncertain gate (< ${Math.round(UNCERTAIN_GATE * 100)} % unexplained context): ${gate.pass.length} of ${holes.length} holes pass` + (gate.fail.length ? `; failing: ${gate.fail.join(', ')}` : '') + (gate.unavailable.length ? `; no report: ${gate.unavailable.join(', ')}` : ''));
 })().catch(error => { console.error(error); process.exit(1); });
