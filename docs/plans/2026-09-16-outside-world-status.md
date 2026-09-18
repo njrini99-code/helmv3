@@ -10,6 +10,14 @@ tracker: `done` (implemented and verified, evidence named), `partial`,
 Authoring contract: `docs/design/meridian-outside-world.md`.
 Proof course: Peek’n Peak Upper (package `fdec6ea8…`).
 
+**Open gates (2026-09-18, head `56bceaf05`).** Every agent-doable row is
+closed; what remains needs the owner: the §39 per-hole context answers
+(the uncertain-share gate passes 1 of 18 holes and moves only with that
+classification pass, not with rendering), the device run behind §103 of
+the Meridian tracker, and landing #1939. Action 10's lab and production
+signoff is current on `4eba1fb9f` (`canaries/v29-package` 96/96,
+`player/audit-v12` 36/36, all within the draw-call budget).
+
 ## §42 immediate action list
 
 | # | Action | Status | Evidence / remaining |

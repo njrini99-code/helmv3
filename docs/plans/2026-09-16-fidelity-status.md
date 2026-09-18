@@ -9,6 +9,12 @@ direction (`2026-09-16-renderer-redesign-status.md`) is folded into the same
 work order; the outside-world spec (`2026-09-16-outside-world-status.md`)
 owns paths, structures, context zones and the player chrome.
 
+**Open gates (2026-09-18, head `56bceaf05`).** The §65 order is worked
+through; the rows still `partial` wait on the §39 human pass (hole
+identity, the mirrored-in-3D checklist, anonymous rough on 2, 3, 4) and on
+a contour source for the green tiers. Checklist item 10 (§69) is the
+owner's visual review. No renderer change is queued.
+
 Doctrine (§54): source-backed detail (green shape, fairway boundary, bunker
 perimeter, path, water, structures, broad terrain) stays canonical; visual-only
 enhancement (bowl nuance, rough breakup, shading, atmosphere) is marked

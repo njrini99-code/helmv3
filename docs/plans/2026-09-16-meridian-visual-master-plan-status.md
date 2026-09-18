@@ -9,6 +9,14 @@ named), `deferred` (the directive itself marks it later or conditional, and
 the trigger is named), `blocked` (needs something outside this machine, such
 as a physical phone), `pending`.
 
+**Open gates (2026-09-18, head `56bceaf05`).** V0–V7 are landed and
+gated; the draw-call budget is enforced by the capture scripts (player
+view phone Terrain runs 13–15 draws against a budget of 180, `player/audit-v12`).
+Still outside this machine: §103 device matrix and §104 battery run on
+the owner's phone, §63.2 (needs the confirmed pin/ball entry flow), the
+Sentry snapshot approval, the flag rows in `config/feature-flags.yml`,
+and `npm run pr:land -- 1939`.
+
 Doctrine sections (rules rather than tasks) are marked `done` when the rule
 is encoded somewhere enforceable: a schema, a test, a dependency guard, or
 the visual-language document.
