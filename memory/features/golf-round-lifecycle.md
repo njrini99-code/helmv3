@@ -831,3 +831,45 @@ flag off or no approved package — renders the tracker exactly as before
   (`src/lib/golf/one-tap/competition-policy.ts`, `playModeForRound`); a
   practice round may opt in from the ••• sheet, which carries the Local Rule
   caveat. Elevation to the green (practice only) is the only advice V1 shows.
+
+### Course-framed tracking and review for Peek'n Peak Upper (September 17, 2026)
+
+Plan §unlock 3 (`docs/plans/2026-09-16-peek-n-peak-enhancements-and-round-review.md`
+P6) is wired for one course. `useCourseGeometry`
+(`src/components/golf/course-geometry/use-course-geometry.ts`) resolves the
+tracker's `geometry` (`TrackingGeometry`: package, hole keys, terrain,
+context layer) for a round whose course is Peek'n Peak Upper by
+`productCourseIdForRound` — the same identity the One-Tap gate uses; a
+bound `golf_courses` id or a name that reads as Peek'n Peak *Upper*, never
+the Lower course, never a nearest-green match — and `undefined` for every
+other round, with no request made. The package comes through the One-Tap
+asset cache (`loadCoursePackage`, network-first manifest, cache-first
+assets); terrain follows the hole on screen and the next one
+(`terrain-residency.ts`, at most three meshes resident), and the review page
+loads the open hole only. No feature flag gates the drawing: the course
+identity is the gate, `buildTrackingHoleScene` returns null on any failure,
+and the 3D canvas falls back to the outline on its own, so shot entry never
+waits on geometry. No new tables or bindings; the general binding model in
+the plan's P6 remains for a launch beyond one course.
+
+- Entry: `new-round-client.tsx` / `continue-round-client.tsx` pass
+  `geometry` to `FairwayShotTracking` (`FairwayHoleHero` → `HoleSceneFrame`,
+  compact SVG card, 3D and tap-to-measure on expand). While Meridian Live is
+  loading or up the hook is idle and `trackingGeometryFromLiveRound` reuses
+  the live round's assets, so nothing loads twice.
+- Review: `rounds/[id]/review/page.tsx` → `FilmstripReview.geometry` →
+  `ReviewHero.geometry` (bounded filmstrip scenes, course-framed hole detail,
+  shot selector). `ReviewHero.onOpenHoleChange` reports the open hole so the
+  page fetches that hole's terrain on demand.
+- Every other course is unchanged: the compact putting header and the hidden
+  shot pills apply only while a hole scene is drawn
+  (`FairwayShotTracking` `courseFramed`), and the selection following the
+  latest recorded shot is the state machine's `autoSelectLatest` option,
+  on only with geometry and off by default (`use-shot-state-machine.ts`,
+  main's null-until-tapped behaviour). Pinned by
+  `__tests__/FairwayShotTracking.course-framed.test.tsx`,
+  `use-course-geometry.test.tsx`, `ReviewHero.layout.test.tsx` and the
+  reducer tests.
+- Meridian Live itself stays behind `peek_n_peak_one_tap_v1` (the round's
+  own *Turn on* row) and the outbox behind `peek_n_peak_one_tap_sync_v1`,
+  which needs `20260916_peek_n_peak_one_tap.sql` applied first.

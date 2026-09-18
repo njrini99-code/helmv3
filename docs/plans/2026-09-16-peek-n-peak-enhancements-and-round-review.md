@@ -317,6 +317,19 @@ in review shows the same per-hole scenes; review first-load JS is
 unchanged (three.js stays behind its dynamic import); the §13.3 access suite
 passes for the new tables.
 
+**Status (2026-09-17, 56b67b07a).** Threading is wired for the one
+approved course without the binding tables: `useCourseGeometry`
+(`src/components/golf/course-geometry/use-course-geometry.ts`) resolves the
+round's course through the One-Tap identity (`productCourseIdForRound`:
+bound `golf_courses` id or a name reading Peek'n Peak *Upper*), loads the
+published package through the task-15 asset cache and hands `geometry` to
+`FairwayShotTracking` (both round clients) and `ReviewHero` (review page →
+`FilmstripReview`). Terrain follows the residency rule on entry (hole on
+screen + next) and the open hole only in review (`onOpenHoleChange`).
+Every other course resolves nothing. The data and delivery bullets above
+(`golf_geometry_*` tables, Storage bucket, `loadCourseGeometry(siteId,
+versionHash)`) remain the design for a launch beyond one course.
+
 ### P7. Rendering and phone budget
 
 - Hole 9's Top preset draws 260 calls where the rest draw under 200; merge

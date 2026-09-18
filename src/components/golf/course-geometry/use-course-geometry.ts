@@ -28,6 +28,9 @@ export interface UseCourseGeometryOptions {
   /** The hole on screen: its terrain loads first, the next hole's behind it.
    * `null` (review with no hole open) loads no terrain at all. */
   focusHoleNumber?: number | null;
+  /** Entry brings the next hole's terrain in behind the current one so the
+   * walk to the next tee never waits; review (`false`) loads the open hole only. */
+  prefetchNext?: boolean;
   /** `false` keeps the hook idle — Meridian Live owns the course assets while
    * it is loading or up, and the tracker takes its geometry from the live round. */
   enabled?: boolean;
@@ -39,7 +42,7 @@ export interface UseCourseGeometryOptions {
 export type CourseGeometryStatus = 'inactive' | 'loading' | 'ready' | 'unavailable';
 export interface CourseGeometryState { geometry: TrackingGeometry | undefined; status: CourseGeometryStatus }
 
-export function useCourseGeometry({ dbCourseId, courseName, holeNumbers, focusHoleNumber = null, enabled = true, policy = PEEK_N_PEAK_ONE_TAP_V1, cache, fetchImpl }: UseCourseGeometryOptions): CourseGeometryState {
+export function useCourseGeometry({ dbCourseId, courseName, holeNumbers, focusHoleNumber = null, prefetchNext = true, enabled = true, policy = PEEK_N_PEAK_ONE_TAP_V1, cache, fetchImpl }: UseCourseGeometryOptions): CourseGeometryState {
   const productCourseId = productCourseIdForRound({ dbCourseId, courseName }, policy);
   const active = enabled && productCourseId === policy.courseId;
   const [loaded, setLoaded] = useState<LoadedCoursePackage | null>(null);
@@ -90,7 +93,7 @@ export function useCourseGeometry({ dbCourseId, courseName, holeNumbers, focusHo
     recent.current = rememberViewedHole(recent.current, current);
     const resident = residentTerrainKeys({ current, next: holeKeys[index + 1] || null, recent: recent.current });
     setTerrainByHole(prev => evictTerrain(prev, resident));
-    const wanted = resident.slice(0, 2).filter(key => manifest.terrainByHole?.[key] && !terrainRef.current[key]);
+    const wanted = resident.slice(0, prefetchNext ? 2 : 1).filter(key => manifest.terrainByHole?.[key] && !terrainRef.current[key]);
     let cancelled = false;
     void (async () => {
       for (const key of wanted) {
@@ -100,7 +103,7 @@ export function useCourseGeometry({ dbCourseId, courseName, holeNumbers, focusHo
       }
     })();
     return () => { cancelled = true; };
-  }, [loaded, holeKeys, holeNumbersKey, focusHoleNumber, assetCache, fetchImpl]);
+  }, [loaded, holeKeys, holeNumbersKey, focusHoleNumber, prefetchNext, assetCache, fetchImpl]);
 
   const geometry = useMemo<TrackingGeometry | undefined>(() => loaded
     ? { package: loaded.pkg, holeKeys, terrainByHole, contextLayer: loaded.contextLayer }

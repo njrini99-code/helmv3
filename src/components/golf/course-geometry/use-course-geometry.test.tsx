@@ -73,10 +73,17 @@ describe('useCourseGeometry', () => {
     await new Promise(r => setTimeout(r, 20));
     expect(warm.result.current.geometry?.terrainByHole).toEqual({});
     expect(requested.some(url => url.startsWith(`${BASE}/terrain/`))).toBe(false);
+    // Review opens one hole: that hole's terrain only, nothing prefetched.
+    const review = renderHook(() => useCourseGeometry({ ...upper, cache, holeNumbers: eighteen, focusHoleNumber: 7, prefetchNext: false }));
+    await waitFor(() => expect(Object.keys(review.result.current.geometry?.terrainByHole ?? {})).toEqual([keys[6]]));
+    await new Promise(r => setTimeout(r, 20));
+    expect(requested.filter(url => url.startsWith(`${BASE}/terrain/`))).toEqual([terrainUrl(keys[6]!)]);
     online.value = false;
     const cold = renderHook(() => useCourseGeometry({ ...upper, cache, holeNumbers: eighteen, focusHoleNumber: 7 }));
     await waitFor(() => expect(cold.result.current.status).toBe('ready'));
     expect(cold.result.current.geometry?.holeKeys).toEqual(keys);
+    // No signal: the cached hole serves, the un-cached next hole is simply absent.
+    await waitFor(() => expect(Object.keys(cold.result.current.geometry?.terrainByHole ?? {})).toEqual([keys[6]]));
     // No signal and no cache: the round keeps its plain layout.
     const empty = renderHook(() => useCourseGeometry({ ...upper, cache: new MemoryCourseAssetCache(), holeNumbers: eighteen, focusHoleNumber: 7 }));
     await waitFor(() => expect(empty.result.current.status).toBe('unavailable'));

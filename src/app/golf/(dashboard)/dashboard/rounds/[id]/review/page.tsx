@@ -186,7 +186,7 @@ export default function RoundReviewPage() {
   // its holes on the approved package, with terrain for the hole that is
   // open. Any other course resolves no geometry and reviews exactly as before.
   const [openReviewHole, setOpenReviewHole] = useState<number | null>(null);
-  const { geometry: courseGeometry } = useCourseGeometry({ dbCourseId: round?.course_id ?? null, courseName: round?.course_name ?? null, holeNumbers: REVIEW_HOLE_NUMBERS, focusHoleNumber: openReviewHole });
+  const { geometry: courseGeometry } = useCourseGeometry({ dbCourseId: round?.course_id ?? null, courseName: round?.course_name ?? null, holeNumbers: REVIEW_HOLE_NUMBERS, focusHoleNumber: openReviewHole, prefetchNext: false });
   const [storedReview, setStoredReview] = useState<RoundReviewWithRound | null>(null);
   // Season-level standing (PGA + team + you) keyed by canonical metric_id.
   // Redesign-only: feeds the StandingBar "where this sits" band below the

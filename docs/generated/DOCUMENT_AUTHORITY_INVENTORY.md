@@ -180,7 +180,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/features/coachhelm-ai.md` | current | yes | - | yes | 5 | 28 | - |
 | `memory/features/crm_outreach.md` | current | yes | - | - | 2 | 24 | - |
 | `memory/features/email_outbound.md` | current | yes | - | - | 2 | 18 | - |
-| `memory/features/golf-round-lifecycle.md` | current | yes | - | yes | 3 | 42 | - |
+| `memory/features/golf-round-lifecycle.md` | current | yes | - | yes | 3 | 44 | - |
 | `memory/features/ios-native-shell.md` | current | yes | - | - | 1 | 14 | - |
 | `memory/features/observability-sentry.md` | current | yes | - | - | 6 | 32 | - |
 | `memory/features/observability-supabase.md` | current | yes | - | yes | 5 | 45 | - |
@@ -337,9 +337,9 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/plans/2026-09-16-meridian-v2-master-plan.md` | current | - | - | yes | 1 | 2 | - |
 | `docs/plans/2026-09-16-meridian-v2-status.md` | current | - | - | yes | 1 | 12 | 2 |
 | `docs/plans/2026-09-16-meridian-visual-master-plan-status.md` | current | - | - | yes | 3 | 12 | - |
-| `docs/plans/2026-09-16-one-tap-status.md` | current | - | - | yes | 1 | 10 | - |
+| `docs/plans/2026-09-16-one-tap-status.md` | current | - | - | yes | 1 | 12 | - |
 | `docs/plans/2026-09-16-outside-world-status.md` | current | - | - | - | 0 | 8 | - |
-| `docs/plans/2026-09-16-peek-n-peak-enhancements-and-round-review.md` | current | - | - | yes | 0 | 1 | - |
+| `docs/plans/2026-09-16-peek-n-peak-enhancements-and-round-review.md` | current | - | - | yes | 1 | 2 | - |
 | `docs/plans/2026-09-16-peek-one-tap-field-calibration.md` | current | - | - | - | 1 | 0 | - |
 | `docs/plans/2026-09-16-renderer-redesign-status.md` | current | - | - | yes | 0 | 3 | - |
 | `docs/plans/IOS_PREMIUM_NATIVE_UPDATE_2026-08-25.md` | current | yes | - | yes | 2 | 1 | - |
