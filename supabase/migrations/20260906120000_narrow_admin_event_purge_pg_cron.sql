@@ -28,6 +28,19 @@
 --
 -- STATUS: HOLD — see supabase/migrations/HELD.md. Not applied by this PR;
 -- the owner applies by hand and stamps the ledger.
+
+-- ROLLBACK: `select cron.schedule('purge-admin-event-telemetry', '10 4 * * *',
+-- ROLLBACK: $job$ ... $job$);` with the two-table body from
+-- ROLLBACK: 20260703043000_admin_events_retention_pg_cron.sql — that restores the
+-- ROLLBACK: blanket 180-day purge over admin_events AND admin_analytics_events.
+-- ROLLBACK: `select cron.unschedule('purge-admin-event-telemetry');` removes the
+-- ROLLBACK: backstop entirely; safe only because log-retention/route.ts is the
+-- ROLLBACK: primary owner of both retention windows. CREATE EXTENSION pg_cron is
+-- ROLLBACK: deliberately NOT rolled back — other jobs depend on it.
+-- VERIFY: select 1 from pg_extension where extname = 'pg_cron';
+-- VERIFY: select 1 from cron.job where jobname = 'purge-admin-event-telemetry' and schedule = '10 4 * * *';
+-- VERIFY: select 1 from cron.job where jobname = 'purge-admin-event-telemetry' and command ilike '%admin_events%' and command not ilike '%admin_analytics_events%';
+-- VERIFY: select 1 from cron.job where jobname = 'purge-admin-event-telemetry' and command ilike '%180 days%';
 CREATE EXTENSION IF NOT EXISTS pg_cron;
 
 DO $$

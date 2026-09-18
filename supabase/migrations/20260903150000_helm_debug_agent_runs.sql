@@ -57,6 +57,12 @@
 --           -- safe: no other migration references any of the above, and this
 --           -- file defines no triggers on any existing table.
 
+-- VERIFY: select 1 from information_schema.tables where table_schema = 'helm_debug' and table_name = 'agent_runs';
+-- VERIFY: select 1 from pg_indexes where schemaname = 'helm_debug' and indexname = 'agent_runs_incident_fingerprint_idx';
+-- VERIFY: select 1 where has_function_privilege('service_role', 'public.helm_debug_record_agent_run(uuid,text,text,jsonb)', 'execute');
+-- VERIFY: select 1 where has_function_privilege('anon', 'public.helm_debug_record_agent_run(uuid,text,text,jsonb)', 'execute') = false;
+-- VERIFY: select 1 where has_function_privilege('authenticated', 'public.helm_debug_get_agent_run(uuid)', 'execute') = false;
+
 create table if not exists helm_debug.agent_runs (
     id uuid primary key default gen_random_uuid(),
     run_id uuid not null unique,

@@ -49,6 +49,11 @@
 -- select cron.unschedule('helm-jobs-consume'); -- if scheduled
 -- drop function public.helm_jobs_pg_cron_consume_tick();
 
+-- VERIFY: select 1 from pg_proc where oid = 'public.helm_jobs_pg_cron_consume_tick(text)'::regprocedure;
+-- VERIFY: select 1 where has_function_privilege('anon', 'public.helm_jobs_pg_cron_consume_tick(text)', 'execute') = false;
+-- VERIFY: select 1 where has_function_privilege('authenticated', 'public.helm_jobs_pg_cron_consume_tick(text)', 'execute') = false;
+-- VERIFY: select 1 where has_function_privilege('service_role', 'public.helm_jobs_pg_cron_consume_tick(text)', 'execute');
+
 create or replace function public.helm_jobs_pg_cron_consume_tick(
     p_target_url text
 )
