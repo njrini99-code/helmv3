@@ -475,13 +475,15 @@ measured as JS heap / DOM nodes / listeners after a forced GC. It found and
 now guards one real leak: three r186 keeps every disposed renderer alive
 through its module-level DFG lookup texture (mrdoob/three.js#34519; fixed
 upstream for r187), which `three-renderer.ts` `dispose()` now releases
-(`releaseSharedDfgLut`). Headed runs of the same soak on the Mac GPU (Apple M4, ANGLE Metal) add
-the two desktop rows of the matrix: Chrome's `EXT_disjoint_timer_query_webgl2`
-puts the GPU frame at 3.9–8.1 ms P95 after a pan (median 5.2 ms) with the CPU
-frame at ~10 ms, and the GPU WebKit build (Safari's engine) holds a 16 ms CPU
-P95 median with the landscape build at ~0.7 s per hole. Not covered from this
-machine: the phones, Android, the Capacitor WebView and real Safari, thermal,
-battery and first-open on a cold phone; those stay on the hardware list above.
+(`releaseSharedDfgLut`). Headed runs of the same soak on the Mac GPU (Apple M4, ANGLE Metal, still
+the iPhone 15 viewport) give the first hardware numbers without standing in
+for any device row: Chrome's `EXT_disjoint_timer_query_webgl2` puts the GPU
+frame at 3.9–8.1 ms P95 after a pan (median 5.2 ms) with the CPU frame at
+~10 ms, and Playwright's GPU WebKit build (Safari's engine, not Safari) holds
+a 16 ms CPU P95 median with the landscape build at ~0.7 s per hole. Every
+row of the matrix above — the phones, Android, the Capacitor WebView, Safari
+and a desktop Chrome window — plus thermal, battery and first-open on a cold
+phone stays on the hardware list.
 
 ## Canary pixel diff (§106.4)
 
