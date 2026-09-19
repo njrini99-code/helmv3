@@ -741,6 +741,17 @@ shelter/exposure tint (`MERIDIAN_STYLE.terrainTone`, fidelity §35 "visible
 terrain response": hollows richer, knolls and embankments warmer, albedo
 only, `material.userData.shading.terrainTone`, canary `v18-terrain-tone`).
 
+September 18 (headless device-class soak, `output/lab-build/device-soak.mjs`):
+the expanded terrain view leaked one WebGL context, ~6.5 MB of JS heap and
+~900 DOM nodes per hole change because three r186 leaves every disposed
+`WebGLRenderer` subscribed to its module-level DFG lookup texture
+(mrdoob/three.js#34519, fixed upstream for r187). `three-renderer.ts`
+`dispose()` now releases that texture from the renderer it tears down
+(`releaseSharedDfgLut`; unit-guarded in `three-renderer-discipline.test.ts`),
+and the 18-hole Chromium soak is flat (heap 89 → 97 MB, nodes ~800,
+listeners 452, was 90 → 202 MB / 1 043 → 17 090 / 458 → 1 275). Display
+runtime only; no lifecycle writer, resolver or production binding changed.
+
 ### Four-course local source trial (September 13, 2026)
 
 The fixture harness now includes Winchester alongside Cacapon; both reuse the

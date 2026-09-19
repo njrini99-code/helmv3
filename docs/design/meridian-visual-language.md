@@ -465,6 +465,20 @@ exposes every state and the tier override):
 The result belongs in the master-plan tracker rows 103–104; the lab and the
 canaries cannot stand in for it.
 
+What the headless device-class soak already covers (`output/lab-build/
+device-soak.mjs`, Playwright WebKit iPhone 15 profile and Chromium against
+the lab play fixture, 18 holes with pan and Green view per hole, then forced
+`WEBGL_lose_context`, restore, re-expand and background/resume): repeated
+hole switch, forced context loss (the frame keeps the outline and reports
+"3D view unavailable"), background/resume, and memory after repeated holes
+measured as JS heap / DOM nodes / listeners after a forced GC. It found and
+now guards one real leak: three r186 keeps every disposed renderer alive
+through its module-level DFG lookup texture (mrdoob/three.js#34519; fixed
+upstream for r187), which `three-renderer.ts` `dispose()` now releases
+(`releaseSharedDfgLut`). Not covered headless: GPU frame time, thermal,
+battery, first-open on a cold phone, the Capacitor WebView and real Safari;
+those stay on the hardware list above.
+
 ## Canary pixel diff (§106.4)
 
 `scripts/golf/course-geometry/diff-visual-canaries.py <before> <after>

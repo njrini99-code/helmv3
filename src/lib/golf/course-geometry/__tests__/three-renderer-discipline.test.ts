@@ -22,7 +22,21 @@ import source from '@/test/fixtures/course-geometry/cacapon-07-terrain.json';
  * browser harness under src/test/fixtures/course-geometry/browser/ is the
  * only thing that can. */
 
-const { FakeWebGLRenderer } = vi.hoisted(() => {
+const { FakeWebGLRenderer, three, sharedLut } = vi.hoisted(() => {
+  const three: { actual?: typeof ThreeModule } = {};
+  // r186's module-level DFG lookup texture (mrdoob/three.js#34519): one
+  // `Texture` for the whole page, subscribed to by every renderer that draws
+  // a physically-based material and left subscribed by `renderer.dispose()`.
+  const sharedLut: { texture?: ThreeModule.Texture; listeners(): number } = {
+    listeners() { return ((this.texture as unknown as { _listeners?: { dispose?: unknown[] } } | undefined)?._listeners?.dispose ?? []).length; },
+  };
+  class FakeWebGLProperties {
+    private map = new WeakMap<object, Record<string, unknown>>();
+    has(object: object) { return this.map.has(object); }
+    get(object: object) { let bag = this.map.get(object); if (!bag) { bag = {}; this.map.set(object, bag); } return bag; }
+    remove(object: object) { this.map.delete(object); }
+    dispose() { this.map = new WeakMap(); }
+  }
   class FakeWebGLRenderer {
     outputColorSpace = '';
     toneMapping = 0;
@@ -32,22 +46,37 @@ const { FakeWebGLRenderer } = vi.hoisted(() => {
     capabilities = { maxTextureSize: 16_384 };
     extensions = { has: () => false };
     info = { render: { calls: 0, triangles: 0 } };
+    properties = new FakeWebGLProperties();
     getContext() { return { getExtension: () => null, isContextLost: () => false }; }
     setPixelRatio() {}
     setSize() {}
     async compileAsync() {}
-    // Mirrors three.js consuming both `needsUpdate` flags once a bake runs.
-    render() { this.shadowMap.needsUpdate = false; }
-    dispose() {}
+    // Mirrors three.js consuming both `needsUpdate` flags once a bake runs,
+    // and r186's first physically-based draw: the material's cached uniforms
+    // point at the shared LUT and the renderer subscribes to its disposal.
+    render(scene: ThreeModule.Scene) {
+      this.shadowMap.needsUpdate = false;
+      scene.traverse(object => {
+        const material = (object as ThreeModule.Mesh).material as ThreeModule.Material | undefined;
+        if (!(object as ThreeModule.Mesh).isMesh || !(material as ThreeModule.MeshStandardMaterial | undefined)?.isMeshStandardMaterial) return;
+        const lut = sharedLut.texture ??= Object.assign(new three.actual!.Texture(), { name: 'DFG_LUT' });
+        this.properties.get(material!).uniforms = { dfgLUT: { value: lut } };
+        if (this.properties.has(lut)) return;
+        this.properties.get(lut).__webglInit = true;
+        const onTextureDispose = () => { lut.removeEventListener('dispose', onTextureDispose); this.properties.remove(lut); };
+        lut.addEventListener('dispose', onTextureDispose);
+      });
+    }
+    dispose() { this.properties.dispose(); }
     forceContextLoss() {}
   }
-  return { FakeWebGLRenderer };
+  return { FakeWebGLRenderer, three, sharedLut };
 });
 
-vi.mock('three', async importOriginal => ({
-  ...(await importOriginal<typeof ThreeModule>()),
-  WebGLRenderer: FakeWebGLRenderer as unknown as typeof ThreeModule.WebGLRenderer,
-}));
+vi.mock('three', async importOriginal => {
+  three.actual = await importOriginal<typeof ThreeModule>();
+  return { ...three.actual, WebGLRenderer: FakeWebGLRenderer as unknown as typeof ThreeModule.WebGLRenderer };
+});
 
 const mesh = parseTerrainMesh(source, pilotPackage), scene = illustrativeScene();
 const camera = fitTerrainCamera(scene, mesh, 'hole', 390, 640, TERRAIN_PRESETS.top);
@@ -108,5 +137,31 @@ describe('three-renderer shadow-bake and precompile discipline (Tasks 20–21, �
       runtime.dispose();
       host.remove();
     }
+  });
+
+  it('unsubscribes the renderer it tears down from the shared DFG lookup texture (three r186, mrdoob/three.js#34519)', async () => {
+    // Without this every hole change left the dead renderer's texture manager,
+    // WebGL context, canvas and React tree reachable from three's module scope
+    // (§68 soak: ~6.5 MB and one WebGL context per hole). Remove with three ≥ 0.187.
+    const host = document.createElement('div'), canvas = document.createElement('canvas');
+    const overlay = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    host.append(canvas, overlay);
+    document.body.append(host);
+    const first = createThreeTerrainRuntime({ canvas, overlay, overlayId: 'lut-first', scene, mesh, camera, width: 390, height: 640, quality: 'standard', onUnavailable: () => {} });
+    await first.ready;
+    expect(sharedLut.texture?.name).toBe('DFG_LUT');
+    expect(sharedLut.listeners()).toBe(1);
+    first.dispose();
+    expect(sharedLut.listeners()).toBe(0);
+    // The next runtime on the same page subscribes again and is released the same way.
+    const second = createThreeTerrainRuntime({ canvas, overlay, overlayId: 'lut-second', scene, mesh, camera, width: 390, height: 640, quality: 'standard', onUnavailable: () => {} });
+    try {
+      await second.ready;
+      expect(sharedLut.listeners()).toBe(1);
+    } finally {
+      second.dispose();
+      host.remove();
+    }
+    expect(sharedLut.listeners()).toBe(0);
   });
 });

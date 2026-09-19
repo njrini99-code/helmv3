@@ -1,6 +1,6 @@
 import {
   ACESFilmicToneMapping, BackSide, Box3, Color, DirectionalLight, Fog, HemisphereLight, Mesh,
-  OrthographicCamera, PCFShadowMap, PerspectiveCamera, Raycaster, Scene, ShaderMaterial, SphereGeometry, SRGBColorSpace, Vector3, WebGLRenderer,
+  OrthographicCamera, PCFShadowMap, PerspectiveCamera, Raycaster, Scene, ShaderMaterial, SphereGeometry, SRGBColorSpace, Texture, Vector3, WebGLRenderer,
 } from 'three';
 import { installTerrainDebugView, type TerrainDebugView, type V2WorldDebug } from '@/components/golf/course-geometry/terrain-debug';
 import { buildThreeLandscape, DEFAULT_THREE_LANDSCAPE_PALETTE, type PerspectiveLodView } from '@/components/golf/course-geometry/three-landscape';
@@ -69,6 +69,30 @@ function estimateGeometryBytes(world: Scene): number {
     if (geometry.index) bytes += geometry.index.array.byteLength;
   });
   return bytes;
+}
+
+/** three r186 shares one module-level DFG lookup texture between every
+ * `WebGLRenderer` that draws a physically-based material, and each renderer
+ * leaves its `dispose` listener on that texture after `renderer.dispose()`
+ * (mrdoob/three.js#34519, fixed by #34530 for r187). The listener retains the
+ * dead renderer's texture manager, so its WebGL context, canvas and React tree
+ * survived every hole change (~6.5 MB, ~900 DOM nodes and one WebGL context
+ * per hole in the headless soak). The texture is reachable only through a
+ * rendered material's cached uniforms, so it is remembered the first time a
+ * runtime is torn down and disposed whenever a renderer that uploaded it goes
+ * away: every listener detaches, and a live renderer re-uploads the 16×16
+ * table on its next frame. Remove once `three` ≥ 0.187. */
+let sharedDfgLut: Texture | null = null;
+function releaseSharedDfgLut(renderer: WebGLRenderer, world: Scene) {
+  if (!sharedDfgLut) world.traverse(object => {
+    if (sharedDfgLut || !(object instanceof Mesh)) return;
+    for (const material of Array.isArray(object.material) ? object.material : [object.material]) {
+      const cached = renderer.properties.get(material) as { uniforms?: { dfgLUT?: { value?: unknown } } } | undefined;
+      const value = cached?.uniforms?.dfgLUT?.value;
+      if (value instanceof Texture) { sharedDfgLut = value; return; }
+    }
+  });
+  if (sharedDfgLut && renderer.properties.has(sharedDfgLut)) sharedDfgLut.dispose();
 }
 
 /** Lazy, scene-owned Three backend. It renders on camera/evidence changes only;
@@ -196,6 +220,9 @@ export function createThreeTerrainRuntime(options: RuntimeOptions): ThreeTerrain
     if (disposed) return;
     disposed = true;
     canvas.removeEventListener('webglcontextlost', lost);
+    // Before the materials lose their cached uniforms and before
+    // `renderer.dispose()` drops the property map that deletes the GL texture.
+    releaseSharedDfgLut(renderer, world);
     releaseDebug?.(); evidence?.dispose(); markersOverlay?.dispose(); flightPaths?.dispose(); landscape?.dispose(); sun?.shadow.dispose();
     skyDome?.geometry.dispose(); skyDome?.material.dispose();
     world.clear(); renderer.dispose();
