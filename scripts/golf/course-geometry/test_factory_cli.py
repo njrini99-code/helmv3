@@ -74,7 +74,9 @@ class GoldenPlanTests(unittest.TestCase):
         for r in rows.values():
             if r['state'] == 'blocked' and r['blockers'] and r['blockers'][0]['code'] not in ('DEPENDENCY_BLOCKED', 'DEPENDENCY_PENDING'):
                 codes.setdefault(r['blockers'][0]['code'], set()).add(r['key'])
-        self.assertIn('layout.terrain.acquire[big-blue-course-uk]', codes['UTM_ZONE_UNSUPPORTED'])
+        # Zone 16 (University Club of Kentucky) is no longer a blocker: the compilers project in the course's own zone.
+        self.assertNotIn('UTM_ZONE_UNSUPPORTED', codes)
+        self.assertNotEqual(rows['layout.terrain.acquire[big-blue-course-uk]']['state'], 'blocked', rows['layout.terrain.acquire[big-blue-course-uk]'])
         self.assertIn('layout.terrain.acquire[the-cardinal]', codes['TERRAIN_ADAPTER_MISSING'])
         self.assertIn('layout.scorecard.validate[cc-of-landfall-marsh-9]', codes['HOLE_COUNT_UNSUPPORTED'])
         self.assertIn('layout.publish.prepare[cacapon]', codes['PUBLISH_NOT_APPROVED'])

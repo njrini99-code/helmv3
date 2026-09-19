@@ -18,6 +18,7 @@ Usage:
 """
 import argparse
 import hashlib
+import importlib.util
 import json
 from datetime import datetime, timezone
 from pathlib import Path
@@ -29,6 +30,16 @@ from PIL import Image, ImageDraw
 from scipy import ndimage
 from shapely.geometry import LineString, Polygon
 from shapely.ops import unary_union
+
+
+def _sibling(name, filename):
+    spec = importlib.util.spec_from_file_location(name, Path(__file__).with_name(filename))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+course_crs = _sibling('course_crs', 'course_crs.py')
 
 gdal.UseExceptions()
 MARGIN_PX = 50
@@ -63,7 +74,9 @@ def main():
     brightness = bands[:3].mean(axis=0)
     # Warmth separates sand from grey pavement and roofs, which are equally bright and low-NDVI.
     sand = (brightness > SAND_BRIGHTNESS_MIN) & (ndvi < SAND_NDVI_MAX) & (bands[0] - bands[2] > SAND_WARMTH_MIN)
-    project = pyproj.Transformer.from_crs(4326, 32617, always_xy=True)
+    # The export's own CRS: the request that cut it names the zone.
+    crs = int((manifest.get('request') or {}).get('imageSR') or course_crs.LEGACY_EPSG)
+    project = pyproj.Transformer.from_crs(4326, crs, always_xy=True)
 
     def to_pixel(lon, lat):
         x, y = project.transform(lon, lat)

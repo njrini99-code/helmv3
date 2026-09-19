@@ -51,6 +51,7 @@ def load_module(name, path):
 
 canopy = load_module('derive_canopy_naip', HERE / 'derive-canopy-naip.py')
 prepare = load_module('prepare_context_layer', HERE / 'prepare-context-layer.py')
+course_crs = load_module('course_crs', HERE / 'course_crs.py')
 GATE = .15
 NOT_COVERING = ('fence', 'lift_line', 'wall')
 
@@ -86,8 +87,9 @@ def main():
     extent, width, height = export['extent'], export['width'], export['height']
     naip_manifest = canopy.acquire(args.naip_directory, extent, (width, height))
     local = prepare.make_local(pkg['originWgs84'])
-    project = pyproj.Transformer.from_crs(4326, 32617, always_xy=True)
-    unproject = pyproj.Transformer.from_crs(32617, 4326, always_xy=True)
+    crs = course_crs.export_epsg(export)
+    project = pyproj.Transformer.from_crs(4326, crs, always_xy=True)
+    unproject = pyproj.Transformer.from_crs(crs, 4326, always_xy=True)
     px_x = (extent['xmax'] - extent['xmin']) / width
     px_y = (extent['ymax'] - extent['ymin']) / height
 
@@ -123,7 +125,7 @@ def main():
     ndvi_min = (review.get('method') or {}).get('ndviMin', canopy.NDVI_MIN)
     mask = canopy.classify(ndvi, texture, masked, ndvi_min)
     transform = (extent['xmin'], px_x, 0, extent['ymax'], 0, -px_y)
-    groups = canopy.polygonize(mask, transform)
+    groups = canopy.polygonize(mask, transform, crs)
     canopy_union = unary_union([g for g in groups if g.area >= canopy.MIN_GROUP_M2])
 
     def regions_for(clip):

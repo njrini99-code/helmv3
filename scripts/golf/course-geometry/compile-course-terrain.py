@@ -41,7 +41,7 @@ ORIGINAL_TRIANGLE_ENVELOPE = 20000
 # simplify source boundaries merely to fit the earlier single-hole envelope.
 MAX_TRIANGLES = 40000
 MAX_METRIC_CELLS = 1000000
-SOURCE_CRS = 32617  # WGS84 UTM 17N; horizontal reprojection only, NAVD88 Z retained.
+SOURCE_CRS = 32617  # the CRS exports were cut in before zone parameterisation; new exports use the course's UTM zone (course_crs)
 US_SURVEY_FOOT_TO_METERS = 0.3048006096012192
 # Ground ribbons from the reviewed context layer become breaklines: the mesh
 # gets vertices exactly along each ribbon edge (heights still sampled from the
@@ -63,6 +63,7 @@ def module(name, filename):
 pilot = module('pilot', 'prepare-pilot.py')
 fetch = module('fetch', 'fetch-terrain-pilot.py')
 elevation_raster = module('elevation_raster', 'elevation_raster.py')
+course_crs = module('course_crs', 'course_crs.py')
 
 
 def canonical_json(value):
@@ -289,7 +290,9 @@ def acquire_source(directory, pkg, bounds):
                   'policy': 'No mixed-date or lower-resolution fallback is imported automatically', 'catalog': catalog}
         write_json(directory / 'coverage-exception.json', report, True)
         raise ValueError(report['reason'])
-    project = pyproj.Transformer.from_crs(4326, SOURCE_CRS, always_xy=True)
+    # Horizontal reprojection only, in the course's own UTM zone; NAVD88 Z retained.
+    crs = course_crs.origin_epsg(pkg)
+    project = pyproj.Transformer.from_crs(4326, crs, always_xy=True)
     source_x, source_y = project.transform(lon, lat)
     # Snap projected output pixels to a 1m grid. Never describe render grid
     # density or image enlargement as additional source resolution.
@@ -297,7 +300,7 @@ def acquire_source(directory, pkg, bounds):
     width, height = int(c-a), int(d-b)
     if width*height > 8_000_000 or max(width, height) > 8000:
         raise ValueError('Bounded course export exceeds the fixed 8M pixel cap')
-    inverse = pyproj.Transformer.from_crs(SOURCE_CRS, 4326, always_xy=True)
+    inverse = pyproj.Transformer.from_crs(crs, 4326, always_xy=True)
     # Newest tile first. A catalog footprint is a claim, not evidence: a
     # project tile clipped at a state line still advertises its full square,
     # so every export is checked for empty fill before it is retained.
@@ -305,7 +308,7 @@ def acquire_source(directory, pkg, bounds):
     for tiles in candidates:
         attrs = tiles[0]['attributes']
         object_ids = [row['attributes']['OBJECTID'] for row in tiles]
-        exported = fetch.request('exportImage', {'bbox': f'{a},{b},{c},{d}', 'bboxSR': SOURCE_CRS, 'imageSR': SOURCE_CRS,
+        exported = fetch.request('exportImage', {'bbox': f'{a},{b},{c},{d}', 'bboxSR': crs, 'imageSR': crs,
             'size': f'{width},{height}', 'format': 'tiff', 'pixelType': 'F32', 'interpolation': 'RSP_BilinearInterpolation',
             'renderingRule': json.dumps({'rasterFunction': 'None'}),
             'mosaicRule': json.dumps({'mosaicMethod': 'esriMosaicLockRaster', 'lockRasterIds': object_ids})})
@@ -334,7 +337,7 @@ def acquire_source(directory, pkg, bounds):
         write_json(directory / 'coverage-exception.json', report, True)
         raise ValueError(report['reason'])
     exported.update(selectedObjectId=attrs['OBJECTID'], selectedObjectIds=object_ids, retrievedAt=datetime.now(timezone.utc).date().isoformat(),
-                    sourceProjection=f'EPSG:{SOURCE_CRS}', requestedLocalBoundsM=bounds)
+                    sourceProjection=f'EPSG:{crs}', requestedLocalBoundsM=bounds)
     write_json(directory/'catalog.json', catalog, True)
     write_json(directory/'export.json', exported, True)
     title = attrs['title'] if len(tiles) == 1 else f"{attrs['title']} (+{len(tiles) - 1} adjacent {tile_project(attrs['title'])} tile{'s' if len(tiles) > 2 else ''})"
@@ -343,7 +346,7 @@ def acquire_source(directory, pkg, bounds):
                 'selectedTiles': [row['attributes']['title'] for row in tiles], 'sourceUrl': attrs['URL'],
                 'acquisitionStart': date_text(attrs['StartDate']), 'acquisitionEnd': date_text(attrs['EndDate']),
                 'nativeResolutionM': 1, 'exportPixelM': [(ex['xmax']-ex['xmin'])/width, (ex['ymax']-ex['ymin'])/height],
-                'horizontalExportCrs': f'EPSG:{SOURCE_CRS}', 'verticalDatum': 'NAVD88',
+                'horizontalExportCrs': f'EPSG:{crs}', 'verticalDatum': 'NAVD88',
                 'rawVerticalUnit': 'meter', 'verticalUnitToMeters': 1,
                 'retrievedAt': exported['retrievedAt'],
                 'sourceSelection': 'single_full_coverage_native_1m_tile' if len(tiles) == 1 else 'same_project_adjacent_native_1m_tiles',
@@ -762,7 +765,7 @@ def compile_hole(hole, pkg, raw_shapes, raw_features, displays, outline_reports,
 
 
 def source_readme(pkg, manifest):
-    return f'''# {pkg['name']} whole-course terrain source\n\nOne locked native-1m USGS tile: **{manifest['selectedTitle']}**.\nAcquisition: {manifest['acquisitionStart']} to {manifest['acquisitionEnd']}.\nRetrieved: {manifest['retrievedAt']}. Immutable hashes and exact projected bounds\nare in source-manifest.json and export.json. Do not replace the cached raster.\n\nThe EPSG:{SOURCE_CRS} export is sampled at approximately 1m; the 2m canonical\nmetric grid, 4m tactical mesh, 2m detail cells and coarser outer cells are separate\nrender/query choices, not claims of finer source resolution. Heights remain\nNAVD88 meters. Registration residual and source vertical accuracy are unknown.\n\nNeighbor source features are renderer-only context. No cart paths, rough\nclassification, additional tree areas, daily tee markers or cup positions are\ncreated. Canopy evidence is limited to explicitly reviewed groups, if any.\n\n[USGS 3DEP products and use terms](https://www.usgs.gov/3d-elevation-program/about-3dep-products-services).\nSource geometry attribution remains © OpenStreetMap contributors, ODbL1.0.\n'''
+    return f'''# {pkg['name']} whole-course terrain source\n\nOne locked native-1m USGS tile: **{manifest['selectedTitle']}**.\nAcquisition: {manifest['acquisitionStart']} to {manifest['acquisitionEnd']}.\nRetrieved: {manifest['retrievedAt']}. Immutable hashes and exact projected bounds\nare in source-manifest.json and export.json. Do not replace the cached raster.\n\nThe {manifest.get('horizontalExportCrs', f'EPSG:{SOURCE_CRS}')} export is sampled at approximately 1m; the 2m canonical\nmetric grid, 4m tactical mesh, 2m detail cells and coarser outer cells are separate\nrender/query choices, not claims of finer source resolution. Heights remain\nNAVD88 meters. Registration residual and source vertical accuracy are unknown.\n\nNeighbor source features are renderer-only context. No cart paths, rough\nclassification, additional tree areas, daily tee markers or cup positions are\ncreated. Canopy evidence is limited to explicitly reviewed groups, if any.\n\n[USGS 3DEP products and use terms](https://www.usgs.gov/3d-elevation-program/about-3dep-products-services).\nSource geometry attribution remains © OpenStreetMap contributors, ODbL1.0.\n'''
 
 
 def main():

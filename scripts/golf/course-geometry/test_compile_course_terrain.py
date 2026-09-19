@@ -2,10 +2,12 @@
 import gzip
 import hashlib
 import importlib.util
+import io
 import json
 import math
 import tempfile
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
 from unittest.mock import patch
 
@@ -259,6 +261,78 @@ class TerrainCompilerTest(unittest.TestCase):
             self.assertEqual(a['uncompressedBytes'], len(plain))
             self.assertEqual(a['sha256'], hashlib.sha256(compressed).hexdigest())
             self.assertEqual(a['uncompressedSha256'], hashlib.sha256(plain).hexdigest())
+
+
+class AcquisitionCrsTests(unittest.TestCase):
+    """The export is cut in the course's own UTM zone and the manifest says so;
+    a raster already on disk keeps the CRS it was cut in."""
+
+    def acquire(self, origin):
+        requests, size = [], [48, 48]
+
+        def fake_request(operation, values):
+            requests.append((operation, values))
+            if operation == 'query':
+                return {'features': [{'attributes': {'OBJECTID': 7, 'Name': 'n', 'title': 'USGS 1 Meter 16 x70y422 KY_Statewide_2019_B19', 'URL': 'https://example.invalid/tile',
+                                                     'StartDate': 1546300800000, 'EndDate': 1577750400000, 'Resolution_X': 1, 'VerticalDatum': 'NAVD88'},
+                                      'geometry': {'rings': [[[-180, -90], [180, -90], [180, 90], [-180, 90], [-180, -90]]]}}]}
+            a, b, c, d = (float(v) for v in values['bbox'].split(','))
+            width, height = (int(v) for v in values['size'].split(','))
+            size[:] = [width, height]
+            return {'width': width, 'height': height, 'href': 'https://example.invalid/export.tiff',
+                    'extent': {'xmin': a, 'ymin': b, 'xmax': c, 'ymax': d, 'spatialReference': {'wkid': values['imageSR'], 'latestWkid': values['imageSR']}}}
+
+        def fake_read(href, limit):
+            from PIL import Image
+            buffer = io.BytesIO()
+            Image.fromarray(np.full((size[1], size[0]), 250., dtype=np.float32)).save(buffer, format='TIFF')
+            return buffer.getvalue()
+
+        pkg = {'contentHash': '2' * 64, 'originWgs84': origin, 'name': 'Zone fixture'}
+        compiler.pilot.ORIGIN = origin
+        with tempfile.TemporaryDirectory() as directory, patch.object(compiler.fetch, 'request', fake_request), patch.object(compiler.fetch, 'read', fake_read), \
+                redirect_stdout(io.StringIO()):
+            manifest = compiler.acquire_source(Path(directory), pkg, [-20, -20, 20, 20])
+            export = json.loads((Path(directory) / 'export.json').read_text())
+        return requests, manifest, export
+
+    def test_a_zone_16_course_is_exported_in_utm_16n_and_the_manifest_records_it(self):
+        requests, manifest, export = self.acquire([-84.6087659, 38.1162934])   # Lexington, KY
+        image = next(values for operation, values in requests if operation == 'exportImage')
+        self.assertEqual((image['bboxSR'], image['imageSR']), (32616, 32616))
+        self.assertEqual(manifest['horizontalExportCrs'], 'EPSG:32616')
+        self.assertEqual(export['sourceProjection'], 'EPSG:32616')
+        self.assertEqual(export['extent']['spatialReference']['wkid'], 32616)
+        # The tile query itself is geographic and does not depend on the zone.
+        query = next(values for operation, values in requests if operation == 'query')
+        self.assertEqual((query['inSR'], query['outSR']), (4326, 4326))
+
+    def test_zone_17_courses_keep_the_crs_every_retained_export_was_cut_in(self):
+        _requests, manifest, _export = self.acquire([-78.1467049, 39.1707734])  # Winchester, VA
+        self.assertEqual(manifest['horizontalExportCrs'], 'EPSG:32617')
+
+    def test_the_zone_is_part_of_the_source_identity(self):
+        base = {'fileHashes': {'elevation.tiff': 'a'}, 'requestedLocalBoundsM': [0, 0, 1, 1]}
+        self.assertNotEqual(compiler.source_identity({**base, 'horizontalExportCrs': 'EPSG:32616'}),
+                            compiler.source_identity({**base, 'horizontalExportCrs': 'EPSG:32617'}))
+
+
+class CourseCrsTests(unittest.TestCase):
+    crs = compiler.course_crs
+
+    def test_utm_epsg_follows_longitude_and_hemisphere(self):
+        self.assertEqual(self.crs.utm_epsg(-78.3, 39.5), 32617)     # Cacapon
+        self.assertEqual(self.crs.utm_epsg(-84.6, 38.1), 32616)     # Lexington
+        self.assertEqual(self.crs.utm_epsg(-77.8, 34.2), 32618)     # Wilmington
+        self.assertEqual(self.crs.utm_epsg(-78.0, 34.0), 32618)     # the zone edge belongs to the eastern zone
+        self.assertEqual(self.crs.utm_epsg(151.2, -33.9), 32756)    # Sydney: southern hemisphere
+        self.assertEqual(self.crs.origin_epsg({'originWgs84': [-79.744, 42.06]}), 32617)
+
+    def test_export_epsg_reads_the_spatial_reference_and_defaults_to_the_legacy_zone(self):
+        self.assertEqual(self.crs.export_epsg({'extent': {'spatialReference': {'wkid': 32616}}}), 32616)
+        self.assertEqual(self.crs.export_epsg({'extent': {'spatialReference': {'wkid': 102100, 'latestWkid': 3857}}}), 3857)
+        self.assertEqual(self.crs.export_epsg({'extent': {'xmin': 0}}), 32617)
+        self.assertEqual(self.crs.export_epsg(None), 32617)
 
 
 if __name__ == '__main__':

@@ -17,11 +17,6 @@ from .fingerprints import (
 
 SCRIPTS_DIR = 'scripts/golf/course-geometry'
 PILOT_HOLE_COUNT = 18          # prepare-osm-course.py builds 18-hole packages only
-SUPPORTED_UTM_ZONE = 17        # the compilers project to EPSG:32617; other zones wait for PR C
-
-
-def utm_zone(lon):
-    return int((lon + 180) // 6) + 1
 
 
 _COMPILERS = {}

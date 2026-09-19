@@ -5,7 +5,7 @@ an ambiguous set blocks with the candidates as evidence and nothing guesses."""
 import json
 import os
 
-from ..context import PILOT_HOLE_COUNT, SUPPORTED_UTM_ZONE, utm_zone
+from ..context import PILOT_HOLE_COUNT
 from ..fingerprints import (
     content_hash_matches,
     digest,
@@ -153,10 +153,6 @@ def eval_terrain_acquire(node, ctx):
     except ImportError as exc:
         blockers.append(blocked('TOOL_MISSING', tool=exc.name or 'python geometry stack', detail=f'compile-course-terrain.py needs it to size the terrain request: {exc}'))
     inputs = {'footprint': footprint, 'origin': digest(facility.get('originWgs84')), 'providers': digest(providers)}
-    origin = facility.get('originWgs84') or [None, None]
-    zone = utm_zone(origin[0]) if origin[0] is not None else None
-    if zone != SUPPORTED_UTM_ZONE:
-        blockers.append(blocked('UTM_ZONE_UNSUPPORTED', zone=zone, supported=SUPPORTED_UTM_ZONE, detail='the compilers project to EPSG:32617 (PR C parameterises the zone)'))
     if not any(p in USGS_PROVIDERS for p in providers):
         blockers.append(blocked('TERRAIN_ADAPTER_MISSING', providers=providers, available=list(USGS_PROVIDERS)))
     if blockers:

@@ -20,6 +20,7 @@ Usage:
 """
 import argparse
 import hashlib
+import importlib.util
 import json
 import urllib.parse
 import urllib.request
@@ -34,6 +35,16 @@ from scipy import ndimage
 from shapely import wkb
 from shapely.geometry import LineString, Polygon, box
 from shapely.ops import unary_union
+
+
+def _sibling(name, filename):
+    spec = importlib.util.spec_from_file_location(name, Path(__file__).with_name(filename))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+course_crs = _sibling('course_crs', 'course_crs.py')
 
 gdal.UseExceptions()
 NAIP = 'https://apps.geo.fpac.usda.gov/geo-imagery/rest/services/naip/conus_naip/ImageServer'
@@ -114,13 +125,14 @@ def acquire(directory, extent, size):
             raise ValueError('Retained NAIP export does not match its manifest hash')
         return manifest
     directory.mkdir(parents=True, exist_ok=True)
-    query = {'f': 'json', 'geometry': json.dumps({**extent, 'spatialReference': {'wkid': 32617}}),
-             'geometryType': 'esriGeometryEnvelope', 'inSR': 32617, 'spatialRel': 'esriSpatialRelIntersects',
+    crs = course_crs.export_epsg({'extent': extent})
+    query = {'f': 'json', 'geometry': json.dumps({**extent, 'spatialReference': {'wkid': crs}}),
+             'geometryType': 'esriGeometryEnvelope', 'inSR': crs, 'spatialRel': 'esriSpatialRelIntersects',
              'returnGeometry': 'false', 'outFields': 'OBJECTID,Name,Category', 'where': 'Category=1'}
     catalog = json.loads(read(NAIP + '/query?' + urllib.parse.urlencode(query), 2_000_000))
     tiles = sorted(row['attributes']['Name'] for row in catalog.get('features', []) if row['attributes']['Name'].startswith('m_'))
     params = {'f': 'image', 'bbox': f"{extent['xmin']},{extent['ymin']},{extent['xmax']},{extent['ymax']}",
-              'bboxSR': 32617, 'imageSR': 32617, 'size': f'{size[0]},{size[1]}', 'format': 'tiff',
+              'bboxSR': crs, 'imageSR': crs, 'size': f'{size[0]},{size[1]}', 'format': 'tiff',
               'pixelType': 'U8', 'bandIds': '0,1,2,3', 'interpolation': 'RSP_NearestNeighbor'}
     raster = read(NAIP + '/exportImage?' + urllib.parse.urlencode(params), MAX_BYTES)
     (directory / 'naip.tif').write_bytes(raster)
@@ -138,12 +150,12 @@ def acquire(directory, extent, size):
     return manifest
 
 
-def polygonize(mask, transform):
+def polygonize(mask, transform, epsg=course_crs.LEGACY_EPSG):
     """Vectorize a boolean mask through GDAL; return shapely polygons in raster CRS."""
     driver = gdal.GetDriverByName('MEM')
     dataset = driver.Create('', mask.shape[1], mask.shape[0], 1, gdal.GDT_Byte)
     dataset.SetGeoTransform(transform)
-    srs = osr.SpatialReference(); srs.ImportFromEPSG(32617); dataset.SetProjection(srs.ExportToWkt())
+    srs = osr.SpatialReference(); srs.ImportFromEPSG(epsg); dataset.SetProjection(srs.ExportToWkt())
     band = dataset.GetRasterBand(1); band.WriteArray(mask.astype(np.uint8))
     memory = ogr.GetDriverByName('MEM').CreateDataSource('')
     layer = memory.CreateLayer('canopy', srs, ogr.wkbPolygon)
@@ -177,8 +189,10 @@ def main():
     ndvi = (nir - red) / (nir + red + 1e-6)
     texture = ndimage.generic_filter(nir, np.std, size=7)
 
-    project = pyproj.Transformer.from_crs(4326, 32617, always_xy=True)
-    unproject = pyproj.Transformer.from_crs(32617, 4326, always_xy=True)
+    # The terrain export's CRS, whichever zone it was cut in.
+    crs = course_crs.export_epsg(export)
+    project = pyproj.Transformer.from_crs(4326, crs, always_xy=True)
+    unproject = pyproj.Transformer.from_crs(crs, 4326, always_xy=True)
     px_x = (extent['xmax'] - extent['xmin']) / width
     px_y = (extent['ymax'] - extent['ymin']) / height
 
@@ -204,7 +218,7 @@ def main():
     canopy = classify(ndvi, texture, masked, calibration['ndviMin'])
 
     transform = (extent['xmin'], px_x, 0, extent['ymax'], 0, -px_y)
-    groups = polygonize(canopy, transform)
+    groups = polygonize(canopy, transform, crs)
     canopy_union = unary_union([g for g in groups if g.area >= MIN_GROUP_M2])
 
     regions = []

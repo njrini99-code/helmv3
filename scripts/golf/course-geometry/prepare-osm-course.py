@@ -12,11 +12,22 @@ Usage:
 import argparse
 import gzip
 import hashlib
+import importlib.util
 import json
 from pathlib import Path
 
 import pyproj
 from shapely.geometry import LineString, Point, Polygon
+
+
+def _sibling(name, filename):
+    spec = importlib.util.spec_from_file_location(name, Path(__file__).with_name(filename))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+course_crs = _sibling('course_crs', 'course_crs.py')
 
 TRACE_SMOOTHING_M = 6  # corner radius for imagery traces; inside every stated accuracy
 
@@ -72,7 +83,10 @@ def main():
     if not (len(card['routeWayIds']) == len(card['pars']) == len(card['scorecardYards']) == 18):
         raise ValueError('The selected course must supply exactly 18 route IDs, pars, and scorecard yardages')
 
-    project = pyproj.Transformer.from_crs(4326, 32617, always_xy=True)
+    # Metric work happens in the course's own UTM zone; the package itself
+    # stays in the local ENU frame about the card's origin.
+    crs = course_crs.origin_epsg(card)
+    project = pyproj.Transformer.from_crs(4326, crs, always_xy=True)
     ways = {element['id']: element for element in raw.get('elements', []) if element.get('type') == 'way'}
     routes = []
     for ordinal, (way_id, par) in enumerate(zip(card['routeWayIds'], card['pars']), start=1):
@@ -202,7 +216,7 @@ def main():
         if traces.get('kind') != 'golfhelm-imagery-traces-v1' or traces.get('siteId') != card['siteId']:
             raise ValueError('Trace file does not belong to this course')
         trace_source = 'naip-trace-' + traces['tracedAt']
-        unproject = pyproj.Transformer.from_crs(32617, 4326, always_xy=True)
+        unproject = pyproj.Transformer.from_crs(crs, 4326, always_xy=True)
         hole_by_key = {hole['key']: hole for hole in package['holes']}
         row_by_hole = {row['hole']: row for row in association_rows}
         for trace in traces['features']:
