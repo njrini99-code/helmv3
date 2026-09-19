@@ -164,4 +164,11 @@ describe('three-renderer shadow-bake and precompile discipline (Tasks 20–21, �
     }
     expect(sharedLut.listeners()).toBe(0);
   });
+
+  it('tripwire: the shared-LUT release is a three r186 workaround and goes with the upgrade', () => {
+    // mrdoob/three.js#34530 ships in r187 (`WebGLTextures.dispose()` detaches
+    // every listener). When this fails, delete `releaseSharedDfgLut` and the
+    // two tests above rather than raising the bound.
+    expect(Number(three.actual!.REVISION), 'three ≥ 0.187 fixes #34519 upstream: remove releaseSharedDfgLut from three-renderer.ts').toBeLessThan(187);
+  });
 });
