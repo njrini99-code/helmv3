@@ -1,0 +1,104 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "grande-dunes-resort-club-gold",
+  "layoutId": "grande-dunes-resort-club",
+  "teeName": "Gold",
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-13",
+    "note": "Helm read-only course library snapshot; current card, not surveyed tee markers"
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 4,
+      "yards": 455
+    },
+    {
+      "hole": 2,
+      "par": 3,
+      "yards": 209
+    },
+    {
+      "hole": 3,
+      "par": 4,
+      "yards": 475
+    },
+    {
+      "hole": 4,
+      "par": 5,
+      "yards": 572
+    },
+    {
+      "hole": 5,
+      "par": 4,
+      "yards": 454
+    },
+    {
+      "hole": 6,
+      "par": 4,
+      "yards": 356
+    },
+    {
+      "hole": 7,
+      "par": 5,
+      "yards": 551
+    },
+    {
+      "hole": 8,
+      "par": 3,
+      "yards": 239
+    },
+    {
+      "hole": 9,
+      "par": 4,
+      "yards": 471
+    },
+    {
+      "hole": 10,
+      "par": 4,
+      "yards": 455
+    },
+    {
+      "hole": 11,
+      "par": 3,
+      "yards": 192
+    },
+    {
+      "hole": 12,
+      "par": 4,
+      "yards": 449
+    },
+    {
+      "hole": 13,
+      "par": 5,
+      "yards": 551
+    },
+    {
+      "hole": 14,
+      "par": 3,
+      "yards": 217
+    },
+    {
+      "hole": 15,
+      "par": 4,
+      "yards": 468
+    },
+    {
+      "hole": 16,
+      "par": 4,
+      "yards": 417
+    },
+    {
+      "hole": 17,
+      "par": 5,
+      "yards": 573
+    },
+    {
+      "hole": 18,
+      "par": 4,
+      "yards": 442
+    }
+  ]
+}

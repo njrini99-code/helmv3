@@ -89,8 +89,12 @@ def hole_subhashes(package, hole, context=None, review_overlay=None):
     source = [[f['id'], sorted(f.get('sourceIds') or [])] for f in features]
     review = [[f['id'], bool(f.get('reviewed')), f.get('accuracyMeters')] for f in features]
     if review_overlay:
+        # Only decisions about this hole's features enter its hash: an overlay
+        # that says nothing about a hole leaves that hole alone.
         ids = {f['id'] for f in features}
-        review.append([[d.get('featureId'), d.get('action'), digest(d)] for d in review_overlay.get('decisions', []) if d.get('featureId') in ids])
+        decisions = [[d.get('featureId'), d.get('action'), digest(d)] for d in review_overlay.get('decisions', []) if d.get('featureId') in ids]
+        if decisions:
+            review.append(decisions)
     zones = sorted(hole_zones(context, hole_key), key=lambda z: z['id'])
     context_rows = [[z['id'], z.get('class'), z.get('geometryWgs84'), z.get('fidelity'), z.get('attributes')] for z in zones]
     frame = {'originWgs84': package.get('originWgs84'), 'projection': package.get('projection')}
@@ -114,3 +118,13 @@ def hole_subhashes(package, hole, context=None, review_overlay=None):
 
 def package_subhashes(package, context=None, review_overlay=None):
     return {hole['key']: hole_subhashes(package, hole, context, review_overlay) for hole in package.get('holes', [])}
+
+
+def terrain_source_identity(manifest):
+    """What makes a terrain source the same source: the retained files and
+    the request bounds. The compiler's own `sourceManifestHash` also covers
+    the list of package hashes the raster has served, which changes with
+    every package revision although not one height did."""
+    if not manifest:
+        return None
+    return digest({'fileHashes': manifest.get('fileHashes'), 'bounds': manifest.get('requestedLocalBoundsM'), 'crs': manifest.get('horizontalExportCrs')})

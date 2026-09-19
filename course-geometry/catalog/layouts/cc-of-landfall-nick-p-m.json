@@ -1,0 +1,71 @@
+{
+  "schema": "golfhelm-layout-v1",
+  "layoutId": "cc-of-landfall-nick-p-m",
+  "facilityId": "landfall-country-club-golf-course",
+  "name": "CC of Landfall (Nick-P/M)",
+  "siteIds": [
+    "osm-way-524540524"
+  ],
+  "segments": {
+    "main": {
+      "holes": [
+        "cc-of-landfall-nick-p-m-01",
+        "cc-of-landfall-nick-p-m-02",
+        "cc-of-landfall-nick-p-m-03",
+        "cc-of-landfall-nick-p-m-04",
+        "cc-of-landfall-nick-p-m-05",
+        "cc-of-landfall-nick-p-m-06",
+        "cc-of-landfall-nick-p-m-07",
+        "cc-of-landfall-nick-p-m-08",
+        "cc-of-landfall-nick-p-m-09",
+        "cc-of-landfall-nick-p-m-10",
+        "cc-of-landfall-nick-p-m-11",
+        "cc-of-landfall-nick-p-m-12",
+        "cc-of-landfall-nick-p-m-13",
+        "cc-of-landfall-nick-p-m-14",
+        "cc-of-landfall-nick-p-m-15",
+        "cc-of-landfall-nick-p-m-16",
+        "cc-of-landfall-nick-p-m-17",
+        "cc-of-landfall-nick-p-m-18"
+      ]
+    }
+  },
+  "segmentOrder": [
+    "main"
+  ],
+  "holeOrder": [
+    "cc-of-landfall-nick-p-m-01",
+    "cc-of-landfall-nick-p-m-02",
+    "cc-of-landfall-nick-p-m-03",
+    "cc-of-landfall-nick-p-m-04",
+    "cc-of-landfall-nick-p-m-05",
+    "cc-of-landfall-nick-p-m-06",
+    "cc-of-landfall-nick-p-m-07",
+    "cc-of-landfall-nick-p-m-08",
+    "cc-of-landfall-nick-p-m-09",
+    "cc-of-landfall-nick-p-m-10",
+    "cc-of-landfall-nick-p-m-11",
+    "cc-of-landfall-nick-p-m-12",
+    "cc-of-landfall-nick-p-m-13",
+    "cc-of-landfall-nick-p-m-14",
+    "cc-of-landfall-nick-p-m-15",
+    "cc-of-landfall-nick-p-m-16",
+    "cc-of-landfall-nick-p-m-17",
+    "cc-of-landfall-nick-p-m-18"
+  ],
+  "routeWayIds": null,
+  "bboxWgs84": null,
+  "capabilityTier": "C0",
+  "externalBindings": {
+    "golfCourseIds": [
+      "45561342-4746-4e80-860f-553cfa6853d2"
+    ]
+  },
+  "scorecardProfiles": [
+    "cc-of-landfall-nick-p-m-black"
+  ],
+  "geometry": null,
+  "notes": [
+    "3 completed cohort rounds (2026-09-13); intake wrote this manifest at C0 with routes unresolved."
+  ]
+}

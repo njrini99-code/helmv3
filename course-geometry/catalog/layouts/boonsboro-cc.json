@@ -1,0 +1,71 @@
+{
+  "schema": "golfhelm-layout-v1",
+  "layoutId": "boonsboro-cc",
+  "facilityId": "boonsboro-country-club",
+  "name": "Boonsboro CC",
+  "siteIds": [
+    "osm-way-518032130"
+  ],
+  "segments": {
+    "main": {
+      "holes": [
+        "boonsboro-cc-01",
+        "boonsboro-cc-02",
+        "boonsboro-cc-03",
+        "boonsboro-cc-04",
+        "boonsboro-cc-05",
+        "boonsboro-cc-06",
+        "boonsboro-cc-07",
+        "boonsboro-cc-08",
+        "boonsboro-cc-09",
+        "boonsboro-cc-10",
+        "boonsboro-cc-11",
+        "boonsboro-cc-12",
+        "boonsboro-cc-13",
+        "boonsboro-cc-14",
+        "boonsboro-cc-15",
+        "boonsboro-cc-16",
+        "boonsboro-cc-17",
+        "boonsboro-cc-18"
+      ]
+    }
+  },
+  "segmentOrder": [
+    "main"
+  ],
+  "holeOrder": [
+    "boonsboro-cc-01",
+    "boonsboro-cc-02",
+    "boonsboro-cc-03",
+    "boonsboro-cc-04",
+    "boonsboro-cc-05",
+    "boonsboro-cc-06",
+    "boonsboro-cc-07",
+    "boonsboro-cc-08",
+    "boonsboro-cc-09",
+    "boonsboro-cc-10",
+    "boonsboro-cc-11",
+    "boonsboro-cc-12",
+    "boonsboro-cc-13",
+    "boonsboro-cc-14",
+    "boonsboro-cc-15",
+    "boonsboro-cc-16",
+    "boonsboro-cc-17",
+    "boonsboro-cc-18"
+  ],
+  "routeWayIds": null,
+  "bboxWgs84": null,
+  "capabilityTier": "C0",
+  "externalBindings": {
+    "golfCourseIds": [
+      "45570b51-7d2c-4b12-b7a4-f141eb3b00be"
+    ]
+  },
+  "scorecardProfiles": [
+    "boonsboro-cc-lynchburg-womens-golf"
+  ],
+  "geometry": null,
+  "notes": [
+    "7 completed cohort rounds (2026-09-13); intake wrote this manifest at C0 with routes unresolved."
+  ]
+}

@@ -52,6 +52,43 @@ explicitly RGB-only and cannot supply NIR-derived claims. A partial Cardinal
 green study stays unbound until actual tee/fairway/route/hole identity and
 license/review evidence are complete.
 
+### Course factory build engine (Factory v2 PR B, 2026-09-19)
+
+`scripts/golf/course-geometry/course-factory.py` (package `factory/`) is the
+local build engine for course geometry. It reads `course-geometry/catalog/`,
+builds a facility → layout → hole task DAG, fingerprints every task from its
+direct inputs plus task version and implementation-file hashes (never git
+HEAD), keeps a disposable ledger at `output/course-geometry/factory/state.sqlite`,
+verifies artifacts before calling anything cached, and explains every state
+with a stable reason code. It wraps the existing scripts (`fetch-osm-*`,
+`prepare-osm-course.py`, `compile-course-terrain.py --acquire-only`,
+`derive-canopy-naip.py`, `review-course-imagery.py`, `prepare-context-layer.py`,
+`build-course-world.py`) and never rewrites their geometry. Contract points:
+
+- It writes only under its output root; it never writes `public/`, the
+  registry, feature flags or production. `layout.publish.prepare` adopts an
+  already-published manifest or blocks on `PUBLISH_NOT_APPROVED`.
+- Route identity is proposed only when every played hole has one unique
+  `golf=hole` ref inside the layout's site polygon (`osm_ref_unique`, queued
+  for human `route_confirmation`); a missing or repeated number blocks with
+  `ROUTE_WAY_IDS_REQUIRED` and the candidate list as evidence.
+- A terrain source's identity is `{fileHashes, requestedLocalBoundsM, crs}`
+  (`terrain_source_identity`); the compiler stamps the same `sourceIdentity`
+  into `asset-manifest.json` and refuses an output directory whose identity
+  differs. The compiler's full `sourceManifestHash` still changes with every
+  package the raster serves and must not gate reuse.
+- Per-hole bookkeeping hashes (`hole-subhashes.json`) keep yardage/par edits
+  out of terrain inputs and a review-overlay decision on one hole's features
+  out of the others.
+- Facility and layout manifests may carry `retained: {kind: path}` maps that
+  point the factory at checked-in evidence (`osm`, `osmContext`, `terrain`,
+  `compiled`, `context`, `canopyReview`, `imageryReview`, …); Peek'n Peak
+  Upper is the reference and adopts 27 nodes from fixtures.
+- The 18-hole and UTM 17N limits of the wrapped scripts surface as
+  `HOLE_COUNT_UNSUPPORTED` and `UTM_ZONE_UNSUPPORTED`; NC courses without a
+  1 m USGS tile carry `providerPolicy.terrain: [nc_onemap_dem03]` and block on
+  `TERRAIN_ADAPTER_MISSING` until PR C.
+
 The current round flow uses a wizard for setup, hole configuration, shot capture, and submit. Draft save and continue routes support in-progress rounds. Database auto-save and confirmed per-hole checkpoints are the reliable path. The dashboard-level v2 sync engine drains the legacy IndexedDB bridge only for failed final submissions; normal Continue Round auto-saves must not write a second per-shot v1 queue.
 
 As of 2026-08-22, a failed hole or shot child write preserves the parent

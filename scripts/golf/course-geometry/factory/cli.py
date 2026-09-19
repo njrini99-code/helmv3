@@ -1,5 +1,6 @@
 """`course-factory.py` — doctor · plan · run · status · why · invalidate."""
 import argparse
+import glob
 import importlib
 import json
 import os
@@ -7,15 +8,24 @@ import platform
 import shutil
 import subprocess
 import sys
+import uuid
 
 from . import disk
+from .adapters import DEFAULT_EXECUTORS
 from .catalog import load_catalog
 from .context import Context
 from .graph import build_graph
 from .ledger import Ledger, now_iso
 from .planner import apply_disk_guard, plan, why
 from .reasons import describe
-from .report import golden_rows, plan_json, render_plan, render_status, status_json, write_run_report
+from .report import (
+    golden_rows,
+    plan_json,
+    render_plan,
+    render_status,
+    status_json,
+    write_run_report,
+)
 from .runner import Run, execute, git_head, select_keys
 from .tasks import default_specs
 
@@ -62,6 +72,13 @@ def build_parser():
     w.add_argument('--layout', required=True)
     w.add_argument('--task', required=True)
     w.add_argument('--hole', type=int)
+    k = sub.add_parser('intake', help='catalog the usage cohort, most-played first (C0 manifests; never overwrites)')
+    k.add_argument('--cohort', default='src/test/fixtures/course-geometry/course-cohort-2026-09-13.json')
+    k.add_argument('--coverage', default='output/course-geometry/library-coverage/coverage.json')
+    k.add_argument('--scorecards', default='src/test/fixtures/course-geometry/cohort-scorecards.json')
+    k.add_argument('--min-rounds', type=int, default=1)
+    k.add_argument('--write', action='store_true', help='write the new catalog manifests (default: report only)')
+    k.add_argument('--json', action='store_true')
     i = sub.add_parser('invalidate')
     i.add_argument('--layout', required=True)
     i.add_argument('--task', required=True)
@@ -78,7 +95,10 @@ class Session:
         self.catalog = load_catalog(self.catalog_root)
         self.specs = default_specs(spec_overrides)
         self.ledger = ledger if ledger is not None else Ledger(os.path.join(self.output_root, 'state.sqlite'))
-        self.ctx = Context(self.repo_root, self.catalog, self.output_root, self.ledger, adopt_output=not args.no_adopt_output, executors=executors)
+        # Injected executors (tests) replace the real adapters wholesale, so a
+        # test never reaches a script or the network by accident.
+        self.ctx = Context(self.repo_root, self.catalog, self.output_root, self.ledger, adopt_output=not args.no_adopt_output,
+                           executors=executors if executors is not None else dict(DEFAULT_EXECUTORS))
 
     def graph(self, layout=None, facility=None, holes=None):
         layouts = [layout] if layout else None
@@ -101,7 +121,7 @@ def cmd_doctor(session, args, out):
         try:
             value = fn()
             checks.append({'check': name, 'ok': bool(value), 'detail': value if isinstance(value, str) else ('present' if value else 'missing'), 'required': required})
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:  # noqa: BLE001 - a probe reports any failure as a missing tool
             checks.append({'check': name, 'ok': False, 'detail': str(exc)[:120], 'required': required})
 
     def module(name):
@@ -116,9 +136,9 @@ def cmd_doctor(session, args, out):
             if not path:
                 return None
             try:
-                res = subprocess.run([path, *args], capture_output=True, text=True, timeout=10)
+                res = subprocess.run([path, *args], capture_output=True, text=True, timeout=10, check=False)
                 return (res.stdout or res.stderr).strip().splitlines()[0][:80] if (res.stdout or res.stderr) else path
-            except Exception:
+            except Exception:  # noqa: BLE001 - a version probe that fails still proves the binary exists
                 return path
         return go
 
@@ -133,7 +153,8 @@ def cmd_doctor(session, args, out):
     probe('tsx', lambda: os.path.isfile(os.path.join(session.repo_root, 'node_modules', '.bin', 'tsx')))
     probe('playwright', lambda: os.path.isfile(os.path.join(session.repo_root, 'node_modules', 'playwright', 'package.json')))
     probe('osmium (optional)', binary('osmium'))
-    probe('qgis (optional)', lambda: next((p for p in ('/Applications',) for _ in [0] for p in [__import__('glob').glob('/Applications/QGIS*.app')] if p), None) and 'present')
+    probe('blender (optional)', binary('blender'))
+    probe('qgis (optional)', lambda: 'present' if glob.glob('/Applications/QGIS*.app') else None)
     free = disk.free_bytes(session.output_root)
     checks.append({'check': 'free disk', 'ok': free > disk.reserve_bytes(), 'detail': f'{disk.gb(free)} GB free, reserve {disk.gb(disk.reserve_bytes())} GB', 'required': True})
     catalog = session.catalog
@@ -166,7 +187,7 @@ def cmd_run(session, args, out):
     keys = select_keys(graph, until=args.until, task=args.task)
     if holes:
         keys = {k for k in keys if graph.nodes[k].scope.kind != 'layout' or not any(d.startswith('hole.') for d in graph.nodes[k].spec.deps)}
-    run_id = 'run-' + now_iso().replace(':', '').replace('-', '')
+    run_id = 'run-' + now_iso().replace(':', '').replace('-', '')[:15] + '-' + uuid.uuid4().hex[:6]
     run = Run(run_id=run_id, out_dir=os.path.join(session.output_root, 'runs', run_id))
     command = ' '.join(sys.argv[1:]) if sys.argv else 'run'
     session.ledger.begin_run(run_id, command, git_head(session.repo_root))
@@ -231,6 +252,33 @@ def cmd_why(session, args, out):
     return 0 if key in by_key else 1
 
 
+def cmd_intake(session, args, out):
+    from .intake import build_entries, render, write_entries
+
+    def read(path):
+        path = path if os.path.isabs(path) else os.path.join(session.repo_root, path)
+        if not os.path.isfile(path):
+            raise SystemExit(f'missing input {path}')
+        with open(path, encoding='utf-8') as f:
+            return json.load(f)
+
+    rows = build_entries(read(args.cohort), read(args.coverage), read(args.scorecards), session.catalog, args.min_rounds)
+    written = write_entries(session.catalog_root, rows) if args.write else []
+    if args.json:
+        out.write(json.dumps({'rows': [{k: v for k, v in r.items() if k != 'docs'} for r in rows], 'written': [session.ctx.relpath(w) for w in written]}, indent=1) + '\n')
+    else:
+        out.write(render(rows) + '\n')
+        counts = {}
+        for r in rows:
+            counts[r['status']] = counts.get(r['status'], 0) + 1
+        out.write('totals: ' + ', '.join(f'{k} {v}' for k, v in sorted(counts.items())) + '\n')
+        if args.write:
+            out.write(f'wrote {len(written)} manifest(s)\n' + ''.join(f'  {session.ctx.relpath(w)}\n' for w in written))
+        elif any(r['status'] == 'ready_to_write' for r in rows):
+            out.write('re-run with --write to add the ready_to_write rows to the catalog\n')
+    return 0
+
+
 def cmd_invalidate(session, args, out):
     key = node_key(session, args)
     scope = key.split('[', 1)[1].rstrip(']')
@@ -239,7 +287,7 @@ def cmd_invalidate(session, args, out):
     return 0
 
 
-COMMANDS = {'doctor': cmd_doctor, 'plan': cmd_plan, 'run': cmd_run, 'status': cmd_status, 'why': cmd_why, 'invalidate': cmd_invalidate}
+COMMANDS = {'doctor': cmd_doctor, 'plan': cmd_plan, 'run': cmd_run, 'status': cmd_status, 'why': cmd_why, 'invalidate': cmd_invalidate, 'intake': cmd_intake}
 
 
 def main(argv=None, out=None, ledger=None, executors=None, spec_overrides=None):

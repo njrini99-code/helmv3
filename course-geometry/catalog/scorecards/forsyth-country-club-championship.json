@@ -1,0 +1,104 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "forsyth-country-club-championship",
+  "layoutId": "forsyth-country-club",
+  "teeName": "Championship",
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-13",
+    "note": "Helm read-only course library snapshot; current card, not surveyed tee markers"
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 4,
+      "yards": 376
+    },
+    {
+      "hole": 2,
+      "par": 4,
+      "yards": 334
+    },
+    {
+      "hole": 3,
+      "par": 3,
+      "yards": 186
+    },
+    {
+      "hole": 4,
+      "par": 4,
+      "yards": 406
+    },
+    {
+      "hole": 5,
+      "par": 5,
+      "yards": 531
+    },
+    {
+      "hole": 6,
+      "par": 4,
+      "yards": 443
+    },
+    {
+      "hole": 7,
+      "par": 3,
+      "yards": 194
+    },
+    {
+      "hole": 8,
+      "par": 5,
+      "yards": 543
+    },
+    {
+      "hole": 9,
+      "par": 4,
+      "yards": 417
+    },
+    {
+      "hole": 10,
+      "par": 4,
+      "yards": 329
+    },
+    {
+      "hole": 11,
+      "par": 3,
+      "yards": 207
+    },
+    {
+      "hole": 12,
+      "par": 4,
+      "yards": 394
+    },
+    {
+      "hole": 13,
+      "par": 4,
+      "yards": 381
+    },
+    {
+      "hole": 14,
+      "par": 3,
+      "yards": 171
+    },
+    {
+      "hole": 15,
+      "par": 5,
+      "yards": 500
+    },
+    {
+      "hole": 16,
+      "par": 4,
+      "yards": 433
+    },
+    {
+      "hole": 17,
+      "par": 4,
+      "yards": 403
+    },
+    {
+      "hole": 18,
+      "par": 4,
+      "yards": 375
+    }
+  ]
+}

@@ -1,0 +1,104 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "cc-of-landfall-nick-p-m-black",
+  "layoutId": "cc-of-landfall-nick-p-m",
+  "teeName": "Black",
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-13",
+    "note": "Helm read-only course library snapshot; current card, not surveyed tee markers"
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 4,
+      "yards": 468
+    },
+    {
+      "hole": 2,
+      "par": 5,
+      "yards": 536
+    },
+    {
+      "hole": 3,
+      "par": 3,
+      "yards": 158
+    },
+    {
+      "hole": 4,
+      "par": 4,
+      "yards": 346
+    },
+    {
+      "hole": 5,
+      "par": 4,
+      "yards": 426
+    },
+    {
+      "hole": 6,
+      "par": 3,
+      "yards": 200
+    },
+    {
+      "hole": 7,
+      "par": 4,
+      "yards": 353
+    },
+    {
+      "hole": 8,
+      "par": 5,
+      "yards": 507
+    },
+    {
+      "hole": 9,
+      "par": 4,
+      "yards": 427
+    },
+    {
+      "hole": 10,
+      "par": 4,
+      "yards": 378
+    },
+    {
+      "hole": 11,
+      "par": 3,
+      "yards": 191
+    },
+    {
+      "hole": 12,
+      "par": 4,
+      "yards": 469
+    },
+    {
+      "hole": 13,
+      "par": 4,
+      "yards": 420
+    },
+    {
+      "hole": 14,
+      "par": 5,
+      "yards": 527
+    },
+    {
+      "hole": 15,
+      "par": 3,
+      "yards": 186
+    },
+    {
+      "hole": 16,
+      "par": 4,
+      "yards": 401
+    },
+    {
+      "hole": 17,
+      "par": 5,
+      "yards": 506
+    },
+    {
+      "hole": 18,
+      "par": 4,
+      "yards": 433
+    }
+  ]
+}

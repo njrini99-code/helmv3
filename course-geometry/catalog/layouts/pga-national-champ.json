@@ -1,0 +1,71 @@
+{
+  "schema": "golfhelm-layout-v1",
+  "layoutId": "pga-national-champ",
+  "facilityId": "pga-national-resort",
+  "name": "PGA National - Champ",
+  "siteIds": [
+    "osm-way-1483954804"
+  ],
+  "segments": {
+    "main": {
+      "holes": [
+        "pga-national-champ-01",
+        "pga-national-champ-02",
+        "pga-national-champ-03",
+        "pga-national-champ-04",
+        "pga-national-champ-05",
+        "pga-national-champ-06",
+        "pga-national-champ-07",
+        "pga-national-champ-08",
+        "pga-national-champ-09",
+        "pga-national-champ-10",
+        "pga-national-champ-11",
+        "pga-national-champ-12",
+        "pga-national-champ-13",
+        "pga-national-champ-14",
+        "pga-national-champ-15",
+        "pga-national-champ-16",
+        "pga-national-champ-17",
+        "pga-national-champ-18"
+      ]
+    }
+  },
+  "segmentOrder": [
+    "main"
+  ],
+  "holeOrder": [
+    "pga-national-champ-01",
+    "pga-national-champ-02",
+    "pga-national-champ-03",
+    "pga-national-champ-04",
+    "pga-national-champ-05",
+    "pga-national-champ-06",
+    "pga-national-champ-07",
+    "pga-national-champ-08",
+    "pga-national-champ-09",
+    "pga-national-champ-10",
+    "pga-national-champ-11",
+    "pga-national-champ-12",
+    "pga-national-champ-13",
+    "pga-national-champ-14",
+    "pga-national-champ-15",
+    "pga-national-champ-16",
+    "pga-national-champ-17",
+    "pga-national-champ-18"
+  ],
+  "routeWayIds": null,
+  "bboxWgs84": null,
+  "capabilityTier": "C0",
+  "externalBindings": {
+    "golfCourseIds": [
+      "2e402439-f096-4b97-91ab-2dfba12bb8e0"
+    ]
+  },
+  "scorecardProfiles": [
+    "pga-national-champ-white"
+  ],
+  "geometry": null,
+  "notes": [
+    "2 completed cohort rounds (2026-09-13); intake wrote this manifest at C0 with routes unresolved."
+  ]
+}

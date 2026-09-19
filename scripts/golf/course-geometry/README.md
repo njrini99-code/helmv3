@@ -336,3 +336,33 @@ with `pack-manifest.json` (§102) beside the holes. The runtime compiles the
 artifact itself when none is supplied (`data-meridian-code="MERIDIAN_ARTIFACT_MISSING"`)
 and refuses one whose package, terrain, hole, style or vertex layout disagree
 (`MERIDIAN_ARTIFACT_MISMATCH`, static fallback).
+
+## Course factory (Factory v2 PR B, September 19, 2026)
+
+`course-factory.py` is the build engine over the scripts above: catalog →
+facility/layout/hole DAG → fingerprints → ledger → bounded runs. It never
+writes `public/`, flags or production; `output/course-geometry/factory/` is
+disposable. `python3 -m unittest discover -s scripts/golf/course-geometry -p 'test_factory_*.py'`
+runs the network-free suite (fake executors, synthetic two-layout facility).
+
+```bash
+F=scripts/golf/course-geometry/course-factory.py
+python3 $F doctor                                   # tools, disk reserve, catalog problems
+python3 $F plan                                      # every layout: state + reason per task
+python3 $F plan --layout cacapon [--json|--golden|--notes]
+python3 $F why  --layout cacapon --task hole.terrain.compile --hole 7   # causal chain
+python3 $F run  --layout cacapon [--until layout.terrain.acquire] [--task hole.world.build --holes 7,8] [--dry-run]
+python3 $F status --layout cacapon [--json]          # earned tier, blockers, disk, last run
+python3 $F invalidate --layout cacapon --task facility.osm.snapshot --reason "OSM edit 2026-09-20"
+python3 $F intake [--min-rounds 5] [--write]          # cohort → C0 manifests, most-played first
+# --no-adopt-output ignores everything under output/ (what a fresh clone sees)
+# COURSE_FACTORY_DISK_RESERVE_GB=8 is the guard heavy tasks must stay above
+```
+
+States: `ready`, `pending` (waiting on upstream, root named), `cached`
+(`FINGERPRINT_UNCHANGED` / `ADOPTED_EXTERNAL` / `INLINE_VALIDATED`), `stale`
+(`FINGERPRINT_CHANGED` with the changed inputs, `ARTIFACT_MISSING`,
+`ARTIFACT_CORRUPT`, `MANUAL_INVALIDATION`, `INTERRUPTED_RUN_RECOVERED`),
+`blocked` (own code, or `DEPENDENCY_BLOCKED` with the root code), `failed`.
+Reason codes and their meaning: `factory/reasons.py`. Runs leave
+`runs/<id>/report.{json,md}` and one log per task.

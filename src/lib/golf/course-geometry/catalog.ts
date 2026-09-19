@@ -31,6 +31,8 @@ export const facilityManifestSchema = z.object({
   }).strict(),
   knownRenovationAfter: isoDate.nullable().optional(),
   notes: z.array(z.string()).max(20).optional(),
+  /** Retained artifacts the factory may adopt instead of rebuilding (repo-relative paths, keyed by artifact kind). */
+  retained: z.record(z.string().regex(/^[a-zA-Z]+$/), z.string().min(1)).optional(),
 }).strict();
 export type FacilityManifest = z.infer<typeof facilityManifestSchema>;
 
@@ -54,6 +56,7 @@ export const layoutManifestSchema = z.object({
   geometry: z.object({ package: z.string().min(1), published: z.string().min(1).nullable() }).strict().nullable(),
   knownRenovationAfter: isoDate.nullable().optional(),
   notes: z.array(z.string()).max(20).optional(),
+  retained: z.record(z.string().regex(/^[a-zA-Z]+$/), z.string().min(1)).optional(),
 }).strict().superRefine((layout, ctx) => {
   const inSegments = new Set(layout.segmentOrder.flatMap(s => layout.segments[s]?.holes ?? []));
   for (const s of layout.segmentOrder) if (!layout.segments[s]) ctx.addIssue({ code: 'custom', message: `segmentOrder names unknown segment ${s}`, path: ['segmentOrder'] });

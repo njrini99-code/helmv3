@@ -1,0 +1,104 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "cutter-creek-black",
+  "layoutId": "cutter-creek",
+  "teeName": "Black",
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-13",
+    "note": "Helm read-only course library snapshot; current card, not surveyed tee markers"
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 4,
+      "yards": 422
+    },
+    {
+      "hole": 2,
+      "par": 5,
+      "yards": 562
+    },
+    {
+      "hole": 3,
+      "par": 3,
+      "yards": 217
+    },
+    {
+      "hole": 4,
+      "par": 4,
+      "yards": 443
+    },
+    {
+      "hole": 5,
+      "par": 5,
+      "yards": 585
+    },
+    {
+      "hole": 6,
+      "par": 4,
+      "yards": 343
+    },
+    {
+      "hole": 7,
+      "par": 4,
+      "yards": 417
+    },
+    {
+      "hole": 8,
+      "par": 3,
+      "yards": 169
+    },
+    {
+      "hole": 9,
+      "par": 4,
+      "yards": 461
+    },
+    {
+      "hole": 10,
+      "par": 4,
+      "yards": 400
+    },
+    {
+      "hole": 11,
+      "par": 5,
+      "yards": 542
+    },
+    {
+      "hole": 12,
+      "par": 4,
+      "yards": 326
+    },
+    {
+      "hole": 13,
+      "par": 4,
+      "yards": 431
+    },
+    {
+      "hole": 14,
+      "par": 4,
+      "yards": 490
+    },
+    {
+      "hole": 15,
+      "par": 3,
+      "yards": 177
+    },
+    {
+      "hole": 16,
+      "par": 4,
+      "yards": 452
+    },
+    {
+      "hole": 17,
+      "par": 3,
+      "yards": 225
+    },
+    {
+      "hole": 18,
+      "par": 5,
+      "yards": 575
+    }
+  ]
+}

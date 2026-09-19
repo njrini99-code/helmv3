@@ -64,22 +64,38 @@ def plan_node(node, ctx, recovered=(), adopt=True, free=None):
             row.artifacts = artifacts
             ledger.touch_artifacts(node.key)
             return finish('cached', 'FINGERPRINT_UNCHANGED', ev.output or output_hash(artifacts, fp))
-    if adoptable and not success:
+    unfinished = None
+    if ledger and not success:
+        # A run that died or failed on these inputs outranks a consistent-
+        # looking artifact: the ledger says the work did not finish.
+        last = ledger.last_run(node.key)
+        if node.key in recovered or (last and last['state'] == 'interrupted'):
+            unfinished = 'INTERRUPTED_RUN_RECOVERED'
+        elif last and last['state'] == 'failed' and last['fingerprint'] == fp:
+            unfinished = 'PREVIOUS_RUN_FAILED'
+    if adoptable and not success and not unfinished:
         # A retained artifact that proves it was built from the current
         # inputs is done work, whether or not its upstream cache is present.
         if ledger and adopt:
             ledger.record_success(_plan_run_id(ledger), node, fp, recorded_inputs, ev.artifacts)
         return finish('cached', 'ADOPTED_EXTERNAL', ev.output or output_hash(ev.artifacts, fp))
     required = [d for d in node.deps if d.split('[', 1)[0] not in optional]
-    dep_blocked = sorted((d for d in required if ctx.states.get(d) == 'blocked'), key=lambda d: _blocker_rank(ctx.rows[d]))
+    dep_blocked = sorted((d for d in required if ctx.states.get(d) in ('blocked', 'failed')), key=lambda d: _blocker_rank(ctx.rows[d]))
     if dep_blocked:
         first = ctx.rows[dep_blocked[0]]
         code = first.blockers[0].code if first.blockers else first.reason
-        root = _root_blocker(ctx, dep_blocked[0])
-        return finish('blocked', 'DEPENDENCY_BLOCKED', blockers=[Blocker('DEPENDENCY_BLOCKED', {'dependency': dep_blocked[0], 'code': code, 'root': root, 'count': len(dep_blocked)})])
-    dep_pending = [d for d in required if ctx.states.get(d) not in DONE]
+        root, root_key = _root_blocker(ctx, dep_blocked[0])
+        return finish('blocked', 'DEPENDENCY_BLOCKED', blockers=[Blocker('DEPENDENCY_BLOCKED', {'dependency': dep_blocked[0], 'code': code, 'root': root, 'rootKey': root_key, 'count': len(dep_blocked)})])
+    # An optional dependency never blocks its dependant, but the dependant
+    # still waits for it to be attempted: planning a compile without the
+    # context layer only because the classifier has not run yet would build
+    # the wrong thing and then rebuild it.
+    dep_pending = [d for d in node.deps if ctx.states.get(d) not in DONE and (d in required or ctx.states.get(d) not in ('blocked', 'failed'))]
     if dep_pending:
-        return finish('blocked', 'DEPENDENCY_PENDING', blockers=[Blocker('DEPENDENCY_PENDING', {'dependency': dep_pending[0], 'state': ctx.states.get(dep_pending[0]), 'count': len(dep_pending)})])
+        # Nothing is wrong here: an upstream node simply has to run first. A
+        # pending row tells the reader which one, and how far the wait reaches.
+        root = _root_pending(ctx, dep_pending[0])
+        return finish('pending', 'DEPENDENCY_PENDING', blockers=[Blocker('DEPENDENCY_PENDING', {'dependency': dep_pending[0], 'state': ctx.states.get(dep_pending[0]), 'root': root, 'count': len(dep_pending)})])
 
     if success:
         manual = ledger.invalidation_after(node.key, success['finished_at'])
@@ -104,10 +120,11 @@ def plan_node(node, ctx, recovered=(), adopt=True, free=None):
         if running:
             row.notes.append(f'run {running["build_run_id"]} pid {running["pid"]}')
             return finish('running', 'RUNNING')
-        if node.key in recovered:
+        if unfinished == 'INTERRUPTED_RUN_RECOVERED':
             row.notes.append('a previous run of this task was interrupted')
-        last = ledger.last_run(node.key)
-        if last and last['state'] == 'failed' and last['fingerprint'] == fp:
+            return _needs_work(row, finish, executor, 'INTERRUPTED_RUN_RECOVERED')
+        if unfinished == 'PREVIOUS_RUN_FAILED':
+            last = ledger.last_run(node.key)
             row.notes.append(f'failed in run {last["build_run_id"]} (exit {last["exit_code"]})')
             return _needs_work(row, finish, executor, 'PREVIOUS_RUN_FAILED')
     return _needs_work(row, finish, executor, 'INTERRUPTED_RUN_RECOVERED' if node.key in recovered else 'NO_SUCCESSFUL_FINGERPRINT', free)
@@ -125,12 +142,24 @@ def _blocker_rank(row):
 
 
 def _root_blocker(ctx, key):
+    """(code, node key) of the first node in a blocked chain that is blocked
+    or failed on its own account."""
     row = ctx.rows.get(key)
-    while row and row.blockers and row.blockers[0].code == 'DEPENDENCY_BLOCKED':
+    while row and row.blockers and row.blockers[0].code in ('DEPENDENCY_BLOCKED', 'DEPENDENCY_PENDING') and row.blockers[0].evidence.get('dependency') in ctx.rows:
         row = ctx.rows.get(row.blockers[0].evidence.get('dependency'))
     if not row:
-        return None
-    return row.blockers[0].code if row.blockers else row.reason
+        return None, key
+    return (row.blockers[0].code if row.blockers else row.reason), row.key
+
+
+def _root_pending(ctx, key):
+    """The first node in a pending chain that is actually ready (or blocked)."""
+    row = ctx.rows.get(key)
+    seen = set()
+    while row and row.state == 'pending' and row.blockers and row.key not in seen:
+        seen.add(row.key)
+        row = ctx.rows.get(row.blockers[0].evidence.get('dependency'))
+    return row.key if row else key
 
 
 def _needs_work(row, finish, executor, reason, free=None):
@@ -157,8 +186,9 @@ def verify_artifacts(artifacts):
             return ('ARTIFACT_CORRUPT', a.path)
         if a.key in ('package', 'context-layer'):
             # Content-addressed documents: the recorded hash is their contentHash.
-            from .fingerprints import content_hash_matches
             import json
+
+            from .fingerprints import content_hash_matches
             with open(a.path, encoding='utf-8') as f:
                 doc = json.load(f)
             if doc.get('contentHash') != a.sha256 or not content_hash_matches(doc):
@@ -190,8 +220,10 @@ _PLAN_RUN = {}
 def _plan_run_id(ledger):
     """Adoptions and inline validations during a plan share one synthetic run."""
     if id(ledger) not in _PLAN_RUN:
+        import uuid
+
         from .ledger import now_iso
-        run_id = 'plan-' + now_iso().replace(':', '').replace('-', '')
+        run_id = 'plan-' + now_iso().replace(':', '').replace('-', '')[:15] + '-' + uuid.uuid4().hex[:6]
         ledger.begin_run(run_id, 'plan (adoption)')
         _PLAN_RUN[id(ledger)] = run_id
     return _PLAN_RUN[id(ledger)]

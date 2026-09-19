@@ -12,7 +12,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from factory.cli import main  # noqa: E402
+from factory.cli import main
 
 if __name__ == '__main__':
     sys.exit(main())

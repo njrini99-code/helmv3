@@ -1,0 +1,104 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "boonsboro-cc-lynchburg-womens-golf",
+  "layoutId": "boonsboro-cc",
+  "teeName": "Lynchburg Women’s Golf",
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-13",
+    "note": "Helm read-only course library snapshot; current card, not surveyed tee markers"
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 5,
+      "yards": 430
+    },
+    {
+      "hole": 2,
+      "par": 3,
+      "yards": 145
+    },
+    {
+      "hole": 3,
+      "par": 5,
+      "yards": 470
+    },
+    {
+      "hole": 4,
+      "par": 4,
+      "yards": 270
+    },
+    {
+      "hole": 5,
+      "par": 3,
+      "yards": 135
+    },
+    {
+      "hole": 6,
+      "par": 4,
+      "yards": 312
+    },
+    {
+      "hole": 7,
+      "par": 5,
+      "yards": 425
+    },
+    {
+      "hole": 8,
+      "par": 4,
+      "yards": 332
+    },
+    {
+      "hole": 9,
+      "par": 4,
+      "yards": 326
+    },
+    {
+      "hole": 10,
+      "par": 5,
+      "yards": 430
+    },
+    {
+      "hole": 11,
+      "par": 4,
+      "yards": 368
+    },
+    {
+      "hole": 12,
+      "par": 4,
+      "yards": 266
+    },
+    {
+      "hole": 13,
+      "par": 3,
+      "yards": 135
+    },
+    {
+      "hole": 14,
+      "par": 4,
+      "yards": 317
+    },
+    {
+      "hole": 15,
+      "par": 4,
+      "yards": 366
+    },
+    {
+      "hole": 16,
+      "par": 5,
+      "yards": 410
+    },
+    {
+      "hole": 17,
+      "par": 3,
+      "yards": 176
+    },
+    {
+      "hole": 18,
+      "par": 4,
+      "yards": 350
+    }
+  ]
+}

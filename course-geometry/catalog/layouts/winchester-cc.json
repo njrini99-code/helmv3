@@ -1,0 +1,71 @@
+{
+  "schema": "golfhelm-layout-v1",
+  "layoutId": "winchester-cc",
+  "facilityId": "winchester-country-club",
+  "name": "Winchester CC",
+  "siteIds": [
+    "osm-way-800486466"
+  ],
+  "segments": {
+    "main": {
+      "holes": [
+        "winchester-cc-01",
+        "winchester-cc-02",
+        "winchester-cc-03",
+        "winchester-cc-04",
+        "winchester-cc-05",
+        "winchester-cc-06",
+        "winchester-cc-07",
+        "winchester-cc-08",
+        "winchester-cc-09",
+        "winchester-cc-10",
+        "winchester-cc-11",
+        "winchester-cc-12",
+        "winchester-cc-13",
+        "winchester-cc-14",
+        "winchester-cc-15",
+        "winchester-cc-16",
+        "winchester-cc-17",
+        "winchester-cc-18"
+      ]
+    }
+  },
+  "segmentOrder": [
+    "main"
+  ],
+  "holeOrder": [
+    "winchester-cc-01",
+    "winchester-cc-02",
+    "winchester-cc-03",
+    "winchester-cc-04",
+    "winchester-cc-05",
+    "winchester-cc-06",
+    "winchester-cc-07",
+    "winchester-cc-08",
+    "winchester-cc-09",
+    "winchester-cc-10",
+    "winchester-cc-11",
+    "winchester-cc-12",
+    "winchester-cc-13",
+    "winchester-cc-14",
+    "winchester-cc-15",
+    "winchester-cc-16",
+    "winchester-cc-17",
+    "winchester-cc-18"
+  ],
+  "routeWayIds": null,
+  "bboxWgs84": null,
+  "capabilityTier": "C0",
+  "externalBindings": {
+    "golfCourseIds": [
+      "846f0ccb-26aa-4e3c-a9e7-5a03c85440a2"
+    ]
+  },
+  "scorecardProfiles": [
+    "winchester-cc-gold"
+  ],
+  "geometry": null,
+  "notes": [
+    "30 completed cohort rounds (2026-09-13); intake wrote this manifest at C0 with routes unresolved."
+  ]
+}

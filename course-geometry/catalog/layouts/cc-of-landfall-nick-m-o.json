@@ -1,0 +1,71 @@
+{
+  "schema": "golfhelm-layout-v1",
+  "layoutId": "cc-of-landfall-nick-m-o",
+  "facilityId": "landfall-country-club-golf-course",
+  "name": "CC of Landfall (Nick-M/O)",
+  "siteIds": [
+    "osm-way-524540524"
+  ],
+  "segments": {
+    "main": {
+      "holes": [
+        "cc-of-landfall-nick-m-o-01",
+        "cc-of-landfall-nick-m-o-02",
+        "cc-of-landfall-nick-m-o-03",
+        "cc-of-landfall-nick-m-o-04",
+        "cc-of-landfall-nick-m-o-05",
+        "cc-of-landfall-nick-m-o-06",
+        "cc-of-landfall-nick-m-o-07",
+        "cc-of-landfall-nick-m-o-08",
+        "cc-of-landfall-nick-m-o-09",
+        "cc-of-landfall-nick-m-o-10",
+        "cc-of-landfall-nick-m-o-11",
+        "cc-of-landfall-nick-m-o-12",
+        "cc-of-landfall-nick-m-o-13",
+        "cc-of-landfall-nick-m-o-14",
+        "cc-of-landfall-nick-m-o-15",
+        "cc-of-landfall-nick-m-o-16",
+        "cc-of-landfall-nick-m-o-17",
+        "cc-of-landfall-nick-m-o-18"
+      ]
+    }
+  },
+  "segmentOrder": [
+    "main"
+  ],
+  "holeOrder": [
+    "cc-of-landfall-nick-m-o-01",
+    "cc-of-landfall-nick-m-o-02",
+    "cc-of-landfall-nick-m-o-03",
+    "cc-of-landfall-nick-m-o-04",
+    "cc-of-landfall-nick-m-o-05",
+    "cc-of-landfall-nick-m-o-06",
+    "cc-of-landfall-nick-m-o-07",
+    "cc-of-landfall-nick-m-o-08",
+    "cc-of-landfall-nick-m-o-09",
+    "cc-of-landfall-nick-m-o-10",
+    "cc-of-landfall-nick-m-o-11",
+    "cc-of-landfall-nick-m-o-12",
+    "cc-of-landfall-nick-m-o-13",
+    "cc-of-landfall-nick-m-o-14",
+    "cc-of-landfall-nick-m-o-15",
+    "cc-of-landfall-nick-m-o-16",
+    "cc-of-landfall-nick-m-o-17",
+    "cc-of-landfall-nick-m-o-18"
+  ],
+  "routeWayIds": null,
+  "bboxWgs84": null,
+  "capabilityTier": "C0",
+  "externalBindings": {
+    "golfCourseIds": [
+      "00bbda7e-53df-405e-8551-f4c156bb9eaf"
+    ]
+  },
+  "scorecardProfiles": [
+    "cc-of-landfall-nick-m-o-seahawk-black"
+  ],
+  "geometry": null,
+  "notes": [
+    "2 completed cohort rounds (2026-09-13); intake wrote this manifest at C0 with routes unresolved."
+  ]
+}

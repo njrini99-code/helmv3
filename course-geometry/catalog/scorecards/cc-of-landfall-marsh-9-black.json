@@ -1,0 +1,59 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "cc-of-landfall-marsh-9-black",
+  "layoutId": "cc-of-landfall-marsh-9",
+  "teeName": "Black",
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-13",
+    "note": "Helm read-only course library snapshot; current card, not surveyed tee markers"
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 4,
+      "yards": 378
+    },
+    {
+      "hole": 2,
+      "par": 3,
+      "yards": 191
+    },
+    {
+      "hole": 3,
+      "par": 4,
+      "yards": 469
+    },
+    {
+      "hole": 4,
+      "par": 4,
+      "yards": 420
+    },
+    {
+      "hole": 5,
+      "par": 5,
+      "yards": 527
+    },
+    {
+      "hole": 6,
+      "par": 3,
+      "yards": 186
+    },
+    {
+      "hole": 7,
+      "par": 4,
+      "yards": 401
+    },
+    {
+      "hole": 8,
+      "par": 5,
+      "yards": 506
+    },
+    {
+      "hole": 9,
+      "par": 4,
+      "yards": 433
+    }
+  ]
+}

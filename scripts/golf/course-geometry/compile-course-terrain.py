@@ -14,6 +14,7 @@ import hashlib
 import importlib.util
 import json
 import math
+import re
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -70,6 +71,13 @@ def canonical_json(value):
 
 def digest(value):
     return hashlib.sha256(canonical_json(value).encode()).hexdigest()
+
+
+def source_identity(manifest):
+    """What makes a terrain source the same source for compiled outputs: its
+    files, request bounds and CRS. The manifest also lists every package the
+    raster has served, which changes without one height changing."""
+    return digest({'fileHashes': manifest.get('fileHashes'), 'bounds': manifest.get('requestedLocalBoundsM'), 'crs': manifest.get('horizontalExportCrs')})
 
 
 def write_json(path, value, pretty=False):
@@ -196,6 +204,41 @@ def is_native_1m_title(title):
     return str(title).lower().startswith(('usgs 1 meter ', 'usgs one meter '))
 
 
+def tile_project(title):
+    """The lidar project a 1m tile belongs to: everything after its x..y..
+    grid token ('USGS 1 Meter 17 x74y435 VA_NorthernShenandoah_2020_D20' →
+    'VA_NorthernShenandoah_2020_D20')."""
+    parts = str(title).split()
+    for i, part in enumerate(parts):
+        if re.fullmatch(r'x\d+y\d+', part.lower()):
+            return ' '.join(parts[i + 1:]) or str(title)
+    return str(title)
+
+
+def covering_tile_sets(rows, extent_wgs84):
+    """Candidate tile sets, best first: one native-1m tile that covers the
+    whole context, else the tiles of one lidar project and acquisition end
+    date whose union covers it (the 10 km tile grid splits a course near a
+    tile edge; the same collection on both sides is one source, not a mosaic
+    of sources). Mixed projects, dates or resolutions are never combined."""
+    singles, groups = [], {}
+    for row in rows:
+        attrs = row['attributes']
+        footprint = Polygon(row['geometry']['rings'][0], row['geometry']['rings'][1:])
+        if not footprint.is_valid:
+            continue
+        if footprint.covers(extent_wgs84):
+            singles.append([row])
+        groups.setdefault((tile_project(attrs['title']), date_text(attrs['EndDate'])), []).append((row, footprint))
+    pairs = []
+    for members in groups.values():
+        if len(members) > 1 and unary_union([f for _, f in members]).covers(extent_wgs84):
+            pairs.append([row for row, _ in sorted(members, key=lambda m: m[0]['attributes']['title'])])
+    def newest_first(tiles):
+        return (date_text(tiles[0]['attributes']['EndDate']), tiles[0]['attributes']['title'])
+    return sorted(singles, key=newest_first, reverse=True) + sorted(pairs, key=newest_first, reverse=True)
+
+
 def acquire_source(directory, pkg, bounds):
     names = ['catalog.json', 'export.json', 'elevation.tiff', 'source-manifest.json']
     existing = [(directory / name).exists() for name in names]
@@ -231,13 +274,10 @@ def acquire_source(directory, pkg, bounds):
     if catalog.get('exceededTransferLimit'):
         raise ValueError('Truncated source catalog requires bounded pagination review')
     extent_wgs84 = box(west, south, east, north)
-    candidates = []
-    for row in catalog.get('features', []):
-        attrs = row['attributes']
-        if is_native_1m_title(attrs['title']) and attrs['VerticalDatum'] in ('NAVD88', 'North American Vertical Datum of 1988 (NAVD 88)'):
-            footprint = Polygon(row['geometry']['rings'][0], row['geometry']['rings'][1:])
-            if footprint.is_valid and footprint.covers(extent_wgs84):
-                candidates.append(row)
+    native = [row for row in catalog.get('features', [])
+              if is_native_1m_title(row['attributes']['title'])
+              and row['attributes']['VerticalDatum'] in ('NAVD88', 'North American Vertical Datum of 1988 (NAVD 88)')]
+    candidates = covering_tile_sets(native, extent_wgs84)
     if not candidates:
         report = {'state': 'needs_source_review', 'reason': 'No single native-1m tile covers the full bounded course context',
                   'packageHash': pkg['contentHash'], 'bboxWgs84': [west, south, east, north],
@@ -257,18 +297,19 @@ def acquire_source(directory, pkg, bounds):
     # project tile clipped at a state line still advertises its full square,
     # so every export is checked for empty fill before it is retained.
     rejected = []
-    for selected in sorted(candidates, key=lambda row: (date_text(row['attributes']['EndDate']), row['attributes']['title']), reverse=True):
-        attrs = selected['attributes']
+    for tiles in candidates:
+        attrs = tiles[0]['attributes']
+        object_ids = [row['attributes']['OBJECTID'] for row in tiles]
         exported = fetch.request('exportImage', {'bbox': f'{a},{b},{c},{d}', 'bboxSR': SOURCE_CRS, 'imageSR': SOURCE_CRS,
             'size': f'{width},{height}', 'format': 'tiff', 'pixelType': 'F32', 'interpolation': 'RSP_BilinearInterpolation',
             'renderingRule': json.dumps({'rasterFunction': 'None'}),
-            'mosaicRule': json.dumps({'mosaicMethod': 'esriMosaicLockRaster', 'lockRasterIds': [attrs['OBJECTID']]})})
+            'mosaicRule': json.dumps({'mosaicMethod': 'esriMosaicLockRaster', 'lockRasterIds': object_ids})})
         if (exported['width'], exported['height']) != (width, height):
             raise ValueError('Export dimensions changed; source resampling requires review')
         ex = exported['extent']
         elon, elat = inverse.transform([ex['xmin'], ex['xmax'], ex['xmax'], ex['xmin']],
                                       [ex['ymin'], ex['ymin'], ex['ymax'], ex['ymax']])
-        footprint = Polygon(selected['geometry']['rings'][0], selected['geometry']['rings'][1:])
+        footprint = unary_union([Polygon(row['geometry']['rings'][0], row['geometry']['rings'][1:]) for row in tiles])
         if not footprint.covers(Polygon(zip(elon, elat))):
             raise ValueError('Returned export exceeds the selected tile footprint')
         raster = fetch.read(exported['href'], 40_000_000)
@@ -279,7 +320,7 @@ def acquire_source(directory, pkg, bounds):
         if empty <= MAX_EMPTY_EXPORT_FRACTION:
             break
         scratch.unlink()
-        rejected.append({'title': attrs['title'], 'objectId': attrs['OBJECTID'], 'emptyFraction': empty,
+        rejected.append({'title': attrs['title'], 'objectId': attrs['OBJECTID'], 'objectIds': object_ids, 'emptyFraction': empty,
                          'reason': 'Catalog footprint covers the context but the locked export is empty fill there'})
     else:
         report = {'state': 'needs_source_review', 'reason': 'Every covering native-1m tile exported empty fill over the course context',
@@ -287,22 +328,25 @@ def acquire_source(directory, pkg, bounds):
                   'rejectedCandidates': rejected, 'catalog': catalog}
         write_json(directory / 'coverage-exception.json', report, True)
         raise ValueError(report['reason'])
-    exported.update(selectedObjectId=attrs['OBJECTID'], retrievedAt=datetime.now(timezone.utc).date().isoformat(),
+    exported.update(selectedObjectId=attrs['OBJECTID'], selectedObjectIds=object_ids, retrievedAt=datetime.now(timezone.utc).date().isoformat(),
                     sourceProjection=f'EPSG:{SOURCE_CRS}', requestedLocalBoundsM=bounds)
     write_json(directory/'catalog.json', catalog, True)
     write_json(directory/'export.json', exported, True)
+    title = attrs['title'] if len(tiles) == 1 else f"{attrs['title']} (+{len(tiles) - 1} adjacent {tile_project(attrs['title'])} tile{'s' if len(tiles) > 2 else ''})"
     manifest = {'schemaVersion': 1, 'packageHash': pkg['contentHash'], 'requestedLocalBoundsM': bounds,
-                'selectedTitle': attrs['title'], 'selectedObjectId': attrs['OBJECTID'], 'sourceUrl': attrs['URL'],
+                'selectedTitle': title, 'selectedObjectId': attrs['OBJECTID'], 'selectedObjectIds': object_ids,
+                'selectedTiles': [row['attributes']['title'] for row in tiles], 'sourceUrl': attrs['URL'],
                 'acquisitionStart': date_text(attrs['StartDate']), 'acquisitionEnd': date_text(attrs['EndDate']),
                 'nativeResolutionM': 1, 'exportPixelM': [(ex['xmax']-ex['xmin'])/width, (ex['ymax']-ex['ymin'])/height],
                 'horizontalExportCrs': f'EPSG:{SOURCE_CRS}', 'verticalDatum': 'NAVD88',
                 'rawVerticalUnit': 'meter', 'verticalUnitToMeters': 1,
-                'retrievedAt': exported['retrievedAt'], 'sourceSelection': 'single_full_coverage_native_1m_tile',
+                'retrievedAt': exported['retrievedAt'],
+                'sourceSelection': 'single_full_coverage_native_1m_tile' if len(tiles) == 1 else 'same_project_adjacent_native_1m_tiles',
                 'exportEmptyFraction': empty, 'decoder': decoder, 'rejectedCandidates': rejected,
                 'licenseUrl': 'https://www.usgs.gov/3d-elevation-program/about-3dep-products-services',
                 'fileHashes': {name: hashlib.sha256((directory/name).read_bytes()).hexdigest() for name in names[:-1]}}
     write_json(directory/'source-manifest.json', manifest, True)
-    print(json.dumps({'source': attrs['title'], 'pixels': [width, height], 'bytes': len(raster)}), flush=True)
+    print(json.dumps({'source': title, 'pixels': [width, height], 'bytes': len(raster)}), flush=True)
     return manifest
 
 
@@ -712,6 +756,10 @@ def compile_hole(hole, pkg, raw_shapes, raw_features, displays, outline_reports,
     return result, report
 
 
+def source_readme(pkg, manifest):
+    return f'''# {pkg['name']} whole-course terrain source\n\nOne locked native-1m USGS tile: **{manifest['selectedTitle']}**.\nAcquisition: {manifest['acquisitionStart']} to {manifest['acquisitionEnd']}.\nRetrieved: {manifest['retrievedAt']}. Immutable hashes and exact projected bounds\nare in source-manifest.json and export.json. Do not replace the cached raster.\n\nThe EPSG:{SOURCE_CRS} export is sampled at approximately 1m; the 2m canonical\nmetric grid, 4m tactical mesh, 2m detail cells and coarser outer cells are separate\nrender/query choices, not claims of finer source resolution. Heights remain\nNAVD88 meters. Registration residual and source vertical accuracy are unknown.\n\nNeighbor source features are renderer-only context. No cart paths, rough\nclassification, additional tree areas, daily tee markers or cup positions are\ncreated. Canopy evidence is limited to explicitly reviewed groups, if any.\n\n[USGS 3DEP products and use terms](https://www.usgs.gov/3d-elevation-program/about-3dep-products-services).\nSource geometry attribution remains © OpenStreetMap contributors, ODbL1.0.\n'''
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--holes', default='7', help='all or comma-separated played hole ordinals')
@@ -721,6 +769,8 @@ def main():
     parser.add_argument('--context', type=Path, default=None, help='reviewed context layer whose ground ribbons become breaklines')
     parser.add_argument('--source-normals', action='store_true',
                         help='also emit the per-vertex sourceNormals array (legacy; the renderer shades from the metric grid)')
+    parser.add_argument('--acquire-only', action='store_true',
+                        help='lock the terrain source for this package and stop before compiling any hole (the course factory acquires once, compiles per hole)')
     args = parser.parse_args()
     pkg = json.loads(args.package.read_text())
     pilot.ORIGIN = pkg['originWgs84']
@@ -730,6 +780,10 @@ def main():
     bounds = [min(b[0] for b in extents)-8, min(b[1] for b in extents)-8,
               max(b[2] for b in extents)+8, max(b[3] for b in extents)+8]
     manifest = acquire_source(args.source, pkg, bounds)
+    if args.acquire_only:
+        (args.source/'README.md').write_text(source_readme(pkg, manifest))
+        print(json.dumps({'source': manifest['selectedTitle'], 'sourceManifestHash': digest(manifest), 'requestedLocalBoundsM': bounds}), flush=True)
+        return
     source = ElevationSource(args.source, manifest)
     displays, outlines = display_surfaces(args.package, pkg, args.source)
     ribbons, context_hash = context_ribbons(args.context, pkg)
@@ -741,7 +795,8 @@ def main():
     asset_path = args.output/'asset-manifest.json'
     if asset_path.exists():
         previous = json.loads(asset_path.read_text())
-        if previous['geometryHash'] != pkg['contentHash'] or previous['sourceManifestHash'] != digest(manifest):
+        same_source = previous['sourceIdentity'] == source_identity(manifest) if previous.get('sourceIdentity') else previous['sourceManifestHash'] == digest(manifest)
+        if previous['geometryHash'] != pkg['contentHash'] or not same_source:
             raise ValueError('Output manifest belongs to a different package/source; choose a new directory')
         assets = previous['holes']
     for hole in pkg['holes']:
@@ -766,10 +821,9 @@ def main():
                'contextCoverage describes DEM support, not completeness of fairway/rough/tree mapping']}
     write_json(args.output/'compilation-report.json', summary, True)
     write_json(asset_path, {'schemaVersion': 1, 'compilerVersion': COMPILER_VERSION,
-                          'geometryHash': pkg['contentHash'], 'sourceManifestHash': digest(manifest),
+                          'geometryHash': pkg['contentHash'], 'sourceManifestHash': digest(manifest), 'sourceIdentity': source_identity(manifest),
                           'holes': dict(sorted(assets.items()))}, True)
-    readme = f'''# {pkg['name']} whole-course terrain source\n\nOne locked native-1m USGS tile: **{manifest['selectedTitle']}**.\nAcquisition: {manifest['acquisitionStart']} to {manifest['acquisitionEnd']}.\nRetrieved: {manifest['retrievedAt']}. Immutable hashes and exact projected bounds\nare in source-manifest.json and export.json. Do not replace the cached raster.\n\nThe EPSG:{SOURCE_CRS} export is sampled at approximately 1m; the 2m canonical\nmetric grid, 4m tactical mesh, 2m detail cells and coarser outer cells are separate\nrender/query choices, not claims of finer source resolution. Heights remain\nNAVD88 meters. Registration residual and source vertical accuracy are unknown.\n\nNeighbor source features are renderer-only context. No cart paths, rough\nclassification, additional tree areas, daily tee markers or cup positions are\ncreated. Canopy evidence is limited to explicitly reviewed groups, if any.\n\n[USGS 3DEP products and use terms](https://www.usgs.gov/3d-elevation-program/about-3dep-products-services).\nSource geometry attribution remains © OpenStreetMap contributors, ODbL1.0.\n'''
-    (args.source/'README.md').write_text(readme)
+    (args.source/'README.md').write_text(source_readme(pkg, manifest))
 
 
 if __name__ == '__main__':

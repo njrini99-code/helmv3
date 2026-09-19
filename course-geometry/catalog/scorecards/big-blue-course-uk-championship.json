@@ -1,0 +1,104 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "big-blue-course-uk-championship",
+  "layoutId": "big-blue-course-uk",
+  "teeName": "Championship",
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-13",
+    "note": "Helm read-only course library snapshot; current card, not surveyed tee markers"
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 4,
+      "yards": 419
+    },
+    {
+      "hole": 2,
+      "par": 4,
+      "yards": 422
+    },
+    {
+      "hole": 3,
+      "par": 3,
+      "yards": 190
+    },
+    {
+      "hole": 4,
+      "par": 4,
+      "yards": 439
+    },
+    {
+      "hole": 5,
+      "par": 5,
+      "yards": 481
+    },
+    {
+      "hole": 6,
+      "par": 4,
+      "yards": 410
+    },
+    {
+      "hole": 7,
+      "par": 5,
+      "yards": 524
+    },
+    {
+      "hole": 8,
+      "par": 3,
+      "yards": 158
+    },
+    {
+      "hole": 9,
+      "par": 4,
+      "yards": 326
+    },
+    {
+      "hole": 10,
+      "par": 4,
+      "yards": 386
+    },
+    {
+      "hole": 11,
+      "par": 4,
+      "yards": 407
+    },
+    {
+      "hole": 12,
+      "par": 3,
+      "yards": 178
+    },
+    {
+      "hole": 13,
+      "par": 5,
+      "yards": 548
+    },
+    {
+      "hole": 14,
+      "par": 4,
+      "yards": 370
+    },
+    {
+      "hole": 15,
+      "par": 4,
+      "yards": 464
+    },
+    {
+      "hole": 16,
+      "par": 5,
+      "yards": 565
+    },
+    {
+      "hole": 17,
+      "par": 3,
+      "yards": 206
+    },
+    {
+      "hole": 18,
+      "par": 4,
+      "yards": 433
+    }
+  ]
+}

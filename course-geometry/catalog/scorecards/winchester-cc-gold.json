@@ -1,0 +1,104 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "winchester-cc-gold",
+  "layoutId": "winchester-cc",
+  "teeName": "Gold",
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-13",
+    "note": "Helm read-only course library snapshot; current card, not surveyed tee markers"
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 4,
+      "yards": 387
+    },
+    {
+      "hole": 2,
+      "par": 5,
+      "yards": 500
+    },
+    {
+      "hole": 3,
+      "par": 4,
+      "yards": 416
+    },
+    {
+      "hole": 4,
+      "par": 3,
+      "yards": 193
+    },
+    {
+      "hole": 5,
+      "par": 4,
+      "yards": 408
+    },
+    {
+      "hole": 6,
+      "par": 5,
+      "yards": 501
+    },
+    {
+      "hole": 7,
+      "par": 4,
+      "yards": 355
+    },
+    {
+      "hole": 8,
+      "par": 3,
+      "yards": 150
+    },
+    {
+      "hole": 9,
+      "par": 4,
+      "yards": 347
+    },
+    {
+      "hole": 10,
+      "par": 4,
+      "yards": 267
+    },
+    {
+      "hole": 11,
+      "par": 4,
+      "yards": 357
+    },
+    {
+      "hole": 12,
+      "par": 3,
+      "yards": 196
+    },
+    {
+      "hole": 13,
+      "par": 5,
+      "yards": 519
+    },
+    {
+      "hole": 14,
+      "par": 3,
+      "yards": 172
+    },
+    {
+      "hole": 15,
+      "par": 5,
+      "yards": 519
+    },
+    {
+      "hole": 16,
+      "par": 4,
+      "yards": 398
+    },
+    {
+      "hole": 17,
+      "par": 4,
+      "yards": 329
+    },
+    {
+      "hole": 18,
+      "par": 4,
+      "yards": 405
+    }
+  ]
+}

@@ -1,0 +1,71 @@
+{
+  "schema": "golfhelm-layout-v1",
+  "layoutId": "grande-dunes-resort-club",
+  "facilityId": "grande-dunes-resort-course",
+  "name": "Grande Dunes Resort Club",
+  "siteIds": [
+    "osm-relation-3973681"
+  ],
+  "segments": {
+    "main": {
+      "holes": [
+        "grande-dunes-resort-club-01",
+        "grande-dunes-resort-club-02",
+        "grande-dunes-resort-club-03",
+        "grande-dunes-resort-club-04",
+        "grande-dunes-resort-club-05",
+        "grande-dunes-resort-club-06",
+        "grande-dunes-resort-club-07",
+        "grande-dunes-resort-club-08",
+        "grande-dunes-resort-club-09",
+        "grande-dunes-resort-club-10",
+        "grande-dunes-resort-club-11",
+        "grande-dunes-resort-club-12",
+        "grande-dunes-resort-club-13",
+        "grande-dunes-resort-club-14",
+        "grande-dunes-resort-club-15",
+        "grande-dunes-resort-club-16",
+        "grande-dunes-resort-club-17",
+        "grande-dunes-resort-club-18"
+      ]
+    }
+  },
+  "segmentOrder": [
+    "main"
+  ],
+  "holeOrder": [
+    "grande-dunes-resort-club-01",
+    "grande-dunes-resort-club-02",
+    "grande-dunes-resort-club-03",
+    "grande-dunes-resort-club-04",
+    "grande-dunes-resort-club-05",
+    "grande-dunes-resort-club-06",
+    "grande-dunes-resort-club-07",
+    "grande-dunes-resort-club-08",
+    "grande-dunes-resort-club-09",
+    "grande-dunes-resort-club-10",
+    "grande-dunes-resort-club-11",
+    "grande-dunes-resort-club-12",
+    "grande-dunes-resort-club-13",
+    "grande-dunes-resort-club-14",
+    "grande-dunes-resort-club-15",
+    "grande-dunes-resort-club-16",
+    "grande-dunes-resort-club-17",
+    "grande-dunes-resort-club-18"
+  ],
+  "routeWayIds": null,
+  "bboxWgs84": null,
+  "capabilityTier": "C0",
+  "externalBindings": {
+    "golfCourseIds": [
+      "a893a1dd-8f95-49c4-8ff3-651220b28afa"
+    ]
+  },
+  "scorecardProfiles": [
+    "grande-dunes-resort-club-gold"
+  ],
+  "geometry": null,
+  "notes": [
+    "13 completed cohort rounds (2026-09-13); intake wrote this manifest at C0 with routes unresolved."
+  ]
+}

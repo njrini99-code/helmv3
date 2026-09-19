@@ -22,9 +22,21 @@ const catalog: CourseCatalog = {
 
 describe('course library catalog (Factory v2 PR A)', () => {
   it('parses every checked-in manifest and holds together with the registry', () => {
-    expect(catalog.facilities.map(f => f.facilityId)).toEqual(['cacapon', 'peek-n-peak']);
-    expect(catalog.layouts.map(l => l.layoutId)).toEqual(['cacapon', 'peek-n-peak-upper']);
+    expect(catalog.facilities.map(f => f.facilityId)).toEqual(expect.arrayContaining(['cacapon', 'peek-n-peak']));
+    expect(catalog.layouts.map(l => l.layoutId)).toEqual(expect.arrayContaining(['cacapon', 'peek-n-peak-upper']));
     expect(catalogProblems(catalog, COURSE_GEOMETRY_REGISTRY)).toEqual([]);
+  });
+  it('keeps every intake layout at C0 with routes and geometry unresolved until the factory earns more', () => {
+    // The usage-cohort intake (PR B) writes C0 manifests only; the registry still draws Upper alone.
+    const intake = catalog.layouts.filter(l => l.layoutId !== 'peek-n-peak-upper');
+    expect(intake.length).toBeGreaterThanOrEqual(1);
+    for (const layout of intake) {
+      expect(layout.capabilityTier).toBe('C0');
+      expect(layout.routeWayIds).toBeNull();
+      expect(layout.geometry).toBeNull();
+      expect(layout.externalBindings.golfCourseIds.length).toBeGreaterThanOrEqual(1);
+    }
+    expect(COURSE_GEOMETRY_REGISTRY.map(p => p.layoutId)).toEqual(['peek-n-peak-upper']);
   });
   it('carries Upper as the drawn C2 layout and Cacapon as catalogued only', () => {
     const upper = catalog.layouts.find(l => l.layoutId === 'peek-n-peak-upper')!;

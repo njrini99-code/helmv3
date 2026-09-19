@@ -1,0 +1,59 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "cc-of-landfall-ocean-9-black",
+  "layoutId": "cc-of-landfall-ocean-9",
+  "teeName": "Black",
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-13",
+    "note": "Helm read-only course library snapshot; current card, not surveyed tee markers"
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 5,
+      "yards": 527
+    },
+    {
+      "hole": 2,
+      "par": 4,
+      "yards": 443
+    },
+    {
+      "hole": 3,
+      "par": 4,
+      "yards": 431
+    },
+    {
+      "hole": 4,
+      "par": 3,
+      "yards": 143
+    },
+    {
+      "hole": 5,
+      "par": 4,
+      "yards": 405
+    },
+    {
+      "hole": 6,
+      "par": 3,
+      "yards": 228
+    },
+    {
+      "hole": 7,
+      "par": 5,
+      "yards": 480
+    },
+    {
+      "hole": 8,
+      "par": 4,
+      "yards": 328
+    },
+    {
+      "hole": 9,
+      "par": 4,
+      "yards": 446
+    }
+  ]
+}

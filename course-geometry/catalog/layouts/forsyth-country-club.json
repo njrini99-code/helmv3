@@ -1,0 +1,71 @@
+{
+  "schema": "golfhelm-layout-v1",
+  "layoutId": "forsyth-country-club",
+  "facilityId": "forsyth-country-club",
+  "name": "Forsyth Country Club",
+  "siteIds": [
+    "osm-way-31294445"
+  ],
+  "segments": {
+    "main": {
+      "holes": [
+        "forsyth-country-club-01",
+        "forsyth-country-club-02",
+        "forsyth-country-club-03",
+        "forsyth-country-club-04",
+        "forsyth-country-club-05",
+        "forsyth-country-club-06",
+        "forsyth-country-club-07",
+        "forsyth-country-club-08",
+        "forsyth-country-club-09",
+        "forsyth-country-club-10",
+        "forsyth-country-club-11",
+        "forsyth-country-club-12",
+        "forsyth-country-club-13",
+        "forsyth-country-club-14",
+        "forsyth-country-club-15",
+        "forsyth-country-club-16",
+        "forsyth-country-club-17",
+        "forsyth-country-club-18"
+      ]
+    }
+  },
+  "segmentOrder": [
+    "main"
+  ],
+  "holeOrder": [
+    "forsyth-country-club-01",
+    "forsyth-country-club-02",
+    "forsyth-country-club-03",
+    "forsyth-country-club-04",
+    "forsyth-country-club-05",
+    "forsyth-country-club-06",
+    "forsyth-country-club-07",
+    "forsyth-country-club-08",
+    "forsyth-country-club-09",
+    "forsyth-country-club-10",
+    "forsyth-country-club-11",
+    "forsyth-country-club-12",
+    "forsyth-country-club-13",
+    "forsyth-country-club-14",
+    "forsyth-country-club-15",
+    "forsyth-country-club-16",
+    "forsyth-country-club-17",
+    "forsyth-country-club-18"
+  ],
+  "routeWayIds": null,
+  "bboxWgs84": null,
+  "capabilityTier": "C0",
+  "externalBindings": {
+    "golfCourseIds": [
+      "aed28a4f-37e2-4029-8e40-9a4963e72527"
+    ]
+  },
+  "scorecardProfiles": [
+    "forsyth-country-club-championship"
+  ],
+  "geometry": null,
+  "notes": [
+    "7 completed cohort rounds (2026-09-13); intake wrote this manifest at C0 with routes unresolved."
+  ]
+}

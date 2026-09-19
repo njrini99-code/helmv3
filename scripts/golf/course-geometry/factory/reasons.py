@@ -7,6 +7,14 @@ BLOCKERS = {
     'LAYOUT_IDENTITY_AMBIGUOUS': 'the layout names no site or binding that identifies it',
     'ROUTE_WAY_IDS_REQUIRED': 'route identity is human-pinned: routeWayIds is null',
     'SCORECARD_REQUIRED': 'the layout has no scorecard profile',
+    'SCORECARD_HOLE_MISMATCH': 'the scorecard profile and the layout disagree on the hole count',
+    'HOLE_COUNT_UNSUPPORTED': 'the package builder handles 18-hole layouts only',
+    'UTM_ZONE_UNSUPPORTED': 'the compilers project to UTM 17N only (PR C parameterises the zone)',
+    'TERRAIN_ADAPTER_MISSING': 'no adapter exists for the terrain provider the facility names',
+    'HUMAN_ROUTE_CONFIRMATION_REQUIRED': 'the route ways were proposed from OSM numbering; a person confirms them',
+    'TRUTH_GATE_NOT_RUN': 'the per-hole truth gate has not run',
+    'PACKAGE_REQUIRED': 'no geometry package exists',
+    'TERRAIN_COMPILE_INCOMPLETE': 'not every hole has compiled terrain',
     'OSM_SOURCE_UNAVAILABLE': 'no retained OSM snapshot',
     'OSM_SOURCE_RETRYABLE': 'the OSM provider failed in a retryable way',
     'TERRAIN_PROVIDER_UNAVAILABLE': 'no terrain provider answered',
@@ -50,6 +58,7 @@ REBUILD_REASONS = {
 NOOP_REASONS = {
     'FINGERPRINT_UNCHANGED': 'fingerprint unchanged',
     'ADOPTED_EXTERNAL': 'existing artifact matches the current inputs',
+    'INLINE_VALIDATED': 'validated while planning; nothing to build',
     'RUNNING': 'a live process holds this task',
 }
 

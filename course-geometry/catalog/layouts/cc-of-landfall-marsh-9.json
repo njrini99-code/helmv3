@@ -1,0 +1,53 @@
+{
+  "schema": "golfhelm-layout-v1",
+  "layoutId": "cc-of-landfall-marsh-9",
+  "facilityId": "landfall-country-club-golf-course",
+  "name": "CC of Landfall (Marsh 9)",
+  "siteIds": [
+    "osm-way-524540524"
+  ],
+  "segments": {
+    "main": {
+      "holes": [
+        "cc-of-landfall-marsh-9-01",
+        "cc-of-landfall-marsh-9-02",
+        "cc-of-landfall-marsh-9-03",
+        "cc-of-landfall-marsh-9-04",
+        "cc-of-landfall-marsh-9-05",
+        "cc-of-landfall-marsh-9-06",
+        "cc-of-landfall-marsh-9-07",
+        "cc-of-landfall-marsh-9-08",
+        "cc-of-landfall-marsh-9-09"
+      ]
+    }
+  },
+  "segmentOrder": [
+    "main"
+  ],
+  "holeOrder": [
+    "cc-of-landfall-marsh-9-01",
+    "cc-of-landfall-marsh-9-02",
+    "cc-of-landfall-marsh-9-03",
+    "cc-of-landfall-marsh-9-04",
+    "cc-of-landfall-marsh-9-05",
+    "cc-of-landfall-marsh-9-06",
+    "cc-of-landfall-marsh-9-07",
+    "cc-of-landfall-marsh-9-08",
+    "cc-of-landfall-marsh-9-09"
+  ],
+  "routeWayIds": null,
+  "bboxWgs84": null,
+  "capabilityTier": "C0",
+  "externalBindings": {
+    "golfCourseIds": [
+      "71f328fb-215b-475f-a7d7-81bce6a478dc"
+    ]
+  },
+  "scorecardProfiles": [
+    "cc-of-landfall-marsh-9-black"
+  ],
+  "geometry": null,
+  "notes": [
+    "7 completed cohort rounds (2026-09-13); intake wrote this manifest at C0 with routes unresolved."
+  ]
+}

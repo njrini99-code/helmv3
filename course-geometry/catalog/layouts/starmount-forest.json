@@ -1,0 +1,71 @@
+{
+  "schema": "golfhelm-layout-v1",
+  "layoutId": "starmount-forest",
+  "facilityId": "starmount-forest-country-club",
+  "name": "Starmount Forest",
+  "siteIds": [
+    "osm-way-570398442"
+  ],
+  "segments": {
+    "main": {
+      "holes": [
+        "starmount-forest-01",
+        "starmount-forest-02",
+        "starmount-forest-03",
+        "starmount-forest-04",
+        "starmount-forest-05",
+        "starmount-forest-06",
+        "starmount-forest-07",
+        "starmount-forest-08",
+        "starmount-forest-09",
+        "starmount-forest-10",
+        "starmount-forest-11",
+        "starmount-forest-12",
+        "starmount-forest-13",
+        "starmount-forest-14",
+        "starmount-forest-15",
+        "starmount-forest-16",
+        "starmount-forest-17",
+        "starmount-forest-18"
+      ]
+    }
+  },
+  "segmentOrder": [
+    "main"
+  ],
+  "holeOrder": [
+    "starmount-forest-01",
+    "starmount-forest-02",
+    "starmount-forest-03",
+    "starmount-forest-04",
+    "starmount-forest-05",
+    "starmount-forest-06",
+    "starmount-forest-07",
+    "starmount-forest-08",
+    "starmount-forest-09",
+    "starmount-forest-10",
+    "starmount-forest-11",
+    "starmount-forest-12",
+    "starmount-forest-13",
+    "starmount-forest-14",
+    "starmount-forest-15",
+    "starmount-forest-16",
+    "starmount-forest-17",
+    "starmount-forest-18"
+  ],
+  "routeWayIds": null,
+  "bboxWgs84": null,
+  "capabilityTier": "C0",
+  "externalBindings": {
+    "golfCourseIds": [
+      "c300318d-332e-4a19-8867-76cd03a39523"
+    ]
+  },
+  "scorecardProfiles": [
+    "starmount-forest-guilford-tees"
+  ],
+  "geometry": null,
+  "notes": [
+    "23 completed cohort rounds (2026-09-13); intake wrote this manifest at C0 with routes unresolved."
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "schema": "golfhelm-facility-v1",
+  "facilityId": "forsyth-country-club",
+  "name": "Forsyth Country Club",
+  "country": "US",
+  "region": "NC",
+  "originWgs84": [
+    -80.2997619,
+    36.1012026
+  ],
+  "aoi": {
+    "kind": "osm",
+    "id": "way/31294445",
+    "marginM": 300
+  },
+  "sourcePins": {
+    "osm": [
+      "way/31294445"
+    ]
+  },
+  "providerPolicy": {
+    "terrain": [
+      "usgs_s1m",
+      "usgs_3dep_project_1m"
+    ],
+    "imagery": [
+      "naip_current"
+    ],
+    "context": [
+      "osm"
+    ]
+  },
+  "notes": [
+    "Intake from the 2026-09-13 usage cohort and the library coverage audit (2026-09-18); origin is the OSM course centre until the build pins it from the AOI.",
+    "Coverage audit: h18 g21 f23 b27 t19 inside the course polygon; DEM tiles named: 1; verdict ready."
+  ]
+}

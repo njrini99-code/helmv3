@@ -1,0 +1,71 @@
+{
+  "schema": "golfhelm-layout-v1",
+  "layoutId": "cutter-creek",
+  "facilityId": "cutter-creek-golf-club",
+  "name": "Cutter Creek",
+  "siteIds": [
+    "osm-way-1545511574"
+  ],
+  "segments": {
+    "main": {
+      "holes": [
+        "cutter-creek-01",
+        "cutter-creek-02",
+        "cutter-creek-03",
+        "cutter-creek-04",
+        "cutter-creek-05",
+        "cutter-creek-06",
+        "cutter-creek-07",
+        "cutter-creek-08",
+        "cutter-creek-09",
+        "cutter-creek-10",
+        "cutter-creek-11",
+        "cutter-creek-12",
+        "cutter-creek-13",
+        "cutter-creek-14",
+        "cutter-creek-15",
+        "cutter-creek-16",
+        "cutter-creek-17",
+        "cutter-creek-18"
+      ]
+    }
+  },
+  "segmentOrder": [
+    "main"
+  ],
+  "holeOrder": [
+    "cutter-creek-01",
+    "cutter-creek-02",
+    "cutter-creek-03",
+    "cutter-creek-04",
+    "cutter-creek-05",
+    "cutter-creek-06",
+    "cutter-creek-07",
+    "cutter-creek-08",
+    "cutter-creek-09",
+    "cutter-creek-10",
+    "cutter-creek-11",
+    "cutter-creek-12",
+    "cutter-creek-13",
+    "cutter-creek-14",
+    "cutter-creek-15",
+    "cutter-creek-16",
+    "cutter-creek-17",
+    "cutter-creek-18"
+  ],
+  "routeWayIds": null,
+  "bboxWgs84": null,
+  "capabilityTier": "C0",
+  "externalBindings": {
+    "golfCourseIds": [
+      "84fb4402-a80a-4880-aaca-338dcb63af4f"
+    ]
+  },
+  "scorecardProfiles": [
+    "cutter-creek-black"
+  ],
+  "geometry": null,
+  "notes": [
+    "8 completed cohort rounds (2026-09-13); intake wrote this manifest at C0 with routes unresolved."
+  ]
+}

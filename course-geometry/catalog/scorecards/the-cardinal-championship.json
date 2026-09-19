@@ -1,0 +1,104 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "the-cardinal-championship",
+  "layoutId": "the-cardinal",
+  "teeName": "Championship",
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-13",
+    "note": "Helm read-only course library snapshot; current card, not surveyed tee markers"
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 5,
+      "yards": 526
+    },
+    {
+      "hole": 2,
+      "par": 4,
+      "yards": 454
+    },
+    {
+      "hole": 3,
+      "par": 4,
+      "yards": 414
+    },
+    {
+      "hole": 4,
+      "par": 4,
+      "yards": 420
+    },
+    {
+      "hole": 5,
+      "par": 4,
+      "yards": 444
+    },
+    {
+      "hole": 6,
+      "par": 5,
+      "yards": 589
+    },
+    {
+      "hole": 7,
+      "par": 4,
+      "yards": 477
+    },
+    {
+      "hole": 8,
+      "par": 3,
+      "yards": 161
+    },
+    {
+      "hole": 9,
+      "par": 3,
+      "yards": 195
+    },
+    {
+      "hole": 10,
+      "par": 5,
+      "yards": 517
+    },
+    {
+      "hole": 11,
+      "par": 4,
+      "yards": 423
+    },
+    {
+      "hole": 12,
+      "par": 4,
+      "yards": 417
+    },
+    {
+      "hole": 13,
+      "par": 3,
+      "yards": 154
+    },
+    {
+      "hole": 14,
+      "par": 4,
+      "yards": 421
+    },
+    {
+      "hole": 15,
+      "par": 5,
+      "yards": 546
+    },
+    {
+      "hole": 16,
+      "par": 3,
+      "yards": 185
+    },
+    {
+      "hole": 17,
+      "par": 4,
+      "yards": 444
+    },
+    {
+      "hole": 18,
+      "par": 4,
+      "yards": 426
+    }
+  ]
+}

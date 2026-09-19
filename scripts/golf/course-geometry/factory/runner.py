@@ -34,8 +34,8 @@ class Run:
 
 def git_head(repo_root):
     try:
-        return subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=repo_root, capture_output=True, text=True, timeout=5).stdout.strip() or None
-    except Exception:
+        return subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=repo_root, capture_output=True, text=True, timeout=5, check=False).stdout.strip() or None
+    except Exception:  # noqa: BLE001 - no git, no head: the report says so
         return None
 
 
@@ -72,7 +72,10 @@ def execute(graph, ctx, run, keys=None, dry_run=False, recovered=()):
         if row.state in DONE:
             run.cached.append(key)
             continue
-        if row.state in ('blocked', 'running'):
+        if row.state == 'pending' and dry_run:
+            run.skipped.append(key)
+            continue
+        if row.state in ('blocked', 'running', 'pending'):
             run.blocked.append({'key': key, 'reason': row.reason, 'blockers': [b.as_dict() for b in row.blockers]})
             continue
         spec = node.spec
@@ -110,7 +113,13 @@ def execute(graph, ctx, run, keys=None, dry_run=False, recovered=()):
                 raise RuntimeError(f'{problem[0]}: {problem[1]}')
             ledger.record_success(run.run_id, node, row.fingerprint, recorded_inputs, artifacts, task_run_id=task_run_id, log_path=log_path)
             row.state, row.reason, row.artifacts = 'success', 'FINGERPRINT_UNCHANGED', artifacts
-            row.output_hash = output_hash(artifacts, row.fingerprint)
+            # The node's output identity must be the same one a later plan
+            # derives from the artifact (its contentHash, extract sha, …), or
+            # every dependent would look stale on the next plan.
+            for a in artifacts:
+                ctx.forget(a.path)
+            fresh = spec.evaluate(node, ctx)
+            row.output_hash = fresh.output or output_hash(artifacts, row.fingerprint)
             ctx.states[key], ctx.outputs[key], ctx.rows[key] = 'success', row.output_hash, row
             run.executed.append(key)
             run.artifacts.extend(a.as_dict() for a in artifacts)

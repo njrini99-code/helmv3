@@ -91,5 +91,12 @@
   "geometry": {
     "package": "src/test/fixtures/course-geometry/peek-n-peak-upper.json",
     "published": "public/course-geometry/peek-n-peak-upper/manifest.json"
+  },
+  "retained": {
+    "compiled": "src/test/fixtures/course-geometry/compiled-peek-n-peak-upper",
+    "context": "src/test/fixtures/course-geometry/peek-n-peak-upper-context.json",
+    "contextReport": "src/test/fixtures/course-geometry/peek-n-peak-upper-context-report.json",
+    "canopyReview": "src/test/fixtures/course-geometry/peek-n-peak-upper-canopy-review.json",
+    "imageryReview": "src/test/fixtures/course-geometry/peek-n-peak-upper-imagery-review.json"
   }
 }

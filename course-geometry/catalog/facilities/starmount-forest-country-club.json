@@ -1,0 +1,36 @@
+{
+  "schema": "golfhelm-facility-v1",
+  "facilityId": "starmount-forest-country-club",
+  "name": "Starmount Forest Country Club",
+  "country": "US",
+  "region": "NC",
+  "originWgs84": [
+    -79.8548418,
+    36.076617
+  ],
+  "aoi": {
+    "kind": "osm",
+    "id": "way/570398442",
+    "marginM": 300
+  },
+  "sourcePins": {
+    "osm": [
+      "way/570398442"
+    ]
+  },
+  "providerPolicy": {
+    "terrain": [
+      "nc_onemap_dem03"
+    ],
+    "imagery": [
+      "naip_current"
+    ],
+    "context": [
+      "osm"
+    ]
+  },
+  "notes": [
+    "Intake from the 2026-09-13 usage cohort and the library coverage audit (2026-09-18); origin is the OSM course centre until the build pins it from the AOI.",
+    "Coverage audit: h18 g23 f19 b84 t63 inside the course polygon; DEM tiles named: 0; verdict no-dem."
+  ]
+}

@@ -263,3 +263,34 @@ class TerrainCompilerTest(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class TileSetTests(unittest.TestCase):
+    """Source selection: one covering tile first, else the tiles of one
+    project and date whose union covers the context; never mixed sources."""
+
+    @staticmethod
+    def tile(title, oid, west, south, east, north, end='1600000000000'):
+        return {'attributes': {'OBJECTID': oid, 'title': title, 'EndDate': end, 'VerticalDatum': 'NAVD88', 'URL': 'u', 'StartDate': end},
+                'geometry': {'rings': [[[west, south], [east, south], [east, north], [west, north], [west, south]]]}}
+
+    def test_tile_project_strips_the_grid_token(self):
+        self.assertEqual(compiler.tile_project('USGS 1 Meter 17 x74y435 VA_NorthernShenandoah_2020_D20'), 'VA_NorthernShenandoah_2020_D20')
+        self.assertEqual(compiler.tile_project('USGS one meter x60y466 NY Southwest East 2017'), 'NY Southwest East 2017')
+
+    def test_single_covering_tile_beats_an_adjacent_pair(self):
+        extent = compiler.box(-78.154, 39.164, -78.139, 39.177)
+        north = self.tile('USGS 1 Meter 17 x74y435 VA_NorthernShenandoah_2020_D20', 1, -78.22, 39.1733, -78.10, 39.27)
+        south = self.tile('USGS 1 Meter 17 x74y434 VA_NorthernShenandoah_2020_D20', 2, -78.22, 39.08, -78.10, 39.1762)
+        whole = self.tile('USGS 1 Meter 17 x74y434 VA_Older_2016_D17', 3, -78.3, 39.0, -78.0, 39.3, end='1500000000000')
+        sets = compiler.covering_tile_sets([north, south, whole], extent)
+        self.assertEqual([[r['attributes']['OBJECTID'] for r in tiles] for tiles in sets], [[3], [2, 1]])
+
+    def test_pairs_never_mix_projects_or_dates(self):
+        extent = compiler.box(-78.154, 39.164, -78.139, 39.177)
+        north = self.tile('USGS 1 Meter 17 x74y435 VA_NorthernShenandoah_2020_D20', 1, -78.22, 39.1733, -78.10, 39.27)
+        other_project = self.tile('USGS 1 Meter 17 x74y434 WV_Eastern_2019_D19', 2, -78.22, 39.08, -78.10, 39.1762)
+        other_date = self.tile('USGS 1 Meter 17 x74y434 VA_NorthernShenandoah_2020_D20', 3, -78.22, 39.08, -78.10, 39.1762, end='1700000000000')
+        self.assertEqual(compiler.covering_tile_sets([north, other_project, other_date], extent), [])
+        gap = self.tile('USGS 1 Meter 17 x74y434 VA_NorthernShenandoah_2020_D20', 4, -78.22, 39.08, -78.10, 39.170)
+        self.assertEqual(compiler.covering_tile_sets([north, gap], extent), [])

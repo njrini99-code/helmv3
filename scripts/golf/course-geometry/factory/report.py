@@ -11,13 +11,15 @@ COLUMNS = ('STATE', 'SCOPE', 'TASK', 'REASON')
 
 
 def reason_text(row):
-    if row.state == 'blocked' and row.blockers:
+    if row.state in ('blocked', 'pending') and row.blockers:
         b = row.blockers[0]
         if b.code == 'DEPENDENCY_BLOCKED':
             root = b.evidence.get('root')
-            return f'dependency {b.evidence.get("dependency")} blocked ({b.evidence.get("code")})' + (f' ← {root}' if root and root != b.evidence.get('code') else '')
+            where = b.evidence.get('rootKey') or b.evidence.get('dependency')
+            return f'upstream {root or b.evidence.get("code")} at {where}' if root != 'DEPENDENCY_PENDING' else f'upstream failure at {where}'
         if b.code == 'DEPENDENCY_PENDING':
-            return f'dependency {b.evidence.get("dependency")} not built ({b.evidence.get("state")})'
+            root = b.evidence.get('root')
+            return f'waiting for {root}' if root and root != b.evidence.get('dependency') else f'waiting for {b.evidence.get("dependency")}'
         return b.code
     if row.state == 'stale' and row.changed_inputs:
         return f'{row.reason}: ' + ', '.join(c['input'] for c in row.changed_inputs[:3])
@@ -29,7 +31,7 @@ def display_order(rows, graph=None):
     def rank(item):
         index, row = item
         kind = row.scope.split(':', 1)[0]
-        aggregate = graph is not None and any(d.endswith('*') or d.endswith('*?') for d in graph.nodes[row.key].spec.deps)
+        aggregate = graph is not None and any(d.endswith(('*', '*?')) for d in graph.nodes[row.key].spec.deps)
         return ({'facility': 0, 'layout': 3 if aggregate else 1, 'hole': 2}[kind], row.scope, index)
     return [row for _, row in sorted(enumerate(rows), key=rank)]
 

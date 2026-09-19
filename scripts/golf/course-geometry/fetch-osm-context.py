@@ -18,12 +18,29 @@ import datetime as dt
 import gzip
 import hashlib
 import json
+import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
 
 ENDPOINT = 'https://overpass-api.de/api/interpreter'
 MAX_BYTES = 12_000_000
+RETRY_SECONDS = (5, 20, 60)   # overpass-api.de answers 429/502/503/504 under load; bounded retries, then fail
+
+
+def fetch(request, limit):
+    """One Overpass request with bounded retries on transient status codes."""
+    for wait in (*RETRY_SECONDS, None):
+        try:
+            with urllib.request.urlopen(request, timeout=180) as response:
+                return response.read(limit + 1)
+        except urllib.error.HTTPError as exc:
+            if exc.code not in (429, 502, 503, 504) or wait is None:
+                raise
+            print(f'overpass {exc.code}; retrying in {wait}s', flush=True)
+            time.sleep(wait)
+    raise RuntimeError('unreachable')
 CONTEXT_TAGS = ['highway', 'building', 'natural', 'landuse', 'waterway', 'man_made', 'barrier', 'amenity', 'leisure', 'aerialway', 'golf']
 
 
@@ -51,8 +68,7 @@ def main():
     query = query_for(bbox, margin_deg)
     request = urllib.request.Request(ENDPOINT, data=urllib.parse.urlencode({'data': query}).encode(),
                                      headers={'User-Agent': 'GolfHelm course-geometry source review (bounded, one request per course revision)'})
-    with urllib.request.urlopen(request, timeout=180) as response:
-        raw = response.read(MAX_BYTES + 1)
+    raw = fetch(request, MAX_BYTES)
     if len(raw) > MAX_BYTES:
         raise ValueError('Overpass response exceeds the bounded extract budget')
     parsed = json.loads(raw)

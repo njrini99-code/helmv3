@@ -1,0 +1,104 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "pga-national-champ-white",
+  "layoutId": "pga-national-champ",
+  "teeName": "White",
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-13",
+    "note": "Helm read-only course library snapshot; current card, not surveyed tee markers"
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 4,
+      "yards": 365
+    },
+    {
+      "hole": 2,
+      "par": 4,
+      "yards": 437
+    },
+    {
+      "hole": 3,
+      "par": 5,
+      "yards": 538
+    },
+    {
+      "hole": 4,
+      "par": 4,
+      "yards": 376
+    },
+    {
+      "hole": 5,
+      "par": 3,
+      "yards": 210
+    },
+    {
+      "hole": 6,
+      "par": 5,
+      "yards": 488
+    },
+    {
+      "hole": 7,
+      "par": 3,
+      "yards": 235
+    },
+    {
+      "hole": 8,
+      "par": 4,
+      "yards": 427
+    },
+    {
+      "hole": 9,
+      "par": 4,
+      "yards": 404
+    },
+    {
+      "hole": 10,
+      "par": 5,
+      "yards": 545
+    },
+    {
+      "hole": 11,
+      "par": 4,
+      "yards": 450
+    },
+    {
+      "hole": 12,
+      "par": 4,
+      "yards": 427
+    },
+    {
+      "hole": 13,
+      "par": 4,
+      "yards": 388
+    },
+    {
+      "hole": 14,
+      "par": 4,
+      "yards": 465
+    },
+    {
+      "hole": 15,
+      "par": 3,
+      "yards": 180
+    },
+    {
+      "hole": 16,
+      "par": 4,
+      "yards": 434
+    },
+    {
+      "hole": 17,
+      "par": 3,
+      "yards": 175
+    },
+    {
+      "hole": 18,
+      "par": 5,
+      "yards": 556
+    }
+  ]
+}

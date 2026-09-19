@@ -124,7 +124,10 @@ def facility_problems(doc):
         errs.append('knownRenovationAfter: YYYY-MM-DD')
     if 'notes' in doc and not _str_list(doc['notes'], None, 0, 20):
         errs.append('notes: up to 20 strings')
-    extra = set(doc) - {'schema', 'facilityId', 'name', 'country', 'region', 'originWgs84', 'aoi', 'sourcePins', 'providerPolicy', 'knownRenovationAfter', 'notes'}
+    retained = doc.get('retained')
+    if retained is not None and not (isinstance(retained, dict) and all(k in RETAINED_KEYS and isinstance(v, str) and v for k, v in retained.items())):
+        errs.append(f'retained: {{{"|".join(RETAINED_KEYS)}: path}}')
+    extra = set(doc) - {'schema', 'facilityId', 'name', 'country', 'region', 'originWgs84', 'aoi', 'sourcePins', 'providerPolicy', 'knownRenovationAfter', 'retained', 'notes'}
     if extra:
         errs.append(f'unknown keys: {", ".join(sorted(extra))}')
     return errs

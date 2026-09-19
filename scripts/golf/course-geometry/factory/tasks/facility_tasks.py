@@ -1,4 +1,4 @@
-"""Facility-scoped tasks: the physical property and its source snapshots.
+"""Facility-scoped tasks: the physical property and its OSM snapshots.
 Every layout at the facility shares these nodes (Factory v2 §8.1)."""
 import os
 
@@ -18,104 +18,40 @@ def eval_catalog_validate(node, ctx):
     return evaluation(inputs, blockers)
 
 
-def eval_identity(node, ctx):
+def eval_aoi_resolve(node, ctx):
     facility = ctx.facility(node.scope.facility_id) or {}
-    inputs = {'identity': doc_hash(facility, ('facilityId', 'aoi', 'sourcePins', 'originWgs84'))}
-    blockers = [] if facility.get('aoi') else [blocked('FACILITY_AOI_REQUIRED', facilityId=node.scope.facility_id)]
-    return evaluation(inputs, blockers)
+    inputs = {'aoi': doc_hash(facility, ('aoi',))}      # the catalog edge orders the work; only the AOI itself is an input
+    if not facility.get('aoi'):
+        return evaluation(inputs, [blocked('FACILITY_AOI_REQUIRED', facilityId=node.scope.facility_id)])
+    path = ctx.aoi_path(node.scope.facility_id)
+    doc = ctx.json(path) if ctx.can_adopt(path) else None
+    if not doc:
+        return evaluation(inputs)
+    if doc.get('element') != facility['aoi']['id'] or doc.get('marginM') != facility['aoi']['marginM']:
+        return evaluation(inputs, [], [], False, [f'resolved AOI is for {doc.get("element")} ± {doc.get("marginM")} m'])
+    return evaluation(inputs, [], [artifact('aoi', path, 'A')], True, [f'AOI {doc["element"]} bbox {doc["bboxWgs84"]} (retrieved {doc.get("retrievedAt")})'], output=digest(doc['bboxWgs84']))
 
 
-def _snapshot_eval(retained_key, blocker_code):
+def _snapshot_eval(kind, artifact_prefix):
     def evaluate(node, ctx):
-        facility = ctx.facility(node.scope.facility_id) or {}
-        inputs = {'aoi': doc_hash(facility, ('aoi', 'sourcePins')), 'identity': dep_input(ctx, node, 'facility.identity')}
-        folder = ctx.retained(facility, retained_key)
-        manifest = os.path.join(folder, 'manifest.json') if folder else None
-        doc = ctx.json(manifest) if ctx.can_adopt(manifest) else None
-        artifacts, adoptable, notes = [], False, []
-        if doc:
-            payload = os.path.join(folder, doc.get('file', ''))
-            artifacts = [artifact(f'{retained_key}-manifest', manifest, 'A'), artifact(f'{retained_key}-extract', payload, 'A')]
-            adoptable = exists(payload)
-            if not adoptable:
-                notes.append(f'{doc.get("file")} named by the manifest is missing')
-            notes.append(f'retained {doc.get("provider", "extract")} {doc.get("retrievedAt", "")}'.strip())
-        return evaluation(inputs, [], artifacts, adoptable, notes, output=digest(doc) if doc else None)
+        facility_id = node.scope.facility_id
+        aoi = ctx.aoi(facility_id)
+        inputs = {'aoi': dep_input(ctx, node, 'facility.aoi.resolve') or (digest(aoi['bboxWgs84']) if aoi else None)}
+        manifest, extract = ctx.snapshot(facility_id, kind)
+        if not manifest:
+            return evaluation(inputs)
+        folder = os.path.dirname(extract)
+        notes = [f'retained extract {manifest.get("retrievedAt", "")}: {manifest.get("elementCount")} elements, sha {str(manifest.get("uncompressedSha256"))[:12]}']
+        artifacts = [artifact(f'{artifact_prefix}-manifest', os.path.join(folder, 'manifest.json'), 'A'), artifact(f'{artifact_prefix}-extract', extract, 'A')]
+        return evaluation(inputs, [], artifacts, exists(extract), notes, output=manifest.get('uncompressedSha256'))
     return evaluate
-
-
-def eval_terrain_discover(node, ctx):
-    facility = ctx.facility(node.scope.facility_id) or {}
-    inputs = {'aoi': doc_hash(facility, ('aoi',)), 'providers': digest(facility.get('providerPolicy', {}).get('terrain')),
-              'identity': dep_input(ctx, node, 'facility.identity')}
-    folder = ctx.retained(facility, 'terrain')
-    catalog = os.path.join(folder, 'catalog.json') if folder else None
-    if ctx.can_adopt(catalog) and exists(catalog):
-        return evaluation(inputs, [], [artifact('terrain-catalog', catalog, 'A')], True, ['retained provider catalog'])
-    return evaluation(inputs)
-
-
-def eval_terrain_acquire(node, ctx):
-    facility = ctx.facility(node.scope.facility_id) or {}
-    inputs = {'discover': dep_input(ctx, node, 'facility.terrain.discover'), 'providers': digest(facility.get('providerPolicy', {}).get('terrain'))}
-    folder = ctx.retained(facility, 'terrain')
-    manifest = os.path.join(folder, 'source-manifest.json') if folder else None
-    doc = ctx.json(manifest) if ctx.can_adopt(manifest) else None
-    if not doc:
-        return evaluation(inputs)
-    artifacts = [artifact('terrain-source-manifest', manifest, 'A')]
-    notes = [f'{doc.get("selectedTitle", "terrain")} retrieved {doc.get("retrievedAt", "")}'.strip()]
-    adoptable = True
-    for name, sha in (doc.get('fileHashes') or {}).items():
-        path = os.path.join(folder, name)
-        ref = artifact(f'terrain-{name}', path, 'A')
-        artifacts.append(ref)
-        if ref.sha256 != sha:
-            adoptable = False
-            notes.append(f'{name} does not match the manifest hash' if ref.sha256 else f'{name} is missing')
-    # The output identity is the compiler's `sourceManifestHash`.
-    return evaluation(inputs, [], artifacts, adoptable, notes, output=digest(doc))
-
-
-def eval_imagery_discover(node, ctx):
-    facility = ctx.facility(node.scope.facility_id) or {}
-    inputs = {'aoi': doc_hash(facility, ('aoi',)), 'providers': digest(facility.get('providerPolicy', {}).get('imagery')),
-              'identity': dep_input(ctx, node, 'facility.identity')}
-    folder = ctx.retained(facility, 'naip')
-    manifest = os.path.join(folder, 'manifest.json') if folder else None
-    doc = ctx.json(manifest) if ctx.can_adopt(manifest) else None
-    if doc:
-        # The retained export's manifest names the tiles discovery chose.
-        return evaluation(inputs, [], [artifact('naip-manifest', manifest, 'B')], True, ['retained NAIP export manifest'], output=digest(doc))
-    return evaluation(inputs)
-
-
-def eval_imagery_acquire(node, ctx):
-    facility = ctx.facility(node.scope.facility_id) or {}
-    inputs = {'discover': dep_input(ctx, node, 'facility.imagery.discover'), 'providers': digest(facility.get('providerPolicy', {}).get('imagery'))}
-    folder = ctx.retained(facility, 'naip')
-    manifest = os.path.join(folder, 'manifest.json') if folder else None
-    doc = ctx.json(manifest) if ctx.can_adopt(manifest) else None
-    if not doc:
-        return evaluation(inputs)
-    raster = os.path.join(folder, 'naip.tif')
-    artifacts = [artifact('naip-manifest', manifest, 'B'), artifact('naip-raster', raster, 'B')]
-    return evaluation(inputs, [], artifacts, exists(raster), ['retained NAIP export'], output=doc.get('rasterSha256') or digest(doc))
 
 
 SPECS = [
     TaskSpec('catalog.validate', '1', 'facility', (), eval_catalog_validate, executor=INLINE, retention='C'),
-    TaskSpec('facility.identity', '1', 'facility', ('catalog.validate',), eval_identity, executor=INLINE),
-    TaskSpec('facility.osm.snapshot', '1', 'facility', ('catalog.validate', 'facility.identity'), _snapshot_eval('osm', 'OSM_SOURCE_UNAVAILABLE'),
+    TaskSpec('facility.aoi.resolve', '1', 'facility', ('catalog.validate',), eval_aoi_resolve, retention='A', estimated_bytes=100_000),
+    TaskSpec('facility.osm.snapshot', '1', 'facility', ('facility.aoi.resolve',), _snapshot_eval('osm', 'osm'),
              impl_files=(script('fetch-osm-course.py'),), retention='A', estimated_bytes=5_000_000),
-    TaskSpec('facility.terrain.discover', '1', 'facility', ('facility.identity',), eval_terrain_discover,
-             impl_files=(script('compile-course-terrain.py'), script('elevation_raster.py')), retention='A', estimated_bytes=1_000_000),
-    TaskSpec('facility.terrain.acquire', '1', 'facility', ('facility.terrain.discover',), eval_terrain_acquire,
-             impl_files=(script('compile-course-terrain.py'), script('elevation_raster.py')), retention='A', estimated_bytes=300_000_000),
-    TaskSpec('facility.imagery.discover', '1', 'facility', ('facility.identity',), eval_imagery_discover,
-             impl_files=(script('derive-canopy-naip.py'),), retention='B', estimated_bytes=1_000_000),
-    TaskSpec('facility.imagery.acquire', '1', 'facility', ('facility.imagery.discover',), eval_imagery_acquire,
-             impl_files=(script('derive-canopy-naip.py'),), retention='B', estimated_bytes=500_000_000),
-    TaskSpec('facility.context.snapshot', '1', 'facility', ('facility.identity',), _snapshot_eval('osmContext', 'OSM_SOURCE_UNAVAILABLE'),
-             impl_files=(script('fetch-osm-context.py'),), retention='A', estimated_bytes=5_000_000),
+    TaskSpec('facility.context.snapshot', '1', 'facility', ('facility.aoi.resolve',), _snapshot_eval('context', 'osm-context'),
+             impl_files=(script('fetch-osm-context.py'),), retention='A', estimated_bytes=12_000_000),
 ]

@@ -1,0 +1,71 @@
+{
+  "schema": "golfhelm-layout-v1",
+  "layoutId": "the-cardinal",
+  "facilityId": "sedgefield-country-club-dye-course",
+  "name": "The Cardinal",
+  "siteIds": [
+    "osm-relation-6542700"
+  ],
+  "segments": {
+    "main": {
+      "holes": [
+        "the-cardinal-01",
+        "the-cardinal-02",
+        "the-cardinal-03",
+        "the-cardinal-04",
+        "the-cardinal-05",
+        "the-cardinal-06",
+        "the-cardinal-07",
+        "the-cardinal-08",
+        "the-cardinal-09",
+        "the-cardinal-10",
+        "the-cardinal-11",
+        "the-cardinal-12",
+        "the-cardinal-13",
+        "the-cardinal-14",
+        "the-cardinal-15",
+        "the-cardinal-16",
+        "the-cardinal-17",
+        "the-cardinal-18"
+      ]
+    }
+  },
+  "segmentOrder": [
+    "main"
+  ],
+  "holeOrder": [
+    "the-cardinal-01",
+    "the-cardinal-02",
+    "the-cardinal-03",
+    "the-cardinal-04",
+    "the-cardinal-05",
+    "the-cardinal-06",
+    "the-cardinal-07",
+    "the-cardinal-08",
+    "the-cardinal-09",
+    "the-cardinal-10",
+    "the-cardinal-11",
+    "the-cardinal-12",
+    "the-cardinal-13",
+    "the-cardinal-14",
+    "the-cardinal-15",
+    "the-cardinal-16",
+    "the-cardinal-17",
+    "the-cardinal-18"
+  ],
+  "routeWayIds": null,
+  "bboxWgs84": null,
+  "capabilityTier": "C0",
+  "externalBindings": {
+    "golfCourseIds": [
+      "65069f6c-9576-4a22-8ade-ef11e2a28574"
+    ]
+  },
+  "scorecardProfiles": [
+    "the-cardinal-championship"
+  ],
+  "geometry": null,
+  "notes": [
+    "30 completed cohort rounds (2026-09-13); intake wrote this manifest at C0 with routes unresolved."
+  ]
+}

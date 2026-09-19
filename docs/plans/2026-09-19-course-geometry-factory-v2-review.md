@@ -66,8 +66,116 @@ Still single-course on purpose:
 - The round pages evaluate `PEEK_N_PEAK_UPPER_POLICY`'s two flags into the existing `oneTapFlagEnabled` / `oneTapSyncEnabled` booleans. A second drawn layout needs a per-layout flag map through `ContinueRoundClient` / `NewRoundClient` (PR B/C), not two more booleans.
 - `dbCourseIds` stays empty in the registry even though the catalog binds the Upper's `golf_courses` row; binding by id would change how a renamed course resolves and belongs with the round-page work above.
 
+## PR B — built 2026-09-19 on `agent/course-factory-b`
+
+Owner's plan: `docs/plans/2026-09-19-course-geometry-factory-v2-next.md`
+(kept verbatim). Stacked on `agent/course-factory-a` (#1949); #1939 untouched.
+Owner redirection mid-build: *"I don't need Peek'n Peak. We're trying to
+replicate how detailed Peek'n Peak was and scale it for the other courses"*
+and *"Focus on highly played courses first and scale them quick"*. PR B
+therefore stops at making the Upper the adopted reference and spends its live
+runs on the cohort.
+
+What landed (`scripts/golf/course-geometry/factory/`, CLI `course-factory.py`):
+
+- Catalog read/validate (`catalog.py`, same wording as `catalog.ts`; both
+  sides accept `retained: {kind: path}` on facilities and layouts).
+- Graph (`graph.py`): facility → layout → hole DAG, fan-in `*`, optional `?`
+  deps, cycle detection that names the stuck nodes, shared facility nodes.
+- Fingerprints (`fingerprints.py`): direct inputs + task version + impl-file
+  hashes; per-hole subhashes (`holeGolfGeometryHash`, `holeCanopyHash`,
+  `holeContextHash`, `holeReviewHash`, `holeTerrainInputHash`,
+  `holeDisplayInputHash`); `terrain_source_identity` = files + bounds + CRS.
+- Planner (`planner.py`): states `ready / pending / cached / stale / blocked /
+  failed / running`; order own blockers → ledger success + verified artifacts →
+  adoption of retained evidence → blocked dependency (human blockers ranked
+  first, root recorded) → pending dependency (an unfinished *optional* dep also
+  waits, so a hole is never compiled without the context layer merely because
+  the classifier has not run) → stale with the changed inputs.
+- Ledger (`ledger.py`): `output/course-geometry/factory/state.sqlite`,
+  runs / task runs / inputs / artifacts / manual invalidations, interrupted
+  recovery by pid, disk accounting and eviction candidates.
+- Runner (`runner.py`): topological, plans each node against what ran before
+  it, re-evaluates a node's output identity after success so dependants judge
+  the artifact, not the run; every attempt leaves a log and a ledger row.
+- Adapters (`adapters.py`, 17 executors): AOI resolve (Overpass element →
+  bbox), OSM + context snapshots, routes (`osm_ref_unique` or block),
+  scorecard/candidates/package compose (`prepare-osm-course.py`), terrain
+  acquire (`compile-course-terrain.py --acquire-only`), canopy
+  (`derive-canopy-naip.py`), imagery audit, base compile, context classify,
+  per-hole compile and world build, aggregates, review queue, capability
+  report. Canary/player capture and publish verify stay
+  `ADAPTER_NOT_IMPLEMENTED` (PR C).
+- Intake (`intake.py`): cohort + coverage audit + library scorecards → C0
+  manifests, most-played first, facility named by its OSM element, sibling
+  polygon guard; wrote 10 facilities / 14 layouts / 14 scorecards.
+- Compiler: `--acquire-only`; `asset-manifest.json` gains `sourceIdentity`
+  and the output-directory guard compares it (the old full-manifest digest
+  changed every time the raster served another package revision).
+- Docs: README command sheet, `memory/features/shot-tracking.md` contract.
+
+Acceptance answers (all from `plan`/`why`, no hand reasoning):
+
+| question | answer |
+| --- | --- |
+| What does Cacapon need? | AOI → snapshots → routes (18 unique refs) → terrain x73y438 → canopy → package → 18 compiles/worlds; reached a cached fixed point live (57 cached, 40 blocked by design). |
+| Why is it blocked? | 18 × `ADAPTER_NOT_IMPLEMENTED` (canary), `PUBLISH_NOT_APPROVED`; earned tier C1. |
+| Which input made this stale? | `why` prints the changed input, previous/current hash and the upstream node that caused it. |
+| Hole 7 geometry changes? | `hole.terrain.compile[07]`, `hole.world.build[07]`, the four aggregates; nothing else (test). |
+| Renderer version bump? | Only `hole.visual.canary` × 18 and its aggregate (test). |
+| Scorecard yardage changes? | No acquire, compile or world build; the package is re-prepared (test). |
+| Hole 7 package hash only? | Hole 14 stays cached (test, per-hole subhashes). |
+| Disk? | `status` prints free / reserve / retained by class and scope; the guard blocks the first heavy task under the reserve with eviction candidates (test). |
+
+Deliberate deviation: the plan asked Cacapon to *block* on route identity.
+The factory proposes when every played hole has exactly one numbered
+`golf=hole` way inside the layout's own polygon (Cacapon: 18/18, no par
+disagreement) and queues `route_confirmation`; it blocks with the candidate
+list when a number is missing or repeated (the Upper's shared resort polygon
+is the test). Guessing never happens; a person still confirms before C2.
+
+Tests: 70 in `test_factory_*.py` (catalog 12, graph 9, osm 7, fingerprints 11,
+ledger 8, cli 14, impact 9) + 16 existing compiler tests; all network-free;
+`ruff` clean. Catalog: `catalog.test.ts` (4).
+
+Live results (scratch output root, nothing committed):
+
+- Cacapon: four runs (the first three exposed real defects that are now
+  fixed and tested: context outputs named after the package file, the
+  compiler guard on the served-package list, the source manifest treated as an
+  immutable artifact). Machine time ≈ 6 min for the full chain; per-hole
+  compile 4–7 s, world build ≈ 2 s. **Canopy came back with 0 groups**: the
+  2024-09-10 NAIP tile is bright (red mean 136 vs the Upper's 88; NDVI median
+  0.16 vs 0.37), so the fixed `ndviMin 0.28` misses the forest. Surfaced as a
+  `CANOPY_SHARE_SUSPECT` note on `layout.canopy.derive`; the fix (per-export
+  threshold calibrated against OSM fairway pixels) is a geospatial change and
+  belongs to PR C.
+- Winchester CC (30 rounds): second live course, started at the end of this
+  session; results in the session report.
+
+Cohort ranking (intake, 2026-09-13 usage): Bryan Park Champs 45 — **no OSM
+course polygon matched, needs a human pin** (the most-played course is
+blocked on a two-minute action); Cacapon 36 (live); The Cardinal 30 and
+Starmount Forest 23 — `TERRAIN_ADAPTER_MISSING` (NC OneMap DEM03, PR C);
+Winchester 30 (live); Big Blue UK 19, Landfall 24 across five layouts, Cutter
+Creek 8 — `UTM_ZONE_UNSUPPORTED` (zone 16/18; PR C parameterises the five
+scripts that hard-code 32617); Grande Dunes 13, Forsyth 7, Boonsboro 7 (OSM
+has no hole ways: will block on routes), PGA National 2 — ready for the same
+chain as Cacapon; River Landing 16, Pinehurst No. 8 7, Magnolia Greens 5,
+Forest Oaks 2 — need an OSM pin.
+
+Honest scaling floor: machine ≈ 10 min per 18-hole course once the source
+adapters exist; the human half-day per course is the route confirmation,
+imagery/context review and the truth gate, which needs someone who knows the
+course. Nothing here changes player behaviour or writes production.
+
+Next PR boundary (PR C): NC OneMap DEM03 terrain adapter (unblocks 60+
+rounds), UTM zone parameterisation (unblocks 50+), canopy threshold
+calibration, the canary/player-capture adapters, and the answer to the
+owner's "lab generators based on map pics" (imagery-traced geometry for
+OSM-thin courses vs imagery-keyed render generators — asked in the session
+report).
+
 ## Not started
 
-Phases B–H. Scale-out work past PR A waits on the branch decision for PR B
-(it needs PR A merged into the pilot branch or main) and on the source checks
-named above (S1M coverage for the first wave).
+PR C onward (see the boundary above). Publishing, flags and production binding stay owner-gated.

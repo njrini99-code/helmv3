@@ -1,0 +1,37 @@
+{
+  "schema": "golfhelm-facility-v1",
+  "facilityId": "boonsboro-country-club",
+  "name": "Boonsboro Country Club",
+  "country": "US",
+  "region": "VA",
+  "originWgs84": [
+    -79.2520796,
+    37.4586501
+  ],
+  "aoi": {
+    "kind": "osm",
+    "id": "way/518032130",
+    "marginM": 300
+  },
+  "sourcePins": {
+    "osm": [
+      "way/518032130"
+    ]
+  },
+  "providerPolicy": {
+    "terrain": [
+      "usgs_s1m",
+      "usgs_3dep_project_1m"
+    ],
+    "imagery": [
+      "naip_current"
+    ],
+    "context": [
+      "osm"
+    ]
+  },
+  "notes": [
+    "Intake from the 2026-09-13 usage cohort and the library coverage audit (2026-09-18); origin is the OSM course centre until the build pins it from the AOI.",
+    "Coverage audit: h0 g6 f7 b0 t25 inside the course polygon; DEM tiles named: 1; verdict no-osm."
+  ]
+}

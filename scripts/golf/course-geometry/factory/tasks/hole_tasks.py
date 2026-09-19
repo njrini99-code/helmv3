@@ -2,7 +2,6 @@
 never the whole package hash, so one hole's edit stays one hole's rebuild."""
 import os
 
-from ..fingerprints import digest
 from ..model import TaskSpec
 from .common import artifact, dep_input, evaluation, exists, script
 
@@ -19,30 +18,34 @@ def _sub(ctx, node, name):
 
 
 def eval_terrain_compile(node, ctx):
-    layout = ctx.layout(node.scope.layout_id) or {}
-    context = ctx.context_layer(node.scope.layout_id)
-    terrain_dir = ctx.retained(ctx.facility(node.scope.facility_id), 'terrain')
-    source_manifest = ctx.json(os.path.join(terrain_dir, 'source-manifest.json')) if terrain_dir else None
-    # The terrain source identity is the compiler's `sourceManifestHash`: the
-    # acquire node's output when built, else the retained manifest itself.
-    source_identity = dep_input(ctx, node, 'facility.terrain.acquire') or (digest(source_manifest) if source_manifest else None)
-    inputs = {'terrainSource': source_identity, 'holeTerrainInputHash': _sub(ctx, node, 'holeTerrainInputHash'),
-              'holeContextHash': _sub(ctx, node, 'holeContextHash'), 'contextLayer': (context or {}).get('contentHash')}
-    folder = ctx.retained(layout, 'compiled')
-    nn = node.scope.nn
-    report_path = os.path.join(folder, f'{node.scope.layout_id}-{nn}-report.json') if folder else None
-    terrain_path = os.path.join(folder, f'{node.scope.layout_id}-{nn}-terrain.json') if folder else None
-    if not (ctx.can_adopt(report_path) and exists(report_path)):
+    layout_id = node.scope.layout_id
+    context = ctx.context_layer(layout_id)
+    context_ready = ctx.states.get(f'layout.context.classify[{layout_id}]') in ('cached', 'success')
+    # Per-hole inputs only: the hole's golf geometry, canopy and the context
+    # zones that touch it. The whole-layer hash is deliberately absent so a
+    # zone edited on hole 12 leaves hole 3's compile cached.
+    inputs = {'terrainSource': dep_input(ctx, node, 'layout.terrain.acquire'), 'holeTerrainInputHash': _sub(ctx, node, 'holeTerrainInputHash'),
+              'holeContextHash': _sub(ctx, node, 'holeContextHash') if context_ready else None, 'withContext': context_ready}
+    hole = ctx.package_hole(layout_id, node.scope.ordinal)
+    folder = ctx.compiled_dir(layout_id)
+    if not hole or not folder or not ctx.can_adopt(folder):
         return evaluation(inputs)
+    report_path = os.path.join(folder, f'{hole["key"]}-report.json')
+    terrain_path = os.path.join(folder, f'{hole["key"]}-terrain.json')
     report = ctx.json(report_path)
+    if not report:
+        return evaluation(inputs)
     compilation = ctx.json(os.path.join(folder, 'compilation-report.json')) or {}
-    notes, adoptable = [], exists(terrain_path)
+    assets = ctx.json(os.path.join(folder, 'asset-manifest.json')) or {}
+    expected_context = (context or {}).get('contentHash') if context_ready else None
+    per_hole_context = report.get('contextLayerHash', compilation.get('contextLayerHash'))
     checks = {
-        'package': report.get('geometryHash') == ctx.package_hash(node.scope.layout_id),
-        'terrain source': bool(source_manifest) and compilation.get('sourceManifestHash') == digest(source_manifest),
-        'context layer': compilation.get('contextLayerHash') == (context or {}).get('contentHash'),
-        'compiler': compilation.get('compilerVersion') == TERRAIN_COMPILER,
+        'package': report.get('geometryHash') == ctx.package_hash(layout_id) and assets.get('geometryHash') == ctx.package_hash(layout_id),
+        'terrain source': ctx.compiled_source_matches(layout_id, folder),
+        'context layer': per_hole_context == expected_context,
+        'compiler': assets.get('compilerVersion', compilation.get('compilerVersion')) == TERRAIN_COMPILER,
     }
+    notes, adoptable = [], exists(terrain_path)
     for name, ok in checks.items():
         if not ok:
             adoptable = False
@@ -52,30 +55,25 @@ def eval_terrain_compile(node, ctx):
     return evaluation(inputs, [], [artifact('terrain', terrain_path, 'C'), artifact('terrain-report', report_path, 'C')], adoptable, notes, output=report.get('contentHash'))
 
 
-def _world_eval(stage, hash_field):
-    def evaluate(node, ctx):
-        layout = ctx.layout(node.scope.layout_id) or {}
-        inputs = {'terrain': dep_input(ctx, node, 'hole.terrain.compile'), 'holeDisplayInputHash': _sub(ctx, node, 'holeDisplayInputHash')}
-        if stage != 'normalize':
-            inputs['previous'] = dep_input(ctx, node, PREVIOUS[stage])
-        folder = ctx.retained(layout, 'world')
-        manifest_path = os.path.join(folder, 'course-world-manifest.json') if folder else None
-        manifest = ctx.json(manifest_path) if ctx.can_adopt(manifest_path) else None
-        if not manifest:
-            return evaluation(inputs)
-        hole = next((h for h in manifest.get('holes', []) if h.get('ordinal') == node.scope.ordinal), None)
-        if not hole or manifest.get('packageHash') != ctx.package_hash(node.scope.layout_id):
-            return evaluation(inputs, [], [], False, ['retained world build is for another package'] if hole else [])
-        value = hole.get(hash_field)
-        if value is None:
-            return evaluation(inputs, [], [], False, [f'world manifest carries no {hash_field}'])
-        ref = artifact(f'world-{stage}', manifest_path, 'C')
-        ref.sha256 = value if isinstance(value, str) else digest(value)
-        return evaluation(inputs, [], [ref], True, [f'retained world build ({hash_field} {str(value)[:12]})'], output=ref.sha256)
-    return evaluate
-
-
-PREVIOUS = {'compile': 'hole.world.normalize', 'truth_gate': 'hole.world.compile', 'glb_export': 'hole.world.compile', 'glb_roundtrip': 'hole.glb.export'}
+def eval_world_build(node, ctx):
+    layout_id = node.scope.layout_id
+    inputs = {'terrainSource': dep_input(ctx, node, 'layout.terrain.acquire'), 'holeGolfGeometryHash': _sub(ctx, node, 'holeGolfGeometryHash'),
+              'holeCanopyHash': _sub(ctx, node, 'holeCanopyHash'), 'par': (ctx.package_hole(layout_id, node.scope.ordinal) or {}).get('par')}
+    hole = ctx.package_hole(layout_id, node.scope.ordinal)
+    if not hole:
+        return evaluation(inputs)
+    folder = os.path.join(ctx.layout_out(layout_id), 'world', 'holes', hole['key'])
+    record = ctx.json(os.path.join(folder, 'record.json')) if ctx.can_adopt(folder) else None
+    if not record:
+        return evaluation(inputs)
+    adoptable = record.get('packageHash') == ctx.package_hash(layout_id)
+    notes = [f'world build {record.get("builtAt", "")[:10]}: truth gate {"passed" if record.get("truthGatePassed") else "failed"}'
+             + ('' if record.get('blender', True) else ' (blender skipped)')]
+    if not adoptable:
+        notes.append('world build is for another package')
+    artifacts = [artifact('world-record', os.path.join(folder, 'record.json'), 'C'), artifact('world-study', os.path.join(folder, 'study.json'), 'C'),
+                 artifact('world-truth', os.path.join(folder, 'validation', 'course-truth.json'), 'C')]
+    return evaluation(inputs, [], artifacts, adoptable, notes, output=record.get('physicalWorldHash'))
 
 
 def eval_visual_canary(node, ctx):
@@ -89,19 +87,12 @@ def eval_player_capture(node, ctx):
 
 
 SPECS = [
-    TaskSpec('hole.terrain.compile', TERRAIN_COMPILER, 'hole', ('facility.terrain.acquire', 'layout.package.validate', 'layout.context.classify?'), eval_terrain_compile,
+    TaskSpec('hole.terrain.compile', TERRAIN_COMPILER, 'hole', ('layout.terrain.acquire', 'layout.package.validate', 'layout.context.classify?'), eval_terrain_compile,
              impl_files=(script('compile-course-terrain.py'), script('elevation_raster.py')), retention='C', estimated_bytes=5_000_000,
              settings={'style': TERRAIN_STYLE}),
-    TaskSpec('hole.world.normalize', '1', 'hole', ('hole.terrain.compile',), _world_eval('normalize', 'studyHash'),
-             impl_files=(script('normalize-study.py'), script('build-course-world.py')), estimated_bytes=5_000_000),
-    TaskSpec('hole.world.compile', '1', 'hole', ('hole.world.normalize',), _world_eval('compile', 'physicalWorldHash'),
-             impl_files=(script('compile-physical-world.py'), script('build-course-world.py')), estimated_bytes=20_000_000),
-    TaskSpec('hole.truth_gate', '1', 'hole', ('hole.world.compile',), _world_eval('truth_gate', 'truthGatePassed'),
-             impl_files=(script('course-truth-gate.py'),), estimated_bytes=100_000),
-    TaskSpec('hole.glb.export', '1', 'hole', ('hole.world.compile',), _world_eval('glb_export', 'glbSha256'),
-             impl_files=(script('build-course-world.py'), script('export-v2-glb.mts')), estimated_bytes=20_000_000),
-    TaskSpec('hole.glb.roundtrip', '1', 'hole', ('hole.glb.export',), _world_eval('glb_roundtrip', 'glbSha256'),
-             impl_files=(script('build-course-world.py'),), estimated_bytes=1_000_000),
+    TaskSpec('hole.world.build', '1', 'hole', ('layout.package.validate', 'layout.terrain.acquire'), eval_world_build,
+             impl_files=(script('build-course-world.py'), script('normalize-study.py'), script('compile-physical-world.py'), script('course-truth-gate.py')),
+             estimated_bytes=30_000_000),
     TaskSpec('hole.visual.canary', '1', 'hole', ('hole.terrain.compile', 'layout.context.classify?'), eval_visual_canary,
              impl_files=RENDERER_FILES + (script('capture-visual-canaries.cjs'),), estimated_bytes=50_000_000),
     TaskSpec('hole.player.capture', '1', 'hole', ('hole.visual.canary',), eval_player_capture,

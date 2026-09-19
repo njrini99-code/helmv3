@@ -1,0 +1,53 @@
+{
+  "schema": "golfhelm-layout-v1",
+  "layoutId": "cc-of-landfall-ocean-9",
+  "facilityId": "landfall-country-club-golf-course",
+  "name": "CC of Landfall (Ocean 9)",
+  "siteIds": [
+    "osm-way-524540524"
+  ],
+  "segments": {
+    "main": {
+      "holes": [
+        "cc-of-landfall-ocean-9-01",
+        "cc-of-landfall-ocean-9-02",
+        "cc-of-landfall-ocean-9-03",
+        "cc-of-landfall-ocean-9-04",
+        "cc-of-landfall-ocean-9-05",
+        "cc-of-landfall-ocean-9-06",
+        "cc-of-landfall-ocean-9-07",
+        "cc-of-landfall-ocean-9-08",
+        "cc-of-landfall-ocean-9-09"
+      ]
+    }
+  },
+  "segmentOrder": [
+    "main"
+  ],
+  "holeOrder": [
+    "cc-of-landfall-ocean-9-01",
+    "cc-of-landfall-ocean-9-02",
+    "cc-of-landfall-ocean-9-03",
+    "cc-of-landfall-ocean-9-04",
+    "cc-of-landfall-ocean-9-05",
+    "cc-of-landfall-ocean-9-06",
+    "cc-of-landfall-ocean-9-07",
+    "cc-of-landfall-ocean-9-08",
+    "cc-of-landfall-ocean-9-09"
+  ],
+  "routeWayIds": null,
+  "bboxWgs84": null,
+  "capabilityTier": "C0",
+  "externalBindings": {
+    "golfCourseIds": [
+      "009b2006-bbd2-4e88-bd17-82771709d0b7"
+    ]
+  },
+  "scorecardProfiles": [
+    "cc-of-landfall-ocean-9-black"
+  ],
+  "geometry": null,
+  "notes": [
+    "5 completed cohort rounds (2026-09-13); intake wrote this manifest at C0 with routes unresolved."
+  ]
+}

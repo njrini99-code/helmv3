@@ -1,0 +1,71 @@
+{
+  "schema": "golfhelm-layout-v1",
+  "layoutId": "big-blue-course-uk",
+  "facilityId": "university-club-of-kentucky",
+  "name": "Big Blue Course (UK)",
+  "siteIds": [
+    "osm-way-258229089"
+  ],
+  "segments": {
+    "main": {
+      "holes": [
+        "big-blue-course-uk-01",
+        "big-blue-course-uk-02",
+        "big-blue-course-uk-03",
+        "big-blue-course-uk-04",
+        "big-blue-course-uk-05",
+        "big-blue-course-uk-06",
+        "big-blue-course-uk-07",
+        "big-blue-course-uk-08",
+        "big-blue-course-uk-09",
+        "big-blue-course-uk-10",
+        "big-blue-course-uk-11",
+        "big-blue-course-uk-12",
+        "big-blue-course-uk-13",
+        "big-blue-course-uk-14",
+        "big-blue-course-uk-15",
+        "big-blue-course-uk-16",
+        "big-blue-course-uk-17",
+        "big-blue-course-uk-18"
+      ]
+    }
+  },
+  "segmentOrder": [
+    "main"
+  ],
+  "holeOrder": [
+    "big-blue-course-uk-01",
+    "big-blue-course-uk-02",
+    "big-blue-course-uk-03",
+    "big-blue-course-uk-04",
+    "big-blue-course-uk-05",
+    "big-blue-course-uk-06",
+    "big-blue-course-uk-07",
+    "big-blue-course-uk-08",
+    "big-blue-course-uk-09",
+    "big-blue-course-uk-10",
+    "big-blue-course-uk-11",
+    "big-blue-course-uk-12",
+    "big-blue-course-uk-13",
+    "big-blue-course-uk-14",
+    "big-blue-course-uk-15",
+    "big-blue-course-uk-16",
+    "big-blue-course-uk-17",
+    "big-blue-course-uk-18"
+  ],
+  "routeWayIds": null,
+  "bboxWgs84": null,
+  "capabilityTier": "C0",
+  "externalBindings": {
+    "golfCourseIds": [
+      "9eb84bdc-9d3e-4486-8206-520505cdeb84"
+    ]
+  },
+  "scorecardProfiles": [
+    "big-blue-course-uk-championship"
+  ],
+  "geometry": null,
+  "notes": [
+    "19 completed cohort rounds (2026-09-13); intake wrote this manifest at C0 with routes unresolved."
+  ]
+}

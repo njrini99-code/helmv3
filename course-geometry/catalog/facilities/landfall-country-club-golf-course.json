@@ -1,0 +1,36 @@
+{
+  "schema": "golfhelm-facility-v1",
+  "facilityId": "landfall-country-club-golf-course",
+  "name": "Landfall Country Club Golf Course",
+  "country": "US",
+  "region": "NC",
+  "originWgs84": [
+    -77.8148906,
+    34.2314018
+  ],
+  "aoi": {
+    "kind": "osm",
+    "id": "way/524540524",
+    "marginM": 300
+  },
+  "sourcePins": {
+    "osm": [
+      "way/524540524"
+    ]
+  },
+  "providerPolicy": {
+    "terrain": [
+      "nc_onemap_dem03"
+    ],
+    "imagery": [
+      "naip_current"
+    ],
+    "context": [
+      "osm"
+    ]
+  },
+  "notes": [
+    "Intake from the 2026-09-13 usage cohort and the library coverage audit (2026-09-18); origin is the OSM course centre until the build pins it from the AOI.",
+    "Coverage audit: h0 g0 f0 b0 t0 inside the course polygon; DEM tiles named: 0; verdict no-osm."
+  ]
+}

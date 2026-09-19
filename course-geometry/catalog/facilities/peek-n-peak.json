@@ -33,5 +33,10 @@
   "notes": [
     "Upper and Lower share the OSM site way/136097904; the Upper layout is selected by its route ways, never by proximity.",
     "Terrain in the library audit: USGS 1 Meter 17 x60y466 PA_WesternPA_2019_D20 and USGS one meter x60y466 NY Southwest East 2017."
-  ]
+  ],
+  "retained": {
+    "osm": "src/test/fixtures/course-geometry/sources/peek-n-peak-upper-osm",
+    "osmContext": "src/test/fixtures/course-geometry/sources/peek-n-peak-upper-osm-context",
+    "terrain": "src/test/fixtures/course-geometry/sources/peek-n-peak-upper-terrain"
+  }
 }
