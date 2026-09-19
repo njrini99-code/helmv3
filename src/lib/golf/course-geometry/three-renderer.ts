@@ -84,12 +84,15 @@ function estimateGeometryBytes(world: Scene): number {
  * table on its next frame. Remove once `three` ≥ 0.187. */
 let sharedDfgLut: Texture | null = null;
 function releaseSharedDfgLut(renderer: WebGLRenderer, world: Scene) {
+  // Duck-typed like three itself, so a second bundled copy of `three` can
+  // never make the lookup miss silently.
   if (!sharedDfgLut) world.traverse(object => {
-    if (sharedDfgLut || !(object instanceof Mesh)) return;
-    for (const material of Array.isArray(object.material) ? object.material : [object.material]) {
-      const cached = renderer.properties.get(material) as { uniforms?: { dfgLUT?: { value?: unknown } } } | undefined;
+    if (sharedDfgLut || !(object as Mesh).isMesh) return;
+    const { material } = object as Mesh;
+    for (const entry of Array.isArray(material) ? material : [material]) {
+      const cached = renderer.properties.get(entry) as { uniforms?: { dfgLUT?: { value?: Partial<Texture> | null } } } | undefined;
       const value = cached?.uniforms?.dfgLUT?.value;
-      if (value instanceof Texture) { sharedDfgLut = value; return; }
+      if (value?.isTexture) { sharedDfgLut = value as Texture; return; }
     }
   });
   if (sharedDfgLut && renderer.properties.has(sharedDfgLut)) sharedDfgLut.dispose();
