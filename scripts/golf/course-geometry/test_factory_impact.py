@@ -243,7 +243,7 @@ class RetainedSafetyTests(unittest.TestCase):
         keep = os.path.join(self.tmp, 'retained')
         for kind, name in (('osm', 'osm'), ('osm-context', 'osm-context'), ('terrain', 'terrain')):
             source = os.path.join(facility_out, kind)
-            shutil.copytree(os.path.join(source, sorted(os.listdir(source))[0]), os.path.join(keep, name))
+            shutil.copytree(os.path.join(source, min(os.listdir(source))), os.path.join(keep, name))
         shutil.copytree(os.path.join(built, 'compiled'), os.path.join(keep, 'compiled'))
         os.makedirs(os.path.join(keep, 'layout'))
         for name in ('canopy-review.json', 'imagery-review.json', os.path.join('context', 'synthetic-a-context.json'), os.path.join('context', 'synthetic-a-context-report.json')):
