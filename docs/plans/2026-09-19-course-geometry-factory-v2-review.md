@@ -150,8 +150,17 @@ Live results (scratch output root, nothing committed):
   `CANOPY_SHARE_SUSPECT` note on `layout.canopy.derive`; the fix (per-export
   threshold calibrated against OSM fairway pixels) is a geospatial change and
   belongs to PR C.
-- Winchester CC (30 rounds): second live course, started at the end of this
-  session; results in the session report.
+- Winchester CC (30 rounds): second live course. Three failed attempts
+  taught the factory three things now in code and tests — Overpass 504s
+  (bounded retry in the AOI adapter and both fetch scripts), an implementation
+  change re-running a snapshot into its immutable directory (snapshot
+  revisions: a complete extract for the same AOI is reused, a manual
+  invalidation fetches `-r2`), and a course that straddles two tiles of one
+  lidar project (`covering_tile_sets`: same project + same date may cover
+  together; mixed sources still refused). The fourth run went clean: 49
+  executed, 0 failed, 57 cached, earned tier C1, canopy 236 groups (24 % of
+  the 2025-06 export), 18 compiled holes at 18–32 k triangles. The Overpass
+  fetch → cached fixed point took 9 minutes of machine time.
 
 Cohort ranking (intake, 2026-09-13 usage): Bryan Park Champs 45 — **no OSM
 course polygon matched, needs a human pin** (the most-played course is
