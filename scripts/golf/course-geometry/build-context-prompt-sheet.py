@@ -204,7 +204,7 @@ if naip:
     lines += ['', (f"NAIP evidence (course-wide, {sum(h['unexplainedM2'] for h in naip['holes']) / 1e4:.0f} ha unexplained): canopy {pct(cc['canopy'])}, meadow {pct(cc['meadow'])}, mown turf {pct(cc['turf'])}, "
                    f"bare / hardscape {pct(cc['bare'])}, dark {pct(cc['dark'])}. {naip['courseCanopy']['beyondCanopyPassReachM2'] / 1e4:.0f} ha of that canopy lies in the {prepare.HOLE_MARGIN_M} m rim beyond the canopy pass's reach. "
                    f"Holes under the gate if every pixel of a class were explained by a new derivation: canopy {g['canopy']}, turf {g['turf']}, turf + meadow {g['turf+meadow']}, all vegetation {g['vegetation']} of {len(naip['holes'])} "
-                   f"(pixel bounds; the review sidecar cannot add zones — each needs a new derived zone). Overlays: `output/course-geometry/peek-n-peak-upper-unexplained/hNN-unexplained.png`.")]
+                   f"(pixel bounds; the review sidecar cannot add zones — each needs a new derived zone). Overlays: `output/course-geometry/peek-n-peak-upper-unexplained/hNN-unexplained.png` (regenerate with `report-unexplained-naip.py`); committed sheet `docs/plans/assets/outside-world-2026-09-19/unexplained-naip-contact-sheet.jpg`, hero hole `docs/plans/assets/outside-world-2026-09-19/hole-07-unexplained.jpg`.")]
 if rerun:
     hp = rerun['holesPassingGate']
     lines += ['', (f"Canopy re-run measured with the pass's own rules out to the hole bounds (`measure-canopy-rerun.py`): {hp['today']} → {hp['rerun']} holes under the gate "
