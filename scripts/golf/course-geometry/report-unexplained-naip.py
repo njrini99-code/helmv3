@@ -21,8 +21,12 @@ already exist; explaining this ground needs a new `derived` zone (design step 4)
 
 Outputs (in <out-dir>): `unexplained-naip.json`, `unexplained-naip.md`, one
 `hNN-unexplained.png` overlay per hole (NAIP RGB, explained ground dimmed,
-unexplained ground tinted by class) and `contact-sheet.png`. `--fixture=<path>`
-also writes the small per-hole JSON (no pixels) for the prompt sheet.
+unexplained ground tinted by class), `contact-sheet.png`, and two QGIS layers
+for the review kit (`build-qgis-review-kit.py --evidence=<out-dir>`):
+`unexplained-classes.tif` (paletted GeoTIFF in the raster CRS, 0 = explained or
+outside) and `unexplained-ground.geojson` (per-hole unexplained polygons,
+WGS84, with the class shares as properties). `--fixture=<path>` also writes
+the small per-hole JSON (no pixels) for the prompt sheet.
 
 Usage:
   python3 scripts/golf/course-geometry/report-unexplained-naip.py \
@@ -40,7 +44,7 @@ from pathlib import Path
 import numpy as np
 import pyproj
 import shapely
-from osgeo import gdal
+from osgeo import gdal, osr
 from PIL import Image, ImageDraw
 from scipy import ndimage
 from shapely.geometry import LineString, Polygon, box
@@ -108,7 +112,7 @@ def enu_grid(export, origin):
     dx, dy, dz = px - ox, py - oy, pz - oz
     east = -np.sin(o_lon) * dx + np.cos(o_lon) * dy
     north = -np.sin(o_lat) * np.cos(o_lon) * dx - np.sin(o_lat) * np.sin(o_lon) * dy + np.cos(o_lat) * dz
-    return east.reshape(height, width), north.reshape(height, width), px_x * px_y
+    return east.reshape(height, width), north.reshape(height, width), (px_x, px_y)
 
 
 def texture_for(naip_dir, nir, raster_sha):
@@ -134,6 +138,32 @@ class Sampler:
         window = (self.east >= minx) & (self.east <= maxx) & (self.north >= miny) & (self.north <= maxy)
         out[window] = shapely.contains_xy(geom, self.east[window], self.north[window])
         return out
+
+
+def enu_inverse(local, origin):
+    """Numeric inverse of make_local (three Newton steps: millimetres at course extents)."""
+    def inverse(e, n):
+        lon, lat = origin
+        for _ in range(3):
+            cur = local([lon, lat])
+            per_lon = (local([lon + 1e-4, lat])[0] - cur[0]) / 1e-4
+            per_lat = (local([lon, lat + 1e-4])[1] - cur[1]) / 1e-4
+            lon += (e - cur[0]) / per_lon
+            lat += (n - cur[1]) / per_lat
+        return [round(lon, 7), round(lat, 7)]
+    return inverse
+
+
+def geojson_geometry(geom, inverse):
+    """Shapely (Multi)Polygon in ENU → GeoJSON MultiPolygon in WGS84, interiors kept."""
+    polygons = list(getattr(geom, 'geoms', [geom]))
+    coords = []
+    for poly in polygons:
+        if poly.is_empty or poly.geom_type != 'Polygon':
+            continue
+        rings = [poly.exterior.coords] + [ring.coords for ring in poly.interiors]
+        coords.append([[inverse(x, y) for x, y in ring] for ring in rings])
+    return {'type': 'MultiPolygon', 'coordinates': coords}
 
 
 def percentiles(values, points):
@@ -251,7 +281,9 @@ def main():
     red, green, blue, nir = bands[0], bands[1], bands[2], bands[3]
     ndvi = (nir - red) / (nir + red + 1e-6)
     texture = texture_for(args.naip_directory, nir, raster_sha)
-    east, north, pixel_m2 = enu_grid(export, pkg['originWgs84'])
+    east, north, (px_w, px_h) = enu_grid(export, pkg['originWgs84'])
+    extent = export['extent']
+    pixel_m2 = px_w * px_h
     sampler = Sampler(east, north)
 
     # Calibration on the package's own surfaces, away from their edges.
@@ -281,7 +313,9 @@ def main():
     rgb8 = np.clip((np.stack([red, green, blue], -1) - stretch_lo) / (stretch_hi - stretch_lo) * 255, 0, 255).astype(np.uint8)
     args.output.mkdir(parents=True, exist_ok=True)
     reach_mask = sampler.mask(canopy_reach)
-    holes_out, tiles = [], []
+    holes_out, tiles, ground_features = [], [], []
+    class_raster = np.zeros(ndvi.shape, dtype=np.uint8)  # 0 = explained or outside every hole's bounds; 1.. = CLASSES
+    inverse = enu_inverse(local, pkg['originWgs84'])
     for hole in sorted(pkg['holes'], key=lambda h: h['ordinal']):
         key, n = hole['key'], hole['ordinal']
         entry = unexplained[key]
@@ -319,6 +353,11 @@ def main():
         ground_idx = np.flatnonzero(ground_mask)
         for i, name in enumerate(CLASSES):
             labels.ravel()[ground_idx[classes[name]]] = i
+        class_raster[labels >= 0] = labels[labels >= 0] + 1
+        ground_features.append({'type': 'Feature', 'geometry': geojson_geometry(entry['ground'].simplify(.25, preserve_topology=True), inverse),
+                                'properties': {'holeKey': key, 'ordinal': n, 'uncertainShare': round(entry['share'], 3), 'unexplainedM2': round(vector_m2),
+                                               **{f'{name}Share': round(shares[name], 3) for name in CLASSES},
+                                               **{f'if_{sname}': scenario_out[sname]['uncertainShare'] for sname, _, _ in SCENARIOS}}})
         for i, name in enumerate(CLASSES):
             sel = labels[r0:r1, c0:c1] == i
             tile[sel] = tile[sel] * .45 + np.array(TINT[name], dtype=float) * .55
@@ -354,6 +393,32 @@ def main():
             contact.paste(tile, (8 + j * (tile_w + 8), y))
         y += row_heights[row] + 8
     contact.save(args.output / 'contact-sheet.png')
+
+    # --- QGIS layers for the review kit ---
+    driver = gdal.GetDriverByName('GTiff')
+    tif = driver.Create(str(args.output / 'unexplained-classes.tif'), class_raster.shape[1], class_raster.shape[0], 1, gdal.GDT_Byte, options=['COMPRESS=DEFLATE', 'TILED=YES'])
+    tif.SetGeoTransform((extent['xmin'], px_w, 0, extent['ymax'], 0, -px_h))
+    srs = osr.SpatialReference()
+    srs.ImportFromEPSG(export['extent']['spatialReference']['wkid'])
+    tif.SetProjection(srs.ExportToWkt())
+    band = tif.GetRasterBand(1)
+    # GTiff fixes the photometric tag on the first pixel write: palette first, pixels last.
+    table = gdal.ColorTable()
+    table.SetColorEntry(0, (0, 0, 0, 0))
+    for i, name in enumerate(CLASSES):
+        table.SetColorEntry(i + 1, (*TINT[name], 255))
+    band.SetRasterColorTable(table)
+    band.SetRasterColorInterpretation(gdal.GCI_PaletteIndex)
+    band.SetNoDataValue(0)
+    band.SetCategoryNames(['explained / outside'] + [LABELS[name] for name in CLASSES])
+    band.SetDescription('unexplained context ground by NAIP class (report-unexplained-naip.py)')
+    band.WriteArray(class_raster)
+    band.FlushCache()
+    tif = None
+    (args.output / 'unexplained-ground.geojson').write_text(json.dumps({
+        'type': 'FeatureCollection', 'name': 'unexplained-ground',
+        'description': 'Per-hole ground the context report calls unexplained (report only; no zone). Properties: class shares from NAIP and the what-if shares.',
+        'packageHash': pkg['contentHash'], 'layerHash': context['contentHash'], 'features': ground_features}) + '\n')
 
     # --- course level ---
     total_unexplained = sum(h['unexplainedM2'] for h in holes_out)
@@ -425,7 +490,8 @@ def main():
     for kind, ref in references.items():
         lines.append(f"| {kind} | {ref['pixels']} | {ref['ndvi']} | {ref['nir']} | {ref['texture']} |")
     lines += ['', '## Caveats', ''] + [f'- {c}' for c in result['method']['caveats']]
-    lines += ['', '## Files', '', '`hNN-unexplained.png` per hole (NAIP RGB, explained ground dimmed to 42 %, outside the bounds to 25 %, unexplained ground tinted by class), `contact-sheet.png`, `unexplained-naip.json`.']
+    lines += ['', '## Files', '', ('`hNN-unexplained.png` per hole (NAIP RGB, explained ground dimmed to 42 %, outside the bounds to 25 %, unexplained ground tinted by class), `contact-sheet.png`, `unexplained-naip.json`; '
+                                   'QGIS layers `unexplained-classes.tif` (paletted, raster CRS) and `unexplained-ground.geojson` (WGS84) for `build-qgis-review-kit.py --evidence=<this directory>`.')]
     (args.output / 'unexplained-naip.md').write_text('\n'.join(lines) + '\n')
     (args.output / 'unexplained-naip.json').write_text(json.dumps(result, indent=1, ensure_ascii=False) + '\n')
     if args.fixture:

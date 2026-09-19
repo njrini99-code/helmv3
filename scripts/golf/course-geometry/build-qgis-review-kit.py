@@ -9,7 +9,13 @@ source / confidence. Nothing here moves a polygon or passes a truth gate.
 
 Usage:
   python3 build-qgis-review-kit.py <package.json> <out-dir> \
-      [--context=<context.json>] [--imagery-review=<review.json>]
+      [--context=<context.json>] [--imagery-review=<review.json>] \
+      [--evidence=<report-unexplained-naip out-dir>]
+
+`--evidence` adds the NAIP evidence layers for the §39 pass — the per-hole
+unexplained ground (`unexplained-ground.geojson`, class shares as attributes)
+and the classified raster (`unexplained-classes.tif`: canopy / meadow / mown
+turf / bare / dark, explained ground transparent) — read-only, under the zones.
 
 Then in QGIS: Plugins → Python Console → exec(open('<out-dir>/load_review_kit.py').read())
 """
@@ -27,6 +33,9 @@ package_path, out = Path(args[0]), Path(args[1])
 package = json.loads(package_path.read_text())
 context = json.loads(Path(opts['context']).read_text()) if 'context' in opts else None
 review = json.loads(Path(opts['imagery-review']).read_text()) if 'imagery-review' in opts else None
+evidence = Path(opts['evidence']).resolve() if 'evidence' in opts else None
+if evidence and not (evidence / 'unexplained-classes.tif').exists():
+    raise SystemExit(f'{evidence} has no unexplained-classes.tif — run report-unexplained-naip.py first')
 out.mkdir(parents=True, exist_ok=True)
 
 hole_by_key = {h['key']: h for h in package['holes']}
@@ -136,6 +145,33 @@ def add_basemap(name, uri):
 add_basemap("OSM source", "type=xyz&url=https://tile.openstreetmap.org/%7Bz%7D/%7Bx%7D/%7By%7D.png&zmax=19&zmin=0")
 add_basemap("NAIP", "crs=EPSG:3857&format=image/png&layers=USGSNAIPPlus&styles=&url=https://imagery.nationalmap.gov/arcgis/services/USGSNAIPPlus/ImageServer/WMSServer")
 
+EVIDENCE = {('Path(r"' + str(evidence) + '")') if evidence else 'None'}
+if EVIDENCE:
+    # report-unexplained-naip.py: what the unexplained context ground is in leaf-on NAIP (report only, never a zone).
+    classes = QgsRasterLayer(str(EVIDENCE / "unexplained-classes.tif"), "unexplained ground · NAIP class", "gdal")
+    if classes.isValid():
+        classes.setOpacity(.55)
+        project.addMapLayer(classes)
+    else:
+        print("could not load", EVIDENCE / "unexplained-classes.tif")
+    ground = QgsVectorLayer(str(EVIDENCE / "unexplained-ground.geojson"), "unexplained ground · per hole", "ogr")
+    if ground.isValid():
+        symbol = QgsSymbol.defaultSymbol(ground.geometryType())
+        for i in range(symbol.symbolLayerCount()):
+            sl = symbol.symbolLayer(i)
+            if hasattr(sl, "setStrokeColor"): sl.setStrokeColor(QColor("#FFFFFF")); sl.setStrokeWidth(.4)
+            if hasattr(sl, "setFillColor"): sl.setFillColor(QColor(0, 0, 0, 0))
+        ground.renderer().setSymbol(symbol)
+        settings = QgsPalLayerSettings()
+        settings.fieldName = "concat('hole ', ordinal, ' · ', round(100 * uncertainShare), ' % unexplained · canopy ', round(100 * canopyShare), ' · meadow ', round(100 * meadowShare), ' · turf ', round(100 * turfShare), ' · bare ', round(100 * bareShare))"
+        settings.isExpression = True
+        fmt = QgsTextFormat(); fmt.setSize(8); settings.setFormat(fmt)
+        ground.setLabelsEnabled(True); ground.setLabeling(QgsVectorLayerSimpleLabeling(settings))
+        ground.setReadOnly(True)
+        project.addMapLayer(ground)
+    else:
+        print("could not load", EVIDENCE / "unexplained-ground.geojson")
+
 STATUS_STYLE = {{
     "accepted": ("#1E9E4A", Qt.SolidLine, "accepted"),
     "adjust": ("#E0A030", Qt.SolidLine, "adjust"),
@@ -200,6 +236,11 @@ Labels: `featureId · hole · source · confidence`.
 
 Hole completeness and known gaps are in `holes.json`. Confidence hints come from imagery statistics
 ({'the imagery review sidecar' if review else 'no imagery review supplied'}); they are hints, not measurements.
+{f'''
+NAIP evidence for the §39 pass (`{evidence}`): `unexplained ground · NAIP class` paints what the context
+report leaves unexplained as canopy (dark green) / meadow (lime) / mown turf (yellow) / bare or hardscape (pink) /
+dark (blue); `unexplained ground · per hole` outlines that ground per hole with its shares. Evidence only —
+explaining any of it needs a new `derived` zone, which the sidecar cannot add.''' if evidence else 'No NAIP evidence layers supplied (`--evidence=`).'}
 """
 (out / 'README.md').write_text(readme)
 print(json.dumps(counts))

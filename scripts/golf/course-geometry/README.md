@@ -292,6 +292,13 @@ python3 scripts/golf/course-geometry/measure-canopy-rerun.py \
   output/course-geometry/peek-n-peak-upper-unexplained \
   --fixture=$F/peek-n-peak-upper-canopy-rerun.json
 # (the prompt sheet takes that fixture as its optional last argument)
+# QGIS review kit with the NAIP evidence layers (classified raster + per-hole
+# unexplained ground, read-only, under the zones):
+python3 scripts/golf/course-geometry/build-qgis-review-kit.py \
+  $F/peek-n-peak-upper.json output/course-geometry/peek-n-peak-upper-review-kit \
+  --context=$F/peek-n-peak-upper-context.json \
+  --imagery-review=$F/peek-n-peak-upper-imagery-review.json \
+  --evidence=output/course-geometry/peek-n-peak-upper-unexplained
 # Visual canaries (§8): 8 holes × Top/Terrain/Side × 4 viewports + canaries.json
 # (each capture also carries the hole's unexplained-context share and its
 # pass/fail against the outside-world uncertain gate, < 15 %, from the context report)

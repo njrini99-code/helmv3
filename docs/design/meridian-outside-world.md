@@ -55,8 +55,11 @@ ground tone, draped ribbon, extruded footprint, vegetation, line, none).
    hole), classifies the leaf-on NAIP pixels inside it with thresholds
    measured on the package's own surfaces (canopy / meadow / mown turf /
    bare / dark), and writes per-hole overlays, a JSON the prompt sheet
-   reads, and the upper bound each class puts on the gate (report only; the
-   review sidecar cannot add zones, a derived zone can).
+   reads, the bound each class puts on the gate, and two QGIS layers the
+   review kit loads with `--evidence=` (report only; the review sidecar
+   cannot add zones, a derived zone can). `measure-canopy-rerun.py` measures
+   the one machine-doable move — the canopy pass re-run out to the hole
+   bounds — without applying it (a new package hash is the owner's call).
 
 The renderer refuses a layer whose package hash, site or origin differ
 (`MERIDIAN_CONTEXT_LAYER_MISMATCH`), exactly like the visual artifact.
