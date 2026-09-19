@@ -90,6 +90,9 @@ class LedgerTests(unittest.TestCase):
         found = self.ledger.invalidation_after(n.key, finished)
         self.assertEqual((found['reason'], found['actor']), ('bunker moved', 'tester'))
         self.assertIsNone(self.ledger.invalidation_after(n.key, '9999-01-01T00:00:00+00:00'))
+        # A rebuild recorded right after the invalidation (same second) clears it.
+        self.ledger.record_success('run-2', n, 'fp1', {}, [])
+        self.assertIsNone(self.ledger.invalidation_after(n.key, self.ledger.last_success(n.key)['finished_at']))
 
     def test_running_rows_without_a_live_process_are_recovered_as_interrupted(self):
         n = node()

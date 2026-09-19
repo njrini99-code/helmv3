@@ -108,6 +108,12 @@ def execute(graph, ctx, run, keys=None, dry_run=False, recovered=()):
         started = time.monotonic()
         try:
             artifacts = executor(node, ctx, run) or []
+            # An executor only ever produces under the output root; retained
+            # evidence (checked-in fixtures, external exports) is read, never
+            # written, so a task that reports one has written where it must not.
+            outside = [a.path for a in artifacts if not ctx.inside_output(a.path)]
+            if outside:
+                raise RuntimeError(f'ARTIFACT_OUTSIDE_OUTPUT_ROOT: {", ".join(ctx.relpath(p) for p in outside)}')
             problem = verify_artifacts(artifacts)
             if problem:
                 raise RuntimeError(f'{problem[0]}: {problem[1]}')

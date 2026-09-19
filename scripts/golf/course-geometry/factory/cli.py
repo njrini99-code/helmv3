@@ -160,6 +160,9 @@ def cmd_doctor(session, args, out):
     catalog = session.catalog
     checks.append({'check': 'catalog', 'ok': not catalog.problems,
                    'detail': f'{len(catalog.facilities)} facilities, {len(catalog.layouts)} layouts, {len(catalog.scorecards)} scorecards' + (f'; {len(catalog.problems)} problem(s): ' + '; '.join(catalog.problems[:3]) if catalog.problems else ''), 'required': True})
+    missing = [f'{doc_id}.{key}' for kind in ('facilities', 'layouts') for doc_id, doc in getattr(catalog, kind).items()
+               for key, path in (doc.get('retained') or {}).items() if not os.path.exists(session.ctx.abspath(path))]
+    checks.append({'check': 'retained evidence', 'ok': not missing, 'detail': 'all retained paths present' if not missing else f'{len(missing)} missing: {", ".join(missing[:4])}', 'required': False})
     checks.append({'check': 'ledger', 'ok': True, 'detail': session.ledger.path, 'required': False})
     for c in checks:
         mark = 'ok ' if c['ok'] else ('!! ' if c['required'] else '-- ')

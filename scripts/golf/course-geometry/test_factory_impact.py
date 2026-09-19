@@ -7,6 +7,8 @@ import shutil
 import tempfile
 import unittest
 
+from factory.fingerprints import file_sha256
+from factory.ledger import Ledger
 from factory_testkit import Harness
 
 DONE = ('cached', 'success')
@@ -147,9 +149,6 @@ class ImpactTests(unittest.TestCase):
         self.assertIn('MANUAL_INVALIDATION', text)
 
 
-if __name__ == '__main__':
-    unittest.main()
-
 
 class BlockerTests(unittest.TestCase):
     def setUp(self):
@@ -210,3 +209,138 @@ class BlockerTests(unittest.TestCase):
         finally:
             os.environ.pop('COURSE_FACTORY_DISK_RESERVE_GB', None)
             h.ledger.close()
+
+
+def tree_hashes(root):
+    return {os.path.relpath(os.path.join(d, f), root): file_sha256(os.path.join(d, f)) for d, _, files in os.walk(root) for f in files}
+
+
+class RetainedSafetyTests(unittest.TestCase):
+    """Retained evidence (checked-in fixtures, external exports) is read and
+    adopted, never written to or deleted: every executor produces under the
+    output root, and a manual invalidation rebuilds there."""
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp(prefix='factory-retained-')
+        self.h = Harness(self.tmp)
+
+    def tearDown(self):
+        self.h.ledger.close()
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def run_report(self, text):
+        line = next(l for l in text.splitlines() if l.startswith('report: '))
+        return read_json(os.path.join(os.path.dirname(line[len('report: '):]), 'report.json'))
+
+    def promote_to_retained(self):
+        """Build layout A once, then move its evidence outside the output root
+        and point the catalog at it, the way a checked-in fixture would."""
+        h = self.h
+        code, text = h.run('run', '--layout', 'synthetic-a')
+        self.assertEqual(code, 0, text)
+        built = os.path.join(h.output, 'layouts', 'synthetic-a')
+        facility_out = os.path.join(h.output, 'facilities', 'synthetic')
+        keep = os.path.join(self.tmp, 'retained')
+        osm_dir = os.path.join(facility_out, 'osm', os.listdir(os.path.join(facility_out, 'osm'))[0])
+        shutil.copytree(osm_dir, os.path.join(keep, 'osm'))
+        shutil.copytree(os.path.join(built, 'compiled'), os.path.join(keep, 'compiled'))
+        os.makedirs(os.path.join(keep, 'layout'))
+        for name in ('canopy-review.json', 'imagery-review.json', os.path.join('context', 'synthetic-a-context.json'), os.path.join('context', 'synthetic-a-context-report.json')):
+            shutil.copy(os.path.join(built, name), os.path.join(keep, 'layout', os.path.basename(name)))
+        facility_doc = os.path.join(h.catalog, 'facilities', 'synthetic.json')
+        layout_doc = os.path.join(h.catalog, 'layouts', 'synthetic-a.json')
+        facility = read_json(facility_doc)
+        facility['retained'] = {'osm': os.path.join(keep, 'osm')}
+        layout = read_json(layout_doc)
+        layout['retained'] = {'compiled': os.path.join(keep, 'compiled'), 'canopyReview': os.path.join(keep, 'layout', 'canopy-review.json'),
+                              'imageryReview': os.path.join(keep, 'layout', 'imagery-review.json'), 'context': os.path.join(keep, 'layout', 'synthetic-a-context.json'),
+                              'contextReport': os.path.join(keep, 'layout', 'synthetic-a-context-report.json')}
+        for path, doc in ((facility_doc, facility), (layout_doc, layout)):
+            with open(path, 'w', encoding='utf-8') as f:
+                json.dump(doc, f, indent=1)
+        # A fresh factory: nothing built, nothing in the ledger.
+        h.ledger.close()
+        shutil.rmtree(h.output)
+        h.output = os.path.join(self.tmp, 'fresh-output')
+        h.ledger = Ledger(os.path.join(h.output, 'state.sqlite'))
+        return keep
+
+    def test_retained_evidence_is_adopted_then_left_alone_by_a_rebuild(self):
+        h = self.h
+        keep = self.promote_to_retained()
+        before = tree_hashes(keep)
+        code, text = h.run('run', '--layout', 'synthetic-a')
+        self.assertEqual(code, 0, text)
+        self.assertIn('failed 0', text)
+        first = self.run_report(text)
+        states = h.states('synthetic-a')
+        for key in ('facility.osm.snapshot[synthetic]', 'layout.canopy.derive[synthetic-a]', 'layout.context.classify[synthetic-a]', 'hole.terrain.compile[synthetic-a:03]'):
+            # Adopted during the run (and recorded), so the next plan reads it
+            # back from the ledger as ordinary cached work.
+            self.assertNotIn(key, first['executed'], key)
+            self.assertEqual(states[key][0], 'cached', (key, states[key]))
+        self.assertEqual(tree_hashes(keep), before, 'adoption must not touch retained evidence')
+
+        # Rebuild what the retained evidence stood for: OSM snapshot (the root
+        # of everything), the context layer and one hole compile.
+        for args in (('--task', 'facility.osm.snapshot'), ('--task', 'layout.context.classify'), ('--task', 'hole.terrain.compile', '--hole', '3')):
+            code, text = h.run('invalidate', '--layout', 'synthetic-a', *args, '--reason', 'retained evidence superseded')
+            self.assertEqual(code, 0, text)
+        code, text = h.run('run', '--layout', 'synthetic-a')
+        self.assertEqual(code, 0, text)
+        self.assertIn('failed 0', text)
+        report = self.run_report(text)
+        for key in ('facility.osm.snapshot[synthetic]', 'layout.context.classify[synthetic-a]', 'hole.terrain.compile[synthetic-a:03]'):
+            self.assertIn(key, report['executed'], key)
+        self.assertEqual(tree_hashes(keep), before, 'a rebuild must not write to or delete retained evidence')
+        outside = [a['path'] for a in report['artifacts'] if not os.path.abspath(a['path']).startswith(os.path.abspath(h.output) + os.sep)]
+        self.assertEqual(outside, [], 'every built artifact lives under the output root')
+        self.assertTrue(os.path.isfile(os.path.join(h.output, 'layouts', 'synthetic-a', 'compiled', 'synthetic-a-03-report.json')) or
+                        any(f.endswith('-report.json') for f in os.listdir(os.path.join(h.output, 'layouts', 'synthetic-a', 'compiled'))))
+        # The next plan reads the rebuilt hole from the output root and the
+        # untouched holes from the retained compile: nothing is stale.
+        states = h.states('synthetic-a')
+        not_done = {k: v for k, v in states.items() if k.startswith(('hole.terrain.compile', 'layout.context.classify', 'facility.osm.snapshot')) and v[0] not in DONE}
+        self.assertEqual(not_done, {})
+        rows = h.plan_rows('synthetic-a')
+        rebuilt = rows['hole.terrain.compile[synthetic-a:03]']['artifacts'][0]['path']
+        self.assertTrue(os.path.abspath(rebuilt).startswith(os.path.abspath(h.output) + os.sep), rebuilt)
+        untouched = rows['hole.terrain.compile[synthetic-a:04]']['artifacts'][0]['path']
+        self.assertTrue(os.path.abspath(untouched).startswith(os.path.join(keep, 'compiled') + os.sep), untouched)
+
+    def test_an_executor_reporting_an_artifact_outside_the_output_root_fails_the_task(self):
+        h = self.h
+        keep = self.promote_to_retained()
+        rogue_path = os.path.join(keep, 'layout', 'canopy-review.json')
+        real = h.pipeline.executors()
+
+        def rogue_canopy(node, ctx, run):
+            real['layout.canopy.derive'](node, ctx, run)
+            from factory.tasks.common import artifact
+            return [artifact('canopy-review', rogue_path, 'A')]
+
+        code, text = h.run('run', '--layout', 'synthetic-a')
+        self.assertEqual(code, 0, text)
+        code, text = h.run('invalidate', '--layout', 'synthetic-a', '--task', 'layout.canopy.derive', '--reason', 'probe')
+        self.assertEqual(code, 0, text)
+        code, text = h.run('run', '--layout', 'synthetic-a', executors={**real, 'layout.canopy.derive': rogue_canopy})
+        self.assertIn('ARTIFACT_OUTSIDE_OUTPUT_ROOT', text)
+        self.assertIn('failed 1', text)
+        self.assertNotIn(h.states('synthetic-a')['layout.canopy.derive[synthetic-a]'][0], DONE)
+
+    def test_safe_rmtree_refuses_paths_outside_the_output_root(self):
+        from factory import adapters
+        from factory.context import Context
+        keep = self.promote_to_retained()
+        ctx = Context(self.h.repo, None, self.h.output)
+        with self.assertRaises(RuntimeError):
+            adapters.safe_rmtree(ctx, os.path.join(keep, 'compiled'))
+        self.assertTrue(os.path.isdir(os.path.join(keep, 'compiled')))
+        victim = os.path.join(self.h.output, 'scratch')
+        os.makedirs(victim)
+        adapters.safe_rmtree(ctx, victim)
+        self.assertFalse(os.path.isdir(victim))
+
+
+if __name__ == '__main__':
+    unittest.main()

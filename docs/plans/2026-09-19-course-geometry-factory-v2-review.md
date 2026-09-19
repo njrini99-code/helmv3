@@ -134,9 +134,25 @@ disagreement) and queues `route_confirmation`; it blocks with the candidate
 list when a number is missing or repeated (the Upper's shared resort polygon
 is the test). Guessing never happens; a person still confirms before C2.
 
-Tests: 70 in `test_factory_*.py` (catalog 12, graph 9, osm 7, fingerprints 11,
-ledger 8, cli 14, impact 9) + 16 existing compiler tests; all network-free;
-`ruff` clean. Catalog: `catalog.test.ts` (4).
+Tests: 75 in `test_factory_*.py` (catalog 12, graph 9, osm 7, fingerprints 11,
+ledger 8, cli 16, impact 12) + 20 compiler tests; all network-free; `ruff`
+clean (no new findings). Catalog: `catalog.test.ts` (4).
+
+Retained evidence is read-only (review finding, fixed before merge): the
+context now separates read locators (`compiled_dir`, `canopy_path`, `osm_dir`,
+… answer "which artifact is current": built output first, then retained
+evidence, then the path a build would create) from write locators (`*_out`,
+always under the output root). Every executor and the test fakes write through
+`*_out`; `safe_rmtree` refuses any path outside the output root; the runner
+fails a task whose reported artifact lies outside the root
+(`ARTIFACT_OUTSIDE_OUTPUT_ROOT`); `doctor` reports missing retained paths. A
+per-hole read (`compiled_dir(layout, hole)`) lets a retained full compile keep
+serving the holes a rebuild did not touch. Verified by
+`RetainedSafetyTests`: adopt from retained → invalidate the OSM snapshot, the
+context layer and one hole compile → rerun → retained tree byte-identical,
+every artifact under the root, untouched holes still read from the retained
+compile. Ledger timestamps carry microseconds so a rebuild finishing in the
+same second as the `invalidate` that asked for it clears the invalidation.
 
 Live results (scratch output root, nothing committed):
 
@@ -157,10 +173,23 @@ Live results (scratch output root, nothing committed):
   revisions: a complete extract for the same AOI is reused, a manual
   invalidation fetches `-r2`), and a course that straddles two tiles of one
   lidar project (`covering_tile_sets`: same project + same date may cover
-  together; mixed sources still refused). The fourth run went clean: 49
-  executed, 0 failed, 57 cached, earned tier C1, canopy 236 groups (24 % of
-  the 2025-06 export), 18 compiled holes at 18–32 k triangles. The Overpass
-  fetch → cached fixed point took 9 minutes of machine time.
+  together; mixed sources still refused; an undated tile is never paired).
+  The fourth run went clean: 49 executed, 0 failed, 57 cached, earned tier
+  C1, canopy 236 groups (24 % of the 2025-06 export), 18 compiled holes at
+  18–32 k triangles. The Overpass fetch → cached fixed point took 9 minutes
+  of machine time. **Caveat for review**: the two tiles (x74y434 + x74y435,
+  VA_NorthernShenandoah_2020_D20) are mosaicked by the export service and the
+  compiler checks only that the union covers the request; nothing yet checks
+  the seam for vertical continuity. A person looks at the seam (it crosses
+  the course near 39.175 N) before Winchester goes past C1.
+- After the retained-path fix both live layouts were re-run from their
+  cached state: the compiler edit changed the impl hash of acquire, base and
+  the 18 hole compiles, so each layout re-executed exactly those (rasters and
+  extracts reused, 1 ms snapshots, no network) and the next run was the fixed
+  point again (`executed 0, cached 57, blocked 40, failed 0`). One
+  refinement for PR C: the base compile's output identity includes its
+  manifest digest, so a base rebuild also re-runs `layout.context.classify`
+  once even when the terrain is unchanged.
 
 Cohort ranking (intake, 2026-09-13 usage): Bryan Park Champs 45 — **no OSM
 course polygon matched, needs a human pin** (the most-played course is

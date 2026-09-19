@@ -36,7 +36,10 @@ SCHEMA_VERSION = 1
 
 
 def now_iso():
-    return dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat()
+    # Microseconds: a manual invalidation is ordered against the success it
+    # targets by timestamp, and a rebuild can finish within the same second
+    # as the `invalidate` that asked for it.
+    return dt.datetime.now(dt.timezone.utc).isoformat(timespec='microseconds')
 
 
 def pid_alive(pid):
@@ -79,7 +82,9 @@ class Ledger:
         self.db.commit()
 
     def runs(self, limit=20):
-        return [dict(r) for r in self.db.execute('SELECT * FROM build_runs ORDER BY started_at DESC LIMIT ?', (limit,))]
+        """Runs an operator launched, newest first. The synthetic runs that
+        book plan-time adoptions are bookkeeping, not history."""
+        return [dict(r) for r in self.db.execute("SELECT * FROM build_runs WHERE command NOT LIKE 'plan (%' ORDER BY started_at DESC, rowid DESC LIMIT ?", (limit,))]
 
     # --- task runs ----------------------------------------------------------
     def start_task(self, run_id, node, fingerprint, log_path=None, pid=None):

@@ -83,7 +83,11 @@ with a stable reason code. It wraps the existing scripts (`fetch-osm-*`,
 - Facility and layout manifests may carry `retained: {kind: path}` maps that
   point the factory at checked-in evidence (`osm`, `osmContext`, `terrain`,
   `compiled`, `context`, `canopyReview`, `imageryReview`, …); Peek'n Peak
-  Upper is the reference and adopts 27 nodes from fixtures.
+  Upper is the reference and adopts 27 nodes from fixtures. Retained paths
+  are read-only: executors write through `*_out` locators under the output
+  root, `safe_rmtree` refuses anything outside it, and a task that reports an
+  artifact outside the root fails (`ARTIFACT_OUTSIDE_OUTPUT_ROOT`). Built
+  output supersedes retained evidence when both exist.
 - The 18-hole and UTM 17N limits of the wrapped scripts surface as
   `HOLE_COUNT_UNSUPPORTED` and `UTM_ZONE_UNSUPPORTED`; NC courses without a
   1 m USGS tile carry `providerPolicy.terrain: [nc_onemap_dem03]` and block on

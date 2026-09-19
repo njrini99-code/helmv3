@@ -246,13 +246,11 @@ def run_package_validate(node, ctx, run):
 def eval_terrain_base(node, ctx):
     layout_id = node.scope.layout_id
     inputs = {'package': dep_input(ctx, node, 'layout.package.compose'), 'terrain': dep_input(ctx, node, 'layout.terrain.acquire')}
-    folder = os.path.join(ctx.layout_out(layout_id), 'compiled-base')
-    manifest = ctx.json(os.path.join(folder, 'asset-manifest.json')) if ctx.can_adopt(folder) else None
+    # A retained full compile of this package is the base the retained
+    # context layer was classified against; it serves as the base here.
+    folder = ctx.terrain_base_dir(layout_id)
     retained = ctx.retained(ctx.layout(layout_id), 'compiled')
-    if not manifest and retained:
-        # A retained full compile of this package is the base the retained
-        # context layer was classified against; it serves as the base here.
-        folder, manifest = retained, ctx.json(os.path.join(retained, 'asset-manifest.json'))
+    manifest = ctx.json(os.path.join(folder, 'asset-manifest.json')) if ctx.can_adopt(folder) else None
     if not manifest:
         return evaluation(inputs)
     holes = len(manifest.get('holes') or {})

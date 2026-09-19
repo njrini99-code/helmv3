@@ -138,12 +138,12 @@ class FakePipeline:
 
     def osm(self, node, ctx, run):
         self._mark(node)
-        return self._snapshot(node, ctx, ctx.osm_dir(node.scope.facility_id), self.world.extract(), 'osm')
+        return self._snapshot(node, ctx, ctx.snapshot_dir(node.scope.facility_id, 'osm'), self.world.extract(), 'osm')
 
     def context_snapshot(self, node, ctx, run):
         self._mark(node)
         doc = {'version': 0.6, 'elements': [{'type': 'way', 'id': 5, 'tags': {'highway': 'service'}, 'geometry': [{'lon': ORIGIN[0], 'lat': ORIGIN[1]}, {'lon': ORIGIN[0] + 0.001, 'lat': ORIGIN[1]}]}]}
-        return self._snapshot(node, ctx, ctx.context_dir(node.scope.facility_id), doc, 'osm-context')
+        return self._snapshot(node, ctx, ctx.snapshot_dir(node.scope.facility_id, 'osm-context'), doc, 'osm-context')
 
     # ---- layout ------------------------------------------------------------
     def routes(self, node, ctx, run):
@@ -227,7 +227,7 @@ class FakePipeline:
     def canopy(self, node, ctx, run):
         self._mark(node)
         layout_id = node.scope.layout_id
-        naip = ctx.naip_dir(layout_id)
+        naip = ctx.naip_out(layout_id)
         os.makedirs(naip, exist_ok=True)
         with open(os.path.join(naip, 'naip.tif'), 'wb') as f:
             f.write(b'NAIP' * 64)
@@ -236,8 +236,8 @@ class FakePipeline:
         regions = [{'id': f'{layout_id}-woods-1', 'holeKey': f'{layout_id}-05', 'coordinatesWgs84': ring(ORIGIN[0] - 0.002, ORIGIN[1] + 0.005, 0.0005)}] if self.world.canopy else []
         doc = {'kind': 'golfhelm-canopy-review-v1', 'siteId': pkg['siteId'], 'packageHash': pkg['contentHash'], 'reviewedAt': '2026-09-19',
                'rasterSha256': self.world.naip_sha, 'regions': regions, 'method': {'name': 'fake'}}
-        write_json(ctx.canopy_path(layout_id), doc)
-        return [artifact('canopy-review', ctx.canopy_path(layout_id), 'A'), artifact('naip-manifest', os.path.join(naip, 'manifest.json'), 'B'), artifact('naip-raster', os.path.join(naip, 'naip.tif'), 'B')]
+        write_json(ctx.canopy_out(layout_id), doc)
+        return [artifact('canopy-review', ctx.canopy_out(layout_id), 'A'), artifact('naip-manifest', os.path.join(naip, 'manifest.json'), 'B'), artifact('naip-raster', os.path.join(naip, 'naip.tif'), 'B')]
 
     def package_validate(self, node, ctx, run):
         self._mark(node)
@@ -261,7 +261,7 @@ class FakePipeline:
     def terrain_base(self, node, ctx, run):
         self._mark(node)
         layout_id = node.scope.layout_id
-        folder = os.path.join(ctx.layout_out(layout_id), 'compiled-base')
+        folder = ctx.terrain_base_out(layout_id)
         holes = {h['key']: {'fileName': f'{h["key"]}-terrain.json.gz'} for h in ctx.package(layout_id)['holes']}
         self._asset_manifest(ctx, layout_id, folder, holes)
         return [artifact('compiled-base-assets', os.path.join(folder, 'asset-manifest.json'), 'C'), artifact('compiled-base-report', os.path.join(folder, 'compilation-report.json'), 'C')]
@@ -271,8 +271,8 @@ class FakePipeline:
         layout_id = node.scope.layout_id
         doc = {'packageHash': ctx.package_hash(layout_id), 'holes': [{'key': h['key'], 'bunkers': [{'featureId': f'{layout_id}-bunker-{h["ordinal"]}', 'sandShareInside': 0.5}]} for h in ctx.package(layout_id)['holes']],
                'lowSandShare': 0.35}
-        write_json(ctx.imagery_review_path(layout_id), doc)
-        return [artifact('imagery-review', ctx.imagery_review_path(layout_id), 'A')]
+        write_json(ctx.imagery_review_out(layout_id), doc)
+        return [artifact('imagery-review', ctx.imagery_review_out(layout_id), 'A')]
 
     def context(self, node, ctx, run):
         self._mark(node)
@@ -281,18 +281,18 @@ class FakePipeline:
         zones = [{'id': f'{layout_id}-zone-1', 'class': 'service_path', 'holeKeys': [f'{layout_id}-01'], 'geometryWgs84': {'type': 'LineString', 'coordinates': [[ORIGIN[0], ORIGIN[1]], [ORIGIN[0] + 0.001, ORIGIN[1]]]}, 'fidelity': 'osm'}]
         layer = {'kind': 'golfhelm-context-layer-v1', 'siteId': pkg['siteId'], 'packageHash': pkg['contentHash'], 'status': 'source_candidate', 'zones': zones}
         layer['contentHash'] = digest(layer)
-        write_json(ctx.context_layer_path(layout_id), layer)
+        write_json(ctx.context_layer_out(layout_id), layer)
         report = {'kind': 'golfhelm-context-report-v1', 'packageHash': pkg['contentHash'], 'layerHash': layer['contentHash'], 'holes': [{'key': h['key'], 'uncertainShare': 0.1} for h in pkg['holes']]}
-        write_json(ctx.context_report_path(layout_id), report)
-        ref = artifact('context-layer', ctx.context_layer_path(layout_id), 'A')
+        write_json(ctx.context_report_out(layout_id), report)
+        ref = artifact('context-layer', ctx.context_layer_out(layout_id), 'A')
         ref.sha256 = layer['contentHash']
-        return [ref, artifact('context-report', ctx.context_report_path(layout_id), 'A')]
+        return [ref, artifact('context-report', ctx.context_report_out(layout_id), 'A')]
 
     # ---- hole --------------------------------------------------------------
     def hole_terrain(self, node, ctx, run):
         self._mark(node)
         layout_id = node.scope.layout_id
-        folder = ctx.compiled_dir(layout_id)
+        folder = ctx.compiled_out(layout_id)
         os.makedirs(folder, exist_ok=True)
         hole = ctx.package_hole(layout_id, node.scope.ordinal)
         sub = ctx.hole_subhashes(layout_id, node.scope.ordinal)

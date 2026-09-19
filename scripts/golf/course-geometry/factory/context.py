@@ -136,10 +136,10 @@ class Context:
         return os.path.join(self.facility_out(facility_id), kind, key)
 
     def osm_dir(self, facility_id):
-        return self.retained(self.facility(facility_id), 'osm') or self.snapshot_dir(facility_id, 'osm')
+        return self._current(self.snapshot_dir(facility_id, 'osm'), self.retained(self.facility(facility_id), 'osm'), lambda d: os.path.isfile(os.path.join(d, 'manifest.json')))
 
     def context_dir(self, facility_id):
-        return self.retained(self.facility(facility_id), 'osmContext') or self.snapshot_dir(facility_id, 'osm-context')
+        return self._current(self.snapshot_dir(facility_id, 'osm-context'), self.retained(self.facility(facility_id), 'osmContext'), lambda d: os.path.isfile(os.path.join(d, 'manifest.json')))
 
     def snapshot(self, facility_id, kind='osm'):
         """(manifest, extract path) of a retained golf/context extract, or (None, None)."""
@@ -173,12 +173,22 @@ class Context:
         path = self.terrain_pointer_path(layout_id)
         return self.json(path) if self.can_adopt(path) else None
 
-    def terrain_source_dir(self, layout_id):
-        retained = self.retained(self.facility((self.layout(layout_id) or {}).get('facilityId')), 'terrain')
-        if retained:
+    # Read locators answer "which artifact is current": something the factory
+    # built (and may adopt) wins, then retained checked-in evidence, then the
+    # path a build would create. Write locators (`*_out`) are always under the
+    # output root: the factory never writes to, or deletes, retained evidence.
+    def _current(self, built, retained, present=os.path.isfile):
+        if built and self.can_adopt(built) and present(built):
+            return built
+        if retained and present(retained):
             return retained
+        return built or retained
+
+    def terrain_source_dir(self, layout_id):
         pointer = self.terrain_pointer(layout_id)
-        return self.abspath(pointer['directory']) if pointer else None
+        built = self.abspath(pointer['directory']) if pointer else None
+        retained = self.retained(self.facility((self.layout(layout_id) or {}).get('facilityId')), 'terrain')
+        return self._current(built, retained, lambda d: os.path.isfile(os.path.join(d, 'source-manifest.json')))
 
     def terrain_source_manifest(self, layout_id):
         folder = self.terrain_source_dir(layout_id)
@@ -197,29 +207,63 @@ class Context:
         assets = self.json(os.path.join(compiled_dir, 'asset-manifest.json')) or {}
         return assets.get('sourceManifestHash') == digest(current)
 
+    def naip_out(self, layout_id):
+        """The NAIP export keyed like the terrain source it was cut to."""
+        source = self.terrain_source_dir(layout_id)
+        if not source:
+            return None
+        return os.path.join(self.facility_out((self.layout(layout_id) or {}).get('facilityId')), 'naip', os.path.basename(os.path.normpath(source)))
+
     def naip_dir(self, layout_id):
         retained = self.retained(self.facility((self.layout(layout_id) or {}).get('facilityId')), 'naip')
-        if retained:
-            return retained
-        pointer = self.terrain_pointer(layout_id)
-        if not pointer:
-            return None
-        return os.path.normpath(os.path.join(os.path.dirname(self.abspath(pointer['directory'])), '..', 'naip', os.path.basename(pointer['directory'])))
+        return self._current(self.naip_out(layout_id), retained, lambda d: os.path.isfile(os.path.join(d, 'manifest.json')))
+
+    def canopy_out(self, layout_id):
+        return os.path.join(self.layout_out(layout_id), 'canopy-review.json')
 
     def canopy_path(self, layout_id):
-        return self.retained(self.layout(layout_id), 'canopyReview') or os.path.join(self.layout_out(layout_id), 'canopy-review.json')
+        return self._current(self.canopy_out(layout_id), self.retained(self.layout(layout_id), 'canopyReview'))
 
-    def compiled_dir(self, layout_id):
-        return self.retained(self.layout(layout_id), 'compiled') or os.path.join(self.layout_out(layout_id), 'compiled')
+    def compiled_out(self, layout_id):
+        return os.path.join(self.layout_out(layout_id), 'compiled')
+
+    def compiled_dir(self, layout_id, hole_key=None):
+        """Per hole when asked: a retained full compile keeps serving the holes
+        the factory has not rebuilt, and each hole's report, compilation
+        report and asset manifest are read from the one directory."""
+        marker = f'{hole_key}-report.json' if hole_key else 'asset-manifest.json'
+        return self._current(self.compiled_out(layout_id), self.retained(self.layout(layout_id), 'compiled'), lambda d: os.path.isfile(os.path.join(d, marker)))
+
+    def terrain_base_out(self, layout_id):
+        return os.path.join(self.layout_out(layout_id), 'compiled-base')
+
+    def terrain_base_dir(self, layout_id):
+        """The full compile the context layer is classified against: the built
+        base, else a retained full compile of this layout."""
+        return self._current(self.terrain_base_out(layout_id), self.retained(self.layout(layout_id), 'compiled'), lambda d: os.path.isfile(os.path.join(d, 'asset-manifest.json')))
+
+    def imagery_review_out(self, layout_id):
+        return os.path.join(self.layout_out(layout_id), 'imagery-review.json')
 
     def imagery_review_path(self, layout_id):
-        return self.retained(self.layout(layout_id), 'imageryReview') or os.path.join(self.layout_out(layout_id), 'imagery-review.json')
+        return self._current(self.imagery_review_out(layout_id), self.retained(self.layout(layout_id), 'imageryReview'))
+
+    def context_layer_out(self, layout_id):
+        return os.path.join(self.layout_out(layout_id), 'context', f'{layout_id}-context.json')
 
     def context_layer_path(self, layout_id):
-        return self.retained(self.layout(layout_id), 'context') or os.path.join(self.layout_out(layout_id), 'context', f'{layout_id}-context.json')
+        return self._current(self.context_layer_out(layout_id), self.retained(self.layout(layout_id), 'context'))
+
+    def context_report_out(self, layout_id):
+        return os.path.join(self.layout_out(layout_id), 'context', f'{layout_id}-context-report.json')
 
     def context_report_path(self, layout_id):
-        return self.retained(self.layout(layout_id), 'contextReport') or os.path.join(self.layout_out(layout_id), 'context', f'{layout_id}-context-report.json')
+        return self._current(self.context_report_out(layout_id), self.retained(self.layout(layout_id), 'contextReport'))
+
+    def inside_output(self, path):
+        """True when `path` is under the factory's output root."""
+        root = os.path.join(self.output_root, '')
+        return bool(path) and (os.path.abspath(path) + os.sep).startswith(root)
 
     # --- documents ----------------------------------------------------------
     def json(self, path, fresh=False):
@@ -248,10 +292,12 @@ class Context:
 
     def package_path(self, layout_id):
         geometry = (self.layout(layout_id) or {}).get('geometry')
+        built = os.path.join(self.package_dir(layout_id), 'normalized.json')
+        if self.can_adopt(built) and os.path.isfile(built):
+            return built
         if geometry:
             return self.abspath(geometry['package'])
-        built = os.path.join(self.package_dir(layout_id), 'normalized.json')
-        return built if self.can_adopt(built) and os.path.isfile(built) else None
+        return None
 
     def package(self, layout_id):
         return self.json(self.package_path(layout_id))

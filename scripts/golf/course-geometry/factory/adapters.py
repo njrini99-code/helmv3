@@ -49,6 +49,14 @@ def run_script(ctx, run, node, script_rel, args, env=None):
     return result
 
 
+def safe_rmtree(ctx, path):
+    """Derived outputs are regenerated into empty directories; only the
+    factory's own output root is ever cleared."""
+    if not ctx.inside_output(path):
+        raise RuntimeError(f'refusing to delete outside the factory output root: {path}')
+    shutil.rmtree(path)
+
+
 # --- facility -------------------------------------------------------------
 OVERPASS_RETRY_SECONDS = (5, 20, 60)   # the public endpoint answers 429/504 under load; three bounded retries, then the run records the failure
 
@@ -143,7 +151,7 @@ def _snapshot(node, ctx, run, kind, script_rel, keys):
         # A partial directory (interrupted fetch) or an explicit request for
         # fresh data: fetch into the next revision beside it.
         if os.path.isdir(out) and not extract_complete(out):
-            shutil.rmtree(out)
+            safe_rmtree(ctx, out)
         n = 2
         while os.path.exists(os.path.join(base, f'{aoi_key}-r{n}')):
             n += 1
@@ -199,7 +207,7 @@ def _prepare(node, ctx, run, out, canopy=None):
     if traces and os.path.isfile(traces):
         args += ['--traces', traces]
     if os.path.isdir(out):
-        shutil.rmtree(out)
+        safe_rmtree(ctx, out)
     run_script(ctx, run, node, 'scripts/golf/course-geometry/prepare-osm-course.py', args)
     pkg = ctx.json(os.path.join(out, 'normalized.json'), fresh=True)
     ref = artifact('package', os.path.join(out, 'normalized.json'), 'A')
@@ -229,7 +237,7 @@ def acquire_terrain(node, ctx, run):
     key = digest(bounds)[:12]
     source = os.path.join(ctx.facility_out(node.scope.facility_id), 'terrain', key)
     run_script(ctx, run, node, 'scripts/golf/course-geometry/compile-course-terrain.py',
-               ['--acquire-only', '--holes', 'all', '--package', pkg_path, '--source', source, '--output', os.path.join(ctx.layout_out(layout_id), 'compiled-base')])
+               ['--acquire-only', '--holes', 'all', '--package', pkg_path, '--source', source, '--output', ctx.terrain_base_out(layout_id)])
     manifest = ctx.json(os.path.join(source, 'source-manifest.json'), fresh=True)
     pointer = {'kind': 'golfhelm-factory-terrain-source-v1', 'layoutId': layout_id, 'directory': ctx.relpath(source),
                'requestedLocalBoundsM': bounds, 'sourceManifestHash': digest(manifest), 'sourceIdentity': terrain_source_identity(manifest), 'selectedTitle': manifest.get('selectedTitle')}
@@ -245,8 +253,8 @@ def acquire_terrain(node, ctx, run):
 def derive_canopy(node, ctx, run):
     layout_id = node.scope.layout_id
     source = ctx.terrain_source_dir(layout_id)
-    naip = ctx.naip_dir(layout_id)
-    out = ctx.canopy_path(layout_id)
+    naip = ctx.naip_out(layout_id)
+    out = ctx.canopy_out(layout_id)
     run_script(ctx, run, node, 'scripts/golf/course-geometry/derive-canopy-naip.py', [ctx.candidates_package_path(layout_id), source, naip, out])
     return [artifact('canopy-review', out, 'A'), artifact('naip-manifest', os.path.join(naip, 'manifest.json'), 'B'), artifact('naip-raster', os.path.join(naip, 'naip.tif'), 'B')]
 
@@ -261,23 +269,23 @@ def _compile(node, ctx, run, holes, out, context=None):
 
 def compile_terrain_base(node, ctx, run):
     layout_id = node.scope.layout_id
-    out = os.path.join(ctx.layout_out(layout_id), 'compiled-base')
+    out = ctx.terrain_base_out(layout_id)
     if os.path.isdir(out):
-        shutil.rmtree(out)
+        safe_rmtree(ctx, out)
     _compile(node, ctx, run, 'all', out)
     return [artifact('compiled-base-assets', os.path.join(out, 'asset-manifest.json'), 'C'), artifact('compiled-base-report', os.path.join(out, 'compilation-report.json'), 'C')]
 
 
 def compile_hole_terrain(node, ctx, run):
     layout_id = node.scope.layout_id
-    out = ctx.compiled_dir(layout_id)
+    out = ctx.compiled_out(layout_id)
     manifest = ctx.json(os.path.join(out, 'asset-manifest.json'), fresh=True)
     source = terrain_source_identity(ctx.terrain_source_manifest(layout_id))
     if manifest and (manifest.get('geometryHash') != ctx.package_hash(layout_id) or manifest.get('sourceIdentity') != source):
         # Compiled outputs are derived products regenerated into an empty
         # directory when the package or the source they were built from
         # changed (or an older compiler wrote them without a source identity).
-        shutil.rmtree(out)
+        safe_rmtree(ctx, out)
     context = ctx.context_layer_path(layout_id)
     context = context if ctx.states.get(f'layout.context.classify[{layout_id}]') in ('cached', 'success') and os.path.isfile(context) else None
     _compile(node, ctx, run, str(node.scope.ordinal), out, context)
@@ -288,7 +296,7 @@ def compile_hole_terrain(node, ctx, run):
 def audit_imagery(node, ctx, run):
     layout_id = node.scope.layout_id
     out_dir = os.path.join(ctx.layout_out(layout_id), 'imagery-review')
-    summary = ctx.imagery_review_path(layout_id)
+    summary = ctx.imagery_review_out(layout_id)
     run_script(ctx, run, node, 'scripts/golf/course-geometry/review-course-imagery.py', [ctx.package_path(layout_id), ctx.naip_dir(layout_id), out_dir, summary])
     return [artifact('imagery-review', summary, 'A')]
 
@@ -299,20 +307,20 @@ def classify_context(node, ctx, run):
     os.makedirs(out, exist_ok=True)
     golf = os.path.join(ctx.osm_dir(node.scope.facility_id), 'overpass.json.gz')
     context = os.path.join(ctx.context_dir(node.scope.facility_id), 'overpass.json.gz')
-    compiled = os.path.join(ctx.layout_out(layout_id), 'compiled-base')
+    compiled = ctx.terrain_base_dir(layout_id)
     package = ctx.package_path(layout_id)
     run_script(ctx, run, node, 'scripts/golf/course-geometry/prepare-context-layer.py', [package, golf, context, compiled, out])
     # The script names its outputs after the package file; the factory keeps
     # them under the layout id so retained and built layers share one path.
     stem = os.path.splitext(os.path.basename(package))[0]
-    for suffix, target in (('-context.json', ctx.context_layer_path(layout_id)), ('-context-report.json', ctx.context_report_path(layout_id))):
+    for suffix, target in (('-context.json', ctx.context_layer_out(layout_id)), ('-context-report.json', ctx.context_report_out(layout_id))):
         written = os.path.join(out, f'{stem}{suffix}')
         if os.path.abspath(written) != os.path.abspath(target):
             os.replace(written, target)
-    layer = ctx.json(ctx.context_layer_path(layout_id), fresh=True)
-    ref = artifact('context-layer', ctx.context_layer_path(layout_id), 'A')
+    layer = ctx.json(ctx.context_layer_out(layout_id), fresh=True)
+    ref = artifact('context-layer', ctx.context_layer_out(layout_id), 'A')
     ref.sha256 = layer['contentHash']
-    return [ref, artifact('context-report', ctx.context_report_path(layout_id), 'A')]
+    return [ref, artifact('context-report', ctx.context_report_out(layout_id), 'A')]
 
 
 def build_hole_world(node, ctx, run):
@@ -353,11 +361,10 @@ def aggregate_world(node, ctx, run):
 
 def aggregate_terrain(node, ctx, run):
     layout_id = node.scope.layout_id
-    out = ctx.compiled_dir(layout_id)
     reports = []
     for key in ctx.graph.layout_holes.get(layout_id, []):
         hole = ctx.package_hole(layout_id, int(key.rsplit(':', 1)[1]))
-        report = ctx.json(os.path.join(out, f'{hole["key"]}-report.json'), fresh=True) if hole else None
+        report = ctx.json(os.path.join(ctx.compiled_dir(layout_id, hole['key']), f'{hole["key"]}-report.json'), fresh=True) if hole else None
         if report:
             reports.append({'key': hole['key'], 'ordinal': hole['ordinal'], 'contentHash': report.get('contentHash'), 'triangles': report.get('triangles'),
                             'tJunctionVertices': (report.get('noding') or {}).get('tJunctionVertices'), 'asset': report.get('asset')})

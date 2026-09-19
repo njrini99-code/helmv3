@@ -27,7 +27,7 @@ def eval_terrain_compile(node, ctx):
     inputs = {'terrainSource': dep_input(ctx, node, 'layout.terrain.acquire'), 'holeTerrainInputHash': _sub(ctx, node, 'holeTerrainInputHash'),
               'holeContextHash': _sub(ctx, node, 'holeContextHash') if context_ready else None, 'withContext': context_ready}
     hole = ctx.package_hole(layout_id, node.scope.ordinal)
-    folder = ctx.compiled_dir(layout_id)
+    folder = ctx.compiled_dir(layout_id, hole['key']) if hole else None
     if not hole or not folder or not ctx.can_adopt(folder):
         return evaluation(inputs)
     report_path = os.path.join(folder, f'{hole["key"]}-report.json')

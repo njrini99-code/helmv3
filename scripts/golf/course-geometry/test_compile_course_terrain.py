@@ -294,3 +294,13 @@ class TileSetTests(unittest.TestCase):
         self.assertEqual(compiler.covering_tile_sets([north, other_project, other_date], extent), [])
         gap = self.tile('USGS 1 Meter 17 x74y434 VA_NorthernShenandoah_2020_D20', 4, -78.22, 39.08, -78.10, 39.170)
         self.assertEqual(compiler.covering_tile_sets([north, gap], extent), [])
+
+    def test_an_undated_tile_is_never_paired_and_sorts_last_alone(self):
+        extent = compiler.box(-78.154, 39.164, -78.139, 39.177)
+        north = self.tile('USGS 1 Meter 17 x74y435 VA_NorthernShenandoah_2020_D20', 1, -78.22, 39.1733, -78.10, 39.27)
+        undated_south = self.tile('USGS 1 Meter 17 x74y434 VA_NorthernShenandoah_2020_D20', 2, -78.22, 39.08, -78.10, 39.1762, end=None)
+        self.assertEqual(compiler.covering_tile_sets([north, undated_south], extent), [])
+        dated_whole = self.tile('USGS 1 Meter 17 x74y434 VA_Older_2016_D17', 3, -78.3, 39.0, -78.0, 39.3, end='1500000000000')
+        undated_whole = self.tile('USGS 1 Meter 17 x74y434 VA_Unknown', 4, -78.3, 39.0, -78.0, 39.3, end=None)
+        sets = compiler.covering_tile_sets([undated_whole, dated_whole], extent)
+        self.assertEqual([[r['attributes']['OBJECTID'] for r in tiles] for tiles in sets], [[3], [4]])

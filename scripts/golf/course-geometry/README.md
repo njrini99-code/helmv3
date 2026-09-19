@@ -341,13 +341,14 @@ and refuses one whose package, terrain, hole, style or vertex layout disagree
 
 `course-factory.py` is the build engine over the scripts above: catalog →
 facility/layout/hole DAG → fingerprints → ledger → bounded runs. It never
-writes `public/`, flags or production; `output/course-geometry/factory/` is
-disposable. `python3 -m unittest discover -s scripts/golf/course-geometry -p 'test_factory_*.py'`
+writes `public/`, flags, production or a retained (checked-in) path — every
+executor writes under the output root, and `output/course-geometry/factory/`
+is disposable. `python3 -m unittest discover -s scripts/golf/course-geometry -p 'test_factory_*.py'`
 runs the network-free suite (fake executors, synthetic two-layout facility).
 
 ```bash
 F=scripts/golf/course-geometry/course-factory.py
-python3 $F doctor                                   # tools, disk reserve, catalog problems
+python3 $F doctor                                   # tools, disk reserve, catalog problems, missing retained paths
 python3 $F plan                                      # every layout: state + reason per task
 python3 $F plan --layout cacapon [--json|--golden|--notes]
 python3 $F why  --layout cacapon --task hole.terrain.compile --hole 7   # causal chain

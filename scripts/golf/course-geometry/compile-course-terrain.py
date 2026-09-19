@@ -229,13 +229,18 @@ def covering_tile_sets(rows, extent_wgs84):
             continue
         if footprint.covers(extent_wgs84):
             singles.append([row])
-        groups.setdefault((tile_project(attrs['title']), date_text(attrs['EndDate'])), []).append((row, footprint))
+        # An undated tile cannot prove it belongs to the same collection as
+        # its neighbour, so it is never paired; alone it still reaches the
+        # acquisition-date review gate below.
+        if attrs.get('EndDate') is not None:
+            groups.setdefault((tile_project(attrs['title']), date_text(attrs['EndDate'])), []).append((row, footprint))
     pairs = []
     for members in groups.values():
         if len(members) > 1 and unary_union([f for _, f in members]).covers(extent_wgs84):
             pairs.append([row for row, _ in sorted(members, key=lambda m: m[0]['attributes']['title'])])
     def newest_first(tiles):
-        return (date_text(tiles[0]['attributes']['EndDate']), tiles[0]['attributes']['title'])
+        end = tiles[0]['attributes'].get('EndDate')
+        return (date_text(end) if end is not None else '', tiles[0]['attributes']['title'])
     return sorted(singles, key=newest_first, reverse=True) + sorted(pairs, key=newest_first, reverse=True)
 
 
