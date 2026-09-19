@@ -9,7 +9,7 @@ import type { PenaltyRepository } from '@/lib/golf/one-tap/penalty-event';
 import type { CalibrationTraceSink } from '@/lib/golf/one-tap/calibration-trace';
 import { initialCameraState, nextHole, observeAnchor, observeGesture, productionStateFor, recenter, tickCamera, type CameraDirectorState, type CameraMode } from '@/lib/golf/one-tap/camera-director';
 import { localOriginFor, wgs84ToEnuInFrame } from '@/lib/golf/one-tap/geodesy';
-import { courseIdForSite } from '@/lib/golf/one-tap/peek-n-peak-policy';
+import { courseIdForSite } from '@/lib/golf/course-geometry/course-registry';
 import { largestOuterRing, ringCentroid, greenDistances, greenReadout, type GreenDistances, type GreenReadout } from '@/lib/golf/one-tap/hole-distances';
 import { competitionPolicy, permittedAdvice, NO_ADVICE, type CompetitionPolicy, type PlayMode, type ReadoutAdvice } from '@/lib/golf/one-tap/competition-policy';
 import { sampleTerrain } from '@/lib/golf/one-tap/terrain-sampler';

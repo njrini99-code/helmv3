@@ -652,6 +652,10 @@ features:
         # source-unit/provenance changes under shot-tracking review rather
         # than silently leaving those scripts unowned.
         - scripts/golf/course-geometry/**
+        # The library catalog (Factory v2 PR A, 2026-09-19): facility, layout
+        # and scorecard manifests the registry and factory read. Same owner
+        # as the compilers above.
+        - course-geometry/catalog/**
         - src/lib/coachhelm/v2/shot-analysis/**
         # src/lib/observability/helm-flight-recorder.ts and
         # golf-round-flight-workflow.ts had no feature mapping anywhere in

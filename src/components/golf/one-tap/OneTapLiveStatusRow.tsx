@@ -17,6 +17,7 @@ const OFF_COPY: Record<Extract<OneTapLiveStatus, { phase: 'off' }>['reason'], st
   geometry_hash_not_approved: 'the course package is not approved',
   wrong_course: 'not this course',
   wrong_site: 'the course package is for another site',
+  capability_not_available: 'this course is not modelled closely enough for Live yet',
   source_candidate_package: 'the course package is unreviewed',
   error: 'something failed while loading',
 };

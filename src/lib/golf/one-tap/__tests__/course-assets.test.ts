@@ -3,13 +3,14 @@ import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { pilotPackage } from '@/test/fixtures/course-geometry/pilot';
 import { MemoryCourseAssetCache, cacheStorageCourseAssetCache, fetchAsset, loadCourseAssets, loadCoursePackage, loadHoleTerrain, manifestUrl, preflightCourseAssets, pruneCourseAssets } from '../course-assets';
-import { isPeekNPeakOneTapEligible, PEEK_N_PEAK_ONE_TAP_V1, type PeekNPeakOneTapPolicy } from '../peek-n-peak-policy';
+import { isCourseGeometryEligible, type CourseGeometryPolicy } from '../../course-geometry/course-policy';
+import { PEEK_N_PEAK_UPPER_POLICY } from '../../course-geometry/course-registry';
 
 // SYNTHETIC POLICY: the pilot fixture stands in for an approved Upper package.
-const policy: PeekNPeakOneTapPolicy = { ...PEEK_N_PEAK_ONE_TAP_V1, siteId: pilotPackage.siteId, approvedGeometryHashes: new Set([pilotPackage.contentHash]), pilotAcceptsSourceCandidate: false };
+const policy: CourseGeometryPolicy = { ...PEEK_N_PEAK_UPPER_POLICY, siteIds: new Set([pilotPackage.siteId]), approvedGeometryHashes: new Set([pilotPackage.contentHash]), pilotAcceptsSourceCandidate: false };
 /** The gate outside the pilot: nothing approved, no source-candidate exception. */
-const dark: PeekNPeakOneTapPolicy = { ...policy, approvedGeometryHashes: new Set() };
-const COURSE = policy.courseId, HASH = pilotPackage.contentHash;
+const dark: CourseGeometryPolicy = { ...policy, approvedGeometryHashes: new Set() };
+const COURSE = policy.layoutId, HASH = pilotPackage.contentHash;
 const PKG_URL = `/course-geometry/${COURSE}/${HASH}/package.json`, TERRAIN_URL = `/course-geometry/${COURSE}/${HASH}/terrain/cacapon-07.json`;
 const terrainBody = readFileSync(join(process.cwd(), 'src/test/fixtures/course-geometry/cacapon-07-terrain.json'), 'utf8');
 const manifestBody = JSON.stringify({ geometryVersion: HASH, packageUrl: PKG_URL, terrainByHole: { 'cacapon-07': TERRAIN_URL } });
@@ -72,7 +73,7 @@ describe('course assets (task 15 — offline readiness)', () => {
     const cache = new MemoryCourseAssetCache();
     const stale = { ...policy, approvedGeometryHashes: new Set(['approved-elsewhere']) };
     expect(await preflightCourseAssets({ courseId: COURSE, policy: stale, cache, fetchImpl: server().fetchImpl })).toMatchObject({ status: 'not_approved', geometryVersion: HASH });
-    const foreign = { ...policy, siteId: 'osm-way-000' };
+    const foreign = { ...policy, siteIds: new Set(['osm-way-000']) };
     expect(await preflightCourseAssets({ courseId: COURSE, policy: foreign, cache, fetchImpl: server().fetchImpl })).toMatchObject({ status: 'unavailable', missing: [PKG_URL] });
     // A poisoned cache entry is dropped rather than served.
     await cache.put(PKG_URL, JSON.stringify({ ...pilotPackage, status: 'source_candidate' }));
@@ -117,7 +118,7 @@ describe('course assets (task 15 — offline readiness)', () => {
     // The Upper package with its own context layer (woods, paths, structures);
     // SYNTHETIC POLICY again — the hash is approved for this test only.
     const upper = JSON.parse(readFileSync(join(process.cwd(), 'src/test/fixtures/course-geometry/peek-n-peak-upper.json'), 'utf8')) as { contentHash: string; siteId: string; status: string };
-    const upperPolicy: PeekNPeakOneTapPolicy = { ...PEEK_N_PEAK_ONE_TAP_V1, siteId: upper.siteId, approvedGeometryHashes: new Set([upper.contentHash]) };
+    const upperPolicy: CourseGeometryPolicy = { ...PEEK_N_PEAK_UPPER_POLICY, siteIds: new Set([upper.siteId]), approvedGeometryHashes: new Set([upper.contentHash]) };
     const contextBody = readFileSync(join(process.cwd(), 'src/test/fixtures/course-geometry/peek-n-peak-upper-context.json'), 'utf8');
     const UPPER_PKG = `/course-geometry/${COURSE}/${upper.contentHash}/package.json`, CONTEXT_URL = `/course-geometry/${COURSE}/${upper.contentHash}/context.json`;
     const withContext = JSON.stringify({ geometryVersion: upper.contentHash, packageUrl: UPPER_PKG, terrainByHole: {}, contextLayerUrl: CONTEXT_URL });
@@ -139,17 +140,17 @@ describe('course assets (task 15 — offline readiness)', () => {
 
   it('accepts the SHIPPED Upper manifest and package under the SHIPPED policy — no override', async () => {
     // What the phone runs: public/course-geometry/<course>/manifest.json and
-    // the package it names, gated by PEEK_N_PEAK_ONE_TAP_V1 as committed.
+    // the package it names, gated by the registry's Upper policy as committed.
     // Terrain is answered 404 to keep the test off the 52 MB of meshes.
     const root = join(process.cwd(), 'public');
     const fetchImpl = vi.fn(async (url: string) => { const ok = !url.includes('/terrain/') && existsSync(join(root, url)); return { ok, text: async () => ok ? readFileSync(join(root, url), 'utf8') : '' }; });
-    const courseId = PEEK_N_PEAK_ONE_TAP_V1.courseId;
+    const courseId = PEEK_N_PEAK_UPPER_POLICY.layoutId;
     const loaded = await loadCoursePackage({ courseId, cache: new MemoryCourseAssetCache(), fetchImpl });
-    expect(loaded?.pkg.siteId).toBe(PEEK_N_PEAK_ONE_TAP_V1.siteId);
+    expect(PEEK_N_PEAK_UPPER_POLICY.siteIds.has(loaded!.pkg.siteId)).toBe(true);
     expect(loaded?.manifest.geometryVersion).toBe(loaded?.pkg.contentHash);
     expect(Object.keys(loaded!.manifest.terrainByHole ?? {})).toHaveLength(18);
     expect(loaded?.contextLayer?.zones.length).toBeGreaterThan(0);
-    expect(isPeekNPeakOneTapEligible({ roundCourseId: courseId, pkg: loaded!.pkg, featureFlagEnabled: true, preciseLocationAvailable: true })).toMatchObject({ eligible: true, geometryVersion: loaded!.pkg.contentHash });
+    expect(isCourseGeometryEligible({ roundCourseId: courseId, pkg: loaded!.pkg, featureFlagEnabled: true, preciseLocationAvailable: true }, PEEK_N_PEAK_UPPER_POLICY)).toMatchObject({ eligible: true, geometryVersion: loaded!.pkg.contentHash });
     // A terrain that is not there is null, never a throw.
     expect(await loadHoleTerrain(Object.values(loaded!.manifest.terrainByHole!)[0] ?? '', loaded!.pkg, { cache: null, fetchImpl })).toBeNull();
   });

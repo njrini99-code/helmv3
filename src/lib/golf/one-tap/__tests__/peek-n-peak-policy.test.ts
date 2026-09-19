@@ -18,8 +18,8 @@ const ok = { roundCourseId: 'peek-n-peak-upper', pkg: approved, featureFlagEnabl
 describe('Peek\'n Peak Upper One-Tap eligibility (§21–22)', () => {
   it('allows the approved Upper package with the flag on and device location available', () => {
     expect(isPeekNPeakOneTapEligible(ok, policy)).toEqual({ eligible: true, courseId: 'peek-n-peak-upper', geometryVersion: upper.contentHash });
-    expect(PEEK_N_PEAK_ONE_TAP_V1.siteId).toBe('osm-way-136097904');
-    expect(upper.siteId).toBe(PEEK_N_PEAK_ONE_TAP_V1.siteId);
+    expect([...PEEK_N_PEAK_ONE_TAP_V1.siteIds]).toEqual(['osm-way-136097904']);
+    expect(PEEK_N_PEAK_ONE_TAP_V1.siteIds.has(upper.siteId)).toBe(true);
   });
   it('rejects another course by identity, never by name or proximity', () => {
     expect(isPeekNPeakOneTapEligible({ ...ok, roundCourseId: 'peek-n-peak-lower' }, policy)).toEqual({ eligible: false, reason: 'wrong_course' });

@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { TerrainMesh } from '@/lib/golf/course-geometry/terrain';
 import type { RoundTypeLike } from '@/lib/golf/one-tap/competition-policy';
 import { cacheStorageCourseAssetCache, loadCoursePackage, loadHoleTerrain, manifestUrl, pruneCourseAssets, type CourseAssetCache } from '@/lib/golf/one-tap/course-assets';
 import { resolveOneTapLiveRound, type OneTapLiveRound } from '@/lib/golf/one-tap/live-round-placement';
 import { deviceLocationSource, queryLocationPermission } from '@/lib/golf/one-tap/location-source';
-import { PEEK_N_PEAK_ONE_TAP_V1, productCourseIdForRound, type OneTapIneligibility, type PeekNPeakOneTapPolicy } from '@/lib/golf/one-tap/peek-n-peak-policy';
+import type { CourseGeometryIneligibility as OneTapIneligibility, CourseGeometryPolicy } from '@/lib/golf/course-geometry/course-policy';
+import { resolveCourseGeometryPolicy } from '@/lib/golf/course-geometry/course-registry';
 import { supabaseSyncTransport, type OneTapSyncClient } from '@/lib/golf/one-tap/supabase-sync-transport';
 import type { SyncTransport } from '@/lib/golf/one-tap/anchor-repository';
 import { createClient } from '@/lib/supabase/client';
@@ -34,7 +35,8 @@ export interface UseOneTapLiveRoundOptions {
   syncEnabled?: boolean;
   /** The hole the player is on; its terrain loads first. */
   holeNumber?: number;
-  policy?: PeekNPeakOneTapPolicy;
+  /** One policy to test against instead of the registry (tests, the lab). */
+  policy?: CourseGeometryPolicy;
   /** Test seam; production uses the Cache API where the WebView has it. */
   cache?: CourseAssetCache | null;
   /** Test seam; production builds the Supabase outbox transport (task 13). */
@@ -43,15 +45,16 @@ export interface UseOneTapLiveRoundOptions {
   roundType?: RoundTypeLike;
 }
 export type OneTapLiveStatus =
-  /** Not an Upper round, or the round is not saved yet: nothing to report. */
+  /** Not a round on a registered layout, or the round is not saved yet: nothing to report. */
   | { phase: 'inactive' }
   | { phase: 'loading'; step: 'course' | 'terrain'; loaded: number; total: number }
   | { phase: 'live'; loaded: number; total: number }
   | { phase: 'off'; reason: OneTapIneligibility | 'opt_in_off' | 'course_unavailable' | 'error'; detail?: string };
 export interface OneTapLiveRoundState { live: OneTapLiveRound | null; status: OneTapLiveStatus }
 
-export function useOneTapLiveRoundState({ roundId, dbCourseId, courseName, featureFlagEnabled, optIn, syncEnabled = false, holeNumber, policy = PEEK_N_PEAK_ONE_TAP_V1, cache, roundType, transport }: UseOneTapLiveRoundOptions): OneTapLiveRoundState {
-  const productCourseId = productCourseIdForRound({ dbCourseId, courseName }, policy);
+export function useOneTapLiveRoundState({ roundId, dbCourseId, courseName, featureFlagEnabled, optIn, syncEnabled = false, holeNumber, policy: onlyPolicy, cache, roundType, transport }: UseOneTapLiveRoundOptions): OneTapLiveRoundState {
+  const policy = useMemo(() => resolveCourseGeometryPolicy({ dbCourseId, courseName }, onlyPolicy ? [onlyPolicy] : undefined), [dbCourseId, courseName, onlyPolicy]);
+  const productCourseId = policy?.layoutId ?? null;
   const [state, setRawState] = useState<OneTapLiveRoundState>({ live: null, status: { phase: 'inactive' } });
   // Idempotent: an unchanged state keeps its identity, so a caller that
   // re-creates an option object per render cannot spin the effect.
@@ -60,7 +63,7 @@ export function useOneTapLiveRoundState({ roundId, dbCourseId, courseName, featu
   const holeRef = useRef(holeNumber);
   holeRef.current = holeNumber;
   useEffect(() => {
-    if (productCourseId !== policy.courseId || !roundId) { setState({ live: null, status: { phase: 'inactive' } }); return; }
+    if (!policy || !productCourseId || !roundId) { setState({ live: null, status: { phase: 'inactive' } }); return; }
     if (!featureFlagEnabled) { setState({ live: null, status: { phase: 'off', reason: 'feature_flag_off' } }); return; }
     // The flag makes the round eligible; the player's tap starts it. Nothing
     // downloads for a round that has not been switched on.

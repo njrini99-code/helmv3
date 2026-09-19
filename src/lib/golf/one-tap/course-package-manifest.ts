@@ -4,13 +4,13 @@ import { MERIDIAN_STYLE_HASH, fnv1a } from '../course-geometry/visual-style';
 import { MERIDIAN_VISUAL_COMPILER_VERSION } from '../course-geometry/visual-artifact';
 import { COMPETITION_POLICY_VERSION } from './competition-policy';
 import { UNSPECIFIED, type LocalOrigin, localOriginFor } from './geodesy';
-import { courseIdForSite } from './peek-n-peak-policy';
+import { courseIdForSite } from '../course-geometry/course-registry';
 
 /** Course package manifest (master plan "Course package"). Versions are the
  * content hashes already gating the pipeline: geometry = package hash,
  * terrain = per-hole terrain hashes, render = compiler + style hash. */
 export interface CoursePackageManifest {
-  /** Product course id (`peek-n-peak-upper` for the Upper site); the site id for a course the policy does not name. */
+  /** Product course id (the registry layout for the package's site); the site id for a course no policy names. */
   courseId: string;
   /** The package's OSM site id — the identity the eligibility gate matches on. */
   siteId: string;

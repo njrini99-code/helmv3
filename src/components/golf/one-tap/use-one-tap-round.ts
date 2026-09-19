@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CourseGeometryPackage, LocalFeature, PointM } from '@/lib/golf/course-geometry/types';
 import { MemoryAnchorRepository, StorageAnchorRepository, type AnchorRepository, type StorageLike } from '@/lib/golf/one-tap/anchor-repository';
-import { courseIdForSite } from '@/lib/golf/one-tap/peek-n-peak-policy';
+import { courseIdForSite } from '@/lib/golf/course-geometry/course-registry';
 import { localOriginFor, wgs84ToEnuInFrame } from '@/lib/golf/one-tap/geodesy';
 import { largestOuterRing, ringCentroid } from '@/lib/golf/one-tap/hole-distances';
 import { assessHoleIntegrity, type HoleIntegrityReport } from '@/lib/golf/one-tap/hole-integrity';
