@@ -1,9 +1,9 @@
 import * as THREE from 'three';
 import { allocateCrowns, canopySymbols, crownScale } from '@/lib/golf/course-geometry/canopy';
 import { boundaryDistance } from '@/lib/golf/course-geometry/display-outline';
-import { inFeature } from '@/lib/golf/course-geometry/spatial';
+import { inFeature, pointBox, pointBoxDistance, type PointBox } from '@/lib/golf/course-geometry/spatial';
 import { sourceVertexNormals, terrainHeight, type TerrainMesh } from '@/lib/golf/course-geometry/terrain';
-import type { MetricTerrainGrid } from '@/lib/golf/course-geometry/terrain-source';
+import { typedGridHeights, type MetricTerrainGrid, type TypedGridHeights } from '@/lib/golf/course-geometry/terrain-source';
 import type { HoleScene, LocalFeature, PointM } from '@/lib/golf/course-geometry/types';
 import { assertVisualArtifact, BUNKER_SLOPE_SCALE, compileVisualArtifact, linearAlbedo, MERIDIAN_CODES, SURFACE_CLASS_IDS, type MeridianVisualArtifact } from '@/lib/golf/course-geometry/visual-artifact';
 import { MERIDIAN_PALETTE, MERIDIAN_STYLE, MERIDIAN_STYLE_HASH, MERIDIAN_STYLE_VERSION, type MeridianPaletteKey, type MeridianStyle, type MeridianStyleOverrides } from '@/lib/golf/course-geometry/visual-style';
@@ -110,6 +110,27 @@ function featureSeed(id: string): number {
   return seed;
 }
 
+/** Rings with their boxes, for the candidate sieves below: a box is never
+ * farther than the edges it holds, so a ring whose box is already past the
+ * distance in question is skipped without reading an edge. `pointBoxDistance`
+ * documents the one ulp its square root can round above `Math.hypot`; every
+ * test here leaves that much slack, so the answers are exactly the plain
+ * minimum and the plain `some`. */
+interface BoxedRing { ring: readonly PointM[]; box: PointBox }
+const BOX_SLACK_M = 1e-9;
+function boxRings(rings: readonly (readonly PointM[])[]): BoxedRing[] { return rings.map(ring => ({ ring, box: pointBox(ring) })); }
+/** The least `boundaryDistance` over the rings (`Infinity` for none). */
+function nearestRingM(point: PointM, rings: readonly BoxedRing[]): number {
+  let best = Infinity;
+  for (const { ring, box } of rings) if (pointBoxDistance(point, box) <= best + BOX_SLACK_M) best = Math.min(best, boundaryDistance(point, ring));
+  return best;
+}
+/** Whether any ring's boundary lies strictly within `reachM` of the point. */
+function ringWithin(point: PointM, rings: readonly BoxedRing[], reachM: number): boolean {
+  for (const { ring, box } of rings) if (pointBoxDistance(point, box) < reachM + BOX_SLACK_M && boundaryDistance(point, ring) < reachM) return true;
+  return false;
+}
+
 /** Indices into SURFACE_CLASS_IDS; the shader compares the class attribute. */
 const SURFACE_CLASS_GREEN = 4, SURFACE_CLASS_BUNKER = 7, SURFACE_CLASS_WATER = 8, SURFACE_CLASS_TURF = 1;
 /** GPU class id: the three ids the shader tests, everything else the turf id. */
@@ -151,19 +172,22 @@ export function landingWindow(scene: HoleScene, style: MeridianStyle = MERIDIAN_
  * only: it never moves a vertex or feeds picking. */
 export interface DemSlopeRelief { texture: THREE.DataTexture; frame: THREE.Vector4; texel: THREE.Vector2; exaggeration: { value: number }; spacingM: number }
 export function buildDemSlopeTexture(grid: MetricTerrainGrid, landform: { radiusM: number; directions: number } = MERIDIAN_STYLE.landform): DemSlopeRelief {
-  const { columns, rows, spacingM, heightsM } = grid;
+  const { columns, rows, spacingM } = grid;
   const data = new Uint16Array(columns * rows * 4);
-  const at = (c: number, r: number) => c < 0 || r < 0 || c >= columns || r >= rows ? null : heightsM[r * columns + c] ?? null;
-  const gradient = (a: number | null, z: number | null, b: number | null) =>
-    a != null && b != null ? (b - a) / (2 * spacingM) : z != null && b != null ? (b - z) / spacingM : z != null && a != null ? (z - a) / spacingM : 0;
+  // Typed copies of the heights: the source array holds nulls, so its
+  // numbers are boxed and every read of the march below would chase a
+  // pointer. The doubles are the same; `support` carries the nulls.
+  const typed = typedGridHeights(grid), { heights, support } = typed;
   const half = (value: number) => THREE.DataUtils.toHalfFloat(Math.max(-16, Math.min(16, value)));
   const slopeX = new Float32Array(columns * rows), slopeY = new Float32Array(columns * rows);
   for (let r = 0; r < rows; r++) for (let c = 0; c < columns; c++) {
-    const z = at(c, r), n = r * columns + c;
-    slopeX[n] = gradient(at(c - 1, r), z, at(c + 1, r));
-    slopeY[n] = gradient(at(c, r - 1), z, at(c, r + 1));
+    const n = r * columns + c, here = support[n] === 1, z = heights[n]!;
+    const left = c > 0 && support[n - 1] === 1, right = c + 1 < columns && support[n + 1] === 1;
+    const below = r > 0 && support[n - columns] === 1, above = r + 1 < rows && support[n + columns] === 1;
+    slopeX[n] = left && right ? (heights[n + 1]! - heights[n - 1]!) / (2 * spacingM) : here && right ? (heights[n + 1]! - z) / spacingM : here && left ? (z - heights[n - 1]!) / spacingM : 0;
+    slopeY[n] = below && above ? (heights[n + columns]! - heights[n - columns]!) / (2 * spacingM) : here && above ? (heights[n + columns]! - z) / spacingM : here && below ? (z - heights[n - columns]!) / spacingM : 0;
   }
-  const { occlusion, exposure } = relativeSkyRelief(grid, slopeX, slopeY, landform);
+  const { occlusion, exposure } = relativeSkyRelief(grid, slopeX, slopeY, landform, typed);
   for (let n = 0; n < columns * rows; n++) {
     data[n * 4] = half(slopeX[n]!); data[n * 4 + 1] = half(slopeY[n]!);
     data[n * 4 + 2] = half(occlusion[n]!); data[n * 4 + 3] = half(exposure[n]!);
@@ -194,29 +218,42 @@ export function relativeSkyOcclusion(grid: MetricTerrainGrid, slopeX: Float32Arr
  * (swale, hollow, valley floor); where it stays negative the ground falls
  * away in that direction (knoll, convex shoulder) and the node is exposed.
  * Both are the mean sine over `directions`; a uniform slope scores 0 on both. */
-export function relativeSkyRelief(grid: MetricTerrainGrid, slopeX: Float32Array, slopeY: Float32Array, landform: { radiusM: number; directions: number }): { occlusion: Float32Array; exposure: Float32Array } {
-  const { columns, rows, spacingM, heightsM } = grid;
+export function relativeSkyRelief(grid: MetricTerrainGrid, slopeX: Float32Array, slopeY: Float32Array, landform: { radiusM: number; directions: number }, typed: TypedGridHeights = typedGridHeights(grid)): { occlusion: Float32Array; exposure: Float32Array } {
+  const { columns, rows, spacingM } = grid, { heights, support } = typed;
   const occlusion = new Float32Array(columns * rows), exposure = new Float32Array(columns * rows);
   const radiusNodes = Math.max(1, Math.round(landform.radiusM / spacingM));
   const steps: number[] = [];
   for (let d = 1; d < radiusNodes; d = d < 4 ? d + 1 : Math.round(d * 1.5)) steps.push(d);
   steps.push(radiusNodes);
-  const directions = Array.from({ length: landform.directions }, (_, k) => { const a = 2 * Math.PI * k / landform.directions; return [Math.cos(a), Math.sin(a)] as const; });
+  // A ray's node offsets and sample distances do not depend on the node, so
+  // they are tabled once per direction instead of rounded and measured again
+  // at every node: the offsets are integers, so a sample's `cc - c` is
+  // exactly the tabled offset and its distance the same double. A zero
+  // offset (the node itself) never contributes and is left out of the table.
+  const rays = Array.from({ length: landform.directions }, (_, k) => {
+    const a = 2 * Math.PI * k / landform.directions, ux = Math.cos(a), uy = Math.sin(a);
+    const dc: number[] = [], dr: number[] = [], distance: number[] = [];
+    for (const d of steps) {
+      const oc = Math.round(ux * d), or = Math.round(uy * d), m = Math.hypot(oc, or) * spacingM;
+      if (m <= 0) continue;
+      dc.push(oc); dr.push(or); distance.push(m);
+    }
+    return { ux, uy, dc: Int32Array.from(dc), dr: Int32Array.from(dr), distance: Float64Array.from(distance) };
+  });
   for (let r = 0; r < rows; r++) for (let c = 0; c < columns; c++) {
-    const n = r * columns + c, z0 = heightsM[n];
-    if (z0 == null) continue;
+    const n = r * columns + c;
+    if (support[n] !== 1) continue;
+    const z0 = heights[n]!;
     let occluded = 0, exposed = 0;
-    for (const [ux, uy] of directions) {
+    for (const { ux, uy, dc, dr, distance } of rays) {
       const plane = slopeX[n]! * ux + slopeY[n]! * uy;
       let maxTan = Number.NEGATIVE_INFINITY;
-      for (const d of steps) {
-        const cc = c + Math.round(ux * d), rr = r + Math.round(uy * d);
+      for (let k = 0; k < dc.length; k++) {
+        const cc = c + dc[k]!, rr = r + dr[k]!;
         if (cc < 0 || rr < 0 || cc >= columns || rr >= rows) break;
-        const z = heightsM[rr * columns + cc];
-        if (z == null) continue;
-        const distance = Math.hypot(cc - c, rr - r) * spacingM;
-        if (distance <= 0) continue;
-        maxTan = Math.max(maxTan, (z - z0) / distance - plane);
+        const m = rr * columns + cc;
+        if (support[m] !== 1) continue;
+        maxTan = Math.max(maxTan, (heights[m]! - z0) / distance[k]! - plane);
       }
       // A ray with no supported sample (grid edge, unsupported neighbours) scores nothing.
       if (!Number.isFinite(maxTan)) continue;
@@ -615,7 +652,7 @@ export function buildThreeLandscape(
   for (const feature of scene.features) canopyFeatures.set(feature.id, feature);
   const canopyScene = { ...scene, features: [...canopyFeatures.values()].sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0) };
   const excludedFeatures = canopyScene.features.filter(feature => feature.kind !== 'woods' && feature.kind !== 'route');
-  const excludedRings = excludedFeatures.flatMap(feature => feature.parts.flat());
+  const excludedRings = boxRings(excludedFeatures.flatMap(feature => feature.parts.flat()));
   const courseFrame = mesh.originWgs84.join(',');
   const canopyGroups = options.underV2 ? [] : canopyScene.features.filter(feature => feature.kind === 'woods' && feature.reviewed);
   // §53: context woods keep their trees but lose saturation and a little
@@ -628,8 +665,8 @@ export function buildThreeLandscape(
   };
   // Over budget, keep the crowns nearest the played hole's own surfaces: the
   // forest edge a golfer sees, not the interior of a mass behind it (§38).
-  const ownRings = scene.features.filter(feature => feature.kind !== 'woods' && feature.kind !== 'route').flatMap(feature => feature.parts.flat());
-  const nearness = (point: PointM) => ownRings.reduce((minimum, ring) => Math.min(minimum, boundaryDistance(point, ring)), Infinity);
+  const ownRings = boxRings(scene.features.filter(feature => feature.kind !== 'woods' && feature.kind !== 'route').flatMap(feature => feature.parts.flat()));
+  const nearness = (point: PointM) => nearestRingM(point, ownRings);
   const families = VEGETATION.families, familyWeight = families.reduce((sum, family) => sum + family.weight, 0);
   const assetById = new Map(treeAtlas.variants.map(asset => [asset.id, asset]));
   const pickFamily = (edgeM: number, roll: number) => {
@@ -659,7 +696,7 @@ export function buildThreeLandscape(
   });
   const allocated = allocateCrowns(patterns, crownBudget, nearness);
   for (const [groupIndex, feature] of canopyGroups.entries()) {
-    const ownBoundary = feature.parts.flat();
+    const ownBoundary = boxRings(feature.parts.flat());
     const clearanceRings = [...ownBoundary, ...excludedRings];
     for (const point of allocated[groupIndex]!) {
       if (trees.some(tree => Math.hypot(tree.x - point[0], tree.y - point[1]) < 5.4)) continue;
@@ -668,7 +705,7 @@ export function buildThreeLandscape(
       // §41: identity = course frame + package + feature + pattern centre + style version.
       const id = `canopy:${courseFrame}:${scene.packageHash.slice(0, 12)}:${feature.id}:${Math.round(point[0] * 1000)},${Math.round(point[1] * 1000)}:${MERIDIAN_STYLE_VERSION}`;
       const n = featureSeed(id), baseRadius = 3.6 * crownScale(n);
-      const edgeM = ownBoundary.reduce((minimum, ring) => Math.min(minimum, boundaryDistance(point, ring)), Infinity);
+      const edgeM = nearestRingM(point, ownBoundary);
       const family = pickFamily(edgeM, variation(n + 71));
       const design = family.designs[Math.floor(variation(n + 97) * family.designs.length) % family.designs.length]!;
       // §20.1: half the trees take the mirrored silhouette of their design.
@@ -678,8 +715,7 @@ export function buildThreeLandscape(
       // Broaden the artwork at the same accepted pattern centers. The complete
       // crown stays inside its reviewed mask, including holes, and clear of
       // playing surfaces. Width never changes the illustrative height or trunk.
-      const clearance = clearanceRings.reduce((minimum, ring) =>
-        Math.min(minimum, boundaryDistance(point, ring)), Infinity);
+      const clearance = nearestRingM(point, clearanceRings);
       const designRadius = baseRadius * proportion * 1.25, height = designRadius * heightRatio;
       // §20: a seeded lean (crown and trunk together, pivot at the ground)
       // only well inside the mask; the crown radius gives up the shift.
@@ -699,7 +735,7 @@ export function buildThreeLandscape(
   // §39 forest mass: beyond the edge band a reviewed woods polygon is carried
   // by low-poly canopy lobes on a coarse grid, budgeted nearest the hole first.
   const massCandidates = canopyGroups.map(feature => {
-    const rings = feature.parts.flat(), vertices = feature.parts.flat(2);
+    const rings = boxRings(feature.parts.flat()), vertices = feature.parts.flat(2);
     if (!vertices.length) return [] as PointM[];
     const spacing = VEGETATION.mass.spacingM;
     const minX = Math.floor(Math.min(...vertices.map(p => p[0])) / spacing) * spacing, maxX = Math.max(...vertices.map(p => p[0]));
@@ -709,8 +745,8 @@ export function buildThreeLandscape(
       const seed = featureSeed(`${feature.id}:${Math.round(x)}:${Math.round(y)}`);
       const point: PointM = [x + (variation(seed) - .5) * spacing * .5, y + (variation(seed + 5) - .5) * spacing * .5];
       if (!inFeature(point, feature)) continue;
-      if (rings.some(ring => boundaryDistance(point, ring) < VEGETATION.mass.insetM)) continue;
-      if (excludedFeatures.some(other => inFeature(point, other)) || excludedRings.some(ring => boundaryDistance(point, ring) < VEGETATION.mass.lobeRadiusM[1])) continue;
+      if (ringWithin(point, rings, VEGETATION.mass.insetM)) continue;
+      if (excludedFeatures.some(other => inFeature(point, other)) || ringWithin(point, excludedRings, VEGETATION.mass.lobeRadiusM[1])) continue;
       points.push(point);
     }
     return points;
@@ -739,7 +775,7 @@ export function buildThreeLandscape(
     .map(zone => ({ id: zone.id, kind: 'woods', type: zone.type, parts: zone.parts, reviewed: false }) as LocalFeature);
   const contextMassBudget = Math.max(0, Math.round(VEGETATION.mass.contextBudget * (options.overrides?.mass ?? 1)));
   const contextMassCandidates = contextWoods.map(feature => {
-    const rings = feature.parts.flat(), vertices = feature.parts.flat(2);
+    const rings = boxRings(feature.parts.flat()), vertices = feature.parts.flat(2);
     if (!vertices.length) return [] as PointM[];
     const spacing = VEGETATION.mass.spacingM;
     const minX = Math.floor(Math.min(...vertices.map(p => p[0])) / spacing) * spacing, maxX = Math.max(...vertices.map(p => p[0]));
@@ -749,9 +785,9 @@ export function buildThreeLandscape(
       const seed = featureSeed(`${feature.id}:${Math.round(x)}:${Math.round(y)}`);
       const point: PointM = [x + (variation(seed) - .5) * spacing * .5, y + (variation(seed + 5) - .5) * spacing * .5];
       if (!inFeature(point, feature)) continue;
-      if (rings.some(ring => boundaryDistance(point, ring) < VEGETATION.mass.lobeRadiusM[0])) continue;
+      if (ringWithin(point, rings, VEGETATION.mass.lobeRadiusM[0])) continue;
       if (canopyGroups.some(other => inFeature(point, other))) continue;
-      if (excludedFeatures.some(other => inFeature(point, other)) || excludedRings.some(ring => boundaryDistance(point, ring) < VEGETATION.mass.lobeRadiusM[1])) continue;
+      if (excludedFeatures.some(other => inFeature(point, other)) || ringWithin(point, excludedRings, VEGETATION.mass.lobeRadiusM[1])) continue;
       points.push(point);
     }
     return points;
@@ -780,7 +816,7 @@ export function buildThreeLandscape(
   const understory = VEGETATION.understory, shrubAsset = assetById.get('broad-low-cluster') ?? treeAtlas.variants[0]!;
   const understoryBudget = Math.max(0, Math.round(understory.budget * (options.overrides?.crowns ?? 1)));
   const understoryCandidates = canopyGroups.map(feature => {
-    const rings = feature.parts.flat(), vertices = feature.parts.flat(2);
+    const rings = boxRings(feature.parts.flat()), vertices = feature.parts.flat(2);
     if (!vertices.length) return [] as PointM[];
     const spacing = understory.spacingM;
     const minX = Math.floor(Math.min(...vertices.map(p => p[0])) / spacing) * spacing, maxX = Math.max(...vertices.map(p => p[0]));
@@ -790,9 +826,9 @@ export function buildThreeLandscape(
       const seed = featureSeed(`understory:${feature.id}:${Math.round(x)}:${Math.round(y)}`);
       const point: PointM = [x + (variation(seed) - .5) * spacing * .6, y + (variation(seed + 5) - .5) * spacing * .6];
       if (!inFeature(point, feature)) continue;
-      const edgeM = rings.reduce((minimum, ring) => Math.min(minimum, boundaryDistance(point, ring)), Infinity);
+      const edgeM = nearestRingM(point, rings);
       if (edgeM < understory.innerM || edgeM > understory.bandM) continue;
-      if (excludedFeatures.some(other => inFeature(point, other)) || excludedRings.some(ring => boundaryDistance(point, ring) < understory.radiusM[1])) continue;
+      if (excludedFeatures.some(other => inFeature(point, other)) || ringWithin(point, excludedRings, understory.radiusM[1])) continue;
       points.push(point);
     }
     return points;
@@ -800,13 +836,13 @@ export function buildThreeLandscape(
   let understoryCount = 0;
   const understoryAllocated = allocateCrowns(understoryCandidates, understoryBudget, nearness);
   for (const [groupIndex, feature] of canopyGroups.entries()) {
-    const ownBoundary = feature.parts.flat(), clearanceRings = [...ownBoundary, ...excludedRings];
+    const ownBoundary = boxRings(feature.parts.flat()), clearanceRings = [...ownBoundary, ...excludedRings];
     for (const point of understoryAllocated[groupIndex]!) {
       const groundZ = terrainHeight(mesh, point);
       if (groundZ == null) continue;
       const id = `understory:${courseFrame}:${scene.packageHash.slice(0, 12)}:${feature.id}:${Math.round(point[0] * 1000)},${Math.round(point[1] * 1000)}:${MERIDIAN_STYLE_VERSION}`;
       const n = featureSeed(id);
-      const clearance = clearanceRings.reduce((minimum, ring) => Math.min(minimum, boundaryDistance(point, ring)), Infinity);
+      const clearance = nearestRingM(point, clearanceRings);
       const designRadius = understory.radiusM[0] + (understory.radiusM[1] - understory.radiusM[0]) * variation(n + 3);
       const radius = Math.min(designRadius, Math.max(0, clearance - .15));
       if (radius < .5) continue;

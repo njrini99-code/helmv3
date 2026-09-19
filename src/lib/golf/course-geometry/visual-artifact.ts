@@ -247,13 +247,23 @@ export function compileVisualArtifact(scene: HoleScene, mesh: TerrainMesh, style
   };
   const roughness = style.surface.roughness;
   const roughnessFor = (surface: SurfaceClass): number => surface in roughness ? roughness[surface as keyof typeof roughness] : roughness.ground;
+  // A triangle's base albedo depends on its kind, material and context flag
+  // only; the palette parse and mixes run once per combination, not per triangle.
+  const albedoCache = new Map<string, (number[] | undefined)[]>();
+  const albedoBytesFor = (kind: TerrainMesh['featureKinds'][number], material: number, contextOnly: boolean): number[] => {
+    let byMaterial = albedoCache.get(kind);
+    if (!byMaterial) { byMaterial = []; albedoCache.set(kind, byMaterial); }
+    const slot = material * 2 + (contextOnly ? 1 : 0);
+    let bytes = byMaterial[slot];
+    if (!bytes) { bytes = albedoFor(kind, material, contextOnly, style).map(channel => Math.round(Math.min(1, Math.max(0, channel)) * 255)); byMaterial[slot] = bytes; }
+    return bytes;
+  };
   const kinds = mesh.featureKinds, ids = mesh.featureIds, v = mesh.vertices;
   for (let t = 0; t < mesh.triangleFeatures.length; t++) {
     const featureIndex = mesh.triangleFeatures[t]!, kind = kinds[featureIndex]!, id = ids[featureIndex]!, material = mesh.triangleMaterials[t]!;
     const contextOnly = contextIds.has(id);
     const surface = classOf(kind, material);
-    const albedo = albedoFor(kind, material, contextOnly, style);
-    const albedoBytes = albedo.map(channel => Math.round(Math.min(1, Math.max(0, channel)) * 255));
+    const albedoBytes = albedoBytesFor(kind, material, contextOnly);
     // Mown fields: the played fairway (§22) and, at its own subtler scale in
     // the shader, the played green (§23). Context copies stay unmown.
     const mown = (kind === 'fairway' || kind === 'green') && material === 0 && !contextOnly;
@@ -516,18 +526,27 @@ function compileRoughHierarchy(scene: HoleScene, mesh: TerrainMesh, style: Merid
   const secondaryAlbedo = hexToRgb(style.palette.roughSecondary), outerAlbedo = hexToRgb(style.palette.roughOuter), firstCutAlbedo = hexToRgb(style.palette.roughFirstCut);
   const secondaryId = SURFACE_CLASS_IDS.indexOf('rough_secondary'), outerId = SURFACE_CLASS_IDS.indexOf('rough_outer');
   const v = mesh.vertices, cache = new Map<string, number>();
+  // Only a ring whose box lies within the search radius can be measured
+  // (the box test below never passes otherwise), so each vertex reads the
+  // rings whose radius-expanded box covers its cell, in ring order.
+  const nearPlaying = boxGrid(playing.map(({ box }) => expandBbox(box, SURROUND_SEARCH_M + 1e-6)));
   const surroundFor = (point: PointM): number => {
     const key = `${point[0]}|${point[1]}`;
     const cached = cache.get(key);
     if (cached != null) return cached;
     let best = SURROUND_SEARCH_M;
-    for (const { ring, box } of playing) {
+    for (const index of nearPlaying(point)) {
+      const { ring, box } = playing[index]!;
       if (bboxDistance(point, box) >= best) continue;
       best = Math.min(best, boundaryDistance(point, ring));
     }
     cache.set(key, best);
     return best;
   };
+  // Zones are found in priority order among those whose footprint box covers
+  // the vertex's cell; a zone with no polygon never matches and is left out.
+  const paintable = painted.filter(zone => zone.polygons.length);
+  const nearPainted = boxGrid(paintable.map(zone => zone.polygons.slice(1).reduce((box, p) => ({ minX: Math.min(box.minX, p.box.minX), minY: Math.min(box.minY, p.box.minY), maxX: Math.max(box.maxX, p.box.maxX), maxY: Math.max(box.maxY, p.box.maxY) }), zone.polygons[0]!.box)));
   const counts = { secondary: 0, outer: 0, painted: 0, classes: {} as Record<string, number>, skippedUncertain };
   for (let t = 0; t < mesh.triangleFeatures.length; t++) {
     const kind = mesh.featureKinds[mesh.triangleFeatures[t]!];
@@ -551,7 +570,11 @@ function compileRoughHierarchy(scene: HoleScene, mesh: TerrainMesh, style: Merid
       const distance = attributes.surroundDistanceCm[vertex]! / 100;
       const base: [number, number, number] = [attributes.albedo[vertex * 3]! / 255, attributes.albedo[vertex * 3 + 1]! / 255, attributes.albedo[vertex * 3 + 2]! / 255];
       let albedo = base, classId = -1, shade = 1;
-      const zone = painted.find(z => z.polygons.some(p => bboxDistance(point, p.box) === 0 && inRing(point, p.outer) && !p.holes.some(hole => inRing(point, hole))));
+      let zone: typeof paintable[number] | undefined;
+      for (const index of nearPainted(point)) {
+        const z = paintable[index]!;
+        if (z.polygons.some(p => bboxDistance(point, p.box) === 0 && inRing(point, p.outer) && !p.holes.some(hole => inRing(point, hole)))) { zone = z; break; }
+      }
       if (zone) {
         // Zone tone, blended in over a short band from the zone edge.
         let edge = Infinity;
@@ -730,19 +753,20 @@ function nearestOnPolyline(point: PointM, line: readonly PointM[], out: { d: num
   };
   if (chunks) {
     // Two passes keep the answer identical to the plain in-order scan (ties
-    // go to the lowest segment index): the first finds the true minimum
-    // distance visiting the nearest boxes first, the second is the in-order
-    // scan restricted to the runs whose box can still hold that minimum.
-    const order = chunks.boxes.map((box, k) => [bboxDistance(point, box), k] as const).sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    // go to the lowest segment index): the first scans the run with the
+    // nearest box for a bound on the minimum distance, the second is the
+    // in-order scan restricted to the runs whose box can still hold a
+    // segment at or below that bound — a superset of the runs holding the
+    // minimum, and the in-order scan picks the first segment reaching it
+    // whatever else it visits.
+    let nearest = 0, nearestBox = Infinity;
+    for (let k = 0; k < chunks.boxes.length; k++) { const d = bboxDistance(point, chunks.boxes[k]!); if (d < nearestBox) { nearestBox = d; nearest = k; } }
     let bound = Infinity;
-    for (const [boxDistance, k] of order) {
-      if (boxDistance > bound) break;
-      for (let i = chunks.first[k]!; i <= chunks.last[k]!; i++) {
-        const [ax, ay] = line[i - 1]!, [cx, cy] = line[i]!, dx = cx - ax, dy = cy - ay, l2 = dx * dx + dy * dy;
-        const t = l2 > 0 ? Math.max(0, Math.min(1, ((point[0] - ax) * dx + (point[1] - ay) * dy) / l2)) : 0;
-        const d = Math.hypot(point[0] - (ax + t * dx), point[1] - (ay + t * dy));
-        if (d < bound) bound = d;
-      }
+    for (let i = chunks.first[nearest]!; i <= chunks.last[nearest]!; i++) {
+      const [ax, ay] = line[i - 1]!, [cx, cy] = line[i]!, dx = cx - ax, dy = cy - ay, l2 = dx * dx + dy * dy;
+      const t = l2 > 0 ? Math.max(0, Math.min(1, ((point[0] - ax) * dx + (point[1] - ay) * dy) / l2)) : 0;
+      const d = Math.hypot(point[0] - (ax + t * dx), point[1] - (ay + t * dy));
+      if (d < bound) bound = d;
     }
     // A box distance is a square root of the same offsets `Math.hypot`
     // combines, so it can round one ulp above the segment distance it
@@ -785,6 +809,9 @@ function compileContextContact(scene: HoleScene, mesh: TerrainMesh, style: Merid
     return zone.parts.flat().filter(line => line.length >= 2).map(line => ({ line, halfM, reachM, box: expandBbox(ringBbox(line), halfM + Math.max(pathShoulderM, cutFillBankM)), chunks: chunkPolyline(line) }));
   });
   if (!structures.length && !ribbons.length) return { structures: 0, ribbons: 0, vertices: 0, levelled: 0 };
+  // Each position reads the structures and ribbons whose (band-expanded)
+  // box covers its cell, in list order; the box tests below still decide.
+  const nearStructures = boxGrid(structures.map(structure => structure.box)), nearRibbons = boxGrid(ribbons.map(ribbon => ribbon.box));
   let touched = 0, levelled = 0;
   const v = mesh.vertices, nearest = { d: 0, x: 0, y: 0, beyond: 0, across: 0 };
   const smooth = (t: number) => 1 - t * t * (3 - 2 * t);
@@ -796,7 +823,8 @@ function compileContextContact(scene: HoleScene, mesh: TerrainMesh, style: Merid
   const contacts = new Map<number, Map<number, Contact>>();
   const contactAt = (point: PointM, z: number): Contact => {
     let shade = 1;
-    for (const structure of structures) {
+    for (const index of nearStructures(point)) {
+      const structure = structures[index]!;
       if (bboxDistance(point, structure.box) > 0 || inRing(point, structure.ring)) continue;
       const d = boundaryDistance(point, structure.ring);
       if (d < structureBandM) shade *= 1 - structureShade * (1 - d / structureBandM);
@@ -810,7 +838,8 @@ function compileContextContact(scene: HoleScene, mesh: TerrainMesh, style: Merid
     // their heights blend by feather weight instead of the nearest one
     // winning, so a junction is a ramp rather than a step.
     let weight = 0, targetSum = 0, lead: { feather: number; t: number; d: number; x: number; y: number; delta: number } | null = null;
-    for (const ribbon of ribbons) {
+    for (const index of nearRibbons(point)) {
+      const ribbon = ribbons[index]!;
       if (bboxDistance(point, ribbon.box) > 0 || !withinChunks(point, ribbon.chunks, ribbon.reachM)) continue;
       nearestOnPolyline(point, ribbon.line, nearest, ribbon.chunks);
       const d = nearest.d;

@@ -752,6 +752,17 @@ and the 18-hole Chromium soak is flat (heap 89 → 97 MB, nodes ~800,
 listeners 452, was 90 → 202 MB / 1 043 → 17 090 / 458 → 1 275). Display
 runtime only; no lifecycle writer, resolver or production binding changed.
 
+September 19 (hole-open time): the wait behind *Expand course view* is the
+main-thread landscape build, and it was geometry sieves — the DEM horizon
+march, ring distance and point-in-ring tests run per candidate against
+every ring. The march now reads typed heights with per-direction offset
+tables, `inRing`/`boundaryDistance` route long rings through the exact edge
+index in `ring-index.ts` (now canonical), and the vegetation and compiler
+loops test ring boxes first. Nothing visible moved: all 18 artifact hashes,
+a digest of every built geometry array and 96 canary captures are
+unchanged. Headed 18-hole soaks: build median 507 → 242 ms (Chrome) and
+735 → 264 ms (WebKit) on the Mac; device numbers remain the owner's run.
+
 ### Four-course local source trial (September 13, 2026)
 
 The fixture harness now includes Winchester alongside Cacapon; both reuse the

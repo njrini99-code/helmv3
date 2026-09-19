@@ -1,17 +1,22 @@
-import { ringBbox, type Bbox } from './bunker-profile';
+import type { PointBox } from './spatial';
 import type { LocalFeature, PointM } from './types';
 
 /** A ring's edges bucketed on a uniform grid over its bounding box, so a
  * point test reads the few edges near the point instead of the whole ring.
- * `contains` answers exactly what `inRing` answers and `distance` exactly
- * what `boundaryDistance` answers (`display-outline.ts`): both evaluate the
- * same per-edge expressions, in ring order, on a superset of the edges that
- * can matter — an edge is stored in every cell its box covers, a horizontal
- * ray only meets edges in its own row and an edge in an unread cell is
- * farther than the best distance already found. */
+ * `contains` answers exactly what `inRingScan` answers (`spatial.ts`) and
+ * `distance` exactly what `boundaryDistanceScan` answers
+ * (`display-outline.ts`): both evaluate the same per-edge expressions, in
+ * ring order, on a superset of the edges that can matter — an edge is stored
+ * in every cell its box covers, a horizontal ray only meets edges in its own
+ * row and an edge in an unread cell is farther than the best distance
+ * already found. `inRing` and `boundaryDistance` themselves route every
+ * ring of `INDEXED_RING_POINTS` or more points through `ringIndexFor`, so
+ * the compiler's per-vertex loops, the landscape's candidate sieves and the
+ * lie classifier all read the index without knowing it. This module imports
+ * nothing at runtime so those two can depend on it without a cycle. */
 export interface RingIndex {
   readonly ring: readonly PointM[];
-  readonly box: Bbox;
+  readonly box: PointBox;
   readonly cellM: number;
   readonly columns: number;
   readonly rows: number;
@@ -45,8 +50,29 @@ function quadDistance(x: number, y: number, quads: Float64Array, at: number): nu
   return Math.sqrt(dx * dx + dy * dy);
 }
 
+/** `pointBox` (spatial.ts) again, so this module stays import-free at runtime. */
+function ringBox(ring: readonly PointM[]): PointBox {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const [x, y] of ring) { if (x < minX) minX = x; if (x > maxX) maxX = x; if (y < minY) minY = y; if (y > maxY) maxY = y; }
+  return { minX, minY, maxX, maxY };
+}
+
+/** Rings this long are indexed on their first `inRing` or `boundaryDistance`
+ * call and the index kept with the ring (a WeakMap, so it goes when the ring
+ * does). Shorter rings scan: their scan costs about what one index read does. */
+export const INDEXED_RING_POINTS = 24;
+const indexes = new WeakMap<readonly PointM[], RingIndex>();
+export function ringIndexFor(ring: readonly PointM[]): RingIndex | null {
+  if (ring.length < INDEXED_RING_POINTS) return null;
+  let index = indexes.get(ring);
+  // Rings are read-only by convention; a ring that grew since it was indexed
+  // (the one mutation a caller could plausibly make) is indexed again.
+  if (!index || index.scratch.seen.length !== ring.length) { index = indexRing(ring); indexes.set(ring, index); }
+  return index;
+}
+
 export function indexRing(ring: readonly PointM[]): RingIndex {
-  const box = ringBbox(ring);
+  const box = ringBox(ring);
   const n = ring.length;
   const width = Math.max(box.maxX - box.minX, 0), height = Math.max(box.maxY - box.minY, 0);
   // Roughly one boundary edge per cell it crosses; never below a metre.
@@ -158,11 +184,11 @@ function scanChunk(ring: readonly PointM[], x: number, y: number, k: number, bes
 
 /** A polygon feature's rings indexed, in `inFeature`'s structure (parts of
  * outer ring then holes); a LineString has no parts to index. */
-export interface FeatureIndex { readonly box: Bbox; readonly parts: readonly (readonly RingIndex[])[] }
+export interface FeatureIndex { readonly box: PointBox; readonly parts: readonly (readonly RingIndex[])[] }
 
 export function indexFeature(feature: Pick<LocalFeature, 'type' | 'parts'>): FeatureIndex {
   const parts = feature.type === 'LineString' ? [] : feature.parts.map(rings => rings.map(indexRing));
-  return { box: ringBbox(feature.parts.flat(2)), parts };
+  return { box: ringBox(feature.parts.flat(2)), parts };
 }
 
 /** Exactly `inFeature(point, feature)` for the indexed feature. */

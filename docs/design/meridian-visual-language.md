@@ -480,10 +480,14 @@ the iPhone 15 viewport) give the first hardware numbers without standing in
 for any device row: Chrome's `EXT_disjoint_timer_query_webgl2` puts the GPU
 frame at 3.9–8.1 ms P95 after a pan (median 5.2 ms) with the CPU frame at
 ~10 ms, and Playwright's GPU WebKit build (Safari's engine, not Safari) holds
-a 16 ms CPU P95 median with the landscape build at ~0.7 s per hole. Every
-row of the matrix above — the phones, Android, the Capacitor WebView, Safari
-and a desktop Chrome window — plus thermal, battery and first-open on a cold
-phone stays on the hardware list.
+a 16 ms CPU P95 median. The landscape build (the wait behind *Expand course
+view*) was ~0.5 s per hole in Chrome and ~0.7 s in WebKit on that machine
+until 2026-09-19, when its geometry sieves were given exact indexes and box
+tests (master plan §68): now a median 0.24 s in Chrome (max 0.32 s) and
+0.26 s in WebKit (max 0.41 s), byte-identical artifacts and pixel-identical
+canaries. Every row of the matrix above — the phones, Android, the Capacitor
+WebView, Safari and a desktop Chrome window — plus thermal, battery and
+first-open on a cold phone stays on the hardware list.
 
 ## Canary pixel diff (§106.4)
 

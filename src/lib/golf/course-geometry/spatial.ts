@@ -1,7 +1,15 @@
+import { indexContains, ringIndexFor } from './ring-index';
 import type { LocalFeature, PointM } from './types';
 
-/** Boundary counts as inside; holes in polygons are excluded. */
-export function inRing([x, y]: PointM, ring: readonly PointM[]): boolean {
+/** Boundary counts as inside; holes in polygons are excluded. A long ring
+ * answers from its edge index (`ring-index.ts`), which returns exactly what
+ * the scan below returns. */
+export function inRing(point: PointM, ring: readonly PointM[]): boolean {
+  const index = ringIndexFor(ring);
+  return index ? indexContains(index, point) : inRingScan(point, ring);
+}
+/** The plain in-order scan `inRing` is defined by; the index is held to it. */
+export function inRingScan([x, y]: PointM, ring: readonly PointM[]): boolean {
   let inside = false;
   for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
     const a = ring[j]!, b = ring[i]!;
@@ -28,8 +36,14 @@ export function pointBoxDistance([x, y]: PointM, box: PointBox): number {
   return Math.sqrt(dx * dx + dy * dy);
 }
 export function inFeature(point: PointM, feature: LocalFeature): boolean {
-  return feature.type !== 'LineString' && feature.parts.some(rings =>
-    !!rings[0] && inRing(point, rings[0]) && !rings.slice(1).some(r => inRing(point, r)));
+  if (feature.type === 'LineString') return false;
+  for (const rings of feature.parts) {
+    if (!rings[0] || !inRing(point, rings[0])) continue;
+    let inHole = false;
+    for (let h = 1; h < rings.length && !inHole; h++) inHole = inRing(point, rings[h]!);
+    if (!inHole) return true;
+  }
+  return false;
 }
 export function ringArea(ring: readonly PointM[]): number {
   return Math.abs(ring.reduce((sum, a, i) => {

@@ -126,11 +126,15 @@ export function sourceVertexNormals(mesh: TerrainMesh): Float32Array | null {
   if (mesh.sourceNormals && mesh.sourceNormals.length === mesh.vertices.length) return Float32Array.from(mesh.sourceNormals);
   const grid = mesh.metricGrid;
   if (!grid) return null;
-  const v = mesh.vertices, normals = new Float32Array(v.length), cache = new Map<string, readonly [number, number, number]>();
+  // One gradient per distinct position (corners share them), keyed by the
+  // coordinates themselves rather than a string of them.
+  const v = mesh.vertices, normals = new Float32Array(v.length), cache = new Map<number, Map<number, readonly [number, number, number]>>();
   for (let i = 0; i < v.length; i += 3) {
-    const key = `${v[i]},${v[i + 1]}`;
-    let n = cache.get(key);
-    if (!n) { n = metricTerrainNormal(grid, [v[i]!, v[i + 1]!]) ?? [0, 0, 1]; cache.set(key, n); }
+    const x = v[i]!, y = v[i + 1]!;
+    let row = cache.get(x);
+    if (!row) { row = new Map(); cache.set(x, row); }
+    let n = row.get(y);
+    if (!n) { n = metricTerrainNormal(grid, [x, y]) ?? [0, 0, 1]; row.set(y, n); }
     normals[i] = n[0]; normals[i + 1] = n[1]; normals[i + 2] = n[2];
   }
   return normals;

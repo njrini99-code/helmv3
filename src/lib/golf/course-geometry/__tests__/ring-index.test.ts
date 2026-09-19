@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { boundaryDistance } from '../display-outline';
-import { featureBoundaryDistance, featureContains, indexContains, indexDistance, indexFeature, indexRing } from '../ring-index';
-import { inFeature, inRing } from '../spatial';
+import { boundaryDistance, boundaryDistanceScan } from '../display-outline';
+import { featureBoundaryDistance, featureContains, indexContains, indexDistance, indexFeature, INDEXED_RING_POINTS, indexRing, ringIndexFor } from '../ring-index';
+import { inFeature, inRing, inRingScan } from '../spatial';
 import type { LocalFeature, PointM } from '../types';
 
 /** Deterministic LCG so a failure names its seed. */
@@ -50,8 +50,8 @@ describe('ring index (forest compile)', () => {
     for (const ring of rings) {
       const index = indexRing(ring);
       for (const p of probes(random, ring, 3000)) {
-        expect(indexContains(index, p), `contains ${p}`).toBe(inRing(p, ring));
-        expect(indexDistance(index, p), `distance ${p}`).toBe(boundaryDistance(p, ring));
+        expect(indexContains(index, p), `contains ${p}`).toBe(inRingScan(p, ring));
+        expect(indexDistance(index, p), `distance ${p}`).toBe(boundaryDistanceScan(p, ring));
       }
     }
   });
@@ -60,7 +60,7 @@ describe('ring index (forest compile)', () => {
     const random = rng(11);
     const ring = star(random, [0, 0], 200, 700, true), index = indexRing(ring);
     for (const p of probes(random, ring, 2000)) {
-      const truth = boundaryDistance(p, ring);
+      const truth = boundaryDistanceScan(p, ring);
       for (const cap of [0, 1, 5, truth, truth + 1e-6, 40, Infinity]) {
         const capped = indexDistance(index, p, cap);
         if (truth < cap) expect(capped).toBe(truth); else expect(capped).toBeGreaterThanOrEqual(cap);
@@ -76,9 +76,28 @@ describe('ring index (forest compile)', () => {
     const rings = [outer, hole, other];
     for (const p of [...probes(random, outer, 2000), ...probes(random, hole, 500), ...probes(random, other, 500)]) {
       expect(featureContains(index, p)).toBe(inFeature(p, feature));
-      expect(featureBoundaryDistance(index, p)).toBe(Math.min(...rings.map(ring => boundaryDistance(p, ring))));
+      expect(featureBoundaryDistance(index, p)).toBe(Math.min(...rings.map(ring => boundaryDistanceScan(p, ring))));
     }
     const line = { id: 'l', kind: 'route', type: 'LineString', parts: [[[[0, 0], [10, 10]]]] } as unknown as LocalFeature;
     expect(featureContains(indexFeature(line), [5, 5])).toBe(inFeature([5, 5], line));
+  });
+
+  it('inRing and boundaryDistance route long rings through the index and short rings through the scan, with the same answers', () => {
+    const random = rng(19);
+    const long = star(random, [20, -10], 90, 260, true), short = star(random, [0, 0], 12, INDEXED_RING_POINTS - 2, true);
+    expect(ringIndexFor(short)).toBeNull();
+    const index = ringIndexFor(long);
+    expect(index).not.toBeNull();
+    expect(ringIndexFor(long)).toBe(index); // built once, kept with the ring
+    for (const ring of [long, short]) for (const p of probes(random, ring, 1500)) {
+      expect(inRing(p, ring), `inRing ${p}`).toBe(inRingScan(p, ring));
+      expect(boundaryDistance(p, ring), `boundaryDistance ${p}`).toBe(boundaryDistanceScan(p, ring));
+    }
+    // A ring that grew after it was indexed is indexed again rather than read stale.
+    const grown = [...long.slice(0, -1), [long[0]![0] + 200, long[0]![1]] as PointM, long[0]!];
+    const before = ringIndexFor(grown)!;
+    grown.splice(grown.length - 1, 0, [long[0]![0] + 200, long[0]![1] + 200]);
+    expect(ringIndexFor(grown)).not.toBe(before);
+    for (const p of probes(random, grown, 300)) expect(inRing(p, grown)).toBe(inRingScan(p, grown));
   });
 });

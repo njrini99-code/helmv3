@@ -1,4 +1,5 @@
 import type { LocalFeature, PointM } from './types';
+import { indexDistance, ringIndexFor } from './ring-index';
 import { inRing, ringArea, segmentsIntersect, simpleRing } from './spatial';
 
 const cache = new WeakMap<LocalFeature, LocalFeature>();
@@ -8,7 +9,14 @@ function distanceToSegment(p: PointM, a: PointM, b: PointM): number {
   const t = length2 ? Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / length2)) : 0;
   return Math.hypot(p[0] - a[0] - t * dx, p[1] - a[1] - t * dy);
 }
+/** Distance from a point to the ring's edges. A long ring answers from its
+ * edge index (`ring-index.ts`), which returns exactly what the scan returns. */
 export function boundaryDistance(p: PointM, ring: readonly PointM[]): number {
+  const index = ringIndexFor(ring);
+  return index ? indexDistance(index, p) : boundaryDistanceScan(p, ring);
+}
+/** The plain in-order scan `boundaryDistance` is defined by; the index is held to it. */
+export function boundaryDistanceScan(p: PointM, ring: readonly PointM[]): number {
   let best = Infinity;
   for (let i = 1; i < ring.length; i++) best = Math.min(best, distanceToSegment(p, ring[i - 1]!, ring[i]!));
   return best;
