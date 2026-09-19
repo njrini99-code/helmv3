@@ -49,6 +49,14 @@ ground tone, draped ribbon, extruded footprint, vegetation, line, none).
    adds `derived` zones for terrain-context classes the sources cannot give
    (ridge, swale, bank …) and marks the layer `partial` or `reviewed`.
    Nothing is added because a space looks empty (§6).
+   `report-unexplained-naip.py` puts imagery beside that judgement without
+   touching the layer: it rebuilds the report's unexplained ground (and
+   refuses to run unless its share matches the retained report on every
+   hole), classifies the leaf-on NAIP pixels inside it with thresholds
+   measured on the package's own surfaces (canopy / meadow / mown turf /
+   bare / dark), and writes per-hole overlays, a JSON the prompt sheet
+   reads, and the upper bound each class puts on the gate (report only; the
+   review sidecar cannot add zones, a derived zone can).
 
 The renderer refuses a layer whose package hash, site or origin differ
 (`MERIDIAN_CONTEXT_LAYER_MISMATCH`), exactly like the visual artifact.

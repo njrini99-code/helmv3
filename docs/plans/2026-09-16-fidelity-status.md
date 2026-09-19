@@ -9,11 +9,15 @@ direction (`2026-09-16-renderer-redesign-status.md`) is folded into the same
 work order; the outside-world spec (`2026-09-16-outside-world-status.md`)
 owns paths, structures, context zones and the player chrome.
 
-**Open gates (2026-09-18, head `56bceaf05`).** The §65 order is worked
+**Open gates (2026-09-19, head `983570c56`).** The §65 order is worked
 through; the rows still `partial` wait on the §39 human pass (hole
 identity, the mirrored-in-3D checklist, anonymous rough on 2, 3, 4) and on
 a contour source for the green tiers. Checklist item 10 (§69) is the
-owner's visual review. No renderer change is queued.
+owner's visual review. No renderer change is queued; the hole-open
+speed-ups landed pixel-identical (`canaries/v31-speed`, `player/audit-v13`),
+and the §39 pass now has NAIP evidence per hole (outside-world action 10:
+the anonymous rough on 2, 3, 4 is 27–43 % meadow and 22–38 % mown turf by
+imagery, with tilled fields as the bare remainder).
 
 Doctrine (§54): source-backed detail (green shape, fairway boundary, bunker
 perimeter, path, water, structures, broad terrain) stays canonical; visual-only

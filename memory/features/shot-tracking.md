@@ -1079,6 +1079,21 @@ still shows a tree, the 3D landscape keeps the crowns nearest the played
 hole's own surfaces, and near-detail crowns swap in only around the camera
 focus so a forest never renders at full detail at once.
 
+The same raster also grades what the context layer leaves unexplained
+(`report-unexplained-naip.py`, September 19, report only): the per-hole
+unexplained ground of the context report is rebuilt and checked against
+the retained report, then its NAIP pixels are classed with thresholds
+measured on the package's own fairways, woods and water — mown turf sits
+at NDVI .14–.31 here, so a low NDVI is never read as bare ground. On the
+Upper course the unexplained 236 ha is canopy 21 %, meadow 24 %, mown turf
+31 %, bare ground or hardscape 23 %, dark 1 %; 31 ha of the canopy is rim
+forest the canopy pass never reached because it clipped groups to features
+± 160 m while the report's bounds run to the mesh ± 24 m. Re-running the
+pass to the hole bounds is the one machine-doable improvement and changes
+the package hash, so it waits on the owner; the numbers sit in the prompt
+sheet beside each §39 question and in
+`peek-n-peak-upper-unexplained-naip.json`.
+
 The harness's `?play=1&course=…` mode drives the real shot-tracking screen
 hole by hole with the compiled terrain for the current and next hole
 resident, persisting shots, scores and the current hole in that browser only.

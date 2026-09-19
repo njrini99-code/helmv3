@@ -9,9 +9,10 @@ named), `deferred` (the directive itself marks it later or conditional, and
 the trigger is named), `blocked` (needs something outside this machine, such
 as a physical phone), `pending`.
 
-**Open gates (2026-09-18, head `56bceaf05`).** V0–V7 are landed and
+**Open gates (2026-09-19, head `983570c56`).** V0–V7 are landed and
 gated; the draw-call budget is enforced by the capture scripts (player
-view phone Terrain runs 13–15 draws against a budget of 180, `player/audit-v12`).
+view phone Terrain runs 9–15 draws against a budget of 180, `player/audit-v13`,
+pixel-identical to `audit-v12` after the hole-open speed-ups of §68).
 The headless device-class soak (§68, 2026-09-18) found and fixed the one
 runtime leak (three r186 DFG-LUT renderer retention) and is flat over 18
 holes on WebKit and Chromium. Still outside this machine: §103 device

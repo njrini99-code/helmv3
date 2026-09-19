@@ -1,0 +1,1233 @@
+{
+ "kind": "golfhelm-unexplained-naip-report-v1",
+ "siteId": "osm-way-136097904",
+ "packageHash": "fdec6ea8467dd214372bde680e7b7f9236c06ad5d27bb5ddeadf8ed5e9d3f87a",
+ "layerHash": "92ee06051fc7b3af52672ce4c1ccbc9072e174ce286c8dc26eec594e84695f8f",
+ "contextReport": {
+  "kind": "golfhelm-context-report-v1",
+  "layerHash": "92ee06051fc7b3af52672ce4c1ccbc9072e174ce286c8dc26eec594e84695f8f"
+ },
+ "raster": {
+  "provider": "USDA NAIP via FPAC conus_naip ImageServer",
+  "rasterSha256": "9d01248d88b76b98d9e67774e118732c280b612f1a6858129951d46196650f05",
+  "captureDates": [
+   "20240524",
+   "20240824"
+  ],
+  "catalogTiles": [
+   "m_4207958_NE_18_60_20240824",
+   "m_4207958_SE_18_60_20240824",
+   "m_4207958_ne_17_060_20240524",
+   "m_4207958_se_17_060_20240524",
+   "m_4207959_nw_17_060_20240524",
+   "m_4207959_sw_17_060_20240524"
+  ],
+  "exportPixelM": 1.0,
+  "license": "US public domain (USDA NAIP); attribution retained"
+ },
+ "reportedAt": "2026-09-19",
+ "meaning": "Report only. Classifies leaf-on NAIP pixels inside the ground the context report calls unexplained. Nothing here creates a zone or changes a hash; the review sidecar only accepts, adjusts or rejects existing zones, so the what-if scenarios are an upper bound on what a new source-backed derived zone could explain.",
+ "gate": {
+  "maxUncertainShare": 0.15,
+  "holesPassing": {
+   "report": 1,
+   "canopy": 3,
+   "turf": 6,
+   "turf+meadow": 13,
+   "vegetation": 17,
+   "all-but-bare": 17
+  }
+ },
+ "courseClasses": {
+  "canopy": 0.214,
+  "meadow": 0.236,
+  "turf": 0.313,
+  "bare": 0.231,
+  "dark": 0.006
+ },
+ "holes": [
+  {
+   "key": "peek-n-peak-upper-01",
+   "ordinal": 1,
+   "contextBoundsM2": 483072,
+   "uncertainShare": 0.327,
+   "unexplainedM2": 158023,
+   "unexplainedPixels": 158043,
+   "pixelM2": 1.0,
+   "rasterVectorDelta": 0.0001,
+   "woodsUnionShare": 0.336,
+   "classes": {
+    "canopy": {
+     "pixels": 41179,
+     "share": 0.261,
+     "m2": 41174
+    },
+    "meadow": {
+     "pixels": 24876,
+     "share": 0.157,
+     "m2": 24873
+    },
+    "turf": {
+     "pixels": 53387,
+     "share": 0.338,
+     "m2": 53380
+    },
+    "bare": {
+     "pixels": 36573,
+     "share": 0.231,
+     "m2": 36568
+    },
+    "dark": {
+     "pixels": 2028,
+     "share": 0.013,
+     "m2": 2028
+    }
+   },
+   "canopy": {
+    "beyondCanopyPassReach": 20554,
+    "rejectedByCanopyPass": 20625
+   },
+   "scenarios": {
+    "canopy": {
+     "uncertainShare": 0.242,
+     "gate": "fail"
+    },
+    "turf": {
+     "uncertainShare": 0.217,
+     "gate": "fail"
+    },
+    "turf+meadow": {
+     "uncertainShare": 0.165,
+     "gate": "fail"
+    },
+    "vegetation": {
+     "uncertainShare": 0.08,
+     "gate": "pass"
+    },
+    "all-but-bare": {
+     "uncertainShare": 0.076,
+     "gate": "pass"
+    }
+   }
+  },
+  {
+   "key": "peek-n-peak-upper-02",
+   "ordinal": 2,
+   "contextBoundsM2": 502016,
+   "uncertainShare": 0.494,
+   "unexplainedM2": 248189,
+   "unexplainedPixels": 248140,
+   "pixelM2": 1.0,
+   "rasterVectorDelta": -0.0002,
+   "woodsUnionShare": 0.23,
+   "classes": {
+    "canopy": {
+     "pixels": 20248,
+     "share": 0.082,
+     "m2": 20252
+    },
+    "meadow": {
+     "pixels": 75506,
+     "share": 0.304,
+     "m2": 75521
+    },
+    "turf": {
+     "pixels": 72832,
+     "share": 0.294,
+     "m2": 72846
+    },
+    "bare": {
+     "pixels": 79457,
+     "share": 0.32,
+     "m2": 79473
+    },
+    "dark": {
+     "pixels": 97,
+     "share": 0.0,
+     "m2": 97
+    }
+   },
+   "canopy": {
+    "beyondCanopyPassReach": 7902,
+    "rejectedByCanopyPass": 12346
+   },
+   "scenarios": {
+    "canopy": {
+     "uncertainShare": 0.454,
+     "gate": "fail"
+    },
+    "turf": {
+     "uncertainShare": 0.349,
+     "gate": "fail"
+    },
+    "turf+meadow": {
+     "uncertainShare": 0.199,
+     "gate": "fail"
+    },
+    "vegetation": {
+     "uncertainShare": 0.159,
+     "gate": "fail"
+    },
+    "all-but-bare": {
+     "uncertainShare": 0.158,
+     "gate": "fail"
+    }
+   }
+  },
+  {
+   "key": "peek-n-peak-upper-03",
+   "ordinal": 3,
+   "contextBoundsM2": 350464,
+   "uncertainShare": 0.348,
+   "unexplainedM2": 121937,
+   "unexplainedPixels": 121874,
+   "pixelM2": 1.0,
+   "rasterVectorDelta": -0.0005,
+   "woodsUnionShare": 0.389,
+   "classes": {
+    "canopy": {
+     "pixels": 5852,
+     "share": 0.048,
+     "m2": 5855
+    },
+    "meadow": {
+     "pixels": 32661,
+     "share": 0.268,
+     "m2": 32678
+    },
+    "turf": {
+     "pixels": 45688,
+     "share": 0.375,
+     "m2": 45712
+    },
+    "bare": {
+     "pixels": 37673,
+     "share": 0.309,
+     "m2": 37692
+    },
+    "dark": {
+     "pixels": 0,
+     "share": 0.0,
+     "m2": 0
+    }
+   },
+   "canopy": {
+    "beyondCanopyPassReach": 0,
+    "rejectedByCanopyPass": 5852
+   },
+   "scenarios": {
+    "canopy": {
+     "uncertainShare": 0.331,
+     "gate": "fail"
+    },
+    "turf": {
+     "uncertainShare": 0.217,
+     "gate": "fail"
+    },
+    "turf+meadow": {
+     "uncertainShare": 0.124,
+     "gate": "pass"
+    },
+    "vegetation": {
+     "uncertainShare": 0.108,
+     "gate": "pass"
+    },
+    "all-but-bare": {
+     "uncertainShare": 0.108,
+     "gate": "pass"
+    }
+   }
+  },
+  {
+   "key": "peek-n-peak-upper-04",
+   "ordinal": 4,
+   "contextBoundsM2": 515328,
+   "uncertainShare": 0.387,
+   "unexplainedM2": 199266,
+   "unexplainedPixels": 199072,
+   "pixelM2": 1.0,
+   "rasterVectorDelta": -0.001,
+   "woodsUnionShare": 0.374,
+   "classes": {
+    "canopy": {
+     "pixels": 29046,
+     "share": 0.146,
+     "m2": 29074
+    },
+    "meadow": {
+     "pixels": 85595,
+     "share": 0.43,
+     "m2": 85678
+    },
+    "turf": {
+     "pixels": 43925,
+     "share": 0.221,
+     "m2": 43968
+    },
+    "bare": {
+     "pixels": 40506,
+     "share": 0.203,
+     "m2": 40545
+    },
+    "dark": {
+     "pixels": 0,
+     "share": 0.0,
+     "m2": 0
+    }
+   },
+   "canopy": {
+    "beyondCanopyPassReach": 21947,
+    "rejectedByCanopyPass": 7099
+   },
+   "scenarios": {
+    "canopy": {
+     "uncertainShare": 0.33,
+     "gate": "fail"
+    },
+    "turf": {
+     "uncertainShare": 0.301,
+     "gate": "fail"
+    },
+    "turf+meadow": {
+     "uncertainShare": 0.135,
+     "gate": "pass"
+    },
+    "vegetation": {
+     "uncertainShare": 0.079,
+     "gate": "pass"
+    },
+    "all-but-bare": {
+     "uncertainShare": 0.079,
+     "gate": "pass"
+    }
+   }
+  },
+  {
+   "key": "peek-n-peak-upper-05",
+   "ordinal": 5,
+   "contextBoundsM2": 289536,
+   "uncertainShare": 0.303,
+   "unexplainedM2": 87671,
+   "unexplainedPixels": 85921,
+   "pixelM2": 1.0,
+   "rasterVectorDelta": -0.02,
+   "woodsUnionShare": 0.587,
+   "classes": {
+    "canopy": {
+     "pixels": 33714,
+     "share": 0.392,
+     "m2": 34401
+    },
+    "meadow": {
+     "pixels": 47585,
+     "share": 0.554,
+     "m2": 48554
+    },
+    "turf": {
+     "pixels": 4463,
+     "share": 0.052,
+     "m2": 4554
+    },
+    "bare": {
+     "pixels": 159,
+     "share": 0.002,
+     "m2": 162
+    },
+    "dark": {
+     "pixels": 0,
+     "share": 0.0,
+     "m2": 0
+    }
+   },
+   "canopy": {
+    "beyondCanopyPassReach": 29996,
+    "rejectedByCanopyPass": 3718
+   },
+   "scenarios": {
+    "canopy": {
+     "uncertainShare": 0.184,
+     "gate": "fail"
+    },
+    "turf": {
+     "uncertainShare": 0.287,
+     "gate": "fail"
+    },
+    "turf+meadow": {
+     "uncertainShare": 0.119,
+     "gate": "pass"
+    },
+    "vegetation": {
+     "uncertainShare": 0.001,
+     "gate": "pass"
+    },
+    "all-but-bare": {
+     "uncertainShare": 0.001,
+     "gate": "pass"
+    }
+   }
+  },
+  {
+   "key": "peek-n-peak-upper-06",
+   "ordinal": 6,
+   "contextBoundsM2": 483072,
+   "uncertainShare": 0.353,
+   "unexplainedM2": 170349,
+   "unexplainedPixels": 170303,
+   "pixelM2": 1.0,
+   "rasterVectorDelta": -0.0003,
+   "woodsUnionShare": 0.474,
+   "classes": {
+    "canopy": {
+     "pixels": 36166,
+     "share": 0.212,
+     "m2": 36176
+    },
+    "meadow": {
+     "pixels": 75957,
+     "share": 0.446,
+     "m2": 75978
+    },
+    "turf": {
+     "pixels": 40422,
+     "share": 0.237,
+     "m2": 40433
+    },
+    "bare": {
+     "pixels": 17758,
+     "share": 0.104,
+     "m2": 17763
+    },
+    "dark": {
+     "pixels": 0,
+     "share": 0.0,
+     "m2": 0
+    }
+   },
+   "canopy": {
+    "beyondCanopyPassReach": 29157,
+    "rejectedByCanopyPass": 7009
+   },
+   "scenarios": {
+    "canopy": {
+     "uncertainShare": 0.278,
+     "gate": "fail"
+    },
+    "turf": {
+     "uncertainShare": 0.269,
+     "gate": "fail"
+    },
+    "turf+meadow": {
+     "uncertainShare": 0.112,
+     "gate": "pass"
+    },
+    "vegetation": {
+     "uncertainShare": 0.037,
+     "gate": "pass"
+    },
+    "all-but-bare": {
+     "uncertainShare": 0.037,
+     "gate": "pass"
+    }
+   }
+  },
+  {
+   "key": "peek-n-peak-upper-07",
+   "ordinal": 7,
+   "contextBoundsM2": 449280,
+   "uncertainShare": 0.407,
+   "unexplainedM2": 182755,
+   "unexplainedPixels": 182576,
+   "pixelM2": 1.0,
+   "rasterVectorDelta": -0.001,
+   "woodsUnionShare": 0.379,
+   "classes": {
+    "canopy": {
+     "pixels": 39005,
+     "share": 0.214,
+     "m2": 39043
+    },
+    "meadow": {
+     "pixels": 54307,
+     "share": 0.297,
+     "m2": 54360
+    },
+    "turf": {
+     "pixels": 54667,
+     "share": 0.299,
+     "m2": 54721
+    },
+    "bare": {
+     "pixels": 34523,
+     "share": 0.189,
+     "m2": 34557
+    },
+    "dark": {
+     "pixels": 74,
+     "share": 0.0,
+     "m2": 74
+    }
+   },
+   "canopy": {
+    "beyondCanopyPassReach": 30557,
+    "rejectedByCanopyPass": 8448
+   },
+   "scenarios": {
+    "canopy": {
+     "uncertainShare": 0.32,
+     "gate": "fail"
+    },
+    "turf": {
+     "uncertainShare": 0.285,
+     "gate": "fail"
+    },
+    "turf+meadow": {
+     "uncertainShare": 0.164,
+     "gate": "fail"
+    },
+    "vegetation": {
+     "uncertainShare": 0.077,
+     "gate": "pass"
+    },
+    "all-but-bare": {
+     "uncertainShare": 0.077,
+     "gate": "pass"
+    }
+   }
+  },
+  {
+   "key": "peek-n-peak-upper-08",
+   "ordinal": 8,
+   "contextBoundsM2": 539904,
+   "uncertainShare": 0.433,
+   "unexplainedM2": 233767,
+   "unexplainedPixels": 233668,
+   "pixelM2": 1.0,
+   "rasterVectorDelta": -0.0004,
+   "woodsUnionShare": 0.25,
+   "classes": {
+    "canopy": {
+     "pixels": 26609,
+     "share": 0.114,
+     "m2": 26620
+    },
+    "meadow": {
+     "pixels": 61307,
+     "share": 0.262,
+     "m2": 61333
+    },
+    "turf": {
+     "pixels": 72623,
+     "share": 0.311,
+     "m2": 72654
+    },
+    "bare": {
+     "pixels": 72334,
+     "share": 0.31,
+     "m2": 72365
+    },
+    "dark": {
+     "pixels": 795,
+     "share": 0.003,
+     "m2": 795
+    }
+   },
+   "canopy": {
+    "beyondCanopyPassReach": 10741,
+    "rejectedByCanopyPass": 15868
+   },
+   "scenarios": {
+    "canopy": {
+     "uncertainShare": 0.384,
+     "gate": "fail"
+    },
+    "turf": {
+     "uncertainShare": 0.298,
+     "gate": "fail"
+    },
+    "turf+meadow": {
+     "uncertainShare": 0.185,
+     "gate": "fail"
+    },
+    "vegetation": {
+     "uncertainShare": 0.136,
+     "gate": "pass"
+    },
+    "all-but-bare": {
+     "uncertainShare": 0.134,
+     "gate": "pass"
+    }
+   }
+  },
+  {
+   "key": "peek-n-peak-upper-09",
+   "ordinal": 9,
+   "contextBoundsM2": 445184,
+   "uncertainShare": 0.223,
+   "unexplainedM2": 99472,
+   "unexplainedPixels": 99459,
+   "pixelM2": 1.0,
+   "rasterVectorDelta": -0.0001,
+   "woodsUnionShare": 0.361,
+   "classes": {
+    "canopy": {
+     "pixels": 19549,
+     "share": 0.197,
+     "m2": 19552
+    },
+    "meadow": {
+     "pixels": 9446,
+     "share": 0.095,
+     "m2": 9447
+    },
+    "turf": {
+     "pixels": 41551,
+     "share": 0.418,
+     "m2": 41557
+    },
+    "bare": {
+     "pixels": 26685,
+     "share": 0.268,
+     "m2": 26689
+    },
+    "dark": {
+     "pixels": 2228,
+     "share": 0.022,
+     "m2": 2228
+    }
+   },
+   "canopy": {
+    "beyondCanopyPassReach": 885,
+    "rejectedByCanopyPass": 18664
+   },
+   "scenarios": {
+    "canopy": {
+     "uncertainShare": 0.18,
+     "gate": "fail"
+    },
+    "turf": {
+     "uncertainShare": 0.13,
+     "gate": "pass"
+    },
+    "turf+meadow": {
+     "uncertainShare": 0.109,
+     "gate": "pass"
+    },
+    "vegetation": {
+     "uncertainShare": 0.065,
+     "gate": "pass"
+    },
+    "all-but-bare": {
+     "uncertainShare": 0.06,
+     "gate": "pass"
+    }
+   }
+  },
+  {
+   "key": "peek-n-peak-upper-10",
+   "ordinal": 10,
+   "contextBoundsM2": 456960,
+   "uncertainShare": 0.205,
+   "unexplainedM2": 93737,
+   "unexplainedPixels": 93705,
+   "pixelM2": 1.0,
+   "rasterVectorDelta": -0.0003,
+   "woodsUnionShare": 0.446,
+   "classes": {
+    "canopy": {
+     "pixels": 20500,
+     "share": 0.219,
+     "m2": 20507
+    },
+    "meadow": {
+     "pixels": 2787,
+     "share": 0.03,
+     "m2": 2788
+    },
+    "turf": {
+     "pixels": 34185,
+     "share": 0.365,
+     "m2": 34197
+    },
+    "bare": {
+     "pixels": 34253,
+     "share": 0.366,
+     "m2": 34265
+    },
+    "dark": {
+     "pixels": 1980,
+     "share": 0.021,
+     "m2": 1981
+    }
+   },
+   "canopy": {
+    "beyondCanopyPassReach": 5635,
+    "rejectedByCanopyPass": 14865
+   },
+   "scenarios": {
+    "canopy": {
+     "uncertainShare": 0.16,
+     "gate": "fail"
+    },
+    "turf": {
+     "uncertainShare": 0.13,
+     "gate": "pass"
+    },
+    "turf+meadow": {
+     "uncertainShare": 0.124,
+     "gate": "pass"
+    },
+    "vegetation": {
+     "uncertainShare": 0.079,
+     "gate": "pass"
+    },
+    "all-but-bare": {
+     "uncertainShare": 0.075,
+     "gate": "pass"
+    }
+   }
+  },
+  {
+   "key": "peek-n-peak-upper-11",
+   "ordinal": 11,
+   "contextBoundsM2": 520960,
+   "uncertainShare": 0.154,
+   "unexplainedM2": 80264,
+   "unexplainedPixels": 80222,
+   "pixelM2": 1.0,
+   "rasterVectorDelta": -0.0005,
+   "woodsUnionShare": 0.57,
+   "classes": {
+    "canopy": {
+     "pixels": 26535,
+     "share": 0.331,
+     "m2": 26549
+    },
+    "meadow": {
+     "pixels": 2999,
+     "share": 0.037,
+     "m2": 3001
+    },
+    "turf": {
+     "pixels": 24960,
+     "share": 0.311,
+     "m2": 24973
+    },
+    "bare": {
+     "pixels": 24316,
+     "share": 0.303,
+     "m2": 24329
+    },
+    "dark": {
+     "pixels": 1412,
+     "share": 0.018,
+     "m2": 1413
+    }
+   },
+   "canopy": {
+    "beyondCanopyPassReach": 18294,
+    "rejectedByCanopyPass": 8241
+   },
+   "scenarios": {
+    "canopy": {
+     "uncertainShare": 0.103,
+     "gate": "pass"
+    },
+    "turf": {
+     "uncertainShare": 0.106,
+     "gate": "pass"
+    },
+    "turf+meadow": {
+     "uncertainShare": 0.1,
+     "gate": "pass"
+    },
+    "vegetation": {
+     "uncertainShare": 0.049,
+     "gate": "pass"
+    },
+    "all-but-bare": {
+     "uncertainShare": 0.047,
+     "gate": "pass"
+    }
+   }
+  },
+  {
+   "key": "peek-n-peak-upper-12",
+   "ordinal": 12,
+   "contextBoundsM2": 429312,
+   "uncertainShare": 0.244,
+   "unexplainedM2": 104745,
+   "unexplainedPixels": 104563,
+   "pixelM2": 1.0,
+   "rasterVectorDelta": -0.0017,
+   "woodsUnionShare": 0.505,
+   "classes": {
+    "canopy": {
+     "pixels": 35460,
+     "share": 0.339,
+     "m2": 35522
+    },
+    "meadow": {
+     "pixels": 10257,
+     "share": 0.098,
+     "m2": 10275
+    },
+    "turf": {
+     "pixels": 36499,
+     "share": 0.349,
+     "m2": 36563
+    },
+    "bare": {
+     "pixels": 21341,
+     "share": 0.204,
+     "m2": 21378
+    },
+    "dark": {
+     "pixels": 1006,
+     "share": 0.01,
+     "m2": 1008
+    }
+   },
+   "canopy": {
+    "beyondCanopyPassReach": 25227,
+    "rejectedByCanopyPass": 10233
+   },
+   "scenarios": {
+    "canopy": {
+     "uncertainShare": 0.161,
+     "gate": "fail"
+    },
+    "turf": {
+     "uncertainShare": 0.159,
+     "gate": "fail"
+    },
+    "turf+meadow": {
+     "uncertainShare": 0.135,
+     "gate": "pass"
+    },
+    "vegetation": {
+     "uncertainShare": 0.052,
+     "gate": "pass"
+    },
+    "all-but-bare": {
+     "uncertainShare": 0.05,
+     "gate": "pass"
+    }
+   }
+  },
+  {
+   "key": "peek-n-peak-upper-13",
+   "ordinal": 13,
+   "contextBoundsM2": 331520,
+   "uncertainShare": 0.331,
+   "unexplainedM2": 109820,
+   "unexplainedPixels": 108075,
+   "pixelM2": 1.0,
+   "rasterVectorDelta": -0.0159,
+   "woodsUnionShare": 0.517,
+   "classes": {
+    "canopy": {
+     "pixels": 33461,
+     "share": 0.31,
+     "m2": 34001
+    },
+    "meadow": {
+     "pixels": 15978,
+     "share": 0.148,
+     "m2": 16236
+    },
+    "turf": {
+     "pixels": 39855,
+     "share": 0.369,
+     "m2": 40498
+    },
+    "bare": {
+     "pixels": 18392,
+     "share": 0.17,
+     "m2": 18689
+    },
+    "dark": {
+     "pixels": 389,
+     "share": 0.004,
+     "m2": 395
+    }
+   },
+   "canopy": {
+    "beyondCanopyPassReach": 25588,
+    "rejectedByCanopyPass": 7873
+   },
+   "scenarios": {
+    "canopy": {
+     "uncertainShare": 0.229,
+     "gate": "fail"
+    },
+    "turf": {
+     "uncertainShare": 0.209,
+     "gate": "fail"
+    },
+    "turf+meadow": {
+     "uncertainShare": 0.16,
+     "gate": "fail"
+    },
+    "vegetation": {
+     "uncertainShare": 0.058,
+     "gate": "pass"
+    },
+    "all-but-bare": {
+     "uncertainShare": 0.056,
+     "gate": "pass"
+    }
+   }
+  },
+  {
+   "key": "peek-n-peak-upper-14",
+   "ordinal": 14,
+   "contextBoundsM2": 439040,
+   "uncertainShare": 0.269,
+   "unexplainedM2": 118102,
+   "unexplainedPixels": 117856,
+   "pixelM2": 1.0,
+   "rasterVectorDelta": -0.0021,
+   "woodsUnionShare": 0.521,
+   "classes": {
+    "canopy": {
+     "pixels": 36396,
+     "share": 0.309,
+     "m2": 36472
+    },
+    "meadow": {
+     "pixels": 11182,
+     "share": 0.095,
+     "m2": 11205
+    },
+    "turf": {
+     "pixels": 41955,
+     "share": 0.356,
+     "m2": 42042
+    },
+    "bare": {
+     "pixels": 27768,
+     "share": 0.236,
+     "m2": 27826
+    },
+    "dark": {
+     "pixels": 555,
+     "share": 0.005,
+     "m2": 556
+    }
+   },
+   "canopy": {
+    "beyondCanopyPassReach": 27795,
+    "rejectedByCanopyPass": 8601
+   },
+   "scenarios": {
+    "canopy": {
+     "uncertainShare": 0.186,
+     "gate": "fail"
+    },
+    "turf": {
+     "uncertainShare": 0.173,
+     "gate": "fail"
+    },
+    "turf+meadow": {
+     "uncertainShare": 0.148,
+     "gate": "pass"
+    },
+    "vegetation": {
+     "uncertainShare": 0.065,
+     "gate": "pass"
+    },
+    "all-but-bare": {
+     "uncertainShare": 0.063,
+     "gate": "pass"
+    }
+   }
+  },
+  {
+   "key": "peek-n-peak-upper-15",
+   "ordinal": 15,
+   "contextBoundsM2": 274688,
+   "uncertainShare": 0.135,
+   "unexplainedM2": 37161,
+   "unexplainedPixels": 37110,
+   "pixelM2": 1.0,
+   "rasterVectorDelta": -0.0014,
+   "woodsUnionShare": 0.56,
+   "classes": {
+    "canopy": {
+     "pixels": 11746,
+     "share": 0.317,
+     "m2": 11762
+    },
+    "meadow": {
+     "pixels": 2311,
+     "share": 0.062,
+     "m2": 2314
+    },
+    "turf": {
+     "pixels": 13237,
+     "share": 0.357,
+     "m2": 13255
+    },
+    "bare": {
+     "pixels": 9385,
+     "share": 0.253,
+     "m2": 9398
+    },
+    "dark": {
+     "pixels": 431,
+     "share": 0.012,
+     "m2": 432
+    }
+   },
+   "canopy": {
+    "beyondCanopyPassReach": 8788,
+    "rejectedByCanopyPass": 2958
+   },
+   "scenarios": {
+    "canopy": {
+     "uncertainShare": 0.092,
+     "gate": "pass"
+    },
+    "turf": {
+     "uncertainShare": 0.087,
+     "gate": "pass"
+    },
+    "turf+meadow": {
+     "uncertainShare": 0.079,
+     "gate": "pass"
+    },
+    "vegetation": {
+     "uncertainShare": 0.036,
+     "gate": "pass"
+    },
+    "all-but-bare": {
+     "uncertainShare": 0.034,
+     "gate": "pass"
+    }
+   }
+  },
+  {
+   "key": "peek-n-peak-upper-16",
+   "ordinal": 16,
+   "contextBoundsM2": 409344,
+   "uncertainShare": 0.162,
+   "unexplainedM2": 66139,
+   "unexplainedPixels": 66002,
+   "pixelM2": 1.0,
+   "rasterVectorDelta": -0.0021,
+   "woodsUnionShare": 0.578,
+   "classes": {
+    "canopy": {
+     "pixels": 22306,
+     "share": 0.338,
+     "m2": 22352
+    },
+    "meadow": {
+     "pixels": 3447,
+     "share": 0.052,
+     "m2": 3454
+    },
+    "turf": {
+     "pixels": 21213,
+     "share": 0.321,
+     "m2": 21257
+    },
+    "bare": {
+     "pixels": 18006,
+     "share": 0.273,
+     "m2": 18043
+    },
+    "dark": {
+     "pixels": 1030,
+     "share": 0.016,
+     "m2": 1032
+    }
+   },
+   "canopy": {
+    "beyondCanopyPassReach": 15783,
+    "rejectedByCanopyPass": 6523
+   },
+   "scenarios": {
+    "canopy": {
+     "uncertainShare": 0.107,
+     "gate": "pass"
+    },
+    "turf": {
+     "uncertainShare": 0.11,
+     "gate": "pass"
+    },
+    "turf+meadow": {
+     "uncertainShare": 0.101,
+     "gate": "pass"
+    },
+    "vegetation": {
+     "uncertainShare": 0.047,
+     "gate": "pass"
+    },
+    "all-but-bare": {
+     "uncertainShare": 0.044,
+     "gate": "pass"
+    }
+   }
+  },
+  {
+   "key": "peek-n-peak-upper-17",
+   "ordinal": 17,
+   "contextBoundsM2": 404736,
+   "uncertainShare": 0.306,
+   "unexplainedM2": 123817,
+   "unexplainedPixels": 123755,
+   "pixelM2": 1.0,
+   "rasterVectorDelta": -0.0005,
+   "woodsUnionShare": 0.552,
+   "classes": {
+    "canopy": {
+     "pixels": 39608,
+     "share": 0.32,
+     "m2": 39628
+    },
+    "meadow": {
+     "pixels": 23615,
+     "share": 0.191,
+     "m2": 23627
+    },
+    "turf": {
+     "pixels": 43255,
+     "share": 0.35,
+     "m2": 43277
+    },
+    "bare": {
+     "pixels": 16170,
+     "share": 0.131,
+     "m2": 16178
+    },
+    "dark": {
+     "pixels": 1107,
+     "share": 0.009,
+     "m2": 1108
+    }
+   },
+   "canopy": {
+    "beyondCanopyPassReach": 28860,
+    "rejectedByCanopyPass": 10748
+   },
+   "scenarios": {
+    "canopy": {
+     "uncertainShare": 0.208,
+     "gate": "fail"
+    },
+    "turf": {
+     "uncertainShare": 0.199,
+     "gate": "fail"
+    },
+    "turf+meadow": {
+     "uncertainShare": 0.141,
+     "gate": "pass"
+    },
+    "vegetation": {
+     "uncertainShare": 0.043,
+     "gate": "pass"
+    },
+    "all-but-bare": {
+     "uncertainShare": 0.04,
+     "gate": "pass"
+    }
+   }
+  },
+  {
+   "key": "peek-n-peak-upper-18",
+   "ordinal": 18,
+   "contextBoundsM2": 569088,
+   "uncertainShare": 0.221,
+   "unexplainedM2": 125771,
+   "unexplainedPixels": 125734,
+   "pixelM2": 1.0,
+   "rasterVectorDelta": -0.0003,
+   "woodsUnionShare": 0.475,
+   "classes": {
+    "canopy": {
+     "pixels": 26470,
+     "share": 0.211,
+     "m2": 26478
+    },
+    "meadow": {
+     "pixels": 14849,
+     "share": 0.118,
+     "m2": 14853
+    },
+    "turf": {
+     "pixels": 52430,
+     "share": 0.417,
+     "m2": 52445
+    },
+    "bare": {
+     "pixels": 30034,
+     "share": 0.239,
+     "m2": 30043
+    },
+    "dark": {
+     "pixels": 1951,
+     "share": 0.016,
+     "m2": 1952
+    }
+   },
+   "canopy": {
+    "beyondCanopyPassReach": 4796,
+    "rejectedByCanopyPass": 21674
+   },
+   "scenarios": {
+    "canopy": {
+     "uncertainShare": 0.174,
+     "gate": "fail"
+    },
+    "turf": {
+     "uncertainShare": 0.129,
+     "gate": "pass"
+    },
+    "turf+meadow": {
+     "uncertainShare": 0.103,
+     "gate": "pass"
+    },
+    "vegetation": {
+     "uncertainShare": 0.056,
+     "gate": "pass"
+    },
+    "all-but-bare": {
+     "uncertainShare": 0.053,
+     "gate": "pass"
+    }
+   }
+  }
+ ],
+ "courseCanopy": {
+  "m2": 505418,
+  "beyondCanopyPassReachM2": 312505,
+  "beyondShareOfUnexplained": 0.132
+ },
+ "method": {
+  "classes": {
+   "canopy": "NDVI > 0.28 and NIR std over 7×7 px > 10.5 (the canopy pass's own pixel test)",
+   "meadow": "NDVI > 0.28, texture ≤ 10.5",
+   "turf": "0.12 ≤ NDVI ≤ 0.28 (floor = fairway NDVI p5 − .02, measured in this raster)",
+   "dark": "NDVI < 0.12, NIR < 50 (2 × median NIR of the package water), NDVI < 0.05",
+   "bare": "NDVI < 0.12, not dark"
+  },
+  "derived": {
+   "turfFloor": 0.12,
+   "waterNirMax": 50.0,
+   "waterNdviMax": 0.05
+  },
+  "scenarios": {
+   "canopy": "canopy explained (the canopy pass re-run out to the hole bounds; the one machine-doable case, but a new package hash)",
+   "turf": "mown turf beyond the derived bands counted as explained",
+   "turf+meadow": "every smooth vegetation pixel counted as explained (open field / native rule)",
+   "vegetation": "all vegetation explained (canopy groups extended to the hole bounds too)",
+   "all-but-bare": "everything but bare ground / hardscape explained"
+  },
+  "caveats": [
+   "Two NAIP flights (20240524, 20240824) meet inside the export; NDVI of the package fairways agrees across them, so the turf floor holds on both, but absolute NIR does not (water/dark uses a ratio to the package water).",
+   "Mown turf at 1 m has NDVI .14–.31 here, below the canopy threshold: a low NDVI is not bare ground.",
+   "Bare ground / hardscape mixes tilled fields, gravel, pavement, roofs and sand; the raster cannot separate them."
+  ]
+ }
+}
