@@ -185,6 +185,14 @@ def eval_terrain_acquire(node, ctx):
     return evaluation(inputs, [], artifacts, adoptable, notes, output=terrain_source_identity(manifest))
 
 
+def canopy_identity(doc):
+    """What the package merge consumes: the groups and the method that drew
+    them (and the raster they came from), not the day the pass ran. A
+    re-derivation that changes the groups must reach the package and every
+    hole compile; one that reproduces them must not."""
+    return digest({k: v for k, v in doc.items() if k not in ('reviewedAt', 'reviewer', 'packageHash')})
+
+
 def eval_canopy_derive(node, ctx):
     layout_id = node.scope.layout_id
     inputs = {'terrain': dep_input(ctx, node, 'layout.terrain.acquire'), 'candidates': dep_input(ctx, node, 'layout.candidates.compose')}
@@ -211,7 +219,7 @@ def eval_canopy_derive(node, ctx):
     artifacts = [artifact('canopy-review', path, 'A')]
     if naip_manifest:
         artifacts += [artifact('naip-manifest', os.path.join(naip, 'manifest.json'), 'B'), artifact('naip-raster', os.path.join(naip, 'naip.tif'), 'B')]
-    return evaluation(inputs, [], artifacts, adoptable, notes, output=doc.get('rasterSha256'))
+    return evaluation(inputs, [], artifacts, adoptable, notes, output=canopy_identity(doc))
 
 
 def eval_package_validate(node, ctx):

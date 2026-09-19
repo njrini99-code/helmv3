@@ -138,6 +138,32 @@ class ImpactTests(unittest.TestCase):
         self.assertIn('failed 0', text)
         self.assertEqual(self.h.states('synthetic-a')[node_key][0], 'cached')
 
+    def test_a_changed_canopy_classification_reaches_the_package_and_every_hole(self):
+        """Same NAIP raster, different groups (a classifier change): the package
+        merge rebuilds and, through the per-hole subhashes, only the hole whose
+        groups changed recompiles; the terrain source does not move."""
+        self.h.run('run', '--layout', 'synthetic-a')
+        before = read_json(os.path.join(self.h.output, 'layouts', 'synthetic-a', 'package', 'normalized.json'))['contentHash']
+        self.h.world.canopy = False
+        code, text = self.h.run('invalidate', '--layout', 'synthetic-a', '--task', 'layout.canopy.derive', '--reason', 'classifier calibrated')
+        self.assertEqual(code, 0, text)
+        code, text = self.h.run('run', '--layout', 'synthetic-a')
+        self.assertEqual(code, 0, text)
+        self.assertIn('failed 0', text)
+        executed = set(read_json(os.path.join(os.path.dirname(next(l for l in text.splitlines() if l.startswith('report: '))[len('report: '):]), 'report.json'))['executed'])
+        self.assertIn('layout.canopy.derive[synthetic-a]', executed)
+        self.assertIn('layout.package.compose[synthetic-a]', executed)
+        self.assertIn('hole.terrain.compile[synthetic-a:05]', executed)
+        self.assertEqual([k for k in executed if k.startswith('hole.terrain.compile') and not k.endswith(':05]')], [], 'other holes keep their compile')
+        self.assertNotIn('layout.terrain.acquire[synthetic-a]', executed)
+        after = read_json(os.path.join(self.h.output, 'layouts', 'synthetic-a', 'package', 'normalized.json'))['contentHash']
+        self.assertNotEqual(before, after)
+        # And a re-derivation that reproduces the same groups is a no-op downstream.
+        code, text = self.h.run('invalidate', '--layout', 'synthetic-a', '--task', 'layout.canopy.derive', '--reason', 'same classifier, re-run')
+        code, text = self.h.run('run', '--layout', 'synthetic-a')
+        executed = set(read_json(os.path.join(os.path.dirname(next(l for l in text.splitlines() if l.startswith('report: '))[len('report: '):]), 'report.json'))['executed'])
+        self.assertEqual(executed, {'layout.canopy.derive[synthetic-a]'})
+
     def test_manual_invalidation_rebuilds_one_hole(self):
         self.h.run('run', '--layout', 'synthetic-a')
         code, text = self.h.run('invalidate', '--layout', 'synthetic-a', '--task', 'hole.terrain.compile', '--hole', '11', '--reason', 'reviewer asked')

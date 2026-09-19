@@ -134,9 +134,17 @@ disagreement) and queues `route_confirmation`; it blocks with the candidate
 list when a number is missing or repeated (the Upper's shared resort polygon
 is the test). Guessing never happens; a person still confirms before C2.
 
-Tests: 75 in `test_factory_*.py` (catalog 12, graph 9, osm 7, fingerprints 11,
-ledger 8, cli 16, impact 12) + 20 compiler tests; all network-free; `ruff`
+Tests: 76 in `test_factory_*.py` (catalog 12, graph 9, osm 7, fingerprints 11,
+ledger 8, cli 16, impact 13) + 20 compiler tests; all network-free; `ruff`
 clean (no new findings). Catalog: `catalog.test.ts` (4).
+
+Canopy output identity (found by the first classifier change, fixed): the
+canopy node's identity was the NAIP raster hash, so a re-derivation that
+changed the groups left the package merge and every compile cached with the
+old woods. It is now the review minus its date/reviewer/packageHash
+(`canopy_identity`); a changed classification reaches the package and, via
+the per-hole subhashes, recompiles only the holes whose groups changed
+(`test_a_changed_canopy_classification_reaches_the_package_and_every_hole`).
 
 Retained evidence is read-only (review finding, fixed before merge): the
 context now separates read locators (`compiled_dir`, `canopy_path`, `osm_dir`,
