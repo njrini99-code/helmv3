@@ -209,7 +209,10 @@ if rerun:
     hp = rerun['holesPassingGate']
     lines += ['', (f"Canopy re-run measured with the pass's own rules out to the hole bounds (`measure-canopy-rerun.py`): {hp['today']} → {hp['rerun']} holes under the gate "
                    f"({', '.join(str(h['ordinal']) for h in rerun['holes'] if h['gateRerun'] == 'pass')}), woods union {rerun['woodsUnionM2']['today'] / 1e4:.1f} → {rerun['woodsUnionM2']['rerun'] / 1e4:.1f} ha, "
-                   f"regions {rerun['regions']['today']} → {rerun['regions']['rerun']}. Doing it for real is a new package hash (owner decision).")]
+                   f"regions {rerun['regions']['today']} → {rerun['regions']['rerun']}. Doing it for real is a new package hash (owner decision). "
+                   + (f"The pass writes exterior rings only, so clearings a group encloses are carried as woods: replayed today {cl['todayReplay']['rings']} rings / "
+                      f"{cl['todayReplay']['m2'] / 1e4:.1f} ha, after the re-run {cl['rerun']['rings']} rings / {cl['rerun']['m2'] / 1e4:.1f} ha, almost none of it under a package surface."
+                      if (cl := rerun.get('clearings')) else ''))]
 lines.append('')
 out.write_text('\n'.join(lines) + '\n' + '\n'.join(sections))
 print(f'{out}: {len(sections)} holes, {passing} pass the gate')

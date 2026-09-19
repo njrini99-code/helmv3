@@ -1092,7 +1092,9 @@ forest the canopy pass never reached because it clipped groups to features
 pass to the hole bounds is measured, not guessed (`measure-canopy-rerun.py`,
 same rules, only the clip box): the gate goes 1 → 4 of 18, the woods
 union 120.6 → 162.1 ha; it changes the package hash, so it waits on the
-owner; the numbers sit in the prompt
+owner. The pass writes exterior rings only, so clearings a group
+encloses are carried as woods (3.5 ha today by replay, 6.6 ha after a
+re-run). The numbers sit in the prompt
 sheet beside each §39 question and in
 `peek-n-peak-upper-unexplained-naip.json`.
 

@@ -156,6 +156,7 @@ def main():
 
     # --- (a) replay with the pass's own boxes against the retained review ---
     review_area = {}
+    today_regions = {}
     for region in review['regions']:
         review_area[region['holeKey']] = review_area.get(region['holeKey'], 0) + region['areaM2']
     check = {}
@@ -163,7 +164,8 @@ def main():
         own = [shapes[i] for i in hole['featureIds'] if i in shapes]
         minx, miny, maxx, maxy = unary_union(own).bounds
         reach = canopy.CONTEXT_MARGIN_M
-        mine = sum(r.area for r in regions_for(box(minx - reach, miny - reach, maxx + reach, maxy + reach)))
+        today_regions[hole['key']] = regions_for(box(minx - reach, miny - reach, maxx + reach, maxy + reach))
+        mine = sum(r.area for r in today_regions[hole['key']])
         check[hole['key']] = (round(mine), round(review_area.get(hole['key'], 0)))
     differences = {k[-2:]: {'replay': v[0], 'review': v[1]} for k, v in check.items() if abs(v[0] - v[1]) > 1}
     reproduction = {'reviewPackageHash': review['packageHash'], 'currentPackageHash': pkg['contentHash'],
@@ -187,7 +189,16 @@ def main():
         clip = box(min(p[0] for p in pts) - 1, min(p[1] for p in pts) - 1, max(p[0] for p in pts) + 1, max(p[1] for p in pts) + 1)
         rerun[key] = regions_for(clip)
     def to_local(poly):
+        # Exterior ring only, as derive-canopy-naip.py writes its regions.
         return Polygon([local(list(unproject.transform(x, y))) for x, y in poly.exterior.coords])
+
+    surfaces = unary_union([s for s in shapes.values() if s.geom_type == 'Polygon'])
+
+    def clearings(regions_by_hole):
+        """Ground enclosed by a group: the pass carries it as woods because it writes exterior rings only."""
+        rings = [Polygon(ring) for regions in regions_by_hole.values() for r in regions for ring in r.interiors]
+        enclosed = unary_union(rings) if rings else Polygon()
+        return {'rings': len(rings), 'm2': round(enclosed.area), 'openM2': round(enclosed.difference(surfaces).area)}
 
     new_woods = unary_union([to_local(r) for regions in rerun.values() for r in regions])
     old_woods = unary_union([Polygon([local(p) for p in f['geometryWgs84']['coordinates'][0]]) for f in pkg['features'] if f['kind'] == 'woods'])
@@ -242,6 +253,10 @@ def main():
               'replayAgainstRetainedReview': reproduction, 'holesPassingGate': passing,
               'woodsUnionM2': {'today': round(old_woods.area), 'rerun': round(new_woods.area)},
               'regions': {'today': len(review['regions']), 'rerun': sum(len(v) for v in rerun.values())},
+              'clearings': {'todayReplay': clearings(today_regions), 'rerun': clearings(rerun),
+                            'note': ('derive-canopy-naip.py writes each region as its exterior ring, so ground a group encloses is carried as woods '
+                                     '(today as much as after a re-run); rings are counted per region, areas are unions in the raster CRS, '
+                                     'openM2 is the part no package surface covers')},
               'meaning': 'Measurement only. Doing this for real changes the package hash (woods are package features), the compiled terrain and every downstream hash.',
               'holes': rows}
     args.output.mkdir(parents=True, exist_ok=True)
@@ -260,7 +275,12 @@ def main():
                      f"{r['woodsM2'] / 1e4:.1f} | {r['woodsM2Rerun'] / 1e4:.1f} | {r['regions']} → {r['regionsRerun']} |")
     lines += ['', (f"Holes under the {GATE * 100:.0f} % gate: {passing['today']} today → {passing['rerun']} after the re-run "
                    f"({', '.join(str(r['ordinal']) for r in rows if r['gateRerun'] == 'pass')}). Woods union {old_woods.area / 1e4:.1f} ha → {new_woods.area / 1e4:.1f} ha; "
-                   f"regions {result['regions']['today']} → {result['regions']['rerun']}. {result['meaning']}"), '']
+                   f"regions {result['regions']['today']} → {result['regions']['rerun']}. {result['meaning']}"), '',
+             (f"Enclosed ground: the pass writes exterior rings only, so clearings inside a group are carried as woods — replayed today "
+              f"{result['clearings']['todayReplay']['rings']} rings / {result['clearings']['todayReplay']['m2'] / 1e4:.1f} ha "
+              f"({result['clearings']['todayReplay']['openM2'] / 1e4:.1f} ha not under any package surface), after the re-run "
+              f"{result['clearings']['rerun']['rings']} rings / {result['clearings']['rerun']['m2'] / 1e4:.1f} ha "
+              f"({result['clearings']['rerun']['openM2'] / 1e4:.1f} ha open). Keeping the rings means the review schema and its readers carry interior rings, at the same new-hash cost as the re-run."), '']
     (args.output / 'canopy-rerun-measurement.md').write_text('\n'.join(lines))
     print(json.dumps({k: v for k, v in result.items() if k not in ('holes', 'meaning', 'clip')}))
 

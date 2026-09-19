@@ -41,6 +41,19 @@
   "today": 144,
   "rerun": 172
  },
+ "clearings": {
+  "todayReplay": {
+   "rings": 176,
+   "m2": 34633,
+   "openM2": 34404
+  },
+  "rerun": {
+   "rings": 319,
+   "m2": 65553,
+   "openM2": 65158
+  },
+  "note": "derive-canopy-naip.py writes each region as its exterior ring, so ground a group encloses is carried as woods (today as much as after a re-run); rings are counted per region, areas are unions in the raster CRS, openM2 is the part no package surface covers"
+ },
  "meaning": "Measurement only. Doing this for real changes the package hash (woods are package features), the compiled terrain and every downstream hash.",
  "holes": [
   {
