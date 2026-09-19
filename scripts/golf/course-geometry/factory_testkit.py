@@ -45,6 +45,7 @@ class World:
 
     def __init__(self):
         self.bunker_shift = {}      # hole ordinal -> extra offset (a bunker edit in OSM)
+        self.hole_labels = {}       # layout slug -> how a mapper named that course's holes ('Synthetic A' -> 'Synthetic A Hole 3')
         self.canopy = True
         self.naip_sha = 'naip-' + '0' * 60
 
@@ -54,7 +55,10 @@ class World:
         for n in range(1, HOLES + 1):
             lat = ORIGIN[1] + n * 0.001
             lon = ORIGIN[0] + offset_lon
-            ways.append({'type': 'way', 'id': base + n, 'tags': {'golf': 'hole', 'ref': str(n), 'par': '4'},
+            tags = {'golf': 'hole', 'ref': str(n), 'par': '4'}
+            if self.hole_labels.get(layout_slug):
+                tags['description'] = f'{self.hole_labels[layout_slug]} Hole {n}'
+            ways.append({'type': 'way', 'id': base + n, 'tags': tags,
                          'geometry': [{'lon': lon, 'lat': lat}, {'lon': lon + 0.0004, 'lat': lat + 0.0004}]})
             # The bunker is part of the OSM extract too, so an edit changes
             # the snapshot the factory re-fetches, not just the fake package.

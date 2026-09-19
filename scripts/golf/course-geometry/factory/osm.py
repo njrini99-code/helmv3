@@ -3,6 +3,7 @@ the route proposal (Factory v2 §8.2) needs only tags, a point-in-polygon
 test and a reference number per hole way."""
 import gzip
 import json
+import re
 
 
 def load_extract(path):
@@ -74,14 +75,59 @@ def hole_ways(extract, site=None):
         tags = element.get('tags') or {}
         par = tags.get('par')
         ways.append({'id': element['id'], 'ref': parse_ref(tags), 'par': int(par) if str(par).isdigit() else None,
-                     'name': tags.get('name'), 'points': len(points)})
+                     'name': tags.get('name'), 'description': tags.get('description'), 'points': len(points)})
     return ways
 
 
-def propose_routes(extract, site, hole_count, pars=None):
+# Words that do not tell one course from another when a mapper names holes.
+GENERIC_NAME_WORDS = frozenset(('course', 'golf', 'club', 'country', 'cc', 'links', 'resort', 'the', 'at', 'of', 'and'))
+_HOLE_NUMBER_SUFFIX = re.compile(r'^(?P<label>.*?)[\s\-–:#]*(?:hole|no\.?|number)?[\s\-–:#]*0*(?P<n>\d{1,2})\s*$', re.IGNORECASE)
+
+
+def _words(text):
+    return re.findall(r'[a-z0-9]+', str(text or '').lower())
+
+
+def series_label(way):
+    """How a mapper told one course's holes from another's, minus the hole
+    number: 'Big Blue Hole 1' → 'big blue'. None when the way carries no
+    such naming ('Hole 7', a bare number, no tags)."""
+    for text in (way.get('description'), way.get('name')):
+        match = _HOLE_NUMBER_SUFFIX.match(str(text)) if text else None
+        if match and _words(match.group('label')):
+            return ' '.join(_words(match.group('label')))
+    return None
+
+
+def label_names_layout(label, layout_name):
+    """A series label names the layout when every distinctive word of the
+    label occurs in the layout's name ('big blue' ↔ 'Big Blue Course')."""
+    words = [w for w in _words(label) if w not in GENERIC_NAME_WORDS]
+    return bool(words) and set(words) <= set(_words(layout_name))
+
+
+def named_series(ways, wanted, layout_name):
+    """Among duplicate-numbered hole ways, the one series whose naming is the
+    layout's and which numbers every wanted hole exactly once; None when no
+    series or more than one qualifies. Evidence lists every label seen."""
+    series = {}
+    for way in ways:
+        label = series_label(way)
+        if label and way['ref'] in wanted:
+            series.setdefault(label, {}).setdefault(way['ref'], []).append(way)
+    qualifying = {label: group for label, group in series.items()
+                  if label_names_layout(label, layout_name) and all(len(group.get(ref, ())) == 1 for ref in wanted)}
+    chosen = next(iter(qualifying)) if len(qualifying) == 1 else None
+    return (chosen, {ref: qualifying[chosen][ref][0] for ref in wanted} if chosen else None), sorted(series)
+
+
+def propose_routes(extract, site, hole_count, pars=None, layout_name=None):
     """Pick one golf=hole way per played hole from the numbered ways inside
     the site, or explain why a person has to. Never guesses: a missing or
-    repeated number is a blocker with the candidate list as evidence."""
+    repeated number is a blocker with the candidate list as evidence — except
+    when the repeats are two courses sharing one polygon and exactly one series
+    is named for this layout ('Big Blue Hole 1' … 'Big Blue Hole 18'), which
+    is proposed as `osm_ref_named` and still queued for a person to confirm."""
     ways = hole_ways(extract, site)
     by_ref = {}
     for way in ways:
@@ -94,14 +140,19 @@ def propose_routes(extract, site, hole_count, pars=None):
     extra = sorted(ref for ref in by_ref if ref not in wanted)
     evidence = {'candidates': len(ways), 'numbered': len(by_ref), 'duplicateRefs': duplicates, 'missingRefs': missing,
                 'unnumbered': len(unnumbered), 'extraRefs': extra}
-    if duplicates or missing:
+    chosen = {ref: by_ref[ref][0] for ref in wanted} if not (duplicates or missing) else None
+    if duplicates and not missing and layout_name:
+        (label, chosen), evidence['namedSeries'] = named_series(ways, wanted, layout_name)
+        if chosen:
+            evidence['series'] = label
+    if not chosen:
         return None, evidence
-    ids = [by_ref[ref][0]['id'] for ref in wanted]
+    ids = [chosen[ref]['id'] for ref in wanted]
     disagreements = []
     if pars:
         for ref, par in zip(wanted, pars):
-            source = by_ref[ref][0]['par']
+            source = chosen[ref]['par']
             if source is not None and source != par:
-                disagreements.append({'hole': ref, 'wayId': by_ref[ref][0]['id'], 'osmPar': source, 'scorecardPar': par})
+                disagreements.append({'hole': ref, 'wayId': chosen[ref]['id'], 'osmPar': source, 'scorecardPar': par})
     evidence['parDisagreements'] = disagreements
     return ids, evidence

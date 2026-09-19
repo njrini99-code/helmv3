@@ -253,9 +253,10 @@ Cohort ranking (intake, 2026-09-13 usage): Bryan Park Champs 45 — **OSM
 has no course geometry at all (see the night run below); imagery tracing,
 not a pin**; Cacapon 36 (live, C1); The Cardinal 30 and Starmount Forest 23
 — `TERRAIN_ADAPTER_MISSING` (NC OneMap DEM03, PR C); Winchester 30 (live,
-C1); Big Blue UK 19, Landfall 24 across five layouts, Cutter Creek 8 —
-`UTM_ZONE_UNSUPPORTED` (zone 16/18; PR C parameterises the five scripts that
-hard-code 32617); Grande Dunes 13 (live, C1), Forsyth 7 (live, C1),
+C1); Big Blue at the University Club of Kentucky 19 — zone 16, was
+`UTM_ZONE_UNSUPPORTED`, **live C1 on PR C** (see below); Landfall 24 across
+five layouts and Cutter Creek 8 — zone 18 and `nc_onemap_dem03`, so they wait
+on the NC OneMap adapter, not the zone; Grande Dunes 13 (live, C1), Forsyth 7 (live, C1),
 Boonsboro 7 (OSM-thin: blocks on routes), PGA National 2 (blocks on routes:
 two unnamed 18-hole series, owner picks); River Landing 16, Pinehurst No. 8
 7, Magnolia Greens 5, Forest Oaks 2 — need an OSM pin.
@@ -362,14 +363,45 @@ First item, chosen from the night run's evidence: the canopy gate.
   the identity fix on PR B (Forsyth and Cacapon 47 executed, Grande Dunes
   25, Winchester 3 — canopy, package, validate — with every compile cached).
 
-Remaining PR C items, unchanged: NC OneMap DEM03 terrain adapter (the USGS
-1 m index has no tile over Greensboro — Starmount, the Cardinal/Sedgefield
-Dye and Bryan Park return only 1/9 arc-second NED — so it is genuinely
-needed; owner gates on the study script's license and vertical-datum notes),
-UTM zone parameterisation, canary/player-capture adapters, and imagery
-tracing at course scale (`retained.imageryTraces` + `_prepare --traces`
-already carry single traced features; Bryan Park and Boonsboro, 52 rounds,
-are reachable no other way).
+Second item: the UTM zone. `course_crs.py` gives the five scripts that
+hard-coded 32617 one rule — raster requests and shapely work use the UTM zone
+of the course origin (`utm_epsg`), and a raster already on disk keeps the CRS
+it was cut in (`export_epsg` reads the export's spatial reference; legacy
+default 32617). The compiler records the zone in `horizontalExportCrs`, which
+`terrain_source_identity` already covered; the NAIP export, canopy
+polygonisation, imagery review and the rerun measurer follow the terrain
+export's CRS; `prepare-osm-course.py` projects through the card origin's
+zone. Packages stay in the local ENU frame. The `UTM_ZONE_UNSUPPORTED` gate
+is gone. Tests: an acquisition in zone 16 requests and records EPSG:32616,
+zone 17 stays byte-compatible with every retained export, the zone is part
+of the source identity, `course_crs` unit tests. Live: University Club of
+Kentucky (Big Blue, 19 rounds, zone 16) — `USGS 1 Meter 16 x70y423
+KY_Eastern_2019_A19 (+1 adjacent tile)` exported in EPSG:32616 with 0 % empty
+fill, NAIP 2024-08-28 in the same CRS, 311 canopy groups (fairway median
+0.267, gate at the 0.28 ceiling), 50 executed / 0 failed, tier C1 in one
+pass; the overlay sheet sent in the session shows OSM surfaces registering on
+the imagery (a wrong zone would show hundreds of metres of offset).
+
+Third item, found by that run: the club's polygon holds two 18-hole series
+(36 `golf=hole` ways, every ref twice), which the "never guess" rule blocked
+with `ROUTE_WAY_IDS_REQUIRED`. One series carries `description: "Big Blue
+Hole n"`. `osm.propose_routes` now accepts, when the repeats come from
+duplicate numbering and exactly one series is named for the layout (every
+distinctive word of the label occurs in the layout name; generic words such
+as course/golf/club do not count) and that series numbers every hole exactly
+once, that series as `osm_ref_named` — still queued for human
+`route_confirmation`, the duplicates kept as evidence. Two series whose
+naming both fit, or unnamed series (PGA National), still block. Big Blue's
+18 proposed ways agree with the scorecard on every par.
+
+Remaining PR C items: NC OneMap DEM03 terrain adapter (the USGS 1 m index
+has no tile over Greensboro — Starmount, the Cardinal/Sedgefield Dye and
+Bryan Park return only 1/9 arc-second NED — and Landfall/Cutter Creek carry
+the same policy; owner gates on the study script's license and
+vertical-datum notes), canary/player-capture adapters, and imagery tracing at
+course scale (`retained.imageryTraces` + `_prepare --traces` already carry
+single traced features; Bryan Park and Boonsboro, 52 rounds, are reachable no
+other way).
 
 ## Not started
 

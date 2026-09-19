@@ -230,6 +230,39 @@ class BlockerTests(unittest.TestCase):
         finally:
             h.ledger.close()
 
+    def test_a_series_named_for_the_layout_is_proposed_and_still_queued_for_confirmation(self):
+        """Two courses in one polygon, every ref repeated — but one series is
+        named 'Synthetic A Hole n' (the way University Club of Kentucky maps
+        its Big Blue course). That series is proposed as osm_ref_named with the
+        duplicates kept as evidence, and a person still confirms it."""
+        from factory_testkit import World
+        world = World()
+        world.hole_labels['a'] = 'Synthetic A'
+        h = Harness(self.tmp, world=world, site_a_shared=True)
+        try:
+            code, text = h.run('run', '--layout', 'synthetic-a')
+            self.assertEqual(code, 0, text)
+            self.assertIn('failed 0', text)
+            self.assertEqual(h.states('synthetic-a')['layout.routes.resolve[synthetic-a]'][0], 'cached')
+            routes = read_json(os.path.join(h.output, 'layouts', 'synthetic-a', 'routes.json'))
+            self.assertEqual(routes['source'], 'osm_ref_named')
+            self.assertEqual(routes['routeWayIds'], [1000 + n for n in range(1, 19)], 'the labelled series, not the other course')
+            chosen = routes['evidence']['chosen']
+            self.assertEqual((chosen['series'], chosen['namedSeries'], len(chosen['duplicateRefs'])), ('synthetic a', ['synthetic a'], 18))
+            queue = read_json(os.path.join(h.output, 'layouts', 'synthetic-a', 'review-queue.json'))
+            self.assertIn('route_confirmation', [item['pass'] for item in queue['items']])
+            # A second series whose naming also fits the layout makes it a person's call again.
+            world.hole_labels['b'] = 'Synthetic'
+            code, text = h.run('invalidate', '--layout', 'synthetic-a', '--task', 'facility.osm.snapshot', '--reason', 'mapper renamed the other course')
+            self.assertEqual(code, 0, text)
+            code, text = h.run('run', '--layout', 'synthetic-a')
+            rows = h.plan_rows('synthetic-a')
+            routes = rows['layout.routes.resolve[synthetic-a]']
+            self.assertEqual((routes['state'], routes['blockers'][0]['code']), ('blocked', 'ROUTE_WAY_IDS_REQUIRED'))
+            self.assertEqual(routes['blockers'][0]['evidence']['attempts'][0]['namedSeries'], ['synthetic', 'synthetic a'])
+        finally:
+            h.ledger.close()
+
     def test_disk_guard_blocks_heavy_tasks_below_the_reserve(self):
         h = Harness(self.tmp)
         try:

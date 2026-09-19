@@ -367,11 +367,11 @@ class Context:
                 pars = [h['par'] for h in card['holes']] if card else None
                 attempts = []
                 for site in self.site_candidates(layout_id) or [None]:
-                    ids, evidence = osm.propose_routes(extract, site, len(layout.get('holeOrder') or []), pars)
+                    ids, evidence = osm.propose_routes(extract, site, len(layout.get('holeOrder') or []), pars, layout.get('name'))
                     attempts.append({'site': (site or {}).get('site'), **evidence})
                     if ids:
-                        result = {'source': 'osm_ref_unique', 'routeWayIds': ids, 'site': (site or {}).get('site'), 'extractSha256': manifest.get('uncompressedSha256'),
-                                  'evidence': {'chosen': attempts[-1], 'attempts': attempts}}
+                        result = {'source': 'osm_ref_named' if evidence.get('series') else 'osm_ref_unique', 'routeWayIds': ids, 'site': (site or {}).get('site'),
+                                  'extractSha256': manifest.get('uncompressedSha256'), 'evidence': {'chosen': attempts[-1], 'attempts': attempts}}
                         break
                 if result is None:
                     result = {'source': None, 'routeWayIds': None, 'extractSha256': manifest.get('uncompressedSha256'), 'evidence': {'attempts': attempts}}

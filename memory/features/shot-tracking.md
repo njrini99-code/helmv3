@@ -69,9 +69,12 @@ with a stable reason code. It wraps the existing scripts (`fetch-osm-*`,
   registry, feature flags or production. `layout.publish.prepare` adopts an
   already-published manifest or blocks on `PUBLISH_NOT_APPROVED`.
 - Route identity is proposed only when every played hole has one unique
-  `golf=hole` ref inside the layout's site polygon (`osm_ref_unique`, queued
-  for human `route_confirmation`); a missing or repeated number blocks with
-  `ROUTE_WAY_IDS_REQUIRED` and the candidate list as evidence.
+  `golf=hole` ref inside the layout's site polygon (`osm_ref_unique`), or,
+  when two courses share the polygon, when exactly one series of hole ways
+  is named for the layout — `description`/`name` like "Big Blue Hole 7"
+  against a layout named "Big Blue Course" (`osm_ref_named`, duplicates kept
+  as evidence). Both are queued for human `route_confirmation`; anything else
+  blocks with `ROUTE_WAY_IDS_REQUIRED` and the candidate list as evidence.
 - A terrain source's identity is `{fileHashes, requestedLocalBoundsM, crs}`
   (`terrain_source_identity`); the compiler stamps the same `sourceIdentity`
   into `asset-manifest.json` and refuses an output directory whose identity
@@ -97,10 +100,15 @@ with a stable reason code. It wraps the existing scripts (`fetch-osm-*`,
   that still passes its content checks stays adopted when only its
   fingerprint moved (an implementation edit); a manual invalidation still
   asks for the rebuild, and built output rebuilds on such a change.
-- The 18-hole and UTM 17N limits of the wrapped scripts surface as
-  `HOLE_COUNT_UNSUPPORTED` and `UTM_ZONE_UNSUPPORTED`; NC courses without a
-  1 m USGS tile carry `providerPolicy.terrain: [nc_onemap_dem03]` and block on
+- The 18-hole limit of the wrapped scripts surfaces as
+  `HOLE_COUNT_UNSUPPORTED`; NC courses without a 1 m USGS tile carry
+  `providerPolicy.terrain: [nc_onemap_dem03]` and block on
   `TERRAIN_ADAPTER_MISSING` until PR C.
+- The metric CRS follows the course (`course_crs.py`): raster requests and
+  shapely work use the UTM zone of `originWgs84`; a raster on disk keeps the
+  CRS it was cut in (readers take it from the export's spatial reference,
+  legacy default 32617) and that CRS is part of the terrain source identity.
+  Packages stay in the local ENU frame, which needs no zone.
 
 The current round flow uses a wizard for setup, hole configuration, shot capture, and submit. Draft save and continue routes support in-progress rounds. Database auto-save and confirmed per-hole checkpoints are the reliable path. The dashboard-level v2 sync engine drains the legacy IndexedDB bridge only for failed final submissions; normal Continue Round auto-saves must not write a second per-shot v1 queue.
 
