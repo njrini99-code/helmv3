@@ -180,9 +180,21 @@ recompiles every hole; changing that means changing what the compiler writes,
 outside PR B). The fake compiler now mirrors the real guard (raises on a
 foreign manifest), and `test_one_hole_bunker_edit_rebuilds_that_hole_only`
 asserts the manifest lists all 18 holes, the 17 cached holes' files are
-byte-identical, and a third run executes nothing. End-to-end confirmation on
-a real course lands with the next package-changing run; the four live courses
-are already at their fixed point, so a rerun proves only no regression.
+byte-identical, and a third run executes nothing. Confirmed live on a scratch
+copy of Winchester's output root and ledger (the four live courses are at
+their fixed point, so a plain rerun proves only no regression): hole 10's
+yardage edited in a copied catalog plus `invalidate hole.terrain.compile
+--hole 10` → run `run-20260919T224410-16a92e` executed 17 nodes with
+`hole.terrain.compile[winchester-cc:10]` the only hole compile, the manifest
+relabelled to the new package hash with 18 holes listed and 17 entries
+unchanged, every other hole's `.gz` and report byte-identical; the next run
+executed 0 (57 cached, 40 blocked by design). Two things that run also showed,
+both pre-existing and outside PR B: the ledger stores absolute artifact paths,
+so a moved output root reads as `ARTIFACT_MISSING` everywhere (the copy needed
+a path rewrite), and a scorecard-only edit still re-runs `layout.terrain.base`
+(a full 18-hole compile, ≈ 50 s), `layout.canopy.derive`,
+`layout.context.classify` and `layout.imagery.audit` because they key on the
+package hash while the hole compiles stay cached.
 
 Live results (scratch output root, nothing committed):
 
