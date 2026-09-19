@@ -191,19 +191,72 @@ Live results (scratch output root, nothing committed):
   manifest digest, so a base rebuild also re-runs `layout.context.classify`
   once even when the terrain is unchanged.
 
-Cohort ranking (intake, 2026-09-13 usage): Bryan Park Champs 45 — **no OSM
-course polygon matched, needs a human pin** (the most-played course is
-blocked on a two-minute action); Cacapon 36 (live); The Cardinal 30 and
-Starmount Forest 23 — `TERRAIN_ADAPTER_MISSING` (NC OneMap DEM03, PR C);
-Winchester 30 (live); Big Blue UK 19, Landfall 24 across five layouts, Cutter
-Creek 8 — `UTM_ZONE_UNSUPPORTED` (zone 16/18; PR C parameterises the five
-scripts that hard-code 32617); Grande Dunes 13, Forsyth 7, Boonsboro 7 (OSM
-has no hole ways: will block on routes), PGA National 2 — ready for the same
-chain as Cacapon; River Landing 16, Pinehurst No. 8 7, Magnolia Greens 5,
-Forest Oaks 2 — need an OSM pin.
+Cohort ranking (intake, 2026-09-13 usage): Bryan Park Champs 45 — **OSM
+has no course geometry at all (see the night run below); imagery tracing,
+not a pin**; Cacapon 36 (live, C1); The Cardinal 30 and Starmount Forest 23
+— `TERRAIN_ADAPTER_MISSING` (NC OneMap DEM03, PR C); Winchester 30 (live,
+C1); Big Blue UK 19, Landfall 24 across five layouts, Cutter Creek 8 —
+`UTM_ZONE_UNSUPPORTED` (zone 16/18; PR C parameterises the five scripts that
+hard-code 32617); Grande Dunes 13 (live, C1), Forsyth 7 (live, C1),
+Boonsboro 7 (OSM-thin: blocks on routes), PGA National 2 (blocks on routes:
+two unnamed 18-hole series, owner picks); River Landing 16, Pinehurst No. 8
+7, Magnolia Greens 5, Forest Oaks 2 — need an OSM pin.
 
-Honest scaling floor: machine ≈ 10 min per 18-hole course once the source
-adapters exist; the human half-day per course is the route confirmation,
+Cohort night run (2026-09-19, after the retained-path fix; scratch output
+root, nothing committed), most-played first:
+
+- **Grande Dunes Resort Club (13 rounds): clean on the first run** — 53
+  executed, 0 failed, earned tier C1. Routes proposed uniquely from OSM
+  relation 3973681 with one par disagreement queued for the person (hole
+  16: OSM par 3, scorecard par 4, way 906844510). Terrain USGS 1 m
+  `SC_2023Horry_Processing_D24` (single tile), NAIP 2025-04-17 (two
+  quarter-quads), 18 holes at 12.5–37.6 k triangles. Review queue: 4
+  low-sand bunkers, 18 holes over the uncertain gate, 110 unreviewed
+  features.
+- **Forsyth Country Club (7): clean on the first run** — C1, routes unique
+  (way 31294445, no par disagreement), terrain USGS 1 m
+  `NC_Phase4_2017_A17` (so this NC course never needed the OneMap adapter),
+  NAIP 2025-06-27, 18 holes at 11.0–29.6 k triangles; 10 low-sand bunkers,
+  72 unreviewed features.
+- **Boonsboro CC (7): `ROUTE_WAY_IDS_REQUIRED`** — OSM inside way
+  518032130 has 0 hole ways, 6 greens and 1 fairway. Not a pin problem: an
+  OSM-thin course, i.e. the imagery-tracing case.
+- **PGA National Champion (2): `ROUTE_WAY_IDS_REQUIRED`** — the resort
+  polygon (way 1483954804, 901 ha) holds two complete 18-hole series
+  (776369833–850 centred 26.8245 N 80.1470 W; 1458625172–189 centred
+  26.8174 N 80.1433 W) plus a partial third (841003253–257, holes 10–14),
+  none named, no relations. The factory refuses to guess which is the
+  Champion; a person picks one series (or its polygon) and the rest of the
+  chain is the Grande Dunes chain (OSM has 104 greens and 285 bunkers here).
+- **Bryan Park Champions (45, most played): not an OSM-pin problem.** OSM
+  has Bryan Park only as park relation 3972771 with a single `golf=hole`
+  way (1148941814, ref 1) and no course polygon, greens, fairways or
+  bunkers (bounded Overpass lookups, 20 km / 12 km). The OSM-based chain
+  cannot build it at any tier; imagery-traced geometry is the only path.
+
+Canopy calibration evidence (for PR C). Band 4 of the FPAC `conus_naip`
+export is real NIR on every course (water NDVI −0.21 … −0.52), and the
+service applies no rendering rule (identical DNs with and without
+`rasterFunction: None`). The exports differ radiometrically: median NDVI
+sampled inside OSM classes —
+
+| Course (NAIP date) | fairway | woods | water | canopy groups / share |
+| --- | --- | --- | --- | --- |
+| Winchester (2025-06-13) | +0.37 | +0.44 | −0.34 | 236 / 24 % |
+| Forsyth (2025-06-27) | +0.12 | +0.33 | −0.21 | 29 / 0.6 % |
+| Grande Dunes (2025-04-17) | +0.21 | +0.31 | −0.39 | 4 / 0.04 % |
+| Cacapon (2024-09-10) | +0.16 | (no OSM woods) | −0.52 | 0 / 0 % |
+
+A fixed `NDVI_MIN 0.28` therefore keeps Winchester and loses most of the
+canopy on the three brighter exports (Forsyth's woods median sits at 0.33,
+so half its forest pixels fall below the gate). The PR C change is a
+per-export threshold from OSM-backed samples (between the fairway and woods
+medians, or Otsu on the masked NDVI) plus a brightness flag in the review
+note; no renderer or geometry change.
+
+Honest scaling floor: machine ≈ 4–10 min per 18-hole course once the
+source adapters exist (Grande Dunes and Forsyth each ran Overpass → C1 in
+one pass); the human half-day per course is the route confirmation,
 imagery/context review and the truth gate, which needs someone who knows the
 course. Nothing here changes player behaviour or writes production.
 
