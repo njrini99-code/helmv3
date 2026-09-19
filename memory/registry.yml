@@ -427,6 +427,7 @@ features:
       routes:
         - src/app/golf/(dashboard)/dashboard/rounds/**
       components:
+        - src/components/golf/course-geometry/**
         - src/components/fairway/pages/rounds/**
         - src/components/fairway/pages/rounds-new/**
         - src/components/fairway/pages/rounds-recover/**
@@ -467,6 +468,9 @@ features:
         - supabase/migrations/*ncaa_division*.sql
         - supabase/migrations/*integrity_completed_round*.sql
         - supabase/migrations/*blind_check*.sql
+        # One-Tap Live Round anchor store (Peek'n Peak Upper pilot; HELD,
+        # owner-gated, branch-only until an explicit migrate).
+        - supabase/migrations/*peek_n_peak_one_tap*.sql
         - supabase/migrations/*golf_attachments*.sql
       tests:
         - src/app/golf/actions/__tests__/golf-schemas.test.ts
@@ -643,6 +647,11 @@ features:
         - src/app/golf/actions/shot-analytics.ts
       services:
         - src/lib/offline/**
+        # Course compilation and terrain-source acquisition are supporting
+        # tooling for the same shot-map coordinates.  Mapping it here keeps
+        # source-unit/provenance changes under shot-tracking review rather
+        # than silently leaving those scripts unowned.
+        - scripts/golf/course-geometry/**
         - src/lib/coachhelm/v2/shot-analysis/**
         # src/lib/observability/helm-flight-recorder.ts and
         # golf-round-flight-workflow.ts had no feature mapping anywhere in

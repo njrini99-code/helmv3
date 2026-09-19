@@ -76,6 +76,11 @@ export interface ShotTrackingState {
   editError: string | null;
   // Navigation
   selectedShotNumber: number | null;
+  /** Course-framed rounds (a hole scene is drawn) keep the selection on the
+   * most recent recorded event so the landscape and inspector start there.
+   * Off — every round without course geometry — the selection behaves exactly
+   * as it always has: null until the player taps a pill. */
+  autoSelectLatest: boolean;
 }
 
 // ============================================================================
@@ -128,6 +133,7 @@ export type ShotAction =
   | { type: 'DELETE_COMPLETE'; payload: { newHistory: ShotRecord[] } }
   // Navigation
   | { type: 'SELECT_SHOT'; payload: number | null }
+  | { type: 'SET_AUTO_SELECT_LATEST'; payload: boolean }
   // Result selection with smart clearing
   | { type: 'HANDLE_RESULT_SELECT'; payload: { result: string; isTeeShot: boolean; isPutting: boolean; isApproachOrAroundGreen: boolean } }
   // Clear input state (used after recording a shot or restoring position)
@@ -236,7 +242,10 @@ export function shotReducer(state: ShotTrackingState, action: ShotAction): ShotT
         showPenaltyModal: false,
         penaltyType: null,
         penaltyOrigin: 'here',
-        selectedShotNumber: null,
+        // Course-framed: the landscape and inspector start on the most recent
+        // recorded event. This is view selection only; it never persists or
+        // mutates a shot, score, position, or distance.
+        selectedShotNumber: state.autoSelectLatest ? initialShots.at(-1)?.shotNumber ?? null : null,
       };
     }
 
@@ -245,6 +254,10 @@ export function shotReducer(state: ShotTrackingState, action: ShotAction): ShotT
       return {
         ...state,
         shotHistory: [...state.shotHistory, shot],
+        // Course-framed: a new result is the clearest current context, so the
+        // camera settles on it instead of retaining the opening stroke after a
+        // five-shot sequence.
+        selectedShotNumber: state.autoSelectLatest ? shot.shotNumber : state.selectedShotNumber,
       };
     }
 
@@ -357,6 +370,7 @@ export function shotReducer(state: ShotTrackingState, action: ShotAction): ShotT
         undoSaving: false,
         undoError: null,
         showUndoConfirm: false,
+        selectedShotNumber: state.autoSelectLatest ? newHistory.at(-1)?.shotNumber ?? null : state.selectedShotNumber,
       };
     }
 
@@ -409,6 +423,7 @@ export function shotReducer(state: ShotTrackingState, action: ShotAction): ShotT
         editFormData: null,
         editError: null,
         showDeleteConfirm: false,
+        selectedShotNumber: state.autoSelectLatest ? updatedHistory.at(-1)?.shotNumber ?? null : state.selectedShotNumber,
       };
     }
 
@@ -436,12 +451,20 @@ export function shotReducer(state: ShotTrackingState, action: ShotAction): ShotT
         editFormData: null,
         editError: null,
         showDeleteConfirm: false,
+        selectedShotNumber: state.autoSelectLatest ? newHistory.at(-1)?.shotNumber ?? null : state.selectedShotNumber,
       };
     }
 
     // Navigation
     case 'SELECT_SHOT':
       return { ...state, selectedShotNumber: action.payload };
+
+    case 'SET_AUTO_SELECT_LATEST': {
+      if (state.autoSelectLatest === action.payload) return state;
+      // Turning on lands on the latest recorded event at once; turning off
+      // keeps whatever is selected, as a plain round would.
+      return { ...state, autoSelectLatest: action.payload, selectedShotNumber: action.payload ? state.shotHistory.at(-1)?.shotNumber ?? null : state.selectedShotNumber };
+    }
 
     // Result selection with smart clearing of miss direction states
     case 'HANDLE_RESULT_SELECT': {
@@ -500,6 +523,7 @@ function computeInitialState(
   initialShots: ShotRecord[],
   initialShotNumber: number,
   holeYardage: number,
+  autoSelectLatest = false,
 ): ShotTrackingState {
   const hasSavedShots = initialShots.length > 0;
 
@@ -551,7 +575,8 @@ function computeInitialState(
     editFormData: null,
     editSaving: false,
     editError: null,
-    selectedShotNumber: null,
+    selectedShotNumber: autoSelectLatest ? initialShots.at(-1)?.shotNumber ?? null : null,
+    autoSelectLatest,
   };
 }
 
@@ -568,6 +593,9 @@ interface UseShotStateMachineParams {
   autoSaveInterval?: number;
   /** When true, suppresses all auto-save scheduling (e.g. after round submission) */
   autoSaveDisabled?: boolean;
+  /** Course-framed rounds only: keep the selection on the latest recorded
+   * event (see `ShotTrackingState.autoSelectLatest`). Defaults off. */
+  autoSelectLatest?: boolean;
 }
 
 export function useShotStateMachine({
@@ -578,14 +606,18 @@ export function useShotStateMachine({
   onAutoSave,
   autoSaveInterval = 5000,
   autoSaveDisabled = false,
+  autoSelectLatest = false,
 }: UseShotStateMachineParams) {
   const holeYardage = currentHole?.yardage ?? 0;
 
   const [state, dispatch] = useReducer(
     shotReducer,
-    { initialShots, initialShotNumber, holeYardage },
-    (args) => computeInitialState(args.initialShots, args.initialShotNumber, args.holeYardage),
+    { initialShots, initialShotNumber, holeYardage, autoSelectLatest },
+    (args) => computeInitialState(args.initialShots, args.initialShotNumber, args.holeYardage, args.autoSelectLatest),
   );
+  // The course scene resolves after mount (its package streams in), so the
+  // policy follows the prop rather than the first render.
+  useEffect(() => { dispatch({ type: 'SET_AUTO_SELECT_LATEST', payload: autoSelectLatest }); }, [autoSelectLatest]);
 
   // Refs
   const isProcessingShotRef = useRef(false);

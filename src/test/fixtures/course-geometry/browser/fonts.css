@@ -1,0 +1,4 @@
+/* Same Fragment Mono family/weight as src/lib/fonts.ts; pinned locally so
+ * fixture captures use no external font service. Source: Google Fonts v6. */
+@font-face { font-family: 'Fragment Mono'; font-style: normal; font-weight: 400; font-display: swap; src: url('./FragmentMono-Regular.ttf') format('truetype'); }
+:root { --font-fairway-mono: 'Fragment Mono'; }

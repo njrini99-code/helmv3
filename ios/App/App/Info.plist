@@ -26,6 +26,8 @@
 	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>GolfHelm uses your precise location while you play Peek'n Peak Upper to mark your ball and calculate shot distances.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Helm Sports Labs uses your camera so you can take photos to share in team messages and attach to your profile and documents.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

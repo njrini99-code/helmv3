@@ -1,0 +1,2335 @@
+{
+  "course": "peek-n-peak-upper",
+  "nativeDevice": false,
+  "viewport": {
+    "width": 390,
+    "height": 844,
+    "devicePixelRatio": 2
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "captures": [
+        {
+          "preset": "Top",
+          "file": "hole-01-top.png",
+          "canvas": {
+            "terrainHash": "ac92ba004166ba0d848f5833a0f0d5fbd7ae45395928c4f8e4859a38c5dd74e8",
+            "engine": "three.js r186",
+            "shadowSpanM": "560.0,493.4",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "90",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1",
+            "terrainScale": "1.6316481084191765",
+            "terrainFocus": "-203.30182042450954,256.5030016723883,534.1693225073946",
+            "terrainTriangles": "21141",
+            "terrainTrees": "317",
+            "renderCount": "3",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "785",
+            "bufferWidth": "776",
+            "bufferHeight": "1570",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "distant",
+            "drawCalls": "100",
+            "renderTriangles": "112929"
+          }
+        },
+        {
+          "preset": "Terrain",
+          "file": "hole-01-terrain.png",
+          "canvas": {
+            "terrainHash": "ac92ba004166ba0d848f5833a0f0d5fbd7ae45395928c4f8e4859a38c5dd74e8",
+            "engine": "three.js r186",
+            "shadowSpanM": "624.5,511.6",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "50",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1.5",
+            "terrainScale": "1.8859988109519747",
+            "terrainFocus": "-218.4219643817326,249.82990354329135,534.1693225073946",
+            "terrainTriangles": "21141",
+            "terrainTrees": "317",
+            "renderCount": "6",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "761",
+            "bufferWidth": "776",
+            "bufferHeight": "1522",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "distant",
+            "drawCalls": "103",
+            "renderTriangles": "120877"
+          }
+        },
+        {
+          "preset": "Profile",
+          "file": "hole-01-profile.png",
+          "canvas": null
+        },
+        {
+          "preset": "Green",
+          "file": "hole-01-green.png",
+          "canvas": {
+            "terrainHash": "ac92ba004166ba0d848f5833a0f0d5fbd7ae45395928c4f8e4859a38c5dd74e8",
+            "engine": "three.js r186",
+            "shadowSpanM": "560.0,493.4",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "90",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1",
+            "terrainScale": "7.664025196823886",
+            "terrainFocus": "-209.99482740042086,428.90014090032076,536.1541528899157",
+            "terrainTriangles": "21141",
+            "terrainTrees": "317",
+            "renderCount": "1",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "785",
+            "bufferWidth": "776",
+            "bufferHeight": "1570",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "near",
+            "drawCalls": "182",
+            "renderTriangles": "310790"
+          }
+        }
+      ],
+      "quality": {
+        "compilerVersion": "course-terrain-v1",
+        "styleVersion": "narrow-surround-v1",
+        "tacticalBoundsM": [
+          -300,
+          52,
+          -108,
+          460
+        ],
+        "contextBoundsM": [
+          -480,
+          -128,
+          64,
+          640
+        ],
+        "terrainAvailable": true,
+        "contextCoverage": "complete",
+        "teeGeometry": "approximate",
+        "treeEvidence": "canopy_only",
+        "limitations": [
+          "Source candidate; independent registration, renovation and boundary review pending",
+          "Macro terrain only; no putting-break or bunker-lip accuracy claim",
+          "Daily tee markers, actual cup, ball positions and tree heights are unknown",
+          "Neutral ground is not classified rough; outward surrounds are illustrative and at most 0.6m",
+          "Neighbor features are renderer-only context, not reassigned played-hole surfaces",
+          "2021 terrain may predate current surfaces; currentness remains unverified"
+        ]
+      },
+      "idleStopped": true
+    },
+    {
+      "hole": 2,
+      "captures": [
+        {
+          "preset": "Top",
+          "file": "hole-02-top.png",
+          "canvas": {
+            "terrainHash": "7e9002ca030ed2269a6bbb8d032f1c8f1ac737733b473f829d7cbfa31ddeb070",
+            "engine": "three.js r186",
+            "shadowSpanM": "669.8,519.6",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "90",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1",
+            "terrainScale": "1.4788639574755837",
+            "terrainFocus": "-390.1548948475926,683.0499466457279,528.4092492990737",
+            "terrainTriangles": "25214",
+            "terrainTrees": "359",
+            "renderCount": "3",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "785",
+            "bufferWidth": "776",
+            "bufferHeight": "1570",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "distant",
+            "drawCalls": "113",
+            "renderTriangles": "144706"
+          }
+        },
+        {
+          "preset": "Terrain",
+          "file": "hole-02-terrain.png",
+          "canvas": {
+            "terrainHash": "7e9002ca030ed2269a6bbb8d032f1c8f1ac737733b473f829d7cbfa31ddeb070",
+            "engine": "three.js r186",
+            "shadowSpanM": "715.0,584.4",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "50",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1.5",
+            "terrainScale": "1.844115153676985",
+            "terrainFocus": "-390.3825033933541,683.957393096869,528.4092492990737",
+            "terrainTriangles": "25214",
+            "terrainTrees": "359",
+            "renderCount": "6",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "761",
+            "bufferWidth": "776",
+            "bufferHeight": "1522",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "distant",
+            "drawCalls": "112",
+            "renderTriangles": "146950"
+          }
+        },
+        {
+          "preset": "Profile",
+          "file": "hole-02-profile.png",
+          "canvas": null
+        },
+        {
+          "preset": "Green",
+          "file": "hole-02-green.png",
+          "canvas": {
+            "terrainHash": "7e9002ca030ed2269a6bbb8d032f1c8f1ac737733b473f829d7cbfa31ddeb070",
+            "engine": "three.js r186",
+            "shadowSpanM": "669.8,519.6",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "90",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1",
+            "terrainScale": "4.853960876954433",
+            "terrainFocus": "-443.42591717596486,860.6058808715469,524.3917575660148",
+            "terrainTriangles": "25214",
+            "terrainTrees": "359",
+            "renderCount": "1",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "785",
+            "bufferWidth": "776",
+            "bufferHeight": "1570",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "near",
+            "drawCalls": "206",
+            "renderTriangles": "291280"
+          }
+        }
+      ],
+      "quality": {
+        "compilerVersion": "course-terrain-v1",
+        "styleVersion": "narrow-surround-v1",
+        "tacticalBoundsM": [
+          -484,
+          456,
+          -296,
+          912
+        ],
+        "contextBoundsM": [
+          -672,
+          288,
+          -128,
+          1088
+        ],
+        "terrainAvailable": true,
+        "contextCoverage": "complete",
+        "teeGeometry": "approximate",
+        "treeEvidence": "canopy_only",
+        "limitations": [
+          "Source candidate; independent registration, renovation and boundary review pending",
+          "Macro terrain only; no putting-break or bunker-lip accuracy claim",
+          "Daily tee markers, actual cup, ball positions and tree heights are unknown",
+          "Neutral ground is not classified rough; outward surrounds are illustrative and at most 0.6m",
+          "Neighbor features are renderer-only context, not reassigned played-hole surfaces",
+          "2021 terrain may predate current surfaces; currentness remains unverified"
+        ]
+      },
+      "idleStopped": true
+    },
+    {
+      "hole": 3,
+      "captures": [
+        {
+          "preset": "Top",
+          "file": "hole-03-top.png",
+          "canvas": {
+            "terrainHash": "dff1632aa7e2e2cfed922b4b1412c1f38e02b0d7e0344508e2927aa37e7f8c02",
+            "engine": "three.js r186",
+            "shadowSpanM": "466.2,363.0",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "90",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1",
+            "terrainScale": "2.890826172510613",
+            "terrainFocus": "-452.6506698379854,997.6672002603359,517.2210950786032",
+            "terrainTriangles": "15600",
+            "terrainTrees": "311",
+            "renderCount": "3",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "785",
+            "bufferWidth": "776",
+            "bufferHeight": "1570",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "distant",
+            "drawCalls": "38",
+            "renderTriangles": "50560"
+          }
+        },
+        {
+          "preset": "Terrain",
+          "file": "hole-03-terrain.png",
+          "canvas": {
+            "terrainHash": "dff1632aa7e2e2cfed922b4b1412c1f38e02b0d7e0344508e2927aa37e7f8c02",
+            "engine": "three.js r186",
+            "shadowSpanM": "602.4,428.0",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "50",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1.5",
+            "terrainScale": "3.4893537913078725",
+            "terrainFocus": "-453.10284416766973,999.2186392387412,517.2210950786032",
+            "terrainTriangles": "15600",
+            "terrainTrees": "311",
+            "renderCount": "6",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "761",
+            "bufferWidth": "776",
+            "bufferHeight": "1522",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "distant",
+            "drawCalls": "36",
+            "renderTriangles": "55648"
+          }
+        },
+        {
+          "preset": "Profile",
+          "file": "hole-03-profile.png",
+          "canvas": null
+        },
+        {
+          "preset": "Green",
+          "file": "hole-03-green.png",
+          "canvas": {
+            "terrainHash": "dff1632aa7e2e2cfed922b4b1412c1f38e02b0d7e0344508e2927aa37e7f8c02",
+            "engine": "three.js r186",
+            "shadowSpanM": "466.2,363.0",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "90",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1",
+            "terrainScale": "6.247333027392252",
+            "terrainFocus": "-516.007348660921,1063.0563466399863,517.2210950786032",
+            "terrainTriangles": "15600",
+            "terrainTrees": "311",
+            "renderCount": "1",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "785",
+            "bufferWidth": "776",
+            "bufferHeight": "1570",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "near",
+            "drawCalls": "126",
+            "renderTriangles": "285200"
+          }
+        }
+      ],
+      "quality": {
+        "compilerVersion": "course-terrain-v1",
+        "styleVersion": "narrow-surround-v1",
+        "tacticalBoundsM": [
+          -556,
+          904,
+          -356,
+          1096
+        ],
+        "contextBoundsM": [
+          -736,
+          736,
+          -192,
+          1280
+        ],
+        "terrainAvailable": true,
+        "contextCoverage": "complete",
+        "teeGeometry": "approximate",
+        "treeEvidence": "canopy_only",
+        "limitations": [
+          "Source candidate; independent registration, renovation and boundary review pending",
+          "Macro terrain only; no putting-break or bunker-lip accuracy claim",
+          "Daily tee markers, actual cup, ball positions and tree heights are unknown",
+          "Neutral ground is not classified rough; outward surrounds are illustrative and at most 0.6m",
+          "Neighbor features are renderer-only context, not reassigned played-hole surfaces",
+          "2021 terrain may predate current surfaces; currentness remains unverified"
+        ]
+      },
+      "idleStopped": true
+    },
+    {
+      "hole": 4,
+      "captures": [
+        {
+          "preset": "Top",
+          "file": "hole-04-top.png",
+          "canvas": {
+            "terrainHash": "1e671a3996fa103a5c9e0698dbb22e8629d2f6b3fd4074d6a12efdf87b3b0f65",
+            "engine": "three.js r186",
+            "shadowSpanM": "638.9,463.1",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "90",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1",
+            "terrainScale": "1.247324990360276",
+            "terrainFocus": "-816.9243129768946,942.6914122809876,517.422171573579",
+            "terrainTriangles": "25792",
+            "terrainTrees": "334",
+            "renderCount": "3",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "785",
+            "bufferWidth": "776",
+            "bufferHeight": "1570",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "distant",
+            "drawCalls": "127",
+            "renderTriangles": "146552"
+          }
+        },
+        {
+          "preset": "Terrain",
+          "file": "hole-04-terrain.png",
+          "canvas": {
+            "terrainHash": "1e671a3996fa103a5c9e0698dbb22e8629d2f6b3fd4074d6a12efdf87b3b0f65",
+            "engine": "three.js r186",
+            "shadowSpanM": "710.8,509.5",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "50",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1.5",
+            "terrainScale": "1.6081810253909987",
+            "terrainFocus": "-820.380435288849,942.4113922880257,517.422171573579",
+            "terrainTriangles": "25792",
+            "terrainTrees": "334",
+            "renderCount": "6",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "761",
+            "bufferWidth": "776",
+            "bufferHeight": "1522",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "distant",
+            "drawCalls": "119",
+            "renderTriangles": "142968"
+          }
+        },
+        {
+          "preset": "Profile",
+          "file": "hole-04-profile.png",
+          "canvas": null
+        },
+        {
+          "preset": "Green",
+          "file": "hole-04-green.png",
+          "canvas": {
+            "terrainHash": "1e671a3996fa103a5c9e0698dbb22e8629d2f6b3fd4074d6a12efdf87b3b0f65",
+            "engine": "three.js r186",
+            "shadowSpanM": "638.9,463.1",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "90",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1",
+            "terrainScale": "4.266181073949153",
+            "terrainFocus": "-1050.7571188916004,915.9413900174968,508.18306667122295",
+            "terrainTriangles": "25792",
+            "terrainTrees": "334",
+            "renderCount": "1",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "785",
+            "bufferWidth": "776",
+            "bufferHeight": "1570",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "distant",
+            "drawCalls": "210",
+            "renderTriangles": "256016"
+          }
+        }
+      ],
+      "quality": {
+        "compilerVersion": "course-terrain-v1",
+        "styleVersion": "narrow-surround-v1",
+        "tacticalBoundsM": [
+          -1092,
+          880,
+          -540,
+          1004
+        ],
+        "contextBoundsM": [
+          -1280,
+          704,
+          -352,
+          1184
+        ],
+        "terrainAvailable": true,
+        "contextCoverage": "complete",
+        "teeGeometry": "approximate",
+        "treeEvidence": "canopy_only",
+        "limitations": [
+          "Source candidate; independent registration, renovation and boundary review pending",
+          "Macro terrain only; no putting-break or bunker-lip accuracy claim",
+          "Daily tee markers, actual cup, ball positions and tree heights are unknown",
+          "Neutral ground is not classified rough; outward surrounds are illustrative and at most 0.6m",
+          "Neighbor features are renderer-only context, not reassigned played-hole surfaces",
+          "2021 terrain may predate current surfaces; currentness remains unverified"
+        ]
+      },
+      "idleStopped": true
+    },
+    {
+      "hole": 5,
+      "captures": [
+        {
+          "preset": "Top",
+          "file": "hole-05-top.png",
+          "canvas": {
+            "terrainHash": "09b2c8c51d4fef391d11659a8c05fd07a42384604867e0c9fb14e715b01c78de",
+            "engine": "three.js r186",
+            "shadowSpanM": "420.4,339.5",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "90",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1",
+            "terrainScale": "3.4514489107202846",
+            "terrainFocus": "-1107.0633985525453,1032.3987813622366,502.24185429367617",
+            "terrainTriangles": "10458",
+            "terrainTrees": "501",
+            "renderCount": "3",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "785",
+            "bufferWidth": "776",
+            "bufferHeight": "1570",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "distant",
+            "drawCalls": "61",
+            "renderTriangles": "76210"
+          }
+        },
+        {
+          "preset": "Terrain",
+          "file": "hole-05-terrain.png",
+          "canvas": {
+            "terrainHash": "09b2c8c51d4fef391d11659a8c05fd07a42384604867e0c9fb14e715b01c78de",
+            "engine": "three.js r186",
+            "shadowSpanM": "428.4,335.2",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "50",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1.5",
+            "terrainScale": "4.540279256149672",
+            "terrainFocus": "-1103.4277147571224,1033.8283179618013,502.24185429367617",
+            "terrainTriangles": "10458",
+            "terrainTrees": "501",
+            "renderCount": "6",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "761",
+            "bufferWidth": "776",
+            "bufferHeight": "1522",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "near",
+            "drawCalls": "69",
+            "renderTriangles": "260930"
+          }
+        },
+        {
+          "preset": "Profile",
+          "file": "hole-05-profile.png",
+          "canvas": null
+        },
+        {
+          "preset": "Green",
+          "file": "hole-05-green.png",
+          "canvas": {
+            "terrainHash": "09b2c8c51d4fef391d11659a8c05fd07a42384604867e0c9fb14e715b01c78de",
+            "engine": "three.js r186",
+            "shadowSpanM": "420.4,339.6",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "90",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1",
+            "terrainScale": "8.922223038432007",
+            "terrainFocus": "-1106.9861362669653,1110.282055265967,496.16870728435805",
+            "terrainTriangles": "10458",
+            "terrainTrees": "501",
+            "renderCount": "1",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "785",
+            "bufferWidth": "776",
+            "bufferHeight": "1570",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "near",
+            "drawCalls": "242",
+            "renderTriangles": "592532"
+          }
+        }
+      ],
+      "quality": {
+        "compilerVersion": "course-terrain-v1",
+        "styleVersion": "narrow-surround-v1",
+        "tacticalBoundsM": [
+          -1140,
+          924,
+          -1064,
+          1140
+        ],
+        "contextBoundsM": [
+          -1312,
+          736,
+          -896,
+          1312
+        ],
+        "terrainAvailable": true,
+        "contextCoverage": "complete",
+        "teeGeometry": "approximate",
+        "treeEvidence": "canopy_only",
+        "limitations": [
+          "Source candidate; independent registration, renovation and boundary review pending",
+          "Macro terrain only; no putting-break or bunker-lip accuracy claim",
+          "Daily tee markers, actual cup, ball positions and tree heights are unknown",
+          "Neutral ground is not classified rough; outward surrounds are illustrative and at most 0.6m",
+          "Neighbor features are renderer-only context, not reassigned played-hole surfaces",
+          "2021 terrain may predate current surfaces; currentness remains unverified"
+        ]
+      },
+      "idleStopped": true
+    },
+    {
+      "hole": 6,
+      "captures": [
+        {
+          "preset": "Top",
+          "file": "hole-06-top.png",
+          "canvas": {
+            "terrainHash": "272c39b7be03e26b7747d7d265e29e04a8e97a19b5aa4dd625cfb81c64da6cda",
+            "engine": "three.js r186",
+            "shadowSpanM": "736.5,458.8",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "90",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1",
+            "terrainScale": "1.5253395693104541",
+            "terrainFocus": "-862.4021898751276,1065.1008790907933,507.32688573139137",
+            "terrainTriangles": "20304",
+            "terrainTrees": "515",
+            "renderCount": "3",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "785",
+            "bufferWidth": "776",
+            "bufferHeight": "1570",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "distant",
+            "drawCalls": "169",
+            "renderTriangles": "170420"
+          }
+        },
+        {
+          "preset": "Terrain",
+          "file": "hole-06-terrain.png",
+          "canvas": {
+            "terrainHash": "272c39b7be03e26b7747d7d265e29e04a8e97a19b5aa4dd625cfb81c64da6cda",
+            "engine": "three.js r186",
+            "shadowSpanM": "758.4,505.4",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "50",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1.5",
+            "terrainScale": "1.8320013451022212",
+            "terrainFocus": "-860.673895770855,1066.238631008752,507.32688573139137",
+            "terrainTriangles": "20304",
+            "terrainTrees": "515",
+            "renderCount": "6",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "761",
+            "bufferWidth": "776",
+            "bufferHeight": "1522",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "distant",
+            "drawCalls": "172",
+            "renderTriangles": "187460"
+          }
+        },
+        {
+          "preset": "Profile",
+          "file": "hole-06-profile.png",
+          "canvas": null
+        },
+        {
+          "preset": "Green",
+          "file": "hole-06-green.png",
+          "canvas": {
+            "terrainHash": "272c39b7be03e26b7747d7d265e29e04a8e97a19b5aa4dd625cfb81c64da6cda",
+            "engine": "three.js r186",
+            "shadowSpanM": "736.5,458.8",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "90",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1",
+            "terrainScale": "5.677456023602906",
+            "terrainFocus": "-679.9631302176435,1135.3774702818394,512.4663379882097",
+            "terrainTriangles": "20304",
+            "terrainTrees": "515",
+            "renderCount": "1",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "785",
+            "bufferWidth": "776",
+            "bufferHeight": "1570",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "near",
+            "drawCalls": "309",
+            "renderTriangles": "567720"
+          }
+        }
+      ],
+      "quality": {
+        "compilerVersion": "course-terrain-v1",
+        "styleVersion": "narrow-surround-v1",
+        "tacticalBoundsM": [
+          -1084,
+          964,
+          -644,
+          1164
+        ],
+        "contextBoundsM": [
+          -1248,
+          800,
+          -480,
+          1344
+        ],
+        "terrainAvailable": true,
+        "contextCoverage": "complete",
+        "teeGeometry": "approximate",
+        "treeEvidence": "canopy_only",
+        "limitations": [
+          "Source candidate; independent registration, renovation and boundary review pending",
+          "Macro terrain only; no putting-break or bunker-lip accuracy claim",
+          "Daily tee markers, actual cup, ball positions and tree heights are unknown",
+          "Neutral ground is not classified rough; outward surrounds are illustrative and at most 0.6m",
+          "Neighbor features are renderer-only context, not reassigned played-hole surfaces",
+          "2021 terrain may predate current surfaces; currentness remains unverified"
+        ]
+      },
+      "idleStopped": true
+    },
+    {
+      "hole": 7,
+      "captures": [
+        {
+          "preset": "Top",
+          "file": "hole-07-top.png",
+          "canvas": {
+            "terrainHash": "e79ef75b502a52f8790ea428cf37bf7851896db66c57046352775d35c6daac46",
+            "engine": "three.js r186",
+            "shadowSpanM": "675.5,501.2",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "90",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1",
+            "terrainScale": "1.807582191453157",
+            "terrainFocus": "-464.8048222628008,1061.643693662716,509.20625141891577",
+            "terrainTriangles": "21565",
+            "terrainTrees": "367",
+            "renderCount": "3",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "785",
+            "bufferWidth": "776",
+            "bufferHeight": "1570",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "distant",
+            "drawCalls": "109",
+            "renderTriangles": "119501"
+          }
+        },
+        {
+          "preset": "Terrain",
+          "file": "hole-07-terrain.png",
+          "canvas": {
+            "terrainHash": "e79ef75b502a52f8790ea428cf37bf7851896db66c57046352775d35c6daac46",
+            "engine": "three.js r186",
+            "shadowSpanM": "720.7,549.3",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "50",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1.5",
+            "terrainScale": "2.2542576935873075",
+            "terrainFocus": "-464.0903057824283,1061.5822975149526,509.20625141891577",
+            "terrainTriangles": "21565",
+            "terrainTrees": "367",
+            "renderCount": "6",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "761",
+            "bufferWidth": "776",
+            "bufferHeight": "1522",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "distant",
+            "drawCalls": "95",
+            "renderTriangles": "108921"
+          }
+        },
+        {
+          "preset": "Profile",
+          "file": "hole-07-profile.png",
+          "canvas": null
+        },
+        {
+          "preset": "Green",
+          "file": "hole-07-green.png",
+          "canvas": {
+            "terrainHash": "e79ef75b502a52f8790ea428cf37bf7851896db66c57046352775d35c6daac46",
+            "engine": "three.js r186",
+            "shadowSpanM": "675.5,501.2",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "90",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1",
+            "terrainScale": "4.11209413808875",
+            "terrainFocus": "-325.79249747911643,1000.836802832639,507.700655174305",
+            "terrainTriangles": "21565",
+            "terrainTrees": "367",
+            "renderCount": "1",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "785",
+            "bufferWidth": "776",
+            "bufferHeight": "1570",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "distant",
+            "drawCalls": "258",
+            "renderTriangles": "259986"
+          }
+        }
+      ],
+      "quality": {
+        "compilerVersion": "course-terrain-v1",
+        "styleVersion": "narrow-surround-v1",
+        "tacticalBoundsM": [
+          -640,
+          956,
+          -288,
+          1168
+        ],
+        "contextBoundsM": [
+          -800,
+          768,
+          -128,
+          1344
+        ],
+        "terrainAvailable": true,
+        "contextCoverage": "complete",
+        "teeGeometry": "approximate",
+        "treeEvidence": "canopy_only",
+        "limitations": [
+          "Source candidate; independent registration, renovation and boundary review pending",
+          "Macro terrain only; no putting-break or bunker-lip accuracy claim",
+          "Daily tee markers, actual cup, ball positions and tree heights are unknown",
+          "Neutral ground is not classified rough; outward surrounds are illustrative and at most 0.6m",
+          "Neighbor features are renderer-only context, not reassigned played-hole surfaces",
+          "2021 terrain may predate current surfaces; currentness remains unverified"
+        ]
+      },
+      "idleStopped": true
+    },
+    {
+      "hole": 8,
+      "captures": [
+        {
+          "preset": "Top",
+          "file": "hole-08-top.png",
+          "canvas": {
+            "terrainHash": "7a1c9f3ae60528ae0a1f116a7a13023330271ddab655e6db4f5c88b88cdf5b96",
+            "engine": "three.js r186",
+            "shadowSpanM": "709.2,587.7",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "90",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1",
+            "terrainScale": "1.28502536140606",
+            "terrainFocus": "-327.9589527909496,721.1945580523837,526.5435668265818",
+            "terrainTriangles": "28605",
+            "terrainTrees": "375",
+            "renderCount": "3",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "785",
+            "bufferWidth": "776",
+            "bufferHeight": "1570",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "distant",
+            "drawCalls": "136",
+            "renderTriangles": "135437"
+          }
+        },
+        {
+          "preset": "Terrain",
+          "file": "hole-08-terrain.png",
+          "canvas": {
+            "terrainHash": "7a1c9f3ae60528ae0a1f116a7a13023330271ddab655e6db4f5c88b88cdf5b96",
+            "engine": "three.js r186",
+            "shadowSpanM": "792.7,637.5",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "50",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1.5",
+            "terrainScale": "1.5085216269762158",
+            "terrainFocus": "-327.66657540407357,721.3754551457216,526.5435668265818",
+            "terrainTriangles": "28605",
+            "terrainTrees": "375",
+            "renderCount": "6",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "761",
+            "bufferWidth": "776",
+            "bufferHeight": "1522",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "distant",
+            "drawCalls": "122",
+            "renderTriangles": "125637"
+          }
+        },
+        {
+          "preset": "Profile",
+          "file": "hole-08-profile.png",
+          "canvas": null
+        },
+        {
+          "preset": "Green",
+          "file": "hole-08-green.png",
+          "canvas": {
+            "terrainHash": "7a1c9f3ae60528ae0a1f116a7a13023330271ddab655e6db4f5c88b88cdf5b96",
+            "engine": "three.js r186",
+            "shadowSpanM": "709.2,587.8",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "90",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1",
+            "terrainScale": "5.042141124208614",
+            "terrainFocus": "-264.4282601215042,513.8351211452007,533.6972353466037",
+            "terrainTriangles": "28605",
+            "terrainTrees": "375",
+            "renderCount": "1",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "785",
+            "bufferWidth": "776",
+            "bufferHeight": "1570",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "near",
+            "drawCalls": "267",
+            "renderTriangles": "523698"
+          }
+        }
+      ],
+      "quality": {
+        "compilerVersion": "course-terrain-v1",
+        "styleVersion": "narrow-surround-v1",
+        "tacticalBoundsM": [
+          -428,
+          460,
+          -228,
+          984
+        ],
+        "contextBoundsM": [
+          -608,
+          288,
+          -64,
+          1152
+        ],
+        "terrainAvailable": true,
+        "contextCoverage": "complete",
+        "teeGeometry": "approximate",
+        "treeEvidence": "canopy_only",
+        "limitations": [
+          "Source candidate; independent registration, renovation and boundary review pending",
+          "Macro terrain only; no putting-break or bunker-lip accuracy claim",
+          "Daily tee markers, actual cup, ball positions and tree heights are unknown",
+          "Neutral ground is not classified rough; outward surrounds are illustrative and at most 0.6m",
+          "Neighbor features are renderer-only context, not reassigned played-hole surfaces",
+          "2021 terrain may predate current surfaces; currentness remains unverified"
+        ]
+      },
+      "idleStopped": true
+    },
+    {
+      "hole": 9,
+      "captures": [
+        {
+          "preset": "Top",
+          "file": "hole-09-top.png",
+          "canvas": {
+            "terrainHash": "cf022cf89257ce6500974d5ec0d05470d8bbaf612b1f10219218073c304fb7ba",
+            "engine": "three.js r186",
+            "shadowSpanM": "560.8,466.3",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "90",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1",
+            "terrainScale": "1.8273747836964873",
+            "terrainFocus": "-81.60004627254389,265.93902946715053,534.2302846672676",
+            "terrainTriangles": "20535",
+            "terrainTrees": "407",
+            "renderCount": "1",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "785",
+            "bufferWidth": "776",
+            "bufferHeight": "1570",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "distant",
+            "drawCalls": "260",
+            "renderTriangles": "242090"
+          }
+        },
+        {
+          "preset": "Terrain",
+          "file": "hole-09-terrain.png",
+          "canvas": {
+            "terrainHash": "cf022cf89257ce6500974d5ec0d05470d8bbaf612b1f10219218073c304fb7ba",
+            "engine": "three.js r186",
+            "shadowSpanM": "636.2,586.2",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "50",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1.5",
+            "terrainScale": "2.2515318146942644",
+            "terrainFocus": "-91.42572395751743,264.57151603889054,534.2302846672676",
+            "terrainTriangles": "20535",
+            "terrainTrees": "407",
+            "renderCount": "4",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "761",
+            "bufferWidth": "776",
+            "bufferHeight": "1522",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "distant",
+            "drawCalls": "46",
+            "renderTriangles": "54915"
+          }
+        },
+        {
+          "preset": "Profile",
+          "file": "hole-09-profile.png",
+          "canvas": null
+        },
+        {
+          "preset": "Green",
+          "file": "hole-09-green.png",
+          "canvas": {
+            "terrainHash": "cf022cf89257ce6500974d5ec0d05470d8bbaf612b1f10219218073c304fb7ba",
+            "engine": "three.js r186",
+            "shadowSpanM": "560.8,466.3",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "90",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1",
+            "terrainScale": "5.8161595137767295",
+            "terrainFocus": "-21.486644653753537,113.07969253212384,532.1403890949175",
+            "terrainTriangles": "20535",
+            "terrainTrees": "407",
+            "renderCount": "1",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "785",
+            "bufferWidth": "776",
+            "bufferHeight": "1570",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "near",
+            "drawCalls": "203",
+            "renderTriangles": "303922"
+          }
+        }
+      ],
+      "quality": {
+        "compilerVersion": "course-terrain-v1",
+        "styleVersion": "narrow-surround-v1",
+        "tacticalBoundsM": [
+          -180,
+          84,
+          16,
+          444
+        ],
+        "contextBoundsM": [
+          -352,
+          -96,
+          192,
+          608
+        ],
+        "terrainAvailable": true,
+        "contextCoverage": "complete",
+        "teeGeometry": "approximate",
+        "treeEvidence": "canopy_only",
+        "limitations": [
+          "Source candidate; independent registration, renovation and boundary review pending",
+          "Macro terrain only; no putting-break or bunker-lip accuracy claim",
+          "Daily tee markers, actual cup, ball positions and tree heights are unknown",
+          "Neutral ground is not classified rough; outward surrounds are illustrative and at most 0.6m",
+          "Neighbor features are renderer-only context, not reassigned played-hole surfaces",
+          "2021 terrain may predate current surfaces; currentness remains unverified"
+        ]
+      },
+      "idleStopped": true
+    },
+    {
+      "hole": 10,
+      "captures": [
+        {
+          "preset": "Top",
+          "file": "hole-10-top.png",
+          "canvas": {
+            "terrainHash": "c574ea5714bcfdd481a2d37e2686cfa186831e2dcec227a72f92304c68781859",
+            "engine": "three.js r186",
+            "shadowSpanM": "620.8,497.0",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "90",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1",
+            "terrainScale": "1.6977897424383275",
+            "terrainFocus": "130.97336699490876,-153.87943916085766,526.3950168774601",
+            "terrainTriangles": "21450",
+            "terrainTrees": "452",
+            "renderCount": "3",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "785",
+            "bufferWidth": "776",
+            "bufferHeight": "1570",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "distant",
+            "drawCalls": "154",
+            "renderTriangles": "152542"
+          }
+        },
+        {
+          "preset": "Terrain",
+          "file": "hole-10-terrain.png",
+          "canvas": {
+            "terrainHash": "c574ea5714bcfdd481a2d37e2686cfa186831e2dcec227a72f92304c68781859",
+            "engine": "three.js r186",
+            "shadowSpanM": "650.7,558.8",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "50",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1.5",
+            "terrainScale": "2.109361364913117",
+            "terrainFocus": "124.5442885702525,-157.33412795681704,526.3950168774601",
+            "terrainTriangles": "21450",
+            "terrainTrees": "452",
+            "renderCount": "6",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "761",
+            "bufferWidth": "776",
+            "bufferHeight": "1522",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "distant",
+            "drawCalls": "144",
+            "renderTriangles": "139202"
+          }
+        },
+        {
+          "preset": "Profile",
+          "file": "hole-10-profile.png",
+          "canvas": null
+        },
+        {
+          "preset": "Green",
+          "file": "hole-10-green.png",
+          "canvas": {
+            "terrainHash": "c574ea5714bcfdd481a2d37e2686cfa186831e2dcec227a72f92304c68781859",
+            "engine": "three.js r186",
+            "shadowSpanM": "620.8,497.0",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "90",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1",
+            "terrainScale": "5.810720772332932",
+            "terrainFocus": "178.3874401715601,-320.8348005475182,523.5082090382441",
+            "terrainTriangles": "21450",
+            "terrainTrees": "452",
+            "renderCount": "1",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "785",
+            "bufferWidth": "776",
+            "bufferHeight": "1570",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "near",
+            "drawCalls": "297",
+            "renderTriangles": "555804"
+          }
+        }
+      ],
+      "quality": {
+        "compilerVersion": "course-terrain-v1",
+        "styleVersion": "narrow-surround-v1",
+        "tacticalBoundsM": [
+          56,
+          -356,
+          216,
+          52
+        ],
+        "contextBoundsM": [
+          -128,
+          -544,
+          384,
+          224
+        ],
+        "terrainAvailable": true,
+        "contextCoverage": "complete",
+        "teeGeometry": "approximate",
+        "treeEvidence": "canopy_only",
+        "limitations": [
+          "Source candidate; independent registration, renovation and boundary review pending",
+          "Macro terrain only; no putting-break or bunker-lip accuracy claim",
+          "Daily tee markers, actual cup, ball positions and tree heights are unknown",
+          "Neutral ground is not classified rough; outward surrounds are illustrative and at most 0.6m",
+          "Neighbor features are renderer-only context, not reassigned played-hole surfaces",
+          "2021 terrain may predate current surfaces; currentness remains unverified"
+        ]
+      },
+      "idleStopped": true
+    },
+    {
+      "hole": 11,
+      "captures": [
+        {
+          "preset": "Top",
+          "file": "hole-11-top.png",
+          "canvas": {
+            "terrainHash": "3621660506ec117b54c30a00785a78e0e97502615b8535722b7c78810939900d",
+            "engine": "three.js r186",
+            "shadowSpanM": "670.4,561.8",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "90",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1",
+            "terrainScale": "1.3393781397536404",
+            "terrainFocus": "145.2173148754351,-578.7939131810089,524.4289015311533",
+            "terrainTriangles": "27402",
+            "terrainTrees": "508",
+            "renderCount": "3",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "785",
+            "bufferWidth": "776",
+            "bufferHeight": "1570",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "distant",
+            "drawCalls": "188",
+            "renderTriangles": "196350"
+          }
+        },
+        {
+          "preset": "Terrain",
+          "file": "hole-11-terrain.png",
+          "canvas": {
+            "terrainHash": "3621660506ec117b54c30a00785a78e0e97502615b8535722b7c78810939900d",
+            "engine": "three.js r186",
+            "shadowSpanM": "726.2,668.0",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "50",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1.5",
+            "terrainScale": "1.6742774349383045",
+            "terrainFocus": "146.71136888246596,-578.3999738108594,524.4289015311533",
+            "terrainTriangles": "27402",
+            "terrainTrees": "508",
+            "renderCount": "6",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "761",
+            "bufferWidth": "776",
+            "bufferHeight": "1522",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "distant",
+            "drawCalls": "163",
+            "renderTriangles": "177558"
+          }
+        },
+        {
+          "preset": "Profile",
+          "file": "hole-11-profile.png",
+          "canvas": null
+        },
+        {
+          "preset": "Green",
+          "file": "hole-11-green.png",
+          "canvas": {
+            "terrainHash": "3621660506ec117b54c30a00785a78e0e97502615b8535722b7c78810939900d",
+            "engine": "three.js r186",
+            "shadowSpanM": "670.4,561.8",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "90",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1",
+            "terrainScale": "6.795832523683389",
+            "terrainFocus": "202.58561859351198,-797.2373734199141,520.6885985638922",
+            "terrainTriangles": "27402",
+            "terrainTrees": "508",
+            "renderCount": "1",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "785",
+            "bufferWidth": "776",
+            "bufferHeight": "1570",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "near",
+            "drawCalls": "282",
+            "renderTriangles": "488356"
+          }
+        }
+      ],
+      "quality": {
+        "compilerVersion": "course-terrain-v1",
+        "styleVersion": "narrow-surround-v1",
+        "tacticalBoundsM": [
+          44,
+          -828,
+          248,
+          -328
+        ],
+        "contextBoundsM": [
+          -128,
+          -992,
+          416,
+          -160
+        ],
+        "terrainAvailable": true,
+        "contextCoverage": "complete",
+        "teeGeometry": "approximate",
+        "treeEvidence": "canopy_only",
+        "limitations": [
+          "Source candidate; independent registration, renovation and boundary review pending",
+          "Macro terrain only; no putting-break or bunker-lip accuracy claim",
+          "Daily tee markers, actual cup, ball positions and tree heights are unknown",
+          "Neutral ground is not classified rough; outward surrounds are illustrative and at most 0.6m",
+          "Neighbor features are renderer-only context, not reassigned played-hole surfaces",
+          "2021 terrain may predate current surfaces; currentness remains unverified"
+        ]
+      },
+      "idleStopped": true
+    },
+    {
+      "hole": 12,
+      "captures": [
+        {
+          "preset": "Top",
+          "file": "hole-12-top.png",
+          "canvas": {
+            "terrainHash": "a14d2070b6bd0a82e367230934dffba5d1ce02a1c05231624b497675e149fac0",
+            "engine": "three.js r186",
+            "shadowSpanM": "584.0,478.7",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "90",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1",
+            "terrainScale": "2.0761761922386324",
+            "terrainFocus": "452.413839725984,-856.8354157905575,514.2818144495752",
+            "terrainTriangles": "18773",
+            "terrainTrees": "439",
+            "renderCount": "3",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "785",
+            "bufferWidth": "776",
+            "bufferHeight": "1570",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "distant",
+            "drawCalls": "94",
+            "renderTriangles": "88433"
+          }
+        },
+        {
+          "preset": "Terrain",
+          "file": "hole-12-terrain.png",
+          "canvas": {
+            "terrainHash": "a14d2070b6bd0a82e367230934dffba5d1ce02a1c05231624b497675e149fac0",
+            "engine": "three.js r186",
+            "shadowSpanM": "663.7,568.7",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "50",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1.5",
+            "terrainScale": "2.8176418798953464",
+            "terrainFocus": "453.292364280798,-856.0543532898503,514.2818144495752",
+            "terrainTriangles": "18773",
+            "terrainTrees": "439",
+            "renderCount": "6",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "761",
+            "bufferWidth": "776",
+            "bufferHeight": "1522",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "distant",
+            "drawCalls": "71",
+            "renderTriangles": "69349"
+          }
+        },
+        {
+          "preset": "Profile",
+          "file": "hole-12-profile.png",
+          "canvas": null
+        },
+        {
+          "preset": "Green",
+          "file": "hole-12-green.png",
+          "canvas": {
+            "terrainHash": "a14d2070b6bd0a82e367230934dffba5d1ce02a1c05231624b497675e149fac0",
+            "engine": "three.js r186",
+            "shadowSpanM": "584.0,478.7",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "90",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1",
+            "terrainScale": "11.12902518734075",
+            "terrainFocus": "572.9131645673051,-924.1978175207321,500.2021382256464",
+            "terrainTriangles": "18773",
+            "terrainTrees": "439",
+            "renderCount": "1",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "785",
+            "bufferWidth": "776",
+            "bufferHeight": "1570",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "near",
+            "drawCalls": "253",
+            "renderTriangles": "396002"
+          }
+        }
+      ],
+      "quality": {
+        "compilerVersion": "course-terrain-v1",
+        "styleVersion": "narrow-surround-v1",
+        "tacticalBoundsM": [
+          300,
+          -964,
+          604,
+          -760
+        ],
+        "contextBoundsM": [
+          128,
+          -1152,
+          768,
+          -576
+        ],
+        "terrainAvailable": true,
+        "contextCoverage": "complete",
+        "teeGeometry": "approximate",
+        "treeEvidence": "canopy_only",
+        "limitations": [
+          "Source candidate; independent registration, renovation and boundary review pending",
+          "Macro terrain only; no putting-break or bunker-lip accuracy claim",
+          "Daily tee markers, actual cup, ball positions and tree heights are unknown",
+          "Neutral ground is not classified rough; outward surrounds are illustrative and at most 0.6m",
+          "Neighbor features are renderer-only context, not reassigned played-hole surfaces",
+          "2021 terrain may predate current surfaces; currentness remains unverified"
+        ]
+      },
+      "idleStopped": true
+    },
+    {
+      "hole": 13,
+      "captures": [
+        {
+          "preset": "Top",
+          "file": "hole-13-top.png",
+          "canvas": {
+            "terrainHash": "6af051a1aff20a308e07c947a46e41236baf40a3021eb2901e8236a374347ec0",
+            "engine": "three.js r186",
+            "shadowSpanM": "480.2,430.6",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "90",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1",
+            "terrainScale": "3.0332526312911736",
+            "terrainFocus": "644.7330298586584,-941.1126595394331,490.6877452175851",
+            "terrainTriangles": "14129",
+            "terrainTrees": "483",
+            "renderCount": "3",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "785",
+            "bufferWidth": "776",
+            "bufferHeight": "1570",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "distant",
+            "drawCalls": "64",
+            "renderTriangles": "87309"
+          }
+        },
+        {
+          "preset": "Terrain",
+          "file": "hole-13-terrain.png",
+          "canvas": {
+            "terrainHash": "6af051a1aff20a308e07c947a46e41236baf40a3021eb2901e8236a374347ec0",
+            "engine": "three.js r186",
+            "shadowSpanM": "574.5,535.2",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "50",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1.5",
+            "terrainScale": "4.109701747439098",
+            "terrainFocus": "642.184827137622,-945.0243434654456,490.6877452175851",
+            "terrainTriangles": "14129",
+            "terrainTrees": "483",
+            "renderCount": "6",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "761",
+            "bufferWidth": "776",
+            "bufferHeight": "1522",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "distant",
+            "drawCalls": "63",
+            "renderTriangles": "86873"
+          }
+        },
+        {
+          "preset": "Profile",
+          "file": "hole-13-profile.png",
+          "canvas": null
+        },
+        {
+          "preset": "Green",
+          "file": "hole-13-green.png",
+          "canvas": {
+            "terrainHash": "6af051a1aff20a308e07c947a46e41236baf40a3021eb2901e8236a374347ec0",
+            "engine": "three.js r186",
+            "shadowSpanM": "480.2,430.7",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "90",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1",
+            "terrainScale": "5.075981562246327",
+            "terrainFocus": "706.1600311295156,-992.88047183661,482.91555156083473",
+            "terrainTriangles": "14129",
+            "terrainTrees": "483",
+            "renderCount": "1",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "785",
+            "bufferWidth": "776",
+            "bufferHeight": "1570",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "near",
+            "drawCalls": "309",
+            "renderTriangles": "626206"
+          }
+        }
+      ],
+      "quality": {
+        "compilerVersion": "course-terrain-v1",
+        "styleVersion": "narrow-surround-v1",
+        "tacticalBoundsM": [
+          556,
+          -1040,
+          736,
+          -848
+        ],
+        "contextBoundsM": [
+          384,
+          -1216,
+          896,
+          -672
+        ],
+        "terrainAvailable": true,
+        "contextCoverage": "complete",
+        "teeGeometry": "approximate",
+        "treeEvidence": "canopy_only",
+        "limitations": [
+          "Source candidate; independent registration, renovation and boundary review pending",
+          "Macro terrain only; no putting-break or bunker-lip accuracy claim",
+          "Daily tee markers, actual cup, ball positions and tree heights are unknown",
+          "Neutral ground is not classified rough; outward surrounds are illustrative and at most 0.6m",
+          "Neighbor features are renderer-only context, not reassigned played-hole surfaces",
+          "2021 terrain may predate current surfaces; currentness remains unverified"
+        ]
+      },
+      "idleStopped": true
+    },
+    {
+      "hole": 14,
+      "captures": [
+        {
+          "preset": "Top",
+          "file": "hole-14-top.png",
+          "canvas": {
+            "terrainHash": "712227de51a39a8f52a98a2171201cc9a6f19f7146aa3325a088e4e479267e19",
+            "engine": "three.js r186",
+            "shadowSpanM": "601.7,533.7",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "90",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1",
+            "terrainScale": "1.6929944714273601",
+            "terrainFocus": "440.41764536577665,-989.9170514618337,499.49470745985127",
+            "terrainTriangles": "19170",
+            "terrainTrees": "429",
+            "renderCount": "3",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "785",
+            "bufferWidth": "776",
+            "bufferHeight": "1570",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "distant",
+            "drawCalls": "137",
+            "renderTriangles": "155690"
+          }
+        },
+        {
+          "preset": "Terrain",
+          "file": "hole-14-terrain.png",
+          "canvas": {
+            "terrainHash": "712227de51a39a8f52a98a2171201cc9a6f19f7146aa3325a088e4e479267e19",
+            "engine": "three.js r186",
+            "shadowSpanM": "691.6,609.6",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "50",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1.5",
+            "terrainScale": "1.9674577462886367",
+            "terrainFocus": "439.49911190688454,-998.0988368196136,499.49470745985127",
+            "terrainTriangles": "19170",
+            "terrainTrees": "429",
+            "renderCount": "6",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "761",
+            "bufferWidth": "776",
+            "bufferHeight": "1522",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "distant",
+            "drawCalls": "138",
+            "renderTriangles": "155358"
+          }
+        },
+        {
+          "preset": "Profile",
+          "file": "hole-14-profile.png",
+          "canvas": null
+        },
+        {
+          "preset": "Green",
+          "file": "hole-14-green.png",
+          "canvas": {
+            "terrainHash": "712227de51a39a8f52a98a2171201cc9a6f19f7146aa3325a088e4e479267e19",
+            "engine": "three.js r186",
+            "shadowSpanM": "601.7,533.8",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "90",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1",
+            "terrainScale": "6.672921197752551",
+            "terrainFocus": "267.68293633233776,-940.4941654351805,505.53416364631926",
+            "terrainTriangles": "19170",
+            "terrainTrees": "429",
+            "renderCount": "1",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "785",
+            "bufferWidth": "776",
+            "bufferHeight": "1570",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "near",
+            "drawCalls": "254",
+            "renderTriangles": "583688"
+          }
+        }
+      ],
+      "quality": {
+        "compilerVersion": "course-terrain-v1",
+        "styleVersion": "narrow-surround-v1",
+        "tacticalBoundsM": [
+          240,
+          -1080,
+          640,
+          -908
+        ],
+        "contextBoundsM": [
+          64,
+          -1248,
+          800,
+          -736
+        ],
+        "terrainAvailable": true,
+        "contextCoverage": "complete",
+        "teeGeometry": "approximate",
+        "treeEvidence": "canopy_only",
+        "limitations": [
+          "Source candidate; independent registration, renovation and boundary review pending",
+          "Macro terrain only; no putting-break or bunker-lip accuracy claim",
+          "Daily tee markers, actual cup, ball positions and tree heights are unknown",
+          "Neutral ground is not classified rough; outward surrounds are illustrative and at most 0.6m",
+          "Neighbor features are renderer-only context, not reassigned played-hole surfaces",
+          "2021 terrain may predate current surfaces; currentness remains unverified"
+        ]
+      },
+      "idleStopped": true
+    },
+    {
+      "hole": 15,
+      "captures": [
+        {
+          "preset": "Top",
+          "file": "hole-15-top.png",
+          "canvas": {
+            "terrainHash": "d521672c209870c63658772c0a6dd7d921e3b614bc251096ae2bedce4f3ec58e",
+            "engine": "three.js r186",
+            "shadowSpanM": "377.3,291.1",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "90",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1",
+            "terrainScale": "3.7371533316501893",
+            "terrainFocus": "215.90813941904653,-872.2387889827115,515.2342580669223",
+            "terrainTriangles": "10791",
+            "terrainTrees": "422",
+            "renderCount": "3",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "785",
+            "bufferWidth": "776",
+            "bufferHeight": "1570",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "distant",
+            "drawCalls": "53",
+            "renderTriangles": "82267"
+          }
+        },
+        {
+          "preset": "Terrain",
+          "file": "hole-15-terrain.png",
+          "canvas": {
+            "terrainHash": "d521672c209870c63658772c0a6dd7d921e3b614bc251096ae2bedce4f3ec58e",
+            "engine": "three.js r186",
+            "shadowSpanM": "460.3,341.8",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "50",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1.5",
+            "terrainScale": "4.805554142037212",
+            "terrainFocus": "215.08358509298893,-872.3598036627143,515.2342580669223",
+            "terrainTriangles": "10791",
+            "terrainTrees": "422",
+            "renderCount": "6",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "761",
+            "bufferWidth": "776",
+            "bufferHeight": "1522",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "near",
+            "drawCalls": "53",
+            "renderTriangles": "213307"
+          }
+        },
+        {
+          "preset": "Profile",
+          "file": "hole-15-profile.png",
+          "canvas": null
+        },
+        {
+          "preset": "Green",
+          "file": "hole-15-green.png",
+          "canvas": {
+            "terrainHash": "d521672c209870c63658772c0a6dd7d921e3b614bc251096ae2bedce4f3ec58e",
+            "engine": "three.js r186",
+            "shadowSpanM": "377.4,291.1",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "90",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1",
+            "terrainScale": "9.111346963218017",
+            "terrainFocus": "147.4221267787894,-891.4094553090413,511.7612512833108",
+            "terrainTriangles": "10791",
+            "terrainTrees": "422",
+            "renderCount": "1",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "785",
+            "bufferWidth": "776",
+            "bufferHeight": "1570",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "near",
+            "drawCalls": "175",
+            "renderTriangles": "574778"
+          }
+        }
+      ],
+      "quality": {
+        "compilerVersion": "course-terrain-v1",
+        "styleVersion": "narrow-surround-v1",
+        "tacticalBoundsM": [
+          116,
+          -920,
+          316,
+          -832
+        ],
+        "contextBoundsM": [
+          -64,
+          -1088,
+          480,
+          -672
+        ],
+        "terrainAvailable": true,
+        "contextCoverage": "complete",
+        "teeGeometry": "approximate",
+        "treeEvidence": "canopy_only",
+        "limitations": [
+          "Source candidate; independent registration, renovation and boundary review pending",
+          "Macro terrain only; no putting-break or bunker-lip accuracy claim",
+          "Daily tee markers, actual cup, ball positions and tree heights are unknown",
+          "Neutral ground is not classified rough; outward surrounds are illustrative and at most 0.6m",
+          "Neighbor features are renderer-only context, not reassigned played-hole surfaces",
+          "2021 terrain may predate current surfaces; currentness remains unverified"
+        ]
+      },
+      "idleStopped": true
+    },
+    {
+      "hole": 16,
+      "captures": [
+        {
+          "preset": "Top",
+          "file": "hole-16-top.png",
+          "canvas": {
+            "terrainHash": "7cd1d0be54a48b7e5461ad1ac25e378fb4e7a0b465c88334eabd1d43ecb8b0d7",
+            "engine": "three.js r186",
+            "shadowSpanM": "521.4,502.4",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "90",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1",
+            "terrainScale": "2.2247311478515748",
+            "terrainFocus": "17.60668814146237,-747.6260677385433,527.0231887996124",
+            "terrainTriangles": "19022",
+            "terrainTrees": "477",
+            "renderCount": "3",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "785",
+            "bufferWidth": "776",
+            "bufferHeight": "1570",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "distant",
+            "drawCalls": "136",
+            "renderTriangles": "172354"
+          }
+        },
+        {
+          "preset": "Terrain",
+          "file": "hole-16-terrain.png",
+          "canvas": {
+            "terrainHash": "7cd1d0be54a48b7e5461ad1ac25e378fb4e7a0b465c88334eabd1d43ecb8b0d7",
+            "engine": "three.js r186",
+            "shadowSpanM": "611.8,557.4",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "50",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1.5",
+            "terrainScale": "2.584697060597352",
+            "terrainFocus": "19.99948495638233,-748.3165288379847,527.0231887996124",
+            "terrainTriangles": "19022",
+            "terrainTrees": "477",
+            "renderCount": "6",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "761",
+            "bufferWidth": "776",
+            "bufferHeight": "1522",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "distant",
+            "drawCalls": "126",
+            "renderTriangles": "165466"
+          }
+        },
+        {
+          "preset": "Profile",
+          "file": "hole-16-profile.png",
+          "canvas": null
+        },
+        {
+          "preset": "Green",
+          "file": "hole-16-green.png",
+          "canvas": {
+            "terrainHash": "7cd1d0be54a48b7e5461ad1ac25e378fb4e7a0b465c88334eabd1d43ecb8b0d7",
+            "engine": "three.js r186",
+            "shadowSpanM": "521.4,502.4",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "90",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1",
+            "terrainScale": "4.726506285696274",
+            "terrainFocus": "-71.78366827941761,-682.4081400663705,531.6920224648946",
+            "terrainTriangles": "19022",
+            "terrainTrees": "477",
+            "renderCount": "1",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "785",
+            "bufferWidth": "776",
+            "bufferHeight": "1570",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "near",
+            "drawCalls": "277",
+            "renderTriangles": "719080"
+          }
+        }
+      ],
+      "quality": {
+        "compilerVersion": "course-terrain-v1",
+        "styleVersion": "narrow-surround-v1",
+        "tacticalBoundsM": [
+          -116,
+          -896,
+          104,
+          -624
+        ],
+        "contextBoundsM": [
+          -288,
+          -1056,
+          288,
+          -448
+        ],
+        "terrainAvailable": true,
+        "contextCoverage": "complete",
+        "teeGeometry": "approximate",
+        "treeEvidence": "canopy_only",
+        "limitations": [
+          "Source candidate; independent registration, renovation and boundary review pending",
+          "Macro terrain only; no putting-break or bunker-lip accuracy claim",
+          "Daily tee markers, actual cup, ball positions and tree heights are unknown",
+          "Neutral ground is not classified rough; outward surrounds are illustrative and at most 0.6m",
+          "Neighbor features are renderer-only context, not reassigned played-hole surfaces",
+          "2021 terrain may predate current surfaces; currentness remains unverified"
+        ]
+      },
+      "idleStopped": true
+    },
+    {
+      "hole": 17,
+      "captures": [
+        {
+          "preset": "Top",
+          "file": "hole-17-top.png",
+          "canvas": {
+            "terrainHash": "71967021bfdd7254e8d7e7050ba4e44d1d45b54c9ff29a422cc479063ffe907d",
+            "engine": "three.js r186",
+            "shadowSpanM": "538.0,472.8",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "90",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1",
+            "terrainScale": "1.686037770086501",
+            "terrainFocus": "-173.21359143753315,-576.2706686419799,546.0882011470918",
+            "terrainTriangles": "16116",
+            "terrainTrees": "578",
+            "renderCount": "3",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "785",
+            "bufferWidth": "776",
+            "bufferHeight": "1570",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "distant",
+            "drawCalls": "184",
+            "renderTriangles": "199052"
+          }
+        },
+        {
+          "preset": "Terrain",
+          "file": "hole-17-terrain.png",
+          "canvas": {
+            "terrainHash": "71967021bfdd7254e8d7e7050ba4e44d1d45b54c9ff29a422cc479063ffe907d",
+            "engine": "three.js r186",
+            "shadowSpanM": "571.0,549.0",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "50",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1.5",
+            "terrainScale": "1.9855705044825867",
+            "terrainFocus": "-183.280095319972,-577.1929736417704,546.0882011470918",
+            "terrainTriangles": "16116",
+            "terrainTrees": "578",
+            "renderCount": "6",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "761",
+            "bufferWidth": "776",
+            "bufferHeight": "1522",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "distant",
+            "drawCalls": "204",
+            "renderTriangles": "230364"
+          }
+        },
+        {
+          "preset": "Profile",
+          "file": "hole-17-profile.png",
+          "canvas": null
+        },
+        {
+          "preset": "Green",
+          "file": "hole-17-green.png",
+          "canvas": {
+            "terrainHash": "71967021bfdd7254e8d7e7050ba4e44d1d45b54c9ff29a422cc479063ffe907d",
+            "engine": "three.js r186",
+            "shadowSpanM": "538.2,472.8",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "90",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1",
+            "terrainScale": "7.349968671872001",
+            "terrainFocus": "-194.79817163379312,-410.88933258184005,551.9091345425327",
+            "terrainTriangles": "16116",
+            "terrainTrees": "578",
+            "renderCount": "1",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "785",
+            "bufferWidth": "776",
+            "bufferHeight": "1570",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "near",
+            "drawCalls": "293",
+            "renderTriangles": "654844"
+          }
+        }
+      ],
+      "quality": {
+        "compilerVersion": "course-terrain-v1",
+        "styleVersion": "narrow-surround-v1",
+        "tacticalBoundsM": [
+          -232,
+          -788,
+          -136,
+          -368
+        ],
+        "contextBoundsM": [
+          -416,
+          -960,
+          32,
+          -192
+        ],
+        "terrainAvailable": true,
+        "contextCoverage": "complete",
+        "teeGeometry": "approximate",
+        "treeEvidence": "canopy_only",
+        "limitations": [
+          "Source candidate; independent registration, renovation and boundary review pending",
+          "Macro terrain only; no putting-break or bunker-lip accuracy claim",
+          "Daily tee markers, actual cup, ball positions and tree heights are unknown",
+          "Neutral ground is not classified rough; outward surrounds are illustrative and at most 0.6m",
+          "Neighbor features are renderer-only context, not reassigned played-hole surfaces",
+          "2021 terrain may predate current surfaces; currentness remains unverified"
+        ]
+      },
+      "idleStopped": true
+    },
+    {
+      "hole": 18,
+      "captures": [
+        {
+          "preset": "Top",
+          "file": "hole-18-top.png",
+          "canvas": {
+            "terrainHash": "78c65afd429ac6f4a2194511d70c2c74c076c84ca380a310d8cecb7fff065179",
+            "engine": "three.js r186",
+            "shadowSpanM": "651.1,550.7",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "90",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1",
+            "terrainScale": "1.249851049729119",
+            "terrainFocus": "-64.06546955841044,-235.94151143192988,538.2436125196489",
+            "terrainTriangles": "27404",
+            "terrainTrees": "533",
+            "renderCount": "3",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "785",
+            "bufferWidth": "776",
+            "bufferHeight": "1570",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "distant",
+            "drawCalls": "182",
+            "renderTriangles": "186396"
+          }
+        },
+        {
+          "preset": "Terrain",
+          "file": "hole-18-terrain.png",
+          "canvas": {
+            "terrainHash": "78c65afd429ac6f4a2194511d70c2c74c076c84ca380a310d8cecb7fff065179",
+            "engine": "three.js r186",
+            "shadowSpanM": "783.2,607.6",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "50",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1.5",
+            "terrainScale": "1.6038804496477708",
+            "terrainFocus": "-45.13474561114486,-241.1976197929126,538.2436125196489",
+            "terrainTriangles": "27404",
+            "terrainTrees": "533",
+            "renderCount": "6",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "761",
+            "bufferWidth": "776",
+            "bufferHeight": "1522",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "distant",
+            "drawCalls": "195",
+            "renderTriangles": "193300"
+          }
+        },
+        {
+          "preset": "Profile",
+          "file": "hole-18-profile.png",
+          "canvas": null
+        },
+        {
+          "preset": "Green",
+          "file": "hole-18-green.png",
+          "canvas": {
+            "terrainHash": "78c65afd429ac6f4a2194511d70c2c74c076c84ca380a310d8cecb7fff065179",
+            "engine": "three.js r186",
+            "shadowSpanM": "651.1,550.7",
+            "terrainRenderer": "three-webgl2",
+            "terrainState": "ready",
+            "terrainPitch": "90",
+            "terrainYaw": "0",
+            "terrainExaggeration": "1",
+            "terrainScale": "6.805079543823912",
+            "terrainFocus": "23.32379016463652,0.8044952336662092,528.6454754287502",
+            "terrainTriangles": "27404",
+            "terrainTrees": "533",
+            "renderCount": "1",
+            "flightPaths": "0",
+            "puttingTracks": "0",
+            "cssWidth": "388",
+            "cssHeight": "785",
+            "bufferWidth": "776",
+            "bufferHeight": "1570",
+            "pixelRatio": "2",
+            "debugView": "final",
+            "crownDetail": "near",
+            "drawCalls": "298",
+            "renderTriangles": "415228"
+          }
+        }
+      ],
+      "quality": {
+        "compilerVersion": "course-terrain-v1",
+        "styleVersion": "narrow-surround-v1",
+        "tacticalBoundsM": [
+          -164,
+          -504,
+          64,
+          24
+        ],
+        "contextBoundsM": [
+          -352,
+          -672,
+          224,
+          192
+        ],
+        "terrainAvailable": true,
+        "contextCoverage": "complete",
+        "teeGeometry": "approximate",
+        "treeEvidence": "canopy_only",
+        "limitations": [
+          "Source candidate; independent registration, renovation and boundary review pending",
+          "Macro terrain only; no putting-break or bunker-lip accuracy claim",
+          "Daily tee markers, actual cup, ball positions and tree heights are unknown",
+          "Neutral ground is not classified rough; outward surrounds are illustrative and at most 0.6m",
+          "Neighbor features are renderer-only context, not reassigned played-hole surfaces",
+          "2021 terrain may predate current surfaces; currentness remains unverified"
+        ]
+      },
+      "idleStopped": true
+    }
+  ],
+  "errors": [],
+  "source": "One compiled source revision; real course geometry; no player positions fabricated"
+}

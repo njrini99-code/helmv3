@@ -1,262 +1,107 @@
 'use client';
 
-/**
- * ============================================================================
- * Fairway · Rounds · Tracking — FairwayHoleHero  (LIGHT HOLE COCKPIT)
- * ----------------------------------------------------------------------------
- * The hole context instrument that sits above the live shot-entry panel. It is
- * a calm LIGHT Fairway surface (warm cream card on the canvas), NOT a dark
- * garish gradient — the dark band fought the light body and the labels collided
- * with the flyover art. The redesign separates the two concerns cleanly:
- *
- *   1. HEADER ROW (light) — Hole N · Par chip · subtitle on the left, the big
- *      distance / score readout on the right. Plain Fairway text tokens on the
- *      cream surface; nothing is overlaid on the art, so nothing can collide.
- *
- *   2. FLYOVER BAND (the only green) — a single rounded inset that holds the
- *      top-down hole, tee → pin, on a soft helm-green turf. It owns a fixed,
- *      comfortable WIDE aspect (the natural shape of a left→right hole), so the
- *      trees, shot dots and pin always have room and never crush. The wide
- *      viewBox is rendered into a wide band — never squeezed into a tall column.
- *
- * Geometry (unchanged): each recorded shot's landing is reconstructed by
- * intersecting two circles — `shotDistance` from the prior lie and
- * `distanceToHoleAfter` around the pin — with the miss choosing the side. A dot
- * marks every landing; the current ball sits at the latest and animates to each
- * new lie. Lateral + along-line share one yards→px scale, so angles are true.
- *
- * Brand: the turf uses the LOCKED helm green (#16A34A). PRESENTATION ONLY — the
- * geometry, props and data contract are untouched.
- * ========================================================================== */
+import type { RoundHole, ShotRecord } from '@/lib/types/golf';
+import type { HoleScene } from '@/lib/golf/course-geometry/types';
+import { useDistanceUnits } from '@/hooks/golf/use-distance-units';
+import { formatFeet, formatYards, feetToDisplay, yardsToDisplay } from '@/lib/golf/distance-units';
+import { entryView } from '@/lib/golf/course-geometry/camera';
+import { HoleSceneFrame } from '@/components/golf/course-geometry/HoleSceneFrame';
+import { Button } from '@/components/fairway/controls/button';
+import { FairwayHoleHeroLegacy } from './FairwayHoleHeroLegacy';
 
-import type { ShotRecord, RoundHole } from '@/lib/types/golf';
-
-const HELM_GREEN = '#16A34A';
-
-/** Ball/landing ring tint per lie. Greens anchor to the LOCKED brand green
- *  (HELM_GREEN) — fairway is the on-brand accent (was a too-light primary-400
- *  that blended into the white ball halo); rough is a deeper, distinct green
- *  (was an off-palette hunter/teal). */
-const LIE_RING: Record<string, string> = {
-  tee: '#cbb892',
-  fairway: HELM_GREEN,
-  rough: '#0f5a36',
-  sand: '#e8d9a6',
-  green: '#34d17a',
-  other: '#cfcac3',
-};
-
-type Pt = { x: number; y: number };
-
-const toYd = (v: number, unit: 'yards' | 'feet') => (unit === 'feet' ? v / 3 : v);
-
-function missSide(s: ShotRecord): number {
-  const m = `${s.missDirection ?? ''} ${s.approachMissDirection ?? ''}`.toLowerCase();
-  if (m.includes('left')) return -1;
-  if (m.includes('right')) return 1;
-  return 0;
+function shotStart(shot: ShotRecord, preference: 'yards' | 'meters') {
+  return shot.distanceUnitBefore === 'feet' ? formatFeet(shot.distanceToHoleBefore, preference) : formatYards(shot.distanceToHoleBefore, preference);
 }
 
-function intersect(c0: Pt, r0: number, c1: Pt, r1: number, side: number): Pt | null {
-  const dx = c1.x - c0.x;
-  const dy = c1.y - c0.y;
-  const d = Math.hypot(dx, dy);
-  if (d === 0 || d > r0 + r1 || d < Math.abs(r0 - r1)) return null;
-  const a = (r0 * r0 - r1 * r1 + d * d) / (2 * d);
-  const h2 = r0 * r0 - a * a;
-  if (h2 < 0) return null;
-  const h = Math.sqrt(h2);
-  const xm = c0.x + (a * dx) / d;
-  const ym = c0.y + (a * dy) / d;
-  const ox = (-dy / d) * h;
-  const oy = (dx / d) * h;
-  const s1 = { x: xm + ox, y: ym + oy };
-  const s2 = { x: xm - ox, y: ym - oy };
-  if (side > 0) return s1.y >= s2.y ? s1 : s2;
-  if (side < 0) return s1.y <= s2.y ? s1 : s2;
-  return Math.abs(s1.y) <= Math.abs(s2.y) ? s1 : s2;
+function shotLeave(shot: ShotRecord, preference: 'yards' | 'meters') {
+  if (shot.result === 'hole') return 'Made';
+  return shot.distanceUnitAfter === 'feet' ? `${formatFeet(shot.distanceToHoleAfter, preference)} left` : `${formatYards(shot.distanceToHoleAfter, preference)} left`;
 }
 
-function buildPath(shots: ShotRecord[], L: number): Pt[] {
-  const pin: Pt = { x: L, y: 0 };
-  const pts: Pt[] = [{ x: 0, y: 0 }];
-  let prev: Pt = { x: 0, y: 0 };
-  for (const s of shots) {
-    if (s.isPenalty) continue;
-    const dAfter = toYd(s.distanceToHoleAfter ?? 0, s.distanceUnitAfter ?? 'yards');
-    const sd = s.shotDistance ?? 0;
-    const sol = intersect(prev, sd, pin, dAfter, missSide(s));
-    const next = sol ?? { x: Math.max(0, Math.min(L, L - dAfter)), y: missSide(s) * Math.min(sd * 0.12, 24) };
-    pts.push(next);
-    prev = next;
-  }
-  return pts;
+/** Read-only course context. Pending input never supplies a camera or anchor.
+ * A round with no resolved course package (every course but Peek'n Peak
+ * Upper, whose round clients thread `geometry` through `useCourseGeometry`)
+ * keeps the hero shipped on main; the course frame is only ever a
+ * replacement for a round it can draw. */
+export function FairwayHoleHero(props: FairwayHoleHeroProps) {
+  if (!props.scene) return <FairwayHoleHeroLegacy {...props} />;
+  return <CourseFramedHoleHero {...props} scene={props.scene} />;
 }
 
-/**
- * The top-down hole. Rendered into a WIDE band (viewBox 0 0 320 120, ~8:3) on a
- * soft helm-green turf. The band is the ONLY green; it owns its own fixed aspect
- * so the corridor + green + dots never crush regardless of the card's width.
- */
-function HoleViz({
-  currentHole,
-  shotHistory,
-  currentLie,
-}: {
-  currentHole: RoundHole;
-  shotHistory: ShotRecord[];
-  currentLie: string;
-}) {
-  const L = currentHole.yardage || 1;
-  const TEE_X = 24;
-  const PIN_X = 296;
-  const MID_Y = 60;
-  const MIN_Y = 18;
-  const MAX_Y = 102;
-  const scale = (PIN_X - TEE_X) / L;
-
-  const ring = LIE_RING[currentLie] ?? LIE_RING.fairway!;
-  const pathYd = buildPath(shotHistory, L);
-  const mapX = (xYd: number) => TEE_X + xYd * scale;
-  const mapY = (yYd: number) => Math.max(MIN_Y, Math.min(MAX_Y, MID_Y + yYd * scale));
-  const svgPts = pathYd.map((p) => ({ x: mapX(p.x), y: mapY(p.y) }));
-  const ball = svgPts[svgPts.length - 1] ?? { x: TEE_X, y: MID_Y };
-  const landings = svgPts.slice(1, -1); // intermediate shot landings (tee + ball excluded)
-  const trail = svgPts.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+function CourseFramedHoleHero({ currentHole, scene, shotType = 'tee', currentShot, shotTypeLabel, currentLie, distanceToHole, distanceUnit, isHoleComplete, holeScore, puttCount, shotHistory, selectedShotNumber, activeDraftShotNumber, puttingSelection, onSelectPuttingContext }: FairwayHoleHeroProps & { scene: HoleScene }) {
+  const { distancePref } = useDistanceUnits();
+  const remaining = distanceUnit === 'feet' ? formatFeet(distanceToHole, distancePref) : formatYards(distanceToHole, distancePref);
+  const puttingM = distanceUnit === 'feet' ? feetToDisplay(distanceToHole, 'meters', false) : yardsToDisplay(distanceToHole, 'meters', false);
+  const puttingShots = shotHistory.filter(shot => shot.shotType === 'putting' && !shot.isPenalty);
+  const selectedPutt = typeof puttingSelection === 'number' ? (puttingShots.find(shot => shot.shotNumber === puttingSelection) ?? null) : null;
+  const selectedOrdinal = selectedPutt ? puttingShots.indexOf(selectedPutt) + 1 : puttCount + 1;
 
   return (
-    <svg
-      viewBox="0 0 320 120"
-      className="block h-full w-full"
-      preserveAspectRatio="xMidYMid meet"
-      aria-hidden="true"
-    >
-      <defs>
-        {/* soft turf wash — calm, not garish */}
-        <linearGradient id="fwTurf" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#1a6e44" />
-          <stop offset="100%" stopColor="#0f5a36" />
-        </linearGradient>
-        <radialGradient id="fwGreen" cx="50%" cy="42%" r="62%">
-          <stop offset="0%" stopColor="#3fd585" />
-          <stop offset="62%" stopColor={HELM_GREEN} />
-          <stop offset="100%" stopColor="#0e7034" />
-        </radialGradient>
-        <radialGradient id="fwBall" cx="34%" cy="28%" r="80%">
-          <stop offset="0%" stopColor="#ffffff" />
-          <stop offset="100%" stopColor="#dfe4df" />
-        </radialGradient>
-      </defs>
-
-      {/* turf backdrop */}
-      <rect x="0" y="0" width="320" height="120" fill="url(#fwTurf)" rx="0" />
-
-      {/* Fairway corridor — a lighter mown lane down the middle */}
-      <line x1={TEE_X} y1={MID_Y} x2={PIN_X} y2={MID_Y} stroke="#2e9b63" strokeOpacity="0.55" strokeWidth="44" strokeLinecap="round" />
-      <line x1={TEE_X} y1={MID_Y} x2={PIN_X} y2={MID_Y} stroke="#ffffff" strokeOpacity="0.05" strokeWidth="44" strokeLinecap="round" />
-
-      {/* Green — helm green putting surface */}
-      <ellipse cx={PIN_X} cy={MID_Y} rx="19" ry="27" fill="url(#fwGreen)" />
-      <ellipse cx={PIN_X} cy={MID_Y} rx="19" ry="27" fill="none" stroke="#ffffff" strokeOpacity="0.18" strokeWidth="0.8" />
-
-      {/* Pin */}
-      <line x1={PIN_X} y1={MID_Y} x2={PIN_X} y2={MID_Y - 25} stroke="#ffffff" strokeOpacity="0.9" strokeWidth="1.3" strokeLinecap="round" />
-      <path d={`M${PIN_X},${MID_Y - 25} L${PIN_X + 11},${MID_Y - 21} L${PIN_X},${MID_Y - 17} Z`} fill="#e0563b" />
-      <circle cx={PIN_X} cy={MID_Y} r="2" fill="#0a1410" />
-
-      {/* Tee */}
-      <circle cx={TEE_X} cy={MID_Y} r="3" fill="#d8c79e" />
-      <circle cx={TEE_X} cy={MID_Y} r="3" fill="none" stroke="#ffffff" strokeOpacity="0.2" strokeWidth="0.8" />
-
-      {/* Shot trail */}
-      {svgPts.length > 1 && (
-        <polyline points={trail} fill="none" stroke="#ffffff" strokeOpacity="0.6" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="0.5 4.5" />
-      )}
-
-      {/* Landing dots — where the ball came to rest each shot */}
-      {landings.map((p, i) => (
-        <g key={i}>
-          <circle cx={p.x} cy={p.y} r="3.4" fill="#ffffff" opacity="0.94" />
-          <circle cx={p.x} cy={p.y} r="3.4" fill="none" stroke={LIE_RING.fairway} strokeWidth="1" strokeOpacity="0.7" />
-        </g>
-      ))}
-
-      {/* Current ball — glassy, animates to each new lie */}
-      <g style={{ transform: `translate(${ball.x.toFixed(1)}px, ${ball.y.toFixed(1)}px)`, transition: 'transform 600ms cubic-bezier(0.22,1,0.36,1)' }}>
-        <circle r="8" fill={ring} opacity="0.24" />
-        <circle r="4" fill="url(#fwBall)" stroke={ring} strokeWidth="1.2" />
-        <circle cx="-1.1" cy="-1.1" r="1.1" fill="#ffffff" opacity="0.9" />
-      </g>
-    </svg>
-  );
-}
-
-export function FairwayHoleHero({
-  currentHole,
-  isHoleComplete,
-  shotHistory,
-  shotHistoryLength,
-  puttCount,
-  holeScore,
-  currentShot,
-  shotTypeLabel,
-  currentLie,
-  displayDistance,
-  displayUnit,
-}: FairwayHoleHeroProps) {
-  const lieLabel = currentLie.charAt(0).toUpperCase() + currentLie.slice(1);
-  const subtitle = isHoleComplete
-    ? `${shotHistoryLength} shots${puttCount > 0 ? ` · ${puttCount} putts` : ''}`
-    : `Shot ${currentShot} · ${shotTypeLabel}${shotTypeLabel.toLowerCase() === currentLie.toLowerCase() ? '' : ` · ${lieLabel}`}`;
-
-  return (
-    <section
-      aria-label={`Hole ${currentHole.number}, par ${currentHole.par}`}
-      className="overflow-hidden rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]"
-    >
-      {/* ── Header row (LIGHT) — labels live here, never on the art ───────────── */}
-      <div className="flex items-start justify-between gap-4 px-5 pt-5">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <h2 className="font-fw-display text-h3 font-semibold tracking-[-0.018em] text-text-primary sm:text-h2">
-              Hole {currentHole.number}
-            </h2>
-            <span className="flex-shrink-0 whitespace-nowrap rounded-fw-sm bg-surface-sunken px-2 py-0.5 font-fw-sans text-eyebrow font-semibold uppercase tracking-wider text-text-secondary">
-              Par {currentHole.par}
-            </span>
+    <section aria-label="Current shot context" className="overflow-clip rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]">
+      <HoleSceneFrame
+        key={`${currentHole.number}-${scene?.packageHash ?? 'unavailable'}`}
+        scene={scene}
+        context="entry"
+        defaultView={entryView(shotType)}
+        selectedShotNumber={selectedShotNumber ?? undefined}
+        activeDraftShotNumber={activeDraftShotNumber}
+        currentPuttingDistanceM={shotType === 'putting' ? puttingM : null}
+        header={
+          <div className="min-w-0 py-1 font-fw-sans">
+            <h2 className="text-body-sm font-semibold leading-5 text-text-primary">{isHoleComplete ? `Hole complete · ${holeScore}` : shotType === 'putting' ? `Putt ${puttCount + 1} · Shot ${currentShot}` : `Shot ${currentShot} · ${shotTypeLabel}`}</h2>
+            {!isHoleComplete && (
+              <p className="text-caption leading-5 text-text-secondary">
+                {shotType === 'putting' ? (
+                  `${remaining} to cup`
+                ) : (
+                  <>
+                    <span className="capitalize">{currentLie}</span> · {remaining} remaining
+                  </>
+                )}
+              </p>
+            )}
           </div>
-          <p className="mt-1.5 line-clamp-2 font-fw-sans text-body-sm text-text-tertiary sm:truncate">{subtitle}</p>
-        </div>
-
-        <div className="flex-shrink-0 text-right">
-          <div className="flex items-baseline justify-end gap-1.5">
-            <span className="font-fw-display text-display font-semibold leading-none tabular-nums text-text-primary sm:text-stat-lg">
-              {isHoleComplete ? holeScore : displayDistance}
-            </span>
-            <span className="font-fw-sans text-eyebrow font-semibold uppercase tracking-wider text-text-tertiary">
-              {isHoleComplete ? 'score' : displayUnit === 'yards' ? 'yds' : 'ft'}
-            </span>
+        }
+      >
+        {shotType === 'putting' && !isHoleComplete && (
+          <div className="border-t border-border-subtle" data-slot="putting-summary">
+            <div className="flex min-w-0 items-center gap-1 overflow-x-auto px-3 py-1.5" role="group" aria-label="Putting sequence">
+              {puttingShots.map((shot, index) => {
+                const selected = selectedPutt?.shotNumber === shot.shotNumber;
+                return (
+                  <Button key={shot.shotNumber} variant={selected ? 'secondary' : 'ghost'} size="sm" aria-pressed={selected} onClick={() => onSelectPuttingContext?.(shot.shotNumber)} className="h-8 shrink-0 px-2 text-caption tabular-nums">
+                    {index + 1} · {shotStart(shot, distancePref)}
+                  </Button>
+                );
+              })}
+              <Button variant={puttingSelection === 'draft' || selectedPutt == null ? 'secondary' : 'ghost'} size="sm" aria-current={puttingSelection === 'draft' || selectedPutt == null ? 'step' : undefined} onClick={() => onSelectPuttingContext?.(null)} className="h-8 shrink-0 px-2 text-caption tabular-nums">
+                {puttCount + 1} · Now
+              </Button>
+            </div>
+            <div className="flex items-center justify-between gap-3 px-3 pb-2 pt-0.5">
+              <div className="min-w-0">
+                <p className="font-fw-sans text-body-sm font-semibold tabular-nums text-text-primary">
+                  Putt {selectedOrdinal} · {selectedPutt ? shotStart(selectedPutt, distancePref) : remaining}
+                </p>
+                <p className="truncate font-fw-sans text-caption text-text-secondary">{selectedPutt ? shotLeave(selectedPutt, distancePref) : 'Select a putt result'}</p>
+              </div>
+              {selectedPutt && (
+                <Button variant="ghost" size="sm" className="h-8 shrink-0 px-2 text-caption" onClick={() => onSelectPuttingContext?.(null)}>
+                  Resume
+                </Button>
+              )}
+            </div>
           </div>
-          {!isHoleComplete && (
-            <p className="mt-0.5 font-fw-sans text-eyebrow uppercase tracking-wider text-text-tertiary">to pin</p>
-          )}
-        </div>
-      </div>
-
-      {/* ── Flyover band (the ONLY green) — owns a fixed wide aspect so the
-            corridor, dots and green never crush. Inset rounded so it reads as a
-            contained instrument, not a full-bleed dark slab. ──────────────────── */}
-      <div className="px-3 pb-3 pt-4">
-        <div className="aspect-[8/3] w-full overflow-hidden rounded-fw-md ring-1 ring-inset ring-border-subtle">
-          <HoleViz currentHole={currentHole} shotHistory={shotHistory} currentLie={currentLie} />
-        </div>
-      </div>
+        )}
+      </HoleSceneFrame>
     </section>
   );
 }
 
 interface FairwayHoleHeroProps {
   currentHole: RoundHole;
+  scene?: HoleScene | null;
+  shotType?: string;
   isHoleComplete: boolean;
   shotHistory: ShotRecord[];
   shotHistoryLength: number;
@@ -271,4 +116,9 @@ interface FairwayHoleHeroProps {
   progressPercent: number;
   displayDistance: number;
   displayUnit: 'yards' | 'feet';
+  selectedShotNumber?: number | null;
+  /** Current unrecorded putt; a view-only identifier, never a shot row. */
+  activeDraftShotNumber?: number;
+  puttingSelection?: number | 'draft';
+  onSelectPuttingContext?: (shotNumber: number | null) => void;
 }

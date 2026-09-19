@@ -1,0 +1,294 @@
+"""Create a source-candidate whole-course package from a retained Overpass response.
+
+The output retains OSM geometry unchanged and makes only reproducible spatial
+associations to explicitly selected golf=hole routes. It is deliberately not a
+physical approval tool: every output surface is unreviewed with unknown boundary
+uncertainty, so it may render but cannot pass CourseTruthGate.
+
+Usage:
+  python3 scripts/golf/course-geometry/prepare-osm-course.py \
+    /path/to/overpass.json scripts/golf/course-geometry/pilots/<course>.json output/course-geometry/<course>
+"""
+import argparse
+import gzip
+import hashlib
+import json
+from pathlib import Path
+
+import pyproj
+from shapely.geometry import LineString, Point, Polygon
+
+TRACE_SMOOTHING_M = 6  # corner radius for imagery traces; inside every stated accuracy
+
+
+def canonical(value):
+    return json.dumps(value, sort_keys=True, separators=(',', ':'), ensure_ascii=False)
+
+
+def sha(value):
+    return hashlib.sha256(canonical(value).encode()).hexdigest()
+
+
+def write(path, value):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(value, indent=2, ensure_ascii=False) + '\n')
+
+
+def polygon(element, project):
+    geometry = element.get('geometry') or []
+    coordinates = [[p['lon'], p['lat']] for p in geometry]
+    if len(coordinates) < 4 or coordinates[0] != coordinates[-1]:
+        return None
+    projected = [project.transform(*point) for point in coordinates]
+    shape = Polygon(projected)
+    return (coordinates, shape) if shape.is_valid and not shape.is_empty else None
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('overpass', type=Path)
+    parser.add_argument('scorecard', type=Path)
+    parser.add_argument('output', type=Path)
+    parser.add_argument('--canopy-review', type=Path, default=None,
+                        help='derive-canopy-naip.py output; adds reviewed decorative woods groups per hole')
+    parser.add_argument('--traces', type=Path, default=None,
+                        help='imagery trace file; adds unreviewed surface candidates where OSM has none')
+    args = parser.parse_args()
+
+    raw_bytes = args.overpass.read_bytes()
+    if args.overpass.suffix == '.gz':
+        raw_bytes = gzip.decompress(raw_bytes)
+    raw = json.loads(raw_bytes)
+    retained = args.overpass.with_name('manifest.json')
+    if retained.exists():
+        manifest = json.loads(retained.read_text())
+        if manifest.get('uncompressedSha256') != hashlib.sha256(raw_bytes).hexdigest():
+            raise ValueError('Overpass extract does not match its retained manifest hash')
+    card = json.loads(args.scorecard.read_text())
+    retrieved_at = card['retrievedAt']
+    if retained.exists():
+        retrieved_at = manifest.get('retrievedAt', retrieved_at)
+    source_id = f'osm-overpass-{retrieved_at}'
+    if not (len(card['routeWayIds']) == len(card['pars']) == len(card['scorecardYards']) == 18):
+        raise ValueError('The selected course must supply exactly 18 route IDs, pars, and scorecard yardages')
+
+    project = pyproj.Transformer.from_crs(4326, 32617, always_xy=True)
+    ways = {element['id']: element for element in raw.get('elements', []) if element.get('type') == 'way'}
+    routes = []
+    for ordinal, (way_id, par) in enumerate(zip(card['routeWayIds'], card['pars']), start=1):
+        element = ways.get(way_id)
+        tags = (element or {}).get('tags', {})
+        geometry = (element or {}).get('geometry') or []
+        if not element or tags.get('golf') != 'hole' or str(tags.get('ref')) != str(ordinal):
+            raise ValueError(f'Explicit route selection is not a matching golf=hole source: hole {ordinal}, way {way_id}')
+        source_par = int(tags.get('par', -1))
+        if source_par < 3 or source_par > 6:
+            raise ValueError(f'OSM route is missing a valid par: hole {ordinal}, way {way_id}')
+        coords = [[p['lon'], p['lat']] for p in geometry]
+        if len(coords) < 2:
+            raise ValueError(f'Route {way_id} has no usable geometry')
+        line = LineString([project.transform(*point) for point in coords])
+        routes.append({'id': f'osm-way-{way_id}', 'ordinal': ordinal, 'coordinates': coords, 'shape': line,
+                       'sourcePar': source_par, 'scorecardPar': par})
+
+    candidates = []
+    kind_map = {'tee': 'tee', 'fairway': 'fairway', 'green': 'green', 'bunker': 'bunker', 'water_hazard': 'water'}
+    for way_id, element in ways.items():
+        tags = element.get('tags', {})
+        golf = tags.get('golf')
+        kind = kind_map.get(golf)
+        if tags.get('natural') == 'water':
+            kind = 'water'
+        if not kind:
+            continue
+        item = polygon(element, project)
+        if not item:
+            continue
+        coordinates, shape = item
+        candidates.append({'id': f'osm-way-{way_id}', 'kind': kind, 'coordinates': coordinates, 'shape': shape})
+
+    by_route = {route['id']: {route['id']} for route in routes}
+    owners = {}
+    unclaimed = []
+    route_lines = {route['id']: route['shape'] for route in routes}
+    # Source polygons can overlap (for example a broad stale/incorrect green over a
+    # smaller endpoint green). Pick the smallest endpoint-containing polygon only as
+    # an association hypothesis and retain every discarded alternative in the report.
+    selected_green = {}
+    green_alternatives = {}
+    for route in routes:
+        containing = [feature for feature in candidates if feature['kind'] == 'green' and feature['shape'].covers(Point(route['shape'].coords[-1]))]
+        if not containing:
+            raise ValueError(f"{card['slug']}-{route['ordinal']:02}: no OSM green contains the selected route endpoint")
+        containing.sort(key=lambda feature: feature['shape'].area)
+        selected_green[route['id']] = containing[0]['id']
+        green_alternatives[route['id']] = [feature['id'] for feature in containing[1:]]
+    for feature in candidates:
+        shape = feature['shape']
+        if feature['kind'] == 'green':
+            assigned = {route_id for route_id, green_id in selected_green.items() if green_id == feature['id']}
+        elif feature['kind'] == 'fairway':
+            assigned = {route['id'] for route in routes if route['shape'].intersection(shape).length >= 8}
+        elif feature['kind'] == 'tee':
+            assigned = {route['id'] for route in routes if shape.distance(Point(route['shape'].coords[0])) <= 28}
+        else:
+            distances = sorted((shape.distance(line), ident) for ident, line in route_lines.items())
+            assigned = {distances[0][1]} if distances and distances[0][0] <= 55 else set()
+        if not assigned:
+            unclaimed.append(feature['id'])
+            continue
+        owners[feature['id']] = sorted(assigned)
+        for route_id in assigned:
+            by_route[route_id].add(feature['id'])
+
+    route_by_id = {route['id']: route for route in routes}
+    features = []
+    for route in routes:
+        features.append({'id': route['id'], 'kind': 'route', 'sourceIds': [source_id],
+                         'holeKeys': [f"{card['slug']}-{route['ordinal']:02}"], 'reviewed': False, 'accuracyMeters': None,
+                         'geometryWgs84': {'type': 'LineString', 'coordinates': route['coordinates']}})
+    for feature in candidates:
+        if feature['id'] not in owners:
+            continue
+        features.append({'id': feature['id'], 'kind': feature['kind'], 'sourceIds': [source_id],
+                         'holeKeys': [f"{card['slug']}-{route_by_id[identifier]['ordinal']:02}" for identifier in owners[feature['id']]],
+                         'reviewed': False, 'accuracyMeters': None,
+                         'geometryWgs84': {'type': 'Polygon', 'coordinates': [feature['coordinates']]}})
+
+    feature_by_id = {feature['id']: feature for feature in features}
+    holes, association_rows = [], []
+    for route in routes:
+        key = f"{card['slug']}-{route['ordinal']:02}"
+        ids = sorted(by_route[route['id']])
+        green_ids = [feature_id for feature_id in ids if feature_by_id[feature_id]['kind'] == 'green']
+        tee_ids = [feature_id for feature_id in ids if feature_by_id[feature_id]['kind'] == 'tee']
+        fairway_ids = [feature_id for feature_id in ids if feature_by_id[feature_id]['kind'] == 'fairway']
+        bunker_ids = [feature_id for feature_id in ids if feature_by_id[feature_id]['kind'] == 'bunker']
+        water_ids = [feature_id for feature_id in ids if feature_by_id[feature_id]['kind'] == 'water']
+        if green_ids != [selected_green[route['id']]]:
+            raise ValueError(f'{key}: selected endpoint green association did not survive feature ownership')
+        gaps = [
+            'OSM source candidate; independent imagery registration and course-familiar review pending',
+            'Boundary uncertainty, daily tee marker, and daily pin are unknown',
+            'Macro terrain, bunker lip/depth, tree height, and putting break require separate evidence',
+        ]
+        if not tee_ids:
+            gaps.append('No OSM tee polygon was within 28m of the selected route start')
+        if not fairway_ids:
+            gaps.append('No OSM fairway polygon intersected the selected route by at least 8m')
+        holes.append({'key': key, 'ordinal': route['ordinal'], 'par': card['pars'][route['ordinal'] - 1],
+                      'scorecardYards': card['scorecardYards'][route['ordinal'] - 1], 'featureIds': ids,
+                      'routeFeatureId': route['id'], 'greenFeatureId': green_ids[0],
+                      'nominalTargetWgs84': route['coordinates'][-1], 'completeness': 'partial', 'gaps': gaps})
+        association_rows.append({'hole': route['ordinal'], 'routeId': route['id'], 'greenIds': green_ids,
+                                 'teeIds': tee_ids, 'fairwayIds': fairway_ids, 'bunkerIds': bunker_ids,
+                                 'waterIds': water_ids, 'routeLengthM': round(route['shape'].length, 3),
+                                 'scorecardYards': card['scorecardYards'][route['ordinal'] - 1],
+                                 'scorecardPar': route['scorecardPar'], 'osmRoutePar': route['sourcePar'],
+                                 'parAgreement': route['scorecardPar'] == route['sourcePar'],
+                                 'discardedEndpointGreenAlternatives': green_alternatives[route['id']]})
+
+    package = {'schemaVersion': 1, 'siteId': card['siteId'], 'name': card['name'], 'status': 'source_candidate',
+               'originWgs84': card['originWgs84'], 'projection': 'wgs84-local-enu-v1', 'features': features,
+               'holes': holes, 'sources': [{'id': source_id, 'provider': 'OpenStreetMap via Overpass API',
+                  'licenseId': 'ODbL-1.0', 'url': 'https://overpass-api.de/api/interpreter', 'capturedAt': None,
+                  'retrievedAt': retrieved_at, 'attribution': '© OpenStreetMap contributors · ODbL 1.0'}]}
+    trace_summary = None
+    if args.traces:
+        # Surfaces traced from retained orthophotography where OSM has none.
+        # They stay unreviewed candidates with a stated accuracy; the hole
+        # remains partial and every truth gate still sees an unreviewed boundary.
+        traces = json.loads(args.traces.read_text())
+        if traces.get('kind') != 'golfhelm-imagery-traces-v1' or traces.get('siteId') != card['siteId']:
+            raise ValueError('Trace file does not belong to this course')
+        trace_source = 'naip-trace-' + traces['tracedAt']
+        unproject = pyproj.Transformer.from_crs(32617, 4326, always_xy=True)
+        hole_by_key = {hole['key']: hole for hole in package['holes']}
+        row_by_hole = {row['hole']: row for row in association_rows}
+        for trace in traces['features']:
+            hole = hole_by_key[trace['holeKey']]
+            ring = trace['coordinatesWgs84']
+            if trace['kind'] not in ('fairway', 'tee', 'bunker', 'green', 'water') or len(ring) < 4 or ring[0] != ring[-1]:
+                raise ValueError('Invalid trace: ' + trace['id'])
+            if not Polygon(ring).is_valid:
+                raise ValueError('Self-intersecting trace: ' + trace['id'])
+            if any(f['id'] == trace['id'] for f in package['features']):
+                raise ValueError('Duplicate trace id: ' + trace['id'])
+            # A hand trace has straight segments between its picked vertices.
+            # Round every corner by a radius well inside the stated accuracy
+            # (closing then opening), so the candidate reads as a mowed edge
+            # rather than a polygon, without moving any edge beyond that band.
+            radius = TRACE_SMOOTHING_M
+            local = Polygon([project.transform(lon, lat) for lon, lat in ring])
+            smooth = local.buffer(radius, join_style='round').buffer(-2 * radius, join_style='round').buffer(radius, join_style='round')
+            smooth = smooth.simplify(0.4, preserve_topology=True)
+            if smooth.geom_type != 'Polygon' or smooth.is_empty or abs(smooth.area - local.area) > 0.15 * local.area:
+                raise ValueError('Trace smoothing changed the shape too much: ' + trace['id'])
+            ring = [[round(v, 7) for v in unproject.transform(x, y)] for x, y in smooth.exterior.coords]
+            ring[-1] = ring[0]
+            package['features'].append({'id': trace['id'], 'kind': trace['kind'], 'sourceIds': [trace_source],
+                                        'holeKeys': [hole['key']], 'reviewed': False,
+                                        'accuracyMeters': trace['accuracyMeters'],
+                                        'geometryWgs84': {'type': 'Polygon', 'coordinates': [ring]}})
+            hole['featureIds'] = sorted(hole['featureIds'] + [trace['id']])
+            row = row_by_hole[hole['ordinal']]
+            row.setdefault('tracedIds', []).append(trace['id'])
+            if trace['kind'] == 'fairway':
+                row['fairwayIds'] = row['fairwayIds'] + [trace['id']]
+                hole['gaps'] = [gap if not gap.startswith('No OSM fairway') else
+                                f"No OSM fairway; {trace['id']} is an unreviewed imagery trace (±{trace['accuracyMeters']}m)"
+                                for gap in hole['gaps']]
+        package['sources'].append({'id': trace_source, 'provider': traces['source']['provider'], 'licenseId': 'US-Public-Domain',
+                                   'url': traces['source']['service'], 'capturedAt': ','.join(traces['source']['capturedAt']),
+                                   'retrievedAt': traces['tracedAt'],
+                                   'attribution': 'USDA NAIP; traced surface candidates, unreviewed'})
+        trace_summary = {'traceFile': args.traces.name, 'features': [t['id'] for t in traces['features']],
+                         'rasterSha256': traces['source']['rasterSha256'], 'tracer': traces['tracer'],
+                         'cornerSmoothingM': TRACE_SMOOTHING_M}
+    canopy_summary = None
+    if args.canopy_review:
+        # Decorative canopy groups derived from NAIP and visually reviewed. They
+        # bound crown artwork only and never become a physical surface claim.
+        canopy = json.loads(args.canopy_review.read_text())
+        if canopy.get('kind') != 'golfhelm-canopy-review-v1' or canopy.get('siteId') != card['siteId']:
+            raise ValueError('Canopy review does not belong to this course')
+        canopy_source = 'naip-canopy-review-' + canopy['reviewedAt']
+        hole_by_key = {hole['key']: hole for hole in holes}
+        for region in canopy['regions']:
+            coords = region['coordinatesWgs84']
+            if not Polygon(coords).is_valid or region['holeKey'] not in hole_by_key:
+                raise ValueError('Invalid canopy group: ' + region['id'])
+            package['features'].append({'id': 'naip-' + region['id'], 'kind': 'woods', 'sourceIds': [canopy_source],
+                                        'holeKeys': [region['holeKey']], 'reviewed': True, 'accuracyMeters': None,
+                                        'geometryWgs84': {'type': 'Polygon', 'coordinates': [coords]}})
+            hole_by_key[region['holeKey']]['featureIds'].append('naip-' + region['id'])
+        package['sources'].append({'id': canopy_source, 'provider': canopy['source'], 'licenseId': 'US-Public-Domain',
+                                   'url': canopy['sourceUrl'], 'capturedAt': ','.join(canopy['capturedAt']),
+                                   'retrievedAt': canopy['retrievedAt'],
+                                   'attribution': 'USDA NAIP; canopy groups approximate, tree symbols illustrative'})
+        canopy_summary = {'reviewFile': args.canopy_review.name, 'groups': len(canopy['regions']),
+                          'rasterSha256': canopy['rasterSha256'], 'method': canopy['method'], 'reviewer': canopy['reviewer']}
+    package['contentHash'] = sha(package)
+    report = {'schemaVersion': 1, 'status': 'needs_physical_review', 'course': card['name'],
+              'packageHash': package['contentHash'], 'rawOverpassSha256': hashlib.sha256(raw_bytes).hexdigest(),
+              'routeSelection': {'method': 'explicit selected OSM golf=hole way IDs; ref checked, source par compared against retained scorecard',
+                                 'routeWayIds': card['routeWayIds']},
+              'associationPolicy': {'green': 'contains selected route endpoint', 'fairway': 'intersects route by 8m or more',
+                                     'tee': 'within 28m of route start', 'bunker_water': 'nearest selected route within 55m'},
+              'holes': association_rows, 'unclaimedSourceFeatureIds': unclaimed, 'canopy': canopy_summary,
+              'traces': trace_summary,
+              'discardedEndpointGreenAlternatives': green_alternatives,
+              'limitations': ['OSM plan geometry is retained as a renderable source candidate only',
+                              'No independent boundary uncertainty or course-familiar review exists',
+                              'No imagery or terrain source is used by this preparation step',
+                              'OSM route par disagreements are retained as source conflicts; the official scorecard remains the round-scoring authority',
+                              'No inferred feature may be used for authoritative physical measurement']}
+    write(args.output / 'normalized.json', package)
+    write(args.output / 'source-metadata.json', {'scorecard': card, 'overpassSha256': report['rawOverpassSha256'],
+                                                   'elementCount': len(raw.get('elements', [])), 'license': 'ODbL-1.0'})
+    write(args.output / 'association-report.json', report)
+    print(json.dumps({'course': card['name'], 'holes': len(holes), 'features': len(features),
+                      'unclaimed': len(unclaimed), 'packageHash': package['contentHash']}))
+
+if __name__ == '__main__':
+    main()

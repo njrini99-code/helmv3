@@ -1,0 +1,128 @@
+import { Line, Mesh } from 'three';
+import { addInteractivePreviewTrajectories, illustrativeScene, pilotPackage, pilotShots } from '@/test/fixtures/course-geometry/pilot';
+import source from '@/test/fixtures/course-geometry/cacapon-07-terrain.json';
+import { buildHoleScene } from '../build-scene';
+import { buildThreeFlightPaths } from '../three-flight-path';
+import { parseTerrainMesh, terrainHeight } from '../terrain';
+import type { ShotRecord } from '@/lib/types/golf';
+
+const mesh = parseTerrainMesh(source, pilotPackage);
+
+describe('Three illustrative flight paths', () => {
+  it('renders a depth-tested elevated arc from the result-derived world points', () => {
+    const scene = addInteractivePreviewTrajectories(buildHoleScene(pilotPackage, 'cacapon-07', [], mesh), [pilotShots[0]!]);
+    const flightPaths = buildThreeFlightPaths(scene, mesh, { exaggeration: 1.5, referenceElevationM: mesh.referenceElevationM, scale: .5 });
+    try {
+      expect(flightPaths.count).toBe(1);
+      const arc = flightPaths.group.getObjectByName('illustrative-shot-flight-1') as Mesh;
+      expect(arc.name).toBe('illustrative-shot-flight-1');
+      expect(arc.castShadow).toBe(false);
+      expect(arc.receiveShadow).toBe(false);
+      const points = arc.userData.displayPointsM as [number, number, number][];
+      const startGround = terrainHeight(mesh, [points[0]![0], points[0]![1]])!;
+      const end = points.at(-1)!, endGround = terrainHeight(mesh, [end[0], end[1]])!;
+      expect(points[0]![2]).toBeCloseTo(mesh.referenceElevationM + (startGround - mesh.referenceElevationM) * 1.5, 6);
+      expect(end[2]).toBeCloseTo(mesh.referenceElevationM + (endGround - mesh.referenceElevationM) * 1.5, 6);
+      expect(points[Math.floor(points.length / 2)]![2]).toBeGreaterThan(points[0]![2] + 10);
+      expect(arc.userData.visualApexM).toBeGreaterThanOrEqual(14);
+      expect(arc.type).toBe('Line2');
+      expect(arc.userData.visualLineWidthPx).toBe(2.5);
+      expect(flightPaths.group.getObjectByName('illustrative-shot-flight-halo-1')).toBeDefined();
+      const footprint = flightPaths.group.getObjectByName('illustrative-shot-footprint-1') as Line;
+      const origin = flightPaths.group.getObjectByName('illustrative-shot-origin-1') as Mesh;
+      const finish = flightPaths.group.getObjectByName('illustrative-shot-finish-1') as Mesh;
+      expect(footprint.userData.kind).toBe('selected_ground_footprint');
+      expect(origin.userData.kind).toBe('origin_marker');
+      expect(finish.userData.kind).toBe('estimated_finish_marker');
+      expect(origin.position.z).toBeGreaterThan(points[0]![2]);
+      expect(finish.position.z).toBeCloseTo(points.at(-1)![2] + .16, 6);
+    } finally { flightPaths.dispose(); }
+  });
+
+  it('keeps selected arc emphasis separate from the immutable source scene', () => {
+    const sourceScene = addInteractivePreviewTrajectories(buildHoleScene(pilotPackage, 'cacapon-07', [], mesh), pilotShots);
+    const snapshot = structuredClone(sourceScene);
+    const flightPaths = buildThreeFlightPaths(sourceScene, mesh, { exaggeration: 1, referenceElevationM: mesh.referenceElevationM, scale: 2 }, 1);
+    try {
+      const active = flightPaths.group.getObjectByName('illustrative-shot-flight-1') as Mesh | undefined;
+      const inactive = flightPaths.group.getObjectByName('illustrative-shot-flight-2') as Mesh | undefined;
+      expect(active).toBeDefined();
+      expect(inactive).toBeDefined();
+      if (!active || !inactive) throw new Error('Expected two flight arcs');
+      expect(active.material).not.toBe(inactive.material);
+      expect(active.type).toBe('Line2');
+      expect(active.userData.visualLineWidthPx).toBe(2.5);
+      expect(inactive.userData.visualLineWidthPx).toBe(1.15);
+      expect((active.material as unknown as { color: { getHexString(): string } }).color.getHexString()).toBe('ffffff');
+      expect((inactive.material as unknown as { color: { getHexString(): string } }).color.getHexString()).toBe('d7e1d2');
+      expect(flightPaths.group.getObjectByName('illustrative-shot-flight-halo-1')).toBeDefined();
+      expect(flightPaths.group.getObjectByName('illustrative-shot-flight-halo-2')).toBeUndefined();
+      expect(flightPaths.group.getObjectByName('illustrative-shot-footprint-1')).toBeDefined();
+      expect(flightPaths.group.getObjectByName('illustrative-shot-footprint-2')).toBeUndefined();
+      expect(flightPaths.group.getObjectByName('illustrative-shot-origin-1')).toBeDefined();
+      expect(flightPaths.group.getObjectByName('illustrative-shot-finish-2')).toBeDefined();
+      expect(sourceScene).toEqual(snapshot);
+    } finally { flightPaths.dispose(); }
+  });
+
+  it('renders an estimated putting ball and a thin terrain-following roll instead of an airborne putt arc', () => {
+    const putting: ShotRecord[] = [
+      { ...pilotShots[0]!, distanceToHoleBefore: 431, distanceToHoleAfter: 158 },
+      { ...pilotShots[1]!, distanceToHoleBefore: 158, distanceToHoleAfter: 17 },
+      { shotNumber: 3, shotType: 'around_green', clubType: 'non_driver', lieBefore: 'sand', distanceToHoleBefore: 17,
+        distanceUnitBefore: 'yards', result: 'green', distanceToHoleAfter: 12, distanceUnitAfter: 'feet', shotDistance: 13, isPenalty: false },
+      { shotNumber: 4, shotType: 'putting', clubType: 'putter', lieBefore: 'green', distanceToHoleBefore: 12,
+        distanceUnitBefore: 'feet', result: 'green', distanceToHoleAfter: 2, distanceUnitAfter: 'feet', shotDistance: 3.3, isPenalty: false, puttBreak: 'left_to_right' },
+    ];
+    const scene = addInteractivePreviewTrajectories(buildHoleScene(pilotPackage, 'cacapon-07', [], mesh), putting);
+    const flightPaths = buildThreeFlightPaths(scene, mesh, { exaggeration: 1.5, referenceElevationM: mesh.referenceElevationM, scale: 3 }, 4);
+    try {
+      expect(flightPaths.count).toBe(3);
+      expect(flightPaths.puttingCount).toBe(2);
+      expect(flightPaths.group.getObjectByName('illustrative-shot-flight-4')).toBeUndefined();
+      const ball = flightPaths.group.getObjectByName('illustrative-putting-ball-3') as Mesh;
+      const roll = flightPaths.group.getObjectByName('illustrative-putting-roll-4') as Mesh;
+      const leave = flightPaths.group.getObjectByName('illustrative-putting-ball-4') as Mesh;
+      expect(ball.userData.kind).toBe('estimated_current_ball');
+      expect(roll.userData.kind).toBe('estimated_surface_roll');
+      expect(leave.userData.kind).toBe('estimated_roll_leave');
+      const start = scene.illustrativePuttingTracks!.find(track => track.shotNumber === 4 && track.kind === 'surface_roll')!.pointsM[0]!;
+      const ground = terrainHeight(mesh, start)!;
+      expect(roll.userData.visualRadiusM).toBeGreaterThan(.1);
+      expect(roll.userData.visualRadiusM).toBeLessThan(.29);
+      expect(ball.position.z).toBeGreaterThan(mesh.referenceElevationM + (ground - mesh.referenceElevationM) * 1.5);
+    } finally { flightPaths.dispose(); }
+  });
+});
+
+describe('production display trajectories', () => {
+  it('renders a reconstruction display estimate as a 3D flight without upgrading its source status', async () => {
+    const { decorateSceneWithDisplayTrajectories } = await import('../display-trajectories');
+    const scene = decorateSceneWithDisplayTrajectories(illustrativeScene());
+    const flightPaths = buildThreeFlightPaths(scene, mesh, { exaggeration: 1, referenceElevationM: mesh.referenceElevationM, scale: 2 }, 1);
+    try {
+      const flight = flightPaths.group.getObjectByName('illustrative-shot-flight-1') as Mesh | undefined;
+      expect(flight).toBeDefined();
+      expect(flight?.userData.trajectorySource).toBe('reconstruction_display_estimate');
+      expect(flight?.userData.estimated).toBe(true);
+    } finally {
+      flightPaths.dispose();
+    }
+  });
+});
+
+describe('screen-space trajectory sizing', () => {
+  it('updates the flight material resolution when the terrain viewport changes', () => {
+    const scene = addInteractivePreviewTrajectories(buildHoleScene(pilotPackage, 'cacapon-07', [], mesh), [pilotShots[0]!]);
+    const flightPaths = buildThreeFlightPaths(scene, mesh, { exaggeration: 1, referenceElevationM: mesh.referenceElevationM, scale: 2 });
+    try {
+      flightPaths.setResolution(390, 660);
+      const active = flightPaths.group.getObjectByName('illustrative-shot-flight-1') as Mesh;
+      const material = active.material as unknown as { resolution: { x: number; y: number } };
+      expect(material.resolution.x).toBe(390);
+      expect(material.resolution.y).toBe(660);
+    } finally {
+      flightPaths.dispose();
+    }
+  });
+});

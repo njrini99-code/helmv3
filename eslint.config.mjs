@@ -92,6 +92,51 @@ export default tseslint.config(
     },
   },
   {
+    // These files are browser callbacks passed to Playwright's page.evaluate,
+    // rather than Node entrypoints.  Scope browser globals to this explicit
+    // set so the remaining scripts keep their Node-only lint contract.
+    files: [
+      "scripts/golf/course-geometry/**/*.{cjs,mjs}",
+      "scripts/__tests__/ui-audit-accname.test.mjs",
+      "scripts/ui-audit-golf.mjs",
+      "scripts/ui-smoke.mjs",
+      "scripts/verify-ios-itinerary-create.mjs",
+    ],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+      },
+    },
+  },
+  {
+    // Course-geometry capture files intentionally export a bare async callback
+    // expression for the runner to inject into page.evaluate().
+    files: ["scripts/golf/course-geometry/**/*.{cjs,mjs}"],
+    rules: {
+      "@typescript-eslint/no-unused-expressions": "off",
+    },
+  },
+  {
+    // Meridian §7 visual code boundary: canonical (reconstruction) modules of
+    // the course-geometry library describe truth and may never depend on the
+    // visual layer, Three, or React components. The mirror-image rule (visual
+    // reads canonical, never mutates) is enforced by visual-boundary.test.ts.
+    files: [
+      "src/lib/golf/course-geometry/{build-scene,camera,canopy,describe-position,display-outline,display-trajectories,normalize,project,quality,reconstruct,ring-index,schema,selected-shot-focus,spatial,surface-compatibility,terrain,terrain-source,tracking-scene,types}.ts",
+    ],
+    rules: {
+      "no-restricted-imports": ["error", {
+        paths: [{ name: "three", message: "Canonical geometry modules must not depend on the renderer (Meridian §7)." }],
+        patterns: [
+          { group: ["three/*"], message: "Canonical geometry modules must not depend on the renderer (Meridian §7)." },
+          { group: ["@/components/*"], message: "Canonical geometry modules must not depend on React components (Meridian §7)." },
+          { group: ["./three-*", "./shadow-bounds", "./terrain-canopy", "./terrain-material", "./terrain-viewport", "./shot-overlay-*", "./runtime-controller", "./camera-motion", "./visual-style", "./visual-artifact", "./visual-artifact-v2", "./terrain-curvature", "./terrain-sky-field", "./surface-distance-field", "./display-mesh-v2", "./hero-patches", "./green-display-mesh", "./bunker-profile", "./bunker-display-mesh", "./bunker-normal-field", "./field-atlas", "./compile-visual-artifact-v2", "./ground-shader-v2", "./path-ribbon", "./forest-edge-v2", "./static-shadow-field", "./glb-writer", "./v2-budgets", "./artifact-residency", "./fairway-direction-field", "./green-surface-v2", "./v2-batching", "./structure-glb", "./canary-compare"],
+            message: "Canonical geometry modules must not import the visual layer (Meridian §7)." },
+        ],
+      }],
+    },
+  },
+  {
     // The GolfHelm Engineering OS's hooks (P2) are plain Node scripts, same
     // shape as scripts/** above — `npm run lint` doesn't reach .claude/ (it
     // targets src/**/*.{ts,tsx} only), but ad-hoc/future linting of these

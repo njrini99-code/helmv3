@@ -1,0 +1,1851 @@
+{
+  "source": {
+    "courseId": "846f0ccb-26aa-4e3c-a9e7-5a03c85440a2",
+    "name": "Winchester CC",
+    "completedRounds": 30,
+    "status": "source_candidate",
+    "bboxWgs84": [
+      -78.158,
+      39.158,
+      -78.132,
+      39.182
+    ],
+    "identityEvidence": "Prior bounded facility review; layout acceptance remains per-hole",
+    "sourceUrl": "https://www.openstreetmap.org/api/0.6/map?bbox=-78.158,39.158,-78.132,39.182",
+    "sourceFile": "a2e1dcee8760ab84.osm.gz",
+    "sourceSha256": "109d8a1f4d8f2e591874091d3cdfd60f62bff6b23b8b187a3c10e30cc0593b99"
+  },
+  "scorecardTeeId": "20e2c6b7-864d-426a-9a0d-6b4ae25196b7",
+  "status": "source_candidate",
+  "rejectedWays": [],
+  "holes": [
+    {
+      "hole": 1,
+      "selectedFeatures": [
+        "osm-way-801986672",
+        "osm-way-800486467",
+        "osm-way-800486469",
+        "osm-way-800486473",
+        "osm-way-1039723344",
+        "osm-way-1039723345",
+        "osm-relation-14063524",
+        "osm-way-214428339-winchester-01-context-crop",
+        "osm-way-1039746150-winchester-01-context-crop"
+      ],
+      "omittedAmbiguousHazards": []
+    },
+    {
+      "hole": 2,
+      "selectedFeatures": [
+        "osm-way-801986673",
+        "osm-way-1039723353",
+        "osm-way-800486474",
+        "osm-way-800486475",
+        "osm-way-1039723348",
+        "osm-way-1039723349",
+        "osm-way-1039723351",
+        "osm-way-1039723352",
+        "osm-way-214428339-winchester-02-context-crop",
+        "osm-way-1039723350-winchester-02-context-crop",
+        "osm-way-1316519495-winchester-02-context-crop"
+      ],
+      "omittedAmbiguousHazards": []
+    },
+    {
+      "hole": 3,
+      "selectedFeatures": [
+        "osm-way-801986674",
+        "osm-way-1039723359",
+        "osm-way-212618025",
+        "osm-way-800486483",
+        "osm-way-1039723355",
+        "osm-way-1039723357",
+        "osm-way-1039723358",
+        "osm-way-214428339-winchester-03-context-crop",
+        "osm-way-1039723350-winchester-03-context-crop",
+        "osm-way-1316519495-winchester-03-context-crop"
+      ],
+      "omittedAmbiguousHazards": []
+    },
+    {
+      "hole": 4,
+      "selectedFeatures": [
+        "osm-way-801986675",
+        "osm-way-1039723363",
+        "osm-way-1039723346",
+        "osm-way-1039723360",
+        "osm-way-1039723361",
+        "osm-way-1039723362",
+        "osm-way-1039723364",
+        "osm-way-1039723365",
+        "osm-way-214428339-winchester-04-context-crop",
+        "osm-way-214428357-winchester-04-context-crop"
+      ],
+      "omittedAmbiguousHazards": []
+    },
+    {
+      "hole": 5,
+      "selectedFeatures": [
+        "osm-way-801986676",
+        "osm-way-1039723371",
+        "osm-way-1039723366",
+        "osm-way-1039723368",
+        "osm-way-1039723369",
+        "osm-way-1039723370",
+        "osm-way-214428339-winchester-05-context-crop",
+        "osm-way-214428342-winchester-05-context-crop",
+        "osm-way-214428350-winchester-05-context-crop",
+        "osm-way-214428357-winchester-05-context-crop"
+      ],
+      "omittedAmbiguousHazards": []
+    },
+    {
+      "hole": 6,
+      "selectedFeatures": [
+        "osm-way-801986677",
+        "osm-way-1039734595",
+        "osm-way-1039734591",
+        "osm-way-1039734593",
+        "osm-way-1039734594",
+        "osm-way-214428339-winchester-06-context-crop",
+        "osm-way-214428342-winchester-06-context-crop",
+        "osm-way-214428357-winchester-06-context-crop"
+      ],
+      "omittedAmbiguousHazards": []
+    },
+    {
+      "hole": 7,
+      "selectedFeatures": [
+        "osm-way-801986678",
+        "osm-way-1039734599",
+        "osm-way-800515700",
+        "osm-way-1039734596",
+        "osm-way-1039734597",
+        "osm-way-1039734598",
+        "osm-way-214428358-winchester-07-context-crop",
+        "osm-way-1039746150-winchester-07-context-crop"
+      ],
+      "omittedAmbiguousHazards": []
+    },
+    {
+      "hole": 8,
+      "selectedFeatures": [
+        "osm-way-801986679",
+        "osm-way-1039734606",
+        "osm-way-1039734602",
+        "osm-way-1039734604",
+        "osm-way-1039734605",
+        "osm-way-214428342-winchester-08-context-crop",
+        "osm-way-214428350-winchester-08-context-crop",
+        "osm-way-214428357-winchester-08-context-crop",
+        "osm-way-214428358-winchester-08-context-crop"
+      ],
+      "omittedAmbiguousHazards": []
+    },
+    {
+      "hole": 9,
+      "selectedFeatures": [
+        "osm-way-801986680",
+        "osm-way-1039734608",
+        "osm-way-800515713",
+        "osm-way-1039734607",
+        "osm-way-1039734609",
+        "osm-way-1039734610",
+        "osm-way-214428342-winchester-09-context-crop",
+        "osm-way-214428350-winchester-09-context-crop",
+        "osm-way-214428357-winchester-09-context-crop",
+        "osm-way-214428358-winchester-09-context-crop",
+        "osm-way-1039746150-winchester-09-context-crop"
+      ],
+      "omittedAmbiguousHazards": []
+    },
+    {
+      "hole": 10,
+      "selectedFeatures": [
+        "osm-way-801986681",
+        "osm-way-800560031",
+        "osm-way-800515718",
+        "osm-way-1039734611",
+        "osm-way-1039734613",
+        "osm-way-1039734614",
+        "osm-way-1039746150-winchester-10-context-crop"
+      ],
+      "omittedAmbiguousHazards": []
+    },
+    {
+      "hole": 11,
+      "selectedFeatures": [
+        "osm-way-801989354",
+        "osm-way-1039734618",
+        "osm-way-1039734615",
+        "osm-way-1039734616",
+        "osm-way-1039734617",
+        "osm-way-1039746150-winchester-11-context-crop"
+      ],
+      "omittedAmbiguousHazards": []
+    },
+    {
+      "hole": 12,
+      "selectedFeatures": [
+        "osm-way-801989355",
+        "osm-way-1039734622",
+        "osm-way-800743349",
+        "osm-way-1039734619",
+        "osm-way-1039734620",
+        "osm-way-1039734621",
+        "osm-way-1039746150-winchester-12-context-crop"
+      ],
+      "omittedAmbiguousHazards": []
+    },
+    {
+      "hole": 13,
+      "selectedFeatures": [
+        "osm-way-801989356",
+        "osm-way-1039734625",
+        "osm-way-800743355",
+        "osm-way-1039734623",
+        "osm-way-1039734626",
+        "osm-way-1039734627",
+        "osm-relation-14063523",
+        "osm-way-1039746151-winchester-13-context-crop"
+      ],
+      "omittedAmbiguousHazards": []
+    },
+    {
+      "hole": 14,
+      "selectedFeatures": [
+        "osm-way-801989357",
+        "osm-way-1039734630",
+        "osm-way-800743361",
+        "osm-way-800743362",
+        "osm-way-800743363",
+        "osm-way-800743364",
+        "osm-way-1039734629",
+        "osm-way-1039746151-winchester-14-context-crop",
+        "osm-way-1425956577-winchester-14-context-crop"
+      ],
+      "omittedAmbiguousHazards": []
+    },
+    {
+      "hole": 15,
+      "selectedFeatures": [
+        "osm-way-801989358",
+        "osm-way-800743380",
+        "osm-way-800743367",
+        "osm-way-800743368",
+        "osm-way-800743369",
+        "osm-way-800743370",
+        "osm-way-800743371",
+        "osm-way-800743372",
+        "osm-way-800743373",
+        "osm-way-800743374",
+        "osm-way-800743375",
+        "osm-way-800743377",
+        "osm-way-800743378",
+        "osm-way-800743379",
+        "osm-way-1039723350-winchester-15-context-crop",
+        "osm-way-1425956577-winchester-15-context-crop"
+      ],
+      "omittedAmbiguousHazards": [
+        "osm-way-800743376"
+      ]
+    },
+    {
+      "hole": 16,
+      "selectedFeatures": [
+        "osm-way-801989359",
+        "osm-way-800750241",
+        "osm-way-800750236",
+        "osm-way-800750237",
+        "osm-way-800750238",
+        "osm-way-800750240",
+        "osm-way-1039723350-winchester-16-context-crop"
+      ],
+      "omittedAmbiguousHazards": []
+    },
+    {
+      "hole": 17,
+      "selectedFeatures": [
+        "osm-way-801989360",
+        "osm-way-800750248",
+        "osm-way-800750242",
+        "osm-way-800750243",
+        "osm-way-800750244",
+        "osm-way-800750246",
+        "osm-way-800750247",
+        "osm-way-1039723350-winchester-17-context-crop"
+      ],
+      "omittedAmbiguousHazards": [
+        "osm-way-800750245"
+      ]
+    },
+    {
+      "hole": 18,
+      "selectedFeatures": [
+        "osm-way-801989361",
+        "osm-way-1039734634",
+        "osm-way-800750249",
+        "osm-way-800767351",
+        "osm-way-800767352",
+        "osm-way-800767353"
+      ],
+      "omittedAmbiguousHazards": []
+    }
+  ],
+  "limitations": [
+    "OSM woods display copies clipped to context; crop edge is not a physical woodland edge",
+    "Tree crowns illustrative, not measured tree heights",
+    "No production binding, pin, shot or terrain inference from imagery"
+  ],
+  "sourceFeatures": [
+    {
+      "id": "osm-way-210898644",
+      "version": "1",
+      "timestamp": "2013-03-19T01:20:39Z",
+      "tags": {
+        "boat": "no",
+        "natural": "water",
+        "source": "bing"
+      }
+    },
+    {
+      "id": "osm-way-210900952",
+      "version": "1",
+      "timestamp": "2013-03-19T02:19:50Z",
+      "tags": {
+        "boat": "no",
+        "natural": "water",
+        "source": "bing"
+      }
+    },
+    {
+      "id": "osm-way-212618025",
+      "version": "2",
+      "timestamp": "2020-07-20T03:42:30Z",
+      "tags": {
+        "boat": "no",
+        "natural": "water",
+        "source": "bing"
+      }
+    },
+    {
+      "id": "osm-way-214422682",
+      "version": "6",
+      "timestamp": "2020-07-14T20:18:09Z",
+      "tags": {
+        "natural": "wood",
+        "source": "bing"
+      }
+    },
+    {
+      "id": "osm-way-214428334",
+      "version": "1",
+      "timestamp": "2013-03-30T23:45:10Z",
+      "tags": {
+        "natural": "wood",
+        "source": "bing"
+      }
+    },
+    {
+      "id": "osm-way-214428339",
+      "version": "4",
+      "timestamp": "2022-03-12T22:23:21Z",
+      "tags": {
+        "natural": "wood",
+        "source": "bing"
+      }
+    },
+    {
+      "id": "osm-way-214428342",
+      "version": "1",
+      "timestamp": "2013-03-30T23:45:12Z",
+      "tags": {
+        "natural": "wood",
+        "source": "bing"
+      }
+    },
+    {
+      "id": "osm-way-214428347",
+      "version": "1",
+      "timestamp": "2013-03-30T23:45:12Z",
+      "tags": {
+        "natural": "wood",
+        "source": "bing"
+      }
+    },
+    {
+      "id": "osm-way-214428350",
+      "version": "1",
+      "timestamp": "2013-03-30T23:45:12Z",
+      "tags": {
+        "natural": "wood",
+        "source": "bing"
+      }
+    },
+    {
+      "id": "osm-way-214428357",
+      "version": "1",
+      "timestamp": "2013-03-30T23:45:13Z",
+      "tags": {
+        "natural": "wood",
+        "source": "Bing"
+      }
+    },
+    {
+      "id": "osm-way-214428358",
+      "version": "1",
+      "timestamp": "2013-03-30T23:45:13Z",
+      "tags": {
+        "natural": "wood",
+        "source": "bing"
+      }
+    },
+    {
+      "id": "osm-way-800486467",
+      "version": "3",
+      "timestamp": "2022-04-21T16:44:35Z",
+      "tags": {
+        "golf": "green",
+        "landuse": "grass",
+        "sport": "golf"
+      }
+    },
+    {
+      "id": "osm-way-800486469",
+      "version": "3",
+      "timestamp": "2023-03-23T06:16:42Z",
+      "tags": {
+        "golf": "bunker",
+        "natural": "sand",
+        "surface": "sand"
+      }
+    },
+    {
+      "id": "osm-way-800486473",
+      "version": "3",
+      "timestamp": "2023-03-23T06:16:42Z",
+      "tags": {
+        "golf": "tee",
+        "landuse": "grass"
+      }
+    },
+    {
+      "id": "osm-way-800486474",
+      "version": "3",
+      "timestamp": "2023-03-23T06:16:42Z",
+      "tags": {
+        "golf": "tee",
+        "landuse": "grass"
+      }
+    },
+    {
+      "id": "osm-way-800486475",
+      "version": "3",
+      "timestamp": "2023-03-23T06:16:42Z",
+      "tags": {
+        "golf": "fairway",
+        "landuse": "grass"
+      }
+    },
+    {
+      "id": "osm-way-800486483",
+      "version": "3",
+      "timestamp": "2023-03-23T06:16:42Z",
+      "tags": {
+        "golf": "fairway",
+        "landuse": "grass"
+      }
+    },
+    {
+      "id": "osm-way-800486493",
+      "version": "3",
+      "timestamp": "2023-03-23T06:16:42Z",
+      "tags": {
+        "golf": "tee",
+        "landuse": "grass"
+      }
+    },
+    {
+      "id": "osm-way-800515700",
+      "version": "3",
+      "timestamp": "2023-03-23T06:16:42Z",
+      "tags": {
+        "golf": "fairway",
+        "landuse": "grass"
+      }
+    },
+    {
+      "id": "osm-way-800515712",
+      "version": "3",
+      "timestamp": "2023-03-23T06:16:42Z",
+      "tags": {
+        "golf": "tee",
+        "landuse": "grass"
+      }
+    },
+    {
+      "id": "osm-way-800515713",
+      "version": "3",
+      "timestamp": "2023-03-23T06:16:42Z",
+      "tags": {
+        "golf": "fairway",
+        "landuse": "grass"
+      }
+    },
+    {
+      "id": "osm-way-800515718",
+      "version": "2",
+      "timestamp": "2023-03-23T06:16:42Z",
+      "tags": {
+        "golf": "fairway",
+        "landuse": "grass"
+      }
+    },
+    {
+      "id": "osm-way-800560031",
+      "version": "3",
+      "timestamp": "2023-03-23T06:16:42Z",
+      "tags": {
+        "golf": "green",
+        "landuse": "grass"
+      }
+    },
+    {
+      "id": "osm-way-800743349",
+      "version": "3",
+      "timestamp": "2023-03-23T06:16:42Z",
+      "tags": {
+        "golf": "fairway",
+        "landuse": "grass"
+      }
+    },
+    {
+      "id": "osm-way-800743355",
+      "version": "3",
+      "timestamp": "2023-03-23T06:16:42Z",
+      "tags": {
+        "golf": "fairway",
+        "landuse": "grass"
+      }
+    },
+    {
+      "id": "osm-way-800743361",
+      "version": "2",
+      "timestamp": "2023-03-23T06:16:42Z",
+      "tags": {
+        "golf": "tee",
+        "landuse": "grass"
+      }
+    },
+    {
+      "id": "osm-way-800743362",
+      "version": "2",
+      "timestamp": "2023-03-23T06:16:42Z",
+      "tags": {
+        "golf": "fairway",
+        "landuse": "grass"
+      }
+    },
+    {
+      "id": "osm-way-800743363",
+      "version": "2",
+      "timestamp": "2023-03-23T06:16:42Z",
+      "tags": {
+        "golf": "bunker",
+        "natural": "sand",
+        "surface": "sand"
+      }
+    },
+    {
+      "id": "osm-way-800743364",
+      "version": "2",
+      "timestamp": "2023-03-23T06:16:42Z",
+      "tags": {
+        "golf": "bunker",
+        "natural": "sand",
+        "surface": "sand"
+      }
+    },
+    {
+      "id": "osm-way-800743366",
+      "version": "2",
+      "timestamp": "2023-03-23T06:16:42Z",
+      "tags": {
+        "golf": "tee",
+        "landuse": "grass"
+      }
+    },
+    {
+      "id": "osm-way-800743367",
+      "version": "2",
+      "timestamp": "2023-03-23T06:16:42Z",
+      "tags": {
+        "golf": "tee",
+        "landuse": "grass"
+      }
+    },
+    {
+      "id": "osm-way-800743368",
+      "version": "2",
+      "timestamp": "2023-03-23T06:16:42Z",
+      "tags": {
+        "golf": "tee",
+        "landuse": "grass"
+      }
+    },
+    {
+      "id": "osm-way-800743369",
+      "version": "2",
+      "timestamp": "2023-03-23T06:16:42Z",
+      "tags": {
+        "golf": "fairway",
+        "landuse": "grass"
+      }
+    },
+    {
+      "id": "osm-way-800743370",
+      "version": "2",
+      "timestamp": "2023-03-23T06:16:42Z",
+      "tags": {
+        "golf": "bunker",
+        "natural": "sand",
+        "surface": "sand"
+      }
+    },
+    {
+      "id": "osm-way-800743371",
+      "version": "2",
+      "timestamp": "2023-03-23T06:16:42Z",
+      "tags": {
+        "golf": "bunker",
+        "natural": "sand",
+        "surface": "sand"
+      }
+    },
+    {
+      "id": "osm-way-800743372",
+      "version": "2",
+      "timestamp": "2023-03-23T06:16:42Z",
+      "tags": {
+        "golf": "bunker",
+        "natural": "sand",
+        "surface": "sand"
+      }
+    },
+    {
+      "id": "osm-way-800743373",
+      "version": "2",
+      "timestamp": "2023-03-23T06:16:42Z",
+      "tags": {
+        "golf": "bunker",
+        "natural": "sand",
+        "surface": "sand"
+      }
+    },
+    {
+      "id": "osm-way-800743374",
+      "version": "2",
+      "timestamp": "2023-03-23T06:16:42Z",
+      "tags": {
+        "golf": "bunker",
+        "natural": "sand",
+        "surface": "sand"
+      }
+    },
+    {
+      "id": "osm-way-800743375",
+      "version": "2",
+      "timestamp": "2023-03-23T06:16:42Z",
+      "tags": {
+        "golf": "bunker",
+        "natural": "sand",
+        "surface": "sand"
+      }
+    },
+    {
+      "id": "osm-way-800743376",
+      "version": "2",
+      "timestamp": "2023-03-23T06:16:42Z",
+      "tags": {
+        "golf": "bunker",
+        "natural": "sand",
+        "surface": "sand"
+      }
+    },
+    {
+      "id": "osm-way-800743377",
+      "version": "2",
+      "timestamp": "2023-03-23T06:16:42Z",
+      "tags": {
+        "golf": "bunker",
+        "natural": "sand",
+        "surface": "sand"
+      }
+    },
+    {
+      "id": "osm-way-800743378",
+      "version": "2",
+      "timestamp": "2023-03-23T06:16:42Z",
+      "tags": {
+        "golf": "bunker",
+        "natural": "sand",
+        "surface": "sand"
+      }
+    },
+    {
+      "id": "osm-way-800743379",
+      "version": "2",
+      "timestamp": "2023-03-23T06:16:42Z",
+      "tags": {
+        "golf": "bunker",
+        "natural": "sand",
+        "surface": "sand"
+      }
+    },
+    {
+      "id": "osm-way-800743380",
+      "version": "2",
+      "timestamp": "2023-03-23T06:16:42Z",
+      "tags": {
+        "golf": "green",
+        "landuse": "grass"
+      }
+    },
+    {
+      "id": "osm-way-800750236",
+      "version": "3",
+      "timestamp": "2023-03-23T06:16:42Z",
+      "tags": {
+        "golf": "tee",
+        "landuse": "grass"
+      }
+    },
+    {
+      "id": "osm-way-800750237",
+      "version": "2",
+      "timestamp": "2023-03-23T06:16:42Z",
+      "tags": {
+        "golf": "tee",
+        "landuse": "grass"
+      }
+    },
+    {
+      "id": "osm-way-800750238",
+      "version": "2",
+      "timestamp": "2023-03-23T06:16:42Z",
+      "tags": {
+        "golf": "tee",
+        "landuse": "grass"
+      }
+    },
+    {
+      "id": "osm-way-800750239",
+      "version": "2",
+      "timestamp": "2023-03-23T06:16:42Z",
+      "tags": {
+        "golf": "tee",
+        "landuse": "grass"
+      }
+    },
+    {
+      "id": "osm-way-800750240",
+      "version": "2",
+      "timestamp": "2023-03-23T06:16:42Z",
+      "tags": {
+        "golf": "fairway",
+        "landuse": "grass"
+      }
+    },
+    {
+      "id": "osm-way-800750241",
+      "version": "2",
+      "timestamp": "2023-03-23T06:16:42Z",
+      "tags": {
+        "golf": "green",
+        "landuse": "grass"
+      }
+    },
+    {
+      "id": "osm-way-800750242",
+      "version": "3",
+      "timestamp": "2023-03-23T06:16:42Z",
+      "tags": {
+        "golf": "tee",
+        "landuse": "grass"
+      }
+    },
+    {
+      "id": "osm-way-800750243",
+      "version": "2",
+      "timestamp": "2023-03-23T06:16:42Z",
+      "tags": {
+        "golf": "tee",
+        "landuse": "grass"
+      }
+    },
+    {
+      "id": "osm-way-800750244",
+      "version": "2",
+      "timestamp": "2023-03-23T06:16:42Z",
+      "tags": {
+        "golf": "fairway",
+        "landuse": "grass"
+      }
+    },
+    {
+      "id": "osm-way-800750245",
+      "version": "2",
+      "timestamp": "2023-03-23T06:16:42Z",
+      "tags": {
+        "golf": "bunker",
+        "natural": "sand",
+        "surface": "sand"
+      }
+    },
+    {
+      "id": "osm-way-800750246",
+      "version": "2",
+      "timestamp": "2023-03-23T06:16:42Z",
+      "tags": {
+        "golf": "bunker",
+        "natural": "sand",
+        "surface": "sand"
+      }
+    },
+    {
+      "id": "osm-way-800750247",
+      "version": "2",
+      "timestamp": "2023-03-23T06:16:42Z",
+      "tags": {
+        "golf": "bunker",
+        "natural": "sand",
+        "surface": "sand"
+      }
+    },
+    {
+      "id": "osm-way-800750248",
+      "version": "3",
+      "timestamp": "2023-03-23T06:16:42Z",
+      "tags": {
+        "golf": "green",
+        "landuse": "grass"
+      }
+    },
+    {
+      "id": "osm-way-800750249",
+      "version": "3",
+      "timestamp": "2023-03-23T06:16:42Z",
+      "tags": {
+        "golf": "tee",
+        "landuse": "grass"
+      }
+    },
+    {
+      "id": "osm-way-800750250",
+      "version": "2",
+      "timestamp": "2023-03-23T06:16:42Z",
+      "tags": {
+        "golf": "tee",
+        "landuse": "grass"
+      }
+    },
+    {
+      "id": "osm-way-800767351",
+      "version": "3",
+      "timestamp": "2023-03-23T06:16:42Z",
+      "tags": {
+        "golf": "fairway",
+        "landuse": "grass"
+      }
+    },
+    {
+      "id": "osm-way-800767352",
+      "version": "2",
+      "timestamp": "2023-03-23T06:16:42Z",
+      "tags": {
+        "golf": "bunker",
+        "natural": "sand",
+        "surface": "sand"
+      }
+    },
+    {
+      "id": "osm-way-800767353",
+      "version": "2",
+      "timestamp": "2023-03-23T06:16:42Z",
+      "tags": {
+        "golf": "bunker",
+        "natural": "sand",
+        "surface": "sand"
+      }
+    },
+    {
+      "id": "osm-way-801986672",
+      "version": "2",
+      "timestamp": "2022-03-12T22:23:21Z",
+      "tags": {
+        "golf": "hole",
+        "handicap": "12",
+        "par": "4",
+        "ref": "1"
+      }
+    },
+    {
+      "id": "osm-way-801986673",
+      "version": "3",
+      "timestamp": "2022-03-13T01:36:49Z",
+      "tags": {
+        "golf": "hole",
+        "handicap": "6",
+        "par": "5",
+        "ref": "2"
+      }
+    },
+    {
+      "id": "osm-way-801986674",
+      "version": "1",
+      "timestamp": "2020-05-09T17:05:13Z",
+      "tags": {
+        "golf": "hole",
+        "handicap": "8",
+        "par": "4",
+        "ref": "3"
+      }
+    },
+    {
+      "id": "osm-way-801986675",
+      "version": "3",
+      "timestamp": "2025-06-27T15:00:58Z",
+      "tags": {
+        "golf": "hole",
+        "handicap": "18",
+        "par": "3",
+        "ref": "4"
+      }
+    },
+    {
+      "id": "osm-way-801986676",
+      "version": "3",
+      "timestamp": "2022-03-13T01:36:49Z",
+      "tags": {
+        "golf": "hole",
+        "handicap": "4",
+        "par": "4",
+        "ref": "5"
+      }
+    },
+    {
+      "id": "osm-way-801986677",
+      "version": "2",
+      "timestamp": "2022-03-13T01:36:49Z",
+      "tags": {
+        "golf": "hole",
+        "handicap": "10",
+        "par": "5",
+        "ref": "6"
+      }
+    },
+    {
+      "id": "osm-way-801986678",
+      "version": "1",
+      "timestamp": "2020-05-09T17:05:13Z",
+      "tags": {
+        "golf": "hole",
+        "handicap": "2",
+        "par": "4",
+        "ref": "7"
+      }
+    },
+    {
+      "id": "osm-way-801986679",
+      "version": "1",
+      "timestamp": "2020-05-09T17:05:13Z",
+      "tags": {
+        "golf": "hole",
+        "handicap": "16",
+        "par": "3",
+        "ref": "8"
+      }
+    },
+    {
+      "id": "osm-way-801986680",
+      "version": "1",
+      "timestamp": "2020-05-09T17:05:13Z",
+      "tags": {
+        "golf": "hole",
+        "handicap": "14",
+        "par": "4",
+        "ref": "9"
+      }
+    },
+    {
+      "id": "osm-way-801986681",
+      "version": "1",
+      "timestamp": "2020-05-09T17:05:13Z",
+      "tags": {
+        "golf": "hole",
+        "handicap": "7",
+        "par": "4",
+        "ref": "10"
+      }
+    },
+    {
+      "id": "osm-way-801989354",
+      "version": "1",
+      "timestamp": "2020-05-09T17:18:31Z",
+      "tags": {
+        "golf": "hole",
+        "handicap": "17",
+        "par": "4",
+        "ref": "11"
+      }
+    },
+    {
+      "id": "osm-way-801989355",
+      "version": "1",
+      "timestamp": "2020-05-09T17:18:31Z",
+      "tags": {
+        "golf": "hole",
+        "handicap": "11",
+        "par": "3",
+        "ref": "12"
+      }
+    },
+    {
+      "id": "osm-way-801989356",
+      "version": "3",
+      "timestamp": "2025-06-27T15:00:58Z",
+      "tags": {
+        "golf": "hole",
+        "handicap": "3",
+        "par": "5",
+        "ref": "13"
+      }
+    },
+    {
+      "id": "osm-way-801989357",
+      "version": "1",
+      "timestamp": "2020-05-09T17:18:31Z",
+      "tags": {
+        "golf": "hole",
+        "handicap": "15",
+        "par": "3",
+        "ref": "14"
+      }
+    },
+    {
+      "id": "osm-way-801989358",
+      "version": "2",
+      "timestamp": "2022-03-12T23:58:39Z",
+      "tags": {
+        "golf": "hole",
+        "handicap": "1",
+        "par": "5",
+        "ref": "15"
+      }
+    },
+    {
+      "id": "osm-way-801989359",
+      "version": "1",
+      "timestamp": "2020-05-09T17:18:31Z",
+      "tags": {
+        "golf": "hole",
+        "handicap": "13",
+        "par": "4",
+        "ref": "16"
+      }
+    },
+    {
+      "id": "osm-way-801989360",
+      "version": "1",
+      "timestamp": "2020-05-09T17:18:31Z",
+      "tags": {
+        "golf": "hole",
+        "handicap": "5",
+        "par": "4",
+        "ref": "17"
+      }
+    },
+    {
+      "id": "osm-way-801989361",
+      "version": "1",
+      "timestamp": "2020-05-09T17:18:31Z",
+      "tags": {
+        "golf": "hole",
+        "handicap": "9",
+        "par": "4",
+        "ref": "18"
+      }
+    },
+    {
+      "id": "osm-way-1039723344",
+      "version": "2",
+      "timestamp": "2026-01-03T00:05:11Z",
+      "tags": {
+        "golf": "bunker",
+        "natural": "sand"
+      }
+    },
+    {
+      "id": "osm-way-1039723345",
+      "version": "1",
+      "timestamp": "2022-03-12T22:23:21Z",
+      "tags": {
+        "golf": "bunker",
+        "natural": "sand"
+      }
+    },
+    {
+      "id": "osm-way-1039723346",
+      "version": "1",
+      "timestamp": "2022-03-12T22:23:21Z",
+      "tags": {
+        "golf": "tee",
+        "landuse": "grass",
+        "sport": "golf"
+      }
+    },
+    {
+      "id": "osm-way-1039723347",
+      "version": "1",
+      "timestamp": "2022-03-12T22:23:21Z",
+      "tags": {
+        "golf": "tee"
+      }
+    },
+    {
+      "id": "osm-way-1039723348",
+      "version": "1",
+      "timestamp": "2022-03-12T22:23:21Z",
+      "tags": {
+        "golf": "bunker",
+        "natural": "sand"
+      }
+    },
+    {
+      "id": "osm-way-1039723349",
+      "version": "1",
+      "timestamp": "2022-03-12T22:23:21Z",
+      "tags": {
+        "golf": "bunker",
+        "natural": "sand"
+      }
+    },
+    {
+      "id": "osm-way-1039723350",
+      "version": "1",
+      "timestamp": "2022-03-12T22:23:21Z",
+      "tags": {
+        "natural": "wood"
+      }
+    },
+    {
+      "id": "osm-way-1039723351",
+      "version": "1",
+      "timestamp": "2022-03-12T22:23:21Z",
+      "tags": {
+        "golf": "bunker",
+        "natural": "sand"
+      }
+    },
+    {
+      "id": "osm-way-1039723352",
+      "version": "1",
+      "timestamp": "2022-03-12T22:23:21Z",
+      "tags": {
+        "golf": "bunker",
+        "natural": "sand"
+      }
+    },
+    {
+      "id": "osm-way-1039723353",
+      "version": "2",
+      "timestamp": "2023-03-23T06:16:42Z",
+      "tags": {
+        "golf": "green",
+        "landuse": "grass",
+        "sport": "golf"
+      }
+    },
+    {
+      "id": "osm-way-1039723354",
+      "version": "3",
+      "timestamp": "2025-07-25T15:26:41Z",
+      "tags": {
+        "golf": "fairway",
+        "landuse": "grass"
+      }
+    },
+    {
+      "id": "osm-way-1039723355",
+      "version": "1",
+      "timestamp": "2022-03-12T22:23:21Z",
+      "tags": {
+        "golf": "tee",
+        "landuse": "grass",
+        "sport": "golf",
+        "surface": "grass"
+      }
+    },
+    {
+      "id": "osm-way-1039723356",
+      "version": "1",
+      "timestamp": "2022-03-12T22:23:21Z",
+      "tags": {
+        "golf": "tee",
+        "landuse": "grass",
+        "sport": "golf",
+        "surface": "grass"
+      }
+    },
+    {
+      "id": "osm-way-1039723357",
+      "version": "1",
+      "timestamp": "2022-03-12T22:23:21Z",
+      "tags": {
+        "golf": "bunker",
+        "natural": "sand"
+      }
+    },
+    {
+      "id": "osm-way-1039723358",
+      "version": "1",
+      "timestamp": "2022-03-12T22:23:21Z",
+      "tags": {
+        "golf": "bunker",
+        "natural": "sand"
+      }
+    },
+    {
+      "id": "osm-way-1039723359",
+      "version": "1",
+      "timestamp": "2022-03-12T22:23:21Z",
+      "tags": {
+        "golf": "green",
+        "landuse": "grass",
+        "sport": "golf",
+        "surface": "grass"
+      }
+    },
+    {
+      "id": "osm-way-1039723360",
+      "version": "1",
+      "timestamp": "2022-03-12T22:23:21Z",
+      "tags": {
+        "golf": "bunker",
+        "natural": "sand"
+      }
+    },
+    {
+      "id": "osm-way-1039723361",
+      "version": "1",
+      "timestamp": "2022-03-12T22:23:21Z",
+      "tags": {
+        "golf": "bunker",
+        "natural": "sand"
+      }
+    },
+    {
+      "id": "osm-way-1039723362",
+      "version": "1",
+      "timestamp": "2022-03-12T22:23:21Z",
+      "tags": {
+        "golf": "bunker",
+        "natural": "sand"
+      }
+    },
+    {
+      "id": "osm-way-1039723363",
+      "version": "1",
+      "timestamp": "2022-03-12T22:23:21Z",
+      "tags": {
+        "golf": "green",
+        "landuse": "grass",
+        "sport": "golf"
+      }
+    },
+    {
+      "id": "osm-way-1039723364",
+      "version": "1",
+      "timestamp": "2022-03-12T22:23:21Z",
+      "tags": {
+        "golf": "tee",
+        "landuse": "grass",
+        "sport": "golf",
+        "surface": "grass"
+      }
+    },
+    {
+      "id": "osm-way-1039723365",
+      "version": "1",
+      "timestamp": "2022-03-12T22:23:21Z",
+      "tags": {
+        "golf": "fairway",
+        "landuse": "grass",
+        "sport": "golf",
+        "surface": "grass"
+      }
+    },
+    {
+      "id": "osm-way-1039723366",
+      "version": "1",
+      "timestamp": "2022-03-12T22:23:21Z",
+      "tags": {
+        "golf": "tee",
+        "landuse": "grass",
+        "sport": "miniature_golf",
+        "surface": "grass"
+      }
+    },
+    {
+      "id": "osm-way-1039723367",
+      "version": "1",
+      "timestamp": "2022-03-12T22:23:21Z",
+      "tags": {
+        "golf": "tee",
+        "landuse": "grass",
+        "sport": "golf",
+        "surface": "grass"
+      }
+    },
+    {
+      "id": "osm-way-1039723368",
+      "version": "2",
+      "timestamp": "2022-03-13T01:36:49Z",
+      "tags": {
+        "golf": "fairway",
+        "landuse": "grass",
+        "sport": "golf",
+        "surface": "grass"
+      }
+    },
+    {
+      "id": "osm-way-1039723369",
+      "version": "1",
+      "timestamp": "2022-03-12T22:23:21Z",
+      "tags": {
+        "golf": "bunker",
+        "natural": "sand"
+      }
+    },
+    {
+      "id": "osm-way-1039723370",
+      "version": "1",
+      "timestamp": "2022-03-12T22:23:21Z",
+      "tags": {
+        "golf": "bunker",
+        "natural": "sand"
+      }
+    },
+    {
+      "id": "osm-way-1039723371",
+      "version": "1",
+      "timestamp": "2022-03-12T22:23:21Z",
+      "tags": {
+        "golf": "green",
+        "landuse": "grass",
+        "sport": "golf",
+        "surface": "grass"
+      }
+    },
+    {
+      "id": "osm-way-1039734591",
+      "version": "1",
+      "timestamp": "2022-03-12T23:58:39Z",
+      "tags": {
+        "golf": "tee",
+        "landuse": "grass",
+        "sport": "golf",
+        "surface": "grass"
+      }
+    },
+    {
+      "id": "osm-way-1039734592",
+      "version": "1",
+      "timestamp": "2022-03-12T23:58:39Z",
+      "tags": {
+        "golf": "tee",
+        "landuse": "grass",
+        "sport": "golf",
+        "surface": "grass"
+      }
+    },
+    {
+      "id": "osm-way-1039734593",
+      "version": "1",
+      "timestamp": "2022-03-12T23:58:39Z",
+      "tags": {
+        "golf": "fairway",
+        "landuse": "grass",
+        "sport": "golf",
+        "surface": "grass"
+      }
+    },
+    {
+      "id": "osm-way-1039734594",
+      "version": "1",
+      "timestamp": "2022-03-12T23:58:39Z",
+      "tags": {
+        "golf": "bunker",
+        "natural": "sand"
+      }
+    },
+    {
+      "id": "osm-way-1039734595",
+      "version": "1",
+      "timestamp": "2022-03-12T23:58:39Z",
+      "tags": {
+        "golf": "green",
+        "landuse": "grass",
+        "sport": "golf"
+      }
+    },
+    {
+      "id": "osm-way-1039734596",
+      "version": "1",
+      "timestamp": "2022-03-12T23:58:39Z",
+      "tags": {
+        "golf": "tee",
+        "landuse": "grass",
+        "sport": "golf",
+        "surface": "grass"
+      }
+    },
+    {
+      "id": "osm-way-1039734597",
+      "version": "1",
+      "timestamp": "2022-03-12T23:58:39Z",
+      "tags": {
+        "golf": "bunker",
+        "natural": "sand"
+      }
+    },
+    {
+      "id": "osm-way-1039734598",
+      "version": "1",
+      "timestamp": "2022-03-12T23:58:39Z",
+      "tags": {
+        "golf": "bunker",
+        "natural": "sand"
+      }
+    },
+    {
+      "id": "osm-way-1039734599",
+      "version": "2",
+      "timestamp": "2024-08-27T17:58:54Z",
+      "tags": {
+        "golf": "green",
+        "sport": "golf",
+        "surface": "grass"
+      }
+    },
+    {
+      "id": "osm-way-1039734600",
+      "version": "1",
+      "timestamp": "2022-03-12T23:58:39Z",
+      "tags": {
+        "golf": "tee",
+        "landuse": "grass",
+        "sport": "golf",
+        "surface": "grass"
+      }
+    },
+    {
+      "id": "osm-way-1039734601",
+      "version": "1",
+      "timestamp": "2022-03-12T23:58:39Z",
+      "tags": {
+        "golf": "tee",
+        "landuse": "grass",
+        "sport": "golf",
+        "surface": "grass"
+      }
+    },
+    {
+      "id": "osm-way-1039734602",
+      "version": "1",
+      "timestamp": "2022-03-12T23:58:39Z",
+      "tags": {
+        "golf": "tee",
+        "landuse": "grass",
+        "sport": "golf",
+        "surface": "grass"
+      }
+    },
+    {
+      "id": "osm-way-1039734603",
+      "version": "1",
+      "timestamp": "2022-03-12T23:58:39Z",
+      "tags": {
+        "golf": "tee",
+        "landuse": "grass",
+        "sport": "golf",
+        "surface": "grass"
+      }
+    },
+    {
+      "id": "osm-way-1039734604",
+      "version": "1",
+      "timestamp": "2022-03-12T23:58:39Z",
+      "tags": {
+        "golf": "bunker",
+        "natural": "sand"
+      }
+    },
+    {
+      "id": "osm-way-1039734605",
+      "version": "1",
+      "timestamp": "2022-03-12T23:58:39Z",
+      "tags": {
+        "golf": "bunker",
+        "natural": "sand"
+      }
+    },
+    {
+      "id": "osm-way-1039734606",
+      "version": "1",
+      "timestamp": "2022-03-12T23:58:39Z",
+      "tags": {
+        "golf": "green",
+        "landuse": "grass",
+        "sport": "golf",
+        "surface": "grass"
+      }
+    },
+    {
+      "id": "osm-way-1039734607",
+      "version": "1",
+      "timestamp": "2022-03-12T23:58:39Z",
+      "tags": {
+        "golf": "tee",
+        "landuse": "grass",
+        "sport": "golf",
+        "surface": "grass"
+      }
+    },
+    {
+      "id": "osm-way-1039734608",
+      "version": "1",
+      "timestamp": "2022-03-12T23:58:39Z",
+      "tags": {
+        "golf": "green",
+        "landuse": "grass",
+        "sport": "golf",
+        "surface": "grass"
+      }
+    },
+    {
+      "id": "osm-way-1039734609",
+      "version": "1",
+      "timestamp": "2022-03-12T23:58:39Z",
+      "tags": {
+        "golf": "bunker",
+        "natural": "sand"
+      }
+    },
+    {
+      "id": "osm-way-1039734610",
+      "version": "1",
+      "timestamp": "2022-03-12T23:58:39Z",
+      "tags": {
+        "golf": "bunker",
+        "natural": "sand"
+      }
+    },
+    {
+      "id": "osm-way-1039734611",
+      "version": "1",
+      "timestamp": "2022-03-12T23:58:39Z",
+      "tags": {
+        "golf": "tee",
+        "landuse": "grass",
+        "sport": "golf",
+        "surface": "grass"
+      }
+    },
+    {
+      "id": "osm-way-1039734612",
+      "version": "1",
+      "timestamp": "2022-03-12T23:58:39Z",
+      "tags": {
+        "golf": "tee",
+        "landuse": "grass",
+        "sport": "golf",
+        "surface": "grass"
+      }
+    },
+    {
+      "id": "osm-way-1039734613",
+      "version": "1",
+      "timestamp": "2022-03-12T23:58:39Z",
+      "tags": {
+        "golf": "bunker",
+        "natural": "sand"
+      }
+    },
+    {
+      "id": "osm-way-1039734614",
+      "version": "1",
+      "timestamp": "2022-03-12T23:58:39Z",
+      "tags": {
+        "golf": "bunker",
+        "natural": "sand"
+      }
+    },
+    {
+      "id": "osm-way-1039734615",
+      "version": "1",
+      "timestamp": "2022-03-12T23:58:39Z",
+      "tags": {
+        "golf": "tee",
+        "landuse": "grass",
+        "sport": "golf",
+        "surface": "grass"
+      }
+    },
+    {
+      "id": "osm-way-1039734616",
+      "version": "1",
+      "timestamp": "2022-03-12T23:58:39Z",
+      "tags": {
+        "golf": "fairway",
+        "landuse": "grass",
+        "sport": "golf",
+        "surface": "grass"
+      }
+    },
+    {
+      "id": "osm-way-1039734617",
+      "version": "1",
+      "timestamp": "2022-03-12T23:58:39Z",
+      "tags": {
+        "golf": "bunker",
+        "natural": "sand"
+      }
+    },
+    {
+      "id": "osm-way-1039734618",
+      "version": "1",
+      "timestamp": "2022-03-12T23:58:39Z",
+      "tags": {
+        "golf": "green",
+        "landuse": "grass",
+        "sport": "golf",
+        "surface": "grass"
+      }
+    },
+    {
+      "id": "osm-way-1039734619",
+      "version": "1",
+      "timestamp": "2022-03-12T23:58:39Z",
+      "tags": {
+        "golf": "tee",
+        "landuse": "grass",
+        "sport": "golf",
+        "surface": "grass"
+      }
+    },
+    {
+      "id": "osm-way-1039734620",
+      "version": "1",
+      "timestamp": "2022-03-12T23:58:39Z",
+      "tags": {
+        "golf": "bunker",
+        "natural": "sand"
+      }
+    },
+    {
+      "id": "osm-way-1039734621",
+      "version": "1",
+      "timestamp": "2022-03-12T23:58:39Z",
+      "tags": {
+        "golf": "bunker",
+        "natural": "sand"
+      }
+    },
+    {
+      "id": "osm-way-1039734622",
+      "version": "1",
+      "timestamp": "2022-03-12T23:58:39Z",
+      "tags": {
+        "golf": "green",
+        "landuse": "grass",
+        "sport": "golf",
+        "surface": "grass"
+      }
+    },
+    {
+      "id": "osm-way-1039734623",
+      "version": "1",
+      "timestamp": "2022-03-12T23:58:39Z",
+      "tags": {
+        "golf": "tee",
+        "landuse": "grass",
+        "sport": "golf",
+        "surface": "grass"
+      }
+    },
+    {
+      "id": "osm-way-1039734624",
+      "version": "1",
+      "timestamp": "2022-03-12T23:58:39Z",
+      "tags": {
+        "golf": "tee",
+        "landuse": "grass",
+        "sport": "golf",
+        "surface": "grass"
+      }
+    },
+    {
+      "id": "osm-way-1039734625",
+      "version": "1",
+      "timestamp": "2022-03-12T23:58:39Z",
+      "tags": {
+        "golf": "green",
+        "landuse": "grass",
+        "sport": "golf",
+        "surface": "grass"
+      }
+    },
+    {
+      "id": "osm-way-1039734626",
+      "version": "1",
+      "timestamp": "2022-03-12T23:58:39Z",
+      "tags": {
+        "golf": "bunker",
+        "natural": "sand"
+      }
+    },
+    {
+      "id": "osm-way-1039734627",
+      "version": "1",
+      "timestamp": "2022-03-12T23:58:39Z",
+      "tags": {
+        "golf": "bunker",
+        "natural": "sand"
+      }
+    },
+    {
+      "id": "osm-way-1039734629",
+      "version": "1",
+      "timestamp": "2022-03-12T23:58:39Z",
+      "tags": {
+        "golf": "tee",
+        "landuse": "grass",
+        "sport": "golf",
+        "surface": "grass"
+      }
+    },
+    {
+      "id": "osm-way-1039734630",
+      "version": "1",
+      "timestamp": "2022-03-12T23:58:39Z",
+      "tags": {
+        "golf": "green",
+        "landuse": "grass",
+        "sport": "golf",
+        "surface": "grass"
+      }
+    },
+    {
+      "id": "osm-way-1039734631",
+      "version": "1",
+      "timestamp": "2022-03-12T23:58:39Z",
+      "tags": {
+        "golf": "tee",
+        "landuse": "grass",
+        "sport": "golf",
+        "surface": "grass"
+      }
+    },
+    {
+      "id": "osm-way-1039734634",
+      "version": "1",
+      "timestamp": "2022-03-12T23:58:39Z",
+      "tags": {
+        "golf": "green",
+        "landuse": "grass",
+        "sport": "golf",
+        "surface": "grass"
+      }
+    },
+    {
+      "id": "osm-way-1039746150",
+      "version": "1",
+      "timestamp": "2022-03-13T01:36:49Z",
+      "tags": {
+        "leaf_type": "mixed",
+        "natural": "wood"
+      }
+    },
+    {
+      "id": "osm-way-1039746151",
+      "version": "1",
+      "timestamp": "2022-03-13T01:36:49Z",
+      "tags": {
+        "natural": "wood"
+      }
+    },
+    {
+      "id": "osm-way-1316519494",
+      "version": "1",
+      "timestamp": "2024-09-18T21:35:35Z",
+      "tags": {
+        "natural": "wood"
+      }
+    },
+    {
+      "id": "osm-way-1316519495",
+      "version": "2",
+      "timestamp": "2024-12-26T15:54:32Z",
+      "tags": {
+        "natural": "wood"
+      }
+    },
+    {
+      "id": "osm-way-1425956576",
+      "version": "2",
+      "timestamp": "2026-07-20T23:52:29Z",
+      "tags": {
+        "natural": "wood"
+      }
+    },
+    {
+      "id": "osm-way-1425956577",
+      "version": "1",
+      "timestamp": "2025-08-30T01:02:19Z",
+      "tags": {
+        "natural": "wood"
+      }
+    },
+    {
+      "id": "osm-way-1425956578",
+      "version": "1",
+      "timestamp": "2025-08-30T01:02:19Z",
+      "tags": {
+        "natural": "wood"
+      }
+    },
+    {
+      "id": "osm-relation-14063523",
+      "version": "1",
+      "timestamp": "2022-04-21T16:44:35Z",
+      "tags": {
+        "golf": "fairway",
+        "landuse": "grass",
+        "sport": "golf",
+        "surface": "grass",
+        "type": "multipolygon"
+      }
+    },
+    {
+      "id": "osm-relation-14063524",
+      "version": "1",
+      "timestamp": "2022-04-21T16:44:35Z",
+      "tags": {
+        "golf": "fairway",
+        "landuse": "grass",
+        "type": "multipolygon"
+      }
+    }
+  ]
+}

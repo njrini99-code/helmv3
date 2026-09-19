@@ -1,5 +1,34 @@
 # Shot Tracking change ledger
 
+## 2026-09-15 — real-course source-study and GLB compiler spike
+
+- Added bounded NC OneMap native-grid orthophoto acquisition with an explicit
+  four-band analysis quality gate and an honestly labelled RGB visual fallback.
+- Added canonical local-metre study normalization and an offline Blender 5.2
+  static-GLB compiler/import round-trip validator. The artifacts remain local
+  source candidates; they do not bind Cardinal's unassigned green complex to a
+  round or change shot reconstruction, scoring, database state or production
+  asset delivery.
+- Refined static source-surface export so long polygons are tessellated and
+  sampled against the same LiDAR mesh, avoiding false terrain-intersection
+  gaps; added a distinct tee material role and a clipped, tactical review
+  camera. No live renderer, score, or round-data path changed.
+- Added the offline `golfhelm-physical-world-v1` compiler boundary. It carries
+  metric terrain plus semantic surfaces and feature-specific permitted and
+  forbidden claims into Blender, preserving the distinction between a mapped
+  bunker footprint and a measured bunker cavity, and between macro terrain on
+  a green and a putting-break surface.
+- Added a source-truth gate and four explicit world truth classes: measured,
+  derived, estimated, and visual-only. A failed geometry source gate blocks
+  authoritative physical publication, while still allowing an honestly scoped
+  visual review scene. It requires reviewed tee, fairway, green, bunker,
+  water, and distance-route evidence before a hole is physically ready.
+- Guarded the terrain compiler's cell cuts against a GEOS float-overlay
+  failure: a zero-area collinear sliver part in a surround band made
+  `intersection` return the whole 2m cell, so area conservation failed by
+  exactly one cell (Peek'n Peak hole 5). Cut parts whose interior point the
+  region does not cover are rejected; existing Cacapon artifacts are unchanged.
+
 ## 2026-08-22 — distinguish a real fallback from a confirmed snapshot
 
 - SHA: `48b41e1c4d8c86f12f5a2becd11454f5bd3899e2`.
@@ -986,6 +1015,46 @@
 - Verification: every edited file was adversarially re-verified against
   its page's source, twice for the files that failed the first pass.
   typecheck 0, lint 0, build 0.
+
+## 2026-09-15 — terrain source units are explicit before shot-map compilation
+
+- Added a bounded NC OneMap DEM03 acquisition path for course studies. It
+  preserves the native 3.125 US-survey-foot LiDAR-derived bare-earth grid,
+  records exact source bounds and hashes, retains the raw F32 TIFF, and marks
+  an absent vertical datum as unknown rather than inferring NAVD88.
+- The terrain compiler now converts source heights only through a declared
+  `verticalUnitToMeters` manifest value. Existing locked USGS 1m caches retain
+  their known meter compatibility; an unrecognized legacy source without an
+  explicit conversion is rejected. No round, shot, course-library, or
+  production database record is written by this tooling.
+- The Cardinal remains an unassigned source study until its tee, route, green,
+  and played-hole identity are reviewed together; LiDAR acquisition is not
+  permission to invent or bind that geometry.
+- Built Peek'n Peak Upper as a full 18-hole local fixture: retained Overpass
+  extract and package, coverage-checked USGS 1m terrain, compiled per-hole
+  meshes, per-hole study/physical-world/truth-gate/GLB chain, and fixture
+  harness selection by `?course=`. The terrain compiler now decodes rasters
+  with GDAL and rejects a catalog tile whose locked export is empty fill over
+  the course (the PA project tile stops at the state line), recording the
+  rejection in the immutable source manifest. The truth gate reports every
+  hole of a whole-course package instead of refusing it. All Peek'n Peak
+  gates fail honestly on unreviewed OSM boundaries; nothing is published or
+  bound to a round.
+- Peek'n Peak Upper now carries derived canopy: NAIP four-band imagery
+  classified into per-hole canopy groups with a recorded method and raster
+  hash, merged as reviewed woods features that bound crown artwork only and
+  never size the study grid. Crown rendering shares one budget across groups,
+  favours crowns nearest the played hole, and swaps near-detail crowns in only
+  around the camera focus. The fixture harness gained a local play-through
+  mode (`?play=1`) that drives the real shot-tracking screen hole by hole with
+  browser-only persistence. No round, statistic, or production record is
+  written; all truth gates still fail on unreviewed boundaries.
+- Peek'n Peak review products: a per-hole NAIP imagery dossier with bunker
+  sand agreement and a contact sheet, an imagery-traced fairway candidate for
+  hole 11 (unreviewed, ±10 m, hole stays partial), a terrain source manifest
+  that records each package hash it serves without replacing the raster, a
+  restrained "Green" reference flag on scenes without an estimated pin, and a
+  quieter 3D forest floor and water tone. No gate passes on any of it.
 
 ## 2026-09-15 — single phone no longer falsely blocked as "updated on another device"
 

@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "provider": "OpenStreetMap via Overpass API",
+  "endpoint": "https://overpass-api.de/api/interpreter",
+  "query": "[out:json][timeout:120];(way[\"golf\"](42.048,-79.76,42.073,-79.733);way[\"natural\"=\"water\"](42.048,-79.76,42.073,-79.733);way[\"leisure\"=\"golf_course\"](42.048,-79.76,42.073,-79.733););out geom;",
+  "bboxWgs84": [
+    -79.76,
+    42.048,
+    -79.733,
+    42.073
+  ],
+  "siteId": "osm-way-136097904",
+  "course": "Peek’n Peak Resort — Upper Course",
+  "retrievedAt": "2026-09-15",
+  "osm3sTimestamp": "2026-09-15T23:20:58Z",
+  "elementCount": 276,
+  "uncompressedSha256": "9157785a781c7d30cf2da16a36631731ad9754686649c520a77bd4da7cad5721",
+  "uncompressedBytes": 563475,
+  "file": "overpass.json.gz",
+  "licenseId": "ODbL-1.0",
+  "attribution": "© OpenStreetMap contributors · ODbL 1.0",
+  "licenseUrl": "https://www.openstreetmap.org/copyright"
+}

@@ -34,7 +34,8 @@
  * big enough" (264/300 → 300/360; putting zoom 148px → 172px).
  * ========================================================================== */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type { ContextLayer } from '@/lib/golf/course-geometry/context-layer';
 import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
@@ -48,10 +49,18 @@ import type { Lie } from '@/components/golf/coachhelm/v3/HoleShotPath/types';
 // both the emptiness check (does this hole even have a putting zoom?) and
 // the `PuttingZoom` panel itself, instead of each side re-deriving it.
 import { plotHole } from '@/components/golf/coachhelm/v3/HoleShotPath/geometry';
+import type { CourseGeometryPackage, HoleScene } from '@/lib/golf/course-geometry/types';
+import { normalizePersistedShot, recordedDistance } from '@/lib/golf/course-geometry/normalize';
+import { buildHoleScene } from '@/lib/golf/course-geometry/build-scene';
+import { describePosition } from '@/lib/golf/course-geometry/describe-position';
+import type { TerrainMesh } from '@/lib/golf/course-geometry/terrain';
+import { Button } from '@/components/fairway/controls/button';
 import type { ReviewGrade } from './buildReviewViewModel';
 import { formatHoleDetail, formatToPar } from './buildReviewViewModel';
 import {
   fetchPlayerPuttMakePct,
+  bandForPuttFeet,
+  puttMakePctBandLabel,
   type ReviewShotInput,
   type PuttMakePctByBand,
 } from './round-review-shots';
@@ -75,9 +84,9 @@ const HoleShotPath = dynamic(
   },
 );
 
-// The putting-green zoom — its own side panel now (2026-07-22 redesign),
-// never a lens crammed inside the main track box. Same code-splitting
-// rationale as `HoleShotPath` above.
+// The putting-green zoom — its own side panel (2026-07-22 redesign) in the
+// legacy layout below, which every round without course geometry still gets.
+// Same code-splitting rationale as `HoleShotPath` above.
 const PuttingZoom = dynamic(
   () => import('@/components/golf/coachhelm/v3/HoleShotPath').then((mod) => mod.PuttingZoom),
   {
@@ -218,6 +227,10 @@ export interface ReviewHoleMeta {
 }
 
 export interface ReviewHeroProps {
+  geometry?: { package: CourseGeometryPackage; holeKeys: readonly string[]; terrainByHole?: Readonly<Record<string, TerrainMesh>>; contextLayer?: ContextLayer };
+  /** Reports which hole's detail is open (null when closed), so the caller
+   * can bring in that hole's terrain without holding every mesh resident. */
+  onOpenHoleChange?: (holeNumber: number | null) => void;
   totalScore: number;
   scoreToPar: number;
   courseDateLine: string;
@@ -239,6 +252,8 @@ export interface ReviewHeroProps {
 }
 
 export function ReviewHero({
+  geometry,
+  onOpenHoleChange,
   totalScore,
   scoreToPar,
   courseDateLine,
@@ -258,8 +273,24 @@ export function ReviewHero({
     return Number.isFinite(n) ? n : null;
   }, [searchParams]);
 
+  const [selectedShot, setSelectedShot] = useState<{ hole: number; number: number } | null>(null);
   const [activeHole, setActiveHole] = useState<number | null>(initialHole);
   const [openHole, setOpenHole] = useState<number | null>(initialHole);
+  // The caller learns which hole is open through a ref'd callback, so a
+  // caller that re-creates the function per render cannot spin this effect.
+  const onOpenHoleChangeRef = useRef(onOpenHoleChange);
+  onOpenHoleChangeRef.current = onOpenHoleChange;
+  useEffect(() => { onOpenHoleChangeRef.current?.(openHole); }, [openHole]);
+  const detailRef = useRef<HTMLDivElement>(null);
+  const [detailScrollRequest, setDetailScrollRequest] = useState(0);
+  useEffect(() => {
+    if (!detailScrollRequest) return;
+    // Only a deliberate hole/shot activation moves the page. Desktop hover
+    // and focus scrubbing keep the filmstrip still and preserve keyboard use.
+    const frame = requestAnimationFrame(() => detailRef.current?.scrollIntoView({ block: 'start',
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' }));
+    return () => cancelAnimationFrame(frame);
+  }, [detailScrollRequest]);
 
   // If the round changes under us (navigating between reviews without a full
   // remount), drop any stale open-hole state from the previous round.
@@ -324,18 +355,41 @@ export function ReviewHero({
     } else {
       setOpenHole(activeHole);
       setHoleParam(activeHole);
+      if (courseFramed) setDetailScrollRequest(request => request + 1);
     }
   }
 
   const openMeta = openHole != null ? holeMeta.get(openHole) : undefined;
   const openPar = openMeta?.par === 3 || openMeta?.par === 4 || openMeta?.par === 5 ? openMeta.par : undefined;
 
-  // Computed once per open hole, shared by the putting-zoom panel AND the
-  // "does this hole even have one" check below — see the import comment.
+  // The course-framed review (HoleSceneFrame, shot selector, position copy)
+  // exists only for a round whose caller supplied course geometry — the
+  // review page does so for a Peek'n Peak Upper round (`useCourseGeometry`,
+  // plan §unlock 3) — and a round without geometry
+  // must keep the review it has today: the legacy shot path, putting zoom and
+  // shot list — never "Course outline unavailable" on every hole of every team.
+  const courseFramed = geometry != null;
+  const scenesByHole = useMemo(() => {
+    const map = new Map<number, HoleScene>();
+    if (!geometry) return map;
+    geometry.holeKeys.forEach((key, index) => {
+      const ledger = (shotsByHole?.get(index + 1) ?? []).map(shot => normalizePersistedShot({ ...shot, putt_details: { miss_tags: shot.miss_tags } }));
+      try { map.set(index + 1, buildHoleScene(geometry.package, key, ledger, geometry.terrainByHole?.[key], geometry.contextLayer)); }
+      catch { /* Optional geometry cannot block review. */ }
+    });
+    return map;
+  }, [geometry, shotsByHole]);
+  const evidence = useMemo(() => (openHoleShots ?? []).map(shot => normalizePersistedShot({ ...shot, putt_details: { miss_tags: shot.miss_tags } })), [openHoleShots]);
+  const selected = evidence.find(e => selectedShot?.hole === openHole && e.shotNumber === selectedShot.number) ?? evidence[0];
+  const selectedView = selected?.shotType === 'putting' ? 'putting' :
+    selected?.shotType === 'around_green' || (selected?.after.valueM != null && selected.after.valueM <= 45.72) ? 'green' : 'hole';
+  const seasonBand = selected?.shotType === 'putting' && selected.before.valueM != null ? bandForPuttFeet(selected.before.valueM / .3048) : null;
+  // Legacy layout: computed once per open hole, shared by the putting-zoom
+  // panel AND the "does this hole even have one" check — see the import comment.
   const openPlot = useMemo(() => {
-    if (!openHoleShots || openHoleShots.length === 0) return null;
+    if (courseFramed || !openHoleShots || openHoleShots.length === 0) return null;
     return plotHole({ shots: openHoleShots, par: openPar, yardage: openMeta?.yardage ?? null });
-  }, [openHoleShots, openPar, openMeta]);
+  }, [courseFramed, openHoleShots, openPar, openMeta]);
   const hasPuttingZoom = (openPlot?.greenInset.shots.length ?? 0) > 0;
 
   // Per-hole "expected vs actual" narrative (Wave D) — the open hole's SG
@@ -394,7 +448,10 @@ export function ReviewHero({
           holes={filmstripHoles}
           activeHole={activeHole ?? undefined}
           onScrub={handleScrub}
+          onSelectHole={courseFramed ? hole => { if ((shotsByHole?.get(hole.n)?.length ?? 0) > 0) setDetailScrollRequest(request => request + 1); } : undefined}
           shotsByHole={shotsByHole}
+          scenesByHole={courseFramed ? scenesByHole : undefined}
+          bounded={courseFramed}
         />
         <div className="mt-3 min-h-[40px] border-t border-border-subtle pt-3">
           {detail ? (
@@ -421,11 +478,11 @@ export function ReviewHero({
       </div>
 
       {openHole != null && openHoleShots && openHoleShots.length > 0 ? (
-        <div className="min-w-0 border-t border-border-subtle bg-surface-tint p-4 sm:col-span-2 sm:p-5">
+        <div ref={detailRef} className="min-w-0 scroll-mt-20 border-t border-border-subtle bg-surface-tint p-4 sm:col-span-2 sm:p-5">
           <div className="flex min-w-0 items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="font-fw-display text-body-lg font-semibold text-text-primary">Hole {openHole} shot path</p>
-              <p className="mt-1 font-fw-sans text-caption text-text-tertiary">Hover or focus a numbered shot to inspect it.</p>
+              <p className="mt-1 font-fw-sans text-caption text-text-tertiary">{courseFramed ? 'Select a recorded shot to inspect its distances and course context.' : 'Hover or focus a numbered shot to inspect it.'}</p>
               {/* Per-hole "expected vs actual" narrative (Wave D) — one
                   honest Strokes-Gained sentence, e.g. "Lost 2.1 strokes
                   here — 1.1 off the tee, 1.0 putting." Omitted entirely
@@ -444,7 +501,37 @@ export function ReviewHero({
             </PressTarget>
           </div>
 
-          {/* The STAR diagram (col 1) + a slim companion column (col 2:
+          {courseFramed ? <div className="mt-3 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(240px,.85fr)] lg:items-start">
+            <HoleShotPath hole_number={openHole} par={openPar} yardage={openMeta?.yardage ?? null}
+              score={openMeta?.score ?? null} shots={openHoleShots} size="review" bounded
+              scene={scenesByHole.get(openHole)} evidence={evidence} defaultView={selectedView} selectedShotNumber={selected?.shotNumber} />
+            <div className="min-w-0 space-y-3">
+              <div role="group" aria-label="Recorded shots" className="flex flex-wrap gap-1">
+                {evidence.map(e => <Button key={e.eventKey} size="sm" variant={selected?.eventKey === e.eventKey ? 'secondary' : 'ghost'}
+                  aria-label={e.penalty ? `Penalty ${e.shotNumber}` : `Shot ${e.shotNumber}`} className="h-11 min-w-11 px-3" aria-pressed={selected?.eventKey === e.eventKey} onClick={() => { setSelectedShot({ hole: openHole, number: e.shotNumber }); setDetailScrollRequest(request => request + 1); }}>
+                  {e.penalty ? `P${e.shotNumber}` : e.shotNumber}
+                </Button>)}
+              </div>
+              {selected && <div key={selected.eventKey} className="fw-course-evidence-enter rounded-fw-md border border-border-subtle bg-surface p-4 font-fw-sans" data-slot="selected-shot-explanation" aria-live="polite">
+                <p className="text-body-sm font-semibold text-text-primary">Shot {selected.shotNumber} · <span className="capitalize">{(selected.shotType ?? 'Shot').replaceAll('_', ' ')}</span></p>
+                <p className="mt-1 text-body-sm text-text-primary"><span className="capitalize">{selected.result ?? selected.lieAfter ?? 'Result unknown'}</span> · {recordedDistance(selected.after)} remaining</p>
+                <p className="mt-1 text-caption text-text-secondary">{recordedDistance(selected.before)} before{selected.rawMiss ? ` · ${selected.rawMiss.replaceAll('_', ' ')}` : ''}</p>
+                <p className="mt-2 text-caption text-text-secondary">{describePosition(scenesByHole.get(openHole), selected).detail}</p>
+                {selected.shotType === 'putting' && <p className="mt-2 text-caption text-text-secondary">{[selected.putt.break, selected.putt.slope, ...selected.putt.tags].filter(Boolean).join(' · ').replaceAll('_', ' ')}</p>}
+                {seasonBand && puttMakePct && <p className="mt-2 text-caption text-text-secondary">{puttMakePct[seasonBand] == null ? `Your season: no ${puttMakePctBandLabel(seasonBand)} putts logged yet` : `Your season: ~${Math.round(puttMakePct[seasonBand])}% from ${puttMakePctBandLabel(seasonBand)}`}</p>}
+              </div>}
+              <details className="text-caption text-text-secondary">
+                <summary className="cursor-pointer py-2">All recorded shots</summary>
+                <ol className="divide-y divide-border-subtle">
+                  {openHoleShots.map((shot, index) => {
+                    const row = describeShotRow(openHoleShots, index);
+                    return <li key={`${shot.shot_number}-${index}`} className="py-2">{shot.shot_number} · {row.transition} · {row.distance}{row.isPenalty ? ' · Penalty' : ''}</li>;
+                  })}
+                </ol>
+              </details>
+            </div>
+          </div> : (
+          /* The STAR diagram (col 1) + a slim companion column (col 2:
               putting-zoom, then the compact shot list) — 2026-07-22
               redesign per Nick's verbatim feedback ("markers hard to see",
               "result vs yardage so far apart", "make it bigger, put the
@@ -453,7 +540,7 @@ export function ReviewHero({
               stretching/shrinking with its neighbors; collapses to one
               column below `lg` — diagram, then putting zoom, then the list,
               each centered until `lg` re-introduces the side-by-side row
-              and left-aligns col 1. */}
+              and left-aligns col 1. */
           <div className="mt-4 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,360px)_minmax(0,1fr)] lg:items-start">
             <HoleShotPath
               // Remounts on every scrubbed hole change — the fresh mount is
@@ -525,6 +612,7 @@ export function ReviewHero({
               </ol>
             </div>
           </div>
+          )}
         </div>
       ) : null}
     </div>

@@ -1,0 +1,867 @@
+{
+  "schemaVersion": 1,
+  "kind": "golfhelm-imagery-review-v1",
+  "siteId": "osm-way-136097904",
+  "packageHash": "fdec6ea8467dd214372bde680e7b7f9236c06ad5d27bb5ddeadf8ed5e9d3f87a",
+  "imagery": {
+    "provider": "USDA NAIP via FPAC conus_naip ImageServer",
+    "catalogTiles": [
+      "m_4207958_NE_18_60_20240824",
+      "m_4207958_SE_18_60_20240824",
+      "m_4207958_ne_17_060_20240524",
+      "m_4207958_se_17_060_20240524",
+      "m_4207959_nw_17_060_20240524",
+      "m_4207959_sw_17_060_20240524"
+    ],
+    "capturedAt": [
+      "20240524",
+      "20240824"
+    ],
+    "rasterSha256": "9d01248d88b76b98d9e67774e118732c280b612f1a6858129951d46196650f05",
+    "nativeResolutionM": 0.6
+  },
+  "method": {
+    "sandBrightnessMin": 140,
+    "sandNdviMax": 0.12,
+    "sandWarmthMin": 12,
+    "outsideRingPx": 6,
+    "lowSandShare": 0.35,
+    "overlayScale": 3,
+    "marginPx": 50
+  },
+  "meaning": "Sand shares compare each OSM bunker polygon with bright low-NDVI pixels in leaf-on NAIP. A low inside share or a large unclaimed blob flags a polygon for human review; shadow, canopy, dry turf and roofs also read as bright or dark. Nothing here moves a polygon, passes a truth gate, or classifies a rules penalty area.",
+  "generatedAt": "2026-09-16",
+  "holes": [
+    {
+      "holeKey": "peek-n-peak-upper-01",
+      "ordinal": 1,
+      "completeness": "partial",
+      "features": {
+        "fairway": 1,
+        "green": 1,
+        "bunker": 2,
+        "tee": 2,
+        "water": 2,
+        "route": 1,
+        "woods": 13
+      },
+      "bunkers": [
+        {
+          "featureId": "osm-way-746146115",
+          "areaM2": 183,
+          "sandShareInside": 0.825,
+          "sandShareOutsideRing": 0.171
+        },
+        {
+          "featureId": "osm-way-746146116",
+          "areaM2": 128,
+          "sandShareInside": 0.828,
+          "sandShareOutsideRing": 0.218
+        }
+      ],
+      "routeShareInsideMappedSurfaces": 0.528,
+      "traced": [],
+      "unclaimedSandBlobsM2": [
+        163,
+        86,
+        84,
+        44,
+        43,
+        41,
+        35,
+        35,
+        29,
+        28,
+        27,
+        25
+      ],
+      "overlay": "peek-n-peak-upper-01-naip-overlay.png"
+    },
+    {
+      "holeKey": "peek-n-peak-upper-02",
+      "ordinal": 2,
+      "completeness": "partial",
+      "features": {
+        "fairway": 1,
+        "green": 1,
+        "bunker": 5,
+        "tee": 1,
+        "route": 1,
+        "woods": 15
+      },
+      "bunkers": [
+        {
+          "featureId": "osm-way-746269617",
+          "areaM2": 191,
+          "sandShareInside": 0.853,
+          "sandShareOutsideRing": 0.05
+        },
+        {
+          "featureId": "osm-way-746269619",
+          "areaM2": 198,
+          "sandShareInside": 0.808,
+          "sandShareOutsideRing": 0.03
+        },
+        {
+          "featureId": "osm-way-746269620",
+          "areaM2": 391,
+          "sandShareInside": 0.862,
+          "sandShareOutsideRing": 0.065
+        },
+        {
+          "featureId": "osm-way-746269621",
+          "areaM2": 241,
+          "sandShareInside": 0.826,
+          "sandShareOutsideRing": 0.06
+        },
+        {
+          "featureId": "osm-way-746269622",
+          "areaM2": 124,
+          "sandShareInside": 0.766,
+          "sandShareOutsideRing": 0.079
+        }
+      ],
+      "routeShareInsideMappedSurfaces": 0.495,
+      "traced": [],
+      "unclaimedSandBlobsM2": [
+        5622,
+        1114,
+        650,
+        314,
+        225,
+        216,
+        187,
+        169,
+        166,
+        162,
+        125,
+        90
+      ],
+      "overlay": "peek-n-peak-upper-02-naip-overlay.png"
+    },
+    {
+      "holeKey": "peek-n-peak-upper-03",
+      "ordinal": 3,
+      "completeness": "partial",
+      "features": {
+        "fairway": 1,
+        "green": 1,
+        "bunker": 2,
+        "tee": 4,
+        "water": 1,
+        "route": 1,
+        "woods": 7
+      },
+      "bunkers": [
+        {
+          "featureId": "osm-way-746269630",
+          "areaM2": 130,
+          "sandShareInside": 0.808,
+          "sandShareOutsideRing": 0.051
+        },
+        {
+          "featureId": "osm-way-746269631",
+          "areaM2": 148,
+          "sandShareInside": 0.73,
+          "sandShareOutsideRing": 0.157
+        }
+      ],
+      "routeShareInsideMappedSurfaces": 0.261,
+      "traced": [],
+      "unclaimedSandBlobsM2": [
+        233,
+        207,
+        184,
+        168,
+        144,
+        120,
+        119,
+        107,
+        106
+      ],
+      "overlay": "peek-n-peak-upper-03-naip-overlay.png"
+    },
+    {
+      "holeKey": "peek-n-peak-upper-04",
+      "ordinal": 4,
+      "completeness": "partial",
+      "features": {
+        "fairway": 1,
+        "green": 1,
+        "bunker": 4,
+        "tee": 2,
+        "route": 1,
+        "woods": 7
+      },
+      "bunkers": [
+        {
+          "featureId": "osm-way-746269639",
+          "areaM2": 295,
+          "sandShareInside": 0.766,
+          "sandShareOutsideRing": 0.079
+        },
+        {
+          "featureId": "osm-way-746269642",
+          "areaM2": 133,
+          "sandShareInside": 0.647,
+          "sandShareOutsideRing": 0.07
+        },
+        {
+          "featureId": "osm-way-746269643",
+          "areaM2": 172,
+          "sandShareInside": 0.703,
+          "sandShareOutsideRing": 0.068
+        },
+        {
+          "featureId": "osm-way-746269644",
+          "areaM2": 216,
+          "sandShareInside": 0.194,
+          "sandShareOutsideRing": 0.058
+        }
+      ],
+      "routeShareInsideMappedSurfaces": 0.423,
+      "traced": [],
+      "unclaimedSandBlobsM2": [
+        6048,
+        211,
+        55
+      ],
+      "overlay": "peek-n-peak-upper-04-naip-overlay.png"
+    },
+    {
+      "holeKey": "peek-n-peak-upper-05",
+      "ordinal": 5,
+      "completeness": "partial",
+      "features": {
+        "fairway": 1,
+        "green": 1,
+        "bunker": 1,
+        "tee": 1,
+        "route": 1,
+        "woods": 1
+      },
+      "bunkers": [
+        {
+          "featureId": "osm-way-746146130",
+          "areaM2": 134,
+          "sandShareInside": 0.776,
+          "sandShareOutsideRing": 0.044
+        }
+      ],
+      "routeShareInsideMappedSurfaces": 0.227,
+      "traced": [],
+      "unclaimedSandBlobsM2": [
+        144,
+        97,
+        47
+      ],
+      "overlay": "peek-n-peak-upper-05-naip-overlay.png"
+    },
+    {
+      "holeKey": "peek-n-peak-upper-06",
+      "ordinal": 6,
+      "completeness": "partial",
+      "features": {
+        "fairway": 1,
+        "green": 1,
+        "bunker": 3,
+        "tee": 2,
+        "route": 1,
+        "woods": 5
+      },
+      "bunkers": [
+        {
+          "featureId": "osm-way-746269653",
+          "areaM2": 536,
+          "sandShareInside": 0.828,
+          "sandShareOutsideRing": 0.046
+        },
+        {
+          "featureId": "osm-way-746269655",
+          "areaM2": 107,
+          "sandShareInside": 0.252,
+          "sandShareOutsideRing": 0.0
+        },
+        {
+          "featureId": "osm-way-746269656",
+          "areaM2": 221,
+          "sandShareInside": 0.819,
+          "sandShareOutsideRing": 0.033
+        }
+      ],
+      "routeShareInsideMappedSurfaces": 0.532,
+      "traced": [],
+      "unclaimedSandBlobsM2": [
+        253,
+        211,
+        97,
+        55,
+        51,
+        29
+      ],
+      "overlay": "peek-n-peak-upper-06-naip-overlay.png"
+    },
+    {
+      "holeKey": "peek-n-peak-upper-07",
+      "ordinal": 7,
+      "completeness": "partial",
+      "features": {
+        "fairway": 1,
+        "green": 1,
+        "bunker": 6,
+        "tee": 2,
+        "route": 1,
+        "woods": 9
+      },
+      "bunkers": [
+        {
+          "featureId": "osm-way-746269664",
+          "areaM2": 142,
+          "sandShareInside": 0.803,
+          "sandShareOutsideRing": 0.038
+        },
+        {
+          "featureId": "osm-way-746269665",
+          "areaM2": 187,
+          "sandShareInside": 0.818,
+          "sandShareOutsideRing": 0.06
+        },
+        {
+          "featureId": "osm-way-746269666",
+          "areaM2": 270,
+          "sandShareInside": 0.626,
+          "sandShareOutsideRing": 0.138
+        },
+        {
+          "featureId": "osm-way-746269667",
+          "areaM2": 219,
+          "sandShareInside": 0.685,
+          "sandShareOutsideRing": 0.099
+        },
+        {
+          "featureId": "osm-way-746269668",
+          "areaM2": 124,
+          "sandShareInside": 0.573,
+          "sandShareOutsideRing": 0.133
+        },
+        {
+          "featureId": "osm-way-746269669",
+          "areaM2": 242,
+          "sandShareInside": 0.752,
+          "sandShareOutsideRing": 0.072
+        }
+      ],
+      "routeShareInsideMappedSurfaces": 0.472,
+      "traced": [],
+      "unclaimedSandBlobsM2": [
+        190,
+        123,
+        120,
+        55,
+        31
+      ],
+      "overlay": "peek-n-peak-upper-07-naip-overlay.png"
+    },
+    {
+      "holeKey": "peek-n-peak-upper-08",
+      "ordinal": 8,
+      "completeness": "partial",
+      "features": {
+        "fairway": 1,
+        "green": 1,
+        "bunker": 6,
+        "tee": 3,
+        "route": 1,
+        "woods": 15
+      },
+      "bunkers": [
+        {
+          "featureId": "osm-way-746269618",
+          "areaM2": 126,
+          "sandShareInside": 0.857,
+          "sandShareOutsideRing": 0.08
+        },
+        {
+          "featureId": "osm-way-746365974",
+          "areaM2": 203,
+          "sandShareInside": 0.788,
+          "sandShareOutsideRing": 0.017
+        },
+        {
+          "featureId": "osm-way-746365975",
+          "areaM2": 273,
+          "sandShareInside": 0.707,
+          "sandShareOutsideRing": 0.081
+        },
+        {
+          "featureId": "osm-way-746365977",
+          "areaM2": 168,
+          "sandShareInside": 0.554,
+          "sandShareOutsideRing": 0.026
+        },
+        {
+          "featureId": "osm-way-746365978",
+          "areaM2": 265,
+          "sandShareInside": 0.875,
+          "sandShareOutsideRing": 0.008
+        },
+        {
+          "featureId": "osm-way-746365979",
+          "areaM2": 150,
+          "sandShareInside": 0.693,
+          "sandShareOutsideRing": 0.019
+        }
+      ],
+      "routeShareInsideMappedSurfaces": 0.415,
+      "traced": [],
+      "unclaimedSandBlobsM2": [
+        784,
+        700,
+        373,
+        221,
+        187,
+        184,
+        181,
+        179,
+        168,
+        167,
+        130,
+        111
+      ],
+      "overlay": "peek-n-peak-upper-08-naip-overlay.png"
+    },
+    {
+      "holeKey": "peek-n-peak-upper-09",
+      "ordinal": 9,
+      "completeness": "partial",
+      "features": {
+        "fairway": 1,
+        "green": 1,
+        "bunker": 2,
+        "tee": 2,
+        "water": 1,
+        "route": 1,
+        "woods": 16
+      },
+      "bunkers": [
+        {
+          "featureId": "osm-way-746365987",
+          "areaM2": 430,
+          "sandShareInside": 0.195,
+          "sandShareOutsideRing": 0.013
+        },
+        {
+          "featureId": "osm-way-746365988",
+          "areaM2": 155,
+          "sandShareInside": 0.277,
+          "sandShareOutsideRing": 0.012
+        }
+      ],
+      "routeShareInsideMappedSurfaces": 0.741,
+      "traced": [],
+      "unclaimedSandBlobsM2": [
+        302,
+        84,
+        44,
+        43,
+        35,
+        35,
+        29,
+        28,
+        28,
+        27,
+        25
+      ],
+      "overlay": "peek-n-peak-upper-09-naip-overlay.png"
+    },
+    {
+      "holeKey": "peek-n-peak-upper-10",
+      "ordinal": 10,
+      "completeness": "partial",
+      "features": {
+        "fairway": 2,
+        "green": 1,
+        "bunker": 3,
+        "tee": 2,
+        "route": 1,
+        "woods": 7
+      },
+      "bunkers": [
+        {
+          "featureId": "osm-way-746365999",
+          "areaM2": 582,
+          "sandShareInside": 0.368,
+          "sandShareOutsideRing": 0.033
+        },
+        {
+          "featureId": "osm-way-746366001",
+          "areaM2": 155,
+          "sandShareInside": 0.284,
+          "sandShareOutsideRing": 0.026
+        },
+        {
+          "featureId": "osm-way-746366002",
+          "areaM2": 203,
+          "sandShareInside": 0.197,
+          "sandShareOutsideRing": 0.021
+        }
+      ],
+      "routeShareInsideMappedSurfaces": 0.584,
+      "traced": [],
+      "unclaimedSandBlobsM2": [],
+      "overlay": "peek-n-peak-upper-10-naip-overlay.png"
+    },
+    {
+      "holeKey": "peek-n-peak-upper-11",
+      "ordinal": 11,
+      "completeness": "partial",
+      "features": {
+        "fairway": 1,
+        "green": 1,
+        "bunker": 7,
+        "tee": 1,
+        "route": 1,
+        "woods": 3
+      },
+      "bunkers": [
+        {
+          "featureId": "osm-way-746366010",
+          "areaM2": 215,
+          "sandShareInside": 0.451,
+          "sandShareOutsideRing": 0.082
+        },
+        {
+          "featureId": "osm-way-746366011",
+          "areaM2": 196,
+          "sandShareInside": 0.643,
+          "sandShareOutsideRing": 0.034
+        },
+        {
+          "featureId": "osm-way-746366012",
+          "areaM2": 252,
+          "sandShareInside": 0.321,
+          "sandShareOutsideRing": 0.041
+        },
+        {
+          "featureId": "osm-way-746366013",
+          "areaM2": 102,
+          "sandShareInside": 0.314,
+          "sandShareOutsideRing": 0.034
+        },
+        {
+          "featureId": "osm-way-746366014",
+          "areaM2": 115,
+          "sandShareInside": 0.591,
+          "sandShareOutsideRing": 0.04
+        },
+        {
+          "featureId": "osm-way-746366015",
+          "areaM2": 57,
+          "sandShareInside": 0.228,
+          "sandShareOutsideRing": 0.042
+        },
+        {
+          "featureId": "osm-way-746366016",
+          "areaM2": 62,
+          "sandShareInside": 0.21,
+          "sandShareOutsideRing": 0.048
+        }
+      ],
+      "routeShareInsideMappedSurfaces": 0.879,
+      "traced": [
+        "naip-trace-peek-n-peak-upper-11-fairway"
+      ],
+      "unclaimedSandBlobsM2": [
+        28
+      ],
+      "overlay": "peek-n-peak-upper-11-naip-overlay.png"
+    },
+    {
+      "holeKey": "peek-n-peak-upper-12",
+      "ordinal": 12,
+      "completeness": "partial",
+      "features": {
+        "fairway": 1,
+        "green": 1,
+        "bunker": 3,
+        "tee": 2,
+        "route": 1,
+        "woods": 9
+      },
+      "bunkers": [
+        {
+          "featureId": "osm-way-746383304",
+          "areaM2": 202,
+          "sandShareInside": 0.609,
+          "sandShareOutsideRing": 0.025
+        },
+        {
+          "featureId": "osm-way-746383305",
+          "areaM2": 190,
+          "sandShareInside": 0.368,
+          "sandShareOutsideRing": 0.02
+        },
+        {
+          "featureId": "osm-way-938602809",
+          "areaM2": 128,
+          "sandShareInside": 0.422,
+          "sandShareOutsideRing": 0.033
+        }
+      ],
+      "routeShareInsideMappedSurfaces": 0.481,
+      "traced": [],
+      "unclaimedSandBlobsM2": [
+        248,
+        199,
+        71,
+        54,
+        38,
+        33
+      ],
+      "overlay": "peek-n-peak-upper-12-naip-overlay.png"
+    },
+    {
+      "holeKey": "peek-n-peak-upper-13",
+      "ordinal": 13,
+      "completeness": "partial",
+      "features": {
+        "green": 1,
+        "bunker": 2,
+        "tee": 3,
+        "route": 1,
+        "woods": 7
+      },
+      "bunkers": [
+        {
+          "featureId": "osm-way-746146131",
+          "areaM2": 390,
+          "sandShareInside": 0.71,
+          "sandShareOutsideRing": 0.126
+        },
+        {
+          "featureId": "osm-way-746383307",
+          "areaM2": 436,
+          "sandShareInside": 0.507,
+          "sandShareOutsideRing": 0.086
+        }
+      ],
+      "routeShareInsideMappedSurfaces": 0.124,
+      "traced": [],
+      "unclaimedSandBlobsM2": [
+        248,
+        63,
+        54,
+        38,
+        26
+      ],
+      "overlay": "peek-n-peak-upper-13-naip-overlay.png"
+    },
+    {
+      "holeKey": "peek-n-peak-upper-14",
+      "ordinal": 14,
+      "completeness": "partial",
+      "features": {
+        "fairway": 1,
+        "green": 1,
+        "bunker": 4,
+        "tee": 2,
+        "route": 1,
+        "woods": 6
+      },
+      "bunkers": [
+        {
+          "featureId": "osm-way-746383323",
+          "areaM2": 189,
+          "sandShareInside": 0.0,
+          "sandShareOutsideRing": 0.029
+        },
+        {
+          "featureId": "osm-way-746383324",
+          "areaM2": 151,
+          "sandShareInside": 0.007,
+          "sandShareOutsideRing": 0.118
+        },
+        {
+          "featureId": "osm-way-746383325",
+          "areaM2": 197,
+          "sandShareInside": 0.533,
+          "sandShareOutsideRing": 0.06
+        },
+        {
+          "featureId": "osm-way-746383326",
+          "areaM2": 156,
+          "sandShareInside": 0.301,
+          "sandShareOutsideRing": 0.126
+        }
+      ],
+      "routeShareInsideMappedSurfaces": 0.593,
+      "traced": [],
+      "unclaimedSandBlobsM2": [
+        248,
+        54,
+        37,
+        26
+      ],
+      "overlay": "peek-n-peak-upper-14-naip-overlay.png"
+    },
+    {
+      "holeKey": "peek-n-peak-upper-15",
+      "ordinal": 15,
+      "completeness": "partial",
+      "features": {
+        "green": 1,
+        "tee": 4,
+        "route": 1,
+        "woods": 6
+      },
+      "bunkers": [],
+      "routeShareInsideMappedSurfaces": 0.153,
+      "traced": [],
+      "unclaimedSandBlobsM2": [],
+      "overlay": "peek-n-peak-upper-15-naip-overlay.png"
+    },
+    {
+      "holeKey": "peek-n-peak-upper-16",
+      "ordinal": 16,
+      "completeness": "partial",
+      "features": {
+        "fairway": 1,
+        "green": 1,
+        "bunker": 4,
+        "tee": 2,
+        "route": 1,
+        "woods": 3
+      },
+      "bunkers": [
+        {
+          "featureId": "osm-way-746383342",
+          "areaM2": 243,
+          "sandShareInside": 0.605,
+          "sandShareOutsideRing": 0.019
+        },
+        {
+          "featureId": "osm-way-746383343",
+          "areaM2": 165,
+          "sandShareInside": 0.291,
+          "sandShareOutsideRing": 0.033
+        },
+        {
+          "featureId": "osm-way-746383344",
+          "areaM2": 306,
+          "sandShareInside": 0.507,
+          "sandShareOutsideRing": 0.019
+        },
+        {
+          "featureId": "osm-way-746383347",
+          "areaM2": 151,
+          "sandShareInside": 0.0,
+          "sandShareOutsideRing": 0.0
+        }
+      ],
+      "routeShareInsideMappedSurfaces": 0.482,
+      "traced": [],
+      "unclaimedSandBlobsM2": [],
+      "overlay": "peek-n-peak-upper-16-naip-overlay.png"
+    },
+    {
+      "holeKey": "peek-n-peak-upper-17",
+      "ordinal": 17,
+      "completeness": "partial",
+      "features": {
+        "fairway": 1,
+        "green": 1,
+        "bunker": 3,
+        "tee": 2,
+        "route": 1,
+        "woods": 6
+      },
+      "bunkers": [
+        {
+          "featureId": "osm-way-746383354",
+          "areaM2": 157,
+          "sandShareInside": 0.732,
+          "sandShareOutsideRing": 0.06
+        },
+        {
+          "featureId": "osm-way-746383355",
+          "areaM2": 111,
+          "sandShareInside": 0.694,
+          "sandShareOutsideRing": 0.041
+        },
+        {
+          "featureId": "osm-way-746383356",
+          "areaM2": 177,
+          "sandShareInside": 0.842,
+          "sandShareOutsideRing": 0.031
+        }
+      ],
+      "routeShareInsideMappedSurfaces": 0.637,
+      "traced": [],
+      "unclaimedSandBlobsM2": [],
+      "overlay": "peek-n-peak-upper-17-naip-overlay.png"
+    },
+    {
+      "holeKey": "peek-n-peak-upper-18",
+      "ordinal": 18,
+      "completeness": "partial",
+      "features": {
+        "fairway": 1,
+        "green": 1,
+        "bunker": 6,
+        "tee": 1,
+        "route": 1,
+        "woods": 9
+      },
+      "bunkers": [
+        {
+          "featureId": "osm-way-746506446",
+          "areaM2": 138,
+          "sandShareInside": 0.87,
+          "sandShareOutsideRing": 0.059
+        },
+        {
+          "featureId": "osm-way-746506447",
+          "areaM2": 114,
+          "sandShareInside": 0.711,
+          "sandShareOutsideRing": 0.075
+        },
+        {
+          "featureId": "osm-way-746506448",
+          "areaM2": 122,
+          "sandShareInside": 0.713,
+          "sandShareOutsideRing": 0.053
+        },
+        {
+          "featureId": "osm-way-746506449",
+          "areaM2": 181,
+          "sandShareInside": 0.243,
+          "sandShareOutsideRing": 0.045
+        },
+        {
+          "featureId": "osm-way-746506450",
+          "areaM2": 349,
+          "sandShareInside": 0.696,
+          "sandShareOutsideRing": 0.033
+        },
+        {
+          "featureId": "osm-way-746506451",
+          "areaM2": 69,
+          "sandShareInside": 0.188,
+          "sandShareOutsideRing": 0.004
+        }
+      ],
+      "routeShareInsideMappedSurfaces": 0.598,
+      "traced": [],
+      "unclaimedSandBlobsM2": [
+        163,
+        150,
+        107,
+        91,
+        75,
+        74,
+        34
+      ],
+      "overlay": "peek-n-peak-upper-18-naip-overlay.png"
+    }
+  ]
+}

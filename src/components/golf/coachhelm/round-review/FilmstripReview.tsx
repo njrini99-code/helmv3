@@ -39,7 +39,7 @@ import {
 import { createFocusAreaFromReview } from '@/app/golf/actions/development';
 import { CoachNotesSection } from '@/app/golf/(dashboard)/dashboard/rounds/[id]/review/CoachNotesSection';
 import type { RoundReviewContent } from '@/app/golf/actions/round-review-system';
-import { ReviewHero, type ReviewHoleMeta } from './ReviewHero';
+import { ReviewHero, type ReviewHeroProps, type ReviewHoleMeta } from './ReviewHero';
 import { ReviewBreakdown } from './ReviewBreakdown';
 import { RoundSGSummary } from './RoundSGSummary';
 import {
@@ -65,6 +65,11 @@ export interface PromoteSuggestion {
 export interface FilmstripReviewProps {
   roundId: string;
   playerId: string;
+  /** Course geometry for a round on a modelled course (`ReviewHero`); absent
+   * for every other round, which keeps the layout shipped on main. */
+  geometry?: ReviewHeroProps['geometry'];
+  /** Which hole's detail is open, so the caller can load that hole's terrain. */
+  onOpenHoleChange?: (holeNumber: number | null) => void;
   courseName: string;
   roundDate: string;
   totalScore: number;
@@ -101,6 +106,8 @@ const STANDING_BAND_METRICS = ['gir_pct', 'sg_ott', 'sg_approach', 'sg_putting']
 export function FilmstripReview({
   roundId,
   playerId,
+  geometry,
+  onOpenHoleChange,
   courseName,
   roundDate,
   totalScore,
@@ -313,6 +320,8 @@ export function FilmstripReview({
       />
 
       <ReviewHero
+        geometry={geometry}
+        onOpenHoleChange={onOpenHoleChange}
         totalScore={totalScore}
         scoreToPar={scoreToPar}
         courseDateLine={courseDateLine}

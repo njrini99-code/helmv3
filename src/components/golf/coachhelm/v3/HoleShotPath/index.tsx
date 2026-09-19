@@ -597,10 +597,32 @@ function formatRemainingReadout(shot: PlottedShot, insetFeet: number | null): st
 // `size="review"` and still get full type-checking.
 // -----------------------------------------------------------------------------
 
-type SizeKey = keyof typeof SIZES;
-type HoleShotPathComponentProps = Omit<HoleShotPathProps, 'size'> & { size?: SizeKey };
+import type { HoleScene, ShotEvidence } from '@/lib/golf/course-geometry/types';
+import type { SceneView } from '@/lib/golf/course-geometry/camera';
+import { CourseHoleScene } from '@/components/golf/course-geometry/CourseHoleScene';
+import { HoleSceneFrame } from '@/components/golf/course-geometry/HoleSceneFrame';
 
-export function HoleShotPath({
+type HoleShotPathComponentProps = HoleShotPathProps & {
+  scene?: HoleScene | null;
+  bounded?: boolean;
+  evidence?: readonly ShotEvidence[];
+  defaultView?: SceneView;
+  selectedShotNumber?: number;
+};
+
+export function HoleShotPath(props: HoleShotPathComponentProps) {
+  if (props.size === 'strip' && (props.scene || props.bounded)) {
+    return <div className={props.className} style={{ height: 112, width: '100%' }}>
+      {props.scene ? <CourseHoleScene scene={props.scene} width={28} height={112} mode="strip" /> :
+        <div className="flex h-full items-center justify-center rounded-fw-sm bg-surface-sunken text-text-tertiary" aria-label="Course outline unavailable">—</div>}
+    </div>;
+  }
+  if (props.bounded || props.scene) return <HoleSceneFrame key={`${props.hole_number}-${props.scene?.packageHash ?? 'unavailable'}`}
+    scene={props.scene} context="review" defaultView={props.defaultView} evidence={props.evidence} selectedShotNumber={props.selectedShotNumber} />;
+  return <LegacyHoleShotPath {...props} />;
+}
+
+function LegacyHoleShotPath({
   hole_number,
   par,
   yardage,

@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "packageHash": "fdec6ea8467dd214372bde680e7b7f9236c06ad5d27bb5ddeadf8ed5e9d3f87a",
+  "requestedLocalBoundsM": [
+    -1320,
+    -1256,
+    904,
+    1352
+  ],
+  "selectedTitle": "USGS one meter x60y466 NY Southwest East 2017",
+  "selectedObjectId": 76329,
+  "sourceUrl": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/NY_Southwest_East_2017/TIFF/USGS_one_meter_x60y466_NY_Southwest_East_2017.tif",
+  "acquisitionStart": "2017-04-18",
+  "acquisitionEnd": "2017-05-09",
+  "nativeResolutionM": 1,
+  "exportPixelM": [
+    1.0,
+    1.0
+  ],
+  "horizontalExportCrs": "EPSG:32617",
+  "verticalDatum": "NAVD88",
+  "rawVerticalUnit": "meter",
+  "verticalUnitToMeters": 1,
+  "retrievedAt": "2026-09-16",
+  "sourceSelection": "single_full_coverage_native_1m_tile",
+  "exportEmptyFraction": 0.0,
+  "decoder": "gdal",
+  "rejectedCandidates": [
+    {
+      "title": "USGS 1 Meter 17 x60y466 PA_WesternPA_2019_D20",
+      "objectId": 74256,
+      "emptyFraction": 0.6146127951912961,
+      "reason": "Catalog footprint covers the context but the locked export is empty fill there"
+    }
+  ],
+  "licenseUrl": "https://www.usgs.gov/3d-elevation-program/about-3dep-products-services",
+  "fileHashes": {
+    "catalog.json": "59067837bf2a1689974ff09e5d1a7e7512865423f9f33737f24caf0f118c799f",
+    "export.json": "bef5fb3ea1593c49b0eb1d2f3c192cc2c26c29d5b032c749aaeaf6aa35867137",
+    "elevation.tiff": "ce26e9ad13026889c6571b8a41cbdecebee90e7ef788e5475431be3060b1b08b"
+  },
+  "previousPackageHashes": [
+    "6db57efff0137b2f264c25f79ce94575efd5e90c3ef3304c0f1f35d7d7699fcc",
+    "1f7e71267f9176c1437e91f9eee51d082b67096b52df061c001cc592cb12f5d4",
+    "15f842fe1ee7fab735488ae2313784fd3118b86e377ea5df7a8c8bfe643867a9"
+  ]
+}

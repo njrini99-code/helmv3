@@ -8,6 +8,50 @@
 
 Shot tracking is the round-entry flow where players record hole-by-hole and shot-by-shot data. It captures the raw evidence used by stats, round reviews, CoachHelm, qualifiers, and future strokes-gained work.
 
+### Course-terrain source contract (2026-09-15)
+
+Course-geometry acquisition is supporting tooling for the same map coordinates
+used by shot tracking; it does not write rounds, shots, or production course
+records. Every elevation source cache declares its raw vertical unit and an
+explicit conversion to meters before a renderer/compiler can consume the
+height field. NC OneMap DEM03 studies retain the raw LiDAR-derived bare-earth
+F32 raster in US survey feet and use `0.3048006096012192` as the only
+feet-to-meters conversion. The importer keeps the service's native 3.125-foot
+grid, records its exact export bounds and file hashes, and records an unknown
+vertical datum as unknown. A source study cannot be bound to a playable hole
+without separately reviewed tee, route, green, and course/hole identity.
+
+The offline real-course rendering spike follows the same rule. Its canonical
+study JSON is a local azimuthal-equidistant metre frame (`x` east, `y` up,
+`z` north; one world unit is one metre) that retains original WGS84 geometry,
+terrain/imagery provenance, confidence and limitations. Blender consumes that
+JSON and the source-hashed terrain raster to generate a static GLB; it does
+not receive or bake shot, ball, cup, label, replay, scoring or analytics data.
+It tessellates and terrain-resamples long static source surfaces at no more
+than four-metre horizontal edges, avoiding false visual gaps where a broad
+planar fairway triangle intersects the LiDAR mesh. Runtime camera control and
+all player/round state remain outside the GLB.
+`compile-physical-world.py` now creates `golfhelm-physical-world-v1` between
+the canonical source study and Blender. It is the explicit Metric Truth layer:
+the shared terrain field, source geometry, feature provenance, claim limits,
+and a Visual World contract. With current data, bunker footprints cannot claim
+depth/lip/face/target-visibility and greens cannot claim putting break or a
+daily pin. Blender reads the physical world without receiving a second set of
+coordinates; the GLB validator accepts either source form and proves its
+metric terrain round trip.
+The upstream `course-truth-gate.py` requires reviewed measured/derived tee,
+fairway, green, bunker, water, and route/distance geometry before a hole can
+be called physically ready. The physical-world contract distinguishes
+`measured`, `derived`, `estimated`, and `visual_only`: every class can render,
+but only reviewed measured/derived geometry with recorded boundary uncertainty
+can supply authoritative physical measurements.
+The GLB import validator checks metric spans and axis conversion. NC OneMap
+orthophoto acquisition rejects transparent/downsampled exports; if the
+four-band analysis service is blank, a valid three-band visual export remains
+explicitly RGB-only and cannot supply NIR-derived claims. A partial Cardinal
+green study stays unbound until actual tee/fairway/route/hole identity and
+license/review evidence are complete.
+
 The current round flow uses a wizard for setup, hole configuration, shot capture, and submit. Draft save and continue routes support in-progress rounds. Database auto-save and confirmed per-hole checkpoints are the reliable path. The dashboard-level v2 sync engine drains the legacy IndexedDB bridge only for failed final submissions; normal Continue Round auto-saves must not write a second per-shot v1 queue.
 
 As of 2026-08-22, a failed hole or shot child write preserves the parent
@@ -956,3 +1000,248 @@ Shot-entry surfaces render under the safe-area-corrected scorecard header
 (see golf-round-lifecycle.md, same date). No shot-tracking contract change.
 Evidence: `docs/audits/evidence/ios-premium-2026-08-25/` (active-round
 header collision before/after, shot-entry walkthrough captures).
+
+## Optional course context (September 12, 2026)
+
+`FairwayShotTracking` accepts a reviewed geometry package as optional display
+context. `FairwayHoleHero` uses the shared SVG frame with a 160 CSS-pixel
+drawing for whole-hole and approach context; a reviewed putting green gets a
+272 CSS-pixel whole-green plan drawing. Committed shot type chooses whole-hole, approach, green-complex or
+abstract putting context. Whole hole and Expand change only the camera. Pending
+form values cannot move that camera or become a saved map marker. The header
+shows the committed lie/remaining distance using the existing unit preference.
+All result, miss, distance, penalty, edit, undo and save handlers remain the
+existing tracking flow. Missing geometry presents a fixed-size neutral fallback
+and the recorded evidence remains available. No production package resolver
+or geometry write is enabled by this optional prop.
+
+An optional `decorateScene` display adapter receives the already-built scene
+and committed in-memory shot history after evidence reconstruction. It cannot
+write, normalize, or persist shots. Production routes do not configure it; the
+isolated static phone fixture alone uses it for a visibly labeled flight-path
+estimate. It derives a display endpoint from the recorded remaining distance,
+result surface, and miss direction against the course route; it is neither a
+recorded ball coordinate nor a measured flight and does not change the
+source-candidate rule that ordinary entries lack geographic anchors.
+
+### Optional terrain study (September 13, 2026)
+
+The same display context can include a version-matched `terrainByHole` mesh.
+Only the Cacapon 7 local fixture supplies it. Expanded course detail exposes
+Top / Terrain / Side, constrained drag, pinch, pan and visual height emphasis;
+inline entry remains a 160px scroll-friendly SVG except for the reviewed,
+whole-green putting plan.
+Camera changes never enter the shot state machine, unit conversion or save
+payload. Closing the existing ModalShell preserves unsaved input. A missing
+mesh or lost WebGL context renders the existing SVG fallback. No GPS, location
+questions, cart paths, measured trajectories or terrain-adjusted statistics
+are introduced. The existing geometry plan Section 20 records source dates,
+accuracy limits and verification.
+
+### Four-course local source trial (September 13, 2026)
+
+The fixture harness now includes Winchester alongside Cacapon; both reuse the
+same entry/review scene and optional terrain sidecar. Bryan Park and The Cardinal
+are explicitly unassigned green studies in the internal source-review harness.
+A nullable route is accepted only for a labelled, partial `source_candidate`
+with a green; it cannot be relabelled as a reviewed package. These studies have
+no played-hole binding, tee or daily pin claim and expose no Whole hole control.
+They do not participate in saves or statistics. The existing geometry plan
+Section 21 records the non-demo cohort, imagery provenance and remaining gaps.
+
+### Whole-course build: Peek'n Peak Upper (September 15, 2026)
+
+Peek'n Peak Resort Upper Course is the first course after Cacapon compiled as
+a full 18-hole local fixture: a retained Overpass extract, an OSM-derived
+`source_candidate` package (18 routes, 36 tees, 16 fairways, 18 greens, 63
+bunkers, 4 water), hash-locked USGS 3DEP native-1m terrain, and per-hole
+compiled meshes served by the fixture harness (`?course=peek-n-peak-upper`)
+through the same entry/review scene and optional terrain sidecar. It carries
+no illustrative preview trajectories; positions stay unresolved. Every hole
+also has a canonical local-metre study, a physical world, a truth-gate report
+and a Blender GLB in ignored output. All eighteen truth gates fail by design
+because no OSM boundary is human reviewed with recorded uncertainty, so the
+course is a visual review product, not authoritative geometry, and it does
+not participate in saves or statistics. Section 26 of the geometry plan
+records the terrain-coverage finding and the build evidence.
+
+Canopy on this course is derived, not observed: `derive-canopy-naip.py`
+classifies leaf-on USDA NAIP four-band imagery into per-hole canopy groups
+(NDVI plus near-infrared texture, every OSM golf surface masked, gaps closed
+and strands dropped so a group reads as one forest mass) and records the
+method, tiles, capture dates and raster hash in a canopy review fixture. The
+merged woods features are `reviewed: true` with a reviewer note naming the
+visual comparison performed and the pending independent course review; they
+bound crown artwork only and carry no height, currentness or obstruction
+claim, and the study grid never grows to fit them. Both renderers share one
+crown budget across groups in proportion to their patterns so a small copse
+still shows a tree, the 3D landscape keeps the crowns nearest the played
+hole's own surfaces, and near-detail crowns swap in only around the camera
+focus so a forest never renders at full detail at once.
+
+The same raster also grades what the context layer leaves unexplained
+(`report-unexplained-naip.py`, September 19, report only): the per-hole
+unexplained ground of the context report is rebuilt and checked against
+the retained report, then its NAIP pixels are classed with thresholds
+measured on the package's own fairways, woods and water — mown turf sits
+at NDVI .14–.31 here, so a low NDVI is never read as bare ground. On the
+Upper course the unexplained 236 ha is canopy 21 %, meadow 24 %, mown turf
+31 %, bare ground or hardscape 23 %, dark 1 %; 31 ha of the canopy is rim
+forest the canopy pass never reached because it clipped groups to features
+± 160 m while the report's bounds run to the mesh ± 24 m. Re-running the
+pass to the hole bounds is measured, not guessed (`measure-canopy-rerun.py`,
+same rules, only the clip box): the gate goes 1 → 4 of 18, the woods
+union 120.6 → 162.1 ha; it changes the package hash, so it waits on the
+owner. The pass writes exterior rings only, so clearings a group
+encloses are carried as woods (3.5 ha today by replay, 6.6 ha after a
+re-run). The numbers sit in the prompt
+sheet beside each §39 question and in
+`peek-n-peak-upper-unexplained-naip.json`.
+
+The harness's `?play=1&course=…` mode drives the real shot-tracking screen
+hole by hole with the compiled terrain for the current and next hole
+resident, persisting shots, scores and the current hole in that browser only.
+It is a local play-through for review on a phone: nothing reaches Supabase, a
+real round, or statistics, positions remain estimates, and a two-tap control
+clears the local round.
+
+Two further source products follow the geometry plan's review workflow.
+`review-course-imagery.py` writes a per-hole dossier of OSM outlines over the
+retained NAIP export with bunker sand-agreement scores and a contact sheet;
+it flags polygons for a course-familiar reviewer and never moves one or
+passes a gate. `prepare-osm-course.py --traces` merges surfaces traced from
+that imagery where OSM has none, as unreviewed candidates with a stated
+horizontal accuracy (hole 11's fairway, ±10 m); the hole stays partial. Every
+scene now shows a restrained green-reference flag labelled "Green" when no
+estimated pin exists; it is a layout point inside the green with an
+accessible note that no pin or cup position is known, and it feeds no
+distance, camera or reconstruction.
+
+### Manual evidence and camera refinement (September 13, 2026)
+
+The local shared scene uses `manual-bounds-v1`: one bounded unknown-target
+sequence, all eight directions and original independent unit tags. Partial
+reviewed sources can show possible regions, while source candidates remain
+context only. A complete reviewed fixture can show an estimated point and a
+validated coherent connection. Neither is a measured shot path; derived
+`shotDistance` remains excluded as independent evidence. Overlapping mapped
+hazards constrain the full region cell, not just its centre. Penalty transitions,
+undo/edit/delete, saves, scores and statistics retain existing behavior.
+
+The expanded camera has a fixed world focus/lens through orbit, midpoint-anchored
+pinch, 0.5–4× explicit zoom and button alternatives. Trees, shadows, surfaces and
+shot anchors use the same projection. Inline geometry remains scroll-friendly
+and typing never rebuilds the camera or records a pending map marker. Review
+selection brings one selected detail into view; hover does not scroll the page.
+See the existing geometry plan Section 22 for verification and source limits.
+
+### Premium landscape adapter (September 13, 2026)
+
+The expanded course view loads a Three.js backend behind the existing shared
+scene; inline maps and exports retain the SVG adapter. The isolated interactive
+fixture keeps its compact tracker map on that SVG adapter; its Expand control
+opens the terrain canvas. A recorded preview shot renders as one thin,
+depth-tested elevated Three.js arc in the expanded canvas, while the compact
+SVG map retains a thin projected estimate. Neither path renders
+candidate-surface boundary dashes. These display arcs are explicitly estimated
+from the recorded result and remaining distance, never a recorded flight,
+carry measurement, or spatial shot write. A normal-flow
+nonmodal inspector reserves actual camera space on phone/desktop. Mutable camera frames and projected annotations
+share one imperative update. Canonical course meters,
+manual evidence, scorecard/units, penalties and local save identities do not
+change. An Estimated pin is a retained manual hypothesis or nominal interior
+green reference, never a measured daily pin or new solver evidence. The revised
+putting diagram replaces cup-reference jargon with an illustrated ball-to-hole
+line using the same feet scale as its remaining-distance ring. See Sections
+22.5 and 23 of the existing geometry plan for source and release boundaries.
+
+### September 13 actual-green first slice
+
+When a scene contains the reviewed canonical green for its physical hole, the
+putting context now renders a taller whole-green Top scope rather than the
+abstract oval. It uses the same source boundary, nearby bunkers, framing, and
+terrain adapter as the hole view. The compact card is intentionally quiet:
+no canopy decoration, synthetic rim lighting, badge cloud, or wide flight
+stroke may cover the putting surface. Its compact cup glyph and thin dark roll
+are screen treatment only; green, bunker, cup and ball coordinates retain the
+shared scene transform. Opening the explicit 3D control begins in the Terrain
+preset, with Top, Side, and Profile still available without changing
+coordinates. Missing or unreviewed green geometry retains the explicitly
+labelled abstract distance view.
+
+This first production slice does not invent putting positions. A cup/ball/putt
+line appears only when the shared scene already has a valid evidence-backed
+anchor; ordinary distance, miss, and made inputs keep their existing abstract
+semantics until a durable pin/ball observation contract is added. The isolated
+static preview fixture may render an explicitly labelled estimated ball or
+surface roll from entered distances to exercise this presentation; it is never
+saved, analytics input, a GPS coordinate, or evidence of production spatial
+capture. Section 25 of
+`docs/plans/2026-09-12-golfhelm-course-geometry.md` remains the next contract
+for explicit Focus putt, Set pin, Mark ball, attempted-distance/leave cards,
+and persistence across snapshot replacement.
+
+Expanded detail follows the external committed shot selection rather than
+retaining its opening shot. A selected fixture flight gets a camera-only focus
+near its displayed landing context, with a bounded progressive zoom; a validated
+estimate can do the same. Candidate-only/unresolved shots never receive a
+made-up focus coordinate. Camera state remains display-only and creates no
+score, shot, or location write.
+
+The tracker now selects the newest recorded event after record, hydrate, undo,
+or deletion. That shared key drives the shot pills, inspector, and camera; it
+is local UI state and is not a new persistence field. Putt distance alone still
+does not create an airborne path or an exact ball coordinate.
+
+### Premium putting workspace refinement (September 13, 2026)
+
+While the active lie is green, the mobile round chrome collapses to a compact
+Hole / Putting header and keeps the existing scorecard behind its explicit
+Scorecard control. The hole-wide scorecard and shot-pill strip remain unchanged
+outside putting, and the compact mode is presentation only: it does not alter
+navigation gates, saves, selection persistence, scores, or shot identity.
+
+The compact card distinguishes a current **draft** putt from recorded putts.
+The active draft uses its own local view state; selecting a recorded putt only
+changes map/card emphasis and never opens the edit flow. A tracked fixture
+leave receives the one current-ball marker and selection halo, while a
+ball-position estimate that coincides with a putt start is suppressed visually
+so it cannot create a stack of identical white markers. These fixture estimates
+remain display-only and are never GPS/marked observations, analytics evidence,
+or durable shot fields.
+
+The green plan uses the canonical boundary with a solid, quiet putting-surface
+fill, a narrow screen-space fringe cue, subdued fairway entrance, and only
+materially visible nearby bunkers. It removes the previous radial green
+spotlight and clipped hazard slivers without changing source geometry. The
+default scope remains Whole green. Focus putt is an explicit, reversible camera
+scope and appears only when an existing displayed surface-roll track supplies
+start/leave geometry; missing positions retain Whole green. Expanded 3D
+continues to use the same scene and coordinates. Status is shortened to a
+source-aware line such as `Mapped green · estimated positions`; full provenance
+remains in the accessible scene description and expanded inspector.
+
+### Evidence-aware course flights (September 14, 2026)
+
+`FairwayShotTracking` now composes its optional course scene through the shared
+`buildTrackingHoleScene` boundary. That boundary adds a display-only trajectory
+only when reconstruction has already accepted a single reviewed compatible
+landing representative. The first qualifying tee stroke may use the physical
+route start as a plainly estimated display origin; later strokes join only an
+unbroken consecutive chain of compatible representatives. Ambiguous outcomes,
+penalty/drop transitions, unreviewed terrain, putting strokes, and holed
+results do not receive an invented airborne path.
+
+The expanded Three canvas renders those display paths as depth-tested,
+CSS-pixel-width lines: the selected estimated flight has a white 2.5 px core
+and restrained dark support; historical flights use a quiet 1.15 px line. The
+selected path retains a dashed terrain footprint and distinct estimated finish
+marker. Lines resize with the live canvas, so compact/expanded transitions and
+phone orientation changes cannot turn the flight into a world-meter tube.
+
+Selecting or recording a qualifying later shot moves the expanded terrain
+camera toward that shot's displayed landing context over a bounded 320 ms
+interruptible transition. Reduced-motion users receive the final state
+immediately. This remains camera-only presentation: no selection, animation,
+or display estimate writes a shot coordinate, changes a metric, or mutates the
+round's score/save flow.

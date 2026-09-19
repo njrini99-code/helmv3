@@ -69,11 +69,8 @@ export interface ShotInput {
   /** Miss direction the player logged for this shot. */
   miss_direction?: MissDirection | string | null;
   is_penalty?: boolean | null;
-  /** Real point-to-point length of this shot, when the app logged it
-   *  directly (`golf_shots.shot_distance`) rather than it being derivable
-   *  from the before/after delta. Same unit convention as the
-   *  distance-to-hole fields — see `distance_unit`. Geometry prefers this
-   *  over the before/after delta when present. */
+  /** Legacy stored length; current manual entry derives it from before/after
+   * distances. It is not an independent measurement for reconstruction. */
   shot_distance?: number | null;
   /** Unit `shot_distance` is stored in (`golf_shots.distance_unit`). Same
    *  convention as `distance_unit_before`/`distance_unit_after`. */
@@ -129,7 +126,7 @@ export interface HoleShotPathProps {
    *   - 'reviewCard' : fluid (w-full, 140:320 aspect) — the framed round-review grid
    *   - 'hero'       : ~280×560 px — detail view when a strip is tapped
    */
-  size?: 'strip' | 'inline' | 'card' | 'reviewCard' | 'hero';
+  size?: 'strip' | 'inline' | 'card' | 'reviewCard' | 'hero' | 'review';
   /** Optional click handler — strip variant uses this to expand to hero. */
   onClick?: () => void;
   /** Tone of the score chip vs par. */

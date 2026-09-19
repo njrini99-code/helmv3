@@ -1,0 +1,158 @@
+/** Meridian V2 bent-sky field (V2 plan §24–25, feeding §18 and §70).
+ *
+ * Per metric grid node, from the source grid only: how much open sky the
+ * node sees, which direction that sky lies in, and how far the ground falls
+ * away around it. The shader spends this as bent-sky ambient — valley floors
+ * and forest edges a little darker and enclosed, exposed shelves a little
+ * brighter — instead of one hemisphere light shading every point alike.
+ *
+ * Horizon (§25): for each azimuth θ the horizon elevation is the largest
+ * angle to the ground along the ray within `radiusM`,
+ *   α_h(θ) = max_r atan((z(r,θ) − z0) / r),
+ * and the direction's open-sky fraction is v(θ) = 1 − max(0, α_h) / (π/2).
+ * This is measured against the horizontal, not the local tangent plane, so a
+ * node at the foot of a slope reads less sky than one on the crest
+ * (`relativeSkyRelief` in three-landscape.ts keeps its tangent-plane form for
+ * the V1 landform occlusion; the two are different quantities on purpose).
+ *
+ * Bent normal (§24): the direction of the open sky. Each ray contributes its
+ * open cone's centre direction — elevation (max(0, α_h) + π/2) / 2 along θ —
+ * weighted by v(θ); the normalized sum is the bent normal. On a horizontal
+ * plane every ray is fully open and the horizontal parts cancel, so the bent
+ * normal is straight up (`bentXY` = 0); next to a wall the occluded rays
+ * contribute less and it tilts away from the wall. It is not a surface
+ * normal and never replaces the source normal (§26).
+ *
+ * Exposure: the mean over directions of how steeply the ground falls away,
+ * max(0, −min_r atan((z − z0) / r)) / (π/2) — a knoll or shoulder scores
+ * high, a floor scores 0. Packed as §18 bent-light B.
+ *
+ * Rays march the grid at geometric steps (1, 2, 3, 4, 6, 9 … nodes) like the
+ * V1 march, so a 20-node radius costs about a dozen reads a direction. A ray
+ * ends at the grid edge; an unsupported (null) sample is skipped; a ray with
+ * no supported sample contributes nothing (it is neither open nor occluded).
+ * Unsupported nodes output 0 everywhere and `support` 0.
+ *
+ * Visual only (constraint 6): this field lights ground. It never feeds lie
+ * truth, distance, GPS resolution, picking or analytics, and never moves
+ * canonical Z (constraint 4). Deterministic from the grid alone (13). */
+import { typedGridHeights, type MetricTerrainGrid } from './terrain-source';
+
+/** §25: a limited radius, 20–60 m; §24: 8–16 azimuth directions. */
+export const SKY_FIELD_OPTIONS = Object.freeze({ radiusM: 40, directions: 16 });
+export interface SkyFieldOptions { radiusM: number; directions: number }
+
+export interface SkyField {
+  /** Mean open-sky fraction per node, 0–1, grid layout. */
+  visibility: Float32Array;
+  /** x, y of the unit bent normal per node (z = sqrt(1 − x² − y²)); 0, 0 straight up. */
+  bentXY: Float32Array;
+  /** Mean fall-away per node, 0–1. */
+  exposure: Float32Array;
+  /** 1 where the source grid answers, 0 where it does not. */
+  support: Uint8Array;
+  options: SkyFieldOptions;
+  basis: 'source_derived_visual';
+}
+
+const HALF_PI = Math.PI / 2;
+/** The cone of a ray whose horizon is level: `(0 + HALF_PI) / 2`. */
+const LEVEL_CONE = HALF_PI / 2, LEVEL_COS = Math.cos(LEVEL_CONE), LEVEL_SIN = Math.sin(LEVEL_CONE);
+
+/** Geometric march offsets in nodes: 1, 2, 3, 4, 6, 9, 14 … then the radius. */
+export function marchSteps(radiusNodes: number): number[] {
+  const steps: number[] = [];
+  for (let d = 1; d < radiusNodes; d = d < 4 ? d + 1 : Math.round(d * 1.5)) steps.push(d);
+  steps.push(radiusNodes);
+  return steps;
+}
+
+/** Open sky per node of `grid` within `options.radiusM`, `options.directions`
+ * azimuths. Arrays are in the grid's own row-major layout. */
+export function compileSkyField(grid: MetricTerrainGrid, options: SkyFieldOptions = SKY_FIELD_OPTIONS): SkyField {
+  const { columns, rows, spacingM } = grid, { heights, support: supported } = typedGridHeights(grid);
+  const count = columns * rows;
+  const visibility = new Float32Array(count), bentXY = new Float32Array(count * 2), exposure = new Float32Array(count), support = new Uint8Array(count);
+  const radiusNodes = Math.max(1, Math.round(options.radiusM / spacingM));
+  const steps = marchSteps(radiusNodes);
+  const directions = Math.max(1, Math.round(options.directions));
+  const azimuthX = new Float64Array(directions), azimuthY = new Float64Array(directions);
+  for (let k = 0; k < directions; k++) { const a = 2 * Math.PI * k / directions; azimuthX[k] = Math.cos(a); azimuthY[k] = Math.sin(a); }
+  // The march is the same integer offset pattern from every node, so the
+  // rounded (column, row) offsets, their flat node offsets and their sample
+  // distances are computed once per direction and step rather than once
+  // per node and sample (the compile's largest single cost before this).
+  // Zero-distance steps (a step that rounds onto the node itself) are
+  // dropped here exactly as the per-node loop skipped them.
+  const rayColumns: Int32Array[] = [], rayRows: Int32Array[] = [], rayOffsets: Int32Array[] = [], rayDistances: Float64Array[] = [];
+  let reachColumns = 0, reachRows = 0;
+  for (let k = 0; k < directions; k++) {
+    const ux = azimuthX[k]!, uy = azimuthY[k]!;
+    const dcs: number[] = [], drs: number[] = [], offsets: number[] = [], distances: number[] = [];
+    for (const d of steps) {
+      const dc = Math.round(ux * d), dr = Math.round(uy * d), distance = Math.hypot(dc, dr) * spacingM;
+      if (distance <= 0) continue;
+      dcs.push(dc); drs.push(dr); offsets.push(dr * columns + dc); distances.push(distance);
+      reachColumns = Math.max(reachColumns, Math.abs(dc)); reachRows = Math.max(reachRows, Math.abs(dr));
+    }
+    rayColumns.push(Int32Array.from(dcs)); rayRows.push(Int32Array.from(drs)); rayOffsets.push(Int32Array.from(offsets)); rayDistances.push(Float64Array.from(distances));
+  }
+  for (let r = 0; r < rows; r++) for (let c = 0; c < columns; c++) {
+    const n = r * columns + c;
+    if (!supported[n]) continue;
+    const z0 = heights[n]!;
+    support[n] = 1;
+    // A node the whole march fits around samples by flat offset with no
+    // edge test; one near an edge walks each ray until it leaves the grid.
+    const interior = c >= reachColumns && c + reachColumns < columns && r >= reachRows && r + reachRows < rows;
+    let rays = 0, open = 0, fall = 0, bx = 0, by = 0, bz = 0;
+    for (let k = 0; k < directions; k++) {
+      const distances = rayDistances[k]!;
+      let maxTan = Number.NEGATIVE_INFINITY, minTan = Number.POSITIVE_INFINITY;
+      if (interior) {
+        const offsets = rayOffsets[k]!;
+        for (let i = 0; i < offsets.length; i++) {
+          const m = n + offsets[i]!;
+          if (!supported[m]) continue;
+          const tan = (heights[m]! - z0) / distances[i]!;
+          if (tan > maxTan) maxTan = tan;
+          if (tan < minTan) minTan = tan;
+        }
+      } else {
+        const dcs = rayColumns[k]!, drs = rayRows[k]!;
+        for (let i = 0; i < dcs.length; i++) {
+          const cc = c + dcs[i]!, rr = r + drs[i]!;
+          if (cc < 0 || rr < 0 || cc >= columns || rr >= rows) break;
+          const m = rr * columns + cc;
+          if (!supported[m]) continue;
+          const tan = (heights[m]! - z0) / distances[i]!;
+          if (tan > maxTan) maxTan = tan;
+          if (tan < minTan) minTan = tan;
+        }
+      }
+      // A ray with no supported sample (grid edge, unsupported neighbours) scores nothing.
+      if (!Number.isFinite(maxTan)) continue;
+      rays++;
+      const ux = azimuthX[k]!, uy = azimuthY[k]!;
+      if (maxTan <= 0) {
+        // Nothing above the level line: the horizon is 0, the ray fully
+        // open and its bent-normal share the level cone — the same values
+        // the general branch computes, without its atan, cos and sin.
+        open += 1; bx += LEVEL_COS * ux; by += LEVEL_COS * uy; bz += LEVEL_SIN;
+      } else {
+        const horizon = Math.atan(maxTan), v = 1 - horizon / HALF_PI;
+        const cone = (horizon + HALF_PI) / 2;
+        open += v;
+        const vCos = v * Math.cos(cone);
+        bx += vCos * ux; by += vCos * uy; bz += v * Math.sin(cone);
+      }
+      if (minTan < 0) fall += -Math.atan(minTan) / HALF_PI;
+    }
+    if (!rays) { visibility[n] = 1; continue; }
+    visibility[n] = open / rays;
+    exposure[n] = fall / rays;
+    const length = Math.hypot(bx, by, bz);
+    if (length > 0) { bentXY[n * 2] = bx / length; bentXY[n * 2 + 1] = by / length; }
+  }
+  return { visibility, bentXY, exposure, support, options: { radiusM: options.radiusM, directions }, basis: 'source_derived_visual' };
+}

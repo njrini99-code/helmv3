@@ -719,6 +719,11 @@
         "category": "components"
       },
       {
+        "id": "components:src/components/golf/course-geometry/**",
+        "pattern": "src/components/golf/course-geometry/**",
+        "category": "components"
+      },
+      {
         "id": "components:src/components/golf/documents/**",
         "pattern": "src/components/golf/documents/**",
         "category": "components"
@@ -1522,6 +1527,11 @@
       {
         "id": "services:scripts/flags/**",
         "pattern": "scripts/flags/**",
+        "category": "services"
+      },
+      {
+        "id": "services:scripts/golf/course-geometry/**",
+        "pattern": "scripts/golf/course-geometry/**",
         "category": "services"
       },
       {
@@ -2730,6 +2740,12 @@
         ]
       },
       {
+        "id": "golf_penalty_events",
+        "definedIn": [
+          "supabase/migrations/20260916_peek_n_peak_one_tap.sql"
+        ]
+      },
+      {
         "id": "golf_qualifier_round_courses",
         "definedIn": [
           "supabase/migrations/20260621231000_qualifier_round_courses.sql"
@@ -2739,6 +2755,18 @@
         "id": "golf_recruit_documents",
         "definedIn": [
           "supabase/migrations/20260614020000_recruit_documents.sql"
+        ]
+      },
+      {
+        "id": "golf_round_course_bindings",
+        "definedIn": [
+          "supabase/migrations/20260916_peek_n_peak_one_tap.sql"
+        ]
+      },
+      {
+        "id": "golf_shot_anchors",
+        "definedIn": [
+          "supabase/migrations/20260916_peek_n_peak_one_tap.sql"
         ]
       },
       {
@@ -3069,6 +3097,10 @@
       {
         "id": "can_notify_baseball_user",
         "definedIn": "supabase/migrations/20260729000100_baseball_tenant_isolation_rls_a_additive.sql"
+      },
+      {
+        "id": "can_read_golf_round",
+        "definedIn": "supabase/migrations/20260916_peek_n_peak_one_tap.sql"
       },
       {
         "id": "can_read_golf_shot_detail",
@@ -3449,6 +3481,10 @@
       {
         "id": "mark_golf_messages_read",
         "definedIn": "supabase/migrations/20260710160000_mark_golf_messages_read_rpc.sql"
+      },
+      {
+        "id": "owns_golf_round",
+        "definedIn": "supabase/migrations/20260916_peek_n_peak_one_tap.sql"
       },
       {
         "id": "owns_golf_shot",
@@ -15705,6 +15741,18 @@
     },
     {
       "source": "golf_round_lifecycle",
+      "target": "components:src/components/golf/course-geometry/**",
+      "kind": "feature_component",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/components/golf/course-geometry/**"
+        }
+      ]
+    },
+    {
+      "source": "golf_round_lifecycle",
       "target": "course_library",
       "kind": "feature_signal",
       "evidence": [
@@ -15767,6 +15815,39 @@
         {
           "kind": "migration_schema",
           "path": "supabase/migrations/20260611000000_create_golf_demo_sessions.sql"
+        }
+      ]
+    },
+    {
+      "source": "golf_round_lifecycle",
+      "target": "golf_penalty_events",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260916_peek_n_peak_one_tap.sql"
+        }
+      ]
+    },
+    {
+      "source": "golf_round_lifecycle",
+      "target": "golf_round_course_bindings",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260916_peek_n_peak_one_tap.sql"
+        }
+      ]
+    },
+    {
+      "source": "golf_round_lifecycle",
+      "target": "golf_shot_anchors",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260916_peek_n_peak_one_tap.sql"
         }
       ]
     },
@@ -18036,7 +18117,7 @@
         {
           "kind": "rpc_call",
           "path": "src/components/golf/coachhelm/round-review/FilmstripReview.tsx",
-          "line": 167
+          "line": 174
         }
       ]
     },
@@ -19796,6 +19877,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/app/golf/(dashboard)/dashboard/rounds/recover/**"
+        }
+      ]
+    },
+    {
+      "source": "shot_tracking",
+      "target": "services:scripts/golf/course-geometry/**",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/golf/course-geometry/**"
         }
       ]
     },

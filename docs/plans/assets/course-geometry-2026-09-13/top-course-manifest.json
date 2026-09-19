@@ -1,0 +1,382 @@
+[
+  {
+    "course": "cacapon",
+    "physicalKey": "cacapon-01",
+    "assignedHole": 1,
+    "capability": "partial",
+    "geometryHash": "69ac58c8cc4e29403101c931abf50c8f1fe4305aea474c3e63bd509083c28bfe",
+    "style": "fairway-vector-v9",
+    "svgHash": "d50f5fdfb23526c5403778b72805f56cf6c0c9f71da32b9a003dcc27336c99b5",
+    "svgGzipBytes": 6891
+  },
+  {
+    "course": "cacapon",
+    "physicalKey": "cacapon-02",
+    "assignedHole": 2,
+    "capability": "partial",
+    "geometryHash": "69ac58c8cc4e29403101c931abf50c8f1fe4305aea474c3e63bd509083c28bfe",
+    "style": "fairway-vector-v9",
+    "svgHash": "497b004eec6421d116dae7453301fcd70e3688993fe6ac73e8c3c7001c767e88",
+    "svgGzipBytes": 6981
+  },
+  {
+    "course": "cacapon",
+    "physicalKey": "cacapon-03",
+    "assignedHole": 3,
+    "capability": "partial",
+    "geometryHash": "69ac58c8cc4e29403101c931abf50c8f1fe4305aea474c3e63bd509083c28bfe",
+    "style": "fairway-vector-v9",
+    "svgHash": "8ff165119a83a9cb5480eb265f5c2658756e6885d9ce66201a7233e12e97d7d8",
+    "svgGzipBytes": 6972
+  },
+  {
+    "course": "cacapon",
+    "physicalKey": "cacapon-04",
+    "assignedHole": 4,
+    "capability": "partial",
+    "geometryHash": "69ac58c8cc4e29403101c931abf50c8f1fe4305aea474c3e63bd509083c28bfe",
+    "style": "fairway-vector-v9",
+    "svgHash": "d9be0e24b8688509bed11e38610db358a0bd85567df153b9627f2c0ea45a7d9e",
+    "svgGzipBytes": 5630
+  },
+  {
+    "course": "cacapon",
+    "physicalKey": "cacapon-05",
+    "assignedHole": 5,
+    "capability": "partial",
+    "geometryHash": "69ac58c8cc4e29403101c931abf50c8f1fe4305aea474c3e63bd509083c28bfe",
+    "style": "fairway-vector-v9",
+    "svgHash": "82c8f261de3c46ad86a00cab1944f21fd4cf89722e7a410af6a5b62ffcf52d27",
+    "svgGzipBytes": 6194
+  },
+  {
+    "course": "cacapon",
+    "physicalKey": "cacapon-06",
+    "assignedHole": 6,
+    "capability": "partial",
+    "geometryHash": "69ac58c8cc4e29403101c931abf50c8f1fe4305aea474c3e63bd509083c28bfe",
+    "style": "fairway-vector-v9",
+    "svgHash": "86fda90a08bf0ae3d55bd46a5f69c173604a6ec6bb85471a8a7a3815e0dfe8c3",
+    "svgGzipBytes": 6308
+  },
+  {
+    "course": "cacapon",
+    "physicalKey": "cacapon-07",
+    "assignedHole": 7,
+    "capability": "partial",
+    "geometryHash": "69ac58c8cc4e29403101c931abf50c8f1fe4305aea474c3e63bd509083c28bfe",
+    "style": "fairway-vector-v9",
+    "svgHash": "c5f2c7f6e223d25baeb118892c52498229d28420ea78963077701eb8db62b952",
+    "svgGzipBytes": 20334
+  },
+  {
+    "course": "cacapon",
+    "physicalKey": "cacapon-08",
+    "assignedHole": 8,
+    "capability": "partial",
+    "geometryHash": "69ac58c8cc4e29403101c931abf50c8f1fe4305aea474c3e63bd509083c28bfe",
+    "style": "fairway-vector-v9",
+    "svgHash": "2a4dbfc4d0cdd0522d73e21f3f458a42510b90664447a6cd3d0c7fe5be1b1bcc",
+    "svgGzipBytes": 5698
+  },
+  {
+    "course": "cacapon",
+    "physicalKey": "cacapon-09",
+    "assignedHole": 9,
+    "capability": "partial",
+    "geometryHash": "69ac58c8cc4e29403101c931abf50c8f1fe4305aea474c3e63bd509083c28bfe",
+    "style": "fairway-vector-v9",
+    "svgHash": "3297192a06a16b285e090880fa3303653c9a1ae814bbfb3e6515914964263cd8",
+    "svgGzipBytes": 6831
+  },
+  {
+    "course": "cacapon",
+    "physicalKey": "cacapon-10",
+    "assignedHole": 10,
+    "capability": "partial",
+    "geometryHash": "69ac58c8cc4e29403101c931abf50c8f1fe4305aea474c3e63bd509083c28bfe",
+    "style": "fairway-vector-v9",
+    "svgHash": "0caac3bc2286de13b84788fe41149968404a65282baa492027d4847638f6f906",
+    "svgGzipBytes": 5575
+  },
+  {
+    "course": "cacapon",
+    "physicalKey": "cacapon-11",
+    "assignedHole": 11,
+    "capability": "partial",
+    "geometryHash": "69ac58c8cc4e29403101c931abf50c8f1fe4305aea474c3e63bd509083c28bfe",
+    "style": "fairway-vector-v9",
+    "svgHash": "b56a48d4f0957f6fb6eebd58d13ab1136495410e2af248bebfbe8fd576784303",
+    "svgGzipBytes": 6743
+  },
+  {
+    "course": "cacapon",
+    "physicalKey": "cacapon-12",
+    "assignedHole": 12,
+    "capability": "partial",
+    "geometryHash": "69ac58c8cc4e29403101c931abf50c8f1fe4305aea474c3e63bd509083c28bfe",
+    "style": "fairway-vector-v9",
+    "svgHash": "fff2f1f2ee4d50ff8e4ef7f01c813db70249e5c723683e17f4815cb39b1260ef",
+    "svgGzipBytes": 5408
+  },
+  {
+    "course": "cacapon",
+    "physicalKey": "cacapon-13",
+    "assignedHole": 13,
+    "capability": "partial",
+    "geometryHash": "69ac58c8cc4e29403101c931abf50c8f1fe4305aea474c3e63bd509083c28bfe",
+    "style": "fairway-vector-v9",
+    "svgHash": "e4a99998576ca70c73b85329502e02d3b89d1dda399ee6353d1703613f1e5633",
+    "svgGzipBytes": 5130
+  },
+  {
+    "course": "cacapon",
+    "physicalKey": "cacapon-14",
+    "assignedHole": 14,
+    "capability": "partial",
+    "geometryHash": "69ac58c8cc4e29403101c931abf50c8f1fe4305aea474c3e63bd509083c28bfe",
+    "style": "fairway-vector-v9",
+    "svgHash": "272af6ef7d02b40286cc0328a62dbe6e7e084dfaeed8d8e0cba4c7127e97433f",
+    "svgGzipBytes": 5061
+  },
+  {
+    "course": "cacapon",
+    "physicalKey": "cacapon-15",
+    "assignedHole": 15,
+    "capability": "partial",
+    "geometryHash": "69ac58c8cc4e29403101c931abf50c8f1fe4305aea474c3e63bd509083c28bfe",
+    "style": "fairway-vector-v9",
+    "svgHash": "7775f35ac8dca20220818469a24acf36400b5ced920dc6b52154014b374702a4",
+    "svgGzipBytes": 5583
+  },
+  {
+    "course": "cacapon",
+    "physicalKey": "cacapon-16",
+    "assignedHole": 16,
+    "capability": "partial",
+    "geometryHash": "69ac58c8cc4e29403101c931abf50c8f1fe4305aea474c3e63bd509083c28bfe",
+    "style": "fairway-vector-v9",
+    "svgHash": "224da4a5d24d33819f79ba2cb15c013544dfd4b664e94302315fc27c34aa63b5",
+    "svgGzipBytes": 5752
+  },
+  {
+    "course": "cacapon",
+    "physicalKey": "cacapon-17",
+    "assignedHole": 17,
+    "capability": "partial",
+    "geometryHash": "69ac58c8cc4e29403101c931abf50c8f1fe4305aea474c3e63bd509083c28bfe",
+    "style": "fairway-vector-v9",
+    "svgHash": "f093fc0b80c7b62e5b98200626e2109f3ad58ac1ac7d55bcd9a1a641fb329f5d",
+    "svgGzipBytes": 4827
+  },
+  {
+    "course": "cacapon",
+    "physicalKey": "cacapon-18",
+    "assignedHole": 18,
+    "capability": "partial",
+    "geometryHash": "69ac58c8cc4e29403101c931abf50c8f1fe4305aea474c3e63bd509083c28bfe",
+    "style": "fairway-vector-v9",
+    "svgHash": "55df294b29eaa92ad88b8ba9174cb443d1f2fe98151a190c98a522d4267a58c5",
+    "svgGzipBytes": 8556
+  },
+  {
+    "course": "winchester",
+    "physicalKey": "winchester-01",
+    "assignedHole": 1,
+    "capability": "partial",
+    "geometryHash": "0bb452f127b08568a8a7a41be537af7cdbcabf39b0c7562ecfa047d8f88373c0",
+    "style": "fairway-vector-v9",
+    "svgHash": "c6fcc404f1753fc818f52ab8dad79f9338137399969e99976e71e65df37fe830",
+    "svgGzipBytes": 6108
+  },
+  {
+    "course": "winchester",
+    "physicalKey": "winchester-02",
+    "assignedHole": 2,
+    "capability": "partial",
+    "geometryHash": "0bb452f127b08568a8a7a41be537af7cdbcabf39b0c7562ecfa047d8f88373c0",
+    "style": "fairway-vector-v9",
+    "svgHash": "ef42f98ddec7c5af1f76af02db253fed28cde17a6e1d1d85cf21f335a228d274",
+    "svgGzipBytes": 7484
+  },
+  {
+    "course": "winchester",
+    "physicalKey": "winchester-03",
+    "assignedHole": 3,
+    "capability": "partial",
+    "geometryHash": "0bb452f127b08568a8a7a41be537af7cdbcabf39b0c7562ecfa047d8f88373c0",
+    "style": "fairway-vector-v9",
+    "svgHash": "aaacb6526b5f1eb079a6ebca5baab6ab360f4c6db7b1c648a8db518646b44b04",
+    "svgGzipBytes": 5492
+  },
+  {
+    "course": "winchester",
+    "physicalKey": "winchester-04",
+    "assignedHole": 4,
+    "capability": "partial",
+    "geometryHash": "0bb452f127b08568a8a7a41be537af7cdbcabf39b0c7562ecfa047d8f88373c0",
+    "style": "fairway-vector-v9",
+    "svgHash": "309a2e5ff3dd0dcae374cd179dc4c7e3b503ce8d4456336befb4d9a3f5af6c3c",
+    "svgGzipBytes": 5186
+  },
+  {
+    "course": "winchester",
+    "physicalKey": "winchester-05",
+    "assignedHole": 5,
+    "capability": "partial",
+    "geometryHash": "0bb452f127b08568a8a7a41be537af7cdbcabf39b0c7562ecfa047d8f88373c0",
+    "style": "fairway-vector-v9",
+    "svgHash": "2b9db53db350c59b9b34effe3611e1a232f455fe3b620a7fc3a7e12ad431a7e1",
+    "svgGzipBytes": 5314
+  },
+  {
+    "course": "winchester",
+    "physicalKey": "winchester-06",
+    "assignedHole": 6,
+    "capability": "partial",
+    "geometryHash": "0bb452f127b08568a8a7a41be537af7cdbcabf39b0c7562ecfa047d8f88373c0",
+    "style": "fairway-vector-v9",
+    "svgHash": "304e95ac430b9bd43e784cfbbdccd72f8b03d8684c5acaf9686ef3acedeb3a19",
+    "svgGzipBytes": 3190
+  },
+  {
+    "course": "winchester",
+    "physicalKey": "winchester-07",
+    "assignedHole": 7,
+    "capability": "partial",
+    "geometryHash": "0bb452f127b08568a8a7a41be537af7cdbcabf39b0c7562ecfa047d8f88373c0",
+    "style": "fairway-vector-v9",
+    "svgHash": "61735e331c74c7cd602f5ad55d8f0c1f28a51ac1f7faf78665149e633b68db1d",
+    "svgGzipBytes": 21274
+  },
+  {
+    "course": "winchester",
+    "physicalKey": "winchester-08",
+    "assignedHole": 8,
+    "capability": "partial",
+    "geometryHash": "0bb452f127b08568a8a7a41be537af7cdbcabf39b0c7562ecfa047d8f88373c0",
+    "style": "fairway-vector-v9",
+    "svgHash": "c77fbc8c62454f64f9e00990b8d1f6004f5ea919b6e8a6df07e4288d280f34fe",
+    "svgGzipBytes": 3979
+  },
+  {
+    "course": "winchester",
+    "physicalKey": "winchester-09",
+    "assignedHole": 9,
+    "capability": "partial",
+    "geometryHash": "0bb452f127b08568a8a7a41be537af7cdbcabf39b0c7562ecfa047d8f88373c0",
+    "style": "fairway-vector-v9",
+    "svgHash": "884df4739d1ed2b4a179c3910527970720ec84b3eb58daf4d116074775cac247",
+    "svgGzipBytes": 5548
+  },
+  {
+    "course": "winchester",
+    "physicalKey": "winchester-10",
+    "assignedHole": 10,
+    "capability": "partial",
+    "geometryHash": "0bb452f127b08568a8a7a41be537af7cdbcabf39b0c7562ecfa047d8f88373c0",
+    "style": "fairway-vector-v9",
+    "svgHash": "d969e2f7dbd95793e6e634ecb71ecfaa8c3aa90dd27b56ad3d9cb93a2f419ca5",
+    "svgGzipBytes": 3933
+  },
+  {
+    "course": "winchester",
+    "physicalKey": "winchester-11",
+    "assignedHole": 11,
+    "capability": "partial",
+    "geometryHash": "0bb452f127b08568a8a7a41be537af7cdbcabf39b0c7562ecfa047d8f88373c0",
+    "style": "fairway-vector-v9",
+    "svgHash": "01a259bfed30c6caa497a7a3b2915b806e74b936b3e6c3209a57f5ef70f5c877",
+    "svgGzipBytes": 4048
+  },
+  {
+    "course": "winchester",
+    "physicalKey": "winchester-12",
+    "assignedHole": 12,
+    "capability": "partial",
+    "geometryHash": "0bb452f127b08568a8a7a41be537af7cdbcabf39b0c7562ecfa047d8f88373c0",
+    "style": "fairway-vector-v9",
+    "svgHash": "1c1156f6ae8e1f72a38434f4d1607e14fadb474752e2588aeffdfd4f11a11db3",
+    "svgGzipBytes": 3816
+  },
+  {
+    "course": "winchester",
+    "physicalKey": "winchester-13",
+    "assignedHole": 13,
+    "capability": "partial",
+    "geometryHash": "0bb452f127b08568a8a7a41be537af7cdbcabf39b0c7562ecfa047d8f88373c0",
+    "style": "fairway-vector-v9",
+    "svgHash": "f96c1ed84dc84d02ec09090dd035282ff7bdebeebf6d0c8c4e89ed7fb61dcdbe",
+    "svgGzipBytes": 5395
+  },
+  {
+    "course": "winchester",
+    "physicalKey": "winchester-14",
+    "assignedHole": 14,
+    "capability": "partial",
+    "geometryHash": "0bb452f127b08568a8a7a41be537af7cdbcabf39b0c7562ecfa047d8f88373c0",
+    "style": "fairway-vector-v9",
+    "svgHash": "fe7f224e7a8c7f17b4e66c553b47cf1db0e12b44894c55634092f130c2e79d5a",
+    "svgGzipBytes": 3443
+  },
+  {
+    "course": "winchester",
+    "physicalKey": "winchester-15",
+    "assignedHole": 15,
+    "capability": "partial",
+    "geometryHash": "0bb452f127b08568a8a7a41be537af7cdbcabf39b0c7562ecfa047d8f88373c0",
+    "style": "fairway-vector-v9",
+    "svgHash": "4f7c82f00d613a1c5a541694b1265e3dd86b6ab7bafb33a5b7b85168de5c463b",
+    "svgGzipBytes": 9689
+  },
+  {
+    "course": "winchester",
+    "physicalKey": "winchester-16",
+    "assignedHole": 16,
+    "capability": "partial",
+    "geometryHash": "0bb452f127b08568a8a7a41be537af7cdbcabf39b0c7562ecfa047d8f88373c0",
+    "style": "fairway-vector-v9",
+    "svgHash": "2ae659b25fa5691f38501cb784360a2a0293a17f85afa825605d42534710137b",
+    "svgGzipBytes": 2983
+  },
+  {
+    "course": "winchester",
+    "physicalKey": "winchester-17",
+    "assignedHole": 17,
+    "capability": "partial",
+    "geometryHash": "0bb452f127b08568a8a7a41be537af7cdbcabf39b0c7562ecfa047d8f88373c0",
+    "style": "fairway-vector-v9",
+    "svgHash": "420a14b14590a5e698f0aed51a0716bbc62e01f08eb1c8d3c379269024184ef9",
+    "svgGzipBytes": 3856
+  },
+  {
+    "course": "winchester",
+    "physicalKey": "winchester-18",
+    "assignedHole": 18,
+    "capability": "partial",
+    "geometryHash": "0bb452f127b08568a8a7a41be537af7cdbcabf39b0c7562ecfa047d8f88373c0",
+    "style": "fairway-vector-v9",
+    "svgHash": "18dc39a99ba45f5511b8e63818758a733e5f2a18e0c663f641130626c62bd7bb",
+    "svgGzipBytes": 4219
+  },
+  {
+    "course": "bryan-study",
+    "physicalKey": "bryan-green-study",
+    "assignedHole": null,
+    "capability": "partial",
+    "geometryHash": "f9b265bdc7a1603cca27cf8c2a7074702ff9e2601d583471e1bd3d0b29e1a254",
+    "style": "fairway-vector-v9",
+    "svgHash": "b7e599d949fd9c540be3adee9a891887b99d6418be17ab395fb6523c6e88926f",
+    "svgGzipBytes": 3604
+  },
+  {
+    "course": "cardinal-study",
+    "physicalKey": "cardinal-green-study",
+    "assignedHole": null,
+    "capability": "partial",
+    "geometryHash": "824f3e1d8f2a33bf35ea8116270d6f78caa8f4a86268f00fe847f929b9d45427",
+    "style": "fairway-vector-v9",
+    "svgHash": "1270a09b4001b47c72804564eeb6f39cfe092c32631ccbb6a20726d3b740d755",
+    "svgGzipBytes": 2147
+  }
+]

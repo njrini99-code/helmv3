@@ -647,3 +647,258 @@ The completed-round Submit banner lives inside this same measured scorecard
 chrome so it remains reachable while scrolling. A ResizeObserver updates the
 published offset when the banner or save status changes height. The route
 loading placeholder reserves the same inset, context, and editor order.
+
+## Course geometry fixture proof (2026-09-12)
+
+Stages 0–2 of `docs/plans/2026-09-12-golfhelm-course-geometry.md` add an
+optional, local-only shared SVG scene under `src/lib/golf/course-geometry/`
+and `src/components/golf/course-geometry/`. The Cacapon fixture is a partial
+source-reviewed draft, with no production binding. Both review and entry
+compositions consume the same physical package and evidence representation.
+The harness reuses `FairwayShotEntry`; existing production consumers and
+all score, save, edit, undo, statistics and putting behavior remain unchanged.
+
+Explicit before/after unit tags are preserved independently. The adapter
+retains all eight approach directions, original Other results and penalty
+transition state. Legacy `shotDistance` is derived evidence only. Ordinary
+events have unresolved endpoints. A separately marked analytic presentation
+fixture supplies test coordinates to demonstrate marker containment and
+label placement; it is not a reconstruction algorithm or a player location.
+Source acceptance and Stage 3–5 storage, access, wiring and reconstruction
+gates remain in the existing plan.
+
+## Local course-geometry UI proof (September 12, 2026)
+
+The shared course SVG now has optional integration seams in the actual
+Fairway tracking and Round Review components. Course data is read-only display
+context; scene construction catches geometry failures without joining save or
+checkpoint success. The local browser harness mounts the real dashboard shell
+and components with inert external adapters and fixture ledgers. It cannot
+access production data. Geometry binding, publication and historical version
+resolution remain unimplemented; no migration or lifecycle writer changes
+are included. See the existing course-geometry plan, Sections 18–19, for source
+provenance, real-component screenshots and device-verification limitations.
+
+### Shared terrain renderer feasibility (September 13, 2026)
+
+Both optional geometry props now accept the same `terrainByHole` sidecar.
+`buildHoleScene` attaches it only when the physical-hole key and package hash
+match. `CourseHoleScene` uses its existing SVG backend inline and a WebGL
+backend in expanded terrain views; shared metric projection/material functions
+also produce static SVG exports. The runtime remains Next.js/Capacitor.
+Source ingestion, Python triangulation and source fixtures stay outside player
+routes. This is a one-hole source candidate, with no production resolver,
+publication, account/location collection or lifecycle writer change.
+
+### Meridian visual system (September 16, 2026)
+
+The expanded WebGL terrain view now renders Terrain and Side through a real
+perspective camera (Top stays orthographic) and draws its ground from a
+`MeridianVisualArtifact` (`src/lib/golf/course-geometry/visual-artifact.ts`):
+per-vertex albedo, turf/mowing weights, route-local coordinates and boundary
+distance compiled from the hash-locked package + terrain + frozen style
+(`visual-style.ts`). The artifact carries `basis: 'visual_only'`, is refused
+when its package/terrain/style hashes disagree with the scene
+(`MERIDIAN_ARTIFACT_MISMATCH`), and never feeds picking, framing, shot
+reconstruction or persisted state. Trees stay inside reviewed woods masks
+and come in seven seeded silhouette families with trunks in the near band
+and a low-poly forest-mass layer for the interior (V4). Water is a class of the
+same ground material with a shoreline-distance tone (never depth), perspective
+presets add capped distance haze and a sky dome, and crowns cast an analytic
+contact shade (V5). Status and evidence
+per plan section:
+`docs/plans/2026-09-16-meridian-visual-master-plan-status.md`; art direction:
+`docs/design/meridian-visual-language.md`. No lifecycle writer, resolver or
+production binding changed.
+
+Overnight September 16–17: the lit ground now shades every fragment from
+the terrain's metric grid (a half-float DEM slope texture,
+`buildDemSlopeTexture`) instead of interpolated vertex normals, so a steep
+bank on a coarse context triangle reads as a bank; the compiler
+(`course-terrain-v4`) therefore stops emitting the per-vertex
+`sourceNormals` array (37 % of each hole's gzip), with
+`sourceVertexNormals(mesh)` deriving the same normals from the grid for
+every remaining consumer and legacy packages read unchanged. Cut/fill is
+`context-contact-v3` (feathered end caps, blended junctions), context
+ribbons drape on the displayed ground, and the sky dome grades below the
+horizon. All display-only; no canonical geometry, picking, framing or
+persisted state changed.
+
+Later the same night (compiler `meridian-visual-compiler-8`, style hash
+changes only): small convex building footprints carry a hipped roof
+archetype (`contextObjects.roof`, `userData.roofs.basis =
+visual_archetype_by_footprint`, never a source claim); the DEM slope texture
+carries a third channel with each grid node's relative sky occlusion and the
+lit ground takes up to 35 % of the indirect light away in swales and hollows
+(`MERIDIAN_STYLE.landform`, `material.userData.shading.landform`); and the
+played green is a mown field with its own faint 2.4 m diagonal bands
+(`mowing.green`) that fade out at hole-view distance. Canaries `v15-roofs`,
+`v16-landform` and `v17-green-mowing` (96 captures each, 0 errors, all within
+budget) are recorded in the outside-world tracker; the 40° sun test (master
+§47) was run and 45° kept. The same horizon march then gained a fourth
+channel, relative sky exposure, and the rough hierarchy takes a DEM
+shelter/exposure tint (`MERIDIAN_STYLE.terrainTone`, fidelity §35 "visible
+terrain response": hollows richer, knolls and embankments warmer, albedo
+only, `material.userData.shading.terrainTone`, canary `v18-terrain-tone`).
+
+September 18 (headless device-class soak, `output/lab-build/device-soak.mjs`):
+the expanded terrain view leaked one WebGL context, ~6.5 MB of JS heap and
+~900 DOM nodes per hole change because three r186 leaves every disposed
+`WebGLRenderer` subscribed to its module-level DFG lookup texture
+(mrdoob/three.js#34519, fixed upstream for r187). `three-renderer.ts`
+`dispose()` now releases that texture from the renderer it tears down
+(`releaseSharedDfgLut`; unit-guarded in `three-renderer-discipline.test.ts`),
+and the 18-hole Chromium soak is flat (heap 89 → 97 MB, nodes ~800,
+listeners 452, was 90 → 202 MB / 1 043 → 17 090 / 458 → 1 275). Display
+runtime only; no lifecycle writer, resolver or production binding changed.
+
+September 19 (hole-open time): the wait behind *Expand course view* is the
+main-thread landscape build, and it was geometry sieves — the DEM horizon
+march, ring distance and point-in-ring tests run per candidate against
+every ring. The march now reads typed heights with per-direction offset
+tables, `inRing`/`boundaryDistance` route long rings through the exact edge
+index in `ring-index.ts` (now canonical), and the vegetation and compiler
+loops test ring boxes first. Nothing visible moved: all 18 artifact hashes,
+a digest of every built geometry array and 96 canary captures are
+unchanged. Headed 18-hole soaks: build median 507 → 242 ms (Chrome) and
+735 → 264 ms (WebKit) on the Mac; device numbers remain the owner's run.
+
+### Four-course local source trial (September 13, 2026)
+
+The fixture harness now includes Winchester alongside Cacapon; both reuse the
+same entry/review scene and optional terrain sidecar. Bryan Park and The Cardinal
+are explicitly unassigned green studies in the internal source-review harness.
+A nullable route is accepted only for a labelled, partial `source_candidate`
+with a green; it cannot be relabelled as a reviewed package. These studies have
+no played-hole binding, tee or daily pin claim and expose no Whole hole control.
+They do not participate in saves or statistics. The existing geometry plan
+Section 21 records the non-demo cohort, imagery provenance and remaining gaps.
+
+### Manual evidence and camera refinement (September 13, 2026)
+
+The local shared scene uses `manual-bounds-v1`: one bounded unknown-target
+sequence, all eight directions and original independent unit tags. Partial
+reviewed sources can show possible regions, while source candidates remain
+context only. A complete reviewed fixture can show an estimated point and a
+validated coherent connection. Neither is a measured shot path; derived
+`shotDistance` remains excluded as independent evidence. Overlapping mapped
+hazards constrain the full region cell, not just its centre. Penalty transitions,
+undo/edit/delete, saves, scores and statistics retain existing behavior.
+
+The expanded camera has a fixed world focus/lens through orbit, midpoint-anchored
+pinch, 0.5–4× explicit zoom and button alternatives. Trees, shadows, surfaces and
+shot anchors use the same projection. Inline geometry remains scroll-friendly
+and typing never rebuilds the camera or records a pending map marker. Review
+selection brings one selected detail into view; hover does not scroll the page.
+See the existing geometry plan Section 22 for verification and source limits.
+
+### Premium landscape adapter (September 13, 2026)
+
+The expanded course view loads a Three.js backend behind the existing shared
+scene; inline maps and exports retain the SVG adapter. A normal-flow nonmodal
+inspector reserves actual camera space on phone/desktop. Mutable camera frames
+and projected annotations share one imperative update. Canonical course meters,
+manual evidence, scorecard/units, penalties and local save identities do not
+change. An Estimated pin is a retained manual hypothesis or nominal interior
+green reference, never a measured daily pin or new solver evidence. The revised
+putting diagram replaces cup-reference jargon with an illustrated ball-to-hole
+line using the same feet scale as its remaining-distance ring. See Sections
+22.5 and 23 of the existing geometry plan for source and release boundaries.
+
+### Planned green observations
+
+The actual-green redesign plan (Section 25 of the existing course-geometry plan)
+requires a durable client shot key plus origin/finish role before adding stored
+ball observations. Current snapshot saves can replace database shot rows, so
+row IDs or shot numbers alone must not own future observations. Pin changes must
+share one round/hole revision and invalidate only derived hypotheses. This is a
+planning requirement; current renderer work adds no persistence or RLS changes.
+
+### One-Tap live round placement (September 16, 2026)
+
+`FairwayShotTracking` accepts `liveRound?: OneTapLiveRound | null`
+(`src/lib/golf/one-tap/live-round-placement.ts`). When present, and only for
+holes the geometry package maps, it renders `OneTapLiveHole`
+(`src/components/golf/one-tap/OneTapLiveHole.tsx`) in place of the shot-entry
+screen; every other round — every other course, and Peek'n Peak Upper with the
+flag off or no approved package — renders the tracker exactly as before
+(`__tests__/FairwayShotTracking.one-tap-placement.test.tsx`).
+
+- Eligibility is resolved client-side by `useOneTapLiveRound` in
+  `new-round-client.tsx` / `continue-round-client.tsx` from a server-evaluated
+  `peek_n_peak_one_tap_v1` (both pages pass `oneTapFlagEnabled`), the round's
+  course (`productCourseIdForRound`: bound DB row or the course name; the
+  Lower course never matches), an owner-approved package
+  (`loadApprovedCoursePackage`; nothing is fetched while
+  `approvedGeometryHashes` is empty, which is the shipped state) and a device
+  location that is not denied.
+- The ledger seam is `toRoundShots` (`src/lib/golf/one-tap/to-round-shots.ts`):
+  a hole's finalized marks become ordinary `ShotRecord`s (`source:
+  'one_tap_location'`, per-shot provenance, `clubSource: 'unknown'`, penalties
+  as separate `isPenalty` records) and `HoleStats` via `calculateHoleStats`
+  only when the hole is COMPLETE with a clean integrity report. A flagged
+  close shows *Finish by hand*; *Use standard tracking* dispatches
+  `RESET_FOR_HOLE_CHANGE` with the adapted shots so the hole continues in the
+  standard flow. Persistence still goes through the host's `onSaveShot` /
+  `onHoleComplete` / `onHoleStatsUpdate`; no new tables, actions or RLS.
+- Offline (task 15): `useOneTapLiveRound` preflights the course into the
+  device cache (`src/lib/golf/one-tap/course-assets.ts`, Cache API name
+  `golfhelm-course-geometry-v1`: manifest network-first, hashed package and
+  per-hole terrain cache-first) before resolving, so a round that started with
+  signal keeps its course through a loss; marks stay in device storage and
+  sync once when the signal returns. With no signal and an empty cache the
+  round stays on standard tracking.
+- Competition Mode (task 16): the round's type decides the One-Tap policy —
+  tournament and qualifier rounds are locked to distance and direction only
+  (`src/lib/golf/one-tap/competition-policy.ts`, `playModeForRound`); a
+  practice round may opt in from the ••• sheet, which carries the Local Rule
+  caveat. Elevation to the green (practice only) is the only advice V1 shows.
+
+### Course-framed tracking and review for Peek'n Peak Upper (September 17, 2026)
+
+Plan §unlock 3 (`docs/plans/2026-09-16-peek-n-peak-enhancements-and-round-review.md`
+P6) is wired for one course. `useCourseGeometry`
+(`src/components/golf/course-geometry/use-course-geometry.ts`) resolves the
+tracker's `geometry` (`TrackingGeometry`: package, hole keys, terrain,
+context layer) for a round whose course is Peek'n Peak Upper by
+`productCourseIdForRound` — the same identity the One-Tap gate uses; a
+bound `golf_courses` id or a name that reads as Peek'n Peak *Upper*, never
+the Lower course, never a nearest-green match — and `undefined` for every
+other round, with no request made. The package comes through the One-Tap
+asset cache (`loadCoursePackage`, network-first manifest, cache-first
+assets); terrain follows the hole on screen and the next one
+(`terrain-residency.ts`, at most three meshes resident), and the review page
+loads the open hole only. No feature flag gates the drawing: the course
+identity is the gate, `buildTrackingHoleScene` returns null on any failure,
+and the 3D canvas falls back to the outline on its own, so shot entry never
+waits on geometry. No new tables or bindings; the general binding model in
+the plan's P6 remains for a launch beyond one course.
+
+- Entry: `new-round-client.tsx` / `continue-round-client.tsx` pass
+  `geometry` to `FairwayShotTracking` (`FairwayHoleHero` → `HoleSceneFrame`,
+  compact SVG card, 3D and tap-to-measure on expand). While Meridian Live is
+  loading or up the hook is idle and `trackingGeometryFromLiveRound` reuses
+  the live round's assets, so nothing loads twice; a pause keeps what is
+  loaded (only a course change resets the hook), so the hero never drops to
+  the plain card while Live comes up or hands back (probe: 0 legacy-card
+  frames over both transitions on preview). On a fresh open the plain card
+  shows until the package is parsed — measured 0.4 s cold / 0.24 s warm on
+  preview from WebKit (`output/lab-build/measure-first-frame.mjs`), longer
+  on a phone's first download of the 1.4 MB package + context — and the
+  new-round setup step prefetches the package so hole 1 opens course-framed.
+- Review: `rounds/[id]/review/page.tsx` → `FilmstripReview.geometry` →
+  `ReviewHero.geometry` (bounded filmstrip scenes, course-framed hole detail,
+  shot selector). `ReviewHero.onOpenHoleChange` reports the open hole so the
+  page fetches that hole's terrain on demand.
+- Every other course is unchanged: the compact putting header and the hidden
+  shot pills apply only while a hole scene is drawn
+  (`FairwayShotTracking` `courseFramed`), and the selection following the
+  latest recorded shot is the state machine's `autoSelectLatest` option,
+  on only with geometry and off by default (`use-shot-state-machine.ts`,
+  main's null-until-tapped behaviour). Pinned by
+  `__tests__/FairwayShotTracking.course-framed.test.tsx`,
+  `use-course-geometry.test.tsx`, `ReviewHero.layout.test.tsx` and the
+  reducer tests.
+- Meridian Live itself stays behind `peek_n_peak_one_tap_v1` (the round's
+  own *Turn on* row) and the outbox behind `peek_n_peak_one_tap_sync_v1`,
+  which needs `20260916_peek_n_peak_one_tap.sql` applied first.

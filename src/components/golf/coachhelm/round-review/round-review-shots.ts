@@ -91,6 +91,9 @@ export interface RawGolfShotRow {
  *  putt/approach detail panel to consume without a second query. `sg`,
  *  `putt_made`, and `miss_tags` ARE real `ShotInput` fields (Wave A). */
 export interface ReviewShotInput extends ShotInput {
+  id?: string;
+  /** Original result is required for truthful spatial evidence (Other is not Rough). */
+  result?: string | null;
   /** `approach_miss_details.lie_type` — an 11-value enum, finer than
    *  `lie_after`'s 8-value one. Null when this shot isn't an approach/
    *  around-green miss row with a logged detail row, or predates the
@@ -164,6 +167,8 @@ export function mapShotRowToReviewShot(row: RawGolfShotRow, sgScale = 1): Review
   const approachMissDetails = normalizeEmbed(row.approach_miss_details);
 
   return {
+    id: row.id,
+    result: row.result,
     shot_number: row.shot_number,
     lie_after: row.lie_after,
     lie_before: row.lie_before,

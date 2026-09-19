@@ -1,0 +1,518 @@
+{
+ "kind": "golfhelm-context-report-v1",
+ "siteId": "osm-way-136097904",
+ "packageHash": "fdec6ea8467dd214372bde680e7b7f9236c06ad5d27bb5ddeadf8ed5e9d3f87a",
+ "layerHash": "92ee06051fc7b3af52672ce4c1ccbc9072e174ce286c8dc26eec594e84695f8f",
+ "zoneCounts": {
+  "building": 98,
+  "cart_path": 18,
+  "fence": 1,
+  "forest_mass": 17,
+  "lift_line": 6,
+  "road": 14,
+  "service_path": 12,
+  "ski_slope": 2
+ },
+ "skipped": {
+  "no_rule": 2,
+  "playing": 274,
+  "geometry": 1,
+  "outside": 162
+ },
+ "worstFirst": [
+  {
+   "key": "peek-n-peak-upper-02",
+   "ordinal": 2,
+   "uncertainShare": 0.494
+  },
+  {
+   "key": "peek-n-peak-upper-08",
+   "ordinal": 8,
+   "uncertainShare": 0.433
+  },
+  {
+   "key": "peek-n-peak-upper-07",
+   "ordinal": 7,
+   "uncertainShare": 0.407
+  },
+  {
+   "key": "peek-n-peak-upper-04",
+   "ordinal": 4,
+   "uncertainShare": 0.387
+  },
+  {
+   "key": "peek-n-peak-upper-06",
+   "ordinal": 6,
+   "uncertainShare": 0.353
+  },
+  {
+   "key": "peek-n-peak-upper-03",
+   "ordinal": 3,
+   "uncertainShare": 0.348
+  },
+  {
+   "key": "peek-n-peak-upper-13",
+   "ordinal": 13,
+   "uncertainShare": 0.331
+  },
+  {
+   "key": "peek-n-peak-upper-01",
+   "ordinal": 1,
+   "uncertainShare": 0.327
+  },
+  {
+   "key": "peek-n-peak-upper-17",
+   "ordinal": 17,
+   "uncertainShare": 0.306
+  },
+  {
+   "key": "peek-n-peak-upper-05",
+   "ordinal": 5,
+   "uncertainShare": 0.303
+  },
+  {
+   "key": "peek-n-peak-upper-14",
+   "ordinal": 14,
+   "uncertainShare": 0.269
+  },
+  {
+   "key": "peek-n-peak-upper-12",
+   "ordinal": 12,
+   "uncertainShare": 0.244
+  },
+  {
+   "key": "peek-n-peak-upper-09",
+   "ordinal": 9,
+   "uncertainShare": 0.223
+  },
+  {
+   "key": "peek-n-peak-upper-18",
+   "ordinal": 18,
+   "uncertainShare": 0.221
+  },
+  {
+   "key": "peek-n-peak-upper-10",
+   "ordinal": 10,
+   "uncertainShare": 0.205
+  },
+  {
+   "key": "peek-n-peak-upper-16",
+   "ordinal": 16,
+   "uncertainShare": 0.162
+  },
+  {
+   "key": "peek-n-peak-upper-11",
+   "ordinal": 11,
+   "uncertainShare": 0.154
+  },
+  {
+   "key": "peek-n-peak-upper-15",
+   "ordinal": 15,
+   "uncertainShare": 0.135
+  }
+ ],
+ "holes": [
+  {
+   "key": "peek-n-peak-upper-01",
+   "ordinal": 1,
+   "contextBoundsM2": 483072,
+   "coveredShare": 0.673,
+   "uncertainShare": 0.327,
+   "zoneCount": 66,
+   "classAreasM2": {
+    "package:woods": 356539,
+    "derived:rough_secondary": 102160,
+    "ski_slope": 89815,
+    "derived:rough_primary": 51138,
+    "package:fairway": 18570,
+    "forest_mass": 12767,
+    "building": 12758,
+    "road": 12397,
+    "package:water": 8852,
+    "cart_path": 5194,
+    "package:green": 1973,
+    "package:bunker": 1845,
+    "package:tee": 690,
+    "service_path": 438,
+    "lift_line": 393
+   }
+  },
+  {
+   "key": "peek-n-peak-upper-02",
+   "ordinal": 2,
+   "contextBoundsM2": 502016,
+   "coveredShare": 0.506,
+   "uncertainShare": 0.494,
+   "zoneCount": 47,
+   "classAreasM2": {
+    "package:woods": 340290,
+    "derived:rough_secondary": 129372,
+    "derived:rough_primary": 67047,
+    "package:fairway": 21962,
+    "ski_slope": 16923,
+    "road": 11495,
+    "building": 7313,
+    "cart_path": 6626,
+    "package:bunker": 3651,
+    "package:water": 3281,
+    "service_path": 2691,
+    "package:green": 2397,
+    "package:tee": 1238,
+    "lift_line": 190
+   }
+  },
+  {
+   "key": "peek-n-peak-upper-03",
+   "ordinal": 3,
+   "contextBoundsM2": 350464,
+   "coveredShare": 0.652,
+   "uncertainShare": 0.348,
+   "zoneCount": 26,
+   "classAreasM2": {
+    "package:woods": 336949,
+    "derived:rough_secondary": 90408,
+    "derived:rough_primary": 45586,
+    "package:fairway": 12530,
+    "road": 7115,
+    "cart_path": 4921,
+    "package:water": 3281,
+    "package:bunker": 3147,
+    "building": 3066,
+    "package:green": 1875,
+    "service_path": 1328,
+    "package:tee": 1106,
+    "ski_slope": 80
+   }
+  },
+  {
+   "key": "peek-n-peak-upper-04",
+   "ordinal": 4,
+   "contextBoundsM2": 515328,
+   "coveredShare": 0.613,
+   "uncertainShare": 0.387,
+   "zoneCount": 13,
+   "classAreasM2": {
+    "package:woods": 446033,
+    "derived:rough_secondary": 136896,
+    "derived:rough_primary": 69026,
+    "package:fairway": 22554,
+    "cart_path": 7172,
+    "package:bunker": 3742,
+    "road": 3541,
+    "package:water": 3281,
+    "package:green": 2382,
+    "package:tee": 1532,
+    "building": 229
+   }
+  },
+  {
+   "key": "peek-n-peak-upper-05",
+   "ordinal": 5,
+   "contextBoundsM2": 289536,
+   "coveredShare": 0.697,
+   "uncertainShare": 0.303,
+   "zoneCount": 3,
+   "classAreasM2": {
+    "package:woods": 340407,
+    "derived:rough_secondary": 43011,
+    "derived:rough_primary": 20438,
+    "package:fairway": 6688,
+    "cart_path": 1959,
+    "package:green": 894,
+    "package:bunker": 828,
+    "package:tee": 426
+   }
+  },
+  {
+   "key": "peek-n-peak-upper-06",
+   "ordinal": 6,
+   "contextBoundsM2": 483072,
+   "coveredShare": 0.647,
+   "uncertainShare": 0.353,
+   "zoneCount": 13,
+   "classAreasM2": {
+    "package:woods": 492892,
+    "derived:rough_secondary": 93344,
+    "derived:rough_primary": 43297,
+    "package:fairway": 13488,
+    "cart_path": 5266,
+    "road": 3859,
+    "package:green": 2122,
+    "package:bunker": 1875,
+    "package:water": 1601,
+    "package:tee": 1070,
+    "building": 238
+   }
+  },
+  {
+   "key": "peek-n-peak-upper-07",
+   "ordinal": 7,
+   "contextBoundsM2": 449280,
+   "coveredShare": 0.593,
+   "uncertainShare": 0.407,
+   "zoneCount": 32,
+   "classAreasM2": {
+    "package:woods": 389684,
+    "derived:rough_secondary": 90458,
+    "derived:rough_primary": 44742,
+    "package:fairway": 12595,
+    "road": 8147,
+    "cart_path": 5097,
+    "building": 3873,
+    "package:water": 3281,
+    "package:bunker": 2747,
+    "ski_slope": 2488,
+    "package:green": 1875,
+    "service_path": 1749,
+    "package:tee": 1106
+   }
+  },
+  {
+   "key": "peek-n-peak-upper-08",
+   "ordinal": 8,
+   "contextBoundsM2": 539904,
+   "coveredShare": 0.567,
+   "uncertainShare": 0.433,
+   "zoneCount": 61,
+   "classAreasM2": {
+    "package:woods": 376093,
+    "derived:rough_secondary": 136004,
+    "derived:rough_primary": 69126,
+    "ski_slope": 40201,
+    "package:fairway": 22028,
+    "road": 14286,
+    "building": 11725,
+    "cart_path": 6304,
+    "package:bunker": 3651,
+    "package:water": 3281,
+    "service_path": 3219,
+    "package:green": 2397,
+    "package:tee": 1567,
+    "lift_line": 351,
+    "forest_mass": 1
+   }
+  },
+  {
+   "key": "peek-n-peak-upper-09",
+   "ordinal": 9,
+   "contextBoundsM2": 445184,
+   "coveredShare": 0.777,
+   "uncertainShare": 0.223,
+   "zoneCount": 72,
+   "classAreasM2": {
+    "package:woods": 363313,
+    "ski_slope": 133094,
+    "derived:rough_secondary": 100324,
+    "derived:rough_primary": 48798,
+    "forest_mass": 44096,
+    "package:fairway": 16379,
+    "road": 12016,
+    "building": 11879,
+    "package:water": 8852,
+    "cart_path": 4864,
+    "package:green": 1973,
+    "package:bunker": 1845,
+    "package:tee": 882,
+    "lift_line": 678,
+    "service_path": 371
+   }
+  },
+  {
+   "key": "peek-n-peak-upper-10",
+   "ordinal": 10,
+   "contextBoundsM2": 456960,
+   "coveredShare": 0.795,
+   "uncertainShare": 0.205,
+   "zoneCount": 67,
+   "classAreasM2": {
+    "package:woods": 489504,
+    "derived:rough_secondary": 117020,
+    "ski_slope": 63678,
+    "derived:rough_primary": 61925,
+    "package:fairway": 27876,
+    "forest_mass": 17352,
+    "building": 13226,
+    "road": 10652,
+    "cart_path": 5001,
+    "package:water": 2552,
+    "package:bunker": 2187,
+    "package:green": 1330,
+    "service_path": 1063,
+    "lift_line": 442,
+    "package:tee": 404
+   }
+  },
+  {
+   "key": "peek-n-peak-upper-11",
+   "ordinal": 11,
+   "contextBoundsM2": 520960,
+   "coveredShare": 0.846,
+   "uncertainShare": 0.154,
+   "zoneCount": 40,
+   "classAreasM2": {
+    "package:woods": 813817,
+    "derived:rough_secondary": 171951,
+    "derived:rough_primary": 89952,
+    "package:fairway": 39248,
+    "building": 9697,
+    "road": 8186,
+    "cart_path": 6707,
+    "package:bunker": 3382,
+    "ski_slope": 3082,
+    "package:green": 2621,
+    "package:tee": 898,
+    "service_path": 692
+   }
+  },
+  {
+   "key": "peek-n-peak-upper-12",
+   "ordinal": 12,
+   "contextBoundsM2": 429312,
+   "coveredShare": 0.756,
+   "uncertainShare": 0.244,
+   "zoneCount": 17,
+   "classAreasM2": {
+    "package:woods": 515005,
+    "derived:rough_secondary": 115743,
+    "derived:rough_primary": 58928,
+    "package:fairway": 22003,
+    "road": 7069,
+    "building": 4423,
+    "cart_path": 3944,
+    "package:bunker": 2665,
+    "package:green": 2582,
+    "package:tee": 911,
+    "service_path": 105
+   }
+  },
+  {
+   "key": "peek-n-peak-upper-13",
+   "ordinal": 13,
+   "contextBoundsM2": 331520,
+   "coveredShare": 0.669,
+   "uncertainShare": 0.331,
+   "zoneCount": 3,
+   "classAreasM2": {
+    "package:woods": 332108,
+    "derived:rough_secondary": 53045,
+    "derived:rough_primary": 25574,
+    "package:fairway": 7337,
+    "road": 5458,
+    "cart_path": 1928,
+    "package:bunker": 1658,
+    "package:green": 910,
+    "package:tee": 385
+   }
+  },
+  {
+   "key": "peek-n-peak-upper-14",
+   "ordinal": 14,
+   "contextBoundsM2": 439040,
+   "coveredShare": 0.731,
+   "uncertainShare": 0.269,
+   "zoneCount": 11,
+   "classAreasM2": {
+    "package:woods": 546981,
+    "derived:rough_secondary": 103805,
+    "derived:rough_primary": 47286,
+    "package:fairway": 13002,
+    "road": 7661,
+    "cart_path": 4071,
+    "package:green": 2582,
+    "package:bunker": 2079,
+    "building": 1431,
+    "package:tee": 1101,
+    "service_path": 330
+   }
+  },
+  {
+   "key": "peek-n-peak-upper-15",
+   "ordinal": 15,
+   "contextBoundsM2": 274688,
+   "coveredShare": 0.865,
+   "uncertainShare": 0.135,
+   "zoneCount": 13,
+   "classAreasM2": {
+    "package:woods": 450072,
+    "derived:rough_secondary": 99104,
+    "derived:rough_primary": 51344,
+    "package:fairway": 20327,
+    "road": 4608,
+    "cart_path": 3419,
+    "building": 2671,
+    "package:green": 1928,
+    "package:bunker": 1810,
+    "package:tee": 716
+   }
+  },
+  {
+   "key": "peek-n-peak-upper-16",
+   "ordinal": 16,
+   "contextBoundsM2": 409344,
+   "coveredShare": 0.838,
+   "uncertainShare": 0.162,
+   "zoneCount": 30,
+   "classAreasM2": {
+    "package:woods": 638763,
+    "derived:rough_secondary": 124921,
+    "derived:rough_primary": 66620,
+    "package:fairway": 30246,
+    "road": 7602,
+    "building": 5600,
+    "cart_path": 4436,
+    "package:green": 2290,
+    "package:bunker": 1914,
+    "package:tee": 729,
+    "service_path": 692,
+    "fence": 68
+   }
+  },
+  {
+   "key": "peek-n-peak-upper-17",
+   "ordinal": 17,
+   "contextBoundsM2": 404736,
+   "coveredShare": 0.694,
+   "uncertainShare": 0.306,
+   "zoneCount": 17,
+   "classAreasM2": {
+    "package:woods": 551763,
+    "derived:rough_secondary": 75655,
+    "derived:rough_primary": 36679,
+    "package:fairway": 13422,
+    "road": 6621,
+    "cart_path": 2991,
+    "package:bunker": 1472,
+    "package:green": 1131,
+    "building": 999,
+    "package:tee": 257,
+    "fence": 68
+   }
+  },
+  {
+   "key": "peek-n-peak-upper-18",
+   "ordinal": 18,
+   "contextBoundsM2": 569088,
+   "coveredShare": 0.779,
+   "uncertainShare": 0.221,
+   "zoneCount": 66,
+   "classAreasM2": {
+    "package:woods": 666321,
+    "derived:rough_secondary": 173720,
+    "derived:rough_primary": 93714,
+    "package:fairway": 42377,
+    "ski_slope": 26827,
+    "road": 14392,
+    "building": 8685,
+    "package:water": 8284,
+    "cart_path": 6835,
+    "forest_mass": 4485,
+    "package:bunker": 3527,
+    "package:green": 2332,
+    "service_path": 813,
+    "package:tee": 598,
+    "lift_line": 243,
+    "fence": 68
+   }
+  }
+ ]
+}

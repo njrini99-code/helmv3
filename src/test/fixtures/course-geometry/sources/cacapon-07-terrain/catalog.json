@@ -1,0 +1,186 @@
+{
+  "objectIdFieldName": "OBJECTID",
+  "fields": [
+    {
+      "name": "OBJECTID",
+      "type": "esriFieldTypeOID",
+      "alias": "OBJECTID",
+      "domain": null
+    },
+    {
+      "name": "Name",
+      "type": "esriFieldTypeString",
+      "alias": "Name",
+      "domain": null,
+      "length": 200
+    },
+    {
+      "name": "DEM_Type",
+      "type": "esriFieldTypeSmallInteger",
+      "alias": "DEM_Type",
+      "domain": null
+    },
+    {
+      "name": "VerticalDatum",
+      "type": "esriFieldTypeString",
+      "alias": "VerticalDatum",
+      "domain": null,
+      "length": 100
+    },
+    {
+      "name": "AcquisitionDate",
+      "type": "esriFieldTypeDate",
+      "alias": "AcquisitionDate",
+      "domain": null,
+      "length": 8
+    },
+    {
+      "name": "URL",
+      "type": "esriFieldTypeString",
+      "alias": "URL",
+      "domain": null,
+      "length": 1000
+    },
+    {
+      "name": "Resolution_X",
+      "type": "esriFieldTypeString",
+      "alias": "Resolution_X",
+      "domain": null,
+      "length": 50
+    },
+    {
+      "name": "StartDate",
+      "type": "esriFieldTypeInteger",
+      "alias": "StartDate",
+      "domain": null
+    },
+    {
+      "name": "EndDate",
+      "type": "esriFieldTypeString",
+      "alias": "EndDate",
+      "domain": null,
+      "length": 50
+    },
+    {
+      "name": "title",
+      "type": "esriFieldTypeString",
+      "alias": "title",
+      "domain": null,
+      "length": 256
+    }
+  ],
+  "features": [
+    {
+      "attributes": {
+        "OBJECTID": 2991,
+        "Name": "n40w079",
+        "DEM_Type": 1,
+        "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+        "AcquisitionDate": 1735603200000,
+        "URL": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1/TIFF/current/n40w079/USGS_1_n40w079.tif",
+        "Resolution_X": "2.7777777803598E-04",
+        "StartDate": 20030101,
+        "EndDate": "20241231",
+        "title": "USGS 1 Arc Second n40w079 20260512"
+      }
+    },
+    {
+      "attributes": {
+        "OBJECTID": 4412,
+        "Name": "n40w079",
+        "DEM_Type": 1,
+        "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+        "AcquisitionDate": 1735603200000,
+        "URL": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/13/TIFF/current/n40w079/USGS_13_n40w079.tif",
+        "Resolution_X": "9.25925927753796E-05",
+        "StartDate": 20030101,
+        "EndDate": "20241231",
+        "title": "USGS 1/3 Arc Second n40w079 20260512"
+      }
+    },
+    {
+      "attributes": {
+        "OBJECTID": 15104,
+        "Name": "ned19_n39x75_w078x50_md_alleganyco_2012",
+        "DEM_Type": 1,
+        "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+        "AcquisitionDate": 1339718400000,
+        "URL": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/19/IMG/ned19_n39x75_w078x50_md_alleganyco_2012.zip",
+        "Resolution_X": "0.00001",
+        "StartDate": 20111215,
+        "EndDate": "20120615",
+        "title": "USGS NED ned19_n39x75_w078x50_md_alleganyco_2012 1/9 arc-second 2012 15 x 15 minute IMG"
+      }
+    },
+    {
+      "attributes": {
+        "OBJECTID": 15105,
+        "Name": "ned19_n39x75_w078x50_md_washingtonco_2012",
+        "DEM_Type": 1,
+        "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+        "AcquisitionDate": 1332806400000,
+        "URL": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/19/IMG/ned19_n39x75_w078x50_md_washingtonco_2012.zip",
+        "Resolution_X": "0.00001",
+        "StartDate": 20120131,
+        "EndDate": "20120327",
+        "title": "USGS NED ned19_n39x75_w078x50_md_washingtonco_2012 1/9 arc-second 2013 15 x 15 minute IMG"
+      }
+    },
+    {
+      "attributes": {
+        "OBJECTID": 15106,
+        "Name": "ned19_n39x75_w078x50_pa_south_2007",
+        "DEM_Type": 1,
+        "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+        "AcquisitionDate": 1177286400000,
+        "URL": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/19/IMG/ned19_n39x75_w078x50_pa_south_2007.zip",
+        "Resolution_X": "0.00001",
+        "StartDate": 20070421,
+        "EndDate": "20070423",
+        "title": "USGS NED ned19_n39x75_w078x50_pa_south_2007 1/9 arc-second 2010 15 x 15 minute IMG"
+      }
+    },
+    {
+      "attributes": {
+        "OBJECTID": 15107,
+        "Name": "ned19_n39x75_w078x50_va_wvmd_fema_r3lot4_2012",
+        "DEM_Type": 1,
+        "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+        "AcquisitionDate": 1335398400000,
+        "URL": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/19/IMG/ned19_n39x75_w078x50_va_wvmd_fema_r3lot4_2012.zip",
+        "Resolution_X": "0.00001",
+        "StartDate": 20120129,
+        "EndDate": "20120426",
+        "title": "USGS NED ned19_n39x75_w078x50_va_wvmd_fema_r3lot4_2012 1/9 arc-second 2013 15 x 15 minute IMG"
+      }
+    },
+    {
+      "attributes": {
+        "OBJECTID": 15108,
+        "Name": "ned19_n39x75_w078x50_wv_statewide_2003",
+        "DEM_Type": 1,
+        "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+        "AcquisitionDate": 1388534400000,
+        "URL": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/19/IMG/ned19_n39x75_w078x50_wv_statewide_2003.zip",
+        "Resolution_X": "0.00001",
+        "StartDate": 2012,
+        "EndDate": "2014",
+        "title": "USGS NED ned19_n39x75_w078x50_wv_statewide_2003 1/9 arc-second 2012 15 x 15 minute IMG"
+      }
+    },
+    {
+      "attributes": {
+        "OBJECTID": 129279,
+        "Name": "MD_Western_2021_D21",
+        "DEM_Type": 1,
+        "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+        "AcquisitionDate": 1640044800000,
+        "URL": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/MD_Western_2021_D21/TIFF/USGS_1M_17_x73y438_MD_Western_2021_D21.tif",
+        "Resolution_X": null,
+        "StartDate": 20211204,
+        "EndDate": "20211221",
+        "title": "USGS 1 Meter 17 x73y438 MD_Western_2021_D21"
+      }
+    }
+  ]
+}

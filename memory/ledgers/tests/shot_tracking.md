@@ -1,5 +1,18 @@
 # Shot Tracking test ledger
 
+## 2026-09-15 — real-course source-study compiler coverage
+
+- Added no-network NC OneMap orthophoto contract tests for the native 0.5
+  US-survey-foot grid, native-resolution guard, and analysis-band contract.
+- Verified the native LiDAR acquisition and terrain compiler tests (14 total),
+  Python compilation, the actual Cardinal Blender export, and a fresh GLB
+  import round trip. The cardinal study retained a one-metre world-unit
+  invariant and imported terrain spans within 0.000008m.
+- `golf-schemas` unit coverage (25) and TypeScript passed. The existing
+  round-flow e2e suite passed five tests and failed two pre-existing
+  in-progress/continue fixtures waiting for a `Hole 1` heading; this source
+  tooling does not enter the round UI or alter those routes.
+
 ## 2026-08-22 — false recovery drawer regression coverage
 
 - SHA: `48b41e1c4d8c86f12f5a2becd11454f5bd3899e2`.
@@ -373,6 +386,22 @@ Each written red first against the pre-fix source; defect descriptions in
   `finalize`, and that exactly one `finalize` call fires, with status
   `'success'` (guards against a double-finalize regression from the
   restructure).
+
+## 2026-09-15 — terrain source-unit and native-grid acquisition contracts
+
+- `scripts/golf/course-geometry/test_fetch_nc_lidar_study.py` verifies that
+  a Cardinal study request expands onto the NC DEM03 native 3.125-foot grid
+  instead of requesting an arbitrary resampled image, and rejects a service
+  whose foot-unit or native-resolution contract changes.
+- `scripts/golf/course-geometry/test_compile_course_terrain.py` verifies that
+  a declared US-survey-foot raster is converted to meters before bilinear
+  sampling, while an unidentified manifest that omits the conversion is
+  rejected. The same focused run keeps the existing no-nodata-substitution,
+  normal, topology, and deterministic-asset invariants covered.
+- `src/test/static/rsc-function-prop-boundary.test.ts` now recognizes the
+  Vite-only course-geometry browser fixture as a client entrypoint. Its local
+  save callbacks therefore remain valid test harness behavior and cannot be
+  misreported as Server-to-Client React function props.
 - `src/lib/observability/__tests__/helm-flight-recorder.test.ts`:
   - (finding 2, new case) a `persistStep` dependency that throws
     synchronously (not an async function returning a rejected promise) is

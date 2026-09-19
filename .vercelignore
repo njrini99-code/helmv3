@@ -30,6 +30,10 @@ playwright-report/
 coverage/
 .turbo/
 *.tsbuildinfo
+# Course-geometry capture and lab output (playwright PNGs, canary runs,
+# static lab builds) — gigabytes in a working checkout, never deployable.
+output/
+.playwright-cli/
 
 # Local-only tooling state — same .gitignore-is-ignored trap as the block
 # above, and the reason the 2026-08-09 deploy was rejected at 19,795 files:
@@ -191,3 +195,75 @@ deno.lock
 # Native shell — built by Capacitor/Xcode, never by the Vercel build.
 android/
 ios/
+
+# Every directory rule above, again WITHOUT the trailing slash.
+#
+# Vercel CLI archive uploads (`--archive=tgz` — what scripts/deploy-prod.sh
+# and every preview deploy from this repo use) walk the tree with ignore@4 and
+# test each DIRECTORY path without a trailing slash, so a "dir/" rule never
+# matches the directory itself, only its children. A directory whose children
+# are all ignored therefore comes back empty, the CLI adds the directory as an
+# entry so that empty directories survive, and tar-fs then packs its ENTIRE
+# contents — ignore rules and all.
+#
+# Measured 2026-09-17 with `vercel deploy --dry --archive=tgz`: the upload
+# was 952 MB instead of ~100 MB (output/, audit/, tools/, docs/, .playwright-cli/
+# all packed), and the deploy was rejected for the supabase/.temp/pooler-url
+# symlink that the "supabase/.temp/" rule above was meant to keep out. From the
+# canonical checkout the same walk was shipping playwright/.auth/, momentic/auth/
+# and .claude/session-state/ — exactly the secrets the block above exists for.
+#
+# A rule without the slash matches the directory path itself, so the walk is
+# pruned before it descends. Keep BOTH forms: the slash form is what every
+# other gitignore-style reader (and scripts/check-vercelignore-coverage.mjs)
+# understands, this form is what the CLI's walker needs.
+helm-website-ui
+helm-intelligence
+next-shadcn-dashboard-starter
+archive
+.full-review
+.full-review-archive-*
+.full-stack-feature-archived-*
+docs/superpowers
+.next
+node_modules
+test-results
+playwright-report
+coverage
+.turbo
+output
+.playwright-cli
+.deepsec
+.worktrees
+.claude/worktrees
+audit
+tools
+.playwright-mcp
+.agents
+routes
+.ruff_cache
+.momentic-mcp
+.momentic
+.cursor
+playwright/.auth
+momentic/auth
+.claude/session-state
+.vercel
+supabase/.temp
+.dev-assets
+.dev-screenshots
+.codex
+.design-sync
+.ultracode
+.vscode
+.idea
+android
+ios
+# The docs/ carve-out has the same problem in reverse: "!docs/generated/" never
+# matched the docs/generated directory path, so the walker never descended to
+# WORLD_MODEL.json and the carve-out only "worked" because the emptied docs/
+# directory was then packed wholesale (145 MB). These two lines let the walk
+# reach the three carved-in paths; everything else under docs/ now really
+# stays out.
+!docs/generated
+!docs/generated/contracts

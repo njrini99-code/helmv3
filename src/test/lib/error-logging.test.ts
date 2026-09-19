@@ -46,6 +46,19 @@ describe('isStaleServerActionError', () => {
     ).toBe(true);
   });
 
+  it('returns true for the Next 16 production wording (404 body, and the server-side error)', async () => {
+    const { isStaleServerActionError } = await import('@/lib/error-logging');
+    expect(isStaleServerActionError(new Error('Server action not found.'))).toBe(true);
+    expect(isStaleServerActionError('Server action not found.')).toBe(true);
+    expect(
+      isStaleServerActionError(
+        new Error('Failed to find Server Action "7f2c". This request might be from an older or newer deployment.'),
+      ),
+    ).toBe(true);
+    expect(isStaleServerActionError(new Error('Could not load that tee'))).toBe(false);
+    expect(isStaleServerActionError(new Error('An unexpected response was received from the server.'))).toBe(false);
+  });
+
   it('returns true for a plain string carrying the same message (rejection reason)', async () => {
     const { isStaleServerActionError } = await import('@/lib/error-logging');
     expect(
@@ -124,6 +137,31 @@ describe('softReloadForStaleServerAction', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     delete (window as unknown as { __helmRecovery?: unknown }).__helmRecovery;
+  });
+
+  it('recoverFromStaleServerAction: claims the reload for a caught stale action and nothing else', async () => {
+    const { recoverFromStaleServerAction } = await import('@/lib/error-logging');
+    expect(recoverFromStaleServerAction(new Error('Could not load that tee'))).toBe(false);
+    expect(recoverFromStaleServerAction(null)).toBe(false);
+    expect(requestRecovery).not.toHaveBeenCalled();
+    expect(recoverFromStaleServerAction(new Error('Server action not found.'))).toBe(true);
+    await waitForReload();
+    expect(requestRecovery).toHaveBeenCalledWith('Server action not found.');
+    expect(reloadSpy).not.toHaveBeenCalled();
+  });
+
+  it('recoverFromStaleServerAction: a refused recovery hands the error back to the caller', async () => {
+    const { recoverFromStaleServerAction } = await import('@/lib/error-logging');
+    // Unsaved work, a spent budget or a missing coordinator: no reload is
+    // coming, so the caller must still toast — a silent tee tap is the bug.
+    for (const status of ['unsafe-work', 'budget-spent', 'ineligible'] as const) {
+      requestRecovery.mockReturnValueOnce(status);
+      expect(recoverFromStaleServerAction(new Error('Server action not found.'))).toBe(false);
+    }
+    requestRecovery.mockReturnValueOnce('in-flight');
+    expect(recoverFromStaleServerAction(new Error('Server action not found.'))).toBe(true);
+    delete (window as unknown as { __helmRecovery?: unknown }).__helmRecovery;
+    expect(recoverFromStaleServerAction(new Error('Server action not found.'))).toBe(false);
   });
 
   it('hands the failure to the coordinator instead of reloading itself', async () => {

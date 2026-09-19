@@ -20,7 +20,7 @@
  * guard release. Result selection ONLY ever dispatches HANDLE_RESULT_SELECT.
  * ========================================================================== */
 
-import { useRef, useState, useCallback, useEffect, type ReactNode } from 'react';
+import { useRef, useMemo, useState, useCallback, useEffect, type ReactNode } from 'react';
 import { calculateShotDistanceWithDirection, calculateHoleStats } from '@/lib/utils/shot-helpers';
 import { triggerHaptic } from '@/lib/utils/capacitor';
 
@@ -35,18 +35,36 @@ import { displayToFeet, displayToYards } from '@/lib/golf/distance-units';
 
 import { FairwayScorecardHeader, FairwayDesktopExitHeader } from './FairwayScorecardHeader';
 import { FairwayShotPills } from './FairwayShotPills';
+import type { TrackingGeometry } from '@/lib/golf/course-geometry/tracking-scene';
+import { buildTrackingHoleScene } from '@/lib/golf/course-geometry/tracking-scene';
 import { FairwayHoleHero } from './FairwayHoleHero';
 import { FairwayShotEntry } from './FairwayShotEntry';
 import { FairwayCompletedHole } from './FairwayCompletedHole';
 import { FairwayEditShotModal } from './FairwayEditShotModal';
 import { FairwayPenaltyModal } from './FairwayPenaltyModal';
 import { FairwayUnsavedNavModal } from './FairwayUnsavedNavModal';
+import { OneTapLiveHole } from '@/components/golf/one-tap/OneTapLiveHole';
+import { OneTapLiveStatusRow } from '@/components/golf/one-tap/OneTapLiveStatusRow';
+import type { OneTapLiveStatus } from '@/components/golf/one-tap/use-one-tap-live-round';
+import { holeKeyForRoundHole, type OneTapLiveRound } from '@/lib/golf/one-tap/live-round-placement';
 
 // Local alias for the Hole interface used by this component's props
 type Hole = RoundHole;
 
-// IDENTICAL to the legacy ShotTrackingProps interface.
+// Existing tracking props plus optional read-only course display context.
 interface ShotTrackingProps {
+  /** Optional reviewed binding context; never part of score persistence. */
+  geometry?: TrackingGeometry;
+  /** One-Tap master plan §77: an eligible Peek'n Peak Upper live round. When
+   * present, Meridian Live replaces the shot-entry screen for the holes its
+   * package maps; absent (every other course, Peek Upper in standard mode),
+   * nothing below changes. */
+  liveRound?: OneTapLiveRound | null;
+  /** The round's Meridian Live switch (`live-opt-in.ts`): the status row turns it on, the ••• menu off. */
+  onLiveOptIn?: (on: boolean) => void;
+  /** Where the Live gate stands for an Upper round whose Live is not up yet
+   * (loading, or off with a reason); shown as one line in the chrome. */
+  liveStatus?: OneTapLiveStatus;
   /** Resume context already occupies the initial status-bar inset. */
   safeAreaHandledAbove?: boolean;
   /** Round-level status stays in the same measured sticky chrome. */
@@ -128,6 +146,10 @@ export function resolveDistanceAfterShot(params: {
 export default function FairwayShotTracking({
   safeAreaHandledAbove = false,
   statusSlot,
+  geometry,
+  liveRound = null,
+  onLiveOptIn,
+  liveStatus,
   holes,
   currentHoleIndex,
   onHoleComplete,
@@ -164,6 +186,10 @@ export default function FairwayShotTracking({
     onAutoSave,
     autoSaveInterval,
     autoSaveDisabled,
+    // Course-framed rounds keep the selection on the latest recorded event so
+    // the landscape and inspector start there. Every round without a course
+    // package keeps the selection behaviour shipped on main.
+    autoSelectLatest: geometry != null,
   });
 
   // Distance-unit preference: 'yards' (default) | 'meters'
@@ -193,6 +219,11 @@ export default function FairwayShotTracking({
   // modal/undo overlap cannot apply two local-history removals to one shot.
   const shotMutationInFlightRef = useRef(false);
   const [holeCheckpointStatus, setHoleCheckpointStatus] = useState<'idle' | 'saving' | 'failed'>('idle');
+  const [puttingSelection, setPuttingSelection] = useState<number | 'draft'>('draft');
+  // One-Tap live round (§77): "Use standard tracking" hands the adapted shots
+  // to this state machine for the rest of the hole; the next hole is Live again.
+  const [standardOverride, setStandardOverride] = useState(false);
+  useEffect(() => { setStandardOverride(false); }, [currentHoleIndex]);
 
   // ============================================================================
   // SUB-HOOKS — must be called before any early return (Rules of Hooks)
@@ -515,12 +546,51 @@ export default function FairwayShotTracking({
     }
   }, [dispatch, shotHistory, handleEditShot]);
 
+  const handleSelectPuttingContext = useCallback((shotNumber: number | null) => {
+    setPuttingSelection(shotNumber ?? 'draft');
+    // Selection changes map/card emphasis only. It must not open the edit
+    // modal, alter the draft, or create a score mutation.
+    dispatch({ type: 'SELECT_SHOT', payload: shotNumber });
+  }, [dispatch]);
+
+  useEffect(() => {
+    // Recording, undoing, moving holes, or entering the green returns to the
+    // active draft by default. A deliberate historical selection survives
+    // ordinary re-renders while the same putt remains active.
+    if (isPutting) setPuttingSelection('draft');
+  }, [currentHoleIndex, currentShot, isPutting]);
+
+  const physicalScene = useMemo(() =>
+    buildTrackingHoleScene(geometry, currentHoleIndex, shotHistory),
+  [geometry, currentHoleIndex, shotHistory]);
+  // The compact putting chrome (a task header instead of the scorecard, no
+  // shot pills) exists to give the drawn green room. A round whose hole is not
+  // drawn — every course without a package, an unmapped hole — keeps the full
+  // chrome shipped on main, putting included.
+  const courseFramed = physicalScene != null;
+
   // Early return for invalid hole data - must be after all hooks
   if (!currentHole) {
     return (
       <div className="flex min-h-full items-center justify-center bg-canvas">
         <p className="font-fw-sans text-lg text-text-secondary">Invalid hole data</p>
       </div>
+    );
+  }
+
+  // Meridian Live replaces the shot-entry screen only when the round is
+  // eligible and the package maps this hole (§77). All hooks above ran the
+  // same way; the standard tracker below is untouched for every other round.
+  const liveHoleKey = liveRound && !standardOverride ? holeKeyForRoundHole(liveRound, currentHole.number) : null;
+  if (liveRound && liveHoleKey) {
+    return (
+      <OneTapLiveHole live={liveRound} holes={holes} holeIndex={currentHoleIndex} onNavigateToHole={onNavigateToHole}
+        onHoleComplete={onHoleComplete} onHoleStatsUpdate={onHoleStatsUpdate} onSaveShot={onSaveShot} onExit={onExit} statusSlot={statusSlot}
+        onTurnOffLive={onLiveOptIn ? () => onLiveOptIn(false) : undefined}
+        onUseStandardTracking={(shots) => {
+          dispatch({ type: 'RESET_FOR_HOLE_CHANGE', payload: { initialShots: shots, initialShotNumber: shots.length + 1, holeYardage: currentHole.yardage } });
+          setStandardOverride(true);
+        }} />
     );
   }
 
@@ -581,6 +651,7 @@ export default function FairwayShotTracking({
           single element that scrolls, sticks and safe-areas as one thing. */}
       <FairwayScorecardHeader
         safeAreaHandledAbove={safeAreaHandledAbove}
+        puttingMode={isPutting && courseFramed}
         holes={holes}
         currentHoleIndex={currentHoleIndex}
         currentHoleNumber={currentHole.number}
@@ -590,12 +661,13 @@ export default function FairwayShotTracking({
         belowSlot={
           <>
             {statusSlot}
-            <FairwayShotPills
+            {liveStatus && <OneTapLiveStatusRow status={liveStatus} onTurnOn={onLiveOptIn ? () => onLiveOptIn(true) : undefined} />}
+            {!(isPutting && courseFramed) && <FairwayShotPills
               currentShot={currentShot}
               recordedShotCount={shotHistory.length}
               selectedShotNumber={selectedShotNumber}
               onSelectShot={handleSelectShot}
-            />
+            />}
           </>
         }
       />
@@ -610,6 +682,12 @@ export default function FairwayShotTracking({
                 desktop so the live panel can scroll without losing context. */}
             <div className="lg:sticky lg:top-[calc(var(--scorecard-height,105px)+5.5rem)]">
               <FairwayHoleHero
+                scene={physicalScene}
+                selectedShotNumber={isPutting && puttingSelection === 'draft' ? undefined : selectedShotNumber}
+                activeDraftShotNumber={isPutting ? currentShot : undefined}
+                puttingSelection={isPutting ? puttingSelection : undefined}
+                onSelectPuttingContext={handleSelectPuttingContext}
+                shotType={shotType}
                 currentHole={currentHole}
                 isHoleComplete={isHoleComplete}
                 shotHistory={shotHistory}

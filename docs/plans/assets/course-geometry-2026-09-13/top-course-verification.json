@@ -1,0 +1,28 @@
+{
+  "courses": [
+    {
+      "course": "cacapon",
+      "triangles": 7796,
+      "preservedPendingFeet": 12,
+      "ledgerUnchanged": true
+    },
+    {
+      "course": "winchester",
+      "triangles": 5484,
+      "preservedPendingFeet": 12,
+      "ledgerUnchanged": true
+    },
+    {
+      "course": "bryan",
+      "kind": "unassigned_green_study",
+      "terrainAvailable": false
+    },
+    {
+      "course": "cardinal",
+      "kind": "unassigned_green_study",
+      "terrainAvailable": false
+    }
+  ],
+  "errors": [],
+  "nativeKeyboardVerified": false
+}
