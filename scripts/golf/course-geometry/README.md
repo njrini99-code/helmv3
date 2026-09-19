@@ -280,6 +280,18 @@ python3 scripts/golf/course-geometry/report-unexplained-naip.py \
   output/course-geometry/peek-n-peak-upper-naip \
   output/course-geometry/peek-n-peak-upper-unexplained \
   --fixture=$F/peek-n-peak-upper-unexplained-naip.json
+# Measure (never apply) a canopy pass re-run out to the report's hole bounds:
+# same raster and rules, only the clip box; replays the pass against the
+# retained canopy review first, then recomputes every hole's uncertain share.
+python3 scripts/golf/course-geometry/measure-canopy-rerun.py \
+  $F/peek-n-peak-upper.json $F/peek-n-peak-upper-context.json \
+  $F/peek-n-peak-upper-context-report.json \
+  $F/peek-n-peak-upper-canopy-review.json $F/compiled-peek-n-peak-upper \
+  $F/sources/peek-n-peak-upper-terrain \
+  output/course-geometry/peek-n-peak-upper-naip \
+  output/course-geometry/peek-n-peak-upper-unexplained \
+  --fixture=$F/peek-n-peak-upper-canopy-rerun.json
+# (the prompt sheet takes that fixture as its optional last argument)
 # Visual canaries (§8): 8 holes × Top/Terrain/Side × 4 viewports + canaries.json
 # (each capture also carries the hole's unexplained-context share and its
 # pass/fail against the outside-world uncertain gate, < 15 %, from the context report)

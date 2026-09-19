@@ -1218,7 +1218,7 @@
    "waterNdviMax": 0.05
   },
   "scenarios": {
-   "canopy": "every canopy pixel explained (upper bound for a canopy pass re-run out to the hole bounds: its group size and smoothing rules would keep less; a new package hash)",
+   "canopy": "every canopy pixel explained (a canopy pass re-run out to the hole bounds keeps fewer pixels but its gap-closing adds ground: measure-canopy-rerun.py gives the measured figure; a new package hash)",
    "turf": "mown turf beyond the derived bands counted as explained",
    "turf+meadow": "every smooth vegetation pixel counted as explained (open field / native rule)",
    "vegetation": "all vegetation explained (canopy groups extended to the hole bounds too)",

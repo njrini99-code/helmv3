@@ -12,11 +12,14 @@ changes the layer: the reviewer copies confirmed answers into the layer's
 
 Usage:
   python3 build-context-prompt-sheet.py <package.json> <context.json> \
-      <context-report.json> <compiled-dir> <out.md> [unexplained-naip.json]
+      <context-report.json> <compiled-dir> <out.md> \
+      [unexplained-naip.json] [canopy-rerun.json]
 
 The optional NAIP report (`report-unexplained-naip.py --fixture=`) adds what
 the imagery says the unexplained ground is (canopy / meadow / mown turf /
-bare / dark) and the upper bound each class puts on the gate; it is evidence
+bare / dark) and the upper bound each class puts on the gate; the optional
+canopy re-run measurement (`measure-canopy-rerun.py --fixture=`) adds what
+the canopy pass would really keep out to the hole bounds. Both are evidence
 for the reviewer, never a zone.
 """
 import gzip
@@ -29,10 +32,11 @@ from pathlib import Path
 from shapely.geometry import Polygon, box
 from shapely.ops import unary_union
 
-if len(sys.argv) not in (6, 7):
+if len(sys.argv) not in (6, 7, 8):
     print(__doc__); sys.exit(2)
 package_path, context_path, report_path, compiled, out = map(Path, sys.argv[1:6])
-naip_path = Path(sys.argv[6]) if len(sys.argv) == 7 else None
+naip_path = Path(sys.argv[6]) if len(sys.argv) >= 7 else None
+rerun_path = Path(sys.argv[7]) if len(sys.argv) == 8 else None
 here = Path(__file__).resolve().parent
 spec = importlib.util.spec_from_file_location('prepare_context_layer', here / 'prepare-context-layer.py')
 prepare = importlib.util.module_from_spec(spec); spec.loader.exec_module(prepare)
@@ -62,6 +66,10 @@ naip = json.loads(naip_path.read_text()) if naip_path else None
 if naip and (naip['packageHash'] != pkg['contentHash'] or naip['layerHash'] != context['contentHash']):
     raise SystemExit('NAIP unexplained report belongs to another package / layer revision')
 naip_by_hole = {h['key']: h for h in naip['holes']} if naip else {}
+rerun = json.loads(rerun_path.read_text()) if rerun_path else None
+if rerun and (rerun['packageHash'] != pkg['contentHash'] or rerun['layerHash'] != context['contentHash']):
+    raise SystemExit('canopy re-run measurement belongs to another package / layer revision')
+rerun_by_hole = {h['key']: h for h in rerun['holes']} if rerun else {}
 manifest = json.loads((compiled / 'asset-manifest.json').read_text())
 if manifest['geometryHash'] != pkg['contentHash']:
     raise SystemExit('compiled terrain belongs to another package revision')
@@ -144,11 +152,15 @@ for hole in sorted(pkg['holes'], key=lambda h: h['ordinal']):
         naip_mix = (f" NAIP (leaf-on {', '.join(naip['raster']['captureDates'])}) inside that unexplained ground: canopy {pct(c['canopy']['share'])}, "
                     f"meadow {pct(c['meadow']['share'])}, mown turf {pct(c['turf']['share'])}, bare / hardscape {pct(c['bare']['share'])}, dark {pct(c['dark']['share'])}.")
         sc = nh['scenarios']
-        naip_bound = (f" Upper bound if a new source-backed derivation explained it (the review sidecar only accepts, adjusts or rejects existing zones; this ground needs a new derived zone): "
-                      f"canopy re-run to the hole bounds → {pct(sc['canopy']['uncertainShare'])} ({sc['canopy']['gate']}); turf + meadow → {pct(sc['turf+meadow']['uncertainShare'])} ({sc['turf+meadow']['gate']}); "
+        naip_bound = (f" If every pixel of a class were explained by a new source-backed derivation (the review sidecar only accepts, adjusts or rejects existing zones; this ground needs a new derived zone): "
+                      f"canopy pixels → {pct(sc['canopy']['uncertainShare'])} ({sc['canopy']['gate']}); turf + meadow → {pct(sc['turf+meadow']['uncertainShare'])} ({sc['turf+meadow']['gate']}); "
                       f"all vegetation → {pct(sc['vegetation']['uncertainShare'])} ({sc['vegetation']['gate']}).")
         beyond = nh['canopy']['beyondCanopyPassReach'] / c['canopy']['pixels'] if c['canopy']['pixels'] else 0
         naip_canopy = (f" NAIP canopy the groups do not cover: {ha(c['canopy']['m2'])} inside the unexplained ground, {pct(beyond)} of it in the {prepare.HOLE_MARGIN_M} m rim beyond the canopy pass's reach.")
+    rr = rerun_by_hole.get(key)
+    if rr:
+        naip_bound += (f" Measured with the pass's own rules out to the hole bounds (`measure-canopy-rerun.py`): {pct(rr['uncertainShareRerun'])} ({rr['gateRerun']}), "
+                       f"woods {ha(rr['woodsM2'])} → {ha(rr['woodsM2Rerun'])} — a new package hash if done for real.")
     ranked = sorted(((k, v) for k, v in areas.items() if not k.startswith('package:')), key=lambda kv: -kv[1])
     top = ', '.join(f'{k.replace("derived:", "")} {ha(v)}' for k, v in ranked[:4])
     gate = 'pass' if unexplained < GATE else 'fail'
@@ -191,8 +203,13 @@ if naip:
     g = naip['gate']['holesPassing']
     lines += ['', (f"NAIP evidence (course-wide, {sum(h['unexplainedM2'] for h in naip['holes']) / 1e4:.0f} ha unexplained): canopy {pct(cc['canopy'])}, meadow {pct(cc['meadow'])}, mown turf {pct(cc['turf'])}, "
                    f"bare / hardscape {pct(cc['bare'])}, dark {pct(cc['dark'])}. {naip['courseCanopy']['beyondCanopyPassReachM2'] / 1e4:.0f} ha of that canopy lies in the {prepare.HOLE_MARGIN_M} m rim beyond the canopy pass's reach. "
-                   f"Holes under the gate if a new derivation explained: canopy {g['canopy']}, turf {g['turf']}, turf + meadow {g['turf+meadow']}, all vegetation {g['vegetation']} of {len(naip['holes'])} "
-                   f"(upper bounds; the review sidecar cannot add zones — each needs a new derived zone). Overlays: `output/course-geometry/peek-n-peak-upper-unexplained/hNN-unexplained.png`.")]
+                   f"Holes under the gate if every pixel of a class were explained by a new derivation: canopy {g['canopy']}, turf {g['turf']}, turf + meadow {g['turf+meadow']}, all vegetation {g['vegetation']} of {len(naip['holes'])} "
+                   f"(pixel bounds; the review sidecar cannot add zones — each needs a new derived zone). Overlays: `output/course-geometry/peek-n-peak-upper-unexplained/hNN-unexplained.png`.")]
+if rerun:
+    hp = rerun['holesPassingGate']
+    lines += ['', (f"Canopy re-run measured with the pass's own rules out to the hole bounds (`measure-canopy-rerun.py`): {hp['today']} → {hp['rerun']} holes under the gate "
+                   f"({', '.join(str(h['ordinal']) for h in rerun['holes'] if h['gateRerun'] == 'pass')}), woods union {rerun['woodsUnionM2']['today'] / 1e4:.1f} → {rerun['woodsUnionM2']['rerun'] / 1e4:.1f} ha, "
+                   f"regions {rerun['regions']['today']} → {rerun['regions']['rerun']}. Doing it for real is a new package hash (owner decision).")]
 lines.append('')
 out.write_text('\n'.join(lines) + '\n' + '\n'.join(sections))
 print(f'{out}: {len(sections)} holes, {passing} pass the gate')

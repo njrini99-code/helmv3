@@ -1,0 +1,263 @@
+{
+ "kind": "golfhelm-canopy-rerun-measurement-v1",
+ "siteId": "osm-way-136097904",
+ "packageHash": "fdec6ea8467dd214372bde680e7b7f9236c06ad5d27bb5ddeadf8ed5e9d3f87a",
+ "layerHash": "92ee06051fc7b3af52672ce4c1ccbc9072e174ce286c8dc26eec594e84695f8f",
+ "rasterSha256": "9d01248d88b76b98d9e67774e118732c280b612f1a6858129951d46196650f05",
+ "clip": "context report hole bounds (compiled mesh \u00b1 24 m) instead of features \u00b1 160 m; every other rule of derive-canopy-naip.py unchanged",
+ "replayAgainstRetainedReview": {
+  "reviewPackageHash": "ee73b0657e3c48f9fdaff73c7960bf14a45ccb6605751eed6b89c21009302aa7",
+  "currentPackageHash": "fdec6ea8467dd214372bde680e7b7f9236c06ad5d27bb5ddeadf8ed5e9d3f87a",
+  "holesExact": 14,
+  "differences": {
+   "10": {
+    "replay": 146325,
+    "review": 146519
+   },
+   "11": {
+    "replay": 220454,
+    "review": 214334
+   },
+   "16": {
+    "replay": 184843,
+    "review": 184863
+   },
+   "18": {
+    "replay": 202397,
+    "review": 202610
+   }
+  },
+  "note": "a review derived from an earlier package revision differs in its surface mask and feature boxes; identical hashes must agree exactly"
+ },
+ "holesPassingGate": {
+  "today": 1,
+  "rerun": 4
+ },
+ "woodsUnionM2": {
+  "today": 1206227,
+  "rerun": 1620990
+ },
+ "regions": {
+  "today": 144,
+  "rerun": 172
+ },
+ "meaning": "Measurement only. Doing this for real changes the package hash (woods are package features), the compiled terrain and every downstream hash.",
+ "holes": [
+  {
+   "key": "peek-n-peak-upper-01",
+   "ordinal": 1,
+   "uncertainShare": 0.327,
+   "uncertainShareRerun": 0.27,
+   "gate": "fail",
+   "gateRerun": "fail",
+   "woodsM2": 162338,
+   "woodsM2Rerun": 201386,
+   "regions": 13,
+   "regionsRerun": 16
+  },
+  {
+   "key": "peek-n-peak-upper-02",
+   "ordinal": 2,
+   "uncertainShare": 0.494,
+   "uncertainShareRerun": 0.464,
+   "gate": "fail",
+   "gateRerun": "fail",
+   "woodsM2": 115347,
+   "woodsM2Rerun": 130558,
+   "regions": 15,
+   "regionsRerun": 16
+  },
+  {
+   "key": "peek-n-peak-upper-03",
+   "ordinal": 3,
+   "uncertainShare": 0.348,
+   "uncertainShareRerun": 0.346,
+   "gate": "fail",
+   "gateRerun": "fail",
+   "woodsM2": 136477,
+   "woodsM2Rerun": 137017,
+   "regions": 7,
+   "regionsRerun": 11
+  },
+  {
+   "key": "peek-n-peak-upper-04",
+   "ordinal": 4,
+   "uncertainShare": 0.387,
+   "uncertainShareRerun": 0.289,
+   "gate": "fail",
+   "gateRerun": "fail",
+   "woodsM2": 192870,
+   "woodsM2Rerun": 244190,
+   "regions": 7,
+   "regionsRerun": 7
+  },
+  {
+   "key": "peek-n-peak-upper-05",
+   "ordinal": 5,
+   "uncertainShare": 0.303,
+   "uncertainShareRerun": 0.101,
+   "gate": "fail",
+   "gateRerun": "pass",
+   "woodsM2": 169878,
+   "woodsM2Rerun": 229528,
+   "regions": 1,
+   "regionsRerun": 1
+  },
+  {
+   "key": "peek-n-peak-upper-06",
+   "ordinal": 6,
+   "uncertainShare": 0.353,
+   "uncertainShareRerun": 0.238,
+   "gate": "fail",
+   "gateRerun": "fail",
+   "woodsM2": 229068,
+   "woodsM2Rerun": 285830,
+   "regions": 5,
+   "regionsRerun": 4
+  },
+  {
+   "key": "peek-n-peak-upper-07",
+   "ordinal": 7,
+   "uncertainShare": 0.407,
+   "uncertainShareRerun": 0.31,
+   "gate": "fail",
+   "gateRerun": "fail",
+   "woodsM2": 170456,
+   "woodsM2Rerun": 214183,
+   "regions": 9,
+   "regionsRerun": 8
+  },
+  {
+   "key": "peek-n-peak-upper-08",
+   "ordinal": 8,
+   "uncertainShare": 0.433,
+   "uncertainShareRerun": 0.402,
+   "gate": "fail",
+   "gateRerun": "fail",
+   "woodsM2": 134711,
+   "woodsM2Rerun": 155338,
+   "regions": 15,
+   "regionsRerun": 19
+  },
+  {
+   "key": "peek-n-peak-upper-09",
+   "ordinal": 9,
+   "uncertainShare": 0.223,
+   "uncertainShareRerun": 0.224,
+   "gate": "fail",
+   "gateRerun": "fail",
+   "woodsM2": 160788,
+   "woodsM2Rerun": 183220,
+   "regions": 16,
+   "regionsRerun": 17
+  },
+  {
+   "key": "peek-n-peak-upper-10",
+   "ordinal": 10,
+   "uncertainShare": 0.205,
+   "uncertainShareRerun": 0.187,
+   "gate": "fail",
+   "gateRerun": "fail",
+   "woodsM2": 203641,
+   "woodsM2Rerun": 227733,
+   "regions": 7,
+   "regionsRerun": 13
+  },
+  {
+   "key": "peek-n-peak-upper-11",
+   "ordinal": 11,
+   "uncertainShare": 0.154,
+   "uncertainShareRerun": 0.111,
+   "gate": "fail",
+   "gateRerun": "pass",
+   "woodsM2": 296842,
+   "woodsM2Rerun": 319826,
+   "regions": 3,
+   "regionsRerun": 8
+  },
+  {
+   "key": "peek-n-peak-upper-12",
+   "ordinal": 12,
+   "uncertainShare": 0.244,
+   "uncertainShareRerun": 0.174,
+   "gate": "fail",
+   "gateRerun": "fail",
+   "woodsM2": 216961,
+   "woodsM2Rerun": 247092,
+   "regions": 9,
+   "regionsRerun": 7
+  },
+  {
+   "key": "peek-n-peak-upper-13",
+   "ordinal": 13,
+   "uncertainShare": 0.331,
+   "uncertainShareRerun": 0.248,
+   "gate": "fail",
+   "gateRerun": "fail",
+   "woodsM2": 171480,
+   "woodsM2Rerun": 199164,
+   "regions": 7,
+   "regionsRerun": 7
+  },
+  {
+   "key": "peek-n-peak-upper-14",
+   "ordinal": 14,
+   "uncertainShare": 0.269,
+   "uncertainShareRerun": 0.197,
+   "gate": "fail",
+   "gateRerun": "fail",
+   "woodsM2": 228533,
+   "woodsM2Rerun": 260445,
+   "regions": 6,
+   "regionsRerun": 8
+  },
+  {
+   "key": "peek-n-peak-upper-15",
+   "ordinal": 15,
+   "uncertainShare": 0.135,
+   "uncertainShareRerun": 0.1,
+   "gate": "pass",
+   "gateRerun": "pass",
+   "woodsM2": 153734,
+   "woodsM2Rerun": 163608,
+   "regions": 6,
+   "regionsRerun": 6
+  },
+  {
+   "key": "peek-n-peak-upper-16",
+   "ordinal": 16,
+   "uncertainShare": 0.162,
+   "uncertainShareRerun": 0.117,
+   "gate": "fail",
+   "gateRerun": "pass",
+   "woodsM2": 236596,
+   "woodsM2Rerun": 254885,
+   "regions": 3,
+   "regionsRerun": 5
+  },
+  {
+   "key": "peek-n-peak-upper-17",
+   "ordinal": 17,
+   "uncertainShare": 0.306,
+   "uncertainShareRerun": 0.23,
+   "gate": "fail",
+   "gateRerun": "fail",
+   "woodsM2": 223233,
+   "woodsM2Rerun": 253828,
+   "regions": 6,
+   "regionsRerun": 7
+  },
+  {
+   "key": "peek-n-peak-upper-18",
+   "ordinal": 18,
+   "uncertainShare": 0.221,
+   "uncertainShareRerun": 0.218,
+   "gate": "fail",
+   "gateRerun": "fail",
+   "woodsM2": 270155,
+   "woodsM2Rerun": 272955,
+   "regions": 9,
+   "regionsRerun": 12
+  }
+ ]
+}

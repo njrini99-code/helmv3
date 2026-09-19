@@ -1089,9 +1089,10 @@ Upper course the unexplained 236 ha is canopy 21 %, meadow 24 %, mown turf
 31 %, bare ground or hardscape 23 %, dark 1 %; 31 ha of the canopy is rim
 forest the canopy pass never reached because it clipped groups to features
 ± 160 m while the report's bounds run to the mesh ± 24 m. Re-running the
-pass to the hole bounds would offer that rim to the same derivation (an
-upper bound; its group-size and smoothing rules keep less) and changes
-the package hash, so it waits on the owner; the numbers sit in the prompt
+pass to the hole bounds is measured, not guessed (`measure-canopy-rerun.py`,
+same rules, only the clip box): the gate goes 1 → 4 of 18, the woods
+union 120.6 → 162.1 ha; it changes the package hash, so it waits on the
+owner; the numbers sit in the prompt
 sheet beside each §39 question and in
 `peek-n-peak-upper-unexplained-naip.json`.
 
