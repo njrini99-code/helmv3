@@ -264,7 +264,20 @@ python3 scripts/golf/course-geometry/build-context-prompt-sheet.py \
   src/test/fixtures/course-geometry/peek-n-peak-upper-context.json \
   src/test/fixtures/course-geometry/peek-n-peak-upper-context-report.json \
   src/test/fixtures/course-geometry/compiled-peek-n-peak-upper \
-  docs/plans/2026-09-16-outside-world-review-prompts.md
+  docs/plans/2026-09-16-outside-world-review-prompts.md \
+  src/test/fixtures/course-geometry/peek-n-peak-upper-unexplained-naip.json   # optional NAIP evidence
+# What the unexplained context ground is in leaf-on NAIP (report only: no zone, no hash change;
+# rebuilds the report's ground and refuses to run unless its share matches on every hole).
+# Writes per-hole overlays + contact sheet + JSON/markdown; --fixture= keeps the numbers for the sheet above.
+python3 scripts/golf/course-geometry/report-unexplained-naip.py \
+  src/test/fixtures/course-geometry/peek-n-peak-upper.json \
+  src/test/fixtures/course-geometry/peek-n-peak-upper-context.json \
+  src/test/fixtures/course-geometry/peek-n-peak-upper-context-report.json \
+  src/test/fixtures/course-geometry/compiled-peek-n-peak-upper \
+  src/test/fixtures/course-geometry/sources/peek-n-peak-upper-terrain \
+  output/course-geometry/peek-n-peak-upper-naip \
+  output/course-geometry/peek-n-peak-upper-unexplained \
+  --fixture=src/test/fixtures/course-geometry/peek-n-peak-upper-unexplained-naip.json
 # Visual canaries (§8): 8 holes × Top/Terrain/Side × 4 viewports + canaries.json
 # (each capture also carries the hole's unexplained-context share and its
 # pass/fail against the outside-world uncertain gate, < 15 %, from the context report)

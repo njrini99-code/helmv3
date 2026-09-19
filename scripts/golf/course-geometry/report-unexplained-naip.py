@@ -68,7 +68,7 @@ LABELS = {'canopy': 'canopy (NDVI > .28, NIR texture > 10.5)', 'meadow': 'meadow
 TINT = {'canopy': (0, 96, 24), 'meadow': (150, 220, 0), 'turf': (255, 235, 0), 'bare': (255, 48, 200), 'dark': (40, 120, 255)}
 NOT_COVERING = ('fence', 'lift_line', 'wall')  # counted by the report, never a cover
 SCENARIOS = [
-    ('canopy', ('canopy',), 'canopy explained (the canopy pass re-run out to the hole bounds; the one machine-doable case, but a new package hash)'),
+    ('canopy', ('canopy',), 'every canopy pixel explained (upper bound for a canopy pass re-run out to the hole bounds: its group size and smoothing rules would keep less; a new package hash)'),
     ('turf', ('turf',), 'mown turf beyond the derived bands counted as explained'),
     ('turf+meadow', ('turf', 'meadow'), 'every smooth vegetation pixel counted as explained (open field / native rule)'),
     ('vegetation', ('turf', 'meadow', 'canopy'), 'all vegetation explained (canopy groups extended to the hole bounds too)'),
@@ -414,7 +414,7 @@ def main():
               '## Findings (numbers only)', '',
               f"- Canopy the pass never looked at: {beyond_m2 / 1e4:.1f} ha of the {canopy_m2 / 1e4:.1f} ha canopy inside the unexplained ground lies beyond the union of the canopy pass's per-hole boxes "
               f"(features ± {canopy_pass.CONTEXT_MARGIN_M} m), i.e. {beyond_m2 / total_unexplained * 100:.0f} % of all unexplained ground is forest in the report's {margin} m rim that no derivation was offered. "
-              f"Re-running the pass out to the hole bounds would explain it with the same source and method, at the cost of a new package hash (woods are package features).",
+              f"Re-running the pass out to the hole bounds would offer it to the same derivation (what survives its minimum group size and smoothing is not measured here), at the cost of a new package hash (woods are package features).",
               f"- Vegetation without a class: turf + meadow is {(course_classes['turf'] + course_classes['meadow']) * 100:.0f} % of the unexplained ground; today it is painted as outer rough with terrain-following tone, which is what it is, but no zone says so.",
               f"- Bare ground / hardscape: {course_classes['bare'] * 100:.0f} % (tilled fields west of the road, driveways and roofs without an OSM footprint, the ski base); a source gap, not a render one.",
               '',

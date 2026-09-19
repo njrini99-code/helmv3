@@ -1089,7 +1089,8 @@ Upper course the unexplained 236 ha is canopy 21 %, meadow 24 %, mown turf
 31 %, bare ground or hardscape 23 %, dark 1 %; 31 ha of the canopy is rim
 forest the canopy pass never reached because it clipped groups to features
 ± 160 m while the report's bounds run to the mesh ± 24 m. Re-running the
-pass to the hole bounds is the one machine-doable improvement and changes
+pass to the hole bounds would offer that rim to the same derivation (an
+upper bound; its group-size and smoothing rules keep less) and changes
 the package hash, so it waits on the owner; the numbers sit in the prompt
 sheet beside each §39 question and in
 `peek-n-peak-upper-unexplained-naip.json`.
