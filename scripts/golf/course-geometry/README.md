@@ -265,19 +265,21 @@ python3 scripts/golf/course-geometry/build-context-prompt-sheet.py \
   src/test/fixtures/course-geometry/peek-n-peak-upper-context-report.json \
   src/test/fixtures/course-geometry/compiled-peek-n-peak-upper \
   docs/plans/2026-09-16-outside-world-review-prompts.md \
-  src/test/fixtures/course-geometry/peek-n-peak-upper-unexplained-naip.json   # optional NAIP evidence
-# What the unexplained context ground is in leaf-on NAIP (report only: no zone, no hash change;
-# rebuilds the report's ground and refuses to run unless its share matches on every hole).
-# Writes per-hole overlays + contact sheet + JSON/markdown; --fixture= keeps the numbers for the sheet above.
+  src/test/fixtures/course-geometry/peek-n-peak-upper-unexplained-naip.json
+# (the last argument, the NAIP evidence JSON, is optional)
+# What the unexplained context ground is in leaf-on NAIP. Report only: no
+# zone, no hash change; it rebuilds the report's ground and refuses to run
+# unless its share matches the retained report on every hole. Writes
+# per-hole overlays, a contact sheet and JSON/markdown; --fixture= keeps
+# the numbers for the prompt sheet above.
+F=src/test/fixtures/course-geometry
 python3 scripts/golf/course-geometry/report-unexplained-naip.py \
-  src/test/fixtures/course-geometry/peek-n-peak-upper.json \
-  src/test/fixtures/course-geometry/peek-n-peak-upper-context.json \
-  src/test/fixtures/course-geometry/peek-n-peak-upper-context-report.json \
-  src/test/fixtures/course-geometry/compiled-peek-n-peak-upper \
-  src/test/fixtures/course-geometry/sources/peek-n-peak-upper-terrain \
+  $F/peek-n-peak-upper.json $F/peek-n-peak-upper-context.json \
+  $F/peek-n-peak-upper-context-report.json $F/compiled-peek-n-peak-upper \
+  $F/sources/peek-n-peak-upper-terrain \
   output/course-geometry/peek-n-peak-upper-naip \
   output/course-geometry/peek-n-peak-upper-unexplained \
-  --fixture=src/test/fixtures/course-geometry/peek-n-peak-upper-unexplained-naip.json
+  --fixture=$F/peek-n-peak-upper-unexplained-naip.json
 # Visual canaries (§8): 8 holes × Top/Terrain/Side × 4 viewports + canaries.json
 # (each capture also carries the hole's unexplained-context share and its
 # pass/fail against the outside-world uncertain gate, < 15 %, from the context report)
