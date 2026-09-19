@@ -369,12 +369,12 @@ Each runs the whole chain unchanged; the per-course notes are the review risks.
 
 | Course | OSM | Features | Rounds | Notes |
 |---|---|---|---|---|
-| Bryan Park Champions / Players (Greensboro) | none matched; `around_2500m` 1/23/22/87/79 | — | 45 (Champs) | No `golf_course` polygon in OSM for the facility; one hole route mapped; two layouts share the crop; 2022 ortho (0.15 m) rejected as current after reported bunker renovations. Needs: an OSM pin or polygon, the layout pick, the NC DEM adapter, a currency decision on imagery |
+| Bryan Park Champions / Players (Greensboro) | none matched | `around_2500m` 1/23/22/87/79 | 45 (Champs) | No `golf_course` polygon in OSM for the facility; one hole route mapped; two layouts share the crop; 2022 ortho (0.15 m) rejected as current after reported bunker renovations. Needs: an OSM pin or polygon, the layout pick, the NC DEM adapter, a currency decision on imagery |
 | The Cardinal (Greensboro) | `relation/6542700` (pin; now "Sedgefield CC, Dye Course") | 0/20/0/52/0 | 30 | Greens and bunkers only: **no routes, fairways or tees in OSM** — someone maps them (or traces from retained ortho with a stated accuracy) before a package exists; NC DEM |
 | Starmount Forest (Greensboro) | `way/570398442` | 18/23/19/84/63 | 23 | Complete in OSM; NC DEM only |
 | Cutter Creek (Snow Hill) | `way/1545511574` | 18/20/22/60/91 | 8 | Complete; NC DEM |
-| Magnolia Greens (Leland) | none matched; `around_2500m` 18/19/0/8/9 | 5 | Three nines; **no fairways, 8 bunkers, 9 tees** mapped; NC DEM |
-| Forest Oaks (Greensboro) | none matched; `around_2500m` 18/19/20/62/69 | 2 | Complete features, no facility polygon: pin needed; NC DEM |
+| Magnolia Greens (Leland) | none matched | `around_2500m` 18/19/0/8/9 | 5 | Three nines; **no fairways, 8 bunkers, 9 tees** mapped; NC DEM |
+| Forest Oaks (Greensboro) | none matched | `around_2500m` 18/19/20/62/69 | 2 | Complete features, no facility polygon: pin needed; NC DEM |
 | Sedgefield CC (Greensboro) | `relation/12580941` (pin) | 18/27/24/59/66 | — | The Ross course; NC DEM |
 | Duke University Golf Club | `way/32921522` | 18/33/19/75/66 | — | 33 greens: exclude practice; NC DEM |
 | Pinehurst No. 2 | `way/1358696570` | 19/24/35/126/4 | — | **4 tees mapped**; NC DEM |
@@ -397,7 +397,7 @@ Each runs the whole chain unchanged; the per-course notes are the review risks.
 | Poplar Grove (Amherst) | `relation/17240231` (pin) | 0/1/1/2/5 | — | Mapping (1 m tile exists) |
 | The Manor (Farmville) | `way/187885811` | 0/0/0/0/0 | — | Mapping (1 m tile exists) |
 | Sea Island – Seaside (partial) | `way/301551447` | 17/18/21/66/71 | — | One hole line missing in OSM: a small fix, then Wave 3 |
-| Marsh Landing CC (partial) | none matched; `around_2500m` 44/36/36/171/98 | — | No facility polygon; neighbouring courses in the crop: pin + layout pick, then Wave 3 |
+| Marsh Landing CC (partial) | none matched | `around_2500m` 44/36/36/171/98 | — | No facility polygon; neighbouring courses in the crop: pin + layout pick, then Wave 3 |
 | River Landing (River / Landing), Wallace NC | not found | — | 9 + 7 | No golf feature within 3 km in OSM: mapping from zero (and NC DEM) |
 
 Cohort courses not in the library audit (name resolution needed at Stage 0):
