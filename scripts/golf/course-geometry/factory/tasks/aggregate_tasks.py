@@ -1,0 +1,126 @@
+"""Layout aggregates over every hole (Factory v2 §8.4) and the capability
+report, which is derived from evidence, never asserted (§48)."""
+import json
+import os
+
+from ..fingerprints import digest
+from ..model import TaskSpec
+from .common import artifact, dep_input, evaluation, fan_in_inputs, script
+
+TIER_ORDER = ('C0', 'C1', 'C2', 'C3', 'C4')
+
+
+def eval_context_report(node, ctx):
+    layout = ctx.layout(node.scope.layout_id) or {}
+    path = ctx.retained(layout, 'contextReport')
+    doc = ctx.json(path) if ctx.can_adopt(path) else None
+    inputs = {'context': dep_input(ctx, node, 'layout.context.classify') or (doc or {}).get('layerHash')}
+    if not doc:
+        return evaluation(inputs)
+    if doc.get('packageHash') != ctx.package_hash(node.scope.layout_id):
+        return evaluation(inputs, [], [], False, [f'retained context report is for package {str(doc.get("packageHash"))[:12]}'])
+    if doc.get('layerHash') and doc['layerHash'] != (ctx.context_layer(node.scope.layout_id) or {}).get('contentHash'):
+        return evaluation(inputs, [], [], False, [f'retained context report is for layer {doc["layerHash"][:12]}'])
+    return evaluation(inputs, [], [artifact('context-report', path, 'A')], True, ['retained context report'])
+
+
+def eval_review_queue(node, ctx):
+    return evaluation({'imagery': dep_input(ctx, node, 'layout.imagery.audit'), 'contextReport': dep_input(ctx, node, 'layout.context.report'),
+                       'truth': digest(fan_in_inputs(ctx, node, 'hole.truth_gate'))})
+
+
+def eval_visual_aggregate(node, ctx):
+    return evaluation({'canaries': digest(fan_in_inputs(ctx, node, 'hole.visual.canary'))})
+
+
+def eval_player_aggregate(node, ctx):
+    return evaluation({'captures': digest(fan_in_inputs(ctx, node, 'hole.player.capture'))})
+
+
+def eval_publish_prepare(node, ctx):
+    layout = ctx.layout(node.scope.layout_id) or {}
+    inputs = {'package': ctx.package_hash(node.scope.layout_id), 'terrain': digest(fan_in_inputs(ctx, node, 'hole.terrain.compile')),
+              'context': dep_input(ctx, node, 'layout.context.classify')}
+    published = ctx.abspath((layout.get('geometry') or {}).get('published'))
+    doc = ctx.json(published) if ctx.can_adopt(published) else None
+    if not doc:
+        return evaluation(inputs)
+    if doc.get('geometryVersion') != ctx.package_hash(node.scope.layout_id):
+        return evaluation(inputs, [], [], False, [f'published manifest is for {str(doc.get("geometryVersion"))[:12]}'])
+    terrain = doc.get('terrainByHole') or {}
+    return evaluation(inputs, [], [artifact('published-manifest', published, 'D')], True, [f'published {doc["geometryVersion"][:12]}, {len(terrain)} terrain files'], output=doc['geometryVersion'])
+
+
+def eval_publish_verify(node, ctx):
+    return evaluation({'published': dep_input(ctx, node, 'layout.publish.prepare')})
+
+
+def eval_capability(node, ctx):
+    inputs = {'package': dep_input(ctx, node, 'layout.package.validate'), 'terrain': digest(fan_in_inputs(ctx, node, 'hole.terrain.compile')),
+              'truth': digest(fan_in_inputs(ctx, node, 'hole.truth_gate')), 'published': dep_input(ctx, node, 'layout.publish.prepare'),
+              'catalogTier': (ctx.layout(node.scope.layout_id) or {}).get('capabilityTier')}
+    return evaluation(inputs)
+
+
+def capability_report(node, ctx):
+    layout_id = node.scope.layout_id
+    layout = ctx.layout(layout_id) or {}
+    pkg = ctx.package(layout_id)
+    holes = ctx.graph.layout_holes.get(layout_id, []) if ctx.graph else []
+    terrain_done = all(ctx.states.get(f'hole.terrain.compile[{h}]') in ('cached', 'success') for h in holes) and bool(holes)
+    truth_done = all(ctx.states.get(f'hole.truth_gate[{h}]') in ('cached', 'success') for h in holes) and bool(holes)
+    published = ctx.states.get(f'layout.publish.prepare[{layout_id}]') in ('cached', 'success')
+    blocked_tiers = {}
+    earned = 'C0'
+    if pkg and terrain_done:
+        earned = 'C1'
+    else:
+        blocked_tiers['C1'] = ['PACKAGE_REQUIRED' if not pkg else 'TERRAIN_COMPILE_INCOMPLETE']
+    if earned == 'C1' and published:
+        earned = 'C2'
+    elif earned == 'C1':
+        blocked_tiers['C2'] = ['PUBLISH_NOT_APPROVED']
+    unreviewed = [f['id'] for f in (pkg or {}).get('features', []) if f.get('kind') != 'route' and not f.get('reviewed')]
+    c3 = []
+    if unreviewed:
+        c3.append('HUMAN_BOUNDARY_REVIEW_REQUIRED')
+    if (pkg or {}).get('status') == 'source_candidate':
+        c3.append('HUMAN_IMAGERY_REVIEW_REQUIRED')
+    if not truth_done:
+        c3.append('TRUTH_GATE_FAILED')
+    blocked_tiers['C3'] = c3 or ['HUMAN_BOUNDARY_REVIEW_REQUIRED']
+    blocked_tiers['C4'] = ['FIELD_VERIFICATION_REQUIRED']
+    catalog_tier = layout.get('capabilityTier', 'C0')
+    note = f'catalog declares {catalog_tier}; evidence supports {earned}'
+    if TIER_ORDER.index(catalog_tier) > TIER_ORDER.index(earned):
+        note += ' — the catalog tier is not earned by retained evidence alone'
+    return {
+        'schema': 'golfhelm-factory-capability-report-v1', 'layoutId': layout_id, 'packageHash': (pkg or {}).get('contentHash'),
+        'packageStatus': (pkg or {}).get('status'), 'catalogTier': catalog_tier, 'earnedTier': earned, 'blockedHigherTiers': blocked_tiers,
+        'capabilities': {'productionVisual': earned in ('C2', 'C3', 'C4'), 'tapToMeasure': earned in ('C2', 'C3', 'C4'),
+                         'authoritativeLieClassification': earned in ('C3', 'C4'), 'reviewShotResolution': earned in ('C3', 'C4'), 'fieldVerified': earned == 'C4'},
+        'evidence': {'holes': len(holes), 'terrainCompiled': terrain_done, 'truthGateComplete': truth_done, 'published': published, 'unreviewedFeatures': len(unreviewed)},
+        'note': note,
+    }
+
+
+def run_capability(node, ctx, run):
+    out = os.path.join(ctx.layout_out(node.scope.layout_id), 'capability-report.json')
+    os.makedirs(os.path.dirname(out), exist_ok=True)
+    with open(out, 'w', encoding='utf-8') as f:
+        json.dump(capability_report(node, ctx), f, indent=1, sort_keys=True)
+    return [artifact('capability-report', out, 'C')]
+
+
+SPECS = [
+    TaskSpec('layout.context.report', '1', 'layout', ('layout.context.classify',), eval_context_report,
+             impl_files=(script('prepare-context-layer.py'),), retention='A', estimated_bytes=1_000_000),
+    TaskSpec('layout.review.queue', '1', 'layout', ('layout.imagery.audit?', 'layout.context.report?', 'hole.truth_gate*'), eval_review_queue, estimated_bytes=1_000_000),
+    TaskSpec('layout.visual.aggregate', '1', 'layout', ('hole.visual.canary*',), eval_visual_aggregate, impl_files=(script('build-canary-sheet.py'),), estimated_bytes=10_000_000),
+    TaskSpec('layout.player.aggregate', '1', 'layout', ('hole.player.capture*',), eval_player_aggregate, estimated_bytes=10_000_000),
+    TaskSpec('layout.publish.prepare', '1', 'layout', ('layout.package.validate', 'hole.terrain.compile*', 'layout.context.classify?'), eval_publish_prepare,
+             impl_files=(script('publish-course-assets.mts'),), retention='D', estimated_bytes=60_000_000),
+    TaskSpec('layout.publish.verify', '1', 'layout', ('layout.publish.prepare',), eval_publish_verify, estimated_bytes=100_000),
+    TaskSpec('layout.capability.evaluate', '1', 'layout', ('layout.package.validate', 'hole.terrain.compile*', 'hole.truth_gate*', 'layout.publish.prepare?'), eval_capability,
+             executor=run_capability, retention='C'),
+]
