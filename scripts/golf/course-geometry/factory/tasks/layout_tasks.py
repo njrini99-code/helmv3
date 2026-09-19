@@ -14,7 +14,8 @@ from ..fingerprints import (
 from ..model import TaskSpec
 from .common import artifact, blocked, dep_input, doc_hash, evaluation, exists, script
 
-CANOPY_SHARE_SUSPECT = 0.02   # below this share of the export, the canopy layer needs a look (Cacapon 2024-09 tile: 0.03%)
+CANOPY_SHARE_SUSPECT = 0.02  # below this share of the export, the canopy layer needs a look (Cacapon 2024-09 tile before calibration: 0.03%)
+CANOPY_TURF_NDVI_COMPRESSED = 0.25  # fairway NDVI medians: Winchester / the Upper ≈ 0.37; Forsyth 0.12, Cacapon 0.16, Grande Dunes 0.21
 
 INLINE = 'inline'
 USGS_PROVIDERS = ('usgs_s1m', 'usgs_3dep_project_1m')
@@ -210,6 +211,14 @@ def eval_canopy_derive(node, ctx):
         # the course really has no tree groups.
         notes.append(f'CANOPY_SHARE_SUSPECT: canopy covers {share:.2%} of the export (tiles {", ".join(doc.get("catalogTiles") or [])}); '
                      f'check the NAIP capture before trusting the canopy layer')
+    calibration = (doc.get('method') or {}).get('ndviCalibration') or {}
+    turf = calibration.get('turfNdviMedian')
+    if turf is not None and turf < CANOPY_TURF_NDVI_COMPRESSED:
+        # The gate was loosened for this export; forest in deep shadow may
+        # still fall below it. A reviewer decides whether another NAIP year
+        # (leaf-on, clearer) should replace this capture.
+        notes.append(f'CANOPY_EXPORT_COMPRESSED: fairway NDVI median {turf:.2f}, gate loosened to {calibration.get("ndviMin")} (captured {", ".join(doc.get("capturedAt") or [])}); '
+                     f'shadowed forest may still fall below it; check the canopy overlay, another NAIP year may read better')
     adoptable = True
     if naip_manifest and naip_manifest.get('rasterSha256') != doc.get('rasterSha256'):
         adoptable, notes = False, notes + ['canopy review was derived from another NAIP export']

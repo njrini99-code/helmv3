@@ -118,12 +118,10 @@ def main():
         shapes[feature['id']] = Polygon([project.transform(*p) for p in geometry['coordinates'][0]])
         draw.polygon([to_pixel(*p) for p in geometry['coordinates'][0]], fill=255)
     masked = ndimage.binary_dilation(np.array(surface) > 0, iterations=canopy.SURFACE_BUFFER_PX)
-    mask = (ndvi > canopy.NDVI_MIN) & (texture > canopy.TEXTURE_MIN) & ~masked
-    mask = ndimage.binary_opening(mask, structure=np.ones((3, 3)))
-    mask = ndimage.binary_closing(mask, structure=np.ones((5, 5)))
-    labels, count = ndimage.label(mask)
-    sizes = ndimage.sum(mask, labels, range(1, count + 1))
-    mask = np.isin(labels, np.nonzero(sizes >= canopy.MIN_GROUP_M2 * .625)[0] + 1)
+    # The gate the retained review was made with (per-export since the
+    # calibration landed; older reviews recorded the fixed ceiling).
+    ndvi_min = (review.get('method') or {}).get('ndviMin', canopy.NDVI_MIN)
+    mask = canopy.classify(ndvi, texture, masked, ndvi_min)
     transform = (extent['xmin'], px_x, 0, extent['ymax'], 0, -px_y)
     groups = canopy.polygonize(mask, transform)
     canopy_union = unary_union([g for g in groups if g.area >= canopy.MIN_GROUP_M2])

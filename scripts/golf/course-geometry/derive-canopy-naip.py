@@ -39,10 +39,62 @@ gdal.UseExceptions()
 NAIP = 'https://apps.geo.fpac.usda.gov/geo-imagery/rest/services/naip/conus_naip/ImageServer'
 CONTEXT_MARGIN_M = 160  # matches compile-course-terrain.py
 MIN_GROUP_M2 = 400
+# NDVI gate ceiling: the value the Peek'n Peak Upper and Winchester reviews
+# were made with. Exports differ radiometrically (a bright or hazy capture
+# compresses NDVI: Forsyth's forest sits at a median 0.32 where Winchester's
+# sits at 0.50, its fairways at 0.12 against 0.37), so the gate is set per
+# export a fixed gap above the median NDVI of the package's own OSM fairways,
+# never above this ceiling and never below the floor. The candidate package
+# carries no woods to sample (woods are what this pass produces). Texture
+# (NIR std) separates turf from crowns by an order of magnitude on every
+# export seen and stays fixed.
 NDVI_MIN = 0.28
+NDVI_MIN_FLOOR = 0.15
+TURF_NDVI_GAP = 0.06
+MIN_SAMPLE_PX = 200
 TEXTURE_MIN = 10.5
 SURFACE_BUFFER_PX = 3
 MAX_BYTES = 60_000_000
+
+
+def calibrated_ndvi_min(turf_median):
+    """The NDVI gate for one export and the rule that chose it: the fairway
+    median plus a fixed gap, or the reviewed ceiling when no fairway could be
+    sampled. Clamped to [NDVI_MIN_FLOOR, NDVI_MIN]: calibration only ever
+    loosens the gate on a compressed export, it never tightens the reviewed
+    one."""
+    if turf_median is None:
+        return NDVI_MIN, 'fixed_ceiling'
+    return round(max(NDVI_MIN_FLOOR, min(NDVI_MIN, turf_median + TURF_NDVI_GAP)), 3), 'turf_plus_gap'
+
+
+def class_median(values, mask):
+    return round(float(np.median(values[mask])), 3) if int(mask.sum()) >= MIN_SAMPLE_PX else None
+
+
+def calibrate(ndvi, pkg, to_pixel, size):
+    """Sample NDVI inside the package's OSM fairways and choose the gate.
+    Everything sampled is recorded in the review's method."""
+    image = Image.new('L', size, 0)
+    draw = ImageDraw.Draw(image)
+    for feature in pkg['features']:
+        if feature['kind'] == 'fairway' and feature['geometryWgs84']['type'] == 'Polygon':
+            draw.polygon([to_pixel(*p) for p in feature['geometryWgs84']['coordinates'][0]], fill=255)
+    mask = np.array(image) > 0
+    turf = class_median(ndvi, mask)
+    ndvi_min, rule = calibrated_ndvi_min(turf)
+    return {'ndviMin': ndvi_min, 'rule': rule, 'ceiling': NDVI_MIN, 'floor': NDVI_MIN_FLOOR, 'turfGap': TURF_NDVI_GAP,
+            'turfNdviMedian': turf, 'turfPixels': int(mask.sum()), 'minSamplePx': MIN_SAMPLE_PX}
+
+
+def classify(ndvi, texture, masked, ndvi_min):
+    """Canopy pixels: vegetated by NDVI, textured by NIR, off every golf surface."""
+    canopy = (ndvi > ndvi_min) & (texture > TEXTURE_MIN) & ~masked
+    canopy = ndimage.binary_opening(canopy, structure=np.ones((3, 3)))
+    canopy = ndimage.binary_closing(canopy, structure=np.ones((5, 5)))
+    labels, count = ndimage.label(canopy)
+    sizes = ndimage.sum(canopy, labels, range(1, count + 1))
+    return np.isin(labels, np.nonzero(sizes >= MIN_GROUP_M2 * .625)[0] + 1)
 
 
 def read(url, limit):
@@ -148,12 +200,8 @@ def main():
         draw.polygon([to_pixel(*p) for p in geometry['coordinates'][0]], fill=255)
     masked = ndimage.binary_dilation(np.array(surface) > 0, iterations=SURFACE_BUFFER_PX)
 
-    canopy = (ndvi > NDVI_MIN) & (texture > TEXTURE_MIN) & ~masked
-    canopy = ndimage.binary_opening(canopy, structure=np.ones((3, 3)))
-    canopy = ndimage.binary_closing(canopy, structure=np.ones((5, 5)))
-    labels, count = ndimage.label(canopy)
-    sizes = ndimage.sum(canopy, labels, range(1, count + 1))
-    canopy = np.isin(labels, np.nonzero(sizes >= MIN_GROUP_M2 * .625)[0] + 1)
+    calibration = calibrate(ndvi, pkg, to_pixel, (width, height))
+    canopy = classify(ndvi, texture, masked, calibration['ndviMin'])
 
     transform = (extent['xmin'], px_x, 0, extent['ymax'], 0, -px_y)
     groups = polygonize(canopy, transform)
@@ -188,7 +236,7 @@ def main():
         'source': manifest['provider'], 'sourceUrl': manifest['service'], 'catalogTiles': manifest['catalogTiles'],
         'capturedAt': manifest['captureDates'], 'nativeResolutionM': manifest['nativeResolutionM'],
         'rasterSha256': manifest['rasterSha256'], 'retrievedAt': manifest['retrievedAt'], 'license': manifest['license'],
-        'method': {'ndviMin': NDVI_MIN, 'nirTextureStdMin': TEXTURE_MIN, 'textureWindowPx': 7, 'surfaceBufferPx': SURFACE_BUFFER_PX,
+        'method': {'ndviMin': calibration['ndviMin'], 'ndviCalibration': calibration, 'nirTextureStdMin': TEXTURE_MIN, 'textureWindowPx': 7, 'surfaceBufferPx': SURFACE_BUFFER_PX,
                    'morphology': 'open 3x3, close 5x5', 'vectorClosingM': 6, 'vectorOpeningM': 2, 'minGroupM2': MIN_GROUP_M2, 'simplifyM': 2.0,
                    'contextMarginM': CONTEXT_MARGIN_M},
         'reviewedAt': datetime.now(timezone.utc).date().isoformat(),
@@ -201,7 +249,7 @@ def main():
     }
     args.output.write_text(json.dumps(review, indent=2, ensure_ascii=False) + '\n')
     print(json.dumps({'groups': len(regions), 'canopyShare': review['stats']['canopyShareOfExport'],
-                      'holes': len({r['holeKey'] for r in regions})}))
+                      'holes': len({r['holeKey'] for r in regions}), 'ndviMin': calibration['ndviMin'], 'ndviRule': calibration['rule']}))
 
 
 if __name__ == '__main__':

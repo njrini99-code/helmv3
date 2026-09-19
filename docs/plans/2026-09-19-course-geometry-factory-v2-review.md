@@ -279,18 +279,25 @@ root, nothing committed), most-played first:
 - **Boonsboro CC (7): `ROUTE_WAY_IDS_REQUIRED`** — OSM inside way
   518032130 has 0 hole ways, 6 greens and 1 fairway. Not a pin problem: an
   OSM-thin course, i.e. the imagery-tracing case.
-- **PGA National Champion (2): `ROUTE_WAY_IDS_REQUIRED`** — the resort
-  polygon (way 1483954804, 901 ha) holds two complete 18-hole series
-  (776369833–850 centred 26.8245 N 80.1470 W; 1458625172–189 centred
-  26.8174 N 80.1433 W) plus a partial third (841003253–257, holes 10–14),
-  none named, no relations. The factory refuses to guess which is the
-  Champion; a person picks one series (or its polygon) and the rest of the
-  chain is the Grande Dunes chain (OSM has 104 greens and 285 bunkers here).
+- **PGA National Champion (2): `ROUTE_WAY_IDS_REQUIRED`** — a multi-course
+  resort, not duplicate data: one 901 ha polygon named "PGA National
+  Resort" (way 1483954804) holds 48 hole ways (two complete 1–18 series,
+  776369833–850 centred 26.8245 N 80.1470 W and 1458625172–189 centred
+  26.8174 N 80.1433 W, plus 841003253–257 for holes 10–14 of a third),
+  none named, no relations. The owner action is "which routing is the
+  Champion" (the resort map answers it) plus a per-course site polygon;
+  the same shape recurs on every multi-course facility (the Upper's resort
+  polygon was the first). The rest is the Grande Dunes chain (OSM has 104
+  greens and 285 bunkers here).
 - **Bryan Park Champions (45, most played): not an OSM-pin problem.** OSM
   has Bryan Park only as park relation 3972771 with a single `golf=hole`
   way (1148941814, ref 1) and no course polygon, greens, fairways or
   bunkers (bounded Overpass lookups, 20 km / 12 km). The OSM-based chain
-  cannot build it at any tier; imagery-traced geometry is the only path.
+  cannot build it at any tier. With Boonsboro that is 52 rounds reachable
+  only by imagery-traced geometry — the evidence now points at reading (a)
+  of the owner's "lab generators based on map pics", and the mechanism
+  exists for single features (`retained.imageryTraces`, `_prepare
+  --traces`, Peek'n Peak hole 11 fairway); PR C scales it.
 
 Canopy calibration evidence (for PR C). Band 4 of the FPAC `conus_naip`
 export is real NIR on every course (water NDVI −0.21 … −0.52), and the
@@ -324,6 +331,45 @@ calibration, the canary/player-capture adapters, and the answer to the
 owner's "lab generators based on map pics" (imagery-traced geometry for
 OSM-thin courses vs imagery-keyed render generators — asked in the session
 report).
+
+## PR C — started 2026-09-19 on `agent/course-factory-c` (→ `agent/course-factory-b`)
+
+First item, chosen from the night run's evidence: the canopy gate.
+
+- `derive-canopy-naip.py`: the NDVI gate is set per export at
+  `fairway NDVI median + 0.06`, clamped to `[0.15, 0.28]` — never above the
+  ceiling the Peek'n Peak Upper and Winchester reviews were made with, so
+  those two do not move (Winchester re-derived to the same 236 groups and
+  the package hash held; the Upper stays adopted). Texture (NIR std) stays
+  fixed: it separates fairway from crowns by an order of magnitude on every
+  export (fairway 1.6–3.3 vs woods 14.5–25). Everything sampled is recorded
+  in `method.ndviCalibration`; `measure-canopy-rerun.py` replays a review
+  with the gate it recorded. Tests: `test_derive_canopy_naip.py` (6).
+- Factory note `CANOPY_EXPORT_COMPRESSED` when the fairway median is below
+  0.25 (the gate was loosened; shadowed forest may still fall below it).
+- Live effect, same rasters, no network: Forsyth 29 → 185 groups (0.6 % →
+  24.8 % of the export), Cacapon 0 → 130 (0 % → 12.2 %), Grande Dunes 4 → 5
+  (0.04 % → 0.07 %; a coastal residential course, mostly houses and
+  lagoons), Winchester 236 → 236. Overlays (`forsyth-canopy-gate.jpg`,
+  `cacapon-canopy-gate.jpg`, sent in the session) show the added pixels
+  tracing tree masses and crowns, none on fairways, sand, roads or roofs.
+  Honest limit: Cacapon's 2024-09-10 tile is hazy; its dark forest sits at
+  NDVI 0.12–0.23 and roughly half of it stays below the 0.22 gate. Going
+  lower would classify native rough (fairway median 0.16). The fix there is
+  another NAIP year, an imagery-currency decision already on the review
+  queue.
+- Each course's package and the holes whose groups changed recompiled via
+  the identity fix on PR B (Forsyth and Cacapon 47 executed, Grande Dunes
+  25, Winchester 3 — canopy, package, validate — with every compile cached).
+
+Remaining PR C items, unchanged: NC OneMap DEM03 terrain adapter (the USGS
+1 m index has no tile over Greensboro — Starmount, the Cardinal/Sedgefield
+Dye and Bryan Park return only 1/9 arc-second NED — so it is genuinely
+needed; owner gates on the study script's license and vertical-datum notes),
+UTM zone parameterisation, canary/player-capture adapters, and imagery
+tracing at course scale (`retained.imageryTraces` + `_prepare --traces`
+already carry single traced features; Bryan Park and Boonsboro, 52 rounds,
+are reachable no other way).
 
 ## Not started
 
