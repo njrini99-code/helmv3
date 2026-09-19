@@ -241,8 +241,9 @@ class RetainedSafetyTests(unittest.TestCase):
         built = os.path.join(h.output, 'layouts', 'synthetic-a')
         facility_out = os.path.join(h.output, 'facilities', 'synthetic')
         keep = os.path.join(self.tmp, 'retained')
-        osm_dir = os.path.join(facility_out, 'osm', os.listdir(os.path.join(facility_out, 'osm'))[0])
-        shutil.copytree(osm_dir, os.path.join(keep, 'osm'))
+        for kind, name in (('osm', 'osm'), ('osm-context', 'osm-context'), ('terrain', 'terrain')):
+            source = os.path.join(facility_out, kind)
+            shutil.copytree(os.path.join(source, sorted(os.listdir(source))[0]), os.path.join(keep, name))
         shutil.copytree(os.path.join(built, 'compiled'), os.path.join(keep, 'compiled'))
         os.makedirs(os.path.join(keep, 'layout'))
         for name in ('canopy-review.json', 'imagery-review.json', os.path.join('context', 'synthetic-a-context.json'), os.path.join('context', 'synthetic-a-context-report.json')):
@@ -250,7 +251,8 @@ class RetainedSafetyTests(unittest.TestCase):
         facility_doc = os.path.join(h.catalog, 'facilities', 'synthetic.json')
         layout_doc = os.path.join(h.catalog, 'layouts', 'synthetic-a.json')
         facility = read_json(facility_doc)
-        facility['retained'] = {'osm': os.path.join(keep, 'osm')}
+        # The shape Peek'n Peak carries: OSM, context and the terrain source.
+        facility['retained'] = {'osm': os.path.join(keep, 'osm'), 'osmContext': os.path.join(keep, 'osm-context'), 'terrain': os.path.join(keep, 'terrain')}
         layout = read_json(layout_doc)
         layout['retained'] = {'compiled': os.path.join(keep, 'compiled'), 'canopyReview': os.path.join(keep, 'layout', 'canopy-review.json'),
                               'imageryReview': os.path.join(keep, 'layout', 'imagery-review.json'), 'context': os.path.join(keep, 'layout', 'synthetic-a-context.json'),
@@ -274,7 +276,8 @@ class RetainedSafetyTests(unittest.TestCase):
         self.assertIn('failed 0', text)
         first = self.run_report(text)
         states = h.states('synthetic-a')
-        for key in ('facility.osm.snapshot[synthetic]', 'layout.canopy.derive[synthetic-a]', 'layout.context.classify[synthetic-a]', 'hole.terrain.compile[synthetic-a:03]'):
+        for key in ('facility.osm.snapshot[synthetic]', 'facility.context.snapshot[synthetic]', 'layout.terrain.acquire[synthetic-a]', 'layout.canopy.derive[synthetic-a]',
+                    'layout.context.classify[synthetic-a]', 'hole.terrain.compile[synthetic-a:03]'):
             # Adopted during the run (and recorded), so the next plan reads it
             # back from the ledger as ordinary cached work.
             self.assertNotIn(key, first['executed'], key)
@@ -282,16 +285,21 @@ class RetainedSafetyTests(unittest.TestCase):
         self.assertEqual(tree_hashes(keep), before, 'adoption must not touch retained evidence')
 
         # Rebuild what the retained evidence stood for: OSM snapshot (the root
-        # of everything), the context layer and one hole compile.
-        for args in (('--task', 'facility.osm.snapshot'), ('--task', 'layout.context.classify'), ('--task', 'hole.terrain.compile', '--hole', '3')):
+        # of everything), the canopy layer (its NAIP export is keyed by the
+        # retained terrain directory), the context layer and one hole compile.
+        for args in (('--task', 'facility.osm.snapshot'), ('--task', 'layout.canopy.derive'), ('--task', 'layout.context.classify'), ('--task', 'hole.terrain.compile', '--hole', '3')):
             code, text = h.run('invalidate', '--layout', 'synthetic-a', *args, '--reason', 'retained evidence superseded')
             self.assertEqual(code, 0, text)
         code, text = h.run('run', '--layout', 'synthetic-a')
         self.assertEqual(code, 0, text)
         self.assertIn('failed 0', text)
         report = self.run_report(text)
-        for key in ('facility.osm.snapshot[synthetic]', 'layout.context.classify[synthetic-a]', 'hole.terrain.compile[synthetic-a:03]'):
+        for key in ('facility.osm.snapshot[synthetic]', 'layout.canopy.derive[synthetic-a]', 'layout.context.classify[synthetic-a]', 'hole.terrain.compile[synthetic-a:03]'):
             self.assertIn(key, report['executed'], key)
+        self.assertNotIn('layout.terrain.acquire[synthetic-a]', report['executed'], 'the retained terrain source still serves')
+        naip = [a['path'] for a in report['artifacts'] if a['key'].startswith('naip-')]
+        self.assertEqual(len(naip), 2, report['artifacts'])
+        self.assertTrue(all(p.startswith(os.path.join(h.output, 'facilities', 'synthetic', 'naip', 'terrain') + os.sep) for p in naip), naip)
         self.assertEqual(tree_hashes(keep), before, 'a rebuild must not write to or delete retained evidence')
         outside = [a['path'] for a in report['artifacts'] if not os.path.abspath(a['path']).startswith(os.path.abspath(h.output) + os.sep)]
         self.assertEqual(outside, [], 'every built artifact lives under the output root')
@@ -300,7 +308,7 @@ class RetainedSafetyTests(unittest.TestCase):
         # The next plan reads the rebuilt hole from the output root and the
         # untouched holes from the retained compile: nothing is stale.
         states = h.states('synthetic-a')
-        not_done = {k: v for k, v in states.items() if k.startswith(('hole.terrain.compile', 'layout.context.classify', 'facility.osm.snapshot')) and v[0] not in DONE}
+        not_done = {k: v for k, v in states.items() if k.startswith(('hole.terrain.compile', 'layout.context.classify', 'layout.canopy.derive', 'layout.terrain.acquire', 'facility.osm.snapshot')) and v[0] not in DONE}
         self.assertEqual(not_done, {})
         rows = h.plan_rows('synthetic-a')
         rebuilt = rows['hole.terrain.compile[synthetic-a:03]']['artifacts'][0]['path']

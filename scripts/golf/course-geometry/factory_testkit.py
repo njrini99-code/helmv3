@@ -14,7 +14,7 @@ if HERE not in sys.path:
     sys.path.insert(0, HERE)
 
 from factory import cli
-from factory.fingerprints import digest, file_sha256
+from factory.fingerprints import digest, file_sha256, terrain_source_identity
 from factory.ledger import Ledger
 from factory.tasks.common import artifact
 
@@ -216,7 +216,6 @@ class FakePipeline:
             manifest = {'schemaVersion': 1, 'packageHash': pkg['contentHash'], 'requestedLocalBoundsM': bounds, 'selectedTitle': 'Synthetic 1m tile',
                         'retrievedAt': '2026-09-19', 'fileHashes': hashes}
             write_json(manifest_path, manifest)
-        from factory.fingerprints import terrain_source_identity
         pointer = {'kind': 'golfhelm-factory-terrain-source-v1', 'layoutId': layout_id, 'directory': ctx.relpath(folder), 'requestedLocalBoundsM': bounds,
                    'sourceManifestHash': digest(manifest), 'sourceIdentity': terrain_source_identity(manifest), 'selectedTitle': manifest['selectedTitle']}
         write_json(ctx.terrain_pointer_path(layout_id), pointer)
@@ -297,7 +296,9 @@ class FakePipeline:
         hole = ctx.package_hole(layout_id, node.scope.ordinal)
         sub = ctx.hole_subhashes(layout_id, node.scope.ordinal)
         context = ctx.context_layer(layout_id) if ctx.states.get(f'layout.context.classify[{layout_id}]') in ('cached', 'success') else None
-        terrain = {'kind': 'terrain', 'hole': hole['key'], 'terrainInput': sub['holeTerrainInputHash'], 'source': ctx.terrain_pointer(layout_id)['sourceIdentity']}
+        # Like the real compiler: the source identity comes from the source
+        # manifest (built or retained), never from the built pointer alone.
+        terrain = {'kind': 'terrain', 'hole': hole['key'], 'terrainInput': sub['holeTerrainInputHash'], 'source': terrain_source_identity(ctx.terrain_source_manifest(layout_id))}
         terrain['contentHash'] = digest(terrain)
         write_json(os.path.join(folder, f'{hole["key"]}-terrain.json'), terrain)
         report = {'geometryHash': ctx.package_hash(layout_id), 'contentHash': terrain['contentHash'], 'triangles': 1000 + node.scope.ordinal,
