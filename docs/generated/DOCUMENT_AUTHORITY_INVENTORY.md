@@ -35,7 +35,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 0 |
 | `RUNBOOK` | 5 | 2 | 1 | 0 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
-| `PLAN` | 50 | 5 | 29 | 83 |
+| `PLAN` | 52 | 5 | 30 | 85 |
 | `AUDIT_SNAPSHOT` | 56 | 6 | 30 | 24 |
 | `STATE_SNAPSHOT` | 7 | 2 | 6 | 0 |
 | `HISTORY_LEDGER` | 40 | 0 | 8 | 13 |
@@ -342,7 +342,9 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/plans/2026-09-16-peek-n-peak-enhancements-and-round-review.md` | current | - | - | yes | 1 | 3 | - |
 | `docs/plans/2026-09-16-peek-one-tap-field-calibration.md` | current | - | - | - | 1 | 0 | - |
 | `docs/plans/2026-09-16-renderer-redesign-status.md` | current | - | - | yes | 0 | 3 | - |
-| `docs/plans/2026-09-19-course-library-scale-out-plan.md` | current | - | - | yes | 0 | 9 | - |
+| `docs/plans/2026-09-19-course-geometry-factory-v2-review.md` | current | - | - | - | 1 | 10 | 2 |
+| `docs/plans/2026-09-19-course-geometry-factory-v2.md` | current | - | - | yes | 1 | 2 | - |
+| `docs/plans/2026-09-19-course-library-scale-out-plan.md` | current | - | - | yes | 1 | 9 | - |
 | `docs/plans/IOS_PREMIUM_NATIVE_UPDATE_2026-08-25.md` | current | yes | - | yes | 2 | 1 | - |
 | `docs/plans/assets/course-geometry-2026-09-15/peek-n-peak-upper-07-course-truth.md` | current | - | - | yes | 0 | 0 | - |
 | `docs/plans/calendar-premium/DESIGN-PLAN.md` | current | - | - | yes | 0 | 5 | - |

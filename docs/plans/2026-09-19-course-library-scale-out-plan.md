@@ -1,6 +1,12 @@
 <!-- markdownlint-disable MD013 MD060 -->
 # Course library scale-out: bringing every course to Peek'n Peak level
 
+> Superseded as architecture on 2026-09-19 by the owner's
+> `2026-09-19-course-geometry-factory-v2.md` (review:
+> `2026-09-19-course-geometry-factory-v2-review.md`). §2 sources, §3 tools
+> and the §6 per-facility tables remain the factory's input inventory;
+> §5.1 `build-course.sh` and the per-course wave scheduling are dropped.
+
 Written 2026-09-19 on `agent/golf-course-geometry` (head `0bf36b548`, PR #1939).
 Status: **proposal for the owner** — nothing in it is started. Every number
 comes from a retained artefact in this branch (named inline); every estimate
