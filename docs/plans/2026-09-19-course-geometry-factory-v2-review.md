@@ -196,6 +196,22 @@ a path rewrite), and a scorecard-only edit still re-runs `layout.terrain.base`
 `layout.context.classify` and `layout.imagery.audit` because they key on the
 package hash while the hole compiles stay cached.
 
+Adoption survives a fingerprint move (found on the Upper's default-root plan,
+fixed before merge): the planner adopted retained evidence only when the node
+had no ledger success at all, so once a plan had recorded the Upper's 27
+adoptions, the next implementation edit (the compiler, the canopy identity)
+changed their fingerprints and every adopted node fell to `pending` on
+`layout.routes.resolve` — work nobody asked for and the same on-disk state a
+fresh ledger adopts outright (6 cached vs 30). Retained artifacts (outside the
+output root) that still pass their content checks are now re-adopted when
+their recorded success no longer matches, unless a manual invalidation asked
+for the rebuild; built output under the root keeps rebuilding on such a change.
+`test_retained_evidence_stays_adopted_when_only_its_fingerprint_moved` edits
+the compiler and the world builder after adoption: the 18 retained compiles
+and the base stay adopted, the 18 built world records rebuild, an invalidation
+still marks its hole stale. The Upper's default-root plan is back to the
+fresh-ledger shape (30 cached, 4 ready, 24 pending, 39 blocked by design).
+
 Live results (scratch output root, nothing committed):
 
 - Cacapon: four runs (the first three exposed real defects that are now

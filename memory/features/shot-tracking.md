@@ -93,7 +93,10 @@ with a stable reason code. It wraps the existing scripts (`fetch-osm-*`,
   are read-only: executors write through `*_out` locators under the output
   root, `safe_rmtree` refuses anything outside it, and a task that reports an
   artifact outside the root fails (`ARTIFACT_OUTSIDE_OUTPUT_ROOT`). Built
-  output supersedes retained evidence when both exist.
+  output supersedes retained evidence when both exist. Retained evidence
+  that still passes its content checks stays adopted when only its
+  fingerprint moved (an implementation edit); a manual invalidation still
+  asks for the rebuild, and built output rebuilds on such a change.
 - The 18-hole and UTM 17N limits of the wrapped scripts surface as
   `HOLE_COUNT_UNSUPPORTED` and `UTM_ZONE_UNSUPPORTED`; NC courses without a
   1 m USGS tile carry `providerPolicy.terrain: [nc_onemap_dem03]` and block on

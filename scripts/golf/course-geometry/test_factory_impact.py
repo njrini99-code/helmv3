@@ -357,6 +357,40 @@ class RetainedSafetyTests(unittest.TestCase):
         untouched = rows['hole.terrain.compile[synthetic-a:04]']['artifacts'][0]['path']
         self.assertTrue(os.path.abspath(untouched).startswith(os.path.join(keep, 'compiled') + os.sep), untouched)
 
+    def test_retained_evidence_stays_adopted_when_only_its_fingerprint_moved(self):
+        """An implementation edit changes the fingerprint of every node the
+        script implements. Retained evidence is judged by its content checks,
+        so it stays adopted (a fresh ledger would adopt it again) instead of
+        going pending on upstream work nobody asked for; built output rebuilds;
+        a manual invalidation still asks for the rebuild."""
+        h = self.h
+        keep = self.promote_to_retained()
+        before = tree_hashes(keep)
+        code, text = h.run('run', '--layout', 'synthetic-a')
+        self.assertEqual(code, 0, text)
+        scripts = os.path.join(h.repo, 'scripts', 'golf', 'course-geometry')
+        for name in ('compile-course-terrain.py', 'build-course-world.py'):
+            with open(os.path.join(scripts, name), 'a', encoding='utf-8') as f:
+                f.write('\n# edited after adoption\n')
+        states = h.states('synthetic-a')
+        compiles = {k: v for k, v in states.items() if k.startswith('hole.terrain.compile')}
+        self.assertEqual(set(compiles.values()), {('cached', 'ADOPTED_EXTERNAL')}, compiles)
+        self.assertEqual(states['layout.terrain.base[synthetic-a]'], ('cached', 'ADOPTED_EXTERNAL'))
+        worlds = {k: v for k, v in states.items() if k.startswith('hole.world.build')}
+        self.assertEqual(set(worlds.values()), {('stale', 'FINGERPRINT_CHANGED')}, worlds)
+        mark = len(h.pipeline.calls)
+        code, text = h.run('run', '--layout', 'synthetic-a')
+        self.assertEqual(code, 0, text)
+        self.assertIn('failed 0', text)
+        executed = h.pipeline.calls[mark:]
+        self.assertEqual([k for k in executed if k.startswith('hole.terrain.compile')], [], 'retained compiles are not rebuilt for a compiler edit')
+        self.assertEqual(len([k for k in executed if k.startswith('hole.world.build')]), 18, 'built world records are')
+        self.assertEqual(tree_hashes(keep), before)
+        code, text = h.run('invalidate', '--layout', 'synthetic-a', '--task', 'hole.terrain.compile', '--hole', '3', '--reason', 'reviewer asked')
+        self.assertEqual(code, 0, text)
+        self.assertEqual(h.states('synthetic-a')['hole.terrain.compile[synthetic-a:03]'], ('stale', 'MANUAL_INVALIDATION'))
+        self.assertEqual(h.states('synthetic-a')['hole.terrain.compile[synthetic-a:04]'][0], 'cached')
+
     def test_an_executor_reporting_an_artifact_outside_the_output_root_fails_the_task(self):
         h = self.h
         keep = self.promote_to_retained()

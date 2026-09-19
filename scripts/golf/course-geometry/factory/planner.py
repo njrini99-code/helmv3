@@ -73,9 +73,16 @@ def plan_node(node, ctx, recovered=(), adopt=True, free=None):
             unfinished = 'INTERRUPTED_RUN_RECOVERED'
         elif last and last['state'] == 'failed' and last['fingerprint'] == fp:
             unfinished = 'PREVIOUS_RUN_FAILED'
-    if adoptable and not success and not unfinished:
+    retained = bool(ev.artifacts) and not any(ctx.is_output_path(a.path) for a in ev.artifacts)
+    invalidated = bool(success and ledger.invalidation_after(node.key, success['finished_at']))
+    if adoptable and not unfinished and (not success or (retained and not invalidated)):
         # A retained artifact that proves it was built from the current
-        # inputs is done work, whether or not its upstream cache is present.
+        # inputs is done work, whether or not its upstream cache is present,
+        # and stays so when only the fingerprint moved under an earlier
+        # adoption (an implementation edit, a dependency's identity): the
+        # content checks are what retained evidence is judged by, and a fresh
+        # ledger would adopt it again. Built output keeps rebuilding on such a
+        # change, and a manual invalidation still asks for the rebuild.
         if ledger and adopt:
             ledger.record_success(_plan_run_id(ledger), node, fp, recorded_inputs, ev.artifacts)
         return finish('cached', 'ADOPTED_EXTERNAL', ev.output or output_hash(ev.artifacts, fp))
