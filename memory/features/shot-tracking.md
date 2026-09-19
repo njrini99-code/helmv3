@@ -76,7 +76,13 @@ with a stable reason code. It wraps the existing scripts (`fetch-osm-*`,
   (`terrain_source_identity`); the compiler stamps the same `sourceIdentity`
   into `asset-manifest.json` and refuses an output directory whose identity
   differs. The compiler's full `sourceManifestHash` still changes with every
-  package the raster serves and must not gate reuse.
+  package the raster serves and must not gate reuse. The compiler also
+  refuses a directory labelled with another package hash; because hole
+  compiles key on per-hole inputs, the factory relabels the shared manifest
+  for the new package (`prepare_compiled_dir`), keeping every listed hole
+  whose file is present, instead of clearing the directory — a cleared
+  directory made the cached holes' artifacts go missing mid-run and forced a
+  second run. Only a changed terrain source clears it.
 - Per-hole bookkeeping hashes (`hole-subhashes.json`) keep yardage/par edits
   out of terrain inputs and a review-overlay decision on one hole's features
   out of the others.

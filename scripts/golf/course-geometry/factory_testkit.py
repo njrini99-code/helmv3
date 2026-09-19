@@ -14,6 +14,7 @@ if HERE not in sys.path:
     sys.path.insert(0, HERE)
 
 from factory import cli
+from factory.adapters import prepare_compiled_dir
 from factory.fingerprints import digest, file_sha256, terrain_source_identity
 from factory.ledger import Ledger
 from factory.tasks.common import artifact
@@ -245,7 +246,8 @@ class FakePipeline:
 
     def _asset_manifest(self, ctx, layout_id, folder, holes):
         manifest = ctx.terrain_source_manifest(layout_id)
-        doc = {'schemaVersion': 1, 'compilerVersion': 'course-terrain-v4', 'geometryHash': ctx.package_hash(layout_id), 'sourceManifestHash': digest(manifest), 'holes': holes}
+        doc = {'schemaVersion': 1, 'compilerVersion': 'course-terrain-v4', 'geometryHash': ctx.package_hash(layout_id), 'sourceManifestHash': digest(manifest),
+               'sourceIdentity': terrain_source_identity(manifest), 'holes': dict(sorted(holes.items()))}
         write_json(os.path.join(folder, 'asset-manifest.json'), doc)
         # Like the real compiler, the compilation report embeds the source manifest.
         write_json(os.path.join(folder, 'compilation-report.json'), {'compilerVersion': 'course-terrain-v4', 'packageHash': ctx.package_hash(layout_id), 'source': manifest,
@@ -291,21 +293,36 @@ class FakePipeline:
     def hole_terrain(self, node, ctx, run):
         self._mark(node)
         layout_id = node.scope.layout_id
-        folder = ctx.compiled_out(layout_id)
+        folder = prepare_compiled_dir(ctx, layout_id)
         os.makedirs(folder, exist_ok=True)
         hole = ctx.package_hole(layout_id, node.scope.ordinal)
         sub = ctx.hole_subhashes(layout_id, node.scope.ordinal)
         context = ctx.context_layer(layout_id) if ctx.states.get(f'layout.context.classify[{layout_id}]') in ('cached', 'success') else None
         # Like the real compiler: the source identity comes from the source
         # manifest (built or retained), never from the built pointer alone.
-        terrain = {'kind': 'terrain', 'hole': hole['key'], 'terrainInput': sub['holeTerrainInputHash'], 'source': terrain_source_identity(ctx.terrain_source_manifest(layout_id))}
+        source_manifest = ctx.terrain_source_manifest(layout_id)
+        identity = terrain_source_identity(source_manifest)
+        # And like the real compiler, an existing manifest for another
+        # package or source refuses the directory before anything is written.
+        manifest = ctx.json(os.path.join(folder, 'asset-manifest.json'), fresh=True)
+        holes = {}
+        if manifest:
+            same_source = manifest['sourceIdentity'] == identity if manifest.get('sourceIdentity') else manifest['sourceManifestHash'] == digest(source_manifest)
+            if manifest['geometryHash'] != ctx.package_hash(layout_id) or not same_source:
+                raise ValueError('Output manifest belongs to a different package/source; choose a new directory')
+            holes = dict(manifest['holes'])
+        terrain = {'kind': 'terrain', 'hole': hole['key'], 'terrainInput': sub['holeTerrainInputHash'], 'source': identity}
         terrain['contentHash'] = digest(terrain)
         write_json(os.path.join(folder, f'{hole["key"]}-terrain.json'), terrain)
+        with open(os.path.join(folder, f'{hole["key"]}-terrain.json'), 'rb') as f:
+            payload = f.read()
+        with open(os.path.join(folder, f'{hole["key"]}-terrain.json.gz'), 'wb') as f:
+            f.write(gzip.compress(payload, mtime=0))
         report = {'geometryHash': ctx.package_hash(layout_id), 'contentHash': terrain['contentHash'], 'triangles': 1000 + node.scope.ordinal,
-                  'contextLayerHash': (context or {}).get('contentHash'), 'noding': {'tJunctionVertices': 0}, 'asset': {'fileName': f'{hole["key"]}-terrain.json.gz'}}
+                  'contextLayerHash': (context or {}).get('contentHash'), 'noding': {'tJunctionVertices': 0},
+                  'asset': {'ordinal': hole['ordinal'], 'fileName': f'{hole["key"]}-terrain.json.gz', 'contentHash': terrain['contentHash']}}
         write_json(os.path.join(folder, f'{hole["key"]}-report.json'), report)
-        manifest = ctx.json(os.path.join(folder, 'asset-manifest.json'), fresh=True) or {'holes': {}}
-        holes = {**manifest.get('holes', {}), hole['key']: report['asset']} if manifest.get('geometryHash') == ctx.package_hash(layout_id) else {hole['key']: report['asset']}
+        holes[hole['key']] = report['asset']
         self._asset_manifest(ctx, layout_id, folder, holes)
         return [artifact('terrain', os.path.join(folder, f'{hole["key"]}-terrain.json'), 'C'), artifact('terrain-report', os.path.join(folder, f'{hole["key"]}-report.json'), 'C')]
 

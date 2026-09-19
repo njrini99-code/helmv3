@@ -276,16 +276,44 @@ def compile_terrain_base(node, ctx, run):
     return [artifact('compiled-base-assets', os.path.join(out, 'asset-manifest.json'), 'C'), artifact('compiled-base-report', os.path.join(out, 'compilation-report.json'), 'C')]
 
 
+def prepare_compiled_dir(ctx, layout_id):
+    """Make the shared compiled directory accept this package's hole compiles.
+
+    The compiler refuses a directory whose asset manifest names another
+    package or source. A new source makes every mesh stale, so the directory
+    is cleared. A new package hash does not: hole compiles key on their own
+    hole's inputs, so the holes an edit did not touch stay cached and their
+    files must stay in the directory and in the manifest. The manifest is
+    relabelled with the new hash and keeps every listed hole still in the
+    package whose file is present; a hole that does need work overwrites its
+    own entry when it compiles. A kept entry cannot fake a cache hit: the
+    planner trusts the ledger fingerprint and the per-hole report, never this
+    manifest."""
+    out = ctx.compiled_out(layout_id)
+    path = os.path.join(out, 'asset-manifest.json')
+    manifest = ctx.json(path, fresh=True)
+    if not manifest:
+        return out
+    if manifest.get('sourceIdentity') != terrain_source_identity(ctx.terrain_source_manifest(layout_id)):
+        # Another terrain source, or a manifest an older compiler wrote
+        # without a source identity: nothing here is known to be current.
+        safe_rmtree(ctx, out)
+        ctx.forget(path)
+        return out
+    package = ctx.package(layout_id) or {}
+    if manifest.get('geometryHash') == package.get('contentHash'):
+        return out
+    keys = {h['key'] for h in package.get('holes', [])}
+    kept = {key: entry for key, entry in (manifest.get('holes') or {}).items()
+            if key in keys and entry.get('fileName') and os.path.isfile(os.path.join(out, entry['fileName']))}
+    _write_json(path, {**manifest, 'geometryHash': package['contentHash'], 'holes': dict(sorted(kept.items()))})
+    ctx.forget(path)
+    return out
+
+
 def compile_hole_terrain(node, ctx, run):
     layout_id = node.scope.layout_id
-    out = ctx.compiled_out(layout_id)
-    manifest = ctx.json(os.path.join(out, 'asset-manifest.json'), fresh=True)
-    source = terrain_source_identity(ctx.terrain_source_manifest(layout_id))
-    if manifest and (manifest.get('geometryHash') != ctx.package_hash(layout_id) or manifest.get('sourceIdentity') != source):
-        # Compiled outputs are derived products regenerated into an empty
-        # directory when the package or the source they were built from
-        # changed (or an older compiler wrote them without a source identity).
-        safe_rmtree(ctx, out)
+    out = prepare_compiled_dir(ctx, layout_id)
     context = ctx.context_layer_path(layout_id)
     context = context if ctx.states.get(f'layout.context.classify[{layout_id}]') in ('cached', 'success') and os.path.isfile(context) else None
     _compile(node, ctx, run, str(node.scope.ordinal), out, context)

@@ -69,6 +69,8 @@ class ImpactTests(unittest.TestCase):
         code, text = self.h.run('invalidate', '--layout', 'synthetic-a', '--task', 'facility.osm.snapshot', '--reason', 'OSM edit reported')
         self.assertEqual(code, 0, text)
         self.assertEqual(self.h.states('synthetic-a')['facility.osm.snapshot[synthetic]'], ('stale', 'MANUAL_INVALIDATION'))
+        compiled = os.path.join(self.h.output, 'layouts', 'synthetic-a', 'compiled')
+        untouched = {name: file_sha256(os.path.join(compiled, name)) for name in os.listdir(compiled) if not name.startswith('synthetic-a-07') and name not in ('asset-manifest.json', 'compilation-report.json')}
         mark = len(self.h.pipeline.calls)
         _code, text = self.h.run('run', '--layout', 'synthetic-a')
         self.assertIn('failed 0', text)
@@ -79,6 +81,19 @@ class ImpactTests(unittest.TestCase):
         self.assertEqual([k for k in second if k.startswith('hole.world.build')], ['hole.world.build[synthetic-a:07]'])
         self.assertIn('layout.terrain.aggregate[synthetic-a]', second)
         self.assertNotIn('layout.terrain.acquire[synthetic-a]', second, 'the footprint did not change, so the raster is not re-acquired')
+        # The compiled directory is shared by the 18 holes and the compiler
+        # refuses one labelled with another package: the factory relabels it
+        # for the new package instead of clearing it, so the 17 cached holes
+        # keep their files, stay listed, and the next run has nothing to do.
+        manifest = read_json(os.path.join(compiled, 'asset-manifest.json'))
+        package = read_json(os.path.join(self.h.output, 'layouts', 'synthetic-a', 'package', 'normalized.json'))
+        self.assertEqual(manifest['geometryHash'], package['contentHash'])
+        self.assertEqual(sorted(manifest['holes']), sorted(h['key'] for h in package['holes']))
+        self.assertEqual({name: file_sha256(os.path.join(compiled, name)) for name in untouched}, untouched, 'cached holes are not rewritten')
+        mark = len(self.h.pipeline.calls)
+        _code, text = self.h.run('run', '--layout', 'synthetic-a')
+        self.assertIn('executed 0', text)
+        self.assertEqual(self.h.pipeline.calls[mark:], [], 'one run reaches the fixed point')
 
     def test_scorecard_only_edit_leaves_terrain_source_and_meshes_cached(self):
         self.h.run('run', '--layout', 'synthetic-a')

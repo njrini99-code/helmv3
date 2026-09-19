@@ -162,6 +162,28 @@ every artifact under the root, untouched holes still read from the retained
 compile. Ledger timestamps carry microseconds so a rebuild finishing in the
 same second as the `invalidate` that asked for it clears the invalidation.
 
+Shared compiled directory vs per-hole isolation (found live on Grande Dunes,
+fixed before merge): the compiler refuses an output directory whose
+`asset-manifest.json` names another package hash, and the executor answered by
+clearing the directory. With per-hole fingerprints that is wrong: when a
+package edit touches hole 10 only, holes 1–9 are planned cached (their files
+verified) before hole 10's compile wipes them, so the run ends with their
+artifacts missing and the next run recompiles them with identical inputs
+(Grande Dunes needed two runs). `prepare_compiled_dir` now relabels the
+manifest for the new package hash — keeping every listed hole still in the
+package whose file is present; holes that do need work overwrite their entry
+when they compile — and clears the directory only when the terrain source
+identity changed. A kept entry cannot fake a cache hit: the planner trusts the
+ledger fingerprint and each `<hole>-report.json`, which still records the
+package hash it was compiled under (so on a cold ledger a package change still
+recompiles every hole; changing that means changing what the compiler writes,
+outside PR B). The fake compiler now mirrors the real guard (raises on a
+foreign manifest), and `test_one_hole_bunker_edit_rebuilds_that_hole_only`
+asserts the manifest lists all 18 holes, the 17 cached holes' files are
+byte-identical, and a third run executes nothing. End-to-end confirmation on
+a real course lands with the next package-changing run; the four live courses
+are already at their fixed point, so a rerun proves only no regression.
+
 Live results (scratch output root, nothing committed):
 
 - Cacapon: four runs (the first three exposed real defects that are now

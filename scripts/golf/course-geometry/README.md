@@ -222,8 +222,12 @@ is such a trace (±10 m): the mowed corridor is visible in NAIP but fairway
 and first cut are not separable at 1 m. A revised package reuses the same
 terrain source directory when the request bounds and every retained file
 hash match; the source manifest records each package hash it has served and
-the raster is never replaced. Compiled outputs are derived products and are
-regenerated into an empty directory.
+the raster is never replaced. Compiled outputs are derived products: a new
+terrain source clears the compiled directory, while a new package hash only
+relabels its `asset-manifest.json` (the factory keeps every listed hole whose
+file is present, and the holes whose own inputs changed overwrite their
+entries when they recompile). Each `<hole>-report.json` still records the
+package hash it was compiled under.
 
 `review-course-imagery.py` draws every package feature over the NAIP export
 per hole at 3×, writes a contact sheet, and scores each bunker polygon by the
