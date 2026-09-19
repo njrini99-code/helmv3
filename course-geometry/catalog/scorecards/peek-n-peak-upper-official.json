@@ -1,0 +1,103 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "peek-n-peak-upper-official",
+  "layoutId": "peek-n-peak-upper",
+  "teeName": null,
+  "source": {
+    "provider": "official_course_site",
+    "url": "https://www.pknpk.com/golf-at-the-peak/upper-golf-course/",
+    "retrievedAt": "2026-09-15"
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 4,
+      "yards": 409
+    },
+    {
+      "hole": 2,
+      "par": 4,
+      "yards": 483
+    },
+    {
+      "hole": 3,
+      "par": 3,
+      "yards": 201
+    },
+    {
+      "hole": 4,
+      "par": 5,
+      "yards": 563
+    },
+    {
+      "hole": 5,
+      "par": 3,
+      "yards": 200
+    },
+    {
+      "hole": 6,
+      "par": 4,
+      "yards": 430
+    },
+    {
+      "hole": 7,
+      "par": 4,
+      "yards": 400
+    },
+    {
+      "hole": 8,
+      "par": 5,
+      "yards": 555
+    },
+    {
+      "hole": 9,
+      "par": 4,
+      "yards": 398
+    },
+    {
+      "hole": 10,
+      "par": 4,
+      "yards": 414
+    },
+    {
+      "hole": 11,
+      "par": 5,
+      "yards": 523
+    },
+    {
+      "hole": 12,
+      "par": 4,
+      "yards": 345
+    },
+    {
+      "hole": 13,
+      "par": 3,
+      "yards": 190
+    },
+    {
+      "hole": 14,
+      "par": 4,
+      "yards": 439
+    },
+    {
+      "hole": 15,
+      "par": 3,
+      "yards": 200
+    },
+    {
+      "hole": 16,
+      "par": 4,
+      "yards": 330
+    },
+    {
+      "hole": 17,
+      "par": 4,
+      "yards": 403
+    },
+    {
+      "hole": 18,
+      "par": 5,
+      "yards": 575
+    }
+  ]
+}

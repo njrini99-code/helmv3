@@ -45,21 +45,29 @@ architecture. `build-course.sh` is dropped as an objective.
 6. **Measure before promising 30–90 min.** Record §22's session metrics from the first Cacapon pass; the imagery dossier already yields per-bunker agreement, so the risk score's first version can be built from data the branch has today.
 7. **Appendix C arrived truncated**; the reason-code list is complete enough to implement as an enum now.
 
-## PR A — ready to start on a go
+## PR A — built 2026-09-19 on `agent/course-factory-a`
 
-Scope (no behaviour change; build + the five test files + `knowledge:check`):
+Owner go: "Do it." Stacked on `agent/golf-course-geometry` (`f21bbfed0`), the
+same worktree; #1939 is untouched. No player behaviour changes: the Upper
+resolves, gates and renders exactly as before, and every other course still
+resolves to null and makes no geometry request.
 
-- `src/lib/golf/course-geometry/course-policy.ts` — `CourseGeometryPolicy` (§16.1) with `layoutId`, `facilityId`, `siteIds`, flags, `approvedGeometryHashes`, `acceptedCapabilityTier`, `pilotAcceptsSourceCandidate`, `dbCourseIds`, `courseNamePatterns`, `renderWorld`.
-- `src/lib/golf/course-geometry/course-registry.ts` — `COURSE_GEOMETRY_REGISTRY = [peekNPeakUpper]`, `resolveCourseGeometryPolicy(round)` (dbCourseId → external binding → name pattern → null), `policyForSite(siteId)`.
-- `peek-n-peak-policy.ts` re-exports the Upper entry as `PEEK_N_PEAK_ONE_TAP_V1`; `productCourseIdForRound` / `courseIdForSite` / `isPeekNPeakOneTapEligible` delegate to the registry; `OneTapIneligibility` gains `capability_not_available` (unused by the Upper).
-- `course-assets.ts`, `course-package-manifest.ts`, `live-round-placement.ts`, `use-course-geometry.ts`, `use-one-tap*.ts`, the two round pages, `publish-course-assets.mts` — take the resolved policy from the registry.
-- `course-geometry/catalog/facilities/peek-n-peak.yml`, `layouts/peek-n-peak-upper.yml`, `scorecards/peek-n-peak-upper.json` (from `pilots/peek-n-peak-upper-scorecard.json`), schema files + a parser test; Cacapon's facility/layout manifests written from the audit row and the old fixtures (no build yet).
-- Docs: feature doc paragraph, `memory/registry.yml` mapping for the new module, this review updated with the head.
+What landed:
 
-Estimate: 1–2 days including the build and a preview check that the Upper
-still renders and every other course makes 0 geometry requests.
+- `src/lib/golf/course-geometry/course-policy.ts` — `CourseGeometryPolicy` (`layoutId`, `facilityId`, `siteIds`, `geometryFeatureFlag`, nullable `syncFeatureFlag`, `approvedGeometryHashes`, `acceptedCapabilityTier`, `pilotAcceptsSourceCandidate`, `dbCourseIds`, `courseNamePatterns`, `renderWorld`), `resolveCoursePolicy` (dbCourseId → name pattern → null), `isCourseGeometryEligible` with the same reason order as before plus `capability_not_available` (checked before the flag, only when a caller asks for a tier), `tierAtLeast`.
+- `src/lib/golf/course-geometry/course-registry.ts` — `PEEK_N_PEAK_UPPER_POLICY`, `COURSE_GEOMETRY_REGISTRY = [PEEK_N_PEAK_UPPER_POLICY]`, registry-defaulted `resolveCourseGeometryPolicy`, `productCourseIdForRound`, `courseGeometryPolicyForLayout/Site`, `courseIdForSite`, `courseGeometryEligibility`.
+- `src/lib/golf/one-tap/peek-n-peak-policy.ts` is a compatibility shim (`PEEK_N_PEAK_ONE_TAP_V1 = PEEK_N_PEAK_UPPER_POLICY`, old names delegate). No production module imports it any more; its test still pins the Upper facts.
+- `course-assets.ts`, `course-package-manifest.ts`, `live-round-placement.ts`, `use-course-geometry.ts`, `use-one-tap*.ts`, both round pages and `publish-course-assets.mts` resolve their policy from the registry (`policy` stays an explicit override for tests and the lab).
+- `OneTapLiveStatusRow` carries copy for `capability_not_available`.
+- Catalog: `course-geometry/catalog/{facilities,layouts,scorecards}/*.json` for Peek'n Peak / Upper (from `pilots/peek-n-peak-upper-scorecard.json`) and Cacapon (tier C0, from the 2026-09-19 audit row and the old library scorecard fixture). JSON, not YAML: `yaml` is a devDependency and the app never needs to read these. `src/lib/golf/course-geometry/catalog.ts` holds the zod schemas and `catalogProblems` (cross-file and registry consistency); `__tests__/catalog.test.ts` and `__tests__/course-registry.test.ts` pin them.
+
+Still single-course on purpose:
+
+- The round pages evaluate `PEEK_N_PEAK_UPPER_POLICY`'s two flags into the existing `oneTapFlagEnabled` / `oneTapSyncEnabled` booleans. A second drawn layout needs a per-layout flag map through `ContinueRoundClient` / `NewRoundClient` (PR B/C), not two more booleans.
+- `dbCourseIds` stays empty in the registry even though the catalog binds the Upper's `golf_courses` row; binding by id would change how a renamed course resolves and belongs with the round-page work above.
 
 ## Not started
 
-Nothing above is begun. The earlier hold stands: scale-out work waits on an
-explicit go and on the branch decision in adjustment 3.
+Phases B–H. Scale-out work past PR A waits on the branch decision for PR B
+(it needs PR A merged into the pilot branch or main) and on the source checks
+named above (S1M coverage for the first wave).

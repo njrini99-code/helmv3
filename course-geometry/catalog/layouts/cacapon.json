@@ -1,0 +1,68 @@
+{
+  "schema": "golfhelm-layout-v1",
+  "layoutId": "cacapon",
+  "facilityId": "cacapon",
+  "name": "Cacapon State Park Golf Course",
+  "siteIds": [
+    "osm-way-223477412"
+  ],
+  "segments": {
+    "main-18": {
+      "holes": [
+        "cacapon-01",
+        "cacapon-02",
+        "cacapon-03",
+        "cacapon-04",
+        "cacapon-05",
+        "cacapon-06",
+        "cacapon-07",
+        "cacapon-08",
+        "cacapon-09",
+        "cacapon-10",
+        "cacapon-11",
+        "cacapon-12",
+        "cacapon-13",
+        "cacapon-14",
+        "cacapon-15",
+        "cacapon-16",
+        "cacapon-17",
+        "cacapon-18"
+      ]
+    }
+  },
+  "segmentOrder": [
+    "main-18"
+  ],
+  "holeOrder": [
+    "cacapon-01",
+    "cacapon-02",
+    "cacapon-03",
+    "cacapon-04",
+    "cacapon-05",
+    "cacapon-06",
+    "cacapon-07",
+    "cacapon-08",
+    "cacapon-09",
+    "cacapon-10",
+    "cacapon-11",
+    "cacapon-12",
+    "cacapon-13",
+    "cacapon-14",
+    "cacapon-15",
+    "cacapon-16",
+    "cacapon-17",
+    "cacapon-18"
+  ],
+  "routeWayIds": null,
+  "bboxWgs84": null,
+  "capabilityTier": "C0",
+  "externalBindings": {
+    "golfCourseIds": [
+      "c6347725-c890-4545-b25f-a72e342b67da"
+    ]
+  },
+  "scorecardProfiles": [
+    "cacapon-blue"
+  ],
+  "geometry": null
+}

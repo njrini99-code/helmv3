@@ -1,7 +1,8 @@
 import { parseContextLayer, type ContextLayer } from '../course-geometry/context-layer';
 import { parseTerrainMesh, type TerrainMesh } from '../course-geometry/terrain';
 import type { CourseGeometryPackage } from '../course-geometry/types';
-import { PEEK_N_PEAK_ONE_TAP_V1, type PeekNPeakOneTapPolicy } from './peek-n-peak-policy';
+import { packageApproved, type CourseGeometryPolicy } from '../course-geometry/course-policy';
+import { courseGeometryPolicyForLayout } from '../course-geometry/course-registry';
 
 /** Master plan task 15 — offline course readiness. The essential manifest
  * names everything a round needs on the course with no signal: the approved
@@ -88,15 +89,16 @@ function parseManifest(body: string, courseId: string): EssentialCourseManifest 
 /** A package is accepted only under the policy's approved hash and site, and
  * as a source candidate only under the policy's explicit pilot exception —
  * a cached body is held to the same bar. */
-export function parseApprovedPackage(body: string, geometryVersion: string, policy: PeekNPeakOneTapPolicy): CourseGeometryPackage | null {
+export function parseApprovedPackage(body: string, geometryVersion: string, policy: CourseGeometryPolicy): CourseGeometryPackage | null {
   try {
     const pkg = JSON.parse(body) as CourseGeometryPackage | null;
-    if (!pkg || pkg.contentHash !== geometryVersion || !policy.approvedGeometryHashes.has(pkg.contentHash) || pkg.siteId !== policy.siteId || (pkg.status === 'source_candidate' && !policy.pilotAcceptsSourceCandidate)) return null;
+    if (!pkg || pkg.contentHash !== geometryVersion || !packageApproved(pkg, policy)) return null;
     return pkg;
   } catch { return null; }
 }
 
-export interface CourseAssetOptions { courseId: string; policy?: PeekNPeakOneTapPolicy; cache: CourseAssetCache | null; fetchImpl?: FetchLike | null; baseUrl?: string }
+/** `policy` defaults to the registry entry for `courseId`; an unlisted course approves nothing. */
+export interface CourseAssetOptions { courseId: string; policy?: CourseGeometryPolicy | null; cache: CourseAssetCache | null; fetchImpl?: FetchLike | null; baseUrl?: string }
 export type PreflightStatus = 'ready' | 'partial' | 'unavailable' | 'not_approved';
 export interface PreflightAsset { kind: 'package' | 'terrain'; holeKey?: string; url: string; source: AssetSource | null }
 export interface PreflightReport { status: PreflightStatus; geometryVersion: string | null; manifestSource: AssetSource | null; assets: PreflightAsset[]; missing: string[] }
@@ -106,9 +108,9 @@ export interface PreflightReport { status: PreflightStatus; geometryVersion: str
  * cache. `ready` means the whole course is viewable offline; `partial` means
  * the package is here but some hole's terrain is not (that hole draws in 2D);
  * `unavailable` means no package — the round stays on standard tracking. */
-export async function preflightCourseAssets({ courseId, policy = PEEK_N_PEAK_ONE_TAP_V1, cache, fetchImpl = defaultFetch, baseUrl = '/course-geometry' }: CourseAssetOptions): Promise<PreflightReport> {
+export async function preflightCourseAssets({ courseId, policy = courseGeometryPolicyForLayout(courseId), cache, fetchImpl = defaultFetch, baseUrl = '/course-geometry' }: CourseAssetOptions): Promise<PreflightReport> {
   const empty = (status: PreflightStatus, geometryVersion: string | null = null, manifestSource: AssetSource | null = null): PreflightReport => ({ status, geometryVersion, manifestSource, assets: [], missing: [] });
-  if (policy.approvedGeometryHashes.size === 0 || courseId !== policy.courseId) return empty('not_approved');
+  if (!policy || policy.approvedGeometryHashes.size === 0 || courseId !== policy.layoutId) return empty('not_approved');
   const manifestHit = await fetchAsset(manifestUrl(courseId, baseUrl), { cache, fetchImpl, strategy: 'network_first' });
   const manifest = manifestHit ? parseManifest(manifestHit.body, courseId) : null;
   if (!manifest) return empty('unavailable');
@@ -149,8 +151,8 @@ export interface LoadedCoursePackage { manifest: EssentialCourseManifest; pkg: C
  * live round needs before it can start. Terrain follows per hole through
  * `loadHoleTerrain`, so the first hole is on screen after ~1.5 MB instead of
  * after the whole course. Null when no approved package can be had. */
-export async function loadCoursePackage({ courseId, policy = PEEK_N_PEAK_ONE_TAP_V1, cache, fetchImpl = defaultFetch, baseUrl = '/course-geometry' }: CourseAssetOptions): Promise<LoadedCoursePackage | null> {
-  if (policy.approvedGeometryHashes.size === 0 || courseId !== policy.courseId) return null;
+export async function loadCoursePackage({ courseId, policy = courseGeometryPolicyForLayout(courseId), cache, fetchImpl = defaultFetch, baseUrl = '/course-geometry' }: CourseAssetOptions): Promise<LoadedCoursePackage | null> {
+  if (!policy || policy.approvedGeometryHashes.size === 0 || courseId !== policy.layoutId) return null;
   const manifestHit = await fetchAsset(manifestUrl(courseId, baseUrl), { cache, fetchImpl, strategy: 'network_first' });
   const manifest = manifestHit ? parseManifest(manifestHit.body, courseId) : null;
   if (!manifest || !policy.approvedGeometryHashes.has(manifest.geometryVersion)) return null;

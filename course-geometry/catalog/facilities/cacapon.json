@@ -1,0 +1,37 @@
+{
+  "schema": "golfhelm-facility-v1",
+  "facilityId": "cacapon",
+  "name": "Cacapon State Park",
+  "country": "US",
+  "region": "WV",
+  "originWgs84": [
+    -78.2958511,
+    39.5119114
+  ],
+  "aoi": {
+    "kind": "osm",
+    "id": "way/223477412",
+    "marginM": 300
+  },
+  "sourcePins": {
+    "osm": [
+      "way/223477412"
+    ]
+  },
+  "providerPolicy": {
+    "terrain": [
+      "usgs_s1m",
+      "usgs_3dep_project_1m"
+    ],
+    "imagery": [
+      "naip_current"
+    ],
+    "context": [
+      "osm"
+    ]
+  },
+  "notes": [
+    "Origin is the OSM course-way centre from the 2026-09-19 library audit; the build pins the origin from the AOI once it runs.",
+    "Terrain in the library audit: USGS 1 Meter 17 x73y438 MD_Western_2021_D21. OSM (2026-09-12 extract): 18 holes, 18 greens, 18 fairways, 71 bunkers, 22 tees."
+  ]
+}

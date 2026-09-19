@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest';
  * visual layer, on Three, or on React components. ESLint carries the same
  * rule for editors; this test is the merge gate. */
 const root = join(__dirname, '..');
-const CANONICAL = ['build-scene', 'camera', 'canopy', 'context-layer', 'context-taxonomy', 'describe-position', 'display-outline', 'display-trajectories', 'normalize',
+const CANONICAL = ['build-scene', 'camera', 'canopy', 'catalog', 'context-layer', 'context-taxonomy', 'course-policy', 'course-registry', 'describe-position', 'display-outline', 'display-trajectories', 'normalize',
   'project', 'quality', 'reconstruct', 'ring-index', 'schema', 'selected-shot-focus', 'shot-camera-target', 'spatial', 'surface-compatibility', 'terrain', 'terrain-residency', 'terrain-source',
   'tracking-scene', 'types'];
 const VISUAL = ['three-camera', 'three-flight-path', 'three-renderer', 'shadow-bounds', 'terrain-canopy', 'terrain-material',

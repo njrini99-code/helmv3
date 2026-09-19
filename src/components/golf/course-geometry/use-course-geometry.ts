@@ -6,7 +6,8 @@ import { evictTerrain, rememberViewedHole, residentTerrainKeys } from '@/lib/gol
 import type { TrackingGeometry } from '@/lib/golf/course-geometry/tracking-scene';
 import { cacheStorageCourseAssetCache, loadCoursePackage, loadHoleTerrain, manifestUrl, pruneCourseAssets, type CourseAssetCache, type FetchLike, type LoadedCoursePackage } from '@/lib/golf/one-tap/course-assets';
 import { holeKeyForRoundHole, type OneTapLiveRound } from '@/lib/golf/one-tap/live-round-placement';
-import { PEEK_N_PEAK_ONE_TAP_V1, productCourseIdForRound, type PeekNPeakOneTapPolicy } from '@/lib/golf/one-tap/peek-n-peak-policy';
+import type { CourseGeometryPolicy } from '@/lib/golf/course-geometry/course-policy';
+import { resolveCourseGeometryPolicy } from '@/lib/golf/course-geometry/course-registry';
 
 /** Course-framed presentation (plan §unlock 3) for a round on a modelled
  * course — today Peek'n Peak Upper, the one course with an owner-approved
@@ -34,7 +35,8 @@ export interface UseCourseGeometryOptions {
   /** `false` keeps the hook idle — Meridian Live owns the course assets while
    * it is loading or up, and the tracker takes its geometry from the live round. */
   enabled?: boolean;
-  policy?: PeekNPeakOneTapPolicy;
+  /** One policy to test against instead of the registry (tests, the lab). */
+  policy?: CourseGeometryPolicy;
   /** Test seams; production uses the Cache API and `fetch`. */
   cache?: CourseAssetCache | null;
   fetchImpl?: FetchLike | null;
@@ -42,9 +44,10 @@ export interface UseCourseGeometryOptions {
 export type CourseGeometryStatus = 'inactive' | 'loading' | 'ready' | 'unavailable';
 export interface CourseGeometryState { geometry: TrackingGeometry | undefined; status: CourseGeometryStatus }
 
-export function useCourseGeometry({ dbCourseId, courseName, holeNumbers, focusHoleNumber = null, prefetchNext = true, enabled = true, policy = PEEK_N_PEAK_ONE_TAP_V1, cache, fetchImpl }: UseCourseGeometryOptions): CourseGeometryState {
-  const productCourseId = productCourseIdForRound({ dbCourseId, courseName }, policy);
-  const active = enabled && productCourseId === policy.courseId;
+export function useCourseGeometry({ dbCourseId, courseName, holeNumbers, focusHoleNumber = null, prefetchNext = true, enabled = true, policy: onlyPolicy, cache, fetchImpl }: UseCourseGeometryOptions): CourseGeometryState {
+  const policy = useMemo(() => resolveCourseGeometryPolicy({ dbCourseId, courseName }, onlyPolicy ? [onlyPolicy] : undefined), [dbCourseId, courseName, onlyPolicy]);
+  const productCourseId = policy?.layoutId ?? null;
+  const active = enabled && productCourseId !== null;
   const [loaded, setLoaded] = useState<LoadedCoursePackage | null>(null);
   const [status, setStatus] = useState<CourseGeometryStatus>('inactive');
   const [terrainByHole, setTerrainByHole] = useState<Readonly<Record<string, TerrainMesh>>>({});
@@ -54,7 +57,7 @@ export function useCourseGeometry({ dbCourseId, courseName, holeNumbers, focusHo
   // change drops what was loaded; a pause (`enabled: false`, Meridian Live
   // taking the assets over) keeps it, so the hero never falls back to the
   // plain card for the seconds Live takes to come up or go away.
-  const matched = productCourseId === policy.courseId;
+  const matched = productCourseId !== null;
   useEffect(() => {
     if (!matched) { setLoaded(null); setTerrainByHole({}); setStatus('inactive'); return; }
     if (!active) return;
@@ -62,7 +65,7 @@ export function useCourseGeometry({ dbCourseId, courseName, holeNumbers, focusHo
     setStatus(current => current === 'ready' ? current : 'loading');
     void (async () => {
       try {
-        const result = await loadCoursePackage({ courseId: productCourseId!, policy, cache: assetCache, fetchImpl });
+        const result = await loadCoursePackage({ courseId: productCourseId!, policy: policy!, cache: assetCache, fetchImpl });
         if (cancelled) return;
         setLoaded(current => current && result && current.manifest.geometryVersion === result.manifest.geometryVersion ? current : result);
         setStatus(result ? 'ready' : 'unavailable');

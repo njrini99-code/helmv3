@@ -1,0 +1,95 @@
+{
+  "schema": "golfhelm-layout-v1",
+  "layoutId": "peek-n-peak-upper",
+  "facilityId": "peek-n-peak",
+  "name": "Peek'n Peak Resort — Upper Course",
+  "siteIds": [
+    "osm-way-136097904"
+  ],
+  "segments": {
+    "upper-18": {
+      "holes": [
+        "upper-01",
+        "upper-02",
+        "upper-03",
+        "upper-04",
+        "upper-05",
+        "upper-06",
+        "upper-07",
+        "upper-08",
+        "upper-09",
+        "upper-10",
+        "upper-11",
+        "upper-12",
+        "upper-13",
+        "upper-14",
+        "upper-15",
+        "upper-16",
+        "upper-17",
+        "upper-18"
+      ]
+    }
+  },
+  "segmentOrder": [
+    "upper-18"
+  ],
+  "holeOrder": [
+    "upper-01",
+    "upper-02",
+    "upper-03",
+    "upper-04",
+    "upper-05",
+    "upper-06",
+    "upper-07",
+    "upper-08",
+    "upper-09",
+    "upper-10",
+    "upper-11",
+    "upper-12",
+    "upper-13",
+    "upper-14",
+    "upper-15",
+    "upper-16",
+    "upper-17",
+    "upper-18"
+  ],
+  "routeWayIds": [
+    746146117,
+    746146123,
+    746269632,
+    746269646,
+    746146129,
+    746269658,
+    746269671,
+    746365981,
+    746365993,
+    746366003,
+    746366018,
+    746383309,
+    746383317,
+    746383328,
+    746383335,
+    746383346,
+    746383357,
+    746383364
+  ],
+  "bboxWgs84": [
+    -79.76,
+    42.048,
+    -79.733,
+    42.073
+  ],
+  "capabilityTier": "C2",
+  "externalBindings": {
+    "golfCourseIds": [
+      "48596a01-88a4-4081-aaa1-3b049584aa2d"
+    ]
+  },
+  "scorecardProfiles": [
+    "peek-n-peak-upper-official"
+  ],
+  "geometry": {
+    "package": "src/test/fixtures/course-geometry/peek-n-peak-upper.json",
+    "published": "public/course-geometry/peek-n-peak-upper/manifest.json"
+  }
+}

@@ -5,18 +5,19 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { pilotPackage } from '@/test/fixtures/course-geometry/pilot';
 import { MemoryCourseAssetCache, manifestUrl } from '@/lib/golf/one-tap/course-assets';
-import { PEEK_N_PEAK_ONE_TAP_V1, type PeekNPeakOneTapPolicy } from '@/lib/golf/one-tap/peek-n-peak-policy';
+import type { CourseGeometryPolicy } from '@/lib/golf/course-geometry/course-policy';
+import { PEEK_N_PEAK_UPPER_POLICY } from '@/lib/golf/course-geometry/course-registry';
 import { trackingGeometryFromLiveRound, useCourseGeometry } from './use-course-geometry';
 
 // SYNTHETIC POLICY: the pilot fixture stands in for the approved Upper package.
-const policy: PeekNPeakOneTapPolicy = { ...PEEK_N_PEAK_ONE_TAP_V1, siteId: pilotPackage.siteId, approvedGeometryHashes: new Set([pilotPackage.contentHash]) };
-const BASE = `/course-geometry/${policy.courseId}/${pilotPackage.contentHash}`;
+const policy: CourseGeometryPolicy = { ...PEEK_N_PEAK_UPPER_POLICY, siteIds: new Set([pilotPackage.siteId]), approvedGeometryHashes: new Set([pilotPackage.contentHash]) };
+const BASE = `/course-geometry/${policy.layoutId}/${pilotPackage.contentHash}`;
 const PKG_URL = `${BASE}/package.json`;
 const keys = pilotPackage.holes.map(h => h.key);
 const terrainUrl = (key: string) => `${BASE}/terrain/${key}.json`;
 const terrainBody = readFileSync(join(process.cwd(), 'src/test/fixtures/course-geometry/cacapon-07-terrain.json'), 'utf8');
 const manifest = { geometryVersion: pilotPackage.contentHash, packageUrl: PKG_URL, terrainByHole: Object.fromEntries(keys.map(key => [key, terrainUrl(key)])) };
-const bodies: Record<string, string> = { [manifestUrl(policy.courseId)]: JSON.stringify(manifest), [PKG_URL]: JSON.stringify(pilotPackage) };
+const bodies: Record<string, string> = { [manifestUrl(policy.layoutId)]: JSON.stringify(manifest), [PKG_URL]: JSON.stringify(pilotPackage) };
 const requested: string[] = [];
 const online = { value: true };
 const fetchImpl = vi.fn(async (url: string) => {
@@ -63,7 +64,7 @@ describe('useCourseGeometry', () => {
     await waitFor(() => expect(Object.keys(hook.result.current.geometry?.terrainByHole ?? {}).sort()).toEqual([keys[10], keys[11], keys[12]].sort()));
     expect(hook.result.current.geometry?.package).toBe(geometry.package);
     // Every asset that was fetched is now in the device cache under its versioned URL.
-    expect((await cache.keys()).sort()).toEqual([manifestUrl(policy.courseId), PKG_URL, ...[9, 10, 11, 12].map(i => terrainUrl(keys[i]!))].sort());
+    expect((await cache.keys()).sort()).toEqual([manifestUrl(policy.layoutId), PKG_URL, ...[9, 10, 11, 12].map(i => terrainUrl(keys[i]!))].sort());
   });
 
   it('serves a cached course with no signal and loads no terrain while no hole is open', async () => {
@@ -108,7 +109,7 @@ describe('useCourseGeometry', () => {
     hook.rerender({ ...props, enabled: true, focusHoleNumber: 8 });
     await waitFor(() => expect(Object.keys(hook.result.current.geometry?.terrainByHole ?? {}).sort()).toEqual([keys[6], keys[7], keys[8]].sort()));
     expect(hook.result.current.geometry?.package).toBe(before.package);
-    expect(requested.slice(requests).filter(url => url !== manifestUrl(policy.courseId))).toEqual([terrainUrl(keys[8]!)]);
+    expect(requested.slice(requests).filter(url => url !== manifestUrl(policy.layoutId))).toEqual([terrainUrl(keys[8]!)]);
     // A different course drops everything.
     hook.rerender({ ...props, courseName: 'Elsewhere GC' });
     await waitFor(() => expect(hook.result.current).toEqual({ geometry: undefined, status: 'inactive' }));

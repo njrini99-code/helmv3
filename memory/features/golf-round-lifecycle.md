@@ -832,6 +832,20 @@ flag off or no approved package — renders the tracker exactly as before
   (`loadApprovedCoursePackage`; nothing is fetched while
   `approvedGeometryHashes` is empty, which is the shipped state) and a device
   location that is not denied.
+- Since 2026-09-19 (Factory v2 PR A) the policy is generic: the course a
+  round is on resolves through `COURSE_GEOMETRY_REGISTRY`
+  (`src/lib/golf/course-geometry/course-registry.ts`, contract in
+  `course-policy.ts`) — bound `golf_courses` id first, then the layout's name
+  patterns, else null and no geometry request. The registry holds one entry,
+  `PEEK_N_PEAK_UPPER_POLICY` (`layoutId` `peek-n-peak-upper`, site
+  `osm-way-136097904`, tier C2 with the pilot source-candidate exception);
+  `src/lib/golf/one-tap/peek-n-peak-policy.ts` is a compatibility shim over
+  it. Each entry names its own flags; the round pages still evaluate the
+  Upper's two flags into the booleans above until a second layout ships.
+  Facility / layout / scorecard manifests live under
+  `course-geometry/catalog/` (schemas: `course-geometry/catalog.ts`;
+  `catalogProblems` checks them against the registry in
+  `__tests__/catalog.test.ts`).
 - The ledger seam is `toRoundShots` (`src/lib/golf/one-tap/to-round-shots.ts`):
   a hole's finalized marks become ordinary `ShotRecord`s (`source:
   'one_tap_location'`, per-shot provenance, `clubSource: 'unknown'`, penalties

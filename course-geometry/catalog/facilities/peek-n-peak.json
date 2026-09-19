@@ -1,0 +1,37 @@
+{
+  "schema": "golfhelm-facility-v1",
+  "facilityId": "peek-n-peak",
+  "name": "Peek'n Peak Resort",
+  "country": "US",
+  "region": "NY",
+  "originWgs84": [
+    -79.744,
+    42.06
+  ],
+  "aoi": {
+    "kind": "osm",
+    "id": "way/136097904",
+    "marginM": 300
+  },
+  "sourcePins": {
+    "osm": [
+      "way/136097904"
+    ]
+  },
+  "providerPolicy": {
+    "terrain": [
+      "usgs_s1m",
+      "usgs_3dep_project_1m"
+    ],
+    "imagery": [
+      "naip_current"
+    ],
+    "context": [
+      "osm"
+    ]
+  },
+  "notes": [
+    "Upper and Lower share the OSM site way/136097904; the Upper layout is selected by its route ways, never by proximity.",
+    "Terrain in the library audit: USGS 1 Meter 17 x60y466 PA_WesternPA_2019_D20 and USGS one meter x60y466 NY Southwest East 2017."
+  ]
+}

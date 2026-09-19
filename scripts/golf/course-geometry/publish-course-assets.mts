@@ -19,7 +19,7 @@ import { parseContextLayer } from '@/lib/golf/course-geometry/context-layer';
 import { parseGeometryPackage } from '@/lib/golf/course-geometry/schema';
 import { parseTerrainMesh } from '@/lib/golf/course-geometry/terrain';
 import type { EssentialCourseManifest } from '@/lib/golf/one-tap/course-assets';
-import { courseIdForSite } from '@/lib/golf/one-tap/peek-n-peak-policy';
+import { courseIdForSite } from '@/lib/golf/course-geometry/course-registry';
 
 const args = Object.fromEntries(process.argv.slice(2).filter(a => a.startsWith('--')).map(a => { const [k, v = 'true'] = a.slice(2).split('='); return [k, v]; }));
 const course = String(args.course ?? 'peek-n-peak-upper');

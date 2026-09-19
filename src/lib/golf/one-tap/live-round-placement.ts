@@ -7,7 +7,8 @@ import { defaultFetch, loadCourseAssets, type CourseAssetCache, type FetchLike, 
 import { largestOuterRing, ringCentroid } from './hole-distances';
 import { buildSurfacePartition } from './lie-classifier';
 import type { LocationSource } from './location-source';
-import { PEEK_N_PEAK_ONE_TAP_V1, isPeekNPeakOneTapEligible, type OneTapEligibility, type PeekNPeakOneTapPolicy } from './peek-n-peak-policy';
+import { isCourseGeometryEligible, type CourseGeometryEligibility as OneTapEligibility, type CourseGeometryPolicy } from '../course-geometry/course-policy';
+import { courseGeometryPolicyForLayout } from '../course-geometry/course-registry';
 
 /** Master design §77 placement: Meridian Live replaces the shot-entry screen
  * of the existing round flow only for an eligible round — Peek'n Peak Upper,
@@ -47,15 +48,17 @@ export interface ResolveLiveRoundInput {
   location: LocationSource | null;
   storage?: StorageLike | null;
   transport?: SyncTransport | null;
-  policy?: PeekNPeakOneTapPolicy;
+  /** Defaults to the registry entry for `roundCourseId`; an unlisted course is `wrong_course`. */
+  policy?: CourseGeometryPolicy | null;
   readiness?: PreflightStatus;
   roundType?: RoundTypeLike;
 }
 export function resolveOneTapLiveRound(input: ResolveLiveRoundInput): { live: OneTapLiveRound | null; eligibility: OneTapEligibility } {
-  const policy = input.policy ?? PEEK_N_PEAK_ONE_TAP_V1;
   if (!input.roundCourseId) return { live: null, eligibility: { eligible: false, reason: 'wrong_course' } };
+  const policy = input.policy ?? courseGeometryPolicyForLayout(input.roundCourseId);
+  if (!policy) return { live: null, eligibility: { eligible: false, reason: 'wrong_course' } };
   if (!input.pkg) return { live: null, eligibility: { eligible: false, reason: 'geometry_hash_not_approved' } };
-  const eligibility = isPeekNPeakOneTapEligible({ roundCourseId: input.roundCourseId, pkg: input.pkg, featureFlagEnabled: input.featureFlagEnabled, preciseLocationAvailable: !!input.location }, policy);
+  const eligibility = isCourseGeometryEligible({ roundCourseId: input.roundCourseId, pkg: input.pkg, featureFlagEnabled: input.featureFlagEnabled, preciseLocationAvailable: !!input.location }, policy);
   if (!eligibility.eligible) return { live: null, eligibility };
   const holeKeys = [...input.pkg.holes].sort((a, b) => a.ordinal - b.ordinal).map(h => h.key);
   return { eligibility, live: { roundId: input.roundId, courseId: eligibility.courseId, geometryVersion: eligibility.geometryVersion, pkg: input.pkg, holeKeys,
@@ -80,7 +83,7 @@ export function greenCentreENU(pkg: CourseGeometryPackage, holeKey: string): Poi
  * disagrees with the policy is refused — a source-candidate package never
  * reaches a player. */
 export type { CoursePackageAssets };
-export async function loadApprovedCoursePackage(courseId: string, policy: PeekNPeakOneTapPolicy = PEEK_N_PEAK_ONE_TAP_V1,
+export async function loadApprovedCoursePackage(courseId: string, policy: CourseGeometryPolicy | null = courseGeometryPolicyForLayout(courseId),
   fetchImpl: FetchLike | null = defaultFetch, baseUrl = '/course-geometry', cache: CourseAssetCache | null = null): Promise<CoursePackageAssets | null> {
   const loaded = await loadCourseAssets({ courseId, policy, cache, fetchImpl, baseUrl });
   return loaded ? { pkg: loaded.pkg, terrainByHole: loaded.terrainByHole, geometryVersion: loaded.geometryVersion } : null;
