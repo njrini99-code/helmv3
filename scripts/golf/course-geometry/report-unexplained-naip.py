@@ -397,8 +397,8 @@ def main():
         'holes': holes_out,
     }
     lines = [f"# Unexplained context ground in NAIP — {pkg['name']} ({pkg['siteId']})", '',
-             f"Package `{pkg['contentHash'][:12]}`, context layer `{context['contentHash'][:12]}`, NAIP `{raster_sha[:12]}` ({', '.join(naip_manifest['captureDates'])}). "
-             f"Report only: no zone is created; the review sidecar only accepts, adjusts or rejects existing zones, so the what-if columns are an upper bound on what a new source-backed derived zone could explain.", '',
+             (f"Package `{pkg['contentHash'][:12]}`, context layer `{context['contentHash'][:12]}`, NAIP `{raster_sha[:12]}` ({', '.join(naip_manifest['captureDates'])}). "
+              "Report only: no zone is created; the review sidecar only accepts, adjusts or rejects existing zones, so the what-if columns are an upper bound on what a new source-backed derived zone could explain."), '',
              f"Course-wide the unexplained ground ({total_unexplained / 1e4:.1f} ha) is: " + ', '.join(f"{name} {course_classes[name] * 100:.0f} %" for name in CLASSES) + '.', '',
              '| Hole | Unexplained | ha | canopy | meadow | turf | bare | dark | canopy beyond pass reach | ' + ' | '.join(f'if {name}' for name, _, _ in SCENARIOS) + ' |',
              '|---|---|---|---|---|---|---|---|---|' + '---|' * len(SCENARIOS)]
@@ -412,14 +412,14 @@ def main():
     result['courseCanopy'] = {'m2': round(canopy_m2), 'beyondCanopyPassReachM2': round(beyond_m2), 'beyondShareOfUnexplained': round(beyond_m2 / total_unexplained, 3)}
     lines += ['', f"Holes under the {GATE * 100:.0f} % gate: report {gate_counts['report']} of {len(holes_out)}; " + '; '.join(f"if {name} → {gate_counts[name]}" for name, _, _ in SCENARIOS) + '.', '',
               '## Findings (numbers only)', '',
-              f"- Canopy the pass never looked at: {beyond_m2 / 1e4:.1f} ha of the {canopy_m2 / 1e4:.1f} ha canopy inside the unexplained ground lies beyond the union of the canopy pass's per-hole boxes "
-              f"(features ± {canopy_pass.CONTEXT_MARGIN_M} m), i.e. {beyond_m2 / total_unexplained * 100:.0f} % of all unexplained ground is forest in the report's {margin} m rim that no derivation was offered. "
-              f"Re-running the pass out to the hole bounds would offer it to the same derivation (what survives its minimum group size and smoothing is not measured here), at the cost of a new package hash (woods are package features).",
+              (f"- Canopy the pass never looked at: {beyond_m2 / 1e4:.1f} ha of the {canopy_m2 / 1e4:.1f} ha canopy inside the unexplained ground lies beyond the union of the canopy pass's per-hole boxes "
+               f"(features ± {canopy_pass.CONTEXT_MARGIN_M} m), i.e. {beyond_m2 / total_unexplained * 100:.0f} % of all unexplained ground is forest in the report's {margin} m rim that no derivation was offered. "
+               "Re-running the pass out to the hole bounds would offer it to the same derivation (what survives its minimum group size and smoothing is not measured here), at the cost of a new package hash (woods are package features)."),
               f"- Vegetation without a class: turf + meadow is {(course_classes['turf'] + course_classes['meadow']) * 100:.0f} % of the unexplained ground; today it is painted as outer rough with terrain-following tone, which is what it is, but no zone says so.",
               f"- Bare ground / hardscape: {course_classes['bare'] * 100:.0f} % (tilled fields west of the road, driveways and roofs without an OSM footprint, the ski base); a source gap, not a render one.",
               '',
-              '## Method', '', f"Thresholds measured in this raster on the package's own surfaces: turf floor NDVI {turf_floor} (fairway p5 − .02), water NIR < {water_nir_max:.0f} (2 × package-water median). "
-              f"Canopy uses the canopy pass's own test (NDVI > {NDVI_CANOPY}, NIR texture > {TEXTURE_CANOPY}).", '',
+              '## Method', '', (f"Thresholds measured in this raster on the package's own surfaces: turf floor NDVI {turf_floor} (fairway p5 − .02), water NIR < {water_nir_max:.0f} (2 × package-water median). "
+                                f"Canopy uses the canopy pass's own test (NDVI > {NDVI_CANOPY}, NIR texture > {TEXTURE_CANOPY})."), '',
               '| Class | Meaning | Rule |', '|---|---|---|'] + [f"| {name} | {LABELS[name]} | {result['method']['classes'][name]} |" for name in CLASSES] + ['',
               '| Reference | px | NDVI p5/25/50/75/95 | NIR p5/50/95 | texture p25/50/75 |', '|---|---|---|---|---|']
     for kind, ref in references.items():
