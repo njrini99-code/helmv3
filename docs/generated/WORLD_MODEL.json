@@ -1450,6 +1450,11 @@
         "category": "services"
       },
       {
+        "id": "services:course-geometry/catalog/**",
+        "pattern": "course-geometry/catalog/**",
+        "category": "services"
+      },
+      {
         "id": "services:docs/ai-system/selfheal/**",
         "pattern": "docs/ai-system/selfheal/**",
         "category": "services"
@@ -19877,6 +19882,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/app/golf/(dashboard)/dashboard/rounds/recover/**"
+        }
+      ]
+    },
+    {
+      "source": "shot_tracking",
+      "target": "services:course-geometry/catalog/**",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "course-geometry/catalog/**"
         }
       ]
     },
