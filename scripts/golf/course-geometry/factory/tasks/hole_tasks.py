@@ -3,7 +3,14 @@ never the whole package hash, so one hole's edit stays one hole's rebuild."""
 import os
 
 from ..model import TaskSpec
-from .common import artifact, dep_input, evaluation, exists, script
+from .common import (
+    TERRAIN_COMPILER_FILES,
+    artifact,
+    dep_input,
+    evaluation,
+    exists,
+    script,
+)
 
 TERRAIN_COMPILER = 'course-terrain-v4'
 TERRAIN_STYLE = 'narrow-surround-v1'
@@ -88,7 +95,7 @@ def eval_player_capture(node, ctx):
 
 SPECS = [
     TaskSpec('hole.terrain.compile', TERRAIN_COMPILER, 'hole', ('layout.terrain.acquire', 'layout.package.validate', 'layout.context.classify?'), eval_terrain_compile,
-             impl_files=(script('compile-course-terrain.py'), script('elevation_raster.py')), retention='C', estimated_bytes=5_000_000,
+             impl_files=TERRAIN_COMPILER_FILES, retention='C', estimated_bytes=5_000_000,
              settings={'style': TERRAIN_STYLE}),
     TaskSpec('hole.world.build', '1', 'hole', ('layout.package.validate', 'layout.terrain.acquire'), eval_world_build,
              impl_files=(script('build-course-world.py'), script('normalize-study.py'), script('compile-physical-world.py'), script('course-truth-gate.py')),

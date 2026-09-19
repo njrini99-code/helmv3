@@ -10,6 +10,14 @@ def script(name):
     return f'{SCRIPTS}/{name}'
 
 
+# Every file whose edit changes what a script produces belongs in its task's
+# impl_files, or the edit ships silently under an unchanged fingerprint. The
+# compiler loads its projection rule, the local frame and the fetch helpers
+# from sibling modules at import time.
+CRS_FILES = (script('course_crs.py'),)
+TERRAIN_COMPILER_FILES = (script('compile-course-terrain.py'), script('elevation_raster.py'), script('prepare-pilot.py'), script('fetch-terrain-pilot.py')) + CRS_FILES
+
+
 def artifact(key, path, retention='C'):
     return ArtifactRef(key=key, path=path, retention=retention, sha256=file_sha256_or_none(path) if path and os.path.isfile(path) else None,
                        bytes=os.path.getsize(path) if path and os.path.isfile(path) else None)

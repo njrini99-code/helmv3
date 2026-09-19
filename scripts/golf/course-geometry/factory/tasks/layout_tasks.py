@@ -12,7 +12,17 @@ from ..fingerprints import (
     terrain_source_identity,
 )
 from ..model import TaskSpec
-from .common import artifact, blocked, dep_input, doc_hash, evaluation, exists, script
+from .common import (
+    CRS_FILES,
+    TERRAIN_COMPILER_FILES,
+    artifact,
+    blocked,
+    dep_input,
+    doc_hash,
+    evaluation,
+    exists,
+    script,
+)
 
 CANOPY_SHARE_SUSPECT = 0.02  # below this share of the export, the canopy layer needs a look (Cacapon 2024-09 tile before calibration: 0.03%)
 CANOPY_TURF_NDVI_COMPRESSED = 0.25  # fairway NDVI medians: Winchester / the Upper ≈ 0.37; Forsyth 0.12, Cacapon 0.16, Grande Dunes 0.21
@@ -320,18 +330,18 @@ SPECS = [
     TaskSpec('layout.scorecard.compose', '1', 'layout', ('layout.routes.resolve', 'layout.scorecard.validate', 'facility.aoi.resolve'), eval_scorecard_compose, retention='A', estimated_bytes=10_000),
     TaskSpec('layout.candidates.compose', '1', 'layout', ('facility.osm.snapshot', 'layout.scorecard.compose'),
              _package_eval(lambda c, l: c.candidates_dir(l), ('facility.osm.snapshot', 'layout.scorecard.compose')),
-             impl_files=(script('prepare-osm-course.py'),), retention='A', estimated_bytes=20_000_000),
+             impl_files=(script('prepare-osm-course.py'),) + CRS_FILES, retention='A', estimated_bytes=20_000_000),
     TaskSpec('layout.terrain.acquire', '1', 'layout', ('layout.candidates.compose',), eval_terrain_acquire,
-             impl_files=(script('compile-course-terrain.py'), script('elevation_raster.py')), retention='A', estimated_bytes=300_000_000),
+             impl_files=TERRAIN_COMPILER_FILES, retention='A', estimated_bytes=300_000_000),
     TaskSpec('layout.canopy.derive', '1', 'layout', ('layout.terrain.acquire', 'layout.candidates.compose'), eval_canopy_derive,
-             impl_files=(script('derive-canopy-naip.py'),), retention='B', estimated_bytes=500_000_000),
+             impl_files=(script('derive-canopy-naip.py'),) + CRS_FILES, retention='B', estimated_bytes=500_000_000),
     TaskSpec('layout.package.compose', '1', 'layout', ('layout.candidates.compose', 'layout.scorecard.compose', 'facility.osm.snapshot', 'layout.canopy.derive?'), eval_package_compose,
-             impl_files=(script('prepare-osm-course.py'),), retention='A', estimated_bytes=5_000_000),
+             impl_files=(script('prepare-osm-course.py'),) + CRS_FILES, retention='A', estimated_bytes=5_000_000),
     TaskSpec('layout.package.validate', '1', 'layout', ('layout.package.compose', 'layout.context.classify?'), eval_package_validate, executor=run_package_validate, retention='C'),
     TaskSpec('layout.terrain.base', '1', 'layout', ('layout.package.compose', 'layout.terrain.acquire'), eval_terrain_base,
-             impl_files=(script('compile-course-terrain.py'), script('elevation_raster.py')), retention='C', estimated_bytes=100_000_000),
+             impl_files=TERRAIN_COMPILER_FILES, retention='C', estimated_bytes=100_000_000),
     TaskSpec('layout.imagery.audit', '1', 'layout', ('layout.package.compose', 'layout.canopy.derive'), eval_imagery_audit,
-             impl_files=(script('review-course-imagery.py'),), retention='A', estimated_bytes=200_000_000),
+             impl_files=(script('review-course-imagery.py'),) + CRS_FILES, retention='A', estimated_bytes=200_000_000),
     TaskSpec('layout.context.classify', '1', 'layout', ('layout.package.compose', 'facility.context.snapshot', 'layout.terrain.base'), eval_context_classify,
              impl_files=(script('prepare-context-layer.py'),), retention='A', estimated_bytes=5_000_000),
     TaskSpec('layout.review.compose', '1', 'layout', ('layout.package.validate', 'layout.imagery.audit?', 'layout.context.classify?'), eval_review_compose, executor=INLINE),

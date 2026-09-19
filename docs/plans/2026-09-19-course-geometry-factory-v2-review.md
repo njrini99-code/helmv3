@@ -372,7 +372,15 @@ default 32617). The compiler records the zone in `horizontalExportCrs`, which
 polygonisation, imagery review and the rerun measurer follow the terrain
 export's CRS; `prepare-osm-course.py` projects through the card origin's
 zone. Packages stay in the local ENU frame. The `UTM_ZONE_UNSUPPORTED` gate
-is gone. Tests: an acquisition in zone 16 requests and records EPSG:32616,
+is gone. `course_crs.py`, `prepare-pilot.py` and `fetch-terrain-pilot.py` —
+sibling modules the compiler loads at import time — now sit in the
+`impl_files` of every task that projects (`TERRAIN_COMPILER_FILES`,
+`CRS_FILES`), so an edit to the projection rule moves those fingerprints
+instead of shipping under an unchanged one (tested). The four zone-17 courses
+re-ran after the change: package hashes held and all 90 compiled meshes in
+the ledger (72 + Kentucky's 18) carry one sha per path across both
+fingerprints — the zone change reproduced every mesh byte-for-byte. Tests:
+an acquisition in zone 16 requests and records EPSG:32616,
 zone 17 stays byte-compatible with every retained export, the zone is part
 of the source identity, `course_crs` unit tests. Live: University Club of
 Kentucky (Big Blue, 19 rounds, zone 16) — `USGS 1 Meter 16 x70y423

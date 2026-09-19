@@ -127,6 +127,21 @@ class ImpactTests(unittest.TestCase):
         self.assertEqual(after['layout.terrain.acquire[synthetic-a]'][0], 'cached')
         self.assertEqual(after['hole.terrain.compile[synthetic-a:03]'][0], 'cached')
 
+    def test_a_projection_rule_edit_reaches_every_task_that_projects(self):
+        """course_crs.py is loaded by the compiler, the canopy, imagery and
+        package scripts at import time; an edit there changes what every
+        export is cut in, so it must move their fingerprints."""
+        self.h.run('run', '--layout', 'synthetic-a')
+        with open(os.path.join(self.h.repo, 'scripts', 'golf', 'course-geometry', 'course_crs.py'), 'a', encoding='utf-8') as f:
+            f.write('\n# zone rule edited\n')
+        states = self.h.states('synthetic-a')
+        self.assertEqual(states['layout.candidates.compose[synthetic-a]'], ('stale', 'FINGERPRINT_CHANGED'))
+        self.assertEqual(states['layout.terrain.acquire[synthetic-a]'][0], 'pending', 'downstream of the candidates package')
+        for key in ('layout.package.compose[synthetic-a]', 'layout.canopy.derive[synthetic-a]', 'layout.terrain.base[synthetic-a]', 'layout.imagery.audit[synthetic-a]', 'hole.terrain.compile[synthetic-a:07]'):
+            self.assertNotIn(states[key][0], DONE, (key, states[key]))
+        self.assertEqual(states['facility.osm.snapshot[synthetic]'][0], 'cached')
+        self.assertEqual(states['layout.scorecard.compose[synthetic-a]'][0], 'cached')
+
     def test_missing_and_corrupt_artifacts_invalidate_despite_a_success_row(self):
         self.h.run('run', '--layout', 'synthetic-a')
         compiled = os.path.join(self.h.output, 'layouts', 'synthetic-a', 'compiled')
