@@ -690,7 +690,6 @@ processes finish; per-facility indices are the resumable acquisition evidence.
 No source-candidate render is declared production-ready, and no production
 binding or flag was changed.
 
-
 ## Catalog continuation: source coverage and Blue Ridge Shadows (September 20)
 
 The 24-layout run completed without executor failures. A subsequent official
