@@ -343,7 +343,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/plans/2026-09-16-peek-one-tap-field-calibration.md` | current | - | - | - | 1 | 0 | - |
 | `docs/plans/2026-09-16-renderer-redesign-status.md` | current | - | - | yes | 0 | 3 | - |
 | `docs/plans/2026-09-19-course-geometry-factory-v2-next.md` | current | - | - | yes | 1 | 0 | - |
-| `docs/plans/2026-09-19-course-geometry-factory-v2-review.md` | current | - | - | - | 1 | 13 | - |
+| `docs/plans/2026-09-19-course-geometry-factory-v2-review.md` | current | - | - | - | 1 | 14 | - |
 | `docs/plans/2026-09-19-course-geometry-factory-v2.md` | current | - | - | yes | 1 | 2 | - |
 | `docs/plans/2026-09-19-course-library-scale-out-plan.md` | current | - | - | yes | 1 | 9 | - |
 | `docs/plans/IOS_PREMIUM_NATIVE_UPDATE_2026-08-25.md` | current | yes | - | yes | 2 | 1 | - |
