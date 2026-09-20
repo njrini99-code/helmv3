@@ -45,6 +45,20 @@ def write(path, value):
     path.write_text(json.dumps(value, indent=2, ensure_ascii=False) + '\n')
 
 
+def source_route_par(tags):
+    """Return the OSM route's stated par when it is usable.
+
+    A route line is still legitimate source-backed geometry when its optional
+    `par` tag is absent.  The scorecard remains the authoritative scoring
+    input, while `None` preserves that OSM did not make a par claim.
+    """
+    try:
+        value = int((tags or {}).get('par'))
+    except (TypeError, ValueError):
+        return None
+    return value if 3 <= value <= 6 else None
+
+
 def polygon(element, project):
     geometry = element.get('geometry') or []
     coordinates = [[p['lon'], p['lat']] for p in geometry]
@@ -80,8 +94,9 @@ def main():
     if retained.exists():
         retrieved_at = manifest.get('retrievedAt', retrieved_at)
     source_id = f'osm-overpass-{retrieved_at}'
-    if not (len(card['routeWayIds']) == len(card['pars']) == len(card['scorecardYards']) == 18):
-        raise ValueError('The selected course must supply exactly 18 route IDs, pars, and scorecard yardages')
+    counts = {len(card['routeWayIds']), len(card['pars']), len(card['scorecardYards'])}
+    if len(counts) != 1 or not 9 <= counts.pop() <= 36:
+        raise ValueError('The selected course must supply matching 9- through 36-hole route IDs, pars, and scorecard yardages')
 
     # Metric work happens in the course's own UTM zone; the package itself
     # stays in the local ENU frame about the card's origin.
@@ -95,9 +110,7 @@ def main():
         geometry = (element or {}).get('geometry') or []
         if not element or tags.get('golf') != 'hole' or str(tags.get('ref')) != str(ordinal):
             raise ValueError(f'Explicit route selection is not a matching golf=hole source: hole {ordinal}, way {way_id}')
-        source_par = int(tags.get('par', -1))
-        if source_par < 3 or source_par > 6:
-            raise ValueError(f'OSM route is missing a valid par: hole {ordinal}, way {way_id}')
+        source_par = source_route_par(tags)
         coords = [[p['lon'], p['lat']] for p in geometry]
         if len(coords) < 2:
             raise ValueError(f'Route {way_id} has no usable geometry')

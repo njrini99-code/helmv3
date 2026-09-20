@@ -20,6 +20,7 @@ from . import imagery, lab
 from .fingerprints import digest, terrain_source_identity
 from .model import Blocker, Precondition
 from .planner import DONE
+from .providers import select_terrain_provider
 from .tasks.common import artifact, script
 
 OVERPASS = 'https://overpass-api.de/api/interpreter'
@@ -195,6 +196,63 @@ def resolve_routes(node, ctx, run):
     return [artifact('routes', path, 'A')]
 
 
+def write_route_dossier(node, ctx, run):
+    """Write auditable OSM route evidence without admitting an unconfirmed route.
+
+    The dossier is intentionally separate from the canonical world. A route
+    enters canonical geometry only through ``layout.routes.resolve`` after it
+    is uniquely sourced or explicitly human-pinned.
+    """
+    layout_id = node.scope.layout_id
+    layout = ctx.layout(layout_id) or {}
+    card = ctx.scorecard(layout_id) or {}
+    resolution = ctx.route_resolution(layout_id) or {}
+    manifest, _extract = ctx.snapshot(node.scope.facility_id)
+    route_ids = resolution.get('routeWayIds')
+    attempts = (resolution.get('evidence') or {}).get('attempts') or []
+    if route_ids:
+        status = 'resolved'
+        truth_class = 'measured'
+        remediation = []
+    else:
+        status = 'source_confirmation_required'
+        truth_class = None
+        remediation = [
+            'Review the retained OSM candidates against current orthophotography and the scorecard; pin routeWayIds only when the complete ordered route is verified.',
+            'If the extract has missing hole references, acquire an authoritative course map, a current orthophoto-derived route, or a human-reviewed source vector. Do not infer a route from scorecard distance.',
+        ]
+    doc = {
+        'schema': 'golfhelm-factory-route-review-v1',
+        'layoutId': layout_id,
+        'layoutName': layout.get('name'),
+        'status': status,
+        # ``None`` means this dossier did not admit a canonical physical
+        # route. It must never be interpreted as an estimated route.
+        'truthClass': truth_class,
+        'canonicalRouteAdmitted': bool(route_ids),
+        'routeWayIds': route_ids,
+        'routeSource': resolution.get('source'),
+        'routeResolution': resolution,
+        'extractSha256': (manifest or {}).get('uncompressedSha256'),
+        'expectedSource': 'a complete ordered route set from a current authoritative map, a reviewed source vector, or uniquely identified OSM hole ways',
+        'scorecard': {
+            'profileId': card.get('profileId'),
+            'source': card.get('source'),
+            'holes': len(card.get('holes') or []),
+        },
+        'evidenceSummary': {
+            'attempts': len(attempts),
+            'candidateCounts': [attempt.get('candidates') for attempt in attempts],
+            'missingRefs': [attempt.get('missingRefs') or [] for attempt in attempts],
+            'duplicateRefs': [attempt.get('duplicateRefs') or {} for attempt in attempts],
+        },
+        'remediation': remediation,
+    }
+    path = os.path.join(ctx.layout_out(layout_id), 'route-review.json')
+    _write_json(path, doc)
+    return [artifact('route-review', path, 'C')]
+
+
 def compose_scorecard(node, ctx, run):
     layout_id = node.scope.layout_id
     doc = ctx.pilot_scorecard(layout_id)
@@ -241,15 +299,20 @@ def acquire_terrain(node, ctx, run):
     package) with the same footprint reuses the raster; the compiler refuses
     any other reuse itself."""
     layout_id = node.scope.layout_id
+    facility = ctx.facility(node.scope.facility_id) or {}
+    provider = select_terrain_provider((facility.get('providerPolicy') or {}).get('terrain') or [])
+    if provider is None:
+        raise RuntimeError('no terrain acquisition adapter is available; the plan should have blocked this node')
     pkg_path = ctx.candidates_package_path(layout_id)
     bounds = ctx.terrain_bounds(layout_id)
     key = digest(bounds)[:12]
     source = os.path.join(ctx.facility_out(node.scope.facility_id), 'terrain', key)
     run_script(ctx, run, node, 'scripts/golf/course-geometry/compile-course-terrain.py',
-               ['--acquire-only', '--holes', 'all', '--package', pkg_path, '--source', source, '--output', ctx.terrain_base_out(layout_id)])
+               ['--acquire-only', '--provider', provider.compiler_id, '--holes', 'all', '--package', pkg_path, '--source', source, '--output', ctx.terrain_base_out(layout_id)])
     manifest = ctx.json(os.path.join(source, 'source-manifest.json'), fresh=True)
     pointer = {'kind': 'golfhelm-factory-terrain-source-v1', 'layoutId': layout_id, 'directory': ctx.relpath(source),
-               'requestedLocalBoundsM': bounds, 'sourceManifestHash': digest(manifest), 'sourceIdentity': terrain_source_identity(manifest), 'selectedTitle': manifest.get('selectedTitle')}
+               'requestedLocalBoundsM': bounds, 'sourceManifestHash': digest(manifest), 'sourceIdentity': terrain_source_identity(manifest),
+               'providerPolicyId': provider.policy_id, 'selectedTitle': manifest.get('selectedTitle')}
     _write_json(ctx.terrain_pointer_path(layout_id), pointer)
     # The source manifest is evidence, not a verified artifact: the compiler
     # appends every package it serves to it while the raster never changes.
@@ -657,6 +720,7 @@ DEFAULT_EXECUTORS = {
     'facility.osm.snapshot': snapshot_osm,
     'facility.context.snapshot': snapshot_context,
     'layout.routes.resolve': resolve_routes,
+    'layout.route.dossier': write_route_dossier,
     'layout.scorecard.compose': compose_scorecard,
     'layout.candidates.compose': compose_candidates,
     'layout.terrain.acquire': acquire_terrain,

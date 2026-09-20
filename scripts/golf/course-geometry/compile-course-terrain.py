@@ -17,6 +17,8 @@ import math
 import re
 import subprocess
 import sys
+import urllib.parse
+import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -198,6 +200,32 @@ def date_text(value):
 
 
 MAX_EMPTY_EXPORT_FRACTION = 0.001
+AREA_CONSERVATION_ABSOLUTE_M2 = .002
+# This accounts only for floating point summation after a source polygon has
+# been split into tens of thousands of exactly-covered faces. It does not
+# permit a boundary move: every face is still required to be covered by its
+# original source region. One part per million is deliberately much smaller
+# than source-resolution uncertainty and keeps large context meshes from
+# failing on numerical residue alone.
+AREA_CONSERVATION_RELATIVE = 1e-6
+USGS_3DEP_PROVIDER = 'usgs_3dep_project_1m'
+NC_ONEMAP_PROVIDER = 'nc_onemap_dem03'
+NC_ONEMAP_BASE = 'https://services.nconemap.gov/secure/rest/services/Elevation/DEM03/ImageServer'
+NC_ONEMAP_HOST = 'services.nconemap.gov'
+NC_ONEMAP_SOURCE_PATH = '/secure/rest/services/Elevation/DEM03/ImageServer'
+NC_ONEMAP_EXPORT_PATH = '/secure/rest/directories/arcgisoutput/Elevation/DEM03_ImageServer/'
+NC_ONEMAP_CRS = 'EPSG:2264'  # NAD83(2011) / North Carolina (ftUS)
+NC_ONEMAP_NATIVE_PIXEL_US_FEET = 3.125
+
+
+def area_conservation_tolerance(source_area_m2):
+    """Return the strict accounting tolerance for a triangulated source area.
+
+    This controls arithmetic accumulation only. Source geometry remains
+    protected by the per-face ``covers`` assertion during triangulation.
+    """
+    return max(AREA_CONSERVATION_ABSOLUTE_M2, abs(source_area_m2) * AREA_CONSERVATION_RELATIVE)
+MAX_NC_ONEMAP_PIXELS = 8_000_000
 
 
 def is_native_1m_title(title):
@@ -245,7 +273,12 @@ def covering_tile_sets(rows, extent_wgs84):
     return sorted(singles, key=newest_first, reverse=True) + sorted(pairs, key=newest_first, reverse=True)
 
 
-def acquire_source(directory, pkg, bounds):
+def existing_source_manifest(directory, pkg, bounds):
+    """Return a verified immutable source cache, or None when none exists.
+
+    Both terrain providers use this contract.  A revised package may cite the
+    same byte-identical raster, but a partial cache is never overwritten.
+    """
     names = ['catalog.json', 'export.json', 'elevation.tiff', 'source-manifest.json']
     existing = [(directory / name).exists() for name in names]
     if all(existing):
@@ -265,6 +298,36 @@ def acquire_source(directory, pkg, bounds):
         return manifest
     if any(existing):
         raise ValueError('Incomplete source cache; preserve evidence and choose a new directory')
+    return None
+
+
+def resolve_source_provider(directory, requested_provider, acquire_only=False):
+    """Use the immutable cache's provider when compiling an acquired source.
+
+    The factory acquires a course-level source once, then invokes this compiler
+    for each hole.  Compilation must retain the provider that produced that
+    evidence; a CLI default must never reinterpret an NC raster as USGS.
+    An explicit acquire request may not switch a directory between providers.
+    """
+    manifest_path = directory / 'source-manifest.json'
+    if not manifest_path.is_file():
+        return requested_provider
+    manifest = json.loads(manifest_path.read_text())
+    provider = manifest.get('providerPolicyId', USGS_3DEP_PROVIDER)
+    if provider not in (USGS_3DEP_PROVIDER, NC_ONEMAP_PROVIDER):
+        raise ValueError(f'Immutable source cache has unsupported terrain provider {provider!r}')
+    if acquire_only and provider != requested_provider:
+        raise ValueError('Immutable source cache belongs to another terrain provider')
+    return provider
+
+
+def acquire_usgs_source(directory, pkg, bounds):
+    manifest = existing_source_manifest(directory, pkg, bounds)
+    if manifest is not None:
+        if manifest.get('providerPolicyId', USGS_3DEP_PROVIDER) != USGS_3DEP_PROVIDER:
+            raise ValueError('Immutable source cache belongs to another terrain provider')
+        return manifest
+    names = ['catalog.json', 'export.json', 'elevation.tiff', 'source-manifest.json']
     directory.mkdir(parents=True, exist_ok=True)
     # Query the footprint of the entire future course context, not just a tee.
     x = [bounds[0], bounds[2], bounds[2], bounds[0]]
@@ -341,7 +404,7 @@ def acquire_source(directory, pkg, bounds):
     write_json(directory/'catalog.json', catalog, True)
     write_json(directory/'export.json', exported, True)
     title = attrs['title'] if len(tiles) == 1 else f"{attrs['title']} (+{len(tiles) - 1} adjacent {tile_project(attrs['title'])} tile{'s' if len(tiles) > 2 else ''})"
-    manifest = {'schemaVersion': 1, 'packageHash': pkg['contentHash'], 'requestedLocalBoundsM': bounds,
+    manifest = {'schemaVersion': 1, 'providerPolicyId': USGS_3DEP_PROVIDER, 'packageHash': pkg['contentHash'], 'requestedLocalBoundsM': bounds,
                 'selectedTitle': title, 'selectedObjectId': attrs['OBJECTID'], 'selectedObjectIds': object_ids,
                 'selectedTiles': [row['attributes']['title'] for row in tiles], 'sourceUrl': attrs['URL'],
                 'acquisitionStart': date_text(attrs['StartDate']), 'acquisitionEnd': date_text(attrs['EndDate']),
@@ -356,6 +419,124 @@ def acquire_source(directory, pkg, bounds):
     write_json(directory/'source-manifest.json', manifest, True)
     print(json.dumps({'source': title, 'pixels': [width, height], 'bytes': len(raster)}), flush=True)
     return manifest
+
+
+def nc_onemap_read(url, limit):
+    """Read only the DEM03 service or its export directory.
+
+    The export URL comes from a public ArcGIS response, so it still gets an
+    explicit host/path check before this pipeline follows it.
+    """
+    parsed = urllib.parse.urlparse(url)
+    allowed = (parsed.scheme == 'https' and parsed.netloc == NC_ONEMAP_HOST and
+               (parsed.path == NC_ONEMAP_SOURCE_PATH or parsed.path.startswith(NC_ONEMAP_SOURCE_PATH + '/') or
+                parsed.path.startswith(NC_ONEMAP_EXPORT_PATH)))
+    if not allowed:
+        raise ValueError('NC OneMap URL outside the DEM03 allowlist')
+    request = urllib.request.Request(url, headers={'User-Agent': 'GolfHelm course-geometry source compiler'})
+    with urllib.request.urlopen(request, timeout=120) as response:
+        data = response.read(limit + 1)
+    if len(data) > limit:
+        raise ValueError('NC OneMap DEM03 response exceeds bounded acquisition cap')
+    return data
+
+
+def nc_onemap_request(operation, values):
+    payload = urllib.parse.urlencode({'f': 'json', **values})
+    response = json.loads(nc_onemap_read(f'{NC_ONEMAP_BASE}/{operation}?{payload}', 2_000_000))
+    if response.get('error'):
+        raise ValueError('NC OneMap DEM03 request failed: ' + str(response['error']))
+    return response
+
+
+def validate_nc_onemap_service(service):
+    if service.get('pixelType') != 'F32' or service.get('serviceDataType') != 'esriImageServiceDataTypeElevation':
+        raise ValueError('NC OneMap DEM03 service type changed; source review required')
+    x, y = float(service.get('pixelSizeX', 0)), float(service.get('pixelSizeY', 0))
+    if not math.isclose(x, NC_ONEMAP_NATIVE_PIXEL_US_FEET, rel_tol=0, abs_tol=1e-9) or not math.isclose(y, NC_ONEMAP_NATIVE_PIXEL_US_FEET, rel_tol=0, abs_tol=1e-9):
+        raise ValueError('NC OneMap DEM03 native resolution changed; source review required')
+    if 'Foot_US' not in (service.get('spatialReference') or {}).get('wkt', ''):
+        raise ValueError('NC OneMap DEM03 source CRS no longer reports US survey feet')
+
+
+def nc_native_grid_bounds(bounds, extent):
+    """Snap a requested NC DEM03 crop to the source grid, never to display pixels."""
+    west, south, east, north = bounds
+    step = NC_ONEMAP_NATIVE_PIXEL_US_FEET
+    origin_x, origin_y = float(extent['xmin']), float(extent['ymin'])
+    left = origin_x + math.floor((west - origin_x) / step) * step
+    bottom = origin_y + math.floor((south - origin_y) / step) * step
+    right = origin_x + math.ceil((east - origin_x) / step) * step
+    top = origin_y + math.ceil((north - origin_y) / step) * step
+    width, height = round((right - left) / step), round((top - bottom) / step)
+    if width <= 1 or height <= 1 or width * height > MAX_NC_ONEMAP_PIXELS:
+        raise ValueError('NC OneMap DEM03 native-grid request violates the fixed acquisition pixel cap')
+    return [left, bottom, right, top], [width, height]
+
+
+def acquire_nc_onemap_source(directory, pkg, bounds):
+    manifest = existing_source_manifest(directory, pkg, bounds)
+    if manifest is not None:
+        if manifest.get('providerPolicyId') != NC_ONEMAP_PROVIDER:
+            raise ValueError('Immutable source cache belongs to another terrain provider')
+        return manifest
+    directory.mkdir(parents=True, exist_ok=True)
+    # Local ENU is the canonical world frame.  Its conversion is used only to
+    # request the grid in NC's declared projected CRS; every sampled vertex is
+    # transformed from WGS84 through that exact CRS at read time.
+    lon, lat = geographic([bounds[0], bounds[2], bounds[2], bounds[0]], [bounds[1], bounds[1], bounds[3], bounds[3]])
+    project = pyproj.Transformer.from_crs(4326, NC_ONEMAP_CRS, always_xy=True)
+    source_x, source_y = project.transform(lon, lat)
+    service = json.loads(nc_onemap_read(NC_ONEMAP_BASE + '?f=json', 2_000_000))
+    validate_nc_onemap_service(service)
+    requested, size = nc_native_grid_bounds([min(source_x), min(source_y), max(source_x), max(source_y)], service['extent'])
+    exported = nc_onemap_request('exportImage', {
+        'bbox': ','.join(map(str, requested)), 'bboxSR': 2264, 'imageSR': 2264,
+        'size': ','.join(map(str, size)), 'format': 'tiff', 'pixelType': 'F32',
+        'interpolation': 'RSP_BilinearInterpolation', 'renderingRule': json.dumps({'rasterFunction': 'None'}),
+    })
+    if [exported.get('width'), exported.get('height')] != size:
+        raise ValueError('NC OneMap DEM03 export dimensions changed; source resampling requires review')
+    actual = exported.get('extent') or {}
+    if any(not math.isclose(float(actual.get(field, math.nan)), expected, rel_tol=0, abs_tol=1e-6)
+           for field, expected in zip(('xmin', 'ymin', 'xmax', 'ymax'), requested)):
+        raise ValueError('NC OneMap DEM03 export extent changed; native-grid alignment requires review')
+    raster = nc_onemap_read(exported['href'], 80_000_000)
+    (directory / 'elevation.tiff').write_bytes(raster)
+    decoded, _nodata, decoder = elevation_raster.read_elevation(directory / 'elevation.tiff')
+    empty = elevation_raster.empty_fraction(decoded)
+    if empty > MAX_EMPTY_EXPORT_FRACTION:
+        raise ValueError(f'NC OneMap DEM03 export contains {empty:.3%} empty fill; source coverage review required')
+    retrieved = datetime.now(timezone.utc).date().isoformat()
+    exported.update(retrievedAt=retrieved, requestedNativeBoundsUSFeet=requested, sourceCrs=NC_ONEMAP_CRS,
+                    requestedLocalBoundsM=bounds)
+    write_json(directory / 'catalog.json', service, True)
+    write_json(directory / 'export.json', exported, True)
+    manifest = {
+        'schemaVersion': 1, 'providerPolicyId': NC_ONEMAP_PROVIDER, 'packageHash': pkg['contentHash'],
+        'requestedLocalBoundsM': bounds, 'selectedTitle': 'NC OneMap DEM03', 'selectedObjectId': None,
+        'selectedObjectIds': [], 'selectedTiles': [], 'sourceUrl': NC_ONEMAP_BASE,
+        'acquisitionStart': None, 'acquisitionEnd': None, 'nativeResolutionM': NC_ONEMAP_NATIVE_PIXEL_US_FEET * US_SURVEY_FOOT_TO_METERS,
+        'exportPixelM': [NC_ONEMAP_NATIVE_PIXEL_US_FEET * US_SURVEY_FOOT_TO_METERS] * 2,
+        'horizontalExportCrs': NC_ONEMAP_CRS, 'verticalDatum': None,
+        'verticalDatumStatus': 'not verified from DEM03 service metadata; never infer NAVD88',
+        'rawVerticalUnit': 'US survey foot', 'verticalUnitToMeters': US_SURVEY_FOOT_TO_METERS,
+        'retrievedAt': retrieved, 'sourceSelection': 'bounded_native_grid_single_service_export',
+        'exportEmptyFraction': empty, 'decoder': decoder,
+        'licenseUrl': None, 'licenseStatus': 'not supplied by the DEM03 service metadata; review before redistribution',
+        'fileHashes': {name: hashlib.sha256((directory / name).read_bytes()).hexdigest() for name in ('catalog.json', 'export.json', 'elevation.tiff')},
+    }
+    write_json(directory / 'source-manifest.json', manifest, True)
+    print(json.dumps({'source': manifest['selectedTitle'], 'pixels': size, 'bytes': len(raster)}), flush=True)
+    return manifest
+
+
+def acquire_source(directory, pkg, bounds, provider=USGS_3DEP_PROVIDER):
+    if provider == USGS_3DEP_PROVIDER:
+        return acquire_usgs_source(directory, pkg, bounds)
+    if provider == NC_ONEMAP_PROVIDER:
+        return acquire_nc_onemap_source(directory, pkg, bounds)
+    raise ValueError(f'No terrain source adapter for provider {provider!r}')
 
 
 def vertical_unit_to_meters(manifest):
@@ -670,9 +851,14 @@ def compile_hole(hole, pkg, raw_shapes, raw_features, displays, outline_reports,
                 area_by_feature[feature_index] += triangle.area; count_by_feature[feature_index] += 1
     for feature_index, (ident, kind, shape) in enumerate(visible):
         area, count = area_by_feature[feature_index], count_by_feature[feature_index]
-        if abs(area-shape.area) > .002:
-            raise ValueError(f'Triangulation area mismatch: {hole["key"]} {ident}: {area-shape.area}')
+        area_delta = area-shape.area
+        area_tolerance = area_conservation_tolerance(shape.area)
+        if abs(area_delta) > area_tolerance:
+            raise ValueError(f'Triangulation area mismatch: {hole["key"]} {ident}: {area_delta} (tolerance {area_tolerance})')
         reports.append({'id': ident, 'kind': kind, 'triangles': count, 'areaM2': round(area, 4),
+                        'sourceAreaM2': round(shape.area, 4),
+                        'areaDeltaM2': round(area_delta, 8),
+                        'areaConservationToleranceM2': round(area_tolerance, 8),
                         'rendererContextOnly': ident not in hole['featureIds'] and ident != 'terrain-context'})
     if len(triangle_features) > MAX_TRIANGLES:
         if outer_step == 16:
@@ -710,7 +896,7 @@ def compile_hole(hole, pkg, raw_shapes, raw_features, displays, outline_reports,
                   'Daily tee markers, actual cup, ball positions and tree heights are unknown',
                   'Neutral ground is not classified rough; outward surrounds are illustrative and at most 0.6m',
                   'Neighbor features are renderer-only context, not reassigned played-hole surfaces',
-                  '2021 terrain may predate current surfaces; currentness remains unverified']
+                  f"Terrain acquisition {source.manifest.get('acquisitionStart') or 'date unknown'} to {source.manifest.get('acquisitionEnd') or 'date unknown'} may predate current surfaces; currentness remains unverified"]
     if not tee:
         limitations.append('Played-hole tee geometry missing; no tee shape synthesized')
     if not own_canopy:
@@ -723,17 +909,18 @@ def compile_hole(hole, pkg, raw_shapes, raw_features, displays, outline_reports,
                'teeGeometry': 'approximate' if tee else 'missing', 'treeEvidence': 'canopy_only' if own_canopy else 'none',
                'limitations': limitations}
     meta = source.manifest
-    source_meta = {'provider': 'USGS 3DEP', 'title': meta['selectedTitle'], 'url': meta['sourceUrl'],
+    source_meta = {'provider': meta.get('providerPolicyId', 'USGS 3DEP'), 'title': meta['selectedTitle'], 'url': meta['sourceUrl'],
                    'catalogObjectId': meta['selectedObjectId'], 'acquisitionStart': meta['acquisitionStart'], 'acquisitionEnd': meta['acquisitionEnd'],
-                   'retrievedAt': meta['retrievedAt'], 'nativeResolutionM': 1, 'verticalAccuracyM': None, 'registrationResidualM': None,
+                   'retrievedAt': meta['retrievedAt'], 'nativeResolutionM': meta.get('nativeResolutionM'), 'verticalAccuracyM': None, 'registrationResidualM': None,
                    'licenseUrl': meta['licenseUrl'], 'rasterSha256': meta['fileHashes']['elevation.tiff'],
-                   'horizontalExportCrs': meta['horizontalExportCrs'], 'exportPixelM': meta['exportPixelM'],
+                   'licenseStatus': meta.get('licenseStatus'), 'verticalDatum': meta.get('verticalDatum'),
+                   'verticalDatumStatus': meta.get('verticalDatumStatus'), 'horizontalExportCrs': meta['horizontalExportCrs'], 'exportPixelM': meta['exportPixelM'],
                    'renderSamplingM': {'tactical': TACTICAL_STEP_M, 'detail': DETAIL_STEP_M, 'context': outer_step},
                    'metricSamplingM': METRIC_STEP_M, 'normalGradientStepM': 1}
     result = {'schemaVersion': 1, 'physicalHoleKey': hole['key'], 'geometryHash': pkg['contentHash'],
               'displayRevision': 'bounded-outline-v1', 'surfaceManifestHash': digest([displays[f['id']][0] for f in selected]),
               'status': 'source_candidate', 'horizontalFrame': 'wgs84-local-enu-v1', 'originWgs84': pkg['originWgs84'],
-              'verticalDatum': 'NAVD88', 'verticalUnits': 'meters', 'referenceElevationM': round(float(np.min(heights[valid])), 4),
+              'verticalDatum': meta.get('verticalDatum'), 'verticalUnits': 'meters', 'referenceElevationM': round(float(np.min(heights[valid])), 4),
               'vertices': vertices, 'triangleFeatures': kept_features, 'triangleMaterials': kept_materials,
               'featureIds': ids, 'featureKinds': kinds, 'contextFeatureIds': context_ids, 'metricGrid': grid,
               'renderProfile': profile, 'source': source_meta, 'limitations': limitations}
@@ -765,7 +952,30 @@ def compile_hole(hole, pkg, raw_shapes, raw_features, displays, outline_reports,
 
 
 def source_readme(pkg, manifest):
-    return f'''# {pkg['name']} whole-course terrain source\n\nOne locked native-1m USGS tile: **{manifest['selectedTitle']}**.\nAcquisition: {manifest['acquisitionStart']} to {manifest['acquisitionEnd']}.\nRetrieved: {manifest['retrievedAt']}. Immutable hashes and exact projected bounds\nare in source-manifest.json and export.json. Do not replace the cached raster.\n\nThe {manifest.get('horizontalExportCrs', f'EPSG:{SOURCE_CRS}')} export is sampled at approximately 1m; the 2m canonical\nmetric grid, 4m tactical mesh, 2m detail cells and coarser outer cells are separate\nrender/query choices, not claims of finer source resolution. Heights remain\nNAVD88 meters. Registration residual and source vertical accuracy are unknown.\n\nNeighbor source features are renderer-only context. No cart paths, rough\nclassification, additional tree areas, daily tee markers or cup positions are\ncreated. Canopy evidence is limited to explicitly reviewed groups, if any.\n\n[USGS 3DEP products and use terms](https://www.usgs.gov/3d-elevation-program/about-3dep-products-services).\nSource geometry attribution remains © OpenStreetMap contributors, ODbL1.0.\n'''
+    native = manifest.get('nativeResolutionM')
+    resolution = f'{native:g}m' if isinstance(native, (int, float)) else 'the provider-declared native grid'
+    vertical = manifest.get('verticalDatum') or 'not verified'
+    license_line = f"Source terms: {manifest['licenseUrl']}." if manifest.get('licenseUrl') else f"Source terms: {manifest.get('licenseStatus', 'not recorded')}."
+    return f"""# {pkg['name']} whole-course terrain source
+
+One immutable provider export: **{manifest['selectedTitle']}** ({manifest.get('providerPolicyId', 'legacy source')}).
+Acquisition: {manifest.get('acquisitionStart') or 'unknown'} to {manifest.get('acquisitionEnd') or 'unknown'}.
+Retrieved: {manifest['retrievedAt']}. Immutable hashes and exact projected bounds
+are in source-manifest.json and export.json. Do not replace the cached raster.
+
+The {manifest.get('horizontalExportCrs', f'EPSG:{SOURCE_CRS}')} export is sampled at {resolution}; the 2m canonical
+metric grid, 4m tactical mesh, 2m detail cells and coarser outer cells are separate
+render/query choices, not claims of finer source resolution. Heights are converted
+to meters from the declared source unit. Vertical datum: **{vertical}**. Registration
+residual and source vertical accuracy are unknown.
+
+Neighbor source features are renderer-only context. No cart paths, rough
+classification, additional tree areas, daily tee markers or cup positions are
+created. Canopy evidence is limited to explicitly reviewed groups, if any.
+
+{license_line}
+Source geometry attribution remains © OpenStreetMap contributors, ODbL1.0.
+"""
 
 
 def main():
@@ -777,6 +987,8 @@ def main():
     parser.add_argument('--context', type=Path, default=None, help='reviewed context layer whose ground ribbons become breaklines')
     parser.add_argument('--source-normals', action='store_true',
                         help='also emit the per-vertex sourceNormals array (legacy; the renderer shades from the metric grid)')
+    parser.add_argument('--provider', choices=(USGS_3DEP_PROVIDER, NC_ONEMAP_PROVIDER), default=USGS_3DEP_PROVIDER,
+                        help='terrain adapter selected by the facility provider policy')
     parser.add_argument('--acquire-only', action='store_true',
                         help='lock the terrain source for this package and stop before compiling any hole (the course factory acquires once, compiles per hole)')
     args = parser.parse_args()
@@ -787,7 +999,8 @@ def main():
     extents = [hole_bounds(hole, raw_shapes, raw_features)[1] for hole in pkg['holes']]
     bounds = [min(b[0] for b in extents)-8, min(b[1] for b in extents)-8,
               max(b[2] for b in extents)+8, max(b[3] for b in extents)+8]
-    manifest = acquire_source(args.source, pkg, bounds)
+    provider = resolve_source_provider(args.source, args.provider, acquire_only=args.acquire_only)
+    manifest = acquire_source(args.source, pkg, bounds, provider)
     if args.acquire_only:
         (args.source/'README.md').write_text(source_readme(pkg, manifest))
         print(json.dumps({'source': manifest['selectedTitle'], 'sourceManifestHash': digest(manifest), 'requestedLocalBoundsM': bounds}), flush=True)

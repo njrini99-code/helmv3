@@ -266,7 +266,7 @@ class ImageryCurrencyTests(unittest.TestCase):
         self.assertIn('failed 0', text)
         self.assertIn('IMAGERY_TOO_OLD_FOR_KNOWN_RENOVATION — the retained imagery was flown before the catalog knownRenovationAfter date; retain a later capture or lift the date', text)
         # Identity is inline: it re-validates whenever the catalog does, at no cost.
-        self.assertEqual(self.executed(text), {'catalog.validate[synthetic]', 'layout.identity.resolve[synthetic-a]', 'layout.capability.evaluate[synthetic-a]', 'layout.review.queue[synthetic-a]'})
+        self.assertEqual(self.executed(text), {'catalog.validate[synthetic]', 'layout.identity.resolve[synthetic-a]', 'layout.route.dossier[synthetic-a]', 'layout.capability.evaluate[synthetic-a]', 'layout.review.queue[synthetic-a]'})
         queue = read_json(os.path.join(self.h.output, 'layouts', 'synthetic-a', 'review-queue.json'))
         items = {i['pass']: i for i in queue['items']}
         self.assertNotIn('imagery_review', items, 'sand shares against pre-renovation ground are not offered for review')

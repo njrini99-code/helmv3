@@ -16,7 +16,16 @@ from .fingerprints import (
 )
 
 SCRIPTS_DIR = 'scripts/golf/course-geometry'
-PILOT_HOLE_COUNT = 18          # prepare-osm-course.py builds 18-hole packages only
+MIN_HOLE_COUNT = 9
+MAX_HOLE_COUNT = 36
+
+
+def supported_hole_count(value):
+    """The canonical catalog and package compiler support a nine-hole loop,
+    a standard eighteen, and multi-segment layouts up to 36 holes.  The
+    factory must not discard a course merely because its round is nine holes.
+    Route and source truth are still independently gated."""
+    return isinstance(value, int) and MIN_HOLE_COUNT <= value <= MAX_HOLE_COUNT
 
 
 _COMPILERS = {}

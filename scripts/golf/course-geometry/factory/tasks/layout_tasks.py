@@ -6,13 +6,14 @@ import json
 import os
 
 from .. import imagery
-from ..context import PILOT_HOLE_COUNT
+from ..context import MAX_HOLE_COUNT, MIN_HOLE_COUNT, supported_hole_count
 from ..fingerprints import (
     content_hash_matches,
     digest,
     terrain_source_identity,
 )
 from ..model import TaskSpec
+from ..providers import select_terrain_provider, supported_terrain_provider_ids
 from .common import (
     CRS_FILES,
     TERRAIN_COMPILER_FILES,
@@ -29,7 +30,6 @@ CANOPY_SHARE_SUSPECT = 0.02  # below this share of the export, the canopy layer 
 CANOPY_TURF_NDVI_COMPRESSED = 0.25  # fairway NDVI medians: Winchester / the Upper ≈ 0.37; Forsyth 0.12, Cacapon 0.16, Grande Dunes 0.21
 
 INLINE = 'inline'
-USGS_PROVIDERS = ('usgs_s1m', 'usgs_3dep_project_1m')
 
 
 def eval_identity_resolve(node, ctx):
@@ -47,8 +47,8 @@ def eval_scorecard_validate(node, ctx):
     if not card:
         blockers.append(blocked('SCORECARD_REQUIRED', layoutId=node.scope.layout_id))
     holes = len(layout.get('holeOrder') or [])
-    if holes != PILOT_HOLE_COUNT:
-        blockers.append(blocked('HOLE_COUNT_UNSUPPORTED', holes=holes, supported=PILOT_HOLE_COUNT))
+    if not supported_hole_count(holes):
+        blockers.append(blocked('HOLE_COUNT_UNSUPPORTED', holes=holes, minimum=MIN_HOLE_COUNT, maximum=MAX_HOLE_COUNT))
     elif card and len(card['holes']) != holes:
         blockers.append(blocked('SCORECARD_HOLE_MISMATCH', scorecardHoles=len(card['holes']), layoutHoles=holes))
     return evaluation(inputs, blockers)
@@ -74,6 +74,33 @@ def eval_routes_resolve(node, ctx):
     doc = ctx.json(path) if ctx.can_adopt(path) else None
     adoptable = bool(doc) and doc.get('routeWayIds') == resolution['routeWayIds'] and doc.get('source') == resolution['source']
     return evaluation(inputs, [], [artifact('routes', path, 'A')] if adoptable else [], adoptable, notes, output=digest(resolution['routeWayIds']))
+
+
+def eval_route_dossier(node, ctx):
+    """Persist route-selection evidence even when no route may be admitted.
+
+    A missing human pin is a physical-truth blocker, not a reason to discard
+    the source evidence needed to resolve it. This task deliberately does not
+    depend on ``layout.routes.resolve`` so it can produce a review dossier for
+    ambiguous and incomplete OSM extracts.
+    """
+    layout_id = node.scope.layout_id
+    resolution = ctx.route_resolution(layout_id) or {}
+    manifest, _extract = ctx.snapshot(node.scope.facility_id)
+    inputs = {
+        'identity': dep_input(ctx, node, 'layout.identity.resolve'),
+        'scorecard': dep_input(ctx, node, 'layout.scorecard.validate'),
+        'osm': dep_input(ctx, node, 'facility.osm.snapshot'),
+        'resolution': digest(resolution),
+    }
+    path = os.path.join(ctx.layout_out(layout_id), 'route-review.json')
+    doc = ctx.json(path) if ctx.can_adopt(path) else None
+    adoptable = bool(doc) and doc.get('layoutId') == layout_id and doc.get('extractSha256') == (manifest or {}).get('uncompressedSha256') \
+        and digest(doc.get('routeResolution')) == digest(resolution)
+    status = 'resolved' if resolution.get('routeWayIds') else 'source_confirmation_required'
+    notes = [f'route dossier: {status}']
+    return evaluation(inputs, [], [artifact('route-review', path, 'C')] if adoptable else [], adoptable, notes,
+                      output=digest(doc) if adoptable else None)
 
 
 def eval_scorecard_compose(node, ctx):
@@ -163,9 +190,11 @@ def eval_terrain_acquire(node, ctx):
         footprint = digest(bounds) if bounds else None
     except ImportError as exc:
         blockers.append(blocked('TOOL_MISSING', tool=exc.name or 'python geometry stack', detail=f'compile-course-terrain.py needs it to size the terrain request: {exc}'))
-    inputs = {'footprint': footprint, 'origin': digest(facility.get('originWgs84')), 'providers': digest(providers)}
-    if not any(p in USGS_PROVIDERS for p in providers):
-        blockers.append(blocked('TERRAIN_ADAPTER_MISSING', providers=providers, available=list(USGS_PROVIDERS)))
+    provider = select_terrain_provider(providers)
+    inputs = {'footprint': footprint, 'origin': digest(facility.get('originWgs84')), 'providers': digest(providers),
+              'selectedProvider': provider.policy_id if provider else None}
+    if provider is None:
+        blockers.append(blocked('TERRAIN_ADAPTER_MISSING', providers=providers, available=list(supported_terrain_provider_ids())))
     if blockers:
         return evaluation(inputs, blockers)
     pointer = ctx.terrain_pointer(layout_id)
@@ -341,6 +370,8 @@ SPECS = [
     TaskSpec('layout.identity.resolve', '1', 'layout', ('catalog.validate',), eval_identity_resolve, executor=INLINE),
     TaskSpec('layout.scorecard.validate', '1', 'layout', ('catalog.validate',), eval_scorecard_validate, executor=INLINE),
     TaskSpec('layout.routes.resolve', '1', 'layout', ('layout.identity.resolve', 'layout.scorecard.validate', 'facility.osm.snapshot'), eval_routes_resolve, retention='A', estimated_bytes=10_000),
+    TaskSpec('layout.route.dossier', '1', 'layout', ('layout.identity.resolve', 'layout.scorecard.validate', 'facility.osm.snapshot'), eval_route_dossier,
+             impl_files=(script('factory/adapters.py'),), retention='C', estimated_bytes=20_000),
     TaskSpec('layout.scorecard.compose', '1', 'layout', ('layout.routes.resolve', 'layout.scorecard.validate', 'facility.aoi.resolve'), eval_scorecard_compose, retention='A', estimated_bytes=10_000),
     TaskSpec('layout.candidates.compose', '1', 'layout', ('facility.osm.snapshot', 'layout.scorecard.compose'),
              _package_eval(lambda c, l: c.candidates_dir(l), ('facility.osm.snapshot', 'layout.scorecard.compose')),

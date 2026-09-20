@@ -68,6 +68,15 @@ def build_parser():
     r.add_argument('--holes', help='comma-separated hole ordinals, e.g. 7,8')
     r.add_argument('--dry-run', action='store_true')
     r.add_argument('--json', action='store_true')
+    b = sub.add_parser('batch', help='serially compile the catalogued usage cohort through physical-world aggregation; never publishes')
+    b.add_argument('--cohort', default='src/test/fixtures/course-geometry/course-cohort-2026-09-13.json')
+    b.add_argument('--all-layouts', action='store_true', help='compile every catalogued layout; ignores usage ranking and never publishes')
+    b.add_argument('--min-rounds', type=int, default=2, help='include courses with at least this many completed rounds')
+    b.add_argument('--until', default='layout.world.aggregate', help='safe terminal task; publish/capture tasks are excluded unless explicitly named')
+    b.add_argument('--max-layouts', type=int, help='bounded number of ranked layouts to attempt')
+    b.add_argument('--include-nonstandard', action='store_true', help='include layouts whose scorecard is not an 18-hole standard round')
+    b.add_argument('--dry-run', action='store_true')
+    b.add_argument('--json', action='store_true')
     w = sub.add_parser('why')
     w.add_argument('--layout', required=True)
     w.add_argument('--task', required=True)
@@ -220,6 +229,108 @@ def cmd_run(session, args, out):
     return 1 if run.failed else 0
 
 
+def cohort_layouts(session, cohort_path, min_rounds, include_nonstandard=False):
+    """Return the usage-ranked catalog layouts and explicit non-runnable rows.
+
+    A batch starts only from a recorded completed-round cohort.  It never
+    invents a priority from catalog order, and it excludes non-standard
+    scorecards unless an operator opts in.
+    """
+    path = cohort_path if os.path.isabs(cohort_path) else os.path.join(session.repo_root, cohort_path)
+    if not os.path.isfile(path):
+        raise SystemExit(f'missing cohort {path}')
+    with open(path, encoding='utf-8') as f:
+        cohort = json.load(f)
+    by_course = {}
+    for layout in session.catalog.layouts.values():
+        for course_id in (layout.get('externalBindings') or {}).get('golfCourseIds') or []:
+            by_course.setdefault(str(course_id), []).append(layout)
+    selected, excluded = [], []
+    for course in sorted(cohort.get('courses') or [], key=lambda c: (-(c.get('completed_rounds') or 0), c.get('name') or '')):
+        rounds = course.get('completed_rounds') or 0
+        if rounds < min_rounds:
+            continue
+        layouts = by_course.get(str(course.get('id'))) or []
+        if not layouts:
+            excluded.append({'course': course.get('name'), 'courseId': course.get('id'), 'rounds': rounds,
+                             'reason': 'COURSE_NOT_CATALOGUED'})
+            continue
+        for layout in layouts:
+            count = len(layout.get('holeOrder') or [])
+            if count != 18 and not include_nonstandard:
+                excluded.append({'course': course.get('name'), 'courseId': course.get('id'), 'layoutId': layout['layoutId'],
+                                 'rounds': rounds, 'reason': 'NONSTANDARD_HOLE_COUNT', 'holeCount': count})
+                continue
+            selected.append({'layoutId': layout['layoutId'], 'course': course.get('name'), 'rounds': rounds,
+                             'holeCount': count})
+    return selected, excluded
+
+
+def catalog_layouts(session):
+    """Every registered layout is a factory concern, even before it has
+    recorded rounds.  This intentionally returns no inferred priority: the
+    caller gets a deterministic catalog order and each layout's own truth
+    gates decide whether any compiler work may happen."""
+    return ([{'layoutId': layout['layoutId'], 'course': layout['name'], 'rounds': None,
+              'holeCount': len(layout.get('holeOrder') or [])}
+             for layout in sorted(session.catalog.layouts.values(), key=lambda item: item['layoutId'])], [])
+
+
+def cmd_batch(session, args, out):
+    # Physical-world aggregation is the safe scale terminal.  A cohort batch
+    # never performs player captures or creates publish manifests by default.
+    if args.until in ('layout.publish.prepare', 'layout.publish.verify') or args.until.startswith('hole.player') or args.until.startswith('layout.player'):
+        raise SystemExit('batch refuses capture or publish tasks; use an explicit per-layout run after review approval')
+    if args.all_layouts:
+        selected, excluded = catalog_layouts(session)
+        selection = 'catalog'
+    else:
+        selected, excluded = cohort_layouts(session, args.cohort, args.min_rounds, args.include_nonstandard)
+        selection = 'usage_cohort'
+    if args.max_layouts is not None:
+        if args.max_layouts < 1:
+            raise SystemExit('--max-layouts must be positive')
+        selected = selected[:args.max_layouts]
+    batches = []
+    any_failed = False
+    for item in selected:
+        layout_id = item['layoutId']
+        graph = session.graph(layout_id)
+        # A world aggregate cannot be reached when route identity is not
+        # source-confirmed. Always run the independent dossier too, so every
+        # catalogued layout leaves an auditable, actionable route review
+        # artifact instead of a bare blocker in a transient console report.
+        keys = select_keys(graph, until=args.until) | select_keys(graph, task='layout.route.dossier')
+        run_id = 'batch-' + now_iso().replace(':', '').replace('-', '')[:15] + '-' + uuid.uuid4().hex[:6]
+        run = Run(run_id=run_id, out_dir=os.path.join(session.output_root, 'runs', run_id))
+        command = f'batch --layout {layout_id} --until {args.until}'
+        session.ledger.begin_run(run_id, command, git_head(session.repo_root))
+        recovered = session.ledger.recover_interrupted()
+        rows = execute(graph, session.ctx, run, keys, dry_run=args.dry_run, recovered=recovered)
+        result = 'failed' if run.failed else ('dry-run' if args.dry_run else 'ok')
+        session.ledger.finish_run(run_id, result)
+        write_run_report(run, rows, session.ctx, command, git_head(session.repo_root),
+                         {'layout': layout_id, 'batch': True, 'until': args.until})
+        batches.append({**item, 'runId': run_id, 'executed': len(run.executed), 'cached': len(run.cached),
+                        'blocked': run.blocked, 'failed': run.failed, 'report': session.ctx.relpath(os.path.join(run.out_dir, 'report.json'))})
+        any_failed = any_failed or bool(run.failed)
+    body = {'schema': 'golfhelm-factory-batch-v1', 'selection': selection,
+            'cohort': None if args.all_layouts else args.cohort, 'minCompletedRounds': None if args.all_layouts else args.min_rounds,
+            'until': args.until, 'selected': batches, 'excluded': excluded,
+            'totals': {'attempted': len(batches), 'failed': sum(bool(b['failed']) for b in batches),
+                       'blocked': sum(bool(b['blocked']) for b in batches), 'excluded': len(excluded)}}
+    if args.json:
+        out.write(json.dumps(body, indent=1) + '\n')
+    else:
+        out.write(f'batch: attempted {body["totals"]["attempted"]}, failed {body["totals"]["failed"]}, blocked {body["totals"]["blocked"]}, excluded {body["totals"]["excluded"]}\n')
+        for entry in batches:
+            state = 'failed' if entry['failed'] else ('blocked' if entry['blocked'] else 'ok')
+            out.write(f'  {entry["layoutId"]}: {state}; executed {entry["executed"]}, cached {entry["cached"]}; {entry["report"]}\n')
+        for entry in excluded:
+            out.write(f'  excluded {entry.get("layoutId") or entry["course"]}: {entry["reason"]}\n')
+    return 1 if any_failed else 0
+
+
 def cmd_status(session, args, out):
     graph = session.graph(args.layout, args.facility)
     rows = plan(graph, session.ctx)
@@ -290,7 +401,7 @@ def cmd_invalidate(session, args, out):
     return 0
 
 
-COMMANDS = {'doctor': cmd_doctor, 'plan': cmd_plan, 'run': cmd_run, 'status': cmd_status, 'why': cmd_why, 'invalidate': cmd_invalidate, 'intake': cmd_intake}
+COMMANDS = {'doctor': cmd_doctor, 'plan': cmd_plan, 'run': cmd_run, 'status': cmd_status, 'batch': cmd_batch, 'why': cmd_why, 'invalidate': cmd_invalidate, 'intake': cmd_intake}
 
 
 def main(argv=None, out=None, ledger=None, executors=None, spec_overrides=None):

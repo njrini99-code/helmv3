@@ -11,7 +11,7 @@ import unittest
 from contextlib import redirect_stdout
 
 from factory import cli
-from factory_testkit import HERE, Harness, write_catalog, write_json
+from factory_testkit import HERE, Harness, SITE_WAY, write_catalog, write_json
 
 REPO = os.path.abspath(os.path.join(HERE, '..', '..', '..'))
 SIGNOFF = ('hole.visual.canary', 'hole.player.capture', 'layout.visual.aggregate', 'layout.player.aggregate', 'layout.publish.prepare', 'layout.publish.verify')
@@ -42,7 +42,7 @@ class GoldenPlanTests(unittest.TestCase):
 
     def test_cacapon_plan_is_a_clean_slate_behind_the_aoi(self):
         rows = self.golden('cacapon')
-        self.assertEqual(len(rows), 97)
+        self.assertEqual(len(rows), 98)
         self.assertEqual(rows['catalog.validate[cacapon]'], ('cached', 'INLINE_VALIDATED'))
         self.assertEqual(rows['layout.identity.resolve[cacapon]'], ('cached', 'INLINE_VALIDATED'))
         self.assertEqual(rows['layout.scorecard.validate[cacapon]'], ('cached', 'INLINE_VALIDATED'))
@@ -50,7 +50,7 @@ class GoldenPlanTests(unittest.TestCase):
         self.assertEqual(rows['layout.publish.prepare[cacapon]'], ('blocked', 'PUBLISH_NOT_APPROVED'))
         self.assertEqual(rows['layout.publish.verify[cacapon]'], ('blocked', 'DEPENDENCY_BLOCKED'))
         pending = [k for k, v in rows.items() if v == ('pending', 'DEPENDENCY_PENDING')]
-        self.assertEqual(len(pending), 91)
+        self.assertEqual(len(pending), 92)
         self.assertIn('hole.terrain.compile[cacapon:07]', pending)
 
     def test_upper_plan_adopts_the_retained_evidence(self):
@@ -79,8 +79,9 @@ class GoldenPlanTests(unittest.TestCase):
         # Zone 16 (University Club of Kentucky) is no longer a blocker: the compilers project in the course's own zone.
         self.assertNotIn('UTM_ZONE_UNSUPPORTED', codes)
         self.assertNotEqual(rows['layout.terrain.acquire[big-blue-course-uk]']['state'], 'blocked', rows['layout.terrain.acquire[big-blue-course-uk]'])
-        self.assertIn('layout.terrain.acquire[the-cardinal]', codes['TERRAIN_ADAPTER_MISSING'])
-        self.assertIn('layout.scorecard.validate[cc-of-landfall-marsh-9]', codes['HOLE_COUNT_UNSUPPORTED'])
+        self.assertNotIn('TERRAIN_ADAPTER_MISSING', codes)
+        self.assertNotEqual(rows['layout.terrain.acquire[the-cardinal]']['state'], 'blocked', rows['layout.terrain.acquire[the-cardinal]'])
+        self.assertNotIn('HOLE_COUNT_UNSUPPORTED', codes)
         self.assertIn('layout.publish.prepare[cacapon]', codes['PUBLISH_NOT_APPROVED'])
         self.assertTrue(all(len(v) >= 1 for v in codes.values()))
 
@@ -105,7 +106,7 @@ class OperatorCommandTests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertIn('STATE', table)
         rows = self.h.plan_rows('synthetic-a')
-        self.assertEqual(len(rows), 97)
+        self.assertEqual(len(rows), 98)
         self.assertEqual(rows['facility.aoi.resolve[synthetic]']['state'], 'ready')
         self.assertEqual(rows['layout.routes.resolve[synthetic-a]']['state'], 'pending')
         self.assertIn('facility.aoi.resolve[synthetic]', table)
@@ -128,6 +129,81 @@ class OperatorCommandTests(unittest.TestCase):
         doc = json.loads(status)
         self.assertEqual(doc['recentRuns'][0]['result'], 'ok')
         self.assertEqual(doc['capabilityReport']['earnedTier'], 'C1')
+
+    def test_batch_is_ranked_serial_and_never_reaches_publish(self):
+        cohort = os.path.join(self.tmp, 'batch-cohort.json')
+        write_json(cohort, {'courses': [
+            {'id': '22222222-2222-4222-8222-222222222222', 'name': 'Synthetic B', 'completed_rounds': 9},
+            {'id': '11111111-1111-4111-8111-111111111111', 'name': 'Synthetic A', 'completed_rounds': 21},
+            {'id': '33333333-3333-4333-8333-333333333333', 'name': 'Uncatalogued', 'completed_rounds': 99},
+        ]})
+        code, text = self.h.run('batch', '--cohort', cohort, '--max-layouts', '1', '--json')
+        self.assertEqual(code, 0, text)
+        body = json.loads(text)
+        self.assertEqual([entry['layoutId'] for entry in body['selected']], ['synthetic-a'])
+        self.assertEqual(body['selected'][0]['rounds'], 21)
+        self.assertEqual(body['excluded'][0]['reason'], 'COURSE_NOT_CATALOGUED')
+        self.assertNotIn('layout.publish.prepare[synthetic-a]', self.h.pipeline.calls)
+        self.assertIn('layout.world.aggregate[synthetic-a]', self.h.pipeline.calls)
+
+    def test_batch_all_layouts_uses_the_catalog_without_a_usage_cohort(self):
+        code, text = self.h.run('batch', '--all-layouts', '--dry-run', '--json')
+        self.assertEqual(code, 0, text)
+        body = json.loads(text)
+        self.assertEqual(body['selection'], 'catalog')
+        self.assertEqual([entry['layoutId'] for entry in body['selected']], ['synthetic-a', 'synthetic-b'])
+        self.assertEqual(body['excluded'], [])
+        self.assertTrue(all(entry['executed'] == 0 for entry in body['selected']))
+
+    def test_route_dossier_preserves_unresolved_route_evidence(self):
+        code, text = self.h.run('run', '--layout', 'synthetic-a', '--task', 'layout.route.dossier')
+        self.assertEqual(code, 0, text)
+        path = os.path.join(self.h.output, 'layouts', 'synthetic-a', 'route-review.json')
+        with open(path, encoding='utf-8') as f:
+            dossier = json.load(f)
+        self.assertEqual(dossier['status'], 'resolved')
+        self.assertEqual(dossier['truthClass'], 'measured')
+        self.assertEqual(len(dossier['routeWayIds']), 18)
+        self.assertIn('layout.route.dossier[synthetic-a]', self.h.pipeline.calls)
+
+    def test_route_dossier_never_promotes_an_ambiguous_route_to_canonical_geometry(self):
+        layout_path = os.path.join(self.h.catalog, 'layouts', 'synthetic-a.json')
+        with open(layout_path, encoding='utf-8') as f:
+            layout = json.load(f)
+        # The shared resort polygon contains two identically numbered courses.
+        # Its OSM candidate set is useful evidence, but cannot select a route.
+        layout['siteIds'] = [f'osm-way-{SITE_WAY}']
+        write_json(layout_path, layout)
+        code, text = self.h.run('run', '--layout', 'synthetic-a', '--task', 'layout.route.dossier')
+        self.assertEqual(code, 0, text)
+        path = os.path.join(self.h.output, 'layouts', 'synthetic-a', 'route-review.json')
+        with open(path, encoding='utf-8') as f:
+            dossier = json.load(f)
+        self.assertEqual(dossier['status'], 'source_confirmation_required')
+        self.assertIsNone(dossier['truthClass'])
+        self.assertFalse(dossier['canonicalRouteAdmitted'])
+        self.assertIsNone(dossier['routeWayIds'])
+        self.assertTrue(dossier['evidenceSummary']['duplicateRefs'])
+
+    def test_nine_hole_layout_is_a_supported_factory_shape(self):
+        layout_path = os.path.join(self.h.catalog, 'layouts', 'synthetic-a.json')
+        card_path = os.path.join(self.h.catalog, 'scorecards', 'synthetic-a-blue.json')
+        with open(layout_path, encoding='utf-8') as f:
+            layout = json.load(f)
+        with open(card_path, encoding='utf-8') as f:
+            card = json.load(f)
+        nine = layout['holeOrder'][:9]
+        layout['segments']['main']['holes'] = nine
+        layout['holeOrder'] = nine
+        card['holes'] = card['holes'][:9]
+        write_json(layout_path, layout)
+        write_json(card_path, card)
+
+        code, text = self.h.run('plan', '--layout', 'synthetic-a', '--json')
+        self.assertEqual(code, 0, text)
+        rows = {row['key']: row for row in json.loads(text)['rows']}
+        self.assertEqual(rows['layout.scorecard.validate[synthetic-a]']['state'], 'cached')
+        self.assertNotIn('HOLE_COUNT_UNSUPPORTED', [b['code'] for b in rows['layout.scorecard.validate[synthetic-a]']['blockers']])
 
     def test_dry_run_executes_nothing(self):
         code, text = self.h.run('run', '--layout', 'synthetic-a', '--dry-run')
@@ -252,8 +328,8 @@ class IntakeTests(unittest.TestCase):
         self.assertEqual({r['course']: r['status'] for r in doc['rows']}['Alpha Country Club'], 'catalogued')
         # The plan for the new layouts is honest about what blocks them.
         rows = self.h.plan_rows('alpha-country-club')
-        self.assertEqual(rows['layout.terrain.acquire[alpha-country-club]']['state'], 'blocked')
-        self.assertEqual(rows['layout.terrain.acquire[alpha-country-club]']['blockers'][0]['code'], 'TERRAIN_ADAPTER_MISSING')
+        self.assertEqual(rows['layout.terrain.acquire[alpha-country-club]']['state'], 'pending')
+        self.assertEqual(rows['layout.terrain.acquire[alpha-country-club]']['reason'], 'DEPENDENCY_PENDING')
         rows = self.h.plan_rows('bravo-links')
         self.assertEqual(rows['layout.scorecard.validate[bravo-links]']['blockers'][0]['code'], 'SCORECARD_REQUIRED')
 

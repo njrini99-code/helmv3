@@ -381,6 +381,8 @@ python3 $F run  --layout cacapon [--until layout.terrain.acquire] [--task hole.w
 python3 $F status --layout cacapon [--json]          # earned tier, blockers, disk, last run
 python3 $F invalidate --layout cacapon --task facility.osm.snapshot --reason "OSM edit 2026-09-20"
 python3 $F intake [--min-rounds 5] [--write]          # cohort → C0 manifests, most-played first
+python3 $F batch --all-layouts --dry-run --json        # every catalogued 9–36-hole layout; no publish/capture work
+python3 $F batch --all-layouts                         # serial world compilation plus an auditable route-review.json for every layout; never publish/capture
 # --no-adopt-output ignores everything under output/ (what a fresh clone sees)
 # COURSE_FACTORY_DISK_RESERVE_GB=8 is the guard heavy tasks must stay above
 ```

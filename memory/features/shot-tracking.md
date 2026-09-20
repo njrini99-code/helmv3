@@ -100,10 +100,20 @@ with a stable reason code. It wraps the existing scripts (`fetch-osm-*`,
   that still passes its content checks stays adopted when only its
   fingerprint moved (an implementation edit); a manual invalidation still
   asks for the rebuild, and built output rebuilds on such a change.
-- The 18-hole limit of the wrapped scripts surfaces as
-  `HOLE_COUNT_UNSUPPORTED`; NC courses without a 1 m USGS tile carry
-  `providerPolicy.terrain: [nc_onemap_dem03]` and block on
-  `TERRAIN_ADAPTER_MISSING` until PR C.
+- Terrain policy selection is explicit in `factory/providers.py`: a facility
+  chooses the first policy-listed provider with an acquisition adapter, then
+  records that policy id in its terrain pointer. `usgs_3dep_project_1m` and
+  `nc_onemap_dem03` are implemented. The NC adapter locks a single native
+  3.125-US-survey-foot DEM03 export, records the source grid, raw unit,
+  feet-to-meters conversion, empty-fill result, unknown vertical datum and
+  unconfirmed redistribution terms. It makes an NC course buildable as a
+  source candidate; it does not turn those unknowns into physical truth or
+  permit publication. `usgs_s1m` remains research-only until a separate
+  acceptance rule is approved.
+- The factory and its wrapped package compiler accept 9–36-hole layouts.
+  `HOLE_COUNT_UNSUPPORTED` now means a malformed layout outside that range;
+  a nine-hole segment still needs its own source-confirmed routes and passes
+  the same physical-truth gates as an 18-hole layout.
 - The metric CRS follows the course (`course_crs.py`): raster requests and
   shapely work use the UTM zone of `originWgs84`; a raster on disk keeps the
   CRS it was cut in (readers take it from the export's spatial reference,

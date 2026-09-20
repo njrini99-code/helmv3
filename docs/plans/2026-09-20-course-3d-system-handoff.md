@@ -62,7 +62,7 @@ Today: 12 facilities, 16 layouts (see §7).
 | File | Role |
 | --- | --- |
 | `cli.py` | `doctor`, `plan`, `run`, `status`, `why`, `invalidate`, `intake`; `--output <root>`, `--repo-root` |
-| `graph.py` | builds the DAG: facility → layout → hole scopes; 29 task ids, 97 nodes for an 18-hole layout |
+| `graph.py` | builds the DAG: facility → layout → hole scopes; 29 task ids, 97 nodes for an 18-hole layout and the same task shapes for 9–36-hole layouts |
 | `tasks/{facility,layout,hole,aggregate}_tasks.py` | one `TaskSpec` per task: deps, evaluator (inputs, blockers, adoptable artifacts), `impl_files`, settings, retention class |
 | `fingerprints.py` | fingerprint = task id + version + impl-file hashes + settings + direct semantic inputs (never the git commit) |
 | `planner.py` | state per node: `ready`, `pending`, `cached`, `stale`, `blocked`, `failed`; own blockers outrank a cached success; `why` chains |
@@ -80,7 +80,7 @@ Output root (disposable, never committed): `output/course-geometry/factory/`
 state.sqlite
 runs/<run-id>/report.{json,md} + <task>.log
 facilities/<facilityId>/{aoi.json, osm/, osm-context/, terrain/<boundsKey>/, naip/<boundsKey>/}
-layouts/<layoutId>/{routes.json, scorecard.json, candidates/, package/normalized.json, canopy-review.json,
+layouts/<layoutId>/{routes.json, route-review.json, scorecard.json, candidates/, package/normalized.json, canopy-review.json,
                     compiled-base/, compiled/ (asset-manifest.json + <layout>-NN-terrain.json[.gz] + -report.json),
                     context/<layout>-context.json + -context-report.json, imagery-review/, imagery-review.json,
                     world/holes/<holeKey>/, terrain-summary.json, review-queue.json, capability-report.json,
@@ -316,7 +316,7 @@ main checks: CI aggregate, Review Gate aggregate, Analyze, block-historical-edit
 | boonsboro-cc | boonsboro-country-club (VA) | C0 | `ROUTE_WAY_IDS_REQUIRED` (OSM has no hole ways; NAIP sheet in `docs/plans/assets/course-factory-2026-09-20/`) |
 | pga-national-champ | pga-national-resort (FL) | C0 | `ROUTE_WAY_IDS_REQUIRED` |
 | cutter-creek, starmount-forest, the-cardinal, cc-of-landfall-nick-{m-o,o-p,p-m} | NC facilities | C0 | terrain adapter selected (`nc_onemap_dem03`); package, source acquisition and human review remain |
-| cc-of-landfall-marsh-9, cc-of-landfall-ocean-9 | landfall-country-club-golf-course (NC) | C0 | `HOLE_COUNT_UNSUPPORTED` (9-hole segments) |
+| cc-of-landfall-marsh-9, cc-of-landfall-ocean-9 | landfall-country-club-golf-course (NC) | C0 | route confirmation required; 9-hole layouts are now supported |
 
 The four factory builds were made before the UTM-zone change to
 `prepare-osm-course.py`; the plan marks their `layout.candidates.compose`

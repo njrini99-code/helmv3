@@ -45,6 +45,48 @@ def fixture():
 
 
 class TerrainCompilerTest(unittest.TestCase):
+    def test_area_conservation_tolerance_is_strict_and_scale_aware(self):
+        # The tolerance is only for accumulated floating-point triangle areas.
+        # It is not a geometry displacement allowance: the face-cover and
+        # source-boundary checks above it remain exact. Small features retain
+        # the historical absolute check; a 400k m2 context mesh can absorb
+        # sub-square-metre summation noise without accepting a material gap.
+        self.assertEqual(compiler.area_conservation_tolerance(1000), .002)
+        self.assertAlmostEqual(compiler.area_conservation_tolerance(425000), .425)
+        self.assertGreater(abs(-.167573387), .002)
+        self.assertLess(abs(-.167573387), compiler.area_conservation_tolerance(425000))
+
+    def test_nc_onemap_native_grid_is_snapped_without_display_resampling(self):
+        bounds, size = compiler.nc_native_grid_bounds([100.1, 200.1, 110.0, 209.4], {'xmin': 0, 'ymin': 0})
+        self.assertEqual(bounds, [100.0, 200.0, 112.5, 212.5])
+        self.assertEqual(size, [4, 4])
+
+    def test_nc_onemap_service_contract_rejects_a_changed_grid_or_units(self):
+        service = {'pixelType': 'F32', 'serviceDataType': 'esriImageServiceDataTypeElevation',
+                   'pixelSizeX': 3.125, 'pixelSizeY': 3.125, 'spatialReference': {'wkt': 'UNIT["Foot_US",0.304800609601219]'}}
+        compiler.validate_nc_onemap_service(service)
+        with self.assertRaisesRegex(ValueError, 'resolution changed'):
+            compiler.validate_nc_onemap_service({**service, 'pixelSizeX': 1})
+        with self.assertRaisesRegex(ValueError, 'CRS'):
+            compiler.validate_nc_onemap_service({**service, 'spatialReference': {'wkt': 'UNIT["metre",1]' }})
+
+    def test_compilation_reuses_the_cached_provider_but_acquisition_cannot_switch_it(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory)
+            (source / 'source-manifest.json').write_text(json.dumps({
+                'providerPolicyId': compiler.NC_ONEMAP_PROVIDER,
+            }))
+            self.assertEqual(
+                compiler.resolve_source_provider(source, compiler.USGS_3DEP_PROVIDER),
+                compiler.NC_ONEMAP_PROVIDER,
+            )
+            with self.assertRaisesRegex(ValueError, 'another terrain provider'):
+                compiler.resolve_source_provider(source, compiler.USGS_3DEP_PROVIDER, acquire_only=True)
+            self.assertEqual(
+                compiler.resolve_source_provider(source / 'new', compiler.USGS_3DEP_PROVIDER),
+                compiler.USGS_3DEP_PROVIDER,
+            )
+
     def test_declared_vertical_units_are_converted_without_guessing(self):
         self.assertEqual(compiler.vertical_unit_to_meters({'verticalUnitToMeters': 1}), 1)
         self.assertAlmostEqual(compiler.vertical_unit_to_meters({'verticalUnitToMeters': compiler.US_SURVEY_FOOT_TO_METERS}),

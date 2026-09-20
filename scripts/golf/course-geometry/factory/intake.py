@@ -31,7 +31,7 @@ def terrain_providers(facility):
     if facility.get('dem1mTiles'):
         return USGS
     if (facility.get('state') or '').upper() == 'NC':
-        return ['nc_onemap_dem03']      # PR C adapter; the plan blocks on TERRAIN_ADAPTER_MISSING until then
+        return ['nc_onemap_dem03']      # Provider adapter selected; source datum and redistribution review remain gates
     return USGS                          # discovery may still find a tile the audit did not name
 
 

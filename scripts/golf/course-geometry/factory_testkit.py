@@ -121,7 +121,7 @@ class FakePipeline:
     def executors(self):
         return {
             'facility.aoi.resolve': self.aoi, 'facility.osm.snapshot': self.osm, 'facility.context.snapshot': self.context_snapshot,
-            'layout.routes.resolve': self.routes, 'layout.scorecard.compose': self.scorecard, 'layout.candidates.compose': self.candidates,
+            'layout.routes.resolve': self.routes, 'layout.route.dossier': self.route_dossier, 'layout.scorecard.compose': self.scorecard, 'layout.candidates.compose': self.candidates,
             'layout.terrain.acquire': self.terrain, 'layout.canopy.derive': self.canopy, 'layout.package.compose': self.package,
             'layout.package.validate': self.package_validate, 'layout.terrain.base': self.terrain_base, 'layout.imagery.audit': self.imagery,
             'layout.context.classify': self.context, 'hole.terrain.compile': self.hole_terrain, 'hole.world.build': self.hole_world,
@@ -167,6 +167,11 @@ class FakePipeline:
         self._mark(node)
         from factory.adapters import resolve_routes
         return resolve_routes(node, ctx, run)
+
+    def route_dossier(self, node, ctx, run):
+        self._mark(node)
+        from factory.adapters import write_route_dossier
+        return write_route_dossier(node, ctx, run)
 
     def scorecard(self, node, ctx, run):
         self._mark(node)
@@ -383,7 +388,7 @@ class FakePipeline:
 def write_catalog(root, two_layouts=True, yards_a=None, routes_a=None, site_a_shared=False):
     facility = {'schema': 'golfhelm-facility-v1', 'facilityId': 'synthetic', 'name': 'Synthetic Golf Club', 'country': 'US', 'region': 'WV', 'originWgs84': ORIGIN,
                 'aoi': {'kind': 'osm', 'id': f'way/{SITE_WAY}', 'marginM': 300}, 'sourcePins': {'osm': [f'way/{SITE_WAY}', f'way/{SITE_A}', f'way/{SITE_B}']},
-                'providerPolicy': {'terrain': ['usgs_s1m'], 'imagery': ['naip_current'], 'context': ['osm']}}
+                'providerPolicy': {'terrain': ['usgs_3dep_project_1m'], 'imagery': ['naip_current'], 'context': ['osm']}}
     write_json(os.path.join(root, 'facilities', 'synthetic.json'), facility)
     layouts = [('synthetic-a', COURSE_ID_A, routes_a)] + ([('synthetic-b', COURSE_ID_B, None)] if two_layouts else [])
     for layout_id, course_id, routes in layouts:
