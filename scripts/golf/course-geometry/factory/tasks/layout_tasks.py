@@ -355,6 +355,9 @@ def canopy_identity(doc):
 def eval_canopy_derive(node, ctx):
     layout_id = node.scope.layout_id
     inputs = {'terrain': dep_input(ctx, node, 'layout.terrain.acquire'), 'candidates': dep_input(ctx, node, 'layout.candidates.compose')}
+    indexed = ctx.indexed_imagery(layout_id)
+    if indexed:
+        inputs['indexedImagery'] = indexed['identity']
     path = ctx.canopy_path(layout_id)
     doc = ctx.json(path) if ctx.can_adopt(path) else None
     if not doc:
@@ -387,6 +390,9 @@ def eval_canopy_derive(node, ctx):
         notes.append(f'{imagery.CODE}: captured {stale["earliestCapture"]}..{stale["latestCapture"]}, renovation after {stale["knownRenovationAfter"]}; '
                      f'the canopy layer shows the course before it')
     adoptable = True
+    if indexed and (doc.get('sourceIdentity') != indexed['identity'] or not naip_manifest
+                    or naip_manifest.get('sourceIdentity') != indexed['identity']):
+        adoptable, notes = False, notes + ['canopy must be rederived from the verified facility imagery cache']
     if naip_manifest and naip_manifest.get('rasterSha256') != doc.get('rasterSha256'):
         adoptable, notes = False, notes + ['canopy review was derived from another NAIP export']
     candidates = ctx.json(ctx.candidates_package_path(layout_id)) if ctx.can_adopt(ctx.candidates_package_path(layout_id)) else None
@@ -514,7 +520,7 @@ SPECS = [
     TaskSpec('layout.terrain.acquire', '1', 'layout', ('layout.candidates.compose',), eval_terrain_acquire,
              impl_files=TERRAIN_COMPILER_FILES, retention='A', estimated_bytes=300_000_000),
     TaskSpec('layout.canopy.derive', '1', 'layout', ('layout.terrain.acquire', 'layout.candidates.compose'), eval_canopy_derive,
-             impl_files=(script('derive-canopy-naip.py'),) + CRS_FILES, retention='B', estimated_bytes=500_000_000),
+             impl_files=(script('derive-canopy-naip.py'), script('indexed_naip.py'), script('fetch-usgs-naip-facility-ortho.py')) + CRS_FILES, retention='B', estimated_bytes=500_000_000),
     TaskSpec('layout.package.compose', '1', 'layout', ('layout.candidates.compose', 'layout.scorecard.compose', 'facility.osm.snapshot', 'layout.canopy.derive?'), eval_package_compose,
              impl_files=(script('prepare-osm-course.py'),) + CRS_FILES, retention='A', estimated_bytes=5_000_000),
     TaskSpec('layout.package.validate', '1', 'layout', ('layout.package.compose', 'layout.context.classify?'), eval_package_validate, executor=run_package_validate, retention='C'),

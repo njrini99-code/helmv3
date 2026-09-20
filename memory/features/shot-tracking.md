@@ -120,8 +120,10 @@ A facility visual-candidate report also records `sourceCoverage` and
 substitute for a source-backed route or feature boundary.
 
 `review-native-ortho.py` is the bounded, offline next step after a complete
-native imagery acquisition. It accepts only a complete `native-ortho-nir-v2`
-index and a source-item sidecar whose input hash matches that index. It reads
+native imagery acquisition. It accepts a complete NC `native-ortho-nir-v2`
+index and matching source-item sidecar, or a complete source-locked national
+`golfhelm-facility-usgs-naip-plus-index-v2` whose tile bytes and metadata hashes
+revalidate. It reads
 the retained GeoTIFFs in place, writes per-hole source overlays and
 `candidate-observations.json`, and records the effective analysis GSD. A
 candidate is always `derived`, `review_required`, and
@@ -134,6 +136,44 @@ elongated bright regions are `visual_only` scene conditions, not feature
 candidates. `batch-native-ortho-review.py` can only schedule layouts with
 both complete native provenance and an existing route candidate package. It
 never writes canonical geometry or changes physical measurement authority.
+
+National acquisition binds each export to its exact catalog raster OBJECTID
+using `esriMosaicLockRaster`, retains acquisition dates and RGB+NIR, and checks
+the actual TIFF grid/CRS/bands rather than trusting response metadata. The
+batch downloads once per facility, checkpoints every verified tile, and
+resumes without replacing source hashes. It preserves NC's regional sources.
+Work is bounded to 256 tiles/256 million pixels per facility, four million
+pixels per request, at most four workers, and an eight-GiB disk reserve.
+Preflight budgets the entire remaining source/preview footprint at eight bytes
+per pixel plus worker headroom; per-request reserve checks remain active.
+Sparse source gaps (at most 0.1%) may enter review imagery only: unknown pixels
+remain unfilled and excluded from extraction; `physicalCoverageComplete` is
+false. This does not relax physical feature coverage or admission.
+
+`indexed_naip.py` reuses that verified facility cache for canopy classification
+on the terrain grid, avoiding another whole-course online image export. Its
+manifest distinguishes native source spacing from derived analysis spacing,
+records coverage and source identity, and never grants measurement authority.
+Factory cache identity includes pixel and provenance hashes but excludes
+resume timestamps. NIR is explicitly not alpha. Canopy texture uses population
+standard deviation with reflected edges; the vectorized calculation is tested
+against the former per-pixel implementation. Unknown pixels and their texture
+neighborhoods are excluded, and morphology cannot fill excluded surface pixels.
+Generated classification reports state automated review, never human approval.
+
+Physical native terrain can use aligned bounded requests when the facility
+exceeds one export: each request retains the same selected project, source
+OBJECTIDs, CRS, datum and source spacing. The compiler validates each TIFF and
+merges without resampling, retaining all part hashes. The eight-million-pixel
+per-request limit remains; total acquisition is capped at 32 million pixels.
+This scales acquisition without downgrading the physical terrain source.
+
+The 40,000-triangle display budget remains fixed. If 32-m outer context cells
+still exceed it, the compiler drops illustrative collar/surround/light bands
+before rejecting the hole. This removes only material subdivisions: canonical
+feature areas, boundary identity, source-sampled heights, 4-m tactical/2-m
+detail spacing, and the independent metric grid are unchanged. The render
+profile records `decorativeEdgeBands: false`; a hole still over budget fails.
 
 ### Course factory build engine (Factory v2 PR B, 2026-09-19)
 

@@ -21,6 +21,15 @@ def digest(value):
     return hashlib.sha256(canonical_json(value).encode('utf-8')).hexdigest()
 
 
+def native_imagery_identity(index):
+    """Pixel/provenance identity independent of resume timestamps and statuses."""
+    return digest({'schema': index.get('schema'), 'source': index.get('source'),
+                   'facilityId': index.get('facilityId'), 'aoi': index.get('aoiResponseSha256'),
+                   'tiles': sorted([{key: tile.get(key) for key in
+                       ('key', 'boundsLocalMeters', 'pixels', 'rasterSha256', 'catalogItemObjectId', 'sourceMetadataHashes')}
+                       for tile in index.get('tiles', [])], key=lambda tile: tile['key'])})
+
+
 def digest_text(text):
     return hashlib.sha256(text.encode('utf-8')).hexdigest()
 

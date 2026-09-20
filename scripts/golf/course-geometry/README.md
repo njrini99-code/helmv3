@@ -470,8 +470,29 @@ known; this is `reprojected_native_density`, not a claim of raw-pixel alignment.
 ```bash
 python3 scripts/golf/course-geometry/fetch-usgs-naip-facility-ortho.py \
   output/course-geometry/factory/facilities/winchester-country-club/aoi.json \
-  output/course-geometry/factory/facilities/winchester-country-club/naip-plus-v1
+  output/course-geometry/factory/facilities/winchester-country-club/naip-plus-locked-v2
 ```
+
+The v2 downloader locks each export to the selected catalog OBJECTID and
+verifies the TIFF itself. It retains original pixels, dates, CRS, hashes and
+all failed source-sheet coverage attempts. Sparse unknown pixels can remain
+in review imagery only (at most 0.1%); they are never filled or admitted as
+physical feature evidence. The source's native spacing and the reprojected
+grid are recorded separately. Do not reuse the earlier unlocked v1 directory.
+
+```bash
+python3 scripts/golf/course-geometry/batch-usgs-naip-facility-ortho.py \
+  course-geometry/catalog output/course-geometry/factory \
+  output/course-geometry/factory/research/naip-source-locked-batch-v2.json --execute
+```
+
+This serial facility batch shares downloads across layouts, leaves NC on its
+regional workflow, checkpoints individual tiles and resumes partial runs.
+The national source is a public fallback, not an assertion that no better
+county/state imagery exists. Requests remain bounded; the eight-GiB reserve
+applies before each download. The per-facility cap is 256 tiles and 256 million
+pixels, with a conservative whole-job disk estimate before execution; partition
+larger sites instead of reducing native density silently.
 
 ```bash
 A=output/course-geometry/factory/facilities/cape-fear-country-club-golf-course/aoi.json
@@ -499,9 +520,33 @@ python3 scripts/golf/course-geometry/batch-native-ortho-review.py \
   --execute
 ```
 
-This batch only admits layouts with a complete native-ortho index, a matching
-source-item provenance sidecar, and a route candidate package. It never edits
+This batch requires a route candidate package plus either a complete NC index
+with matching source-item sidecar, or a complete locked national v2 index with
+verified raster and metadata hashes. National imagery uses its actual 0.3/0.6-m
+spacing, never the NC six-inch label. Outputs use `native-imagery-review-v2`.
+It never edits
 canonical geometry, admits a route, or supplies physical measurements.
+
+When a locked national cache is complete, `layout.canopy.derive` automatically
+uses it offline through `indexed_naip.py`. Direct invocation adds
+`--imagery-index <facility>/naip-plus-locked-v2/index.json` to
+`derive-canopy-naip.py`. The resulting terrain-aligned raster is a derived
+classification input, with its actual coverage and spacing recorded. Its cache
+key includes source pixel/provenance identity; unknown areas stay excluded.
+Canopy regions remain approximate artwork placement, never measured trees or
+obstruction heights. No renderer or shot-coordinate contract changes.
+
+Large physical terrain requests are partitioned into aligned native-resolution
+parts (eight-million-pixel request cap; 32-million-pixel total cap). The compiler
+retains and checks every part, selected source IDs, reference frame and datum,
+then mosaics without resampling. Native geometry is not downgraded to fit one
+HTTP request.
+
+The terrain renderer keeps its 40,000-triangle cap. After the existing 32-m
+outer-context fallback, an over-budget hole may omit only decorative edge-band
+subdivisions. The profile records this choice; canonical boundaries, source
+heights, tactical/detail sampling and the metric grid remain unchanged. An
+over-budget mesh still fails after that cosmetic reduction.
 
 States: `ready`, `pending` (waiting on upstream, root named), `cached`
 (`FINGERPRINT_UNCHANGED` / `ADOPTED_EXTERNAL` / `INLINE_VALIDATED`), `stale`

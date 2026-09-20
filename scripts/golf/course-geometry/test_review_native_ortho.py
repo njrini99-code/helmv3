@@ -5,6 +5,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 import numpy as np
@@ -17,12 +18,12 @@ HERE = Path(__file__).resolve().parent
 SCRIPT = HERE / 'review-native-ortho.py'
 
 
-def write_tiff(path, array, geotransform):
+def write_tiff(path, array, geotransform, epsg=6543):
     bands, height, width = array.shape
     dataset = gdal.GetDriverByName('GTiff').Create(str(path), width, height, bands, gdal.GDT_Byte)
     dataset.SetGeoTransform(geotransform)
     spatial_ref = osr.SpatialReference()
-    spatial_ref.ImportFromEPSG(6543)
+    spatial_ref.ImportFromEPSG(epsg)
     dataset.SetProjection(spatial_ref.ExportToWkt())
     for index in range(bands):
         dataset.GetRasterBand(index + 1).WriteArray(array[index])
@@ -96,6 +97,74 @@ if __name__ == '__main__':
     unittest.main()
 
 class NativeOrthoObservationLimitsTests(unittest.TestCase):
+    def test_crop_grid_is_exact_and_zero_nir_is_not_transparency(self):
+        spec = importlib.util.spec_from_file_location('review_native_ortho', SCRIPT)
+        module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
+        with tempfile.TemporaryDirectory() as tmp:
+            raster = Path(tmp) / 'four.tif'
+            data = np.full((4, 100, 100), 180, dtype=np.uint8)
+            data[3] = 0
+            write_tiff(raster, data, (100, .6, 0, 200, 0, -.6), epsg=26917)
+            ds = gdal.Open(str(raster), gdal.GA_Update)
+            ds.GetRasterBand(4).SetColorInterpretation(gdal.GCI_AlphaBand)
+            ds = None
+            grid = module.bounded_grid([100.13, 145.13, 155.33, 199.51], .6, 4000000)
+            result = module.crop_vrt([('tile', raster, raster)], 1, grid)
+            self.assertEqual(result.shape[0], 4)
+            self.assertTrue(np.all(result[:3, 5:-5, 5:-5] == 180))
+            self.assertTrue(np.all(result[3] == 0))
+            self.assertAlmostEqual((grid['bounds'][2] - grid['bounds'][0]) / grid['width'], .6)
+
+    def test_source_locked_naip_drives_review_and_tampering_fails(self):
+        spec = importlib.util.spec_from_file_location('review_native_ortho', SCRIPT)
+        module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
+        naip = module.naip_ortho
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp); native = root / 'naip'
+            raster = root / 'test.tif'
+            project = pyproj.Transformer.from_crs(4326, 26917, always_xy=True)
+            unproject = pyproj.Transformer.from_crs(26917, 4326, always_xy=True)
+            cx, cy = project.transform(-78.1, 39.2)
+            bounds = [cx - 120, cy - 120, cx + 120, cy + 120]
+            data = np.full((4, 400, 400), 90, dtype=np.uint8)
+            data[:, 50:100, 50:100] = 180
+            write_tiff(raster, data, (bounds[0], .6, 0, bounds[3], 0, -.6), epsg=26917)
+            item = {'OBJECTID': 42, 'Category': 1, 'band_count': 4, 'resolution_value': .6,
+                    'resolution_units': 'METER', 'acquisition_date': 100}
+            tile = {'key': 'r00-c00', 'boundsLocalMeters': bounds, 'pixels': [400, 400]}
+            payload = {'width': 400, 'height': 400, 'href': 'https://example.com/image.tif',
+                       'extent': dict(zip(('xmin', 'ymin', 'xmax', 'ymax'), bounds))}
+            from PIL import Image
+            with patch.object(naip, 'identify', return_value={'catalogItems': {'features': [{'attributes': item}]}}), \
+                 patch.object(naip, 'read_json', return_value=payload), \
+                 patch.object(naip, 'read_tiff_with_retry', return_value=(raster.read_bytes(), Image.open(raster))):
+                record = naip.acquire_tile(tile, native, 26917, 3857, .6)
+            index = {'schema': naip.INDEX_SCHEMA, 'complete': True, 'tileCountPlanned': 1,
+                     'acquisitionContract': 'locked_catalog_item_four_band_geotiff_v2',
+                     'sourceResolutionMeters': .6, 'source': {'targetWkid': 26917}, 'tiles': [record]}
+            index_path = native / 'index.json'; index_path.write_text(json.dumps(index))
+            package = {'contentHash': 'synthetic', 'holes': [{'key': 'hole-01', 'ordinal': 1, 'featureIds': ['route']}],
+                       'features': [{'id': 'route', 'kind': 'route', 'geometryWgs84': {'type': 'LineString',
+                                     'coordinates': [unproject.transform(cx - 30, cy - 30), unproject.transform(cx + 30, cy + 30)]}}]}
+            package_path = root / 'normalized.json'; package_path.write_text(json.dumps(package))
+            command = [sys.executable, str(SCRIPT), str(package_path), str(index_path), '-', str(root / 'review')]
+            result = subprocess.run(command, capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            report = json.loads((root / 'review/candidate-observations.json').read_text())
+            self.assertEqual(report['source']['nativeGsdMeters'], .6)
+            self.assertEqual(report['holes'][0]['validImageryShareInCrop'], 1)
+            self.assertFalse(report['canMeasurePhysicalGeometry'])
+            item_path = native / 'tiles/r00-c00/item.json'
+            original = item_path.read_text()
+            changed = json.loads(original); changed['acquisition_date'] = 200
+            item_path.write_text(json.dumps(changed))
+            with self.assertRaisesRegex(ValueError, 'differs from retained tile provenance'):
+                naip.validate_index(index_path)
+            item_path.write_text(original)
+            (native / 'tiles/r00-c00/ortho.tif').write_bytes(b'changed')
+            with self.assertRaisesRegex(ValueError, 'hash changed'):
+                naip.validate_index(index_path)
+
     def test_large_or_elongated_spectral_regions_are_review_context_not_feature_candidates(self):
         spec = importlib.util.spec_from_file_location('review_native_ortho', SCRIPT)
         module = importlib.util.module_from_spec(spec)

@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Create source-backed, per-hole review overlays from NC native RGB+NIR tiles.
+"""Create source-backed, per-hole review overlays from retained RGB+NIR tiles.
 
-This compiler consumes only a *complete* native imagery index whose every tile
-has a matching NC OneMap source-item sidecar. It draws existing source-candidate
+This compiler consumes only a *complete* imagery index with either matching
+NC OneMap source-item provenance or verified locked national source tiles.
+It draws existing source-candidate
 features over high-resolution imagery and emits sand-like observation regions
 for reviewer attention. It never edits a canonical package, admits a route, or
 creates measurement authority.
@@ -34,6 +35,9 @@ _SOURCE_REGISTRY_SPEC = importlib.util.spec_from_file_location(
 source_registry = importlib.util.module_from_spec(_SOURCE_REGISTRY_SPEC)
 assert _SOURCE_REGISTRY_SPEC and _SOURCE_REGISTRY_SPEC.loader
 _SOURCE_REGISTRY_SPEC.loader.exec_module(source_registry)
+_NAIP_SPEC = importlib.util.spec_from_file_location('naip_ortho', HERE / 'fetch-usgs-naip-facility-ortho.py')
+naip_ortho = importlib.util.module_from_spec(_NAIP_SPEC)
+_NAIP_SPEC.loader.exec_module(naip_ortho)
 
 # These values produce review observations, never a classifier verdict. They
 # deliberately mirror the existing NAIP review threshold family but always
@@ -117,10 +121,13 @@ def tile_paths(index_path, index, bounds):
     root = Path(index_path).parent
     paths = []
     for tile in index.get('tiles') or []:
-        if not intersects(bounds, tile.get('boundsNativeUSFeet') or []):
+        if not intersects(bounds, tile.get('boundsNativeUSFeet') or tile.get('boundsLocalMeters') or []):
             continue
         folder = root / 'tiles' / tile['key']
-        rgb, nir = folder / 'rgb.tif', folder / 'nir.tif'
+        if index.get('schema') == naip_ortho.INDEX_SCHEMA:
+            rgb = nir = folder / 'ortho.tif'
+        else:
+            rgb, nir = folder / 'rgb.tif', folder / 'nir.tif'
         if not rgb.is_file() or not nir.is_file():
             raise ValueError(f'native imagery tile {tile["key"]} is missing its RGB or NIR TIFF')
         paths.append((tile['key'], rgb, nir))
@@ -142,13 +149,17 @@ def bounded_grid(bounds, base_pixel, max_pixels):
     height_base = max(1, math.ceil((north - south) / base_pixel))
     factor = max(1, math.ceil(math.sqrt((width_base * height_base) / max_pixels)))
     pixel = base_pixel * factor
+    width = max(1, math.ceil((east - west) / pixel))
+    height = max(1, math.ceil((north - south) / pixel))
     return {
-        'bounds': [west, south, east, north],
+        # Explicit square processing cells. Expanding the crop by less than
+        # one cell keeps source/vector registration exact after GDAL resampling.
+        'bounds': [west, north - height * pixel, west + width * pixel, north],
         'basePixelUnits': base_pixel,
         'analysisPixelUnits': pixel,
         'downsampleFactor': factor,
-        'width': max(1, math.ceil((east - west) / pixel)),
-        'height': max(1, math.ceil((north - south) / pixel)),
+        'width': width,
+        'height': height,
     }
 
 
@@ -157,16 +168,19 @@ def crop_vrt(paths, channel_index, grid):
     suffix = uuid.uuid4().hex
     vrt_path = f'/vsimem/golfhelm-native-{suffix}-{channel_index}.vrt'
     source_paths = [str(row[channel_index]) for row in paths]
-    vrt = gdal.BuildVRT(vrt_path, source_paths)
+    # TIFF readers may label the fourth NAIP band as alpha. It is NIR, and
+    # its low reflectance must not hide valid RGB water/shadow pixels.
+    vrt = gdal.BuildVRT(vrt_path, source_paths, options=gdal.BuildVRTOptions(options=['-ignore_srcmaskband']))
     if vrt is None:
         raise ValueError('could not construct virtual native imagery mosaic')
     vrt = None
     west, south, east, north = grid['bounds']
     try:
-        crop = gdal.Translate(
+        crop = gdal.Warp(
             '', vrt_path,
-            options=gdal.TranslateOptions(format='MEM', projWin=[west, north, east, south],
-                                         width=grid['width'], height=grid['height'], resampleAlg='nearest'),
+            options=gdal.WarpOptions(format='MEM', outputBounds=[west, south, east, north],
+                                    width=grid['width'], height=grid['height'], resampleAlg='near',
+                                    srcAlpha=False, dstAlpha=False),
         )
         if crop is None:
             raise ValueError('could not read native imagery review crop')
@@ -175,6 +189,9 @@ def crop_vrt(paths, channel_index, grid):
             data = data[np.newaxis, :, :]
         if data.shape[1:] != (grid['height'], grid['width']):
             raise ValueError('native imagery crop dimensions do not match the review grid')
+        expected = (west, grid['analysisPixelUnits'], 0, north, 0, -grid['analysisPixelUnits'])
+        if not np.allclose(crop.GetGeoTransform(), expected, atol=1e-7, rtol=0):
+            raise ValueError('review crop coordinates differ from the overlay grid')
         return data.astype(np.uint8, copy=False)
     finally:
         gdal.Unlink(vrt_path)
@@ -246,7 +263,8 @@ def sand_observations(rgb, nir, features, project, unproject, grid, meters_per_u
     red, blue = rgb[0].astype(float), rgb[2].astype(float)
     brightness = rgb.astype(float).mean(axis=0)
     ndvi = (nir[0].astype(float) - red) / (nir[0].astype(float) + red + 1e-6)
-    sand = (brightness > SAND_BRIGHTNESS_MIN) & (ndvi < SAND_NDVI_MAX) & ((red - blue) > SAND_WARMTH_MIN)
+    valid = np.any(rgb != 0, axis=0) | (nir[0] != 0)
+    sand = valid & (brightness > SAND_BRIGHTNESS_MIN) & (ndvi < SAND_NDVI_MAX) & ((red - blue) > SAND_WARMTH_MIN)
     bunker_stats, claimed = [], np.zeros_like(sand, dtype=bool)
     for feature in features:
         if feature.get('kind') != 'bunker':
@@ -256,25 +274,30 @@ def sand_observations(rgb, nir, features, project, unproject, grid, meters_per_u
         outside = ndimage.binary_dilation(inside, iterations=ring_px) & ~inside
         bunker_stats.append({
             'featureId': feature['id'],
-            'sandShareInside': round(float(sand[inside].mean()), 3) if inside.any() else 0.0,
-            'sandShareOutsideRing': round(float(sand[outside].mean()), 3) if outside.any() else 0.0,
+            'validImageryShareInside': round(float(valid[inside].mean()), 6) if inside.any() else None,
+            'sandShareInside': round(float(sand[inside & valid].mean()), 3) if (inside & valid).any() else None,
+            'sandShareOutsideRing': round(float(sand[outside & valid].mean()), 3) if (outside & valid).any() else None,
             'analysisAreaM2': round(float(inside.sum()) * (grid['analysisPixelUnits'] * meters_per_unit) ** 2, 2),
         })
         claimed |= ndimage.binary_dilation(inside, iterations=ring_px)
     unclaimed = ndimage.binary_opening(sand & ~claimed, structure=np.ones((3, 3)))
-    labels, count = ndimage.label(unclaimed)
+    labels, _count = ndimage.label(unclaimed)
     minimum_pixels = max(1, math.ceil(CANDIDATE_MIN_AREA_M2 / (grid['analysisPixelUnits'] * meters_per_unit) ** 2))
     candidates, scene_conditions = [], []
-    for label in range(1, count + 1):
-        ys, xs = np.nonzero(labels == label)
-        if len(xs) < minimum_pixels:
+    # Inspect each component's bounding slice, not the whole multi-megapixel
+    # raster once per fragment. This keeps the review scan linear in practice.
+    for label, region in enumerate(ndimage.find_objects(labels), start=1):
+        if region is None:
             continue
-        x0, x1 = xs.min(), xs.max() + 1
-        y0, y1 = ys.min(), ys.max() + 1
+        count = int(np.count_nonzero(labels[region] == label))
+        if count < minimum_pixels:
+            continue
+        y0, y1 = region[0].start, region[0].stop
+        x0, x1 = region[1].start, region[1].stop
         west, _south, _east, north = grid['bounds']
         pixel = grid['analysisPixelUnits']
         bbox = [west + x0 * pixel, north - y1 * pixel, west + x1 * pixel, north - y0 * pixel]
-        area_m2 = round(len(xs) * (pixel * meters_per_unit) ** 2, 2)
+        area_m2 = round(count * (pixel * meters_per_unit) ** 2, 2)
         width_m = (x1 - x0) * pixel * meters_per_unit
         height_m = (y1 - y0) * pixel * meters_per_unit
         aspect_ratio = round(max(width_m, height_m) / max(min(width_m, height_m), 1e-6), 3)
@@ -322,16 +345,27 @@ def main():
     args = parser.parse_args()
     package = json.loads(args.package.read_text())
     index = json.loads(args.native_index.read_text())
-    source_items = json.loads(args.source_items.read_text())
-    contract = source_registry.native_ortho_review_contract(
-        index, source_items, index_sha256=digest_path(args.native_index),
-    )
+    is_naip = index.get('schema') == naip_ortho.INDEX_SCHEMA
+    if is_naip:
+        # The national v2 index embeds tile hashes; check the original item,
+        # locked export request and TIFF bytes, not an NC sidecar substitute.
+        naip_ortho.validate_index(args.native_index)
+        contract = {'canCreateReviewCandidates': True, 'canMeasurePhysicalGeometry': False,
+                    'sourceTruthClass': 'measured', 'candidateGeometryTruthClass': 'derived',
+                    'reviewRequired': True, 'reason': 'Source-locked four-band pixels verified for derived review only.'}
+        items_hash = None
+    else:
+        source_items = json.loads(args.source_items.read_text())
+        contract = source_registry.native_ortho_review_contract(
+            index, source_items, index_sha256=digest_path(args.native_index),
+        )
+        items_hash = digest_path(args.source_items)
     args.output.mkdir(parents=True, exist_ok=True)
     write_json(args.output / 'review-contract.json', {
         **contract,
         'packageHash': package.get('contentHash'),
         'nativeIndexSha256': digest_path(args.native_index),
-        'sourceItemsSha256': digest_path(args.source_items),
+        'sourceItemsSha256': items_hash,
         'rule': 'This review output never changes canonical geometry, route admission, or physical measurement authority.',
     })
     if not contract['canCreateReviewCandidates']:
@@ -354,8 +388,12 @@ def main():
         bounds = analysis_bounds(features, project, margin_units)
         paths = tile_paths(args.native_index, index, bounds)
         grid = bounded_grid(bounds, base_pixel, MAX_ANALYSIS_PIXELS)
-        rgb = crop_vrt(paths, 1, grid)
-        nir = crop_vrt(paths, 2, grid)
+        if is_naip:
+            data = crop_vrt(paths, 1, grid)
+            rgb, nir = data[:3], data[3:4]
+        else:
+            rgb = crop_vrt(paths, 1, grid)
+            nir = crop_vrt(paths, 2, grid)
         if rgb.shape[0] != 3 or nir.shape[0] != 1:
             raise ValueError(f'{hole.get("key")}: retained native tile bands do not match RGB+NIR contract')
         overlay = args.output / f'{hole["key"]}-native-overlay.png'
@@ -368,6 +406,7 @@ def main():
             'scanScope': {'route': 'non_canonical_visual_crop_aid' if has_route else 'feature_extent_only',
                           'rule': 'The crop scope cannot admit a route or support a distance measurement.'},
             'effectiveAnalysisGsdMeters': round(grid['analysisPixelUnits'] * meters_per_unit, 6),
+            'validImageryShareInCrop': round(float((np.any(rgb != 0, axis=0) | (nir[0] != 0)).mean()), 6),
             'downsampleFactor': grid['downsampleFactor'], 'nativeTiles': [key for key, _rgb, _nir in paths],
             'mappedBunkers': bunker_stats, 'derivedObservationCandidates': candidates,
             'largeSandLikeSceneConditions': scene_conditions, 'overlay': overlay.name,
@@ -378,8 +417,10 @@ def main():
         'schema': 'golfhelm-native-ortho-review-v1', 'packageHash': package.get('contentHash'),
         'sourceTruthClass': contract['sourceTruthClass'], 'candidateGeometryTruthClass': contract['candidateGeometryTruthClass'],
         'canMeasurePhysicalGeometry': False, 'reviewRequired': True,
-        'source': {'nativeGsdMeters': index.get('sourceGsdMeters'), 'indexSha256': digest_path(args.native_index),
-                   'sourceItemsSha256': digest_path(args.source_items)},
+        'source': {'nativeGsdMeters': index.get('sourceGsdMeters') or index.get('sourceResolutionMeters'),
+                   'indexSha256': digest_path(args.native_index), 'sourceItemsSha256': items_hash,
+                   'provider': 'USGS NAIP Plus' if is_naip else 'NC OneMap',
+                   'gridAlignment': 'reprojected_native_density' if is_naip else 'native_source_grid'},
         'method': {'sandBrightnessMin': SAND_BRIGHTNESS_MIN, 'sandNdviMax': SAND_NDVI_MAX,
                    'sandWarmthMin': SAND_WARMTH_MIN, 'maximumAnalysisPixels': MAX_ANALYSIS_PIXELS,
                    'maximumCandidateAreaM2': MAX_REVIEW_CANDIDATE_AREA_M2,

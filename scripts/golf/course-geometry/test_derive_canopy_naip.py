@@ -36,6 +36,21 @@ class GateTests(unittest.TestCase):
 
 
 class ClassifyTests(unittest.TestCase):
+    def test_texture_matches_original_std_including_reflected_edges(self):
+        from scipy import ndimage
+        source = np.random.default_rng(42).integers(0, 256, (80, 110)).astype(float)
+        expected = ndimage.generic_filter(source, np.std, size=7)
+        np.testing.assert_allclose(canopy.nir_texture(source), expected, atol=1e-9)
+
+    def test_morphology_never_fills_an_unknown_or_golf_surface_pixel(self):
+        ndvi = np.full((100, 100), .8)
+        texture = np.full((100, 100), 30.)
+        masked = np.zeros((100, 100), dtype=bool)
+        masked[40:60, 49] = True
+        found = canopy.classify(ndvi, texture, masked, .28)
+        self.assertFalse(found[masked].any())
+        self.assertTrue(found[30:40, 30:40].all())
+
     def synthetic(self, forest_ndvi):
         rng = np.random.default_rng(7)
         size = 120

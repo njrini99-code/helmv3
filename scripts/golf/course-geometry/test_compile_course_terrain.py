@@ -19,6 +19,55 @@ compiler = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(compiler)
 
 
+class TiledTerrainAcquisitionTests(unittest.TestCase):
+    def test_large_course_partitions_without_downsampling_or_gaps(self):
+        bounds = [100, 200, 3600, 3000]
+        windows = compiler.terrain_export_windows(bounds, 3500, 2800)
+        self.assertGreater(len(windows), 1)
+        self.assertEqual(sum(w['pixels'][0] * w['pixels'][1] for w in windows), 3500 * 2800)
+        self.assertTrue(compiler.unary_union([box(*w['bounds']) for w in windows]).equals(box(*bounds)))
+        for window in windows:
+            a, b, c, d = window['bounds']; width, height = window['pixels']
+            self.assertLessEqual(width * height, 8_000_000)
+            self.assertEqual([c-a, d-b], [width, height])
+        with self.assertRaisesRegex(ValueError, '32M'):
+            compiler.terrain_export_windows([0, 0, 9000, 9000], 9000, 9000)
+
+    def test_tile_mosaic_preserves_elevations_coordinates_and_source_requests(self):
+        from osgeo import gdal, osr
+        gdal.UseExceptions()
+        windows = [{'bounds': [100, 200, 103, 204], 'pixels': [3, 4]},
+                   {'bounds': [103, 200, 106, 204], 'pixels': [3, 4]}]
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp); payloads = {}
+            def request(operation, values):
+                self.assertEqual(operation, 'exportImage')
+                self.assertEqual(json.loads(values['mosaicRule'])['lockRasterIds'], [42, 43])
+                a, b, c, d = map(float, values['bbox'].split(','))
+                path = root / f'{int(a)}.tif'
+                ds = gdal.GetDriverByName('GTiff').Create(str(path), 3, 4, 1, gdal.GDT_Float32)
+                ds.SetGeoTransform((a, 1, 0, d, 0, -1))
+                sr = osr.SpatialReference(); sr.ImportFromEPSG(32617); ds.SetProjection(sr.ExportToWkt())
+                grid = np.asarray([[a + x + (d-y) / 10 for x in range(3)] for y in range(4)], dtype=np.float32)
+                ds.GetRasterBand(1).WriteArray(grid); ds = None
+                payloads[str(path)] = path.read_bytes()
+                return {'width': 3, 'height': 4, 'href': str(path),
+                        'extent': {'xmin': a, 'ymin': b, 'xmax': c, 'ymax': d}}
+            with patch.object(compiler, 'terrain_export_windows', return_value=windows), \
+                 patch.object(compiler.fetch, 'request', side_effect=request), \
+                 patch.object(compiler.fetch, 'read', side_effect=lambda href, limit: payloads[href]):
+                exported, raw, parts = compiler.export_usgs_grid(root, [100, 200, 106, 204], 6, 4, 32617, [42, 43])
+            result = root / 'result.tif'; result.write_bytes(raw)
+            ds = gdal.Open(str(result))
+            expected = np.asarray([[100 + x + (204-y) / 10 for x in range(6)] for y in range(4)], dtype=np.float32)
+            np.testing.assert_array_equal(ds.ReadAsArray(), expected)
+            self.assertEqual(ds.GetGeoTransform(), (100, 1, 0, 204, 0, -1))
+            self.assertEqual(len(parts), 2)
+            self.assertEqual(exported['assembly'], 'exact_aligned_grid_mosaic_no_resampling')
+            for row, part in zip(exported['parts'], parts):
+                self.assertEqual(row['sha256'], hashlib.sha256(part['raster']).hexdigest())
+
+
 class PlaneSource:
     manifest = {'selectedTitle': 'Analytic fixture', 'sourceUrl': 'https://example.invalid/source',
                 'selectedObjectId': 1, 'acquisitionStart': '2021-01-01', 'acquisitionEnd': '2021-01-01',
@@ -197,6 +246,27 @@ class TerrainCompilerTest(unittest.TestCase):
         grid = self.fine['metricGrid']
         self.assertAlmostEqual(grid['heightsM'][grid['columns']]-grid['heightsM'][0], .1*grid['spacingM'])
         self.assertAlmostEqual(grid['heightsM'][1]-grid['heightsM'][0], .05*grid['spacingM'])
+
+    def test_budget_discards_decorative_cuts_before_physical_detail(self):
+        args = fixture()
+        with patch.object(compiler, 'CONTEXT_MARGIN_M', 16):
+            decorated, full_report = compiler.compile_hole(*args, PlaneSource(), outer_step=32)
+            plain, plain_report = compiler.compile_hole(*args, PlaneSource(), outer_step=32, decorative_bands=False)
+            self.assertLess(plain_report['triangles'], full_report['triangles'])
+            with patch.object(compiler, 'MAX_TRIANGLES', plain_report['triangles']):
+                bounded, report = compiler.compile_hole(*args, PlaneSource(), outer_step=32)
+            self.assertEqual(report['triangles'], plain_report['triangles'])
+            self.assertFalse(bounded['renderProfile']['decorativeEdgeBands'])
+            self.assertEqual(bounded['metricGrid'], decorated['metricGrid'])
+            self.assertEqual(bounded['featureIds'], decorated['featureIds'])
+            self.assertEqual(bounded['source']['renderSamplingM'], decorated['source']['renderSamplingM'])
+            for actual, original in zip(report['features'], full_report['features']):
+                self.assertAlmostEqual(actual['areaM2'], original['areaM2'], places=3)
+            triangles = np.array(bounded['vertices']).reshape(-1, 3)
+            np.testing.assert_allclose(triangles[:, 2], 200+.05*triangles[:, 0]+.1*triangles[:, 1], atol=1e-3)
+            with patch.object(compiler, 'MAX_TRIANGLES', 1):
+                with self.assertRaisesRegex(ValueError, 'explicit LOD review required'):
+                    compiler.compile_hole(*args, PlaneSource(), outer_step=32)
 
     def test_per_vertex_source_normals_are_opt_in_because_the_renderer_shades_from_the_metric_grid(self):
         self.assertNotIn('sourceNormals', self.fine)

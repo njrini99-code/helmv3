@@ -52,7 +52,8 @@ Schema and validation: `scripts/golf/course-geometry/factory/catalog.py`
 `python3 scripts/golf/course-geometry/course-factory.py intake` writes C0
 entries from the usage cohort and the coverage audit.
 
-Today: 12 facilities, 16 layouts (see §7).
+Catalog snapshot, September 20: 19 facilities, 24 layouts. The historical
+coverage inventory in §7 is not a current completion count.
 
 ### 1.2 Factory — the build engine
 
@@ -118,7 +119,10 @@ has `canRender: true`, `canMeasure: false`, and
 footprints and visual-only vegetation, but it cannot provide a hole yardage,
 terrain measurement, slope, lie, shot constraint, or replay endpoint.
 
-Native terrain requests keep the provider's hard pixel cap. If an unresolved
+Native physical terrain keeps the per-request pixel cap and can partition a
+larger area into aligned native-resolution parts, with all source IDs, datum
+and part hashes retained and no resampling on merge (32-million-pixel total
+budget). If an unresolved
 facility is too large for one native provider request, the factory creates a
 different immutable `*-visual-r<N>m-v1` source record at the smallest
 source-aligned **derived** resolution that fits. That manifest records both
@@ -163,8 +167,9 @@ extraction and human review remain downstream gates.
 ### 1.2.3 Native imagery review candidates
 
 `review-native-ortho.py` is deliberately a review compiler rather than a
-geometry importer. It requires a complete native imagery index and a matching
-catalog-item provenance sidecar, reads the retained RGB/NIR GeoTIFFs in place,
+geometry importer. It requires either a complete NC imagery index and matching
+catalog-item sidecar, or a complete locked national v2 index with verified
+raster/metadata hashes. It reads the retained RGB/NIR GeoTIFFs in place,
 and emits per-hole overlays plus a candidate-observation sidecar. The raster
 source remains `measured`; every observation is `derived`,
 `review_required`, and cannot measure physical geometry. A candidate OSM route
@@ -176,6 +181,14 @@ retained only as `visual_only` scene conditions. The batch scheduler requires
 native provenance and a route candidate package, and never alters canonical
 geometry. Human approval plus feature-specific source validation is still the
 only route to physical admission.
+
+`batch-usgs-naip-facility-ortho.py` provides resumable national fallback imagery
+once per facility; NC retains its regional workflow. Exports lock the chosen
+catalog raster, preserve actual source density, and retain unknown pixels as
+unknown. `indexed_naip.py` then reuses those verified tiles offline for canopy,
+avoiding duplicate whole-course service requests. The derived canopy cache is
+keyed by pixel/provenance identity, independent of resume timestamps. These
+stages never admit physical geometry or claim independently reviewed trees.
 
 Rules the factory enforces: it never writes `src/`, `public/`, flags or a
 retained path; every executor writes under the output root; heavy tasks

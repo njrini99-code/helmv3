@@ -524,7 +524,11 @@ def derive_canopy(node, ctx, run):
     source = ctx.terrain_source_dir(layout_id)
     naip = ctx.naip_out(layout_id)
     out = ctx.canopy_out(layout_id)
-    run_script(ctx, run, node, 'scripts/golf/course-geometry/derive-canopy-naip.py', [ctx.candidates_package_path(layout_id), source, naip, out])
+    args = [ctx.candidates_package_path(layout_id), source, naip, out]
+    imagery = ctx.indexed_imagery(layout_id)
+    if imagery:
+        args += ['--imagery-index', imagery['path']]
+    run_script(ctx, run, node, 'scripts/golf/course-geometry/derive-canopy-naip.py', args)
     return [artifact('canopy-review', out, 'A'), artifact('naip-manifest', os.path.join(naip, 'manifest.json'), 'B'), artifact('naip-raster', os.path.join(naip, 'naip.tif'), 'B')]
 
 

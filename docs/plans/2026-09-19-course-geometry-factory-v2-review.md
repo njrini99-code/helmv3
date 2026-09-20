@@ -640,3 +640,52 @@ above (owner routing decision first).
 ## Not started
 
 PR C onward (see the boundary above). Publishing, flags and production binding stay owner-gated.
+
+## September 20 continuation — source-locked imagery and native terrain scale
+
+This continuation supersedes the earlier implementation-status snapshot above.
+The current catalog contains 19 facilities and 24 layouts. The source and
+rendering batches remain separate from physical admission and publishing.
+
+- National v2 acquisition now locks the actual source OBJECTID used for each
+  four-band GeoTIFF, verifies TIFF coordinates/bands/coverage, retains metadata
+  hashes, checkpoints per tile, and resumes interrupted runs. Equivalent source
+  sheets are tried deterministically with every rejected coverage attempt saved.
+  Failed temporary ArcGIS image URLs can use the documented direct stream with
+  the identical source lock, bands and native-density grid.
+- The facility batch preserves NC's six-inch regional workflow and provides the
+  public NAIP fallback elsewhere. Request sizes, concurrency and disk use are
+  bounded; the whole remaining source/preview footprint is checked before work
+  starts, in addition to the eight-GiB reserve checked during acquisition.
+- Native review overlays now accept both NC and verified national sources,
+  reporting actual analysis GSD. NIR cannot act as transparency, source gaps stay
+  excluded, and the processing grid is verified against the overlay coordinates.
+- Canopy classification can reuse the retained national tiles offline through
+  `indexed_naip.py`, with source identity in the factory fingerprint. Reports
+  say automated classification and pending review, never human approval or
+  measured tree/obstruction evidence. A fixed-seed 512×512 NIR benchmark measured
+  0.9923 s for the old standard-deviation filter and 0.00423 s for the vectorized
+  equivalent (maximum difference 1.12e-12); this is a local algorithm benchmark,
+  not mobile frame-rate evidence.
+- Large native terrain is fetched in aligned, source-locked parts and mosaicked
+  without resampling. Great Waters retained four requests from
+  `GA_Central_2019_B19`, with original part hashes. The project year does not prove
+  post-renovation terrain; the catalog records its official 2019 renovation and
+  keeps currentness review explicit.
+- Great Waters' official One-tee scorecard (6,836 yards, par 72) unlocked its
+  18-hole candidate package. All 18 Blender assets round-tripped with maximum
+  coordinate error 0.0001011 m. This checks export integrity, not real-world
+  accuracy. Its source-truth gate still requires feature uncertainty/registration
+  evidence and independent review.
+- Great Waters Hole 12 initially exceeded the unchanged 40,000-triangle display
+  cap. Omitting only illustrative material bands reduced it to 38,888 triangles,
+  preserving source boundaries, heights, tactical/detail spacing and the metric
+  grid. Tests also prove that a still-over-budget mesh rejects.
+
+Local evidence is retained under `output/course-geometry/factory/research/`:
+`naip-source-locked-batch-v2.json`, `native-imagery-review-batch-v2.json`,
+`great-waters-world-run-v4.json`, `all-courses-world-batch-v3.json`, and
+`canopy-texture-benchmark.json`. Batch reports are terminal only after their
+processes finish; per-facility indices are the resumable acquisition evidence.
+No source-candidate render is declared production-ready, and no production
+binding or flag was changed.

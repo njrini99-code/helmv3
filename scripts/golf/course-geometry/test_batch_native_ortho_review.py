@@ -10,6 +10,14 @@ SPEC.loader.exec_module(module)
 
 
 class BatchNativeOrthoReviewTests(unittest.TestCase):
+    def test_national_source_uses_embedded_provenance_without_forging_nc_sidecar(self):
+        jobs = module.build_jobs([{'facilityId': 'national'}],
+            {'national': {'nativeIndex': '/index.json', 'sourceItems': None, 'provider': 'usgs_naip_plus'}},
+            {'layout': {'facilityId': 'national', 'package': '/normalized.json'}}, Path('/out'))
+        self.assertEqual(jobs[0]['status'], 'ready_native_hole_review')
+        self.assertIsNone(jobs[0]['sourceItems'])
+        self.assertEqual(jobs[0]['provider'], 'usgs_naip_plus')
+
     def test_batches_only_complete_bound_native_sources_with_a_route_candidate_package(self):
         facilities = [
             {'facilityId': 'eligible'},

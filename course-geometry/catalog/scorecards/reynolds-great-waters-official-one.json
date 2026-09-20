@@ -1,0 +1,104 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "reynolds-great-waters-official-one",
+  "layoutId": "reynolds-lake-oconee-great-waters",
+  "teeName": "One",
+  "source": {
+    "provider": "official_course_site",
+    "url": "https://s3.us-east-2.amazonaws.com/reynoldsdotcomassets/resources/golf-course/Great-Waters-At-Reynolds-Lake-Oconee_Scorecard.pdf",
+    "retrievedAt": "2026-09-20",
+    "note": "Official One tees, 6836 yards / par 72, matched across downloadable scorecard and official hole tour. PDF SHA256 84a17937c3990bb67eb45c982216770f98b665b98094d1d329e559a62b3b9506; tour SHA256 83e7b8ff0bf19cf48996c3955888f6758f230ce8d0a6317fdcca2b50c317a115. Publication date unspecified; yardages are scorecard values, not surveyed daily tee-marker or pin coordinates."
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 4,
+      "yards": 387
+    },
+    {
+      "hole": 2,
+      "par": 5,
+      "yards": 498
+    },
+    {
+      "hole": 3,
+      "par": 4,
+      "yards": 407
+    },
+    {
+      "hole": 4,
+      "par": 3,
+      "yards": 178
+    },
+    {
+      "hole": 5,
+      "par": 4,
+      "yards": 413
+    },
+    {
+      "hole": 6,
+      "par": 5,
+      "yards": 525
+    },
+    {
+      "hole": 7,
+      "par": 4,
+      "yards": 463
+    },
+    {
+      "hole": 8,
+      "par": 3,
+      "yards": 207
+    },
+    {
+      "hole": 9,
+      "par": 4,
+      "yards": 370
+    },
+    {
+      "hole": 10,
+      "par": 4,
+      "yards": 405
+    },
+    {
+      "hole": 11,
+      "par": 4,
+      "yards": 325
+    },
+    {
+      "hole": 12,
+      "par": 5,
+      "yards": 555
+    },
+    {
+      "hole": 13,
+      "par": 4,
+      "yards": 414
+    },
+    {
+      "hole": 14,
+      "par": 3,
+      "yards": 175
+    },
+    {
+      "hole": 15,
+      "par": 4,
+      "yards": 405
+    },
+    {
+      "hole": 16,
+      "par": 4,
+      "yards": 454
+    },
+    {
+      "hole": 17,
+      "par": 3,
+      "yards": 160
+    },
+    {
+      "hole": 18,
+      "par": 5,
+      "yards": 495
+    }
+  ]
+}

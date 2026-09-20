@@ -4,6 +4,7 @@
   "name": "Great Waters",
   "country": "US",
   "region": "GA",
+  "knownRenovationAfter": "2019-12-31",
   "originWgs84": [
     -83.2333854,
     33.3930212
@@ -32,6 +33,7 @@
   },
   "notes": [
     "Intake from the 2026-09-20T12:43:48.457Z usage cohort and the library coverage audit (2026-09-18); origin is the OSM course centre until the build pins it from the AOI.",
-    "Coverage audit: h18 g19 f21 b51 t57 inside the course polygon; DEM tiles named: 2; verdict ready."
+    "Coverage audit: h18 g19 f21 b51 t57 inside the course polygon; DEM tiles named: 2; verdict ready.",
+    "Official course page https://www.reynoldslakeoconee.com/life/golf/great-waters reports a full renovation in 2019 (verified 2026-09-20). The year-end freshness boundary is conservative, not an asserted renovation day. The retained GA_Central_2019_B19 terrain still requires acquisition-date/currentness review; a 2019 project name alone does not prove post-renovation terrain."
   ]
 }

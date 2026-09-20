@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Plan or run source-backed per-hole review overlays from retained NC imagery.
+"""Plan or run source-backed per-hole review overlays from retained imagery.
 
 The batch has no downloader and no canonical-geometry writer. It only invokes
 ``review-native-ortho.py`` after both native RGB+NIR and tile-level source
@@ -25,6 +25,9 @@ SPEC = importlib.util.spec_from_file_location('golfhelm_source_registry', HERE /
 source_registry = importlib.util.module_from_spec(SPEC)
 assert SPEC and SPEC.loader
 SPEC.loader.exec_module(source_registry)
+NAIP_SPEC = importlib.util.spec_from_file_location('naip_ortho', HERE / 'fetch-usgs-naip-facility-ortho.py')
+naip_ortho = importlib.util.module_from_spec(NAIP_SPEC)
+NAIP_SPEC.loader.exec_module(naip_ortho)
 
 
 def write_json(path, document):
@@ -53,6 +56,9 @@ def index_hash(path):
 def native_assets(factory_root, facility_id):
     native_index = Path(factory_root) / 'facilities' / facility_id / 'native-ortho-nir-v2' / 'index.json'
     if not native_index.is_file():
+        naip_index = native_index.parent.parent / 'naip-plus-locked-v2' / 'index.json'
+        if naip_index.is_file():
+            return {'nativeIndex': str(naip_index), 'sourceItems': None, 'provider': 'usgs_naip_plus'}
         return {'nativeIndex': None, 'sourceItems': None}
     wanted_hash = index_hash(native_index)
     sidecars = sorted(native_index.parent.parent.glob('native-ortho-nir-v2-source-items-v*/source-items.json'))
@@ -72,7 +78,7 @@ def build_jobs(facilities, assets, packages, output_root):
         facility_id = facility['facilityId']
         asset = assets.get(facility_id) or {'nativeIndex': None, 'sourceItems': None}
         layouts = [(layout_id, package) for layout_id, package in sorted(packages.items()) if package['facilityId'] == facility_id]
-        if not asset.get('nativeIndex') or not asset.get('sourceItems'):
+        if not asset.get('nativeIndex') or (not asset.get('sourceItems') and asset.get('provider') != 'usgs_naip_plus'):
             jobs.append({'facilityId': facility_id, 'status': 'native_source_provenance_required',
                          'reason': 'Complete native RGB+NIR imagery and a matching source-item sidecar are required.'})
             continue
@@ -84,7 +90,8 @@ def build_jobs(facilities, assets, packages, output_root):
             jobs.append({
                 'facilityId': facility_id, 'layoutId': layout_id, 'package': package['package'],
                 'nativeIndex': asset['nativeIndex'], 'sourceItems': asset['sourceItems'],
-                'output': str(Path(output_root) / 'layouts' / layout_id / 'native-imagery-review-v1'),
+                'provider': asset.get('provider', 'nc_onemap'),
+                'output': str(Path(output_root) / 'layouts' / layout_id / 'native-imagery-review-v2'),
                 'status': 'ready_native_hole_review', 'execute': False,
             })
     return jobs
@@ -92,6 +99,12 @@ def build_jobs(facilities, assets, packages, output_root):
 
 def source_contract(job):
     index = json.loads(Path(job['nativeIndex']).read_text())
+    if job.get('provider') == 'usgs_naip_plus':
+        try:
+            naip_ortho.validate_index(job['nativeIndex'])
+        except (ValueError, OSError, KeyError, RuntimeError) as error:
+            return {'canCreateReviewCandidates': False, 'reason': str(error)}
+        return {'canCreateReviewCandidates': True, 'canMeasurePhysicalGeometry': False}
     sidecar = json.loads(Path(job['sourceItems']).read_text())
     return source_registry.native_ortho_review_contract(
         index, sidecar, index_sha256=index_hash(job['nativeIndex']),
@@ -107,7 +120,8 @@ def run_jobs(plan, report):
             job.update(status='native_source_provenance_required', reason=contract['reason'])
             write_json(report, plan)
             continue
-        command = [sys.executable, str(HERE / 'review-native-ortho.py'), job['package'], job['nativeIndex'], job['sourceItems'], job['output']]
+        command = [sys.executable, str(HERE / 'review-native-ortho.py'), job['package'], job['nativeIndex'], job['sourceItems'] or '-', job['output']]
+        print(json.dumps({'layout': job['layoutId'], 'status': 'review_started', 'provider': job['provider']}), flush=True)
         result = subprocess.run(command, cwd=HERE.parents[2], text=True, capture_output=True)
         job['command'] = command
         job['stdoutTail'] = result.stdout[-2000:]
@@ -115,10 +129,12 @@ def run_jobs(plan, report):
         if result.returncode == 0:
             observations = json.loads((Path(job['output']) / 'candidate-observations.json').read_text())
             job.update(status='native_hole_review_complete', holes=len(observations.get('holes') or []),
-                       reviewRequired=observations.get('reviewRequired'))
+                       overlays=sum(row.get('status') == 'review_candidate_ready' for row in observations.get('holes') or []),
+                       source=observations.get('source'), reviewRequired=observations.get('reviewRequired'))
         else:
             job.update(status='native_hole_review_failed', returncode=result.returncode)
         write_json(report, plan)
+        print(json.dumps({'layout': job['layoutId'], 'status': job['status']}), flush=True)
     return plan
 
 

@@ -83,7 +83,7 @@ def class_median(values, mask):
     return round(float(np.median(values[mask])), 3) if int(mask.sum()) >= MIN_SAMPLE_PX else None
 
 
-def calibrate(ndvi, pkg, to_pixel, size):
+def calibrate(ndvi, pkg, to_pixel, size, valid=None):
     """Sample NDVI inside the package's OSM fairways and choose the gate.
     Everything sampled is recorded in the review's method."""
     image = Image.new('L', size, 0)
@@ -92,6 +92,8 @@ def calibrate(ndvi, pkg, to_pixel, size):
         if feature['kind'] == 'fairway' and feature['geometryWgs84']['type'] == 'Polygon':
             draw.polygon([to_pixel(*p) for p in feature['geometryWgs84']['coordinates'][0]], fill=255)
     mask = np.array(image) > 0
+    if valid is not None:
+        mask &= valid
     turf = class_median(ndvi, mask)
     ndvi_min, rule = calibrated_ndvi_min(turf)
     return {'ndviMin': ndvi_min, 'rule': rule, 'ceiling': NDVI_MIN, 'floor': NDVI_MIN_FLOOR, 'turfGap': TURF_NDVI_GAP,
@@ -103,9 +105,18 @@ def classify(ndvi, texture, masked, ndvi_min):
     canopy = (ndvi > ndvi_min) & (texture > TEXTURE_MIN) & ~masked
     canopy = ndimage.binary_opening(canopy, structure=np.ones((3, 3)))
     canopy = ndimage.binary_closing(canopy, structure=np.ones((5, 5)))
+    canopy &= ~masked
     labels, count = ndimage.label(canopy)
     sizes = ndimage.sum(canopy, labels, range(1, count + 1))
     return np.isin(labels, np.nonzero(sizes >= MIN_GROUP_M2 * .625)[0] + 1)
+
+
+def nir_texture(nir):
+    """Same population std/reflect boundary as generic_filter, in linear time."""
+    values = np.asarray(nir, dtype=np.float64)
+    mean = ndimage.uniform_filter(values, size=7, mode='reflect')
+    variance = ndimage.uniform_filter(values * values, size=7, mode='reflect') - mean * mean
+    return np.sqrt(np.maximum(variance, 0))
 
 
 def read(url, limit):
@@ -178,16 +189,22 @@ def main():
     parser.add_argument('terrain_source', type=Path)
     parser.add_argument('naip_directory', type=Path)
     parser.add_argument('output', type=Path)
+    parser.add_argument('--imagery-index', type=Path)
     args = parser.parse_args()
 
     pkg = json.loads(args.package.read_text())
     export = json.loads((args.terrain_source / 'export.json').read_text())
     extent, width, height = export['extent'], export['width'], export['height']
-    manifest = acquire(args.naip_directory, extent, (width, height))
+    if args.imagery_index:
+        import indexed_naip
+        manifest = indexed_naip.acquire(args.imagery_index, args.naip_directory, extent, (width, height), course_crs.export_epsg(export))
+    else:
+        manifest = acquire(args.naip_directory, extent, (width, height))
     bands = gdal.Open(str(args.naip_directory / 'naip.tif')).ReadAsArray().astype(float)
+    valid = np.any(bands != 0, axis=0)
     red, nir = bands[0], bands[3]
     ndvi = (nir - red) / (nir + red + 1e-6)
-    texture = ndimage.generic_filter(nir, np.std, size=7)
+    texture = nir_texture(nir)
 
     # The terrain export's CRS, whichever zone it was cut in.
     crs = course_crs.export_epsg(export)
@@ -213,8 +230,11 @@ def main():
         shapes[feature['id']] = Polygon([project.transform(*p) for p in geometry['coordinates'][0]])
         draw.polygon([to_pixel(*p) for p in geometry['coordinates'][0]], fill=255)
     masked = ndimage.binary_dilation(np.array(surface) > 0, iterations=SURFACE_BUFFER_PX)
+    # Exclude the entire texture neighborhood of unknown pixels as well as
+    # the pixels themselves: a no-data edge cannot become a tree candidate.
+    masked |= ndimage.binary_dilation(~valid, iterations=3)
 
-    calibration = calibrate(ndvi, pkg, to_pixel, (width, height))
+    calibration = calibrate(ndvi, pkg, to_pixel, (width, height), valid)
     canopy = classify(ndvi, texture, masked, calibration['ndviMin'])
 
     transform = (extent['xmin'], px_x, 0, extent['ymax'], 0, -px_y)
@@ -250,15 +270,17 @@ def main():
         'source': manifest['provider'], 'sourceUrl': manifest['service'], 'catalogTiles': manifest['catalogTiles'],
         'capturedAt': manifest['captureDates'], 'nativeResolutionM': manifest['nativeResolutionM'],
         'rasterSha256': manifest['rasterSha256'], 'retrievedAt': manifest['retrievedAt'], 'license': manifest['license'],
+        'sourceIdentity': manifest.get('sourceIdentity'), 'truthClass': 'derived',
+        'reviewStatus': 'review_required', 'canMeasurePhysicalGeometry': False,
         'method': {'ndviMin': calibration['ndviMin'], 'ndviCalibration': calibration, 'nirTextureStdMin': TEXTURE_MIN, 'textureWindowPx': 7, 'surfaceBufferPx': SURFACE_BUFFER_PX,
                    'morphology': 'open 3x3, close 5x5', 'vectorClosingM': 6, 'vectorOpeningM': 2, 'minGroupM2': MIN_GROUP_M2, 'simplifyM': 2.0,
                    'contextMarginM': CONTEXT_MARGIN_M},
         'reviewedAt': datetime.now(timezone.utc).date().isoformat(),
-        'reviewer': 'Claude visual comparison of the classification against the same NAIP export; independent course review pending',
+        'reviewer': 'Automated spectral classification; independent course review pending',
         'meaning': 'Approximate canopy groups classified from leaf-on NAIP by NIR texture and NDVI, masked away from every OSM golf surface. '
                    'Group interiors bound crown artwork only; crown glyphs are illustrative, not surveyed trees. '
                    'No currentness, height or obstruction claim.',
-        'stats': {'canopyShareOfExport': round(float(canopy.mean()), 4), 'groups': len(regions)},
+        'stats': {'canopyShareOfExport': round(float(canopy.mean()), 4), 'validImageryShare': float(valid.mean()), 'groups': len(regions)},
         'regions': regions,
     }
     args.output.write_text(json.dumps(review, indent=2, ensure_ascii=False) + '\n')

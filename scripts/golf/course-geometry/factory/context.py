@@ -13,6 +13,7 @@ from .fingerprints import (
     files_digest,
     package_subhashes,
     terrain_source_identity,
+    native_imagery_identity,
 )
 
 SCRIPTS_DIR = 'scripts/golf/course-geometry'
@@ -251,12 +252,25 @@ class Context:
         assets = self.json(os.path.join(compiled_dir, 'asset-manifest.json')) or {}
         return assets.get('sourceManifestHash') == digest(current)
 
+    def indexed_imagery(self, layout_id):
+        facility = (self.layout(layout_id) or {}).get('facilityId')
+        path = os.path.join(self.facility_out(facility), 'naip-plus-locked-v2', 'index.json')
+        index = self.json(path)
+        if (index and index.get('schema') == 'golfhelm-facility-usgs-naip-plus-index-v2'
+                and index.get('complete') is True and index.get('facilityId') == facility):
+            # Executor checks every source byte. Planning reads only the
+            # content/provenance identity, keeping the all-course DAG cheap.
+            return {'path': path, 'identity': native_imagery_identity(index)}
+        return None
+
     def naip_out(self, layout_id):
         """The NAIP export keyed like the terrain source it was cut to."""
         source = self.terrain_source_dir(layout_id)
         if not source:
             return None
-        return os.path.join(self.facility_out((self.layout(layout_id) or {}).get('facilityId')), 'naip', os.path.basename(os.path.normpath(source)))
+        imagery = self.indexed_imagery(layout_id)
+        suffix = '-locked-' + imagery['identity'][:16] if imagery else ''
+        return os.path.join(self.facility_out((self.layout(layout_id) or {}).get('facilityId')), 'naip', os.path.basename(os.path.normpath(source)) + suffix)
 
     def naip_dir(self, layout_id):
         retained = self.retained(self.facility((self.layout(layout_id) or {}).get('facilityId')), 'naip')

@@ -17,6 +17,7 @@ import math
 import re
 import subprocess
 import sys
+import tempfile
 import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
@@ -330,7 +331,7 @@ def existing_source_manifest(directory, pkg, bounds, rendering_only=False):
             raise ValueError('Immutable source cache belongs to another context; choose a new directory')
         if bool(manifest.get('renderingOnly')) != bool(rendering_only):
             raise ValueError('Immutable source cache has a different physical/render-only contract; choose a new directory')
-        for name in names[:-1]:
+        for name in manifest['fileHashes']:
             if hashlib.sha256((directory/name).read_bytes()).hexdigest() != manifest['fileHashes'][name]:
                 raise ValueError('Immutable source cache hash mismatch: ' + name)
         if manifest['packageHash'] != pkg['contentHash']:
@@ -374,6 +375,88 @@ def usgs_rendering_only_grid_size(width_m, height_m, resolution_m):
     if width <= 1 or height <= 1 or width * height > 8_000_000 or max(width, height) > 8000:
         raise ValueError('Bounded course render-only export exceeds the fixed 8M pixel cap')
     return [width, height]
+
+
+def terrain_export_windows(bounds, width, height):
+    """Partition one grid without changing resolution, origin or request caps."""
+    if min(width, height) < 1 or width * height > 32_000_000 or max(width, height) > 16000:
+        raise ValueError('Terrain acquisition exceeds the bounded 32M-pixel tiled-work budget')
+    a, b, c, d = bounds
+    xstep, ystep = (c - a) / width, (d - b) / height
+    if width * height <= 8_000_000 and max(width, height) <= 8000:
+        return [{'bounds': list(bounds), 'pixels': [width, height]}]
+    edge = 2000
+    return [{'bounds': [a + x * xstep, b + y * ystep,
+                         a + min(x + edge, width) * xstep, b + min(y + edge, height) * ystep],
+             'pixels': [min(edge, width - x), min(edge, height - y)]}
+            for y in range(0, height, edge) for x in range(0, width, edge)]
+
+
+def export_usgs_grid(directory, bounds, width, height, crs, object_ids):
+    """Retain original locked exports and stitch their exact pixel grid.
+
+    The 8M-pixel/40MB per-request limits remain unchanged. Large layouts use
+    several smaller exports from the same admitted project and datum. The
+    mosaic has no extra interpolation or invented values.
+    """
+    windows = terrain_export_windows(bounds, width, height)
+    parts = []
+    for number, window in enumerate(windows):
+        a, b, c, d = window['bounds']
+        w, h = window['pixels']
+        request = {'bbox': f'{a},{b},{c},{d}', 'bboxSR': crs, 'imageSR': crs,
+                   'size': f'{w},{h}', 'format': 'tiff', 'pixelType': 'F32',
+                   'interpolation': 'RSP_BilinearInterpolation', 'adjustAspectRatio': 'false',
+                   'renderingRule': json.dumps({'rasterFunction': 'None'}),
+                   'mosaicRule': json.dumps({'mosaicMethod': 'esriMosaicLockRaster', 'lockRasterIds': object_ids})}
+        exported = fetch.request('exportImage', request)
+        if (exported.get('width'), exported.get('height')) != (w, h):
+            raise ValueError('Export dimensions changed; source resampling requires review')
+        extent = exported.get('extent') or {}
+        if any(not math.isclose(float(extent.get(key, math.nan)), value, abs_tol=1e-6, rel_tol=0)
+               for key, value in zip(('xmin', 'ymin', 'xmax', 'ymax'), window['bounds'])):
+            raise ValueError('Terrain tile export changed the requested grid extent')
+        raw = fetch.read(exported['href'], 40_000_000)
+        parts.append({'name': f'source-part-{number:03d}.tiff', 'raster': raw,
+                      'export': {**exported, 'request': request}})
+    if len(parts) == 1:
+        return parts[0]['export'], parts[0]['raster'], []
+    from osgeo import gdal
+    gdal.UseExceptions()
+    with tempfile.TemporaryDirectory(prefix='.terrain-exports-', dir=directory) as tmp:
+        root = Path(tmp)
+        paths = []
+        for part, window in zip(parts, windows):
+            path = root / part['name']; path.write_bytes(part['raster']); paths.append(str(path))
+            ds = gdal.Open(str(path))
+            if ds.RasterCount != 1 or [ds.RasterXSize, ds.RasterYSize] != window['pixels']:
+                raise ValueError('Terrain tile TIFF has the wrong pixel grid')
+            if not pyproj.CRS.from_wkt(ds.GetProjectionRef()).equals(pyproj.CRS.from_epsg(crs)):
+                raise ValueError('Terrain tile TIFF CRS differs from its locked request')
+            west, south, east, north = window['bounds']; w, h = window['pixels']
+            expected = [west, (east - west) / w, 0, north, 0, -(north - south) / h]
+            if not np.allclose(ds.GetGeoTransform(), expected, atol=1e-7, rtol=0):
+                raise ValueError('Terrain tile TIFF grid differs from its locked request')
+            ds = None
+            values, _nodata, _decoder = elevation_raster.read_elevation(path)
+            if elevation_raster.empty_fraction(values) > MAX_EMPTY_EXPORT_FRACTION:
+                raise ValueError('A locked terrain tile contains unsupported empty fill')
+        vrt = gdal.BuildVRT(str(root / 'mosaic.vrt'), paths)
+        merged = gdal.Translate(str(root / 'mosaic.tiff'), vrt,
+                                creationOptions=['COMPRESS=DEFLATE', 'PREDICTOR=3', 'TILED=YES'])
+        if [merged.RasterXSize, merged.RasterYSize] != [width, height]:
+            raise ValueError('Terrain mosaic did not preserve the original grid dimensions')
+        expected = [bounds[0], (bounds[2] - bounds[0]) / width, 0, bounds[3], 0, -(bounds[3] - bounds[1]) / height]
+        if not np.allclose(merged.GetGeoTransform(), expected, atol=1e-7, rtol=0):
+            raise ValueError('Terrain mosaic grid changed during assembly')
+        merged = vrt = None
+        raster = (root / 'mosaic.tiff').read_bytes()
+    document = {'width': width, 'height': height,
+                'extent': dict(zip(('xmin', 'ymin', 'xmax', 'ymax'), bounds), spatialReference={'wkid': crs}),
+                'assembly': 'exact_aligned_grid_mosaic_no_resampling',
+                'parts': [{'file': part['name'], 'sha256': hashlib.sha256(part['raster']).hexdigest(),
+                           **part['export']} for part in parts]}
+    return document, raster, parts
 
 
 def acquire_usgs_source(directory, pkg, bounds, rendering_only_resolution_m=None):
@@ -431,8 +514,7 @@ def acquire_usgs_source(directory, pkg, bounds, rendering_only_resolution_m=None
     native_width, native_height = int(c-a), int(d-b)
     if rendering_only_resolution_m is None:
         width, height = native_width, native_height
-        if width*height > 8_000_000 or max(width, height) > 8000:
-            raise ValueError('Bounded course export exceeds the fixed 8M pixel cap')
+        terrain_export_windows([a, b, c, d], width, height)
     else:
         width, height = usgs_rendering_only_grid_size(native_width, native_height, rendering_only_resolution_m)
     inverse = pyproj.Transformer.from_crs(crs, 4326, always_xy=True)
@@ -448,10 +530,13 @@ def acquire_usgs_source(directory, pkg, bounds, rendering_only_resolution_m=None
         if lower_resolution_visual_fallback and rendering_only_resolution_m < source_native_resolution_m:
             raise ValueError('Render-only request would magnify the lower-resolution source grid')
         object_ids = [row['attributes']['OBJECTID'] for row in tiles]
-        exported = fetch.request('exportImage', {'bbox': f'{a},{b},{c},{d}', 'bboxSR': crs, 'imageSR': crs,
-            'size': f'{width},{height}', 'format': 'tiff', 'pixelType': 'F32', 'interpolation': 'RSP_BilinearInterpolation',
-            'renderingRule': json.dumps({'rasterFunction': 'None'}),
-            'mosaicRule': json.dumps({'mosaicMethod': 'esriMosaicLockRaster', 'lockRasterIds': object_ids})})
+        try:
+            exported, raster, source_parts = export_usgs_grid(directory, [a, b, c, d], width, height, crs, object_ids)
+        except ValueError as error:
+            if 'unsupported empty fill' not in str(error):
+                raise
+            rejected.append({'title': attrs['title'], 'objectIds': object_ids, 'reason': str(error)})
+            continue
         if (exported['width'], exported['height']) != (width, height):
             raise ValueError('Export dimensions changed; source resampling requires review')
         ex = exported['extent']
@@ -460,7 +545,6 @@ def acquire_usgs_source(directory, pkg, bounds, rendering_only_resolution_m=None
         footprint = unary_union([Polygon(row['geometry']['rings'][0], row['geometry']['rings'][1:]) for row in tiles])
         if not footprint.covers(Polygon(zip(elon, elat))):
             raise ValueError('Returned export exceeds the selected tile footprint')
-        raster = fetch.read(exported['href'], 40_000_000)
         scratch = directory/'elevation.tiff'
         scratch.write_bytes(raster)
         decoded, _nodata, decoder = elevation_raster.read_elevation(scratch)
@@ -480,6 +564,8 @@ def acquire_usgs_source(directory, pkg, bounds, rendering_only_resolution_m=None
                     sourceProjection=f'EPSG:{crs}', requestedLocalBoundsM=bounds)
     write_json(directory/'catalog.json', catalog, True)
     write_json(directory/'export.json', exported, True)
+    for part in source_parts:
+        (directory / part['name']).write_bytes(part['raster'])
     title = attrs['title'] if len(tiles) == 1 else f"{attrs['title']} (+{len(tiles) - 1} adjacent {tile_project(attrs['title'])} tile{'s' if len(tiles) > 2 else ''})"
     manifest = {'schemaVersion': 1, 'providerPolicyId': USGS_3DEP_PROVIDER, 'packageHash': pkg['contentHash'], 'requestedLocalBoundsM': bounds,
                 'selectedTitle': title, 'selectedObjectId': attrs['OBJECTID'], 'selectedObjectIds': object_ids,
@@ -498,7 +584,9 @@ def acquire_usgs_source(directory, pkg, bounds, rendering_only_resolution_m=None
                 'coverageMethod': SOURCE_COVERAGE_METHOD, 'coveragePaddingMeters': SOURCE_COVERAGE_PADDING_METERS,
                 'exportEmptyFraction': empty, 'decoder': decoder, 'rejectedCandidates': rejected,
                 'licenseUrl': 'https://www.usgs.gov/3d-elevation-program/about-3dep-products-services',
-                'fileHashes': {name: hashlib.sha256((directory/name).read_bytes()).hexdigest() for name in names[:-1]}}
+                'exportRequestCount': max(1, len(source_parts)),
+                'fileHashes': {name: hashlib.sha256((directory/name).read_bytes()).hexdigest()
+                               for name in [*names[:-1], *(part['name'] for part in source_parts)]}}
     write_json(directory/'source-manifest.json', manifest, True)
     print(json.dumps({'source': title, 'pixels': [width, height], 'bytes': len(raster)}), flush=True)
     return manifest
@@ -906,7 +994,7 @@ def t_junction_report(xy, bounds):
 
 
 def compile_hole(hole, pkg, raw_shapes, raw_features, displays, outline_reports, source, outer_step=16, ribbons=None,
-                 source_normals=False):
+                 source_normals=False, decorative_bands=True):
     """course-terrain-v4: the per-vertex `sourceNormals` array is opt-in. The
     renderer shades every fragment from the metric grid's slope (the same
     DEM gradient, sampled per pixel), so the array only duplicated 37 % of
@@ -948,10 +1036,10 @@ def compile_hole(hole, pkg, raw_shapes, raw_features, displays, outline_reports,
         feature_index = len(ids)
         ids.append(ident); kinds.append(kind)
         regions = [(0, shape)]
-        if kind == 'ground':
+        if kind == 'ground' and decorative_bands:
             regions = [(0, shape.difference(surround).difference(collar)), (3, shape.intersection(surround).difference(collar)), (4, shape.intersection(collar))]
         widths = {'green': (.2, .35), 'bunker': (.2, .35)}
-        if kind in widths and ident in hole['featureIds']:
+        if kind in widths and ident in hole['featureIds'] and decorative_bands:
             edge, light = widths[kind]
             inset, interior = shape.buffer(-edge, quad_segs=2), shape.buffer(-edge-light, quad_segs=2)
             regions = [(1, shape.difference(inset)), (2, inset.difference(interior)), (0, interior)]
@@ -1003,7 +1091,12 @@ def compile_hole(hole, pkg, raw_shapes, raw_features, displays, outline_reports,
                         'rendererContextOnly': ident not in hole['featureIds'] and ident != 'terrain-context'})
     if len(triangle_features) > MAX_TRIANGLES:
         if outer_step == 16:
-            return compile_hole(hole, pkg, raw_shapes, raw_features, displays, outline_reports, source, 32, ribbons, source_normals)
+            return compile_hole(hole, pkg, raw_shapes, raw_features, displays, outline_reports, source, 32, ribbons, source_normals, decorative_bands)
+        if decorative_bands:
+            # Drop only illustrative material subdivisions before considering
+            # less terrain detail. Canonical boundaries, source heights, the
+            # metric grid and tactical/detail spacing remain unchanged.
+            return compile_hole(hole, pkg, raw_shapes, raw_features, displays, outline_reports, source, outer_step, ribbons, source_normals, False)
         raise ValueError(f'{hole["key"]}: {len(triangle_features)} triangles exceeds {MAX_TRIANGLES}; explicit LOD review required')
     unique = np.array(sorted(set(xy)), dtype=float)
     heights = source.sample(unique[:, 0], unique[:, 1])
@@ -1045,6 +1138,7 @@ def compile_hole(hole, pkg, raw_shapes, raw_features, displays, outline_reports,
     if omitted or not np.isfinite(grid_values).all():
         limitations.append('Source nodata remains unknown; unsupported triangles omitted')
     profile = {'compilerVersion': COMPILER_VERSION, 'styleVersion': STYLE_VERSION,
+               'decorativeEdgeBands': decorative_bands,
                'tacticalBoundsM': tactical_bounds, 'contextBoundsM': context_bounds, 'terrainAvailable': True,
                'contextCoverage': 'partial' if omitted or not np.isfinite(grid_values).all() else 'complete',
                'teeGeometry': 'approximate' if tee else 'missing', 'treeEvidence': 'canopy_only' if own_canopy else 'none',
