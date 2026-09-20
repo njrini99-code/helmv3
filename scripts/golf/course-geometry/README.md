@@ -87,14 +87,14 @@ nonzero after persisting its evidence.
 Compile and validate locally with the free Blender toolchain:
 
 ```sh
-blender --background --python scripts/golf/course-geometry/blender/generate_hole.py -- \
+blender --background --python-exit-code 1 --python scripts/golf/course-geometry/blender/generate_hole.py -- \
   output/course-geometry/cardinal-spike-v1/physical/world.json \
   output/course-geometry/cardinal-lidar-native-v1/elevation.tiff \
   output/course-geometry/cardinal-spike-v1/rendering/cardinal-green-study.glb \
   output/course-geometry/cardinal-spike-v1/validation/blender-export.json \
   output/course-geometry/cardinal-spike-v1/rendering/cardinal-green-study-preview.png
 
-blender --background --python scripts/golf/course-geometry/blender/validate_glb.py -- \
+blender --background --python-exit-code 1 --python scripts/golf/course-geometry/blender/validate_glb.py -- \
   output/course-geometry/cardinal-spike-v1/physical/world.json \
   output/course-geometry/cardinal-spike-v1/rendering/cardinal-green-study.glb \
   output/course-geometry/cardinal-spike-v1/validation/glb-roundtrip.json
@@ -134,6 +134,21 @@ as unknown. It is valid for a clearly labelled source-candidate visual build;
 it cannot make terrain, bunker depth, or green-break measurements authoritative
 or clear a publication gate. `usgs_s1m` remains discovery-only until its
 registration and acceptance rule are approved.
+
+Every current terrain source uses `coverageMethod: perimeter-v1`: the compiler
+samples each edge of the requested local-ENU bounds before projecting to the
+provider CRS, then requests an eight-metre source guard. This prevents curved
+projected edges from excluding a valid source polygon. Legacy four-corner
+raster caches are preserved rather than edited, but the factory does not adopt
+their derived terrain, canopy, context, world, or capture outputs. A route-
+unresolved layout can still build a facility visual context package and GLB;
+its `renderingContract` is `canRender: true`, `canMeasure: false`, and
+`maySupplyHoleAssociation: false`, so it can never act as a playable hole.
+If that facility cannot fit the NC provider's fixed native-pixel cap, the
+factory retains a separate `*-visual-r<N>m-v1` raster. It records the original
+`sourceNativeResolutionM`, its coarser actual raster resolution, and
+`renderingOnly: true`; downstream terrain uses `truthClass: visual_only` and
+may not provide elevation, slope, route, lie, or shot evidence.
 
 ## Whole-course build (Peek'n Peak Upper)
 

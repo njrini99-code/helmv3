@@ -122,6 +122,8 @@ class FakePipeline:
         return {
             'facility.aoi.resolve': self.aoi, 'facility.osm.snapshot': self.osm, 'facility.context.snapshot': self.context_snapshot,
             'layout.routes.resolve': self.routes, 'layout.route.dossier': self.route_dossier, 'layout.scorecard.compose': self.scorecard, 'layout.candidates.compose': self.candidates,
+            'layout.visual.candidates.compose': self.visual_candidates, 'layout.visual.terrain.acquire': self.visual_terrain,
+            'layout.visual.world.build': self.visual_world,
             'layout.terrain.acquire': self.terrain, 'layout.canopy.derive': self.canopy, 'layout.package.compose': self.package,
             'layout.package.validate': self.package_validate, 'layout.terrain.base': self.terrain_base, 'layout.imagery.audit': self.imagery,
             'layout.context.classify': self.context, 'hole.terrain.compile': self.hole_terrain, 'hole.world.build': self.hole_world,
@@ -173,6 +175,66 @@ class FakePipeline:
         from factory.adapters import write_route_dossier
         return write_route_dossier(node, ctx, run)
 
+    def visual_candidates(self, node, ctx, run):
+        self._mark(node)
+        from factory.adapters import compose_visual_candidates
+        return compose_visual_candidates(node, ctx, run)
+
+    def visual_terrain(self, node, ctx, run):
+        self._mark(node)
+        layout_id = node.scope.layout_id
+        if (ctx.visual_candidate_pointer(layout_id) or {}).get('status') == 'not_required_source_route_available':
+            write_json(ctx.visual_terrain_pointer_path(layout_id), {'kind': 'golfhelm-layout-visual-terrain-pointer-v1', 'layoutId': layout_id,
+                                                                     'facilityId': node.scope.facility_id, 'status': 'not_required_source_route_available'})
+            return [artifact('visual-terrain-pointer', ctx.visual_terrain_pointer_path(layout_id), 'C')]
+        pkg = ctx.json(ctx.visual_candidate_package_path(layout_id), fresh=True)
+        folder = os.path.join(ctx.facility_out(node.scope.facility_id), 'visual-terrain', pkg['contentHash'][:12] + '-perimeter-v1')
+        os.makedirs(folder, exist_ok=True)
+        elevation = os.path.join(folder, 'elevation.tiff')
+        export = os.path.join(folder, 'export.json')
+        with open(elevation, 'wb') as f:
+            f.write(b'TIFF' * 64)
+        write_json(export, {'extent': {'xmin': 0, 'ymin': 0, 'xmax': 1000, 'ymax': 1000}, 'width': 1000, 'height': 1000})
+        hashes = {name: file_sha256(os.path.join(folder, name)) for name in ('elevation.tiff', 'export.json')}
+        manifest = {'schemaVersion': 1, 'packageHash': pkg['contentHash'], 'requestedLocalBoundsM': [0, 0, 1000, 1000],
+                    'selectedTitle': 'Synthetic visual terrain', 'coverageMethod': 'perimeter-v1', 'fileHashes': hashes}
+        write_json(os.path.join(folder, 'source-manifest.json'), manifest)
+        pointer = {'kind': 'golfhelm-layout-visual-terrain-pointer-v1', 'layoutId': layout_id, 'facilityId': node.scope.facility_id,
+                   'directory': ctx.relpath(folder), 'packageHash': pkg['contentHash'], 'sourceIdentity': terrain_source_identity(manifest)}
+        write_json(ctx.visual_terrain_pointer_path(layout_id), pointer)
+        return [artifact('visual-terrain-pointer', ctx.visual_terrain_pointer_path(layout_id), 'C'),
+                *[artifact(f'visual-terrain-{name}', os.path.join(folder, name), 'C') for name in hashes]]
+
+    def visual_world(self, node, ctx, run):
+        self._mark(node)
+        layout_id = node.scope.layout_id
+        if (ctx.visual_candidate_pointer(layout_id) or {}).get('status') == 'not_required_source_route_available':
+            write_json(ctx.visual_world_pointer_path(layout_id), {'kind': 'golfhelm-layout-visual-world-pointer-v1', 'layoutId': layout_id,
+                                                                   'facilityId': node.scope.facility_id, 'status': 'not_required_source_route_available',
+                                                                   'canonicalHoleRoutesAdmitted': True})
+            return [artifact('visual-world-pointer', ctx.visual_world_pointer_path(layout_id), 'C')]
+        pkg = ctx.json(ctx.visual_candidate_package_path(layout_id), fresh=True)
+        key = pkg['holes'][0]['key']
+        out = ctx.visual_world_dir(layout_id)
+        rendering = os.path.join(out, 'holes', key, 'rendering')
+        os.makedirs(rendering, exist_ok=True)
+        glb = os.path.join(rendering, f'{key}.glb')
+        preview = os.path.join(rendering, f'{key}-preview.png')
+        with open(glb, 'wb') as f:
+            f.write(b'glTF')
+        with open(preview, 'wb') as f:
+            f.write(PNG_1PX)
+        manifest_path = os.path.join(out, 'course-world-manifest.json')
+        write_json(manifest_path, {'schemaVersion': 1, 'kind': 'golfhelm-course-world-manifest-v1', 'packageHash': pkg['contentHash'], 'truthGatePassed': False,
+                                   'holes': [{'key': key, 'ordinal': 1, 'truthGatePassed': False, 'glb': os.path.basename(glb), 'preview': os.path.basename(preview)}]})
+        pointer = {'kind': 'golfhelm-layout-visual-world-pointer-v1', 'layoutId': layout_id, 'facilityId': node.scope.facility_id,
+                   'visualPackageHash': pkg['contentHash'], 'facilityWorldManifest': ctx.relpath(manifest_path),
+                   'glb': ctx.relpath(glb), 'preview': ctx.relpath(preview), 'canonicalHoleRoutesAdmitted': False,
+                   'renderingContract': {'canRender': True, 'canMeasure': False, 'maySupplyHoleAssociation': False}, 'truthGatePassed': False}
+        write_json(ctx.visual_world_pointer_path(layout_id), pointer)
+        return [artifact('visual-world-pointer', ctx.visual_world_pointer_path(layout_id), 'C'), artifact('visual-world-manifest', manifest_path, 'C'),
+                artifact('visual-world-glb', glb, 'C'), artifact('visual-world-preview', preview, 'C')]
+
     def scorecard(self, node, ctx, run):
         self._mark(node)
         from factory.adapters import compose_scorecard
@@ -222,7 +284,7 @@ class FakePipeline:
         layout_id = node.scope.layout_id
         pkg = ctx.json(ctx.candidates_package_path(layout_id), fresh=True)
         bounds = ctx.terrain_bounds(layout_id)    # the real compiler's request bounds (snapped to its grid)
-        folder = os.path.join(ctx.facility_out(node.scope.facility_id), 'terrain', digest(bounds)[:12])
+        folder = os.path.join(ctx.facility_out(node.scope.facility_id), 'terrain', digest(bounds)[:12] + '-perimeter-v1')
         manifest_path = os.path.join(folder, 'source-manifest.json')
         manifest = ctx.json(manifest_path, fresh=True)
         if manifest and manifest['packageHash'] != pkg['contentHash']:
@@ -236,7 +298,7 @@ class FakePipeline:
             write_json(os.path.join(folder, 'export.json'), {'extent': {'xmin': 0, 'ymin': 0, 'xmax': 1000, 'ymax': 1000}, 'width': 1000, 'height': 1000})
             hashes = {name: file_sha256(os.path.join(folder, name)) for name in ('elevation.tiff', 'export.json')}
             manifest = {'schemaVersion': 1, 'packageHash': pkg['contentHash'], 'requestedLocalBoundsM': bounds, 'selectedTitle': 'Synthetic 1m tile',
-                        'retrievedAt': '2026-09-19', 'fileHashes': hashes}
+                        'retrievedAt': '2026-09-19', 'coverageMethod': 'perimeter-v1', 'fileHashes': hashes}
             write_json(manifest_path, manifest)
         pointer = {'kind': 'golfhelm-factory-terrain-source-v1', 'layoutId': layout_id, 'directory': ctx.relpath(folder), 'requestedLocalBoundsM': bounds,
                    'sourceManifestHash': digest(manifest), 'sourceIdentity': terrain_source_identity(manifest), 'selectedTitle': manifest['selectedTitle']}
@@ -357,7 +419,9 @@ class FakePipeline:
         study['contentHash'] = digest(study)
         write_json(os.path.join(folder, 'study.json'), study)
         write_json(os.path.join(folder, 'validation', 'course-truth.json'), {'passed': False})
-        record = {'packageHash': ctx.package_hash(layout_id), 'terrainRasterSha256': 'x', 'builtAt': '2026-09-19T00:00:00+00:00', 'blender': False, 'key': hole['key'],
+        record = {'packageHash': ctx.package_hash(layout_id), 'terrainRasterSha256': 'x',
+                  'terrainSourceIdentity': terrain_source_identity(ctx.terrain_source_manifest(layout_id)),
+                  'builtAt': '2026-09-19T00:00:00+00:00', 'blender': False, 'key': hole['key'],
                   'ordinal': hole['ordinal'], 'par': hole['par'], 'studyHash': study['contentHash'], 'physicalWorldHash': digest(['world', study['contentHash']]), 'truthGatePassed': False}
         write_json(os.path.join(folder, 'record.json'), record)
         return [artifact('world-record', os.path.join(folder, 'record.json'), 'C'), artifact('world-study', os.path.join(folder, 'study.json'), 'C'),

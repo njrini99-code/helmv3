@@ -42,7 +42,7 @@ class GoldenPlanTests(unittest.TestCase):
 
     def test_cacapon_plan_is_a_clean_slate_behind_the_aoi(self):
         rows = self.golden('cacapon')
-        self.assertEqual(len(rows), 98)
+        self.assertEqual(len(rows), 101)
         self.assertEqual(rows['catalog.validate[cacapon]'], ('cached', 'INLINE_VALIDATED'))
         self.assertEqual(rows['layout.identity.resolve[cacapon]'], ('cached', 'INLINE_VALIDATED'))
         self.assertEqual(rows['layout.scorecard.validate[cacapon]'], ('cached', 'INLINE_VALIDATED'))
@@ -50,22 +50,30 @@ class GoldenPlanTests(unittest.TestCase):
         self.assertEqual(rows['layout.publish.prepare[cacapon]'], ('blocked', 'PUBLISH_NOT_APPROVED'))
         self.assertEqual(rows['layout.publish.verify[cacapon]'], ('blocked', 'DEPENDENCY_BLOCKED'))
         pending = [k for k, v in rows.items() if v == ('pending', 'DEPENDENCY_PENDING')]
-        self.assertEqual(len(pending), 92)
+        self.assertEqual(len(pending), 95)
         self.assertIn('hole.terrain.compile[cacapon:07]', pending)
 
     def test_upper_plan_adopts_the_retained_evidence(self):
         rows = self.golden('peek-n-peak-upper')
         adopted = sorted(k for k, v in rows.items() if v == ('cached', 'ADOPTED_EXTERNAL'))
-        for key in ('facility.osm.snapshot[peek-n-peak]', 'facility.context.snapshot[peek-n-peak]', 'layout.terrain.acquire[peek-n-peak-upper]',
-                    'layout.canopy.derive[peek-n-peak-upper]', 'layout.package.compose[peek-n-peak-upper]', 'layout.imagery.audit[peek-n-peak-upper]',
-                    'layout.terrain.base[peek-n-peak-upper]', 'layout.context.classify[peek-n-peak-upper]', 'layout.publish.prepare[peek-n-peak-upper]'):
+        for key in ('facility.osm.snapshot[peek-n-peak]', 'facility.context.snapshot[peek-n-peak]',
+                    'layout.package.compose[peek-n-peak-upper]', 'layout.imagery.audit[peek-n-peak-upper]', 'layout.publish.prepare[peek-n-peak-upper]'):
             self.assertIn(key, adopted)
-        self.assertEqual(sum(1 for k in adopted if k.startswith('hole.terrain.compile[')), 18)
+        # The retained raster used a four-corner crop. It remains preserved
+        # evidence, but the factory must acquire perimeter-covered terrain
+        # before treating derived terrain/world artifacts as current.
+        self.assertEqual(rows['layout.terrain.acquire[peek-n-peak-upper]'], ('pending', 'DEPENDENCY_PENDING'))
+        self.assertEqual(rows['layout.canopy.derive[peek-n-peak-upper]'], ('pending', 'DEPENDENCY_PENDING'))
+        self.assertEqual(rows['layout.terrain.base[peek-n-peak-upper]'], ('pending', 'DEPENDENCY_PENDING'))
+        self.assertEqual(rows['layout.context.classify[peek-n-peak-upper]'], ('pending', 'DEPENDENCY_PENDING'))
+        self.assertEqual(sum(1 for k in adopted if k.startswith('hole.terrain.compile[')), 0)
+        self.assertEqual(rows['hole.terrain.compile[peek-n-peak-upper:01]'], ('pending', 'DEPENDENCY_PENDING'))
         self.assertEqual(rows['layout.routes.resolve[peek-n-peak-upper]'], ('ready', 'NO_SUCCESSFUL_FINGERPRINT'))
-        # The lab serves the Upper (its compiled fixture is hash-locked to this package), so the sign-off captures are runnable work.
-        self.assertEqual(rows['hole.visual.canary[peek-n-peak-upper:01]'], ('ready', 'NO_SUCCESSFUL_FINGERPRINT'))
+        # The lab still serves the Upper, but sign-off capture waits for the
+        # perimeter-covered terrain rebuild rather than capturing stale mesh.
+        self.assertEqual(rows['hole.visual.canary[peek-n-peak-upper:01]'], ('pending', 'DEPENDENCY_PENDING'))
         self.assertEqual(rows['hole.player.capture[peek-n-peak-upper:01]'], ('pending', 'DEPENDENCY_PENDING'))
-        self.assertEqual(rows['layout.publish.verify[peek-n-peak-upper]'], ('ready', 'NO_SUCCESSFUL_FINGERPRINT'))
+        self.assertEqual(rows['layout.publish.verify[peek-n-peak-upper]'], ('pending', 'DEPENDENCY_PENDING'))
         self.assertNotIn(('stale', 'FINGERPRINT_CHANGED'), rows.values())
 
     def test_whole_catalog_plan_names_concrete_blockers(self):
@@ -106,7 +114,7 @@ class OperatorCommandTests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertIn('STATE', table)
         rows = self.h.plan_rows('synthetic-a')
-        self.assertEqual(len(rows), 98)
+        self.assertEqual(len(rows), 101)
         self.assertEqual(rows['facility.aoi.resolve[synthetic]']['state'], 'ready')
         self.assertEqual(rows['layout.routes.resolve[synthetic-a]']['state'], 'pending')
         self.assertIn('facility.aoi.resolve[synthetic]', table)

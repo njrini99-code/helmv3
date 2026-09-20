@@ -32,6 +32,8 @@ from shapely.ops import polygonize, unary_union
 ROOT = Path(__file__).resolve().parents[3]
 FIXTURES = ROOT / 'src/test/fixtures/course-geometry'
 COMPILER_VERSION = 'course-terrain-v4'
+SOURCE_COVERAGE_METHOD = 'perimeter-v1'
+SOURCE_COVERAGE_PADDING_METERS = 8
 NODING_GRID_M = 1e-6
 STYLE_VERSION = 'narrow-surround-v1'
 CONTEXT_MARGIN_M = 160
@@ -80,7 +82,8 @@ def source_identity(manifest):
     """What makes a terrain source the same source for compiled outputs: its
     files, request bounds and CRS. The manifest also lists every package the
     raster has served, which changes without one height changing."""
-    return digest({'fileHashes': manifest.get('fileHashes'), 'bounds': manifest.get('requestedLocalBoundsM'), 'crs': manifest.get('horizontalExportCrs')})
+    return digest({'fileHashes': manifest.get('fileHashes'), 'bounds': manifest.get('requestedLocalBoundsM'), 'crs': manifest.get('horizontalExportCrs'),
+                   'renderingOnly': bool(manifest.get('renderingOnly')), 'sourceNativeResolutionM': manifest.get('sourceNativeResolutionM')})
 
 
 def write_json(path, value, pretty=False):
@@ -182,6 +185,24 @@ def snap_bounds(bounds, padding=0, step=16):
             math.ceil((c+padding)/step)*step, math.ceil((d+padding)/step)*step]
 
 
+def local_bounds_perimeter(bounds, samples_per_edge=32):
+    """Return a closed local-ENU rectangle boundary with sampled edges.
+
+    A local ENU rectangle maps to curved edges in an acquisition CRS. Sampling
+    only its four corners can crop a legitimate feature that lies along a
+    bowed edge. This request helper preserves the physical requested bounds;
+    it only makes the source coverage conservative.
+    """
+    west, south, east, north = bounds
+    if samples_per_edge < 1 or west > east or south > north:
+        raise ValueError('Invalid local bounds perimeter request')
+    fractions = [index / samples_per_edge for index in range(samples_per_edge + 1)]
+    return ([(west + (east - west) * t, south) for t in fractions]
+            + [(east, south + (north - south) * t) for t in fractions[1:]]
+            + [(east - (east - west) * t, north) for t in fractions[1:]]
+            + [(west, north - (north - south) * t) for t in fractions[1:-1]])
+
+
 def hole_bounds(hole, raw_shapes, raw_features):
     shapes = [raw_shapes[i] for i in hole['featureIds'] if raw_features[i]['kind'] != 'woods']
     tactical = snap_bounds(unary_union(shapes).bounds, 12, 4)
@@ -273,7 +294,7 @@ def covering_tile_sets(rows, extent_wgs84):
     return sorted(singles, key=newest_first, reverse=True) + sorted(pairs, key=newest_first, reverse=True)
 
 
-def existing_source_manifest(directory, pkg, bounds):
+def existing_source_manifest(directory, pkg, bounds, rendering_only=False):
     """Return a verified immutable source cache, or None when none exists.
 
     Both terrain providers use this contract.  A revised package may cite the
@@ -285,6 +306,8 @@ def existing_source_manifest(directory, pkg, bounds):
         manifest = json.loads((directory / 'source-manifest.json').read_text())
         if manifest['requestedLocalBoundsM'] != bounds:
             raise ValueError('Immutable source cache belongs to another context; choose a new directory')
+        if bool(manifest.get('renderingOnly')) != bool(rendering_only):
+            raise ValueError('Immutable source cache has a different physical/render-only contract; choose a new directory')
         for name in names[:-1]:
             if hashlib.sha256((directory/name).read_bytes()).hexdigest() != manifest['fileHashes'][name]:
                 raise ValueError('Immutable source cache hash mismatch: ' + name)
@@ -321,17 +344,28 @@ def resolve_source_provider(directory, requested_provider, acquire_only=False):
     return provider
 
 
-def acquire_usgs_source(directory, pkg, bounds):
-    manifest = existing_source_manifest(directory, pkg, bounds)
+def usgs_rendering_only_grid_size(width_m, height_m, resolution_m):
+    """Bounded derived output size for a source-native 1 m USGS request."""
+    if not math.isfinite(resolution_m) or resolution_m <= 1:
+        raise ValueError('USGS render-only resolution must be coarser than the native source grid')
+    width, height = math.ceil(width_m / resolution_m), math.ceil(height_m / resolution_m)
+    if width <= 1 or height <= 1 or width * height > 8_000_000 or max(width, height) > 8000:
+        raise ValueError('Bounded course render-only export exceeds the fixed 8M pixel cap')
+    return [width, height]
+
+
+def acquire_usgs_source(directory, pkg, bounds, rendering_only_resolution_m=None):
+    manifest = existing_source_manifest(directory, pkg, bounds, rendering_only=rendering_only_resolution_m is not None)
     if manifest is not None:
         if manifest.get('providerPolicyId', USGS_3DEP_PROVIDER) != USGS_3DEP_PROVIDER:
             raise ValueError('Immutable source cache belongs to another terrain provider')
         return manifest
     names = ['catalog.json', 'export.json', 'elevation.tiff', 'source-manifest.json']
     directory.mkdir(parents=True, exist_ok=True)
-    # Query the footprint of the entire future course context, not just a tee.
-    x = [bounds[0], bounds[2], bounds[2], bounds[0]]
-    y = [bounds[1], bounds[1], bounds[3], bounds[3]]
+    # Query every projected edge of the entire future course context, not
+    # merely its four ENU corners.
+    local_perimeter = local_bounds_perimeter(bounds)
+    x, y = zip(*local_perimeter)
     lon, lat = geographic(x, y)
     west, south, east, north = float(min(lon)), float(min(lat)), float(max(lon)), float(max(lat))
     query = {'where': 'Category=1', 'geometryType': 'esriGeometryEnvelope', 'inSR': 4326, 'outSR': 4326,
@@ -359,10 +393,14 @@ def acquire_usgs_source(directory, pkg, bounds):
     source_x, source_y = project.transform(lon, lat)
     # Snap projected output pixels to a 1m grid. Never describe render grid
     # density or image enlargement as additional source resolution.
-    a, b, c, d = snap_bounds([min(source_x), min(source_y), max(source_x), max(source_y)], 8, 1)
-    width, height = int(c-a), int(d-b)
-    if width*height > 8_000_000 or max(width, height) > 8000:
-        raise ValueError('Bounded course export exceeds the fixed 8M pixel cap')
+    a, b, c, d = snap_bounds([min(source_x), min(source_y), max(source_x), max(source_y)], SOURCE_COVERAGE_PADDING_METERS, 1)
+    native_width, native_height = int(c-a), int(d-b)
+    if rendering_only_resolution_m is None:
+        width, height = native_width, native_height
+        if width*height > 8_000_000 or max(width, height) > 8000:
+            raise ValueError('Bounded course export exceeds the fixed 8M pixel cap')
+    else:
+        width, height = usgs_rendering_only_grid_size(native_width, native_height, rendering_only_resolution_m)
     inverse = pyproj.Transformer.from_crs(crs, 4326, always_xy=True)
     # Newest tile first. A catalog footprint is a claim, not evidence: a
     # project tile clipped at a state line still advertises its full square,
@@ -408,11 +446,16 @@ def acquire_usgs_source(directory, pkg, bounds):
                 'selectedTitle': title, 'selectedObjectId': attrs['OBJECTID'], 'selectedObjectIds': object_ids,
                 'selectedTiles': [row['attributes']['title'] for row in tiles], 'sourceUrl': attrs['URL'],
                 'acquisitionStart': date_text(attrs['StartDate']), 'acquisitionEnd': date_text(attrs['EndDate']),
-                'nativeResolutionM': 1, 'exportPixelM': [(ex['xmax']-ex['xmin'])/width, (ex['ymax']-ex['ymin'])/height],
+                'nativeResolutionM': max((ex['xmax']-ex['xmin'])/width, (ex['ymax']-ex['ymin'])/height),
+                'sourceNativeResolutionM': 1, 'exportPixelM': [(ex['xmax']-ex['xmin'])/width, (ex['ymax']-ex['ymin'])/height],
                 'horizontalExportCrs': f'EPSG:{crs}', 'verticalDatum': 'NAVD88',
                 'rawVerticalUnit': 'meter', 'verticalUnitToMeters': 1,
                 'retrievedAt': exported['retrievedAt'],
-                'sourceSelection': 'single_full_coverage_native_1m_tile' if len(tiles) == 1 else 'same_project_adjacent_native_1m_tiles',
+                'sourceSelection': ('bounded_rendering_only_resampled_export' if rendering_only_resolution_m is not None else
+                                    'single_full_coverage_native_1m_tile' if len(tiles) == 1 else 'same_project_adjacent_native_1m_tiles'),
+                'renderingOnly': rendering_only_resolution_m is not None,
+                'renderingOnlyResolutionM': rendering_only_resolution_m,
+                'coverageMethod': SOURCE_COVERAGE_METHOD, 'coveragePaddingMeters': SOURCE_COVERAGE_PADDING_METERS,
                 'exportEmptyFraction': empty, 'decoder': decoder, 'rejectedCandidates': rejected,
                 'licenseUrl': 'https://www.usgs.gov/3d-elevation-program/about-3dep-products-services',
                 'fileHashes': {name: hashlib.sha256((directory/name).read_bytes()).hexdigest() for name in names[:-1]}}
@@ -459,8 +502,8 @@ def validate_nc_onemap_service(service):
         raise ValueError('NC OneMap DEM03 source CRS no longer reports US survey feet')
 
 
-def nc_native_grid_bounds(bounds, extent):
-    """Snap a requested NC DEM03 crop to the source grid, never to display pixels."""
+def nc_source_grid_bounds(bounds, extent):
+    """Snap a request extent to the native NC DEM03 source grid."""
     west, south, east, north = bounds
     step = NC_ONEMAP_NATIVE_PIXEL_US_FEET
     origin_x, origin_y = float(extent['xmin']), float(extent['ymin'])
@@ -469,13 +512,41 @@ def nc_native_grid_bounds(bounds, extent):
     right = origin_x + math.ceil((east - origin_x) / step) * step
     top = origin_y + math.ceil((north - origin_y) / step) * step
     width, height = round((right - left) / step), round((top - bottom) / step)
-    if width <= 1 or height <= 1 or width * height > MAX_NC_ONEMAP_PIXELS:
-        raise ValueError('NC OneMap DEM03 native-grid request violates the fixed acquisition pixel cap')
     return [left, bottom, right, top], [width, height]
 
 
-def acquire_nc_onemap_source(directory, pkg, bounds):
-    manifest = existing_source_manifest(directory, pkg, bounds)
+def nc_native_grid_bounds(bounds, extent):
+    """Snap a requested NC DEM03 crop to the source grid, never to display pixels."""
+    requested, size = nc_source_grid_bounds(bounds, extent)
+    width, height = size
+    if width <= 1 or height <= 1 or width * height > MAX_NC_ONEMAP_PIXELS:
+        raise ValueError('NC OneMap DEM03 native-grid request violates the fixed acquisition pixel cap')
+    return requested, size
+
+
+def nc_rendering_only_grid_bounds(bounds, extent, resolution_m):
+    """Return a bounded *derived* render raster request for a large facility.
+
+    This deliberately preserves the source-grid-aligned extent but requests a
+    coarser output from the provider. Callers must mark the resulting raster
+    render-only; it is never a substitute for native terrain evidence.
+    """
+    source_m = NC_ONEMAP_NATIVE_PIXEL_US_FEET * US_SURVEY_FOOT_TO_METERS
+    if not math.isfinite(resolution_m) or resolution_m <= source_m:
+        raise ValueError('NC OneMap render-only resolution must be coarser than the native source grid')
+    requested, _native_size = nc_source_grid_bounds(bounds, extent)
+    step = resolution_m / US_SURVEY_FOOT_TO_METERS
+    width = math.ceil((requested[2] - requested[0]) / step)
+    height = math.ceil((requested[3] - requested[1]) / step)
+    if width <= 1 or height <= 1 or width * height > MAX_NC_ONEMAP_PIXELS:
+        raise ValueError('NC OneMap render-only request violates the fixed acquisition pixel cap')
+    pixel_m = [(requested[2] - requested[0]) / width * US_SURVEY_FOOT_TO_METERS,
+               (requested[3] - requested[1]) / height * US_SURVEY_FOOT_TO_METERS]
+    return requested, [width, height], pixel_m
+
+
+def acquire_nc_onemap_source(directory, pkg, bounds, rendering_only_resolution_m=None):
+    manifest = existing_source_manifest(directory, pkg, bounds, rendering_only=rendering_only_resolution_m is not None)
     if manifest is not None:
         if manifest.get('providerPolicyId') != NC_ONEMAP_PROVIDER:
             raise ValueError('Immutable source cache belongs to another terrain provider')
@@ -484,12 +555,21 @@ def acquire_nc_onemap_source(directory, pkg, bounds):
     # Local ENU is the canonical world frame.  Its conversion is used only to
     # request the grid in NC's declared projected CRS; every sampled vertex is
     # transformed from WGS84 through that exact CRS at read time.
-    lon, lat = geographic([bounds[0], bounds[2], bounds[2], bounds[0]], [bounds[1], bounds[1], bounds[3], bounds[3]])
+    local_perimeter = local_bounds_perimeter(bounds)
+    local_x, local_y = zip(*local_perimeter)
+    lon, lat = geographic(local_x, local_y)
     project = pyproj.Transformer.from_crs(4326, NC_ONEMAP_CRS, always_xy=True)
     source_x, source_y = project.transform(lon, lat)
     service = json.loads(nc_onemap_read(NC_ONEMAP_BASE + '?f=json', 2_000_000))
     validate_nc_onemap_service(service)
-    requested, size = nc_native_grid_bounds([min(source_x), min(source_y), max(source_x), max(source_y)], service['extent'])
+    source_padding = SOURCE_COVERAGE_PADDING_METERS / US_SURVEY_FOOT_TO_METERS
+    request_bounds = [min(source_x) - source_padding, min(source_y) - source_padding,
+                      max(source_x) + source_padding, max(source_y) + source_padding]
+    if rendering_only_resolution_m is None:
+        requested, size = nc_native_grid_bounds(request_bounds, service['extent'])
+        output_pixel_m = [NC_ONEMAP_NATIVE_PIXEL_US_FEET * US_SURVEY_FOOT_TO_METERS] * 2
+    else:
+        requested, size, output_pixel_m = nc_rendering_only_grid_bounds(request_bounds, service['extent'], rendering_only_resolution_m)
     exported = nc_onemap_request('exportImage', {
         'bbox': ','.join(map(str, requested)), 'bboxSR': 2264, 'imageSR': 2264,
         'size': ','.join(map(str, size)), 'format': 'tiff', 'pixelType': 'F32',
@@ -498,9 +578,24 @@ def acquire_nc_onemap_source(directory, pkg, bounds):
     if [exported.get('width'), exported.get('height')] != size:
         raise ValueError('NC OneMap DEM03 export dimensions changed; source resampling requires review')
     actual = exported.get('extent') or {}
-    if any(not math.isclose(float(actual.get(field, math.nan)), expected, rel_tol=0, abs_tol=1e-6)
-           for field, expected in zip(('xmin', 'ymin', 'xmax', 'ymax'), requested)):
-        raise ValueError('NC OneMap DEM03 export extent changed; native-grid alignment requires review')
+    actual_values = [float(actual.get(field, math.nan)) for field in ('xmin', 'ymin', 'xmax', 'ymax')]
+    if rendering_only_resolution_m is None:
+        if any(not math.isclose(value, expected, rel_tol=0, abs_tol=1e-6)
+               for value, expected in zip(actual_values, requested)):
+            raise ValueError('NC OneMap DEM03 export extent changed; native-grid alignment requires review')
+    else:
+        # ArcGIS may expand a resampled export by part of one output cell so
+        # it preserves all requested samples. The returned extent has to cover
+        # the requested source-aligned perimeter, and cannot grow by more than
+        # one declared visual pixel. This remains a rendering-only contract.
+        output_step_ft = rendering_only_resolution_m / US_SURVEY_FOOT_TO_METERS
+        left, bottom, right, top = actual_values
+        if (not (left <= requested[0] <= requested[2] <= right and bottom <= requested[1] <= requested[3] <= top)
+                or left < requested[0] - output_step_ft - 1e-6 or bottom < requested[1] - output_step_ft - 1e-6
+                or right > requested[2] + output_step_ft + 1e-6 or top > requested[3] + output_step_ft + 1e-6):
+            raise ValueError('NC OneMap DEM03 rendering-only export does not preserve bounded source coverage')
+        output_pixel_m = [(right - left) / size[0] * US_SURVEY_FOOT_TO_METERS,
+                          (top - bottom) / size[1] * US_SURVEY_FOOT_TO_METERS]
     raster = nc_onemap_read(exported['href'], 80_000_000)
     (directory / 'elevation.tiff').write_bytes(raster)
     decoded, _nodata, decoder = elevation_raster.read_elevation(directory / 'elevation.tiff')
@@ -516,12 +611,18 @@ def acquire_nc_onemap_source(directory, pkg, bounds):
         'schemaVersion': 1, 'providerPolicyId': NC_ONEMAP_PROVIDER, 'packageHash': pkg['contentHash'],
         'requestedLocalBoundsM': bounds, 'selectedTitle': 'NC OneMap DEM03', 'selectedObjectId': None,
         'selectedObjectIds': [], 'selectedTiles': [], 'sourceUrl': NC_ONEMAP_BASE,
-        'acquisitionStart': None, 'acquisitionEnd': None, 'nativeResolutionM': NC_ONEMAP_NATIVE_PIXEL_US_FEET * US_SURVEY_FOOT_TO_METERS,
-        'exportPixelM': [NC_ONEMAP_NATIVE_PIXEL_US_FEET * US_SURVEY_FOOT_TO_METERS] * 2,
+        'acquisitionStart': None, 'acquisitionEnd': None, 'nativeResolutionM': max(output_pixel_m),
+        'sourceNativeResolutionM': NC_ONEMAP_NATIVE_PIXEL_US_FEET * US_SURVEY_FOOT_TO_METERS,
+        'exportPixelM': output_pixel_m,
         'horizontalExportCrs': NC_ONEMAP_CRS, 'verticalDatum': None,
         'verticalDatumStatus': 'not verified from DEM03 service metadata; never infer NAVD88',
         'rawVerticalUnit': 'US survey foot', 'verticalUnitToMeters': US_SURVEY_FOOT_TO_METERS,
-        'retrievedAt': retrieved, 'sourceSelection': 'bounded_native_grid_single_service_export',
+        'retrievedAt': retrieved,
+        'sourceSelection': ('bounded_rendering_only_resampled_service_export' if rendering_only_resolution_m is not None
+                            else 'bounded_native_grid_single_service_export'),
+        'renderingOnly': rendering_only_resolution_m is not None,
+        'renderingOnlyResolutionM': rendering_only_resolution_m,
+        'coverageMethod': SOURCE_COVERAGE_METHOD, 'coveragePaddingMeters': SOURCE_COVERAGE_PADDING_METERS,
         'exportEmptyFraction': empty, 'decoder': decoder,
         'licenseUrl': None, 'licenseStatus': 'not supplied by the DEM03 service metadata; review before redistribution',
         'fileHashes': {name: hashlib.sha256((directory / name).read_bytes()).hexdigest() for name in ('catalog.json', 'export.json', 'elevation.tiff')},
@@ -531,11 +632,11 @@ def acquire_nc_onemap_source(directory, pkg, bounds):
     return manifest
 
 
-def acquire_source(directory, pkg, bounds, provider=USGS_3DEP_PROVIDER):
+def acquire_source(directory, pkg, bounds, provider=USGS_3DEP_PROVIDER, rendering_only_resolution_m=None):
     if provider == USGS_3DEP_PROVIDER:
-        return acquire_usgs_source(directory, pkg, bounds)
+        return acquire_usgs_source(directory, pkg, bounds, rendering_only_resolution_m)
     if provider == NC_ONEMAP_PROVIDER:
-        return acquire_nc_onemap_source(directory, pkg, bounds)
+        return acquire_nc_onemap_source(directory, pkg, bounds, rendering_only_resolution_m)
     raise ValueError(f'No terrain source adapter for provider {provider!r}')
 
 
@@ -954,6 +1055,7 @@ def compile_hole(hole, pkg, raw_shapes, raw_features, displays, outline_reports,
 def source_readme(pkg, manifest):
     native = manifest.get('nativeResolutionM')
     resolution = f'{native:g}m' if isinstance(native, (int, float)) else 'the provider-declared native grid'
+    source_native = manifest.get('sourceNativeResolutionM')
     vertical = manifest.get('verticalDatum') or 'not verified'
     license_line = f"Source terms: {manifest['licenseUrl']}." if manifest.get('licenseUrl') else f"Source terms: {manifest.get('licenseStatus', 'not recorded')}."
     return f"""# {pkg['name']} whole-course terrain source
@@ -968,6 +1070,8 @@ metric grid, 4m tactical mesh, 2m detail cells and coarser outer cells are separ
 render/query choices, not claims of finer source resolution. Heights are converted
 to meters from the declared source unit. Vertical datum: **{vertical}**. Registration
 residual and source vertical accuracy are unknown.
+
+{'This is a derived **render-only** raster at ' + resolution + ' from the provider native ' + (f'{source_native:g}m' if isinstance(source_native, (int, float)) else 'grid') + '. It may supply visual terrain context only; it must not be used for physical height, slope, route, or shot claims.' if manifest.get('renderingOnly') else 'This is a source-native acquisition and may be evaluated only under the separate physical validation contract.'}
 
 Neighbor source features are renderer-only context. No cart paths, rough
 classification, additional tree areas, daily tee markers or cup positions are
@@ -991,6 +1095,8 @@ def main():
                         help='terrain adapter selected by the facility provider policy')
     parser.add_argument('--acquire-only', action='store_true',
                         help='lock the terrain source for this package and stop before compiling any hole (the course factory acquires once, compiles per hole)')
+    parser.add_argument('--rendering-only-resolution-m', type=float, default=None,
+                        help='request a coarser derived raster for a facility visual scene; never supplies physical terrain truth')
     args = parser.parse_args()
     pkg = json.loads(args.package.read_text())
     pilot.ORIGIN = pkg['originWgs84']
@@ -1000,7 +1106,9 @@ def main():
     bounds = [min(b[0] for b in extents)-8, min(b[1] for b in extents)-8,
               max(b[2] for b in extents)+8, max(b[3] for b in extents)+8]
     provider = resolve_source_provider(args.source, args.provider, acquire_only=args.acquire_only)
-    manifest = acquire_source(args.source, pkg, bounds, provider)
+    if args.rendering_only_resolution_m is not None and not args.acquire_only:
+        raise ValueError('rendering-only terrain may only be acquired; it cannot compile physical hole terrain')
+    manifest = acquire_source(args.source, pkg, bounds, provider, args.rendering_only_resolution_m)
     if args.acquire_only:
         (args.source/'README.md').write_text(source_readme(pkg, manifest))
         print(json.dumps({'source': manifest['selectedTitle'], 'sourceManifestHash': digest(manifest), 'requestedLocalBoundsM': bounds}), flush=True)

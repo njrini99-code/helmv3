@@ -22,8 +22,8 @@ vertical datum as unknown. A source study cannot be bound to a playable hole
 without separately reviewed tee, route, green, and course/hole identity.
 
 The offline real-course rendering spike follows the same rule. Its canonical
-study JSON is a local azimuthal-equidistant metre frame (`x` east, `y` up,
-`z` north; one world unit is one metre) that retains original WGS84 geometry,
+study JSON uses the package's `wgs84-local-enu-v1` metre frame (`x` east,
+`y` up, `z` north; one world unit is one metre) that retains original WGS84 geometry,
 terrain/imagery provenance, confidence and limitations. Blender consumes that
 JSON and the source-hashed terrain raster to generate a static GLB; it does
 not receive or bake shot, ball, cup, label, replay, scoring or analytics data.
@@ -51,6 +51,25 @@ four-band analysis service is blank, a valid three-band visual export remains
 explicitly RGB-only and cannot supply NIR-derived claims. A partial Cardinal
 green study stays unbound until actual tee/fairway/route/hole identity and
 license/review evidence are complete.
+
+### Perimeter-safe terrain acquisition and facility visual fallback (2026-09-20)
+
+Terrain acquisition samples every edge of the requested local-ENU rectangle
+before transforming it into the provider CRS and adds an eight-metre native
+coverage guard. A four-corner raster remains historic evidence but is not
+adoptable by the current factory; derived terrain, canopy, context, world, and
+capture artifacts rebuild only from a `coverageMethod: perimeter-v1` source
+manifest. This prevents a valid polygon on a curved projected edge from losing
+bilinear terrain support without shifting that polygon.
+
+When a layout has no confirmed ordered route, the factory may build one shared
+facility GLB from available OSM polygons and source terrain. Its manifest is
+explicitly `renderingOnly`, `canRender: true`, `canMeasure: false`, and
+`maySupplyHoleAssociation: false`. It is visual context only: it cannot supply
+tee-to-green distance, lie class, hazard ownership, shot constraints, or a
+playable course-world claim. Blender is invoked with `--python-exit-code 1`,
+so an uncaught compiler exception cannot leave a partial GLB directory looking
+successful.
 
 ### Course factory build engine (Factory v2 PR B, 2026-09-19)
 

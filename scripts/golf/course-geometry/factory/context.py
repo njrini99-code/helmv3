@@ -117,6 +117,43 @@ class Context:
     def card_path(self, facility_id):
         return os.path.join(self.facility_out(facility_id), 'card.json')
 
+    # A facility visual candidate is deliberately distinct from the layout
+    # package. It may show a source-backed property before a tee-to-green
+    # route is known, but it never supplies a hole association or a metric
+    # measurement to GolfHelm.
+    def visual_candidate_dir(self, layout_id):
+        facility_id = (self.layout(layout_id) or {}).get('facilityId')
+        return os.path.join(self.facility_out(facility_id), 'visual-candidate')
+
+    def visual_candidate_package_path(self, layout_id):
+        return os.path.join(self.visual_candidate_dir(layout_id), 'normalized.json')
+
+    def visual_candidate_report_path(self, layout_id):
+        return os.path.join(self.visual_candidate_dir(layout_id), 'visual-candidate-report.json')
+
+    def visual_candidate_pointer_path(self, layout_id):
+        return os.path.join(self.layout_out(layout_id), 'visual-candidate.json')
+
+    def visual_candidate_pointer(self, layout_id):
+        return self.json(self.visual_candidate_pointer_path(layout_id)) if self.can_adopt(self.visual_candidate_pointer_path(layout_id)) else None
+
+    def visual_terrain_pointer_path(self, layout_id):
+        return os.path.join(self.layout_out(layout_id), 'visual-terrain-source.json')
+
+    def visual_terrain_pointer(self, layout_id):
+        return self.json(self.visual_terrain_pointer_path(layout_id)) if self.can_adopt(self.visual_terrain_pointer_path(layout_id)) else None
+
+    def visual_terrain_source_dir(self, layout_id):
+        pointer = self.visual_terrain_pointer(layout_id)
+        return self.abspath(pointer.get('directory')) if pointer and pointer.get('directory') else None
+
+    def visual_world_dir(self, layout_id):
+        facility_id = (self.layout(layout_id) or {}).get('facilityId')
+        return os.path.join(self.facility_out(facility_id), 'visual-world')
+
+    def visual_world_pointer_path(self, layout_id):
+        return os.path.join(self.layout_out(layout_id), 'visual-world.json')
+
     def aoi(self, facility_id):
         return self.json(self.aoi_path(facility_id)) if self.can_adopt(self.aoi_path(facility_id)) else None
 
@@ -204,7 +241,10 @@ class Context:
         compilation = self.json(os.path.join(compiled_dir, 'compilation-report.json')) or {}
         embedded = compilation.get('source')
         current = self.terrain_source_manifest(layout_id)
-        if not current:
+        # A four-corner crop can miss a valid edge after CRS conversion. Its
+        # immutable artifact remains auditable, but it cannot underwrite a
+        # current physical or visual compiler output.
+        if not current or current.get('coverageMethod') != 'perimeter-v1':
             return False
         if embedded:
             return terrain_source_identity(embedded) == terrain_source_identity(current)

@@ -38,6 +38,27 @@ def points(value):
             yield from points(child)
 
 
+def local_enu(origin, point):
+    """Project WGS84 into the package's canonical zero-altitude ENU frame.
+
+    ``compile-course-terrain.py`` and the browser both use
+    ``wgs84-local-enu-v1``. Keeping this conversion here byte-for-byte
+    equivalent prevents a terrain grid and its semantic polygons drifting into
+    different local frames at a source boundary.
+    """
+    def ecef(value):
+        lon, lat = [v * math.pi / 180 for v in value]
+        eccentricity_squared = 6.6943799901413165e-3
+        radius = 6378137 / math.sqrt(1 - eccentricity_squared * math.sin(lat) ** 2)
+        return [radius * math.cos(lat) * math.cos(lon), radius * math.cos(lat) * math.sin(lon),
+                radius * (1 - eccentricity_squared) * math.sin(lat)]
+
+    delta = [a - b for a, b in zip(ecef(point), ecef(origin))]
+    lon, lat = [v * math.pi / 180 for v in origin]
+    return (-math.sin(lon) * delta[0] + math.cos(lon) * delta[1],
+            -math.sin(lat) * math.cos(lon) * delta[0] - math.sin(lat) * math.sin(lon) * delta[1] + math.cos(lat) * delta[2])
+
+
 class Terrain:
     def __init__(self, directory):
         self.manifest = json.loads((directory / 'source-manifest.json').read_text())
@@ -83,8 +104,8 @@ def main():
     parser.add_argument('--padding-m', type=float, default=None,
                         help='Crop the terrain grid to the study footprint plus this padding; omit to keep the whole raster')
     args = parser.parse_args()
-    if not 0 < args.terrain_step_m <= 10 or (args.padding_m is not None and not 0 <= args.padding_m <= 500):
-        raise ValueError('Terrain step must be 0–10m and padding 0–500m')
+    if not 0 < args.terrain_step_m <= 20 or (args.padding_m is not None and not 0 <= args.padding_m <= 500):
+        raise ValueError('Terrain step must be 0–20m and padding 0–500m')
     package = json.loads(args.package.read_text())
     study = next((item for item in package['holes'] if item['key'] == args.study_key), None)
     if study is None:
@@ -92,13 +113,13 @@ def main():
     if study['completeness'] != 'partial' or package['status'] != 'source_candidate':
         raise ValueError('This compiler only handles unpromoted source studies')
     lidar = Terrain(args.lidar_directory)
+    terrain_rendering_only = bool(lidar.manifest.get('renderingOnly'))
     imagery = json.loads((args.imagery_directory / 'source-manifest.json').read_text()) if args.imagery_directory else None
     origin = package['originWgs84']
-    local = pyproj.Transformer.from_crs(4326, f'+proj=aeqd +lat_0={origin[1]} +lon_0={origin[0]} +datum=WGS84 +units=m +no_defs', always_xy=True)
     features = {item['id']: item for item in package['features']}
     selected = [features[item] for item in study['featureIds']]
     def local_point(point):
-        east, north = local.transform(point[0], point[1])
+        east, north = local_enu(origin, point)
         elevation = lidar.sample(point[0], point[1])
         if elevation is None:
             raise ValueError('Source feature lies outside LiDAR coverage; no fabricated elevation')
@@ -121,7 +142,7 @@ def main():
     footprint = []
     for feature in selected:
         for point in points(feature['geometryWgs84']['coordinates']):
-            footprint.append(local.transform(point[0], point[1]))
+            footprint.append(local_enu(origin, point))
     # Preserve the LiDAR raster's own complete grid.  A locally projected
     # source grid is slightly rotated relative to an east/north frame, so a
     # fabricated axis-aligned grid would introduce coverage gaps at corners.
@@ -165,28 +186,34 @@ def main():
                 raise ValueError('LiDAR source contains nodata in requested study grid; no fill is permitted')
             sx, sy = extent['xmin'] + (col + .5) * dx, extent['ymax'] - (row + .5) * dy
             lon, lat = source_to_wgs.transform(sx, sy)
-            east, north = local.transform(lon, lat)
+            east, north = local_enu(origin, (lon, lat))
             positions.append([round(east, 5), round(float(raw_height), 5), round(north, 5)])
     result = {
         'schemaVersion': 1, 'kind': 'golfhelm-canonical-local-meter-study', 'version': 1,
         'siteId': package['siteId'], 'physicalStudyKey': args.study_key, 'status': 'source_candidate_partial',
         'origin': {'longitude': origin[0], 'latitude': origin[1], 'elevationMeters': round(lidar.sample(*origin), 5)},
         'coordinateSystem': {'units': 'meters', 'worldAxes': {'x': 'east', 'y': 'elevation_up', 'z': 'north'},
-            'projection': 'local-azimuthal-equidistant-wgs84', 'oneWorldUnitEqualsMeters': True},
+            'projection': 'wgs84-local-enu-v1', 'oneWorldUnitEqualsMeters': True},
         'features': compiled_features,
-        'terrain': {'grid': {'width': width, 'height': height, 'positionsMeters': positions,
+        'terrain': {'truthClass': 'visual_only' if terrain_rendering_only else 'derived',
+                    'grid': {'width': width, 'height': height, 'positionsMeters': positions,
             'sampleStride': stride, 'nominalStepMeters': round(stride * float(lidar.native_resolution_m), 6)}, 'source': {
-              'provider': lidar.manifest.get('provider', 'USGS 3DEP'), 'derivation': lidar.manifest.get('derivation', lidar.manifest.get('selectedTitle')),
-              'nativeResolutionMeters': lidar.native_resolution_m, 'verticalDatum': lidar.manifest['verticalDatum'],
+              'provider': lidar.manifest.get('provider', lidar.manifest.get('providerPolicyId', 'unknown')),
+              'derivation': lidar.manifest.get('derivation', lidar.manifest.get('selectedTitle')),
+              'nativeResolutionMeters': lidar.native_resolution_m,
+              'sourceNativeResolutionMeters': lidar.manifest.get('sourceNativeResolutionM', lidar.native_resolution_m),
+              'renderingOnly': terrain_rendering_only,
+              'verticalDatum': lidar.manifest['verticalDatum'],
               'verticalDatumStatus': lidar.manifest.get('verticalDatumStatus', 'declared by source catalog metadata'), 'rasterSha256': sha256(args.lidar_directory / 'elevation.tiff')}},
         'sources': {'imagery': {'provider': imagery['provider'], 'selectedKind': imagery['selectedKind'], 'nativeResolutionMeters': imagery['nativeResolutionM'],
                       'analysisStatus': imagery['analysisStatus'], 'attribution': imagery['attribution']} if imagery else None,
                     'geometry': package['sources'], 'terrain': lidar.manifest},
-        'confidence': {'terrain': 'high_resolution_source_candidate', **{
+        'confidence': {'terrain': 'rendering_only_derived_raster' if terrain_rendering_only else 'high_resolution_source_candidate', **{
             label: ('osm_source_candidate' if any(feature['kind'] == kind for feature in selected) else 'missing')
             for label, kind in (('green', 'green'), ('bunkers', 'bunker'), ('fairway', 'fairway'), ('teeBoxes', 'tee'), ('water', 'water'))},
             'trees': 'missing'},
         'limitations': [*study['gaps'],
+                        *(['Terrain raster was resampled only to render a large facility context; it is not physical height authority.'] if terrain_rendering_only else []),
                         *(['The valid visual imagery fallback is RGB only; analysis RGB+NIR export was transparent and rejected.']
                           if imagery and imagery.get('analysisStatus') != 'analysis' else
                           ['No imagery source is bound to this study; boundaries are vector-source candidates only.'] if not imagery else []),

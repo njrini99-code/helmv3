@@ -26,6 +26,7 @@ from .tasks.common import artifact, script
 OVERPASS = 'https://overpass-api.de/api/interpreter'
 USER_AGENT = 'GolfHelm course-geometry factory (bounded, one request per facility revision)'
 MAX_AOI_BYTES = 4_000_000
+VISUAL_TERRAIN_DERIVED_RESOLUTIONS_M = (2, 4, 8)
 
 
 def _write_json(path, doc):
@@ -253,6 +254,190 @@ def write_route_dossier(node, ctx, run):
     return [artifact('route-review', path, 'C')]
 
 
+def compose_visual_candidates(node, ctx, run):
+    """Build or reuse the shared facility visual package for an unresolved layout.
+
+    The facility package has no playable route. The per-layout pointer is the
+    important boundary: it tells every later reader this is a render-only
+    fallback for this particular unresolved layout, not a substitute for its
+    canonical package.
+    """
+    layout_id, facility_id = node.scope.layout_id, node.scope.facility_id
+    resolution = ctx.route_resolution(layout_id) or {}
+    pointer_path = ctx.visual_candidate_pointer_path(layout_id)
+    if resolution.get('routeWayIds'):
+        _write_json(pointer_path, {
+            'kind': 'golfhelm-layout-visual-candidate-pointer-v1', 'layoutId': layout_id, 'facilityId': facility_id,
+            'status': 'not_required_source_route_available', 'canonicalHoleRoutesAdmitted': True,
+            'routeSource': resolution.get('source'),
+            'note': 'The route-specific candidate package is the only geometry input for this layout; no facility visual fallback was built.',
+        })
+        return [artifact('visual-candidate-pointer', pointer_path, 'C')]
+    package_dir = ctx.visual_candidate_dir(layout_id)
+    package_path = ctx.visual_candidate_package_path(layout_id)
+    report_path = ctx.visual_candidate_report_path(layout_id)
+    manifest, extract = ctx.snapshot(facility_id)
+    if not manifest or not extract:
+        raise RuntimeError('visual candidate requires a retained OSM snapshot')
+    package = ctx.json(package_path, fresh=True) if os.path.isfile(package_path) else None
+    report = ctx.json(report_path, fresh=True) if os.path.isfile(report_path) else None
+    reuse = bool(package and report and package.get('kind') == 'golfhelm-facility-visual-package-v1'
+                 and package.get('contentHash') and report.get('packageHash') == package.get('contentHash')
+                 and report.get('extractSha256') == manifest.get('uncompressedSha256'))
+    if not reuse:
+        if os.path.isdir(package_dir):
+            safe_rmtree(ctx, package_dir)
+        if not os.path.isfile(ctx.card_path(facility_id)):
+            write_card(ctx, facility_id)
+        run_script(ctx, run, node, 'scripts/golf/course-geometry/prepare-osm-facility-visual.py', [extract, ctx.card_path(facility_id), package_dir])
+        package = ctx.json(package_path, fresh=True)
+        report = ctx.json(report_path, fresh=True)
+    _write_json(pointer_path, {
+        'kind': 'golfhelm-layout-visual-candidate-pointer-v1', 'layoutId': layout_id, 'facilityId': facility_id,
+        'packagePath': ctx.relpath(package_path), 'packageHash': package['contentHash'],
+        'extractSha256': manifest.get('uncompressedSha256'), 'canonicalHoleRoutesAdmitted': False,
+        'routeStatus': 'unresolved', 'renderingContract': report['renderingContract'],
+    })
+    ref = artifact('package', package_path, 'C')
+    ref.sha256 = package['contentHash']
+    return [artifact('visual-candidate-pointer', pointer_path, 'C'), ref,
+            artifact('visual-candidate-report', report_path, 'C')]
+
+
+def acquire_visual_terrain(node, ctx, run):
+    """Acquire one source-hashed terrain raster for a facility visual scene."""
+    layout_id, facility_id = node.scope.layout_id, node.scope.facility_id
+    if (ctx.visual_candidate_pointer(layout_id) or {}).get('status') == 'not_required_source_route_available':
+        pointer_path = ctx.visual_terrain_pointer_path(layout_id)
+        _write_json(pointer_path, {
+            'kind': 'golfhelm-layout-visual-terrain-pointer-v1', 'layoutId': layout_id, 'facilityId': facility_id,
+            'status': 'not_required_source_route_available',
+            'note': 'The route-specific terrain chain is authoritative for this layout.',
+        })
+        return [artifact('visual-terrain-pointer', pointer_path, 'C')]
+    facility = ctx.facility(facility_id) or {}
+    package = ctx.json(ctx.visual_candidate_package_path(layout_id), fresh=True)
+    if not package:
+        raise RuntimeError('visual terrain requires a facility visual package')
+    provider = select_terrain_provider((facility.get('providerPolicy') or {}).get('terrain') or [])
+    if provider is None:
+        raise RuntimeError('no terrain acquisition adapter is available for the facility visual world')
+    # New sources must record the perimeter-aware coverage contract. The
+    # older directory is retained immutable evidence; it cannot be relabelled
+    # after discovering an edge-coverage defect.
+    source_root = os.path.join(ctx.facility_out(facility_id), 'visual-terrain', package['contentHash'][:12] + '-perimeter-v1')
+    base_args = ['--acquire-only', '--provider', provider.compiler_id, '--holes', 'all', '--package', ctx.visual_candidate_package_path(layout_id),
+                 '--output', os.path.join(ctx.facility_out(facility_id), 'visual-compiled')]
+    source = source_root
+    # Keep the provider's native-size cap hard.  A facility that exceeds that
+    # one-request limit receives a separately versioned derived raster solely
+    # for a non-measurable visual scene. Nothing in this branch can make it a
+    # route, terrain measurement, shot constraint, or hole association.
+    if os.path.isdir(source) and not os.path.isfile(os.path.join(source, 'source-manifest.json')):
+        safe_rmtree(ctx, source)
+    try:
+        run_script(ctx, run, node, 'scripts/golf/course-geometry/compile-course-terrain.py', [*base_args, '--source', source])
+    except RuntimeError as error:
+        if provider.compiler_id not in ('nc_onemap_dem03', 'usgs_3dep_project_1m') or 'pixel cap' not in str(error):
+            raise
+        for resolution_m in VISUAL_TERRAIN_DERIVED_RESOLUTIONS_M:
+            candidate = source_root + f'-visual-r{resolution_m}m-v1'
+            if os.path.isdir(candidate) and not os.path.isfile(os.path.join(candidate, 'source-manifest.json')):
+                safe_rmtree(ctx, candidate)
+            try:
+                run_script(ctx, run, node, 'scripts/golf/course-geometry/compile-course-terrain.py', [*base_args, '--source', candidate,
+                           '--rendering-only-resolution-m', str(resolution_m)])
+            except RuntimeError as derived_error:
+                if 'pixel cap' in str(derived_error):
+                    continue
+                raise
+            source = candidate
+            break
+        else:
+            raise RuntimeError('No bounded derived visual terrain resolution fits the provider acquisition cap') from error
+    manifest = ctx.json(os.path.join(source, 'source-manifest.json'), fresh=True)
+    pointer_path = ctx.visual_terrain_pointer_path(layout_id)
+    _write_json(pointer_path, {
+        'kind': 'golfhelm-layout-visual-terrain-pointer-v1', 'layoutId': layout_id, 'facilityId': facility_id,
+        'directory': ctx.relpath(source), 'packageHash': package['contentHash'],
+        'sourceIdentity': terrain_source_identity(manifest), 'sourceManifestHash': digest(manifest),
+        'providerPolicyId': provider.policy_id, 'selectedTitle': manifest.get('selectedTitle'),
+        'renderingOnly': True, 'terrainTruthClass': 'visual_only',
+        'sourceNativeResolutionM': manifest.get('sourceNativeResolutionM', manifest.get('nativeResolutionM')),
+        'rasterResolutionM': manifest.get('nativeResolutionM'),
+    })
+    artifacts = [artifact('visual-terrain-pointer', pointer_path, 'C')]
+    artifacts += [artifact(f'visual-terrain-{name}', os.path.join(source, name), 'C') for name in manifest.get('fileHashes') or {}]
+    return artifacts
+
+
+def _facility_visual_step(manifest):
+    """A facility scene is background context, so cap its grid by visual
+    importance. This only decimates source samples for rendering; it never
+    changes the acquired raster or promotes the result into physical truth."""
+    bounds = (manifest or {}).get('requestedLocalBoundsM') or []
+    if len(bounds) != 4:
+        return 12
+    area = max(1, (bounds[2] - bounds[0]) * (bounds[3] - bounds[1]))
+    return min(20, max(8, int(math.ceil(math.sqrt(area / 120_000)))))
+
+
+def build_visual_world(node, ctx, run):
+    """Compile one GLB per facility and point each unresolved layout at it."""
+    layout_id, facility_id = node.scope.layout_id, node.scope.facility_id
+    if (ctx.visual_candidate_pointer(layout_id) or {}).get('status') == 'not_required_source_route_available':
+        pointer_path = ctx.visual_world_pointer_path(layout_id)
+        _write_json(pointer_path, {
+            'kind': 'golfhelm-layout-visual-world-pointer-v1', 'layoutId': layout_id, 'facilityId': facility_id,
+            'status': 'not_required_source_route_available', 'canonicalHoleRoutesAdmitted': True,
+            'note': 'Use the route-specific world; a facility-only fallback would be less precise.',
+        })
+        return [artifact('visual-world-pointer', pointer_path, 'C')]
+    package_path = ctx.visual_candidate_package_path(layout_id)
+    package = ctx.json(package_path, fresh=True)
+    source = ctx.visual_terrain_source_dir(layout_id)
+    if not package or not source:
+        raise RuntimeError('visual world requires the visual package and terrain source')
+    key = package['holes'][0]['key']
+    out = ctx.visual_world_dir(layout_id)
+    manifest_path = os.path.join(out, 'course-world-manifest.json')
+    glb_path = os.path.join(out, 'holes', key, 'rendering', f'{key}.glb')
+    preview_path = os.path.join(out, 'holes', key, 'rendering', f'{key}-preview.png')
+    source_manifest_path = os.path.join(source, 'source-manifest.json')
+    source_manifest = ctx.json(source_manifest_path, fresh=True)
+    with open(source_manifest_path, 'rb') as source_manifest_file:
+        source_manifest_sha256 = hashlib.sha256(source_manifest_file.read()).hexdigest()
+    current = ctx.json(manifest_path, fresh=True) if os.path.isfile(manifest_path) else None
+    reuse = bool(current and current.get('packageHash') == package['contentHash']
+                 and current.get('terrainSourceManifestSha256') == source_manifest_sha256
+                 and os.path.isfile(glb_path) and os.path.isfile(preview_path))
+    if not reuse:
+        if os.path.isdir(out):
+            safe_rmtree(ctx, out)
+        step = _facility_visual_step(source_manifest)
+        # Keep at least two visual-grid cells outside every source feature.
+        # The extra sampled terrain is render support only; no semantic point
+        # is moved or promoted into the physical model.
+        terrain_guard_m = max(16, step * 2)
+        run_script(ctx, run, node, 'scripts/golf/course-geometry/build-course-world.py',
+                   [package_path, source, out, '--terrain-step-m', str(step), '--padding-m', str(terrain_guard_m)])
+        current = ctx.json(manifest_path, fresh=True)
+    pointer_path = ctx.visual_world_pointer_path(layout_id)
+    _write_json(pointer_path, {
+        'kind': 'golfhelm-layout-visual-world-pointer-v1', 'layoutId': layout_id, 'facilityId': facility_id,
+        'visualPackageHash': package['contentHash'], 'facilityWorldManifest': ctx.relpath(manifest_path),
+        'glb': ctx.relpath(glb_path), 'preview': ctx.relpath(preview_path),
+        'canonicalHoleRoutesAdmitted': False,
+        'renderingContract': {
+            'canRender': True, 'canMeasure': False, 'maySupplyHoleAssociation': False,
+            'rule': 'The GLB is facility context only until a separately reviewed tee-to-green route is admitted into canonical geometry.',
+        },
+        'truthGatePassed': bool(current.get('truthGatePassed')) if current else False,
+    })
+    return [artifact('visual-world-pointer', pointer_path, 'C'), artifact('visual-world-manifest', manifest_path, 'C'),
+            artifact('visual-world-glb', glb_path, 'C'), artifact('visual-world-preview', preview_path, 'C')]
+
+
 def compose_scorecard(node, ctx, run):
     layout_id = node.scope.layout_id
     doc = ctx.pilot_scorecard(layout_id)
@@ -306,7 +491,9 @@ def acquire_terrain(node, ctx, run):
     pkg_path = ctx.candidates_package_path(layout_id)
     bounds = ctx.terrain_bounds(layout_id)
     key = digest(bounds)[:12]
-    source = os.path.join(ctx.facility_out(node.scope.facility_id), 'terrain', key)
+    # Keep the old four-corner source immutable. Perimeter coverage plus a
+    # native-grid buffer is a different acquired raster, not a metadata edit.
+    source = os.path.join(ctx.facility_out(node.scope.facility_id), 'terrain', key + '-perimeter-v1')
     run_script(ctx, run, node, 'scripts/golf/course-geometry/compile-course-terrain.py',
                ['--acquire-only', '--provider', provider.compiler_id, '--holes', 'all', '--package', pkg_path, '--source', source, '--output', ctx.terrain_base_out(layout_id)])
     manifest = ctx.json(os.path.join(source, 'source-manifest.json'), fresh=True)
@@ -436,7 +623,8 @@ def build_hole_world(node, ctx, run):
     manifest = ctx.json(os.path.join(out, 'course-world-manifest.json'), fresh=True)
     record = next(h for h in manifest['holes'] if h['ordinal'] == node.scope.ordinal)
     record_path = os.path.join(out, 'holes', hole['key'], 'record.json')
-    _write_json(record_path, {'packageHash': manifest['packageHash'], 'terrainRasterSha256': manifest['terrainRasterSha256'], 'builtAt': manifest['builtAt'],
+    _write_json(record_path, {'packageHash': manifest['packageHash'], 'terrainRasterSha256': manifest['terrainRasterSha256'],
+                              'terrainSourceIdentity': terrain_source_identity(ctx.terrain_source_manifest(layout_id)), 'builtAt': manifest['builtAt'],
                               'blender': args[-1] != '--skip-blender', **record})
     return [artifact('world-record', record_path, 'C'), artifact('world-study', os.path.join(out, 'holes', hole['key'], 'study.json'), 'C'),
             artifact('world-truth', os.path.join(out, 'holes', hole['key'], 'validation', 'course-truth.json'), 'C')]
@@ -721,6 +909,9 @@ DEFAULT_EXECUTORS = {
     'facility.context.snapshot': snapshot_context,
     'layout.routes.resolve': resolve_routes,
     'layout.route.dossier': write_route_dossier,
+    'layout.visual.candidates.compose': compose_visual_candidates,
+    'layout.visual.terrain.acquire': acquire_visual_terrain,
+    'layout.visual.world.build': build_visual_world,
     'layout.scorecard.compose': compose_scorecard,
     'layout.candidates.compose': compose_candidates,
     'layout.terrain.acquire': acquire_terrain,

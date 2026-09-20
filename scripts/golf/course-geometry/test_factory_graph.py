@@ -35,7 +35,7 @@ class GraphTests(unittest.TestCase):
         # Every layout's identity task hangs off the same catalog node.
         for layout_id in ('synthetic-a', 'synthetic-b'):
             self.assertIn('catalog.validate[synthetic]', graph.nodes[f'layout.identity.resolve[{layout_id}]'].deps)
-        self.assertEqual(len(graph.nodes), 4 + 2 * (13 + 18 * 4 + 8))
+        self.assertEqual(len(graph.nodes), 198)
 
     def test_selecting_a_layout_still_brings_its_facility(self):
         graph = build_graph(self.catalog, default_specs(), layout_ids=['synthetic-b'])

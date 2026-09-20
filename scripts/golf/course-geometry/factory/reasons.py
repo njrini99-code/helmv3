@@ -6,6 +6,7 @@ BLOCKERS = {
     'FACILITY_AOI_REQUIRED': 'the facility has no area of interest',
     'LAYOUT_IDENTITY_AMBIGUOUS': 'the layout names no site or binding that identifies it',
     'ROUTE_WAY_IDS_REQUIRED': 'route identity is human-pinned: routeWayIds is null',
+    'VISUAL_FALLBACK_NOT_REQUIRED': 'the layout already has a source-resolved route, so the facility-only visual fallback is not needed',
     'SCORECARD_REQUIRED': 'the layout has no scorecard profile',
     'SCORECARD_HOLE_MISMATCH': 'the scorecard profile and the layout disagree on the hole count',
     'HOLE_COUNT_UNSUPPORTED': 'the package builder requires a 9- through 36-hole layout',

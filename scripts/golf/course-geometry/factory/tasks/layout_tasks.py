@@ -103,6 +103,114 @@ def eval_route_dossier(node, ctx):
                       output=digest(doc) if adoptable else None)
 
 
+def _visual_fallback_inputs(node, ctx):
+    layout_id = node.scope.layout_id
+    resolution = ctx.route_resolution(layout_id)
+    return {
+        'osm': dep_input(ctx, node, 'facility.osm.snapshot'),
+        # The full evidence object, rather than a Boolean, makes a new source
+        # proposal invalidate the visual pointer without admitting it to the
+        # physical route chain.
+        'routeResolution': digest(resolution),
+    }, resolution
+
+
+def eval_visual_candidates_compose(node, ctx):
+    """A facility-scoped render package for a layout blocked on hole routes.
+
+    It shares source geometry with sibling layouts at the facility but every
+    layout receives its own pointer carrying the unresolved-route evidence.
+    The pointer is intentionally not a canonical package locator.
+    """
+    layout_id = node.scope.layout_id
+    inputs, resolution = _visual_fallback_inputs(node, ctx)
+    if resolution is None:
+        return evaluation(inputs)
+    pointer_path = ctx.visual_candidate_pointer_path(layout_id)
+    pointer = ctx.json(pointer_path) if ctx.can_adopt(pointer_path) else None
+    if resolution.get('routeWayIds'):
+        valid = bool(pointer and pointer.get('layoutId') == layout_id
+                     and pointer.get('status') == 'not_required_source_route_available'
+                     and pointer.get('canonicalHoleRoutesAdmitted') is True
+                     and pointer.get('routeSource') == resolution.get('source'))
+        return evaluation(inputs, [], [artifact('visual-candidate-pointer', pointer_path, 'C')] if valid else [], valid,
+                          ['facility visual fallback not required; source route is available'] if valid else [],
+                          output=digest(pointer) if valid else None)
+    package_path = ctx.visual_candidate_package_path(layout_id)
+    report_path = ctx.visual_candidate_report_path(layout_id)
+    package = ctx.json(package_path) if ctx.can_adopt(package_path) else None
+    report = ctx.json(report_path) if ctx.can_adopt(report_path) else None
+    manifest, _extract = ctx.snapshot(node.scope.facility_id)
+    valid = bool(pointer and package and report and content_hash_matches(package)
+                 and pointer.get('layoutId') == layout_id
+                 and pointer.get('packageHash') == package.get('contentHash')
+                 and pointer.get('extractSha256') == (manifest or {}).get('uncompressedSha256')
+                 and pointer.get('canonicalHoleRoutesAdmitted') is False
+                 and (report.get('renderingContract') or {}).get('canRender') is True
+                 and (report.get('renderingContract') or {}).get('canMeasure') is False)
+    notes = [f'facility visual candidate {str(package.get("contentHash"))[:12]} (renderable, non-measurable)'] if valid else []
+    artifacts = [artifact('visual-candidate-pointer', pointer_path, 'C'), artifact('package', package_path, 'C'),
+                 artifact('visual-candidate-report', report_path, 'C')] if valid else []
+    return evaluation(inputs, [], artifacts, valid, notes, output=package.get('contentHash') if valid else None)
+
+
+def eval_visual_terrain_acquire(node, ctx):
+    layout_id = node.scope.layout_id
+    inputs = {'visualPackage': dep_input(ctx, node, 'layout.visual.candidates.compose')}
+    pointer_path = ctx.visual_terrain_pointer_path(layout_id)
+    pointer = ctx.json(pointer_path) if ctx.can_adopt(pointer_path) else None
+    candidate_pointer = ctx.visual_candidate_pointer(layout_id) or {}
+    if candidate_pointer.get('status') == 'not_required_source_route_available':
+        valid = bool(pointer and pointer.get('layoutId') == layout_id and pointer.get('status') == 'not_required_source_route_available')
+        return evaluation(inputs, [], [artifact('visual-terrain-pointer', pointer_path, 'C')] if valid else [], valid,
+                          ['facility visual terrain not required; the route-specific terrain chain is available'] if valid else [],
+                          output=digest(pointer) if valid else None)
+    package = ctx.json(ctx.visual_candidate_package_path(layout_id))
+    folder = ctx.visual_terrain_source_dir(layout_id)
+    manifest = ctx.json(os.path.join(folder, 'source-manifest.json')) if folder and ctx.can_adopt(folder) else None
+    valid = bool(pointer and package and manifest and manifest.get('coverageMethod') == 'perimeter-v1'
+                 and pointer.get('packageHash') == package.get('contentHash')
+                 and pointer.get('sourceIdentity') == terrain_source_identity(manifest)
+                 and os.path.isfile(os.path.join(folder, 'elevation.tiff')))
+    artifacts = [artifact('visual-terrain-pointer', pointer_path, 'C')]
+    if valid:
+        artifacts += [artifact(f'visual-terrain-{name}', os.path.join(folder, name), 'C') for name in manifest.get('fileHashes') or {}]
+    notes = [f'facility visual terrain {str(pointer.get("sourceIdentity"))[:12]}'] if valid else []
+    return evaluation(inputs, [], artifacts if valid else [], valid, notes, output=pointer.get('sourceIdentity') if valid else None)
+
+
+def eval_visual_world_build(node, ctx):
+    layout_id = node.scope.layout_id
+    inputs = {'visualPackage': dep_input(ctx, node, 'layout.visual.candidates.compose'),
+              'terrain': dep_input(ctx, node, 'layout.visual.terrain.acquire')}
+    pointer_path = ctx.visual_world_pointer_path(layout_id)
+    pointer = ctx.json(pointer_path) if ctx.can_adopt(pointer_path) else None
+    candidate_pointer = ctx.visual_candidate_pointer(layout_id) or {}
+    if candidate_pointer.get('status') == 'not_required_source_route_available':
+        valid = bool(pointer and pointer.get('layoutId') == layout_id and pointer.get('status') == 'not_required_source_route_available')
+        return evaluation(inputs, [], [artifact('visual-world-pointer', pointer_path, 'C')] if valid else [], valid,
+                          ['facility visual world not required; route-specific world is available'] if valid else [],
+                          output=digest(pointer) if valid else None)
+    package = ctx.json(ctx.visual_candidate_package_path(layout_id))
+    manifest_path = os.path.join(ctx.visual_world_dir(layout_id), 'course-world-manifest.json')
+    manifest = ctx.json(manifest_path) if ctx.can_adopt(manifest_path) else None
+    key = ((package or {}).get('holes') or [{}])[0].get('key')
+    glb_path = os.path.join(ctx.visual_world_dir(layout_id), 'holes', str(key), 'rendering', f'{key}.glb') if key else None
+    preview_path = os.path.join(ctx.visual_world_dir(layout_id), 'holes', str(key), 'rendering', f'{key}-preview.png') if key else None
+    valid = bool(pointer and package and manifest and key and glb_path and preview_path
+                 and pointer.get('layoutId') == layout_id
+                 and pointer.get('visualPackageHash') == package.get('contentHash')
+                 and manifest.get('packageHash') == package.get('contentHash')
+                 and pointer.get('canonicalHoleRoutesAdmitted') is False
+                 and (pointer.get('renderingContract') or {}).get('canRender') is True
+                 and (pointer.get('renderingContract') or {}).get('canMeasure') is False
+                 and os.path.isfile(glb_path) and os.path.isfile(preview_path))
+    artifacts = [artifact('visual-world-pointer', pointer_path, 'C'), artifact('visual-world-manifest', manifest_path, 'C'),
+                 artifact('visual-world-glb', glb_path, 'C'), artifact('visual-world-preview', preview_path, 'C')] if valid else []
+    notes = [f'facility visual GLB {str(package.get("contentHash"))[:12]} (route unresolved; no measurement authority)'] if valid else []
+    return evaluation(inputs, [], artifacts, valid, notes, output=package.get('contentHash') if valid else None)
+
+
 def eval_scorecard_compose(node, ctx):
     layout_id = node.scope.layout_id
     inputs = {'routes': dep_input(ctx, node, 'layout.routes.resolve'), 'scorecard': dep_input(ctx, node, 'layout.scorecard.validate'),
@@ -141,6 +249,9 @@ def _package_eval(folder_fn, dep_ids, with_canopy=False):
             adoptable, notes = False, notes + ['package was prepared from another scorecard']
         report = ctx.json(os.path.join(folder, 'association-report.json')) or {}
         if with_canopy:
+            terrain = ctx.terrain_source_manifest(layout_id)
+            if not terrain or terrain.get('coverageMethod') != 'perimeter-v1':
+                return evaluation(inputs, [], [], False, ['package canopy evidence depends on a terrain source that predates the perimeter-coverage contract'])
             canopy_used = bool((report.get('canopy') or {}).get('rasterSha256'))
             canopy_now = ctx.states.get(f'layout.canopy.derive[{layout_id}]') in ('cached', 'success') and exists(ctx.canopy_path(layout_id))
             if canopy_used != canopy_now:
@@ -202,6 +313,8 @@ def eval_terrain_acquire(node, ctx):
     manifest = ctx.json(os.path.join(folder, 'source-manifest.json')) if folder and ctx.can_adopt(folder) else None
     if not manifest:
         return evaluation(inputs)
+    if manifest.get('coverageMethod') != 'perimeter-v1':
+        return evaluation(inputs, [], [], False, ['terrain source predates the perimeter-coverage contract'])
     notes = [f'{manifest.get("selectedTitle")} retrieved {manifest.get("retrievedAt")}']
     # The verified artifacts are the raster files and the pointer. The source
     # manifest itself is evidence, not an artifact: the compiler appends every
@@ -237,6 +350,9 @@ def eval_canopy_derive(node, ctx):
     doc = ctx.json(path) if ctx.can_adopt(path) else None
     if not doc:
         return evaluation(inputs)
+    terrain = ctx.terrain_source_manifest(layout_id)
+    if not terrain or terrain.get('coverageMethod') != 'perimeter-v1':
+        return evaluation(inputs, [], [], False, ['canopy review depends on a terrain source that predates the perimeter-coverage contract'])
     naip = ctx.naip_dir(layout_id)
     naip_manifest = ctx.json(os.path.join(naip, 'manifest.json')) if naip else None
     notes = [f'canopy review {doc.get("reviewedAt", "")}: {len(doc.get("regions", []))} groups, raster {str(doc.get("rasterSha256"))[:12]}']
@@ -350,6 +466,8 @@ def eval_context_classify(node, ctx):
         return evaluation(inputs, [blocked('SOURCE_HASH_MISMATCH', path=ctx.relpath(path), detail='context contentHash does not recompute')])
     if doc.get('packageHash') != ctx.package_hash(layout_id):
         return evaluation(inputs, [], [], False, [f'context layer is for package {str(doc.get("packageHash"))[:12]}'])
+    if not ctx.compiled_source_matches(layout_id, ctx.terrain_base_dir(layout_id)):
+        return evaluation(inputs, [], [], False, ['context layer depends on a terrain source that predates the perimeter-coverage contract'])
     report_path = ctx.context_report_path(layout_id)
     report = ctx.json(report_path) if ctx.can_adopt(report_path) else None
     ref = artifact('context-layer', path, 'A')
@@ -372,6 +490,14 @@ SPECS = [
     TaskSpec('layout.routes.resolve', '1', 'layout', ('layout.identity.resolve', 'layout.scorecard.validate', 'facility.osm.snapshot'), eval_routes_resolve, retention='A', estimated_bytes=10_000),
     TaskSpec('layout.route.dossier', '1', 'layout', ('layout.identity.resolve', 'layout.scorecard.validate', 'facility.osm.snapshot'), eval_route_dossier,
              impl_files=(script('factory/adapters.py'),), retention='C', estimated_bytes=20_000),
+    TaskSpec('layout.visual.candidates.compose', '1', 'layout', ('layout.identity.resolve', 'facility.osm.snapshot', 'layout.routes.resolve?'), eval_visual_candidates_compose,
+             impl_files=(script('prepare-osm-facility-visual.py'),), retention='C', estimated_bytes=20_000_000),
+    TaskSpec('layout.visual.terrain.acquire', '1', 'layout', ('layout.visual.candidates.compose',), eval_visual_terrain_acquire,
+             impl_files=TERRAIN_COMPILER_FILES, retention='C', estimated_bytes=450_000_000),
+    TaskSpec('layout.visual.world.build', '1', 'layout', ('layout.visual.candidates.compose', 'layout.visual.terrain.acquire'), eval_visual_world_build,
+             impl_files=(script('build-course-world.py'), script('normalize-study.py'), script('compile-physical-world.py'),
+                         script('course-truth-gate.py'), script('blender/generate_hole.py'), script('blender/validate_glb.py')),
+             retention='C', estimated_bytes=120_000_000),
     TaskSpec('layout.scorecard.compose', '1', 'layout', ('layout.routes.resolve', 'layout.scorecard.validate', 'facility.aoi.resolve'), eval_scorecard_compose, retention='A', estimated_bytes=10_000),
     TaskSpec('layout.candidates.compose', '1', 'layout', ('facility.osm.snapshot', 'layout.scorecard.compose'),
              _package_eval(lambda c, l: c.candidates_dir(l), ('facility.osm.snapshot', 'layout.scorecard.compose')),

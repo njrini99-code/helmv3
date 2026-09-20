@@ -61,6 +61,41 @@ class TerrainCompilerTest(unittest.TestCase):
         self.assertEqual(bounds, [100.0, 200.0, 112.5, 212.5])
         self.assertEqual(size, [4, 4])
 
+    def test_nc_onemap_rendering_only_grid_keeps_source_bounds_but_declares_derived_pixel_size(self):
+        # A facility visual scene can be too large for the provider's native
+        # one-request cap.  It may use a coarser render-only raster, but its
+        # request extent still has to remain snapped to the provider grid and
+        # the requested output cannot exceed the same hard cap.
+        bounds, size, pixel_m = compiler.nc_rendering_only_grid_bounds(
+            [100.1, 200.1, 110.0, 209.4], {'xmin': 0, 'ymin': 0}, 2,
+        )
+        self.assertEqual(bounds, [100.0, 200.0, 112.5, 212.5])
+        self.assertEqual(size, [2, 2])
+        self.assertAlmostEqual(pixel_m[0], 12.5 / 2 * compiler.US_SURVEY_FOOT_TO_METERS)
+        self.assertAlmostEqual(pixel_m[1], 12.5 / 2 * compiler.US_SURVEY_FOOT_TO_METERS)
+        with self.assertRaisesRegex(ValueError, 'coarser'):
+            compiler.nc_rendering_only_grid_bounds([100.1, 200.1, 110.0, 209.4], {'xmin': 0, 'ymin': 0}, .5)
+
+    def test_usgs_rendering_only_grid_cannot_silently_claim_native_sampling(self):
+        # 2 m would still exceed the provider cap; the caller must advance to
+        # a separately declared 4 m visual-only raster.
+        with self.assertRaisesRegex(ValueError, 'pixel cap'):
+            compiler.usgs_rendering_only_grid_size(9447, 8722, 2)
+        self.assertEqual(compiler.usgs_rendering_only_grid_size(9447, 8722, 4), [2362, 2181])
+        with self.assertRaisesRegex(ValueError, 'coarser'):
+            compiler.usgs_rendering_only_grid_size(9447, 8722, 1)
+
+    def test_source_request_samples_every_local_bound_edge(self):
+        # Projecting only four ENU corners into a different CRS can leave a
+        # curved edge just outside the raster. The source request must include
+        # its edge midpoints too, not merely the corners.
+        samples = compiler.local_bounds_perimeter([0, 10, 100, 50], samples_per_edge=2)
+        self.assertEqual(samples[0], (0, 10))
+        self.assertIn((50, 10), samples)
+        self.assertIn((100, 30), samples)
+        self.assertIn((50, 50), samples)
+        self.assertIn((0, 30), samples)
+
     def test_nc_onemap_service_contract_rejects_a_changed_grid_or_units(self):
         service = {'pixelType': 'F32', 'serviceDataType': 'esriImageServiceDataTypeElevation',
                    'pixelSizeX': 3.125, 'pixelSizeY': 3.125, 'spatialReference': {'wkt': 'UNIT["Foot_US",0.304800609601219]'}}

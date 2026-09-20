@@ -297,10 +297,14 @@ def cmd_batch(session, args, out):
         layout_id = item['layoutId']
         graph = session.graph(layout_id)
         # A world aggregate cannot be reached when route identity is not
-        # source-confirmed. Always run the independent dossier too, so every
-        # catalogued layout leaves an auditable, actionable route review
-        # artifact instead of a bare blocker in a transient console report.
-        keys = select_keys(graph, until=args.until) | select_keys(graph, task='layout.route.dossier')
+        # source-confirmed. In that case the factory still builds a clearly
+        # labelled, facility-scoped visual GLB. It has no hole association and
+        # cannot feed measurements, but it prevents missing OSM route tags
+        # from becoming a blank course. The independent dossier remains the
+        # route-review evidence that unlocks the physical chain later.
+        keys = (select_keys(graph, until=args.until)
+                | select_keys(graph, task='layout.route.dossier')
+                | select_keys(graph, task='layout.visual.world.build'))
         run_id = 'batch-' + now_iso().replace(':', '').replace('-', '')[:15] + '-' + uuid.uuid4().hex[:6]
         run = Run(run_id=run_id, out_dir=os.path.join(session.output_root, 'runs', run_id))
         command = f'batch --layout {layout_id} --until {args.until}'

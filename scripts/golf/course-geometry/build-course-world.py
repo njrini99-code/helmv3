@@ -37,6 +37,16 @@ def sha256(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def blender_python_command(blender, script, script_args):
+    """Run Blender Python with a nonzero exit status for compiler errors.
+
+    Blender otherwise reports a successful process for many uncaught Python
+    exceptions, which can leave a partial world directory looking valid.
+    """
+    return [str(blender), '--background', '--python-exit-code', '1', '--python', str(script), '--',
+            *[str(value) for value in script_args]]
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('package', type=Path)
@@ -51,8 +61,12 @@ def main():
     package = json.loads(args.package.read_text())
     wanted = None if args.holes == 'all' else {int(n) for n in args.holes.split(',')}
     raster = args.terrain_source / 'elevation.tiff'
+    terrain_source_manifest = args.terrain_source / 'source-manifest.json'
+    if not terrain_source_manifest.is_file():
+        raise SystemExit('Terrain source manifest is required to compile a world')
     manifest = {'schemaVersion': 1, 'kind': 'golfhelm-course-world-manifest-v1', 'siteId': package['siteId'], 'course': package['name'],
-                'packageHash': package['contentHash'], 'terrainRasterSha256': sha256(raster), 'builtAt': datetime.now(timezone.utc).isoformat(),
+                'packageHash': package['contentHash'], 'terrainRasterSha256': sha256(raster),
+                'terrainSourceManifestSha256': sha256(terrain_source_manifest), 'builtAt': datetime.now(timezone.utc).isoformat(),
                 'terrainStepMeters': args.terrain_step_m, 'paddingMeters': args.padding_m, 'holes': [], 'truthGatePassed': None,
                 'publicationRule': 'No hole below passes the course truth gate unless its row says so; GLBs are visual review products only.'}
     for hole in package['holes']:
@@ -77,10 +91,10 @@ def main():
             glb = directory / 'rendering' / f'{key}.glb'
             preview = directory / 'rendering' / f'{key}-preview.png'
             export_report = directory / 'validation' / 'blender-export.json'
-            run([args.blender, '--background', '--python', str(HERE / 'blender' / 'generate_hole.py'), '--',
-                 str(world), str(raster), str(glb), str(export_report), str(preview)])
+            run(blender_python_command(args.blender, HERE / 'blender' / 'generate_hole.py',
+                                       [world, raster, glb, export_report, preview]))
             roundtrip = directory / 'validation' / 'glb-roundtrip.json'
-            run([args.blender, '--background', '--python', str(HERE / 'blender' / 'validate_glb.py'), '--', str(world), str(glb), str(roundtrip)])
+            run(blender_python_command(args.blender, HERE / 'blender' / 'validate_glb.py', [world, glb, roundtrip]))
             trip = json.loads(roundtrip.read_text())
             if not trip['passed']:
                 raise SystemExit(f'{key}: GLB round trip failed')

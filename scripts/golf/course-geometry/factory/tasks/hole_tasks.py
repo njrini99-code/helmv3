@@ -3,6 +3,7 @@ never the whole package hash, so one hole's edit stays one hole's rebuild."""
 import os
 
 from .. import lab
+from ..fingerprints import terrain_source_identity
 from ..model import TaskSpec
 from .common import (
     TERRAIN_COMPILER_FILES,
@@ -75,11 +76,13 @@ def eval_world_build(node, ctx):
     record = ctx.json(os.path.join(folder, 'record.json')) if ctx.can_adopt(folder) else None
     if not record:
         return evaluation(inputs)
-    adoptable = record.get('packageHash') == ctx.package_hash(layout_id)
+    terrain = ctx.terrain_source_manifest(layout_id)
+    current_terrain_identity = terrain_source_identity(terrain) if terrain and terrain.get('coverageMethod') == 'perimeter-v1' else None
+    adoptable = record.get('packageHash') == ctx.package_hash(layout_id) and record.get('terrainSourceIdentity') == current_terrain_identity
     notes = [f'world build {record.get("builtAt", "")[:10]}: truth gate {"passed" if record.get("truthGatePassed") else "failed"}'
              + ('' if record.get('blender', True) else ' (blender skipped)')]
     if not adoptable:
-        notes.append('world build is for another package')
+        notes.append('world build is for another package or terrain source')
     artifacts = [artifact('world-record', os.path.join(folder, 'record.json'), 'C'), artifact('world-study', os.path.join(folder, 'study.json'), 'C'),
                  artifact('world-truth', os.path.join(folder, 'validation', 'course-truth.json'), 'C')]
     return evaluation(inputs, [], artifacts, adoptable, notes, output=record.get('physicalWorldHash'))

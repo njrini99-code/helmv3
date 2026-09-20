@@ -62,7 +62,7 @@ Today: 12 facilities, 16 layouts (see §7).
 | File | Role |
 | --- | --- |
 | `cli.py` | `doctor`, `plan`, `run`, `status`, `why`, `invalidate`, `intake`; `--output <root>`, `--repo-root` |
-| `graph.py` | builds the DAG: facility → layout → hole scopes; 29 task ids, 97 nodes for an 18-hole layout and the same task shapes for 9–36-hole layouts |
+| `graph.py` | builds the DAG: facility → layout → hole scopes; 32 task ids, 101 nodes for an 18-hole layout and the same task shapes for 9–36-hole layouts |
 | `tasks/{facility,layout,hole,aggregate}_tasks.py` | one `TaskSpec` per task: deps, evaluator (inputs, blockers, adoptable artifacts), `impl_files`, settings, retention class |
 | `fingerprints.py` | fingerprint = task id + version + impl-file hashes + settings + direct semantic inputs (never the git commit) |
 | `planner.py` | state per node: `ready`, `pending`, `cached`, `stale`, `blocked`, `failed`; own blockers outrank a cached success; `why` chains |
@@ -79,11 +79,12 @@ Output root (disposable, never committed): `output/course-geometry/factory/`
 ```text
 state.sqlite
 runs/<run-id>/report.{json,md} + <task>.log
-facilities/<facilityId>/{aoi.json, osm/, osm-context/, terrain/<boundsKey>/, naip/<boundsKey>/}
+facilities/<facilityId>/{aoi.json, osm/, osm-context/, terrain/<boundsKey>/, visual-candidate/, visual-terrain/<boundsKey>/, visual-world/, naip/<boundsKey>/}
 layouts/<layoutId>/{routes.json, route-review.json, scorecard.json, candidates/, package/normalized.json, canopy-review.json,
                     compiled-base/, compiled/ (asset-manifest.json + <layout>-NN-terrain.json[.gz] + -report.json),
                     context/<layout>-context.json + -context-report.json, imagery-review/, imagery-review.json,
                     world/holes/<holeKey>/, terrain-summary.json, review-queue.json, capability-report.json,
+                    visual-candidate.json, visual-terrain-source.json, visual-world.json,
                     visual/ (canaries + sheets), player/ (captures + sheets), publish-verification.json}
 research/s1m-coverage.{json,md}
 ```
@@ -100,6 +101,30 @@ layout.identity.resolve, layout.scorecard.validate → layout.routes.resolve →
 → layout.review.queue → layout.review.compose → layout.publish.prepare → layout.publish.verify
 → layout.capability.evaluate
 ```
+
+### 1.2.1 Route-blocked facility visual fallback
+
+`layout.routes.resolve` is the boundary between a physical hole world and a
+facility visual world. When the route cannot be source-confirmed, its reason
+remains `ROUTE_WAY_IDS_REQUIRED`; the factory does not manufacture a
+tee-to-green corridor from scorecard yardage or visual proximity. In parallel,
+the three `layout.visual.*` tasks create a shared facility package, acquire a
+terrain raster, and compile one non-measurable GLB for visual orientation.
+
+The visual package has `canonicalHoleRoutesAdmitted: false`. Its world pointer
+has `canRender: true`, `canMeasure: false`, and
+`maySupplyHoleAssociation: false`. It can show sourced green/bunker/water
+footprints and visual-only vegetation, but it cannot provide a hole yardage,
+terrain measurement, slope, lie, shot constraint, or replay endpoint.
+
+Native terrain requests keep the provider's hard pixel cap. If an unresolved
+facility is too large for one native provider request, the factory creates a
+different immutable `*-visual-r<N>m-v1` source record at the smallest
+source-aligned **derived** resolution that fits. That manifest records both
+`sourceNativeResolutionM` and the coarser `nativeResolutionM`, plus
+`renderingOnly: true`; the normalized and physical worlds carry
+`truthClass: visual_only`. This is a renderer support layer, never a downgrade
+of the native physical-terrain contract.
 
 Rules the factory enforces: it never writes `src/`, `public/`, flags or a
 retained path; every executor writes under the output root; heavy tasks

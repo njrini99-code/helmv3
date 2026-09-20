@@ -35,6 +35,22 @@ class PhysicalWorldTest(unittest.TestCase):
         self.assertTrue(bunker['rendering']['renderable'])
         self.assertFalse(bunker['rendering']['measurementAuthority'])
 
+    def test_rendering_only_terrain_cannot_be_promoted_to_a_physical_height_field(self):
+        fixture = {
+            'kind': 'golfhelm-canonical-local-meter-study', 'contentHash': 'canonical', 'siteId': 'test', 'physicalStudyKey': 'visual', 'status': 'source_candidate_partial',
+            'coordinateSystem': {'units': 'meters', 'oneWorldUnitEqualsMeters': True},
+            'terrain': {'truthClass': 'visual_only', 'grid': {'width': 2, 'height': 2, 'positionsMeters': []},
+                        'source': {'nativeResolutionMeters': 2, 'sourceNativeResolutionMeters': .9525, 'renderingOnly': True}},
+            'features': [], 'limitations': ['A rendering-only source was used.'], 'sources': {},
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            inp, out = Path(directory) / 'canonical.json', Path(directory) / 'world.json'
+            inp.write_text(json.dumps(fixture))
+            subprocess.run(['python3', str(SCRIPT), str(inp), str(out)], check=True, capture_output=True, text=True)
+            world = json.loads(out.read_text())
+        self.assertEqual(world['terrainField']['truthClass'], 'visual_only')
+        self.assertTrue(world['terrainField']['source']['renderingOnly'])
+
 
 if __name__ == '__main__':
     unittest.main()
