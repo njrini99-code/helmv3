@@ -461,6 +461,7 @@ def main():
         if (previous.get('schema') != INDEX_SCHEMA or previous.get('facilityId') != aoi['facilityId']
                 or previous.get('aoiResponseSha256') != aoi['responseSha256']
                 or previous.get('tileCountPlanned') != len(tiles)
+                or (previous.get('acquisitionBoundsWgs84') is not None and previous['acquisitionBoundsWgs84'] != aoi['bboxWgs84'])
                 or previous.get('sourceResolutionMeters') != source_resolution):
             raise ValueError('Existing index has different acquisition inputs; use a new output directory')
         # Retain previously verified tiles beyond --limit. Never downgrade a
@@ -485,6 +486,8 @@ def main():
             'schema': INDEX_SCHEMA,
             'facilityId': aoi['facilityId'],
             'aoiResponseSha256': aoi['responseSha256'],
+            'acquisitionBoundsWgs84': aoi['bboxWgs84'],
+            'acquisitionExtent': aoi.get('acquisitionExtent'),
             'source': {
                 'provider': 'USGS NAIP Plus', 'service': SERVICE,
                 'serviceWkid': service_wkid_value, 'targetWkid': target_wkid,

@@ -142,6 +142,13 @@ using `esriMosaicLockRaster`, retains acquisition dates and RGB+NIR, and checks
 the actual TIFF grid/CRS/bands rather than trusting response metadata. The
 batch downloads once per facility, checkpoints every verified tile, and
 resumes without replacing source hashes. It preserves NC's regional sources.
+Acquisition coverage unions the site request with explicit catalogued layout
+envelopes. This fixes multi-loop facilities whose OSM site polygon omits a
+played loop. `factory/imagery_extent.py` preserves the original site polygon
+and response hash, records the coverage-only derivation, and selects a new
+extent-keyed imagery cache. Expanded requests never fall back to clipped older
+imagery. These envelopes confer neither route ownership nor measurement
+authority. `--facility` permits bounded batch retries by facility ID.
 Work is bounded to 256 tiles/256 million pixels per facility, four million
 pixels per request, at most four workers, and an eight-GiB disk reserve.
 Preflight budgets the entire remaining source/preview footprint at eight bytes

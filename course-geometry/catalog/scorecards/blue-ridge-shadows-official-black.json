@@ -1,0 +1,104 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "blue-ridge-shadows-official-black",
+  "layoutId": "blue-ridge-shadows-gc",
+  "teeName": "Black",
+  "source": {
+    "provider": "official_course_site",
+    "url": "https://blueridgeshadows.com/course-tour/",
+    "retrievedAt": "2026-09-20",
+    "note": "Official hole-tour Black tees: 7315 yards / par 72, independently matches https://blueridgeshadows.com/about-us/. Transcribed from the 18 official diagrams; ambiguous OCR for holes 4 and 14 visually checked. Image URL pattern https://blueridgeshadows.com/wp-content/uploads/2018/06/blueridgeshadows_benchcraftcompany_{hole}.png. Retained individual source hashes in output/course-geometry/factory/research/official-scorecards/blue-ridge-shadows/source-metadata.json (SHA256 86e4b1c83893d060eeab5e3dde27e7164da222ad45eb2bd032c9685c28e6368e). The current official page serves 2018/06 diagrams; actual update date is unknown. These are scorecard facts, not georeferenced geometry, daily tee-marker positions, or proof of current hole boundaries."
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 4,
+      "yards": 411
+    },
+    {
+      "hole": 2,
+      "par": 4,
+      "yards": 355
+    },
+    {
+      "hole": 3,
+      "par": 3,
+      "yards": 248
+    },
+    {
+      "hole": 4,
+      "par": 5,
+      "yards": 554
+    },
+    {
+      "hole": 5,
+      "par": 3,
+      "yards": 234
+    },
+    {
+      "hole": 6,
+      "par": 5,
+      "yards": 567
+    },
+    {
+      "hole": 7,
+      "par": 4,
+      "yards": 420
+    },
+    {
+      "hole": 8,
+      "par": 4,
+      "yards": 436
+    },
+    {
+      "hole": 9,
+      "par": 4,
+      "yards": 444
+    },
+    {
+      "hole": 10,
+      "par": 3,
+      "yards": 188
+    },
+    {
+      "hole": 11,
+      "par": 4,
+      "yards": 425
+    },
+    {
+      "hole": 12,
+      "par": 3,
+      "yards": 226
+    },
+    {
+      "hole": 13,
+      "par": 4,
+      "yards": 489
+    },
+    {
+      "hole": 14,
+      "par": 5,
+      "yards": 562
+    },
+    {
+      "hole": 15,
+      "par": 4,
+      "yards": 449
+    },
+    {
+      "hole": 16,
+      "par": 5,
+      "yards": 589
+    },
+    {
+      "hole": 17,
+      "par": 4,
+      "yards": 380
+    },
+    {
+      "hole": 18,
+      "par": 4,
+      "yards": 338
+    }
+  ]
+}

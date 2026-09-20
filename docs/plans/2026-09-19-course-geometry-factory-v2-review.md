@@ -689,3 +689,52 @@ Local evidence is retained under `output/course-geometry/factory/research/`:
 processes finish; per-facility indices are the resumable acquisition evidence.
 No source-candidate render is declared production-ready, and no production
 binding or flag was changed.
+
+
+## Catalog continuation: source coverage and Blue Ridge Shadows (September 20)
+
+The 24-layout run completed without executor failures. A subsequent official
+scorecard addition unblocked Blue Ridge Shadows: its Black tee hole tour sums
+to 7,315 yards / par 72 and matches the official course summary. The published
+diagrams have 2018/06 URL paths; their actual update date is unknown. They
+supply scorecard facts only, never georeferenced boundaries or daily markers.
+The source URLs and retained image-manifest hash are in
+`course-geometry/catalog/scorecards/blue-ridge-shadows-official-black.json`.
+
+The retained checkpoint now contains ten complete 18-hole asset sets (180
+GLBs). The other fourteen layouts have facility visual assets, with these
+physical hole-world blockers preserved:
+
+| Layout | Missing confirmation |
+| --- | --- |
+| Boonsboro | Hole routing |
+| Cape Fear | Hole routing and matching scorecard |
+| Landfall Marsh 9 / Ocean 9 / four Nicklaus combinations | Hole routing; the `nicklaus-m-o` entry also needs a matching scorecard |
+| Denison | Matching scorecard |
+| Eagle Point | Hole routing and matching scorecard |
+| Lakeview | Hole routing and matching scorecard |
+| PGA National Champion | Hole routing |
+| Shenandoah Valley | Hole routing and matching scorecard |
+| Cardinal | Hole routing |
+
+These are catalog layouts, including combinations at shared facilities, not a
+count of unique physical properties. The ten generated hole-world manifests
+still report `truthGatePassed: false`; this checkpoint does not publish them
+or claim approved feature geometry. Blue Ridge's maximum GLB round-trip
+coordinate error is 0.0000289942 m. That measures export consistency, not
+real-world source accuracy. Reports live under the factory research directory:
+`all-courses-world-batch-v3.json`, `blue-ridge-world-run-v1.json`, and
+`catalog-checkpoint-v1.json`.
+
+Native overlay validation caught an actual acquisition defect at Peek'n Peak:
+the facility site's smaller OSM polygon omitted the western Upper Course.
+The imagery batch now unions explicit catalog layout envelopes into an
+acquisition-only request. Original source polygons and their hashes remain
+unchanged. Expanded bounds select a separate immutable cache, and consumers
+cannot fall back to the old clipped cache. No route is admitted by the union.
+The regression suite covers expansion, original evidence preservation,
+unrelated facilities, cache identity, and invalid geographic bounds.
+
+Validation: 214 Python tests pass; `docs:check` and `helm-os:check` pass. No
+production binding, source-accuracy gate, shot observation, or generated
+repository documentation was edited by hand.

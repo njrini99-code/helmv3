@@ -7,6 +7,7 @@ import json
 import os
 
 from . import osm
+from .imagery_extent import selected_index
 from .fingerprints import (
     content_hash_matches,
     digest,
@@ -254,7 +255,7 @@ class Context:
 
     def indexed_imagery(self, layout_id):
         facility = (self.layout(layout_id) or {}).get('facilityId')
-        path = os.path.join(self.facility_out(facility), 'naip-plus-locked-v2', 'index.json')
+        path = str(selected_index(self.facility_out(facility)))
         index = self.json(path)
         if (index and index.get('schema') == 'golfhelm-facility-usgs-naip-plus-index-v2'
                 and index.get('complete') is True and index.get('facilityId') == facility):

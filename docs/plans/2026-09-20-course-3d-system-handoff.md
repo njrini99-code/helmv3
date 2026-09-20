@@ -189,6 +189,12 @@ unknown. `indexed_naip.py` then reuses those verified tiles offline for canopy,
 avoiding duplicate whole-course service requests. The derived canopy cache is
 keyed by pixel/provenance identity, independent of resume timestamps. These
 stages never admit physical geometry or claim independently reviewed trees.
+Acquisition extents also include explicit catalogued layout envelopes. The
+Peek'n Peak Upper overlay exposed a smaller site-only crop; the reusable
+`factory/imagery_extent.py` now records the coverage union in `imagery-aoi.json`
+and selects a new extent-keyed cache, retaining the earlier source unchanged.
+The site polygon and route associations are not altered. An expanded request
+cannot silently reuse a clipped earlier cache.
 
 Rules the factory enforces: it never writes `src/`, `public/`, flags or a
 retained path; every executor writes under the output root; heavy tasks

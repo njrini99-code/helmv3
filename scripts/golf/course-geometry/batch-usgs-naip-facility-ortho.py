@@ -13,6 +13,7 @@ import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from factory.imagery_extent import acquisition_aoi, index_for_aoi
 
 HERE = Path(__file__).resolve().parent
 
@@ -68,7 +69,17 @@ def execute(plan, args):
                 job.update(status='aoi_resolution_failed', returncode=code)
                 write_json(args.report, plan)
                 continue
-        command = [sys.executable, str(HERE / 'fetch-usgs-naip-facility-ortho.py'), job['aoi'],
+        # Site polygons can omit a catalogued loop (Peek'n Peak Upper, for
+        # example). Extend only acquisition coverage, with a new immutable
+        # cache identity; do not change canonical site or route geometry.
+        layouts = [json.loads(p.read_text()) for p in sorted((args.catalog / 'layouts').glob('*.json'))]
+        source_aoi = json.loads(Path(job['aoi']).read_text())
+        imagery_aoi = acquisition_aoi(source_aoi, layouts)
+        request_path = out.parent / 'imagery-aoi.json'
+        write_json(request_path, imagery_aoi)
+        out = index_for_aoi(out.parent, imagery_aoi).parent
+        job.update(output=str(out), acquisitionAoi=str(request_path))
+        command = [sys.executable, str(HERE / 'fetch-usgs-naip-facility-ortho.py'), str(request_path),
                    job['output'], '--reserve-gb', str(args.reserve_gb)]
         code = run_logged(command, log)
         index = json.loads((out / 'index.json').read_text()) if (out / 'index.json').is_file() else {}
@@ -86,12 +97,18 @@ def main():
     parser.add_argument('factory_root', type=Path)
     parser.add_argument('report', type=Path)
     parser.add_argument('--execute', action='store_true')
+    parser.add_argument('--facility', action='append', default=[], help='limit a retry to named facilities (repeatable)')
     parser.add_argument('--reserve-gb', type=float, default=8)
     args = parser.parse_args()
     if not math.isfinite(args.reserve_gb) or args.reserve_gb < 8:
         raise ValueError('Reserve must be at least 8 GiB')
     facilities = [json.loads(p.read_text()) for p in sorted((args.catalog / 'facilities').glob('*.json'))]
     layouts = [json.loads(p.read_text()) for p in sorted((args.catalog / 'layouts').glob('*.json'))]
+    if args.facility:
+        unknown = set(args.facility) - {card['facilityId'] for card in facilities}
+        if unknown:
+            raise ValueError('Unknown facilities: ' + ', '.join(sorted(unknown)))
+        facilities = [card for card in facilities if card['facilityId'] in args.facility]
     plan = {'schema': 'golfhelm-source-locked-naip-batch-v1', 'generatedAt': datetime.now(timezone.utc).isoformat(),
             'jobs': build_jobs(facilities, layouts, args.factory_root), 'canMeasurePhysicalGeometry': False}
     write_json(args.report, plan)

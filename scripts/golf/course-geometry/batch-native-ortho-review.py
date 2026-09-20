@@ -18,6 +18,7 @@ import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from factory.imagery_extent import selected_index
 
 
 HERE = Path(__file__).resolve().parent
@@ -56,7 +57,7 @@ def index_hash(path):
 def native_assets(factory_root, facility_id):
     native_index = Path(factory_root) / 'facilities' / facility_id / 'native-ortho-nir-v2' / 'index.json'
     if not native_index.is_file():
-        naip_index = native_index.parent.parent / 'naip-plus-locked-v2' / 'index.json'
+        naip_index = selected_index(native_index.parent.parent)
         if naip_index.is_file():
             return {'nativeIndex': str(naip_index), 'sourceItems': None, 'provider': 'usgs_naip_plus'}
         return {'nativeIndex': None, 'sourceItems': None}

@@ -524,6 +524,12 @@ This batch requires a route candidate package plus either a complete NC index
 with matching source-item sidecar, or a complete locked national v2 index with
 verified raster and metadata hashes. National imagery uses its actual 0.3/0.6-m
 spacing, never the NC six-inch label. Outputs use `native-imagery-review-v2`.
+The national batch includes explicit catalog layout envelopes in the imagery
+coverage request when a site polygon is too small. `imagery-aoi.json` records
+this acquisition-only union without editing site or hole geometry. Expanded
+requests use an extent-keyed cache; the previous source cache stays intact and
+cannot be used as a fallback for missing expanded coverage. Retry a particular
+facility with `--facility <facility-id>` on the national batch command.
 It never edits
 canonical geometry, admits a route, or supplies physical measurements.
 
