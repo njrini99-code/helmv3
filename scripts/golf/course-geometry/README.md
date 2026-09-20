@@ -114,6 +114,27 @@ static review render. Tee surfaces have their own material role. The bundled
 camera is only an authored review default with an explicit far clip; it is not
 the runtime interaction controller.
 
+## Terrain providers at library scale
+
+`compile-course-terrain.py` accepts an explicit provider selected from the
+facility's ordered `providerPolicy.terrain` list by `factory/providers.py`.
+The default is `usgs_3dep_project_1m`; `nc_onemap_dem03` is now supported for
+North Carolina whole-course source candidates:
+
+```sh
+python3 scripts/golf/course-geometry/compile-course-terrain.py --acquire-only \
+  --provider nc_onemap_dem03 --holes all --package <package.json> \
+  --source <immutable-source-dir> --output <derived-output-dir>
+```
+
+The NC adapter preserves the native 3.125-US-survey-foot grid and raw F32
+heights, converts Z only with the declared US-survey-foot factor, rejects a
+resampled or empty export, and records unknown vertical datum and source terms
+as unknown. It is valid for a clearly labelled source-candidate visual build;
+it cannot make terrain, bunker depth, or green-break measurements authoritative
+or clear a publication gate. `usgs_s1m` remains discovery-only until its
+registration and acceptance rule are approved.
+
 ## Whole-course build (Peek'n Peak Upper)
 
 The same chain runs for a full 18-hole OSM course. Every stage is
@@ -401,9 +422,13 @@ python3 scripts/golf/course-geometry/research-s1m-coverage.py \
 
 Plan §19 C2: for every catalog facility, one TNM catalog query for the USGS
 Seamless 1 m DEM (`Seamless 1-m DEM (S1M)`), one ScienceBase read per tile
-for the source flight window, an HTTP range read of the AOI window from the
-COGs (never a whole 300–430 MB tile), and — where a retained project export
-exists under a root — a comparison every 25 m plus a ±2 m best-fit shift.
+for the source flight window, a range read of each tile's `s1m_source_inputs`
+GeoPackage (the work unit under each part of the tile with its data type,
+source resolution, flight window and share of the tile and of the AOI), an
+HTTP range read of the AOI window from the COGs (never a whole 300–430 MB
+tile), and — where a retained project export exists under a root — a
+comparison every 25 m plus a ±2 m best-fit shift, reported as a measurement
+(the cause of the constant ~1 m offset is not established).
 Writes `research/s1m-coverage.{json,md}` under the first root, nothing else;
 `providerPolicy` and the compiler's provider do not move. `--facility` runs
 refresh those rows and keep the rest of the previous report. Tests:

@@ -567,34 +567,45 @@ output; the numbers below are from that run). What it established:
 - Coverage today: full over the Upper, Cacapon, Forsyth, Winchester,
   Starmount, Sedgefield and Cutter Creek; three of four cells over Boonsboro
   (5.4 % nodata in the window) and Grande Dunes (7.9 %); one of two over
-  Landfall (66 %); none over Kentucky or PGA National.
+  Landfall (66 %); none over Kentucky or PGA National. Measured against the
+  AOI polygon rather than its bbox cells (the 2026-09-20 re-run), the source
+  units under the tiles cover 100 % of Boonsboro's AOI (the missing cell is
+  outside the course), 96.7 % of Grande Dunes' and 30.5 % of Landfall's.
 - Where a retained project export exists (five facilities), S1M agrees with
   it to a median |Δ| of 2–6 cm, p95 16–26 cm, mean within ±2 cm, and a
   best-fit horizontal shift of (+0.5, −0.5…−1.0) m on every one; after that
   shift the median is about 1 cm. The same offset each time is not terrain.
-  PROJ here maps the export's WGS84 UTM into NAD83(2011) Albers with the
-  EPSG null transformation (declaring the export as NAD83(2011) changes
-  nothing), so the offset sits between the two export paths: the image
-  service cut the retained exports into WGS84 with a real datum shift while
-  S1M is NAD83(2011) native. The sign and size fit — at the Upper a
-  lon/lat read as WGS84 (G2139)/ITRF2014 lands (+0.84 E, −0.88 N) m from
-  the same numbers read as NAD83(2011), and the retained export sits
-  (−0.5 E, +1.0 N) m from S1M for the same ground, which is that vector
-  within the 0.5 m search step. So an S1M adapter has to say which frame
-  its warp lands in: a null-transform warp puts the terrain about 1.2 m
-  from where the current exports (and, plausibly, a phone's GPS fix) put
-  it. That is the first number the acceptance rule has to name; the
-  ITRF-based inverse was not demonstrated cleanly tonight and is not
-  claimed.
+  Its cause is not established. What was checked: PROJ here maps the
+  export's WGS84 UTM into NAD83(2011) Albers with the EPSG null
+  transformation (declaring the export as NAD83(2011) changes nothing), so
+  the comparison did not introduce the offset — it sits between the two
+  products as they are read. The obvious hypothesis (the image service cut
+  the retained exports with a real WGS84/ITRF datum shift while S1M is
+  NAD83(2011) native) has the right size — at the Upper an ITRF2014 reading
+  of the same lon/lat lands (+0.84 E, −0.88 N) m from the NAD83(2011)
+  reading — but reinterpreting the export that way and re-comparing made
+  agreement worse (median 2.1 m, best shift saturated at the (+2, +2) m
+  search edge), so it is not the explanation as tested. What is claimed is
+  the measurement: the current 3DEP exports and S1M place the same ground
+  about 1.1 m apart, consistently, and an S1M adapter has to say which of
+  the two positions it keeps. That is the first number the acceptance rule
+  has to name.
 - The flight matters more than the cut date: the Greensboro tiles
-  (Starmount, Sedgefield) were cut in June/July 2026 from lidar flown
-  2003-01 – 2004-03 (the ScienceBase item's window; the per-tile GeoPackage
-  names the project under each pixel). "S1M covers Greensboro" is true and
+  (Starmount, Sedgefield) were cut in June/July 2026 from
+  `ned19_*_nc_statewide_2003` — the per-tile GeoPackage `s1m_source_inputs`
+  layer names it under 100 % of each tile: data type `1/9 Arc Second`,
+  source resolution 3 m, collected 2003-01-20 – 2004-03-20, no quality
+  level, resampled onto the 1 m grid. "S1M covers Greensboro" is true and
   is not 1 m data in substance, which is the silent-downgrade the plan
   forbids and why `nc_onemap_dem03` stays the NC policy until the owner's
-  rule says what flight age it accepts. Forsyth's tile is the same 2017
-  Phase 4 flight as the retained export; Cacapon's mixes MD_Western_2021
-  with VA_FEMA_R3 2016.
+  rule says what flight age and source resolution it accepts. Cutter Creek
+  is the opposite case: real QL1 0.5 m lidar (`NC_HurricaneFlorence_3/10_2020`,
+  flown 2019-12 – 2020-01) under 99 % of its cells. Forsyth's tile is the
+  same 2017 Phase 4 Geiger-mode flight as the retained export; Cacapon's
+  mixes `MD_Western_1_D21` (2021) with `VA_FEMA_R3_Northeast_2016` and
+  `VA_NShenandoah_1_2020`. The report now carries each unit's share of the
+  AOI as well as of the tile, so a filler unit in a tile corner does not
+  read as "under the course".
 
 Nothing moved: `providerPolicy`, the compiler's provider and every source
 manifest are as they were. The report's "mechanical checks" pre-check the

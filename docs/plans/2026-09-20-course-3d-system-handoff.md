@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD013 -->
 # Course 3D system — handoff (front to back)
 
 Written 2026-09-20 on `agent/course-factory-c`. This is an orientation map:
@@ -5,7 +6,7 @@ it names where everything lives and which document owns each part. It does
 not replace those documents.
 
 | Question | Authority |
-|---|---|
+| --- | --- |
 | How does each pipeline script run, with real commands | `scripts/golf/course-geometry/README.md` |
 | Feature contract (what the app may do, gates, risks) | `memory/features/shot-tracking.md` (registry route for `scripts/golf/course-geometry/**`, `course-geometry/catalog/**`, `src/components/golf/course-geometry/**`) |
 | Factory design (DAG, fingerprints, ledger, blocker codes) | `docs/plans/2026-09-19-course-geometry-factory-v2.md`, `docs/plans/2026-09-19-course-geometry-factory-v2-next.md` (PR A–H roadmap) |
@@ -59,7 +60,7 @@ Today: 12 facilities, 16 layouts (see §7).
 `scripts/golf/course-geometry/factory/`:
 
 | File | Role |
-|---|---|
+| --- | --- |
 | `cli.py` | `doctor`, `plan`, `run`, `status`, `why`, `invalidate`, `intake`; `--output <root>`, `--repo-root` |
 | `graph.py` | builds the DAG: facility → layout → hole scopes; 29 task ids, 97 nodes for an 18-hole layout |
 | `tasks/{facility,layout,hole,aggregate}_tasks.py` | one `TaskSpec` per task: deps, evaluator (inputs, blockers, adoptable artifacts), `impl_files`, settings, retention class |
@@ -67,7 +68,7 @@ Today: 12 facilities, 16 layouts (see §7).
 | `planner.py` | state per node: `ready`, `pending`, `cached`, `stale`, `blocked`, `failed`; own blockers outrank a cached success; `why` chains |
 | `ledger.py` | SQLite `state.sqlite`: task runs (`running/success/failed/interrupted/blocked`), artifacts, inputs, invalidations |
 | `runner.py` | executes ready nodes in order, writes `runs/<id>/report.{json,md}` and one log per task; a `Precondition` closes a run as `blocked` |
-| `adapters.py` | the executors: each wraps one pipeline script unchanged (`DEFAULT_EXECUTORS`); tests inject fakes |
+| `adapters.py`, `providers.py` | executors plus explicit provider selection: policy order selects a supported adapter; tests inject fakes |
 | `context.py` | every path under the output root; adoption of retained (checked-in) evidence; `_current(built, retained)` |
 | `lab.py` | is the lab listening, is this hole served, capture verdicts |
 | `imagery.py` | `knownRenovationAfter` vs capture dates |
@@ -112,7 +113,7 @@ All under `scripts/golf/course-geometry/`. Python needs GDAL/numpy/shapely
 (`requirements-terrain.txt`); TS scripts run through `node_modules/.bin/tsx`.
 
 | Stage | Script | In → out |
-|---|---|---|
+| --- | --- | --- |
 | OSM golf extract | `fetch-osm-course.py` | facility card (bbox) → `overpass.json.gz` + `manifest.json` (retained, immutable) |
 | OSM context extract | `fetch-osm-context.py` | same shape, the non-golf world around the course |
 | Package | `prepare-osm-course.py` (`--canopy-review`, `--traces`, `--routes`) | extract + scorecard → `normalized.json` (`golfhelm-course-geometry` package, `contentHash`) + association report |
@@ -123,7 +124,7 @@ All under `scripts/golf/course-geometry/`. Python needs GDAL/numpy/shapely
 | Physical world + truth gate | `build-course-world.py`, `compile-physical-world.py`, `course-truth-gate.py`, `vectorize-terrain.py` | per hole study → physical world → truth verdict → GLB; `course-world-manifest.json` |
 | Visual artifacts (Meridian v2) | `compile-visual-artifacts-v2.mts`, `compile-display-lods.mts`, `export-v2-glb.mts`, `validate-v2-budgets.mts` | display meshes, LODs, budgets |
 | Human review kit | `build-qgis-review-kit.py`, `apply-review-adjustments.py`, `build-context-prompt-sheet.py` | QGIS project + sidecar → reviewed package |
-| Captures | `capture-visual-canaries.cjs` (`--presets=Top,Terrain,Side --viewports=390x844,…`), `capture-player-view.cjs` (`--viewport=phone|desktop --view=terrain|top|green`), `build-canary-sheet.py`, `build-player-sheet.py`, `compare-canaries.mts`, `diff-visual-canaries.py` | PNGs + JSON (draw calls, triangles, `terrainHash`) + sheets |
+| Captures | `capture-visual-canaries.cjs` (`--presets=Top,Terrain,Side --viewports=390x844,…`), `capture-player-view.cjs` (`--viewport=phone` or `desktop`, `--view=terrain`, `top` or `green`), `build-canary-sheet.py`, `build-player-sheet.py`, `compare-canaries.mts`, `diff-visual-canaries.py` | PNGs + JSON (draw calls, triangles, `terrainHash`) + sheets |
 | Publish | `publish-course-assets.mts --course=<layout> --out=public/course-geometry` | compiled fixtures → `public/course-geometry/<layout>/` (a source change; ships only by deploy) |
 | Research (read-only) | `research-s1m-coverage.py`, `audit-library-coverage.py`, `audit-course-cohort.py`, `fetch-nc-*-study.py` | reports under `output/…/research/` |
 
@@ -138,7 +139,7 @@ All under `scripts/golf/course-geometry/`. Python needs GDAL/numpy/shapely
 - Entry: `browser/main.tsx`. URL params: `?course=<key>` (unknown → cacapon),
   `?hole=N`, `?onetap` (+ `&bar`, `&mode=competition`, `&world=v2`),
   `?matrix` (course matrix), `?lab` (Meridian lab), `?play`,
-  `?export=top|terrain|side` (terrain export presets), `?study=bryan|cardinal`.
+  `?export=top`, `terrain` or `side` (terrain export presets), `?study=bryan` or `cardinal`.
   Fixtures: `one-tap.tsx`, `course-matrix.tsx`, `meridian-lab.tsx`,
   `play-round.tsx`, `terrain-export.tsx`, `source-study.tsx`.
 - Registry: `browser/fixture-assets.ts` — `compiledCourses` is a static
@@ -271,13 +272,13 @@ build (Peek'n Peak Upper)".
 ## 5. Where evidence and outputs live
 
 | Kind | Path | Committed? |
-|---|---|---|
+| --- | --- | --- |
 | Retained sources and reviews | `src/test/fixtures/course-geometry/…` | yes (fixtures) |
 | Pilot scorecards, traces | `scripts/golf/course-geometry/pilots/` | yes |
 | Published player assets | `public/course-geometry/<layout>/` | yes |
 | Factory builds, ledgers, runs, captures | `output/course-geometry/factory/` | no (disposable) |
 | Study sheets and evidence images | `docs/plans/assets/course-factory-2026-09-20/` | yes |
-| Unit tests (Python, run from `scripts/golf/course-geometry`) | `test_factory_*.py` (88), `test_compile_course_terrain.py` (25), `test_derive_canopy_naip.py` (6), `test_research_s1m_coverage.py` (7), `test_compile_physical_world.py`, `test_course_truth_gate.py`, `test_apply_review_adjustments.py` | yes |
+| Unit tests (Python, run from `scripts/golf/course-geometry`) | `test_factory_*.py` (88), `test_compile_course_terrain.py` (25), `test_derive_canopy_naip.py` (6), `test_research_s1m_coverage.py` (8), `test_compile_physical_world.py`, `test_course_truth_gate.py`, `test_apply_review_adjustments.py` | yes |
 | Unit tests (vitest) | `src/lib/golf/course-geometry/__tests__/` (56 files), `src/components/golf/course-geometry/*.test.ts(x)`, `src/lib/golf/one-tap/__tests__/` | yes |
 
 Commands:
@@ -305,7 +306,7 @@ main checks: CI aggregate, Review Gate aggregate, Analyze, block-historical-edit
 16 catalog layouts; six have 18/18 holes compiled.
 
 | Layout | Facility | State | Root blocker |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | peek-n-peak-upper | peek-n-peak (NY) | C2, published, captures signed off by machine | §39 human pass, boundary review |
 | winchester-cc | winchester-country-club (VA) | C1 (factory build, output root) | lab not serving; publish approval |
 | forsyth-country-club | forsyth-country-club (NC) | C1 | same |
@@ -314,7 +315,7 @@ main checks: CI aggregate, Review Gate aggregate, Analyze, block-historical-edit
 | big-blue-course-uk | university-club-of-kentucky (KY) | C1; routes proposed (`osm_ref_named`) | route confirmation |
 | boonsboro-cc | boonsboro-country-club (VA) | C0 | `ROUTE_WAY_IDS_REQUIRED` (OSM has no hole ways; NAIP sheet in `docs/plans/assets/course-factory-2026-09-20/`) |
 | pga-national-champ | pga-national-resort (FL) | C0 | `ROUTE_WAY_IDS_REQUIRED` |
-| cutter-creek, starmount-forest, the-cardinal, cc-of-landfall-nick-{m-o,o-p,p-m} | NC facilities | C0 | `TERRAIN_ADAPTER_MISSING` (`nc_onemap_dem03` has no adapter) |
+| cutter-creek, starmount-forest, the-cardinal, cc-of-landfall-nick-{m-o,o-p,p-m} | NC facilities | C0 | terrain adapter selected (`nc_onemap_dem03`); package, source acquisition and human review remain |
 | cc-of-landfall-marsh-9, cc-of-landfall-ocean-9 | landfall-country-club-golf-course (NC) | C0 | `HOLE_COUNT_UNSUPPORTED` (9-hole segments) |
 
 The four factory builds were made before the UTM-zone change to
@@ -336,18 +337,21 @@ stale, so a rebuild recomposes their packages.
 4. Route pins: Kentucky confirmation; Boonsboro and PGA National way ids or
    drawn tee→green routes (proposed `retained.routeTraces` format in the
    review doc).
-5. NC terrain: a `nc_onemap_dem03` adapter (license + vertical datum), or
-   an S1M acceptance rule — the S1M spike shows Cutter Creek has real
-   2014–2020 lidar in S1M while Greensboro's S1M tiles are 2003–04 NED at
-   3 m resampled to 1 m (per-tile `s1m_source_inputs` GeoPackages), and a
-   consistent ~1 m horizontal offset between S1M and the current 3DEP
-   image-service exports whose cause is not yet established.
+5. **NC terrain adapter is now wired** — `nc_onemap_dem03` acquires one
+   native 3.125-US-survey-foot DEM03 export under the standard immutable
+   manifest contract and converts its declared raw vertical unit to metres.
+   It retains unknown vertical datum and redistribution terms as review
+   blockers, so it enables C1 source candidates but not C3/production truth.
+   S1M remains research-only: Cutter Creek has real 2014–2020 lidar while
+   Greensboro's S1M tiles are 2003–04 NED at 3 m resampled to 1 m, with an
+   unresolved roughly 1 m horizontal difference from current 3DEP exports.
 6. 9-hole layout support in the DAG (Landfall Marsh/Ocean).
 7. Human OSM pins for the cohort courses the intake skipped (Bryan Park,
    River Landing, Pinehurst No. 8, Magnolia Greens, Forest Oaks).
-8. Provider contracts (`discover/select/acquire/validate`) and the
-   facility source bundle from the PR C plan — not started; today's
-   adapters call the scripts directly.
+8. Provider selection and acquisition now have a small shared contract
+   (`factory/providers.py` and `compile-course-terrain.py --provider`).
+   Provider discovery, independent registration validation and a retained
+   per-facility source bundle remain the next scale-out layer.
 
 ## 9. Operating rules that bit people
 

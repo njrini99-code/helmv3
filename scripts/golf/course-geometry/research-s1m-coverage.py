@@ -27,7 +27,7 @@ import urllib.request
 from datetime import datetime, timezone
 
 import numpy as np
-from osgeo import gdal, osr
+from osgeo import gdal, ogr, osr
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, '..', '..', '..'))
@@ -120,7 +120,11 @@ def best_shift(sample, mosaic, cols, rows, pixel_m=1.0):
             score = (round(float(np.median(np.abs(delta))), 3), dx * dx + dy * dy)   # ties go to the smaller shift
             if best is None or score < best[0]:
                 best = (score, {'dxM': float(dx), 'dyM': float(dy), 'medianAbsM': score[0]})
-    return best[1] if best else None
+    if not best:
+        return None
+    # A best on the edge of the window is a bound, not an optimum.
+    best[1]['atSearchEdge'] = max(abs(best[1]['dxM']), abs(best[1]['dyM'])) >= SHIFT_RANGE_M
+    return best[1]
 
 
 def mechanical_checks(record):
@@ -133,7 +137,8 @@ def mechanical_checks(record):
         'emptyFractionUnderThreshold': window.get('nodataFraction') is not None and window['nodataFraction'] <= MAX_EMPTY_FRACTION,
         'crsAndGridRetained': bool(window.get('crs')) and window.get('pixelM') == [1.0, 1.0],
         'sourceProjectsKnown': bool(record.get('sourceProjects')),
-        'sourceFlightKnown': bool(record.get('sourceAcquisition')),
+        'sourceFlightKnown': bool(record.get('sourceAcquisition')) or bool((record.get('sourceUnits') or {}).get('collect')),
+        'sourceNative1m': (record.get('sourceUnits') or {}).get('coarsestSourceM') is not None and record['sourceUnits']['coarsestSourceM'] <= 1,
         'comparedToRetainedTile': bool(compare.get('points')),
         'reproducibleWindow': bool(window.get('albersWindow')) and bool(record.get('tiles')),
     }
@@ -176,9 +181,56 @@ def item_provenance(meta_url):
     return {'acquisitionStart': dates.get('Start'), 'acquisitionEnd': dates.get('End'), 'spatialMetadata': links.get('Spatial Metadata'), 'productMetadata': links.get('Product Metadata')}
 
 
-def discover(bbox_wgs84):
+SOURCE_FIELDS = ('workunit_name', 'priority_rank', 'percent_area', 'collect_start', 'collect_end', 'source_dem_pub_date', 'quality_level', 'data_type', 'source_resolution_meters',
+                 'horiz_crs_epsg', 'vert_crs_name')
+
+
+def aoi_polygon_albers(bbox_wgs84, polygon_wgs84=None):
+    """The AOI as an OGR polygon in Albers: the OSM element's ring when the
+    factory resolved one, else the bbox."""
+    ring = polygon_wgs84 or [(bbox_wgs84[0], bbox_wgs84[1]), (bbox_wgs84[2], bbox_wgs84[1]), (bbox_wgs84[2], bbox_wgs84[3]), (bbox_wgs84[0], bbox_wgs84[3])]
+    points = albers_transform(4326).TransformPoints([(float(x), float(y)) for x, y in ring])
+    geometry = ogr.Geometry(ogr.wkbLinearRing)
+    for x, y, *_ in points:
+        geometry.AddPoint_2D(x, y)
+    geometry.CloseRings()
+    polygon = ogr.Geometry(ogr.wkbPolygon)
+    polygon.AddGeometry(geometry)
+    return polygon.Buffer(0) if not polygon.IsValid() else polygon
+
+
+def tile_sources(gpkg_url, aoi=None):
+    """The tile's `s1m_source_inputs` layer, read by range requests: the
+    work unit under each part of the tile with its share of the tile, its
+    flight window and its source resolution — the record that says whether
+    a 1 m tile is 1 m data or a 3 m grid resampled. With an AOI polygon
+    (Albers), each unit also carries its share of the AOI, since a filler
+    unit over the ocean corner of a tile is not under the course."""
+    if not gpkg_url:
+        return None
+    try:
+        ds = ogr.Open('/vsicurl/' + gpkg_url)
+        layer = ds.GetLayerByName('s1m_source_inputs') if ds else None
+        if layer is None:
+            return {'error': 'no s1m_source_inputs layer'}
+        defn = layer.GetLayerDefn()
+        names = [defn.GetFieldDefn(i).GetName() for i in range(defn.GetFieldCount())]
+        rows = []
+        aoi_area = aoi.GetArea() if aoi is not None else 0
+        for feature in layer:
+            row = {name: feature.GetField(name) for name in SOURCE_FIELDS if name in names}
+            geometry = feature.GetGeometryRef()
+            if aoi is not None and geometry is not None and aoi_area > 0:
+                row['aoiShare'] = round(aoi.Intersection(geometry).GetArea() / aoi_area, 4)
+            rows.append(row)
+        return sorted(rows, key=lambda r: (r.get('priority_rank') or 0, r.get('workunit_name') or ''))
+    except Exception as exc:  # noqa: BLE001 — provenance is evidence, not a gate
+        return {'error': f'{type(exc).__name__}: {exc}'}
+
+
+def discover(bbox_wgs84, aoi=None):
     """One TNM catalog query: the S1M tiles intersecting a WGS84 bbox, then
-    one ScienceBase read per tile for its provenance."""
+    one ScienceBase read and one GeoPackage read per tile for its provenance."""
     query = {'datasets': S1M_DATASET, 'bbox': ','.join(f'{v:.7f}' for v in bbox_wgs84), 'prodFormats': 'GeoTIFF', 'outputFormat': 'JSON', 'max': 20}
     started = time.time()
     doc = fetch_json(TNM_PRODUCTS + '?' + urllib.parse.urlencode(query), MAX_CATALOG_BYTES)
@@ -192,6 +244,7 @@ def discover(bbox_wgs84):
     latency = round(time.time() - started, 1)
     for tile in tiles:
         tile.update(item_provenance(tile['metaUrl']))
+        tile['sources'] = tile_sources(tile.get('spatialMetadata'), aoi)
     return {'latencyS': latency, 'total': doc.get('total'), 'tiles': tiles}
 
 
@@ -353,7 +406,7 @@ def study(facility, roots, offline=False, log=print):
         record['skipped'] = 'offline'
         return record
     try:
-        found = discover(bbox)
+        found = discover(bbox, aoi_polygon_albers(bbox, (aoi or {}).get('polygon')))
     except Exception as exc:  # noqa: BLE001 — the report records the failure; nothing retries into a rate limit
         record['discovery'] = {'error': f'{type(exc).__name__}: {exc}'}
         return record
@@ -363,6 +416,21 @@ def study(facility, roots, offline=False, log=print):
     starts = sorted(t['acquisitionStart'] for t in found['tiles'] if t.get('acquisitionStart'))
     ends = sorted(t['acquisitionEnd'] for t in found['tiles'] if t.get('acquisitionEnd'))
     record['sourceAcquisition'] = [starts[0], ends[-1]] if starts and ends else None
+    every = [u for t in found['tiles'] for u in (t.get('sources') if isinstance(t.get('sources'), list) else [])]
+    # Only the work units under the AOI count for the facility: a filler unit
+    # in a tile's far corner says nothing about the course.
+    units = [u for u in every if u.get('aoiShare', 1) > 0]
+    if units:
+        resolutions = [u['source_resolution_meters'] for u in units if u.get('source_resolution_meters') is not None]
+        collect = sorted(u['collect_start'] for u in units if u.get('collect_start')), sorted(u['collect_end'] for u in units if u.get('collect_end'))
+        shares = {}
+        for u in units:
+            shares[u.get('workunit_name')] = round(shares.get(u.get('workunit_name'), 0) + u.get('aoiShare', 0), 4)
+        record['sourceUnits'] = {'workUnits': sorted({u['workunit_name'] for u in units if u.get('workunit_name')}), 'dataTypes': sorted({str(u.get('data_type')) for u in units}),
+                                 'coarsestSourceM': max(resolutions) if resolutions else None, 'finestSourceM': min(resolutions) if resolutions else None,
+                                 'collect': [collect[0][0], collect[1][-1]] if collect[0] and collect[1] else None,
+                                 'qualityLevels': sorted({str(u.get('quality_level')) for u in units}), 'aoiShareByUnit': shares,
+                                 'aoiShareCovered': round(min(1.0, sum(shares.values())), 4), 'unitsOutsideAoi': len(every) - len(units)}
     record['coverage'] = coverage(record['envelopeAlbers'], found['tiles'])
     log(f'  {facility_id}: {len(found["tiles"])} S1M tile(s) in {found["latencyS"]} s, coverage {record["coverage"]["cellsCovered"]}/{record["coverage"]["cellsNeeded"]}')
     if not found['tiles']:
@@ -403,7 +471,7 @@ def render(report):
              ('Discovery is one TNM catalog query per facility; the window is an HTTP range read of the AOI from the S1M COGs (never a whole tile); the comparison samples the retained project export every '
               f'{SAMPLE_STEP_M} m and reads S1M at the same ground positions (bilinear), then searches ±{SHIFT_RANGE_M:g} m for a systematic horizontal offset. '
               '"Mechanical checks" are the plan\'s example rule pre-checked; the owner\'s written rule decides.'), '',
-             '| Facility | Policy | AOI | Tiles | Coverage | Published | Source flown | Source projects | Window | Nodata | Bytes | vs retained (n, median, p95, mean; its flight) | Best shift |',
+             '| Facility | Policy | AOI | Tiles | Coverage | Published | Source flown | Source (work units: type, resolution) | Window | Nodata | Bytes | vs retained (n, median, p95, mean; its flight) | Best shift |',
              '|---|---|---|---|---|---|---|---|---|---|---|---|---|']
     for r in report['facilities']:
         tiles = r.get('tiles') or []
@@ -418,17 +486,22 @@ def render(report):
         flown = f'{cmp_["retainedAcquisition"][0]}..{cmp_["retainedAcquisition"][1]}' if cmp_.get('retainedAcquisition') and cmp_['retainedAcquisition'][0] else '?'
         versus = f'{cmp_["points"]}, {cmp_["medianAbsM"]} m, {cmp_["p95AbsM"]} m, {cmp_["meanSignedM"]:+} m; {flown}' if cmp_.get('points') else (cmp_.get('error', '—')[:40] if cmp_ else 'no retained export')
         acquired = f'{r["sourceAcquisition"][0]}..{r["sourceAcquisition"][1]}' if r.get('sourceAcquisition') else '—'
-        shift = f'{cmp_["bestShift"]["dxM"]:+g}, {cmp_["bestShift"]["dyM"]:+g} m → {cmp_["bestShift"]["medianAbsM"]} m' if cmp_.get('bestShift') else '—'
+        shift = (f'{cmp_["bestShift"]["dxM"]:+g}, {cmp_["bestShift"]["dyM"]:+g} m → {cmp_["bestShift"]["medianAbsM"]} m' + (' (at search edge)' if cmp_['bestShift'].get('atSearchEdge') else '')) if cmp_.get('bestShift') else '—'
+        units = r.get('sourceUnits') or {}
+        if units:
+            source = f'{len(units.get("workUnits") or [])} unit(s): {", ".join(units.get("dataTypes") or [])}, {units.get("finestSourceM")}–{units.get("coarsestSourceM")} m, flown {units["collect"][0]}..{units["collect"][1]}' if units.get('collect') else f'{len(units.get("workUnits") or [])} unit(s)'
+        else:
+            source = ', '.join(r.get('sourceProjects') or []) or '—'
         aoi = 'AOI' if str(r.get('aoiSource', '')).endswith('aoi.json') else 'origin proxy'
-        lines.append(f'| {r["facilityId"]} | {", ".join(r.get("terrainPolicy") or [])} | {aoi} | {len(tiles)} | {cover} | {published} | {acquired} | {", ".join(r.get("sourceProjects") or []) or "—"} | {window} | {nodata} | {size} | {versus} | {shift} |')
+        lines.append(f'| {r["facilityId"]} | {", ".join(r.get("terrainPolicy") or [])} | {aoi} | {len(tiles)} | {cover} | {published} | {acquired} | {source} | {window} | {nodata} | {size} | {versus} | {shift} |')
     lines += ['', '## Mechanical checks (plan §19 example rule)', '',
-              '| Facility | AOI covered | Empty ≤ 0.1 % | CRS + 1 m grid | Source projects known | Source flight known | Compared to retained tile | Window reproducible |', '|---|---|---|---|---|---|---|---|']
+              '| Facility | AOI covered | Empty ≤ 0.1 % | CRS + 1 m grid | Source projects known | Source flight known | Source under the AOI is native 1 m | Compared to retained tile | Window reproducible |', '|---|---|---|---|---|---|---|---|---|']
     for r in report['facilities']:
         checks = r.get('mechanicalChecks')
         if not checks:
-            lines.append(f'| {r["facilityId"]} | — | — | — | — | — | — | — |')
+            lines.append(f'| {r["facilityId"]} | — | — | — | — | — | — | — | — |')
             continue
-        marks = ' | '.join('✓' if checks[k] else '✗' for k in ('aoiFullyCovered', 'emptyFractionUnderThreshold', 'crsAndGridRetained', 'sourceProjectsKnown', 'sourceFlightKnown', 'comparedToRetainedTile', 'reproducibleWindow'))
+        marks = ' | '.join('✓' if checks[k] else '✗' for k in ('aoiFullyCovered', 'emptyFractionUnderThreshold', 'crsAndGridRetained', 'sourceProjectsKnown', 'sourceFlightKnown', 'sourceNative1m', 'comparedToRetainedTile', 'reproducibleWindow'))
         lines.append(f'| {r["facilityId"]} | {marks} |')
     lines += ['', '## What the tiles are', '']
     seen = set()
@@ -437,15 +510,21 @@ def render(report):
             if t['title'] in seen:
                 continue
             seen.add(t['title'])
-            lines.append(f'- `{t["title"]}` — {t.get("sizeInBytes", 0) / 1e6:.0f} MB, published {t.get("publicationDate")}, source flown {t.get("acquisitionStart") or "?"}..{t.get("acquisitionEnd") or "?"}, '
-                         f'project {t.get("sourceProject") or "? (open the spatial metadata)"}, Albers square {list(t.get("square") or [])}'
-                         + (f', [per-pixel sources]({t["spatialMetadata"]})' if t.get('spatialMetadata') else ''))
+            lines.append(f'- `{t["title"]}` — {t.get("sizeInBytes", 0) / 1e6:.0f} MB, published {t.get("publicationDate")}, Albers square {list(t.get("square") or [])}'
+                         + (f', [source inputs]({t["spatialMetadata"]})' if t.get('spatialMetadata') else ''))
+            for u in (t.get('sources') if isinstance(t.get('sources'), list) else []):
+                share = f', {u["aoiShare"]:.0%} of the AOI' if u.get('aoiShare') is not None else ''
+                lines.append(f'  - {u.get("percent_area", 0):.0%} of the tile{share}: `{u.get("workunit_name")}` — {u.get("data_type")}, source {u.get("source_resolution_meters")} m, QL {u.get("quality_level")}, '
+                             f'flown {u.get("collect_start")}..{u.get("collect_end")}, source DEM published {u.get("source_dem_pub_date")}')
+            if isinstance(t.get('sources'), dict):
+                lines.append(f'  - source inputs unreadable: {t["sources"].get("error")}')
     lines += ['', '## Notes for the acceptance rule', '',
               (f'- S1M tiles sit on the NAD83(2011) Conus Albers 10 km grid (EPSG:{ALBERS_EPSG}, NAVD88 heights), not on the UTM zone the project tiles and every retained export use; '
                'the compiler would warp from Albers to the course zone locally instead of asking the 3DEP image service to cut a UTM window.'),
-              '- The comparison crosses NAD83(2011) → WGS84 UTM; a best-fit shift near zero says the two exports agree on where the ground is, a shift of a metre or more says datum handling, not terrain, separates them.',
-              ('- A tile\'s `publicationDate` is when S1M was cut, not when the lidar flew: "source flown" is the ScienceBase acquisition window, and a 2026 tile over ground last flown in 2003 is 1 m '
-               'only by resampling. The per-tile GeoPackage names the project under every pixel; the retained export\'s own flight window sits beside the comparison.'),
+              ('- The comparison crosses the export\'s WGS84 UTM into NAD83(2011) Albers with the EPSG null transformation. A best-fit shift near zero says the two exports agree on where the ground is; '
+               'a consistent shift of about a metre says something systematic separates them, and its cause is not established by this script — an "at search edge" shift is a bound, not an optimum.'),
+              ('- A tile\'s `publicationDate` is when S1M was cut, not when the lidar flew. "Source flown" is the ScienceBase window; the per-tile GeoPackage (`s1m_source_inputs`) is the record that '
+               'counts: work unit, share of the tile, flight window, data type and source resolution. A 1 m tile whose work units are 1/9 arc-second NED at 3 m is a resampled grid, not 1 m data.'),
               '- A source start of 1947-01-01 or 1970-01-01 is a placeholder in the ScienceBase item, not a flight; read the project metadata for that tile.',
               '- Nothing here downloads a tile, writes a source manifest or moves `providerPolicy`.']
     return '\n'.join(lines) + '\n'
@@ -459,7 +538,7 @@ def main(argv=None):
     parser.add_argument('--offline', action='store_true', help='write the report skeleton without any network call')
     args = parser.parse_args(argv)
     roots = [os.path.abspath(r) for r in (args.root or [os.path.join(REPO, 'output', 'course-geometry', 'factory')])]
-    for key, value in (('GDAL_DISABLE_READDIR_ON_OPEN', 'EMPTY_DIR'), ('CPL_VSIL_CURL_ALLOWED_EXTENSIONS', '.tif'), ('CPL_VSIL_NETWORK_STATS_ENABLED', 'YES'),
+    for key, value in (('GDAL_DISABLE_READDIR_ON_OPEN', 'EMPTY_DIR'), ('CPL_VSIL_CURL_ALLOWED_EXTENSIONS', '.tif,.gpkg'), ('CPL_VSIL_NETWORK_STATS_ENABLED', 'YES'),
                        ('GDAL_HTTP_TIMEOUT', '120'), ('GDAL_HTTP_MAX_RETRY', '2'), ('GDAL_HTTP_RETRY_DELAY', '5'), ('GDAL_HTTP_USERAGENT', USER_AGENT)):
         gdal.SetConfigOption(key, value)
     facilities = []

@@ -29,13 +29,13 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | --- | --- | --- | --- | --- |
 | `POLICY` | 21 | 2 | 7 | 0 |
 | `AGENT_SKILL` | 87 | 0 | 4 | 0 |
-| `CURRENT_FEATURE` | 27 | 27 | 12 | 1 |
+| `CURRENT_FEATURE` | 27 | 27 | 12 | 0 |
 | `REFERENCE` | 52 | 15 | 19 | 0 |
 | `GENERATED_TRUTH` | 25 | 3 | 7 | 4 |
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 0 |
 | `RUNBOOK` | 5 | 2 | 1 | 0 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
-| `PLAN` | 53 | 5 | 31 | 83 |
+| `PLAN` | 54 | 5 | 31 | 83 |
 | `AUDIT_SNAPSHOT` | 56 | 6 | 30 | 24 |
 | `STATE_SNAPSHOT` | 7 | 2 | 6 | 0 |
 | `HISTORY_LEDGER` | 40 | 0 | 8 | 13 |
@@ -190,7 +190,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/features/recruiting.md` | current | yes | - | - | 3 | 15 | - |
 | `memory/features/roster-team.md` | current | yes | - | - | 2 | 9 | - |
 | `memory/features/settings-preferences.md` | current | yes | - | - | 1 | 10 | - |
-| `memory/features/shot-tracking.md` | current | yes | - | yes | 6 | 56 | 1 |
+| `memory/features/shot-tracking.md` | current | yes | - | yes | 7 | 56 | - |
 | `memory/features/stats-analytics.md` | current | yes | - | yes | 2 | 26 | - |
 | `memory/features/team-access-control.md` | current | yes | - | - | 1 | 18 | - |
 | `memory/features/team-communications.md` | current | yes | - | - | 9 | 14 | - |
@@ -276,7 +276,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/generated/contracts/golf_round_lifecycle.md` | generated | - | - | - | 0 | 43 | - |
 | `docs/operations/GENERATED_FILE_POLICY.md` | generated | - | - | - | 0 | 1 | - |
 | `docs/operations/RETENTION.md` | generated | - | yes | - | 0 | 2 | - |
-| `docs/plans/2026-09-16-outside-world-review-prompts.md` | generated | - | - | - | 1 | 3 | - |
+| `docs/plans/2026-09-16-outside-world-review-prompts.md` | generated | - | - | - | 2 | 3 | - |
 | `memory/README.md` | generated | - | - | yes | 3 | 7 | - |
 | `memory/context/golfhelm-database.md` | generated | yes | yes | yes | 19 | 5 | - |
 | `memory/glossary.md` | current | yes | yes | yes | 19 | 10 | - |
@@ -331,21 +331,22 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/baseball/stats-migration-plan.md` | current | - | - | yes | 2 | 20 | - |
 | `docs/baseball/ui-migration-execution-plan.md` | current | - | - | yes | 1 | 23 | 4 |
 | `docs/features/CALENDAR_COMPREHENSIVE_IMPLEMENTATION_PLAN.md` | current | yes | - | - | 1 | 12 | 3 |
-| `docs/plans/2026-09-12-golfhelm-course-geometry.md` | current | - | - | yes | 5 | 54 | 6 |
-| `docs/plans/2026-09-16-fidelity-status.md` | current | - | - | yes | 0 | 0 | - |
+| `docs/plans/2026-09-12-golfhelm-course-geometry.md` | current | - | - | yes | 6 | 54 | 6 |
+| `docs/plans/2026-09-16-fidelity-status.md` | current | - | - | yes | 1 | 0 | - |
 | `docs/plans/2026-09-16-meridian-operations.md` | current | - | - | yes | 2 | 5 | - |
-| `docs/plans/2026-09-16-meridian-v2-master-plan.md` | current | - | - | yes | 1 | 2 | - |
+| `docs/plans/2026-09-16-meridian-v2-master-plan.md` | current | - | - | yes | 2 | 2 | - |
 | `docs/plans/2026-09-16-meridian-v2-status.md` | current | - | - | yes | 1 | 12 | 2 |
-| `docs/plans/2026-09-16-meridian-visual-master-plan-status.md` | current | - | - | yes | 3 | 13 | - |
+| `docs/plans/2026-09-16-meridian-visual-master-plan-status.md` | current | - | - | yes | 4 | 13 | - |
 | `docs/plans/2026-09-16-one-tap-status.md` | current | - | - | yes | 1 | 12 | - |
-| `docs/plans/2026-09-16-outside-world-status.md` | current | - | - | - | 0 | 13 | - |
+| `docs/plans/2026-09-16-outside-world-status.md` | current | - | - | - | 1 | 13 | - |
 | `docs/plans/2026-09-16-peek-n-peak-enhancements-and-round-review.md` | current | - | - | yes | 1 | 3 | - |
 | `docs/plans/2026-09-16-peek-one-tap-field-calibration.md` | current | - | - | - | 1 | 0 | - |
-| `docs/plans/2026-09-16-renderer-redesign-status.md` | current | - | - | yes | 0 | 3 | - |
-| `docs/plans/2026-09-19-course-geometry-factory-v2-next.md` | current | - | - | yes | 1 | 0 | - |
-| `docs/plans/2026-09-19-course-geometry-factory-v2-review.md` | current | - | - | - | 1 | 14 | - |
-| `docs/plans/2026-09-19-course-geometry-factory-v2.md` | current | - | - | yes | 1 | 2 | - |
-| `docs/plans/2026-09-19-course-library-scale-out-plan.md` | current | - | - | yes | 1 | 9 | - |
+| `docs/plans/2026-09-16-renderer-redesign-status.md` | current | - | - | yes | 1 | 3 | - |
+| `docs/plans/2026-09-19-course-geometry-factory-v2-next.md` | current | - | - | yes | 2 | 0 | - |
+| `docs/plans/2026-09-19-course-geometry-factory-v2-review.md` | current | - | - | - | 2 | 14 | - |
+| `docs/plans/2026-09-19-course-geometry-factory-v2.md` | current | - | - | yes | 2 | 2 | - |
+| `docs/plans/2026-09-19-course-library-scale-out-plan.md` | current | - | - | yes | 2 | 9 | - |
+| `docs/plans/2026-09-20-course-3d-system-handoff.md` | current | - | - | - | 1 | 44 | - |
 | `docs/plans/IOS_PREMIUM_NATIVE_UPDATE_2026-08-25.md` | current | yes | - | yes | 2 | 1 | - |
 | `docs/plans/assets/course-geometry-2026-09-15/peek-n-peak-upper-07-course-truth.md` | current | - | - | yes | 0 | 0 | - |
 | `docs/plans/calendar-premium/DESIGN-PLAN.md` | current | - | - | yes | 0 | 5 | - |
@@ -554,7 +555,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `public/images/README.md` | current | - | - | - | 0 | 0 | - |
 | `replay/README.md` | current | yes | - | yes | 0 | 6 | - |
 | `scripts/README.md` | current | - | - | - | 0 | 2 | - |
-| `scripts/golf/course-geometry/README.md` | current | - | - | yes | 1 | 4 | - |
+| `scripts/golf/course-geometry/README.md` | current | - | - | yes | 2 | 4 | - |
 | `src/app/golf/README.md` | current | - | - | - | 3 | 8 | - |
 | `src/components/baseball/living-annual/README.md` | current | - | - | - | 2 | 3 | - |
 | `src/contracts/baseball/README.md` | current | - | - | yes | 1 | 5 | - |

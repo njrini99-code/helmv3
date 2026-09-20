@@ -56,8 +56,11 @@ class ComparisonTests(unittest.TestCase):
         cols, rows = np.array([10.0, 22.0, 31.0, 15.0, 25.0, 7.0, 33.0]), np.array([12.0, 7.0, 29.0, 25.0, 12.0, 30.0, 9.0])
         sample = s1m.bilinear(bowl, cols + 1.0, rows)
         best = s1m.best_shift(sample, bowl, cols, rows)
-        self.assertEqual((best['dxM'], best['dyM'], best['medianAbsM']), (1.0, 0.0, 0.0))
+        self.assertEqual((best['dxM'], best['dyM'], best['medianAbsM'], best['atSearchEdge']), (1.0, 0.0, 0.0, False))
         self.assertEqual(s1m.best_shift(sample, bowl, cols + 1.0, rows)['dxM'], 0.0)
+        # An offset beyond the window comes back pinned to its edge, and says so.
+        far = s1m.bilinear(bowl, cols + 3.0, rows)
+        self.assertTrue(s1m.best_shift(far, bowl, cols, rows)['atSearchEdge'])
 
     def test_network_bytes_reads_the_top_level_methods_only(self):
         stats = {'methods': {'HEAD': {'count': 1}, 'GET': {'count': 2, 'downloaded_bytes': 2566402}},
@@ -66,12 +69,35 @@ class ComparisonTests(unittest.TestCase):
         self.assertEqual(s1m.network_bytes({}), 0)
 
 
+class AoiTests(unittest.TestCase):
+    def test_the_aoi_polygon_is_built_in_albers_and_shares_are_per_unit(self):
+        from osgeo import ogr
+        bbox = [-79.7388695, 42.0567613, -79.7173575, 42.070588]   # Peek'n Peak
+        polygon = s1m.aoi_polygon_albers(bbox)
+        self.assertTrue(polygon.IsValid())
+        x0, x1, y0, y1 = polygon.GetEnvelope()
+        self.assertEqual(s1m.grid_cells((x0, y0, x1, y1)), [(1320000, 2230000, 1330000, 2240000), (1330000, 2230000, 1340000, 2240000)])
+        self.assertAlmostEqual(polygon.GetArea() / 1e6, 2.8, delta=0.4)   # ~1.8 km × 1.5 km
+        # The AOI straddles the 1 330 000 m grid line by a sliver: the western
+        # tile is needed for about 2 % of the course, the eastern for the rest.
+        west = ogr.CreateGeometryFromWkt('POLYGON ((1320000 2230000, 1330000 2230000, 1330000 2240000, 1320000 2240000, 1320000 2230000))')
+        east = ogr.CreateGeometryFromWkt('POLYGON ((1330000 2230000, 1340000 2230000, 1340000 2240000, 1330000 2240000, 1330000 2230000))')
+        west_share = polygon.Intersection(west).GetArea() / polygon.GetArea()
+        east_share = polygon.Intersection(east).GetArea() / polygon.GetArea()
+        self.assertAlmostEqual(west_share + east_share, 1.0, places=6)
+        self.assertTrue(0 < west_share < 0.05, west_share)
+        self.assertGreater(east_share, 0.95)
+
+
 class ReportTests(unittest.TestCase):
     def record(self):
         return {'facilityId': 'synthetic', 'terrainPolicy': ['usgs_s1m'], 'aoiSource': 'output/x/aoi.json', 'sourceProjects': ['NY_SouthwestNY_2017_A17/NY_Southwest-East_2017'],
                 'sourceAcquisition': ['2017-04-18', '2017-05-09'],
+                'sourceUnits': {'workUnits': ['NY_Southwest_East_2017'], 'dataTypes': ['Lidar'], 'coarsestSourceM': 1, 'finestSourceM': 1, 'collect': ['2017-04-18', '2017-05-09'], 'qualityLevels': ['QL2']},
                 'tiles': [{'title': 'S1M n2240e1330 20260521', 'publicationDate': '2026-05-21', 'sizeInBytes': 319571257, 'sourceProject': 'NY_SouthwestNY_2017_A17/NY_Southwest-East_2017',
-                           'square': (1330000, 2230000, 1340000, 2240000), 'acquisitionStart': '2017-04-18', 'acquisitionEnd': '2017-05-09', 'spatialMetadata': 'https://example.test/tile.gpkg'}],
+                           'square': (1330000, 2230000, 1340000, 2240000), 'acquisitionStart': '2017-04-18', 'acquisitionEnd': '2017-05-09', 'spatialMetadata': 'https://example.test/tile.gpkg',
+                           'sources': [{'workunit_name': 'NY_Southwest_East_2017', 'percent_area': 1.0, 'aoiShare': 1.0, 'collect_start': '2017-04-18', 'collect_end': '2017-05-09', 'source_dem_pub_date': '2019-01-01',
+                                        'quality_level': 'QL2', 'data_type': 'Lidar', 'source_resolution_meters': 1}]}],
                 'coverage': {'cellsNeeded': 1, 'cellsCovered': 1, 'covered': True, 'missingCells': []},
                 'window': {'albersWindow': [1335000, 2232000, 1337000, 2234000], 'pixels': [2000, 2000], 'nodataFraction': 0.0, 'elapsedS': 9.9, 'downloadBytes': 12_000_000,
                            'crs': 'NAD83(2011) / Conus Albers + NAVD88 height', 'pixelM': [1.0, 1.0]},
@@ -81,23 +107,27 @@ class ReportTests(unittest.TestCase):
     def test_mechanical_checks_read_the_record(self):
         record = self.record()
         self.assertEqual(s1m.mechanical_checks(record), {'aoiFullyCovered': True, 'emptyFractionUnderThreshold': True, 'crsAndGridRetained': True, 'sourceProjectsKnown': True,
-                                                         'sourceFlightKnown': True, 'comparedToRetainedTile': True, 'reproducibleWindow': True})
+                                                         'sourceFlightKnown': True, 'sourceNative1m': True, 'comparedToRetainedTile': True, 'reproducibleWindow': True})
         record['window']['nodataFraction'] = 0.05
         record['coverage']['covered'] = False
+        record['sourceUnits']['coarsestSourceM'] = 3   # Greensboro: 1/9 arc-second NED resampled
         checks = s1m.mechanical_checks(record)
-        self.assertEqual((checks['aoiFullyCovered'], checks['emptyFractionUnderThreshold']), (False, False))
+        self.assertEqual((checks['aoiFullyCovered'], checks['emptyFractionUnderThreshold'], checks['sourceNative1m']), (False, False, False))
 
     def test_the_report_renders_every_facility_including_an_empty_one(self):
         record = self.record()
         record['mechanicalChecks'] = s1m.mechanical_checks(record)
         empty = {'facilityId': 'nowhere', 'terrainPolicy': ['usgs_s1m'], 'aoiSource': 'origin_proxy_1500m', 'tiles': [], 'coverage': {'cellsNeeded': 1, 'cellsCovered': 0, 'covered': False, 'missingCells': [(0, 0, 10000, 10000)]}}
         text = s1m.render({'generatedAt': '2026-09-20T01:00:00+00:00', 'facilities': [record, empty]})
-        self.assertIn('| synthetic | usgs_s1m | AOI | 1 | 1/1 ✓ | 2026-05-21 | 2017-04-18..2017-05-09 |', text)
+        self.assertIn('| synthetic | usgs_s1m | AOI | 1 | 1/1 ✓ | 2026-05-21 | 2017-04-18..2017-05-09 | 1 unit(s): Lidar, 1–1 m, flown 2017-04-18..2017-05-09 |', text)
         self.assertIn('1755, 0.033 m, 0.23 m, -0.012 m; 2017-04-18..2017-05-09 | +0.5, -1 m → 0.01 m |', text)
         self.assertIn('| nowhere | usgs_s1m | origin proxy | 0 | 0/1 ✗ | — | — | — | — | — | — | no retained export | — |', text)
-        self.assertIn('| synthetic | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |', text)
-        self.assertIn('| nowhere | — | — | — | — | — | — | — |', text)
-        self.assertIn('[per-pixel sources](https://example.test/tile.gpkg)', text)
+        self.assertIn('| synthetic | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |', text)
+        self.assertIn('| nowhere | — | — | — | — | — | — | — | — |', text)
+        self.assertIn('[source inputs](https://example.test/tile.gpkg)', text)
+        self.assertIn('  - 100% of the tile, 100% of the AOI: `NY_Southwest_East_2017` — Lidar, source 1 m, QL QL2, flown 2017-04-18..2017-05-09', text)
+        record['comparison']['bestShift'] = {'dxM': 2.0, 'dyM': 2.0, 'medianAbsM': 1.9, 'atSearchEdge': True}
+        self.assertIn('+2, +2 m → 1.9 m (at search edge)', s1m.render({'generatedAt': 'x', 'facilities': [record]}))
         self.assertIn('no provider default changed', text)
 
 
