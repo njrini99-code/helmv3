@@ -123,6 +123,11 @@ with a stable reason code. It wraps the existing scripts (`fetch-osm-*`,
   capture of another mesh (`terrainHash`) fail the node; a §106 draw-call
   breach or a hole over the uncertain gate are findings the aggregates
   summarise and `layout.review.queue` carries as `visual_signoff`.
+- `layout.publish.verify` reads `public/` and never writes it: each URL in
+  the published manifest must resolve to a file whose content hash is the
+  package, the factory's compiled mesh of that hole, or the context layer;
+  a mismatch fails the node (`PUBLISH_MISMATCH`) and the fix is a publishing
+  PR.
 
 The current round flow uses a wizard for setup, hole configuration, shot capture, and submit. Draft save and continue routes support in-progress rounds. Database auto-save and confirmed per-hole checkpoints are the reliable path. The dashboard-level v2 sync engine drains the legacy IndexedDB bridge only for failed final submissions; normal Continue Round auto-saves must not write a second per-shot v1 queue.
 

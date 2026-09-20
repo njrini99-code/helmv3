@@ -600,6 +600,49 @@ def aggregate_player(node, ctx, run):
     return [artifact('player-summary', os.path.join(root, 'player-summary.json'), 'C')] + [artifact(f'sheet:{os.path.basename(s)}', s, 'C') for s in sheets]
 
 
+# --- publishing -----------------------------------------------------------------
+def verify_publish(node, ctx, run):
+    """Read-only check of what is published under public/ against the evidence
+    the factory holds (Factory v2 §11): every URL in the published manifest
+    resolves to a file whose content hash is the package, the compiled mesh
+    of that hole or the context layer this layout's nodes fingerprint. A
+    mismatch fails the node — the fix is a publishing PR, never a write here."""
+    layout_id = node.scope.layout_id
+    layout = ctx.layout(layout_id) or {}
+    manifest_path = ctx.abspath((layout.get('geometry') or {}).get('published'))
+    manifest = ctx.json(manifest_path, fresh=True) or {}
+    public_root = os.path.join(ctx.repo_root, 'public')
+    expected_package = ctx.package_hash(layout_id)
+    checks = []
+
+    def check(name, url, expected, read):
+        path = os.path.join(public_root, url.lstrip('/')) if url else None
+        doc = ctx.json(path, fresh=True) if path and os.path.isfile(path) else None
+        actual = read(doc) if doc else None
+        checks.append({'name': name, 'url': url, 'expected': expected, 'actual': actual, 'ok': bool(url) and actual is not None and actual == expected})
+
+    checks.append({'name': 'manifest.geometryVersion', 'url': ctx.relpath(manifest_path) if manifest_path else None, 'expected': expected_package,
+                   'actual': manifest.get('geometryVersion'), 'ok': bool(manifest) and manifest.get('geometryVersion') == expected_package})
+    check('package', manifest.get('packageUrl'), expected_package, lambda d: d.get('contentHash'))
+    terrain_by_hole = manifest.get('terrainByHole') or {}
+    for hole in (ctx.package(layout_id) or {}).get('holes', []):
+        key = hole['key']
+        folder = ctx.compiled_dir(layout_id, key)
+        report = ctx.json(os.path.join(folder, f'{key}-report.json')) if folder else None
+        check(f'terrain:{key}', terrain_by_hole.get(key), (report or {}).get('contentHash'), lambda d: d.get('contentHash') if d.get('geometryHash') == expected_package else f'mesh of package {str(d.get("geometryHash"))[:12]}')
+    context = ctx.context_layer(layout_id) if ctx.states.get(f'layout.context.classify[{layout_id}]') in DONE else None
+    if manifest.get('contextLayerUrl') or context:
+        check('contextLayer', manifest.get('contextLayerUrl'), (context or {}).get('contentHash'), lambda d: d.get('contentHash'))
+    failed = [c for c in checks if not c['ok']]
+    out = os.path.join(ctx.layout_out(layout_id), 'publish-verification.json')
+    _write_json(out, {'kind': 'golfhelm-factory-publish-verification-v1', 'layoutId': layout_id, 'packageHash': expected_package, 'manifest': ctx.relpath(manifest_path) if manifest_path else None,
+                      'checks': checks, 'ok': not failed, 'verifiedAt': datetime.now(timezone.utc).isoformat()})
+    if failed:
+        first = failed[0]
+        raise RuntimeError(f'PUBLISH_MISMATCH: {len(failed)} of {len(checks)} published files differ from the evidence; first {first["name"]}: expected {str(first["expected"])[:12]}, published {str(first["actual"])[:12]}')
+    return [artifact('publish-verification', out, 'C')]
+
+
 DEFAULT_EXECUTORS = {
     'facility.aoi.resolve': resolve_aoi,
     'facility.osm.snapshot': snapshot_osm,
@@ -622,4 +665,5 @@ DEFAULT_EXECUTORS = {
     'hole.player.capture': capture_player_view,
     'layout.visual.aggregate': aggregate_visual,
     'layout.player.aggregate': aggregate_player,
+    'layout.publish.verify': verify_publish,
 }

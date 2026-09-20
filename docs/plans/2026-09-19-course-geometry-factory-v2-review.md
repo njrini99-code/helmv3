@@ -105,7 +105,7 @@ What landed (`scripts/golf/course-geometry/factory/`, CLI `course-factory.py`):
   (`derive-canopy-naip.py`), imagery audit, base compile, context classify,
   per-hole compile and world build, aggregates, review queue, capability
   report. Canary/player capture and publish verify stay
-  `ADAPTER_NOT_IMPLEMENTED` (PR C; the captures land on PR C, below).
+  `ADAPTER_NOT_IMPLEMENTED` on PR B (all three land on PR C, below).
 - Intake (`intake.py`): cohort + coverage audit + library scorecards → C0
   manifests, most-played first, facility named by its OSM element, sibling
   polygon guard; wrote 10 facilities / 14 layouts / 14 scorecards.
@@ -509,6 +509,20 @@ catalog or a package):
   water and sand read correctly on both; mown turf does not (spring/summer
   NDVI here sits above the Upper's fairway band), which is the calibration
   problem a tracer solves per course, not a reason to hand-tune tonight.
+
+Fifth item, small: `layout.publish.verify` has an adapter (`verify_publish`),
+the last `ADAPTER_NOT_IMPLEMENTED` in the graph. It is read-only over
+`public/`: every URL in the published manifest must resolve to a file whose
+content hash is the package, the compiled mesh of that hole (from the
+factory's own `-report.json`, so a recompiled hole re-verifies — the
+meshes and the context layer are now direct inputs of the node, since the
+prepare node's output is the package hash alone) or the context layer. A
+mismatch fails the node naming the first file (`PUBLISH_MISMATCH`); the
+fix is a publishing PR, never a write here. Live on the Upper: 21 checks
+(manifest, package, 18 meshes, context layer) all pass; the layout plans
+97 cached, 0 blocked — the whole DAG runs. Tested with a fake publish
+(21 checks pass, tier C2) and a drifted mesh (fails naming
+`terrain:synthetic-a-07`, `public/` byte-identical afterwards).
 
 What would be built once the owner decides (proposed, not started):
 `retained.routeTraces` — one file per layout, `golfhelm-route-traces-v1`,

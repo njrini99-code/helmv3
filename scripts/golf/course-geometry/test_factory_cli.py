@@ -65,7 +65,7 @@ class GoldenPlanTests(unittest.TestCase):
         # The lab serves the Upper (its compiled fixture is hash-locked to this package), so the sign-off captures are runnable work.
         self.assertEqual(rows['hole.visual.canary[peek-n-peak-upper:01]'], ('ready', 'NO_SUCCESSFUL_FINGERPRINT'))
         self.assertEqual(rows['hole.player.capture[peek-n-peak-upper:01]'], ('pending', 'DEPENDENCY_PENDING'))
-        self.assertEqual(rows['layout.publish.verify[peek-n-peak-upper]'], ('blocked', 'ADAPTER_NOT_IMPLEMENTED'))
+        self.assertEqual(rows['layout.publish.verify[peek-n-peak-upper]'], ('ready', 'NO_SUCCESSFUL_FINGERPRINT'))
         self.assertNotIn(('stale', 'FINGERPRINT_CHANGED'), rows.values())
 
     def test_whole_catalog_plan_names_concrete_blockers(self):

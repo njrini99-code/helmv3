@@ -39,7 +39,7 @@ BLOCKERS = {
     'TOOL_MISSING': 'a required tool is not installed',
     'LAB_NOT_LISTENING': 'the local lab is not listening on its port (npx vite --config scripts/golf/course-geometry/browser.config.ts)',
     'LAB_COURSE_NOT_SERVED': 'the local lab renders checked-in course fixtures only, and this package is not one of them',
-    'ADAPTER_NOT_IMPLEMENTED': 'no adapter runs this task yet (PR C)',
+    'ADAPTER_NOT_IMPLEMENTED': 'no adapter runs this task in this session (every catalog task has one since PR C; an injected executor set may omit some)',
     'DEPENDENCY_BLOCKED': 'a dependency is blocked',
     'DEPENDENCY_PENDING': 'a dependency has not been built yet',
 }

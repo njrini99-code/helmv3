@@ -535,6 +535,41 @@ class Harness:
         shutil.copytree(os.path.join(self.output, 'layouts', layout, 'compiled'), target)
         shutil.copyfile(os.path.join(self.output, 'layouts', layout, 'package', 'normalized.json'), os.path.join(fixtures, f'{layout}.json'))
 
+    def publish(self, layout):
+        """What publish-course-assets.mts does in a PR: hash-named copies of the
+        package, every compiled mesh and the context layer under public/, a
+        manifest naming them, and the layout manifest pointing at it."""
+        import shutil
+        out = os.path.join(self.output, 'layouts', layout)
+        public = os.path.join(self.repo, 'public', 'course-geometry', layout)
+        shutil.rmtree(public, ignore_errors=True)
+        os.makedirs(os.path.join(public, 'terrain'))
+        pkg = read_json(os.path.join(out, 'package', 'normalized.json'))
+        short = pkg['contentHash'][:12]
+        shutil.copyfile(os.path.join(out, 'package', 'normalized.json'), os.path.join(public, f'package-{short}.json'))
+        terrain = {}
+        for hole in pkg['holes']:
+            mesh = read_json(os.path.join(out, 'compiled', f'{hole["key"]}-terrain.json'))
+            name = f'terrain/{hole["key"]}-{mesh["contentHash"][:12]}.json'
+            write_json(os.path.join(public, name), {**mesh, 'geometryHash': pkg['contentHash']})
+            terrain[hole['key']] = f'/course-geometry/{layout}/{name}'
+        manifest = {'courseId': layout, 'geometryVersion': pkg['contentHash'], 'packageUrl': f'/course-geometry/{layout}/package-{short}.json', 'terrainByHole': terrain}
+        context_path = os.path.join(out, 'context', f'{layout}-context.json')
+        if os.path.isfile(context_path):
+            context = read_json(context_path)
+            write_json(os.path.join(public, f'context-{context["contentHash"][:12]}.json'), context)
+            manifest['contextLayerUrl'] = f'/course-geometry/{layout}/context-{context["contentHash"][:12]}.json'
+        write_json(os.path.join(public, 'manifest.json'), manifest)
+        # Publishing follows the package being checked in: the layout names both.
+        fixtures = os.path.join(self.repo, 'src', 'test', 'fixtures', 'course-geometry')
+        os.makedirs(fixtures, exist_ok=True)
+        shutil.copyfile(os.path.join(out, 'package', 'normalized.json'), os.path.join(fixtures, f'{layout}.json'))
+        layout_path = os.path.join(self.catalog, 'layouts', f'{layout}.json')
+        doc = read_json(layout_path)
+        doc['geometry'] = {'package': f'src/test/fixtures/course-geometry/{layout}.json', 'published': f'public/course-geometry/{layout}/manifest.json'}
+        write_json(layout_path, doc)
+        return public
+
     def plan_rows(self, layout, executors=None):
         code, text = self.run('plan', '--layout', layout, '--json', executors=executors)
         assert code == 0, text

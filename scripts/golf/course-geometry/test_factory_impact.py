@@ -595,6 +595,54 @@ class LabCaptureTests(unittest.TestCase):
         self.assertIn('CAPTURE_MESH_MISMATCH', text)
 
 
+class PublishVerifyTests(unittest.TestCase):
+    """What is published under public/ is checked against the evidence, never written."""
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp(prefix='factory-publish-')
+        self.h = Harness(self.tmp)
+        code, text = self.h.run('run', '--layout', 'synthetic-a')
+        self.assertEqual(code, 0, text)
+
+    def tearDown(self):
+        self.h.ledger.close()
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def executors(self):
+        from factory import adapters
+        return {**self.h.pipeline.executors(), 'layout.publish.verify': adapters.verify_publish}
+
+    def test_published_assets_are_verified_against_the_evidence_and_a_drifted_mesh_fails(self):
+        self.assertEqual(self.h.states('synthetic-a', self.executors())['layout.publish.verify[synthetic-a]'], ('blocked', 'DEPENDENCY_BLOCKED'))
+        public = self.h.publish('synthetic-a')
+        code, text = self.h.run('run', '--layout', 'synthetic-a', executors=self.executors())
+        self.assertEqual(code, 0, text)
+        states = self.h.states('synthetic-a', self.executors())
+        self.assertEqual(states['layout.publish.prepare[synthetic-a]'][0], 'cached')
+        self.assertIn(states['layout.publish.verify[synthetic-a]'][0], DONE)
+        report = read_json(os.path.join(self.h.output, 'layouts', 'synthetic-a', 'publish-verification.json'))
+        self.assertTrue(report['ok'])
+        self.assertEqual(len(report['checks']), 2 + 18 + 1)
+        self.assertEqual(read_json(os.path.join(self.h.output, 'layouts', 'synthetic-a', 'capability-report.json'))['earnedTier'], 'C2')
+        # A published mesh that is not the compiled one: the node fails and names the hole; public/ is untouched.
+        name = next(n for n in os.listdir(os.path.join(public, 'terrain')) if n.startswith('synthetic-a-07'))
+        path = os.path.join(public, 'terrain', name)
+        drifted = {**read_json(path), 'contentHash': 'e' * 64}
+        with open(path, 'w', encoding='utf-8') as f:
+            json.dump(drifted, f)
+        before = {n: file_sha256(os.path.join(public, 'terrain', n)) for n in os.listdir(os.path.join(public, 'terrain'))}
+        code, text = self.h.run('invalidate', '--layout', 'synthetic-a', '--task', 'layout.publish.verify', '--reason', 'probe')
+        self.assertEqual(code, 0, text)
+        code, text = self.h.run('run', '--layout', 'synthetic-a', '--task', 'layout.publish.verify', executors=self.executors())
+        self.assertEqual(code, 1, text)
+        self.assertIn('PUBLISH_MISMATCH: 1 of 21', text)
+        self.assertIn('terrain:synthetic-a-07', text)
+        self.assertEqual({n: file_sha256(os.path.join(public, 'terrain', n)) for n in os.listdir(os.path.join(public, 'terrain'))}, before)
+        report = read_json(os.path.join(self.h.output, 'layouts', 'synthetic-a', 'publish-verification.json'))
+        self.assertFalse(report['ok'])
+        self.assertEqual([c['name'] for c in report['checks'] if not c['ok']], ['terrain:synthetic-a-07'])
+
+
 class LabVerdictTests(unittest.TestCase):
     def report(self, **overrides):
         captures = [{'hole': 7, 'preset': p, 'viewport': v, 'file': f'hole-07-{p.lower()}-{v}.png', 'metadata': {'terrainHash': 'a' * 64, 'drawCallStatus': 'within'}}

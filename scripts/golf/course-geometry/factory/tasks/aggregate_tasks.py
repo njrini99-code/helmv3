@@ -65,7 +65,11 @@ def eval_publish_prepare(node, ctx):
 
 
 def eval_publish_verify(node, ctx):
-    return evaluation({'published': dep_input(ctx, node, 'layout.publish.prepare')})
+    # The prepare node's output is the published package hash alone, so the
+    # meshes and the context layer enter here directly: a recompiled hole
+    # re-verifies what is published even though the package did not move.
+    return evaluation({'published': dep_input(ctx, node, 'layout.publish.prepare'), 'terrain': digest(fan_in_inputs(ctx, node, 'hole.terrain.compile')),
+                       'context': dep_input(ctx, node, 'layout.context.classify')})
 
 
 def eval_capability(node, ctx):
@@ -149,7 +153,7 @@ SPECS = [
     TaskSpec('layout.player.aggregate', '1', 'layout', ('hole.player.capture*',), eval_player_aggregate, impl_files=(script('build-player-sheet.py'),), estimated_bytes=10_000_000),
     TaskSpec('layout.publish.prepare', '1', 'layout', ('layout.package.validate', 'hole.terrain.compile*', 'layout.context.classify?'), eval_publish_prepare,
              impl_files=(script('publish-course-assets.mts'),), retention='D', estimated_bytes=60_000_000),
-    TaskSpec('layout.publish.verify', '1', 'layout', ('layout.publish.prepare',), eval_publish_verify, estimated_bytes=100_000),
+    TaskSpec('layout.publish.verify', '1', 'layout', ('layout.publish.prepare', 'hole.terrain.compile*', 'layout.context.classify?'), eval_publish_verify, estimated_bytes=100_000),
     TaskSpec('layout.capability.evaluate', '1', 'layout', ('layout.package.validate', 'hole.terrain.compile*', 'hole.world.build*?', 'layout.publish.prepare?'), eval_capability,
              executor=run_capability, retention='C'),
 ]
