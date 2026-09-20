@@ -475,15 +475,61 @@ view a player can open plus the desktop entry view.
   `canaries/v31-speed` and `player/audit-v13` in the outside-world
   tracker until a reader compares a factory capture against them.
 
+Imagery-traced courses (Bryan Park 45 rounds, Boonsboro 7): stopped at an
+owner decision, with the evidence for it. Both courses fail at
+`layout.routes.resolve` (`ROUTE_WAY_IDS_REQUIRED`), and routing is what the
+trace path needs first: `--traces` is read inside `layout.candidates.compose`
+(`prepare-osm-course.py`), which never runs without routes, and every trace
+is keyed by `holeKey`. So "trace the surfaces" produces nothing on either
+course until the holes exist; the never-guess rule behind that blocker is
+the owner's, and the way past it is a second human pin format, not a
+relaxation. Evidence gathered 2026-09-20 (scratch `naip-study-sheet.py`:
+one NAIP export per bbox at 1 m in the course zone, the canopy pass's
+fixed classes tinted, OSM golf features drawn; nothing written to the
+catalog or a package):
+
+- Boonsboro CC — NAIP 2025-04-28 over OSM way 518032130 + 150 m
+  (`docs/plans/assets/course-factory-2026-09-20/boonsboro-naip-osm-overview.jpg`):
+  all 18 holes readable (fairways, greens, sand, three ponds); OSM inside
+  the polygon has 0 hole ways, 6 greens, 1 fairway and a few bunkers/tees
+  (33 features drawn). Terrain (`usgs_s1m`, zone 17) and NAIP are both
+  available, so 18 drawn routes are the only thing between this course and
+  C1.
+- Bryan Park — NAIP 2025-06-03 over park relation 3972771
+  (`bryan-park-naip-osm-overview.jpg`): both courses (Champions + Players,
+  36 holes) on Lake Townsend. Correction to the night-run note above: OSM
+  is thin here, not empty — inside the relation bbox it has 1 hole way
+  (1148941814, ref 1, magenta on the sheet), 23 greens, 79 tees, 87
+  bunkers, 4 fairways, 7 water hazards and 32 cart paths, but no course
+  polygon. Three owner decisions: which loop is the Champions layout (a
+  site polygon or bbox per course), its 18 routes, and the terrain provider
+  (`nc_onemap_dem03` — license and vertical datum, the study script exists —
+  or 1/9 arc-second NED as a coarser public-domain fallback).
+- Class tints on the sheets are the Upper's report bands uncalibrated:
+  water and sand read correctly on both; mown turf does not (spring/summer
+  NDVI here sits above the Upper's fairway band), which is the calibration
+  problem a tracer solves per course, not a reason to hand-tune tonight.
+
+What would be built once the owner decides (proposed, not started):
+`retained.routeTraces` — one file per layout, `golfhelm-route-traces-v1`,
+18 tee→green lines with hole numbers drawn in QGIS over the retained NAIP
+export — consumed by `prepare-osm-course.py --routes` in place of OSM hole
+ways (a human pin, so the never-guess rule holds; `routeWayIds` stays null);
+a NAIP surface tracer that emits `golfhelm-imagery-traces-v1` candidates
+(green, bunker, fairway, tee, water) keyed to those routes, calibrated on
+the course's own pixels, stated accuracy, `reviewed: false`, walked in the
+existing QGIS review kit; and an AOI-keyed NAIP export task so the tracer
+has pixels before a package exists. The rest of the chain (terrain, canopy,
+compile, world, review queue) is unchanged.
+
 Remaining PR C items: NC OneMap DEM03 terrain adapter (the USGS 1 m index
 has no tile over Greensboro — Starmount, the Cardinal/Sedgefield Dye and
 Bryan Park return only 1/9 arc-second NED — and Landfall/Cutter Creek carry
 the same policy; owner gates on the study script's license and
 vertical-datum notes), lab serving for factory-built courses (a fixture
 retention step or a dev-only lab source; owner decision, since the lab's
-registry is checked-in code), and imagery tracing at course scale
-(`retained.imageryTraces` + `_prepare --traces` already carry single traced
-features; Bryan Park and Boonsboro, 52 rounds, are reachable no other way).
+registry is checked-in code), and the imagery-traced route/surface path
+above (owner routing decision first).
 
 ## Not started
 
