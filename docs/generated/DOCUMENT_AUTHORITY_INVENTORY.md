@@ -29,7 +29,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | --- | --- | --- | --- | --- |
 | `POLICY` | 21 | 2 | 7 | 0 |
 | `AGENT_SKILL` | 87 | 0 | 4 | 0 |
-| `CURRENT_FEATURE` | 27 | 27 | 12 | 0 |
+| `CURRENT_FEATURE` | 27 | 27 | 12 | 1 |
 | `REFERENCE` | 52 | 15 | 19 | 0 |
 | `GENERATED_TRUTH` | 25 | 3 | 7 | 4 |
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 0 |
@@ -190,7 +190,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/features/recruiting.md` | current | yes | - | - | 3 | 15 | - |
 | `memory/features/roster-team.md` | current | yes | - | - | 2 | 9 | - |
 | `memory/features/settings-preferences.md` | current | yes | - | - | 1 | 10 | - |
-| `memory/features/shot-tracking.md` | current | yes | - | yes | 6 | 55 | - |
+| `memory/features/shot-tracking.md` | current | yes | - | yes | 6 | 56 | 1 |
 | `memory/features/stats-analytics.md` | current | yes | - | yes | 2 | 26 | - |
 | `memory/features/team-access-control.md` | current | yes | - | - | 1 | 18 | - |
 | `memory/features/team-communications.md` | current | yes | - | - | 9 | 14 | - |

@@ -1085,6 +1085,7 @@ scroll range that scroll needed. See ios-native-shell.md.
 - `memory/context/golfhelm-features.md`
 - `docs/features/SHOT_TRACKING_DATA_FLOW.md`
 - `docs/features/SHOT_TRACKING_VERIFICATION.md`
+- `docs/plans/2026-09-20-course-3d-system-handoff.md` (course 3D system handoff: catalog → factory → lab → One-Tap, where everything lives)
 - `https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-07/ROUND_REVIEW_ACCURACY_REPORT.md`
 
 ## iOS shell chrome (updated 2026-08-26)
