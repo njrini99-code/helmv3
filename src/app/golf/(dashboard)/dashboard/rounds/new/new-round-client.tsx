@@ -1,5 +1,7 @@
 'use client';
 
+import { releaseBrowserRoundLeases } from '@/lib/golf/one-tap/course-assets';
+
 import { startTransition, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -609,6 +611,7 @@ export default function NewRoundClient({ playerId, oneTapFlagEnabled = false, on
     };
   }, [playerId]);
 
+  const selectedTeeIdRef = useRef<string | null>(null);
   // Refs for visibility change handler — prevents stale closures
   const completedHoleStatsRef = useRef(completedHoleStats);
   completedHoleStatsRef.current = completedHoleStats;
@@ -689,7 +692,7 @@ export default function NewRoundClient({ playerId, oneTapFlagEnabled = false, on
         playerId,
         roundId: savedRoundIdRef.current,
         timestamp: Date.now(),
-        setupData: setup,
+        setupData: { ...setup, courseId: resolvedCourseIdRef.current, teeId: selectedTeeIdRef.current },
         holes: holesSnapshot,
         completedHoleStats: statsSnapshot,
         inProgressShotsByHole: mergedInProgress,
@@ -714,6 +717,8 @@ export default function NewRoundClient({ playerId, oneTapFlagEnabled = false, on
         }));
       const saveData = {
         courseName: setup.courseName,
+        courseId: resolvedCourseIdRef.current || undefined,
+        teeId: selectedTeeIdRef.current || undefined,
         courseCity: setup.courseCity || undefined,
         courseState: setup.courseState || undefined,
         courseRating: setup.courseRating ? parseFloat(setup.courseRating) : undefined,
@@ -816,6 +821,8 @@ export default function NewRoundClient({ playerId, oneTapFlagEnabled = false, on
   const [qualifierRoundRetry, setQualifierRoundRetry] = useState(0);
 
   const buildRecoverySetupData = useCallback(() => ({
+    courseId: resolvedCourseIdRef.current,
+    teeId: selectedTeeIdRef.current,
     ...setupData,
     qualifierId: setupData.roundType === 'qualifier' ? selectedQualifierId ?? undefined : undefined,
     qualifierRoundNumber: setupData.roundType === 'qualifier' ? selectedRoundNumber ?? undefined : undefined,
@@ -889,18 +896,17 @@ export default function NewRoundClient({ playerId, oneTapFlagEnabled = false, on
   // flag on and an approved package resolves a live round; everything else is null.
   // The player's own Live switch for this round (the status row turns it on, the ••• menu off).
   const [oneTapOptIn, setOneTapOptIn] = useLiveOptIn(savedRoundIdRef.current);
-  const { live: oneTapLiveRound, status: oneTapLiveStatus } = useOneTapLiveRoundState({ roundId: savedRoundIdRef.current, dbCourseId: resolvedCourseIdRef.current, courseName: setupData.courseName, featureFlagEnabled: oneTapFlagEnabled, optIn: oneTapOptIn === 'on', syncEnabled: oneTapSyncEnabled, roundType: setupData.roundType, holeNumber: holes[currentHoleIndex]?.number ?? currentHoleIndex + 1 });
+  const { live: oneTapLiveRound, status: oneTapLiveStatus } = useOneTapLiveRoundState({ roundSetup: { dbCourseId: resolvedCourseIdRef.current, selectedTeeId: selectedTeeIdRef.current, holes }, roundId: savedRoundIdRef.current, dbCourseId: resolvedCourseIdRef.current, courseName: setupData.courseName, featureFlagEnabled: oneTapFlagEnabled, optIn: oneTapOptIn === 'on', syncEnabled: oneTapSyncEnabled, roundType: setupData.roundType, holeNumber: holes[currentHoleIndex]?.number ?? currentHoleIndex + 1 });
   const onOneTapOptIn = useCallback((on: boolean) => setOneTapOptIn(on ? 'on' : 'off'), [setOneTapOptIn]);
   // Course-framed tracking (plan §unlock 3): the Upper package draws the hole
   // scene, the 3D hero and tap-to-measure for a Peek'n Peak Upper round only;
   // every other course gets no geometry and the tracker shipped on main. While
   // Meridian Live is loading or up, its assets serve instead of a second load.
   const roundHoleNumbers = useMemo(() => holes.map(hole => hole.number), [holes]);
-  const { geometry: loadedCourseGeometry } = useCourseGeometry({ dbCourseId: resolvedCourseIdRef.current, courseName: setupData.courseName, holeNumbers: roundHoleNumbers, focusHoleNumber: holes[currentHoleIndex]?.number ?? null, enabled: oneTapLiveStatus.phase !== 'loading' && oneTapLiveStatus.phase !== 'live' });
+  const { geometry: loadedCourseGeometry } = useCourseGeometry({ roundId: savedRoundIdRef.current, dbCourseId: resolvedCourseIdRef.current, courseName: setupData.courseName, holeNumbers: roundHoleNumbers, focusHoleNumber: holes[currentHoleIndex]?.number ?? null, enabled: oneTapLiveStatus.phase !== 'loading' && oneTapLiveStatus.phase !== 'live' });
   const courseGeometry = useMemo(() => oneTapLiveRound ? trackingGeometryFromLiveRound(oneTapLiveRound, roundHoleNumbers) : loadedCourseGeometry, [oneTapLiveRound, roundHoleNumbers, loadedCourseGeometry]);
   // Cloud Course Library tee (golf_course_tees.id) when the round was started
   // from the tee picker. Cleared whenever a non-library course is chosen.
-  const selectedTeeIdRef = useRef<string | null>(null);
   // Reactive mirror of "a cloud tee is selected" (selectedTeeIdRef is a ref and
   // can't drive render). Kept in lockstep with selectedTeeIdRef so the setup
   // screen can show a read-only "Course ready" confirmation for a cloud pick
@@ -1328,6 +1334,8 @@ export default function NewRoundClient({ playerId, oneTapFlagEnabled = false, on
       timestamp: Date.now(),
       setupData: {
         ...setupData,
+        courseId: resolvedCourseIdRef.current,
+        teeId: selectedTeeIdRef.current,
         qualifierId: selectedQualifierId ?? undefined,
         qualifierRoundNumber: selectedRoundNumber ?? undefined,
       },
@@ -1885,7 +1893,7 @@ export default function NewRoundClient({ playerId, oneTapFlagEnabled = false, on
       playerId,
       roundId: savedRoundIdRef.current,
       timestamp: emergencyTimestamp,
-      setupData,
+      setupData: { ...setupData, courseId: resolvedCourseIdRef.current, teeId: selectedTeeIdRef.current },
       holes: updatedHoles,
       completedHoleStats: updatedStats,
       inProgressShotsByHole: inProgressAfter,
@@ -1977,7 +1985,7 @@ export default function NewRoundClient({ playerId, oneTapFlagEnabled = false, on
       playerId,
       roundId: savedRoundIdRef.current,
       timestamp: Date.now(),
-      setupData: setupDataRef.current,
+      setupData: { ...setupDataRef.current, courseId: resolvedCourseIdRef.current, teeId: selectedTeeIdRef.current },
       holes: holesRef.current,
       completedHoleStats: completedHoleStatsRef.current,
       inProgressShotsByHole: nextInProgress,
@@ -2014,7 +2022,7 @@ export default function NewRoundClient({ playerId, oneTapFlagEnabled = false, on
       playerId,
       roundId: savedRoundIdRef.current,
       timestamp: emergencyTimestamp,
-      setupData: setupDataRef.current,
+      setupData: { ...setupDataRef.current, courseId: resolvedCourseIdRef.current, teeId: selectedTeeIdRef.current },
       holes: holesRef.current,
       completedHoleStats: completedHoleStatsRef.current,
       inProgressShotsByHole: allInProgressShots,
@@ -2330,6 +2338,7 @@ export default function NewRoundClient({ playerId, oneTapFlagEnabled = false, on
       // Clear local recovery state after successful submission. The snapshot
       // is keyed by the id it was written under — still the old one here.
       clearEmergencySave(savedRoundIdRef.current, playerId);
+      if (savedRoundIdRef.current) void releaseBrowserRoundLeases(savedRoundIdRef.current);
       if (recreated) {
         savedRoundIdRef.current = result.data.roundId;
         setSavedRoundId(result.data.roundId);
@@ -2499,6 +2508,7 @@ export default function NewRoundClient({ playerId, oneTapFlagEnabled = false, on
 
     // Clear local recovery state after successful server delete (or no server round)
     clearEmergencySave(savedRoundId, playerId);
+    if (savedRoundId) void releaseBrowserRoundLeases(savedRoundId, true);
     setShowExitModal(false);
 
     // The round is gone server-side — nothing left to warn about or re-save
@@ -2561,6 +2571,8 @@ export default function NewRoundClient({ playerId, oneTapFlagEnabled = false, on
       });
     const recoveryData: PartialRoundData = {
       courseName: rd.setupData.courseName,
+      courseId: rd.setupData.courseId || undefined,
+      teeId: rd.setupData.teeId || undefined,
       courseCity: rd.setupData.courseCity || undefined,
       courseState: rd.setupData.courseState || undefined,
       courseRating: rd.setupData.courseRating ? parseFloat(rd.setupData.courseRating) : undefined,

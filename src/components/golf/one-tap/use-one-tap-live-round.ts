@@ -1,9 +1,11 @@
 'use client';
 
+import type { RoundScoringSetup } from '@/lib/golf/one-tap/live-round-placement';
+
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { TerrainMesh } from '@/lib/golf/course-geometry/terrain';
 import type { RoundTypeLike } from '@/lib/golf/one-tap/competition-policy';
-import { cacheStorageCourseAssetCache, loadCoursePackage, loadHoleTerrain, manifestUrl, pruneCourseAssets, type CourseAssetCache } from '@/lib/golf/one-tap/course-assets';
+import { browserRoundLeaseStore, cacheStorageCourseAssetCache, loadCoursePackage, loadHoleTerrain, manifestUrl, pruneCourseAssets, type CourseAssetCache } from '@/lib/golf/one-tap/course-assets';
 import { resolveOneTapLiveRound, type OneTapLiveRound } from '@/lib/golf/one-tap/live-round-placement';
 import { deviceLocationSource, queryLocationPermission } from '@/lib/golf/one-tap/location-source';
 import type { CourseGeometryIneligibility as OneTapIneligibility, CourseGeometryPolicy } from '@/lib/golf/course-geometry/course-policy';
@@ -22,6 +24,7 @@ import { createClient } from '@/lib/supabase/client';
  * asking again. `status` says where the gate stands, so the standard tracker
  * can tell the player why Live is not up instead of staying silent. */
 export interface UseOneTapLiveRoundOptions {
+  roundSetup?: RoundScoringSetup;
   roundId: string | null;
   dbCourseId?: string | null;
   courseName?: string | null;
@@ -52,7 +55,9 @@ export type OneTapLiveStatus =
   | { phase: 'off'; reason: OneTapIneligibility | 'opt_in_off' | 'course_unavailable' | 'error'; detail?: string };
 export interface OneTapLiveRoundState { live: OneTapLiveRound | null; status: OneTapLiveStatus }
 
-export function useOneTapLiveRoundState({ roundId, dbCourseId, courseName, featureFlagEnabled, optIn, syncEnabled = false, holeNumber, policy: onlyPolicy, cache, roundType, transport }: UseOneTapLiveRoundOptions): OneTapLiveRoundState {
+export function useOneTapLiveRoundState({ roundSetup, roundId, dbCourseId, courseName, featureFlagEnabled, optIn, syncEnabled = false, holeNumber, policy: onlyPolicy, cache, roundType, transport }: UseOneTapLiveRoundOptions): OneTapLiveRoundState {
+  const roundSetupRef = useRef(roundSetup);
+  roundSetupRef.current = roundSetup;
   const policy = useMemo(() => resolveCourseGeometryPolicy({ dbCourseId, courseName }, onlyPolicy ? [onlyPolicy] : undefined), [dbCourseId, courseName, onlyPolicy]);
   const productCourseId = policy?.layoutId ?? null;
   const [state, setRawState] = useState<OneTapLiveRoundState>({ live: null, status: { phase: 'inactive' } });
@@ -74,7 +79,7 @@ export function useOneTapLiveRoundState({ roundId, dbCourseId, courseName, featu
     void (async () => {
       try {
         const assetCache = cache === undefined ? cacheStorageCourseAssetCache() : cache;
-        const loaded = await loadCoursePackage({ courseId: productCourseId, policy, cache: assetCache });
+        const loaded = await loadCoursePackage({ roundId, leaseStore: browserRoundLeaseStore(), courseId: productCourseId, policy, cache: assetCache });
         if (cancelled) return;
         if (!loaded) { off('course_unavailable'); return; }
         const { manifest, pkg, contextLayer } = loaded;
@@ -87,12 +92,12 @@ export function useOneTapLiveRoundState({ roundId, dbCourseId, courseName, featu
         // the scorecard is written through the standard ledger (§77).
         const outbox = transport !== undefined ? transport : syncEnabled ? browserSyncTransport() : null;
         const terrainByHole: Record<string, TerrainMesh> = {};
-        const { live: resolved, eligibility } = resolveOneTapLiveRound({ roundId, roundCourseId: productCourseId, featureFlagEnabled, pkg, terrainByHole, contextLayer, location, policy, readiness: 'partial', roundType, transport: outbox });
+        const { live: resolved, eligibility } = resolveOneTapLiveRound({ roundSetup: roundSetupRef.current, roundId, roundCourseId: productCourseId, featureFlagEnabled, pkg, terrainByHole, contextLayer, location, policy, readiness: 'partial', roundType, transport: outbox });
         if (cancelled) return;
         if (!resolved) { off(eligibility.eligible ? 'error' : eligibility.reason); return; }
         // Current hole first, then the holes ahead, then the ones behind.
         const entries = Object.entries(manifest.terrainByHole ?? {});
-        const current = Math.max(0, entries.findIndex(([key]) => pkg.holes.find(h => h.key === key)?.ordinal === holeRef.current));
+        const current = Math.max(0, entries.findIndex(([key]) => key === resolved.roundHoleKeys?.[holeRef.current ?? -1]));
         const queue = [...entries.slice(current), ...entries.slice(0, current)];
         const total = queue.length;
         let loadedCount = 0, missing = 0, started = false;

@@ -4,8 +4,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { TerrainMesh } from '@/lib/golf/course-geometry/terrain';
 import { evictTerrain, rememberViewedHole, residentTerrainKeys } from '@/lib/golf/course-geometry/terrain-residency';
 import type { TrackingGeometry } from '@/lib/golf/course-geometry/tracking-scene';
-import { cacheStorageCourseAssetCache, loadCoursePackage, loadHoleTerrain, manifestUrl, pruneCourseAssets, type CourseAssetCache, type FetchLike, type LoadedCoursePackage } from '@/lib/golf/one-tap/course-assets';
-import { holeKeyForRoundHole, type OneTapLiveRound } from '@/lib/golf/one-tap/live-round-placement';
+import { browserRoundLeaseStore, cacheStorageCourseAssetCache, loadCoursePackage, loadHoleTerrain, manifestUrl, pruneCourseAssets, type CourseAssetCache, type FetchLike, type LoadedCoursePackage } from '@/lib/golf/one-tap/course-assets';
+import { explicitHoleBindings, holeKeyForRoundHole, type OneTapLiveRound } from '@/lib/golf/one-tap/live-round-placement';
 import type { CourseGeometryPolicy } from '@/lib/golf/course-geometry/course-policy';
 import { resolveCourseGeometryPolicy } from '@/lib/golf/course-geometry/course-registry';
 
@@ -21,6 +21,7 @@ import { resolveCourseGeometryPolicy } from '@/lib/golf/course-geometry/course-r
  * package or terrain that cannot be had is not an error: the round simply
  * keeps its 2D course frame, or the plain layout, and shot entry never waits. */
 export interface UseCourseGeometryOptions {
+  roundId?: string | null;
   dbCourseId?: string | null;
   courseName?: string | null;
   /** Round hole numbers in the caller's order: `holeKeys[i]` is the package
@@ -44,7 +45,7 @@ export interface UseCourseGeometryOptions {
 export type CourseGeometryStatus = 'inactive' | 'loading' | 'ready' | 'unavailable';
 export interface CourseGeometryState { geometry: TrackingGeometry | undefined; status: CourseGeometryStatus }
 
-export function useCourseGeometry({ dbCourseId, courseName, holeNumbers, focusHoleNumber = null, prefetchNext = true, enabled = true, policy: onlyPolicy, cache, fetchImpl }: UseCourseGeometryOptions): CourseGeometryState {
+export function useCourseGeometry({ roundId, dbCourseId, courseName, holeNumbers, focusHoleNumber = null, prefetchNext = true, enabled = true, policy: onlyPolicy, cache, fetchImpl }: UseCourseGeometryOptions): CourseGeometryState {
   const policy = useMemo(() => resolveCourseGeometryPolicy({ dbCourseId, courseName }, onlyPolicy ? [onlyPolicy] : undefined), [dbCourseId, courseName, onlyPolicy]);
   const productCourseId = policy?.layoutId ?? null;
   const active = enabled && productCourseId !== null;
@@ -65,25 +66,25 @@ export function useCourseGeometry({ dbCourseId, courseName, holeNumbers, focusHo
     setStatus(current => current === 'ready' ? current : 'loading');
     void (async () => {
       try {
-        const result = await loadCoursePackage({ courseId: productCourseId!, policy: policy!, cache: assetCache, fetchImpl });
+        const result = await loadCoursePackage({ roundId: roundId ?? undefined, leaseStore: browserRoundLeaseStore(), courseId: productCourseId!, policy: policy!, cache: assetCache, fetchImpl });
         if (cancelled) return;
         setLoaded(current => current && result && current.manifest.geometryVersion === result.manifest.geometryVersion ? current : result);
         setStatus(result ? 'ready' : 'unavailable');
-        // One course version in the cache at a time (task 15).
+        // Old versions stay available while a suspended round leases them.
         if (result) await pruneCourseAssets(assetCache, productCourseId!, [manifestUrl(productCourseId!), result.manifest.packageUrl, ...Object.values(result.manifest.terrainByHole ?? {}), ...(result.manifest.contextLayerUrl ? [result.manifest.contextLayerUrl] : [])]);
       } catch {
         if (!cancelled) { setLoaded(null); setStatus('unavailable'); }
       }
     })();
     return () => { cancelled = true; };
-  }, [matched, active, productCourseId, policy, assetCache, fetchImpl]);
+  }, [matched, active, roundId, productCourseId, policy, assetCache, cache, fetchImpl]);
 
   // Hole numbers are compared by value so a caller may rebuild the array per render.
   const holeNumbersKey = holeNumbers.join(',');
   const holeKeys = useMemo(() => {
     const pkg = loaded?.pkg;
-    return holeNumbersKey === '' || !pkg ? [] : holeNumbersKey.split(',').map(n => holeKeyForRoundHole({ pkg }, Number(n)) ?? '');
-  }, [holeNumbersKey, loaded]);
+    return holeNumbersKey === '' || !pkg ? [] : holeNumbersKey.split(',').map(n => holeKeyForRoundHole({ pkg, roundHoleKeys: explicitHoleBindings(pkg, policy) }, Number(n)) ?? '');
+  }, [holeNumbersKey, loaded, policy]);
 
   // Terrain residency (§69): the hole on screen, the next hole, then the most
   // recently viewed, at most three decoded meshes; the rest are evicted. The
@@ -122,6 +123,6 @@ export function useCourseGeometry({ dbCourseId, courseName, holeNumbers, focusHo
 /** The same read-only geometry from a resolved Meridian Live round, so a
  * round whose Live is up (or that stepped back to standard tracking for a
  * hole) draws from the assets Live already holds instead of loading twice. */
-export function trackingGeometryFromLiveRound(live: Pick<OneTapLiveRound, 'pkg' | 'terrainByHole' | 'contextLayer'>, holeNumbers: readonly number[]): TrackingGeometry {
+export function trackingGeometryFromLiveRound(live: Pick<OneTapLiveRound, 'pkg' | 'roundHoleKeys' | 'terrainByHole' | 'contextLayer'>, holeNumbers: readonly number[]): TrackingGeometry {
   return { package: live.pkg, holeKeys: holeNumbers.map(n => holeKeyForRoundHole(live, n) ?? ''), terrainByHole: live.terrainByHole, contextLayer: live.contextLayer };
 }

@@ -59,6 +59,8 @@ export interface EmergencySaveData {
   roundId: string | null;
   timestamp: number;
   setupData: {
+    courseId?: string | null;
+    teeId?: string | null;
     courseName: string;
     courseCity: string;
     courseState: string;

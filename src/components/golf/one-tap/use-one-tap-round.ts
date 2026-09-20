@@ -28,6 +28,7 @@ import { newAnchorId, type ShotAnchor, type TerminalMethod } from '@/lib/golf/on
 export const ROUND_STORAGE_PREFIX = 'golfhelm-one-tap-round:';
 export interface UseOneTapRoundOptions {
   roundId: string;
+  scoringByHole?: Readonly<Record<string, { number: number; par: number; yardage: number }>>;
   pkg: CourseGeometryPackage;
   /** Hole keys in playing order. */
   holeKeys: readonly string[];
@@ -41,7 +42,7 @@ export interface UseOneTapRoundOptions {
   roundType?: RoundTypeLike;
 }
 export interface OneTapScorecardRow {
-  holeKey: string; ordinal: number; par: number;
+  holeKey: string; ordinal: number; par: number; scorecardYards?: number;
   /** Shots between marks (the live UI says shots, never strokes). */
   strokes: number;
   status: HoleStatus; terminalMethod: TerminalMethod | null; integrity: HoleIntegrityReport;
@@ -142,7 +143,7 @@ function teesOf(pkg: CourseGeometryPackage, holeKey: string): LocalFeature[] {
 function liveOnHole(anchors: readonly ShotAnchor[], holeKey: string): ShotAnchor[] { return anchors.filter(a => a.holeKey === holeKey && !a.deletedAt); }
 interface PendingCompletion { holeKey: string; ordinal: number; inferred: boolean; review?: boolean }
 
-export function useOneTapRound({ roundId, pkg, holeKeys, location, storage: storageOption, controlled = null , roundType }: UseOneTapRoundOptions): OneTapRoundView {
+export function useOneTapRound({ scoringByHole, roundId, pkg, holeKeys, location, storage: storageOption, controlled = null , roundType }: UseOneTapRoundOptions): OneTapRoundView {
   const storage = storageOption === undefined ? defaultStorage() : storageOption;
   const binding = useMemo(() => ({ courseId: courseIdForSite(pkg.siteId), siteId: pkg.siteId }), [pkg.siteId]);
   const repo = useMemo<AnchorRepository>(() => storage ? new StorageAnchorRepository(storage, [roundId], binding) : new MemoryAnchorRepository(), [storage, roundId, binding]);
@@ -177,10 +178,10 @@ export function useOneTapRound({ roundId, pkg, holeKeys, location, storage: stor
     const hole = pkg.holes.find(h => h.key === key), live = liveOnHole(anchors, key), s = holeStatus(live);
     const skippedAt = skipped[key], isSkipped = !!skippedAt && !live.some(a => Date.parse(a.tapTimestamp) > Date.parse(skippedAt));
     const penalties = sumPenaltyStrokes(penaltyEvents, key), unresolved = unresolvedPenalties(penaltyEvents, live, key).length;
-    return { holeKey: key, ordinal: hole?.ordinal ?? index + 1, par: hole?.par ?? 4, strokes: s.strokes, status: s.status, terminalMethod: s.terminalMethod,
+    return { holeKey: key, ordinal: scoringByHole?.[key]?.number ?? hole?.ordinal ?? index + 1, par: scoringByHole?.[key]?.par ?? hole?.par ?? 4, scorecardYards: scoringByHole?.[key]?.yardage ?? hole?.scorecardYards ?? undefined, strokes: s.strokes, status: s.status, terminalMethod: s.terminalMethod,
       integrity: assessHoleIntegrity(live, { expectClosed: index < holeIndex && !isSkipped, unresolvedPenalties: unresolved }),
       penaltyStrokes: penalties, score: holeScore(s.strokes, penalties), unresolvedPenalties: unresolved, skipped: isSkipped };
-  }), [holeKeys, pkg, anchors, penaltyEvents, holeIndex, skipped]);
+  }), [holeKeys, pkg, scoringByHole, anchors, penaltyEvents, holeIndex, skipped]);
   const current = useMemo<OneTapScorecardRow>(() => scorecard[holeIndex] ?? scorecard[0] ?? { holeKey, ordinal: 1, par: 4, strokes: 0, status: 'OPEN', terminalMethod: null, integrity: assessHoleIntegrity([]), penaltyStrokes: 0, score: 0, unresolvedPenalties: 0, skipped: false }, [scorecard, holeIndex, holeKey]);
   const holePenalties = useMemo(() => livePenalties(penaltyEvents, holeKey), [penaltyEvents, holeKey]);
   const holeAnchors = useMemo(() => liveOnHole(anchors, holeKey), [anchors, holeKey]);

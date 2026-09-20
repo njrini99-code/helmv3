@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { pilotPackage } from '@/test/fixtures/course-geometry/pilot';
-import { MemoryCourseAssetCache, manifestUrl } from '@/lib/golf/one-tap/course-assets';
+import { MemoryCourseAssetCache, manifestUrl, roundLeaseUrl } from '@/lib/golf/one-tap/course-assets';
 import type { CourseGeometryPolicy } from '@/lib/golf/course-geometry/course-policy';
 import { PEEK_N_PEAK_UPPER_POLICY } from '@/lib/golf/course-geometry/course-registry';
 import { useOneTapLiveRound, useOneTapLiveRoundState } from './use-one-tap-live-round';
@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 // SYNTHETIC POLICY: the pilot fixture stands in for an approved Upper package.
-const policy: CourseGeometryPolicy = { ...PEEK_N_PEAK_UPPER_POLICY, siteIds: new Set([pilotPackage.siteId]), approvedGeometryHashes: new Set([pilotPackage.contentHash]) };
+const policy: CourseGeometryPolicy = { ...PEEK_N_PEAK_UPPER_POLICY, livePilot: { layoutId: 'peek-n-peak-upper', geometryHashes: new Set([pilotPackage.contentHash]) }, holeBindings: { [pilotPackage.contentHash]: Object.fromEntries(pilotPackage.holes.map(h => [h.ordinal, h.key])) }, siteIds: new Set([pilotPackage.siteId]), approvedGeometryHashes: new Set([pilotPackage.contentHash]) };
 const PKG_URL = `/course-geometry/${policy.layoutId}/${pilotPackage.contentHash}/package.json`;
 const bodies: Record<string, string> = { [manifestUrl(policy.layoutId)]: JSON.stringify({ geometryVersion: pilotPackage.contentHash, packageUrl: PKG_URL }), [PKG_URL]: JSON.stringify(pilotPackage) };
 const online = { value: true };
@@ -20,6 +20,12 @@ describe('useOneTapLiveRound', () => {
   afterEach(() => { vi.unstubAllGlobals(); fetchMock.mockClear(); online.value = true; });
   function arm() {
     vi.stubGlobal('fetch', fetchMock);
+    const bindings = new Map<string, string>();
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => bindings.get(key) ?? null,
+      setItem: (key: string, value: string) => { bindings.set(key, value); },
+      removeItem: (key: string) => { bindings.delete(key); },
+    });
     Object.defineProperty(navigator, 'geolocation', { configurable: true, value: { watchPosition: () => 1, clearWatch() {} } });
   }
 
@@ -50,7 +56,7 @@ describe('useOneTapLiveRound', () => {
     const withOutbox = renderHook(() => useOneTapLiveRound({ ...base, roundId: 'r1-sync', cache, transport: outbox }));
     await waitFor(() => expect(withOutbox.result.current).not.toBeNull());
     expect(withOutbox.result.current?.transport).toBe(outbox);
-    expect((await cache.keys()).sort()).toEqual([manifestUrl(policy.layoutId), PKG_URL].sort());
+    expect((await cache.keys()).sort()).toEqual([manifestUrl(policy.layoutId), PKG_URL, roundLeaseUrl(policy.layoutId, 'r1'), roundLeaseUrl(policy.layoutId, 'r1-sync')].sort());
     online.value = false;
     const noSignal = renderHook(() => useOneTapLiveRound({ ...base, roundId: 'r2', cache }));
     await waitFor(() => expect(noSignal.result.current).not.toBeNull());

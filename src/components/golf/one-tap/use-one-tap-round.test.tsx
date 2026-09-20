@@ -87,6 +87,15 @@ describe('One-Tap round', () => {
     expect(again.result.current).toMatchObject({ holeIndex: 0, status: 'OPEN', terminalMethod: null });
   });
 
+  it('uses the saved tee scorecard and played order even when package scoring disagrees', () => {
+    const ordered = [...holeKeys].reverse();
+    const scoringByHole = Object.fromEntries(ordered.map((key, index) => [key, { number: index + 10, par: 5, yardage: 410 }]));
+    const before = JSON.stringify(pilotPackage);
+    const { result } = renderHook(() => useOneTapRound({ roundId: 'white-tee', pkg: pilotPackage, holeKeys: ordered, scoringByHole, location: null, storage: memoryStorage() }));
+    expect(result.current.scorecard[0]).toMatchObject({ holeKey: ordered[0], ordinal: 10, par: 5, scorecardYards: 410 });
+    expect(JSON.stringify(pilotPackage)).toBe(before);
+  });
+
   it('closes a hole by the next-tee fallback only after the dwell on the next tee, and lets the player take it back', () => {
     const { index, green, nextTee } = holePair();
     const phone = manualSource();

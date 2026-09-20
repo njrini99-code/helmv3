@@ -172,6 +172,8 @@ function seed(rpcHandler: (args: unknown) => Promise<{ data: unknown; error: unk
     golf_team_members: [],
     golf_rounds: [{
       id: ROUND_ID,
+      course_id: COURSE_ID,
+      tee_id: '22222222-2222-4222-8222-222222222222',
       player_id: 'player-1',
       status: 'in_progress',
       draft_data: null,
@@ -195,6 +197,21 @@ beforeEach(() => {
 afterEach(() => {
   delete process.env.VERCEL_ENV;
   delete process.env.HELM_FLIGHT_RECORDER_ENABLED;
+});
+
+describe('submit — saved scoring identity', () => {
+  it('preserves the saved tee even when a legacy completion omits it', async () => {
+    let args: Record<string, unknown> | undefined;
+    seed(async (input) => {
+      args = input as Record<string, unknown>;
+      return { data: { success: true, round_id: ROUND_ID, warnings: [] }, error: null };
+    });
+    const input = makeRoundInput();
+    const before = structuredClone(input.holes);
+    expect((await submitGolfRoundComprehensive(input, ROUND_ID)).success).toBe(true);
+    expect(args?.p_round_data).toMatchObject({ course_id: COURSE_ID, tee_id: '22222222-2222-4222-8222-222222222222' });
+    expect(input.holes).toEqual(before);
+  });
 });
 
 describe('submitGolfRoundComprehensive — flight recorder trace payload', () => {

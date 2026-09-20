@@ -1860,6 +1860,7 @@ async function submitGolfRoundComprehensiveImpl(
     // can be old, resumed from recovery, or have lost setup state while it was
     // backgrounded; it must never be able to detach or retarget a started
     // qualifier round when it submits the scorecard.
+    let savedCourseSetup: { course_id: string | null; tee_id: string | null } | null = null;
     let effectiveRoundType = data.roundType;
     let effectiveQualifierId = data.qualifierId;
     let effectiveQualifierRoundNumber = data.qualifierRoundNumber;
@@ -1869,7 +1870,7 @@ async function submitGolfRoundComprehensiveImpl(
       // SECURITY: Verify the round belongs to this player and is not already completed
       const { data: existingRound, error: verifyError } = await supabase
         .from('golf_rounds')
-        .select('id, player_id, status, round_type, qualifier_id, qualifier_round_number')
+        .select('id, player_id, status, round_type, qualifier_id, qualifier_round_number, course_id, tee_id')
         .eq('id', existingRoundId)
         .eq('player_id', player.id)
         .single();
@@ -1886,6 +1887,8 @@ async function submitGolfRoundComprehensiveImpl(
         }, 'warning');
         return { success: false, error: 'Round not found or you do not have permission to update it.' };
       }
+
+      savedCourseSetup = { course_id: existingRound.course_id ?? null, tee_id: existingRound.tee_id ?? null };
 
       if (existingRound.status === 'completed') {
         void logServerError('Round submit rejected: round already completed (double-submit attempt)', {
@@ -2088,7 +2091,7 @@ async function submitGolfRoundComprehensiveImpl(
     // When a Cloud Course Library tee is chosen, its course is authoritative for
     // course_id (more reliable than fuzzy name matching). Par/yards still come
     // from the client hole payload — the tee only sets provenance + course link.
-    if (data.teeId) {
+    if (!savedCourseSetup && data.teeId) {
       const { data: teeRow } = await supabase
         .from('golf_course_tees')
         .select('course_id')
@@ -2099,14 +2102,14 @@ async function submitGolfRoundComprehensiveImpl(
     const roundData: CompletedRoundUpdatePayload = {
       player_id: player.id,
       team_id: teamId,
-      course_id: resolvedCourseId,
+      course_id: savedCourseSetup ? savedCourseSetup.course_id : resolvedCourseId,
       course_name: data.courseName,
       course_city: data.courseCity || null,
       course_state: data.courseState || null,
       course_rating: data.courseRating ?? null,
       course_slope: data.courseSlope ?? null,
       tees_played: data.teesPlayed || null,
-      tee_id: data.teeId || null,
+      tee_id: savedCourseSetup ? savedCourseSetup.tee_id : data.teeId || null,
       round_type: effectiveRoundType,
       round_date: data.roundDate,
       holes_played: data.holes.length,
@@ -7194,7 +7197,25 @@ async function savePartialRoundImpl(
       };
     };
 
+    // Autosave/recovery may not rebind a started round. In particular, old
+    // clients omit teeId; the RPC interprets omission as NULL, so send the
+    // owned round's actual setup explicitly. Read failure must fail closed.
+    const preserveSavedCourseSetup = async (targetRoundId: string): Promise<boolean> => {
+      const { data: saved, error } = await supabase.from('golf_rounds')
+        .select('course_id, tee_id').eq('id', targetRoundId).eq('player_id', player.id).maybeSingle();
+      if (error) return false;
+      if (saved) {
+        roundData.course_id = saved.course_id ?? null;
+        roundData.tee_id = saved.tee_id ?? null;
+      }
+      return true;
+    };
+
     if (existingRoundId) {
+      if (!await preserveSavedCourseSetup(existingRoundId)) {
+        endTrace('warning');
+        return { success: false, error: 'retry' };
+      }
       // A3: before anything is written, refuse silent data loss on a
       // salvaged hole this round has no durable row for.
       const holeInvalid = await checkNonDurableSalvageBeforeWrite(existingRoundId);
@@ -7485,6 +7506,9 @@ async function savePartialRoundImpl(
           .eq('status', 'in_progress')
           .eq('course_id', resolvedCourseId)
           .eq('round_date', data.roundDate);
+        // A known tee is part of recovery identity; another tee's empty shell
+        // is not this setup. Legacy callers without a tee retain the saved one.
+        if (data.teeId) existingRoundQuery = existingRoundQuery.eq('tee_id', data.teeId);
         existingRoundQuery = data.qualifierId
           ? existingRoundQuery.eq('qualifier_id', data.qualifierId)
           : existingRoundQuery.is('qualifier_id', null);
@@ -7542,6 +7566,10 @@ async function savePartialRoundImpl(
       // the full row; the prior narrower type just discarded the column.
       let round: { id: string; updated_at?: string | null } | null = null;
       if (existingRound) {
+        if (!await preserveSavedCourseSetup(existingRound.id)) {
+          endTrace('warning');
+          return { success: false, error: 'retry' };
+        }
         // Identity columns (player_id, team_id, qualifier_id, qualifier_round_number)
         // are set on INSERT and never change for an in-progress round. Stripping
         // them from the UPDATE payload avoids Postgres' per-column UPDATE-privilege

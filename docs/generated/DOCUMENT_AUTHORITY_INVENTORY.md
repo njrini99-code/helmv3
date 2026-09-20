@@ -35,7 +35,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 0 |
 | `RUNBOOK` | 5 | 2 | 1 | 0 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
-| `PLAN` | 54 | 5 | 32 | 83 |
+| `PLAN` | 55 | 5 | 33 | 83 |
 | `AUDIT_SNAPSHOT` | 56 | 6 | 30 | 24 |
 | `STATE_SNAPSHOT` | 7 | 2 | 6 | 0 |
 | `HISTORY_LEDGER` | 40 | 0 | 8 | 13 |
@@ -180,7 +180,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/features/coachhelm-ai.md` | current | yes | - | yes | 5 | 28 | - |
 | `memory/features/crm_outreach.md` | current | yes | - | - | 2 | 24 | - |
 | `memory/features/email_outbound.md` | current | yes | - | - | 2 | 18 | - |
-| `memory/features/golf-round-lifecycle.md` | current | yes | - | yes | 3 | 46 | - |
+| `memory/features/golf-round-lifecycle.md` | current | yes | - | yes | 3 | 47 | - |
 | `memory/features/ios-native-shell.md` | current | yes | - | - | 1 | 14 | - |
 | `memory/features/observability-sentry.md` | current | yes | - | - | 6 | 32 | - |
 | `memory/features/observability-supabase.md` | current | yes | - | yes | 5 | 45 | - |
@@ -190,7 +190,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/features/recruiting.md` | current | yes | - | - | 3 | 15 | - |
 | `memory/features/roster-team.md` | current | yes | - | - | 2 | 9 | - |
 | `memory/features/settings-preferences.md` | current | yes | - | - | 1 | 10 | - |
-| `memory/features/shot-tracking.md` | current | yes | - | yes | 7 | 56 | - |
+| `memory/features/shot-tracking.md` | current | yes | - | yes | 7 | 57 | - |
 | `memory/features/stats-analytics.md` | current | yes | - | yes | 2 | 26 | - |
 | `memory/features/team-access-control.md` | current | yes | - | - | 1 | 18 | - |
 | `memory/features/team-communications.md` | current | yes | - | - | 9 | 14 | - |
@@ -347,6 +347,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/plans/2026-09-19-course-geometry-factory-v2.md` | current | - | - | yes | 2 | 2 | - |
 | `docs/plans/2026-09-19-course-library-scale-out-plan.md` | current | - | - | yes | 2 | 9 | - |
 | `docs/plans/2026-09-20-course-3d-system-handoff.md` | current | - | - | yes | 1 | 44 | - |
+| `docs/plans/2026-09-20-course-factory-authority-implementation.md` | current | - | - | yes | 2 | 3 | - |
 | `docs/plans/IOS_PREMIUM_NATIVE_UPDATE_2026-08-25.md` | current | yes | - | yes | 2 | 1 | - |
 | `docs/plans/assets/course-geometry-2026-09-15/peek-n-peak-upper-07-course-truth.md` | current | - | - | yes | 0 | 0 | - |
 | `docs/plans/calendar-premium/DESIGN-PLAN.md` | current | - | - | yes | 0 | 5 | - |

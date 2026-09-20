@@ -77,7 +77,7 @@ export function OneTapPlayerScreen({ roundId, pkg, holeKey, terrain, contextLaye
   const overflow = useOneTapOverflow({ view, round: round ?? null, onUseStandardTracking, onTurnOffLive, onExitRound });
   return <div className="flex h-full min-h-0 flex-1 flex-col" data-slot="one-tap-screen" data-one-tap-state={view.snapshot.state} data-camera-mode={view.cameraMode} data-camera-state={view.cameraState}
     data-camera-framing={stageFocus?.target.framing ?? ''} data-hole-key={holeKey} data-hole-status={round?.status ?? ''}>
-    <HoleSceneFrame scene={scene} context="entry" presentation="stage" markers={view.markers} stageFocus={stageFocus} world={world}
+    <HoleSceneFrame scorecard={round ? { number: round.ordinal, par: round.scorecard[round.holeIndex]?.par ?? 4, yardage: round.scorecard[round.holeIndex]?.scorecardYards ?? null } : undefined} scene={scene} context="entry" presentation="stage" markers={view.markers} stageFocus={stageFocus} world={world}
       stageOverlay={<><OneTapHud view={view} round={round} />{overflow.sheet}</>} stageFooter={<><OneTapReadout view={view} /><OneTapButton view={view} round={round} /></>}
       stageMenuItems={overflow.items} stageCameraRef={cameraRef} onStageGesture={view.onGesture} />
   </div>;

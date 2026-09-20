@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { pilotPackage } from '@/test/fixtures/course-geometry/pilot';
-import { MemoryCourseAssetCache, cacheStorageCourseAssetCache, fetchAsset, loadCourseAssets, loadCoursePackage, loadHoleTerrain, manifestUrl, preflightCourseAssets, pruneCourseAssets } from '../course-assets';
+import { MemoryCourseAssetCache, cacheStorageCourseAssetCache, fetchAsset, loadCourseAssets, loadCoursePackage, loadHoleTerrain, manifestUrl, preflightCourseAssets, pruneCourseAssets, releaseCourseRoundLease, roundLeaseUrl } from '../course-assets';
 import { isCourseGeometryEligible, type CourseGeometryPolicy } from '../../course-geometry/course-policy';
 import { PEEK_N_PEAK_UPPER_POLICY } from '../../course-geometry/course-registry';
 
@@ -27,6 +27,37 @@ function server(bodies: Record<string, string> = { [manifestUrl(COURSE)]: manife
 }
 
 describe('course assets (task 15 — offline readiness)', () => {
+  it('pins a suspended round across a new publication and cache eviction, and obeys revocation', async () => {
+    const cache = new MemoryCourseAssetCache();
+    const entries = new Map<string, string>();
+    const leaseStore = { getItem: (key: string) => entries.get(key) ?? null, setItem: (key: string, value: string) => { entries.set(key, value); }, removeItem: (key: string) => { entries.delete(key); } };
+    const round = { roundId: 'suspended', leaseStore, courseId: COURSE, policy, cache };
+    await loadCoursePackage({ ...round, fetchImpl: server().fetchImpl });
+    expect(await cache.get(roundLeaseUrl(COURSE, 'suspended'))).not.toBeNull();
+    // The manifest now points elsewhere. No loader may bind this round to it.
+    const newer = server({ [manifestUrl(COURSE)]: JSON.stringify({ geometryVersion: 'new-version', packageUrl: '/new.json' }), [PKG_URL]: JSON.stringify(pilotPackage) });
+    expect((await loadCoursePackage({ ...round, fetchImpl: newer.fetchImpl }))?.pkg.contentHash).toBe(HASH);
+    expect(newer.state.calls).not.toContain(manifestUrl(COURSE));
+    expect(await pruneCourseAssets(cache, COURSE, [])).toEqual([]);
+    for (const key of await cache.keys()) await cache.delete(key);
+    expect((await loadCoursePackage({ ...round, fetchImpl: newer.fetchImpl }))?.pkg.contentHash).toBe(HASH);
+    expect(newer.state.calls).toEqual([PKG_URL]);
+    expect(await loadCoursePackage({ ...round, policy: dark, fetchImpl: newer.fetchImpl })).toBeNull();
+    await releaseCourseRoundLease(cache, COURSE, 'suspended');
+    expect(await pruneCourseAssets(cache, COURSE, [])).toContain(PKG_URL);
+    // Small historical binding remains independent of evictable render bytes.
+    expect(entries.size).toBe(1);
+  });
+
+  it('refuses a manifest for another layout and unreadable round bindings', async () => {
+    const wrong = server({ [manifestUrl(COURSE)]: JSON.stringify({ courseId: 'sister-layout', geometryVersion: HASH, packageUrl: PKG_URL }), [PKG_URL]: JSON.stringify(pilotPackage) });
+    expect(await loadCoursePackage({ courseId: COURSE, policy, cache: null, fetchImpl: wrong.fetchImpl })).toBeNull();
+    const leaseStore = { getItem() { throw new Error('unreadable'); }, setItem() {}, removeItem() {} };
+    const live = server();
+    expect(await loadCoursePackage({ roundId: 'existing', leaseStore, courseId: COURSE, policy, cache: null, fetchImpl: live.fetchImpl })).toBeNull();
+    expect(await loadCoursePackage({ roundId: 'existing', leaseStore: null, courseId: COURSE, policy, cache: new MemoryCourseAssetCache(), fetchImpl: live.fetchImpl })).toBeNull();
+    expect(live.state.calls).toEqual([]);
+  });
   it('fetches nothing while no package hash is approved', async () => {
     const { state, fetchImpl } = server();
     expect(await preflightCourseAssets({ courseId: COURSE, policy: dark, cache: new MemoryCourseAssetCache(), fetchImpl })).toMatchObject({ status: 'not_approved' });

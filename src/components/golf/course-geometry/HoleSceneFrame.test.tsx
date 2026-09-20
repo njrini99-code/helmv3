@@ -45,6 +45,14 @@ describe('player view details (outside-world §3.6)', () => {
 });
 
 describe('stage presentation (One-Tap "the course is the screen")', () => {
+  it('labels the saved tee and round hole instead of the geometry build scorecard', () => {
+    const scene = pilotScene('cacapon-07', false);
+    const before = JSON.stringify(scene.hole);
+    const markup = renderToStaticMarkup(<HoleSceneFrame scene={scene} context="entry" presentation="stage" scorecard={{ number: 10, par: 5, yardage: 410 }} />);
+    expect(markup).toContain('410');
+    expect(markup).toContain('Par 5');
+    expect(JSON.stringify(scene.hole)).toBe(before);
+  });
   it('fills its container with the expanded course, no trigger, no Close, and hosts the caller\'s HUD and footer', () => {
     render(<HoleSceneFrame scene={pilotScene('cacapon-07', false)} context="entry" presentation="stage"
       stageOverlay={<span data-testid="hud">HUD</span>} stageFooter={<Button variant="primary">Mark ball</Button>} />);

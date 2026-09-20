@@ -34,6 +34,7 @@ function hasReviewedGreen(scene: HoleScene | null | undefined): boolean {
   return !!scene?.features.some(feature => feature.id === scene.hole.greenFeatureId && feature.kind === 'green' && feature.reviewed);
 }
 interface FrameProps {
+  scorecard?: { number: number | null; par: number | null; yardage: number | null };
   scene?: HoleScene | null;
   context: 'entry' | 'review';
   defaultView?: SceneView;
@@ -76,7 +77,7 @@ interface FrameProps {
  * view persists through typing and committed shots, until a different hole. */
 /** An entry the host adds to the production ••• menu; the frame closes the menu before `onSelect`. */
 export interface StageMenuItem { key: string; label: string; onSelect(): void; disabled?: boolean }
-export function HoleSceneFrame({ scene, context, defaultView = 'hole', selectedShotNumber, activeDraftShotNumber, evidence, currentPuttingDistanceM, header, children, debugView, world, markers, presentation = 'card', stageOverlay, stageFooter, stageMenuItems, stageCameraRef, onStageGesture, stageFocus }: FrameProps) {
+export function HoleSceneFrame({ scorecard, scene, context, defaultView = 'hole', selectedShotNumber, activeDraftShotNumber, evidence, currentPuttingDistanceM, header, children, debugView, world, markers, presentation = 'card', stageOverlay, stageFooter, stageMenuItems, stageCameraRef, onStageGesture, stageFocus }: FrameProps) {
   const [choice, setChoice] = useState<SceneView | null>(null);
   const [expanded, setExpanded] = useState(false);
   const [detailSelection, setDetailSelection] = useState<number | null>(null);
@@ -117,8 +118,8 @@ export function HoleSceneFrame({ scene, context, defaultView = 'hole', selectedS
     // selection remains in control until the outside selection actually changes.
     if (expanded) setDetailSelection(selectedShotNumber ?? null);
   }, [expanded, selectedShotNumber]);
-  const heading = <><span className="font-fw-display text-body-lg font-semibold">{view === 'putting' || view === 'green' || scene?.hole.displayLabel ? 'Green complex' : scene ? `Hole ${scene.hole.ordinal}` : 'Course view'}</span>
-    <span className="text-caption text-text-secondary">{scene && !unassignedStudy ? `Par ${scene.hole.par} · ${scene.hole.scorecardYards ?? '—'} yd` : 'Source review'}</span></>;
+  const heading = <><span className="font-fw-display text-body-lg font-semibold">{view === 'putting' || view === 'green' || scene?.hole.displayLabel ? 'Green complex' : scene ? `Hole ${(scorecard ? scorecard.number : scene.hole.ordinal) ?? '—'}` : 'Course view'}</span>
+    <span className="text-caption text-text-secondary">{scene && !unassignedStudy ? `Par ${(scorecard ? scorecard.par : scene.hole.par) ?? '—'} · ${(scorecard ? scorecard.yardage : scene.hole.scorecardYards) ?? '—'} yd` : 'Source review'}</span></>;
   const areaControls = (closeArea: () => void) => <div className="flex flex-wrap gap-1" role="group" aria-label="Expanded course views">
     {views.map(v => <Button variant={view === v ? 'secondary' : 'ghost'} size="sm" key={v} aria-pressed={view === v} onClick={() => { setChoice(v); closeArea(); }}>{LABELS[v]}</Button>)}
   </div>;

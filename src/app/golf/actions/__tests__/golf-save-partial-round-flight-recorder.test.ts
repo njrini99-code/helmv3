@@ -113,6 +113,7 @@ function baseTables() {
       player_id: 'player-1',
       team_id: 'team-1',
       course_id: COURSE_A,
+      tee_id: '22222222-2222-4222-8222-222222222222',
       course_name: 'Same Course',
       round_date: '2026-08-25',
       status: 'in_progress',
@@ -148,6 +149,40 @@ beforeEach(() => {
 afterEach(() => {
   delete process.env.VERCEL_ENV;
   delete process.env.HELM_FLIGHT_RECORDER_ENABLED;
+});
+
+describe('savePartialRound — saved scoring identity', () => {
+  it('preserves the saved tee when a no-id recovery reuses the existing draft', async () => {
+    seed(async () => ({ data: null, error: null }));
+    await fake.from('golf_rounds').update({ qualifier_id: null, qualifier_round_number: null }).eq('id', ROUND_ID);
+    const result = await savePartialRound(partialData, undefined, { allowReuse: true });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.roundId).toBe(ROUND_ID);
+    const { data: saved } = await fake.from('golf_rounds').select('*').eq('id', ROUND_ID).single();
+    expect(saved).toMatchObject({ course_id: COURSE_A, tee_id: '22222222-2222-4222-8222-222222222222' });
+  });
+  it('does not reuse a different tee when the recovering setup supplies an exact tee ID', async () => {
+    seed(async () => ({ data: null, error: null }));
+    await fake.from('golf_rounds').update({ qualifier_id: null, qualifier_round_number: null }).eq('id', ROUND_ID);
+    const result = await savePartialRound({ ...partialData, teeId: '33333333-3333-4333-8333-333333333333' }, undefined, { allowReuse: true });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.roundId).not.toBe(ROUND_ID);
+    const { data: original } = await fake.from('golf_rounds').select('*').eq('id', ROUND_ID).single();
+    expect(original?.tee_id).toBe('22222222-2222-4222-8222-222222222222');
+  });
+  it.each([undefined, '33333333-3333-4333-8333-333333333333'])('preserves the selected White tee when legacy or mismatched input supplies %s', async (teeId) => {
+    let args: Record<string, unknown> | undefined;
+    seed(async (input) => {
+      args = input as Record<string, unknown>;
+      return { data: { success: true, updated_at: '2026-08-25T10:00:01Z' }, error: null };
+    });
+    const holeConfigs = [{ holeNumber: 1, par: 4, yardage: 410 }];
+    const result = await savePartialRound({ ...partialData, teeId, holeConfigs }, ROUND_ID);
+    expect(result.success).toBe(true);
+    expect(args?.p_round_data).toMatchObject({ course_id: COURSE_A, tee_id: '22222222-2222-4222-8222-222222222222',
+      draft_data: { holes: [{ number: 1, par: 4, yardage: 410 }] } });
+    expect(holeConfigs).toEqual([{ holeNumber: 1, par: 4, yardage: 410 }]);
+  });
 });
 
 describe('savePartialRound — flight recorder trace payload', () => {

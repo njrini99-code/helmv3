@@ -205,14 +205,13 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
     redirect(`/golf/dashboard/rounds/${id}`);
   }
 
-  // Load holes, shots, and course hole yardages in parallel
+  // Load the saved round snapshot, never today's mutable course yardages.
   // Note: We fetch shots separately instead of using relation query due to missing FK in types
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sb = supabase as any;
   const [
     { data: holes, error: holesError },
-    { data: allShots, error: shotsError },
-    { data: courseHoles, error: courseHolesError }
+    { data: allShots, error: shotsError }
   ] = await Promise.all([
     supabase
       .from('golf_holes')
@@ -225,13 +224,7 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
       .eq('round_id', id)
       .order('hole_number', { ascending: true })
       .order('shot_number', { ascending: true }),
-    round.course_id
-      ? supabase
-          .from('golf_course_holes')
-          .select('hole_number, yardage')
-          .eq('course_id', round.course_id)
-          .order('hole_number', { ascending: true })
-      : Promise.resolve({ data: null, error: null }),
+
   ]);
 
   if (holesError) {
@@ -272,29 +265,22 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
     throw new Error("Couldn't load this round's saved scorecard. Nothing was changed; please try again.");
   }
 
-  if (courseHolesError) {
-    await logServerError(`Continue round course-hole load failed: ${courseHolesError.message}`, {
-      action: 'continueRoundPage.courseHoles',
-      source: 'server_component',
-      featureArea: 'shot_tracking',
-      route: `/golf/dashboard/rounds/continue/${id}`,
-      roundId: id,
-      playerId: player.id,
-      userId: session.userId,
-      errorCode: courseHolesError.code,
-      errorHint: courseHolesError.hint,
-      errorDetails: courseHolesError.details,
-      extra: {
-        courseId: round.course_id ?? null,
-      },
-    }, 'warning');
+  // Try to load hole configs from draft_data JSONB column first, then fall back to notes (legacy)
+  let draftHoleConfigs: Array<{ number: number; par: number; yardage: number }> | null = null;
+  const draftData = (round as Record<string, unknown>).draft_data as Record<string, unknown> | null;
+  if (draftData?.holes && Array.isArray(draftData.holes)) {
+    draftHoleConfigs = draftData.holes as Array<{ number: number; par: number; yardage: number }>;
+  } else if (round.notes) {
+    try {
+      const parsedNotes = JSON.parse(round.notes);
+      if (parsedNotes?.holes && Array.isArray(parsedNotes.holes)) {
+        draftHoleConfigs = parsedNotes.holes;
+      }
+    } catch {
+      // notes field may not contain valid JSON
+    }
   }
 
-  // Build yardage lookup from course config
-  const courseYardageMap = new Map<number, number>();
-  for (const ch of (courseHoles || [])) {
-    if (ch.yardage != null) courseYardageMap.set(ch.hole_number, ch.yardage);
-  }
 
   // Fetch putt_details and approach_miss_details for all shots in this round
   const shotIds = ((allShots || []) as GolfShot[]).map(s => s.id);
@@ -382,7 +368,7 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
     const holeConfig = {
       number: hole.hole_number,
       par: hole.par,
-      yardage: courseYardageMap.get(hole.hole_number) ?? hole.yardage ?? 0,
+      yardage: hole.yardage ?? draftHoleConfigs?.find(h => h.number === hole.hole_number)?.yardage ?? 0,
     };
 
     // Re-derive full detailed stats from the shot data
@@ -405,10 +391,11 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
     };
   }
 
-  const holeConfigMap = new Map<number, { par: number; score: number | null }>();
+  const holeConfigMap = new Map<number, { par: number; yardage: number | null; score: number | null }>();
   for (const hole of (holes || []) as GolfHoleRow[]) {
     holeConfigMap.set(hole.hole_number, {
       par: hole.par,
+      yardage: hole.yardage,
       score: hole.score,
     });
   }
@@ -419,21 +406,6 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
   const hasBackNineHoles = maxHoleNumber > 9;
   const isLikely18HoleRound = hasBackNineHoles || (round.back_nine !== null);
   const totalHoles = round.holes_played ?? (isLikely18HoleRound ? 18 : 9);
-  // Try to load hole configs from draft_data JSONB column first, then fall back to notes (legacy)
-  let draftHoleConfigs: Array<{ number: number; par: number; yardage: number }> | null = null;
-  const draftData = (round as Record<string, unknown>).draft_data as Record<string, unknown> | null;
-  if (draftData?.holes && Array.isArray(draftData.holes)) {
-    draftHoleConfigs = draftData.holes as Array<{ number: number; par: number; yardage: number }>;
-  } else if (round.notes) {
-    try {
-      const parsedNotes = JSON.parse(round.notes);
-      if (parsedNotes?.holes && Array.isArray(parsedNotes.holes)) {
-        draftHoleConfigs = parsedNotes.holes;
-      }
-    } catch {
-      // notes field may not contain valid JSON
-    }
-  }
 
   // Some older in-progress qualifier rows predate the durable
   // qualifier_round_number field. Keep a valid number from their existing
@@ -509,7 +481,7 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
     return {
       number: i + 1,
       par: existingHole?.par ?? draftHole?.par ?? 4,
-      yardage: draftHole?.yardage ?? courseYardageMap.get(i + 1) ?? 0,
+      yardage: existingHole?.yardage ?? draftHole?.yardage ?? 0,
       score: existingHole?.score ?? null,
     };
   });

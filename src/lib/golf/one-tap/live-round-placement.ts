@@ -10,6 +10,18 @@ import type { LocationSource } from './location-source';
 import { isCourseGeometryEligible, type CourseGeometryEligibility as OneTapEligibility, type CourseGeometryPolicy } from '../course-geometry/course-policy';
 import { courseGeometryPolicyForLayout } from '../course-geometry/course-registry';
 
+/** Saved scoring setup is supplied by the host round, never by the geometry compiler. */
+export interface RoundScoringSetup {
+  dbCourseId: string | null;
+  selectedTeeId: string | null;
+  scorecardProfileId?: string | null;
+  holes: readonly { number: number; par: number; yardage: number }[];
+}
+export function explicitHoleBindings(pkg: CourseGeometryPackage, policy: CourseGeometryPolicy | null): Readonly<Record<number, string>> {
+  const bindings = policy?.holeBindings?.[pkg.contentHash] ?? {};
+  return Object.fromEntries(Object.entries(bindings).filter(([, key]) => pkg.holes.some(h => h.key === key)));
+}
+
 /** Master design §77 placement: Meridian Live replaces the shot-entry screen
  * of the existing round flow only for an eligible round — Peek'n Peak Upper,
  * an approved package, the release flag on, a device location — and only for
@@ -20,7 +32,9 @@ export interface OneTapLiveRound {
   courseId: string;
   geometryVersion: string;
   pkg: CourseGeometryPackage;
-  /** Package hole keys in ordinal order. */
+  roundSetup?: RoundScoringSetup;
+  roundHoleKeys?: Readonly<Record<number, string>>;
+  /** Explicitly bound hole keys in played order. */
   holeKeys: readonly string[];
   terrainByHole?: Readonly<Record<string, TerrainMesh>>;
   contextLayer?: ContextLayer;
@@ -38,6 +52,7 @@ export interface OneTapLiveRound {
 }
 interface CoursePackageAssets { pkg: CourseGeometryPackage; terrainByHole?: Readonly<Record<string, TerrainMesh>>; contextLayer?: ContextLayer; geometryVersion?: string }
 export interface ResolveLiveRoundInput {
+  roundSetup?: RoundScoringSetup;
   roundId: string;
   /** Product course id of the round's course (`productCourseIdForRound`), null for any other course. */
   roundCourseId: string | null;
@@ -58,15 +73,21 @@ export function resolveOneTapLiveRound(input: ResolveLiveRoundInput): { live: On
   const policy = input.policy ?? courseGeometryPolicyForLayout(input.roundCourseId);
   if (!policy) return { live: null, eligibility: { eligible: false, reason: 'wrong_course' } };
   if (!input.pkg) return { live: null, eligibility: { eligible: false, reason: 'geometry_hash_not_approved' } };
-  const eligibility = isCourseGeometryEligible({ roundCourseId: input.roundCourseId, pkg: input.pkg, featureFlagEnabled: input.featureFlagEnabled, preciseLocationAvailable: !!input.location }, policy);
+  const eligibility = isCourseGeometryEligible({ roundCourseId: input.roundCourseId, pkg: input.pkg, featureFlagEnabled: input.featureFlagEnabled, preciseLocationAvailable: !!input.location,
+    requiredTier: policy.livePilot?.layoutId === policy.layoutId && policy.livePilot.geometryHashes.has(input.pkg.contentHash) ? 'C2' : 'C3' }, policy);
   if (!eligibility.eligible) return { live: null, eligibility };
-  const holeKeys = [...input.pkg.holes].sort((a, b) => a.ordinal - b.ordinal).map(h => h.key);
-  return { eligibility, live: { roundId: input.roundId, courseId: eligibility.courseId, geometryVersion: eligibility.geometryVersion, pkg: input.pkg, holeKeys,
+  const roundHoleKeys = explicitHoleBindings(input.pkg, policy);
+  const roundSetup = input.roundSetup ? structuredClone(input.roundSetup) : undefined;
+  const order = roundSetup?.holes.map(h => h.number) ?? Object.keys(roundHoleKeys).map(Number).sort((a, b) => a - b);
+  const holeKeys = order.map(number => roundHoleKeys[number]).filter((key): key is string => !!key);
+  if (!holeKeys.length || new Set(holeKeys).size !== holeKeys.length) return { live: null, eligibility: { eligible: false, reason: 'capability_not_available' } };
+  return { eligibility, live: { roundId: input.roundId, courseId: eligibility.courseId, geometryVersion: eligibility.geometryVersion, pkg: input.pkg, holeKeys, roundSetup, roundHoleKeys,
     terrainByHole: input.terrainByHole, contextLayer: input.contextLayer, location: input.location, storage: input.storage, transport: input.transport, readiness: input.readiness, roundType: input.roundType, world: policy.renderWorld } };
 }
 /** The package hole for a round hole number, or null when the package does not map it (that hole stays on standard tracking). */
-export function holeKeyForRoundHole(live: Pick<OneTapLiveRound, 'pkg'>, holeNumber: number): string | null {
-  return live.pkg.holes.find(h => h.ordinal === holeNumber)?.key ?? null;
+export function holeKeyForRoundHole(live: Pick<OneTapLiveRound, 'pkg' | 'roundHoleKeys'>, holeNumber: number): string | null {
+  const key = live.roundHoleKeys?.[holeNumber];
+  return key && live.pkg.holes.some(h => h.key === key) ? key : null;
 }
 export function greenCentreENU(pkg: CourseGeometryPackage, holeKey: string): PointM | null {
   try {

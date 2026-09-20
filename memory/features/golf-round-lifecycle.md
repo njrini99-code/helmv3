@@ -916,3 +916,30 @@ the plan's P6 remains for a launch beyond one course.
 - Meridian Live itself stays behind `peek_n_peak_one_tap_v1` (the round's
   own *Turn on* row) and the outbox behind `peek_n_peak_one_tap_sync_v1`,
   which needs `20260916_peek_n_peak_one_tap.sql` applied first.
+
+## Geometry and scorecard authority (September 20, 2026)
+
+A geometry package is never a scoring authority. Live and review headers use
+the round's hole number, par and yardage. New/continue clients pass the selected
+tee and saved hole setup explicitly to the live adapter; geometry hole lookup
+uses a version-keyed policy crosswalk rather than a package ordinal join.
+A known database course ID cannot fall through to a matching course name.
+
+Both autosave (including no-ID recovery reuse) and comprehensive submit read
+the owned round's saved `course_id` and `tee_id` before updating it. An omitted
+or different tee in a stale client does not detach/rebind an existing round.
+Emergency/pagehide payloads carry these IDs too. Continue Round uses saved
+`golf_holes.yardage`, then saved draft configuration, then unknown (0); it no
+longer reads mutable course-library hole yardages to reconstruct the round.
+Player edits still travel through the existing round ledger and validation.
+
+Course asset loading leases an exact manifest per round. The browser keeps a
+small version binding beside its observation storage, independently of Cache
+API eviction; a missing old asset is fetched by its original versioned URL.
+Revocation returns unavailable instead of rebinding to a new version. Active
+leases prevent pruning; confirmed completion releases cached-byte leases but
+retains the historical binding, while confirmed deletion removes both. This is
+a device binding, not yet a server-synchronized admission/frame-version ledger.
+
+Implementation and remaining rollout gates:
+`docs/plans/2026-09-20-course-factory-authority-implementation.md`.

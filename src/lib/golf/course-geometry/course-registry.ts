@@ -28,9 +28,14 @@ export const PEEK_N_PEAK_UPPER_POLICY: CourseGeometryPolicy = {
    * `source_candidate` — no OSM feature has been reviewed by a person. Set
    * false again once a reviewed package is approved. */
   pilotAcceptsSourceCandidate: true,
-  dbCourseIds: new Set<string>([]),
+  dbCourseIds: new Set<string>(['48596a01-88a4-4081-aaa1-3b049584aa2d']),
   courseNamePatterns: [/peek\W*n?\W*peak[\s\S]*\bupper\b/i],
   renderWorld: 'v2',
+  holeBindings: {
+    fdec6ea8467dd214372bde680e7b7f9236c06ad5d27bb5ddeadf8ed5e9d3f87a: Object.fromEntries(
+      Array.from({ length: 18 }, (_, i) => [i + 1, `peek-n-peak-upper-${String(i + 1).padStart(2, '0')}`])),
+  },
+  livePilot: { layoutId: 'peek-n-peak-upper', geometryHashes: new Set(['fdec6ea8467dd214372bde680e7b7f9236c06ad5d27bb5ddeadf8ed5e9d3f87a']) },
 };
 
 /** Every layout the app may draw. Adding a course is an entry here plus its

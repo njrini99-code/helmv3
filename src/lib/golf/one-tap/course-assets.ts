@@ -3,6 +3,7 @@ import { parseTerrainMesh, type TerrainMesh } from '../course-geometry/terrain';
 import type { CourseGeometryPackage } from '../course-geometry/types';
 import { packageApproved, type CourseGeometryPolicy } from '../course-geometry/course-policy';
 import { courseGeometryPolicyForLayout } from '../course-geometry/course-registry';
+import type { StorageLike } from './anchor-repository';
 
 /** Master plan task 15 — offline course readiness. The essential manifest
  * names everything a round needs on the course with no signal: the approved
@@ -80,7 +81,7 @@ export async function fetchAsset(url: string, { cache, fetchImpl = defaultFetch,
 function parseManifest(body: string, courseId: string): EssentialCourseManifest | null {
   try {
     const value = JSON.parse(body) as Partial<EssentialCourseManifest> | null;
-    if (!value || typeof value.geometryVersion !== 'string' || typeof value.packageUrl !== 'string') return null;
+    if (!value || (value.courseId !== undefined && value.courseId !== courseId) || typeof value.geometryVersion !== 'string' || typeof value.packageUrl !== 'string') return null;
     const terrainByHole = value.terrainByHole && typeof value.terrainByHole === 'object'
       ? Object.fromEntries(Object.entries(value.terrainByHole).filter((e): e is [string, string] => typeof e[1] === 'string')) : undefined;
     return { courseId, geometryVersion: value.geometryVersion, packageUrl: value.packageUrl, terrainByHole, contextLayerUrl: typeof value.contextLayerUrl === 'string' ? value.contextLayerUrl : undefined };
@@ -98,7 +99,7 @@ export function parseApprovedPackage(body: string, geometryVersion: string, poli
 }
 
 /** `policy` defaults to the registry entry for `courseId`; an unlisted course approves nothing. */
-export interface CourseAssetOptions { courseId: string; policy?: CourseGeometryPolicy | null; cache: CourseAssetCache | null; fetchImpl?: FetchLike | null; baseUrl?: string }
+export interface CourseAssetOptions { roundId?: string; leaseStore?: StorageLike | null; courseId: string; policy?: CourseGeometryPolicy | null; cache: CourseAssetCache | null; fetchImpl?: FetchLike | null; baseUrl?: string }
 export type PreflightStatus = 'ready' | 'partial' | 'unavailable' | 'not_approved';
 export interface PreflightAsset { kind: 'package' | 'terrain'; holeKey?: string; url: string; source: AssetSource | null }
 export interface PreflightReport { status: PreflightStatus; geometryVersion: string | null; manifestSource: AssetSource | null; assets: PreflightAsset[]; missing: string[] }
@@ -130,10 +131,33 @@ export async function preflightCourseAssets({ courseId, policy = courseGeometryP
   await pruneCourseAssets(cache, courseId, [manifestUrl(courseId, baseUrl), manifest.packageUrl, ...Object.values(manifest.terrainByHole ?? {}), ...(manifest.contextLayerUrl ? [manifest.contextLayerUrl] : [])], baseUrl);
   return { status: missing.length ? 'partial' : 'ready', geometryVersion: manifest.geometryVersion, manifestSource: manifestHit!.source, assets, missing };
 }
-/** Drop this course's cached assets from a version the manifest no longer
- * names, so the cache holds one course version at a time. */
+/** A suspended round leases its exact manifest. Revocation still wins over
+ * a lease. Release explicitly at terminal completion/deletion, never unmount. */
+export function roundLeaseUrl(courseId: string, roundId: string, baseUrl = '/course-geometry'): string {
+  return `${baseUrl}/${courseId}/round-leases/${encodeURIComponent(roundId)}.json`;
+}
+export function browserRoundLeaseStore(): StorageLike | null {
+  try { return typeof window === 'undefined' ? null : window.localStorage; } catch { return null; }
+}
+const roundBindingKey = (roundId: string) => `golfhelm-round-course-binding:${roundId}`;
+export async function releaseCourseRoundLease(cache: CourseAssetCache | null, courseId: string, roundId: string): Promise<void> {
+  await cache?.delete(roundLeaseUrl(courseId, roundId));
+}
+/** Completion releases cached bytes, but retains the small version binding
+ * for later review. Only a confirmed deletion removes that binding. */
+export async function releaseBrowserRoundLeases(roundId: string, deleted = false): Promise<void> {
+  try {
+    const cache = cacheStorageCourseAssetCache();
+    const suffix = `/round-leases/${encodeURIComponent(roundId)}.json`;
+    for (const url of await cache?.keys() ?? []) if (url.endsWith(suffix)) await cache?.delete(url);
+    if (deleted) browserRoundLeaseStore()?.removeItem(roundBindingKey(roundId));
+  } catch { /* cleanup cannot make a completed or deleted round fail */ }
+}
+/** Keep suspended rounds' files; otherwise remove obsolete course assets. */
 export async function pruneCourseAssets(cache: CourseAssetCache | null, courseId: string, keep: readonly string[], baseUrl = '/course-geometry'): Promise<string[]> {
   if (!cache) return [];
+  const leasePrefix = `${baseUrl}/${courseId}/round-leases/`;
+  if ((await cache.keys()).some(url => url.replace(/^https?:\/\/[^/]+/, '').startsWith(leasePrefix))) return [];
   const prefix = `${baseUrl}/${courseId}/`, keepSet = new Set(keep), removed: string[] = [];
   for (const url of await cache.keys()) {
     const path = url.startsWith('http') ? url.replace(/^https?:\/\/[^/]+/, '') : url;
@@ -151,14 +175,34 @@ export interface LoadedCoursePackage { manifest: EssentialCourseManifest; pkg: C
  * live round needs before it can start. Terrain follows per hole through
  * `loadHoleTerrain`, so the first hole is on screen after ~1.5 MB instead of
  * after the whole course. Null when no approved package can be had. */
-export async function loadCoursePackage({ courseId, policy = courseGeometryPolicyForLayout(courseId), cache, fetchImpl = defaultFetch, baseUrl = '/course-geometry' }: CourseAssetOptions): Promise<LoadedCoursePackage | null> {
+export async function loadCoursePackage({ roundId, leaseStore, courseId, policy = courseGeometryPolicyForLayout(courseId), cache, fetchImpl = defaultFetch, baseUrl = '/course-geometry' }: CourseAssetOptions): Promise<LoadedCoursePackage | null> {
   if (!policy || policy.approvedGeometryHashes.size === 0 || courseId !== policy.layoutId) return null;
-  const manifestHit = await fetchAsset(manifestUrl(courseId, baseUrl), { cache, fetchImpl, strategy: 'network_first' });
+  // An evictable asset cache alone cannot protect a round's version binding.
+  if (roundId && !leaseStore) return null;
+  const leaseUrl = roundId ? roundLeaseUrl(courseId, roundId, baseUrl) : null;
+  // This small binding lives beside the observation ledger, independently of
+  // the evictable asset cache. If it cannot be read, do not select a new world.
+  let binding: string | null = null;
+  try { binding = roundId && leaseStore ? leaseStore.getItem(roundBindingKey(roundId)) : null; } catch { return null; }
+  const pinned = binding ?? (leaseUrl && cache ? await cache.get(leaseUrl) : null);
+  const manifestHit = pinned ? { body: pinned, source: 'cache' as const }
+    : await fetchAsset(manifestUrl(courseId, baseUrl), { cache, fetchImpl, strategy: 'network_first' });
   const manifest = manifestHit ? parseManifest(manifestHit.body, courseId) : null;
   if (!manifest || !policy.approvedGeometryHashes.has(manifest.geometryVersion)) return null;
   const packageHit = await fetchAsset(manifest.packageUrl, { cache, fetchImpl, strategy: 'cache_first' });
   const pkg = packageHit ? parseApprovedPackage(packageHit.body, manifest.geometryVersion, policy) : null;
   if (!pkg) return null;
+  const serialized = JSON.stringify(manifest);
+  if (roundId && leaseStore) {
+    try {
+      // Concurrent loaders must agree; never replace the first round binding.
+      const existing = leaseStore.getItem(roundBindingKey(roundId));
+      if (existing && existing !== serialized) return null;
+      if (!existing) leaseStore.setItem(roundBindingKey(roundId), serialized);
+      if (leaseStore.getItem(roundBindingKey(roundId)) !== serialized) return null;
+    } catch { return null; }
+  }
+  if (leaseUrl) await cache?.put(leaseUrl, serialized);
   const sources: Record<string, AssetSource> = { [manifestUrl(courseId, baseUrl)]: manifestHit!.source, [manifest.packageUrl]: packageHit!.source };
   // The outside-world layer (woods, paths, structures) is optional: the
   // course plays without it, so a missing or unparseable layer is dropped

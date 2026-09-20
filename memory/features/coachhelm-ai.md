@@ -195,3 +195,10 @@ Desktop places geometry and shot detail beside each other. Optional physical
 geometry uses the same adapter/renderer as manual entry. Unknown positions
 remain unresolved and the physical green never implies the day's cup. This
 presentation change does not alter insight generation or statistical inputs.
+
+### Round-review course labels (September 20, 2026)
+
+The bounded `HoleShotPath` passes recorded hole/par/yardage into
+`HoleSceneFrame` separately from the geometry scene. The package's build tee
+cannot replace those round labels; an unavailable recorded value stays unknown.
+The change does not alter historical shot positions or CoachHelm calculations.

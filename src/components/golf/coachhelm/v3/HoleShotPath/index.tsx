@@ -618,7 +618,7 @@ export function HoleShotPath(props: HoleShotPathComponentProps) {
     </div>;
   }
   if (props.bounded || props.scene) return <HoleSceneFrame key={`${props.hole_number}-${props.scene?.packageHash ?? 'unavailable'}`}
-    scene={props.scene} context="review" defaultView={props.defaultView} evidence={props.evidence} selectedShotNumber={props.selectedShotNumber} />;
+    scorecard={{ number: props.hole_number ?? null, par: props.par ?? null, yardage: props.yardage ?? null }} scene={props.scene} context="review" defaultView={props.defaultView} evidence={props.evidence} selectedShotNumber={props.selectedShotNumber} />;
   return <LegacyHoleShotPath {...props} />;
 }
 

@@ -37,6 +37,8 @@ describe('course geometry registry (Factory v2 PR A)', () => {
     expect(resolveCoursePolicy({ courseName: 'Cacapon State Park' }, both)).toBe(cacapon);
     expect(resolveCoursePolicy({ courseName: "Peek'n Peak Resort - Lower Course" }, both)).toBeNull();
     expect(resolveCoursePolicy({ dbCourseId: 'course-row-9', courseName: null }, both)).toBeNull();
+    expect(resolveCoursePolicy({ dbCourseId: 'course-row-9', courseName: "Peek'n Peak Upper" }, both)).toBeNull();
+    expect(resolveCoursePolicy({ dbCourseId: '48596a01-88a4-4081-aaa1-3b049584aa2d', courseName: 'Renamed by player' }, both)).toBe(PEEK_N_PEAK_UPPER_POLICY);
     expect(resolveCoursePolicy({}, both)).toBeNull();
     // The default registry knows only the pilot.
     expect(resolveCourseGeometryPolicy({ courseName: 'Cacapon State Park' })).toBeNull();

@@ -40,6 +40,11 @@ export interface CourseGeometryPolicy {
   readonly courseNamePatterns: readonly RegExp[];
   /** Meridian world the layout renders. */
   readonly renderWorld: 'v1' | 'v2';
+  /** Explicit layout order, bound to immutable geometry revisions. Never infer from mesh ordinal. */
+  readonly holeBindings?: Readonly<Record<string, Readonly<Record<number, string>>>>;
+  /** Existing on-course pilot only; copying its policy to another layout cannot copy this exception. */
+  readonly livePilot?: { readonly layoutId: string; readonly geometryHashes: ReadonlySet<string> };
+
 }
 
 export type RoundCourseIdentity = { dbCourseId?: string | null; courseName?: string | null };
@@ -50,7 +55,7 @@ export type RoundCourseIdentity = { dbCourseId?: string | null; courseName?: str
 export function resolveCoursePolicy(round: RoundCourseIdentity, registry: readonly CourseGeometryPolicy[]): CourseGeometryPolicy | null {
   if (round.dbCourseId) {
     const bound = registry.find(p => p.dbCourseIds.has(round.dbCourseId!));
-    if (bound) return bound;
+    return bound ?? null;
   }
   if (round.courseName) {
     const name = round.courseName;

@@ -10,7 +10,7 @@ import { PEEK_N_PEAK_UPPER_POLICY } from '@/lib/golf/course-geometry/course-regi
 import { trackingGeometryFromLiveRound, useCourseGeometry } from './use-course-geometry';
 
 // SYNTHETIC POLICY: the pilot fixture stands in for the approved Upper package.
-const policy: CourseGeometryPolicy = { ...PEEK_N_PEAK_UPPER_POLICY, siteIds: new Set([pilotPackage.siteId]), approvedGeometryHashes: new Set([pilotPackage.contentHash]) };
+const policy: CourseGeometryPolicy = { ...PEEK_N_PEAK_UPPER_POLICY, livePilot: { layoutId: 'peek-n-peak-upper', geometryHashes: new Set([pilotPackage.contentHash]) }, holeBindings: { [pilotPackage.contentHash]: Object.fromEntries(pilotPackage.holes.map(h => [h.ordinal, h.key])) }, siteIds: new Set([pilotPackage.siteId]), approvedGeometryHashes: new Set([pilotPackage.contentHash]) };
 const BASE = `/course-geometry/${policy.layoutId}/${pilotPackage.contentHash}`;
 const PKG_URL = `${BASE}/package.json`;
 const keys = pilotPackage.holes.map(h => h.key);
@@ -116,7 +116,7 @@ describe('useCourseGeometry', () => {
   });
 
   it('builds the same geometry from a live round without loading anything', () => {
-    const live = { pkg: pilotPackage, terrainByHole: {}, contextLayer: undefined };
+    const live = { pkg: pilotPackage, roundHoleKeys: policy.holeBindings![pilotPackage.contentHash], terrainByHole: {}, contextLayer: undefined };
     expect(trackingGeometryFromLiveRound(live, [1, 2, 99])).toEqual({ package: pilotPackage, holeKeys: [keys[0], keys[1], ''], terrainByHole: {}, contextLayer: undefined });
   });
 });

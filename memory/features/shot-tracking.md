@@ -96,6 +96,23 @@ admit geometry. Extraction still requires an AOI item query, native-GSD
 calculation, a retained georeferenced export with hashes/CRS/bands/date, and
 the imagery-quality gate.
 
+PGA National explicitly includes Palm Beach County's 2025 RGB ImageServer
+as visual-review evidence before the national analysis fallback. It is not
+a statewide Florida default. Its 0.1524003048-m Web Mercator service pixel
+does not establish native ground GSD; the service year does not establish an
+exact flight date. Neither NIR nor geometry authority is implied. Virginia
+tile-index products can differ locally (including three-inch coverage at
+Lakeview); retain that declaration separately from map-export pixel spacing.
+An RGBA map export contains transparency, not a fourth spectral band.
+
+Denison also selects the state-hosted OSIP three-inch original-tile index
+before the county map preview. The retained LIC_2023 sample's XML declares
+public-domain data and 2023-02-18 acquisition; its GeoTIFF grid decodes to
+0.25 US survey feet (0.0762001524 m). All four bands are preserved; the
+unlabelled fourth band does not yet authorize NIR-derived claims. This source
+needs a bounded tile acquisition adapter and separate registration/feature
+validation. The discovery entry itself grants no physical authority.
+
 NC facility acquisition uses `fetch-nc-facility-ortho.py` v2. Every retained
 tile has two independently requested, georeferenced GeoTIFFs: RGB (`bandIds`
 0,1,2) and NIR (`bandIds` 3). Both must preserve the native 0.5-US-survey-foot
@@ -183,6 +200,16 @@ detail spacing, and the independent metric grid are unchanged. The render
 profile records `decorativeEdgeBands: false`; a hole still over budget fails.
 
 ### Course factory build engine (Factory v2 PR B, 2026-09-19)
+
+The library snapshot exporter paginates all five input tables in stable ID
+order with exact counts. It rejects missing counts, early empty pages,
+duplicate IDs and changing totals rather than exporting a capped inventory.
+It accepts a scorecard only with a complete ordered hole sequence, valid par,
+and valid yardage. `course-factory.py refresh-scorecards --snapshot ...`
+uses that complete export to fill only absent catalog scorecard selections,
+matching bound course IDs and hole count. Existing selections and production
+records remain unchanged. A retained scorecard supplies par/yardage evidence;
+it does not approve source routes, tee-marker locations or physical geometry.
 
 `scripts/golf/course-geometry/course-factory.py` (package `factory/`) is the
 local build engine for course geometry. It reads `course-geometry/catalog/`,
@@ -1480,3 +1507,36 @@ interruptible transition. Reduced-motion users receive the final state
 immediately. This remains camera-only presentation: no selection, animation,
 or display estimate writes a shot coordinate, changes a metric, or mutates the
 round's score/save flow.
+
+## Factory source import and admission hardening (September 20, 2026)
+
+The factory accepts retained `sourceGeometry` using
+`golfhelm-source-geometry-v1` (`source_geometry.py`). Routes and Polygon/
+MultiPolygon surfaces from that artifact enter candidate assembly before green
+association. Hole keys come from the explicit physical-hole/layout order.
+An imported green can satisfy the route association with no OSM green or fake
+OSM way. Invalid imports block rather than silently falling back to OSM.
+Identity-review evidence never grants physical boundary approval.
+
+Canonical traces now retain their exact coordinates: the former 6 m buffer
+smoothing and 0.4 m simplification are removed. Original import bytes are copied
+with source metadata into the prepared package directory and tracked as retained
+artifacts. The CLI is `--source-geometry` for the general contract; legacy
+NAIP surface imports remain `--traces` (there is no `--routes` alias).
+
+C2 publication requires successful byte verification as well as preparation.
+C2 does not grant tap measurement. C3 promotion requires current reviewed
+geometry, successful per-hole truth records and verified publication; C4 stays
+blocked until actual field evidence has a supported admission contract. Live
+consumers request C3 explicitly except the exact Upper pilot layout/hash.
+
+NC DEM acquisition now requests native EPSG:6543, locks a single full-coverage
+catalog raster, aligns to that raster's grid origin, and verifies vertical CRS
+from its separate item info. Old EPSG:2264 sources remain evidence and are not
+adopted as corrected physical data. Unknown Z units block physical acquisition;
+explicit render-only fallback retains its assumption separately. V2 acquisition
+uses a new source directory and identity. Registration/putting-grade approval
+is not implied by this correction.
+
+See `docs/plans/2026-09-20-course-factory-authority-implementation.md` for
+verification and remaining canary/admission work.

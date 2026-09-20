@@ -171,3 +171,11 @@ directions. No inferred pin, measured endpoint, new player input or CoachHelm
 insight change is introduced. The local fixture harness verifies the real
 components/styles without publishing course geometry. Implementation evidence
 and remaining gates live in the existing course-geometry plan, Section 19.
+
+### Versioned course presentation (September 20, 2026)
+
+Round Review supplies its round ID to the course asset loader, reusing the
+same device geometry binding as entry/resume. An approved replacement package
+does not automatically replace the version used by that round. Standard review
+continues when a pinned bundle is unavailable or revoked. Server-synchronized
+bindings and explicit migrations remain follow-up work.

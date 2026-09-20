@@ -8,9 +8,28 @@ import { PEEK_N_PEAK_UPPER_POLICY, productCourseIdForRound } from '../../course-
 
 const location: LocationSource = { kind: 'synthetic', subscribe: () => () => {} };
 // SYNTHETIC POLICY: the pilot fixture stands in for an approved Upper package.
-const approved: CourseGeometryPolicy = { ...PEEK_N_PEAK_UPPER_POLICY, siteIds: new Set([pilotPackage.siteId]), approvedGeometryHashes: new Set([pilotPackage.contentHash]), dbCourseIds: new Set(['course-row-1']) };
+const approved: CourseGeometryPolicy = { ...PEEK_N_PEAK_UPPER_POLICY, livePilot: { layoutId: 'peek-n-peak-upper', geometryHashes: new Set([pilotPackage.contentHash]) }, holeBindings: { [pilotPackage.contentHash]: Object.fromEntries(pilotPackage.holes.map(h => [h.ordinal, h.key])) }, siteIds: new Set([pilotPackage.siteId]), approvedGeometryHashes: new Set([pilotPackage.contentHash]), dbCourseIds: new Set(['course-row-1']) };
 
 describe('live round placement (§77)', () => {
+  it('does not copy the Upper measurement pilot to another C2 layout', () => {
+    const policy = { ...approved, layoutId: 'another-layout' };
+    expect(resolveOneTapLiveRound({ roundId: 'r1', roundCourseId: policy.layoutId, featureFlagEnabled: true,
+      pkg: pilotPackage, location, policy })).toMatchObject({ live: null, eligibility: { reason: 'capability_not_available' } });
+  });
+
+  it('preserves White scoring and binds reordered nines explicitly', () => {
+    const [first, second] = pilotPackage.holes;
+    const policy = { ...approved, holeBindings: { [pilotPackage.contentHash]: { 1: second!.key, 2: first!.key } } };
+    const setup = { dbCourseId: 'course-row-1', selectedTeeId: 'white', holes: [{ number: 1, par: 4, yardage: 410 }, { number: 2, par: 3, yardage: 155 }] };
+    const before = structuredClone(setup);
+    const { live } = resolveOneTapLiveRound({ roundId: 'r1', roundCourseId: policy.layoutId, featureFlagEnabled: true, pkg: pilotPackage, location, policy, roundSetup: setup });
+    expect(live?.roundSetup).toEqual(before);
+    expect(live?.holeKeys).toEqual([second!.key, first!.key]);
+    expect(holeKeyForRoundHole(live!, 1)).toBe(second!.key);
+    expect(holeKeyForRoundHole(live!, 3)).toBeNull();
+    expect(holeKeyForRoundHole({ pkg: pilotPackage }, 1)).toBeNull();
+    expect(setup).toEqual(before);
+  });
   it("names the product course only for Peek'n Peak Upper, by bound row or by name, never the Lower course", () => {
     expect(productCourseIdForRound({ courseName: "Peek'n Peak Resort - Upper Course" })).toBe('peek-n-peak-upper');
     expect(productCourseIdForRound({ courseName: 'Peek n Peak (Upper)' })).toBe('peek-n-peak-upper');
@@ -34,8 +53,8 @@ describe('live round placement (§77)', () => {
     // the wrong course before anything else is looked at.
     expect(resolveOneTapLiveRound({ ...base, policy: undefined })).toMatchObject({ live: null, eligibility: { eligible: false, reason: 'wrong_site' } });
     expect(resolveOneTapLiveRound({ ...base, policy: undefined, roundCourseId: 'cacapon' })).toMatchObject({ live: null, eligibility: { eligible: false, reason: 'wrong_course' } });
-    expect(holeKeyForRoundHole({ pkg: pilotPackage }, pilotPackage.holes[0]!.ordinal)).toBe(pilotPackage.holes[0]!.key);
-    expect(holeKeyForRoundHole({ pkg: pilotPackage }, 99)).toBeNull();
+    expect(holeKeyForRoundHole({ pkg: pilotPackage, roundHoleKeys: approved.holeBindings![pilotPackage.contentHash] }, pilotPackage.holes[0]!.ordinal)).toBe(pilotPackage.holes[0]!.key);
+    expect(holeKeyForRoundHole({ pkg: pilotPackage, roundHoleKeys: approved.holeBindings![pilotPackage.contentHash] }, 99)).toBeNull();
     expect(greenCentreENU(pilotPackage, pilotPackage.holes[0]!.key)).not.toBeNull();
     expect(greenCentreENU(pilotPackage, 'no-such-hole')).toBeNull();
   });
