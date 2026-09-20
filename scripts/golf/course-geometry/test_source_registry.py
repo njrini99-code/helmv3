@@ -38,3 +38,54 @@ class NcHistoricalImageryPolicyTests(unittest.TestCase):
         self.assertEqual(provider['role'], 'feature_extraction')
         self.assertEqual(provider['expected_bands'], ['red', 'green', 'blue', 'nir'])
         self.assertNotIn('nc_onemap_2020_2023_analysis', registry.imagery_policy('NC'))
+
+class NativeImageryReviewContractTests(unittest.TestCase):
+    def test_complete_bound_native_imagery_can_create_review_candidates_but_not_measurements(self):
+        index = {
+            'schema': 'golfhelm-facility-native-ortho-index-v2',
+            'complete': True,
+            'tileCountPlanned': 1,
+            'qualitySummary': {'passedTiles': 1, 'failedTileKeys': []},
+            'tiles': [{'key': 'r00-c00'}],
+        }
+        source_items = {
+            'schema': 'golfhelm-nc-ortho-source-items-v1',
+            'complete': True,
+            'inputIndexSha256': 'native-index-hash',
+            'tiles': [{'tileKey': 'r00-c00', 'status': 'one_native_resolution_catalog_item'}],
+        }
+        contract = registry.native_ortho_review_contract(index, source_items, index_sha256='native-index-hash')
+        self.assertTrue(contract['canCreateReviewCandidates'])
+        self.assertFalse(contract['canMeasurePhysicalGeometry'])
+        self.assertEqual(contract['sourceTruthClass'], 'measured')
+        self.assertEqual(contract['candidateGeometryTruthClass'], 'derived')
+
+    def test_unbound_imagery_fails_closed_for_review_candidate_creation(self):
+        index = {
+            'schema': 'golfhelm-facility-native-ortho-index-v2',
+            'complete': True,
+            'tileCountPlanned': 1,
+            'qualitySummary': {'passedTiles': 1, 'failedTileKeys': []},
+            'tiles': [{'key': 'r00-c00'}],
+        }
+        contract = registry.native_ortho_review_contract(index, {'complete': False, 'tiles': []}, index_sha256='native-index-hash')
+        self.assertFalse(contract['canCreateReviewCandidates'])
+        self.assertIn('source item', contract['reason'])
+
+    def test_mismatched_sidecar_hash_fails_closed_even_when_tile_keys_match(self):
+        index = {
+            'schema': 'golfhelm-facility-native-ortho-index-v2',
+            'complete': True,
+            'tileCountPlanned': 1,
+            'qualitySummary': {'passedTiles': 1, 'failedTileKeys': []},
+            'tiles': [{'key': 'r00-c00'}],
+        }
+        source_items = {
+            'schema': 'golfhelm-nc-ortho-source-items-v1',
+            'complete': True,
+            'inputIndexSha256': 'another-acquisition',
+            'tiles': [{'tileKey': 'r00-c00', 'status': 'one_native_resolution_catalog_item'}],
+        }
+        contract = registry.native_ortho_review_contract(index, source_items, index_sha256='native-index-hash')
+        self.assertFalse(contract['canCreateReviewCandidates'])
+        self.assertIn('does not bind', contract['reason'])

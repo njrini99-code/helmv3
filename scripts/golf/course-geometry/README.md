@@ -483,6 +483,26 @@ python3 scripts/golf/course-geometry/batch-nc-facility-ortho.py \
   output/course-geometry/factory/research/nc-ortho-batch-plan.json
 ```
 
+Complete native imagery can next produce a **review kit**, not new course
+geometry. The review compiler reads retained GeoTIFFs in place, bounds scans
+to an existing route candidate only as a non-canonical crop aid, and emits
+overlays plus derived prompts. Its strict contract is: native pixels are
+`measured` source evidence; every prompt is `derived`, requires review, and
+cannot measure physical geometry. Large or elongated spectral regions stay
+`visual_only`; the scan records its effective GSD and is capped at four
+million pixels per hole.
+
+```bash
+python3 scripts/golf/course-geometry/batch-native-ortho-review.py \
+  course-geometry/catalog output/course-geometry/factory \
+  output/course-geometry/factory/research/native-ortho-hole-review-batch-v1.json \
+  --execute
+```
+
+This batch only admits layouts with a complete native-ortho index, a matching
+source-item provenance sidecar, and a route candidate package. It never edits
+canonical geometry, admits a route, or supplies physical measurements.
+
 States: `ready`, `pending` (waiting on upstream, root named), `cached`
 (`FINGERPRINT_UNCHANGED` / `ADOPTED_EXTERNAL` / `INLINE_VALIDATED`), `stale`
 (`FINGERPRINT_CHANGED` with the changed inputs, `ARTIFACT_MISSING`,

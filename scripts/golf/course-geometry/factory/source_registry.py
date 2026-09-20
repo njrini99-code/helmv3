@@ -119,3 +119,50 @@ def provider_document(provider_id: str) -> dict:
 
 def providers_for_region(region: str) -> list[dict]:
     return [provider_document(provider_id) for provider_id in imagery_policy(region)]
+
+
+def native_ortho_review_contract(index: dict, source_items: dict, *, index_sha256: str | None = None) -> dict:
+    """State whether retained native pixels may drive *review* candidates.
+
+    The raster itself is a measured source. Any feature proposed from it is a
+    derived, unreviewed observation until the canonical review workflow accepts
+    it. Keeping this contract here makes it impossible for an imagery script to
+    confuse high-resolution pixels with physical measurement authority.
+    """
+    tile_keys = {tile.get('key') for tile in index.get('tiles') or [] if tile.get('key')}
+    quality = index.get('qualitySummary') or {}
+    index_complete = (
+        index.get('schema') == 'golfhelm-facility-native-ortho-index-v2'
+        and index.get('complete') is True
+        and bool(tile_keys)
+        and quality.get('passedTiles') == index.get('tileCountPlanned') == len(tile_keys)
+        and not quality.get('failedTileKeys')
+    )
+    item_tiles = {tile.get('tileKey') for tile in source_items.get('tiles') or [] if tile.get('tileKey')}
+    bound_items = (
+        source_items.get('schema') == 'golfhelm-nc-ortho-source-items-v1'
+        and source_items.get('complete') is True
+        and bool(index_sha256)
+        and source_items.get('inputIndexSha256') == index_sha256
+        and tile_keys == item_tiles
+        and all(tile.get('status') == 'one_native_resolution_catalog_item' for tile in source_items.get('tiles') or [])
+    )
+    can_create = index_complete and bound_items
+    if not index_complete:
+        reason = 'A complete native RGB+NIR index is required before review candidate creation.'
+    elif not source_items.get('complete'):
+        reason = 'A complete source item sidecar is required before review candidate creation.'
+    elif not index_sha256 or source_items.get('inputIndexSha256') != index_sha256:
+        reason = 'The source item sidecar does not bind to this exact native imagery index.'
+    elif not bound_items:
+        reason = 'A complete source item sidecar is required before review candidate creation.'
+    else:
+        reason = 'Native source pixels are sufficient for derived review candidates only.'
+    return {
+        'canCreateReviewCandidates': can_create,
+        'canMeasurePhysicalGeometry': False,
+        'sourceTruthClass': 'measured',
+        'candidateGeometryTruthClass': 'derived',
+        'reviewRequired': True,
+        'reason': reason,
+    }

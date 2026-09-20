@@ -119,6 +119,22 @@ A facility visual-candidate report also records `sourceCoverage` and
 `visual_only` context, but it is never high-fidelity, measurable, or a
 substitute for a source-backed route or feature boundary.
 
+`review-native-ortho.py` is the bounded, offline next step after a complete
+native imagery acquisition. It accepts only a complete `native-ortho-nir-v2`
+index and a source-item sidecar whose input hash matches that index. It reads
+the retained GeoTIFFs in place, writes per-hole source overlays and
+`candidate-observations.json`, and records the effective analysis GSD. A
+candidate is always `derived`, `review_required`, and
+`canMeasurePhysicalGeometry: false`; the native pixels remain `measured`
+source evidence. An unreviewed OSM route may bound the review crop only and
+is declared a `non_canonical_visual_crop_aid`, never a route admission or
+distance measurement. The spectral scan is capped at four million pixels per
+hole and yields at most three bounded sand-like prompts per hole. Broad or
+elongated bright regions are `visual_only` scene conditions, not feature
+candidates. `batch-native-ortho-review.py` can only schedule layouts with
+both complete native provenance and an existing route candidate package. It
+never writes canonical geometry or changes physical measurement authority.
+
 ### Course factory build engine (Factory v2 PR B, 2026-09-19)
 
 `scripts/golf/course-geometry/course-factory.py` (package `factory/`) is the

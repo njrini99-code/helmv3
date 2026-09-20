@@ -160,6 +160,23 @@ actual density, and labels local reprojection as density preservation rather
 than raw source-grid alignment. These are source artifacts only—candidate
 extraction and human review remain downstream gates.
 
+### 1.2.3 Native imagery review candidates
+
+`review-native-ortho.py` is deliberately a review compiler rather than a
+geometry importer. It requires a complete native imagery index and a matching
+catalog-item provenance sidecar, reads the retained RGB/NIR GeoTIFFs in place,
+and emits per-hole overlays plus a candidate-observation sidecar. The raster
+source remains `measured`; every observation is `derived`,
+`review_required`, and cannot measure physical geometry. A candidate OSM route
+can limit a crop as a `non_canonical_visual_crop_aid`, but cannot establish a
+route, scorecard distance, ownership, or playable corridor. To keep review
+bounded and repeatable, scans are limited to four million pixels per hole and
+to three bounded sand-like prompts; broad or elongated bright regions are
+retained only as `visual_only` scene conditions. The batch scheduler requires
+native provenance and a route candidate package, and never alters canonical
+geometry. Human approval plus feature-specific source validation is still the
+only route to physical admission.
+
 Rules the factory enforces: it never writes `src/`, `public/`, flags or a
 retained path; every executor writes under the output root; heavy tasks
 stay above `COURSE_FACTORY_DISK_RESERVE_GB` (8); a facility's OSM extract
@@ -180,6 +197,7 @@ All under `scripts/golf/course-geometry/`. Python needs GDAL/numpy/shapely
 | Canopy | `derive-canopy-naip.py` (`measure-canopy-rerun.py`, `report-unexplained-naip.py`) | NAIP 4-band export (FPAC `conus_naip`) → `canopy-review.json` (tree groups the package merges as `woods`) |
 | Outside world | `prepare-context-layer.py` with `src/lib/golf/course-geometry/context-rules.json` | both extracts + compiled footprints → `<layout>-context.json` (`golfhelm-context-layer-v1`) + `-context-report.json` (uncertain share per hole) |
 | Imagery review | `review-course-imagery.py` | package + NAIP → contact sheet + `imagery-review.json` (bunker sand shares) |
+| Native review candidates | `review-native-ortho.py`, `batch-native-ortho-review.py` | complete native RGB+NIR source + matching catalog-item sidecar + route candidate package → source overlays + review prompts only; no canonical geometry or measurements |
 | Physical world + truth gate | `build-course-world.py`, `compile-physical-world.py`, `course-truth-gate.py`, `vectorize-terrain.py` | per hole study → physical world → truth verdict → GLB; `course-world-manifest.json` |
 | Visual artifacts (Meridian v2) | `compile-visual-artifacts-v2.mts`, `compile-display-lods.mts`, `export-v2-glb.mts`, `validate-v2-budgets.mts` | display meshes, LODs, budgets |
 | Human review kit | `build-qgis-review-kit.py`, `apply-review-adjustments.py`, `build-context-prompt-sheet.py` | QGIS project + sidecar → reviewed package |
