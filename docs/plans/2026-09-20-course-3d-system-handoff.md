@@ -104,9 +104,10 @@ layout.identity.resolve, layout.scorecard.validate → layout.routes.resolve →
 
 ### 1.2.1 Route-blocked facility visual fallback
 
-`layout.routes.resolve` is the boundary between a physical hole world and a
-facility visual world. When the route cannot be source-confirmed, its reason
-remains `ROUTE_WAY_IDS_REQUIRED`; the factory does not manufacture a
+`layout.routes.resolve` plus scorecard validation form the boundary between a
+physical hole world and a facility visual world. When either the route or the
+matching scorecard cannot be source-confirmed, the plan retains the exact
+root blocker (`ROUTE_WAY_IDS_REQUIRED` or `SCORECARD_REQUIRED`); the factory does not manufacture a
 tee-to-green corridor from scorecard yardage or visual proximity. In parallel,
 the three `layout.visual.*` tasks create a shared facility package, acquire a
 terrain raster, and compile one non-measurable GLB for visual orientation.
@@ -125,6 +126,39 @@ source-aligned **derived** resolution that fits. That manifest records both
 `renderingOnly: true`; the normalized and physical worlds carry
 `truthClass: visual_only`. This is a renderer support layer, never a downgrade
 of the native physical-terrain contract.
+
+If a facility has no native-1-m 3DEP tile set, a visual-only build may use a
+bounded lower-resolution USGS export only at a grid no finer than the source
+spacing. Its manifest records
+`bounded_rendering_only_lower_resolution_export`; physical terrain admission
+remains blocked. Denison is the first exercised case: it retained a 12-m
+render fallback because the 3DEP index did not offer a covering native 1-m
+project tile set.
+
+### 1.2.2 High-fidelity imagery source policy
+
+`factory/source_registry.py` records provider role, service URL, expected
+GSD/bands, and licensing boundary. `preflight-imagery-sources.py` captures
+live service metadata without downloading imagery. NC OneMap's six-inch,
+four-band analysis service is extraction-capable; Virginia VBMP and Licking
+County’s 2023 three-inch service are visual-review-only pending their
+specific export/reuse contracts. USGS NAIP Plus is the reusable public
+fallback. A preflight never admits geometry: an AOI item query, native-GSD
+GeoTIFF, complete provenance, and the existing quality gate remain required.
+
+The NC v2 acquisition adapter retains RGB and NIR as separate source GeoTIFFs
+per native-grid tile, along with request metadata, bounds, band checks, and
+hashes. It rejects `png32`/alpha as a substitute for NIR. A separate
+source-item sidecar records ImageServer catalog-item identity at each tile
+center; the service catalog date is not asserted as a flight date. The batch
+planner records the live service grid origin so its capacity forecast is
+reproducible, and stops before the factory disk reserve. When the newer NC
+source has no coverage, the adapter tries the official 2020–2023 four-band
+analysis mosaic only after recording the newer source's failure. The national
+USGS NAIP Plus adapter retains the selected four-band catalog item, date and
+actual density, and labels local reprojection as density preservation rather
+than raw source-grid alignment. These are source artifacts only—candidate
+extraction and human review remain downstream gates.
 
 Rules the factory enforces: it never writes `src/`, `public/`, flags or a
 retained path; every executor writes under the output root; heavy tasks
@@ -328,7 +362,7 @@ main checks: CI aggregate, Review Gate aggregate, Analyze, block-historical-edit
 
 ## 7. Current library state
 
-16 catalog layouts; six have 18/18 holes compiled.
+The catalog now has 19 facilities, 24 layouts and 16 retained scorecards. Six earlier layouts have 18/18 compiled-hole artifacts; catalog scale-out does not turn source candidates into physically ready holes.
 
 | Layout | Facility | State | Root blocker |
 | --- | --- | --- | --- |

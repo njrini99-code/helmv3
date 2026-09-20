@@ -1,0 +1,38 @@
+{
+  "schema": "golfhelm-facility-v1",
+  "facilityId": "blue-ridge-shadows-golf-club",
+  "name": "Blue Ridge Shadows Golf Club",
+  "country": "US",
+  "region": "VA",
+  "originWgs84": [
+    -78.1893158,
+    38.9890447
+  ],
+  "aoi": {
+    "kind": "osm",
+    "id": "way/298698170",
+    "marginM": 300
+  },
+  "sourcePins": {
+    "osm": [
+      "way/298698170"
+    ]
+  },
+  "providerPolicy": {
+    "terrain": [
+      "usgs_s1m",
+      "usgs_3dep_project_1m"
+    ],
+    "imagery": [
+      "vgin_vbmp_most_recent",
+      "usgs_naip_plus"
+    ],
+    "context": [
+      "osm"
+    ]
+  },
+  "notes": [
+    "Intake from the 2026-09-20T12:43:48.457Z usage cohort and the library coverage audit (2026-09-18); origin is the OSM course centre until the build pins it from the AOI.",
+    "Coverage audit: h18 g18 f22 b42 t74 inside the course polygon; DEM tiles named: 3; verdict ready."
+  ]
+}

@@ -1,0 +1,69 @@
+{
+  "schema": "golfhelm-layout-v1",
+  "layoutId": "eagle-point",
+  "facilityId": "eagle-point-golf-club",
+  "name": "Eagle Point",
+  "siteIds": [
+    "osm-way-1509573612"
+  ],
+  "segments": {
+    "main": {
+      "holes": [
+        "eagle-point-01",
+        "eagle-point-02",
+        "eagle-point-03",
+        "eagle-point-04",
+        "eagle-point-05",
+        "eagle-point-06",
+        "eagle-point-07",
+        "eagle-point-08",
+        "eagle-point-09",
+        "eagle-point-10",
+        "eagle-point-11",
+        "eagle-point-12",
+        "eagle-point-13",
+        "eagle-point-14",
+        "eagle-point-15",
+        "eagle-point-16",
+        "eagle-point-17",
+        "eagle-point-18"
+      ]
+    }
+  },
+  "segmentOrder": [
+    "main"
+  ],
+  "holeOrder": [
+    "eagle-point-01",
+    "eagle-point-02",
+    "eagle-point-03",
+    "eagle-point-04",
+    "eagle-point-05",
+    "eagle-point-06",
+    "eagle-point-07",
+    "eagle-point-08",
+    "eagle-point-09",
+    "eagle-point-10",
+    "eagle-point-11",
+    "eagle-point-12",
+    "eagle-point-13",
+    "eagle-point-14",
+    "eagle-point-15",
+    "eagle-point-16",
+    "eagle-point-17",
+    "eagle-point-18"
+  ],
+  "routeWayIds": null,
+  "bboxWgs84": null,
+  "capabilityTier": "C0",
+  "externalBindings": {
+    "golfCourseIds": [
+      "678e1e4b-4ad6-4ddc-a4b7-0370dd69212a"
+    ]
+  },
+  "scorecardProfiles": [],
+  "geometry": null,
+  "notes": [
+    "Factory intake from active-team school proximity (1 nearby team anchor(s), within 75.0 miles; queried 2026-09-20T12:43:48.457Z). Proximity selected build priority only; it does not establish a physical route or feature geometry."
+  ]
+}

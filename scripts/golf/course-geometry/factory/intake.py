@@ -112,12 +112,20 @@ def build_entries(cohort, coverage, scorecards, existing, min_rounds=1):
                           f'Coverage audit: {row["features"]} inside the course polygon; DEM tiles named: {len(facility.get("dem1mTiles") or [])}; verdict {facility.get("verdict")}.'][:20],
             }
             facility_docs[facility_id] = facility_doc
+        selection = course.get('selection') if isinstance(course.get('selection'), dict) else None
+        if selection and selection.get('kind') == 'active_team_school_proximity':
+            team_count = len(selection.get('matches') or [])
+            intake_note = (f'Factory intake from active-team school proximity ({team_count} nearby team anchor(s), '
+                           f'within {selection.get("maxMiles")} miles; queried {cohort.get("queriedAt")}). '
+                           'Proximity selected build priority only; it does not establish a physical route or feature geometry.')
+        else:
+            intake_note = f'{rounds} completed cohort rounds ({cohort.get("queriedAt")}); intake wrote this manifest at C0 with routes unresolved.'
         layout_doc = {
             'schema': 'golfhelm-layout-v1', 'layoutId': layout_id, 'facilityId': facility_id, 'name': course.get('name'),
             'siteIds': [f'osm-{element.replace("/", "-")}'], 'segments': {'main': {'holes': holes}}, 'segmentOrder': ['main'], 'holeOrder': holes,
             'routeWayIds': None, 'bboxWgs84': None, 'capabilityTier': 'C0', 'externalBindings': {'golfCourseIds': [course['id']]},
             'scorecardProfiles': [f'{layout_id}-{slugify(card["tee_name"])}'] if card else [], 'geometry': None,
-            'notes': [f'{rounds} completed cohort rounds ({cohort.get("queriedAt")}); intake wrote this manifest at C0 with routes unresolved.'],
+            'notes': [intake_note],
         }
         scorecard_doc = None
         if card:

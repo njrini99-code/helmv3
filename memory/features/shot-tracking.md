@@ -62,14 +62,62 @@ capture artifacts rebuild only from a `coverageMethod: perimeter-v1` source
 manifest. This prevents a valid polygon on a curved projected edge from losing
 bilinear terrain support without shifting that polygon.
 
-When a layout has no confirmed ordered route, the factory may build one shared
-facility GLB from available OSM polygons and source terrain. Its manifest is
+When a layout has no **admitted scorecard-and-route pair**, the factory may
+build one shared facility GLB from available OSM polygons and source terrain.
+A uniquely numbered OSM hole series alone is not enough to suppress this
+fallback: without a matching retained scorecard it cannot define a playable
+hole order or distance contract. Its manifest is
 explicitly `renderingOnly`, `canRender: true`, `canMeasure: false`, and
 `maySupplyHoleAssociation: false`. It is visual context only: it cannot supply
 tee-to-green distance, lie class, hazard ownership, shot constraints, or a
 playable course-world claim. Blender is invoked with `--python-exit-code 1`,
 so an uncaught compiler exception cannot leave a partial GLB directory looking
 successful.
+
+For a render-only facility where no native 1-m 3DEP project tile set covers
+the AOI, the compiler may retain the first bounded USGS lower-resolution
+terrain export whose declared source spacing is no finer than the requested
+visual grid. The manifest names this as
+`bounded_rendering_only_lower_resolution_export`, records both source and
+export spacing, and stays `visual_only`. Physical terrain acquisition still
+blocks in that situation; this fallback cannot provide elevation, slope,
+hazard depth, route, or shot claims.
+
+### High-fidelity imagery policy and source preflight (2026-09-20)
+
+`factory/source_registry.py` is the ordered public-source policy used by C0
+intake. It identifies NC OneMap's 2024–2027 six-inch RGB+NIR analysis service
+as feature-extraction-capable, while Virginia VBMP and Licking County 2023
+imagery are explicitly visual-review-only until their export and reuse terms
+are confirmed. USGS NAIP Plus remains the public, four-band fallback.
+`preflight-imagery-sources.py` records current service metadata before any
+download. A successful preflight is discovery evidence only: it does not
+admit geometry. Extraction still requires an AOI item query, native-GSD
+calculation, a retained georeferenced export with hashes/CRS/bands/date, and
+the imagery-quality gate.
+
+NC facility acquisition uses `fetch-nc-facility-ortho.py` v2. Every retained
+tile has two independently requested, georeferenced GeoTIFFs: RGB (`bandIds`
+0,1,2) and NIR (`bandIds` 3). Both must preserve the native 0.5-US-survey-foot
+grid, source bounds, bands, variance and hashes before the facility index can
+be complete. The prior `png32` cache is visual evidence only: its alpha band
+does not retain NIR. `annotate-nc-ortho-source-items.py` writes a separate
+center-sampled catalog-item sidecar; its date is explicitly a service catalog
+date, never an asserted flight date. `batch-nc-facility-ortho.py` uses the
+live provider grid origin to forecast native tiles, retains a disk reserve,
+and acquires source pixels only. When the current NC 2024–2027 service
+returns a no-coverage raster, the adapter attempts NC's official 2020–2023
+four-band analysis service in declared order; both the rejection and selected
+source are tile provenance. The USGS NAIP Plus adapter is a public national
+fallback: it retains the selected four-band catalog item and its source
+density, but marks its output as reprojected native density because the service
+does not expose a raw source-grid origin. None of these artifacts admits a
+feature or hole geometry.
+
+A facility visual-candidate report also records `sourceCoverage` and
+`visualReadiness`. Sparse OSM coverage remains renderable as a
+`visual_only` context, but it is never high-fidelity, measurable, or a
+substitute for a source-backed route or feature boundary.
 
 ### Course factory build engine (Factory v2 PR B, 2026-09-19)
 
@@ -94,7 +142,8 @@ with a stable reason code. It wraps the existing scripts (`fetch-osm-*`,
   against a layout named "Big Blue Course" (`osm_ref_named`, duplicates kept
   as evidence). Both are queued for human `route_confirmation`; anything else
   blocks with `ROUTE_WAY_IDS_REQUIRED` and the candidate list as evidence.
-- A terrain source's identity is `{fileHashes, requestedLocalBoundsM, crs}`
+- A terrain source's identity is `{fileHashes, requestedLocalBoundsM, crs,
+  renderingOnly, sourceNativeResolutionM}`
   (`terrain_source_identity`); the compiler stamps the same `sourceIdentity`
   into `asset-manifest.json` and refuses an output directory whose identity
   differs. The compiler's full `sourceManifestHash` still changes with every

@@ -254,6 +254,28 @@ def is_native_1m_title(title):
     return str(title).lower().startswith(('usgs 1 meter ', 'usgs one meter '))
 
 
+def catalog_resolution_m(attrs, latitude):
+    """Conservatively express the catalog's horizontal source spacing in m.
+
+    The USGS index reports its national arc-second products in degrees.  A
+    render-only fallback may use one only when the requested render grid is
+    no finer than that source.  The physical compiler never calls this path:
+    it still requires a native 1 m project product.
+    """
+    if is_native_1m_title(attrs.get('title')):
+        return 1.0
+    try:
+        spacing = abs(float(attrs.get('Resolution_X')))
+    except (TypeError, ValueError):
+        return None
+    if not math.isfinite(spacing) or spacing <= 0:
+        return None
+    # Values below one hundredth are angular degrees in the 3DEP index.
+    if spacing < 0.01:
+        return spacing * 111_320.0
+    return spacing
+
+
 def tile_project(title):
     """The lidar project a 1m tile belongs to: everything after its x..y..
     grid token ('USGS 1 Meter 17 x74y435 VA_NorthernShenandoah_2020_D20' →
@@ -381,8 +403,20 @@ def acquire_usgs_source(directory, pkg, bounds, rendering_only_resolution_m=None
               if is_native_1m_title(row['attributes']['title'])
               and row['attributes']['VerticalDatum'] in ('NAVD88', 'North American Vertical Datum of 1988 (NAVD 88)')]
     candidates = covering_tile_sets(native, extent_wgs84)
+    lower_resolution_visual_fallback = False
+    if not candidates and rendering_only_resolution_m is not None:
+        # A facility context world can retain a lower-resolution, current
+        # public 3DEP export only after declaring it render-only.  It cannot
+        # become a physical height field, slope source, or route constraint.
+        # Do not magnify the source: restrict candidates to grids no coarser
+        # than the requested visual raster.
+        visual = [row for row in catalog.get('features', [])
+                  if row['attributes'].get('VerticalDatum') in ('NAVD88', 'North American Vertical Datum of 1988 (NAVD 88)')
+                  and (catalog_resolution_m(row['attributes'], (south + north) / 2) or math.inf) <= rendering_only_resolution_m]
+        candidates = covering_tile_sets(visual, extent_wgs84)
+        lower_resolution_visual_fallback = bool(candidates)
     if not candidates:
-        report = {'state': 'needs_source_review', 'reason': 'No single native-1m tile covers the full bounded course context',
+        report = {'state': 'needs_source_review', 'reason': 'No native-1m tile set covers the full bounded course context',
                   'packageHash': pkg['contentHash'], 'bboxWgs84': [west, south, east, north],
                   'policy': 'No mixed-date or lower-resolution fallback is imported automatically', 'catalog': catalog}
         write_json(directory / 'coverage-exception.json', report, True)
@@ -408,6 +442,11 @@ def acquire_usgs_source(directory, pkg, bounds, rendering_only_resolution_m=None
     rejected = []
     for tiles in candidates:
         attrs = tiles[0]['attributes']
+        source_native_resolution_m = max(catalog_resolution_m(row['attributes'], (south + north) / 2) or math.inf for row in tiles)
+        if source_native_resolution_m > width and source_native_resolution_m > height:
+            raise ValueError('Source native resolution exceeds the bounded visual export dimensions')
+        if lower_resolution_visual_fallback and rendering_only_resolution_m < source_native_resolution_m:
+            raise ValueError('Render-only request would magnify the lower-resolution source grid')
         object_ids = [row['attributes']['OBJECTID'] for row in tiles]
         exported = fetch.request('exportImage', {'bbox': f'{a},{b},{c},{d}', 'bboxSR': crs, 'imageSR': crs,
             'size': f'{width},{height}', 'format': 'tiff', 'pixelType': 'F32', 'interpolation': 'RSP_BilinearInterpolation',
@@ -432,7 +471,7 @@ def acquire_usgs_source(directory, pkg, bounds, rendering_only_resolution_m=None
         rejected.append({'title': attrs['title'], 'objectId': attrs['OBJECTID'], 'objectIds': object_ids, 'emptyFraction': empty,
                          'reason': 'Catalog footprint covers the context but the locked export is empty fill there'})
     else:
-        report = {'state': 'needs_source_review', 'reason': 'Every covering native-1m tile exported empty fill over the course context',
+        report = {'state': 'needs_source_review', 'reason': 'Every covering terrain tile exported empty fill over the course context',
                   'packageHash': pkg['contentHash'], 'bboxWgs84': [west, south, east, north],
                   'rejectedCandidates': rejected, 'catalog': catalog}
         write_json(directory / 'coverage-exception.json', report, True)
@@ -447,11 +486,12 @@ def acquire_usgs_source(directory, pkg, bounds, rendering_only_resolution_m=None
                 'selectedTiles': [row['attributes']['title'] for row in tiles], 'sourceUrl': attrs['URL'],
                 'acquisitionStart': date_text(attrs['StartDate']), 'acquisitionEnd': date_text(attrs['EndDate']),
                 'nativeResolutionM': max((ex['xmax']-ex['xmin'])/width, (ex['ymax']-ex['ymin'])/height),
-                'sourceNativeResolutionM': 1, 'exportPixelM': [(ex['xmax']-ex['xmin'])/width, (ex['ymax']-ex['ymin'])/height],
+                'sourceNativeResolutionM': source_native_resolution_m, 'exportPixelM': [(ex['xmax']-ex['xmin'])/width, (ex['ymax']-ex['ymin'])/height],
                 'horizontalExportCrs': f'EPSG:{crs}', 'verticalDatum': 'NAVD88',
                 'rawVerticalUnit': 'meter', 'verticalUnitToMeters': 1,
                 'retrievedAt': exported['retrievedAt'],
-                'sourceSelection': ('bounded_rendering_only_resampled_export' if rendering_only_resolution_m is not None else
+                'sourceSelection': ('bounded_rendering_only_lower_resolution_export' if lower_resolution_visual_fallback else
+                                    'bounded_rendering_only_resampled_export' if rendering_only_resolution_m is not None else
                                     'single_full_coverage_native_1m_tile' if len(tiles) == 1 else 'same_project_adjacent_native_1m_tiles'),
                 'renderingOnly': rendering_only_resolution_m is not None,
                 'renderingOnlyResolutionM': rendering_only_resolution_m,

@@ -1,0 +1,37 @@
+{
+  "schema": "golfhelm-facility-v1",
+  "facilityId": "great-waters",
+  "name": "Great Waters",
+  "country": "US",
+  "region": "GA",
+  "originWgs84": [
+    -83.2333854,
+    33.3930212
+  ],
+  "aoi": {
+    "kind": "osm",
+    "id": "way/776584699",
+    "marginM": 300
+  },
+  "sourcePins": {
+    "osm": [
+      "way/776584699"
+    ]
+  },
+  "providerPolicy": {
+    "terrain": [
+      "usgs_s1m",
+      "usgs_3dep_project_1m"
+    ],
+    "imagery": [
+      "usgs_naip_plus"
+    ],
+    "context": [
+      "osm"
+    ]
+  },
+  "notes": [
+    "Intake from the 2026-09-20T12:43:48.457Z usage cohort and the library coverage audit (2026-09-18); origin is the OSM course centre until the build pins it from the AOI.",
+    "Coverage audit: h18 g19 f21 b51 t57 inside the course polygon; DEM tiles named: 2; verdict ready."
+  ]
+}

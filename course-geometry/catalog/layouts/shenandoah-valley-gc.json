@@ -1,0 +1,69 @@
+{
+  "schema": "golfhelm-layout-v1",
+  "layoutId": "shenandoah-valley-gc",
+  "facilityId": "shenandoah-valley-golf-club",
+  "name": "Shenandoah Valley GC",
+  "siteIds": [
+    "osm-way-298698194"
+  ],
+  "segments": {
+    "main": {
+      "holes": [
+        "shenandoah-valley-gc-01",
+        "shenandoah-valley-gc-02",
+        "shenandoah-valley-gc-03",
+        "shenandoah-valley-gc-04",
+        "shenandoah-valley-gc-05",
+        "shenandoah-valley-gc-06",
+        "shenandoah-valley-gc-07",
+        "shenandoah-valley-gc-08",
+        "shenandoah-valley-gc-09",
+        "shenandoah-valley-gc-10",
+        "shenandoah-valley-gc-11",
+        "shenandoah-valley-gc-12",
+        "shenandoah-valley-gc-13",
+        "shenandoah-valley-gc-14",
+        "shenandoah-valley-gc-15",
+        "shenandoah-valley-gc-16",
+        "shenandoah-valley-gc-17",
+        "shenandoah-valley-gc-18"
+      ]
+    }
+  },
+  "segmentOrder": [
+    "main"
+  ],
+  "holeOrder": [
+    "shenandoah-valley-gc-01",
+    "shenandoah-valley-gc-02",
+    "shenandoah-valley-gc-03",
+    "shenandoah-valley-gc-04",
+    "shenandoah-valley-gc-05",
+    "shenandoah-valley-gc-06",
+    "shenandoah-valley-gc-07",
+    "shenandoah-valley-gc-08",
+    "shenandoah-valley-gc-09",
+    "shenandoah-valley-gc-10",
+    "shenandoah-valley-gc-11",
+    "shenandoah-valley-gc-12",
+    "shenandoah-valley-gc-13",
+    "shenandoah-valley-gc-14",
+    "shenandoah-valley-gc-15",
+    "shenandoah-valley-gc-16",
+    "shenandoah-valley-gc-17",
+    "shenandoah-valley-gc-18"
+  ],
+  "routeWayIds": null,
+  "bboxWgs84": null,
+  "capabilityTier": "C0",
+  "externalBindings": {
+    "golfCourseIds": [
+      "48efefb2-4254-4a50-96d2-2d917ef8a2d7"
+    ]
+  },
+  "scorecardProfiles": [],
+  "geometry": null,
+  "notes": [
+    "Factory intake from active-team school proximity (2 nearby team anchor(s), within 75.0 miles; queried 2026-09-20T12:43:48.457Z). Proximity selected build priority only; it does not establish a physical route or feature geometry."
+  ]
+}

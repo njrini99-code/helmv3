@@ -1,0 +1,69 @@
+{
+  "schema": "golfhelm-layout-v1",
+  "layoutId": "lakeview-golf-club",
+  "facilityId": "lakeview-golf-club",
+  "name": "Lakeview Golf Club",
+  "siteIds": [
+    "osm-relation-15101713"
+  ],
+  "segments": {
+    "main": {
+      "holes": [
+        "lakeview-golf-club-01",
+        "lakeview-golf-club-02",
+        "lakeview-golf-club-03",
+        "lakeview-golf-club-04",
+        "lakeview-golf-club-05",
+        "lakeview-golf-club-06",
+        "lakeview-golf-club-07",
+        "lakeview-golf-club-08",
+        "lakeview-golf-club-09",
+        "lakeview-golf-club-10",
+        "lakeview-golf-club-11",
+        "lakeview-golf-club-12",
+        "lakeview-golf-club-13",
+        "lakeview-golf-club-14",
+        "lakeview-golf-club-15",
+        "lakeview-golf-club-16",
+        "lakeview-golf-club-17",
+        "lakeview-golf-club-18"
+      ]
+    }
+  },
+  "segmentOrder": [
+    "main"
+  ],
+  "holeOrder": [
+    "lakeview-golf-club-01",
+    "lakeview-golf-club-02",
+    "lakeview-golf-club-03",
+    "lakeview-golf-club-04",
+    "lakeview-golf-club-05",
+    "lakeview-golf-club-06",
+    "lakeview-golf-club-07",
+    "lakeview-golf-club-08",
+    "lakeview-golf-club-09",
+    "lakeview-golf-club-10",
+    "lakeview-golf-club-11",
+    "lakeview-golf-club-12",
+    "lakeview-golf-club-13",
+    "lakeview-golf-club-14",
+    "lakeview-golf-club-15",
+    "lakeview-golf-club-16",
+    "lakeview-golf-club-17",
+    "lakeview-golf-club-18"
+  ],
+  "routeWayIds": null,
+  "bboxWgs84": null,
+  "capabilityTier": "C0",
+  "externalBindings": {
+    "golfCourseIds": [
+      "dbce971e-a0a4-4e35-bd01-8953798c9a2a"
+    ]
+  },
+  "scorecardProfiles": [],
+  "geometry": null,
+  "notes": [
+    "Factory intake from active-team school proximity (2 nearby team anchor(s), within 75.0 miles; queried 2026-09-20T12:43:48.457Z). Proximity selected build priority only; it does not establish a physical route or feature geometry."
+  ]
+}

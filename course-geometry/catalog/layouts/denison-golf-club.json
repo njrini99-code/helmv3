@@ -1,0 +1,69 @@
+{
+  "schema": "golfhelm-layout-v1",
+  "layoutId": "denison-golf-club",
+  "facilityId": "denison-golf-club",
+  "name": "Denison Golf Club",
+  "siteIds": [
+    "osm-relation-20395689"
+  ],
+  "segments": {
+    "main": {
+      "holes": [
+        "denison-golf-club-01",
+        "denison-golf-club-02",
+        "denison-golf-club-03",
+        "denison-golf-club-04",
+        "denison-golf-club-05",
+        "denison-golf-club-06",
+        "denison-golf-club-07",
+        "denison-golf-club-08",
+        "denison-golf-club-09",
+        "denison-golf-club-10",
+        "denison-golf-club-11",
+        "denison-golf-club-12",
+        "denison-golf-club-13",
+        "denison-golf-club-14",
+        "denison-golf-club-15",
+        "denison-golf-club-16",
+        "denison-golf-club-17",
+        "denison-golf-club-18"
+      ]
+    }
+  },
+  "segmentOrder": [
+    "main"
+  ],
+  "holeOrder": [
+    "denison-golf-club-01",
+    "denison-golf-club-02",
+    "denison-golf-club-03",
+    "denison-golf-club-04",
+    "denison-golf-club-05",
+    "denison-golf-club-06",
+    "denison-golf-club-07",
+    "denison-golf-club-08",
+    "denison-golf-club-09",
+    "denison-golf-club-10",
+    "denison-golf-club-11",
+    "denison-golf-club-12",
+    "denison-golf-club-13",
+    "denison-golf-club-14",
+    "denison-golf-club-15",
+    "denison-golf-club-16",
+    "denison-golf-club-17",
+    "denison-golf-club-18"
+  ],
+  "routeWayIds": null,
+  "bboxWgs84": null,
+  "capabilityTier": "C0",
+  "externalBindings": {
+    "golfCourseIds": [
+      "a58fc3c7-4fcb-479f-bdf3-c121203afdf8"
+    ]
+  },
+  "scorecardProfiles": [],
+  "geometry": null,
+  "notes": [
+    "Factory intake from active-team school proximity (1 nearby team anchor(s), within 75.0 miles; queried 2026-09-20T12:43:48.457Z). Proximity selected build priority only; it does not establish a physical route or feature geometry."
+  ]
+}

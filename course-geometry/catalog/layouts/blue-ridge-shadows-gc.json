@@ -1,0 +1,69 @@
+{
+  "schema": "golfhelm-layout-v1",
+  "layoutId": "blue-ridge-shadows-gc",
+  "facilityId": "blue-ridge-shadows-golf-club",
+  "name": "Blue Ridge Shadows GC",
+  "siteIds": [
+    "osm-way-298698170"
+  ],
+  "segments": {
+    "main": {
+      "holes": [
+        "blue-ridge-shadows-gc-01",
+        "blue-ridge-shadows-gc-02",
+        "blue-ridge-shadows-gc-03",
+        "blue-ridge-shadows-gc-04",
+        "blue-ridge-shadows-gc-05",
+        "blue-ridge-shadows-gc-06",
+        "blue-ridge-shadows-gc-07",
+        "blue-ridge-shadows-gc-08",
+        "blue-ridge-shadows-gc-09",
+        "blue-ridge-shadows-gc-10",
+        "blue-ridge-shadows-gc-11",
+        "blue-ridge-shadows-gc-12",
+        "blue-ridge-shadows-gc-13",
+        "blue-ridge-shadows-gc-14",
+        "blue-ridge-shadows-gc-15",
+        "blue-ridge-shadows-gc-16",
+        "blue-ridge-shadows-gc-17",
+        "blue-ridge-shadows-gc-18"
+      ]
+    }
+  },
+  "segmentOrder": [
+    "main"
+  ],
+  "holeOrder": [
+    "blue-ridge-shadows-gc-01",
+    "blue-ridge-shadows-gc-02",
+    "blue-ridge-shadows-gc-03",
+    "blue-ridge-shadows-gc-04",
+    "blue-ridge-shadows-gc-05",
+    "blue-ridge-shadows-gc-06",
+    "blue-ridge-shadows-gc-07",
+    "blue-ridge-shadows-gc-08",
+    "blue-ridge-shadows-gc-09",
+    "blue-ridge-shadows-gc-10",
+    "blue-ridge-shadows-gc-11",
+    "blue-ridge-shadows-gc-12",
+    "blue-ridge-shadows-gc-13",
+    "blue-ridge-shadows-gc-14",
+    "blue-ridge-shadows-gc-15",
+    "blue-ridge-shadows-gc-16",
+    "blue-ridge-shadows-gc-17",
+    "blue-ridge-shadows-gc-18"
+  ],
+  "routeWayIds": null,
+  "bboxWgs84": null,
+  "capabilityTier": "C0",
+  "externalBindings": {
+    "golfCourseIds": [
+      "343e8904-3d01-402f-ae48-d7f671ec9c53"
+    ]
+  },
+  "scorecardProfiles": [],
+  "geometry": null,
+  "notes": [
+    "Factory intake from active-team school proximity (2 nearby team anchor(s), within 75.0 miles; queried 2026-09-20T12:43:48.457Z). Proximity selected build priority only; it does not establish a physical route or feature geometry."
+  ]
+}

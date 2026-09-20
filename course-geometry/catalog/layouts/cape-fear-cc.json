@@ -1,0 +1,69 @@
+{
+  "schema": "golfhelm-layout-v1",
+  "layoutId": "cape-fear-cc",
+  "facilityId": "cape-fear-country-club-golf-course",
+  "name": "Cape Fear CC",
+  "siteIds": [
+    "osm-way-479644879"
+  ],
+  "segments": {
+    "main": {
+      "holes": [
+        "cape-fear-cc-01",
+        "cape-fear-cc-02",
+        "cape-fear-cc-03",
+        "cape-fear-cc-04",
+        "cape-fear-cc-05",
+        "cape-fear-cc-06",
+        "cape-fear-cc-07",
+        "cape-fear-cc-08",
+        "cape-fear-cc-09",
+        "cape-fear-cc-10",
+        "cape-fear-cc-11",
+        "cape-fear-cc-12",
+        "cape-fear-cc-13",
+        "cape-fear-cc-14",
+        "cape-fear-cc-15",
+        "cape-fear-cc-16",
+        "cape-fear-cc-17",
+        "cape-fear-cc-18"
+      ]
+    }
+  },
+  "segmentOrder": [
+    "main"
+  ],
+  "holeOrder": [
+    "cape-fear-cc-01",
+    "cape-fear-cc-02",
+    "cape-fear-cc-03",
+    "cape-fear-cc-04",
+    "cape-fear-cc-05",
+    "cape-fear-cc-06",
+    "cape-fear-cc-07",
+    "cape-fear-cc-08",
+    "cape-fear-cc-09",
+    "cape-fear-cc-10",
+    "cape-fear-cc-11",
+    "cape-fear-cc-12",
+    "cape-fear-cc-13",
+    "cape-fear-cc-14",
+    "cape-fear-cc-15",
+    "cape-fear-cc-16",
+    "cape-fear-cc-17",
+    "cape-fear-cc-18"
+  ],
+  "routeWayIds": null,
+  "bboxWgs84": null,
+  "capabilityTier": "C0",
+  "externalBindings": {
+    "golfCourseIds": [
+      "9f427cd5-3c00-4436-a855-f212f219b252"
+    ]
+  },
+  "scorecardProfiles": [],
+  "geometry": null,
+  "notes": [
+    "Factory intake from active-team school proximity (1 nearby team anchor(s), within 75.0 miles; queried 2026-09-20T12:43:48.457Z). Proximity selected build priority only; it does not establish a physical route or feature geometry."
+  ]
+}

@@ -23,7 +23,8 @@
       "nc_onemap_dem03"
     ],
     "imagery": [
-      "naip_current"
+      "nc_onemap_2024_2027_analysis",
+      "usgs_naip_plus"
     ],
     "context": [
       "osm"

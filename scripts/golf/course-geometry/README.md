@@ -402,6 +402,87 @@ python3 $F batch --all-layouts                         # serial world compilatio
 # COURSE_FACTORY_DISK_RESERVE_GB=8 is the guard heavy tasks must stay above
 ```
 
+### Active-team school proximity cohort
+
+The standard cohort ranks actual completed rounds. To scale a nearby-home-course
+rollout without hard-coding course names, export the active GolfHelm schools
+and live library first, then select courses within the stated school radius.
+The selection is **only a build-priority signal**: its geocoded city/address
+anchors never establish physical course coordinates, hole routing, yardage or
+feature geometry.
+
+```bash
+ROOT=output/course-geometry/team-proximity
+DOTENV_CONFIG_PATH=.env.local node_modules/.bin/tsx -r dotenv/config \
+  scripts/golf/course-geometry/export-team-course-library-snapshot.mts \
+  --out "$ROOT/library-snapshot.json"
+python3 scripts/golf/course-geometry/build-team-nearby-course-cohort.py \
+  "$ROOT/library-snapshot.json" "$ROOT" --max-miles 75
+python3 scripts/golf/course-geometry/audit-library-coverage.py \
+  "$ROOT/cohort.json" "$ROOT/coverage"
+python3 $F intake --cohort "$ROOT/cohort.json" --coverage "$ROOT/coverage/coverage.json" \
+  --scorecards "$ROOT/library-snapshot.json" --min-rounds 0 --write
+```
+
+`build-team-nearby-course-cohort.py` caches its bounded public Nominatim
+geocodes under the output root and records `derived_address_geocode` versus
+`estimated_city_anchor`. The factory still requires independently
+source-confirmed routes for a physical hole world; route-blocked layouts build
+only the non-measurable facility visual fallback.
+
+### High-fidelity imagery preflight
+
+The factory catalog has an ordered, region-specific imagery policy. Preflight
+records a provider’s live ArcGIS metadata without treating a browser preview
+as a source raster. It is a prerequisite for acquisition, not a geometry
+approval: an AOI item query, native-resolution GeoTIFF, source hash, CRS,
+bands, date, licensing, and imagery-quality checks remain mandatory.
+
+```bash
+python3 scripts/golf/course-geometry/preflight-imagery-sources.py \
+  course-geometry/catalog/facilities/cape-fear-country-club-golf-course.json \
+  output/course-geometry/factory/facilities/cape-fear-country-club-golf-course/imagery-source-preflight.json
+```
+
+`factory/source_registry.py` marks every provider as
+`feature_extraction`, `visual_review_only`, or `discovery_only`. The latter
+two can guide human review but cannot enter canonical geometry automatically.
+
+For NC facilities, acquire analysis imagery with retained source bands rather
+than a browser preview or `png32` cache. The v2 downloader writes independent
+RGB and NIR GeoTIFFs for each native-grid tile and fails a tile unless both
+exports pass. The optional sidecar identifies the single matching ImageServer
+catalog item at each tile center; it preserves the provider catalog date as
+metadata only, never as an asserted imagery-flight date. The NC adapter tries
+the current 2024–2027 four-band analysis source first, then its 2020–2023
+four-band analysis source only when the newer tile fails its quality gate;
+tile-level selection and every rejection are retained. The batch command uses
+the provider's live grid origin for its capacity estimate and stops before its
+disk reserve. All outputs below are imagery evidence; segmentation and human
+review still decide whether any vector can become canonical geometry.
+
+For a facility without a stronger reproducible state adapter, the national
+public fallback retains a four-band USGS NAIP Plus GeoTIFF at the selected
+catalog item's actual density. It uses nearest-neighbor reprojection into the
+course UTM frame and explicitly records that the raw source grid origin is not
+known; this is `reprojected_native_density`, not a claim of raw-pixel alignment.
+
+```bash
+python3 scripts/golf/course-geometry/fetch-usgs-naip-facility-ortho.py \
+  output/course-geometry/factory/facilities/winchester-country-club/aoi.json \
+  output/course-geometry/factory/facilities/winchester-country-club/naip-plus-v1
+```
+
+```bash
+A=output/course-geometry/factory/facilities/cape-fear-country-club-golf-course/aoi.json
+I=output/course-geometry/factory/facilities/cape-fear-country-club-golf-course/native-ortho-nir-v2
+python3 scripts/golf/course-geometry/fetch-nc-facility-ortho.py "$A" "$I"
+python3 scripts/golf/course-geometry/annotate-nc-ortho-source-items.py "$I/index.json" "${I}-source-items-v1"
+python3 scripts/golf/course-geometry/batch-nc-facility-ortho.py \
+  course-geometry/catalog output/course-geometry/factory \
+  output/course-geometry/factory/research/nc-ortho-batch-plan.json
+```
+
 States: `ready`, `pending` (waiting on upstream, root named), `cached`
 (`FINGERPRINT_UNCHANGED` / `ADOPTED_EXTERNAL` / `INLINE_VALIDATED`), `stale`
 (`FINGERPRINT_CHANGED` with the changed inputs, `ARTIFACT_MISSING`,

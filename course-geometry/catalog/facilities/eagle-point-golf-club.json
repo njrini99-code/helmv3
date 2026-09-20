@@ -1,0 +1,37 @@
+{
+  "schema": "golfhelm-facility-v1",
+  "facilityId": "eagle-point-golf-club",
+  "name": "Eagle Point Golf Club",
+  "country": "US",
+  "region": "NC",
+  "originWgs84": [
+    -77.760819,
+    34.2863414
+  ],
+  "aoi": {
+    "kind": "osm",
+    "id": "way/1509573612",
+    "marginM": 300
+  },
+  "sourcePins": {
+    "osm": [
+      "way/1509573612"
+    ]
+  },
+  "providerPolicy": {
+    "terrain": [
+      "nc_onemap_dem03"
+    ],
+    "imagery": [
+      "nc_onemap_2024_2027_analysis",
+      "usgs_naip_plus"
+    ],
+    "context": [
+      "osm"
+    ]
+  },
+  "notes": [
+    "Intake from the 2026-09-20T12:43:48.457Z usage cohort and the library coverage audit (2026-09-18); origin is the OSM course centre until the build pins it from the AOI.",
+    "Coverage audit: h27 g30 f22 b74 t69 inside the course polygon; DEM tiles named: 0; verdict no-dem."
+  ]
+}

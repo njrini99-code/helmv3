@@ -1,0 +1,69 @@
+{
+  "schema": "golfhelm-layout-v1",
+  "layoutId": "reynolds-lake-oconee-great-waters",
+  "facilityId": "great-waters",
+  "name": "Reynolds Lake Oconee - Great Waters",
+  "siteIds": [
+    "osm-way-776584699"
+  ],
+  "segments": {
+    "main": {
+      "holes": [
+        "reynolds-lake-oconee-great-waters-01",
+        "reynolds-lake-oconee-great-waters-02",
+        "reynolds-lake-oconee-great-waters-03",
+        "reynolds-lake-oconee-great-waters-04",
+        "reynolds-lake-oconee-great-waters-05",
+        "reynolds-lake-oconee-great-waters-06",
+        "reynolds-lake-oconee-great-waters-07",
+        "reynolds-lake-oconee-great-waters-08",
+        "reynolds-lake-oconee-great-waters-09",
+        "reynolds-lake-oconee-great-waters-10",
+        "reynolds-lake-oconee-great-waters-11",
+        "reynolds-lake-oconee-great-waters-12",
+        "reynolds-lake-oconee-great-waters-13",
+        "reynolds-lake-oconee-great-waters-14",
+        "reynolds-lake-oconee-great-waters-15",
+        "reynolds-lake-oconee-great-waters-16",
+        "reynolds-lake-oconee-great-waters-17",
+        "reynolds-lake-oconee-great-waters-18"
+      ]
+    }
+  },
+  "segmentOrder": [
+    "main"
+  ],
+  "holeOrder": [
+    "reynolds-lake-oconee-great-waters-01",
+    "reynolds-lake-oconee-great-waters-02",
+    "reynolds-lake-oconee-great-waters-03",
+    "reynolds-lake-oconee-great-waters-04",
+    "reynolds-lake-oconee-great-waters-05",
+    "reynolds-lake-oconee-great-waters-06",
+    "reynolds-lake-oconee-great-waters-07",
+    "reynolds-lake-oconee-great-waters-08",
+    "reynolds-lake-oconee-great-waters-09",
+    "reynolds-lake-oconee-great-waters-10",
+    "reynolds-lake-oconee-great-waters-11",
+    "reynolds-lake-oconee-great-waters-12",
+    "reynolds-lake-oconee-great-waters-13",
+    "reynolds-lake-oconee-great-waters-14",
+    "reynolds-lake-oconee-great-waters-15",
+    "reynolds-lake-oconee-great-waters-16",
+    "reynolds-lake-oconee-great-waters-17",
+    "reynolds-lake-oconee-great-waters-18"
+  ],
+  "routeWayIds": null,
+  "bboxWgs84": null,
+  "capabilityTier": "C0",
+  "externalBindings": {
+    "golfCourseIds": [
+      "39edfa12-c60f-4f14-b9f7-efabe30cafdf"
+    ]
+  },
+  "scorecardProfiles": [],
+  "geometry": null,
+  "notes": [
+    "Factory intake from active-team school proximity (1 nearby team anchor(s), within 75.0 miles; queried 2026-09-20T12:43:48.457Z). Proximity selected build priority only; it does not establish a physical route or feature geometry."
+  ]
+}

@@ -24,6 +24,38 @@ GOLF_KIND = {
     'bunker': 'bunker',
 }
 VISUAL_KINDS = {'tee', 'fairway', 'green', 'bunker', 'water', 'woods'}
+# These counts describe only the retained facility-scoped OSM extract.  They
+# prioritize imagery/review work; they must never promote a render candidate
+# into hole ownership, metric truth, or physical validation.
+CORE_SEMANTIC_KINDS = ('tee', 'fairway', 'green', 'bunker')
+
+
+def source_coverage(features):
+    counts = {kind: sum(feature['kind'] == kind for feature in features) for kind in sorted(VISUAL_KINDS)}
+    missing = sorted(kind for kind in CORE_SEMANTIC_KINDS if not counts[kind])
+    # One green/fairway across a facility is not enough evidence that every
+    # playable hole has been represented.  It remains useful source context,
+    # but needs native imagery extraction before a reviewer sees it as a
+    # candidate whole-course visual world.
+    sparse = bool(missing or counts['green'] <= 1 or counts['fairway'] <= 1)
+    return {
+        'status': 'sparse' if sparse else 'contextual',
+        'semanticFeatureCounts': counts,
+        'missingSemanticKinds': missing,
+        'rule': 'Facility-scoped OSM counts prioritize imagery extraction and review; they never establish a played-hole route or physical measurement.',
+    }
+
+
+def visual_readiness(coverage):
+    sparse = coverage['status'] == 'sparse'
+    return {
+        'status': 'requires_imagery_enhancement' if sparse else 'requires_route_and_boundary_review',
+        'highFidelityHoleWorld': False,
+        'nextAction': ('Acquire native imagery and derive/review missing or underrepresented surfaces before visual polish.'
+                       if sparse else
+                       'Confirm tee-to-green routes and complete boundary review before a physical hole world can be considered.'),
+        'rule': 'A facility visual package remains render-only until the independent physical route and boundary contracts pass.',
+    }
 
 
 def canonical(value):
@@ -147,6 +179,7 @@ def build_package(raw, card, manifest):
         }],
     }
     package['contentHash'] = hashlib.sha256(canonical(package).encode()).hexdigest()
+    coverage = source_coverage(features)
     report = {
         'schemaVersion': 1,
         'kind': 'golfhelm-facility-visual-candidate-report-v1',
@@ -154,6 +187,8 @@ def build_package(raw, card, manifest):
         'packageHash': package['contentHash'],
         'extractSha256': manifest.get('uncompressedSha256'),
         'featureCounts': {kind: sum(feature['kind'] == kind for feature in features) for kind in sorted({feature['kind'] for feature in features})},
+        'sourceCoverage': coverage,
+        'visualReadiness': visual_readiness(coverage),
         'renderingContract': {
             'canRender': True,
             'canMeasure': False,

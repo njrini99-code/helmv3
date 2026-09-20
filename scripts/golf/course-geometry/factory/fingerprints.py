@@ -127,4 +127,13 @@ def terrain_source_identity(manifest):
     every package revision although not one height did."""
     if not manifest:
         return None
-    return digest({'fileHashes': manifest.get('fileHashes'), 'bounds': manifest.get('requestedLocalBoundsM'), 'crs': manifest.get('horizontalExportCrs')})
+    return digest({
+        'fileHashes': manifest.get('fileHashes'),
+        'bounds': manifest.get('requestedLocalBoundsM'),
+        'crs': manifest.get('horizontalExportCrs'),
+        # A visual-only terrain source must never share a cache identity with
+        # a measurable source, even when the acquired files happen to match.
+        # Keep this byte-for-byte aligned with compile-course-terrain.py.
+        'renderingOnly': bool(manifest.get('renderingOnly')),
+        'sourceNativeResolutionM': manifest.get('sourceNativeResolutionM'),
+    })

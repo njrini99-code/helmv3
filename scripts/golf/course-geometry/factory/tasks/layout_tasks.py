@@ -106,13 +106,18 @@ def eval_route_dossier(node, ctx):
 def _visual_fallback_inputs(node, ctx):
     layout_id = node.scope.layout_id
     resolution = ctx.route_resolution(layout_id)
+    admission = ctx.canonical_route_admission(layout_id)
     return {
         'osm': dep_input(ctx, node, 'facility.osm.snapshot'),
         # The full evidence object, rather than a Boolean, makes a new source
         # proposal invalidate the visual pointer without admitting it to the
         # physical route chain.
         'routeResolution': digest(resolution),
-    }, resolution
+        # A route proposal alone never suppresses a visual fallback.  A
+        # matching scorecard is required before route-specific geometry can
+        # become the authoritative physical chain.
+        'canonicalRouteAdmission': digest(admission),
+    }, resolution, admission
 
 
 def eval_visual_candidates_compose(node, ctx):
@@ -123,12 +128,12 @@ def eval_visual_candidates_compose(node, ctx):
     The pointer is intentionally not a canonical package locator.
     """
     layout_id = node.scope.layout_id
-    inputs, resolution = _visual_fallback_inputs(node, ctx)
+    inputs, resolution, admission = _visual_fallback_inputs(node, ctx)
     if resolution is None:
         return evaluation(inputs)
     pointer_path = ctx.visual_candidate_pointer_path(layout_id)
     pointer = ctx.json(pointer_path) if ctx.can_adopt(pointer_path) else None
-    if resolution.get('routeWayIds'):
+    if admission.get('admitted'):
         valid = bool(pointer and pointer.get('layoutId') == layout_id
                      and pointer.get('status') == 'not_required_source_route_available'
                      and pointer.get('canonicalHoleRoutesAdmitted') is True
@@ -147,7 +152,11 @@ def eval_visual_candidates_compose(node, ctx):
                  and pointer.get('extractSha256') == (manifest or {}).get('uncompressedSha256')
                  and pointer.get('canonicalHoleRoutesAdmitted') is False
                  and (report.get('renderingContract') or {}).get('canRender') is True
-                 and (report.get('renderingContract') or {}).get('canMeasure') is False)
+                 and (report.get('renderingContract') or {}).get('canMeasure') is False
+                 and (report.get('sourceCoverage') or {}).get('status') in {'sparse', 'contextual'}
+                 and (report.get('visualReadiness') or {}).get('highFidelityHoleWorld') is False
+                 and pointer.get('sourceCoverage') == report.get('sourceCoverage')
+                 and pointer.get('visualReadiness') == report.get('visualReadiness'))
     notes = [f'facility visual candidate {str(package.get("contentHash"))[:12]} (renderable, non-measurable)'] if valid else []
     artifacts = [artifact('visual-candidate-pointer', pointer_path, 'C'), artifact('package', package_path, 'C'),
                  artifact('visual-candidate-report', report_path, 'C')] if valid else []

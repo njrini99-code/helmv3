@@ -85,6 +85,12 @@ class TerrainCompilerTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'coarser'):
             compiler.usgs_rendering_only_grid_size(9447, 8722, 1)
 
+    def test_catalog_resolution_keeps_native_and_arc_second_grids_distinct(self):
+        self.assertEqual(compiler.catalog_resolution_m({'title': 'USGS 1 Meter 17 x1y1 Test', 'Resolution_X': 1}, 40), 1)
+        # 1/3 arc-second is about 10.3 m north/south.  The fallback may not
+        # export it to a finer grid and call the result higher fidelity.
+        self.assertAlmostEqual(compiler.catalog_resolution_m({'title': 'USGS 1/3 Arc Second n41w083', 'Resolution_X': 1 / 10800}, 40), 111_320 / 10800)
+
     def test_source_request_samples_every_local_bound_edge(self):
         # Projecting only four ENU corners into a different CRS can leave a
         # curved edge just outside the raster. The source request must include

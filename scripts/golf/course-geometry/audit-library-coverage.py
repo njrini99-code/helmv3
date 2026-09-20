@@ -14,7 +14,7 @@ Nothing here edits a package, a fixture or the app; it is an inventory for
 choosing the next course, not a verdict on any boundary.
 
   python3 scripts/golf/course-geometry/audit-library-coverage.py courses.json \
-      output/course-geometry/library-coverage [--sleep=1.5] [--only=bryan,cardinal]
+      output/course-geometry/library-coverage [--sleep=1.5] [--only=bryan,cardinal] [--resume]
 
 `--only` re-audits the facilities whose name contains one of the parts and
 keeps every other row from the directory's previous coverage.json.
@@ -274,17 +274,42 @@ def verdict_for(record: dict) -> str:
     return ('ready' if mapped and dem else 'partial-osm' if partial and dem else 'no-dem' if mapped or partial else 'no-osm' if record['osmCourse'] else 'not-found')
 
 
+def write_report(out: Path, results: list[dict], library_rows: int, complete: bool) -> None:
+    """Checkpoint every completed facility. A public-source timeout must not
+    erase the work already done or force a full costly retry. `complete` makes
+    a partial inventory explicit for downstream callers."""
+    payload = {'generatedAt': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'libraryRows': library_rows,
+               'complete': complete, 'facilities': results}
+    (out / 'coverage.json').write_text(json.dumps(payload, indent=2) + '\n')
+    lines = ['| State | Facility (library rows) | OSM course | Holes | Greens | Fairways | Bunkers | Tees | 1 m DEM | Verdict |', '| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |']
+    for r in results:
+        osm = r['osmCourse']['siteId'] if r['osmCourse'] else f"bbox near {r['anchor']['name']}" if r['anchor'] else '—'
+        lines.append(f"| {r['state']} | {r['name']} ({len(r['libraryIds'])}) | {osm} | {r['holes']} | {r['greens']} | {r['fairways']} | {r['bunkers']} | {r['tees']} | {len(r['dem1mTiles'])} | {r['verdict']}{' · ' + '; '.join(r['notes']) if r['notes'] else ''} |")
+    tally = {}
+    for r in results:
+        tally[r['verdict']] = tally.get(r['verdict'], 0) + 1
+    lines.extend(['', 'Complete: ' + ('yes' if complete else 'no — resume required before intake'), 'Verdicts: ' + ', '.join(f'{k} {v}' for k, v in sorted(tally.items()))])
+    (out / 'coverage.md').write_text('\n'.join(lines) + '\n')
+
+
 def main() -> int:
     args = [a for a in sys.argv[1:] if not a.startswith('--')]
     options = dict(a[2:].split('=', 1) for a in sys.argv[1:] if a.startswith('--') and '=' in a)
     if len(args) != 2:
         print(__doc__); return 2
-    rows = json.loads(Path(args[0]).read_text())
+    source_payload = json.loads(Path(args[0]).read_text())
+    # The raw library export is a list, while the active-team selector emits a
+    # cohort envelope. Both retain the same course-row contract. Accepting the
+    # envelope keeps the scale-out path auditable and avoids a lossy jq step.
+    rows = source_payload.get('courses') if isinstance(source_payload, dict) else source_payload
+    if not isinstance(rows, list):
+        raise SystemExit('courses input must be a list or an object with a courses list')
     out = Path(args[1]); out.mkdir(parents=True, exist_ok=True)
     pause = float(options.get('sleep', '1.5'))
     only = [part.strip().lower() for part in options.get('only', '').split(',') if part.strip()]
+    resume = '--resume' in sys.argv[1:]
     previous = {}
-    if only and (out / 'coverage.json').exists():
+    if (only or resume) and (out / 'coverage.json').exists():
         previous = {f['name']: f for f in json.loads((out / 'coverage.json').read_text())['facilities']}
     facilities: dict[str, dict] = {}
     for row in rows:
@@ -293,19 +318,24 @@ def main() -> int:
         entry['libraryIds'].append(row['id']); entry['libraryNames'].append(row.get('name'))
         entry['osmPin'] = entry['osmPin'] or row.get('osm')
     results = []
-    for index, (key, facility) in enumerate(sorted(facilities.items(), key=lambda item: (item[1]['state'], item[1]['name'] or '')), 1):
+    ordered = sorted(facilities.items(), key=lambda item: (item[1]['state'], item[1]['name'] or ''))
+    try:
+      for index, (key, facility) in enumerate(ordered, 1):
         if only and not any(part in (facility['name'] or '').lower() for part in only):
             if facility['name'] in previous:
                 # Counts are evidence and stay; the verdict is derived, so a rule change reaches every kept row.
                 results.append({**previous[facility['name']], 'verdict': verdict_for(previous[facility['name']])})
             continue
+        if resume and facility['name'] in previous:
+            results.append({**previous[facility['name']], 'verdict': verdict_for(previous[facility['name']])})
+            continue
         record = {**facility, 'cityPoint': None, 'osmCourse': None, 'anchor': None, 'golfFeatures': {}, 'featureBasis': None, 'holes': 0, 'greens': 0, 'fairways': 0, 'bunkers': 0, 'tees': 0, 'dem1mTiles': [], 'verdict': 'unknown', 'notes': []}
         try:
             if not facility['city']:
-                record['notes'].append('no city in the library row'); results.append(record); continue
+                record['notes'].append('no city in the library row'); results.append(record); write_report(out, results, len(rows), False); continue
             point = geocode_city(facility['city'], facility['state'], facility['country']); time.sleep(pause)
             if not point:
-                record['notes'].append('city did not geocode'); results.append(record); continue
+                record['notes'].append('city did not geocode'); results.append(record); write_report(out, results, len(rows), False); continue
             record['cityPoint'] = list(point)
             if facility['osmPin']:
                 pinned = overpass_element(facility['osmPin']); time.sleep(pause)
@@ -361,17 +391,16 @@ def main() -> int:
             record['notes'].append(f'lookup failed: {type(error).__name__}: {str(error)[:120]}')
         record['verdict'] = verdict_for(record)
         results.append(record)
+        write_report(out, results, len(rows), False)
         print(f"{index:2d}/{len(facilities)} {facility['state']:>3} {facility['name'][:40]:40} holes={record['holes']:2d} greens={record['greens']:2d} fairways={record['fairways']:2d} bunkers={record['bunkers']:3d} dem1m={len(record['dem1mTiles'])} → {record['verdict']}{' · ' + '; '.join(record['notes']) if record['notes'] else ''}", flush=True)
-    (out / 'coverage.json').write_text(json.dumps({'generatedAt': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'libraryRows': len(rows), 'facilities': results}, indent=2) + '\n')
-    lines = ['| State | Facility (library rows) | OSM course | Holes | Greens | Fairways | Bunkers | Tees | 1 m DEM | Verdict |', '| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |']
-    for r in results:
-        osm = r['osmCourse']['siteId'] if r['osmCourse'] else f"bbox near {r['anchor']['name']}" if r['anchor'] else '—'
-        lines.append(f"| {r['state']} | {r['name']} ({len(r['libraryIds'])}) | {osm} | {r['holes']} | {r['greens']} | {r['fairways']} | {r['bunkers']} | {r['tees']} | {len(r['dem1mTiles'])} | {r['verdict']}{' · ' + '; '.join(r['notes']) if r['notes'] else ''} |")
+    except KeyboardInterrupt:
+        write_report(out, results, len(rows), False)
+        print('interrupted; checkpoint written (re-run with --resume)', file=sys.stderr)
+        return 130
+    write_report(out, results, len(rows), True)
     tally = {}
     for r in results:
         tally[r['verdict']] = tally.get(r['verdict'], 0) + 1
-    lines.append(''); lines.append('Verdicts: ' + ', '.join(f'{k} {v}' for k, v in sorted(tally.items())))
-    (out / 'coverage.md').write_text('\n'.join(lines) + '\n')
     print('facilities', len(results), 'verdicts', tally)
     return 0
 

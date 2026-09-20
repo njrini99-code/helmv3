@@ -24,7 +24,8 @@
       "usgs_3dep_project_1m"
     ],
     "imagery": [
-      "naip_current"
+      "nc_onemap_2024_2027_analysis",
+      "usgs_naip_plus"
     ],
     "context": [
       "osm"

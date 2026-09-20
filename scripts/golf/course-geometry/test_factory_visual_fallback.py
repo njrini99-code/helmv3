@@ -27,6 +27,22 @@ class VisualFallbackFactoryTests(unittest.TestCase):
         self.assertFalse(pointer['renderingContract']['canMeasure'])
         self.assertFalse(pointer['canonicalHoleRoutesAdmitted'])
 
+    def test_stale_candidate_report_is_regenerated_when_coverage_contract_is_missing(self):
+        code, text = self.harness.run('run', '--layout', 'synthetic-a', '--task', 'layout.visual.candidates.compose')
+        self.assertEqual(code, 0, text)
+        report_path = os.path.join(self.harness.output, 'facilities', 'synthetic', 'visual-candidate', 'visual-candidate-report.json')
+        stale = read_json(report_path)
+        stale.pop('sourceCoverage')
+        stale.pop('visualReadiness')
+        with open(report_path, 'w', encoding='utf-8') as handle:
+            import json
+            json.dump(stale, handle)
+        code, text = self.harness.run('run', '--layout', 'synthetic-a', '--task', 'layout.visual.candidates.compose')
+        self.assertEqual(code, 0, text)
+        rebuilt = read_json(report_path)
+        self.assertIn('sourceCoverage', rebuilt)
+        self.assertIn('visualReadiness', rebuilt)
+
     def test_catalog_batch_includes_the_visual_fallback_for_unresolved_layouts(self):
         code, text = self.harness.run('batch', '--all-layouts', '--until', 'layout.world.aggregate')
         self.assertEqual(code, 0, text)

@@ -26,7 +26,7 @@ from .tasks.common import artifact, script
 OVERPASS = 'https://overpass-api.de/api/interpreter'
 USER_AGENT = 'GolfHelm course-geometry factory (bounded, one request per facility revision)'
 MAX_AOI_BYTES = 4_000_000
-VISUAL_TERRAIN_DERIVED_RESOLUTIONS_M = (2, 4, 8)
+VISUAL_TERRAIN_DERIVED_RESOLUTIONS_M = (2, 4, 8, 12, 16)
 
 
 def _write_json(path, doc):
@@ -264,8 +264,9 @@ def compose_visual_candidates(node, ctx, run):
     """
     layout_id, facility_id = node.scope.layout_id, node.scope.facility_id
     resolution = ctx.route_resolution(layout_id) or {}
+    admission = ctx.canonical_route_admission(layout_id)
     pointer_path = ctx.visual_candidate_pointer_path(layout_id)
-    if resolution.get('routeWayIds'):
+    if admission.get('admitted'):
         _write_json(pointer_path, {
             'kind': 'golfhelm-layout-visual-candidate-pointer-v1', 'layoutId': layout_id, 'facilityId': facility_id,
             'status': 'not_required_source_route_available', 'canonicalHoleRoutesAdmitted': True,
@@ -283,7 +284,9 @@ def compose_visual_candidates(node, ctx, run):
     report = ctx.json(report_path, fresh=True) if os.path.isfile(report_path) else None
     reuse = bool(package and report and package.get('kind') == 'golfhelm-facility-visual-package-v1'
                  and package.get('contentHash') and report.get('packageHash') == package.get('contentHash')
-                 and report.get('extractSha256') == manifest.get('uncompressedSha256'))
+                 and report.get('extractSha256') == manifest.get('uncompressedSha256')
+                 and (report.get('sourceCoverage') or {}).get('status') in {'sparse', 'contextual'}
+                 and (report.get('visualReadiness') or {}).get('highFidelityHoleWorld') is False)
     if not reuse:
         if os.path.isdir(package_dir):
             safe_rmtree(ctx, package_dir)
@@ -297,6 +300,7 @@ def compose_visual_candidates(node, ctx, run):
         'packagePath': ctx.relpath(package_path), 'packageHash': package['contentHash'],
         'extractSha256': manifest.get('uncompressedSha256'), 'canonicalHoleRoutesAdmitted': False,
         'routeStatus': 'unresolved', 'renderingContract': report['renderingContract'],
+        'sourceCoverage': report['sourceCoverage'], 'visualReadiness': report['visualReadiness'],
     })
     ref = artifact('package', package_path, 'C')
     ref.sha256 = package['contentHash']
@@ -338,7 +342,9 @@ def acquire_visual_terrain(node, ctx, run):
     try:
         run_script(ctx, run, node, 'scripts/golf/course-geometry/compile-course-terrain.py', [*base_args, '--source', source])
     except RuntimeError as error:
-        if provider.compiler_id not in ('nc_onemap_dem03', 'usgs_3dep_project_1m') or 'pixel cap' not in str(error):
+        failure = str(error)
+        source_coverage_gap = provider.compiler_id == 'usgs_3dep_project_1m' and 'No native-1m tile set covers' in failure
+        if provider.compiler_id not in ('nc_onemap_dem03', 'usgs_3dep_project_1m') or ('pixel cap' not in failure and not source_coverage_gap):
             raise
         for resolution_m in VISUAL_TERRAIN_DERIVED_RESOLUTIONS_M:
             candidate = source_root + f'-visual-r{resolution_m}m-v1'
@@ -348,7 +354,11 @@ def acquire_visual_terrain(node, ctx, run):
                 run_script(ctx, run, node, 'scripts/golf/course-geometry/compile-course-terrain.py', [*base_args, '--source', candidate,
                            '--rendering-only-resolution-m', str(resolution_m)])
             except RuntimeError as derived_error:
-                if 'pixel cap' in str(derived_error):
+                # A 1 m source may need a coarser export for pixel budget;
+                # a lower-resolution public fallback needs a render grid no
+                # finer than its declared source spacing.  In both cases try
+                # the next declared visual tier, never inventing resolution.
+                if 'pixel cap' in str(derived_error) or 'No native-1m tile set covers' in str(derived_error):
                     continue
                 raise
             source = candidate

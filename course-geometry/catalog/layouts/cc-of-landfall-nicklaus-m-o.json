@@ -1,0 +1,69 @@
+{
+  "schema": "golfhelm-layout-v1",
+  "layoutId": "cc-of-landfall-nicklaus-m-o",
+  "facilityId": "landfall-country-club-golf-course",
+  "name": "CC of Landfall (Nicklaus M/O)",
+  "siteIds": [
+    "osm-way-524540524"
+  ],
+  "segments": {
+    "main": {
+      "holes": [
+        "cc-of-landfall-nicklaus-m-o-01",
+        "cc-of-landfall-nicklaus-m-o-02",
+        "cc-of-landfall-nicklaus-m-o-03",
+        "cc-of-landfall-nicklaus-m-o-04",
+        "cc-of-landfall-nicklaus-m-o-05",
+        "cc-of-landfall-nicklaus-m-o-06",
+        "cc-of-landfall-nicklaus-m-o-07",
+        "cc-of-landfall-nicklaus-m-o-08",
+        "cc-of-landfall-nicklaus-m-o-09",
+        "cc-of-landfall-nicklaus-m-o-10",
+        "cc-of-landfall-nicklaus-m-o-11",
+        "cc-of-landfall-nicklaus-m-o-12",
+        "cc-of-landfall-nicklaus-m-o-13",
+        "cc-of-landfall-nicklaus-m-o-14",
+        "cc-of-landfall-nicklaus-m-o-15",
+        "cc-of-landfall-nicklaus-m-o-16",
+        "cc-of-landfall-nicklaus-m-o-17",
+        "cc-of-landfall-nicklaus-m-o-18"
+      ]
+    }
+  },
+  "segmentOrder": [
+    "main"
+  ],
+  "holeOrder": [
+    "cc-of-landfall-nicklaus-m-o-01",
+    "cc-of-landfall-nicklaus-m-o-02",
+    "cc-of-landfall-nicklaus-m-o-03",
+    "cc-of-landfall-nicklaus-m-o-04",
+    "cc-of-landfall-nicklaus-m-o-05",
+    "cc-of-landfall-nicklaus-m-o-06",
+    "cc-of-landfall-nicklaus-m-o-07",
+    "cc-of-landfall-nicklaus-m-o-08",
+    "cc-of-landfall-nicklaus-m-o-09",
+    "cc-of-landfall-nicklaus-m-o-10",
+    "cc-of-landfall-nicklaus-m-o-11",
+    "cc-of-landfall-nicklaus-m-o-12",
+    "cc-of-landfall-nicklaus-m-o-13",
+    "cc-of-landfall-nicklaus-m-o-14",
+    "cc-of-landfall-nicklaus-m-o-15",
+    "cc-of-landfall-nicklaus-m-o-16",
+    "cc-of-landfall-nicklaus-m-o-17",
+    "cc-of-landfall-nicklaus-m-o-18"
+  ],
+  "routeWayIds": null,
+  "bboxWgs84": null,
+  "capabilityTier": "C0",
+  "externalBindings": {
+    "golfCourseIds": [
+      "87aeeab1-59c0-411c-94cd-7fdee4344989"
+    ]
+  },
+  "scorecardProfiles": [],
+  "geometry": null,
+  "notes": [
+    "Factory intake from active-team school proximity (1 nearby team anchor(s), within 75.0 miles; queried 2026-09-20T12:43:48.457Z). Proximity selected build priority only; it does not establish a physical route or feature geometry."
+  ]
+}

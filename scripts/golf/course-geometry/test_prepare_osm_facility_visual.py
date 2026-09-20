@@ -49,6 +49,10 @@ class FacilityVisualPackageTests(unittest.TestCase):
         self.assertTrue(report['renderingContract']['canRender'])
         self.assertFalse(report['renderingContract']['canMeasure'])
         self.assertFalse(report['renderingContract']['maySupplyHoleAssociation'])
+        self.assertEqual(report['sourceCoverage']['status'], 'sparse')
+        self.assertEqual(report['sourceCoverage']['missingSemanticKinds'], ['bunker', 'fairway', 'tee'])
+        self.assertEqual(report['visualReadiness']['status'], 'requires_imagery_enhancement')
+        self.assertFalse(report['visualReadiness']['highFidelityHoleWorld'])
 
 
 if __name__ == '__main__':

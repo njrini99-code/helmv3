@@ -427,6 +427,30 @@ class Context:
         self._routes[layout_id] = result
         return result
 
+    def canonical_route_admission(self, layout_id):
+        """Return the narrow prerequisite for a route-specific physical world.
+
+        A uniquely numbered OSM series is useful evidence, but is not enough
+        to make a playable course world: its hole order has to agree with a
+        retained scorecard profile as well.  This does not itself publish a
+        physical package; it only prevents the visual fallback from being
+        incorrectly suppressed while a layout is still physically blocked.
+        """
+        layout = self.layout(layout_id) or {}
+        card = self.scorecard(layout_id)
+        expected = len(layout.get('holeOrder') or [])
+        actual = len((card or {}).get('holes') or [])
+        routes = self.route_resolution(layout_id) or {}
+        scorecard_valid = bool(card and supported_hole_count(expected) and actual == expected)
+        return {
+            'admitted': bool(scorecard_valid and routes.get('routeWayIds')),
+            'scorecardValid': scorecard_valid,
+            'expectedHoles': expected,
+            'scorecardHoles': actual if card else None,
+            'routeSource': routes.get('source'),
+            'routeWayIds': routes.get('routeWayIds'),
+        }
+
     def pilot_scorecard(self, layout_id):
         """The scorecard-shaped document the pipeline scripts consume, composed
         from the catalog: facility origin, layout routes, profile pars/yards."""
