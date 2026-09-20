@@ -76,7 +76,8 @@ export const scorecardProfileSchema = z.object({
     provider: z.enum(['official_course_site', 'helm_course_library', 'owner_supplied']),
     url: z.string().url().nullable(),
     retrievedAt: isoDate,
-    note: z.string().max(300).optional(),
+    // Preserve source qualifications; keep this limit in sync with catalog.py.
+    note: z.string().max(4096).optional(),
   }).strict(),
   holes: z.array(z.object({
     hole: z.number().int().min(1).max(36),

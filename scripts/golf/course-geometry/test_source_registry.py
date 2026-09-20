@@ -1,6 +1,6 @@
 import importlib.util
-from pathlib import Path
 import unittest
+from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 spec = importlib.util.spec_from_file_location('source_registry', HERE / 'factory' / 'source_registry.py')
@@ -27,6 +27,20 @@ class SourceRegistryTests(unittest.TestCase):
         provider = registry.provider_document('licking_county_2023_visual_qa')
         self.assertEqual(provider['role'], 'visual_review_only')
         self.assertIn('writing', provider['licensing'])
+
+    def test_palm_beach_rgb_review_cannot_claim_ground_gsd_or_statewide_coverage(self):
+        provider = registry.provider_document('palm_beach_2025_visual_qa')
+        self.assertEqual(provider['role'], 'visual_review_only')
+        self.assertIsNone(provider['expected_gsd_m'])
+        self.assertEqual(provider['expected_bands'], ['red', 'green', 'blue'])
+        self.assertNotIn(provider['id'], registry.imagery_policy('FL'))
+
+    def test_ohio_original_tiles_need_an_adapter_and_do_not_assume_nir(self):
+        provider = registry.provider_document('ohio_osip3_3in_geotiff')
+        self.assertEqual(provider['role'], 'visual_review_only')
+        self.assertEqual(provider['service_type'], 'arcgis_tile_download_index')
+        self.assertNotIn('nir', provider['expected_bands'])
+        self.assertIn('public domain', provider['licensing'])
 
 
 if __name__ == '__main__':

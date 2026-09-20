@@ -6,16 +6,19 @@ import importlib.util
 import json
 import os
 
+from source_geometry import identity as source_identity
+from source_geometry import read_source_geometry, resolved_routes
+
 from . import osm
-from .imagery_extent import selected_index
 from .fingerprints import (
     content_hash_matches,
     digest,
     files_digest,
+    native_imagery_identity,
     package_subhashes,
     terrain_source_identity,
-    native_imagery_identity,
 )
+from .imagery_extent import selected_index
 
 SCRIPTS_DIR = 'scripts/golf/course-geometry'
 MIN_HOLE_COUNT = 9
@@ -421,7 +424,17 @@ class Context:
             return self._routes[layout_id]
         layout = self.layout(layout_id) or {}
         result = None
-        if layout.get('routeWayIds'):
+        source_geometry = self.retained(layout, 'sourceGeometry')
+        if source_geometry:
+            try:
+                if layout.get('routeWayIds') or layout.get('geometry'):
+                    raise ValueError('ROUTE_SOURCE_CONFLICT: sourceGeometry cannot silently replace pinned OSM routes or a served package')
+                doc = read_source_geometry(source_geometry, layout['facilityId'], layout['siteIds'][0], layout['holeOrder'])
+                result = {'source': 'source_geometry', 'routeWayIds': None, 'sourceGeometryHash': source_identity(doc),
+                          'holeOrder': layout['holeOrder'], 'evidence': {'sourceGeometry': self.relpath(source_geometry)}}
+            except (OSError, ValueError, TypeError, KeyError) as exc:
+                result = {'source': 'source_geometry', 'routeWayIds': None, 'problem': 'SOURCE_GEOMETRY_INVALID', 'evidence': {'detail': str(exc)}}
+        elif layout.get('routeWayIds'):
             result = {'source': 'catalog', 'routeWayIds': list(layout['routeWayIds']), 'evidence': None}
         else:
             manifest, extract_path = self.snapshot(layout.get('facilityId'))
@@ -458,7 +471,7 @@ class Context:
         routes = self.route_resolution(layout_id) or {}
         scorecard_valid = bool(card and supported_hole_count(expected) and actual == expected)
         return {
-            'admitted': bool(scorecard_valid and routes.get('routeWayIds')),
+            'admitted': bool(scorecard_valid and resolved_routes(routes)),
             'scorecardValid': scorecard_valid,
             'expectedHoles': expected,
             'scorecardHoles': actual if card else None,
@@ -475,12 +488,13 @@ class Context:
         routes = self.route_resolution(layout_id)
         aoi = self.aoi(layout.get('facilityId'))
         bbox = layout.get('bboxWgs84') or (aoi or {}).get('bboxWgs84')
-        if not (card and routes and routes.get('routeWayIds') and bbox):
+        if not (card and resolved_routes(routes) and bbox):
             return None
         holes = sorted(card['holes'], key=lambda h: h['hole'])
         return {'siteId': (layout.get('siteIds') or ['osm-' + facility['aoi']['id'].replace('/', '-')])[0], 'name': layout.get('name'), 'slug': layout_id,
                 'originWgs84': facility.get('originWgs84'), 'scorecardYards': [h['yards'] for h in holes], 'pars': [h['par'] for h in holes],
-                'routeWayIds': routes['routeWayIds'], 'routeSource': routes['source'], 'officialScorecardUrl': (card.get('source') or {}).get('url'),
+                'facilityId': layout['facilityId'], 'holeOrder': layout['holeOrder'],
+                'routeWayIds': routes.get('routeWayIds'), 'routeSource': routes['source'], 'officialScorecardUrl': (card.get('source') or {}).get('url'),
                 'retrievedAt': (card.get('source') or {}).get('retrievedAt'), 'bboxWgs84': bbox, 'scorecardProfile': card['profileId']}
 
     def terrain_bounds(self, layout_id):

@@ -568,8 +568,12 @@ class Harness:
         self.overrides = None
 
     def run(self, *argv, executors=None):
+        from unittest.mock import patch
         buf = io.StringIO()
-        with redirect_stdout(buf):
+        # Fake executors write tiny JSON fixtures. Keep their modeled disk
+        # independent of host swap/cache pressure, while exercising the real
+        # reserve guard (the low-space test deliberately sets a larger reserve).
+        with redirect_stdout(buf), patch('factory.disk.free_bytes', return_value=100 * (1 << 30)):
             code = cli.main(['--repo-root', self.repo, '--output', self.output, *argv], out=buf, ledger=self.ledger,
                             executors=self.pipeline.executors() if executors is None else executors, spec_overrides=self.overrides)
         return code, buf.getvalue()

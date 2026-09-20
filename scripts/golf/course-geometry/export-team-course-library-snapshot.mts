@@ -13,6 +13,7 @@ import { writeFile, mkdir } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
 import nextEnv from '@next/env';
+import { completeScorecard, readAllRows } from './library-snapshot.mts';
 
 const { loadEnvConfig } = nextEnv;
 
@@ -43,19 +44,16 @@ async function main(): Promise<void> {
   if (!url || !serviceRole) fail('NEXT_PUBLIC_SUPABASE_URL/SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required');
   const supabase = createClient(url, serviceRole, { auth: { persistSession: false, autoRefreshToken: false } });
 
-  const [teamsResult, organizationsResult, coursesResult, teesResult, teeHolesResult] = await Promise.all([
-    supabase.from('golf_teams').select('id,name,organization_id,season_active').eq('season_active', true),
-    supabase.from('organizations').select('id,name,location_city,location_state,division,conference'),
-    supabase.from('golf_courses').select('id,name,city,state,country,address,deleted_at').is('deleted_at', null).order('name'),
-    supabase.from('golf_course_tees').select('id,course_id,tee_name,holes_count,is_draft,deleted_at').is('deleted_at', null).eq('is_draft', false),
-    supabase.from('golf_course_tee_holes').select('tee_id,hole_number,par,yardage').order('hole_number'),
+  const [teamRows, organizationRows, courseRows, teeRows, teeHoleRows] = await Promise.all([
+    readAllRows('golf_teams', (from, to) => supabase.from('golf_teams').select('id,name,organization_id,season_active', { count: 'exact' }).eq('season_active', true).order('id').range(from, to)),
+    readAllRows('organizations', (from, to) => supabase.from('organizations').select('id,name,location_city,location_state,division,conference', { count: 'exact' }).order('id').range(from, to)),
+    readAllRows('golf_courses', (from, to) => supabase.from('golf_courses').select('id,name,city,state,country,address,deleted_at', { count: 'exact' }).is('deleted_at', null).order('id').range(from, to)),
+    readAllRows('golf_course_tees', (from, to) => supabase.from('golf_course_tees').select('id,course_id,tee_name,holes_count,is_draft,deleted_at,source', { count: 'exact' }).is('deleted_at', null).eq('is_draft', false).order('id').range(from, to)),
+    readAllRows('golf_course_tee_holes', (from, to) => supabase.from('golf_course_tee_holes').select('id,tee_id,hole_number,par,yardage', { count: 'exact' }).order('id').range(from, to)),
   ]);
-  for (const [name, result] of Object.entries({ teamsResult, organizationsResult, coursesResult, teesResult, teeHolesResult })) {
-    if (result.error) fail(`${name}: ${result.error.message}`);
-  }
 
-  const organizations = new Map(((organizationsResult.data ?? []) as Row[]).map(row => [String(row.id), row]));
-  const teams = ((teamsResult.data ?? []) as Row[])
+  const organizations = new Map((organizationRows as Row[]).map(row => [String(row.id), row]));
+  const teams = (teamRows as Row[])
     .map(team => {
       const organization = organizations.get(String(team.organization_id));
       return {
@@ -73,29 +71,31 @@ async function main(): Promise<void> {
     .sort((a, b) => a.schoolName.localeCompare(b.schoolName) || a.name.localeCompare(b.name));
 
   const holesByTee = new Map<string, Row[]>();
-  for (const hole of (teeHolesResult.data ?? []) as Row[]) {
+  for (const hole of teeHoleRows as Row[]) {
     const key = String(hole.tee_id);
     holesByTee.set(key, [...(holesByTee.get(key) ?? []), hole]);
   }
-  const scorecards = ((teesResult.data ?? []) as Row[]).flatMap(tee => {
+  const scorecards = (teeRows as Row[]).flatMap(tee => {
     const holes = (holesByTee.get(String(tee.id)) ?? [])
       .sort((a, b) => Number(a.hole_number) - Number(b.hole_number))
       .map(hole => ({ number: Number(hole.hole_number), par: Number(hole.par), yardage: Number(hole.yardage) }));
     // Incomplete tee cards must remain absent; the factory will report the
     // scorecard blocker rather than create arbitrary hole data.
-    return holes.length === Number(tee.holes_count) && holes.length >= 9
-      ? [{ course_id: String(tee.course_id), tee_name: String(tee.tee_name), holes }]
+    return completeScorecard(holes, Number(tee.holes_count))
+      ? [{ course_id: String(tee.course_id), tee_name: String(tee.tee_name), source: tee.source, holes }]
       : [];
   });
-  const courses = ((coursesResult.data ?? []) as Row[]).map(course => ({
+  const courses = (courseRows as Row[]).map(course => ({
     id: String(course.id), name: String(course.name), city: nonEmpty(course.city), state: nonEmpty(course.state),
     country: nonEmpty(course.country), address: nonEmpty(course.address),
-  }));
+  })).sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
 
   const snapshot = {
     schema: 'golfhelm-team-course-library-snapshot-v1',
     queriedAt: new Date().toISOString(),
     source: { provider: 'helm_supabase_read_only', tables: ['golf_teams', 'organizations', 'golf_courses', 'golf_course_tees', 'golf_course_tee_holes'] },
+    completeness: { method: 'exact-count-stable-id-pagination', teams: teamRows.length, organizations: organizationRows.length,
+      courses: courseRows.length, tees: teeRows.length, teeHoles: teeHoleRows.length },
     teams, courses, scorecards,
   };
   const target = resolve(out);

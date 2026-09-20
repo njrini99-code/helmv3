@@ -26,13 +26,13 @@ describe('course library catalog (Factory v2 PR A)', () => {
     expect(catalog.layouts.map(l => l.layoutId)).toEqual(expect.arrayContaining(['cacapon', 'peek-n-peak-upper']));
     expect(catalogProblems(catalog, COURSE_GEOMETRY_REGISTRY)).toEqual([]);
   });
-  it('keeps every intake layout at C0 with routes and geometry unresolved until the factory earns more', () => {
+  it('keeps intake layouts at C0 even when source routes have been pinned', () => {
     // The usage-cohort intake (PR B) writes C0 manifests only; the registry still draws Upper alone.
     const intake = catalog.layouts.filter(l => l.layoutId !== 'peek-n-peak-upper');
     expect(intake.length).toBeGreaterThanOrEqual(1);
     for (const layout of intake) {
       expect(layout.capabilityTier).toBe('C0');
-      expect(layout.routeWayIds).toBeNull();
+      if (layout.routeWayIds) expect(layout.routeWayIds).toHaveLength(layout.holeOrder.length);
       expect(layout.geometry).toBeNull();
       expect(layout.externalBindings.golfCourseIds.length).toBeGreaterThanOrEqual(1);
     }

@@ -88,6 +88,9 @@ def build_parser():
     k.add_argument('--min-rounds', type=int, default=1)
     k.add_argument('--write', action='store_true', help='write the new catalog manifests (default: report only)')
     k.add_argument('--json', action='store_true')
+    s = sub.add_parser('refresh-scorecards', help='fill absent cards from a complete read-only library export; preserve existing selections')
+    s.add_argument('--snapshot', required=True)
+    s.add_argument('--write', action='store_true')
     i = sub.add_parser('invalidate')
     i.add_argument('--layout', required=True)
     i.add_argument('--task', required=True)
@@ -405,7 +408,15 @@ def cmd_invalidate(session, args, out):
     return 0
 
 
-COMMANDS = {'doctor': cmd_doctor, 'plan': cmd_plan, 'run': cmd_run, 'status': cmd_status, 'batch': cmd_batch, 'why': cmd_why, 'invalidate': cmd_invalidate, 'intake': cmd_intake}
+def cmd_refresh_scorecards(session, args, out):
+    from .scorecard_refresh import refresh
+    result = refresh(session.catalog_root, session.ctx.abspath(args.snapshot), args.write)
+    out.write(json.dumps(result, indent=1) + '\n')
+    return 0
+
+
+COMMANDS = {'doctor': cmd_doctor, 'plan': cmd_plan, 'run': cmd_run, 'status': cmd_status, 'batch': cmd_batch, 'why': cmd_why, 'invalidate': cmd_invalidate, 'intake': cmd_intake,
+            'refresh-scorecards': cmd_refresh_scorecards}
 
 
 def main(argv=None, out=None, ledger=None, executors=None, spec_overrides=None):

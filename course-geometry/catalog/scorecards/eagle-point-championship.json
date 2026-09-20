@@ -1,0 +1,104 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "eagle-point-championship",
+  "layoutId": "eagle-point",
+  "teeName": "Championship",
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-20",
+    "note": "Complete read-only export SHA256 d488b2fa0e0575a652ae1385c1a229ef402063d19d2eb814db6daa8668b27bc4; library source=manual. Scorecard facts only; no surveyed tee markers, route association, source boundary approval or production publication."
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 4,
+      "yards": 453
+    },
+    {
+      "hole": 2,
+      "par": 3,
+      "yards": 160
+    },
+    {
+      "hole": 3,
+      "par": 4,
+      "yards": 386
+    },
+    {
+      "hole": 4,
+      "par": 5,
+      "yards": 635
+    },
+    {
+      "hole": 5,
+      "par": 3,
+      "yards": 204
+    },
+    {
+      "hole": 6,
+      "par": 5,
+      "yards": 549
+    },
+    {
+      "hole": 7,
+      "par": 4,
+      "yards": 353
+    },
+    {
+      "hole": 8,
+      "par": 4,
+      "yards": 456
+    },
+    {
+      "hole": 9,
+      "par": 4,
+      "yards": 430
+    },
+    {
+      "hole": 10,
+      "par": 3,
+      "yards": 163
+    },
+    {
+      "hole": 11,
+      "par": 4,
+      "yards": 448
+    },
+    {
+      "hole": 12,
+      "par": 5,
+      "yards": 562
+    },
+    {
+      "hole": 13,
+      "par": 4,
+      "yards": 427
+    },
+    {
+      "hole": 14,
+      "par": 4,
+      "yards": 464
+    },
+    {
+      "hole": 15,
+      "par": 3,
+      "yards": 221
+    },
+    {
+      "hole": 16,
+      "par": 4,
+      "yards": 449
+    },
+    {
+      "hole": 17,
+      "par": 4,
+      "yards": 440
+    },
+    {
+      "hole": 18,
+      "par": 5,
+      "yards": 582
+    }
+  ]
+}

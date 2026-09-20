@@ -35,13 +35,18 @@ class CheckedInCatalogTests(unittest.TestCase):
             for key, rel in (doc.get('retained') or {}).items():
                 self.assertTrue(os.path.exists(os.path.join(REPO, rel)), f'{doc.get("facilityId") or doc.get("layoutId")}.retained.{key}: {rel}')
 
-    def test_intake_layouts_start_at_c0_without_routes_or_geometry(self):
+    def test_intake_layouts_remain_c0_without_published_geometry(self):
         catalog = load_catalog(CATALOG)
         for layout_id, layout in catalog.layouts.items():
             if layout_id in ('cacapon', 'peek-n-peak-upper'):
                 continue
             self.assertEqual(layout['capabilityTier'], 'C0', layout_id)
-            self.assertIsNone(layout['routeWayIds'], layout_id)
+            if layout_id == 'pga-national-champ':
+                # Official course-map corroboration selects the existing OSM
+                # series; it does not upgrade physical authority/publication.
+                self.assertEqual(len(set(layout['routeWayIds'])), len(layout['holeOrder']))
+            else:
+                self.assertIsNone(layout['routeWayIds'], layout_id)
             self.assertIsNone(layout['geometry'], layout_id)
 
 

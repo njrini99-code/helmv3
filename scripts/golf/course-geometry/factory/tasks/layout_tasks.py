@@ -1,3 +1,5 @@
+from source_geometry import resolved_routes
+
 """Layout-scoped tasks: identity, routes, the scorecard the pipeline reads,
 the package and its evidence (Factory v2 §8.2). Route identity is pinned by
 a person or proposed from uniquely numbered OSM hole ways inside the site;
@@ -62,18 +64,18 @@ def eval_routes_resolve(node, ctx):
               'extract': None if layout.get('routeWayIds') else dep_input(ctx, node, 'facility.osm.snapshot')}
     if resolution is None:
         return evaluation(inputs)      # the extract is not retained yet; the dependency reports that
-    if not resolution.get('routeWayIds'):
-        return evaluation(inputs, [blocked('ROUTE_WAY_IDS_REQUIRED', layoutId=layout_id, holes=len(layout.get('holeOrder') or []), **(resolution.get('evidence') or {}))])
-    inputs['routes'] = digest(resolution['routeWayIds'])
+    if not resolved_routes(resolution):
+        return evaluation(inputs, [blocked(resolution.get('problem') or 'ROUTE_WAY_IDS_REQUIRED', layoutId=layout_id, holes=len(layout.get('holeOrder') or []), **(resolution.get('evidence') or {}))])
+    inputs['routes'] = digest(resolution)
     inputs['source'] = resolution['source']
-    notes = [f'{resolution["source"]}: {len(resolution["routeWayIds"])} route ways' + (f' inside {resolution.get("site")}' if resolution.get('site') else '')]
+    notes = [f'{resolution["source"]}: {len(layout['holeOrder'])} routes' + (f' inside {resolution.get("site")}' if resolution.get('site') else '')]
     disagreements = ((resolution.get('evidence') or {}).get('chosen') or {}).get('parDisagreements') or []
     if disagreements:
         notes.append(f'{len(disagreements)} OSM par disagreement(s) retained as source conflicts: holes {[d["hole"] for d in disagreements]}')
     path = ctx.routes_path(layout_id)
     doc = ctx.json(path) if ctx.can_adopt(path) else None
-    adoptable = bool(doc) and doc.get('routeWayIds') == resolution['routeWayIds'] and doc.get('source') == resolution['source']
-    return evaluation(inputs, [], [artifact('routes', path, 'A')] if adoptable else [], adoptable, notes, output=digest(resolution['routeWayIds']))
+    adoptable = bool(doc) and all(doc.get(key) == value for key, value in resolution.items())
+    return evaluation(inputs, [], [artifact('routes', path, 'A')] if adoptable else [], adoptable, notes, output=digest(resolution))
 
 
 def eval_route_dossier(node, ctx):
@@ -97,7 +99,7 @@ def eval_route_dossier(node, ctx):
     doc = ctx.json(path) if ctx.can_adopt(path) else None
     adoptable = bool(doc) and doc.get('layoutId') == layout_id and doc.get('extractSha256') == (manifest or {}).get('uncompressedSha256') \
         and digest(doc.get('routeResolution')) == digest(resolution)
-    status = 'resolved' if resolution.get('routeWayIds') else 'source_confirmation_required'
+    status = 'resolved' if resolved_routes(resolution) else 'source_confirmation_required'
     notes = [f'route dossier: {status}']
     return evaluation(inputs, [], [artifact('route-review', path, 'C')] if adoptable else [], adoptable, notes,
                       output=digest(doc) if adoptable else None)
@@ -178,6 +180,7 @@ def eval_visual_terrain_acquire(node, ctx):
     folder = ctx.visual_terrain_source_dir(layout_id)
     manifest = ctx.json(os.path.join(folder, 'source-manifest.json')) if folder and ctx.can_adopt(folder) else None
     valid = bool(pointer and package and manifest and manifest.get('coverageMethod') == 'perimeter-v1'
+                 and (manifest.get('providerPolicyId') != 'nc_onemap_dem03' or manifest.get('sourceFrameContract') == 'nc-dem03-native-v2')
                  and pointer.get('packageHash') == package.get('contentHash')
                  and pointer.get('sourceIdentity') == terrain_source_identity(manifest)
                  and os.path.isfile(os.path.join(folder, 'elevation.tiff')))
@@ -237,7 +240,10 @@ def _package_eval(folder_fn, dep_ids, with_canopy=False):
     def evaluate(node, ctx):
         layout_id = node.scope.layout_id
         inputs = {dep: dep_input(ctx, node, dep) for dep in dep_ids}
-        inputs['traces'] = digest(ctx.json(ctx.retained(ctx.layout(layout_id), 'imageryTraces')))
+        traces = ctx.json(ctx.retained(ctx.layout(layout_id), 'imageryTraces'))
+        imported = ctx.json(ctx.retained(ctx.layout(layout_id), 'sourceGeometry'))
+        inputs['traces'] = digest(traces)
+        inputs['sourceGeometry'] = digest(imported)
         if with_canopy:
             inputs['canopy'] = dep_input(ctx, node, 'layout.canopy.derive')
         folder = folder_fn(ctx, layout_id)
@@ -252,6 +258,9 @@ def _package_eval(folder_fn, dep_ids, with_canopy=False):
         card = ctx.pilot_scorecard(layout_id)
         notes = []
         adoptable = True
+        for key, doc in [('sourceGeometryHash', imported), ('imageryTracesHash', traces)]:
+            if meta.get(key) != (digest(doc) if doc is not None else None):
+                adoptable, notes = False, notes + [f'package was prepared from another {key}']
         if manifest and meta.get('overpassSha256') != manifest.get('uncompressedSha256'):
             adoptable, notes = False, notes + ['package was prepared from another extract']
         if card and digest(meta.get('scorecard')) != digest(card):
@@ -324,6 +333,8 @@ def eval_terrain_acquire(node, ctx):
         return evaluation(inputs)
     if manifest.get('coverageMethod') != 'perimeter-v1':
         return evaluation(inputs, [], [], False, ['terrain source predates the perimeter-coverage contract'])
+    if manifest.get('providerPolicyId') == 'nc_onemap_dem03' and manifest.get('sourceFrameContract') != 'nc-dem03-native-v2':
+        return evaluation(inputs, [], [], False, ['NC source predates verified native-frame contract; preserve old evidence and acquire a new revision'])
     notes = [f'{manifest.get("selectedTitle")} retrieved {manifest.get("retrievedAt")}']
     # The verified artifacts are the raster files and the pointer. The source
     # manifest itself is evidence, not an artifact: the compiler appends every
@@ -502,7 +513,7 @@ def eval_review_compose(node, ctx):
 SPECS = [
     TaskSpec('layout.identity.resolve', '1', 'layout', ('catalog.validate',), eval_identity_resolve, executor=INLINE),
     TaskSpec('layout.scorecard.validate', '1', 'layout', ('catalog.validate',), eval_scorecard_validate, executor=INLINE),
-    TaskSpec('layout.routes.resolve', '1', 'layout', ('layout.identity.resolve', 'layout.scorecard.validate', 'facility.osm.snapshot'), eval_routes_resolve, retention='A', estimated_bytes=10_000),
+    TaskSpec('layout.routes.resolve', '2', 'layout', ('layout.identity.resolve', 'layout.scorecard.validate', 'facility.osm.snapshot'), eval_routes_resolve, impl_files=(script('source_geometry.py'), script('factory/context.py')), retention='A', estimated_bytes=10_000),
     TaskSpec('layout.route.dossier', '1', 'layout', ('layout.identity.resolve', 'layout.scorecard.validate', 'facility.osm.snapshot'), eval_route_dossier,
              impl_files=(script('factory/adapters.py'),), retention='C', estimated_bytes=20_000),
     TaskSpec('layout.visual.candidates.compose', '1', 'layout', ('layout.identity.resolve', 'facility.osm.snapshot', 'layout.routes.resolve?'), eval_visual_candidates_compose,
@@ -513,16 +524,16 @@ SPECS = [
              impl_files=(script('build-course-world.py'), script('normalize-study.py'), script('compile-physical-world.py'),
                          script('course-truth-gate.py'), script('blender/generate_hole.py'), script('blender/validate_glb.py')),
              retention='C', estimated_bytes=120_000_000),
-    TaskSpec('layout.scorecard.compose', '1', 'layout', ('layout.routes.resolve', 'layout.scorecard.validate', 'facility.aoi.resolve'), eval_scorecard_compose, retention='A', estimated_bytes=10_000),
+    TaskSpec('layout.scorecard.compose', '2', 'layout', ('layout.routes.resolve', 'layout.scorecard.validate', 'facility.aoi.resolve'), eval_scorecard_compose, impl_files=(script('source_geometry.py'), script('factory/context.py')), retention='A', estimated_bytes=10_000),
     TaskSpec('layout.candidates.compose', '1', 'layout', ('facility.osm.snapshot', 'layout.scorecard.compose'),
              _package_eval(lambda c, l: c.candidates_dir(l), ('facility.osm.snapshot', 'layout.scorecard.compose')),
-             impl_files=(script('prepare-osm-course.py'),) + CRS_FILES, retention='A', estimated_bytes=20_000_000),
+             impl_files=(script('prepare-osm-course.py'), script('source_geometry.py')) + CRS_FILES, retention='A', estimated_bytes=20_000_000),
     TaskSpec('layout.terrain.acquire', '1', 'layout', ('layout.candidates.compose',), eval_terrain_acquire,
              impl_files=TERRAIN_COMPILER_FILES, retention='A', estimated_bytes=300_000_000),
     TaskSpec('layout.canopy.derive', '1', 'layout', ('layout.terrain.acquire', 'layout.candidates.compose'), eval_canopy_derive,
              impl_files=(script('derive-canopy-naip.py'), script('indexed_naip.py'), script('fetch-usgs-naip-facility-ortho.py')) + CRS_FILES, retention='B', estimated_bytes=500_000_000),
     TaskSpec('layout.package.compose', '1', 'layout', ('layout.candidates.compose', 'layout.scorecard.compose', 'facility.osm.snapshot', 'layout.canopy.derive?'), eval_package_compose,
-             impl_files=(script('prepare-osm-course.py'),) + CRS_FILES, retention='A', estimated_bytes=5_000_000),
+             impl_files=(script('prepare-osm-course.py'), script('source_geometry.py')) + CRS_FILES, retention='A', estimated_bytes=5_000_000),
     TaskSpec('layout.package.validate', '1', 'layout', ('layout.package.compose', 'layout.context.classify?'), eval_package_validate, executor=run_package_validate, retention='C'),
     TaskSpec('layout.terrain.base', '1', 'layout', ('layout.package.compose', 'layout.terrain.acquire'), eval_terrain_base,
              impl_files=TERRAIN_COMPILER_FILES, retention='C', estimated_bytes=100_000_000),

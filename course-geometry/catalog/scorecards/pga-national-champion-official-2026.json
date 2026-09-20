@@ -1,0 +1,104 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "pga-national-champion-official-2026",
+  "layoutId": "pga-national-champ",
+  "teeName": "2026 Cognizant Classic tournament",
+  "source": {
+    "provider": "official_course_site",
+    "url": "https://pgatourmedia.pgatourhq.com/static-assets/page/files/tours/2026/pgatour/cognizant-classic-in-the-palm-beaches/scorecards/Scorecard.pdf",
+    "retrievedAt": "2026-09-20",
+    "note": "Official PGA TOUR event scorecard, 7223 yards / par 71. Source PDF SHA256 cbe6d5ca1cab7d2ed56d1cb33914dd9645d5b62352e2db38a6ed2a56ccbc2c79. Tournament setup only; never relabel as White tees or current daily markers. Existing Helm round-derived White profile retained separately (hole 6 par conflicts). Source artwork is not redistributed; only scorecard facts used. OSM routes remain independently licensed ODbL source geometry."
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 4,
+      "yards": 365
+    },
+    {
+      "hole": 2,
+      "par": 4,
+      "yards": 484
+    },
+    {
+      "hole": 3,
+      "par": 5,
+      "yards": 538
+    },
+    {
+      "hole": 4,
+      "par": 4,
+      "yards": 395
+    },
+    {
+      "hole": 5,
+      "par": 3,
+      "yards": 217
+    },
+    {
+      "hole": 6,
+      "par": 4,
+      "yards": 479
+    },
+    {
+      "hole": 7,
+      "par": 3,
+      "yards": 226
+    },
+    {
+      "hole": 8,
+      "par": 4,
+      "yards": 427
+    },
+    {
+      "hole": 9,
+      "par": 4,
+      "yards": 421
+    },
+    {
+      "hole": 10,
+      "par": 5,
+      "yards": 550
+    },
+    {
+      "hole": 11,
+      "par": 4,
+      "yards": 450
+    },
+    {
+      "hole": 12,
+      "par": 4,
+      "yards": 438
+    },
+    {
+      "hole": 13,
+      "par": 4,
+      "yards": 388
+    },
+    {
+      "hole": 14,
+      "par": 4,
+      "yards": 465
+    },
+    {
+      "hole": 15,
+      "par": 3,
+      "yards": 179
+    },
+    {
+      "hole": 16,
+      "par": 4,
+      "yards": 434
+    },
+    {
+      "hole": 17,
+      "par": 3,
+      "yards": 175
+    },
+    {
+      "hole": 18,
+      "par": 5,
+      "yards": 592
+    }
+  ]
+}

@@ -61,7 +61,9 @@
       "a58fc3c7-4fcb-479f-bdf3-c121203afdf8"
     ]
   },
-  "scorecardProfiles": [],
+  "scorecardProfiles": [
+    "denison-official-black"
+  ],
   "geometry": null,
   "notes": [
     "Factory intake from active-team school proximity (1 nearby team anchor(s), within 75.0 miles; queried 2026-09-20T12:43:48.457Z). Proximity selected build priority only; it does not establish a physical route or feature geometry."

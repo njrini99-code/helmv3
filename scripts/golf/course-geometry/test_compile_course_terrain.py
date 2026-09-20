@@ -9,6 +9,7 @@ import tempfile
 import unittest
 from contextlib import redirect_stdout
 from pathlib import Path
+from typing import ClassVar
 from unittest.mock import patch
 
 import numpy as np
@@ -69,7 +70,7 @@ class TiledTerrainAcquisitionTests(unittest.TestCase):
 
 
 class PlaneSource:
-    manifest = {'selectedTitle': 'Analytic fixture', 'sourceUrl': 'https://example.invalid/source',
+    manifest: ClassVar[dict] = {'selectedTitle': 'Analytic fixture', 'sourceUrl': 'https://example.invalid/source',
                 'selectedObjectId': 1, 'acquisitionStart': '2021-01-01', 'acquisitionEnd': '2021-01-01',
                 'retrievedAt': '2026-09-13', 'licenseUrl': 'https://example.invalid/license',
                 'fileHashes': {'elevation.tiff': '0'*64}, 'horizontalExportCrs': 'EPSG:32617', 'exportPixelM': [1, 1]}
@@ -153,12 +154,23 @@ class TerrainCompilerTest(unittest.TestCase):
 
     def test_nc_onemap_service_contract_rejects_a_changed_grid_or_units(self):
         service = {'pixelType': 'F32', 'serviceDataType': 'esriImageServiceDataTypeElevation',
-                   'pixelSizeX': 3.125, 'pixelSizeY': 3.125, 'spatialReference': {'wkt': 'UNIT["Foot_US",0.304800609601219]'}}
+                   'pixelSizeX': 3.125, 'pixelSizeY': 3.125, 'spatialReference': {'wkt': compiler.pyproj.CRS('EPSG:6543').to_wkt()}}
         compiler.validate_nc_onemap_service(service)
         with self.assertRaisesRegex(ValueError, 'resolution changed'):
             compiler.validate_nc_onemap_service({**service, 'pixelSizeX': 1})
         with self.assertRaisesRegex(ValueError, 'CRS'):
             compiler.validate_nc_onemap_service({**service, 'spatialReference': {'wkt': 'UNIT["metre",1]' }})
+
+    def test_nc_original_nad83_is_not_native_2011_and_horizontal_units_do_not_establish_z(self):
+        with self.assertRaisesRegex(ValueError, 'CRS differs'):
+            compiler.validate_nc_horizontal_crs({'latestWkid': 2264})
+        self.assertIsNone(compiler.nc_vertical_evidence({'extent': {'spatialReference': {'latestWkid': 6543}}}))
+        vertical = compiler.nc_vertical_evidence({'extent': {'spatialReference': {'latestWkid': 6543, 'latestVcsWkid': 6360}}})
+        self.assertEqual(vertical['verticalCrs'], 'EPSG:6360')
+        self.assertAlmostEqual(vertical['verticalUnitToMeters'], 1200 / 3937)
+        with self.assertRaisesRegex(ValueError, 'NC_SOURCE_FRAME_UNVERIFIED'):
+            compiler.vertical_unit_to_meters({'providerPolicyId': compiler.NC_ONEMAP_PROVIDER, 'verticalUnitToMeters': 1200 / 3937})
+        self.assertIsNone(vertical['geoidModel'])
 
     def test_compilation_reuses_the_cached_provider_but_acquisition_cannot_switch_it(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -251,7 +263,7 @@ class TerrainCompilerTest(unittest.TestCase):
         args = fixture()
         with patch.object(compiler, 'CONTEXT_MARGIN_M', 16):
             decorated, full_report = compiler.compile_hole(*args, PlaneSource(), outer_step=32)
-            plain, plain_report = compiler.compile_hole(*args, PlaneSource(), outer_step=32, decorative_bands=False)
+            _plain, plain_report = compiler.compile_hole(*args, PlaneSource(), outer_step=32, decorative_bands=False)
             self.assertLess(plain_report['triangles'], full_report['triangles'])
             with patch.object(compiler, 'MAX_TRIANGLES', plain_report['triangles']):
                 bounded, report = compiler.compile_hole(*args, PlaneSource(), outer_step=32)
@@ -264,9 +276,8 @@ class TerrainCompilerTest(unittest.TestCase):
                 self.assertAlmostEqual(actual['areaM2'], original['areaM2'], places=3)
             triangles = np.array(bounded['vertices']).reshape(-1, 3)
             np.testing.assert_allclose(triangles[:, 2], 200+.05*triangles[:, 0]+.1*triangles[:, 1], atol=1e-3)
-            with patch.object(compiler, 'MAX_TRIANGLES', 1):
-                with self.assertRaisesRegex(ValueError, 'explicit LOD review required'):
-                    compiler.compile_hole(*args, PlaneSource(), outer_step=32)
+            with patch.object(compiler, 'MAX_TRIANGLES', 1), self.assertRaisesRegex(ValueError, 'explicit LOD review required'):
+                compiler.compile_hole(*args, PlaneSource(), outer_step=32)
 
     def test_per_vertex_source_normals_are_opt_in_because_the_renderer_shades_from_the_metric_grid(self):
         self.assertNotIn('sourceNormals', self.fine)

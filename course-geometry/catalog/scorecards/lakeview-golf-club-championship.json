@@ -1,0 +1,104 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "lakeview-golf-club-championship",
+  "layoutId": "lakeview-golf-club",
+  "teeName": "Championship",
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-20",
+    "note": "Complete read-only export SHA256 d488b2fa0e0575a652ae1385c1a229ef402063d19d2eb814db6daa8668b27bc4; library source=round. Scorecard facts only; no surveyed tee markers, route association, source boundary approval or production publication."
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 4,
+      "yards": 332
+    },
+    {
+      "hole": 2,
+      "par": 4,
+      "yards": 490
+    },
+    {
+      "hole": 3,
+      "par": 5,
+      "yards": 557
+    },
+    {
+      "hole": 4,
+      "par": 3,
+      "yards": 200
+    },
+    {
+      "hole": 5,
+      "par": 4,
+      "yards": 437
+    },
+    {
+      "hole": 6,
+      "par": 5,
+      "yards": 579
+    },
+    {
+      "hole": 7,
+      "par": 4,
+      "yards": 401
+    },
+    {
+      "hole": 8,
+      "par": 3,
+      "yards": 177
+    },
+    {
+      "hole": 9,
+      "par": 4,
+      "yards": 388
+    },
+    {
+      "hole": 10,
+      "par": 4,
+      "yards": 417
+    },
+    {
+      "hole": 11,
+      "par": 5,
+      "yards": 507
+    },
+    {
+      "hole": 12,
+      "par": 4,
+      "yards": 329
+    },
+    {
+      "hole": 13,
+      "par": 3,
+      "yards": 173
+    },
+    {
+      "hole": 14,
+      "par": 5,
+      "yards": 493
+    },
+    {
+      "hole": 15,
+      "par": 4,
+      "yards": 370
+    },
+    {
+      "hole": 16,
+      "par": 4,
+      "yards": 322
+    },
+    {
+      "hole": 17,
+      "par": 3,
+      "yards": 170
+    },
+    {
+      "hole": 18,
+      "par": 4,
+      "yards": 398
+    }
+  ]
+}

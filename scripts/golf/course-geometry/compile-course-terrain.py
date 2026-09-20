@@ -215,7 +215,7 @@ def date_text(value):
         raise ValueError('Missing source acquisition date requires review')
     text = str(value)
     if len(text) == 8 and text.isdigit():
-        return datetime.strptime(text, '%Y%m%d').date().isoformat()
+        return datetime.strptime(text, '%Y%m%d').replace(tzinfo=timezone.utc).date().isoformat()
     if len(text) == 4 and text.isdigit():
         return text
     return datetime.fromtimestamp(float(value)/1000, timezone.utc).date().isoformat()
@@ -236,7 +236,7 @@ NC_ONEMAP_BASE = 'https://services.nconemap.gov/secure/rest/services/Elevation/D
 NC_ONEMAP_HOST = 'services.nconemap.gov'
 NC_ONEMAP_SOURCE_PATH = '/secure/rest/services/Elevation/DEM03/ImageServer'
 NC_ONEMAP_EXPORT_PATH = '/secure/rest/directories/arcgisoutput/Elevation/DEM03_ImageServer/'
-NC_ONEMAP_CRS = 'EPSG:2264'  # NAD83(2011) / North Carolina (ftUS)
+NC_ONEMAP_CRS = 'EPSG:6543'  # NAD83(2011) / North Carolina (ftUS)
 NC_ONEMAP_NATIVE_PIXEL_US_FEET = 3.125
 
 
@@ -626,8 +626,33 @@ def validate_nc_onemap_service(service):
     x, y = float(service.get('pixelSizeX', 0)), float(service.get('pixelSizeY', 0))
     if not math.isclose(x, NC_ONEMAP_NATIVE_PIXEL_US_FEET, rel_tol=0, abs_tol=1e-9) or not math.isclose(y, NC_ONEMAP_NATIVE_PIXEL_US_FEET, rel_tol=0, abs_tol=1e-9):
         raise ValueError('NC OneMap DEM03 native resolution changed; source review required')
-    if 'Foot_US' not in (service.get('spatialReference') or {}).get('wkt', ''):
-        raise ValueError('NC OneMap DEM03 source CRS no longer reports US survey feet')
+    validate_nc_horizontal_crs(service.get('spatialReference') or {})
+
+
+def validate_nc_horizontal_crs(reference):
+    try:
+        source = pyproj.CRS.from_user_input(reference.get('wkt') or reference.get('latestWkid') or reference.get('wkid'))
+    except pyproj.exceptions.CRSError as exc:
+        raise ValueError('NC OneMap source CRS is missing or invalid') from exc
+    if not source.equals(pyproj.CRS(NC_ONEMAP_CRS)):
+        raise ValueError('NC OneMap source CRS differs from NAD83(2011) NC ftUS; retain as a new source revision')
+    return source
+
+
+def nc_vertical_evidence(info):
+    """Horizontal ftUS is never evidence of Z units. Read the raster VCS."""
+    reference = (info.get('extent') or {}).get('spatialReference') or {}
+    code = reference.get('latestVcsWkid')
+    if not code:
+        return None
+    vertical = pyproj.CRS.from_epsg(code)
+    if not vertical.is_vertical or len(vertical.axis_info) != 1:
+        raise ValueError('NC vertical CRS is not a one-axis vertical reference')
+    axis = vertical.axis_info[0]
+    return {'verticalCrs': f'EPSG:{code}', 'verticalWkt': vertical.to_wkt(),
+            'verticalDatum': vertical.datum.name, 'rawVerticalUnit': axis.unit_name,
+            'verticalUnitToMeters': axis.unit_conversion_factor,
+            'verticalUnitStatus': 'verified_from_locked_raster_vcs', 'geoidModel': None}
 
 
 def nc_source_grid_bounds(bounds, extent):
@@ -678,6 +703,8 @@ def acquire_nc_onemap_source(directory, pkg, bounds, rendering_only_resolution_m
     if manifest is not None:
         if manifest.get('providerPolicyId') != NC_ONEMAP_PROVIDER:
             raise ValueError('Immutable source cache belongs to another terrain provider')
+        if manifest.get('sourceFrameContract') != 'nc-dem03-native-v2':
+            raise ValueError('NC_SOURCE_FRAME_UNVERIFIED: retain the old source and acquire into a new source directory')
         return manifest
     directory.mkdir(parents=True, exist_ok=True)
     # Local ENU is the canonical world frame.  Its conversion is used only to
@@ -693,16 +720,42 @@ def acquire_nc_onemap_source(directory, pkg, bounds, rendering_only_resolution_m
     source_padding = SOURCE_COVERAGE_PADDING_METERS / US_SURVEY_FOOT_TO_METERS
     request_bounds = [min(source_x) - source_padding, min(source_y) - source_padding,
                       max(source_x) + source_padding, max(source_y) + source_padding]
+    catalog = nc_onemap_request('query', {
+        'where': 'category=1', 'geometry': ','.join(map(str, request_bounds)),
+        'geometryType': 'esriGeometryEnvelope', 'inSR': 6543, 'outSR': 6543,
+        'spatialRel': 'esriSpatialRelIntersects', 'outFields': '*', 'returnGeometry': 'true',
+    })
+    footprint = box(*request_bounds)
+    covering = [row for row in catalog.get('features', [])
+                if row.get('geometry', {}).get('rings') and Polygon(row['geometry']['rings'][0], row['geometry']['rings'][1:]).covers(footprint)]
+    if catalog.get('exceededTransferLimit') or len(covering) != 1:
+        raise ValueError('NC_SOURCE_SELECTION_UNRESOLVED: select one full-coverage county raster; never blend unknown vertical references')
+    selected = covering[0]
+    object_id = selected['attributes'][catalog.get('objectIdFieldName', 'objectid')]
+    info = nc_onemap_request(f'{object_id}/info', {})
+    validate_nc_horizontal_crs((info.get('extent') or {}).get('spatialReference') or {})
+    if any(not math.isclose(float(info.get(k, 0)), NC_ONEMAP_NATIVE_PIXEL_US_FEET, abs_tol=1e-9) for k in ('pixelSizeX', 'pixelSizeY')):
+        raise ValueError('NC selected raster grid differs from declared native spacing')
+    vertical = nc_vertical_evidence(info)
+    # Preserve metadata even when measurement is blocked. Existing visual assets
+    # remain usable; an explicitly requested visual export may declare an assumption.
+    write_json(directory / 'selected-raster.json', {'catalog': catalog, 'rasterInfo': info}, True)
+    if vertical is None and rendering_only_resolution_m is None:
+        raise ValueError('VERTICAL_UNIT_UNKNOWN: selected county raster supplies no independent vertical CRS; metadata retained')
+    origin = info['origin']
+    grid_extent = {'xmin': origin['x'], 'ymin': origin['y']}
     if rendering_only_resolution_m is None:
-        requested, size = nc_native_grid_bounds(request_bounds, service['extent'])
+        requested, size = nc_native_grid_bounds(request_bounds, grid_extent)
         output_pixel_m = [NC_ONEMAP_NATIVE_PIXEL_US_FEET * US_SURVEY_FOOT_TO_METERS] * 2
     else:
-        requested, size, output_pixel_m = nc_rendering_only_grid_bounds(request_bounds, service['extent'], rendering_only_resolution_m)
+        requested, size, output_pixel_m = nc_rendering_only_grid_bounds(request_bounds, grid_extent, rendering_only_resolution_m)
     exported = nc_onemap_request('exportImage', {
-        'bbox': ','.join(map(str, requested)), 'bboxSR': 2264, 'imageSR': 2264,
+        'bbox': ','.join(map(str, requested)), 'bboxSR': 6543, 'imageSR': 6543,
         'size': ','.join(map(str, size)), 'format': 'tiff', 'pixelType': 'F32',
         'interpolation': 'RSP_BilinearInterpolation', 'renderingRule': json.dumps({'rasterFunction': 'None'}),
+        'mosaicRule': json.dumps({'mosaicMethod': 'esriMosaicLockRaster', 'lockRasterIds': [object_id], 'mosaicOperation': 'MT_FIRST'}),
     })
+    validate_nc_horizontal_crs((exported.get('extent') or {}).get('spatialReference') or {})
     if [exported.get('width'), exported.get('height')] != size:
         raise ValueError('NC OneMap DEM03 export dimensions changed; source resampling requires review')
     actual = exported.get('extent') or {}
@@ -737,23 +790,25 @@ def acquire_nc_onemap_source(directory, pkg, bounds, rendering_only_resolution_m
     write_json(directory / 'export.json', exported, True)
     manifest = {
         'schemaVersion': 1, 'providerPolicyId': NC_ONEMAP_PROVIDER, 'packageHash': pkg['contentHash'],
-        'requestedLocalBoundsM': bounds, 'selectedTitle': 'NC OneMap DEM03', 'selectedObjectId': None,
-        'selectedObjectIds': [], 'selectedTiles': [], 'sourceUrl': NC_ONEMAP_BASE,
+        'requestedLocalBoundsM': bounds, 'selectedTitle': selected['attributes'].get('name', 'NC OneMap DEM03'), 'selectedObjectId': object_id,
+        'selectedObjectIds': [object_id], 'selectedTiles': [selected['attributes']], 'sourceUrl': NC_ONEMAP_BASE,
         'acquisitionStart': None, 'acquisitionEnd': None, 'nativeResolutionM': max(output_pixel_m),
         'sourceNativeResolutionM': NC_ONEMAP_NATIVE_PIXEL_US_FEET * US_SURVEY_FOOT_TO_METERS,
         'exportPixelM': output_pixel_m,
-        'horizontalExportCrs': NC_ONEMAP_CRS, 'verticalDatum': None,
-        'verticalDatumStatus': 'not verified from DEM03 service metadata; never infer NAVD88',
-        'rawVerticalUnit': 'US survey foot', 'verticalUnitToMeters': US_SURVEY_FOOT_TO_METERS,
+        'horizontalExportCrs': NC_ONEMAP_CRS, 'horizontalSourceWkt': service['spatialReference']['wkt'],
+        'sourceFrameContract': 'nc-dem03-native-v2', 'sourceGridOrigin': origin,
+        **(vertical or {'verticalDatum': None, 'rawVerticalUnit': None, 'verticalUnitToMeters': None,
+                       'verticalUnitStatus': 'unknown', 'visualVerticalUnitToMeters': US_SURVEY_FOOT_TO_METERS,
+                       'visualElevationAssumption': 'US survey feet assumed for visual-only rendering; unavailable for measurements'}),
         'retrievedAt': retrieved,
         'sourceSelection': ('bounded_rendering_only_resampled_service_export' if rendering_only_resolution_m is not None
-                            else 'bounded_native_grid_single_service_export'),
+                            else 'bounded_native_grid_locked_county_export'),
         'renderingOnly': rendering_only_resolution_m is not None,
         'renderingOnlyResolutionM': rendering_only_resolution_m,
         'coverageMethod': SOURCE_COVERAGE_METHOD, 'coveragePaddingMeters': SOURCE_COVERAGE_PADDING_METERS,
         'exportEmptyFraction': empty, 'decoder': decoder,
         'licenseUrl': None, 'licenseStatus': 'not supplied by the DEM03 service metadata; review before redistribution',
-        'fileHashes': {name: hashlib.sha256((directory / name).read_bytes()).hexdigest() for name in ('catalog.json', 'export.json', 'elevation.tiff')},
+        'fileHashes': {name: hashlib.sha256((directory / name).read_bytes()).hexdigest() for name in ('catalog.json', 'export.json', 'elevation.tiff', 'selected-raster.json')},
     }
     write_json(directory / 'source-manifest.json', manifest, True)
     print(json.dumps({'source': manifest['selectedTitle'], 'pixels': size, 'bytes': len(raster)}), flush=True)
@@ -770,6 +825,13 @@ def acquire_source(directory, pkg, bounds, provider=USGS_3DEP_PROVIDER, renderin
 
 def vertical_unit_to_meters(manifest):
     """Return the declared source Z conversion without guessing source units."""
+    if manifest.get('providerPolicyId') == NC_ONEMAP_PROVIDER:
+        if manifest.get('sourceFrameContract') != 'nc-dem03-native-v2':
+            raise ValueError('NC_SOURCE_FRAME_UNVERIFIED: retain legacy artifact; acquire a new native-frame revision')
+        if manifest.get('verticalUnitStatus') != 'verified_from_locked_raster_vcs':
+            if manifest.get('renderingOnly') and manifest.get('visualVerticalUnitToMeters') == US_SURVEY_FOOT_TO_METERS:
+                return US_SURVEY_FOOT_TO_METERS
+            raise ValueError('VERTICAL_UNIT_UNKNOWN: horizontal units cannot establish source Z')
     factor = manifest.get('verticalUnitToMeters')
     if factor is None:
         # Pre-v2 locked USGS cache manifests contain a well-known meters-only
@@ -972,12 +1034,12 @@ def t_junction_report(xy, bounds):
     cell, grid = 8.0, {}
     for e in single:
         (x1, y1), (x2, y2) = e
-        for cx in range(int(math.floor(min(x1, x2)/cell)), int(math.floor(max(x1, x2)/cell))+1):
-            for cy in range(int(math.floor(min(y1, y2)/cell)), int(math.floor(max(y1, y2)/cell))+1):
+        for cx in range(math.floor(min(x1, x2)/cell), math.floor(max(x1, x2)/cell)+1):
+            for cy in range(math.floor(min(y1, y2)/cell), math.floor(max(y1, y2)/cell)+1):
                 grid.setdefault((cx, cy), []).append(e)
     junctions = 0
     for x, y in unique:
-        for e in grid.get((int(math.floor(x/cell)), int(math.floor(y/cell))), []):
+        for e in grid.get((math.floor(x/cell), math.floor(y/cell)), []):
             (x1, y1), (x2, y2) = e
             if (x, y) in e:
                 continue

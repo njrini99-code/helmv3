@@ -76,6 +76,8 @@ def eval_publish_verify(node, ctx):
 def eval_capability(node, ctx):
     inputs = {'package': dep_input(ctx, node, 'layout.package.validate'), 'terrain': digest(fan_in_inputs(ctx, node, 'hole.terrain.compile')),
               'world': digest(fan_in_inputs(ctx, node, 'hole.world.build')), 'published': dep_input(ctx, node, 'layout.publish.prepare'),
+              'publishVerification': dep_input(ctx, node, 'layout.publish.verify'),
+              'publishVerificationState': ctx.states.get(f'layout.publish.verify[{node.scope.layout_id}]'),
               'catalogTier': (ctx.layout(node.scope.layout_id) or {}).get('capabilityTier'), 'imageryCurrency': digest(imagery.currency(ctx, node.scope.layout_id))}
     return evaluation(inputs)
 
@@ -85,8 +87,9 @@ def _truth_verdicts(ctx, layout_id, holes):
     for key in holes:
         hole = ctx.package_hole(layout_id, int(key.rsplit(':', 1)[1]))
         record = ctx.json(os.path.join(ctx.layout_out(layout_id), 'world', 'holes', hole['key'], 'record.json')) if hole else None
-        if record and ctx.states.get(f'hole.world.build[{key}]') in DONE:
-            verdicts[hole['key']] = bool(record.get('truthGatePassed'))
+        if (record and ctx.states.get(f'hole.world.build[{key}]') in DONE
+                and record.get('key') == hole['key'] and record.get('packageHash') == ctx.package_hash(layout_id)):
+            verdicts[hole['key']] = record.get('truthGatePassed') is True
     return verdicts
 
 
@@ -98,7 +101,12 @@ def capability_report(node, ctx):
     terrain_done = bool(holes) and all(ctx.states.get(f'hole.terrain.compile[{h}]') in DONE for h in holes)
     verdicts = _truth_verdicts(ctx, layout_id, holes)
     truth_done = bool(holes) and len(verdicts) == len(holes) and all(verdicts.values())
-    published = ctx.states.get(f'layout.publish.prepare[{layout_id}]') in DONE
+    prepared = ctx.states.get(f'layout.publish.prepare[{layout_id}]') in DONE
+    verification = ctx.json(os.path.join(ctx.layout_out(layout_id), 'publish-verification.json')) or {}
+    published = (prepared and ctx.states.get(f'layout.publish.verify[{layout_id}]') in DONE
+                 and verification.get('kind') == 'golfhelm-factory-publish-verification-v1'
+                 and verification.get('layoutId') == layout_id and verification.get('ok') is True
+                 and verification.get('packageHash') == ctx.package_hash(layout_id))
     blocked_tiers = {}
     earned = 'C0'
     if pkg and terrain_done:
@@ -108,19 +116,22 @@ def capability_report(node, ctx):
     if earned == 'C1' and published:
         earned = 'C2'
     elif earned == 'C1':
-        blocked_tiers['C2'] = ['PUBLISH_NOT_APPROVED']
-    unreviewed = [f['id'] for f in (pkg or {}).get('features', []) if f.get('kind') != 'route' and not f.get('reviewed')]
+        blocked_tiers['C2'] = ['PUBLISH_VERIFICATION_REQUIRED' if prepared else 'PUBLISH_NOT_APPROVED']
+    unreviewed = [f['id'] for f in (pkg or {}).get('features', []) if f.get('reviewed') is not True]
     c3 = []
     if unreviewed:
         c3.append('HUMAN_BOUNDARY_REVIEW_REQUIRED')
-    if (pkg or {}).get('status') == 'source_candidate':
+    if (pkg or {}).get('status') != 'reviewed_draft':
         c3.append('HUMAN_IMAGERY_REVIEW_REQUIRED')
     currency = imagery.currency(ctx, layout_id)
     if currency and currency['predatesRenovation']:
         c3.append(imagery.CODE)
     if not truth_done:
         c3.append('TRUTH_GATE_FAILED' if verdicts else 'TRUTH_GATE_NOT_RUN')
-    blocked_tiers['C3'] = c3 or ['HUMAN_BOUNDARY_REVIEW_REQUIRED']
+    if earned == 'C2' and not c3:
+        earned = 'C3'
+    else:
+        blocked_tiers['C3'] = c3 or ['VERIFIED_PUBLICATION_REQUIRED']
     blocked_tiers['C4'] = ['FIELD_VERIFICATION_REQUIRED']
     catalog_tier = layout.get('capabilityTier', 'C0')
     note = f'catalog declares {catalog_tier}; evidence supports {earned}'
@@ -129,10 +140,10 @@ def capability_report(node, ctx):
     return {
         'schema': 'golfhelm-factory-capability-report-v1', 'layoutId': layout_id, 'packageHash': (pkg or {}).get('contentHash'),
         'packageStatus': (pkg or {}).get('status'), 'catalogTier': catalog_tier, 'earnedTier': earned, 'blockedHigherTiers': blocked_tiers,
-        'capabilities': {'productionVisual': earned in ('C2', 'C3', 'C4'), 'tapToMeasure': earned in ('C2', 'C3', 'C4'),
+        'capabilities': {'productionVisual': earned in ('C2', 'C3', 'C4'), 'tapToMeasure': earned in ('C3', 'C4'),
                          'authoritativeLieClassification': earned in ('C3', 'C4'), 'reviewShotResolution': earned in ('C3', 'C4'), 'fieldVerified': earned == 'C4'},
         'evidence': {'holes': len(holes), 'terrainCompiled': terrain_done, 'truthGate': {'passed': sum(verdicts.values()), 'failed': sum(1 for v in verdicts.values() if not v), 'notRun': len(holes) - len(verdicts)},
-                     'published': published, 'unreviewedFeatures': len(unreviewed), 'imageryCurrency': currency},
+                     'publishPrepared': prepared, 'published': published, 'unreviewedFeatures': len(unreviewed), 'imageryCurrency': currency},
         'note': note,
     }
 
@@ -158,6 +169,6 @@ SPECS = [
     TaskSpec('layout.publish.prepare', '1', 'layout', ('layout.package.validate', 'hole.terrain.compile*', 'layout.context.classify?'), eval_publish_prepare,
              impl_files=(script('publish-course-assets.mts'),), retention='D', estimated_bytes=60_000_000),
     TaskSpec('layout.publish.verify', '1', 'layout', ('layout.publish.prepare', 'hole.terrain.compile*', 'layout.context.classify?'), eval_publish_verify, estimated_bytes=100_000),
-    TaskSpec('layout.capability.evaluate', '1', 'layout', ('layout.package.validate', 'hole.terrain.compile*', 'hole.world.build*?', 'layout.publish.prepare?'), eval_capability,
+    TaskSpec('layout.capability.evaluate', '2', 'layout', ('layout.package.validate', 'hole.terrain.compile*', 'hole.world.build*?', 'layout.publish.prepare?', 'layout.publish.verify?'), eval_capability,
              executor=run_capability, retention='C'),
 ]

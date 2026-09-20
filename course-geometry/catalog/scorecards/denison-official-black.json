@@ -1,0 +1,104 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "denison-official-black",
+  "layoutId": "denison-golf-club",
+  "teeName": "Black",
+  "source": {
+    "provider": "official_course_site",
+    "url": "https://www.denisongolfclub.com/wp-content/uploads/2019/01/scorecard-1.jpg",
+    "retrievedAt": "2026-09-20",
+    "note": "Official scorecard currently linked by https://www.denisongolfclub.com/golf-course/. Black 6559 yards / par 71 also matches official course tour. Original JPEG SHA256 53cf52aa45f1f9e3bc9941480ba9f1764eabbe8d53f1522dee0153d4ce6de761. Upload path is 2019/01; actual revision date is unknown. Official map scorecard2.jpg SHA256 73dc7055742053bbd996f579009043ff64d5de9dcb023dcbe989a4868750b29e supports hole numbering only, not geographic coordinates. Library round-derived White card has conflicting pars at 4,13,15 and is not used as the canonical reference. No historical player data is altered."
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 4,
+      "yards": 334
+    },
+    {
+      "hole": 2,
+      "par": 4,
+      "yards": 444
+    },
+    {
+      "hole": 3,
+      "par": 4,
+      "yards": 422
+    },
+    {
+      "hole": 4,
+      "par": 3,
+      "yards": 233
+    },
+    {
+      "hole": 5,
+      "par": 4,
+      "yards": 396
+    },
+    {
+      "hole": 6,
+      "par": 5,
+      "yards": 501
+    },
+    {
+      "hole": 7,
+      "par": 3,
+      "yards": 175
+    },
+    {
+      "hole": 8,
+      "par": 4,
+      "yards": 434
+    },
+    {
+      "hole": 9,
+      "par": 4,
+      "yards": 368
+    },
+    {
+      "hole": 10,
+      "par": 5,
+      "yards": 540
+    },
+    {
+      "hole": 11,
+      "par": 4,
+      "yards": 390
+    },
+    {
+      "hole": 12,
+      "par": 5,
+      "yards": 504
+    },
+    {
+      "hole": 13,
+      "par": 4,
+      "yards": 323
+    },
+    {
+      "hole": 14,
+      "par": 3,
+      "yards": 187
+    },
+    {
+      "hole": 15,
+      "par": 4,
+      "yards": 440
+    },
+    {
+      "hole": 16,
+      "par": 4,
+      "yards": 330
+    },
+    {
+      "hole": 17,
+      "par": 3,
+      "yards": 169
+    },
+    {
+      "hole": 18,
+      "par": 4,
+      "yards": 369
+    }
+  ]
+}

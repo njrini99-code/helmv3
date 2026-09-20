@@ -7,7 +7,6 @@ Entries marked visual_review_only or discovery_only may improve human review,
 but cannot silently become geometry evidence.
 """
 from dataclasses import asdict, dataclass
-from typing import Optional
 
 
 @dataclass(frozen=True)
@@ -17,7 +16,7 @@ class ImageryProvider:
     service_url: str
     service_type: str
     role: str
-    expected_gsd_m: Optional[float]
+    expected_gsd_m: float | None
     expected_bands: tuple[str, ...]
     licensing: str
     notes: str
@@ -61,6 +60,19 @@ IMAGERY_PROVIDERS = {
         'VGIN service terms and the selected tile’s vintage/GSD govern use.',
         'Use to inspect current geometry and capture provenance. A MapServer preview is not an analysis raster until an export contract is verified.',
     ),
+    'palm_beach_2025_visual_qa': ImageryProvider(
+        'palm_beach_2025_visual_qa',
+        'Palm Beach County 2025 aerial photography',
+        'https://gis.pbcgov.org/image/rest/services/Aerialphotography_2025_Webmercator/ImageServer',
+        'arcgis_image_server',
+        'visual_review_only',
+        None,
+        ('red', 'green', 'blue'),
+        'Public county service; retain county attribution. Confirm derivative-use terms before geometry extraction or redistribution.',
+        'Verified RGB export. The 0.1524003048-m service pixel is in Web Mercator, not verified native ground GSD. '
+        'Service year is 2025; exact flight date remains unconfirmed. No NIR is exposed. '
+        'Facility-scoped source for PGA National, not a statewide Florida default.',
+    ),
     'licking_county_2023_visual_qa': ImageryProvider(
         'licking_county_2023_visual_qa',
         'Licking County 2023 orthoimagery',
@@ -71,6 +83,21 @@ IMAGERY_PROVIDERS = {
         ('red', 'green', 'blue'),
         'No automated derivative/export use until Licking County grants it in writing.',
         '3-inch imagery is valuable for QA at Denison, but the public service is not an automatic source-geometry license.',
+    ),
+    'ohio_osip3_3in_geotiff': ImageryProvider(
+        'ohio_osip3_3in_geotiff',
+        'Ohio OSIP enhanced three-inch original GeoTIFF tiles',
+        'https://maps.ohio.gov/arcgis/rest/services/OSIP3Downloads/MapServer/4',
+        'arcgis_tile_download_index',
+        'visual_review_only',
+        0.0762001524,
+        ('red', 'green', 'blue', 'unclassified'),
+        'Selected LIC_2023 tile XML declares public domain; credit Licking County and Ohio Statewide Imagery Program. '
+        'For planning, not legal/cadastral purposes. Validate each selected project metadata.',
+        'Query TILE/FOLDER/CollYear by AOI, then retrieve the bounded ZIP from the state 3INGEOTIFF/_ENHANCED archive. '
+        'Denison sample BS19660755 decodes as 5000x5000, 0.25 US-survey-foot pixels, four bands. '
+        'The fourth band is retained but has no decoded spectral label; do not assume NIR. '
+        'A native tile acquisition adapter and registration/feature review remain required before geometry use.',
     ),
     'sc_statewide_aerial_discovery': ImageryProvider(
         'sc_statewide_aerial_discovery',

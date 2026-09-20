@@ -1,0 +1,281 @@
+{
+  "base": {
+    "schema": "golfhelm-scorecard-profile-v1",
+    "profileId": "test-white",
+    "layoutId": "test-layout",
+    "teeName": "White",
+    "source": {
+      "provider": "official_course_site",
+      "url": "https://example.org/card.pdf",
+      "retrievedAt": "2026-09-20"
+    },
+    "holes": [
+      {
+        "hole": 1,
+        "par": 4,
+        "yards": 410,
+        "handicap": 1
+      },
+      {
+        "hole": 2,
+        "par": 4,
+        "yards": 410,
+        "handicap": 2
+      },
+      {
+        "hole": 3,
+        "par": 4,
+        "yards": 410,
+        "handicap": 3
+      },
+      {
+        "hole": 4,
+        "par": 4,
+        "yards": 410,
+        "handicap": 4
+      },
+      {
+        "hole": 5,
+        "par": 4,
+        "yards": 410,
+        "handicap": 5
+      },
+      {
+        "hole": 6,
+        "par": 4,
+        "yards": 410,
+        "handicap": 6
+      },
+      {
+        "hole": 7,
+        "par": 4,
+        "yards": 410,
+        "handicap": 7
+      },
+      {
+        "hole": 8,
+        "par": 4,
+        "yards": 410,
+        "handicap": 8
+      },
+      {
+        "hole": 9,
+        "par": 4,
+        "yards": 410,
+        "handicap": 9
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "valid scorecard",
+      "valid": true,
+      "changes": []
+    },
+    {
+      "name": "extended provenance retained",
+      "valid": true,
+      "changes": [
+        {
+          "path": [
+            "source",
+            "note"
+          ],
+          "repeat": "e",
+          "count": 742
+        }
+      ]
+    },
+    {
+      "name": "maximum note",
+      "valid": true,
+      "changes": [
+        {
+          "path": [
+            "source",
+            "note"
+          ],
+          "repeat": "e",
+          "count": 4096
+        }
+      ]
+    },
+    {
+      "name": "overlong note",
+      "valid": false,
+      "changes": [
+        {
+          "path": [
+            "source",
+            "note"
+          ],
+          "repeat": "e",
+          "count": 4097
+        }
+      ]
+    },
+    {
+      "name": "unicode note limit counts code points",
+      "valid": false,
+      "changes": [
+        {
+          "path": [
+            "source",
+            "note"
+          ],
+          "repeat": "\ud83c\udfcc",
+          "count": 4097
+        }
+      ]
+    },
+    {
+      "name": "note must be text",
+      "valid": false,
+      "changes": [
+        {
+          "path": [
+            "source",
+            "note"
+          ],
+          "value": 4
+        }
+      ]
+    },
+    {
+      "name": "URL malformed",
+      "valid": false,
+      "changes": [
+        {
+          "path": [
+            "source",
+            "url"
+          ],
+          "value": "not-a-url"
+        }
+      ]
+    },
+    {
+      "name": "boolean hole",
+      "valid": false,
+      "changes": [
+        {
+          "path": [
+            "holes",
+            0,
+            "hole"
+          ],
+          "value": true
+        }
+      ]
+    },
+    {
+      "name": "boolean par",
+      "valid": false,
+      "changes": [
+        {
+          "path": [
+            "holes",
+            0,
+            "par"
+          ],
+          "value": true
+        }
+      ]
+    },
+    {
+      "name": "fractional yards",
+      "valid": false,
+      "changes": [
+        {
+          "path": [
+            "holes",
+            0,
+            "yards"
+          ],
+          "value": 410.5
+        }
+      ]
+    },
+    {
+      "name": "invalid handicap",
+      "valid": false,
+      "changes": [
+        {
+          "path": [
+            "holes",
+            0,
+            "handicap"
+          ],
+          "value": 37
+        }
+      ]
+    },
+    {
+      "name": "boolean handicap",
+      "valid": false,
+      "changes": [
+        {
+          "path": [
+            "holes",
+            0,
+            "handicap"
+          ],
+          "value": true
+        }
+      ]
+    },
+    {
+      "name": "wrong hole order",
+      "valid": false,
+      "changes": [
+        {
+          "path": [
+            "holes",
+            1,
+            "hole"
+          ],
+          "value": 3
+        }
+      ]
+    },
+    {
+      "name": "extra source key",
+      "valid": false,
+      "changes": [
+        {
+          "path": [
+            "source",
+            "unrecognized"
+          ],
+          "value": true
+        }
+      ]
+    },
+    {
+      "name": "wrong provider",
+      "valid": false,
+      "changes": [
+        {
+          "path": [
+            "source",
+            "provider"
+          ],
+          "value": "web"
+        }
+      ]
+    },
+    {
+      "name": "missing source URL",
+      "valid": false,
+      "changes": [
+        {
+          "path": [
+            "source",
+            "url"
+          ],
+          "remove": true
+        }
+      ]
+    }
+  ]
+}

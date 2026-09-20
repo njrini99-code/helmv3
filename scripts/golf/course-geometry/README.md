@@ -602,3 +602,44 @@ Writes `research/s1m-coverage.{json,md}` under the first root, nothing else;
 `providerPolicy` and the compiler's provider do not move. `--facility` runs
 refresh those rows and keep the rest of the previous report. Tests:
 `test_research_s1m_coverage.py` (offline).
+
+### Source-independent route and surface imports
+
+Set `layout.retained.sourceGeometry` to a retained JSON artifact with schema
+`golfhelm-source-geometry-v1`. Do not simultaneously pin `routeWayIds` or a served
+package: changing source authority requires an explicit catalog revision.
+The authoritative format validator is `source_geometry.py`; its synthetic
+nine-hole regression fixture is `test_source_geometry.py:source_fixture`.
+
+The artifact declares `facilityId`, `siteId`, `crs: EPSG:4326`,
+`coordinateOrder: longitude,latitude`, licensed `sources`, and retained
+`evidence` records (source ID, snapshot SHA-256, original CRS and method).
+Each feature has a stable ID, kind, physical `holeKeys`, `sourceIds`,
+`evidenceIds`, nullable boundary uncertainty and raw `geometryWgs84`.
+Each hole binds `routeFeatureId` and `greenFeatureId` explicitly and carries
+separate `identityReview` evidence. Confirming numbering is not physical review.
+Unknown positional uncertainty remains null, never the model's confidence score.
+
+Export edited QGIS vectors in the declared interchange frame and preserve IDs
+and evidence in this sidecar. The importer selects physical holes in the
+layout's `holeOrder`, accepts Polygon/MultiPolygon boundaries, and verifies the
+route endpoint lies inside its explicitly selected green. It does not snap
+endpoints, select the nearest green, simplify boundaries or grant approval.
+Keep conflicting alternatives in the retained evidence; resolve them explicitly.
+
+```bash
+python3 scripts/golf/course-geometry/prepare-osm-course.py \
+  retained/overpass.json.gz retained/build-reference-card.json output/candidate \
+  --source-geometry retained/source-geometry.json
+```
+
+This direct command needs no OSM route or green, but preserves any available
+OSM context and attribution. Normal factory execution passes the argument from
+the catalog and fingerprints the complete source artifact. Source changes
+invalidate route/package decisions; new factory ledgers cannot adopt a package
+prepared from a different trace hash. Raw import bytes, their digest and source
+provenance stay with the prepared outputs. Legacy NAIP surfaces use `--traces`;
+that path also assembles greens before association and preserves raw boundaries.
+
+The build reference card is a QA input, not the player's selected tee. Every
+new/continued round owns its saved setup. No importer writes round or tee tables.

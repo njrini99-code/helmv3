@@ -4,9 +4,11 @@ schema so both sides fail the same fixture the same way
 (`src/test/fixtures/course-geometry/factory/catalog-invariants.json`).
 """
 import json
+import math
 import os
 import re
 from dataclasses import dataclass, field
+from urllib.parse import urlsplit
 
 SLUG = re.compile(r'^[a-z0-9]+(?:-[a-z0-9]+)*$')
 OSM_REF = re.compile(r'^(?:node|way|relation)/\d+$')
@@ -16,7 +18,7 @@ ISO_DATE = re.compile(r'^\d{4}-\d{2}-\d{2}$')
 UUID = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$')
 TIERS = ('C0', 'C1', 'C2', 'C3', 'C4')
 RETAINED_KEYS = ('osm', 'osmContext', 'terrain', 'compiled', 'context', 'contextReport', 'canopyReview',
-                 'imageryReview', 'associations', 'reviewOverlay', 'naip', 'world', 'imageryTraces')
+                 'imageryReview', 'associations', 'reviewOverlay', 'naip', 'world', 'imageryTraces', 'sourceGeometry')
 
 
 class CatalogError(Exception):
@@ -207,14 +209,18 @@ def scorecard_problems(doc):
         errs.append('teeName: string or null')
     src = doc.get('source')
     if not (isinstance(src, dict) and src.get('provider') in ('official_course_site', 'helm_course_library', 'owner_supplied')
-            and (src.get('url') is None or isinstance(src.get('url'), str)) and isinstance(src.get('retrievedAt'), str) and ISO_DATE.match(src['retrievedAt'])
+            and {'provider', 'url', 'retrievedAt'} <= set(src)
+            and (src.get('url') is None or _absolute_url(src.get('url')))
+            and isinstance(src.get('retrievedAt'), str) and ISO_DATE.fullmatch(src['retrievedAt'])
+            and ('note' not in src or (isinstance(src['note'], str) and len(src['note']) <= 4096))
             and set(src) <= {'provider', 'url', 'retrievedAt', 'note'}):
         errs.append('source: {provider, url|null, retrievedAt, note?}')
     holes = doc.get('holes')
     ok = isinstance(holes, list) and 9 <= len(holes) <= 36 and all(
         isinstance(h, dict) and set(h) <= {'hole', 'par', 'yards', 'handicap'} and {'hole', 'par', 'yards'} <= set(h)
-        and isinstance(h['hole'], int) and 1 <= h['hole'] <= 36 and isinstance(h['par'], int) and 3 <= h['par'] <= 6
-        and isinstance(h['yards'], int) and 50 <= h['yards'] <= 800 for h in holes)
+        and _integer(h['hole']) and 1 <= h['hole'] <= 36 and _integer(h['par']) and 3 <= h['par'] <= 6
+        and _integer(h['yards']) and 50 <= h['yards'] <= 800
+        and ('handicap' not in h or (_integer(h['handicap']) and 1 <= h['handicap'] <= 36)) for h in holes)
     if not ok:
         errs.append('holes: 9..36 of {hole, par, yards, handicap?}')
     extra = set(doc) - {'schema', 'profileId', 'layoutId', 'teeName', 'source', 'holes'}
@@ -226,6 +232,20 @@ def scorecard_problems(doc):
         if h['hole'] != i + 1:
             errs.append(f'holes run 1..n in order (index {i} is hole {h["hole"]})')
     return errs
+
+
+def _integer(value):
+    return not isinstance(value, bool) and isinstance(value, (int, float)) and math.isfinite(value) and value == int(value)
+
+
+def _absolute_url(value):
+    if not isinstance(value, str):
+        return False
+    try:
+        parsed = urlsplit(value)
+        return bool(parsed.scheme and (parsed.netloc if parsed.scheme in ('http', 'https', 'ftp') else parsed.path))
+    except ValueError:
+        return False
 
 
 def cross_problems(catalog):

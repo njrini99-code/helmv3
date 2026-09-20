@@ -53,8 +53,32 @@
     "pga-national-champ-17",
     "pga-national-champ-18"
   ],
-  "routeWayIds": null,
-  "bboxWgs84": null,
+  "routeWayIds": [
+    776369833,
+    776369834,
+    776369835,
+    776369836,
+    776369837,
+    776369838,
+    776369839,
+    776369840,
+    776369841,
+    776369842,
+    776369843,
+    776369844,
+    776369845,
+    776369846,
+    776369847,
+    776369848,
+    776369849,
+    776369850
+  ],
+  "bboxWgs84": [
+    -80.154,
+    26.816,
+    -80.1389,
+    26.8314
+  ],
   "capabilityTier": "C0",
   "externalBindings": {
     "golfCourseIds": [
@@ -62,10 +86,12 @@
     ]
   },
   "scorecardProfiles": [
+    "pga-national-champion-official-2026",
     "pga-national-champ-white"
   ],
   "geometry": null,
   "notes": [
-    "2 completed cohort rounds (2026-09-13); intake wrote this manifest at C0 with routes unresolved."
+    "2 completed cohort rounds (2026-09-13); intake wrote this manifest at C0 with routes unresolved.",
+    "Champion OSM ways 776369833\u2013776369850 manually cross-checked in hole-number order against official Cognizant Classic 2025/2026 course maps (2026 map SHA256 d76a31d0c7de69f03bb8568e91c3466d604d94b007fffdec2e576d9a719b30ba). All 18 route directions and neighboring-hole sequence match, including 13\u201318 lake loop/Bear Trap; this selects the Champion from other resort routes. Map source: https://pgatourmedia.pgatourhq.com/static-assets/page/files/tours/2026/pgatour/cognizant-classic-in-the-palm-beaches/mediaRegulations/2026%20CCPB%20Course%20Map.pdf. Artwork used for identity cross-check only; XY stays original OSM, with no tracing, scaling or inferred daily markers. Does not approve feature boundaries or physical truth gates."
   ]
 }

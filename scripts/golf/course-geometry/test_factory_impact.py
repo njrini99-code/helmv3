@@ -744,6 +744,12 @@ class PublishVerifyTests(unittest.TestCase):
         report = read_json(os.path.join(self.h.output, 'layouts', 'synthetic-a', 'publish-verification.json'))
         self.assertFalse(report['ok'])
         self.assertEqual([c['name'] for c in report['checks'] if not c['ok']], ['terrain:synthetic-a-07'])
+        # A cached prepare must not keep release admission alive after verification fails.
+        code, text = self.h.run('run', '--layout', 'synthetic-a', '--task', 'layout.capability.evaluate', executors=self.executors())
+        capability = read_json(os.path.join(self.h.output, 'layouts', 'synthetic-a', 'capability-report.json'))
+        self.assertEqual(capability['earnedTier'], 'C1', text)
+        self.assertFalse(capability['capabilities']['productionVisual'])
+        self.assertFalse(capability['capabilities']['tapToMeasure'])
 
 
 class LabVerdictTests(unittest.TestCase):

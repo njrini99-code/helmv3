@@ -24,6 +24,7 @@
       "usgs_3dep_project_1m"
     ],
     "imagery": [
+      "palm_beach_2025_visual_qa",
       "usgs_naip_plus"
     ],
     "context": [

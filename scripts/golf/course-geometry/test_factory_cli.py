@@ -9,9 +9,10 @@ import shutil
 import tempfile
 import unittest
 from contextlib import redirect_stdout
+from unittest.mock import patch
 
 from factory import cli
-from factory_testkit import HERE, Harness, SITE_WAY, write_catalog, write_json
+from factory_testkit import HERE, SITE_WAY, Harness, write_catalog, write_json
 
 REPO = os.path.abspath(os.path.join(HERE, '..', '..', '..'))
 SIGNOFF = ('hole.visual.canary', 'hole.player.capture', 'layout.visual.aggregate', 'layout.player.aggregate', 'layout.publish.prepare', 'layout.publish.verify')
@@ -19,7 +20,7 @@ SIGNOFF = ('hole.visual.canary', 'hole.player.capture', 'layout.visual.aggregate
 
 def run_cli(argv, **kwargs):
     buf = io.StringIO()
-    with redirect_stdout(buf):
+    with redirect_stdout(buf), patch('factory.disk.free_bytes', return_value=100 * (1 << 30)):
         code = cli.main(argv, out=buf, **kwargs)
     return code, buf.getvalue()
 
@@ -170,7 +171,7 @@ class OperatorCommandTests(unittest.TestCase):
         with open(path, encoding='utf-8') as f:
             dossier = json.load(f)
         self.assertEqual(dossier['status'], 'resolved')
-        self.assertEqual(dossier['truthClass'], 'measured')
+        self.assertEqual(dossier['truthClass'], 'derived')
         self.assertEqual(len(dossier['routeWayIds']), 18)
         self.assertIn('layout.route.dossier[synthetic-a]', self.h.pipeline.calls)
 

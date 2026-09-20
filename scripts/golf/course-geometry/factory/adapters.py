@@ -16,6 +16,8 @@ import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
 
+from source_geometry import resolved_routes
+
 from . import imagery, lab
 from .fingerprints import digest, terrain_source_identity
 from .model import Blocker, Precondition
@@ -190,7 +192,7 @@ def snapshot_context(node, ctx, run):
 def resolve_routes(node, ctx, run):
     layout_id = node.scope.layout_id
     resolution = ctx.route_resolution(layout_id)
-    if not resolution or not resolution.get('routeWayIds'):
+    if not resolved_routes(resolution):
         raise RuntimeError('routes are not resolvable; the plan should have blocked this node')
     path = ctx.routes_path(layout_id)
     _write_json(path, {'kind': 'golfhelm-factory-routes-v1', 'layoutId': layout_id, **resolution})
@@ -211,9 +213,9 @@ def write_route_dossier(node, ctx, run):
     manifest, _extract = ctx.snapshot(node.scope.facility_id)
     route_ids = resolution.get('routeWayIds')
     attempts = (resolution.get('evidence') or {}).get('attempts') or []
-    if route_ids:
+    if resolved_routes(resolution):
         status = 'resolved'
-        truth_class = 'measured'
+        truth_class = 'derived'
         remediation = []
     else:
         status = 'source_confirmation_required'
@@ -230,7 +232,7 @@ def write_route_dossier(node, ctx, run):
         # ``None`` means this dossier did not admit a canonical physical
         # route. It must never be interpreted as an estimated route.
         'truthClass': truth_class,
-        'canonicalRouteAdmitted': bool(route_ids),
+        'canonicalRouteAdmitted': resolved_routes(resolution),
         'routeWayIds': route_ids,
         'routeSource': resolution.get('source'),
         'routeResolution': resolution,
@@ -329,7 +331,7 @@ def acquire_visual_terrain(node, ctx, run):
     # New sources must record the perimeter-aware coverage contract. The
     # older directory is retained immutable evidence; it cannot be relabelled
     # after discovering an edge-coverage defect.
-    source_root = os.path.join(ctx.facility_out(facility_id), 'visual-terrain', package['contentHash'][:12] + '-perimeter-v1')
+    source_root = os.path.join(ctx.facility_out(facility_id), 'visual-terrain', package['contentHash'][:12] + ('-nc-native-v2' if provider.compiler_id == 'nc_onemap_dem03' else '-perimeter-v1'))
     base_args = ['--acquire-only', '--provider', provider.compiler_id, '--holes', 'all', '--package', ctx.visual_candidate_package_path(layout_id),
                  '--output', os.path.join(ctx.facility_out(facility_id), 'visual-compiled')]
     source = source_root
@@ -344,7 +346,8 @@ def acquire_visual_terrain(node, ctx, run):
     except RuntimeError as error:
         failure = str(error)
         source_coverage_gap = provider.compiler_id == 'usgs_3dep_project_1m' and 'No native-1m tile set covers' in failure
-        if provider.compiler_id not in ('nc_onemap_dem03', 'usgs_3dep_project_1m') or ('pixel cap' not in failure and not source_coverage_gap):
+        vertical_unknown = provider.compiler_id == 'nc_onemap_dem03' and 'VERTICAL_UNIT_UNKNOWN' in failure
+        if provider.compiler_id not in ('nc_onemap_dem03', 'usgs_3dep_project_1m') or ('pixel cap' not in failure and not source_coverage_gap and not vertical_unknown):
             raise
         for resolution_m in VISUAL_TERRAIN_DERIVED_RESOLUTIONS_M:
             candidate = source_root + f'-visual-r{resolution_m}m-v1'
@@ -389,7 +392,7 @@ def _facility_visual_step(manifest):
     if len(bounds) != 4:
         return 12
     area = max(1, (bounds[2] - bounds[0]) * (bounds[3] - bounds[1]))
-    return min(20, max(8, int(math.ceil(math.sqrt(area / 120_000)))))
+    return min(20, max(8, math.ceil(math.sqrt(area / 120_000))))
 
 
 def build_visual_world(node, ctx, run):
@@ -461,10 +464,13 @@ def compose_scorecard(node, ctx, run):
 def _prepare(node, ctx, run, out, canopy=None):
     layout_id = node.scope.layout_id
     layout = ctx.layout(layout_id)
-    extract = os.path.join(ctx.osm_dir(node.scope.facility_id), 'overpass.json.gz')
+    _manifest, extract = ctx.snapshot(node.scope.facility_id)
     args = [extract, ctx.scorecard_path(layout_id), out]
     if canopy:
         args += ['--canopy-review', canopy]
+    imported = ctx.retained(layout, 'sourceGeometry')
+    if imported:
+        args += ['--source-geometry', imported]
     traces = ctx.retained(layout, 'imageryTraces')
     if traces and os.path.isfile(traces):
         args += ['--traces', traces]
@@ -475,7 +481,9 @@ def _prepare(node, ctx, run, out, canopy=None):
     ref = artifact('package', os.path.join(out, 'normalized.json'), 'A')
     ref.sha256 = pkg['contentHash']
     return [ref, artifact('association-report', os.path.join(out, 'association-report.json'), 'A'),
-            artifact('source-metadata', os.path.join(out, 'source-metadata.json'), 'A')]
+            artifact('source-metadata', os.path.join(out, 'source-metadata.json'), 'A')] + [
+                artifact(name, os.path.join(out, name + '.json'), 'A')
+                for name in ('source-geometry', 'imagery-traces') if os.path.isfile(os.path.join(out, name + '.json'))]
 
 
 def compose_candidates(node, ctx, run):
@@ -503,7 +511,7 @@ def acquire_terrain(node, ctx, run):
     key = digest(bounds)[:12]
     # Keep the old four-corner source immutable. Perimeter coverage plus a
     # native-grid buffer is a different acquired raster, not a metadata edit.
-    source = os.path.join(ctx.facility_out(node.scope.facility_id), 'terrain', key + '-perimeter-v1')
+    source = os.path.join(ctx.facility_out(node.scope.facility_id), 'terrain', key + ('-nc-native-v2' if provider.compiler_id == 'nc_onemap_dem03' else '-perimeter-v1'))
     run_script(ctx, run, node, 'scripts/golf/course-geometry/compile-course-terrain.py',
                ['--acquire-only', '--provider', provider.compiler_id, '--holes', 'all', '--package', pkg_path, '--source', source, '--output', ctx.terrain_base_out(layout_id)])
     manifest = ctx.json(os.path.join(source, 'source-manifest.json'), fresh=True)
@@ -685,7 +693,7 @@ def review_queue(node, ctx, run):
     routes = ctx.json(ctx.routes_path(layout_id), fresh=True)
     if routes and routes.get('source') != 'catalog':
         items.append({'pass': 'route_confirmation', 'code': 'HUMAN_ROUTE_CONFIRMATION_REQUIRED', 'evidence': routes.get('evidence'),
-                      'action': 'confirm the proposed golf=hole ways against the scorecard and write them to the layout manifest routeWayIds'})
+                      'action': 'confirm numbered hole identity against the course map; retain sourceGeometry bindings for traced routes or routeWayIds for OSM routes; neither is boundary approval'})
     currency = imagery.currency(ctx, layout_id)
     if currency and currency['predatesRenovation']:
         # The audit is blocked on this (a freshness failure, v2 §21.5); the
