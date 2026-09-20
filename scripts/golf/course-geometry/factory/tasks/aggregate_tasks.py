@@ -4,6 +4,7 @@ asserted (§48)."""
 import json
 import os
 
+from .. import imagery
 from ..fingerprints import digest
 from ..model import TaskSpec
 from .common import artifact, blocked, dep_input, evaluation, fan_in_inputs, script
@@ -31,7 +32,7 @@ def eval_review_queue(node, ctx):
     inputs = {'package': dep_input(ctx, node, 'layout.package.validate'), 'imagery': dep_input(ctx, node, 'layout.imagery.audit'),
               'context': dep_input(ctx, node, 'layout.context.classify'), 'routes': dep_input(ctx, node, 'layout.routes.resolve'),
               'world': digest(fan_in_inputs(ctx, node, 'hole.world.build')), 'visual': dep_input(ctx, node, 'layout.visual.aggregate'),
-              'player': dep_input(ctx, node, 'layout.player.aggregate')}
+              'player': dep_input(ctx, node, 'layout.player.aggregate'), 'imageryCurrency': digest(imagery.currency(ctx, layout_id))}
     path = os.path.join(ctx.layout_out(layout_id), 'review-queue.json')
     doc = ctx.json(path) if ctx.can_adopt(path) else None
     adoptable = bool(doc) and doc.get('packageHash') == ctx.package_hash(layout_id)
@@ -75,7 +76,7 @@ def eval_publish_verify(node, ctx):
 def eval_capability(node, ctx):
     inputs = {'package': dep_input(ctx, node, 'layout.package.validate'), 'terrain': digest(fan_in_inputs(ctx, node, 'hole.terrain.compile')),
               'world': digest(fan_in_inputs(ctx, node, 'hole.world.build')), 'published': dep_input(ctx, node, 'layout.publish.prepare'),
-              'catalogTier': (ctx.layout(node.scope.layout_id) or {}).get('capabilityTier')}
+              'catalogTier': (ctx.layout(node.scope.layout_id) or {}).get('capabilityTier'), 'imageryCurrency': digest(imagery.currency(ctx, node.scope.layout_id))}
     return evaluation(inputs)
 
 
@@ -114,6 +115,9 @@ def capability_report(node, ctx):
         c3.append('HUMAN_BOUNDARY_REVIEW_REQUIRED')
     if (pkg or {}).get('status') == 'source_candidate':
         c3.append('HUMAN_IMAGERY_REVIEW_REQUIRED')
+    currency = imagery.currency(ctx, layout_id)
+    if currency and currency['predatesRenovation']:
+        c3.append(imagery.CODE)
     if not truth_done:
         c3.append('TRUTH_GATE_FAILED' if verdicts else 'TRUTH_GATE_NOT_RUN')
     blocked_tiers['C3'] = c3 or ['HUMAN_BOUNDARY_REVIEW_REQUIRED']
@@ -128,7 +132,7 @@ def capability_report(node, ctx):
         'capabilities': {'productionVisual': earned in ('C2', 'C3', 'C4'), 'tapToMeasure': earned in ('C2', 'C3', 'C4'),
                          'authoritativeLieClassification': earned in ('C3', 'C4'), 'reviewShotResolution': earned in ('C3', 'C4'), 'fieldVerified': earned == 'C4'},
         'evidence': {'holes': len(holes), 'terrainCompiled': terrain_done, 'truthGate': {'passed': sum(verdicts.values()), 'failed': sum(1 for v in verdicts.values() if not v), 'notRun': len(holes) - len(verdicts)},
-                     'published': published, 'unreviewedFeatures': len(unreviewed)},
+                     'published': published, 'unreviewedFeatures': len(unreviewed), 'imageryCurrency': currency},
         'note': note,
     }
 

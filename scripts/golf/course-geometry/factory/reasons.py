@@ -20,7 +20,7 @@ BLOCKERS = {
     'TERRAIN_NO_NATIVE_SOURCE': 'no native 1 m terrain covers the AOI',
     'TERRAIN_EMPTY_FILL': 'the terrain export is mostly empty fill',
     'IMAGERY_PROVIDER_UNAVAILABLE': 'no imagery provider answered',
-    'IMAGERY_TOO_OLD_FOR_KNOWN_RENOVATION': 'imagery predates a known renovation',
+    'IMAGERY_TOO_OLD_FOR_KNOWN_RENOVATION': 'the retained imagery was flown before the catalog knownRenovationAfter date; retain a later capture or lift the date',
     'SOURCE_HASH_MISMATCH': 'an artifact was built from other inputs than the current ones',
     'PACKAGE_PARTIAL': 'the package is partial',
     'PACKAGE_HASH_NOT_APPROVED': 'the package hash is not approved for release',

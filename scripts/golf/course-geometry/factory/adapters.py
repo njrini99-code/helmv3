@@ -16,7 +16,7 @@ import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
 
-from . import lab
+from . import imagery, lab
 from .fingerprints import digest, terrain_source_identity
 from .model import Blocker, Precondition
 from .planner import DONE
@@ -421,10 +421,19 @@ def review_queue(node, ctx, run):
     if routes and routes.get('source') != 'catalog':
         items.append({'pass': 'route_confirmation', 'code': 'HUMAN_ROUTE_CONFIRMATION_REQUIRED', 'evidence': routes.get('evidence'),
                       'action': 'confirm the proposed golf=hole ways against the scorecard and write them to the layout manifest routeWayIds'})
-    imagery = ctx.json(ctx.imagery_review_path(layout_id), fresh=True)
-    if imagery:
-        flagged = [b for row in imagery.get('holes', []) for b in row.get('bunkers', []) if b.get('sandShareInside', 1) < imagery.get('lowSandShare', 0.35)]
-        items.append({'pass': 'imagery_review', 'code': 'HUMAN_IMAGERY_REVIEW_REQUIRED', 'evidence': {'lowSandBunkers': len(flagged), 'holes': len(imagery.get('holes', []))},
+    currency = imagery.currency(ctx, layout_id)
+    if currency and currency['predatesRenovation']:
+        # The audit is blocked on this (a freshness failure, v2 §21.5); the
+        # decision that unblocks it is a person's.
+        items.append({'pass': 'imagery_currency', 'code': imagery.CODE, 'evidence': currency,
+                      'action': 'retain a NAIP capture flown after the renovation (another year or provider) and re-derive canopy and the imagery audit, '
+                                'or lift knownRenovationAfter in the catalog with a note saying why the change did not move these surfaces'})
+    review = ctx.json(ctx.imagery_review_path(layout_id), fresh=True)
+    if review and ctx.states.get(f'layout.imagery.audit[{layout_id}]') in DONE:
+        flagged = [b for row in review.get('holes', []) for b in row.get('bunkers', []) if b.get('sandShareInside', 1) < review.get('lowSandShare', 0.35)]
+        items.append({'pass': 'imagery_review', 'code': 'HUMAN_IMAGERY_REVIEW_REQUIRED',
+                      'evidence': {'lowSandBunkers': len(flagged), 'holes': len(review.get('holes', [])), 'capturedAt': (review.get('imagery') or {}).get('capturedAt'),
+                                   'knownRenovationAfter': (currency or {}).get('knownRenovationAfter')},
                       'action': 'walk the contact sheet; flag mis-traced or grass-faced bunkers; decide imagery currency'})
     report = ctx.json(ctx.context_report_path(layout_id), fresh=True)
     if report:

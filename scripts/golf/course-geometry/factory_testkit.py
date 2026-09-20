@@ -53,6 +53,7 @@ class World:
         self.hole_labels = {}       # layout slug -> how a mapper named that course's holes ('Synthetic A' -> 'Synthetic A Hole 3')
         self.canopy = True
         self.naip_sha = 'naip-' + '0' * 60
+        self.naip_dates = ['2024-06-01']  # what the fake NAIP export was flown on (the real manifest writes YYYYMMDD tile suffixes)
         # What the fake lab draws: holes whose captures breach the draw-call
         # budget, holes whose page throws, and holes the lab draws from a
         # different mesh than the fixture names (a stale bundle).
@@ -246,7 +247,7 @@ class FakePipeline:
         os.makedirs(naip, exist_ok=True)
         with open(os.path.join(naip, 'naip.tif'), 'wb') as f:
             f.write(b'NAIP' * 64)
-        write_json(os.path.join(naip, 'manifest.json'), {'rasterSha256': self.world.naip_sha, 'captureDates': ['2024-06-01']})
+        write_json(os.path.join(naip, 'manifest.json'), {'rasterSha256': self.world.naip_sha, 'captureDates': list(self.world.naip_dates)})
         pkg = ctx.json(ctx.candidates_package_path(layout_id), fresh=True)
         regions = [{'id': f'{layout_id}-woods-1', 'holeKey': f'{layout_id}-05', 'coordinatesWgs84': ring(ORIGIN[0] - 0.002, ORIGIN[1] + 0.005, 0.0005)}] if self.world.canopy else []
         doc = {'kind': 'golfhelm-canopy-review-v1', 'siteId': pkg['siteId'], 'packageHash': pkg['contentHash'], 'reviewedAt': '2026-09-19',

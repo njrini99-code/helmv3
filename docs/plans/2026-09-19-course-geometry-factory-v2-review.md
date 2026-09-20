@@ -524,6 +524,31 @@ fix is a publishing PR, never a write here. Live on the Upper: 21 checks
 (21 checks pass, tier C2) and a drifted mesh (fails naming
 `terrain:synthetic-a-07`, `public/` byte-identical afterwards).
 
+Sixth item (§20 of the v2-next plan, §21.5 of v2): imagery currency. The
+catalog already validated `knownRenovationAfter` on facilities and layouts
+and the NAIP manifest already recorded its tile capture dates; nothing
+compared them. `factory/imagery.py` does, reading the dates from the NAIP
+manifest, the canopy review and the imagery review (the Upper keeps only
+the reviews in fixtures). Imagery flown before the date is a freshness
+failure for the changed-surface review, so `layout.imagery.audit` blocks on
+`IMAGERY_TOO_OLD_FOR_KNOWN_RENOVATION` — its own blocker, which the planner
+ranks above a cached success — rather than offering sand shares against
+pre-renovation ground; the canopy node only notes it (tree groups outlive
+most renovations; the package still composes); the review queue swaps the
+sand-share pass for an `imagery_currency` item with the dates and the two
+ways out (a later capture, or lifting the date with a note); the capability
+report lists the code against C3. The review queue and capability report
+fingerprint the currency verdict, so a catalog date or a new capture
+restages exactly those two nodes: on the Upper the plan moved two rows and
+the run executed two (97 cached again). Tested end to end with the fakes:
+date after the capture → blocked, queued, C3-listed, one `why` line; the
+facility date applies when the layout states none and the layout's wins; a
+2025 raster clears it with no hole recompiled. What §20 still lacks: an
+explicit `crs`/`bounds`/`analysisCapable` field set on the NAIP manifest
+(the values are in `request` today) — deferred because the writer is an
+impl file of `layout.canopy.derive`, and a script edit restages every live
+canopy node.
+
 What would be built once the owner decides (proposed, not started):
 `retained.routeTraces` — one file per layout, `golfhelm-route-traces-v1`,
 18 tee→green lines with hole numbers drawn in QGIS over the retained NAIP

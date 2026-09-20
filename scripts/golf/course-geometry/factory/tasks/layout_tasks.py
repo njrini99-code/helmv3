@@ -5,6 +5,7 @@ an ambiguous set blocks with the candidates as evidence and nothing guesses."""
 import json
 import os
 
+from .. import imagery
 from ..context import PILOT_HOLE_COUNT
 from ..fingerprints import (
     content_hash_matches,
@@ -225,6 +226,12 @@ def eval_canopy_derive(node, ctx):
         # (leaf-on, clearer) should replace this capture.
         notes.append(f'CANOPY_EXPORT_COMPRESSED: fairway NDVI median {turf:.2f}, gate loosened to {calibration.get("ndviMin")} (captured {", ".join(doc.get("capturedAt") or [])}); '
                      f'shadowed forest may still fall below it; check the canopy overlay, another NAIP year may read better')
+    stale = imagery.stale(ctx, layout_id)
+    if stale:
+        # Not a blocker either: tree groups outlive most renovations. The
+        # imagery audit, which reads the surfaces a renovation moves, blocks.
+        notes.append(f'{imagery.CODE}: captured {stale["earliestCapture"]}..{stale["latestCapture"]}, renovation after {stale["knownRenovationAfter"]}; '
+                     f'the canopy layer shows the course before it')
     adoptable = True
     if naip_manifest and naip_manifest.get('rasterSha256') != doc.get('rasterSha256'):
         adoptable, notes = False, notes + ['canopy review was derived from another NAIP export']
@@ -286,6 +293,13 @@ def eval_terrain_base(node, ctx):
 def eval_imagery_audit(node, ctx):
     layout_id = node.scope.layout_id
     inputs = {'package': dep_input(ctx, node, 'layout.package.compose'), 'imagery': dep_input(ctx, node, 'layout.canopy.derive')}
+    stale = imagery.stale(ctx, layout_id)
+    if stale:
+        # Sand shares read against pre-renovation ground would send a
+        # reviewer after bunkers that were rebuilt, so the audit is a
+        # freshness failure (v2 §21.5) until a later capture is retained or
+        # the owner lifts the date. An earlier success does not outrank this.
+        return evaluation(inputs, [blocked(imagery.CODE, layoutId=layout_id, capturedAt=', '.join(stale['capturedAt']), knownRenovationAfter=stale['knownRenovationAfter'])])
     path = ctx.imagery_review_path(layout_id)
     doc = ctx.json(path) if ctx.can_adopt(path) else None
     if not doc:

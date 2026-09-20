@@ -128,6 +128,15 @@ with a stable reason code. It wraps the existing scripts (`fetch-osm-*`,
   package, the factory's compiled mesh of that hole, or the context layer;
   a mismatch fails the node (`PUBLISH_MISMATCH`) and the fix is a publishing
   PR.
+- Imagery currency (`factory/imagery.py`): a catalog `knownRenovationAfter`
+  (layout over facility) is compared with the capture dates the retained
+  imagery states (NAIP manifest, canopy and imagery reviews). Imagery flown
+  before it is a freshness failure: `layout.imagery.audit` blocks on
+  `IMAGERY_TOO_OLD_FOR_KNOWN_RENOVATION` (an earlier success does not
+  outrank the date), the canopy node notes it, the review queue carries an
+  `imagery_currency` item in place of the sand-share review, and the
+  capability report lists it against C3. A later capture or a lifted date
+  clears it; nothing that never read the date is rebuilt.
 
 The current round flow uses a wizard for setup, hole configuration, shot capture, and submit. Draft save and continue routes support in-progress rounds. Database auto-save and confirmed per-hole checkpoints are the reliable path. The dashboard-level v2 sync engine drains the legacy IndexedDB bridge only for failed final submissions; normal Continue Round auto-saves must not write a second per-shot v1 queue.
 

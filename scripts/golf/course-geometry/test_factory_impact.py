@@ -7,6 +7,7 @@ import shutil
 import tempfile
 import unittest
 
+from factory import imagery
 from factory.fingerprints import file_sha256
 from factory.ledger import Ledger
 from factory_testkit import Harness
@@ -204,6 +205,108 @@ class ImpactTests(unittest.TestCase):
         code, text = self.h.run('why', '--layout', 'synthetic-a', '--task', 'hole.terrain.compile', '--hole', '11')
         self.assertIn('MANUAL_INVALIDATION', text)
 
+
+
+class ImageryCurrencyTests(unittest.TestCase):
+    """Factory v2 §21.5 / v2-next §20: imagery flown before the catalog's
+    knownRenovationAfter is a freshness failure. The changed-surface audit
+    blocks on it (an earlier success does not outrank the date), the review
+    queue and the capability report name it, the canopy node notes it, and
+    nothing that never read the date is rebuilt."""
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp(prefix='factory-currency-')
+        self.h = Harness(self.tmp)
+        self.layout_path = os.path.join(self.h.catalog, 'layouts', 'synthetic-a.json')
+        self.facility_path = os.path.join(self.h.catalog, 'facilities', 'synthetic.json')
+
+    def tearDown(self):
+        self.h.ledger.close()
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def set_date(self, path, value):
+        doc = read_json(path)
+        doc['knownRenovationAfter'] = value
+        with open(path, 'w', encoding='utf-8') as f:
+            json.dump(doc, f)
+
+    def executed(self, text):
+        report = next(line for line in text.splitlines() if line.startswith('report: '))[len('report: '):]
+        return set(read_json(os.path.join(os.path.dirname(report), 'report.json'))['executed'])
+
+    def test_dates(self):
+        self.assertEqual(imagery.iso_date('20240524'), '2024-05-24')
+        self.assertEqual(imagery.iso_date('2024-06-01'), '2024-06-01')
+        self.assertIsNone(imagery.iso_date('m_4207958_NE_18_60_20240824'))
+        self.assertIsNone(imagery.iso_date(None))
+
+    def test_imagery_flown_before_a_known_renovation_blocks_the_audit_and_queues_the_decision(self):
+        code, text = self.h.run('run', '--layout', 'synthetic-a')
+        self.assertEqual(code, 0, text)
+        self.assertEqual(self.h.states('synthetic-a')['layout.imagery.audit[synthetic-a]'][0], 'cached')
+        queue = read_json(os.path.join(self.h.output, 'layouts', 'synthetic-a', 'review-queue.json'))
+        self.assertEqual([i['pass'] for i in queue['items'] if i['pass'].startswith('imagery')], ['imagery_review'])
+
+        # The owner records a renovation after the 2024-06-01 capture.
+        self.set_date(self.layout_path, '2025-03-01')
+        states = self.h.states('synthetic-a')
+        self.assertEqual(states['layout.imagery.audit[synthetic-a]'], ('blocked', 'IMAGERY_TOO_OLD_FOR_KNOWN_RENOVATION'))
+        stale = sorted(k for k, v in states.items() if v[0] == 'stale')
+        self.assertEqual(stale, ['catalog.validate[synthetic]', 'layout.capability.evaluate[synthetic-a]', 'layout.review.queue[synthetic-a]'], 'only the readers of the date move')
+        rows = self.h.plan_rows('synthetic-a')
+        self.assertTrue(any(n.startswith('IMAGERY_TOO_OLD_FOR_KNOWN_RENOVATION: captured 2024-06-01..2024-06-01, renovation after 2025-03-01') for n in rows['layout.canopy.derive[synthetic-a]']['notes']),
+                        rows['layout.canopy.derive[synthetic-a]']['notes'])
+        code, text = self.h.run('why', '--layout', 'synthetic-a', '--task', 'layout.imagery.audit')
+        self.assertEqual(code, 0, text)
+        self.assertIn("'knownRenovationAfter': '2025-03-01'", text)
+        self.assertIn("'capturedAt': '2024-06-01'", text)
+
+        code, text = self.h.run('run', '--layout', 'synthetic-a')
+        self.assertEqual(code, 0, text)
+        self.assertIn('failed 0', text)
+        self.assertIn('IMAGERY_TOO_OLD_FOR_KNOWN_RENOVATION — the retained imagery was flown before the catalog knownRenovationAfter date; retain a later capture or lift the date', text)
+        # Identity is inline: it re-validates whenever the catalog does, at no cost.
+        self.assertEqual(self.executed(text), {'catalog.validate[synthetic]', 'layout.identity.resolve[synthetic-a]', 'layout.capability.evaluate[synthetic-a]', 'layout.review.queue[synthetic-a]'})
+        queue = read_json(os.path.join(self.h.output, 'layouts', 'synthetic-a', 'review-queue.json'))
+        items = {i['pass']: i for i in queue['items']}
+        self.assertNotIn('imagery_review', items, 'sand shares against pre-renovation ground are not offered for review')
+        self.assertEqual(items['imagery_currency']['code'], 'IMAGERY_TOO_OLD_FOR_KNOWN_RENOVATION')
+        self.assertEqual(items['imagery_currency']['evidence'], {'knownRenovationAfter': '2025-03-01', 'capturedAt': ['2024-06-01'], 'earliestCapture': '2024-06-01', 'latestCapture': '2024-06-01',
+                                                                 'predatesRenovation': True, 'code': 'IMAGERY_TOO_OLD_FOR_KNOWN_RENOVATION'})
+        report = read_json(os.path.join(self.h.output, 'layouts', 'synthetic-a', 'capability-report.json'))
+        self.assertIn('IMAGERY_TOO_OLD_FOR_KNOWN_RENOVATION', report['blockedHigherTiers']['C3'])
+        self.assertTrue(report['evidence']['imageryCurrency']['predatesRenovation'])
+
+        # A renovation the capture already shows is no failure; the facility's
+        # date applies when the layout states none, and the layout's wins.
+        self.set_date(self.layout_path, None)
+        self.set_date(self.facility_path, '2023-01-01')
+        states = self.h.states('synthetic-a')
+        self.assertEqual(states['layout.imagery.audit[synthetic-a]'][0], 'cached')
+        self.assertEqual(states['layout.review.queue[synthetic-a]'][0], 'stale')
+        self.set_date(self.layout_path, '2025-03-01')
+        self.assertEqual(self.h.states('synthetic-a')['layout.imagery.audit[synthetic-a]'], ('blocked', 'IMAGERY_TOO_OLD_FOR_KNOWN_RENOVATION'))
+
+        # A later capture (a new raster) clears it without anyone touching the catalog.
+        self.h.world.naip_dates = ['2025-09-10']
+        self.h.world.naip_sha = 'naip-' + '1' * 60
+        code, text = self.h.run('invalidate', '--layout', 'synthetic-a', '--task', 'layout.canopy.derive', '--reason', 'NAIP 2025 published')
+        self.assertEqual(code, 0, text)
+        code, text = self.h.run('run', '--layout', 'synthetic-a')
+        self.assertEqual(code, 0, text)
+        self.assertIn('failed 0', text)
+        executed = self.executed(text)
+        self.assertIn('layout.canopy.derive[synthetic-a]', executed)
+        self.assertIn('layout.imagery.audit[synthetic-a]', executed)
+        self.assertEqual([k for k in executed if k.startswith('hole.')], [], 'the same groups compile nothing')
+        self.assertEqual(self.h.states('synthetic-a')['layout.imagery.audit[synthetic-a]'][0], 'cached')
+        queue = read_json(os.path.join(self.h.output, 'layouts', 'synthetic-a', 'review-queue.json'))
+        items = {i['pass']: i for i in queue['items']}
+        self.assertNotIn('imagery_currency', items)
+        self.assertEqual(items['imagery_review']['evidence']['knownRenovationAfter'], '2025-03-01')
+        report = read_json(os.path.join(self.h.output, 'layouts', 'synthetic-a', 'capability-report.json'))
+        self.assertNotIn('IMAGERY_TOO_OLD_FOR_KNOWN_RENOVATION', report['blockedHigherTiers']['C3'])
+        self.assertEqual(report['evidence']['imageryCurrency']['latestCapture'], '2025-09-10')
 
 
 class BlockerTests(unittest.TestCase):
