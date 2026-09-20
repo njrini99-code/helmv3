@@ -570,10 +570,22 @@ output; the numbers below are from that run). What it established:
   Landfall (66 %); none over Kentucky or PGA National.
 - Where a retained project export exists (five facilities), S1M agrees with
   it to a median |Δ| of 2–6 cm, p95 16–26 cm, mean within ±2 cm, and a
-  best-fit horizontal shift of (+0.5, −0.5…−1.0) m on every one — the same
-  offset each time, which reads as NAD83(2011) → WGS84 handling between the
-  two export paths rather than terrain, and is the first number an
-  acceptance rule has to name.
+  best-fit horizontal shift of (+0.5, −0.5…−1.0) m on every one; after that
+  shift the median is about 1 cm. The same offset each time is not terrain.
+  PROJ here maps the export's WGS84 UTM into NAD83(2011) Albers with the
+  EPSG null transformation (declaring the export as NAD83(2011) changes
+  nothing), so the offset sits between the two export paths: the image
+  service cut the retained exports into WGS84 with a real datum shift while
+  S1M is NAD83(2011) native. The sign and size fit — at the Upper a
+  lon/lat read as WGS84 (G2139)/ITRF2014 lands (+0.84 E, −0.88 N) m from
+  the same numbers read as NAD83(2011), and the retained export sits
+  (−0.5 E, +1.0 N) m from S1M for the same ground, which is that vector
+  within the 0.5 m search step. So an S1M adapter has to say which frame
+  its warp lands in: a null-transform warp puts the terrain about 1.2 m
+  from where the current exports (and, plausibly, a phone's GPS fix) put
+  it. That is the first number the acceptance rule has to name; the
+  ITRF-based inverse was not demonstrated cleanly tonight and is not
+  claimed.
 - The flight matters more than the cut date: the Greensboro tiles
   (Starmount, Sedgefield) were cut in June/July 2026 from lidar flown
   2003-01 – 2004-03 (the ScienceBase item's window; the per-tile GeoPackage
