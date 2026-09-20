@@ -114,7 +114,7 @@ with a stable reason code. It wraps the existing scripts (`fetch-osm-*`,
   (Vite on 127.0.0.1:8768) into the output root, one hole per node, with the
   §8 preset × viewport matrix in the task settings. The lab draws checked-in
   fixtures only, so a hole is served when
-  `src/test/fixtures/course-geometry/compiled-<layout>/asset-manifest.json`
+  `src/test/fixtures/course-geometry/compiled-*/asset-manifest.json` (one per layout)
   is hash-locked to the validated package and holds the factory's compile of
   that hole (`factory/lab.py`); otherwise `LAB_COURSE_NOT_SERVED` names both
   hashes. A lab that is not listening is a `Precondition`: the runner closes

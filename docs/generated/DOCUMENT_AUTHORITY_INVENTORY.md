@@ -190,7 +190,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/features/recruiting.md` | current | yes | - | - | 3 | 15 | - |
 | `memory/features/roster-team.md` | current | yes | - | - | 2 | 9 | - |
 | `memory/features/settings-preferences.md` | current | yes | - | - | 1 | 10 | - |
-| `memory/features/shot-tracking.md` | current | yes | - | yes | 6 | 54 | - |
+| `memory/features/shot-tracking.md` | current | yes | - | yes | 6 | 55 | - |
 | `memory/features/stats-analytics.md` | current | yes | - | yes | 2 | 26 | - |
 | `memory/features/team-access-control.md` | current | yes | - | - | 1 | 18 | - |
 | `memory/features/team-communications.md` | current | yes | - | - | 9 | 14 | - |
