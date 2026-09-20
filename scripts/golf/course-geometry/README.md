@@ -385,3 +385,26 @@ both hashes). Captures land under
 (`build-player-sheet.py`). Draw-call breaches and uncertain-gate failures are
 findings for `visual_signoff` on the review queue, never a failed capture; a
 page error, a missing image or a mesh other than the node's is.
+
+Imagery currency: a catalog `knownRenovationAfter` (layout over facility)
+against the retained imagery's capture dates. Imagery flown before it blocks
+`layout.imagery.audit` with `IMAGERY_TOO_OLD_FOR_KNOWN_RENOVATION`, notes the
+canopy node, and puts an `imagery_currency` item on the review queue; a later
+capture or a lifted date clears it (`factory/imagery.py`).
+
+### S1M discovery spike (read-only research)
+
+```bash
+python3 scripts/golf/course-geometry/research-s1m-coverage.py \
+  [--root output/course-geometry/factory]... [--facility <id>]...
+```
+
+Plan §19 C2: for every catalog facility, one TNM catalog query for the USGS
+Seamless 1 m DEM (`Seamless 1-m DEM (S1M)`), one ScienceBase read per tile
+for the source flight window, an HTTP range read of the AOI window from the
+COGs (never a whole 300–430 MB tile), and — where a retained project export
+exists under a root — a comparison every 25 m plus a ±2 m best-fit shift.
+Writes `research/s1m-coverage.{json,md}` under the first root, nothing else;
+`providerPolicy` and the compiler's provider do not move. `--facility` runs
+refresh those rows and keep the rest of the previous report. Tests:
+`test_research_s1m_coverage.py` (offline).

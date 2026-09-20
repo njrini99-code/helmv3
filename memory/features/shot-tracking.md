@@ -137,6 +137,13 @@ with a stable reason code. It wraps the existing scripts (`fetch-osm-*`,
   `imagery_currency` item in place of the sand-share review, and the
   capability report lists it against C3. A later capture or a lifted date
   clears it; nothing that never read the date is rebuilt.
+- `research-s1m-coverage.py` is the §19 S1M discovery spike: TNM discovery,
+  ScienceBase provenance, a windowed COG read and a comparison against the
+  retained project export per facility, written to
+  `output/course-geometry/factory/research/s1m-coverage.{json,md}`. It is
+  read-only research; the terrain provider order in `providerPolicy` and
+  the compiler's source do not change until the owner writes the acceptance
+  rule.
 
 The current round flow uses a wizard for setup, hole configuration, shot capture, and submit. Draft save and continue routes support in-progress rounds. Database auto-save and confirmed per-hole checkpoints are the reliable path. The dashboard-level v2 sync engine drains the legacy IndexedDB bridge only for failed final submissions; normal Continue Round auto-saves must not write a second per-shot v1 queue.
 

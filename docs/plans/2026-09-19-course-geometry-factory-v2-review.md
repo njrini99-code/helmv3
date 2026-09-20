@@ -549,6 +549,47 @@ explicit `crs`/`bounds`/`analysisCapable` field set on the NAIP manifest
 impl file of `layout.canopy.derive`, and a script edit restages every live
 canopy node.
 
+Seventh item (§19 C2): the S1M discovery spike, `research-s1m-coverage.py`,
+run 2026-09-20 over all 12 catalog facilities and written to
+`output/course-geometry/factory/research/s1m-coverage.{json,md}` (uncommitted
+output; the numbers below are from that run). What it established:
+
+- The product exists and is discoverable: TNM dataset `Seamless 1-m DEM
+  (S1M)` ("Limited Availability", first published 2025-05-28), index
+  `USGS_Seamless1m_Index`, tiles named `S1M n<y>e<x> <cut date>` on the
+  NAD83(2011) Conus Albers 10 km grid (EPSG:6350, NAVD88 heights) — not the
+  UTM zone the project tiles and every retained export use. Each tile is a
+  306–437 MB cloud-optimised GeoTIFF (LZW, 512 px blocks, 5 overviews,
+  Float32, nodata −999999) on `prd-tnm.s3.amazonaws.com` with range requests,
+  so an AOI window is a 14–58 MB read in 7–47 s and no tile is ever
+  downloaded whole. A compiler adapter would warp Albers → course zone
+  locally instead of asking the 3DEP image service for a UTM cut.
+- Coverage today: full over the Upper, Cacapon, Forsyth, Winchester,
+  Starmount, Sedgefield and Cutter Creek; three of four cells over Boonsboro
+  (5.4 % nodata in the window) and Grande Dunes (7.9 %); one of two over
+  Landfall (66 %); none over Kentucky or PGA National.
+- Where a retained project export exists (five facilities), S1M agrees with
+  it to a median |Δ| of 2–6 cm, p95 16–26 cm, mean within ±2 cm, and a
+  best-fit horizontal shift of (+0.5, −0.5…−1.0) m on every one — the same
+  offset each time, which reads as NAD83(2011) → WGS84 handling between the
+  two export paths rather than terrain, and is the first number an
+  acceptance rule has to name.
+- The flight matters more than the cut date: the Greensboro tiles
+  (Starmount, Sedgefield) were cut in June/July 2026 from lidar flown
+  2003-01 – 2004-03 (the ScienceBase item's window; the per-tile GeoPackage
+  names the project under each pixel). "S1M covers Greensboro" is true and
+  is not 1 m data in substance, which is the silent-downgrade the plan
+  forbids and why `nc_onemap_dem03` stays the NC policy until the owner's
+  rule says what flight age it accepts. Forsyth's tile is the same 2017
+  Phase 4 flight as the retained export; Cacapon's mixes MD_Western_2021
+  with VA_FEMA_R3 2016.
+
+Nothing moved: `providerPolicy`, the compiler's provider and every source
+manifest are as they were. The report's "mechanical checks" pre-check the
+plan's example rule per facility; the rule itself is the owner's to write
+(flight-age limit, the datum shift, partial-cell handling, whether a window
+read replaces a tile download as the Class B unit).
+
 What would be built once the owner decides (proposed, not started):
 `retained.routeTraces` — one file per layout, `golfhelm-route-traces-v1`,
 18 tee→green lines with hole numbers drawn in QGIS over the retained NAIP
