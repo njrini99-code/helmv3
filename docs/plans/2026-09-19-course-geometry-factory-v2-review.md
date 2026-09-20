@@ -569,8 +569,9 @@ output; the numbers below are from that run). What it established:
   (5.4 % nodata in the window) and Grande Dunes (7.9 %); one of two over
   Landfall (66 %); none over Kentucky or PGA National. Measured against the
   AOI polygon rather than its bbox cells (the 2026-09-20 re-run), the source
-  units under the tiles cover 100 % of Boonsboro's AOI (the missing cell is
-  outside the course), 96.7 % of Grande Dunes' and 30.5 % of Landfall's.
+  units under the tiles cover 100 % of Boonsboro's AOI (the missing cell,
+  and the window's 5.4 % nodata, is envelope area outside the course
+  polygon), 96.7 % of Grande Dunes' and 30.5 % of Landfall's.
 - Where a retained project export exists (five facilities), S1M agrees with
   it to a median |Δ| of 2–6 cm, p95 16–26 cm, mean within ±2 cm, and a
   best-fit horizontal shift of (+0.5, −0.5…−1.0) m on every one; after that
@@ -586,10 +587,12 @@ output; the numbers below are from that run). What it established:
   reading — but reinterpreting the export that way and re-comparing made
   agreement worse (median 2.1 m, best shift saturated at the (+2, +2) m
   search edge), so it is not the explanation as tested. What is claimed is
-  the measurement: the current 3DEP exports and S1M place the same ground
-  about 1.1 m apart, consistently, and an S1M adapter has to say which of
-  the two positions it keeps. That is the first number the acceptance rule
-  has to name.
+  the measurement: against all five retained exports the best-fit shift is
+  +0.5 m east, and −1.0 m north at the Upper, Cacapon and Winchester but
+  −0.5 m at Forsyth and Grande Dunes (1.1 m and 0.7 m apart respectively,
+  at the 0.5 m search step), and an S1M adapter has to say which of the two
+  positions it keeps. That is the first number the acceptance rule has to
+  name.
 - The flight matters more than the cut date: the Greensboro tiles
   (Starmount, Sedgefield) were cut in June/July 2026 from
   `ned19_*_nc_statewide_2003` — the per-tile GeoPackage `s1m_source_inputs`
