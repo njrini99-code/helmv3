@@ -158,7 +158,8 @@ describe('savePartialRound — saved scoring identity', () => {
     const result = await savePartialRound(partialData, undefined, { allowReuse: true });
     expect(result.success).toBe(true);
     if (result.success) expect(result.data.roundId).toBe(ROUND_ID);
-    const { data: saved } = await fake.from('golf_rounds').select('*').eq('id', ROUND_ID).single();
+    const { data: saved, error } = await fake.from('golf_rounds').select('*').eq('id', ROUND_ID).single();
+    expect(error).toBeNull();
     expect(saved).toMatchObject({ course_id: COURSE_A, tee_id: '22222222-2222-4222-8222-222222222222' });
   });
   it('does not reuse a different tee when the recovering setup supplies an exact tee ID', async () => {
@@ -167,7 +168,8 @@ describe('savePartialRound — saved scoring identity', () => {
     const result = await savePartialRound({ ...partialData, teeId: '33333333-3333-4333-8333-333333333333' }, undefined, { allowReuse: true });
     expect(result.success).toBe(true);
     if (result.success) expect(result.data.roundId).not.toBe(ROUND_ID);
-    const { data: original } = await fake.from('golf_rounds').select('*').eq('id', ROUND_ID).single();
+    const { data: original, error } = await fake.from('golf_rounds').select('*').eq('id', ROUND_ID).single();
+    expect(error).toBeNull();
     expect(original?.tee_id).toBe('22222222-2222-4222-8222-222222222222');
   });
   it.each([undefined, '33333333-3333-4333-8333-333333333333'])('preserves the selected White tee when legacy or mismatched input supplies %s', async (teeId) => {

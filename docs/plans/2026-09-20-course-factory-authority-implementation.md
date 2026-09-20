@@ -6,20 +6,50 @@ This is an implementation checkpoint, not physical approval or deployment.
 
 ## Implemented
 
-| Finding | Change | Evidence |
-| --- | --- | --- |
-| Python accepts cards TypeScript rejects | Both support provenance notes through 4,096 characters; Python now enforces required source fields, URL, date shape, integer/bool distinction and handicap bounds | Shared valid/invalid corpus plus real checked-in scorecards |
-| Prepared publication grants capabilities despite failed verification | Capability evaluation depends on current successful publish verification and matching layout/package evidence | Failed verification, stale evidence, C2 measurement denial and successful C3 tests |
-| C2 pilot could become the general measurement policy | Live resolution explicitly requires C3; Upper exception is bound to its exact layout/hash | Copied pilot policy cannot admit a different C2 layout |
-| Course identity can fall through to a name | A nonempty unbound database course ID fails closed; Upper's catalog-backed database ID is explicitly registered | Exact ID, renamed course and conflicting name tests |
-| Build tee leaks into round labels | Live adapter receives selected tee and saved scorecard; explicit versioned hole crosswalk; live/review headers use round values | Reversed hole order and White-tee card against different build values |
-| Autosave/recovery clears tee provenance | Existing-round saves/submission read and preserve owned course/tee IDs; emergency/beacon payloads retain them; known tee ID constrains no-ID reuse | Real server-action boundary tests, including omitted/different tee and no-ID recovery |
-| Resume reads current library yardages | Continue loads saved hole yardage, then saved draft configuration; mutable course-hole read removed | Existing round suites plus source-path inspection |
-| No OSM way/green prevents candidate import | `retained.sourceGeometry` and `--source-geometry` assemble routes and surfaces before explicit green association | Real Python preparer plus TypeScript parser on nine sparse-OSM holes; separate legacy traced-green test |
-| Traces are smoothed before canon | Removed buffer/simplification; preserve original coordinate arrays and retained source artifact bytes | Exact polygon coordinate equality tests |
-| Source edit can reuse stale import | Source hash enters route/package inputs and implementation fingerprints; fresh-ledger adoption checks source metadata | Changed retained source produces a different route resolution; invalid source remains blocked |
-| NC source frame is mislabeled | EPSG:6543 native CRS, complete horizontal CRS check, catalog raster lock and item grid origin; separately verify item vertical CRS | Focused compiler tests and retained tiny metadata/export probes |
-| Asset refresh evicts suspended round version | Per-round cache lease plus a small independent browser binding; revocation fails closed; completion/deletion cleanup | Resume after changed manifest, eviction, pruning and revocation tests |
+- **Python accepts cards TypeScript rejects.** Both support provenance notes
+  through 4,096 characters; Python now enforces required source fields, URL,
+  date shape, integer/bool distinction and handicap bounds. Evidence: Shared
+  valid/invalid corpus plus real checked-in scorecards.
+- **Prepared publication grants capabilities despite failed verification.**
+  Capability evaluation depends on current successful publish verification and
+  matching layout/package evidence. Evidence: Failed verification, stale
+  evidence, C2 measurement denial and successful C3 tests.
+- **C2 pilot could become the general measurement policy.** Live resolution
+  explicitly requires C3; Upper exception is bound to its exact layout/hash.
+  Evidence: Copied pilot policy cannot admit a different C2 layout.
+- **Course identity can fall through to a name.** A nonempty unbound database
+  course ID fails closed; Upper's catalog-backed database ID is explicitly
+  registered. Evidence: Exact ID, renamed course and conflicting name tests.
+- **Build tee leaks into round labels.** Live adapter receives selected tee
+  and saved scorecard; explicit versioned hole crosswalk; live/review headers
+  use round values. Evidence: Reversed hole order and White-tee card against
+  different build values.
+- **Autosave/recovery clears tee provenance.** Existing-round saves/submission
+  read and preserve owned course/tee IDs; emergency/beacon payloads retain
+  them; known tee ID constrains no-ID reuse. Evidence: Real server-action
+  boundary tests, including omitted/different tee and no-ID recovery.
+- **Resume reads current library yardages.** Continue loads saved hole
+  yardage, then saved draft configuration; mutable course-hole read removed.
+  Evidence: Existing round suites plus source-path inspection.
+- **No OSM way/green prevents candidate import.** `retained.sourceGeometry`
+  and `--source-geometry` assemble routes and surfaces before explicit green
+  association. Evidence: Real Python preparer plus TypeScript parser on nine
+  sparse-OSM holes; separate legacy traced-green test.
+- **Traces are smoothed before canon.** Removed buffer/simplification;
+  preserve original coordinate arrays and retained source artifact bytes.
+  Evidence: Exact polygon coordinate equality tests.
+- **Source edit can reuse stale import.** Source hash enters route/package
+  inputs and implementation fingerprints; fresh-ledger adoption checks source
+  metadata. Evidence: Changed retained source produces a different route
+  resolution; invalid source remains blocked.
+- **NC source frame is mislabeled.** EPSG:6543 native CRS, complete horizontal
+  CRS check, catalog raster lock and item grid origin; separately verify item
+  vertical CRS. Evidence: Focused compiler tests and retained tiny
+  metadata/export probes.
+- **Asset refresh evicts suspended round version.** Per-round cache lease plus
+  a small independent browser binding; revocation fails closed;
+  completion/deletion cleanup. Evidence: Resume after changed manifest,
+  eviction, pruning and revocation tests.
 
 Scoring and shot persistence remain in the existing round ledger. There is no
 geometry-to-scorecard write path, no new paid API, and no production database,
