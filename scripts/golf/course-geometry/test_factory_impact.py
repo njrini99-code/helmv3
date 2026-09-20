@@ -52,7 +52,7 @@ class ImpactTests(unittest.TestCase):
         self.assertEqual(b['layout.routes.resolve[synthetic-b]'][0], 'ready')
         # Blocked-by-design rows stay honest.
         self.assertEqual(states['layout.publish.prepare[synthetic-a]'], ('blocked', 'PUBLISH_NOT_APPROVED'))
-        self.assertEqual(states['hole.visual.canary[synthetic-a:01]'], ('blocked', 'ADAPTER_NOT_IMPLEMENTED'))
+        self.assertEqual(states['hole.visual.canary[synthetic-a:01]'], ('blocked', 'LAB_COURSE_NOT_SERVED'))
         report = read_json(os.path.join(self.h.output, 'layouts', 'synthetic-a', 'capability-report.json'))
         self.assertEqual(report['earnedTier'], 'C1')
         self.assertIn('PUBLISH_NOT_APPROVED', report['blockedHigherTiers']['C2'])
@@ -471,6 +471,172 @@ class RetainedSafetyTests(unittest.TestCase):
         os.makedirs(victim)
         adapters.safe_rmtree(ctx, victim)
         self.assertFalse(os.path.isdir(victim))
+
+
+class LabCaptureTests(unittest.TestCase):
+    """The sign-off captures run against the local lab, which draws checked-in
+    fixtures only; the factory says so per hole and never writes under src."""
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp(prefix='factory-lab-')
+        self.h = Harness(self.tmp)
+        code, text = self.h.run('run', '--layout', 'synthetic-a')
+        self.assertEqual(code, 0, text)
+
+    def tearDown(self):
+        self.h.ledger.close()
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def blocker(self, layout, key):
+        row = self.h.plan_rows(layout, self.h.lab_executors())[key]
+        return row['state'], row['blockers'][0]['code'] if row['blockers'] else None, (row['blockers'][0]['evidence'] if row['blockers'] else {})
+
+    def test_a_course_the_lab_does_not_serve_is_blocked_per_hole_with_the_reason(self):
+        state, code, evidence = self.blocker('synthetic-a', 'hole.visual.canary[synthetic-a:07]')
+        self.assertEqual((state, code), ('blocked', 'LAB_COURSE_NOT_SERVED'))
+        self.assertIn('checked-in fixtures only', evidence['detail'])
+        self.assertEqual(evidence['holeKey'], 'synthetic-a-07')
+        self.assertIsNone(evidence['labPackageHash'])
+        # Retained in the lab, then the package moves (a bunker edit reaches OSM): the lab still holds the
+        # old package, so the hole is not served, and the plan says which hash the lab holds.
+        self.h.retain_in_lab('synthetic-a')
+        self.assertEqual(self.blocker('synthetic-a', 'hole.visual.canary[synthetic-a:07]')[0], 'ready')
+        self.h.world.bunker_shift[7] = 0.00002
+        code_, text = self.h.run('invalidate', '--layout', 'synthetic-a', '--task', 'facility.osm.snapshot', '--reason', 'OSM edit reported')
+        self.assertEqual(code_, 0, text)
+        code_, text = self.h.run('run', '--layout', 'synthetic-a')
+        self.assertEqual(code_, 0, text)
+        state, code, evidence = self.blocker('synthetic-a', 'hole.visual.canary[synthetic-a:07]')
+        self.assertEqual((state, code), ('blocked', 'LAB_COURSE_NOT_SERVED'))
+        self.assertIn('another package', evidence['detail'])
+        self.assertNotEqual(evidence['labPackageHash'], evidence['packageHash'])
+        # The aggregates and the review queue are not held hostage: blocked optional deps let the queue run.
+        states = self.h.states('synthetic-a', self.h.lab_executors())
+        self.assertEqual(states['layout.visual.aggregate[synthetic-a]'], ('blocked', 'DEPENDENCY_BLOCKED'))
+        self.assertIn(states['layout.review.queue[synthetic-a]'][0], DONE)
+
+    def test_a_lab_that_is_not_listening_blocks_the_capture_without_a_failed_run(self):
+        self.h.retain_in_lab('synthetic-a')
+        self.assertEqual(self.h.states('synthetic-a', self.h.lab_executors())['hole.visual.canary[synthetic-a:01]'], ('ready', 'NO_SUCCESSFUL_FINGERPRINT'))
+        session, commands = self.h.lab_session(listening=False)
+        with session:
+            code, text = self.h.run('run', '--layout', 'synthetic-a', '--task', 'hole.visual.canary', executors=self.h.lab_executors())
+        self.assertEqual(code, 0, text)
+        self.assertIn('failed 0', text)
+        self.assertIn('LAB_NOT_LISTENING', text)
+        self.assertEqual(commands.calls, [])
+        last = self.h.ledger.last_run('hole.visual.canary[synthetic-a:01]')
+        self.assertEqual((last['state'], last['blocker_code']), ('blocked', 'LAB_NOT_LISTENING'))
+        # Still ready, never "failed": nothing about the work went wrong.
+        self.assertEqual(self.h.states('synthetic-a', self.h.lab_executors())['hole.visual.canary[synthetic-a:01]'], ('ready', 'NO_SUCCESSFUL_FINGERPRINT'))
+
+    def test_captures_run_per_hole_and_the_reader_gets_the_sheets_and_the_breaches(self):
+        self.h.retain_in_lab('synthetic-a')
+        self.h.world.draw_call_over = {7}
+        session, commands = self.h.lab_session()
+        with session:
+            code, text = self.h.run('run', '--layout', 'synthetic-a', executors=self.h.lab_executors())
+        self.assertEqual(code, 0, text)
+        self.assertIn('failed 0', text)
+        names = [name for name, _ in commands.calls]
+        self.assertEqual(names.count('capture-visual-canaries.cjs'), 18)
+        self.assertEqual(names.count('capture-player-view.cjs'), 18 * 4)
+        self.assertEqual(names.count('build-canary-sheet.py'), 4)
+        self.assertEqual(names.count('build-player-sheet.py'), 2)
+        canary_args = dict(a.split('=', 1) for a in next(args for name, args in commands.calls if name == 'capture-visual-canaries.cjs' and '--holes=7' in args) if '=' in a)
+        self.assertEqual(canary_args['--course'], 'synthetic-a')
+        self.assertEqual(canary_args['--presets'], 'Top,Terrain,Side')
+        self.assertTrue(canary_args['--out'].startswith(os.path.join(self.h.output, 'layouts', 'synthetic-a', 'visual', 'holes', 'synthetic-a-07')), canary_args['--out'])
+        states = self.h.states('synthetic-a', self.h.lab_executors())
+        not_done = {k: v for k, v in states.items() if v[0] not in DONE and not k.startswith(('layout.publish', 'layout.review.compose'))}
+        self.assertEqual(not_done, {}, not_done)
+        # One report for the layout, files relative to it, and the breach where the fake lab put it.
+        merged = read_json(os.path.join(self.h.output, 'layouts', 'synthetic-a', 'visual', 'canaries.json'))
+        self.assertEqual(len(merged['captures']), 18 * 3 * 4)
+        self.assertTrue(all(c['file'].startswith('holes/synthetic-a-') for c in merged['captures']))
+        self.assertTrue(all(os.path.isfile(os.path.join(self.h.output, 'layouts', 'synthetic-a', 'visual', c['file'])) for c in merged['captures']))
+        summary = read_json(os.path.join(self.h.output, 'layouts', 'synthetic-a', 'visual', 'visual-summary.json'))
+        self.assertEqual(summary['captures'], 216)
+        self.assertEqual({b['hole'] for b in summary['drawCallBreaches']}, {7})
+        self.assertEqual(len(summary['drawCallBreaches']), 3)
+        self.assertEqual(summary['sheets'], [f'output/course-geometry/factory/layouts/synthetic-a/visual/sheet-{v}.png' for v in ('390x844', '430x932', '768x1024', '1440x1000')])
+        player = read_json(os.path.join(self.h.output, 'layouts', 'synthetic-a', 'player', 'player-summary.json'))
+        self.assertEqual((player['captures'], player['holes']), (72, 18))
+        self.assertEqual({b['hole'] for b in player['drawCallBreaches']}, {7})
+        self.assertEqual(player['views'], ['desktop-terrain', 'phone-green', 'phone-terrain', 'phone-top'])
+        queue = read_json(os.path.join(self.h.output, 'layouts', 'synthetic-a', 'review-queue.json'))
+        signoff = next(i for i in queue['items'] if i['pass'] == 'visual_signoff')
+        self.assertEqual(signoff['evidence']['drawCallBreaches'], 3 + 3)
+        self.assertEqual(signoff['evidence']['canaryCaptures'], 216)
+        # Every capture is a ledger artifact under the output root; a second run is a no-op.
+        artifacts = self.h.ledger.artifacts_for('hole.visual.canary[synthetic-a:07]')
+        self.assertEqual(len(artifacts), 13)
+        self.assertTrue(all(a.path.startswith(self.h.output) for a in artifacts))
+        with session:
+            code, text = self.h.run('run', '--layout', 'synthetic-a', executors=self.h.lab_executors())
+        self.assertIn('executed 0', text)
+
+    def test_a_page_error_or_another_mesh_fails_that_hole_only(self):
+        self.h.retain_in_lab('synthetic-a')
+        self.h.world.lab_page_errors = {3}
+        self.h.world.lab_mesh_override = {5: 'f' * 64}
+        session, _commands = self.h.lab_session()
+        with session:
+            code, text = self.h.run('run', '--layout', 'synthetic-a', '--task', 'hole.visual.canary', executors=self.h.lab_executors())
+        self.assertEqual(code, 1, text)
+        self.assertIn('failed 2', text)
+        rows = self.h.plan_rows('synthetic-a', self.h.lab_executors())
+        self.assertEqual(rows['hole.visual.canary[synthetic-a:03]']['state'], 'failed')
+        self.assertEqual(rows['hole.visual.canary[synthetic-a:05]']['state'], 'failed')
+        self.assertEqual(rows['hole.visual.canary[synthetic-a:04]']['state'], 'cached')
+        run_id = text.split('run ', 1)[1].split(':', 1)[0]
+        with open(os.path.join(self.h.output, 'runs', run_id, 'logs', 'hole.visual.canary.synthetic-a-03.log'), encoding='utf-8') as f:
+            self.assertIn('PAGE_ERRORS', f.read())
+        self.assertIn('CAPTURE_MESH_MISMATCH', text)
+
+
+class LabVerdictTests(unittest.TestCase):
+    def report(self, **overrides):
+        captures = [{'hole': 7, 'preset': p, 'viewport': v, 'file': f'hole-07-{p.lower()}-{v}.png', 'metadata': {'terrainHash': 'a' * 64, 'drawCallStatus': 'within'}}
+                    for p in ('Top', 'Side') for v in ('390x844', '1440x1000')]
+        return {'captures': captures, 'errors': [], **overrides}
+
+    def test_canary_verdicts(self):
+        from factory import lab
+        tmp = tempfile.mkdtemp(prefix='factory-verdict-')
+        try:
+            report = self.report()
+            for c in report['captures']:
+                open(os.path.join(tmp, c['file']), 'wb').close()
+            self.assertIsNone(lab.canary_problem(report, 7, ('Top', 'Side'), ('390x844', '1440x1000'), 'a' * 64, tmp))
+            # A draw-call breach is a finding, not a failed capture.
+            report['captures'][0]['metadata']['drawCallStatus'] = 'over'
+            self.assertIsNone(lab.canary_problem(report, 7, ('Top', 'Side'), ('390x844', '1440x1000'), 'a' * 64, tmp))
+            self.assertEqual(len(lab.budget_breaches(report['captures'])), 1)
+            self.assertTrue(lab.canary_problem(None, 7, ('Top',), ('390x844',), 'a' * 64, tmp).startswith('CAPTURE_REPORT_MISSING'))
+            self.assertTrue(lab.canary_problem(self.report(errors=[{'viewport': '390x844', 'message': 'boom'}]), 7, ('Top',), ('390x844',), 'a' * 64, tmp).startswith('PAGE_ERRORS'))
+            self.assertTrue(lab.canary_problem(report, 7, ('Top', 'Side', 'Terrain'), ('390x844', '1440x1000'), 'a' * 64, tmp).startswith('CAPTURE_MISSING: 2 of 6'))
+            os.remove(os.path.join(tmp, report['captures'][0]['file']))
+            self.assertIn('not on disk', lab.canary_problem(report, 7, ('Top', 'Side'), ('390x844', '1440x1000'), 'a' * 64, tmp))
+            open(os.path.join(tmp, report['captures'][0]['file']), 'wb').close()
+            self.assertTrue(lab.canary_problem(report, 7, ('Top', 'Side'), ('390x844', '1440x1000'), 'b' * 64, tmp).startswith('CAPTURE_MESH_MISMATCH'))
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
+    def test_player_verdicts(self):
+        from factory import lab
+        tmp = tempfile.mkdtemp(prefix='factory-verdict-')
+        try:
+            image = os.path.join(tmp, 'phone-terrain.png')
+            open(image, 'wb').close()
+            doc = {'dataset': {'terrainHash': 'a' * 64, 'drawCallStatus': 'over'}, 'errors': []}
+            self.assertIsNone(lab.player_problem(doc, image, 'a' * 64))
+            self.assertTrue(lab.player_problem(None, image, 'a' * 64).startswith('CAPTURE_REPORT_MISSING'))
+            self.assertTrue(lab.player_problem({**doc, 'errors': ['boom']}, image, 'a' * 64).startswith('PAGE_ERRORS'))
+            self.assertTrue(lab.player_problem(doc, os.path.join(tmp, 'missing.png'), 'a' * 64).startswith('CAPTURE_MISSING'))
+            self.assertTrue(lab.player_problem(doc, image, 'b' * 64).startswith('CAPTURE_MESH_MISMATCH'))
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
 
 
 if __name__ == '__main__':

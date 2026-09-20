@@ -34,6 +34,11 @@ def write_json(path, doc):
         json.dump(doc, f, indent=1, sort_keys=True, ensure_ascii=False)
 
 
+def read_json(path):
+    with open(path, encoding='utf-8') as f:
+        return json.load(f)
+
+
 def ring(cx, cy, r=0.0003, n=6):
     import math
     return [[round(cx + r * math.cos(2 * math.pi * i / n), 7), round(cy + r * math.sin(2 * math.pi * i / n), 7)] for i in range(n)] + [[round(cx + r, 7), round(cy, 7)]]
@@ -48,6 +53,12 @@ class World:
         self.hole_labels = {}       # layout slug -> how a mapper named that course's holes ('Synthetic A' -> 'Synthetic A Hole 3')
         self.canopy = True
         self.naip_sha = 'naip-' + '0' * 60
+        # What the fake lab draws: holes whose captures breach the draw-call
+        # budget, holes whose page throws, and holes the lab draws from a
+        # different mesh than the fixture names (a stale bundle).
+        self.draw_call_over = set()
+        self.lab_page_errors = set()
+        self.lab_mesh_override = {}
 
     def hole_ways(self, layout_slug, offset_lon):
         ways = []
@@ -388,6 +399,82 @@ def write_catalog(root, two_layouts=True, yards_a=None, routes_a=None, site_a_sh
             'holes': [{'hole': n, 'par': 4, 'yards': yards[n - 1]} for n in range(1, HOLES + 1)]})
 
 
+# A one-pixel PNG: the fake lab's captures are real image files, so the
+# artifact checks (presence, bytes, sha) run on them like on the real ones.
+PNG_1PX = bytes.fromhex('89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000d49444154789c63f8ffff3f0005fe02fe'
+                        'a735814a0000000049454e44ae426082')
+
+
+class FakeLabCommands:
+    """Stands in for adapters.run_command when a test drives the real capture
+    executors: writes what the two capture scripts and the two sheet builders
+    write, from the same argv, without node, playwright or a browser."""
+
+    def __init__(self, world):
+        self.world = world
+        self.calls = []
+
+    @staticmethod
+    def _args(command):
+        return {a[2:].split('=', 1)[0]: a[2:].split('=', 1)[1] if '=' in a else True for a in command if a.startswith('--')}
+
+    def _mesh(self, ctx, course, hole):
+        from factory import lab
+        manifest = read_json(lab.fixture_manifest_path(ctx, course))
+        entry = next(e for e in manifest['holes'].values() if e['ordinal'] == hole)
+        return self.world.lab_mesh_override.get(hole, entry['contentHash'])
+
+    def __call__(self, ctx, run, node, command, env=None, check=True):
+        command = [str(c) for c in command]
+        name = os.path.basename(command[1])
+        self.calls.append((name, command[2:]))
+        args = self._args(command)
+        code = 0
+        if name == 'capture-visual-canaries.cjs':
+            hole, out, course = int(args['holes']), args['out'], args['course']
+            presets, viewports = args['presets'].split(','), args['viewports'].split(',')
+            pkg = read_json(os.path.join(ctx.repo_root, 'src', 'test', 'fixtures', 'course-geometry', f'{course}.json'))
+            report = {'label': args['label'], 'course': course, 'packageHash': pkg['contentHash'], 'base': args['base'], 'capturedAt': '2026-09-19T00:00:00.000Z',
+                      'debugView': None, 'holes': [hole], 'presets': presets, 'viewports': viewports,
+                      'uncertainGate': {'max': 0.15, 'contextLayerHash': None, 'pass': [hole], 'fail': [], 'unavailable': []}, 'captures': [], 'errors': []}
+            os.makedirs(out, exist_ok=True)
+            for viewport in viewports:
+                if hole in self.world.lab_page_errors:
+                    report['errors'].append({'viewport': viewport, 'message': 'Uncaught TypeError: fake page error'})
+                for preset in presets:
+                    file = f'hole-{hole:02d}-{preset.lower()}-{viewport}.png'
+                    with open(os.path.join(out, file), 'wb') as f:
+                        f.write(PNG_1PX)
+                    over = hole in self.world.draw_call_over and viewport.startswith('390')
+                    report['captures'].append({'hole': hole, 'preset': preset, 'viewport': viewport, 'file': file,
+                                               'metadata': {'packageHash': pkg['contentHash'], 'drawCalls': 350 if over else 120, 'drawCallBudget': 200,
+                                                            'drawCallStatus': 'over' if over else 'within', 'renderTriangles': 90000, 'terrainHash': self._mesh(ctx, course, hole),
+                                                            'uncertainShare': 0.1, 'uncertainGate': 'pass'}})
+            write_json(os.path.join(out, 'canaries.json'), report)
+            code = 1 if report['errors'] or any(c['metadata']['drawCallStatus'] != 'within' for c in report['captures']) else 0
+        elif name == 'capture-player-view.cjs':
+            out, hole, course = args['out'], int(args['hole']), args['course']
+            os.makedirs(os.path.dirname(out), exist_ok=True)
+            with open(out, 'wb') as f:
+                f.write(PNG_1PX)
+            over = hole in self.world.draw_call_over and args['viewport'] == 'phone'
+            doc = {'course': course, 'hole': hole, 'viewport': {'width': 390, 'height': 844} if args['viewport'] == 'phone' else {'width': 1440, 'height': 1000},
+                   'view': args['view'], 'dataset': {'drawCalls': 350 if over else 130, 'drawCallBudget': 200, 'drawCallStatus': 'over' if over else 'within',
+                                                     'renderTriangles': 90000, 'terrainHash': self._mesh(ctx, course, hole)},
+                   'chrome': ['Close', 'Top', 'Terrain', 'Green'], 'errors': ['Uncaught TypeError: fake page error'] if hole in self.world.lab_page_errors else []}
+            write_json(out[:-4] + '.json', doc)
+            code = 1 if doc['errors'] or over else 0
+        elif name in ('build-canary-sheet.py', 'build-player-sheet.py'):
+            os.makedirs(os.path.dirname(command[-1]), exist_ok=True)
+            with open(command[-1], 'wb') as f:
+                f.write(PNG_1PX)
+        else:
+            raise AssertionError(f'unexpected command {command}')
+        if check and code:
+            raise RuntimeError(f'{name} exited {code}')
+        return type('Result', (), {'returncode': code})()
+
+
 class Harness:
     """Runs the CLI in-process against a temp repo root, with fake executors."""
 
@@ -417,10 +504,41 @@ class Harness:
                             executors=self.pipeline.executors() if executors is None else executors, spec_overrides=self.overrides)
         return code, buf.getvalue()
 
-    def plan_rows(self, layout):
-        code, text = self.run('plan', '--layout', layout, '--json')
+    def lab_executors(self):
+        """The fakes plus the real capture executors: a test drives them with
+        FakeLabCommands in place of adapters.run_command (see lab_session)."""
+        from factory import adapters
+        return {**self.pipeline.executors(), 'hole.visual.canary': adapters.capture_visual_canary, 'hole.player.capture': adapters.capture_player_view,
+                'layout.visual.aggregate': adapters.aggregate_visual, 'layout.player.aggregate': adapters.aggregate_player}
+
+    def lab_session(self, listening=True):
+        """Patches the lab probe, the node lookup and the command runner so the
+        real capture executors run against the fake lab; returns (context manager, commands)."""
+        from contextlib import ExitStack
+        from unittest import mock
+        commands = FakeLabCommands(self.world)
+        stack = ExitStack()
+        stack.enter_context(mock.patch('factory.lab.listening', return_value=listening))
+        stack.enter_context(mock.patch('factory.adapters.shutil.which', return_value='/usr/bin/node'))
+        stack.enter_context(mock.patch('factory.adapters.run_command', commands))
+        return stack, commands
+
+    def retain_in_lab(self, layout):
+        """What a PR does for a course the owner wants in the lab: the compiled
+        directory and the package become checked-in fixtures the lab is
+        hash-locked to (src/test/fixtures/course-geometry/compiled-<layout>)."""
+        import shutil
+        fixtures = os.path.join(self.repo, 'src', 'test', 'fixtures', 'course-geometry')
+        os.makedirs(fixtures, exist_ok=True)
+        target = os.path.join(fixtures, f'compiled-{layout}')
+        shutil.rmtree(target, ignore_errors=True)
+        shutil.copytree(os.path.join(self.output, 'layouts', layout, 'compiled'), target)
+        shutil.copyfile(os.path.join(self.output, 'layouts', layout, 'package', 'normalized.json'), os.path.join(fixtures, f'{layout}.json'))
+
+    def plan_rows(self, layout, executors=None):
+        code, text = self.run('plan', '--layout', layout, '--json', executors=executors)
         assert code == 0, text
         return {r['key']: r for r in json.loads(text)['rows']}
 
-    def states(self, layout):
-        return {k: (r['state'], r['reason']) for k, r in self.plan_rows(layout).items()}
+    def states(self, layout, executors=None):
+        return {k: (r['state'], r['reason']) for k, r in self.plan_rows(layout, executors).items()}

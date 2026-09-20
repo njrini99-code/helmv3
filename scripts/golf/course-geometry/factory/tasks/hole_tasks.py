@@ -2,10 +2,12 @@
 never the whole package hash, so one hole's edit stays one hole's rebuild."""
 import os
 
+from .. import lab
 from ..model import TaskSpec
 from .common import (
     TERRAIN_COMPILER_FILES,
     artifact,
+    blocked,
     dep_input,
     evaluation,
     exists,
@@ -83,14 +85,34 @@ def eval_world_build(node, ctx):
     return evaluation(inputs, [], artifacts, adoptable, notes, output=record.get('physicalWorldHash'))
 
 
+# The sign-off matrix (master plan §8): the canary script's own defaults,
+# fixed here so a changed matrix is a changed fingerprint.
+CANARY_PRESETS = ('Top', 'Terrain', 'Side')
+CANARY_VIEWPORTS = ('390x844', '430x932', '768x1024', '1440x1000')
+# Player-view captures: the phone in each view a player can open, the
+# desktop in the entry view.
+PLAYER_VIEWS = (('phone', 'terrain'), ('phone', 'top'), ('phone', 'green'), ('desktop', 'terrain'))
+
+
+def _lab_blockers(ctx, node):
+    """The lab draws checked-in fixtures only; a capture of another package
+    would describe nothing this node fingerprints. Checked once the package
+    exists, so a layout that is still being composed stays pending."""
+    hole = ctx.package_hole(node.scope.layout_id, node.scope.ordinal)
+    if not hole:
+        return []
+    ok, evidence = lab.served(ctx, node.scope.layout_id, hole['key'])
+    return [] if ok else [blocked('LAB_COURSE_NOT_SERVED', **evidence)]
+
+
 def eval_visual_canary(node, ctx):
     inputs = {'terrain': dep_input(ctx, node, 'hole.terrain.compile'), 'context': dep_input(ctx, node, 'layout.context.classify'),
               'holeDisplayInputHash': _sub(ctx, node, 'holeDisplayInputHash')}
-    return evaluation(inputs)
+    return evaluation(inputs, _lab_blockers(ctx, node))
 
 
 def eval_player_capture(node, ctx):
-    return evaluation({'canary': dep_input(ctx, node, 'hole.visual.canary')})
+    return evaluation({'canary': dep_input(ctx, node, 'hole.visual.canary')}, _lab_blockers(ctx, node))
 
 
 SPECS = [
@@ -101,7 +123,9 @@ SPECS = [
              impl_files=(script('build-course-world.py'), script('normalize-study.py'), script('compile-physical-world.py'), script('course-truth-gate.py')),
              estimated_bytes=30_000_000),
     TaskSpec('hole.visual.canary', '1', 'hole', ('hole.terrain.compile', 'layout.context.classify?'), eval_visual_canary,
-             impl_files=RENDERER_FILES + (script('capture-visual-canaries.cjs'),), estimated_bytes=50_000_000),
+             impl_files=RENDERER_FILES + (script('capture-visual-canaries.cjs'),), estimated_bytes=50_000_000,
+             settings={'presets': CANARY_PRESETS, 'viewports': CANARY_VIEWPORTS}),
     TaskSpec('hole.player.capture', '1', 'hole', ('hole.visual.canary',), eval_player_capture,
-             impl_files=RENDERER_FILES + (script('capture-player-view.cjs'),), estimated_bytes=50_000_000),
+             impl_files=RENDERER_FILES + (script('capture-player-view.cjs'),), estimated_bytes=50_000_000,
+             settings={'views': PLAYER_VIEWS}),
 ]

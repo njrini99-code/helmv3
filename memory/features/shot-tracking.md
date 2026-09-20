@@ -109,6 +109,20 @@ with a stable reason code. It wraps the existing scripts (`fetch-osm-*`,
   CRS it was cut in (readers take it from the export's spatial reference,
   legacy default 32617) and that CRS is part of the terrain source identity.
   Packages stay in the local ENU frame, which needs no zone.
+- Sign-off captures (`hole.visual.canary`, `hole.player.capture` and their
+  layout aggregates) run the two capture scripts against the local lab
+  (Vite on 127.0.0.1:8768) into the output root, one hole per node, with the
+  §8 preset × viewport matrix in the task settings. The lab draws checked-in
+  fixtures only, so a hole is served when
+  `src/test/fixtures/course-geometry/compiled-<layout>/asset-manifest.json`
+  is hash-locked to the validated package and holds the factory's compile of
+  that hole (`factory/lab.py`); otherwise `LAB_COURSE_NOT_SERVED` names both
+  hashes. A lab that is not listening is a `Precondition`: the runner closes
+  the task run as blocked (`LAB_NOT_LISTENING`), not failed. The report, not
+  the script's exit code, is the verdict: page errors, missing captures or a
+  capture of another mesh (`terrainHash`) fail the node; a §106 draw-call
+  breach or a hole over the uncertain gate are findings the aggregates
+  summarise and `layout.review.queue` carries as `visual_signoff`.
 
 The current round flow uses a wizard for setup, hole configuration, shot capture, and submit. Draft save and continue routes support in-progress rounds. Database auto-save and confirmed per-hole checkpoints are the reliable path. The dashboard-level v2 sync engine drains the legacy IndexedDB bridge only for failed final submissions; normal Continue Round auto-saves must not write a second per-shot v1 queue.
 

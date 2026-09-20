@@ -16,8 +16,11 @@ import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
 
+from . import lab
 from .fingerprints import digest, terrain_source_identity
-from .tasks.common import artifact
+from .model import Blocker, Precondition
+from .planner import DONE
+from .tasks.common import artifact, script
 
 OVERPASS = 'https://overpass-api.de/api/interpreter'
 USER_AGENT = 'GolfHelm course-geometry factory (bounded, one request per facility revision)'
@@ -31,22 +34,28 @@ def _write_json(path, doc):
         f.write('\n')
 
 
-def run_script(ctx, run, node, script_rel, args, env=None):
-    """Run one pipeline script from the repo root, appending stdout/stderr to
-    the node's run log. Raises with the tail of the output on failure."""
+def run_command(ctx, run, node, command, env=None, check=True):
+    """Run one command from the repo root, appending stdout/stderr to the
+    node's run log. Raises with the tail of the output on failure unless the
+    caller judges the outcome from what the command wrote (check=False)."""
     log_path = run.log_path(node)
     os.makedirs(os.path.dirname(log_path), exist_ok=True)
-    command = [sys.executable, ctx.abspath(script_rel), *[str(a) for a in args]]
+    command = [str(a) for a in command]
     with open(log_path, 'a', encoding='utf-8') as log:
         log.write('$ ' + ' '.join(command) + '\n')
         log.flush()
         result = subprocess.run(command, cwd=ctx.repo_root, stdout=log, stderr=subprocess.STDOUT, text=True,
                                 env={**os.environ, **(env or {})}, check=False)
-    if result.returncode != 0:
+    if check and result.returncode != 0:
         with open(log_path, encoding='utf-8') as log:
             tail = log.read()[-1500:]
-        raise RuntimeError(f'{os.path.basename(script_rel)} exited {result.returncode}\n{tail}')
+        raise RuntimeError(f'{os.path.basename(command[1] if len(command) > 1 else command[0])} exited {result.returncode}\n{tail}')
     return result
+
+
+def run_script(ctx, run, node, script_rel, args, env=None):
+    """Run one pipeline script (python) from the repo root."""
+    return run_command(ctx, run, node, [sys.executable, ctx.abspath(script_rel), *args], env=env)
 
 
 def safe_rmtree(ctx, path):
@@ -422,6 +431,16 @@ def review_queue(node, ctx, run):
         over = [h for h in report.get('holes', []) if (h.get('uncertainShare') or 0) > 0.15]
         items.append({'pass': 'context_review', 'code': 'HUMAN_CONTEXT_REVIEW_REQUIRED', 'evidence': {'holesOverUncertainGate': len(over), 'holes': len(report.get('holes', []))},
                       'action': 'answer the §39 prompts per hole in QGIS; accept/reject zones in the sidecar'})
+    visual = ctx.json(os.path.join(ctx.layout_out(layout_id), 'visual', 'visual-summary.json'), fresh=True)
+    player = ctx.json(os.path.join(ctx.layout_out(layout_id), 'player', 'player-summary.json'), fresh=True)
+    if (visual or player) and ctx.states.get(f'layout.visual.aggregate[{layout_id}]') in DONE:
+        # The captures exist; what they show is a reader's call (master plan
+        # §8 canary review, §106 draw-call budget, outside-world §39 gate).
+        breaches = len((visual or {}).get('drawCallBreaches') or []) + len((player or {}).get('drawCallBreaches') or [])
+        items.append({'pass': 'visual_signoff', 'code': 'HUMAN_VISUAL_SIGNOFF_REQUIRED',
+                      'evidence': {'canaryCaptures': (visual or {}).get('captures'), 'playerCaptures': (player or {}).get('captures'), 'drawCallBreaches': breaches,
+                                   'holesOverUncertainGate': len(((visual or {}).get('uncertainGate') or {}).get('fail') or []), 'sheets': (visual or {}).get('sheets') or []},
+                      'action': 'walk the canary sheets per viewport and the player captures; clear or accept each draw-call breach; answer the §39 prompts for holes over the gate'})
     pkg = ctx.package(layout_id)
     if pkg:
         unreviewed = sum(1 for f in pkg.get('features', []) if f.get('kind') != 'route' and not f.get('reviewed'))
@@ -430,6 +449,155 @@ def review_queue(node, ctx, run):
     path = os.path.join(ctx.layout_out(layout_id), 'review-queue.json')
     _write_json(path, {'kind': 'golfhelm-factory-review-queue-v1', 'layoutId': layout_id, 'packageHash': ctx.package_hash(layout_id), 'items': items})
     return [artifact('review-queue', path, 'C')]
+
+
+# --- sign-off captures (lab) --------------------------------------------------
+def _lab_base(ctx):
+    """The lab the captures run against. Its absence is a precondition, not a
+    failure: the node closes as blocked and stays ready for the next run."""
+    if not shutil.which('node'):
+        raise Precondition(Blocker('TOOL_MISSING', {'tool': 'node', 'detail': 'the capture scripts run under node with playwright'}))
+    if not lab.listening(lab.LAB_BASE):
+        raise Precondition(Blocker('LAB_NOT_LISTENING', {'base': lab.LAB_BASE, 'detail': 'start it from the repo root: npx vite --config scripts/golf/course-geometry/browser.config.ts'}))
+    return lab.LAB_BASE
+
+
+def _lab_hole(node, ctx):
+    hole = ctx.package_hole(node.scope.layout_id, node.scope.ordinal)
+    ok, evidence = lab.served(ctx, node.scope.layout_id, hole['key'])
+    if not ok:
+        raise Precondition(Blocker('LAB_COURSE_NOT_SERVED', evidence))
+    return hole, evidence['terrainHash']
+
+
+def _fresh_dir(ctx, path):
+    if os.path.isdir(path):
+        safe_rmtree(ctx, path)
+    os.makedirs(path)
+    return path
+
+
+def capture_visual_canary(node, ctx, run):
+    """The sign-off matrix for one hole (master plan §8): every preset ×
+    viewport in the task settings, drawn by the lab from the mesh this node
+    fingerprints and captured by capture-visual-canaries.cjs into the hole's
+    own directory. The report the script writes is the verdict, not its exit
+    code: see lab.canary_problem."""
+    layout_id, ordinal = node.scope.layout_id, node.scope.ordinal
+    hole, terrain_hash = _lab_hole(node, ctx)
+    base = _lab_base(ctx)
+    presets, viewports = node.spec.settings['presets'], node.spec.settings['viewports']
+    out = _fresh_dir(ctx, os.path.join(ctx.layout_out(layout_id), 'visual', 'holes', hole['key']))
+    run_command(ctx, run, node, ['node', ctx.abspath(script('capture-visual-canaries.cjs')), f'--label={layout_id}/{hole["key"]}', f'--base={base}',
+                                 f'--course={layout_id}', f'--holes={ordinal}', f'--presets={",".join(presets)}', f'--viewports={",".join(viewports)}', f'--out={out}'], check=False)
+    report_path = os.path.join(out, 'canaries.json')
+    report = ctx.json(report_path, fresh=True)
+    problem = lab.canary_problem(report, ordinal, presets, viewports, terrain_hash, out)
+    if problem:
+        raise RuntimeError(problem)
+    return [artifact('canaries', report_path, 'C')] + [artifact(f'capture:{c["file"]}', os.path.join(out, c['file']), 'C') for c in report['captures']]
+
+
+def capture_player_view(node, ctx, run):
+    """The production player view for one hole from the play fixture: one
+    capture per (viewport, view) in the task settings, judged like the
+    canaries (lab.player_problem)."""
+    layout_id, ordinal = node.scope.layout_id, node.scope.ordinal
+    hole, terrain_hash = _lab_hole(node, ctx)
+    base = _lab_base(ctx)
+    out = _fresh_dir(ctx, os.path.join(ctx.layout_out(layout_id), 'player', 'holes', hole['key']))
+    artifacts = []
+    for viewport, view in node.spec.settings['views']:
+        image = os.path.join(out, f'{viewport}-{view}.png')
+        run_command(ctx, run, node, ['node', ctx.abspath(script('capture-player-view.cjs')), f'--out={image}', f'--base={base}', f'--course={layout_id}',
+                                     f'--hole={ordinal}', f'--viewport={viewport}', f'--view={view}'], check=False)
+        doc = ctx.json(image[:-4] + '.json', fresh=True)
+        problem = lab.player_problem(doc, image, terrain_hash)
+        if problem:
+            raise RuntimeError(f'{viewport} {view}: {problem}')
+        artifacts += [artifact(f'player:{viewport}-{view}', image, 'C'), artifact(f'player:{viewport}-{view}:report', image[:-4] + '.json', 'C')]
+    return artifacts
+
+
+def _hole_reports(ctx, layout_id, folder, name):
+    for hole in (ctx.package(layout_id) or {}).get('holes', []):
+        doc = ctx.json(os.path.join(ctx.layout_out(layout_id), folder, 'holes', hole['key'], name), fresh=True)
+        if not doc:
+            raise RuntimeError(f'{folder}/holes/{hole["key"]}/{name} is missing; the hole captures have to succeed first')
+        yield hole, doc
+
+
+def aggregate_visual(node, ctx, run):
+    """One canaries.json for the layout from the per-hole matrices (files
+    named relative to the visual directory, so build-canary-sheet.py reads it
+    unchanged), a contact sheet per viewport, and the summary a reader clears:
+    draw-call budget breaches and holes over the uncertain gate."""
+    layout_id = node.scope.layout_id
+    root = os.path.join(ctx.layout_out(layout_id), 'visual')
+    merged = {'kind': 'golfhelm-factory-canaries-v1', 'label': layout_id, 'course': layout_id, 'packageHash': ctx.package_hash(layout_id), 'base': None,
+              'capturedAt': None, 'holes': [], 'presets': [], 'viewports': [], 'uncertainGate': {'max': None, 'contextLayerHash': None, 'pass': [], 'fail': [], 'unavailable': []},
+              'captures': [], 'errors': []}
+    for hole, report in _hole_reports(ctx, layout_id, 'visual', 'canaries.json'):
+        merged['base'] = report.get('base')
+        merged['capturedAt'] = max(filter(None, [merged['capturedAt'], report.get('capturedAt')]), default=None)
+        merged['holes'].append(hole['ordinal'])
+        merged['presets'] = merged['presets'] or list(report.get('presets') or [])
+        merged['viewports'] = merged['viewports'] or list(report.get('viewports') or [])
+        gate = report.get('uncertainGate') or {}
+        merged['uncertainGate']['max'] = gate.get('max', merged['uncertainGate']['max'])
+        merged['uncertainGate']['contextLayerHash'] = gate.get('contextLayerHash', merged['uncertainGate']['contextLayerHash'])
+        for verdict in ('pass', 'fail', 'unavailable'):
+            merged['uncertainGate'][verdict] += list(gate.get(verdict) or [])
+        merged['captures'] += [{**c, 'file': f'holes/{hole["key"]}/{c["file"]}'} for c in report.get('captures') or []]
+    for verdict in ('pass', 'fail', 'unavailable'):
+        merged['uncertainGate'][verdict] = sorted(set(merged['uncertainGate'][verdict]))
+    _write_json(os.path.join(root, 'canaries.json'), merged)
+    sheets = []
+    for viewport in merged['viewports']:
+        sheet = os.path.join(root, f'sheet-{viewport}.png')
+        run_script(ctx, run, node, script('build-canary-sheet.py'), [root, viewport, sheet])
+        sheets.append(sheet)
+    summary = {'kind': 'golfhelm-factory-visual-summary-v1', 'layoutId': layout_id, 'packageHash': merged['packageHash'], 'holes': len(merged['holes']),
+               'captures': len(merged['captures']), 'presets': merged['presets'], 'viewports': merged['viewports'],
+               'drawCallBreaches': lab.budget_breaches(merged['captures']), 'uncertainGate': merged['uncertainGate'],
+               'sheets': [ctx.relpath(s) for s in sheets]}
+    _write_json(os.path.join(root, 'visual-summary.json'), summary)
+    return [artifact('canaries', os.path.join(root, 'canaries.json'), 'C'), artifact('visual-summary', os.path.join(root, 'visual-summary.json'), 'C')] + \
+        [artifact(f'sheet:{os.path.basename(s)}', s, 'C') for s in sheets]
+
+
+def aggregate_player(node, ctx, run):
+    """The player captures of a layout in one summary (draw calls, budget
+    status, chrome, errors per hole and view) and a sheet per viewport."""
+    layout_id = node.scope.layout_id
+    root = os.path.join(ctx.layout_out(layout_id), 'player')
+    rows, breaches, views = [], [], []
+    for hole in (ctx.package(layout_id) or {}).get('holes', []):
+        # Each hole directory is rewritten whole by its capture node, so its
+        # reports are exactly the views the task settings asked for.
+        folder = os.path.join(root, 'holes', hole['key'])
+        names = sorted(f[:-5] for f in os.listdir(folder) if f.endswith('.json')) if os.path.isdir(folder) else []
+        if not names:
+            raise RuntimeError(f'player/holes/{hole["key"]} has no captures; the hole captures have to succeed first')
+        views = sorted(set(views) | set(names))
+        for name in names:
+            doc = ctx.json(os.path.join(folder, f'{name}.json'), fresh=True)
+            dataset = doc.get('dataset') or {}
+            row = {'hole': hole['ordinal'], 'key': hole['key'], 'capture': name, 'file': f'holes/{hole["key"]}/{name}.png', 'viewport': doc.get('viewport'), 'view': doc.get('view'),
+                   'drawCalls': dataset.get('drawCalls'), 'drawCallBudget': dataset.get('drawCallBudget'), 'drawCallStatus': dataset.get('drawCallStatus'),
+                   'renderTriangles': dataset.get('renderTriangles'), 'terrainHash': dataset.get('terrainHash'), 'chrome': doc.get('chrome'), 'errors': doc.get('errors') or []}
+            rows.append(row)
+            if row['drawCallStatus'] not in (None, 'within'):
+                breaches.append({'hole': row['hole'], 'file': row['file'], 'drawCalls': row['drawCalls'], 'drawCallBudget': row['drawCallBudget'], 'status': row['drawCallStatus']})
+    summary = {'kind': 'golfhelm-factory-player-summary-v1', 'layoutId': layout_id, 'packageHash': ctx.package_hash(layout_id), 'holes': len({r['hole'] for r in rows}),
+               'captures': len(rows), 'views': views, 'drawCallBreaches': breaches, 'rows': rows}
+    _write_json(os.path.join(root, 'player-summary.json'), summary)
+    sheets = []
+    for viewport in sorted({name.split('-', 1)[0] for name in views}):
+        sheet = os.path.join(root, f'sheet-{viewport}.png')
+        run_script(ctx, run, node, script('build-player-sheet.py'), [root, viewport, sheet])
+        sheets.append(sheet)
+    return [artifact('player-summary', os.path.join(root, 'player-summary.json'), 'C')] + [artifact(f'sheet:{os.path.basename(s)}', s, 'C') for s in sheets]
 
 
 DEFAULT_EXECUTORS = {
@@ -450,4 +618,8 @@ DEFAULT_EXECUTORS = {
     'layout.terrain.aggregate': aggregate_terrain,
     'layout.world.aggregate': aggregate_world,
     'layout.review.queue': review_queue,
+    'hole.visual.canary': capture_visual_canary,
+    'hole.player.capture': capture_player_view,
+    'layout.visual.aggregate': aggregate_visual,
+    'layout.player.aggregate': aggregate_player,
 }

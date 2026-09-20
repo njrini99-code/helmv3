@@ -49,6 +49,16 @@ class Blocker:
         return {'code': self.code, 'evidence': dict(self.evidence)}
 
 
+class Precondition(Exception):
+    """An executor found its environment not ready (no lab listening, a tool
+    missing): the runner records the node as blocked with this blocker, never
+    as a failed run, and its dependants wait behind it."""
+
+    def __init__(self, blocker):
+        super().__init__(f'{blocker.code}: ' + ', '.join(f'{k}={v}' for k, v in sorted(blocker.evidence.items())))
+        self.blocker = blocker
+
+
 @dataclass
 class ArtifactRef:
     """One expected or recorded output. `verify` decides how the recorded

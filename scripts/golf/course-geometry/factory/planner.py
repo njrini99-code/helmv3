@@ -137,7 +137,7 @@ def plan_node(node, ctx, recovered=(), adopt=True, free=None):
     return _needs_work(row, finish, executor, 'INTERRUPTED_RUN_RECOVERED' if node.key in recovered else 'NO_SUCCESSFUL_FINGERPRINT', free)
 
 
-HUMAN_FIRST = ('ADAPTER_NOT_IMPLEMENTED', 'DEPENDENCY_PENDING', 'DEPENDENCY_BLOCKED', 'DISK_GUARD_BLOCKED', 'TOOL_MISSING')
+HUMAN_FIRST = ('ADAPTER_NOT_IMPLEMENTED', 'DEPENDENCY_PENDING', 'DEPENDENCY_BLOCKED', 'DISK_GUARD_BLOCKED', 'TOOL_MISSING', 'LAB_NOT_LISTENING')
 
 
 def _blocker_rank(row):

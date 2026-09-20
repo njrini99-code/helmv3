@@ -30,7 +30,8 @@ def eval_review_queue(node, ctx):
     layout_id = node.scope.layout_id
     inputs = {'package': dep_input(ctx, node, 'layout.package.validate'), 'imagery': dep_input(ctx, node, 'layout.imagery.audit'),
               'context': dep_input(ctx, node, 'layout.context.classify'), 'routes': dep_input(ctx, node, 'layout.routes.resolve'),
-              'world': digest(fan_in_inputs(ctx, node, 'hole.world.build'))}
+              'world': digest(fan_in_inputs(ctx, node, 'hole.world.build')), 'visual': dep_input(ctx, node, 'layout.visual.aggregate'),
+              'player': dep_input(ctx, node, 'layout.player.aggregate')}
     path = os.path.join(ctx.layout_out(layout_id), 'review-queue.json')
     doc = ctx.json(path) if ctx.can_adopt(path) else None
     adoptable = bool(doc) and doc.get('packageHash') == ctx.package_hash(layout_id)
@@ -141,10 +142,11 @@ SPECS = [
              _summary_eval('terrain-summary', 'hole.terrain.compile', lambda c, l: os.path.join(c.layout_out(l), 'terrain-summary.json'), 'contentHash'), retention='C', estimated_bytes=100_000),
     TaskSpec('layout.world.aggregate', '1', 'layout', ('hole.world.build*',),
              _summary_eval('world-manifest', 'hole.world.build', lambda c, l: os.path.join(c.layout_out(l), 'world', 'course-world-manifest.json'), 'physicalWorldHash'), retention='C', estimated_bytes=100_000),
-    TaskSpec('layout.review.queue', '1', 'layout', ('layout.package.validate', 'layout.routes.resolve', 'layout.imagery.audit?', 'layout.context.classify?', 'hole.world.build*?'), eval_review_queue,
+    TaskSpec('layout.review.queue', '1', 'layout', ('layout.package.validate', 'layout.routes.resolve', 'layout.imagery.audit?', 'layout.context.classify?', 'hole.world.build*?',
+                                                    'layout.visual.aggregate?', 'layout.player.aggregate?'), eval_review_queue,
              retention='C', estimated_bytes=100_000),
     TaskSpec('layout.visual.aggregate', '1', 'layout', ('hole.visual.canary*',), eval_visual_aggregate, impl_files=(script('build-canary-sheet.py'),), estimated_bytes=10_000_000),
-    TaskSpec('layout.player.aggregate', '1', 'layout', ('hole.player.capture*',), eval_player_aggregate, estimated_bytes=10_000_000),
+    TaskSpec('layout.player.aggregate', '1', 'layout', ('hole.player.capture*',), eval_player_aggregate, impl_files=(script('build-player-sheet.py'),), estimated_bytes=10_000_000),
     TaskSpec('layout.publish.prepare', '1', 'layout', ('layout.package.validate', 'hole.terrain.compile*', 'layout.context.classify?'), eval_publish_prepare,
              impl_files=(script('publish-course-assets.mts'),), retention='D', estimated_bytes=60_000_000),
     TaskSpec('layout.publish.verify', '1', 'layout', ('layout.publish.prepare',), eval_publish_verify, estimated_bytes=100_000),

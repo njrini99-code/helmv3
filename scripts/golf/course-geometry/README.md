@@ -371,3 +371,17 @@ States: `ready`, `pending` (waiting on upstream, root named), `cached`
 `blocked` (own code, or `DEPENDENCY_BLOCKED` with the root code), `failed`.
 Reason codes and their meaning: `factory/reasons.py`. Runs leave
 `runs/<id>/report.{json,md}` and one log per task.
+
+Sign-off captures (`hole.visual.canary`, `hole.player.capture`, the two
+layout aggregates) need the lab listening (`npx vite --config
+scripts/golf/course-geometry/browser.config.ts`, port 8768) and a course the
+lab serves: its compiled fixture under `src/test/fixtures/course-geometry/`
+hash-locked to the factory's package. Otherwise the plan says
+`LAB_NOT_LISTENING` (the node stays ready) or `LAB_COURSE_NOT_SERVED` (with
+both hashes). Captures land under
+`layouts/<layout>/{visual,player}/holes/<hole>/`; the aggregates write
+`visual/canaries.json` + `sheet-<viewport>.png` + `visual-summary.json` and
+`player/player-summary.json` + `sheet-<viewport>.png`
+(`build-player-sheet.py`). Draw-call breaches and uncertain-gate failures are
+findings for `visual_signoff` on the review queue, never a failed capture; a
+page error, a missing image or a mesh other than the node's is.

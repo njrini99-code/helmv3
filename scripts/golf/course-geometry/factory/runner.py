@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 
 from . import disk
 from .fingerprints import digest
-from .model import Blocker
+from .model import Blocker, Precondition
 from .planner import DONE, output_hash, plan_node, verify_artifacts
 from .tasks import INLINE
 
@@ -131,6 +131,15 @@ def execute(graph, ctx, run, keys=None, dry_run=False, recovered=()):
             run.artifacts.extend(a.as_dict() for a in artifacts)
             with open(log_path, 'a', encoding='utf-8') as log:
                 log.write(f'{key}: success in {time.monotonic() - started:.3f}s\n')
+        except Precondition as exc:
+            # Not a failure of the work: the environment the task needs is
+            # absent. The task run closes as blocked, the plan stays ready.
+            with open(log_path, 'a', encoding='utf-8') as log:
+                log.write(f'{key}: blocked {exc}\n')
+            ledger.end_task(task_run_id, 'blocked', None, exc.blocker.code)
+            row.state, row.reason, row.blockers = 'blocked', exc.blocker.code, [exc.blocker]
+            ctx.states[key], ctx.rows[key] = 'blocked', row
+            run.blocked.append({'key': key, 'reason': row.reason, 'blockers': [exc.blocker.as_dict()]})
         except Exception as exc:  # noqa: BLE001 - every failure is recorded, never swallowed
             with open(log_path, 'a', encoding='utf-8') as log:
                 log.write(f'{key}: failed\n{traceback.format_exc()}\n')

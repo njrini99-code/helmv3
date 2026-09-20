@@ -62,7 +62,9 @@ class GoldenPlanTests(unittest.TestCase):
             self.assertIn(key, adopted)
         self.assertEqual(sum(1 for k in adopted if k.startswith('hole.terrain.compile[')), 18)
         self.assertEqual(rows['layout.routes.resolve[peek-n-peak-upper]'], ('ready', 'NO_SUCCESSFUL_FINGERPRINT'))
-        self.assertEqual(rows['hole.visual.canary[peek-n-peak-upper:01]'], ('blocked', 'ADAPTER_NOT_IMPLEMENTED'))
+        # The lab serves the Upper (its compiled fixture is hash-locked to this package), so the sign-off captures are runnable work.
+        self.assertEqual(rows['hole.visual.canary[peek-n-peak-upper:01]'], ('ready', 'NO_SUCCESSFUL_FINGERPRINT'))
+        self.assertEqual(rows['hole.player.capture[peek-n-peak-upper:01]'], ('pending', 'DEPENDENCY_PENDING'))
         self.assertEqual(rows['layout.publish.verify[peek-n-peak-upper]'], ('blocked', 'ADAPTER_NOT_IMPLEMENTED'))
         self.assertNotIn(('stale', 'FINGERPRINT_CHANGED'), rows.values())
 

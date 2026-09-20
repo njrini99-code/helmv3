@@ -105,7 +105,7 @@ What landed (`scripts/golf/course-geometry/factory/`, CLI `course-factory.py`):
   (`derive-canopy-naip.py`), imagery audit, base compile, context classify,
   per-hole compile and world build, aggregates, review queue, capability
   report. Canary/player capture and publish verify stay
-  `ADAPTER_NOT_IMPLEMENTED` (PR C).
+  `ADAPTER_NOT_IMPLEMENTED` (PR C; the captures land on PR C, below).
 - Intake (`intake.py`): cohort + coverage audit + library scorecards → C0
   manifests, most-played first, facility named by its OSM element, sibling
   polygon guard; wrote 10 facilities / 14 layouts / 14 scorecards.
@@ -402,14 +402,88 @@ once, that series as `osm_ref_named` — still queued for human
 naming both fit, or unnamed series (PGA National), still block. Big Blue's
 18 proposed ways agree with the scorecard on every par.
 
+Fourth item: the sign-off captures. `hole.visual.canary`,
+`hole.player.capture`, `layout.visual.aggregate` and
+`layout.player.aggregate` have adapters (`factory/adapters.py`,
+`factory/lab.py`). The captures run against the local lab (Vite on
+127.0.0.1:8768) through the two capture scripts unchanged, one hole per
+node, every preset × viewport of the master-plan §8 matrix (fixed in the
+task settings, so a changed matrix is a changed fingerprint) into the hole's
+own directory under the output root; the player node takes the phone in each
+view a player can open plus the desktop entry view.
+
+- What the lab serves is a fact the factory checks, not an assumption. The
+  lab's course registry is static and draws checked-in fixtures only, so a
+  hole is served when `src/test/fixtures/course-geometry/compiled-<layout>/
+  asset-manifest.json` is hash-locked to the package the factory validated,
+  lists the hole, and holds the same compile the factory built — the check
+  the lab's own loader makes. Otherwise the node is `LAB_COURSE_NOT_SERVED`
+  with the lab's package hash beside the factory's. That is the honest state
+  of Winchester, Forsyth, Grande Dunes, Cacapon (the lab draws its older
+  checked-in package) and Kentucky: retaining a compiled fixture in the lab
+  is a PR, like publishing; the factory never writes under `src`.
+- A lab that is not listening is a precondition, not a failure: the executor
+  raises `Precondition`, the runner closes the task run as `blocked`
+  (`LAB_NOT_LISTENING`) and the node stays `ready`. Same for a missing
+  `node` (`TOOL_MISSING`).
+- The script's exit code is not the verdict. It exits 1 for a §106
+  draw-call budget breach as well as for a page error; the adapter reads the
+  report instead: a page error, a missing capture, or a capture whose
+  `terrainHash` is not the mesh the node fingerprints fails the node
+  (`PAGE_ERRORS`, `CAPTURE_MISSING`, `CAPTURE_MESH_MISMATCH`); a breach and
+  a hole over the uncertain gate are findings. The visual aggregate merges
+  the 18 reports into one `canaries.json` (files relative to it, so
+  `build-canary-sheet.py` reads it unchanged), builds a sheet per viewport
+  and writes `visual-summary.json` (breaches, gate verdicts); the player
+  aggregate writes `player-summary.json` and a sheet per viewport
+  (`build-player-sheet.py`). `layout.review.queue` now takes both aggregates
+  as optional inputs and queues `visual_signoff` with the breach and gate
+  counts — the captures exist, what they show is a reader's call. Tradeoff,
+  deliberate: on a course the lab serves, the queue waits for the capture
+  pass (about 15 minutes for 18 holes) before it lists the route, imagery,
+  context and boundary passes; on a course the lab does not serve the
+  aggregates are blocked, which the planner exempts, and the queue runs at
+  once.
+- Tests (factory suite 84): a course the lab does not serve is blocked per
+  hole with the reason, and stays so when the lab holds an older package
+  after an OSM edit moved the factory's; a lab that is not listening blocks
+  without a failed run; the real executors driven by a fake command runner
+  capture 18 holes (216 canary + 72 player images, all ledger artifacts
+  under the output root), aggregate, feed the review queue, and reach
+  `executed 0` on the next run; a page error or another mesh fails that hole
+  only; the verdict functions directly.
+- Live on the Upper, the one course the lab serves at the factory's package
+  hash (`run-20260920T000117-8f5472`, head `05b0d612a` + this change,
+  lab pid 23912): 58 executed / 0 failed in 14 minutes — 18 canary nodes
+  (216 captures, 12 per hole, 0 page errors, 5–10 draw calls against a
+  budget of 140, every `terrainHash` the fixture mesh) and 18 player nodes
+  (72 captures, 0 page errors, 5–15 draws; the phone in Terrain, Top and
+  Green plus the desktop entry view, identical chrome on every hole), then
+  the two aggregates (four canary sheets, two player sheets,
+  `visual-summary.json`, `player-summary.json`) and the review queue with
+  `visual_signoff` (0 breaches, 17 holes over the uncertain gate). The
+  next run: executed 0, cached 96, blocked 1 (`layout.publish.verify`,
+  still `ADAPTER_NOT_IMPLEMENTED`). 353 MB under the output root; 10 GB
+  free after it. This is the first 18-hole lab matrix (the hand-run
+  canary set covers 8 holes) and it confirms the two known facts at course
+  scale: the draw budget holds everywhere (the "~350 draws in player mode"
+  figure is gone since the V7 batching), and the outside-world uncertain
+  gate passes 1 of 18 holes (15 at 13.5 %; 11 at 15.4 %, 16 at 16.2 %,
+  the worst 2 at 49 %) — a property of the retained context report, so
+  the §39 classification pass is what moves it, not rendering. The
+  factory does not diff labels; the go-forward pixel baselines stay
+  `canaries/v31-speed` and `player/audit-v13` in the outside-world
+  tracker until a reader compares a factory capture against them.
+
 Remaining PR C items: NC OneMap DEM03 terrain adapter (the USGS 1 m index
 has no tile over Greensboro — Starmount, the Cardinal/Sedgefield Dye and
 Bryan Park return only 1/9 arc-second NED — and Landfall/Cutter Creek carry
 the same policy; owner gates on the study script's license and
-vertical-datum notes), canary/player-capture adapters, and imagery tracing at
-course scale (`retained.imageryTraces` + `_prepare --traces` already carry
-single traced features; Bryan Park and Boonsboro, 52 rounds, are reachable no
-other way).
+vertical-datum notes), lab serving for factory-built courses (a fixture
+retention step or a dev-only lab source; owner decision, since the lab's
+registry is checked-in code), and imagery tracing at course scale
+(`retained.imageryTraces` + `_prepare --traces` already carry single traced
+features; Bryan Park and Boonsboro, 52 rounds, are reachable no other way).
 
 ## Not started
 
