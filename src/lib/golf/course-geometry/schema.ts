@@ -5,7 +5,11 @@ import { inFeature, inRing, simpleRing, segmentsIntersect } from './spatial';
 
 const position = z.tuple([z.number().finite().min(-180).max(180), z.number().finite().min(-90).max(90)]);
 const id = z.string().min(1).max(160);
-const ring = z.array(position).min(4).max(512).refine(r =>
+// Source-backed coastlines and water bodies can legitimately exceed the old
+// per-ring cap. The parser keeps an independent 40k package-wide vertex budget
+// and 4 MB payload limit below, so accepting a detailed individual ring does
+// not remove the bounded-input guard.
+const ring = z.array(position).min(4).max(2048).refine(r =>
   r[0]![0] === r.at(-1)![0] && r[0]![1] === r.at(-1)![1], 'Unclosed ring');
 const geometry = z.discriminatedUnion('type', [
   z.object({ type: z.literal('LineString'), coordinates: z.array(position).min(2).max(512) }).strict(),
@@ -22,7 +26,9 @@ const packageSchema = z.object({
   features: z.array(z.object({ id, kind: z.enum(['route', 'tee', 'fairway', 'green', 'bunker', 'water', 'rough', 'woods']),
     sourceIds: z.array(id).min(1).max(32), holeKeys: z.array(id).min(1).max(36),
     geometryWgs84: geometry, reviewed: z.boolean(), accuracyMeters: z.number().finite().positive().nullable(),
-  }).strict()).min(1).max(1000),
+  // A hole package can contain hundreds of individually mapped bunkers. This
+  // remains bounded by the 4 MB payload and 40k global vertex guards below.
+  }).strict()).min(1).max(2048),
   holes: z.array(z.object({ key: id, displayLabel: z.string().min(1).max(100).optional(), ordinal: z.number().int().min(1).max(36), par: z.number().int().min(3).max(6),
     scorecardYards: z.number().finite().positive().nullable(), featureIds: z.array(id).min(1).max(200),
     routeFeatureId: id.nullable(), greenFeatureId: id.nullable(), nominalTargetWgs84: position.nullable(),

@@ -24,6 +24,8 @@ TERRAIN_PROVIDERS = {
         'usgs_3dep_project_1m', 'usgs_3dep_project_1m', 'USGS 3DEP project 1 m'),
     'nc_onemap_dem03': TerrainProvider(
         'nc_onemap_dem03', 'nc_onemap_dem03', 'NC OneMap DEM03'),
+    'charleston_county_dem_2025': TerrainProvider(
+        'charleston_county_dem_2025', 'charleston_county_dem_2025', 'Charleston County LiDAR DEM 2025'),
 }
 
 

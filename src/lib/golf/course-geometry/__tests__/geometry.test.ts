@@ -115,6 +115,32 @@ describe('physical scale, coordinates and topology', () => {
     const changed = structuredClone(pkg); changed.holes[0]!.scorecardYards = 1000;
     expect(buildHoleScene(changed, 'cacapon-01').features).toEqual(buildHoleScene(pkg, 'cacapon-01').features);
   });
+  it('accepts a detailed source-backed surface ring within the global package budget', () => {
+    const detailed = structuredClone(data);
+    const water = detailed.features.find(feature => feature.kind === 'water')!;
+    const center: [number, number] = [-78.3, 39.52];
+    const ring: [number, number][] = Array.from({ length: 777 }, (_, index) => {
+      const angle = (Math.PI * 2 * index) / 777;
+      return [center[0] + Math.cos(angle) * 0.0001, center[1] + Math.sin(angle) * 0.0001];
+    });
+    ring.push(ring[0]!);
+    water.geometryWgs84 = { type: 'Polygon', coordinates: [ring] };
+    expect(parseGeometryPackage(detailed).features.find(feature => feature.id === water.id)?.geometryWgs84.coordinates[0]).toHaveLength(778);
+  });
+  it('accepts a source-backed package with more than 1,000 small mapped features', () => {
+    const detailed = structuredClone(data);
+    const bunker = detailed.features.find(feature => feature.kind === 'bunker')!;
+    const geometryWgs84 = { type: 'Polygon' as const, coordinates: [[
+      [-78.3, 39.52], [-78.2999, 39.52], [-78.2999, 39.5201], [-78.3, 39.52],
+    ] as [number, number][]] };
+    for (let index = 0; index < 1001; index++) {
+      const hole = detailed.holes[index % detailed.holes.length]!;
+      const id = `detailed-bunker-${index}`;
+      detailed.features.push({ ...bunker, id, holeKeys: [hole.key], geometryWgs84 });
+      hole.featureIds.push(id);
+    }
+    expect(parseGeometryPackage(detailed).features).toHaveLength(data.features.length + 1001);
+  });
   it.each(['duplicate', 'source', 'green', 'ring', 'nan', 'kind'] as const)('rejects malformed %s packages', kind => {
     const bad = structuredClone(data);
     if (kind === 'duplicate') bad.features.push(bad.features[0]!);

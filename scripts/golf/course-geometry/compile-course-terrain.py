@@ -26,6 +26,7 @@ from pathlib import Path
 import numpy as np
 import pyproj
 import shapely
+from hole_footprint import played_features
 from shapely import constrained_delaunay_triangles
 from shapely.geometry import LineString, MultiPolygon, Polygon, box
 from shapely.ops import polygonize, unary_union
@@ -41,6 +42,8 @@ CONTEXT_MARGIN_M = 160
 METRIC_STEP_M = 2
 TACTICAL_STEP_M = 4
 DETAIL_STEP_M = 2
+MAX_CONTEXT_RENDER_STEP_M = 64
+BUNKER_TACTICAL_BUFFER_M = 4
 ORIGINAL_TRIANGLE_ENVELOPE = 20000
 # Deliberately reviewed for expanded source-backed neighboring context. Do not
 # simplify source boundaries merely to fit the earlier single-hole envelope.
@@ -204,8 +207,13 @@ def local_bounds_perimeter(bounds, samples_per_edge=32):
             + [(west, north - (north - south) * t) for t in fractions[1:-1]])
 
 
-def hole_bounds(hole, raw_shapes, raw_features):
-    shapes = [raw_shapes[i] for i in hole['featureIds'] if raw_features[i]['kind'] != 'woods']
+def hole_bounds(hole, raw_shapes, raw_features, played_only=False):
+    # Facility acquisition keeps its established full source envelope. A
+    # single-hole display/refinement footprint excludes shared lakes/rough;
+    # those exact source polygons still render where they intersect context.
+    features = [raw_features[i] for i in hole['featureIds']]
+    features = played_features(features) if played_only else [f for f in features if f['kind'] != 'woods']
+    shapes = [raw_shapes[f['id']] for f in features]
     tactical = snap_bounds(unary_union(shapes).bounds, 12, 4)
     return tactical, snap_bounds(tactical, CONTEXT_MARGIN_M, 32)
 
@@ -232,6 +240,11 @@ AREA_CONSERVATION_ABSOLUTE_M2 = .002
 AREA_CONSERVATION_RELATIVE = 1e-6
 USGS_3DEP_PROVIDER = 'usgs_3dep_project_1m'
 NC_ONEMAP_PROVIDER = 'nc_onemap_dem03'
+CHARLESTON_COUNTY_DEM_2025_PROVIDER = 'charleston_county_dem_2025'
+CHARLESTON_COUNTY_DEM_2025_BASE = 'https://gisccimg.charlestoncounty.org/arcgis/rest/services/LiDAR/DEM_2025/ImageServer'
+CHARLESTON_COUNTY_DEM_2025_CRS = 'EPSG:6570'  # NAD83(2011) / South Carolina (ft)
+CHARLESTON_COUNTY_DEM_2025_PIXEL_FEET = 2.0
+INTERNATIONAL_FOOT_TO_METERS = 0.3048
 NC_ONEMAP_BASE = 'https://services.nconemap.gov/secure/rest/services/Elevation/DEM03/ImageServer'
 NC_ONEMAP_HOST = 'services.nconemap.gov'
 NC_ONEMAP_SOURCE_PATH = '/secure/rest/services/Elevation/DEM03/ImageServer'
@@ -360,7 +373,7 @@ def resolve_source_provider(directory, requested_provider, acquire_only=False):
         return requested_provider
     manifest = json.loads(manifest_path.read_text())
     provider = manifest.get('providerPolicyId', USGS_3DEP_PROVIDER)
-    if provider not in (USGS_3DEP_PROVIDER, NC_ONEMAP_PROVIDER):
+    if provider not in (USGS_3DEP_PROVIDER, NC_ONEMAP_PROVIDER, CHARLESTON_COUNTY_DEM_2025_PROVIDER):
         raise ValueError(f'Immutable source cache has unsupported terrain provider {provider!r}')
     if acquire_only and provider != requested_provider:
         raise ValueError('Immutable source cache belongs to another terrain provider')
@@ -698,6 +711,68 @@ def nc_rendering_only_grid_bounds(bounds, extent, resolution_m):
     return requested, [width, height], pixel_m
 
 
+def nc_native_covering_rasters(catalog, footprint):
+    """Return only full-covering native DEM03 rasters from an item query.
+
+    The service marks both county source rasters and 500--8000 ft overview
+    pyramids as ``category=1``.  An overview has an item-level ``lowps`` that
+    differs from the service's locked 3.125 US-foot native grid.  It cannot
+    participate in physical source selection, even when its large envelope
+    covers the request.  Missing/unparseable item spacing fails closed.
+    """
+    result = []
+    for row in catalog.get('features', []):
+        geometry = row.get('geometry') or {}
+        rings = geometry.get('rings') or []
+        try:
+            spacing = float((row.get('attributes') or {}).get('lowps'))
+        except (TypeError, ValueError):
+            continue
+        if (not rings or not math.isclose(spacing, NC_ONEMAP_NATIVE_PIXEL_US_FEET,
+                                          rel_tol=0, abs_tol=1e-9)):
+            continue
+        try:
+            polygon = Polygon(rings[0], rings[1:])
+        except (IndexError, TypeError, ValueError):
+            continue
+        if polygon.is_valid and polygon.covers(footprint):
+            result.append(row)
+    return result
+
+
+def nc_select_covering_raster(catalog, footprint, rendering_only_resolution_m=None):
+    """Select a locked NC raster without blurring physical and visual truth.
+
+    A physical acquisition needs exactly one full-coverage native item. Some
+    course envelopes straddle overlapping county products; their Z lineage is
+    not an authority conflict a compiler may resolve.  A *rendering-only*
+    export may instead choose the lowest stable object id and retain every
+    candidate id and that rule in provenance.  It is deliberately forbidden
+    to use that selection for physical terrain or measurements.
+    """
+    if catalog.get('exceededTransferLimit'):
+        raise ValueError('NC_SOURCE_SELECTION_UNRESOLVED: item query was truncated; no raster may be selected')
+    covering = nc_native_covering_rasters(catalog, footprint)
+    object_id_field = catalog.get('objectIdFieldName', 'objectid')
+    if len(covering) == 1:
+        selected = covering[0]
+        object_id = selected.get('attributes', {}).get(object_id_field)
+        return selected, [object_id], 'unique_native_coverage'
+    if not covering:
+        raise ValueError('NC_SOURCE_SELECTION_UNRESOLVED: no full-coverage native county raster')
+    if rendering_only_resolution_m is None:
+        raise ValueError('NC_SOURCE_SELECTION_UNRESOLVED: select one full-coverage county raster; never blend unknown vertical references')
+    # The source is used only to form a decorative height field.  Locking a
+    # stable item prevents a changing ArcGIS mosaic from silently changing a
+    # scene, while preserving the unresolved source choice in the manifest.
+    try:
+        ordered = sorted(covering, key=lambda row: int(row['attributes'][object_id_field]))
+    except (KeyError, TypeError, ValueError) as error:
+        raise ValueError('NC_SOURCE_SELECTION_UNRESOLVED: overlapping visual candidates have no stable object ids') from error
+    candidate_ids = [row['attributes'][object_id_field] for row in ordered]
+    return ordered[0], candidate_ids, 'visual_only_lowest_object_id_among_overlapping_native_coverage'
+
+
 def acquire_nc_onemap_source(directory, pkg, bounds, rendering_only_resolution_m=None):
     manifest = existing_source_manifest(directory, pkg, bounds, rendering_only=rendering_only_resolution_m is not None)
     if manifest is not None:
@@ -726,11 +801,9 @@ def acquire_nc_onemap_source(directory, pkg, bounds, rendering_only_resolution_m
         'spatialRel': 'esriSpatialRelIntersects', 'outFields': '*', 'returnGeometry': 'true',
     })
     footprint = box(*request_bounds)
-    covering = [row for row in catalog.get('features', [])
-                if row.get('geometry', {}).get('rings') and Polygon(row['geometry']['rings'][0], row['geometry']['rings'][1:]).covers(footprint)]
-    if catalog.get('exceededTransferLimit') or len(covering) != 1:
-        raise ValueError('NC_SOURCE_SELECTION_UNRESOLVED: select one full-coverage county raster; never blend unknown vertical references')
-    selected = covering[0]
+    selected, candidate_object_ids, selection_method = nc_select_covering_raster(
+        catalog, footprint, rendering_only_resolution_m,
+    )
     object_id = selected['attributes'][catalog.get('objectIdFieldName', 'objectid')]
     info = nc_onemap_request(f'{object_id}/info', {})
     validate_nc_horizontal_crs((info.get('extent') or {}).get('spatialReference') or {})
@@ -791,7 +864,8 @@ def acquire_nc_onemap_source(directory, pkg, bounds, rendering_only_resolution_m
     manifest = {
         'schemaVersion': 1, 'providerPolicyId': NC_ONEMAP_PROVIDER, 'packageHash': pkg['contentHash'],
         'requestedLocalBoundsM': bounds, 'selectedTitle': selected['attributes'].get('name', 'NC OneMap DEM03'), 'selectedObjectId': object_id,
-        'selectedObjectIds': [object_id], 'selectedTiles': [selected['attributes']], 'sourceUrl': NC_ONEMAP_BASE,
+        'selectedObjectIds': [object_id], 'candidateObjectIds': candidate_object_ids,
+        'selectionMethod': selection_method, 'selectedTiles': [selected['attributes']], 'sourceUrl': NC_ONEMAP_BASE,
         'acquisitionStart': None, 'acquisitionEnd': None, 'nativeResolutionM': max(output_pixel_m),
         'sourceNativeResolutionM': NC_ONEMAP_NATIVE_PIXEL_US_FEET * US_SURVEY_FOOT_TO_METERS,
         'exportPixelM': output_pixel_m,
@@ -801,8 +875,13 @@ def acquire_nc_onemap_source(directory, pkg, bounds, rendering_only_resolution_m
                        'verticalUnitStatus': 'unknown', 'visualVerticalUnitToMeters': US_SURVEY_FOOT_TO_METERS,
                        'visualElevationAssumption': 'US survey feet assumed for visual-only rendering; unavailable for measurements'}),
         'retrievedAt': retrieved,
-        'sourceSelection': ('bounded_rendering_only_resampled_service_export' if rendering_only_resolution_m is not None
-                            else 'bounded_native_grid_locked_county_export'),
+        'sourceSelection': (
+            'bounded_rendering_only_ambiguous_native_selection'
+            if rendering_only_resolution_m is not None and len(candidate_object_ids) > 1
+            else 'bounded_rendering_only_resampled_service_export'
+            if rendering_only_resolution_m is not None
+            else 'bounded_native_grid_locked_county_export'
+        ),
         'renderingOnly': rendering_only_resolution_m is not None,
         'renderingOnlyResolutionM': rendering_only_resolution_m,
         'coverageMethod': SOURCE_COVERAGE_METHOD, 'coveragePaddingMeters': SOURCE_COVERAGE_PADDING_METERS,
@@ -815,11 +894,182 @@ def acquire_nc_onemap_source(directory, pkg, bounds, rendering_only_resolution_m
     return manifest
 
 
+def charleston_county_request(operation, params):
+    """Request the county's public 2025 LiDAR ImageServer with explicit JSON.
+
+    This service is deliberately a named provider rather than a generic URL:
+    its horizontal grid and published vertical-unit evidence form part of the
+    immutable source contract.  A different county service needs its own
+    adapter and review, rather than inheriting these assumptions.
+    """
+    query = urllib.parse.urlencode({**params, 'f': 'json'})
+    request = urllib.request.Request(f'{CHARLESTON_COUNTY_DEM_2025_BASE}/{operation}?{query}',
+                                     headers={'User-Agent': 'GolfHelm course-geometry source compiler'})
+    with urllib.request.urlopen(request, timeout=120) as response:
+        payload = json.load(response)
+    if payload.get('error'):
+        raise ValueError('Charleston County DEM service error: ' + str(payload['error']))
+    return payload
+
+
+def charleston_county_read(url, limit):
+    parsed = urllib.parse.urlparse(url)
+    if parsed.scheme != 'https' or parsed.netloc != 'gisccimg.charlestoncounty.org':
+        raise ValueError('Charleston County DEM export URL is outside the public service host')
+    with urllib.request.urlopen(urllib.request.Request(url, headers={'User-Agent': 'GolfHelm course-geometry source compiler'}), timeout=120) as response:
+        raw = response.read(limit + 1)
+    if len(raw) > limit:
+        raise ValueError('Charleston County DEM export exceeds bounded acquisition cap')
+    return raw
+
+
+def export_charleston_county_grid(directory, bounds, width, height):
+    """Export and, if needed, stitch an exact grid from the 2025 county DEM.
+
+    The service limits image height to 4,100 pixels.  Splitting preserves the
+    requested source grid and rejects every shifted extent before a raster is
+    retained.  It is the same no-resampling contract used by the USGS path.
+    """
+    windows = terrain_export_windows(bounds, width, height)
+    parts = []
+    for number, window in enumerate(windows):
+        west, south, east, north = window['bounds']; w, h = window['pixels']
+        request = {
+            'bbox': f'{west},{south},{east},{north}', 'bboxSR': 6570, 'imageSR': 6570,
+            'size': f'{w},{h}', 'format': 'tiff', 'pixelType': 'F32',
+            'interpolation': 'RSP_BilinearInterpolation', 'adjustAspectRatio': 'false',
+            'renderingRule': json.dumps({'rasterFunction': 'None'}),
+        }
+        exported = charleston_county_request('exportImage', request)
+        if (exported.get('width'), exported.get('height')) != (w, h):
+            raise ValueError('Charleston County DEM export dimensions changed; source resampling requires review')
+        extent = exported.get('extent') or {}
+        if any(not math.isclose(float(extent.get(key, math.nan)), value, abs_tol=1e-6, rel_tol=0)
+               for key, value in zip(('xmin', 'ymin', 'xmax', 'ymax'), window['bounds'])):
+            raise ValueError('Charleston County DEM export changed the requested grid extent')
+        parts.append({'name': f'source-part-{number:03d}.tiff',
+                      'raster': charleston_county_read(exported['href'], 40_000_000),
+                      'export': {**exported, 'request': request}})
+    if len(parts) == 1:
+        return parts[0]['export'], parts[0]['raster'], []
+    from osgeo import gdal
+    gdal.UseExceptions()
+    with tempfile.TemporaryDirectory(prefix='.charleston-terrain-', dir=directory) as tmp:
+        root = Path(tmp); paths = []
+        for part, window in zip(parts, windows):
+            path = root / part['name']; path.write_bytes(part['raster']); paths.append(str(path))
+            ds = gdal.Open(str(path))
+            if ds.RasterCount != 1 or [ds.RasterXSize, ds.RasterYSize] != window['pixels']:
+                raise ValueError('Charleston County DEM TIFF has the wrong pixel grid')
+            if not pyproj.CRS.from_wkt(ds.GetProjectionRef()).equals(pyproj.CRS.from_epsg(6570)):
+                raise ValueError('Charleston County DEM TIFF CRS differs from the locked request')
+            west, south, east, north = window['bounds']; w, h = window['pixels']
+            expected = [west, (east-west)/w, 0, north, 0, -(north-south)/h]
+            if not np.allclose(ds.GetGeoTransform(), expected, atol=1e-7, rtol=0):
+                raise ValueError('Charleston County DEM TIFF grid differs from its locked request')
+            values, _nodata, _decoder = elevation_raster.read_elevation(path)
+            if elevation_raster.empty_fraction(values) > MAX_EMPTY_EXPORT_FRACTION:
+                raise ValueError('Charleston County DEM export contains unsupported empty fill')
+            ds = None
+        vrt = gdal.BuildVRT(str(root/'mosaic.vrt'), paths)
+        merged = gdal.Translate(str(root/'mosaic.tiff'), vrt,
+                                creationOptions=['COMPRESS=DEFLATE', 'PREDICTOR=3', 'TILED=YES'])
+        if [merged.RasterXSize, merged.RasterYSize] != [width, height]:
+            raise ValueError('Charleston County DEM mosaic did not preserve the original grid dimensions')
+        expected = [bounds[0], (bounds[2]-bounds[0])/width, 0, bounds[3], 0, -(bounds[3]-bounds[1])/height]
+        if not np.allclose(merged.GetGeoTransform(), expected, atol=1e-7, rtol=0):
+            raise ValueError('Charleston County DEM mosaic grid changed during assembly')
+        merged = vrt = None
+        raster = (root/'mosaic.tiff').read_bytes()
+    document = {'width': width, 'height': height,
+                'extent': dict(zip(('xmin', 'ymin', 'xmax', 'ymax'), bounds), spatialReference={'wkid': 6570}),
+                'assembly': 'exact_aligned_grid_mosaic_no_resampling',
+                'parts': [{'file': part['name'], 'sha256': hashlib.sha256(part['raster']).hexdigest(), **part['export']} for part in parts]}
+    return document, raster, parts
+
+
+def acquire_charleston_county_dem_2025_source(directory, pkg, bounds, rendering_only_resolution_m=None):
+    manifest = existing_source_manifest(directory, pkg, bounds, rendering_only=rendering_only_resolution_m is not None)
+    if manifest is not None:
+        if manifest.get('providerPolicyId') != CHARLESTON_COUNTY_DEM_2025_PROVIDER:
+            raise ValueError('Immutable source cache belongs to another terrain provider')
+        return manifest
+    directory.mkdir(parents=True, exist_ok=True)
+    metadata = charleston_county_request('', {})
+    if metadata.get('pixelSizeX') != CHARLESTON_COUNTY_DEM_2025_PIXEL_FEET or metadata.get('pixelSizeY') != CHARLESTON_COUNTY_DEM_2025_PIXEL_FEET:
+        raise ValueError('Charleston County DEM source grid changed; review the provider contract')
+    if metadata.get('bandCount') != 1 or metadata.get('pixelType') != 'F32' or not metadata.get('allowCopy'):
+        raise ValueError('Charleston County DEM metadata does not satisfy the immutable raster contract')
+    local_perimeter = local_bounds_perimeter(bounds)
+    east, north = zip(*local_perimeter)
+    lon, lat = geographic(east, north)
+    project = pyproj.Transformer.from_crs(4326, 6570, always_xy=True)
+    source_x, source_y = project.transform(lon, lat)
+    padding_ft = SOURCE_COVERAGE_PADDING_METERS / INTERNATIONAL_FOOT_TO_METERS
+    raw = [min(source_x)-padding_ft, min(source_y)-padding_ft, max(source_x)+padding_ft, max(source_y)+padding_ft]
+    spacing_ft = CHARLESTON_COUNTY_DEM_2025_PIXEL_FEET if rendering_only_resolution_m is None else max(
+        CHARLESTON_COUNTY_DEM_2025_PIXEL_FEET,
+        math.ceil((rendering_only_resolution_m / INTERNATIONAL_FOOT_TO_METERS) / CHARLESTON_COUNTY_DEM_2025_PIXEL_FEET) * CHARLESTON_COUNTY_DEM_2025_PIXEL_FEET,
+    )
+    a = math.floor(raw[0] / spacing_ft) * spacing_ft
+    b = math.floor(raw[1] / spacing_ft) * spacing_ft
+    c = math.ceil(raw[2] / spacing_ft) * spacing_ft
+    d = math.ceil(raw[3] / spacing_ft) * spacing_ft
+    width, height = int(round((c-a)/spacing_ft)), int(round((d-b)/spacing_ft))
+    terrain_export_windows([a, b, c, d], width, height)
+    service_extent = metadata.get('extent') or {}
+    if not (service_extent.get('xmin', math.inf) <= a <= c <= service_extent.get('xmax', -math.inf)
+            and service_extent.get('ymin', math.inf) <= b <= d <= service_extent.get('ymax', -math.inf)):
+        raise ValueError('Charleston County DEM does not cover the full bounded course context')
+    exported, raster, source_parts = export_charleston_county_grid(directory, [a, b, c, d], width, height)
+    scratch = directory/'elevation.tiff'; scratch.write_bytes(raster)
+    values, _nodata, decoder = elevation_raster.read_elevation(scratch)
+    empty = elevation_raster.empty_fraction(values)
+    if empty > MAX_EMPTY_EXPORT_FRACTION:
+        scratch.unlink(missing_ok=True)
+        raise ValueError('Charleston County DEM export contains unsupported empty fill')
+    write_json(directory/'catalog.json', metadata, True)
+    write_json(directory/'export.json', exported, True)
+    for part in source_parts:
+        (directory / part['name']).write_bytes(part['raster'])
+    manifest = {
+        'schemaVersion': 1, 'providerPolicyId': CHARLESTON_COUNTY_DEM_2025_PROVIDER,
+        'packageHash': pkg['contentHash'], 'requestedLocalBoundsM': bounds,
+        'selectedTitle': 'Charleston County LiDAR DEM 2025', 'selectedObjectId': None,
+        'selectedObjectIds': [], 'selectedTiles': [], 'sourceUrl': CHARLESTON_COUNTY_DEM_2025_BASE,
+        'acquisitionStart': '2025', 'acquisitionEnd': '2025',
+        'nativeResolutionM': spacing_ft * INTERNATIONAL_FOOT_TO_METERS,
+        'sourceNativeResolutionM': CHARLESTON_COUNTY_DEM_2025_PIXEL_FEET * INTERNATIONAL_FOOT_TO_METERS,
+        'exportPixelM': [spacing_ft * INTERNATIONAL_FOOT_TO_METERS, spacing_ft * INTERNATIONAL_FOOT_TO_METERS],
+        'horizontalExportCrs': CHARLESTON_COUNTY_DEM_2025_CRS,
+        'horizontalSourceWkid': metadata.get('spatialReference', {}).get('latestWkid'),
+        'horizontalSourceWkt': pyproj.CRS.from_epsg(6570).to_wkt(),
+        'verticalDatum': 'NAVD88 (Geoid 18)', 'rawVerticalUnit': 'international_foot',
+        'verticalUnitToMeters': INTERNATIONAL_FOOT_TO_METERS,
+        'verticalDatumEvidenceUrl': 'https://www.fisheries.noaa.gov/inport/item/77722',
+        'retrievedAt': datetime.now(timezone.utc).date().isoformat(),
+        'sourceSelection': 'charleston_county_2025_lidar_dem',
+        'renderingOnly': rendering_only_resolution_m is not None,
+        'renderingOnlyResolutionM': rendering_only_resolution_m,
+        'coverageMethod': SOURCE_COVERAGE_METHOD, 'coveragePaddingMeters': SOURCE_COVERAGE_PADDING_METERS,
+        'exportEmptyFraction': empty, 'decoder': decoder,
+        'licenseUrl': 'https://www.dnr.sc.gov/GIS/lidar.html',
+        'exportRequestCount': max(1, len(source_parts)),
+        'fileHashes': {name: hashlib.sha256((directory/name).read_bytes()).hexdigest()
+                       for name in ['catalog.json', 'export.json', 'elevation.tiff', *(part['name'] for part in source_parts)]},
+    }
+    write_json(directory/'source-manifest.json', manifest, True)
+    print(json.dumps({'source': manifest['selectedTitle'], 'pixels': [width, height], 'bytes': len(raster)}), flush=True)
+    return manifest
+
+
 def acquire_source(directory, pkg, bounds, provider=USGS_3DEP_PROVIDER, rendering_only_resolution_m=None):
     if provider == USGS_3DEP_PROVIDER:
         return acquire_usgs_source(directory, pkg, bounds, rendering_only_resolution_m)
     if provider == NC_ONEMAP_PROVIDER:
         return acquire_nc_onemap_source(directory, pkg, bounds, rendering_only_resolution_m)
+    if provider == CHARLESTON_COUNTY_DEM_2025_PROVIDER:
+        return acquire_charleston_county_dem_2025_source(directory, pkg, bounds, rendering_only_resolution_m)
     raise ValueError(f'No terrain source adapter for provider {provider!r}')
 
 
@@ -1062,7 +1312,7 @@ def compile_hole(hole, pkg, raw_shapes, raw_features, displays, outline_reports,
     DEM gradient, sampled per pixel), so the array only duplicated 37 % of
     the gzipped hole payload; legacy packages that still carry it are read
     unchanged."""
-    tactical_bounds, context_bounds = hole_bounds(hole, raw_shapes, raw_features)
+    tactical_bounds, context_bounds = hole_bounds(hole, raw_shapes, raw_features, played_only=True)
     context = box(*context_bounds)
     ribbons = (ribbons if ribbons is not None else Polygon()).intersection(context)
     selected = [f for f in pkg['features'] if f['kind'] != 'route' and raw_shapes[f['id']].intersects(context)]
@@ -1078,11 +1328,27 @@ def compile_hole(hole, pkg, raw_shapes, raw_features, displays, outline_reports,
     visible.reverse()
     # Only the played hole receives fine terrain sampling. Neighbor surfaces
     # remain actual polygons, rendered in context without changing ownership.
-    own = [raw_shapes[i] for i in hole['featureIds'] if raw_features[i]['kind'] != 'woods']
-    tactical = unary_union(own).buffer(12).intersection(context)
+    own = [raw_shapes[f['id']] for f in played_features([raw_features[i] for i in hole['featureIds']])]
+    # A dense bunker field should retain every source-backed boundary without
+    # forcing 4 m render cells across a 12 m halo around every small hazard.
+    # Fairway, green and tee surfaces retain the broad tactical halo; bunkers
+    # receive a smaller display-only halo. The canonical package, source DEM,
+    # metric grid and all bunker coordinates remain unchanged.
+    tactical_surfaces = [raw_shapes[i] for i in hole['featureIds']
+                         if raw_features[i]['kind'] in ('fairway', 'green', 'tee')]
+    bunker_surfaces = [raw_shapes[i] for i in hole['featureIds'] if raw_features[i]['kind'] == 'bunker']
+    tactical = unary_union(tactical_surfaces).buffer(12)
+    if bunker_surfaces:
+        tactical = tactical.union(unary_union(bunker_surfaces).buffer(BUNKER_TACTICAL_BUFFER_M))
+    tactical = tactical.intersection(context)
     if not ribbons.is_empty:
         tactical = tactical.union(ribbons.buffer(RIBBON_BAND_M).intersection(unary_union(own).buffer(RIBBON_REFINE_REACH_M)).intersection(context))
-    detail = unary_union([raw_shapes[i] for i in hole['featureIds'] if raw_features[i]['kind'] in ('green', 'bunker', 'tee')]).buffer(3)
+    # Greens and tee surfaces receive 2 m visual cells. Bunker footprints stay
+    # exact, but use the 4 m tactical mesh above: public macro DEM evidence is
+    # not a license to invent putting-grade bunker lips, and a crowded bunker
+    # field must not consume the active-hole mobile budget.
+    detail = unary_union([raw_shapes[i] for i in hole['featureIds']
+                          if raw_features[i]['kind'] in ('green', 'tee')]).buffer(3)
     cells = leaf_cells(context_bounds, tactical, detail, outer_step)
     cell_shapes = [cell for cell, _ in cells]
     tree = shapely.STRtree(cell_shapes)
@@ -1159,6 +1425,14 @@ def compile_hole(hole, pkg, raw_shapes, raw_features, displays, outline_reports,
             # less terrain detail. Canonical boundaries, source heights, the
             # metric grid and tactical/detail spacing remain unchanged.
             return compile_hole(hole, pkg, raw_shapes, raw_features, displays, outline_reports, source, outer_step, ribbons, source_normals, False)
+        if outer_step < MAX_CONTEXT_RENDER_STEP_M:
+            # A dense source-backed boundary can make the remote context exceed
+            # the mobile triangle budget even after visual bands are removed.
+            # Coarsen only the renderer's context cells. The canonical source
+            # polygons, tactical/detail cells, metric grid and sampled heights
+            # remain unchanged, and the report records the selected display LOD.
+            return compile_hole(hole, pkg, raw_shapes, raw_features, displays, outline_reports, source,
+                                min(outer_step * 2, MAX_CONTEXT_RENDER_STEP_M), ribbons, source_normals, False)
         raise ValueError(f'{hole["key"]}: {len(triangle_features)} triangles exceeds {MAX_TRIANGLES}; explicit LOD review required')
     unique = np.array(sorted(set(xy)), dtype=float)
     heights = source.sample(unique[:, 0], unique[:, 1])
@@ -1287,7 +1561,7 @@ def main():
     parser.add_argument('--context', type=Path, default=None, help='reviewed context layer whose ground ribbons become breaklines')
     parser.add_argument('--source-normals', action='store_true',
                         help='also emit the per-vertex sourceNormals array (legacy; the renderer shades from the metric grid)')
-    parser.add_argument('--provider', choices=(USGS_3DEP_PROVIDER, NC_ONEMAP_PROVIDER), default=USGS_3DEP_PROVIDER,
+    parser.add_argument('--provider', choices=(USGS_3DEP_PROVIDER, NC_ONEMAP_PROVIDER, CHARLESTON_COUNTY_DEM_2025_PROVIDER), default=USGS_3DEP_PROVIDER,
                         help='terrain adapter selected by the facility provider policy')
     parser.add_argument('--acquire-only', action='store_true',
                         help='lock the terrain source for this package and stop before compiling any hole (the course factory acquires once, compiles per hole)')

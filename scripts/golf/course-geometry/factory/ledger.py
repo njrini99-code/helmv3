@@ -185,14 +185,56 @@ class Ledger:
 
     def evictable(self, need_bytes):
         """Class B/C artifacts, largest first, until `need_bytes` is covered."""
+        return self.eviction_candidates(need_bytes)
+
+    def eviction_candidates(self, need_bytes, classes=('B', 'C'), path_prefix=None):
+        """Return existing disposable artifacts without changing the ledger.
+
+        Callers choose the retention classes deliberately.  The disk guard
+        uses both B and C for *advice*, while an operator may restrict an
+        actual eviction to reproducible C artifacts and a known intermediate
+        directory.  Prefix matching is exact-path based rather than a loose
+        substring so a course name cannot select an unrelated artifact.
+        """
+        if not classes or any(value not in ('B', 'C') for value in classes):
+            raise ValueError('only disposable B/C retention classes may be evicted')
+        marks = ','.join('?' * len(classes))
+        query = ("SELECT path, bytes, retention_class, producer_task_key FROM artifacts "
+                 f"WHERE retention_class IN ({marks})")
+        params = list(classes)
+        if path_prefix:
+            query += ' AND path LIKE ?'
+            params.append(os.path.join(os.path.abspath(path_prefix), '') + '%')
+        query += ' ORDER BY bytes DESC, path ASC'
         out, covered = [], 0
-        for r in self.db.execute("SELECT path, bytes, retention_class, producer_task_key FROM artifacts WHERE retention_class IN ('B','C') ORDER BY bytes DESC"):
+        for r in self.db.execute(query, params):
             if covered >= need_bytes:
                 break
             if os.path.exists(r['path']):
                 out.append({'path': r['path'], 'bytes': r['bytes'] or 0, 'retention': r['retention_class'], 'producer': r['producer_task_key']})
                 covered += r['bytes'] or 0
         return out
+
+    def forget_evicted(self, candidates, reason):
+        """Forget successfully deleted derived artifacts and force rebuild.
+
+        A retained successful task may otherwise look cached with an empty
+        artifact list.  Recording a normal manual invalidation preserves an
+        audit trail and makes the planner rebuild from its canonical inputs.
+        """
+        producers = set()
+        for candidate in candidates:
+            path = os.fspath(candidate['path'])
+            producer = candidate['producer']
+            self.db.execute('DELETE FROM artifacts WHERE producer_task_key=? AND path=?', (producer, path))
+            producers.add(producer)
+        stamp = now_iso()
+        actor = os.environ.get('USER', 'unknown')
+        for producer in sorted(producers):
+            scope = producer.split('[', 1)[1].rstrip(']') if '[' in producer else producer
+            self.db.execute('INSERT INTO manual_invalidations (task_key, scope_id, reason, created_at, actor) VALUES (?,?,?,?,?)',
+                            (producer, scope, reason, stamp, actor))
+        self.db.commit()
 
 
 def _as_hash(value):

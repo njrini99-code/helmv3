@@ -94,11 +94,20 @@ def build_parser():
     review = sub.add_parser('review-bundle', help='export one immutable local review bundle; optional serial captures, no admission or publication')
     review.add_argument('--layout', required=True)
     review.add_argument('--capture', action='store_true', help='capture every bundle hole using the existing loopback factory lab on port 8774')
+    recovery = sub.add_parser('route-recovery', help='inspect retained route sources and emit bounded remediation commands; no downloads or geometry writes')
+    recovery.add_argument('--layout')
+    recovery.add_argument('--facility')
+    recovery.add_argument('--json', action='store_true')
     i = sub.add_parser('invalidate')
     i.add_argument('--layout', required=True)
     i.add_argument('--task', required=True)
     i.add_argument('--hole', type=int)
     i.add_argument('--reason', required=True)
+    e = sub.add_parser('evict', help='remove selected reproducible factory intermediates; source truth is never selected')
+    e.add_argument('--bytes', type=int, required=True, help='minimum bytes to reclaim')
+    e.add_argument('--path-prefix', required=True, help='directory below --output containing only intended intermediates')
+    e.add_argument('--apply', action='store_true', help='perform deletion; default reports the exact candidates only')
+    e.add_argument('--json', action='store_true')
     return p
 
 
@@ -109,7 +118,9 @@ class Session:
         self.output_root = os.path.join(self.repo_root, args.output or DEFAULT_OUTPUT) if not (args.output and os.path.isabs(args.output)) else args.output
         self.catalog = load_catalog(self.catalog_root)
         self.specs = default_specs(spec_overrides)
-        self.ledger = ledger if ledger is not None else Ledger(os.path.join(self.output_root, 'state.sqlite'))
+        # Recovery is a retained-file inventory, including while a batch is
+        # running. Do not open/create the shared ledger for this command.
+        self.ledger = None if args.command == 'route-recovery' else (ledger if ledger is not None else Ledger(os.path.join(self.output_root, 'state.sqlite')))
         # Injected executors (tests) replace the real adapters wholesale, so a
         # test never reaches a script or the network by accident.
         self.ctx = Context(self.repo_root, self.catalog, self.output_root, self.ledger, adopt_output=not args.no_adopt_output,
@@ -285,6 +296,8 @@ def catalog_layouts(session):
 def cmd_batch(session, args, out):
     # Physical-world aggregation is the safe scale terminal.  A cohort batch
     # never performs player captures or creates publish manifests by default.
+    if args.until not in session.specs:
+        raise SystemExit(f'unknown batch terminal {args.until}; no tasks were run')
     if args.until in ('layout.publish.prepare', 'layout.publish.verify') or args.until.startswith('hole.player') or args.until.startswith('layout.player'):
         raise SystemExit('batch refuses capture or publish tasks; use an explicit per-layout run after review approval')
     if args.all_layouts:
@@ -308,9 +321,13 @@ def cmd_batch(session, args, out):
         # cannot feed measurements, but it prevents missing OSM route tags
         # from becoming a blank course. The independent dossier remains the
         # route-review evidence that unlocks the physical chain later.
-        keys = (select_keys(graph, until=args.until)
-                | select_keys(graph, task='layout.route.dossier')
-                | select_keys(graph, task='layout.visual.world.build'))
+        keys = select_keys(graph, until=args.until)
+        # The default whole-world batch retains its independent visual fallback.
+        # A deliberately earlier terminal is a work boundary: assembling routes
+        # or vector candidates must not acquire rasters or invoke Blender.
+        if args.until == 'layout.world.aggregate':
+            keys |= (select_keys(graph, task='layout.route.dossier')
+                     | select_keys(graph, task='layout.visual.world.build'))
         run_id = 'batch-' + now_iso().replace(':', '').replace('-', '')[:15] + '-' + uuid.uuid4().hex[:6]
         run = Run(run_id=run_id, out_dir=os.path.join(session.output_root, 'runs', run_id))
         command = f'batch --layout {layout_id} --until {args.until}'
@@ -411,6 +428,48 @@ def cmd_invalidate(session, args, out):
     return 0
 
 
+def cmd_evict(session, args, out):
+    """Factory-owned cleanup for class-C reproducible intermediates.
+
+    The command deliberately cannot select source truth (A), reacquirable
+    source cache (B), or published assets (D).  It also refuses a prefix
+    outside the configured output root and defaults to a dry run.
+    """
+    if args.bytes < 1:
+        raise SystemExit('--bytes must be positive')
+    output_root = os.path.realpath(session.output_root)
+    prefix = os.path.realpath(args.path_prefix if os.path.isabs(args.path_prefix)
+                              else os.path.join(output_root, args.path_prefix))
+    if os.path.commonpath((output_root, prefix)) != output_root:
+        raise SystemExit('--path-prefix must be inside --output')
+    candidates = session.ledger.eviction_candidates(args.bytes, classes=('C',), path_prefix=prefix)
+    body = {'schema': 'golfhelm-factory-eviction-v1', 'outputRoot': output_root,
+            'pathPrefix': prefix, 'requestedBytes': args.bytes,
+            'reclaimableBytes': sum(item['bytes'] for item in candidates),
+            'applied': False, 'candidates': candidates}
+    if args.apply:
+        removed = []
+        for item in candidates:
+            path = os.path.realpath(item['path'])
+            if os.path.commonpath((output_root, path)) != output_root:
+                raise SystemExit(f'refusing to delete artifact outside output: {item["path"]}')
+            if not os.path.isfile(path):
+                continue
+            os.remove(path)
+            removed.append(item)
+        if removed:
+            session.ledger.forget_evicted(removed, f'factory eviction: reclaimed reproducible intermediate under {session.ctx.relpath(prefix)}')
+        body.update({'applied': True, 'removed': removed, 'removedBytes': sum(item['bytes'] for item in removed)})
+    if args.json:
+        out.write(json.dumps(body, indent=1) + '\n')
+    else:
+        action = 'removed' if args.apply else 'would remove'
+        out.write(f'{action} {len(body.get("removed", candidates))} class-C artifact(s), {body.get("removedBytes", body["reclaimableBytes"])} bytes\\n')
+        for item in body.get('removed', candidates):
+            out.write(f'  {session.ctx.relpath(item["path"])} ({item["bytes"]} bytes; {item["producer"]})\\n')
+    return 0
+
+
 def cmd_refresh_scorecards(session, args, out):
     from .scorecard_refresh import refresh
     result = refresh(session.catalog_root, session.ctx.abspath(args.snapshot), args.write)
@@ -423,8 +482,16 @@ def cmd_review_bundle(session, args, out):
     return review_bundle(session, args, out)
 
 
-COMMANDS = {'doctor': cmd_doctor, 'plan': cmd_plan, 'run': cmd_run, 'status': cmd_status, 'batch': cmd_batch, 'why': cmd_why, 'invalidate': cmd_invalidate, 'intake': cmd_intake,
-            'refresh-scorecards': cmd_refresh_scorecards, 'review-bundle': cmd_review_bundle}
+def cmd_route_recovery(session, args, out):
+    from .route_recovery import inventory, render_inventory
+    session.graph(args.layout, args.facility)  # Validate explicit scope, without planning/executing tasks.
+    result = inventory(session.ctx, layout_id=args.layout, facility_id=args.facility)
+    out.write((json.dumps(result, indent=1) if args.json else render_inventory(result)) + '\n')
+    return 1 if result['totals']['invalidSources'] else 0
+
+
+COMMANDS = {'doctor': cmd_doctor, 'plan': cmd_plan, 'run': cmd_run, 'status': cmd_status, 'batch': cmd_batch, 'why': cmd_why, 'invalidate': cmd_invalidate, 'evict': cmd_evict, 'intake': cmd_intake,
+            'refresh-scorecards': cmd_refresh_scorecards, 'review-bundle': cmd_review_bundle, 'route-recovery': cmd_route_recovery}
 
 
 def main(argv=None, out=None, ledger=None, executors=None, spec_overrides=None):
@@ -434,5 +501,5 @@ def main(argv=None, out=None, ledger=None, executors=None, spec_overrides=None):
     try:
         return COMMANDS[args.command](session, args, out)
     finally:
-        if ledger is None:
+        if ledger is None and session.ledger is not None:
             session.ledger.close()
