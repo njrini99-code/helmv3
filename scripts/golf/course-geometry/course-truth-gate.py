@@ -13,8 +13,20 @@ Usage:
 """
 import argparse
 import json
+import math
 import sys
+from itertools import pairwise
 from pathlib import Path
+
+from physical_admission import (
+    availability,
+    capabilities,
+    positive,
+    review_scope,
+    reviewed_feature,
+)
+from pyproj import Geod
+from shapely.geometry import Point, shape
 
 TRUTH_CLASSES = {'measured', 'derived', 'estimated', 'visual_only'}
 CORE_FEATURES = ('tee', 'fairway', 'green', 'bunker', 'water')
@@ -50,10 +62,13 @@ def requirements(feature, kind):
     reasons = []
     if truth not in {'measured', 'derived'}:
         reasons.append(f'truth class is {truth}, not measured/derived')
-    if not provenance.get('humanReviewed'):
+    if provenance.get('humanReviewed') is not True:
         reasons.append('not human reviewed')
-    if provenance.get('boundaryAccuracyMeters') is None:
+    accuracy = provenance.get('boundaryAccuracyMeters')
+    if not isinstance(accuracy, (float, int)) or isinstance(accuracy, bool) or not 0 < accuracy < float('inf'):
         reasons.append('horizontal boundary uncertainty is not recorded')
+    if not provenance.get('sourceIds'):
+        reasons.append('source identifiers are missing')
     return reasons
 
 
@@ -100,7 +115,8 @@ def row(kind, features):
 
 
 def distance_row(source):
-    item = source.get('holeDistanceGeometry')
+    review, _scope = review_scope(source)
+    item = review.get('holeDistanceGeometry') or source.get('holeDistanceGeometry')
     if not item:
         return {
             'feature': 'hole-distance geometry', 'source': 'scorecard only or absent', 'resolutionMeters': None,
@@ -116,10 +132,30 @@ def distance_row(source):
         errors.append(f'truth class is {truth}, not measured/derived')
     if not item.get('humanReviewed'):
         errors.append('not human reviewed')
-    if item.get('routeLengthMeters') is None:
-        errors.append('route length missing')
-    if item.get('scorecardYards') is None:
-        errors.append('official scorecard yardage missing')
+    if not positive(item.get('routeLengthMeters')):
+        errors.append('route length missing or invalid')
+    if not positive(source.get('scorecardYards')) or item.get('scorecardYards') != source.get('scorecardYards'):
+        errors.append('official scorecard yardage missing or mismatched; the review cannot change it')
+    features = {feature.get('id'): feature for feature in source.get('features', [])}
+    route, tee, green = [features.get(item.get(key)) for key in ('routeFeatureId', 'teeFeatureId', 'greenFeatureId')]
+    if not route or not tee or not green or [f.get('kind') for f in (route, tee, green)] != ['route', 'tee', 'green']:
+        errors.append('explicit current route/tee/green associations required')
+    else:
+        errors.extend(requirements(study_feature(route), 'route'))
+        try:
+            geometry = route['sourceGeometryWgs84']
+            points = geometry['coordinates']
+            if geometry['type'] != 'LineString' or len(points) < 2:
+                raise ValueError('route must be a line')
+            if not shape(tee['sourceGeometryWgs84']).covers(Point(points[0])) or not shape(green['sourceGeometryWgs84']).covers(Point(points[-1])):
+                errors.append('route endpoints are not inside the explicitly bound tee and green')
+            length = sum(Geod(ellps='WGS84').inv(*a[:2], *b[:2])[2] for a, b in pairwise(points))
+            if not math.isfinite(length) or not positive(item.get('routeLengthMeters')) or abs(length - item['routeLengthMeters']) > .01:
+                errors.append('recorded route length does not match the retained source geometry within 1 cm')
+            if positive(source.get('scorecardYards')) and abs(length / .9144 - source['scorecardYards']) / source['scorecardYards'] > .20:
+                errors.append('route differs from scorecard by more than 20%; resolve reference/identity without stretching')
+        except (KeyError, TypeError, ValueError):
+            errors.append('source route or endpoint geometry invalid')
     return {
         'feature': 'hole-distance geometry', 'source': ', '.join(item.get('sourceIds', [])) or 'none',
         'resolutionMeters': item.get('resolutionMeters'), 'truthClass': truth,
@@ -141,15 +177,31 @@ def study_feature(feature):
     """
     if 'provenance' in feature:
         return feature
-    return {**feature, 'provenance': {'sourceIds': feature.get('sourceIds', []), 'humanReviewed': bool(feature.get('reviewed')),
+    return {**feature, 'provenance': {'sourceIds': feature.get('sourceIds', []), 'humanReviewed': feature.get('reviewed') is True,
                                       'boundaryAccuracyMeters': feature.get('accuracyMeters'), 'extraction': 'OSM source candidate; not imagery-derived'}}
 
 
 def hole_report(label, features, distance_source):
-    by_kind = {kind: [study_feature(item) for item in features if item.get('kind') == kind] for kind in CORE_FEATURES}
-    rows = [row(kind, by_kind[kind]) for kind in CORE_FEATURES]
+    reviewed = [reviewed_feature(distance_source, study_feature(item)) for item in features]
+    distance_source = {**distance_source, 'features': reviewed}
+    by_kind = {kind: [item for item in reviewed if item.get('kind') == kind] for kind in CORE_FEATURES}
+    rows = []
+    for kind in CORE_FEATURES:
+        result = row(kind, by_kind[kind])
+        state = availability(distance_source, kind, by_kind[kind])
+        result['availability'] = state
+        result['completenessPassed'] = (result['canMeasure'] and not state['reasons']) or state['state'] == 'confirmed_absent'
+        if state['state'] == 'confirmed_absent':
+            result.update({'confidence': 'reviewed_absence', 'reviewStatus': 'reviewed',
+                           'validation': ['absence reviewed against current source revision over the complete hole area'],
+                           'remediation': 'None. Absence does not create a measurable feature.'})
+        elif state['reasons'] and by_kind[kind]:
+            result['canMeasure'] = False
+            result['validation'].extend(state['reasons'])
+        rows.append(result)
     rows.append(distance_row(distance_source))
-    return {'hole': label, 'passed': all(item['canMeasure'] for item in rows), 'features': rows}
+    admission = capabilities(distance_source, rows)
+    return {'hole': label, 'passed': admission['physicalCompleteness']['allowed'], 'features': rows, 'admission': admission}
 
 
 def package_holes(source):
@@ -159,7 +211,11 @@ def package_holes(source):
         # A package hole has a route and a scorecard yardage, but no reviewed
         # tee/green endpoint measurement; that is exactly what the distance row
         # must report rather than silently treating route length as measured.
-        yield hole_report(hole['key'], owned, {'holeDistanceGeometry': hole.get('holeDistanceGeometry')})
+        yield hole_report(hole['key'], owned, {
+            'physicalStudyKey': hole['key'], 'packageHash': source.get('contentHash'), 'par': hole.get('par'), 'scorecardYards': hole.get('scorecardYards'),
+            'features': owned, 'sources': {'geometry': source.get('sources', [])},
+            'holeDistanceGeometry': hole.get('holeDistanceGeometry'),
+        })
 
 
 def markdown(report):
@@ -174,7 +230,8 @@ def markdown(report):
     for hole in report['holes']:
         lines.extend([f"## {hole['hole']} — {'PASS' if hole['passed'] else 'FAIL'}", '', *header])
         for item in hole['features']:
-            resolution = ', '.join(f'{v:g} m' for v in item['resolutionMeters']) if item['resolutionMeters'] else '—'
+            values = item['resolutionMeters']
+            resolution = ', '.join(f'{v:g} m' for v in (values if isinstance(values, list) else [values])) if values else '—'
             validation = '; '.join([*item['validation'], *item.get('measurementLimitations', [])])
             lines.append(f"| {item['feature']} | {item['source']} | {resolution} | {item['truthClass']} | {item['confidence']} | {item['reviewStatus']} | {validation} |")
         lines.append('')
@@ -193,13 +250,13 @@ def main():
     if source.get('kind') == 'golfhelm-canonical-local-meter-study':
         holes = [hole_report(source.get('physicalStudyKey', 'study'), source.get('features', []), source)]
         input_kind = source['kind']
-    elif source.get('schemaVersion') == 1 and 'holes' in source and 'features' in source and source.get('status') == 'source_candidate':
+    elif source.get('schemaVersion') == 1 and 'holes' in source and 'features' in source and source.get('status') in ('source_candidate', 'reviewed_draft'):
         holes = list(package_holes(source))
         input_kind = 'golfhelm-course-package-v1'
     else:
         raise ValueError('Course truth gate requires canonical local-metre source geometry or a whole-course source package')
     report = {
-        'schemaVersion': 2,
+        'schemaVersion': 3,
         'kind': 'golfhelm-course-truth-gate-v1',
         'inputKind': input_kind,
         'siteId': source.get('siteId'),

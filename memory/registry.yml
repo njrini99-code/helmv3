@@ -665,7 +665,11 @@ features:
         # caller of the recorder today, so this is where it belongs.
         - src/lib/observability/**
       db:
-        - supabase/migrations/*golf_round*.sql
+        # Round write/access migrations support shot persistence. Geometry
+        # version bindings belong to golf_round_lifecycle; avoid sweeping new
+        # round topics into the shot-storage database ownership.
+        - supabase/migrations/*golf_rounds*.sql
+        - supabase/migrations/*golf_round_lifecycle*.sql
         - supabase/migrations/*golf_shot*.sql
         - supabase/migrations/*helm_flight_recorder*.sql
         - supabase/migrations/*helm_debug_retention.sql

@@ -79,7 +79,7 @@ const meshSchema = z.object({
   triangleMaterials: z.array(z.number().int().min(0).max(4)).min(1).max(MAX_TERRAIN_TRIANGLES),
   featureIds: z.array(z.string().min(1).max(100)).min(1).max(256),
   featureKinds: z.array(z.enum(['ground', 'woods', 'rough', 'water', 'fairway', 'tee', 'green', 'bunker'])).min(1).max(256),
-  source: z.object({ provider: z.literal('USGS 3DEP'), title: z.string().max(300), url: z.string().url().max(2000),
+  source: z.object({ provider: z.enum(['USGS 3DEP', 'usgs_3dep_project_1m', 'nc_onemap_dem03']), title: z.string().max(300), url: z.string().url().max(2000),
     acquisitionStart: z.string().max(20), acquisitionEnd: z.string().max(20), nativeResolutionM: z.number().positive(),
     verticalAccuracyM: z.number().nonnegative().nullable(), registrationResidualM: z.number().nonnegative().nullable() }).passthrough(),
   limitations: z.array(z.string().max(300)).max(20),

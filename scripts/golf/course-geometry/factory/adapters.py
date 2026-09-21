@@ -16,10 +16,11 @@ import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
 
+from physical_admission import review_input_hash
 from source_geometry import resolved_routes
 
 from . import imagery, lab
-from .fingerprints import digest, terrain_source_identity
+from .fingerprints import digest, file_sha256, terrain_source_identity
 from .model import Blocker, Precondition
 from .planner import DONE
 from .providers import select_terrain_provider
@@ -536,8 +537,21 @@ def derive_canopy(node, ctx, run):
     imagery = ctx.indexed_imagery(layout_id)
     if imagery:
         args += ['--imagery-index', imagery['path']]
-    run_script(ctx, run, node, 'scripts/golf/course-geometry/derive-canopy-naip.py', args)
-    return [artifact('canopy-review', out, 'A'), artifact('naip-manifest', os.path.join(naip, 'manifest.json'), 'B'), artifact('naip-raster', os.path.join(naip, 'naip.tif'), 'B')]
+    from .payload_reuse import load_receipt, retain_receipt, stage_identity
+    package = ctx.json(ctx.candidates_package_path(layout_id), fresh=True)
+    identity = stage_identity(ctx, node, package, {'imagery': imagery['identity'] if imagery else None})
+    receipt = load_receipt(ctx, layout_id, 'canopy', identity)
+    if receipt:
+        document = ctx.json(out, fresh=True)
+        if document.get('packageHash') != receipt['packageHash']:
+            raise RuntimeError('reusable canopy envelope mismatch')
+        _write_json(out, {**document, 'packageHash': package['contentHash']})
+    else:
+        run_script(ctx, run, node, 'scripts/golf/course-geometry/derive-canopy-naip.py', args)
+    paths = [out, os.path.join(naip, 'manifest.json'), os.path.join(naip, 'naip.tif')]
+    retained = retain_receipt(ctx, layout_id, 'canopy', identity, package['contentHash'], paths)
+    return [artifact('canopy-review', out, 'A'), artifact('naip-manifest', paths[1], 'B'), artifact('naip-raster', paths[2], 'B'),
+            artifact('payload-reuse', retained, 'C')]
 
 
 def _compile(node, ctx, run, holes, out, context=None):
@@ -551,10 +565,25 @@ def _compile(node, ctx, run, holes, out, context=None):
 def compile_terrain_base(node, ctx, run):
     layout_id = node.scope.layout_id
     out = ctx.terrain_base_out(layout_id)
-    if os.path.isdir(out):
-        safe_rmtree(ctx, out)
-    _compile(node, ctx, run, 'all', out)
-    return [artifact('compiled-base-assets', os.path.join(out, 'asset-manifest.json'), 'C'), artifact('compiled-base-report', os.path.join(out, 'compilation-report.json'), 'C')]
+    from .payload_reuse import (
+        load_receipt,
+        rebind_terrain,
+        retain_receipt,
+        stage_identity,
+        terrain_files,
+    )
+    package = ctx.json(ctx.package_path(layout_id), fresh=True)
+    identity = stage_identity(ctx, node, package)
+    receipt = load_receipt(ctx, layout_id, 'terrain-base', identity)
+    if receipt:
+        rebind_terrain(out, package, receipt['packageHash'], ctx.terrain_source_manifest(layout_id))
+    else:
+        if os.path.isdir(out):
+            safe_rmtree(ctx, out)
+        _compile(node, ctx, run, 'all', out)
+    retained = retain_receipt(ctx, layout_id, 'terrain-base', identity, package['contentHash'], terrain_files(out))
+    return [artifact('compiled-base-assets', os.path.join(out, 'asset-manifest.json'), 'C'),
+            artifact('compiled-base-report', os.path.join(out, 'compilation-report.json'), 'C'), artifact('payload-reuse', retained, 'C')]
 
 
 def prepare_compiled_dir(ctx, layout_id):
@@ -618,18 +647,36 @@ def classify_context(node, ctx, run):
     context = os.path.join(ctx.context_dir(node.scope.facility_id), 'overpass.json.gz')
     compiled = ctx.terrain_base_dir(layout_id)
     package = ctx.package_path(layout_id)
-    run_script(ctx, run, node, 'scripts/golf/course-geometry/prepare-context-layer.py', [package, golf, context, compiled, out])
-    # The script names its outputs after the package file; the factory keeps
-    # them under the layout id so retained and built layers share one path.
-    stem = os.path.splitext(os.path.basename(package))[0]
-    for suffix, target in (('-context.json', ctx.context_layer_out(layout_id)), ('-context-report.json', ctx.context_report_out(layout_id))):
-        written = os.path.join(out, f'{stem}{suffix}')
-        if os.path.abspath(written) != os.path.abspath(target):
-            os.replace(written, target)
+    from .payload_reuse import (
+        load_receipt,
+        rebind_context,
+        retain_receipt,
+        stage_identity,
+    )
+    package_doc = ctx.json(package, fresh=True)
+    base_receipt = ctx.json(os.path.join(ctx.layout_out(layout_id), 'payload-reuse', 'terrain-base.json'), fresh=True)
+    # A legacy base without a receipt remains safe but cannot skip context
+    # classification on a card edit until a verified producer has run once.
+    base_identity = (base_receipt or {}).get('inputHash') or file_sha256(os.path.join(compiled, 'asset-manifest.json'))
+    identity = stage_identity(ctx, node, package_doc, {'golf': file_sha256(golf), 'context': file_sha256(context), 'base': base_identity})
+    receipt = load_receipt(ctx, layout_id, 'context', identity)
+    if receipt:
+        rebind_context(ctx.context_layer_out(layout_id), ctx.context_report_out(layout_id), package_doc['contentHash'], receipt['packageHash'])
+    else:
+        run_script(ctx, run, node, 'scripts/golf/course-geometry/prepare-context-layer.py', [package, golf, context, compiled, out])
+        # The script names outputs after the package file; the factory keeps
+        # them under layout ID so retained and built layers share one path.
+        stem = os.path.splitext(os.path.basename(package))[0]
+        for suffix, target in (('-context.json', ctx.context_layer_out(layout_id)), ('-context-report.json', ctx.context_report_out(layout_id))):
+            written = os.path.join(out, f'{stem}{suffix}')
+            if os.path.abspath(written) != os.path.abspath(target):
+                os.replace(written, target)
+    retained = retain_receipt(ctx, layout_id, 'context', identity, package_doc['contentHash'],
+                              [ctx.context_layer_out(layout_id), ctx.context_report_out(layout_id)])
     layer = ctx.json(ctx.context_layer_out(layout_id), fresh=True)
     ref = artifact('context-layer', ctx.context_layer_out(layout_id), 'A')
     ref.sha256 = layer['contentHash']
-    return [ref, artifact('context-report', ctx.context_report_out(layout_id), 'A')]
+    return [ref, artifact('context-report', ctx.context_report_out(layout_id), 'A'), artifact('payload-reuse', retained, 'C')]
 
 
 def build_hole_world(node, ctx, run):
@@ -637,6 +684,9 @@ def build_hole_world(node, ctx, run):
     out = os.path.join(ctx.layout_out(layout_id), 'world')
     hole = ctx.package_hole(layout_id, node.scope.ordinal)
     args = [ctx.package_path(layout_id), ctx.terrain_source_dir(layout_id), out, '--holes', str(node.scope.ordinal)]
+    admission_path = ctx.retained(ctx.layout(layout_id), 'physicalAdmission')
+    if admission_path:
+        args.extend(['--physical-admission', admission_path])
     if not shutil.which('blender'):
         args.append('--skip-blender')
     run_script(ctx, run, node, 'scripts/golf/course-geometry/build-course-world.py', args)
@@ -647,6 +697,7 @@ def build_hole_world(node, ctx, run):
     record_path = os.path.join(out, 'holes', hole['key'], 'record.json')
     _write_json(record_path, {'packageHash': manifest['packageHash'], 'terrainRasterSha256': manifest['terrainRasterSha256'],
                               'terrainSourceIdentity': terrain_source_identity(ctx.terrain_source_manifest(layout_id)), 'builtAt': manifest['builtAt'],
+                              'admissionReviewHash': review_input_hash(ctx.json(admission_path), hole['key']) if admission_path else None,
                               'blender': args[-1] != '--skip-blender', **record})
     return [artifact('world-record', record_path, 'C'), artifact('world-study', os.path.join(out, 'holes', hole['key'], 'study.json'), 'C'),
             artifact('world-truth', os.path.join(out, 'holes', hole['key'], 'validation', 'course-truth.json'), 'C')]
@@ -670,19 +721,49 @@ def aggregate_world(node, ctx, run):
 
 
 def aggregate_terrain(node, ctx, run):
+    """Bind cached numeric payloads to the current package without rewriting
+    their producer artifacts or pretending old serialized hashes are new."""
+    from .payload_reuse import bind_verified_hole
+    from .planner import verify_artifacts
     layout_id = node.scope.layout_id
-    reports = []
-    for key in ctx.graph.layout_holes.get(layout_id, []):
-        hole = ctx.package_hole(layout_id, int(key.rsplit(':', 1)[1]))
-        report = ctx.json(os.path.join(ctx.compiled_dir(layout_id, hole['key']), f'{hole["key"]}-report.json'), fresh=True) if hole else None
-        if report:
-            reports.append({'key': hole['key'], 'ordinal': hole['ordinal'], 'contentHash': report.get('contentHash'), 'triangles': report.get('triangles'),
-                            'tJunctionVertices': (report.get('noding') or {}).get('tJunctionVertices'), 'asset': report.get('asset')})
-    summary = {'kind': 'golfhelm-factory-terrain-summary-v1', 'layoutId': layout_id, 'packageHash': ctx.package_hash(layout_id),
+    package = ctx.package(layout_id)
+    context_hash = (ctx.context_layer(layout_id) or {}).get('contentHash')
+    bound = os.path.join(ctx.layout_out(layout_id), 'compiled-bound')
+    os.makedirs(bound, exist_ok=True)
+    reports, entries, artifacts = [], {}, []
+    for scope_key in ctx.graph.layout_holes.get(layout_id, []):
+        hole = ctx.package_hole(layout_id, int(scope_key.rsplit(':', 1)[1]))
+        producer = ctx.rows.get(f'hole.terrain.compile[{scope_key}]')
+        if not hole or not producer or producer.state not in DONE or not producer.artifacts:
+            raise RuntimeError('current verified terrain producer required for package binding')
+        problem = verify_artifacts(producer.artifacts)
+        if problem:
+            raise RuntimeError(f'terrain producer integrity failed: {problem[0]}')
+        folder = ctx.compiled_dir(layout_id, hole['key'])
+        mesh = ctx.json(os.path.join(folder, f'{hole["key"]}-terrain.json'), fresh=True)
+        report = ctx.json(os.path.join(folder, f'{hole["key"]}-report.json'), fresh=True)
+        payload, compressed, entry, rebound_report, binding = bind_verified_hole(
+            mesh, report, package, hole, producer.fingerprint, context_hash)
+        names = {f'{hole["key"]}-terrain.json': payload, entry['fileName']: compressed}
+        for name, data in names.items():
+            with open(os.path.join(bound, name), 'wb') as handle:
+                handle.write(data)
+            artifacts.append(artifact(name, os.path.join(bound, name), 'C'))
+        for name, doc in ((f'{hole["key"]}-report.json', rebound_report), (f'{hole["key"]}-binding.json', binding)):
+            _write_json(os.path.join(bound, name), doc)
+            artifacts.append(artifact(name, os.path.join(bound, name), 'C'))
+        entries[hole['key']] = entry
+        reports.append({'key': hole['key'], 'ordinal': hole['ordinal'], 'contentHash': entry['contentHash'],
+                        'triangles': report.get('triangles'), 'tJunctionVertices': (report.get('noding') or {}).get('tJunctionVertices'),
+                        'asset': entry, 'producerFingerprint': producer.fingerprint})
+    manifest_path = os.path.join(bound, 'asset-manifest.json')
+    _write_json(manifest_path, {'schemaVersion': 1, 'compilerVersion': 'course-terrain-v4', 'geometryHash': package['contentHash'],
+                               'sourceIdentity': terrain_source_identity(ctx.terrain_source_manifest(layout_id)), 'holes': entries})
+    summary = {'kind': 'golfhelm-factory-terrain-summary-v1', 'layoutId': layout_id, 'packageHash': package['contentHash'],
                'sourceIdentity': terrain_source_identity(ctx.terrain_source_manifest(layout_id)), 'holes': sorted(reports, key=lambda r: r['ordinal'])}
     path = os.path.join(ctx.layout_out(layout_id), 'terrain-summary.json')
     _write_json(path, summary)
-    return [artifact('terrain-summary', path, 'C')]
+    return [artifact('terrain-summary', path, 'C'), artifact('bound-manifest', manifest_path, 'C'), *artifacts]
 
 
 def review_queue(node, ctx, run):
@@ -889,6 +970,8 @@ def verify_publish(node, ctx, run):
     resolves to a file whose content hash is the package, the compiled mesh
     of that hole or the context layer this layout's nodes fingerprint. A
     mismatch fails the node — the fix is a publishing PR, never a write here."""
+    from .fingerprints import content_hash_matches
+    from .publication import public_asset, publication_snapshot
     layout_id = node.scope.layout_id
     layout = ctx.layout(layout_id) or {}
     manifest_path = ctx.abspath((layout.get('geometry') or {}).get('published'))
@@ -896,25 +979,40 @@ def verify_publish(node, ctx, run):
     public_root = os.path.join(ctx.repo_root, 'public')
     expected_package = ctx.package_hash(layout_id)
     checks = []
+    inventory = publication_snapshot(ctx, layout_id)
+    inventory_valid = not inventory['error'] and all(item.get('sha256') for item in inventory['assets'])
 
-    def check(name, url, expected, read):
-        path = os.path.join(public_root, url.lstrip('/')) if url else None
-        doc = ctx.json(path, fresh=True) if path and os.path.isfile(path) else None
-        actual = read(doc) if doc else None
-        checks.append({'name': name, 'url': url, 'expected': expected, 'actual': actual, 'ok': bool(url) and actual is not None and actual == expected})
+    def check(name, url, expected, read, producer_path):
+        actual, actual_sha, expected_sha = None, None, None
+        valid = False
+        try:
+            _path, raw = public_asset(public_root, url)
+            doc = json.loads(raw)
+            actual = read(doc)
+            actual_sha = hashlib.sha256(raw).hexdigest()
+            with open(producer_path, 'rb') as handle:
+                producer_bytes = handle.read()
+            expected_sha = hashlib.sha256(producer_bytes).hexdigest()
+            valid = content_hash_matches(doc) and actual == expected and actual_sha == expected_sha
+        except (OSError, ValueError, TypeError, AttributeError):
+            valid = False
+        checks.append({'name': name, 'url': url, 'expected': expected, 'actual': actual,
+                       'expectedSha256': expected_sha, 'actualSha256': actual_sha, 'ok': valid})
 
     checks.append({'name': 'manifest.geometryVersion', 'url': ctx.relpath(manifest_path) if manifest_path else None, 'expected': expected_package,
-                   'actual': manifest.get('geometryVersion'), 'ok': bool(manifest) and manifest.get('geometryVersion') == expected_package})
-    check('package', manifest.get('packageUrl'), expected_package, lambda d: d.get('contentHash'))
+                   'actual': manifest.get('geometryVersion'), 'ok': bool(manifest) and inventory_valid and manifest.get('geometryVersion') == expected_package})
+    check('package', manifest.get('packageUrl'), expected_package, lambda d: d.get('contentHash'), ctx.package_path(layout_id))
     terrain_by_hole = manifest.get('terrainByHole') or {}
     for hole in (ctx.package(layout_id) or {}).get('holes', []):
         key = hole['key']
-        folder = ctx.compiled_dir(layout_id, key)
+        folder = os.path.join(ctx.layout_out(layout_id), 'compiled-bound')
         report = ctx.json(os.path.join(folder, f'{key}-report.json')) if folder else None
-        check(f'terrain:{key}', terrain_by_hole.get(key), (report or {}).get('contentHash'), lambda d: d.get('contentHash') if d.get('geometryHash') == expected_package else f'mesh of package {str(d.get("geometryHash"))[:12]}')
+        check(f'terrain:{key}', terrain_by_hole.get(key), (report or {}).get('contentHash'), lambda d: d.get('contentHash') if d.get('geometryHash') == expected_package else f'mesh of package {str(d.get("geometryHash"))[:12]}', os.path.join(folder, f'{key}-terrain.json'))
     context = ctx.context_layer(layout_id) if ctx.states.get(f'layout.context.classify[{layout_id}]') in DONE else None
     if manifest.get('contextLayerUrl') or context:
-        check('contextLayer', manifest.get('contextLayerUrl'), (context or {}).get('contentHash'), lambda d: d.get('contentHash'))
+        check('contextLayer', manifest.get('contextLayerUrl'), (context or {}).get('contentHash'), lambda d: d.get('contentHash'), ctx.context_layer_path(layout_id))
+    inventory_path = os.path.join(ctx.layout_out(layout_id), 'published-byte-inventory.json')
+    _write_json(inventory_path, inventory)
     failed = [c for c in checks if not c['ok']]
     out = os.path.join(ctx.layout_out(layout_id), 'publish-verification.json')
     _write_json(out, {'kind': 'golfhelm-factory-publish-verification-v1', 'layoutId': layout_id, 'packageHash': expected_package, 'manifest': ctx.relpath(manifest_path) if manifest_path else None,
@@ -922,7 +1020,7 @@ def verify_publish(node, ctx, run):
     if failed:
         first = failed[0]
         raise RuntimeError(f'PUBLISH_MISMATCH: {len(failed)} of {len(checks)} published files differ from the evidence; first {first["name"]}: expected {str(first["expected"])[:12]}, published {str(first["actual"])[:12]}')
-    return [artifact('publish-verification', out, 'C')]
+    return [artifact('publish-verification', out, 'C'), artifact('published-byte-inventory', inventory_path, 'C')]
 
 
 DEFAULT_EXECUTORS = {

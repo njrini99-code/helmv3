@@ -2,6 +2,8 @@
 never the whole package hash, so one hole's edit stays one hole's rebuild."""
 import os
 
+from physical_admission import review_input_hash
+
 from .. import lab
 from ..fingerprints import terrain_source_identity
 from ..model import TaskSpec
@@ -70,6 +72,9 @@ def eval_world_build(node, ctx):
     inputs = {'terrainSource': dep_input(ctx, node, 'layout.terrain.acquire'), 'holeGolfGeometryHash': _sub(ctx, node, 'holeGolfGeometryHash'),
               'holeCanopyHash': _sub(ctx, node, 'holeCanopyHash'), 'par': (ctx.package_hole(layout_id, node.scope.ordinal) or {}).get('par')}
     hole = ctx.package_hole(layout_id, node.scope.ordinal)
+    admission_path = ctx.retained(ctx.layout(layout_id), 'physicalAdmission')
+    review_hash = review_input_hash(ctx.json(admission_path), hole['key']) if admission_path and hole else None
+    inputs['physicalAdmission'] = review_hash
     if not hole:
         return evaluation(inputs)
     folder = os.path.join(ctx.layout_out(layout_id), 'world', 'holes', hole['key'])
@@ -78,7 +83,8 @@ def eval_world_build(node, ctx):
         return evaluation(inputs)
     terrain = ctx.terrain_source_manifest(layout_id)
     current_terrain_identity = terrain_source_identity(terrain) if terrain and terrain.get('coverageMethod') == 'perimeter-v1' else None
-    adoptable = record.get('packageHash') == ctx.package_hash(layout_id) and record.get('terrainSourceIdentity') == current_terrain_identity
+    adoptable = (record.get('packageHash') == ctx.package_hash(layout_id) and record.get('terrainSourceIdentity') == current_terrain_identity
+                 and record.get('admissionReviewHash') == review_hash and isinstance(record.get('admission'), dict))
     notes = [f'world build {record.get("builtAt", "")[:10]}: truth gate {"passed" if record.get("truthGatePassed") else "failed"}'
              + ('' if record.get('blender', True) else ' (blender skipped)')]
     if not adoptable:
@@ -122,8 +128,8 @@ SPECS = [
     TaskSpec('hole.terrain.compile', TERRAIN_COMPILER, 'hole', ('layout.terrain.acquire', 'layout.package.validate', 'layout.context.classify?'), eval_terrain_compile,
              impl_files=TERRAIN_COMPILER_FILES, retention='C', estimated_bytes=5_000_000,
              settings={'style': TERRAIN_STYLE}),
-    TaskSpec('hole.world.build', '1', 'hole', ('layout.package.validate', 'layout.terrain.acquire'), eval_world_build,
-             impl_files=(script('build-course-world.py'), script('normalize-study.py'), script('compile-physical-world.py'), script('course-truth-gate.py')),
+    TaskSpec('hole.world.build', '2', 'hole', ('layout.package.validate', 'layout.terrain.acquire'), eval_world_build,
+             impl_files=(script('build-course-world.py'), script('normalize-study.py'), script('compile-physical-world.py'), script('course-truth-gate.py'), script('physical_admission.py')),
              estimated_bytes=30_000_000),
     TaskSpec('hole.visual.canary', '1', 'hole', ('hole.terrain.compile', 'layout.context.classify?'), eval_visual_canary,
              impl_files=RENDERER_FILES + (script('capture-visual-canaries.cjs'),), estimated_bytes=50_000_000,

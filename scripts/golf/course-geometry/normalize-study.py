@@ -13,6 +13,7 @@ from pathlib import Path
 
 import numpy as np
 import pyproj
+from physical_admission import load_review, review_input
 
 _spec = importlib.util.spec_from_file_location('elevation_raster', Path(__file__).with_name('elevation_raster.py'))
 elevation_raster = importlib.util.module_from_spec(_spec)
@@ -71,7 +72,10 @@ class Terrain:
         self.native_resolution_m = self.manifest.get('nativeResolutionMeters', self.manifest.get('nativeResolutionM'))
         if self.native_resolution_m is None:
             raise ValueError('LiDAR source manifest omits its native resolution')
-        factor = float(self.manifest.get('verticalUnitToMeters', float('nan')))
+        declared_factor = self.manifest.get('verticalUnitToMeters')
+        if declared_factor is None and self.manifest.get('renderingOnly') is True:
+            declared_factor = self.manifest.get('visualVerticalUnitToMeters')
+        factor = float(declared_factor) if declared_factor is not None else float('nan')
         if not math.isfinite(factor) or factor <= 0:
             raise ValueError('LiDAR source omits an explicit vertical metres conversion')
         self.raster *= factor
@@ -100,6 +104,7 @@ def main():
     parser.add_argument('imagery_directory', type=Path, nargs='?', default=None,
                         help='Optional orthophoto study directory; omit when no imagery source exists')
     parser.add_argument('output', type=Path)
+    parser.add_argument('--physical-admission', type=Path, help='Immutable, human-reviewed admission sidecar; never generated approval')
     parser.add_argument('--terrain-step-m', type=float, default=1)
     parser.add_argument('--padding-m', type=float, default=None,
                         help='Crop the terrain grid to the study footprint plus this padding; omit to keep the whole raster')
@@ -110,8 +115,8 @@ def main():
     study = next((item for item in package['holes'] if item['key'] == args.study_key), None)
     if study is None:
         raise ValueError('Unknown physical study key')
-    if study['completeness'] != 'partial' or package['status'] != 'source_candidate':
-        raise ValueError('This compiler only handles unpromoted source studies')
+    if package['status'] not in ('source_candidate', 'reviewed_draft'):
+        raise ValueError('This compiler only handles source candidates or explicitly reviewed packages')
     lidar = Terrain(args.lidar_directory)
     terrain_rendering_only = bool(lidar.manifest.get('renderingOnly'))
     imagery = json.loads((args.imagery_directory / 'source-manifest.json').read_text()) if args.imagery_directory else None
@@ -136,7 +141,8 @@ def main():
         compiled_features.append({
             'id': feature['id'], 'kind': feature['kind'], 'geometryMeters': {'type': source['type'], 'coordinates': local_geometry},
             'sourceGeometryWgs84': source, 'provenance': {'sourceIds': feature['sourceIds'], 'humanReviewed': feature['reviewed'],
-                'boundaryAccuracyMeters': feature['accuracyMeters'], 'extraction': 'OSM source candidate; not imagery-derived'},
+                'boundaryAccuracyMeters': feature['accuracyMeters'], 'extraction': feature.get('provenance', {}).get('extraction', 'retained source geometry; not imagery-derived')},
+            **({'truthClass': feature['truthClass']} if feature.get('truthClass') else {}),
         })
     # Use geographic projected X/Z bounds, not elevations, to form a compact grid.
     footprint = []
@@ -190,7 +196,10 @@ def main():
             positions.append([round(east, 5), round(float(raw_height), 5), round(north, 5)])
     result = {
         'schemaVersion': 1, 'kind': 'golfhelm-canonical-local-meter-study', 'version': 1,
-        'siteId': package['siteId'], 'physicalStudyKey': args.study_key, 'status': 'source_candidate_partial',
+        'siteId': package['siteId'], 'physicalStudyKey': args.study_key, 'status': 'source_candidate_partial' if package['status'] == 'source_candidate' else 'reviewed_draft',
+        'packageHash': package['contentHash'], 'par': study['par'], 'scorecardYards': study.get('scorecardYards'),
+        'holeDistanceGeometry': study.get('holeDistanceGeometry'),
+        'admissionReview': review_input(load_review(args.physical_admission), args.study_key) if args.physical_admission else None,
         'origin': {'longitude': origin[0], 'latitude': origin[1], 'elevationMeters': round(lidar.sample(*origin), 5)},
         'coordinateSystem': {'units': 'meters', 'worldAxes': {'x': 'east', 'y': 'elevation_up', 'z': 'north'},
             'projection': 'wgs84-local-enu-v1', 'oneWorldUnitEqualsMeters': True},

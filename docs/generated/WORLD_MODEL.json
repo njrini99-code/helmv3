@@ -3284,6 +3284,10 @@
         "definedIn": "supabase/migrations/20260907160000_golf_team_chat_membership_management.sql"
       },
       {
+        "id": "guard_golf_round_geometry_binding",
+        "definedIn": "supabase/migrations/20260920234128_golf_round_geometry_binding_immutable_v2.sql"
+      },
+      {
         "id": "guard_users_role_self_change",
         "definedIn": "supabase/migrations/20260703210000_admin_rollup_consistent_super_admin_gate.sql"
       },
@@ -3590,6 +3594,10 @@
       {
         "id": "resolve_baseball_team_invitation_by_code",
         "definedIn": "supabase/migrations/20260729000100_baseball_tenant_isolation_rls_a_additive.sql"
+      },
+      {
+        "id": "resolve_golf_round_course_binding",
+        "definedIn": "supabase/migrations/20260920234128_golf_round_geometry_binding_immutable_v2.sql"
       },
       {
         "id": "revoke_user_sessions",
@@ -15590,6 +15598,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/golf/one-tap/round-binding-transport.ts",
+          "line": 1
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/golf/progress-drivers.ts",
           "line": 98
         },
@@ -16002,6 +16015,18 @@
           "kind": "rpc_call",
           "path": "src/lib/coachhelm/v2/post-round-trigger.ts",
           "line": 100
+        }
+      ]
+    },
+    {
+      "source": "golf_round_lifecycle",
+      "target": "resolve_golf_round_course_binding",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/lib/golf/one-tap/round-binding-transport.ts",
+          "line": 12
         }
       ]
     },

@@ -1526,8 +1526,8 @@ NAIP surface imports remain `--traces` (there is no `--routes` alias).
 
 C2 publication requires successful byte verification as well as preparation.
 C2 does not grant tap measurement. C3 promotion requires current reviewed
-geometry, successful per-hole truth records and verified publication; C4 stays
-blocked until actual field evidence has a supported admission contract. Live
+geometry, successful per-hole truth records and verified publication. C4 also
+requires current independent field evidence. Live
 consumers request C3 explicitly except the exact Upper pilot layout/hash.
 
 NC DEM acquisition now requests native EPSG:6543, locks a single full-coverage
@@ -1540,3 +1540,61 @@ is not implied by this correction.
 
 See `docs/plans/2026-09-20-course-factory-authority-implementation.md` for
 verification and remaining canary/admission work.
+
+### Tee profiles and immutable round versions
+
+The library exporter retains exact course/tee UUIDs, rating/slope and every
+complete tee card. `factory/tee_profiles.py` imports all supported profiles,
+including identically named tees. Each revision retains a source snapshot
+hash. Refresh appends new revisions without replacing existing cards or
+changing the explicit offline QA reference. Name/color preference ranking is
+removed. `resolveTeeProfile` requires exact IDs and an explicit revision when
+multiple revisions exist. No imported profile proves a physical tee marker.
+
+Geometry loading uses the immutable v2 round binding defined in
+`memory/features/golf-round-lifecycle.md`. A package's QA scorecard never
+replaces the round's saved tee, ordered pars/yards, overrides or observations.
+An unbound tee still has valid saved scoring data and no asserted tee position.
+
+### Physical admission evidence
+
+The retained `physicalAdmission` sidecar is scoped to the exact package,
+source revision and hole. `present`, `confirmed_absent` and `unknown` are
+distinct. Reviewed absence must name a reviewed area and evidence; empty OSM
+results remain unknown. Tee and green cannot be waived as absent, and a
+fairway absence requires an applicable par-3 review. A changed source or
+boundary invalidates its old evidence.
+
+Capabilities report per-hole dependencies and rejection reasons. Horizontal
+measurement requires independent registration evidence; elevation requires
+verified vertical units and accuracy evidence; field admission requires
+independent field checks distributed inside the reviewed hole area. The
+initial horizontal engineering budget conservatively adds registration and
+boundary uncertainty and requires their total to stay within two metres;
+this is not a survey guarantee. Reviewed per-feature truth records preserve exact
+geometry hashes, source IDs, uncertainty and reviewer/date. Source/provider
+names do not promote a boundary. Unsupported bunker depth, putting break,
+daily pins and decorative vegetation remain unavailable analytically even
+when their visual representations render.
+
+### Immutable review bundles and cache separation
+
+`factory.lab_bundle` exports an explicit layout's retained package, terrain,
+context, GLBs and admission evidence into a content-addressed local bundle.
+The dedicated Vite lab verifies its bytes and refuses unknown layout/hole
+keys, traversal, symlinks and mismatched objects. It uses the production
+terrain renderer without modifying the fixture registry. A bundle is a review
+artifact; loading or capturing it never promotes runtime eligibility.
+
+Scorecard-only changes can reuse verified numerical terrain, canopy and
+context payloads. Reuse receipts bind source bytes, implementation/settings
+and every package field except the derived package hash and per-hole QA
+par/yardage. Changed source/geometry still recompiles. Delivery envelopes are
+separately rebound and rehashed for the new package; cached numeric producers
+are not relabelled in place. Publication validates actual payload/byte hashes,
+and modified published bytes invalidate verification. Durable round loading
+also requires an approved exact package byte digest before claiming a world.
+
+Instructions: `scripts/golf/course-geometry/factory-lab/README.md`.
+Current actual-source results and limitations:
+`docs/plans/2026-09-20-course-factory-canary-evidence.md`.

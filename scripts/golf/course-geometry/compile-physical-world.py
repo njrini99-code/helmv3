@@ -11,8 +11,11 @@ Usage:
 """
 import argparse
 import hashlib
+import importlib.util
 import json
 from pathlib import Path
+
+from physical_admission import reviewed_feature
 
 
 def canonical(value):
@@ -91,7 +94,8 @@ def rendering_contract(kind, truth, provenance):
         # used as an authoritative analytical measurement.
         'measurementAuthority': truth in {'measured', 'derived'} and bool(provenance.get('humanReviewed')) and provenance.get('boundaryAccuracyMeters') is not None,
         'mayUseVisualInterpolation': True,
-        'mayUseVisualOnlyGeometry': truth in {'estimated', 'visual_only'},
+        'mayUseVisualOnlyGeometry': True,
+        'visualGeometryAuthority': 'render_only_separate_from_source_surface',
         'visualOnlyExamples': (
             ['procedural_bunker_bowl', 'sand_material', 'lip_grass'] if kind == 'bunker' else
             ['smooth_visual_mesh', 'grass_material'] if kind == 'green' else
@@ -111,9 +115,16 @@ def main():
         raise ValueError('Physical world input must be canonical local-metre geometry')
     if not source.get('coordinateSystem', {}).get('oneWorldUnitEqualsMeters'):
         raise ValueError('Physical world requires one world unit to equal one metre')
+    spec = importlib.util.spec_from_file_location('course_truth_gate', Path(__file__).with_name('course-truth-gate.py'))
+    gate = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(gate)
+    report = gate.hole_report(source['physicalStudyKey'], source.get('features', []), source)
+    admission = report['admission']
+    boundaries = {item['feature']: item for item in report['features']}
     features = []
     unsupported = []
-    for feature in source.get('features', []):
+    for original_feature in source.get('features', []):
+        feature = reviewed_feature(source, original_feature)
         kind = feature.get('kind')
         rule = RULES.get(kind)
         if rule is None:
@@ -134,7 +145,8 @@ def main():
                 'height': 'shared_macro_terrain_only',
                 'status': 'source_candidate' if not provenance.get('humanReviewed') else 'reviewed_source_candidate',
             },
-            'rendering': rendering_contract(kind, feature_truth, provenance),
+            'rendering': {**rendering_contract(kind, feature_truth, provenance),
+                          'measurementAuthority': bool(boundaries[kind]['canMeasure']) and admission['capabilities'][f'measureBoundary:{kind}']['allowed']},
         })
     world = {
         'schemaVersion': 1,
@@ -152,10 +164,14 @@ def main():
         },
         'semanticSurfaces': features,
         'unsupportedFeatures': unsupported,
+        'featureAvailability': {item['feature']: item['availability'] for item in report['features'] if 'availability' in item},
+        'admission': admission,
         'visualWorldContract': {
             'mayAdd': ['materials', 'grass_height_visual_only', 'roughness', 'mowing_patterns', 'tree_assets', 'lighting', 'atmosphere', 'lod'],
             'mustNotChange': ['coordinateSystem', 'terrainField', 'semanticSurfaces.geometryMeters', 'observed_shot_coordinates'],
-            'mustNotInvent': ['bunker_depth', 'bunker_lip_height', 'green_micro_slope', 'daily_pin', 'historical_ball_position'],
+            'mustNotInvent': ['authoritative_bunker_depth', 'authoritative_bunker_lip_height', 'measured_green_micro_slope', 'known_daily_pin', 'observed_historical_ball_position'],
+            'visualOnlyGeometryAllowed': ['procedural_bunker_bowl', 'fringe_transition', 'decorative_vegetation', 'interpolated_visual_surface'],
+            'visualOnlyGeometryRule': 'Separate render geometry may add appearance; it never changes terrain samples, source polygons, capabilities or observations.',
         },
         'limitations': [
             *source.get('limitations', []),

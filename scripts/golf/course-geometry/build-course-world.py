@@ -52,6 +52,7 @@ def main():
     parser.add_argument('package', type=Path)
     parser.add_argument('terrain_source', type=Path)
     parser.add_argument('output', type=Path)
+    parser.add_argument('--physical-admission', type=Path, help='Human-reviewed per-hole admission evidence')
     parser.add_argument('--holes', default='all')
     parser.add_argument('--terrain-step-m', type=float, default=2)
     parser.add_argument('--padding-m', type=float, default=60)
@@ -78,7 +79,8 @@ def main():
         (directory / 'rendering').mkdir(parents=True, exist_ok=True)
         study = directory / 'study.json'
         run(['python3', str(HERE / 'normalize-study.py'), str(args.package), key, str(args.terrain_source), str(study),
-             '--terrain-step-m', str(args.terrain_step_m), '--padding-m', str(args.padding_m)])
+             '--terrain-step-m', str(args.terrain_step_m), '--padding-m', str(args.padding_m),
+             *(['--physical-admission', str(args.physical_admission)] if args.physical_admission else [])])
         world = directory / 'physical' / 'world.json'
         run(['python3', str(HERE / 'compile-physical-world.py'), str(study), str(world)])
         gate_json, gate_md = directory / 'validation' / 'course-truth.json', directory / 'validation' / 'course-truth.md'
@@ -86,7 +88,7 @@ def main():
         gate = json.loads(gate_json.read_text())
         record = {'key': key, 'ordinal': hole['ordinal'], 'par': hole['par'], 'scorecardYards': hole.get('scorecardYards'),
                   'studyHash': json.loads(study.read_text())['contentHash'], 'physicalWorldHash': json.loads(world.read_text())['contentHash'],
-                  'truthGatePassed': gate['passed'], 'terrainGrid': json.loads(study.with_name('study-validation.json').read_text())['terrainGrid']}
+                  'truthGatePassed': gate['passed'], 'admission': gate['holes'][0]['admission'], 'terrainGrid': json.loads(study.with_name('study-validation.json').read_text())['terrainGrid']}
         if not args.skip_blender:
             glb = directory / 'rendering' / f'{key}.glb'
             preview = directory / 'rendering' / f'{key}-preview.png'

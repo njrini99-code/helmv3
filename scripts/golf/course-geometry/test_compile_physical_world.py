@@ -35,6 +35,16 @@ class PhysicalWorldTest(unittest.TestCase):
         self.assertTrue(bunker['rendering']['renderable'])
         self.assertFalse(bunker['rendering']['measurementAuthority'])
 
+    def test_derived_boundary_still_allows_separate_visual_only_bunker_geometry(self):
+        spec = importlib.util.spec_from_file_location('physical_world', SCRIPT)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        contract = module.rendering_contract('bunker', 'derived', {'humanReviewed': False, 'boundaryAccuracyMeters': None})
+        self.assertTrue(contract['renderable'])
+        self.assertTrue(contract['mayUseVisualOnlyGeometry'])
+        self.assertFalse(contract['measurementAuthority'])
+        self.assertIn('bunker_depth', contract['physicalClaimsRemainBoundedBy'])
+
     def test_rendering_only_terrain_cannot_be_promoted_to_a_physical_height_field(self):
         fixture = {
             'kind': 'golfhelm-canonical-local-meter-study', 'contentHash': 'canonical', 'siteId': 'test', 'physicalStudyKey': 'visual', 'status': 'source_candidate_partial',

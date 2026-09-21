@@ -36,7 +36,7 @@ INLINE = 'inline'
 
 def eval_identity_resolve(node, ctx):
     layout = ctx.layout(node.scope.layout_id) or {}
-    inputs = {'identity': doc_hash(layout, ('layoutId', 'facilityId', 'siteIds', 'externalBindings')), 'catalog': dep_input(ctx, node, 'catalog.validate')}
+    inputs = {'identity': doc_hash(layout, ('layoutId', 'facilityId', 'siteIds', 'externalBindings'))}
     blockers = [] if layout.get('siteIds') or (layout.get('externalBindings') or {}).get('golfCourseIds') else [blocked('LAYOUT_IDENTITY_AMBIGUOUS', layoutId=node.scope.layout_id)]
     return evaluation(inputs, blockers)
 
@@ -511,7 +511,7 @@ def eval_review_compose(node, ctx):
 
 
 SPECS = [
-    TaskSpec('layout.identity.resolve', '1', 'layout', ('catalog.validate',), eval_identity_resolve, executor=INLINE),
+    TaskSpec('layout.identity.resolve', '2', 'layout', ('catalog.validate',), eval_identity_resolve, executor=INLINE),
     TaskSpec('layout.scorecard.validate', '1', 'layout', ('catalog.validate',), eval_scorecard_validate, executor=INLINE),
     TaskSpec('layout.routes.resolve', '2', 'layout', ('layout.identity.resolve', 'layout.scorecard.validate', 'facility.osm.snapshot'), eval_routes_resolve, impl_files=(script('source_geometry.py'), script('factory/context.py')), retention='A', estimated_bytes=10_000),
     TaskSpec('layout.route.dossier', '1', 'layout', ('layout.identity.resolve', 'layout.scorecard.validate', 'facility.osm.snapshot'), eval_route_dossier,
@@ -531,15 +531,15 @@ SPECS = [
     TaskSpec('layout.terrain.acquire', '1', 'layout', ('layout.candidates.compose',), eval_terrain_acquire,
              impl_files=TERRAIN_COMPILER_FILES, retention='A', estimated_bytes=300_000_000),
     TaskSpec('layout.canopy.derive', '1', 'layout', ('layout.terrain.acquire', 'layout.candidates.compose'), eval_canopy_derive,
-             impl_files=(script('derive-canopy-naip.py'), script('indexed_naip.py'), script('fetch-usgs-naip-facility-ortho.py')) + CRS_FILES, retention='B', estimated_bytes=500_000_000),
+             impl_files=(script('derive-canopy-naip.py'), script('indexed_naip.py'), script('fetch-usgs-naip-facility-ortho.py'), script('factory/payload_reuse.py')) + CRS_FILES, retention='B', estimated_bytes=500_000_000),
     TaskSpec('layout.package.compose', '1', 'layout', ('layout.candidates.compose', 'layout.scorecard.compose', 'facility.osm.snapshot', 'layout.canopy.derive?'), eval_package_compose,
              impl_files=(script('prepare-osm-course.py'), script('source_geometry.py')) + CRS_FILES, retention='A', estimated_bytes=5_000_000),
     TaskSpec('layout.package.validate', '1', 'layout', ('layout.package.compose', 'layout.context.classify?'), eval_package_validate, executor=run_package_validate, retention='C'),
     TaskSpec('layout.terrain.base', '1', 'layout', ('layout.package.compose', 'layout.terrain.acquire'), eval_terrain_base,
-             impl_files=TERRAIN_COMPILER_FILES, retention='C', estimated_bytes=100_000_000),
+             impl_files=TERRAIN_COMPILER_FILES + (script('factory/payload_reuse.py'),), retention='C', estimated_bytes=100_000_000),
     TaskSpec('layout.imagery.audit', '1', 'layout', ('layout.package.compose', 'layout.canopy.derive'), eval_imagery_audit,
              impl_files=(script('review-course-imagery.py'),) + CRS_FILES, retention='A', estimated_bytes=200_000_000),
     TaskSpec('layout.context.classify', '1', 'layout', ('layout.package.compose', 'facility.context.snapshot', 'layout.terrain.base'), eval_context_classify,
-             impl_files=(script('prepare-context-layer.py'),), retention='A', estimated_bytes=5_000_000),
+             impl_files=(script('prepare-context-layer.py'), script('factory/payload_reuse.py')), retention='A', estimated_bytes=5_000_000),
     TaskSpec('layout.review.compose', '1', 'layout', ('layout.package.validate', 'layout.imagery.audit?', 'layout.context.classify?'), eval_review_compose, executor=INLINE),
 ]

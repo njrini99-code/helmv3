@@ -217,3 +217,19 @@ describe('orientation visibility (Meridian §11)', () => {
     }
   });
 });
+
+
+describe('current compiler terrain provider identifiers', () => {
+  it('preserves each supported source identity without claiming a different provider', () => {
+    for (const provider of ['USGS 3DEP', 'usgs_3dep_project_1m', 'nc_onemap_dem03']) {
+      const source = structuredClone(terrainData);
+      source.source.provider = provider;
+      expect(parseTerrainMesh(source, pkg).source.provider).toBe(provider);
+    }
+  });
+  it('rejects arbitrary provider identifiers', () => {
+    const source = structuredClone(terrainData);
+    source.source.provider = 'unverified-basemap';
+    expect(() => parseTerrainMesh(source, pkg)).toThrow();
+  });
+});

@@ -116,6 +116,15 @@ class ImpactTests(unittest.TestCase):
         self.assertEqual([k for k in second if k.startswith('hole.terrain.compile')], [])
         self.assertEqual([k for k in second if k.startswith('hole.world.build')], [])
         self.assertIn('layout.package.compose[synthetic-a]', second)   # yards live in the package, so it is re-prepared
+        bound = os.path.join(self.h.output, 'layouts', 'synthetic-a', 'compiled-bound')
+        current = read_json(os.path.join(self.h.output, 'layouts', 'synthetic-a', 'package', 'normalized.json'))
+        for hole in current['holes']:
+            raw = read_json(os.path.join(self.h.output, 'layouts', 'synthetic-a', 'compiled', f"{hole['key']}-terrain.json"))
+            rebound = read_json(os.path.join(bound, f"{hole['key']}-terrain.json"))
+            self.assertEqual(rebound['geometryHash'], current['contentHash'])
+            self.assertEqual(rebound['terrainInput'], raw['terrainInput'])
+            self.assertNotEqual(rebound['geometryHash'], raw['geometryHash'])
+
 
     def test_renderer_version_bump_touches_visual_nodes_only(self):
         self.h.run('run', '--layout', 'synthetic-a')
@@ -266,7 +275,7 @@ class ImageryCurrencyTests(unittest.TestCase):
         self.assertIn('failed 0', text)
         self.assertIn('IMAGERY_TOO_OLD_FOR_KNOWN_RENOVATION — the retained imagery was flown before the catalog knownRenovationAfter date; retain a later capture or lift the date', text)
         # Identity is inline: it re-validates whenever the catalog does, at no cost.
-        self.assertEqual(self.executed(text), {'catalog.validate[synthetic]', 'layout.identity.resolve[synthetic-a]', 'layout.route.dossier[synthetic-a]', 'layout.capability.evaluate[synthetic-a]', 'layout.review.queue[synthetic-a]'})
+        self.assertEqual(self.executed(text), {'catalog.validate[synthetic]', 'layout.capability.evaluate[synthetic-a]', 'layout.review.queue[synthetic-a]'})
         queue = read_json(os.path.join(self.h.output, 'layouts', 'synthetic-a', 'review-queue.json'))
         items = {i['pass']: i for i in queue['items']}
         self.assertNotIn('imagery_review', items, 'sand shares against pre-renovation ground are not offered for review')
@@ -702,7 +711,7 @@ class PublishVerifyTests(unittest.TestCase):
     """What is published under public/ is checked against the evidence, never written."""
 
     def setUp(self):
-        self.tmp = tempfile.mkdtemp(prefix='factory-publish-')
+        self.tmp = tempfile.mkdtemp(prefix='factory-publish-', dir=os.path.realpath(tempfile.gettempdir()))
         self.h = Harness(self.tmp)
         code, text = self.h.run('run', '--layout', 'synthetic-a')
         self.assertEqual(code, 0, text)
@@ -750,6 +759,30 @@ class PublishVerifyTests(unittest.TestCase):
         self.assertEqual(capability['earnedTier'], 'C1', text)
         self.assertFalse(capability['capabilities']['productionVisual'])
         self.assertFalse(capability['capabilities']['tapToMeasure'])
+
+    def test_body_tamper_with_unchanged_declared_hash_invalidates_cached_verification(self):
+        public = self.h.publish('synthetic-a')
+        code, text = self.h.run('run', '--layout', 'synthetic-a', executors=self.executors())
+        self.assertEqual(code, 0, text)
+        name = next(n for n in os.listdir(os.path.join(public, 'terrain')) if n.startswith('synthetic-a-07'))
+        path = os.path.join(public, 'terrain', name)
+        tampered = read_json(path)
+        unchanged = tampered['contentHash']
+        tampered['terrainInput'] = 'forged numerical payload'
+        with open(path, 'w', encoding='utf-8') as handle:
+            json.dump(tampered, handle)
+        self.assertEqual(read_json(path)['contentHash'], unchanged)
+        states = self.h.states('synthetic-a', self.executors())
+        self.assertEqual(states['layout.publish.verify[synthetic-a]'][0], 'stale')
+        code, text = self.h.run('run', '--layout', 'synthetic-a', executors=self.executors())
+        self.assertEqual(code, 1, text)
+        report = read_json(os.path.join(self.h.output, 'layouts', 'synthetic-a', 'publish-verification.json'))
+        failed = [row for row in report['checks'] if not row['ok']]
+        self.assertEqual([row['name'] for row in failed], ['terrain:synthetic-a-07'])
+        self.assertNotEqual(failed[0]['expectedSha256'], failed[0]['actualSha256'])
+        capability = read_json(os.path.join(self.h.output, 'layouts', 'synthetic-a', 'capability-report.json'))
+        self.assertFalse(capability['evidence']['published'])
+
 
 
 class LabVerdictTests(unittest.TestCase):

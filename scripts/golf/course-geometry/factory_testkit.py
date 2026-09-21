@@ -18,6 +18,7 @@ from factory.adapters import prepare_compiled_dir
 from factory.fingerprints import digest, file_sha256, terrain_source_identity
 from factory.ledger import Ledger
 from factory.tasks.common import artifact
+from physical_admission import capabilities, review_input_hash
 
 HOLES = 18
 ORIGIN = [-78.2958511, 39.5119114]
@@ -394,7 +395,7 @@ class FakePipeline:
             if manifest['geometryHash'] != ctx.package_hash(layout_id) or not same_source:
                 raise ValueError('Output manifest belongs to a different package/source; choose a new directory')
             holes = dict(manifest['holes'])
-        terrain = {'kind': 'terrain', 'hole': hole['key'], 'terrainInput': sub['holeTerrainInputHash'], 'source': identity}
+        terrain = {'kind': 'terrain', 'hole': hole['key'], 'physicalHoleKey': hole['key'], 'geometryHash': ctx.package_hash(layout_id), 'terrainInput': sub['holeTerrainInputHash'], 'source': identity}
         terrain['contentHash'] = digest(terrain)
         write_json(os.path.join(folder, f'{hole["key"]}-terrain.json'), terrain)
         with open(os.path.join(folder, f'{hole["key"]}-terrain.json'), 'rb') as f:
@@ -419,7 +420,10 @@ class FakePipeline:
         study['contentHash'] = digest(study)
         write_json(os.path.join(folder, 'study.json'), study)
         write_json(os.path.join(folder, 'validation', 'course-truth.json'), {'passed': False})
+        admission_path = ctx.retained(ctx.layout(layout_id), 'physicalAdmission')
+        admission = capabilities({'packageHash': ctx.package_hash(layout_id), 'physicalStudyKey': hole['key']}, [])
         record = {'packageHash': ctx.package_hash(layout_id), 'terrainRasterSha256': 'x',
+                  'admission': admission, 'admissionReviewHash': review_input_hash(ctx.json(admission_path), hole['key']) if admission_path else None,
                   'terrainSourceIdentity': terrain_source_identity(ctx.terrain_source_manifest(layout_id)),
                   'builtAt': '2026-09-19T00:00:00+00:00', 'blender': False, 'key': hole['key'],
                   'ordinal': hole['ordinal'], 'par': hole['par'], 'studyHash': study['contentHash'], 'physicalWorldHash': digest(['world', study['contentHash']]), 'truthGatePassed': False}
@@ -623,9 +627,9 @@ class Harness:
         shutil.copyfile(os.path.join(out, 'package', 'normalized.json'), os.path.join(public, f'package-{short}.json'))
         terrain = {}
         for hole in pkg['holes']:
-            mesh = read_json(os.path.join(out, 'compiled', f'{hole["key"]}-terrain.json'))
+            mesh = read_json(os.path.join(out, 'compiled-bound', f'{hole["key"]}-terrain.json'))
             name = f'terrain/{hole["key"]}-{mesh["contentHash"][:12]}.json'
-            write_json(os.path.join(public, name), {**mesh, 'geometryHash': pkg['contentHash']})
+            shutil.copyfile(os.path.join(out, 'compiled-bound', f'{hole["key"]}-terrain.json'), os.path.join(public, name))
             terrain[hole['key']] = f'/course-geometry/{layout}/{name}'
         manifest = {'courseId': layout, 'geometryVersion': pkg['contentHash'], 'packageUrl': f'/course-geometry/{layout}/package-{short}.json', 'terrainByHole': terrain}
         context_path = os.path.join(out, 'context', f'{layout}-context.json')

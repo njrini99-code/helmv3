@@ -88,9 +88,12 @@ def build_parser():
     k.add_argument('--min-rounds', type=int, default=1)
     k.add_argument('--write', action='store_true', help='write the new catalog manifests (default: report only)')
     k.add_argument('--json', action='store_true')
-    s = sub.add_parser('refresh-scorecards', help='fill absent cards from a complete read-only library export; preserve existing selections')
+    s = sub.add_parser('refresh-scorecards', help='append all identified tee revisions from a complete export; preserve existing cards and reference selection')
     s.add_argument('--snapshot', required=True)
     s.add_argument('--write', action='store_true')
+    review = sub.add_parser('review-bundle', help='export one immutable local review bundle; optional serial captures, no admission or publication')
+    review.add_argument('--layout', required=True)
+    review.add_argument('--capture', action='store_true', help='capture every bundle hole using the existing loopback factory lab on port 8774')
     i = sub.add_parser('invalidate')
     i.add_argument('--layout', required=True)
     i.add_argument('--task', required=True)
@@ -415,8 +418,13 @@ def cmd_refresh_scorecards(session, args, out):
     return 0
 
 
+def cmd_review_bundle(session, args, out):
+    from .review_bundle import review_bundle
+    return review_bundle(session, args, out)
+
+
 COMMANDS = {'doctor': cmd_doctor, 'plan': cmd_plan, 'run': cmd_run, 'status': cmd_status, 'batch': cmd_batch, 'why': cmd_why, 'invalidate': cmd_invalidate, 'intake': cmd_intake,
-            'refresh-scorecards': cmd_refresh_scorecards}
+            'refresh-scorecards': cmd_refresh_scorecards, 'review-bundle': cmd_review_bundle}
 
 
 def main(argv=None, out=None, ledger=None, executors=None, spec_overrides=None):
