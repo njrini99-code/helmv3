@@ -28,13 +28,17 @@ def args_after_separator():
     return [Path(value) for value in sys.argv[sys.argv.index('--') + 1:]]
 
 
-def material(name, color, roughness=.85):
+def material(name, color, roughness=.85, emission=.25):
     item = bpy.data.materials.new(name)
     item.diffuse_color = (*color, 1)
     item.use_nodes = True
     bsdf = item.node_tree.nodes.get('Principled BSDF')
     bsdf.inputs['Base Color'].default_value = (*color, 1)
     bsdf.inputs['Roughness'].default_value = roughness
+    # Readability is a visual-only rendering choice. It cannot alter any
+    # source geometry, candidate coordinates, or physical interpretation.
+    bsdf.inputs['Emission Color'].default_value = (*color, 1)
+    bsdf.inputs['Emission Strength'].default_value = emission
     return item
 
 
@@ -150,11 +154,11 @@ def main():
     origin = green['centerWgs84']
     project = local_projector(origin)
     materials = {
-        'ground': material('GolfHelmVisualOnlyGround', (.055, .11, .07)),
-        'green': material('GolfHelmSourceGreen', (.26, .78, .16)),
-        'tee': material('GolfHelmSourceTee', (.12, .52, .72)),
-        'fairway': material('GolfHelmSourceFairway', (.42, .66, .18)),
-        'corridor': material('GolfHelmEstimatedDisplayCorridor', (.92, .76, .20), .5),
+        'ground': material('GolfHelmVisualOnlyGround', (.075, .16, .095), emission=.42),
+        'green': material('GolfHelmSourceGreen', (.34, .88, .20), emission=.65),
+        'tee': material('GolfHelmSourceTee', (.12, .64, .92), emission=.60),
+        'fairway': material('GolfHelmSourceFairway', (.48, .76, .20), emission=.48),
+        'corridor': material('GolfHelmEstimatedDisplayCorridor', (.98, .82, .22), .5, emission=.80),
     }
     all_points, layers = [], []
     heights = {'fairway': .02, 'tee': .04, 'green': .06}
@@ -199,8 +203,8 @@ def main():
     bpy.context.collection.objects.link(sun)
     bpy.context.scene.world.use_nodes = True
     background = bpy.context.scene.world.node_tree.nodes.get('Background')
-    background.inputs['Color'].default_value = (.07, .12, .085, 1)
-    background.inputs['Strength'].default_value = .5
+    background.inputs['Color'].default_value = (.20, .32, .24, 1)
+    background.inputs['Strength'].default_value = .8
 
     glb_path.parent.mkdir(parents=True, exist_ok=True)
     bpy.ops.object.select_all(action='SELECT')
@@ -208,6 +212,7 @@ def main():
                               export_apply=True, export_extras=True, export_cameras=True, export_lights=True)
     preview_path.parent.mkdir(parents=True, exist_ok=True)
     scene = bpy.context.scene
+    scene.view_settings.exposure = 1.25
     # Blender 5.2 still exposes the EEVEE renderer under this stable enum.
     scene.render.engine = 'BLENDER_EEVEE'
     scene.render.resolution_x = 720

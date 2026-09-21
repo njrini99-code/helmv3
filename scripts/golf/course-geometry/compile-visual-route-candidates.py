@@ -167,14 +167,24 @@ def run_blender(blender, script, args):
     return result.stdout.strip()
 
 
-def asset_output(repo_root, factory_output, asset, plan_hash):
+def renderer_identity():
+    """A renderer revision receives a separate review-artifact directory.
+
+    A material/camera update must not make an older preview look current just
+    because source geometry and the candidate plan did not change.
+    """
+    parts = [HERE / 'blender/generate_visual_route_candidate.py', HERE / 'blender/validate_visual_route_candidate.py']
+    return sha256_bytes(b''.join(path.read_bytes() for path in parts))
+
+
+def asset_output(repo_root, factory_output, asset, plan_hash, renderer_hash):
     suggested = checked_path(repo_root, asset['suggestedDerivedDirectory'], factory_output)
     # A hash-scoped build directory prevents an interrupted/revised visual plan
     # from mutating a previous review artifact in place.
-    return suggested / ('build-' + plan_hash[:16])
+    return suggested / ('build-' + plan_hash[:12] + '-r' + renderer_hash[:8])
 
 
-def reusable(output, plan_hash, source_hash):
+def reusable(output, plan_hash, source_hash, renderer_hash):
     manifest = output / 'review-manifest.json'
     glb, preview, validation = output / 'scene.glb', output / 'preview.png', output / 'validation.json'
     if not all(path.is_file() for path in (manifest, glb, preview, validation)):
@@ -183,6 +193,7 @@ def reusable(output, plan_hash, source_hash):
         value = json.loads(manifest.read_text())
         check = json.loads(validation.read_text())
         return (value.get('planSha256') == plan_hash and value.get('sourceSha256') == source_hash
+                and value.get('rendererSha256') == renderer_hash
                 and value.get('glbSha256') == sha256_path(glb) and check.get('passed') is True
                 and check.get('glbSha256') == sha256_path(glb))
     except (OSError, ValueError, TypeError):
@@ -194,8 +205,9 @@ def compile_asset(args, plan, asset, raw_extract, repo_root, factory_output):
         raise ValueError('asset source artifact differs from its display-only plan')
     if any(asset.get(key) for key in ('physicalHoleId', 'holeKey', 'ordinal', 'routeWayId')):
         raise ValueError('asset carries a canonical identifier')
-    output = asset_output(repo_root, factory_output, asset, plan['contentHash'])
-    if reusable(output, plan['contentHash'], asset['sourceArtifact']['sha256']):
+    renderer_hash = renderer_identity()
+    output = asset_output(repo_root, factory_output, asset, plan['contentHash'], renderer_hash)
+    if reusable(output, plan['contentHash'], asset['sourceArtifact']['sha256'], renderer_hash):
         return {'assetKey': asset['assetKey'], 'candidateId': asset['candidateId'], 'status': 'reused',
                 'directory': str(output), 'glb': str(output / 'scene.glb')}
     guard = disk.guard(str(output.parent), args.estimated_bytes_per_asset)
@@ -219,6 +231,7 @@ def compile_asset(args, plan, asset, raw_extract, repo_root, factory_output):
         'schema': 'golfhelm-visual-route-candidate-review-manifest-v1',
         'assetKey': asset['assetKey'], 'candidateId': asset['candidateId'],
         'planSha256': plan['contentHash'], 'sourceSha256': asset['sourceArtifact']['sha256'],
+        'rendererSha256': renderer_hash,
         'inputSha256': sha256_path(input_path), 'glbSha256': sha256_path(glb),
         'previewSha256': sha256_path(preview), 'validationSha256': sha256_path(validation),
         'renderingContract': plan['renderingContract'],

@@ -94,7 +94,7 @@ class VisualRouteCompilerTests(unittest.TestCase):
     def test_rejects_plan_path_outside_factory_output(self):
         escaped = dict(self.asset, suggestedDerivedDirectory='../outside')
         with self.assertRaisesRegex(ValueError, 'escapes'):
-            compiler.asset_output(self.repo, self.output, escaped, self.plan['contentHash'])
+            compiler.asset_output(self.repo, self.output, escaped, self.plan['contentHash'], 'c' * 64)
 
 
 if __name__ == '__main__':
