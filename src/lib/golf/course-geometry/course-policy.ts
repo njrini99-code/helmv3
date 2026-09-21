@@ -29,6 +29,8 @@ export interface CourseGeometryPolicy {
   readonly syncFeatureFlag: string | null;
   /** Exact owner-approved package hashes; an empty set approves nothing. */
   readonly approvedGeometryHashes: ReadonlySet<string>;
+  /** SHA-256 of exact published package bytes; required before a durable round can bind. */
+  readonly approvedPackageByteHashes?: Readonly<Record<string, string>>;
   /** The tier the approved package has earned; capabilities above it are refused. */
   readonly acceptedCapabilityTier: 'C2' | 'C3' | 'C4';
   /** Owner-approved exception that lets a `source_candidate` package serve

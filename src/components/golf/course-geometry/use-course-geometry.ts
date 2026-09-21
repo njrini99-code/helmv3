@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { browserRoundBindingTransport } from '@/lib/golf/one-tap/round-binding-transport';
+import type { RoundBindingTransport } from '@/lib/golf/one-tap/round-course-binding';
 import type { TerrainMesh } from '@/lib/golf/course-geometry/terrain';
 import { evictTerrain, rememberViewedHole, residentTerrainKeys } from '@/lib/golf/course-geometry/terrain-residency';
 import type { TrackingGeometry } from '@/lib/golf/course-geometry/tracking-scene';
@@ -21,6 +23,7 @@ import { resolveCourseGeometryPolicy } from '@/lib/golf/course-geometry/course-r
  * package or terrain that cannot be had is not an error: the round simply
  * keeps its 2D course frame, or the plain layout, and shot entry never waits. */
 export interface UseCourseGeometryOptions {
+  bindingTransport?: RoundBindingTransport | null;
   roundId?: string | null;
   dbCourseId?: string | null;
   courseName?: string | null;
@@ -45,7 +48,9 @@ export interface UseCourseGeometryOptions {
 export type CourseGeometryStatus = 'inactive' | 'loading' | 'ready' | 'unavailable';
 export interface CourseGeometryState { geometry: TrackingGeometry | undefined; status: CourseGeometryStatus }
 
-export function useCourseGeometry({ roundId, dbCourseId, courseName, holeNumbers, focusHoleNumber = null, prefetchNext = true, enabled = true, policy: onlyPolicy, cache, fetchImpl }: UseCourseGeometryOptions): CourseGeometryState {
+export function useCourseGeometry({ bindingTransport, roundId, dbCourseId, courseName, holeNumbers, focusHoleNumber = null, prefetchNext = true, enabled = true, policy: onlyPolicy, cache, fetchImpl }: UseCourseGeometryOptions): CourseGeometryState {
+  const [connectionRevision, setConnectionRevision] = useState(0);
+  useEffect(() => { const online = () => setConnectionRevision(n => n + 1); window.addEventListener('online', online); return () => window.removeEventListener('online', online); }, []);
   const policy = useMemo(() => resolveCourseGeometryPolicy({ dbCourseId, courseName }, onlyPolicy ? [onlyPolicy] : undefined), [dbCourseId, courseName, onlyPolicy]);
   const productCourseId = policy?.layoutId ?? null;
   const active = enabled && productCourseId !== null;
@@ -59,14 +64,17 @@ export function useCourseGeometry({ roundId, dbCourseId, courseName, holeNumbers
   // taking the assets over) keeps it, so the hero never falls back to the
   // plain card for the seconds Live takes to come up or go away.
   const matched = productCourseId !== null;
+  const loadedIdentity = useRef<string | null>(null);
   useEffect(() => {
     if (!matched) { setLoaded(null); setTerrainByHole({}); setStatus('inactive'); return; }
     if (!active) return;
+    const identity = `${roundId ?? 'preview'}:${productCourseId}`;
+    if (loadedIdentity.current !== identity) { loadedIdentity.current = identity; setLoaded(null); setTerrainByHole({}); }
     let cancelled = false;
     setStatus(current => current === 'ready' ? current : 'loading');
     void (async () => {
       try {
-        const result = await loadCoursePackage({ roundId: roundId ?? undefined, leaseStore: browserRoundLeaseStore(), courseId: productCourseId!, policy: policy!, cache: assetCache, fetchImpl });
+        const result = await loadCoursePackage({ bindingTransport: bindingTransport === undefined ? browserRoundBindingTransport(roundId) : bindingTransport, roundId: roundId ?? undefined, leaseStore: browserRoundLeaseStore(), courseId: productCourseId!, policy: policy!, cache: assetCache, fetchImpl });
         if (cancelled) return;
         setLoaded(current => current && result && current.manifest.geometryVersion === result.manifest.geometryVersion ? current : result);
         setStatus(result ? 'ready' : 'unavailable');
@@ -77,13 +85,13 @@ export function useCourseGeometry({ roundId, dbCourseId, courseName, holeNumbers
       }
     })();
     return () => { cancelled = true; };
-  }, [matched, active, roundId, productCourseId, policy, assetCache, cache, fetchImpl]);
+  }, [connectionRevision, bindingTransport, matched, active, roundId, productCourseId, policy, assetCache, cache, fetchImpl]);
 
   // Hole numbers are compared by value so a caller may rebuild the array per render.
   const holeNumbersKey = holeNumbers.join(',');
   const holeKeys = useMemo(() => {
     const pkg = loaded?.pkg;
-    return holeNumbersKey === '' || !pkg ? [] : holeNumbersKey.split(',').map(n => holeKeyForRoundHole({ pkg, roundHoleKeys: explicitHoleBindings(pkg, policy) }, Number(n)) ?? '');
+    return holeNumbersKey === '' || !pkg ? [] : holeNumbersKey.split(',').map(n => holeKeyForRoundHole({ pkg, roundHoleKeys: loaded?.roundBinding?.holeBindings ?? explicitHoleBindings(pkg, policy) }, Number(n)) ?? '');
   }, [holeNumbersKey, loaded, policy]);
 
   // Terrain residency (§69): the hole on screen, the next hole, then the most

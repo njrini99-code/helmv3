@@ -109,17 +109,10 @@ export class SupabaseSyncTransport implements SyncTransport {
     return this.upsert(ONE_TAP_PENALTY_TABLE, events, e => e.id, e => e.roundId, penaltyRow);
   }
 
-  /** Not on `SyncTransport`: the binding is round setup, not a queued record.
-   * Idempotent on `round_id` for the same reason everything else here is. */
+  /** Retired legacy payload cannot establish a replayable world. Use the
+   * immutable round-binding RPC, which also snapshots the saved scorecard. */
   async upsertRoundBinding(binding: RoundCourseBinding): Promise<SyncResult> {
-    if (!isSyncableRoundId(binding.roundId)) return { acceptedIds: [], rejectedIds: [binding.roundId] };
-    const { data, error } = await this.client.from(ONE_TAP_ROUND_BINDING_TABLE).upsert([{
-      round_id: binding.roundId, course_id: binding.courseId, site_id: binding.siteId,
-      geometry_version: binding.geometryVersion, terrain_version: binding.terrainVersion,
-      one_tap_mode: binding.oneTapMode,
-    }], { onConflict: 'round_id' }).select('round_id');
-    if (error) throw new Error(`one-tap round binding sync failed: ${error.message}`);
-    return { acceptedIds: data?.length ? [binding.roundId] : [] };
+    return { acceptedIds: [], rejectedIds: [binding.roundId] };
   }
 
   private async upsert<T>(

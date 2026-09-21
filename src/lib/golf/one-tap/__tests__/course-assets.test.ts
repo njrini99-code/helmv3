@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
@@ -149,7 +150,7 @@ describe('course assets (task 15 — offline readiness)', () => {
     // The Upper package with its own context layer (woods, paths, structures);
     // SYNTHETIC POLICY again — the hash is approved for this test only.
     const upper = JSON.parse(readFileSync(join(process.cwd(), 'src/test/fixtures/course-geometry/peek-n-peak-upper.json'), 'utf8')) as { contentHash: string; siteId: string; status: string };
-    const upperPolicy: CourseGeometryPolicy = { ...PEEK_N_PEAK_UPPER_POLICY, siteIds: new Set([upper.siteId]), approvedGeometryHashes: new Set([upper.contentHash]) };
+    const upperPolicy: CourseGeometryPolicy = { ...PEEK_N_PEAK_UPPER_POLICY, approvedPackageByteHashes: { [upper.contentHash]: createHash('sha256').update(JSON.stringify({ ...upper, status: 'reviewed_draft' })).digest('hex') }, siteIds: new Set([upper.siteId]), approvedGeometryHashes: new Set([upper.contentHash]) };
     const contextBody = readFileSync(join(process.cwd(), 'src/test/fixtures/course-geometry/peek-n-peak-upper-context.json'), 'utf8');
     const UPPER_PKG = `/course-geometry/${COURSE}/${upper.contentHash}/package.json`, CONTEXT_URL = `/course-geometry/${COURSE}/${upper.contentHash}/context.json`;
     const withContext = JSON.stringify({ geometryVersion: upper.contentHash, packageUrl: UPPER_PKG, terrainByHole: {}, contextLayerUrl: CONTEXT_URL });

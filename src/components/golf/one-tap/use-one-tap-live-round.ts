@@ -1,6 +1,8 @@
 'use client';
 
 import type { RoundScoringSetup } from '@/lib/golf/one-tap/live-round-placement';
+import { browserRoundBindingTransport } from '@/lib/golf/one-tap/round-binding-transport';
+import type { RoundBindingTransport } from '@/lib/golf/one-tap/round-course-binding';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { TerrainMesh } from '@/lib/golf/course-geometry/terrain';
@@ -25,6 +27,7 @@ import { createClient } from '@/lib/supabase/client';
  * can tell the player why Live is not up instead of staying silent. */
 export interface UseOneTapLiveRoundOptions {
   roundSetup?: RoundScoringSetup;
+  bindingTransport?: RoundBindingTransport | null;
   roundId: string | null;
   dbCourseId?: string | null;
   courseName?: string | null;
@@ -55,7 +58,9 @@ export type OneTapLiveStatus =
   | { phase: 'off'; reason: OneTapIneligibility | 'opt_in_off' | 'course_unavailable' | 'error'; detail?: string };
 export interface OneTapLiveRoundState { live: OneTapLiveRound | null; status: OneTapLiveStatus }
 
-export function useOneTapLiveRoundState({ roundSetup, roundId, dbCourseId, courseName, featureFlagEnabled, optIn, syncEnabled = false, holeNumber, policy: onlyPolicy, cache, roundType, transport }: UseOneTapLiveRoundOptions): OneTapLiveRoundState {
+export function useOneTapLiveRoundState({ roundSetup, bindingTransport, roundId, dbCourseId, courseName, featureFlagEnabled, optIn, syncEnabled = false, holeNumber, policy: onlyPolicy, cache, roundType, transport }: UseOneTapLiveRoundOptions): OneTapLiveRoundState {
+  const [connectionRevision, setConnectionRevision] = useState(0);
+  useEffect(() => { const online = () => setConnectionRevision(n => n + 1); window.addEventListener('online', online); return () => window.removeEventListener('online', online); }, []);
   const roundSetupRef = useRef(roundSetup);
   roundSetupRef.current = roundSetup;
   const policy = useMemo(() => resolveCourseGeometryPolicy({ dbCourseId, courseName }, onlyPolicy ? [onlyPolicy] : undefined), [dbCourseId, courseName, onlyPolicy]);
@@ -79,7 +84,7 @@ export function useOneTapLiveRoundState({ roundSetup, roundId, dbCourseId, cours
     void (async () => {
       try {
         const assetCache = cache === undefined ? cacheStorageCourseAssetCache() : cache;
-        const loaded = await loadCoursePackage({ roundId, leaseStore: browserRoundLeaseStore(), courseId: productCourseId, policy, cache: assetCache });
+        const loaded = await loadCoursePackage({ roundSetup: roundSetupRef.current, bindingTransport: bindingTransport === undefined ? browserRoundBindingTransport(roundId) : bindingTransport, roundId, leaseStore: browserRoundLeaseStore(), courseId: productCourseId, policy, cache: assetCache });
         if (cancelled) return;
         if (!loaded) { off('course_unavailable'); return; }
         const { manifest, pkg, contextLayer } = loaded;
@@ -92,7 +97,7 @@ export function useOneTapLiveRoundState({ roundSetup, roundId, dbCourseId, cours
         // the scorecard is written through the standard ledger (§77).
         const outbox = transport !== undefined ? transport : syncEnabled ? browserSyncTransport() : null;
         const terrainByHole: Record<string, TerrainMesh> = {};
-        const { live: resolved, eligibility } = resolveOneTapLiveRound({ roundSetup: roundSetupRef.current, roundId, roundCourseId: productCourseId, featureFlagEnabled, pkg, terrainByHole, contextLayer, location, policy, readiness: 'partial', roundType, transport: outbox });
+        const { live: resolved, eligibility } = resolveOneTapLiveRound({ roundHoleKeys: loaded.roundBinding?.holeBindings, roundSetup: roundSetupRef.current, roundId, roundCourseId: productCourseId, featureFlagEnabled, pkg, terrainByHole, contextLayer, location, policy, readiness: 'partial', roundType, transport: outbox });
         if (cancelled) return;
         if (!resolved) { off(eligibility.eligible ? 'error' : eligibility.reason); return; }
         // Current hole first, then the holes ahead, then the ones behind.
@@ -125,7 +130,7 @@ export function useOneTapLiveRoundState({ roundSetup, roundId, dbCourseId, cours
       }
     })();
     return () => { cancelled = true; };
-  }, [roundId, featureFlagEnabled, optIn, syncEnabled, productCourseId, policy, cache, roundType, transport]);
+  }, [connectionRevision, bindingTransport, roundId, featureFlagEnabled, optIn, syncEnabled, productCourseId, policy, cache, roundType, transport]);
   return state;
 }
 function sameStatus(a: OneTapLiveStatus, b: OneTapLiveStatus): boolean {

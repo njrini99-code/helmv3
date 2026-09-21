@@ -4,6 +4,8 @@ import type { CourseGeometryPackage } from '../course-geometry/types';
 import { packageApproved, type CourseGeometryPolicy } from '../course-geometry/course-policy';
 import { courseGeometryPolicyForLayout } from '../course-geometry/course-registry';
 import type { StorageLike } from './anchor-repository';
+import type { RoundScoringSetup } from './live-round-placement';
+import { bindingMatchesScoring, canonicalBindingJson, proposeRoundBinding, roundCourseBindingSchema, sameBindingProposal, type DurableRoundCourseBinding, type RoundBindingTransport } from './round-course-binding';
 
 /** Master plan task 15 — offline course readiness. The essential manifest
  * names everything a round needs on the course with no signal: the approved
@@ -98,8 +100,20 @@ export function parseApprovedPackage(body: string, geometryVersion: string, poli
   } catch { return null; }
 }
 
+/** Verify exact approved bytes, not a self-declared JSON contentHash. Python
+ * canonical JSON can spell floats differently from JavaScript; publication
+ * therefore pins an independent byte digest instead of reserializing here. */
+async function packageBytesApproved(body: string, version: string, policy: CourseGeometryPolicy, required: boolean): Promise<boolean> {
+  const expected = policy.approvedPackageByteHashes?.[version];
+  if (!expected) return !required;
+  try {
+    const digest = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(body));
+    return Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, '0')).join('') === expected;
+  } catch { return false; }
+}
+
 /** `policy` defaults to the registry entry for `courseId`; an unlisted course approves nothing. */
-export interface CourseAssetOptions { roundId?: string; leaseStore?: StorageLike | null; courseId: string; policy?: CourseGeometryPolicy | null; cache: CourseAssetCache | null; fetchImpl?: FetchLike | null; baseUrl?: string }
+export interface CourseAssetOptions { roundSetup?: RoundScoringSetup; bindingTransport?: RoundBindingTransport | null; roundId?: string; leaseStore?: StorageLike | null; courseId: string; policy?: CourseGeometryPolicy | null; cache: CourseAssetCache | null; fetchImpl?: FetchLike | null; baseUrl?: string }
 export type PreflightStatus = 'ready' | 'partial' | 'unavailable' | 'not_approved';
 export interface PreflightAsset { kind: 'package' | 'terrain'; holeKey?: string; url: string; source: AssetSource | null }
 export interface PreflightReport { status: PreflightStatus; geometryVersion: string | null; manifestSource: AssetSource | null; assets: PreflightAsset[]; missing: string[] }
@@ -118,7 +132,8 @@ export async function preflightCourseAssets({ courseId, policy = courseGeometryP
   if (!policy.approvedGeometryHashes.has(manifest.geometryVersion)) return empty('not_approved', manifest.geometryVersion, manifestHit!.source);
   const assets: PreflightAsset[] = [], missing: string[] = [];
   const packageHit = await fetchAsset(manifest.packageUrl, { cache, fetchImpl, strategy: 'cache_first' });
-  const pkg = packageHit ? parseApprovedPackage(packageHit.body, manifest.geometryVersion, policy) : null;
+  const pkg = packageHit && await packageBytesApproved(packageHit.body, manifest.geometryVersion, policy, false)
+    ? parseApprovedPackage(packageHit.body, manifest.geometryVersion, policy) : null;
   if (!pkg) { if (packageHit) await cache?.delete(manifest.packageUrl); return { status: 'unavailable', geometryVersion: manifest.geometryVersion, manifestSource: manifestHit!.source, assets: [{ kind: 'package', url: manifest.packageUrl, source: null }], missing: [manifest.packageUrl] }; }
   assets.push({ kind: 'package', url: manifest.packageUrl, source: packageHit!.source });
   for (const [holeKey, url] of Object.entries(manifest.terrainByHole ?? {})) {
@@ -139,6 +154,7 @@ export function roundLeaseUrl(courseId: string, roundId: string, baseUrl = '/cou
 export function browserRoundLeaseStore(): StorageLike | null {
   try { return typeof window === 'undefined' ? null : window.localStorage; } catch { return null; }
 }
+const durableRoundBindingKey = (roundId: string) => `golfhelm-round-world-v2:${roundId}`;
 const roundBindingKey = (roundId: string) => `golfhelm-round-course-binding:${roundId}`;
 export async function releaseCourseRoundLease(cache: CourseAssetCache | null, courseId: string, roundId: string): Promise<void> {
   await cache?.delete(roundLeaseUrl(courseId, roundId));
@@ -150,7 +166,7 @@ export async function releaseBrowserRoundLeases(roundId: string, deleted = false
     const cache = cacheStorageCourseAssetCache();
     const suffix = `/round-leases/${encodeURIComponent(roundId)}.json`;
     for (const url of await cache?.keys() ?? []) if (url.endsWith(suffix)) await cache?.delete(url);
-    if (deleted) browserRoundLeaseStore()?.removeItem(roundBindingKey(roundId));
+    if (deleted) { browserRoundLeaseStore()?.removeItem(roundBindingKey(roundId)); browserRoundLeaseStore()?.removeItem(durableRoundBindingKey(roundId)); }
   } catch { /* cleanup cannot make a completed or deleted round fail */ }
 }
 /** Keep suspended rounds' files; otherwise remove obsolete course assets. */
@@ -170,12 +186,12 @@ export interface LoadedCourseAssets { geometryVersion: string; pkg: CourseGeomet
 /** What the live round consumes: the approved package and whichever terrain
  * is present, from the cache when there is no signal. Null when no approved
  * package can be had either way. */
-export interface LoadedCoursePackage { manifest: EssentialCourseManifest; pkg: CourseGeometryPackage; contextLayer?: ContextLayer; sources: Record<string, AssetSource> }
+export interface LoadedCoursePackage { roundBinding?: DurableRoundCourseBinding; manifest: EssentialCourseManifest; pkg: CourseGeometryPackage; contextLayer?: ContextLayer; sources: Record<string, AssetSource> }
 /** The approved package (and the optional context layer) alone — the part a
  * live round needs before it can start. Terrain follows per hole through
  * `loadHoleTerrain`, so the first hole is on screen after ~1.5 MB instead of
  * after the whole course. Null when no approved package can be had. */
-export async function loadCoursePackage({ roundId, leaseStore, courseId, policy = courseGeometryPolicyForLayout(courseId), cache, fetchImpl = defaultFetch, baseUrl = '/course-geometry' }: CourseAssetOptions): Promise<LoadedCoursePackage | null> {
+export async function loadCoursePackage({ roundSetup, bindingTransport, roundId, leaseStore, courseId, policy = courseGeometryPolicyForLayout(courseId), cache, fetchImpl = defaultFetch, baseUrl = '/course-geometry' }: CourseAssetOptions): Promise<LoadedCoursePackage | null> {
   if (!policy || policy.approvedGeometryHashes.size === 0 || courseId !== policy.layoutId) return null;
   // An evictable asset cache alone cannot protect a round's version binding.
   if (roundId && !leaseStore) return null;
@@ -184,14 +200,56 @@ export async function loadCoursePackage({ roundId, leaseStore, courseId, policy 
   // the evictable asset cache. If it cannot be read, do not select a new world.
   let binding: string | null = null;
   try { binding = roundId && leaseStore ? leaseStore.getItem(roundBindingKey(roundId)) : null; } catch { return null; }
-  const pinned = binding ?? (leaseUrl && cache ? await cache.get(leaseUrl) : null);
+  let durableBinding: DurableRoundCourseBinding | undefined;
+  if (roundId && leaseStore && bindingTransport) {
+    try {
+      const raw = leaseStore.getItem(durableRoundBindingKey(roundId));
+      if (raw) {
+        const parsed = roundCourseBindingSchema.safeParse(JSON.parse(raw));
+        if (!parsed.success || parsed.data.roundId !== roundId) return null;
+        durableBinding = parsed.data;
+      }
+    } catch { return null; }
+    const remote = await bindingTransport.read(roundId);
+    if (remote.status === 'conflict') return null;
+    if (remote.status === 'found') {
+      if (durableBinding && canonicalBindingJson(durableBinding) !== canonicalBindingJson(remote.binding)) return null;
+      durableBinding = remote.binding;
+    } else if (remote.status === 'unavailable' && !durableBinding) return null;
+    else if (remote.status === 'missing' && durableBinding) return null;
+    if (durableBinding && (durableBinding.layoutId !== courseId
+      || (durableBinding.scoringSnapshot.dbCourseId !== null && !policy.dbCourseIds.has(durableBinding.scoringSnapshot.dbCourseId))
+      || !bindingMatchesScoring(durableBinding, roundSetup))) return null;
+    if (binding && durableBinding && canonicalBindingJson(parseManifest(binding, courseId)) !== canonicalBindingJson(durableBinding.manifest)) return null;
+  }
+  const pinned = (durableBinding ? JSON.stringify(durableBinding.manifest) : binding) ?? (leaseUrl && cache ? await cache.get(leaseUrl) : null);
   const manifestHit = pinned ? { body: pinned, source: 'cache' as const }
     : await fetchAsset(manifestUrl(courseId, baseUrl), { cache, fetchImpl, strategy: 'network_first' });
   const manifest = manifestHit ? parseManifest(manifestHit.body, courseId) : null;
   if (!manifest || !policy.approvedGeometryHashes.has(manifest.geometryVersion)) return null;
   const packageHit = await fetchAsset(manifest.packageUrl, { cache, fetchImpl, strategy: 'cache_first' });
-  const pkg = packageHit ? parseApprovedPackage(packageHit.body, manifest.geometryVersion, policy) : null;
-  if (!pkg) return null;
+  const pkg = packageHit && await packageBytesApproved(packageHit.body, manifest.geometryVersion, policy, Boolean(roundId && bindingTransport))
+    ? parseApprovedPackage(packageHit.body, manifest.geometryVersion, policy) : null;
+  if (!pkg) { if (packageHit) await cache?.delete(manifest.packageUrl); return null; }
+  if (roundId && leaseStore && bindingTransport) {
+    const proposal = await proposeRoundBinding(roundId, manifest, pkg, policy).catch(() => null);
+    if (!proposal) return null;
+    if (!durableBinding) {
+      const claimed = await bindingTransport.claim(proposal);
+      if (claimed.status !== 'found') return null;
+      durableBinding = claimed.binding;
+    }
+    if (!sameBindingProposal(durableBinding, proposal)
+      || (durableBinding.scoringSnapshot.dbCourseId !== null && !policy.dbCourseIds.has(durableBinding.scoringSnapshot.dbCourseId))
+      || !bindingMatchesScoring(durableBinding, roundSetup)) return null;
+    try {
+      const key = durableRoundBindingKey(roundId), serializedBinding = canonicalBindingJson(durableBinding);
+      const existing = leaseStore.getItem(key);
+      if (existing && canonicalBindingJson(JSON.parse(existing)) !== serializedBinding) return null;
+      leaseStore.setItem(key, serializedBinding);
+      if (leaseStore.getItem(key) !== serializedBinding) return null;
+    } catch { return null; }
+  }
   const serialized = JSON.stringify(manifest);
   if (roundId && leaseStore) {
     try {
@@ -212,7 +270,7 @@ export async function loadCoursePackage({ roundId, leaseStore, courseId, policy 
     const hit = await fetchAsset(manifest.contextLayerUrl, { cache, fetchImpl, strategy: 'cache_first' });
     if (hit) { try { contextLayer = parseContextLayer(JSON.parse(hit.body), pkg); sources[manifest.contextLayerUrl] = hit.source; } catch { await cache?.delete(manifest.contextLayerUrl); } }
   }
-  return { manifest, pkg, contextLayer, sources };
+  return { manifest, pkg, contextLayer, sources, roundBinding: durableBinding };
 }
 /** One hole's terrain, cache-first; null (and the cached body dropped) when
  * it is missing or does not parse against the package. */

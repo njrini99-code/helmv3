@@ -20,6 +20,7 @@ export const PEEK_N_PEAK_UPPER_POLICY: CourseGeometryPolicy = {
    * hash-locked to) was approved by the owner on 2026-09-16 for the on-course
    * pilot; `public/course-geometry/peek-n-peak-upper/manifest.json` names the same hash. */
   approvedGeometryHashes: new Set(['fdec6ea8467dd214372bde680e7b7f9236c06ad5d27bb5ddeadf8ed5e9d3f87a']),
+  approvedPackageByteHashes: { fdec6ea8467dd214372bde680e7b7f9236c06ad5d27bb5ddeadf8ed5e9d3f87a: '7dbe0b9caf1c7e5e6399397c0521bc97af418d6693cc6ddc29228af88dfae119' },
   /** C2: renders in production with uncertainty labelled; no capability that
    * needs a reviewed surface runs on it (lie words read "Surface uncertain",
    * round-review shot resolution stays off for a source-candidate package). */

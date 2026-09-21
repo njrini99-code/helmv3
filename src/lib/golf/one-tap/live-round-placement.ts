@@ -15,6 +15,7 @@ export interface RoundScoringSetup {
   dbCourseId: string | null;
   selectedTeeId: string | null;
   scorecardProfileId?: string | null;
+  scorecardRevision?: string | null;
   holes: readonly { number: number; par: number; yardage: number }[];
 }
 export function explicitHoleBindings(pkg: CourseGeometryPackage, policy: CourseGeometryPolicy | null): Readonly<Record<number, string>> {
@@ -52,6 +53,7 @@ export interface OneTapLiveRound {
 }
 interface CoursePackageAssets { pkg: CourseGeometryPackage; terrainByHole?: Readonly<Record<string, TerrainMesh>>; contextLayer?: ContextLayer; geometryVersion?: string }
 export interface ResolveLiveRoundInput {
+  roundHoleKeys?: Readonly<Record<number, string>>;
   roundSetup?: RoundScoringSetup;
   roundId: string;
   /** Product course id of the round's course (`productCourseIdForRound`), null for any other course. */
@@ -76,7 +78,7 @@ export function resolveOneTapLiveRound(input: ResolveLiveRoundInput): { live: On
   const eligibility = isCourseGeometryEligible({ roundCourseId: input.roundCourseId, pkg: input.pkg, featureFlagEnabled: input.featureFlagEnabled, preciseLocationAvailable: !!input.location,
     requiredTier: policy.livePilot?.layoutId === policy.layoutId && policy.livePilot.geometryHashes.has(input.pkg.contentHash) ? 'C2' : 'C3' }, policy);
   if (!eligibility.eligible) return { live: null, eligibility };
-  const roundHoleKeys = explicitHoleBindings(input.pkg, policy);
+  const roundHoleKeys = input.roundHoleKeys ?? explicitHoleBindings(input.pkg, policy);
   const roundSetup = input.roundSetup ? structuredClone(input.roundSetup) : undefined;
   const order = roundSetup?.holes.map(h => h.number) ?? Object.keys(roundHoleKeys).map(Number).sort((a, b) => a - b);
   const holeKeys = order.map(number => roundHoleKeys[number]).filter((key): key is string => !!key);

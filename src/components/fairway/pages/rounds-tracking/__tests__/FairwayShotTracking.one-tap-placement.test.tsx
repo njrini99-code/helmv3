@@ -13,7 +13,7 @@ const holes = [
   { number: packageHoles[0]!.ordinal, par: 4, yardage: 380, score: null },
   { number: 99, par: 3, yardage: 150, score: null }, // not in the package
 ];
-const live: OneTapLiveRound = { roundId: 'r1', courseId: 'peek-n-peak-upper', geometryVersion: pilotPackage.contentHash, pkg: pilotPackage, holeKeys: packageHoles.map(h => h.key), location, storage: null };
+const live: OneTapLiveRound = { roundId: 'r1', courseId: 'peek-n-peak-upper', geometryVersion: pilotPackage.contentHash, pkg: pilotPackage, holeKeys: packageHoles.map(h => h.key), roundHoleKeys: { [holes[0]!.number]: packageHoles[0]!.key }, location, storage: null };
 const base = { holes, onHoleComplete: async () => true, statusSlot: <div data-testid="host-status">host status</div> };
 const liveHole = () => document.querySelector('[data-slot="one-tap-live-hole"]');
 
@@ -64,6 +64,12 @@ describe('FairwayShotTracking one-tap placement', () => {
 
   it('falls back to the existing tracker on a hole the package does not map', () => {
     render(<FairwayShotTracking {...base} liveRound={live} currentHoleIndex={1} />);
+    expect(liveHole()).toBeNull();
+    expect(document.querySelector('[data-slot="one-tap-screen"]')).toBeNull();
+  });
+
+  it('does not infer a hole binding from a matching package ordinal', () => {
+    render(<FairwayShotTracking {...base} liveRound={{ ...live, roundHoleKeys: undefined }} currentHoleIndex={0} />);
     expect(liveHole()).toBeNull();
     expect(document.querySelector('[data-slot="one-tap-screen"]')).toBeNull();
   });

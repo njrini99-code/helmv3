@@ -939,7 +939,37 @@ API eviction; a missing old asset is fetched by its original versioned URL.
 Revocation returns unavailable instead of rebinding to a new version. Active
 leases prevent pruning; confirmed completion releases cached-byte leases but
 retains the historical binding, while confirmed deletion removes both. This is
-a device binding, not yet a server-synchronized admission/frame-version ledger.
+a device lease backed by the immutable server binding described below.
+
+<!-- schema-drift-absent: golf_round_course_bindings -->
+
+The v2 binding extends the migration-defined `golf_round_course_bindings`
+table. A read-only production schema check on September 20 confirmed that
+the table and v2 RPC are not deployed; the baseline One-Tap migration and the
+v2 extension are rollout prerequisites, not live schema assumptions. The
+`resolve_golf_round_course_binding` RPC serializes first claims against the
+owned round and snapshots its saved course, selected tee, ordered holes, pars
+and yards itself. A client proposal cannot supply replacement scoring values.
+Explicit saved profile/revision and mixed-tee IDs are retained when present;
+unknown physical tee/hole associations stay null. Full sequence, length and
+scoring facts must match when a tracking client resumes.
+
+The binding pins the package, explicit hole crosswalk, layout revision,
+runtime-policy admission revision, frame revision and asset URLs. Competing
+devices receive the first immutable binding. A changed policy, revoked asset,
+different saved scoring sequence or observation frame conflict makes geometry
+unavailable without changing scoring or observations. Coaches can read an
+authorized round binding; only its player can create it. Direct client writes
+and in-place binding updates are denied.
+
+UUID rounds require server confirmation before using the binding. If the RPC
+or migration is unavailable on first load, standard tracking remains usable.
+A previously confirmed copy may resume offline; reconnect reconciles with the
+server before geometry-dependent operations. Authorization denial is not an
+offline fallback. Lab IDs remain device-only. Deploy migration
+`20260916_peek_n_peak_one_tap.sql`, followed by
+`20260920234128_golf_round_geometry_binding_immutable_v2.sql`, before enabling
+this production path; local migration verification is not production rollout.
 
 Implementation and remaining rollout gates:
 `docs/plans/2026-09-20-course-factory-authority-implementation.md`.

@@ -171,14 +171,14 @@ describe('supabase one-tap sync transport', () => {
     expect(fake.rows(ONE_TAP_PENALTY_TABLE)[0]!.deleted_at).toBe('2026-09-17T12:05:00.000Z');
   });
 
-  it('writes the round-course binding idempotently on round_id', async () => {
+  it('refuses legacy mutable bindings instead of overwriting a pinned world', async () => {
     const fake = fakeClient();
     const transport = new SupabaseSyncTransport(fake.client);
     const binding = { roundId: ROUND, courseId: 'peek-n-peak-upper', siteId: 'osm-way-136097904', geometryVersion: 'g-hash', terrainVersion: null, oneTapMode: true };
-    expect((await transport.upsertRoundBinding(binding)).acceptedIds).toEqual([ROUND]);
-    expect((await transport.upsertRoundBinding(binding)).acceptedIds).toEqual([ROUND]);
-    expect(fake.rows(ONE_TAP_ROUND_BINDING_TABLE)).toHaveLength(1);
-    expect(fake.calls[0]).toMatchObject({ table: ONE_TAP_ROUND_BINDING_TABLE, onConflict: 'round_id' });
+    expect((await transport.upsertRoundBinding(binding)).rejectedIds).toEqual([ROUND]);
+    expect((await transport.upsertRoundBinding(binding)).rejectedIds).toEqual([ROUND]);
+    expect(fake.rows(ONE_TAP_ROUND_BINDING_TABLE)).toHaveLength(0);
+    expect(fake.calls).toHaveLength(0);
     expect(await transport.upsertRoundBinding({ ...binding, roundId: 'lab-round' })).toEqual({ acceptedIds: [], rejectedIds: ['lab-round'] });
   });
 
