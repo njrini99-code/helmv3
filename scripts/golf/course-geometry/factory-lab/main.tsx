@@ -40,7 +40,7 @@ export function FactoryLab() {
       <span>Local candidate · physical approval pending</span>
       {hole.glb && <a href={`${assetBase}${hole.glb.sha256}`} download={`${holeKey}.glb`}>Download retained GLB</a>}
     </header>
-    <CourseHoleScene key={`${holeKey}:${preset}`} scene={scene} width={size.width} height={size.height}
+    <CourseHoleScene key={holeKey} scene={scene} width={size.width} height={size.height}
       terrainCamera={camera} world="v2" showIllustrativeFlightPreviews={false} />
     <footer className="p-3"><div className="flex gap-3">{(['terrain', 'top', 'side'] as const).map(view =>
       <Button key={view} type="button" variant={preset === view ? 'secondary' : 'ghost'} size="sm" haptic="none" aria-pressed={preset === view} onClick={() => setPreset(view)}>{view}</Button>)}</div>

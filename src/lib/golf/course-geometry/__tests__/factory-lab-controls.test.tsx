@@ -29,6 +29,7 @@ describe('factory lab controls', () => {
     render(<FactoryLab />);
     await act(async () => { pending.get('example-07')!(response('example-07')); });
     expect(screen.getByTestId('scene')).toHaveTextContent('example-07');
+    const sevenScene = screen.getByTestId('scene');
 
     fireEvent.change(screen.getByRole('combobox', { name: 'Physical hole' }), { target: { value: 'example-08' } });
     expect(screen.getByRole('status')).toHaveTextContent('Loading immutable');
@@ -37,9 +38,12 @@ describe('factory lab controls', () => {
 
     await act(async () => { pending.get('example-08')!(response('example-08')); });
     expect(screen.getByTestId('scene')).toHaveTextContent('example-08');
+    const eightScene = screen.getByTestId('scene');
+    expect(eightScene).not.toBe(sevenScene);
     expect(document.querySelector('main')?.dataset.meshHash).toBe('mesh-example-08');
     fireEvent.click(screen.getByRole('button', { name: 'top' }));
     expect(screen.getByRole('button', { name: 'top' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByTestId('scene')).toHaveTextContent('example-08');
+    expect(screen.getByTestId('scene')).toBe(eightScene);
   });
 });
