@@ -97,3 +97,10 @@ CREATE OR REPLACE TRIGGER "update_golf_travel_expenses_updated_at" BEFORE UPDATE
 CREATE OR REPLACE TRIGGER "update_golf_travel_itineraries_updated_at" BEFORE UPDATE ON "public"."golf_travel_itineraries" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
 
 CREATE OR REPLACE TRIGGER "update_putt_details_updated_at" BEFORE UPDATE ON "public"."putt_details" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
+
+-- One-Tap immutable round geometry binding and required evidence dependencies.
+CREATE OR REPLACE TRIGGER "golf_round_course_bindings_set_updated_at" BEFORE UPDATE ON "public"."golf_round_course_bindings" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
+
+CREATE OR REPLACE TRIGGER "golf_round_geometry_binding_immutable" BEFORE UPDATE ON "public"."golf_round_course_bindings" FOR EACH ROW EXECUTE FUNCTION "public"."guard_golf_round_geometry_binding"();
+
+CREATE OR REPLACE TRIGGER "golf_shot_anchors_set_updated_at" BEFORE UPDATE ON "public"."golf_shot_anchors" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();

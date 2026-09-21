@@ -663,3 +663,16 @@ GRANT ALL ON TABLE "public"."putt_details" TO "anon";
 GRANT ALL ON TABLE "public"."putt_details" TO "authenticated";
 
 GRANT ALL ON TABLE "public"."putt_details" TO "service_role";
+
+-- One-Tap immutable round geometry binding and required evidence dependencies.
+-- Match the final migration ACL, including PostgreSQL-version-specific
+-- privileges inherited from Supabase defaults (for example PG17 MAINTAIN).
+REVOKE ALL ON TABLE "public"."golf_round_course_bindings" FROM "anon";
+GRANT ALL ON TABLE "public"."golf_round_course_bindings" TO "authenticated";
+REVOKE INSERT,UPDATE,DELETE,TRUNCATE ON TABLE "public"."golf_round_course_bindings" FROM "authenticated";
+GRANT ALL ON TABLE "public"."golf_round_course_bindings" TO "service_role";
+
+REVOKE ALL ON TABLE "public"."golf_shot_anchors" FROM "anon";
+GRANT ALL ON TABLE "public"."golf_shot_anchors" TO "authenticated";
+REVOKE DELETE,TRUNCATE ON TABLE "public"."golf_shot_anchors" FROM "authenticated";
+GRANT ALL ON TABLE "public"."golf_shot_anchors" TO "service_role";

@@ -259,3 +259,42 @@ COMMENT ON TABLE "public"."golf_travel_expenses" IS 'Travel expenses for golf te
 COMMENT ON COLUMN "public"."golf_travel_expenses"."category" IS 'Expense category: lodging, transportation, meals, entry_fees, equipment, other';
 
 COMMENT ON COLUMN "public"."golf_travel_expenses"."paid_by" IS 'Who paid: team, player, pending_reimbursement, split';
+
+-- One-Tap immutable round geometry binding and required evidence dependencies.
+COMMENT ON TABLE "public"."golf_round_course_bindings" IS 'One-Tap §73 round-course binding: the course, site and geometry/terrain package version a round''s anchors were captured and classified against. No location data of any kind lives here.';
+
+COMMENT ON COLUMN "public"."golf_round_course_bindings"."course_id" IS 'Product course id, e.g. peek-n-peak-upper. Text, not a golf_courses FK: the One-Tap pilot is keyed by course PACKAGE identity, not by the user-editable course library row.';
+
+COMMENT ON COLUMN "public"."golf_round_course_bindings"."site_id" IS 'Package site id, e.g. osm-way-136097904. Course identity is the gate that keeps the Lower Course from ever activating by proximity.';
+
+COMMENT ON COLUMN "public"."golf_round_course_bindings"."geometry_version" IS 'Content hash of the approved course geometry package the lie posteriors were computed against. Required: a posterior without it is not replayable.';
+
+COMMENT ON COLUMN "public"."golf_round_course_bindings"."one_tap_mode" IS 'True when the round was played in One-Tap Live mode. False/absent means the standard shot tracker owns the round.';
+
+COMMENT ON TABLE "public"."golf_shot_anchors" IS 'One-Tap Live Round shot anchors (master design §72/§76). One tap = one anchor = "the ball is here now"; shots are DERIVED between consecutive live anchors and are not stored here. PRIVACY (§71): NO RAW GNSS SAMPLES ARE STORED. The durable record holds the resolved position, its covariance and a summary of the estimator''s evidence — never the per-fix sample window, never a continuous track. Do not add a raw-sample, breadcrumb or heading-trace column to this table. Rows are immutable evidence: Undo sets deleted_at, it does not delete, and no DELETE policy exists.';
+
+COMMENT ON COLUMN "public"."golf_shot_anchors"."id" IS 'Client-generated anchor id and the sync outbox''s only idempotency key (§75). Retries upsert on this column, so N attempts produce exactly one row.';
+
+COMMENT ON COLUMN "public"."golf_shot_anchors"."hole_key" IS 'Course-package hole key (e.g. peek-n-peak-upper-07). The package, not the golf_holes row, is what the geometry was classified against.';
+
+COMMENT ON COLUMN "public"."golf_shot_anchors"."hole_id" IS 'Hole ordinal 1-18 (up to 36 for a double round). Named to match the client ShotAnchor.holeId; §76 called it hole_ordinal.';
+
+COMMENT ON COLUMN "public"."golf_shot_anchors"."finalized_at" IS 'When the estimator''s capture window closed. NULL while the anchor is still provisional — provisional marks persist so a force-kill cannot lose them.';
+
+COMMENT ON COLUMN "public"."golf_shot_anchors"."cov_ee" IS '2x2 ENU horizontal covariance, element [0][0], in m^2. With cov_en/cov_ne/cov_nn this is the whole uncertainty the UI and the distance sigma use.';
+
+COMMENT ON COLUMN "public"."golf_shot_anchors"."sigma_m" IS 'Largest-axis 1-sigma horizontal uncertainty, metres. The number the UI shows as +/- and the one that suppresses a short-putt readout.';
+
+COMMENT ON COLUMN "public"."golf_shot_anchors"."reported_accuracy_median_m" IS 'Median UNCALIBRATED radius the device reported across the window (§72). Kept apart from calibrated_uncertainty_m so a field calibration can be recomputed later without re-deriving it from a raw window we do not keep.';
+
+COMMENT ON COLUMN "public"."golf_shot_anchors"."calibrated_uncertainty_m" IS 'kAcc * reported radius: the calibrated device term (§35).';
+
+COMMENT ON COLUMN "public"."golf_shot_anchors"."capture_motion" IS 'Whether the phone was stationary / settling / moving while the window was captured. A SUMMARY of motion, never the motion trace itself.';
+
+COMMENT ON COLUMN "public"."golf_shot_anchors"."lie_posterior" IS 'Canonical-partition posterior as [{featureId, lieClass, p}]. The evidence behind primary_lie; the UI chooses words from it, never snaps to a feature.';
+
+COMMENT ON COLUMN "public"."golf_shot_anchors"."terminal" IS 'True when this mark is the ball in the cup. terminal_method records how that was established; NEXT_TEE_INFERRED never invents a cup position.';
+
+COMMENT ON COLUMN "public"."golf_shot_anchors"."estimator_summary" IS 'PRIVACY-MINIMIZED estimator evidence (§71/§72): sample COUNT, rejected residual count, scatter major/minor axes, kAcc and its calibration state, poor-accuracy flag, motion evidence, basis. It is the summary that replaces the raw sample window — it must never be widened to carry the window back.';
+
+COMMENT ON COLUMN "public"."golf_shot_anchors"."deleted_at" IS 'Tombstone. Undo sets it and re-queues the row; nothing is renumbered and the record is retained. There is no hard-delete path for a client.';

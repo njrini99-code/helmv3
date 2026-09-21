@@ -2070,3 +2070,74 @@ CREATE TABLE IF NOT EXISTS "public"."putt_details" (
 );
 
 ALTER TABLE "public"."putt_details" OWNER TO "postgres";
+
+-- One-Tap immutable round geometry binding and required evidence dependencies.
+CREATE TABLE IF NOT EXISTS "public"."golf_round_course_bindings" (
+    "round_id" "uuid" NOT NULL,
+    "course_id" "text" NOT NULL,
+    "site_id" "text" NOT NULL,
+    "geometry_version" "text" NOT NULL,
+    "terrain_version" "text",
+    "one_tap_mode" boolean DEFAULT false NOT NULL,
+    "schema_version" smallint DEFAULT 1 NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "binding_snapshot" "jsonb"
+);
+
+
+ALTER TABLE "public"."golf_round_course_bindings" OWNER TO "postgres";
+
+CREATE TABLE IF NOT EXISTS "public"."golf_shot_anchors" (
+    "id" "text" NOT NULL,
+    "round_id" "uuid" NOT NULL,
+    "course_id" "text" NOT NULL,
+    "site_id" "text" NOT NULL,
+    "hole_key" "text" NOT NULL,
+    "hole_id" smallint NOT NULL,
+    "sequence" integer NOT NULL,
+    "tap_at" timestamp with time zone NOT NULL,
+    "finalized_at" timestamp with time zone,
+    "provisional" boolean DEFAULT false NOT NULL,
+    "lon" double precision NOT NULL,
+    "lat" double precision NOT NULL,
+    "alt_m" double precision,
+    "e_m" double precision NOT NULL,
+    "n_m" double precision NOT NULL,
+    "u_m" double precision DEFAULT 0 NOT NULL,
+    "cov_ee" double precision NOT NULL,
+    "cov_en" double precision NOT NULL,
+    "cov_ne" double precision NOT NULL,
+    "cov_nn" double precision NOT NULL,
+    "sigma_m" double precision NOT NULL,
+    "reported_accuracy_median_m" double precision NOT NULL,
+    "calibrated_uncertainty_m" double precision NOT NULL,
+    "capture_motion" "text" NOT NULL,
+    "lie_posterior" "jsonb" DEFAULT '[]'::"jsonb" NOT NULL,
+    "primary_lie" "text" NOT NULL,
+    "confidence" "text" NOT NULL,
+    "terrain_elevation_m" double precision,
+    "terrain_slope_degrees" double precision,
+    "terrain_aspect_degrees" double precision,
+    "geometry_version" "text" NOT NULL,
+    "terrain_version" "text",
+    "terminal" boolean DEFAULT false NOT NULL,
+    "terminal_method" "text",
+    "estimator_summary" "jsonb",
+    "classification" "jsonb",
+    "schema_version" smallint DEFAULT 2 NOT NULL,
+    "deleted_at" timestamp with time zone,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "golf_shot_anchors_calibrated_uncertainty_m_check" CHECK (("calibrated_uncertainty_m" >= (0)::double precision)),
+    CONSTRAINT "golf_shot_anchors_capture_motion_check" CHECK (("capture_motion" = ANY (ARRAY['stationary'::"text", 'settling'::"text", 'moving'::"text", 'unknown'::"text"]))),
+    CONSTRAINT "golf_shot_anchors_confidence_check" CHECK (("confidence" = ANY (ARRAY['HIGH'::"text", 'MEDIUM'::"text", 'LOW'::"text"]))),
+    CONSTRAINT "golf_shot_anchors_hole_id_check" CHECK ((("hole_id" >= 1) AND ("hole_id" <= 36))),
+    CONSTRAINT "golf_shot_anchors_reported_accuracy_median_m_check" CHECK (("reported_accuracy_median_m" >= (0)::double precision)),
+    CONSTRAINT "golf_shot_anchors_sequence_check" CHECK (("sequence" >= 0)),
+    CONSTRAINT "golf_shot_anchors_sigma_m_check" CHECK (("sigma_m" >= (0)::double precision)),
+    CONSTRAINT "golf_shot_anchors_terminal_method_check" CHECK (("terminal_method" = ANY (ARRAY['CUP_MARK'::"text", 'PIN_KNOWN'::"text", 'NEXT_TEE_INFERRED'::"text"])))
+);
+
+
+ALTER TABLE "public"."golf_shot_anchors" OWNER TO "postgres";

@@ -1376,3 +1376,21 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUN
 
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "service_role";
 
+-- One-Tap immutable round geometry binding and required evidence dependencies.
+REVOKE ALL ON FUNCTION "helm_private"."resolve_golf_round_course_binding"("p_round_id" "uuid", "p_proposal" "jsonb") FROM PUBLIC, "anon", "authenticated";
+GRANT ALL ON FUNCTION "helm_private"."resolve_golf_round_course_binding"("p_round_id" "uuid", "p_proposal" "jsonb") TO "authenticated";
+
+REVOKE ALL ON FUNCTION "public"."can_read_golf_round"("p_round_id" "uuid") FROM PUBLIC, "anon", "authenticated";
+GRANT ALL ON FUNCTION "public"."can_read_golf_round"("p_round_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."can_read_golf_round"("p_round_id" "uuid") TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."guard_golf_round_geometry_binding"() FROM PUBLIC, "anon", "authenticated";
+GRANT ALL ON FUNCTION "public"."guard_golf_round_geometry_binding"() TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."owns_golf_round"("p_round_id" "uuid") FROM PUBLIC, "anon", "authenticated";
+GRANT ALL ON FUNCTION "public"."owns_golf_round"("p_round_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."owns_golf_round"("p_round_id" "uuid") TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."resolve_golf_round_course_binding"("p_round_id" "uuid", "p_proposal" "jsonb") FROM PUBLIC, "anon", "authenticated";
+GRANT ALL ON FUNCTION "public"."resolve_golf_round_course_binding"("p_round_id" "uuid", "p_proposal" "jsonb") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."resolve_golf_round_course_binding"("p_round_id" "uuid", "p_proposal" "jsonb") TO "service_role";

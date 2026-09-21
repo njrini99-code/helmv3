@@ -42,6 +42,11 @@ The exact report is under
 The report records `admissionHash: null` and `physicallyApproved: false`;
 successful capture does not alter that state.
 
+A separate interactive check exercised hole 7 → hole 8 → Top. It found a
+stale-mesh race during selection, now guarded so the scene waits for the
+selected hole's response. The rerun had zero page/console errors and the
+expected terrain hash change. A regression test protects the transition.
+
 ## Boonsboro: missing identity evidence, not missing pixels
 
 The retained OSM extract contains no numbered hole routes; the real layout

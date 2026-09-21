@@ -295,3 +295,6 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "pgmq" GRANT SELECT ON SEQUENCES TO "pg_monitor";
 
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "pgmq" GRANT SELECT ON TABLES TO "pg_monitor";
+
+-- One-Tap immutable round geometry binding and required evidence dependencies.
+GRANT USAGE ON SCHEMA "helm_private" TO "authenticated";

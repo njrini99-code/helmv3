@@ -639,3 +639,8 @@ CREATE INDEX "idx_putt_details_shot_id" ON "public"."putt_details" USING "btree"
 CREATE INDEX "idx_standing_computed_at" ON "public"."golf_player_standing" USING "btree" ("computed_at" DESC);
 
 CREATE INDEX "idx_standing_team_metric" ON "public"."golf_player_standing" USING "btree" ("metric_id", "team_pct") INCLUDE ("player_id");
+
+-- One-Tap immutable round geometry binding and required evidence dependencies.
+CREATE INDEX "golf_shot_anchors_round_hole_idx" ON "public"."golf_shot_anchors" USING "btree" ("round_id", "hole_key", "sequence") WHERE ("deleted_at" IS NULL);
+
+CREATE INDEX "golf_shot_anchors_round_idx" ON "public"."golf_shot_anchors" USING "btree" ("round_id", "sequence");

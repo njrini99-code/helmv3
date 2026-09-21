@@ -1229,3 +1229,16 @@ CREATE POLICY "team_chs_settings_select_team" ON "public"."golf_team_coachhelm_s
 CREATE POLICY "team_chs_settings_write_team" ON "public"."golf_team_coachhelm_settings" TO "authenticated" USING ("public"."is_golf_team_head_coach"("team_id")) WITH CHECK ("public"."is_golf_team_head_coach"("team_id"));
 
 COMMENT ON POLICY "team_chs_settings_write_team" ON "public"."golf_team_coachhelm_settings" IS 'Only a head coach of the team may write team-level CoachHelm settings. Head-coach (not primary) so a program head can manage both teams; assistants stay locked out.';
+
+-- One-Tap immutable round geometry binding and required evidence dependencies.
+CREATE POLICY "golf_round_course_bindings_insert" ON "public"."golf_round_course_bindings" FOR INSERT TO "authenticated" WITH CHECK ("public"."owns_golf_round"("round_id"));
+
+CREATE POLICY "golf_round_course_bindings_select" ON "public"."golf_round_course_bindings" FOR SELECT TO "authenticated" USING ("public"."can_read_golf_round"("round_id"));
+
+CREATE POLICY "golf_round_course_bindings_update" ON "public"."golf_round_course_bindings" FOR UPDATE TO "authenticated" USING ("public"."owns_golf_round"("round_id")) WITH CHECK ("public"."owns_golf_round"("round_id"));
+
+CREATE POLICY "golf_shot_anchors_insert" ON "public"."golf_shot_anchors" FOR INSERT TO "authenticated" WITH CHECK ("public"."owns_golf_round"("round_id"));
+
+CREATE POLICY "golf_shot_anchors_select" ON "public"."golf_shot_anchors" FOR SELECT TO "authenticated" USING ("public"."can_read_golf_round"("round_id"));
+
+CREATE POLICY "golf_shot_anchors_update" ON "public"."golf_shot_anchors" FOR UPDATE TO "authenticated" USING ("public"."owns_golf_round"("round_id")) WITH CHECK ("public"."owns_golf_round"("round_id"));

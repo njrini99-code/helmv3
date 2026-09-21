@@ -101,7 +101,16 @@ two workers; the final combined factory suite passed 132 tests. Typecheck,
 targeted lint, the unchanged Markdown/Supabase-read
 ratchets, `docs:check` and `helm-os:check` passed. The real PostgreSQL migration
 test exercised authorization, concurrent claims, immutable saved values and
-legacy frame conflicts. The new pgTAP assertions still require CI's extension.
+legacy frame conflicts. A second PostgreSQL replay verified 54 declared schema
+objects against the migration result, including ACLs, RLS and triggers. The
+local server was PostgreSQL 16; CI targets 17. The new pgTAP assertions still
+require CI's extension.
+
+The final interactive lab check caught and fixed a stale-mesh race during
+hole selection. Hole 7 → hole 8 → Top now preserves exact bundle identity,
+updates the terrain hash and emits no browser errors; a focused regression
+passes. Shared controls also resolve the CI lint ratchet without increasing
+its baseline.
 
 The preceding pushed checkpoint passed the full CI Next.js build; its unit
 fixture failure was corrected locally by supplying explicit hole mappings,

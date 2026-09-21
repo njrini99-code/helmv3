@@ -619,3 +619,8 @@ ALTER TABLE "graveyard"."golf_player_baselines" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "graveyard"."golf_tracer_health_snapshot" ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE "graveyard"."golf_validations" ENABLE ROW LEVEL SECURITY;
+
+-- One-Tap immutable round geometry binding and required evidence dependencies.
+ALTER TABLE "public"."golf_round_course_bindings" ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE "public"."golf_shot_anchors" ENABLE ROW LEVEL SECURITY;

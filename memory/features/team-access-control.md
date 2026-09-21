@@ -59,6 +59,12 @@ Use `memory/glossary.md` for table lookup and `memory/context/golfhelm-database.
 - Players can read or mutate only their own/team-allowed records, depending on the feature.
 - Every new table needs RLS enabled and policies in the same migration.
 - Security definer functions must pin `search_path`.
+- The round geometry binding RPC checks round readability before any read
+  and ownership before a first claim. Direct browser insert/update grants
+  are revoked; the server snapshots saved scoring data and serializes
+  concurrent claims. Its declarative definitions must match the migration,
+  including default-grant revocations. Deployment status and the complete
+  contract live in [Round Lifecycle](golf-round-lifecycle.md).
 - Completed golf rounds may be changed only by protected submit flows, with a
   separately scoped service-only exception for derived strokes-gained cache
   fields and CoachHelm terminal-processing metadata; no client or coach write

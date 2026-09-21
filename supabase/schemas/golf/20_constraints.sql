@@ -1065,3 +1065,16 @@ ALTER TABLE ONLY "public"."golf_travel_itineraries"
 
 ALTER TABLE ONLY "public"."putt_details"
     ADD CONSTRAINT "putt_details_shot_id_fkey" FOREIGN KEY ("shot_id") REFERENCES "public"."golf_shots"("id") ON DELETE CASCADE;
+
+-- One-Tap immutable round geometry binding and required evidence dependencies.
+ALTER TABLE ONLY "public"."golf_round_course_bindings"
+    ADD CONSTRAINT "golf_round_course_bindings_pkey" PRIMARY KEY ("round_id");
+
+ALTER TABLE ONLY "public"."golf_shot_anchors"
+    ADD CONSTRAINT "golf_shot_anchors_pkey" PRIMARY KEY ("id");
+
+ALTER TABLE ONLY "public"."golf_round_course_bindings"
+    ADD CONSTRAINT "golf_round_course_bindings_round_id_fkey" FOREIGN KEY ("round_id") REFERENCES "public"."golf_rounds"("id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."golf_shot_anchors"
+    ADD CONSTRAINT "golf_shot_anchors_round_id_fkey" FOREIGN KEY ("round_id") REFERENCES "public"."golf_rounds"("id") ON DELETE CASCADE;

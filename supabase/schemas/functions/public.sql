@@ -11094,3 +11094,83 @@ END;
 $$;
 
 ALTER FUNCTION "public"."write_suppression_on_unsubscribe"() OWNER TO "postgres";
+
+-- One-Tap immutable round geometry binding and required evidence dependencies.
+CREATE OR REPLACE FUNCTION "public"."can_read_golf_round"("p_round_id" "uuid") RETURNS boolean
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+  select exists (
+    select 1
+    from public.golf_rounds gr
+    join public.golf_players gp on gp.id = gr.player_id
+    where gr.id = p_round_id
+      -- Branch order matters: the plain column comparison is first so the
+      -- overwhelmingly common self-read never pays for the helper functions,
+      -- each of which is a query of its own.
+      and (
+        gp.user_id = (select auth.uid())
+        or (gr.team_id is not null and public.is_golf_team_coach(gr.team_id))
+        or (gr.team_id is not null and public.is_golf_team_player(gr.team_id))
+        or public.is_admin()
+      )
+  );
+$$;
+
+
+ALTER FUNCTION "public"."can_read_golf_round"("p_round_id" "uuid") OWNER TO "postgres";
+
+COMMENT ON FUNCTION "public"."can_read_golf_round"("p_round_id" "uuid") IS 'RLS read helper for the One-Tap evidence tables (golf_shot_anchors, golf_penalty_events, golf_round_course_bindings). Reproduces the union of golf_rounds'' SELECT policies — player, staffing coach, active teammate, admin — correlated on round_id. Anchors are metre-accurate ball positions, so the teammate branch is the widest audience here; it is inherited from the round on purpose (§76: do not create a second auth domain).';
+
+CREATE OR REPLACE FUNCTION "public"."guard_golf_round_geometry_binding"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+BEGIN
+  IF TG_OP = 'UPDATE' AND (
+    NEW.round_id IS DISTINCT FROM OLD.round_id
+    OR NEW.course_id IS DISTINCT FROM OLD.course_id
+    OR NEW.site_id IS DISTINCT FROM OLD.site_id
+    OR NEW.geometry_version IS DISTINCT FROM OLD.geometry_version
+    OR NEW.terrain_version IS DISTINCT FROM OLD.terrain_version
+    OR NEW.binding_snapshot IS DISTINCT FROM OLD.binding_snapshot
+    OR NEW.schema_version IS DISTINCT FROM OLD.schema_version
+  ) THEN
+    RAISE EXCEPTION 'Round geometry binding is immutable' USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."guard_golf_round_geometry_binding"() OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "public"."owns_golf_round"("p_round_id" "uuid") RETURNS boolean
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+  select exists (
+    select 1
+    from public.golf_rounds gr
+    join public.golf_players gp on gp.id = gr.player_id
+    where gr.id = p_round_id
+      and gp.user_id = (select auth.uid())
+  );
+$$;
+
+
+ALTER FUNCTION "public"."owns_golf_round"("p_round_id" "uuid") OWNER TO "postgres";
+
+COMMENT ON FUNCTION "public"."owns_golf_round"("p_round_id" "uuid") IS 'RLS write helper for the One-Tap evidence tables. True only for the player whose round it is. Deliberately NOT the read helper: a coach may read a player''s anchors but must never write them, and folding the two would hand every staffing coach write access to another player''s evidence.';
+
+CREATE OR REPLACE FUNCTION "public"."resolve_golf_round_course_binding"("p_round_id" "uuid", "p_proposal" "jsonb" DEFAULT NULL::"jsonb") RETURNS "jsonb"
+    LANGUAGE "sql"
+    SET "search_path" TO ''
+    AS $$
+  SELECT helm_private.resolve_golf_round_course_binding(p_round_id, p_proposal);
+$$;
+
+
+ALTER FUNCTION "public"."resolve_golf_round_course_binding"("p_round_id" "uuid", "p_proposal" "jsonb") OWNER TO "postgres";
+
+COMMENT ON FUNCTION "public"."resolve_golf_round_course_binding"("p_round_id" "uuid", "p_proposal" "jsonb") IS 'Owner-only first claim, round-reader lookup; immutable world binding. Reads saved round scoring, never modifies scoring or observations.';
