@@ -1,0 +1,112 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "eagle-point-tee-bbe9031d-d70c-4835-8701-3496c31e38c2-bd9a99071f0eb7b5eed9",
+  "layoutId": "eagle-point",
+  "teeName": "Championship",
+  "revision": "bd9a99071f0eb7b5eed9f5da42fec6b984440b800f150cb16296f0de1d7ae8b5",
+  "courseRating": 76.1,
+  "slopeRating": 144,
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-20",
+    "snapshotHash": "9fdfbafb2a78ddbd8fc9fed83ab5fe2cd23b3cd711f72305d094187ff356aa19",
+    "note": "Immutable read-only snapshot; library source=manual. Scorecard facts only. No physical tee marker, hole association or geometry approval."
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 4,
+      "yards": 453
+    },
+    {
+      "hole": 2,
+      "par": 3,
+      "yards": 160
+    },
+    {
+      "hole": 3,
+      "par": 4,
+      "yards": 386
+    },
+    {
+      "hole": 4,
+      "par": 5,
+      "yards": 635
+    },
+    {
+      "hole": 5,
+      "par": 3,
+      "yards": 204
+    },
+    {
+      "hole": 6,
+      "par": 5,
+      "yards": 549
+    },
+    {
+      "hole": 7,
+      "par": 4,
+      "yards": 353
+    },
+    {
+      "hole": 8,
+      "par": 4,
+      "yards": 456
+    },
+    {
+      "hole": 9,
+      "par": 4,
+      "yards": 430
+    },
+    {
+      "hole": 10,
+      "par": 3,
+      "yards": 163
+    },
+    {
+      "hole": 11,
+      "par": 4,
+      "yards": 448
+    },
+    {
+      "hole": 12,
+      "par": 5,
+      "yards": 562
+    },
+    {
+      "hole": 13,
+      "par": 4,
+      "yards": 427
+    },
+    {
+      "hole": 14,
+      "par": 4,
+      "yards": 464
+    },
+    {
+      "hole": 15,
+      "par": 3,
+      "yards": 221
+    },
+    {
+      "hole": 16,
+      "par": 4,
+      "yards": 449
+    },
+    {
+      "hole": 17,
+      "par": 4,
+      "yards": 440
+    },
+    {
+      "hole": 18,
+      "par": 5,
+      "yards": 582
+    }
+  ],
+  "libraryBinding": {
+    "courseId": "678e1e4b-4ad6-4ddc-a4b7-0370dd69212a",
+    "teeId": "bbe9031d-d70c-4835-8701-3496c31e38c2"
+  }
+}

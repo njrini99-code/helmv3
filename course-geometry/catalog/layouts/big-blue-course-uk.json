@@ -62,10 +62,12 @@
     ]
   },
   "scorecardProfiles": [
-    "big-blue-course-uk-championship"
+    "big-blue-course-uk-championship",
+    "big-blue-course-uk-tee-2cd99920-0cd5-4628-bec7-30c9f2210e70-f56275a22288431a17cf"
   ],
   "geometry": null,
   "notes": [
     "19 completed cohort rounds (2026-09-13); intake wrote this manifest at C0 with routes unresolved."
-  ]
+  ],
+  "referenceScorecardProfileId": "big-blue-course-uk-championship"
 }

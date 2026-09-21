@@ -87,11 +87,13 @@
   },
   "scorecardProfiles": [
     "pga-national-champion-official-2026",
-    "pga-national-champ-white"
+    "pga-national-champ-white",
+    "pga-national-champ-tee-f608b2f4-cbfa-4133-b4bb-1689c0d01536-ff5ba1b71f800e55e75c"
   ],
   "geometry": null,
   "notes": [
     "2 completed cohort rounds (2026-09-13); intake wrote this manifest at C0 with routes unresolved.",
     "Champion OSM ways 776369833\u2013776369850 manually cross-checked in hole-number order against official Cognizant Classic 2025/2026 course maps (2026 map SHA256 d76a31d0c7de69f03bb8568e91c3466d604d94b007fffdec2e576d9a719b30ba). All 18 route directions and neighboring-hole sequence match, including 13\u201318 lake loop/Bear Trap; this selects the Champion from other resort routes. Map source: https://pgatourmedia.pgatourhq.com/static-assets/page/files/tours/2026/pgatour/cognizant-classic-in-the-palm-beaches/mediaRegulations/2026%20CCPB%20Course%20Map.pdf. Artwork used for identity cross-check only; XY stays original OSM, with no tracing, scaling or inferred daily markers. Does not approve feature boundaries or physical truth gates."
-  ]
+  ],
+  "referenceScorecardProfileId": "pga-national-champion-official-2026"
 }

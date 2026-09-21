@@ -1,0 +1,130 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "peek-n-peak-upper-tee-3e9d5d51-740f-49c3-9de8-7130f99a36ba-632e3f96e92522f91149",
+  "layoutId": "peek-n-peak-upper",
+  "teeName": "White",
+  "revision": "632e3f96e92522f91149127c7e650a550d0c7edfe452b4ea88918bd5421f835a",
+  "courseRating": 69.4,
+  "slopeRating": 128,
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-20",
+    "snapshotHash": "9fdfbafb2a78ddbd8fc9fed83ab5fe2cd23b3cd711f72305d094187ff356aa19",
+    "note": "Immutable read-only snapshot; library source=Official Peek\u2019n Peak Upper Course scorecard: yardage; Golfify scorecard: ratings, slopes, handicaps; retrieved 2026-09-15. Scorecard facts only. No physical tee marker, hole association or geometry approval."
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 4,
+      "yards": 360,
+      "handicap": 10
+    },
+    {
+      "hole": 2,
+      "par": 4,
+      "yards": 405,
+      "handicap": 2
+    },
+    {
+      "hole": 3,
+      "par": 3,
+      "yards": 160,
+      "handicap": 16
+    },
+    {
+      "hole": 4,
+      "par": 5,
+      "yards": 505,
+      "handicap": 4
+    },
+    {
+      "hole": 5,
+      "par": 3,
+      "yards": 160,
+      "handicap": 18
+    },
+    {
+      "hole": 6,
+      "par": 4,
+      "yards": 360,
+      "handicap": 8
+    },
+    {
+      "hole": 7,
+      "par": 4,
+      "yards": 355,
+      "handicap": 12
+    },
+    {
+      "hole": 8,
+      "par": 5,
+      "yards": 505,
+      "handicap": 6
+    },
+    {
+      "hole": 9,
+      "par": 4,
+      "yards": 330,
+      "handicap": 14
+    },
+    {
+      "hole": 10,
+      "par": 4,
+      "yards": 355,
+      "handicap": 3
+    },
+    {
+      "hole": 11,
+      "par": 5,
+      "yards": 460,
+      "handicap": 15
+    },
+    {
+      "hole": 12,
+      "par": 4,
+      "yards": 290,
+      "handicap": 17
+    },
+    {
+      "hole": 13,
+      "par": 3,
+      "yards": 150,
+      "handicap": 13
+    },
+    {
+      "hole": 14,
+      "par": 4,
+      "yards": 390,
+      "handicap": 1
+    },
+    {
+      "hole": 15,
+      "par": 3,
+      "yards": 150,
+      "handicap": 11
+    },
+    {
+      "hole": 16,
+      "par": 4,
+      "yards": 310,
+      "handicap": 9
+    },
+    {
+      "hole": 17,
+      "par": 4,
+      "yards": 330,
+      "handicap": 7
+    },
+    {
+      "hole": 18,
+      "par": 5,
+      "yards": 470,
+      "handicap": 5
+    }
+  ],
+  "libraryBinding": {
+    "courseId": "48596a01-88a4-4081-aaa1-3b049584aa2d",
+    "teeId": "3e9d5d51-740f-49c3-9de8-7130f99a36ba"
+  }
+}

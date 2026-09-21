@@ -62,10 +62,12 @@
     ]
   },
   "scorecardProfiles": [
-    "forsyth-country-club-championship"
+    "forsyth-country-club-championship",
+    "forsyth-country-club-tee-32bf3034-e88b-48f5-b3af-2e472862800e-e22681996cc3b5ca763a"
   ],
   "geometry": null,
   "notes": [
     "7 completed cohort rounds (2026-09-13); intake wrote this manifest at C0 with routes unresolved."
-  ]
+  ],
+  "referenceScorecardProfileId": "forsyth-country-club-championship"
 }

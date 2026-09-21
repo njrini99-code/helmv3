@@ -1,0 +1,130 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "cacapon-tee-8d1aaca0-361f-4e60-8d9d-9ab3491126dc-c616dc9a49af9ecfeaaa",
+  "layoutId": "cacapon",
+  "teeName": "Men's Blue",
+  "revision": "c616dc9a49af9ecfeaaa119e7c1f8da3546489737866308f21f93435fcf5e86f",
+  "courseRating": 71.9,
+  "slopeRating": 130,
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-20",
+    "snapshotHash": "9fdfbafb2a78ddbd8fc9fed83ab5fe2cd23b3cd711f72305d094187ff356aa19",
+    "note": "Immutable read-only snapshot; library source=manual. Scorecard facts only. No physical tee marker, hole association or geometry approval."
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 4,
+      "yards": 383,
+      "handicap": 15
+    },
+    {
+      "hole": 2,
+      "par": 4,
+      "yards": 395,
+      "handicap": 11
+    },
+    {
+      "hole": 3,
+      "par": 5,
+      "yards": 535,
+      "handicap": 5
+    },
+    {
+      "hole": 4,
+      "par": 3,
+      "yards": 194,
+      "handicap": 17
+    },
+    {
+      "hole": 5,
+      "par": 4,
+      "yards": 410,
+      "handicap": 7
+    },
+    {
+      "hole": 6,
+      "par": 4,
+      "yards": 379,
+      "handicap": 13
+    },
+    {
+      "hole": 7,
+      "par": 4,
+      "yards": 431,
+      "handicap": 1
+    },
+    {
+      "hole": 8,
+      "par": 3,
+      "yards": 197,
+      "handicap": 9
+    },
+    {
+      "hole": 9,
+      "par": 5,
+      "yards": 536,
+      "handicap": 3
+    },
+    {
+      "hole": 10,
+      "par": 4,
+      "yards": 378,
+      "handicap": 16
+    },
+    {
+      "hole": 11,
+      "par": 5,
+      "yards": 484,
+      "handicap": 10
+    },
+    {
+      "hole": 12,
+      "par": 4,
+      "yards": 381,
+      "handicap": 6
+    },
+    {
+      "hole": 13,
+      "par": 4,
+      "yards": 414,
+      "handicap": 8
+    },
+    {
+      "hole": 14,
+      "par": 4,
+      "yards": 376,
+      "handicap": 14
+    },
+    {
+      "hole": 15,
+      "par": 3,
+      "yards": 210,
+      "handicap": 12
+    },
+    {
+      "hole": 16,
+      "par": 4,
+      "yards": 396,
+      "handicap": 2
+    },
+    {
+      "hole": 17,
+      "par": 3,
+      "yards": 181,
+      "handicap": 18
+    },
+    {
+      "hole": 18,
+      "par": 5,
+      "yards": 547,
+      "handicap": 4
+    }
+  ],
+  "libraryBinding": {
+    "courseId": "c6347725-c890-4545-b25f-a72e342b67da",
+    "teeId": "8d1aaca0-361f-4e60-8d9d-9ab3491126dc"
+  }
+}

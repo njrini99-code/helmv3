@@ -1,0 +1,67 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "cc-of-landfall-marsh-9-tee-f6c84bed-1957-4d1a-bc25-ddd1a2cc0921-c3da6ca3b520f9cdd2dc",
+  "layoutId": "cc-of-landfall-marsh-9",
+  "teeName": "Black",
+  "revision": "c3da6ca3b520f9cdd2dc87a5b825a933535140c3aadcfee969b9982b799c4945",
+  "courseRating": null,
+  "slopeRating": null,
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-20",
+    "snapshotHash": "9fdfbafb2a78ddbd8fc9fed83ab5fe2cd23b3cd711f72305d094187ff356aa19",
+    "note": "Immutable read-only snapshot; library source=manual. Scorecard facts only. No physical tee marker, hole association or geometry approval."
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 4,
+      "yards": 378
+    },
+    {
+      "hole": 2,
+      "par": 3,
+      "yards": 191
+    },
+    {
+      "hole": 3,
+      "par": 4,
+      "yards": 469
+    },
+    {
+      "hole": 4,
+      "par": 4,
+      "yards": 420
+    },
+    {
+      "hole": 5,
+      "par": 5,
+      "yards": 527
+    },
+    {
+      "hole": 6,
+      "par": 3,
+      "yards": 186
+    },
+    {
+      "hole": 7,
+      "par": 4,
+      "yards": 401
+    },
+    {
+      "hole": 8,
+      "par": 5,
+      "yards": 506
+    },
+    {
+      "hole": 9,
+      "par": 4,
+      "yards": 433
+    }
+  ],
+  "libraryBinding": {
+    "courseId": "71f328fb-215b-475f-a7d7-81bce6a478dc",
+    "teeId": "f6c84bed-1957-4d1a-bc25-ddd1a2cc0921"
+  }
+}

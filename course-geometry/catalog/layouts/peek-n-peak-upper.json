@@ -2,7 +2,7 @@
   "schema": "golfhelm-layout-v1",
   "layoutId": "peek-n-peak-upper",
   "facilityId": "peek-n-peak",
-  "name": "Peek'n Peak Resort — Upper Course",
+  "name": "Peek'n Peak Resort \u2014 Upper Course",
   "siteIds": [
     "osm-way-136097904"
   ],
@@ -86,7 +86,12 @@
     ]
   },
   "scorecardProfiles": [
-    "peek-n-peak-upper-official"
+    "peek-n-peak-upper-official",
+    "peek-n-peak-upper-tee-0529fb79-2f4f-465b-9a2e-a4d3aa452032-84d6aee8867fd8c46a8b",
+    "peek-n-peak-upper-tee-063b0fd9-dfb8-4811-a2b9-1ece3d244713-31a0e8280f2c326d40fd",
+    "peek-n-peak-upper-tee-3e9d5d51-740f-49c3-9de8-7130f99a36ba-632e3f96e92522f91149",
+    "peek-n-peak-upper-tee-844083e7-663f-413f-9073-481dcfbd1a5c-cd8fb2eff2436fd7ab4d",
+    "peek-n-peak-upper-tee-a17ffff2-8928-42bc-ab2c-521c3643083c-04cb943258e0ec304203"
   ],
   "geometry": {
     "package": "src/test/fixtures/course-geometry/peek-n-peak-upper.json",
@@ -98,5 +103,6 @@
     "contextReport": "src/test/fixtures/course-geometry/peek-n-peak-upper-context-report.json",
     "canopyReview": "src/test/fixtures/course-geometry/peek-n-peak-upper-canopy-review.json",
     "imageryReview": "src/test/fixtures/course-geometry/peek-n-peak-upper-imagery-review.json"
-  }
+  },
+  "referenceScorecardProfileId": "peek-n-peak-upper-official"
 }

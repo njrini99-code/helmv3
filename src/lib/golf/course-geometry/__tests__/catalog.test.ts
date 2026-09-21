@@ -21,6 +21,12 @@ const catalog: CourseCatalog = {
 };
 
 describe('course library catalog (Factory v2 PR A)', () => {
+  it('accepts scoped admission inputs but rejects unknown retained artifact keys', () => {
+    const layout = catalog.layouts[0]!;
+    expect(parseLayoutManifest({ ...layout, retained: { physicalAdmission: 'review/pending.json' } }).retained)
+      .toEqual({ physicalAdmission: 'review/pending.json' });
+    expect(() => parseLayoutManifest({ ...layout, retained: { arbitraryApproval: 'review/yes.json' } })).toThrow();
+  });
   it('parses every checked-in manifest and holds together with the registry', () => {
     expect(catalog.facilities.map(f => f.facilityId)).toEqual(expect.arrayContaining(['cacapon', 'peek-n-peak']));
     expect(catalog.layouts.map(l => l.layoutId)).toEqual(expect.arrayContaining(['cacapon', 'peek-n-peak-upper']));

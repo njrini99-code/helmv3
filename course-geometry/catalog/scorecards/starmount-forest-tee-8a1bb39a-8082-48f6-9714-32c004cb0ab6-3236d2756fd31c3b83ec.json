@@ -1,0 +1,112 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "starmount-forest-tee-8a1bb39a-8082-48f6-9714-32c004cb0ab6-3236d2756fd31c3b83ec",
+  "layoutId": "starmount-forest",
+  "teeName": "Guilford Tees",
+  "revision": "3236d2756fd31c3b83ec54fe77bdb999bbd5870bbdf49184a34ed7c2a06b04d0",
+  "courseRating": null,
+  "slopeRating": null,
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-20",
+    "snapshotHash": "9fdfbafb2a78ddbd8fc9fed83ab5fe2cd23b3cd711f72305d094187ff356aa19",
+    "note": "Immutable read-only snapshot; library source=manual. Scorecard facts only. No physical tee marker, hole association or geometry approval."
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 4,
+      "yards": 423
+    },
+    {
+      "hole": 2,
+      "par": 4,
+      "yards": 386
+    },
+    {
+      "hole": 3,
+      "par": 3,
+      "yards": 144
+    },
+    {
+      "hole": 4,
+      "par": 4,
+      "yards": 458
+    },
+    {
+      "hole": 5,
+      "par": 4,
+      "yards": 408
+    },
+    {
+      "hole": 6,
+      "par": 4,
+      "yards": 378
+    },
+    {
+      "hole": 7,
+      "par": 5,
+      "yards": 577
+    },
+    {
+      "hole": 8,
+      "par": 3,
+      "yards": 215
+    },
+    {
+      "hole": 9,
+      "par": 4,
+      "yards": 354
+    },
+    {
+      "hole": 10,
+      "par": 3,
+      "yards": 165
+    },
+    {
+      "hole": 11,
+      "par": 4,
+      "yards": 425
+    },
+    {
+      "hole": 12,
+      "par": 4,
+      "yards": 418
+    },
+    {
+      "hole": 13,
+      "par": 4,
+      "yards": 367
+    },
+    {
+      "hole": 14,
+      "par": 5,
+      "yards": 472
+    },
+    {
+      "hole": 15,
+      "par": 4,
+      "yards": 353
+    },
+    {
+      "hole": 16,
+      "par": 4,
+      "yards": 416
+    },
+    {
+      "hole": 17,
+      "par": 3,
+      "yards": 188
+    },
+    {
+      "hole": 18,
+      "par": 5,
+      "yards": 501
+    }
+  ],
+  "libraryBinding": {
+    "courseId": "c300318d-332e-4a19-8867-76cd03a39523",
+    "teeId": "8a1bb39a-8082-48f6-9714-32c004cb0ab6"
+  }
+}

@@ -13,7 +13,13 @@ const slug = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'kebab-case id');
 const osmRef = z.string().regex(/^(?:node|way|relation)\/\d+$/, 'osm element ref');
 const siteId = z.string().regex(/^osm-(?:node|way|relation)-\d+$/, 'osm site id');
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'YYYY-MM-DD');
+const sha256 = z.string().regex(/^[0-9a-f]{64}$/, 'SHA256');
 const tier = z.enum(['C0', 'C1', 'C2', 'C3', 'C4']);
+const retained = z.partialRecord(z.enum([
+  'osm', 'osmContext', 'terrain', 'compiled', 'context', 'contextReport', 'canopyReview',
+  'imageryReview', 'associations', 'reviewOverlay', 'naip', 'world', 'imageryTraces',
+  'sourceGeometry', 'physicalAdmission',
+]), z.string().min(1));
 
 export const facilityManifestSchema = z.object({
   schema: z.literal('golfhelm-facility-v1'),
@@ -32,7 +38,7 @@ export const facilityManifestSchema = z.object({
   knownRenovationAfter: isoDate.nullable().optional(),
   notes: z.array(z.string()).max(20).optional(),
   /** Retained artifacts the factory may adopt instead of rebuilding (repo-relative paths, keyed by artifact kind). */
-  retained: z.record(z.string().regex(/^[a-zA-Z]+$/), z.string().min(1)).optional(),
+  retained: retained.optional(),
 }).strict();
 export type FacilityManifest = z.infer<typeof facilityManifestSchema>;
 
@@ -52,16 +58,19 @@ export const layoutManifestSchema = z.object({
   bboxWgs84: z.tuple([z.number(), z.number(), z.number(), z.number()]).nullable(),
   capabilityTier: tier,
   externalBindings: z.object({ golfCourseIds: z.array(z.string().uuid()).max(8) }).strict(),
-  scorecardProfiles: z.array(slug).max(8),
+  scorecardProfiles: z.array(slug).max(256),
+  /** Offline QA reference only; never selects a player's tee. */
+  referenceScorecardProfileId: slug.nullable().optional(),
   geometry: z.object({ package: z.string().min(1), published: z.string().min(1).nullable() }).strict().nullable(),
   knownRenovationAfter: isoDate.nullable().optional(),
   notes: z.array(z.string()).max(20).optional(),
-  retained: z.record(z.string().regex(/^[a-zA-Z]+$/), z.string().min(1)).optional(),
+  retained: retained.optional(),
 }).strict().superRefine((layout, ctx) => {
   const inSegments = new Set(layout.segmentOrder.flatMap(s => layout.segments[s]?.holes ?? []));
   for (const s of layout.segmentOrder) if (!layout.segments[s]) ctx.addIssue({ code: 'custom', message: `segmentOrder names unknown segment ${s}`, path: ['segmentOrder'] });
   if (new Set(layout.holeOrder).size !== layout.holeOrder.length) ctx.addIssue({ code: 'custom', message: 'holeOrder repeats a hole', path: ['holeOrder'] });
   for (const h of layout.holeOrder) if (!inSegments.has(h)) ctx.addIssue({ code: 'custom', message: `hole ${h} is in no ordered segment`, path: ['holeOrder'] });
+  if (layout.referenceScorecardProfileId && !layout.scorecardProfiles.includes(layout.referenceScorecardProfileId)) ctx.addIssue({ code: 'custom', message: 'reference scorecard must be listed by layout', path: ['referenceScorecardProfileId'] });
   if (layout.routeWayIds && layout.routeWayIds.length !== layout.holeOrder.length) ctx.addIssue({ code: 'custom', message: 'one route way per hole', path: ['routeWayIds'] });
   if (layout.capabilityTier !== 'C0' && !layout.geometry) ctx.addIssue({ code: 'custom', message: 'a layout above C0 names its geometry package', path: ['geometry'] });
 });
@@ -72,12 +81,17 @@ export const scorecardProfileSchema = z.object({
   profileId: slug,
   layoutId: slug,
   teeName: z.string().min(1).max(60).nullable(),
+  libraryBinding: z.object({ courseId: z.string().uuid(), teeId: z.string().uuid() }).strict().optional(),
+  revision: sha256.optional(),
+  courseRating: z.number().finite().min(20).max(100).nullable().optional(),
+  slopeRating: z.number().int().min(55).max(155).nullable().optional(),
   source: z.object({
     provider: z.enum(['official_course_site', 'helm_course_library', 'owner_supplied']),
     url: z.string().url().nullable(),
     retrievedAt: isoDate,
     // Preserve source qualifications; keep this limit in sync with catalog.py.
     note: z.string().max(4096).optional(),
+    snapshotHash: sha256.optional(),
   }).strict(),
   holes: z.array(z.object({
     hole: z.number().int().min(1).max(36),
@@ -86,9 +100,21 @@ export const scorecardProfileSchema = z.object({
     handicap: z.number().int().min(1).max(36).optional(),
   }).strict()).min(9).max(36),
 }).strict().superRefine((card, ctx) => {
+  if (card.libraryBinding && (!card.revision || !card.source.snapshotHash)) ctx.addIssue({ code: 'custom', message: 'library binding requires revision and snapshot hash', path: ['libraryBinding'] });
   card.holes.forEach((h, i) => { if (h.hole !== i + 1) ctx.addIssue({ code: 'custom', message: `holes run 1..n in order (index ${i} is hole ${h.hole})`, path: ['holes', i, 'hole'] }); });
 });
 export type ScorecardProfile = z.infer<typeof scorecardProfileSchema>;
+
+/** Names/colors/order are display facts, never identity or revision selectors. */
+export function resolveTeeProfile(cards: readonly ScorecardProfile[], input: {
+  layoutId: string; courseId: string; teeId: string; profileId?: string; revision?: string;
+}): { status: 'resolved'; profile: ScorecardProfile } | { status: 'unavailable' | 'revision_required' } {
+  const matches = cards.filter(card => card.layoutId === input.layoutId
+    && card.libraryBinding?.courseId === input.courseId && card.libraryBinding.teeId === input.teeId
+    && (!input.profileId || card.profileId === input.profileId) && (!input.revision || card.revision === input.revision));
+  return matches.length === 1 ? { status: 'resolved', profile: matches[0]! }
+    : { status: matches.length ? 'revision_required' : 'unavailable' };
+}
 
 export function parseFacilityManifest(input: unknown): FacilityManifest { return facilityManifestSchema.parse(input); }
 export function parseLayoutManifest(input: unknown): LayoutManifest { return layoutManifestSchema.parse(input); }
@@ -127,6 +153,7 @@ export function catalogProblems(catalog: CourseCatalog, registry: readonly Cours
       const card = cards.get(p);
       if (!card) problems.push(`layout ${l.layoutId}: unknown scorecard profile ${p}`);
       else if (card.layoutId !== l.layoutId) problems.push(`scorecard ${p} belongs to ${card.layoutId}, listed by ${l.layoutId}`);
+      else if (card.libraryBinding && !l.externalBindings.golfCourseIds.includes(card.libraryBinding.courseId)) problems.push(`scorecard ${p}: library course is not bound by layout ${l.layoutId}`);
       else if (card.holes.length !== l.holeOrder.length) problems.push(`scorecard ${p} has ${card.holes.length} holes, layout ${l.layoutId} plays ${l.holeOrder.length}`);
     }
   }

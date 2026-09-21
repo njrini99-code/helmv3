@@ -12,7 +12,14 @@ from contextlib import redirect_stdout
 from unittest.mock import patch
 
 from factory import cli
-from factory_testkit import HERE, SITE_WAY, Harness, write_catalog, write_json
+from factory_testkit import (
+    HERE,
+    SITE_WAY,
+    Harness,
+    read_json,
+    write_catalog,
+    write_json,
+)
 
 REPO = os.path.abspath(os.path.join(HERE, '..', '..', '..'))
 SIGNOFF = ('hole.visual.canary', 'hole.player.capture', 'layout.visual.aggregate', 'layout.player.aggregate', 'layout.publish.prepare', 'layout.publish.verify')
@@ -319,13 +326,16 @@ class IntakeTests(unittest.TestCase):
         code, text = self.intake('--write', '--json')
         self.assertEqual(code, 0, text)
         written = json.loads(text)['written']
-        self.assertEqual(sorted(os.path.basename(w) for w in written),
-                         ['alpha-country-club-blue.json', 'alpha-country-club.json', 'alpha-country-club.json', 'bravo-golf-links.json', 'bravo-links.json'])
+        self.assertEqual(len(written), 6)  # two tee profiles, two facilities and two layouts
         with open(os.path.join(self.h.catalog, 'layouts', 'alpha-country-club.json'), encoding='utf-8') as f:
             layout = json.load(f)
         self.assertEqual(layout['capabilityTier'], 'C0')
         self.assertIsNone(layout['routeWayIds'])
-        self.assertEqual(layout['scorecardProfiles'], ['alpha-country-club-blue'])
+        self.assertEqual(len(layout['scorecardProfiles']), 2)
+        self.assertIn(layout['referenceScorecardProfileId'], layout['scorecardProfiles'])
+        profiles = [read_json(os.path.join(self.h.catalog, 'scorecards', f'{key}.json')) for key in layout['scorecardProfiles']]
+        self.assertEqual({p['teeName'] for p in profiles}, {'Blue', 'White'})
+        self.assertTrue(all('libraryBinding' not in p for p in profiles))  # old export has no tee IDs
         with open(os.path.join(self.h.catalog, 'facilities', 'alpha-country-club.json'), encoding='utf-8') as f:
             facility = json.load(f)
         self.assertEqual(facility['providerPolicy']['terrain'], ['nc_onemap_dem03'])

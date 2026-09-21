@@ -1,0 +1,130 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "reynolds-lake-oconee-great-waters-tee-e961a8f9-537d-4292-9c63-61b822c5d89b-3575367ba72c63378f04",
+  "layoutId": "reynolds-lake-oconee-great-waters",
+  "teeName": "Championship",
+  "revision": "3575367ba72c63378f0437ecd5710711a54c6491edf9ee87eac2c3dcefdc5a55",
+  "courseRating": 74.5,
+  "slopeRating": 141,
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-20",
+    "snapshotHash": "9fdfbafb2a78ddbd8fc9fed83ab5fe2cd23b3cd711f72305d094187ff356aa19",
+    "note": "Immutable read-only snapshot; library source=seed. Scorecard facts only. No physical tee marker, hole association or geometry approval."
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 3,
+      "yards": 172,
+      "handicap": 16
+    },
+    {
+      "hole": 2,
+      "par": 4,
+      "yards": 433,
+      "handicap": 3
+    },
+    {
+      "hole": 3,
+      "par": 4,
+      "yards": 426,
+      "handicap": 5
+    },
+    {
+      "hole": 4,
+      "par": 5,
+      "yards": 532,
+      "handicap": 14
+    },
+    {
+      "hole": 5,
+      "par": 4,
+      "yards": 447,
+      "handicap": 2
+    },
+    {
+      "hole": 6,
+      "par": 4,
+      "yards": 380,
+      "handicap": 9
+    },
+    {
+      "hole": 7,
+      "par": 3,
+      "yards": 214,
+      "handicap": 15
+    },
+    {
+      "hole": 8,
+      "par": 5,
+      "yards": 573,
+      "handicap": 11
+    },
+    {
+      "hole": 9,
+      "par": 4,
+      "yards": 377,
+      "handicap": 10
+    },
+    {
+      "hole": 10,
+      "par": 3,
+      "yards": 169,
+      "handicap": 18
+    },
+    {
+      "hole": 11,
+      "par": 5,
+      "yards": 530,
+      "handicap": 13
+    },
+    {
+      "hole": 12,
+      "par": 3,
+      "yards": 156,
+      "handicap": 17
+    },
+    {
+      "hole": 13,
+      "par": 4,
+      "yards": 472,
+      "handicap": 1
+    },
+    {
+      "hole": 14,
+      "par": 4,
+      "yards": 421,
+      "handicap": 7
+    },
+    {
+      "hole": 15,
+      "par": 4,
+      "yards": 434,
+      "handicap": 6
+    },
+    {
+      "hole": 16,
+      "par": 5,
+      "yards": 539,
+      "handicap": 12
+    },
+    {
+      "hole": 17,
+      "par": 4,
+      "yards": 365,
+      "handicap": 8
+    },
+    {
+      "hole": 18,
+      "par": 4,
+      "yards": 408,
+      "handicap": 4
+    }
+  ],
+  "libraryBinding": {
+    "courseId": "39edfa12-c60f-4f14-b9f7-efabe30cafdf",
+    "teeId": "e961a8f9-537d-4292-9c63-61b822c5d89b"
+  }
+}

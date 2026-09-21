@@ -1,0 +1,112 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "cc-of-landfall-nick-m-o-tee-fb38ad99-190f-4b03-a490-e03328d39bb7-b56eefcb2a1ddcd34e56",
+  "layoutId": "cc-of-landfall-nick-m-o",
+  "teeName": "Seahawk (Black)",
+  "revision": "b56eefcb2a1ddcd34e5675869163d49f5fcc746af123bb1939c4465c56e88561",
+  "courseRating": 75.5,
+  "slopeRating": 143,
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-20",
+    "snapshotHash": "9fdfbafb2a78ddbd8fc9fed83ab5fe2cd23b3cd711f72305d094187ff356aa19",
+    "note": "Immutable read-only snapshot; library source=manual. Scorecard facts only. No physical tee marker, hole association or geometry approval."
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 4,
+      "yards": 378
+    },
+    {
+      "hole": 2,
+      "par": 3,
+      "yards": 191
+    },
+    {
+      "hole": 3,
+      "par": 4,
+      "yards": 469
+    },
+    {
+      "hole": 4,
+      "par": 4,
+      "yards": 420
+    },
+    {
+      "hole": 5,
+      "par": 5,
+      "yards": 527
+    },
+    {
+      "hole": 6,
+      "par": 3,
+      "yards": 186
+    },
+    {
+      "hole": 7,
+      "par": 4,
+      "yards": 401
+    },
+    {
+      "hole": 8,
+      "par": 5,
+      "yards": 506
+    },
+    {
+      "hole": 9,
+      "par": 4,
+      "yards": 433
+    },
+    {
+      "hole": 10,
+      "par": 5,
+      "yards": 527
+    },
+    {
+      "hole": 11,
+      "par": 4,
+      "yards": 443
+    },
+    {
+      "hole": 12,
+      "par": 4,
+      "yards": 431
+    },
+    {
+      "hole": 13,
+      "par": 3,
+      "yards": 143
+    },
+    {
+      "hole": 14,
+      "par": 4,
+      "yards": 405
+    },
+    {
+      "hole": 15,
+      "par": 3,
+      "yards": 228
+    },
+    {
+      "hole": 16,
+      "par": 5,
+      "yards": 477
+    },
+    {
+      "hole": 17,
+      "par": 4,
+      "yards": 328
+    },
+    {
+      "hole": 18,
+      "par": 4,
+      "yards": 446
+    }
+  ],
+  "libraryBinding": {
+    "courseId": "00bbda7e-53df-405e-8551-f4c156bb9eaf",
+    "teeId": "fb38ad99-190f-4b03-a490-e03328d39bb7"
+  }
+}

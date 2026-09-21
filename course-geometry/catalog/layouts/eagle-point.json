@@ -62,10 +62,12 @@
     ]
   },
   "scorecardProfiles": [
-    "eagle-point-championship"
+    "eagle-point-championship",
+    "eagle-point-tee-bbe9031d-d70c-4835-8701-3496c31e38c2-bd9a99071f0eb7b5eed9"
   ],
   "geometry": null,
   "notes": [
     "Factory intake from active-team school proximity (1 nearby team anchor(s), within 75.0 miles; queried 2026-09-20T12:43:48.457Z). Proximity selected build priority only; it does not establish a physical route or feature geometry."
-  ]
+  ],
+  "referenceScorecardProfileId": "eagle-point-championship"
 }

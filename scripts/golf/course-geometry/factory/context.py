@@ -78,9 +78,11 @@ class Context:
         return self.catalog.scorecards_of(layout_id)
 
     def scorecard(self, layout_id):
-        """The profile the build uses: the first one the layout names."""
+        """Explicit offline QA reference. Never a player's selected tee."""
         layout = self.layout(layout_id) or {}
         cards = {c['profileId']: c for c in self.scorecards(layout_id)}
+        if layout.get('referenceScorecardProfileId'):
+            return cards.get(layout['referenceScorecardProfileId'])
         for profile in layout.get('scorecardProfiles') or []:
             if profile in cards:
                 return cards[profile]

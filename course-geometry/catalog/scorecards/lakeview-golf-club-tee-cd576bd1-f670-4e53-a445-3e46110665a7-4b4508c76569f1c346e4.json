@@ -1,0 +1,112 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "lakeview-golf-club-tee-cd576bd1-f670-4e53-a445-3e46110665a7-4b4508c76569f1c346e4",
+  "layoutId": "lakeview-golf-club",
+  "teeName": "Championship",
+  "revision": "4b4508c76569f1c346e4859bf167fe79af61b8faeeebf1785511e73659202bbe",
+  "courseRating": 72.9,
+  "slopeRating": 132,
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-20",
+    "snapshotHash": "9fdfbafb2a78ddbd8fc9fed83ab5fe2cd23b3cd711f72305d094187ff356aa19",
+    "note": "Immutable read-only snapshot; library source=round. Scorecard facts only. No physical tee marker, hole association or geometry approval."
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 4,
+      "yards": 332
+    },
+    {
+      "hole": 2,
+      "par": 4,
+      "yards": 490
+    },
+    {
+      "hole": 3,
+      "par": 5,
+      "yards": 557
+    },
+    {
+      "hole": 4,
+      "par": 3,
+      "yards": 200
+    },
+    {
+      "hole": 5,
+      "par": 4,
+      "yards": 437
+    },
+    {
+      "hole": 6,
+      "par": 5,
+      "yards": 579
+    },
+    {
+      "hole": 7,
+      "par": 4,
+      "yards": 401
+    },
+    {
+      "hole": 8,
+      "par": 3,
+      "yards": 177
+    },
+    {
+      "hole": 9,
+      "par": 4,
+      "yards": 388
+    },
+    {
+      "hole": 10,
+      "par": 4,
+      "yards": 417
+    },
+    {
+      "hole": 11,
+      "par": 5,
+      "yards": 507
+    },
+    {
+      "hole": 12,
+      "par": 4,
+      "yards": 329
+    },
+    {
+      "hole": 13,
+      "par": 3,
+      "yards": 173
+    },
+    {
+      "hole": 14,
+      "par": 5,
+      "yards": 493
+    },
+    {
+      "hole": 15,
+      "par": 4,
+      "yards": 370
+    },
+    {
+      "hole": 16,
+      "par": 4,
+      "yards": 322
+    },
+    {
+      "hole": 17,
+      "par": 3,
+      "yards": 170
+    },
+    {
+      "hole": 18,
+      "par": 4,
+      "yards": 398
+    }
+  ],
+  "libraryBinding": {
+    "courseId": "dbce971e-a0a4-4e35-bd01-8953798c9a2a",
+    "teeId": "cd576bd1-f670-4e53-a445-3e46110665a7"
+  }
+}

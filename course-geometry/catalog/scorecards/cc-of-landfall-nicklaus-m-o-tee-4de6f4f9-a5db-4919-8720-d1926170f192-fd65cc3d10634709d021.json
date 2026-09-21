@@ -1,0 +1,112 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "cc-of-landfall-nicklaus-m-o-tee-4de6f4f9-a5db-4919-8720-d1926170f192-fd65cc3d10634709d021",
+  "layoutId": "cc-of-landfall-nicklaus-m-o",
+  "teeName": "Black",
+  "revision": "fd65cc3d10634709d0217055838e317ed90c1584ae0868675c82856f4c3fa322",
+  "courseRating": 75.5,
+  "slopeRating": 143,
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-20",
+    "snapshotHash": "9fdfbafb2a78ddbd8fc9fed83ab5fe2cd23b3cd711f72305d094187ff356aa19",
+    "note": "Immutable read-only snapshot; library source=round. Scorecard facts only. No physical tee marker, hole association or geometry approval."
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 4,
+      "yards": 377
+    },
+    {
+      "hole": 2,
+      "par": 3,
+      "yards": 199
+    },
+    {
+      "hole": 3,
+      "par": 4,
+      "yards": 471
+    },
+    {
+      "hole": 4,
+      "par": 4,
+      "yards": 425
+    },
+    {
+      "hole": 5,
+      "par": 5,
+      "yards": 535
+    },
+    {
+      "hole": 6,
+      "par": 3,
+      "yards": 191
+    },
+    {
+      "hole": 7,
+      "par": 4,
+      "yards": 413
+    },
+    {
+      "hole": 8,
+      "par": 5,
+      "yards": 507
+    },
+    {
+      "hole": 9,
+      "par": 5,
+      "yards": 433
+    },
+    {
+      "hole": 10,
+      "par": 5,
+      "yards": 537
+    },
+    {
+      "hole": 11,
+      "par": 4,
+      "yards": 447
+    },
+    {
+      "hole": 12,
+      "par": 4,
+      "yards": 436
+    },
+    {
+      "hole": 13,
+      "par": 3,
+      "yards": 138
+    },
+    {
+      "hole": 14,
+      "par": 4,
+      "yards": 414
+    },
+    {
+      "hole": 15,
+      "par": 3,
+      "yards": 229
+    },
+    {
+      "hole": 16,
+      "par": 5,
+      "yards": 480
+    },
+    {
+      "hole": 17,
+      "par": 4,
+      "yards": 342
+    },
+    {
+      "hole": 18,
+      "par": 4,
+      "yards": 442
+    }
+  ],
+  "libraryBinding": {
+    "courseId": "87aeeab1-59c0-411c-94cd-7fdee4344989",
+    "teeId": "4de6f4f9-a5db-4919-8720-d1926170f192"
+  }
+}

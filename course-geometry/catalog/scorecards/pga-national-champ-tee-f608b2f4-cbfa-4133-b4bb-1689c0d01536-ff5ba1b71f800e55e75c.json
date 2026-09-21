@@ -1,0 +1,112 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "pga-national-champ-tee-f608b2f4-cbfa-4133-b4bb-1689c0d01536-ff5ba1b71f800e55e75c",
+  "layoutId": "pga-national-champ",
+  "teeName": "White",
+  "revision": "ff5ba1b71f800e55e75c5310f1c92b55df36f0daab673bd63e1a006c33591f52",
+  "courseRating": null,
+  "slopeRating": null,
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-20",
+    "snapshotHash": "9fdfbafb2a78ddbd8fc9fed83ab5fe2cd23b3cd711f72305d094187ff356aa19",
+    "note": "Immutable read-only snapshot; library source=round. Scorecard facts only. No physical tee marker, hole association or geometry approval."
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 4,
+      "yards": 365
+    },
+    {
+      "hole": 2,
+      "par": 4,
+      "yards": 437
+    },
+    {
+      "hole": 3,
+      "par": 5,
+      "yards": 538
+    },
+    {
+      "hole": 4,
+      "par": 4,
+      "yards": 376
+    },
+    {
+      "hole": 5,
+      "par": 3,
+      "yards": 210
+    },
+    {
+      "hole": 6,
+      "par": 5,
+      "yards": 488
+    },
+    {
+      "hole": 7,
+      "par": 3,
+      "yards": 235
+    },
+    {
+      "hole": 8,
+      "par": 4,
+      "yards": 427
+    },
+    {
+      "hole": 9,
+      "par": 4,
+      "yards": 404
+    },
+    {
+      "hole": 10,
+      "par": 5,
+      "yards": 545
+    },
+    {
+      "hole": 11,
+      "par": 4,
+      "yards": 450
+    },
+    {
+      "hole": 12,
+      "par": 4,
+      "yards": 427
+    },
+    {
+      "hole": 13,
+      "par": 4,
+      "yards": 388
+    },
+    {
+      "hole": 14,
+      "par": 4,
+      "yards": 465
+    },
+    {
+      "hole": 15,
+      "par": 3,
+      "yards": 180
+    },
+    {
+      "hole": 16,
+      "par": 4,
+      "yards": 434
+    },
+    {
+      "hole": 17,
+      "par": 3,
+      "yards": 175
+    },
+    {
+      "hole": 18,
+      "par": 5,
+      "yards": 556
+    }
+  ],
+  "libraryBinding": {
+    "courseId": "2e402439-f096-4b97-91ab-2dfba12bb8e0",
+    "teeId": "f608b2f4-cbfa-4133-b4bb-1689c0d01536"
+  }
+}

@@ -1,0 +1,130 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "boonsboro-cc-tee-ecefeb83-c38d-4f70-8198-4539c4c0e56f-01394c1446729ecf9b73",
+  "layoutId": "boonsboro-cc",
+  "teeName": "Lynchburg Women\u2019s Golf",
+  "revision": "01394c1446729ecf9b73e1ff1e3f08c826e70b55265e44ee11885f3c2182a53e",
+  "courseRating": null,
+  "slopeRating": null,
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-20",
+    "snapshotHash": "9fdfbafb2a78ddbd8fc9fed83ab5fe2cd23b3cd711f72305d094187ff356aa19",
+    "note": "Immutable read-only snapshot; library source=manual. Scorecard facts only. No physical tee marker, hole association or geometry approval."
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 5,
+      "yards": 430,
+      "handicap": 17
+    },
+    {
+      "hole": 2,
+      "par": 3,
+      "yards": 145,
+      "handicap": 11
+    },
+    {
+      "hole": 3,
+      "par": 5,
+      "yards": 470,
+      "handicap": 5
+    },
+    {
+      "hole": 4,
+      "par": 4,
+      "yards": 270,
+      "handicap": 9
+    },
+    {
+      "hole": 5,
+      "par": 3,
+      "yards": 135,
+      "handicap": 15
+    },
+    {
+      "hole": 6,
+      "par": 4,
+      "yards": 312,
+      "handicap": 1
+    },
+    {
+      "hole": 7,
+      "par": 5,
+      "yards": 425,
+      "handicap": 7
+    },
+    {
+      "hole": 8,
+      "par": 4,
+      "yards": 332,
+      "handicap": 13
+    },
+    {
+      "hole": 9,
+      "par": 4,
+      "yards": 326,
+      "handicap": 3
+    },
+    {
+      "hole": 10,
+      "par": 5,
+      "yards": 430,
+      "handicap": 12
+    },
+    {
+      "hole": 11,
+      "par": 4,
+      "yards": 368,
+      "handicap": 6
+    },
+    {
+      "hole": 12,
+      "par": 4,
+      "yards": 266,
+      "handicap": 14
+    },
+    {
+      "hole": 13,
+      "par": 3,
+      "yards": 135,
+      "handicap": 16
+    },
+    {
+      "hole": 14,
+      "par": 4,
+      "yards": 317,
+      "handicap": 8
+    },
+    {
+      "hole": 15,
+      "par": 4,
+      "yards": 366,
+      "handicap": 2
+    },
+    {
+      "hole": 16,
+      "par": 5,
+      "yards": 410,
+      "handicap": 10
+    },
+    {
+      "hole": 17,
+      "par": 3,
+      "yards": 176,
+      "handicap": 18
+    },
+    {
+      "hole": 18,
+      "par": 4,
+      "yards": 350,
+      "handicap": 4
+    }
+  ],
+  "libraryBinding": {
+    "courseId": "45570b51-7d2c-4b12-b7a4-f141eb3b00be",
+    "teeId": "ecefeb83-c38d-4f70-8198-4539c4c0e56f"
+  }
+}

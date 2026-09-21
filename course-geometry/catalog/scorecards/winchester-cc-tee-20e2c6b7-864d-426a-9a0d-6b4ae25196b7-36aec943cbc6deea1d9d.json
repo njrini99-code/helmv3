@@ -1,0 +1,130 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "winchester-cc-tee-20e2c6b7-864d-426a-9a0d-6b4ae25196b7-36aec943cbc6deea1d9d",
+  "layoutId": "winchester-cc",
+  "teeName": "Gold",
+  "revision": "36aec943cbc6deea1d9ddfc7a277069d24418c9d2cbf264b1ef3fced1305c0cc",
+  "courseRating": 71.4,
+  "slopeRating": null,
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-20",
+    "snapshotHash": "9fdfbafb2a78ddbd8fc9fed83ab5fe2cd23b3cd711f72305d094187ff356aa19",
+    "note": "Immutable read-only snapshot; library source=manual. Scorecard facts only. No physical tee marker, hole association or geometry approval."
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 4,
+      "yards": 387,
+      "handicap": 9
+    },
+    {
+      "hole": 2,
+      "par": 5,
+      "yards": 500,
+      "handicap": 13
+    },
+    {
+      "hole": 3,
+      "par": 4,
+      "yards": 416,
+      "handicap": 1
+    },
+    {
+      "hole": 4,
+      "par": 3,
+      "yards": 193,
+      "handicap": 15
+    },
+    {
+      "hole": 5,
+      "par": 4,
+      "yards": 408,
+      "handicap": 3
+    },
+    {
+      "hole": 6,
+      "par": 5,
+      "yards": 501,
+      "handicap": 7
+    },
+    {
+      "hole": 7,
+      "par": 4,
+      "yards": 355,
+      "handicap": 5
+    },
+    {
+      "hole": 8,
+      "par": 3,
+      "yards": 150,
+      "handicap": 17
+    },
+    {
+      "hole": 9,
+      "par": 4,
+      "yards": 347,
+      "handicap": 11
+    },
+    {
+      "hole": 10,
+      "par": 4,
+      "yards": 267,
+      "handicap": 18
+    },
+    {
+      "hole": 11,
+      "par": 4,
+      "yards": 357,
+      "handicap": 6
+    },
+    {
+      "hole": 12,
+      "par": 3,
+      "yards": 196,
+      "handicap": 10
+    },
+    {
+      "hole": 13,
+      "par": 5,
+      "yards": 519,
+      "handicap": 2
+    },
+    {
+      "hole": 14,
+      "par": 3,
+      "yards": 172,
+      "handicap": 14
+    },
+    {
+      "hole": 15,
+      "par": 5,
+      "yards": 519,
+      "handicap": 2
+    },
+    {
+      "hole": 16,
+      "par": 4,
+      "yards": 398,
+      "handicap": 8
+    },
+    {
+      "hole": 17,
+      "par": 4,
+      "yards": 329,
+      "handicap": 16
+    },
+    {
+      "hole": 18,
+      "par": 4,
+      "yards": 405,
+      "handicap": 4
+    }
+  ],
+  "libraryBinding": {
+    "courseId": "846f0ccb-26aa-4e3c-a9e7-5a03c85440a2",
+    "teeId": "20e2c6b7-864d-426a-9a0d-6b4ae25196b7"
+  }
+}

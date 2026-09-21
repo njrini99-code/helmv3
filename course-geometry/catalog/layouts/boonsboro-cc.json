@@ -62,10 +62,12 @@
     ]
   },
   "scorecardProfiles": [
-    "boonsboro-cc-lynchburg-womens-golf"
+    "boonsboro-cc-lynchburg-womens-golf",
+    "boonsboro-cc-tee-ecefeb83-c38d-4f70-8198-4539c4c0e56f-01394c1446729ecf9b73"
   ],
   "geometry": null,
   "notes": [
     "7 completed cohort rounds (2026-09-13); intake wrote this manifest at C0 with routes unresolved."
-  ]
+  ],
+  "referenceScorecardProfileId": "boonsboro-cc-lynchburg-womens-golf"
 }

@@ -62,10 +62,12 @@
     ]
   },
   "scorecardProfiles": [
-    "cutter-creek-black"
+    "cutter-creek-black",
+    "cutter-creek-tee-a478e77a-62e6-4404-8a28-790bb15574db-487d271e41c5b3de0adf"
   ],
   "geometry": null,
   "notes": [
     "8 completed cohort rounds (2026-09-13); intake wrote this manifest at C0 with routes unresolved."
-  ]
+  ],
+  "referenceScorecardProfileId": "cutter-creek-black"
 }

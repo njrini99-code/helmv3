@@ -1,0 +1,112 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "denison-golf-club-tee-4d5d3223-cbc0-4be7-ba59-4e56da6e8c84-0e30ca568d2bf5d3b907",
+  "layoutId": "denison-golf-club",
+  "teeName": "White",
+  "revision": "0e30ca568d2bf5d3b9074c1e1ff26fd3721d21e4c8b26e27c73aa68e5152d800",
+  "courseRating": null,
+  "slopeRating": null,
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-20",
+    "snapshotHash": "9fdfbafb2a78ddbd8fc9fed83ab5fe2cd23b3cd711f72305d094187ff356aa19",
+    "note": "Immutable read-only snapshot; library source=round. Scorecard facts only. No physical tee marker, hole association or geometry approval."
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 4,
+      "yards": 326
+    },
+    {
+      "hole": 2,
+      "par": 4,
+      "yards": 352
+    },
+    {
+      "hole": 3,
+      "par": 4,
+      "yards": 318
+    },
+    {
+      "hole": 4,
+      "par": 4,
+      "yards": 233
+    },
+    {
+      "hole": 5,
+      "par": 4,
+      "yards": 347
+    },
+    {
+      "hole": 6,
+      "par": 5,
+      "yards": 482
+    },
+    {
+      "hole": 7,
+      "par": 3,
+      "yards": 138
+    },
+    {
+      "hole": 8,
+      "par": 4,
+      "yards": 348
+    },
+    {
+      "hole": 9,
+      "par": 4,
+      "yards": 347
+    },
+    {
+      "hole": 10,
+      "par": 5,
+      "yards": 455
+    },
+    {
+      "hole": 11,
+      "par": 4,
+      "yards": 327
+    },
+    {
+      "hole": 12,
+      "par": 5,
+      "yards": 423
+    },
+    {
+      "hole": 13,
+      "par": 5,
+      "yards": 293
+    },
+    {
+      "hole": 14,
+      "par": 3,
+      "yards": 142
+    },
+    {
+      "hole": 15,
+      "par": 5,
+      "yards": 426
+    },
+    {
+      "hole": 16,
+      "par": 4,
+      "yards": 305
+    },
+    {
+      "hole": 17,
+      "par": 3,
+      "yards": 129
+    },
+    {
+      "hole": 18,
+      "par": 4,
+      "yards": 322
+    }
+  ],
+  "libraryBinding": {
+    "courseId": "a58fc3c7-4fcb-479f-bdf3-c121203afdf8",
+    "teeId": "4d5d3223-cbc0-4be7-ba59-4e56da6e8c84"
+  }
+}

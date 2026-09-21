@@ -1,0 +1,112 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "cape-fear-cc-tee-0c58e233-cf20-49a6-8ddf-dc19752a0a54-d4cc820979c70de0df03",
+  "layoutId": "cape-fear-cc",
+  "teeName": "Championship",
+  "revision": "d4cc820979c70de0df03a2ba784d9446dc2271d7039bcd2479675f9b27d22e7d",
+  "courseRating": 74.3,
+  "slopeRating": 139,
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-20",
+    "snapshotHash": "9fdfbafb2a78ddbd8fc9fed83ab5fe2cd23b3cd711f72305d094187ff356aa19",
+    "note": "Immutable read-only snapshot; library source=manual. Scorecard facts only. No physical tee marker, hole association or geometry approval."
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 4,
+      "yards": 352
+    },
+    {
+      "hole": 2,
+      "par": 4,
+      "yards": 459
+    },
+    {
+      "hole": 3,
+      "par": 5,
+      "yards": 573
+    },
+    {
+      "hole": 4,
+      "par": 4,
+      "yards": 456
+    },
+    {
+      "hole": 5,
+      "par": 3,
+      "yards": 208
+    },
+    {
+      "hole": 6,
+      "par": 5,
+      "yards": 539
+    },
+    {
+      "hole": 7,
+      "par": 4,
+      "yards": 372
+    },
+    {
+      "hole": 8,
+      "par": 3,
+      "yards": 172
+    },
+    {
+      "hole": 9,
+      "par": 4,
+      "yards": 481
+    },
+    {
+      "hole": 10,
+      "par": 4,
+      "yards": 340
+    },
+    {
+      "hole": 11,
+      "par": 5,
+      "yards": 558
+    },
+    {
+      "hole": 12,
+      "par": 4,
+      "yards": 452
+    },
+    {
+      "hole": 13,
+      "par": 4,
+      "yards": 337
+    },
+    {
+      "hole": 14,
+      "par": 3,
+      "yards": 151
+    },
+    {
+      "hole": 15,
+      "par": 5,
+      "yards": 497
+    },
+    {
+      "hole": 16,
+      "par": 3,
+      "yards": 229
+    },
+    {
+      "hole": 17,
+      "par": 4,
+      "yards": 439
+    },
+    {
+      "hole": 18,
+      "par": 4,
+      "yards": 325
+    }
+  ],
+  "libraryBinding": {
+    "courseId": "9f427cd5-3c00-4436-a855-f212f219b252",
+    "teeId": "0c58e233-cf20-49a6-8ddf-dc19752a0a54"
+  }
+}

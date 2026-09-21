@@ -1,0 +1,67 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "cc-of-landfall-ocean-9-tee-751fb549-36a1-4635-b0af-dd33ae898763-53396cfd458b8f395edb",
+  "layoutId": "cc-of-landfall-ocean-9",
+  "teeName": "Black",
+  "revision": "53396cfd458b8f395edb7831a207ddd8f13df2a7caead412c28a6c5e52f1d837",
+  "courseRating": null,
+  "slopeRating": null,
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-20",
+    "snapshotHash": "9fdfbafb2a78ddbd8fc9fed83ab5fe2cd23b3cd711f72305d094187ff356aa19",
+    "note": "Immutable read-only snapshot; library source=manual. Scorecard facts only. No physical tee marker, hole association or geometry approval."
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 5,
+      "yards": 527
+    },
+    {
+      "hole": 2,
+      "par": 4,
+      "yards": 443
+    },
+    {
+      "hole": 3,
+      "par": 4,
+      "yards": 431
+    },
+    {
+      "hole": 4,
+      "par": 3,
+      "yards": 143
+    },
+    {
+      "hole": 5,
+      "par": 4,
+      "yards": 405
+    },
+    {
+      "hole": 6,
+      "par": 3,
+      "yards": 228
+    },
+    {
+      "hole": 7,
+      "par": 5,
+      "yards": 480
+    },
+    {
+      "hole": 8,
+      "par": 4,
+      "yards": 328
+    },
+    {
+      "hole": 9,
+      "par": 4,
+      "yards": 446
+    }
+  ],
+  "libraryBinding": {
+    "courseId": "009b2006-bbd2-4e88-bd17-82771709d0b7",
+    "teeId": "751fb549-36a1-4635-b0af-dd33ae898763"
+  }
+}

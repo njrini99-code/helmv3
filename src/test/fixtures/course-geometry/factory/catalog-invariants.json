@@ -276,6 +276,103 @@
           "remove": true
         }
       ]
+    },
+    {
+      "name": "identified revision with source hash",
+      "valid": true,
+      "changes": [
+        {
+          "path": [
+            "libraryBinding"
+          ],
+          "value": {
+            "courseId": "11111111-1111-4111-8111-111111111111",
+            "teeId": "22222222-2222-4222-8222-222222222222"
+          }
+        },
+        {
+          "path": [
+            "revision"
+          ],
+          "value": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        {
+          "path": [
+            "source",
+            "snapshotHash"
+          ],
+          "value": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        }
+      ]
+    },
+    {
+      "name": "identity without revision is not a profile binding",
+      "valid": false,
+      "changes": [
+        {
+          "path": [
+            "libraryBinding"
+          ],
+          "value": {
+            "courseId": "11111111-1111-4111-8111-111111111111",
+            "teeId": "22222222-2222-4222-8222-222222222222"
+          }
+        }
+      ]
+    },
+    {
+      "name": "invalid revision hash",
+      "valid": false,
+      "changes": [
+        {
+          "path": [
+            "revision"
+          ],
+          "value": "not-a-hash"
+        }
+      ]
+    },
+    {
+      "name": "fractional slope rating",
+      "valid": false,
+      "changes": [
+        {
+          "path": [
+            "slopeRating"
+          ],
+          "value": 121.5
+        }
+      ]
+    },
+    {
+      "name": "boolean course rating",
+      "valid": false,
+      "changes": [
+        {
+          "path": [
+            "courseRating"
+          ],
+          "value": true
+        }
+      ]
+    },
+    {
+      "name": "nullable ratings",
+      "valid": true,
+      "changes": [
+        {
+          "path": [
+            "courseRating"
+          ],
+          "value": null
+        },
+        {
+          "path": [
+            "slopeRating"
+          ],
+          "value": null
+        }
+      ]
     }
   ]
 }

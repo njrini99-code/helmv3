@@ -44,10 +44,12 @@
     ]
   },
   "scorecardProfiles": [
-    "cc-of-landfall-ocean-9-black"
+    "cc-of-landfall-ocean-9-black",
+    "cc-of-landfall-ocean-9-tee-751fb549-36a1-4635-b0af-dd33ae898763-53396cfd458b8f395edb"
   ],
   "geometry": null,
   "notes": [
     "5 completed cohort rounds (2026-09-13); intake wrote this manifest at C0 with routes unresolved."
-  ]
+  ],
+  "referenceScorecardProfileId": "cc-of-landfall-ocean-9-black"
 }

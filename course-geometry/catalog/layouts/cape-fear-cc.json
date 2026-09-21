@@ -62,10 +62,12 @@
     ]
   },
   "scorecardProfiles": [
-    "cape-fear-cc-championship"
+    "cape-fear-cc-championship",
+    "cape-fear-cc-tee-0c58e233-cf20-49a6-8ddf-dc19752a0a54-d4cc820979c70de0df03"
   ],
   "geometry": null,
   "notes": [
     "Factory intake from active-team school proximity (1 nearby team anchor(s), within 75.0 miles; queried 2026-09-20T12:43:48.457Z). Proximity selected build priority only; it does not establish a physical route or feature geometry."
-  ]
+  ],
+  "referenceScorecardProfileId": "cape-fear-cc-championship"
 }

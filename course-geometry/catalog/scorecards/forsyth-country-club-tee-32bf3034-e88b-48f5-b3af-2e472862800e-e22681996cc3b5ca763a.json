@@ -1,0 +1,130 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "forsyth-country-club-tee-32bf3034-e88b-48f5-b3af-2e472862800e-e22681996cc3b5ca763a",
+  "layoutId": "forsyth-country-club",
+  "teeName": "Championship",
+  "revision": "e22681996cc3b5ca763af414457722c69257f78e471a7a3b24b7174e496de716",
+  "courseRating": 72.4,
+  "slopeRating": 134,
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-20",
+    "snapshotHash": "9fdfbafb2a78ddbd8fc9fed83ab5fe2cd23b3cd711f72305d094187ff356aa19",
+    "note": "Immutable read-only snapshot; library source=manual. Scorecard facts only. No physical tee marker, hole association or geometry approval."
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 4,
+      "yards": 376,
+      "handicap": 11
+    },
+    {
+      "hole": 2,
+      "par": 4,
+      "yards": 334,
+      "handicap": 13
+    },
+    {
+      "hole": 3,
+      "par": 3,
+      "yards": 186,
+      "handicap": 17
+    },
+    {
+      "hole": 4,
+      "par": 4,
+      "yards": 406,
+      "handicap": 9
+    },
+    {
+      "hole": 5,
+      "par": 5,
+      "yards": 531,
+      "handicap": 5
+    },
+    {
+      "hole": 6,
+      "par": 4,
+      "yards": 443,
+      "handicap": 1
+    },
+    {
+      "hole": 7,
+      "par": 3,
+      "yards": 194,
+      "handicap": 15
+    },
+    {
+      "hole": 8,
+      "par": 5,
+      "yards": 543,
+      "handicap": 3
+    },
+    {
+      "hole": 9,
+      "par": 4,
+      "yards": 417,
+      "handicap": 7
+    },
+    {
+      "hole": 10,
+      "par": 4,
+      "yards": 329,
+      "handicap": 14
+    },
+    {
+      "hole": 11,
+      "par": 3,
+      "yards": 207,
+      "handicap": 16
+    },
+    {
+      "hole": 12,
+      "par": 4,
+      "yards": 394,
+      "handicap": 6
+    },
+    {
+      "hole": 13,
+      "par": 4,
+      "yards": 381,
+      "handicap": 12
+    },
+    {
+      "hole": 14,
+      "par": 3,
+      "yards": 171,
+      "handicap": 18
+    },
+    {
+      "hole": 15,
+      "par": 5,
+      "yards": 500,
+      "handicap": 4
+    },
+    {
+      "hole": 16,
+      "par": 4,
+      "yards": 433,
+      "handicap": 2
+    },
+    {
+      "hole": 17,
+      "par": 4,
+      "yards": 403,
+      "handicap": 8
+    },
+    {
+      "hole": 18,
+      "par": 4,
+      "yards": 375,
+      "handicap": 10
+    }
+  ],
+  "libraryBinding": {
+    "courseId": "aed28a4f-37e2-4029-8e40-9a4963e72527",
+    "teeId": "32bf3034-e88b-48f5-b3af-2e472862800e"
+  }
+}

@@ -62,10 +62,14 @@
     ]
   },
   "scorecardProfiles": [
-    "reynolds-great-waters-official-one"
+    "reynolds-great-waters-official-one",
+    "reynolds-lake-oconee-great-waters-tee-cb3a2bb7-ad65-4df5-a199-60f5075e12ce-fb9ae8c5103b96f3856f",
+    "reynolds-lake-oconee-great-waters-tee-e6ee7e50-455f-4bd2-ba40-d1883bc24200-87175566e723fdd57c81",
+    "reynolds-lake-oconee-great-waters-tee-e961a8f9-537d-4292-9c63-61b822c5d89b-3575367ba72c63378f04"
   ],
   "geometry": null,
   "notes": [
     "Factory intake from active-team school proximity (1 nearby team anchor(s), within 75.0 miles; queried 2026-09-20T12:43:48.457Z). Proximity selected build priority only; it does not establish a physical route or feature geometry."
-  ]
+  ],
+  "referenceScorecardProfileId": "reynolds-great-waters-official-one"
 }

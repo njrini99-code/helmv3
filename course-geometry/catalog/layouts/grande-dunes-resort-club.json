@@ -62,10 +62,12 @@
     ]
   },
   "scorecardProfiles": [
-    "grande-dunes-resort-club-gold"
+    "grande-dunes-resort-club-gold",
+    "grande-dunes-resort-club-tee-0610828d-0404-4d6f-a6ff-64bd2922ef0f-448ce8cf7ef9239b6efd"
   ],
   "geometry": null,
   "notes": [
     "13 completed cohort rounds (2026-09-13); intake wrote this manifest at C0 with routes unresolved."
-  ]
+  ],
+  "referenceScorecardProfileId": "grande-dunes-resort-club-gold"
 }

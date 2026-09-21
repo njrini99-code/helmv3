@@ -1,0 +1,112 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "grande-dunes-resort-club-tee-0610828d-0404-4d6f-a6ff-64bd2922ef0f-448ce8cf7ef9239b6efd",
+  "layoutId": "grande-dunes-resort-club",
+  "teeName": "Gold",
+  "revision": "448ce8cf7ef9239b6efd64fc532c2a052f21690b598b21c61fe03046b02e0583",
+  "courseRating": 76.7,
+  "slopeRating": 143,
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-20",
+    "snapshotHash": "9fdfbafb2a78ddbd8fc9fed83ab5fe2cd23b3cd711f72305d094187ff356aa19",
+    "note": "Immutable read-only snapshot; library source=manual. Scorecard facts only. No physical tee marker, hole association or geometry approval."
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 4,
+      "yards": 455
+    },
+    {
+      "hole": 2,
+      "par": 3,
+      "yards": 209
+    },
+    {
+      "hole": 3,
+      "par": 4,
+      "yards": 475
+    },
+    {
+      "hole": 4,
+      "par": 5,
+      "yards": 572
+    },
+    {
+      "hole": 5,
+      "par": 4,
+      "yards": 454
+    },
+    {
+      "hole": 6,
+      "par": 4,
+      "yards": 356
+    },
+    {
+      "hole": 7,
+      "par": 5,
+      "yards": 551
+    },
+    {
+      "hole": 8,
+      "par": 3,
+      "yards": 239
+    },
+    {
+      "hole": 9,
+      "par": 4,
+      "yards": 471
+    },
+    {
+      "hole": 10,
+      "par": 4,
+      "yards": 455
+    },
+    {
+      "hole": 11,
+      "par": 3,
+      "yards": 192
+    },
+    {
+      "hole": 12,
+      "par": 4,
+      "yards": 449
+    },
+    {
+      "hole": 13,
+      "par": 5,
+      "yards": 551
+    },
+    {
+      "hole": 14,
+      "par": 3,
+      "yards": 217
+    },
+    {
+      "hole": 15,
+      "par": 4,
+      "yards": 468
+    },
+    {
+      "hole": 16,
+      "par": 4,
+      "yards": 417
+    },
+    {
+      "hole": 17,
+      "par": 5,
+      "yards": 573
+    },
+    {
+      "hole": 18,
+      "par": 4,
+      "yards": 442
+    }
+  ],
+  "libraryBinding": {
+    "courseId": "a893a1dd-8f95-49c4-8ff3-651220b28afa",
+    "teeId": "0610828d-0404-4d6f-a6ff-64bd2922ef0f"
+  }
+}

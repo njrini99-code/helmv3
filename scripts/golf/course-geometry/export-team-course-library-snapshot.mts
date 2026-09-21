@@ -48,8 +48,8 @@ async function main(): Promise<void> {
     readAllRows('golf_teams', (from, to) => supabase.from('golf_teams').select('id,name,organization_id,season_active', { count: 'exact' }).eq('season_active', true).order('id').range(from, to)),
     readAllRows('organizations', (from, to) => supabase.from('organizations').select('id,name,location_city,location_state,division,conference', { count: 'exact' }).order('id').range(from, to)),
     readAllRows('golf_courses', (from, to) => supabase.from('golf_courses').select('id,name,city,state,country,address,deleted_at', { count: 'exact' }).is('deleted_at', null).order('id').range(from, to)),
-    readAllRows('golf_course_tees', (from, to) => supabase.from('golf_course_tees').select('id,course_id,tee_name,holes_count,is_draft,deleted_at,source', { count: 'exact' }).is('deleted_at', null).eq('is_draft', false).order('id').range(from, to)),
-    readAllRows('golf_course_tee_holes', (from, to) => supabase.from('golf_course_tee_holes').select('id,tee_id,hole_number,par,yardage', { count: 'exact' }).order('id').range(from, to)),
+    readAllRows('golf_course_tees', (from, to) => supabase.from('golf_course_tees').select('id,course_id,tee_name,course_rating,slope_rating,holes_count,is_draft,deleted_at,source', { count: 'exact' }).is('deleted_at', null).eq('is_draft', false).order('id').range(from, to)),
+    readAllRows('golf_course_tee_holes', (from, to) => supabase.from('golf_course_tee_holes').select('id,tee_id,hole_number,par,yardage,handicap_index', { count: 'exact' }).order('id').range(from, to)),
   ]);
 
   const organizations = new Map((organizationRows as Row[]).map(row => [String(row.id), row]));
@@ -78,11 +78,13 @@ async function main(): Promise<void> {
   const scorecards = (teeRows as Row[]).flatMap(tee => {
     const holes = (holesByTee.get(String(tee.id)) ?? [])
       .sort((a, b) => Number(a.hole_number) - Number(b.hole_number))
-      .map(hole => ({ number: Number(hole.hole_number), par: Number(hole.par), yardage: Number(hole.yardage) }));
+      .map(hole => ({ number: Number(hole.hole_number), par: Number(hole.par), yardage: Number(hole.yardage),
+        ...(hole.handicap_index == null ? {} : { handicap: Number(hole.handicap_index) }) }));
     // Incomplete tee cards must remain absent; the factory will report the
     // scorecard blocker rather than create arbitrary hole data.
     return completeScorecard(holes, Number(tee.holes_count))
-      ? [{ course_id: String(tee.course_id), tee_name: String(tee.tee_name), source: tee.source, holes }]
+      ? [{ course_id: String(tee.course_id), tee_id: String(tee.id), tee_name: String(tee.tee_name),
+        course_rating: tee.course_rating, slope_rating: tee.slope_rating, source: tee.source, holes }]
       : [];
   });
   const courses = (courseRows as Row[]).map(course => ({

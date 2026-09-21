@@ -62,10 +62,12 @@
     ]
   },
   "scorecardProfiles": [
-    "lakeview-golf-club-championship"
+    "lakeview-golf-club-championship",
+    "lakeview-golf-club-tee-cd576bd1-f670-4e53-a445-3e46110665a7-4b4508c76569f1c346e4"
   ],
   "geometry": null,
   "notes": [
     "Factory intake from active-team school proximity (2 nearby team anchor(s), within 75.0 miles; queried 2026-09-20T12:43:48.457Z). Proximity selected build priority only; it does not establish a physical route or feature geometry."
-  ]
+  ],
+  "referenceScorecardProfileId": "lakeview-golf-club-championship"
 }

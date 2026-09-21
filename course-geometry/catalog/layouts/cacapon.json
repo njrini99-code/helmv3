@@ -62,7 +62,9 @@
     ]
   },
   "scorecardProfiles": [
-    "cacapon-blue"
+    "cacapon-blue",
+    "cacapon-tee-8d1aaca0-361f-4e60-8d9d-9ab3491126dc-c616dc9a49af9ecfeaaa"
   ],
-  "geometry": null
+  "geometry": null,
+  "referenceScorecardProfileId": "cacapon-blue"
 }

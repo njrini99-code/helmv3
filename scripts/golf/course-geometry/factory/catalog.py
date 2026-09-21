@@ -16,9 +16,10 @@ SITE_ID = re.compile(r'^osm-(?:node|way|relation)-\d+$')
 HOLE_KEY = re.compile(r'^[a-z0-9]+(?:-[a-z0-9]+)*-\d{2}$')
 ISO_DATE = re.compile(r'^\d{4}-\d{2}-\d{2}$')
 UUID = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$')
+SHA256 = re.compile(r'^[0-9a-f]{64}$')
 TIERS = ('C0', 'C1', 'C2', 'C3', 'C4')
 RETAINED_KEYS = ('osm', 'osmContext', 'terrain', 'compiled', 'context', 'contextReport', 'canopyReview',
-                 'imageryReview', 'associations', 'reviewOverlay', 'naip', 'world', 'imageryTraces', 'sourceGeometry')
+                 'imageryReview', 'associations', 'reviewOverlay', 'naip', 'world', 'imageryTraces', 'sourceGeometry', 'physicalAdmission')
 
 
 class CatalogError(Exception):
@@ -160,7 +161,10 @@ def layout_problems(doc):
     ext = doc.get('externalBindings')
     if not (isinstance(ext, dict) and set(ext) == {'golfCourseIds'} and _str_list(ext['golfCourseIds'], UUID, 0, 8)):
         errs.append('externalBindings.golfCourseIds: up to 8 uuids')
-    _require(doc, 'scorecardProfiles', lambda v: _str_list(v, SLUG, 0, 8), 'scorecardProfiles: up to 8 profile ids', errs)
+    _require(doc, 'scorecardProfiles', lambda v: _str_list(v, SLUG, 0, 256), 'scorecardProfiles: up to 256 profile ids', errs)
+    reference = doc.get('referenceScorecardProfileId')
+    if reference is not None and (not isinstance(reference, str) or reference not in doc.get('scorecardProfiles', [])):
+        errs.append('reference scorecard must be listed by layout')
     geometry = doc.get('geometry', 'missing')
     if geometry == 'missing' or not (geometry is None or (isinstance(geometry, dict) and set(geometry) == {'package', 'published'} and isinstance(geometry['package'], str) and geometry['package']
                                                           and (geometry['published'] is None or (isinstance(geometry['published'], str) and geometry['published'])))):
@@ -173,7 +177,7 @@ def layout_problems(doc):
     if 'notes' in doc and not _str_list(doc['notes'], None, 0, 20):
         errs.append('notes: up to 20 strings')
     extra = set(doc) - {'schema', 'layoutId', 'facilityId', 'name', 'siteIds', 'segments', 'segmentOrder', 'holeOrder', 'routeWayIds', 'bboxWgs84',
-                        'capabilityTier', 'externalBindings', 'scorecardProfiles', 'geometry', 'retained', 'knownRenovationAfter', 'notes'}
+                        'capabilityTier', 'externalBindings', 'scorecardProfiles', 'referenceScorecardProfileId', 'geometry', 'retained', 'knownRenovationAfter', 'notes'}
     if extra:
         errs.append(f'unknown keys: {", ".join(sorted(extra))}')
     if errs:
@@ -213,8 +217,23 @@ def scorecard_problems(doc):
             and (src.get('url') is None or _absolute_url(src.get('url')))
             and isinstance(src.get('retrievedAt'), str) and ISO_DATE.fullmatch(src['retrievedAt'])
             and ('note' not in src or (isinstance(src['note'], str) and len(src['note']) <= 4096))
-            and set(src) <= {'provider', 'url', 'retrievedAt', 'note'}):
+            and ('snapshotHash' not in src or (isinstance(src['snapshotHash'], str) and SHA256.fullmatch(src['snapshotHash'])))
+            and set(src) <= {'provider', 'url', 'retrievedAt', 'note', 'snapshotHash'}):
         errs.append('source: {provider, url|null, retrievedAt, note?}')
+    if 'revision' in doc and not (isinstance(doc['revision'], str) and SHA256.fullmatch(doc['revision'])):
+        errs.append('revision: SHA256')
+    binding = doc.get('libraryBinding')
+    if 'libraryBinding' in doc and not (isinstance(binding, dict) and set(binding) == {'courseId', 'teeId'}
+            and all(isinstance(v, str) and UUID.fullmatch(v) for v in binding.values())):
+        errs.append('libraryBinding: {courseId, teeId} UUIDs')
+    if binding and (not doc.get('revision') or not isinstance(src, dict) or not src.get('snapshotHash')):
+        errs.append('library binding requires revision and snapshot hash')
+    rating = doc.get('courseRating')
+    if rating is not None and (isinstance(rating, bool) or not isinstance(rating, (int, float)) or not math.isfinite(rating) or not 20 <= rating <= 100):
+        errs.append('courseRating: 20..100 or null')
+    slope = doc.get('slopeRating')
+    if slope is not None and (not _integer(slope) or not 55 <= slope <= 155):
+        errs.append('slopeRating: 55..155 or null')
     holes = doc.get('holes')
     ok = isinstance(holes, list) and 9 <= len(holes) <= 36 and all(
         isinstance(h, dict) and set(h) <= {'hole', 'par', 'yards', 'handicap'} and {'hole', 'par', 'yards'} <= set(h)
@@ -223,7 +242,7 @@ def scorecard_problems(doc):
         and ('handicap' not in h or (_integer(h['handicap']) and 1 <= h['handicap'] <= 36)) for h in holes)
     if not ok:
         errs.append('holes: 9..36 of {hole, par, yards, handicap?}')
-    extra = set(doc) - {'schema', 'profileId', 'layoutId', 'teeName', 'source', 'holes'}
+    extra = set(doc) - {'schema', 'profileId', 'layoutId', 'teeName', 'source', 'holes', 'libraryBinding', 'revision', 'courseRating', 'slopeRating'}
     if extra:
         errs.append(f'unknown keys: {", ".join(sorted(extra))}')
     if errs:
@@ -272,6 +291,8 @@ def cross_problems(catalog):
                 problems.append(f'layout {l["layoutId"]}: unknown scorecard profile {p}')
             elif card['layoutId'] != l['layoutId']:
                 problems.append(f'scorecard {p} belongs to {card["layoutId"]}, listed by {l["layoutId"]}')
+            elif card.get('libraryBinding', {}).get('courseId') and card['libraryBinding']['courseId'] not in l['externalBindings']['golfCourseIds']:
+                problems.append(f'scorecard {p}: library course is not bound by layout {l["layoutId"]}')
             elif len(card['holes']) != len(l['holeOrder']):
                 problems.append(f'scorecard {p} has {len(card["holes"])} holes, layout {l["layoutId"]} plays {len(l["holeOrder"])}')
     for c in cards.values():

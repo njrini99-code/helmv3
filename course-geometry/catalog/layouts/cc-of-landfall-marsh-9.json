@@ -44,10 +44,12 @@
     ]
   },
   "scorecardProfiles": [
-    "cc-of-landfall-marsh-9-black"
+    "cc-of-landfall-marsh-9-black",
+    "cc-of-landfall-marsh-9-tee-f6c84bed-1957-4d1a-bc25-ddd1a2cc0921-c3da6ca3b520f9cdd2dc"
   ],
   "geometry": null,
   "notes": [
     "7 completed cohort rounds (2026-09-13); intake wrote this manifest at C0 with routes unresolved."
-  ]
+  ],
+  "referenceScorecardProfileId": "cc-of-landfall-marsh-9-black"
 }

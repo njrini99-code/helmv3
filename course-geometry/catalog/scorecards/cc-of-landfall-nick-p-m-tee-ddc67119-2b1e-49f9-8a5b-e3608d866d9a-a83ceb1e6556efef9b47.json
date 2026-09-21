@@ -1,0 +1,112 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "cc-of-landfall-nick-p-m-tee-ddc67119-2b1e-49f9-8a5b-e3608d866d9a-a83ceb1e6556efef9b47",
+  "layoutId": "cc-of-landfall-nick-p-m",
+  "teeName": "Black",
+  "revision": "a83ceb1e6556efef9b477ecfcbddf19829b461732fb480944e3d419277291229",
+  "courseRating": 74.7,
+  "slopeRating": 145,
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-20",
+    "snapshotHash": "9fdfbafb2a78ddbd8fc9fed83ab5fe2cd23b3cd711f72305d094187ff356aa19",
+    "note": "Immutable read-only snapshot; library source=manual. Scorecard facts only. No physical tee marker, hole association or geometry approval."
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 4,
+      "yards": 468
+    },
+    {
+      "hole": 2,
+      "par": 5,
+      "yards": 536
+    },
+    {
+      "hole": 3,
+      "par": 3,
+      "yards": 158
+    },
+    {
+      "hole": 4,
+      "par": 4,
+      "yards": 346
+    },
+    {
+      "hole": 5,
+      "par": 4,
+      "yards": 426
+    },
+    {
+      "hole": 6,
+      "par": 3,
+      "yards": 200
+    },
+    {
+      "hole": 7,
+      "par": 4,
+      "yards": 353
+    },
+    {
+      "hole": 8,
+      "par": 5,
+      "yards": 507
+    },
+    {
+      "hole": 9,
+      "par": 4,
+      "yards": 427
+    },
+    {
+      "hole": 10,
+      "par": 4,
+      "yards": 378
+    },
+    {
+      "hole": 11,
+      "par": 3,
+      "yards": 191
+    },
+    {
+      "hole": 12,
+      "par": 4,
+      "yards": 469
+    },
+    {
+      "hole": 13,
+      "par": 4,
+      "yards": 420
+    },
+    {
+      "hole": 14,
+      "par": 5,
+      "yards": 527
+    },
+    {
+      "hole": 15,
+      "par": 3,
+      "yards": 186
+    },
+    {
+      "hole": 16,
+      "par": 4,
+      "yards": 401
+    },
+    {
+      "hole": 17,
+      "par": 5,
+      "yards": 506
+    },
+    {
+      "hole": 18,
+      "par": 4,
+      "yards": 433
+    }
+  ],
+  "libraryBinding": {
+    "courseId": "45561342-4746-4e80-860f-553cfa6853d2",
+    "teeId": "ddc67119-2b1e-49f9-8a5b-e3608d866d9a"
+  }
+}

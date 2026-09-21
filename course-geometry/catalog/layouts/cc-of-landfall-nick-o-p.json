@@ -62,10 +62,12 @@
     ]
   },
   "scorecardProfiles": [
-    "cc-of-landfall-nick-o-p-black"
+    "cc-of-landfall-nick-o-p-black",
+    "cc-of-landfall-nick-o-p-tee-e04385ea-da37-4204-8fc2-1e0babe721ad-7ac0401297023cbdac05"
   ],
   "geometry": null,
   "notes": [
     "3 completed cohort rounds (2026-09-13); intake wrote this manifest at C0 with routes unresolved."
-  ]
+  ],
+  "referenceScorecardProfileId": "cc-of-landfall-nick-o-p-black"
 }

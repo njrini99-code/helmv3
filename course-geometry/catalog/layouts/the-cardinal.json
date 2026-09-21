@@ -62,10 +62,12 @@
     ]
   },
   "scorecardProfiles": [
-    "the-cardinal-championship"
+    "the-cardinal-championship",
+    "the-cardinal-tee-a6723043-f092-4cf4-b88a-53175244deeb-9b39f1f801bdf1a7637d"
   ],
   "geometry": null,
   "notes": [
     "30 completed cohort rounds (2026-09-13); intake wrote this manifest at C0 with routes unresolved."
-  ]
+  ],
+  "referenceScorecardProfileId": "the-cardinal-championship"
 }

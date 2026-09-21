@@ -1,0 +1,112 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "cutter-creek-tee-a478e77a-62e6-4404-8a28-790bb15574db-487d271e41c5b3de0adf",
+  "layoutId": "cutter-creek",
+  "teeName": "Black",
+  "revision": "487d271e41c5b3de0adfb9a4ff68e4eeaecbd4697573ce6912b4178ae4d03449",
+  "courseRating": 75.3,
+  "slopeRating": 138,
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-20",
+    "snapshotHash": "9fdfbafb2a78ddbd8fc9fed83ab5fe2cd23b3cd711f72305d094187ff356aa19",
+    "note": "Immutable read-only snapshot; library source=manual. Scorecard facts only. No physical tee marker, hole association or geometry approval."
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 4,
+      "yards": 422
+    },
+    {
+      "hole": 2,
+      "par": 5,
+      "yards": 562
+    },
+    {
+      "hole": 3,
+      "par": 3,
+      "yards": 217
+    },
+    {
+      "hole": 4,
+      "par": 4,
+      "yards": 443
+    },
+    {
+      "hole": 5,
+      "par": 5,
+      "yards": 585
+    },
+    {
+      "hole": 6,
+      "par": 4,
+      "yards": 343
+    },
+    {
+      "hole": 7,
+      "par": 4,
+      "yards": 417
+    },
+    {
+      "hole": 8,
+      "par": 3,
+      "yards": 169
+    },
+    {
+      "hole": 9,
+      "par": 4,
+      "yards": 461
+    },
+    {
+      "hole": 10,
+      "par": 4,
+      "yards": 400
+    },
+    {
+      "hole": 11,
+      "par": 5,
+      "yards": 542
+    },
+    {
+      "hole": 12,
+      "par": 4,
+      "yards": 326
+    },
+    {
+      "hole": 13,
+      "par": 4,
+      "yards": 431
+    },
+    {
+      "hole": 14,
+      "par": 4,
+      "yards": 490
+    },
+    {
+      "hole": 15,
+      "par": 3,
+      "yards": 177
+    },
+    {
+      "hole": 16,
+      "par": 4,
+      "yards": 452
+    },
+    {
+      "hole": 17,
+      "par": 3,
+      "yards": 225
+    },
+    {
+      "hole": 18,
+      "par": 5,
+      "yards": 575
+    }
+  ],
+  "libraryBinding": {
+    "courseId": "84fb4402-a80a-4880-aaca-338dcb63af4f",
+    "teeId": "a478e77a-62e6-4404-8a28-790bb15574db"
+  }
+}

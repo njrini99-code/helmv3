@@ -9,22 +9,15 @@ import re
 import tempfile
 
 from .catalog import load_catalog
+from .tee_profiles import content_hash, import_profiles
 
 USGS = ['usgs_s1m', 'usgs_3dep_project_1m']
-TEE_PREFERENCE = ('champ', 'black', 'blue', 'gold', 'member', 'white')
 
 
 def slugify(text):
     text = re.sub(r"['’]", '', str(text or '').lower())
     text = re.sub(r'[^a-z0-9]+', '-', text).strip('-')
     return text or 'course'
-
-
-def choose_tee(cards):
-    def rank(card):
-        name = (card.get('tee_name') or '').lower()
-        return next((i for i, word in enumerate(TEE_PREFERENCE) if word in name), len(TEE_PREFERENCE))
-    return min(cards, key=rank) if cards else None
 
 
 def terrain_providers(facility):
@@ -97,8 +90,13 @@ def build_entries(cohort, coverage, scorecards, existing, min_rounds=1):
             rows.append(row)
             continue
         cards = cards_by_course.get(course['id'], [])
-        card = choose_tee(cards)
-        hole_count = len(card['holes']) if card else 18
+        profiles, rejected = import_profiles(cards, layout_id, cohort.get('queriedAt', '')[:10], content_hash(scorecards), require_ids=False)
+        counts = {len(card['holes']) for card in profiles}
+        if len(counts) > 1:
+            row.update(status='skipped', reason='LAYOUT_HOLE_COUNT_AMBIGUOUS: tee profiles have different hole counts; resolve layout identity')
+            rows.append(row)
+            continue
+        hole_count = next(iter(counts), 18)
         holes = [f'{layout_id}-{n:02}' for n in range(1, hole_count + 1)]
         facility_doc = facility_docs.get(facility_id) or existing.facilities.get(facility_id)
         if facility_doc is None:
@@ -124,19 +122,14 @@ def build_entries(cohort, coverage, scorecards, existing, min_rounds=1):
             'schema': 'golfhelm-layout-v1', 'layoutId': layout_id, 'facilityId': facility_id, 'name': course.get('name'),
             'siteIds': [f'osm-{element.replace("/", "-")}'], 'segments': {'main': {'holes': holes}}, 'segmentOrder': ['main'], 'holeOrder': holes,
             'routeWayIds': None, 'bboxWgs84': None, 'capabilityTier': 'C0', 'externalBindings': {'golfCourseIds': [course['id']]},
-            'scorecardProfiles': [f'{layout_id}-{slugify(card["tee_name"])}'] if card else [], 'geometry': None,
+            'scorecardProfiles': [p['profileId'] for p in profiles],
+            'referenceScorecardProfileId': profiles[0]['profileId'] if profiles else None, 'geometry': None,
             'notes': [intake_note],
         }
-        scorecard_doc = None
-        if card:
-            scorecard_doc = {
-                'schema': 'golfhelm-scorecard-profile-v1', 'profileId': f'{layout_id}-{slugify(card["tee_name"])}', 'layoutId': layout_id, 'teeName': card['tee_name'][:60],
-                'source': {'provider': 'helm_course_library', 'url': None, 'retrievedAt': cohort.get('queriedAt'), 'note': 'Helm read-only course library snapshot; current card, not surveyed tee markers'},
-                'holes': [{'hole': h['number'], 'par': h['par'], 'yards': h['yardage']} for h in sorted(card['holes'], key=lambda h: h['number'])],
-            }
         row.update(status='ready_to_write', layoutId=layout_id, facilityId=facility_id,
-                   reason=None if card else 'no library scorecard: the plan will block on SCORECARD_REQUIRED',
-                   docs={'facility': facility_doc, 'layout': layout_doc, 'scorecard': scorecard_doc})
+                   reason=None if profiles else 'no library scorecard: the plan will block on SCORECARD_REQUIRED',
+                   rejectedScorecards=rejected,
+                   docs={'facility': facility_doc, 'layout': layout_doc, 'scorecards': profiles})
         rows.append(row)
     return rows
 
@@ -157,7 +150,9 @@ def write_entries(catalog_root, rows):
             if row.get('status') != 'ready_to_write':
                 continue
             docs = row['docs']
-            for sub, key, doc in (('facilities', 'facilityId', docs['facility']), ('layouts', 'layoutId', docs['layout']), ('scorecards', 'profileId', docs['scorecard'])):
+            documents = [('facilities', 'facilityId', docs['facility']), ('layouts', 'layoutId', docs['layout'])]
+            documents += [('scorecards', 'profileId', card) for card in docs['scorecards']]
+            for sub, key, doc in documents:
                 if doc is None:
                     continue
                 name = f'{doc[key]}.json'
