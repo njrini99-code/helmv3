@@ -1,10 +1,12 @@
 // @vitest-environment jsdom
+import { createHash } from 'node:crypto';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { pilotPackage } from '@/test/fixtures/course-geometry/pilot';
 import { MemoryCourseAssetCache, manifestUrl } from '@/lib/golf/one-tap/course-assets';
+import type { DurableRoundCourseBinding, RoundBindingProposal, RoundBindingTransport } from '@/lib/golf/one-tap/round-course-binding';
 import type { CourseGeometryPolicy } from '@/lib/golf/course-geometry/course-policy';
 import { PEEK_N_PEAK_UPPER_POLICY } from '@/lib/golf/course-geometry/course-registry';
 import { trackingGeometryFromLiveRound, useCourseGeometry } from './use-course-geometry';
@@ -113,6 +115,46 @@ describe('useCourseGeometry', () => {
     // A different course drops everything.
     hook.rerender({ ...props, courseName: 'Elsewhere GC' });
     await waitFor(() => expect(hook.result.current).toEqual({ geometry: undefined, status: 'inactive' }));
+  });
+
+  it("uses the existing round’s saved tee and scorecard values before standard tracking accepts a world", async () => {
+    const leases = new Map<string, string>();
+    Object.defineProperty(window, 'localStorage', { configurable: true, value: {
+      getItem: (key: string) => leases.get(key) ?? null,
+      setItem: (key: string, value: string) => { leases.set(key, value); },
+      removeItem: (key: string) => { leases.delete(key); },
+    } });
+    const roundId = 'aaaaaaaa-1111-4111-8111-111111111111';
+    const savedSetup = { dbCourseId: null, selectedTeeId: null, holes: [{ number: 1, par: 4, yardage: 410 }] };
+    const bindings: DurableRoundCourseBinding[] = [];
+    const transport: RoundBindingTransport = {
+      read: async () => bindings[0] ? { status: 'found', binding: bindings[0] } : { status: 'missing' },
+      claim: async (proposal: RoundBindingProposal) => {
+        const binding: DurableRoundCourseBinding = {
+          ...proposal,
+          scoringSnapshot: {
+            dbCourseId: null, selectedTeeId: null, scorecardProfileId: null, scorecardRevision: null,
+            courseRating: null, courseSlope: null,
+            holes: [{ ...savedSetup.holes[0]!, teeId: null, scorecardProfileId: null, physicalHoleId: null, geometryHoleKey: keys[0]!, teeFeatureId: null }],
+          },
+          scorecardSnapshotHash: 'd'.repeat(64),
+        };
+        bindings.push(binding);
+        return { status: 'found', binding };
+      },
+    };
+    const bindingPolicy: CourseGeometryPolicy = {
+      ...policy,
+      approvedPackageByteHashes: { [pilotPackage.contentHash]: createHash('sha256').update(JSON.stringify(pilotPackage)).digest('hex') },
+    };
+    const props = { ...upper, policy: bindingPolicy, roundId, roundSetup: savedSetup, bindingTransport: transport,
+      cache: new MemoryCourseAssetCache(), holeNumbers: [1], focusHoleNumber: null };
+    const hook = renderHook((value: typeof props) => useCourseGeometry(value), { initialProps: props });
+    await waitFor(() => expect(hook.result.current.status).toBe('ready'));
+    expect(bindings[0]?.scoringSnapshot.holes[0]?.yardage).toBe(410);
+    hook.rerender({ ...props, roundSetup: { ...savedSetup, holes: [{ number: 1, par: 4, yardage: 411 }] } });
+    await waitFor(() => expect(hook.result.current.status).toBe('unavailable'));
+    expect(bindings[0]?.scoringSnapshot.holes[0]?.yardage).toBe(410);
   });
 
   it('builds the same geometry from a live round without loading anything', () => {

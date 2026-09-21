@@ -180,7 +180,7 @@ export default function ContinueRoundClient({
   // every other course gets no geometry and the tracker shipped on main. While
   // Meridian Live is loading or up, its assets serve instead of a second load.
   const roundHoleNumbers = useMemo(() => holes.map(hole => hole.number), [holes]);
-  const { geometry: loadedCourseGeometry } = useCourseGeometry({ roundId, dbCourseId: setupData.courseId ?? null, courseName: setupData.courseName, holeNumbers: roundHoleNumbers, focusHoleNumber: holes[currentHoleIndex]?.number ?? null, enabled: oneTapLiveStatus.phase !== 'loading' && oneTapLiveStatus.phase !== 'live' });
+  const { geometry: loadedCourseGeometry } = useCourseGeometry({ roundId, roundSetup: { dbCourseId: setupData.courseId ?? null, selectedTeeId: setupData.teeId ?? null, holes }, dbCourseId: setupData.courseId ?? null, courseName: setupData.courseName, holeNumbers: roundHoleNumbers, focusHoleNumber: holes[currentHoleIndex]?.number ?? null, enabled: oneTapLiveStatus.phase !== 'loading' && oneTapLiveStatus.phase !== 'live' });
   const courseGeometry = useMemo(() => oneTapLiveRound ? trackingGeometryFromLiveRound(oneTapLiveRound, roundHoleNumbers) : loadedCourseGeometry, [oneTapLiveRound, roundHoleNumbers, loadedCourseGeometry]);
   const [completedHoleStats, setCompletedHoleStats] = useState<HoleStats[]>(initialCompletedStats);
   const [error, setError] = useState('');

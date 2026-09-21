@@ -903,7 +903,7 @@ export default function NewRoundClient({ playerId, oneTapFlagEnabled = false, on
   // every other course gets no geometry and the tracker shipped on main. While
   // Meridian Live is loading or up, its assets serve instead of a second load.
   const roundHoleNumbers = useMemo(() => holes.map(hole => hole.number), [holes]);
-  const { geometry: loadedCourseGeometry } = useCourseGeometry({ roundId: savedRoundIdRef.current, dbCourseId: resolvedCourseIdRef.current, courseName: setupData.courseName, holeNumbers: roundHoleNumbers, focusHoleNumber: holes[currentHoleIndex]?.number ?? null, enabled: oneTapLiveStatus.phase !== 'loading' && oneTapLiveStatus.phase !== 'live' });
+  const { geometry: loadedCourseGeometry } = useCourseGeometry({ roundId: savedRoundIdRef.current, roundSetup: { dbCourseId: resolvedCourseIdRef.current, selectedTeeId: selectedTeeIdRef.current, holes }, dbCourseId: resolvedCourseIdRef.current, courseName: setupData.courseName, holeNumbers: roundHoleNumbers, focusHoleNumber: holes[currentHoleIndex]?.number ?? null, enabled: oneTapLiveStatus.phase !== 'loading' && oneTapLiveStatus.phase !== 'live' });
   const courseGeometry = useMemo(() => oneTapLiveRound ? trackingGeometryFromLiveRound(oneTapLiveRound, roundHoleNumbers) : loadedCourseGeometry, [oneTapLiveRound, roundHoleNumbers, loadedCourseGeometry]);
   // Cloud Course Library tee (golf_course_tees.id) when the round was started
   // from the tee picker. Cleared whenever a non-library course is chosen.

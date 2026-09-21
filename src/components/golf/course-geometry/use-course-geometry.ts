@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { browserRoundBindingTransport } from '@/lib/golf/one-tap/round-binding-transport';
 import type { RoundBindingTransport } from '@/lib/golf/one-tap/round-course-binding';
+import type { RoundScoringSetup } from '@/lib/golf/one-tap/live-round-placement';
 import type { TerrainMesh } from '@/lib/golf/course-geometry/terrain';
 import { evictTerrain, rememberViewedHole, residentTerrainKeys } from '@/lib/golf/course-geometry/terrain-residency';
 import type { TrackingGeometry } from '@/lib/golf/course-geometry/tracking-scene';
@@ -25,6 +26,9 @@ import { resolveCourseGeometryPolicy } from '@/lib/golf/course-geometry/course-r
 export interface UseCourseGeometryOptions {
   bindingTransport?: RoundBindingTransport | null;
   roundId?: string | null;
+  /** Immutable saved scoring data. When provided, the persisted world binding
+   * must match this round's tee, ordered holes, pars, and yardages. */
+  roundSetup?: RoundScoringSetup;
   dbCourseId?: string | null;
   courseName?: string | null;
   /** Round hole numbers in the caller's order: `holeKeys[i]` is the package
@@ -48,7 +52,7 @@ export interface UseCourseGeometryOptions {
 export type CourseGeometryStatus = 'inactive' | 'loading' | 'ready' | 'unavailable';
 export interface CourseGeometryState { geometry: TrackingGeometry | undefined; status: CourseGeometryStatus }
 
-export function useCourseGeometry({ bindingTransport, roundId, dbCourseId, courseName, holeNumbers, focusHoleNumber = null, prefetchNext = true, enabled = true, policy: onlyPolicy, cache, fetchImpl }: UseCourseGeometryOptions): CourseGeometryState {
+export function useCourseGeometry({ bindingTransport, roundId, roundSetup, dbCourseId, courseName, holeNumbers, focusHoleNumber = null, prefetchNext = true, enabled = true, policy: onlyPolicy, cache, fetchImpl }: UseCourseGeometryOptions): CourseGeometryState {
   const [connectionRevision, setConnectionRevision] = useState(0);
   useEffect(() => { const online = () => setConnectionRevision(n => n + 1); window.addEventListener('online', online); return () => window.removeEventListener('online', online); }, []);
   const policy = useMemo(() => resolveCourseGeometryPolicy({ dbCourseId, courseName }, onlyPolicy ? [onlyPolicy] : undefined), [dbCourseId, courseName, onlyPolicy]);
@@ -58,6 +62,11 @@ export function useCourseGeometry({ bindingTransport, roundId, dbCourseId, cours
   const [status, setStatus] = useState<CourseGeometryStatus>('inactive');
   const [terrainByHole, setTerrainByHole] = useState<Readonly<Record<string, TerrainMesh>>>({});
   const assetCache = useMemo(() => cache === undefined ? cacheStorageCourseAssetCache() : cache, [cache]);
+  // Values, rather than object identity, define the saved scoring contract. A
+  // course package may never win when a persisted binding belongs to another
+  // tee, hole order, par, or scorecard-yardage snapshot.
+  const roundSetupKey = JSON.stringify(roundSetup ?? null);
+  const immutableRoundSetup = useMemo(() => roundSetupKey === 'null' ? undefined : JSON.parse(roundSetupKey) as RoundScoringSetup, [roundSetupKey]);
 
   // The package, once per course. Nothing runs for any other course. A course
   // change drops what was loaded; a pause (`enabled: false`, Meridian Live
@@ -74,7 +83,7 @@ export function useCourseGeometry({ bindingTransport, roundId, dbCourseId, cours
     setStatus(current => current === 'ready' ? current : 'loading');
     void (async () => {
       try {
-        const result = await loadCoursePackage({ bindingTransport: bindingTransport === undefined ? browserRoundBindingTransport(roundId) : bindingTransport, roundId: roundId ?? undefined, leaseStore: browserRoundLeaseStore(), courseId: productCourseId!, policy: policy!, cache: assetCache, fetchImpl });
+        const result = await loadCoursePackage({ roundSetup: immutableRoundSetup, bindingTransport: bindingTransport === undefined ? browserRoundBindingTransport(roundId) : bindingTransport, roundId: roundId ?? undefined, leaseStore: browserRoundLeaseStore(), courseId: productCourseId!, policy: policy!, cache: assetCache, fetchImpl });
         if (cancelled) return;
         setLoaded(current => current && result && current.manifest.geometryVersion === result.manifest.geometryVersion ? current : result);
         setStatus(result ? 'ready' : 'unavailable');
@@ -85,7 +94,7 @@ export function useCourseGeometry({ bindingTransport, roundId, dbCourseId, cours
       }
     })();
     return () => { cancelled = true; };
-  }, [connectionRevision, bindingTransport, matched, active, roundId, productCourseId, policy, assetCache, cache, fetchImpl]);
+  }, [connectionRevision, bindingTransport, matched, active, roundId, immutableRoundSetup, productCourseId, policy, assetCache, cache, fetchImpl]);
 
   // Hole numbers are compared by value so a caller may rebuild the array per render.
   const holeNumbersKey = holeNumbers.join(',');

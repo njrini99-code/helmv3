@@ -60,6 +60,7 @@ interface RoundData {
   id: string;
   player_id: string;
   course_id?: string | null;
+  tee_id?: string | null;
   course_name: string | null;
   round_date: string;
   total_score: number | null;
@@ -186,7 +187,17 @@ export default function RoundReviewPage() {
   // its holes on the approved package, with terrain for the hole that is
   // open. Any other course resolves no geometry and reviews exactly as before.
   const [openReviewHole, setOpenReviewHole] = useState<number | null>(null);
-  const { geometry: courseGeometry } = useCourseGeometry({ roundId, dbCourseId: round?.course_id ?? null, courseName: round?.course_name ?? null, holeNumbers: REVIEW_HOLE_NUMBERS, focusHoleNumber: openReviewHole, prefetchNext: false });
+  // A completed round reviews against its saved card, never against a
+  // renderer's reference tee or inferred route. Incomplete historical rows
+  // still display normally; they simply do not assert a full scoring match.
+  const reviewRoundSetup = useMemo(() => {
+    const holes = round?.holes;
+    if (!round || !holes?.length || holes.some(h => h.par == null || h.yardage == null)) return undefined;
+    return { dbCourseId: round.course_id ?? null, selectedTeeId: round.tee_id ?? null,
+      holes: holes.map(h => ({ number: h.hole_number, par: h.par!, yardage: h.yardage! })) };
+  }, [round]);
+  const reviewHoleNumbers = reviewRoundSetup?.holes.map(hole => hole.number) ?? REVIEW_HOLE_NUMBERS;
+  const { geometry: courseGeometry } = useCourseGeometry({ roundId, roundSetup: reviewRoundSetup, dbCourseId: round?.course_id ?? null, courseName: round?.course_name ?? null, holeNumbers: reviewHoleNumbers, focusHoleNumber: openReviewHole, prefetchNext: false });
   const [storedReview, setStoredReview] = useState<RoundReviewWithRound | null>(null);
   // Season-level standing (PGA + team + you) keyed by canonical metric_id.
   // Redesign-only: feeds the StandingBar "where this sits" band below the
