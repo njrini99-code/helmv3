@@ -2,7 +2,7 @@ import * as Sentry from '@sentry/nextjs';
 import '@supabase/supabase-js/tracing';
 import { redactEventPii } from '@/lib/observability/redact-pii';
 import { isAlreadyBridgeLogged } from '@/lib/bridge-logged-marker';
-import { buildClientSentryOptions } from '@/lib/sentry-client-options';
+import { buildClientSentryOptions, isHealthProbeFetchEcho } from '@/lib/sentry-client-options';
 import { classifyTraceSurface } from '@/lib/error-trace-classification';
 import { enforceMetricAttributeAllowlist } from '@/lib/observability/metrics';
 import { enforceLogAttributeAllowlist } from '@/lib/observability/structured-log';
@@ -151,6 +151,15 @@ Sentry.init({
   // duplicated event.contexts.location written by error-logging.ts.
   // Replay already masks DOM text.
   beforeSend(event, hint) {
+    // /api/health's database readiness failure is independently captured on
+    // the server and persisted through the Bridge. The connectivity hook
+    // intentionally accepts its 503 response as proof that the DEVICE is
+    // still online, so do not turn the same probe into an unhandled browser
+    // issue for every active page.
+    if (isHealthProbeFetchEcho(event)) {
+      return null;
+    }
+
     // Drop the console-origin ECHO of an error the Bridge pipeline already
     // captured. React's default onCaughtError console.error's every error a
     // boundary catches, and captureConsoleIntegration({levels:['error']})

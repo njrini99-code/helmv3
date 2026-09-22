@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   buildClientSentryOptions,
+  isHealthProbeFetchEcho,
   parseSampleRateEnv,
   CLIENT_IGNORE_ERRORS,
   type ClientSentryOptionsEnv,
@@ -43,6 +44,37 @@ describe('parseSampleRateEnv', () => {
 
   it('clamps below 0 up to 0', () => {
     expect(parseSampleRateEnv('-2', 0.05)).toBe(0);
+  });
+});
+
+describe('isHealthProbeFetchEcho', () => {
+  it('drops only the automatic 503 echo from the connectivity probe', () => {
+    expect(isHealthProbeFetchEcho({
+      request: { url: 'https://helmsportslabs.com/api/health' },
+      exception: {
+        values: [{
+          value: 'HTTP Client Error with status code: 503',
+          mechanism: { type: 'auto.http.client.fetch' },
+        }],
+      },
+    })).toBe(true);
+  });
+
+  it.each([
+    {
+      request: { url: 'https://helmsportslabs.com/api/health' },
+      exception: { values: [{ value: 'HTTP Client Error with status code: 500', mechanism: { type: 'auto.http.client.fetch' } }] },
+    },
+    {
+      request: { url: 'https://helmsportslabs.com/api/other' },
+      exception: { values: [{ value: 'HTTP Client Error with status code: 503', mechanism: { type: 'auto.http.client.fetch' } }] },
+    },
+    {
+      request: { url: 'https://helmsportslabs.com/api/health' },
+      exception: { values: [{ value: 'HTTP Client Error with status code: 503', mechanism: { type: 'generic' } }] },
+    },
+  ])('keeps every other event', (event) => {
+    expect(isHealthProbeFetchEcho(event)).toBe(false);
   });
 });
 
