@@ -1,8 +1,8 @@
 // Cross-cutting config: required npm scripts, exactly one Supabase root,
 // the Vercel deployment model, and Vercel route/upload contracts.
 
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
 import { check, Status } from '../result.mjs';
 import { coverage } from '../../check-vercelignore-coverage.mjs';
 
