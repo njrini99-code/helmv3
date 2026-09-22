@@ -35,7 +35,7 @@ human has to remember to invalidate them.
 | --- | --- | --- | --- | --- |
 | Supabase | `mcp__supabase__*` | project-scoped: qmnssrrolpinvwjjnufo, read/write | .mcp.json (this repo) | **EXERCISED** — 2026-09-08T14:44:38.455Z — Claude Haiku executed read-only metadata SQL from canonical and an older worktree using the current Helm launch profile. Role postgres, transaction_read_only=off; apply_migration present in tool catalog; zero permission denials. Read privileges inspected across schemas; application tables accessible. No production data/schema mutations were executed. |
 | Sentry | `mcp__claude_ai_Sentry__*` | org helm-xs | account connector | **STALE** — observed 2026-08-29 under config 6965b945cbb523f5; config is now 4d81ab6283cd58ec |
-| Vercel | `mcp__claude_ai_Vercel__*` | account | account connector | **STALE** — observed 2026-09-01 under config 5b174c1ef5d936bb; config is now e14074e44c19ddeb |
+| Vercel | `mcp__claude_ai_Vercel__*` | account | account connector | **STALE** — observed 2026-09-01 under config 5b174c1ef5d936bb; config is now 6cfb8f40efb58604 |
 | GitHub | `gh CLI (gh api)` | repo njrini99-code/helmv3 | scripts/worktree-lifecycle.mjs | **EXERCISED** — 2026-08-29 — exercised three ways: MERGED #1676 -> head 7843291b2; OPEN #1659 -> head 03a13075d; feat/ask-nav-and-opening -> NONE. A failed lookup classifies UNKNOWN_PR, never NONE (#1668). Capability is fingerprintable after all: the authenticated account id, the repository id and the OAuth scope set (X-Oauth-Scopes response header) are all stable and carry no secret material. Recorded 2026-08-30; control-plane:verify re-measures them live and reports drift. |
 
 ## Every namespace, classified
@@ -103,7 +103,7 @@ When a fingerprint changes, every EXERCISED claim under it becomes STALE.
 | --- | --- | --- |
 | Supabase | `0c81fcff3e2212cf` | yes — derived from the allow/deny/ask rules and `.mcp.json` entries naming this service |
 | Sentry | `4d81ab6283cd58ec` | yes — derived from the allow/deny/ask rules and `.mcp.json` entries naming this service |
-| Vercel | `e14074e44c19ddeb` | yes — derived from the allow/deny/ask rules and `.mcp.json` entries naming this service |
+| Vercel | `6cfb8f40efb58604` | yes — derived from the allow/deny/ask rules and `.mcp.json` entries naming this service |
 | GitHub | `ungoverned:87544794` | **NO** — no allow/deny/ask rule or `.mcp.json` entry in this repo governs it, so there is nothing here to fingerprint |
 
 <!-- AUTOGEN:tool-authority:end -->
