@@ -354,8 +354,13 @@ function TemplateEditor({
     setTesting(true);
     setError('');
     try {
-      const { to } = await sendTestTemplate({ id: state.id });
-      toast.success(`Test sent to ${to}`);
+      const result = await sendTestTemplate({ id: state.id });
+      if (!result.ok) {
+        setError(result.error);
+        toast.error(result.error);
+        return;
+      }
+      toast.success(`Test sent to ${result.to}`);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to send test';
       setError(msg);
@@ -770,8 +775,12 @@ export function TemplateManager() {
   const handleSendTest = async (t: CrmEmailTemplate) => {
     setBusyId(t.id);
     try {
-      const { to } = await sendTestTemplate({ id: t.id });
-      toast.success(`Test sent to ${to}`);
+      const result = await sendTestTemplate({ id: t.id });
+      if (!result.ok) {
+        toast.error(result.error);
+        return;
+      }
+      toast.success(`Test sent to ${result.to}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to send test');
     } finally {
