@@ -65,7 +65,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/rules/golfhelm-engineering-os.md` | current | - | - | yes | 1 | 4 | - |
 | `.claude/rules/integrations.md` | current | - | - | - | 4 | 10 | - |
 | `.claude/rules/quality-gates.md` | current | - | - | - | 8 | 7 | - |
-| `.claude/rules/shipping.md` | current | - | - | - | 23 | 3 | - |
+| `.claude/rules/shipping.md` | current | - | - | - | 23 | 4 | - |
 | `AGENTS.md` | current | yes | - | yes | 0 | 8 | - |
 | `CLAUDE.md` | current | yes | - | yes | 0 | 4 | - |
 | `CONTRIBUTING.md` | current | - | - | yes | 0 | 2 | - |
@@ -292,7 +292,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/architecture/coachhelm-evidence-contract.md` | current | yes | - | yes | 3 | 9 | - |
 | `docs/superpowers/plans/2026-04-22-insight-delivery/00-design-contract.md` | superseded | - | - | yes | 0 | 4 | - |
 | `docs/superpowers/plans/2026-04-22-insight-quality/00-design-contract.md` | superseded | - | - | yes | 0 | 3 | - |
-| `memory/system/golfhelm-engineering-os.md` | current | - | - | yes | 16 | 17 | - |
+| `memory/system/golfhelm-engineering-os.md` | current | - | - | yes | 16 | 18 | - |
 | `memory/templates/ui-contract.md` | current | - | - | - | 0 | 0 | - |
 
 ### `RUNBOOK`
@@ -553,7 +553,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.github/PULL_REQUEST_TEMPLATE.md` | current | - | - | - | 0 | 1 | - |
 | `.github/branch-protection.md` | current | - | - | - | 5 | 5 | 1 |
 | `android/playstore/SUBMISSION.md` | current | - | - | - | 0 | 4 | - |
-| `docs/AGENT_LIFECYCLE.md` | current | - | - | yes | 0 | 44 | 9 |
+| `docs/AGENT_LIFECYCLE.md` | current | - | - | yes | 0 | 46 | 9 |
 | `docs/BI_DASHBOARD_ARCHITECTURE.md` | current | yes | - | - | 2 | 21 | 20 |
 | `docs/CI_RUNBOOK.md` | current | - | - | yes | 8 | 17 | - |
 | `docs/HELM_OS.md` | current | - | - | yes | 5 | 20 | - |
