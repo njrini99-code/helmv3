@@ -3,24 +3,16 @@
   "buildCommand": "npm run build",
   "installCommand": "npm ci",
   "framework": "nextjs",
+  "git": {
+    "deploymentEnabled": {
+      "*": false
+    }
+  },
   "ignoreCommand": "bash scripts/vercel-ignore-build.sh",
   "regions": [
     "iad1"
   ],
   "headers": [
-    {
-      "source": "/sw.js",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=0, must-revalidate"
-        },
-        {
-          "key": "Service-Worker-Allowed",
-          "value": "/"
-        }
-      ]
-    },
     {
       "source": "/manifest.json",
       "headers": [
