@@ -504,9 +504,9 @@ export async function setDefaultTemplate(
 export async function sendTestTemplate(input: {
   id: string;
   toEmail?: string;
-}): Promise<{ ok: true; to: string }> {
-  const { supabase, user } = await getAuthedClient();
+}): Promise<{ ok: true; to: string } | { ok: false; error: string }> {
   try {
+    const { supabase, user } = await getAuthedClient();
     const client = supabase as AnySupabase;
 
     // 1) Load the template (subject/body/format).
@@ -622,6 +622,11 @@ export async function sendTestTemplate(input: {
       featureArea: 'crm',
       metadata: { templateId: input.id },
     });
-    throw error;
+    // Thrown errors crossing the Server Action boundary are redacted to a
+    // generic "Server Components render" message in production (Next.js
+    // masks all thrown error text for security). Return the message as data
+    // instead so the admin sees the real failure reason, per Next's
+    // documented expected-errors pattern.
+    return { ok: false, error: error instanceof Error ? error.message : 'Failed to send test' };
   }
 }
