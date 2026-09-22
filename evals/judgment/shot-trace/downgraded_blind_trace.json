@@ -1,0 +1,31 @@
+{
+  "fixtureVersion": 1,
+  "useCase": "shot_trace",
+  "name": "downgraded_blind_trace",
+  "input": {
+    "traceId": "00000000-0000-4000-8000-475252304063",
+    "run": {
+      "workflow": "golf.round.autosave",
+      "status": "warning",
+      "metadata": {
+        "status_downgraded_from": "success",
+        "status_downgraded_reason": "no application-layer steps observed"
+      }
+    },
+    "steps": [
+      {
+        "step_key": "db.save_partial_round_atomic",
+        "status": "success",
+        "layer": "postgres"
+      }
+    ]
+  },
+  "expected": {
+    "disposition": "collect_more_evidence",
+    "alsoAccept": [
+      "observe",
+      "escalate"
+    ]
+  },
+  "source": "invented-known-shape"
+}

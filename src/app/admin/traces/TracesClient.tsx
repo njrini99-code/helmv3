@@ -12,6 +12,7 @@ import {
 import { LocalTime } from '../_components/LocalTime';
 import { TraceTree, EYEBROW_CLASS } from './TraceTree';
 import { TraceFleetStrip } from './TraceFleetStrip';
+import { TraceJudgmentPanel } from './TraceJudgmentPanel';
 import { stepCoverage } from './trace-fleet';
 import type { TraceIncidentLink } from '@/lib/admin/triage/trace-incident-link';
 
@@ -212,6 +213,9 @@ export function TracesClient({
                 workflow={String(detail.run.workflow ?? '')}
                 run={detail.run}
               />
+            )}
+            {!error && !loading && detail && selectedId && (
+              <TraceJudgmentPanel key={selectedId} traceId={selectedId} />
             )}
           </div>
         </Inset>

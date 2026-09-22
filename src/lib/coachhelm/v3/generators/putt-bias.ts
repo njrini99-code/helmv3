@@ -282,16 +282,24 @@ export class PuttBiasGenerator extends BaseGenerator<PuttBiasAggregate> {
     const strongDisp = `${Math.round(agg.strong_pct)}%`;
     const gap = Math.round(agg.gap_pp);
     const slopeText = agg.slope ? `, ${agg.slope}` : '';
+    // Observation → check → recommendation (claim-honesty contract). The
+    // record measures a make-rate gap by break direction; it does not
+    // measure the read, the start line, or the pace, so "the classic
+    // under-read" was a cause asserted as fact (typesafe:honesty sweep,
+    // cause_stated_as_fact 79%) and the sentence also began lowercase.
+    const edge = agg.weakest_direction === 'left' ? 'left' : 'right';
     const action =
-      agg.weakest_direction === 'left'
-        ? `start your read higher on the left edge and commit to playing more break — your makes drop on left-to-right putts, the classic under-read.`
-        : `start your read higher on the right edge and commit to playing more break — your makes drop on right-to-left putts, the classic under-read.`;
+      `Why is not recorded: the same gap comes from an under-read, a start line ` +
+      `pushed toward the hole, or pace that takes the break out. Check the aim ` +
+      `and the read on the next few ${breakLabel} putts before naming a cause. ` +
+      `Recommended: start your read higher on the ${edge} edge and commit to ` +
+      `playing more break on that look, then compare the makes.`;
     const slopeAction = agg.slope
-      ? ` It shows up most on ${agg.slope} ${agg.band} putts, so rehearse that exact look.`
+      ? ` The gap is largest on ${agg.slope} ${agg.band} putts, so rehearse that exact look.`
       : '';
 
     return {
-      title: `Putting break: under-reading ${breakLabel} (${agg.band})`,
+      title: `Putting break: ${breakLabel} putts lag the other direction (${agg.band})`,
       content: `On ${agg.band}${slopeText} putts you're making ${weakDisp} of ${breakLabel} breaks vs ${strongDisp} the other way — a ${gap}-point gap at matched distance (n=${agg.weak_n}/${agg.strong_n}). ${action}${slopeAction}`,
       priority: 'medium',
       signature: `putt_bias:${agg.weakest_direction}:${agg.band}`,

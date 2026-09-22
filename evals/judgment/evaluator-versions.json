@@ -1,0 +1,10 @@
+{
+  "evaluators": {
+    "shot-trace:v2": "60ae9d07d7e7e17c87648a45f43217a3c12a2be357376aa087ae5eac04318b72",
+    "bug-triage:v1": "4849d5f0558120ceac07be477d7a25dba3ab5f4a4784067f53297ed3df12e04c"
+  },
+  "fixtureCounts": {
+    "shot-trace": 14,
+    "bug-triage": 6
+  }
+}

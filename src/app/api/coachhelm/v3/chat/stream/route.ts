@@ -42,6 +42,9 @@ import { recordAi } from '@/lib/observability/metrics';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
+import { isFlagEnabled } from '@/lib/flags/is-enabled';
+import { judgeFlaggedClaims } from '@/lib/typesafe/judgments/chat-claims';
+import { judgeChatIntent } from '@/lib/typesafe/judgments/chat-intent';
 import { classifyProviderFault, providerFaultSeverity } from '@/lib/admin/provider-fault';
 import { drainCollapsedCount, shouldEmit } from '@/lib/admin/emit-throttle';
 import {
@@ -303,6 +306,26 @@ export async function POST(req: NextRequest) {
   const startedAt = Date.now();
   let firstTokenMs: number | null = null;
 
+  // TypeSafe shadow judgments (flag `typesafe_judgments`, off in production).
+  //
+  // Intent runs CONCURRENTLY with the model call and is only recorded, never
+  // consulted: the system block is prompt-cached across turns (see the
+  // `instructions` comment below), so an intent hint cannot be added to it
+  // without breaking the cache, and the answer is not needed to route yet.
+  // The telemetry it produces is what decides whether routing is worth it.
+  // A failed judgment resolves null (askJev never throws).
+  const jevEnabled = isFlagEnabled('typesafe_judgments');
+  const intentPromise =
+    jevEnabled && userText && !isApprovalContinuation
+      ? judgeChatIntent({
+          question: userText,
+          previous_turns: uiMessages
+            .filter((m) => m !== lastUser && (m.role === 'user' || m.role === 'assistant'))
+            .slice(-4)
+            .map((m) => `${m.role}: ${textOf(m).slice(0, 400)}`),
+        })
+      : Promise.resolve(null);
+
   // Everything the turn measured, for the post-generation claim audit.
   const measurements: Measurement[] = [];
   const seriesAll: MeasurementSeries[] = [];
@@ -539,6 +562,62 @@ export async function POST(req: NextRequest) {
           ui_parts: publishableParts(assistant.parts) as unknown,
         });
         await touchConversation(supabase, convId);
+
+        // Shadow judgments, AFTER the turn is safely stored so a slow or
+        // failing TypeSafe call can never cost a coach their answer. The
+        // per-claim verdict is the telemetry the ungrounded-audit comment
+        // above asks for before any exemption is widened: it says which of
+        // the flagged figures are stat claims and which are "18 holes".
+        if (jevEnabled) {
+          const [intent, claims] = await Promise.all([
+            intentPromise,
+            unsupported.length > 0
+              ? judgeFlaggedClaims({ question: userText, answer: text, claims: unsupported })
+              : Promise.resolve(null),
+          ]);
+          if (intent || claims) {
+            await logServerEvent(
+              'chat/stream: typesafe shadow judgments recorded',
+              {
+                action: 'v3.chat.stream.jev',
+                featureArea: 'coachhelm',
+                skipSentry: true,
+                extra: {
+                  conversationId: convId,
+                  grounded,
+                  intent: intent
+                    ? {
+                        model: intent.model,
+                        latencyMs: intent.latencyMs,
+                        choice: intent.answers.intent.choice,
+                        confidence: intent.answers.intent.confidence,
+                        namesPlayer: intent.answers.names_specific_player.noul,
+                        followUp: intent.answers.is_follow_up.noul,
+                        needsFreshData: intent.answers.needs_fresh_data.noul,
+                        wantsAction: intent.answers.wants_action.noul,
+                      }
+                    : null,
+                  claims: claims
+                    ? {
+                        model: claims.model,
+                        latencyMs: claims.latencyMs,
+                        flagged: claims.claims.length,
+                        statClaims: claims.claims.filter((c) => c.statClaim >= 0.5).length,
+                        // Text + probability per figure, so a false-positive
+                        // rate can be computed from the event log alone.
+                        verdicts: claims.claims.map((c) => ({
+                          text: c.text,
+                          stat: Math.round(c.statClaim * 100) / 100,
+                          asked: Math.round(c.fromQuestion * 100) / 100,
+                        })),
+                      }
+                    : null,
+                },
+              },
+              'info',
+            );
+          }
+        }
 
         // Latency telemetry: first token and total. No player name, prompt
         // text or database value — only timings and the model tier.

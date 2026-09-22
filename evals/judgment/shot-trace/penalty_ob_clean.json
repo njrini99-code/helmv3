@@ -1,0 +1,86 @@
+{
+  "fixtureVersion": 1,
+  "useCase": "shot_trace",
+  "name": "penalty_ob_clean",
+  "input": {
+    "traceId": "00000000-0000-4000-8000-894438221579",
+    "run": {
+      "workflow": "golf.round.autosave",
+      "status": "success",
+      "duration_ms": 650
+    },
+    "steps": [
+      {
+        "step_key": "server.validation",
+        "status": "success",
+        "layer": "server_action"
+      },
+      {
+        "step_key": "server.auth",
+        "status": "success",
+        "layer": "server_action"
+      },
+      {
+        "step_key": "server.player",
+        "status": "success",
+        "layer": "server_action"
+      },
+      {
+        "step_key": "db.save_partial_round_atomic",
+        "status": "success"
+      },
+      {
+        "step_key": "verify.round",
+        "status": "success"
+      },
+      {
+        "step_key": "verify.holes",
+        "status": "success",
+        "observed": {
+          "expected": 5,
+          "actual": 5
+        }
+      },
+      {
+        "step_key": "verify.shots",
+        "status": "success",
+        "observed": {
+          "expected": 24,
+          "actual": 24
+        }
+      }
+    ],
+    "shots": [
+      {
+        "hole_number": 5,
+        "shot_number": 1,
+        "distance_unit_before": "yards",
+        "distance_to_hole_before": 395,
+        "penalty_strokes": 1,
+        "result": "penalty"
+      },
+      {
+        "hole_number": 5,
+        "shot_number": 2,
+        "distance_unit_before": "yards",
+        "distance_to_hole_before": 395
+      },
+      {
+        "hole_number": 5,
+        "shot_number": 3,
+        "distance_unit_after": "feet",
+        "distance_to_hole_after": 9
+      },
+      {
+        "hole_number": 5,
+        "shot_number": 4,
+        "result": "hole",
+        "distance_to_hole_after": 0
+      }
+    ]
+  },
+  "expected": {
+    "disposition": "pass"
+  },
+  "source": "invented-healthy"
+}

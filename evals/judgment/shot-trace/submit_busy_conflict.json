@@ -1,0 +1,47 @@
+{
+  "fixtureVersion": 1,
+  "useCase": "shot_trace",
+  "name": "submit_busy_conflict",
+  "input": {
+    "traceId": "00000000-0000-4000-8000-700936697481",
+    "run": {
+      "workflow": "golf.round.submit",
+      "status": "failure",
+      "failure_step": "db.submit_round_atomic",
+      "failure_code": "busy",
+      "failure_summary": "lock_not_available"
+    },
+    "steps": [
+      {
+        "step_key": "server.validation",
+        "status": "success",
+        "layer": "server_action"
+      },
+      {
+        "step_key": "server.auth",
+        "status": "success",
+        "layer": "server_action"
+      },
+      {
+        "step_key": "server.player",
+        "status": "success",
+        "layer": "server_action"
+      },
+      {
+        "step_key": "db.submit_round_atomic",
+        "status": "failure",
+        "error_code": "55P03",
+        "error_summary": "busy"
+      }
+    ]
+  },
+  "expected": {
+    "disposition": "observe",
+    "alsoAccept": [
+      "collect_more_evidence",
+      "escalate"
+    ]
+  },
+  "source": "invented-known-shape",
+  "notes": "Loud failure, player told to retry; not silent."
+}

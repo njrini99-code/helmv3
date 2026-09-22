@@ -33,6 +33,8 @@ import { requireCronAuth } from '@/lib/cron/auth';
 import { recordJobRun } from '@/lib/admin/job-log';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { buildTriagePlan, type TriageGroup } from '@/lib/admin/triage-engine';
+import { judgeTriageGroup } from '@/lib/ai/judgment/use-cases/bug-triage';
+import { resolveMode } from '@/lib/ai/judgment/policy';
 import {
   collectAdminEvents,
   collectReliabilitySignals,
@@ -48,6 +50,8 @@ import {
 } from '@/lib/admin/rca-run';
 import { deriveRcaCategory, isAutoResolvable } from '@/lib/admin/rca-category';
 import { isOperatorGatedFaultCode, classifyProviderFault } from '@/lib/admin/provider-fault';
+import { classifyProviderFaultSemantic } from '@/lib/typesafe/judgments/provider-fault-semantic';
+import { isFlagEnabled } from '@/lib/flags/is-enabled';
 import { getProductionDeployAt, RELEASE_GRACE_MS } from '@/lib/admin/auto-resolve';
 import type { RcaAnalysis, RcaResult } from '@/lib/admin/rca';
 import type { Json } from '@/lib/types/database';
@@ -116,6 +120,28 @@ function groupHasProviderFault(group: TriageGroup): boolean {
     const fault = classifyProviderFault(member.message ?? member.title);
     return fault?.needsOperator === true;
   });
+}
+
+/**
+ * Semantic second look, consulted ONLY when the regex rules matched nothing
+ * (flag `typesafe_judgments`, off in production). The rules are a fixed list
+ * of phrasings; the eval harness (scripts/typesafe/eval.ts) showed them
+ * missing "run out of prepaid usage", "key has been disabled" and "not
+ * available on your current plan tier", each of which Jev named at ≥ 99%.
+ *
+ * This can only ever WITHHOLD an auto-resolve, never cause one, and a null
+ * verdict (flag off, no key, API down) means "no opinion". The regex stays
+ * synchronous and authoritative for the online `onError` paths.
+ */
+async function groupHasProviderFaultSemantic(group: TriageGroup): Promise<boolean> {
+  if (!isFlagEnabled('typesafe_judgments')) return false;
+  const text = group.members.map((m) => m.message ?? m.title).find((t): t is string => !!t);
+  if (!text) return false;
+  const verdict = await classifyProviderFaultSemantic(text);
+  if (!verdict || verdict.kind === 'none' || verdict.kind === 'rate_limited') return false;
+  // High bar on purpose: a false positive here leaves a not-a-defect group
+  // open for a human, which is the cheap direction to be wrong in.
+  return verdict.kindConfidence >= 0.9;
 }
 
 function reliabilityContextFor(group: TriageGroup): ReliabilitySignalContext {
@@ -227,6 +253,17 @@ async function runSelfHealTriage(): Promise<Response> {
   const applyResult = await applyPlan(admin, plan);
   let resolvedGroups = plan.closeable.length;
 
+  // Helm Judgment Layer — bug-triage judge, SHADOW (flags `jev_judgment_layer`
+  // + `jev_bug_triage`, both off in production). Judges the groups the
+  // engine already put in the queue and records each verdict beside the
+  // engine's in helm_debug.judgment_evaluations; it neither reorders the
+  // queue nor closes anything. Started here and awaited after the analysis
+  // loop so its ~300 ms/group never delays the RCA calls; bounded to the
+  // same cap the loop uses.
+  const judgmentPromise = resolveMode('bug_triage') === 'off'
+    ? Promise.resolve([] as PromiseSettledResult<unknown>[])
+    : Promise.allSettled(plan.queue.slice(0, maxAnalyses()).map((group) => judgeTriageGroup(group)));
+
   const cap = maxAnalyses();
   const capped = plan.queue.length > cap;
   const analysedKeys: string[] = [];
@@ -289,6 +326,7 @@ async function runSelfHealTriage(): Promise<Response> {
     const category = deriveRcaCategory(result.analysis.suggestedFix);
     if (!isAutoResolvable(category)) continue;
     if (groupHasProviderFault(group)) continue;
+    if (await groupHasProviderFaultSemantic(group)) continue;
 
     if (category === 'not-a-defect') {
       for (const member of group.members) {
@@ -312,6 +350,8 @@ async function runSelfHealTriage(): Promise<Response> {
       }
     }
   }
+
+  await judgmentPromise;
 
   const stillOpenUnanalysed = plan.queue.length - analysedKeys.length;
   const hadAnalysisFailure = failureReasons.length > 0;

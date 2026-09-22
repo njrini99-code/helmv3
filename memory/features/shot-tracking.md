@@ -528,6 +528,15 @@ write stays fail-open and non-blocking to the player's write throughout;
 `vercelWaitUntil` is additive (a no-op outside Vercel, by its own contract)
 and never changes what the caller awaits.
 
+### Judgment panel (2026-09-17)
+
+`/admin/traces` shows a collapsed **Judgment** section under the trace tree.
+On demand (never on open, never from `golf.ts`) it runs the shot-trace judge
+(`src/lib/ai/judgment/use-cases/shot-trace.ts`) over the same detail row,
+with step facts recomputed from the step rows rather than the run's
+counters, and shows evidence first, then the shadow verdict, versions and
+mode. See `memory/features/helm-judgment-layer.md`.
+
 ## Business Rules
 
 - Do not lose user-entered shots. Save/submit/recover paths must be idempotent and interruption-tolerant.

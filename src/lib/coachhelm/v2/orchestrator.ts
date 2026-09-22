@@ -1487,9 +1487,12 @@ class CoachHelmIntelligence {
     // weakness, and the record carries no intent, lie, or conditions for the
     // misses — so the body states what happened, the call-to-action names the
     // check and a recommendation, and the magnitude ranks without posing as
-    // strokes.
+    // strokes. The headline states the count rather than "the biggest
+    // misses": only brackets with 2+ misses qualify, so a round often has one
+    // qualifying bracket and there is nothing to compare it against (claim-
+    // honesty sweep, contradicts_evidence).
     return {
-      headline: `Round Approach Check: ${topBracket.label} produced the biggest misses`,
+      headline: `Round Approach Check: ${topBracket.severeCount} of ${topBracket.sampleSize} misses from ${topBracket.label} were severe`,
       body: `${topBracket.severeCount} of ${topBracket.sampleSize} missed approaches from ${topBracket.label} finished more than 25 yards away or in a penalty state in this round.`,
       callToAction: severePct >= 75
         ? 'Check the club, lie, and target on those shots before reading a pattern into one round. Recommended: from this yardage, favor the safe side of the target until the miss is understood.'

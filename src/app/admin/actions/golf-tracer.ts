@@ -137,3 +137,77 @@ export async function bridgeFixRoundData(
   await requireSuperAdmin();
   return fixRoundData(...args);
 }
+
+/**
+ * Helm Judgment Layer — on-demand shot-trace judgment for the trace detail
+ * view. Runs only when the operator asks (never on open, never in the
+ * shot-entry path), over the same detail RPC row the tree renders, with step
+ * facts recomputed from the rows rather than the run's counters. Shadow: the
+ * verdict is recorded to helm_debug.judgment_evaluations and shown beside
+ * the evidence; it changes nothing else. Escalation into RCA stays with the
+ * existing incident link on this page.
+ */
+export type FlightTraceJudgmentView = {
+  disposition: string;
+  reasonCodes: string[];
+  shadow: boolean;
+  mode: string;
+  evaluatorVersion: string;
+  policyVersion: string;
+  modelId: string;
+  durationMs: number;
+  providerErrorCode: string | null;
+  intentPreserved: number | null;
+  silentFailure: number | null;
+  failureDomain: { choice: string; confidence: number } | null;
+  evidence: {
+    requiredDeclared: number;
+    requiredObservedSuccess: number;
+    requiredMissing: string[];
+    requiredFailed: string[];
+    verificationMismatches: string[];
+    recoveryPath: boolean;
+    hardInvariants: string[];
+  };
+};
+
+export async function bridgeJudgeFlightTrace(traceId: string): Promise<FlightTraceJudgmentView | null> {
+  await requireSuperAdmin();
+  const detail = await bridgeGetFlightTrace(traceId);
+  if (!detail) return null;
+  const { judgeShotTrace } = await import('@/lib/ai/judgment/use-cases/shot-trace');
+  const { evidence, result } = await judgeShotTrace({
+    traceId,
+    run: detail.run as unknown as Parameters<typeof judgeShotTrace>[0]['run'],
+    steps: detail.steps as unknown as Parameters<typeof judgeShotTrace>[0]['steps'],
+    roundId: detail.run.round_id,
+  });
+  const noul = (id: string): number | null => {
+    const a = result.answers[id];
+    return a?.kind === 'noul' ? Math.round(a.p * 100) / 100 : null;
+  };
+  const domain = result.answers.failure_domain;
+  return {
+    disposition: result.disposition,
+    reasonCodes: result.reasonCodes,
+    shadow: result.shadow,
+    mode: result.mode,
+    evaluatorVersion: result.evaluatorVersion,
+    policyVersion: result.policyVersion,
+    modelId: result.modelId,
+    durationMs: result.durationMs,
+    providerErrorCode: result.providerErrorCode,
+    intentPreserved: noul('player_intent_preserved'),
+    silentFailure: noul('silent_failure_likely'),
+    failureDomain: domain?.kind === 'choice' ? { choice: domain.choice, confidence: Math.round(domain.confidence * 100) / 100 } : null,
+    evidence: {
+      requiredDeclared: evidence.steps.required_declared.length,
+      requiredObservedSuccess: evidence.steps.required_observed_success.length,
+      requiredMissing: evidence.steps.required_missing,
+      requiredFailed: evidence.steps.required_failed,
+      verificationMismatches: evidence.verification.filter((v) => v.matched === false).map((v) => `${v.step} ${v.expected}→${v.actual}`),
+      recoveryPath: evidence.recovery.fallback_used || evidence.recovery.conflict_seen || evidence.recovery.retry_seen,
+      hardInvariants: evidence.hard_invariants,
+    },
+  };
+}

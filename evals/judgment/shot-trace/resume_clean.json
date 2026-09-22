@@ -1,0 +1,42 @@
+{
+  "fixtureVersion": 1,
+  "useCase": "shot_trace",
+  "name": "resume_clean",
+  "input": {
+    "traceId": "00000000-0000-4000-8000-298518974860",
+    "run": {
+      "workflow": "golf.round.resume",
+      "status": "success",
+      "duration_ms": 220
+    },
+    "steps": [
+      {
+        "step_key": "server.validation",
+        "status": "success",
+        "layer": "server_action"
+      },
+      {
+        "step_key": "server.auth",
+        "status": "success",
+        "layer": "server_action"
+      },
+      {
+        "step_key": "server.player",
+        "status": "success",
+        "layer": "server_action"
+      },
+      {
+        "step_key": "db.load_round",
+        "status": "success"
+      },
+      {
+        "step_key": "verify.recovery_state",
+        "status": "success"
+      }
+    ]
+  },
+  "expected": {
+    "disposition": "pass"
+  },
+  "source": "invented-healthy"
+}

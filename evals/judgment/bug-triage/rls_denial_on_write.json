@@ -1,0 +1,52 @@
+{
+  "fixtureVersion": 1,
+  "useCase": "bug_triage",
+  "name": "rls_denial_on_write",
+  "input": {
+    "causeKey": "sig-golf_shots i",
+    "title": "golf_shots insert: new row violates row-level security policy",
+    "severity": "error",
+    "route": "/golf/rounds/new",
+    "errorCode": "42501",
+    "verdict": "needs-analysis",
+    "reason": "actionable error with no analysis",
+    "category": null,
+    "members": [
+      {
+        "key": "fp",
+        "origin": "admin_events",
+        "title": "golf_shots insert: new row violates row-level security policy",
+        "message": "42501 new row violates row-level security policy for table golf_shots",
+        "route": "/golf/rounds/new",
+        "severity": "error",
+        "errorCode": "42501",
+        "feature": "golf",
+        "action": "golf.shot.add_or_edit",
+        "source": "server",
+        "occurrences": 5,
+        "firstSeen": "2026-09-16T10:00:00Z",
+        "lastSeen": "2026-09-16T12:00:00Z",
+        "seenBy": [
+          "admin_events"
+        ],
+        "evidenceUrl": null,
+        "existingAnalysisFix": null
+      }
+    ],
+    "occurrences": 5,
+    "firstSeen": "2026-09-16T10:00:00Z",
+    "lastSeen": "2026-09-16T12:00:00Z",
+    "origins": [
+      "admin_events"
+    ],
+    "corroborated": false,
+    "evidenceUrls": []
+  },
+  "expected": {
+    "disposition": "escalate",
+    "reasonCodes": [
+      "hard_invariant_failed"
+    ]
+  },
+  "source": "invented-safety-override"
+}

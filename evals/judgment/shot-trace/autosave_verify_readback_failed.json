@@ -1,0 +1,58 @@
+{
+  "fixtureVersion": 1,
+  "useCase": "shot_trace",
+  "name": "autosave_verify_readback_failed",
+  "input": {
+    "traceId": "00000000-0000-4000-8000-377169844627",
+    "run": {
+      "workflow": "golf.round.autosave",
+      "status": "success",
+      "duration_ms": 920
+    },
+    "steps": [
+      {
+        "step_key": "server.validation",
+        "status": "success",
+        "layer": "server_action"
+      },
+      {
+        "step_key": "server.auth",
+        "status": "success",
+        "layer": "server_action"
+      },
+      {
+        "step_key": "server.player",
+        "status": "success",
+        "layer": "server_action"
+      },
+      {
+        "step_key": "db.save_partial_round_atomic",
+        "status": "success"
+      },
+      {
+        "step_key": "verify.round",
+        "status": "warning",
+        "error_summary": "fetch failed"
+      },
+      {
+        "step_key": "verify.holes",
+        "status": "warning",
+        "error_summary": "fetch failed"
+      },
+      {
+        "step_key": "verify.shots",
+        "status": "warning",
+        "error_summary": "fetch failed"
+      }
+    ]
+  },
+  "expected": {
+    "disposition": "observe",
+    "alsoAccept": [
+      "collect_more_evidence",
+      "pass"
+    ]
+  },
+  "source": "invented-ambiguous",
+  "notes": "Write succeeded; only the read-back failed. Instrumentation-only or thin evidence, not a data loss."
+}

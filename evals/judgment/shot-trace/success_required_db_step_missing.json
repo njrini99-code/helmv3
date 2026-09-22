@@ -1,0 +1,42 @@
+{
+  "fixtureVersion": 1,
+  "useCase": "shot_trace",
+  "name": "success_required_db_step_missing",
+  "input": {
+    "traceId": "00000000-0000-4000-8000-769766278974",
+    "run": {
+      "workflow": "golf.shot.add_or_edit",
+      "status": "success",
+      "duration_ms": 90
+    },
+    "steps": [
+      {
+        "step_key": "server.validation",
+        "status": "success",
+        "layer": "server_action"
+      },
+      {
+        "step_key": "server.auth",
+        "status": "success",
+        "layer": "server_action"
+      },
+      {
+        "step_key": "server.player",
+        "status": "success",
+        "layer": "server_action"
+      },
+      {
+        "step_key": "post.stats",
+        "status": "success"
+      }
+    ]
+  },
+  "expected": {
+    "disposition": "escalate",
+    "alsoAccept": [
+      "collect_more_evidence"
+    ]
+  },
+  "source": "invented-known-shape",
+  "notes": "Claims success; db.shot_mutation never observed and no verification. Silent failure or blind instrumentation \u2014 must not pass."
+}

@@ -175,14 +175,18 @@ export class ScramblingGenerator extends BaseGenerator<ScramblingAggregate> {
     let title: string;
     let driver: string;
     if (agg.failure_mode === 'lag' && leaveDisp) {
-      // Headline-inversion: escape is fine, the leak is distance control + lag.
+      // Headline-inversion: the leak is after the escape — leave distance +
+      // lag. Every figure here is measured (reached-green share, average
+      // leave, two-putts after reaching), so the decomposition can be stated;
+      // "you ESCAPE fine" could not be, with a quarter of shots staying in
+      // the sand (typesafe:honesty sweep, contradicts_evidence 83%).
       title = `Bunkers: it's the lag, not the escape (${saveDisp} up-and-down)`;
       driver =
-        `You ESCAPE the bunker fine — ${escapePct}% of your ${agg.attempts} sand shots reached ` +
-        `the green — but you finish ${leaveDisp} from the hole and then 2-putt ` +
-        `(${agg.two_putt_after_reach_n} of ${agg.reached_green_n} reached greens). The driver is ` +
-        `distance control OUT of the sand and the lag putt that follows, not your splash. ` +
-        `Drill: bunker shots to a 6-ft circle (carry-to-rollout control), then 10-20 ft lag putts.`;
+        `Most of your sand shots get out — ${escapePct}% of ${agg.attempts} reached the green — ` +
+        `but the ones that do finish ${leaveDisp} from the hole and then 2-putt ` +
+        `(${agg.two_putt_after_reach_n} of ${agg.reached_green_n} reached greens). The strokes are ` +
+        `going after the escape: distance control out of the sand and the lag putt that follows. ` +
+        `Recommended: bunker shots to a 6-ft circle (carry-to-rollout control), then 10-20 ft lag putts.`;
     } else if (agg.failure_mode === 'escape') {
       title = `Bunkers: escape is the leak (${saveDisp} up-and-down)`;
       driver =

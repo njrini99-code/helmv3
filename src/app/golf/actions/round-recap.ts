@@ -39,6 +39,7 @@
  */
 
 import { revalidatePath } from 'next/cache';
+import { after } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { compose } from '@/lib/coachhelm/v3/llm/compose';
 import { buildRecapEvidence } from '@/lib/coachhelm/v3/llm/recap-evidence';
@@ -46,7 +47,9 @@ import { pct } from '@/lib/golf/stat-formulas';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
 import { gateUserAction, LLM_COMPOSE_RATE_LIMIT } from '@/lib/auth/action-rate-limit';
-import { logServerError } from '@/lib/server-error-logger';
+import { logServerError, logServerEvent } from '@/lib/server-error-logger';
+import { isFlagEnabled } from '@/lib/flags/is-enabled';
+import { judgeRecapSupport } from '@/lib/typesafe/judgments/recap-support';
 
 interface RoundContext {
   id: string;
@@ -347,6 +350,44 @@ Output only the two sentences. Nothing else.`;
   // collapses to fallback at the persistence layer.
   const trimmed = result.text.trim();
   if (!trimmed || trimmed.length < 30 || trimmed.length > 400) return null;
+
+  // TypeSafe shadow judgment (flag `typesafe_judgments`, off in production):
+  // reads the recap against the same `facts` block the model saw and records
+  // whether it contradicts them, invents a detail, or names the wrong player
+  // — the three failures `verifyCitations` cannot see because every NUMBER
+  // can be present and correct while the sentence is wrong. Logged beside
+  // the regex verdict; it never discards a recap. Only the LLM path is
+  // judged: the deterministic fallback is built from the facts themselves.
+  //
+  // Runs in `after()` so it neither delays the `save_round_ai_recap` write
+  // nor the Server Component render this can be called from — the same rule
+  // the chat route follows by judging only after the turn is persisted.
+  if (result.used_llm && isFlagEnabled('typesafe_judgments')) {
+    after(async () => {
+      const verdict = await judgeRecapSupport({ facts, recap: trimmed, player_name: playerName });
+      if (!verdict) return;
+      await logServerEvent(
+        'round-recap: typesafe shadow judgment recorded',
+        {
+          action: 'golf.round_recap.jev',
+          featureArea: 'coachhelm',
+          skipSentry: true,
+          extra: {
+            roundId: round.id,
+            model: verdict.model,
+            latencyMs: verdict.latencyMs,
+            citationsVerified: result.citations_verified,
+            support: Math.round(verdict.support * 100) / 100,
+            contradicts: Math.round(verdict.answers.contradicts_facts.noul * 100) / 100,
+            invents: Math.round(verdict.answers.invents_detail.noul * 100) / 100,
+            editorial: Math.round(verdict.answers.reads_as_editorial.noul * 100) / 100,
+            nameOk: Math.round(verdict.answers.names_correct_player.noul * 100) / 100,
+          },
+        },
+        'info',
+      );
+    });
+  }
   return trimmed;
 }
 

@@ -1,0 +1,53 @@
+{
+  "fixtureVersion": 1,
+  "useCase": "bug_triage",
+  "name": "cron_llm_credit_exhausted",
+  "input": {
+    "causeKey": "sig-coachhelm ge",
+    "title": "coachhelm generate failed: insufficient credits",
+    "severity": "warning",
+    "route": "/api/cron/coachhelm-generate",
+    "errorCode": "credit_exhausted",
+    "verdict": "needs-analysis",
+    "reason": "actionable error with no analysis",
+    "category": null,
+    "members": [
+      {
+        "key": "fp",
+        "origin": "admin_events",
+        "title": "coachhelm generate failed: insufficient credits",
+        "message": "Anthropic: Your credit balance is too low to access the API",
+        "route": "/api/cron/coachhelm-generate",
+        "severity": "warning",
+        "errorCode": "credit_exhausted",
+        "feature": "coachhelm",
+        "action": "v3.generate",
+        "source": "server",
+        "occurrences": 12,
+        "firstSeen": "2026-09-16T10:00:00Z",
+        "lastSeen": "2026-09-16T12:00:00Z",
+        "seenBy": [
+          "admin_events"
+        ],
+        "evidenceUrl": null,
+        "existingAnalysisFix": null
+      }
+    ],
+    "occurrences": 12,
+    "firstSeen": "2026-09-16T10:00:00Z",
+    "lastSeen": "2026-09-16T12:00:00Z",
+    "origins": [
+      "admin_events"
+    ],
+    "corroborated": false,
+    "evidenceUrls": []
+  },
+  "expected": {
+    "disposition": "escalate",
+    "alsoAccept": [
+      "observe"
+    ]
+  },
+  "source": "invented-known-shape",
+  "notes": "Background job; not user-visible immediately but every insight run is failing until someone pays."
+}

@@ -1,0 +1,50 @@
+{
+  "fixtureVersion": 1,
+  "useCase": "shot_trace",
+  "name": "delete_shot_clean",
+  "input": {
+    "traceId": "00000000-0000-4000-8000-961474140092",
+    "run": {
+      "workflow": "golf.shot.delete",
+      "status": "success",
+      "duration_ms": 300
+    },
+    "steps": [
+      {
+        "step_key": "server.validation",
+        "status": "success",
+        "layer": "server_action"
+      },
+      {
+        "step_key": "server.auth",
+        "status": "success",
+        "layer": "server_action"
+      },
+      {
+        "step_key": "server.player",
+        "status": "success",
+        "layer": "server_action"
+      },
+      {
+        "step_key": "db.delete_shot",
+        "status": "success"
+      },
+      {
+        "step_key": "verify.shots",
+        "status": "success",
+        "observed": {
+          "expected": 5,
+          "actual": 5
+        }
+      },
+      {
+        "step_key": "post.stats",
+        "status": "success"
+      }
+    ]
+  },
+  "expected": {
+    "disposition": "pass"
+  },
+  "source": "invented-healthy"
+}

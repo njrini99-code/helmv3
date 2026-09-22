@@ -95,6 +95,57 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   'derived_progress'`. The metric identity table lives in
   `docs/architecture/coachhelm-evidence-contract.md`.
 - Budget-sensitive LLM behavior should use team settings and persisted usage, not hardcoded token math.
+- TypeSafe (Jev) shadow judgments (2026-09-17, flag `typesafe_judgments`,
+  off in production): `src/lib/typesafe/client.ts` wraps
+  `@typesafe-ai/sdk` and resolves `null` when the flag is off, the key
+  (`TYPESAFE_API_KEY`, server-only) is absent, or the API fails — every
+  consumer treats null as "no opinion" and keeps its deterministic verdict.
+  With the flag on, each call site records Jev's answer beside the existing
+  check as a `skipSentry` info event and changes nothing: the chat route
+  (`v3.chat.stream.jev`: per-figure "is this a stat claim" verdicts for
+  every number `auditNumericClaims` flagged, plus the coach's intent — run
+  AFTER the turn is persisted and concurrently with the model call
+  respectively, so it never delays an answer or breaks the cached system
+  block), the round recap (`golf.round_recap.jev`: contradicts / invents /
+  wrong-name against the same `facts` the model saw — the three failures
+  `verifyCitations` cannot see), and `upsertInsightV3` (`v3.insights.jev`:
+  actionability, specificity, player-safety, over-claiming — never fed into
+  `ranking/score.ts`). Question sets live in `src/lib/typesafe/judgments/`;
+  `npm run typesafe:eval` runs them on planted fixtures. Thresholds come from
+  this telemetry, not from the docs' examples; do not promote a judgment to a
+  veto before its false-positive rate on real traffic is known. The judged
+  text (an assistant turn, a recap, an insight body) is sent to
+  api.typesafe.ai, so the flag stays off in production until that is
+  decided.
+- Claim-honesty sweep (`npm run typesafe:honesty`,
+  `scripts/typesafe/honesty-sweep.ts`): drives every composite rule's
+  `compose()`, every v3 single-metric generator's `composeContent()`
+  (fixtures in `scripts/typesafe/generator-fixtures.ts`), the v2
+  orchestrator's per-round builders, and the approach-axis readings with
+  synthetic inputs and asks
+  `src/lib/typesafe/judgments/claim-honesty.ts` the contract's questions
+  (unsupported figure, cause stated as fact, over-claimed sample,
+  contradicts evidence, estimate presented as measured, action as verdict),
+  with planted breaches alongside so detection is visible. Five of the six
+  questions catch their planted breach; `contradicts_evidence` sits at
+  50–65% on its planted direction flip after three phrasings, so treat its
+  clean result as unproven, not as a pass. Run the sweep after editing
+  generator prose; `--strict` exits 1 on a real breach. On its first
+  run (2026-09-17) it found two rules asserting an unmeasured cause as fact
+  ("the over-correction is" in `doubles-after-bogey`, "the flyer effect is
+  real" in `flyer-lie-over-the-green`, which also titled a direction the
+  rule does not measure); both were rewritten observation → check →
+  recommendation. Extending it to the generators and round builders found
+  four more: `putt-bias` named "under-read" as the cause and started a
+  sentence in lower case, `putt-slope-bias` claimed the gap "does not show
+  up beyond 6 ft" without measuring beyond 6 ft, `scrambling`'s sand lag
+  branch presented the lag putt as the diagnosed cost, and the v2 severe-
+  approach round builder headlined "the biggest misses" when a round
+  usually has one qualifying bracket and nothing to compare it against. All
+  six now read observation → check → recommendation; the round-builder
+  case still sits at ~68% on `contradicts_evidence` (threshold 70%), so
+  that one is a wording fix on the merits, not a sweep pass. It is not in
+  CI (it needs the key and the network).
 
 ## UI Contract
 

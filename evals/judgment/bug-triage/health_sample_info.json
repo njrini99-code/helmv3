@@ -1,0 +1,49 @@
+{
+  "fixtureVersion": 1,
+  "useCase": "bug_triage",
+  "name": "health_sample_info",
+  "input": {
+    "causeKey": "sig-db health sa",
+    "title": "db health sample recorded",
+    "severity": "info",
+    "route": "/api/cron/db-health-sampler",
+    "errorCode": null,
+    "verdict": "needs-analysis",
+    "reason": "actionable error with no analysis",
+    "category": null,
+    "members": [
+      {
+        "key": "fp",
+        "origin": "admin_events",
+        "title": "db health sample recorded",
+        "message": "connections=12 cache_hit=0.99",
+        "route": "/api/cron/db-health-sampler",
+        "severity": "info",
+        "errorCode": null,
+        "feature": "observability",
+        "action": null,
+        "source": "server",
+        "occurrences": 288,
+        "firstSeen": "2026-09-16T10:00:00Z",
+        "lastSeen": "2026-09-16T12:00:00Z",
+        "seenBy": [
+          "admin_events"
+        ],
+        "evidenceUrl": null,
+        "existingAnalysisFix": null
+      }
+    ],
+    "occurrences": 288,
+    "firstSeen": "2026-09-16T10:00:00Z",
+    "lastSeen": "2026-09-16T12:00:00Z",
+    "origins": [
+      "admin_events"
+    ],
+    "corroborated": false,
+    "evidenceUrls": []
+  },
+  "expected": {
+    "disposition": "pass"
+  },
+  "source": "invented-noise"
+}

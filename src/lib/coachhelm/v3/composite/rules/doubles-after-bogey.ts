@@ -94,11 +94,18 @@ const rule: CompositeRule = {
     return {
       title: 'Bogeys turning into doubles too often',
       content:
+        // Observation → check → recommendation (claim-honesty contract). The
+        // earlier wording named "the over-correction" as the cause; nothing
+        // here measures what the player did on the tee after a bogey, so the
+        // cause is handed to the coach as a check (typesafe:honesty sweep,
+        // cause_stated_as_fact 78%).
         `Of your last ${opps} bogey-or-worse holes, the next hole was a ` +
-        `double-or-worse ${compounded} times (${ratePct}%). The bogey ` +
-        `isn't the problem — the over-correction is. After a bogey, ` +
-        `force a 30-second reset before the next tee shot and commit to ` +
-        `your stock target rather than chasing.`,
+        `double-or-worse ${compounded} times (${ratePct}%). Why is not ` +
+        `recorded: a compounded hole can be a chased target, a harder ` +
+        `stretch of the course, or a rushed routine. Check the tee-shot ` +
+        `target and club on the hole after the next few bogeys before ` +
+        `naming a cause. Recommended: a 30-second reset before the tee ` +
+        `shot after a bogey, and a stock target rather than a recovery line.`,
       signature: 'doubles_after_bogey',
       evidence: {
         metric: 'compound_mistake_rate',

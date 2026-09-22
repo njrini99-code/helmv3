@@ -1,0 +1,43 @@
+{
+  "fixtureVersion": 1,
+  "useCase": "shot_trace",
+  "name": "delete_claims_success_with_failed_step",
+  "input": {
+    "traceId": "00000000-0000-4000-8000-098265868203",
+    "run": {
+      "workflow": "golf.shot.delete",
+      "status": "success"
+    },
+    "steps": [
+      {
+        "step_key": "server.validation",
+        "status": "success",
+        "layer": "server_action"
+      },
+      {
+        "step_key": "server.auth",
+        "status": "success",
+        "layer": "server_action"
+      },
+      {
+        "step_key": "server.player",
+        "status": "success",
+        "layer": "server_action"
+      },
+      {
+        "step_key": "db.delete_shot",
+        "status": "failure",
+        "error_code": "23503",
+        "error_summary": "foreign key violation"
+      }
+    ]
+  },
+  "expected": {
+    "disposition": "escalate",
+    "reasonCodes": [
+      "hard_invariant_failed",
+      "success_with_failed_required_step"
+    ]
+  },
+  "source": "invented-known-shape"
+}

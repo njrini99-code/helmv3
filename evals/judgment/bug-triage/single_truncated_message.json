@@ -1,0 +1,52 @@
+{
+  "fixtureVersion": 1,
+  "useCase": "bug_triage",
+  "name": "single_truncated_message",
+  "input": {
+    "causeKey": "sig-Load failed",
+    "title": "Load failed",
+    "severity": "error",
+    "route": null,
+    "errorCode": null,
+    "verdict": "needs-analysis",
+    "reason": "actionable error with no analysis",
+    "category": null,
+    "members": [
+      {
+        "key": "fp",
+        "origin": "admin_events",
+        "title": "Load failed",
+        "message": "Load failed",
+        "route": null,
+        "severity": "error",
+        "errorCode": null,
+        "feature": "golf",
+        "action": null,
+        "source": "server",
+        "occurrences": 1,
+        "firstSeen": "2026-09-16T10:00:00Z",
+        "lastSeen": "2026-09-16T12:00:00Z",
+        "seenBy": [
+          "admin_events"
+        ],
+        "evidenceUrl": null,
+        "existingAnalysisFix": null
+      }
+    ],
+    "occurrences": 1,
+    "firstSeen": "2026-09-16T10:00:00Z",
+    "lastSeen": "2026-09-16T12:00:00Z",
+    "origins": [
+      "admin_events"
+    ],
+    "corroborated": false,
+    "evidenceUrls": []
+  },
+  "expected": {
+    "disposition": "collect_more_evidence",
+    "alsoAccept": [
+      "observe"
+    ]
+  },
+  "source": "invented-thin"
+}

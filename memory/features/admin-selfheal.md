@@ -151,7 +151,13 @@ owner's machine, for anyone who needs to see exactly what ran before.
   (`classifyProviderFault`) in addition to reading a stored `errorCode` —
   three of the four production "Inngest signature" fingerprints carry no
   persisted `errorCode` at all, so the stored-code check alone would miss
-  them.
+  them. When the regex rules match nothing and `typesafe_judgments` is on,
+  `groupHasProviderFaultSemantic` asks Jev (`src/lib/typesafe/judgments/
+  provider-fault-semantic.ts`) and withholds the auto-resolve only for an
+  operator-gated kind at ≥ 0.9 confidence; it can never cause a resolve, and
+  a null verdict (flag off, no key, API down) is "no opinion". The regex
+  classifier stays synchronous and authoritative for the online `onError`
+  paths.
 - **Runtime health and capability proof are separate facts for every
   self-healing stage.** A stage can heartbeat healthily for a week while never
   once producing its output; on 2026-08-28 Repair's heartbeats were green and
@@ -215,6 +221,15 @@ owner's machine, for anyone who needs to see exactly what ran before.
   heartbeat, byte-for-byte plist verification) that do not apply to the GHA
   runner replacing it — GitHub Actions' own scheduler, secrets, and
   `if: always()` step semantics cover the same ground natively.
+
+- **Bug-triage judgment (shadow, 2026-09-17).** After `buildTriagePlan`, the
+  cron hands each queue group (bounded by the analysis cap) to
+  `judgeTriageGroup` (`src/lib/ai/judgment/use-cases/bug-triage.ts`) under
+  flags `jev_judgment_layer` + `jev_bug_triage` (production off). Verdicts are
+  recorded in `helm_debug.judgment_evaluations` beside the engine's verdict;
+  the queue, the closeable set and the RCA calls are unchanged, and the
+  judgment is awaited only after the analysis loop. See
+  `memory/features/helm-judgment-layer.md`.
 
 ## Known Behaviour
 

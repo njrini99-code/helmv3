@@ -22,8 +22,10 @@ import {
   GATED_OUT,
 } from '@/lib/coachhelm/v2/insights/upsert';
 import type { InsightInput } from '@/lib/coachhelm/v2/insights/types';
-import { logServerError } from '@/lib/server-error-logger';
+import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
+import { isFlagEnabled } from '@/lib/flags/is-enabled';
+import { judgeInsight } from '@/lib/typesafe/judgments/insight-priority';
 
 const V3_SIGNATURE_PREFIX = 'v3:';
 
@@ -67,6 +69,53 @@ export async function upsertInsightV3(
       `upsertInsightV3 stamp exception for ${result}: ${describeError(err)}`,
       { action: 'v3.insights.upsert' },
     );
+  }
+
+  // TypeSafe shadow judgment (flag `typesafe_judgments`, off in production):
+  // scores the insight TEXT for actionability, specificity, player-safety
+  // and over-claiming and records them beside the row id. `ranking/score.ts`
+  // is audit-tracked (EC-1, FID-1/2) and stays untouched — these numbers are
+  // logged so their distribution can be seen before any of them is allowed
+  // near the rank.
+  //
+  // Not awaited: a generator run upserts sequentially, ~10–30 rows per
+  // player across 11 generators plus composites, so awaiting ~300 ms here
+  // would add seconds per player to every cron sweep. The judgment runs in
+  // the background and logs when it lands; a judgment lost to a function
+  // shutting down is acceptable for shadow telemetry. `askJev` never
+  // rejects, and the `.catch` covers the log call.
+  if (isFlagEnabled('typesafe_judgments')) {
+    void judgeInsight({
+      id: result,
+      title: input.title,
+      content: input.content,
+      category: input.category,
+      insight_type: input.insight_type ?? 'unknown',
+      evidence: input.evidence,
+    }).then(async (verdict) => {
+      if (!verdict) return;
+      await logServerEvent(
+        'upsertInsightV3: typesafe shadow judgment recorded',
+        {
+          action: 'v3.insights.jev',
+          featureArea: 'coachhelm',
+          skipSentry: true,
+          extra: {
+            insightId: result,
+            insightType: input.insight_type ?? null,
+            category: input.category,
+            priority: input.priority ?? null,
+            model: verdict.model,
+            latencyMs: verdict.latencyMs,
+            actionability: Math.round(verdict.answers.actionability.score * 100) / 100,
+            specificity: Math.round(verdict.answers.specificity.score * 100) / 100,
+            safeForPlayer: Math.round(verdict.answers.safe_for_player.noul * 100) / 100,
+            overclaims: Math.round(verdict.answers.overclaims.noul * 100) / 100,
+          },
+        },
+        'info',
+      );
+    }).catch(() => undefined);
   }
 
   return result;

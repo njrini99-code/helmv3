@@ -1,0 +1,67 @@
+{
+  "fixtureVersion": 1,
+  "useCase": "shot_trace",
+  "name": "qualifier_transition_missing",
+  "input": {
+    "traceId": "00000000-0000-4000-8000-121974759283",
+    "run": {
+      "workflow": "golf.qualifier.submit",
+      "status": "success",
+      "duration_ms": 1500
+    },
+    "steps": [
+      {
+        "step_key": "server.validation",
+        "status": "success",
+        "layer": "server_action"
+      },
+      {
+        "step_key": "server.auth",
+        "status": "success",
+        "layer": "server_action"
+      },
+      {
+        "step_key": "server.player",
+        "status": "success",
+        "layer": "server_action"
+      },
+      {
+        "step_key": "db.submit_round_atomic",
+        "status": "success"
+      },
+      {
+        "step_key": "verify.round",
+        "status": "success"
+      },
+      {
+        "step_key": "verify.holes",
+        "status": "success",
+        "observed": {
+          "expected": 18,
+          "actual": 18
+        }
+      },
+      {
+        "step_key": "verify.shots",
+        "status": "success",
+        "observed": {
+          "expected": 70,
+          "actual": 70
+        }
+      },
+      {
+        "step_key": "post.stats",
+        "status": "success"
+      }
+    ]
+  },
+  "expected": {
+    "disposition": "collect_more_evidence",
+    "alsoAccept": [
+      "escalate",
+      "observe"
+    ]
+  },
+  "source": "invented-known-shape",
+  "notes": "Round persisted but the required qualifier transition never ran; the player's qualifier entry may be stale."
+}

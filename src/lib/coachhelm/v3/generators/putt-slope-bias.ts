@@ -312,8 +312,12 @@ export class PuttSlopeBiasGenerator extends BaseGenerator<PuttSlopeBiasAggregate
     const gap = Math.round(agg.gap_pp);
 
     return {
-      title: `Downhill putts inside ${agg.band}: a real penalty`,
-      content: `Inside ${agg.band} you're making ${downhillDisp} of downhill putts vs ${levelDisp} of level putts at the same distance — a ${gap}-point gap (n=${agg.downhill_n} downhill / ${agg.level_n} level). Short putts carry the highest leverage per attempt in your bag (a miss costs a full stroke), so this gap is worth closing. It's consistent with a pace-control pattern rather than a green-reading one — the gap shows up inside 6 ft and not beyond it, where line matters more than speed. Rehearse a downhill-only ladder drill: start 2 ft below the hole and add a foot at a time, focused on dying the ball into the front of the cup rather than a firm strike.`,
+      // The row measures ONE band. "The gap shows up inside 6 ft and not
+      // beyond it" asserted a comparison with bands this row never read, and
+      // "a real penalty" in the title graded a 13-putt sample (typesafe:honesty
+      // sweep, overclaims_sample 82%). The mechanism stays a hypothesis.
+      title: `Downhill putts inside ${agg.band}: ${gap}-point gap vs level`,
+      content: `Inside ${agg.band} you're making ${downhillDisp} of downhill putts vs ${levelDisp} of level putts at the same distance — a ${gap}-point gap (n=${agg.downhill_n} downhill / ${agg.level_n} level). Short putts carry the highest leverage per attempt in your bag (a miss costs a full stroke), so this gap is worth closing. It's consistent with a pace-control pattern more than a green-reading one, since speed matters most this close; whether the same gap exists at longer range is not measured here. Check the pace on the next few downhill putts from this range before naming a cause. Recommended: a downhill-only ladder drill — start 2 ft below the hole and add a foot at a time, focused on dying the ball into the front of the cup rather than a firm strike.`,
       priority: 'medium',
       signature: `putt_slope_bias:${agg.band}`,
       evidence: {

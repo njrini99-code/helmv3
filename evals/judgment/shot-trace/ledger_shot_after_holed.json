@@ -1,0 +1,69 @@
+{
+  "fixtureVersion": 1,
+  "useCase": "shot_trace",
+  "name": "ledger_shot_after_holed",
+  "input": {
+    "traceId": "00000000-0000-4000-8000-199350293724",
+    "run": {
+      "workflow": "golf.shot.add_or_edit",
+      "status": "success"
+    },
+    "steps": [
+      {
+        "step_key": "server.validation",
+        "status": "success",
+        "layer": "server_action"
+      },
+      {
+        "step_key": "server.auth",
+        "status": "success",
+        "layer": "server_action"
+      },
+      {
+        "step_key": "server.player",
+        "status": "success",
+        "layer": "server_action"
+      },
+      {
+        "step_key": "db.shot_mutation",
+        "status": "success"
+      },
+      {
+        "step_key": "verify.shots",
+        "status": "success",
+        "observed": {
+          "expected": 4,
+          "actual": 4
+        }
+      }
+    ],
+    "shots": [
+      {
+        "hole_number": 3,
+        "shot_number": 1,
+        "distance_unit_before": "yards",
+        "distance_to_hole_before": 410
+      },
+      {
+        "hole_number": 3,
+        "shot_number": 2,
+        "result": "hole",
+        "distance_to_hole_after": 0
+      },
+      {
+        "hole_number": 3,
+        "shot_number": 3,
+        "distance_unit_after": "feet",
+        "distance_to_hole_after": 2
+      }
+    ]
+  },
+  "expected": {
+    "disposition": "escalate",
+    "reasonCodes": [
+      "hard_invariant_failed",
+      "ledger:shot_after_holed"
+    ]
+  },
+  "source": "invented-contract"
+}

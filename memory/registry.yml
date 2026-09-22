@@ -272,6 +272,10 @@ features:
         - src/app/golf/actions/v3/**
       services:
         - src/lib/coachhelm/**
+        # TypeSafe (Jev) judgment client + question sets; every consumer is a
+        # CoachHelm or self-heal shadow path gated by `typesafe_judgments`.
+        - src/lib/typesafe/**
+        - scripts/typesafe/**
       db:
         - supabase/migrations/*coachhelm*.sql
         - supabase/migrations/*insight*.sql
@@ -1883,6 +1887,48 @@ features:
         - npm run typecheck
         - npx vitest run src/lib/admin/ensemble src/lib/admin/causal src/lib/admin/autonomy
         - npm run build
+
+  helm_judgment_layer:
+    name: Helm Judgment Layer
+    status: active
+    owner: platform
+    criticality: medium
+    observability:
+      feature_keys: []
+      reason: >-
+        Records under helm.judgment.* actions with featureArea 'judgment';
+        no dedicated runtime FeatureKey yet. Shadow-only; production flags off.
+      covered_by: admin_platform
+    docs:
+      feature: memory/features/helm-judgment-layer.md
+      flows: []
+      business_logic:
+        - evals/judgment/README.md
+      incidents: []
+    code:
+      routes: []
+      components:
+        - src/app/admin/traces/TraceJudgmentPanel.tsx
+      api: []
+      actions: []
+      services:
+        - src/lib/ai/judgment/**
+        - scripts/judgment/**
+        - evals/judgment/**
+      db:
+        - supabase/migrations/20260917090000_helm_judgment_evaluations.sql
+      tests:
+        - src/lib/ai/judgment/__tests__/**
+        - supabase/tests/rls/helm_judgment.sql
+    integrations:
+      - supabase
+    review:
+      required_docs:
+        - memory/features/helm-judgment-layer.md
+      required_checks:
+        - npm run typecheck
+        - npx vitest run --project unit src/lib/ai/judgment
+        - npm run flags:check
 
   admin_replay_lab:
     name: Admin Replay Lab

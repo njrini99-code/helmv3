@@ -70,13 +70,20 @@ const rule: CompositeRule = {
     const avgProximity = Number(match.signals.avg_proximity_ft ?? 0);
     const avgDistance = Number(match.signals.avg_distance_yd ?? 0);
     return {
-      title: 'Flyer lies are jumping past the green',
+      // Observation → check → recommendation (claim-honesty contract). The
+      // rule measures proximity only, not which side of the hole the ball
+      // finished, so neither the title nor the text may say "past the
+      // green"; and the flyer mechanism is offered as the thing to check,
+      // not asserted (typesafe:honesty sweep, cause_stated_as_fact 88%).
+      title: 'Approaches from light rough are finishing far from the hole',
       content:
         `From light rough you've hit ${attempts} approaches averaging ` +
-        `${avgDistance.toFixed(0)} yd in — and ended up ${avgProximity.toFixed(0)} ft ` +
-        `from the hole on average. The flyer effect is real: grass between ` +
-        `face and ball reduces spin, and the ball releases hot. Plan one ` +
-        `less club from light rough when the lie sits up.`,
+        `${avgDistance.toFixed(0)} yd in, and they finished ${avgProximity.toFixed(0)} ft ` +
+        `from the hole on average. Which side they missed is not recorded: a ` +
+        `flyer that releases past the flag and a lie that comes out dead ` +
+        `leave the same number. Check where the next few of these finish ` +
+        `relative to the pin before adjusting the club. Recommended: note the ` +
+        `lie and the landing spot on each approach from rough this week.`,
       signature: 'flyer_lie_over_the_green',
       evidence: {
         metric: 'flyer_lie_proximity',

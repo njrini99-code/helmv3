@@ -147,3 +147,184 @@ flags:
     cleanup_plan: >-
       No planned removal — permanent ops lever gating a genuinely optional
       verification pass, not a migration bridge.
+
+  # TypeSafe (Jev) System One judgments — src/lib/typesafe/**. Every call
+  # site treats a null verdict (flag off, no TYPESAFE_API_KEY, API error) as
+  # "no opinion" and keeps today's deterministic behaviour. With the flag on
+  # the judgments are shadow-mode: recorded beside the existing verdict in
+  # server events so thresholds can be set from real traffic before any of
+  # them is allowed to change an outcome. Sends the judged text (an
+  # assistant turn, a recap, an insight, an error message) to api.typesafe.ai.
+  - feature_id: jev_judgment_layer
+    owner: judgment
+    purpose: >-
+      Master switch for the Helm Judgment Layer (src/lib/ai/judgment). Off means zero Jev provider calls from any judgment use case regardless of the per-use-case flags.
+    type: experiment
+    status: active
+    created_at: "2026-09-17"
+    expires_at: "2026-12-31"
+    default: false
+    environment:
+      production: false
+      preview: true
+      development: true
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      Each use case is shadow until scripts/judgment/run-calibration.ts
+      justifies enforcement (memory/features/helm-judgment-layer.md). Then
+      either promote it in src/lib/ai/judgment/policy.ts and archive this
+      flag, or delete the use case module and this flag by the expiry date.
+  - feature_id: jev_shot_trace
+    owner: judgment
+    purpose: >-
+      Shot-tracking trace judge: shadow semantic verdicts over finalized helm_debug flight-recorder traces (warning/failure/missing-step) — never in the shot-entry path.
+    type: experiment
+    status: active
+    created_at: "2026-09-17"
+    expires_at: "2026-12-31"
+    default: false
+    environment:
+      production: false
+      preview: true
+      development: true
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      Each use case is shadow until scripts/judgment/run-calibration.ts
+      justifies enforcement (memory/features/helm-judgment-layer.md). Then
+      either promote it in src/lib/ai/judgment/policy.ts and archive this
+      flag, or delete the use case module and this flag by the expiry date.
+  - feature_id: jev_bug_triage
+    owner: judgment
+    purpose: >-
+      Bug-triage judge: shadow actionability/priority judgments over grouped self-heal triage queue groups, recorded beside the existing verdict.
+    type: experiment
+    status: active
+    created_at: "2026-09-17"
+    expires_at: "2026-12-31"
+    default: false
+    environment:
+      production: false
+      preview: true
+      development: true
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      Each use case is shadow until scripts/judgment/run-calibration.ts
+      justifies enforcement (memory/features/helm-judgment-layer.md). Then
+      either promote it in src/lib/ai/judgment/policy.ts and archive this
+      flag, or delete the use case module and this flag by the expiry date.
+  - feature_id: jev_semantic_regression
+    owner: judgment
+    purpose: >-
+      Semantic-regression judge over E2E evidence packets (not yet wired; reserved so the flag id is stable).
+    type: experiment
+    status: active
+    created_at: "2026-09-17"
+    expires_at: "2026-12-31"
+    default: false
+    environment:
+      production: false
+      preview: true
+      development: true
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      Each use case is shadow until scripts/judgment/run-calibration.ts
+      justifies enforcement (memory/features/helm-judgment-layer.md). Then
+      either promote it in src/lib/ai/judgment/policy.ts and archive this
+      flag, or delete the use case module and this flag by the expiry date.
+  - feature_id: jev_coachhelm_insight_quality
+    owner: coachhelm
+    purpose: >-
+      CoachHelm insight quality judge at the tentative->detected lifecycle boundary (not yet wired; reserved).
+    type: experiment
+    status: active
+    created_at: "2026-09-17"
+    expires_at: "2026-12-31"
+    default: false
+    environment:
+      production: false
+      preview: true
+      development: true
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      Each use case is shadow until scripts/judgment/run-calibration.ts
+      justifies enforcement (memory/features/helm-judgment-layer.md). Then
+      either promote it in src/lib/ai/judgment/policy.ts and archive this
+      flag, or delete the use case module and this flag by the expiry date.
+  - feature_id: jev_self_heal_router
+    owner: judgment
+    purpose: >-
+      Self-heal router judge before runRcaAnalysis (not yet wired; reserved).
+    type: experiment
+    status: active
+    created_at: "2026-09-17"
+    expires_at: "2026-12-31"
+    default: false
+    environment:
+      production: false
+      preview: true
+      development: true
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      Each use case is shadow until scripts/judgment/run-calibration.ts
+      justifies enforcement (memory/features/helm-judgment-layer.md). Then
+      either promote it in src/lib/ai/judgment/policy.ts and archive this
+      flag, or delete the use case module and this flag by the expiry date.
+  - feature_id: jev_release_canary
+    owner: judgment
+    purpose: >-
+      Release/canary behavioural judge for release-intel (not yet wired; reserved).
+    type: experiment
+    status: active
+    created_at: "2026-09-17"
+    expires_at: "2026-12-31"
+    default: false
+    environment:
+      production: false
+      preview: true
+      development: true
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      Each use case is shadow until scripts/judgment/run-calibration.ts
+      justifies enforcement (memory/features/helm-judgment-layer.md). Then
+      either promote it in src/lib/ai/judgment/policy.ts and archive this
+      flag, or delete the use case module and this flag by the expiry date.
+  - feature_id: jev_state_integrity
+    owner: judgment
+    purpose: >-
+      State-integrity watchdog judge over deterministic candidate sets (not yet wired; reserved).
+    type: experiment
+    status: active
+    created_at: "2026-09-17"
+    expires_at: "2026-12-31"
+    default: false
+    environment:
+      production: false
+      preview: true
+      development: true
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      Each use case is shadow until scripts/judgment/run-calibration.ts
+      justifies enforcement (memory/features/helm-judgment-layer.md). Then
+      either promote it in src/lib/ai/judgment/policy.ts and archive this
+      flag, or delete the use case module and this flag by the expiry date.
+  - feature_id: typesafe_judgments
+    owner: coachhelm
+    purpose: >-
+      Enables shadow-mode Jev judgments beside the chat grounding audit,
+      round-recap citation check, insight upsert, chat intent and the
+      self-heal provider-fault guard; off means zero TypeSafe calls.
+    type: experiment
+    status: active
+    created_at: "2026-09-17"
+    expires_at: "2026-12-31"
+    default: false
+    environment:
+      production: false
+      preview: true
+      development: true
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      Once the shadow telemetry has settled thresholds (or shown the
+      judgments are not worth their cost), either promote each call site to
+      act on its verdict under its own flag or delete src/lib/typesafe and
+      this flag together.

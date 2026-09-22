@@ -1,0 +1,70 @@
+{
+  "fixtureVersion": 1,
+  "useCase": "bug_triage",
+  "name": "autosave_rpc_failing_many_players",
+  "input": {
+    "causeKey": "sig-save_partial",
+    "title": "save_partial_round_atomic failed: invalid_snapshot",
+    "severity": "error",
+    "route": "/golf/rounds/new",
+    "errorCode": "invalid_snapshot",
+    "verdict": "needs-analysis",
+    "reason": "actionable error with no analysis",
+    "category": null,
+    "members": [
+      {
+        "key": "fp",
+        "origin": "admin_events",
+        "title": "save_partial_round_atomic failed: invalid_snapshot",
+        "message": "RPC returned {success:false, error:'invalid_snapshot'} for 14 rounds since 09:40",
+        "route": "/golf/rounds/new",
+        "severity": "error",
+        "errorCode": "invalid_snapshot",
+        "feature": "golf",
+        "action": "golf.round.autosave",
+        "source": "server",
+        "occurrences": 41,
+        "firstSeen": "2026-09-16T10:00:00Z",
+        "lastSeen": "2026-09-16T12:00:00Z",
+        "seenBy": [
+          "admin_events"
+        ],
+        "evidenceUrl": null,
+        "existingAnalysisFix": null
+      },
+      {
+        "key": "fp",
+        "origin": "sentry",
+        "title": "save_partial_round_atomic failed: invalid_snapshot",
+        "message": null,
+        "route": "/golf/rounds/new",
+        "severity": "error",
+        "errorCode": "invalid_snapshot",
+        "feature": "golf",
+        "action": null,
+        "source": "server",
+        "occurrences": 39,
+        "firstSeen": "2026-09-16T10:00:00Z",
+        "lastSeen": "2026-09-16T12:00:00Z",
+        "seenBy": [
+          "admin_events"
+        ],
+        "evidenceUrl": null,
+        "existingAnalysisFix": null
+      }
+    ],
+    "occurrences": 80,
+    "firstSeen": "2026-09-16T10:00:00Z",
+    "lastSeen": "2026-09-16T12:00:00Z",
+    "origins": [
+      "admin_events",
+      "sentry"
+    ],
+    "corroborated": true,
+    "evidenceUrls": []
+  },
+  "expected": {
+    "disposition": "escalate"
+  },
+  "source": "invented-known-shape"
+}

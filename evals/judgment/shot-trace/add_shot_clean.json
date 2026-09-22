@@ -1,0 +1,50 @@
+{
+  "fixtureVersion": 1,
+  "useCase": "shot_trace",
+  "name": "add_shot_clean",
+  "input": {
+    "traceId": "00000000-0000-4000-8000-294481507024",
+    "run": {
+      "workflow": "golf.shot.add_or_edit",
+      "status": "success",
+      "duration_ms": 410
+    },
+    "steps": [
+      {
+        "step_key": "server.validation",
+        "status": "success",
+        "layer": "server_action"
+      },
+      {
+        "step_key": "server.auth",
+        "status": "success",
+        "layer": "server_action"
+      },
+      {
+        "step_key": "server.player",
+        "status": "success",
+        "layer": "server_action"
+      },
+      {
+        "step_key": "db.shot_mutation",
+        "status": "success"
+      },
+      {
+        "step_key": "verify.shots",
+        "status": "success",
+        "observed": {
+          "expected": 6,
+          "actual": 6
+        }
+      },
+      {
+        "step_key": "post.stats",
+        "status": "success"
+      }
+    ]
+  },
+  "expected": {
+    "disposition": "pass"
+  },
+  "source": "invented-healthy"
+}
