@@ -7,7 +7,9 @@
  * - coach_weight is read from golf_coachhelm_coach_weights keyed by
  *   (coach_id, insight_type, intent='general'). Default = 1.0 until
  *   sample_n ≥ MIN_CALIBRATED_SAMPLES so under-calibrated weights don't
- *   skew rank order.
+ *   skew rank order. Gated behind `coachhelm_learned_personalization`
+ *   (default OFF) as of 2026-09-23 — see loadCoachWeightsForPlayer's own
+ *   docblock.
  * - goalBoost (Tier-2 audit, 2026-05-27) floats insights touching an
  *   active player goal to the top:
  *     1.0 = no active goal touches this insight's metric/category
@@ -23,6 +25,7 @@ import type { Database } from '@/lib/types/database';
 import type { Goal } from '@/lib/coachhelm/v3/goals/types';
 import type { InsightPriority } from '@/lib/coachhelm/insight-types';
 import { getCounterfactualConfig } from '@/lib/coachhelm/v3/counterfactual/lookup-tables';
+import { isFlagEnabled } from '@/lib/flags/is-enabled';
 import { bootstrapFromDb, calibrateConfidence } from '@/lib/coachhelm/v2/reasoning/confidence-calibrator';
 
 type Sb = SupabaseClient<Database>;
@@ -360,11 +363,31 @@ export function rankInsights<T extends RankableInsight>(
  * → golf_team_coach_staff, then pulls rows where sample_n ≥
  * MIN_CALIBRATED_SAMPLES. Under-calibrated rows fall back to default
  * 1.0 (encoded by omission from the returned map).
+ *
+ * Gated behind `coachhelm_learned_personalization` (default OFF): as of
+ * 2026-09-23, production's `golf_coachhelm_coach_weights` rows (sample_n up
+ * to 36, weights 0.77-1.60) were built entirely from v1's outcome
+ * attribution — the pre-N10 formula that algebraically cancelled to
+ * post-vs-ambient instead of the observed lift (see
+ * src/lib/coachhelm/v3/causality/attribute.ts's file header). Per the
+ * 2026-09-12 repair plan §6.7 step 8, learned weights stay neutral (1.0 for
+ * every insight) until outcome quality under the corrected v2 attribution
+ * justifies applying them again. This does NOT touch the write side: the
+ * causality-attribute cron's `updateCoachWeight` keeps computing and
+ * persisting weights unconditionally (in shadow), so the data is ready and
+ * currently-accumulating for whenever the flag flips on — only this read
+ * path is gated. Flag off returns `{}` before querying at all, which is
+ * exactly equivalent to every insight_type getting its `?? 1.0` default in
+ * scoreInsight.
  */
 export async function loadCoachWeightsForPlayer(
   sb: Sb,
   player_id: string,
 ): Promise<CoachWeights> {
+  if (!isFlagEnabled('coachhelm_learned_personalization')) {
+    return {};
+  }
+
   const { data: membership } = await sb
     .from('golf_team_members')
     .select('team_id')

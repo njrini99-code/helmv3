@@ -627,7 +627,24 @@ export async function getTopInsightsByStrokeImpact(
  */
 async function verifyPlayerAccess(
   playerId: string
-): Promise<{ authorized: boolean; userId?: string; coachId?: string; teamId?: string; error?: string }> {
+): Promise<{
+  authorized: boolean;
+  userId?: string;
+  coachId?: string;
+  /**
+   * Security review follow-up (PR #1980): best-effort enrichment only. It
+   * becomes `undefined` on a query error in either branch above (self:
+   * `.maybeSingle()` error is swallowed by optional chaining; coach:
+   * `membershipError`/`staffError` are logged but still fall through to
+   * `undefined`) as well as on a genuine "no matching team" result. An
+   * `undefined` teamId must never be treated as "no team scoping needed" —
+   * callers that use `access.teamId` to scope a write (see `.eq('team_id',
+   * access.teamId)` call sites below) must re-verify access/ownership
+   * rather than trusting this value to authorize or scope a mutation.
+   */
+  teamId?: string;
+  error?: string;
+}> {
   const shared = getStatsActionContext();
   const matchingShared = shared?.requestedPlayerId === playerId ? shared : undefined;
   const supabase = matchingShared?.supabase ?? (await createClient());

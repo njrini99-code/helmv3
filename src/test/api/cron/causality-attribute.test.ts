@@ -49,11 +49,12 @@ vi.mock('@/lib/coachhelm/v3/causality/attribute', () => ({
 import { POST } from '@/app/api/cron/v3/causality-attribute/route';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { computeAttribution } from '@/lib/coachhelm/v3/causality/attribute';
-import { logServerError } from '@/lib/server-error-logger';
+import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 
 const createAdminMock = vi.mocked(createAdminClient);
 const computeAttributionMock = vi.mocked(computeAttribution);
 const logServerErrorMock = vi.mocked(logServerError);
+const logServerEventMock = vi.mocked(logServerEvent);
 
 interface FixtureInsight {
   id: string;
@@ -176,6 +177,14 @@ interface ClientOpts {
   insertError?: { message: string };
   /** Insert error for the effectiveness-ledger outcome row (P1-12). */
   outcomeInsertError?: { message: string };
+  /**
+   * N10 unknown-column retry test: PGRST204/42703-shaped error returned ONLY
+   * for the first insert attempt (the one carrying `method_version`) —
+   * `isUnknownColumnError` should catch it and the route's retry (the exact
+   * same row, minus `method_version`) should then succeed via the plain
+   * `insertError` (or null) path above.
+   */
+  unknownColumnError?: { code: string; message: string };
 }
 
 function makeClient(rows: FixtureInsight[], opts: ClientOpts = {}) {
@@ -183,6 +192,7 @@ function makeClient(rows: FixtureInsight[], opts: ClientOpts = {}) {
     rangeError: opts.rangeError,
   });
   const attributedSet = new Set(opts.attributedIds ?? []);
+  const attributionInserts: Record<string, unknown>[] = [];
   const attributionBuilder = {
     select: vi.fn().mockReturnThis(),
     in: vi.fn((_col: string, ids: string[]) =>
@@ -191,9 +201,13 @@ function makeClient(rows: FixtureInsight[], opts: ClientOpts = {}) {
         error: null,
       }),
     ),
-    insert: vi.fn(() =>
-      Promise.resolve({ error: opts.insertError ?? null }),
-    ),
+    insert: vi.fn((row: Record<string, unknown>) => {
+      attributionInserts.push(row);
+      if (opts.unknownColumnError && 'method_version' in row) {
+        return Promise.resolve({ error: opts.unknownColumnError });
+      }
+      return Promise.resolve({ error: opts.insertError ?? null });
+    }),
   };
   const weightCalls: { upserts: unknown[]; selects: number } = {
     upserts: [],
@@ -232,7 +246,7 @@ function makeClient(rows: FixtureInsight[], opts: ClientOpts = {}) {
       throw new Error(`Unexpected table: ${table}`);
     }),
   } as unknown as ReturnType<typeof createAdminClient>;
-  return { client, calls, weightCalls, attributionBuilder, outcomeCalls };
+  return { client, calls, weightCalls, attributionBuilder, attributionInserts, outcomeCalls };
 }
 
 function authedRequest(): NextRequest {
@@ -533,5 +547,96 @@ describe('causality-attribute cron P3: coach-weight upsert error is captured', (
     expect(weightCall?.[1]).toMatchObject({
       action: 'cron.v3.causality.coach-weight',
     });
+  });
+});
+
+describe('causality-attribute cron N10: unknown-column retry (method_version not yet applied)', () => {
+  beforeEach(() => {
+    vi.stubEnv('CRON_SECRET', 'test-secret');
+    computeAttributionMock.mockClear();
+    logServerErrorMock.mockClear();
+    logServerEventMock.mockClear();
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  function okAttribution(lift: number | null) {
+    return {
+      ok: true as const,
+      row: {
+        insight_id: 'r-1',
+        surfaced_at: OLD,
+        target_metric_id: 'sg_total',
+        baseline_value: 0,
+        post_value: 1,
+        raw_delta: 1,
+        delta: 1,
+        n_rounds_before: 3,
+        n_rounds_after: 3,
+        improvement_lift: lift,
+        lift,
+        method_version: 'v2_observed_delta' as const,
+      },
+    };
+  }
+
+  it.each([
+    ['PGRST204', 'Could not find the \'method_version\' column of \'golf_insight_outcome_attribution\' in the schema cache'],
+    ['42703', 'column "method_version" of relation "golf_insight_outcome_attribution" does not exist'],
+  ])('code %s: drops method_version and retries once, succeeding', async (code, message) => {
+    computeAttributionMock.mockResolvedValue(okAttribution(0.5));
+    const { client, attributionInserts } = makeClient([fixture({ id: 'r-1' })], {
+      unknownColumnError: { code, message },
+    });
+    createAdminMock.mockReturnValue(client);
+
+    const res = await POST(authedRequest());
+    expect(res.status).toBe(200);
+    const summary = await res.json();
+
+    // The row is NOT lost — the retry without method_version succeeded.
+    expect(summary.attributed).toBe(1);
+    expect(summary.errors).toBe(0);
+    expect(summary.method_version_column_missing).toBe(true);
+
+    // Exactly two insert attempts: first carrying method_version (rejected),
+    // second identical minus that field (accepted).
+    expect(attributionInserts).toHaveLength(2);
+    expect(attributionInserts[0]).toHaveProperty('method_version', 'v2_observed_delta');
+    expect(attributionInserts[1]).not.toHaveProperty('method_version');
+    // Every other field is byte-identical between the two attempts.
+    const { method_version: _omit, ...retryComparableFirst } = attributionInserts[0]!;
+    expect(attributionInserts[1]).toEqual(retryComparableFirst);
+
+    // One info-level event per RUN, not per row — never paging noise.
+    expect(logServerEventMock).toHaveBeenCalledTimes(1);
+    const [message0, meta0, level0] = logServerEventMock.mock.calls[0]!;
+    expect(message0).toContain('method_version');
+    expect(meta0).toMatchObject({
+      action: 'cron.v3.causality.method-version-missing',
+      metadata: { migration: '20260922230000_v3_attribution_method_version' },
+    });
+    expect(level0).toBe('info');
+
+    // Not a real failure — no error logged for the expected/handled retry.
+    expect(logServerErrorMock).not.toHaveBeenCalled();
+  });
+
+  it('a genuine (non-unknown-column) insert error is NOT retried and still surfaces', async () => {
+    computeAttributionMock.mockResolvedValue(okAttribution(0.5));
+    const { client, attributionInserts } = makeClient([fixture({ id: 'r-1' })], {
+      insertError: { message: 'permission denied for table golf_insight_outcome_attribution' },
+    });
+    createAdminMock.mockReturnValue(client);
+
+    const res = await POST(authedRequest());
+    const summary = await res.json();
+
+    expect(summary.errors).toBe(1);
+    expect(summary.method_version_column_missing).toBeUndefined();
+    expect(attributionInserts).toHaveLength(1); // no retry attempted
+    expect(logServerErrorMock).toHaveBeenCalledTimes(1);
+    expect(logServerEventMock).not.toHaveBeenCalled();
   });
 });

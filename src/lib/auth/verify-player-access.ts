@@ -195,13 +195,33 @@ async function resolveCoachIdForPlayer(
   const teamIds = (memberships ?? [])
     .map((m: { team_id: string | null }) => m.team_id)
     .filter((id): id is string => !!id);
-  if (teamIds.length === 0) return undefined;
+  if (teamIds.length === 0) {
+    // `verify_coach_owns_player` (the RPC just above this call) already
+    // confirmed the caller is a coach with access to this player, so an
+    // active player with zero active team memberships here is a
+    // contradiction, not a benign case -- most likely a stale/inconsistent
+    // `golf_team_members` row. Logged (not thrown): access was already
+    // granted, so a coachId lookup gap must degrade to `undefined`, not
+    // flip the decision to denied.
+    await logServerError(
+      'resolveCoachIdForPlayer: coach access granted but player has no active team membership',
+      { action: 'auth.resolveCoachIdForPlayer', metadata: { playerId, userId } },
+    );
+    return undefined;
+  }
 
   const { data: staff, error: staffError } = await probeWithRetry(() =>
     sb
       .from('golf_team_coach_staff')
       .select('coach_id, golf_coaches!inner(user_id)')
-      .in('team_id', teamIds),
+      .in('team_id', teamIds)
+      // Deterministic pick when more than one staff row could match this
+      // user_id (a coach staffing more than one of the player's teams, or
+      // the rarer case of one user_id spanning multiple golf_coaches rows):
+      // order by coach_id so the same profile wins every time regardless of
+      // Postgres's unordered physical row order, rather than depending on
+      // whichever row `.find()` below happens to see first.
+      .order('coach_id', { ascending: true }),
   );
   if (staffError) {
     await logServerError('resolveCoachIdForPlayer.staff failed', {
@@ -215,6 +235,17 @@ async function resolveCoachIdForPlayer(
       (row as unknown as { golf_coaches?: { user_id?: string | null } }).golf_coaches
         ?.user_id === userId,
   ) as { coach_id?: string } | undefined;
+  if (!match) {
+    // Same contradiction as the empty-teamIds branch above: the RPC granted
+    // coach access, but none of the staff rows for the player's teams
+    // belong to this user_id. Logged so a real gap (e.g. the RPC and this
+    // lookup disagreeing on staffing) is visible instead of silently
+    // falling back to `undefined` forever.
+    await logServerError(
+      'resolveCoachIdForPlayer: coach access granted but no staff row matched this user_id',
+      { action: 'auth.resolveCoachIdForPlayer', metadata: { playerId, userId, teamIds } },
+    );
+  }
   return match?.coach_id ?? undefined;
 }
 

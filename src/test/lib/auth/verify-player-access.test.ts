@@ -94,9 +94,11 @@ describe('verifyPlayerAccess', () => {
         if (table === 'golf_team_coach_staff') {
           return {
             select: () => ({
-              in: async () => ({
-                data: [{ coach_id: 'coach-99', golf_coaches: { user_id: 'user-1' } }],
-                error: null,
+              in: () => ({
+                order: async () => ({
+                  data: [{ coach_id: 'coach-99', golf_coaches: { user_id: 'user-1' } }],
+                  error: null,
+                }),
               }),
             }),
           };
@@ -137,9 +139,11 @@ describe('verifyPlayerAccess', () => {
         if (table === 'golf_team_coach_staff') {
           return {
             select: () => ({
-              in: async () => ({
-                data: [{ coach_id: 'coach-other', golf_coaches: { user_id: 'someone-else' } }],
-                error: null,
+              in: () => ({
+                order: async () => ({
+                  data: [{ coach_id: 'coach-other', golf_coaches: { user_id: 'someone-else' } }],
+                  error: null,
+                }),
               }),
             }),
           };

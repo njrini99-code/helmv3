@@ -195,8 +195,10 @@ const METRIC_DIRECTION_ALIASES: Record<string, MetricDirection> = {
  * documentation, not a behaviour that can mis-learn a real metric.
  *
  * Single source of truth for the P0-01 fix: outcome attribution multiplies the
- * raw ambient-adjusted lift by `+1` for `higher_better` and `-1` for
- * `lower_better` so an improvement is ALWAYS a positive lift.
+ * raw observed `post − baseline` delta (N10, 2026-09-22: no longer an ambient
+ * adjustment — see `v3/causality/attribute.ts`'s file header) by `+1` for
+ * `higher_better` and `-1` for `lower_better` so an improvement is ALWAYS a
+ * positive lift.
  */
 export function getMetricDirection(metricId: string): MetricDirection {
   const canonical = (METRIC_DIRECTION as Record<string, MetricDirection | undefined>)[metricId];
@@ -207,9 +209,9 @@ export function getMetricDirection(metricId: string): MetricDirection {
 }
 
 /**
- * Sign multiplier that turns a raw `post − baseline` delta (or ambient-adjusted
- * lift) into an *improvement* magnitude: `+1` when higher is better, `-1` when
- * lower is better. Multiply the raw value by this so a real-world improvement is
+ * Sign multiplier that turns a raw `post − baseline` delta into an
+ * *improvement* magnitude: `+1` when higher is better, `-1` when lower is
+ * better. Multiply the raw value by this so a real-world improvement is
  * always positive regardless of the metric's polarity.
  */
 export function improvementSign(metricId: string): 1 | -1 {

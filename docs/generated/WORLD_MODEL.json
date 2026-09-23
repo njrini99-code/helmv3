@@ -17394,6 +17394,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/ranking/score.ts",
+          "line": 28
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/standing/loader.ts",
           "line": 12
         },
@@ -17708,7 +17713,7 @@
         {
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/ranking/score.ts",
-          "line": 26
+          "line": 29
         },
         {
           "kind": "import_graph",
@@ -17780,7 +17785,7 @@
         {
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/ranking/score.ts",
-          "line": 24
+          "line": 26
         },
         {
           "kind": "import_graph",
