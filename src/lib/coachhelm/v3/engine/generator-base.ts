@@ -658,6 +658,11 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
             pga_omitted_reason: this.standingTourComparable
               ? standing.pga_omitted_reason
               : 'basis_mismatch',
+            // Package 7B (addendum A2): frozen so a later re-check of this
+            // exact snapshot (EvidencePanel's `applyTourBasis`) recomputes the
+            // same comparability this row had at generation time, instead of
+            // seeing an absent `basis` and assuming on-green.
+            basis: standing.basis,
             computed_at: standing.computed_at,
           },
           counterfactual,

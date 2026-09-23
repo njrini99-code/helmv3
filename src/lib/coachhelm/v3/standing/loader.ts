@@ -36,9 +36,10 @@ async function loadLpgaIfWomens(
   return loadStandardsForTour('lpga');
 }
 
-const SELECT_FIELDS =
+const LEGACY_SELECT_FIELDS =
   'player_id, metric_id, player_value, team_avg, team_n, team_pct, ' +
   'level_avg, level_n, level_pct, pga_value, pga_delta, computed_at';
+const SELECT_FIELDS = `${LEGACY_SELECT_FIELDS}, basis, on_green_proximity_feet, layup_excluded_n`;
 
 interface RawRow {
   player_id: string;
@@ -52,7 +53,41 @@ interface RawRow {
   level_pct: number | null;
   pga_value: number;
   pga_delta: number | null;
+  /** approach_proximity_* only (Package 7B) — see PlayerStanding.basis. */
+  basis: 'on_green' | 'all_shot' | null;
+  on_green_proximity_feet: number | null;
+  layup_excluded_n: number | null;
   computed_at: string;
+}
+
+/** The pre-Package-7B row shape, before `basis`/`on_green_proximity_feet`/
+ *  `layup_excluded_n` existed. See {@link isMissingStandingColumnsError}. */
+type LegacyRawRow = Omit<RawRow, 'basis' | 'on_green_proximity_feet' | 'layup_excluded_n'>;
+
+/** Fill a legacy row out to the current shape: no basis means "not yet on
+ *  the all-shot basis", which `applyTourBasis` already treats as
+ *  non-comparable — the same withheld-marker behavior as today. */
+function withLegacyDefaults(row: LegacyRawRow): RawRow {
+  return { ...row, basis: null, on_green_proximity_feet: null, layup_excluded_n: null };
+}
+
+/**
+ * Package 7B (migration 20260922120000) added the three columns above to
+ * `golf_player_standing`. Deploy order between this app code and that
+ * migration is not guaranteed — a manual release can ship this reader before
+ * the migration applies (see the migration's merge-order note). PostgREST
+ * then rejects the WHOLE select with "column ... does not exist" (Postgres
+ * 42703), which would otherwise 500 every standing read on every page that
+ * uses one. Every loader below detects exactly this error shape and retries
+ * once with {@link LEGACY_SELECT_FIELDS}, so a mid-rollout read renders
+ * identically to a pre-migration one instead of throwing.
+ */
+function isMissingStandingColumnsError(
+  error: { code?: string | null; message?: string | null } | null | undefined,
+): boolean {
+  if (!error) return false;
+  if (error.code === '42703') return true;
+  return /column .* does not exist/i.test(error.message ?? '');
 }
 
 function toStanding(row: RawRow): PlayerStanding | null {
@@ -96,14 +131,26 @@ export async function loadStandingForMetric(
   metricId: MetricId,
 ): Promise<PlayerStanding | null> {
   const supabase = createAdminClient();
-  const { data, error } = await fromUntyped(supabase, 'golf_player_standing')
+  let { data, error } = await fromUntyped(supabase, 'golf_player_standing')
     .select(SELECT_FIELDS)
     .eq('player_id', playerId)
     .eq('metric_id', metricId)
     .maybeSingle() as {
     data: RawRow | null;
-    error: { message: string } | null;
+    error: { code?: string; message: string } | null;
   };
+  if (isMissingStandingColumnsError(error)) {
+    const legacy = await fromUntyped(supabase, 'golf_player_standing')
+      .select(LEGACY_SELECT_FIELDS)
+      .eq('player_id', playerId)
+      .eq('metric_id', metricId)
+      .maybeSingle() as {
+      data: LegacyRawRow | null;
+      error: { code?: string; message: string } | null;
+    };
+    data = legacy.data ? withLegacyDefaults(legacy.data) : null;
+    error = legacy.error;
+  }
   if (error) {
     throw new Error(`loadStandingForMetric(${playerId}, ${metricId}): ${error.message}`);
   }
@@ -129,12 +176,22 @@ export async function loadPlayerStandingMap(
   playerId: string,
 ): Promise<Map<MetricId, PlayerStanding>> {
   const supabase = createAdminClient();
-  const { data, error } = await fromUntyped(supabase, 'golf_player_standing')
+  let { data, error } = await fromUntyped(supabase, 'golf_player_standing')
     .select(SELECT_FIELDS)
     .eq('player_id', playerId) as {
     data: RawRow[] | null;
-    error: { message: string } | null;
+    error: { code?: string; message: string } | null;
   };
+  if (isMissingStandingColumnsError(error)) {
+    const legacy = await fromUntyped(supabase, 'golf_player_standing')
+      .select(LEGACY_SELECT_FIELDS)
+      .eq('player_id', playerId) as {
+      data: LegacyRawRow[] | null;
+      error: { code?: string; message: string } | null;
+    };
+    data = legacy.data ? legacy.data.map(withLegacyDefaults) : null;
+    error = legacy.error;
+  }
   if (error) {
     throw new Error(`loadPlayerStandingMap(${playerId}): ${error.message}`);
   }
@@ -183,18 +240,30 @@ export async function loadPlayersStandingMap(
     const batch = playerIds.slice(i, i + STANDING_PLAYER_BATCH);
     // Paginate each batch past the 1000-row cap (a 300-player batch can exceed
     // 1000 standing rows) with a stable order on the table's natural key.
-    const batchRows = await fetchAllRows<RawRow>((from, to) =>
-      fromUntyped(supabase, 'golf_player_standing')
-        .select(SELECT_FIELDS)
-        .in('player_id', batch)
-        .order('player_id', { ascending: true })
-        .order('metric_id', { ascending: true })
-        .range(from, to) as PromiseLike<{
-        data: RawRow[] | null;
-        error: { message: string } | null;
-      }>,
-    );
-    rows.push(...batchRows);
+    const fetchBatch = (fields: string) =>
+      fetchAllRows<RawRow | LegacyRawRow>((from, to) =>
+        fromUntyped(supabase, 'golf_player_standing')
+          .select(fields)
+          .in('player_id', batch)
+          .order('player_id', { ascending: true })
+          .order('metric_id', { ascending: true })
+          .range(from, to) as PromiseLike<{
+          data: (RawRow | LegacyRawRow)[] | null;
+          error: { code?: string; message: string } | null;
+        }>,
+      );
+    try {
+      rows.push(...(await fetchBatch(SELECT_FIELDS)) as RawRow[]);
+    } catch (err) {
+      // fetchAllRows throws rather than returning {error} — see
+      // isMissingStandingColumnsError's doc comment for why this retry
+      // exists. Only a missing-column shape is retried; anything else
+      // (a real connection/RLS failure) rethrows unchanged.
+      const message = err instanceof Error ? err.message : String(err);
+      if (!isMissingStandingColumnsError({ message })) throw err;
+      const legacyRows = (await fetchBatch(LEGACY_SELECT_FIELDS)) as LegacyRawRow[];
+      rows.push(...legacyRows.map(withLegacyDefaults));
+    }
   }
 
   // Resolve each distinct player's cohort once.

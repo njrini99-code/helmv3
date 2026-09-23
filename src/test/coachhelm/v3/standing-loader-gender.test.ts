@@ -95,6 +95,9 @@ function dbRow(overrides: Record<string, unknown> = {}) {
     level_pct: null,
     pga_value: 50, // men's Tour value — what the RPC always writes
     pga_delta: -50,
+    basis: null,
+    on_green_proximity_feet: null,
+    layup_excluded_n: null,
     computed_at: '2026-06-09T00:00:00.000Z',
     ...overrides,
   };
@@ -168,10 +171,13 @@ describe('loadStandingForMetric — gender-aware override', () => {
     expect(loadPlayerCohortMock).not.toHaveBeenCalled();
   });
 
-  // Addendum A2 (read level): the approach-proximity rows are on-green-only
-  // player values against the Tour's all-shot figure. Every cohort gets the
-  // Tour marker omitted with a stated reason; the team tick is untouched.
-  it('men: omits the Tour marker on an approach-proximity row (basis mismatch)', async () => {
+  // Addendum A2 (read level): a not-yet-refreshed approach-proximity row
+  // (basis null, the dbRow() default) still carries an on-green-only player
+  // value against the Tour's all-shot figure. Every cohort gets the Tour
+  // marker omitted with a stated reason; the team tick is untouched. Once
+  // Package 7B refreshes the row onto basis='all_shot' (below), the marker
+  // draws.
+  it('men: omits the Tour marker on a not-yet-refreshed approach-proximity row (basis mismatch)', async () => {
     singleResult.data = dbRow({
       player_id: 'tyler',
       metric_id: 'approach_proximity_175_plus_ft',
@@ -190,7 +196,7 @@ describe('loadStandingForMetric — gender-aware override', () => {
     expect(s!.team_n).toBe(9);
   });
 
-  it('women: an approach-proximity row is omitted for basis even with an LPGA row', async () => {
+  it('women: a not-yet-refreshed approach-proximity row is omitted for basis even with an LPGA row', async () => {
     standardsResult.data = [lpgaRow('approach_proximity_125_175ft', 38)];
     singleResult.data = dbRow({
       metric_id: 'approach_proximity_125_175ft',
@@ -204,6 +210,58 @@ describe('loadStandingForMetric — gender-aware override', () => {
     expect(s!.pga_omitted).toBe(true);
     expect(s!.pga_omitted_reason).toBe('basis_mismatch');
     expect(s!.is_womens).toBe(true);
+  });
+
+  it('Package 7B: an all-shot row draws the Tour marker instead of being omitted', async () => {
+    singleResult.data = dbRow({
+      player_id: 'tyler',
+      metric_id: 'approach_proximity_175_plus_ft',
+      player_value: 72,
+      team_avg: 68,
+      team_n: 9,
+      pga_value: 45,
+      pga_delta: 27,
+      basis: 'all_shot',
+    });
+    loadPlayerCohortMock.mockResolvedValue({ gender: 'mens', level: null });
+
+    const s = await loadStandingForMetric('tyler', 'approach_proximity_175_plus_ft');
+    expect(s!.pga_omitted).toBeUndefined();
+    expect(s!.pga_omitted_reason).toBeUndefined();
+    expect(s!.pga_value).toBe(45);
+  });
+
+  it('Package 7B: basis / on_green_proximity_feet / layup_excluded_n pass through untouched', async () => {
+    singleResult.data = dbRow({
+      metric_id: 'approach_proximity_175_plus_ft',
+      player_value: 72,
+      pga_value: 45,
+      pga_delta: 27,
+      basis: 'all_shot',
+      on_green_proximity_feet: 41.5,
+      layup_excluded_n: 12,
+    });
+    loadPlayerCohortMock.mockResolvedValue({ gender: 'mens', level: null });
+
+    const s = await loadStandingForMetric('tyler', 'approach_proximity_175_plus_ft');
+    expect(s!.basis).toBe('all_shot');
+    expect(s!.on_green_proximity_feet).toBe(41.5);
+    expect(s!.layup_excluded_n).toBe(12);
+  });
+
+  it('a pre-Package-7B row (basis/on_green/layup columns null) is undisturbed', async () => {
+    singleResult.data = dbRow({
+      metric_id: 'approach_proximity_50_125ft',
+      basis: null,
+      on_green_proximity_feet: null,
+      layup_excluded_n: null,
+    });
+    loadPlayerCohortMock.mockResolvedValue({ gender: 'mens', level: null });
+
+    const s = await loadStandingForMetric('tyler', 'approach_proximity_50_125ft');
+    expect(s!.basis).toBeNull();
+    expect(s!.on_green_proximity_feet).toBeNull();
+    expect(s!.layup_excluded_n).toBeNull();
   });
 });
 

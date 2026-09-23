@@ -8,7 +8,11 @@
 
 ## 1. What CoachHelm promises
 
-Turn raw performance data into trustworthy, cited, sport-specific coaching narrative and decision support, cheaply enough to run per-coach per-day, and degrade gracefully — never silently, never over budget — when it can't (`00-business-context.md` §4.2). Concretely, this is delivered through three composer entry points, all server-only:
+Turn raw performance data into trustworthy, cited, sport-specific coaching
+narrative and decision support, cheaply enough to run per-coach per-day, and
+degrade gracefully — never silently, never over budget — when it can't
+(`00-business-context.md` §4.2). Concretely, this is delivered through three
+composer entry points, all server-only:
 
 - `composeRoundReview` — plain-language round review, tying specific holes/shots to specific causes, with a predicted-vs-actual comparison for unusual rounds (`02-jobs-to-be-done.md` §3.1).
 - `composeCoachChat` — natural-language Q&A about a player or trend, grounded in that player's actual data (`02-jobs-to-be-done.md` §3.2).

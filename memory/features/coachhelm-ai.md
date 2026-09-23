@@ -26,7 +26,9 @@ CoachHelm is the golf intelligence layer. It turns round, shot, standing, player
 The feature currently spans two generations:
 
 - **V2**: established insight mining, prediction, learning, NLG, post-round triggers, and coach/player feedback loops.
-- **V3**: newer generator framework for composite insights, counterfactuals, player genome, provider ingest, goals, intent, LLM narratives, practice recommendations, qualifying, and chat.
+- **V3**: newer generator framework for composite insights, counterfactuals,
+  player genome, provider ingest, goals, intent, LLM narratives, practice
+  recommendations, qualifying, and chat.
 
 ## Primary Entry Points
 
@@ -107,15 +109,27 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   `hole_number`); derived tee distances carry `distance_method:
   'derived_progress'`. The metric identity table lives in
   `docs/architecture/coachhelm-evidence-contract.md`.
-- Standing Tour basis (2026-09-12, addendum A2 read level): the three
-  `approach_proximity_*` standing rows are on-green-only player values
-  against the Tour's all-shot figure. `v3/standing/tour-basis.ts` names them
-  and every standing loader stamps `pga_omitted: true` with
-  `pga_omitted_reason: 'basis_mismatch'`, so no tile, goal target, or engine
-  suggestion compares them to Tour (the team tick stays — same basis).
-  `StandingStrip`/`StandingBar` caption the omission (`pgaOmissionNote`).
-  Moving the RPC to all-shot proximity is Package 7B; until then do not
-  re-add a Tour comparison for these ids anywhere.
+- Standing Tour basis (2026-09-22, Package 7B / addendum A2): the three
+  `approach_proximity_*` standing rows carry a `basis` column
+  (`'on_green' | 'all_shot' | null`) written by
+  `refresh_player_standing_shot_metrics` (migration
+  `20260922120000_v3_standing_shot_metrics_all_shot_proximity.sql`). The RPC now
+  computes `player_value` as ALL-SHOT proximity (misses included), matching
+  `pga_value`'s basis, with 175+ yd par-5 approaches that miss the green
+  excluded as likely lay-ups (`layup_excluded_n`) rather than counted as
+  misses; the pre-migration on-green-only figure is preserved in
+  `on_green_proximity_feet`. `v3/standing/tour-basis.ts`'s
+  `isStandingTourComparable(metricId, basis)` now reads that column: a row is
+  comparable ONLY when `basis === 'all_shot'` — `null`/`'on_green'`/absent
+  all fail closed (a not-yet-refreshed row stays withheld, same as before
+  this migration). When comparable, every standing loader stops stamping
+  `pga_omitted: true`/`pga_omitted_reason: 'basis_mismatch'`, so the tile,
+  goal target, and engine suggestion draw the Tour marker; when not, the
+  omission is unchanged from the #1938 behavior (the team tick was always
+  fine either way — same basis on both sides). `StandingStrip`/`StandingBar`
+  caption the omission (`pgaOmissionNote`).
+  `ApproachMissGenerator.standingTourComparable` no longer force-overrides
+  this — it trusts the loader's basis-aware `standing.pga_omitted`.
 - Severity ordering (2026-09-12, N5): `golf_coach_insights.priority` is TEXT
   and sorts alphabetically at the database. Never `.order('priority')`. Rank
   feeds with `rankEvidenceInsights`; order a "sort by priority" list with

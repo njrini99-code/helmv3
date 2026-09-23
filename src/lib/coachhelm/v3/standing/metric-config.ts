@@ -66,10 +66,19 @@ export const METRIC_RENDER_CONFIG: Record<MetricId, MetricRenderConfig> = {
   putt_miss_bias_left_pct:   { direction: 'higher_better', unit: 'percent', display_label: 'Break Make % (weaker side, L-to-R)',  default_scale: { min: 0, max: 100 } },
   putt_miss_bias_right_pct:  { direction: 'higher_better', unit: 'percent', display_label: 'Break Make % (weaker side, R-to-L)', default_scale: { min: 0, max: 100 } },
 
-  // Approach proximity — lower is better (closer to hole), feet
-  approach_proximity_50_125ft:   { direction: 'lower_better', unit: 'feet', display_label: 'Approach Proximity 50-125 yd',  default_scale: { min: 10, max: 50 } },
-  approach_proximity_125_175ft:  { direction: 'lower_better', unit: 'feet', display_label: 'Approach Proximity 125-175 yd', default_scale: { min: 20, max: 60 } },
-  approach_proximity_175_plus_ft:{ direction: 'lower_better', unit: 'feet', display_label: 'Approach Proximity 175+ yd',    default_scale: { min: 30, max: 80 } },
+  // Approach proximity — lower is better (closer to hole), feet.
+  // Package 7B / addendum A2 (2026-09-22): player_value moved from on-green-
+  // only to all-shot (misses included), which widens the real distribution.
+  // Bounds below are the min/max around the measured p10-p90 player-average
+  // range on prod at migration time (50-125: 20.9-35.6 ft; 125-175:
+  // 33.6-60.9 ft; 175+: 39.9-101.8 ft, layups excluded), with the Tour value
+  // kept inside range. NOTE: stroke_impact_per_unit in
+  // counterfactual/lookup-tables.ts was calibrated against the OLD
+  // on-green-only distribution and has not been recalibrated for the wider
+  // all-shot range — a known follow-up, not fixed by this scale change.
+  approach_proximity_50_125ft:   { direction: 'lower_better', unit: 'feet', display_label: 'Approach Proximity 50-125 yd',  default_scale: { min: 15, max: 40  } },
+  approach_proximity_125_175ft:  { direction: 'lower_better', unit: 'feet', display_label: 'Approach Proximity 125-175 yd', default_scale: { min: 25, max: 65  } },
+  approach_proximity_175_plus_ft:{ direction: 'lower_better', unit: 'feet', display_label: 'Approach Proximity 175+ yd',    default_scale: { min: 35, max: 110 } },
 
   // Scrambling — higher is better
   scrambling_pct_rough:   { direction: 'higher_better', unit: 'percent', display_label: 'Scrambling % Rough',   default_scale: { min: 20, max: 70 } },

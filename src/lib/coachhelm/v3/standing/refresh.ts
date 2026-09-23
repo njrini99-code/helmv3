@@ -61,9 +61,13 @@ export const ROUND_REFRESH_METRIC_IDS: readonly MetricId[] = [
 /**
  * Shot-level metrics populated by `refresh_player_standing_shot_metrics(uuid[])`
  * (migration 20260605130000). The cache has only an overall approach-proximity
- * average, so these by-band proximities are computed straight from golf_shots
- * (on-green feet, by 50-125 / 125-175 / 175+ yd). Same (metric_id, rows) shape
- * (aliased out_*) so the cron concatenates results.
+ * average, so these by-band proximities are computed straight from golf_shots,
+ * by 50-125 / 125-175 / 175+ yd. Since Package 7B / addendum A2 (migration
+ * 20260922120000) player_value is ALL-SHOT proximity (misses included,
+ * likely lay-ups on 175+ yd par-5s excluded — see `PlayerStanding.basis` in
+ * ./types.ts), matching golf_pga_standards' basis; the prior on-green-only
+ * figure is preserved separately in `on_green_proximity_feet`. Same
+ * (metric_id, rows) shape (aliased out_*) so the cron concatenates results.
  */
 export const SHOT_REFRESH_METRIC_IDS: readonly MetricId[] = [
   'approach_proximity_50_125ft',

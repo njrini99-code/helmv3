@@ -96,6 +96,15 @@ export const COUNTERFACTUAL_LOOKUP: Record<MetricId, CounterfactualConfig> = {
   // Approach proximity — research doc §4: every 5 ft closer ≈ 10-15 pp of
   // conversion in the 5-15 ft zone. Approximate: each foot closer ≈ 0.04
   // strokes/round contribution at typical 12 approaches/round.
+  //
+  // KNOWN FOLLOW-UP (Package 7B / addendum A2, 2026-09-22): these three
+  // coefficients were calibrated against the OLD on-green-only proximity.
+  // standing.player_value for these ids is now all-shot (misses included,
+  // wider range — see standing/metric-config.ts), and part of that movement
+  // is really a green-hit-rate effect rather than a proximity effect, so a
+  // foot of all-shot improvement is not necessarily worth the same strokes
+  // as a foot of on-green improvement. Not recalibrated here — that needs its
+  // own measurement, not an invented number in this migration's follow-up.
   approach_proximity_50_125ft:    { stroke_impact_per_unit: 0.05, coachable_timeframe_weeks: 6 },
   approach_proximity_125_175ft:   { stroke_impact_per_unit: 0.03, coachable_timeframe_weeks: 12 },
   approach_proximity_175_plus_ft: { stroke_impact_per_unit: 0.02, coachable_timeframe_weeks: 16 },

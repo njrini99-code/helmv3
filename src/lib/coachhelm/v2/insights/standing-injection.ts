@@ -41,6 +41,14 @@ export type EvidenceStanding = {
   team_pct: number | null;
   pga_value: number;
   pga_delta: number | null;
+  /**
+   * Package 7B (addendum A2). Frozen so a later re-check of this exact
+   * snapshot (`standing/tour-basis.ts` applyTourBasis, re-run at
+   * EvidencePanel read time) recomputes the same Tour-marker comparability
+   * this row had at generation time. Absent on a row written before Package
+   * 7B — treated as not comparable, same as before.
+   */
+  basis?: PlayerStanding['basis'];
   computed_at: string;
 };
 
@@ -56,6 +64,7 @@ function flatten(s: PlayerStanding): EvidenceStanding {
     pga_omitted: s.pga_omitted,
     pga_omitted_reason: s.pga_omitted_reason,
     is_womens: s.is_womens,
+    basis: s.basis,
     computed_at: s.computed_at,
   };
 }

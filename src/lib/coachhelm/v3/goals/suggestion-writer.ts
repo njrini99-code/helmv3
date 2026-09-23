@@ -36,6 +36,8 @@ export interface StandingRowWithDirection {
   /** Signed (player - pga). Sign meaning depends on direction. */
   pga_delta: number | null;
   direction: 'higher_better' | 'lower_better';
+  /** Package 7B (addendum A2) — see standing/tour-basis.ts. */
+  basis?: 'on_green' | 'all_shot' | null;
 }
 
 /** Compact view of an existing active goal — we only need the metric_id. */
@@ -109,15 +111,16 @@ export function isWorseThanAnchor(
  * baseline, no finite PGA baseline to aim at, or a metric whose player value
  * and Tour value are measured on different bases).
  *
- * Basis rule (addendum A2): the approach-proximity rows carry on-green-only
- * player values against the Tour's all-shot figure, so the "gap" is not a
- * gap and its sign is not evidence either way. Those metrics are ineligible
- * here BY DECISION — not silently "better than Tour" — until the standing
- * refresh moves them onto one basis (Package 7B). `runSuggestionWriter`
- * reports how many rows this rule skipped.
+ * Basis rule (addendum A2): an approach-proximity row carrying on-green-only
+ * player values against the Tour's all-shot figure has a "gap" that is not a
+ * gap, and its sign is not evidence either way. Those rows are ineligible
+ * here BY DECISION — not silently "better than Tour". Package 7B moved the
+ * standing refresh to an all-shot basis, so a row IS eligible once its own
+ * `basis` says `'all_shot'`; a row not yet refreshed onto that basis stays
+ * ineligible. `runSuggestionWriter` reports how many rows this rule skipped.
  */
 function rowSeverity(row: StandingRowWithDirection): number | null {
-  if (!isStandingTourComparable(row.metric_id)) return null;
+  if (!isStandingTourComparable(row.metric_id, row.basis)) return null;
   if (!Number.isFinite(row.pga_value)) return null;
   const rawDelta = row.pga_delta ?? row.player_value - row.pga_value;
   const severity = row.direction === 'higher_better' ? -rawDelta : rawDelta;
@@ -394,7 +397,7 @@ export async function runSuggestionWriter(
   // 3. Pull all standing rows, grouped by player.
   const { data: standingRows, error: standingErr } = await supabase
     .from('golf_player_standing')
-    .select('player_id, metric_id, player_value, pga_value, pga_delta');
+    .select('player_id, metric_id, player_value, pga_value, pga_delta, basis');
   if (standingErr) {
     result.error = `standing: ${standingErr.message}`;
     result.duration_ms = Date.now() - startedAt;
@@ -407,7 +410,7 @@ export async function runSuggestionWriter(
     if (!dir) continue; // Inactive or unknown metric — skip.
     // Counted here for the run report; `rowSeverity` is what actually refuses
     // the row, so the pure selector and the P1-08 expiry path agree.
-    if (!isStandingTourComparable(s.metric_id)) result.rows_skipped_basis_mismatch += 1;
+    if (!isStandingTourComparable(s.metric_id, s.basis)) result.rows_skipped_basis_mismatch += 1;
     const list = standingsByPlayer.get(s.player_id) ?? [];
     list.push({
       player_id: s.player_id,
@@ -416,6 +419,7 @@ export async function runSuggestionWriter(
       pga_value: Number(s.pga_value),
       pga_delta: s.pga_delta == null ? null : Number(s.pga_delta),
       direction: dir,
+      basis: s.basis ?? null,
     });
     standingsByPlayer.set(s.player_id, list);
   }
