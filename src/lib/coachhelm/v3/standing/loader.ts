@@ -38,7 +38,8 @@ async function loadLpgaIfWomens(
 
 const SELECT_FIELDS =
   'player_id, metric_id, player_value, team_avg, team_n, team_pct, ' +
-  'level_avg, level_n, level_pct, pga_value, pga_delta, computed_at';
+  'level_avg, level_n, level_pct, pga_value, pga_delta, ' +
+  'basis, on_green_proximity_feet, layup_excluded_n, computed_at';
 
 interface RawRow {
   player_id: string;
@@ -52,6 +53,10 @@ interface RawRow {
   level_pct: number | null;
   pga_value: number;
   pga_delta: number | null;
+  /** approach_proximity_* only (Package 7B) — see PlayerStanding.basis. */
+  basis: 'on_green' | 'all_shot' | null;
+  on_green_proximity_feet: number | null;
+  layup_excluded_n: number | null;
   computed_at: string;
 }
 

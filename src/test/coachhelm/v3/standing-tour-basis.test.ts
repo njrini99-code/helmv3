@@ -33,20 +33,32 @@ function row(overrides: Partial<PlayerStanding> = {}): PlayerStanding {
 }
 
 describe('isStandingTourComparable', () => {
-  it('names exactly the three approach-proximity ids as non-comparable', () => {
+  it('names exactly the three approach-proximity ids as basis-gated', () => {
     expect([...STANDING_TOUR_BASIS_MISMATCH].sort()).toEqual([
       'approach_proximity_125_175ft',
       'approach_proximity_175_plus_ft',
       'approach_proximity_50_125ft',
     ]);
+  });
+
+  it('a basis-gated id with no basis, or basis on_green, stays non-comparable (fails closed)', () => {
     for (const id of STANDING_TOUR_BASIS_MISMATCH) {
       expect(isStandingTourComparable(id)).toBe(false);
+      expect(isStandingTourComparable(id, null)).toBe(false);
+      expect(isStandingTourComparable(id, 'on_green')).toBe(false);
     }
   });
 
-  it('every other registry metric keeps its Tour comparison', () => {
+  it('Package 7B: a basis-gated id becomes comparable once its row says basis=all_shot', () => {
+    for (const id of STANDING_TOUR_BASIS_MISMATCH) {
+      expect(isStandingTourComparable(id, 'all_shot')).toBe(true);
+    }
+  });
+
+  it('every other registry metric keeps its Tour comparison regardless of basis', () => {
     for (const id of ['gir_pct', 'scrambling_pct_sand', 'putts_made_5_10ft_pct', 'sg_approach', 'big_number_rate']) {
       expect(isStandingTourComparable(id)).toBe(true);
+      expect(isStandingTourComparable(id, 'on_green')).toBe(true);
     }
   });
 });
@@ -80,7 +92,8 @@ describe('applyTourBasis', () => {
 
   it('a women\'s approach row is omitted for basis even after the LPGA anchor is applied', () => {
     // The gender anchor swaps the men's 30 for the LPGA figure — still an
-    // all-shot number against an on-green player value. Basis rule wins.
+    // all-shot number against an on-green player value (basis unset). Basis
+    // rule wins.
     const lpga = new Map([
       ['approach_proximity_125_175ft', { metric_id: 'approach_proximity_125_175ft', pga_tour_value: 38 }],
     ]) as unknown as Parameters<typeof applyGenderAnchor>[2];
@@ -91,5 +104,18 @@ describe('applyTourBasis', () => {
     expect(s.pga_omitted).toBe(true);
     expect(s.pga_omitted_reason).toBe('basis_mismatch');
     expect(s.is_womens).toBe(true);
+  });
+
+  it('Package 7B: an all-shot row draws the Tour marker (no omission stamped)', () => {
+    const r = row({ basis: 'all_shot', player_value: 72, pga_value: 45, pga_delta: 27 });
+    const s = applyTourBasis(r);
+    expect(s).toBe(r); // comparable → returned unchanged, same reference
+    expect(s.pga_omitted).toBeUndefined();
+  });
+
+  it('Package 7B: a row not yet refreshed onto the new basis (basis: null) still fails closed', () => {
+    const s = applyTourBasis(row({ basis: null }));
+    expect(s.pga_omitted).toBe(true);
+    expect(s.pga_omitted_reason).toBe('basis_mismatch');
   });
 });

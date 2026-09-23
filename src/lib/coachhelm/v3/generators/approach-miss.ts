@@ -264,22 +264,32 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
   protected override readonly attachStandingWhenAvailable = true;
 
   /**
-   * No counterfactual and no Tour tick on the standing block (repair plan
-   * Package 2, "separate proximity/green-hit metric identities"):
+   * No counterfactual (repair plan Package 2, "separate proximity/green-hit
+   * metric identities") — but the standing block's Tour tick is no longer
+   * forced off (Package 7B / addendum A2, 2026-09-22):
    *
-   *   - `agg.playerValue` is proximity over GREEN-FINDING shots only, while
-   *     `standing.pga_value` (and the research-doc Tour figures) are proximity
-   *     over ALL approaches from the range, misses included. A gap between the
-   *     two is not a gap — production showed players "beating Tour" from 175+
-   *     (25.8 ft vs 45 ft) purely because their long misses were excluded.
-   *   - The green-hit % headline has no strokes-per-green-hit model yet; a
-   *     "strokes saved" projection for it would be invented (addendum A2).
+   *   - `agg.playerValue` is THIS GENERATOR's own on-green-only proximity
+   *     (over GREEN-FINDING shots only), computed straight from the round's
+   *     shots for the insight card's headline/counterfactual math. It stays
+   *     on-green-only — the green-hit % headline still has no
+   *     strokes-per-green-hit model (a "strokes saved" projection for it
+   *     would be invented, addendum A2) — so it remains a different quantity
+   *     from `standing.pga_value`, and the counterfactual stays suppressed.
+   *   - `standing.player_value` / `standing.pga_value` (injected into
+   *     `evidence.standing` below, NOT `agg.playerValue`) both come from
+   *     `golf_player_standing`, refreshed by
+   *     `refresh_player_standing_shot_metrics`. Since that RPC moved to an
+   *     all-shot basis (Package 7B), the two now share a basis, so there is
+   *     no separate reason for THIS generator to force-omit the marker on
+   *     top of the loader's own `applyTourBasis` (which already omits
+   *     correctly per-row via `standing.basis`, including for a row not yet
+   *     refreshed onto the new basis). Leave `standingTourComparable` at the
+   *     base class default (trust `standing.pga_omitted` as computed).
    *
-   * The standing's TEAM tick stays: teammates are measured on the same
-   * on-green-only basis, so that comparison is like-for-like.
+   * The standing's TEAM tick was always like-for-like (teammates measured on
+   * the same basis as each other) and is unaffected either way.
    */
   protected override readonly counterfactualComparable = false;
-  protected override readonly standingTourComparable = false;
 
   readonly metricId: MetricId;
   readonly bucket: ApproachBucket;

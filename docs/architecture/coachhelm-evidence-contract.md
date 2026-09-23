@@ -196,27 +196,44 @@ true`, the same render path the women's gender-anchor omission uses).
 Two rules every reader of `golf_player_standing` and `golf_coach_insights`
 follows; both are pure functions with tests.
 
-- Tour basis (addendum A2, read level). `standing/tour-basis.ts` names the
-  metric ids whose `player_value` and `pga_value` measure different
-  quantities (today the three `approach_proximity_*` ids: on-green-only
-  leave vs the Tour's all-shot proximity). The three loaders in
-  `standing/loader.ts` apply `applyTourBasis` after the gender anchor, so
-  the row reaches every surface with `pga_omitted: true` and
+- Tour basis (addendum A2, read level; Package 7B, 2026-09-22). `standing/
+  tour-basis.ts` names the metric ids whose `player_value` and `pga_value`
+  CAN measure different quantities (the three `approach_proximity_*` ids)
+  and gates comparability per-row via `isStandingTourComparable(metricId,
+  basis)`: comparable only when `basis === 'all_shot'`; `null`/`'on_green'`/
+  absent fail closed. `refresh_player_standing_shot_metrics` (migration
+  `20260922120000_v3_standing_shot_metrics_all_shot_proximity.sql`) writes
+  `basis: 'all_shot'` and computes `player_value` as all-shot proximity
+  (misses included, 175+ yd par-5 approaches missing the green excluded as
+  likely lay-ups into `layup_excluded_n`), matching `pga_value`'s basis; the
+  pre-migration on-green-only figure is preserved in
+  `on_green_proximity_feet`. A row this RPC hasn't (re)written keeps
+  `basis: null` and stays withheld exactly as before. The three loaders in
+  `standing/loader.ts` apply `applyTourBasis` after the gender anchor, so a
+  comparable row reaches every surface with the Tour marker intact, and a
+  non-comparable row gets `pga_omitted: true` /
   `pga_omitted_reason: 'basis_mismatch'`. `StandingStrip` / `StandingBar`
   render "—" plus a caption from `pgaOmissionNote()` and narrate it in the
-  aria label; `pgaTickPct` draws no tick; `suggestGoalTarget` returns the
-  baseline with `no_target_reason`; the suggestion writer's `rowSeverity`
-  returns null and `WriterResult.rows_skipped_basis_mismatch` counts the
-  rows it refused. The women's no-anchor omission carries
+  aria label when omitted; `pgaTickPct` draws no tick; `suggestGoalTarget`
+  returns the baseline with `no_target_reason`; the suggestion writer's
+  `rowSeverity` returns null and `WriterResult.rows_skipped_basis_mismatch`
+  counts the rows it refused (also basis-aware now — its `golf_player_
+  standing` select carries `basis` and passes it through
+  `StandingRowWithDirection.basis`). The women's no-anchor omission carries
   `'no_womens_anchor'` the same way. Two consequences worth knowing: the
-  snapshot frozen into `evidence.standing` predates the rule on 116
-  production rows (2026-09-12), so `EvidencePanel` re-applies
-  `applyTourBasis` on read instead of trusting the stored flag; and every
-  card that receives a live `PlayerStanding` (goal card, focus-area card,
-  home insights drill, standing drills, filmstrip) forwards both omission
-  fields to the strip — a consumer that passes `pga_value` alone redraws
-  the comparison. Remove an id from the set only when the refresh RPC
-  writes it on the Tour's basis.
+  snapshot frozen into `evidence.standing` now also carries `basis` (added
+  to the injected object in `generator-base.ts` and to `EvidenceStanding` in
+  `v2/insights/standing-injection.ts`) so `EvidencePanel`'s read-time
+  `applyTourBasis` re-check reproduces the same comparability the row had at
+  generation time; a snapshot frozen before this field existed has no
+  `basis` and renders the same (safe) omission it always did. Every card
+  that receives a live `PlayerStanding` (goal card, focus-area card, home
+  insights drill, standing drills, filmstrip) forwards both omission fields
+  to the strip — a consumer that passes `pga_value` alone redraws the
+  comparison. `ApproachMissGenerator.standingTourComparable` no longer
+  force-overrides the loader's decision (removed the `= false` override);
+  it defers to the base class default (`true`, trust `standing.pga_omitted`
+  as already basis-aware).
 - No backwards target. `suggestGoalTarget` offers the Tour midpoint only
   when the player is behind the anchor (`isWorseThanAnchor`); a player
   already ahead gets `no_target_reason: 'already_ahead'` and sets their own
@@ -237,8 +254,9 @@ follows; both are pure functions with tests.
 | Measure | `evidence.metric` / key | Unit | Numerator | Denominator | Eligibility | Direction | Comparator | Producer |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Green-hit rate per band | `approach_proximity_{50_125ft,125_175ft,175_plus_ft}` (registry id kept; `polarity: higher_better`, `unit: percent`, label "Greens hit from …") | percent | approaches from the band finishing on the green (`result` green/hole/gir) | approaches from the band in the 90-day window | ≥ 5 attempts in band; intent unknown (a par-5 lay-up logged as an approach counts — addendum A2 separates it) | higher_better | `greenHitAnchor(bucket, gender)`: men's approximate Tour band figure (`pga_baseline`), women's derived target (`estimated_target`) | `v3/generators/approach-miss.ts` |
-| On-green proximity per band | same registry id; `standing.metric_id`, `agg.playerValue`, `evidence.detail.proximity_when_hit_feet` | feet | sum of finish distance for green-finding approaches | green-finding approaches (≥ 3) | as above, on-green finishes only | lower_better | team tick only (same basis). Tour marker omitted for EVERY reader and cohort — `standing/tour-basis.ts` stamps `pga_omitted: true, pga_omitted_reason: 'basis_mismatch'` in the three loaders; no counterfactual; goal targets and engine suggestions treat the metric as ineligible (stated, not silent) until the RPC moves to one basis (Package 7B). `pga_value` is all-shot proximity, misses included | approach-miss standing block; `standing/refresh.ts` |
-| Short-approach on-green leave (composite) | `approach_proximity_50_125ft` on the `short_approach_proximity_gap` composite; `polarity: lower_better`, `unit: feet` | feet | `detail.proximity_when_hit_feet` of the source approach_miss row | green-finding approaches only | fires above `DIAL_IN_TARGET_FT` (22 ft) AND weak scrambling | lower_better | the rule's own threshold as `estimated_target` ("Dial-in target ~22 ft (est., on-green only)") — never a Tour all-shot proximity, same basis rule as the approach_miss row | `v3/composite/rules/short-approach-proximity-gap.ts` |
+| On-green proximity per band (generator's own headline, `agg.playerValue` / `evidence.detail.proximity_when_hit_feet`) | same registry id; NOT `standing.metric_id` | feet | sum of finish distance for green-finding approaches | green-finding approaches (≥ 3) | as above, on-green finishes only | lower_better | none — `counterfactualComparable = false` (unchanged by Package 7B; this is a different quantity than `pga_value` and stays on-green-only for the insight card headline) | approach-miss aggregate; `v3/generators/approach-miss.ts` |
+| Approach-proximity STANDING per band (`golf_player_standing` row) | same registry id; `standing.metric_id`, `standing.player_value` | feet | Package 7B (2026-09-22, migration `20260922120000_*`): ALL-SHOT — every eligible approach in the band, misses included | ≥ 10 attempts AND ≥ 3 distinct rounds (addendum A2 §5.2 floor, replacing the old MIN_GREENS=3); 175+ yd par-5 approaches missing the green excluded as likely lay-ups (`layup_excluded_n`), not counted as misses | lower_better | team tick (same basis either way). Tour marker draws when `basis = 'all_shot'` (`standing/tour-basis.ts` `isStandingTourComparable`); withheld (`pga_omitted: true, pga_omitted_reason: 'basis_mismatch'`) for `basis` null/`'on_green'` — a row not yet refreshed onto the new basis fails closed, same as every row before this migration. `pga_value` is all-shot proximity (unchanged). The pre-migration on-green-only figure is preserved in `on_green_proximity_feet` for `short-approach-proximity-gap.ts` | `refresh_player_standing_shot_metrics`; `standing/refresh.ts` |
+| Short-approach on-green leave (composite) | `approach_proximity_50_125ft` on the `short_approach_proximity_gap` composite; `polarity: lower_better`, `unit: feet` | feet | `detail.proximity_when_hit_feet` of the source approach_miss GENERATOR aggregate (not the `golf_player_standing` row — that one moved to all-shot under Package 7B) | green-finding approaches only | fires above `DIAL_IN_TARGET_FT` (22 ft) AND weak scrambling | lower_better | the rule's own threshold as `estimated_target` ("Dial-in target ~22 ft (est., on-green only)") — never a Tour all-shot proximity; unaffected by Package 7B, which is why `on_green_proximity_feet` was added to the standing row instead of changing this generator aggregate | `v3/composite/rules/short-approach-proximity-gap.ts` |
 | GIR % | `gir_pct` | percent | holes with `golf_holes.gir = true` | holes played | per hole (regulation status as logged; addendum A1 re-derives it from total strokes incl. penalties) | higher_better | `cohortAnchor('gir_pct', gender)` / DB `pga_value` | stats cache; **a different id from green-hit rate by contract** |
 | Miss-axis share | diagnosis driver `approach_miss_{short,long,left,right}_share` | percent | misses on the dominant pole of one axis | misses with a read on that axis (`n` in the observation) | ≥ 5 directional misses and share ≥ 0.55 (`dominantAxis`) | descriptive | none — an observation; the reading's `check` names what is not recorded (intent, club, wind, target) | `v3/engine/diagnosis.ts` `approachAxisReading` |
 | Rough/sand recovery leave | `recovery_proximity_rough_sand` (composite; was `short_side_proximity`) | feet | sum of leave (yards ×3 normalised) | short-game shots from rough/sand (≥ 10) | shot record only — short-sidedness is **not** measured (needs pin position + miss side) | lower_better | Tour ~10 ft (approx), `strokes_impact_method: rough_estimate` | `composite/rules/short-side-scrambling-chain.ts` |

@@ -63,6 +63,35 @@ export interface PlayerStanding {
    */
   is_womens?: boolean;
 
+  /**
+   * approach_proximity_* only (Package 7B / addendum A2, 2026-09-22). Set to
+   * 'all_shot' by refresh_player_standing_shot_metrics: player_value there is
+   * averaged over every eligible approach in the band, misses included, on
+   * the same basis as pga_value (previously on-green-only, which is why the
+   * Tour marker was withheld — see tour-basis.ts). Undefined/null for every
+   * other metric_id and for a row this migration's function hasn't refreshed
+   * yet — treat those as not (yet) Tour-comparable, not as "on_green".
+   */
+  basis?: 'on_green' | 'all_shot' | null;
+
+  /**
+   * approach_proximity_* only: the pre-Package-7B ON-GREEN-only proximity
+   * (feet), preserved for a consumer that specifically wants that figure
+   * (e.g. v3/composite/rules/short-approach-proximity-gap.ts, which compares
+   * against its own fixed dial-in target, never against Tour) now that
+   * player_value has moved to the all-shot basis. Null below the on-green
+   * sample floor or for any other metric_id.
+   */
+  on_green_proximity_feet?: number | null;
+
+  /**
+   * approach_proximity_175_plus_ft only: count of approach shots in this
+   * player's band excluded from player_value as likely deliberate lay-ups
+   * (par-5 hole, 175+ yd, did not finish on the green — a derived heuristic,
+   * not recorded intent). 0 for the two shorter bands and any other metric.
+   */
+  layup_excluded_n?: number | null;
+
   computed_at: string;
 }
 
