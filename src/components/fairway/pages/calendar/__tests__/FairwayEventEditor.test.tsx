@@ -767,3 +767,41 @@ describe('FairwayEventEditor — empty roster', () => {
     expect(screen.getByText(/No players on this team yet\./i)).toBeInTheDocument();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Coaches are not invitable attendees (Bridge 2026-09-23, Guilford).
+//
+// The calendar page hands the editor `teamMembers`: the roster PLUS every
+// coach in the organisation, tagged `role: 'coach'`. The editor only dropped
+// the signed-in coach's own row, so every OTHER coach was offered as an
+// invitee and "Select all" put their `golf_coaches.id` into attendeeIds.
+// None of it can be saved — `golf_event_attendance.player_id` references
+// `golf_players`, and `sendEventInvitations` drops anyone off the roster —
+// but the conflict check sends the list as-is, and its shared-team gate
+// refuses the WHOLE check on one non-player id. A head coach creating 14
+// practices got "Not authorized to check availability for these people" on
+// every one of them.
+// ---------------------------------------------------------------------------
+
+describe('FairwayEventEditor — coaches are not invitees', () => {
+  const ORG_COACH = { id: 'coach-other', first_name: 'Coach', last_name: '(Demo)', role: 'coach' as const };
+  const ROSTER = PLAYERS.map((p) => ({ ...p, role: 'player' as const }));
+
+  it('offers only roster players in the invite picker, so the conflict check never carries a coach id', async () => {
+    renderEditor({ event: null, teamPlayers: [ORG_COACH, ...ROSTER] }, { stage: 'essentials' });
+
+    fireEvent.click(screen.getByRole('button', { name: /Choose/ }));
+    expect(await screen.findByRole('option', { name: /Ava Stone/ })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /Coach/ })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Apply attendees/ }));
+
+    await pickPlayers(/Ava Stone/, /Ben Reed/, /Cam Knox/);
+    await waitFor(() => {
+      const ids = checkScheduleConflicts.mock.calls.at(-1)?.[4] as string[] | undefined;
+      expect([...(ids ?? [])].sort()).toEqual(['p1', 'p2', 'p3']);
+    });
+    for (const call of checkScheduleConflicts.mock.calls) {
+      expect(call[4]).not.toContain(ORG_COACH.id);
+    }
+  });
+});

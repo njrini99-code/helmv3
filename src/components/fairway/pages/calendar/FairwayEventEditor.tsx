@@ -320,7 +320,14 @@ export function FairwayEventEditor({
   onOpenPeoplePicker,
 }: FairwayEventEditorProps) {
   const isCreating = !event;
-  const availablePlayers = teamPlayers.filter((p) => p.id !== currentUserId);
+  // Invitees are PLAYERS. `teamPlayers` is the page's roster merged with every
+  // coach in the organisation (tagged `role: 'coach'`); dropping only the
+  // signed-in coach left the others invitable. Their ids cannot be saved —
+  // attendance references `golf_players` and `sendEventInvitations` drops
+  // non-roster ids — and the conflict check's shared-team gate refuses the
+  // whole check on one of them ("Not authorized to check availability for
+  // these people", Bridge 2026-09-23). The id check stays for untagged rows.
+  const availablePlayers = teamPlayers.filter((p) => p.role !== 'coach' && p.id !== currentUserId);
   // The people picker (§2.3) owns its own search, so it gets the whole
   // roster rather than the query-filtered `visiblePlayers` the inline grid
   // shows; applying replaces the selection outright — that is what the
