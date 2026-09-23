@@ -291,3 +291,58 @@
   during the grace window itself).
 - Verification: `npm run typecheck:fast` clean; `causality-attribute.
   test.ts` — 28 passed, 0 failed (1 new test).
+
+## 2026-09-23 — A9 slice 2: confounding-intervention detection wired in
+
+- SHA: (pending push).
+- Change: new `src/lib/coachhelm/v3/causality/confounding-check.ts`
+  (`detectConfoundingInterventions`), called from `comparable-attribute.ts`
+  right after the follow-up-window-open gate (never before — the write is
+  permanent) and before `loadPlayerContext`. Replaces slice 1's hardcoded
+  `multipleInterventions: false` with a real check: sets it `true` when
+  ANY other insight's first-ever `golf_insight_exposure` to the same
+  player lands inside `[baselineWindow.start, followUpWindow.end]`
+  (window starts at BASELINE start, not `interventionAt` — an
+  intervention landing during baseline contaminates it too), matched on
+  ANY metric (insight→metric mapping isn't reliable enough to filter on).
+  Excludes this insight itself; `golf_coach_insights` has no lineage/
+  supersession key to exclude a re-surfacing chain by, only `signature`
+  (identifies the generating rule, not an identity chain).
+  A confounded write is still written, never dropped — under a new
+  distinct `method_version`, `'comparable_opportunities_v1_limited'`
+  (`COMPARABLE_OPPORTUNITIES_LIMITED_METHOD_VERSION`,
+  `comparable-attribute.ts`), instead of the clean
+  `'comparable_opportunities_v1'`. A failed confounder query is its own
+  typed skip (`{ok: false, reason: 'confounder-read-failed', error}`) —
+  never silently read as "no confounder found", the wrong direction for a
+  downgrade flag — counted under the cron's new
+  `summary.comparable_confounder_read_failed` and logged under
+  `cron.v3.causality.comparable-confounder-read`. The cron's summary also
+  splits `comparable_attributed` (clean writes only, now) from a new
+  `comparable_attributed_limited` (confounded writes), so a reader can
+  tell clean vs. confounded evidence apart from the summary alone.
+- Grepped every reader of `golf_insight_outcome_attribution`/
+  `method_version` in the repo: the only other reads are the round-level
+  `attribute.ts` path's own, unrelated `'v2_observed_delta'` literal and
+  the cron's anti-join `.select('insight_id')` (never reads
+  `method_version`). Nothing today does an equality/switch check on this
+  column that could misclassify the new `_limited` value — nothing
+  needed fixing.
+- Deferred (named follow-up, not shipped): focus-area/drill-change
+  confounders (repair-plan addendum item (c)) — no existing player-scoped
+  table has a reliable activation timestamp to join against without
+  inventing one.
+- Docs: `docs/architecture/coachhelm-evidence-contract.md`'s
+  "Comparable-opportunities outcome measurement" section now documents
+  both `method_version` values and the layer each belongs to (pure core's
+  own `methodVersion` never changes; the DB-write adapter is what maps
+  `observed_change_limited` to the distinct DB value).
+  `config/feature-flags.yml`'s flag entry updated: slice 2 is no longer a
+  separate enable blocker, but the flag stays default-off pending the
+  still-unapplied migration 20260922230000 and real-world shadow
+  evidence.
+- Verification: `npm run typecheck:fast` clean; `npx eslint` on all
+  touched/new files clean; `npm run flags:generate` + `flags:check` clean
+  (8 flags); `npm run docs:check` all green; `npm run markdown:ratchet`
+  no regressions. Test counts in the matching test-ledger entry. Build
+  not run locally (session rule — CI's Next build job covers it).
