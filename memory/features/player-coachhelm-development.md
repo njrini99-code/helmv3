@@ -258,11 +258,15 @@ Player opens round review
   component, or `ranking/score.ts` yet) — `groupIssues(packets)` groups
   par/distance/sequence/hypothesis findings that describe the same
   underlying shots into one `Issue` instead of letting a future feed show
-  the same pattern three times or triple-count its stroke impact. Each
-  issue picks exactly one deterministic impact owner among its member
-  claims and mirrors only that owner's numbers into its `policyInput`, so
-  "one underlying issue, one leading priority" holds without discarding
-  the other perspectives (they stay visible as drill-down claims). Full
+  the same pattern three times or triple-count its stroke impact. Grouping
+  runs before eligibility filtering (an ineligible packet can still bridge
+  two eligible ones without splitting a real chain); each issue then picks
+  exactly one deterministic impact owner among its ELIGIBLE member claims
+  — only a genuine strokes-LOST (negative) claim may own, never a
+  strength or a null — and mirrors only that owner's own numbers
+  (including its own sample size) into its `policyInput`, so "one
+  underlying issue, one leading priority" holds without discarding the
+  other perspectives (they stay visible as drill-down claims). Full
   contract in `docs/architecture/coachhelm-evidence-contract.md`'s "Issue
   grouping and ranking-input unification" section and
   `memory/features/coachhelm-ai.md`.

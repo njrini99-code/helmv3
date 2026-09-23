@@ -22,14 +22,22 @@ import {
  *
  * A2 (`distance-profile.ts`, #1989) and A4 (`sequence-attribution.ts`,
  * #1988) merged to `main` during this slice — the main grouping fixture
- * below calls all three of A2/A3/A4's real, merged functions and wraps
- * their actual output into packets via small test-local adapters (not a
- * claim about what a real production adapter's claimId scheme will look
- * like — that wiring is a later slice's job). The "tie-breaking and edge
- * cases" describe block below stays on hand-built synthetic packets on
- * purpose: those tests exercise `groupIssues`'s own algorithm (ownership
- * tie-breaks, empty input, determinism) independent of any one family's
- * real shape, not a claim about A2/A3/A4 behavior.
+ * below calls all three of A2/A3/A4's real, merged compute functions, so
+ * every metric VALUE and STATUS the fixture asserts on is real, not
+ * hand-picked. `sourceShotIds` — the actual join key `groupIssues` reads —
+ * is still test-supplied for every packet, not derived from the real
+ * functions' own return values: `MetricResult` (A2/A3) and
+ * `SequenceAttributionResult` (A4) carry no per-shot provenance field (see
+ * `metrics/types.ts`'s own doc comment on why `sourceShotIds` isn't on it
+ * yet), so an honest adapter — here, the small test-local functions below —
+ * must supply it from outside the family's own output. This fixture is
+ * not a claim about what a real production adapter's claimId scheme will
+ * look like; that wiring is a later slice's job. The "tie-breaking and
+ * edge cases" describe block below stays on hand-built synthetic packets
+ * on purpose: those tests exercise `groupIssues`'s own algorithm
+ * (ownership sign/tie-breaks, eligibility-after-grouping, empty input,
+ * determinism) independent of any one family's real shape, not a claim
+ * about A2/A3/A4 behavior.
  */
 
 function scope(overrides: Partial<AnalysisScope> = {}): AnalysisScope {
@@ -283,7 +291,7 @@ describe('groupIssues — par, distance, and sequence describing the same source
     label: 'rough_gap',
     sourceShotIds: [unrelatedShot],
     eligible: true,
-    strokesImpact: 0.3,
+    strokesImpact: -0.3, // a genuine loss, so this singleton owns itself
     confidence: 0.5,
   });
 
@@ -327,9 +335,12 @@ describe('groupIssues — par, distance, and sequence describing the same source
   });
 
   it('impact ownership is non-overlapping: the issue is not inflated by duplicate perspectives', () => {
-    // Precondition: A4 resolved a real number here (neither endpoint hit a
-    // baselineGap) — this test is meaningless against a null.
+    // Precondition: A4 resolved a real, NEGATIVE (strokes-lost) number here
+    // (neither endpoint hit a baselineGap, and this par-5 approach came up
+    // short of expectation) — this test is meaningless against a null, and
+    // ownership specifically requires a loss, not just any real number.
     expect(approachEvent.measuredContribution).not.toBeNull();
+    expect(approachEvent.measuredContribution).toBeLessThan(0);
 
     const issues = groupIssues(allPackets);
     const grouped = issues.find((i) => i.claims.length > 1)!;
@@ -388,24 +399,78 @@ describe('groupIssues — par, distance, and sequence describing the same source
 describe('groupIssues — tie-breaking and edge cases', () => {
   it('breaks an exact impact tie by ORIGIN_PRIORITY (par > distance > sequence > hypothesis)', () => {
     const s1 = shotClaimId({ round_id: 'r', hole_number: 1, shot_number: 1 });
+    // Values must be genuine LOSSES (negative) to be ownership candidates
+    // at all — a tie among strengths would resolve to "no owner", not to
+    // origin priority.
     const packets: IssueSourcePacket[] = [
-      syntheticPacket({ claimId: 'seq', origin: 'sequence', sourceShotIds: [s1], strokesImpact: 1.0, confidence: 0.6 }),
-      syntheticPacket({ claimId: 'dist', origin: 'distance', sourceShotIds: [s1], strokesImpact: 1.0, confidence: 0.6 }),
-      syntheticPacket({ claimId: 'hyp', origin: 'hypothesis', sourceShotIds: [s1], strokesImpact: 1.0, confidence: 0.6 }),
+      syntheticPacket({ claimId: 'seq', origin: 'sequence', sourceShotIds: [s1], strokesImpact: -1.0, confidence: 0.6 }),
+      syntheticPacket({ claimId: 'dist', origin: 'distance', sourceShotIds: [s1], strokesImpact: -1.0, confidence: 0.6 }),
+      syntheticPacket({ claimId: 'hyp', origin: 'hypothesis', sourceShotIds: [s1], strokesImpact: -1.0, confidence: 0.6 }),
     ];
     const [issue] = groupIssues(packets);
     expect(issue!.impactOwnership.ownerClaimId).toBe('dist');
   });
 
-  it('a null strokesImpact never outranks a real (including zero) impact', () => {
+  it('a null strokesImpact never outranks a real loss, however small', () => {
     const s1 = shotClaimId({ round_id: 'r', hole_number: 1, shot_number: 1 });
     const packets: IssueSourcePacket[] = [
       syntheticPacket({ claimId: 'par-no-impact', origin: 'par', sourceShotIds: [s1], strokesImpact: null }),
-      syntheticPacket({ claimId: 'seq-zero-impact', origin: 'sequence', sourceShotIds: [s1], strokesImpact: 0 }),
+      syntheticPacket({ claimId: 'seq-tiny-loss', origin: 'sequence', sourceShotIds: [s1], strokesImpact: -0.01 }),
     ];
     const [issue] = groupIssues(packets);
-    expect(issue!.impactOwnership.ownerClaimId).toBe('seq-zero-impact');
-    expect(issue!.policyInput.strokesImpact).toBe(0);
+    expect(issue!.impactOwnership.ownerClaimId).toBe('seq-tiny-loss');
+    expect(issue!.policyInput.strokesImpact).toBe(-0.01);
+  });
+
+  it('only a strokes-lost claim may own an issue — a strength never owns, however large', () => {
+    const s1 = shotClaimId({ round_id: 'r', hole_number: 1, shot_number: 1 });
+    const packets: IssueSourcePacket[] = [
+      syntheticPacket({ claimId: 'weakness', origin: 'sequence', sourceShotIds: [s1], strokesImpact: -0.4, confidence: 0.7 }),
+      syntheticPacket({ claimId: 'strength', origin: 'distance', sourceShotIds: [s1], strokesImpact: 2.0, confidence: 0.9 }),
+    ];
+    const [issue] = groupIssues(packets);
+    expect(issue!.impactOwnership.ownerClaimId).toBe('weakness');
+    expect(issue!.impactOwnership.nonOwningClaimIds).toEqual(['strength']);
+    expect(issue!.policyInput.strokesImpact).toBe(-0.4);
+    expect(issue!.policyInput.confidence).toBe(0.7);
+  });
+
+  it('a group with no loss at all (strengths and/or nulls only) has no impact owner', () => {
+    const s1 = shotClaimId({ round_id: 'r', hole_number: 1, shot_number: 1 });
+    const packets: IssueSourcePacket[] = [
+      syntheticPacket({ claimId: 'strength', origin: 'distance', sourceShotIds: [s1], strokesImpact: 2.0, confidence: 0.9 }),
+      syntheticPacket({ claimId: 'zero', origin: 'sequence', sourceShotIds: [s1], strokesImpact: 0, confidence: 0.5 }),
+      syntheticPacket({ claimId: 'no-number', origin: 'par', sourceShotIds: [s1], strokesImpact: null }),
+    ];
+    const [issue] = groupIssues(packets);
+    expect(issue!.impactOwnership.ownerClaimId).toBeNull();
+    expect(new Set(issue!.impactOwnership.nonOwningClaimIds)).toEqual(new Set(['strength', 'zero', 'no-number']));
+    expect(issue!.claims.map((c) => c.claimId).sort()).toEqual(['no-number', 'strength', 'zero']);
+    expect(issue!.policyInput).toEqual({ strokesImpact: 0, confidence: 0, sampleSize: 0 });
+  });
+
+  it("policyInput.sampleSize mirrors only the owner's own sample, never the union", () => {
+    const shared = shotClaimId({ round_id: 'r', hole_number: 1, shot_number: 1 });
+    const aggregateOnlyShots = Array.from({ length: 38 }, (_, i) =>
+      shotClaimId({ round_id: 'r', hole_number: 1, shot_number: i + 2 }),
+    );
+    const owner = syntheticPacket({
+      claimId: 'owner-1-shot',
+      origin: 'sequence',
+      sourceShotIds: [shared],
+      strokesImpact: -0.5,
+      confidence: 0.6,
+    });
+    const aggregate = syntheticPacket({
+      claimId: 'aggregate-39-shots',
+      origin: 'par',
+      sourceShotIds: [shared, ...aggregateOnlyShots],
+      strokesImpact: null,
+    });
+    const [issue] = groupIssues([owner, aggregate]);
+    expect(issue!.opportunityFrequency.shotCount).toBe(39); // the union — unaffected
+    expect(issue!.impactOwnership.ownerClaimId).toBe('owner-1-shot');
+    expect(issue!.policyInput.sampleSize).toBe(1); // the owner's own sample, not 39 or 40
   });
 
   it('an empty packet list produces no issues', () => {
@@ -440,6 +505,123 @@ describe('groupIssues — tie-breaking and edge cases', () => {
     ];
     const issues = groupIssues(packets);
     expect(issues).toHaveLength(2);
+  });
+
+  it('a true A-B-C chain groups transitively even when A and C share no shot directly', () => {
+    const sAB = shotClaimId({ round_id: 'r', hole_number: 1, shot_number: 1 });
+    const sBC = shotClaimId({ round_id: 'r', hole_number: 1, shot_number: 2 });
+    const a = syntheticPacket({ claimId: 'a', origin: 'par', sourceShotIds: [sAB], strokesImpact: -0.2 });
+    const b = syntheticPacket({ claimId: 'b', origin: 'distance', sourceShotIds: [sAB, sBC] });
+    const c = syntheticPacket({ claimId: 'c', origin: 'sequence', sourceShotIds: [sBC], strokesImpact: -0.6 });
+
+    const issues = groupIssues([a, b, c]);
+    expect(issues).toHaveLength(1);
+    expect(new Set(issues[0]!.claims.map((claim) => claim.claimId))).toEqual(new Set(['a', 'b', 'c']));
+    expect(issues[0]!.impactOwnership.ownerClaimId).toBe('c'); // larger loss magnitude
+  });
+
+  it('an ineligible packet still bridges a chain: eligibility is applied AFTER grouping, not before', () => {
+    const sAB = shotClaimId({ round_id: 'r', hole_number: 1, shot_number: 1 });
+    const sBC = shotClaimId({ round_id: 'r', hole_number: 1, shot_number: 2 });
+    const bOnlyShot = shotClaimId({ round_id: 'r', hole_number: 1, shot_number: 3 });
+    const a = syntheticPacket({ claimId: 'a', origin: 'par', sourceShotIds: [sAB], strokesImpact: -0.3 });
+    const bridge = syntheticPacket({
+      claimId: 'bridge',
+      origin: 'distance',
+      sourceShotIds: [sAB, sBC, bOnlyShot],
+      eligible: false,
+      strokesImpact: -99, // must never surface or own despite the huge magnitude
+    });
+    const c = syntheticPacket({ claimId: 'c', origin: 'sequence', sourceShotIds: [sBC], strokesImpact: -0.5 });
+
+    const issues = groupIssues([a, bridge, c]);
+    // a and c share no shot directly — without the ineligible bridge still
+    // participating in union-find, this would wrongly split into 2 issues.
+    expect(issues).toHaveLength(1);
+    const [issue] = issues;
+    expect(new Set(issue!.claims.map((claim) => claim.claimId))).toEqual(new Set(['a', 'c']));
+    expect(issue!.impactOwnership.ownerClaimId).toBe('c');
+    // The hidden bridge's own private shot must never leak into the
+    // surfaced issue's sourceShotIds.
+    expect(issue!.sourceShotIds).not.toContain(bOnlyShot);
+    expect(issue!.sourceShotIds.sort()).toEqual([sAB, sBC].sort());
+  });
+
+  it('a group where every member is ineligible surfaces no issue at all', () => {
+    const s1 = shotClaimId({ round_id: 'r', hole_number: 1, shot_number: 1 });
+    const packets: IssueSourcePacket[] = [
+      syntheticPacket({ claimId: 'a', origin: 'par', sourceShotIds: [s1], eligible: false }),
+      syntheticPacket({ claimId: 'b', origin: 'distance', sourceShotIds: [s1], eligible: false }),
+    ];
+    expect(groupIssues(packets)).toEqual([]);
+  });
+
+  it('two different unknown shots (null hole/shot number) never collide into one issue', () => {
+    // Both stringify the same way under the OLD `?? 'null'` scheme
+    // (`shot:r:null:null`) but must be treated as two distinct, unrelated
+    // shots — never silently merged.
+    const unknown1 = shotClaimId({ round_id: 'r', hole_number: null, shot_number: null });
+    const unknown2 = shotClaimId({ round_id: 'r', hole_number: null, shot_number: null });
+    expect(unknown1).not.toBe(unknown2);
+
+    const packets: IssueSourcePacket[] = [
+      syntheticPacket({ claimId: 'a', origin: 'par', sourceShotIds: [unknown1] }),
+      syntheticPacket({ claimId: 'b', origin: 'distance', sourceShotIds: [unknown2] }),
+    ];
+    expect(groupIssues(packets)).toHaveLength(2);
+  });
+
+  it('rejects two distinct packets sharing the same claimId instead of silently dropping one', () => {
+    const s1 = shotClaimId({ round_id: 'r', hole_number: 1, shot_number: 1 });
+    const s2 = shotClaimId({ round_id: 'r', hole_number: 1, shot_number: 2 });
+    const packets: IssueSourcePacket[] = [
+      syntheticPacket({ claimId: 'dup', origin: 'par', sourceShotIds: [s1], strokesImpact: -1 }),
+      syntheticPacket({ claimId: 'dup', origin: 'distance', sourceShotIds: [s1, s2] }),
+    ];
+    expect(() => groupIssues(packets)).toThrow(/duplicate claimId "dup"/);
+  });
+
+  it('is deterministic across many random permutations of the input, not just a single reversal', () => {
+    const s1 = shotClaimId({ round_id: 'r', hole_number: 1, shot_number: 1 });
+    const s2 = shotClaimId({ round_id: 'r', hole_number: 1, shot_number: 2 });
+    const s3 = shotClaimId({ round_id: 'r', hole_number: 2, shot_number: 1 });
+    const s4 = shotClaimId({ round_id: 'r', hole_number: 3, shot_number: 1 });
+    const packets: IssueSourcePacket[] = [
+      syntheticPacket({ claimId: 'a', origin: 'par', sourceShotIds: [s1], strokesImpact: -0.2 }),
+      syntheticPacket({ claimId: 'b', origin: 'distance', sourceShotIds: [s1, s2] }),
+      syntheticPacket({ claimId: 'c', origin: 'sequence', sourceShotIds: [s2], strokesImpact: -0.6 }),
+      syntheticPacket({ claimId: 'd', origin: 'hypothesis', sourceShotIds: [s3], strokesImpact: 1.2 }),
+      syntheticPacket({ claimId: 'e', origin: 'par', sourceShotIds: [s4] }),
+    ];
+
+    // Deterministic seeded PRNG (mulberry32) — a fixed seed makes this
+    // reproducible while still exercising many distinct orderings, not
+    // just a single hand-picked reversal.
+    function mulberry32(seed: number): () => number {
+      let a = seed;
+      return () => {
+        a |= 0;
+        a = (a + 0x6d2b79f5) | 0;
+        let t = Math.imul(a ^ (a >>> 15), 1 | a);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+    function shuffled(input: readonly IssueSourcePacket[], rand: () => number): IssueSourcePacket[] {
+      const arr = [...input];
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(rand() * (i + 1));
+        [arr[i], arr[j]] = [arr[j]!, arr[i]!];
+      }
+      return arr;
+    }
+
+    const baseline = groupIssues(packets);
+    for (let seed = 1; seed <= 8; seed++) {
+      const permuted = shuffled(packets, mulberry32(seed));
+      const result = groupIssues(permuted);
+      expect(result).toEqual(baseline);
+    }
   });
 });
 

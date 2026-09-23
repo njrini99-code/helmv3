@@ -378,27 +378,44 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   `ranking/score.ts` or delivery yet) — `groupIssues(packets:
   IssueSourcePacket[]): Issue[]` is the issue-grouping/parent-child-claim
   work the A6 top-N audit above explicitly deferred. A3
-  (`par-opportunities.ts`), a future A2 `distance-profile.ts`, a future A4
+  (`par-opportunities.ts`), A2 `distance-profile.ts`, A4
   `sequence-attribution.ts`, and A5's `hypothesis-policy.ts` can each
   surface something about the SAME underlying shots from a different
   angle; this module groups packets whose adapter-stated `sourceShotIds`
-  transitively overlap (union-find) into one `Issue`, filtering ineligible
-  packets out BEFORE grouping (mirroring the A6 top-N rule one level up).
-  An accepted issue carries: a content-addressed, input-order-independent
-  `id`; `claims` (parent/child links — every member survives unmerged,
-  owner first then sorted by `claimId`, so drill-down is never lost);
-  `impactOwnership` (exactly ONE deterministic owner claim — largest
-  `|strokesImpact|`, `null` never beating a real number including `0`,
-  ties broken by a fixed origin order then `claimId` — every other member
-  contributes zero additional impact, so three perspectives on the same
-  shots never triple the estimate); `opportunityFrequency` (distinct
-  source-shot/round counts); and `policyInput` (the
+  transitively overlap (union-find) into one `Issue`. **Grouping runs
+  BEFORE eligibility filtering** (revised 2026-09-23 review fix): an
+  ineligible packet still participates in union-find so it can act as a
+  bridge between two eligible ones without splitting a real chain; only
+  after grouping is each connected group filtered down to its eligible
+  members to decide what surfaces. An accepted issue carries: a
+  content-addressed, input-order-independent `id` (from its eligible
+  members' shots only); `claims` (parent/child links — every eligible
+  member survives unmerged, owner first when one exists then sorted by
+  `claimId`, so drill-down is never lost); `impactOwnership` (a **signed**
+  `strokesImpact` — negative is a loss, positive is a gain — and only a
+  real NEGATIVE number may own; a strength, `0`, or `null` never owns,
+  and a group with no loss has `ownerClaimId: null`; among losses, the
+  largest magnitude wins, ties broken by a fixed origin order then
+  `claimId` — every other member contributes zero additional impact, so
+  three perspectives on the same shots never triple the estimate);
+  `opportunityFrequency` (distinct source-shot/round counts, the union
+  across eligible members); and `policyInput` (the
   `strokesImpact`/`confidence`/`sampleSize` a later ranking policy would
-  consume, mirroring ONLY the owner — "one issue, one leading priority" by
-  construction). Tested against real `computeParOpportunities` (A3),
+  consume, mirroring ONLY the owner — including the owner's OWN sample
+  size, never the union — "one issue, one leading priority" by
+  construction; every field `0` when there is no owner). `groupIssues`
+  rejects a duplicate `claimId` outright rather than silently dropping a
+  claim, and a `null` hole/shot number no longer collides with another
+  unknown shot (each gets a unique id instead — A5's own `shotClaimId`,
+  #1993, still has this bug and needs the same fix in its own slice).
+  Tested against real `computeParOpportunities` (A3),
   `computeDistanceProfile` (A2, #1989), and `attributeSequence` (A4,
-  #1988) output on one shared par-5 fixture, each wrapped by a small
-  test-local adapter — not synthetic stand-ins. Full contract in
+  #1988) metric values on one shared par-5 fixture, each wrapped by a
+  small test-local adapter — `sourceShotIds` itself is still test-supplied
+  (neither `MetricResult` nor `SequenceAttributionResult` carries per-shot
+  provenance yet), so this proves the real values/statuses drive
+  eligibility and ownership correctly, not that a real adapter's shot-id
+  derivation is proven. Full contract in
   `docs/architecture/coachhelm-evidence-contract.md`'s "Issue grouping and
   ranking-input unification" section.
 - N13 sweep (repair plan, 2026-09-23): audited every CoachHelm action/route
