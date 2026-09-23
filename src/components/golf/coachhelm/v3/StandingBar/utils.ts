@@ -19,6 +19,11 @@ import { TEAM_MARKER_MIN_N, PCT_LANGUAGE_MIN_N } from './types';
  * Clamped — out-of-range values stick to the edge.
  */
 export function toScalePct(value: number, scale: { min: number; max: number }): number {
+  // Package 11 (#1933 bug, confirmed present on main): a non-finite input
+  // (NaN/±Infinity) used to flow straight through Math.max/Math.min, which
+  // both return NaN for a NaN operand — the marker silently vanished at
+  // `left: NaN%` instead of failing loudly or degrading gracefully.
+  if (!Number.isFinite(value)) return 0;
   if (scale.max === scale.min) return 50;
   const pct = ((value - scale.min) / (scale.max - scale.min)) * 100;
   return Math.max(0, Math.min(100, pct));
@@ -79,6 +84,9 @@ export function pgaOmissionNote(
 
 /** Display formatter per unit. */
 export function formatValue(value: number, unit: Unit): string {
+  // Package 11 (#1933 bug, confirmed present on main): no guard meant a
+  // non-finite input printed the literal string "NaN%"/"NaN yd"/etc.
+  if (!Number.isFinite(value)) return '—';
   switch (unit) {
     case 'percent': return `${value.toFixed(0)}%`;
     case 'strokes': return value.toFixed(2);
