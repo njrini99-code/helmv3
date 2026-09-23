@@ -187,11 +187,21 @@ export interface FocusAreaCardData {
    * (requires migration `20260923090000_golf_focus_area_evidence_revision`
    * applied). Absent/null on every row created before this slice, or with
    * the flag off, or with no source insight — render nothing, never a
-   * placeholder. Slice 3 will compare this against the live insight's
-   * current fingerprint to badge a mismatch; this card only shows presence,
-   * never the raw hash (meaningless to a coach) or a stale/fresh verdict.
+   * placeholder. See `evidence_revision_status` below for the slice 3
+   * mismatch verdict; this field alone only signals presence.
    */
   evidence_revision?: string | null;
+  /**
+   * A8 slice 3: the read-time-only verdict comparing this stored fingerprint
+   * against the source insight's LIVE fingerprint, computed by
+   * `computeEvidenceRevisionStatuses` (`load-evidence-revision-status.ts`) in
+   * the page loader — never persisted, never written back to
+   * `evidence_revision` or `status`. `'changed'` renders the mismatch badge;
+   * `'match'` or absent renders nothing beyond the plain presence badge
+   * above. Always absent when the flag is off or `evidence_revision` itself
+   * is absent (both loader-side and by construction of the comparison).
+   */
+  evidence_revision_status?: 'match' | 'changed';
   /**
    * Recorded effectiveness verdict (golf_coach_insights.outcome_status, surfaced
    * onto the focus area). When present the card reflects it as a StatusPill
@@ -862,11 +872,22 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
             role={role}
           />
 
-          {/* A8 slice 1: shows only when an evidence fingerprint was stamped
-              at approval time (flag on + a well-formed source insight). Never
-              renders the raw hash — that's meaningless to a coach — only
-              that this focus area is pinned to a specific evidence snapshot. */}
-          {focusArea.evidence_revision ? (
+          {/* A8 slices 1 + 3: shows only when an evidence fingerprint was
+              stamped at approval time (flag on + a well-formed source
+              insight). Never renders the raw hash — that's meaningless to a
+              coach. Slice 3's read-time comparison (never persisted, never
+              written back) replaces the plain "recorded" badge with a
+              mismatch warning when the live insight has moved on. */}
+          {focusArea.evidence_revision && focusArea.evidence_revision_status === 'changed' ? (
+            <Badge
+              tone="warning"
+              variant="outline"
+              size="sm"
+              title="The source insight's evidence has changed since this focus area was approved from it."
+            >
+              Evidence has changed since this was approved
+            </Badge>
+          ) : focusArea.evidence_revision ? (
             <Badge
               tone="neutral"
               variant="outline"

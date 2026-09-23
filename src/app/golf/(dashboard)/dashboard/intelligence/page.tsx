@@ -28,6 +28,26 @@ import type { FairwayGoalCardData } from '@/components/fairway/pages/coachhelm/F
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { todayIsoInZone } from '@/lib/golf/timezone';
+import { isFlagEnabled } from '@/lib/flags';
+import { fromUntyped } from '@/lib/supabase/untyped';
+import { computeEvidenceRevisionStatuses } from '@/lib/coachhelm/focus-areas/load-evidence-revision-status';
+
+/**
+ * A8 slice 3: the focus-area select is routed through `fromUntyped` (see
+ * above) so it can conditionally add `evidence_revision`, a column that
+ * doesn't exist in generated `database.ts` types until the owner applies
+ * the migration — this is the resulting row shape, kept minimal to what
+ * this page actually reads off it.
+ */
+interface RawFocusAreaRow {
+  id: string;
+  player_id: string;
+  from_insight_id?: string | null;
+  from_review_id?: string | null;
+  progress_notes?: unknown;
+  evidence_revision?: string | null;
+  [key: string]: unknown;
+}
 
 // ============================================================================
 // METADATA
@@ -214,17 +234,27 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
   // Page loads are read-only. Progress evaluation belongs to round ingestion /
   // scheduled refreshes; running two write-heavy recomputations here made every
   // tab click wait on database writes before the controls could hydrate.
-  const [focusResult, statsResult, goalsByPlayerMap, standingByPlayer] = await Promise.all([
-    playerIds.length > 0
-      ? supabase
-          .from('golf_player_focus_areas')
-          .select(
-            `id, player_id, coach_id, area_type, title, description, status, target_metric,
+  // A8 slice 3: only extend the select (and only route it through the
+  // untyped escape hatch) when the flag is on — with it off, this must be
+  // byte-for-byte the same select as before slice 1/3, since the column
+  // doesn't exist in prod until the owner applies the migration.
+  const evidenceRevisionFlagOn = isFlagEnabled('coachhelm_focus_area_evidence_revision');
+  const focusAreaSelectColumns = `id, player_id, coach_id, area_type, title, description, status, target_metric,
              current_value, baseline_value, snapshots,
              target_value, target_kind, target_date, target_rounds,
              started_at, completed_at, created_at, updated_at,
-             from_review_id, from_insight_id, review_context, progress_notes`,
-          )
+             from_review_id, from_insight_id, review_context, progress_notes${
+               evidenceRevisionFlagOn ? ', evidence_revision' : ''
+             }`;
+
+  const [focusResult, statsResult, goalsByPlayerMap, standingByPlayer] = await Promise.all([
+    playerIds.length > 0
+      ? // fromUntyped is `client.from(table) as any` at runtime — identical to
+        // the typed call below for every column this select already carried
+        // before slice 1/3; only the column LIST varies on the flag, never
+        // the client, which keeps this branch simple to type.
+        fromUntyped(supabase, 'golf_player_focus_areas')
+          .select(focusAreaSelectColumns)
           .in('player_id', playerIds)
           .order('created_at', { ascending: false })
       : Promise.resolve({ data: [], error: null }),
@@ -237,16 +267,23 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
     loadActiveGoalsForPlayers(playerIds).catch(() => new Map<string, Goal[]>()),
     loadPlayersStandingMap(playerIds).catch(() => new Map<string, Map<MetricId, PlayerStanding>>()),
   ]);
-  const { data: focusAreas, error: focusAreasError } = focusResult;
+  // fromUntyped's `any` return means `focusResult`/`focusAreas` are only
+  // reliably typed by this cast — the select is a plain string either way
+  // (flag off never even touches fromUntyped's row shape), so this reflects
+  // what the query actually returns rather than widening anything further.
+  const { data: focusAreas, error: focusAreasError } = focusResult as {
+    data: RawFocusAreaRow[] | null;
+    error: unknown;
+  };
   const { data: statsRows } = statsResult;
 
   const sourceInsightIds = Array.from(
-    new Set((focusAreas || []).map((fa) => fa.from_insight_id).filter((id): id is string => Boolean(id))),
-  );
+    new Set((focusAreas || []).map((fa) => fa.from_insight_id).filter(Boolean)),
+  ) as string[];
   const outcomeByInsightId: Record<string, string> = {};
   const reviewIds = Array.from(
-    new Set((focusAreas || []).map((fa) => fa.from_review_id).filter((id): id is string => Boolean(id))),
-  );
+    new Set((focusAreas || []).map((fa) => fa.from_review_id).filter(Boolean)),
+  ) as string[];
   const [insightOutcomesResult, reviewRowsResult] = await Promise.all([
     sourceInsightIds.length > 0
       ? supabase
@@ -284,12 +321,18 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
       if (row.round_id) roundIdByReviewId[row.id] = row.round_id;
   }
 
+  const evidenceRevisionStatusByFocusAreaId = await computeEvidenceRevisionStatuses(
+    supabase,
+    focusAreas || [],
+  );
+
   const focusAreasWithPlayers: PlayersGridFocusArea[] = (focusAreas || []).map((fa) => ({
     ...fa,
     player: players.find((p) => p.id === fa.player_id) || null,
     outcome_status: fa.from_insight_id ? (outcomeByInsightId[fa.from_insight_id] ?? null) : null,
     progressHistory: progressHistoryOf(fa.progress_notes),
     from_review_round_id: fa.from_review_id ? (roundIdByReviewId[fa.from_review_id] ?? null) : null,
+    evidence_revision_status: evidenceRevisionStatusByFocusAreaId[fa.id],
   })) as unknown as PlayersGridFocusArea[];
 
   const gridStats: Record<string, PlayersGridStats> = {};
