@@ -31,6 +31,8 @@ from scipy import ndimage
 from shapely.geometry import LineString, Polygon
 from shapely.ops import unary_union
 
+from factory.ship import TRACE_SOURCE_PREFIXES
+
 
 def _sibling(name, filename):
     spec = importlib.util.spec_from_file_location(name, Path(__file__).with_name(filename))
@@ -145,7 +147,7 @@ def main():
         rows.append({'holeKey': hole['key'], 'ordinal': hole['ordinal'], 'completeness': hole['completeness'],
                      'features': {kind: sum(1 for f in own if f['kind'] == kind) for kind in COLORS if any(f['kind'] == kind for f in own)},
                      'bunkers': bunkers, 'routeShareInsideMappedSurfaces': route_cover,
-                     'traced': [f['id'] for f in own if any(s.startswith('naip-trace') for s in f['sourceIds'])],
+                     'traced': [f['id'] for f in own if any(s.startswith(TRACE_SOURCE_PREFIXES) for s in f['sourceIds'])],
                      'unclaimedSandBlobsM2': blobs[:12], 'overlay': path.name})
         print(json.dumps({'hole': hole['key'], 'bunkers': len(bunkers), 'lowSand': [b['featureId'] for b in bunkers if b['sandShareInside'] < LOW_SAND_SHARE],
                           'unclaimedSand': blobs[:5]}), flush=True)

@@ -246,11 +246,12 @@ def eval_scorecard_compose(node, ctx):
     return evaluation(inputs, [], [artifact('scorecard', path, 'A')] if adoptable else [], adoptable, [f'pilot scorecard: profile {doc["scorecardProfile"]}, routes {doc["routeSource"]}'], output=digest(doc))
 
 
-def _package_eval(folder_fn, dep_ids, with_canopy=False):
+def _package_eval(folder_fn, dep_ids, with_canopy=False, use_auto_trace=False):
     def evaluate(node, ctx):
         layout_id = node.scope.layout_id
         inputs = {dep: dep_input(ctx, node, dep) for dep in dep_ids}
-        traces = ctx.json(ctx.retained(ctx.layout(layout_id), 'imageryTraces'))
+        traces_path = ctx.effective_traces_path(layout_id) if use_auto_trace else ctx.retained(ctx.layout(layout_id), 'imageryTraces')
+        traces = ctx.json(traces_path)
         imported = ctx.json(ctx.retained(ctx.layout(layout_id), 'sourceGeometry'))
         route_traces = ctx.json(ctx.retained(ctx.layout(layout_id), 'routeTraces'))
         inputs['traces'] = digest(traces)
@@ -258,6 +259,8 @@ def _package_eval(folder_fn, dep_ids, with_canopy=False):
         inputs['routeTraces'] = digest(route_traces)
         if with_canopy:
             inputs['canopy'] = dep_input(ctx, node, 'layout.canopy.derive')
+        if use_auto_trace:
+            inputs['autoTrace'] = dep_input(ctx, node, 'layout.surfaces.trace')
         folder = folder_fn(ctx, layout_id)
         path = os.path.join(folder, 'normalized.json')
         pkg = ctx.json(path) if ctx.can_adopt(path) else None
@@ -323,7 +326,8 @@ def eval_package_compose(node, ctx):
         ref = artifact('package', path, 'A')
         ref.sha256 = pkg['contentHash']
         return evaluation(inputs, [], [ref], True, [f'checked-in package {pkg["contentHash"][:12]} status {pkg.get("status")}, {len(pkg.get("holes", []))} holes'], output=pkg['contentHash'])
-    return _package_eval(lambda c, l: c.package_dir(l), ('layout.candidates.compose', 'layout.scorecard.compose', 'facility.osm.snapshot'), with_canopy=True)(node, ctx)
+    return _package_eval(lambda c, l: c.package_dir(l), ('layout.candidates.compose', 'layout.scorecard.compose', 'facility.osm.snapshot'),
+                         with_canopy=True, use_auto_trace=True)(node, ctx)
 
 
 def eval_terrain_acquire(node, ctx):
@@ -500,6 +504,47 @@ def eval_canopy_derive(node, ctx):
     return evaluation(inputs, [], artifacts, adoptable, notes, output=canopy_identity(doc))
 
 
+def surfaces_trace_identity(doc):
+    """What the package merge consumes: the traced features and their
+    evidence, not the day the run happened or which package hash it was
+    stamped against (re-checked separately as adoptability, matching
+    `canopy_identity`)."""
+    return digest({k: v for k, v in doc.items() if k not in ('tracedAt', 'packageHash')})
+
+
+def eval_surfaces_trace(node, ctx):
+    """Auto-trace missing fairways from NAIP (+ lidar CHM where covered) for
+    whatever holes the shape gate currently flags -- never a substitute for
+    a real mapped surface, only imagery-derived evidence for owner review
+    (`ship.traced_surfaces`); a hole below the confidence floor stays
+    `HOLE_SURFACE_MISSING` regardless of what this task produces."""
+    layout_id = node.scope.layout_id
+    inputs = {'terrain': dep_input(ctx, node, 'layout.terrain.acquire'), 'candidates': dep_input(ctx, node, 'layout.candidates.compose'),
+              'canopy': dep_input(ctx, node, 'layout.canopy.derive'), 'lidar': dep_input(ctx, node, 'layout.lidar.acquire')}
+    path = ctx.surfaces_trace_out(layout_id)
+    doc = ctx.json(path, fresh=True) if ctx.can_adopt(path) and os.path.isfile(path) else None
+    if not doc:
+        return evaluation(inputs)
+    candidates = ctx.json(ctx.candidates_package_path(layout_id), fresh=True) if ctx.can_adopt(ctx.candidates_package_path(layout_id)) else None
+    if not candidates:
+        return evaluation(inputs)
+    adoptable = True
+    notes = [f'surfaces trace {doc.get("tracedAt", "")}: {len(doc.get("features", []))} traced, {len(doc.get("report", []))} hole(s) reported']
+    if doc.get('packageHash') != candidates.get('contentHash'):
+        adoptable, notes = False, notes + ['surfaces trace was derived from another candidate package']
+    lidar = ctx.lidar_manifest(layout_id)
+    used_chm = ((doc.get('lidarSource') or {}).get('lidar') or {}).get('chmSha256')
+    if lidar and lidar.get('status') == 'covered':
+        if used_chm != lidar.get('chmSha256'):
+            # New (or changed) lidar coverage since this trace ran: re-trace,
+            # since a hole that was NAIP-only-refused may now clear the bar.
+            adoptable, notes = False, notes + ['surfaces trace was not derived from the current lidar CHM']
+    elif used_chm:
+        adoptable, notes = False, notes + ['surfaces trace used a lidar CHM no longer available']
+    artifacts = [artifact('surfaces-trace', path, 'A')]
+    return evaluation(inputs, [], artifacts, adoptable, notes, output=surfaces_trace_identity(doc))
+
+
 def eval_package_validate(node, ctx):
     layout_id = node.scope.layout_id
     inputs = {'package': dep_input(ctx, node, 'layout.package.compose') or ctx.package_hash(layout_id), 'context': digest((ctx.context_layer(layout_id) or {}).get('contentHash')),
@@ -619,7 +664,9 @@ SPECS = [
              impl_files=(script('fetch-lidar-chm.py'),) + CRS_FILES, retention='B', estimated_bytes=40_000_000),
     TaskSpec('layout.canopy.derive', '1', 'layout', ('layout.terrain.acquire', 'layout.candidates.compose', 'layout.lidar.acquire?'), eval_canopy_derive,
              impl_files=(script('derive-canopy-naip.py'), script('indexed_naip.py'), script('fetch-usgs-naip-facility-ortho.py'), script('factory/payload_reuse.py')) + CRS_FILES, retention='B', estimated_bytes=500_000_000),
-    TaskSpec('layout.package.compose', '1', 'layout', ('layout.candidates.compose', 'layout.scorecard.compose', 'facility.osm.snapshot', 'layout.canopy.derive?'), eval_package_compose,
+    TaskSpec('layout.surfaces.trace', '1', 'layout', ('layout.candidates.compose', 'layout.terrain.acquire', 'layout.canopy.derive', 'layout.lidar.acquire?'), eval_surfaces_trace,
+             impl_files=(script('derive-surface-traces.py'), script('course_raster.py'), script('factory/ship.py'), script('factory/payload_reuse.py')) + CRS_FILES, retention='A', estimated_bytes=5_000_000),
+    TaskSpec('layout.package.compose', '1', 'layout', ('layout.candidates.compose', 'layout.scorecard.compose', 'facility.osm.snapshot', 'layout.canopy.derive?', 'layout.surfaces.trace?'), eval_package_compose,
              impl_files=(script('prepare-osm-course.py'), script('source_geometry.py')) + CRS_FILES, retention='A', estimated_bytes=5_000_000),
     TaskSpec('layout.package.validate', '1', 'layout', ('layout.package.compose', 'layout.context.classify?'), eval_package_validate, executor=run_package_validate, retention='C'),
     TaskSpec('layout.terrain.base', '1', 'layout', ('layout.package.compose', 'layout.terrain.acquire'), eval_terrain_base,

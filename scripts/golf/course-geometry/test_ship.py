@@ -103,6 +103,76 @@ class TracedSurfacesTests(unittest.TestCase):
         self.assertEqual(ship.traced_surfaces(make_package(holes, mapped)), [])
         self.assertEqual(ship.traced_surfaces(None), [])
 
+    def test_lidar_trace_prefix_is_also_recognized(self):
+        """A trace the lidar CHM signal also confirmed carries a
+        `lidar-trace-` source id, not `naip-trace-`: still owner review, not
+        OSM truth, and still listed for `ship --approve`."""
+        holes, features = full_18_holes()
+        traced = {'id': 'h01-fairway-trace', 'kind': 'fairway', 'holeKeys': ['h01'], 'sourceIds': ['lidar-trace-2026-09-23']}
+        holes[0]['featureIds'] = [fid for fid in holes[0]['featureIds'] if not fid.endswith('fairway')] + [traced['id']]
+        package = make_package(holes, [f for f in features if f['id'] != 'h01-fairway'] + [traced])
+        self.assertEqual(ship.gate_holes_shape(package), [])
+        self.assertEqual(ship.traced_surfaces(package), [{'featureId': 'h01-fairway-trace', 'kind': 'fairway', 'holeKeys': ['h01'],
+                                                          'sourceIds': ['lidar-trace-2026-09-23']}])
+
+
+class MissingSurfaceEvidenceTests(unittest.TestCase):
+    """`enrich_missing_surface_blockers`: a still-blocked `HOLE_SURFACE_
+    MISSING`/fairway blocker gets the matching `layout.surfaces.trace` report
+    row attached as `autoTrace` evidence, without changing which holes block
+    -- `gate_holes_shape` alone still decides that."""
+
+    def test_a_refused_trace_attaches_its_reason_and_confidence(self):
+        holes, features = full_18_holes()
+        # Drop hole 11's fairway (par 4) so it stays HOLE_SURFACE_MISSING.
+        key = 'h11'
+        holes = [h if h['key'] != key else {**h, 'featureIds': [f for f in h['featureIds'] if not f.endswith('fairway')]} for h in holes]
+        features = [f for f in features if f['id'] != f'{key}-fairway']
+        package = make_package(holes, features)
+        blockers = ship.gate_holes_shape(package)
+        trace_report = {'report': [{'holeKey': 'h11', 'ordinal': 11, 'decision': 'skipped_confidence_below_threshold',
+                                    'evidence': {'confidence': 0.31, 'reason': 'confidence_below_threshold', 'lidar': {'used': False}}}]}
+        enriched = ship.enrich_missing_surface_blockers(blockers, trace_report)
+        target = next(b for b in enriched if b.get('holeKey') == 'h11')
+        self.assertEqual(target['autoTrace'], {'decision': 'skipped_confidence_below_threshold', 'confidence': 0.31,
+                                               'reason': 'confidence_below_threshold', 'evidenceSource': 'naip'})
+        # Never changes which holes block.
+        self.assertEqual([b.get('code') for b in enriched], [b.get('code') for b in blockers])
+        self.assertEqual([b.get('holeKey') for b in enriched], [b.get('holeKey') for b in blockers])
+
+    def test_lidar_backed_evidence_source_is_reported(self):
+        holes, features = full_18_holes()
+        key = 'h11'
+        holes = [h if h['key'] != key else {**h, 'featureIds': [f for f in h['featureIds'] if not f.endswith('fairway')]} for h in holes]
+        features = [f for f in features if f['id'] != f'{key}-fairway']
+        package = make_package(holes, features)
+        blockers = ship.gate_holes_shape(package)
+        trace_report = {'report': [{'holeKey': 'h11', 'ordinal': 11, 'decision': 'skipped_no_connected_candidate_touching_route',
+                                    'evidence': {'reason': 'no_connected_candidate_touching_route', 'lidar': {'used': True, 'treePixels': 400}}}]}
+        enriched = ship.enrich_missing_surface_blockers(blockers, trace_report)
+        target = next(b for b in enriched if b.get('holeKey') == 'h11')
+        self.assertEqual(target['autoTrace']['evidenceSource'], 'lidar_chm+naip')
+
+    def test_no_trace_report_leaves_blockers_untouched(self):
+        holes, features = full_18_holes()
+        key = 'h11'
+        holes = [h if h['key'] != key else {**h, 'featureIds': [f for f in h['featureIds'] if not f.endswith('fairway')]} for h in holes]
+        features = [f for f in features if f['id'] != f'{key}-fairway']
+        package = make_package(holes, features)
+        blockers = ship.gate_holes_shape(package)
+        self.assertEqual(ship.enrich_missing_surface_blockers(blockers, None), blockers)
+        self.assertEqual(ship.enrich_missing_surface_blockers(blockers, {}), blockers)
+
+    def test_a_hole_the_trace_report_never_mentions_is_left_alone(self):
+        holes, features = full_18_holes()
+        key = 'h11'
+        holes = [h if h['key'] != key else {**h, 'featureIds': [f for f in h['featureIds'] if not f.endswith('fairway')]} for h in holes]
+        features = [f for f in features if f['id'] != f'{key}-fairway']
+        package = make_package(holes, features)
+        blockers = ship.gate_holes_shape(package)
+        trace_report = {'report': [{'holeKey': 'h05', 'ordinal': 5, 'decision': 'written', 'evidence': {'confidence': 0.9}}]}
+        self.assertEqual(ship.enrich_missing_surface_blockers(blockers, trace_report), blockers)
+
 
 class HashChainGateTests(unittest.TestCase):
     def setUp(self):

@@ -54,6 +54,7 @@ class World:
         self.hole_labels = {}       # layout slug -> how a mapper named that course's holes ('Synthetic A' -> 'Synthetic A Hole 3')
         self.canopy = True
         self.lidar_chm = None       # bytes of a fake CHM once 3DEP covers the export; None is no coverage
+        self.auto_trace = False     # write real (fake) traced-fairway features from layout.surfaces.trace; False keeps every existing test's package shape unchanged
         self.naip_sha = 'naip-' + '0' * 60
         self.naip_dates = ['2024-06-01']  # what the fake NAIP export was flown on (the real manifest writes YYYYMMDD tile suffixes)
         # What the fake lab draws: holes whose captures breach the draw-call
@@ -126,7 +127,8 @@ class FakePipeline:
             'layout.routes.resolve': self.routes, 'layout.route.dossier': self.route_dossier, 'layout.scorecard.compose': self.scorecard, 'layout.candidates.compose': self.candidates,
             'layout.visual.candidates.compose': self.visual_candidates, 'layout.visual.terrain.acquire': self.visual_terrain,
             'layout.visual.world.build': self.visual_world,
-            'layout.terrain.acquire': self.terrain, 'layout.lidar.acquire': self.lidar, 'layout.canopy.derive': self.canopy, 'layout.package.compose': self.package,
+            'layout.terrain.acquire': self.terrain, 'layout.lidar.acquire': self.lidar, 'layout.canopy.derive': self.canopy,
+            'layout.surfaces.trace': self.surfaces_trace, 'layout.package.compose': self.package,
             'layout.package.validate': self.package_validate, 'layout.terrain.base': self.terrain_base, 'layout.imagery.audit': self.imagery,
             'layout.context.classify': self.context, 'hole.terrain.compile': self.hole_terrain, 'hole.world.build': self.hole_world,
             'layout.terrain.aggregate': self.terrain_aggregate, 'layout.world.aggregate': self.world_aggregate, 'layout.review.queue': self.review_queue,
@@ -242,7 +244,7 @@ class FakePipeline:
         from factory.adapters import compose_scorecard
         return compose_scorecard(node, ctx, run)
 
-    def _prepare(self, node, ctx, folder, with_canopy):
+    def _prepare(self, node, ctx, folder, with_canopy, use_auto_trace=False):
         layout_id = node.scope.layout_id
         card = ctx.json(ctx.scorecard_path(layout_id))
         offset = 0.0 if layout_id.endswith('-a') else 0.012
@@ -263,10 +265,29 @@ class FakePipeline:
                                         'accuracyMeters': None, 'geometryWgs84': {'type': 'Polygon', 'coordinates': [region['coordinatesWgs84']]}})
                 next(h for h in holes if h['key'] == region['holeKey'])['featureIds'].append('naip-' + region['id'])
             canopy_summary = {'groups': len(canopy['regions']), 'rasterSha256': canopy['rasterSha256']}
+        trace_doc = None
+        if use_auto_trace:
+            traces_path = ctx.effective_traces_path(layout_id)
+            trace_doc = ctx.json(traces_path, fresh=True) if traces_path else None
+            if trace_doc and trace_doc.get('features'):
+                by_key = {h['key']: h for h in holes}
+                sources_used = set()
+                for tf in trace_doc['features']:
+                    prefix = 'lidar-trace-' if tf.get('evidenceSource') == 'lidar_chm+naip' else 'naip-trace-'
+                    source_id = prefix + trace_doc['tracedAt']
+                    sources_used.add(source_id)
+                    tfeature = {'id': tf['id'], 'kind': tf['kind'], 'sourceIds': [source_id], 'holeKeys': [tf['holeKey']],
+                               'reviewed': False, 'accuracyMeters': tf['accuracyMeters'],
+                               'geometryWgs84': {'type': 'Polygon', 'coordinates': [tf['coordinatesWgs84']]}}
+                    pkg['features'].append(tfeature)
+                    by_key[tf['holeKey']]['featureIds'].append(tf['id'])
+                for source_id in sorted(sources_used):
+                    pkg['sources'].append({'id': source_id})
         pkg['contentHash'] = digest(pkg)
         manifest, _ = ctx.snapshot(node.scope.facility_id)
         write_json(os.path.join(folder, 'normalized.json'), pkg)
-        write_json(os.path.join(folder, 'source-metadata.json'), {'scorecard': card, 'overpassSha256': manifest['uncompressedSha256']})
+        write_json(os.path.join(folder, 'source-metadata.json'), {'scorecard': card, 'overpassSha256': manifest['uncompressedSha256'],
+                                                                   'imageryTracesHash': digest(trace_doc) if trace_doc is not None else None})
         write_json(os.path.join(folder, 'association-report.json'), {'packageHash': pkg['contentHash'], 'canopy': canopy_summary, 'holes': []})
         ref = artifact('package', os.path.join(folder, 'normalized.json'), 'A')
         ref.sha256 = pkg['contentHash']
@@ -279,7 +300,7 @@ class FakePipeline:
     def package(self, node, ctx, run):
         self._mark(node)
         with_canopy = ctx.states.get(f'layout.canopy.derive[{node.scope.layout_id}]') in ('cached', 'success')
-        return self._prepare(node, ctx, ctx.package_dir(node.scope.layout_id), with_canopy)
+        return self._prepare(node, ctx, ctx.package_dir(node.scope.layout_id), with_canopy, use_auto_trace=True)
 
     def terrain(self, node, ctx, run):
         self._mark(node)
@@ -343,6 +364,38 @@ class FakePipeline:
             doc['canopySource'] = {'kind': 'lidar_chm+naip', 'lidar': {'chmSha256': lidar['chmSha256']}}
         write_json(ctx.canopy_out(layout_id), doc)
         return [artifact('canopy-review', ctx.canopy_out(layout_id), 'A'), artifact('naip-manifest', os.path.join(naip, 'manifest.json'), 'B'), artifact('naip-raster', os.path.join(naip, 'naip.tif'), 'B')]
+
+    def surfaces_trace(self, node, ctx, run):
+        self._mark(node)
+        from factory import ship
+        layout_id = node.scope.layout_id
+        pkg = ctx.json(ctx.candidates_package_path(layout_id), fresh=True)
+        target = sorted({b['ordinal'] for b in ship.gate_holes_shape(pkg, expected_holes=len(pkg.get('holes') or []))
+                         if b['code'] == 'HOLE_SURFACE_MISSING' and b.get('surfaceClass') == 'fairway'})
+        lidar = ctx.lidar_manifest(layout_id)
+        lidar_covered = bool(lidar and lidar.get('status') == 'covered')
+        features, report = [], []
+        if self.world.auto_trace:
+            by_ordinal = {h['ordinal']: h for h in pkg['holes']}
+            for ordinal in target:
+                hole = by_ordinal[ordinal]
+                evidence_source = 'lidar_chm+naip' if lidar_covered else 'naip'
+                fid = f'auto-trace-{hole["key"]}-fairway'
+                features.append({'id': fid, 'kind': 'fairway', 'holeKey': hole['key'], 'accuracyMeters': 5.0,
+                                 'confidence': 0.9, 'producer': 'auto-trace-v1', 'evidenceSource': evidence_source,
+                                 'coordinatesWgs84': ring(ORIGIN[0] - 0.0001, ORIGIN[1] + ordinal * 0.001, 0.0002)})
+                report.append({'ordinal': ordinal, 'holeKey': hole['key'], 'decision': 'written',
+                               'evidence': {'confidence': 0.9, 'lidar': {'used': lidar_covered}}})
+        out = ctx.surfaces_trace_out(layout_id)
+        doc = {'schemaVersion': 1, 'kind': 'golfhelm-imagery-traces-v1', 'siteId': pkg['siteId'], 'packageHash': pkg['contentHash'],
+               'producer': 'auto-trace-v1',
+               'source': {'provider': 'fake', 'service': 'fake', 'catalogTiles': [], 'capturedAt': [], 'rasterSha256': self.world.naip_sha, 'nativeResolutionM': 0.6},
+               'lidarSource': ({'kind': 'lidar_chm+naip', 'lidar': lidar, 'reason': None} if lidar_covered
+                               else {'kind': 'naip', 'lidar': None, 'reason': 'no lidar CHM supplied' if not lidar else 'LIDAR_NO_COVERAGE'}),
+               'tracer': 'fake auto-trace-v1', 'tracedAt': '2026-09-19',
+               'meaning': 'fake traced surface candidates for tests, never a course-supplied vector', 'features': features, 'report': report}
+        write_json(out, doc)
+        return [artifact('surfaces-trace', out, 'A')]
 
     def package_validate(self, node, ctx, run):
         self._mark(node)

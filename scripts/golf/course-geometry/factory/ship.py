@@ -187,22 +187,50 @@ def context_uncertain_shares(context_report):
     return [{'holeKey': hole.get('key'), 'uncertainShare': hole.get('uncertainShare')} for hole in context_report.get('holes') or []]
 
 
-TRACE_SOURCE_PREFIX = 'naip-trace-'
+# `naip-trace-<tracedAt>`: an imagery-only auto/hand trace.
+# `lidar-trace-<tracedAt>`: an auto trace whose lidar canopy-height signal
+# also confirmed open ground -- still owner review, never OSM truth.
+TRACE_SOURCE_PREFIXES = ('naip-trace-', 'lidar-trace-')
 
 
 def traced_surfaces(package):
     """Every surface that came from an imagery trace (hand or auto) rather
     than a mapped source -- `prepare-osm-course.py --traces` stamps each one
-    with a `naip-trace-<tracedAt>` source id. Not a gate: the plan makes the
-    owner's `ship --approve` the review of these, the same pattern as
-    context sign-off, so every one is listed in the QA report and the
-    proposed approval rather than passing `gate_holes_shape` silently."""
+    with a `naip-trace-<tracedAt>` or `lidar-trace-<tracedAt>` source id. Not
+    a gate: the plan makes the owner's `ship --approve` the review of these,
+    the same pattern as context sign-off, so every one is listed in the QA
+    report and the proposed approval rather than passing `gate_holes_shape`
+    silently."""
     if not package:
         return []
     return [{'featureId': f['id'], 'kind': f['kind'], 'holeKeys': f.get('holeKeys') or [],
-             'sourceIds': [s for s in f.get('sourceIds') or [] if s.startswith(TRACE_SOURCE_PREFIX)]}
+             'sourceIds': [s for s in f.get('sourceIds') or [] if s.startswith(TRACE_SOURCE_PREFIXES)]}
             for f in package.get('features') or []
-            if any(s.startswith(TRACE_SOURCE_PREFIX) for s in f.get('sourceIds') or [])]
+            if any(s.startswith(TRACE_SOURCE_PREFIXES) for s in f.get('sourceIds') or [])]
+
+
+def enrich_missing_surface_blockers(blockers, trace_report):
+    """Attach the `layout.surfaces.trace` report row for any hole a
+    `HOLE_SURFACE_MISSING` blocker names, when that task ran: an owner
+    reading `ship`'s output for a still-blocked hole sees why the auto-trace
+    itself refused (no candidate, below the confidence floor, ...) instead of
+    just the bare blocker. Never changes which holes block -- `gate_holes_
+    shape` stays the pure, untouched source of truth for that; this only
+    attaches evidence to its output."""
+    if not trace_report:
+        return blockers
+    by_hole = {row.get('holeKey'): row for row in trace_report.get('report') or [] if row.get('holeKey')}
+    enriched = []
+    for b in blockers:
+        if b['code'] == 'HOLE_SURFACE_MISSING' and b.get('surfaceClass') == 'fairway' and b.get('holeKey') in by_hole:
+            row = by_hole[b['holeKey']]
+            evidence = row.get('evidence') or {}
+            lidar_used = bool((evidence.get('lidar') or {}).get('used'))
+            b = {**b, 'autoTrace': {'decision': row.get('decision'), 'confidence': evidence.get('confidence'),
+                                    'reason': evidence.get('reason'),
+                                    'evidenceSource': 'lidar_chm+naip' if lidar_used else 'naip'}}
+        enriched.append(b)
+    return enriched
 
 
 def gate_bundle_captures(captures_report, expected_holes=18):
@@ -305,7 +333,10 @@ def evaluate_gates(ctx, layout_id, captures_report=None, capture_blockers=None):
     glb_reports = collect_glb_reports(ctx, layout_id, package)
 
     blockers = []
-    blockers += gate_holes_shape(package)
+    holes_shape_blockers = gate_holes_shape(package)
+    trace_report_path = ctx.surfaces_trace_out(layout_id)
+    trace_report = ctx.json(trace_report_path, fresh=True) if trace_report_path and os.path.isfile(trace_report_path) else None
+    blockers += enrich_missing_surface_blockers(holes_shape_blockers, trace_report)
     blockers += gate_hash_chain(package, asset_manifest, context_layer, hole_docs)
     blockers += gate_t_junctions(terrain_summary)
     blockers += gate_terrain_contract(hole_docs)
