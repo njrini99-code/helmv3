@@ -1,0 +1,39 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - link "Skip to login form" [ref=e3] [cursor=pointer]:
+      - /url: "#login-form"
+    - link "Back to home" [ref=e4] [cursor=pointer]:
+      - /url: /
+      - text: Home
+    - generic [ref=e7]:
+      - heading "GolfHelm" [level=1] [ref=e12]
+      - region "Login form" [ref=e13]:
+        - heading "Log in to GolfHelm" [level=2] [ref=e15]
+        - form "Sign in to GolfHelm" [ref=e17]:
+          - generic [ref=e18]:
+            - generic [ref=e19]: Email*
+            - textbox "Email*" [ref=e21]:
+              - /placeholder: you@example.com
+          - generic [ref=e22]:
+            - generic [ref=e23]:
+              - generic [ref=e24]: Password*
+              - link "Forgot password?" [ref=e25] [cursor=pointer]:
+                - /url: /golf/forgot-password
+            - generic [ref=e27]:
+              - textbox "Password*" [ref=e28]:
+                - /placeholder: Enter your password
+              - button "Show password" [ref=e29] [cursor=pointer]
+          - button "Sign in" [ref=e33] [cursor=pointer]
+        - generic [ref=e34]:
+          - paragraph [ref=e35]:
+            - text: New to GolfHelm?
+            - link "Create an account" [ref=e36] [cursor=pointer]:
+              - /url: /golf/signup
+          - generic [ref=e37]:
+            - link "Privacy" [ref=e38] [cursor=pointer]:
+              - /url: /privacy
+            - generic [aria-hidden] [ref=e39]: ·
+            - link "Terms" [ref=e40] [cursor=pointer]:
+              - /url: /terms
+  - region "Notifications alt+T"
+  - alert [ref=e41]
