@@ -81,6 +81,43 @@ export interface ClientSentryOptions {
   ignoreErrors: (string | RegExp)[];
 }
 
+/**
+ * The browser connectivity hook intentionally treats any response from
+ * /api/health as proof that the device reached the server. A 503 still
+ * indicates an unhealthy backend, but it is not a browser exception the
+ * player can act on. The route's bounded server-side readiness probe and its
+ * Bridge record remain the source of truth for that failure.
+ *
+ * Keep this deliberately narrower than a generic 5xx filter: it only drops
+ * Sentry's automatic fetch capture for this one probe and status code.
+ */
+export function isHealthProbeFetchEcho(event: {
+  request?: { url?: string | undefined } | undefined;
+  exception?: {
+    values?: Array<{
+      value?: string | undefined;
+      mechanism?: { type?: string | undefined } | undefined;
+    }> | undefined;
+  } | undefined;
+}): boolean {
+  const url = event.request?.url;
+  if (!url) return false;
+
+  let pathname: string;
+  try {
+    pathname = new URL(url, 'https://helm.invalid').pathname;
+  } catch {
+    return false;
+  }
+
+  if (pathname !== '/api/health') return false;
+
+  return event.exception?.values?.some((value) =>
+    value.mechanism?.type === 'auto.http.client.fetch'
+      && value.value === 'HTTP Client Error with status code: 503',
+  ) ?? false;
+}
+
 /** Blank/undefined/non-finite -> fallback. Otherwise clamped into [0, 1]. */
 export function parseSampleRateEnv(raw: string | undefined, fallback: number): number {
   if (raw === undefined) return fallback;

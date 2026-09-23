@@ -17,6 +17,14 @@ message. It does **not** touch:
 So "filtered here" never means "invisible everywhere" unless the row below
 says so explicitly.
 
+instrumentation-client.ts also has one narrower beforeSend rule outside this
+list. It drops Sentry's automatic browser fetch event only when the request is
+/api/health, the response is a 503, and the mechanism is auto.http.client.fetch.
+The connection-status hook deliberately treats that response as proof that the
+device reached Helm; the route's bounded server-side readiness query still
+emits the timeout/error signal and writes a throttled Bridge event. No other
+5xx, endpoint, or explicit capture matches.
+
 Every entry must be argued the same way a CSP host addition is
 (`src/lib/security/__tests__/analytics-csp-hosts.test.ts`): what it is, why
 it's safe to drop, and how a genuine outage still gets noticed despite the
