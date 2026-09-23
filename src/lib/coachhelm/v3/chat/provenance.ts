@@ -319,38 +319,45 @@ function numbersInText(value: string): number[] {
 }
 
 /**
- * The calendar day(s) a whole-string ISO date/timestamp (already validated by
+ * The calendar day a whole-string ISO date/timestamp (already validated by
  * {@link ISO_DATE_LITERAL}) reads as. A DATE-ONLY string (`YYYY-MM-DD`, no
  * time component) has no zone to convert and is returned unchanged — this is
  * the "date-only strings stay as they are" rule `window_start`/`window_end`
- * follow. A full TIMESTAMP is returned as its naive UTC calendar day AND,
- * when a `timezone` is given, the day the coach actually reads it as (via
- * {@link todayIsoInZone}, the same zone-conversion `program-pulse.ts`'s
- * `formatDateTime` renders chat timestamps with).
+ * follow. A full TIMESTAMP, when a `timezone` is given, is returned as ONLY
+ * the day the coach actually reads it as (via {@link todayIsoInZone}, the
+ * same zone-conversion `program-pulse.ts`'s `formatDateTime` renders chat
+ * timestamps with) — the naive UTC day is dropped, not accepted alongside
+ * it. Falls back to the naive UTC day only when no `timezone` is given, or
+ * when one is given but doesn't parse.
  *
- * Both days are accepted (not just the zone-converted one) so a caller that
- * omits `timezone` — an existing test, or a future call site that forgets to
- * thread it — degrades to the previous UTC-only behavior instead of
- * silently under-supporting every timestamped date. Verified against a real
- * shape: `starts_at: '2026-08-28T00:30:00Z'` reads as "Aug 27" to a coach in
- * America/New_York (8:30pm the evening before) — the naive UTC slice alone
- * flagged a model's "Aug 27" as unsupported even though the event evidence
- * said so, just not in UTC's calendar.
+ * A prior version of this function accepted BOTH the UTC day and the
+ * zone-converted day whenever a timezone was given, reasoning that an
+ * omitted timezone should degrade to UTC-only rather than under-support a
+ * date. But every real call site (`route.ts`) threads `ctx.timezone`, which
+ * is never null in production — so that "omitted timezone" case never
+ * actually applies once a timezone IS given, and accepting the UTC day
+ * alongside it became a FALSE NEGATIVE in the audit it exists to run:
+ * `starts_at: '2026-08-28T00:30:00Z'` reads as "Aug 27" to a coach in
+ * America/New_York (8:30pm the evening before) — a coach who never sees
+ * "Aug 28" anywhere in their own timezone — but the old dual-day set still
+ * accepted a model's "Aug 28" as supported evidence. Once a real, parseable
+ * timezone is given, the zone-converted day is the ONLY day the coach could
+ * have actually seen, so it's the only one this returns.
  */
 function isoDaysOf(value: string, timezone: string | undefined): string[] {
   const utcDay = value.slice(0, 10);
   if (value.length <= 10 || !timezone) return [utcDay];
   const asDate = new Date(value);
   if (Number.isNaN(asDate.getTime())) return [utcDay];
-  const localDay = todayIsoInZone(timezone, asDate);
-  return localDay === utcDay ? [utcDay] : [utcDay, localDay];
+  return [todayIsoInZone(timezone, asDate)];
 }
 
 /**
  * Every whole-string ISO date/timestamp reachable inside an arbitrary tool
- * payload, normalized to `YYYY-MM-DD` (or two days — see {@link isoDaysOf})
- * — the `detail`-shaped sibling of {@link collectNumbers}, used to seed
- * {@link auditDateExpressions}'s evidence set with dates like
+ * payload, normalized to `YYYY-MM-DD` (see {@link isoDaysOf} for which day
+ * — the zone-converted one when a timezone is given and parses, otherwise
+ * the naive UTC day) — the `detail`-shaped sibling of {@link collectNumbers},
+ * used to seed {@link auditDateExpressions}'s evidence set with dates like
  * `detail.events[].starts_at` or `detail.rounds[].date` that never reach a
  * `Measurement`'s `window_start`/`window_end`.
  *
@@ -677,9 +684,10 @@ export function auditNumericClaims(
   const evidenceDates = new Set<string>(extraSupportedDates);
   const evidenceWindows: Array<[string, string]> = [];
   const addWindow = (start: string | null, end: string | null) => {
-    // The exact-date evidence set accepts BOTH days for a timestamped bound
-    // (see isoDaysOf) — a window bound is normally date-only already, in
-    // which case this is a no-op change (one day, unchanged).
+    // For a timestamped bound, the exact-date evidence set accepts only the
+    // day the coach actually reads it as (see isoDaysOf) — a window bound is
+    // normally date-only already, in which case this is a no-op (one day,
+    // unchanged).
     if (start) for (const d of isoDaysOf(start, timezone)) evidenceDates.add(d);
     if (end) for (const d of isoDaysOf(end, timezone)) evidenceDates.add(d);
     // The CONTAINMENT range itself deliberately keeps the naive UTC day —

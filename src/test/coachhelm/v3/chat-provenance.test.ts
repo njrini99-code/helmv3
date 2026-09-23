@@ -607,6 +607,72 @@ describe('auditNumericClaims', () => {
       expect(withTimezone).toEqual([]);
     });
 
+    // Third review round (2026-09-23), #2001's own re-review should-fix:
+    // isoDaysOf used to accept BOTH the naive UTC day and the zone-converted
+    // day whenever a timezone was given, but every real call site
+    // (chat/stream/route.ts) always threads a non-null ctx.timezone — so the
+    // "omitted timezone" fallback this dual-day set was meant for never
+    // actually applies once one IS given. The result was a false negative:
+    // a model claim of "Aug 28" (the UTC day) was still accepted as
+    // supported for a New York coach who never sees that date anywhere in
+    // their own timezone. Fixed: once a real, parseable timezone is given,
+    // ONLY the zone-converted day is accepted.
+    it('rejects the naive UTC day once a real timezone is given, accepting only the day the coach actually sees', () => {
+      // 2026-08-28T00:30:00Z is 8:30pm on 2026-08-27 in America/New_York.
+      const detail = { events: [{ title: 'Late tee time', starts_at: '2026-08-28T00:30:00Z' }] };
+
+      const claims = auditNumericClaims(
+        'The team gathered on Aug 28.',
+        [],
+        [],
+        collectNumbers(detail),
+        collectDates(detail, 'America/New_York'),
+      );
+      // "Aug 27" (asserted in the earlier test) is still accepted; "Aug 28"
+      // — a date this New York coach never actually saw — must not be.
+      expect(claims.map((c) => c.text)).toEqual(['Aug 28']);
+    });
+
+    it('still supports the naive UTC day when no timezone is given at all', () => {
+      // Same timestamp, no timezone argument anywhere — degrades to the
+      // pre-#2001 UTC-only behavior, proving the fix above is conditioned on
+      // a real timezone being given, not a blanket narrowing.
+      const detail = { events: [{ title: 'Late tee time', starts_at: '2026-08-28T00:30:00Z' }] };
+
+      const claims = auditNumericClaims(
+        'The team gathered on Aug 28.',
+        [],
+        [],
+        collectNumbers(detail),
+        collectDates(detail),
+      );
+      expect(claims).toEqual([]);
+    });
+
+    it('leaves a date-only window bound unaffected by a given timezone (no time component, nothing to convert)', () => {
+      // Same window-containment case as the no-year-date test above, but
+      // with a timezone threaded through anyway — window_start/window_end
+      // are date-only strings here, so isoDaysOf's early return (no time
+      // component) means the timezone argument changes nothing.
+      const claims = auditNumericClaims(
+        'He played well on Aug 25.',
+        [
+          measurement({
+            metric_id: 'penalties_per_round',
+            value: 0.09,
+            sample_size: 11,
+            window_start: '2026-08-16',
+            window_end: '2026-09-15',
+          }),
+        ],
+        [],
+        [],
+        [],
+        'America/New_York',
+      );
+      expect(claims).toEqual([]);
+    });
+
     it('pivots a two-digit year: >=70 resolves to 19xx, otherwise 20xx', () => {
       const evidence = [
         measurement({
