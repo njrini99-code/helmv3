@@ -86,6 +86,13 @@ export interface RoundLibraryRound {
   current_hole?: number | null;
   updated_at?: string | null;
   created_at?: string | null;
+  // R8: true when every hole of this in_progress round already carries a
+  // durable score (computed server-side in page.tsx from `golf_holes`, the
+  // same source `continue-round-client.tsx`'s own mount effect checks) — the
+  // round is stuck holding a completed scorecard, most likely because a
+  // final submit was attempted and never confirmed committed. Never
+  // auto-finalized from this signal, only used to change the resume CTA.
+  hasPendingSubmission?: boolean;
   player: {
     first_name: string | null;
     last_name: string | null;

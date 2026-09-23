@@ -96,7 +96,11 @@ describe('New Round — multi-device conflict blocks further writes (B2/B9)', ()
       .map((m) => afterWrapper.slice(m.index + m[0].length, m.index + 160));
     expect(raw.length).toBeGreaterThan(0);
     for (const args of raw) {
-      expect(args).toMatch(/^(data, targetRoundId\)|initialData\)|\s*buildPartialRoundData\([^)]*\),\s*undefined,)/);
+      // R8: persistRoundStart's create call now passes a 3rd `startIntent`
+      // options argument (`initialData, undefined, { ... }`) — still a
+      // CREATE (no round id, no lock token), so it belongs in this same
+      // allowlist of raw calls.
+      expect(args).toMatch(/^(data, targetRoundId\)|initialData\)|initialData,\s*undefined,\s*\{|\s*buildPartialRoundData\([^)]*\),\s*undefined,)/);
     }
   });
 
@@ -197,5 +201,42 @@ describe('New Round — completion surfaces provide cold-chunk feedback (B10)', 
     const submitRender = source.slice(source.indexOf("{step === 'submitting' && ("));
     expect(submitRender).toContain('<SubmitOverlay');
     expect(submitRender).toContain('isVisible');
+  });
+});
+
+describe('New Round — start-intent dedupe against a stranded/duplicate round (R8)', () => {
+  const persistRoundStartSource = () =>
+    slice('const persistRoundStart = useCallback(async (', 'const handleSetupSubmit = async (');
+
+  it('sends startIntent (never allowReuse) so the server can dedupe a plain "begin a new round" call', () => {
+    const handler = persistRoundStartSource();
+    expect(handler).toContain('startIntent: true');
+    expect(handler).not.toContain('allowReuse');
+  });
+
+  it('routes to Continue Round for the matched round instead of creating a sibling, on in_progress_exists', () => {
+    const handler = persistRoundStartSource();
+    const branch = handler.slice(
+      handler.indexOf("result.error === 'in_progress_exists'"),
+      handler.indexOf("result.error === 'duplicate_completed_round'"),
+    );
+    expect(branch).toContain('router.push(`/golf/dashboard/rounds/continue/${result.roundId}`)');
+    // No round was created for this outcome — nothing here should look like
+    // starting a fresh round.
+    expect(branch).not.toContain('savedRoundIdRef.current = result.data');
+  });
+
+  it('arms the duplicate-course confirmation ref on the warning, so the SAME "Start round" tap proceeds next time', () => {
+    const handler = persistRoundStartSource();
+    const branch = handler.slice(
+      handler.indexOf("result.error === 'duplicate_completed_round'"),
+      handler.indexOf('// B6: this call always sends'),
+    );
+    expect(branch).toContain('duplicateCourseConfirmedRef.current = true');
+  });
+
+  it('forwards the confirmation ref back to the server on the next call', () => {
+    const handler = persistRoundStartSource();
+    expect(handler).toContain('confirmDuplicateCourse: duplicateCourseConfirmedRef.current');
   });
 });

@@ -168,7 +168,7 @@ export default async function RoundsPage() {
         .select(inProgressSelectFields)
         .eq('player_id', player.id)
         .eq('status', 'in_progress')
-        .order('updated_at', { ascending: false })
+        .order('updated_at', { ascending: false }),
     ]);
     if (completedResult.error) throw new Error(`Failed to load rounds: ${completedResult.error.message}`);
     if (inProgressResult.error) throw new Error(`Failed to load in-progress rounds: ${inProgressResult.error.message}`);
@@ -181,10 +181,70 @@ export default async function RoundsPage() {
 
     inProgressData = (inProgressResult.data ?? []) as typeof inProgressRounds;
 
+    // R8: "ready to submit" — every hole already carries a durable score, so
+    // the round is stuck holding a completed scorecard, not mid-tracking
+    // (most commonly a final submit that was attempted and never confirmed
+    // committed — but this reads durable per-hole state, not a marker of
+    // that specific cause; see below). Deliberately reads `golf_holes`
+    // directly (the SAME source `continue-round-client.tsx`'s own mount
+    // effect checks via `hasAllHolesScored`) rather than
+    // `draft_data.submissionBackup`: every `savePartialRound` write REPLACES
+    // `draft_data` wholesale (it does not merge), so a backup marker written
+    // by a failed submit is wiped by the very next autosave tick if the
+    // player stays on the page. Durable per-hole scores have no such
+    // fragility. Paginated per `.claude/rules/database.md` (anything over
+    // rounds/shots/holes must not trust PostgREST's 1,000-row cap).
+    const inProgressIds = inProgressData.map((r) => r.id).filter((id): id is string => Boolean(id));
+    const readyToSubmitIds = new Set<string>();
+    if (inProgressIds.length > 0) {
+      const { data: holeRows, error: holeRowsError } = await fetchAllRowsResult((from, to) =>
+        supabase
+          .from('golf_holes')
+          .select('round_id, score')
+          .in('round_id', inProgressIds)
+          .order('id', { ascending: true })
+          .range(from, to)
+      );
+      if (holeRowsError) {
+        // Display-only enhancement, not the round data itself — fail open
+        // (no round marked "ready to submit") rather than breaking the whole
+        // rounds page over it.
+        await logServerException(
+          new Error(`Failed to load hole completeness for in-progress rounds: ${holeRowsError.message}`),
+          { action: 'rounds-ready-to-submit-load', route: '/golf/dashboard/rounds', source: 'server_component', sport: 'golf' },
+          'warning',
+        );
+      } else {
+        // A completed round already occupies this exact course/date — never
+        // nudge the player to submit a SECOND finished round onto the same
+        // day. What happens to an existing stranded duplicate like that is
+        // an owner decision (R8 plan), not something this label should push
+        // toward on its own. Matched the same way the production duplicates
+        // were found: course name (or id, once selected) + round date.
+        const completedCourseDateKeys = new Set(
+          rounds.map((r) => `${r.course_name ?? ''}|${r.round_date}`)
+        );
+        const scoredCountByRound = new Map<string, number>();
+        for (const h of holeRows ?? []) {
+          if (h.score != null && h.round_id) {
+            scoredCountByRound.set(h.round_id, (scoredCountByRound.get(h.round_id) ?? 0) + 1);
+          }
+        }
+        for (const r of inProgressData) {
+          const target = r.holes_played ?? 18;
+          const hasCompletedSibling = completedCourseDateKeys.has(`${r.course_name ?? ''}|${r.round_date}`);
+          if (target > 0 && !hasCompletedSibling && (scoredCountByRound.get(r.id) ?? 0) >= target) {
+            readyToSubmitIds.add(r.id);
+          }
+        }
+      }
+    }
+
     // Show ALL in-progress rounds (including setup-only drafts without shots)
     inProgressRounds = (inProgressData ?? []).map(r => ({
       ...r,
-      player: r.player && !('error' in r.player) ? r.player : null
+      player: r.player && !('error' in r.player) ? r.player : null,
+      hasPendingSubmission: readyToSubmitIds.has(r.id),
     })) as RoundWithPlayer[];
   }
 

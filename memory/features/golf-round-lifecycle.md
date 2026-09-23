@@ -230,6 +230,43 @@ Use `memory/context/golfhelm-database.md` for exact columns.
   mechanics live in `memory/features/shot-tracking.md`'s save/submit result
   contract, since the RPCs and TypeScript guards this touches are shared with
   shot tracking, not lifecycle-specific.
+  - **A non-empty course/date match was previously an insert-fresh silent
+    orphan, not a resume (R8, 2026-09-22).** Measured against production: 10
+    of 54 `in_progress` rounds were abandoned duplicates of a `completed`
+    round for the same player/course/date — most because the player started
+    round A, abandoned it, started a separate round B, and finished B without
+    A ever being offered back to them; a smaller cluster because a player
+    re-triggered "start a round" against a course/date it had already
+    completed, with nothing to warn them. `persistRoundStart` (New Round's
+    "begin a brand-new round" call, ONLY) now passes `startIntent: true` to
+    `savePartialRound`. Everything else that calls it — autosave, the
+    unload beacon, the `/api/golf/rounds/partial-save` route, and
+    `writeRoundRecreatingIfMissing`'s round_missing recreate — omits the 3rd
+    argument entirely and is behaviorally unchanged. With `startIntent`, the
+    no-id branch:
+    - returns `in_progress_exists` (no insert) when the course/date/qualifier
+      match has real progress and is not reused — the client routes straight
+      to Continue Round for that round instead of leaving it stranded.
+    - returns `duplicate_completed_round` (no insert) when no in_progress
+      match exists but a COMPLETED round already occupies that exact
+      player/course/date/qualifier slot — the client warns once and the
+      player's next tap of the same "Start round" control re-sends
+      `confirmDuplicateCourse: true` to proceed (one primary action,
+      confirmed by repeating it, not a second button). A failed lookup fails
+      OPEN to the ordinary insert rather than blocking a round start.
+    - The Rounds dashboard also flags an `in_progress` round whose every hole
+      already carries a durable `golf_holes` score with a "Ready to submit"
+      pill and a "Finish submitting" CTA instead of "In progress"/"Continue"
+      — same destination, since `continue-round-client.tsx`'s own mount
+      effect ("If ALL holes are already scored on mount") already re-opens
+      the submit dialog once it independently sees every hole scored. This
+      deliberately reads `golf_holes`, not `draft_data.submissionBackup`
+      (persisted by every `submitGolfRoundComprehensive` attempt against an
+      existing round, success or fail): `savePartialRound`'s `roundData`
+      REPLACES `draft_data` wholesale rather than merging it, so a backup
+      marker is wiped by the very next autosave tick if the player stays on
+      the page — durable per-hole scores have no such fragility. This never
+      auto-finalizes a round; the player still taps Submit.
 - A qualifier round number derived server-side (the client sent none) must
   never re-mint a number the player's own in-progress round already holds —
   the unique index on `golf_rounds` over `(qualifier_id, player_id,

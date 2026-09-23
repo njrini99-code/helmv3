@@ -881,12 +881,31 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
   // Cloud Course Library tee (golf_course_tees.id) when the round was started
   // from the tee picker. Cleared whenever a non-library course is chosen.
   const selectedTeeIdRef = useRef<string | null>(null);
+  // R8: set once the player has SEEN the "you already completed a round for
+  // this course on this date" warning and tapped Start Round again to proceed —
+  // the one primary action confirms itself on a second tap rather than
+  // spawning a separate dialog/button. Reset whenever the setup identity
+  // (course/date/type/qualifier) changes below, so a stale confirmation
+  // can never silently apply to a different course or date.
+  const duplicateCourseConfirmedRef = useRef(false);
   // Reactive mirror of "a cloud tee is selected" (selectedTeeIdRef is a ref and
   // can't drive render). Kept in lockstep with selectedTeeIdRef so the setup
   // screen can show a read-only "Course ready" confirmation for a cloud pick
   // instead of an editable form — editing the form would otherwise persist the
   // edited name against the original (now-mismatched) tee_id/course_id.
   const [cloudPickActive, setCloudPickActive] = useState(false);
+  // R8: a confirmed duplicate-course warning applies only to the exact setup
+  // it was shown for. Any change to what would actually start recomputes the
+  // dedupe check server-side next tap.
+  useEffect(() => {
+    duplicateCourseConfirmedRef.current = false;
+  }, [
+    setupData.courseName,
+    setupData.roundDate,
+    setupData.roundType,
+    selectedQualifierId,
+    selectedRoundNumber,
+  ]);
   // Course imagery for the confirm screen, carried out of the picker with the
   // tee (FairwayCoursePicker already had the golf_courses row in hand). Null on
   // every non-cloud path, where CourseImage falls back to its name-derived photo.
@@ -1433,8 +1452,30 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
     }
 
     try {
-      const result = await savePartialRound(initialData);
+      const result = await savePartialRound(initialData, undefined, {
+        startIntent: true,
+        confirmDuplicateCourse: duplicateCourseConfirmedRef.current,
+      });
       if (!result.success) {
+        // R8: the player's own in-progress round already occupies this
+        // exact course/date/qualifier slot with real progress. Nothing was
+        // created — send them to it instead of leaving them stuck on a
+        // "Start round" control that will only find the same round again.
+        if (result.error === 'in_progress_exists' && 'roundId' in result) {
+          reportStartFailure('in_progress_exists', { existingRoundId: result.roundId });
+          showToast('You already have this round in progress — resuming it.', 'warning');
+          router.push(`/golf/dashboard/rounds/continue/${result.roundId}`);
+          return false;
+        }
+        // R8: a COMPLETED round already occupies this slot. Warn once; a
+        // second tap of the same "Start round" control (duplicateCourseConfirmedRef)
+        // proceeds — one primary action, confirmed by repeating it.
+        if (result.error === 'duplicate_completed_round' && 'completedRoundId' in result) {
+          reportStartFailure('duplicate_completed_round', { completedRoundId: result.completedRoundId });
+          duplicateCourseConfirmedRef.current = true;
+          setError('You already have a completed round for this course on this date. Tap Start round again to start a new one anyway.');
+          return false;
+        }
         // B6: this call always sends `holes: []` (a fresh round), so
         // `conflict`/`round_missing`/`hole_invalid` cannot occur here — but
         // `busy`/`retry` can, and both are bare signal keys, not sentences.
@@ -1442,6 +1483,10 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
         setError(describeRoundWriteFailure(result.error));
         return false;
       }
+
+      // A round genuinely started — any stale duplicate confirmation from an
+      // earlier tap no longer applies.
+      duplicateCourseConfirmedRef.current = false;
 
       savedRoundIdRef.current = result.data.roundId;
       setSavedRoundId(result.data.roundId);
@@ -1473,7 +1518,7 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
       setError('Unable to save this round. Please try again before tracking.');
       return false;
     }
-  }, [connectionStatus.isConnected, playerId, selectedQualifierId, selectedRoundNumber, setupData]);
+  }, [connectionStatus.isConnected, playerId, router, selectedQualifierId, selectedRoundNumber, setupData, showToast]);
 
   const handleSetupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
