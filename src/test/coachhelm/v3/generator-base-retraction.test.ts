@@ -334,12 +334,18 @@ describe('BaseGenerator stale-scope retraction (audit P2 + regrade hardening)', 
       error: expect.objectContaining({ message: 'boom' }),
     });
     expect(recordedSelects).toHaveLength(0);
+    // Normalized, not the raw Error instance — `JSON.stringify(new
+    // Error('boom'))` is `'{}'`, so storing the raw value here would
+    // silently vanish from the admin_events write.
     expect(logServerErrorMock).toHaveBeenCalledWith(
       expect.stringContaining('run() failed'),
       expect.objectContaining({
-        metadata: { dbError: expect.objectContaining({ message: 'boom' }) },
+        metadata: { dbError: { name: 'Error', message: 'boom' } },
       }),
     );
+    const loggedCall = logServerErrorMock.mock.calls[logServerErrorMock.mock.calls.length - 1];
+    const logged = loggedCall?.[1] as { metadata?: { dbError?: { message?: string } } };
+    expect(logged.metadata?.dbError?.message).toBe('boom');
   });
 
   it('is a no-op when the generator declares no scope (default)', async () => {

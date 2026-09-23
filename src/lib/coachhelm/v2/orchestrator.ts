@@ -74,7 +74,7 @@ import type {
   ShotPattern,
   ReasoningResult,
 } from './types';
-import { describeError } from '@/lib/utils/describe-error';
+import { describeError, toDbErrorMetadata } from '@/lib/utils/describe-error';
 
 interface RoundReviewShotRow {
   hole_number: number;
@@ -317,7 +317,7 @@ class CoachHelmIntelligence {
         {
           action: 'orchestrator.ensureCalibrationBootstrapped',
           featureArea: 'coachhelm',
-          metadata: { dbError: error as unknown },
+          metadata: { dbError: toDbErrorMetadata(error) },
         },
         'warning',
       );
@@ -477,7 +477,7 @@ class CoachHelmIntelligence {
           featureArea: 'coachhelm',
           playerId,
           extra: { generator, reason },
-          metadata: { dbError: r },
+          metadata: { dbError: toDbErrorMetadata(r) },
         });
         continue;
       }
@@ -512,7 +512,7 @@ class CoachHelmIntelligence {
           featureArea: 'coachhelm',
           playerId,
           extra: { generator, reason },
-          metadata: value.error !== undefined ? { dbError: value.error } : undefined,
+          metadata: value.error !== undefined ? { dbError: toDbErrorMetadata(value.error) } : undefined,
         });
         continue;
       }
@@ -527,7 +527,7 @@ class CoachHelmIntelligence {
     const compositeSummary = await synthesizeForPlayer(playerId).catch((err) => {
       void logServerError(
         `composite synthesis failed for ${playerId}: ${describeError(err)}`,
-        { action: 'analyzePlayer.composite', metadata: { dbError: err as unknown } },
+        { action: 'analyzePlayer.composite', metadata: { dbError: toDbErrorMetadata(err) } },
       );
       return { player_id: playerId, rule_matches: 0, rule_suppressed: 0, rule_emitted: 0, errors: 1, refusals: 0 };
     });
@@ -754,7 +754,7 @@ class CoachHelmIntelligence {
           action: 'coachhelm.orchestrator.generateRoundReview',
           featureArea: 'coachhelm',
           extra: { roundId },
-          metadata: roundOwnerError ? { dbError: roundOwnerError as unknown } : undefined,
+          metadata: roundOwnerError ? { dbError: toDbErrorMetadata(roundOwnerError) } : undefined,
         },
       );
       return null;
@@ -1252,7 +1252,7 @@ class CoachHelmIntelligence {
         {
           action: 'coachhelm.orchestrator.generateTeamPatternInsights',
           featureArea: 'coachhelm',
-          metadata: { dbError: error as unknown },
+          metadata: { dbError: toDbErrorMetadata(error) },
         }
       );
     }
@@ -2157,7 +2157,7 @@ class CoachHelmIntelligence {
           action: 'coachhelm.orchestrator.fetchPlayerStats',
           featureArea: 'coachhelm',
           playerId,
-          metadata: { dbError: error as unknown },
+          metadata: { dbError: toDbErrorMetadata(error) },
         }
       );
       this._statsCache.set(playerId, undefined);
@@ -2212,7 +2212,7 @@ class CoachHelmIntelligence {
           action: 'coachhelm.orchestrator.generateCorrelationInsights',
           featureArea: 'coachhelm',
           playerId,
-          metadata: { dbError: error as unknown },
+          metadata: { dbError: toDbErrorMetadata(error) },
         }
       );
     }

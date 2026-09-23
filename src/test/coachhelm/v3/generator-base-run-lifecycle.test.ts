@@ -361,7 +361,20 @@ describe('BaseGenerator.run() lifecycle (TS2)', () => {
     expect(res).toEqual({ id: null, gated: false, status: 'failed', error: thrown });
     expect(logServerErrorMock).toHaveBeenCalledTimes(1);
     expect(lastLogMessage()).toContain('test-generator run() failed');
-    expect(lastLogContext().metadata?.dbError).toBe(thrown);
+    // The receipt's `error` is the raw thrown value (asserted above), but the
+    // LOGGED metadata must be `toDbErrorMetadata`'s normalized plain object,
+    // not the raw Error instance — `JSON.stringify(new Error(...))` is `'{}'`
+    // (name/message/stack are non-enumerable), so storing the raw Error
+    // directly under `metadata` would silently disappear once
+    // server-error-logger's `normalizeContext` round-trips it through
+    // `JSON.parse(JSON.stringify(...))` before the admin_events write —
+    // exactly the case this fix exists to capture.
+    expect(lastLogContext().metadata?.dbError).toEqual({ name: 'Error', message: 'db exploded' });
+    expect((lastLogContext().metadata?.dbError as { message: string }).message).toBe('db exploded');
+    expect(JSON.parse(JSON.stringify(lastLogContext().metadata?.dbError))).toEqual({
+      name: 'Error',
+      message: 'db exploded',
+    });
   });
 
   it('propagates a PostgREST-shaped error (code + message) into logged metadata.dbError', async () => {
@@ -382,8 +395,11 @@ describe('BaseGenerator.run() lifecycle (TS2)', () => {
     expect(res).toEqual({ id: null, gated: false, status: 'failed', error: dbError });
     expect(lastLogMessage()).toContain('code=PGRST002');
     expect(lastLogMessage()).toContain('Could not query the database for the schema cache');
-    const loggedDbError = lastLogContext().metadata?.dbError as typeof dbError;
-    expect(loggedDbError.code).toBe('PGRST002');
-    expect(loggedDbError.message).toBe('Could not query the database for the schema cache. Retrying.');
+    // Normalized (null details/hint dropped, unlike the raw fixture above) —
+    // and JSON-round-trip-safe, unlike the Error case in the previous test.
+    expect(lastLogContext().metadata?.dbError).toEqual({
+      message: 'Could not query the database for the schema cache. Retrying.',
+      code: 'PGRST002',
+    });
   });
 });

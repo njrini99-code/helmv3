@@ -353,3 +353,37 @@ export function postgrestErrorContext(err: unknown): {
     errorDetails: str(e.details),
   };
 }
+
+/**
+ * Normalize any caught value into a plain object safe to store as
+ * `metadata: { dbError: toDbErrorMetadata(err) }`.
+ *
+ * `JSON.stringify(new Error('x'))` is `'{}'` — Error's own `name`/`message`/
+ * `stack` are non-enumerable — so a raw Error instance stored directly under
+ * `metadata` silently disappears the moment `server-error-logger.ts`'s
+ * `normalizeContext` round-trips the whole context through
+ * `JSON.parse(JSON.stringify(...))` before the `admin_events` write. Found
+ * 2026-09 fixing the `generator-base.ts` / `orchestrator.ts` `dbError` call
+ * sites added for the 2026-09-18 incident: those catches see a genuinely
+ * thrown `Error` at least as often as a Postgrest-shaped rejection, which is
+ * exactly the case this would have silently dropped again.
+ *
+ * Reuses `postgrestErrorContext` for `code`/`details`/`hint` (same canonical
+ * naming the Bridge already reads via `extractErrorCode`/`extractErrorHint`)
+ * and adds `name`/`message` — direct property access on a live Error still
+ * returns those correctly even though `JSON.stringify` would not.
+ */
+export function toDbErrorMetadata(err: unknown): Record<string, unknown> {
+  const { errorCode, errorHint, errorDetails } = postgrestErrorContext(err);
+  const e = (err && typeof err === 'object' ? err : {}) as Record<string, unknown>;
+  const name = err instanceof Error ? err.name : str(e.name);
+  const message = err instanceof Error ? err.message : (str(e.message) ?? describeError(err));
+
+  return {
+    ...(name ? { name } : {}),
+    message,
+    ...(errorCode ? { code: errorCode } : {}),
+    ...(errorDetails ? { details: errorDetails } : {}),
+    ...(errorHint ? { hint: errorHint } : {}),
+  };
+}
