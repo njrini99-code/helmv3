@@ -337,13 +337,40 @@ closes that gap for a `compose()` caller that opts in.
   failed) with a `claim_validation: { malformed, rejected: [{claim_id,
   metric_id, reason}] }` payload — fields only, no prose, mirroring the
   existing `evidence_offered` no-prose contract.
-- Not wired in this slice: `round-review.ts` does not build or pass an
-  `evidence_packet` yet, so this gate is dormant for every live caller
-  today. `round-review.ts` itself has zero callers in production
-  (`round-regime.ts` documents this); the wiring candidate is
-  `round-recap.ts`'s `generateLLMRecap`, the only live, persisted
-  (`golf_rounds.ai_recap`) LLM-text surface among the candidates
-  surveyed — a later slice.
+- Not wired in slice 1: `round-review.ts` does not build or pass an
+  `evidence_packet`, so this gate stays dormant there. `round-review.ts`
+  itself has zero callers in production (`round-regime.ts` documents
+  this) and this stays true — no persistence path from
+  `composeRoundReview` into `golf_round_reviews` was added; that remains
+  a product/cost decision for the owner, not a slice.
+- Wired in slice 2 (2026-09-23, Package 8 slice 2): `round-recap.ts`'s
+  `generateLLMRecap` was the only live, persisted (`golf_rounds.ai_recap`)
+  LLM-text surface among every `compose()`/LLM-text caller surveyed
+  (`round-review.ts`, `hero-narrative.ts`, `practice-rx/composer.ts` all
+  have zero production callers; the coach-chat stream route has no
+  persisted output to gate). `buildRecapEvidencePacket()`
+  (`recap-evidence.ts`) builds the packet from the SAME `fir`/`gir`
+  `pct()`-rounded values the prompt's `facts` block already shows the
+  model — recomputing them independently would risk a rounding-drift
+  `wrong_field`/`value_mismatch` false rejection over the same true
+  percentage. Every round-level fact (`total_score`, `score_to_par`,
+  `total_putts`, `fairways_hit_pct`, `gir_pct`, `front_nine`,
+  `back_nine`) is `kind: 'measurement'`; the season aggregates
+  (`season_scoring_average`, `season_best_round`, sample_n =
+  `stats.rounds_played`) are `kind: 'aggregate'` and are withheld
+  entirely for a non-18-hole round, mirroring the prompt's own
+  18-hole-only gating for those same figures.
+  Gated behind `coachhelm_recap_claim_packet` (`config/feature-flags.yml`,
+  type `experiment`, default off everywhere) — off, `generateLLMRecap`
+  passes no `evidence_packet` and behavior is byte-for-byte what it was
+  before this flag existed; the existing flat numeric scan
+  (`buildRecapEvidence`/`citations.ts`) runs either way, unaffected by
+  this flag. `round-recap-claim-gate.test.ts` exercises the REAL
+  `compose()` → `claim-validator.ts` pipeline (not a mocked `compose()`)
+  with the flag forced on, proving a rejected typed claim and a
+  malformed claims block each fall back to the deterministic recap and
+  that only the deterministic text — never the discarded prose — reaches
+  the `save_round_ai_recap` RPC.
 - `EvidencePacketEntry.kind: 'measurement' | 'aggregate'` (2026-09-23
   review fix): the `sample_n` floor only applies to `'aggregate'` (a
   value computed over multiple observations — a rate, an average).

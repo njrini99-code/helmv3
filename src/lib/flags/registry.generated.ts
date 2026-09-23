@@ -30,6 +30,23 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     cleanup_plan: "Either promote to a permanent `release` flag once shadow-log data shows the learned thresholds track real coach preference (fewer dismissed alerts without missing real declines), or remove the wiring and this flag entirely if the evidence doesn't support it.",
   },
   {
+    feature_id: "coachhelm_recap_claim_packet",
+    owner: "golf/coachhelm",
+    purpose: "Gates whether the round recap's compose() call also receives a typed EvidencePacket (Package 8), engaging claim-validator.ts's wrong-metric/wrong-player/wrong-window/unsupported-cause checks for this one LLM surface, on top of the existing flat numeric scan; default off pending real-world evidence this doesn't over-reject otherwise-good recaps into the deterministic fallback.",
+    type: "experiment",
+    status: "active",
+    created_at: "2026-09-23",
+    expires_at: null,
+    default: false,
+    environment: {
+      production: false,
+      preview: false,
+      development: false,
+    },
+    kill_switch_behavior: null,
+    cleanup_plan: "Either promote to a permanent `release` flag once shadow data (the recap's fallback rate with the packet engaged vs. without) shows the typed gate isn't discarding good recaps, or remove the packet wiring entirely if it is.",
+  },
+  {
     feature_id: "coachhelm_v2_availability",
     owner: "golf/coachhelm",
     purpose: "Global product-availability switch for the CoachHelm V2 AI layer. Off disables the whole surface for every coach and player account; the underlying check is a fail-open string comparison (any value except the literal string \"false\" leaves it on).",

@@ -28,7 +28,12 @@
  */
 import { describe, it, expect } from 'vitest';
 import { verifyCitations } from '@/lib/coachhelm/v3/llm/citations';
-import { buildRecapEvidence } from '@/lib/coachhelm/v3/llm/recap-evidence';
+import {
+  buildRecapEvidence,
+  buildRecapEvidencePacket,
+  type RecapPacketRound,
+  type RecapPacketStats,
+} from '@/lib/coachhelm/v3/llm/recap-evidence';
 
 /** The real shape `generateLLMRecap` builds, for an 18-hole round. */
 const FACTS = [
@@ -76,5 +81,75 @@ describe('round recap citations', () => {
 
   it('returns no claims for an empty fact list rather than throwing', () => {
     expect(buildRecapEvidence([])).toEqual([]);
+  });
+});
+
+describe('buildRecapEvidencePacket (Package 8 slice 2)', () => {
+  const ROUND18: RecapPacketRound = {
+    player_id: 'player-1',
+    round_date: '2026-06-01',
+    total_score: 74,
+    score_to_par: 2,
+    total_putts: 30,
+    front_nine: 37,
+    back_nine: 37,
+    holes_played: 18,
+  };
+  const STATS: RecapPacketStats = { scoring_average: 74.7, best_round: 68, rounds_played: 12 };
+
+  it('marks every round-level fact as kind: measurement, sample_n 1', () => {
+    const packet = buildRecapEvidencePacket(ROUND18, null, 71.4, 66.7);
+    const roundEntries = packet.entries.filter((e) => e.metric_id !== 'season_scoring_average' && e.metric_id !== 'season_best_round');
+    expect(roundEntries.length).toBeGreaterThan(0);
+    for (const entry of roundEntries) {
+      expect(entry.kind).toBe('measurement');
+      expect(entry.sample_n).toBe(1);
+    }
+  });
+
+  it('marks the season aggregates as kind: aggregate, sample_n = rounds_played', () => {
+    const packet = buildRecapEvidencePacket(ROUND18, STATS, 71.4, 66.7);
+    const avg = packet.entries.find((e) => e.metric_id === 'season_scoring_average');
+    const best = packet.entries.find((e) => e.metric_id === 'season_best_round');
+    expect(avg).toEqual({ metric_id: 'season_scoring_average', value: 74.7, sample_n: 12, kind: 'aggregate' });
+    expect(best).toEqual({ metric_id: 'season_best_round', value: 68, sample_n: 12, kind: 'aggregate' });
+  });
+
+  it('withholds the season aggregates entirely for a non-18-hole round, matching the prompt', () => {
+    const nineHole: RecapPacketRound = { ...ROUND18, holes_played: 9 };
+    const packet = buildRecapEvidencePacket(nineHole, STATS, 71.4, 66.7);
+    expect(packet.entries.find((e) => e.metric_id === 'season_scoring_average')).toBeUndefined();
+    expect(packet.entries.find((e) => e.metric_id === 'season_best_round')).toBeUndefined();
+  });
+
+  it('treats a null holes_played as 18 (matches the prompt facts builder default)', () => {
+    const packet = buildRecapEvidencePacket({ ...ROUND18, holes_played: null }, STATS, 71.4, 66.7);
+    expect(packet.entries.find((e) => e.metric_id === 'season_scoring_average')).toBeDefined();
+  });
+
+  it('floors an aggregate with a zero/null rounds_played sample_n (kind: aggregate stays floored, fail-safe)', () => {
+    const packet = buildRecapEvidencePacket(ROUND18, { ...STATS, rounds_played: null }, 71.4, 66.7);
+    const avg = packet.entries.find((e) => e.metric_id === 'season_scoring_average');
+    expect(avg?.sample_n).toBe(0);
+    expect(avg?.kind).toBe('aggregate');
+  });
+
+  it('omits a null round-level fact instead of registering a fabricated zero', () => {
+    const noPutts: RecapPacketRound = { ...ROUND18, total_putts: null };
+    const packet = buildRecapEvidencePacket(noPutts, null, 71.4, 66.7);
+    expect(packet.entries.find((e) => e.metric_id === 'total_putts')).toBeUndefined();
+  });
+
+  it('omits fir/gir entries when the caller passes null (no fairway/GIR data on the round)', () => {
+    const packet = buildRecapEvidencePacket(ROUND18, null, null, null);
+    expect(packet.entries.find((e) => e.metric_id === 'fairways_hit_pct')).toBeUndefined();
+    expect(packet.entries.find((e) => e.metric_id === 'gir_pct')).toBeUndefined();
+  });
+
+  it('builds window_start/window_end from round_date, matching the round the claims must be scoped to', () => {
+    const packet = buildRecapEvidencePacket(ROUND18, null, 71.4, 66.7);
+    expect(packet.window_start).toBe('2026-06-01T00:00:00.000Z');
+    expect(packet.window_end).toBe('2026-06-01T00:00:00.000Z');
+    expect(packet.player_id).toBe('player-1');
   });
 });
