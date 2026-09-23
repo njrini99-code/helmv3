@@ -90,9 +90,11 @@
 
 ## 2026-09-23 — A7 distance-profile surface: loader, view model, Fairway section, Game Fingerprint mount (slice 1)
 
-- SHA: ee1b4db95 (server loader + view model), f938d1220 (rolling
-  12-month scope + window label), 09609e21d (Fairway section
-  component), 7070eae8d (accessibility fixes + Game Fingerprint mount).
+- SHA: 7f1834abe (server loader + view model), 81860195b (rolling
+  12-month scope + window label), 406e1dd10 (Fairway section
+  component), 235e37aa5 (accessibility fixes + Game Fingerprint mount).
+  Corrected 2026-09-23 (#2008 review) — the SHAs originally recorded
+  here were not on this branch.
 - Change: adds `loadDistanceProfile` (server-only, wraps
   `loadPlayerContext` + `computeDistanceProfile`),
   `buildRollingDistanceProfileScope`/`describeDistanceProfileWindow`
