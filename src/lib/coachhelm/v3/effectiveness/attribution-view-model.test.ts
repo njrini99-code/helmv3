@@ -25,6 +25,10 @@ function makeRow(over: Partial<AttributionRow> = {}): AttributionRow {
     n_rounds_before: MIN_SUFFICIENT_ROUNDS,
     n_rounds_after: MIN_SUFFICIENT_ROUNDS,
     method_version: COMPARABLE_OPPORTUNITIES_METHOD_VERSION,
+    // Default null (no anchor claim) — the anchor-label tests below pass
+    // 'action'/'exposure' explicitly; every pre-existing test above this
+    // gets the pre-Package-10 label text unchanged.
+    anchor_kind: null,
     ...over,
   };
 }
@@ -111,5 +115,93 @@ describe('toAttributionReadout — missing vs. result', () => {
   it('one row → the same shape rowToAttributionReadout produces', () => {
     const row = makeRow();
     expect(toAttributionReadout([row])).toEqual(rowToAttributionReadout(row));
+  });
+});
+
+describe('Package 10: anchor label ("since first shown" / "since you acted on it")', () => {
+  it('anchor_kind: exposure on a clean (observed_change) result readout appends "(since first shown)" to the description', () => {
+    const readout = rowToAttributionReadout(makeRow({ anchor_kind: 'exposure' }));
+    expect(readout.state).toBe('result');
+    if (readout.state === 'result') {
+      expect(readout.method.label).toBe('observed_change');
+      expect(readout.method.description).toBe('Observed change on comparable shots (since first shown)');
+    }
+  });
+
+  it('anchor_kind: exposure on an observed_change_limited result readout also appends the suffix', () => {
+    const readout = rowToAttributionReadout(
+      makeRow({ method_version: COMPARABLE_OPPORTUNITIES_LIMITED_METHOD_VERSION, anchor_kind: 'exposure' }),
+    );
+    expect(readout.state).toBe('result');
+    if (readout.state === 'result') {
+      expect(readout.method.label).toBe('observed_change_limited');
+      expect(readout.method.description).toBe(
+        "Observed change — another change happened in the same window, so it can't be isolated (since first shown)",
+      );
+    }
+  });
+
+  it('anchor_kind: exposure on an insufficient (below sample-size floor) readout also gets the suffix — the label applies regardless of state', () => {
+    const readout = rowToAttributionReadout(
+      makeRow({ anchor_kind: 'exposure', n_rounds_before: 1, n_rounds_after: 1 }),
+    );
+    expect(readout.state).toBe('insufficient');
+    expect(readout.method.description).toBe('Observed change on comparable shots (since first shown)');
+  });
+
+  it('anchor_kind: action on a clean (observed_change) result readout appends "(since you acted on it)" to the description', () => {
+    const readout = rowToAttributionReadout(makeRow({ anchor_kind: 'action' }));
+    expect(readout.state).toBe('result');
+    if (readout.state === 'result') {
+      expect(readout.method.label).toBe('observed_change');
+      expect(readout.method.description).toBe('Observed change on comparable shots (since you acted on it)');
+      expect(readout.method.description).not.toContain('since first shown');
+    }
+  });
+
+  it('anchor_kind: action on an observed_change_limited result readout also appends the "since you acted on it" suffix', () => {
+    const readout = rowToAttributionReadout(
+      makeRow({ method_version: COMPARABLE_OPPORTUNITIES_LIMITED_METHOD_VERSION, anchor_kind: 'action' }),
+    );
+    expect(readout.state).toBe('result');
+    if (readout.state === 'result') {
+      expect(readout.method.label).toBe('observed_change_limited');
+      expect(readout.method.description).toBe(
+        "Observed change — another change happened in the same window, so it can't be isolated (since you acted on it)",
+      );
+    }
+  });
+
+  it('anchor_kind: null (round-level/unknown rows) gets no suffix, regardless of method label', () => {
+    const readout = rowToAttributionReadout(makeRow({ anchor_kind: null }));
+    expect(readout.state).toBe('result');
+    if (readout.state === 'result') {
+      expect(readout.method.description).not.toContain('since first shown');
+      expect(readout.method.description).not.toContain('since you acted on it');
+    }
+  });
+
+  it('defensive: withAnchorLabel only touches observed_change/observed_change_limited — an exposure- or action-anchored earlier_method or unknown row (should never happen in practice, since attribution-read.ts only ever sets anchor_kind for comparable method_versions) still gets no suffix', () => {
+    for (const anchorKind of ['exposure', 'action'] as const) {
+      const earlierMethod = rowToAttributionReadout(
+        makeRow({ method_version: null, anchor_kind: anchorKind }),
+      );
+      expect(earlierMethod.state).toBe('result');
+      if (earlierMethod.state === 'result') {
+        expect(earlierMethod.method.label).toBe('earlier_method');
+        expect(earlierMethod.method.description).not.toContain('since first shown');
+        expect(earlierMethod.method.description).not.toContain('since you acted on it');
+      }
+
+      const unknown = rowToAttributionReadout(
+        makeRow({ method_version: 'some_future_method_v7', anchor_kind: anchorKind }),
+      );
+      expect(unknown.state).toBe('result');
+      if (unknown.state === 'result') {
+        expect(unknown.method.label).toBe('unknown');
+        expect(unknown.method.description).not.toContain('since first shown');
+        expect(unknown.method.description).not.toContain('since you acted on it');
+      }
+    }
   });
 });

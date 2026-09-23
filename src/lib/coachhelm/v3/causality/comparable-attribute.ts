@@ -163,6 +163,61 @@ export function isShotLevelAttributionMetric(metricId: string): boolean {
   return metricId in SHOT_LEVEL_METRICS;
 }
 
+/**
+ * Owner decision (2026-09-23, Package 10): `interventionAt` anchors on the
+ * player/coach's first genuine ACTION on the insight when one exists, else
+ * falls back to the first EXPOSURE — an action is stronger evidence of real
+ * engagement than a mere view. `'dismissed'` is deliberately excluded: it is
+ * the coach REJECTING the insight, the opposite of the engagement signal
+ * this anchor means to capture — anchoring on a dismissal would start the
+ * measurement clock at the exact moment the coach said "don't act on this."
+ * `'create_focus'`/`'acknowledged'`/`'resolved'` (the only other
+ * `recordInsightAction` action_type values as of this decision — see
+ * `event-ledger.ts`'s call sites) are included as genuine engagement.
+ * CONFIRMED by the owner (2026-09-23): this exact allowlist, including that
+ * `'acknowledged'` alone (without a follow-up action) counts — change here,
+ * not by adding a second allowlist elsewhere.
+ */
+export const INTERVENTION_ACTION_TYPES = ['create_focus', 'acknowledged', 'resolved'] as const;
+
+export type InterventionAnchorKind = 'action' | 'exposure';
+
+export interface InterventionAnchor {
+  /** Raw timestamp string exactly as read from the source row — never
+   *  round-tripped through `new Date(...).toISOString()`, which truncates
+   *  sub-millisecond precision and would break the exact-string-equality
+   *  read-time `anchor_kind` derivation (`attribution-read.ts`). */
+  at: string;
+  kind: InterventionAnchorKind;
+}
+
+/**
+ * Pure tie-break, exported so the cron route's bulk pre-filter
+ * (`api/cron/v3/causality-attribute/route.ts`) can apply the SAME choice
+ * before deciding whether a candidate is ready to attempt, rather than the
+ * two call sites silently drifting apart. `null` when neither a qualifying
+ * action nor an exposure exists yet (`ComparableAttributionSkip`'s
+ * `'no-exposure-record'` — the name predates this anchor choice and still
+ * means "no real recorded instant of any kind", not "no exposure
+ * specifically"; kept rather than renamed since it's a stable typed-union
+ * value other code branches on, not a display string).
+ *
+ * Deliberate: an action's timestamp wins even when it is EARLIER than the
+ * insight's first recorded exposure (a gap in the exposure ledger — a write
+ * failure, a delivery path that doesn't call `recordInsightExposure`, etc.
+ * — not evidence the action didn't really happen). The action itself is
+ * strictly stronger proof of engagement than an exposure row, so there is
+ * no ordering check here beyond "does a qualifying action exist at all".
+ */
+export function resolveInterventionAnchor(input: {
+  firstActionAt: string | null;
+  firstExposureAt: string | null;
+}): InterventionAnchor | null {
+  if (input.firstActionAt) return { at: input.firstActionAt, kind: 'action' };
+  if (input.firstExposureAt) return { at: input.firstExposureAt, kind: 'exposure' };
+  return null;
+}
+
 export interface ComparableAttributionInput {
   insight_id: string;
   player_id: string;
@@ -172,6 +227,14 @@ export interface ComparableAttributionInput {
 export type ComparableAttributionSkip =
   | { ok: false; reason: 'unsupported-metric' }
   | { ok: false; reason: 'no-exposure-record' }
+  /**
+   * The `golf_insight_action` lookup itself failed (a transient/infra
+   * error) — must never be folded into `no-exposure-record`, same
+   * discipline as `exposure-read-failed` below. Fails fast, same as that
+   * check: the exposure lookup is never reached, so this candidate is
+   * retried next run rather than guessed at from a half-known anchor.
+   */
+  | { ok: false; reason: 'action-read-failed'; error: string }
   /**
    * The follow-up window (`interventionAt` + `POST_WINDOW_DAYS`) has not
    * fully elapsed yet as of now. Unlike the round-level path, this
@@ -217,6 +280,16 @@ export interface ComparableAttributionRow {
    *  surfaced_at` so the column still means "when the intervention took
    *  effect," just backed by a stronger source for these rows. */
   intervention_at: string;
+  /** Which real record `intervention_at` came from — see
+   *  `resolveInterventionAnchor`. NOT persisted: `golf_insight_outcome_
+   *  attribution` has no column for it (Package 10, no migration this
+   *  slice), so `writeComparableAttribution` drops this field. A reader
+   *  re-derives it at read time instead, by exact-string-matching
+   *  `intervention_at`/`surfaced_at` against `golf_insight_action.
+   *  created_at` (`attribution-read.ts`) — carried here anyway so the
+   *  cron's own summary/logging and this module's tests can see the
+   *  compute-time decision directly, without a DB round-trip. */
+  anchor_kind: InterventionAnchorKind;
   target_metric_id: string;
   baseline_value: number;
   post_value: number;
@@ -253,6 +326,24 @@ export async function computeComparableAttribution(
   const shotLevel = SHOT_LEVEL_METRICS[input.target_metric_id];
   if (!shotLevel) return { ok: false, reason: 'unsupported-metric' };
 
+  // Package 10 owner decision: prefer the first genuine ACTION over the
+  // first EXPOSURE — see `resolveInterventionAnchor`'s doc comment. Checked
+  // first, fails fast on its own read error (never falls through to the
+  // exposure lookup on an action-read failure — see `'action-read-failed'`'s
+  // doc comment).
+  const { data: actionRow, error: actionError } = await sb
+    .from('golf_insight_action')
+    .select('created_at')
+    .eq('insight_id', input.insight_id)
+    .in('action_type', INTERVENTION_ACTION_TYPES)
+    .order('created_at', { ascending: true })
+    .order('id', { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (actionError) {
+    return { ok: false, reason: 'action-read-failed', error: actionError.message };
+  }
+
   // The addendum rule: only a REAL recorded exposure counts. First exposure
   // = earliest `shown_at` on record for this insight. Zero rows → skip,
   // never estimate one from `created_at`.
@@ -271,8 +362,13 @@ export async function computeComparableAttribution(
   if (exposureError) {
     return { ok: false, reason: 'exposure-read-failed', error: exposureError.message };
   }
-  if (!exposure) return { ok: false, reason: 'no-exposure-record' };
-  const interventionAt = exposure.shown_at;
+
+  const anchor = resolveInterventionAnchor({
+    firstActionAt: actionRow?.created_at ?? null,
+    firstExposureAt: exposure?.shown_at ?? null,
+  });
+  if (!anchor) return { ok: false, reason: 'no-exposure-record' };
+  const interventionAt = anchor.at;
 
   const interventionMs = new Date(interventionAt).getTime();
   const baselineWindow = {
@@ -363,6 +459,7 @@ export async function computeComparableAttribution(
     row: {
       insight_id: input.insight_id,
       intervention_at: interventionAt,
+      anchor_kind: anchor.kind,
       target_metric_id: input.target_metric_id,
       baseline_value: result.baseline.value,
       post_value: result.followUp.value,
@@ -419,6 +516,9 @@ export async function writeComparableAttribution(
   sb: Sb,
   row: ComparableAttributionRow,
 ): Promise<WriteComparableAttributionResult> {
+  // row.anchor_kind is intentionally NOT included below — no column exists
+  // for it (see ComparableAttributionRow's doc comment); a reader re-derives
+  // it from surfaced_at instead.
   const attributionRow = {
     insight_id: row.insight_id,
     surfaced_at: row.intervention_at,

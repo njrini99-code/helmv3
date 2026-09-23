@@ -100,6 +100,23 @@ export function describeMethodVersion(methodVersion: string | null): Attribution
   return { label, ...METHOD_INFO[label] };
 }
 
+/** ANCHOR LABELING (owner decision, Package 10): `interventionAt` anchors on
+ *  the insight's first `golf_insight_action` when one exists, else falls
+ *  back to first exposure (`shown_at`) — `comparable-attribute.ts`'s
+ *  `resolveInterventionAnchor`. Each `anchor_kind` gets its own honest
+ *  suffix so the measurement window's start is never misattributed:
+ *  `'exposure'` → "(since first shown)" (the fallback was used);
+ *  `'action'` → "(since you acted on it)" (owner-confirmed wording,
+ *  2026-09-23, mirroring the exposure phrasing). Only applied to the two
+ *  comparable-method labels — `earlier_method`/`unknown` rows carry
+ *  `anchor_kind: null` (`attribution-read.ts`) and are left untouched. */
+function withAnchorLabel(method: AttributionMethodInfo, anchorKind: AttributionRow['anchor_kind']): AttributionMethodInfo {
+  if (method.label !== 'observed_change' && method.label !== 'observed_change_limited') return method;
+  if (anchorKind === 'exposure') return { ...method, description: `${method.description} (since first shown)` };
+  if (anchorKind === 'action') return { ...method, description: `${method.description} (since you acted on it)` };
+  return method;
+}
+
 /** Same `< 3` sample-size floor `event-ledger.ts`'s `deriveTrustStatus`
  *  already established for "too few measured outcomes to say anything" —
  *  reused rather than a new number invented for this surface. */
@@ -138,7 +155,7 @@ function sufficientSampleSize(sampleSize: AttributionSampleSize): boolean {
  *  whether the data was confound-checked). */
 export function rowToAttributionReadout(row: AttributionRow): AttributionReadout {
   const sampleSize: AttributionSampleSize = { before: row.n_rounds_before, after: row.n_rounds_after };
-  const method = describeMethodVersion(row.method_version);
+  const method = withAnchorLabel(describeMethodVersion(row.method_version), row.anchor_kind);
   if (!sufficientSampleSize(sampleSize)) {
     return { state: 'insufficient', sampleSize, method };
   }
