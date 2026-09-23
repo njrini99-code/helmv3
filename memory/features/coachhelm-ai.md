@@ -299,16 +299,29 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   against its authoritative `HoleContext` totals: order, termination, and
   penalty representation, not just a matching row count — a hole
   terminates on `result === 'hole'` OR `putt_made === true`). Nothing here
-  reads a table. **Not yet wired to anything**: no adapter onto
-  `engine/shot-source.ts`/`engine/generator-base.ts`, no
-  `load-player-context.ts`, no `evidence-packet.ts`, no generator output
-  change — those are later slices (A2+). `AnalysisScope` is carried by
-  every fixture but not consumed yet; its source-scoping/cutoff tests are
-  deferred to the `load-player-context.ts` slice. See
-  `docs/architecture/coachhelm-evidence-contract.md`'s "Situational fact
-  types" section and the seven named fixtures in
+  reads a table. See `docs/architecture/coachhelm-evidence-contract.md`'s
+  "Situational fact types" section and the seven named fixtures in
   `src/test/coachhelm/v3/fixtures/situational-intelligence.ts` (A0) for the
   concrete scenarios this package is proven against.
+
+- **A1 slice 2 (2026-09-23, `agent/coachhelm-player-context`, stacked on
+  `agent/coachhelm-evidence-facts`): `load-player-context.ts` and the
+  shot-source adapter.** `context/load-player-context.ts`'s
+  `loadPlayerContext(scope, deps)` is the first DB-backed A1 function —
+  scopes strictly by `player_id` (never `team_id`), bounds rounds by
+  `window_start`/`window_end`, and bounds holes/shots by `analysis_cutoff`
+  against their own `created_at` (the closest available proxy for
+  "observed"). Enforces the `HoleContext.total_strokes` null-score
+  exclusion against a live source for the first time. DB dependency is
+  injected (`deps.supabase`), never constructed inside, so tests use a fake
+  client. `context/adapters/shot-source-adapter.ts`'s
+  `approachShotToShotFact` additively maps `engine/shot-source.ts`'s
+  `ApproachShot` onto `ShotFact`; `shot-source-adapter.test.ts` compares the
+  existing broad approach totals before/after normalization on fixed
+  fixtures (see the evidence-contract doc's "Player-context loader and
+  shot-source adapter" section for what differs and why). **Still not
+  wired to a generator**: no change to `engine/generator-base.ts` or any
+  generator's output, no `evidence-packet.ts` — those remain later slices.
 
 ## Tests To Prefer
 

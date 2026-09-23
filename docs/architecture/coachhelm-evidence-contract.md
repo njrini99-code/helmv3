@@ -434,6 +434,53 @@ function — the source-scoping and historical-cutoff tests the addendum
 lists for A1 are deferred to the loader slice (`load-player-context.ts`),
 which is the first place a live source exists to scope or cut off against.
 
+## Player-context loader and shot-source adapter (A1 slice 2)
+
+`context/load-player-context.ts`'s `loadPlayerContext(scope, deps)` is the
+first DB-backed A1 function — it is the ONLY place in `context/` that reads
+`golf_rounds`/`golf_holes`/`golf_shots`, and it fulfills the two boxes the
+section above left deferred:
+
+- **Scoping.** `scope.player_id` is the only scope column filtered on.
+  `golf_rounds.team_id` is read but never filtered — two players sharing a
+  team must never see each other's rounds through this loader (see the
+  "does not use team_id to scope" test). `window_start`/`window_end` bound
+  `golf_rounds.round_date`.
+- **Cutoff.** `analysis_cutoff` bounds each hole's and shot's own
+  `created_at` — the closest available proxy for "observed", since
+  `golf_holes`/`golf_shots` carry no separate observation timestamp. A
+  `null` created_at (a legacy row predating the column) is treated as
+  available, not excluded. A shot excluded by cutoff can turn an
+  otherwise-complete hole into a partial sequence; `coverage
+  .partialSequenceCount` (via `buildHoleSequence`) is how a caller sees
+  that without the shot silently vanishing.
+- **`HoleContext` invariant enforced here.** A hole with a null
+  `golf_holes.score` is excluded (`coverage.holesExcludedByReason
+  .null_score`), mirroring `hole-diagnosis.ts`'s own exclusion — this is
+  where that invariant, stated as a doc comment on `HoleContext
+  .total_strokes`, is actually enforced against a live source.
+- **DB dependency is injected** (`deps.supabase`) rather than constructed
+  inside — a test passes a fake client instead of a live database. Every
+  Supabase error is thrown (via `fetchAllRows`), never swallowed into an
+  empty result. Round-id lists are chunked at 200
+  (`src/lib/supabase/chunk-ids.ts`) before each `.in()` filter, and each
+  chunk is paginated past the 1,000-row cap (`fetchAllRows`).
+
+`context/adapters/shot-source-adapter.ts`'s `approachShotToShotFact` maps
+`engine/shot-source.ts`'s already-shipped `ApproachShot` (what
+`approach-miss.ts` already loads and aggregates) onto `ShotFact`, additively
+— it changes no generator output. `shot-source-adapter.test.ts` compares
+the existing broad approach totals before/after normalization on fixed
+fixtures: bucketing on a canonical, unit-normalized distance instead of the
+existing raw-value bucketing (`bucketApproachDistance`'s own "unrecognized
+unit ⇒ assume yards" fallback) is the only source of disagreement found,
+and it only ever REMOVES an unmeasurable-distance shot from `attempts` —
+never adds one, and never changes which shots count as green hits (`result`
+and `lie_after`, which `reachedGreen` reads, pass through normalization
+unchanged). `approach-miss.ts` itself is unmodified except exporting the
+already-existing `reachedGreen` so the comparison can reuse it instead of
+forking a copy that could drift.
+
 ## How to add a new comparison source
 
 1. Append to `InsightComparisonSource` and `COMPARISON_SOURCES` in `types.ts`.
