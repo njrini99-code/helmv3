@@ -854,6 +854,12 @@ jobs:
     if: needs.detect-changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # packages: read lets the ghcr.io login step below get the authenticated
+    # (higher) pull rate limit for ghcr.io/supabase/* images; the
+    # workflow-level `permissions:` block above only grants `contents: read`.
+    permissions:
+      contents: read
+      packages: read
     env:
       SUPABASE_PROJECT_ID: helmv3
     steps:
@@ -912,6 +918,11 @@ jobs:
 
       - name: "Declarative schema: new migrations reflected in supabase/schemas"
         run: bash scripts/db/check-new-migrations-in-schema.sh "${{ github.event.pull_request.base.sha }}"
+
+      # Authenticated ghcr pulls: anonymous pulls of ghcr.io/supabase/* hit
+      # `toomanyrequests` when several PRs start the stack at once.
+      - name: Log in to ghcr.io (Supabase images)
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
       - name: Start local Supabase stack
         run: supabase start
@@ -1233,6 +1244,14 @@ jobs:
   baseball-auth-smoke:
     name: BaseballHelm authenticated smoke
     needs: detect-changes
+    # packages: read lets the local-supabase-stack composite action's ghcr.io
+    # login step get the authenticated (higher) pull rate limit for
+    # ghcr.io/supabase/* images; the workflow-level `permissions:` block above
+    # only grants `contents: read`, so a job needs this to use the token for
+    # anything else.
+    permissions:
+      contents: read
+      packages: read
     # PUSH/MAIN ONLY (owner 2026-08-26, PR throughput): removed from the PR
     # gate after it blocked a golf production hotfix twice in one afternoon —
     # both times the runner died ("shutdown signal") during the TypeScript
@@ -1319,6 +1338,8 @@ jobs:
       # action for why, and for the loopback assertion it ends with.
       - name: Start local Supabase stack
         uses: ./.github/actions/local-supabase-stack
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Cache Playwright browsers
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
