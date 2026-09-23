@@ -227,6 +227,11 @@ pending check has hung — then rerun (see below) rather than waiting longer.
 - If a workflow doesn't expose a rerun option for its trigger, an empty
   commit (`git commit --allow-empty -m "ci: retrigger" && git push`)
   retriggers any `push`/`pull_request`-driven workflow.
+- Draft PRs skip every gated job, and `CI aggregate` and `Review Gate
+  aggregate` fail on purpose, so a skipped run can never satisfy branch
+  protection. Marking the PR ready (`ready_for_review`) starts the real run.
+  Rerunning a draft-era run keeps its draft payload and fails again, so
+  instead retrigger with `gh pr ready <pr> --undo && gh pr ready <pr>`.
 
 ### CircleCI
 
