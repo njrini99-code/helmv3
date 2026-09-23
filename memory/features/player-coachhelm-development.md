@@ -317,11 +317,75 @@ Player opens round review
   action count can read low. Fixing it means widening the dedup key, a
   follow-up slice.
 
+## §15.2 Regression Fixture Matrix (repair plan, 2026-09-23)
+
+Coverage audit of the repair plan's 43-row fixture matrix against `main`. Each
+row cites the test that pins it, or notes the gap. "Real bug" rows are
+`it.fails` reproducers added in this pass — not fixed here; see the PR that
+introduced this table for the repro and report.
+
+| # | Fixture | Status | Evidence |
+|---|---|---|---|
+| 1 | Player with 1–2 rounds under a three-round policy | Covered | `analysis-outcome.test.ts:24`, `post-round-trigger.test.ts:149`, `coachhelm-safety-net-reconcile.test.ts:132` (real cron caller: a parked round is excluded from the sweep, no engine call) |
+| 2 | Third eligible round arrives | Covered | `coachhelm-safety-net-reconcile.test.ts:149` (real cron caller: "round 3 wakes the player: the never-processed sweep runs it, and its success covers rounds 1–2"); also `post-round-trigger.test.ts` new test "a parked round is not stuck…" |
+| 3 | No active membership | Covered | `coachhelm-safety-net-reconcile.test.ts:207` (real cron caller: "no membership stays quiet until a roster row appears, then gets ONE run" — proves no repeated retry) |
+| 4 | Team deliberately disabled | Covered | `coachhelm-safety-net-reconcile.test.ts:248` ("team disable stays quiet until both switches are on") and `:268` ("a coach-level disable keeps the round parked even when the team switch is on") — the reconcile sweep IS the repair/backfill path, and both prove it honors the disable |
+| 5 | Tentative, unchanged value, newly sufficient sample | Covered | `upsert-tentative-promotion.test.ts:138` |
+| 6 | Tentative, moved value, newly sufficient sample | Covered | `upsert-tentative-promotion.test.ts:152` |
+| 7 | Sample adequacy fixed while recency decreases | Covered | `confidence-honest-monotone.test.ts:25` |
+| 8 | Same evidence scanned on three nights | Covered | `lifecycle-policy.test.ts:109`, `upsert.test.ts:325` (DI-1) |
+| 9 | Coach dismisses while worker runs | Covered | `upsert-tentative-promotion.test.ts:214` (CAS race, asserts no push); dismiss writes `lifecycle_state:'archived'` at `src/app/golf/actions/insights.ts:1454` |
+| 10 | Old worker finishes after a new revision | **Missing — real bug** | new `it.fails`, `upsert.test.ts` "stale write vs. a concurrent newer revision"; CAS only guards `lifecycle_state`, not revision |
+| 11 | Same round revision delivered twice | Covered | `upsert.test.ts:325` (DI-1 dedup), `round-review-system.test.ts:219,243` |
+| 12 | Corrected round within 24 hours | Covered | `upsert.test.ts` "corrected-round, same revision key" — resolved per plan §5.2's maturation correction, not a code fix: `evidenceRevisionKey` gates only `metadata.maturation_keys` (lifecycle-policy.ts:119), never the evidence write itself, so a same-day correction is already written/processed on main; it correctly does not add a second maturation confirmation for the same round (§5.2: "require new contributing rounds or meaningful independent opportunities") |
+| 13 | Some generators fail, others succeed | Partial | per-generator gate: `generator-base-run-lifecycle.test.ts:217`; orchestrator-level `tier1Generators`/`Promise.allSettled` aggregation untested — `it.todo`, `fixture-matrix-gaps.test.ts` |
+| 14 | Missing unit on a legacy shot | Needs follow-up | not conclusively verified this pass |
+| 15 | Mixed before/after feet and yards | Covered | `ApproachMissGenerator.test.ts:153,280` |
+| 16 | OB from tee and mid-hole, entered/here variants | Needs follow-up | not conclusively verified this pass |
+| 17 | Scorecard-only round | Needs follow-up | not conclusively verified this pass |
+| 18 | Nine-hole round | Needs follow-up | not conclusively verified this pass |
+| 19 | Layup/recovery in long-approach bucket | Covered | `distance-profile.test.ts:219` |
+| 20 | Par-3 tee miss | Missing (SQL layer) | exclusion lives in `recompute_golf_round_totals`, no pgTAP fixture — `it.todo`, `fixture-matrix-gaps.test.ts` |
+| 21 | Missing miss directions | Partial | `ApproachMissGenerator.test.ts:411` (off-green-only tally) is adjacent, denominator/coverage reporting unconfirmed |
+| 22 | Short misses under unknown conditions | Covered | `ApproachMissGenerator.test.ts:363` |
+| 23 | Rough/sand shots with no pin geometry | Partial | `composite-w305.test.ts:380` describe block exists, exact fixture unconfirmed |
+| 24 | Same event contributing to multiple generators | Missing (no code path) | A6 `groupIssues` (#2003) unmerged and unwired — `it.todo`, `fixture-matrix-gaps.test.ts` |
+| 25 | Women's estimated target | Covered | `ApproachMissGenerator.test.ts:223` |
+| 26 | Percent headline plus feet standing | Covered | `ApproachMissGenerator.test.ts:331` |
+| 27 | Old review created after new review | Covered | `round-review-chronology.test.ts:168,231` |
+| 28 | Historical review with later rounds available | Covered | `round-review-as-of.test.ts:158,177` |
+| 29 | Status-filtered second page | Covered | `round-review-chronology.test.ts:179` |
+| 30 | Two simultaneous missing-review creators | Covered | `round-review-system.test.ts:219,243` |
+| 31 | Existing published/annotated review during backfill | Missing (no testable surface) | `scripts/coachhelm-prewarm-round-reviews.ts` has no exported helpers, no test file — `it.todo`, `fixture-matrix-gaps.test.ts` |
+| 32 | Known number attached to wrong statistic | Covered | `claim-validator.test.ts:54` (`wrong_field`) |
+| 33 | Unsupported claim using an exempt small number | Covered | `claim-validator.test.ts:66` (`unsupported_small_number`) |
+| 34 | Correct percentage complement or rounding | Missing (no code path) | no metric-derivation registry exists — `it.todo`, `claim-validator.test.ts` |
+| 35 | Correct number for wrong player/team | Covered | `claim-validator.test.ts:124` (`wrong_player`) |
+| 36 | LLM provider failure | Needs follow-up | live fallback is `buildDeterministicRecap` in `round-recap.ts`, reached via `compose()`'s `fallbackText`; `deterministic-review.ts` is used only by the prewarm script, not this path — wiring-level test unconfirmed |
+| 37 | Cached fallback after transient failure | Needs follow-up | not conclusively verified this pass |
+| 38 | Chat fails validation after generating text | Needs follow-up | chat surface does not appear to use `claim-validator.ts`; separate mechanism not investigated |
+| 39 | Focus assigned, no practice completion data | Missing (no code path) | no completion-tracking concept in `focus-areas/` — `it.todo`, `fixture-matrix-gaps.test.ts` |
+| 40 | Practice improves, course data sparse | Missing (no code path) | `it.todo`, `fixture-matrix-gaps.test.ts` |
+| 41 | Two of three follow-ups improve | Missing (no code path) | `it.todo`, `fixture-matrix-gaps.test.ts` |
+| 42 | Transfer/assistant coach/multi-team | Partial | write-scoping covered: `upsert-coach-scoping.test.ts:53`; broader read-access-control unconfirmed |
+| 43 | Silent night with no new rounds | Needs follow-up | not conclusively verified this pass |
+
+Two real, pre-existing bugs surfaced by this audit (reported, not fixed —
+each has an `it.fails` repro in `src/test/coachhelm/v2/insights/upsert.test.ts`):
+`updateExisting`'s optimistic CAS (2026-09-22) guards only `lifecycle_state`,
+not a revision/content marker, so (a) an older worker's stale write can land
+after a newer worker's fresher write when `lifecycle_state` is unchanged
+between them, and (b) `evidenceRevisionKey = sample_n|window_end` has no
+content component, so a same-day correction that leaves the round count and
+window unchanged collides with the pre-correction key and is not counted as
+a new maturation confirmation.
+
 ## Tests To Prefer
 
 - `src/test/app/golf/dashboard/coachhelm/**`
 - `src/test/coachhelm/v3/**`
 - `src/test/coachhelm/v2/post-round-trigger.test.ts`
+- `src/test/coachhelm/fixture-matrix-gaps.test.ts` — §15.2 no-code-path rows, delete entries as they gain real coverage
 - Browser checks for player CoachHelm, My Development, and round review on mobile.
 
 ## Related Docs
