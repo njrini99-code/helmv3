@@ -109,8 +109,11 @@ const BUCKET_LABEL: Record<ApproachBucket, string> = {
 const MIN_GREENS_FOR_PROXIMITY = 3;
 
 /** Did the approach find the green? Result is the canonical signal; lie_after is a
- *  corroborating fallback for older rows where only the lie was recorded. */
-function reachedGreen(s: ApproachShot): boolean {
+ *  corroborating fallback for older rows where only the lie was recorded.
+ *  Exported (additive — same behavior, just visible) so
+ *  `context/adapters/shot-source-adapter.test.ts` can reuse the exact
+ *  predicate instead of forking a copy that could drift from this one. */
+export function reachedGreen(s: ApproachShot): boolean {
   const r = (s.result ?? '').toLowerCase();
   if (r === 'green' || r === 'hole' || r === 'gir') return true;
   return (s.lie_after ?? '').toLowerCase() === 'green';
