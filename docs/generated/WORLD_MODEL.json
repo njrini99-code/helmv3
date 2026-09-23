@@ -1620,6 +1620,11 @@
         "category": "services"
       },
       {
+        "id": "services:src/hooks/use-presence.ts",
+        "pattern": "src/hooks/use-presence.ts",
+        "category": "services"
+      },
+      {
         "id": "services:src/instrumentation*.ts",
         "pattern": "src/instrumentation*.ts",
         "category": "services"
@@ -8283,6 +8288,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/app/golf/join/**"
+        }
+      ]
+    },
+    {
+      "source": "auth_onboarding_join",
+      "target": "services:src/hooks/use-presence.ts",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/hooks/use-presence.ts"
         }
       ]
     },
