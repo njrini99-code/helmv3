@@ -36,6 +36,7 @@ import {
   shouldShowTeamMarker,
   deriveAriaLabel,
   pgaReferenceLabel,
+  pgaOmissionNote,
   neutralizeForCoach,
   standingSubjectLabel,
   resolveDisplayScale,
@@ -105,6 +106,9 @@ export function StandingStrip(props: StandingStripProps) {
   // CF-3: SG metrics anchor to the field average (0), not a PGA Tour score.
   // Women's teams get "LPGA" instead of "PGA" for non-SG metrics.
   const refLabel = pgaReferenceLabel(props.metric_id, props.is_womens).short;
+  // A2: say WHY the reference is "—" when the row carries a reason, so a
+  // suppressed Tour tick reads as "not comparable", not "missing data".
+  const omissionNote = pgaOmissionNote(props);
   // Bug #949 #7: an SG metric's reference value is DEFINITIONALLY 0 (the
   // field average IS the zero point SG is computed against) — a "Field Avg
   // 0.00" readout column can never say anything else, on every player, every
@@ -206,6 +210,10 @@ export function StandingStrip(props: StandingStripProps) {
       {/* Cohort text */}
       {cohortText ? (
         <p className={cn('mt-3 font-fw-sans text-caption font-medium', deltaToneClass)}>{cohortText}</p>
+      ) : null}
+
+      {omissionNote ? (
+        <p className="mt-2 font-fw-sans text-caption text-text-tertiary">{omissionNote}</p>
       ) : null}
 
       {state === 'cold-start' ? (

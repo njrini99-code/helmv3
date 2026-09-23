@@ -237,6 +237,8 @@ export function StandingDrill({
                       team_n={row.team_n}
                       team_pct={row.team_pct}
                       pga_value={row.pga_value}
+                      pga_omitted={row.pga_omitted}
+                      pga_omitted_reason={row.pga_omitted_reason}
                       is_womens={row.is_womens}
                       direction={cfg.direction}
                       unit={cfg.unit}

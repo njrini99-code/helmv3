@@ -514,6 +514,55 @@ describe('StandingBar pga_omitted (P3)', () => {
 });
 
 // ---------------------------------------------------------------------------
+// A2: an omission WITH a reason says why (card caption + aria), so "—" reads
+// as "not comparable" rather than "missing data".
+// ---------------------------------------------------------------------------
+
+describe('StandingBar pga_omitted_reason (A2)', () => {
+  it('card: basis mismatch renders the caption and narrates it in the aria label', () => {
+    const { container } = render(
+      <StandingBar
+        {...HAPPY}
+        metric_id="approach_proximity_125_175ft"
+        metric_label="Proximity 125-175 yd"
+        unit="feet"
+        direction="lower_better"
+        player_value={22.6}
+        team_avg={24.1}
+        pga_value={30}
+        pga_omitted
+        pga_omitted_reason="basis_mismatch"
+      />,
+    );
+    expect(screen.getByText(/counts only the ones that hit the green/)).toBeTruthy();
+    expect(screen.queryByText(/PGA 30/)).toBeNull();
+    const aria = container.querySelector('[role="img"]')?.getAttribute('aria-label') ?? '';
+    expect(aria).toContain('Tour reference not shown');
+    expect(aria).not.toContain('PGA Tour: 30');
+  });
+
+  it('card: a women\'s no-anchor omission names the missing benchmark', () => {
+    render(
+      <StandingBar
+        {...HAPPY}
+        metric_id="big_number_rate"
+        unit="percent"
+        pga_value={2}
+        pga_omitted
+        pga_omitted_reason="no_womens_anchor"
+        is_womens
+      />,
+    );
+    expect(screen.getByText(/No women’s Tour benchmark for this metric yet/)).toBeTruthy();
+  });
+
+  it('card: an omission without a reason renders no caption (P3 path unchanged)', () => {
+    render(<StandingBar {...HAPPY} metric_id="big_number_rate" pga_value={2} pga_omitted />);
+    expect(screen.queryByText(/Tour benchmark|hit the green/)).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Size dispatch
 // ---------------------------------------------------------------------------
 

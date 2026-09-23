@@ -168,9 +168,12 @@ export interface StatsBentoProps {
   leakArea: StatsArea;
 }
 
-/** PGA tick position (0-100) for a make%/gir%/fairway% row, from the standing map. */
+/** PGA tick position (0-100) for a make%/gir%/fairway% row, from the standing map.
+ *  No tick when the loader suppressed the reference (`pga_omitted`). */
 function pgaTickPct(standingByMetric: Map<string, PlayerStandingRow>, metricId: string): number | undefined {
-  const v = finite(standingByMetric.get(metricId)?.pga_value ?? null);
+  const row = standingByMetric.get(metricId);
+  if (!row || row.pga_omitted) return undefined;
+  const v = finite(row.pga_value);
   return v === null ? undefined : Math.max(0, Math.min(100, v));
 }
 

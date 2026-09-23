@@ -83,6 +83,36 @@ describe('EvidencePanel', () => {
     expect(screen.getByText(/PGA 36%/)).toBeTruthy();
   });
 
+  // A2 read level: `evidence.standing` is frozen at write time. Rows written
+  // before the Tour-basis rule (116 in production on 2026-09-12) carry an
+  // approach-proximity id with `pga_omitted` unset against the all-shot Tour
+  // anchor. The panel must re-apply the rule on read — no "PGA 30 ft" beside
+  // an on-green 22 ft leave, and the caption says why.
+  it('omits the Tour marker on a persisted approach-proximity standing (A2)', () => {
+    const evidence = makeEvidence();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (evidence as any).standing = {
+      metric_id: 'approach_proximity_125_175ft',
+      player_value: 22.6,
+      team_avg: 24.1,
+      team_n: 6,
+      team_pct: 40,
+      pga_value: 30,
+      pga_delta: -7.4,
+      computed_at: '2026-05-25T00:00:00.000Z',
+    };
+    const { container } = render(<EvidencePanel evidence={evidence} compact />);
+    expect(screen.getByText('Approach Proximity 125-175 yd')).toBeTruthy();
+    // The Tour figure never reaches the DOM — not as a value, not in the label.
+    expect(container.textContent).not.toMatch(/30 ft/);
+    const bar = container.querySelector('[aria-label]');
+    expect(bar?.getAttribute('aria-label')).toContain('Tour reference not shown');
+    expect(bar?.getAttribute('aria-label')).not.toContain('PGA Tour: 30');
+    expect(
+      screen.getByText(/Tour proximity counts every approach, misses included/),
+    ).toBeTruthy();
+  });
+
   // Defense: an unknown / non-canonical metric_id in evidence.standing
   // falls through to the legacy BenchmarkScale rather than rendering
   // a broken v3 bar with missing direction/unit.

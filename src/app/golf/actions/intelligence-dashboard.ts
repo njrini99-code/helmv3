@@ -11,6 +11,7 @@ import {
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { recordInsightAction } from '@/lib/coachhelm/v3/effectiveness/event-ledger';
+import { compareBySeverity } from '@/lib/coachhelm/v3/ranking/score';
 import { describeError } from '@/lib/utils/describe-error';
 
 // ============================================================================
@@ -307,10 +308,15 @@ async function getTeamInsightsSummaryImpl(
       };
     });
 
-    // Build player summaries
+    // Build player summaries. The page above is the NEWEST `limit` rows
+    // (ordered by created_at at the DB); walk it most-severe-first so each
+    // player's `topInsight` is their worst row on the page, not their newest
+    // (repair plan N5 — the old comment claimed the created_at sort was a
+    // priority sort).
     const playerMap = new Map<string, TeamInsightSummary>();
+    const bySeverity = [...(insightsData || [])].sort(compareBySeverity);
 
-    for (const record of insightsData || []) {
+    for (const record of bySeverity) {
       if (!record.player_id) continue;
 
       const playerId = record.player_id;
@@ -336,7 +342,7 @@ async function getTeamInsightsSummaryImpl(
         summary.urgentInsights++;
       }
 
-      // Set top insight (first one is highest priority due to sorting)
+      // Set top insight (first one is the most severe — see bySeverity above)
       if (!summary.topInsight) {
         summary.topInsight = insights.find((i) => i.id === record.id);
       }

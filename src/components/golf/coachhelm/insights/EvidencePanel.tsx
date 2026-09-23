@@ -22,6 +22,7 @@ import type {
 import { StandingBar } from '@/components/golf/coachhelm/v3/StandingBar';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import type { EvidenceStanding } from '@/lib/coachhelm/v2/insights/standing-injection';
+import { applyTourBasis } from '@/lib/coachhelm/v3/standing/tour-basis';
 import { DiagnosisPanel } from './DiagnosisPanel';
 import { formatValue } from './format-value';
 
@@ -36,12 +37,19 @@ import { formatValue } from './format-value';
  *     metric-config), so direction + unit + scale are known
  *
  * Otherwise returns null — caller falls through to BenchmarkScale.
+ *
+ * The snapshot is frozen at write time, so the Tour-basis rule
+ * (`standing/tour-basis.ts`) is re-applied here: an approach-proximity block
+ * persisted before the rule existed still carries `pga_omitted: false`
+ * against an all-shot Tour anchor, and trusting the stored flag would draw
+ * the very comparison the rule forbids.
  */
 function tryRenderV3Standing(evidence: InsightEvidence): React.ReactElement | null {
-  const standing = (evidence as InsightEvidence & { standing?: EvidenceStanding }).standing;
-  if (!standing || !standing.metric_id) return null;
-  const cfg = getMetricRenderConfig(standing.metric_id);
+  const persisted = (evidence as InsightEvidence & { standing?: EvidenceStanding }).standing;
+  if (!persisted || !persisted.metric_id) return null;
+  const cfg = getMetricRenderConfig(persisted.metric_id);
   if (!cfg) return null;
+  const standing = applyTourBasis(persisted);
   return (
     <StandingBar
       metric_id={standing.metric_id}
@@ -52,6 +60,7 @@ function tryRenderV3Standing(evidence: InsightEvidence): React.ReactElement | nu
       team_pct={standing.team_pct}
       pga_value={standing.pga_value}
       pga_omitted={standing.pga_omitted}
+      pga_omitted_reason={standing.pga_omitted_reason}
       is_womens={standing.is_womens}
       direction={cfg.direction}
       unit={cfg.unit}

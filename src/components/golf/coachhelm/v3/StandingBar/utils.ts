@@ -54,6 +54,29 @@ export function pgaReferenceLabel(
   return { short: 'PGA', long: 'PGA Tour' };
 }
 
+/**
+ * One-line caption explaining a suppressed Tour reference (addendum A2).
+ * Returns null when the reference is rendered or no reason was supplied, so
+ * the P3 omission-without-reason path renders exactly as before.
+ */
+export function pgaOmissionNote(
+  props: Pick<StandingBarProps, 'pga_omitted' | 'pga_omitted_reason' | 'is_womens'>,
+): string | null {
+  if (!props.pga_omitted || !props.pga_omitted_reason) return null;
+  switch (props.pga_omitted_reason) {
+    case 'basis_mismatch':
+      return 'Tour proximity counts every approach, misses included; this number counts only the ones that hit the green, so the two are not compared.';
+    case 'no_womens_anchor':
+      return props.is_womens
+        ? 'No women’s Tour benchmark for this metric yet.'
+        : 'No Tour benchmark for this metric yet.';
+    default: {
+      const _exhaustive: never = props.pga_omitted_reason;
+      return _exhaustive;
+    }
+  }
+}
+
 /** Display formatter per unit. */
 export function formatValue(value: number, unit: Unit): string {
   switch (unit) {
@@ -283,6 +306,11 @@ export function deriveAriaLabel(props: StandingBarProps): string {
     // Women's teams get "LPGA Tour" instead of "PGA Tour" for non-SG metrics.
     const refLabel = pgaReferenceLabel(props.metric_id, props.is_womens).long;
     parts.push(`${refLabel}: ${formatValue(props.pga_value, props.unit)}.`);
+  } else {
+    // A2: when the omission carries a reason, narrate it — the visible caption
+    // sits inside the role="img" element and is not read on its own.
+    const note = pgaOmissionNote(props);
+    if (note) parts.push(`Tour reference not shown: ${note}`);
   }
   if (props.team_avg !== null && (props.team_n ?? 0) >= TEAM_MARKER_MIN_N) {
     parts.push(`Team average: ${formatValue(props.team_avg, props.unit)}.`);
