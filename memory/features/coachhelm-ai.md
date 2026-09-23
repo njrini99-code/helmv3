@@ -421,7 +421,6 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   derivation is proven. Full contract in
   `docs/architecture/coachhelm-evidence-contract.md`'s "Issue grouping and
   ranking-input unification" section.
-
 - **`src/lib/coachhelm/v3/reasoning/hypothesis-policy.ts`** (2026-09-23,
   `agent/coachhelm-hypothesis-policy`, addendum §13, work package A5
   slice 1) — `buildHypotheses(metrics, facts)` proposes a small, NAMED set
@@ -468,6 +467,24 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   `diagnosis.ts` or `personal-context.ts`** — that's slice 2. See
   `docs/architecture/coachhelm-evidence-contract.md`'s "Controlled
   hypotheses" section.
+
+- **`situational-ranking.ts` slice 2** (2026-09-23, addendum §13, A6 slice
+  2, still pure core, still not wired to a live ranking read, no flag
+  needed): sequence packets now gate `eligible` on the #2020 rollup's own
+  per-kind `status: 'supported'`, not on a single event's own resolution —
+  closes a real gap where one hole's one event could found/own an issue
+  with zero population behind it. New `Issue.evidenceKey: string | null`
+  (owner-derived, stable across shot-set churn, distinct from the
+  shot-set-addressed `id`) backs the new
+  `applyMaterialChangeSuppression(issues, activeInterventions)` — pure,
+  never drops an issue from its output, suppresses only an exact
+  `evidenceKey` match unchanged/under 50% worse than its intervention's
+  baseline, and resurfaces at or past that threshold (mutation-verified at
+  the boundary). New `issueToRankableInsight(issue): RankableInsight` pure
+  adapter proves "one issue, one leading priority" at the ranked-output
+  level via `rankInsights`. Full contract in
+  `docs/architecture/coachhelm-evidence-contract.md`'s "Issue grouping and
+  ranking-input unification (A6 slice 2)" section.
 - N13 sweep (repair plan, 2026-09-23): audited every CoachHelm action/route
   under `src/app/golf/actions` and `src/lib/coachhelm` for a catch-all that
   discards the real exception and returns one generic "session expired"-style
