@@ -29,7 +29,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import { Card } from './Card';
+import { Bar, Card } from './Card';
 import type { StandingBarProps } from './types';
 import {
   resolveDisplayScale,
@@ -307,5 +307,37 @@ describe('Card — equality verdict render (founder screenshot: CB 65% vs TEAM 6
     render(<Card {...GIR_LIKE} player_value={50} />);
     expect(screen.getByText('Below team average')).toBeTruthy();
     expect(screen.queryByText('Matches team average')).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Bar — fill band vs marker circle alignment (Package 11, #1933 bug,
+// confirmed present on main, fixed here)
+// ---------------------------------------------------------------------------
+
+describe('Bar — team/you fill band tracks the NUDGED marker positions, not the raw ones', () => {
+  it('when team/you are close enough to collide and get nudged apart, the fill spans the same nudged positions the marker circles draw at', () => {
+    // team=52, you=50 (2pt apart) collide under BAR_MARKER_MIN_GAP_PCT=4.5 and
+    // get nudged to team=53.25 / you=48.75 (see layoutMarkerPositions math).
+    // Pre-fix, the fill used the RAW 50/52 span (width 2); it must now match
+    // the nudged 48.75/53.25 span (width 4.5) the circles actually sit at.
+    const { container } = render(
+      <Bar
+        youPct={50}
+        teamPct={52}
+        pgaPct={null}
+        size="card"
+        fill={{ fromPct: 52, toPct: 50, tone: 'good' }}
+      />,
+    );
+    const youMarker = container.querySelector('.bg-primary-600') as HTMLElement;
+    const teamMarker = screen.getByText('T');
+    expect(youMarker.style.left).toBe('48.75%');
+    expect(teamMarker.style.left).toBe('53.25%');
+
+    const fillDiv = container.querySelector('[style*="background-color"]') as HTMLElement;
+    expect(fillDiv).toBeTruthy();
+    expect(fillDiv.style.left).toBe('48.75%');
+    expect(fillDiv.style.width).toBe('4.5%');
   });
 });
