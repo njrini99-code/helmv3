@@ -17250,6 +17250,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/causality/comparable-attribute.ts",
+          "anchor": "src/lib/supabase/untyped"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/chat/action-runs.ts",
           "anchor": "src/lib/supabase/untyped"
         },

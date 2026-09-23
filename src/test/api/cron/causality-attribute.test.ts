@@ -44,17 +44,50 @@ vi.mock('@/lib/coachhelm/v3/causality/attribute', () => ({
     weight: base.weight,
     sample_n: base.sample_n + 1,
   })),
+  // Real value (not a mock) — the route's MUST 2 pre-filter math needs the
+  // real 21 to agree with `comparable-attribute.ts`'s own window check.
+  POST_WINDOW_DAYS: 21,
+}));
+
+// A9 slice 1: mocked wholesale, same as `causality/attribute.ts` above — these
+// tests prove the CRON'S wiring (flag on/off, pre-filter, summary counters,
+// never touching updateCoachWeight/recordInsightOutcome for these rows), not
+// `comparable-attribute.ts`'s own DB logic (see `comparable-attribute.test.ts`
+// for that).
+vi.mock('@/lib/coachhelm/v3/causality/comparable-attribute', () => ({
+  computeComparableAttribution: vi.fn(),
+  writeComparableAttribution: vi.fn(),
+  isShotLevelAttributionMetric: vi.fn(
+    (metricId: string) =>
+      metricId === 'approach_proximity_50_125ft' ||
+      metricId === 'approach_proximity_125_175ft' ||
+      metricId === 'approach_proximity_175_plus_ft',
+  ),
+}));
+
+// Defaults to the real production default (off) — a test only needs to
+// mock a `true` return when it's specifically exercising the A9 slice 1 path.
+vi.mock('@/lib/flags', () => ({
+  isFlagEnabled: vi.fn().mockReturnValue(false),
 }));
 
 import { POST } from '@/app/api/cron/v3/causality-attribute/route';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { computeAttribution } from '@/lib/coachhelm/v3/causality/attribute';
+import {
+  computeComparableAttribution,
+  writeComparableAttribution,
+} from '@/lib/coachhelm/v3/causality/comparable-attribute';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
+import { isFlagEnabled } from '@/lib/flags';
 
 const createAdminMock = vi.mocked(createAdminClient);
 const computeAttributionMock = vi.mocked(computeAttribution);
+const computeComparableAttributionMock = vi.mocked(computeComparableAttribution);
+const writeComparableAttributionMock = vi.mocked(writeComparableAttribution);
 const logServerErrorMock = vi.mocked(logServerError);
 const logServerEventMock = vi.mocked(logServerEvent);
+const isFlagEnabledMock = vi.mocked(isFlagEnabled);
 
 interface FixtureInsight {
   id: string;
@@ -70,6 +103,13 @@ interface FixtureInsight {
 }
 
 const OLD = '2026-01-01T00:00:00.000Z'; // far older than the 21d cutoff
+// A9 slice 1 (PR #2007 review, residual on MUST 2): exposure shown 25 days
+// ago — the 21-day follow-up window has closed, but the 14-day
+// RETRY_GRACE_DAYS horizon (closing at day 35) has not, so the candidate
+// should still reach computeComparableAttribution. Relative to Date.now()
+// (not an absolute date like OLD) so it stays valid regardless of when the
+// suite runs.
+const WINDOW_CLOSED_IN_GRACE = new Date(Date.now() - 25 * 86_400_000).toISOString();
 
 function fixture(over: Partial<FixtureInsight> & { id: string }): FixtureInsight {
   return {
@@ -185,12 +225,57 @@ interface ClientOpts {
    * `insertError` (or null) path above.
    */
   unknownColumnError?: { code: string; message: string };
+  /**
+   * A9 slice 1 (MUST 2): map of `insight_id` -> its real first `shown_at`
+   * ISO string, backing the cron's per-page bulk `golf_insight_exposure`
+   * pre-filter fetch. An id absent from this map has no exposure row at
+   * all (the `comparable_no_exposure_record` pre-filter branch).
+   */
+  exposures?: Record<string, string>;
+  /**
+   * Advisor review (post-#2007-push): inject raw exposure rows directly,
+   * including MULTIPLE rows per `insight_id` (the real table has no
+   * uniqueness constraint on it) — for exercising `fetchAllRowsResult`'s
+   * pagination past PostgREST's 1,000-row cap. Takes precedence over
+   * `exposures` when both are supplied (it isn't, in any test below).
+   */
+  exposureRowsRaw?: Array<{ insight_id: string; shown_at: string }>;
+  /** Force the bulk exposure pre-filter fetch (`.in()` over the page's
+   *  shot-level candidate ids) to error. */
+  exposureBulkFetchError?: { message: string };
 }
 
 function makeClient(rows: FixtureInsight[], opts: ClientOpts = {}) {
   const { builder, calls } = makeCandidatesBuilder(rows, {
     rangeError: opts.rangeError,
   });
+  const exposureRows =
+    opts.exposureRowsRaw ??
+    Object.entries(opts.exposures ?? {}).map(([insight_id, shown_at]) => ({
+      insight_id,
+      shown_at,
+    }));
+  let exposureQueriedIds: string[] = [];
+  const exposureBuilder = {
+    select: vi.fn().mockReturnThis(),
+    in: vi.fn((_col: string, ids: string[]) => {
+      exposureQueriedIds = ids;
+      return exposureBuilder;
+    }),
+    // Two `.order()` calls (shown_at, then the id tiebreaker) chain, and
+    // `.range(from, to)` is what actually resolves — mirrors
+    // `fetchAllRowsResult`'s pagination contract in route.ts.
+    order: vi.fn().mockReturnThis(),
+    range: vi.fn((from: number, to: number) => {
+      if (opts.exposureBulkFetchError) {
+        return Promise.resolve({ data: null, error: opts.exposureBulkFetchError });
+      }
+      const matched = exposureRows
+        .filter((r) => exposureQueriedIds.includes(r.insight_id))
+        .sort((a, b) => a.shown_at.localeCompare(b.shown_at));
+      return Promise.resolve({ data: matched.slice(from, to + 1), error: null });
+    }),
+  };
   const attributedSet = new Set(opts.attributedIds ?? []);
   const attributionInserts: Record<string, unknown>[] = [];
   const attributionBuilder = {
@@ -243,6 +328,7 @@ function makeClient(rows: FixtureInsight[], opts: ClientOpts = {}) {
       if (table === 'golf_insight_outcome_attribution') return attributionBuilder;
       if (table === 'golf_coachhelm_coach_weights') return weightBuilder;
       if (table === 'golf_insight_outcome') return outcomeBuilder;
+      if (table === 'golf_insight_exposure') return exposureBuilder;
       throw new Error(`Unexpected table: ${table}`);
     }),
   } as unknown as ReturnType<typeof createAdminClient>;
@@ -638,5 +724,357 @@ describe('causality-attribute cron N10: unknown-column retry (method_version not
     expect(attributionInserts).toHaveLength(1); // no retry attempted
     expect(logServerErrorMock).toHaveBeenCalledTimes(1);
     expect(logServerEventMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('causality-attribute cron A9 slice 1: comparable-opportunity attribution', () => {
+  beforeEach(() => {
+    vi.stubEnv('CRON_SECRET', 'test-secret');
+    computeAttributionMock.mockClear();
+    computeAttributionMock.mockResolvedValue({ ok: false, reason: 'no-data' });
+    computeComparableAttributionMock.mockReset();
+    writeComparableAttributionMock.mockReset();
+    isFlagEnabledMock.mockReset().mockReturnValue(false);
+    logServerErrorMock.mockClear();
+    logServerEventMock.mockClear();
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    // Never leak a `true` flag state into a later describe block — this is
+    // the one mock in the file whose default lives in the module factory,
+    // not reset by every other block's own `beforeEach`.
+    isFlagEnabledMock.mockReturnValue(false);
+  });
+
+  const SHOT_LEVEL_METRIC = 'approach_proximity_125_175ft';
+
+  it('flag OFF: a shot-level metric is still dropped in the pre-filter exactly as before this slice', async () => {
+    const rows = [fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } })];
+    const { client } = makeClient(rows);
+    createAdminMock.mockReturnValue(client);
+
+    const res = await POST(authedRequest());
+    const summary = await res.json();
+
+    expect(summary.intentional_no_lift).toBe(1);
+    expect(summary.comparable_attributed).toBe(0);
+    expect(computeComparableAttributionMock).not.toHaveBeenCalled();
+    expect(computeAttributionMock).not.toHaveBeenCalled();
+  });
+
+  it('flag ON: a shot-level metric with a closed-window exposure is NOT dropped in the pre-filter, and reaches computeComparableAttribution instead of computeAttribution', async () => {
+    isFlagEnabledMock.mockReturnValue(true);
+    computeComparableAttributionMock.mockResolvedValue({ ok: false, reason: 'insufficient-evidence' });
+    const rows = [fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } })];
+    const { client } = makeClient(rows, { exposures: { 'insight-1': WINDOW_CLOSED_IN_GRACE } });
+    createAdminMock.mockReturnValue(client);
+
+    const res = await POST(authedRequest());
+    const summary = await res.json();
+
+    expect(summary.considered).toBe(1);
+    expect(summary.intentional_no_lift).toBe(0);
+    expect(computeComparableAttributionMock).toHaveBeenCalledWith(
+      client,
+      expect.objectContaining({ insight_id: 'insight-1', target_metric_id: SHOT_LEVEL_METRIC }),
+    );
+    expect(computeAttributionMock).not.toHaveBeenCalled();
+  });
+
+  it('MUST 2 pre-filter: a shot-level candidate with NO real exposure row is dropped before ever reaching computeComparableAttribution', async () => {
+    isFlagEnabledMock.mockReturnValue(true);
+    const rows = [fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } })];
+    const { client } = makeClient(rows, { exposures: {} });
+    createAdminMock.mockReturnValue(client);
+
+    const res = await POST(authedRequest());
+    const summary = await res.json();
+
+    expect(summary.comparable_no_exposure_record).toBe(1);
+    expect(summary.considered).toBe(0);
+    expect(computeComparableAttributionMock).not.toHaveBeenCalled();
+    expect(writeComparableAttributionMock).not.toHaveBeenCalled();
+  });
+
+  it('MUST 2 pre-filter: a shot-level candidate whose follow-up window has not closed yet is dropped before ever reaching computeComparableAttribution', async () => {
+    isFlagEnabledMock.mockReturnValue(true);
+    const shownRecently = new Date(Date.now() - 3 * 86_400_000).toISOString(); // 3 days ago
+    const rows = [fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } })];
+    const { client } = makeClient(rows, { exposures: { 'insight-1': shownRecently } });
+    createAdminMock.mockReturnValue(client);
+
+    const res = await POST(authedRequest());
+    const summary = await res.json();
+
+    expect(summary.comparable_follow_up_open).toBe(1);
+    expect(summary.considered).toBe(0);
+    expect(computeComparableAttributionMock).not.toHaveBeenCalled();
+  });
+
+  it('MUST 2 pre-filter: bulk exposure fetch paginates past PostgREST\'s 1,000-row cap so a later candidate\'s real exposure is not silently dropped', async () => {
+    // Advisor review (post-#2007-push): golf_insight_exposure has no
+    // uniqueness constraint on insight_id (an insight can be re-shown/
+    // re-ranked any number of times), so a page's shot-level candidates can
+    // legitimately produce >1,000 exposure rows. An unpaginated `.in()`
+    // fetch would keep only the globally-earliest 1,000 rows and silently
+    // drop any candidate whose real first exposure landed later than that
+    // — permanently misread as comparable_no_exposure_record, since a page
+    // is never re-fetched.
+    isFlagEnabledMock.mockReturnValue(true);
+    computeComparableAttributionMock.mockResolvedValue({ ok: false, reason: 'insufficient-evidence' });
+    // insight-1 is spammy: 1005 exposure rows, all older than insight-2's
+    // single row below, so they occupy global sort indices 0-1004.
+    const insight1Rows = Array.from({ length: 1005 }, (_, i) => ({
+      insight_id: 'insight-1',
+      shown_at: new Date(Date.now() - 25 * 86_400_000 + i * 1000).toISOString(),
+    }));
+    // insight-2's only exposure sorts LAST globally (index 1005) — past
+    // an unpaginated fetch's 1,000-row cap.
+    const insight2Row = {
+      insight_id: 'insight-2',
+      shown_at: new Date(Date.now() - 3 * 86_400_000).toISOString(), // 3 days ago
+    };
+    const rows = [
+      fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } }),
+      fixture({ id: 'insight-2', evidence: { metric: SHOT_LEVEL_METRIC } }),
+    ];
+    const { client } = makeClient(rows, {
+      exposureRowsRaw: [...insight1Rows, insight2Row],
+    });
+    createAdminMock.mockReturnValue(client);
+
+    const res = await POST(authedRequest());
+    const summary = await res.json();
+
+    // insight-1's earliest exposure (25 days ago) is well past the
+    // follow-up window — reaches the mock as usual.
+    expect(computeComparableAttributionMock).toHaveBeenCalledTimes(1);
+    // insight-2's exposure (3 days ago, still within the follow-up window)
+    // must be FOUND, not lost — proving pagination ran past row 1,000.
+    // A truncated fetch would misclassify it as no-exposure-record instead.
+    expect(summary.comparable_no_exposure_record).toBe(0);
+    expect(summary.comparable_follow_up_open).toBe(1);
+  });
+
+  it('residual on MUST 2: a shot-level candidate whose retry horizon (window close + 14d grace) has expired is dropped for good and never reaches computeComparableAttribution', async () => {
+    isFlagEnabledMock.mockReturnValue(true);
+    // Shown 40 days ago: the 21-day window closed at day 21, and the 14-day
+    // grace period closed at day 35 — 40 is past both.
+    const shownLongAgo = new Date(Date.now() - 40 * 86_400_000).toISOString();
+    const rows = [fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } })];
+    const { client } = makeClient(rows, { exposures: { 'insight-1': shownLongAgo } });
+    createAdminMock.mockReturnValue(client);
+
+    const res = await POST(authedRequest());
+    const summary = await res.json();
+
+    expect(summary.comparable_retry_horizon_expired).toBe(1);
+    expect(summary.comparable_follow_up_open).toBe(0);
+    expect(summary.considered).toBe(0);
+    expect(computeComparableAttributionMock).not.toHaveBeenCalled();
+  });
+
+  it('residual on MUST 2: a shot-level candidate still within the retry grace period (window closed, horizon not yet expired) still reaches computeComparableAttribution', async () => {
+    isFlagEnabledMock.mockReturnValue(true);
+    computeComparableAttributionMock.mockResolvedValue({ ok: false, reason: 'insufficient-evidence' });
+    const rows = [fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } })];
+    const { client } = makeClient(rows, { exposures: { 'insight-1': WINDOW_CLOSED_IN_GRACE } });
+    createAdminMock.mockReturnValue(client);
+
+    const res = await POST(authedRequest());
+    const summary = await res.json();
+
+    expect(summary.comparable_retry_horizon_expired).toBe(0);
+    expect(computeComparableAttributionMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('MUST 2 pre-filter: a bulk exposure-fetch error is logged distinctly, counted, and the page never reaches computeComparableAttribution', async () => {
+    isFlagEnabledMock.mockReturnValue(true);
+    const rows = [fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } })];
+    const { client } = makeClient(rows, {
+      exposureBulkFetchError: { message: 'connection reset' },
+    });
+    createAdminMock.mockReturnValue(client);
+
+    const res = await POST(authedRequest());
+    const summary = await res.json();
+
+    expect(summary.comparable_exposure_read_failed).toBe(1);
+    expect(computeComparableAttributionMock).not.toHaveBeenCalled();
+    const errorCall = logServerErrorMock.mock.calls.find(
+      (c) =>
+        (c[1] as { action?: string } | undefined)?.action ===
+        'cron.v3.causality.comparable-exposure-bulk-fetch',
+    );
+    expect(errorCall).toBeDefined();
+  });
+
+  it('backstop: computeComparableAttribution itself reporting exposure-read-failed is logged distinctly and counted, not folded into no-exposure-record', async () => {
+    isFlagEnabledMock.mockReturnValue(true);
+    computeComparableAttributionMock.mockResolvedValue({
+      ok: false,
+      reason: 'exposure-read-failed',
+      error: 'statement timeout',
+    });
+    const rows = [fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } })];
+    const { client } = makeClient(rows, { exposures: { 'insight-1': WINDOW_CLOSED_IN_GRACE } });
+    createAdminMock.mockReturnValue(client);
+
+    const res = await POST(authedRequest());
+    const summary = await res.json();
+
+    expect(summary.comparable_exposure_read_failed).toBe(1);
+    expect(summary.comparable_no_exposure_record).toBe(0);
+    const errorCall = logServerErrorMock.mock.calls.find(
+      (c) =>
+        (c[1] as { action?: string } | undefined)?.action === 'cron.v3.causality.comparable-exposure-read',
+    );
+    expect(errorCall).toBeDefined();
+  });
+
+  it('backstop: computeComparableAttribution itself reporting no-exposure-record (bulk pre-filter passed it through) is still counted correctly', async () => {
+    isFlagEnabledMock.mockReturnValue(true);
+    computeComparableAttributionMock.mockResolvedValue({ ok: false, reason: 'no-exposure-record' });
+    const rows = [fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } })];
+    const { client } = makeClient(rows, { exposures: { 'insight-1': WINDOW_CLOSED_IN_GRACE } });
+    createAdminMock.mockReturnValue(client);
+
+    const res = await POST(authedRequest());
+    const summary = await res.json();
+
+    expect(summary.comparable_no_exposure_record).toBe(1);
+    expect(summary.comparable_attributed).toBe(0);
+    expect(summary.intentional_no_lift).toBe(0);
+    expect(writeComparableAttributionMock).not.toHaveBeenCalled();
+  });
+
+  it('backstop: computeComparableAttribution itself reporting follow-up-window-open (bulk pre-filter passed it through) is still counted correctly', async () => {
+    isFlagEnabledMock.mockReturnValue(true);
+    computeComparableAttributionMock.mockResolvedValue({ ok: false, reason: 'follow-up-window-open' });
+    const rows = [fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } })];
+    const { client } = makeClient(rows, { exposures: { 'insight-1': WINDOW_CLOSED_IN_GRACE } });
+    createAdminMock.mockReturnValue(client);
+
+    const res = await POST(authedRequest());
+    const summary = await res.json();
+
+    expect(summary.comparable_follow_up_open).toBe(1);
+    expect(summary.comparable_attributed).toBe(0);
+    expect(summary.intentional_no_lift).toBe(0);
+    expect(writeComparableAttributionMock).not.toHaveBeenCalled();
+  });
+
+  it('flag ON: insufficient-evidence is counted separately and never written', async () => {
+    isFlagEnabledMock.mockReturnValue(true);
+    computeComparableAttributionMock.mockResolvedValue({ ok: false, reason: 'insufficient-evidence' });
+    const rows = [fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } })];
+    const { client } = makeClient(rows, { exposures: { 'insight-1': WINDOW_CLOSED_IN_GRACE } });
+    createAdminMock.mockReturnValue(client);
+
+    const res = await POST(authedRequest());
+    const summary = await res.json();
+
+    expect(summary.comparable_insufficient_evidence).toBe(1);
+    expect(writeComparableAttributionMock).not.toHaveBeenCalled();
+  });
+
+  it('flag ON: a successful compute writes the row, counts comparable_attributed, and never touches the round-level weight path', async () => {
+    isFlagEnabledMock.mockReturnValue(true);
+    computeComparableAttributionMock.mockResolvedValue({
+      ok: true,
+      row: {
+        insight_id: 'insight-1',
+        intervention_at: '2026-08-01T00:00:00.000Z',
+        target_metric_id: SHOT_LEVEL_METRIC,
+        baseline_value: 22.4,
+        post_value: 18.1,
+        delta: -4.3,
+        n_rounds_before: 3,
+        n_rounds_after: 4,
+        method_version: 'comparable_opportunities_v1',
+      },
+    });
+    writeComparableAttributionMock.mockResolvedValue({ written: true, methodVersionColumnMissing: false });
+    const rows = [fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } })];
+    const { client, weightCalls } = makeClient(rows, { exposures: { 'insight-1': WINDOW_CLOSED_IN_GRACE } });
+    createAdminMock.mockReturnValue(client);
+
+    const res = await POST(authedRequest());
+    const summary = await res.json();
+
+    expect(summary.comparable_attributed).toBe(1);
+    expect(writeComparableAttributionMock).toHaveBeenCalledTimes(1);
+    // Never feeds the learning loop (the file header's own contract):
+    // the round-level coach-weight upsert must never fire for this row.
+    expect(weightCalls.upserts).toHaveLength(0);
+  });
+
+  it('MUST 3: a write degraded away for a missing method_version column is NOT counted as attributed, sets the shared flag, and logs nothing', async () => {
+    isFlagEnabledMock.mockReturnValue(true);
+    computeComparableAttributionMock.mockResolvedValue({
+      ok: true,
+      row: {
+        insight_id: 'insight-1',
+        intervention_at: '2026-08-01T00:00:00.000Z',
+        target_metric_id: SHOT_LEVEL_METRIC,
+        baseline_value: 22.4,
+        post_value: 18.1,
+        delta: -4.3,
+        n_rounds_before: 3,
+        n_rounds_after: 4,
+        method_version: 'comparable_opportunities_v1',
+      },
+    });
+    // MUST 3 (PR #2007 review): the comparable path never degrades to a
+    // NULL-method_version insert — it writes NOTHING and reports
+    // written:false with no `error` (not a failure, a routine degrade).
+    writeComparableAttributionMock.mockResolvedValue({ written: false, methodVersionColumnMissing: true });
+    const rows = [fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } })];
+    const { client } = makeClient(rows, { exposures: { 'insight-1': WINDOW_CLOSED_IN_GRACE } });
+    createAdminMock.mockReturnValue(client);
+
+    const res = await POST(authedRequest());
+    const summary = await res.json();
+
+    expect(summary.method_version_column_missing).toBe(true);
+    expect(summary.comparable_attributed).toBe(0);
+    expect(summary.errors).toBe(0);
+    expect(logServerErrorMock).not.toHaveBeenCalled();
+  });
+
+  it('flag ON: a write error is logged and counted in summary.errors, tagged with its own action', async () => {
+    isFlagEnabledMock.mockReturnValue(true);
+    computeComparableAttributionMock.mockResolvedValue({
+      ok: true,
+      row: {
+        insight_id: 'insight-1',
+        intervention_at: '2026-08-01T00:00:00.000Z',
+        target_metric_id: SHOT_LEVEL_METRIC,
+        baseline_value: 22.4,
+        post_value: 18.1,
+        delta: -4.3,
+        n_rounds_before: 3,
+        n_rounds_after: 4,
+        method_version: 'comparable_opportunities_v1',
+      },
+    });
+    writeComparableAttributionMock.mockResolvedValue({
+      written: false,
+      methodVersionColumnMissing: false,
+      error: 'permission denied for table golf_insight_outcome_attribution',
+    });
+    const rows = [fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } })];
+    const { client } = makeClient(rows, { exposures: { 'insight-1': WINDOW_CLOSED_IN_GRACE } });
+    createAdminMock.mockReturnValue(client);
+
+    const res = await POST(authedRequest());
+    const summary = await res.json();
+
+    expect(summary.errors).toBe(1);
+    expect(summary.comparable_attributed).toBe(0);
+    const errorCall = logServerErrorMock.mock.calls.find(
+      (c) => (c[1] as { action?: string } | undefined)?.action === 'cron.v3.causality.comparable-insert',
+    );
+    expect(errorCall).toBeDefined();
   });
 });

@@ -135,8 +135,12 @@ export type WindowResult =
   | { ok: false; reason: 'unknown-metric' }
   | { ok: false; reason: 'no-data' };
 
-const PRE_WINDOW_DAYS = 14;
-const POST_WINDOW_DAYS = 21;
+// Exported (additive, same values) so `comparable-attribute.ts` (A9 slice 1)
+// can mirror the same baseline/follow-up window lengths for the shot-level
+// metrics this module intentionally-nulls, without a second copy of the
+// numbers to drift.
+export const PRE_WINDOW_DAYS = 14;
+export const POST_WINDOW_DAYS = 21;
 /**
  * Minimum rounds required in BOTH the baseline and post windows before a
  * lift is trusted. A 1-round window average is noise, not a measurement —

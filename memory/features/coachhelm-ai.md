@@ -673,6 +673,129 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   fixtures, including the version-mismatch-rejection and
   exactly-at-the-instant boundary cases.
 
+- **A9 slice 1 wires the pure core above into the `causality-attribute` cron**
+  (2026-09-23, `agent/coachhelm-comparable-attribution`, addendum §14.12) —
+  `src/lib/coachhelm/v3/causality/comparable-attribute.ts`
+  (`computeComparableAttribution`/`writeComparableAttribution`,
+  `isShotLevelAttributionMetric`), gated behind
+  `coachhelm_comparable_opportunity_attribution` (default off everywhere).
+  Targets the three "needs-shot-level-join" `intentional-null` metrics
+  (`approach_proximity_{50_125,125_175,175_plus}ft`, `metric-sources.ts`) —
+  `attribute.ts`'s round-level average has no per-shot opportunity concept
+  for them, so they've sat permanently skipped since W22. Flag off: these
+  metrics are still dropped by the cron's pre-filter exactly as before this
+  slice; `computeComparableAttribution` is never called. Flag on: the
+  pre-filter lets them through, and the cron's main loop routes them to this
+  module instead of `computeAttribution`, bypassing `recordInsightOutcome`
+  and `updateCoachWeight` entirely for these rows.
+  **Never simulates an exposure (addendum rule)**: `interventionAt` is the
+  insight's FIRST real `golf_insight_exposure.shown_at` row — never a
+  `created_at` proxy the way `attribute.ts`'s round-level path uses one. Zero
+  exposure rows → `{ok: false, reason: 'no-exposure-record'}`, retried next
+  run, not treated as a permanent skip. A genuine DB error on that lookup
+  THROWS rather than being misread as "no exposure yet" — caught by the
+  cron's own per-candidate try/catch like any other infra failure in that
+  loop. Baseline/follow-up windows reuse `attribute.ts`'s own
+  `PRE_WINDOW_DAYS`/`POST_WINDOW_DAYS` (now exported) around that instant.
+  **The cron's 21-day candidate-age filter does NOT guarantee this path's
+  follow-up window has closed** (review catch, 2026-09-23): `interventionAt`
+  is the real, independently-timed `shown_at`, which can land long after
+  `created_at` — an insight created 30 days ago but first shown 3 days ago
+  still has most of its 21-day follow-up window open. Measuring early would
+  permanently record a row built from a truncated slice (the insert is
+  idempotent, PK on `insight_id` — it could never be corrected once the
+  window actually closes), so `computeComparableAttribution` checks
+  `followUpWindow.end` against now and returns
+  `{ok: false, reason: 'follow-up-window-open'}` (counted in
+  `summary.comparable_follow_up_open`, retried next run, same as
+  `no-exposure-record`) before calling `loadPlayerContext` at all.
+  `loadPlayerContext` (A1) loads the combined-window shot/hole facts.
+  **Never feeds the learning loop (this slice)**: every
+  written row carries `lift: null` unconditionally — there is no parameter
+  that could set it otherwise — so a `method_version:
+  'comparable_opportunities_v1'` row can never move a coach weight. Whether
+  it ever should is an explicit, separate decision (A9 slice 3, a decision
+  doc, not code). Reuses the cron's own `isUnknownColumnError` detection
+  (duplicated, not imported) for the same still-unapplied migration
+  20260922230000 `method_version` column, but — unlike the round-level
+  path — never degrades to a NULL-labeled insert on it (see the MUST 3
+  review fix below); `summary.comparable_attributed`
+  /`comparable_no_exposure_record`/`comparable_insufficient_evidence` are
+  counted separately from the
+  round-level `attributed`/`intentional_no_lift`, and
+  `summary.method_version_column_missing` is the same flag the round-level
+  degrade path already sets. See `src/lib/coachhelm/v3/causality/
+  comparable-attribute.test.ts` (this module's own DB-orchestration logic)
+  and `src/test/api/cron/causality-attribute.test.ts`'s A9 slice 1 describe
+  block (the cron's wiring — flag on/off, pre-filter, summary counters,
+  never touching the weight/outcome-ledger tables).
+  **PR #2007 review fixes (2026-09-23), three MUSTs**:
+  1. The follow-up window can still be open even once the cron's own
+     21-day candidate-age filter admits a candidate — that filter
+     guarantees the ROUND-LEVEL path's window has closed (anchored to
+     `created_at`), not this path's (anchored to the real, independently
+     timed `shown_at`). `computeComparableAttribution` now returns
+     `{ok: false, reason: 'follow-up-window-open'}` before ever calling
+     `loadPlayerContext`, retried next run like `no-exposure-record`.
+  2. **P1 starvation, reintroduced and now fixed**: with the flag on,
+     every shot-level candidate since W22 was passing the cron's P1
+     pre-filter on metric alone — including old `no-exposure-record`/
+     `follow-up-window-open` ones — refilling every run's fixed work-list
+     slots oldest-first and starving round-level attribution, the same
+     stall the pagination rewrite originally fixed. Fixed: the route now
+     bulk-fetches each page's shot-level candidates' first exposure in one
+     `.in()` query (already page-bounded, <= `FETCH_PAGE_SIZE`) and drops
+     a candidate with no exposure or an open window BEFORE it ever takes a
+     `todo` slot or costs a `loadPlayerContext` call.
+     `computeComparableAttribution`'s own per-candidate checks stay as a
+     backstop. **Residual gap, resolved with no schema change**: once a
+     shot-level candidate's window IS closed, an `insufficient-evidence`
+     result has no honest terminal row to write — `golf_insight_
+     outcome_attribution.baseline_value`/`post_value`/`delta` are all
+     `NOT NULL numeric`, so a truly empty side (zero contributing shots)
+     has no real number to write, and even a real-but-underpowered pair of
+     values has no existing column to flag "measured, but below the
+     support floor" as distinct from a certified `observed_change` row.
+     The task owner's decision: no migration — cap the retry window
+     instead. The bulk pre-filter now also drops a candidate once
+     `firstExposure + POST_WINDOW_DAYS + RETRY_GRACE_DAYS` (14 days) has
+     passed, counted under its own `summary.comparable_retry_horizon_
+     expired` counter — permanently, it never takes a `todo` slot again.
+     This bounds each insight's cost at roughly `RETRY_GRACE_DAYS` daily-
+     cron `loadPlayerContext` calls after its window closes, instead of an
+     unbounded number, with no schema addition.
+  3. **`method_version` degrade mislabeling**: retrying the insert without
+     `method_version` on an unknown-column error (the round-level path's
+     own degrade pattern) would write a `NULL`-labeled row here too — but
+     `NULL` means "v1" (the round-level method) by that migration's own
+     comment, so a comparable-opportunities row written that way would be
+     silently, permanently misread as a round-level row. Fixed:
+     `writeComparableAttribution` now writes NOTHING on an unknown-column
+     error (`written: false, methodVersionColumnMissing: true`, no
+     retry-insert) — this flag's enable criteria (`config/
+     feature-flags.yml`) now requires migration 20260922230000 applied
+     before it can ever go on in production, alongside A9 slice 2
+     (confounding detection) landing first, since a slice-1 row is
+     permanent (idempotent insert, PK on `insight_id`) and can't be
+     relabeled later.
+  Also: a genuine exposure-lookup DB error is its own typed skip
+  (`exposure-read-failed`, both at the bulk pre-filter and the
+  per-candidate backstop), logged distinctly and never folded into
+  `no-exposure-record` (which means "legitimately never shown yet"). The
+  first-exposure lookup is the insight's first exposure on ANY surface
+  (player or coach) — there is no surface filter.
+  **Re-review catch (2026-09-23): the bulk exposure fetch needed
+  pagination.** `golf_insight_exposure` has no uniqueness constraint on
+  `insight_id` (an insight can be re-shown/re-ranked any number of
+  times), so a page's shot-level candidates could legitimately produce
+  more than PostgREST's 1,000-row cap — an unpaginated `.in()` would
+  silently keep only the globally-earliest 1,000 rows and permanently
+  misread a later candidate's real exposure as `comparable_no_exposure_
+  record`, since a page is never re-fetched. Fixed by routing the fetch
+  through `fetchAllRowsResult` (`src/lib/supabase/fetch-all-rows.ts`),
+  with `id` added as an `.order()` tiebreaker after `shown_at` so
+  `.range()` page boundaries stay stable.
+
 ## Tests To Prefer
 
 - Unit tests under `src/test/coachhelm/**`.
