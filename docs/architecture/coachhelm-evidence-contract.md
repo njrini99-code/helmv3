@@ -1259,6 +1259,49 @@ never feeds `nextWeight` or any learning loop, so there is no
 direction-corrected signal to compute, only the plain observed change
 (module header's NAMING note).
 
+## Package 10 gap audit — open items (2026-09-23)
+
+Repair-plan §14.12 Package 10's gate: *"Improvement is not attributed to a
+mere page view, repeated cron scan, or unrelated later round. Missing
+post-action evidence remains unknown."* Most of the checklist ((a) real
+measurement method, (b) versioned outcomes, (e) limited language, (f)
+neutral personalization weights) was already covered on main or by #2023/
+#2007/#2016 by the time of this audit — see PR #2034's description for the
+full item-by-item map. Two items are named here as genuine, currently-open
+gaps rather than built, because both need product/owner decisions or a
+migration this slice does not make:
+
+- **Uncertainty (variance/SE/CI on the observed lift)**: neither
+  `causality/attribute.ts`'s round-level path nor this doc's
+  comparable-opportunities module above computes or stores a confidence
+  interval or standard error alongside `observedChange`/`improvement_lift`
+  — both report a point estimate only. Adding this needs a new column on
+  `golf_insight_outcome`/`golf_insight_outcome_attribution` (there is
+  nowhere to persist it today) and therefore a migration, plus a decision
+  on what estimator to use for the shot-level matched-opportunity case
+  (which is not a simple before/after paired difference). Not built by
+  #2034 — named here so it isn't rediscovered as a surprise gap.
+- **Round-level intervention-start anchor is still a proxy**: the
+  comparable-opportunities module above anchors `interventionAt` to a real
+  recorded instant (a matched shot-level exposure). `causality/attribute.ts`'s
+  round-level path has no equivalent — it still uses
+  `golf_coach_insights.created_at` as an admitted stand-in for when the
+  player was actually exposed to the insight, and has no "comparable future
+  opportunities" concept at all (it compares round-level metric averages
+  before/after, not matched per-shot opportunities). Fixing this would mean
+  either backfilling round-level attribution to read real exposure rows
+  (`golf_insight_exposure`) the way the shot-level path does, or accepting
+  the proxy permanently and documenting why. Not decided or built by #2034.
+
+Two related decisions were escalated to the owner rather than resolved in
+#2034 (see that PR's description): whether the new
+`coachhelm_trust_status_exclude_unmeasured_outcomes` flag (the missingness
+fix — a null-`improvement` `golf_insight_outcome` row from a thin-sample
+attribution no longer counts as `measured`) should be enabled, and whether
+`interventionAt` across this contract should anchor to first EXPOSURE
+(current default everywhere it's implemented) or first ACTION with an
+exposure fallback.
+
 ## Controlled hypotheses (A5 deliverable, slice 1 — pure core, no DB)
 
 `buildHypotheses(metrics, facts)`
