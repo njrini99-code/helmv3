@@ -56,15 +56,20 @@ describe('loadFocusAreaPracticeLogData', () => {
 
     const result = await loadFocusAreaPracticeLogData(supabase as never, ['fa-1']);
 
-    expect(result.criteriaByFocusArea.size).toBe(0);
-    expect(result.practiceSummaryByFocusArea.size).toBe(0);
+    // A real, honest empty (flag off) -- not null. Only a read that actually
+    // failed degrades to null; asking nothing is not failing.
+    expect(result.criteriaByFocusArea).not.toBeNull();
+    expect(result.practiceSummaryByFocusArea).not.toBeNull();
+    expect(result.criteriaByFocusArea?.size).toBe(0);
+    expect(result.practiceSummaryByFocusArea?.size).toBe(0);
     expect(supabase._fromCalls).toEqual([]);
   });
 
   it('returns empty maps and makes zero .from() calls when there are no focus area ids', async () => {
     const supabase = makeSupabase({});
     const result = await loadFocusAreaPracticeLogData(supabase as never, []);
-    expect(result.criteriaByFocusArea.size).toBe(0);
+    expect(result.criteriaByFocusArea).not.toBeNull();
+    expect(result.criteriaByFocusArea?.size).toBe(0);
     expect(supabase._fromCalls).toEqual([]);
   });
 
@@ -80,14 +85,14 @@ describe('loadFocusAreaPracticeLogData', () => {
 
     const result = await loadFocusAreaPracticeLogData(supabase as never, ['fa-1', 'fa-2']);
 
-    expect(result.criteriaByFocusArea.get('fa-1')).toEqual([
+    expect(result.criteriaByFocusArea?.get('fa-1')).toEqual([
       { id: 'c1', label: 'Tempo', source: 'coach', met: false, met_at: null },
       { id: 'c2', label: 'Follow-through', source: 'coach', met: true, met_at: '2026-09-20T00:00:00Z' },
     ]);
-    expect(result.criteriaByFocusArea.get('fa-2')).toEqual([
+    expect(result.criteriaByFocusArea?.get('fa-2')).toEqual([
       { id: 'c3', label: 'Stance', source: 'coach', met: false, met_at: null },
     ]);
-    expect(result.criteriaByFocusArea.has('fa-3')).toBe(false);
+    expect(result.criteriaByFocusArea?.has('fa-3')).toBe(false);
   });
 
   it('rolls sessions up to a count + the most recent practiced_at', async () => {
@@ -102,13 +107,13 @@ describe('loadFocusAreaPracticeLogData', () => {
 
     const result = await loadFocusAreaPracticeLogData(supabase as never, ['fa-1']);
 
-    expect(result.practiceSummaryByFocusArea.get('fa-1')).toEqual({
+    expect(result.practiceSummaryByFocusArea?.get('fa-1')).toEqual({
       count: 3,
       lastPracticedAt: '2026-09-20T00:00:00Z',
     });
   });
 
-  it('degrades to an empty criteria map, without throwing, when that read fails', async () => {
+  it('degrades criteria to null (not an empty map) when that read fails, without throwing', async () => {
     const supabase = {
       from: (table: string) => {
         if (table === 'golf_focus_area_criteria') {
@@ -139,12 +144,51 @@ describe('loadFocusAreaPracticeLogData', () => {
 
     const result = await loadFocusAreaPracticeLogData(supabase as never, ['fa-1']);
 
-    expect(result.criteriaByFocusArea.size).toBe(0);
+    // null (unknown), not {} (verified empty) -- a failed read must not look
+    // like "this focus area genuinely has no criteria".
+    expect(result.criteriaByFocusArea).toBeNull();
     // The OTHER table's read is unaffected by the first table's failure.
-    expect(result.practiceSummaryByFocusArea.get('fa-1')).toEqual({
+    expect(result.practiceSummaryByFocusArea?.get('fa-1')).toEqual({
       count: 1,
       lastPracticedAt: '2026-09-01T00:00:00Z',
     });
+  });
+
+  it('degrades the practice summary to null (not an empty map) when that read fails, independently of criteria', async () => {
+    const supabase = {
+      from: (table: string) => {
+        if (table === 'golf_focus_area_practice_sessions') {
+          return {
+            select: () => ({
+              in: () => ({
+                order: () => ({
+                  range: async () => ({ data: null, error: { message: 'boom' } }),
+                }),
+              }),
+            }),
+          };
+        }
+        return {
+          select: () => ({
+            in: () => ({
+              order: () => ({
+                range: async () => ({
+                  data: [{ id: 'c1', focus_area_id: 'fa-1', label: 'Tempo', source: 'coach', met: false, met_at: null }],
+                  error: null,
+                }),
+              }),
+            }),
+          }),
+        };
+      },
+    };
+
+    const result = await loadFocusAreaPracticeLogData(supabase as never, ['fa-1']);
+
+    expect(result.practiceSummaryByFocusArea).toBeNull();
+    expect(result.criteriaByFocusArea?.get('fa-1')).toEqual([
+      { id: 'c1', label: 'Tempo', source: 'coach', met: false, met_at: null },
+    ]);
   });
 
   it('chunks a focus-area id list over 200 into separate .in() calls', async () => {

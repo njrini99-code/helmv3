@@ -299,8 +299,15 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
     outcome_status: fa.from_insight_id ? (outcomeByInsightId[fa.from_insight_id] ?? null) : null,
     progressHistory: progressHistoryOf(fa.progress_notes),
     from_review_round_id: fa.from_review_id ? (roundIdByReviewId[fa.from_review_id] ?? null) : null,
-    criteria: criteriaByFocusArea.get(fa.id) ?? null,
-    practiceSummary: practiceSummaryByFocusArea.get(fa.id) ?? null,
+    // `null` from the loader means that table's read failed (unknown), not
+    // "no criteria"/"never practiced" -- the explicit `criteriaByFocusArea ?
+    // ... : null` (rather than defaulting the whole map to `?? new Map()`)
+    // keeps that distinction from collapsing here, one call up from the
+    // loader itself. FocusAreaCard renders nothing for a `null` per-item
+    // value either way, so a failed read and a genuine zero look the same
+    // on screen, but never the same as each other in the data.
+    criteria: criteriaByFocusArea ? (criteriaByFocusArea.get(fa.id) ?? null) : null,
+    practiceSummary: practiceSummaryByFocusArea ? (practiceSummaryByFocusArea.get(fa.id) ?? null) : null,
   })) as unknown as PlayersGridFocusArea[];
 
   const gridStats: Record<string, PlayersGridStats> = {};

@@ -49,8 +49,15 @@ export interface FocusAreaPracticeSummary {
 }
 
 export interface FocusAreaPracticeLogData {
-  criteriaByFocusArea: Map<string, FocusAreaCriterionView[]>;
-  practiceSummaryByFocusArea: Map<string, FocusAreaPracticeSummary>;
+  /** `null` means the read itself failed -- distinct from an empty Map,
+   *  which means a successful read found no criteria for any requested
+   *  focus area. Callers must branch on `null` explicitly (render nothing,
+   *  the same as a genuine empty result) rather than defaulting it to an
+   *  empty Map themselves, or the same "failure looks like none" collapse
+   *  just happens one call up. */
+  criteriaByFocusArea: Map<string, FocusAreaCriterionView[]> | null;
+  /** Same contract as `criteriaByFocusArea` above. */
+  practiceSummaryByFocusArea: Map<string, FocusAreaPracticeSummary> | null;
 }
 
 interface CriterionRow {
@@ -71,23 +78,11 @@ function emptyResult(): FocusAreaPracticeLogData {
   return { criteriaByFocusArea: new Map(), practiceSummaryByFocusArea: new Map() };
 }
 
-/**
- * Loads criteria + a practice-session summary for a batch of focus areas.
- * Best-effort: a read failure on either table logs and degrades that one
- * table to empty rather than failing the whole page — the same honest-empty
- * contract every other optional read in these loaders already follows.
- */
-export async function loadFocusAreaPracticeLogData(
+async function loadCriteriaBatch(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   supabase: SupabaseClient<any>,
-  focusAreaIds: readonly string[],
-): Promise<FocusAreaPracticeLogData> {
-  if (!isFlagEnabled(FLAG) || focusAreaIds.length === 0) {
-    return emptyResult();
-  }
-
-  const idChunks = chunkIds(focusAreaIds);
-
+  idChunks: readonly string[][],
+): Promise<Map<string, FocusAreaCriterionView[]> | null> {
   const criteriaByFocusArea = new Map<string, FocusAreaCriterionView[]>();
   try {
     for (const idChunk of idChunks) {
@@ -106,12 +101,24 @@ export async function loadFocusAreaPracticeLogData(
     }
   } catch (error) {
     await logServerError(
-      `[focus-area-practice-log] criteria batch read failed; criteria will render as absent: ${describeError(error)}`,
+      `[focus-area-practice-log] criteria batch read failed — criteria will render as absent, not as a false "none": ${describeError(error)}`,
       { action: 'focusAreaPracticeLog.loadCriteria', featureArea: 'development' },
       'warning',
     );
+    // One failed chunk makes the whole batch unverifiable -- a partial map
+    // would silently show "no criteria" for every focus area whose chunk
+    // simply never got read. Same shape as computeEvidenceRevisionStatuses'
+    // fix (A8 slice 3).
+    return null;
   }
+  return criteriaByFocusArea;
+}
 
+async function loadPracticeSummaryBatch(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: SupabaseClient<any>,
+  idChunks: readonly string[][],
+): Promise<Map<string, FocusAreaPracticeSummary> | null> {
   const practiceSummaryByFocusArea = new Map<string, FocusAreaPracticeSummary>();
   try {
     for (const idChunk of idChunks) {
@@ -136,11 +143,37 @@ export async function loadFocusAreaPracticeLogData(
     }
   } catch (error) {
     await logServerError(
-      `[focus-area-practice-log] practice-session batch read failed; the practice log will render as absent: ${describeError(error)}`,
+      `[focus-area-practice-log] practice-session batch read failed — the practice log will render as absent, not as a false "never practiced": ${describeError(error)}`,
       { action: 'focusAreaPracticeLog.loadSessions', featureArea: 'development' },
       'warning',
     );
+    return null;
   }
+  return practiceSummaryByFocusArea;
+}
+
+/**
+ * Loads criteria + a practice-session summary for a batch of focus areas.
+ * Each table is independent: a read failure on one degrades ONLY that
+ * table's result to `null` (unknown), logs, and does not affect the other.
+ * `null` is never silently treated as "empty" here or by either caller --
+ * see `FocusAreaPracticeLogData`'s own doc comment.
+ */
+export async function loadFocusAreaPracticeLogData(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: SupabaseClient<any>,
+  focusAreaIds: readonly string[],
+): Promise<FocusAreaPracticeLogData> {
+  if (!isFlagEnabled(FLAG) || focusAreaIds.length === 0) {
+    return emptyResult();
+  }
+
+  const idChunks = chunkIds(focusAreaIds);
+
+  const [criteriaByFocusArea, practiceSummaryByFocusArea] = await Promise.all([
+    loadCriteriaBatch(supabase, idChunks),
+    loadPracticeSummaryBatch(supabase, idChunks),
+  ]);
 
   return { criteriaByFocusArea, practiceSummaryByFocusArea };
 }
