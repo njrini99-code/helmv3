@@ -13,6 +13,23 @@ import type { FlagDefinition } from './types';
 
 export const FLAG_REGISTRY: readonly FlagDefinition[] = [
   {
+    feature_id: "coachhelm_a7_distance_profile_surface",
+    owner: "golf/coachhelm",
+    purpose: "Gates whether the Game Fingerprint page's Approach section renders the new distance-profile surface (buildRollingDistanceProfileScope + loadDistanceProfile + DistanceProfileSection) alongside the existing stats-cache-backed KPIs; default off pending a design/product review of the new section's placement and copy.",
+    type: "experiment",
+    status: "active",
+    created_at: "2026-09-23",
+    expires_at: null,
+    default: false,
+    environment: {
+      production: false,
+      preview: false,
+      development: false,
+    },
+    kill_switch_behavior: null,
+    cleanup_plan: "Either promote to a permanent `release` flag once the section has been reviewed and the rolling-12-month load has been checked against a heavy-user roster in preview, or remove the section and its wiring if the review asks for a different surface/placement instead.",
+  },
+  {
     feature_id: "coachhelm_learned_personalization",
     owner: "golf/coachhelm",
     purpose: "Gates whether v3 insight ranking's loadCoachWeightsForPlayer applies stored golf_coachhelm_coach_weights instead of neutral 1.0 defaults; default off because production's weights were computed under v1's broken outcome-attribution math (see score.ts's own docblock), not because of any evidence problem with this flag.",

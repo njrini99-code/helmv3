@@ -47,12 +47,60 @@ describe('DistanceProfileSection', () => {
     // Insufficient: 50_125ft's own green-hit-rate row is under-floor but
     // still carries a real (non-null) value — InsufficientData renders
     // regardless, proving the surface switches on `kind`, not on nullness.
+    // The real count (8, scenario B's fixture size) must actually be
+    // STATED somewhere in the tile — InsufficientData's `current`/`required`
+    // pair only renders a number together, so passing `current` alone would
+    // silently show no count at all; this asserts the real fix (an explicit
+    // `description`), not just the presence of the generic title.
     const insufficientButton = screen.getByRole('button', { name: /Greens hit, 50–125 ft/i });
     expect(within(insufficientButton).getByText('Not enough data yet')).toBeInTheDocument();
+    expect(within(insufficientButton).getByText(/8 attempts so far/i)).toBeInTheDocument();
 
     // Invalid: 175_plus_ft never received a fixture shot — denominator 0.
     const invalidButton = screen.getByRole('button', { name: /Greens hit, 175\+ ft/i });
     expect(within(invalidButton).getByText('No data yet')).toBeInTheDocument();
+  });
+
+  it('bakes the value and kind into the accessible name, not just the metric/band identity', () => {
+    // A bare aria-label on the tile's wrapping element replaces its
+    // descendants' text for assistive tech, so the label itself has to
+    // state what a sighted user reads visually — otherwise a screen-reader
+    // user gets strictly less information than a mouse user looking at the
+    // same tile.
+    const results = computeDistanceProfile(
+      [...SCENARIO_A_125_175, ...SCENARIO_B_UNDER_ATTEMPTS_50_125],
+      scope('p1'),
+      [],
+    );
+    const sections = buildDistanceProfileViewModel(results);
+    render(<DistanceProfileSection sections={sections} windowLabel="Last 12 months (test)" />);
+
+    expect(
+      screen.getByRole('button', { name: /Greens hit, 125–175 ft: 60% of 10 attempts\./i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {
+        name: /Greens hit, 50–125 ft: not enough data yet, 8 attempts recorded\./i,
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /Greens hit, 175\+ ft: no data recorded yet\./i }),
+    ).toBeInTheDocument();
+  });
+
+  it('renders "Measured attempts" as a real number even when its own band is under the support floor', () => {
+    // approach_measured_contribution's whole job is to STATE the count —
+    // A2 never nulls its value, even below the floor — so it must render as
+    // a MetricCard (a real "8"), never as an InsufficientData hedge, for a
+    // band whose OTHER four rows are legitimately insufficient.
+    const results = computeDistanceProfile(SCENARIO_B_UNDER_ATTEMPTS_50_125, scope('p1'), []);
+    const sections = buildDistanceProfileViewModel(results);
+    render(<DistanceProfileSection sections={sections} windowLabel="Last 12 months (test)" />);
+
+    const contributionButton = screen.getByRole('button', { name: /Measured attempts, 50–125 ft/i });
+    expect(within(contributionButton).queryByText('Not enough data yet')).not.toBeInTheDocument();
+    expect(contributionButton.textContent).toContain('8');
+    expect(contributionButton.textContent).toContain('Below support floor');
   });
 
   it('opens the same evidence via keyboard (Enter) as via click, and Escape closes it', async () => {
