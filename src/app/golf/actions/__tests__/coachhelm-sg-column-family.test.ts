@@ -37,8 +37,12 @@ const ROUNDS_IN_CALCULATION = 13;
 const CUMULATIVE_APPROACH_SG = -85.8; // -6.6 * 13 — the incident's own arithmetic
 const insightsSource = readFileSync(new URL('../insights.ts', import.meta.url), 'utf8');
 const buildStatInsightsStart = insightsSource.indexOf('function buildStatInsightsForTeam(');
+// End marker was the now-removed "ACKNOWLEDGE COMPOSED INSIGHT" section
+// header (that dead code — and its sibling DISMISS COMPOSED INSIGHT — was
+// deleted 2026-09-22; see insights.ts). The next stable section header after
+// buildStatInsightsForTeam is now TRIGGER INSIGHTS FOR SINGLE PLAYER.
 const buildStatInsightsEnd = insightsSource.indexOf(
-  '// ============================================================================\n// ACKNOWLEDGE COMPOSED INSIGHT',
+  '// ============================================================================\n// TRIGGER INSIGHTS FOR SINGLE PLAYER',
   buildStatInsightsStart,
 );
 const buildStatInsightsSource = insightsSource.slice(buildStatInsightsStart, buildStatInsightsEnd);
