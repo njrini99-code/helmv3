@@ -193,4 +193,14 @@
   mirroring slice 1's `loadDistanceProfileAddendumIfEnabled` pattern.
   `typecheck:fast` and `eslint --max-warnings 0` clean; `flags:check`
   clean (9 flags total). Not verified: mobile/desktop visual layout (no
-  local build or dev server run this session).
+  local build or dev server run this session). Corrected 2026-09-23
+  (#2010 review, round 3): added a test proving
+  `renderDistanceProfileFromContext`/`renderScoringFromContext`'s
+  isolation actually holds when one COMPUTE function throws (not just
+  when the shared `loadPlayerContext` call itself fails, already
+  covered) — `computeParOpportunities` throwing degrades only `scoring`
+  to null; the shared distance-profile addendum still renders. Also
+  documents `MetricResult.failedFloors`/`SupportFloorGap` (landed on
+  `metrics/types.ts` via #2008) in this doc's and the evidence-contract
+  doc's A2 sections — absent unless `status === 'insufficient'`, and can
+  name more than one failed floor at once.

@@ -800,6 +800,23 @@ row, reconciled onto the shared shape once #1990 landed a shared
   `value` is never null even at `denominator === 0` (`status: 'invalid'`
   there simply means "no evidence," not "value withheld") — it is the
   evidence count the other four rows' `status` is judged against.
+- **`MetricResult.failedFloors?: readonly SupportFloorGap[]`** (`{ floor:
+  string; current: number; required: number }`, `metrics/types.ts`) names
+  the SPECIFIC floor(s) this row's own `status: 'insufficient'` failed —
+  `'rounds'` | `'attempts'` | `'greens'` — built from the row's own real
+  gating population, never a narrower per-row proxy (#2008 review, MUST
+  1: a row once reported a floor its own narrower `eligibleCount` had
+  already cleared, hiding the wider floor that actually produced
+  `'insufficient'`). Absent entirely unless `status === 'insufficient'`;
+  most rows fail exactly one floor, but a row can fail more than one at
+  once (e.g. both rounds and attempts, or — for the proximity row —
+  rounds, attempts, AND greens together), in which case `failedFloors`
+  carries every one that failed, not just the first found.
+  `describeSupportGap(row)` (`metrics/support-gap.ts` — split out of this
+  module so a client component can import it as a value without pulling
+  in `distance-profile.ts`'s own server-only `bucketApproachDistance`
+  import chain) renders straight from `failedFloors`, joining multiple
+  gaps with `" and "`.
 - **Lay-up exclusion needs `par`, which `ShotFact` doesn't carry.**
   `holes: readonly HoleContext[]` is a REQUIRED third argument (not an
   optional side map) — `load-player-context.ts` already returns
