@@ -24,6 +24,8 @@ ADD COLUMN IF NOT EXISTS "method_version" text;
 -- ROLLBACK: method_version;` — safe: the column is nullable, additive, and
 -- ROLLBACK: read by application code with a `?? 'v1'` fallback, never
 -- ROLLBACK: assumed present.
+--
+-- VERIFY: select 1 from information_schema.columns where table_schema = 'public' and table_name = 'golf_insight_outcome_attribution' and column_name = 'method_version'; -- noqa: LT05
 
 COMMENT ON COLUMN "public"."golf_insight_outcome_attribution"."method_version"
 IS 'Attribution lift method. NULL = v1 (pre-2026-09-22, post-ambient

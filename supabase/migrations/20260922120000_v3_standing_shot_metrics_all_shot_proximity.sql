@@ -338,23 +338,24 @@ REVOKE EXECUTE ON FUNCTION "public"."refresh_player_standing_shot_metrics"("p_te
 GRANT EXECUTE ON FUNCTION "public"."refresh_player_standing_shot_metrics"("p_team_ids" "uuid"[]) TO service_role;
 
 -- ============================================================================
+-- ROLLBACK: additive only (added post-merge, header-only, no SQL body
+-- ROLLBACK: change). `ALTER TABLE public.golf_player_standing DROP COLUMN
+-- ROLLBACK: basis, DROP COLUMN on_green_proximity_feet, DROP COLUMN
+-- ROLLBACK: layup_excluded_n;` then restore the prior
+-- ROLLBACK: `refresh_player_standing_shot_metrics` body (the on-green-only
+-- ROLLBACK: proximity version predating this migration). Safe: the new
+-- ROLLBACK: columns are nullable and this migration writes no backfill, so
+-- ROLLBACK: nothing downstream depends on them existing until the companion
+-- ROLLBACK: app-code change (tour-basis.ts, #1938) actually reads `basis`.
+-- ============================================================================
+-- ============================================================================
 -- 3) Post-apply verification (db-migration-reviewer, 2026-09-22): scripts/
 -- db/apply.mjs runs every `-- VERIFY:` line below as a standalone SELECT
 -- after this file commits and fails the apply step (without rolling back)
 -- if any returns zero rows.
 -- ============================================================================
--- VERIFY: select 1 from information_schema.columns
--- VERIFY:  where table_schema = 'public' and table_name = 'golf_player_standing'
--- VERIFY:    and column_name = 'basis';
--- VERIFY: select 1 from information_schema.columns
--- VERIFY:  where table_schema = 'public' and table_name = 'golf_player_standing'
--- VERIFY:    and column_name = 'on_green_proximity_feet';
--- VERIFY: select 1 from information_schema.columns
--- VERIFY:  where table_schema = 'public' and table_name = 'golf_player_standing'
--- VERIFY:    and column_name = 'layup_excluded_n';
--- VERIFY: select 1 from pg_constraint
--- VERIFY:  where conname = 'golf_player_standing_basis_check'
--- VERIFY:    and conrelid = 'public.golf_player_standing'::regclass;
--- VERIFY: select 1 from pg_proc
--- VERIFY:  where proname = 'refresh_player_standing_shot_metrics'
--- VERIFY:    and prosrc ilike '%all_shot%';
+-- VERIFY: select 1 from information_schema.columns where table_schema = 'public' and table_name = 'golf_player_standing' and column_name = 'basis'; -- noqa: LT05
+-- VERIFY: select 1 from information_schema.columns where table_schema = 'public' and table_name = 'golf_player_standing' and column_name = 'on_green_proximity_feet'; -- noqa: LT05
+-- VERIFY: select 1 from information_schema.columns where table_schema = 'public' and table_name = 'golf_player_standing' and column_name = 'layup_excluded_n'; -- noqa: LT05
+-- VERIFY: select 1 from pg_constraint where conname = 'golf_player_standing_basis_check' and conrelid = 'public.golf_player_standing'::regclass; -- noqa: LT05
+-- VERIFY: select 1 from pg_proc where proname = 'refresh_player_standing_shot_metrics' and prosrc ilike '%all_shot%'; -- noqa: LT05
