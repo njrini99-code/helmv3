@@ -50,6 +50,14 @@ class SelectCoursesTests(unittest.TestCase):
 
 
 class WaitForCapacityTests(unittest.TestCase):
+    def test_default_free_gb_measures_the_pause_file_volume(self):
+        # The real default must be callable with no injected stub (it once
+        # called free_gb() without its path and crashed the first batch).
+        with tempfile.TemporaryDirectory() as d:
+            sleeps = []
+            wait_for_capacity(os.path.join(d, 'PAUSE'), 0.0, _Sink(), sleep_fn=sleeps.append)
+            self.assertEqual(sleeps, [])
+
     def test_returns_immediately_when_not_paused_and_enough_free_disk(self):
         sleeps = []
         wait_for_capacity('/no/such/PAUSE', 9.0, _Sink(), free_gb_fn=lambda: 20.0, sleep_fn=sleeps.append)

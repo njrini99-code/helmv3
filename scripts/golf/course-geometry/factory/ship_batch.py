@@ -109,11 +109,15 @@ def _refuse_if_already_locked(repo_root, out):
     return False
 
 
-def wait_for_capacity(pause_path, min_free_gb, out, free_gb_fn=free_gb, sleep_fn=time.sleep,
+def wait_for_capacity(pause_path, min_free_gb, out, free_gb_fn=None, sleep_fn=time.sleep,
                       poll_seconds=DEFAULT_POLL_SECONDS, status_every=DEFAULT_STATUS_EVERY):
     """Blocks while `pause_path` exists or free disk is below `min_free_gb`,
     polling every `poll_seconds`. Re-checked by the caller before every
-    course, not just once at batch start."""
+    course, not just once at batch start. Free space is measured on the
+    volume holding `pause_path` unless `free_gb_fn` is injected."""
+    if free_gb_fn is None:
+        def free_gb_fn():
+            return free_gb(os.path.dirname(pause_path) or '.')
     ticks = 0
     while True:
         paused = os.path.exists(pause_path)
