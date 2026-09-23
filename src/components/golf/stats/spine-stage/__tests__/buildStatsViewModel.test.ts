@@ -169,10 +169,13 @@ describe('buildPriorities', () => {
       { label: 'Approach 150-175yd', strokeImpact: -0.9 },
       { label: 'Off the tee accuracy', strokeImpact: -0.5 },
     ]);
+    // Package 11 (#1933 bug, confirmed present on main): value carries an
+    // "est." suffix — strokeImpact is a benchmark-derived estimate, not a
+    // measured SG figure, and PriorityItem has no separate qualifier slot.
     expect(items).toEqual([
-      { rank: 1, title: 'Approach 150-175yd', value: '−0.90' },
-      { rank: 2, title: 'Off the tee accuracy', value: '−0.50' },
-      { rank: 3, title: 'Putting 5-10ft', value: '−0.30' },
+      { rank: 1, title: 'Approach 150-175yd', value: '−0.90 est.' },
+      { rank: 2, title: 'Off the tee accuracy', value: '−0.50 est.' },
+      { rank: 3, title: 'Putting 5-10ft', value: '−0.30 est.' },
     ]);
   });
 
@@ -195,7 +198,7 @@ describe('buildPriorities', () => {
       { label: 'Missing', strokeImpact: null },
       { label: 'Real', strokeImpact: -0.6 },
     ]);
-    expect(items).toEqual([{ rank: 1, title: 'Real', value: '−0.60' }]);
+    expect(items).toEqual([{ rank: 1, title: 'Real', value: '−0.60 est.' }]);
   });
 });
 

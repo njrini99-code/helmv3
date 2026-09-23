@@ -1103,6 +1103,11 @@
         "category": "actions"
       },
       {
+        "id": "actions:src/app/golf/actions/focus-area-practice-log.ts",
+        "pattern": "src/app/golf/actions/focus-area-practice-log.ts",
+        "category": "actions"
+      },
+      {
         "id": "actions:src/app/golf/actions/golf.ts",
         "pattern": "src/app/golf/actions/golf.ts",
         "category": "actions"
@@ -2731,6 +2736,18 @@
         "id": "golf_demo_sessions",
         "definedIn": [
           "supabase/migrations/20260611000000_create_golf_demo_sessions.sql"
+        ]
+      },
+      {
+        "id": "golf_focus_area_criteria",
+        "definedIn": [
+          "supabase/migrations/20260923110000_golf_focus_area_practice_log.sql"
+        ]
+      },
+      {
+        "id": "golf_focus_area_practice_sessions",
+        "definedIn": [
+          "supabase/migrations/20260923110000_golf_focus_area_practice_log.sql"
         ]
       },
       {
@@ -13233,6 +13250,11 @@
       "kind": "feature_relation",
       "evidence": [
         {
+          "kind": "feature_doc_contract",
+          "path": "memory/features/coachhelm-ai.md",
+          "anchor": "admin_platform"
+        },
+        {
           "kind": "import_graph",
           "path": "src/app/golf/actions/coachhelm-data.ts",
           "anchor": "src/lib/supabase/admin"
@@ -13803,6 +13825,11 @@
       "target": "player_coachhelm_development",
       "kind": "feature_relation",
       "evidence": [
+        {
+          "kind": "feature_doc_contract",
+          "path": "memory/features/coachhelm-ai.md",
+          "anchor": "player_coachhelm_development"
+        },
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/insight-delivery-ranking.ts",
@@ -16903,6 +16930,18 @@
     },
     {
       "source": "player_coachhelm_development",
+      "target": "actions:src/app/golf/actions/focus-area-practice-log.ts",
+      "kind": "feature_action",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/golf/actions/focus-area-practice-log.ts"
+        }
+      ]
+    },
+    {
+      "source": "player_coachhelm_development",
       "target": "actions:src/app/golf/actions/intelligence-dashboard.ts",
       "kind": "feature_action",
       "evidence": [
@@ -16989,6 +17028,16 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/drills.ts",
+          "anchor": "src/lib/admin/observed-action"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/focus-area-practice-log.ts",
+          "anchor": "src/lib/flags"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/focus-area-practice-log.ts",
           "anchor": "src/lib/admin/observed-action"
         },
         {
@@ -17177,6 +17226,21 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/app/golf/actions/focus-area-practice-log.ts",
+          "anchor": "src/lib/supabase/server"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/focus-area-practice-log.ts",
+          "anchor": "src/lib/supabase/untyped"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/focus-area-practice-log.ts",
+          "anchor": "src/lib/auth/verify-player-access"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/app/golf/actions/round-reviews.ts",
           "anchor": "src/lib/supabase/server"
         },
@@ -17204,6 +17268,11 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/causality/comparable-attribute.ts",
           "anchor": "src/lib/supabase/untyped"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/causality/confounding-check.ts",
+          "anchor": "src/lib/supabase/fetch-all-rows"
         },
         {
           "kind": "import_graph",
@@ -17697,6 +17766,28 @@
     },
     {
       "source": "player_coachhelm_development",
+      "target": "golf_focus_area_criteria",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260923110000_golf_focus_area_practice_log.sql"
+        }
+      ]
+    },
+    {
+      "source": "player_coachhelm_development",
+      "target": "golf_focus_area_practice_sessions",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260923110000_golf_focus_area_practice_log.sql"
+        }
+      ]
+    },
+    {
+      "source": "player_coachhelm_development",
       "target": "golf_round_lifecycle",
       "kind": "feature_relation",
       "evidence": [
@@ -17754,6 +17845,11 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/generators/scrambling.ts",
           "anchor": "src/lib/golf/stat-formulas"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/metrics/distance-profile-window.ts",
+          "anchor": "src/lib/golf/date-only"
         },
         {
           "kind": "import_graph",

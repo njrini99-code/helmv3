@@ -34,7 +34,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Segmented, type SegmentedOption } from '@/components/fairway/controls/segmented';
-import { FairwayPlayerGameFingerprint } from '@/components/fairway/pages/player-game';
+import {
+  FairwayPlayerGameFingerprint,
+  type FairwayPlayerGameFingerprintProps,
+} from '@/components/fairway/pages/player-game';
 import { CoachHelmShell } from '@/components/fairway/pages/coachhelm/CoachHelmShell';
 import {
   FairwayPlayerInsight,
@@ -53,9 +56,14 @@ export interface PlayerDeepDiveTabsProps {
   fingerprint: PlayerFingerprint;
   /** Everything FairwayPlayerInsight needs, pre-fetched alongside the fingerprint. */
   insight: FairwayPlayerInsightProps;
+  /** Threaded straight through to `FairwayPlayerGameFingerprint` (addendum
+   *  §13 A7) — server-built extra content per section, e.g. the A2
+   *  distance-profile surface under `approach`. Omitted for every existing
+   *  call site, so nothing about their output changes. */
+  sectionAddenda?: FairwayPlayerGameFingerprintProps['sectionAddenda'];
 }
 
-export function PlayerDeepDiveTabs({ fingerprint, insight }: PlayerDeepDiveTabsProps) {
+export function PlayerDeepDiveTabs({ fingerprint, insight, sectionAddenda }: PlayerDeepDiveTabsProps) {
   const searchParams = useSearchParams();
   const [tab, setTab] = useState<DeepDiveTab>(
     searchParams.get('tab') === 'scouting' ? 'scouting' : 'fingerprint',
@@ -108,7 +116,7 @@ export function PlayerDeepDiveTabs({ fingerprint, insight }: PlayerDeepDiveTabsP
           aria-label="Player deep-dive view"
         />
         {tab === 'fingerprint' ? (
-          <FairwayPlayerGameFingerprint fingerprint={fingerprint} />
+          <FairwayPlayerGameFingerprint fingerprint={fingerprint} sectionAddenda={sectionAddenda} />
         ) : (
           <FairwayPlayerInsight {...insight} embedded />
         )}
