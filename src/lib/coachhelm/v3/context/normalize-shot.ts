@@ -148,6 +148,9 @@ export interface RawShotInput {
   lie_after: string | null;
   result: string | null;
   is_penalty: boolean | null;
+  /** `golf_shots.putt_made` — see `ShotFact.putt_made`'s doc comment for the
+   *  `result === 'hole' || putt_made === true` termination rule this feeds. */
+  putt_made: boolean | null;
   /** Ingest-provided, optional. Never inferred here — see `ShotIntent`. */
   intent?: string | null;
   observed_at: string;
@@ -171,6 +174,7 @@ export function normalizeShot(raw: RawShotInput): ShotFact {
     lie_after: raw.lie_after,
     result: raw.result,
     is_penalty: raw.is_penalty === true,
+    putt_made: raw.putt_made,
     observed_at: raw.observed_at,
   };
 }

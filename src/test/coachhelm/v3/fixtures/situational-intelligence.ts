@@ -1,7 +1,7 @@
 /**
  * A0 counterexample fixtures (repair-plan addendum §13, work package A0).
  *
- * Six concrete scenarios a metric registry has to explain: for each, a
+ * Seven concrete scenarios a metric registry has to explain: for each, a
  * reviewer should be able to say why it IS eligible for some metrics and
  * NOT eligible for others, without reading generator code. `shot-context
  * .test.ts` (A1) runs these raw shots through `normalizeShot` and
@@ -90,6 +90,7 @@ const twoCourseSameHoleNumber: SituationalFixture = {
       lie_after: 'fairway',
       result: 'fairway',
       is_penalty: false,
+      putt_made: null,
       observed_at: '2026-06-01T14:00:00.000Z',
     },
     {
@@ -106,6 +107,7 @@ const twoCourseSameHoleNumber: SituationalFixture = {
       lie_after: 'green',
       result: 'green',
       is_penalty: false,
+      putt_made: null,
       intent: 'go_for_green',
       observed_at: '2026-06-01T14:03:00.000Z',
     },
@@ -123,6 +125,7 @@ const twoCourseSameHoleNumber: SituationalFixture = {
       lie_after: 'hole',
       result: 'hole',
       is_penalty: false,
+      putt_made: null,
       intent: 'putt',
       observed_at: '2026-06-01T14:05:00.000Z',
     },
@@ -140,6 +143,7 @@ const twoCourseSameHoleNumber: SituationalFixture = {
       lie_after: 'green',
       result: 'green',
       is_penalty: false,
+      putt_made: null,
       intent: 'go_for_green',
       observed_at: '2026-06-08T09:10:00.000Z',
     },
@@ -157,6 +161,7 @@ const twoCourseSameHoleNumber: SituationalFixture = {
       lie_after: 'hole',
       result: 'hole',
       is_penalty: false,
+      putt_made: null,
       intent: 'putt',
       observed_at: '2026-06-08T09:12:00.000Z',
     },
@@ -205,6 +210,7 @@ const par5Layup: SituationalFixture = {
       lie_after: 'fairway',
       result: 'fairway',
       is_penalty: false,
+      putt_made: null,
       observed_at: '2026-06-10T15:00:00.000Z',
     },
     {
@@ -221,6 +227,7 @@ const par5Layup: SituationalFixture = {
       lie_after: 'fairway',
       result: 'fairway',
       is_penalty: false,
+      putt_made: null,
       intent: 'layup',
       observed_at: '2026-06-10T15:04:00.000Z',
     },
@@ -238,6 +245,7 @@ const par5Layup: SituationalFixture = {
       lie_after: 'green',
       result: 'green',
       is_penalty: false,
+      putt_made: null,
       intent: 'go_for_green',
       observed_at: '2026-06-10T15:07:00.000Z',
     },
@@ -255,6 +263,7 @@ const par5Layup: SituationalFixture = {
       lie_after: 'hole',
       result: 'hole',
       is_penalty: false,
+      putt_made: null,
       intent: 'putt',
       observed_at: '2026-06-10T15:09:00.000Z',
     },
@@ -300,6 +309,7 @@ const par3TeeGreenAttempt: SituationalFixture = {
       lie_after: 'green',
       result: 'green',
       is_penalty: false,
+      putt_made: null,
       intent: 'go_for_green',
       observed_at: '2026-06-14T11:00:00.000Z',
     },
@@ -317,6 +327,7 @@ const par3TeeGreenAttempt: SituationalFixture = {
       lie_after: 'green',
       result: null,
       is_penalty: false,
+      putt_made: null,
       intent: 'putt',
       observed_at: '2026-06-14T11:02:00.000Z',
     },
@@ -334,6 +345,7 @@ const par3TeeGreenAttempt: SituationalFixture = {
       lie_after: 'hole',
       result: 'hole',
       is_penalty: false,
+      putt_made: null,
       intent: 'putt',
       observed_at: '2026-06-14T11:03:00.000Z',
     },
@@ -380,6 +392,7 @@ const explicitPenaltyPair: SituationalFixture = {
       lie_after: 'fairway',
       result: 'fairway',
       is_penalty: false,
+      putt_made: null,
       observed_at: '2026-06-20T08:00:00.000Z',
     },
     {
@@ -398,6 +411,7 @@ const explicitPenaltyPair: SituationalFixture = {
       lie_after: null,
       result: null,
       is_penalty: true,
+      putt_made: null,
       observed_at: '2026-06-20T08:04:00.000Z',
     },
     {
@@ -415,6 +429,7 @@ const explicitPenaltyPair: SituationalFixture = {
       lie_after: null,
       result: null,
       is_penalty: true,
+      putt_made: null,
       observed_at: '2026-06-20T08:07:00.000Z',
     },
     {
@@ -431,6 +446,7 @@ const explicitPenaltyPair: SituationalFixture = {
       lie_after: 'green',
       result: 'green',
       is_penalty: false,
+      putt_made: null,
       intent: 'go_for_green',
       observed_at: '2026-06-20T08:10:00.000Z',
     },
@@ -448,6 +464,7 @@ const explicitPenaltyPair: SituationalFixture = {
       lie_after: 'green',
       result: null,
       is_penalty: false,
+      putt_made: null,
       intent: 'putt',
       observed_at: '2026-06-20T08:12:00.000Z',
     },
@@ -465,6 +482,7 @@ const explicitPenaltyPair: SituationalFixture = {
       lie_after: 'hole',
       result: 'hole',
       is_penalty: false,
+      putt_made: null,
       intent: 'putt',
       observed_at: '2026-06-20T08:13:00.000Z',
     },
@@ -511,6 +529,7 @@ const incompleteShotSequence: SituationalFixture = {
       lie_after: 'fairway',
       result: 'fairway',
       is_penalty: false,
+      putt_made: null,
       observed_at: '2026-06-25T12:00:00.000Z',
     },
     {
@@ -527,6 +546,7 @@ const incompleteShotSequence: SituationalFixture = {
       lie_after: 'green',
       result: 'green',
       is_penalty: false,
+      putt_made: null,
       intent: 'go_for_green',
       observed_at: '2026-06-25T12:03:00.000Z',
     },
@@ -546,6 +566,7 @@ const incompleteShotSequence: SituationalFixture = {
       // terminate the hole.
       result: null,
       is_penalty: false,
+      putt_made: null,
       intent: 'putt',
       observed_at: '2026-06-25T12:05:00.000Z',
     },
@@ -592,6 +613,7 @@ const mixedUnitApproach: SituationalFixture = {
       lie_after: 'fairway',
       result: 'fairway',
       is_penalty: false,
+      putt_made: null,
       observed_at: '2026-06-28T16:00:00.000Z',
     },
     {
@@ -608,6 +630,7 @@ const mixedUnitApproach: SituationalFixture = {
       lie_after: 'green',
       result: 'green',
       is_penalty: false,
+      putt_made: null,
       intent: 'go_for_green',
       observed_at: '2026-06-28T16:03:00.000Z',
     },
@@ -625,8 +648,93 @@ const mixedUnitApproach: SituationalFixture = {
       lie_after: 'hole',
       result: 'hole',
       is_penalty: false,
+      putt_made: null,
       intent: 'putt',
       observed_at: '2026-06-28T16:05:00.000Z',
+    },
+  ],
+};
+
+// ---------------------------------------------------------------------------
+// 7. Hole-out from off the green (chip-in)
+// ---------------------------------------------------------------------------
+// The approach misses the green; the next shot is a CHIP from around the
+// green that goes straight in — no putt at all. Termination must come from
+// `result === 'hole'` on an `around_green` shot, not from `putt_made`
+// (`putt_made` is genuinely `null` here, since this was never a putt).
+// Proves the termination OR does not require BOTH signals to agree, and
+// that holing out isn't assumed to always happen on the green.
+const CHIP_IN_HOLE: HoleContext = {
+  round_id: 'round-chip-in',
+  course_id: 'course-j',
+  hole_number: 8,
+  par: 4,
+  total_strokes: 3,
+  penalty_strokes: 0,
+  putts: 0,
+  gir: false,
+};
+const aroundGreenHoleOut: SituationalFixture = {
+  name: 'around_green_hole_out',
+  description:
+    'Par: tee, an approach that misses the green (fairway/rough short of ' +
+    'it), then a chip-in from around the green — no putt is ever recorded. ' +
+    "Termination must key off result === 'hole' on the around_green shot; " +
+    'putt_made stays null throughout and must not be required.',
+  scope: scope('player-chip-in'),
+  holes: [CHIP_IN_HOLE],
+  rawShots: [
+    {
+      round_id: 'round-chip-in',
+      hole_number: 8,
+      shot_number: 1,
+      shot_type: 'tee',
+      club_type: 'driver',
+      distance_to_hole_before: 380,
+      distance_unit_before: 'yards',
+      distance_to_hole_after: 150,
+      distance_unit_after: 'yards',
+      lie_before: 'tee',
+      lie_after: 'fairway',
+      result: 'fairway',
+      is_penalty: false,
+      putt_made: null,
+      observed_at: '2026-07-02T10:00:00.000Z',
+    },
+    {
+      round_id: 'round-chip-in',
+      hole_number: 8,
+      shot_number: 2,
+      shot_type: 'approach',
+      club_type: 'non_driver',
+      distance_to_hole_before: 150,
+      distance_unit_before: 'yards',
+      distance_to_hole_after: 30,
+      distance_unit_after: 'feet',
+      lie_before: 'fairway',
+      lie_after: 'rough',
+      result: 'rough',
+      is_penalty: false,
+      putt_made: null,
+      intent: 'go_for_green',
+      observed_at: '2026-07-02T10:03:00.000Z',
+    },
+    {
+      round_id: 'round-chip-in',
+      hole_number: 8,
+      shot_number: 3,
+      shot_type: 'around_green',
+      club_type: 'non_driver',
+      distance_to_hole_before: 30,
+      distance_unit_before: 'feet',
+      distance_to_hole_after: 0,
+      distance_unit_after: 'feet',
+      lie_before: 'rough',
+      lie_after: 'hole',
+      result: 'hole',
+      is_penalty: false,
+      putt_made: null,
+      observed_at: '2026-07-02T10:05:00.000Z',
     },
   ],
 };
@@ -638,6 +746,7 @@ export const SITUATIONAL_FIXTURES: readonly SituationalFixture[] = [
   explicitPenaltyPair,
   incompleteShotSequence,
   mixedUnitApproach,
+  aroundGreenHoleOut,
 ];
 
 export {
@@ -647,4 +756,5 @@ export {
   explicitPenaltyPair,
   incompleteShotSequence,
   mixedUnitApproach,
+  aroundGreenHoleOut,
 };

@@ -12,6 +12,7 @@ import { buildHoleSequence } from '@/lib/coachhelm/v3/context/build-hole-sequenc
 import { normalizeShot, normalizeShotValue } from '@/lib/coachhelm/v3/context/normalize-shot';
 import { holeIdentityKey, type HoleContext, type ShotFact } from '@/lib/coachhelm/v3/context/types';
 import {
+  aroundGreenHoleOut,
   explicitPenaltyPair,
   incompleteShotSequence,
   mixedUnitApproach,
@@ -178,6 +179,124 @@ describe('buildHoleSequence — order, termination, and penalty representation',
     expect(result.reasons).toEqual([]);
   });
 
+  it('accepts a chip-in from off the green as complete, with putt_made null throughout', () => {
+    const facts = factsFor(aroundGreenHoleOut.rawShots);
+    const result = buildHoleSequence(facts, aroundGreenHoleOut.holes[0]!);
+    expect(result.complete).toBe(true);
+    expect(result.reasons).toEqual([]);
+    expect(result.shots.every((s) => s.putt_made === null)).toBe(true);
+    expect(result.shots.at(-1)?.result).toBe('hole');
+  });
+
+  it('terminates on putt_made === true even when result is null, on a count-matching hole', () => {
+    // The must-fix case: the final putt was logged with `putt_made: true`
+    // but `result` was never set to 'hole' — a real gap the shot-edit path
+    // (`golf.ts`'s `updateShotImpl`) can produce, since it can set
+    // `putt_made` independently of `result`. `result === 'hole'` alone
+    // would miss this; the termination check must accept either signal.
+    const hole: HoleContext = {
+      round_id: 'round-putt-made-only',
+      course_id: 'course-k',
+      hole_number: 6,
+      par: 4,
+      total_strokes: 2,
+      penalty_strokes: 0,
+      putts: 1,
+      gir: true,
+    };
+    const facts: ShotFact[] = [
+      {
+        round_id: 'round-putt-made-only',
+        hole_number: 6,
+        shot_number: 1,
+        shot_type: 'approach',
+        club_type: 'non_driver',
+        intent: 'go_for_green',
+        distance_to_hole_before_feet: 300,
+        distance_to_hole_after_feet: 10,
+        lie_before: 'fairway',
+        lie_after: 'green',
+        result: 'green',
+        is_penalty: false,
+        putt_made: null,
+        observed_at: '2026-07-10T00:00:00.000Z',
+      },
+      {
+        round_id: 'round-putt-made-only',
+        hole_number: 6,
+        shot_number: 2,
+        shot_type: 'putting',
+        club_type: 'putter',
+        intent: 'putt',
+        distance_to_hole_before_feet: 10,
+        distance_to_hole_after_feet: 0,
+        lie_before: 'green',
+        lie_after: 'hole',
+        result: null, // never set — only putt_made records the hole-out
+        is_penalty: false,
+        putt_made: true,
+        observed_at: '2026-07-10T00:01:00.000Z',
+      },
+    ];
+
+    const result = buildHoleSequence(facts, hole);
+    expect(result.complete).toBe(true);
+    expect(result.reasons).toEqual([]);
+  });
+
+  it('skips penalty-count reconciliation when the authoritative penalty_strokes is null (unknown, not zero)', () => {
+    const hole: HoleContext = {
+      round_id: 'round-unknown-penalty',
+      course_id: 'course-l',
+      hole_number: 2,
+      par: 4,
+      total_strokes: 2,
+      penalty_strokes: null, // not recorded — must not be treated as 0
+      putts: 1,
+      gir: false,
+    };
+    const facts: ShotFact[] = [
+      {
+        round_id: 'round-unknown-penalty',
+        hole_number: 2,
+        shot_number: 1,
+        shot_type: 'approach',
+        club_type: 'non_driver',
+        intent: 'unknown',
+        distance_to_hole_before_feet: 300,
+        distance_to_hole_after_feet: null,
+        lie_before: 'fairway',
+        lie_after: null,
+        result: null,
+        is_penalty: true, // a real penalty shot on this hole
+        putt_made: null,
+        observed_at: '2026-07-11T00:00:00.000Z',
+      },
+      {
+        round_id: 'round-unknown-penalty',
+        hole_number: 2,
+        shot_number: 2,
+        shot_type: 'putting',
+        club_type: 'putter',
+        intent: 'putt',
+        distance_to_hole_before_feet: 10,
+        distance_to_hole_after_feet: 0,
+        lie_before: 'green',
+        lie_after: 'hole',
+        result: 'hole',
+        is_penalty: false,
+        putt_made: true,
+        observed_at: '2026-07-11T00:01:00.000Z',
+      },
+    ];
+
+    const result = buildHoleSequence(facts, hole);
+    // There is no authoritative penalty count to reconcile against, so no
+    // mismatch is reported — the check is skipped entirely, not run against
+    // an assumed 0.
+    expect(result.reasons).not.toContain('penalty_count_mismatch');
+  });
+
   it('keeps two penalty events ordered and never reclassifies either as a green attempt', () => {
     const facts = factsFor(explicitPenaltyPair.rawShots);
     const hole = explicitPenaltyPair.holes[0]!;
@@ -194,7 +313,8 @@ describe('buildHoleSequence — order, termination, and penalty representation',
       expect(s.result === 'green' || s.result === 'gir').toBe(false);
     }
     // penalty_strokes (2) reconciles with the is_penalty row count.
-    expect(penaltyShots).toHaveLength(hole.penalty_strokes);
+    expect(hole.penalty_strokes).toBe(2);
+    expect(penaltyShots).toHaveLength(2);
   });
 
   it('flags a penalty shot that is misrecorded as a green-finding attempt', () => {
@@ -226,6 +346,7 @@ describe('buildHoleSequence — order, termination, and penalty representation',
         lie_after: 'green',
         result: 'green', // impossible: a penalty shot cannot also find the green
         is_penalty: true,
+        putt_made: null,
         observed_at: '2026-06-01T00:00:00.000Z',
       },
       {
@@ -241,6 +362,7 @@ describe('buildHoleSequence — order, termination, and penalty representation',
         lie_after: 'hole',
         result: 'hole',
         is_penalty: false,
+        putt_made: true,
         observed_at: '2026-06-01T00:01:00.000Z',
       },
     ];
@@ -306,6 +428,7 @@ describe('buildHoleSequence — order, termination, and penalty representation',
       lie_after: n === 4 ? 'hole' : 'green',
       result: n === 4 ? 'hole' : 'green',
       is_penalty: false,
+      putt_made: n === 4 ? true : null,
       observed_at: '2026-06-01T00:00:00.000Z',
     }));
 

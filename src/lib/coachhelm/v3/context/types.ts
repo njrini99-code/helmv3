@@ -33,6 +33,12 @@ export type ClubType = 'driver' | 'non_driver' | 'putter' | null;
  * silently `'go_for_green'`: guessing intent from distance and outcome is
  * exactly the false-precision A2 exists to fix carefully, and A1 must not
  * pre-empt that by inferring anything.
+ *
+ * `golf_shots` has no column backing this field today — no ingest layer
+ * currently writes an intent tag, so every real fact normalizes to
+ * `'unknown'` until an annotations table (or equivalent) exists to source
+ * it from. The type and the normalization path are written now so nothing
+ * downstream has to change shape once that source lands.
  */
 export type ShotIntent = 'layup' | 'go_for_green' | 'recovery' | 'putt' | 'unknown';
 
@@ -48,11 +54,14 @@ export type ShotIntent = 'layup' | 'go_for_green' | 'recovery' | 'putt' | 'unkno
  */
 export interface ShotFact {
   round_id: string;
-  /** `null` when the source row had no hole assignment — never coerced to
-   *  a number so a caller can't accidentally group it under hole 0/1. */
+  /** `golf_shots.hole_number` is NOT NULL in the database. This field stays
+   *  nullable in the type only to guard non-DB inputs (a fixture, a future
+   *  adapter) that might omit it — never coerced to a number so a caller
+   *  can't accidentally group a genuine gap under hole 0/1. */
   hole_number: number | null;
-  /** `null` when the source row had no shot ordinal. `buildHoleSequence`
-   *  treats this as an explicit ordering gap, not a shot to silently drop. */
+  /** `golf_shots.shot_number` is NOT NULL in the database, nullable here
+   *  for the same non-DB-input reason. `buildHoleSequence` treats an actual
+   *  `null` as an explicit ordering gap, not a shot to silently drop. */
   shot_number: number | null;
   shot_type: ShotType;
   club_type: ClubType;
@@ -66,6 +75,13 @@ export interface ShotFact {
    *  `null` when not recorded or not meaningful for this shot type. */
   result: string | null;
   is_penalty: boolean;
+  /** `golf_shots.putt_made` (nullable). A hole can terminate either by
+   *  `result === 'hole'` or by `putt_made === true` — the rest of the
+   *  codebase (`round-review-system.ts`, `round-review-content.ts`) treats
+   *  both as holing out, and the shot-edit path (`golf.ts`'s
+   *  `updateShotImpl`) can set this independently of `result`.
+   *  `buildHoleSequence`'s termination check mirrors that OR. */
+  putt_made: boolean | null;
   /** Source observation time (ISO 8601) — when the shot was actually
    *  recorded, independent of the consuming `AnalysisScope.analysis_cutoff`. */
   observed_at: string;
@@ -91,8 +107,22 @@ export interface HoleContext {
   course_id: string | null;
   hole_number: number;
   par: number;
+  /** `golf_holes.score` is nullable in the database, but this field is not:
+   *  a `HoleContext` must only ever be constructed for a hole with a
+   *  non-null score. A null score means "exclude this hole", mirroring
+   *  `engine/hole-diagnosis.ts`'s `if (r.score === null) continue` — that
+   *  exclusion is the adapter's (`load-player-context.ts`, not yet built)
+   *  job to enforce; this type does not represent "unknown total". */
   total_strokes: number;
-  penalty_strokes: number;
+  /** `golf_holes.penalty_strokes` is nullable in the database, and unlike
+   *  `total_strokes` this field stays nullable here: `null` means "not
+   *  recorded", not "zero". This is a deliberate departure from
+   *  `hole-diagnosis.ts`'s engine-level `r.penalty_strokes ?? 0` — that
+   *  default is a fine choice for one consumer's arithmetic, but A1's job
+   *  is to state the fact without making that choice for every caller.
+   *  `buildHoleSequence` skips the penalty-count reconciliation entirely
+   *  when this is `null`, rather than comparing against an assumed 0. */
+  penalty_strokes: number | null;
   putts: number | null;
   gir: boolean | null;
 }

@@ -279,13 +279,16 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   count/strokes conversion, strict zero-vs-missing separation), and
   `build-hole-sequence.ts` (`buildHoleSequence` — validates a hole's shots
   against its authoritative `HoleContext` totals: order, termination, and
-  penalty representation, not just a matching row count). Nothing here
+  penalty representation, not just a matching row count — a hole
+  terminates on `result === 'hole'` OR `putt_made === true`). Nothing here
   reads a table. **Not yet wired to anything**: no adapter onto
   `engine/shot-source.ts`/`engine/generator-base.ts`, no
   `load-player-context.ts`, no `evidence-packet.ts`, no generator output
-  change — those are later slices (A2+). See
+  change — those are later slices (A2+). `AnalysisScope` is carried by
+  every fixture but not consumed yet; its source-scoping/cutoff tests are
+  deferred to the `load-player-context.ts` slice. See
   `docs/architecture/coachhelm-evidence-contract.md`'s "Situational fact
-  types" section and the six named fixtures in
+  types" section and the seven named fixtures in
   `src/test/coachhelm/v3/fixtures/situational-intelligence.ts` (A0) for the
   concrete scenarios this package is proven against.
 

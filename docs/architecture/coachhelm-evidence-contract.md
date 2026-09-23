@@ -327,11 +327,25 @@ adapter (`load-player-context.ts`, and wiring into `engine/shot-source.ts` /
   `intent` (`ShotIntent`) is carried through ONLY when the ingest layer
   explicitly tagged it; A1 never infers intent from distance or outcome —
   that inference, done carefully with denominators and eligibility rules,
-  is A2's job (`distance-profile.ts`, not yet built).
+  is A2's job (`distance-profile.ts`, not yet built). `golf_shots` has no
+  column backing `intent` today, so every real fact normalizes to
+  `'unknown'` until an annotations table exists to source it from.
+  `putt_made` mirrors `golf_shots.putt_made`; a hole terminates on EITHER
+  `result === 'hole'` OR `putt_made === true`, matching how
+  `round-review-system.ts`/`round-review-content.ts` already read it.
 - **`HoleContext`** (`context/types.ts`) — a hole's AUTHORITATIVE totals
   (par, `total_strokes`, `penalty_strokes`, `putts`, `gir`), sourced from
   `golf_holes`, never derived from the shots being validated against it.
-  Mirrors `engine/hole-diagnosis.ts`'s `DiagnosisHole` shape.
+  Mirrors `engine/hole-diagnosis.ts`'s `DiagnosisHole` shape. `total_strokes`
+  is non-nullable BY CONTRACT: a `HoleContext` must only ever be constructed
+  for a hole with a non-null `golf_holes.score`, mirroring
+  `hole-diagnosis.ts`'s `if (score === null) continue` — enforcing that
+  exclusion is the adapter's (`load-player-context.ts`, not yet built) job.
+  `penalty_strokes` stays nullable: `null` means "not recorded", not zero —
+  a deliberate departure from `hole-diagnosis.ts`'s engine-level
+  `penalty_strokes ?? 0` default. `buildHoleSequence` skips the
+  penalty-count reconciliation entirely when it is `null`, rather than
+  comparing against an assumed 0.
   `holeIdentityKey(hole)` returns `` `${course_id}:${hole_number}` `` or
   `null` when `course_id` is missing — a missing `course_id` is never
   treated as equal to another missing `course_id` just because both hole
@@ -357,22 +371,30 @@ adapter (`load-player-context.ts`, and wiring into `engine/shot-source.ts` /
 - **`buildHoleSequence(facts, hole)`** (`context/build-hole-sequence.ts`) —
   validates a hole's shots against its `HoleContext` totals. A matching row
   count is necessary but not sufficient: order (sequential `shot_number`
-  from 1, no gaps or duplicates), termination (`result === 'hole'` on, and
-  only on, the last shot), and penalty representation (the `is_penalty`
-  row count reconciles with `penalty_strokes`, and no `is_penalty` shot may
-  carry a green-finding `result`) are each checked independently. Returns
+  from 1, no gaps or duplicates), termination (`result === 'hole'` OR
+  `putt_made === true` on, and only on, the last shot), and penalty
+  representation (the `is_penalty` row count reconciles with
+  `penalty_strokes` when it is recorded, and no `is_penalty` shot may carry
+  a green-finding `result`) are each checked independently. Returns
   `{ shots, complete, reasons }` with every violated check listed, not just
   the first — a caller can show exactly what's wrong with an incomplete
   sequence instead of one symptom at a time.
 
-Six named fixtures in
+Seven named fixtures in
 `src/test/coachhelm/v3/fixtures/situational-intelligence.ts` (A0) exercise
 this package: a two-course same-hole-number pair, a par-5 lay-up, a par-3
 tee shot that is itself the green attempt, an explicit two-penalty pair, an
-incomplete sequence (missing the final holing putt), and a mixed-unit
-approach (before in yards, after in feet, same row). Each carries its own
-`observed_at` per shot and one fixed `analysis_cutoff` in its `scope`, so
-the fixture's expected result never depends on when a test happens to run.
+incomplete sequence (missing the final holing putt), a mixed-unit approach
+(before in yards, after in feet, same row), and a chip-in hole-out from
+around the green (`result === 'hole'` with `putt_made` staying `null`
+throughout, since it was never a putt). Each carries its own `observed_at`
+per shot and one fixed `analysis_cutoff` in its `scope`, so the fixture's
+expected result never depends on when a test happens to run.
+
+`AnalysisScope` is carried by every fixture but not yet consumed by any A1
+function — the source-scoping and historical-cutoff tests the addendum
+lists for A1 are deferred to the loader slice (`load-player-context.ts`),
+which is the first place a live source exists to scope or cut off against.
 
 ## How to add a new comparison source
 

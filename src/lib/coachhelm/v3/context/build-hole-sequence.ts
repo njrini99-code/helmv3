@@ -82,8 +82,12 @@ export function buildHoleSequence(facts: ShotFact[], hole: HoleContext): HoleSeq
   // clears `is_penalty` on the shots it returns — downstream code that
   // checks `result`/`lie_after` for a green finish MUST check `is_penalty`
   // first (mirrors `proximateCause`'s penalty-first precedence).
+  // `hole.penalty_strokes === null` means the authoritative count is not
+  // recorded, not that it's zero — see `HoleContext.penalty_strokes`'s doc
+  // comment. There is nothing to reconcile against, so this check is
+  // skipped rather than comparing against an assumed 0.
   const penaltyCount = shots.filter((s) => s.is_penalty).length;
-  if (penaltyCount !== hole.penalty_strokes) {
+  if (hole.penalty_strokes !== null && penaltyCount !== hole.penalty_strokes) {
     reasons.push('penalty_count_mismatch');
   }
   const penaltyMisreadAsGreenAttempt = shots.some(
@@ -94,9 +98,14 @@ export function buildHoleSequence(facts: ShotFact[], hole: HoleContext): HoleSeq
   }
 
   // --- Termination -------------------------------------------------------
-  // The sequence must end with the ball holed (`result === 'hole'`), and
-  // nothing recorded after that point.
-  const holedIndex = shots.findIndex((s) => s.result === 'hole');
+  // The sequence must end with the ball holed, and nothing recorded after
+  // that point. A hole is holed out by EITHER `result === 'hole'` OR
+  // `putt_made === true` — the shot-edit path (`golf.ts`'s `updateShotImpl`)
+  // can set `putt_made` independently of `result`, and the rest of the
+  // codebase (`round-review-system.ts`, `round-review-content.ts`) already
+  // treats both as termination; checking `result` alone would miss a hole
+  // logged only through `putt_made`.
+  const holedIndex = shots.findIndex((s) => s.result === 'hole' || s.putt_made === true);
   if (holedIndex === -1) {
     reasons.push('sequence_not_terminated');
   } else if (holedIndex !== shots.length - 1) {
