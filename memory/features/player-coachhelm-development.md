@@ -339,11 +339,11 @@ introduced this table for the repro and report.
 | 11 | Same round revision delivered twice | Covered | `upsert.test.ts:325` (DI-1 dedup), `round-review-system.test.ts:219,243` |
 | 12 | Corrected round within 24 hours | Covered | `upsert.test.ts` "corrected-round, same revision key" — resolved per plan §5.2's maturation correction, not a code fix: `evidenceRevisionKey` gates only `metadata.maturation_keys` (lifecycle-policy.ts:119), never the evidence write itself, so a same-day correction is already written/processed on main; it correctly does not add a second maturation confirmation for the same round (§5.2: "require new contributing rounds or meaningful independent opportunities") |
 | 13 | Some generators fail, others succeed | Partial | per-generator gate: `generator-base-run-lifecycle.test.ts:217`; orchestrator-level `tier1Generators`/`Promise.allSettled` aggregation untested — `it.todo`, `fixture-matrix-gaps.test.ts` |
-| 14 | Missing unit on a legacy shot | Needs follow-up | not conclusively verified this pass |
+| 14 | Missing unit on a legacy shot | Covered | `shot-context.test.ts:53-55` — `normalizeShotValue(128, null/undefined/'')` returns `{kind:'missing', reason:'no_unit'}`, never a silent conversion |
 | 15 | Mixed before/after feet and yards | Covered | `ApproachMissGenerator.test.ts:153,280` |
-| 16 | OB from tee and mid-hole, entered/here variants | Needs follow-up | not conclusively verified this pass |
-| 17 | Scorecard-only round | Needs follow-up | not conclusively verified this pass |
-| 18 | Nine-hole round | Needs follow-up | not conclusively verified this pass |
+| 16 | OB from tee and mid-hole, entered/here variants | Covered | `use-penalty-handler.test.ts:42` (tee), `:69` (mid-hole, replays from that shot's own spot), `:106-134` ('entered'/'here' origin); undo both-row semantics: `shot-mutation-recovery.test.ts:544,563,583` |
+| 17 | Scorecard-only round | Partial | shot-diagnosis abstention covered — `shot-context.test.ts:398-412` (`no_shots_recorded`), `par-opportunities.test.ts:183-193` (`incomplete_sequence` exclusion); "scoring facts permitted" half is an architectural guarantee (`HoleContext` sourced from `golf_holes`, never derived from shots — `build-hole-sequence.ts` module doc), not directly proven end-to-end — `it.todo`, `fixture-matrix-gaps.test.ts` |
+| 18 | Nine-hole round | Covered | `composite-rating.test.ts:75`, `scoring-trend.test.ts:28`, `round-regime.test.ts:59`, `putts-per-round.test.ts:14` (18-hole-equivalent normalization); `holes-played-assert.test.ts` (submitted `holes_played` must match actual hole entries — no imaginary holes) |
 | 19 | Layup/recovery in long-approach bucket | Covered | `distance-profile.test.ts:219` |
 | 20 | Par-3 tee miss | Missing (SQL layer) | exclusion lives in `recompute_golf_round_totals`, no pgTAP fixture — `it.todo`, `fixture-matrix-gaps.test.ts` |
 | 21 | Missing miss directions | Partial | `ApproachMissGenerator.test.ts:411` (off-green-only tally) is adjacent, denominator/coverage reporting unconfirmed |
@@ -361,14 +361,14 @@ introduced this table for the repro and report.
 | 33 | Unsupported claim using an exempt small number | Covered | `claim-validator.test.ts:66` (`unsupported_small_number`) |
 | 34 | Correct percentage complement or rounding | Missing (no code path) | no metric-derivation registry exists — `it.todo`, `claim-validator.test.ts` |
 | 35 | Correct number for wrong player/team | Covered | `claim-validator.test.ts:124` (`wrong_player`) |
-| 36 | LLM provider failure | Needs follow-up | live fallback is `buildDeterministicRecap` in `round-recap.ts`, reached via `compose()`'s `fallbackText`; `deterministic-review.ts` is used only by the prewarm script, not this path — wiring-level test unconfirmed |
-| 37 | Cached fallback after transient failure | Needs follow-up | not conclusively verified this pass |
-| 38 | Chat fails validation after generating text | Needs follow-up | chat surface does not appear to use `claim-validator.ts`; separate mechanism not investigated |
+| 36 | LLM provider failure | Covered | new test, `round-review-system.test.ts` "falls back to the rule-based review instead of failing when the CoachHelm/LLM provider throws" — `reviewContent` is built deterministically before the CoachHelm/LLM enhancement is attempted; a thrown provider error is caught (`round-review-system.ts` "CoachHelm V2 enhancement failed") and the deterministic content ships with `ai_model_version: 'rule-based-v2'` |
+| 37 | Cached fallback after transient failure | Partial | two real mechanisms, neither tested: `round-reviews.ts`'s `generateRoundReviewImpl` (`MAX_GENERATION_ATTEMPTS`, likely legacy/no live caller) and the active `useRoundReviewV2.ts` hook (stable read of an existing `summary`, `autoGenAttempted` bounds automatic regeneration to once per mount, deliberate `generate()` still available) — proving the hook needs a renderHook harness, not a fake client — `it.todo`, `fixture-matrix-gaps.test.ts` |
+| 38 | Chat fails validation after generating text | Covered | separate mechanism confirmed (not `claim-validator.ts`): `auditNumericClaims` (`chat-provenance.test.ts`, extensive) flags an unsupported number post-generation, wired in `stream/route.test.ts:513` (`data-grounding-flag` emitted); the flag is durably persisted and replayed on reload, not dropped — `chat-restore.test.ts:31-41` |
 | 39 | Focus assigned, no practice completion data | Missing (no code path) | no completion-tracking concept in `focus-areas/` — `it.todo`, `fixture-matrix-gaps.test.ts` |
 | 40 | Practice improves, course data sparse | Missing (no code path) | `it.todo`, `fixture-matrix-gaps.test.ts` |
 | 41 | Two of three follow-ups improve | Missing (no code path) | `it.todo`, `fixture-matrix-gaps.test.ts` |
 | 42 | Transfer/assistant coach/multi-team | Partial | write-scoping covered: `upsert-coach-scoping.test.ts:53`; broader read-access-control unconfirmed |
-| 43 | Silent night with no new rounds | Needs follow-up | not conclusively verified this pass |
+| 43 | Silent night with no new rounds | Covered | `engine_no_recent_rounds` maps to the healthy `waiting_for_data` outcome kind (`analysis-outcome.test.ts:37,137`), routed to info-level logging with `skipSentry:true` and never `logServerError` (`coachhelm-safety-net.test.ts:481-492`), and parks the round without a hard failure stamp (`post-round-trigger.test.ts:181-198`) — the engine never reaches `upsertInsight` on this early-exit path, so nothing is fabricated |
 
 Two real, pre-existing bugs surfaced by this audit (reported, not fixed —
 each has an `it.fails` repro in `src/test/coachhelm/v2/insights/upsert.test.ts`):
