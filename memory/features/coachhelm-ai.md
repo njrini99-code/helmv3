@@ -529,25 +529,28 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   known at annotation time — checked against the CONTRADICTING snapshot
   specifically (never a union of both), since a claim id can flip sides
   between calls (e.g. `short_bias` reuses one undimensioned id on both
-  sides). **`diagnosis.ts`/`personal-context.ts` remain unwired**:
-  `diagnosis.ts` (`engine/diagnosis.ts`) is a narrow pure `AxisTally`→text
-  helper with one caller, the DB-backed `generators/approach-miss.ts` — not
-  a fit for this module's pure-core `Hypothesis[]` shape without a much
-  larger change than "wire it in." Wiring hypotheses into a generator's
-  reading belongs to that DB-backed GENERATOR layer, not `diagnosis.ts`
-  itself — a future slice, reported back rather than forced here.
-  `personal-context.ts` was scoped to resolve active goals/focus
-  areas/interventions for check-selection priority, but `Goal.metric_id`
-  (typed `MetricId`, `metrics/registry.ts`) shares NO ids with this
-  module's own metric-id vocabulary (`approach_short_miss_rate`,
-  `approach_rough_gap_strokes_contribution`, etc. — none are registered
-  `MetricId`s), no "intervention" type/loader exists anywhere in the
-  codebase, and `FocusAreaCategory` (`insight-types.ts`) has no verified
-  mapping to a `HypothesisFamily` — building it would either always return
-  empty or require inventing an unverified correspondence, so it was not
-  built this slice pending a real shared vocabulary or loader. See
-  `docs/architecture/coachhelm-evidence-contract.md`'s "Controlled
-  hypotheses" section.
+  sides). **`diagnosis.ts` remains unwired**: `diagnosis.ts`
+  (`engine/diagnosis.ts`) is a narrow pure `AxisTally`→text helper with one
+  caller, the DB-backed `generators/approach-miss.ts` — not a fit for this
+  module's pure-core `Hypothesis[]` shape without a much larger change than
+  "wire it in." Wiring hypotheses into a generator's reading belongs to
+  that DB-backed GENERATOR layer, not `diagnosis.ts` itself — a future
+  slice, reported back rather than forced here. **`personal-context.ts`
+  was built** (owner decision, 2026-09-23: a code-level mapping table, not
+  a DB table): `resolvePersonalContextHints(goals, focusAreas)` is pure,
+  never touches a `MetricResult`, and returns a per-family "prioritize
+  this" hint attributed to the goal/focus-area id behind it. Checked
+  against every registered `MetricId` (`metrics/registry.ts`) and every
+  `FocusAreaCategory` (`insight-types.ts`), exactly ONE honest mapping
+  exists — `scoring_par_5` → `par5_opportunity_loss` (same holes, coarse
+  average vs. conversion-rate breakdown); the focus-area table is empty
+  (e.g. `short_game`'s `shot_type: 'around_green'` is a different shot
+  type from `recovery`'s `shot_type: 'approach'` — the shared word
+  "recovery" is not a shared measurement domain). No "intervention"
+  type/loader exists anywhere in the codebase — interventions stay out of
+  scope. See `docs/architecture/coachhelm-evidence-contract.md`'s
+  "Controlled hypotheses" section for the full per-entry rationale and
+  exclusion list.
 
 - **`situational-ranking.ts` slice 2** (2026-09-23, addendum §13, A6 slice
   2, still pure core, still not wired to a live ranking read, no flag
