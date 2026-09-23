@@ -149,11 +149,12 @@ export function useSessionActivity() {
       isDemoMetadataUser(await probeSignedIn(supabase));
 
     clearLastActivity();
-    // The idle-timeout logout is the OTHER path off a golf dashboard besides
-    // `useGolfSignOut` (FairwayDashboardShell.tsx) — exactly the shared-device
-    // case (a team iPad left signed in) that per-viewer cached rails/threads
-    // must not survive. A no-op for baseball/lifting/admin: this cache only
-    // ever holds golf-prefixed keys.
+    // The idle-timeout logout is one of several paths off a golf session
+    // (see the other supabase.auth.signOut() call sites tagged with the same
+    // client-resource-cache.ts contract) — exactly the shared-device case (a
+    // team iPad left signed in) that per-viewer cached rails/threads must not
+    // survive. A no-op for baseball/lifting/admin: this cache only ever holds
+    // golf-prefixed keys.
     clearAllCachedResources();
     try {
       await supabase.auth.signOut();

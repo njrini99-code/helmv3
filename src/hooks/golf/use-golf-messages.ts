@@ -12,7 +12,6 @@ import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { isGroupConversation } from '@/components/fairway/pages/messages/conversation-kind';
 import {
   readCachedResource,
-  writeCachedResource,
   writeCachedResourceIfCurrent,
   getCacheEpoch,
 } from '@/lib/golf/client-resource-cache';
@@ -619,7 +618,12 @@ export function useGolfMessages(conversationId: string, viewerUserId?: string | 
   useEffect(() => {
     if (!conversationId || loading || !currentUserId) return;
     if (messages.some((m) => m.conversation_id && m.conversation_id !== conversationId)) return;
-    writeCachedResource(messagesCacheKey(conversationId, currentUserId), cacheableMessages(messages));
+    // Epoch-guarded like the fetch-path writes above: a realtime insert can
+    // schedule this effect around the same moment sign-out calls
+    // clearAllCachedResources(), and an unguarded write here would resurrect
+    // the cleared entry with this signed-out viewer's messages.
+    const epoch = getCacheEpoch();
+    writeCachedResourceIfCurrent(messagesCacheKey(conversationId, currentUserId), cacheableMessages(messages), epoch);
   }, [conversationId, messages, loading, currentUserId]);
 
   // Compute read status for messages when otherParticipantLastReadAt changes

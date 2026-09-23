@@ -245,9 +245,12 @@ function useGolfSignOut() {
     // Cached rails/threads are per-viewer; none may outlive the session. This
     // also bumps the cache epoch (client-resource-cache.ts), so a prewarm or
     // hook fetch already in flight cannot write a stale value back in after
-    // this point even if it resolves later. This is the ONLY sign-out path on
-    // a golf-dashboard page today (see session-activity.ts's idle-timeout
-    // logout for the other one, which must clear it too).
+    // this point even if it resolves later. Every other supabase.auth.signOut()
+    // call site for a golf identity must clear it too — as of 2026-09-23 that
+    // is session-activity.ts's idle timeout, FairwaySettingsGeneral's Settings
+    // sign-out, and Helm Bridge's AdminShell sign-out (shared GolfHelm
+    // session); re-grep `auth.signOut()` before assuming this list is still
+    // complete.
     clearAllCachedResources();
     await supabase.auth.signOut();
     router.push('/golf/login');
