@@ -97,8 +97,7 @@ describe('FairwayCalendarSubscriptionsSheet — copy is real, display is masked'
 
     // Only the Team row has a real feed here (Personal shows "Not added
     // yet" with no Copy button), so this is the one Copy button in the DOM.
-    await screen.findByText('Team calendar');
-    fireEvent.click(screen.getByRole('button', { name: 'Copy calendar link' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Copy calendar link' }));
 
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith(TEAM_FEED.url);
     expect(await screen.findByRole('button', { name: 'Link copied' })).toBeInTheDocument();
@@ -129,11 +128,12 @@ describe('FairwayCalendarSubscriptionsSheet — create / regenerate / remove', (
     });
 
     render(<FairwayCalendarSubscriptionsSheet open onOpenChange={() => {}} canManageTeamFeed />);
-    await screen.findByText('Team calendar');
-
-    fireEvent.click(screen.getByRole('button', { name: 'Regenerate link' }));
+    // Wait for the LOADED row, not its label: 'Team calendar' also renders on
+    // the pre-load pass, and the load's skeleton swap remounts the row (which
+    // drops the confirm state) if the click lands before it settles.
+    fireEvent.click(await screen.findByRole('button', { name: 'Regenerate link' }));
     expect(mockRegenerateCalendarFeed).not.toHaveBeenCalled();
-    expect(screen.getByText('Get a new link? The old one stops working.')).toBeInTheDocument();
+    expect(await screen.findByText('Get a new link? The old one stops working.')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Regenerate' }));
     // The mutation crosses a real microtask boundary (the code-split action
@@ -149,9 +149,7 @@ describe('FairwayCalendarSubscriptionsSheet — create / regenerate / remove', (
     mockDeleteCalendarFeed.mockResolvedValue({ success: true, data: undefined });
 
     render(<FairwayCalendarSubscriptionsSheet open onOpenChange={() => {}} canManageTeamFeed />);
-    await screen.findByText('Team calendar');
-
-    fireEvent.click(screen.getByRole('button', { name: 'Remove feed' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Remove feed' }));
     expect(mockDeleteCalendarFeed).not.toHaveBeenCalled();
     // The inline confirm renders on the next commit; query it asynchronously
     // (a synchronous getByRole raced it and failed on loaded CI runners).
@@ -175,7 +173,7 @@ describe('FairwayCalendarSubscriptionsSheet — load failure and offline', () =>
     setOnline(false);
     render(<FairwayCalendarSubscriptionsSheet open onOpenChange={() => {}} canManageTeamFeed />);
 
-    await screen.findByText('Team calendar');
+    await screen.findByRole('button', { name: 'Regenerate link' });
     expect(screen.getByText(/You.{1,2}re offline/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Regenerate link' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Remove feed' })).toBeDisabled();
