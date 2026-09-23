@@ -49,7 +49,7 @@ interface RawFocusAreaRow {
   from_review_id?: string | null;
   progress_notes?: unknown;
   evidence_revision?: string | null;
-  started_at?: string | null;
+  started_at: string | null;
   [key: string]: unknown;
 }
 
