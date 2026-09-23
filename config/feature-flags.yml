@@ -289,3 +289,11 @@ flags:
       re-date it rather than silently expiring. Once on everywhere and
       stable, remove this flag and the branch in createFocusAreaFromInsight
       / createFocusAreaFromInsightV2 that reads it (stamp unconditionally).
+      DB-review follow-up (#2004): once db:types is regenerated against the
+      applied migration, also restore the two now-untyped
+      golf_player_focus_areas inserts (development.ts's
+      createFocusAreaFromInsightV2Impl and createFocusAreaFromInsightImpl)
+      to plain typed `.from('golf_player_focus_areas')` calls — they were
+      routed through fromUntyped only because evidence_revision didn't
+      exist in generated types yet, and that escape hatch should not
+      outlive the reason it was needed.
