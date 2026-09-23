@@ -33,6 +33,7 @@ import { isFlagEnabled } from '@/lib/flags';
 import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
 import { readAttributionForInsight, readAttributionForPlayer } from '@/lib/coachhelm/v3/effectiveness/attribution-read';
 import { toAttributionReadout, rowToAttributionReadout, type AttributionReadout } from '@/lib/coachhelm/v3/effectiveness/attribution-view-model';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 const ATTRIBUTION_FLAG = 'coachhelm_comparable_opportunity_attribution';
 
@@ -42,7 +43,7 @@ const ATTRIBUTION_FLAG = 'coachhelm_comparable_opportunity_attribution';
  * `null` = flag off, not authenticated, or a failed read — the caller
  * treats all three identically (render nothing).
  */
-export async function getInsightAttributionReadout(insightId: string): Promise<AttributionReadout | null> {
+async function getInsightAttributionReadoutImpl(insightId: string): Promise<AttributionReadout | null> {
   if (!insightId) return null;
   if (!isFlagEnabled(ATTRIBUTION_FLAG)) return null;
 
@@ -59,6 +60,15 @@ export async function getInsightAttributionReadout(insightId: string): Promise<A
   return toAttributionReadout(result.rows);
 }
 
+const observedGetInsightAttributionReadout = withAdminObserved(
+  'getInsightAttributionReadout',
+  { sport: 'golf', feature: 'coachhelm_analytics' },
+  getInsightAttributionReadoutImpl,
+);
+export async function getInsightAttributionReadout(insightId: string): Promise<AttributionReadout | null> {
+  return observedGetInsightAttributionReadout(insightId);
+}
+
 /**
  * Every attributed insight's readout for one player, keyed by `insight_id`
  * — for a future roster/player-summary surface (not wired to a page in
@@ -66,7 +76,7 @@ export async function getInsightAttributionReadout(insightId: string): Promise<A
  * `FairwayPlayerInsight.tsx`'s insight detail). `null` = flag off, not
  * authenticated, not authorized for this player, or a failed read.
  */
-export async function getPlayerAttributionReadouts(playerId: string): Promise<Record<string, AttributionReadout> | null> {
+async function getPlayerAttributionReadoutsImpl(playerId: string): Promise<Record<string, AttributionReadout> | null> {
   if (!playerId) return null;
   if (!isFlagEnabled(ATTRIBUTION_FLAG)) return null;
 
@@ -88,4 +98,13 @@ export async function getPlayerAttributionReadouts(playerId: string): Promise<Re
     byInsightId[row.insight_id] = rowToAttributionReadout(row);
   }
   return byInsightId;
+}
+
+const observedGetPlayerAttributionReadouts = withAdminObserved(
+  'getPlayerAttributionReadouts',
+  { sport: 'golf', feature: 'coachhelm_analytics' },
+  getPlayerAttributionReadoutsImpl,
+);
+export async function getPlayerAttributionReadouts(playerId: string): Promise<Record<string, AttributionReadout> | null> {
+  return observedGetPlayerAttributionReadouts(playerId);
 }

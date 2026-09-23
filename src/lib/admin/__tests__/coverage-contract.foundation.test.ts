@@ -391,6 +391,12 @@ describe('global tripwire', () => {
     // and never replaced; generateTournamentPrep (#1485) never had a UI
     // caller. Both confirmed via `git log -G` for the last removed .tsx
     // call site. Total 431 -> 429.
-    expect(total).toBe(429);
+    // 2026-09-23 (+2), A9 slice 3 (repair-plan §14.12): getInsightAttributionReadout
+    // and getPlayerAttributionReadouts in the new
+    // src/app/golf/actions/insight-attribution.ts — the coach-facing read of
+    // comparable-opportunity attribution results, both withAdminObserved-wrapped
+    // with feature `coachhelm_analytics` (same feature as the sibling
+    // getInsightEffectiveness/getPlayerEffectiveness reads). Total 429 -> 431.
+    expect(total).toBe(431);
   });
 });
