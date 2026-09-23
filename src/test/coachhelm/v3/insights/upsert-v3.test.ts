@@ -39,7 +39,7 @@ function baseV3Input(overrides: Partial<InsightInput> = {}): InsightInput {
       your_value_display: '38%',
       comparison_value: 0.52,
       comparison_label: 'Team average',
-      comparison_source: 'peer_percentile',
+      comparison_source: 'team_avg',
       sample_n: 47,
       window_days: 30,
       window_start: '2026-03-22',
