@@ -105,8 +105,8 @@ ALTER TABLE public.golf_focus_area_practice_sessions OWNER TO "postgres";
 -- Brand-new, empty table created earlier in this same migration
 -- transaction -- no rows and no concurrent traffic exist to be blocked by
 -- the ACCESS EXCLUSIVE lock, unlike adding a PK to a live table.
--- squawk-ignore adding-serial-primary-key-field
 ALTER TABLE ONLY public.golf_focus_area_practice_sessions
+-- squawk-ignore adding-serial-primary-key-field
 ADD CONSTRAINT golf_focus_area_practice_sessions_pkey PRIMARY KEY (id);
 
 -- Named golf_focus_area_practice_sessions_dedupe_key (not the mechanical
@@ -262,8 +262,8 @@ ALTER TABLE public.golf_focus_area_criteria OWNER TO "postgres";
 -- Brand-new, empty table created earlier in this same migration
 -- transaction -- no rows and no concurrent traffic exist to be blocked by
 -- the ACCESS EXCLUSIVE lock, unlike adding a PK to a live table.
--- squawk-ignore adding-serial-primary-key-field
 ALTER TABLE ONLY public.golf_focus_area_criteria
+-- squawk-ignore adding-serial-primary-key-field
 ADD CONSTRAINT golf_focus_area_criteria_pkey PRIMARY KEY (id);
 
 -- The two FOREIGN KEY constraints for this table are added at the end of
