@@ -249,8 +249,12 @@ alongside (not duplicated here).
   operation is therefore not evidence of an unhandled bug on its own — the
   question is whether the failing call could be avoided (check a session
   before an RPC, use `.maybeSingle()` where a missing row is expected), not
-  whether the catch block is good enough. See `memory/features/
-  admin-platform.md`'s Known Risk Areas for the companion "most unresolved
+  whether the catch block is good enough. The one deliberately suppressed
+  case is the `TimeoutError: signal timed out` emitted from
+  `usePresence.sendHeartbeat`: the hook has no round mutation, serializes
+  refreshes, and retries on its next interval. The client `beforeSend` filter
+  requires that exact error and source frame, so other Supabase timeouts remain
+  visible. See `memory/features/admin-platform.md`'s Known Risk Areas for the companion "most unresolved
   Sentry issues are noise" triage note. (STU, source:
   `supabase-tracing-reports-handled-errors.md`, no date field.)
 - **Those auto-captures are regrouped by their Postgres code.** The

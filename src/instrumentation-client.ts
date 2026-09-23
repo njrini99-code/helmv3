@@ -22,6 +22,27 @@ function isConsoleOriginEvent(event: Sentry.ErrorEvent): boolean {
   );
 }
 
+/**
+ * `@supabase/supabase-js/tracing` captures resolved RPC errors as unhandled.
+ * A timed-out presence refresh is a deliberate best-effort retry path; scope
+ * this suppression to its exact source frame so no other Supabase timeout is
+ * hidden from Sentry.
+ */
+function isBackgroundPresenceHeartbeatTimeout(event: Sentry.ErrorEvent): boolean {
+  return Boolean(
+    event.exception?.values?.some((value) => {
+      // The live auto-instrumented event is an `Error` whose value contains
+      // the Supabase timeout name, so match its complete value rather than
+      // depending on Sentry's error-type normalization.
+      const timeout = /^TimeoutError:\s*signal timed out$/i.test(value.value ?? '');
+      const heartbeatFrame = value.stacktrace?.frames?.some((frame) =>
+        frame.filename?.includes('src/hooks/use-presence') && frame.function === 'sendHeartbeat',
+      );
+      return timeout && heartbeatFrame;
+    }),
+  );
+}
+
 const isDev = process.env.NODE_ENV === 'development';
 
 // All the non-integration, non-beforeSend options (dsn, release, environment,
@@ -166,6 +187,10 @@ Sentry.init({
     // Only ever suppresses a strict duplicate — an error nothing bridge-logged
     // still reaches Sentry through the console path exactly as before.
     if (isConsoleOriginEvent(event) && isAlreadyBridgeLogged(hint?.originalException)) {
+      return null;
+    }
+
+    if (isBackgroundPresenceHeartbeatTimeout(event)) {
       return null;
     }
 
