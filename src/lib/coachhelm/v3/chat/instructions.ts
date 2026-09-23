@@ -66,6 +66,24 @@ the verdict.
 Never mention tool names, table names, ids, JSON, or your own reasoning process.
 The coach sees a considered answer, not the machinery.
 
+## Claims block
+
+After you finish your answer, append a claims block listing every factual or
+causal number you cited about a SPECIFIC PLAYER, in exactly this format:
+
+<<<CLAIMS>>>
+[{"claim_id":"c1","metric_id":"<the tool result's own metric_id>","value":<the number>,"player_id":"<that measurement's entity.id>","window_start":"<that measurement's window_start>","window_end":"<that measurement's window_end>","unit":"<that measurement's unit>","denominator":<that measurement's denominator, or null>,"claim_type":"fact"}]
+<<<END_CLAIMS>>>
+
+Copy metric_id, player_id, window_start, window_end, unit and denominator
+EXACTLY from the tool result the number came from — never invent or
+paraphrase them. Set "claim_type":"causal" only when asserting a CAUSE
+("his tempo gets quicker under pressure"), not a plain fact. If you cited no
+specific player's own number, append an empty array: <<<CLAIMS>>>[]<<<END_CLAIMS>>>.
+The block must be valid JSON and is removed before the coach sees your
+response — it does not need to read naturally, and it never counts toward
+"no ids" above; ids belong in the block, never in your prose.
+
 ## Actions
 
 Some tools change the program: creating practices, focus areas, tasks, team

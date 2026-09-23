@@ -37,6 +37,26 @@ export interface ClaimReference {
    *  Defaults to 'fact' — only a causal claim is checked against the
    *  packet entry's causal backing. */
   claim_type?: 'fact' | 'causal';
+  /**
+   * A7 (chat slice, 2026-09-23): the unit the model said this value was in.
+   * Optional and unset by every compose() caller — a value cited under the
+   * right metric/player/window can still be presented in the wrong unit
+   * ("58 strokes gained" for a value that is actually a make-rate percent),
+   * which neither the flat numeric scan nor a bare value match can see.
+   * Checked only when both this and the matched entry's own `unit` are
+   * present, so an entry with no declared unit does not spuriously reject
+   * every claim against it.
+   */
+  unit?: string;
+  /**
+   * A7 (chat slice): the attempts/rounds/shots the model said this value was
+   * measured over. Distinct from `sample_n`'s floor check below — a model
+   * can cite a packet's real value while attributing it to the WRONG
+   * denominator ("58% over 43 attempts" when the entry was actually 18
+   * attempts), which reads as fully grounded to a bare value/metric check.
+   * Optional; unset by every compose() caller.
+   */
+  denominator?: number | null;
 }
 
 /**
@@ -70,6 +90,23 @@ export interface EvidencePacketEntry {
    */
   kind?: 'measurement' | 'aggregate';
   causal_support?: CausalSupport;
+  /**
+   * A7 (chat slice): this entry's own unit ('percent', 'strokes', 'yards',
+   * 'feet', 'count', 'score', 'ratio' — `Measurement.unit`'s vocabulary, but
+   * left as a bare string here rather than importing chat's schema, since
+   * this module has no other dependency on `chat/provenance.ts`). Optional
+   * so a compose() caller that never sets it is unaffected; `wrong_unit`
+   * only fires when a claim declares its own `unit` AND this entry declares
+   * one, and they differ.
+   */
+  unit?: string;
+  /**
+   * A7 (chat slice): the denominator (attempts/rounds/shots) this entry's
+   * value was actually computed over, when the metric is a rate. Optional
+   * for the same reason as `unit` — `wrong_denominator` only fires when
+   * both a claim's and this entry's denominator are present and differ.
+   */
+  denominator?: number | null;
 }
 
 /**
@@ -94,7 +131,13 @@ export type ClaimRejectionReason =
   | 'value_mismatch'
   | 'unsupported_small_number'
   | 'unsupported_cause'
-  | 'uncited_number';
+  | 'uncited_number'
+  /** A7 (chat slice): the claim's own `unit` disagrees with the matched
+   *  entry's `unit`. Only checked when both declare one. */
+  | 'wrong_unit'
+  /** A7 (chat slice): the claim's own `denominator` disagrees with the
+   *  matched entry's `denominator`. Only checked when both declare one. */
+  | 'wrong_denominator';
 
 export interface RejectedClaim {
   claim: ClaimReference;
@@ -171,9 +214,10 @@ function structurallyExemptTokens(prose: string): Set<string> {
  * claim backs.
  *
  * Fixed check order per claim — player, then window, then metric
- * existence, then value, then the sample floor, then causal backing —
- * so every fixture trips exactly one reason and reordering never changes
- * which check "wins" for a claim broken in more than one way.
+ * existence, then value, then unit, then denominator, then the sample
+ * floor, then causal backing — so every fixture trips exactly one reason
+ * and reordering never changes which check "wins" for a claim broken in
+ * more than one way.
  */
 export function validateClaims(
   claims: ClaimReference[],
@@ -273,6 +317,25 @@ function checkClaim(claim: ClaimReference, packet: EvidencePacket): ClaimRejecti
       (e) => e.metric_id !== claim.metric_id && valuesMatch(claim.value, e.value),
     );
     return misattributed ? 'wrong_field' : 'value_mismatch';
+  }
+
+  // A7 (chat slice): the value matched, but is it the same STATEMENT? A
+  // model can cite a packet's real number while mislabeling its unit or its
+  // denominator — neither is visible to a bare value comparison, since the
+  // value itself is correct. Only checked when both sides declare the
+  // field, so an entry (or a compose() claim, which never sets either)
+  // with nothing to compare against never spuriously rejects.
+  if (claim.unit !== undefined && entry.unit !== undefined && claim.unit !== entry.unit) {
+    return 'wrong_unit';
+  }
+  if (
+    claim.denominator !== undefined &&
+    claim.denominator !== null &&
+    entry.denominator !== undefined &&
+    entry.denominator !== null &&
+    claim.denominator !== entry.denominator
+  ) {
+    return 'wrong_denominator';
   }
 
   // A 'measurement' entry (a round's own score/putts/fairways) has no "n"

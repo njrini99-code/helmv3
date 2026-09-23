@@ -76,6 +76,8 @@ import {
   verdictPartType,
   type TurnVerdict,
 } from '@/lib/coachhelm/v3/chat/verdict';
+import { buildSinglePlayerPacket } from '@/lib/coachhelm/v3/chat/claims-packet';
+import { CLAIMS_OPEN, extractAndValidateClaimsSafe } from '@/lib/coachhelm/v3/llm/claims-block';
 import type { ChatMessage } from '@/lib/coachhelm/v3/chat/types';
 import {
   appendMessage,
@@ -702,13 +704,52 @@ export async function POST(req: NextRequest) {
         onError: sanitiseStreamError,
       }) as AsyncIterable<StreamChunk>;
       let finishChunk: StreamChunk | null = null;
-      let accumulatedText = '';
+      // The COMPLETE text the model streamed, claims block included — never
+      // forwarded to the client as-is; only `extractAndValidateClaims`
+      // (after this loop) reads it. `turnText`/the persisted `content` come
+      // from ITS stripped output, not from this variable directly.
+      let rawText = '';
       let streamErrored = false;
+      // Addendum A7 slice 1: the model appends a `<<<CLAIMS>>>...` block
+      // after its prose (instructions.ts's "Claims block" section) — a raw
+      // JSON fragment a coach must never see live, in the persisted
+      // `content`, or in a saved `ui_parts` text part. Withholding it here,
+      // not just stripping it after the fact, is what keeps all three
+      // honest: `execute` is the only place text ever reaches the writer.
+      //
+      // `pendingText` holds back up to `CLAIMS_OPEN.length - 1` trailing
+      // characters of every otherwise-forwardable delta, in case the
+      // opener is split across two chunks (a provider can flush a delta at
+      // any byte boundary) — without this, forwarding a delta the instant
+      // it arrives could send half of `<<<CLAIMS` before ever seeing the
+      // rest. Once the opener is found, EVERYTHING from there on for this
+      // text part is withheld, not just the matched substring.
+      let pendingText = '';
+      let claimsBlockStarted = false;
+      let lastTextDeltaChunk: StreamChunk | null = null;
       for await (const chunk of uiStream) {
         const c = chunk as { type?: string; delta?: unknown };
         if (c.type === 'text-delta' && typeof c.delta === 'string') {
-          accumulatedText += c.delta;
-        } else if (c.type === 'error') {
+          rawText += c.delta;
+          lastTextDeltaChunk = chunk;
+          if (claimsBlockStarted) continue; // never forward more of the block
+          pendingText += c.delta;
+          const openIdx = pendingText.indexOf(CLAIMS_OPEN);
+          if (openIdx !== -1) {
+            claimsBlockStarted = true;
+            const toForward = pendingText.slice(0, openIdx);
+            if (toForward) writer.write({ ...chunk, delta: toForward } as StreamChunk);
+            pendingText = '';
+            continue;
+          }
+          const safeLen = Math.max(0, pendingText.length - (CLAIMS_OPEN.length - 1));
+          if (safeLen > 0) {
+            writer.write({ ...chunk, delta: pendingText.slice(0, safeLen) } as StreamChunk);
+            pendingText = pendingText.slice(safeLen);
+          }
+          continue;
+        }
+        if (c.type === 'error') {
           streamErrored = true;
         }
         if (c.type === 'finish') {
@@ -716,6 +757,13 @@ export async function POST(req: NextRequest) {
           continue;
         }
         writer.write(chunk);
+      }
+      // No claims block ever started — the withheld tail was ordinary text
+      // (the common case: most turns end after "…" with nothing to hold
+      // back at all), so flush it now that we know it was never the start
+      // of a delimiter.
+      if (!claimsBlockStarted && pendingText && lastTextDeltaChunk) {
+        writer.write({ ...lastTextDeltaChunk, delta: pendingText } as StreamChunk);
       }
       // The stream ended without ever emitting a `finish` chunk — the
       // connection was aborted mid-generation rather than completing
@@ -757,7 +805,17 @@ export async function POST(req: NextRequest) {
         detailDates.push(...priorDeferred.detailDates);
       }
 
-      turnText = accumulatedText.trim();
+      // Addendum A7 slice 1: parse+validate the claims block against a
+      // packet only when this turn's fresh measurements resolve to exactly
+      // one player and one window (`buildSinglePlayerPacket` returns `null`
+      // otherwise — a team/multi-player turn is judged by the checks above
+      // only, same as before this gate existed). Either way `strippedText`
+      // is the text with any claims block removed — see
+      // `extractAndValidateClaims`'s own doc comment for why that holds
+      // even when no packet is engaged.
+      const claimsPacket = buildSinglePlayerPacket(measurements);
+      const { strippedText, claims } = extractAndValidateClaimsSafe(rawText, claimsPacket);
+      turnText = strippedText.trim();
       turnVerdict = computeTurnVerdict({
         streamComplete: !streamErrored,
         text: turnText,
@@ -776,6 +834,7 @@ export async function POST(req: NextRequest) {
         // a broken call).
         detailDates,
         timezone: ctx.timezone,
+        claims,
       });
       // A rejected verdict's note replaces the streamed text — not a note
       // appended alongside it — so ChatThread (live) and restoreUIMessages
@@ -882,6 +941,34 @@ export async function POST(req: NextRequest) {
             },
             'info',
           );
+        } else if (verdict.outcome === 'rejected' && verdict.reason === 'claim_validation_failed') {
+          // Addendum A7 slice 1: the typed claim gate (claim-validator.ts,
+          // #1991) caught a claim that cited a real value under the wrong
+          // metric/player/window/unit/denominator, or lacked causal backing
+          // for a stated cause — a MISATTRIBUTED number, not a fabricated
+          // one, which the flat numeric scan above cannot see (the value
+          // really is in the packet). Same 'info'/skipSentry convention as
+          // the ungrounded-claims branch: the guardrail firing is the system
+          // working, not an incident. `{claim_id, metric_id, reason}` only —
+          // no prose — mirrors compose.ts's own `claim_validation` log shape.
+          await logServerEvent(
+            'chat/stream: assistant turn contained a typed claim that failed validation against its evidence packet',
+            {
+              action: 'v3.chat.stream.claim_validation',
+              featureArea: 'coachhelm',
+              skipSentry: true,
+              extra: {
+                rejected: (verdict.rejectedClaims ?? []).map((r) => ({
+                  claim_id: r.claim.claim_id,
+                  metric_id: r.claim.metric_id,
+                  reason: r.reason,
+                })),
+                conversationId: convId,
+                coachId: ctx.coach_id,
+              },
+            },
+            'info',
+          );
         } else if (verdict.outcome === 'rejected' && verdict.reason === 'stream_incomplete') {
           // Distinct from the guardrail above: nothing was fabricated, the
           // turn simply never finished (an inline error chunk, the stream
@@ -943,7 +1030,12 @@ export async function POST(req: NextRequest) {
           conversationId: convId,
           usagePromise,
           grounded: verdict.outcome === 'accepted',
-          unmatchedTokens: verdict.outcome === 'rejected' ? verdict.unsupported.map((c) => c.text) : [],
+          unmatchedTokens:
+            verdict.outcome === 'rejected'
+              ? verdict.reason === 'claim_validation_failed'
+                ? (verdict.rejectedClaims ?? []).map((r) => `${r.claim.metric_id || '(none)'}:${r.reason}`)
+                : verdict.unsupported.map((c) => c.text)
+              : [],
         });
 
         // helm.ai.* — the call reached this point, so the model responded and
