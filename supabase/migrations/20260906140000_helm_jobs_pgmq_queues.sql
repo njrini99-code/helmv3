@@ -142,9 +142,6 @@ on helm_jobs.dead_letters (queue, failed_at desc);
 -- accidentally grants a table privilege to `authenticated` still cannot
 -- read a row here without a matching policy.
 alter table if exists helm_jobs.dead_letters enable row level security;
--- Same structural line of defense for the dedupe ledger: service_role only,
--- zero policies, RLS on so an accidental future grant still reads nothing.
-alter table if exists helm_jobs.dedupe_keys enable row level security;
 
 revoke all on all tables in schema helm_jobs from public;
 revoke all on all sequences in schema helm_jobs from public;
