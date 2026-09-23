@@ -12,9 +12,11 @@
  * `row.row.value !== null` — so a surface can never claim stronger
  * certainty than its packet actually supports.
  *
- * Every tile is a real `<button>` (native keyboard activation — Enter/Space,
- * a real focus ring — not a styled `<div role="button">`), and clicking ANY
- * of them, regardless of kind, opens the SAME `<Sheet>` built directly from
+ * Every tile is a `div[role="button"]` with its own Enter/Space keyboard
+ * activation wired explicitly (see `handleActivationKeyDown` below) — not a
+ * literal `<button>` (the `no-raw-button` lint rule; see that helper's doc
+ * comment for why neither candidate `Button` component fit). Clicking ANY
+ * tile, regardless of kind, opens the SAME `<Sheet>` built directly from
  * that row's own `MetricResult` — no refetch, so the drill-down can never
  * disagree with the tile that opened it.
  * ========================================================================== */
@@ -73,8 +75,64 @@ function handleActivationKeyDown(onActivate: () => void) {
   };
 }
 
+function formatMetricValue(row: DistanceProfileRowViewModel): string {
+  const display = METRIC_DISPLAY[row.metricId];
+  if (row.row.value === null) return 'unavailable';
+  return `${row.row.value.toFixed(display.decimals)}${display.suffix ?? ''}`;
+}
+
+/**
+ * The accessible name for a tile. A bare `aria-label` on the wrapping
+ * element REPLACES its descendants' text for assistive tech — MetricCard's
+ * own visible number, InsufficientData's own description, EmptyState's own
+ * copy are all invisible to a screen reader once an ancestor carries
+ * `aria-label`. So the label itself must state the VALUE and the KIND, not
+ * just the metric/band name — otherwise a keyboard/AT user gets strictly
+ * less information than a sighted mouse user reading the tile directly,
+ * which is the opposite of "verify … with keyboard access."
+ */
+function describeTileA11y(row: DistanceProfileRowViewModel, sectionLabel: string): string {
+  const display = METRIC_DISPLAY[row.metricId];
+  const base = `${row.label}, ${sectionLabel}`;
+  if (row.metricId === 'approach_measured_contribution' && row.kind !== 'invalid' && row.row.value !== null) {
+    return `${base}: ${formatMetricValue(row)} ${display.sampleUnit}.`;
+  }
+  if ((row.kind === 'supported' || row.kind === 'descriptive_only') && row.row.value !== null) {
+    return `${base}: ${formatMetricValue(row)} of ${row.row.denominator} ${display.sampleUnit}.`;
+  }
+  if (row.kind === 'insufficient') {
+    return `${base}: not enough data yet, ${row.row.eligibleCount} ${display.sampleUnit} recorded.`;
+  }
+  return `${base}: no data recorded yet.`;
+}
+
 function DistanceProfileTile({ row }: { row: DistanceProfileRowViewModel }) {
   const display = METRIC_DISPLAY[row.metricId];
+
+  // `approach_measured_contribution`'s whole purpose is to STATE the count
+  // (A2 never nulls its value, even at denominator 0 — see distance-profile.ts's
+  // own doc comment) — it is never a hedged claim about something else, so
+  // it renders as a real number for any non-invalid kind, rather than the
+  // InsufficientData treatment the other four rate rows get once their band
+  // is under the support floor. Rendering the support-statement metric
+  // ITSELF as "not enough data" would be a contradiction — the count is
+  // exactly the data.
+  if (
+    row.metricId === 'approach_measured_contribution' &&
+    row.kind !== 'invalid' &&
+    row.row.value !== null
+  ) {
+    return (
+      <MetricCard
+        label={row.label}
+        value={row.row.value}
+        decimals={display.decimals}
+        suffix={display.suffix}
+        density="compact"
+        footnote={row.kind === 'insufficient' ? 'Below support floor' : undefined}
+      />
+    );
+  }
 
   if ((row.kind === 'supported' || row.kind === 'descriptive_only') && row.row.value !== null) {
     return (
@@ -90,15 +148,16 @@ function DistanceProfileTile({ row }: { row: DistanceProfileRowViewModel }) {
   }
 
   if (row.kind === 'insufficient') {
-    // `current` only — no `required`: the support floor (MIN_ATTEMPTS/
-    // MIN_ROUNDS/MIN_GREENS) is an internal detail of computeDistanceProfile,
-    // not part of MetricResult, and fabricating a number here would be
-    // exactly the "stronger certainty than the packet" this surface must
-    // avoid.
+    // No `required`: the support floor (MIN_ATTEMPTS/MIN_ROUNDS/MIN_GREENS)
+    // is an internal detail of computeDistanceProfile, not part of
+    // MetricResult, and fabricating one here would be exactly the "stronger
+    // certainty than the packet" this surface must avoid. `current` and
+    // `required` only render a count TOGETHER (InsufficientData.tsx's own
+    // `hasCounts` gate) — passing `current` alone renders no number at all,
+    // so the real, non-fabricated count goes in `description` directly.
     return (
       <InsufficientData
-        current={row.row.eligibleCount}
-        unit={display.sampleUnit}
+        description={`${row.row.eligibleCount} ${display.sampleUnit} so far — below the support floor.`}
         compact
       />
     );
@@ -211,7 +270,7 @@ export function DistanceProfileSection({ sections, windowLabel }: DistanceProfil
                 onClick={() => setSelected(row)}
                 onKeyDown={handleActivationKeyDown(() => setSelected(row))}
                 aria-haspopup="dialog"
-                aria-label={`${row.label}, ${section.label}. View evidence.`}
+                aria-label={`${describeTileA11y(row, section.label)} View evidence.`}
                 className={TILE_BUTTON_CLASS}
               >
                 <DistanceProfileTile row={row} />

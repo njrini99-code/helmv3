@@ -13,6 +13,23 @@ import type { FlagDefinition } from './types';
 
 export const FLAG_REGISTRY: readonly FlagDefinition[] = [
   {
+    feature_id: "coachhelm_a7_distance_profile_surface",
+    owner: "golf/coachhelm",
+    purpose: "Gates whether the Game Fingerprint page's Approach section renders the new distance-profile surface (buildRollingDistanceProfileScope + loadDistanceProfile + DistanceProfileSection) alongside the existing stats-cache-backed KPIs; default off pending a design/product review of the new section's placement and copy.",
+    type: "experiment",
+    status: "active",
+    created_at: "2026-09-23",
+    expires_at: null,
+    default: false,
+    environment: {
+      production: false,
+      preview: false,
+      development: false,
+    },
+    kill_switch_behavior: null,
+    cleanup_plan: "Either promote to a permanent `release` flag once the section has been reviewed and the rolling-12-month load has been checked against a heavy-user roster in preview, or remove the section and its wiring if the review asks for a different surface/placement instead.",
+  },
+  {
     feature_id: "coachhelm_focus_area_evidence_revision",
     owner: "golf/coachhelm",
     purpose: "Gates stamping computeEvidenceRevision()'s fingerprint onto golf_player_focus_areas.evidence_revision when a focus area is approved from a source insight (A8 slice 1). Requires migration 20260923090000_golf_focus_area_evidence_revision applied in prod — until then the column does not exist there, and turning this on would make every insight-sourced focus-area create fail outright (the insert would include a key the live table doesn't have). Off by default in every environment for exactly that reason; this is a migration-sequencing gate, not a rollout decision the flag itself makes on the feature's merits.",
