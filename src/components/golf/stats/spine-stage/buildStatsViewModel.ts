@@ -189,7 +189,12 @@ export function buildPriorities(
   return scored.map((w, i) => ({
     rank: i + 1,
     title: w.label,
-    value: `${w.impact > 0 ? '+' : '−'}${Math.abs(w.impact).toFixed(2)}`,
+    // Package 11 (#1933 bug, confirmed present on main): strokeImpact here is
+    // a benchmark-derived statistical estimate (StatisticalStrengthWeakness
+    // carries its own `confidence`, not a measured figure) rendered with the
+    // exact same "+X.XX" typography as the spine's measured SG total —
+    // visually indistinguishable from a real number.
+    value: `${w.impact > 0 ? '+' : '−'}${Math.abs(w.impact).toFixed(2)} est.`,
   }));
 }
 

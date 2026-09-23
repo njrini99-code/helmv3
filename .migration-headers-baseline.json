@@ -259,8 +259,6 @@
     "20260904103000_golf_message_reactions.sql",
     "20260904120000_golf_messages_reply_to.sql",
     "20260904160000_golf_messaging_structured.sql",
-    "20260905090000_baseball_camp_registrations_lifecycle_timestamps.sql",
-    "20260905091000_baseball_timeline_event_acks_user_id_columns.sql",
-    "20260905092000_baseball_elite_stat_event_columns_gap.sql"
+    "20260905091000_baseball_timeline_event_acks_user_id_columns.sql"
   ]
 }

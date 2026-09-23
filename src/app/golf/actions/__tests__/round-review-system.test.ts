@@ -72,6 +72,12 @@ const COORD_ROUND: Record<string, unknown> = {
   status: 'completed',
 };
 
+// §15.2 row 36 ("LLM provider failure") harness hook: coordinatorMode's
+// golf_shots read is empty by default (existing suites never exercise the
+// shotRows.length > 0 branch), so it's opt-in per test rather than changing
+// the shared default.
+let coordShotsData: unknown[] = [];
+
 const mockFrom = vi.fn((table: string) => {
   if (coordinatorMode) {
     if (table === 'golf_rounds') {
@@ -97,6 +103,9 @@ const mockFrom = vi.fn((table: string) => {
       // `.from()` chain, never both).
       chain.maybeSingle = vi.fn(async () => ({ data: existingReviewData, error: existingReviewErrorValue }));
       return chain;
+    }
+    if (table === 'golf_shots' && coordShotsData.length > 0) {
+      return createChainableMock({ data: coordShotsData });
     }
     return createChainableMock({ data: [] });
   }
@@ -148,6 +157,8 @@ vi.mock('@/lib/auth/action-rate-limit', () => ({
 
 import { getStatAverages, generateAndStoreRoundReview } from '../round-review-system';
 import { gateCoachHelmEngineCall } from '@/lib/auth/action-rate-limit';
+import { coachHelmIntelligence, isCoachHelmEnabledForPlayer } from '@/lib/coachhelm/v2';
+import { logServerError } from '@/lib/server-error-logger';
 
 const PLAYER_ID = '11111111-1111-1111-1111-111111111111';
 
@@ -366,5 +377,57 @@ describe('generateAndStoreRoundReview — regenerate rate limit (server-derived)
     expect(gateCoachHelmEngineCall).toHaveBeenCalled();
     expect(result).toEqual({ success: false, error: 'blocked', code: 'rate_limited' });
     expect(upsertCallCount).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// §15.2 row 36 ("LLM provider failure: useful deterministic explanation
+// remains available"). `reviewContent` is built by the deterministic,
+// rule-based `generateReviewContent` BEFORE the CoachHelm V2 (LLM) enhancement
+// is even attempted; that enhancement is wrapped in its own try/catch, so a
+// throwing provider only forfeits the enhancement, never the underlying
+// review. This was previously unverified — see the coverage table's former
+// "wiring-level test unconfirmed" note.
+// ---------------------------------------------------------------------------
+describe('generateAndStoreRoundReview — LLM/CoachHelm provider failure (§15.2 row 36)', () => {
+  const SHOT_ROW = {
+    hole_number: 1, shot_number: 1, shot_type: 'tee', club_type: 'driver',
+    distance_to_hole_before: '400', distance_unit_before: 'yards',
+    result: 'fairway', lie_before: 'tee', lie_after: 'fairway',
+    miss_direction: null, putt_distance_feet: null, shot_distance: '250',
+    is_penalty: false, putt_made: null,
+  };
+
+  beforeEach(() => {
+    coordinatorMode = true;
+    upsertCallCount = 0;
+    upsertGate = Promise.resolve();
+    coordShotsData = [SHOT_ROW];
+    mockFrom.mockClear();
+    vi.mocked(isCoachHelmEnabledForPlayer).mockResolvedValue({ effectivelyEnabled: true } as never);
+    vi.mocked(coachHelmIntelligence.generateRoundReview).mockRejectedValue(new Error('provider unavailable'));
+    vi.mocked(logServerError).mockClear();
+  });
+
+  afterEach(() => {
+    coordinatorMode = false;
+    coordShotsData = [];
+    vi.mocked(isCoachHelmEnabledForPlayer).mockResolvedValue({ effectivelyEnabled: false } as never);
+    vi.mocked(coachHelmIntelligence.generateRoundReview).mockReset();
+  });
+
+  it('falls back to the rule-based review instead of failing when the CoachHelm/LLM provider throws', async () => {
+    const result = await generateAndStoreRoundReview('round-coord-1', PLAYER_ID);
+
+    expect(result.success).toBe(true);
+    // Deterministic content is real, not an empty/error placeholder.
+    expect(result.review?.review_content?.summary).toBeTruthy();
+    // Enhancement did not apply — the fallback engine version, not coachhelm-v2.
+    expect(result.review?.ai_model_version).toBe('rule-based-v2');
+    // The failure was captured, not silently swallowed.
+    expect(vi.mocked(logServerError)).toHaveBeenCalledWith(
+      expect.stringContaining('CoachHelm V2 enhancement failed'),
+      expect.anything(),
+    );
   });
 });

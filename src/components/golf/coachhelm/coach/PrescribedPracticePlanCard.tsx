@@ -200,8 +200,12 @@ export function derivePracticePlan(args: {
     if (usedAreas.has(areaType)) continue;
     const rec = pickTopPatternRecommendation(p);
     if (!rec) continue;
+    // `stroke_impact` is the pattern engine's generation-time counterfactual
+    // estimate, never a post-resolution measurement (the same field #2023
+    // relabeled on InsightCard's OutcomeBadge and FairwayEffectiveness) — the
+    // "~" + "est." here keep it visually distinct from a measured value.
     const impact = typeof p.stroke_impact === 'number'
-      ? `${p.stroke_impact.toFixed(2)} strokes/rd`
+      ? `~${p.stroke_impact.toFixed(2)} str/rd (est.)`
       : undefined;
     drills.push({
       id: `pattern-${p.id}`,

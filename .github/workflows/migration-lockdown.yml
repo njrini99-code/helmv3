@@ -20,7 +20,14 @@ name: migration-lockdown
 # fail-closed even if the shared job errors.
 on:
   merge_group:
+  # ready_for_review added so a draft->ready transition re-triggers a real
+  # run. block-historical-edits still always runs as a JOB (per the
+  # phantom-context note above) so the required context never goes missing
+  # while draft — only its one real step skips, via detect-changes.yml's
+  # migrations=false on a draft PR (owner decision, PR throughput), the same
+  # fail-open-to-skip path this step already uses for a non-migration PR.
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
 
 # Least privilege: this guard only reads git history.
 permissions:

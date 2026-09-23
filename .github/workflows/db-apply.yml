@@ -128,9 +128,19 @@ jobs:
       - name: Order guard — list every migration production is missing
         run: |
           set -euo pipefail
-          ./node_modules/.bin/supabase migration list --linked --password "$SUPABASE_DB_PASSWORD" > migration-list.txt 2>&1
-          # Rows look like: "   <local> | <remote> | <time>"; a pending row has an empty Remote column.
-          pending="$(awk -F'|' '/^[[:space:]]*[0-9]{14}[[:space:]]*\|/ { l=$1; r=$2; gsub(/[[:space:]]/,"",l); gsub(/[[:space:]]/,"",r); if (r=="") print l }' migration-list.txt || true)"
+          ./node_modules/.bin/supabase migration list --linked --output-format json \
+            --password "$SUPABASE_DB_PASSWORD" > migration-list.json 2> migration-list.log
+          # The CLI's text table stopped being what a non-TTY run prints (2.115
+          # emits JSON), so an awk over the table matched nothing and every
+          # migration read as "not pending". Ask for JSON explicitly and parse it;
+          # a pending row has a local version and an empty remote one. Fail
+          # closed if the document is missing or malformed.
+          pending="$(node -e '
+            const text = require("fs").readFileSync("migration-list.json", "utf8");
+            const line = text.split("\n").find((l) => l.trim().startsWith("{\"migrations\""));
+            if (!line) { console.error("no migrations JSON in supabase migration list output"); process.exit(1); }
+            for (const m of JSON.parse(line).migrations) if (m.local && !m.remote) console.log(m.local);
+          ')" || { echo "::error::could not read the production migration list"; cat migration-list.log; exit 1; }
           want="${MIGRATION%%_*}"
           echo "Pending on production (only $want will be applied; the rest stay pending):"
           if [ -z "$pending" ]; then echo "  (none)"; else echo "$pending" | awk '{ print "  " $0 }'; fi

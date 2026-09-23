@@ -9,6 +9,14 @@ asking the user to repeat permission. Ask only for missing information or an
 irreversible action outside that authorization. A task involving production
 must identify the intended target and change before execution.
 
+Owner decisions are asked, not assumed or parked in a status report: product
+behavior, cost or billing, production migrations, deploys, enabling feature
+flags, and merging or closing someone else's PR. Ask with AskUserQuestion,
+put a recommended option first with its trade-off, batch related questions,
+and keep working on anything that does not depend on the answer. When unsure
+about intent, scope, or which of two reasonable designs to build, ask before
+building.
+
 This file is the single operating policy. CLAUDE.md is a technical adapter;
 path-scoped rules cover code conventions. Historical incidents, old plans,
 agent templates, and cached tool inventories do not override current user
@@ -31,7 +39,9 @@ Prefer `scripts/new-worktree.sh <task>` for an isolated task. It creates an
 is capacity advice, not proof of active processes. Disk limits still apply;
 when storage is short, use the existing checkout for disjoint files instead
 of creating another copy. Run `node scripts/ensure-worktree-deps.mjs <dir>`
-only when dependencies differ or are unavailable. Worktrees share canonical
+only when dependencies differ or are unavailable — or pass `--install` to
+`scripts/new-worktree.sh` at creation time to run that same install upfront
+instead of the default node_modules symlink. Worktrees share canonical
 environment files, Claude local permissions, tool credentials, and Vercel
 project identity. Branch isolation separates source changes, not tool access.
 Runtime files remain ignored and linked; never print credential values.

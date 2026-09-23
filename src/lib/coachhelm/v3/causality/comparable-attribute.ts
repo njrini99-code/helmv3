@@ -30,11 +30,19 @@
  * NEVER FEEDS THE LEARNING LOOP (this slice): every row this module writes
  * carries `lift: null` unconditionally — `nextWeight`/`updateCoachWeight`
  * (`api/cron/v3/causality-attribute/route.ts`) are never called for a
- * `comparable_opportunities_v1` row. Whether/how this signal should ever move
- * a coach weight is an explicit, separate decision (A9 slice 3, a decision
- * doc, not code) — not something this slice decides by writing a non-null
- * number into a column the pure core's own contract says must never be named
- * `lift` (see `comparable-opportunities.ts`'s "NAMING" note).
+ * `comparable_opportunities_v1` OR `comparable_opportunities_v1_limited` row.
+ * Whether/how this signal should ever move a coach weight is an explicit,
+ * separate decision (A9 slice 3, a decision doc, not code) — not something
+ * this slice decides by writing a non-null number into a column the pure
+ * core's own contract says must never be named `lift` (see
+ * `comparable-opportunities.ts`'s "NAMING" note).
+ *
+ * A9 slice 2 (confounding detection, `confounding-check.ts`): every write
+ * this module produces now carries an honest `multipleInterventions` flag
+ * instead of the slice-1 hardcoded `false`. A confounded measurement is
+ * still written — never dropped — under the distinct `method_version`
+ * `COMPARABLE_OPPORTUNITIES_LIMITED_METHOD_VERSION`, so a reader can always
+ * tell a clean comparison from a confounded one without re-deriving it.
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -49,6 +57,23 @@ import {
   type MatchingSpec,
   type OutcomeSpec,
 } from '@/lib/coachhelm/v3/evaluation/comparable-opportunities';
+import { detectConfoundingInterventions } from './confounding-check';
+
+/**
+ * A9 slice 2: the DB-write-layer method_version for a row whose measurement
+ * window had another intervention land inside it (see `confounding-check.ts`).
+ * Distinct from the pure core's own `methodVersion` field (always
+ * `COMPARABLE_OPPORTUNITIES_METHOD_VERSION` regardless of
+ * `multipleInterventions` — see that module's NAMING note): THIS is the axis
+ * `golf_insight_outcome_attribution.method_version` is written under, so a
+ * reader of that column can tell a clean comparison from a confounded one
+ * without re-deriving it. No migration, no CHECK constraint on the column —
+ * any string value round-trips. A "limited" row is written, never skipped
+ * (team-lead decision, A9 slice 2): erring toward flagging confounding costs
+ * no data, only a downgraded label.
+ */
+export const COMPARABLE_OPPORTUNITIES_LIMITED_METHOD_VERSION =
+  `${COMPARABLE_OPPORTUNITIES_METHOD_VERSION}_limited` as const;
 
 type Sb = SupabaseClient<Database>;
 
@@ -174,6 +199,15 @@ export type ComparableAttributionSkip =
    * `error` carries the raw driver message for the caller to log.
    */
   | { ok: false; reason: 'exposure-read-failed'; error: string }
+  /**
+   * A9 slice 2: the confounding-intervention scan itself failed (a
+   * transient/infra error) — must never be silently read as "no
+   * confounder found", which would UNDER-report confounding (the wrong
+   * direction for a downgrade flag). See `confounding-check.ts`'s doc
+   * comment. Retried next run, exactly like `no-exposure-record` and
+   * `follow-up-window-open` — never a permanent skip.
+   */
+  | { ok: false; reason: 'confounder-read-failed'; error: string }
   | { ok: false; reason: 'insufficient-evidence' };
 
 export interface ComparableAttributionRow {
@@ -189,7 +223,12 @@ export interface ComparableAttributionRow {
   delta: number;
   n_rounds_before: number;
   n_rounds_after: number;
-  method_version: typeof COMPARABLE_OPPORTUNITIES_METHOD_VERSION;
+  /** `..._limited` when another intervention landed inside the measurement
+   *  window (`multipleInterventions`) — see
+   *  `COMPARABLE_OPPORTUNITIES_LIMITED_METHOD_VERSION`'s doc comment. */
+  method_version:
+    | typeof COMPARABLE_OPPORTUNITIES_METHOD_VERSION
+    | typeof COMPARABLE_OPPORTUNITIES_LIMITED_METHOD_VERSION;
 }
 
 export type ComparableAttributionResult =
@@ -260,6 +299,22 @@ export async function computeComparableAttribution(
     return { ok: false, reason: 'follow-up-window-open' };
   }
 
+  // A9 slice 2: only evaluated AFTER the followUpWindow-open gate above has
+  // passed — the write below is permanent (PK on insight_id), so checking
+  // for a confounder before the window has fully closed could miss one that
+  // lands later in the window and never get a second chance. See
+  // `confounding-check.ts`'s own doc comment for what counts and why the
+  // window starts at baseline start, not `interventionAt`.
+  const confounderCheck = await detectConfoundingInterventions(sb, {
+    insight_id: input.insight_id,
+    player_id: input.player_id,
+    windowStart: baselineWindow.start,
+    windowEnd: followUpWindow.end,
+  });
+  if (!confounderCheck.ok) {
+    return { ok: false, reason: 'confounder-read-failed', error: confounderCheck.error };
+  }
+
   // One `loadPlayerContext` call covering BOTH windows — `computeSide`
   // (inside `computeComparableOpportunities`) re-filters down to the exact
   // baseline/follow-up sub-window via `interventionAt`, so overlapping the
@@ -285,19 +340,12 @@ export async function computeComparableAttribution(
     followUpWindow,
     spec: shotLevel.spec,
     outcome: shotLevel.outcome,
-    // Slice 2 candidate: detect a second insight surfaced before the
-    // follow-up window closes. Slice 1 always reports `false` — WRONG in the
-    // "more confident than warranted" direction would be worse than this
-    // slice's actual behavior (which never feeds a coach weight regardless —
-    // see the file header's "NEVER FEEDS THE LEARNING LOOP" note), so this is
-    // a real known gap for slice 2, not a silent shortcut. PR #2007 review:
-    // this is a genuine enable-blocker, not just a nice-to-have — a
-    // confounded row written now is PERMANENT (the insert is idempotent, PK
-    // on `insight_id`) and can't be relabeled once slice 2 lands. See
-    // `config/feature-flags.yml`'s `coachhelm_comparable_opportunity_
-    // attribution` entry: this flag should not go on in production before
-    // slice 2 (confounding detection) ships.
-    multipleInterventions: false,
+    // A9 slice 2: real confounder detection (`confounding-check.ts`), no
+    // longer hardcoded `false`. The pure core downgrades `status` to
+    // `'observed_change_limited'` when this is `true`; this module maps that
+    // to a distinct `method_version` below rather than skipping the write —
+    // see `COMPARABLE_OPPORTUNITIES_LIMITED_METHOD_VERSION`'s doc comment.
+    multipleInterventions: confounderCheck.multipleInterventions,
     metricId: input.target_metric_id,
   });
 
@@ -321,7 +369,13 @@ export async function computeComparableAttribution(
       delta: result.observedChange,
       n_rounds_before: result.baseline.distinctRounds,
       n_rounds_after: result.followUp.distinctRounds,
-      method_version: COMPARABLE_OPPORTUNITIES_METHOD_VERSION,
+      // A9 slice 2: `'observed_change_limited'` (another intervention landed
+      // in the measurement window) writes the distinct `_limited` version
+      // rather than being skipped — see the const's own doc comment.
+      method_version:
+        result.status === 'observed_change_limited'
+          ? COMPARABLE_OPPORTUNITIES_LIMITED_METHOD_VERSION
+          : COMPARABLE_OPPORTUNITIES_METHOD_VERSION,
     },
   };
 }

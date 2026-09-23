@@ -101,7 +101,13 @@ on:
   push:
     branches:
       - main
+  # ready_for_review (plus the GitHub defaults opened/synchronize/reopened):
+  # a draft->ready transition needs its own event to trigger the first real
+  # run, since every gated job below skips while github.event.pull_request.draft
+  # is true (owner decision, PR throughput — drafts can't be merged, so
+  # running the full suite on every draft push only burns Actions queue slots).
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
 
 concurrency:
   # Per-COMMIT groups on main (playwright.yml's old pattern): two merges landing
@@ -155,6 +161,10 @@ jobs:
   # ---------------------------------------------------------------------------
   static-checks:
     name: Static checks
+    # Skip while draft (owner decision, PR throughput): nothing is required
+    # on a draft PR since it can't be merged; marking it ready_for_review
+    # re-triggers a full, real run via the added pull_request type above.
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft != true
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -518,7 +528,9 @@ jobs:
     # a change outside the `code` path filter (a rule file, memory/registry.yml,
     # config/*.yml) can still change what `tsc` reports through an ambient
     # `.d.ts` or a tsconfig `include`/`paths` entry the filter doesn't track —
-    # so this always runs, every PR and every push.
+    # so this always runs, every PR and every push. Still skips while draft
+    # (owner decision, PR throughput) — see static-checks above.
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft != true
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -545,7 +557,9 @@ jobs:
     # ESLint reads config files (eslint.config.mjs is already in the `code`
     # filter, but a rule referencing another tracked path is not guaranteed
     # to be) and the ratchets in here read the whole tree, not just the diff.
-    # Always runs.
+    # Always runs, except while draft (owner decision, PR throughput) — see
+    # static-checks above.
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft != true
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -854,6 +868,12 @@ jobs:
     if: needs.detect-changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # packages: read lets the ghcr.io login step below get the authenticated
+    # (higher) pull rate limit for ghcr.io/supabase/* images; the
+    # workflow-level `permissions:` block above only grants `contents: read`.
+    permissions:
+      contents: read
+      packages: read
     env:
       SUPABASE_PROJECT_ID: helmv3
     steps:
@@ -913,8 +933,13 @@ jobs:
       - name: "Declarative schema: new migrations reflected in supabase/schemas"
         run: bash scripts/db/check-new-migrations-in-schema.sh "${{ github.event.pull_request.base.sha }}"
 
+      # Authenticated ghcr pulls: anonymous pulls of ghcr.io/supabase/* hit
+      # `toomanyrequests` when several PRs start the stack at once.
+      - name: Log in to ghcr.io (Supabase images)
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
       - name: Start local Supabase stack
-        run: supabase start
+        run: bash scripts/db/supabase-start-with-retry.sh
 
       - name: Lint migrations
         run: supabase db lint --schema public
@@ -954,6 +979,11 @@ jobs:
       - name: Run pgTAP RLS suites
         run: |
           set -euo pipefail
+          # `supabase test db` pulls pg_prove itself; pre-pull it with the
+          # mirror fallback so a ghcr.io rate limit can't fail the suite.
+          # The tag follows the pinned CLI; a stale tag only skips the
+          # pre-pull, and the CLI pulls the image it wants as before.
+          bash scripts/db/pull-supabase-image.sh ghcr.io/supabase/pg_prove:3.36 || true
           tmp_dir="$(mktemp -d)"
           for f in supabase/tests/rls/*.sql; do
             case "$f" in
@@ -1233,6 +1263,14 @@ jobs:
   baseball-auth-smoke:
     name: BaseballHelm authenticated smoke
     needs: detect-changes
+    # packages: read lets the local-supabase-stack composite action's ghcr.io
+    # login step get the authenticated (higher) pull rate limit for
+    # ghcr.io/supabase/* images; the workflow-level `permissions:` block above
+    # only grants `contents: read`, so a job needs this to use the token for
+    # anything else.
+    permissions:
+      contents: read
+      packages: read
     # PUSH/MAIN ONLY (owner 2026-08-26, PR throughput): removed from the PR
     # gate after it blocked a golf production hotfix twice in one afternoon —
     # both times the runner died ("shutdown signal") during the TypeScript
@@ -1319,6 +1357,8 @@ jobs:
       # action for why, and for the loopback assertion it ends with.
       - name: Start local Supabase stack
         uses: ./.github/actions/local-supabase-stack
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Cache Playwright browsers
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
@@ -1430,6 +1470,16 @@ jobs:
       - next-build
       - supabase
     steps:
+      - name: Fail on a draft PR (full suite runs on ready_for_review)
+        # Owner decision 2026-09-23: a draft run skips every gated job, and a
+        # green aggregate from that run stayed attached to the head SHA after
+        # the PR was marked ready, satisfying branch protection with nothing
+        # tested (#2049). Failing here means only a real, non-draft run can
+        # ever turn this required check green.
+        if: github.event_name == 'pull_request' && github.event.pull_request.draft == true
+        run: |
+          echo "Draft PR: gated jobs were skipped. The full suite runs when the PR is marked ready for review."
+          exit 1
       - name: Fail if any required CI check failed
         # A skipped heavy job is fine ONLY on a docs-only PR (code=='false').
         # On a code PR or a push, a skip is a real problem and still fails.

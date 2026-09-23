@@ -35,7 +35,7 @@
  * serif / skeuomorphic gauges).
  * ========================================================================== */
 
-import { useCallback, useMemo, useState, useTransition } from 'react';
+import { useCallback, useMemo, useState, useTransition, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -48,13 +48,11 @@ import {
   InsightCard,
   EmptyState,
   Chip,
-  SegmentBar,
   Sparkline,
   Button,
   Avatar,
   fairwayToast,
   type InsightPriority,
-  type SegmentTone,
 } from '@/components/fairway';
 
 import { IconLayers } from '@/components/icons';
@@ -102,6 +100,15 @@ export interface FairwayPlayerGameFingerprintProps {
   /** @default 'coach' — every existing call site (the coach route) is
    *  unaffected by this prop's addition. */
   mode?: FingerprintMode;
+  /**
+   * Extra, server-built content rendered directly after a given section's
+   * own card (addendum §13 A7). Keyed by `FingerprintSectionKey` so a caller
+   * can target e.g. `approach` (A2's distance profile) or `scoring` (A3)
+   * without this component knowing anything about either surface. Omitted
+   * or `undefined` for a key renders nothing extra — every existing call
+   * site is byte-for-byte unaffected by this prop's addition.
+   */
+  sectionAddenda?: Partial<Record<FingerprintSectionKey, ReactNode>>;
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
@@ -182,6 +189,7 @@ export function formatGeneratedAt(iso: string): string {
 export function FairwayPlayerGameFingerprint({
   fingerprint,
   mode = 'coach',
+  sectionAddenda,
 }: FairwayPlayerGameFingerprintProps) {
   const router = useRouter();
   const golfUser = useGolfUser();
@@ -462,15 +470,39 @@ export function FairwayPlayerGameFingerprint({
         </nav>
 
         {/* ════════════════ 3 · GAME AREAS — the six sections ═══════════════ */}
-        {orderedSections.map((section, index) => (
-          <FingerprintSection
-            key={section.key}
-            section={section}
-            index={index}
-            pendingIds={pendingIds}
-            onAction={handleAction}
-          />
-        ))}
+        {orderedSections.map((section, index) => {
+          const addendum = sectionAddenda?.[section.key];
+          // Only wrap in the extra `space-y-4` div when there is actually an
+          // addendum to append — every existing call site (no `sectionAddenda`
+          // prop, or one that omits this key) renders the exact same
+          // `<FingerprintSection>` markup as before this prop existed, not a
+          // new wrapper div around it. A prior version of this map always
+          // added the wrapper, so "byte-for-byte unaffected" was true only
+          // when compared component-for-component, not against the actual
+          // rendered DOM.
+          if (!addendum) {
+            return (
+              <FingerprintSection
+                key={section.key}
+                section={section}
+                index={index}
+                pendingIds={pendingIds}
+                onAction={handleAction}
+              />
+            );
+          }
+          return (
+            <div key={section.key} className="space-y-4">
+              <FingerprintSection
+                section={section}
+                index={index}
+                pendingIds={pendingIds}
+                onAction={handleAction}
+              />
+              {addendum}
+            </div>
+          );
+        })}
 
         {/* ════════════════ 4 · GENERATED-AT footnote ═══════════════════════ */}
         <p className="text-center font-fw-sans text-caption text-text-tertiary">
@@ -787,8 +819,11 @@ function InsightEvidenceLine({
 
 /* ════════════════════════════════════════════════════════════════════════════
  * SectionChart — the small per-section chart, recomputed honestly from the
- * aggregator's chart_data. Bars → a chunky matte SegmentBar; pills → flat
- * matte chips. Null chart_data renders nothing (no fabricated chart).
+ * aggregator's chart_data. Bars AND pills both render as flat matte chips —
+ * every `bars` section here is an independent-scale value (a make-rate
+ * percentage, a strokes average on its own max), never a shared-total part,
+ * so there is no honest proportional bar to draw (Package 11 follow-up).
+ * Null chart_data renders nothing (no fabricated chart).
  * ══════════════════════════════════════════════════════════════════════════ */
 
 function SectionChart({ section }: { section: SectionData }) {
@@ -824,25 +859,47 @@ function SectionChart({ section }: { section: SectionData }) {
 
   // bars
   if (chart.bars.length === 0) return null;
-  // Honest tone: keep bars neutral — the aggregator's bar charts are descriptive
-  // distributions (make-% by distance / par-type averages / short-game rates),
-  // not good/bad calls.
-  const parts = chart.bars.map((b) => ({
-    label: b.label,
-    value: b.value,
-    tone: 'neutral' as SegmentTone,
-  }));
-
-  const overline =
-    section.key === 'putting' ? 'Make %' : section.key === 'short_game' ? 'Around the green' : 'By type';
-  const title =
+  // Package 11 (follow-up): these were rendered as SegmentBar "categorical
+  // parts" — a 100%-segmented bar whose each part's on-screen width is
+  // value / SUM(all values). That's only honest when the values are counts
+  // of one whole (e.g. improved/no-change/worsened rounds). None of these
+  // three sections are: putting/short-game are INDEPENDENT make-rate
+  // percentages that don't sum to 100 (0-3ft make% and 20+ft make% aren't
+  // parts of a shared total), and scoring's par-type averages are STROKES on
+  // three different maxes (par 3 ≤5, par 4 ≤6, par 5 ≤7) — sharing one
+  // sum-normalized bar with those silently rendered a stroke average as a
+  // slice of a 100% strokes-vs-strokes-vs-strokes bar. Using the pills
+  // treatment already used above renders each bar's own value on its own
+  // terms instead.
+  const header =
     section.key === 'putting'
       ? 'Make % by distance'
       : section.key === 'short_game'
         ? 'Recovery rates'
         : 'Averages';
+  // `max === 100` is this aggregator's convention for a percentage bar
+  // (buildPuttingBars / buildShortGameBars); anything else (buildScoringSection's
+  // par-type maxes of 5/6/7) is a raw strokes value and must never get a "%".
+  const formatBarValue = (b: { value: number; max?: number }) =>
+    b.max === 100 ? `${Math.round(b.value)}%` : b.value.toFixed(1);
 
-  return <SegmentBar overline={overline} title={title} parts={parts} />;
+  return (
+    <InstrumentPanel depth="base" padding="md" header={header}>
+      <div className="flex flex-wrap gap-2">
+        {chart.bars.map((b) => (
+          <span
+            key={b.label}
+            className="inline-flex items-center gap-2 rounded-fw-md bg-surface-sunken px-3 py-1.5"
+          >
+            <span className="font-fw-sans text-caption text-text-secondary">{b.label}</span>
+            <span className="font-fw-mono text-body-sm font-semibold tabular-nums text-text-primary">
+              {formatBarValue(b)}
+            </span>
+          </span>
+        ))}
+      </div>
+    </InstrumentPanel>
+  );
 }
 
 /* ════════════════════════════════════════════════════════════════════════════

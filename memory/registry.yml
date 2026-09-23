@@ -454,6 +454,7 @@ features:
         # course library, and their storage/RLS surface.
         - supabase/migrations/*course_library*.sql
         - supabase/migrations/*course_image*.sql
+        - supabase/migrations/*course_geometry*.sql
         - supabase/migrations/*round_atomic*.sql
         - supabase/migrations/*atomic_round*.sql
         - supabase/migrations/*atomic_lifecycle*.sql
@@ -816,7 +817,21 @@ features:
         - src/lib/calendar/**
       db:
         - supabase/migrations/*calendar*.sql
-        - supabase/migrations/*event*.sql
+        # Narrowed 2026-09-23 off a blanket `*event*.sql` (Phase 5 registry
+        # glob lint follow-up): that glob also matched every
+        # `*baseball*event*.sql` migration, which is baseball_core's alone,
+        # so it counted as calendar_events' "own" file and inflated
+        # baseball_core's cross-feature overlap ratio. These patterns cover
+        # exactly the non-baseball files the old glob matched — verified by
+        # diffing the matched-file sets before and after the change.
+        - supabase/migrations/*event_attendance*.sql
+        - supabase/migrations/*notification_type_event*.sql
+        - supabase/migrations/*insight_event*.sql
+        - supabase/migrations/*admin_event*.sql
+        - supabase/migrations/*team_event_reminder*.sql
+        - supabase/migrations/*class_event*.sql
+        - supabase/migrations/*calendar_events*.sql
+        - supabase/migrations/*error_events*.sql
         - supabase/migrations/*attendance*.sql
         # Reclassified 2026-09-06 off team_access_control's retired blanket
         # glob (Phase 5 registry glob lint).
@@ -972,6 +987,7 @@ features:
         - src/app/golf/actions/shot-analytics.ts
         - src/app/golf/actions/intelligence-dashboard.ts
         - src/app/golf/actions/development.ts
+        - src/app/golf/actions/focus-area-practice-log.ts
         - src/app/golf/actions/player-feedback.ts
         - src/app/golf/actions/round-reviews.ts
         - src/app/golf/actions/v3/**
@@ -1424,7 +1440,17 @@ features:
       db:
         - supabase/migrations/*travel*.sql
         - supabase/migrations/*task*.sql
-        - supabase/migrations/*event*.sql
+        # Narrowed 2026-09-23 — see calendar_events' db: list for why the
+        # blanket `*event*.sql` was replaced with these (same set, same
+        # reason: it was also matching baseball_core's own migrations).
+        - supabase/migrations/*event_attendance*.sql
+        - supabase/migrations/*notification_type_event*.sql
+        - supabase/migrations/*insight_event*.sql
+        - supabase/migrations/*admin_event*.sql
+        - supabase/migrations/*team_event_reminder*.sql
+        - supabase/migrations/*class_event*.sql
+        - supabase/migrations/*calendar_events*.sql
+        - supabase/migrations/*error_events*.sql
       tests:
         - src/lib/golf/nav-registry.test.ts
     integrations:

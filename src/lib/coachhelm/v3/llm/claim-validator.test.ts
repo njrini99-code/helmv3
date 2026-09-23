@@ -241,6 +241,16 @@ describe('validateClaims() — kind: measurement vs aggregate (post-#1991 review
     expect(result.rejected).toHaveLength(1);
     expect(result.rejected[0]?.reason).toBe('unsupported_small_number');
   });
+
+  it("#1999 re-review, NICE: a 'measurement' entry with sample_n 0 is still floored — zero support is never 'the count IS the fact'", () => {
+    const zeroSamplePacket = packet({
+      entries: [{ metric_id: 'total_putts', value: 28, sample_n: 0, kind: 'measurement' }],
+    });
+    const result = validateClaims([claim()], zeroSamplePacket, 'You took 28 putts today.');
+
+    expect(result.rejected).toHaveLength(1);
+    expect(result.rejected[0]?.reason).toBe('unsupported_small_number');
+  });
 });
 
 describe('validateClaims() — causal-language detector (SHOULD-3, post-#1991 review)', () => {

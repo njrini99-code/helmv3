@@ -31,6 +31,16 @@ inputs:
     description: Supabase CLI version. Keep in step with the `supabase` job in ci.yml.
     required: false
     default: 2.114.0
+  github-token:
+    description: >-
+      Token to authenticate ghcr.io pulls with (pass the caller job's
+      secrets.GITHUB_TOKEN). Anonymous pulls of ghcr.io/supabase/* hit
+      `toomanyrequests` when several PRs start the stack at once;
+      authenticated pulls get a much higher rate limit. Optional so a
+      caller without package-read permission still runs, just without the
+      higher limit.
+    required: false
+    default: ''
 
 runs:
   using: composite
@@ -40,9 +50,16 @@ runs:
       with:
         version: ${{ inputs.cli-version }}
 
+    # Authenticated ghcr pulls: anonymous pulls of ghcr.io/supabase/* hit
+    # `toomanyrequests` when several PRs start the stack at once.
+    - name: Log in to ghcr.io (Supabase images)
+      if: inputs.github-token != ''
+      shell: bash
+      run: echo "${{ inputs.github-token }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
     - name: Start local Supabase stack
       shell: bash
-      run: supabase start
+      run: bash scripts/db/supabase-start-with-retry.sh
 
     - name: Export local stack credentials
       shell: bash

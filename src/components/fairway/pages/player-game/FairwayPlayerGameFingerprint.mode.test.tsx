@@ -165,6 +165,42 @@ describe('FairwayPlayerGameFingerprint — section count label', () => {
   });
 });
 
+describe('FairwayPlayerGameFingerprint — sectionAddenda structural no-op', () => {
+  it('renders no extra wrapper around a section when sectionAddenda is absent', () => {
+    render(
+      <GolfUserProvider userData={coachUser}>
+        <FairwayPlayerGameFingerprint fingerprint={makeFingerprint()} />
+      </GolfUserProvider>,
+    );
+    const putting = document.getElementById('fingerprint-putting');
+    expect(putting).toBeInTheDocument();
+    // The section's own <section> must be a DIRECT child of the page's
+    // "flex flex-col gap-7 md:gap-9" body — never wrapped in an extra
+    // `space-y-4` div when this section has no addendum. A prior version
+    // added that wrapper unconditionally, which meant the new
+    // `sectionAddenda` prop's own doc comment ("byte-for-byte unaffected")
+    // was false the moment it shipped, even though every existing test
+    // still passed.
+    expect(putting?.parentElement?.className).not.toContain('space-y-4');
+  });
+
+  it('wraps only the section that actually receives an addendum', () => {
+    render(
+      <GolfUserProvider userData={coachUser}>
+        <FairwayPlayerGameFingerprint
+          fingerprint={makeFingerprint()}
+          sectionAddenda={{ approach: <div data-testid="approach-addendum">extra</div> }}
+        />
+      </GolfUserProvider>,
+    );
+    expect(screen.getByTestId('approach-addendum')).toBeInTheDocument();
+    const approach = document.getElementById('fingerprint-approach');
+    const putting = document.getElementById('fingerprint-putting');
+    expect(approach?.parentElement?.className).toContain('space-y-4');
+    expect(putting?.parentElement?.className).not.toContain('space-y-4');
+  });
+});
+
 describe('FairwayPlayerGameFingerprint — mode branching', () => {
   it('coach mode (default prop) shows the coach-only header actions + avatar initials', () => {
     render(
