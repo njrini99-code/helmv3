@@ -108,6 +108,9 @@ export interface PlayerCoachHelmHomeProps {
   suggestions?: GoalSuggestionView[];
   causalRelationships?: CausalRelationshipRow[];
   achievedGoals?: FairwayGoalCardData[];
+  /** A8 slice 3 — see `DevelopmentDrillProps.practiceLogEnabled`. Threaded
+   *  straight through from the server page (`isFlagEnabled` is server-only). */
+  practiceLogEnabled?: boolean;
 
   /** `profile` drill — copied from `my-game-profile/page.tsx`. */
   genomeAxes: GameProfileAxis[];
@@ -147,6 +150,7 @@ export function PlayerCoachHelmHome({
   suggestions = [],
   causalRelationships = [],
   achievedGoals = [],
+  practiceLogEnabled = false,
   genomeAxes,
   genomeDimensions,
   genomeStrengths,
@@ -365,6 +369,7 @@ export function PlayerCoachHelmHome({
           standingByMetric={standingByMetric}
           causalRelationships={causalRelationships}
           achievedGoals={achievedGoals}
+          practiceLogEnabled={practiceLogEnabled}
         />
       ),
     },
