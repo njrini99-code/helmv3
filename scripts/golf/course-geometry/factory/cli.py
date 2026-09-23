@@ -93,6 +93,17 @@ def build_parser():
     k.add_argument('--min-rounds', type=int, default=1)
     k.add_argument('--write', action='store_true', help='write the new catalog manifests (default: report only)')
     k.add_argument('--json', action='store_true')
+    kp = sub.add_parser('intake-played', help='intake for every played course (played-courses.json), resolving missing/stale facilities first; C0 manifests, never overwrites')
+    kp.add_argument('--played', default='output/course-geometry/overnight/played-courses.json')
+    kp.add_argument('--coverage', default='output/course-geometry/library-coverage/coverage.json')
+    kp.add_argument('--coverage-out', default='output/course-geometry/library-coverage/coverage-played.json', help='merged coverage (the audit file is never overwritten)')
+    kp.add_argument('--scorecards', default='output/course-geometry/overnight/w4-combined-scorecards.json')
+    kp.add_argument('--cache', default='output/course-geometry/library-coverage/resolver-cache')
+    kp.add_argument('--sleep', type=float, default=1.5, help='seconds between public API calls')
+    kp.add_argument('--no-resolve', action='store_true', help='report on current coverage only; no network')
+    kp.add_argument('--min-rounds', type=int, default=1)
+    kp.add_argument('--write', action='store_true', help='write the new catalog manifests (default: report only)')
+    kp.add_argument('--json', action='store_true')
     s = sub.add_parser('refresh-scorecards', help='append all identified tee revisions from a complete export; preserve existing cards and reference selection')
     s.add_argument('--snapshot', required=True)
     s.add_argument('--write', action='store_true')
@@ -458,6 +469,11 @@ def cmd_intake(session, args, out):
     return 0
 
 
+def cmd_intake_played(session, args, out):
+    from .intake_played import cmd_intake_played as run
+    return run(session, args, out)
+
+
 def cmd_invalidate(session, args, out):
     key = node_key(session, args)
     scope = key.split('[', 1)[1].rstrip(']')
@@ -568,7 +584,7 @@ def cmd_ship(session, args, out):
 
 COMMANDS = {'doctor': cmd_doctor, 'plan': cmd_plan, 'run': cmd_run, 'status': cmd_status, 'batch': cmd_batch, 'why': cmd_why, 'invalidate': cmd_invalidate, 'evict': cmd_evict, 'intake': cmd_intake,
             'refresh-scorecards': cmd_refresh_scorecards, 'review-bundle': cmd_review_bundle, 'route-recovery': cmd_route_recovery,
-            'coverage': cmd_coverage, 'ship': cmd_ship}
+            'coverage': cmd_coverage, 'ship': cmd_ship, 'intake-played': cmd_intake_played}
 
 
 def main(argv=None, out=None, ledger=None, executors=None, spec_overrides=None):
