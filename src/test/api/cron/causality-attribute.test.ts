@@ -232,6 +232,14 @@ interface ClientOpts {
    * all (the `comparable_no_exposure_record` pre-filter branch).
    */
   exposures?: Record<string, string>;
+  /**
+   * Advisor review (post-#2007-push): inject raw exposure rows directly,
+   * including MULTIPLE rows per `insight_id` (the real table has no
+   * uniqueness constraint on it) — for exercising `fetchAllRowsResult`'s
+   * pagination past PostgREST's 1,000-row cap. Takes precedence over
+   * `exposures` when both are supplied (it isn't, in any test below).
+   */
+  exposureRowsRaw?: Array<{ insight_id: string; shown_at: string }>;
   /** Force the bulk exposure pre-filter fetch (`.in()` over the page's
    *  shot-level candidate ids) to error. */
   exposureBulkFetchError?: { message: string };
@@ -241,10 +249,12 @@ function makeClient(rows: FixtureInsight[], opts: ClientOpts = {}) {
   const { builder, calls } = makeCandidatesBuilder(rows, {
     rangeError: opts.rangeError,
   });
-  const exposureRows = Object.entries(opts.exposures ?? {}).map(([insight_id, shown_at]) => ({
-    insight_id,
-    shown_at,
-  }));
+  const exposureRows =
+    opts.exposureRowsRaw ??
+    Object.entries(opts.exposures ?? {}).map(([insight_id, shown_at]) => ({
+      insight_id,
+      shown_at,
+    }));
   let exposureQueriedIds: string[] = [];
   const exposureBuilder = {
     select: vi.fn().mockReturnThis(),
@@ -252,14 +262,18 @@ function makeClient(rows: FixtureInsight[], opts: ClientOpts = {}) {
       exposureQueriedIds = ids;
       return exposureBuilder;
     }),
-    order: vi.fn(() => {
+    // Two `.order()` calls (shown_at, then the id tiebreaker) chain, and
+    // `.range(from, to)` is what actually resolves — mirrors
+    // `fetchAllRowsResult`'s pagination contract in route.ts.
+    order: vi.fn().mockReturnThis(),
+    range: vi.fn((from: number, to: number) => {
       if (opts.exposureBulkFetchError) {
         return Promise.resolve({ data: null, error: opts.exposureBulkFetchError });
       }
-      return Promise.resolve({
-        data: exposureRows.filter((r) => exposureQueriedIds.includes(r.insight_id)),
-        error: null,
-      });
+      const matched = exposureRows
+        .filter((r) => exposureQueriedIds.includes(r.insight_id))
+        .sort((a, b) => a.shown_at.localeCompare(b.shown_at));
+      return Promise.resolve({ data: matched.slice(from, to + 1), error: null });
     }),
   };
   const attributedSet = new Set(opts.attributedIds ?? []);
@@ -795,6 +809,51 @@ describe('causality-attribute cron A9 slice 1: comparable-opportunity attributio
     expect(summary.comparable_follow_up_open).toBe(1);
     expect(summary.considered).toBe(0);
     expect(computeComparableAttributionMock).not.toHaveBeenCalled();
+  });
+
+  it('MUST 2 pre-filter: bulk exposure fetch paginates past PostgREST\'s 1,000-row cap so a later candidate\'s real exposure is not silently dropped', async () => {
+    // Advisor review (post-#2007-push): golf_insight_exposure has no
+    // uniqueness constraint on insight_id (an insight can be re-shown/
+    // re-ranked any number of times), so a page's shot-level candidates can
+    // legitimately produce >1,000 exposure rows. An unpaginated `.in()`
+    // fetch would keep only the globally-earliest 1,000 rows and silently
+    // drop any candidate whose real first exposure landed later than that
+    // — permanently misread as comparable_no_exposure_record, since a page
+    // is never re-fetched.
+    isFlagEnabledMock.mockReturnValue(true);
+    computeComparableAttributionMock.mockResolvedValue({ ok: false, reason: 'insufficient-evidence' });
+    // insight-1 is spammy: 1005 exposure rows, all older than insight-2's
+    // single row below, so they occupy global sort indices 0-1004.
+    const insight1Rows = Array.from({ length: 1005 }, (_, i) => ({
+      insight_id: 'insight-1',
+      shown_at: new Date(Date.now() - 25 * 86_400_000 + i * 1000).toISOString(),
+    }));
+    // insight-2's only exposure sorts LAST globally (index 1005) — past
+    // an unpaginated fetch's 1,000-row cap.
+    const insight2Row = {
+      insight_id: 'insight-2',
+      shown_at: new Date(Date.now() - 3 * 86_400_000).toISOString(), // 3 days ago
+    };
+    const rows = [
+      fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } }),
+      fixture({ id: 'insight-2', evidence: { metric: SHOT_LEVEL_METRIC } }),
+    ];
+    const { client } = makeClient(rows, {
+      exposureRowsRaw: [...insight1Rows, insight2Row],
+    });
+    createAdminMock.mockReturnValue(client);
+
+    const res = await POST(authedRequest());
+    const summary = await res.json();
+
+    // insight-1's earliest exposure (25 days ago) is well past the
+    // follow-up window — reaches the mock as usual.
+    expect(computeComparableAttributionMock).toHaveBeenCalledTimes(1);
+    // insight-2's exposure (3 days ago, still within the follow-up window)
+    // must be FOUND, not lost — proving pagination ran past row 1,000.
+    // A truncated fetch would misclassify it as no-exposure-record instead.
+    expect(summary.comparable_no_exposure_record).toBe(0);
+    expect(summary.comparable_follow_up_open).toBe(1);
   });
 
   it('residual on MUST 2: a shot-level candidate whose retry horizon (window close + 14d grace) has expired is dropped for good and never reaches computeComparableAttribution', async () => {

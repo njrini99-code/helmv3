@@ -26,6 +26,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { requireCronAuth } from '@/lib/cron/auth';
 import { fromUntyped } from '@/lib/supabase/untyped';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { computeAttribution, nextWeight, POST_WINDOW_DAYS } from '@/lib/coachhelm/v3/causality/attribute';
 import { lookupMetricSource } from '@/lib/coachhelm/v3/causality/metric-sources';
 import {
@@ -180,8 +181,9 @@ interface CronSummary {
    * bulk pre-filter and never takes a `todo` slot (never calls
    * `loadPlayerContext`) again. Distinct from `comparable_follow_up_open`
    * (window still open, retry expected) and from
-   * `comparable_insufficient_evidence` (the pure core ran and found
-   * insufficient evidence on a stale run before this cap existed).
+   * `comparable_insufficient_evidence` (the pure core actually ran and
+   * reported it — still fires on every run during the `RETRY_GRACE_DAYS`
+   * window itself, before the horizon expires).
    */
   comparable_retry_horizon_expired: number;
 }
@@ -315,11 +317,30 @@ async function handle(): Promise<NextResponse> {
     const firstExposureByInsightId = new Map<string, string>();
     let exposureBulkFetchFailed = false;
     if (shotLevelPageIds.length > 0) {
-      const { data: exposureRows, error: exposureErr } = await sb
-        .from('golf_insight_exposure')
-        .select('insight_id, shown_at')
-        .in('insight_id', shotLevelPageIds)
-        .order('shown_at', { ascending: true });
+      // Advisor review (post-#2007-push): an unpaginated `.in()` here would
+      // hit PostgREST's silent 1,000-row cap (`.claude/rules/database.md`'s
+      // documented trap) — `golf_insight_exposure` has no uniqueness
+      // constraint on `insight_id` (an insight can be re-shown/re-ranked any
+      // number of times), so 200 page ids can legitimately exceed 1,000
+      // exposure rows. A truncated fetch would keep only the globally
+      // earliest rows and silently drop any candidate whose real first
+      // exposure fell past row 1,000 — permanently misread as
+      // `comparable_no_exposure_record` since a page is never re-fetched.
+      // `fetchAllRowsResult` paginates past the cap; `id` (the PK) is added
+      // as a tiebreaker after `shown_at` so `.range()` page boundaries are
+      // stable even when several rows share the same `shown_at` instant.
+      const { data: exposureRows, error: exposureErr } = await fetchAllRowsResult<{
+        insight_id: string;
+        shown_at: string;
+      }>((from, to) =>
+        sb
+          .from('golf_insight_exposure')
+          .select('insight_id, shown_at')
+          .in('insight_id', shotLevelPageIds)
+          .order('shown_at', { ascending: true })
+          .order('id', { ascending: true })
+          .range(from, to),
+      );
       if (exposureErr) {
         // Fail closed for this page's shot-level candidates rather than
         // guessing — they're simply not enqueued this run (accounted for

@@ -138,3 +138,22 @@
   reaching the mock) without changing anything about their own intent.
 - Verification: the three A9 slice 1 test files together — 44 passed, 0
   failed. `npm run typecheck:fast` clean.
+
+## 2026-09-23 — #2007 re-review catch: bulk exposure fetch pagination test
+
+- `causality-attribute.test.ts` gained 1 test: 1,005 exposure rows for a
+  spammy `insight-1` plus a single, later exposure row for `insight-2`
+  (1,006 total, across only 2 candidates) — `insight-2`'s row sorts past
+  global index 1,000. Asserts it is still found
+  (`comparable_no_exposure_record` stays 0, `comparable_follow_up_open`
+  becomes 1) rather than silently dropped, proving the bulk fetch's new
+  `fetchAllRowsResult` pagination actually runs past PostgREST's 1,000-row
+  cap instead of just adding an unused import.
+- `makeClient`'s `exposureBuilder` gained a `range(from, to)` step
+  (previously resolved on `.order()`) to mirror the real query's new
+  `.order().order().range()` chain, plus an `exposureRowsRaw` option for
+  injecting raw multi-row-per-insight fixtures (the existing `exposures`
+  single-shown_at-per-id map can't express an insight with more than one
+  exposure row).
+- Verification: `causality-attribute.test.ts` — 28 passed, 0 failed.
+  `npm run typecheck:fast` clean.
