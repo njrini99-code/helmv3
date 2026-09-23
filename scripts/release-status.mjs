@@ -108,7 +108,7 @@ if (!deployed) {
   die(2, [
     `release-status: no commit from the last ${depth} on main appears in the served bundle.`,
     '  Either production is older than that window, or it was deployed without',
-    '  the Vercel Git integration (VERCEL_GIT_COMMIT_SHA is the release tag).',
+    '  scripts/deploy-prod.sh (which stamps NEXT_PUBLIC_SENTRY_RELEASE with the commit).',
     '  This is UNKNOWN, not "in sync" — do not read it as healthy.',
   ].join('\n'));
 }
@@ -134,5 +134,5 @@ for (const line of (sh('git', ['log', '--oneline', `${deployed}..${mainSha}`]) ?
   console.log(`   ${line}`);
 }
 console.log('\nThese are fixes users do not have yet.');
-console.log('Production deploys from the Vercel Git integration on merge to main (scripts/deploy-prod.sh is retired); this script never deploys.');
+console.log('Merging does not deploy. Production changes only when the owner runs scripts/deploy-prod.sh; this script never deploys.');
 process.exit(behind > allow ? 1 : 0);

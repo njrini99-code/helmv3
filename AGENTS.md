@@ -80,14 +80,18 @@ Baseball and Lift Lab; preserve RLS, sport boundaries, and customer data.
 Keep secrets out of output and commits.
 
 Vercel reads, logs, and previews are normal development work. Production
-deploys from the Vercel Git integration: merging a PR to `main` builds and
-promotes it. Do not deploy from the CLI (`vercel deploy --prod`,
-`scripts/deploy-prod.sh` — retired, it refuses to run); a CLI deploy beside
-the Git integration produced duplicate and failed production deploys. After a
-merge, confirm the Vercel deployment for that commit is READY before
-reporting it live; a push or merge alone does not prove deployment. Rollback
-and promote of an existing deployment still require explicit user
-authorization. Use repo-local Supabase/Vercel binaries.
+deploys are manual and happen only when the owner says to deploy.
+`vercel.json` disables Vercel Git deployments, so pushing or merging to
+`main` never deploys; merged work waits in `npm run release:status` until a
+release. The release path is `scripts/deploy-prod.sh`, run by the owner from a
+clean, current `main` checkout (`! scripts/deploy-prod.sh` in a Claude
+session): it checks the linked project, the tree and the weekly budget
+(`config/release-policy.yml`), stamps the Sentry release, deploys, and
+verifies the served commit. Agents are denied the script and `vercel --prod`;
+they prepare the release and verify it afterwards. Report a release live only
+after `npm run release:status` shows the released SHA. Rollback and promote of
+an existing deployment also require explicit owner authorization. Use
+repo-local Supabase/Vercel binaries.
 
 ## Product conventions
 

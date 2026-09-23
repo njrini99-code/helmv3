@@ -150,10 +150,6 @@ function deploy(cwd: string, env: Record<string, string> = {}, extraPath: string
       FAKE_VERCEL_LOG: vercelLog,
       FAKE_CURL_LOG: curlLog,
       FAKE_STAMP_SHA: headSha,
-      // The script refuses to run since 2026-09-17 (production deploys from
-      // the Vercel Git integration); the verification block is what is
-      // under test here, so the retirement guard is lifted for the fakes.
-      HELM_RETIRED_CLI_DEPLOY_OVERRIDE: '1',
       ...env,
     },
   });
