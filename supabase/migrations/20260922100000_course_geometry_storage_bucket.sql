@@ -25,8 +25,13 @@
 -- pipeline, never from a player or coach session.
 --
 -- Idempotent (re-runnable): bucket upsert only, no policy to (re-)create.
--- BRANCH-ONLY: this file is committed for review and has NOT been applied to
--- any remote project (see HELD.md).
+--
+-- ROLLBACK:
+--   delete from storage.buckets where id = 'course-geometry';
+--   (Only while the bucket is empty — empty it through the Storage API first.
+--   Nothing else is touched, so removing the row fully reverts it.)
+--
+-- VERIFY: select 1 from storage.buckets where id = 'course-geometry' and public and file_size_limit = 20971520 and allowed_mime_types = array['application/json'];
 -- ============================================================================
 
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
