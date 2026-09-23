@@ -1,6 +1,7 @@
 import * as Sentry from '@sentry/nextjs';
 import '@supabase/supabase-js/tracing';
 import { redactEventPii } from '@/lib/observability/redact-pii';
+import { fingerprintSupabaseAutoCapture } from '@/lib/observability/supabase-error-grouping';
 import { isAlreadyBridgeLogged } from '@/lib/bridge-logged-marker';
 import { buildClientSentryOptions } from '@/lib/sentry-client-options';
 import { classifyTraceSurface } from '@/lib/error-trace-classification';
@@ -238,7 +239,10 @@ Sentry.init({
     // Mask email addresses in message / extra / contexts / exception values.
     // The scrubbing above covers only the request envelope; the free-text fields
     // are where addresses actually appear.
-    return redactEventPii(event);
+    // Browser Supabase clients are instrumented too (src/lib/supabase/client.ts),
+    // so their auto-captured PostgREST errors get the same grouping as the
+    // server's — see supabase-error-grouping.ts.
+    return fingerprintSupabaseAutoCapture(redactEventPii(event), hint);
   },
 });
 

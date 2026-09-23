@@ -9492,14 +9492,16 @@ async function deleteShotImpl(shotId: string): Promise<ActionResult<void>> {
       .from('golf_shots')
       .select('id, round_id, hole_number')
       .eq('id', shotId)
-      .single();
+      .maybeSingle();
 
-    // Supabase returns PGRST116 when `.single()` found no visible row. That
-    // is the one case the client may safely reconcile as a stale local ID.
-    // A transport/database error must remain a normal failure: treating it as
-    // a missing shot would make an offline player temporarily hide valid
-    // progress from their own scorecard.
-    if (shotError && shotError.code !== 'PGRST116') {
+    // A missing row (null data, no error) is the one case the client may
+    // safely reconcile as a stale local ID. A transport/database error must
+    // remain a normal failure: treating it as a missing shot would make an
+    // offline player temporarily hide valid progress from their own
+    // scorecard. `.maybeSingle()`, not `.single()`: the old PGRST116 error
+    // for "no row" was handled here but still reached Sentry as an unhandled
+    // integration auto-capture (JAVASCRIPT-NEXTJS-SZ, 34 events).
+    if (shotError) {
       endTrace('failure');
       return { success: false, error: 'Failed to verify shot. Please try again.' };
     }
@@ -9757,12 +9759,12 @@ async function updateShotImpl(
       .from('golf_shots')
       .select('id, round_id')
       .eq('id', shotId)
-      .single();
+      .maybeSingle();
 
     // Match deleteShot's reconciliation contract: only an explicit no-row
     // response is stale local state. A transient lookup failure must preserve
     // the local shot and let the player retry.
-    if (shotError && shotError.code !== 'PGRST116') {
+    if (shotError) {
       endTrace('failure');
       return { success: false, error: 'Failed to verify shot. Please try again.' };
     }

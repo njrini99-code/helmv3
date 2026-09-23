@@ -65,7 +65,9 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
-        run: npm run db:drift:check
+        run: |
+          set -o pipefail
+          npm run db:drift:check 2>&1 | tee "$RUNNER_TEMP/drift-check.log"
 
       # D4 second check (db-tooling-drift): object-level drift between the
       # ledger and the live catalog — a version can be "applied" on both
@@ -75,7 +77,9 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
-        run: npm run db:ledger-vs-catalog
+        run: |
+          set -o pipefail
+          npm run db:ledger-vs-catalog 2>&1 | tee "$RUNNER_TEMP/drift-ledger.log"
 
       # Alert the owner within the hour of a failure above, instead of
       # waiting for someone to notice a red scheduled run. Two channels,
@@ -87,28 +91,75 @@ jobs:
       #      OPS_DIGEST_TO) — skipped without failing the workflow if those
       #      secrets are not configured in this repo's Actions, in which
       #      case the issue is the alert of record.
+      #
+      # ONE ALERT PER DISTINCT FAILURE, NOT PER RUN. The check stays red every
+      # day until a known gap is fixed, and it used to comment (and email) on
+      # every run: by 2026-09-23 issue #1897 held 18 byte-identical comments
+      # for one gap that HELD.md had tracked since 2026-09-05. The failing
+      # lines (each "❌" line, its detail line, and each missing-object line)
+      # are hashed into a signature; an alert whose signature is already on
+      # the open issue is skipped. A NEW or CHANGED failure still alerts on
+      # both channels, and the run itself stays red either way.
+      - name: Compute the failure signature
+        id: signature
+        if: failure()
+        run: |
+          set -euo pipefail
+          failing="$(cat "$RUNNER_TEMP"/drift-*.log 2>/dev/null | awk '/^❌/ {print; grab=1; next} grab && /^   / {print; grab=0; next} {grab=0} /^   \[/ {print}' || true)"
+          if [ -z "$failing" ]; then
+            failing="no failing invariant printed (unreachable database or a crashed check)"
+          fi
+          signature="$(printf '%s' "$failing" | sha256sum | cut -c1-16)"
+          echo "signature=$signature" >> "$GITHUB_OUTPUT"
+          {
+            echo 'failing<<DRIFT_EOF'
+            printf '%s\n' "$failing"
+            echo 'DRIFT_EOF'
+          } >> "$GITHUB_OUTPUT"
+
       - name: Open or update the db-drift alert issue
+        id: alert
         if: failure()
         env:
           GH_TOKEN: ${{ github.token }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SIGNATURE: ${{ steps.signature.outputs.signature }}
+          FAILING: ${{ steps.signature.outputs.failing }}
         run: |
           set -euo pipefail
           gh label create db-drift --description "Automated production database drift/advisor alerts" --color B60205 --force >/dev/null 2>&1 || true
           existing="$(gh issue list --repo "$GITHUB_REPOSITORY" --label db-drift --state open --json number --jq '.[0].number // empty')"
+          marker="<!-- db-drift-signature: ${SIGNATURE} -->"
+          if [ -n "$existing" ]; then
+            seen="$(gh issue view "$existing" --repo "$GITHUB_REPOSITORY" --json body,comments --jq '[.body, .comments[].body] | map(select(contains("'"$marker"'"))) | length')"
+            if [ "$seen" != "0" ]; then
+              echo "Failure signature ${SIGNATURE} is already on issue #${existing}; not alerting again."
+              echo "new=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
           body="A scheduled Database drift check step failed.
 
           Run: ${RUN_URL}
 
-          See the failed step's log for which invariant (schema, or ledger-vs-catalog) tripped."
+          Failing invariants:
+
+          \`\`\`
+          ${FAILING}
+          \`\`\`
+
+          Later runs with this same failure do not comment again; a new or changed failure does.
+
+          ${marker}"
           if [ -n "$existing" ]; then
             gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body "$body"
           else
             gh issue create --repo "$GITHUB_REPOSITORY" --title "Database drift check failing" --label db-drift --body "$body"
           fi
+          echo "new=true" >> "$GITHUB_OUTPUT"
 
       - name: Email the owner
-        if: failure()
+        if: failure() && steps.alert.outputs.new != 'false'
         env:
           OPS_DIGEST_RESEND_API_KEY: ${{ secrets.OPS_DIGEST_RESEND_API_KEY }}
           OPS_DIGEST_TO: ${{ secrets.OPS_DIGEST_TO }}

@@ -253,6 +253,17 @@ alongside (not duplicated here).
   admin-platform.md`'s Known Risk Areas for the companion "most unresolved
   Sentry issues are noise" triage note. (STU, source:
   `supabase-tracing-reports-handled-errors.md`, no date field.)
+- **Those auto-captures are regrouped by their Postgres code.** The
+  integration (mechanism `auto.db.supabase.postgres`) hangs the code only on
+  `hint.originalException.code`, so `fingerprintByPostgresCode` never saw it.
+  `src/lib/observability/supabase-error-grouping.ts`, called from both
+  `beforeSend` hooks, groups INFRASTRUCTURE codes (PGRST000-003, 08*, 53*,
+  57014, 57P0*, 55P03) on the code alone, so one database incident is one
+  issue rather than one per call site (2026-09-18: one schema-cache reload
+  became 15+ issues). Query-specific codes keep default grouping plus
+  `pg:<code>`, and uncoded transport failures group by kind. A deliberate
+  fingerprint is never overridden. Measured 2026-09-23: 35 of the top 100
+  unresolved issues were these auto-captures.
 
 ## Rollback
 

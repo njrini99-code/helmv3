@@ -71,8 +71,6 @@ export function TraceFleetStrip({ traces }: { traces: readonly FlightTraceRun[] 
   const fleet = summarizeTraceFleet(traces);
   if (fleet.total === 0) return null;
 
-  const healthy = fleet.total - fleet.failed - fleet.warning;
-
   return (
     <div>
       <h2 className={EYEBROW_CLASS}>Recorded fleet</h2>
@@ -109,7 +107,7 @@ export function TraceFleetStrip({ traces }: { traces: readonly FlightTraceRun[] 
         <div className="rounded-fw-md bg-surface-sunken p-3">
           <p className="text-eyebrow font-semibold uppercase tracking-widest text-warm-400">Outcome</p>
           <div className="mt-2 flex items-start gap-5">
-            <Figure value={healthy.toLocaleString()} label="succeeded" tone="success" />
+            <Figure value={fleet.succeeded.toLocaleString()} label="succeeded" tone="success" />
             <Figure
               value={fleet.warning.toLocaleString()}
               label="warning"
@@ -120,6 +118,15 @@ export function TraceFleetStrip({ traces }: { traces: readonly FlightTraceRun[] 
               label="failed"
               tone={fleet.failed > 0 ? 'danger' : 'neutral'}
             />
+            {fleet.stuck > 0 ? (
+              <Figure
+                value={fleet.stuck.toLocaleString()}
+                label="never finished"
+                hint="started, not finalized after 15 min"
+                tone="warning"
+              />
+            ) : null}
+            {fleet.running > 0 ? <Figure value={fleet.running.toLocaleString()} label="running" /> : null}
           </div>
           <p className="mt-2 text-caption text-warm-500">
             A short trace is not a failed one. These two panels count different things and are never added

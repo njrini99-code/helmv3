@@ -18,13 +18,13 @@
 // src/instrumentation-client.ts.
 import '@supabase/supabase-js/tracing';
 import * as Sentry from '@sentry/nextjs';
-import '@supabase/supabase-js/tracing';
 import { redactEventPii } from '@/lib/observability/redact-pii';
 import { getAppBaseUrl } from '@/lib/app-base-url';
 import { isAlreadyBridgeLogged } from '@/lib/bridge-logged-marker';
 import { resolveServerEnvironment } from '@/lib/sentry-environment';
 import { enforceMetricAttributeAllowlist } from '@/lib/observability/metrics';
 import { enforceLogAttributeAllowlist } from '@/lib/observability/structured-log';
+import { fingerprintSupabaseAutoCapture } from '@/lib/observability/supabase-error-grouping';
 
 const release = process.env.NEXT_PUBLIC_SENTRY_RELEASE || process.env.VERCEL_GIT_COMMIT_SHA;
 const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN?.trim() || process.env.SENTRY_DSN?.trim();
@@ -273,7 +273,7 @@ function fingerprintSupabaseKeyError(event: Sentry.ErrorEvent): Sentry.ErrorEven
   return event;
 }
 
-const scrubPii: Sentry.NodeOptions['beforeSend'] = (event) => {
+const scrubPii: Sentry.NodeOptions['beforeSend'] = (event, hint) => {
   if (event.request) {
     delete event.request.cookies;
     if (event.request.headers) {
@@ -318,8 +318,13 @@ const scrubPii: Sentry.NodeOptions['beforeSend'] = (event) => {
   // be scrubbed. Supabase-key runs first: it bails immediately when the text
   // doesn't match, and fingerprintByPostgresCode's own "never override a
   // deliberate fingerprint" guard means whichever rule matches first wins —
-  // the two are not expected to co-occur on the same event.
-  return fingerprintByPostgresCode(fingerprintSupabaseKeyError(redactEventPii(event)));
+  // the two are not expected to co-occur on the same event. Supabase
+  // integration auto-captures sit between them: they carry their code only on
+  // `hint.originalException`, which fingerprintByPostgresCode cannot see (see
+  // supabase-error-grouping.ts).
+  return fingerprintByPostgresCode(
+    fingerprintSupabaseAutoCapture(fingerprintSupabaseKeyError(redactEventPii(event)), hint),
+  );
 };
 
 export async function register() {

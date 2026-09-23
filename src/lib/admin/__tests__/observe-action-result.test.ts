@@ -225,6 +225,7 @@ describe('observe-action-result', () => {
     ['no_rounds_in_period', 'No completed rounds found in the specified period'],
     ['no_completed_rounds', 'No completed rounds found for this player'],
     ['insufficient_rounds', 'Need at least 3 completed rounds for trend analysis'],
+    ['round_not_completed', 'Round must be completed before generating a review'],
   ])('logs %s via logServerEvent at info severity with skipSentry', (code, error) => {
     observeActionSoftFailure(
       { success: false, error, code },

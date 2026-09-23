@@ -29,6 +29,18 @@ export interface TraceFleetSummary {
   failed: number;
   /** Runs the store flagged `warning`, and that did not fail. */
   warning: number;
+  /** Runs that finalized as `success` and did not fail. Counted, never derived. */
+  succeeded: number;
+  /**
+   * Runs still `started` after STUCK_TRACE_AFTER_MS: the process crashed or
+   * timed out before `helm_debug_finalize_trace` ran. Measured 2026-09-23:
+   * 62 of 3,769 production runs in 14 days. The strip used to compute
+   * "succeeded" as total - failed - warning, so every one of them rendered
+   * green.
+   */
+  stuck: number;
+  /** Runs still `started` and younger than the threshold: genuinely running. */
+  running: number;
   /**
    * The modal number of missing required steps among short runs, with how
    * many runs share it. A single dominant value means one uninstrumented
@@ -40,13 +52,22 @@ export interface TraceFleetSummary {
   workflows: string[];
 }
 
-export function summarizeTraceFleet(traces: readonly FlightTraceRun[]): TraceFleetSummary {
+/** A run that has not finalized after this long never will. */
+export const STUCK_TRACE_AFTER_MS = 15 * 60 * 1000;
+
+export function summarizeTraceFleet(
+  traces: readonly FlightTraceRun[],
+  now: number = Date.now(),
+): TraceFleetSummary {
   const gapCounts = new Map<number, number>();
   const workflows = new Set<string>();
   let complete = 0;
   let short = 0;
   let failed = 0;
   let warning = 0;
+  let succeeded = 0;
+  let stuck = 0;
+  let running = 0;
 
   for (const run of traces) {
     if (run.workflow) workflows.add(run.workflow);
@@ -63,8 +84,16 @@ export function summarizeTraceFleet(traces: readonly FlightTraceRun[]): TraceFle
     }
 
     // Outcome axis, independent of the above.
+    // Anything else (an unknown status) is left out of every bucket rather
+    // than counted as a success.
     if (run.status === 'failure' || run.failure_step) failed += 1;
     else if (run.status === 'warning') warning += 1;
+    else if (run.status === 'success') succeeded += 1;
+    else if (run.status === 'started') {
+      const startedAt = Date.parse(run.started_at);
+      if (Number.isFinite(startedAt) && now - startedAt < STUCK_TRACE_AFTER_MS) running += 1;
+      else stuck += 1;
+    }
   }
 
   let dominantGap: TraceFleetSummary['dominantGap'] = null;
@@ -78,6 +107,9 @@ export function summarizeTraceFleet(traces: readonly FlightTraceRun[]): TraceFle
     short,
     failed,
     warning,
+    succeeded,
+    stuck,
+    running,
     dominantGap,
     workflows: [...workflows].sort(),
   };
