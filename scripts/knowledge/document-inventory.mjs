@@ -43,6 +43,10 @@
  *     against `.dead-refs-baseline.json`. Same shape as
  *     scripts/markdown-lint-ratchet.mjs: the baseline may only fall, never
  *     rise; `--update` rewrites it from the current count.
+ *   node scripts/knowledge/document-inventory.mjs --dead-refs --introduced-since <ref>
+ *     CI's form: fails only for (doc, reference) pairs that are dead now and
+ *     were not dead at <ref> — what the change itself introduced. Scans <ref>
+ *     in a throwaway detached worktree.
  *   node scripts/knowledge/document-inventory.mjs --lifecycle
  *     Lists every doc outside the attic (`docs/archive/`, `archive/`) whose
  *     own Status header reads SUPERSEDED, DONE or COMPLETE, and fails
@@ -55,10 +59,11 @@
  *     `git rev-list --count <sha>..HEAD -- <pathspec>` command — runs that
  *     count and flags anything over 200 commits since the anchor.
  */
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdtempSync, rmSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
-import { resolve } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { join, resolve } from 'node:path';
+import { tmpdir } from 'node:os';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import * as yaml from 'js-yaml';
 
 const ROOT = process.cwd();
@@ -419,11 +424,86 @@ function main() {
  * ARCHIVE, HISTORY_LEDGER, PLAN, AUDIT_SNAPSHOT, ADR, INCIDENT, INDEX and
  * UNKNOWN are excluded, matching what the plan calls the living set.
  */
+function deadRefPairs(living) {
+  return living.flatMap((r) => r.deadRefList.map((ref) => `${r.path} -> ${ref}`)).sort();
+}
+
+/**
+ * The living dead-reference pairs at another commit, computed by running THIS
+ * script (so both sides use one definition of "dead") with its cwd in a
+ * throwaway detached worktree of <ref>. ROOT is process.cwd(), so the scan
+ * reads that tree; js-yaml still resolves next to this file.
+ */
+function deadRefPairsAt(ref) {
+  const dir = mkdtempSync(join(tmpdir(), 'dead-refs-base-'));
+  rmSync(dir, { recursive: true, force: true });
+  git(['worktree', 'add', '--detach', '--quiet', dir, ref]);
+  try {
+    const out = execFileSync(process.execPath, [fileURLToPath(import.meta.url), '--dead-refs', '--list-json'], {
+      cwd: dir,
+      encoding: 'utf-8',
+      maxBuffer: 64 * 1024 * 1024,
+    });
+    return new Set(JSON.parse(out));
+  } finally {
+    try {
+      git(['worktree', 'remove', '--force', dir]);
+    } catch {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }
+}
+
 function runDeadRefs() {
   const update = process.argv.includes('--update');
   const { rows } = buildRows();
   const living = rows.filter((r) => LIVING_CATEGORIES.includes(r.category) && r.deadRefs > 0);
   const total = living.reduce((a, r) => a + r.deadRefs, 0);
+
+  if (process.argv.includes('--list-json')) {
+    process.stdout.write(JSON.stringify(deadRefPairs(living)));
+    return;
+  }
+
+  // --introduced-since <ref> (CI, 2026-09-23): fail only for dead references
+  // that are NOT already dead at <ref> (the PR's base / the previous main
+  // commit). The global ratchet below compared the whole tree to one
+  // committed number, so when two PRs landed dead refs back to back, main
+  // itself sat over the baseline ("REGRESSION 4 -> 6") and EVERY open PR
+  // failed for references none of them wrote. This form still catches a PR
+  // that deletes or moves a file a living doc names — that pair is new — and
+  // never a pair the base already had. The committed baseline stays the
+  // number `--update` locks in and the plain form (local, docs:check) checks.
+  const sinceIdx = process.argv.indexOf('--introduced-since');
+  if (sinceIdx !== -1) {
+    const since = process.argv[sinceIdx + 1];
+    if (!since || since.startsWith('--')) {
+      console.error('document-inventory --dead-refs: --introduced-since needs a git ref');
+      process.exitCode = 2;
+      return;
+    }
+    let before;
+    try {
+      before = deadRefPairsAt(since);
+    } catch (err) {
+      console.error(`document-inventory --dead-refs: could not scan ${since}: ${err.message}`);
+      process.exitCode = 2;
+      return;
+    }
+    const introduced = deadRefPairs(living).filter((p) => !before.has(p));
+    if (introduced.length) {
+      console.error(`document-inventory --dead-refs: ${introduced.length} dead reference(s) introduced since ${since}:\n`);
+      for (const p of introduced) console.error(`  ${p}`);
+      console.error('\nFix the reference (or restore the file it names).');
+      process.exitCode = 1;
+      return;
+    }
+    console.log(
+      `document-inventory --dead-refs: OK — no dead reference introduced since ${since} ` +
+        `(${total} total in living docs, ${before.size} at ${since}).`,
+    );
+    return;
+  }
 
   living.sort((a, b) => a.path.localeCompare(b.path));
   if (living.length) {
