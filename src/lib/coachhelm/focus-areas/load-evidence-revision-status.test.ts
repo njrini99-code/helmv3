@@ -110,7 +110,7 @@ describe('computeEvidenceRevisionStatuses', () => {
     expect(result).toEqual({});
   });
 
-  it('flag on, the read errors: degrades to {} rather than throwing', async () => {
+  it('flag on, the read errors: returns null (unknown), not {} (none stale), rather than throwing', async () => {
     isFlagEnabledMock.mockReturnValue(true);
     const client = makeClient([], { message: 'boom' });
 
@@ -118,7 +118,7 @@ describe('computeEvidenceRevisionStatuses', () => {
       { id: 'fa-1', from_insight_id: 'insight-1', evidence_revision: LIVE_FINGERPRINT },
     ]);
 
-    expect(result).toEqual({});
+    expect(result).toBeNull();
   });
 
   it('batches distinct insight ids into a single .in() read for multiple focus areas', async () => {
