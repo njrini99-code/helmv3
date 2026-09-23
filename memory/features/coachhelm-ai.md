@@ -288,6 +288,17 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   never stamped `v3` for these, so `applyInsightVisibility` excludes them
   from every coach/player surface. Planned retirement PR (sequenced after
   `agent/coachhelm-outcomes` lands on main) not yet done as of 2026-09-22.
+- **"Delivered" (not "Shown") is the honest label for the exposure count**
+  (N11, 2026-09-23): `recordExposureForReturned` (`insight-delivery.ts`)
+  writes `golf_insight_exposure` on every server render that returns an
+  insight to a surface — proof of reach, not of attention. The Fairway
+  effectiveness page (`FairwayEffectiveness.tsx`), its trust chip
+  tooltips/aria-labels, and the KPI band all read "Delivered", with a hint
+  that it counts delivery, not a confirmed view. Copy-only: `TrustSignal
+  .shown` and the DB column names are unchanged. A client-observed
+  "viewed" signal (debounced, in-viewport) is future work (Package 9/11),
+  not implemented by this fix. See "Delivered vs. viewed" in
+  `docs/architecture/coachhelm-evidence-contract.md`.
 
 - **`src/lib/coachhelm/v3/context/` is a new, pure-core-only package**
   (2026-09-23, `agent/coachhelm-evidence-facts`, repair-plan addendum §13,

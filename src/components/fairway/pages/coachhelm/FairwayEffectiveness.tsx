@@ -223,7 +223,11 @@ function trustChipTitle(signal: TrustSignal): string {
   } else {
     parts.push('No outcomes measured yet.');
   }
-  parts.push(`Shown ${signal.shown} · Acted ${signal.acted}.`);
+  parts.push(`Delivered ${signal.shown} · Acted ${signal.acted}.`);
+  // N11: "delivered" is the honest word — a render-time exposure row, not a
+  // confirmed view. See the "Delivered vs. viewed" note in
+  // docs/architecture/coachhelm-evidence-contract.md.
+  parts.push('Delivered = reached a CoachHelm screen, not a confirmed view.');
   if (signal.recentTrend) {
     parts.push(
       signal.recentTrend === 'up'
@@ -238,8 +242,14 @@ function trustChipTitle(signal: TrustSignal): string {
 
 /**
  * The TRUST CHIP — a small rounded pill (Badge primitive, tone-mapped) with a
- * tiny status dot, plus a muted `Shown N · Acted M` micro-stat. Wraps
+ * tiny status dot, plus a muted `Delivered N · Acted M` micro-stat. Wraps
  * gracefully, never overflows, carries a title tooltip + aria-label.
+ *
+ * N11: "Delivered" (not "Shown") — `signal.shown` is an exposure-ledger count
+ * written on every server render (`recordExposureForReturned`,
+ * insight-delivery.ts), which proves the insight reached a CoachHelm screen,
+ * not that a coach looked at it. See "Delivered vs. viewed" in
+ * docs/architecture/coachhelm-evidence-contract.md.
  */
 function InsightTrustChip({ signal }: { signal: TrustSignal }) {
   const spec = TRUST_SPECS[signal.status];
@@ -261,7 +271,7 @@ function InsightTrustChip({ signal }: { signal: TrustSignal }) {
         {label}
       </Badge>
       <span className="font-fw-mono text-caption font-normal tabular-nums text-text-tertiary whitespace-nowrap">
-        Shown {signal.shown} · Acted {signal.acted}
+        Delivered {signal.shown} · Acted {signal.acted}
       </span>
     </span>
   );
@@ -1482,7 +1492,7 @@ function summarizeTrust(rows: InsightTrustRow[]) {
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
- * TRUST BAND — a clean KPI row (Shown · Acted · Supported · Needs validation).
+ * TRUST BAND — a clean KPI row (Delivered · Acted · Supported · Needs validation).
  * One accent, restrained, editorial. Honest loading / error / empty states.
  * ─────────────────────────────────────────────────────────────────────────── */
 function InsightTrustBand({ trust }: { trust: InsightTrustState }) {
@@ -1515,7 +1525,7 @@ function InsightTrustBand({ trust }: { trust: InsightTrustState }) {
       <Surface padding="md">
         <InsufficientData
           title="No tracked insights yet"
-          description="Once CoachHelm surfaces insights, their trust signals — how often each was shown, acted on, and actually worked — roll up here from the unified ledger."
+          description="Once CoachHelm surfaces insights, their trust signals — how often each was delivered, acted on, and actually worked — roll up here from the unified ledger."
           unit="surfaced insights"
           current={0}
           required={1}
@@ -1526,7 +1536,7 @@ function InsightTrustBand({ trust }: { trust: InsightTrustState }) {
 
   const k = summarizeTrust(trust.rows);
   const kpis: ReadonlyArray<{ label: string; value: number; hint: string; accent?: boolean }> = [
-    { label: 'Insights shown', value: k.shown, hint: `across ${k.tracked} tracked` },
+    { label: 'Insights delivered', value: k.shown, hint: `across ${k.tracked} tracked` },
     { label: 'Acted on', value: k.acted, hint: 'coach or player taps' },
     { label: 'Supported', value: k.supported, hint: 'worked ≥60% of ≥3 measured', accent: true },
     { label: 'Needs validation', value: k.needsValidation, hint: 'too few outcomes yet' },
@@ -1541,21 +1551,31 @@ function InsightTrustBand({ trust }: { trust: InsightTrustState }) {
         <h3 className="font-fw-display text-h3 text-text-primary">Are these insights earning trust?</h3>
         <p className="font-fw-sans text-caption text-text-tertiary">
           Counts come only from real exposure, action, and outcome rows — absence reads as a new
-          hypothesis, never as success.
+          hypothesis, never as success. "Delivered" counts a render, not a confirmed view — a
+          client-observed viewed signal is future work.
         </p>
       </div>
       <StatStrip count={4} columns={4} ariaLabel="Insight trust ledger">
         {kpis.map((kpi) => (
-          <StatTile
+          <div
             key={kpi.label}
-            label={kpi.label}
-            value={kpi.value}
-            format={{ maximumFractionDigits: 0 }}
-            mono
-            hideTrend
-            tone={kpi.accent ? 'accent' : 'neutral'}
-            unit={kpi.hint}
-          />
+            className="h-full"
+            title={
+              kpi.label === 'Insights delivered'
+                ? 'Counts times this insight was delivered to a CoachHelm screen, not confirmed views.'
+                : undefined
+            }
+          >
+            <StatTile
+              label={kpi.label}
+              value={kpi.value}
+              format={{ maximumFractionDigits: 0 }}
+              mono
+              hideTrend
+              tone={kpi.accent ? 'accent' : 'neutral'}
+              unit={kpi.hint}
+            />
+          </div>
         ))}
       </StatStrip>
     </Surface>
