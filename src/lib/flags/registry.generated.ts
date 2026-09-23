@@ -13,6 +13,23 @@ import type { FlagDefinition } from './types';
 
 export const FLAG_REGISTRY: readonly FlagDefinition[] = [
   {
+    feature_id: "coachhelm_a4_sequence_attribution_surface",
+    owner: "golf/coachhelm",
+    purpose: "Gates whether the Round Review page renders the new per-hole sequence-attribution rollup (loadSequenceAttribution + computeSequenceAttribution + SequenceAttributionSection) below the existing stat breakdown; default off pending a design/product review of the section's placement, copy, and the observed-strokes-gained wording against a busy round.",
+    type: "experiment",
+    status: "active",
+    created_at: "2026-09-23",
+    expires_at: null,
+    default: false,
+    environment: {
+      production: false,
+      preview: false,
+      development: false,
+    },
+    kill_switch_behavior: null,
+    cleanup_plan: "Either promote to a permanent `release` flag once the section has been reviewed, or remove the section and its wiring if the review asks for a different surface/placement instead.",
+  },
+  {
     feature_id: "coachhelm_comparable_opportunity_attribution",
     owner: "golf/coachhelm",
     purpose: "Gates whether the causality-attribute cron attempts a shot-level, matched-opportunity outcome measurement (distance band, lie, and shot classification held constant on both sides of the insight's actual recorded exposure) for the three approach-proximity metrics that have no round-level equivalent, writing `method_version: 'comparable_opportunities_v1'` rows with `lift` always null; default off pending real-world evidence on the insufficient-evidence / no-exposure-record rate before any shadow data exists. Enable criteria (PR #2007 review, both required before this goes on in production): (1) migration 20260922230000 must be applied — off that migration, every write degrades away with nothing inserted (`writeComparableAttribution`'s `methodVersionColumnMissing` path), so turning the flag on beforehand produces zero rows, not partial ones; (2) A9 slice 2 (confounding / `multipleInterventions` detection) must ship first — slice 1 hard-codes `multipleInterventions: false`, and a confounded row written under that hard-code is PERMANENT (the insert is idempotent, PK on `insight_id`) and cannot be relabeled once slice 2 lands.",
