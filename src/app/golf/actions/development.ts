@@ -197,10 +197,17 @@ const ACTIVE_FOCUS_AREA_STATUSES_FOR_DEDUP = ['proposed', 'active', 'in_progress
  * persist) — comparing a raw, unresolved alias against the stored canonical
  * id would silently miss a real duplicate.
  *
- * `null`/empty `target_metric` never matches anything: an unresolved custom
- * free-text metric can't safely collide with another free-text metric (two
- * players' coaches might both type "tempo" meaning different things), so the
- * guard only protects the canonical-metric case.
+ * `null`/empty `target_metric` never matches anything — there is no value to
+ * compare. A free-text metric that does NOT resolve to a catalog id still
+ * gets compared, but only as an EXACT string match against this SAME
+ * player's other rows (every caller passes `resolveFocusTargetMetric(raw) ??
+ * raw`, so an unresolved value is the raw string verbatim). That is
+ * deliberately narrower than the canonical case: two different players'
+ * coaches typing "tempo" for different things never collide (this is a
+ * same-player check), and two spellings of the same free-text idea on the
+ * SAME player ("tempo" vs "Tempo") do not either — only a literal repeat
+ * does. A real cross-alias catch for free text would need normalization
+ * this function does not attempt.
  *
  * Reads through whichever client the caller is about to WRITE through (the
  * scoped RLS client for a coach path, the service-role admin client for a

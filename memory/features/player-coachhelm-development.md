@@ -208,6 +208,16 @@ Player opens round review
   actor_id, action_type)` via `effectiveness/action-rows.ts`, so a
   double-submit that DOES get past the guard (a genuine race between the
   read and the insert) still can't double-count as two ledger actions.
+  Known limitation (#1995 review, deferred): the ledger dedup key is
+  `(insight_id, actor_id, action_type)` — it does NOT include
+  `focus_area_id`. A second genuine `create_focus_area` action on the SAME
+  insight but a DIFFERENT target metric (now possible since the duplicate
+  guard only blocks a repeat of the same metric) is deduped away as if it
+  were the earlier one, undercounting the display-only `acted` signal in
+  `TrustSignal`. This does not affect the duplicate-active-work guard
+  itself (a separate check, keyed on player+metric) — only the ledger's
+  action count can read low. Fixing it means widening the dedup key, a
+  follow-up slice.
 
 ## Tests To Prefer
 

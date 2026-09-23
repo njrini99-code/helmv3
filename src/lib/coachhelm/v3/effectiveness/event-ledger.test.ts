@@ -7,11 +7,22 @@
  *
  * Run: npm test -- event-ledger
  */
-import { describe, test, expect } from 'vitest';
+import { describe, test, expect, vi, beforeEach } from 'vitest';
+
+vi.mock('@/lib/server-error-logger', () => ({
+  logServerError: vi.fn().mockResolvedValue(undefined),
+}));
+
+const adminClientMock = vi.fn();
+vi.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: () => adminClientMock(),
+}));
+
 import {
   deriveTrustStatus,
   deriveTrend,
   RECENT_TREND_WINDOW,
+  recordInsightAction,
   type TrustStatus,
 } from './event-ledger';
 
@@ -130,5 +141,93 @@ describe('deriveTrend — recent outcome direction (newest-first)', () => {
     for (let i = 0; i < 50; i++) {
       expect(deriveTrend([3, -1, 2])).toBe('up');
     }
+  });
+});
+
+/**
+ * Pkg 9 slice 1a review follow-up — `recordInsightAction`'s dedup read/insert
+ * chain against a Supabase-shaped admin-client mock (the same (insight_id,
+ * actor_id, action_type)-same-day dedup `recordInsightExposure` already has,
+ * built on `action-rows.ts`'s `actionDedupeKey`/`isActionAlreadyRecorded`).
+ */
+describe('recordInsightAction — dedup read/insert chain', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  function makeActionTable(opts: {
+    existing?: Array<{ actor_id: string | null }>;
+    existingError?: { message: string; code?: string } | null;
+    insertError?: { message: string; code?: string } | null;
+  }) {
+    const insertSpy = vi.fn().mockResolvedValue({ error: opts.insertError ?? null });
+    return {
+      table: {
+        select: () => ({
+          eq: () => ({
+            eq: () => ({
+              gte: async () => ({
+                data: opts.existingError ? null : (opts.existing ?? []),
+                error: opts.existingError ?? null,
+              }),
+            }),
+          }),
+        }),
+        insert: insertSpy,
+      },
+      insertSpy,
+    };
+  }
+
+  test('skips the insert when this (insight, actor, action_type) is already recorded today', async () => {
+    const { table, insertSpy } = makeActionTable({ existing: [{ actor_id: 'coach-1' }] });
+    adminClientMock.mockReturnValue({ from: () => table });
+
+    await recordInsightAction({
+      insight_id: 'insight-1',
+      player_id: 'player-1',
+      actor_id: 'coach-1',
+      action_type: 'create_focus_area',
+    });
+
+    expect(insertSpy).not.toHaveBeenCalled();
+  });
+
+  test('inserts when no matching (insight, actor, action_type) key exists yet', async () => {
+    const { table, insertSpy } = makeActionTable({ existing: [{ actor_id: 'someone-else' }] });
+    adminClientMock.mockReturnValue({ from: () => table });
+
+    await recordInsightAction({
+      insight_id: 'insight-1',
+      player_id: 'player-1',
+      actor_id: 'coach-1',
+      action_type: 'create_focus_area',
+    });
+
+    expect(insertSpy).toHaveBeenCalledTimes(1);
+    expect(insertSpy.mock.calls[0]?.[0]).toMatchObject({
+      insight_id: 'insight-1',
+      actor_id: 'coach-1',
+      action_type: 'create_focus_area',
+    });
+  });
+
+  test('falls open — still inserts — when the dedup read itself errors', async () => {
+    const { table, insertSpy } = makeActionTable({ existingError: { message: 'boom' } });
+    adminClientMock.mockReturnValue({ from: () => table });
+
+    await recordInsightAction({
+      insight_id: 'insight-1',
+      player_id: 'player-1',
+      actor_id: 'coach-1',
+      action_type: 'create_focus_area',
+    });
+
+    expect(insertSpy).toHaveBeenCalledTimes(1);
+  });
+
+  test('is a no-op when required fields are missing — no client call at all', async () => {
+    await recordInsightAction({ insight_id: '', player_id: 'player-1', action_type: 'create_focus_area' });
+    expect(adminClientMock).not.toHaveBeenCalled();
   });
 });

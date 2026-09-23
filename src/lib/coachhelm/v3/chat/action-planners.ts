@@ -22,6 +22,7 @@
 import type { CoachChatContext } from './context';
 import { requireRosterPlayer } from './context';
 import type { ActionProposal, ActionReceipt } from './action-types';
+import { ACTIVE_FOCUS_DUPLICATE_ERROR } from '@/lib/coachhelm/focus-areas/duplicate-guard';
 
 export class ActionPlanError extends Error {}
 
@@ -151,6 +152,9 @@ export async function executeFocusArea(plan: FocusAreaPlan): Promise<ActionRecei
   });
 
   if (!result.success) {
+    // A duplicate-active-focus rejection (Pkg 9 slice 1a) is not transient —
+    // retrying the identical plan hits the same guard again every time.
+    const isDuplicate = result.error === ACTIVE_FOCUS_DUPLICATE_ERROR;
     return {
       status: 'failed',
       action: 'Create a focus area',
@@ -159,7 +163,7 @@ export async function executeFocusArea(plan: FocusAreaPlan): Promise<ActionRecei
       notifications: [],
       partial_failures: [],
       error: result.error ?? 'The development plan rejected it.',
-      retryable: true,
+      retryable: !isDuplicate,
       at,
     };
   }
