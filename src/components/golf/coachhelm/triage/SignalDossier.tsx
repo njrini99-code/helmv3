@@ -194,7 +194,11 @@ export function SignalDossier({
       {signal.strokeImpact !== null ? (
         <p className="font-fw-mono text-body-lg font-semibold tabular-nums text-text-primary">
           {signal.strokeImpact > 0 ? '+' : ''}
-          {signal.strokeImpact.toFixed(2)} strokes
+          {/* Package 11 (#1933 bug, confirmed present on main): strokeImpact is
+              the same generation-time estimate TeamSignalSummary sums as
+              `estimatedImpact` and badges "est. strokes" — this rendered it
+              with no qualifier at all, reading as a measured figure. */}
+          {signal.strokeImpact.toFixed(2)} est. strokes
         </p>
       ) : null}
 
