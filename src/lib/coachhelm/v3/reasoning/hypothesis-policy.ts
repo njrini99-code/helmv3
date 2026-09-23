@@ -28,15 +28,17 @@
  * reads the ONE row that actually describes its own shot/hole, never an
  * arbitrary first match across every band/hole.
  *
- * `rough_gap` matches `approach_measured_contribution` to its OWN
- * triggering shot's distance band (`bandOf` from `../metrics/distance-
- * profile.ts`) — the real metric is a per-band row, not a single
- * round-wide value. That real metric also turned out to be a plain
- * eligible-attempt COUNT (`unit: 'count'`, always >= 0), not the signed
- * strokes-gained value this slice originally assumed — a count can state
- * how much evidence exists, never a direction, so a `'count'`-unit row is
- * treated the same as an absent one (named in `missingInputs`, never
- * elevates or contradicts) until a strokes-shaped metric exists.
+ * `rough_gap` was originally written to match `approach_measured_
+ * contribution` (the real producer in `distance-profile.ts`, per-band, via
+ * `bandOf` from `../metrics/distance-profile.ts`). That metric turned out
+ * to be a plain eligible-attempt COUNT (`unit: 'count'`, always >= 0), not
+ * the signed strokes-gained value this family needs — a count can state
+ * how much evidence exists, never a direction. Rather than name the real
+ * count metric as this family's corroborator (present or missing), the
+ * family is keyed to a distinct id, `approach_rough_gap_strokes_
+ * contribution` (`ROUGH_GAP_STROKES_METRIC_ID`), naming the honestly
+ * not-yet-existing strokes-shaped signal it actually needs — no producer
+ * emits it today, so the family always reports the gap.
  *
  * `par5_opportunity_loss` matches every real call: `par-opportunities.ts`
  * dimensions its two metric ids per SPECIFIC par-5 hole
@@ -350,19 +352,21 @@ function buildShortBiasHypothesis(
 // intent.
 // ---------------------------------------------------------------------------
 
-/** The real producer (distance-profile.ts) — an eligible-attempt COUNT,
- *  never a signed value (see below). Looked up only to check whether some
- *  future row under this id ever carries the strokes-shaped signal this
- *  family actually needs; never itself named as the prerequisite/claim,
- *  since naming a count metric as "the rough-gap corroborator" would be
- *  the same count-vs-signed-value conflation review flagged once already. */
-const ROUGH_GAP_COUNT_METRIC_ID = 'approach_measured_contribution';
 /** Not a real producer today — names the GAP honestly, the same pattern
- *  short_bias/recovery already use for a real-but-absent signal. Likely
- *  future producer: A4's `sequence-attribution.ts`
- *  `SequenceEvent.measuredContribution` (a genuinely signed,
- *  canonical-baseline strokes value), adapted to a `MetricResult` row —
- *  that adapter is deliberately not built in this slice. */
+ *  short_bias/recovery already use for a real-but-absent signal, rather
+ *  than naming the real `approach_measured_contribution` metric (an
+ *  eligible-attempt COUNT, `distance-profile.ts`) as this family's
+ *  corroborator: a count states evidence volume, never a signed direction,
+ *  so citing it as "the rough-gap signal" — missing OR present — would be
+ *  the same count-vs-signed-value conflation review flagged once already.
+ *  A single metricId also cannot mean two different things (a count today,
+ *  a signed strokes value if some future producer reused it) without
+ *  corrupting every OTHER reader of `approach_measured_contribution`, so
+ *  this is a genuinely distinct id, not an alias. Likely future producer:
+ *  A4's `sequence-attribution.ts` `SequenceEvent.measuredContribution` (a
+ *  genuinely signed, canonical-baseline strokes value), adapted to a
+ *  `MetricResult` row under THIS id — that adapter is deliberately not
+ *  built in this slice. */
 const ROUGH_GAP_STROKES_METRIC_ID = 'approach_rough_gap_strokes_contribution';
 /** A negative measured contribution means the shot cost more strokes than
  *  the canonical baseline expected — the direction `rough_gap` claims.
@@ -439,32 +443,34 @@ function buildRoughGapHypothesis(shot: ShotFact, metrics: readonly MetricResult[
   // real producer (distance-profile.ts) reports one row per band, not one
   // round-wide value, so an unfiltered lookup could silently corroborate
   // off a different band's evidence than the one this shot belongs to.
+  //
+  // Looked up under ROUGH_GAP_STROKES_METRIC_ID, not the real
+  // `approach_measured_contribution` count metric — see that constant's
+  // own doc comment for why a single id can't serve both meanings. Until a
+  // future producer emits a row under this id, the lookup simply finds
+  // nothing here, which is honestly "missing," not "present but
+  // wrong-shaped."
   const band = bandOf(shot);
-  const contribution = band ? findMetric(metrics, ROUGH_GAP_COUNT_METRIC_ID, { band }) : undefined;
+  const contribution = band ? findMetric(metrics, ROUGH_GAP_STROKES_METRIC_ID, { band }) : undefined;
 
   const supportingClaimIds = [claim];
   const contradictingClaimIds: string[] = [];
   const missingInputs: string[] = [];
   let elevates = false;
 
-  // The real approach_measured_contribution row is a plain eligible-
-  // attempt COUNT (unit 'count', never negative) — evidence volume, not a
-  // signed strokes-gained direction. It cannot support or contradict this
-  // family's over/underperformance claim until a strokes-shaped metric
-  // exists, so a missing/wrong-shaped row is named under
-  // ROUGH_GAP_STROKES_METRIC_ID, the honestly-not-yet-existing signal —
-  // never the count metric's own id, which IS present, just wrong-shaped.
-  // A resolved claim, by contrast, must name the row that actually produced
-  // it: ROUGH_GAP_COUNT_METRIC_ID, the real id `contribution` was looked up
-  // under, so the claim id traces back to an actual input element.
+  // A row under ROUGH_GAP_STROKES_METRIC_ID would be a genuinely signed
+  // strokes value by construction; the unit guard is a defensive honesty
+  // check, not the load-bearing part — today no producer emits this id at
+  // all, so `contribution` is always undefined and this always reports the
+  // gap.
   if (!contribution || contribution.unit !== 'strokes') {
     missingInputs.push(metricClaimId(ROUGH_GAP_STROKES_METRIC_ID));
   } else if (contribution.status === 'supported' && contribution.value !== null) {
     if (contribution.value < ROUGH_GAP_UNDERPERFORM_THRESHOLD) {
-      supportingClaimIds.push(metricClaimId(ROUGH_GAP_COUNT_METRIC_ID, contribution.dimensions));
+      supportingClaimIds.push(metricClaimId(ROUGH_GAP_STROKES_METRIC_ID, contribution.dimensions));
       elevates = true;
     } else if (contribution.value > ROUGH_GAP_CONTRADICT_THRESHOLD) {
-      contradictingClaimIds.push(metricClaimId(ROUGH_GAP_COUNT_METRIC_ID, contribution.dimensions));
+      contradictingClaimIds.push(metricClaimId(ROUGH_GAP_STROKES_METRIC_ID, contribution.dimensions));
     }
   }
 

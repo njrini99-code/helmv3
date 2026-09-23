@@ -147,10 +147,14 @@ describe('buildHypotheses — rough_gap elevates only with a corroborating, unco
   });
 
   it('a supported, below-expectation contribution elevates to supported_association', () => {
+    // Fixture is keyed under the distinct, honestly-not-yet-existing
+    // strokes id (approach_rough_gap_strokes_contribution) — this is the
+    // shape a real future producer (A4's sequence-attribution adapter)
+    // would emit, not the real-today approach_measured_contribution count.
     const facts = [roughApproachShot('go_for_green')];
     const metrics: MetricResult[] = [
       metricRow({
-        metricId: 'approach_measured_contribution',
+        metricId: 'approach_rough_gap_strokes_contribution',
         value: -0.4,
         status: 'supported',
         unit: 'strokes',
@@ -161,7 +165,7 @@ describe('buildHypotheses — rough_gap elevates only with a corroborating, unco
     const roughGap = result.find((h) => h.family === 'rough_gap')!;
     expect(roughGap.state).toBe('supported_association');
     expect(roughGap.supportingClaimIds).toContain(
-      metricClaimId('approach_measured_contribution', { band: ROUGH_GAP_BAND }),
+      metricClaimId('approach_rough_gap_strokes_contribution', { band: ROUGH_GAP_BAND }),
     );
     expect(roughGap.missingInputs).toEqual([]);
     assertClaimsResolve(result, metrics, facts);
@@ -171,7 +175,7 @@ describe('buildHypotheses — rough_gap elevates only with a corroborating, unco
     const facts = [roughApproachShot('go_for_green')];
     const metrics: MetricResult[] = [
       metricRow({
-        metricId: 'approach_measured_contribution',
+        metricId: 'approach_rough_gap_strokes_contribution',
         value: 0.3,
         status: 'supported',
         unit: 'strokes',
@@ -182,7 +186,7 @@ describe('buildHypotheses — rough_gap elevates only with a corroborating, unco
     const roughGap = result.find((h) => h.family === 'rough_gap')!;
     expect(roughGap.state).toBe('candidate');
     expect(roughGap.contradictingClaimIds).toContain(
-      metricClaimId('approach_measured_contribution', { band: ROUGH_GAP_BAND }),
+      metricClaimId('approach_rough_gap_strokes_contribution', { band: ROUGH_GAP_BAND }),
     );
     assertClaimsResolve(result, metrics, facts);
   });
@@ -193,7 +197,7 @@ describe('buildHypotheses — rough_gap elevates only with a corroborating, unco
       const facts = [roughApproachShot('go_for_green')];
       const metrics: MetricResult[] = [
         metricRow({
-          metricId: 'approach_measured_contribution',
+          metricId: 'approach_rough_gap_strokes_contribution',
           value: -0.9,
           status,
           unit: 'strokes',
@@ -208,12 +212,14 @@ describe('buildHypotheses — rough_gap elevates only with a corroborating, unco
     },
   );
 
-  it('the REAL producer shape (unit "count", never negative) never elevates or contradicts (slice 2 fix)', () => {
+  it('the REAL producer (approach_measured_contribution, a count under a DIFFERENT id) is never found by this ' +
+    'family\'s lookup, so it reports the gap rather than a false contradiction or a wrong-shaped match', () => {
     // approach_measured_contribution's actual shape (distance-profile.ts):
-    // a plain eligible-attempt count, not a signed strokes-gained value.
-    // Under the pre-fix code (which read `value` alone, no unit guard) a
-    // positive count would land in the CONTRADICTS branch on every real
-    // call — this pins that it now stays a stated gap instead.
+    // a plain eligible-attempt count, not a signed strokes-gained value,
+    // AND a different metricId than ROUGH_GAP_STROKES_METRIC_ID entirely.
+    // findMetric looks up the strokes id, so this row is simply absent from
+    // its perspective — pins that a real count row under the OLD id can
+    // never be mistaken for this family's (not-yet-existing) signal.
     const facts = [roughApproachShot('go_for_green')];
     const metrics: MetricResult[] = [
       metricRow({
@@ -243,14 +249,14 @@ describe('buildHypotheses — rough_gap elevates only with a corroborating, unco
     });
     const metrics: MetricResult[] = [
       metricRow({
-        metricId: 'approach_measured_contribution',
+        metricId: 'approach_rough_gap_strokes_contribution',
         value: -0.4,
         status: 'supported',
         unit: 'strokes',
         dimensions: { band: '50_125ft' },
       }),
       metricRow({
-        metricId: 'approach_measured_contribution',
+        metricId: 'approach_rough_gap_strokes_contribution',
         value: 0.4,
         status: 'supported',
         unit: 'strokes',
@@ -263,7 +269,7 @@ describe('buildHypotheses — rough_gap elevates only with a corroborating, unco
     expect(near.state).toBe('supported_association');
     expect(far.state).toBe('candidate');
     expect(far.contradictingClaimIds).toContain(
-      metricClaimId('approach_measured_contribution', { band: '175_plus_ft' }),
+      metricClaimId('approach_rough_gap_strokes_contribution', { band: '175_plus_ft' }),
     );
     assertClaimsResolve(result, metrics, [nearShot, farShot]);
   });
@@ -517,7 +523,7 @@ describe('buildHypotheses — description is a function of state, not a fixed te
     const supported = buildHypotheses(
       [
         metricRow({
-          metricId: 'approach_measured_contribution',
+          metricId: 'approach_rough_gap_strokes_contribution',
           value: -0.4,
           status: 'supported',
           unit: 'strokes',
@@ -569,7 +575,7 @@ describe('buildHypotheses — never infers psychology, fatigue, or mechanics', (
     const metrics: MetricResult[] = [
       metricRow({ metricId: 'approach_short_miss_rate', value: 70, status: 'supported' }),
       metricRow({
-        metricId: 'approach_measured_contribution',
+        metricId: 'approach_rough_gap_strokes_contribution',
         value: -0.4,
         status: 'supported',
         unit: 'strokes',
@@ -597,7 +603,7 @@ describe('buildHypotheses — claim ids always resolve to an input element', () 
     ];
     const metrics: MetricResult[] = [
       metricRow({
-        metricId: 'approach_measured_contribution',
+        metricId: 'approach_rough_gap_strokes_contribution',
         value: -0.2,
         status: 'supported',
         unit: 'strokes',

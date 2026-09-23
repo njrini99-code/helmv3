@@ -1291,20 +1291,25 @@ are dimensioned when they resolved against an actual row.
   slice 1 assumed a signed strokes-gained value (negative supports,
   positive contradicts). The real producer (`distance-profile.ts`) is a
   plain eligible-attempt COUNT, `unit: 'count'`, never negative — evidence
-  volume, not direction. Corroboration is now guarded on `unit ===
-  'strokes'`; a `'count'`-unit row is treated the same as an absent one
-  (named in `missingInputs`, never elevates or contradicts) until a
-  strokes-shaped metric exists for this family. Pinned by a test using the
-  real shape (`unit: 'count'`, a positive value) asserting it stays
-  `'candidate'`, never `'candidate'`-via-false-contradiction.
-  Follow-up: `missingInputs`/`prerequisites` now name a distinct id,
+  volume, not direction, so it can never corroborate an over/underperformance
+  claim. Follow-up: rather than name this real, present count metric as
+  `rough_gap`'s corroborator — "missing" when unit-mismatched, "supporting"
+  when hypothetically reshaped — `findMetric`/`missingInputs`/
+  `prerequisites`/every claim id now key on a DISTINCT id,
   `approach_rough_gap_strokes_contribution` (`ROUGH_GAP_STROKES_METRIC_ID`),
-  for the not-yet-existing strokes-shaped signal, instead of dishonestly
-  naming the real, present count metric as "missing." A resolved
-  supporting/contradicting claim still names
-  `approach_measured_contribution` (`ROUGH_GAP_COUNT_METRIC_ID`) — the id
-  `contribution` was actually looked up and found under — so the claim
-  traces back to a real input element.
+  naming the honestly not-yet-existing strokes-shaped signal this family
+  actually needs. No producer emits a row under this id today, so the
+  lookup always reports the gap — a `'count'`-unit row under the OLD id is
+  simply never found under the new one (pinned by a test using the real
+  `approach_measured_contribution` shape, `unit: 'count'`, asserting it
+  stays `'candidate'` with the gap reported, never a false contradiction).
+  A single metricId cannot honestly mean two different things (a count
+  today, a signed value if some future producer reused it) without
+  corrupting every OTHER reader of `approach_measured_contribution` — the
+  likely future producer (A4's `sequence-attribution.ts`
+  `SequenceEvent.measuredContribution`, adapted to a `MetricResult` row) is
+  expected to emit under this distinct id, not the old one; that adapter is
+  deliberately not built in this slice.
 - **`par5_opportunity_loss` now emits one `Hypothesis` PER dimensioned
   opportunity row**, not one aggregate reading an arbitrary first match.
   `par-opportunities.ts` dimensions its two metric ids per SPECIFIC par-5
