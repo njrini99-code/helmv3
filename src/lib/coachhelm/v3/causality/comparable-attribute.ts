@@ -174,10 +174,9 @@ export function isShotLevelAttributionMetric(metricId: string): boolean {
  * `'create_focus'`/`'acknowledged'`/`'resolved'` (the only other
  * `recordInsightAction` action_type values as of this decision — see
  * `event-ledger.ts`'s call sites) are included as genuine engagement.
- * PROVISIONAL: this exact allowlist (in particular whether `'acknowledged'`
- * alone, without a follow-up action, should count) was not itself part of
- * the owner's decision and is flagged for confirmation in this PR's
- * description — change here, not by adding a second allowlist elsewhere.
+ * CONFIRMED by the owner (2026-09-23): this exact allowlist, including that
+ * `'acknowledged'` alone (without a follow-up action) counts — change here,
+ * not by adding a second allowlist elsewhere.
  */
 export const INTERVENTION_ACTION_TYPES = ['create_focus', 'acknowledged', 'resolved'] as const;
 

@@ -103,21 +103,18 @@ export function describeMethodVersion(methodVersion: string | null): Attribution
 /** ANCHOR LABELING (owner decision, Package 10): `interventionAt` anchors on
  *  the insight's first `golf_insight_action` when one exists, else falls
  *  back to first exposure (`shown_at`) — `comparable-attribute.ts`'s
- *  `resolveInterventionAnchor`. `row.anchor_kind === 'exposure'` means THIS
- *  row used the fallback, so the measurement window is honestly described
- *  as counted "since first shown" rather than implying an action anchored
- *  it. Only applied to the two comparable-method labels — `earlier_method`/
- *  `unknown` rows carry `anchor_kind: null` (`attribution-read.ts`) and are
- *  left untouched.
- *
- *  `anchor_kind === 'action'` gets NO added label — there is no established
- *  house phrase yet for "since you acted on it" that stays inside this
- *  file's hedged-language contract, and inventing one here was flagged as
- *  an open question for the PR rather than decided unilaterally. */
+ *  `resolveInterventionAnchor`. Each `anchor_kind` gets its own honest
+ *  suffix so the measurement window's start is never misattributed:
+ *  `'exposure'` → "(since first shown)" (the fallback was used);
+ *  `'action'` → "(since you acted on it)" (owner-confirmed wording,
+ *  2026-09-23, mirroring the exposure phrasing). Only applied to the two
+ *  comparable-method labels — `earlier_method`/`unknown` rows carry
+ *  `anchor_kind: null` (`attribution-read.ts`) and are left untouched. */
 function withAnchorLabel(method: AttributionMethodInfo, anchorKind: AttributionRow['anchor_kind']): AttributionMethodInfo {
-  if (anchorKind !== 'exposure') return method;
   if (method.label !== 'observed_change' && method.label !== 'observed_change_limited') return method;
-  return { ...method, description: `${method.description} (since first shown)` };
+  if (anchorKind === 'exposure') return { ...method, description: `${method.description} (since first shown)` };
+  if (anchorKind === 'action') return { ...method, description: `${method.description} (since you acted on it)` };
+  return method;
 }
 
 /** Same `< 3` sample-size floor `event-ledger.ts`'s `deriveTrustStatus`
