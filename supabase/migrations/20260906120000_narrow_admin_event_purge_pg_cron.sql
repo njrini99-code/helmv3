@@ -46,7 +46,7 @@
 -- VERIFY: '%admin_analytics_events%';
 -- VERIFY: select 1 from cron.job where jobname = 'purge-admin-event-telemetry'
 -- VERIFY: and command ilike '%180 days%';
--- VERIFY: select 1 from cron.job where jobname='purge-admin-event-telemetry' and command not like '%admin_analytics_events%' and command like '%severity IN%' -- noqa: LT05
+-- VERIFY: select 1 from cron.job where jobname='purge-admin-event-telemetry' and command not like '%admin_analytics_events%' and command like '%severity IN%'; -- noqa: LT05
 CREATE EXTENSION IF NOT EXISTS pg_cron;
 
 DO $$
