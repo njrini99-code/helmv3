@@ -470,8 +470,9 @@ Gating: `detect-changes`, `database-types`, `schema-invariants`,
 Aggregate: `all`, named **CI aggregate**.
 
 **Not gating, by owner decision:** `unit-tests-timezone` and
-`baseball-auth-smoke`. Both run on push to `main` only, so a failure
-blocks the next **promote** rather than every merge. Not drift — do not
+`baseball-auth-smoke`. Both run nightly (`nightly.yml`, since 2026-09-23;
+push to `main` before that), so a failure blocks the next **promote**
+rather than every merge. Not drift — do not
 re-add them while tidying.
 
 ### `review-gate.yml` — 12 jobs, 11 gate

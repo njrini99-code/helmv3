@@ -49,7 +49,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `INCIDENT` | 30 | 15 | 2 | 0 |
 | `ADR` | 5 | 0 | 3 | 0 |
 | `INDEX` | 19 | 1 | 7 | 5 |
-| `UNKNOWN` | 94 | 12 | 40 | 80 |
+| `UNKNOWN` | 94 | 12 | 40 | 81 |
 
 ## Files
 
@@ -563,7 +563,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `android/playstore/SUBMISSION.md` | current | - | - | - | - |
 | `docs/AGENT_LIFECYCLE.md` | current | - | - | yes | 9 |
 | `docs/BI_DASHBOARD_ARCHITECTURE.md` | current | yes | - | - | 20 |
-| `docs/CI_RUNBOOK.md` | current | - | - | yes | - |
+| `docs/CI_RUNBOOK.md` | current | - | - | yes | 1 |
 | `docs/HELM_OS.md` | current | - | - | yes | - |
 | `docs/LANDING_ENTRY_WORLD_DESIGN.md` | current | - | - | - | 2 |
 | `docs/OBSERVABILITY.md` | current | yes | - | yes | - |

@@ -61,7 +61,7 @@ These branches must **not** trigger automatic Vercel preview builds. With the po
 | Workflow | Runs when | What it does |
 |----------|-----------|--------------|
 | **`CI`** (`.github/workflows/ci.yml`) | Every PR | typecheck, lint, unit tests, build, RLS tests |
-| **`Playwright PR smoke (a11y)`** (`pr-smoke-a11y` job in `.github/workflows/ci.yml`, folded in from the now-deleted `pr-smoke.yml` on 2026-09-06) | Every PR (gated on `detect-changes`'s `code`/`frontend` outputs) | Public **accessibility** Playwright only when src/e2e paths change (~12 min max); downloads `ci.yml`'s own `next-build` artifact instead of rebuilding |
+| **`Playwright PR smoke (a11y)`** (`pr-smoke-a11y` job in `.github/workflows/ci.yml`, folded in from the now-deleted `pr-smoke.yml` on 2026-09-06) | Push to `main`, `workflow_dispatch`, or a PR labelled `ci:e2e` (2026-09-23; every code PR before) | Public **accessibility** Playwright only when src/e2e paths change (~12 min max); downloads `ci.yml`'s own `next-build` artifact instead of rebuilding |
 | **`Review Gate`** | Every PR | Static analyzers (fast) |
 | **`Playwright E2E`** (`.github/workflows/playwright.yml`) | Manual only (since 2026-09-02) | Full Chromium suite on `workflow_dispatch`. The **Smoke checks** build job it carried on every PR was a duplicate of CI's `Next build` and is gone; the job now downloads `ci.yml`'s `next-build` artifact for the same commit when one exists, building only as a fallback. |
 
