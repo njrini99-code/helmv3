@@ -192,6 +192,11 @@ describe('useRoundReviewV2', () => {
     // fired and settled — a prior version of this class of hook re-fired
     // its auto effect on a re-render because it re-evaluated a fresh
     // "needsGeneration" guard without checking a fired-once ref.
+    // NOTE: this mocked harness can't reproduce the retry loop that
+    // dropping `autoGenAttempted` would cause (a plain rerender() here
+    // doesn't change the effect's dependency values either way) — this
+    // assertion documents the intended behavior rather than proving the
+    // guard's necessity by mutation.
     rerender();
     rerender();
     rerender();
