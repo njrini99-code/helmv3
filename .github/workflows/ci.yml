@@ -167,6 +167,12 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.pull_request.draft != true
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      # Read by scripts/github/pr-drift-gate.mjs: on a pull_request, a failing
+      # drift check is re-run on the base (main) and the PR head to tell
+      # "introduced by this PR" from "inherited from main". Empty elsewhere.
+      PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+      PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -226,10 +232,16 @@ jobs:
       # leaving the tree byte-identical. The previous `docs:regen && git diff`
       # shape could only tell you the docs were stale by first making them
       # correct, which is unusable as a gate.
+      #
+      # 2026-09-23: through scripts/github/pr-drift-gate.mjs. A PR fails here
+      # only for drift it introduced — not when `main` itself is stale
+      # (inherited) or when two PRs each regenerated the same block and the
+      # merge describes neither tree (skew). Both of those went red on every
+      # open PR whenever main moved; Docs Regen now regenerates after merge.
       - name: Generated inventory is current
         id: inventory
         continue-on-error: true
-        run: npm run docs:inventory-check
+        run: node scripts/github/pr-drift-gate.mjs --allow-merge-skew -- npm run docs:inventory-check
 
       # REPO-WIDE STATIC GUARDS, with honest outcomes.
       #
@@ -270,15 +282,42 @@ jobs:
       # being assumed rather than checked. It was a dedicated job until
       # 2026-09-02 so that a failure would surface under its own name; it is a
       # named step now, and the aggregate below prints that name.
+      #
+      # HELM_CP_SKIP_GENERATED / KNOWLEDGE_CHECK_SKIP_GENERATED: the
+      # generated-artifact stages of these two run in "Generated artifacts
+      # are current" below instead (moved, not dropped — see that step).
+      # Both run through pr-drift-gate WITHOUT --allow-merge-skew: the only
+      # failure it excuses for them is one main already has (inherited).
       - name: Control plane
         id: control_plane
         continue-on-error: true
-        run: npm run control-plane:verify:static
+        env:
+          HELM_CP_SKIP_GENERATED: '1'
+        run: node scripts/github/pr-drift-gate.mjs -- npm run control-plane:verify:static
 
       - name: Feature knowledge registry
         id: knowledge_check
         continue-on-error: true
-        run: npm run knowledge:check
+        env:
+          KNOWLEDGE_CHECK_SKIP_GENERATED: '1'
+        run: node scripts/github/pr-drift-gate.mjs -- npm run knowledge:check
+
+      # Every other generated artifact, each compared to its sources through
+      # scripts/github/pr-drift-gate.mjs (same rule as the inventory step
+      # above): the document inventory and feature map (from knowledge:check),
+      # and the enforcement inventory and tool-authority matrix (from the
+      # control plane). Every command runs even if an earlier one fails.
+      - name: Generated artifacts are current
+        id: generated_artifacts
+        continue-on-error: true
+        run: |
+          rc=0
+          for check in knowledge:doc-inventory:check knowledge:feature-map:check enforcement:check tool-authority:check; do
+            echo "::group::$check"
+            node scripts/github/pr-drift-gate.mjs --allow-merge-skew -- npm run "$check" || rc=1
+            echo "::endgroup::"
+          done
+          exit "$rc"
 
       # Fails when memory/**, CLAUDE.md, AGENTS.md or .claude/rules/* name a
       # golf_*/baseball_* database object that does not exist in
@@ -321,7 +360,7 @@ jobs:
       - name: World Model graph is current
         id: world_model
         continue-on-error: true
-        run: npm run knowledge:world-model:check
+        run: node scripts/github/pr-drift-gate.mjs --allow-merge-skew -- npm run knowledge:world-model:check
 
       # The other direction from registry glob coverage in knowledge:check:
       # that check fails when a registry entry points at a path that no
@@ -485,10 +524,25 @@ jobs:
       # longer exist. Ratchets against .dead-refs-baseline.json — the
       # baseline may only fall, never rise; a NEW dead reference always
       # fails regardless of the baseline.
-      - name: Living dead references at or under baseline
+      #
+      # 2026-09-23: CI asks the "NEW" half directly — `--introduced-since`
+      # the PR's base (or the previous main commit on push) fails only for
+      # (doc, path) pairs dead now and not dead there. The whole-tree count
+      # tripped on main's own total ("REGRESSION 4 -> 6") whenever two PRs
+      # landed dead refs back to back, failing every open PR for references
+      # none of them wrote. `npm run docs:dead-refs` (the baseline ratchet)
+      # is unchanged for local use and `-- --update`.
+      - name: Living dead references (none introduced)
         id: dead_refs
         continue-on-error: true
-        run: npm run docs:dead-refs
+        env:
+          DEAD_REFS_SINCE: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
+        run: |
+          if [ -n "$DEAD_REFS_SINCE" ] && [ "$DEAD_REFS_SINCE" != "0000000000000000000000000000000000000000" ]; then
+            npm run docs:dead-refs -- --introduced-since "$DEAD_REFS_SINCE"
+          else
+            npm run docs:dead-refs
+          fi
 
       # Lifecycle gate: fails if any living doc outside the attic
       # (docs/archive/, archive/) carries its own Status header reading
