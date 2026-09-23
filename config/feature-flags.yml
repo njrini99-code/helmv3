@@ -298,6 +298,44 @@ flags:
       exist in generated types yet, and that escape hatch should not
       outlive the reason it was needed.
 
+  - feature_id: coachhelm_recap_single_flight_lock
+    owner: golf/coachhelm
+    purpose: >-
+      Gates the tighter half of round-recap.ts's single-flight protection:
+      a per-round lease taken BEFORE compose()'s LLM call (Package 8,
+      deferred at migration 20260923080000 as "an owner product/cost
+      decision", approved and built at 20260923100000). Requires migration
+      20260923100000_round_recap_single_flight_lock applied in prod —
+      until then, neither golf_round_recap_locks nor its two claim/release
+      functions exist there. Off by default in every environment for
+      exactly that reason: "a lock claim/reclaim failure fails closed"
+      must never mean "every recap silently stops calling the LLM" in an
+      environment this migration hasn't reached yet. With the flag off,
+      round-recap.ts's generateRoundRecapImpl takes this branch's `if`
+      and skips it entirely — behavior is byte-for-byte what it was before
+      this lock existed (only 20260923080000's cheap `ai_recap IS NULL`
+      guard applies).
+    type: temporary_migration
+    status: active
+    created_at: "2026-09-23"
+    expires_at: "2026-10-23"
+    default: false
+    environment:
+      production: false
+      preview: false
+      development: false
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      Flip on (development, then preview, then production) only after the
+      owner applies migration 20260923100000_round_recap_single_flight_lock
+      to each environment and confirms both public.claim_round_recap_lock
+      and public.release_round_recap_lock exist via `pg_proc`. expires_at
+      is a review reminder, not an automatic kill — if the migration still
+      hasn't landed by then, re-date it rather than silently expiring.
+      Once on everywhere and stable for a season, consider promoting to a
+      permanent `release` flag or removing the flag branch entirely (the
+      lock becomes the only code path) — owner's call, not automatic.
+
   # A9 slice 1 (repair-plan addendum §14.12, PR #1992's pure core wired into
   # the attribution path). `causality/attribute.ts`'s round-level average has
   # no natural per-shot opportunity for the "needs-shot-level-join" metrics

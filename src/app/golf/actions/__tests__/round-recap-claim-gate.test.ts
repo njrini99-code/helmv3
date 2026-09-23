@@ -64,6 +64,42 @@ const loggedRows: Array<Record<string, unknown>> = [];
 const provenanceRows: Array<Record<string, unknown>> = [];
 let provenanceInsertResult: { error: { message: string; code?: string } | null } = { error: null };
 let provenanceInsertThrows = false;
+
+// --- Package 8 (migration 20260923100000) — single-flight lock harness. ---
+// A tiny in-memory lease store keyed by "round_id:revision", plus the
+// admin client's `golf_rounds` poll read a waiter uses. Untouched by any
+// test outside the dedicated lock describe block below (default: no rows,
+// no ai_recap) — existing tests never exercise this branch.
+const lockRows = new Map<string, { holder_token: string; expires_at: number }>();
+let lockClaimCallCount = 0;
+let lockReleaseCallCount = 0;
+let lockClaimError: { message: string; code?: string } | null = null;
+let adminRoundsAiRecap: string | null = null;
+const adminRpcMock = vi.fn(async (name: string, args: Record<string, unknown>) => {
+  if (name === 'claim_round_recap_lock') {
+    lockClaimCallCount += 1;
+    if (lockClaimError) return { data: null, error: lockClaimError };
+    const key = `${args.p_round_id as string}:${args.p_revision as number}`;
+    const now = Date.now();
+    const existing = lockRows.get(key);
+    if (existing && existing.expires_at > now) {
+      return { data: [], error: null }; // a live, unexpired lease is held by someone else
+    }
+    const token = `token-${lockClaimCallCount}`;
+    const ttlMs = (args.p_ttl_seconds as number) * 1000;
+    lockRows.set(key, { holder_token: token, expires_at: now + ttlMs });
+    return { data: [{ holder_token: token, expires_at: new Date(now + ttlMs).toISOString() }], error: null };
+  }
+  if (name === 'release_round_recap_lock') {
+    lockReleaseCallCount += 1;
+    const key = `${args.p_round_id as string}:${args.p_revision as number}`;
+    const existing = lockRows.get(key);
+    if (existing && existing.holder_token === args.p_holder_token) lockRows.delete(key);
+    return { data: null, error: null };
+  }
+  return { data: null, error: null };
+});
+
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
     from: (table: string) => {
@@ -78,6 +114,16 @@ vi.mock('@/lib/supabase/admin', () => ({
           },
         };
       }
+      if (table === 'golf_rounds') {
+        // The single-flight lock's waiter poll — `admin.from('golf_rounds').select('ai_recap').eq(...).maybeSingle()`.
+        return {
+          select: () => ({
+            eq: () => ({
+              maybeSingle: () => Promise.resolve({ data: { ai_recap: adminRoundsAiRecap }, error: null }),
+            }),
+          }),
+        };
+      }
       // golf_coachhelm_llm_calls (compose.ts's own call log).
       return {
         insert: (row: Record<string, unknown>) => {
@@ -90,8 +136,14 @@ vi.mock('@/lib/supabase/admin', () => ({
         },
       };
     },
+    rpc: (name: string, args: Record<string, unknown>) => adminRpcMock(name, args),
   }),
 }));
+
+vi.mock('@/lib/utils/transient-error', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/utils/transient-error')>();
+  return { ...actual, delay: vi.fn(() => Promise.resolve()) };
+});
 
 vi.mock('@/lib/server-error-logger', () => ({
   logServerError: vi.fn().mockResolvedValue(undefined),
@@ -139,6 +191,15 @@ let golfRoundsFetchCount = 0;
 let winnerAiRecap: string | null = null;
 let mockRpcOverridePersisted: boolean | undefined;
 let winnerReadError: { message: string; code?: string } | null = null;
+// The single-flight lock's concurrent-pair test fires TWO independent
+// generateRoundRecapImpl() calls, each with its own genuine FIRST
+// golf_rounds fetch — the `golfRoundsFetchCount > 1` heuristic above cannot
+// tell that apart from one call's own SHOULD-4 re-read and would hand the
+// second caller's initial fetch the re-read stub (no `status`/`player_id`),
+// failing it at the `status !== 'completed'` gate before it ever reaches the
+// lock. Only that test opts out; every other test keeps the default (false)
+// and the original serialized-re-read behavior.
+let bypassGolfRoundsRereadHeuristic = false;
 
 function createChainableMock(maybeSingleData: unknown) {
   const chain: Record<string, unknown> = { data: null, error: null };
@@ -153,7 +214,7 @@ function createChainableMock(maybeSingleData: unknown) {
 const mockFrom = vi.fn((table: string) => {
   if (table === 'golf_rounds') {
     golfRoundsFetchCount += 1;
-    if (golfRoundsFetchCount > 1) {
+    if (!bypassGolfRoundsRereadHeuristic && golfRoundsFetchCount > 1) {
       const chain = createChainableMock({ ai_recap: winnerAiRecap });
       if (winnerReadError) chain.maybeSingle = vi.fn(async () => ({ data: null, error: winnerReadError }));
       return chain;
@@ -192,6 +253,7 @@ import { generateRoundRecap } from '../round-recap';
 import { logServerError } from '@/lib/server-error-logger';
 import { buildRecapEvidencePacket } from '@/lib/coachhelm/v3/llm/recap-evidence';
 import { extractNumericTokens, normalize, SAFE_NUMERIC_TOKENS } from '@/lib/coachhelm/v3/llm/citations';
+import { delay } from '@/lib/utils/transient-error';
 
 // 18-hole round chosen so buildDeterministicRecap takes one specific,
 // entirely predictable branch: no season stats to compare against
@@ -254,6 +316,13 @@ describe('round-recap.ts x claim-validator.ts — typed gate wired (flag ON)', (
     winnerAiRecap = null;
     mockRpcOverridePersisted = undefined;
     winnerReadError = null;
+    lockRows.clear();
+    lockClaimCallCount = 0;
+    lockReleaseCallCount = 0;
+    lockClaimError = null;
+    adminRoundsAiRecap = null;
+    adminRpcMock.mockClear();
+    bypassGolfRoundsRereadHeuristic = false;
     isFlagEnabledMock.mockReset();
     isFlagEnabledMock.mockReturnValue(true);
   });
@@ -451,6 +520,13 @@ describe('round-recap.ts — recap provenance (Package 8, revision-keyed provena
     winnerAiRecap = null;
     mockRpcOverridePersisted = undefined;
     winnerReadError = null;
+    lockRows.clear();
+    lockClaimCallCount = 0;
+    lockReleaseCallCount = 0;
+    lockClaimError = null;
+    adminRoundsAiRecap = null;
+    adminRpcMock.mockClear();
+    bypassGolfRoundsRereadHeuristic = false;
     isFlagEnabledMock.mockReset();
     isFlagEnabledMock.mockReturnValue(true);
   });
@@ -598,4 +674,185 @@ describe('round-recap.ts — recap provenance (Package 8, revision-keyed provena
     );
     expect(provenanceRows).toHaveLength(0);
   });
+});
+
+describe('round-recap.ts — single-flight lock, taken BEFORE the LLM call (Package 8, migration 20260923100000)', () => {
+  beforeEach(() => {
+    mockRound = { ...baseRound };
+    mockStats = null;
+    persistedRecap = null;
+    mockPlayerFirstName = 'Caden';
+    generateTextMock.mockReset();
+    recordSpendMock.mockClear();
+    mockFrom.mockClear();
+    mockRpc.mockClear();
+    loggedRows.length = 0;
+    provenanceRows.length = 0;
+    provenanceInsertResult = { error: null };
+    provenanceInsertThrows = false;
+    golfRoundsFetchCount = 0;
+    winnerAiRecap = null;
+    mockRpcOverridePersisted = undefined;
+    winnerReadError = null;
+    lockRows.clear();
+    lockClaimCallCount = 0;
+    lockReleaseCallCount = 0;
+    lockClaimError = null;
+    adminRoundsAiRecap = null;
+    adminRpcMock.mockClear();
+    bypassGolfRoundsRereadHeuristic = false;
+    // The claim-packet gate is orthogonal to the lock — off here so every
+    // response in this block is accepted on the flat scan alone, keeping
+    // these fixtures about the lock, not the typed claim gate.
+    isFlagEnabledMock.mockReset();
+    isFlagEnabledMock.mockImplementation(
+      (featureId?: string) => featureId === 'coachhelm_recap_single_flight_lock',
+    );
+    vi.mocked(delay).mockImplementation(() => Promise.resolve());
+  });
+
+  it('flag off: makes zero lock RPC calls (byte-for-byte the pre-lock behavior)', async () => {
+    isFlagEnabledMock.mockImplementation(() => false);
+    const goodText = 'Caden carded 74 at Pinehurst No. 2. Consistency next time is the target.';
+    generateTextMock.mockResolvedValueOnce({ text: goodText, usage: { inputTokens: 20, outputTokens: 20 } });
+
+    const result = await generateRoundRecap('round-1');
+
+    expect(result.recap).toBe(goodText);
+    expect(generateTextMock).toHaveBeenCalledTimes(1);
+    expect(adminRpcMock).not.toHaveBeenCalled();
+    expect(lockClaimCallCount).toBe(0);
+    expect(lockReleaseCallCount).toBe(0);
+  });
+
+  it('a concurrent pair for the same round makes exactly ONE LLM call — the loser waits and reads the winner\'s stored result', async () => {
+    // The loser's poll loop checks a REAL `Date.now() < deadline` each
+    // iteration. With `delay` mocked to resolve via a bare `Promise.resolve()`
+    // (this describe block's default), the loop never yields to a macrotask —
+    // it re-queues itself as a microtask on every iteration, so the event
+    // loop's microtask queue never drains and the winner's own chain (which
+    // does depend on real macrotask turns further down its call stack) never
+    // gets scheduled until the loop's real-clock deadline finally elapses.
+    // A real, tiny `setTimeout`-based delay — same technique as the
+    // "waiter timeout" test below — lets the loser's poll actually yield each
+    // iteration, so the winner's chain runs and persists well inside one poll
+    // interval instead of only after the full 6s wait is exhausted.
+    vi.mocked(delay).mockImplementation((ms: number) => new Promise((resolve) => setTimeout(resolve, ms)));
+
+    // Hold the FIRST call's LLM response open until both calls have reached
+    // the lock: the winner then finishes and persists; the loser (which
+    // lost the claim) is still in its poll loop and picks up the result.
+    let releaseLlm: () => void = () => {};
+    const llmGate = new Promise<void>((resolve) => {
+      releaseLlm = resolve;
+    });
+    const winnerText = 'Caden carded 74 at Pinehurst No. 2. Consistency next time is the target.';
+    generateTextMock.mockImplementationOnce(async () => {
+      await llmGate;
+      return { text: winnerText, usage: { inputTokens: 20, outputTokens: 20 } };
+    });
+    // save_round_ai_recap's own mock (mockRpc, the regular client) already
+    // records `persistedRecap` and reflects success — once it resolves,
+    // this test also updates the admin client's golf_rounds poll read so
+    // the waiter's next poll observes the persisted text, exactly like a
+    // real `AND ai_recap IS NULL` write becoming visible to a fresh read.
+    const originalMockRpcImpl = mockRpc.getMockImplementation()!;
+    mockRpc.mockImplementationOnce(async (name, args) => {
+      const result = await originalMockRpcImpl(name, args);
+      adminRoundsAiRecap = args.p_recap;
+      return result;
+    });
+
+    // Both calls make their own genuine FIRST golf_rounds fetch — opt out of
+    // the shared SHOULD-4 "second fetch = re-read" heuristic (see
+    // bypassGolfRoundsRereadHeuristic's declaration) so call b's initial
+    // fetch gets the real round row, not the re-read stub.
+    bypassGolfRoundsRereadHeuristic = true;
+
+    const a = generateRoundRecap('round-1');
+    const b = generateRoundRecap('round-1');
+
+    // Let the auth/access/rate-limit microtasks settle so BOTH calls reach
+    // the lock claim before either one wins it.
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    releaseLlm();
+    const [ra, rb] = await Promise.all([a, b]);
+
+    // Exactly one LLM call across both — the definition of "single-flight".
+    expect(generateTextMock).toHaveBeenCalledTimes(1);
+    // Exactly one claim SUCCEEDED (one holder_token minted); the other
+    // claim attempt(s) returned "someone else holds it" (empty rows).
+    const results = [ra, rb];
+    const winner = results.find((r) => r.recap === winnerText && !r.cached);
+    const waiter = results.find((r) => r !== winner);
+    expect(winner).toBeTruthy();
+    expect(waiter).toBeTruthy();
+    expect(waiter?.recap).toBe(winnerText);
+    expect(waiter?.cached).toBe(true);
+    // The lease was claimed and released exactly once by the winner.
+    expect(lockReleaseCallCount).toBe(1);
+  }, 15_000);
+
+  it('an expired lock is reclaimed — the new holder still makes exactly one LLM call', async () => {
+    // Seed a stale lease (already past its own expiry) as if a prior
+    // request crashed mid-generation without ever releasing it.
+    lockRows.set('round-1:1', { holder_token: 'crashed-holder', expires_at: Date.now() - 1_000 });
+    const goodText = 'Caden carded 74 at Pinehurst No. 2. Consistency next time is the target.';
+    generateTextMock.mockResolvedValueOnce({ text: goodText, usage: { inputTokens: 20, outputTokens: 20 } });
+
+    const result = await generateRoundRecap('round-1');
+
+    expect(result.recap).toBe(goodText);
+    expect(generateTextMock).toHaveBeenCalledTimes(1);
+    // The claim succeeded on the FIRST attempt (expired row reclaimed
+    // directly), not via the wait-then-reclaim fallback path.
+    expect(lockClaimCallCount).toBe(1);
+    expect(lockReleaseCallCount).toBe(1);
+  });
+
+  it('a lock claim RPC error fails closed: zero LLM calls, zero save_round_ai_recap calls, no recap returned', async () => {
+    lockClaimError = { message: 'simulated connection failure', code: '08006' };
+
+    const result = await generateRoundRecap('round-1');
+
+    expect(result.recap).toBeNull();
+    expect(result.cached).toBe(false);
+    expect(generateTextMock).not.toHaveBeenCalled();
+    expect(mockRpc).not.toHaveBeenCalled(); // save_round_ai_recap never called
+    expect(persistedRecap).toBeNull();
+    expect(vi.mocked(logServerError)).toHaveBeenCalledWith(
+      expect.stringContaining('lock claim threw'),
+      expect.objectContaining({ action: 'generateRoundRecap.lockClaim', roundId: 'round-1' }),
+      'warning',
+    );
+  });
+
+  it(
+    'a waiter that never sees a result within the wait window fails closed — no persist, no second LLM call',
+    async () => {
+      // A live lease, held by someone else, that never resolves within this
+      // test (the "winner" side is intentionally never simulated) and
+      // never expires during the wait. Real timers here (not the file's
+      // default instant-delay mock) so the poll loop's own bounded wait is
+      // exercised end to end, not bypassed.
+      lockRows.set('round-1:1', { holder_token: 'still-working', expires_at: Date.now() + 999_000 });
+      vi.mocked(delay).mockImplementation((ms: number) => new Promise((resolve) => setTimeout(resolve, ms)));
+
+      const result = await generateRoundRecap('round-1');
+
+      expect(result.recap).toBeNull();
+      expect(result.cached).toBe(false);
+      expect(generateTextMock).not.toHaveBeenCalled();
+      expect(mockRpc).not.toHaveBeenCalled(); // save_round_ai_recap never called — no persist
+      expect(persistedRecap).toBeNull();
+      // One initial claim attempt, then exactly one reclaim attempt after
+      // the wait window — still denied (the lease is still live).
+      expect(lockClaimCallCount).toBe(2);
+    },
+    15_000,
+  );
 });

@@ -50,6 +50,7 @@ import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
 import { gateUserAction, LLM_COMPOSE_RATE_LIMIT } from '@/lib/auth/action-rate-limit';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
+import { delay } from '@/lib/utils/transient-error';
 
 interface RoundContext {
   id: string;
@@ -70,6 +71,12 @@ interface RoundContext {
   front_nine: number | null;
   back_nine: number | null;
 }
+
+type RoundRow = RoundContext & {
+  status: string | null;
+  ai_recap: string | null;
+  ai_recap_generated_at: string | null;
+};
 
 /**
  * A player's first name as it may appear inside the prompt: double quotes and
@@ -117,7 +124,7 @@ async function generateRoundRecapImpl(
       'id, player_id, course_name, course_city, course_state, round_date, round_type, total_score, score_to_par, total_putts, total_fairways, total_fairways_hit, total_gir, total_gir_possible, holes_played, front_nine, back_nine, status, ai_recap, ai_recap_generated_at',
     )
     .eq('id', roundId)
-    .maybeSingle<RoundContext & { status: string | null; ai_recap: string | null; ai_recap_generated_at: string | null }>();
+    .maybeSingle<RoundRow>();
 
   if (!round) return { recap: null, cached: false };
 
@@ -143,6 +150,50 @@ async function generateRoundRecapImpl(
   );
   if (!rateLimit.allowed) return { recap: null, cached: false };
 
+  // Package 8: single-flight lock, taken BEFORE the LLM call — deferred at
+  // 20260923080000 as "an owner product/cost decision"; approved here.
+  // Gated behind its own flag (default off everywhere) so a missing
+  // migration in an environment can never turn "a lock failure fails
+  // closed" into "every recap silently stops calling the LLM": with the
+  // flag off, this whole block is skipped and behavior is byte-for-byte
+  // what it was before this lock existed (only 20260923080000's cheap
+  // `ai_recap IS NULL` guard applies). See migration 20260923100000 for
+  // the full design rationale (TTL sizing, why a lease table and not
+  // pg_advisory_xact_lock, why (round_id, revision)).
+  if (isFlagEnabled('coachhelm_recap_single_flight_lock')) {
+    const lock = await acquireRecapLockOrWait(roundId, user.id);
+    if (lock.outcome === 'resolved') {
+      // A concurrent winner's result materialized while this call waited —
+      // no LLM call was made by this call.
+      return { recap: lock.recap, cached: true };
+    }
+    if (lock.outcome === 'fail-closed') {
+      // Either the claim/reclaim RPC itself errored, or the wait was
+      // exhausted while a live lease was still held by someone else. In
+      // both cases: no LLM call, and — deliberately — no deterministic
+      // persist either. Persisting here would win the RPC's own
+      // `ai_recap IS NULL` race against a winner that is still genuinely
+      // in flight, permanently discarding the paid LLM call this whole
+      // lock exists to protect. A later render simply tries again.
+      return { recap: null, cached: false };
+    }
+    try {
+      return await runRecapGeneration(roundId, round, user.id, supabase, options);
+    } finally {
+      await lock.release();
+    }
+  }
+
+  return runRecapGeneration(roundId, round, user.id, supabase, options);
+}
+
+async function runRecapGeneration(
+  roundId: string,
+  round: RoundRow,
+  userId: string,
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  options: GenerateRoundRecapOptions,
+): Promise<{ recap: string | null; cached: boolean }> {
   // 2. Pull peer context — player's recent stats cache for comparison
   const { data: stats } = await supabase
     .from('golf_player_stats_cache')
@@ -171,7 +222,7 @@ async function generateRoundRecapImpl(
         featureArea: 'round_review_ai',
         roundId,
         playerId: round.player_id,
-        userId: user.id,
+        userId,
         errorCode: playerError.code,
         errorHint: playerError.hint,
         errorDetails: playerError.details,
@@ -224,7 +275,7 @@ async function generateRoundRecapImpl(
         featureArea: 'round_review_ai',
         roundId,
         playerId: round.player_id,
-        userId: user.id,
+        userId,
         errorCode: persistError?.code,
         errorHint: persistError?.hint,
         errorDetails: persistError?.details,
@@ -260,7 +311,7 @@ async function generateRoundRecapImpl(
           featureArea: 'round_review_ai',
           roundId,
           playerId: round.player_id,
-          userId: user.id,
+          userId,
           errorCode: winnerError.code,
           errorHint: winnerError.hint,
           errorDetails: winnerError.details,
@@ -291,6 +342,192 @@ async function generateRoundRecapImpl(
   }
 
   return { recap, cached: false };
+}
+
+// --- Single-flight lock (Package 8, migration 20260923100000) ------------
+
+/**
+ * No "recap revision" concept exists anywhere in this codebase today —
+ * checked golf_rounds' own columns and v2 insights' evidenceRevisionKey
+ * (lifecycle-policy.ts / upsert.ts), which is a distinct, unrelated
+ * maturation-tracking mechanism for a different feature. round-recap.ts
+ * always generates once per round (gated by the `ai_recap IS NULL` check
+ * above) and has no regenerate flow yet. The lock's primary key carries a
+ * revision column anyway, ahead of that need, so a future regenerate flow
+ * can take a fresh lock for a new revision without a second schema change —
+ * this constant is that placeholder until one exists.
+ */
+const ROUND_RECAP_LOCK_REVISION = 1;
+
+/**
+ * Sized to the documented worst case: one compose() call, one corrective
+ * retry (repair plan §14.10's typed-claim retry), and the persistence RPC.
+ * No `maxDuration` is configured for the round detail route to tie this to
+ * instead — see migration 20260923100000's own comment.
+ */
+const RECAP_LOCK_TTL_SECONDS = 45;
+
+/**
+ * generateRoundRecap runs during Server Component render — a waiter polls
+ * for a few seconds, not the full TTL, so a slow render never itself
+ * becomes the next request's bottleneck. On exhaustion the waiter tries
+ * reclaiming once (covers a holder that crashed mid-wait) before failing
+ * closed.
+ */
+const RECAP_LOCK_WAIT_MS = 6_000;
+const RECAP_LOCK_POLL_INTERVAL_MS = 400;
+
+type RecapLockOutcome =
+  | { outcome: 'winner'; release: () => Promise<void> }
+  | { outcome: 'resolved'; recap: string }
+  | { outcome: 'fail-closed' };
+
+/**
+ * Attempts to claim public.claim_round_recap_lock. Returns the holder token
+ * on success, or `null` when a live, unexpired lease is already held by
+ * someone else (not an error — the normal "lost the race" case).
+ */
+async function claimRecapLock(
+  admin: ReturnType<typeof createAdminClient>,
+  roundId: string,
+): Promise<{ holder_token: string } | null> {
+  // golf_round_recap_locks and its functions are new (this slice's
+  // migration) and may not be reflected in the generated Database type in
+  // every environment until `npm run db:types` runs against a DB that has
+  // it applied — cast, matching this file's existing
+  // `(supabase as any).rpc(...)` / `(admin as any).from(...)` pattern.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (admin as any).rpc('claim_round_recap_lock', {
+    p_round_id: roundId,
+    p_revision: ROUND_RECAP_LOCK_REVISION,
+    p_ttl_seconds: RECAP_LOCK_TTL_SECONDS,
+  });
+  if (error) throw new Error(error.message);
+  // The function RETURNS TABLE — PostgREST returns an array. Zero rows
+  // means someone else holds a live, unexpired lease; this call did not
+  // claim it (not thrown — the caller decides what "didn't claim" means).
+  const row = Array.isArray(data) ? data[0] : data;
+  return row?.holder_token ? { holder_token: row.holder_token as string } : null;
+}
+
+/**
+ * Releases a held lock. Best-effort: a release failure is logged and
+ * swallowed, never thrown — the lease's own TTL is the backstop, so a
+ * failed release only delays (never permanently blocks) the next claim.
+ */
+async function releaseRecapLock(
+  admin: ReturnType<typeof createAdminClient>,
+  roundId: string,
+  holderToken: string,
+): Promise<void> {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (admin as any).rpc('release_round_recap_lock', {
+      p_round_id: roundId,
+      p_revision: ROUND_RECAP_LOCK_REVISION,
+      p_holder_token: holderToken,
+    });
+    if (error) {
+      await logServerError(
+        `Recap lock release failed (harmless — the lease expires on its own): ${error.message}`,
+        {
+          action: 'generateRoundRecap.lockRelease',
+          featureArea: 'round_review_ai',
+          roundId,
+          errorCode: error.code,
+          skipSentry: true,
+        },
+        'warning',
+      );
+    }
+  } catch (err) {
+    await logServerError(
+      `Recap lock release threw (harmless — the lease expires on its own): ${describeError(err)}`,
+      {
+        action: 'generateRoundRecap.lockRelease',
+        featureArea: 'round_review_ai',
+        roundId,
+        skipSentry: true,
+      },
+      'warning',
+    );
+  }
+}
+
+/**
+ * Claims the single-flight lock, or waits briefly for a concurrent
+ * winner's result, or fails closed. Never calls or triggers an LLM call
+ * itself — it only decides whether THIS caller is allowed to.
+ */
+async function acquireRecapLockOrWait(roundId: string, userId: string): Promise<RecapLockOutcome> {
+  const admin = createAdminClient();
+
+  try {
+    const claimed = await claimRecapLock(admin, roundId);
+    if (claimed) {
+      return { outcome: 'winner', release: () => releaseRecapLock(admin, roundId, claimed.holder_token) };
+    }
+  } catch (err) {
+    await logServerError(
+      `Recap lock claim threw — failing closed, no LLM call: ${describeError(err)}`,
+      { action: 'generateRoundRecap.lockClaim', featureArea: 'round_review_ai', roundId, userId, skipSentry: true },
+      'warning',
+    );
+    return { outcome: 'fail-closed' };
+  }
+
+  // Someone else holds a live lease. Wait briefly for their result rather
+  // than starting a second billable LLM call.
+  const deadline = Date.now() + RECAP_LOCK_WAIT_MS;
+  while (Date.now() < deadline) {
+    await delay(RECAP_LOCK_POLL_INTERVAL_MS);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (admin as any)
+      .from('golf_rounds')
+      .select('ai_recap')
+      .eq('id', roundId)
+      .maybeSingle();
+    if (error) {
+      await logServerError(
+        `Recap lock waiter's poll read failed — failing closed, no LLM call: ${error.message}`,
+        {
+          action: 'generateRoundRecap.lockWaitPoll',
+          featureArea: 'round_review_ai',
+          roundId,
+          userId,
+          errorCode: error.code,
+          skipSentry: true,
+        },
+        'warning',
+      );
+      return { outcome: 'fail-closed' };
+    }
+    const aiRecap = (data as { ai_recap: string | null } | null)?.ai_recap;
+    if (aiRecap) {
+      return { outcome: 'resolved', recap: aiRecap };
+    }
+  }
+
+  // Wait exhausted with no result. Try reclaiming once more — covers a
+  // holder that crashed mid-wait (its lease has since expired) — before
+  // concluding the holder is still genuinely working and failing closed.
+  try {
+    const claimed = await claimRecapLock(admin, roundId);
+    if (claimed) {
+      return { outcome: 'winner', release: () => releaseRecapLock(admin, roundId, claimed.holder_token) };
+    }
+  } catch (err) {
+    await logServerError(
+      `Recap lock reclaim threw after wait — failing closed, no LLM call: ${describeError(err)}`,
+      { action: 'generateRoundRecap.lockReclaim', featureArea: 'round_review_ai', roundId, userId, skipSentry: true },
+      'warning',
+    );
+    return { outcome: 'fail-closed' };
+  }
+
+  // Still held by a live, unexpired lease — the winner is genuinely still
+  // working. Fail closed rather than double-calling the LLM.
+  return { outcome: 'fail-closed' };
 }
 
 async function recordRecapProvenance(

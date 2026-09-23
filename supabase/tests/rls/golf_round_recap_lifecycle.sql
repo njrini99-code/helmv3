@@ -1,6 +1,6 @@
 BEGIN;
 
-SELECT plan(17);
+SELECT plan(30);
 
 SELECT ok(
   has_function_privilege('authenticated', 'public.save_round_ai_recap(uuid, text)', 'EXECUTE'),
@@ -120,6 +120,85 @@ SELECT isnt(
 SELECT ok(
   has_table_privilege('service_role', 'public.golf_round_recap_provenance', 'INSERT'),
   'the service role (round-recap.ts admin client) can write recap provenance'
+);
+
+-- Package 8 (2026-09-23, migration 20260923100000): the tighter half of
+-- single-flight — golf_round_recap_locks and its two claim/release
+-- functions. Zero authenticated access at all (unlike provenance, which
+-- authenticated may read): this table is purely an internal lease,
+-- written and read only through the two functions below, by round-recap.ts's
+-- service-role admin client.
+
+SELECT ok(
+  (SELECT relrowsecurity FROM pg_class WHERE oid = 'public.golf_round_recap_locks'::regclass),
+  'golf_round_recap_locks has row level security enabled'
+);
+
+SELECT isnt(
+  has_table_privilege('anon', 'public.golf_round_recap_locks', 'SELECT'),
+  true,
+  'anonymous callers cannot read the recap lock table'
+);
+
+SELECT isnt(
+  has_table_privilege('public', 'public.golf_round_recap_locks', 'SELECT'),
+  true,
+  'the recap lock table is not granted to PUBLIC'
+);
+
+SELECT isnt(
+  has_table_privilege('authenticated', 'public.golf_round_recap_locks', 'SELECT'),
+  true,
+  'authenticated callers cannot read the recap lock table — it has no user-facing purpose'
+);
+
+SELECT ok(
+  has_table_privilege('service_role', 'public.golf_round_recap_locks', 'SELECT'),
+  'the service role (round-recap.ts admin client) can read the recap lock table'
+);
+
+SELECT isnt(
+  has_function_privilege('anon', 'public.claim_round_recap_lock(uuid, integer, integer)', 'EXECUTE'),
+  true,
+  'anonymous callers cannot claim a recap lock'
+);
+
+SELECT isnt(
+  has_function_privilege('authenticated', 'public.claim_round_recap_lock(uuid, integer, integer)', 'EXECUTE'),
+  true,
+  'authenticated callers cannot claim a recap lock directly — only the service role coordinates this'
+);
+
+SELECT ok(
+  has_function_privilege('service_role', 'public.claim_round_recap_lock(uuid, integer, integer)', 'EXECUTE'),
+  'the service role (round-recap.ts admin client) can claim a recap lock'
+);
+
+SELECT isnt(
+  has_function_privilege('anon', 'public.release_round_recap_lock(uuid, integer, uuid)', 'EXECUTE'),
+  true,
+  'anonymous callers cannot release a recap lock'
+);
+
+SELECT isnt(
+  has_function_privilege('authenticated', 'public.release_round_recap_lock(uuid, integer, uuid)', 'EXECUTE'),
+  true,
+  'authenticated callers cannot release a recap lock directly'
+);
+
+SELECT ok(
+  has_function_privilege('service_role', 'public.release_round_recap_lock(uuid, integer, uuid)', 'EXECUTE'),
+  'the service role (round-recap.ts admin client) can release a recap lock'
+);
+
+SELECT ok(
+  position('WHERE l.expires_at < now()' IN pg_get_functiondef('public.claim_round_recap_lock(uuid, integer, integer)'::regprocedure)) > 0,
+  'claim_round_recap_lock only reclaims an EXPIRED lock, never a live one'
+);
+
+SELECT ok(
+  position('holder_token = p_holder_token' IN pg_get_functiondef('public.release_round_recap_lock(uuid, integer, uuid)'::regprocedure)) > 0,
+  'release_round_recap_lock only deletes a row it can prove it still owns'
 );
 
 SELECT * FROM finish();

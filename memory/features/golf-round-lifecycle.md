@@ -12,7 +12,7 @@
 > reference entirely is a ratchet-down — re-run
 > `node scripts/check-doc-schema-drift.mjs --update` after.
 
-<!-- schema-drift-absent: golf_round_holes -->
+<!-- schema-drift-absent: golf_round_holes, golf_round_recap_locks, golf_round_recap_provenance -->
 
 ## Status
 
@@ -634,6 +634,31 @@ reload (`lieFromShotResult`) restore position from.
   back to "the player") both as a fact and in the third-person rule. Until
   2026-09-02 the prompt named nobody and offered "Nick" as an example, and the
   model copied the example into a Shenandoah player's stored recap.
+- (2026-09-23, Package 8) `round-recap.ts` now takes a per-round, per-revision
+  single-flight lock BEFORE the LLM call, gated behind
+  `coachhelm_recap_single_flight_lock` (default off — with the flag off,
+  behavior is byte-for-byte what it was before, only migration
+  `20260923080000`'s cheap `ai_recap IS NULL` guard applies). New migration
+  `20260923100000` adds `golf_round_recap_locks` (composite PK `round_id,
+  revision`, `holder_token`, `expires_at`) plus `claim_round_recap_lock`/
+  `release_round_recap_lock` (service-role only, zero authenticated access —
+  unlike `golf_round_recap_provenance`, which authenticated may read). No
+  "recap revision" concept exists anywhere in this codebase today (checked
+  `golf_rounds`' own columns and v2 insights' unrelated `evidenceRevisionKey`
+  maturation mechanism); the lock hardcodes `ROUND_RECAP_LOCK_REVISION = 1`
+  with the revision column present in the schema ahead of that need, for a
+  future regenerate flow. The claim is an atomic lease-table `INSERT ... ON
+  CONFLICT ... WHERE expires_at < now() RETURNING`, not
+  `pg_advisory_xact_lock`, because the LLM call spans a network round-trip
+  outside any one short DB transaction — same reasoning as
+  `20260821043500_single_flight_round_submit.sql`'s `FOR UPDATE NOWAIT`. A
+  losing caller polls briefly (`RECAP_LOCK_WAIT_MS`) for the winner's
+  persisted result before trying one reclaim (covers a crashed holder) and
+  otherwise fails closed — no LLM call, and deliberately no deterministic
+  persist either, since persisting would win the RPC's own `ai_recap IS NULL`
+  race against a winner still genuinely in flight, discarding its paid LLM
+  call. The migration is NOT applied as of this entry; it ships in the PR for
+  review.
 - `generateAndStoreRoundReview` (`round-review-system.ts`) returns a typed,
   additive `code` on every failure (`unauthenticated | unauthorized |
   round_not_found | round_not_completed | db_error | save_failed |

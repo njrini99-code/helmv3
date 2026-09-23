@@ -1614,6 +1614,21 @@ CREATE TABLE IF NOT EXISTS "public"."golf_review_events" (
 
 ALTER TABLE "public"."golf_review_events" OWNER TO "postgres";
 
+-- Package 8 (2026-09-23, migration 20260923100000): single-flight lease
+-- for round-recap.ts's LLM call, taken BEFORE compose(). Written and
+-- cleared exclusively through public.claim_round_recap_lock /
+-- public.release_round_recap_lock; see 90_comments.sql for the full
+-- COMMENT ON TABLE text.
+CREATE TABLE IF NOT EXISTS "public"."golf_round_recap_locks" (
+    "round_id" "uuid" NOT NULL,
+    "revision" integer DEFAULT 1 NOT NULL,
+    "holder_token" "uuid" NOT NULL,
+    "locked_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "expires_at" timestamp with time zone NOT NULL
+);
+
+ALTER TABLE "public"."golf_round_recap_locks" OWNER TO "postgres";
+
 -- Package 8, repair plan §14.10 (2026-09-23): one row per generated
 -- golf_rounds.ai_recap — which path produced it (llm vs deterministic
 -- fallback), the golf_coachhelm_llm_calls audit row for the llm path,

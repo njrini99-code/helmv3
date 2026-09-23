@@ -81,6 +81,23 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     cleanup_plan: "Either promote to a permanent `release` flag once shadow data (the recap's fallback rate with the packet engaged vs. without) shows the typed gate isn't discarding good recaps, or remove the packet wiring entirely if it is.",
   },
   {
+    feature_id: "coachhelm_recap_single_flight_lock",
+    owner: "golf/coachhelm",
+    purpose: "Gates the tighter half of round-recap.ts's single-flight protection: a per-round lease taken BEFORE compose()'s LLM call (Package 8, deferred at migration 20260923080000 as \"an owner product/cost decision\", approved and built at 20260923100000). Requires migration 20260923100000_round_recap_single_flight_lock applied in prod — until then, neither golf_round_recap_locks nor its two claim/release functions exist there. Off by default in every environment for exactly that reason: \"a lock claim/reclaim failure fails closed\" must never mean \"every recap silently stops calling the LLM\" in an environment this migration hasn't reached yet. With the flag off, round-recap.ts's generateRoundRecapImpl takes this branch's `if` and skips it entirely — behavior is byte-for-byte what it was before this lock existed (only 20260923080000's cheap `ai_recap IS NULL` guard applies).",
+    type: "temporary_migration",
+    status: "active",
+    created_at: "2026-09-23",
+    expires_at: "2026-10-23",
+    default: false,
+    environment: {
+      production: false,
+      preview: false,
+      development: false,
+    },
+    kill_switch_behavior: null,
+    cleanup_plan: "Flip on (development, then preview, then production) only after the owner applies migration 20260923100000_round_recap_single_flight_lock to each environment and confirms both public.claim_round_recap_lock and public.release_round_recap_lock exist via `pg_proc`. expires_at is a review reminder, not an automatic kill — if the migration still hasn't landed by then, re-date it rather than silently expiring. Once on everywhere and stable for a season, consider promoting to a permanent `release` flag or removing the flag branch entirely (the lock becomes the only code path) — owner's call, not automatic.",
+  },
+  {
     feature_id: "coachhelm_v2_alert_personalization",
     owner: "golf/coachhelm",
     purpose: "Adjusts a coach's v2 alert-generation thresholds (decline, pressure gap) using their own ack/dismiss history instead of only the coach-set CoachPhilosophy values; default off pending real-world evidence that this improves alert relevance.",
