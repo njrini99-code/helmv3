@@ -1086,3 +1086,9 @@
 - SHA: this commit on `agent/course-factory-phase0`. Not merged or deployed; factory tooling only.
 - Change: `fetch-lidar-chm.py` retries PDAL on transient tile reads. It rejects a covering project whose CHM has returns over less than 50% of the export, then tries the next. When no EPT project covers, it falls back to National Map LPC LAZ tiles: parallel download under an 800 MB cap, per-tile height above ground, max mosaic, and tile hashes kept in the manifest.
 - Why: Grande Dunes had `CANOPY_OUT_OF_BOUNDS` (0.07% canopy) because Horry County's 2023 lidar is not published as EPT. With the tiles its canopy is 48% (205 groups, within bounds). University Club of Kentucky chose a western Kentucky project with no points at the course. A single S3 tile read failed Forsyth's whole acquisition.
+
+## 2026-09-23 — terrain meshes stop cracking at material seams
+
+- SHA: `f35a48125` and `3bad95b58` on `agent/course-factory-phase0`. Not merged or deployed; factory tooling only.
+- Change: per-face triangulation moved to `terrain_triangulate.py` (`triangulate_faces`). The degenerate-sliver gate is now `DEGENERATE_AREA_M2 = 1e-10` instead of `1e-8`, at all three gates. `factory/tasks/common.py` splits `TERRAIN_ACQUIRE_FILES` (acquisition) from `TERRAIN_COMPILE_FILES` (adds `terrain_triangulate.py`), so a mesh-only edit no longer stales DEM acquisition. The compiler version is `course-terrain-v5`.
+- Why: a legitimate near-tangent sliver (7.7e-9 to 9.6e-9 m² on Golden Horseshoe 03 and 18) was dropped by one face's triangulation but kept by its neighbour's. That left single-use edges, which `T_JUNCTIONS_PRESENT` blocked on 11 layouts. All 8 failing Golden Horseshoe holes now report 0 T-junction vertices, with 1–3 more triangles each. This merge's one-time acquire re-run was shown to do no network I/O and to leave the source byte-identical.

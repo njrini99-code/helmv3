@@ -498,3 +498,7 @@ date.
 
 - Added to `test_fetch_lidar_chm.py`: `NationalMapTileTests` (the newest project whose tiles cover the export leads; partial, oversized and non-LAZ projects are rejected by name; listing pages until the total), `PdalRetryTests` (a transient read succeeds on retry; a persistent failure raises after 3 attempts), and `MosaicTests` (cell-wise max; nodata only where no tile has returns).
 - Guarantee still missing: the thin-coverage rejection and fallback order in `main()` are verified on real data (Grande Dunes) but not by a unit test.
+
+## 2026-09-23 — T-junction guarantees
+
+- Added: `test_a_legitimate_near_tangent_sliver_is_not_dropped_from_only_one_side` (`test_compile_course_terrain.py`, the real hole-18 face pair: 1 T-junction at the old threshold, 0 now) and `test_a_mesh_only_triangulation_edit_leaves_terrain_acquisition_cached` (`test_factory_impact.py`).
