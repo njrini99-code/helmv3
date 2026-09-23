@@ -51,15 +51,27 @@
 -- migration adds `basis` so every consumer can tell which population a row
 -- reflects rather than silently reinterpreting an unversioned number
 -- (op note in the task: "add new columns ... or version the basis field").
--- The prior on-green-only figure is NOT dropped: it is preserved verbatim
--- (same MIN_GREENS=3 floor as before) in the new on_green_proximity_feet
--- column for the one consumer that explicitly wants it —
--- v3/composite/rules/short-approach-proximity-gap.ts, which compares against
--- its own fixed dial-in target, never against Tour. `basis` is nullable and
--- left NULL by every other writer of this table (refresh_player_standing,
--- refresh_player_standing_round_metrics); the render-side rule in
--- tour-basis.ts is scoped to only these three metric_ids, so an unrelated
--- metric's NULL basis is not itself grounds to withhold its Tour marker.
+-- The prior on-green-only figure is NOT dropped: it is kept in the new
+-- on_green_proximity_feet column, computed the same way as before (AVG over
+-- on-green shots, requiring >= MIN_GREENS=3 of them) but now ALSO gated
+-- behind the same, stricter all-shot floor as player_value itself
+-- (MIN_ATTEMPTS=10, MIN_ROUNDS=3) — a player who cleared the old
+-- MIN_GREENS-only floor but not the new one gets neither number written.
+-- db-migration-reviewer (2026-09-22) confirmed 24 such player-band rows in
+-- production today (10 in 50-125, 6 in 125-175, 8 in 175+); this function
+-- stops writing them and they age out via the existing
+-- prune_stale_player_standing job — an owner-visible effect of this
+-- migration, not a bug (see the PR description). No current reader consumes
+-- this column: v3/composite/rules/short-approach-proximity-gap.ts reads its
+-- own independently-computed evidence.detail.proximity_when_hit_feet, not
+-- this table (a corrected claim — an earlier draft of this comment wrongly
+-- named it as this column's consumer). on_green_proximity_feet exists so the
+-- pre-migration number is not silently lost for any future or ad-hoc reader.
+-- `basis` is nullable and left NULL by every other writer of this table
+-- (refresh_player_standing, refresh_player_standing_round_metrics); the
+-- render-side rule in tour-basis.ts is scoped to only these three
+-- metric_ids, so an unrelated metric's NULL basis is not itself grounds to
+-- withhold its Tour marker.
 --
 -- Known follow-up NOT done here (out of scope for a schema migration):
 -- counterfactual/lookup-tables.ts's stroke_impact_per_unit for these three
@@ -84,7 +96,9 @@ ALTER TABLE public.golf_player_standing
 DO $$
 BEGIN
   IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint WHERE conname = 'golf_player_standing_basis_check'
+    SELECT 1 FROM pg_constraint
+     WHERE conname = 'golf_player_standing_basis_check'
+       AND conrelid = 'public.golf_player_standing'::regclass
   ) THEN
     ALTER TABLE public.golf_player_standing
       ADD CONSTRAINT golf_player_standing_basis_check
@@ -105,18 +119,22 @@ COMMENT ON COLUMN public.golf_player_standing.basis IS
 
 COMMENT ON COLUMN public.golf_player_standing.on_green_proximity_feet IS
   'Nullable. approach_proximity_* only: the pre-Package-7B ON-GREEN-only '
-  'proximity (feet), preserved so v3/composite/rules/short-approach-'
-  'proximity-gap.ts keeps its original semantics after player_value moved to '
-  'the all-shot basis. NULL below the MIN_GREENS floor (3) or for any other '
-  'metric_id.';
+  'proximity (feet), kept for any future/ad-hoc reader now that player_value '
+  'moved to the all-shot basis -- no current reader consumes this column '
+  '(short-approach-proximity-gap.ts reads its own independently-computed '
+  'evidence.detail.proximity_when_hit_feet, not this table). NULL unless the '
+  'row also clears the all-shot MIN_ATTEMPTS=10/MIN_ROUNDS=3 floor (a '
+  'stricter gate than the on-green-only MIN_GREENS=3 floor alone) AND has '
+  '>= MIN_GREENS=3 on-green shots itself within that population.';
 
 COMMENT ON COLUMN public.golf_player_standing.layup_excluded_n IS
   'Nullable. approach_proximity_175_plus_ft only (Package 7B lay-up split): '
   'count of approach shots on this row''s player+band excluded from '
   'player_value as likely deliberate lay-ups (par-5 hole, 175+ yd, did not '
   'finish on the green — a derived heuristic, not recorded intent; see '
-  'approach-miss.ts parSplit()). 0 for the two shorter bands and for every '
-  'other metric_id, never NULL for rows this function writes.';
+  'approach-miss.ts parSplit()). 0 for the two shorter bands on rows this '
+  'function writes (it never tags a lay-up outside the 175+ band); NULL for '
+  'every other metric_id, since only this function ever sets this column.';
 
 -- ============================================================================
 -- 2) refresh_player_standing_shot_metrics — all-shot basis + lay-up split.
@@ -173,8 +191,6 @@ BEGIN
               THEN s.distance_to_hole_after * 3.0
               ELSE s.distance_to_hole_after END) AS after_ft
       FROM public.golf_players p
-      JOIN public.golf_team_members tmx
-        ON tmx.player_id = p.id AND tmx.status = 'active'::team_member_status
       JOIN public.golf_rounds r
         ON r.player_id = p.id AND r.status = 'completed'
       JOIN public.golf_shots s
@@ -189,10 +205,24 @@ BEGIN
                  THEN s.distance_to_hole_before / 3.0
                  ELSE s.distance_to_hole_before END) < v_hi
       LEFT JOIN public.golf_holes h ON h.id = s.hole_id
+      -- db-migration-reviewer (2026-09-22): an inner JOIN to golf_team_members
+      -- here duplicated every shot once per active team a player belongs to
+      -- (harmless when only AVG'd; now it also inflates attempts/greens/
+      -- layup_excluded_n against the new floors). EXISTS keeps it a per-player
+      -- membership check, not a row multiplier.
+      WHERE EXISTS (
+        SELECT 1 FROM public.golf_team_members tmx
+         WHERE tmx.player_id = p.id AND tmx.status = 'active'::team_member_status
+      )
     ),
     tagged AS (
       SELECT *,
-        (v_metric = 'approach_proximity_175_plus_ft' AND par = 5 AND NOT on_green) AS is_likely_layup
+        -- db-migration-reviewer (2026-09-22): `par = 5` is NULL (not false)
+        -- when the hole/par is unresolvable (LEFT JOIN miss), which made the
+        -- whole AND-chain NULL and silently dropped the shot from BOTH
+        -- `NOT is_likely_layup` and `is_likely_layup` filters below.
+        -- IS NOT DISTINCT FROM treats a NULL par as "not 5" instead.
+        (v_metric = 'approach_proximity_175_plus_ft' AND par IS NOT DISTINCT FROM 5 AND NOT on_green) AS is_likely_layup
       FROM shots
     ),
     -- One row per active player: all-shot proximity (feet) over the
@@ -301,7 +331,29 @@ BEGIN
 END;
 $_$;
 
-COMMENT ON FUNCTION "public"."refresh_player_standing_shot_metrics"("p_team_ids" "uuid"[]) IS 'v3 2026-06-05 + tiny-N team_pct guard (EC-2, 2026-06-06) + gender-scoped level cohort (audit P3, 2026-06-09) + ALL-SHOT basis + lay-up split (Package 7B / addendum A2, 2026-09-22). Shot-level approach-proximity-by-band standings (50-125 / 125-175 / 175+ yd) with team + app-wide cohort (SCOPED BY golf_teams.gender, MIN_COHORT_N=8) + PGA. player_value is now averaged over every eligible approach in the band (misses included, basis=''all_shot''), matching golf_pga_standards.pga_value''s basis so the Tour marker is comparable; 175+ yd par-5 approaches missing the green are excluded as likely lay-ups (layup_excluded_n) rather than counted as misses. The pre-migration on-green-only figure is preserved in on_green_proximity_feet (MIN_GREENS=3). Floor for the all-shot population is MIN_ATTEMPTS=10 + MIN_ROUNDS=3 (addendum A2 §5.2). team_pct is NULLed when team_n<3. Companion to refresh_player_standing; same (metric_id, rows_upserted) shape (aliased out_*).';
+COMMENT ON FUNCTION "public"."refresh_player_standing_shot_metrics"("p_team_ids" "uuid"[]) IS 'v3 2026-06-05 + tiny-N team_pct guard (EC-2, 2026-06-06) + gender-scoped level cohort (audit P3, 2026-06-09) + ALL-SHOT basis + lay-up split (Package 7B / addendum A2, 2026-09-22). Shot-level approach-proximity-by-band standings (50-125 / 125-175 / 175+ yd) with team + app-wide cohort (SCOPED BY golf_teams.gender, MIN_COHORT_N=8) + PGA. player_value is now averaged over every eligible approach in the band (misses included, basis=''all_shot''), matching golf_pga_standards.pga_value''s basis so the Tour marker is comparable; 175+ yd par-5 approaches missing the green are excluded as likely lay-ups (layup_excluded_n) rather than counted as misses. The pre-migration on-green-only figure is kept in on_green_proximity_feet, now ALSO gated behind the all-shot floor (MIN_ATTEMPTS=10, MIN_ROUNDS=3) on top of its own MIN_GREENS=3 -- no current reader consumes that column. Floor for the all-shot population is MIN_ATTEMPTS=10 + MIN_ROUNDS=3 (addendum A2 §5.2). team_pct is NULLed when team_n<3. Companion to refresh_player_standing; same (metric_id, rows_upserted) shape (aliased out_*).';
 
 REVOKE EXECUTE ON FUNCTION "public"."refresh_player_standing_shot_metrics"("p_team_ids" "uuid"[]) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION "public"."refresh_player_standing_shot_metrics"("p_team_ids" "uuid"[]) TO service_role;
+
+-- ============================================================================
+-- 3) Post-apply verification (db-migration-reviewer, 2026-09-22): scripts/
+-- db/apply.mjs runs every `-- VERIFY:` line below as a standalone SELECT
+-- after this file commits and fails the apply step (without rolling back)
+-- if any returns zero rows.
+-- ============================================================================
+-- VERIFY: select 1 from information_schema.columns
+-- VERIFY:  where table_schema = 'public' and table_name = 'golf_player_standing'
+-- VERIFY:    and column_name = 'basis';
+-- VERIFY: select 1 from information_schema.columns
+-- VERIFY:  where table_schema = 'public' and table_name = 'golf_player_standing'
+-- VERIFY:    and column_name = 'on_green_proximity_feet';
+-- VERIFY: select 1 from information_schema.columns
+-- VERIFY:  where table_schema = 'public' and table_name = 'golf_player_standing'
+-- VERIFY:    and column_name = 'layup_excluded_n';
+-- VERIFY: select 1 from pg_constraint
+-- VERIFY:  where conname = 'golf_player_standing_basis_check'
+-- VERIFY:    and conrelid = 'public.golf_player_standing'::regclass;
+-- VERIFY: select 1 from pg_proc
+-- VERIFY:  where proname = 'refresh_player_standing_shot_metrics'
+-- VERIFY:    and prosrc ilike '%all_shot%';
