@@ -30,6 +30,23 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     cleanup_plan: "A9 slice 2 extends metric coverage, adds confounding detection (the enable-blocking prerequisite above), and adds an observability rollup; slice 3 is the explicit, separate decision on whether this signal should ever feed `nextWeight` (requires either a dedicated non-`lift` column or a reviewed ADR relaxing the pure core's \"never named lift\" rule). This flag is promoted or removed based on that decision plus shadow-log evidence on the insufficient-evidence rate, not on a fixed date.",
   },
   {
+    feature_id: "coachhelm_focus_area_evidence_revision",
+    owner: "golf/coachhelm",
+    purpose: "Gates stamping computeEvidenceRevision()'s fingerprint onto golf_player_focus_areas.evidence_revision when a focus area is approved from a source insight (A8 slice 1). Requires migration 20260923090000_golf_focus_area_evidence_revision applied in prod — until then the column does not exist there, and turning this on would make every insight-sourced focus-area create fail outright (the insert would include a key the live table doesn't have). Off by default in every environment for exactly that reason; this is a migration-sequencing gate, not a rollout decision the flag itself makes on the feature's merits.",
+    type: "temporary_migration",
+    status: "active",
+    created_at: "2026-09-23",
+    expires_at: "2026-10-23",
+    default: false,
+    environment: {
+      production: false,
+      preview: false,
+      development: false,
+    },
+    kill_switch_behavior: null,
+    cleanup_plan: "Flip on (development, then preview, then production) only after the owner applies migration 20260923090000_golf_focus_area_evidence_revision to each environment and `information_schema.columns` confirms evidence_revision exists there. expires_at is a review reminder, not an automatic kill — if the migration still hasn't landed by then, re-date it rather than silently expiring. Once on everywhere and stable, remove this flag and the branch in createFocusAreaFromInsight / createFocusAreaFromInsightV2 that reads it (stamp unconditionally). DB-review follow-up (#2004): once db:types is regenerated against the applied migration, also restore the two now-untyped golf_player_focus_areas inserts (development.ts's createFocusAreaFromInsightV2Impl and createFocusAreaFromInsightImpl) to plain typed `.from('golf_player_focus_areas')` calls — they were routed through fromUntyped only because evidence_revision didn't exist in generated types yet, and that escape hatch should not outlive the reason it was needed.",
+  },
+  {
     feature_id: "coachhelm_learned_personalization",
     owner: "golf/coachhelm",
     purpose: "Gates whether v3 insight ranking's loadCoachWeightsForPlayer applies stored golf_coachhelm_coach_weights instead of neutral 1.0 defaults; default off because production's weights were computed under v1's broken outcome-attribution math (see score.ts's own docblock), not because of any evidence problem with this flag.",
