@@ -370,9 +370,15 @@ export async function createWorkspace(opts = {}) {
   if (!runtime.linked.includes('.env.local')) {
     warn('canonical .env.local is unavailable; no empty replacement was generated');
   }
-  // MCP definitions describe the same services even when reattaching an old branch.
+  // MCP definitions describe the same services even when reattaching an old
+  // branch. .mcp.json is TRACKED, so copying canonical's over the checkout's
+  // own copy left every new worktree born dirty whenever the two differed —
+  // and a dirty checkout is never parkable, so landed worktrees piled up.
+  // `helm` passes canonical's file via --mcp-config (scripts/claude.mjs), so
+  // the copy is only needed for a branch that predates the tracked file.
   const mcpSource = join(canonicalRoot, '.mcp.json');
-  if (existsSync(mcpSource)) copyFileSync(mcpSource, join(path, '.mcp.json'));
+  const mcpTarget = join(path, '.mcp.json');
+  if (existsSync(mcpSource) && !existsSync(mcpTarget)) copyFileSync(mcpSource, mcpTarget);
   marker.sharedRuntime = runtime.linked;
   writeFileSync(join(path, '.helm/workspace.json'), `${JSON.stringify(marker, null, 2)}\n`);
 

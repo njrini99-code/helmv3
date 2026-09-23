@@ -156,6 +156,32 @@ describe('worktree classification — refusals first', () => {
     ).toBe(UNKNOWN_REMOTE);
   });
 
+  // pr:land deletes the remote branch but leaves the tracking config, so a
+  // landed checkout still has an upstream whose ref no longer resolves.
+  it('PARKS a checkout whose configured upstream is gone when its PR MERGED at exactly this tip', () => {
+    const v = classifyWorktree({
+      ...clean,
+      remoteSha: null,
+      prState: 'MERGED',
+      prNumber: 2003,
+      prHeadSha: SHA_A,
+    });
+    expect(v.verdict).toBe(PARKABLE);
+    expect(v.reason).toMatch(/is gone, but PR #2003 MERGED/);
+  });
+
+  it('still refuses UNKNOWN_REMOTE for a gone upstream without an exact MERGED match', () => {
+    expect(classifyWorktree({ ...clean, remoteSha: null }).verdict).toBe(UNKNOWN_REMOTE);
+    expect(
+      classifyWorktree({ ...clean, remoteSha: null, prState: 'MERGED', prNumber: 2003, prHeadSha: SHA_B })
+        .verdict,
+    ).toBe(UNKNOWN_REMOTE);
+    expect(
+      classifyWorktree({ ...clean, remoteSha: null, prState: 'CLOSED', prNumber: 2003, prHeadSha: SHA_A })
+        .verdict,
+    ).toBe(UNKNOWN_REMOTE);
+  });
+
   it('PARKS a clean, idle, fully-pushed worktree when no PR claims it', () => {
     // This assertion used to end "— regardless of PR state", and that sentence
     // was the #1681 defect written as a guarantee. It is now scoped: with no PR
