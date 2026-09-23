@@ -541,15 +541,22 @@ describe('upsertInsight', () => {
   });
 
   // §15.2 fixture matrix — "Corrected round within 24 hours: new revision is
-  // not suppressed by old dedup key." REAL GAP (reported, not fixed here):
-  // `evidenceRevisionKey = ${sample_n}|${window_end}` (see updateExisting)
-  // has NO content/value component. A same-day correction to a round (coach
-  // fixes a scoring error) that leaves sample_n and window_end unchanged
-  // produces the IDENTICAL key as the pre-correction evidence, so the
-  // maturation-confirmation tracker treats the corrected write as "the same
-  // revision already counted" even though the underlying value changed.
-  describe('corrected-round revision-key collision (plan §5.1, inverse of "stale evidence does not become new evidence")', () => {
-    it.fails('a same-day correction with an unchanged sample_n/window_end still counts as a new maturation confirmation', async () => {
+  // not suppressed by old dedup key." Re-read against plan §5.2's maturation
+  // correction ("require new contributing rounds or meaningful independent
+  // opportunities... random swings should not mature merely because they
+  // crossed the movement threshold repeatedly"): a same-day correction to the
+  // SAME round is neither a new contributing round nor an independent
+  // opportunity, so it must NOT count toward the maturation confirmation
+  // tally — §5.2 wins over a literal "not suppressed" reading of row 12.
+  // `evidenceRevisionKey` gates exactly one thing (lifecycle-policy.ts:119):
+  // whether this write's key is appended to `metadata.maturation_keys`. It
+  // does not gate whether the corrected evidence is written — `updateExisting`
+  // unconditionally sets `updatePayload.evidence = evidence` regardless of
+  // key collision — so "not suppressed" is already satisfied by main's
+  // existing behavior: the correction IS written and processed, it simply
+  // (correctly) does not add a second confirmation for the same round.
+  describe('corrected-round, same revision key (plan §5.1 row 12, resolved per plan §5.2 maturation correction)', () => {
+    it('a same-day correction with an unchanged sample_n/window_end is written, but does not count as a second maturation confirmation', async () => {
       const existing = {
         id: 'existing-correction',
         evidence: baseEvidence({ sample_n: 47, window_end: '2026-04-21', your_value: 0.30 }),
@@ -568,12 +575,12 @@ describe('upsertInsight', () => {
 
       const updateCall = calls.find((c) => c.op === 'update');
       const payload = updateCall!.payload as Record<string, unknown>;
+      const writtenEvidence = payload.evidence as InsightEvidence;
       const metadata = payload.metadata as Record<string, unknown>;
-      // Desired: a genuinely corrected value should register as a new
-      // confirmation. Today it does not — the key collides with the
-      // pre-correction write, so maturation_keys stays at length 1 instead
-      // of growing to 2.
-      expect((metadata.maturation_keys as string[]).length).toBe(2);
+      // The correction is written and processed, not suppressed.
+      expect(writtenEvidence.your_value).toBe(0.55);
+      // Same round, same revision key: no new confirmation — §5.2.
+      expect((metadata.maturation_keys as string[])).toEqual(['47|2026-04-21']);
     });
   });
 });

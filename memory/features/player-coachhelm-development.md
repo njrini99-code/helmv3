@@ -337,7 +337,7 @@ introduced this table for the repro and report.
 | 9 | Coach dismisses while worker runs | Covered | `upsert-tentative-promotion.test.ts:214` (CAS race, asserts no push); dismiss writes `lifecycle_state:'archived'` at `src/app/golf/actions/insights.ts:1454` |
 | 10 | Old worker finishes after a new revision | **Missing — real bug** | new `it.fails`, `upsert.test.ts` "stale write vs. a concurrent newer revision"; CAS only guards `lifecycle_state`, not revision |
 | 11 | Same round revision delivered twice | Covered | `upsert.test.ts:325` (DI-1 dedup), `round-review-system.test.ts:219,243` |
-| 12 | Corrected round within 24 hours | **Missing — real bug** | new `it.fails`, `upsert.test.ts` "corrected-round revision-key collision"; `evidenceRevisionKey = sample_n\|window_end` has no content component |
+| 12 | Corrected round within 24 hours | Covered | `upsert.test.ts` "corrected-round, same revision key" — resolved per plan §5.2's maturation correction, not a code fix: `evidenceRevisionKey` gates only `metadata.maturation_keys` (lifecycle-policy.ts:119), never the evidence write itself, so a same-day correction is already written/processed on main; it correctly does not add a second maturation confirmation for the same round (§5.2: "require new contributing rounds or meaningful independent opportunities") |
 | 13 | Some generators fail, others succeed | Partial | per-generator gate: `generator-base-run-lifecycle.test.ts:217`; orchestrator-level `tier1Generators`/`Promise.allSettled` aggregation untested — `it.todo`, `fixture-matrix-gaps.test.ts` |
 | 14 | Missing unit on a legacy shot | Needs follow-up | not conclusively verified this pass |
 | 15 | Mixed before/after feet and yards | Covered | `ApproachMissGenerator.test.ts:153,280` |
