@@ -40,7 +40,7 @@
 //
 // Run via: node --test scripts/__tests__/motion-reduced-motion-coverage.test.mjs
 
-import { test } from 'node:test';
+import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
@@ -123,8 +123,38 @@ function animates(strippedSrc) {
 // `useReducedMotion` hook (the canonical mechanism, including the
 // `useReducedMotionGuard` wrapper which calls it) OR reads the
 // `prefers-reduced-motion` media query directly.
+//
+// A file also honors reduced motion by DELEGATING to a hook that does the
+// gating for it. That indirection is invisible to a regex, so each delegate is
+// named here together with the module that defines it, and the test below
+// re-verifies that module still honors reduced motion itself. If someone
+// strips the guard out of the delegate, this stops being an exemption and the
+// suite fails — unlike an allowlist, it cannot rot into a silent pass.
+const SAFE_DELEGATES = new Map([
+  ['useRouteRevealMotion', 'src/lib/motion/route-motion.ts'],
+]);
+
 function honorsReducedMotion(rawSrc) {
-  return /useReducedMotion/.test(rawSrc) || /prefers-reduced-motion/.test(rawSrc);
+  if (/useReducedMotion/.test(rawSrc) || /prefers-reduced-motion/.test(rawSrc)) return true;
+  for (const hook of SAFE_DELEGATES.keys()) {
+    if (new RegExp(`\\b${hook}\\b`).test(rawSrc)) return true;
+  }
+  return false;
+}
+
+// A file whose ONLY framer-motion import is provider/feature plumbing does not
+// animate, whatever an `animate=` prop on some unrelated component suggests.
+const PROVIDER_ONLY_IMPORTS = new Set(['LazyMotion', 'MotionConfig', 'domAnimation', 'domMax']);
+
+function isProviderShell(rawSrc) {
+  const specifiers = [];
+  for (const m of rawSrc.matchAll(/import\s+\{([^}]*)\}\s+from\s+['"]framer-motion['"]/g)) {
+    for (const raw of m[1].split(',')) {
+      const name = raw.replace(/^\s*type\s+/, '').split(/\s+as\s+/)[0].trim();
+      if (name) specifiers.push(name);
+    }
+  }
+  return specifiers.length > 0 && specifiers.every((n) => PROVIDER_ONLY_IMPORTS.has(n));
 }
 
 function importsFramerMotion(rawSrc) {
@@ -165,6 +195,7 @@ test('every framer-motion file that animates honors prefers-reduced-motion', () 
     if (ALLOWLIST.has(rel)) continue;
     const raw = readFileSync(resolve(repoRoot, rel), 'utf8');
     const stripped = stripComments(raw);
+    if (isProviderShell(raw)) continue;
     if (animates(stripped) && !honorsReducedMotion(raw)) {
       offenders.push(rel);
     }
@@ -178,6 +209,22 @@ test('every framer-motion file that animates honors prefers-reduced-motion', () 
       'Gate the motion props so reduced-motion users get the static/instant variant:\n  - ' +
       offenders.join('\n  - '),
   );
+});
+
+test('every reduced-motion delegate hook still honors reduced motion itself', () => {
+  for (const [hook, modulePath] of SAFE_DELEGATES) {
+    const src = readFileSync(resolve(repoRoot, modulePath), 'utf8');
+    assert.match(
+      src,
+      new RegExp(`\\b${hook}\\b`),
+      `${modulePath} no longer defines ${hook}; update SAFE_DELEGATES`,
+    );
+    assert.ok(
+      /useReducedMotion/.test(src) || /prefers-reduced-motion/.test(src),
+      `${modulePath} defines ${hook}, which callers are exempted for, but no ` +
+        'longer honors reduced motion itself — the exemption is now unsound',
+    );
+  }
 });
 
 test('the canonical v3 motion library exposes the reduced-motion guard + 5 primitives', () => {

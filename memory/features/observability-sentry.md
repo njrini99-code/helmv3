@@ -239,6 +239,20 @@ alongside (not duplicated here).
 - No `admin_events.feature` key for this feature itself — see the
   `observability` block in `memory/registry.yml`'s `integrations.sentry`
   entry for why.
+- **The Supabase tracing instrumentation reports a failed query to Sentry
+  independently of how the calling code handles it.**
+  `import '@supabase/supabase-js/tracing'` +
+  `Sentry.instrumentSupabaseClient()` (wired in
+  `src/instrumentation-client.ts` and `src/lib/supabase/admin.ts`) flags a
+  failed query `handled: no` even when the caller caught the error, logged
+  it, and returned a clean result. A Sentry error naming a Supabase
+  operation is therefore not evidence of an unhandled bug on its own — the
+  question is whether the failing call could be avoided (check a session
+  before an RPC, use `.maybeSingle()` where a missing row is expected), not
+  whether the catch block is good enough. See `memory/features/
+  admin-platform.md`'s Known Risk Areas for the companion "most unresolved
+  Sentry issues are noise" triage note. (STU, source:
+  `supabase-tracing-reports-handled-errors.md`, no date field.)
 
 ## Rollback
 

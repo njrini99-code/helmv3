@@ -158,6 +158,43 @@ no `HELD.md` row.
   `/admin/database?incident=<fingerprint>`, linked from each error-group
   row. The admin gate still runs before any data access.
 
+### Database Plan track D5 (Database Tab: statement capture, index advice, bloat, coverage, drift, Sentry paging)
+
+Full detail: `docs/observability/DATABASE_TAB.md` (not duplicated here —
+that doc is the live authority on what each new section reads, retention,
+fail-open behaviour, and named gaps).
+
+- Tables: `helm_debug.db_statement_samples`, `db_statement_alert_state`,
+  `db_analysis_samples`. No new collector schedule — extends the existing
+  `db-stat-delta` (15 min) and `db-table-health` (hourly) crons.
+- Pure evaluators: `src/lib/observability/supabase/statement-ranking.ts`
+  (top-25-by-total/top-25-by-mean ranking, once-per-UTC-day Sentry paging
+  gate), `db-analysis.ts` (flatten/diff for the six-then-seven analysis
+  categories), `rls-coverage.ts` (RLS/grant coverage findings, importable
+  by `scripts/db/rls-coverage.mjs` without a live database).
+- Bridge readers: `src/lib/admin/database/statements.ts`, `analysis.ts`.
+- **`index_advisor` must never be called from anything PostgREST invokes.**
+  `extensions.index_advisor()` runs `DEALLOCATE ALL`, which wipes the prepared
+  statements PostgREST holds on the pooled backend connection it happens to be
+  using; every later request on that connection then fails with SQLSTATE 26000,
+  `prepared statement "N" does not exist`. Shipping it inside
+  `helm_debug_db_analysis_snapshot()` (applied to production 2026-09-09 12:47Z)
+  produced a site-wide cascade at :07 past every hour — 303 `admin_events` rows
+  and 9 affected users in 72h — until
+  `20260909230000_helm_debug_analysis_drop_index_advisor.sql` removed the call.
+  The `index_suggestion` category now emits a `note` row only. Restoring it
+  means computing suggestions from a `pg_cron` job (its own backend connection)
+  into `helm_debug.db_analysis_samples`, never from the PostgREST path. See
+  `docs/observability/DATABASE_TAB.md`.
+- Bridge page additions: Slow statements, Index suggestions, Unused
+  indexes, Bloat, Coverage sections; a best-effort Drift section (no
+  persisted drift verdict or GitHub Actions credential reachable from this
+  Bridge deployment — falls back to a migration-ledger file count plus the
+  health sampler's last-sample time); a "Changed since yesterday" strip.
+- Coverage's third finding (policies with no matching pgTAP test) is
+  script-only (`npm run db:rls-coverage`), not live-trended — a SECURITY
+  DEFINER SQL function cannot read `supabase/tests/rls/*.sql`.
+
 ## Tests
 
 Unit-level TypeScript fixtures against every pure evaluator listed above

@@ -15,6 +15,17 @@
 -- security boundary, not base-table RLS — the exposed columns are safe for any
 -- authenticated user, so the view runs with owner rights and returns non-PII
 -- identity for all coaches. Additive/idempotent (CREATE OR REPLACE). NEVER anon.
+--
+-- SUPABASE ADVISOR NOTE (2026-09-05, F097): the advisor's ERROR-level
+-- `security_definer_view` finding on this view is INTENTIONAL, not a defect —
+-- dismiss it rather than fixing it. This view is the security boundary for
+-- the non-PII coach-identity surface described above (authenticated callers,
+-- not anon); its base table `baseball_coaches` stays RLS-locked so a caller's
+-- own row-level access never determines what this view returns; and
+-- `security_invoker` MUST stay `false` — flipping it to `true` would make the
+-- view re-apply the caller's own RLS on `baseball_coaches`, reintroducing the
+-- exact PII leak (email/phone readable cross-org) this view exists to close.
+-- See supabase/migrations/HELD.md's "Dismiss in the Supabase advisor UI" list.
 
 CREATE OR REPLACE VIEW public.baseball_coaches_public
 WITH (security_invoker = false)

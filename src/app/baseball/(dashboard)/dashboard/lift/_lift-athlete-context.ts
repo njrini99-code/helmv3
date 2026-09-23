@@ -57,6 +57,15 @@ async function resolvePlayerTeamIds(
       `[lift-athlete-context] resolvePlayerTeamIds query failed: ${error.message}`,
       { action: 'baseball.liftAthleteContext.resolvePlayerTeamIds', metadata: { playerId } },
     );
+    // Deliberate, not a swallow: this list is additive-only (the caller
+    // tries each team membership in turn and gives up once the list is
+    // exhausted), and resolvePlayerLiftAthleteContext's contract — stated
+    // in its own docstring above — is to degrade to the canonical
+    // component's honest empty state on ANY resolution failure, never an
+    // error screen, matching the existing player-lift read-model's
+    // contract elsewhere. An empty list here does not grant or hide
+    // anything; it only means "render the empty Lift home", the same
+    // outcome as a genuinely un-seeded athlete.
     return [];
   }
   return (data ?? [])

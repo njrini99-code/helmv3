@@ -30,7 +30,7 @@ Some preferences are saved locally and not yet consumed globally, so agents shou
 - `src/app/golf/actions/v3/notification-prefs.ts`
 - `src/app/golf/actions/coaching-philosophy.ts`
 - `src/app/golf/actions/teams.ts`
-- `src/lib/coachhelm/v3/foundation/flags.ts` was removed 2026-07-03 (`b0a45ea31`, knip dead-code prune); per-team toggles live in `src/lib/coachhelm/v3/foundation/generator-toggles.ts`
+- src/lib/coachhelm/v3/foundation/flags.ts was removed 2026-07-03 (`b0a45ea31`, knip dead-code prune); per-team toggles live in `src/lib/coachhelm/v3/foundation/generator-toggles.ts`
 
 ## Core Data
 
@@ -57,6 +57,12 @@ Some preferences are saved locally and not yet consumed globally, so agents shou
 - Role-specific panels should not show controls that cannot apply to the current role.
 - Notification controls should disclose email/push distinctions.
 - Coaching intelligence controls need clear sensitivity, threshold, weighting, and toggle semantics.
+- A route's `loading.tsx` reserves the page's paint at t=0 — for a
+  `'use client'` page holding its own `loading` state that is that
+  component's loading branch, not its settled layout. A route whose
+  `page.tsx` is a pure `permanentRedirect` shim renders `bg-canvas` only:
+  no geometry, and no real `<h1>` for a screen that never mounts.
+  Reference implementation: `dashboard/alerts/loading.tsx`.
 
 ## Known Risk Areas
 

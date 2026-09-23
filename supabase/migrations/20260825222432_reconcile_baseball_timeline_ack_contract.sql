@@ -1,4 +1,4 @@
--- Reconcile the two live shapes of baseball_timeline_event_acks.
+-- LOCAL-ONLY. Reconcile the two live shapes of baseball_timeline_event_acks.
 --
 -- Production predates the timeline-ack migration and requires team_id,
 -- player_id, acked_by, and acked_at. A fresh local replay created the intended

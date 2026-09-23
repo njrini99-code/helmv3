@@ -9,6 +9,12 @@ import { shouldPersistAdminTables, getRuntimeEnv } from '@/lib/telemetry-gate';
 const clearAmbientCi = () => {
   vi.stubEnv('CI', '');
   vi.stubEnv('GITHUB_ACTIONS', '');
+  // Every Vercel deployment — production AND preview — runs the app under
+  // NODE_ENV=production, because `next build`/`next start` set it. Vitest
+  // sets NODE_ENV='test', which would otherwise trip the dev-machine guard
+  // in every scenario below and make the deployment cases untestable. Tests
+  // that model a developer's laptop override this explicitly.
+  vi.stubEnv('NODE_ENV', 'production');
 };
 
 describe('shouldPersistAdminTables', () => {
@@ -56,6 +62,26 @@ describe('shouldPersistAdminTables', () => {
     expect(shouldPersistAdminTables()).toBe(false);
   });
 
+  it('never persists from a developer machine, even with VERCEL_ENV=production in .env.local', () => {
+    // Regression guard for the 2026-09-09 flood: `vercel env pull` writes
+    // VERCEL_ENV="production" (and VERCEL="1") verbatim into .env.local and
+    // .env.production.local, so `npm run dev` on the owner's machine cleared
+    // the old VERCEL_ENV check and wrote 287 of 1626 rows in a 72h window
+    // into the production admin_events table. NODE_ENV is the one signal a
+    // local env file cannot forge: Next's CLI sets it before any .env* file
+    // is read, and dotenv never overwrites an already-set key.
+    vi.stubEnv('NODE_ENV', 'development');
+    vi.stubEnv('VERCEL', '1');
+    vi.stubEnv('VERCEL_ENV', 'production');
+    expect(shouldPersistAdminTables()).toBe(false);
+  });
+
+  it('still honours ADMIN_EVENTS_FORCE_CAPTURE from a developer machine', () => {
+    vi.stubEnv('NODE_ENV', 'development');
+    vi.stubEnv('ADMIN_EVENTS_FORCE_CAPTURE', '1');
+    expect(shouldPersistAdminTables()).toBe(true);
+  });
+
   it('never persists from CI/GITHUB_ACTIONS even if VERCEL_ENV is spoofed to production', () => {
     // Regression guard: the Playwright workflow boots `npm run dev` and
     // `npm run build`/`next start` with real prod Supabase secrets, and a
@@ -98,6 +124,16 @@ describe('getRuntimeEnv', () => {
 
   it('tags local dev (no VERCEL_ENV, no CI) as dev', () => {
     vi.stubEnv('VERCEL_ENV', '');
+    expect(getRuntimeEnv()).toBe('dev');
+  });
+
+  it('tags a developer machine as dev even with VERCEL_ENV=production in .env.local', () => {
+    // Without this, a row forced through by ADMIN_EVENTS_FORCE_CAPTURE from a
+    // laptop would be *tagged* runtimeEnv:'production' and be indistinguishable
+    // from a real prod incident in the Bridge.
+    vi.stubEnv('NODE_ENV', 'development');
+    vi.stubEnv('VERCEL', '1');
+    vi.stubEnv('VERCEL_ENV', 'production');
     expect(getRuntimeEnv()).toBe('dev');
   });
 });

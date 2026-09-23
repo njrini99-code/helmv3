@@ -35,6 +35,8 @@ import type {
   DecisionRoomSourceRef,
 } from '@/app/baseball/actions/decision-room';
 import type { Database } from '@/lib/types/database';
+import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 /**
  * Supabase client typed against the generated Database schema. The Decision
@@ -151,7 +153,21 @@ export async function loadAgendaItems(
     .order('created_at', { ascending: false, nullsFirst: false })
     .limit(MAX_ROWS);
 
-  if (error || !data) return [];
+  if (error || !data) {
+    if (error) {
+      await logServerError(
+        `[decision-room] loadAgendaItems query failed: ${describeError(error)}`,
+        { action: 'baseball.decisionRoom.loadAgendaItems', metadata: { teamId } },
+      );
+    }
+    // Deliberate, not a swallow: this module's documented contract (file
+    // header, "HONESTY") is real rows or an honest empty array — a failed
+    // read degrades gracefully rather than throwing into the Decision
+    // Room's Promise.all, which would otherwise take the WHOLE dashboard
+    // down for one flaky panel. The failure is now logged above; the
+    // empty return is the considered, existing policy, not an oversight.
+    return [];
+  }
 
   const rows = data as MeetingItemRow[];
 
@@ -256,7 +272,17 @@ export async function loadDecisionLedger(
     .order('created_at', { ascending: false, nullsFirst: false })
     .limit(MAX_ROWS);
 
-  if (error || !data) return [];
+  if (error || !data) {
+    if (error) {
+      await logServerError(
+        `[decision-room] loadDecisionLedger query failed: ${describeError(error)}`,
+        { action: 'baseball.decisionRoom.loadDecisionLedger', metadata: { teamId } },
+      );
+    }
+    // See loadAgendaItems above — same documented "HONESTY" contract:
+    // degrade to empty rather than throw into the dashboard's Promise.all.
+    return [];
+  }
 
   const rows = data as DecisionLogRow[];
 

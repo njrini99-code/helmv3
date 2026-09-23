@@ -1,5 +1,6 @@
 /**
- * Bridge Premium Phase 3 — Feature Constellation for `/admin/reliability`.
+ * Bridge Premium Phase 3 — Feature Constellation, now the top of
+ * `/admin/errors?view=sources` (was `/admin/reliability`).
  *
  * Deliberately a GRID, not a force-directed graph (brief §44: "no giant
  * force-directed graph"). Each card is one feature node — label, app,
@@ -40,16 +41,18 @@ function NodeCard({
   node,
   edges,
   selected,
+  hrefForKey,
 }: {
   node: ConstellationNode;
   edges: readonly ConstellationEdge[];
   selected: boolean;
+  hrefForKey: (key: string) => string;
 }) {
   const related = edgesFor(node.key, edges);
 
   return (
     <Link
-      href={`?feature=${encodeURIComponent(node.key)}`}
+      href={hrefForKey(node.key)}
       className={`block rounded-fw-md border p-3 transition-colors ${
         selected ? 'border-fw-accent-ink bg-surface' : 'border-warm-200 bg-surface hover:bg-warm-50'
       }`}
@@ -84,9 +87,18 @@ function NodeCard({
 export function FeatureConstellationGrid({
   view,
   selectedKey,
+  /**
+   * How to link one node. Supplied by the host page rather than built here as
+   * a bare `?feature=<key>`: a query-only href resolves against the current
+   * path and DROPS every other param, so from `/admin/errors?view=sources` a
+   * node click would silently land back on the `list` view. The host is the
+   * only place that knows which params must survive.
+   */
+  hrefForKey,
 }: {
   view: FeatureConstellationView;
   selectedKey: string | null;
+  hrefForKey: (key: string) => string;
 }) {
   if (view.nodes.length === 0) {
     return <p className="text-sm text-warm-500">No feature health data available this refresh.</p>;
@@ -96,7 +108,13 @@ export function FeatureConstellationGrid({
     <div>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         {view.nodes.map((node) => (
-          <NodeCard key={node.key} node={node} edges={view.edges} selected={node.key === selectedKey} />
+          <NodeCard
+            key={node.key}
+            node={node}
+            edges={view.edges}
+            selected={node.key === selectedKey}
+            hrefForKey={hrefForKey}
+          />
         ))}
       </div>
       {view.edgeSource === 'none' ? (

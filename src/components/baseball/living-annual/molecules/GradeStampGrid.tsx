@@ -10,7 +10,8 @@
  * No hooks / handlers — safe in a server component.
  */
 import { cn } from '@/lib/utils';
-import { GradeStamp } from '..';
+// Leaf import, not the parent barrel ('..') — see CoverHero.tsx for why.
+import { GradeStamp } from '../GradeStamp';
 
 // Static column templates — the stamps are fixed-size, so `w-fit` keeps the grid
 // snug to its content instead of stretching cells.

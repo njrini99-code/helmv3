@@ -968,3 +968,40 @@
   each six times over is what pushed the row off the narrowest screen in the
   product. `src/lib/fairway/haptics.ts` already existed with the full
   vocabulary and the round had not one call.
+
+## 2026-09-07 — route `loading.tsx` fallbacks reshaped to the real first paint
+
+- SHA: 6eccdf03d.
+- Change: this feature's route Suspense fallbacks (`dashboard/rounds/[id]`, `dashboard/rounds/continue/[id]`) were reshaped.
+  No route, table, server action, data flow or business rule changed — the
+  edits are confined to `loading.tsx` skeleton geometry and its ARIA
+  wrapper.
+- Why: the fallbacks were shape-matched to each page's SETTLED layout
+  rather than the markup that paints at t=0. For a `'use client'` page
+  holding its own `loading` state, the Suspense fallback is replaced by
+  that component's loading branch, so reserving the populated geometry
+  caused the layout shift the fallback exists to prevent. A route whose
+  `page.tsx` is a pure `permanentRedirect` shim now renders `bg-canvas`
+  only — no geometry, no `<h1>` for a screen that never mounts.
+- Verification: every edited file was adversarially re-verified against
+  its page's source, twice for the files that failed the first pass.
+  typecheck 0, lint 0, build 0.
+
+## 2026-09-15 — single phone no longer falsely blocked as "updated on another device"
+
+- SHA: this PR (`agent/round-conflict-self-heal`); not deployed at the time of writing.
+- Incident: `memory/incidents/shot_tracking/INC-2026-09-15-single-phone-false-conflict-block.md`.
+- Change: foreground saves route through `savePartialRoundTracked`, which
+  marks a pending unreadable write on a recognised transport loss (new
+  `src/lib/golf/round-write-outcome.ts`); the pagehide/hidden beacon marks
+  it too and is sent once per hidden period; `handleRoundSyncConflict`
+  adopts the server's current `updated_at` and callers retry instead of
+  blocking when that flag is set, and races (poll and save under the same
+  token) are guarded by comparing the known value to the live token. The
+  beacon deliberately carries no lock token; B2's block for a device proven
+  behind is unchanged.
+- Why: iOS kills in-flight saves on lock/app switch (`TypeError: Load
+  failed`) and fires two beacons per backgrounding; each landed write bumped
+  `updated_at` without telling the client, and the B9 boolean forgave only
+  one, so every Hampden-Sydney phone escalated to the permanent block during
+  post-round stat entry.

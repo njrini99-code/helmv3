@@ -35,7 +35,7 @@ The reasoning behind the map, and the alternatives rejected, is
 | What do Sentry and `admin_events` each mean? | `docs/OBSERVABILITY_AUTHORITY.md` |
 | How does self-heal operate? | `docs/ai-system/selfheal/` |
 | Is production healthy right now? | Mission Control, synthesised from the rows above |
-| What was true on a past date? | the dated snapshot, audit, or `docs/archive/**` |
+| What was true on a past date? | the dated snapshot, audit, or the attic (tag `docs-attic-2026-09`; see `docs/README.md`) |
 
 <!-- markdownlint-enable MD013 -->
 
@@ -83,7 +83,7 @@ SELF-HEAL CONTRACT
   docs/ai-system/selfheal/              capture -> diagnose -> repair -> close
 
 HISTORICAL EVIDENCE ONLY
-  docs/archive/**                       never current architecture or schema
+  tag docs-attic-2026-09 (see docs/README.md)   never current architecture or schema
   docs/audits/*                         dated audits
   docs/ai-system/selfheal/STATE-*.md    dated snapshots
   docs/superpowers/plans|specs/**       plans and design specs

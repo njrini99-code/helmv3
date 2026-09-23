@@ -1,6 +1,6 @@
 /**
  * Regression tests for the EVENT actions in golf.ts — calendar audit
- * 2026-06-10 (docs/audits/GOLFHELM_CALENDAR_AUDIT_2026-06-10.md).
+ * 2026-06-10 (https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-06/audits/GOLFHELM_CALENDAR_AUDIT_2026-06-10.md).
  *
  * Covers:
  *  - #5/#15: createGolfEvent persists requires_rsvp / rsvp_deadline /

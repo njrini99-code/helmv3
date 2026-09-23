@@ -1,5 +1,7 @@
 # W11: Jobs & Integrity — cron board, nightly integrity checks, retention
 
+Status: active
+
 **Goal:** Give every scheduled job a persisted outcome (`background_job_logs` finally gets writers — it has ZERO today), detect dead crons explicitly (OVERDUE = absence, which a dead cron can't log), add the nightly data-integrity cron (orphans, schema canaries, anon-grant drift) and the retention cron, and ship `/admin/jobs`.
 
 **Depends-on:** W2 (source column), W4 (panels). Retention ships in the SAME wave as the new write volume (risk #8 rule).

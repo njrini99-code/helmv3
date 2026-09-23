@@ -75,13 +75,18 @@ async function getCoachAlerts(
     .select('id')
     .eq('id', coachId)
     .eq('user_id', user.id)
-    .single();
+    .maybeSingle();
 
-  // `.single()` reports a genuine no-row as PGRST116 — that is the real "this
-  // coach id is not yours" and keeps its message. Any other code is the read
-  // falling over, and telling a coach they may not view their own alerts is a
-  // statement about their access rather than about the query.
-  if (coachError && coachError.code !== 'PGRST116') {
+  // `.maybeSingle()` answers a genuine no-row with `data: null` and NO error.
+  // "This coach id is not yours" is a verdict this function reaches below, on
+  // `!coach` — it is not a failure of the read. `.single()` reported the same
+  // zero rows as PGRST116, and although the code here handled that code, the
+  // Sentry Supabase integration captured the raw PostgREST response as an
+  // exception before the check ever ran (JAVASCRIPT-NEXTJS-QZ). Any error that
+  // survives now is the read genuinely falling over, and telling a coach they
+  // may not view their own alerts is a statement about their access rather
+  // than about the query.
+  if (coachError) {
     await logServerError(
       `alerts: coach identity read failed for ${coachId}: ${describeError(coachError)}`,
       { action: 'alerts.getAlerts', featureArea: 'coachhelm' },
@@ -219,13 +224,19 @@ async function getAlertCountsImpl(
     .select('id')
     .eq('id', coachId)
     .eq('user_id', user.id)
-    .single();
+    .maybeSingle();
 
   // This one returns EMPTY COUNTS with authExpired — so the alert badge reads
   // zero and the coach is told their session lapsed. A failed read produced
   // exactly that: a clean "nothing needs your attention" on a surface whose
   // whole job is to say when something does.
-  if (countsCoachError && countsCoachError.code !== 'PGRST116') {
+  //
+  // `.maybeSingle()` for the same reason as the read in `getCoachAlerts`
+  // above: this badge is POLLED, so `.single()`'s PGRST116 on an expired
+  // session reported an exception to Sentry on every poll of every lapsed
+  // tab (JAVASCRIPT-NEXTJS-QZ, culprit POST /golf/dashboard/calendar) for a
+  // state this function answers deliberately three lines down.
+  if (countsCoachError) {
     await logServerError(
       `alerts: coach identity read failed while counting for ${coachId}; badge will read zero: ${describeError(countsCoachError)}`,
       { action: 'alerts.getAlertCounts', featureArea: 'coachhelm' },
@@ -349,12 +360,15 @@ async function generateAlertsImpl(
     return { success: false, error: 'Not authenticated' };
   }
 
+  // `.maybeSingle()`, as above: the error is not even bound here, so
+  // `.single()`'s PGRST116 could only ever have reached Sentry — never this
+  // code, which reads the no-row verdict off `!coach`.
   const { data: coach } = await supabase
     .from('golf_coaches')
     .select('id')
     .eq('id', coachId)
     .eq('user_id', user.id)
-    .single();
+    .maybeSingle();
 
   if (!coach) {
     return { success: false, error: 'Not authorized to generate alerts for this coach' };

@@ -35,6 +35,7 @@ type Settings = {
 
 const settings: Settings = JSON.parse(readFileSync(SETTINGS, 'utf-8'));
 const deny = settings.permissions?.deny ?? [];
+const ask = settings.permissions?.ask ?? [];
 
 function hookRows() {
   const rows: Array<{ event: string; matcher: string; command: string }> = [];
@@ -73,15 +74,22 @@ describe('hook wiring is real', () => {
     }
   });
 
-  it('exactly one hook can refuse a tool call, and it is the canonical-write guard', () => {
-    // If this ever legitimately changes, the inventory changes with it and this
-    // assertion is what forces the docs to be regenerated rather than drift.
+  it('every PreToolUse guard added by the config-hardening pass is wired', () => {
+    // 2026-09-07: guard-git.mjs, guard-sql.mjs, and guard-config-change.mjs
+    // joined guard-canonical-write.mjs as PreToolUse hooks that can refuse a
+    // tool call — this repo's config-hardening pass. If this count or set
+    // ever legitimately changes again, the inventory changes with it and
+    // this assertion is what forces the docs to be regenerated rather than
+    // silently drift.
     const blocking = hookRows().filter((r) => r.event === 'PreToolUse');
-    expect(blocking).toHaveLength(1);
-    const only = blocking[0];
-    expect(only, 'expected exactly one PreToolUse hook').toBeDefined();
-    expect(only!.command).toContain('guard-canonical-write.mjs');
-    expect(only!.matcher).toBe('Write|Edit|MultiEdit');
+    const scripts = blocking.map((r) => scriptPath(r.command));
+    expect(scripts).toEqual(
+      expect.arrayContaining([
+        '.claude/hooks/guard-git.mjs',
+        '.claude/hooks/guard-sql.mjs',
+      ]),
+    );
+    expect(blocking.length).toBeGreaterThan(1);
   });
 
   it('no hook claims to cover MCP unless one actually matches mcp__', () => {
@@ -97,29 +105,44 @@ describe('hook wiring is real', () => {
   });
 });
 
-describe('project-level Supabase denies are present', () => {
-  it('every account-wide mutating tool is denied', () => {
+describe('database access and destructive-operation permissions', () => {
+  it('project deletion, resets and costly operations request approval', () => {
     const mutating = [
-      'apply_migration',
-      'create_branch',
       'create_project',
       'delete_branch',
-      'deploy_edge_function',
       'merge_branch',
       'pause_project',
-      'rebase_branch',
       'reset_branch',
       'restore_project',
     ];
     const missing = mutating
       .map((t) => `mcp__claude_ai_Supabase__${t}`)
-      .filter((r) => !deny.includes(r));
+      .filter((r) => !ask.includes(r));
     expect(missing).toEqual([]);
   });
 
-  it('the uninstalled plugin namespace stays denied at server level', () => {
-    // Denied so the standing user-scope grant cannot activate on install.
-    expect(deny).toContain('mcp__plugin_supabase_supabase');
+  it('provides project-scoped database access without disabling migrations', () => {
+    const mcp = JSON.parse(readFileSync(resolve(REPO, '.mcp.json'), 'utf-8'));
+    const url = new URL(mcp.mcpServers.supabase.url);
+    expect(url.searchParams.get('project_ref')).toBeTruthy();
+    expect(url.searchParams.get('read_only')).not.toBe('true');
+    expect(settings.permissions?.allow).toContain('mcp__supabase');
+    for (const tool of ['execute_sql', 'apply_migration']) {
+      expect(deny).not.toContain(`mcp__supabase__${tool}`);
+      expect(ask).not.toContain(`mcp__supabase__${tool}`);
+    }
+    expect(settings.permissions?.allow).toContain('Bash');
+    expect(deny).not.toContain('Read(./.env.local)');
+  });
+
+  it('keeps account connector reads available', () => {
+    for (const tool of ['list_tables', 'list_migrations', 'get_advisors', 'execute_sql']) {
+      expect(deny).not.toContain(`mcp__claude_ai_Supabase__${tool}`);
+    }
+  });
+
+  it('fallback connector namespaces are not permanently disabled', () => {
+    expect(deny).not.toContain('mcp__plugin_supabase_supabase');
   });
 });
 
@@ -176,12 +199,17 @@ describe('the three corrected claims stay corrected', () => {
     read(p)
       .replace(/[\u201c\u201d"][^\u201c\u201d"]*[\u201c\u201d"]/g, ' ');
 
-  it('database.md does not claim destructive SQL is blocked by a hook', () => {
-    expect(asserted('.claude/rules/database.md')).not.toMatch(/are blocked by a PreToolUse hook/);
+  it('database.md describes guard-sql.mjs\'s actual, narrow coverage rather than a blanket block', () => {
+    // 2026-09-07: guard-sql.mjs now really does refuse DROP TABLE/SCHEMA,
+    // TRUNCATE, a WHERE-less DELETE, and ALTER...DROP COLUMN — so the old
+    // "blocked by a PreToolUse hook on both the file-write and MCP paths"
+    // phrasing this suite used to forbid is no longer a lie to correct, it
+    // is closer to true. What must still not happen is overclaiming: the
+    // hook is text matching over SQL syntax, not a parser, and everything
+    // outside that exact statement shape is explicitly out of scope.
     const db = read('.claude/rules/database.md');
-    expect(db).toMatch(/UNENFORCED/);
-    // and it records that the false version escaped into user scope
-    expect(db).toMatch(/autoMode/);
+    expect(db).toMatch(/guard-sql\.mjs/);
+    expect(db).toMatch(/not a parser/);
   });
 
   it('CLAUDE.md distinguishes detection from prevention', () => {
@@ -197,13 +225,27 @@ describe('the three corrected claims stay corrected', () => {
   });
 
   it('autonomy.md does not justify autonomy with hooks that do not exist', () => {
-    // The most consequential of the four. This paragraph told the reader it was
-    // safe to proceed without asking, and named three shapes — force push,
-    // destructive SQL, unscoped recursive rm — as deterministically blocked.
-    // None of the three is covered by any hook or deny rule.
+    // The most consequential of the four. A now-deleted paragraph told the
+    // reader it was safe to proceed without asking, and named three shapes —
+    // force push, destructive SQL, unscoped recursive rm — as
+    // deterministically blocked, when none of the three was covered by any
+    // hook or deny rule.
+    //
+    // 2026-09-07: force push and destructive SQL got REAL, narrow guards
+    // (guard-git.mjs, guard-sql.mjs) — so the blanket "no hook covers force
+    // push, destructive SQL, or recursive rm" this suite used to pin is now
+    // itself the kind of overclaim this file exists to prevent, just
+    // pointed the other way. What must still hold: autonomy.md names each
+    // guard's actual scope (a subset of commands/statements, not a shell or
+    // SQL parser) rather than claiming blanket coverage, and it still names
+    // the two things nothing catches — Bash-driven writes into the
+    // canonical checkout, and a recursive `rm`.
     const a = asserted('.claude/rules/autonomy.md');
     expect(a).not.toMatch(/they block the shapes\s+that actually matter/);
-    expect(read('.claude/rules/autonomy.md')).toMatch(/All three examples were false/);
+    const raw = read('.claude/rules/autonomy.md');
+    expect(raw).toMatch(/guard-git\.mjs/);
+    expect(raw).toMatch(/guard-sql\.mjs/);
+    expect(raw).toMatch(/not parsers or complete security boundaries/);
   });
 
   it('all four point readers at the generated inventory', () => {

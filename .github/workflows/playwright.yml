@@ -22,6 +22,12 @@ name: Playwright E2E
 # the PR.
 #
 # SECURITY: zero untrusted user input in run: blocks except github.sha.
+#
+# 2026-09-06: the `e2e` job now tries to download ci.yml's `next-build`
+# artifact for this commit before building — see the "Try to reuse this
+# commit's Next build artifact" step below. It falls back to a normal
+# `npm run build` when there is nothing to download (retention expired, or
+# this ref never had a `ci.yml` run at all).
 
 on:
   workflow_dispatch:
@@ -95,7 +101,23 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
-      - name: Build (the suite serves this build via `next start`)
+      # BUILD ONCE, reused (2026-09-06). ci.yml's `next-build` job uploads
+      # `.next` (minus `.next/cache`) as `next-build-${{ github.sha }}`,
+      # 1-day retention — if this dispatch targets a commit CI already built
+      # today, reuse it instead of paying for a second `next build`.
+      # `continue-on-error` so a miss (retention expired, or this ref never
+      # ran ci.yml at all — e.g. a branch pushed straight to a fork) falls
+      # through to the fallback build below rather than failing the job.
+      - name: Try to reuse this commit's Next build artifact
+        id: download_build
+        continue-on-error: true
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
+        with:
+          name: next-build-${{ env.COMMIT_SHA }}
+          path: .next
+
+      - name: Build (fallback — no reusable artifact for this commit)
+        if: steps.download_build.outcome != 'success'
         run: npm run build
 
       # ⚠️ THESE TWO STEPS STILL WRITE TO PRODUCTION, and now say so out loud.

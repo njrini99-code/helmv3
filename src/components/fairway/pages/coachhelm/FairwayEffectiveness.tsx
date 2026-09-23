@@ -85,36 +85,36 @@ import { searchInsights } from '@/app/golf/actions/insight-management';
 import type { InsightWithPlayer } from '@/lib/coachhelm/insight-types';
 
 // ── Fairway kit — the INSTRUMENT cockpit pieces + the supporting primitives. ──
+// Imported from each module's own leaf path, not the top `@/components/fairway`
+// barrel — this file is itself re-exported (via pages/coachhelm/index.ts) from
+// that barrel, so importing the barrel back here created an import cycle
+// (fairway/index.ts -> pages/coachhelm/index.ts -> this file ->
+// fairway/index.ts), flagged by npm run check:cycles.
+import { InstrumentPanel, InstrumentCluster, Readout } from '@/components/fairway/instrument';
 import {
-  // Cockpit surfaces + layout + readout.
-  InstrumentPanel,
-  InstrumentCluster,
-  Readout,
-  // The flat chart instruments still in use.
   Ribbon,
   SegmentBar,
   StrokesGainedTornado,
-  // Supporting primitives (drill-downs + matte reads + states).
-  Segmented,
-  Button,
   StatStrip,
   StatTile,
-  ChartCard,
+  ChartFrame as ChartCard,
   BarCompare,
-  InsufficientData,
-  EmptyState,
-  InlineNotice,
-  SkeletonCard,
-  SkeletonText,
-  Surface,
-  Badge,
-  fairwayToast,
   formatPercent,
   type RibbonPoint,
   type SegmentBarPart,
   type BarCompareDatum,
   type SGCategory,
-} from '@/components/fairway';
+} from '@/components/fairway/charts';
+import { Segmented, Button, Badge } from '@/components/fairway/controls';
+import {
+  InsufficientData,
+  EmptyState,
+  InlineNotice,
+  SkeletonCard,
+  SkeletonText,
+  fairwayToast,
+} from '@/components/fairway/feedback';
+import { Surface } from '@/components/fairway/surfaces';
 
 /* ────────────────────────────────────────────────────────────────────────────
  * Honesty thresholds (resolved decisions — deterministic product rule)

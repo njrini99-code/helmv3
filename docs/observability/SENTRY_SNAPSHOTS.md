@@ -4,13 +4,20 @@
 Visual safety net for pull requests: a fixed, named set of screenshots is
 captured from THIS PR's own build and uploaded to Sentry's Snapshots product
 (Beta), which diffs it against a base build and posts a GitHub status check.
-Workflow: `.github/workflows/sentry-snapshots.yml`. Spec files:
+**2026-09-06: the standalone `sentry-snapshots.yml` workflow this doc
+describes is gone** — its job (`Capture + upload Sentry snapshots`) now
+lives as the `sentry-snapshot-capture` job inside `.github/workflows/ci.yml`,
+gated by the shared `.github/workflows/detect-changes.yml` detector's
+`code`/`e2e` outputs instead of a trigger-level `paths:` filter, and it
+downloads `ci.yml`'s own `next-build` artifact instead of running its own
+`npm run build`. The design below (screen list, determinism rules,
+advisory-then-required plan) is otherwise unchanged. Spec files:
 `e2e/sentry-snapshots.spec.ts` (public pages + GolfHelm player) and
 `e2e/sentry-snapshots-baseball.spec.ts` (BaseballHelm coach + player).
 Shared capture logic: `e2e/fixtures/sentry-snapshot-helpers.ts`.
 
 Anchor SHA for the "current" claims below: run
-`git rev-list --count 75d3c761a..HEAD -- 'e2e/**' '.github/workflows/sentry-snapshots.yml'`
+`git rev-list --count 75d3c761a..HEAD -- 'e2e/**' '.github/workflows/ci.yml'`
 to see how far the code has moved since this was written (75d3c761a is the
 `main` commit this branch was created from — Phase G of the Sentry
 maximum-observability build).
@@ -179,20 +186,26 @@ mitigates that and what doesn't.
 
 ## 5. Cost controls
 
-Two independent, cheap (`gate` job, a few seconds) checks decide whether the
-heavy `snapshots` job (build + Playwright browser install + capture +
-upload, ~10-15 min depending on cache warmth) runs at all:
+Two independent, cheap checks decide whether the heavy part of this job
+(Playwright browser install + capture + upload, ~10-15 min depending on
+cache warmth) runs at all — since 2026-09-06 both live as steps/gates
+inside the single `sentry-snapshot-capture` job in `ci.yml`, not a separate
+`gate` job plus a separate `snapshots` job:
 
-1. **`SENTRY_AUTH_TOKEN` must be set.** Checked via a step output, not a
-   job/step `if:` reading `secrets.*` directly — capturing screenshots with
-   nowhere to upload them is pure cost with no product. As of this writing
-   the secret does NOT exist (see §6), so every PR pays only the `gate`
-   job's few seconds until an owner adds it.
-2. **On `pull_request`, a frontend/e2e-relevant path must have changed** —
-   the identical path-filter shape `pr-smoke.yml`'s `detect-changes` job
-   uses. A docs-only or backend-only PR never pays for a Next build it has
-   no reason to need. `push` to `main` always runs regardless (§1, base
-   build refresh).
+1. **`SENTRY_AUTH_TOKEN` must be set.** Checked via a step output (`Check
+   for SENTRY_AUTH_TOKEN`), not a job/step `if:` reading `secrets.*`
+   directly — capturing screenshots with nowhere to upload them is pure
+   cost with no product. As of this writing the secret does NOT exist (see
+   §6), so every PR pays only that step's few seconds until an owner adds
+   it.
+2. **`detect-changes`'s shared `code`/`e2e` outputs must both be true** —
+   the same shared `.github/workflows/detect-changes.yml` reusable workflow
+   `pr-smoke-a11y` also consumes, replacing what used to be this workflow's
+   own trigger-level `paths:` filter. A docs-only or backend-only PR never
+   pays for a Next build it has no reason to need — nor does this job even
+   start, since it also `needs: next-build`, which itself skips on
+   `code=='false'`. `push` to `main` always runs regardless (§1, base build
+   refresh).
 
 This job is **advisory, not required** — it is not added to branch
 protection's required checks, so a capture failure can never block a merge
@@ -286,13 +299,16 @@ a job-rename must land together.
 
 ## 9. Rollback
 
-Delete `.github/workflows/sentry-snapshots.yml`. Nothing else depends on
-it: `e2e/sentry-snapshots.spec.ts` and `e2e/sentry-snapshots-baseball.spec.ts`
-are both self-gated behind `SENTRY_SNAPSHOTS=1` and standalone/tag-scoped in
-`playwright.config.ts` exactly like `e2e/visual-audit.spec.ts` and
-`e2e/appstore-screenshots.spec.ts` already are, so leaving them in place
-with no workflow to set that env var is inert — they simply never run. No
-migration, no data, no other job references this one.
+Since 2026-09-06 (this job now lives inside `.github/workflows/ci.yml` as
+`sentry-snapshot-capture` rather than its own workflow file): delete that
+job from `ci.yml`. Nothing else depends on it: `e2e/sentry-snapshots.spec.ts`
+and `e2e/sentry-snapshots-baseball.spec.ts` are both self-gated behind
+`SENTRY_SNAPSHOTS=1` and standalone/tag-scoped in `playwright.config.ts`
+exactly like `e2e/visual-audit.spec.ts` and `e2e/appstore-screenshots.spec.ts`
+already are, so leaving them in place with no job to set that env var is
+inert — they simply never run. No migration, no data, no other job
+references this one. (`ci.yml`'s `next-build` artifact upload stays either
+way — `pr-smoke-a11y` still consumes it.)
 
 ---
 
@@ -330,3 +346,14 @@ run creates the base build from scratch — that is what the workflow does
 on every push to `main` regardless of whether a local seed ever ran (see
 §1, "Why a base build needs `push: main` too"). No manual step is needed to
 make that happen.
+
+---
+
+## 11. Earning its keep
+
+Advisory only (§5, §8) — runs Playwright against production per PR and per
+push to `main`. As of 2026-09-06, no regression has been caught on record.
+Revisit 2026-10-06: if the log by then still shows zero real catches, weigh
+the ~10-15 min per-run cost against the signal actually delivered before
+deciding whether to keep it, tighten the screen list, or retire it. No
+workflow changes made as part of this note.

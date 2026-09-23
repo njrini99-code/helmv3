@@ -1,7 +1,6 @@
 ---
 paths:
   - "src/**/*"
-verified: 2026-08-20-mechanical  # paths + table names machine-checked this date (docs:path-drift / docs:schema-drift); PROSE not re-read against code
 ---
 
 ## File Structure (Key Paths)
@@ -41,5 +40,7 @@ src/lib/
 src/hooks/golf/           # Realtime, data, offline hooks (see memory/projects/golfhelm.md)
 src/stores/               # Zustand (auth-store.ts — shared across golf + baseball, not golf-specific)
 ```
+
+Deliverables (screenshots, exports, scratch reports) never enter the repo; a test's own baseline file lives next to that test, not in a shared top-level folder.
 
 ---

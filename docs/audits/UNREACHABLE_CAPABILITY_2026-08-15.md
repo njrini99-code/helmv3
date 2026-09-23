@@ -1,5 +1,7 @@
 # Finished-But-Unreachable Capability Audit — GolfHelm
 
+Status: active
+
 > **CORRECTION 2026-08-15 06:05 — finding #1 (`pga-standards.ts`) is real, but
 > its framing is wrong, and acting on the framing would produce the wrong fix.**
 >

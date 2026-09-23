@@ -767,7 +767,7 @@ async function getCoachHelmOverviewImpl(
     // Paginate past the PostgREST 1000-row cap — a wide team window of
     // insights easily exceeds 1000 rows and an unpaginated read would silently
     // under-count totalInsights / action / improvement rates.
-    const { data: insightRows } = await fetchAllRowsResult((from, to) =>
+    const { data: insightRows, error: insightRowsError } = await fetchAllRowsResult((from, to) =>
       applyInsightVisibility(
         supabase
           .from('golf_coach_insights')
@@ -781,6 +781,16 @@ async function getCoachHelmOverviewImpl(
       undefined,
       { table: 'golf_coach_insights', action: 'getCoachHelmOverview', feature: 'coachhelm_analytics', sport: 'golf' },
     );
+    // Same duty as the roster read above: a failed insights read must not
+    // pass silently. The counts below still degrade to zero on error
+    // (unchanged from before this fix), but that zero is now logged instead
+    // of indistinguishable from "no insights this window".
+    if (insightRowsError) {
+      await logServerError(
+        `[coachhelmAnalytics] insights read failed — would have reported zero effectiveness it never measured: ${describeError(insightRowsError)}`,
+        { action: 'coachhelmAnalytics.insights', featureArea: 'coachhelm' },
+      );
+    }
 
     // Headline counts use the SELECTED window; the week-over-week deltas stay
     // anchored to fixed 7d/14d-from-now buckets (a "this week" metric, which is

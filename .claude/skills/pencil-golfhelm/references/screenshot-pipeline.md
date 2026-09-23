@@ -11,7 +11,7 @@ The pipeline captures actual GolfHelm UI (running locally or in production), sav
 ```
 GolfHelm App (browser)
     ↓ Playwright / DevTools / Manual
-Screenshots saved to helmv3/design/screenshots/
+Screenshots saved to helmv3/docs/design/assets/reference-shots/
     ↓ Pencil batch_design
 Imported as image fills on frames
     ↓ Overlay glass cards, text, branding
@@ -24,7 +24,7 @@ Final marketing creative or mockup
 
 ```bash
 # Create the screenshot directory (if it doesn't exist)
-mkdir -p helmv3/design/screenshots
+mkdir -p helmv3/docs/design/assets/reference-shots
 ```
 
 All screenshots should be saved here so Pencil can reference them via relative paths.
@@ -45,12 +45,12 @@ npx playwright install chromium
 npx playwright screenshot http://localhost:3000/golf/dashboard/hub \
   --viewport-size=1440,900 \
   --full-page \
-  helmv3/design/screenshots/player-hub.png
+  helmv3/docs/design/assets/reference-shots/player-hub.png
 
 # Specific viewport (no scroll)
 npx playwright screenshot http://localhost:3000/golf/dashboard/hub \
   --viewport-size=1440,900 \
-  helmv3/design/screenshots/player-hub-viewport.png
+  helmv3/docs/design/assets/reference-shots/player-hub-viewport.png
 ```
 
 #### Playwright Script for Element Isolation
@@ -79,14 +79,14 @@ async function captureElement(url, selector, outputPath) {
 captureElement(
   'http://localhost:3000/golf/dashboard/coachhelm',
   '[data-testid="score-prediction"]',
-  'helmv3/design/screenshots/score-prediction.png'
+  'helmv3/docs/design/assets/reference-shots/score-prediction.png'
 );
 
 // Insights feed
 captureElement(
   'http://localhost:3000/golf/dashboard/insights',
   '.insights-feed',
-  'helmv3/design/screenshots/insights-feed.png'
+  'helmv3/docs/design/assets/reference-shots/insights-feed.png'
 );
 ```
 
@@ -98,7 +98,7 @@ captureElement(
 4. Set viewport to **1440 × 900**
 5. Right-click any element → "Capture node screenshot"
 6. Or use DevTools command palette (Cmd+Shift+P) → "Capture full size screenshot"
-7. Save to `helmv3/design/screenshots/`
+7. Save to `helmv3/docs/design/assets/reference-shots/`
 
 ### Method 3: Claude in Chrome MCP
 
@@ -107,7 +107,7 @@ If Claude in Chrome is connected, use the browser automation tools:
 ```
 1. Navigate to GolfHelm URL
 2. Take screenshot using computer tool
-3. Save screenshot to helmv3/design/screenshots/
+3. Save screenshot to helmv3/docs/design/assets/reference-shots/
 ```
 
 ---
@@ -152,7 +152,7 @@ Capture these for the most commonly needed creative and mockup assets:
 ```javascript
 // Create a frame and apply the screenshot as an image fill
 frame=I(parent, {type: "frame", width: 600, height: 400,
-  fill: {type: "image", url: "../../design/screenshots/player-hub.png", mode: "fill"},
+  fill: {type: "image", url: "../../docs/design/assets/reference-shots/player-hub.png", mode: "fill"},
   cornerRadius: "$--radius-2xl"
 })
 ```
@@ -160,7 +160,7 @@ frame=I(parent, {type: "frame", width: 600, height: 400,
 ### With Shadow (floating card effect)
 ```javascript
 frame=I(parent, {type: "frame", width: 600, height: 400,
-  fill: {type: "image", url: "../../design/screenshots/score-prediction.png", mode: "fill"},
+  fill: {type: "image", url: "../../docs/design/assets/reference-shots/score-prediction.png", mode: "fill"},
   cornerRadius: "$--radius-2xl",
   effect: [
     {type: "shadow", shadowType: "outer", offset: {x: 0, y: 8}, blur: 24, color: "#00000014"},
@@ -173,7 +173,7 @@ frame=I(parent, {type: "frame", width: 600, height: 400,
 ```javascript
 // Slight rotation for marketing creative depth
 frame=I(parent, {type: "frame", width: 600, height: 400,
-  fill: {type: "image", url: "../../design/screenshots/insights-feed.png", mode: "fill"},
+  fill: {type: "image", url: "../../docs/design/assets/reference-shots/insights-feed.png", mode: "fill"},
   cornerRadius: "$--radius-2xl",
   rotation: -2,
   effect: [
@@ -186,7 +186,7 @@ frame=I(parent, {type: "frame", width: 600, height: 400,
 ```javascript
 // Back card (slightly rotated, smaller, faded)
 back=I(parent, {type: "frame", width: 550, height: 370,
-  fill: {type: "image", url: "../../design/screenshots/team-stats.png", mode: "fill"},
+  fill: {type: "image", url: "../../docs/design/assets/reference-shots/team-stats.png", mode: "fill"},
   cornerRadius: "$--radius-2xl",
   rotation: 3, opacity: 0.7,
   x: 30, y: 20,
@@ -195,7 +195,7 @@ back=I(parent, {type: "frame", width: 550, height: 370,
 
 // Front card (prominent, centered)
 front=I(parent, {type: "frame", width: 600, height: 400,
-  fill: {type: "image", url: "../../design/screenshots/score-prediction.png", mode: "fill"},
+  fill: {type: "image", url: "../../docs/design/assets/reference-shots/score-prediction.png", mode: "fill"},
   cornerRadius: "$--radius-2xl",
   x: 0, y: 0,
   effect: [{type: "shadow", shadowType: "outer", offset: {x: 0, y: 8}, blur: 24, color: "#00000014"}]
@@ -212,7 +212,7 @@ The most common layout. One screenshot card as the visual hero, text content und
 ```javascript
 // On a 1080×1350 canvas:
 heroFrame=I(canvas, {type: "frame", width: 880, height: 550,
-  fill: {type: "image", url: "../../design/screenshots/score-prediction.png", mode: "fill"},
+  fill: {type: "image", url: "../../docs/design/assets/reference-shots/score-prediction.png", mode: "fill"},
   cornerRadius: "$--radius-2xl",
   x: 100, y: 160,
   effect: [{type: "shadow", shadowType: "outer", offset: {x: 0, y: 8}, blur: 24, color: "#00000014"}]
@@ -230,7 +230,7 @@ Screenshot as background, glass card with additional info layered on top.
 
 ```javascript
 bgFrame=I(canvas, {type: "frame", width: 1080, height: 1350,
-  fill: {type: "image", url: "../../design/screenshots/player-hub.png", mode: "fill"},
+  fill: {type: "image", url: "../../docs/design/assets/reference-shots/player-hub.png", mode: "fill"},
   clip: true
 })
 
@@ -255,7 +255,7 @@ infoCard=I(canvas, {type: "frame", layout: "vertical",
 ## File Naming Convention
 
 ```
-helmv3/design/screenshots/
+helmv3/docs/design/assets/reference-shots/
 ├── player-hub.png                    # Full page screenshots
 ├── coach-dashboard.png
 ├── coachhelm-insights.png

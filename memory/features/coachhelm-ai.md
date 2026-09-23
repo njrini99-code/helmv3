@@ -6,10 +6,13 @@
 >
 > It is described here as if live. Do not query, type, or build on it —
 > check `src/lib/types/database.ts` (or `memory/glossary.md`'s AUTOGEN blocks)
-> before trusting any table name in this file. Tracked in
-> `.doc-schema-baseline.json`; `npm run docs:schema-drift` fails on new ones.
-> Removing this is a ratchet-down — re-run
+> before trusting any table name in this file. Declared absent
+> below so `npm run docs:schema-drift` exempts them structurally
+> instead of carrying them in the numeric baseline. Removing this
+> reference entirely is a ratchet-down — re-run
 > `node scripts/check-doc-schema-drift.mjs --update` after.
+
+<!-- schema-drift-absent: golf_insight_evidence -->
 
 
 ## Status
@@ -75,7 +78,22 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
 - Player-facing feedback must be tied to the authenticated player and revalidate the affected dashboard surfaces.
 - Coach-to-team ownership is via `golf_team_coach_staff`; do not infer it from `golf_coaches.team_id`.
 - V2/V3 scoring and generator logic should stay pure where designed as pure engine code; Supabase access belongs in loaders, actions, or orchestration boundaries.
+- Insight lifecycle is decided only by `src/lib/coachhelm/v2/insights/lifecycle-policy.ts` (see `docs/architecture/coachhelm-evidence-contract.md`). A `tentative` row is promoted to `detected` on the first write whose freshly recomputed confidence clears the 0.4 floor; the nightly lifecycle cron only demotes/archives/resolves and never promotes. Promotion is pausable per team via `golf_team_coachhelm_settings.preferences.tentative_promotion_enabled = false`.
+- Honest-mode confidence (`factors_measured=false`) is `sample_adequacy × freshness` (`honest_v2`); it is a support score, never a probability, and can never rise as evidence ages.
 - Citations, evidence, and baseline comparisons are part of the trust contract. Do not emit fabricated comparisons or uncited claims.
+- Claim honesty (2026-09-12, repair plan Package 2): prose states what was
+  measured, hands unmeasured causes to the coach as a check, and frames the
+  action as a recommendation (`approachAxisReading` observation/check/action in
+  `v3/engine/diagnosis.ts`; the round builders in `v2/orchestrator.ts`; the
+  short-side and pressure-decel composites). Heuristic severities go in
+  `ComposedInsight.rankScore`, never `strokeImpact`. A row whose `your_value`
+  is not the registry quantity for its metric id declares `evidence.polarity`
+  (approach_miss: green-hit percent under `approach_proximity_*ft`). Women's
+  cohort anchors ship as `comparison_source: 'estimated_target'` with a
+  `target (est.)` label. Specific-hole rankings key on (`course_id`,
+  `hole_number`); derived tee distances carry `distance_method:
+  'derived_progress'`. The metric identity table lives in
+  `docs/architecture/coachhelm-evidence-contract.md`.
 - Budget-sensitive LLM behavior should use team settings and persisted usage, not hardcoded token math.
 
 ## UI Contract
@@ -88,6 +106,12 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
 - The Ask composer autofocuses only on fine-pointer (desktop) clients (2026-08-26). On touch, no CoachHelm surface may focus a text input on open — iOS answers that focus with a keyboard over an unread page.
 - The phone Ask drawer (`CoachHelmDrawer`) lifts by `--keyboard-height` and the composer drops its home-indicator pad while `body.keyboard-open` (2026-09-02) — the WebView never resizes for the keyboard, so a `bottom-0` drawer put the composer under the keys exactly like the messages screen.
 - A question started on the Brief tab (`CoachIntelligenceHome` → `?q=` → the Ask page) auto-submits exactly once through `PromptComposer`'s own `submit()` (2026-09-02) — it previously only pre-filled the composer, so the coach had to press Send a second time on the page it navigated to. `AskSurface` strips `q` from the URL the moment the submit is kicked off, before the server has minted a conversation, so a refresh or back-navigation in that window cannot resend it. `PromptComposer` also now restores the just-submitted text into the field on a failed turn (never on success) instead of the previous unconditional clear-on-submit, so a failure does not force retyping. See `src/components/golf/coachhelm/chat/PromptComposer.tsx`, `CoachHelmChat.tsx` (`autoSubmitInitialInput`), and `AskSurface.tsx`.
+- A route's `loading.tsx` reserves the page's paint at t=0 — for a
+  `'use client'` page holding its own `loading` state that is that
+  component's loading branch, not its settled layout. A route whose
+  `page.tsx` is a pure `permanentRedirect` shim renders `bg-canvas` only:
+  no geometry, and no real `<h1>` for a screen that never mounts.
+  Reference implementation: `dashboard/alerts/loading.tsx`.
 
 ## Known Risk Areas
 
@@ -107,6 +131,79 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   processing metadata but cannot modify score, shots, identity, or status.
 - Round-review feedback and player acknowledgement paths can become stale if revalidation misses player or coach routes.
 - V3 feature surface is expanding quickly; registry/docs must be updated when new generators, tables, or cron routes land.
+- **`CoachHelmSubNav.tsx`'s header comment can lag the `COACH_TABS` array it
+  describes.** A skeleton or nav consumer that hand-draws the tab strip from
+  the file's header comment rather than importing `COACH_TABS`
+  (`src/components/fairway/pages/coachhelm/CoachHelmSubNav.tsx`) can drift —
+  one skeleton was written against a stale "single Brief tab" claim while the
+  array actually carried two (`brief` + `ask`), and the strip grew a second
+  tab on hydrate. `resolveTabFromPath` branches on `tabs.length === 1`, so
+  this matters beyond cosmetics. Only `PLAYER_TABS` is genuinely one tab.
+  When a consumer needs the coach tab count, read the array, never the file
+  header. (STU, source: `coachhelm-subnav-doc-contradicts-code.md` dated
+  2026-08-15; verified 2026-09-05 that `COACH_TABS` is still the live
+  constant name in that file.)
+- **The 2026-07-19 "Spine & Stage" redesign is the current architecture for
+  CoachHelm, Stats and Round Review**, and its 8 legacy routes
+  (my-development, my-game-profile, my-standing, alerts, insights, patterns,
+  development, analytics) are now permanent-redirect shims forwarding query
+  params onto `?area=`/`?view=` — treat those params as the canonical nav for
+  these surfaces rather than resurrecting the retired tab routes. New summary
+  UI on these pages should compose from `src/components/fairway/modules/`
+  (present in this repo) rather than reintroducing a DetailGrid-style text
+  table. (STU, source: `spine-stage-redesign.md` dated 2026-07-20; verified
+  2026-09-05 that `src/components/fairway/modules/` exists.)
+- **A "Rendered more hooks than during the previous render" / React #310
+  report on this surface is not automatically the same bug twice.** On
+  `/golf/dashboard/stats` it was a Turbopack HMR/Fast-Refresh and stale-chunk
+  deploy-churn artifact (exhaustive audit found zero rules-of-hooks
+  violations) — but the identical error message on
+  `/golf/dashboard/qualifiers/new` was a real production crash, caused by
+  `FairwayCoursePicker` calling `useReducedMotion()` directly instead of
+  `useReducedMotionGuard()` (the guard defaults `null` — framer-motion's
+  SSR/pre-hydration value — to `false`, avoiding a server/client render
+  mismatch). Before dismissing a "more hooks" report as the known false
+  positive, check the route, the Sentry `environment` tag, `handled`, and
+  whether the chunk hashes are prod- or localhost-shaped. Any use of
+  `useReducedMotion()` in this codebase should go through
+  `useReducedMotionGuard()` from `@/lib/coachhelm/v3/motion`. (STU, source:
+  `coachhelm-stats-hooks-310-false-positive.md` dated 2026-07-30, updated
+  2026-08-19; verified 2026-09-05 that src/lib/coachhelm/v3/motion exists.)
+- **Outcome measurement now covers v3 insights** (2026-09-22,
+  `agent/coachhelm-outcome-measure`): `backfillInsightOutcomes`
+  (`v2/analytics/effectiveness-writer.ts`) previously only mapped v2-era
+  metric names to round columns, so `outcome_status`/`OutcomeBadge` were
+  effectively NULL on every v3-authored insight. It now also resolves v3
+  `evidence.metric` ids through the v3 metric registry
+  (`lookupMetricSource`/`averageInWindow`/`improvementSign`), keeps the
+  legacy mapping as a fallback, and leaves intentional-null metrics
+  unmeasured on purpose. It also now populates
+  `outcome_metric_name`/`outcome_metric_before`/`outcome_metric_after`, not
+  just `outcome_status`. Candidate selection is paginated and
+  pre-filtered to measurable rows (`FETCH_PAGE_SIZE`/`MAX_FETCH_PAGES`) so a
+  page of permanently-unmeasurable rows can't starve the per-tick backfill
+  budget — same pattern as the `causality-attribute` cron.
+- **Learned personalization of v2 alert thresholds is wired but flagged off**
+  (2026-09-22, `agent/coachhelm-learning-cleanup`): `BehaviorLearner`'s
+  `getLearnedPreferences()`/`getPersonalizedThreshold` are now consulted in
+  `orchestrator.ts`'s `generateAlerts()`, but only applied to
+  `philosophy.declineThreshold`/`pressureGapThreshold` when the
+  `coachhelm_learned_personalization` feature flag (default OFF in every
+  environment, see `config/feature-flags.yml`) is on. With the flag off the
+  computed thresholds are shadow-logged
+  (`coachhelm.learned_personalization.shadow`) instead of applied, so alert
+  generation is unchanged until an owner turns the flag on with evidence to
+  support it. Also fixed upstream: `'feedback'`-type interactions (from
+  `rateInsight`) are now correctly bucketed into `BehaviorLearner`'s
+  ack/dismiss counts, and `rateInsightImpl` now records a real `insight_type`
+  in interaction metadata so per-type bucketing works.
+- **v2 coach-alert family (bubble_player, pattern_detected, streak,
+  surge_player, plateau, tournament_pressure, closing_holes, par_3_issues,
+  recurring_weakness, team_trend, scoring_decline) is still live-written,
+  100% dark on read** — no v3 successor exists yet, `engine_version` is
+  never stamped `v3` for these, so `applyInsightVisibility` excludes them
+  from every coach/player surface. Planned retirement PR (sequenced after
+  `agent/coachhelm-outcomes` lands on main) not yet done as of 2026-09-22.
 
 ## Tests To Prefer
 

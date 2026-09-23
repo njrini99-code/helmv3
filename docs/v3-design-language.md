@@ -323,3 +323,35 @@ When a flagship visual surface justifies the bundle weight:
 - Gaussian splatting for a 3D player genome environment
 
 Until then, the CSS + Framer Motion stack covers 90% of the premium feel at <50KB of additional runtime cost. We get the look, we don't pay for it.
+
+### Mobile navigation and overlay motion (2026-09-08)
+
+The mobile bottom navigation is a floating warm-glass capsule. A shared raised
+selection pill travels between the existing destinations; the selected label
+is visible and other destinations retain their accessible names and honest
+badges. Press feedback and spring movement use transforms, with reduced-motion
+alternatives. `--fw-mobile-nav-height` is the common content/FAB clearance.
+
+More opens with a 360ms glide and dismisses in 240ms. Its destination prefetch
+starts after the entrance animation, and choosing a normal link closes the
+sheet immediately while routing proceeds. Page changes use a brief reveal
+from visible content, preserving viewport-fixed descendants and avoiding a
+blank fade. Messaging action content remains mounted through dismissal so its
+sheet or popup can finish animating before removal. No full-page blur or scale
+animation is introduced.
+
+Navigation and messaging controls use the shared `fw-glass-chrome` treatment:
+a constant 16px blur, existing warm glass tint, and a highlight rim. Reduced
+transparency replaces it with an opaque surface. Active mobile destinations
+and message filters use a green pill with cream text; hub sub-navigation uses
+a green wash and underline. The content and message bubbles stay legible on
+solid surfaces.
+
+Mobile audit follow-up (2026-09-08): selected bottom-navigation labels receive
+their intrinsic width while inactive targets retain 44px. Shared
+empty/insufficient states are visible in server-rendered HTML rather than
+waiting for hydration. Fairway link-style buttons enforce busy/disabled state
+for pointer and keyboard activation, including slotted child actions. Mobile
+tabs retain 44px touch height. Course/tee/announcement drawer callers own a
+bounded body scroller and footer safe-area clearance; profile-photo actions
+wrap within narrow cards.

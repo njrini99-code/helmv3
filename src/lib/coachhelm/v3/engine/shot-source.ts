@@ -16,6 +16,7 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { logServerError } from '@/lib/server-error-logger';
 
 export type ApproachBucket = '50_125ft' | '125_175ft' | '175_plus_ft';
 
@@ -105,9 +106,20 @@ export interface TeeStrategyShot {
    *  source is golf_holes.fairway_hit; falls back to lie_after = 'fairway'
    *  when the hole-level flag isn't recorded. */
   fairway_hit: boolean;
-  /** Yards traveled. Prefer recorded shot_distance; fall back to
-   *  hole.yardage - distance_to_hole_after when shot_distance is null. */
+  /** Yards. Prefer recorded shot_distance; fall back to
+   *  hole.yardage - distance_to_hole_after when shot_distance is null —
+   *  see `distance_method` for what the number then means. */
   shot_distance: number | null;
+  /**
+   * How `shot_distance` was obtained (addendum §5, travel vs progress):
+   *   - `recorded`: the logged travel distance of the shot.
+   *   - `derived_progress`: hole yardage minus the remaining distance — an
+   *     estimate of PROGRESS TOWARD THE HOLE, not travel or carry (on a dogleg
+   *     the two differ by construction). Prose must not describe it as
+   *     distance the ball flew.
+   *   - null: no distance available.
+   */
+  distance_method: 'recorded' | 'derived_progress' | null;
   is_penalty: boolean;
 }
 
@@ -269,12 +281,22 @@ export async function loadSandShots(
     // rounds/90d) would otherwise truncate, dropping later holes' flags and
     // silently demoting those attempts to the heuristic. Same pattern + stable
     // order key as the golf_shots fetch above.
-    const { data: holes } = await fetchAllRowsResult<HoleFlagRow>((from, to) =>
+    const { data: holes, error: holesError } = await fetchAllRowsResult<HoleFlagRow>((from, to) =>
       fromUntyped(supabase, 'golf_holes')
         .select('round_id, hole_number, sand_save')
         .in('round_id', roundIds)
         .order('id', { ascending: true })
         .range(from, to));
+    if (holesError) {
+      await logServerError(
+        'shot-source sand_save flag read failed — falling back to the shot-derived heuristic for this window',
+        {
+          action: 'shot-source.sandSaveFlags',
+          featureArea: 'coachhelm.engine',
+          metadata: { dbError: holesError as unknown },
+        },
+      );
+    }
     for (const h of holes ?? []) {
       if (h.hole_number == null) continue;
       flagByHole.set(`${h.round_id}:${h.hole_number}`, h.sand_save ?? null);
@@ -447,8 +469,10 @@ export async function loadTeeShotsForStrategy(
           ? false
           : r.lie_after === 'fairway';
 
-    // Prefer the recorded shot_distance; derive from yardage when null.
+    // Prefer the recorded shot_distance; derive progress-toward-the-hole from
+    // yardage when null, and say which one the value is.
     let dist: number | null = r.shot_distance ?? null;
+    let method: TeeStrategyShot['distance_method'] = dist === null ? null : 'recorded';
     if (
       dist === null &&
       typeof hole.yardage === 'number' &&
@@ -456,6 +480,7 @@ export async function loadTeeShotsForStrategy(
     ) {
       const derived = hole.yardage - r.distance_to_hole_after;
       dist = derived > 0 ? derived : null;
+      method = dist === null ? null : 'derived_progress';
     }
 
     out.push({
@@ -465,6 +490,7 @@ export async function loadTeeShotsForStrategy(
       par: hole.par,
       fairway_hit: fairway,
       shot_distance: dist,
+      distance_method: method,
       is_penalty: !!r.is_penalty,
     });
   }

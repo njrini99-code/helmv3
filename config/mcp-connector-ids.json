@@ -19,7 +19,17 @@
     "ids here against the deny rules on every run (tools/mcp-deny-connector-ids).",
     "",
     "To re-measure: in an interactive session, list the tool inventory and copy the",
-    "prefix of the connector's tools here. Update observed_at when you do."
+    "prefix of the connector's tools here. Update observed_at when you do.",
+    "",
+    "A second observed_at per service was added 2026-09-04, same ids as",
+    "2026-09-01 for all three services. Stability stays UNVERIFIED — two",
+    "observations three days apart is evidence of persistence, not proof",
+    "across the kind of gap (a re-auth, a workspace change) that would",
+    "actually rotate an id. One more observation, taken after some real",
+    "gap in time or after a deliberate re-authorization, is what closes",
+    "this: if the id still matches, promote stability to VERIFIED; if it",
+    "doesn't, every mcp__<uuid>__ deny rule keyed on the old id needs an",
+    "update in the same change."
   ],
   "connectors": [
     {
@@ -31,6 +41,14 @@
       "stability": "UNVERIFIED across sessions"
     },
     {
+      "service": "Supabase",
+      "id": "e139bbde-4728-4ed3-977f-7b1b22f4b69c",
+      "display_name_prefix": "mcp__claude_ai_Supabase__",
+      "observed_at": "2026-09-04",
+      "evidence": "Re-observed: mcp__e139bbde-4728-4ed3-977f-7b1b22f4b69c__* still the only Supabase account-connector prefix in the live tool inventory, same id as 2026-09-01. Still no mcp__claude_ai_Supabase__* name.",
+      "stability": "UNVERIFIED across sessions — same id twice, no re-auth gap tested"
+    },
+    {
       "service": "Vercel",
       "id": "fba2ada3-c190-4053-b91a-3e81f5296483",
       "display_name_prefix": "mcp__claude_ai_Vercel__",
@@ -39,11 +57,59 @@
       "stability": "UNVERIFIED across sessions"
     },
     {
+      "service": "Vercel",
+      "id": "fba2ada3-c190-4053-b91a-3e81f5296483",
+      "display_name_prefix": "mcp__claude_ai_Vercel__",
+      "observed_at": "2026-09-04",
+      "evidence": "Re-observed: mcp__fba2ada3-c190-4053-b91a-3e81f5296483__* still the only Vercel account-connector prefix in the live tool inventory, same id as 2026-09-01. Still no mcp__claude_ai_Vercel__* name.",
+      "stability": "UNVERIFIED across sessions — same id twice, no re-auth gap tested"
+    },
+    {
       "service": "Sentry",
       "id": "7524981b-0003-40de-9f86-c5275420784a",
       "display_name_prefix": "mcp__claude_ai_Sentry__",
       "observed_at": "2026-09-01",
       "evidence": "mcp__7524981b-0003-40de-9f86-c5275420784a__find_organizations -> org helm-xs (us.sentry.io), byte-identical to the 2026-08-29 authority observation. update_issue present under this prefix; not denied (read-only observability is the authority's role and the Sentry mutator is out of scope for repo policy). No mcp__claude_ai_Sentry__* name in the inventory.",
+      "stability": "UNVERIFIED across sessions"
+    },
+    {
+      "service": "Sentry",
+      "id": "7524981b-0003-40de-9f86-c5275420784a",
+      "display_name_prefix": "mcp__claude_ai_Sentry__",
+      "observed_at": "2026-09-04",
+      "evidence": "Re-observed: mcp__7524981b-0003-40de-9f86-c5275420784a__* still the only Sentry account-connector prefix in the live tool inventory, same id as 2026-09-01. Still no mcp__claude_ai_Sentry__* name.",
+      "stability": "UNVERIFIED across sessions — same id twice, no re-auth gap tested"
+    },
+    {
+      "service": "Gmail",
+      "id": "eec160d1-9083-448c-ba0f-52b7e4659f5d",
+      "display_name_prefix": null,
+      "observed_at": "2026-09-04",
+      "evidence": "mcp__eec160d1-9083-448c-ba0f-52b7e4659f5d__* is the Gmail account connector's only prefix in the live tool inventory. Mutating tools (create_draft, update_draft, label/unlabel, mark/unmark spam, untrash, sensitive-label apply) denied under this id — no send/forward/reply tool observed in this session's inventory, but the connector is capable of full mailbox access per its own server description, so the deny list is written against the documented capability, not just what happened to be listed.",
+      "stability": "UNVERIFIED across sessions"
+    },
+    {
+      "service": "Zapier",
+      "id": "a0b62d79-7f93-44ec-8f0c-462c01a2d02f",
+      "display_name_prefix": null,
+      "observed_at": "2026-09-04",
+      "evidence": "mcp__a0b62d79-7f93-44ec-8f0c-462c01a2d02f__* is the Zapier account connector's only prefix in the live tool inventory. auto_provision_mcp and the *_zapier_skill/connection management tools denied under this id; execute_zapier_write_action is a dynamically-registered tool this session did not have enabled and so could not observe directly, but the server's own instructions describe it as unbounded write across 9,000+ connected apps.",
+      "stability": "UNVERIFIED across sessions"
+    },
+    {
+      "service": "Apollo.io",
+      "id": "24018350-f7aa-4654-aa54-99025682c52b",
+      "display_name_prefix": null,
+      "observed_at": "2026-09-04",
+      "evidence": "mcp__24018350-f7aa-4654-aa54-99025682c52b__* is the Apollo.io account connector's only prefix in the live tool inventory. Every create/update/bulk_create/approve/purchase/install-script tool this session could enumerate is denied under this id.",
+      "stability": "UNVERIFIED across sessions"
+    },
+    {
+      "service": "Notion",
+      "id": "3c91f7e2-c0c6-4b6e-b310-d234be459b53",
+      "display_name_prefix": null,
+      "observed_at": "2026-09-04",
+      "evidence": "mcp__3c91f7e2-c0c6-4b6e-b310-d234be459b53__* is the Notion account connector's only prefix in the live tool inventory. Create/update/spawn-session/send-message-to-session tools denied under this id.",
       "stability": "UNVERIFIED across sessions"
     }
   ]

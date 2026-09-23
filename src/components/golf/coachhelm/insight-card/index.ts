@@ -3,7 +3,6 @@
  *
  * Public surface:
  *   - `InsightCard`              the primitive (compact / default / hero)
- *   - `HeroInsightCard`          hero-density wrapper w/ staggered mount
  *   - `deriveTone` / `isImprovement`   pure classification helpers
  *   - `MovementPill`             inline movement chip
  *   - `WhyPopover`               "Why?" popover / bottom sheet
@@ -11,14 +10,17 @@
  *   - `DrillSheet`               full-detail drill sheet (opens from a chip)
  *   - `ResolutionCelebration`    confetti wrapper for resolved insights
  *
+ * `HeroInsightCard` (staggered-mount wrapper) was removed 2026-09-22: zero
+ * importers anywhere outside its own test — every live hero-density card
+ * renders through a separate, duplicate local `HeroInsightCardInner` inside
+ * `InsightCard.tsx`, which has no stagger/reveal logic at all.
+ *
  * Downstream teams (Hub, CoachHelm Dashboard, Round Review) import from this
  * barrel. Do NOT deep-import individual files — keeps refactor surface small.
  */
 
 export { InsightCard } from './InsightCard';
 export type { InsightCardProps, InsightAction } from './InsightCard';
-export { HeroInsightCard } from './HeroInsightCard';
-export type { HeroInsightCardProps } from './HeroInsightCard';
 export { MovementPill } from './MovementPill';
 export type { MovementPillProps } from './MovementPill';
 export { WhyPopover } from './WhyPopover';

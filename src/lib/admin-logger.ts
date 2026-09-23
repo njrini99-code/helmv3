@@ -25,7 +25,8 @@ export type AdminEventType =
   | 'security'        // Security events (failed logins, etc.)
   | 'system'          // System events (deployments, maintenance)
   | 'subscription'    // Subscription/billing events
-  | 'api';            // API events
+  | 'api'             // API events
+  | 'email.suppressed'; // Customer email suppressed by the outbound gate (src/lib/email/outbound-gate.ts)
 
 export type AdminEventSeverity = 'info' | 'warning' | 'error' | 'critical';
 
@@ -324,6 +325,40 @@ export async function logSecurityEvent(
     metadata,
     userId,
     source: 'auth',
+  });
+}
+
+/**
+ * Log one suppressed-customer-email event (src/lib/email/outbound-gate.ts).
+ * No address fields — kind/source/recipientCount only, so this table never
+ * accumulates recipient PII while the outbound gate is closed.
+ */
+export async function logEmailSuppressed(params: {
+  kind: string;
+  source: string;
+  recipientCount: number;
+  collapsedCount?: number;
+}): Promise<string | null> {
+  return logAdminEvent({
+    eventType: 'email.suppressed',
+    title: `Customer email suppressed (${params.kind})`,
+    severity: 'info',
+    // `source` is CHECK-constrained to 11 values (admin_events_source_check,
+    // supabase/migrations/20260701120000_admin_events_bridge_columns.sql).
+    // params.source is a free-text call-site path
+    // ('notifications/email.sendEmailNotification', ...), so forwarding it
+    // here raised SQLSTATE 23514 on EVERY suppressed-email event and the row
+    // was silently dropped — reportBridgeWriteFailure() only console.warns and
+    // fires a rate-limited `bridge_write_failed` Sentry message, deliberately
+    // never logServerError (recursion), so nothing landed in admin_events at
+    // all. The call-site path belongs in unconstrained jsonb metadata.
+    source: 'system',
+    metadata: {
+      kind: params.kind,
+      callSite: params.source,
+      recipientCount: params.recipientCount,
+      ...(params.collapsedCount ? { collapsedCount: params.collapsedCount } : {}),
+    },
   });
 }
 

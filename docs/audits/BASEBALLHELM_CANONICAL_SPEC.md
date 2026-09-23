@@ -1,5 +1,7 @@
 # BaseballHelm Canonical Spec — Single Source of Truth
 
+Status: active
+
 > **Generated:** 2026-06-24  
 > **Precedence:** V12 > V11 > V10 > V9 > earlier. Where versions conflict, later version wins; conflict calls noted inline.  
 > **Repo:** `~/Downloads/helmv3` — all new work extends this codebase, not a parallel product.  

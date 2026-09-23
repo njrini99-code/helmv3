@@ -1,5 +1,25 @@
 {
-  "$comment": "Registry entries that resolve to nothing. May only go DOWN. Fix by re-pointing the entry at where the code lives now (often src/components/fairway/pages/*) — never by deleting the feature.",
-  "total": 0,
-  "entries": []
+  "$comment": "Registry glob findings. Every list may only go DOWN. dead_entries: re-point at where the code lives now — never delete the feature. migration_overlaps: narrow the broader glob to its own feature's actual migrations. unowned_migrations: give the file a feature `db:` entry or add it to a `systems:` entry — never leave it unmapped.",
+  "dead_entries": {
+    "total": 0,
+    "entries": []
+  },
+  "migration_overlaps": {
+    "total": 9,
+    "entries": [
+      "admin_platform matches 50% of admin_incidents's own migration files (1/2)",
+      "admin_platform matches 94% of crm_outreach's own migration files (16/17)",
+      "baseball_core matches 41% of calendar_events's own migration files (13/32)",
+      "baseball_core matches 45% of player_hub's own migration files (14/31)",
+      "baseball_core matches 50% of settings_preferences's own migration files (6/12)",
+      "baseball_core matches 58% of team_access_control's own migration files (7/12)",
+      "calendar_events matches 94% of player_hub's own migration files (29/31)",
+      "player_hub matches 91% of calendar_events's own migration files (29/32)",
+      "team_operations matches 100% of recruiting's own migration files (1/1)"
+    ]
+  },
+  "unowned_migrations": {
+    "total": 0,
+    "entries": []
+  }
 }

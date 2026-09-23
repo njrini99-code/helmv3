@@ -34,6 +34,8 @@ import type { RoundHole } from '@/lib/types/golf';
 type Hole = RoundHole;
 
 interface FairwayScorecardHeaderProps {
+  /** Use the status-bar inset as the sticky offset when a resume header owns it. */
+  safeAreaHandledAbove?: boolean;
   holes: Hole[];
   currentHoleIndex: number;
   currentHoleNumber: number;
@@ -181,6 +183,7 @@ export function FairwayDesktopExitHeader({
 }
 
 export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
+  safeAreaHandledAbove = false,
   holes,
   currentHoleIndex,
   currentHoleNumber,
@@ -201,15 +204,20 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
   const updateCSSProperty = useCallback(() => {
     if (headerRef.current) {
       const height = headerRef.current.getBoundingClientRect().height;
-      document.documentElement.style.setProperty('--scorecard-height', `${height}px`);
+      document.documentElement.style.setProperty('--scorecard-height', `${height + (parseFloat(getComputedStyle(headerRef.current).top) || 0)}px`);
     }
   }, []);
 
   useEffect(() => {
     updateCSSProperty();
     window.addEventListener('resize', updateCSSProperty);
-    return () => window.removeEventListener('resize', updateCSSProperty);
-  }, [updateCSSProperty]);
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(updateCSSProperty);
+    if (headerRef.current) observer?.observe(headerRef.current);
+    return () => {
+      window.removeEventListener('resize', updateCSSProperty);
+      observer?.disconnect();
+    };
+  }, [updateCSSProperty, safeAreaHandledAbove]);
 
   const is9Hole = holes.length <= 9;
   const front9 = holes.slice(0, 9);
@@ -319,14 +327,19 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
     !canGoNext && nextIndex < holes.length ? 'Finish this hole to move on' : undefined;
 
   return (
-    // pt safe-area: the WKWebView is edge-to-edge (contentInset 'never'), so this
-    // sticky bar owns the status-bar zone — without the inset pad the Prev/Exit/Next
-    // row renders under the clock and Dynamic Island (iOS premium audit 2026-08-25,
-    // F-SAFEAREA-04). Padding lives INSIDE the measured element so the published
-    // --scorecard-height var stays correct for the ShotPills sticky offset.
+    // New Round owns the status-bar padding here. Continue Round has an inset
+    // context header above: stick BELOW the status bar without padding a second
+    // blank band into the document. The pseudo-element paints the status area
+    // as that context scrolls away; measured offsets include the sticky inset.
     <div
       ref={headerRef}
-      className="sticky top-0 z-50 bg-elevated pt-[env(safe-area-inset-top,0px)] text-text-primary shadow-flat"
+      data-testid="round-scorecard-header"
+      className={cn(
+        'sticky z-50 bg-elevated text-text-primary shadow-flat',
+        safeAreaHandledAbove
+          ? 'top-[env(safe-area-inset-top,0px)] before:pointer-events-none before:fixed before:inset-x-0 before:top-0 before:h-[env(safe-area-inset-top,0px)] before:bg-elevated before:content-[\'\']'
+          : 'top-0 pt-[env(safe-area-inset-top,0px)]',
+      )}
     >
       {/* Mobile control row */}
       <div className="flex items-center justify-between gap-2 border-b border-border-subtle px-3 py-2 lg:hidden">

@@ -1,5 +1,7 @@
 # Golf Flight Recorder Implementation Plan
 
+Status: active
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Make each Golf round mutation auditable across client, Server Action, Supabase/Postgres, verification, and background work without making tracing a dependency of the player workflow.

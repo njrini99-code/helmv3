@@ -174,6 +174,25 @@ describe('short_approach_proximity_gap', () => {
     expect(c.content).not.toContain('55 ft');
   });
 
+  it('compares the on-green leave to its own estimated target, never to a Tour all-shot proximity (repair Package 2)', () => {
+    const insights = [
+      makeInsight({ type: 'approach_miss', signature: 'v3:approach_miss:50_125ft', your_value: 55, proximity_feet: 28 }),
+      makeInsight({ type: 'scrambling', signature: 'v3:scrambling:sand', your_value: 30, team_pct: 25 }),
+    ];
+    const c = shortApproachGap.compose(shortApproachGap.detect(insights)!);
+    expect(c.evidence.comparison_source).toBe('estimated_target');
+    expect(c.evidence.comparison_value).toBe(22);
+    expect(c.evidence.comparison_label).toMatch(/est\./);
+    expect(c.evidence.comparison_label).toMatch(/on-green only/);
+    expect(c.evidence.polarity).toBe('lower_better');
+    expect(c.content).not.toMatch(/tour/i);
+    expect(c.content).toContain('on-green only');
+    // Observation → check → recommendation; no asserted cause.
+    expect(c.content).toMatch(/Check whether/);
+    expect(c.content).toMatch(/Recommended:/);
+    expect(c.content).not.toMatch(/improves on its own|near-automatic/);
+  });
+
   it('does NOT fire when on-green proximity is acceptable (≤ 22 ft)', () => {
     const insights = [
       makeInsight({ type: 'approach_miss', signature: 'v3:approach_miss:50_125ft', your_value: 60, proximity_feet: 19 }),

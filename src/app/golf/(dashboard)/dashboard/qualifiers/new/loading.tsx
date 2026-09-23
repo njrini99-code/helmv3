@@ -24,7 +24,10 @@ function SectionSkeleton({
   );
 }
 
-/** One FormField's skeleton: visible label + control. */
+/** One FormField's skeleton: visible label + control. Control radius is
+ *  `rounded-fw-sm` (10px) to match the real controls it stands for — Input
+ *  and TextArea share `fieldControlBase` (forms/styles.ts:49, `rounded-fw-sm`)
+ *  and NumberField's wrapper is `rounded-fw-sm` (NumberField.tsx:55). */
 function FieldSkeleton({
   labelWidth,
   controlHeight = 'h-11',
@@ -35,7 +38,7 @@ function FieldSkeleton({
   return (
     <div className="flex flex-col gap-1.5">
       <Skeleton className={`h-3.5 ${labelWidth}`} />
-      <Skeleton className={`${controlHeight} w-full rounded-fw-md`} />
+      <Skeleton className={`${controlHeight} w-full rounded-fw-sm`} />
     </div>
   );
 }
@@ -94,7 +97,10 @@ export default function NewQualifierLoading() {
               <FieldSkeleton labelWidth="w-20" />
               <FieldSkeleton labelWidth="w-24" />
             </div>
-            <Skeleton className="h-[68px] w-full rounded-fw-md" />
+            {/* Live squad read-out: a `Surface` (surfaces/surface.tsx:92,
+                `rounded-card` — a bg className override doesn't touch radius),
+                not a form control, so it takes the 20px card radius, not fw-sm/md. */}
+            <Skeleton className="h-[68px] w-full rounded-card" />
           </SectionSkeleton>
 
           {/* Players */}

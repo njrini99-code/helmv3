@@ -1,5 +1,15 @@
 # Repo Map for Agents
 
+Status: SUPERSEDED — superseded by `docs/generated/HELM_FEATURE_MAP.md`.
+KEPT FOR HISTORY -- until the attic move; live docs still cite it by path.
+Feature routing now goes through `memory/registry.yml`,
+`docs/generated/HELM_FEATURE_MAP.md`, and `npm run knowledge:context` (see
+`AGENTS.md`, `CLAUDE.md`). This file is scheduled to move to the docs attic
+(`docs-attic-2026-09`) once the tree-move PR lands; until then its
+route-atlas/idiom/trap content below is still the best structural reference,
+but treat its counts and anchors as unverified per the staleness warning
+already in this file.
+
 Structural map of helmv3: route atlas, canonical idioms (with file:line
 anchors), known traps, and a pre-code checklist. This is a map of *shape and
 convention*, not of feature behavior — for feature behavior use
@@ -164,7 +174,7 @@ wrapped in `withBaseballAction`/`withLiftingAction` — purely to add
 | Primitive | Location | Usage | Rule |
 |---|---|---|---|
 | `fromUntyped(client, table)` | `src/lib/supabase/untyped.ts:69` (`UntypedTable` allowlist union, lines 15-61) | 159 sites | Centralizes the `as any` escape hatch for tables not yet in generated `database.ts` types. Extend the `UntypedTable` union when adding a new hand-typed table module — don't scatter raw `as any` casts. Graduate a table off this list once `db:types` regen picks it up. |
-| `createAdminClient()` | `src/lib/supabase/admin.ts:4` | 200 sites — most-used data-access primitive in the repo | Throws if `NEXT_PUBLIC_SUPABASE_URL` or `SUPABASE_SERVICE_ROLE_KEY` is missing/placeholder; returns a service-role client (`autoRefreshToken:false, persistSession:false`) that **bypasses RLS**. The `service-role-scope` hard rule blocks any use outside `src/lib/supabase/admin*` and `src/app/api/**/admin/**` as a security incident — not a style nit. **2026-08-15:** this rule no longer lives in the external review bot — the external review bots were dropped 2026-07-20 and the retired rules directory is deleted. It is now enforced deterministically by the **Review Gate** (`.github/workflows/review-gate.yml`, aggregate check `Review Gate / all`) via the custom packs under `.coderabbit/ast-grep/` and `.coderabbit/semgrep/` — that directory name is historical, CI still consumes it. See `.claude/rules/code-review-tooling.md`. |
+| `createAdminClient()` | `src/lib/supabase/admin.ts:4` | 200 sites — most-used data-access primitive in the repo | Throws if `NEXT_PUBLIC_SUPABASE_URL` is missing/placeholder, or if neither `SUPABASE_SECRET_KEY` (new format) nor its legacy fallback `SUPABASE_SERVICE_ROLE_KEY` is set — resolved by `src/lib/supabase/keys.mjs`'s `getSecretKey()`, new name first (Phase 2 / P6). Returns a service-role client (`autoRefreshToken:false, persistSession:false`) that **bypasses RLS**. The `service-role-scope` hard rule blocks any use outside `src/lib/supabase/admin*`, `src/lib/supabase/keys*`, and `src/app/api/**/admin/**` as a security incident — not a style nit. It is enforced deterministically by the **Review Gate** (`.github/workflows/review-gate.yml`, aggregate check `Review Gate aggregate`) via the custom packs under `.coderabbit/ast-grep/` and `.coderabbit/semgrep/` — that directory name is historical, CI still consumes it. See `.claude/rules/code-review-tooling.md`. |
 | `fetchAllRows` / `fetchAllRowsResult` | `src/lib/supabase/fetch-all-rows.ts` — `fetchAllRows` (line 60, throws on error), `fetchAllRowsResult` (line 103, `{data,error}` shape) | 69 sites | `DEFAULT_PAGE_SIZE=1000` (line 34), loop bounded at 1000 pages as a circuit-breaker (line 74). Caller **must** supply a stable `.order()` on a unique column (lines 10-19) or page boundaries drift. Optional `rlsCtx` threads into `maybeCaptureRlsDenial` (lines 22-29). This is the fix for the PostgREST 1000-row-cap trap below — treat the two as one unit. |
 | `todayIsoInTz(tz, now)` / `resolveTeamTimezone(...)` | `src/lib/baseball/daily-contract/contract-day.ts:57` and `:193` | — | Canonical timezone-resolution primitives for any calendar/today/streak feature. Part of the "daily contract" module backing the `calendar-timezone-safety` rule (store UTC, display in team/user timezone, no naive `new Date()` day-boundaries) — now a Review Gate pack rule, not the external review bot. Don't hand-roll `new Date()` day-boundary math. |
 | `getAppBaseUrl()` | `src/lib/app-base-url.ts:32` | — | Canonical way to resolve the app's own base URL (email links, share links) instead of hardcoding a host or reading `NEXT_PUBLIC_SITE_URL` directly at each call site. |
@@ -334,8 +344,9 @@ Eight traps found with concrete repo evidence (not assumed from memory).
    `VERCEL_GIT_COMMIT_REF`. Vercel preview builds being off is **by
    design** (cost control) — a red/skipped Vercel preview check on a PR is
    expected, not a CI failure to chase. `docs/audits/REPO_UNTANGLE_AND_CLEAN_BASE.md:96`
-   notes CircleCI's `lighthouse-preview` job is red only because of this,
-   an easy misdiagnosis. Flipping the Ignored Build Step back on is a
+   (archived) attributed a red `lighthouse-preview` check to this — that job
+   was never defined in `.circleci/config.yml`; see `.circleci/README.md` and
+   `.claude/rules/integrations.md` for the correction. Flipping the Ignored Build Step back on is a
    manual, owner-gated step (line 127) — easy to forget, don't do it
    unprompted.
 
@@ -362,7 +373,7 @@ Eight traps found with concrete repo evidence (not assumed from memory).
    (`team.tabs[0]!.href`), `src/lib/golf/strokes-gained.ts:122`
    (`distances[0]!`), `src/lib/golf/progress-drivers.ts:145`
    (`goals[0]!.player_id // non-empty (guarded above)`). Convention
-   confirmed in `docs/archive/2026-06/superpowers/plans/2026-06-07-coachhelm-to-90.md:927`.
+   confirmed in `https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-06/superpowers/plans/2026-06-07-coachhelm-to-90.md:927`.
    When `noUncheckedIndexedAccess` forces a `T | undefined` at an index
    you've already proven non-empty (length check, `.filter`, upstream
    invariant), assert with `!` **and** leave a one-line comment naming the
@@ -383,7 +394,8 @@ Eight traps found with concrete repo evidence (not assumed from memory).
    SessionStart hook reported *ahead-of-upstream* but never *behind-main*
    (fixed — `.claude/hooks/session-context.sh` now prints behind-main and the
    worktree count). **Before trusting anything about project state, run:**
-   `git worktree list && git rev-list --count HEAD..main && git branch --sort=-committerdate | head`.
+   `git worktree list && git rev-list --count HEAD..main && git branch
+   --sort=-committerdate | head`.
    A non-zero behind-count means the code you are reading is not the code that
    ships. Near-duplicate branch names are the tell.
 

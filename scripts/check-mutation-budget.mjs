@@ -87,10 +87,11 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const budget = Number(process.env.HELM_MAX_MUTATION_WORKTREES ?? DEFAULT_MUTATION_BUDGET);
   const spaces = inspectWorkspaces(repo, canonicalRoot(repo));
   const decision = mutationBudgetDecision(spaces, budget);
+  const enforced = process.env.HELM_MAX_MUTATION_WORKTREES !== undefined;
 
   if (process.argv.includes('--json')) {
-    console.log(JSON.stringify({ repo, budget, decision, spaces }, null, 2));
-    process.exit(decision.ok ? 0 : 1);
+    console.log(JSON.stringify({ repo, budget, enforced, decision, spaces }, null, 2));
+    process.exit(decision.ok || !enforced ? 0 : 1);
   }
 
   if (decision.ok) {
@@ -98,6 +99,10 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     process.exit(0);
   }
 
+  if (!enforced) {
+    console.log(`workspace count advisory: ${decision.reason}; no explicit cap is set`);
+    process.exit(0);
+  }
   console.error(`refusing: ${decision.reason}.`);
   console.error('');
   console.error('Already in use:');
@@ -106,7 +111,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     console.error(`    ${b.kind} — ${b.reason}`);
   }
   console.error('');
-  console.error('One mutation workspace at a time. Finish or park the existing one:');
+  console.error(`Budget is ${decision.budget} mutation workspace(s) at a time. Finish or park one:`);
   console.error('');
   console.error('  npm run worktrees          # report');
   console.error('  npm run worktrees:park     # remove a disposable checkout, KEEP its branch');

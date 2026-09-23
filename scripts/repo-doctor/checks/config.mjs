@@ -1,23 +1,36 @@
-// Cross-cutting config: required npm scripts exist, exactly one Supabase root,
-// and the Vercel deployment model is stated (so "merge ≠ ship" is never a
-// surprise).
+// Cross-cutting config: required npm scripts, exactly one Supabase root,
+// the Vercel deployment model, and Vercel route/upload contracts.
 
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { check, Status } from '../result.mjs';
 import { coverage } from '../../check-vercelignore-coverage.mjs';
 
-export const meta = { id: 'config', title: 'Scripts, Supabase root, deploy model, Vercel upload' };
+export const meta = { id: 'config', title: 'Scripts, Supabase root, deploy model, Vercel upload and cron routes' };
+
+function findRoute(repoRoot, apiPath) {
+  const segments = apiPath.replace(/^\/api\//, '').split('/').filter(Boolean);
+  let dir = join(repoRoot, 'src', 'app', 'api', ...segments);
+  if (!existsSync(dir)) return null;
+  const entries = readdirSync(dir);
+  for (const name of ['route.ts', 'route.tsx', 'route.js', 'route.mjs']) {
+    if (entries.includes(name)) return join(dir, name);
+  }
+  return null;
+}
 
 export async function run(ctx) {
   const out = [];
   const { repoRoot, manifest } = ctx;
 
-  // 1. Required npm scripts.
   const pkgPath = join(repoRoot, 'package.json');
-  let pkg = {};
-  try { pkg = JSON.parse(readFileSync(pkgPath, 'utf-8')); }
-  catch (err) { return [check('config.package', Status.BLOCKED, 'package.json unreadable', { detail: String(err) })]; }
+  let pkg;
+  try {
+    pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
+  } catch (err) {
+    return [check('config.package', Status.BLOCKED, 'package.json unreadable', { detail: String(err) })];
+  }
+
   const scripts = pkg.scripts ?? {};
   const required = manifest?.required_scripts ?? [];
   const missing = required.filter((s) => !(s in scripts));
@@ -30,55 +43,67 @@ export async function run(ctx) {
         }),
   );
 
-  // 2. Exactly one Supabase root (holds config.toml).
   const expectedRoot = manifest?.supabase?.root ?? 'supabase';
   const rootToml = join(repoRoot, expectedRoot, 'config.toml');
   out.push(
     existsSync(rootToml)
       ? check('config.supabase-root', Status.PASS, `Supabase root ${expectedRoot}/ present`)
-      : check('config.supabase-root', Status.FAIL, `expected Supabase root ${expectedRoot}/config.toml not found`, {
+      : check('config.supabase-root', Status.FAIL, `expected ${expectedRoot}/config.toml not found`, {
           expected: `${expectedRoot}/config.toml`,
         }),
   );
 
-  // 3. Vercel deployment model — surface it explicitly.
   const vjPath = join(repoRoot, 'vercel.json');
-  if (existsSync(vjPath)) {
+  let vj = null;
+  if (!existsSync(vjPath)) {
+    out.push(check('config.vercel-json', Status.FAIL, 'vercel.json is missing'));
+  } else {
     try {
-      const vj = JSON.parse(readFileSync(vjPath, 'utf-8'));
-      const de = vj?.git?.deploymentEnabled;
-      const disabled = de && Object.values(de).every((v) => v === false);
+      vj = JSON.parse(readFileSync(vjPath, 'utf-8'));
+      const deploymentEnabled = vj?.git?.deploymentEnabled;
+      const disabled = deploymentEnabled?.['*'] === false;
       out.push(
-        check('config.deploy-model', Status.PASS,
-          disabled
-            ? 'production deploy model: MANUAL (git auto-deploy disabled) — merge ≠ ship'
-            : 'production deploy model: git auto-deploy ENABLED', { actual: de ?? '(default)' }),
+        disabled
+          ? check('config.deploy-model', Status.PASS, 'production deploy model: MANUAL (all Git auto-deploys disabled)')
+          : check('config.deploy-model', Status.FAIL, 'vercel.json must disable Git deployment for every branch', {
+              expected: 'git.deploymentEnabled["*"] === false',
+              actual: deploymentEnabled ?? '(missing)',
+            }),
+      );
+
+      const crons = Array.isArray(vj.crons) ? vj.crons : [];
+      const invalid = crons.filter((cron) => {
+        if (!cron || typeof cron.path !== 'string' || !/^\/api\//.test(cron.path)) return true;
+        return !findRoute(repoRoot, cron.path);
+      });
+      const duplicatePaths = [...new Set(crons.map((cron) => cron?.path).filter(Boolean))]
+        .filter((path) => crons.filter((cron) => cron.path === path).length > 1);
+      out.push(
+        invalid.length === 0 && duplicatePaths.length === 0
+          ? check('config.vercel-cron-routes', Status.PASS, `all ${crons.length} Vercel cron paths resolve to unique API routes`)
+          : check('config.vercel-cron-routes', Status.FAIL, 'Vercel cron configuration has missing or duplicate routes', {
+              missingOrInvalid: invalid.map((cron) => cron?.path ?? '(missing path)'),
+              duplicates: duplicatePaths,
+            }),
       );
     } catch (err) {
       out.push(check('config.vercel-json', Status.FAIL, 'vercel.json is not valid JSON', { detail: String(err) }));
     }
   }
 
-  // 4. Vercel upload coverage. `.vercelignore` REPLACES the default ignore
-  // set, so every secret-bearing gitignored path must be named there too —
-  // the .env family shipped in every upload until #1714 because nothing
-  // asserted this. The list of paths lives in the manifest (vercel.must_ignore);
-  // the matcher lives in scripts/check-vercelignore-coverage.mjs, which is also
-  // the CI step (`npm run check:vercelignore`). One list, one matcher.
   const mustIgnore = manifest?.vercel?.must_ignore ?? [];
   if (mustIgnore.length) {
     const viPath = join(repoRoot, '.vercelignore');
     if (!existsSync(viPath)) {
-      out.push(check('config.vercelignore-coverage', Status.FAIL, '.vercelignore is missing — the manifest names paths that must be kept out of the Vercel upload', {
+      out.push(check('config.vercelignore-coverage', Status.FAIL, '.vercelignore is missing', {
         expected: `${mustIgnore.length} path(s) excluded`,
-        source: 'config/repo/manifest.yml (vercel.must_ignore)',
       }));
     } else {
       const r = coverage(mustIgnore, readFileSync(viPath, 'utf-8'));
       out.push(
         r.uncovered.length === 0
-          ? check('config.vercelignore-coverage', Status.PASS, `.vercelignore covers all ${mustIgnore.length} paths that must never upload`)
-          : check('config.vercelignore-coverage', Status.FAIL, `${r.uncovered.length} path(s) the manifest forbids from the Vercel upload are NOT excluded by .vercelignore`, {
+          ? check('config.vercelignore-coverage', Status.PASS, `.vercelignore covers all ${mustIgnore.length} protected paths`)
+          : check('config.vercelignore-coverage', Status.FAIL, `${r.uncovered.length} protected path(s) are not excluded`, {
               evidence: r.uncovered,
               source: 'config/repo/manifest.yml (vercel.must_ignore)',
             }),

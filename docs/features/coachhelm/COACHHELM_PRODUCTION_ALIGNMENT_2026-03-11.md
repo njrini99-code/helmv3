@@ -38,7 +38,7 @@ This document records the live CoachHelm contract after the March 11, 2026 produ
 
 Migration file:
 
-- `supabase/migrations/20260311192653_coachhelm_production_alignment.sql`
+- `supabase/migrations_archive/pre_20260527/20260311192653_coachhelm_production_alignment.sql`
 
 Applied to production on March 11, 2026. The migration:
 

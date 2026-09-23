@@ -10,7 +10,7 @@ import { VERDICT_LABEL } from '@/lib/admin/replay/coverage';
  * word, never color alone) rather than importing that file — it is shared
  * with `/admin`'s overview page (`src/app/admin/_components/SelfHealFlow.tsx`),
  * which is out of scope for this change, so this is a new, additive
- * component wired only into `/admin/self-heal`.
+ * component wired only into `/admin/errors?view=loop`.
  *
  * `not-yet-run` renders NEUTRAL, never green and never omitted — an
  * un-executed replay is the same "unknown never renders as healthy" rule

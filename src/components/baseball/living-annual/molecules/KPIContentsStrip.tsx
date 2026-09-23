@@ -14,7 +14,8 @@
  * `sm`. No hooks / handlers — safe in a server component.
  */
 import { StatStrip, STAT_STRIP_RAIL_THRESHOLD } from '@/components/fairway';
-import { RuledStatLine } from '..';
+// Leaf import, not the parent barrel ('..') — see CoverHero.tsx for why.
+import { RuledStatLine } from '../RuledStatLine';
 
 // Below StatStrip's default rail threshold, a `leader`/`emphasis` figure
 // stays wherever the caller placed it — the pin-first partition below only

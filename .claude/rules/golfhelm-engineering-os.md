@@ -9,7 +9,6 @@ paths:
   - "supabase/migrations/**"
   - "memory/features/**"
   - "memory/registry.yml"
-verified: 2026-08-21  # paths audited against memory/registry.yml's actual code.* globs (see memory/system/golfhelm-engineering-os.md) + confirmed on disk this date
 ---
 
 # GolfHelm Engineering OS — path-scoped rule
@@ -39,6 +38,6 @@ After meaningful behavioral mutation:
   "not needed" — see the contract's valid-reason list.
 
 Daily reliability operations on these paths never deploy, promote, roll back,
-or mutate production — see `config/release-policy.yml`. Schema changes under
-`supabase/migrations/**` additionally require `db-migration-reviewer` review
-before landing.
+or mutate production — see `config/release-policy.yml`. For a shared or
+production schema change, use `db-migration-reviewer` when the risk warrants an
+independent review; local-only changes need not invoke a reviewer agent.

@@ -10,6 +10,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 import type {
   CausalRelationship,
   CausalEvidence,
@@ -62,6 +63,18 @@ export class CausalEngine {
       .limit(100);
 
     if (error || !rounds || rounds.length < 10) {
+      if (error) {
+        await logServerError(
+          `causal-engine.discoverCausalRelationships: rounds query failed: ${describeError(error)}`,
+          { action: 'coachhelm.causalEngine.discoverCausalRelationships', metadata: { playerId: this.playerId } },
+        );
+      }
+      // Deliberate, not a swallow: this branch already covers a genuine
+      // "not enough rounds yet" case (< 10) alongside the query-error case,
+      // and both must answer the same way — no fabricated causal claim from
+      // insufficient/failed data. Background mining (v2/orchestrator.ts),
+      // fails closed. The error case is now logged, distinguishing it from
+      // "insufficient sample" in the logs even though the return is the same.
       return [];
     }
 

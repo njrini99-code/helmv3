@@ -39,16 +39,17 @@ import * as React from 'react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { CoachHelmShell } from './CoachHelmShell';
+// Imported from each module's own leaf path, not the top `@/components/fairway`
+// barrel — this file is itself re-exported (via pages/coachhelm/index.ts) from
+// that barrel, so importing the barrel back here created an import cycle,
+// flagged by npm run check:cycles.
+import { InstrumentPanel, InstrumentCluster, Readout } from '@/components/fairway/instrument';
 import {
-  InstrumentPanel,
-  InstrumentCluster,
-  Readout,
   GenomeFingerprint,
   type GenomeDimension as FingerprintDimension,
-  StatusPill,
-  Avatar,
-  EmptyState,
-} from '@/components/fairway';
+} from '@/components/fairway/charts';
+import { StatusPill, Avatar } from '@/components/fairway/controls';
+import { EmptyState } from '@/components/fairway/feedback';
 import { GENOME_DIMENSIONS } from '@/lib/coachhelm/v3/genome/registry';
 import { formatGenomeRefreshed } from '@/lib/coachhelm/v3/genome/format-refreshed';
 import { normalizeForRadar } from '@/lib/coachhelm/v3/genome/normalize';

@@ -14,12 +14,12 @@ KEPT FOR HISTORY -- do not delete this file.
 **End-state vibe:** Player opens the app → Hub shows ONE insight that matters today. Taps "Try gate drill." Done. Or taps the insight → expanded view → context, evidence, drill, history. Coaches get the same primitive in compact density on alerts, default in insights feed, hero on per-player view.
 
 **The one primitive replaces four:**
-- `src/components/golf/coachhelm/player/AIInsightsPanel.tsx` (player feed)
-- `src/components/golf/coachhelm/insights/InsightCard.tsx` (coach feed) — RENAMED legacy
-- `src/components/golf/coachhelm/alerts/AlertCard.tsx` (coach alerts)
-- `src/components/golf/coachhelm/round-review/V2CausalInsights.tsx` (round review)
-- `src/components/golf/coachhelm/round-review/V2PatternsSection.tsx`
-- `src/components/golf/coachhelm/round-review/V2PredictionCard.tsx`
+- src/components/golf/coachhelm/player/AIInsightsPanel.tsx (player feed)
+- src/components/golf/coachhelm/insights/InsightCard.tsx (coach feed) — RENAMED legacy
+- src/components/golf/coachhelm/alerts/AlertCard.tsx (coach alerts)
+- src/components/golf/coachhelm/round-review/V2CausalInsights.tsx (round review)
+- src/components/golf/coachhelm/round-review/V2PatternsSection.tsx
+- src/components/golf/coachhelm/round-review/V2PredictionCard.tsx
 
 ---
 
@@ -212,7 +212,7 @@ No scroll-jacking. No background motion (perf on iOS Capacitor).
 | **Foundation** | `src/components/golf/coachhelm/insight-card/InsightCard.tsx` (NEW), `HeroInsightCard.tsx` (NEW), `WhyPopover.tsx` (NEW), `MovementPill.tsx` (NEW), `tone-derivation.ts` (NEW), `src/app/golf/actions/insight-delivery.ts` (NEW), `src/lib/fonts.ts` (NEW), root `layout.tsx` (Fraunces font hook only), tests |
 | **Hub** | `src/components/golf/player-hub/HubInsightSignalCard.tsx` (NEW), edits to `PlayerHub.tsx` (slot + dismiss state), no other files |
 | **CoachHelm Dashboard** | `src/app/golf/(dashboard)/dashboard/coachhelm/components/PlayerCoachHelmDashboard.tsx` (refactor to use HeroInsightCard + InsightCard list); the existing `AIInsightsPanel.tsx` is replaced (delete after migration confirmed) |
-| **Round Review** | `src/components/golf/coachhelm/round-review/RoundTakeaway.tsx` (NEW — replaces V2CausalInsights/V2PatternsSection/V2PredictionCard for primary surfacing); `RoundReviewDisplay.tsx` (rewire); leave the old V2* components as a 1-line re-export wrapper for backwards compat or delete |
+| **Round Review** | src/components/golf/coachhelm/round-review/RoundTakeaway.tsx (NEW — replaces V2CausalInsights/V2PatternsSection/V2PredictionCard for primary surfacing); `RoundReviewDisplay.tsx` (rewire); leave the old V2* components as a 1-line re-export wrapper for backwards compat or delete |
 
 ---
 

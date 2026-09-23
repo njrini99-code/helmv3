@@ -20,6 +20,9 @@ import noEmptyCollectionOnError from "./eslint-rules/no-empty-collection-on-erro
 import noHealthyValueOnError from "./eslint-rules/no-healthy-value-on-error.mjs";
 import noRawErrorInConsole from "./eslint-rules/no-raw-error-in-console.mjs";
 import noUncheckedPaginatedRead from "./eslint-rules/no-unchecked-paginated-read.mjs";
+// D8 (db-tooling-drift) — the .in() PostgREST URL-length trap
+// (.claude/rules/database.md). Ratcheted by scripts/supabase-chunk-audit.mjs.
+import noUnchunkedInFilter from "./eslint-rules/no-unchunked-in-filter.mjs";
 
 // Downgrade every `error`-severity rule in a flat-config rules object to
 // `warn`. Used by W0 to ship the jsx-a11y recommended set + the six
@@ -141,6 +144,7 @@ export default tseslint.config(
           "no-healthy-value-on-error": noHealthyValueOnError,
           "no-raw-error-in-console": noRawErrorInConsole,
           "no-unchecked-paginated-read": noUncheckedPaginatedRead,
+          "no-unchunked-in-filter": noUnchunkedInFilter,
         },
       },
     },
@@ -189,6 +193,11 @@ export default tseslint.config(
       // Off by default like its siblings: the audit script turns it on to take a
       // census, so existing debt does not block every unrelated lint run.
       "helm/no-unchecked-paginated-read": "off",
+      // D8: off here for the same reason as its siblings above —
+      // scripts/supabase-chunk-audit.mjs turns it on to take a census so
+      // existing debt does not block every unrelated lint run. See
+      // .claude/skills/helm-supabase/SKILL.md for the trap this guards.
+      "helm/no-unchunked-in-filter": "off",
     },
   },
   {

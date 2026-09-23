@@ -37,6 +37,31 @@ so a job split/rename does not silently break protection.
 > of one `Review Gate checks` job. The aggregate names did not change, which
 > is the whole reason branch protection depends on aggregates.
 >
+> **Updated 2026-09-06 (verified against commit `1e5d10a34`): `block-historical-edits`
+> is now APPLIED.** `gh api repos/njrini99-code/helmv3/branches/main/protection
+> --jq '.required_status_checks.contexts'` returns all six contexts, including
+> `block-historical-edits` — the PATCH described below has been applied and
+> read back; this is no longer a target. `migration-lockdown.yml`'s workflow-level `paths:
+> supabase/migrations/**` filter is gone: the workflow now runs on every
+> `pull_request` and `merge_group` event and always reports a conclusion (a
+> first step checks whether any `supabase/migrations/*.sql` file changed and
+> exits 0 without running the lockdown logic when none did, instead of the
+> workflow simply never starting). That was the actual blocker to requiring
+> it — a required context that only sometimes runs leaves every PR that
+> doesn't trip its old path filter waiting on "Expected" forever, the exact
+> failure this section spent 2026-08-19 fixing for `all` and `CodeQL`. This
+> file lists the six-context target below; it is a specification until the
+> PATCH is applied and read back, not the live GitHub state — verify with:
+>
+> ```bash
+> gh api \
+>   repos/njrini99-code/helmv3/branches/main/protection/required_status_checks \
+>   -q '{strict, contexts}'
+> ```
+>
+> before trusting this file over the API, per the standing rule two
+> paragraphs below.
+>
 > **The window this section used to warn about was OPEN, and is now closed.**
 > The job rename (`all` → `CI aggregate` / `Review Gate aggregate`) had already
 > landed on `main`, but the required-context list had not been updated — exactly
@@ -108,6 +133,9 @@ so a job split/rename does not silently break protection.
   `Review Gate checks` (ast-grep, gitleaks, actionlint, yamllint, shellcheck,
   markdownlint, ruff+pylint, sqlfluff, hadolint, env-secrets as named steps
   of one job since 2026-09-02) and `semgrep (custom rules)`.
+- `block-historical-edits` (`migration-lockdown.yml`) —
+  **PROMOTED 2026-09-05**
+  from advisory (see below for why it wasn't required before this date).
 - ~~`Playwright E2E / Smoke checks`~~ — **REMOVED 2026-09-02** (context first,
   then job). It was `npm ci` + `next build`, a duplicate of `Next build`
   above. The full `Playwright (chromium)` suite is manual `workflow_dispatch`
@@ -132,11 +160,24 @@ Advisory checks:
 - `Playwright (chromium)` — main + manual only
 - `Course picker screenshots` — manual `workflow_dispatch` only
 - `BaseballHelm seeded smoke (advisory)` — main + manual only
-- `migration-lockdown / block-historical-edits`
 
 `Supabase lint + RLS tests` was promoted from advisory into the hard
 `CI / all` aggregate once the baseball pgTAP RLS suite went green on `main`
 (#517, supersedes #423). RLS regressions now block merge.
+
+`migration-lockdown / block-historical-edits` was promoted the same way on
+2026-09-05: it enforces a real invariant (historical migrations are
+immutable past the alignment baseline) but until this date it structurally
+could not gate anything, for the same reason `all` and `CodeQL` were
+phantoms above — its workflow had a `pull_request: paths:
+supabase/migrations/**` filter, so a PR that never touched a migration file
+never started the workflow at all, and GitHub cannot require a context that
+sometimes never posts. The filter is gone; the workflow now runs on every
+PR and reports a conclusion every time (see `migration-lockdown.yml`'s own
+header comment). The context has since been added to
+`required_status_checks.contexts` and read back — see the callout above,
+verified against commit `1e5d10a34`. Six contexts are required today, not
+five.
 
 `BaseballHelm authenticated smoke` (the `baseball-auth-smoke` job in
 `ci.yml`) was promoted the same way (#372): the coach/player smoke suite
@@ -186,11 +227,15 @@ sqlfluff, hadolint) plus CodeQL cover the same hard rules and report on every PR
 - Dismiss stale pull request approvals when new commits are pushed: **N/A** (no
   reviews required).
 - Restrict who can push to matching branches: **OFF** (no push-restriction list).
-- Do not allow bypassing the above settings: **OFF** — `enforce_admins` is
-  disabled, so the owner can direct-push to `main`.
-- Allow force pushes: **OFF**. Required status checks (five, since 2026-09-02):
-  CI aggregate, Review Gate aggregate, Analyze (actions / javascript-typescript /
-  python).
+- Do not allow bypassing the above settings: **ON** — `enforce_admins` is
+  enabled as of the 2026-09-06 verification below (`docs/CI_RUNBOOK.md` and
+  `.claude/rules/quality-gates.md` agree); the owner can no longer
+  direct-push past required checks. This reverses the "OFF" state recorded
+  2026-08-20 above — read the API, not this bullet, before relying on it.
+- Allow force pushes: **OFF**. Required status checks, verified against
+  commit `1e5d10a34` (2026-09-06): CI aggregate, Review Gate aggregate,
+  Analyze (actions / javascript-typescript / python), and
+  `block-historical-edits` — six contexts, all applied.
 
 ## Why this matters
 

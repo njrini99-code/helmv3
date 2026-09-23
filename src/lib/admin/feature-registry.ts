@@ -275,6 +275,9 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
       ],
       'src/app/golf/actions/attendance.ts': 'ALL',
       'src/app/golf/actions/calendar-feeds.ts': 'ALL',
+      'src/app/golf/actions/scheduling.ts': 'ALL',
+      'src/app/golf/actions/conflict-inbox.ts': 'ALL',
+      'src/app/golf/actions/class-detail.ts': 'ALL',
       'src/app/golf/actions/recurring-events.ts': [
         'createRecurringEvent',
         'editRecurringEvent',
@@ -333,7 +336,6 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     app: 'golfhelm',
     actions: {
       'src/app/golf/actions/tasks.ts': 'ALL',
-      'src/app/golf/actions/task-templates.ts': 'ALL',
       'src/app/golf/actions/task-reminders.ts': 'ALL',
     },
     primaryTable: 'golf_task_assignments',
@@ -362,6 +364,10 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
         'getGolfPlayerUserId',
         'searchGolfMessages',
         'getGolfActiveTeamConversationIds',
+        'getGolfGroupAddCandidates',
+        'addGolfGroupMember',
+        'removeGolfGroupMember',
+        'leaveGolfGroup',
       ],
     },
     primaryTable: 'golf_messages',
@@ -484,7 +490,6 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     app: 'golfhelm',
     actions: {
       'src/app/golf/actions/course-library.ts': 'ALL',
-      'src/app/golf/actions/courses.ts': 'ALL',
       'src/app/golf/actions/golf.ts': [
         'getPlayerSavedCourses',
         'savePlayerCourse',
@@ -719,8 +724,6 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
         'reactivateInsight',
         'resolveInsight',
         'rateInsight',
-        'acknowledgeComposedInsight',
-        'dismissComposedInsight',
       ],
     },
     primaryTable: 'golf_coach_insights',

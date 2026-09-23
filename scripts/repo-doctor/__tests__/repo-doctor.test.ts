@@ -7,6 +7,7 @@ import { Status, summarize, check } from '../result.mjs';
 import * as ai from '../checks/ai.mjs';
 import * as ci from '../checks/ci.mjs';
 import * as config from '../checks/config.mjs';
+import * as nodeVersion from '../checks/node-version.mjs';
 
 /**
  * repo:doctor is only useful if it CANNOT false-green. These tests pin the two
@@ -98,5 +99,46 @@ describe('check fixtures — each fails on bad input, passes on good', () => {
     writeFileSync(join(wf, 'a.yml'), 'jobs:\n  j1:\n    name: Something Else\n');
     const res = await ci.run({ repoRoot: dir, manifest });
     expect(s(res, 'ci.required-producer')).toBe(Status.FAIL);
+  });
+
+  // node-version: engines.node must be an exact major ("22.x"), never a
+  // range, and any .nvmrc/.node-version present must name the same major.
+  it('node.engines-exact-major FAILs on a range', async () => {
+    writeFileSync(join(dir, 'package.json'), JSON.stringify({ engines: { node: '>=22' } }));
+    const res = await nodeVersion.run({ repoRoot: dir, manifest });
+    expect(s(res, 'node.engines-exact-major')).toBe(Status.FAIL);
+  });
+  it('node.engines-exact-major FAILs on a full semver', async () => {
+    writeFileSync(join(dir, 'package.json'), JSON.stringify({ engines: { node: '22.9.0' } }));
+    const res = await nodeVersion.run({ repoRoot: dir, manifest });
+    expect(s(res, 'node.engines-exact-major')).toBe(Status.FAIL);
+  });
+  it('node.engines-exact-major FAILs when engines.node is absent', async () => {
+    writeFileSync(join(dir, 'package.json'), JSON.stringify({}));
+    const res = await nodeVersion.run({ repoRoot: dir, manifest });
+    expect(s(res, 'node.engines-exact-major')).toBe(Status.FAIL);
+  });
+  it('node.engines-exact-major PASSes on an exact major', async () => {
+    writeFileSync(join(dir, 'package.json'), JSON.stringify({ engines: { node: '22.x' } }));
+    const res = await nodeVersion.run({ repoRoot: dir, manifest });
+    expect(s(res, 'node.engines-exact-major')).toBe(Status.PASS);
+  });
+  it('node.nvmrc-agrees FAILs when .nvmrc names a different major', async () => {
+    writeFileSync(join(dir, 'package.json'), JSON.stringify({ engines: { node: '22.x' } }));
+    writeFileSync(join(dir, '.nvmrc'), '20\n');
+    const res = await nodeVersion.run({ repoRoot: dir, manifest });
+    expect(s(res, 'node.nvmrc-agrees')).toBe(Status.FAIL);
+  });
+  it('node.nvmrc-agrees PASSes when .nvmrc agrees (bare major)', async () => {
+    writeFileSync(join(dir, 'package.json'), JSON.stringify({ engines: { node: '22.x' } }));
+    writeFileSync(join(dir, '.nvmrc'), '22\n');
+    const res = await nodeVersion.run({ repoRoot: dir, manifest });
+    expect(s(res, 'node.nvmrc-agrees')).toBe(Status.PASS);
+  });
+  it('node.node-version-agrees PASSes with a v-prefixed full version', async () => {
+    writeFileSync(join(dir, 'package.json'), JSON.stringify({ engines: { node: '22.x' } }));
+    writeFileSync(join(dir, '.node-version'), 'v22.9.0\n');
+    const res = await nodeVersion.run({ repoRoot: dir, manifest });
+    expect(s(res, 'node.node-version-agrees')).toBe(Status.PASS);
   });
 });

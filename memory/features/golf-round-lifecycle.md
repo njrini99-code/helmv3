@@ -6,10 +6,13 @@
 >
 > It is described here as if live. Do not query, type, or build on it —
 > check `src/lib/types/database.ts` (or `memory/glossary.md`'s AUTOGEN blocks)
-> before trusting any table name in this file. Tracked in
-> `.doc-schema-baseline.json`; `npm run docs:schema-drift` fails on new ones.
-> Removing this is a ratchet-down — re-run
+> before trusting any table name in this file. Declared absent
+> below so `npm run docs:schema-drift` exempts them structurally
+> instead of carrying them in the numeric baseline. Removing this
+> reference entirely is a ratchet-down — re-run
 > `node scripts/check-doc-schema-drift.mjs --update` after.
+
+<!-- schema-drift-absent: golf_round_holes -->
 
 ## Status
 
@@ -56,8 +59,9 @@ As of 2026-09-02, a device that falls behind the server on a round it is
 tracking (a second device/session/tab wrote to it) can no longer silently
 resync its optimistic-lock token and overwrite the newer server state — both
 round screens now block further writes until the player reloads, with one
-narrow self-healing exception for a background beacon save's own unreadable
-response. A round's start date can no longer be set in the future from
+narrow self-healing exception for this device's own unreadable write (a
+background beacon, or — since 2026-09-15 — a foreground save the browser
+killed on phone lock). A round's start date can no longer be set in the future from
 either round-start screen. Full mechanics for both live in
 `memory/features/shot-tracking.md`, since the RPCs and client guards they
 touch are shared with shot tracking, not lifecycle-specific.
@@ -151,6 +155,15 @@ Use `memory/context/golfhelm-database.md` for exact columns.
   choices from the authenticated server and asks the player to select one at
   final submit; it never invents a qualifier result from a browser backup.
 - Authenticated users must only create or modify rounds they are allowed to own or coach.
+- Round-start validation must accept whatever the course library stores for
+  the course's city and state. The library's `golf_courses.state` is free text
+  (Canadian courses carry "Ontario", not "ON") and the tee picker copies it into
+  the round verbatim, so both round schemas allow `courseState` up to 100
+  characters — the same cap as `courseCity`; the `golf_rounds.course_state`
+  column is `text`. A fresh round's first save carries no holes, so a
+  validation failure on any top-level field is unsalvageable and reaches the
+  player as a bare `retry` ("start round does nothing"). See
+  `memory/incidents/golf_round_lifecycle/INC-2026-09-16-course-state-two-letter-rejection.md`.
 - Direct database writes cannot create, mutate, or delete a completed round
   or its child shots. Only the postgres-owned SECURITY DEFINER round RPCs may
   carry the transaction-local lifecycle marker needed for their atomic write.
@@ -220,9 +233,11 @@ Use `memory/context/golfhelm-database.md` for exact columns.
   `savePartialRound` and `submit_round_atomic` are full-snapshot REPLACE, so
   a stale device that resyncs its lock token can overwrite a genuinely newer
   server round with its own outdated in-memory holes/shots. The one
-  sanctioned exception is a background beacon save's own unreadable response,
-  self-healed exactly once. Full mechanics (the write-blocking flag, the
-  beacon self-heal window, the Reload UI) live in
+  sanctioned exception is this device's own unreadable write — a background
+  beacon, or a foreground save the browser killed on phone lock (2026-09-15)
+  — self-healed exactly once per lock token. Full mechanics (the
+  write-blocking flag, the unreadable-write self-heal window, the Reload UI)
+  live in
   `memory/features/shot-tracking.md`'s Current State — this is the same
   optimistic-lock/RPC surface the lost-round-id bullet above shares, not a
   lifecycle-specific mechanism.
@@ -236,6 +251,54 @@ Use `memory/context/golfhelm-database.md` for exact columns.
   this fix has no in-app way to correct its date; only the block on new
   future-dated rounds shipped this date, tracked as an explicit gap here
   rather than silently declared solved.
+
+### Penalty strokes (2026-09-09)
+
+A penalty is its own `golf_shots` row (`is_penalty`, `shot_type: 'penalty'`),
+written by `usePenaltyHandler` → `buildPenaltyShot` AFTER the player records
+the errant shot; the scorecard counts rows, so score = shots + penalty rows.
+The row's `lieBefore` / `distanceToHoleAfter` mean "where the ball is played
+from next" — that is what `CONFIRM_PENALTY`, undo, and the continue-round
+reload (`lieFromShotResult`) restore position from.
+
+- **Water / unplayable**: play on from the drop — the row keeps the current
+  position (two rows, correct).
+- **OB / lost ball**: stroke AND distance — the row carries the errant shot's
+  `lieBefore` / `distanceToHoleBefore`, so the next stroke is entered from
+  there (`getShotTypeFromState` types anything played from `tee` as a tee
+  shot, not only shot 1). Before this the row copied the provisional's landing
+  spot and the replayed stroke was never entered: 24 of 37 OB tee shots and
+  24 of 29 lost balls in the 90 days to 2026-09-09 scored one stroke short.
+- **Which stroke went (2026-09-10, `penaltyOrigin`)**: players use BOTH
+  flows — enter the drive as "other" then tap Penalty (the entered shot went
+  OB), or stand in the fairway with the last entered shot safely at 115 yds,
+  hit the next one OB and tap Penalty without entering it. The 09-09 rule
+  always replayed from the last ENTERED shot's start, which sent the second
+  player back to the tee (owner's test round d69bd372, hole 1). Now
+  `SHOW_PENALTY_MODAL` defaults `penaltyOrigin` via `defaultPenaltyOrigin`:
+  last shot in play (fairway/rough/sand/green) → `'here'`; last shot entered
+  as "other" → `'entered'`; no shot or a penalty row last → `'here'`. The
+  modal shows the choice for OB/lost ("My next shot from here" · "Shot N that
+  I entered") so the player can flip it. `'here'` writes TWO rows via
+  `CONFIRM_PENALTY { payload, errantStroke }`: `buildErrantStroke` (the
+  un-entered stroke from the current spot, result `other`, ball back at the
+  same spot) then the penalty row, and the player replays from here.
+  Water/unplayable ignore origin. "+ Penalty" is therefore enabled again
+  before any shot exists — the un-entered stroke is recorded rather than the
+  penalty being refused (the 78-of-311 stroke-short case). One Undo lifts
+  BOTH rows: `useUndoManager` checks `endsWithErrantStrokePair` (a 0-yard
+  "other" stroke ending where it began, followed by an OB/lost penalty that
+  replays from that spot — recognised by shape so it survives a reload) and
+  deletes penalty-then-errant; a player-entered "other" shot carries real
+  distance, so only its penalty is lifted.
+- **Stats attribution** (`getPenaltyCategory`, `golf-stats-calculator-shots.ts`)
+  charges the −1.0 SG to the shot that EARNED the penalty — the nearest
+  preceding non-penalty shot on the hole, else the nearest following one —
+  never to the row's own (drop) position. That had put 130 tee-shot penalties
+  against Approach and 16 approach penalties against Around Green. Pure
+  calculator change: history corrects itself without a data migration.
+- Player-facing summary that went to the coach who reported it: scores were
+  right for water, one short for OB/lost; the SG split was wrong for all four.
 
 ### Reclassification — changing what a round counts toward
 
@@ -345,9 +408,9 @@ Use `memory/context/golfhelm-database.md` for exact columns.
   touch for no gain; it was reverted the same day. The editor now renders on
   `/golf/dashboard/rounds/continue/[id]`, which already scopes its round to
   `player.id`, so it is always the player's own.
-  - Rendered from the SERVER component, outside `ContinueRoundClient`. That
-    component owns live scoring, autosave and recovery; a type picker does not
-    belong inside that state machine.
+  - Constructed by the server component and passed into `ContinueRoundClient`
+    as a presentation slot in its inset-aware resume header. The editor still
+    owns its independent state; scoring, autosave and recovery do not own it.
   - Player rules apply: only qualifiers the player is already ENTERED in,
     because RLS makes entry creation coach-only.
 - **A round re-typed mid-play must still submit.** Saving calls
@@ -403,9 +466,56 @@ Use `memory/context/golfhelm-database.md` for exact columns.
   round saves exactly the holes on screen. Before 2026-09-01 the editor seeded
   once on mount, so "9 holes · Front 9" tapped after the course was confirmed
   still started an 18-hole round (Shenandoah field report).
+- A tee picked from the course library survives a document reload before the
+  round exists on the server. `handleTeePick` writes the `TeeRoundDefaults` to
+  `src/lib/golf/new-round-pick-cache.ts` (localStorage, per player, 12 h TTL);
+  on mount, the auto-open effect restores it through the same handler instead
+  of reopening the picker, and the record is dropped once `persistRoundStart`
+  succeeds or the player clears the cloud pick. Before 2026-09-17 a reload at
+  the setup stage (WKWebView content-process kill, stale-asset recovery)
+  remounted an empty form and auto-opened the picker — "it loaded, then reset
+  to the course screen" with no message (UNCW, Oviinbyrd GC). Rounds with
+  shots are still owned by the emergency-save / recovery path, not this cache.
+- A round-start failure is shown beside the control that started the round.
+  On the confirmed-course path that control is `FairwayHoleConfig`'s own
+  "Start round" dock, so the parent's error travels down as `submitError`
+  (rendered directly above the dock, scrolled into view) and `submitting`
+  disables/relabels the dock while `persistRoundStart` runs. Before
+  2026-09-17 the notice rendered above the 18-hole scorecard — off-screen on
+  a phone — so any start failure read as "it tries to load, then resets, no
+  error" (UNCW, Oviinbyrd GC). Every start failure is also reported through
+  `logError` (`component: NewRoundClient`, `action: round start`, `reason`
+  offline / server_rejected / transport, with `navigatorOnLine` and the
+  health-probe state) so a start that never reaches the server is visible in
+  `error_logs`. The offline gate refuses only when `navigator.onLine` is false
+  AND the last `/api/health` probe failed (`connectionStatus.isConnected`;
+  `isOnline` merely mirrors `navigator.onLine`) — WKWebView's
+  `navigator.onLine` alone is not trusted.
+- A route's `loading.tsx` reserves the page's paint at t=0 — for a
+  `'use client'` page holding its own `loading` state that is that
+  component's loading branch, not its settled layout. A route whose
+  `page.tsx` is a pure `permanentRedirect` shim renders `bg-canvas` only:
+  no geometry, and no real `<h1>` for a screen that never mounts.
+  Reference implementation: `dashboard/alerts/loading.tsx`.
 
 ## Known Risk Areas
 
+- **Golf player round and shot history is an owner-level absolute
+  constraint: never deletable outside the two protected write paths**
+  (`submit_round_atomic`/`save_partial_round_atomic`, both `SECURITY
+  DEFINER` and self-checking `player_id`; or the player-scoped JS
+  fallback authorized by the player's own delete policies). A confirmed
+  2026-08-19 defect let any `assistant_coach` (not just the head coach)
+  delete a team's entire round/shot history through three role-blind
+  DELETE policies — closed by
+  `memory/incidents/golf_round_lifecycle/INC-2026-08-19-assistant-coach-cascade-delete-round-history.md`.
+  Any new DELETE/ALL policy on `golf_rounds`/`golf_shots`/`golf_holes`/
+  `golf_round_reviews` must use `is_golf_team_head_coach()`, never the
+  existence-only `is_golf_team_coach()` — see
+  `memory/context/engineering-methodology.md`'s Row-Level Security
+  section for the verification technique. A decrease in `golf_rounds`,
+  `golf_shots`, `golf_holes`, `golf_players` or `golf_round_reviews` row
+  counts is this class of incident recurring, not a discrepancy.
 - Race conditions between save draft, submit, and recovery.
 - Undo, edit, and delete actions share a local single-flight guard. If the
   authorized server lookup confirms a shot is already absent, Undo and Delete
@@ -466,8 +576,9 @@ Use `memory/context/golfhelm-database.md` for exact columns.
 
 The round chrome owns the iOS status-bar zone: the Capacitor WKWebView is
 edge-to-edge (`contentInset: 'never'`), so `FairwayScorecardHeader`'s sticky
-bar pads `env(safe-area-inset-top)` (inside the measured element — the
-published `--scorecard-height` var includes it), and both
+bar owns `env(safe-area-inset-top)` as padding for New Round or a sticky
+offset below Continue Round's inset-aware context (the published
+`--scorecard-height` includes the inset in both modes), and both
 `FairwayNewRoundEntry` step wrappers plus `FairwayCoursePicker`'s floating
 Close fold the inset into their top offsets. Off-iOS these resolve to the
 prior paddings (env() = 0). No lifecycle, autosave, or navigation semantics
@@ -487,17 +598,52 @@ The push pre-prompt sheet (`PushPermissionSoftAsk.tsx`) moved off retired
 - `memory/context/golfhelm-database.md`
 - `docs/features/SHOT_TRACKING_DATA_FLOW.md`
 - `docs/features/SHOT_TRACKING_VERIFICATION.md`
-- `docs/ROUND_REVIEW_ACCURACY_REPORT.md`
+- `https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-07/ROUND_REVIEW_ACCURACY_REPORT.md`
 - `docs/v3-testing-standards.md`
 
 ## iOS shell chrome (updated 2026-08-26)
 
 Round entry and tracking chrome are safe-area-native in the Capacitor shell:
-`FairwayScorecardHeader` pads `env(safe-area-inset-top)` (publishing
-`--scorecard-height` inclusive of the inset), both `FairwayNewRoundEntry`
+`FairwayScorecardHeader` accounts for `env(safe-area-inset-top)` through
+padding or its resumed-round sticky offset (publishing `--scorecard-height`
+inclusive of the inset), both `FairwayNewRoundEntry`
 step wrappers fold the inset into top padding, and the course-picker close
 control sits below the status bar. The shared `Segmented` control renders an
 accent-green selected thumb in dark scope. Presentation layer only — no
 lifecycle contract change. Ledger: the round-lifecycle file under `memory/ledgers/changes/`
 (2026-08-26 entries); evidence: `docs/audits/evidence/ios-premium-2026-08-25/`
 (course picker, tee step, setup band, and scorecard header captures).
+
+### Course picker viewport repair (2026-09-08)
+
+The course/tee picker now applies top and bottom safe-area insets to its single
+vertical scroll owner, not only the floating Close button. Its full-screen
+surface hides the partial-sheet handle and reduces its available height with
+the keyboard inset. Choosing a course scrolls the tee stage to the top; stage
+transitions overlap briefly instead of waiting through an empty frame. Tee
+cards do not introduce a second vertical scroller. Course, tee and round data
+operations are unchanged.
+
+Long course names wrap within the reserved close-button lane; both back and
+close controls have 44px touch targets. Safe-area regression coverage is in
+`e2e/golf-critical-paths.spec.ts` and only inspects the picker without starting
+a round.
+
+New-round completion shows a fixed, non-blocking loading status while its summary/submit chunks
+load. The summary remains mounted after its first finish attempt so closing can complete the shared
+sheet exit. Round-detail distribution segments keep their final layout widths and reveal with
+transforms.
+
+### Continue Round header ownership (2026-09-08)
+
+The resume context and round-type editor share one header below the status-bar
+inset. The scorecard uses that inset as its sticky top offset, without adding
+a second blank padding band. Its published offset includes the inset for
+offline banners and desktop context. New Round still owns its inset inside
+the scorecard. The tracking wrapper clips horizontal overflow without becoming
+a vertical scroll container, and Continue Round avoids an ancestor transform
+that would trap fixed status-bar chrome. Scores and save behavior are unchanged.
+The completed-round Submit banner lives inside this same measured scorecard
+chrome so it remains reachable while scrolling. A ResizeObserver updates the
+published offset when the banner or save status changes height. The route
+loading placeholder reserves the same inset, context, and editor order.

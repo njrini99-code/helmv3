@@ -4,14 +4,13 @@ paths:
   - "src/lib/golf/**"
   - "src/components/golf/**"
   - "src/app/api/golf/**"
-verified: 2026-08-20-mechanical  # paths + table names machine-checked this date (docs:path-drift / docs:schema-drift); PROSE not re-read against code
 ---
 
 ## COACH vs PLAYER vs TEAM — Feature Ownership
 
 ### Coach-Only Features
 
-> **The coach intelligence surfaces were consolidated (2026-07-19 → 07-22).**
+> **The coach intelligence surfaces are consolidated.**
 > Alerts, Patterns, Insights, Development Plans and CoachHelm Analytics are no
 > longer routes of their own — they are **views inside `/dashboard/intelligence`**,
 > reached by query string. The old paths survive only as `permanentRedirect`

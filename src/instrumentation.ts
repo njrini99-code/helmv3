@@ -36,6 +36,11 @@ const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN?.trim() || process.env.SENTRY_DSN
 // resolve-environment.ts and its matrix test.
 const environment = resolveServerEnvironment(process.env);
 
+/** Next's own message when the response stream's consumer disconnects
+ *  mid-render. Anchored to the whole message so a real stream error that
+ *  merely mentions closing is not swallowed with it. */
+const CLIENT_ABORTED_STREAM = /^The destination stream closed early\.?$/;
+
 const sharedIgnoreErrors = [
   'NEXT_NOT_FOUND',
   'NEXT_REDIRECT',
@@ -104,6 +109,15 @@ const sharedIgnoreErrors = [
   'LiftingUnauthorizedError',
   'LiftingNoOrgError',
   'LiftingForbiddenError',
+  // The client went away while a server component's RSC payload was still
+  // streaming — a navigation, a closed tab, a dropped mobile connection.
+  // Next reports it through onRequestError as an unhandled render error, so
+  // it reached the Bridge as a 500 on the route being LEFT: 260 rows across
+  // nine /golf/dashboard/* fingerprints in the 72h to 2026-09-09, zero
+  // affected users, and the self-heal loop's Repair stage spent its
+  // 2026-09-09 run on it. Nothing failed for anyone; it is the request being
+  // abandoned, not the page.
+  CLIENT_ABORTED_STREAM,
 ];
 
 /**
@@ -213,6 +227,52 @@ function fingerprintByPostgresCode(event: Sentry.ErrorEvent): Sentry.ErrorEvent 
   };
 }
 
+/**
+ * Supabase auth-key rejection as a grouping key.
+ *
+ * On 2026-09-06 21:27-21:43 UTC the owner disabled Supabase legacy API keys
+ * while Vercel still held a legacy key, and production threw "Legacy API
+ * keys are disabled" (and the sibling "Invalid API key") from at least four
+ * unrelated call paths — POST /golf/login, recordDeployMarker, the presence
+ * heartbeat RPC, and a bridge_write_failed follow-on — each with its own
+ * message wrapper, so Sentry split one root cause into four-plus separate
+ * issues. The presence heartbeat wraps its message as `msg=...` rather than
+ * surfacing the Supabase text directly, so this checks the full exception
+ * value / event message text rather than requiring an exact match.
+ *
+ * Same shape as fingerprintByPostgresCode: only applies when no deliberate
+ * fingerprint already exists, keeps `{{ default }}` as a secondary axis, and
+ * tags the event so the two failure modes stay distinguishable in counts.
+ * The permanent fix (rotating Vercel's key) is the owner's; this only keeps
+ * every occurrence of the same root cause in one issue while it's live.
+ */
+function fingerprintSupabaseKeyError(event: Sentry.ErrorEvent): Sentry.ErrorEvent {
+  if (event.fingerprint) return event; // never override a deliberate one
+  const haystacks: string[] = [];
+  for (const value of event.exception?.values ?? []) {
+    if (typeof value.value === 'string') haystacks.push(value.value);
+  }
+  if (typeof event.message === 'string') haystacks.push(event.message);
+  const text = haystacks.join(' ');
+  if (!text) return event;
+
+  if (/legacy api keys are disabled/i.test(text)) {
+    return {
+      ...event,
+      tags: { ...event.tags, supabase_key_error: 'legacy_disabled' },
+      fingerprint: ['{{ default }}', 'supabase:legacy-keys-disabled'],
+    };
+  }
+  if (/invalid api key/i.test(text)) {
+    return {
+      ...event,
+      tags: { ...event.tags, supabase_key_error: 'invalid' },
+      fingerprint: ['{{ default }}', 'supabase:invalid-api-key'],
+    };
+  }
+  return event;
+}
+
 const scrubPii: Sentry.NodeOptions['beforeSend'] = (event) => {
   if (event.request) {
     delete event.request.cookies;
@@ -253,9 +313,13 @@ const scrubPii: Sentry.NodeOptions['beforeSend'] = (event) => {
   // telemetry; the pair identifies a person and where they were.
   //
   // Applied last, so it also covers anything the tagging above introduced.
-  // Postgres-code fingerprinting runs on the redacted event, so grouping never
-  // depends on a value that was about to be scrubbed.
-  return fingerprintByPostgresCode(redactEventPii(event));
+  // Postgres-code and Supabase-key-error fingerprinting both run on the
+  // redacted event, so grouping never depends on a value that was about to
+  // be scrubbed. Supabase-key runs first: it bails immediately when the text
+  // doesn't match, and fingerprintByPostgresCode's own "never override a
+  // deliberate fingerprint" guard means whichever rule matches first wins —
+  // the two are not expected to co-occur on the same event.
+  return fingerprintByPostgresCode(fingerprintSupabaseKeyError(redactEventPii(event)));
 };
 
 export async function register() {
@@ -447,8 +511,15 @@ function isNextControlFlowDigest(error: unknown): boolean {
   return typeof digest === 'string' && (digest === 'DYNAMIC_SERVER_USAGE' || digest.startsWith('NEXT_'));
 }
 
+function isClientAbortedStream(error: unknown): boolean {
+  return error instanceof Error && CLIENT_ABORTED_STREAM.test(error.message);
+}
+
 function shouldSkipBridgeWrite(error: unknown, alreadyLogged: boolean): boolean {
   if (isNextControlFlowDigest(error)) return true;
+  // Sentry already ignores this via sharedIgnoreErrors; the Bridge write
+  // must skip it for the same reason (see CLIENT_ABORTED_STREAM).
+  if (isClientAbortedStream(error)) return true;
   // Already went through logServerException/logServerError at the throw
   // site (e.g. a golf CRM server action's `catch { logServerException(...);
   // throw error; }`) and is now escaping to onRequestError a second time —

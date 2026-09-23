@@ -75,7 +75,7 @@ are **awaiting a production promote**, not implementation. Production is roughly
 production promote**, which is what makes the observability in Phase 1
 measurable at all. It is an owner decision and stays queued.
 
-Also superseded: `docs/COACHHELM_FIX_PLAN.md` (2026-08-02, 675 lines). Its
+Also superseded: docs/COACHHELM_FIX_PLAN.md (2026-08-02, 675 lines). Its
 Phase 4.1 "monitoring for stalled generation" is built on
 `.select('created_at').gte('created_at', now - 24h)` — the column that freezes —
 so shipping it would report every generator as permanently stalled. Its
@@ -320,5 +320,5 @@ renamespace — is measured, dry-run counted, applied, then verified.
   only as engagement.
 - The LLM paths: round-review citation discards (#1474) and review generation
   coverage (#1476, 30% lifetime / 66% in August). Own issues, own fixes.
-- `docs/COACHHELM_FIX_PLAN.md`'s calibration and behavior-learning items, which
+- docs/COACHHELM_FIX_PLAN.md's calibration and behavior-learning items, which
   are independent and remain valid.

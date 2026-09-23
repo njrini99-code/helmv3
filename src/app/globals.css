@@ -96,17 +96,10 @@
 
   /* Shared Golf mobile shell sizing */
   --golf-mobile-header-offset: calc(4.5rem + env(safe-area-inset-top, 0px));
-  /* REINTRODUCED (P413/M1, docs/MOBILE_DOCTRINE.md Rule 10, 2026-07-10):
-     the comment this replaces said the bottom nav was retired May 2026 and
-     that this var resolved to the safe-area only "so nothing reserves dead
-     pixels for a bar that no longer exists" — but FairwayBottomNav.tsx now
-     ships a persistent 56px mobile tab bar again, and that stale value was
-     silently under-reserving space for it, so every consumer (fab-vs-nav
-     sweep: KeyboardShortcutHint.tsx, InsightBulkActions.tsx, the round
-     review page's scroll padding) sat ON TOP OF / behind the bar instead of
-     clearing it. Height = FairwayBottomNav's `min-h-[56px]` tab column plus
-     the safe-area padding the bar applies to itself. */
-  --golf-mobile-bottom-nav-offset: calc(56px + env(safe-area-inset-bottom, 0px));
+  /* Floating navigation: 56px capsule, 8px top gap, and home-indicator clearance.
+     Share this measurement with content padding and fixed action offsets. */
+  --fw-mobile-nav-height: calc(64px + max(8px, env(safe-area-inset-bottom, 0px)));
+  --golf-mobile-bottom-nav-offset: var(--fw-mobile-nav-height);
 
   /* ── IMMERSIVE SURFACES ────────────────────────────────────────────────
      A focused destination that owns the whole screen — an open conversation
@@ -141,6 +134,25 @@
     body[data-fw-immersive] [data-slot='fw-topbar'] {
       display: none;
     }
+    /* And the hub sub-nav with it — the band the rule above kept missing.
+       Measured in a browser at 390x844 with a conversation open: the shell bar
+       was correctly gone, but FairwayHubSubNav (rendered at shell level for
+       every golf hub, 39px + its border, `position: sticky`) stayed, and the
+       immersive surface below it is sized against the FULL viewport precisely
+       because it believes it owns the screen. So the thread's own header —
+       avatar, contact name, and BACK — laid out underneath it and was clipped:
+       at scrollTop 0 the name row measured 0px tall and only the tail of the
+       subtitle ("Class of 2026") bled out from under the strip. Back was
+       unreachable on every conversation on a phone.
+       This is the same argument the rule above makes, one band further: an open
+       conversation is ONE destination, and a tab strip offering to leave it for
+       Announcements is not chrome the thread owes space to. Keyed on the same
+       attribute, so FairwayHubSubNav is untouched on every non-immersive route
+       and at every width >= md, where the thread is one pane of two and the
+       strip is still the app's navigation. */
+    body[data-fw-immersive] [data-slot='fairway-hub-subnav'] {
+      display: none;
+    }
   }
   @media (max-width: 767px) {
     /* Zero, not safe-area: the immersive surface sizes itself against the
@@ -150,6 +162,16 @@
     body[data-fw-immersive] [data-slot='fw-shell-content'] {
       padding-bottom: 0;
     }
+  }
+
+  /* The messaging workspace supplies its own header and bottom budget.
+     Keep app navigation; remove duplicate chrome only while this route exists. */
+  body:has([data-fw-messages]) [data-slot='fw-topbar'],
+  body:has([data-fw-messages]) [data-slot='fairway-hub-subnav'] {
+    display: none;
+  }
+  body:has([data-fw-messages]) [data-slot='fw-shell-content'] {
+    padding-bottom: 0;
   }
 
   /* BaseballHelm-only (#481 mustFix): the coach `HubSubNav` strip
@@ -376,6 +398,20 @@
   body.capacitor span {
     -webkit-user-select: text;
     user-select: text;
+  }
+
+  /* Message bubbles own their long-press gesture (MessageThreadPane.tsx
+     opens the reactions row on a 500ms hold, and Copy in that row replaces
+     what selection provided). The re-enable above matches the bubble's own
+     <p> and <span> at higher specificity than the bubble's select-none
+     class, so on the app a hold opened the row AND started an iOS highlight
+     under it. Scoped to the bubble so nothing else loses selection. */
+  body.capacitor [data-message-bubble],
+  body.capacitor [data-message-bubble] p,
+  body.capacitor [data-message-bubble] span {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
   }
 
   /* Scroll containers on iOS — momentum + no rubber-band at body level */
@@ -2597,6 +2633,14 @@ body {
   overflow: hidden;
 }
 
+/* The sweep needs something to sweep across. This class carried no fill of its
+   own, so every bare `skeleton-shimmer` block was a transparent box with a
+   white highlight travelling over the page behind it. `:where()` keeps the
+   specificity at zero, so any `bg-*` utility on the same element still wins. */
+:where(.skeleton-shimmer) {
+  background-color: var(--fw-color-skeleton);
+}
+
 .skeleton-shimmer::after {
   content: '';
   position: absolute;
@@ -3153,5 +3197,53 @@ html[data-baseball-branded='true'] .baseball-shell .nav-item-active-icon {
   .marketing-anim-gate [data-hero='actions']:not([data-anim-ready]),
   .marketing-anim-gate [data-hero='plate']:not([data-anim-ready]) {
     visibility: hidden;
+  }
+}
+
+/* More navigation: one compositor-driven entrance, with a quicker dismissal.
+   Destination prefetch starts after the panel animation, not during it. */
+[data-vaul-drawer][data-slot='more-nav-sheet'],
+[data-vaul-overlay][data-slot='more-nav-sheet-overlay'] {
+  animation-duration: 360ms;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+[data-vaul-drawer][data-slot='more-nav-sheet'][data-state='closed'],
+[data-vaul-overlay][data-slot='more-nav-sheet-overlay'][data-state='closed'] {
+  animation-duration: 240ms;
+}
+
+@keyframes fw-message-actions-out {
+  to { opacity: 0; transform: translateY(4px) scale(0.98); }
+}
+[data-fw-message-actions][data-state='closed'] {
+  animation: fw-message-actions-out 120ms ease-in forwards;
+}
+
+/* Navigation and message controls share one fixed glass treatment. */
+.fw-glass-chrome {
+  background-color: var(--fw-glass-bg-strong);
+  background-image: linear-gradient(160deg, var(--fw-glass-highlight), transparent 48%);
+  border-color: var(--fw-glass-border);
+  -webkit-backdrop-filter: blur(16px) saturate(var(--fw-glass-saturate));
+  backdrop-filter: blur(16px) saturate(var(--fw-glass-saturate));
+}
+.fw-nav-selection,
+.fw-message-filters [data-slot='fw-segment-pill'] {
+  background-color: var(--fw-color-accent-700);
+  background-image: linear-gradient(165deg, rgb(255 255 255 / 0.08), transparent 65%);
+  border-color: var(--fw-color-accent-600);
+}
+.fw-message-filters [data-slot='fw-segment'][data-state='on'] {
+  color: var(--fw-color-text-on-accent);
+}
+.fw-message-filters [data-slot='fw-segment-pill'] > span {
+  display: none;
+}
+@media (prefers-reduced-transparency: reduce) {
+  .fw-glass-chrome {
+    background-color: var(--fw-color-surface);
+    background-image: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
   }
 }

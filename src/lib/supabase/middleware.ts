@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { getPublishableKey } from '@/lib/supabase/keys.mjs';
 import {
   SUPABASE_TRACE_PROPAGATION,
   withSupabaseTracing,
@@ -157,8 +158,20 @@ function isNativeUserAgent(request: NextRequest): boolean {
   return ua.includes(NATIVE_UA_MARKER);
 }
 
+// The native web-view loads these from the origin root — a 307 to /golf/login
+// makes WebKit drop the service-worker script and the manifest, which is what
+// broke the iOS app's SW/manifest/offline page from 2026-07-01 through
+// 2026-09-17. Kept in sync with src/proxy.ts's copy.
+const NATIVE_SHELL_RESOURCES = ['/sw.js', '/manifest.json', '/offline.html', '/monitoring'];
+
 function isMarketingRoute(pathname: string): boolean {
   if (pathname === '/') return true;
+  if (NATIVE_SHELL_RESOURCES.some((path) => pathname === path || pathname.startsWith(`${path}/`))) {
+    return false;
+  }
+  // Any file-extension path (`.js`, `.css`, `.json`, image, font) is a static
+  // resource the web view loads for the app — never a marketing page.
+  if (/\.[a-z0-9]+$/i.test(pathname)) return false;
   return !APP_ROUTE_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   );
@@ -566,13 +579,13 @@ export async function updateSession(request: NextRequest) {
   }
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
   if (!url || /placeholder\.supabase\.co/i.test(url)) {
     throw new Error('NEXT_PUBLIC_SUPABASE_URL is missing or a placeholder. Check Vercel env.');
   }
-  if (!anonKey) {
-    throw new Error('NEXT_PUBLIC_SUPABASE_ANON_KEY is missing. Check Vercel env.');
-  }
+  // New-format publishable key first, legacy anon-key JWT as fallback — see
+  // src/lib/supabase/keys.mjs. Both are literal `process.env.X` reads inside
+  // that module (required for this Edge Runtime to bundle them at all).
+  const anonKey = getPublishableKey();
 
   let supabaseResponse = NextResponse.next({
     request,

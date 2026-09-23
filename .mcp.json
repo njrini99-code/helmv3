@@ -2,7 +2,15 @@
   "mcpServers": {
     "supabase": {
       "type": "http",
-      "url": "https://mcp.supabase.com/mcp?project_ref=qmnssrrolpinvwjjnufo&read_only=true"
+      "url": "https://mcp.supabase.com/mcp?project_ref=qmnssrrolpinvwjjnufo"
+    },
+    "playwright": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp@0.0.79"
+      ]
     }
   }
 }

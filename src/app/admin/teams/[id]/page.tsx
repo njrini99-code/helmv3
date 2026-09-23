@@ -20,6 +20,7 @@ import { PanelPageSkeleton } from '../../_components/PanelSkeletons';
 import { PanelAllClear, PanelNoData } from '../../_components/PanelStates';
 import { LocalTime } from '../../_components/LocalTime';
 import { RosterTable, type RosterDisplayRow } from './RosterTable';
+import { SectionLabel } from '../../_components/SectionLabel';
 
 export const dynamic = 'force-dynamic';
 
@@ -66,10 +67,6 @@ const IN_FLIGHT_TIER_LABEL: Record<InFlightTier, string> = {
   stuck: 'stuck',
   live: 'live',
 };
-
-function SectionLabel({ children }: { children: ReactNode }) {
-  return <h2 className="text-xs font-semibold uppercase tracking-widest text-warm-500">{children}</h2>;
-}
 
 /**
  * GREEN CONTRACT: heavy graphite (warm-900, bold, tabular) numerals — never
@@ -274,7 +271,7 @@ async function TeamDetailBody({ teamId }: { teamId: string }) {
       </Surface>
 
       <section className="space-y-4">
-        <SectionLabel>Activity</SectionLabel>
+        <SectionLabel rule={false}>Activity</SectionLabel>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
           <GraphiteStat label="Rounds 7d" value={rounds7d} />
           <GraphiteStat label="Rounds 30d" value={rounds30d} />
@@ -293,7 +290,7 @@ async function TeamDetailBody({ teamId }: { teamId: string }) {
       </section>
 
       <Surface padding="sm">
-        <SectionLabel>Roster ({roster.length})</SectionLabel>
+        <SectionLabel rule={false}>Roster ({roster.length})</SectionLabel>
         <div className="mt-3">
           {roster.length === 0 ? (
             <PanelNoData label="No active roster" description="Players appear here once they join this team." />
@@ -304,7 +301,7 @@ async function TeamDetailBody({ teamId }: { teamId: string }) {
       </Surface>
 
       <Surface padding="sm">
-        <SectionLabel>Autosaves in flight ({inFlight.total})</SectionLabel>
+        <SectionLabel rule={false}>Autosaves in flight ({inFlight.total})</SectionLabel>
         <div className="mt-3">
           {allDegraded.includes('inFlightRounds') ? (
             <PanelNoData
@@ -359,7 +356,7 @@ async function TeamDetailBody({ teamId }: { teamId: string }) {
       </Surface>
 
       <Surface padding="sm">
-        <SectionLabel>Qualifiers ({qualifiers.total})</SectionLabel>
+        <SectionLabel rule={false}>Qualifiers ({qualifiers.total})</SectionLabel>
         <div className="mt-3">
           {allDegraded.includes('qualifiers') ? (
             <PanelNoData
@@ -404,7 +401,7 @@ async function TeamDetailBody({ teamId }: { teamId: string }) {
 
       <Surface padding="sm">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <SectionLabel>Team errors</SectionLabel>
+          <SectionLabel rule={false}>Team errors</SectionLabel>
           {errorHealth.worstSeverity ? (
             <span className="flex items-center gap-2 text-xs text-warm-500">
               Worst:
@@ -462,7 +459,7 @@ async function TeamDetailBody({ teamId }: { teamId: string }) {
 
       <Surface padding="sm">
         <KeyPanelRule />
-        <SectionLabel>CoachHelm</SectionLabel>
+        <SectionLabel rule={false}>CoachHelm</SectionLabel>
         <div className="mt-3">
           {coaches.length === 0 || extras.coachhelmInsights === null ? (
             <PanelNoData

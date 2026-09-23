@@ -57,7 +57,12 @@ function makeClient(opts: { countSequence: number[]; insertError?: boolean }) {
   const coachBuilder = {
     select: vi.fn().mockReturnThis(),
     eq: vi.fn().mockReturnThis(),
+    // Both terminals stubbed: the ownership reads use `.maybeSingle()`
+    // (JAVASCRIPT-NEXTJS-QZ — `.single()` reported an expected no-row as
+    // PGRST116 to Sentry), and this fixture is about the honest count, not
+    // about which terminal the action picks.
     single: vi.fn().mockResolvedValue({ data: { id: 'coach-1' }, error: null }),
+    maybeSingle: vi.fn().mockResolvedValue({ data: { id: 'coach-1' }, error: null }),
   };
 
   const teamMembersBuilder = {

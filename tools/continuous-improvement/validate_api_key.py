@@ -12,8 +12,20 @@ if not API_KEY:
     print("Error: ANTHROPIC_API_KEY environment variable is not set")
     sys.exit(1)
 
+def describe_key(key: str) -> str:
+    """py/clear-text-logging-sensitive-data (#7, then #609): this used to
+    print the first 20 and last 10 characters of the real key, and the
+    first fix still printed 8. Any substring of the credential is key
+    material once it lands in a terminal scrollback or a captured log, and
+    CodeQL rightly keeps flagging it. What a human needs to confirm "this is
+    the key I meant to test" is its shape, not its bytes: the length and
+    whether it carries the Anthropic prefix."""
+    prefix_ok = key.startswith("sk-ant-")
+    return f"length {len(key)}, anthropic prefix: {'yes' if prefix_ok else 'no'}"
+
+
 print("=== Testing Anthropic API Key ===")
-print(f"Key: {API_KEY[:20]}...{API_KEY[-10:]}")
+print(f"Key: {describe_key(API_KEY)}")
 print()
 
 # Set environment variable
@@ -41,7 +53,7 @@ except anthropic.AuthenticationError as e:
     print("The API key is invalid or expired.")
     sys.exit(1)
     
-except Exception as e:
+except Exception as e:  # noqa: BLE001 — diagnostic: report whatever failed, then exit 1
     print(f"❌ Error: {e}")
     sys.exit(1)
 
@@ -69,7 +81,7 @@ try:
     
     asyncio.run(test_sdk())
     
-except Exception as e:
+except Exception as e:  # noqa: BLE001 — diagnostic: report whatever failed, then exit 1
     print(f"❌ SDK Error: {e}")
     import traceback
     traceback.print_exc()

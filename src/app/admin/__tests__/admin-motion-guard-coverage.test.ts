@@ -3,9 +3,20 @@
  * the admin surface.
  *
  * The admin console does not use framer-motion for its own chrome or triage
- * visuals (that library is reserved for product-facing pages and is already
- * covered by `scripts/__tests__/motion-reduced-motion-coverage.test.mjs`).
- * Admin motion is plain Tailwind utility classes — `animate-spin`,
+ * visuals, with ONE named exception: `SegmentedLinks`
+ * (`src/components/fairway/controls/segmented-links.tsx`), whose moving
+ * selection pill mounts `motion.span`'s `layoutId` glide and is rendered
+ * inside `IncidentLensRail` under `src/app/admin`. That component resolves
+ * `useReducedMotion()` itself (mirroring `Segmented`'s identical gate) and is
+ * covered by `segmented-links.test.tsx` +
+ * `segmented-links.motion-integration.test.tsx` — it is NOT walked by this
+ * gate's `ROOTS` (below), which only covers `src/app/admin` and
+ * `src/components/admin`, not `src/components/fairway`, and this gate's
+ * Tailwind-class regex would not detect a framer-motion `layoutId`/`transition`
+ * prop even if it did walk that path. Every OTHER framer-motion use is
+ * reserved for product-facing pages and is already covered by
+ * `scripts/__tests__/motion-reduced-motion-coverage.test.mjs`. Aside from that
+ * one exception, admin motion is plain Tailwind utility classes — `animate-spin`,
  * `animate-pulse`, `transition-transform` — and this repo's own established
  * convention (see `src/app/admin/_components/AdminShell.tsx`'s
  * `REFRESH_SPIN_CLASS`, `UnifiedIncidentCard.tsx`, `ErrorsFilterBar.tsx`,

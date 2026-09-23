@@ -1,5 +1,7 @@
 # Repo migrations vs production — classification
 
+Status: active
+
 <!-- schema-drift-absent:
     golf_player_anonymize_on_unlink, golf_players_anonymized_at_idx,
     anonymized_at, baseball_legacy_backfill_manifest,

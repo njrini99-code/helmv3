@@ -17,9 +17,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
  *
  * `partial` is not decorative — insights.ts:4628 counts it (`playersFailed`).
  *
- * The honest case is unchanged: a user who is genuinely neither a player nor a
- * coach also yields no busy periods, but with `error === null`, so `partial`
- * stays false and that answer is trusted correctly.
+ * A rostered player with no events remains complete. A nonempty requested auth
+ * identity with neither profile is incomplete because its teams and schedule
+ * sources cannot be resolved.
  */
 
 vi.mock('@/lib/server-error-logger', () => ({
@@ -99,15 +99,16 @@ describe('busy periods — a failed identity read must not read as a free calend
   });
 });
 
-describe('busy periods — a genuinely free calendar is still reported as complete', () => {
-  it('stays complete for a user who is neither a player nor a coach', async () => {
-    // Both reads legitimately find nothing: { data: null, error: null }.
+describe('busy periods — missing identity is not reported as a free calendar', () => {
+  it('marks a nonempty requested identity as partial when neither profile exists', async () => {
+    // Both reads legitimately return no row, but this caller requested a
+    // specific nonempty auth identity. Its schedule cannot be verified.
     outcomes.set('golf_players', ok(null));
     outcomes.set('golf_coaches', ok(null));
 
     const result = await busy();
 
-    expect(result.partial).toBe(false);
+    expect(result.partial).toBe(true);
     expect(result.periods).toEqual([]);
   });
 

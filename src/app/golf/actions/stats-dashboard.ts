@@ -14,6 +14,7 @@ import { getUserResilient } from '@/lib/auth/resilient-get-user';
 import { runWithStatsActionContext } from '@/lib/golf/stats-action-context';
 import { createClient } from '@/lib/supabase/server';
 import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
+import type { StatsRoundScope } from './stats-data-types';
 
 type SettledValue<T> =
   | { ok: true; value: T }
@@ -63,7 +64,7 @@ function failedStatsBundle() {
  */
 async function getPlayerStatsDashboardBundleImpl(
   playerId: string,
-  roundId?: string | 'overall',
+  roundId?: StatsRoundScope,
 ) {
   const supabase = await createClient();
   // The dashboard is latency-sensitive and already bounds each downstream
@@ -113,7 +114,7 @@ const observedGetPlayerStatsDashboardBundle = withAdminObserved(
 
 export async function getPlayerStatsDashboardBundle(
   playerId: string,
-  roundId?: string | 'overall',
+  roundId?: StatsRoundScope,
 ) {
   return observedGetPlayerStatsDashboardBundle(playerId, roundId);
 }

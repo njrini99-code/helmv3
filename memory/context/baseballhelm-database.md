@@ -156,7 +156,7 @@ RLS: INSERT/manage gated by `baseball_can_invite_staff(team_id)` (primary coach 
 Purpose: Append-only audit trail of staff-role/capability changes (who changed what capability on which staff row, and when) — the compliance answer to `docs/BASEBALL_RLS_SECURITY_AUDIT.md`'s §11 gap "No audit trail for sensitive actions."
 Key columns: id, team_id, staff_id (→ baseball_team_coach_staff), actor_coach_id, change_type, before/after snapshot (jsonb)
 FKs: team_id → baseball_teams.id; actor_coach_id → baseball_coaches.id
-RLS: staff-only SELECT (team staff); INSERT is system-written via the `baseball_log_staff_change` trigger function, not a direct client write. [`supabase/migrations/20260624000081_baseball_staff_roles_scope_audit.sql:104+`]
+RLS: staff-only SELECT (team staff); INSERT is meant to be system-written via the `baseball_log_staff_change` trigger function per the migration [`supabase/migrations/20260624000081_baseball_staff_roles_scope_audit.sql:104+`], not a direct client write. **The function does not exist live and no trigger fires on `baseball_team_coach_staff`** — verified directly against `pg_proc`/`pg_trigger` in production; the table itself IS live, but nothing currently writes to it that way. Same G8 caveat as everywhere else: migration-file presence is not proof of a live effect.
 
 ### baseball_player_classes
 Purpose: A player's academic class schedule entry (course name, meeting days/times) — feeds the class-conflict engine.
@@ -524,10 +524,18 @@ RLS: per-user rows only, team-scoped via `is_baseball_team_member`; table uses *
 > are unverified against the live `helm_lifting_*` schema; for those, read
 > `src/lib/types/database.ts`.
 >
-> These names are recorded in `.doc-schema-baseline.json` so
-> `npm run docs:schema-drift` does not fail on them. **Deleting or migrating
-> this section is a ratchet-down** — re-run `node scripts/check-doc-schema-drift.mjs --update`
+> These names, plus five more elsewhere in this file that name something
+> equally absent (Gotcha G1's retired-family list, `baseball_organizations`
+> in §1, `baseball_signal_visibility` in §3, `baseball_log_staff_change` in
+> §4, and `baseball_import_field_mappings`/`baseball_stat_facts` in §2c's
+> "elite event model" — see the note there), are declared absent below so
+> `npm run docs:schema-drift` exempts them structurally instead of carrying
+> them in the numeric baseline. **Deleting or migrating this section is a
+> ratchet-down** — re-run `node scripts/check-doc-schema-drift.mjs --update`
 > afterwards.
+
+<!-- schema-drift-absent: baseball_availability_statuses, baseball_bodyweight_entries, baseball_import_field_mappings, baseball_lift_import_runs, baseball_lift_sessions, baseball_log_staff_change, baseball_organizations, baseball_readiness_checkins, baseball_signal_visibility, baseball_soreness_maps, baseball_stat_facts -->
+
 The Lift Lab generations below are retired, and their per-table specs have
 been REMOVED rather than kept: they described 24 tables that no longer exist,
 in column-level detail, formatted exactly like the live ones. That is the
@@ -628,6 +636,13 @@ Purpose: A to-do/assignment issued by a coach to the team (conditioning, academi
 Key columns: id, team_id, title, due_date, status (pending/in_progress/completed/overdue/cancelled), category, priority (low/normal/high), reminder_at, is_recurring, created_by_id
 FKs: team_id → baseball_teams.id; created_by_id → baseball_coaches.id
 RLS: coach CRUD via `is_baseball_team_coach(team_id)`; player SELECT via `is_baseball_team_player(team_id)`.
+
+**Intent note:** `due_date` here is `timestamp with time zone`, unlike golf's
+sibling table where the equivalent column is a bare `date` — this is
+deliberate, not drift, because baseball task due-dates carry a real time of
+day. See `memory/context/golfhelm-database.md`'s `golf_tasks` note for the
+full comparison-logic implication and the migration-level verification.
+(STU, source: `due-date-column-types-differ-by-sport.md` dated 2026-08-17.)
 
 ### baseball_task_assignments
 Purpose: Per-player instance of a task (completion tracking).
@@ -865,7 +880,7 @@ dedicated "Wave 1" helpers file).
 - `can_manage_baseball_lift_group(p_team_id, p_player_id)` — `has_baseball_staff_capability(team_id, 'can_manage_lifting')` AND (`p_player_id IS NULL` OR `can_view_baseball_player`).
 - `baseball_can_invite_staff(p_team_id)` — primary coach OR (`is_head_coach = true` OR `can_invite_staff = true`) on the caller's staff row. [`supabase/migrations/20260624000030_baseball_staff_capabilities.sql:72-89`]
 - `baseball_staff_has_note_capability(p_team_id, p_capability)` — the note-scope-specific variant used by `baseball_coach_notes` (see §2f). [`supabase/migrations/20260624000900_baseball_coach_notes.sql:62+`]
-- `baseball_log_staff_change(...)` — trigger function writing `baseball_staff_audit_events`, not a policy predicate.
+- `baseball_log_staff_change(...)` — trigger function per migration, writing `baseball_staff_audit_events`, not a policy predicate. **Not live** — see §2a.
 
 **RPCs (not RLS predicates, but SECURITY DEFINER data-mutating/reading entry points worth knowing):**
 - `get_baseball_public_player_stats(...)` — the sole anon-safe path to `baseball_player_season_stats`; re-checks `recruiting_activated`/`profile_visibility`/discoverability itself rather than relying on table RLS. [`supabase/migrations/20260624001401_baseball_public_player_stats_rpc.sql`]
@@ -891,29 +906,29 @@ runtime. Anything driven by `PIPELINE_STAGES` (a stage-picker UI, `getNextStage(
 currently offering 2 stages that cannot be persisted. Matches `CLAUDE.md`'s explicit "Pipeline
 Stages (Baseball - only 5 valid)" callout — this file is the one place that violates it.
 
-**G1 — Two live, unsynced "Lift Lab" schemas coexist: `baseball_lift_*`/`baseball_strength_*` vs `helm_lifting_*`.**
-Neither family is deprecated; both are actively used by *different* app surfaces and are NOT
-kept in sync going forward. `baseball_lift_*`/`baseball_strength_*`/`baseball_exercises`/
-`baseball_readiness_checkins`/`baseball_soreness_maps`/`baseball_bodyweight_entries`/
-`baseball_availability_statuses` (built by `supabase/migrations/20260624000061_baseball_lifting_performance.sql`
-"Lite" and `supabase/migrations/20260624000063_baseball_v11_premium_lifting.sql` "V11
-Premium") are the write path for BaseballHelm's embedded Lift Lab under
-`src/app/baseball/(dashboard)/dashboard/performance/*`. Separately,
-`supabase/migrations/20260625000000_helm_lifting_identity.sql` through
-`supabase/migrations/20260625000090_helm_lifting_soreness_weight_nutrition.sql` built a
-**sport-agnostic, standalone "Helm Lifting Lab" product** with its own identity model
-(`helm_lifting_coaches`/`helm_lifting_athletes`, NOT FK'd to `baseball_coaches`/
-`baseball_players`) powering a separate top-level route tree at `src/app/lifting/*`.
+**G1 — `baseball_lift_*`/`baseball_strength_*` is a completed, one-way supersession by `helm_lifting_*`, not a live twin.**
+**See §2d for the current state** (verified by direct query, not from migration files): only
+`baseball_exercises` remains live in the `baseball_lift_*`/`baseball_strength_*`/
+`baseball_readiness_*`/`baseball_soreness_*`/`baseball_bodyweight_*` family, and
+`helm_lifting_*` is the one live system. This paragraph used to claim both families were
+"actively used by different app surfaces" and NOT kept in sync going forward, and that
+`baseball_lift_*` was "the write path for BaseballHelm's embedded Lift Lab" — both false, per
+§2d's correction. `supabase/migrations/20260625000000_helm_lifting_identity.sql` through
+`supabase/migrations/20260625000090_helm_lifting_soreness_weight_nutrition.sql` built
+`helm_lifting_*` as a **sport-agnostic, standalone "Helm Lifting Lab" product** with its own
+identity model (`helm_lifting_coaches`/`helm_lifting_athletes`, NOT FK'd to `baseball_coaches`/
+`baseball_players`), reachable from a separate top-level route tree at `src/app/lifting/*` as
+well as BaseballHelm's own `src/app/baseball/(dashboard)/dashboard/performance/*` — both now
+read `helm_lifting_*` (see `src/lib/baseball/read-models/live-weight-room.ts` and
+`decision-room/lift.ts`, both cited in §2d).
 `supabase/migrations/20260625000080_helm_lifting_backfill_from_baseball.sql` did a **one-time,
 one-directional** copy of existing `baseball_lift_*` data into `helm_lifting_*` (idempotent via
-a `legacy_baseball_id` unique key) — historical data matches as of cutover, but a set logged
-today in BaseballHelm's Lift Lab does NOT appear in `/lifting`, and vice versa. No
-cross-references exist between the two table families or route trees in `src/`. This is a
-live, unresolved schema/product split, not a completed migration. Also: `src/lib/supabase/untyped.ts`
-allowlists every `helm_lifting_*` table under a `fromUntyped()` escape hatch with a comment
-claiming they are "not yet in generated Database types" — but `src/lib/types/database.ts`
-DOES contain all 40 `helm_lifting_*` tables as of this mining pass, so that comment (and
-possibly the whole untyped-cast pattern for this table family) is now stale.
+a `legacy_baseball_id` unique key), which is why that was a completed cutover rather than an
+ongoing split. Also: `src/lib/supabase/untyped.ts` allowlists every `helm_lifting_*` table
+under a `fromUntyped()` escape hatch with a comment claiming they are "not yet in generated
+Database types" — but `src/lib/types/database.ts` DOES contain every live `helm_lifting_*`
+table, so that comment (and possibly the whole untyped-cast pattern for this table family) is
+stale.
 
 **G2 — `docs/BASEBALL_RLS_SECURITY_AUDIT.md` (dated 2026-02-21) describes a schema that no longer exists.**
 The audit doc's §3/§5 describe `baseball_teams` UPDATE/DELETE as "Head coach only," resolved via
@@ -938,7 +953,7 @@ Confirmed still anon-granted as of the newest migrations in this repo (grepped e
 `get_my_coach_id()`, `get_my_player_id()`, `is_baseball_team_coach(uuid)`,
 `is_baseball_team_member_v2(uuid)`, `is_baseball_team_player(uuid)`,
 `get_baseball_conversations_with_details(uuid)`, `get_my_baseball_conversation_ids()`.
-This matches `docs/audits/BASEBALLHELM_LIFTLAB_GAP_MAP_2026-06-25.md` Wave 2's flagged item
+This matches `https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-06/audits/BASEBALLHELM_LIFTLAB_GAP_MAP_2026-06-25.md` Wave 2's flagged item
 ("8 baseball SECURITY DEFINER RPCs callable by anon") — a sibling hardening migration,
 `supabase/migrations/20260630170248_harden_baseball_phase1_rls_rollup.sql`, DID revoke anon on
 a different set (the 0050-file helpers: `get_my_baseball_player_id`, `is_baseball_team_staff`,
@@ -990,7 +1005,7 @@ current (118 of the 119 confirmed `baseball_*` tables), but is still missing
 file as exhaustive for new work.
 
 **G8 — Migration-file presence in this repo is not proof a table/policy is live in prod; verify against `information_schema`.**
-Two contradictory signals exist in the docs for the same week: `docs/audits/BASEBALLHELM_LIFTLAB_GAP_MAP_2026-06-25.md`
+Two contradictory signals exist in the docs for the same week: `https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-06/audits/BASEBALLHELM_LIFTLAB_GAP_MAP_2026-06-25.md`
 (morning of 2026-06-25) states "59 pending migrations not applied to prod DB — all tables
 gated," while `docs/audits/BASEBALLHELM_PRODUCTION_VERDICT.md` (same day, later) reports prod
 already had "118 baseball + 26 lifting tables" applied via an out-of-band session that predated

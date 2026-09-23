@@ -21,6 +21,7 @@ import { describeError } from '@/lib/utils/describe-error';
 import type { IncidentReportDeploy } from '@/lib/admin/incident-report';
 import { recordAi } from '@/lib/observability/metrics';
 import { classifyProviderFault } from '@/lib/admin/provider-fault';
+import { RCA_CANONICAL_PREFIX, deriveRcaCategory, type RcaCategory } from '@/lib/admin/rca-category';
 
 /** Structured root-cause analysis for one incident fingerprint. */
 export interface RcaAnalysis {
@@ -85,7 +86,11 @@ const rcaEngineSchema = z.object({
   suspectFiles: z
     .array(suspectFileSchema)
     .describe('Files most likely responsible, most likely first. Empty array if none can be identified from the context.'),
-  suggestedFix: z.string().describe('A concrete suggested fix or next debugging step.'),
+  suggestedFix: z
+    .string()
+    .describe(
+      'A concrete suggested fix or next debugging step. For FIX HERE name the file and the change; for ALREADY FIXED name the commit or PR; for NOT A DEFECT name the control flow or noise source; for NEEDS MORE EVIDENCE name exactly what is missing.',
+    ),
   confidence: z
     .enum(['high', 'medium', 'low'])
     .describe('Confidence in this analysis, given how much of the context was actually available.'),
@@ -105,9 +110,54 @@ export const rcaAnalysisSchema = rcaEngineSchema.extend({
   generatedAt: z.string(),
 });
 
+/** The four verdicts an analysis can carry — `rca-category.ts` owns the
+ *  vocabulary; this is the same set minus `uncategorized`, which a model is
+ *  never allowed to choose. */
+const RCA_VERDICTS = ['fix-here', 'already-fixed', 'not-a-defect', 'needs-more-evidence'] as const;
+type RcaVerdict = (typeof RCA_VERDICTS)[number];
+
+/**
+ * What the MODEL is asked for: the stored engine shape plus an explicit
+ * verdict. The verdict is a separate enum field rather than a hoped-for
+ * opening phrase in `suggestedFix` because the phrase alone was never
+ * produced: every one of the 184 analyses the Vercel cron wrote between
+ * 2026-09-03 and 2026-09-09 opened with free prose, derived to
+ * `uncategorized`, and so was invisible to Close (`isAutoResolvable`) and
+ * unranked for Repair — the whole loop ran and moved nothing. The enum is
+ * validated at the SDK layer (the model retries on mismatch), and
+ * `withCanonicalPrefix` turns it into the exact opening
+ * `deriveRcaCategory()` reads, so a stored analysis can no longer be
+ * off-contract by phrasing. The stored shape is unchanged: the verdict is
+ * folded into `suggestedFix`, never persisted as its own field, so every
+ * analysis already in `admin_events` still parses.
+ */
+const rcaModelSchema = rcaEngineSchema.extend({
+  category: z
+    .enum(RCA_VERDICTS)
+    .describe(
+      'Your verdict. fix-here: a code change in this repo would stop it (name it in suggestedFix). already-fixed: a commit or PR you can name from the provided context already fixed it. not-a-defect: expected control flow, third-party noise, a bot, or a client abort — name why. needs-more-evidence: the provided context cannot support any of the other three — name exactly what is missing.',
+    ),
+});
+
+/**
+ * Open `suggestedFix` with the canonical phrase for `category`, unless the
+ * model already wrote one (any of the four — a model that writes
+ * "ALREADY FIXED …" while picking `already-fixed` must not be doubled, and one
+ * whose prose already derives to a category keeps its own words). Pure and
+ * exported for tests.
+ */
+export function withCanonicalPrefix(category: RcaVerdict, suggestedFix: string): string {
+  const derived: RcaCategory = deriveRcaCategory(suggestedFix);
+  if (derived !== 'uncategorized') return suggestedFix;
+  const body = suggestedFix.trim();
+  return body ? `${RCA_CANONICAL_PREFIX[category]} — ${body}` : RCA_CANONICAL_PREFIX[category];
+}
+
 const RCA_SYSTEM_PROMPT = `You are assisting a solo engineer doing root-cause analysis on a production incident in a Next.js + Supabase TypeScript monorepo (Helm Sports Labs — BaseballHelm/GolfHelm/CoachHelm). You will be given an incident report (title, message, classification, occurrence history, nearby deploys), a resolved source-file hint from the feature registry when one exists, and up to three raw stack traces.
 
-Ground every claim in what is actually shown. Never invent a file path, function name, or line number that does not appear in the provided context — if the context does not name a specific file, leave suspectFiles empty rather than guessing. Prefer a lower confidence rating over an unsupported claim.`;
+Ground every claim in what is actually shown. Never invent a file path, function name, or line number that does not appear in the provided context — if the context does not name a specific file, leave suspectFiles empty rather than guessing. Prefer a lower confidence rating over an unsupported claim.
+
+Every analysis carries exactly one verdict in the category field, and suggestedFix must justify that verdict: fix-here names the file and the change; already-fixed names the commit or PR that fixed it (only if the provided context names one — never guess a SHA); not-a-defect names the expected control flow, noise source, or client behaviour; needs-more-evidence names exactly what is missing and what would produce it. Reserve not-a-defect and already-fixed for cases the context actually proves — when unsure, choose needs-more-evidence.`;
 
 /** Env var this feature requires. Named explicitly in the unconfigured
  *  message so an operator knows exactly what to set. */
@@ -199,7 +249,7 @@ export async function runRcaAnalysis(context: RcaSourceContext): Promise<RcaResu
     // field the SDK's own `Prompt` type provides for this.
     const { object, usage } = await generateObject({
       model: resolveModelProvider(RCA_MODEL),
-      schema: rcaEngineSchema,
+      schema: rcaModelSchema,
       instructions: RCA_SYSTEM_PROMPT,
       prompt: buildRcaContextText(context),
       // Sentry AI observability opt-in (Phase A finding, §(a)): the prompt
@@ -227,8 +277,10 @@ export async function runRcaAnalysis(context: RcaSourceContext): Promise<RcaResu
       runtime: process.env.NEXT_RUNTIME ?? 'nodejs',
     });
 
+    const { category, ...engine } = object;
     const analysis: RcaAnalysis = {
-      ...object,
+      ...engine,
+      suggestedFix: withCanonicalPrefix(category, engine.suggestedFix),
       model: RCA_MODEL,
       generatedAt: new Date().toISOString(),
     };

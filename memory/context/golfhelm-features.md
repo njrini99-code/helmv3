@@ -24,16 +24,18 @@ KEPT FOR HISTORY -- do not delete this file.
 
 # GolfHelm Feature Registry
 
-<!-- schema-drift-banner -->
 > **⚠️ 19 identifiers named below do not exist in the database.**
 > Verified 2026-08-19 against production. `golf_availability_polls`, `golf_calendar_sync_log`, `golf_calendar_sync_state`, `golf_event_exclusions`, `golf_event_status_log`, `golf_external_calendars`, `golf_insight_feedback`, `golf_insight_weights`, `golf_insights`, `golf_player_attendance_stats`, `golf_player_availability_blocks`, `golf_player_insight_preferences`, `golf_poll_responses`, `golf_putting_tendencies`, `golf_recurring_events`, `golf_review_insights`, `golf_task_completions`, `golf_travel_expense_splits`, `golf_validations`
 >
 > They are described here as if live. Do not query, type, or build on them —
 > check `src/lib/types/database.ts` (or `memory/glossary.md`'s AUTOGEN blocks)
-> before trusting any table name in this file. Tracked in
-> `.doc-schema-baseline.json`; `npm run docs:schema-drift` fails on new ones.
-> Removing these is a ratchet-down — re-run
+> before trusting any table name in this file. Declared absent below so
+> `npm run docs:schema-drift` exempts them structurally instead of carrying
+> them in the numeric baseline. Removing these is a ratchet-down — re-run
 > `node scripts/check-doc-schema-drift.mjs --update` after.
+
+<!-- schema-drift-absent: golf_availability_polls, golf_calendar_sync_log, golf_calendar_sync_state, golf_event_exclusions, golf_event_status_log, golf_external_calendars, golf_insight_feedback, golf_insight_weights, golf_insights, golf_player_attendance_stats, golf_player_availability_blocks, golf_player_insight_preferences, golf_poll_responses, golf_putting_tendencies, golf_recurring_events, golf_review_insights, golf_task_completions, golf_travel_expense_splits, golf_validations -->
+
 
 
 > ## ⛔ SUPERSEDED — do not route feature work here
@@ -166,7 +168,7 @@ Players create rounds with shot-by-shot tracking. Rounds populate stats, trigger
 | Drafts | `src/app/golf/actions/round-drafts.ts` |
 | Reviews | `src/app/golf/actions/round-reviews.ts` |
 | Shot analytics | `src/app/golf/actions/shot-analytics.ts` |
-| Auto-save hook | `src/hooks/golf/use-auto-save-round.ts` no longer exists; round persistence is `use-offline-sync.ts` + `use-round-status-sync.ts` |
+| Auto-save hook | src/hooks/golf/use-auto-save-round.ts no longer exists; round persistence is `use-offline-sync.ts` + `use-round-status-sync.ts` |
 | Offline engine | `src/lib/offline/sync-engine.ts` |
 
 ### DB Tables
@@ -633,7 +635,7 @@ ROUND REVIEW PIPELINE:
 | Learning | `src/lib/coachhelm/v2/learning/` |
 | Reasoning | `src/lib/coachhelm/v2/reasoning/` |
 | NLG | `src/lib/coachhelm/v2/nlg/insight-composer.ts` |
-| Persistence | `src/lib/coachhelm/v2/services/` was removed; see `src/lib/coachhelm/v3/chat/persistence.ts` |
+| Persistence | src/lib/coachhelm/v2/services/ was removed; see `src/lib/coachhelm/v3/chat/persistence.ts` |
 | Types & constants | `src/lib/coachhelm/types.ts`, `constants.ts` |
 | Actions | `insight-management.ts`, `pattern-management.ts`, `round-reviews.ts`, `alerts.ts`, `coachhelm-analytics.ts`, `development.ts` |
 | UI (80+ components) | `src/components/golf/coachhelm/` |
@@ -941,7 +943,7 @@ triage (honest-empty, not a placeholder).
 | Route (Dashboard, fetches the data) | `src/app/golf/(dashboard)/dashboard/page.tsx` |
 | Redirect (former Hub route) | `src/app/golf/(dashboard)/dashboard/hub/page.tsx` |
 | Data | `src/app/golf/actions/player-hub-data.ts` (`getPlayerHubSummaryData`) |
-| Component | none — `src/components/fairway/pages/dashboard/PlayerActionCenter.tsx` was removed and nothing replaced it |
+| Component | none — src/components/fairway/pages/dashboard/PlayerActionCenter.tsx was removed and nothing replaced it |
 | Host component | `src/components/fairway/pages/dashboard/FairwayPlayerDashboard.tsx` |
 | Shared presentational parts | `src/components/fairway/pages/hub/hub-parts.tsx` (TaskRow, RSVPRow, TripRow, TripDetailSheet, AnnouncementsList) |
 | Management surface | `src/app/golf/(dashboard)/dashboard/team-hub/**` (full tasks/travel CRUD) |

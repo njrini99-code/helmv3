@@ -30,7 +30,7 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
-import yaml from 'js-yaml';
+import * as yaml from 'js-yaml';
 import { loadRegistry } from './lib/registry.mjs';
 import { validateJourneysDoc } from './check-journeys.mjs';
 

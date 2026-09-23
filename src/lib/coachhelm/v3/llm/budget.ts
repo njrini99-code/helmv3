@@ -100,7 +100,15 @@ async function noteUnconfiguredBudgetOnce(coach_id: string): Promise<void> {
   LOGGED_UNCONFIGURED_BUDGET_COACHES.add(coach_id);
   await logServerEvent(
     `budget: coach_id=${coach_id} has no configured daily budget; using the platform default of $${PLATFORM_DEFAULT_DAILY_BUDGET_USD}`,
-    { action: 'v3.llm.budget.platform_default', feature: 'coachhelm_ai_engine' },
+    {
+      action: 'v3.llm.budget.platform_default',
+      feature: 'coachhelm_ai_engine',
+      // Nobody has made a decision here — the platform default applied and
+      // CoachHelm ran. Findable in admin_events, but not a Sentry issue: see
+      // this function's own header for the production burst this caused
+      // when it paged.
+      skipSentry: true,
+    },
     'info',
   ).catch(() => {});
 }
@@ -273,7 +281,14 @@ async function resolveDefaultBudgetForCoach(
     // Guessing a budget here would spend money on an unattributable request.
     await logServerError(
       `budget: coach_id=${coach_id} has no team staff row; cannot resolve a budget`,
-      { action: 'v3.llm.budget.no_team', feature: 'coachhelm_ai_engine' },
+      {
+        action: 'v3.llm.budget.no_team',
+        feature: 'coachhelm_ai_engine',
+        // Account-shaped (a coach not yet assigned to a team), not a
+        // billing or infra fault — findable in admin_events without paging
+        // as a Sentry issue.
+        skipSentry: true,
+      },
       'warning',
     );
     return { budget_usd: 0, source: 'unresolved' };

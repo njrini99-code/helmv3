@@ -15,6 +15,8 @@ import { buildSystemOrbit } from '@/lib/admin/command-deck/orbit';
 import { buildCircuitSummary } from '@/lib/admin/command-deck/selfheal-circuit';
 import { buildReleaseWake } from '@/lib/admin/command-deck/release-wake';
 import { buildDecisionInbox } from '@/lib/admin/command-deck/decisions';
+import { selectProofDebt } from '@/app/admin/_components/ProofDebtPanel';
+import { BlindnessBeacon } from '@/app/admin/_components/BlindnessBeacon';
 import { PostureSentenceBanner } from './PostureSentence';
 import { SystemOrbit } from './SystemOrbit';
 import { AttentionStack, type AttentionStackImpact } from './AttentionStack';
@@ -22,10 +24,20 @@ import { DecisionInboxSummary } from './DecisionInboxSummary';
 import { ReleaseWakeRibbon } from './ReleaseWakeRibbon';
 import { SelfHealCircuitSummary } from './SelfHealCircuitSummary';
 
-const ATTENTION_STACK_LIMIT = 5;
+const ATTENTION_STACK_LIMIT = 8;
 
 /**
- * HELM COMMAND DECK (brief §10) — the upper 40-50% of `/admin`.
+ * HELM COMMAND DECK (brief §10; Bridge redesign plan §2) — THE Overview.
+ *
+ * This is no longer an additive layer sitting above an unchanged page: the
+ * eleven panels `src/app/admin/page.tsx` used to render below this deck
+ * (Status banner, Needs-your-eyes, Severity mix, Action lanes/Triage/
+ * Regressed, Self-heal flow, Proof debt, Mission Truth Strip) were each a
+ * second or third rendering of a computation this deck already makes
+ * (`selectAttention`, `summarizeFlow`, the posture read) — they are deleted,
+ * not hidden. What survives below this deck on `/admin` is exactly three
+ * things this deck does NOT compute: the KPI `StatStrip`, the feature-health
+ * rollup, and the change timeline. See `page.tsx`'s own header comment.
  *
  * A single composition, not six independently-fetching panels. Every
  * upstream read this deck uses (`cachedIncidentBoard`, `cachedSelfHealBoard`,
@@ -40,7 +52,7 @@ const ATTENTION_STACK_LIMIT = 5;
  * anyway, since every visual reads from the SAME shared fetch and none of
  * them can resolve independently of the others. The page still wraps this
  * whole component in one `PanelBoundary` (render-time errors), matching how
- * `MissionTruthStrip` below it is wrapped.
+ * every other panel on `page.tsx` is wrapped.
  *
  * `fetchOverviewSnapshot` (only for its `kpis.activeUsersToday`, feeding the
  * orbit's Users node) is the one upstream call here NOT independently
@@ -162,9 +174,20 @@ export async function CommandDeck() {
     now,
   });
 
+  // Proof debt (plan §2.4) — a real zero renders only when coverage can
+  // actually claim it; otherwise a computed zero is indistinguishable from
+  // "a blind source is hiding some" and must say so, not lie with a `0`. A
+  // non-zero count is shown as-is even under partial coverage: an undercount
+  // is still true information, the same reasoning `AttentionStack` already
+  // applies to its own rows.
+  const proofDebtRows = selectProofDebt(board.incidents);
+  const proofDebt: number | null =
+    proofDebtRows.length > 0 ? proofDebtRows.length : canClaimAllClear(board.coverage) ? 0 : null;
+
   return (
     <div className="space-y-4">
       <PostureSentenceBanner posture={posture} />
+      <BlindnessBeacon note={board.blindnessNote} coverage={board.coverage} />
 
       <Surface as="section" padding="sm" aria-label="Helm System Orbit">
         <Eyebrow as="h2" tone="secondary" className="mb-2">
@@ -205,7 +228,7 @@ export async function CommandDeck() {
         <Eyebrow as="h2" tone="tertiary" className="mb-2">
           Self-Heal Circuit
         </Eyebrow>
-        <SelfHealCircuitSummary summary={circuit} />
+        <SelfHealCircuitSummary summary={circuit} proofDebt={proofDebt} />
       </Surface>
     </div>
   );

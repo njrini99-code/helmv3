@@ -1,5 +1,7 @@
 # W7: Auth & Sign-ins Tab + Full Auth Capture Coverage
 
+Status: active
+
 **Goal:** Ship `/admin/auth` (sign-in feed, failed-auth/lockout panel, active sessions with revoke, signup→activation funnel) and close capture class #3: baseball/lifting auth logging, middleware failure capture, anonymous client-error logging, and the `AuthApiError` ignore-list narrowing.
 
 **Depends-on:** W2 (writer columns), W3 (`get_active_sessions()`), W4 (panel pattern).

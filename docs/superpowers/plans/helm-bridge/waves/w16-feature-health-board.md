@@ -1,5 +1,7 @@
 # W16: Feature Health Board — `/admin/health` dot grid + Overview rollup
 
+Status: active
+
 **Goal:** A cream+green Feature Health board: green/amber/red/neutral dot grid for all 37 GolfHelm + CoachHelm features (grouped by app), per-feature error/activity summarization card, drill-in to the Errors tab filtered by feature, and a compact health rollup on the Overview — computed with hysteresis from `get_feature_health()` + Sentry + activity, per the noise charter (a blip never flips a dot; warnings never drive a dot; empty reads NEUTRAL, never red).
 
 **Spec:** `docs/superpowers/specs/helm-bridge/FEATURE_COVERAGE.md` §3 (state machine + thresholds) and §4 (board design) are canonical — the classifier and UI implement them verbatim.

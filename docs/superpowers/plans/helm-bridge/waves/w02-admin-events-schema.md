@@ -1,5 +1,7 @@
 # W2: `admin_events` Additive Schema + Backward-Compatible Writer Extension
 
+Status: active
+
 **Goal:** Add the four new columns (`sport`, `team_id`, `fingerprint`, `source`) + indexes to `admin_events` BEFORE any new emitter ships (schema-drift gotcha: fields silently drop otherwise), revoke the pre-existing table-level anon/authenticated grants found in W1, and extend the two writers additively so the ~230 existing importers compile unchanged.
 
 **Depends-on:** W1 (the ACL findings recorded in W1 Task 1 step 4).

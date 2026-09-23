@@ -3,7 +3,7 @@
  * check-supabase-drift.mjs — read-only Supabase/Baseball/Bridge drift guard.
  *
  * Connects directly to Postgres (never through the app, never through
- * schema_migrations bookkeeping — see docs/audits/SUPABASE_DRIFT_REPORT_2026-07-03.md
+ * schema_migrations bookkeeping — see https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-07/SUPABASE_DRIFT_REPORT_2026-07-03.md
  * for why the migration ledger cannot be trusted alone on this project) and
  * asserts a fixed list of production-correctness invariants discovered
  * during the 2026-07 stabilization pass. Every check is a plain SELECT;
@@ -22,11 +22,23 @@
 import postgres from 'postgres';
 import { config as loadEnv } from 'dotenv';
 import { fileURLToPath } from 'node:url';
-import { resolve as resolvePath } from 'node:path';
+import { resolve as resolvePath, dirname } from 'node:path';
 
 const POOLER_HOST = 'aws-0-us-east-1.pooler.supabase.com';
 
-loadEnv({ path: '.env.local', quiet: true });
+// Load .env.local first, then .env as a FALLBACK. dotenv does not override an
+// already-set variable, so .env.local keeps precedence; .env only fills gaps.
+// This exists because SUPABASE_ACCESS_TOKEN has historically lived in .env
+// while the connection vars live in .env.local — a script loading only one of
+// them saw the token or not depending on which file it happened to read, and
+// the same credential produced different results per script.
+//
+// Both paths resolve from the REPO ROOT, never cwd: these are run from npm
+// scripts, worktrees and CI, and a relative '.env.local' silently loaded
+// nothing whenever cwd was not the repo root.
+const ENV_ROOT = resolvePath(dirname(fileURLToPath(import.meta.url)), '..', '..');
+loadEnv({ path: resolvePath(ENV_ROOT, '.env.local'), quiet: true });
+loadEnv({ path: resolvePath(ENV_ROOT, '.env'), quiet: true });
 
 function buildConnectionString() {
   if (process.env.DATABASE_URL) return process.env.DATABASE_URL;
@@ -95,6 +107,16 @@ const REQUIRED_ACTIVE_BASEBALL_QUERY_COLUMNS = [
 const GOLF_EXPECTED_COLUMNS = [
   ['golf_rounds', 'status'],
   ['golf_documents', 'is_public'],
+  // G-58. These two exist in production and were declared in
+  // supabase/schemas/golf/10_tables.sql, but no migration created either, so a
+  // stack rebuilt from migrations had exactly
+  // (id, conversation_id, user_id, joined_at, last_read_at) — verified against
+  // the local stack on 2026-09-07, before 20260907120000 was written. Drift in
+  // the schemas -> migrations direction, which nothing checked: this invariant
+  // runs against the migrations rebuild, so it is the check that direction was
+  // missing. Removing or breaking that migration now fails CI.
+  ['golf_conversation_participants', 'notification_level'],
+  ['golf_conversation_participants', 'muted_until'],
 ];
 const GOLF_REMOVED_COLUMNS = [
   ['golf_rounds', 'round_status'],
@@ -104,7 +126,7 @@ const GOLF_REMOVED_COLUMNS = [
 const GOLF_REMOVED_TABLES = ['golf_event_rsvps'];
 
 // Admin rollup RPCs Helm Bridge depends on (see
-// docs/audits/SUPABASE_DRIFT_REPORT_2026-07-03.md and the
+// https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-07/SUPABASE_DRIFT_REPORT_2026-07-03.md and the
 // admin_rollup_consistent_super_admin_gate migration).
 const ADMIN_ROLLUP_FUNCTIONS = [
   'get_admin_analytics_rollup',
@@ -350,28 +372,41 @@ const CHECKS = [
     },
   },
   {
-    name: 'admin_allowlist and users.role=admin stay in sync (no silent divergence)',
+    name: 'every users.role=admin account is in admin_allowlist (is_super_admin is the gate)',
     async run(sql) {
+      // Two gates, one source of truth: `admin_allowlist` (via is_super_admin())
+      // is what authorizes admin RPCs; `users.role` only drives routing and
+      // per-app UI. The dangerous divergence is an account that LOOKS like an
+      // admin (role = 'admin') but is absent from the allowlist — that is the
+      // 2026-07-29 shape, where every Bridge Resolve raised Forbidden. The
+      // reverse — an allowlisted account whose role is coach/player — is a
+      // deliberate dual-role account (the founder's test-coach login) and is
+      // reported, not failed.
       const rows = await sql`
         select
           (select count(*) from public.admin_allowlist) as allowlist_count,
           (select count(*) from public.users where role = 'admin') as role_admin_count,
           (
+            select count(*) from public.users u
+            where u.role = 'admin'
+              and not exists (select 1 from public.admin_allowlist a where a.user_id = u.id)
+          ) as role_admin_not_allowlisted,
+          (
             select count(*) from public.admin_allowlist a
-            left join public.users u on u.id = a.user_id and u.role = 'admin'
-            where u.id is null
-          ) as allowlisted_but_not_role_admin
+            join public.users u on u.id = a.user_id
+            where u.role <> 'admin'
+          ) as allowlisted_non_admin
       `;
       const row = rows[0];
-      if (Number(row.allowlisted_but_not_role_admin) > 0) {
+      if (Number(row.role_admin_not_allowlisted) > 0) {
         return {
           ok: false,
-          detail: `${row.allowlisted_but_not_role_admin} admin_allowlist user(s) no longer have users.role='admin' — likely demoted; admin RPCs still work via is_super_admin() but investigate the divergence`,
+          detail: `${row.role_admin_not_allowlisted} users.role='admin' account(s) are not in admin_allowlist — is_super_admin() is false for them, so admin RPCs and Bridge Resolve return Forbidden; add the allowlist row or clear the role`,
         };
       }
       return {
         ok: true,
-        detail: `admin_allowlist=${row.allowlist_count}, users.role='admin'=${row.role_admin_count}, no divergence`,
+        detail: `admin_allowlist=${row.allowlist_count}, users.role='admin'=${row.role_admin_count}, allowlisted non-admin (deliberate dual-role) accounts=${row.allowlisted_non_admin}`,
       };
     },
   },

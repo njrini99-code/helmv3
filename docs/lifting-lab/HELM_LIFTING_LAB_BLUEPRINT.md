@@ -361,7 +361,7 @@ No invite, no separate login. They can flip to "Yes" later (sends invite, downgr
 1. Head coach enters the coach's **email** (+ optional title).
 2. `inviteLiftingCoach(email, title)` inserts `helm_lifting_coach_invites` (org-scoped,
    DB-minted token, 14-day expiry), stage-and-swap if a pending invite exists.
-3. Invite email via the existing Resend wrapper (`src/lib/email/resend-client.ts` /
+3. Invite email via the existing Resend wrapper (src/lib/email/resend-client.ts /
    `src/lib/notifications/email.ts:sendEmailNotification`) → `/lifting/join/<token>`
    (no-op-safe without `RESEND_API_KEY`).
 4. Interim: head coach keeps a `can_edit=true` viewer row until accept (lifting isn't blocked).
@@ -567,7 +567,7 @@ satisfying the permission matrix with no per-component gating.
 
 ### NEW — routes & components
 - `src/app/lifting/**` (tree §2.1); `src/components/lifting/**` (Lab shell + cloned
-  performance UIs on `helm_lifting_*`); `src/components/lifting/onboarding/LiftingCoachQuestion.tsx`;
+  performance UIs on `helm_lifting_*`); src/components/lifting/onboarding/LiftingCoachQuestion.tsx;
   `src/app/lifting/join/[token]/{page,join-client}.tsx`; `src/lib/email/lifting-invite-template.ts`.
 
 ### MODIFIED (additive, golf-safe)
@@ -613,7 +613,7 @@ fans out into 5 file-disjoint tasks, including the new **W2-G backfill + rewire*
 | **W2-B Portal shell & auth** | `src/lib/supabase/middleware.ts` (lifting branch), `src/app/lifting/(auth)/**`, `(onboarding)/**`, `(dashboard)/layout.tsx`, `dashboard/page.tsx`, `settings/**`, `src/components/lifting/shell/**` | W1 (access) |
 | **W2-C Lab program/session/readiness UIs** | `src/app/lifting/actions/{programs,sessions,readiness,groups,imports}.ts`, `src/app/lifting/(dashboard)/dashboard/{programs,sessions,readiness,groups}/**`, `src/components/lifting/{programs,sessions,readiness,groups}/**` | W1 (data types, adapter) |
 | **W2-D Athletes & roster** | `src/app/lifting/(dashboard)/dashboard/athletes/**`, `src/components/lifting/athletes/**` | W1 (athlete types, sync RPC) |
-| **W2-E Onboarding branch (both sports)** | `src/components/lifting/onboarding/LiftingCoachQuestion.tsx`, edits to the two sport onboarding pages + the `setLiftingMode` call-sites in the two sport `onboarding.ts` actions | `setLiftingMode` from W2-A (pin signature in W1) |
+| **W2-E Onboarding branch (both sports)** | src/components/lifting/onboarding/LiftingCoachQuestion.tsx, edits to the two sport onboarding pages + the `setLiftingMode` call-sites in the two sport `onboarding.ts` actions | `setLiftingMode` from W2-A (pin signature in W1) |
 | **W2-G Baseball backfill + dashboard REWIRE** | migration 5 (`_helm_lifting_backfill_from_baseball.sql`), `src/app/baseball/actions/lifting.ts` + `lifting-v11.ts` + `player-today-lift.ts`, `src/components/baseball/performance/**` | **W1 (the `helm_lifting_*` tables must exist before the backfill runs)** + the W1 adapter/resolver |
 
 **W2-G dependency note:** the backfill migration MUST be ordered after the Wave-1 schema
@@ -696,6 +696,6 @@ adapter/resolver → W1 only (W2-G + W2-C import them).
   (SECURITY DEFINER helpers L32–290).
 - Portal routing/auth: root `middleware.ts` (updateSession only); per-portal logic in
   `src/lib/supabase/middleware.ts` (`getSportFromPath:12`, `STAFF_CAPABILITY_ROUTES:86`).
-- Email: `src/lib/email/resend-client.ts`, `src/lib/notifications/email.ts`.
+- Email: src/lib/email/resend-client.ts, `src/lib/notifications/email.ts`.
 - anon-regrant gotcha + no-destructive-write rules: project memory.
 </content>

@@ -230,6 +230,26 @@ const STALE_DEPLOYMENT_PHRASES = [
   'importing a module script failed',
 ];
 
+/**
+ * The peer went away mid-response. Next's `onRequestError` hook reports these
+ * with `source` ∈ {server_component, route_handler, server_action,
+ * request_hook}, never 'client', so rule 3c's `source === 'client'` guard
+ * never sees them and they were being filed as unhandled server defects.
+ *
+ * Measured 2026-09-09: 'The destination stream closed early.' (163 events)
+ * and bare 'aborted' (67 events) were the two largest "actionable production
+ * incidents" in the 72h export — 230 of 238 rows' worth of ranking noise for
+ * two ordinary client disconnects.
+ *
+ * NOT included: 'the operation was aborted due to timeout' (our own
+ * AbortSignal.timeout budget expiring, which transient-network-error.ts keeps
+ * deliberately visible) — that is why bare 'aborted' is matched by exact
+ * equality below rather than as a substring.
+ */
+const CLIENT_DISCONNECT_PHRASES = [
+  'the destination stream closed early',
+];
+
 /** Handled fallbacks — the call site explicitly continued. */
 const DEGRADATION_PHRASES = [
   '(continuing',
@@ -348,6 +368,29 @@ export function classifyIncident(input: ClassifiableIncident): IncidentClassific
       'integration',
       false,
       'Client-side connectivity — the request never reached the server (transport-layer TypeError)',
+    );
+  }
+
+  // 3d. Client disconnected mid-response. Unlike 3c these arrive with a
+  //     SERVER `source` (Next's onRequestError hook tags the RSC render /
+  //     route handler / server action that was streaming when the socket
+  //     went away), so they must be matched regardless of source. There is
+  //     nothing to fix on our side: the response we were writing has no
+  //     reader left.
+  if (matchesAny(haystack, CLIENT_DISCONNECT_PHRASES)) {
+    return done(
+      'integration',
+      false,
+      'Client disconnected mid-render (destination stream closed) — nothing left to write the response to',
+    );
+  }
+  // Exact equality, not a substring: 'The operation was aborted due to
+  // timeout' is OUR statement/abort budget expiring and stays actionable.
+  if (message.trim() === 'aborted') {
+    return done(
+      'integration',
+      false,
+      'Bare socket abort — the client went away, not a server fault',
     );
   }
 

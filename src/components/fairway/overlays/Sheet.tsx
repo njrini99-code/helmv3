@@ -132,6 +132,8 @@ export interface SheetProps {
   /** Extra classes merged (last-wins) onto the panel. */
   className?: string;
   'data-slot'?: string;
+  /** CSS animation lifecycle for consumers deferring nonessential work. */
+  onAnimationEnd?: React.AnimationEventHandler<HTMLDivElement>;
 }
 
 function SheetRoot({
@@ -152,6 +154,7 @@ function SheetRoot({
   children,
   className,
   'data-slot': dataSlot = 'sheet',
+  onAnimationEnd,
 }: SheetProps) {
   const titleIsString = typeof title === 'string';
 
@@ -188,6 +191,7 @@ function SheetRoot({
       <Drawer.Portal>
         {/* Cheap dim warm scrim — not blurred (§4.3 perf). */}
         <Drawer.Overlay
+          data-slot={`${dataSlot}-overlay`}
           className="fixed inset-0"
           style={{
             zIndex: FW_Z.overlay,
@@ -197,6 +201,7 @@ function SheetRoot({
 
         <Drawer.Content
           data-slot={dataSlot}
+          onAnimationEnd={onAnimationEnd}
           // Lifted above the keyboard by SIDE_CLASS; the provider's global
           // keyboardWillShow scroll-into-view must not also scroll the page
           // behind the scrim.

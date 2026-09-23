@@ -36,8 +36,8 @@ description: Supercharged Pencil design system for GolfHelm — UI mockups, mark
 | **web-accessibility** | `~/.agents/skills/web-accessibility/` | WCAG 2.1 audit |
 | **web-design-guidelines** | `~/.agents/skills/web-design-guidelines/` | Design linter |
 | **ui-animation** | `~/.agents/skills/ui-animation/` | Motion design rules |
-| **Design folder** | `design/DESIGN-SYSTEM.md` | Extracted Tailwind tokens for Pencil |
-| **Screenshots** | `design/screenshots/` | Captured UI for import into Pencil |
+| **Design folder** | `docs/design/DESIGN-SYSTEM.md` | Extracted Tailwind tokens for Pencil |
+| **Screenshots** | `docs/design/assets/reference-shots/` | Captured UI for import into Pencil |
 
 ---
 
@@ -95,10 +95,10 @@ description: Supercharged Pencil design system for GolfHelm — UI mockups, mark
 ```
 1. Read references/screenshot-pipeline.md → setup instructions
 2. Capture screenshots of live GolfHelm UI (Playwright or manual)
-3. Save to helmv3/design/screenshots/
+3. Save to helmv3/docs/design/assets/reference-shots/
 4. In Pencil, create frame → apply image as fill:
    batch_design: I(parent, {type: "frame", width: 400, height: 300,
-     fill: {type: "image", url: "../../design/screenshots/feature-x.png", mode: "fill"}})
+     fill: {type: "image", url: "../../docs/design/assets/reference-shots/feature-x.png", mode: "fill"}})
 5. Overlay glass card + crop for creative composition
 ```
 
@@ -299,7 +299,7 @@ conf=I(pred, {type: "text", content: "78% confidence · Range: 71-76", fill: "$-
 npx playwright screenshot http://localhost:3000/golf/dashboard/hub \
   --viewport-size=1440,900 \
   --full-page \
-  helmv3/design/screenshots/player-hub.png
+  helmv3/docs/design/assets/reference-shots/player-hub.png
 
 # Specific component isolation (crop after capture)
 # Use browser DevTools to screenshot specific elements
@@ -309,14 +309,14 @@ npx playwright screenshot http://localhost:3000/golf/dashboard/hub \
 ```javascript
 // Apply screenshot as image fill on a frame
 frame=I(parent, {type: "frame", width: 600, height: 400,
-  fill: {type: "image", url: "../../design/screenshots/player-hub.png", mode: "fill"},
+  fill: {type: "image", url: "../../docs/design/assets/reference-shots/player-hub.png", mode: "fill"},
   cornerRadius: "$--radius-2xl",
   effect: [{type: "shadow", shadowType: "outer", offset: {x: 0, y: 8}, blur: 24, color: "#00000014"}]
 })
 ```
 
 ### Recommended Screenshots to Capture
-Save these to `helmv3/design/screenshots/`:
+Save these to `helmv3/docs/design/assets/reference-shots/`:
 
 | Screenshot | URL | Best For |
 |-----------|-----|----------|

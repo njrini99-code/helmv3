@@ -18,8 +18,10 @@ import {
   buildRcaContextText,
   runRcaAnalysis,
   rcaAnalysisSchema,
+  withCanonicalPrefix,
   type RcaSourceContext,
 } from '@/lib/admin/rca';
+import { deriveRcaCategory } from '@/lib/admin/rca-category';
 
 const baseContext: RcaSourceContext = {
   fingerprint: 'fp-1',
@@ -114,6 +116,7 @@ describe('runRcaAnalysis', () => {
         suggestedFix: 'Guard the null case',
         confidence: 'high',
         relatedFingerprints: [],
+        category: 'fix-here',
       },
     });
 
@@ -131,6 +134,12 @@ describe('runRcaAnalysis', () => {
       // Round-trips through the same schema getStoredRcaAnalysis validates
       // stored rows with — proves the two stay in sync.
       expect(rcaAnalysisSchema.safeParse(result.analysis).success).toBe(true);
+      // The verdict is folded into suggestedFix as the canonical opening
+      // deriveRcaCategory reads, and is NOT persisted as its own field — the
+      // stored shape must keep parsing every analysis already in admin_events.
+      expect(result.analysis.suggestedFix).toBe('FIX HERE — Guard the null case');
+      expect(deriveRcaCategory(result.analysis.suggestedFix)).toBe('fix-here');
+      expect('category' in result.analysis).toBe(false);
     }
 
     const call = generateObject.mock.calls[0]?.[0];
@@ -150,6 +159,30 @@ describe('runRcaAnalysis', () => {
       recordInputs: false,
       recordOutputs: false,
     });
+  });
+
+  it('asks the model for an explicit verdict — the category enum is on the schema it receives', async () => {
+    vi.stubEnv('ANTHROPIC_API_KEY', 'sk-test-key');
+    generateObject.mockResolvedValue({
+      object: {
+        probableCause: 'x',
+        suspectFiles: [],
+        suggestedFix: 'y',
+        confidence: 'low',
+        relatedFingerprints: [],
+        category: 'needs-more-evidence',
+      },
+    });
+    const result = await runRcaAnalysis(baseContext);
+    expect(result.status).toBe('ok');
+    if (result.status === 'ok') {
+      expect(deriveRcaCategory(result.analysis.suggestedFix)).toBe('needs-more-evidence');
+    }
+    const schema = generateObject.mock.calls[0]?.[0].schema;
+    // Zod object: the shape must carry `category` so the SDK validates the
+    // verdict (and makes the model retry) rather than trusting free prose.
+    expect(schema.shape.category).toBeDefined();
+    expect(schema.shape.category.options ?? schema.shape.category._def?.values).toContain('fix-here');
   });
 
   it('records helm.ai.* success on a completed analysis', async () => {
@@ -200,5 +233,28 @@ describe('runRcaAnalysis', () => {
         outcome: 'failure',
       }),
     );
+  });
+});
+
+describe('withCanonicalPrefix', () => {
+  it('opens free prose with the canonical phrase for the verdict', () => {
+    expect(withCanonicalPrefix('already-fixed', 'commit abc123 removed the call')).toBe(
+      'ALREADY FIXED — commit abc123 removed the call',
+    );
+    expect(withCanonicalPrefix('not-a-defect', 'client navigated away mid-stream')).toBe(
+      'NOT A DEFECT — client navigated away mid-stream',
+    );
+  });
+
+  it('never doubles a prefix the model already wrote', () => {
+    expect(withCanonicalPrefix('fix-here', 'FIX HERE — src/x.ts: guard null')).toBe('FIX HERE — src/x.ts: guard null');
+    expect(withCanonicalPrefix('fix-here', '**Already fixed** in #1900')).toBe('**Already fixed** in #1900');
+  });
+
+  it('every verdict derives back to its own category', () => {
+    for (const v of ['fix-here', 'already-fixed', 'not-a-defect', 'needs-more-evidence'] as const) {
+      expect(deriveRcaCategory(withCanonicalPrefix(v, 'because'))).toBe(v);
+      expect(deriveRcaCategory(withCanonicalPrefix(v, ''))).toBe(v);
+    }
   });
 });

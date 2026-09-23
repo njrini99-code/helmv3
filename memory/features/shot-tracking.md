@@ -252,6 +252,44 @@ also routes through) treats exactly the first apparent conflict inside that
 window as self-caused — it adopts the value (or, lacking one, re-checks
 staleness once) and clears the flag, instead of blocking. A genuine
 multi-device conflict outside that narrow window still blocks normally.
+**2026-09-15 (Hampden-Sydney: every phone blocked during post-round stat
+entry, laptops fine): B9 widened from "one beacon" to "any write this device
+could not read the outcome of", and the beacon now holds the lock.** Two gaps
+in the 2026-09-02 carve-out produced the block on a single phone: (1) a
+FOREGROUND `savePartialRound` the browser killed mid-flight (iOS reports
+`TypeError: Load failed` on phone lock / app switch — `error_logs` shows it
+against `auto-save initial attempt`) may still have landed server-side, but
+nothing recorded it as a possible self-write, so the next poll/save blocked;
+(2) iOS fires BOTH `visibilitychange: hidden` and `pagehide` for one
+backgrounding, so two token-less beacons both landed and bumped
+`updated_at` twice, while the boolean forgave only the first. Fix, in both
+round screens: `pendingBeaconRef` → `pendingUnreadableWriteRef`, set by the
+beacon AND by `savePartialRoundTracked` (the wrapper every foreground save
+against an existing round now goes through) when the failure is a transport
+loss (`isUnreadableWriteFailure`, `src/lib/golf/round-write-outcome.ts` — a
+server-thrown action error carries Next's `digest` and is a known rollback,
+so it does not set the flag; an unrecognised throw does not either, since
+that would forgive a genuine conflict). The single flag is exact because the
+heal adopts the server's CURRENT `updated_at` (re-read, or handed over by
+the poll), however many unreadable writes landed in between. The beacon is
+sent once per hidden period (`beaconSentWhileHiddenRef`, reset on
+visible/pageshow) and never while blocked, and deliberately still carries
+NO lock token: it has no reader, so a lock rejection would silently drop the
+last shots before a phone lock (the 2026-06-10 lost-round mode) exactly when
+this device's token is stale from its own earlier unreadable write. Residual
+(accepted): a beacon from a device that is behind but has not yet polled can
+still overwrite another device's newer holes — unchanged from before. `handleRoundSyncConflict` now resolves a boolean (`true` = healed,
+token adopted, caller may retry): `persistCompletedHole` re-sends the same
+checkpoint under the adopted token (always the LIVE ref, not the token
+captured when `saveData` was built), Save & Exit re-sends once, and the
+pre-submit staleness check routes through the same decision instead of
+adopting the token and then bailing (which had left the next auto-save able
+to pass the lock with the stale scorecard). Two race guards before a block:
+the poll's `knownCurrentUpdatedAt` already equal to our token, or a save's
+`conflict` re-verified as not stale against the live token — a concurrent
+self-heal beat it. Nothing changed server-side; `use-round-status-sync.ts`
+is unchanged.
+
 Separately, `savePartialRound`'s no-id create/reuse success path
 (`golf.ts`) used to hard-code `updatedAt: undefined` even though both its
 INSERT and UPDATE queries already `.select()` the full row — a caller-visible
@@ -353,7 +391,7 @@ the hole index the checkpoint started on.
 - `src/app/golf/actions/golf.ts`
 - `src/app/golf/actions/round-drafts.ts`
 - `src/app/golf/actions/shot-analytics.ts`
-- `src/hooks/golf/use-auto-save-round.ts` no longer exists; round persistence is `src/hooks/golf/use-offline-sync.ts`
+- src/hooks/golf/use-auto-save-round.ts no longer exists; round persistence is `src/hooks/golf/use-offline-sync.ts`
 - `src/lib/offline/sync-engine.ts`
 - `src/lib/utils/emergency-save.ts` — synchronous device snapshot, keyed by
   round id (or `new_<playerId>` before one exists)
@@ -589,9 +627,12 @@ and never changes what the caller awaits.
   the server's `updated_at` into the optimistic-lock ref while it proves this
   device is behind — doing so lets the next save from this device pass the
   lock and silently replace another device's newer holes/shots. The one
-  sanctioned exception is a background beacon save's own unreadable
-  response (B9): self-heal exactly once inside that window, never for a
-  conflict outside it.
+  sanctioned exception is this device's own unreadable write (B9): a
+  background beacon, or a foreground save the browser killed mid-flight
+  (2026-09-15). Self-heal exactly once per lock token inside that window,
+  never for a conflict outside it. The beacon itself carries no lock token
+  on purpose — a rejection with no reader would drop the player's last
+  shots.
 - **A `hole_invalid` result must never be retried with the identical
   payload (B5, 2026-09-02).** It means the payload itself needs a fix, not
   that the server had trouble — every write entry point (checkpoint,
@@ -730,6 +771,12 @@ signal keys, and every client branches on the keys before it shows anything.
   chip always says "Save failed" in words, compact or not (UI-11). The
   round-detail pulse chart scales to its column (viewBox + width 100%) instead
   of clipping at a fixed 520px (UI-1).
+- A route's `loading.tsx` reserves the page's paint at t=0 — for a
+  `'use client'` page holding its own `loading` state that is that
+  component's loading branch, not its settled layout. A route whose
+  `page.tsx` is a pure `permanentRedirect` shim renders `bg-canvas` only:
+  no geometry, and no real `<h1>` for a screen that never mounts.
+  Reference implementation: `dashboard/alerts/loading.tsx`.
 
 ## Known Risk Areas
 
@@ -901,7 +948,7 @@ scroll range that scroll needed. See ios-native-shell.md.
 - `memory/context/golfhelm-features.md`
 - `docs/features/SHOT_TRACKING_DATA_FLOW.md`
 - `docs/features/SHOT_TRACKING_VERIFICATION.md`
-- `docs/ROUND_REVIEW_ACCURACY_REPORT.md`
+- `https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-07/ROUND_REVIEW_ACCURACY_REPORT.md`
 
 ## iOS shell chrome (updated 2026-08-26)
 

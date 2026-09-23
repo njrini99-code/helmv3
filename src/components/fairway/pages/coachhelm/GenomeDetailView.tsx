@@ -44,20 +44,19 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { CoachHelmShell } from './CoachHelmShell';
 import { FocusAreaCard, type FocusAreaCardData } from './FocusAreaCard';
+// Imported from each module's own leaf path, not the top `@/components/fairway`
+// barrel — this file is itself re-exported (via pages/coachhelm/index.ts) from
+// that barrel, so importing the barrel back here created an import cycle,
+// flagged by npm run check:cycles.
+import { InstrumentPanel, InstrumentCluster, Readout } from '@/components/fairway/instrument';
+import { GenomeRadar, type GenomeAxis } from '@/components/fairway/charts';
+import { Button, Badge, StatusPill } from '@/components/fairway/controls';
 import {
-  InstrumentPanel,
-  InstrumentCluster,
-  Readout,
-  GenomeRadar,
-  type GenomeAxis,
-  Button,
-  Badge,
-  StatusPill,
   EmptyState,
   InlineNotice,
   InsufficientData,
   fairwayToast,
-} from '@/components/fairway';
+} from '@/components/fairway/feedback';
 import {
   recordFocusAreaOutcome,
   createFocusArea,

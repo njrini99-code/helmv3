@@ -6,10 +6,13 @@
 >
 > They are described here as if live. Do not query, type, or build on them —
 > check `src/lib/types/database.ts` (or `memory/glossary.md`'s AUTOGEN blocks)
-> before trusting any table name in this file. Tracked in
-> `.doc-schema-baseline.json`; `npm run docs:schema-drift` fails on new ones.
-> Removing these is a ratchet-down — re-run
+> before trusting any table name in this file. Declared absent
+> below so `npm run docs:schema-drift` exempts them structurally
+> instead of carrying them in the numeric baseline. Removing this
+> reference entirely is a ratchet-down — re-run
 > `node scripts/check-doc-schema-drift.mjs --update` after.
+
+<!-- schema-drift-absent: golf_insight_evidence, golf_insight_feedback -->
 
 
 ## Status
@@ -96,6 +99,7 @@ CoachHelm generates insight/pattern/prediction
 - Intelligence dashboard should communicate team-wide patterns without hiding per-player drilldowns.
 - Coaching settings should make sensitivity, thresholds, weights, and alert toggles clear enough that coaches understand downstream impact.
 - Mobile views must stay dense and scannable; avoid stacked header controls.
+- A retired route that is now a `permanentRedirect` shim (`alerts`, `analytics/coachhelm`) keeps a `loading.tsx` that renders only `bg-canvas` — no skeleton geometry and no `<h1>`. Its real first paint is nothing, so a reconstructed workspace fallback there announces and reserves a screen that no longer mounts. The file is kept, not deleted, so the ancestor `dashboard/loading.tsx` cannot claim the segment with a full `FairwayDashboardSkeleton`. `insights` is the third shim on this pattern. For a live route, the fallback reserves the paint at t=0 — for a `'use client'` page holding its own `loading` state that is that component's loading branch, not its settled layout.
 
 ## Known Risk Areas
 

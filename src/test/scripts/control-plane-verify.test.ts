@@ -31,6 +31,7 @@ const FIXTURE_PATHS = [
   'docs/CONTROL_PLANE_ENFORCEMENT.md',
   'docs/TOOL_AUTHORITY_MATRIX.md',
   'scripts/new-worktree.sh',
+  'scripts/lib/create-workspace.mjs',
   'CLAUDE.md',
   'AGENTS.md',
   '.mcp.json',
@@ -138,7 +139,7 @@ describe('failure injection — each control goes red for its own reason', () =>
   it('baseline fixture: the checks under test are green before injection', () => {
     for (const id of [
       'hook-scripts-exist',
-      'canonical-write-guard-reachable',
+      'guard-git.mjs-reachable',
       'no-prose-overclaims-enforcement',
       'every-declared-namespace-observed',
       'mutation-budget-enforced',
@@ -150,10 +151,10 @@ describe('failure injection — each control goes red for its own reason', () =>
   it('DELETE a configured hook -> hook-scripts-exist FAILS', () => {
     const fx = makeFixture();
     try {
-      rmSync(join(fx, '.claude/hooks/guard-canonical-write.mjs'));
+      rmSync(join(fx, '.claude/hooks/guard-git.mjs'));
       const r = checkIn(fx, 'hook-scripts-exist');
       expect(r?.state).toBe('FAIL');
-      expect(r?.detail).toMatch(/guard-canonical-write/);
+      expect(r?.detail).toMatch(/guard-git/);
     } finally {
       rmSync(fx, { recursive: true, force: true });
     }
@@ -164,7 +165,7 @@ describe('failure injection — each control goes red for its own reason', () =>
     try {
       const p = join(fx, '.claude/settings.json');
       const d = JSON.parse(readFileSync(p, 'utf-8'));
-      d.hooks.Stop[0].hooks[0].command = '"$CLAUDE_PROJECT_DIR"/.claude/hooks/guard-sql.sh';
+      d.hooks.SessionStart[0].hooks[0].command = '"$CLAUDE_PROJECT_DIR"/.claude/hooks/guard-sql.sh';
       writeFileSync(p, JSON.stringify(d, null, 2));
       expect(checkIn(fx, 'hook-scripts-exist')?.state).toBe('FAIL');
     } finally {
@@ -178,11 +179,11 @@ describe('failure injection — each control goes red for its own reason', () =>
     try {
       const p = join(fx, '.claude/settings.json');
       const d = JSON.parse(readFileSync(p, 'utf-8'));
-      d.hooks.PreToolUse[0].matcher = 'Bash';
+      d.hooks.PreToolUse[0].matcher = 'Read';
       writeFileSync(p, JSON.stringify(d, null, 2));
-      const r = checkIn(fx, 'canonical-write-guard-reachable');
+      const r = checkIn(fx, 'guard-git.mjs-reachable');
       expect(r?.state).toBe('FAIL');
-      expect(r?.detail).toMatch(/cannot reach/);
+      expect(r?.detail).toMatch(/unreachable/);
     } finally {
       rmSync(fx, { recursive: true, force: true });
     }
@@ -231,13 +232,16 @@ describe('failure injection — each control goes red for its own reason', () =>
 
   it('MOVE the budget check after allocation -> ordering FAILS', () => {
     // Enforcing a budget after `git worktree add` means a refusal has already
-    // allocated what it was refusing to spend.
+    // allocated what it was refusing to spend. The mechanism lives in
+    // scripts/lib/create-workspace.mjs now, not scripts/new-worktree.sh (a
+    // thin wrapper since the "one workspace door" change) — see
+    // docs/operations/WORKSPACES.md.
     const fx = makeFixture();
     try {
-      const p = join(fx, 'scripts/new-worktree.sh');
+      const p = join(fx, 'scripts/lib/create-workspace.mjs');
       const src = readFileSync(p, 'utf-8');
       const lines = src.split('\n');
-      const bi = lines.findIndex((l) => !l.trimStart().startsWith('#') && l.includes('check-mutation-budget.mjs'));
+      const bi = lines.findIndex((l) => !l.trimStart().startsWith('//') && l.includes('check-mutation-budget.mjs'));
       expect(bi, 'fixture must contain the budget call').toBeGreaterThan(-1);
       const moved = lines.splice(bi, 1)[0] ?? '';
       lines.push(moved);
@@ -253,7 +257,7 @@ describe('failure injection — each control goes red for its own reason', () =>
   it('REMOVE the budget check entirely -> ordering FAILS', () => {
     const fx = makeFixture();
     try {
-      const p = join(fx, 'scripts/new-worktree.sh');
+      const p = join(fx, 'scripts/lib/create-workspace.mjs');
       writeFileSync(p, readFileSync(p, 'utf-8').replace(/check-mutation-budget\.mjs/g, 'nothing.mjs'));
       expect(checkIn(fx, 'mutation-budget-enforced')?.state).toBe('FAIL');
     } finally {
@@ -267,8 +271,7 @@ describe('runtime evidence expires when its configuration moves', () => {
     const { fingerprintFor, resolveObservation } = await import('../../../scripts/gen-tool-authority.mjs');
     const mcp = JSON.parse(readFileSync(resolve(REPO, '.mcp.json'), 'utf-8'));
     const settings = JSON.parse(readFileSync(resolve(REPO, '.claude/settings.json'), 'utf-8'));
-    const obs = JSON.parse(readFileSync(resolve(REPO, 'config/control-plane-observations.json'), 'utf-8'))
-      .observations.find((o: { service: string }) => o.service === 'Sentry');
+    const obs = { result: 'PASS', observed_at: 'fixture', configuration_fingerprint: fingerprintFor('Sentry', { settings, mcp }) };
 
     // Fresh under the config it was recorded against.
     expect(resolveObservation(obs, fingerprintFor('Sentry', { settings, mcp })).state).not.toBe('STALE');

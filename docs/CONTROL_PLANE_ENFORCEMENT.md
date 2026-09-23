@@ -38,46 +38,55 @@ asserted here — see `.claude/rules/database.md`.
 | --- | --- | --- | --- | --- |
 | SessionStart | `(all tools)` | `.claude/hooks/session-context.sh` | yes | no — records/reports only |
 | SessionStart | `(all tools)` | `.claude/hooks/init-session-state.mjs` | yes | no — records/reports only |
-| PreToolUse | `Write\|Edit\|MultiEdit` | `.claude/hooks/guard-canonical-write.mjs` | yes | yes |
+| SessionStart | `(all tools)` | `.claude/hooks/stamp-workspace.mjs` | yes | no — records/reports only |
+| SessionStart | `compact\|resume` | `.claude/hooks/restore-session-state.mjs` | yes | no — records/reports only |
+| WorktreeCreate | `(all tools)` | `.claude/hooks/worktree-create.mjs` | yes | no — records/reports only |
+| UserPromptSubmit | `(all tools)` | `.claude/hooks/route-prompt.mjs` | yes | no — records/reports only |
+| PreToolUse | `Bash` | `.claude/hooks/guard-git.mjs` | yes | yes |
+| PreToolUse | `Bash` | `.claude/hooks/guard-sql.mjs` | yes | yes |
+| PreToolUse | `^mcp__.*__(execute_sql\|apply_migration)$` | `.claude/hooks/guard-sql.mjs` | yes | yes |
 | PostToolUse | `Read\|Bash` | `.claude/hooks/record-context-load.mjs` | yes | no — records/reports only |
 | PostToolUse | `Write\|Edit\|MultiEdit` | `.claude/hooks/record-session-touch.mjs` | yes | no — records/reports only |
-| Stop | `(all tools)` | `.claude/hooks/stop-verify.sh` | yes | not a tool call — refuses turn-end once per tree state (`{"decision":"block"}`) |
+| PreCompact | `(all tools)` | `.claude/hooks/save-session-state.mjs` | yes | no — records/reports only |
 
-Exactly one hook can refuse a tool call: `guard-canonical-write.mjs` under matcher `Write|Edit|MultiEdit`. Every other wired hook observes.
+3 hooks can refuse a tool call.
 
 ## Permission rules
 
 | Kind | Count |
 | --- | --- |
-| `permissions.deny` total | 70 |
-| …covering `mcp__` | 48 |
-| …covering `Bash(` | 15 |
-| …other | 7 |
+| `permissions.deny` total | 10 |
+| …covering `mcp__` | 0 |
+| …covering `Bash(` | 10 |
+| …other | 0 |
 
 Deny rules fire even under `bypassPermissions`, and a project-scope
 deny overrides a user-scope allow (probed 2026-08-29).
+
+Production mutation requests use `permissions.ask` instead of permanent denies.
+This table reports hard refusal only; an UNENFORCED row does not grant task authorization.
 
 ## Claims, resolved against the configuration above
 
 | Claim | Mechanism | Config location | How observed |
 | --- | --- | --- | --- |
-| A write into the canonical checkout via Write/Edit/MultiEdit is refused | PreToolUse hook `guard-canonical-write.mjs` | .claude/settings.json → hooks.PreToolUse | WIRED — matcher covers the tool names; exercised in src/test/hooks/ |
-| A write into the canonical checkout via Bash is refused | NONE | — | UNENFORCED — no PreToolUse matcher includes Bash |
-| Destructive SQL (DROP TABLE / TRUNCATE / unqualified DELETE) is refused before it runs | NONE | — | UNENFORCED — guard-sql.sh was deleted 2026-08-27 |
-| An MCP tool call can be refused by a hook | NONE | — | UNENFORCED — no hook matcher mentions mcp__; permission rules are the only MCP control |
+| A write into the canonical checkout via Write/Edit/MultiEdit is refused | NONE | — | UNENFORCED |
+| A write into the canonical checkout via Bash is refused | NONE | — | UNENFORCED — authorized edits are allowed in the owned checkout |
+| Destructive SQL (DROP TABLE / TRUNCATE / unqualified DELETE) is refused before it runs | hook guard-sql.mjs, hook guard-sql.mjs | .claude/settings.json | CONFIGURED |
+| An MCP tool call can be refused by a hook | guard-sql.mjs | .claude/settings.json | WIRED |
 | A recursive rm outside the project is refused | NONE | — | UNENFORCED |
 | `rm -rf .next` is refused | NONE | — | UNENFORCED — advisory only (it wedges Turbopack) |
 | A governed edit without loaded feature context is prevented | NONE (detection only) | .claude/settings.json → hooks.Stop | POST-HOC — the Stop gate reports it after the edit; nothing prevents it |
-| The Supabase CLI migration path is refused | 12 deny rules | .claude/settings.json → permissions.deny | CONFIGURED — fires under bypassPermissions |
-| Account-wide Supabase MCP mutation is refused (display-name spelling `mcp__claude_ai_Supabase__*`) | 10 deny rules | .claude/settings.json → permissions.deny | EXERCISED 2026-08-29 — the denied tools left the session tool set; list_tables still loaded. Measured 2026-09-01: no mcp__claude_ai_* name exists in the session inventory, so these rules match nothing the session can call today; kept because the spelling may return |
-| Account-wide Supabase MCP mutation is refused (UUID spelling the session exposes) | 10 deny rules | .claude/settings.json → permissions.deny (ids: config/mcp-connector-ids.json) | CONFIGURED 2026-09-01 — written against the prefix observed in that session; NOT yet observed to remove the tools; id stability across sessions UNVERIFIED (gap MCP_DENY_RULES_KEYED_ON_ROTATABLE_CONNECTOR_IDS) |
-| A production deploy, purchase, pause or deployment-protection change through the Vercel MCP is refused | 8 deny rules (7 under the UUID spelling) | .claude/settings.json → permissions.deny | CONFIGURED — display-name and UUID spellings; NOT probed (the only probe is a real production deploy, a purchase, or a protection change); id stability UNVERIFIED |
-| A file write or process spawn through the Desktop Commander MCP is refused | 16 deny rules | .claude/settings.json → permissions.deny | CONFIGURED 2026-09-01 — both the account connector and plugin spellings; NOT probed. Read tools stay allowed |
-| The uninstalled Supabase plugin namespace cannot activate on install | mcp__plugin_supabase_supabase | .claude/settings.json → permissions.deny | CONFIGURED — server-level deny |
+| The Supabase CLI migration path is refused | NONE | — | UNENFORCED |
+| Account-wide Supabase MCP mutation is refused (display-name spelling `mcp__claude_ai_Supabase__*`) | NONE | — | UNENFORCED |
+| Account-wide Supabase MCP mutation is refused (UUID spelling the session exposes) | NONE | — | UNENFORCED — the connector id is recorded but no deny rule names it |
+| A production deploy, purchase, pause or deployment-protection change through the Vercel MCP is refused | NONE | — | UNENFORCED |
+| A file write or process spawn through the Desktop Commander MCP is refused | NONE | — | UNENFORCED — Desktop Commander bypasses guard-canonical-write.mjs and the Bash sandbox |
+| The uninstalled Supabase plugin namespace cannot activate on install | NONE | — | UNENFORCED |
 | Arbitrary SQL against production through MCP is refused | NONE | — | UNENFORCED, KNOWINGLY — the only working query path; no read_only enforcement on it |
 | Direct psql / service-role writes to production are refused | NONE | — | UNENFORCED — guard-sql.sh deleted 2026-08-27; SUPABASE_SERVICE_ROLE_KEY carries write capability |
-| A production deploy typed as a vercel command (`deploy --prod`, `promote`, `rollback`) is refused | NONE | — | UNENFORCED, BY OWNER GRANT — e5ec5e7b8 (2026-09-01) removed these rules so scripts/deploy-prod.sh is the one sanctioned promote path; AGENTS.md still forbids a production action the user did not ask for |
-| Re-pointing the production alias (`vercel alias set`) is refused | 3 deny rules | .claude/settings.json → permissions.deny | CONFIGURED — bare, ./node_modules/.bin and npx spellings; fires under bypassPermissions |
-| A production deploy run through scripts/deploy-prod.sh is refused | NONE | — | UNENFORCED — scripts/deploy-prod.sh runs `vercel deploy --prod` in a child process; deny rules match the submitted command, which is the script. NOT probed: the only probe is a real production deploy |
+| A production deploy typed as a vercel command (`deploy --prod`, `promote`, `rollback`) is refused | 6 deny rules | .claude/settings.json → permissions.deny | CONFIGURED — fires under bypassPermissions |
+| Re-pointing the production alias (`vercel alias set`) is refused | NONE | — | UNENFORCED |
+| A production deploy run through scripts/deploy-prod.sh is refused | Bash(scripts/deploy-prod.sh:*), Bash(./scripts/deploy-prod.sh:*), Bash(bash scripts/deploy-prod.sh:*), Bash(sh scripts/deploy-prod.sh:*) | .claude/settings.json → permissions.deny | CONFIGURED — the wrapper itself is denied |
 
 <!-- AUTOGEN:enforcement:end -->

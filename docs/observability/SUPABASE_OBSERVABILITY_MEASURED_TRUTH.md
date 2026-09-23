@@ -122,13 +122,13 @@ select pg_size_pretty(pg_total_relation_size('helm_debug.trace_runs')) as runs_s
   actually pruning.
 
 **Both `supabase/migrations/HELD.md` and this cron route's own header
-comment describe `20260825200811`/`20260826010000` as not-yet-applied to
-production.** That was true when written and is not true now — production
-evidence says both are live and have been for about a week. This PR does not
-edit `HELD.md` (shared surface, not owned by this track) but the owner should
-correct those two rows; leaving them stale means a future reader trusts a
-"not applied" claim that is actively wrong, which is exactly the failure
-mode `.claude/rules/shipping.md` §1 warns about.
+comment described `20260825200811`/`20260826010000` as not-yet-applied to
+production.** That was true when written and was not true by the time this
+was measured — production evidence said both were live. **Corrected
+2026-09-06:** `HELD.md`'s row for these two files now reads "APPLIED
+2026-08-26 — R3 — hold discharged"; the stale claim this section flagged is
+resolved. Left in place as the record of the drift, per `.claude/rules/
+shipping.md`'s staleness-marker convention.
 
 **Isolation is real, not just documented:**
 `has_schema_privilege('service_role','helm_debug','USAGE')` → **false**. Even
@@ -247,6 +247,19 @@ error-rate/retry/timeout metric families beyond `helm.db.failure` (§36–39),
 Trace Explorer extension and replay fixtures (§56–61), alert policy/paging
 (§49–55). These stay NOT VERIFIED in this PR's acceptance section, not
 silently absent.
+
+## 7a. D5 — Database Tab additions (statement capture, index advice, bloat, coverage)
+
+Four new HELD migrations, four new `helm_debug` tables/state rows
+(`db_statement_samples`, `db_statement_alert_state`, `db_analysis_samples`,
+plus an additive `min_exec_ms` field on the already-applied
+`helm_debug_stat_statements_snapshot`), extending the existing `db-stat-delta`
+(15 min) and `db-table-health` (hourly) crons rather than adding a new
+schedule. Full detail — what each Bridge section reads, retention,
+fail-open behaviour, Sentry paging, and named gaps (Drift's fallback path,
+"top by mean" being a re-sort of the existing Top-K-by-total snapshot, the
+untested-policies finding being script-only) — is in
+`docs/observability/DATABASE_TAB.md`, not duplicated here.
 
 ## 8. Incremental recurring cost
 

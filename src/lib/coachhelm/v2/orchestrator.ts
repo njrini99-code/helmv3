@@ -54,7 +54,8 @@ import { analyzeMultiWindowTrends } from './trends/multi-window';
 import { detectAnomalies } from './stats/anomaly-detector';
 import { detectStreaks } from './trends/streak-detector';
 import { scoreInsight, shouldShowInsight } from './feedback/insight-scorer';
-import { logServerError } from '@/lib/server-error-logger';
+import { logServerError, logServerEvent } from '@/lib/server-error-logger';
+import { isFlagEnabled } from '@/lib/flags/is-enabled';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 
 import type {
@@ -219,6 +220,42 @@ export function applyPhilosophyThresholds(
       ? 'warning'
       : 'info';
   return { shouldAlert, severity };
+}
+
+export interface PersonalizedThresholds {
+  declineThreshold: number;
+  pressureGapThreshold: number;
+  /** Whether the personalized value differs from the input `currentDeclineThreshold`. */
+  declineChanged: boolean;
+  /** Whether the personalized value differs from the input `currentPressureGapThreshold`. */
+  pressureChanged: boolean;
+}
+
+/**
+ * Computes what `generateAlerts`'s decline/pressure-gap thresholds WOULD be
+ * under `BehaviorLearner.getPersonalizedThreshold` (coachhelm_learned_personalization),
+ * without deciding whether to apply them — the caller does that, so the
+ * "flag off never mutates philosophy" contract is a plain if/else at the
+ * call site rather than buried in here. Pure aside from the
+ * `behaviorLearner` calls, which read the already-loaded `BehaviorProfile`
+ * cache (no query when called after `getLearnedPreferences()`/
+ * `loadBehavior()` has already run for this instance).
+ */
+export async function computePersonalizedThresholds(
+  behaviorLearner: Pick<BehaviorLearner, 'getPersonalizedThreshold'>,
+  currentDeclineThreshold: number,
+  currentPressureGapThreshold: number,
+): Promise<PersonalizedThresholds> {
+  const [declineThreshold, pressureGapThreshold] = await Promise.all([
+    behaviorLearner.getPersonalizedThreshold('scoring_decline', currentDeclineThreshold),
+    behaviorLearner.getPersonalizedThreshold('pressure_gap', currentPressureGapThreshold),
+  ]);
+  return {
+    declineThreshold,
+    pressureGapThreshold,
+    declineChanged: declineThreshold !== currentDeclineThreshold,
+    pressureChanged: pressureGapThreshold !== currentPressureGapThreshold,
+  };
 }
 
 /**
@@ -829,9 +866,13 @@ class CoachHelmIntelligence {
   ): Promise<ComposedInsight[]> {
     const alerts: ComposedInsight[] = [];
 
-    // Initialize behavior learner for coach preferences
+    // Initialize behavior learner for coach preferences. Previously this
+    // query's result was awaited and thrown away; kept here (used below,
+    // gated by coachhelm_learned_personalization, once `philosophy` is
+    // loaded) so `loadBehavior()`'s cache is warm before
+    // `getPersonalizedThreshold()` needs it — no extra query.
     const behaviorLearner = new BehaviorLearner(coachId, 'coach');
-    await behaviorLearner.getLearnedPreferences();
+    const learnedPreferences = await behaviorLearner.getLearnedPreferences();
 
     // Get team patterns via cross-learner
     const crossLearner = new CrossLearner(teamId);
@@ -863,6 +904,48 @@ class CoachHelmIntelligence {
       declineThreshold: philosophyRow?.decline_threshold ?? undefined,
       pressureGapThreshold: philosophyRow?.pressure_gap_threshold ?? undefined,
     };
+
+    // Learned-preference personalization (NEW, coachhelm_learned_personalization,
+    // default OFF everywhere). `computePersonalizedThresholds` nudges each
+    // threshold by the coach's own ack/dismiss history on that alert type,
+    // bounded to +/-25% (see BehaviorLearner.getPersonalizedThreshold). We
+    // always COMPUTE the personalized values — loadBehavior()'s cache is
+    // already warm from getLearnedPreferences() above, so this is free — but
+    // only ASSIGN them onto `philosophy` inside the `if (personalizationEnabled)`
+    // branch below. With the flag off, `philosophy` is never assigned to here
+    // at all: alert output is byte-identical to before this change, and a
+    // differing personalized value is only logged (shadow).
+    const personalizationEnabled = isFlagEnabled('coachhelm_learned_personalization');
+    const personalized = await computePersonalizedThresholds(
+      behaviorLearner,
+      philosophy.declineThreshold ?? DEFAULT_DECLINE_THRESHOLD,
+      philosophy.pressureGapThreshold ?? DEFAULT_PRESSURE_GAP_THRESHOLD,
+    );
+    if (personalizationEnabled) {
+      philosophy.declineThreshold = personalized.declineThreshold;
+      philosophy.pressureGapThreshold = personalized.pressureGapThreshold;
+    } else if (personalized.declineChanged || personalized.pressureChanged) {
+      await logServerEvent(
+        'coachhelm.learned_personalization.shadow',
+        {
+          action: 'orchestrator.generateAlerts.personalizationShadow',
+          featureArea: 'coachhelm',
+          metadata: {
+            coachId,
+            currentDeclineThreshold: philosophy.declineThreshold ?? DEFAULT_DECLINE_THRESHOLD,
+            personalizedDeclineThreshold: personalized.declineThreshold,
+            currentPressureGapThreshold:
+              philosophy.pressureGapThreshold ?? DEFAULT_PRESSURE_GAP_THRESHOLD,
+            personalizedPressureGapThreshold: personalized.pressureGapThreshold,
+            alertFrequency: learnedPreferences.alertFrequency,
+          },
+          // Expected, informational shadow signal — not an error surface.
+          skipSentry: true,
+        },
+        'info',
+      );
+    }
+
     // F060 — per-type alert toggles (default-enabled when a switch is unset).
     const alertToggles: AlertTypeToggleFlags = {
       alertScoringDecline: philosophyRow?.alert_scoring_decline ?? undefined,
@@ -1329,7 +1412,9 @@ class CoachHelmIntelligence {
       celebratory: 0.04,
     };
 
-    const strokeComponent = Math.min(1, (insight.strokeImpact ?? 0) / 2.5) * 0.45;
+    // Heuristic round insights carry their magnitude in `rankScore` (never a
+    // stroke figure); measured insights carry strokes. Either ranks here.
+    const strokeComponent = Math.min(1, (insight.rankScore ?? insight.strokeImpact ?? 0) / 2.5) * 0.45;
     const confidenceComponent = Math.max(0, Math.min(1, insight.confidence)) * 0.3;
     const evidenceCount =
       insight.evidenceMetrics?.length
@@ -1415,7 +1500,9 @@ class CoachHelmIntelligence {
     const scrambleInsight = this.buildRoundScrambleInsight(roundHoles);
     if (scrambleInsight) insights.push(scrambleInsight);
 
-    return insights.sort((a, b) => (b.strokeImpact ?? 0) - (a.strokeImpact ?? 0));
+    return insights.sort(
+      (a, b) => (b.rankScore ?? b.strokeImpact ?? 0) - (a.rankScore ?? a.strokeImpact ?? 0),
+    );
   }
 
   private mergeRoundSpecificInsights(
@@ -1479,15 +1566,21 @@ class CoachHelmIntelligence {
 
     const severePct = Math.round(topBracket.severeRate * 100);
 
+    // One round's severe-miss rate is a round observation, not a persistent
+    // weakness, and the record carries no intent, lie, or conditions for the
+    // misses — so the body states what happened, the call-to-action names the
+    // check and a recommendation, and the magnitude ranks without posing as
+    // strokes.
     return {
       headline: `Round Approach Check: ${topBracket.label} produced the biggest misses`,
       body: `${topBracket.severeCount} of ${topBracket.sampleSize} missed approaches from ${topBracket.label} finished more than 25 yards away or in a penalty state in this round.`,
       callToAction: severePct >= 75
-        ? 'Play to the safe side of the target and favor solid contact over chasing a perfect shot from this yardage.'
-        : 'Keep the target wider from this yardage window and prioritize finishing inside a playable leave.',
+        ? 'Check the club, lie, and target on those shots before reading a pattern into one round. Recommended: from this yardage, favor the safe side of the target until the miss is understood.'
+        : 'Check whether those misses shared a club, lie, or target. Recommended: keep the target wider from this yardage window and aim to finish inside a playable leave.',
       tone: severePct >= 75 ? 'urgent' : 'cautionary',
       confidence: Math.min(0.9, 0.55 + topBracket.sampleSize * 0.08),
-      strokeImpact: Number((topBracket.severeRate * Math.max(1, topBracket.sampleSize / 2)).toFixed(1)),
+      // severeRate × max(1, n/2): a ranking heuristic, not strokes.
+      rankScore: Number((topBracket.severeRate * Math.max(1, topBracket.sampleSize / 2)).toFixed(1)),
       evidenceMetrics: [
         { label: 'Yardage window', value: topBracket.label },
         { label: 'Severe misses', value: `${topBracket.severeCount}/${topBracket.sampleSize}` },
@@ -1532,13 +1625,18 @@ class CoachHelmIntelligence {
       if (gap <= 6 || gap <= bestGap) continue;
 
       bestGap = gap;
+      // A rough-vs-fairway leave gap is an observed difference in this round;
+      // it does not measure strokes lost or prove the lie caused it (two shots
+      // per side is a thin comparison). Body = observation, call-to-action =
+      // check + recommendation, magnitude ranks without posing as strokes.
       bestInsight = {
-        headline: `Round Lie Penalty: rough from ${bracket.label} cost you the next shot`,
+        headline: `Round Lie Check: rough from ${bracket.label} left longer next shots`,
         body: `From ${bracket.label}, fairway approaches finished ${Math.round(fairwayAvg)} yards away on average versus ${Math.round(roughAvg)} yards from rough in this round.`,
-        callToAction: 'When you miss the fairway into this yardage window, shift to a safer target and protect against the expensive leave.',
+        callToAction: 'Check whether the rough approaches shared a lie depth, club, or target before treating this as a lie effect. Recommended: when you miss the fairway into this yardage window, take the safer target and protect against the long leave.',
         tone: gap >= 12 ? 'urgent' : 'cautionary',
         confidence: Math.min(0.88, 0.55 + (fairwayShots.length + roughShots.length) * 0.05),
-        strokeImpact: Number((Math.max(0.8, gap / 10)).toFixed(1)),
+        // max(0.8, gap / 10): a ranking heuristic, not strokes.
+        rankScore: Number((Math.max(0.8, gap / 10)).toFixed(1)),
         evidenceMetrics: [
           { label: 'Window', value: bracket.label },
           { label: 'Fairway leave', value: `${Math.round(fairwayAvg)}y` },
@@ -1571,13 +1669,18 @@ class CoachHelmIntelligence {
 
     if (dominantCount / missedFairways.length < 0.75) return null;
 
+    // The miss side is measured; what the next shot cost is not (no next-shot
+    // result is read here), and one round's direction does not establish a
+    // start-line fault. Body = observation, call-to-action = check +
+    // recommendation, magnitude ranks without posing as strokes.
     return {
       headline: `Round Driving Pattern: missed fairways piled up ${dominantDirection}`,
-      body: `${dominantCount} of ${missedFairways.length} missed fairways finished ${dominantDirection} in this round, which repeatedly pushed the next shot into a worse lie.`,
-      callToAction: `Start the ball a touch ${dominantDirection === 'right' ? 'left' : 'right'} of the final target and commit to the playable side.`,
+      body: `${dominantCount} of ${missedFairways.length} missed fairways finished ${dominantDirection} in this round.`,
+      callToAction: `Check the intended start line and wind on those tee shots before reading a pattern into one round. Recommended: start the ball a touch ${dominantDirection === 'right' ? 'left' : 'right'} of the final target and commit to the playable side.`,
       tone: 'cautionary',
       confidence: Math.min(0.84, 0.55 + missedFairways.length * 0.06),
-      strokeImpact: Number((missedFairways.length * 0.3).toFixed(1)),
+      // missed fairways × 0.3: a ranking heuristic, not strokes.
+      rankScore: Number((missedFairways.length * 0.3).toFixed(1)),
       evidenceMetrics: [
         { label: 'Missed fairways', value: missedFairways.length },
         { label: 'Dominant side', value: dominantDirection },
@@ -1593,13 +1696,18 @@ class CoachHelmIntelligence {
     const scrambleFails = missedGreens.filter((hole) => hole.up_and_down === false && hole.score != null && hole.par != null && hole.score > hole.par);
     if (scrambleFails.length < 4) return null;
 
+    // Hole outcomes only: the miss and the bogey are measured, the recovery
+    // shots that connected them are not read here. Body = observation,
+    // call-to-action = check + recommendation, magnitude ranks without posing
+    // as strokes.
     return {
       headline: 'Round Damage Pattern: missed greens kept turning into bogeys',
-      body: `${scrambleFails.length} of ${missedGreens.length} missed greens became bogey or worse in this round, so the scoring damage kept happening after the first miss.`,
-      callToAction: 'Treat the first recovery shot as a scoring save: leave uphill, favor center green, and remove the big miss after the miss.',
+      body: `${scrambleFails.length} of ${missedGreens.length} missed greens became bogey or worse in this round.`,
+      callToAction: 'Check where the recovery shots finished on those holes — the leave, not the miss, is what to look at first. Recommended: treat the first recovery shot as a scoring save: leave uphill and favor center green.',
       tone: 'cautionary',
       confidence: Math.min(0.86, 0.55 + missedGreens.length * 0.04),
-      strokeImpact: Number(((scrambleFails.length / missedGreens.length) * 2).toFixed(1)),
+      // fail share × 2: a ranking heuristic, not strokes.
+      rankScore: Number(((scrambleFails.length / missedGreens.length) * 2).toFixed(1)),
       evidenceMetrics: [
         { label: 'Missed greens', value: missedGreens.length },
         { label: 'Bogeys after miss', value: scrambleFails.length },

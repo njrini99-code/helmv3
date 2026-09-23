@@ -11,6 +11,14 @@ import { Surface } from '@/components/fairway/surfaces/surface';
  * a max-w-[1280px] shell with a ViewHeader-shaped title row + action, the
  * soft-lit hero Surface, the status FilterPills + search row, then the two-up
  * Surface card grid. Tokens only (bg-canvas, Surface/Skeleton primitives).
+ *
+ * Radius/height audit: the masthead action skeleton stands for the "Create
+ * qualifier" Button (FairwayQualifiers.tsx:196, variant="primary", default
+ * size="md"), which resolves to `rounded-full` + `min-h-[44px]` (button.tsx:94,
+ * :161) — not `rounded-card` / h-10. The toolbar search skeleton stands for
+ * SearchField (FairwayQualifiers.tsx:294, default size="md"), whose track is
+ * `rounded-fw-sm` + `h-11` (search-field.tsx:75, :141) — Skeleton's own default
+ * radius, so it takes no radius override, and h-11 not h-10.
  */
 function FairwayQualifiersLoading() {
   return (
@@ -29,7 +37,7 @@ function FairwayQualifiersLoading() {
             <Skeleton className="h-8 w-44" />
             <Skeleton className="h-4 w-72" />
           </div>
-          <Skeleton className="h-10 w-36 rounded-card" />
+          <Skeleton className="h-11 w-36 rounded-full" />
         </div>
 
         {/* Hero — soft-lit active/upcoming qualifier */}
@@ -57,7 +65,7 @@ function FairwayQualifiersLoading() {
             ))}
           </div>
           <div className="max-w-md">
-            <Skeleton className="h-10 w-full rounded-card" />
+            <Skeleton className="h-11 w-full" />
           </div>
         </div>
 

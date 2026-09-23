@@ -80,3 +80,29 @@ export const hasGolfPlayerAuth = Boolean(
 export const hasGolfCoachAuth = Boolean(
   process.env.GOLFHELM_COACH_EMAIL && process.env.GOLFHELM_COACH_PASSWORD,
 );
+
+/**
+ * Gate a describe block on golf auth credentials being available.
+ *
+ * Locally, missing credentials is an ordinary, visible Playwright skip — most
+ * contributors don't have the seeded golf account and were never meant to
+ * need it for unrelated work. In CI, silently skipping is exactly the failure
+ * mode this exists to close: playwright.config.ts loads `.env.local` into
+ * this process before any spec is collected, so if the credential is STILL
+ * missing once CI runs, it genuinely was not configured for this run, and a
+ * suite gating surfaces nothing else in e2e/ covers should report that loudly
+ * rather than as a permanently green "skipped".
+ */
+export function requireGolfAuthOrSkip(
+  gate: { skip(condition: boolean, description?: string): void },
+  hasAuth: boolean,
+  envHint: string,
+): void {
+  if (!hasAuth && process.env.CI) {
+    throw new Error(
+      `Golf e2e credentials missing in CI (${envHint}) — refusing to silently skip. ` +
+        'Set the secret(s) in the CI environment, or in .env.local for a local run.',
+    );
+  }
+  gate.skip(!hasAuth, `Set ${envHint} to run.`);
+}

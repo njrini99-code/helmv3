@@ -27,6 +27,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { logServerError } from '@/lib/server-error-logger';
 import {
   lookupMetricSource,
   ALL_SCORING_COLUMNS,
@@ -267,7 +268,7 @@ async function averageHoleLevelByPar(
   startIso: string,
   endIso: string,
 ): Promise<WindowResult> {
-  const { data } = await fetchAllRowsResult((from, to) => sb
+  const { data, error } = await fetchAllRowsResult((from, to) => sb
     .from('golf_holes')
     .select('score, par, round_id, golf_rounds!inner(round_date, status, player_id)')
     .eq('golf_rounds.player_id', player_id)
@@ -277,6 +278,18 @@ async function averageHoleLevelByPar(
     .lte('golf_rounds.round_date', endIso.slice(0, 10))
     .order('id', { ascending: true })
     .range(from, to)); // paginate past PostgREST 1000-row cap
+  if (error) {
+    // A real query failure and a genuinely empty window both fall through to
+    // { ok: false, reason: 'no-data' } below — WindowResult has no slot for
+    // "the read itself failed" without widening every switch that already
+    // exhaustively matches it. Logged so a query failure is at least
+    // distinguishable from a legitimately quiet window in traces.
+    await logServerError('attribute.averageHoleLevelByPar read failed', {
+      action: 'attribute.averageHoleLevelByPar',
+      featureArea: 'coachhelm.causality',
+      metadata: { player_id, par_filter: source.par_filter, dbError: error as unknown },
+    });
+  }
   type Row = Record<string, unknown>;
   const diffs: number[] = [];
   const roundIds = new Set<string>();

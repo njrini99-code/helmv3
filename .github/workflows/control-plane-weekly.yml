@@ -1,0 +1,154 @@
+name: Control plane weekly
+
+# A weekly, wider-lens sweep than any per-PR check runs, on a schedule for
+# the same reason db-drift.yml is: these are facts about the REPOSITORY and
+# its history, not about one diff, so a PR-blocking version of this would
+# fail for reasons the PR author cannot fix.
+#
+# FOUR HARD CHECKS (the job fails if any fails):
+#   1. secret-scanning-alerts-zero    open secret-scanning alerts must be 0
+#   2. dependabot-high-severity       open Dependabot alerts at severity
+#                                     high/critical <= config/
+#                                     release-policy.yml's
+#                                     security.max_open_high_dependabot
+#   3. gitleaks-full-history          `gitleaks git . --log-opts=--all
+#                                     --config .gitleaks.toml` — ALL refs,
+#                                     not just one branch's diff. This is
+#                                     wider than review-gate.yml's per-PR
+#                                     gitleaks step on purpose: a secret that
+#                                     was ever committed, anywhere in history,
+#                                     is still a secret.
+#   4. control-plane-verify-static    `node scripts/control-plane-verify.mjs
+#                                     --static` exits 0
+#
+# All four logic + the soft "no PR ever, stale > 30 days" branch listing live
+# in scripts/control-plane-weekly-report.mjs, not inline here — see that
+# file's header. It prints one Markdown report to stdout and exits 1 if any
+# hard check failed; this workflow's job just runs it and posts the report.
+#
+# THIS GATE CAN START RED, AND THAT IS NOT A BUG IN THE GATE. Verified
+# 2026-09-05, running the script for real against this repo: 2 open
+# secret-scanning alerts (already tracked, owner item O2), 17 open
+# high/critical Dependabot alerts (ceiling 5), and — the reason this check
+# exists at all — 211 full-history gitleaks findings across 140 files that
+# review-gate.yml's per-PR, current-tree scan structurally cannot see (files
+# renamed, or deleted, since the secret was committed). Those are believed to
+# already be a rotated dev-project password and test-fixture JWTs per
+# .gitleaks.toml's own rule comments, but that belief has not been confirmed
+# against every one of the 140 files, and this workflow deliberately does
+# NOT paper over that with a baseline/allowlist — doing so on an agent's own
+# authority, for an unreviewed security finding, is exactly the kind of
+# silent resolution this reset operation exists to stop. The first run's
+# issue is the record of this for the owner to triage.
+#
+# ONE ISSUE, always. The "Post or update the weekly issue" step searches by
+# EXACT title ("Control plane weekly") across every state and edits that
+# issue's body (reopening it if it was closed) rather than ever creating a
+# second one.
+
+on:
+  schedule:
+    # Mondays 07:00 UTC — one hour behind CircleCI's Monday 06:00 UTC weekly
+    # window (see .circleci/README.md), so this doesn't compete with it for
+    # attention in the same hour.
+    - cron: '0 7 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  security-events: read
+  pull-requests: read
+
+concurrency:
+  group: control-plane-weekly
+  cancel-in-progress: false
+
+jobs:
+  weekly:
+    name: Control plane weekly sweep
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout (full history, all refs)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      # gitleaks --log-opts=--all scans every ref reachable from what the
+      # local repo knows about. `actions/checkout` with fetch-depth: 0 only
+      # fetches the ref that triggered the run (full history on ONE branch);
+      # without this, "--all" would still only cover that one branch.
+      - name: Fetch every remote branch
+        run: git fetch --prune origin '+refs/heads/*:refs/remotes/origin/*'
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Pinned release binary, same technique review-gate.yml uses for
+      # ast-grep/hadolint (a direct, version-pinned download rather than a
+      # marketplace Action) — that step's gitleaks/gitleaks-action doesn't
+      # expose a way to pass --log-opts, which this check needs.
+      - name: Install gitleaks
+        run: |
+          set -euo pipefail
+          curl -fsSL https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz -o /tmp/gitleaks.tar.gz
+          tar -xzf /tmp/gitleaks.tar.gz -C /tmp gitleaks
+          sudo mv /tmp/gitleaks /usr/local/bin/gitleaks
+          gitleaks version
+
+      - name: Run the weekly report
+        id: report
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/control-plane-weekly-report.mjs | tee /tmp/control-plane-weekly-report.md
+
+      # `if: always()` deliberately — the whole point of tracking this in ONE
+      # issue is that a failure must still be visible. A step gated on
+      # success here would mean the one time a hard check fails, nobody
+      # finds out because the issue never gets written.
+      - name: Post or update the "Control plane weekly" issue
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TITLE="Control plane weekly"
+          BODY_FILE="/tmp/control-plane-weekly-report.md"
+          if [ ! -s "$BODY_FILE" ]; then
+            echo "# Control plane weekly" > "$BODY_FILE"
+            echo "" >> "$BODY_FILE"
+            echo "The report script produced no output — see the 'Run the weekly report' step log." >> "$BODY_FILE"
+          fi
+
+          # Exact-title match, across every state, so a previously CLOSED
+          # issue is found and updated (reopened, since a weekly finding
+          # needs attention) rather than a second one being created.
+          NUMBER="$(gh issue list --search "in:title \"$TITLE\"" --state all --json number,title \
+            --jq "[.[] | select(.title == \"$TITLE\")][0].number // empty")"
+
+          if [ -n "$NUMBER" ]; then
+            echo "Updating existing issue #$NUMBER"
+            gh issue edit "$NUMBER" --body-file "$BODY_FILE"
+            STATE="$(gh issue view "$NUMBER" --json state --jq .state)"
+            if [ "$STATE" = "CLOSED" ]; then
+              gh issue reopen "$NUMBER"
+            fi
+          else
+            echo "No existing issue titled \"$TITLE\" — creating one"
+            gh issue create --title "$TITLE" --body-file "$BODY_FILE"
+          fi
+
+      - name: Fail the job if any hard check failed
+        if: steps.report.outcome != 'success'
+        run: |
+          echo "One or more control-plane-weekly hard checks failed — see the issue for details."
+          exit 1

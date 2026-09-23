@@ -110,6 +110,17 @@
 -- baseball_team_coach_staff_public — exclude opted-out / non-active staff.
 -- Column list UNCHANGED from the live view (team_id, coach_id, is_primary,
 -- role, full_name, avatar_url) — no consumer .select() needs updating.
+--
+-- SUPABASE ADVISOR NOTE (2026-09-05, F097): the advisor's ERROR-level
+-- `security_definer_view` finding on this view is INTENTIONAL — dismiss it,
+-- do not "fix" it. This view IS the security boundary for anonymous readers
+-- of the public /baseball/team/[id] staff card; base tables
+-- `baseball_team_coach_staff` and `baseball_coaches` stay RLS-locked to
+-- `authenticated`, so anon reads are served exclusively through this view's
+-- owner-rights execution. `security_invoker` MUST stay `false` — `true`
+-- would make anon's read apply the base tables' own RLS and return zero
+-- rows, defeating the anon-read posture this file exists to preserve (see
+-- the relacl evidence in the file header above).
 -- ----------------------------------------------------------------------------
 CREATE OR REPLACE VIEW public.baseball_team_coach_staff_public
 WITH (security_invoker = false)
@@ -136,6 +147,16 @@ COMMENT ON VIEW public.baseball_team_coach_staff_public IS
 -- Deliberately does NOT filter to 'public' only — see caller-semantics note
 -- above: this view backs direct-by-id share-link lookups where 'unlisted'
 -- (the product default) must still resolve. Only 'private' is excluded.
+--
+-- SUPABASE ADVISOR NOTE (2026-09-05, F097): the advisor's ERROR-level
+-- `security_definer_view` finding on this view is INTENTIONAL — dismiss it,
+-- do not "fix" it. This view IS the security boundary for anonymous readers
+-- of the public /baseball/team/[id] and /baseball/program/[id] pages; base
+-- table `baseball_teams` stays RLS-locked to `authenticated`, so anon reads
+-- are served exclusively through this view's owner-rights execution.
+-- `security_invoker` MUST stay `false` — `true` would make anon's read apply
+-- `baseball_teams`' own RLS and return zero rows, regressing the share-link
+-- fix this view exists for back to its pre-fix 404 behavior.
 -- ----------------------------------------------------------------------------
 CREATE OR REPLACE VIEW public.baseball_teams_public_profile
 WITH (security_invoker = false)

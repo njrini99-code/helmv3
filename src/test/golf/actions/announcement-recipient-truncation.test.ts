@@ -139,7 +139,7 @@ describe('announcement recipient fan-out — a transport cap is not an answer', 
   it('keeps the last announcement addressable rather than turning it all-team', async () => {
     const { fetchAllRowsResult } = await import('@/lib/supabase/fetch-all-rows');
 
-    const { data } = await fetchAllRowsResult<{
+    const { data, error } = await fetchAllRowsResult<{
       announcement_id: string;
       player_id: string;
     }>(
@@ -151,6 +151,7 @@ describe('announcement recipient fan-out — a transport cap is not an answer', 
       1000,
     );
 
+    expect(error).toBeNull();
     const tail = `ann-${TOTAL_RECIPIENT_ROWS - 1}`;
     expect((data ?? []).some((r) => r.announcement_id === tail)).toBe(true);
   });

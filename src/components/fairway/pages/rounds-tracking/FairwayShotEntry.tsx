@@ -591,7 +591,18 @@ export function FairwayShotEntry({
           {resultOfShot === 'hole' ? `Complete hole · Score ${currentShot}` : 'Next shot →'}
         </Button>
         <div className="mt-2 flex gap-2">
-          <Button variant="ghost" className="flex-1" onClick={onAddPenalty} aria-label="Add penalty stroke">
+          <Button
+            variant="ghost"
+            className="flex-1"
+            onClick={onAddPenalty}
+            // Allowed before any shot is entered: the modal records the
+            // un-entered errant stroke together with the penalty (origin
+            // 'here'), so a drive that goes OB and is never typed in still
+            // counts — the stroke-short scorecard the old disable guarded
+            // against (78 of 311 rows, 90 days to 2026-09-09) is written
+            // correctly instead of being refused.
+            aria-label="Add penalty stroke"
+          >
             + Penalty
           </Button>
           {shotHistory.length > 0 && (

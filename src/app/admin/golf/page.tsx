@@ -18,6 +18,11 @@ import { LocalTime } from '../_components/LocalTime';
 import { AutoRefresh } from '../_components/AutoRefresh';
 import { FeatureHealthRollup } from '../_components/FeatureHealthRollup';
 import { honestRoundsDelta } from './honest-rounds-delta';
+import { parseView, type AdminViewOf } from '@/lib/admin/views';
+import { ViewRail } from '../_components/ViewRail';
+import { GolfJourneyView } from './_components/GolfJourneyView';
+import { QualifiersView } from './_components/QualifiersView';
+import { SectionLabel } from '../_components/SectionLabel';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,14 +55,6 @@ const FEATURE_ADOPTION_ROWS: ReadonlyArray<{
   { key: 'documents', label: 'Documents' },
   { key: 'travel', label: 'Travel itineraries' },
 ];
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
-      {children}
-    </h2>
-  );
-}
 
 // Dateline rule — replaces the retired border-l-2 "key panel" left-edge
 // stripe. Chrome, not a status signal: a helm-green h-[2px] w-7 rounded-full
@@ -470,14 +467,45 @@ async function GolfBody() {
   );
 }
 
-export default async function GolfAdminPage() {
+export default async function GolfAdminPage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
   await requireSuperAdmin();
+  const params = (await searchParams) ?? {};
+  const view = parseView('/admin/golf', params.view);
+
   return (
     <div className="space-y-6">
       <AutoRefresh />
+      <ViewRail
+        host="/admin/golf"
+        active={view}
+        ariaLabel="Golf view"
+        searchParams={params}
+        labels={{ production: 'Production', journey: 'Journey', qualifiers: 'Qualifiers' }}
+        descriptions={{
+          production: 'Live GolfHelm signals — teams, features, AI, releases.',
+          journey: 'Login → round → autosave → submit → stats, with incidents per stage.',
+          qualifiers: 'Every qualifier business rule, checked against live rows — listed whether it is violated or not.',
+        }}
+      />
       <PanelBoundary title="Golf" skeleton={<PanelPageSkeleton rows={8} />}>
-        <GolfBody />
+        {renderView(view)}
       </PanelBoundary>
     </div>
   );
+}
+
+/** One branch per registered view — see `src/lib/admin/views.ts`. */
+function renderView(view: AdminViewOf<'/admin/golf'>) {
+  switch (view) {
+    case 'production':
+      return <GolfBody />;
+    case 'journey':
+      return <GolfJourneyView />;
+    case 'qualifiers':
+      return <QualifiersView />;
+  }
 }

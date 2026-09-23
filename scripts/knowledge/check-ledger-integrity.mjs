@@ -38,7 +38,7 @@
  */
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
-import yaml from 'js-yaml';
+import * as yaml from 'js-yaml';
 
 /**
  * The repository this checks is the one containing the current working

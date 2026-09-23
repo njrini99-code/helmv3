@@ -1,5 +1,7 @@
 # CoachHelm: cron, insight accuracy, root cause, and what to wire where
 
+Status: active
+
 **Measured** 2026-08-18 against production, signed in as coach Ben Potter
 (Guilford College Men's Golf Team, 12 active players), after the promote of
 `5add250d4` and the `golf_shots` RLS migration.

@@ -1763,97 +1763,15 @@ export async function publishReview(reviewId: string): Promise<{ success: boolea
   return observedPublishReview(reviewId);
 }
 
-/**
- * Create a focus area from a review insight
- */
-async function createFocusAreaFromReviewImpl(
-  reviewId: string,
-  focusAreaData: { name: string; description?: string }
-): Promise<{ success: boolean; focusAreaId?: string; error?: string }> {
-  const supabase = await createClient();
-
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return { success: false, error: 'Not authenticated' };
-    }
-
-    // Verify user is a coach
-    const { data: coach } = await supabase
-      .from('golf_coaches')
-      .select('id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!coach) {
-      return { success: false, error: 'Not authorized - coach access required' };
-    }
-
-    // Get the review to find the player
-    const { data: review, error: reviewError } = await supabase
-      .from('golf_round_reviews')
-      .select('player_id')
-      .eq('id', reviewId)
-      .single();
-
-    if (reviewError || !review) {
-      return { success: false, error: 'Review not found' };
-    }
-
-    // The review's player was already resolved above — it just was not
-    // authorized against. "Is a coach" plus a review id let any coach create a
-    // development focus area on another program's player, which then appears
-    // in that player's own plan.
-    const access = await verifyReviewAccess(supabase, review.player_id, 'player_or_coach');
-    if (!access.authorized || access.callerRole !== 'coach') {
-      return { success: false, error: access.error || 'Not authorized for this player' };
-    }
-
-    // Create the focus area
-    // Note: area_type and title are required fields per schema
-    const { data: focusArea, error } = await supabase
-      .from('golf_player_focus_areas')
-      .insert({
-        player_id: review.player_id,
-        coach_id: coach.id,
-        area_type: 'improvement', // Default type for review-derived focus areas
-        title: focusAreaData.name,
-        description: focusAreaData.description,
-        status: 'active',
-      })
-      .select('id')
-      .single();
-
-    if (error || !focusArea) {
-      await logServerError(`createFocusAreaFromReview insert failed: ${error?.message || 'No focus area returned'}`, {
-        action: 'createFocusAreaFromReview',
-        featureArea: 'round_reviews',
-        extra: { reviewId, errorCode: error?.code },
-      });
-      return { success: false, error: 'Failed to create focus area' };
-    }
-
-    revalidatePath('/golf/dashboard');
-    return { success: true, focusAreaId: focusArea.id };
-  } catch (error) {
-    await logServerError(`createFocusAreaFromReview failed: ${describeError(error)}`, {
-      action: 'createFocusAreaFromReview',
-      featureArea: 'round_reviews',
-      extra: { reviewId },
-    });
-    return { success: false, error: 'An unexpected error occurred' };
-  }
-}
-
-const observedCreateFocusAreaFromReview = withAdminObserved(
-  'createFocusAreaFromReview',
-  { sport: 'golf', feature: 'round_review_ai' },
-  createFocusAreaFromReviewImpl,
-);
-
-export async function createFocusAreaFromReview(reviewId: string, focusAreaData: { name: string; description?: string }): Promise<{ success: boolean; focusAreaId?: string; error?: string }> {
-  return observedCreateFocusAreaFromReview(reviewId, focusAreaData);
-}
+// The old (reviewId, focusAreaData) `createFocusAreaFromReview` that used to
+// live here was deleted 2026-09-05 while resolving the duplicate-exports
+// ratchet: `grep -rn` across src turned up zero importers of this module's
+// version (development.ts's newer camelCase-args variant, documented there
+// as "the new variant... both can coexist because consumers import by
+// module path", is the one every real caller — FilmstripReview.tsx, its
+// tests — actually uses). "Can coexist" described what the code permitted,
+// not what anything called; this half of that pair was dead since it was
+// superseded, just never removed.
 
 async function markReviewViewedByPlayerImpl(
   reviewId: string

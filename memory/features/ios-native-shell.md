@@ -53,6 +53,17 @@ Live Activity — each gated behind a capability entry when its binary lands. Re
 `ios/appstore/RELEASE_CANDIDATE_2.0-9.md`; audit:
 `docs/audits/IOS_PREMIUM_NATIVE_AUDIT_2026-08-25.md`.
 
+## Proxy contract for the native user agent (2026-09-17)
+
+`src/proxy.ts` redirects a `HelmSportsLabsApp` request for any non-app path to
+`/golf/login` (App Store 3.1.1). That redirect must skip the app-shell
+resources the web view loads from the origin root — `/sw.js`,
+`/manifest.json`, `/offline.html`, the Sentry tunnel `/monitoring`, and any
+path with a file extension. From 2026-07-01 to 2026-09-17 it did not, so
+the service worker script and manifest answered 307 for the app and WebKit
+dropped them: the iOS app ran with no service worker, no manifest and no
+offline page. `src/test/proxy-middleware.test.ts` pins the exemption.
+
 ## Business Rules
 
 - The web layer must degrade gracefully on every binary: no web deploy may

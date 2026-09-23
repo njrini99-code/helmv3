@@ -49,9 +49,17 @@ npm run knowledge:context -- --files <paths...> --task "<task>"
 ```
 
 A file's presence in `memory/registry.yml` means its path is load-bearing — those files
-never move (see `docs/archive/` semantics below). Everything else in `docs/` is
+never move (see the attic note below). Everything else in `docs/` is
 organized into the clusters listed further down, or has already been swept into
-`docs/archive/`.
+the attic.
+
+## The attic
+
+Superseded and historical docs no longer live in this tree. They are preserved
+in full at the git tag `docs-attic-2026-09`, pushed to `origin` — browse a file
+at `https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/<path>`
+(the `<path>` is the file's old in-repo path, e.g. `docs/archive/2026-07/...`).
+A living doc that still needs to cite one of them links straight to that URL.
 
 ## Start here
 
@@ -73,7 +81,7 @@ For orientation before diving into a specific doc cluster, read (in rough order)
 - **`docs/audits/BASEBALLHELM_CANONICAL_SPEC.md`** — source of truth for what BaseballHelm
   should be.
 - **`memory/incidents/`** — confirmed product defects, one file per incident, per
-  feature. This entry used to point at `docs/audits/HELMV3_ISSUE_LEDGER_2026-06-30.md`
+  feature. This entry used to point at `https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-06/audits/HELMV3_ISSUE_LEDGER_2026-06-30.md`
   as the ledger "driving the current clean-slate work"; that file's own header
   reads `STATUS: SUPERSEDED` and has since 2026-07-10. Both dated issue ledgers
   under `docs/audits/` are historical audits now — current defects flow through
@@ -83,17 +91,6 @@ For orientation before diving into a specific doc cluster, read (in rough order)
   revenue/packaging, competitor positioning).
 - **`docs/baseball/`** — active BaseballHelm design docs (execution plan, production
   roadmap, "Living Annual" design system, stats architecture).
-
-## `docs/archive/<YYYY-MM>/`
-
-Every subfolder under `docs/archive/` is a dated bucket of superseded/historical
-docs — phase plans, stale architecture snapshots, completed audits, old UI-system docs.
-The `<YYYY-MM>` is the **content date** of the material (a `Generated:`/`Date:` header or
-a filename-embedded date), not the date it was archived — git-log dates on this repo are
-unreliable for that purpose (a 2026-07-01 bulk commit touched most files). Nothing under
-`docs/archive/` is maintained going forward; treat it as a historical record, not a live
-reference. If an archived doc is still linked from a living doc, that link is deliberately
-flagged as archived/stale at the link site rather than silently pointing into the past.
 
 ## Living clusters
 
@@ -105,7 +102,7 @@ These directories are actively maintained and safe to treat as current:
 | **Business** | `docs/business/` | The model cluster: business context, personas, jobs-to-be-done, product invariants, workflow maps, revenue/packaging, competitor positioning, per-product business context. |
 | **Baseball** | `docs/baseball/` | Active BaseballHelm design docs: execution/production-readiness plans, nav proposals, "Living Annual" design system, stats architecture/migration. |
 | **Operations + Context** | `docs/operations/` (incl. `docs/operations/context/`) | Runbooks, incident/investigation logs, business contract + feature-readiness matrices, and the curated Mission Control context pack (`context/SYSTEMS_AND_DATA_MAP.md`, `context/MISSION_CONTROL_CONTEXT_INDEX.md`) that points into the deeper engineering docs. |
-| **Reference** | `docs/seed/`, `docs/security/`, `docs/research/`, `docs/lifting-lab/`, `docs/ai-system/` | Five single-file, single-purpose reference docs (demo-data contract, auth config, coach-outreach legal/best-practices, Lift Lab blueprint, AI codebase-intelligence report). Kept as separate top-level dirs rather than consolidated because two of them (`docs/security/auth-config.md`, `docs/ai-system/helmv3-ai-codebase-intelligence.md`) are `memory/registry.yml`-referenced paths that must not move — the other three stay alongside them for consistency. |
+| **Reference** | `docs/seed/`, `docs/security/`, `docs/research/`, `docs/lifting-lab/`, `docs/ai-system/` | `docs/seed/`, `docs/research/` and `docs/lifting-lab/` are still single-file (demo-data contract, coach-outreach legal/best-practices, Lift Lab blueprint). `docs/security/` has grown to two files (`auth-config.md` plus `accepted-risks.md`). `docs/ai-system/` has grown well past single-file into the control-plane doc cluster (`HELM_AUTONOMY_CONTROL_PLANE.md`, the self-healing/reliability specs, `selfheal/`, `briefs/`, `FEATURE_FLAGS.md`, plus the original `helmv3-ai-codebase-intelligence.md`) — see `memory/system/golfhelm-engineering-os.md` for how those pieces relate. Kept as separate top-level dirs rather than consolidated because `docs/security/auth-config.md` and `docs/ai-system/helmv3-ai-codebase-intelligence.md` are `memory/registry.yml`-referenced paths that must not move — the rest stay alongside them for consistency. |
 
 ## Loose files at `docs/` root
 
@@ -115,12 +112,12 @@ For the current census — how many there are and what each one is — read the
 generated document inventory rather than a number typed here;
 `docs/HELM_OS.md` says where it lives.
 
-A 2026-08-20 sweep archived the unreferenced remainder into
-`docs/archive/superseded-2026-08/` — completed one-shot audits, fix plans and
-session reports (verified by grep across `CLAUDE.md`, `AGENTS.md`, `.claude/`,
-`memory/`, `scripts/`, `src/`, `.github/`, `.circleci/` and `package.json`
-before moving; the path-drift gate confirmed zero broken links after). They are
-history, not reference.
+A 2026-08-20 sweep archived the unreferenced remainder — completed one-shot
+audits, fix plans and session reports (verified by grep across `CLAUDE.md`,
+`AGENTS.md`, `.claude/`, `memory/`, `scripts/`, `src/`, `.github/`,
+`.circleci/` and `package.json` before moving; the path-drift gate confirmed
+zero broken links after). They are history, not reference, and now live only
+in the attic (see above).
 
 The two counts that stood here — "there are 22" and "the other 44" — are gone
 on purpose. `.claude/rules/shipping.md` §1 forbids writing a count into prose
@@ -134,6 +131,7 @@ What remains loose, and why:
 | `REPO_MAP.md`, `CODEBASE_MAP.md`, `CI_RUNBOOK.md`, `OBSERVABILITY.md`, `README.md` | Routed to from `CLAUDE.md` / `AGENTS.md` / `.claude/rules/` |
 | `v3-*.md` (9 files) | Referenced from `memory/registry.yml` — registry paths never move |
 | `SECURITY_AUDIT.md`, `BASEBALL_RLS_SECURITY_AUDIT.md`, `PRIVACY_AUDIT.md`-class | Cited from rules or audit docs as standing references |
+| `AGENT_LIFECYCLE.md` | Documented exception, added 2026-09-06: a self-auditing trace of the agent/CI machinery with its own staleness check (an anchor SHA + a `git rev-list` command at the top of the file). Nothing outside `docs/` links to it yet — the trace itself currently reports as unverified past its anchor, so re-run its own check before adding a link that implies it's current. |
 | the rest | Each is linked from a living doc or the registry |
 
 **Before adding a file here:** put it in a cluster directory instead. A loose

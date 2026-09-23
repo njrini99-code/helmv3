@@ -1,5 +1,7 @@
 # W9: Baseball Tab (+ Lift Lab)
 
+Status: active
+
 **Goal:** Ship `/admin/baseball` — the admin surface that has NEVER existed: activity pulse from the C5 rollup (computed on every old golf-admin load, rendered nowhere — `BaseballOps.tsx` is dead code), teams registry, Lift Lab panel, honest event-level readiness card, and the absorbed demo-sessions table — all in the clay ink built in W4.
 
 **Depends-on:** W4 (clay token + SportBadge + TeamHealthTable), W8 (`classifyTeamHealth`).

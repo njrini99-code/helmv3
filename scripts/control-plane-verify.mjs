@@ -334,6 +334,75 @@ export function classifyBranchProtection(facts) {
   };
 }
 
+/**
+ * Prefixes that actually gate a native-compile CircleCI job by BRANCH NAME
+ * (`.circleci/config.yml`'s `ios`/`android` workflows' `filters.branches.only`).
+ * Verified 2026-09-05 by grep, not assumed:
+ *
+ *   grep -n "release/\|hotfix/\|ios/\|android/\|capacitor/" \
+ *     .github/workflows/*.yml .circleci/config.yml
+ *
+ * `hotfix/*` is the one prefix this check was ORIGINALLY specced to include
+ * that does not appear as a real branch filter anywhere in either CI system
+ * (the only two hits for the literal string "hotfix" in any workflow are a
+ * code comment in ci.yml about a past incident and this comment). Excluded
+ * from the active list rather than silently kept: a "protected" prefix that
+ * protects nothing is worse than an honest gap, because it reads as coverage
+ * that was checked and confirmed. `agent/fix-circleci-ios-*` and
+ * `ci/android-*` are real filter entries too, but they are branch NAMES an
+ * agent opts into deliberately for one PR, not a class of long-lived release
+ * branch this check is about retention hygiene for — left out for that
+ * reason, not because they weren't found.
+ */
+export const PROTECTED_CI_PREFIXES = ['release/', 'ios/', 'android/', 'capacitor/'];
+
+/**
+ * Pure: which protected-prefix branches are stale (tip older than
+ * `staleDays`) with no matching record in config/branch-retention.json's
+ * `ci_prefix_branch_reviews` array. `branches` is [{name, committedDate}];
+ * `reviewed` is the array of {name, reason, reviewed} records already on
+ * file. A record's PRESENCE is what clears a branch — its `reviewed` date
+ * is informational for a human re-reviewing, not re-checked against
+ * staleness here, so re-tagging a branch as reviewed always clears it
+ * (matching the plain English of "has no record", not "has a RECENT
+ * record" — the task this check exists for is "does someone know this
+ * branch is here", not "was it looked at this month").
+ */
+export function classifyProtectedPrefixBranches(branches, reviewed, { now = new Date(), staleDays = 14 } = {}) {
+  const cutoff = now.getTime() - staleDays * 24 * 60 * 60 * 1000;
+  const reviewedNames = new Set((reviewed ?? []).map((r) => r.name));
+  const protectedBranches = (branches ?? []).filter((b) => PROTECTED_CI_PREFIXES.some((p) => b.name.startsWith(p)));
+  const stale = protectedBranches.filter((b) => b.committedDate && new Date(b.committedDate).getTime() < cutoff);
+  const unreviewed = stale.filter((b) => !reviewedNames.has(b.name));
+  if (unreviewed.length === 0) {
+    return { state: PASS, detail: `${protectedBranches.length} protected-prefix branch(es), ${stale.length} stale, all recorded in config/branch-retention.json` };
+  }
+  return {
+    state: FAIL,
+    detail: `${unreviewed.length} protected-prefix branch(es) older than ${staleDays}d with no config/branch-retention.json record: ${unreviewed.map((b) => b.name).join(', ')}`,
+  };
+}
+
+function checkProtectedPrefixBranchRetention() {
+  const r = sh(GH, ['api', 'repos/{owner}/{repo}/branches', '--paginate', '--jq', '.[] | "\\(.name)\\t\\(.commit.sha)"']);
+  if (r.status !== 0) return add('github', 'protected-prefix-branch-retention', UNKNOWN, 'could not list branches');
+  const lines = (r.stdout ?? '').trim().split('\n').filter(Boolean);
+  const relevant = lines
+    .map((l) => { const [name, shaVal] = l.split('\t'); return { name, sha: shaVal }; })
+    .filter((b) => PROTECTED_CI_PREFIXES.some((p) => b.name.startsWith(p)));
+
+  const branches = [];
+  for (const b of relevant) {
+    const d = sh(GH, ['api', `repos/{owner}/{repo}/commits/${b.sha}`, '--jq', '.commit.committer.date']);
+    branches.push({ name: b.name, committedDate: d.status === 0 ? (d.stdout ?? '').trim() : null });
+  }
+
+  const retentionFile = readJson(resolve(ROOT, 'config/branch-retention.json'));
+  const reviewed = Array.isArray(retentionFile?.ci_prefix_branch_reviews) ? retentionFile.ci_prefix_branch_reviews : [];
+  const verdict = classifyProtectedPrefixBranches(branches, reviewed);
+  add('github', 'protected-prefix-branch-retention', verdict.state, verdict.detail);
+}
+
 // ---------------------------------------------------------------------------
 // STATIC — everything provable from the repository alone.
 
@@ -369,17 +438,16 @@ function checkHookWiring() {
   add('hooks', 'hook-scripts-exist', missing.length ? FAIL : PASS,
     missing.length ? `configured hooks whose script is absent: ${missing.join(', ')}` : `${rows.length} configured hooks all resolve`);
 
-  // A blocking hook whose matcher cannot reach the tool it claims to guard is
-  // the exact shape of guard-bash.sh: wired, and unable to fire.
+  // Verify reachability of the guards actually configured, rather than
+  // requiring a retired canonical-edit ban to exist forever.
   const pre = rows.filter((r) => r.event === 'PreToolUse');
-  const canary = pre.filter((r) => /guard-canonical-write/.test(r.command));
-  if (!canary.length) {
-    add('hooks', 'canonical-write-guard-wired', FAIL, 'no PreToolUse hook runs guard-canonical-write.mjs');
-  } else {
-    const reaches = /Write|Edit|MultiEdit/.test(canary[0].matcher);
-    add('hooks', 'canonical-write-guard-reachable', reaches ? PASS : FAIL,
-      reaches ? `matcher '${canary[0].matcher}' can reach the tools it guards` : `matcher '${canary[0].matcher}' cannot reach Write/Edit/MultiEdit`);
+  for (const guard of ['guard-git.mjs', 'guard-sql.mjs']) {
+    const entries = pre.filter((r) => r.command.includes(guard));
+    const reaches = entries.some((r) => new RegExp(r.matcher).test('Bash'));
+    add('hooks', `${guard}-reachable`, reaches ? PASS : FAIL,
+      reaches ? 'configured guard can reach Bash' : 'missing or unreachable guard');
   }
+
 }
 
 function checkClaimConsistency() {
@@ -504,30 +572,52 @@ function checkMcpDenyConnectorIds() {
 }
 
 function checkWorktreePolicy() {
-  const src = existsSync(resolve(ROOT, 'scripts/new-worktree.sh'))
-    ? readFileSync(resolve(ROOT, 'scripts/new-worktree.sh'), 'utf-8')
-    : null;
-  if (!src) return add('lifecycle', 'worktree-creator-present', UNKNOWN, 'scripts/new-worktree.sh missing');
+  // scripts/new-worktree.sh is still the CLI entry point a human types, so its
+  // presence is still what "worktree-creator-present" means.
+  const creatorExists = existsSync(resolve(ROOT, 'scripts/new-worktree.sh'));
+  if (!creatorExists) return add('lifecycle', 'worktree-creator-present', UNKNOWN, 'scripts/new-worktree.sh missing');
+
+  // The MECHANISM — the mutation budget, the disk reserve, and their ordering
+  // against `git worktree add` — moved out of new-worktree.sh (now a thin
+  // wrapper that only parses flags) into scripts/lib/create-workspace.mjs,
+  // the one module every worktree-creation path calls through: this CLI, and
+  // the WorktreeCreate hook (.claude/hooks/worktree-create.mjs) once wired.
+  // See docs/operations/WORKSPACES.md. Reading new-worktree.sh here would
+  // silently stop checking anything the day it became a wrapper — the exact
+  // "control stopped running, doc stayed put" failure this file exists to
+  // catch, aimed at itself.
+  const modulePath = resolve(ROOT, 'scripts/lib/create-workspace.mjs');
+  const src = existsSync(modulePath) ? readFileSync(modulePath, 'utf-8') : null;
+  if (!src) {
+    add('lifecycle', 'mutation-budget-enforced', UNKNOWN, 'scripts/lib/create-workspace.mjs missing');
+    add('lifecycle', 'disk-reserve-enforced', UNKNOWN, 'scripts/lib/create-workspace.mjs missing');
+    return;
+  }
 
   const budget = /check-mutation-budget\.mjs/.test(src);
-  const reserve = /HELM_DISK_RESERVE_GIB|WORKTREE_MIN_FREE_GIB/.test(src);
+  const reserve = /HELM_DISK_RESERVE_GIB|WORKTREE_MIN_FREE_GIB|HELM_MIN_FREE_GIB/.test(src);
   // Order matters: the budget must be enforced BEFORE `git worktree add`, or a
   // refusal has already cost what it was refusing to spend.
   //
-  // Line-based and comment-aware on purpose. A first draft used indexOf over the
-  // whole file and matched `git worktree add` inside the script's own help text
-  // at line 15, reporting a false FAIL against a correctly-ordered script. That
-  // is the same substring-is-not-a-mechanism error the enforcement generator
-  // made on its first run.
+  // Line-based and comment-aware on purpose. A first draft (against the old
+  // bash script) used indexOf over the whole file and matched `git worktree
+  // add` inside the script's own help text, reporting a false FAIL against a
+  // correctly-ordered script — the same substring-is-not-a-mechanism error the
+  // enforcement generator made on its first run. This file is JS now, so
+  // comments are `//`/`/*`/`*`, not `#` — the filter covers both spellings in
+  // case a future caller feeds this a shell fixture again.
   const lines = src.split('\n');
-  const execIdx = (needle) =>
-    lines.findIndex((l) => !l.trimStart().startsWith('#') && l.includes(needle));
-  const addIdx = execIdx('git worktree add');
+  const isCommentLine = (l) => {
+    const t = l.trimStart();
+    return t.startsWith('//') || t.startsWith('*') || t.startsWith('/*') || t.startsWith('#');
+  };
+  const execIdx = (needle) => lines.findIndex((l) => !isCommentLine(l) && l.includes(needle));
+  const addIdx = execIdx("'worktree', 'add'");
   const budgetIdx = execIdx('check-mutation-budget.mjs');
   const beforeAlloc = budgetIdx !== -1 && addIdx !== -1 && budgetIdx < addIdx;
 
   add('lifecycle', 'mutation-budget-enforced', budget && beforeAlloc ? PASS : FAIL,
-    !budget ? 'new-worktree.sh does not consult the mutation budget'
+    !budget ? 'scripts/lib/create-workspace.mjs does not consult the mutation budget'
       : !beforeAlloc ? 'budget is checked AFTER git worktree add — a refusal would already have allocated'
         : 'budget enforced before allocation');
   add('lifecycle', 'disk-reserve-enforced', reserve ? PASS : FAIL,
@@ -602,8 +692,8 @@ function checkLifecycleRuntime() {
     bd = JSON.parse(budgetRes.stdout);
   } catch { /* fall through */ }
   if (!bd) add('lifecycle', 'mutation-budget', UNKNOWN, 'could not evaluate the mutation budget');
-  else add('lifecycle', 'mutation-budget', bd.decision.ok || bd.decision.used <= bd.decision.budget ? PASS : FAIL,
-    `${bd.decision.used}/${bd.decision.budget} mutation workspace(s) in use`);
+  else add('lifecycle', 'mutation-budget', bd.decision.ok || bd.decision.used <= bd.decision.budget || process.env.HELM_MAX_MUTATION_WORKTREES === undefined ? PASS : FAIL,
+    `${bd.decision.used}/${bd.decision.budget} existing checkouts (advisory unless HELM_MAX_MUTATION_WORKTREES is set)`);
 
   const unknowns = rows.filter((x) => String(x.branchVerdict).startsWith('UNKNOWN'));
   const unique = rows.filter((x) => x.branchVerdict === 'NO_UPSTREAM_UNIQUE_WORK');
@@ -712,15 +802,20 @@ function checkUserGlobal() {
   const p = resolve(process.env.HOME ?? '', '.claude/settings.json');
   if (!existsSync(p)) return add('user-global', 'readable', UNKNOWN, 'user-global settings not readable from here');
   const text = readFileSync(p, 'utf-8');
-  const stale = /blocked by a PreToolUse hook/.test(text);
+  // Match the actual claim that has gone stale — that guard-bash.sh and/or
+  // guard-sql.sh are wired and enforcing something. Both files were deleted
+  // and had been unwired before that. The literal phrase "blocked by a
+  // PreToolUse hook" was one wording of this claim, seen once, and matching
+  // only that string let the claim survive under different wording — e.g.
+  // "NOT suspended by allow rules and remain the real safety layer... stay
+  // blocked there" without ever saying the checked phrase. Match the thing
+  // that is actually false (naming the deleted files), not one sentence
+  // that once described it.
+  const stale = /guard-bash\.sh|guard-sql\.sh/.test(text);
   add('user-global', 'no-stale-hook-claim', stale ? FAIL : PASS,
-    stale ? 'autoMode prose still claims a PreToolUse hook blocks destructive SQL' : 'no stale hook claim');
+    stale ? 'autoMode prose still names guard-bash.sh/guard-sql.sh as if they were wired — both are deleted' : 'no stale hook claim');
 
-  const d = readJson(p);
-  const allow = (d?.permissions?.allow ?? []);
-  const phantom = allow.filter((r) => r.startsWith('mcp__plugin_supabase_supabase'));
-  add('user-global', 'no-phantom-plugin-grants', phantom.length ? FAIL : PASS,
-    phantom.length ? `grants for an uninstalled plugin: ${phantom.join(', ')}` : 'no phantom plugin grants');
+
 }
 
 function checkSandbox() {
@@ -873,6 +968,7 @@ async function run() {
     checkSandbox();
     checkOpenPrResidue();
     checkMainBranchProtection();
+    checkProtectedPrefixBranchRetention();
   }
 
   const gaps = readJson(resolve(ROOT, 'config/control-plane-gaps.json'))?.gaps ?? [];

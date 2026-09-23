@@ -117,10 +117,84 @@ describe('notifyGolfMessageRecipients', () => {
     expect(rlsTables).toContain('golf_conversation_participants');
   });
 
-  it('sends push + email + in-app to every recipient even though RLS returns none', async () => {
+  it('emails every recipient even though RLS returns none (email_messages defaults ON)', async () => {
     await runFanout({
       rlsUsersRows: [],
       adminUsersRows: [{ id: RECIPIENT, email: 'player@example.com' }],
+    });
+
+    expect(notifyNewMessageMock).toHaveBeenCalledTimes(1);
+  });
+
+  /**
+   * DELIVERY PREFERENCES. This fan-out emailed AND pushed AND belled every
+   * other participant unconditionally — it read `users.notification_preferences`
+   * nowhere, so the Messages toggles in the settings panel did nothing for the
+   * one category they name. In a 12-player group chat a single coach post was
+   * twelve emails; a player told their coach "Stop spamming my email" on
+   * 2026-08-31 after 33 notifications in one day, and the only remedy offered
+   * was "just turn the notifications off" — which was true, because the
+   * specific toggle they had was read by nothing.
+   *
+   * The gate is `gatedDelivery` from CoachHelm v3, already used elsewhere and
+   * already carrying these exact keys and defaults. No second gate was built.
+   */
+  it('does NOT email a recipient who turned email_messages off', async () => {
+    await runFanout({
+      rlsUsersRows: [],
+      adminUsersRows: [
+        {
+          id: RECIPIENT,
+          email: 'player@example.com',
+          notification_preferences: { email_messages: false },
+        },
+      ],
+    });
+
+    expect(notifyNewMessageMock).not.toHaveBeenCalled();
+  });
+
+  it('honours quiet_mode? NO — messages are quiet-exempt and still deliver', async () => {
+    // DELIVERY_NOTIFICATION_GROUPS marks the messages category quietExempt,
+    // so quiet mode must not silence a direct message. Pinned so a later
+    // change to the gate cannot quietly swallow team messages.
+    await runFanout({
+      rlsUsersRows: [],
+      adminUsersRows: [
+        {
+          id: RECIPIENT,
+          email: 'player@example.com',
+          notification_preferences: { quiet_mode: true },
+        },
+      ],
+    });
+
+    expect(notifyNewMessageMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('does NOT push by default — push_messages defaults OFF, and the code used to ignore that', async () => {
+    // The settings panel has always rendered this toggle as off by default
+    // while the fan-out pushed anyway, so the UI was lying about what the
+    // product does. This is a real behaviour change and is called out in the
+    // PR: a recipient who never opted in stops receiving message pushes.
+    await runFanout({
+      rlsUsersRows: [],
+      adminUsersRows: [{ id: RECIPIENT, email: 'player@example.com' }],
+    });
+
+    expect(sendPushNotificationMock).not.toHaveBeenCalled();
+  });
+
+  it('DOES push a recipient who opted in', async () => {
+    await runFanout({
+      rlsUsersRows: [],
+      adminUsersRows: [
+        {
+          id: RECIPIENT,
+          email: 'player@example.com',
+          notification_preferences: { push_messages: true },
+        },
+      ],
     });
 
     expect(sendPushNotificationMock).toHaveBeenCalledTimes(1);
@@ -129,7 +203,27 @@ describe('notifyGolfMessageRecipients', () => {
       RECIPIENT,
       expect.objectContaining({ senderName: 'Coach Rini', conversationId: CONV }),
     );
-    expect(notifyNewMessageMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('still writes the in-app bell for someone who muted email AND push', async () => {
+    // The bell is how a recipient discovers the message at all. Suppressing it
+    // would hide mail rather than quiet it.
+    const adminTablesSeen: string[] = [];
+    const before = notifyNewMessageMock.mock.calls.length;
+    await runFanout({
+      rlsUsersRows: [],
+      adminUsersRows: [
+        {
+          id: RECIPIENT,
+          email: 'player@example.com',
+          notification_preferences: { email_messages: false, push_messages: false },
+        },
+      ],
+    }).then((r) => adminTablesSeen.push(...r.adminTables));
+
+    expect(notifyNewMessageMock.mock.calls.length).toBe(before);
+    expect(sendPushNotificationMock).not.toHaveBeenCalled();
+    expect(adminTablesSeen).toContain('golf_calendar_notifications');
   });
 
   it('an empty recipient set is LOGGED and sends nothing — never a silent return', async () => {

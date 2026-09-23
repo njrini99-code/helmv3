@@ -6,16 +6,9 @@ import { PanelStale } from '../_components/PanelStates';
 import { LocalTime } from '../_components/LocalTime';
 import { AutoRefresh } from '../_components/AutoRefresh';
 import { FeatureConstellation } from './FeatureConstellation';
+import { SectionLabel } from '../_components/SectionLabel';
 
 export const dynamic = 'force-dynamic';
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
-      {children}
-    </h2>
-  );
-}
 
 const SKELETON = (
   <div className="space-y-6">

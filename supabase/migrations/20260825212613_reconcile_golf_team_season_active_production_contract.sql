@@ -1,4 +1,5 @@
--- Production has this required, true-by-default lifecycle flag and the
+-- LOCAL-ONLY. Production has this required, true-by-default lifecycle flag and
+-- the
 -- application reads it from CoachHelm and Helm Bridge/admin paths. The column
 -- was not reproducible from the checked-in local migration chain, making local
 -- integration testing diverge from the deployed contract.

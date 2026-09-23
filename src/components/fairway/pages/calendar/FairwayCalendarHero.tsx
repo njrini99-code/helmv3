@@ -2,36 +2,71 @@
 
 /**
  * ============================================================================
- * Fairway · Calendar · FairwayCalendarHero
+ * Fairway · Calendar · FairwayCalendarHero — the calendar's masthead
  * ----------------------------------------------------------------------------
- * The ONE focal hero: a warm Fairway calendar plinth (Surface, bg-surface — NOT
- * bg-white). Holds the eyebrow ("Calendar"), the month title (font-fw-display,
- * replacing the legacy font-serif), an HONEST status line from real counts, the
- * Prev/Today/Next nav cluster, the single primary action, and the day strip.
+ * One native-feeling header on the shared chrome material, sticky under the
+ * app bar and the hub sub-nav:
  *
- * HONEST status line (no fabricated numbers):
- *   - upcomingCount > 0 → "{n} upcoming · {m} this {week|month}" (tabular-nums)
- *   - upcomingCount === 0 (the DEMO, all-past) → a dim text-text-tertiary line
- *     "No upcoming events — browse the season below" (NO invented count).
+ *   1. Title row   — the period as a large title: the month word with the year
+ *                    quiet beside it, the exact range in Week, the day in Day.
+ *                    The title is also the date-jump (a CalendarSurface in a
+ *                    PopoverPanel). Right cluster: "Today" (only when away
+ *                    from it, carrying today's number the way a calendar
+ *                    glyph does) · More (below xl) · the ONE primary action
+ *                    (from md up; on a phone the parent floats it above the
+ *                    tab bar so the row breathes).
+ *   2. Control row — the full-width Fairway Segmented in its shared depth
+ *                    presentation (sunken track, floating thumb). Previous / next sit
+ *                    beside it from md up. On a phone the period turns like a
+ *                    page — the schedule below swipes — the way iOS Calendar,
+ *                    Fantastical and Google Calendar all do it, so the
+ *                    switcher keeps the whole row and nothing is squeezed.
+ *   3. Day strip   — Day view only, where a week of nearby dates is exactly
+ *                    the scope on screen.
  *
- * ONE PRIMARY ACTION:
- *   - coach  → "New event" (accent Button) — wires the legacy create flow
- *     (handed in as `onPrimaryAction` from the orchestrator).
- *   - player → "Respond" on the most-imminent un-RSVP'd event; on the demo
- *     (0 future events) it degrades to a calm absence (no fake CTA).
+ * The masthead measures itself and publishes `--fw-calendar-hero-h` on the
+ * page column so the schedule's sticky day headings pin exactly beneath it.
+ * A range fetch in flight is a 2px line along the masthead's bottom edge
+ * (`busy`), not a banner between the header and the list.
  *
- * HYDRATION: `nowRef` is parent-owned (serverNow→nowRef). "Today" highlight uses
+ * Material comes from the shell (`fw-glass-chrome`, with its own opaque
+ * reduced-transparency fallback). Nothing here glows, washes or floats on
+ * its own; every control is the shared Fairway primitive in its shared state.
+ *
+ * The player's "Respond" action is NOT a header CTA — it is rendered by the
+ * parent as a contextual row beside the schedule, when there is something to
+ * respond to.
+ *
+ * HYDRATION: `nowRef` is parent-owned (serverNow→nowRef). "Today" uses
  * isSameDay(focusDate, nowRef), never Date.now().
- *
- * GOTCHA (a): nav arrows are Fairway IconButton / the primary is Fairway Button
- * (both native <button>s) — never `Surface as="button"`.
  * ========================================================================== */
 
-import { format, isSameDay } from 'date-fns';
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
-import { Surface, Button, IconButton } from '@/components/fairway';
+import * as React from 'react';
+import { endOfWeek, format, isSameDay, isSameMonth, isSameYear, startOfWeek } from 'date-fns';
+import { motion } from 'framer-motion';
+import { CalendarSurface } from '@/components/fairway/calendar';
+import {
+  AlertTriangle,
+  CalendarClock,
+  CalendarPlus,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  MoreHorizontal,
+  Plus,
+  ScanLine,
+} from 'lucide-react';
+import { Button, IconButton, PopoverPanel, PressTarget, Segmented } from '@/components/fairway';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
+import { cn } from '@/lib/utils';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { FairwayDayStrip } from './FairwayDayStrip';
+import surfaces from './CalendarSurfaces.module.css';
+
+export type FairwayCalendarViewId = 'day' | 'week' | 'month' | 'agenda';
+
+/** The CSS custom property the masthead publishes on its host column. */
+export const CALENDAR_HERO_HEIGHT_VAR = '--fw-calendar-hero-h';
 
 export interface FairwayCalendarHeroProps {
   focusDate: Date;
@@ -40,38 +75,68 @@ export interface FairwayCalendarHeroProps {
   events: CalendarEvent[];
   /** Parent-owned reference "now" (seeded from serverNow). */
   nowRef: Date;
-  /** Total events with a start at/after serverNow (page-derived, stable). */
-  upcomingCount: number;
-  /** Events inside the currently visible window (this week / month). */
-  windowCount: number;
-  /** Whether the active lens is the month grid (affects the "this …" label). */
-  isMonthView: boolean;
-  /** Whether the active lens is the agenda (wide range — label changes to "in view"). */
-  isAgendaView?: boolean;
-  /**
-   * Whether the active lens is the single-day view. Falling through to the
-   * `week` label here (as this used to) mislabels a one-day window as
-   * "this week" — a fixed-window fetch buffer leaking into user-facing copy.
-   */
+  /** Whether the active lens is the single Day view (shows the day strip). */
   isDayView?: boolean;
   isCoach: boolean;
-  /** Prev / Today / Next. */
+  /** Prev / Next / Today. */
   onNavigate: (direction: 'prev' | 'next' | 'today') => void;
-  /** Day-strip selection. */
+  /** Day-strip tap. */
   onSelectDate: (date: Date) => void;
-  /** Team timezone — threaded straight through to FairwayDayStrip's
-   *  timezone-aware density-dot bucketing (see that file's header note).
-   *  Optional (defaults to `null`, which `getZonedDateParts` treats as
-   *  DEFAULT_TIMEZONE) so existing callers/tests need no changes. */
+  /** Team timezone for the day-strip density dots (IANA). */
   teamTimezone?: string | null;
   /**
-   * The single primary action. Coach → fires the legacy create flow; player →
-   * opens the most-imminent un-RSVP'd event's drawer. Undefined (e.g. player on
-   * the all-past demo) renders NO CTA — an honest calm absence.
+   * The coach's ONE primary action (create). Players get no header CTA —
+   * their response action lives beside the schedule (see parent).
    */
   onPrimaryAction?: () => void;
-  /** Primary action label ("New event" coach / "Respond" player). */
   primaryActionLabel?: string;
+  /** View switcher. */
+  view?: FairwayCalendarViewId;
+  viewOptions?: ReadonlyArray<{ value: FairwayCalendarViewId; label: string }>;
+  onViewChange?: (view: FairwayCalendarViewId) => void;
+  /** Secondary actions. Each is omitted from the UI when absent. */
+  onFindTime?: () => void;
+  onConflicts?: () => void;
+  onSubscribe?: () => void;
+  onAvailability?: () => void;
+  /** Real count of open conflicts (badge on the Conflicts action). `null` = unknown. */
+  conflictCount?: number | null;
+  /** A range fetch is in flight: a thin progress line along the bottom edge. */
+  busy?: boolean;
+}
+
+/** Week view names its exact scope, split so the year can sit quiet:
+ *  "Sep 6 – 12" + ", 2026"; "Aug 30 – Sep 5" + ", 2026"; a week that crosses
+ *  the year keeps both years in the main run ("Dec 27, 2026 – Jan 2, 2027").
+ *  Sunday-start weeks, matching the parent's visible window. */
+export function weekRangeTitleParts(focusDate: Date): { main: string; quiet: string } {
+  const start = startOfWeek(focusDate, { weekStartsOn: 0 });
+  const end = endOfWeek(focusDate, { weekStartsOn: 0 });
+  if (!isSameYear(start, end)) {
+    return { main: `${format(start, 'MMM d, yyyy')} – ${format(end, 'MMM d, yyyy')}`, quiet: '' };
+  }
+  const main = isSameMonth(start, end)
+    ? `${format(start, 'MMM d')} – ${format(end, 'd')}`
+    : `${format(start, 'MMM d')} – ${format(end, 'MMM d')}`;
+  return { main, quiet: `, ${format(end, 'yyyy')}` };
+}
+
+export function weekRangeTitle(focusDate: Date): string {
+  const { main, quiet } = weekRangeTitleParts(focusDate);
+  return `${main}${quiet}`;
+}
+
+/** The little calendar page the "Today" control carries — today's number
+ *  under a thick top rule, the way the system calendar glyph draws it. */
+function TodayGlyph({ day }: { day: number }) {
+  return (
+    <span
+      aria-hidden
+      className="grid h-[18px] w-[18px] place-items-center rounded-sm border-[1.5px] border-t-[4px] border-current pt-px text-eyebrow font-bold leading-none tracking-normal tabular-nums"
+    >
+      {day}
+    </span>
+  );
 }
 
 export function FairwayCalendarHero({
@@ -79,10 +144,6 @@ export function FairwayCalendarHero({
   selectedDate,
   events,
   nowRef,
-  upcomingCount,
-  windowCount,
-  isMonthView,
-  isAgendaView = false,
   isDayView = false,
   isCoach,
   onNavigate,
@@ -90,179 +151,266 @@ export function FairwayCalendarHero({
   onPrimaryAction,
   primaryActionLabel,
   teamTimezone = null,
+  view,
+  viewOptions,
+  onViewChange,
+  onFindTime,
+  onConflicts,
+  onSubscribe,
+  onAvailability,
+  conflictCount = null,
+  busy = false,
 }: FairwayCalendarHeroProps) {
-  const monthTitle = format(focusDate, 'MMMM yyyy');
+  const reduceMotion = useReducedMotionGuard();
+  // The separator lives in the main run (a trailing space), not at the head of
+  // the quiet span: accessible-name computation drops a nested span's leading
+  // whitespace, which would announce "July2026".
+  const title = isDayView
+    ? { main: format(focusDate, 'EEEE, MMMM d'), quiet: '', short: format(focusDate, 'EEE, MMM d') }
+    : view === 'week'
+      ? weekRangeTitleParts(focusDate)
+      : { main: `${format(focusDate, 'MMMM')} `, quiet: format(focusDate, 'yyyy') };
+  const titleText = `${title.main}${title.quiet}`;
   const focusIsToday = isSameDay(focusDate, nowRef);
-  // Agenda lens spans ±3 months — "this week/month" is misleading; use "in view".
-  // Each lens owns its OWN full phrase (not a noun the sentence re-prefixes
-  // with "this ") so there is no seam where a second "this" can sneak in
-  // (findings #84/#106/#155/#165/#12/#80) and no fallthrough where an
-  // un-handled lens silently inherits another lens's wording. Day view
-  // previously had no branch here at all and fell through to "week"
-  // (mislabeling a single-day window as "this week") because the fetch
-  // buffer for Day reuses the week range internally — that internal
-  // implementation detail must never leak into this label.
-  const windowLabel = isAgendaView
-    ? 'in view'
-    : isMonthView
-      ? 'this month'
-      : isDayView
-        ? 'today'
-        : 'this week';
+  const ctaLabel = primaryActionLabel ?? 'New event';
+  const hasViews = Boolean(view && viewOptions && onViewChange);
+  const conflictsLabel =
+    conflictCount && conflictCount > 0 ? `Conflicts (${conflictCount})` : 'Conflicts';
+  const [moreOpen, setMoreOpen] = React.useState(false);
+  const [jumpOpen, setJumpOpen] = React.useState(false);
+  const secondaryActions = [
+    onFindTime && isCoach
+      ? { key: 'find', label: 'Find a time', icon: <ScanLine className="h-4 w-4" aria-hidden />, run: onFindTime }
+      : null,
+    onConflicts
+      ? { key: 'conflicts', label: conflictsLabel, icon: <AlertTriangle className="h-4 w-4" aria-hidden />, run: onConflicts }
+      : null,
+    onAvailability
+      ? { key: 'availability', label: 'My availability', icon: <CalendarClock className="h-4 w-4" aria-hidden />, run: onAvailability }
+      : null,
+    onSubscribe
+      ? { key: 'subscribe', label: 'Add to phone', icon: <CalendarPlus className="h-4 w-4" aria-hidden />, run: onSubscribe }
+      : null,
+  ].filter((action): action is NonNullable<typeof action> => action !== null);
+
+  // Agenda is month-scoped (its period is the title's month), so it steps by month too.
+  // Day steps by a WEEK, not a day: FairwayCalendar's navigate() routes both
+  // Day and Week through addDays(d, dir * 7) because the day-strip is the
+  // single-day picker and these arrows turn the page. The label has to match
+  // what the button does -- an AT user cannot see the strip to infer it.
+  const stepLabel = view === 'month' || view === 'agenda' ? 'month' : 'week';
+
+  // Publish the masthead's height on the host column so the schedule's sticky
+  // day headings can pin exactly under it (the strip in Day view changes it).
+  const sectionRef = React.useRef<HTMLElement>(null);
+  React.useEffect(() => {
+    const section = sectionRef.current;
+    const host = section?.parentElement;
+    if (!section || !host) return;
+    const publish = () => host.style.setProperty(CALENDAR_HERO_HEIGHT_VAR, `${section.offsetHeight}px`);
+    publish();
+    if (typeof ResizeObserver === 'undefined') return () => host.style.removeProperty(CALENDAR_HERO_HEIGHT_VAR);
+    const observer = new ResizeObserver(publish);
+    observer.observe(section);
+    return () => {
+      observer.disconnect();
+      host.style.removeProperty(CALENDAR_HERO_HEIGHT_VAR);
+    };
+  }, []);
 
   return (
-    // The ONE hero plinth — a warm matte Surface (bg-surface), shadow elevation
-    // (border OR shadow, never both), generous hero padding.
-    <Surface elevation="shadow" padding="lg" className="bg-surface">
-      <div className="flex flex-col gap-5 md:flex-row md:flex-wrap md:items-end md:justify-between md:gap-6">
-        {/* Title column — eyebrow + month + honest status line.
-            md:min-w-[260px]: at tablet widths (810/844px — between md and lg)
-            the nav+CTA cluster is flex-shrink-0, so ALL the deficit used to
-            land on this column; with no floor it could shrink toward zero and
-            the status line wrapped word-by-word ("1 / upcoming / · 12 in /
-            view" — GAPS_AUDIT_TABLET_LANDSCAPE #5). The floor plus md:flex-wrap
-            on the row above means the cluster drops to its own line instead of
-            squeezing this one once there isn't room for both. */}
-        <div className="flex min-w-0 flex-col gap-2 md:min-w-[260px]">
-          <p className="inline-flex items-center gap-2 font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.07em] text-accent-700">
-            <span aria-hidden className="h-1 w-1 rounded-full bg-accent-500" />
-            Calendar
-          </p>
-
-          <h1 className="font-fw-display text-h1 font-medium leading-[1.05] tracking-[-0.008em] text-text-primary [text-wrap:balance]">
-            {monthTitle}
-          </h1>
-
-          {/* HONEST status line — real counts, never fabricated.
-              whitespace-nowrap: this is ONE phrase ("N upcoming · M this
-              week") — it must wrap as a whole line (or not at all, given the
-              min-width above), never split mid-phrase across 3-4 lines. */}
-          {upcomingCount > 0 ? (
-            <p className="whitespace-nowrap font-fw-sans text-body-lg leading-[1.5] text-text-secondary">
-              <span className="font-fw-mono tabular-nums">{upcomingCount}</span>
-              {' upcoming · '}
-              <span className="font-fw-mono tabular-nums">{windowCount}</span>
-              {` ${windowLabel}`}
-            </p>
-          ) : (
-            <p className="font-fw-sans text-body-lg leading-[1.5] text-text-tertiary">
-              No upcoming events — browse the season below
-            </p>
-          )}
-        </div>
-
-        {/* Action cluster — nav + the ONE primary action.
-            DESKTOP (lg+ / any md+ width with room): same single row as
-            before. TABLET (md, tight width): md:flex-wrap on the row above
-            drops this cluster onto its own line below the title column
-            instead of squeezing it; md:ml-auto keeps it flush right in
-            EITHER case (identical to the old md:justify-between placement
-            when there's one row, right-aligned on its own line when there
-            are two).
-            PHONE (<md): the four controls (2× 44px IconButton + Today + a
-            primary CTA) blow the ~294px content budget at 390px in one row
-            (Surface padding="lg" + page px-4), so the phone treatment is
-            hand-composed, not wrapped: a centered Prev · Today · Next nav row,
-            then the ONE primary action full-width on its own row in the
-            thumb zone. "Today" drops to `size="sm"` on phone — a compact
-            affordance, not a full chip — while Prev/Next stay `md` (44px,
-            the touch-target minimum). */}
-        <div className="hidden flex-shrink-0 items-center gap-2 md:ml-auto md:flex">
-          <IconButton
-            variant="secondary"
-            size="md"
-            aria-label="Previous"
-            onClick={() => onNavigate('prev')}
+    <section
+      ref={sectionRef}
+      aria-label="Calendar controls"
+      className={cn(
+        // Sticky under the app header + hub sub-nav (AppShell publishes both
+        // offsets). The shell's chrome material keeps scrolled rows from
+        // reading as ghost text behind the controls.
+        'fw-glass-chrome sticky top-[calc(var(--golf-mobile-header-offset)+var(--fw-hub-subnav-offset,0px))] z-[9]',
+        // A warm rim along the bottom edge plus the resting whisper: the
+        // masthead sits ON the list, the way a native bar floats over content.
+        '-mx-4 px-4 pb-2.5 pt-2 md:-mx-6 md:px-6 md:pb-3 md:pt-3',
+        '[box-shadow:0_1px_0_var(--fw-glass-border-bot),var(--fw-shadow-flat)]',
+      )}
+    >
+      {/* Row 1 — the period, and the primary action. */}
+      <div className="flex min-h-11 items-center gap-1 md:gap-2">
+        <h1 className="min-w-0 flex-1 truncate font-fw-sans text-h2 text-text-primary">
+          {/* The title is the date-jump: same headless CalendarSurface the
+              DatePicker uses, in a PopoverPanel, behind an unstyled press. */}
+          <PopoverPanel
+            open={jumpOpen}
+            onOpenChange={setJumpOpen}
+            side="bottom"
+            align="start"
+            width="auto"
+            ariaLabel="Jump to a date"
+            trigger={
+              <PressTarget className="-mx-2 inline-flex max-w-full items-center gap-1 rounded-fw-sm px-2 py-1 text-left [@media(hover:hover)]:hover:bg-surface-sunken">
+                {/* Re-keyed on change so a new period settles in rather than
+                    snapping — one quiet rise, no exit choreography. */}
+                <motion.span
+                  key={titleText}
+                  initial={reduceMotion ? false : { opacity: 0, y: 3 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                  className="truncate"
+                >
+                  {'short' in title && title.short ? (
+                    <>
+                      {/* Phone: the short day beside a strip that already names
+                          it; the full form stays the accessible text. */}
+                      <span aria-hidden className="md:hidden">{title.short}</span>
+                      <span className="sr-only md:not-sr-only">{title.main}</span>
+                    </>
+                  ) : (
+                    title.main
+                  )}
+                  {title.quiet ? (
+                    <span className="font-medium text-text-tertiary">{title.quiet}</span>
+                  ) : null}
+                </motion.span>
+                <span className="sr-only">, jump to a date</span>
+                <ChevronDown className="h-4 w-4 shrink-0 text-text-tertiary" aria-hidden />
+              </PressTarget>
+            }
           >
-            <ChevronLeft />
-          </IconButton>
+            <CalendarSurface
+              mode="single"
+              selected={selectedDate}
+              defaultMonth={focusDate}
+              today={nowRef}
+              size="cozy"
+              glass={false}
+              className="border-0 shadow-none"
+              onSelect={(date) => {
+                if (!date) return;
+                onSelectDate(date);
+                setJumpOpen(false);
+              }}
+            />
+          </PopoverPanel>
+        </h1>
+        {!focusIsToday ? (
           <Button
-            variant={focusIsToday ? 'secondary' : 'ghost'}
-            size="md"
+            variant="secondary"
+            size="sm"
             onClick={() => onNavigate('today')}
-            aria-pressed={focusIsToday}
+            leftIcon={<TodayGlyph day={nowRef.getDate()} />}
+            className="px-2.5"
           >
             Today
           </Button>
-          <IconButton
-            variant="secondary"
-            size="md"
-            aria-label="Next"
-            onClick={() => onNavigate('next')}
+        ) : null}
+        {secondaryActions.length > 0 ? (
+          <PopoverPanel
+            open={moreOpen}
+            onOpenChange={setMoreOpen}
+            side="bottom"
+            align="end"
+            width="sm"
+            ariaLabel="More calendar actions"
+            trigger={
+              <IconButton
+                variant="secondary"
+                size="sm"
+                aria-label="More calendar actions"
+                className="xl:hidden"
+              >
+                <MoreHorizontal />
+              </IconButton>
+            }
           >
-            <ChevronRight />
-          </IconButton>
+            {secondaryActions.map((action) => (
+              <PopoverPanel.Item
+                key={action.key}
+                onClick={() => {
+                  setMoreOpen(false);
+                  action.run();
+                }}
+              >
+                <span className="flex items-center gap-2.5">
+                  <span className="text-text-tertiary">{action.icon}</span>
+                  {action.label}
+                </span>
+              </PopoverPanel.Item>
+            ))}
+          </PopoverPanel>
+        ) : null}
+        {onPrimaryAction && isCoach ? (
+          // From md up the primary action is a labelled button in the bar. On a
+          // phone it floats above the tab bar instead (the parent renders that
+          // one), so the title row keeps its air.
+          <Button
+            variant="primary"
+            size="md"
+            onClick={onPrimaryAction}
+            leftIcon={<Plus />}
+            className="hidden md:inline-flex"
+          >
+            {ctaLabel}
+          </Button>
+        ) : null}
+      </div>
 
-          {onPrimaryAction ? (
-            <Button
-              variant="primary"
-              size="md"
-              onClick={onPrimaryAction}
-              leftIcon={isCoach ? <Plus /> : undefined}
-              className="ml-1"
-            >
-              {primaryActionLabel ?? (isCoach ? 'New event' : 'Respond')}
-            </Button>
-          ) : null}
-        </div>
-
-        {/* PHONE ONLY — nav row (centered Today) + full-width primary CTA. */}
-        <div className="flex flex-col gap-3 md:hidden">
-          <div className="grid grid-cols-3 items-center">
-            <IconButton
-              variant="secondary"
-              size="md"
-              aria-label="Previous"
-              className="justify-self-start"
-              onClick={() => onNavigate('prev')}
-            >
-              <ChevronLeft />
-            </IconButton>
-            <Button
-              variant={focusIsToday ? 'secondary' : 'ghost'}
-              size="sm"
-              className="justify-self-center"
-              onClick={() => onNavigate('today')}
-              aria-pressed={focusIsToday}
-            >
-              Today
-            </Button>
-            <IconButton
-              variant="secondary"
-              size="md"
-              aria-label="Next"
-              className="justify-self-end"
-              onClick={() => onNavigate('next')}
-            >
-              <ChevronRight />
-            </IconButton>
-          </div>
-
-          {onPrimaryAction ? (
-            <Button
-              variant="primary"
+      {/* Row 2 — the explicit view selector; stepping from md up (a phone
+          swipes the schedule instead, and the title jumps anywhere). */}
+      <div className="mt-2 flex items-center gap-2">
+        {hasViews ? (
+          <div className="min-w-0 flex-1 md:flex-none">
+            <Segmented<FairwayCalendarViewId>
+              options={viewOptions!}
+              value={view!}
+              onValueChange={onViewChange!}
               size="md"
               fullWidth
-              onClick={onPrimaryAction}
-              leftIcon={isCoach ? <Plus /> : undefined}
-            >
-              {primaryActionLabel ?? (isCoach ? 'New event' : 'Respond')}
-            </Button>
-          ) : null}
+              aria-label="Calendar view"
+              className="md:w-auto"
+            />
+          </div>
+        ) : null}
+        <div className="hidden shrink-0 items-center gap-0.5 md:flex">
+          <IconButton variant="ghost" size="sm" aria-label={`Previous ${stepLabel}`} onClick={() => onNavigate('prev')}>
+            <ChevronLeft />
+          </IconButton>
+          <IconButton variant="ghost" size="sm" aria-label={`Next ${stepLabel}`} onClick={() => onNavigate('next')}>
+            <ChevronRight />
+          </IconButton>
         </div>
+        {secondaryActions.length > 0 ? (
+          <div className="ml-auto hidden items-center gap-1 xl:flex">
+            {secondaryActions.map((action) => (
+              <Button key={action.key} variant="ghost" size="sm" leftIcon={action.icon} onClick={action.run}>
+                {action.label}
+              </Button>
+            ))}
+          </div>
+        ) : null}
       </div>
 
-      {/* Day strip — sits inside the plinth, beneath the title. */}
-      <div className="mt-6 md:mt-8">
-        <FairwayDayStrip
-          focusDate={focusDate}
-          selectedDate={selectedDate}
-          events={events}
-          nowRef={nowRef}
-          teamTimezone={teamTimezone}
-          onSelectDate={onSelectDate}
-        />
-      </div>
-    </Surface>
+      {/* Row 3 — Day view only: the week around the selected day. */}
+      {isDayView ? (
+        <div className="mt-2">
+          <FairwayDayStrip
+            focusDate={focusDate}
+            selectedDate={selectedDate}
+            events={events}
+            nowRef={nowRef}
+            teamTimezone={teamTimezone}
+            onSelectDate={onSelectDate}
+            onSwipe={(direction) => onNavigate(direction)}
+          />
+        </div>
+      ) : null}
+
+      {/* A range fetch in flight: a hairline of progress along the bottom
+          edge, where a native bar shows it, never a banner in the list. */}
+      {busy ? (
+        <div role="status" aria-live="polite" className="pointer-events-none absolute inset-x-0 -bottom-px h-[2px] overflow-hidden">
+          <span className="sr-only">Loading events for this date range…</span>
+          <span aria-hidden className={cn('block h-full w-1/3 rounded-full bg-accent-500', surfaces.indeterminate)} />
+        </div>
+      ) : null}
+    </section>
   );
 }

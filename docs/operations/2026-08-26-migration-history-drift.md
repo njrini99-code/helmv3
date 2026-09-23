@@ -18,7 +18,7 @@ then written into a migration file afterward under a fresh timestamp, rather
 than the file being run and letting the tool assign the version.
 
 This is the same defect `docs/operations/SUPABASE_DRIFT_GUARD.md` and
-`docs/audits/SUPABASE_DRIFT_REPORT_2026-07-03.md` already named for the
+`https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-07/SUPABASE_DRIFT_REPORT_2026-07-03.md` already named for the
 period since 2026-05-26 — "local migration filenames and the versions
 actually recorded in `supabase_migrations.schema_migrations` are
 systemically mismatched" — just now confirmed by direct row-for-row
@@ -213,7 +213,7 @@ options only, per the task's read-only scope.
 
 - `docs/operations/SUPABASE_DRIFT_GUARD.md` — the standing read-only drift
   guard and the prior documentation of the version-mismatch pattern.
-- `docs/audits/SUPABASE_DRIFT_REPORT_2026-07-03.md` — the original report
+- `https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-07/SUPABASE_DRIFT_REPORT_2026-07-03.md` — the original report
   that first found filename/version mismatches since 2026-05-26.
 - `supabase/migrations/HELD.md` — the register for migrations deliberately
   not applied; this document's subject is the opposite case (applied, but

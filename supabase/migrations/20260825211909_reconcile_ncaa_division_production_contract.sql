@@ -1,6 +1,7 @@
--- Reconcile the resettable local schema with the production NCAA division
--- contract. Production already contains these labels; this migration is
--- idempotent so it can safely be reviewed for a later production ledger repair.
+-- LOCAL-ONLY. Reconcile the resettable local schema with the production NCAA
+-- division contract. Production already contains these labels; this
+-- migration is idempotent so it can safely be reviewed for a later
+-- production ledger repair.
 --
 -- The baseline captured only D2/D3, while live CRM/UI/import code accepts all
 -- nine labels below. Preserve the live ordering because enum ordering is part

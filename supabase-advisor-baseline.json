@@ -1,0 +1,20 @@
+{
+  "$note": "Counts by advisor class, security and performance separately. May only shrink; a new class at count > 0 is a regression too. The pg_graphql_authenticated_table_exposed and pg_graphql_anon_table_exposed classes under security drop to zero once the owner removes the exposed GraphQL schema in the Supabase dashboard — that is an owner action, not something this repo can fix.",
+  "updated_at": "2026-09-06",
+  "security": {
+    "pg_graphql_authenticated_table_exposed": 308,
+    "authenticated_security_definer_function_executable": 133,
+    "pg_graphql_anon_table_exposed": 126,
+    "rls_enabled_no_policy": 7,
+    "security_definer_view": 4,
+    "extension_in_public": 2
+  },
+  "performance": {
+    "unused_index": 323,
+    "multiple_permissive_policies": 143,
+    "unindexed_foreign_keys": 50,
+    "auth_rls_initplan": 7,
+    "no_primary_key": 5,
+    "auth_db_connections_absolute": 1
+  }
+}

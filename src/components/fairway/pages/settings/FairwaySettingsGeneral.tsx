@@ -1812,7 +1812,7 @@ export function NotificationsPanel({ coachId }: { coachId?: string } = {}) {
             and short-game/putting priority inverted) — so their alert
             thresholds shift as a side effect of an email preference. 10 of 15
             coaches currently have no row. See
-            docs/audits/COACHHELM_PHILOSOPHY_DEFAULTS_DRIFT_2026-07-25.md;
+            https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-07/COACHHELM_PHILOSOPHY_DEFAULTS_DRIFT_2026-07-25.md;
             resolving that drift removes this hazard. */}
         {coachId ? (
           <div className="mt-3 flex items-center justify-between gap-3 rounded-fw-sm bg-surface-sunken p-3">

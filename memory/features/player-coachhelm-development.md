@@ -91,6 +91,12 @@ Player opens round review
 - Round review surfaces need clear highlights, areas to review, stats comparison, predictions, and feedback actions.
 - Standing/goal/intent/hero narrative UI should be polished but not obscure source data or actionability.
 - Mobile views must follow the shared app shell and avoid oversized top-of-screen chrome.
+- A route's `loading.tsx` reserves the page's paint at t=0 — for a
+  `'use client'` page holding its own `loading` state that is that
+  component's loading branch, not its settled layout. A route whose
+  `page.tsx` is a pure `permanentRedirect` shim renders `bg-canvas` only:
+  no geometry, and no real `<h1>` for a screen that never mounts.
+  Reference implementation: `dashboard/alerts/loading.tsx`.
 
 ## Known Risk Areas
 
@@ -98,6 +104,40 @@ Player opens round review
 - Revalidation can miss `/golf/dashboard/coachhelm` or `/golf/dashboard/my-development`.
 - Player-facing fallbacks can mask missing source data or LLM/citation failures.
 - V3 surfaces evolve quickly, so docs and registry paths need frequent updates when new components land.
+- **Focus-area progress is travel from baseline, never `current / target`,
+  and an unresolvable metric must render no progress bar at all** — not a
+  guessed one. `golf_player_focus_areas.baseline_value` (present in
+  `src/lib/types/database.ts`) anchors the math;
+  `getProgressPercent(current, target, metric, baseline)` returns
+  `number | null`, and `null` means callers must render no bar rather than
+  defaulting to a ratio. Direction is a three-state resolution
+  (`'lower' | 'higher' | 'unknown'` from `resolveMetricDirection`) — never
+  default an unknown direction to "higher is better", since that can render
+  a full "on track" bar for a player who is meaningfully worse than target.
+  `target_metric` is free text by design (the modal offers "Custom
+  metric…"); anything outside the shared catalog
+  (`src/lib/coachhelm/focus-areas/catalog.ts`, re-exported for UI importers
+  by `src/components/fairway/pages/coachhelm/areaTypes.ts`) is legitimate
+  but manual, and the card must say "Tracked manually" rather than show an
+  inert bar. Baselines are recovered only where provable (an area the
+  windowed driver never touched, or the first snapshot value) — guessing one
+  reintroduces the fabricated-progress bug this display contract exists to
+  prevent. (STU, source: `focus-area-progress-display-contract.md` and
+  `focus-area-redesign.md`, both dated 2026-08-02; verified 2026-09-05 that
+  `golf_player_focus_areas` and `golf_goals` exist in
+  `src/lib/types/database.ts` and that the three files above exist.)
+- **Windowed auto-tracking for focus areas is driven by `src/lib/golf/
+  progress-drivers.ts`, a plain server module (deliberately not `'use
+  server'`)**, windowing each active area's metric over rounds since the
+  area's `started_at` from the round stats cache rather than an all-time,
+  diluted cache. It never auto-completes an area. The two page-view hooks
+  that used to also trigger it were removed deliberately — a page read that
+  writes raced the CoachHelm crons into a live database deadlock — and are
+  locked out by a dedicated test; do not re-add them. The round-submit
+  background path is what actually drives this in production alongside the
+  nightly standing-refresh cron, and it must run before any early-return
+  branch in that action, or everything after the return silently never
+  executes. (STU, source: `focus-area-redesign.md` dated 2026-08-02.)
 
 ## Tests To Prefer
 
@@ -114,3 +154,9 @@ Player opens round review
 - `memory/context/coachhelm-ai.md`
 - `memory/context/golfhelm-features.md`
 - `docs/v3-feature-audit.md`
+
+Stats uses CoachHelmShell as its only horizontal container, including the loading fallback. On
+phones, selected development/standing/detail views prioritize their content over the overview spine;
+desktop retains its side-by-side context. The round scope picker and Log round action retain 44px
+touch targets. What-if results reveal with opacity/translation rather than animated layout height,
+and honor reduced motion.

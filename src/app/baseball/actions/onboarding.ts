@@ -572,7 +572,7 @@ export async function completeBaseballSignup(data: {
     //
     // Resolving that is a product decision about the recruiting-on case, so it
     // is escalated rather than made at 07:00 unattended — see
-    // docs/baseballhelm-overnight/CURRENT_PRIORITIES.md. The module gate below
+    // https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-07/baseballhelm-overnight/CURRENT_PRIORITIES.md. The module gate below
     // is correct either way and changes nothing while recruiting ships.
     const recruitingActivated = playerType !== 'college' && isRecruitingEnabled();
     CommonSchemas.recruitingPlayerState.parse({

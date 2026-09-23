@@ -4,6 +4,13 @@ production:
   routine_max_deploys_per_calendar_week: 2
   timezone: America/New_York
   # calendar week = ISO week: Monday 00:00:00 through Sunday 23:59:59 in this timezone
+  # The one linked helmv3 Vercel project (Vercel audit §1). Production deploys
+  # from this project's Git integration on merge to main (2026-09-17);
+  # scripts/deploy-prod.sh is retired. The id is still the guard against
+  # helmv3-golf-reliability-release-20260825 / helmv3-main-release-c350 —
+  # `vercel deploy` runs from an unlinked directory that silently created a
+  # NEW project named after the cwd — for any tool that reads the linked project.
+  vercel_project_id: prj_qPgC4eErTUsaSmv40EiQMNuTpuEV
 
 daily_reliability:
   may_observe: true
@@ -25,3 +32,12 @@ release:
 emergency:
   automatic_override: false
   owner_decision_required: true
+
+security:
+  # Read by .github/workflows/control-plane-weekly.yml's hard check: the
+  # weekly run fails when open Dependabot alerts at severity high or
+  # critical exceed this number. Not zero — a hard gate that can never be
+  # green while an alert is triaged-but-unfixed just gets ignored; this is a
+  # ceiling on how much can accumulate before it becomes a required action,
+  # not a claim that this many is fine to carry indefinitely.
+  max_open_high_dependabot: 5

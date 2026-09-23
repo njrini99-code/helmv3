@@ -380,7 +380,7 @@ RoundData[] = [
 
 ## 7. Migration Status
 
-**Migration 026:** `supabase/migrations/026_add_comprehensive_golf_stats.sql`
+**Migration 026:** `supabase/migrations_archive/v1_original/026_add_comprehensive_golf_stats.sql`
 
 **To apply migration:**
 ```bash

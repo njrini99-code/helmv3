@@ -15,7 +15,8 @@
  */
 import { Fragment } from 'react';
 import { cn } from '@/lib/utils';
-import { StatReadout } from '..';
+// Leaf import, not the parent barrel ('..') — see CoverHero.tsx for why.
+import { StatReadout } from '../StatReadout';
 import { formatRate } from '../format';
 
 const SIZE: Record<'sm' | 'md' | 'lg', string> = {

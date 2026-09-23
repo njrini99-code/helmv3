@@ -1,0 +1,117 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; }
+    a { color: oklch(0.488 0.124 150); }
+    a:hover { color: oklch(0.567 0.142 149.6); }
+    .fw { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "Segoe UI", Roboto, ui-sans-serif, system-ui, sans-serif; }
+    .mono { font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace; font-variant-numeric: tabular-nums; }
+    .bub { font-size: 15px; line-height: 22px; }
+    /* the lit-from-above card: inset specular + contact + ambient */
+    .lit { box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.55), 0 1px 2px oklch(0.18 0.01 60 / 0.05), 0 4px 10px oklch(0.18 0.01 60 / 0.06); }
+    /* own bubbles cast a GREEN ambient, so depth carries their colour */
+    .lit-accent { box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.14), 0 1px 2px oklch(0.18 0.01 60 / 0.07), 0 8px 20px oklch(0.488 0.124 150 / 0.22); }
+    .glass { background: rgb(244 232 210 / 0.74); backdrop-filter: blur(22px) saturate(190%); -webkit-backdrop-filter: blur(22px) saturate(190%); }
+  </style>
+</helmet>
+
+<div class="fw" style="position: relative; display: flex; flex-direction: column; width: 390px; height: 844px; color: oklch(0.216 0.007 49); overflow: hidden;
+     background:
+       radial-gradient(132% 92% at 50% -15%, oklch(0.982 0.014 86) 0%, oklch(0.970 0.020 84) 44%, transparent 78%),
+       linear-gradient(180deg, oklch(0.973 0.018 85) 0%, oklch(0.955 0.026 83) 52%, oklch(0.948 0.028 82) 100%);">
+
+  <!-- glass header: warm specular rim above, deeper warm edge below -->
+  <div class="glass" style="position: relative; z-index: 3; display: flex; align-items: center; gap: 10px; padding: 14px 12px 12px 6px;
+       box-shadow: inset 0 1px 0 rgb(255 248 233 / 0.5), 0 1px 0 oklch(0.32 0.045 68 / 0.12), 0 8px 20px oklch(0.18 0.01 60 / 0.05);">
+    <div style="display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; flex-shrink: 0;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="oklch(0.444 0.014 65)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m14.5 5-7 7 7 7"></path></svg>
+    </div>
+    <div style="position: relative; flex-shrink: 0;">
+      <div style="display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 9999px; background: linear-gradient(160deg, oklch(0.971 0.024 150) 0%, oklch(0.939 0.045 150) 100%); color: oklch(0.488 0.124 150); font-size: 14px; font-weight: 600; box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.6), 0 1px 2px oklch(0.18 0.01 60 / 0.08);">CB</div>
+      <span style="position: absolute; right: -1px; bottom: -1px; width: 12px; height: 12px; border-radius: 9999px; background: oklch(0.648 0.149 149.6); border: 2.5px solid oklch(0.973 0.018 85); box-shadow: 0 0 0 1px oklch(0.648 0.149 149.6 / 0.25);"></span>
+    </div>
+    <div style="display: flex; flex-direction: column; min-width: 0; flex-grow: 1;">
+      <div style="font-size: 16px; line-height: 21px; font-weight: 600; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Cole Bennett</div>
+      <div style="font-size: 12px; line-height: 16px; color: oklch(0.488 0.124 150); font-weight: 500;">Active now</div>
+    </div>
+    <div style="display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 9999px; flex-shrink: 0; background: rgb(255 249 235 / 0.55); box-shadow: inset 0 1px 0 rgb(255 248 233 / 0.6), 0 1px 2px oklch(0.18 0.01 60 / 0.06);">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="oklch(0.444 0.014 65)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5"></path><path d="M12 7.6h.01"></path></svg>
+    </div>
+  </div>
+
+  <div style="position: relative; flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-end; padding: 0 16px 8px 16px; overflow: hidden;">
+
+    <!-- the day chip FLOATS over the thread on glass, not inline in it -->
+    <div style="position: absolute; top: 12px; left: 0; right: 0; z-index: 2; display: flex; justify-content: center; pointer-events: none;">
+      <span class="glass" style="padding: 6px 14px; border-radius: 9999px; font-size: 11px; letter-spacing: 0.06em; font-weight: 600; color: oklch(0.444 0.014 65); box-shadow: inset 0 1px 0 rgb(255 248 233 / 0.6), 0 2px 4px oklch(0.18 0.01 60 / 0.06), 0 12px 32px oklch(0.18 0.01 60 / 0.10);">TODAY</span>
+    </div>
+
+    <!-- incoming, with a reaction resting on its lower edge -->
+    <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 0; margin-bottom: 22px;">
+      <div class="bub lit" style="max-width: 296px; padding: 12px 16px; border-radius: 1.25rem 1.25rem 1.25rem 0.375rem; background: linear-gradient(180deg, oklch(0.989 0.013 87) 0%, oklch(0.980 0.017 86) 100%);">Tee time moved to 7:40 — bus leaves at six.</div>
+      <div style="display: flex; align-items: center; gap: 10px; margin-top: -9px; margin-left: 14px; z-index: 1;">
+        <span style="display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 9999px; background: oklch(0.989 0.013 87); box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.6), 0 1px 2px oklch(0.18 0.01 60 / 0.06), 0 4px 10px oklch(0.18 0.01 60 / 0.08);">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="oklch(0.648 0.149 149.6)" stroke="none"><path d="M12 20s-7-4.4-7-9.2A4 4 0 0 1 12 8.4 4 4 0 0 1 19 10.8C19 15.6 12 20 12 20z"></path></svg>
+          <span class="mono" style="font-size: 10px; font-weight: 600; color: oklch(0.444 0.014 65);">2</span>
+        </span>
+      </div>
+      <span class="mono" style="margin-top: 8px; padding-left: 6px; font-size: 11px; color: oklch(0.535 0.015 70);">4:07 PM</span>
+    </div>
+
+    <!-- own reply, quoting what it answers — depth INSIDE the bubble -->
+    <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px; margin-bottom: 20px;">
+      <div class="bub lit-accent" style="max-width: 296px; padding: 10px 16px 12px 16px; border-radius: 1.25rem 1.25rem 0.375rem 1.25rem; background: linear-gradient(165deg, oklch(0.567 0.142 149.6) 0%, oklch(0.526 0.128 149.8) 100%); color: oklch(0.994 0.006 95);">
+        <div style="display: flex; gap: 9px; margin-bottom: 8px; padding: 7px 10px; border-radius: 0.625rem; background: oklch(1 0 0 / 0.13);">
+          <span style="width: 2.5px; border-radius: 9999px; background: oklch(0.939 0.045 150); flex-shrink: 0;"></span>
+          <div style="display: flex; flex-direction: column; gap: 1px; min-width: 0;">
+            <span style="font-size: 11px; font-weight: 600; color: oklch(0.939 0.045 150);">Cole Bennett</span>
+            <span style="font-size: 12px; line-height: 17px; color: oklch(0.994 0.006 95 / 0.78); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Tee time moved to 7:40 — bus…</span>
+          </div>
+        </div>
+        Perfect. Bring the travel case Thursday night.
+      </div>
+      <span class="mono" style="padding-right: 6px; font-size: 11px; color: oklch(0.535 0.015 70);">4:12 PM</span>
+    </div>
+
+    <!-- the ONE ruled thing in the thread -->
+    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 18px;">
+      <span style="flex-grow: 1; height: 1px; background: linear-gradient(90deg, transparent, oklch(0.648 0.149 149.6 / 0.5));"></span>
+      <span style="font-size: 11px; letter-spacing: 0.06em; font-weight: 600; color: oklch(0.488 0.124 150);">NEW</span>
+      <span style="flex-grow: 1; height: 1px; background: linear-gradient(90deg, oklch(0.648 0.149 149.6 / 0.5), transparent);"></span>
+    </div>
+
+    <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 6px; margin-bottom: 20px;">
+      <div class="bub lit" style="max-width: 296px; padding: 12px 16px; border-radius: 1.25rem 1.25rem 1.25rem 0.375rem; background: linear-gradient(180deg, oklch(0.989 0.013 87) 0%, oklch(0.980 0.017 86) 100%);">My clubs are already in the travel case.</div>
+      <span class="mono" style="padding-left: 6px; font-size: 11px; color: oklch(0.535 0.015 70);">9:06 AM</span>
+    </div>
+
+    <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px;">
+      <div class="bub lit-accent" style="max-width: 296px; padding: 12px 16px; border-radius: 1.25rem 1.25rem 0.375rem 1.25rem; background: linear-gradient(165deg, oklch(0.567 0.142 149.6) 0%, oklch(0.526 0.128 149.8) 100%); color: oklch(0.994 0.006 95);">Great — see you at the bus.</div>
+      <div style="display: flex; align-items: center; gap: 6px; padding-right: 6px;">
+        <span class="mono" style="font-size: 11px; color: oklch(0.535 0.015 70);">9:15 AM</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="oklch(0.488 0.124 150)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Read"><path d="m2 13 3.5 3.5L13 9"></path><path d="m11 15.5 1.5 1.5L21 8.5"></path></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- glass composer, lifted off the thread -->
+  <div class="glass" style="position: relative; z-index: 3; padding: 10px 14px 26px 14px; box-shadow: inset 0 1px 0 rgb(255 248 233 / 0.5), 0 -1px 0 oklch(0.32 0.045 68 / 0.10), 0 -10px 28px oklch(0.18 0.01 60 / 0.06);">
+    <div style="display: flex; align-items: center; gap: 8px; padding: 5px 5px 5px 12px; border-radius: 1.75rem; background: oklch(0.989 0.013 87); box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.6), 0 0 0 1px oklch(0.648 0.149 149.6 / 0.28), 0 0 0 4px oklch(0.648 0.149 149.6 / 0.10), 0 1px 2px oklch(0.18 0.01 60 / 0.05);">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="oklch(0.488 0.124 150)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M20 11.5 12.3 19a4.6 4.6 0 0 1-6.5-6.5l7.7-7.6a3 3 0 1 1 4.3 4.3l-7.7 7.6a1.5 1.5 0 1 1-2.1-2.1l7-7"></path></svg>
+      <span style="flex-grow: 1; font-size: 15px; color: oklch(0.535 0.015 70);">Message Cole</span>
+      <div style="display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 9999px; background: linear-gradient(165deg, oklch(0.567 0.142 149.6) 0%, oklch(0.526 0.128 149.8) 100%); flex-shrink: 0; box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.18), 0 2px 4px oklch(0.488 0.124 150 / 0.28), 0 6px 16px oklch(0.488 0.124 150 / 0.22);">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="oklch(0.994 0.006 95)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12h14"></path><path d="m12.5 6 6 6-6 6"></path></svg>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

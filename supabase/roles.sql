@@ -1,0 +1,22 @@
+-- Custom cluster-wide roles referenced by the declarative schema files under
+-- supabase/schemas/**. Roles are cluster objects, not schema objects, so
+-- `supabase db dump --schema-only` never emits them and they cannot live in
+-- supabase/schemas/. This file is the Supabase CLI's documented mechanism
+-- for seeding project-specific roles into a fresh local stack before
+-- schema_paths are applied (`supabase db start`/`db reset` both run
+-- "Seeding globals from roles.sql..." right after the built-in role
+-- bootstrap, before schema application).
+--
+-- helm_repair_ro exists in production (referenced by
+-- supabase/schemas/shared/95_grants.sql and by an RLS policy in
+-- supabase/schemas/shared/95_grants.sql / policies/*.sql granting it
+-- schema USAGE and a narrow INSERT policy on background_job_logs for the
+-- self-heal repair agent) but no migration file creates it — it was
+-- provisioned directly against production, out of band. That is a real
+-- "applied but not recorded" gap per .claude/rules/database.md; this file
+-- documents and closes the local-dev side of it. It does not attempt to
+-- reproduce its full production grant set — those grants are already
+-- schema-file content (GRANT statements naming helm_repair_ro); this file
+-- only has to make the role exist so `TO "helm_repair_ro"` in a policy or
+-- grant resolves.
+CREATE ROLE "helm_repair_ro" NOLOGIN NOINHERIT;

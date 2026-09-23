@@ -5,6 +5,10 @@ import { sendPushNotification } from '@/lib/notifications/push';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { allSettledReported } from '@/lib/settled-failures';
+import {
+  gatedDelivery,
+  type DeliveryNotificationPreferences,
+} from '@/lib/coachhelm/v3/notifications/types';
 
 /**
  * Fan out "new message" notifications (email + push + in-app bell) to every
@@ -74,7 +78,7 @@ export async function notifyGolfMessageRecipients(
       supabase.from('golf_coaches').select('full_name').eq('user_id', senderId).maybeSingle(),
       supabase.from('golf_players').select('first_name, last_name').eq('user_id', senderId).maybeSingle(),
       supabase.from('users').select('email').eq('id', senderId).maybeSingle(),
-      adminClient.from('users').select('id, email').in('id', recipientUserIds),
+      adminClient.from('users').select('id, email, notification_preferences').in('id', recipientUserIds),
     ]);
 
     const senderName = senderCoach?.full_name
@@ -105,11 +109,27 @@ export async function notifyGolfMessageRecipients(
       return;
     }
 
+    // Per-recipient delivery preferences. `users.notification_preferences` is
+    // the store the settings panel already writes (updateNotificationPreferences),
+    // and `gatedDelivery` is the gate CoachHelm v3 already uses — including
+    // quiet-mode handling and the documented defaults (email_messages ON,
+    // push_messages OFF). Nothing new is invented here; this fan-out was simply
+    // never wired to any of it.
+    //
+    // Before this, every message emailed AND pushed AND belled every other
+    // participant unconditionally. In a 12-player group chat one coach post is
+    // twelve emails, and a player told their coach "Stop spamming my email" on
+    // 2026-08-31 after 33 notifications in a day. Their only remedy was the
+    // coach's advice — "just turn the notifications off" — because the toggle
+    // they DID have was read by nothing.
+    const prefsFor = (r: { notification_preferences?: unknown }) =>
+      (r.notification_preferences ?? null) as Partial<DeliveryNotificationPreferences> | null;
+
     // Email notifications. Reasons are reported, not just counted — see
     // src/lib/settled-failures.ts and INC-2026-08-27.
     await allSettledReported(
       recipientProfiles.map(r =>
-        r.email
+        r.email && gatedDelivery(prefsFor(r), 'email_messages')
           ? notifyNewMessage(r.id, r.email, senderName, previewText, conversationId, 'golf')
           : Promise.resolve()
       ),
@@ -120,15 +140,21 @@ export async function notifyGolfMessageRecipients(
     // deep-links straight to the thread that fired it (P260).
     await allSettledReported(
       recipientProfiles.map(r =>
-        sendPushNotification('new_message', r.id, {
-          senderName,
-          preview: previewText,
-          conversationId,
-        })
+        gatedDelivery(prefsFor(r), 'push_messages')
+          ? sendPushNotification('new_message', r.id, {
+              senderName,
+              preview: previewText,
+              conversationId,
+            })
+          : Promise.resolve()
       ),
       { action: 'notifications.notifyGolfMessageRecipients', featureArea: 'messaging', label: 'push' },
     );
 
+    // In-app notifications (golf_calendar_notifications) — DELIBERATELY not
+    // gated. This is the in-product bell, not an outbound channel: it is how a
+    // recipient discovers the message at all, and suppressing it would hide
+    // mail rather than quiet it. The complaint was about email volume.
     // In-app notifications (golf_calendar_notifications)
     // P260: deep-link to the conversation that fired the notification via
     // ?conversation=<id> (NotificationCenter does router.push(action_url),

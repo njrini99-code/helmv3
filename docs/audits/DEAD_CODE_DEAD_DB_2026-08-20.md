@@ -1,5 +1,7 @@
 # Dead code + dead Supabase — full audit, 2026-08-20
 
+Status: active
+
 Every number here was measured, not estimated. Where I could not verify a
 claim, it is in the **Unverified** section at the bottom rather than in a
 finding.

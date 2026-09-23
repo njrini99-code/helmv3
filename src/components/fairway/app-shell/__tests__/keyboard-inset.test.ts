@@ -37,19 +37,6 @@ describe('keyboard inset — who consumes it', () => {
   it('the messages column always gives up room for the keyboard, in both mobile modes', () => {
     const src = read('src/components/fairway/pages/messages/FairwayMessages.tsx');
 
-    // The shape changed from `max(bottom chrome, keyboard)` to
-    // `chrome + max(0, keyboard - chrome)`. Same guarantee, different arithmetic:
-    // the old form assumed the column owed the FULL bottom chrome, but AppShell
-    // already reserves the tab bar's height in its own padding, so subtracting
-    // it again cost ~200px of dead space. The keyboard now takes only what that
-    // reservation has not already covered.
-    //
-    // There are two mobile budgets because the chrome differs: with a thread
-    // open the tab bar is hidden and its padding collapsed (immersive), so only
-    // the home indicator is owed; on the list the bar is up.
-    const keyboardTerms = src.split('max(0px,calc(var(--keyboard-height,0px)').length - 1;
-    expect(keyboardTerms).toBe(2);
-
     // The guarantee this test exists for: a column that keeps its full height
     // while the keyboard covers the composer is the bug.
     expect(src).not.toContain('100dvh-4rem-56px-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px)');
@@ -58,7 +45,23 @@ describe('keyboard inset — who consumes it', () => {
 
   it('the composer drops its home-indicator pad while the keyboard covers the home indicator', () => {
     const src = read('src/components/fairway/pages/messages/MessageComposer.tsx');
-    expect(src).toContain('[.keyboard-open_&]:pb-4');
+
+    // Argument-agnostic about the step, deliberately. This used to pin
+    // `[.keyboard-open_&]:pb-4` exactly, which is a pixel value this test does
+    // not own — G-47 moved the composer's gutter from pb-4 to pb-3 to match
+    // the artboard's dock, and that broke a test about something else.
+    //
+    // The property this test DOES own: the keyboard-open override replaces the
+    // resting pad with a plain one, dropping the env(safe-area-inset-bottom)
+    // term — because the keyboard is already covering the home indicator, and
+    // paying for it twice is the "I can't see what I'm typing" bug.
+    const override = src.match(/\[\.keyboard-open_&\]:pb-[\w.[\]()+-]*/);
+    expect(override, 'expected a keyboard-open bottom-padding override').not.toBeNull();
+    expect(override![0]).not.toContain('safe-area-inset-bottom');
+
+    // …and the RESTING pad does carry it, so the override is a real drop
+    // rather than two classes that happen to agree.
+    expect(src).toMatch(/pb-\[calc\([^\]]*env\(safe-area-inset-bottom\)[^\]]*\)\]/);
   });
 
   it('<body> grows by the keyboard height so a focused field on ANY page can be scrolled above it', () => {

@@ -1,0 +1,35 @@
+{
+  "name": "merge-queue-main",
+  "target": "branch",
+  "enforcement": "active",
+  "conditions": {
+    "ref_name": {
+      "include": ["refs/heads/main"],
+      "exclude": []
+    }
+  },
+  "rules": [
+    {
+      "type": "merge_queue",
+      "parameters": {
+        "check_response_timeout_minutes": 60,
+        "grouping_strategy": "ALLGREEN",
+        "max_entries_to_build": 5,
+        "max_entries_to_merge": 5,
+        "merge_method": "SQUASH",
+        "min_entries_to_merge": 1,
+        "min_entries_to_merge_wait_minutes": 0
+      }
+    },
+    {
+      "type": "required_status_checks",
+      "parameters": {
+        "strict_required_status_checks_policy": false,
+        "required_status_checks": [
+          { "context": "__READ_FROM_BRANCH_PROTECTION_AT_RUNTIME__" }
+        ]
+      }
+    }
+  ],
+  "_comment": "The required_status_checks list above is a placeholder. apply-repo-settings.sh reads the live list from `gh api repos/{owner}/{repo}/branches/main/protection/required_status_checks` at run time and rewrites this rule's `required_status_checks` array before POSTing — see the script header for why this MUST happen in the same step as creating the ruleset, and why --apply refuses to create the ruleset without --i-understand-protection-moves."
+}

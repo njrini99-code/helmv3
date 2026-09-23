@@ -1,7 +1,7 @@
 /**
  * seed-baseball-surfaces-demo.ts — Phase-3 BaseballHelm demo surface seed.
  *
- * Closes the gap recorded in docs/audits/BASEBALLHELM_STALE_SURFACE_AUDIT_2026-06-25.md:
+ * Closes the gap recorded in https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-06/audits/BASEBALLHELM_STALE_SURFACE_AUDIT_2026-06-25.md:
  * the Phase-1 demo seed (scripts/seed-baseball-demo.ts) does not populate
  * messaging, video, tasks, strength groups, developmental plans, seasons,
  * import-source registry, or stats/aggregates — so those routes render empty

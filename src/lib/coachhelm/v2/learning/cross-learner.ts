@@ -10,6 +10,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 import type { Json } from '@/lib/types/database';
 import type { MinedPattern } from '../types';
 
@@ -111,6 +112,15 @@ export class CrossLearner {
         .eq('team_id', this.teamId);
 
       if (teamMembersError) {
+        await logServerError(
+          `cross-learner.buildGlobalPatternLibrary: team members fetch failed: ${describeError(teamMembersError)}`,
+          { action: 'coachhelm.crossLearner.buildGlobalPatternLibrary', metadata: { teamId: this.teamId } },
+        );
+        // Deliberate, not a swallow: this is background pattern-mining
+        // analysis (src/lib/coachhelm/v2/orchestrator.ts), not a live
+        // user-facing read. Failing to a smaller/empty pattern set fails
+        // CLOSED (fewer surfaced patterns) rather than open — it never
+        // grants access or fabricates a relationship. Failure is logged.
         return [];
       }
 
@@ -128,6 +138,13 @@ export class CrossLearner {
     const { data: patterns, error } = await query as { data: PatternRow[] | null; error: Error | null };
 
     if (error || !patterns) {
+      if (error) {
+        await logServerError(
+          `cross-learner.buildGlobalPatternLibrary: pattern query failed: ${describeError(error)}`,
+          { action: 'coachhelm.crossLearner.buildGlobalPatternLibrary', metadata: { teamId: this.teamId } },
+        );
+      }
+      // Same reasoning as the team-members branch above.
       return [];
     }
 
@@ -214,7 +231,15 @@ export class CrossLearner {
         .select('player_id')
         .eq('team_id', this.teamId);
 
-      if (teamMembersError) return [];
+      if (teamMembersError) {
+        await logServerError(
+          `cross-learner.findSimilarPlayers: team members fetch failed: ${describeError(teamMembersError)}`,
+          { action: 'coachhelm.crossLearner.findSimilarPlayers', metadata: { teamId: this.teamId, playerId } },
+        );
+        // Same "fails closed, background analysis, not a live gate"
+        // reasoning as buildGlobalPatternLibrary above. Failure is logged.
+        return [];
+      }
 
       const teamPlayerIds = (teamMembers ?? [])
         .map((member) => member.player_id)

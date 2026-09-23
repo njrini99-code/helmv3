@@ -1,5 +1,7 @@
 # Duplication & Nesting Audit — 2026-08-20
 
+Status: active
+
 Scope: logic duplicated across 2+ locations that must agree and can drift, and
 structural bloat (god-files, god-functions, deep nesting). Read-only; no files
 edited. All numbers below are measured, not estimated — commands are listed so

@@ -20,7 +20,10 @@ To connect locally:
 
 ```bash
 # .env.local
-SUPABASE_DB_URL='postgresql://postgres:<password>@db.<project-ref>.supabase.co:5432/postgres'
+# <from .env.local> — the real password lives only in your own local
+# .env.local (gitignored) or the Supabase dashboard; never paste a literal
+# password into this file or any committed doc.
+SUPABASE_DB_URL='postgresql://postgres:<from .env.local>@db.<project-ref>.supabase.co:5432/postgres'
 ```
 
 ## Option 1: Quick — Run Critical Checks Only (2 minutes)
@@ -90,7 +93,9 @@ Try the IPv6 bracket notation against the same `$SUPABASE_DB_URL` host:
 
 ```bash
 # Resolve the IPv6 address from Supabase dashboard, then:
-psql "postgresql://postgres:<password>@[<ipv6-addr>]:5432/postgres" \
+# <from .env.local> — same rule as above: the real password lives only in
+# your own local .env.local or the Supabase dashboard, never in this file.
+psql "postgresql://postgres:<from .env.local>@[<ipv6-addr>]:5432/postgres" \
   -f AUDIT_BATCH_2_SECURITY_CRITICAL.sql
 ```
 

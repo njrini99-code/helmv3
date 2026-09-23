@@ -8,7 +8,7 @@
  * (the system bans `animate-spin` on primary data, §7.3). Skeletons reduce CLS
  * by holding the slot the real content will occupy.
  *
- * Tokens only: warm `bg-surface-sunken` blocks with a cream specular sweep. The
+ * Tokens only: `bg-skeleton` blocks with a cream specular sweep. The
  * sweep is built from the existing `animate-shimmer` keyframe + `bg-shimmer`
  * gradient already in tailwind.config.ts (no injected <style>, no dangerouslySet
  * InnerHTML). The sweep is suppressed under `prefers-reduced-motion` via the
@@ -48,7 +48,7 @@ export const Skeleton = forwardRef<HTMLDivElement, SkeletonProps>(function Skele
       ref={ref}
       aria-hidden="true"
       className={cn(
-        'relative isolate overflow-hidden bg-surface-sunken',
+        'relative isolate overflow-hidden bg-skeleton',
         // cream specular sweep, reused from the existing tailwind keyframe/gradient
         'before:absolute before:inset-0 before:bg-shimmer before:bg-[length:200%_100%]',
         'before:animate-shimmer before:content-[""]',
@@ -173,7 +173,7 @@ export function SkeletonList({
       {Array.from({ length: Math.max(1, rows) }).map((_, i) => (
         <div
           key={i}
-          className="flex items-center gap-3 rounded-fw-md bg-surface-sunken px-4 py-3"
+          className="flex items-center gap-3 rounded-fw-md bg-skeleton px-4 py-3"
         >
           <Skeleton circle className="h-8 w-8" />
           <Skeleton className="h-3.5 flex-1" style={{ maxWidth: `${70 - (i % 3) * 8}%` }} />

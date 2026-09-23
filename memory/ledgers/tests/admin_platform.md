@@ -183,7 +183,7 @@
 ## 2026-08-26 — reliability tab view helpers + cron wiring contracts
 
 - SHA: recorded on merge of `feat/reliability-collector`.
-- New: `src/app/admin/reliability/__tests__/reliability-view.test.ts` (19 tests)
+- New: `src/app/admin/errors/_components/sources/__tests__/reliability-view.test.ts` (19 tests)
   covering the pure view layer, split out of `page.tsx` for the same reason
   `tracer-shared.ts` was.
 - Guarantees now covered:
@@ -316,7 +316,9 @@
   `tracer/DataQualityIssueRow.tsx` call-site pin — the other 6 pinned sites
   are untouched and still guarded),
   `scripts/__tests__/admin-tables-mobile.test.mjs`, and
-  `scripts/__tests__/badge-consolidation.test.mjs` (both dropped their now-
+  `archive/scripts/__tests__/badge-consolidation.test.mjs` (moved there
+  2026-09-05 as a confirmed orphan — see its own archive header; path
+  updated here so this entry keeps resolving) (both dropped their now-
   deleted TARGETS/MIGRATED_PILLS entries; neither is wired into any runner
   today per vitest.config.ts's own note on `scripts/__tests__/`, so this was
   hygiene, not a CI fix).
@@ -669,7 +671,7 @@
 - Full scoped run after the `agent/bridge-premium-p1` merge:
   `npx vitest run --maxWorkers=4 src/lib/admin/triage
   src/components/admin/triage src/app/admin/health src/app/admin/jobs
-  src/app/admin/reliability src/app/admin/self-heal src/app/admin/traces
+  src/app/admin/errors/_components/sources src/app/admin/errors/_components/loop src/app/admin/traces
   src/app/admin/deploys src/app/admin/__tests__` — 21 files, 199 tests, all
   passing. `npx vitest run src/components/admin/premium` (the merged-in
   primitives) — 7 files, 25 tests, still passing after this PR's lint

@@ -2,7 +2,7 @@
 
 > Purpose: enumerate the concrete jobs a college golf coach, a college golf player, and (at high level) baseball/lift-lab users hire this product to do — so that feature work, prioritization, and PR review can be checked against "does this serve a real job" rather than against a feature-list checklist.
 
-This doc frames every job as **When [situation], I want [motivation], so I can [outcome]**. Jobs are grouped by persona. Each job links to the feature area that serves it (see `memory/context/golfhelm-features.md` for implementation detail) and, where relevant, to the competitive gap it closes (see `docs/v3-research-competitive-landscape.md`). Cross-reference `00-business-context.md` for company/product framing, `01-personas.md` for persona framing, and `03-product-invariants.md` for the rules that keep these jobs safe to run in production.
+This doc frames every job as **When [situation], I want [motivation], so I can [outcome]**. Jobs are grouped by persona. Each job links to the feature area that serves it (see `memory/context/golfhelm-features.md` for implementation detail) and, where relevant, to the competitive gap it closes (see docs/v3-research-competitive-landscape.md). Cross-reference `00-business-context.md` for company/product framing, `01-personas.md` for persona framing, and `03-product-invariants.md` for the rules that keep these jobs safe to run in production.
 
 Read this doc as: **jobs are stable even when features change**. If a PR changes *how* a job is served, that is fine. If a PR makes a job harder or impossible to complete, that is a regression regardless of how the code looks.
 
@@ -80,7 +80,7 @@ The player is a student-athlete — many are minors, so every job below is also 
 - **When** my connection drops or I close the app mid-round, **I want** to resume exactly where I left off — same hole, same shot sequence, same miss tags, **so I can** not lose 12 holes of data to a dead phone battery or a bad signal at hole 14.
 - **When** I submit a completed round, **I want** it to immediately feed my stats, trigger my AI review, and (if it's a qualifier round) update the leaderboard, **so I can** see the payoff of logging carefully without extra steps.
 
-Served by: Round Tracking — 4-step wizard, auto-save every 15s, resume-in-progress (`src/hooks/golf/use-auto-save-round.ts`; §1).
+Served by: Round Tracking — 4-step wizard, auto-save every 15s, resume-in-progress (src/hooks/golf/use-auto-save-round.ts; §1).
 
 Known gap: offline shot sync via IndexedDB is currently disabled due to a `ShotRecord` ↔ `OfflineShot` type mismatch (§1 gap table) — DB auto-save still works when connected, but true offline capture (no signal at the course) is not yet reliable. This directly limits the "log fast, don't lose data" job at courses with poor cell coverage; flag PRs that touch offline sync against this known gap rather than assuming it's solved.
 

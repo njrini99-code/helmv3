@@ -96,4 +96,23 @@ describe('schedule parser — junk in, nothing out', () => {
       expect(parseScheduleText(junk)).toEqual([]);
     },
   );
+
+  /**
+   * js/redos (#559): DAYS_INLINE_RE's day-code alternation is ambiguous
+   * (bare "S" matches both `Sa?` and `Su?`; bare "T" matches both `Tu?` and
+   * `Th?`), and it used to repeat that ambiguous group unboundedly. A long
+   * run of "S"/"T" in pasted schedule text — plausible paste-garbage, not a
+   * contrived attack string — drove catastrophic backtracking trying every
+   * partition before the trailing word boundary finally failed. Bounding the
+   * repeat count closes that regardless of how long the line is; proven here
+   * with a line long enough that unbounded backtracking would time the test
+   * out, not asserted from reading the fix.
+   */
+  it('stays fast on a line with a long run of ambiguous day characters (ReDoS regression)', () => {
+    const evil = 'S'.repeat(40) + 'X';
+    const started = performance.now();
+    parseScheduleText(evil);
+    const elapsedMs = performance.now() - started;
+    expect(elapsedMs).toBeLessThan(500);
+  });
 });

@@ -1,5 +1,7 @@
 # Feature Gap / Intent Audit — Documented-Intent Side
 
+Status: active
+
 **Date:** 2026-08-20
 **Scope:** `memory/context/golfhelm-features.md`, `memory/context/baseballhelm-features.md`,
 `memory/context/coachhelm-ai.md`, `docs/audits/BASEBALLHELM_CANONICAL_SPEC.md`,
@@ -194,7 +196,7 @@ Lines 209 and 262 of `coachhelm-ai.md` describe `InsightTrustChips.tsx` and
 `src/lib/coachhelm/v2/feedback/coach-behavior.ts` as real, unwired ("DARK") code.
 Verified: `git ls-files | grep -i 'InsightTrustChips'` → nothing. `git ls-files | grep -i
 'coach-behavior'` → nothing. Both files have been deleted from the repository entirely —
-`docs/audits/COACHHELM_APPROVED_FIXES_PLAN_2026-07-25.md:39` records the deletion decision
+`https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-07/COACHHELM_APPROVED_FIXES_PLAN_2026-07-25.md:39` records the deletion decision
 ("`coach-behavior.ts` and its test + both barrel export blocks... delete. Zero callers of
 the writer or the readers anywhere outside their own barrel/tests"). `coachhelm-ai.md`
 still cites file:line evidence for code that is gone.
@@ -242,7 +244,7 @@ Line 156: "every app writer hardcodes `is_anonymous:false` with a `coach_id`, so
 anonymous branch is currently unreachable — `is_anonymous` is effectively a dead column."
 Verified: the column doesn't exist on `baseball_player_engagement_events` at all (0 hits
 in `database.ts`), and this was a deliberate, tracked fix —
-`docs/audits/PRODUCTION_READINESS_MISSION_2026-07-09.md:54`: "CONFIRMED P1: `is_anonymous`
+`https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-07/PRODUCTION_READINESS_MISSION_2026-07-09.md:54`: "CONFIRMED P1: `is_anonymous`
 column doesn't exist"; regression tests now assert writers send payloads **without** the
 field (`player-peek-engagement-events.test.ts:186`, `watchlist-engagement-events.test.ts:137`).
 The doc's *read-side* description is still accurate and live —

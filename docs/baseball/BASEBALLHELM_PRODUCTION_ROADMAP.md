@@ -2,7 +2,7 @@
      Author: Fable 5, product owner + lead planner · 2026-07-01 · Repo: /Users/ricknini/Downloads/helmv3
      Reconciles-and-supersedes-for-sequencing:
        1. docs/audits/BASEBALLHELM_HONEST_FEATURE_READ.md        (feature truth: 72/21/18/7 · ~61%)
-       2. docs/baseball/PRODUCTION_READINESS_MASTER_PLAN.md      (56-task plan; its spec blocks remain the per-task specs, cited as MP WSx.y)
+       2. https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-07/PRODUCTION_READINESS_MASTER_PLAN.md      (56-task plan; its spec blocks remain the per-task specs, cited as MP WSx.y)
        3. docs/audits/REPO_UNTANGLE_AND_CLEAN_BASE.md            (git/PR/issue/check untangle, cited as UT §x)
        4. docs/baseball/COACH_NAV_8TAB_PROPOSAL.md               (8-tab nav consolidation)
        5. Live prod DB baseline (shared golf+baseball; captured in Phase 0/3 below)

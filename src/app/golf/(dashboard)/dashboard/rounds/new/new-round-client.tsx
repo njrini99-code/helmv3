@@ -52,14 +52,35 @@ import {
   writeRoundRecreatingIfMissing,
   isQualifierClosedError,
 } from '@/lib/golf/round-missing-recovery';
+import { isUnreadableWriteFailure } from '@/lib/golf/round-write-outcome';
 import { updateRoundType } from '@/app/golf/actions/round-type';
 import { getRoundRecoverySnapshots } from '@/lib/offline/shot-storage';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayNewRoundEntry } from '@/components/fairway/pages/rounds-new/FairwayNewRoundEntry';
 import { FairwayShotTracking } from '@/components/fairway/pages/rounds-tracking';
+import { Skeleton } from '@/components/fairway';
 import { Button as FwButton } from '@/components/fairway/controls/button';
 import { ModalShell } from '@/components/fairway/overlays/ModalShell';
 import { localDayIso } from '@/lib/golf/local-day';
+import { useActiveWork } from '@/lib/recovery/use-active-work';
+import { logError } from '@/lib/error-logging';
+import { clearPendingTeePick, loadPendingTeePick, savePendingTeePick } from '@/lib/golf/new-round-pick-cache';
+
+function RoundCompletionChunkLoading() {
+  return (
+    <div
+      role="status"
+      aria-busy="true"
+      aria-live="polite"
+      className="pointer-events-none fixed inset-x-0 bottom-[calc(1rem+var(--golf-mobile-bottom-nav-offset,0px))] z-[var(--fw-z-toast)] flex justify-center px-4"
+    >
+      <div className="flex items-center gap-3 rounded-fw-lg border border-border-subtle bg-surface px-4 py-3 font-fw-sans text-body-sm text-text-secondary shadow-fw-modal">
+        <Skeleton circle className="h-2.5 w-2.5" />
+        <span>Preparing your round…</span>
+      </div>
+    </div>
+  );
+}
 
 // Round-completion-only overlays — never rendered until the round is
 // finished, so keep them out of the initial hole-entry bundle (perf audit
@@ -70,9 +91,11 @@ const FairwaySaveRoundModal = dynamic(
 );
 const FairwayRoundSubmitOverlay = dynamic(
   () => import('@/components/fairway/pages/rounds-new/FairwayRoundSubmitOverlay').then((m) => m.FairwayRoundSubmitOverlay),
+  { loading: () => <RoundCompletionChunkLoading /> },
 );
 const FairwayRoundSummarySheet = dynamic(
   () => import('@/components/fairway/pages/rounds-new/FairwayRoundSummarySheet').then((m) => m.FairwayRoundSummarySheet),
+  { loading: () => <RoundCompletionChunkLoading /> },
 );
 
 type Hole = RoundHole;
@@ -301,11 +324,14 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
   // (and the pagehide beacon) bail out for exactly those two exits — a
   // genuinely unsaved close/refresh/back is untouched.
   const roundExitedSafelyRef = useRef(false);
-  // B9: true from the moment a background beacon save is queued until the
-  // next status check resolves it — see the matching ref in
-  // continue-round-client.tsx for the full "beacon has no readable
-  // response" reasoning.
-  const pendingBeaconRef = useRef(false);
+  // B9: true while a write issued under the current lock token has an
+  // outcome this device could not read — a background beacon, or a
+  // foreground save the browser killed mid-flight. See the matching ref in
+  // continue-round-client.tsx and src/lib/golf/round-write-outcome.ts.
+  const pendingUnreadableWriteRef = useRef(false);
+  // One background beacon per hidden period — iOS fires both
+  // visibilitychange-hidden and pagehide for a single backgrounding.
+  const beaconSentWhileHiddenRef = useRef(false);
   const [pendingFinalStats, setPendingFinalStats] = useState<HoleStats[] | null>(null);
   const [showFinishConfirm, setShowFinishConfirm] = useState(false);
   const [showBackToSetupModal, setShowBackToSetupModal] = useState(false);
@@ -434,37 +460,43 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
     }
   }, [showToast]);
 
+  /**
+   * Resolves `true` when the apparent conflict was this device's own
+   * unreadable write (or a concurrent path already resolved it) and the lock
+   * token now matches the server, so the caller may retry its write; `false`
+   * when the round is now blocked (or was redirected as completed).
+   */
   const handleRoundSyncConflict = useCallback(async (
     fallbackMessage: string,
     knownCurrentUpdatedAt?: string | null,
-  ) => {
+  ): Promise<boolean> => {
     const roundId = savedRoundIdRef.current;
     if (!roundId) {
       // No server round exists yet at all — nothing to reconcile against,
       // and nothing to block (the next persistRoundStart is the only write).
       setError(fallbackMessage);
       showToast(fallbackMessage, 'error');
-      return;
+      return false;
     }
 
-    // B9: a background beacon has no readable response, so its own
-    // successful write is indistinguishable from a genuine multi-device
-    // conflict until this next check. Treat exactly one apparent conflict
-    // after a pending beacon as self-caused rather than escalating to a
-    // permanent write-block on a single device that simply had its phone
-    // lock — see the matching comment in continue-round-client.tsx.
-    if (pendingBeaconRef.current) {
-      pendingBeaconRef.current = false;
+    // B9: a write this device issued but could not read the outcome of (a
+    // beacon, or a save the browser killed mid-flight) is indistinguishable
+    // from a genuine multi-device conflict until this next check. Treat the
+    // next apparent conflict after one as self-caused rather than escalating
+    // to a permanent write-block on a single device that simply had its
+    // phone lock — see the matching comment in continue-round-client.tsx.
+    if (pendingUnreadableWriteRef.current) {
+      pendingUnreadableWriteRef.current = false;
       if (knownCurrentUpdatedAt) {
         lastServerUpdatedAtRef.current = knownCurrentUpdatedAt;
-        return;
+        return true;
       }
       try {
         const stalenessResult = await checkRoundStaleness(roundId, lastServerUpdatedAtRef.current);
         if (stalenessResult.success) {
           if (stalenessResult.data.status === 'completed') {
             redirectToCompletedRound();
-            return;
+            return false;
           }
           if (stalenessResult.data.currentUpdatedAt) {
             lastServerUpdatedAtRef.current = stalenessResult.data.currentUpdatedAt;
@@ -474,7 +506,14 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
         // Nothing more to do — a real write attempt will surface a fresh
         // conflict (and re-enter this function) if this guess was wrong.
       }
-      return;
+      return true;
+    }
+
+    // The poll and a save can both be in flight with the same old token and
+    // both observe the same self-caused mismatch; whichever resolves second
+    // finds the token already adopted. Not a conflict.
+    if (knownCurrentUpdatedAt && knownCurrentUpdatedAt === lastServerUpdatedAtRef.current) {
+      return true;
     }
 
     try {
@@ -487,14 +526,38 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
       const stalenessResult = await checkRoundStaleness(roundId, lastServerUpdatedAtRef.current);
       if (stalenessResult.success && stalenessResult.data.status === 'completed') {
         redirectToCompletedRound();
-        return;
+        return false;
+      }
+      // Same race, seen from the save side: a concurrent self-heal adopted
+      // the token between this save's dispatch and its `conflict` answer.
+      if (stalenessResult.success && !stalenessResult.data.isStale) {
+        return true;
       }
     } catch {
       // Fall through to the generic conflict message below.
     }
 
     blockRoundForConflict(fallbackMessage);
+    return false;
   }, [blockRoundForConflict, redirectToCompletedRound, showToast]);
+
+  /**
+   * Every foreground `savePartialRound` against an existing round goes
+   * through here so a call whose outcome the browser lost (killed fetch on
+   * phone lock — see round-write-outcome.ts) is recorded as a possibly-landed
+   * write under the current token, exactly like a beacon.
+   */
+  const savePartialRoundTracked = useCallback(async (
+    data: PartialRoundData,
+    targetRoundId: string | undefined,
+  ) => {
+    try {
+      return await savePartialRound(data, targetRoundId);
+    } catch (err) {
+      if (targetRoundId && isUnreadableWriteFailure(err)) pendingUnreadableWriteRef.current = true;
+      throw err;
+    }
+  }, []);
 
   // Check for the freshest emergency save on mount. Restore always persists
   // through savePartialRound before reopening Continue Round. A recovery
@@ -565,6 +628,14 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
   // Save data when user leaves the page (phone lock, app switch, tab close)
   const stepRef = useRef(step);
   stepRef.current = step;
+  // A02-001: same gate as handleBeforeUnload below — once setup has been left,
+  // or a course has been named, a stale-asset recovery must not replace the
+  // document out from under the entry the player has not saved yet.
+  useActiveWork(
+    'golf-round-new',
+    step !== 'setup' || Boolean(setupData.courseName),
+  );
+
   useEffect(() => {
     // Warn before closing tab/navigating away if there's any data to lose
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -621,6 +692,12 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
 
       // 2. Best-effort async server save — only during tracking (needs shot data)
       if (stepRef.current !== 'tracking') return;
+      // B2: a device PROVEN behind must not write — the beacon holds no lock
+      // token (see below), so this return is the only thing stopping it.
+      if (roundConflictBlockedRef.current) return;
+      // iOS fires visibilitychange-hidden AND pagehide for one backgrounding;
+      // the snapshot cannot change while hidden, so one beacon covers both.
+      if (beaconSentWhileHiddenRef.current) return;
 
       const inProgressArr = Object.entries(mergedInProgress)
         .filter(([, shots]) => shots.length > 0)
@@ -649,6 +726,10 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
           par: hole.par,
           yardage: hole.yardage,
         })),
+        // Deliberately NO `expectedUpdatedAt` — see continue-round-client: a
+        // beacon has no reader, so a lock rejection would silently drop the
+        // last shots before a phone lock. A device PROVEN behind is kept from
+        // writing by the `roundConflictBlockedRef` return above.
       };
       // Unload-safe: a plain `void savePartialRound(...)` server-action fetch is
       // killed when the page freezes (phone lock / app switch), so the round
@@ -656,25 +737,33 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
       // to deliver during unload. The synchronous emergencySave above is the
       // hard fallback if even the beacon can't be queued.
       if (beaconPartialSave(saveData, savedRoundIdRef.current ?? undefined)) {
-        // B9: this write's response is unreadable — see pendingBeaconRef above.
-        pendingBeaconRef.current = true;
+        beaconSentWhileHiddenRef.current = true;
+        // B9: this write's response is unreadable — see pendingUnreadableWriteRef above.
+        pendingUnreadableWriteRef.current = true;
       }
     };
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
         handlePageHide();
+      } else {
+        beaconSentWhileHiddenRef.current = false;
       }
+    };
+    const handlePageShow = () => {
+      beaconSentWhileHiddenRef.current = false;
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
     document.addEventListener('visibilitychange', handleVisibilityChange);
     // pagehide fires on iOS when switching apps — more reliable than visibilitychange
     window.addEventListener('pagehide', handlePageHide);
+    window.addEventListener('pageshow', handlePageShow);
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('pagehide', handlePageHide);
+      window.removeEventListener('pageshow', handlePageShow);
     };
   }, [playerId]); // All mutable round state is read from refs
 
@@ -1041,6 +1130,9 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
    * tee only seeds defaults. We leave the user on the setup screen to confirm.
    */
   const handleTeePick = useCallback((d: TeeRoundDefaults) => {
+    // Survive a document reload before the round exists on the server (see
+    // new-round-pick-cache.ts); the restore below replays this same handler.
+    savePendingTeePick(playerId, d);
     setCourseMode('saved');
     setSelectedCourseId(null);
     resolvedCourseIdRef.current = d.courseId;
@@ -1078,7 +1170,17 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
     }
     setPreloadedHoleConfigs(configs);
     if (d.holesCount === 9 || d.holesCount === 18) setHolesPerRound(d.holesCount);
-  }, []);
+  }, [playerId]);
+
+  // Any path that drops the cloud pick (manual course, saved course, "change
+  // course") also drops the reload record, so a cleared course never comes
+  // back on the next mount. Only a true→false transition counts: on a fresh
+  // mount the flag is false before the restore below has had its turn.
+  const cloudPickWasActiveRef = useRef(false);
+  useEffect(() => {
+    if (cloudPickWasActiveRef.current && !cloudPickActive) clearPendingTeePick(playerId);
+    cloudPickWasActiveRef.current = cloudPickActive;
+  }, [cloudPickActive, playerId]);
 
   // The course picker IS the first screen of a new round. Auto-open it once
   // on a fresh start (not resuming, nothing chosen yet) so picking a course
@@ -1100,8 +1202,34 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
     const nothingChosenYet =
       !selectedCourseId && selectedTeeIdRef.current == null && !setupData.courseName;
     autoOpenedPickerRef.current = true;
-    if (nothingChosenYet) setTeePickerOpen(true);
-  }, [step, selectedCourseId, setupData.courseName, connectionStatus.isOnline]);
+    if (!nothingChosenYet) return;
+    // A tee picked before this document was reloaded (WKWebView process
+    // kill, stale-asset recovery) comes back as the setup screen it was on,
+    // not as a fresh course picker — that reset with no message is exactly
+    // what a phone reload looked like to the player.
+    const pending = loadPendingTeePick(playerId);
+    if (pending) {
+      // Not a failure, but the only evidence we get that the page reloaded
+      // mid-setup — the process kill that caused it never reaches JS.
+      logError(
+        new Error('Round setup restored after reload'),
+        {
+          component: 'NewRoundClient',
+          action: 'round setup restore',
+          route: '/golf/dashboard/rounds/new',
+          featureArea: 'round_tracking',
+          courseId: pending.courseId,
+          teeId: pending.teeId,
+          navigatorOnLine: typeof navigator !== 'undefined' ? navigator.onLine : null,
+          isNative: typeof navigator !== 'undefined' && /HelmSportsLabsApp/.test(navigator.userAgent),
+        },
+        'low',
+      );
+      handleTeePick(pending);
+      return;
+    }
+    setTeePickerOpen(true);
+  }, [step, selectedCourseId, setupData.courseName, connectionStatus.isOnline, playerId, handleTeePick]);
 
   // Handle saved course selection
   const handleSavedCourseSelect = (courseId: string | null) => {
@@ -1268,7 +1396,38 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
       })),
     };
 
-    if (!navigator.onLine) {
+    // A start that never reaches the server is invisible to every log we
+    // have, so record why here (UNCW, Oviinbyrd GC, 2026-09-17: "it tries to
+    // load then resets, no error message" — nothing server-side to read).
+    const reportStartFailure = (reason: string, detail?: Record<string, unknown>) => {
+      logError(
+        new Error(`Round start failed: ${reason}`),
+        {
+          component: 'NewRoundClient',
+          action: 'round start',
+          route: '/golf/dashboard/rounds/new',
+          featureArea: 'round_tracking',
+          reason,
+          courseId: resolvedCourseIdRef.current ?? null,
+          teeId: selectedTeeIdRef.current ?? null,
+          roundType: setupData.roundType,
+          roundDate: setupData.roundDate,
+          holeCount: configuredHoles.length,
+          navigatorOnLine: typeof navigator !== 'undefined' ? navigator.onLine : null,
+          probeConnected: connectionStatus.isConnected,
+          ...detail,
+        },
+        'medium',
+      );
+    };
+
+    // `navigator.onLine` alone is not trusted: WKWebView reports false on some
+    // reachable networks, and a false negative here silently blocks every
+    // start without a request. Only refuse when the last /api/health probe
+    // (`isConnected`, not `isOnline`, which mirrors navigator.onLine) also
+    // failed; otherwise attempt the save and let the catch below report it.
+    if (!navigator.onLine && !connectionStatus.isConnected) {
+      reportStartFailure('offline');
       setError('Connect to the internet before starting so this round can be saved and resumed.');
       return false;
     }
@@ -1279,6 +1438,7 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
         // B6: this call always sends `holes: []` (a fresh round), so
         // `conflict`/`round_missing`/`hole_invalid` cannot occur here — but
         // `busy`/`retry` can, and both are bare signal keys, not sentences.
+        reportStartFailure('server_rejected', { serverError: result.error });
         setError(describeRoundWriteFailure(result.error));
         return false;
       }
@@ -1286,6 +1446,8 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
       savedRoundIdRef.current = result.data.roundId;
       setSavedRoundId(result.data.roundId);
       if (result.data.updatedAt) lastServerUpdatedAtRef.current = result.data.updatedAt;
+      // The round now exists server-side; Continue Round owns it from here.
+      clearPendingTeePick(playerId);
       setHoles(initialHoles);
       setCompletedHoleStats([]);
       setInProgressShotsByHole({});
@@ -1303,11 +1465,15 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
         holesPerRound: configuredHoles.length as 9 | 18,
       });
       return true;
-    } catch {
+    } catch (err) {
+      reportStartFailure('transport', {
+        errorName: err instanceof Error ? err.name : typeof err,
+        errorMessage: err instanceof Error ? err.message : String(err),
+      });
       setError('Unable to save this round. Please try again before tracking.');
       return false;
     }
-  }, [playerId, selectedQualifierId, selectedRoundNumber, setupData]);
+  }, [connectionStatus.isConnected, playerId, selectedQualifierId, selectedRoundNumber, setupData]);
 
   const handleSetupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1397,6 +1563,11 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
   const handleConfirmedHolesSave = async (configuredHoles: HoleConfig[]) => {
     const validationError = validateBeforeStart();
     if (validationError) {
+      logError(
+        new Error(`Round start blocked: ${validationError}`),
+        { component: 'NewRoundClient', action: 'round start validation', route: '/golf/dashboard/rounds/new', featureArea: 'round_tracking', roundType: setupData.roundType, roundDate: setupData.roundDate },
+        'low',
+      );
       setError(validationError);
       return;
     }
@@ -1577,7 +1748,12 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
 
       serverSaveInProgressRef.current = true;
       try {
-        const result = await savePartialRound(saveData, savedRoundIdRef.current ?? undefined);
+        // Always the LIVE token: `saveData` captured it at build time, and a
+        // self-healed conflict (below) or a dropped id refreshes it mid-loop.
+        const result = await savePartialRoundTracked(
+          { ...saveData, expectedUpdatedAt: lastServerUpdatedAtRef.current },
+          savedRoundIdRef.current ?? undefined,
+        );
         if (result.success) {
           consecutiveSaveFailuresRef.current = 0;
           if (result.data.updatedAt) lastServerUpdatedAtRef.current = result.data.updatedAt;
@@ -1593,7 +1769,9 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
           return true;
         }
         if (result.error === 'conflict') {
-          await handleRoundSyncConflict('This round was updated on another device. Please reload.');
+          // B9: our own unreadable write moved the row — the token is
+          // adopted, so re-send this same checkpoint under it.
+          if (await handleRoundSyncConflict('This round was updated on another device. Please reload.')) continue;
           return false;
         }
         if (isCompletedRoundError(result.error)) {
@@ -1641,7 +1819,7 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
       showAutoSaveWarning();
     }
     return false;
-  }, [dropStaleRoundId, handleRoundSyncConflict, isCompletedRoundError, playerId, redirectToCompletedRound, showAutoSaveWarning]);
+  }, [dropStaleRoundId, handleRoundSyncConflict, isCompletedRoundError, playerId, redirectToCompletedRound, savePartialRoundTracked, showAutoSaveWarning]);
 
   const handleHoleComplete = async (holeIndex: number, holeStats: HoleStats): Promise<boolean> => {
     const pendingCheckpoint = pendingHoleCheckpointRef.current;
@@ -1864,7 +2042,7 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
         serverSaveInProgressRef.current = true;
         try {
           const mergedInProgress = { ...inProgressShotsByHoleRef.current, [holeIndex]: shots };
-          const result = await savePartialRound(
+          const result = await savePartialRoundTracked(
             buildPartialRoundData(undefined, holeIndex, mergedInProgress),
             savedRoundIdRef.current ?? undefined
           );
@@ -1946,7 +2124,7 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
               serverSaveInProgressRef.current = true;
               try {
                 const mergedPending = { ...inProgressShotsByHoleRef.current, [pending.holeIndex]: pending.shots };
-                const r = await savePartialRound(
+                const r = await savePartialRoundTracked(
                   buildPartialRoundData(undefined, pending.holeIndex, mergedPending),
                   savedRoundIdRef.current ?? undefined
                 );
@@ -1994,6 +2172,7 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
     playerId,
     persistCompletedHole,
     redirectToCompletedRound,
+    savePartialRoundTracked,
     showAutoSaveWarning,
   ]);
 
@@ -2051,21 +2230,27 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
         try {
           const stalenessResult = await checkRoundStaleness(savedRoundIdRef.current, lastServerUpdatedAtRef.current);
           if (stalenessResult.success) {
-            if (stalenessResult.data.currentUpdatedAt) {
-              lastServerUpdatedAtRef.current = stalenessResult.data.currentUpdatedAt;
-            }
             if (stalenessResult.data.status === 'completed') {
               redirectToCompletedRound();
               return;
             }
+            // B2/B9: the same self-heal-or-block decision every other write
+            // uses. The token is adopted only when the mismatch was this
+            // device's own unreadable write; a genuine conflict blocks —
+            // never adopt first and bail second, which would let the next
+            // auto-save pass the lock with this device's stale scorecard.
             if (stalenessResult.data.isStale) {
-              setError(
-                'This round was modified on another device or browser tab. ' +
-                'Please reload the page to get the latest data before submitting.'
+              const healed = await handleRoundSyncConflict(
+                'This round was updated on another device. Please reload.',
+                stalenessResult.data.currentUpdatedAt,
               );
-              isSubmittingRef.current = false;
-              setStep('tracking');
-              return;
+              if (!healed) {
+                isSubmittingRef.current = false;
+                setStep('tracking');
+                return;
+              }
+            } else if (stalenessResult.data.currentUpdatedAt) {
+              lastServerUpdatedAtRef.current = stalenessResult.data.currentUpdatedAt;
             }
           }
         } catch {
@@ -2209,14 +2394,23 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
       showToast('This round was updated on another device. Please reload.', 'error');
       return;
     }
-    let result = await savePartialRound(buildPartialRoundData(), savedRoundId || undefined);
+    let result = await savePartialRoundTracked(buildPartialRoundData(), savedRoundId || undefined);
 
     // 'busy' = an auto-save for this round is mid-flight server-side. This is a
     // user-initiated save, so don't fail it on a coalescing skip — wait for the
     // in-flight save to release the row and try once more with current state.
     if (!result.success && (result.error === 'busy' || result.error === 'retry')) {
       await new Promise((resolve) => setTimeout(resolve, 1_500));
-      result = await savePartialRound(buildPartialRoundData(), savedRoundId || undefined);
+      result = await savePartialRoundTracked(buildPartialRoundData(), savedRoundId || undefined);
+    }
+
+    // B9: a self-healed conflict (our own unreadable write moved the row)
+    // adopts the token — re-send once under it. A genuine conflict blocks
+    // and returns below.
+    if (!result.success && result.error === 'conflict') {
+      if (await handleRoundSyncConflict('This round was updated on another device. Please reload.')) {
+        result = await savePartialRoundTracked(buildPartialRoundData(), savedRoundId || undefined);
+      }
     }
 
     // A user-initiated save must not be the one that loses the round: if the id
@@ -2226,7 +2420,7 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
     // that case re-creating would resurrect it.
     if (!result.success && result.error === 'round_missing' && !roundDiscardedRef.current) {
       dropStaleRoundId();
-      result = await savePartialRound(buildPartialRoundData(), undefined);
+      result = await savePartialRoundTracked(buildPartialRoundData(), undefined);
     }
 
     if (!result.success) {
@@ -2733,12 +2927,13 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
       </ModalShell>
 
       {/* Finish Round — Premium Round Summary */}
-      <FairwayRoundSummarySheet
-          open={Boolean(showFinishConfirm && pendingFinalStats)}
+      {pendingFinalStats && (
+        <FairwayRoundSummarySheet
+          open={showFinishConfirm}
           onOpenChange={(next) => {
             if (!next) setShowFinishConfirm(false);
           }}
-          finalStats={pendingFinalStats ?? []}
+          finalStats={pendingFinalStats}
           courseName={setupData.courseName}
           onGoBack={() => setShowFinishConfirm(false)}
           onSubmit={async () => {
@@ -2747,43 +2942,46 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
             await handleRoundSubmit(pendingFinalStats);
           }}
         />
+      )}
 
       {/* Submit Overlay — shows during submission, success celebration, and errors */}
-      <SubmitOverlay
-        isVisible={step === 'submitting'}
-        totalScore={submittingTotalScore}
-        toPar={submittingToPar}
-        courseName={setupData.courseName}
-        error={error || undefined}
-        completedRoundId={completedRoundId ?? undefined}
-        onGoBack={() => {
-          setError('');
-          setQualifierClosed(false);
-          isSubmittingRef.current = false;
-          setStep('tracking');
-          // Always re-show the finish confirm so user can submit again
-          if (pendingFinalStats) {
-            setShowFinishConfirm(true);
-          }
-        }}
-        onRetry={qualifierClosed ? undefined : (pendingFinalStats ? () => {
-          setError('');
-          isSubmittingRef.current = false;
-          void handleRoundSubmit(pendingFinalStats);
-        } : undefined)}
-        secondaryActionLabel={qualifierClosed ? 'Save as practice round' : undefined}
-        onSecondaryAction={qualifierClosed ? handleSaveAsPractice : undefined}
-        onSaveAndExit={async () => {
-          setError('');
-          isSubmittingRef.current = false;
-          await handleSaveForLater();
-        }}
-        onDiscard={async () => {
-          setError('');
-          isSubmittingRef.current = false;
-          await handleDeleteRound();
-        }}
-      />
+      {step === 'submitting' && (
+        <SubmitOverlay
+          isVisible
+          totalScore={submittingTotalScore}
+          toPar={submittingToPar}
+          courseName={setupData.courseName}
+          error={error || undefined}
+          completedRoundId={completedRoundId ?? undefined}
+          onGoBack={() => {
+            setError('');
+            setQualifierClosed(false);
+            isSubmittingRef.current = false;
+            setStep('tracking');
+            // Always re-show the finish confirm so user can submit again
+            if (pendingFinalStats) {
+              setShowFinishConfirm(true);
+            }
+          }}
+          onRetry={qualifierClosed ? undefined : (pendingFinalStats ? () => {
+            setError('');
+            isSubmittingRef.current = false;
+            void handleRoundSubmit(pendingFinalStats);
+          } : undefined)}
+          secondaryActionLabel={qualifierClosed ? 'Save as practice round' : undefined}
+          onSecondaryAction={qualifierClosed ? handleSaveAsPractice : undefined}
+          onSaveAndExit={async () => {
+            setError('');
+            isSubmittingRef.current = false;
+            await handleSaveForLater();
+          }}
+          onDiscard={async () => {
+            setError('');
+            isSubmittingRef.current = false;
+            await handleDeleteRound();
+          }}
+        />
+      )}
 
     </>
   );

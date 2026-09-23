@@ -59,7 +59,7 @@ $$;
 -- Either-or convenience. (current_coach_id + is_in_team follow the same pattern.)
 ```
 
-See `supabase/migrations/20260524190000_v3_rls_helpers.sql` for the canonical implementation of all five. These are the only sanctioned access primitives — policies SHOULD NOT inline equivalent joins. A schema correction patches every policy at once.
+See `supabase/migrations_archive/pre_20260527/20260524190000_v3_rls_helpers.sql` for the canonical implementation of all five. These are the only sanctioned access primitives — policies SHOULD NOT inline equivalent joins. A schema correction patches every policy at once.
 
 ---
 
@@ -175,7 +175,7 @@ Every new RLS policy ships with tests (see [`docs/v3-testing-standards.md`](./v3
 - A cross-team test: coach on team A cannot read team B's rows.
 - A transfer test: a player who has moved teams loses access to their old team's view (relevant for Pattern 3).
 
-Tests use Supabase's `auth.set_session` helper in a SQL fixture or the typescript test helpers under `src/test/rls/`.
+Tests use Supabase's `auth.set_session` helper in a SQL fixture or the typescript test helpers under src/test/rls/.
 
 ---
 

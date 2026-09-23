@@ -14,13 +14,15 @@
  * the window's delta rows and the refreshed prior-state/baseline rows are
  * persisted in one call to `public.record_db_stat_snapshot(...)`.
  *
- * Both RPCs are HELD (20260903180200_helm_debug_db_stat_deltas.sql, not
- * applied to production) — degrades to a 200 no-op while unapplied, same
+ * Both RPCs (20260903180200_helm_debug_db_stat_deltas.sql) were applied to
+ * production 2026-09-03 (see supabase/migrations/HELD.md) — the 200 no-op
+ * fallback remains only for a fresh local stack without the migration, same
  * `isMigrationNotAppliedError` pattern as every other collector in this PR.
  *
  * Auth: `requireCronAuth`. Schedule: every 15 minutes (vercel.json).
  */
 import { NextResponse, type NextRequest } from 'next/server';
+import * as Sentry from '@sentry/nextjs';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { recordJobRun } from '@/lib/admin/job-log';
 import { describeError } from '@/lib/utils/describe-error';
@@ -32,6 +34,12 @@ import {
   type StatCurrentRow,
   type StatPriorRow,
 } from '@/lib/observability/supabase/query-regression';
+import {
+  rankStatements,
+  selectStatementsToPage,
+  slowStatementFingerprint,
+  type RankableStatement,
+} from '@/lib/observability/supabase/statement-ranking';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -63,6 +71,7 @@ interface RawCurrentRow {
   total_exec_ms: number;
   mean_exec_ms: number;
   max_exec_ms: number;
+  min_exec_ms?: number | null;
   rows: number;
   shared_blks_hit: number;
   shared_blks_read: number;
@@ -228,11 +237,83 @@ export async function GET(req: NextRequest) {
       throw new Error(`record_db_stat_snapshot failed: ${describeError(writeResult.error)}`);
     }
 
+    // D5 task 1 + task 5: top-25-by-total / top-25-by-mean statement
+    // samples, plus a once-per-UTC-day Sentry page for anything over
+    // SLOW_STATEMENT_MEAN_THRESHOLD_MS mean. Reuses the SAME `current`
+    // snapshot fetched above — no second pg_stat_statements read.
+    let statementSampleResult: { skipped?: string } = {};
+    try {
+      const rankable: RankableStatement[] = current.map((raw) => ({
+        queryid: raw.queryid,
+        safeQueryClass: raw.safe_query_class,
+        sourceClass: raw.source_class,
+        calls: raw.calls,
+        rows: raw.rows,
+        totalExecMs: raw.total_exec_ms,
+        meanExecMs: raw.mean_exec_ms,
+        maxExecMs: raw.max_exec_ms,
+        minExecMs: raw.min_exec_ms ?? null,
+      }));
+      const ranked = rankStatements(rankable);
+
+      const candidateQueryids = Array.from(
+        new Set([...ranked.topByTotal, ...ranked.topByMean].map((r) => r.queryid)),
+      );
+      const alertStateResult = (await admin.rpc('helm_debug_read_statement_alert_state' as never, {
+        p_queryids: candidateQueryids,
+      } as never)) as { data: Record<string, string> | null; error: MaybePostgrestError };
+
+      const alertState = alertStateResult.error ? {} : (alertStateResult.data ?? {});
+      const toPage = selectStatementsToPage(ranked, alertState, new Date());
+
+      for (const candidate of toPage) {
+        const row = [...ranked.topByTotal, ...ranked.topByMean].find((r) => r.queryid === candidate.queryid);
+        try {
+          Sentry.captureMessage(row?.safeQueryClass ?? candidate.queryid, {
+            level: 'warning',
+            fingerprint: [slowStatementFingerprint(candidate.queryid)],
+            tags: {
+              'helm.feature': 'database-tab',
+              'supabase.service': 'postgres',
+              'supabase.operation': 'stat-statements',
+            },
+            extra: {
+              queryid: candidate.queryid,
+              meanExecMs: candidate.meanExecMs,
+              sourceClass: row?.sourceClass,
+            },
+          });
+        } catch {
+          // Sentry itself must never break the collector — same fail-open
+          // contract as realtime.ts's Sentry.captureMessage call.
+        }
+      }
+
+      const statementWrite = (await admin.rpc('record_db_statement_samples' as never, {
+        p_sampled_at: sampledAt,
+        p_total_rows: ranked.topByTotal,
+        p_mean_rows: ranked.topByMean,
+        p_paged_queryids: toPage,
+      } as never)) as { data: number | null; error: MaybePostgrestError };
+
+      if (statementWrite.error) {
+        statementSampleResult = isMigrationNotAppliedError(statementWrite.error)
+          ? { skipped: 'migration-not-applied' }
+          : { skipped: `write-failed: ${describeError(statementWrite.error)}` };
+      }
+    } catch (err) {
+      // Statement-sample capture is additive to the existing delta engine —
+      // a failure here must never fail the whole cron run or the response
+      // it already computed above.
+      statementSampleResult = { skipped: `unexpected: ${describeError(err)}` };
+    }
+
     return NextResponse.json({
       ok: true,
       rowsWritten: writeResult.data,
       queriesObserved: current.length,
       regressionCount,
+      statementSamples: statementSampleResult,
     });
   });
 }

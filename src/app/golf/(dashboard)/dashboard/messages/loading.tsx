@@ -28,7 +28,7 @@ export default function Loading() {
   return (
     <div
       className={fairwayScope(
-        'flex h-[calc(100dvh-4rem-56px-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))] flex-col overflow-hidden bg-canvas md:h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))]',
+        'flex h-[calc(100dvh-4rem-56px-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))] flex-col overflow-hidden bg-canvas bg-canvas-gradient md:h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))]',
       )}
     >
       <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col overflow-hidden px-4 py-3 sm:px-6 sm:py-6 lg:py-8">

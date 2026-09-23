@@ -97,4 +97,17 @@ describe('password reset email — unchanged behaviour', () => {
 
     expect(await send1()).toBe('unconfigured');
   });
+
+  /**
+   * CONTROL for the outbound customer-email kill switch (owner decision,
+   * 2026-09-06, src/lib/email/outbound-gate.ts): the app-sent password reset
+   * is explicitly NOT gated — an account cannot recover without it — and
+   * must still call Resend with the switch off (the repo default).
+   */
+  it('still calls Resend with HELM_CUSTOMER_EMAIL_ENABLED unset', async () => {
+    delete process.env.HELM_CUSTOMER_EMAIL_ENABLED;
+
+    expect(await send1()).toBe('sent');
+    expect(send).toHaveBeenCalledTimes(1);
+  });
 });

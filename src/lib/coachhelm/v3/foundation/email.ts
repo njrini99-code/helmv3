@@ -2,9 +2,10 @@
  * v3 email provider — Resend wrapper.
  *
  * Thin canonical wrapper around the Resend SDK so the rest of the v3
- * stack (W37 weekly coach email, W42 notification routing, W30 LLM
- * spend-alert digests) doesn't import Resend directly. Lets the provider
- * swap later if needed without rewriting callsites.
+ * stack (W37 weekly coach email, W30 LLM spend-alert digests) doesn't
+ * import Resend directly. Lets the provider swap later if needed without
+ * rewriting callsites. (W42 notification routing does NOT use this module —
+ * it imports @/lib/notifications/email directly; verified 2026-09-06.)
  *
  * Per Part XXVIII locked decision: Resend is the v3 email provider.
  * Resend@^6.7.0 was already installed before W9-pt3 started (confirmed
@@ -16,6 +17,7 @@
  */
 
 import { Resend } from 'resend';
+import { gateCustomerEmail } from '@/lib/email/outbound-gate';
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const FROM_EMAIL =
@@ -67,6 +69,18 @@ export interface SendEmailResult {
  * preview deploys.
  */
 export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult> {
+  // Outbound customer-email kill switch (owner decision, 2026-09-06) — this
+  // wrapper is the choke point for the weekly coach email (and any future v3
+  // caller). See memory/features/email_outbound.md.
+  const gate = gateCustomerEmail({
+    kind: 'coachhelm_v3',
+    recipientCount: Array.isArray(input.to) ? input.to.length : 1,
+    source: 'coachhelm/v3/foundation/email.sendEmail',
+  });
+  if (!gate.allowed) {
+    return { delivered: false, error: gate.reason };
+  }
+
   const client = getEmailClient();
   if (!client) {
     return {

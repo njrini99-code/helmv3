@@ -12,8 +12,12 @@
  */
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
-import { Masthead, PaperCard, HairlineRule, PacketSeal } from '..';
-import type { RuledStatLineProps } from '..';
+// Leaf imports, not the parent barrel ('..') — see CoverHero.tsx for why.
+import { Masthead } from '../Masthead';
+import { PaperCard } from '../PaperCard';
+import { HairlineRule } from '../HairlineRule';
+import { PacketSeal } from '../CommitSeal';
+import type { RuledStatLineProps } from '../RuledStatLine';
 import { StatLineStack } from './StatLineStack';
 
 export interface TearSheetPlayer {

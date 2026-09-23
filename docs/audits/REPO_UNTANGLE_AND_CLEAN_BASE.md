@@ -1,5 +1,7 @@
 # REPO UNTANGLE & CLEAN BASE PLAN
 
+Status: active
+
 **Date:** 2026-07-01
 **Repo:** helmv3 (Helm Sports Labs monorepo — active push: BaseballHelm)
 **Verified live at time of writing:** branch `batch/baseball-fixes` checked out in the main worktree; 222 local branches (220 excl. `main` + `batch/baseball-fixes`); 37 worktrees; 57 open PRs; 49 open issues; main tip `53697b35` CI workflow = **failure**; PR #650 = MERGEABLE but mergeStateStatus **BLOCKED**.

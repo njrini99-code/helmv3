@@ -16,6 +16,9 @@ import { StateChip } from '../_components/Row';
 import { LocalTime } from '../_components/LocalTime';
 import { buildJobWaterfall } from '@/lib/admin/triage/job-waterfall';
 import { JobExecutionWaterfall } from '@/components/admin/triage/JobExecutionWaterfall';
+import { fetchHelmJobsQueueStatus } from '@/lib/admin/data/helm-jobs';
+import { HelmJobsQueuePanel } from './HelmJobsQueuePanel';
+import { SectionLabel } from '../_components/SectionLabel';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,6 +35,21 @@ const CRON_STATUS_TONE: Record<CronBoardRow['status'], FwStatusTone> = {
   // danger — the job is alive and its schedule is fine — and emphatically not
   // success, which is the lie this status exists to stop.
   degraded: 'warning',
+};
+
+/**
+ * Per-job-type note surfaced under the job identity on both the card and
+ * table renderings. Only `reliability-triage` and `selfheal-triage` have
+ * one today: each writes a SECOND `background_job_logs` detail row per run
+ * by design (the triage pass and the invocation/heartbeat it records are
+ * separate rows under the same `jobType`), which otherwise reads as a
+ * duplicate-write bug to anyone scanning "last 20 runs" for this job. Add
+ * here, not inline in JSX, so the reasoning lives in one place next to the
+ * jobType it explains.
+ */
+const JOB_TYPE_NOTE: Partial<Record<string, string>> = {
+  'reliability-triage': 'Writes a second detail row per run by design (triage pass + invocation record) — not a duplicate.',
+  'selfheal-triage': 'Writes a second detail row per run by design (triage pass + invocation record) — not a duplicate.',
 };
 
 /**
@@ -85,14 +103,6 @@ function InngestDetail({ inngest }: { inngest: InngestHealth }) {
         ) : null}
       </p>
     </>
-  );
-}
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <h2 className="border-b border-primary-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
-      {children}
-    </h2>
   );
 }
 
@@ -194,7 +204,18 @@ function CronJobCard({ row }: { row: CronBoardRow }) {
     <Inset padding="sm" className={cn('relative pl-3', isAlarm && 'ring-1 ring-fw-danger/30')}>
       <span aria-hidden className={cn('absolute inset-y-2 left-0 w-1 rounded-r-sm', rail)} />
       <div className="flex items-start justify-between gap-3">
-        <p className="min-w-0 break-words font-fw-mono text-xs font-medium text-warm-900">{row.jobType}</p>
+        <p className="min-w-0 break-words font-fw-mono text-xs font-medium text-warm-900">
+          {row.jobType}
+          {JOB_TYPE_NOTE[row.jobType] ? (
+            <span
+              title={JOB_TYPE_NOTE[row.jobType]}
+              className="ml-1 cursor-help font-sans text-warm-400"
+              aria-label={JOB_TYPE_NOTE[row.jobType]}
+            >
+              ⓘ
+            </span>
+          ) : null}
+        </p>
         {/* Status still reaches assistive tech and colour-blind readers as a
             word — the rail is reinforcement, never the only channel. */}
         <StateChip
@@ -300,6 +321,15 @@ function CronBoardTable({ rows, unreadable }: { rows: CronBoardRow[]; unreadable
               <tr key={row.jobType}>
                 <td className="sticky left-0 z-10 bg-surface py-2 pr-3 font-fw-mono text-xs text-warm-900">
                   {row.jobType}
+                  {JOB_TYPE_NOTE[row.jobType] ? (
+                    <span
+                      title={JOB_TYPE_NOTE[row.jobType]}
+                      className="ml-1 cursor-help font-sans text-warm-400"
+                      aria-label={JOB_TYPE_NOTE[row.jobType]}
+                    >
+                      ⓘ
+                    </span>
+                  ) : null}
                 </td>
                 <td className="px-3">
                   <StatusPill tone={CRON_STATUS_TONE[row.status]} dot size="sm">
@@ -466,8 +496,9 @@ function IntegrityGrid({ checks }: { checks: IntegrityRow[] }) {
 /**
  * The self-healing loop.
  *
- * One of its three stages runs OUTSIDE this deployment — a launchd agent on
- * the owner's laptop (Repair) — so nothing in the app can observe it failing.
+ * One of its three stages runs OUTSIDE this deployment — a GitHub Actions
+ * workflow (Repair; it was a launchd agent on the owner's laptop until
+ * 2026-09-05) — so nothing in the app can observe it failing.
  * Its only evidence of life is a heartbeat row, and this panel is where its
  * absence becomes visible. Without it, a dead stage and a quiet week look the
  * same. (Diagnose moved from an Anthropic-hosted cloud routine onto a Vercel
@@ -583,9 +614,12 @@ function SelfHealLoop({ stages, status }: { stages: SelfHealStageRow[]; status: 
 
 async function JobsBody() {
   const tab = await fetchJobsTab();
+  const helmJobsStatus = await fetchHelmJobsQueueStatus();
 
   return (
     <div className="space-y-6">
+      <HelmJobsQueuePanel status={helmJobsStatus} />
+
       <Surface padding="sm">
         <KeyPanelRule />
         <SectionLabel>Self-healing loop — error to diagnosis to repair to closure</SectionLabel>

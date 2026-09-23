@@ -7,7 +7,7 @@
  * golf_course_tee_holes, golf_team_saved_courses, + edit-history) and the
  * additive golf_courses cloud columns.
  *
- * Invariants enforced here (see docs/audits/COURSE_LIBRARY_AUDIT_2026-06-13.md):
+ * Invariants enforced here (see https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-06/audits/COURSE_LIBRARY_AUDIT_2026-06-13.md):
  *  • SNAPSHOT SAFETY — nothing in this file touches golf_rounds / golf_holes /
  *    golf_shots. Editing a tee or its holes NEVER rewrites historical round
  *    truth; rounds snapshot par/yards at submit time and a tee only feeds
@@ -268,6 +268,10 @@ async function listCoursesImpl(opts: ListCoursesOptions = {}): Promise<GolfCours
       `[listCourses] course listing read failed — the library will look empty: ${describeError(error)}`,
       { action: 'courseLibrary.listCourses', featureArea: 'course_library' },
     );
+    // Deliberate, not a swallow — see the comment above: lenient rather
+    // than throwing because this feeds a picker inside a larger round-entry
+    // form, and the failure is now recorded (it wasn't before this file's
+    // own prior fix pass).
     return [];
   }
 
@@ -373,6 +377,9 @@ async function getRecentlyPlayedCoursesImpl(limit = 12): Promise<GolfCourse[]> {
       `[getRecentlyPlayedCourses] rounds read failed — the player's recent courses will look empty: ${describeError(roundsError)}`,
       { action: 'courseLibrary.recentlyPlayed', featureArea: 'course_library', playerId: player.id },
     );
+    // Deliberate, not a swallow — see the comment above: this function has
+    // no failure channel without a signature change, the consequence is
+    // mild, and the failure is now logged instead of invisible.
     return [];
   }
   if (!rounds || rounds.length === 0) return [];
@@ -420,6 +427,8 @@ async function getRecentlyPlayedCoursesImpl(limit = 12): Promise<GolfCourse[]> {
       `[getRecentlyPlayedCourses] course resolve failed — recent courses will look empty: ${describeError(courseRowsError)}`,
       { action: 'courseLibrary.recentlyPlayed', featureArea: 'course_library' },
     );
+    // Same leniency, same duty to say so — see the roundsError branch above
+    // in this function. Failure is now logged.
     return [];
   }
   if (!courseRows) return [];
@@ -447,7 +456,7 @@ async function getCourseTeeCountsImpl(courseIds: string[]): Promise<Record<strin
   // PostgREST caps a single response at 1000 rows. A library of ~250 courses with
   // several tee sets each exceeds that, silently undercounting the "N tees" badge
   // for whichever courses fall past row 1000. Paginate with a stable `id` order.
-  const { data } = await fetchAllRowsResult<{ id: string; course_id: string }>((from, to) =>
+  const { data, error } = await fetchAllRowsResult<{ id: string; course_id: string }>((from, to) =>
     supabase
       .from('golf_course_tees')
       .select('id, course_id')
@@ -458,6 +467,14 @@ async function getCourseTeeCountsImpl(courseIds: string[]): Promise<Record<strin
     undefined,
     { table: 'golf_course_tees', action: 'getCourseTeeCounts', feature: 'course_library', sport: 'golf' },
   );
+  // Same leniency, same duty to say so as getRecentlyPlayedCourses above: a
+  // failed read here silently zeroes every "N tees" badge.
+  if (error) {
+    await logServerError(
+      `[getCourseTeeCounts] tee count read failed — every "N tees" badge will read zero: ${describeError(error)}`,
+      { action: 'courseLibrary.teeCounts', featureArea: 'course_library' },
+    );
+  }
   const counts: Record<string, number> = {};
   for (const r of data ?? []) {
     const cid = r.course_id;
@@ -706,13 +723,36 @@ export interface TeeRoundDefaults {
 async function getTeeRoundDefaultsImpl(teeId: string): Promise<TeeRoundDefaults | null> {
   const supabase = await createClient();
   const tee = await getTeeWithHoles(teeId);
-  if (!tee || tee.deleted_at) return null;
+  if (!tee || tee.deleted_at) {
+    // The player picked a tee we returned to them and we could not find it —
+    // it was deleted, or RLS blocked it here after showing it in the list.
+    // Silent null used to reach the client as "Could not load that tee" with
+    // nothing on the server to trace (Oviinbyrd GC, MacTier Ontario, 2026-09-17).
+    await logServerError('getTeeRoundDefaults: tee missing or deleted', {
+      action: 'getTeeRoundDefaults',
+      feature: 'course_library',
+      featureArea: 'round_tracking',
+      metadata: { teeId, deleted: !!tee?.deleted_at },
+    }, 'warning');
+    return null;
+  }
 
-  const { data: course } = await supabase
+  const { data: course, error: courseErr } = await supabase
     .from('golf_courses')
     .select('name, city, state')
     .eq('id', tee.course_id)
     .maybeSingle();
+
+  if (courseErr || !course) {
+    await logServerError('getTeeRoundDefaults: course row missing', {
+      action: 'getTeeRoundDefaults',
+      feature: 'course_library',
+      featureArea: 'round_tracking',
+      metadata: { teeId, courseId: tee.course_id, courseErr: courseErr?.message ?? null },
+    }, 'warning');
+    // Fall through — the client can still start the round with an empty
+    // course-state string (see below), we just want a record that it happened.
+  }
 
   return {
     teeId: tee.id,
@@ -832,6 +872,9 @@ async function loadTeamSaved(
       `[getTeamSavedCourses] saved-courses read failed — the Saved tab will look empty: ${describeError(savedError)}`,
       { action: 'courseLibrary.getTeamSavedCourses', featureArea: 'course_library', teamId },
     );
+    // Deliberate, not a swallow — see this function's own header comment:
+    // a degraded Saved tab beats a broken picker, and the failure is now
+    // logged instead of reading identically to "nothing saved yet".
     return [];
   }
   if (!savedRows || savedRows.length === 0) return [];

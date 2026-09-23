@@ -1,5 +1,5 @@
 import { expect } from '@playwright/test';
-import { golfPlayerTest as test, hasGolfPlayerAuth } from './fixtures/golf-auth';
+import { golfPlayerTest as test, hasGolfPlayerAuth, requireGolfAuthOrSkip } from './fixtures/golf-auth';
 
 /**
  * Golf Round E2E Test
@@ -47,7 +47,7 @@ async function closeCoursePicker(page: import('@playwright/test').Page): Promise
 }
 
 test.describe('Golf Round - Complete Flow', () => {
-  test.skip(!hasGolfPlayerAuth, 'Set GOLFHELM_PLAYER_* or E2E_GOLF_* credentials to run.');
+  requireGolfAuthOrSkip(test, hasGolfPlayerAuth, 'GOLFHELM_PLAYER_* or E2E_GOLF_*');
 
   test('should configure a full round entry', async ({ page }) => {
     // Navigate to new round page
@@ -187,7 +187,7 @@ test.describe('Golf Round - Complete Flow', () => {
 });
 
 test.describe('Golf Round - Stats Calculation', () => {
-  test.skip(!hasGolfPlayerAuth, 'Set GOLFHELM_PLAYER_* or E2E_GOLF_* credentials to run.');
+  requireGolfAuthOrSkip(test, hasGolfPlayerAuth, 'GOLFHELM_PLAYER_* or E2E_GOLF_*');
 
   test('should display stats after round completion', async ({ page }) => {
     // Navigate to stats page

@@ -1,0 +1,162 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; }
+    a { color: oklch(0.488 0.124 150); }
+    a:hover { color: oklch(0.567 0.142 149.6); }
+    .fw { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "Segoe UI", Roboto, ui-sans-serif, system-ui, sans-serif; }
+    .mono { font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace; font-variant-numeric: tabular-nums; }
+    /* every state is one floating glass slab — the same treatment the thread's
+       composer has, shown whole rather than as a cropped fragment */
+    .slab { padding: 12px 12px 14px 12px; border-radius: 1.75rem;
+      background: rgb(244 232 210 / 0.74); backdrop-filter: blur(22px) saturate(190%); -webkit-backdrop-filter: blur(22px) saturate(190%);
+      box-shadow: inset 0 1px 0 rgb(255 248 233 / 0.6), 0 2px 4px oklch(0.18 0.01 60 / 0.06), 0 12px 32px oklch(0.18 0.01 60 / 0.10); }
+    .track { display: flex; align-items: center; gap: 8px; padding: 5px 5px 5px 12px; border-radius: 1.75rem;
+      background: linear-gradient(180deg, oklch(0.989 0.013 87) 0%, oklch(0.980 0.017 86) 100%);
+      box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.6), 0 0 0 1px oklch(0.862 0.013 82 / 0.95); }
+    .track-on { box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.6), 0 0 0 1px oklch(0.648 0.149 149.6 / 0.30), 0 0 0 4px oklch(0.648 0.149 149.6 / 0.10); }
+    .send { display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 9999px; flex-shrink: 0; }
+    .send-on { background: linear-gradient(165deg, oklch(0.567 0.142 149.6) 0%, oklch(0.526 0.128 149.8) 100%);
+      box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.18), 0 2px 4px oklch(0.488 0.124 150 / 0.28), 0 6px 16px oklch(0.488 0.124 150 / 0.22); }
+    .send-off { background: oklch(0.963 0.021 84); box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.5), 0 0 0 1px oklch(0.862 0.013 82 / 0.95); }
+    .cap { font-size: 12px; line-height: 16px; font-weight: 500; color: oklch(0.535 0.015 70); padding-left: 4px; }
+    .ph { flex-grow: 1; font-size: 15px; color: oklch(0.535 0.015 70); }
+    .tx { flex-grow: 1; font-size: 15px; line-height: 22px; color: oklch(0.216 0.007 49); }
+    .clip { flex-shrink: 0; }
+  </style>
+</helmet>
+
+<div class="fw" style="display: flex; flex-direction: column; gap: 22px; width: 390px; padding: 28px 16px 32px 16px; color: oklch(0.216 0.007 49);
+     background:
+       radial-gradient(132% 92% at 50% -15%, oklch(0.982 0.014 86) 0%, oklch(0.970 0.020 84) 44%, transparent 78%),
+       linear-gradient(180deg, oklch(0.973 0.018 85) 0%, oklch(0.955 0.026 83) 52%, oklch(0.948 0.028 82) 100%);">
+
+  <!-- 1 · resting -->
+  <div style="display: flex; flex-direction: column; gap: 7px;">
+    <span class="cap">Resting — send is inert until there is something to send</span>
+    <div class="slab">
+      <div class="track">
+        <svg class="clip" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="oklch(0.535 0.015 70)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5 12.3 19a4.6 4.6 0 0 1-6.5-6.5l7.7-7.6a3 3 0 1 1 4.3 4.3l-7.7 7.6a1.5 1.5 0 1 1-2.1-2.1l7-7"></path></svg>
+        <span class="ph">Message Cole</span>
+        <div class="send send-off">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="oklch(0.535 0.015 70)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12h14"></path><path d="m12.5 6 6 6-6 6"></path></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2 · typing, grown -->
+  <div style="display: flex; flex-direction: column; gap: 7px;">
+    <span class="cap">Typing — the track grows to 5 lines, then scrolls</span>
+    <div class="slab">
+      <div class="track track-on" style="align-items: flex-end;">
+        <svg class="clip" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="oklch(0.488 0.124 150)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 10px;"><path d="M20 11.5 12.3 19a4.6 4.6 0 0 1-6.5-6.5l7.7-7.6a3 3 0 1 1 4.3 4.3l-7.7 7.6a1.5 1.5 0 1 1-2.1-2.1l7-7"></path></svg>
+        <div class="tx" style="padding: 9px 0;">Bring the travel case Thursday night — we load the bus at six<span style="display: inline-block; width: 1.5px; height: 17px; margin-left: 1px; background: oklch(0.648 0.149 149.6); vertical-align: -3px;"></span></div>
+        <div class="send send-on" style="margin-bottom: 0;">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="oklch(0.994 0.006 95)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12h14"></path><path d="m12.5 6 6 6-6 6"></path></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3 · replying -->
+  <div style="display: flex; flex-direction: column; gap: 7px;">
+    <span class="cap">Replying — the quote sits above the track, dismissable</span>
+    <div class="slab">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px; padding: 8px 10px; border-radius: 0.875rem; background: oklch(0.648 0.149 149.6 / 0.10);">
+        <span style="width: 2.5px; align-self: stretch; border-radius: 9999px; background: oklch(0.540 0.132 149.7); flex-shrink: 0;"></span>
+        <div style="display: flex; flex-direction: column; gap: 1px; min-width: 0; flex-grow: 1;">
+          <span style="font-size: 11px; font-weight: 600; color: oklch(0.488 0.124 150);">Replying to Cole Bennett</span>
+          <span style="font-size: 12px; line-height: 17px; color: oklch(0.444 0.014 65); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Tee time moved to 7:40 — bus leaves at six.</span>
+        </div>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="oklch(0.444 0.014 65)" stroke-width="2.4" stroke-linecap="round" style="flex-shrink: 0;"><path d="M6 6l12 12M18 6 6 18"></path></svg>
+      </div>
+      <div class="track track-on">
+        <svg class="clip" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="oklch(0.488 0.124 150)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5 12.3 19a4.6 4.6 0 0 1-6.5-6.5l7.7-7.6a3 3 0 1 1 4.3 4.3l-7.7 7.6a1.5 1.5 0 1 1-2.1-2.1l7-7"></path></svg>
+        <span class="tx">Confirmed<span style="display: inline-block; width: 1.5px; height: 17px; margin-left: 1px; background: oklch(0.648 0.149 149.6); vertical-align: -3px;"></span></span>
+        <div class="send send-on">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="oklch(0.994 0.006 95)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12h14"></path><path d="m12.5 6 6 6-6 6"></path></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4 · attachment uploading -->
+  <div style="display: flex; flex-direction: column; gap: 7px;">
+    <span class="cap">Attachment — staged, with real upload progress</span>
+    <div class="slab">
+      <div style="display: flex; align-items: center; gap: 11px; margin-bottom: 8px; padding: 9px 10px; border-radius: 0.875rem; background: linear-gradient(180deg, oklch(0.989 0.013 87) 0%, oklch(0.980 0.017 86) 100%); box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.55), 0 1px 2px oklch(0.18 0.01 60 / 0.05);">
+        <div style="display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 0.625rem; background: linear-gradient(160deg, oklch(0.971 0.024 150) 0%, oklch(0.939 0.045 150) 100%); flex-shrink: 0;">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="oklch(0.488 0.124 150)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v5h5"></path><path d="M14 3H6.5A1.5 1.5 0 0 0 5 4.5v15A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V8z"></path></svg>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 5px; min-width: 0; flex-grow: 1;">
+          <div style="display: flex; align-items: baseline; gap: 8px;">
+            <span style="font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">kiawah-pairings.pdf</span>
+            <span class="mono" style="margin-left: auto; flex-shrink: 0; font-size: 11px; color: oklch(0.535 0.015 70);">62%</span>
+          </div>
+          <div style="height: 4px; border-radius: 9999px; background: oklch(0.862 0.013 82 / 0.6); overflow: hidden;">
+            <div style="width: 62%; height: 100%; border-radius: 9999px; background: linear-gradient(90deg, oklch(0.567 0.142 149.6), oklch(0.648 0.149 149.6));"></div>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 9999px; background: oklch(0.963 0.021 84); flex-shrink: 0;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="oklch(0.444 0.014 65)" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"></path></svg>
+        </div>
+      </div>
+      <div class="track">
+        <svg class="clip" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="oklch(0.488 0.124 150)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5 12.3 19a4.6 4.6 0 0 1-6.5-6.5l7.7-7.6a3 3 0 1 1 4.3 4.3l-7.7 7.6a1.5 1.5 0 1 1-2.1-2.1l7-7"></path></svg>
+        <span class="tx">Pairings for Saturday</span>
+        <div class="send send-on">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="oklch(0.994 0.006 95)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12h14"></path><path d="m12.5 6 6 6-6 6"></path></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5 · sending -->
+  <div style="display: flex; flex-direction: column; gap: 7px;">
+    <span class="cap">Sending — the field holds its text until the send lands</span>
+    <div class="slab">
+      <div class="track">
+        <svg class="clip" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="oklch(0.535 0.015 70)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.5;"><path d="M20 11.5 12.3 19a4.6 4.6 0 0 1-6.5-6.5l7.7-7.6a3 3 0 1 1 4.3 4.3l-7.7 7.6a1.5 1.5 0 1 1-2.1-2.1l7-7"></path></svg>
+        <span class="tx" style="opacity: 0.5;">See you at the bus.</span>
+        <div class="send send-on">
+          <span style="display: flex; align-items: center; gap: 3px;">
+            <span style="width: 5px; height: 5px; border-radius: 9999px; background: oklch(0.994 0.006 95); opacity: 0.35;"></span>
+            <span style="width: 5px; height: 5px; border-radius: 9999px; background: oklch(0.994 0.006 95); opacity: 0.85;"></span>
+            <span style="width: 5px; height: 5px; border-radius: 9999px; background: oklch(0.994 0.006 95); opacity: 0.35;"></span>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6 · failed -->
+  <div style="display: flex; flex-direction: column; gap: 7px;">
+    <span class="cap">Didn't send — recoverable, and the text is never lost</span>
+    <div class="slab">
+      <div style="display: flex; align-items: center; gap: 9px; margin-bottom: 8px; padding: 8px 12px; border-radius: 0.875rem; background: oklch(0.505 0.19 27 / 0.08);">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="oklch(0.505 0.19 27)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5"></path><path d="M12 16.2h.01"></path></svg>
+        <span style="flex-grow: 1; font-size: 12px; line-height: 17px; color: oklch(0.505 0.19 27);">Couldn't send — you're offline</span>
+        <span style="font-size: 12px; font-weight: 600; color: oklch(0.505 0.19 27);">Retry</span>
+      </div>
+      <div class="track">
+        <svg class="clip" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="oklch(0.535 0.015 70)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5 12.3 19a4.6 4.6 0 0 1-6.5-6.5l7.7-7.6a3 3 0 1 1 4.3 4.3l-7.7 7.6a1.5 1.5 0 1 1-2.1-2.1l7-7"></path></svg>
+        <span class="tx">See you at the bus.</span>
+        <div class="send send-on">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="oklch(0.994 0.006 95)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12h14"></path><path d="m12.5 6 6 6-6 6"></path></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

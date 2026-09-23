@@ -1,9 +1,4 @@
 {
-  "total": 12,
-  "byArea": {
-    "app/golf/actions": 5,
-    "lib/coachhelm/v2": 4,
-    "lib/coachhelm/v3": 2,
-    "test/golf/actions": 1
-  }
+  "total": 0,
+  "byArea": {}
 }

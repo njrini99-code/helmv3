@@ -1,0 +1,257 @@
+name: Detect changes
+
+# ONE changed-path detector for the whole pipeline, called by ci.yml,
+# codeql.yml, feature-awareness.yml and migration-lockdown.yml — each of
+# which used to run its own dorny/paths-filter (or, for feature-awareness, a
+# hand-rolled git-diff classifier) with its own copy of the path lists.
+#
+# `workflow_call` reusable workflow, ONE job. The job id/name is deliberately
+# "detect changes" everywhere it's called: no caller needs `- Detect changed
+# paths`, `- Detect code-relevant paths`, `- Detect E2E-relevant paths`, or
+# `- Check Sentry snapshot prerequisites` as a separate check row any more —
+# those all collapse into this workflow's single "Detect changes" row inside
+# whichever caller invoked it.
+#
+# FAIL CLOSED, uniformly, the same rule ci.yml's original detect-changes job
+# used: any inability to classify the diff (a non-`pull_request` event, or
+# the paths-filter step itself failing) resolves every boolean output to
+# `true` EXCEPT `docs_only`, which resolves to `false` (i.e.
+# `mapped_feature_code` resolves to `true`) — uncertainty must never turn off
+# a gate. `push`/`merge_group`/`schedule`/`workflow_dispatch` always classify
+# as "everything changed" for the same reason ci.yml's original job did: a
+# merge to main (or a scheduled CodeQL sweep) always gets the full suite.
+#
+# The path lists below are lifted VERBATIM from the detector each one
+# replaces, with one deliberate addition: every list that used to include its
+# OWN workflow file's path (so an edit to the detection logic itself forced a
+# full run) now also includes `.github/workflows/detect-changes.yml`, since
+# that is where the logic actually lives now. Nothing else changed.
+
+on:
+  workflow_call:
+    outputs:
+      code:
+        description: >-
+          src/**, supabase/**, e2e/**, and the config files that gate
+          ci.yml's Next build / unit-test shards / Supabase lint+RLS, and
+          codeql.yml's javascript-typescript CodeQL leg. Verbatim from
+          ci.yml's original `detect-changes` job.
+        value: ${{ jobs.detect.outputs.code }}
+      frontend:
+        description: >-
+          UI-relevant paths that used to live in pr-smoke.yml's
+          `pull_request.paths` trigger filter (now the gate for the
+          PR-smoke a11y job inside ci.yml).
+        value: ${{ jobs.detect.outputs.frontend }}
+      e2e:
+        description: >-
+          E2E/visual-diff-relevant paths that used to live in
+          sentry-snapshots.yml's `pull_request.paths` trigger filter (now the
+          gate for the Sentry snapshot capture job inside ci.yml).
+        value: ${{ jobs.detect.outputs.e2e }}
+      migrations:
+        description: supabase/migrations/** — gates migration-lockdown.yml's deep check.
+        value: ${{ jobs.detect.outputs.migrations }}
+      python:
+        description: Verbatim from codeql.yml's `changes` job.
+        value: ${{ jobs.detect.outputs.python }}
+      actions:
+        description: Verbatim from codeql.yml's `changes` job (`.github/**`).
+        value: ${{ jobs.detect.outputs.actions }}
+      docs_only:
+        description: >-
+          true only when EVERY changed file is under docs/ or ends in .md —
+          feature-awareness.yml's original git-diff classifier, ported as-is.
+        value: ${{ jobs.detect.outputs.docs_only }}
+      mapped_feature_code:
+        description: >-
+          Negation of docs_only (renamed from feature-awareness.yml's own
+          `code` output to avoid colliding with ci.yml's differently-scoped
+          `code` output above) — gates feature-awareness.yml's context-pack job.
+        value: ${{ jobs.detect.outputs.mapped_feature_code }}
+
+jobs:
+  detect:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      code: ${{ steps.classify.outputs.code }}
+      frontend: ${{ steps.classify.outputs.frontend }}
+      e2e: ${{ steps.classify.outputs.e2e }}
+      migrations: ${{ steps.classify.outputs.migrations }}
+      python: ${{ steps.classify.outputs.python }}
+      actions: ${{ steps.classify.outputs.actions }}
+      docs_only: ${{ steps.classify.outputs.docs_only }}
+      mapped_feature_code: ${{ steps.classify.outputs.mapped_feature_code }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      # Only meaningful on `pull_request` — dorny/paths-filter diffs the PR's
+      # base against its head. `continue-on-error` so a filter failure falls
+      # through to the fail-closed branch in "Classify" below rather than
+      # failing this job outright.
+      - name: Filter changed paths
+        id: filter
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d  # v4.0.3
+        with:
+          filters: |
+            code:
+              - 'src/**'
+              - 'supabase/**'
+              - 'e2e/**'
+              - 'package.json'
+              - 'package-lock.json'
+              - 'next.config.*'
+              - 'tsconfig*.json'
+              - 'vitest.config.ts'
+              - 'eslint.config.mjs'
+              - 'tailwind.config.*'
+              - 'postcss.config.*'
+              - 'middleware.ts'
+              - 'scripts/**/*.ts'
+              - 'scripts/**/*.mjs'
+              - '.github/workflows/ci.yml'
+              - '.github/workflows/detect-changes.yml'
+            frontend:
+              - 'src/**'
+              - 'app/**'
+              - 'components/**'
+              - 'lib/**'
+              - 'e2e/**'
+              - 'public/**'
+              - 'playwright.config.ts'
+              - 'package.json'
+              - 'package-lock.json'
+              - '.github/workflows/ci.yml'
+              - '.github/workflows/detect-changes.yml'
+              - '.github/workflows/playwright.yml'
+            e2e:
+              - 'src/**'
+              - 'e2e/**'
+              - 'public/**'
+              - 'playwright.config.ts'
+              - 'package.json'
+              - 'package-lock.json'
+              - '.github/workflows/ci.yml'
+              - '.github/workflows/detect-changes.yml'
+            migrations:
+              - 'supabase/migrations/**'
+            python:
+              - '**/*.py'
+              - 'requirements*.txt'
+              - 'pyproject.toml'
+            actions:
+              - '.github/**'
+
+      # Ported verbatim from feature-awareness.yml's original `detect-changes`
+      # job: a git-diff-based "is every changed file docs/markdown" check —
+      # dorny/paths-filter's include-list model can't express that shape.
+      # Only meaningful on `pull_request`; same continue-on-error / fail-open
+      # pattern as the filter step above.
+      - name: Classify docs-only diff
+        id: docsdiff
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -uo pipefail
+          if [ -z "${BASE_SHA:-}" ] || [ -z "${HEAD_SHA:-}" ]; then
+            echo "::error::missing base/head sha"; exit 1
+          fi
+          if ! changed="$(git diff --name-only --diff-filter=ACMRT "$BASE_SHA" "$HEAD_SHA")"; then
+            echo "::error::git diff failed"; exit 1
+          fi
+          if [ -z "$changed" ]; then
+            echo "::error::empty diff"; exit 1
+          fi
+          echo "--- changed files ---"; echo "$changed"
+          # docs-only = EVERY changed file is under docs/ or ends in .md.
+          nondoc="$(echo "$changed" | grep -cvE '^docs/|\.md$' || true)"
+          if [ "${nondoc:-1}" -gt 0 ]; then
+            echo "docs_only=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "docs_only=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Combines the filter/docsdiff verdicts with fail-closed branches for
+      # every output. Every boolean here gates a real check somewhere
+      # downstream — an unclassifiable diff must not silently turn one off.
+      - name: Classify (fail closed)
+        id: classify
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          FILTER_OUTCOME: ${{ steps.filter.outcome }}
+          FILTER_CODE: ${{ steps.filter.outputs.code }}
+          FILTER_FRONTEND: ${{ steps.filter.outputs.frontend }}
+          FILTER_E2E: ${{ steps.filter.outputs.e2e }}
+          FILTER_MIGRATIONS: ${{ steps.filter.outputs.migrations }}
+          FILTER_PYTHON: ${{ steps.filter.outputs.python }}
+          FILTER_ACTIONS: ${{ steps.filter.outputs.actions }}
+          DOCSDIFF_OUTCOME: ${{ steps.docsdiff.outcome }}
+          DOCSDIFF_DOCS_ONLY: ${{ steps.docsdiff.outputs.docs_only }}
+        run: |
+          set -uo pipefail
+
+          # Non-PR events (push, merge_group, schedule, workflow_dispatch)
+          # always run the full suite everywhere.
+          if [ "$EVENT_NAME" != "pull_request" ]; then
+            {
+              for out in code frontend e2e migrations python actions; do
+                echo "$out=true"
+              done
+              echo "docs_only=false"
+              echo "mapped_feature_code=true"
+            } >> "$GITHUB_OUTPUT"
+            echo "non-PR event ($EVENT_NAME) -> full classification"
+            exit 0
+          fi
+
+          # dorny/paths-filter-backed outputs. FAIL CLOSED (all true) if the
+          # filter step itself didn't succeed.
+          if [ "$FILTER_OUTCOME" != "success" ]; then
+            for out in code frontend e2e migrations python actions; do
+              echo "$out=true"
+            done >> "$GITHUB_OUTPUT"
+            echo "paths-filter did not succeed ($FILTER_OUTCOME) -> fail closed to true"
+          else
+            {
+              echo "code=${FILTER_CODE:-true}"
+              echo "frontend=${FILTER_FRONTEND:-true}"
+              echo "e2e=${FILTER_E2E:-true}"
+              echo "migrations=${FILTER_MIGRATIONS:-true}"
+              echo "python=${FILTER_PYTHON:-true}"
+              echo "actions=${FILTER_ACTIONS:-true}"
+            } >> "$GITHUB_OUTPUT"
+          fi
+
+          # git-diff-backed docs_only/mapped_feature_code. FAIL CLOSED to
+          # docs_only=false (mapped_feature_code=true) if the classifier
+          # step didn't succeed.
+          if [ "$DOCSDIFF_OUTCOME" != "success" ]; then
+            {
+              echo "docs_only=false"
+              echo "mapped_feature_code=true"
+            } >> "$GITHUB_OUTPUT"
+            echo "docs-only classifier did not succeed ($DOCSDIFF_OUTCOME) -> fail closed to mapped_feature_code=true"
+          elif [ "$DOCSDIFF_DOCS_ONLY" = "true" ]; then
+            {
+              echo "docs_only=true"
+              echo "mapped_feature_code=false"
+            } >> "$GITHUB_OUTPUT"
+          else
+            {
+              echo "docs_only=false"
+              echo "mapped_feature_code=true"
+            } >> "$GITHUB_OUTPUT"
+          fi

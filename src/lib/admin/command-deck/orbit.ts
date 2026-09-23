@@ -28,7 +28,7 @@ const ORBIT_NODE_HREF: Readonly<Record<OrbitNodeId, string | null>> = {
   users: '/admin/users',
   next_vercel: '/admin/deploys',
   auth: '/admin/auth',
-  supabase: '/admin/reliability',
+  supabase: '/admin/errors?view=sources',
   ai: '/admin/errors?feature=coachhelm_ai_engine',
   postgres: '/admin/jobs',
   jobs: '/admin/self-heal',

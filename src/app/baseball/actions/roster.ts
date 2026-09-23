@@ -74,7 +74,7 @@ function playerDisplayName(
 // surface (live-weight-room.ts, lifting-v11.ts, lift-onboarding.ts) already
 // uses to bridge baseball_players.id <-> helm_lifting_athletes.id.
 //
-// THE BUG THIS CLOSES (docs/baseballhelm-overnight/ISSUE_LEDGER.md #9):
+// THE BUG THIS CLOSES (https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-07/baseballhelm-overnight/ISSUE_LEDGER.md #9):
 // helm_lifting_sync_org_athletes() (supabase/migrations/
 // 20260625000030_helm_lifting_accept_invite_rpc.sql) is an idempotent
 // `INSERT ... ON CONFLICT (organization_id, sport, sport_player_id) DO
@@ -684,6 +684,16 @@ async function findAssignablePlayerByExactEmail(
         skipSentry: true,
       },
     );
+    // Deliberate, not a swallow — kept distinct from this function's own
+    // sibling queries (membersError/searchError below throw), because the
+    // comment above documents a SPECIFIC, EXPECTED failure mode (PGRST202
+    // on every email-shaped search during the window before the RPC's
+    // migration lands) that this call was written to suppress rather than
+    // surface as a search failure. Verify that window is actually closed in
+    // production before converting this to a throw like its siblings —
+    // this ratchet paydown does not touch production migration state to
+    // confirm it. Failure is logged (out of Sentry, into error_logs/Bridge)
+    // either way.
     return [];
   }
 

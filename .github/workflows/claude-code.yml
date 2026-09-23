@@ -1,9 +1,13 @@
 name: Claude Code Agent
 
+# No `pull_request_review_comment` trigger. Measured over the last 100 runs:
+# 100 were skipped or cancelled and 0 succeeded — every CodeQL/CodeRabbit/etc.
+# inline review comment restarted this workflow for a job that always gates
+# out on the author check below. `issue_comment` still covers `@claude` in a
+# normal PR/issue conversation comment; only the noisier, redundant trigger
+# is gone.
 on:
   issue_comment:
-    types: [created]
-  pull_request_review_comment:
     types: [created]
   issues:
     types: [labeled]

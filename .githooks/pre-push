@@ -1,0 +1,109 @@
+#!/bin/bash
+# .githooks/pre-push — fast local push hygiene.
+#
+# CI owns the project-wide checks. Locally, keep only checks that are cheap,
+# range-scoped, and useful before a push: whitespace errors in the pushed
+# commits and an optional gitleaks scan of that same commit range.
+#
+# Skip for a single push: HELM_SKIP_PREPUSH=1 git push
+
+set -uo pipefail
+
+if [ "${HELM_SKIP_PREPUSH:-0}" = "1" ]; then
+  echo "pre-push: HELM_SKIP_PREPUSH=1 — local checks skipped; CI still runs."
+  exit 0
+fi
+
+REPO_ROOT="$(git rev-parse --show-toplevel)" || exit 1
+cd "$REPO_ROOT" || exit 1
+
+ZERO_SHA="0000000000000000000000000000000000000000"
+HOOK_START=$(date +%s)
+STDIN_LINES=()
+
+# Read every ref before invoking a subprocess. Git supplies one line per
+# pushed ref on stdin, and a child process must not consume the remaining lines.
+while IFS= read -r line; do
+  [ -n "$line" ] && STDIN_LINES+=("$line")
+done
+
+if [ "${#STDIN_LINES[@]}" -eq 0 ]; then
+  echo "pre-push: no ref updates on stdin — nothing to check."
+  exit 0
+fi
+
+RANGES=()
+FAILED=0
+
+for line in "${STDIN_LINES[@]}"; do
+  read -r local_ref local_sha _remote_ref remote_sha <<<"$line"
+
+  # A zero local SHA means the remote ref is being deleted. There is no
+  # pushed history to inspect.
+  if [ "$local_sha" = "$ZERO_SHA" ]; then
+    continue
+  fi
+
+  base=""
+  if [ "$remote_sha" != "$ZERO_SHA" ] && git cat-file -e "${remote_sha}^{commit}" 2>/dev/null; then
+    base="$remote_sha"
+  else
+    base="$(git merge-base origin/main "$local_sha" 2>/dev/null || true)"
+    if [ -z "$base" ]; then
+      base="$(git rev-list --max-parents=0 "$local_sha" 2>/dev/null | tail -1)"
+    fi
+  fi
+
+  if [ -z "$base" ]; then
+    echo "pre-push: could not resolve a diff base for $local_ref — push aborted."
+    FAILED=1
+    continue
+  fi
+
+  RANGES+=("${base}..${local_sha}")
+done
+
+if [ "${#RANGES[@]}" -eq 0 ]; then
+  echo "pre-push: no pushed commit ranges — nothing to check."
+  exit "$FAILED"
+fi
+
+echo "pre-push: checking ${#RANGES[@]} pushed commit range(s)."
+
+for range in "${RANGES[@]}"; do
+  if git diff --check "$range" --; then
+    echo "✓ git diff --check OK ($range)"
+  else
+    echo "✗ git diff --check FAILED ($range)"
+    FAILED=1
+  fi
+done
+
+if command -v gitleaks >/dev/null 2>&1; then
+  for range in "${RANGES[@]}"; do
+    if [ -f "$REPO_ROOT/.gitleaks.toml" ]; then
+      gitleaks git --redact --config "$REPO_ROOT/.gitleaks.toml" --log-opts="$range" .
+    else
+      gitleaks git --redact --log-opts="$range" .
+    fi
+    status=$?
+    if [ "$status" -eq 0 ]; then
+      echo "✓ gitleaks OK ($range)"
+    else
+      echo "✗ gitleaks FAILED ($range)"
+      FAILED=1
+    fi
+  done
+else
+  echo "pre-push: gitleaks not found — skipped (CI still scans)."
+fi
+
+TOTAL=$(( $(date +%s) - HOOK_START ))
+echo "pre-push: total ${TOTAL}s."
+
+if [ "$FAILED" -ne 0 ]; then
+  echo "pre-push: local checks failed — push aborted."
+  exit 1
+fi
+
+exit 0

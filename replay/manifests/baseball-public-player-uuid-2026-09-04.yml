@@ -1,0 +1,33 @@
+schema_version: 1
+replay_id: baseball-public-player-uuid-2026-09-04
+incident_id: /admin/errors/rel:c1120074
+feature_id: baseball_core
+title: >-
+  The public baseball player page passed an unvalidated [id] route param
+  into a uuid-typed query, so a malformed id answered 22P02 and rendered a
+  server error instead of a 404.
+bad_version: b865306e0fdf8366d25219a041c2afbf12928467
+fixed_version: 29118786372823e8ed3a00222b99cd2b5f928b15
+fixture:
+  - source: id-pages-validate-uuid.test.ts
+    target: src/test/baseball/id-pages-validate-uuid.test.ts
+test_command: "./node_modules/.bin/vitest run --project unit src/test/baseball/id-pages-validate-uuid.test.ts"
+expected:
+  bad_version: fail
+  fixed_version: pass
+expected_failure_mode: assertion
+sanitization:
+  reviewed: true
+  contains_production_data: false
+  notes: >-
+    Fixture reads the page's own SOURCE off disk and asserts a guard is
+    present. It opens no client, holds no fixture rows, and carries no
+    production data of any kind.
+source_incident_status: open at time of repair; PR opened, not merged, not deployed
+created_at: "2026-09-04"
+notes: >-
+  Same contract-over-source shape as src/test/golf/id-pages-validate-uuid.test.ts,
+  which 44f4ce183 added for the golf [id] pages; this is the public baseball
+  page that fix did not cover. Fails at bad_version on the missing isUuid
+  import — an assertion, not a module-resolution error, because the fixture
+  reads the file rather than importing a symbol from it.

@@ -3,7 +3,6 @@ paths:
   - "src/app/**/*.ts"
   - "src/app/**/*.tsx"
   - "src/lib/**/*.ts"
-verified: 2026-08-20-mechanical  # paths + table names machine-checked this date (docs:path-drift / docs:schema-drift); PROSE not re-read against code
 ---
 
 ## Code Patterns

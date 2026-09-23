@@ -5,7 +5,6 @@ paths:
   - "src/lib/recruiting/**"
   - "src/components/baseball/**"
   - "src/app/api/baseball/**"
-verified: 2026-08-20-mechanical  # paths + table names machine-checked this date (docs:path-drift / docs:schema-drift); PROSE not re-read against code
 ---
 
 # BaseballHelm review checklist
@@ -71,8 +70,3 @@ subsystem is under active rework, trust DB enums/RLS over route detail):
 - Player-facing mobile clarity (a recruit/player understanding their status at a
   glance).
 
----
-*Promoted 2026-08-09 from a per-directory review-rules file, orphaned when the
-external review bots were dropped 2026-07-20. Claims re-verified at promotion time; the
-`contacted`/`campus_visit` item was rewritten — the source rule still called it
-a live bug, but it had been fixed.*

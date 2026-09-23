@@ -19,13 +19,21 @@ import { assertAreaFullyWrapped } from '@/lib/admin/__tests__/coverage-contract.
  * — zero log-and-rethrow sites found in any of the 5 files.
  *
  * RED before the Batch 3 retrofit (63 unwrapped exports); GREEN after.
+ *
+ * `task-templates.ts` was deleted 2026-09-05 while resolving the
+ * duplicate-exports ratchet: `git grep` for the module specifier across src
+ * found zero importers (independently confirmed by
+ * docs/audits/DEAD_CODE_DEAD_DB_2026-08-20.md §B2's "16 server-action files
+ * no route imports" list, which already named it). `crm-templates.ts` is the
+ * live template-CRUD surface; `task-templates.ts`'s create/update/delete/
+ * duplicateTemplate were the superseded, never-called duplicates. Dropped
+ * from the array below for the same reason.
  */
 describe('coverage-contract — B3 tasks + travel + documents (task_management, travel, documents)', () => {
   it('every B3 export is wrapped with withAdminObserved({ feature: <its registry key> })', () => {
     expect(() =>
       assertAreaFullyWrapped([
         'src/app/golf/actions/tasks.ts',
-        'src/app/golf/actions/task-templates.ts',
         'src/app/golf/actions/task-reminders.ts',
         'src/app/golf/actions/travel.ts',
         'src/app/golf/actions/documents.ts',

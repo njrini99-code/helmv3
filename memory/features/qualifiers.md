@@ -136,6 +136,12 @@ Leaderboard reads qualifier
 - Detail views should make ties and round-by-round breakdowns inspectable.
 - Mobile qualifier views need compact cards, clear primary action, and no stacked header utility rows.
 - Empty states should explain whether there are no qualifiers, no entries, or no rounds yet.
+- A route's `loading.tsx` reserves the page's paint at t=0 — for a
+  `'use client'` page holding its own `loading` state that is that
+  component's loading branch, not its settled layout. A route whose
+  `page.tsx` is a pure `permanentRedirect` shim renders `bg-canvas` only:
+  no geometry, and no real `<h1>` for a screen that never mounts.
+  Reference implementation: `dashboard/alerts/loading.tsx`.
 
 ## Known Risk Areas
 
@@ -160,6 +166,18 @@ Leaderboard reads qualifier
 - Calendar integration means deleting or rescheduling qualifiers can affect event views.
 - A date-based entry gate is a release-blocking regression: it strands an
   eligible player and contradicts the coach-controlled qualifier lifecycle.
+- **A bare (ungrouped) Base UI `Checkbox` inside a Fairway `<Form>` silently
+  blocks every submit** — no POST, no console output, no visible error —
+  because it registers as a permanently-invalid field outside any
+  `Field.Root`. This previously killed "Create qualifier" outright; the fix
+  is wrapping the control in a `CheckboxGroup`. Guarded by
+  `FairwayNewQualifier.submit.test.tsx` (present in this repo), which asserts
+  the server action actually gets called — a green Playwright/unit run alone
+  does not prove this, only an outcome-asserting test does. See
+  `memory/context/engineering-methodology.md`'s Fairway/Base UI section for
+  the full mechanism and diagnostic. (STU, source:
+  `baseui-ungrouped-checkbox-kills-form-submit.md` dated 2026-08-03; verified
+  2026-09-05 that the guard test file exists.)
 
 ## Tests To Prefer
 

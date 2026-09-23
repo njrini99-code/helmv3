@@ -22,7 +22,12 @@ import Link from 'next/link';
 import type { KeyboardEvent } from 'react';
 import { cn } from '@/lib/utils';
 import { IconChevronRight } from '@/components/icons';
-import { StatReadout, PositionChip, HairlineRule, HoverReveal, pressableClass } from '..';
+// Leaf imports, not the parent barrel ('..') — see CoverHero.tsx for why.
+import { StatReadout } from '../StatReadout';
+import { PositionChip } from '../PositionChip';
+import { HairlineRule } from '../HairlineRule';
+import { HoverReveal } from '../HoverReveal';
+import { pressableClass } from '../pressable';
 
 // Shared stat-column geometry so the header and every row align to one grid.
 const STAT_COL = 'w-20 shrink-0';

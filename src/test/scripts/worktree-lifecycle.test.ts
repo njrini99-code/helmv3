@@ -119,6 +119,43 @@ describe('worktree classification — refusals first', () => {
     expect(classifyWorktree({ ...clean, remoteSha: SHA_B }).verdict).toBe(UNKNOWN_REMOTE);
   });
 
+  // PR #1863: `gh pr merge --delete-branch` removes the remote branch AT THE
+  // MOMENT the checkout becomes safe to park, so "no upstream" and "just
+  // merged" are indistinguishable from upstream alone. A MERGED PR whose head
+  // OID matches the local tip exactly is stronger proof than a remote ref —
+  // GitHub is attesting this exact tree reached main.
+  it('PARKS a no-upstream checkout when its PR MERGED with tip === PR head exactly', () => {
+    const v = classifyWorktree({
+      ...clean,
+      upstream: null,
+      remoteSha: null,
+      prState: 'MERGED',
+      prNumber: 1863,
+      prHeadSha: SHA_A,
+    });
+    expect(v.verdict).toBe(PARKABLE);
+    expect(v.reason).toMatch(/PR #1863 MERGED/);
+  });
+
+  it('still refuses UNKNOWN_REMOTE for a no-upstream tip with no matching MERGED PR', () => {
+    // No PR facts at all — the ordinary unpushed-work case.
+    expect(
+      classifyWorktree({ ...clean, upstream: null, remoteSha: null }).verdict,
+    ).toBe(UNKNOWN_REMOTE);
+    // MERGED, but the local tip has since diverged from the PR head — the
+    // exact-match requirement, not "a PR merged at some point".
+    expect(
+      classifyWorktree({
+        ...clean,
+        upstream: null,
+        remoteSha: null,
+        prState: 'MERGED',
+        prNumber: 1863,
+        prHeadSha: SHA_B,
+      }).verdict,
+    ).toBe(UNKNOWN_REMOTE);
+  });
+
   it('PARKS a clean, idle, fully-pushed worktree when no PR claims it', () => {
     // This assertion used to end "— regardless of PR state", and that sentence
     // was the #1681 defect written as a guarantee. It is now scoped: with no PR
@@ -766,6 +803,50 @@ describe('the CLI, against real worktrees', () => {
 
     run(['--gc-branches']);
     expect(git(['branch', '--list', 'agent/w6'], canonical)).not.toContain('agent/w6');
+    expect(git(['rev-parse', '--verify', 'refs/tags/archive/agent/w6^{}'], canonical)).toBe(sha);
+  });
+
+  it('--gc-branches preserves a branch when its archive tag conflicts', () => {
+    git(['branch', 'agent/w6-conflict', 'main'], canonical);
+    const sha = git(['rev-parse', 'agent/w6-conflict'], canonical);
+    commit(canonical, 'archive-conflict-tip');
+    const otherSha = git(['rev-parse', 'HEAD'], canonical);
+    expect(otherSha).not.toBe(sha);
+    git(['tag', '-a', 'archive/agent/w6-conflict', otherSha, '-m', 'existing archive'], canonical);
+    writePrStub({ 'agent/w6-conflict': `904 MERGED ${sha}` });
+
+    const out = run(['--gc-branches']);
+    expect(git(['branch', '--list', 'agent/w6-conflict'], canonical)).toContain('agent/w6-conflict');
+    expect(out).toMatch(/archive\/agent\/w6-conflict already points/);
+  });
+
+  it('--gc-branches preserves a branch when its archive tag cannot be created', () => {
+    git(['branch', 'agent/w6-tag-failure', 'main'], canonical);
+    const sha = git(['rev-parse', 'agent/w6-tag-failure'], canonical);
+    // A tag at the archive namespace root prevents Git from creating any
+    // archive/<branch> child ref, exercising the create-failure veto.
+    git(['tag', '-a', 'archive', sha, '-m', 'archive namespace sentinel'], canonical);
+    writePrStub({ 'agent/w6-tag-failure': `905 MERGED ${sha}` });
+
+    const out = run(['--gc-branches']);
+    expect(git(['branch', '--list', 'agent/w6-tag-failure'], canonical)).toContain('agent/w6-tag-failure');
+    expect(out).toMatch(/could not create archive tag archive\/agent\/w6-tag-failure/);
+  });
+
+  it('--gc-branches archives and deletes a proven merged remote-only branch', () => {
+    const remote = join(tmp, 'origin.git');
+    mkdirSync(remote, { recursive: true });
+    git(['init', '-q', '--bare', '-b', 'main'], remote);
+    git(['remote', 'add', 'origin', remote], canonical);
+    git(['push', '-q', 'origin', 'main'], canonical);
+    const sha = git(['rev-parse', 'main'], canonical);
+    git(['push', '-q', 'origin', `main:refs/heads/feat/remote-retire`], canonical);
+    git(['fetch', '-q', 'origin'], canonical);
+    writePrStub({ 'feat/remote-retire': `4244 MERGED ${sha}` });
+
+    run(['--gc-branches']);
+    expect(git(['rev-parse', '--verify', 'refs/tags/archive/feat/remote-retire^{}'], canonical)).toBe(sha);
+    expect(git(['ls-remote', '--heads', 'origin', 'feat/remote-retire'], canonical)).toBe('');
   });
 
   it('SENTINEL: a fixture run can never resolve back to the live Helm checkout', () => {

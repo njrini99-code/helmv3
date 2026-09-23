@@ -28,6 +28,7 @@ import { Input } from '@/components/ui/input';
 import { NativeSelect } from '@/components/ui/select';
 import { useToast } from '@/components/ui/sonner';
 import { InkNotice } from '@/components/baseball/living-annual';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import {
   IconLink,
   IconCopy,
@@ -158,6 +159,7 @@ export function ScoutPacketManager({
   initialLinks,
   previewHref,
 }: Props) {
+  const prefersReducedMotion = useReducedMotionGuard();
   const { showToast } = useToast();
   const [links, setLinks] = useState<PassportShareLinkView[]>(initialLinks);
   const [recipient, setRecipient] = useState('');
@@ -306,10 +308,10 @@ export function ScoutPacketManager({
                 {links.map((link) => (
                   <m.li
                     key={link.id}
-                    initial={{ opacity: 0, y: -6 }}
+                    initial={prefersReducedMotion ? false : { opacity: 0, y: -6 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.18 }}
+                    exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, height: 0 }}
+                    transition={{ duration: prefersReducedMotion ? 0 : 0.18 }}
                     className="flex items-center gap-3 py-3"
                   >
                     <span

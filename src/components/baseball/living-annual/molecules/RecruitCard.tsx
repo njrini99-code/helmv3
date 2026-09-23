@@ -12,7 +12,13 @@
  */
 import type { KeyboardEvent } from 'react';
 import { cn } from '@/lib/utils';
-import { PaperCard, Eyebrow, RuledStatLine, GradeStamp, AgingBar, InkBadge } from '..';
+// Leaf imports, not the parent barrel ('..') — see CoverHero.tsx for why.
+import { PaperCard } from '../PaperCard';
+import { Eyebrow } from '../Eyebrow';
+import { RuledStatLine } from '../RuledStatLine';
+import { GradeStamp } from '../GradeStamp';
+import { AgingBar } from '../AgingBar';
+import { InkBadge } from '../InkBadge';
 
 export interface RecruitCardGrade {
   /** Tool name, e.g. `HIT`, `POWER`, `ARM`. */

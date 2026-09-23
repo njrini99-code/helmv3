@@ -1,5 +1,7 @@
 # Helm Bridge Command Center — Implementation Plan
 
+Status: active
+
 > **For agentic workers:** execute this plan with `superpowers:subagent-driven-development` — one wave file per worker session, tasks in order, strict TDD, commit per task.
 
 **Goal:** Build Helm Bridge — ONE Nick-only, server-rendered command center at `/admin` that unifies error triage (live Sentry pull + the mature `admin_events` pipeline), auth visibility, golf/baseball/Lift-Lab operations, cron/data-integrity monitoring, deploy visibility, read-only impersonation, and a daily ops digest — then retires the old non-CRM admin surfaces.

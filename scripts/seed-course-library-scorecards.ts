@@ -31,7 +31,7 @@
  *    tee rows are touched, by id, so `golf_rounds.tee_id` references and
  *    already-recorded rounds are untouched. (Rounds snapshot par/yardage
  *    into `golf_holes` at submit time regardless of later course edits —
- *    see docs/audits/COURSE_LIBRARY_AUDIT_2026-06-13.md §4 "Snapshot
+ *    see https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-06/audits/COURSE_LIBRARY_AUDIT_2026-06-13.md §4 "Snapshot
  *    Safety".)
  *  - Matches courses by `golf_normalize_name(name)` (the same dedup key the
  *    app itself uses — see src/lib/golf/course-library.ts `normalizeName`),

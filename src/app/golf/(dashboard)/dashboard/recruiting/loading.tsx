@@ -48,12 +48,16 @@ export default function Loading() {
           ))}
         </div>
 
-        {/* Toolbar — search field + sort segmented control. */}
+        {/* Toolbar — search field + sort segmented control. Heights/radii match
+            SearchField's `size="sm"` track (search-field.tsx:74,141 — h-9,
+            rounded-fw-sm) and Segmented's track (segmented.tsx:110 —
+            rounded-fw-sm, never a pill), not the h-11/rounded-fw-md and
+            rounded-full this block previously guessed at. */}
         <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-center">
-          <Skeleton className="h-11 w-full rounded-fw-md md:flex-1" />
+          <Skeleton className="h-9 w-full rounded-fw-sm md:flex-1" />
           <div className="flex flex-wrap items-center gap-2">
             <Skeleton className="h-9 w-16 rounded-full" />
-            <Skeleton className="h-9 w-56 rounded-full" />
+            <Skeleton className="h-9 w-56 rounded-fw-sm" />
           </div>
         </div>
 

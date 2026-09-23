@@ -93,7 +93,7 @@ import { parseDateOnly } from '@/lib/utils/date-only';
 // (Lift Lab, outside the baseball sweep's scope) — it still uses
 // <Card variant="glass"> + raw amber/red, tracked with the tree-wide
 // glass-Card→PaperCard migration debt (36 sites / 19 files;
-// docs/audits/PRODUCTION_READINESS_MISSION_2026-07-09.md).
+// https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-07/PRODUCTION_READINESS_MISSION_2026-07-09.md).
 //
 // Data wiring, handlers, computed values, and prop contracts are unchanged.
 // =============================================================================

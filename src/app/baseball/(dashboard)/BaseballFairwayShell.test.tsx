@@ -1,7 +1,7 @@
 // =============================================================================
 // BaseballFairwayShell.test.tsx
 //
-// Wave W3 (docs/audits/PRODUCTION_READINESS_MISSION_2026-07-09.md): Settings
+// Wave W3 (https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-07/PRODUCTION_READINESS_MISSION_2026-07-09.md): Settings
 // moved OUT of the player rail's secondary "More" nav section and INTO the
 // shell's pinned rail FOOTER (ShellFooter), matching the coach shell. This
 // locks the new shape: ShellFooter now renders Settings + Sign out

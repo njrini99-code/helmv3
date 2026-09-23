@@ -24,6 +24,13 @@ import { describeError } from '@/lib/utils/describe-error';
 // CRON: mirror inbound mail from the admin@ Gmail inbox into the CRM.
 // ============================================================================
 //
+// Schedule: `20 * * * *` in vercel.json — hourly, offset :20. Relaxed from
+// `*/30 * * * *` 2026-09-06 (cron consolidation): the default 7-day lookback
+// window (DEFAULT_LOOKBACK_DAYS, resolveLookbackWindow in gmail-read.ts) and
+// message_id-uniqueness dedupe make the exact polling cadence irrelevant to
+// correctness, so 30-minute polling bought nothing but a schedule collision
+// with `coachhelm-safety-net`, which also ran `*/30 * * * *`.
+//
 // Why polling instead of the Resend inbound webhook: outreach deliberately
 // keeps Reply-To on the real mailbox so replies feel 1:1 (product decision,
 // 2026-07-20) — which means replies never touch Resend. This cron reads the

@@ -17,8 +17,18 @@ cp .env.example .env.local
 
 ### Supabase (Database & Auth)
 
+Two key formats work — set EITHER pair, not both. `src/lib/supabase/keys.mjs`
+checks the new-format name first and falls back to the legacy JWT if it is
+unset, so the two names in a pair are interchangeable everywhere in this repo.
+
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
+
+# New format (recommended)
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_your-key-here
+SUPABASE_SECRET_KEY=sb_secret_your-key-here
+
+# Legacy fallback — only needed if the new-format keys above are unset
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
 ```
@@ -27,12 +37,15 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
 1. Go to https://app.supabase.com
 2. Select your project
 3. Settings → API
-4. Copy URL and keys
+4. Copy URL and keys (the API settings page shows both formats)
 
 **Security:**
 - `NEXT_PUBLIC_*` variables are exposed to the browser
-- `SUPABASE_SERVICE_ROLE_KEY` is server-only (never add `NEXT_PUBLIC_` prefix!)
-- Service role key bypasses Row Level Security - only use in server-side code
+- `SUPABASE_SECRET_KEY` / `SUPABASE_SERVICE_ROLE_KEY` are server-only (never
+  add a `NEXT_PUBLIC_` prefix!)
+- Both bypass Row Level Security - only use in server-side code
+  (`src/lib/supabase/admin.ts`, and nowhere else outside that allowlist —
+  see `.coderabbit/semgrep/helmv3.yml`'s `helmv3-service-role-outside-admin`)
 
 ### Application URL
 

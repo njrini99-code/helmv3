@@ -71,8 +71,16 @@ async function getDrillsForInsightImpl(
   const supabase = await createClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) {
+    if (authError) {
+      await logServerError(`getDrillsForInsight auth check failed: ${authError.message}`, {
+        action: 'drills.getDrillsForInsight',
+        featureArea: 'insights',
+        extra: { insightId },
+      });
+    }
     // Not throwing — the player dashboard already sets up auth; a drill
-    // fetch failing shouldn't blank the page.
+    // fetch failing shouldn't blank the page. A real auth-service failure
+    // (as opposed to simply no session) is now logged rather than silent.
     return [];
   }
 
@@ -88,6 +96,9 @@ async function getDrillsForInsightImpl(
       featureArea: 'insights',
       extra: { insightId, errorCode: visError.code },
     });
+    // Deliberate, not a swallow — this function's own docstring: returns
+    // empty for missing/inaccessible insights so the UI can safely render
+    // nothing. Failure is logged above.
     return [];
   }
   if (!visibleInsight || visibleInsight.length === 0) return [];
@@ -123,6 +134,7 @@ async function getDrillsForInsightImpl(
         extra: { insightId, errorCode: error.code },
       },
     );
+    // Same reasoning as the visError branch above — logged, not silent.
     return [];
   }
 

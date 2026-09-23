@@ -5,7 +5,6 @@ paths:
   - "src/lib/inngest/**"
   - "src/lib/email/**"
   - "src/lib/notifications/**"
-verified: 2026-08-20-mechanical  # paths + table names machine-checked this date (docs:path-drift / docs:schema-drift); PROSE not re-read against code
 ---
 
 ## Product integrations
@@ -16,7 +15,7 @@ verified: 2026-08-20-mechanical  # paths + table names machine-checked this date
   (W12/W20/W27/W33/W35) with room to spare. Local dev runs on
   `npx inngest-cli@latest dev`; production needs `INNGEST_EVENT_KEY` +
   `INNGEST_SIGNING_KEY` env vars. See `.env.example`.
-- **No Mapbox / no map provider** — there is no `src/lib/mapbox/` and no
+- **No Mapbox / no map provider** — there is no src/lib/mapbox/ and no
   `CourseMap` component in the repo. Round Review (#23) hole visuals are a
   synthetic SVG shot-path reconstruction built from `golf_shots` data
   (`HoleShotPath`, `src/components/golf/coachhelm/v3/HoleShotPath/`), not a
@@ -38,9 +37,13 @@ verified: 2026-08-20-mechanical  # paths + table names machine-checked this date
 - **Promptfoo** (LLM evals) — config at `evals/round-review.yaml`.
   Run via `npm run evals` locally; runs weekly in CircleCI's
   `promptfoo-evals` job. Catches silent prompt drift between deploys.
-- **Lighthouse CI** — config at `lighthouserc.cjs`, runs against
-  Vercel preview URLs in CircleCI's `lighthouse-preview` job on
-  every push. a11y + CLS are hard errors; perf is a warning.
+- **Lighthouse CI** — config at `lighthouserc.cjs`, run manually via
+  `npm run lighthouse` (`lhci autorun`). No CI job runs it: `.circleci/config.yml`
+  has never defined a `lighthouse-preview` job (`.circleci/README.md` already
+  corrects the same stale claim), and there is no Vercel preview URL for it
+  to target anyway — non-main branches don't build (`vercel.json`'s
+  `deploymentEnabled: {"*": false}`). a11y + CLS are configured as hard
+  errors; perf as a warning — for whoever runs it locally.
 - **Sentry Session Replay** — already wired in
   `src/instrumentation-client.ts`. 100% sample on errors, 10% session
   sample in prod, 0% in dev. `maskAllText` on by default.

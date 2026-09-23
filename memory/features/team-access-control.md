@@ -29,7 +29,9 @@ This feature is foundational: most GolfHelm features depend on it, and many revi
 
 ### Database And Tests
 
-- `supabase/migrations/*.sql`
+- `supabase/migrations/*.sql` — applied history, never hand-edited
+- `supabase/schemas/**` — declarative current shape (Database Plan D2); see
+  `docs/operations/DECLARATIVE_SCHEMA.md` for the edit → `db diff -f` → PR flow
 - `supabase/tests/rls/*.sql`
 - `src/test/lib/auth/**`
 - `src/test/lib/cron/auth.test.ts`
@@ -68,6 +70,12 @@ Use `memory/glossary.md` for table lookup and `memory/context/golfhelm-database.
 - Permission-denied states should be explicit and calm, not blank screens.
 - Team/admin/account destinations belong in drawer or secondary navigation, not duplicated across bottom nav.
 - Mobile changes must follow `AGENTS.md` Standard or Action header patterns.
+- A route's `loading.tsx` reserves the page's paint at t=0 — for a
+  `'use client'` page holding its own `loading` state that is that
+  component's loading branch, not its settled layout. A route whose
+  `page.tsx` is a pure `permanentRedirect` shim renders `bg-canvas` only:
+  no geometry, and no real `<h1>` for a screen that never mounts.
+  Reference implementation: `dashboard/alerts/loading.tsx`.
 
 ## Known Risk Areas
 

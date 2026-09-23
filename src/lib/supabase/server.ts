@@ -3,6 +3,7 @@ import { createServerClient } from '@supabase/ssr';
 import * as Sentry from '@sentry/nextjs';
 import { cookies } from 'next/headers';
 import { Database } from '@/lib/types/database';
+import { getPublishableKey } from '@/lib/supabase/keys.mjs';
 
 /**
  * The HTTP abort is a BACKSTOP, not the request budget. The invariant that
@@ -42,13 +43,12 @@ function timeoutForRequest(fetchUrl: RequestInfo | URL): number {
  */
 export async function createClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
   if (!url || /placeholder\.supabase\.co/i.test(url)) {
     throw new Error('NEXT_PUBLIC_SUPABASE_URL is missing or a placeholder. Check Vercel env.');
   }
-  if (!anonKey) {
-    throw new Error('NEXT_PUBLIC_SUPABASE_ANON_KEY is missing. Check Vercel env.');
-  }
+  // New-format publishable key first, legacy anon-key JWT as fallback — see
+  // src/lib/supabase/keys.mjs.
+  const anonKey = getPublishableKey();
   const cookieStore = await cookies();
 
   const client = createServerClient<Database>(

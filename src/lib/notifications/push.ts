@@ -29,6 +29,7 @@ import { gatedDelivery, type DeliveryNotificationKey } from '@/lib/coachhelm/v3/
 import { logServerError, logServerEvent, logServerException } from '@/lib/server-error-logger';
 import { recordPush } from '@/lib/observability/metrics';
 import { helmLog } from '@/lib/observability/structured-log';
+import { enqueueJob, isHelmQueueEnabled } from '@/lib/jobs/enqueue';
 import { observeEdgeInvoke } from '@/lib/observability/supabase/observe-edge';
 
 /**
@@ -244,7 +245,39 @@ function recordPushOutcome(
   });
 }
 
+/**
+ * Send a push notification.
+ *
+ * Database Plan D6: when `HELM_QUEUE_ENABLED=true` and the pgmq facade
+ * migration is applied, this enqueues the send onto the `push_send` queue
+ * instead of sending inline. `enqueueJob` fails open (queue off or facade
+ * missing), falling through to the exact inline path below, unchanged. The
+ * jobs-consume route calls `sendPushNotificationDirect` (below), never this
+ * function, so a queued send is never re-enqueued.
+ */
 export async function sendPushNotification(
+  type: NotificationType,
+  userId: string,
+  data: Record<string, unknown>
+): Promise<{ success: boolean; error?: string }> {
+  if (isHelmQueueEnabled()) {
+    const result = await enqueueJob('push_send', { type, userId, data });
+    if (result.queued) {
+      return { success: true };
+    }
+    // fails open — fall through to the inline send below.
+  }
+  return sendPushNotificationDirect(type, userId, data);
+}
+
+/**
+ * The real work of sending a push notification. Called directly by
+ * `sendPushNotification` when the queue is off/unavailable, and by the
+ * jobs-consume route's `push_send` handler when a queued message is
+ * processed. Never call this from a new call site expecting queue
+ * durability — use `sendPushNotification`.
+ */
+export async function sendPushNotificationDirect(
   type: NotificationType,
   userId: string,
   data: Record<string, unknown>

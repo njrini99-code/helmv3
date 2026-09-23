@@ -1,5 +1,7 @@
 # W14: Retirement of the Old Non-CRM Admin + Hardening + Final QA
 
+Status: active
+
 **Goal:** Retire `/golf/admin`'s non-CRM surfaces (the CRM subtree survives intact with its `role='admin'` gate), retire the unguarded `/baseball/admin` page, revoke anon EXECUTE on the admin-relevant SECURITY DEFINER functions, and run the full-system QA pass.
 
 **Depends-on:** W5–W13 ALL MERGED AND VERIFIED IN PROD (this wave deletes the fallback).

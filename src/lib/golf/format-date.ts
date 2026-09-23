@@ -19,14 +19,18 @@
  *     TZ=America/New_York
  *     formatShortDate('2026-07-01')  ->  'Jun 30'
  *
- * A full timestamp is a real instant and is deliberately NOT matched here: its
- * correct answer is whatever day it is locally, which is what all three current
- * callers depend on (`feed.last_synced_at`, `feed.created_at`, `ev.start_time`
- * are all timestamptz).
+ * A full timestamp is a real instant and, by default, renders in the local
+ * zone. A caller with a stable metadata-date contract can supply its explicit
+ * timezone instead.
  */
 const DATE_ONLY_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
 
-export function formatShortDate(date: string | number | Date): string {
+export function formatShortDate(date: string | number | Date, timeZone?: string): string {
+  const options: Intl.DateTimeFormatOptions = {
+    month: 'short',
+    day: 'numeric',
+    ...(timeZone ? { timeZone } : {}),
+  };
   // Date-only strings are re-built as a LOCAL date so the formatter renders the
   // day that was stored. No current caller passes one — but this helper exists
   // to be reached for by new call sites, and the trap is one import away:
@@ -39,10 +43,12 @@ export function formatShortDate(date: string | number | Date): string {
     if (parts) {
       const [, year, month, day] = parts;
       const local = new Date(Number(year), Number(month) - 1, Number(day));
+      // This branch represents a date column, not an instant. Preserve its
+      // stored day even if the caller requested a timezone for timestamps.
       return local.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     }
   }
 
   const d = date instanceof Date ? date : new Date(date);
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return d.toLocaleDateString('en-US', options);
 }

@@ -1,5 +1,7 @@
 # CoachHelm insight pipeline trace — why 66% of `golf_coach_insights` never reach a surface
 
+Status: active
+
 Date: 2026-08-20. Code-side companion to a database-side measurement (not reproduced here — see
 the numbers quoted in the task). Scope: read-only trace, `git grep`/`git ls-files` only (phantom
 dirs `.deepsec/`, `.worktrees/`, `.claude/worktrees/` excluded per repo convention). Every claim

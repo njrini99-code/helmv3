@@ -22,10 +22,14 @@ Every cell is one of:
 
 **"Live verified?" is NO for every row.** This agent has no Sentry access
 (per the task boundary) and made no live query. One caveat worth surfacing to
-the commander: `mcp__claude_ai_Sentry__*` tools are present in this session's
-tool list and `.claude/rules/shipping.md` names the Sentry MCP (org
-`helm-xs`) as a working read path — so live verification is technically
-reachable from a differently-scoped Phase A run, but this run did not use it,
+the commander: `mcp__7524981b-0003-40de-9f86-c5275420784a__*` tools (the
+account connector's UUID spelling — the display name `mcp__claude_ai_Sentry__*`
+this note originally cited does not exist in any current session's tool
+inventory; see `config/mcp-connector-ids.json` for when the rotation was
+observed) are present in this session's tool list and
+`.claude/rules/shipping.md` names the Sentry MCP (org `helm-xs`) as a working
+read path — so live verification is technically reachable from a
+differently-scoped Phase A run, but this run did not use it,
 per the brief's explicit instruction to leave "Live verified?" at NO
 throughout and let the commander do that check.
 
@@ -251,6 +255,7 @@ Same as row 12 — `instrumentSupabaseClient` wraps RPC calls identically to que
 - **Mon/Alrt**: NO/UNKNOWN.
 - **Live?**: NO.
 - **Blind spot / action**: none identified — this is one of the more deliberately-engineered rows in the codebase (the fingerprinting function's own comment cites a real production case: "one Inngest key mismatch occupies four fingerprints").
+- **Sibling rule (added 2026-09-06)**: `fingerprintSupabaseKeyError` in `instrumentation.ts`, wired into the same `beforeSend` pipeline immediately before `fingerprintByPostgresCode`. On 2026-09-06 21:27-21:43 UTC the owner disabled Supabase legacy API keys while Vercel still held one, and "Legacy API keys are disabled" / "Invalid API key" fired from at least four unrelated call paths (`POST /golf/login`, `recordDeployMarker`, the presence heartbeat RPC, a `bridge_write_failed` follow-on), each landing as its own issue. The rule matches either message anywhere in `event.exception.values[].value` or `event.message` (including wrapped, e.g. the heartbeat's `msg=...` form), case-insensitively, and sets fingerprint `['{{ default }}', 'supabase:legacy-keys-disabled']` (tag `supabase_key_error: legacy_disabled`) or `['{{ default }}', 'supabase:invalid-api-key']` (tag `supabase_key_error: invalid`) — never overriding an existing deliberate fingerprint. Unit tests: `src/test/observability/instrumentation-fingerprint.test.ts`. The permanent fix (rotating Vercel's key) is the owner's; this only keeps every occurrence of the same root cause in one issue while it's live.
 
 ### 15. Authentication failure
 - **Err**: PARTIAL — Supabase auth errors are NOT blanket-suppressed (the `instrumentation.ts:45-49` comment explicitly documents a past regression where `'AuthApiError'` was over-broadly ignored and was narrowed to just refresh-token-expiry noise); genuine auth failures (wrong password, locked account, expired invite) DO reach Sentry as intended. M1/M2/M3's own AUTH-resolution throws (`LiftingUnauthorizedError` etc.) are the SEPARATE control-flow class covered in row 5/6's Blind spot.
@@ -388,7 +393,7 @@ Covered by rows 9/10 (process-level) when the failure escapes to a process handl
 - **Rel**: YES.
 - **FR**: NO.
 - **Mon**: **YES (was NO) — CLOSED by Phase C Deliverable 3, re-verified 2026-09-03.** `src/lib/observability/cron-monitors.ts` (`shouldEmitCronCheckIns`, `resolveCronMonitorSlug`, `resolveCronMonitorConfig` — never returns undefined, unregistered jobs get a conservative fallback config, `startCronCheckIn`/`finishCronCheckIn`, all fail-open) is wired into `recordJobRun` (`src/lib/admin/job-log.ts`) at all 3 exit paths (success, resolved 4xx/5xx Response, thrown error) and into Inngest's `withBridgeLogging`. `CronRegistryEntry.schedule` is contract-tested byte-exact against `vercel.json` so a monitor's expected cadence can never silently drift from what Vercel actually runs. `automaticVercelMonitors` was deliberately left `false` (not re-activated) after re-reading the installed SDK's build-time source showed it would inject a SECOND, independent Cron Monitor mechanism alongside the manual check-ins — see `docs/observability/SENTRY_CRON_MONITORS.md`'s decision record. This also resolves the `ingest-gmail-replies` self-built substitute noted below: the real mechanism now exists, the ad hoc one is no longer the only signal (not removed this pass — a fail-soft self-throttle isn't harmful to also keep).
-- **Alrt**: UNKNOWN — a monitor now exists to attach an alert rule to; whether one is configured live in Sentry was not checked (would need `mcp__claude_ai_Sentry__*` or the live dashboard, out of this pass's read-only-docs scope).
+- **Alrt**: UNKNOWN, re-checked 2026-09-06 now that the read-only Sentry MCP is an allowed tool (`mcp__7524981b-0003-40de-9f86-c5275420784a__*` — the UUID spelling; see the note below this table's header about the rotated display name). `find_organizations` confirmed org `helm-xs` is reachable. `get_sentry_resource` was then tried against the detector/workflow ids `docs/operations/SENTRY_MONITORS.md` records (e.g. detector `7702315`, workflow `3937972`), both as `resourceType: "detector"` / `"workflow"` and as a direct organization URL (`https://helm-xs.sentry.io/organizations/helm-xs/detectors/`) — both attempts returned `Input validation error: resourceType: Invalid input` and `Could not determine resource type from URL`, respectively. The tool's own error message names its full supported set: issues, events, traces, agent conversations, profiles, replays, monitors (cron check-ins, a different object from alert detectors), and releases — detectors and workflows are not among them. So this pass could reach the Sentry org but could NOT enumerate alert-rule/workflow config through the five sanctioned read tools; confirming live routing still requires the Sentry web dashboard or a differently-scoped API path, same conclusion as the prior pass, now with the actual attempted calls on record instead of "not checked."
 - **Live?**: NO.
 - **Blind spot / action**: none remaining for the missed-check-in class. The `withSentryConfig` App-Router-support caveat (`docs/guides/SENTRY_SETUP_GUIDE.md:225`) is moot — Deliverable 3's approach was manual `captureCheckIn`-style check-ins via `cron-monitors.ts`, not `automaticVercelMonitors`, specifically because that auto-instrumentation's App Router support was in doubt. The 19-registered/5-orphan route count (Findings §(d)) is unchanged by this fix; the 2 genuine undocumented orphans (`v3/ingest-sync`, `v3/weekly-coach-email`) still have no `vercel.json` entry and therefore no monitor either — OWNER ACTION (or a follow-up PR) to decide whether they should be scheduled at all before wiring a monitor for a job that never runs on a schedule.
 

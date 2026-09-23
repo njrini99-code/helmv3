@@ -1,5 +1,7 @@
 # W13: Daily Email Digest (dedicated non-CRM transport)
 
+Status: active
+
 **Goal:** The "coffee check": one email to Nick at 10:00 UTC with overnight errors/regressions, new signups, activity, and anything red — sent through a DEDICATED ops transport (its own secret + its own `src/lib/admin/` module) that touches ZERO `crm_*` tables and ZERO CRM/Resend/Gmail outreach code (owner decision #10).
 
 **Depends-on:** W3 (sentry-api), W11 (`recordJobRun`, registry contract).

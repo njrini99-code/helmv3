@@ -120,6 +120,13 @@
   --fw-color-surface-sunken: oklch(0.963 0.021 84);  /* wells, insets, input tracks */
   --fw-color-elevated:       oklch(0.993 0.016 88);  /* menus / popovers / modal body — the brightest, warmest cream so floating panels read genuinely lifted */
 
+  /* Loading blocks. NOT `surface-sunken`: that well is 1.06:1 against the card
+     it sits on — present in the DOM, absent to the eye, so a loading screen
+     read as a blank one and the specular sweep had nothing to sweep across.
+     1.23:1 on the card is the band the dark UIs people rate as premium use:
+     unmistakably a placeholder, still quiet enough not to look like content. */
+  --fw-color-skeleton:       oklch(0.915 0.014 84);
+
   /* ---- The sunlit page wash: a WARM CREAM gradient for the canvas, not a flat
           fill. A faint near-white highlight at the top reads as afternoon light;
           the column deepens gently into a warmer, creamier "parchment" toward the
@@ -459,6 +466,11 @@
   --fw-color-surface-tint:   oklch(0.308 0.005 150);  /* hero plinth — a touch lighter */
   --fw-color-surface-sunken: oklch(0.140 0.003 150);  /* wells / insets / input tracks — recede below canvas */
   --fw-color-elevated:       oklch(0.338 0.006 150);  /* menus / popovers / modal body — brightest, most lifted */
+
+  /* The dark twin. Lifts ABOVE the card (the light one sits below it): on a
+     dark ground a recessed well disappears into the page, so the placeholder
+     has to come toward the viewer to read at all. 1.35:1 on the card. */
+  --fw-color-skeleton:       oklch(0.360 0.005 150);
 
   /* ---- The page wash: a warm espresso gradient (afternoon → dusk), never a
           flat black fill. Faint warm lift at the top, deepening to near-black

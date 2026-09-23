@@ -39,6 +39,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
 import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
 import {
   getInsightsForCoach,
@@ -447,7 +448,20 @@ async function loadSelfDismissedInsightIds(
     .select('insight_id')
     .eq('player_id', playerId)
     .eq('rating', 'dismissed');
-  if (error || !data) return new Set();
+  if (error || !data) {
+    if (error) {
+      await logServerError(
+        `loadSelfDismissedInsightIds query failed: ${describeError(error)}`,
+        { action: 'player-fingerprint.loadSelfDismissedInsightIds', playerId },
+      );
+    }
+    // Deliberate, not a swallow — this function's own docstring: best
+    // effort, degrades to empty so a read failure never blocks the
+    // fingerprint render. The only downside of an empty set here is a
+    // previously-dismissed insight briefly reappearing for its own
+    // player — never a cross-player exposure. Failure is now logged.
+    return new Set();
+  }
   return new Set(data.map((row) => row.insight_id));
 }
 

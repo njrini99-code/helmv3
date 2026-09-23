@@ -212,6 +212,11 @@ export async function getEngagementLeaderboard(
         errorDetails: error.details,
       },
     );
+    // Deliberate, not a swallow — same tested "graceful degradation"
+    // contract as getCoachEngagement above (crm-engagement.test.ts:
+    // "serializes a PostgrestError the same way and returns [] on
+    // failure"). Failure is logged; the empty return is the pinned,
+    // regression-tested behavior, not an oversight.
     return [];
   }
 

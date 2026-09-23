@@ -221,7 +221,9 @@ jobs:
       - install-node-deps
       - run:
           name: Install Squawk
-          command: npm install --no-save squawk-cli
+          # Pinned (D2): matches the per-PR blocking gate in
+          # .github/workflows/ci.yml so both squawk runs see the same rules.
+          command: npm install --no-save squawk-cli@2.64.0
       - run:
           name: Squawk migration safety scan
           command: |
@@ -231,8 +233,8 @@ jobs:
               echo "No migrations to scan."
               exit 0
             fi
-            npx squawk \
-              --exclude=prefer-text-field,require-concurrent-index-creation,prefer-bigint-over-int \
+            npx squawk --assume-in-transaction \
+              --exclude=prefer-text-field,require-concurrent-index-creation,prefer-bigint-over-int,require-lock-timeout,require-statement-timeout \
               "${files[@]}" || true
 
   # ---------- Weekly: dependency vulnerability scan ----------

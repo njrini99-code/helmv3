@@ -41,13 +41,13 @@
 import { useMemo } from 'react';
 import { ArrowRight, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import {
-  Surface,
-  Inset,
-  Badge,
-  StatusPill,
-  EmptyState,
-} from '@/components/fairway';
+// Imported from each module's own leaf path, not the top `@/components/fairway`
+// barrel — this file sits under pages/coachhelm/ (re-exported from that
+// barrel via pages/coachhelm/index.ts), so importing the barrel back here
+// created an import cycle, flagged by npm run check:cycles.
+import { Surface, Inset } from '@/components/fairway/surfaces';
+import { Badge, StatusPill } from '@/components/fairway/controls';
+import { EmptyState } from '@/components/fairway/feedback';
 import {
   composeCausalChains,
   type CausalChain,

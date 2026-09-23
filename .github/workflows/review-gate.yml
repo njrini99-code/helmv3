@@ -184,9 +184,12 @@ jobs:
           # rate-limit / push-notification / Edge Function paths. Mirrors the
           # exclude list in .coderabbit/semgrep/helmv3.yml for the equivalent
           # semgrep rule (helmv3-service-role-outside-admin).
+          excl='^(src/lib/supabase/admin|src/lib/supabase/keys|src/lib/supabase/service'
+          excl+='|src/lib/auth/supabase-rate-limit|src/lib/notifications/push'
+          excl+='|src/app/api/admin/|src/app/api/.+/admin/|scripts/|supabase/functions/)'
           run_rule .coderabbit/ast-grep/no-service-role-in-client.yml \
             '\.(ts|tsx)$' \
-            '^(src/lib/supabase/admin|src/lib/supabase/service|src/lib/auth/supabase-rate-limit|src/lib/notifications/push|src/app/api/admin/|src/app/api/.+/admin/|scripts/|supabase/functions/)' \
+            "$excl" \
             'no-admin/scripts/edge'
 
           # Server-action rule — a catch whose entire body returns []/null/{}
@@ -396,24 +399,16 @@ jobs:
             exit 0
           fi
           semgrep --error --config .coderabbit/semgrep/helmv3.yml --skip-unknown-extensions "${files[@]}"
-      - name: Scan with default p/ci ruleset
-        shell: bash
-        env:
-          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
-          HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
-        run: |
-          set -eu
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          changed_files="$(bash .github/scripts/changed-files.sh)"
-          mapfile -t files < <(printf '%s\n' "$changed_files" \
-            | grep -E '\.(ts|tsx|js|jsx|sql|py|sh|bash|ya?ml)$' \
-            | grep -vE '^\.coderabbit/(semgrep|ast-grep)/__test__/' \
-            || :)
-          if [ "${#files[@]}" -eq 0 ]; then
-            echo "No changed files for semgrep p/ci."
-            exit 0
-          fi
-          semgrep --error --config p/ci --skip-unknown-extensions "${files[@]}"
+      # The "Scan with default p/ci ruleset" step that used to run here was
+      # removed 2026-09-05: it was a bare community ruleset with no
+      # repo-specific tuning, redundant with the custom-rules step above (the
+      # actual hard-rule enforcement AGENTS.md names) — see the
+      # pr-checks-review audit §2(f)/§5. The Semgrep Cloud Platform App is
+      # being removed (owner decision 2026-09-06); the custom-rules step
+      # above is the only semgrep enforcement in this workflow. The `all`
+      # aggregate below reads `needs.*.result` for the whole `semgrep` JOB,
+      # not per-step outcomes, so removing a step here needed no change to
+      # that logic.
 
   all:
     # Renamed from the bare `all` (2026-08-19): ci.yml's aggregate job was

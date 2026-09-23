@@ -1135,9 +1135,10 @@ interface CreateFocusAreaFromReviewArgs {
  * Resolves `team_id` and `coach_id` from the player's current active team.
  *
  * NOTE: This is the new (camelCase-args) variant added per the My Development
- * spec. There is also an older `createFocusAreaFromReview` in
- * `round-reviews.ts` with a different signature; both can coexist because
- * consumers import by module path.
+ * spec. An older `createFocusAreaFromReview(reviewId, focusAreaData)` used to
+ * live in `round-reviews.ts` with a different signature; it had zero
+ * importers (every real caller — FilmstripReview.tsx, its tests — already
+ * used this one) and was deleted 2026-09-05 rather than kept "coexisting".
  */
 async function createFocusAreaFromReviewImpl(
   args: CreateFocusAreaFromReviewArgs

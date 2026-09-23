@@ -161,4 +161,16 @@ describe('respondToEvent — the genuine refusals still say what is actually wro
     expect(result.error).toMatch(/Only active members/);
     expect(result.code).toBe('not_team_member');
   });
+
+  it('a synced class meeting takes no RSVP at all', async () => {
+    // A class row is one player's personal commitment on the team calendar.
+    // Letting a teammate RSVP onto it was how another player's class — real
+    // title included — ended up in their own busy schedule.
+    outcomes.set('golf_events', ok({ id: 'e1', team_id: 't1', event_type: 'class' }));
+
+    const result = refused(await rsvp());
+
+    expect(result.error).toMatch(/Class meetings/);
+    expect(result.code).toBe('class_meeting');
+  });
 });

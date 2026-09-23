@@ -4,6 +4,17 @@ name: Feature Awareness
 # It maps changed files through memory/registry.yml and uploads a context
 # pack that Codex/Claude reviewers can use. Keep this non-blocking
 # until registry coverage is stable across normal PR traffic.
+#
+# Gated on code-relevant paths (added 2026-09-05): the report only makes
+# sense for a diff that touches feature code — a docs-only or CI-config PR
+# has nothing for memory/registry.yml to map. `detect-changes` below calls
+# the same shared .github/workflows/detect-changes.yml every other
+# path-gated workflow in this repo calls (2026-09-06) and reads its
+# `mapped_feature_code` output (this job's own `code` concept, renamed to
+# avoid colliding with the shared workflow's differently-scoped `code`
+# output) — same fail-closed rule as before: any inability to classify, or
+# any non-pull_request event such as workflow_dispatch, resolves to
+# mapped_feature_code=true.
 
 on:
   pull_request:
@@ -18,8 +29,21 @@ permissions:
   contents: read
 
 jobs:
+  # Reusable workflow (2026-09-06) — see .github/workflows/detect-changes.yml.
+  # This job used to run its own hand-rolled git-diff classifier (not
+  # dorny/paths-filter, since "every changed file is docs/markdown" isn't an
+  # include-list shape); that logic moved into the shared workflow verbatim
+  # as its `docs_only`/`mapped_feature_code` outputs — renamed from this
+  # job's own `code` output to avoid colliding with ci.yml's differently-
+  # scoped `code` output, since both are now produced by the same call.
+  detect-changes:
+    name: Detect changes
+    uses: ./.github/workflows/detect-changes.yml
+
   report:
     name: Build context pack
+    needs: detect-changes
+    if: needs.detect-changes.outputs.mapped_feature_code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:

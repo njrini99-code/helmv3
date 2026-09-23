@@ -8,11 +8,17 @@
  * so ordering/columns/ghost behavior is directly assertable, while the REAL
  * `StatStrip` renders underneath so the container-shape contract (grid vs
  * rail) is exercised end to end.
+ *
+ * Mocked at RuledStatLine's own leaf module (`../RuledStatLine`), not the
+ * parent barrel (`'..'`): KPIContentsStrip.tsx now imports it from the leaf
+ * module directly to break an import cycle through the barrel (see
+ * CoverHero.tsx's docblock for the same fix), so a barrel-level mock no
+ * longer intercepts it.
  */
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-vi.mock('..', () => ({
+vi.mock('../RuledStatLine', () => ({
   RuledStatLine: (props: {
     label: string;
     value: number | string;

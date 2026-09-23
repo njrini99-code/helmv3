@@ -20,7 +20,7 @@
 > 3-lane `nav-registry.ts` restructure (deferred/owner-gated, see §Docs to
 > keep current below — unchanged, still frozen) and the tree-wide red/amber
 > → ink conversion remainder (tracked in
-> `docs/audits/PRODUCTION_READINESS_MISSION_2026-07-09.md`'s follow-up
+> `https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-07/PRODUCTION_READINESS_MISSION_2026-07-09.md`'s follow-up
 > waves — `PlayerNotesSection.tsx`/`PlayerPerformanceTab.tsx` still carry
 > raw `warm-*`/`amber-*` swatches as of tonight).
 

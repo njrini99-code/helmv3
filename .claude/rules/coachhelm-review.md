@@ -3,7 +3,6 @@ paths:
   - "src/lib/coachhelm/**"
   - "src/app/golf/actions/round-review*"
   - "src/app/api/coachhelm/**"
-verified: 2026-08-16  # re-checked against code this date
 ---
 
 # CoachHelm review checklist
@@ -21,23 +20,13 @@ routine backend plumbing. Business context:
   `src/lib/coachhelm/v3/llm/budget.ts` before `compose()`. Never hardcode
   $/token math outside that module.
 
-  > CORRECTED 2026-08-16. This rule used to read: "The resolved default budget
-  > for a coach/team with no settings row is `0` (safe) — do not 'fix' it to a
-  > nonzero fallback." **That is no longer true, and following it would revert a
-  > deliberate fix.** An unconfigured team now resolves to
-  > `PLATFORM_DEFAULT_DAILY_BUDGET_USD` (env-overridable, default **$3**) plus a
-  > `v3.llm.budget.platform_default` log line. The rationale is in
-  > `resolveDefaultBudgetForCoach`: a bare `0` returned for FOUR different
-  > situations — no team, failed read, no settings row, and a deliberate zero —
-  > so an unconfigured team was indistinguishable from a switched-off one. In
-  > production that was **eight of thirteen teams**: every coach on them opened
-  > CoachHelm, asked a question, and was told analysis was unavailable, with
-  > nothing anywhere naming the cause.
-  >
-  > Only the two states we genuinely cannot serve — a deliberate zero and a
-  > failed lookup — still return 0. THAT is the invariant to protect: a
-  > deliberate zero must never be "fixed" into a spend, and a failed lookup must
-  > fail closed rather than guess.
+  An unconfigured team resolves to `PLATFORM_DEFAULT_DAILY_BUDGET_USD`
+  (env-overridable) via `resolveDefaultBudgetForCoach`, plus a
+  `v3.llm.budget.platform_default` log line — never to a bare `0` fallback.
+  Only two states genuinely return `0`: a deliberate zero and a failed
+  lookup. THAT is the invariant to protect — a deliberate zero must never
+  be "fixed" into a spend, and a failed lookup must fail closed rather
+  than guess. Do not conflate an unconfigured team with either.
 - **Citation-verify → regenerate once → template fallback.** `composeRoundReview`,
   `composeHeroNarrative`, `composeCoachChat` must verify citations against real
   data, regenerate once on failure, then fall back to a deterministic template.
@@ -70,7 +59,3 @@ routine backend plumbing. Business context:
 - Cheap moves toward the "conversational round review nobody else has"
   differentiator (`docs/business/06-competitor-positioning.md`).
 
----
-*Promoted 2026-08-09 from a per-directory review-rules file, orphaned when the
-external review bots were dropped 2026-07-20. `budget.ts`, `checkBudget`/`recordSpend` and
-the composer names were re-verified against the code at promotion time.*

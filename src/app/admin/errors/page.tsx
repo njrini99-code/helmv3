@@ -38,6 +38,10 @@ import { PanelAllClear, PanelNoData, PanelStale } from '../_components/PanelStat
 import { AutoRefresh } from '../_components/AutoRefresh';
 import { LocalTime } from '../_components/LocalTime';
 import { CopyReportButton } from '../_components/CopyReportButton';
+import { ViewRail } from '../_components/ViewRail';
+import { parseView, type AdminViewOf } from '@/lib/admin/views';
+import { SourcesView } from './_components/sources/SourcesView';
+import { LoopView } from './_components/loop/LoopView';
 import { BulkResolveButton } from '../_components/BulkResolveButton';
 import { ErrorsFilterBar, type ActiveFilter, type FilterGroup } from './_components/ErrorsFilterBar';
 import { HowToReadIncidents } from './_components/HowToReadIncidents';
@@ -417,6 +421,7 @@ export default async function ErrorsPage({
   const params = await searchParams;
   const filters = parseErrorsFilters(params);
   const lens: IncidentLens = parseIncidentLens(params.lens);
+  const view = parseView('/admin/errors', params.view);
   const current = new URLSearchParams(
     Object.entries(params).flatMap(([k, v]) => (typeof v === 'string' ? [[k, v] as [string, string]] : [])),
   );
@@ -968,21 +973,61 @@ export default async function ErrorsPage({
           fault are merged into a single incident, so a fault three systems saw is one thing to fix, not three.
         </p>
       </header>
-      <ErrorsFilterBar
-        groups={buildFilterGroups(current, filters)}
-        active={activeFilters(current, filters)}
-        clearAllHref={hrefWithOverrides(current, {
-          sport: null,
-          severity: null,
-          source: null,
-          window: null,
-          kind: null,
-          feature: null,
-        })}
+      <ViewRail
+        host="/admin/errors"
+        active={view}
+        ariaLabel="Incidents view"
+        searchParams={params}
+        labels={{ list: 'Queue', sources: 'Sources', loop: 'Loop' }}
+        descriptions={{
+          list: 'One row per production cause, lensed and filtered.',
+          sources: 'What Sentry, Supabase and Vercel each saw, correlated every 3 hours — the evidence behind the queue.',
+          loop: 'Collect → diagnose → repair → close, and whether each stage has ever produced its output.',
+        }}
       />
+      {/* The filter bar narrows the QUEUE. Under `sources` and `loop` it would
+          offer controls that change nothing on screen, which is worse than
+          offering none — the same reason Teams hides its sort chips under EKG. */}
+      {view === 'list' ? (
+        <ErrorsFilterBar
+          groups={buildFilterGroups(current, filters)}
+          active={activeFilters(current, filters)}
+          clearAllHref={hrefWithOverrides(current, {
+            sport: null,
+            severity: null,
+            source: null,
+            window: null,
+            kind: null,
+            feature: null,
+          })}
+        />
+      ) : null}
       <PanelBoundary title="Incidents" skeleton={<PanelPageSkeleton rows={8} />}>
-        <Body />
+        {renderView()}
       </PanelBoundary>
     </div>
   );
+
+  /**
+   * One branch per registered view. `?feature=` is shared vocabulary, not a
+   * collision: `parseErrorsFilters` reads it as a FeatureKey to narrow the
+   * queue, and the constellation reads the same key to select a node — so
+   * `/admin/reliability?feature=X`'s redirect lands somewhere that still means
+   * what it meant.
+   */
+  function renderView() {
+    switch (view as AdminViewOf<'/admin/errors'>) {
+      case 'list':
+        return <Body />;
+      case 'sources':
+        return (
+          <SourcesView
+            selectedKey={typeof params.feature === 'string' ? params.feature : null}
+            hrefForFeature={(key) => hrefWithOverrides(current, { view: 'sources', feature: key })}
+          />
+        );
+      case 'loop':
+        return <LoopView />;
+    }
+  }
 }

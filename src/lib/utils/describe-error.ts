@@ -49,7 +49,15 @@ export function collapseHtmlErrorBody(text: string): string | null {
   // `<title>` carries the whole story on every gateway error page worth naming:
   // "supabase.co | 522: Connection timed out", "502 Bad Gateway", "Attention
   // Required! | Cloudflare".
-  const title = /<title[^>]*>([\s\S]{0,200}?)<\/title>/i.exec(text)?.[1]?.replace(/\s+/g, ' ').trim();
+  //
+  // js/polynomial-redos (#551): `text` is an untrusted upstream response body
+  // with no length cap before this point, and a run of unclosed `<title`
+  // substrings drives this pattern's backtracking to quadratic time. `<title>`
+  // is always near the top of `<head>` on every real error page, so matching
+  // against the already-bounded `head` (2000 chars, computed above) instead
+  // of the full `text` gives the regex a constant-size input regardless of
+  // how large the actual response body is.
+  const title = /<title[^>]*>([\s\S]{0,200}?)<\/title>/i.exec(head)?.[1]?.replace(/\s+/g, ' ').trim();
 
   // Status code from the title, or from Cloudflare's own error-code label.
   const status =

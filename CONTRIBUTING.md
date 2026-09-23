@@ -11,9 +11,11 @@ first; this file is just the workflow summary.
    required reviews + checks). Never push to it directly.
 2. **Open a PR** and fill out the template. Stale branches are auto-deleted on
    merge; use the "Update branch" button if you fall behind.
-3. **Pass the required checks.** A PR can merge only when these five are
+3. **Pass the required checks.** A PR can merge only when these six are
    green: `CI aggregate`, `Review Gate aggregate`, `Analyze (actions)`,
-   `Analyze (javascript-typescript)` and `Analyze (python)`. Treat
+   `Analyze (javascript-typescript)`, `Analyze (python)`, and
+   `block-historical-edits` (promoted from advisory 2026-09-05, applied and
+   verified live 2026-09-06). Treat
    `Supabase lint + RLS tests`, `Static checks`, `Lint`, `TypeScript`,
    `Unit tests`, and `Next build` as must-pass too — they gate `CI aggregate`.
    (`Smoke checks` was a sixth required check until 2026-09-02; it was a
@@ -51,6 +53,15 @@ npm run build           # catches SSR / prerender breakage
 
 Use the design-system primitives. Raw `<button>`/`<input>`, arbitrary `px`
 spacing, and `bg-white` are caught by the lint ratchet and will fail CI.
+
+**Screenshots do not belong in the tree.** Git LFS is registered
+(`.gitattributes` marks image extensions `binary`) but nothing actually
+routes images through it — `git lfs ls-files` returns zero tracked objects,
+so every screenshot ever committed sits in plain git blob storage, growing
+the repo forever. A one-off QA/visual-audit screenshot pack
+(docs/qa/baseball-fairway-visual-audit-2026-07-04/ was ~80MB before being
+pruned) belongs in a PR description or an external link, not a committed
+directory.
 
 ## Security
 

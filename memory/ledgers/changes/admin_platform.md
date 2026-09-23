@@ -2,6 +2,8 @@
 
 # Admin Platform change ledger
 
+> **2026-09-05: the launchd Repair path this ledger documents building has been removed.** `scripts/run-selfheal-repair.mjs` no longer exists. `scripts/lib/selfheal-repair-runner.mjs` no longer exists. `scripts/selfheal-repair-install.sh` no longer exists. `scripts/selfheal-repair-doctor.mjs` no longer exists. `src/test/scripts/run-selfheal-repair.test.ts` no longer exists. `src/test/scripts/selfheal-repair-launchd.test.ts` no longer exists. Repair runs only as `.github/workflows/selfheal-repair.yml` now. See `memory/features/admin-selfheal.md`. The entries below are left exactly as written at the time; this note exists only so a path-existence check doesn't read their historical references as current.
+
 ## 2026-09-03 — Zero-cost Supabase observability, Phase 1 (foundation): envelope, classifier, out-of-band DB error store, health/stat collectors, `/admin/database`
 
 New track (`agent/supabase-observability`), Phase 1 of a multi-phase
@@ -467,7 +469,7 @@ since both change behaviour the first pass shipped.
   `__setSentryRetryDelayForTests` stub keeps the 429 tests instant instead of
   actually pausing 30s), new `worstStatus` ranking cases in
   `normalize.test.ts`; `npx vitest run src/lib/reliability/__tests__/
-  src/lib/admin/__tests__/sentry-api.test.ts src/app/admin/reliability`
+  src/lib/admin/__tests__/sentry-api.test.ts src/app/admin/errors/_components/sources`
   (139/139); `npm run typecheck`, `lint`, `lint:ratchet`,
   `audit:supabase-errors` all green.
 
@@ -962,10 +964,12 @@ since both change behaviour the first pass shipped.
   - `src/lib/utils/date-only.test.ts` — removed the pinned call-site entry for
     the deleted `tracer/DataQualityIssueRow.tsx`.
   - `scripts/__tests__/admin-tables-mobile.test.mjs`,
-    `scripts/__tests__/badge-consolidation.test.mjs` — dropped the deleted
-    files from their target lists (both currently run under `node --test`
-    only, which nothing in this repo invokes — see vitest.config.ts's own
-    comment on that — so neither was breaking CI, but both stayed accurate).
+    `archive/scripts/__tests__/badge-consolidation.test.mjs` (moved there
+    2026-09-05 as a confirmed orphan; path updated here so this entry keeps
+    resolving) — dropped the deleted files from their target lists (both
+    currently run under `node --test` only, which nothing in this repo
+    invokes — see vitest.config.ts's own comment on that — so neither was
+    breaking CI, but both stayed accurate).
   - `.duplicate-exports-baseline.json` — regenerated via
     `node scripts/check-duplicate-exports.mjs --update`: 32 → 27 known
     duplicates. Deleting the legacy copies resolved `ActivityFeed`,
@@ -1866,7 +1870,7 @@ the full description of each module; summarized here for the change record.
   Charter & verifier visibility, blast radius + causal confidence, repair
   quality), each backed 1:1 by the modules above. `?entity=<feature_id>`
   selects the blast-radius entity (default `admin_platform`).
-- **`src/app/admin/work-log/page.tsx`** + `WorkLogProofCard.tsx` — the
+- **`src/app/admin/work/_components/WorkProofView.tsx`** + `WorkLogProofCard.tsx` — the
   change-to-proof PR list, distinct from the existing narrative timeline at
   `/admin/work`.
 - **Nav**: `ADMIN_NAV` gained two entries (`/admin/engineering` key `G`,
@@ -1970,7 +1974,7 @@ status transition, not a caller-supplied timestamp).
 - **Verified**: `npm run typecheck`, `npx eslint --max-warnings 0` on
   changed files, `npx vitest run --maxWorkers=4` for
   `src/lib/admin/agent-runs`, `src/lib/admin/engineering`,
-  `src/app/admin/engineering`, `src/app/admin/work-log`,
+  `src/app/admin/engineering`, `src/app/admin/work`,
   `node scripts/sql-lint-ratchet.mjs`,
   `node scripts/knowledge/document-inventory.mjs --check`,
   `node scripts/markdown-lint-ratchet.mjs` — all exit 0.
@@ -2373,3 +2377,21 @@ section for the full per-module description; not restated here.
   `npx vitest run --maxWorkers=4 <paths>` — 17/17 passing, including a
   manual revert-and-rerun of the motion guard test to confirm it actually
   fails on the violation it exists to catch (then restored).
+
+## 2026-09-07 — route `loading.tsx` fallbacks reshaped to the real first paint
+
+- SHA: 6eccdf03d.
+- Change: this feature's route Suspense fallbacks (`admin`, `admin/crm`) were reshaped.
+  No route, table, server action, data flow or business rule changed — the
+  edits are confined to `loading.tsx` skeleton geometry and its ARIA
+  wrapper.
+- Why: the fallbacks were shape-matched to each page's SETTLED layout
+  rather than the markup that paints at t=0. For a `'use client'` page
+  holding its own `loading` state, the Suspense fallback is replaced by
+  that component's loading branch, so reserving the populated geometry
+  caused the layout shift the fallback exists to prevent. A route whose
+  `page.tsx` is a pure `permanentRedirect` shim now renders `bg-canvas`
+  only — no geometry, no `<h1>` for a screen that never mounts.
+- Verification: every edited file was adversarially re-verified against
+  its page's source, twice for the files that failed the first pass.
+  typecheck 0, lint 0, build 0.

@@ -58,20 +58,47 @@ export interface DecisionInboxSummary {
  * tolerant of surrounding prose (only lines matching the table's own
  * `| \`file.sql\` | **STATUS** | why | decided |` shape are rows) so an
  * edit to the file's prose above/below the table cannot break this parser.
+ *
+ * STATUS IS A PREFIX, NOT A WHOLE CELL. This used to require the bold span be
+ * pure uppercase (`\*\*([A-Z]+)\*\*`), which matched six of the eleven real
+ * HOLD rows — every row whose status carries a qualifier
+ * (`**HOLD — R3, not yet reviewed**`, `**APPLIED 2026-09-03 — hold
+ * discharged**`) fell through the `if (!match) continue` and vanished. The
+ * Decision Inbox then rendered "no held migrations" for five decisions that
+ * were genuinely waiting on the owner: a silent zero standing in for unknown,
+ * which is the one thing this console's read models are built not to do.
+ *
+ * `src/lib/admin/engineering/held-migrations.ts` already classified by prefix
+ * and already found all eleven. The two parsers reading one file and
+ * disagreeing about what is in it is the actual defect; the test pins them
+ * against the REAL HELD.md so they cannot drift apart again.
  */
+const HELD_ROW = /^\|\s*`([^`]+)`[^|]*\|\s*\*\*([^*]+)\*\*[^|]*\|\s*(.*?)\s*\|\s*(.*?)\s*\|\s*$/;
+
+/** The leading keyword of a status cell — `HOLD — R3` is a HOLD. */
+function statusPrefix(cell: string): HeldMigrationRow['status'] | null {
+  const first = cell.trim().toUpperCase().split(/[^A-Z-]/)[0] ?? '';
+  if (first.startsWith('HOLD')) return 'HOLD';
+  if (first.startsWith('OBSOLETE')) return 'OBSOLETE';
+  // APPLIED-ELSEWHERE is not APPLIED here: it means another environment ran
+  // it, which is still an open decision for production.
+  if (first === 'APPLIED') return 'APPLIED';
+  return null;
+}
+
 export function parseHeldMigrations(markdown: string): HeldMigrationRow[] {
   const rows: HeldMigrationRow[] = [];
-  const lineRe = /^\|\s*`([^`]+)`\s*\|\s*\*\*([A-Z]+)\*\*\s*\|\s*(.*?)\s*\|\s*(.*?)\s*\|\s*$/;
   for (const line of markdown.split('\n')) {
-    const match = lineRe.exec(line.trim());
+    const match = HELD_ROW.exec(line.trim());
     if (!match) continue;
     const migration = match[1];
     const statusRaw = match[2];
     const why = match[3];
     const decided = match[4];
-    if (migration === undefined || why === undefined || decided === undefined) continue;
-    if (statusRaw !== 'HOLD' && statusRaw !== 'OBSOLETE' && statusRaw !== 'APPLIED') continue;
-    rows.push({ migration, status: statusRaw, why, decided });
+    if (migration === undefined || statusRaw === undefined || why === undefined || decided === undefined) continue;
+    const status = statusPrefix(statusRaw);
+    if (status === null) continue;
+    rows.push({ migration, status, why, decided });
   }
   return rows;
 }

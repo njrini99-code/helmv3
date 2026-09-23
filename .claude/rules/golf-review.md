@@ -4,7 +4,6 @@ paths:
   - "src/lib/golf/**"
   - "src/components/golf/**"
   - "src/app/api/golf/**"
-verified: 2026-08-20-mechanical  # paths + table names machine-checked this date (docs:path-drift / docs:schema-drift); PROSE not re-read against code
 ---
 
 # GolfHelm review checklist
@@ -63,7 +62,3 @@ the mapped `memory/features/*.md`, `memory/context/golfhelm-database.md`.
 - A missing RLS/business-contract/E2E test on a stats, roster, or qualifier
   surface the PR touches.
 
----
-*Promoted 2026-08-09 from a per-directory review-rules file, orphaned when the
-external review bots were dropped 2026-07-20. Claims re-verified against the
-code at promotion time.*

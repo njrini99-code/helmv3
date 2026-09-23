@@ -77,7 +77,7 @@ GolfHelm's promise has two layers: a system-of-record layer and an intelligence 
 - **Qualifying / travel-roster selection** — a first-class workflow (`golf_qualifiers`, `golf_qualifier_entries`, `golf_qualifier_selections`) explicitly built because this is described in competitive research as "the most-painful, most-frequent, most-poorly-tooled workflow in college golf" (`docs/v3-research-competitive-landscape.md:393`) and is treated internally as a stated differentiator.
 - **Coach-approved player-set Goals** as a first-class object (superseding the older `golf_player_focus_areas` model per `docs/v3-master-plan.md` Part II) — framed competitively as something no rival product treats as first-class.
 
-**Competitive frame** (for context on why the above bars are set where they are, from `docs/v3-research-competitive-landscape.md` — competitor pricing/positioning research exists; GolfHelm's own pricing does not, see §6):
+**Competitive frame** (for context on why the above bars are set where they are, from docs/v3-research-competitive-landscape.md — competitor pricing/positioning research exists; GolfHelm's own pricing does not, see §6):
 - **Clippd** — the primary threat. The NCAA's official scoring/rankings vendor since 2023, live in 200+ D1 programs, with proprietary Shot Quality / Player Quality metrics. This is the incumbent GolfHelm's SG and insight quality is implicitly benchmarked against.
 - **DECADE** — a peer competitor (Combines, Practice Rx-style features).
 - **Arccos** — recreational sensor hardware, a different category but adjacent.
@@ -133,7 +133,7 @@ Calendar and event-scheduling bugs (wrong timezone, wrong RSVP window) are a con
 - On exhaustion, the fallback priority is `round_review > coach_chat > hero_narrative → template` — i.e. when budget runs out, the system degrades in that priority order down to a non-LLM template rather than either silently failing or overspending.
 - This is currently the platform's one and only enforced unit-economics lever. There is no other cost gate (no per-org budget, no billing-tied throttle) in the repo — treat any new LLM call site that does not route through this budget check as a gap, not an acceptable exception.
 
-**Sales motion:** demo/prospect accounts exist in the product, consistent with a sales-led (not self-serve/PLG) motion — consistent with the buyer being an institutional program rather than an individual consumer (§3). Only *competitors'* pricing has been researched (`docs/v3-research-competitive-landscape.md`); GolfHelm's own pricing is not documented anywhere in-repo.
+**Sales motion:** demo/prospect accounts exist in the product, consistent with a sales-led (not self-serve/PLG) motion — consistent with the buyer being an institutional program rather than an individual consumer (§3). Only *competitors'* pricing has been researched (docs/v3-research-competitive-landscape.md); GolfHelm's own pricing is not documented anywhere in-repo.
 
 ---
 

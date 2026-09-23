@@ -16,9 +16,10 @@
  * locked in for the primary accuracy headline (`isAccuracyHeadlineLive`) —
  * that fix didn't cover this second, easy-to-miss instance.
  *
- * Mocks only `Readout` (via the `@/components/fairway` barrel) so the rest of
- * the cockpit kit (InstrumentPanel, etc.) renders for real; NumberFlow /
- * custom-element quirks in `Readout` itself are irrelevant to this test.
+ * Mocks only `Readout` (via its own `@/components/fairway/instrument` leaf
+ * module) so the rest of the cockpit kit (InstrumentPanel, etc.) renders for
+ * real; NumberFlow / custom-element quirks in `Readout` itself are
+ * irrelevant to this test.
  * ========================================================================== */
 import { render } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
@@ -34,10 +35,14 @@ interface CapturedReadout {
 const calls: CapturedReadout[] = [];
 
 // vi.mock calls are hoisted above every import in this file (including the
-// static `CalibrationInstrument` import above), so this still intercepts the
-// `Readout` the component pulls from the shared barrel.
-vi.mock('@/components/fairway', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/components/fairway')>();
+// static `CalibrationInstrument` import above), so this still intercepts
+// the `Readout` the component pulls. Mocked at its own leaf module
+// (`@/components/fairway/instrument`), not the `@/components/fairway`
+// barrel: FairwayEffectiveness.tsx now imports Readout from that leaf
+// module directly to break an import cycle through the barrel (see that
+// file's docblock), so a barrel-level mock no longer intercepts it.
+vi.mock('@/components/fairway/instrument', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/components/fairway/instrument')>();
   return {
     ...actual,
     Readout: (props: CapturedReadout) => {
