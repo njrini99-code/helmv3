@@ -787,10 +787,12 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   insight's FIRST real `golf_insight_exposure.shown_at` row — never a
   `created_at` proxy the way `attribute.ts`'s round-level path uses one. Zero
   exposure rows → `{ok: false, reason: 'no-exposure-record'}`, retried next
-  run, not treated as a permanent skip. A genuine DB error on that lookup
-  THROWS rather than being misread as "no exposure yet" — caught by the
-  cron's own per-candidate try/catch like any other infra failure in that
-  loop. Baseline/follow-up windows reuse `attribute.ts`'s own
+  run, not treated as a permanent skip. A genuine DB error on that lookup is
+  its own typed skip (`{ok: false, reason: 'exposure-read-failed', error}`),
+  logged via `logServerError` and counted under
+  `summary.comparable_exposure_read_failed` — never misread as "no exposure
+  yet" (PR #2007 review, SHOULD decision; see the matching note further
+  down this section). Baseline/follow-up windows reuse `attribute.ts`'s own
   `PRE_WINDOW_DAYS`/`POST_WINDOW_DAYS` (now exported) around that instant.
   **The cron's 21-day candidate-age filter does NOT guarantee this path's
   follow-up window has closed** (review catch, 2026-09-23): `interventionAt`
@@ -890,6 +892,78 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   through `fetchAllRowsResult` (`src/lib/supabase/fetch-all-rows.ts`),
   with `id` added as an `.order()` tiebreaker after `shown_at` so
   `.range()` page boundaries stay stable.
+
+- **A9 slice 2 adds confounding-intervention detection**
+  (2026-09-23, `agent/coachhelm-comparable-confounding`, addendum §14.12) —
+  `src/lib/coachhelm/v3/causality/confounding-check.ts`
+  (`detectConfoundingInterventions`), called from
+  `comparable-attribute.ts` right after the follow-up-window-open gate
+  (never before — the write is permanent, so checking before the window
+  has closed could miss a confounder that lands later in it) and before
+  `loadPlayerContext`. Replaces slice 1's hardcoded
+  `multipleInterventions: false`, which PR #2007's review flagged as the
+  real enable-blocker for this flag (a confounded row written under that
+  hard-code could never be relabeled once slice 2 shipped).
+  **What counts as a confounder**: ANY other insight whose FIRST-EVER
+  `golf_insight_exposure` to this player lands inside
+  `[baselineWindow.start, followUpWindow.end]` — the window starts at
+  BASELINE start (not `interventionAt`), since an intervention landing
+  during the baseline contaminates it just as much as one landing during
+  follow-up. Matched on ANY metric, not just this insight's own
+  `target_metric_id` — insight→metric mapping isn't reliable enough to
+  trust as a filter, and a swing/practice change can plausibly move a
+  totally different metric than the one it surfaced on. Erring toward
+  flagging costs no data (a "limited" result is still written, see below).
+  **What does NOT count**: this insight itself, or a re-surfacing of it.
+  `golf_coach_insights` carries no lineage/supersession key today (only
+  `signature`, which identifies the generating RULE, not an identity
+  chain across re-creates) — if one is ever added, its chain should be
+  excluded here too.
+  **Deferred (named follow-up, not shipped in slice 2)**: focus-area/
+  drill-change confounders (repair-plan addendum item (c)) are not
+  checked — there is no existing player-scoped table with a reliable
+  activation timestamp for a focus-area change to join against without
+  inventing one.
+  **Query**: player-scoped (`.eq('player_id', ...)`), excludes this
+  insight (`.neq('insight_id', ...)`), filtered to `shown_at <= windowEnd`
+  (an insight first exposed after the window closes can't confound it),
+  paginated via `fetchAllRowsResult` (a player's cumulative exposure
+  history can exceed PostgREST's 1,000-row cap), ordered `insight_id,
+  shown_at, id` so the first row of each `insight_id` group is that
+  insight's true minimum `shown_at`. **A failed query never silently
+  reads as "no confounder found"** (the wrong direction for a downgrade
+  flag) — it returns a typed failure, and the caller returns
+  `{ok: false, reason: 'confounder-read-failed', error}` (own summary
+  counter `comparable_confounder_read_failed`, own log action
+  `cron.v3.causality.comparable-confounder-read`, retried next run, never
+  a permanent skip).
+  **Write-layer method_version**: a confounded write is still written,
+  never skipped or dropped — under the distinct `method_version`
+  `'comparable_opportunities_v1_limited'`
+  (`COMPARABLE_OPPORTUNITIES_LIMITED_METHOD_VERSION`, `comparable-
+  attribute.ts`) instead of the clean `'comparable_opportunities_v1'`. No
+  migration and no CHECK constraint on the column — either string
+  round-trips today. The cron's own summary splits the two:
+  `comparable_attributed` (clean) vs. `comparable_attributed_limited`
+  (confounded) — a reader must be able to tell them apart from the
+  summary alone, without re-deriving `method_version`. Every current
+  reader of `golf_insight_outcome_attribution`/`method_version` was
+  grepped (2026-09-23): the only other reads are the round-level
+  `attribute.ts` path (its own, unrelated `'v2_observed_delta'` literal)
+  and the cron's own anti-join `.select('insight_id')` (never reads
+  `method_version` at all) — nothing today does an equality/switch check
+  on this column that could misclassify the new value.
+  See `docs/architecture/coachhelm-evidence-contract.md`'s
+  "Comparable-opportunities outcome measurement" section (both
+  `method_version` values documented there too),
+  `src/lib/coachhelm/v3/causality/confounding-check.test.ts` (the query/
+  grouping logic itself), `comparable-attribute.test.ts`'s "A9 slice 2"
+  describe block (this module's orchestration — call ordering, window
+  bounds, method_version selection), and `causality-attribute.test.ts`'s
+  matching cases (the cron's counters/logging). Flag
+  (`coachhelm_comparable_opportunity_attribution`) stays default-off —
+  slice 2 removes one enable blocker, but migration 20260922230000 still
+  isn't applied and no real-world shadow evidence exists yet.
 
 ## Tests To Prefer
 

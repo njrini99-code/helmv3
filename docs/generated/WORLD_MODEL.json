@@ -17339,6 +17339,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/causality/confounding-check.ts",
+          "anchor": "src/lib/supabase/fetch-all-rows"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/chat/action-runs.ts",
           "anchor": "src/lib/supabase/untyped"
         },

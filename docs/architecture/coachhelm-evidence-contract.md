@@ -1250,14 +1250,19 @@ from that row's own real gating population — never a narrower proxy
 floor its own narrower population had already cleared, hiding the wider
 floor that actually produced `'insufficient'`).
 
-## Comparable-opportunities outcome measurement (A9 deliverable — pure, not wired)
+## Comparable-opportunities outcome measurement (A9 deliverable)
 
 `src/lib/coachhelm/v3/evaluation/comparable-opportunities.ts` (addendum A9,
 repair plan §14.12) exports `computeComparableOpportunities(input):
 ComparableOpportunitiesResult`, a pure function over `ShotFact[]`/
-`HoleContext[]`. **Not wired into `causality/attribute.ts` or any UI
-surface** — same not-wired discipline as A1/A3 above; learning/
-personalization weights are untouched by this slice.
+`HoleContext[]`. **Still not wired into `causality/attribute.ts` itself or
+any UI surface** — same not-wired discipline as A1/A3 above for THAT
+module. It IS wired into the `causality-attribute` cron via a separate
+DB-adapter (`src/lib/coachhelm/v3/causality/comparable-attribute.ts`, A9
+slices 1–2, behind `coachhelm_comparable_opportunity_attribution`, default
+off) — see below and `memory/features/coachhelm-ai.md`'s A9 sections for
+that wiring. Learning/personalization weights are untouched either way:
+every row this adapter writes carries `lift: null` unconditionally.
 
 Where this differs from `causality/attribute.ts`: `attribute.ts` measures a
 ROUND-LEVEL average (e.g. `sg_total`) before vs after an insight's
@@ -1636,6 +1641,34 @@ a per-event-kind status table to its report output (tracked as a harness
 follow-up on `agent/a10-shadow-eval-harness`/#2032, once #2024 lands and
 is merged in) before any A4/A9 sequence-attribution surface is considered
 for enablement on real data.
+
+**Two `method_version` values, two different layers (A9 slice 2)**: this
+pure core's own `methodVersion` field is ALWAYS the string
+`'comparable_opportunities_v1'`, regardless of `multipleInterventions` —
+that field is this module's own versioning axis (what the matching/
+aggregation math means), independent of the DB column below, and never
+changes based on confounding (module header's NAMING note). The DB-write
+adapter (`comparable-attribute.ts`) is a separate layer: it maps a
+`status: 'observed_change_limited'` result to a DISTINCT
+`golf_insight_outcome_attribution.method_version` value,
+`'comparable_opportunities_v1_limited'`
+(`COMPARABLE_OPPORTUNITIES_LIMITED_METHOD_VERSION`), instead of the clean
+`'comparable_opportunities_v1'` — a confounded measurement is still
+written, never dropped, but a DB reader can always tell a clean
+comparison from a confounded one from that column alone, without
+re-deriving `multipleInterventions`. No migration and no CHECK constraint
+guards this column (migration 20260922230000 only adds the column
+itself) — either string round-trips today. Confounding-intervention
+detection itself (`detectConfoundingInterventions`,
+`src/lib/coachhelm/v3/causality/confounding-check.ts`) is a query over
+`golf_insight_exposure`, not part of this pure core: it sets
+`multipleInterventions` to `true` when any OTHER insight's first-ever
+exposure to the same player lands inside
+`[baselineWindow.start, followUpWindow.end]`, on ANY metric (insight→metric
+mapping isn't reliable enough to trust as a filter) — see
+`memory/features/coachhelm-ai.md`'s A9 slice 2 entry for the full
+what-counts/what-doesn't rule and the deferred focus-area/drill-change
+follow-up.
 
 ## How to add a new comparison source
 
