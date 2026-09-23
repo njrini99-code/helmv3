@@ -34,7 +34,12 @@ on:
   merge_group:
   push:
     branches: [main]
+  # ready_for_review (plus the GitHub defaults opened/synchronize/reopened):
+  # a draft->ready transition needs its own event to trigger the first real
+  # run, since `checks`/`semgrep` below skip while
+  # github.event.pull_request.draft is true (owner decision, PR throughput).
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
 
 concurrency:
   # Per-COMMIT on main, per-ref with cancel on branches — see ci.yml's note.
@@ -48,6 +53,10 @@ permissions:
 jobs:
   checks:
     name: Review Gate checks
+    # Skip while draft (owner decision, PR throughput): nothing is required
+    # on a draft PR since it can't be merged; marking it ready_for_review
+    # re-triggers a full, real run via the added pull_request type above.
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft != true
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -364,6 +373,8 @@ jobs:
 
   semgrep:
     name: semgrep (custom rules)
+    # Skip while draft — see `checks` above.
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft != true
     runs-on: ubuntu-latest
     timeout-minutes: 15
     # The legacy `returntocorp/semgrep` namespace is deprecated and pinned to
@@ -428,7 +439,12 @@ jobs:
       - semgrep
     steps:
       - name: Fail if any required check failed
-        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'skipped')
+        # A skip is fine ONLY on a draft PR (checks/semgrep deliberately
+        # skip there, owner decision, PR throughput) — a skip on any other
+        # event is still a real problem.
+        if: >-
+          contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') ||
+          (contains(needs.*.result, 'skipped') && github.event.pull_request.draft != true)
         run: |
           echo "One or more review-gate checks failed."
           exit 1

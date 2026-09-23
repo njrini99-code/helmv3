@@ -101,7 +101,13 @@ on:
   push:
     branches:
       - main
+  # ready_for_review (plus the GitHub defaults opened/synchronize/reopened):
+  # a draft->ready transition needs its own event to trigger the first real
+  # run, since every gated job below skips while github.event.pull_request.draft
+  # is true (owner decision, PR throughput — drafts can't be merged, so
+  # running the full suite on every draft push only burns Actions queue slots).
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
 
 concurrency:
   # Per-COMMIT groups on main (playwright.yml's old pattern): two merges landing
@@ -155,6 +161,10 @@ jobs:
   # ---------------------------------------------------------------------------
   static-checks:
     name: Static checks
+    # Skip while draft (owner decision, PR throughput): nothing is required
+    # on a draft PR since it can't be merged; marking it ready_for_review
+    # re-triggers a full, real run via the added pull_request type above.
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft != true
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -518,7 +528,9 @@ jobs:
     # a change outside the `code` path filter (a rule file, memory/registry.yml,
     # config/*.yml) can still change what `tsc` reports through an ambient
     # `.d.ts` or a tsconfig `include`/`paths` entry the filter doesn't track —
-    # so this always runs, every PR and every push.
+    # so this always runs, every PR and every push. Still skips while draft
+    # (owner decision, PR throughput) — see static-checks above.
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft != true
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -545,7 +557,9 @@ jobs:
     # ESLint reads config files (eslint.config.mjs is already in the `code`
     # filter, but a rule referencing another tracked path is not guaranteed
     # to be) and the ratchets in here read the whole tree, not just the diff.
-    # Always runs.
+    # Always runs, except while draft (owner decision, PR throughput) — see
+    # static-checks above.
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft != true
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
