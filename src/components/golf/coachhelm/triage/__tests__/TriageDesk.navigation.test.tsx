@@ -104,6 +104,7 @@ function renderDesk() {
         focusAreas: [],
         coachId: 'coach-1',
         playerStats: {},
+        todayIso: '2026-09-23',
       }}
       effectivenessDrillProps={{} as never}
     />,

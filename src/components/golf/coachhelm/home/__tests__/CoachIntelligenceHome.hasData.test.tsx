@@ -65,6 +65,7 @@ function playersDrillProps(players: PlayersGridViewProps['players']): PlayersGri
     causalByPlayer: {},
     silentPostureByPlayer: {},
     initialSelectedPlayerId: null,
+    todayIso: '2026-09-23',
   };
 }
 

@@ -78,6 +78,7 @@ import {
   computeRosterHealth,
   computeNeedsAttention,
 } from './RosterHealthHeader';
+import { DueForReviewPanel } from './DueForReviewPanel';
 import {
   DataTable,
   type ColumnDef,
@@ -214,6 +215,18 @@ export interface PlayersGridViewProps {
    * direct mount) is unaffected.
    */
   embedded?: boolean;
+  /**
+   * Today's calendar date (`YYYY-MM-DD`) on the TEAM's wall clock — resolved
+   * server-side once in `intelligence/page.tsx` via
+   * `todayIsoInZone(teamTimezone)` (`golf_team_settings.timezone`, default
+   * `'America/New_York'`) and threaded down here as a plain prop. Required,
+   * not defaulted: computing "today" inside a client component (`new
+   * Date()`) diverges between SSR (UTC on the server) and hydration (the
+   * browser's own zone), which is both wrong (coach-local due dates need the
+   * TEAM's zone, not either of those) and a hydration-mismatch risk. Passed
+   * straight through to `DueForReviewPanel`.
+   */
+  todayIso: string;
 }
 
 /* ---------------------------------------------------------------------------
@@ -265,6 +278,7 @@ export function PlayersGridView({
   onNavigationChange,
   className,
   embedded = false,
+  todayIso,
 }: PlayersGridViewProps) {
   const router = useRouter();
 
@@ -812,6 +826,20 @@ export function PlayersGridView({
               warm glass: coverage gauge focal, outcome-mix rail, micro-readout
               foot row. Reads from the same props (no new fetch). ── */}
         <RosterHealthHeader health={rosterHealth} needs={needsAttention} onAdd={openCreate} />
+
+        {/* ── DUE FOR REVIEW (Pkg 9 slice 4) — overdue/due-soon focus areas,
+              derived from the SAME focusAreas prop above (no new fetch).
+              Renders nothing when the queue is empty. ── */}
+        <DueForReviewPanel
+          players={players}
+          focusAreas={focusAreas}
+          todayIso={todayIso}
+          onSelectPlayer={(playerId) => {
+            setSelectedPlayerId(playerId);
+            setView('areas');
+            onNavigationChange?.({ view: 'areas', playerId });
+          }}
+        />
 
         {/* Player filter chip strip (selecting a player scopes the areas view). */}
         {selectedPlayer ? (

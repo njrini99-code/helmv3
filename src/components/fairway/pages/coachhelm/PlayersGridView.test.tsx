@@ -207,6 +207,7 @@ describe('PlayersGridView — desktop roster table row actions are always visibl
         focusAreas={[]}
         coachId="coach-1"
         playerStats={{}}
+        todayIso="2026-09-23"
       />,
     );
   }

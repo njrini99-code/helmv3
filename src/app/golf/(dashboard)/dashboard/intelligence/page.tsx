@@ -27,6 +27,7 @@ import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import type { FairwayGoalCardData } from '@/components/fairway/pages/coachhelm/FairwayGoalCard';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
+import { todayIsoInZone } from '@/lib/golf/timezone';
 
 // ============================================================================
 // METADATA
@@ -130,6 +131,7 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
     performanceResult,
     patternResult,
     categoryInsightsResult,
+    teamTimezoneResult,
   ] = await Promise.all([
     getTeamOverview(teamId),
     getAlertCounts(coach.id),
@@ -148,10 +150,29 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
     // teamCategories rating used by the empty-roster gate). Additive read,
     // same team-scoped RLS as every other fetch in this block.
     getTeamCategoryInsights(teamId),
+    // #1998 review — "due for review" needs the TEAM's wall-clock calendar
+    // day, not the server's UTC day (dashboard-data.ts's own pattern).
+    supabase.from('golf_team_settings').select('timezone').eq('team_id', teamId).maybeSingle(),
   ]);
   const alertCounts = countsRes.success ? (countsRes.counts ?? null) : null;
   const signalGroups = signalGroupsResult.success ? signalGroupsResult.groups : [];
   const signalGroupsError = signalGroupsResult.success ? null : (signalGroupsResult.error ?? 'Could not load signals.');
+  // A failed read here must not silently masquerade as "no timezone row" —
+  // bind the error and log it; the fallback below is still the correct
+  // degrade (America/New_York), just an explicit one instead of an
+  // accidental one.
+  if (teamTimezoneResult.error) {
+    void logServerError(
+      `[intelligence] team timezone read failed for team ${teamId}; due-for-review dates will fall back to America/New_York: ${describeError(teamTimezoneResult.error)}`,
+      { action: 'intelligence.loadTeamTimezone', featureArea: 'coachhelm' },
+      'warning',
+    );
+  }
+  const teamTimezone = (teamTimezoneResult.data as { timezone?: string } | null)?.timezone || 'America/New_York';
+  // Resolved ONCE, server-side, on the team's zone — threaded down through
+  // playersDrillProps -> PlayersGridView -> DueForReviewPanel. Never
+  // recomputed client-side (see due-for-review.ts's module doc).
+  const todayIso = todayIsoInZone(teamTimezone);
 
   // ── `players` drill reads — a port of development/page.tsx's roster +
   // focus-area fetch. The goals/causal/silent-posture extras (goalsByPlayer,
@@ -380,6 +401,7 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
             // unscoped grid instead of a phantom selection.
             initialSelectedPlayerId:
               sp.player && players.some((p) => p.id === sp.player) ? sp.player : null,
+            todayIso,
           }}
           effectivenessDrillProps={{
             teamId,
