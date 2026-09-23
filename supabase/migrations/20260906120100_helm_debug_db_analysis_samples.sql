@@ -33,11 +33,17 @@
 --
 -- ROLLBACK: drop the three functions, then the table.
 
--- VERIFY: select 1 from information_schema.tables where table_schema = 'helm_debug' and table_name = 'db_analysis_samples';
--- VERIFY: select 1 from pg_indexes where schemaname = 'helm_debug' and indexname = 'db_analysis_samples_category_idx';
--- VERIFY: select 1 where has_function_privilege('anon', 'public.record_db_analysis_sample(timestamptz,jsonb)', 'execute') = false;
--- VERIFY: select 1 where has_function_privilege('authenticated', 'public.helm_debug_db_analysis_snapshot()', 'execute') = false;
--- VERIFY: select 1 where has_function_privilege('service_role', 'public.helm_debug_read_db_analysis_samples()', 'execute');
+-- VERIFY: select 1 from information_schema.tables where table_schema =
+-- VERIFY: 'helm_debug' and table_name = 'db_analysis_samples';
+-- VERIFY: select 1 from pg_indexes where schemaname = 'helm_debug' and
+-- VERIFY: indexname = 'db_analysis_samples_category_idx';
+-- VERIFY: select 1 where has_function_privilege('anon',
+-- VERIFY: 'public.record_db_analysis_sample(timestamptz,jsonb)', 'execute') =
+-- VERIFY: false;
+-- VERIFY: select 1 where has_function_privilege('authenticated',
+-- VERIFY: 'public.helm_debug_db_analysis_snapshot()', 'execute') = false;
+-- VERIFY: select 1 where has_function_privilege('service_role',
+-- VERIFY: 'public.helm_debug_read_db_analysis_samples()', 'execute');
 
 create schema if not exists helm_debug;
 

@@ -63,7 +63,10 @@
 -- safe no-op either way.
 
 -- VERIFY: select 1 from pg_extension where extname = 'pgaudit';
--- VERIFY: select 1 from pg_db_role_setting s join pg_roles r on r.oid = s.setrole where r.rolname = 'postgres' and array_to_string(s.setconfig, ',') ~* 'pgaudit\.log\s*=\s*"?ddl\s*,\s*role';
+-- VERIFY: select 1 from pg_db_role_setting s join pg_roles r on r.oid =
+-- VERIFY: s.setrole where r.rolname = 'postgres' and
+-- VERIFY: array_to_string(s.setconfig, ',') ~*
+-- VERIFY: 'pgaudit\.log\s*=\s*"?ddl\s*,\s*role';
 create extension if not exists pgaudit schema extensions;
 
 -- Session/database-level default. `ddl` covers CREATE/ALTER/DROP/etc.;

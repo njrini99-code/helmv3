@@ -23,11 +23,28 @@
 -- ROLLBACK: CREATE OR REPLACE back to v2's body
 -- (20260903191300_helm_debug_observability_retention_v2.sql).
 
--- VERIFY: select 1 from pg_proc where oid = 'public.helm_debug_prune_observability(integer,integer,integer,integer)'::regprocedure;
--- VERIFY: select 1 from (select count(*) c from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.proname = 'helm_debug_prune_observability') s where s.c = 1;
--- VERIFY: select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.proname = 'helm_debug_prune_observability' and p.prosrc like '%db_statement_samples%' and p.prosrc like '%db_analysis_samples%';
--- VERIFY: select 1 where has_function_privilege('anon', 'public.helm_debug_prune_observability(integer,integer,integer,integer)', 'execute') = false;
--- VERIFY: select 1 where has_function_privilege('service_role', 'public.helm_debug_prune_observability(integer,integer,integer,integer)', 'execute');
+-- VERIFY: select 1 from pg_proc where oid =
+-- noqa: disable=LT05
+-- VERIFY: 'public.helm_debug_prune_observability(integer,integer,integer,integer)'
+-- noqa: enable=LT05
+-- VERIFY: ::regprocedure;
+-- VERIFY: select 1 from (select count(*) c from pg_proc p join pg_namespace n
+-- VERIFY: on n.oid = p.pronamespace where n.nspname = 'public' and p.proname =
+-- VERIFY: 'helm_debug_prune_observability') s where s.c = 1;
+-- VERIFY: select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+-- VERIFY: where n.nspname = 'public' and p.proname =
+-- VERIFY: 'helm_debug_prune_observability' and p.prosrc like
+-- VERIFY: '%db_statement_samples%' and p.prosrc like '%db_analysis_samples%';
+-- VERIFY: select 1 where has_function_privilege('anon',
+-- noqa: disable=LT05
+-- VERIFY: 'public.helm_debug_prune_observability(integer,integer,integer,integer)'
+-- noqa: enable=LT05
+-- VERIFY: , 'execute') = false;
+-- VERIFY: select 1 where has_function_privilege('service_role',
+-- noqa: disable=LT05
+-- VERIFY: 'public.helm_debug_prune_observability(integer,integer,integer,integer)'
+-- noqa: enable=LT05
+-- VERIFY: , 'execute');
 
 create or replace function public.helm_debug_prune_observability(
     p_error_events_retention_days integer default 30,

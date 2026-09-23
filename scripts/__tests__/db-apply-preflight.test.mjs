@@ -58,9 +58,11 @@ const STILL_HELD_QUALIFIED = '20260903150000_helm_debug_agent_runs.sql';
 // grouped row) as of 2026-09-08 and are now APPLIED — ledger-verified
 // 2026-09-22 against production (`list_migrations`); see the corresponding
 // rows in `supabase/migrations/HELD.md`. Kept as fixtures for the NEGATIVE
-// assertion: isHeldInRegister must not flag an applied row, including one
-// whose status text still contains "hold" nowhere in its own text but did
-// in the row's history.
+// assertion: isHeldInRegister must not flag an applied row, even though the
+// register's own prose for that row still discusses the migration's earlier
+// HOLD reasoning (kept for historical context) — the classification must
+// come from the status cell's leading keyword, not from whether the word
+// "hold" appears anywhere in the row.
 const NOW_APPLIED = [
   '20260906115900_helm_debug_stat_statements_snapshot_min_exec.sql',
   '20260906120000_narrow_admin_event_purge_pg_cron.sql',
