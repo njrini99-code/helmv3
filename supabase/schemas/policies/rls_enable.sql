@@ -436,6 +436,8 @@ ALTER TABLE "public"."golf_recruits" ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE "public"."golf_review_events" ENABLE ROW LEVEL SECURITY;
 
+ALTER TABLE "public"."golf_round_recap_provenance" ENABLE ROW LEVEL SECURITY;
+
 ALTER TABLE "public"."golf_round_reviews" ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE "public"."golf_round_stats_cache" ENABLE ROW LEVEL SECURITY;

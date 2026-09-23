@@ -1,6 +1,6 @@
 BEGIN;
 
-SELECT plan(10);
+SELECT plan(17);
 
 SELECT ok(
   has_function_privilege('authenticated', 'public.save_round_ai_recap(uuid, text)', 'EXECUTE'),
@@ -80,6 +80,47 @@ SELECT throws_ok(
 );
 
 RESET ROLE;
+
+-- Package 8 (revision-keyed provenance + single-flight, 2026-09-23):
+-- the cheap single-flight guard and the new provenance table.
+
+SELECT ok(
+  position('ai_recap IS NULL' IN pg_get_functiondef('helm_private.save_round_ai_recap(uuid, text, uuid)'::regprocedure)) > 0,
+  'a concurrent call that lost the single-flight race updates zero rows instead of overwriting the winner'
+);
+
+SELECT ok(
+  (SELECT relrowsecurity FROM pg_class WHERE oid = 'public.golf_round_recap_provenance'::regclass),
+  'golf_round_recap_provenance has row level security enabled'
+);
+
+SELECT isnt(
+  has_table_privilege('anon', 'public.golf_round_recap_provenance', 'SELECT'),
+  true,
+  'anonymous callers cannot read recap provenance'
+);
+
+SELECT isnt(
+  has_table_privilege('public', 'public.golf_round_recap_provenance', 'SELECT'),
+  true,
+  'recap provenance is not granted to PUBLIC'
+);
+
+SELECT ok(
+  has_table_privilege('authenticated', 'public.golf_round_recap_provenance', 'SELECT'),
+  'authenticated players/coaches may read recap provenance (subject to RLS policy)'
+);
+
+SELECT isnt(
+  has_table_privilege('authenticated', 'public.golf_round_recap_provenance', 'INSERT'),
+  true,
+  'only the service role writes recap provenance, never an authenticated client'
+);
+
+SELECT ok(
+  has_table_privilege('service_role', 'public.golf_round_recap_provenance', 'INSERT'),
+  'the service role (round-recap.ts admin client) can write recap provenance'
+);
 
 SELECT * FROM finish();
 

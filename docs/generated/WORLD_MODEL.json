@@ -2747,6 +2747,12 @@
         ]
       },
       {
+        "id": "golf_round_recap_provenance",
+        "definedIn": [
+          "supabase/migrations/20260923080000_recap_provenance_and_single_flight.sql"
+        ]
+      },
+      {
         "id": "golf_staff_invite_codes",
         "definedIn": [
           "supabase/migrations/20260819040000_golf_staff_invite_codes.sql"
@@ -15418,12 +15424,17 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/round-recap.ts",
-          "line": 45
+          "line": 43
         },
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/round-recap.ts",
-          "line": 47
+          "line": 46
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/round-recap.ts",
+          "line": 48
         },
         {
           "kind": "import_graph",
@@ -15592,12 +15603,12 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/round-recap.ts",
-          "line": 48
+          "line": 49
         },
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/round-recap.ts",
-          "line": 49
+          "line": 50
         },
         {
           "kind": "import_graph",
@@ -15854,6 +15865,17 @@
     },
     {
       "source": "golf_round_lifecycle",
+      "target": "golf_round_recap_provenance",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260923080000_recap_provenance_and_single_flight.sql"
+        }
+      ]
+    },
+    {
+      "source": "golf_round_lifecycle",
       "target": "golf_team_saved_courses",
       "kind": "feature_table",
       "evidence": [
@@ -15908,12 +15930,12 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/round-recap.ts",
-          "line": 43
+          "line": 44
         },
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/round-recap.ts",
-          "line": 44
+          "line": 45
         },
         {
           "kind": "import_graph",

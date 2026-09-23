@@ -405,6 +405,47 @@ closes that gap for a `compose()` caller that opts in.
 - A successful packet-engaged call now logs `citations.claim_validation:
   { accepted, rejected: 0 }` (2026-09-23 review fix) — previously only a
   discard told you the typed gate had run at all.
+- Revision-keyed provenance + single-flight (2026-09-23, Package 8 repair
+  plan §14.10, migration `20260923080000_recap_provenance_and_single_flight`).
+  Two findings from a round-recap cache-provenance review: (1) two
+  concurrent `generateRoundRecap()` calls for the same round previously
+  both passed the `ai_recap IS NULL` cache check, both billed a full LLM
+  call, and whichever `save_round_ai_recap` RPC call committed second
+  silently overwrote the first — no error, no coordination; (2) nothing
+  recorded which path (LLM vs. deterministic), which
+  `golf_coachhelm_llm_calls` row, whether the typed claim packet was
+  engaged, or which `golf_player_stats_cache.rounds_played` snapshot
+  produced a stored recap, even though `compose()` already returns
+  `used_llm`/`call_log_id` and `generateLLMRecap` was discarding all of it
+  but the text.
+  - Single-flight (cheap half only — the tighter fix, a lock taken BEFORE
+    the LLM call, is deferred as an owner product/cost decision):
+    `save_round_ai_recap`'s UPDATE now guards `AND ai_recap IS NULL`, so
+    a call that loses the race persists nothing instead of overwriting
+    the winner. The RPC's `success:true` return is unchanged either way —
+    a losing caller's own in-memory `recap` text can still differ from
+    what's actually stored in that rare concurrent case.
+  - Provenance: a new table,
+    <!-- schema-drift-absent: golf_round_recap_provenance -->
+    `golf_round_recap_provenance` (round_id PK/FK, not new `golf_rounds`
+    columns — keeps this off golf_rounds' RLS/trigger-guarded surface),
+    with `source: 'llm' | 'deterministic'`, `call_log_id` (FK into
+    `golf_coachhelm_llm_calls`), `claim_packet_engaged`, and
+    `stats_rounds_played_at_generation` — the season-stats snapshot the
+    prose was generated against, since `golf_player_stats_cache` is a
+    live, mutable, separately-recomputed cache even though a completed
+    round's own score/shot data is permanent
+    (`helm_private.guard_golf_round_lifecycle()` blocks any other
+    mutation). This makes staleness queryable ("recap generated over N
+    rounds; player now has M > N") without new invalidation machinery;
+    whether to act on it is a separate, deferred product decision.
+    `round-recap.ts` writes this best-effort through the admin
+    (service_role) client after a successful persist — a write failure,
+    including this migration not yet being applied in an environment, is
+    logged and swallowed, never blocking or throwing the recap itself.
+    RLS mirrors `golf_rounds`' own read policies (self player, team
+    coach, admin); only the service role writes it (`authenticated` gets
+    `SELECT` only, nothing to `anon`/`PUBLIC`).
 
 ## Standing read rules (2026-09-12, repair deferrals)
 

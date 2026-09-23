@@ -150,6 +150,10 @@ CREATE INDEX "golf_recruit_documents_uploaded_by_idx" ON "public"."golf_recruit_
 
 CREATE INDEX "golf_recruits_created_by_idx" ON "public"."golf_recruits" USING "btree" ("created_by");
 
+CREATE INDEX "golf_round_recap_provenance_call_log_id_idx" ON "public"."golf_round_recap_provenance" USING "btree" ("call_log_id");
+
+CREATE INDEX "golf_round_recap_provenance_player_id_idx" ON "public"."golf_round_recap_provenance" USING "btree" ("player_id");
+
 CREATE INDEX "golf_round_reviews_published_by_idx" ON "public"."golf_round_reviews" USING "btree" ("published_by");
 
 CREATE INDEX "golf_rounds_pending_coachhelm_idx" ON "public"."golf_rounds" USING "btree" ("created_at") WHERE (("coachhelm_analyzed_at" IS NULL) AND ("coachhelm_failed_at" IS NULL) AND ("status" = 'completed'::"text"));

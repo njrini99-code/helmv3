@@ -283,6 +283,7 @@ CREATE OR REPLACE FUNCTION "helm_private"."save_round_ai_recap"("p_round_id" "uu
 DECLARE
   v_player_id uuid;
   v_recap text;
+  v_persisted boolean;
 BEGIN
   IF p_actor_user_id IS NULL THEN
     RAISE EXCEPTION USING errcode = '42501', message = 'Sign in to save a round recap.';
@@ -314,12 +315,19 @@ BEGIN
 
   PERFORM set_config('helm.golf_lifecycle_write', 'round_recap', true);
 
+  -- Package 8, repair plan §14.10 (2026-09-23): single-flight, cheap half.
+  -- A concurrent call that already won the race already set ai_recap, so
+  -- this call's UPDATE now touches zero rows instead of overwriting the
+  -- winner's text. `persisted` (below) tells the caller which happened.
   UPDATE public.golf_rounds
   SET ai_recap = v_recap,
       ai_recap_generated_at = now()
-  WHERE id = p_round_id;
+  WHERE id = p_round_id
+    AND ai_recap IS NULL;
 
-  RETURN jsonb_build_object('success', true);
+  v_persisted := FOUND;
+
+  RETURN jsonb_build_object('success', true, 'persisted', v_persisted);
 END;
 $$;
 

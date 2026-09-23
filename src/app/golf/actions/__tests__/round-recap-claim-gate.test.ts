@@ -56,20 +56,40 @@ vi.mock('@/lib/coachhelm/v3/llm/budget', () => ({
   recordSpend: (...args: unknown[]) => recordSpendMock(...args),
 }));
 
-// --- Capture rows written to golf_coachhelm_llm_calls. ---
+// --- Capture rows written to golf_coachhelm_llm_calls (by compose.ts) and
+//     golf_round_recap_provenance (by round-recap.ts's own admin write,
+//     Package 8 slice 3) — same mocked module, routed by table name since
+//     both callers share it. ---
 const loggedRows: Array<Record<string, unknown>> = [];
+const provenanceRows: Array<Record<string, unknown>> = [];
+let provenanceInsertResult: { error: { message: string; code?: string } | null } = { error: null };
+let provenanceInsertThrows = false;
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
-    from: () => ({
-      insert: (row: Record<string, unknown>) => {
-        loggedRows.push(row);
+    from: (table: string) => {
+      if (table === 'golf_round_recap_provenance') {
         return {
-          select: () => ({
-            maybeSingle: () => Promise.resolve({ data: { id: 'log-1' }, error: null }),
-          }),
+          insert: (row: Record<string, unknown>) => {
+            if (provenanceInsertThrows) {
+              return Promise.reject(new Error('provenance insert threw'));
+            }
+            provenanceRows.push(row);
+            return Promise.resolve(provenanceInsertResult);
+          },
         };
-      },
-    }),
+      }
+      // golf_coachhelm_llm_calls (compose.ts's own call log).
+      return {
+        insert: (row: Record<string, unknown>) => {
+          loggedRows.push(row);
+          return {
+            select: () => ({
+              maybeSingle: () => Promise.resolve({ data: { id: 'log-1' }, error: null }),
+            }),
+          };
+        },
+      };
+    },
   }),
 }));
 
@@ -108,6 +128,17 @@ let mockStats: { scoring_average: number | null; best_round: number | null; roun
   null;
 let persistedRecap: { p_round_id: string; p_recap: string | null } | null = null;
 let mockPlayerFirstName: string | null = 'Caden';
+// SHOULD-4 (single-flight race) fixtures: golf_rounds is read once for the
+// round context, then a SECOND time only by the "lost the race, re-read the
+// winner" branch — this counter distinguishes the two so a test can serve a
+// different ai_recap on the re-read. `mockRpcOverridePersisted` lets a test
+// simulate the RPC's `persisted: false` response without touching every
+// other test's default (no `persisted` field at all — the pre-migration
+// shape every other test in this file still exercises).
+let golfRoundsFetchCount = 0;
+let winnerAiRecap: string | null = null;
+let mockRpcOverridePersisted: boolean | undefined;
+let winnerReadError: { message: string; code?: string } | null = null;
 
 function createChainableMock(maybeSingleData: unknown) {
   const chain: Record<string, unknown> = { data: null, error: null };
@@ -121,6 +152,12 @@ function createChainableMock(maybeSingleData: unknown) {
 
 const mockFrom = vi.fn((table: string) => {
   if (table === 'golf_rounds') {
+    golfRoundsFetchCount += 1;
+    if (golfRoundsFetchCount > 1) {
+      const chain = createChainableMock({ ai_recap: winnerAiRecap });
+      if (winnerReadError) chain.maybeSingle = vi.fn(async () => ({ data: null, error: winnerReadError }));
+      return chain;
+    }
     return createChainableMock(mockRound);
   }
   if (table === 'golf_player_stats_cache') {
@@ -138,7 +175,9 @@ const mockFrom = vi.fn((table: string) => {
 const mockGetUser = vi.fn(async () => ({ data: { user: { id: 'user-1' } }, error: null }));
 const mockRpc = vi.fn(async (_name: string, args: { p_round_id: string; p_recap: string | null }) => {
   persistedRecap = args;
-  return { data: { success: true }, error: null };
+  const data: { success: boolean; persisted?: boolean } = { success: true };
+  if (mockRpcOverridePersisted !== undefined) data.persisted = mockRpcOverridePersisted;
+  return { data, error: null };
 });
 
 vi.mock('@/lib/supabase/server', () => ({
@@ -150,6 +189,7 @@ vi.mock('next/cache', () => ({
 }));
 
 import { generateRoundRecap } from '../round-recap';
+import { logServerError } from '@/lib/server-error-logger';
 import { buildRecapEvidencePacket } from '@/lib/coachhelm/v3/llm/recap-evidence';
 import { extractNumericTokens, normalize, SAFE_NUMERIC_TOKENS } from '@/lib/coachhelm/v3/llm/citations';
 
@@ -207,6 +247,13 @@ describe('round-recap.ts x claim-validator.ts — typed gate wired (flag ON)', (
     mockFrom.mockClear();
     mockRpc.mockClear();
     loggedRows.length = 0;
+    provenanceRows.length = 0;
+    provenanceInsertResult = { error: null };
+    provenanceInsertThrows = false;
+    golfRoundsFetchCount = 0;
+    winnerAiRecap = null;
+    mockRpcOverridePersisted = undefined;
+    winnerReadError = null;
     isFlagEnabledMock.mockReset();
     isFlagEnabledMock.mockReturnValue(true);
   });
@@ -383,5 +430,172 @@ describe('round-recap.ts x claim-validator.ts — typed gate wired (flag ON)', (
     });
 
     expect(uncoveredTokens).toEqual([]);
+  });
+});
+
+describe('round-recap.ts — recap provenance (Package 8, revision-keyed provenance + single-flight)', () => {
+  beforeEach(() => {
+    mockRound = { ...baseRound };
+    mockStats = null;
+    persistedRecap = null;
+    mockPlayerFirstName = 'Caden';
+    generateTextMock.mockReset();
+    recordSpendMock.mockClear();
+    mockFrom.mockClear();
+    mockRpc.mockClear();
+    loggedRows.length = 0;
+    provenanceRows.length = 0;
+    provenanceInsertResult = { error: null };
+    provenanceInsertThrows = false;
+    golfRoundsFetchCount = 0;
+    winnerAiRecap = null;
+    mockRpcOverridePersisted = undefined;
+    winnerReadError = null;
+    isFlagEnabledMock.mockReset();
+    isFlagEnabledMock.mockReturnValue(true);
+  });
+
+  it('writes source: "llm" provenance, linked to the compose() call-log row, on a verified LLM recap', async () => {
+    const goodText =
+      'Caden carded 74, holding 71.4% of fairways to keep the card clean. Consistency next time is the target.';
+    generateTextMock.mockResolvedValueOnce({
+      text:
+        goodText +
+        claimsBlock([
+          {
+            claim_id: 'c1',
+            metric_id: 'fairways_hit_pct',
+            value: 71.4,
+            player_id: 'player-1',
+            window_start: WINDOW_START,
+            window_end: WINDOW_START,
+            claim_type: 'fact',
+          },
+        ]),
+      usage: { inputTokens: 20, outputTokens: 20 },
+    });
+
+    await generateRoundRecap('round-1');
+
+    expect(provenanceRows).toHaveLength(1);
+    expect(provenanceRows[0]).toMatchObject({
+      round_id: 'round-1',
+      player_id: 'player-1',
+      source: 'llm',
+      call_log_id: 'log-1', // the mocked golf_coachhelm_llm_calls insert always returns this id
+      claim_packet_engaged: true,
+      stats_rounds_played_at_generation: null, // mockStats is null in this suite's default
+    });
+  });
+
+  it('writes source: "deterministic" provenance when a rejected claim discards to the fallback', async () => {
+    const text =
+      'Caden carded 74, holding 71.4% of fairways to keep the card clean. Consistency next time is the target.';
+    const badResponse = {
+      text:
+        text +
+        claimsBlock([
+          {
+            claim_id: 'c1',
+            metric_id: 'total_putts',
+            value: 999,
+            player_id: 'player-1',
+            window_start: WINDOW_START,
+            window_end: WINDOW_START,
+            claim_type: 'fact',
+          },
+        ]),
+      usage: { inputTokens: 20, outputTokens: 20 },
+    };
+    generateTextMock.mockResolvedValueOnce(badResponse).mockResolvedValueOnce(badResponse);
+
+    const result = await generateRoundRecap('round-1');
+
+    expect(result.recap).toBe(EXPECTED_DETERMINISTIC_RECAP);
+    expect(provenanceRows).toHaveLength(1);
+    expect(provenanceRows[0]).toMatchObject({
+      round_id: 'round-1',
+      player_id: 'player-1',
+      source: 'deterministic',
+      claim_packet_engaged: true, // the packet WAS engaged; it's what rejected the claim
+    });
+  });
+
+  it('records stats_rounds_played_at_generation from the season-stats snapshot used at generation time', async () => {
+    mockStats = { scoring_average: 74.7, best_round: 68, rounds_played: 12 };
+    const goodText = 'Caden carded 74 at Pinehurst No. 2. Consistency next time is the target.';
+    generateTextMock.mockResolvedValueOnce({ text: goodText, usage: { inputTokens: 20, outputTokens: 20 } });
+
+    await generateRoundRecap('round-1');
+
+    expect(provenanceRows[0]?.stats_rounds_played_at_generation).toBe(12);
+  });
+
+  it('a provenance write that returns an error never breaks the recap — it is already durably saved', async () => {
+    isFlagEnabledMock.mockReturnValue(false); // no claims block needed; this test is about the provenance write, not the claim gate
+    provenanceInsertResult = { error: { message: 'relation "golf_round_recap_provenance" does not exist', code: '42P01' } };
+    const goodText = 'Caden carded 74 at Pinehurst No. 2. Consistency next time is the target.';
+    generateTextMock.mockResolvedValueOnce({ text: goodText, usage: { inputTokens: 20, outputTokens: 20 } });
+
+    const result = await generateRoundRecap('round-1');
+
+    // The recap itself is unaffected — this is the "migration not applied yet
+    // in this environment" case the best-effort write exists to survive.
+    expect(result.recap).toBe(goodText);
+    expect(persistedRecap).toEqual({ p_round_id: 'round-1', p_recap: goodText });
+  });
+
+  it('a provenance write that throws never breaks the recap', async () => {
+    isFlagEnabledMock.mockReturnValue(false); // no claims block needed; this test is about the provenance write, not the claim gate
+    provenanceInsertThrows = true;
+    const goodText = 'Caden carded 74 at Pinehurst No. 2. Consistency next time is the target.';
+    generateTextMock.mockResolvedValueOnce({ text: goodText, usage: { inputTokens: 20, outputTokens: 20 } });
+
+    const result = await generateRoundRecap('round-1');
+
+    expect(result.recap).toBe(goodText);
+    expect(persistedRecap).toEqual({ p_round_id: 'round-1', p_recap: goodText });
+  });
+
+  it('SHOULD-4: a call that loses the single-flight race re-reads and returns the winner\'s stored recap, and skips provenance', async () => {
+    isFlagEnabledMock.mockReturnValue(false); // no claims block needed; this test is about the race, not the claim gate
+    mockRpcOverridePersisted = false; // this call's UPDATE touched zero rows — a concurrent call already won
+    const winnerText = "Someone else's generation won the race and is what's actually stored.";
+    winnerAiRecap = winnerText;
+    const thisCallsOwnText = 'This call generated its own text, but it lost the race and was never stored.';
+    generateTextMock.mockResolvedValueOnce({ text: thisCallsOwnText, usage: { inputTokens: 20, outputTokens: 20 } });
+
+    const result = await generateRoundRecap('round-1');
+
+    // Not this call's own (discarded) generation — the winner's stored text,
+    // re-read from golf_rounds after the RPC reported persisted: false.
+    expect(result.recap).toBe(winnerText);
+    expect(result.cached).toBe(true);
+    // The RPC was still called with this call's own text (it had no way to
+    // know in advance it would lose) — persistedRecap reflects the attempt,
+    // not what ended up stored.
+    expect(persistedRecap).toEqual({ p_round_id: 'round-1', p_recap: thisCallsOwnText });
+    // This call didn't produce what's stored, so it must not write provenance
+    // for it — the winning call already did.
+    expect(provenanceRows).toHaveLength(0);
+  });
+
+  it('SHOULD-4: a failed winner re-read logs and returns no recap, never this call\'s discarded text', async () => {
+    isFlagEnabledMock.mockReturnValue(false);
+    mockRpcOverridePersisted = false;
+    winnerReadError = { message: 'connection reset', code: '08006' };
+    const thisCallsOwnText = 'This call generated its own text, but it lost the race and was never stored.';
+    generateTextMock.mockResolvedValueOnce({ text: thisCallsOwnText, usage: { inputTokens: 20, outputTokens: 20 } });
+
+    const result = await generateRoundRecap('round-1');
+
+    expect(result.recap).toBeNull();
+    expect(result.cached).toBe(false);
+    expect(vi.mocked(logServerError)).toHaveBeenCalledWith(
+      expect.stringContaining('winner re-read failed'),
+      expect.objectContaining({ action: 'generateRoundRecap.rereadWinner', roundId: 'round-1' }),
+      'warning',
+    );
+    expect(provenanceRows).toHaveLength(0);
   });
 });
