@@ -41,9 +41,9 @@ class CheckedInCatalogTests(unittest.TestCase):
             if layout_id in ('cacapon', 'peek-n-peak-upper'):
                 continue
             self.assertEqual(layout['capabilityTier'], 'C0', layout_id)
-            if layout_id == 'pga-national-champ':
-                # Official course-map corroboration selects the existing OSM
-                # series; it does not upgrade physical authority/publication.
+            if layout_id in ('pga-national-champ', 'harbour-town-golf-links'):
+                # Retained source evidence selects the existing OSM series;
+                # it does not upgrade physical authority or publication.
                 self.assertEqual(len(set(layout['routeWayIds'])), len(layout['holeOrder']))
             else:
                 self.assertIsNone(layout['routeWayIds'], layout_id)

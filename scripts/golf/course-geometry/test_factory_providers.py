@@ -1,7 +1,12 @@
 """Provider-policy selection stays explicit and network-free."""
 import unittest
 
-from factory.providers import select_terrain_provider, supported_terrain_provider_ids
+from factory.providers import (
+    select_terrain_provider,
+    supported_terrain_provider_ids,
+    terrain_provider_contract,
+    terrain_provider_policy_contract,
+)
 
 
 class TerrainProviderSelectionTest(unittest.TestCase):
@@ -18,6 +23,19 @@ class TerrainProviderSelectionTest(unittest.TestCase):
         self.assertIsNone(select_terrain_provider(['unreviewed_dem']))
         self.assertEqual(set(supported_terrain_provider_ids()),
                          {'usgs_3dep_project_1m', 'nc_onemap_dem03', 'charleston_county_dem_2025'})
+
+    def test_provider_contract_carries_measurement_relevant_frame_evidence(self):
+        nc = terrain_provider_contract(select_terrain_provider(['nc_onemap_dem03']))
+        self.assertEqual(nc['sourceContract'], 'nc-dem03-native-frame-v2')
+        self.assertEqual(nc['horizontalCrs'], 'EPSG:6543')
+        self.assertTrue(nc['requiresVerifiedVerticalReference'])
+        self.assertAlmostEqual(nc['nativeResolutionM'], 0.9525019050038099)
+
+    def test_ordered_policy_contract_keeps_unknown_candidate_visible(self):
+        contract = terrain_provider_policy_contract(['state_lidar_pending', 'usgs_3dep_project_1m'])
+        self.assertEqual(contract['orderedPolicyIds'], ('state_lidar_pending', 'usgs_3dep_project_1m'))
+        self.assertEqual(contract['declaredContracts'][0], ('state_lidar_pending', None))
+        self.assertEqual(contract['selected']['policyId'], 'usgs_3dep_project_1m')
 
 
 if __name__ == '__main__':

@@ -22,6 +22,8 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+from world_render_cache import file_hash, render_identity, reusable, write_receipt
+
 HERE = Path(__file__).resolve().parent
 
 
@@ -70,6 +72,7 @@ def main():
                 'terrainSourceManifestSha256': sha256(terrain_source_manifest), 'builtAt': datetime.now(timezone.utc).isoformat(),
                 'terrainStepMeters': args.terrain_step_m, 'paddingMeters': args.padding_m, 'holes': [], 'truthGatePassed': None,
                 'publicationRule': 'No hole below passes the course truth gate unless its row says so; GLBs are visual review products only.'}
+    blender_version = run([args.blender, '--version']).stdout.strip() if not args.skip_blender else None
     for hole in package['holes']:
         if wanted is not None and hole['ordinal'] not in wanted:
             continue
@@ -93,15 +96,23 @@ def main():
             glb = directory / 'rendering' / f'{key}.glb'
             preview = directory / 'rendering' / f'{key}-preview.png'
             export_report = directory / 'validation' / 'blender-export.json'
-            run(blender_python_command(args.blender, HERE / 'blender' / 'generate_hole.py',
-                                       [world, raster, glb, export_report, preview]))
+            generator = HERE / 'blender' / 'generate_hole.py'
+            world_data = json.loads(world.read_text())
+            identity = render_identity(world_data, manifest['terrainRasterSha256'], file_hash(generator), blender_version)
+            receipt = directory / 'validation' / 'render-receipt.json'
+            reused = reusable(receipt, identity, glb, preview, export_report)
+            if not reused:
+                run(blender_python_command(args.blender, generator, [world, raster, glb, export_report, preview]))
             roundtrip = directory / 'validation' / 'glb-roundtrip.json'
             run(blender_python_command(args.blender, HERE / 'blender' / 'validate_glb.py', [world, glb, roundtrip]))
             trip = json.loads(roundtrip.read_text())
             if not trip['passed']:
                 raise SystemExit(f'{key}: GLB round trip failed')
+            if not reused:
+                write_receipt(receipt, identity, world_data['contentHash'], glb, preview, export_report)
             record.update({'glb': glb.name, 'glbSha256': sha256(glb), 'glbBytes': glb.stat().st_size,
-                           'roundTripAbsoluteErrorMeters': trip['absoluteErrorMeters'], 'preview': preview.name})
+                           'roundTripAbsoluteErrorMeters': trip['absoluteErrorMeters'], 'preview': preview.name,
+                           'renderReused': reused, 'renderIdentity': identity})
         manifest['holes'].append(record)
         print(json.dumps({k: record[k] for k in record if k in ('key', 'truthGatePassed', 'glbBytes', 'terrainGrid')}), flush=True)
     manifest['truthGatePassed'] = all(item['truthGatePassed'] for item in manifest['holes']) if manifest['holes'] else None

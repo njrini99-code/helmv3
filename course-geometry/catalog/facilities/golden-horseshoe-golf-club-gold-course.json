@@ -1,0 +1,38 @@
+{
+  "schema": "golfhelm-facility-v1",
+  "facilityId": "golden-horseshoe-golf-club-gold-course",
+  "name": "Golden Horseshoe Golf Club Gold Course",
+  "country": "US",
+  "region": "VA",
+  "originWgs84": [
+    -76.6961535,
+    37.2609315
+  ],
+  "aoi": {
+    "kind": "osm",
+    "id": "way/242651981",
+    "marginM": 300
+  },
+  "sourcePins": {
+    "osm": [
+      "way/242651981"
+    ]
+  },
+  "providerPolicy": {
+    "terrain": [
+      "usgs_s1m",
+      "usgs_3dep_project_1m"
+    ],
+    "imagery": [
+      "vgin_vbmp_most_recent",
+      "usgs_naip_plus"
+    ],
+    "context": [
+      "osm"
+    ]
+  },
+  "notes": [
+    "Complete library snapshot 2026-09-21T01:57:42.835Z; retained coverage 2026-09-18T21:46:00Z. OSM pin is a discovery AOI candidate, not physical admission.",
+    "Retained coverage basis: course_area; h18 g21 f17 b52 t49."
+  ]
+}

@@ -1,0 +1,72 @@
+{
+  "schema": "golfhelm-layout-v1",
+  "layoutId": "pinehurst-no-8",
+  "facilityId": "pinehurst-course-no-8",
+  "name": "Pinehurst No. 8",
+  "siteIds": [
+    "osm-way-428977993"
+  ],
+  "segments": {
+    "main": {
+      "holes": [
+        "pinehurst-no-8-01",
+        "pinehurst-no-8-02",
+        "pinehurst-no-8-03",
+        "pinehurst-no-8-04",
+        "pinehurst-no-8-05",
+        "pinehurst-no-8-06",
+        "pinehurst-no-8-07",
+        "pinehurst-no-8-08",
+        "pinehurst-no-8-09",
+        "pinehurst-no-8-10",
+        "pinehurst-no-8-11",
+        "pinehurst-no-8-12",
+        "pinehurst-no-8-13",
+        "pinehurst-no-8-14",
+        "pinehurst-no-8-15",
+        "pinehurst-no-8-16",
+        "pinehurst-no-8-17",
+        "pinehurst-no-8-18"
+      ]
+    }
+  },
+  "segmentOrder": [
+    "main"
+  ],
+  "holeOrder": [
+    "pinehurst-no-8-01",
+    "pinehurst-no-8-02",
+    "pinehurst-no-8-03",
+    "pinehurst-no-8-04",
+    "pinehurst-no-8-05",
+    "pinehurst-no-8-06",
+    "pinehurst-no-8-07",
+    "pinehurst-no-8-08",
+    "pinehurst-no-8-09",
+    "pinehurst-no-8-10",
+    "pinehurst-no-8-11",
+    "pinehurst-no-8-12",
+    "pinehurst-no-8-13",
+    "pinehurst-no-8-14",
+    "pinehurst-no-8-15",
+    "pinehurst-no-8-16",
+    "pinehurst-no-8-17",
+    "pinehurst-no-8-18"
+  ],
+  "routeWayIds": null,
+  "bboxWgs84": null,
+  "capabilityTier": "C0",
+  "externalBindings": {
+    "golfCourseIds": [
+      "991cae6b-4a6e-4018-b101-0288e1aa37af"
+    ]
+  },
+  "scorecardProfiles": [
+    "pinehurst-no-8-tee-70a67b06-78d6-4a48-8fad-3256340eaa6b-fa1cf7510d299364b7be"
+  ],
+  "referenceScorecardProfileId": "pinehurst-no-8-tee-70a67b06-78d6-4a48-8fad-3256340eaa6b-fa1cf7510d299364b7be",
+  "geometry": null,
+  "notes": [
+    "Complete library intake of exact course UUID 991cae6b-4a6e-4018-b101-0288e1aa37af; no usage threshold. C0 only: routes, bbox and geometry remain unresolved. Shared names/proximity establish no physical association."
+  ]
+}

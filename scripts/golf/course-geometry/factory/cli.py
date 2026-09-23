@@ -98,6 +98,12 @@ def build_parser():
     recovery.add_argument('--layout')
     recovery.add_argument('--facility')
     recovery.add_argument('--json', action='store_true')
+    coverage = sub.add_parser('coverage', help='read the canonical 44-layout evidence/capability state; no factory task runs')
+    coverage.add_argument('--json', action='store_true')
+    coverage.add_argument('--write-json', help='optional report path outside factory inputs')
+    coverage.add_argument('--write-markdown', help='optional report path outside factory inputs')
+    coverage.add_argument('--write-acquisition-tasks', help='optional generated external-evidence queue')
+    coverage.add_argument('--write-terrain-decisions', help='optional generated terrain source-decision queue')
     i = sub.add_parser('invalidate')
     i.add_argument('--layout', required=True)
     i.add_argument('--task', required=True)
@@ -120,7 +126,7 @@ class Session:
         self.specs = default_specs(spec_overrides)
         # Recovery is a retained-file inventory, including while a batch is
         # running. Do not open/create the shared ledger for this command.
-        self.ledger = None if args.command == 'route-recovery' else (ledger if ledger is not None else Ledger(os.path.join(self.output_root, 'state.sqlite')))
+        self.ledger = None if args.command in {'route-recovery', 'coverage'} else (ledger if ledger is not None else Ledger(os.path.join(self.output_root, 'state.sqlite')))
         # Injected executors (tests) replace the real adapters wholesale, so a
         # test never reaches a script or the network by accident.
         self.ctx = Context(self.repo_root, self.catalog, self.output_root, self.ledger, adopt_output=not args.no_adopt_output,
@@ -490,8 +496,30 @@ def cmd_route_recovery(session, args, out):
     return 1 if result['totals']['invalidSources'] else 0
 
 
+def cmd_coverage(session, args, out):
+    """Read-only inventory/admission report used by CI and review queues."""
+    from .world_coverage import acquisition_tasks, audit_catalog, render_markdown, terrain_decisions
+    report = audit_catalog(session.repo_root, session.catalog_root, session.output_root)
+    if args.write_json:
+        with open(args.write_json, 'w', encoding='utf-8') as stream:
+            json.dump(report, stream, indent=2, sort_keys=True)
+            stream.write('\n')
+    if args.write_markdown:
+        from pathlib import Path
+        Path(args.write_markdown).write_text(render_markdown(report) + '\n', encoding='utf-8')
+    for path, document in ((args.write_acquisition_tasks, acquisition_tasks(report)),
+                           (args.write_terrain_decisions, terrain_decisions(report))):
+        if path:
+            with open(path, 'w', encoding='utf-8') as stream:
+                json.dump(document, stream, indent=2, sort_keys=True)
+                stream.write('\n')
+    out.write((json.dumps(report, indent=1) if args.json else render_markdown(report)) + '\n')
+    return 0
+
+
 COMMANDS = {'doctor': cmd_doctor, 'plan': cmd_plan, 'run': cmd_run, 'status': cmd_status, 'batch': cmd_batch, 'why': cmd_why, 'invalidate': cmd_invalidate, 'evict': cmd_evict, 'intake': cmd_intake,
-            'refresh-scorecards': cmd_refresh_scorecards, 'review-bundle': cmd_review_bundle, 'route-recovery': cmd_route_recovery}
+            'refresh-scorecards': cmd_refresh_scorecards, 'review-bundle': cmd_review_bundle, 'route-recovery': cmd_route_recovery,
+            'coverage': cmd_coverage}
 
 
 def main(argv=None, out=None, ledger=None, executors=None, spec_overrides=None):

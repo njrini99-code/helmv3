@@ -15,7 +15,16 @@ def script(name):
 # compiler loads its projection rule, the local frame and the fetch helpers
 # from sibling modules at import time.
 CRS_FILES = (script('course_crs.py'),)
-TERRAIN_COMPILER_FILES = (script('compile-course-terrain.py'), script('elevation_raster.py'), script('prepare-pilot.py'), script('fetch-terrain-pilot.py')) + CRS_FILES
+# Provider contracts decide which source adapter is permitted, its source
+# grid/frame expectations, and whether Z evidence can support measurements.
+# Hash the registry with acquisition and compilation tasks: otherwise a
+# registry contract edit could leave a cached terrain result looking current.
+TERRAIN_PROVIDER_FILES = (script('factory/providers.py'),)
+TERRAIN_COMPILER_FILES = (
+    script('compile-course-terrain.py'), script('hole_footprint.py'),
+    script('elevation_raster.py'), script('prepare-pilot.py'),
+    script('fetch-terrain-pilot.py'),
+) + CRS_FILES + TERRAIN_PROVIDER_FILES
 
 
 def artifact(key, path, retention='C'):

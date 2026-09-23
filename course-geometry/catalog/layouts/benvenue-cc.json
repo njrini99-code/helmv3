@@ -1,0 +1,72 @@
+{
+  "schema": "golfhelm-layout-v1",
+  "layoutId": "benvenue-cc",
+  "facilityId": "benvenue-country-club-course",
+  "name": "Benvenue CC",
+  "siteIds": [
+    "osm-way-227971180"
+  ],
+  "segments": {
+    "main": {
+      "holes": [
+        "benvenue-cc-01",
+        "benvenue-cc-02",
+        "benvenue-cc-03",
+        "benvenue-cc-04",
+        "benvenue-cc-05",
+        "benvenue-cc-06",
+        "benvenue-cc-07",
+        "benvenue-cc-08",
+        "benvenue-cc-09",
+        "benvenue-cc-10",
+        "benvenue-cc-11",
+        "benvenue-cc-12",
+        "benvenue-cc-13",
+        "benvenue-cc-14",
+        "benvenue-cc-15",
+        "benvenue-cc-16",
+        "benvenue-cc-17",
+        "benvenue-cc-18"
+      ]
+    }
+  },
+  "segmentOrder": [
+    "main"
+  ],
+  "holeOrder": [
+    "benvenue-cc-01",
+    "benvenue-cc-02",
+    "benvenue-cc-03",
+    "benvenue-cc-04",
+    "benvenue-cc-05",
+    "benvenue-cc-06",
+    "benvenue-cc-07",
+    "benvenue-cc-08",
+    "benvenue-cc-09",
+    "benvenue-cc-10",
+    "benvenue-cc-11",
+    "benvenue-cc-12",
+    "benvenue-cc-13",
+    "benvenue-cc-14",
+    "benvenue-cc-15",
+    "benvenue-cc-16",
+    "benvenue-cc-17",
+    "benvenue-cc-18"
+  ],
+  "routeWayIds": null,
+  "bboxWgs84": null,
+  "capabilityTier": "C0",
+  "externalBindings": {
+    "golfCourseIds": [
+      "bca8988a-affe-4686-b2d8-69363d0ba203"
+    ]
+  },
+  "scorecardProfiles": [
+    "benvenue-cc-tee-cdb616f8-219c-4216-82b6-2290ec414b1e-69dcdb9764024b397ff6"
+  ],
+  "referenceScorecardProfileId": "benvenue-cc-tee-cdb616f8-219c-4216-82b6-2290ec414b1e-69dcdb9764024b397ff6",
+  "geometry": null,
+  "notes": [
+    "Complete library intake of exact course UUID bca8988a-affe-4686-b2d8-69363d0ba203; no usage threshold. C0 only: routes, bbox and geometry remain unresolved. Shared names/proximity establish no physical association."
+  ]
+}

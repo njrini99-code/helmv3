@@ -14,6 +14,7 @@ from shapely.geometry import Point, shape
 
 ID = re.compile(r'^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,119}$')
 KINDS = {'route', 'tee', 'fairway', 'green', 'bunker', 'water', 'rough', 'woods'}
+ROUTE_TRACE_SCHEMA = 'golfhelm-route-traces-v1'
 
 
 def identity(doc):
@@ -21,7 +22,7 @@ def identity(doc):
 
 
 def resolved_routes(result):
-    return bool(result and (result.get('routeWayIds') or result.get('sourceGeometryHash')) and not result.get('problem'))
+    return bool(result and (result.get('routeWayIds') or result.get('sourceGeometryHash') or result.get('routeTracesHash')) and not result.get('problem'))
 
 
 def read_source_geometry(path, facility_id, site_id, hole_order):
@@ -30,6 +31,51 @@ def read_source_geometry(path, facility_id, site_id, hole_order):
         raise ValueError('SOURCE_GEOMETRY_INVALID: import exceeds 4 MB')
     doc = json.loads(raw)
     validate(doc, facility_id, site_id, hole_order)
+    return doc
+
+
+def read_route_traces(path, facility_id, site_id, hole_order):
+    """Read a reviewed route/surface intake without creating synthetic OSM IDs.
+
+    ``golfhelm-route-traces-v1`` deliberately carries the same lossless vector
+    and provenance contract as source geometry, plus a review record that
+    confirms *hole identity and route-to-green association only*. It does not
+    grant boundary, terrain, or measurement approval.  The returned document
+    is normalized to the internal source-geometry contract so the package
+    compiler has one association path for OSM and non-OSM sources.
+    """
+    raw = Path(path).read_bytes()
+    if len(raw) > 4_000_000:
+        raise ValueError('ROUTE_TRACES_INVALID: import exceeds 4 MB')
+    trace = json.loads(raw)
+
+    def require(ok, message):
+        if not ok:
+            raise ValueError('ROUTE_TRACES_INVALID: ' + message)
+
+    require(isinstance(trace, dict), 'object required')
+    require(trace.get('schema') == ROUTE_TRACE_SCHEMA, 'schema')
+    review = trace.get('associationReview') or {}
+    require(review.get('status') == 'confirmed', 'confirmed route/green association review required')
+    require(isinstance(review.get('reviewer'), str) and bool(review['reviewer']), 'association reviewer')
+    require(isinstance(review.get('reviewedAt'), str) and bool(review['reviewedAt']), 'association review date')
+    require(isinstance(review.get('evidenceIds'), list) and bool(review['evidenceIds']), 'association review evidence')
+
+    # The wrapper is source data, not a new canonical type. Retain review
+    # metadata through the compile path while validating every coordinate and
+    # explicit feature binding with the established source-geometry contract.
+    doc = copy.deepcopy(trace)
+    doc['schema'] = 'golfhelm-source-geometry-v1'
+    doc['routeTraceAssociationReview'] = copy.deepcopy(review)
+    validate(doc, facility_id, site_id, hole_order)
+    evidence_ids = {item['id'] for item in doc['evidence']}
+    require(set(review['evidenceIds']) <= evidence_ids, 'association review evidence reference')
+    selected = {h['holeKey']: h for h in doc['holes']}
+    for key in hole_order:
+        hole = selected[key]
+        identity_review = hole.get('identityReview') or {}
+        require(identity_review.get('status') == 'confirmed', 'confirmed hole identity: ' + key)
+        require(set(identity_review.get('evidenceIds') or []) <= evidence_ids, 'hole identity evidence: ' + key)
     return doc
 
 

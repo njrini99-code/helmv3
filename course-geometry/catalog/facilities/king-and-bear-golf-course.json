@@ -1,0 +1,37 @@
+{
+  "schema": "golfhelm-facility-v1",
+  "facilityId": "king-and-bear-golf-course",
+  "name": "King and Bear Golf Course",
+  "country": "US",
+  "region": "FL",
+  "originWgs84": [
+    -81.5188268,
+    29.9622181
+  ],
+  "aoi": {
+    "kind": "osm",
+    "id": "way/678136658",
+    "marginM": 300
+  },
+  "sourcePins": {
+    "osm": [
+      "way/678136658"
+    ]
+  },
+  "providerPolicy": {
+    "terrain": [
+      "usgs_s1m",
+      "usgs_3dep_project_1m"
+    ],
+    "imagery": [
+      "usgs_naip_plus"
+    ],
+    "context": [
+      "osm"
+    ]
+  },
+  "notes": [
+    "Complete library snapshot 2026-09-21T01:57:42.835Z; retained coverage 2026-09-18T21:46:00Z. OSM pin is a discovery AOI candidate, not physical admission.",
+    "Retained coverage basis: course_area; h18 g20 f22 b70 t75."
+  ]
+}

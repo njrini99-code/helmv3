@@ -60,7 +60,10 @@ def eval_routes_resolve(node, ctx):
     layout_id = node.scope.layout_id
     layout = ctx.layout(layout_id) or {}
     resolution = ctx.route_resolution(layout_id)
+    source_geometry = ctx.json(ctx.retained(layout, 'sourceGeometry'))
+    route_traces = ctx.json(ctx.retained(layout, 'routeTraces'))
     inputs = {'holes': digest(layout.get('holeOrder')), 'catalogRoutes': digest(layout.get('routeWayIds')),
+              'sourceGeometry': digest(source_geometry), 'routeTraces': digest(route_traces),
               'extract': None if layout.get('routeWayIds') else dep_input(ctx, node, 'facility.osm.snapshot')}
     if resolution is None:
         return evaluation(inputs)      # the extract is not retained yet; the dependency reports that
@@ -109,6 +112,7 @@ def _visual_fallback_inputs(node, ctx):
     layout_id = node.scope.layout_id
     resolution = ctx.route_resolution(layout_id)
     admission = ctx.canonical_route_admission(layout_id)
+    route_terrain_renderable = ctx.route_terrain_renderable(layout_id)
     return {
         'osm': dep_input(ctx, node, 'facility.osm.snapshot'),
         # The full evidence object, rather than a Boolean, makes a new source
@@ -119,7 +123,11 @@ def _visual_fallback_inputs(node, ctx):
         # matching scorecard is required before route-specific geometry can
         # become the authoritative physical chain.
         'canonicalRouteAdmission': digest(admission),
-    }, resolution, admission
+        # Native source availability is independent of route identity.  A
+        # failed physical acquisition may still have a visual-only facility
+        # scene, but it must never borrow the physical terrain pointer.
+        'routeTerrainRenderable': route_terrain_renderable,
+    }, resolution, admission, route_terrain_renderable
 
 
 def eval_visual_candidates_compose(node, ctx):
@@ -130,12 +138,12 @@ def eval_visual_candidates_compose(node, ctx):
     The pointer is intentionally not a canonical package locator.
     """
     layout_id = node.scope.layout_id
-    inputs, resolution, admission = _visual_fallback_inputs(node, ctx)
+    inputs, resolution, admission, route_terrain_renderable = _visual_fallback_inputs(node, ctx)
     if resolution is None:
         return evaluation(inputs)
     pointer_path = ctx.visual_candidate_pointer_path(layout_id)
     pointer = ctx.json(pointer_path) if ctx.can_adopt(pointer_path) else None
-    if admission.get('admitted'):
+    if admission.get('admitted') and route_terrain_renderable:
         valid = bool(pointer and pointer.get('layoutId') == layout_id
                      and pointer.get('status') == 'not_required_source_route_available'
                      and pointer.get('canonicalHoleRoutesAdmitted') is True
@@ -242,8 +250,10 @@ def _package_eval(folder_fn, dep_ids, with_canopy=False):
         inputs = {dep: dep_input(ctx, node, dep) for dep in dep_ids}
         traces = ctx.json(ctx.retained(ctx.layout(layout_id), 'imageryTraces'))
         imported = ctx.json(ctx.retained(ctx.layout(layout_id), 'sourceGeometry'))
+        route_traces = ctx.json(ctx.retained(ctx.layout(layout_id), 'routeTraces'))
         inputs['traces'] = digest(traces)
         inputs['sourceGeometry'] = digest(imported)
+        inputs['routeTraces'] = digest(route_traces)
         if with_canopy:
             inputs['canopy'] = dep_input(ctx, node, 'layout.canopy.derive')
         folder = folder_fn(ctx, layout_id)
@@ -258,8 +268,16 @@ def _package_eval(folder_fn, dep_ids, with_canopy=False):
         card = ctx.pilot_scorecard(layout_id)
         notes = []
         adoptable = True
-        for key, doc in [('sourceGeometryHash', imported), ('imageryTracesHash', traces)]:
-            if meta.get(key) != (digest(doc) if doc is not None else None):
+        expected_hashes = {
+            'sourceGeometryHash': digest(imported) if imported is not None else None,
+            # Route traces are normalized before their explicit bindings are
+            # consumed. Compare the same normalized identity the importer
+            # persisted, while raw bytes remain separately auditable.
+            'routeTracesHash': (ctx.route_resolution(layout_id) or {}).get('routeTracesHash') if route_traces is not None else None,
+            'imageryTracesHash': digest(traces) if traces is not None else None,
+        }
+        for key, expected in expected_hashes.items():
+            if meta.get(key) != expected:
                 adoptable, notes = False, notes + [f'package was prepared from another {key}']
         if manifest and meta.get('overpassSha256') != manifest.get('uncompressedSha256'):
             adoptable, notes = False, notes + ['package was prepared from another extract']
@@ -292,7 +310,8 @@ def eval_package_compose(node, ctx):
     geometry = (ctx.layout(layout_id) or {}).get('geometry')
     if geometry:
         inputs = {'candidates': dep_input(ctx, node, 'layout.candidates.compose'), 'canopy': dep_input(ctx, node, 'layout.canopy.derive'),
-                  'traces': digest(ctx.json(ctx.retained(ctx.layout(layout_id), 'imageryTraces'))), 'checkedIn': geometry['package']}
+                  'traces': digest(ctx.json(ctx.retained(ctx.layout(layout_id), 'imageryTraces'))),
+                  'routeTraces': digest(ctx.json(ctx.retained(ctx.layout(layout_id), 'routeTraces'))), 'checkedIn': geometry['package']}
         path = ctx.package_path(layout_id)
         pkg = ctx.package(layout_id)
         if not pkg:
@@ -331,6 +350,17 @@ def eval_terrain_acquire(node, ctx):
     manifest = ctx.json(os.path.join(folder, 'source-manifest.json')) if folder and ctx.can_adopt(folder) else None
     if not manifest:
         return evaluation(inputs)
+    # A facility-context raster can be deliberately rendered at a derived
+    # resolution after native acquisition fails.  That artifact is useful for
+    # a scene, but it must never be adopted by the route-specific physical
+    # branch merely because it has a terrain-shaped manifest.
+    if manifest.get('renderingOnly'):
+        return evaluation(inputs, [blocked(
+            'RENDERING_ONLY_TERRAIN_SOURCE',
+            layoutId=layout_id,
+            sourceIdentity=terrain_source_identity(manifest),
+            detail='rendering-only terrain cannot support physical terrain, hole association, or measurement',
+        )])
     if manifest.get('coverageMethod') != 'perimeter-v1':
         return evaluation(inputs, [], [], False, ['terrain source predates the perimeter-coverage contract'])
     if manifest.get('providerPolicyId') == 'nc_onemap_dem03' and manifest.get('sourceFrameContract') != 'nc-dem03-native-v2':
@@ -513,10 +543,10 @@ def eval_review_compose(node, ctx):
 SPECS = [
     TaskSpec('layout.identity.resolve', '2', 'layout', ('catalog.validate',), eval_identity_resolve, executor=INLINE),
     TaskSpec('layout.scorecard.validate', '1', 'layout', ('catalog.validate',), eval_scorecard_validate, executor=INLINE),
-    TaskSpec('layout.routes.resolve', '2', 'layout', ('layout.identity.resolve', 'layout.scorecard.validate', 'facility.osm.snapshot'), eval_routes_resolve, impl_files=(script('source_geometry.py'), script('factory/context.py')), retention='A', estimated_bytes=10_000),
+    TaskSpec('layout.routes.resolve', '3', 'layout', ('layout.identity.resolve', 'layout.scorecard.validate', 'facility.osm.snapshot'), eval_routes_resolve, impl_files=(script('source_geometry.py'), script('factory/context.py')), retention='A', estimated_bytes=10_000),
     TaskSpec('layout.route.dossier', '1', 'layout', ('layout.identity.resolve', 'layout.scorecard.validate', 'facility.osm.snapshot'), eval_route_dossier,
              impl_files=(script('factory/adapters.py'),), retention='C', estimated_bytes=20_000),
-    TaskSpec('layout.visual.candidates.compose', '1', 'layout', ('layout.identity.resolve', 'facility.osm.snapshot', 'layout.routes.resolve?'), eval_visual_candidates_compose,
+    TaskSpec('layout.visual.candidates.compose', '2', 'layout', ('layout.identity.resolve', 'facility.osm.snapshot', 'layout.routes.resolve?', 'layout.terrain.acquire?'), eval_visual_candidates_compose,
              impl_files=(script('prepare-osm-facility-visual.py'),), retention='C', estimated_bytes=20_000_000),
     TaskSpec('layout.visual.terrain.acquire', '1', 'layout', ('layout.visual.candidates.compose',), eval_visual_terrain_acquire,
              impl_files=TERRAIN_COMPILER_FILES, retention='C', estimated_bytes=450_000_000),

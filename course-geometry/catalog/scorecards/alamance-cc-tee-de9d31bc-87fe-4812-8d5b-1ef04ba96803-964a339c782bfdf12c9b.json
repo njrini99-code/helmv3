@@ -1,0 +1,112 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "alamance-cc-tee-de9d31bc-87fe-4812-8d5b-1ef04ba96803-964a339c782bfdf12c9b",
+  "layoutId": "alamance-cc",
+  "teeName": "Championship",
+  "revision": "964a339c782bfdf12c9b70a3220f27f278d2aa607a66c60d2d3cdb553a58eca8",
+  "courseRating": 73.2,
+  "slopeRating": 130,
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-21",
+    "snapshotHash": "59c51440bb55ec122f369c154574307c0ff9abe59f97eb19a6b6ae172ef92a7d",
+    "note": "Immutable read-only snapshot; library source=manual. Scorecard facts only. No physical tee marker, hole association or geometry approval."
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 4,
+      "yards": 432
+    },
+    {
+      "hole": 2,
+      "par": 4,
+      "yards": 373
+    },
+    {
+      "hole": 3,
+      "par": 4,
+      "yards": 444
+    },
+    {
+      "hole": 4,
+      "par": 3,
+      "yards": 178
+    },
+    {
+      "hole": 5,
+      "par": 4,
+      "yards": 414
+    },
+    {
+      "hole": 6,
+      "par": 5,
+      "yards": 542
+    },
+    {
+      "hole": 7,
+      "par": 4,
+      "yards": 460
+    },
+    {
+      "hole": 8,
+      "par": 3,
+      "yards": 201
+    },
+    {
+      "hole": 9,
+      "par": 4,
+      "yards": 382
+    },
+    {
+      "hole": 10,
+      "par": 4,
+      "yards": 398
+    },
+    {
+      "hole": 11,
+      "par": 4,
+      "yards": 376
+    },
+    {
+      "hole": 12,
+      "par": 5,
+      "yards": 513
+    },
+    {
+      "hole": 13,
+      "par": 4,
+      "yards": 439
+    },
+    {
+      "hole": 14,
+      "par": 3,
+      "yards": 218
+    },
+    {
+      "hole": 15,
+      "par": 4,
+      "yards": 419
+    },
+    {
+      "hole": 16,
+      "par": 3,
+      "yards": 189
+    },
+    {
+      "hole": 17,
+      "par": 5,
+      "yards": 502
+    },
+    {
+      "hole": 18,
+      "par": 4,
+      "yards": 398
+    }
+  ],
+  "libraryBinding": {
+    "courseId": "74cd512b-7444-4a31-a8aa-b27b92709044",
+    "teeId": "de9d31bc-87fe-4812-8d5b-1ef04ba96803"
+  }
+}

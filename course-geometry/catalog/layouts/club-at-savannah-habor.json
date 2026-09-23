@@ -1,0 +1,74 @@
+{
+  "schema": "golfhelm-layout-v1",
+  "layoutId": "club-at-savannah-habor",
+  "facilityId": "the-club-at-savannah-harbor",
+  "name": "Club at Savannah Habor",
+  "siteIds": [
+    "osm-way-31468114"
+  ],
+  "segments": {
+    "main": {
+      "holes": [
+        "club-at-savannah-habor-01",
+        "club-at-savannah-habor-02",
+        "club-at-savannah-habor-03",
+        "club-at-savannah-habor-04",
+        "club-at-savannah-habor-05",
+        "club-at-savannah-habor-06",
+        "club-at-savannah-habor-07",
+        "club-at-savannah-habor-08",
+        "club-at-savannah-habor-09",
+        "club-at-savannah-habor-10",
+        "club-at-savannah-habor-11",
+        "club-at-savannah-habor-12",
+        "club-at-savannah-habor-13",
+        "club-at-savannah-habor-14",
+        "club-at-savannah-habor-15",
+        "club-at-savannah-habor-16",
+        "club-at-savannah-habor-17",
+        "club-at-savannah-habor-18"
+      ]
+    }
+  },
+  "segmentOrder": [
+    "main"
+  ],
+  "holeOrder": [
+    "club-at-savannah-habor-01",
+    "club-at-savannah-habor-02",
+    "club-at-savannah-habor-03",
+    "club-at-savannah-habor-04",
+    "club-at-savannah-habor-05",
+    "club-at-savannah-habor-06",
+    "club-at-savannah-habor-07",
+    "club-at-savannah-habor-08",
+    "club-at-savannah-habor-09",
+    "club-at-savannah-habor-10",
+    "club-at-savannah-habor-11",
+    "club-at-savannah-habor-12",
+    "club-at-savannah-habor-13",
+    "club-at-savannah-habor-14",
+    "club-at-savannah-habor-15",
+    "club-at-savannah-habor-16",
+    "club-at-savannah-habor-17",
+    "club-at-savannah-habor-18"
+  ],
+  "routeWayIds": null,
+  "bboxWgs84": null,
+  "capabilityTier": "C0",
+  "externalBindings": {
+    "golfCourseIds": [
+      "ee257690-fe52-4008-8ad2-ad8d2c617775"
+    ]
+  },
+  "scorecardProfiles": [
+    "club-at-savannah-habor-tee-b5044a85-886d-4249-b599-b03210a458ee-2ad004d4a589820f0320",
+    "club-at-savannah-habor-tee-cd3fdc58-a910-43a4-b0d4-3b56b9c82af5-6faab7be9376da89d54e",
+    "club-at-savannah-habor-tee-fa01dae3-06f6-4135-9408-ba3bb5b137d9-1ed0eae2825542a78bfc"
+  ],
+  "referenceScorecardProfileId": "club-at-savannah-habor-tee-b5044a85-886d-4249-b599-b03210a458ee-2ad004d4a589820f0320",
+  "geometry": null,
+  "notes": [
+    "Complete library intake of exact course UUID ee257690-fe52-4008-8ad2-ad8d2c617775; no usage threshold. C0 only: routes, bbox and geometry remain unresolved. Shared names/proximity establish no physical association."
+  ]
+}

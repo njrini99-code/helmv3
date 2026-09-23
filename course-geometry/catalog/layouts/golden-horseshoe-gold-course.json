@@ -1,0 +1,74 @@
+{
+  "schema": "golfhelm-layout-v1",
+  "layoutId": "golden-horseshoe-gold-course",
+  "facilityId": "golden-horseshoe-golf-club-gold-course",
+  "name": "Golden Horseshoe gold course",
+  "siteIds": [
+    "osm-way-242651981"
+  ],
+  "segments": {
+    "main": {
+      "holes": [
+        "golden-horseshoe-gold-course-01",
+        "golden-horseshoe-gold-course-02",
+        "golden-horseshoe-gold-course-03",
+        "golden-horseshoe-gold-course-04",
+        "golden-horseshoe-gold-course-05",
+        "golden-horseshoe-gold-course-06",
+        "golden-horseshoe-gold-course-07",
+        "golden-horseshoe-gold-course-08",
+        "golden-horseshoe-gold-course-09",
+        "golden-horseshoe-gold-course-10",
+        "golden-horseshoe-gold-course-11",
+        "golden-horseshoe-gold-course-12",
+        "golden-horseshoe-gold-course-13",
+        "golden-horseshoe-gold-course-14",
+        "golden-horseshoe-gold-course-15",
+        "golden-horseshoe-gold-course-16",
+        "golden-horseshoe-gold-course-17",
+        "golden-horseshoe-gold-course-18"
+      ]
+    }
+  },
+  "segmentOrder": [
+    "main"
+  ],
+  "holeOrder": [
+    "golden-horseshoe-gold-course-01",
+    "golden-horseshoe-gold-course-02",
+    "golden-horseshoe-gold-course-03",
+    "golden-horseshoe-gold-course-04",
+    "golden-horseshoe-gold-course-05",
+    "golden-horseshoe-gold-course-06",
+    "golden-horseshoe-gold-course-07",
+    "golden-horseshoe-gold-course-08",
+    "golden-horseshoe-gold-course-09",
+    "golden-horseshoe-gold-course-10",
+    "golden-horseshoe-gold-course-11",
+    "golden-horseshoe-gold-course-12",
+    "golden-horseshoe-gold-course-13",
+    "golden-horseshoe-gold-course-14",
+    "golden-horseshoe-gold-course-15",
+    "golden-horseshoe-gold-course-16",
+    "golden-horseshoe-gold-course-17",
+    "golden-horseshoe-gold-course-18"
+  ],
+  "routeWayIds": null,
+  "bboxWgs84": null,
+  "capabilityTier": "C0",
+  "externalBindings": {
+    "golfCourseIds": [
+      "8dfc10c6-4e50-4b84-afa6-276b8e08cb7c"
+    ]
+  },
+  "scorecardProfiles": [
+    "golden-horseshoe-gold-course-tee-06664dba-f906-418e-b8b5-76e9f10262f5-12c44d9f187634da4a7c",
+    "golden-horseshoe-gold-course-tee-377b527e-5efc-42d1-99c4-5f2463dfd2e5-78586661fcc9acd4ad84",
+    "golden-horseshoe-gold-course-tee-7c517021-008b-4cfd-9c0a-0a5ca09a58bc-1f924fcbf0d7c394ca0a"
+  ],
+  "referenceScorecardProfileId": "golden-horseshoe-gold-course-tee-06664dba-f906-418e-b8b5-76e9f10262f5-12c44d9f187634da4a7c",
+  "geometry": null,
+  "notes": [
+    "Complete library intake of exact course UUID 8dfc10c6-4e50-4b84-afa6-276b8e08cb7c; no usage threshold. C0 only: routes, bbox and geometry remain unresolved. Shared names/proximity establish no physical association."
+  ]
+}

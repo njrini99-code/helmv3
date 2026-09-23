@@ -8,10 +8,12 @@ import { useOneTapLiveRound, useOneTapLiveRoundState } from './use-one-tap-live-
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-// SYNTHETIC POLICY: the pilot fixture stands in for an approved Upper package.
-const policy: CourseGeometryPolicy = { ...PEEK_N_PEAK_UPPER_POLICY, livePilot: { layoutId: 'peek-n-peak-upper', geometryHashes: new Set([pilotPackage.contentHash]) }, holeBindings: { [pilotPackage.contentHash]: Object.fromEntries(pilotPackage.holes.map(h => [h.ordinal, h.key])) }, siteIds: new Set([pilotPackage.siteId]), approvedGeometryHashes: new Set([pilotPackage.contentHash]) };
-const PKG_URL = `/course-geometry/${policy.layoutId}/${pilotPackage.contentHash}/package.json`;
-const bodies: Record<string, string> = { [manifestUrl(policy.layoutId)]: JSON.stringify({ geometryVersion: pilotPackage.contentHash, packageUrl: PKG_URL }), [PKG_URL]: JSON.stringify(pilotPackage) };
+// Synthetic future physical admission. The real fixture remains a display-only
+// source candidate and is covered by the policy rejection test below.
+const physicalPackage = { ...pilotPackage, status: 'reviewed_draft' as const };
+const policy: CourseGeometryPolicy = { ...PEEK_N_PEAK_UPPER_POLICY, acceptedCapabilityTier: 'C3', holeBindings: { [physicalPackage.contentHash]: Object.fromEntries(physicalPackage.holes.map(h => [h.ordinal, h.key])) }, siteIds: new Set([physicalPackage.siteId]), approvedGeometryHashes: new Set([physicalPackage.contentHash]) };
+const PKG_URL = `/course-geometry/${policy.layoutId}/${physicalPackage.contentHash}/package.json`;
+const bodies: Record<string, string> = { [manifestUrl(policy.layoutId)]: JSON.stringify({ geometryVersion: physicalPackage.contentHash, packageUrl: PKG_URL }), [PKG_URL]: JSON.stringify(physicalPackage) };
 const online = { value: true };
 const fetchMock = vi.fn(async (url: string) => { if (!online.value) throw new TypeError('Failed to fetch'); return new Response(bodies[url] ?? '', { status: bodies[url] ? 200 : 404 }); });
 const base = { roundId: 'r1', courseName: "Peek'n Peak Resort - Upper Course", featureFlagEnabled: true, policy };
@@ -47,7 +49,7 @@ describe('useOneTapLiveRound', () => {
     const cache = new MemoryCourseAssetCache();
     const withSignal = renderHook(() => useOneTapLiveRound({ ...base, cache }));
     await waitFor(() => expect(withSignal.result.current).not.toBeNull());
-    expect(withSignal.result.current).toMatchObject({ roundId: 'r1', courseId: policy.layoutId, geometryVersion: pilotPackage.contentHash, readiness: 'ready' });
+    expect(withSignal.result.current).toMatchObject({ roundId: 'r1', courseId: policy.layoutId, geometryVersion: physicalPackage.contentHash, readiness: 'ready' });
     expect(withSignal.result.current?.location?.kind).toBe('device');
     // Sync off (the default until the outbox migration is applied): the round
     // plays device-only, no transport posts to tables that may not exist.
@@ -99,8 +101,8 @@ describe('useOneTapLiveRound', () => {
     arm();
     // Two mapped holes: the round is on the second, so its terrain loads first.
     const terrainBody = readFileSync(join(process.cwd(), 'src/test/fixtures/course-geometry/cacapon-07-terrain.json'), 'utf8');
-    const T1 = `/course-geometry/${policy.layoutId}/${pilotPackage.contentHash}/terrain/h1.json`, T7 = `/course-geometry/${policy.layoutId}/${pilotPackage.contentHash}/terrain/cacapon-07.json`;
-    const holeKeys = pilotPackage.holes.map(h => h.key);
+    const T1 = `/course-geometry/${policy.layoutId}/${physicalPackage.contentHash}/terrain/h1.json`, T7 = `/course-geometry/${policy.layoutId}/${physicalPackage.contentHash}/terrain/cacapon-07.json`;
+    const holeKeys = physicalPackage.holes.map(h => h.key);
     const [k0, k1] = [holeKeys[0] ?? 'h1', holeKeys[1] ?? 'cacapon-07'];
     const gate = { release: null as null | (() => void) };
     const slowFetch = vi.fn(async (url: string) => {
@@ -109,8 +111,8 @@ describe('useOneTapLiveRound', () => {
       return new Response(body ?? '', { status: body ? 200 : 404 });
     });
     vi.stubGlobal('fetch', slowFetch);
-    bodies[manifestUrl(policy.layoutId)] = JSON.stringify({ geometryVersion: pilotPackage.contentHash, packageUrl: PKG_URL, terrainByHole: { [k0]: T1, [k1]: T7 } });
-    const current = pilotPackage.holes[1]?.ordinal ?? pilotPackage.holes[0]?.ordinal ?? 1;
+    bodies[manifestUrl(policy.layoutId)] = JSON.stringify({ geometryVersion: physicalPackage.contentHash, packageUrl: PKG_URL, terrainByHole: { [k0]: T1, [k1]: T7 } });
+    const current = physicalPackage.holes[1]?.ordinal ?? physicalPackage.holes[0]?.ordinal ?? 1;
     const cache = new MemoryCourseAssetCache();
     const hook = renderHook(() => useOneTapLiveRoundState({ ...base, roundId: 'r5', cache, holeNumber: current }));
     await waitFor(() => expect(hook.result.current.status.phase).toBe('live'));
@@ -126,6 +128,6 @@ describe('useOneTapLiveRound', () => {
     // Same round: identity of everything but the terrain map is preserved.
     expect(second.pkg).toBe(first.pkg); expect(second.holeKeys).toBe(first.holeKeys); expect(second.location).toBe(first.location);
     delete bodies[manifestUrl(policy.layoutId)];
-    bodies[manifestUrl(policy.layoutId)] = JSON.stringify({ geometryVersion: pilotPackage.contentHash, packageUrl: PKG_URL });
+    bodies[manifestUrl(policy.layoutId)] = JSON.stringify({ geometryVersion: physicalPackage.contentHash, packageUrl: PKG_URL });
   });
 });

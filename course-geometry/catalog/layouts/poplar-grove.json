@@ -1,0 +1,74 @@
+{
+  "schema": "golfhelm-layout-v1",
+  "layoutId": "poplar-grove",
+  "facilityId": "poplar-grove",
+  "name": "Poplar Grove",
+  "siteIds": [
+    "osm-relation-17240231"
+  ],
+  "segments": {
+    "main": {
+      "holes": [
+        "poplar-grove-01",
+        "poplar-grove-02",
+        "poplar-grove-03",
+        "poplar-grove-04",
+        "poplar-grove-05",
+        "poplar-grove-06",
+        "poplar-grove-07",
+        "poplar-grove-08",
+        "poplar-grove-09",
+        "poplar-grove-10",
+        "poplar-grove-11",
+        "poplar-grove-12",
+        "poplar-grove-13",
+        "poplar-grove-14",
+        "poplar-grove-15",
+        "poplar-grove-16",
+        "poplar-grove-17",
+        "poplar-grove-18"
+      ]
+    }
+  },
+  "segmentOrder": [
+    "main"
+  ],
+  "holeOrder": [
+    "poplar-grove-01",
+    "poplar-grove-02",
+    "poplar-grove-03",
+    "poplar-grove-04",
+    "poplar-grove-05",
+    "poplar-grove-06",
+    "poplar-grove-07",
+    "poplar-grove-08",
+    "poplar-grove-09",
+    "poplar-grove-10",
+    "poplar-grove-11",
+    "poplar-grove-12",
+    "poplar-grove-13",
+    "poplar-grove-14",
+    "poplar-grove-15",
+    "poplar-grove-16",
+    "poplar-grove-17",
+    "poplar-grove-18"
+  ],
+  "routeWayIds": null,
+  "bboxWgs84": null,
+  "capabilityTier": "C0",
+  "externalBindings": {
+    "golfCourseIds": [
+      "a5e38378-62a4-4cbf-ba2a-edc88df0fdc8"
+    ]
+  },
+  "scorecardProfiles": [
+    "poplar-grove-tee-38eb0413-85fc-4ae6-a72c-4b5fc5b7d897-c3ddf30414b90971f864",
+    "poplar-grove-tee-f3ab8211-2ab7-4985-a91f-c0a36065bfd4-443266261a3783ddabe0",
+    "poplar-grove-tee-fab16df7-ac1b-4aaa-ad1f-c04b381170db-0a68726e3b2b4717c9aa"
+  ],
+  "referenceScorecardProfileId": "poplar-grove-tee-38eb0413-85fc-4ae6-a72c-4b5fc5b7d897-c3ddf30414b90971f864",
+  "geometry": null,
+  "notes": [
+    "Complete library intake of exact course UUID a5e38378-62a4-4cbf-ba2a-edc88df0fdc8; no usage threshold. C0 only: routes, bbox and geometry remain unresolved. Shared names/proximity establish no physical association."
+  ]
+}

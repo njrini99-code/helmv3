@@ -1,0 +1,130 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "poplar-grove-tee-38eb0413-85fc-4ae6-a72c-4b5fc5b7d897-c3ddf30414b90971f864",
+  "layoutId": "poplar-grove",
+  "teeName": "Members",
+  "revision": "c3ddf30414b90971f864f68c577417829e1e8e254785a81d2f041286a771d8ae",
+  "courseRating": 69.5,
+  "slopeRating": 116,
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-21",
+    "snapshotHash": "59c51440bb55ec122f369c154574307c0ff9abe59f97eb19a6b6ae172ef92a7d",
+    "note": "Immutable read-only snapshot; library source=seed. Scorecard facts only. No physical tee marker, hole association or geometry approval."
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 3,
+      "yards": 165,
+      "handicap": 16
+    },
+    {
+      "hole": 2,
+      "par": 5,
+      "yards": 470,
+      "handicap": 13
+    },
+    {
+      "hole": 3,
+      "par": 4,
+      "yards": 388,
+      "handicap": 6
+    },
+    {
+      "hole": 4,
+      "par": 4,
+      "yards": 337,
+      "handicap": 3
+    },
+    {
+      "hole": 5,
+      "par": 4,
+      "yards": 317,
+      "handicap": 10
+    },
+    {
+      "hole": 6,
+      "par": 4,
+      "yards": 407,
+      "handicap": 1
+    },
+    {
+      "hole": 7,
+      "par": 5,
+      "yards": 450,
+      "handicap": 14
+    },
+    {
+      "hole": 8,
+      "par": 3,
+      "yards": 170,
+      "handicap": 18
+    },
+    {
+      "hole": 9,
+      "par": 4,
+      "yards": 396,
+      "handicap": 7
+    },
+    {
+      "hole": 10,
+      "par": 4,
+      "yards": 310,
+      "handicap": 4
+    },
+    {
+      "hole": 11,
+      "par": 4,
+      "yards": 370,
+      "handicap": 2
+    },
+    {
+      "hole": 12,
+      "par": 4,
+      "yards": 332,
+      "handicap": 9
+    },
+    {
+      "hole": 13,
+      "par": 4,
+      "yards": 317,
+      "handicap": 11
+    },
+    {
+      "hole": 14,
+      "par": 3,
+      "yards": 185,
+      "handicap": 15
+    },
+    {
+      "hole": 15,
+      "par": 5,
+      "yards": 436,
+      "handicap": 12
+    },
+    {
+      "hole": 16,
+      "par": 3,
+      "yards": 132,
+      "handicap": 17
+    },
+    {
+      "hole": 17,
+      "par": 4,
+      "yards": 368,
+      "handicap": 8
+    },
+    {
+      "hole": 18,
+      "par": 4,
+      "yards": 360,
+      "handicap": 5
+    }
+  ],
+  "libraryBinding": {
+    "courseId": "a5e38378-62a4-4cbf-ba2a-edc88df0fdc8",
+    "teeId": "38eb0413-85fc-4ae6-a72c-4b5fc5b7d897"
+  }
+}

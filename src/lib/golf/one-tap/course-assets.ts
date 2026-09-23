@@ -1,11 +1,12 @@
 import { parseContextLayer, type ContextLayer } from '../course-geometry/context-layer';
 import { parseTerrainMesh, type TerrainMesh } from '../course-geometry/terrain';
 import type { CourseGeometryPackage } from '../course-geometry/types';
+import { parseGeometryPackage } from '../course-geometry/schema';
 import { packageApproved, type CourseGeometryPolicy } from '../course-geometry/course-policy';
 import { courseGeometryPolicyForLayout } from '../course-geometry/course-registry';
 import type { StorageLike } from './anchor-repository';
 import type { RoundScoringSetup } from './live-round-placement';
-import { bindingMatchesScoring, canonicalBindingJson, proposeRoundBinding, roundCourseBindingSchema, sameBindingProposal, type DurableRoundCourseBinding, type RoundBindingTransport } from './round-course-binding';
+import { bindingHasCompleteHoleCrosswalk, bindingMatchesScoring, canonicalBindingJson, proposeRoundBinding, roundCourseBindingSchema, sameBindingProposal, type DurableRoundCourseBinding, type RoundBindingTransport } from './round-course-binding';
 
 /** Master plan task 15 — offline course readiness. The essential manifest
  * names everything a round needs on the course with no signal: the approved
@@ -89,13 +90,13 @@ function parseManifest(body: string, courseId: string): EssentialCourseManifest 
     return { courseId, geometryVersion: value.geometryVersion, packageUrl: value.packageUrl, terrainByHole, contextLayerUrl: typeof value.contextLayerUrl === 'string' ? value.contextLayerUrl : undefined };
   } catch { return null; }
 }
-/** A package is accepted only under the policy's approved hash and site, and
- * as a source candidate only under the policy's explicit pilot exception —
- * a cached body is held to the same bar. */
+/** A runtime package must pass the bounded geometry parser and the physical
+ * package gate. Display-only candidates use the review renderer instead and
+ * cannot enter this loader through a JSON type assertion. */
 export function parseApprovedPackage(body: string, geometryVersion: string, policy: CourseGeometryPolicy): CourseGeometryPackage | null {
   try {
-    const pkg = JSON.parse(body) as CourseGeometryPackage | null;
-    if (!pkg || pkg.contentHash !== geometryVersion || !packageApproved(pkg, policy)) return null;
+    const pkg = parseGeometryPackage(JSON.parse(body));
+    if (pkg.contentHash !== geometryVersion || !packageApproved(pkg, policy)) return null;
     return pkg;
   } catch { return null; }
 }
@@ -219,6 +220,7 @@ export async function loadCoursePackage({ roundSetup, bindingTransport, roundId,
     else if (remote.status === 'missing' && durableBinding) return null;
     if (durableBinding && (durableBinding.layoutId !== courseId
       || (durableBinding.scoringSnapshot.dbCourseId !== null && !policy.dbCourseIds.has(durableBinding.scoringSnapshot.dbCourseId))
+      || !bindingHasCompleteHoleCrosswalk(durableBinding)
       || !bindingMatchesScoring(durableBinding, roundSetup))) return null;
     if (binding && durableBinding && canonicalBindingJson(parseManifest(binding, courseId)) !== canonicalBindingJson(durableBinding.manifest)) return null;
   }
@@ -241,6 +243,7 @@ export async function loadCoursePackage({ roundSetup, bindingTransport, roundId,
     }
     if (!sameBindingProposal(durableBinding, proposal)
       || (durableBinding.scoringSnapshot.dbCourseId !== null && !policy.dbCourseIds.has(durableBinding.scoringSnapshot.dbCourseId))
+      || !bindingHasCompleteHoleCrosswalk(durableBinding)
       || !bindingMatchesScoring(durableBinding, roundSetup)) return null;
     try {
       const key = durableRoundBindingKey(roundId), serializedBinding = canonicalBindingJson(durableBinding);

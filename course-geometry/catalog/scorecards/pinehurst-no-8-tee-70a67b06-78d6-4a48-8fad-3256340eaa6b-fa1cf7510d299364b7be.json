@@ -1,0 +1,112 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "pinehurst-no-8-tee-70a67b06-78d6-4a48-8fad-3256340eaa6b-fa1cf7510d299364b7be",
+  "layoutId": "pinehurst-no-8",
+  "teeName": "Gold",
+  "revision": "fa1cf7510d299364b7bea5c77224f8ef61c784a55e552291bab0c93ec5f55780",
+  "courseRating": 74.1,
+  "slopeRating": 137,
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-21",
+    "snapshotHash": "59c51440bb55ec122f369c154574307c0ff9abe59f97eb19a6b6ae172ef92a7d",
+    "note": "Immutable read-only snapshot; library source=manual. Scorecard facts only. No physical tee marker, hole association or geometry approval."
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 4,
+      "yards": 361
+    },
+    {
+      "hole": 2,
+      "par": 5,
+      "yards": 559
+    },
+    {
+      "hole": 3,
+      "par": 4,
+      "yards": 382
+    },
+    {
+      "hole": 4,
+      "par": 4,
+      "yards": 464
+    },
+    {
+      "hole": 5,
+      "par": 3,
+      "yards": 149
+    },
+    {
+      "hole": 6,
+      "par": 5,
+      "yards": 605
+    },
+    {
+      "hole": 7,
+      "par": 4,
+      "yards": 370
+    },
+    {
+      "hole": 8,
+      "par": 3,
+      "yards": 236
+    },
+    {
+      "hole": 9,
+      "par": 4,
+      "yards": 442
+    },
+    {
+      "hole": 10,
+      "par": 4,
+      "yards": 441
+    },
+    {
+      "hole": 11,
+      "par": 5,
+      "yards": 579
+    },
+    {
+      "hole": 12,
+      "par": 4,
+      "yards": 373
+    },
+    {
+      "hole": 13,
+      "par": 3,
+      "yards": 204
+    },
+    {
+      "hole": 14,
+      "par": 4,
+      "yards": 404
+    },
+    {
+      "hole": 15,
+      "par": 3,
+      "yards": 187
+    },
+    {
+      "hole": 16,
+      "par": 4,
+      "yards": 398
+    },
+    {
+      "hole": 17,
+      "par": 5,
+      "yards": 500
+    },
+    {
+      "hole": 18,
+      "par": 4,
+      "yards": 445
+    }
+  ],
+  "libraryBinding": {
+    "courseId": "991cae6b-4a6e-4018-b101-0288e1aa37af",
+    "teeId": "70a67b06-78d6-4a48-8fad-3256340eaa6b"
+  }
+}

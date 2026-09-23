@@ -1,0 +1,38 @@
+{
+  "schema": "golfhelm-facility-v1",
+  "facilityId": "the-manor-golf-club",
+  "name": "The Manor Golf Club",
+  "country": "US",
+  "region": "VA",
+  "originWgs84": [
+    -78.4065503,
+    37.2453572
+  ],
+  "aoi": {
+    "kind": "osm",
+    "id": "way/187885811",
+    "marginM": 300
+  },
+  "sourcePins": {
+    "osm": [
+      "way/187885811"
+    ]
+  },
+  "providerPolicy": {
+    "terrain": [
+      "usgs_s1m",
+      "usgs_3dep_project_1m"
+    ],
+    "imagery": [
+      "vgin_vbmp_most_recent",
+      "usgs_naip_plus"
+    ],
+    "context": [
+      "osm"
+    ]
+  },
+  "notes": [
+    "Complete library snapshot 2026-09-21T01:57:42.835Z; retained coverage 2026-09-18T21:46:00Z. OSM pin is a discovery AOI candidate, not physical admission.",
+    "Retained coverage basis: course_area; h0 g0 f0 b0 t0."
+  ]
+}

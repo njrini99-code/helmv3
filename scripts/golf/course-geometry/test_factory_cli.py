@@ -117,6 +117,28 @@ class OperatorCommandTests(unittest.TestCase):
         self.assertIn('1 facilities, 2 layouts, 2 scorecards', text)
         self.assertIn(code, (0, 1))  # optional tools may be absent; required checks decide the code
 
+    def test_coverage_is_read_only_and_emits_machine_blockers(self):
+        report = os.path.join(self.tmp, 'coverage.json')
+        markdown = os.path.join(self.tmp, 'coverage.md')
+        tasks = os.path.join(self.tmp, 'acquisition-tasks.json')
+        terrain = os.path.join(self.tmp, 'terrain-decisions.json')
+        ledger_path = os.path.join(self.h.output, 'state.sqlite')
+        ledger_size_before = os.path.getsize(ledger_path)
+        code, text = self.h.run('coverage', '--json', '--write-json', report, '--write-markdown', markdown,
+                                '--write-acquisition-tasks', tasks, '--write-terrain-decisions', terrain)
+        self.assertEqual(code, 0, text)
+        body = json.loads(text)
+        self.assertEqual(body['schema'], 'golfhelm-factory-world-coverage-audit-v2')
+        self.assertEqual(body['totals']['layouts'], 2)
+        self.assertTrue(os.path.isfile(report))
+        self.assertTrue(os.path.isfile(markdown))
+        self.assertTrue(os.path.isfile(tasks))
+        self.assertTrue(os.path.isfile(terrain))
+        # Harness owns a ledger for unrelated command tests.  Coverage opens
+        # no ledger, so it must leave those existing bytes untouched.
+        self.assertEqual(os.path.getsize(ledger_path), ledger_size_before)
+        self.assertTrue(all(row['lifecycleState'] for row in body['layouts']))
+
     def test_plan_table_and_json_agree(self):
         code, table = self.h.run('plan', '--layout', 'synthetic-a')
         self.assertEqual(code, 0)

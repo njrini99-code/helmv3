@@ -1,0 +1,37 @@
+{
+  "schema": "golfhelm-facility-v1",
+  "facilityId": "benvenue-country-club-course",
+  "name": "Benvenue Country Club Course",
+  "country": "US",
+  "region": "NC",
+  "originWgs84": [
+    -77.8177683,
+    35.9811049
+  ],
+  "aoi": {
+    "kind": "osm",
+    "id": "way/227971180",
+    "marginM": 300
+  },
+  "sourcePins": {
+    "osm": [
+      "way/227971180"
+    ]
+  },
+  "providerPolicy": {
+    "terrain": [
+      "nc_onemap_dem03"
+    ],
+    "imagery": [
+      "nc_onemap_2024_2027_analysis",
+      "usgs_naip_plus"
+    ],
+    "context": [
+      "osm"
+    ]
+  },
+  "notes": [
+    "Complete library snapshot 2026-09-21T01:57:42.835Z; retained coverage 2026-09-18T21:46:00Z. OSM pin is a discovery AOI candidate, not physical admission.",
+    "Retained coverage basis: course_area; h18 g21 f22 b42 t55."
+  ]
+}

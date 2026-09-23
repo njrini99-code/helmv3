@@ -1,0 +1,37 @@
+{
+  "schema": "golfhelm-facility-v1",
+  "facilityId": "sedgefield-cc",
+  "name": "Sedgefield CC",
+  "country": "US",
+  "region": "NC",
+  "originWgs84": [
+    -79.8843245,
+    36.010336
+  ],
+  "aoi": {
+    "kind": "osm",
+    "id": "relation/12580941",
+    "marginM": 300
+  },
+  "sourcePins": {
+    "osm": [
+      "relation/12580941"
+    ]
+  },
+  "providerPolicy": {
+    "terrain": [
+      "nc_onemap_dem03"
+    ],
+    "imagery": [
+      "nc_onemap_2024_2027_analysis",
+      "usgs_naip_plus"
+    ],
+    "context": [
+      "osm"
+    ]
+  },
+  "notes": [
+    "Complete library snapshot 2026-09-21T01:57:42.835Z; retained coverage 2026-09-18T21:46:00Z. OSM pin is a discovery AOI candidate, not physical admission.",
+    "Retained coverage basis: around_1500m; h18 g27 f24 b59 t66."
+  ]
+}

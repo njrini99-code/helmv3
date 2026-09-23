@@ -1,0 +1,72 @@
+{
+  "schema": "golfhelm-layout-v1",
+  "layoutId": "statesville-country-club",
+  "facilityId": "statesville-country-club",
+  "name": "Statesville Country Club",
+  "siteIds": [
+    "osm-way-351674356"
+  ],
+  "segments": {
+    "main": {
+      "holes": [
+        "statesville-country-club-01",
+        "statesville-country-club-02",
+        "statesville-country-club-03",
+        "statesville-country-club-04",
+        "statesville-country-club-05",
+        "statesville-country-club-06",
+        "statesville-country-club-07",
+        "statesville-country-club-08",
+        "statesville-country-club-09",
+        "statesville-country-club-10",
+        "statesville-country-club-11",
+        "statesville-country-club-12",
+        "statesville-country-club-13",
+        "statesville-country-club-14",
+        "statesville-country-club-15",
+        "statesville-country-club-16",
+        "statesville-country-club-17",
+        "statesville-country-club-18"
+      ]
+    }
+  },
+  "segmentOrder": [
+    "main"
+  ],
+  "holeOrder": [
+    "statesville-country-club-01",
+    "statesville-country-club-02",
+    "statesville-country-club-03",
+    "statesville-country-club-04",
+    "statesville-country-club-05",
+    "statesville-country-club-06",
+    "statesville-country-club-07",
+    "statesville-country-club-08",
+    "statesville-country-club-09",
+    "statesville-country-club-10",
+    "statesville-country-club-11",
+    "statesville-country-club-12",
+    "statesville-country-club-13",
+    "statesville-country-club-14",
+    "statesville-country-club-15",
+    "statesville-country-club-16",
+    "statesville-country-club-17",
+    "statesville-country-club-18"
+  ],
+  "routeWayIds": null,
+  "bboxWgs84": null,
+  "capabilityTier": "C0",
+  "externalBindings": {
+    "golfCourseIds": [
+      "0927c323-7248-4def-8e49-a80d8fb53775"
+    ]
+  },
+  "scorecardProfiles": [
+    "statesville-country-club-tee-44dfe2aa-9f74-4343-b74f-32665d59b465-fa2074a5f20fff8c73d3"
+  ],
+  "referenceScorecardProfileId": "statesville-country-club-tee-44dfe2aa-9f74-4343-b74f-32665d59b465-fa2074a5f20fff8c73d3",
+  "geometry": null,
+  "notes": [
+    "Complete library intake of exact course UUID 0927c323-7248-4def-8e49-a80d8fb53775; no usage threshold. C0 only: routes, bbox and geometry remain unresolved. Shared names/proximity establish no physical association."
+  ]
+}

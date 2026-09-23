@@ -1,0 +1,130 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "kiawah-island-ocean-course-tee-e71b1a50-c183-4e43-8768-27c72924200f-e2d59ee8d20cae02fb67",
+  "layoutId": "kiawah-island-ocean-course",
+  "teeName": "Forward",
+  "revision": "e2d59ee8d20cae02fb67303fce66f3ef4a5dd7f8f3e2db8711a17c9ba677d7f6",
+  "courseRating": 70.6,
+  "slopeRating": 134,
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-21",
+    "snapshotHash": "59c51440bb55ec122f369c154574307c0ff9abe59f97eb19a6b6ae172ef92a7d",
+    "note": "Immutable read-only snapshot; library source=seed. Scorecard facts only. No physical tee marker, hole association or geometry approval."
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 4,
+      "yards": 339,
+      "handicap": 9
+    },
+    {
+      "hole": 2,
+      "par": 3,
+      "yards": 159,
+      "handicap": 16
+    },
+    {
+      "hole": 3,
+      "par": 5,
+      "yards": 446,
+      "handicap": 13
+    },
+    {
+      "hole": 4,
+      "par": 3,
+      "yards": 162,
+      "handicap": 18
+    },
+    {
+      "hole": 5,
+      "par": 4,
+      "yards": 294,
+      "handicap": 6
+    },
+    {
+      "hole": 6,
+      "par": 4,
+      "yards": 289,
+      "handicap": 1
+    },
+    {
+      "hole": 7,
+      "par": 4,
+      "yards": 370,
+      "handicap": 10
+    },
+    {
+      "hole": 8,
+      "par": 5,
+      "yards": 470,
+      "handicap": 14
+    },
+    {
+      "hole": 9,
+      "par": 4,
+      "yards": 328,
+      "handicap": 4
+    },
+    {
+      "hole": 10,
+      "par": 3,
+      "yards": 185,
+      "handicap": 15
+    },
+    {
+      "hole": 11,
+      "par": 4,
+      "yards": 319,
+      "handicap": 8
+    },
+    {
+      "hole": 12,
+      "par": 5,
+      "yards": 430,
+      "handicap": 12
+    },
+    {
+      "hole": 13,
+      "par": 4,
+      "yards": 299,
+      "handicap": 5
+    },
+    {
+      "hole": 14,
+      "par": 4,
+      "yards": 304,
+      "handicap": 2
+    },
+    {
+      "hole": 15,
+      "par": 5,
+      "yards": 455,
+      "handicap": 11
+    },
+    {
+      "hole": 16,
+      "par": 4,
+      "yards": 292,
+      "handicap": 7
+    },
+    {
+      "hole": 17,
+      "par": 3,
+      "yards": 176,
+      "handicap": 17
+    },
+    {
+      "hole": 18,
+      "par": 4,
+      "yards": 293,
+      "handicap": 3
+    }
+  ],
+  "libraryBinding": {
+    "courseId": "7c598ed3-7f89-433b-af73-e173105495c0",
+    "teeId": "e71b1a50-c183-4e43-8768-27c72924200f"
+  }
+}

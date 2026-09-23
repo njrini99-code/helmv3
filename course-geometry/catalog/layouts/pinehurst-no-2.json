@@ -1,0 +1,74 @@
+{
+  "schema": "golfhelm-layout-v1",
+  "layoutId": "pinehurst-no-2",
+  "facilityId": "pinehurst-no-2",
+  "name": "Pinehurst No. 2",
+  "siteIds": [
+    "osm-way-1358696570"
+  ],
+  "segments": {
+    "main": {
+      "holes": [
+        "pinehurst-no-2-01",
+        "pinehurst-no-2-02",
+        "pinehurst-no-2-03",
+        "pinehurst-no-2-04",
+        "pinehurst-no-2-05",
+        "pinehurst-no-2-06",
+        "pinehurst-no-2-07",
+        "pinehurst-no-2-08",
+        "pinehurst-no-2-09",
+        "pinehurst-no-2-10",
+        "pinehurst-no-2-11",
+        "pinehurst-no-2-12",
+        "pinehurst-no-2-13",
+        "pinehurst-no-2-14",
+        "pinehurst-no-2-15",
+        "pinehurst-no-2-16",
+        "pinehurst-no-2-17",
+        "pinehurst-no-2-18"
+      ]
+    }
+  },
+  "segmentOrder": [
+    "main"
+  ],
+  "holeOrder": [
+    "pinehurst-no-2-01",
+    "pinehurst-no-2-02",
+    "pinehurst-no-2-03",
+    "pinehurst-no-2-04",
+    "pinehurst-no-2-05",
+    "pinehurst-no-2-06",
+    "pinehurst-no-2-07",
+    "pinehurst-no-2-08",
+    "pinehurst-no-2-09",
+    "pinehurst-no-2-10",
+    "pinehurst-no-2-11",
+    "pinehurst-no-2-12",
+    "pinehurst-no-2-13",
+    "pinehurst-no-2-14",
+    "pinehurst-no-2-15",
+    "pinehurst-no-2-16",
+    "pinehurst-no-2-17",
+    "pinehurst-no-2-18"
+  ],
+  "routeWayIds": null,
+  "bboxWgs84": null,
+  "capabilityTier": "C0",
+  "externalBindings": {
+    "golfCourseIds": [
+      "71c4eebc-f555-42f9-962f-9d16814e6172"
+    ]
+  },
+  "scorecardProfiles": [
+    "pinehurst-no-2-tee-1934e180-deb2-4e93-8498-325996d3a4f4-aac364802f9a0ae661a9",
+    "pinehurst-no-2-tee-693b89b8-8770-473a-9b56-18d2c4795ae2-836f856bc0cb00b0ec17",
+    "pinehurst-no-2-tee-b2a90253-b2db-47d2-9fbb-29b5c08eefa9-148b3484fed8be1b505f"
+  ],
+  "referenceScorecardProfileId": "pinehurst-no-2-tee-1934e180-deb2-4e93-8498-325996d3a4f4-aac364802f9a0ae661a9",
+  "geometry": null,
+  "notes": [
+    "Complete library intake of exact course UUID 71c4eebc-f555-42f9-962f-9d16814e6172; no usage threshold. C0 only: routes, bbox and geometry remain unresolved. Shared names/proximity establish no physical association."
+  ]
+}

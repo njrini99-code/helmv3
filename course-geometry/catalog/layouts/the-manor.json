@@ -1,0 +1,72 @@
+{
+  "schema": "golfhelm-layout-v1",
+  "layoutId": "the-manor",
+  "facilityId": "the-manor-golf-club",
+  "name": "The Manor",
+  "siteIds": [
+    "osm-way-187885811"
+  ],
+  "segments": {
+    "main": {
+      "holes": [
+        "the-manor-01",
+        "the-manor-02",
+        "the-manor-03",
+        "the-manor-04",
+        "the-manor-05",
+        "the-manor-06",
+        "the-manor-07",
+        "the-manor-08",
+        "the-manor-09",
+        "the-manor-10",
+        "the-manor-11",
+        "the-manor-12",
+        "the-manor-13",
+        "the-manor-14",
+        "the-manor-15",
+        "the-manor-16",
+        "the-manor-17",
+        "the-manor-18"
+      ]
+    }
+  },
+  "segmentOrder": [
+    "main"
+  ],
+  "holeOrder": [
+    "the-manor-01",
+    "the-manor-02",
+    "the-manor-03",
+    "the-manor-04",
+    "the-manor-05",
+    "the-manor-06",
+    "the-manor-07",
+    "the-manor-08",
+    "the-manor-09",
+    "the-manor-10",
+    "the-manor-11",
+    "the-manor-12",
+    "the-manor-13",
+    "the-manor-14",
+    "the-manor-15",
+    "the-manor-16",
+    "the-manor-17",
+    "the-manor-18"
+  ],
+  "routeWayIds": null,
+  "bboxWgs84": null,
+  "capabilityTier": "C0",
+  "externalBindings": {
+    "golfCourseIds": [
+      "26e99824-0218-42c0-b1a3-237803538d9a"
+    ]
+  },
+  "scorecardProfiles": [
+    "the-manor-tee-0aec37b0-09bc-4f5c-8a1f-db3e456932d1-5b043c72ac25a6858d5a"
+  ],
+  "referenceScorecardProfileId": "the-manor-tee-0aec37b0-09bc-4f5c-8a1f-db3e456932d1-5b043c72ac25a6858d5a",
+  "geometry": null,
+  "notes": [
+    "Complete library intake of exact course UUID 26e99824-0218-42c0-b1a3-237803538d9a; no usage threshold. C0 only: routes, bbox and geometry remain unresolved. Shared names/proximity establish no physical association."
+  ]
+}

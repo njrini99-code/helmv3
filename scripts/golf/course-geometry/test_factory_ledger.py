@@ -119,6 +119,21 @@ class LedgerTests(unittest.TestCase):
         self.assertEqual([e['path'] for e in evict], [big])
         self.assertTrue(all(e['retention'] in ('B', 'C') for e in self.ledger.evictable(10 ** 9)))
 
+    def test_reproducible_evict_forgets_artifact_and_invalidates_producer(self):
+        n = node()
+        os.makedirs(os.path.join(self.tmp, 'visual-terrain'))
+        generated = self.write('visual-terrain/elevation.tiff', 'x' * 100)
+        source = self.write('visual-terrain/source.tiff', 'y' * 200)
+        self.ledger.record_success('run-1', n, 'fp1', {}, [artifact('generated', generated, 'C'), artifact('source', source, 'A')])
+        candidates = self.ledger.eviction_candidates(100, classes=('C',), path_prefix=os.path.join(self.tmp, 'visual-terrain'))
+        self.assertEqual([entry['path'] for entry in candidates], [generated])
+        os.remove(generated)
+        self.ledger.forget_evicted(candidates, 'space needed')
+        self.assertEqual(self.ledger.artifacts_for(n.key)[0].path, source)
+        self.assertEqual(self.ledger.invalidation_after(n.key, self.ledger.last_success(n.key)['finished_at'])['reason'], 'space needed')
+        with self.assertRaises(ValueError):
+            self.ledger.eviction_candidates(1, classes=('A',))
+
     def test_artifact_ref_without_hash_is_hashed_on_record(self):
         n = node()
         path = self.write('lazy.json', 'lazy')

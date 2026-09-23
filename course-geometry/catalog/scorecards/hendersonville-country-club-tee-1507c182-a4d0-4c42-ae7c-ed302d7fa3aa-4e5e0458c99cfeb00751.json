@@ -1,0 +1,112 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "hendersonville-country-club-tee-1507c182-a4d0-4c42-ae7c-ed302d7fa3aa-4e5e0458c99cfeb00751",
+  "layoutId": "hendersonville-country-club",
+  "teeName": "Championship",
+  "revision": "4e5e0458c99cfeb0075169ccfca3d352ac72ff0ed4e7a7ec8fb6623b9c8ba80b",
+  "courseRating": 71.8,
+  "slopeRating": 128,
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-21",
+    "snapshotHash": "59c51440bb55ec122f369c154574307c0ff9abe59f97eb19a6b6ae172ef92a7d",
+    "note": "Immutable read-only snapshot; library source=round. Scorecard facts only. No physical tee marker, hole association or geometry approval."
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 4,
+      "yards": 389
+    },
+    {
+      "hole": 2,
+      "par": 3,
+      "yards": 165
+    },
+    {
+      "hole": 3,
+      "par": 4,
+      "yards": 383
+    },
+    {
+      "hole": 4,
+      "par": 3,
+      "yards": 189
+    },
+    {
+      "hole": 5,
+      "par": 5,
+      "yards": 533
+    },
+    {
+      "hole": 6,
+      "par": 4,
+      "yards": 433
+    },
+    {
+      "hole": 7,
+      "par": 4,
+      "yards": 432
+    },
+    {
+      "hole": 8,
+      "par": 4,
+      "yards": 324
+    },
+    {
+      "hole": 9,
+      "par": 4,
+      "yards": 424
+    },
+    {
+      "hole": 10,
+      "par": 4,
+      "yards": 433
+    },
+    {
+      "hole": 11,
+      "par": 4,
+      "yards": 401
+    },
+    {
+      "hole": 12,
+      "par": 4,
+      "yards": 362
+    },
+    {
+      "hole": 13,
+      "par": 3,
+      "yards": 140
+    },
+    {
+      "hole": 14,
+      "par": 4,
+      "yards": 362
+    },
+    {
+      "hole": 15,
+      "par": 4,
+      "yards": 454
+    },
+    {
+      "hole": 16,
+      "par": 5,
+      "yards": 474
+    },
+    {
+      "hole": 17,
+      "par": 3,
+      "yards": 220
+    },
+    {
+      "hole": 18,
+      "par": 4,
+      "yards": 410
+    }
+  ],
+  "libraryBinding": {
+    "courseId": "2e20e45a-c795-4581-827a-0323429b5ee6",
+    "teeId": "1507c182-a4d0-4c42-ae7c-ed302d7fa3aa"
+  }
+}

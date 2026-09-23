@@ -9,7 +9,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from factory.context import Context
-from source_geometry import identity, validate
+from source_geometry import identity, read_route_traces, validate
 
 ROOT = Path(__file__).resolve().parents[3]
 SCRIPT = Path(__file__).with_name('prepare-osm-course.py')
@@ -35,7 +35,65 @@ def source_fixture():
     return doc
 
 
+def reviewed_route_trace_fixture():
+    doc = source_fixture()
+    doc['schema'] = 'golfhelm-route-traces-v1'
+    doc['associationReview'] = {
+        'status': 'confirmed', 'reviewer': 'synthetic reviewer', 'reviewedAt': '2026-09-21', 'evidenceIds': ['image'],
+    }
+    for hole in doc['holes']:
+        hole['identityReview'] = {
+            'status': 'confirmed', 'reviewer': 'synthetic reviewer', 'reviewedAt': '2026-09-21', 'evidenceIds': ['image'],
+        }
+    return doc
+
+
 class SourceGeometryTests(unittest.TestCase):
+    def test_reviewed_route_traces_resolve_without_osm_ids_and_satisfy_green_association(self):
+        source = reviewed_route_trace_fixture()
+        order = [h['holeKey'] for h in source['holes']]
+        with tempfile.TemporaryDirectory() as directory:
+            folder = Path(directory)
+            path = folder/'routes.json'
+            path.write_text(json.dumps(source))
+            layout = {'facilityId': 'test-facility', 'siteIds': ['osm-way-1'], 'holeOrder': order,
+                      'retained': {'routeTraces': str(path)}}
+            catalog = SimpleNamespace(layouts={'test-layout': layout}, facilities={})
+            resolution = Context(directory, catalog, str(folder/'output')).route_resolution('test-layout')
+            self.assertEqual(resolution['source'], 'reviewed_route_traces')
+            self.assertIsNone(resolution['routeWayIds'])
+            self.assertTrue(resolution['routeTracesHash'])
+
+            (folder/'osm.json').write_text(json.dumps({'elements': []}))
+            card = {'facilityId': 'test-facility', 'siteId': 'osm-way-1', 'name': 'Reviewed routes', 'slug': 'test-layout',
+                    'originWgs84': [-79, 37], 'holeOrder': order, 'pars': [4]*9, 'scorecardYards': [410]*9,
+                    'routeWayIds': None, 'retrievedAt': '2026-09-21'}
+            (folder/'card.json').write_text(json.dumps(card))
+            result = subprocess.run([sys.executable, str(SCRIPT), str(folder/'osm.json'), str(folder/'card.json'), str(folder/'out'),
+                                     '--route-traces', str(path)], capture_output=True, text=True, check=False)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            package = json.loads((folder/'out/normalized.json').read_text())
+            self.assertEqual([hole['greenFeatureId'] for hole in package['holes']], [f'green-{i}' for i in range(1, 10)])
+            self.assertTrue((folder/'out/route-traces.json').is_file())
+            metadata = json.loads((folder/'out/source-metadata.json').read_text())
+            self.assertEqual(metadata['routeTracesHash'], resolution['routeTracesHash'])
+            self.assertIsNone(metadata['sourceGeometryHash'])
+            association = json.loads((folder/'out/association-report.json').read_text())
+            self.assertIn('reviewed route-trace', association['routeSelection']['method'])
+            self.assertEqual(association['routeTraces']['associationReview']['status'], 'confirmed')
+            # Review confirms association only. It does not upgrade boundary
+            # confidence or make the resulting package physically approved.
+            self.assertTrue(all(not feature['reviewed'] for feature in package['features']))
+
+    def test_route_trace_requires_confirmed_route_and_green_identity_review(self):
+        doc = reviewed_route_trace_fixture()
+        doc['holes'][0]['identityReview']['status'] = 'candidate'
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)/'routes.json'
+            path.write_text(json.dumps(doc))
+            with self.assertRaisesRegex(ValueError, 'confirmed hole identity'):
+                read_route_traces(path, 'test-facility', 'osm-way-1', [hole['holeKey'] for hole in doc['holes']])
+
     def test_factory_planning_accepts_import_without_osm_and_invalidates_changed_evidence(self):
         doc = source_fixture()
         with tempfile.TemporaryDirectory() as directory:

@@ -21,7 +21,7 @@ import pyproj
 from shapely.geometry import LineString, Point, Polygon
 from shapely.geometry import shape as geometry_shape
 from shapely.ops import transform
-from source_geometry import identity, read_source_geometry, selected_features
+from source_geometry import identity, read_route_traces, read_source_geometry, selected_features
 
 
 def _sibling(name, filename):
@@ -83,6 +83,8 @@ def main():
     parser.add_argument('--traces', type=Path, default=None,
                         help='imagery trace file; adds unreviewed surface candidates where OSM has none')
     parser.add_argument('--source-geometry', type=Path, help='retained source-independent routes and surfaces')
+    parser.add_argument('--route-traces', '--routes', dest='route_traces', type=Path,
+                        help='reviewed golfhelm-route-traces-v1 route and surface evidence; never converted to OSM IDs')
     args = parser.parse_args()
 
     raw_bytes = args.overpass.read_bytes()
@@ -102,7 +104,17 @@ def main():
     counts = {len(card['pars']), len(card['scorecardYards'])}
     hole_order = card.get('holeOrder') or [f"{card['slug']}-{n:02}" for n in range(1, len(card['pars']) + 1)]
     counts.add(len(hole_order))
-    imported = read_source_geometry(args.source_geometry, card.get('facilityId'), card['siteId'], hole_order) if args.source_geometry else None
+    if args.source_geometry and args.route_traces:
+        raise ValueError('ROUTE_SOURCE_CONFLICT: select exactly one source geometry or reviewed route traces input')
+    route_traces = None
+    if args.route_traces:
+        # Validate the bounded retained artifact before reading it again for
+        # audit-copy output. Do not parse arbitrary-sized local JSON merely to
+        # discover that it violates the route-trace intake contract.
+        route_traces = args.route_traces
+        imported = read_route_traces(args.route_traces, card.get('facilityId'), card['siteId'], hole_order)
+    else:
+        imported = read_source_geometry(args.source_geometry, card.get('facilityId'), card['siteId'], hole_order) if args.source_geometry else None
     if imported and card.get('routeWayIds'):
         raise ValueError('ROUTE_SOURCE_CONFLICT: select imported geometry or OSM way IDs explicitly')
     if not imported:
@@ -283,6 +295,11 @@ def main():
     if imported:
         package['sources'].extend(copy.deepcopy(imported['sources']))
     trace_summary = None
+    route_trace_summary = None
+    if route_traces:
+        route_trace_summary = {'traceFile': args.route_traces.name, 'hash': identity(imported),
+                               'associationReview': imported['routeTraceAssociationReview'],
+                               'rule': 'confirms hole identity and route-to-green association only; boundaries remain source candidates'}
     if traces:
         package['sources'].append({'id': trace_source, 'provider': traces['source']['provider'], 'licenseId': 'US-Public-Domain',
                                    'url': traces['source']['service'], 'capturedAt': ','.join(traces['source']['capturedAt']),
@@ -317,12 +334,12 @@ def main():
     package['contentHash'] = sha(package)
     report = {'schemaVersion': 1, 'status': 'needs_physical_review', 'course': card['name'],
               'packageHash': package['contentHash'], 'rawOverpassSha256': hashlib.sha256(raw_bytes).hexdigest(),
-              'routeSelection': {'method': 'explicit imported physical-hole bindings' if imported else 'explicit selected OSM golf=hole way IDs; ref checked, source par compared against retained scorecard',
+              'routeSelection': {'method': 'explicit reviewed route-trace physical-hole bindings' if route_traces else ('explicit imported physical-hole bindings' if imported else 'explicit selected OSM golf=hole way IDs; ref checked, source par compared against retained scorecard'),
                                  'routeWayIds': card.get('routeWayIds')},
               'associationPolicy': {'green': 'contains selected route endpoint', 'fairway': 'intersects route by 8m or more',
                                      'tee': 'within 28m of route start', 'bunker_water': 'nearest selected route within 55m'},
               'holes': association_rows, 'unclaimedSourceFeatureIds': unclaimed, 'canopy': canopy_summary,
-              'traces': trace_summary,
+              'traces': trace_summary, 'routeTraces': route_trace_summary,
               'discardedEndpointGreenAlternatives': green_alternatives,
               'limitations': ['OSM plan geometry is retained as a renderable source candidate only',
                               'No independent boundary uncertainty or course-familiar review exists',
@@ -332,11 +349,16 @@ def main():
     write(args.output / 'normalized.json', package)
     write(args.output / 'source-metadata.json', {'scorecard': card, 'overpassSha256': report['rawOverpassSha256'],
                                                    'elementCount': len(raw.get('elements', [])), 'license': 'ODbL-1.0',
-                                                   'sourceGeometryHash': identity(imported) if imported else None,
-                                                   'sourceGeometryFileSha256': hashlib.sha256(args.source_geometry.read_bytes()).hexdigest() if imported else None,
+                                                   'sourceGeometryHash': identity(imported) if imported and not route_traces else None,
+                                                   'routeTracesHash': identity(imported) if route_traces else None,
+                                                   'sourceGeometryFileSha256': hashlib.sha256(args.source_geometry.read_bytes()).hexdigest() if args.source_geometry else None,
+                                                   'routeTracesFileSha256': hashlib.sha256(args.route_traces.read_bytes()).hexdigest() if route_traces else None,
                                                    'imageryTracesHash': identity(json.loads(args.traces.read_text())) if args.traces else None})
     if imported:
-        (args.output / 'source-geometry.json').write_bytes(args.source_geometry.read_bytes())
+        if route_traces:
+            (args.output / 'route-traces.json').write_bytes(args.route_traces.read_bytes())
+        else:
+            (args.output / 'source-geometry.json').write_bytes(args.source_geometry.read_bytes())
     if traces:
         (args.output / 'imagery-traces.json').write_bytes(args.traces.read_bytes())
     write(args.output / 'association-report.json', report)

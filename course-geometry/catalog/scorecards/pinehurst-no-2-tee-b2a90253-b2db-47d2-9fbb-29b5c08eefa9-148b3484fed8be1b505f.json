@@ -1,0 +1,130 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "pinehurst-no-2-tee-b2a90253-b2db-47d2-9fbb-29b5c08eefa9-148b3484fed8be1b505f",
+  "layoutId": "pinehurst-no-2",
+  "teeName": "Members",
+  "revision": "148b3484fed8be1b505f3d25e141868bf6e0b3ea1a70a864cb58addffcb64247",
+  "courseRating": 73.2,
+  "slopeRating": 126,
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-21",
+    "snapshotHash": "59c51440bb55ec122f369c154574307c0ff9abe59f97eb19a6b6ae172ef92a7d",
+    "note": "Immutable read-only snapshot; library source=seed. Scorecard facts only. No physical tee marker, hole association or geometry approval."
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 4,
+      "yards": 377,
+      "handicap": 2
+    },
+    {
+      "hole": 2,
+      "par": 4,
+      "yards": 420,
+      "handicap": 4
+    },
+    {
+      "hole": 3,
+      "par": 3,
+      "yards": 180,
+      "handicap": 15
+    },
+    {
+      "hole": 4,
+      "par": 4,
+      "yards": 399,
+      "handicap": 3
+    },
+    {
+      "hole": 5,
+      "par": 5,
+      "yards": 497,
+      "handicap": 12
+    },
+    {
+      "hole": 6,
+      "par": 4,
+      "yards": 395,
+      "handicap": 5
+    },
+    {
+      "hole": 7,
+      "par": 3,
+      "yards": 188,
+      "handicap": 17
+    },
+    {
+      "hole": 8,
+      "par": 4,
+      "yards": 338,
+      "handicap": 8
+    },
+    {
+      "hole": 9,
+      "par": 5,
+      "yards": 477,
+      "handicap": 14
+    },
+    {
+      "hole": 10,
+      "par": 4,
+      "yards": 328,
+      "handicap": 1
+    },
+    {
+      "hole": 11,
+      "par": 4,
+      "yards": 363,
+      "handicap": 10
+    },
+    {
+      "hole": 12,
+      "par": 4,
+      "yards": 350,
+      "handicap": 7
+    },
+    {
+      "hole": 13,
+      "par": 4,
+      "yards": 383,
+      "handicap": 9
+    },
+    {
+      "hole": 14,
+      "par": 3,
+      "yards": 152,
+      "handicap": 16
+    },
+    {
+      "hole": 15,
+      "par": 3,
+      "yards": 180,
+      "handicap": 18
+    },
+    {
+      "hole": 16,
+      "par": 4,
+      "yards": 421,
+      "handicap": 6
+    },
+    {
+      "hole": 17,
+      "par": 5,
+      "yards": 499,
+      "handicap": 11
+    },
+    {
+      "hole": 18,
+      "par": 5,
+      "yards": 468,
+      "handicap": 13
+    }
+  ],
+  "libraryBinding": {
+    "courseId": "71c4eebc-f555-42f9-962f-9d16814e6172",
+    "teeId": "b2a90253-b2db-47d2-9fbb-29b5c08eefa9"
+  }
+}

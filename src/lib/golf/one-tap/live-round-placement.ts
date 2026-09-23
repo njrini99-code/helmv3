@@ -24,10 +24,9 @@ export function explicitHoleBindings(pkg: CourseGeometryPackage, policy: CourseG
 }
 
 /** Master design §77 placement: Meridian Live replaces the shot-entry screen
- * of the existing round flow only for an eligible round — Peek'n Peak Upper,
- * an approved package, the release flag on, a device location — and only for
- * holes the package maps. Every other round, and Peek Upper in standard
- * mode, renders the existing tracker unchanged. */
+ * only for an explicitly admitted physical package. Visual candidates can
+ * remain available in the review renderer, but cannot supply a live round.
+ * Every unavailable round keeps the existing tracker unchanged. */
 export interface OneTapLiveRound {
   roundId: string;
   courseId: string;
@@ -76,13 +75,24 @@ export function resolveOneTapLiveRound(input: ResolveLiveRoundInput): { live: On
   if (!policy) return { live: null, eligibility: { eligible: false, reason: 'wrong_course' } };
   if (!input.pkg) return { live: null, eligibility: { eligible: false, reason: 'geometry_hash_not_approved' } };
   const eligibility = isCourseGeometryEligible({ roundCourseId: input.roundCourseId, pkg: input.pkg, featureFlagEnabled: input.featureFlagEnabled, preciseLocationAvailable: !!input.location,
-    requiredTier: policy.livePilot?.layoutId === policy.layoutId && policy.livePilot.geometryHashes.has(input.pkg.contentHash) ? 'C2' : 'C3' }, policy);
+    requiredTier: 'C3' }, policy);
   if (!eligibility.eligible) return { live: null, eligibility };
   const roundHoleKeys = input.roundHoleKeys ?? explicitHoleBindings(input.pkg, policy);
   const roundSetup = input.roundSetup ? structuredClone(input.roundSetup) : undefined;
   const order = roundSetup?.holes.map(h => h.number) ?? Object.keys(roundHoleKeys).map(Number).sort((a, b) => a - b);
-  const holeKeys = order.map(number => roundHoleKeys[number]).filter((key): key is string => !!key);
-  if (!holeKeys.length || new Set(holeKeys).size !== holeKeys.length) return { live: null, eligibility: { eligible: false, reason: 'capability_not_available' } };
+  // A round's scorecard owns its played order. Do not remove an unmapped hole
+  // and let the remaining package keys slide into a different position.
+  const holeKeys: string[] = [];
+  for (const number of order) {
+    const key = roundHoleKeys[number];
+    if (!key || !input.pkg.holes.some(hole => hole.key === key)) {
+      return { live: null, eligibility: { eligible: false, reason: 'capability_not_available' } };
+    }
+    holeKeys.push(key);
+  }
+  if (!holeKeys.length || new Set(holeKeys).size !== holeKeys.length) {
+    return { live: null, eligibility: { eligible: false, reason: 'capability_not_available' } };
+  }
   return { eligibility, live: { roundId: input.roundId, courseId: eligibility.courseId, geometryVersion: eligibility.geometryVersion, pkg: input.pkg, holeKeys, roundSetup, roundHoleKeys,
     terrainByHole: input.terrainByHole, contextLayer: input.contextLayer, location: input.location, storage: input.storage, transport: input.transport, readiness: input.readiness, roundType: input.roundType, world: policy.renderWorld } };
 }

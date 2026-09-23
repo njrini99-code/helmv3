@@ -1,0 +1,74 @@
+{
+  "schema": "golfhelm-layout-v1",
+  "layoutId": "isleworth-golf-country-club",
+  "facilityId": "isleworth-country-club",
+  "name": "Isleworth Golf & Country Club",
+  "siteIds": [
+    "osm-relation-21236557"
+  ],
+  "segments": {
+    "main": {
+      "holes": [
+        "isleworth-golf-country-club-01",
+        "isleworth-golf-country-club-02",
+        "isleworth-golf-country-club-03",
+        "isleworth-golf-country-club-04",
+        "isleworth-golf-country-club-05",
+        "isleworth-golf-country-club-06",
+        "isleworth-golf-country-club-07",
+        "isleworth-golf-country-club-08",
+        "isleworth-golf-country-club-09",
+        "isleworth-golf-country-club-10",
+        "isleworth-golf-country-club-11",
+        "isleworth-golf-country-club-12",
+        "isleworth-golf-country-club-13",
+        "isleworth-golf-country-club-14",
+        "isleworth-golf-country-club-15",
+        "isleworth-golf-country-club-16",
+        "isleworth-golf-country-club-17",
+        "isleworth-golf-country-club-18"
+      ]
+    }
+  },
+  "segmentOrder": [
+    "main"
+  ],
+  "holeOrder": [
+    "isleworth-golf-country-club-01",
+    "isleworth-golf-country-club-02",
+    "isleworth-golf-country-club-03",
+    "isleworth-golf-country-club-04",
+    "isleworth-golf-country-club-05",
+    "isleworth-golf-country-club-06",
+    "isleworth-golf-country-club-07",
+    "isleworth-golf-country-club-08",
+    "isleworth-golf-country-club-09",
+    "isleworth-golf-country-club-10",
+    "isleworth-golf-country-club-11",
+    "isleworth-golf-country-club-12",
+    "isleworth-golf-country-club-13",
+    "isleworth-golf-country-club-14",
+    "isleworth-golf-country-club-15",
+    "isleworth-golf-country-club-16",
+    "isleworth-golf-country-club-17",
+    "isleworth-golf-country-club-18"
+  ],
+  "routeWayIds": null,
+  "bboxWgs84": null,
+  "capabilityTier": "C0",
+  "externalBindings": {
+    "golfCourseIds": [
+      "eaefce7a-9221-43dd-8026-6c49ee572aee"
+    ]
+  },
+  "scorecardProfiles": [
+    "isleworth-golf-country-club-tee-0234df64-ef9f-474d-9077-7ebf24e165ae-f46f4afa5cc441c80c93",
+    "isleworth-golf-country-club-tee-5610db84-1496-4591-ab20-9ace90d90759-551fda870347ae6bb73d",
+    "isleworth-golf-country-club-tee-af771a3c-3a9f-4575-a77f-ef8a904d519d-f367638a70654391f48f"
+  ],
+  "referenceScorecardProfileId": "isleworth-golf-country-club-tee-0234df64-ef9f-474d-9077-7ebf24e165ae-f46f4afa5cc441c80c93",
+  "geometry": null,
+  "notes": [
+    "Complete library intake of exact course UUID eaefce7a-9221-43dd-8026-6c49ee572aee; no usage threshold. C0 only: routes, bbox and geometry remain unresolved. Shared names/proximity establish no physical association."
+  ]
+}

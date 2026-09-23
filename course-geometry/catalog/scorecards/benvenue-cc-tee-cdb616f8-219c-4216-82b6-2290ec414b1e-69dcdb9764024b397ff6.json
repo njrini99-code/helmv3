@@ -1,0 +1,112 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "benvenue-cc-tee-cdb616f8-219c-4216-82b6-2290ec414b1e-69dcdb9764024b397ff6",
+  "layoutId": "benvenue-cc",
+  "teeName": "Gold",
+  "revision": "69dcdb9764024b397ff6faf677591c4e73b725849a6572503706a0e5353617f7",
+  "courseRating": 71.8,
+  "slopeRating": 135,
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-21",
+    "snapshotHash": "59c51440bb55ec122f369c154574307c0ff9abe59f97eb19a6b6ae172ef92a7d",
+    "note": "Immutable read-only snapshot; library source=manual. Scorecard facts only. No physical tee marker, hole association or geometry approval."
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 4,
+      "yards": 370
+    },
+    {
+      "hole": 2,
+      "par": 3,
+      "yards": 165
+    },
+    {
+      "hole": 3,
+      "par": 5,
+      "yards": 507
+    },
+    {
+      "hole": 4,
+      "par": 5,
+      "yards": 546
+    },
+    {
+      "hole": 5,
+      "par": 4,
+      "yards": 400
+    },
+    {
+      "hole": 6,
+      "par": 4,
+      "yards": 363
+    },
+    {
+      "hole": 7,
+      "par": 4,
+      "yards": 421
+    },
+    {
+      "hole": 8,
+      "par": 4,
+      "yards": 300
+    },
+    {
+      "hole": 9,
+      "par": 3,
+      "yards": 175
+    },
+    {
+      "hole": 10,
+      "par": 5,
+      "yards": 484
+    },
+    {
+      "hole": 11,
+      "par": 4,
+      "yards": 372
+    },
+    {
+      "hole": 12,
+      "par": 4,
+      "yards": 343
+    },
+    {
+      "hole": 13,
+      "par": 3,
+      "yards": 160
+    },
+    {
+      "hole": 14,
+      "par": 4,
+      "yards": 441
+    },
+    {
+      "hole": 15,
+      "par": 5,
+      "yards": 537
+    },
+    {
+      "hole": 16,
+      "par": 4,
+      "yards": 348
+    },
+    {
+      "hole": 17,
+      "par": 3,
+      "yards": 197
+    },
+    {
+      "hole": 18,
+      "par": 4,
+      "yards": 390
+    }
+  ],
+  "libraryBinding": {
+    "courseId": "bca8988a-affe-4686-b2d8-69363d0ba203",
+    "teeId": "cdb616f8-219c-4216-82b6-2290ec414b1e"
+  }
+}

@@ -4,7 +4,7 @@
   "facilityId": "eagle-point-golf-club",
   "name": "Eagle Point",
   "siteIds": [
-    "osm-way-1509573612"
+    "osm-way-1509582682"
   ],
   "segments": {
     "main": {
@@ -67,7 +67,8 @@
   ],
   "geometry": null,
   "notes": [
-    "Factory intake from active-team school proximity (1 nearby team anchor(s), within 75.0 miles; queried 2026-09-20T12:43:48.457Z). Proximity selected build priority only; it does not establish a physical route or feature geometry."
+    "Factory intake from active-team school proximity (1 nearby team anchor(s), within 75.0 miles; queried 2026-09-20T12:43:48.457Z). Proximity selected build priority only; it does not establish a physical route or feature geometry.",
+    "2026-09-21 route recovery: site pins the retained OSM Main Course polygon way/1509582682, with exactly one numbered route for each of holes 1–18. Facility perimeter way/1509573612 also contains the separately mapped Par 3 Course way/1509582683 (holes 1–9). Source SHA256 70eceebacce67e9e1bcaf4273bc03c86d3c77aaad25676d6d76cadfa5657f29b; evidence and limitations: scripts/golf/course-geometry/route-recovery.md. This is candidate course identity, not physical boundary approval."
   ],
   "referenceScorecardProfileId": "eagle-point-championship"
 }

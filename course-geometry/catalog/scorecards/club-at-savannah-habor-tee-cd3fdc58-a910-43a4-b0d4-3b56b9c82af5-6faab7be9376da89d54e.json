@@ -1,0 +1,130 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "club-at-savannah-habor-tee-cd3fdc58-a910-43a4-b0d4-3b56b9c82af5-6faab7be9376da89d54e",
+  "layoutId": "club-at-savannah-habor",
+  "teeName": "Forward",
+  "revision": "6faab7be9376da89d54e1affcd0d0061cf9063cc5e0abf489742237fd1d4df5c",
+  "courseRating": 70.1,
+  "slopeRating": 109,
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-21",
+    "snapshotHash": "59c51440bb55ec122f369c154574307c0ff9abe59f97eb19a6b6ae172ef92a7d",
+    "note": "Immutable read-only snapshot; library source=seed. Scorecard facts only. No physical tee marker, hole association or geometry approval."
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 5,
+      "yards": 445,
+      "handicap": 12
+    },
+    {
+      "hole": 2,
+      "par": 3,
+      "yards": 174,
+      "handicap": 17
+    },
+    {
+      "hole": 3,
+      "par": 4,
+      "yards": 327,
+      "handicap": 9
+    },
+    {
+      "hole": 4,
+      "par": 3,
+      "yards": 159,
+      "handicap": 18
+    },
+    {
+      "hole": 5,
+      "par": 4,
+      "yards": 286,
+      "handicap": 8
+    },
+    {
+      "hole": 6,
+      "par": 4,
+      "yards": 320,
+      "handicap": 2
+    },
+    {
+      "hole": 7,
+      "par": 5,
+      "yards": 412,
+      "handicap": 11
+    },
+    {
+      "hole": 8,
+      "par": 4,
+      "yards": 290,
+      "handicap": 5
+    },
+    {
+      "hole": 9,
+      "par": 4,
+      "yards": 314,
+      "handicap": 4
+    },
+    {
+      "hole": 10,
+      "par": 4,
+      "yards": 369,
+      "handicap": 7
+    },
+    {
+      "hole": 11,
+      "par": 5,
+      "yards": 396,
+      "handicap": 14
+    },
+    {
+      "hole": 12,
+      "par": 5,
+      "yards": 433,
+      "handicap": 13
+    },
+    {
+      "hole": 13,
+      "par": 3,
+      "yards": 171,
+      "handicap": 16
+    },
+    {
+      "hole": 14,
+      "par": 3,
+      "yards": 129,
+      "handicap": 15
+    },
+    {
+      "hole": 15,
+      "par": 4,
+      "yards": 351,
+      "handicap": 3
+    },
+    {
+      "hole": 16,
+      "par": 4,
+      "yards": 292,
+      "handicap": 6
+    },
+    {
+      "hole": 17,
+      "par": 4,
+      "yards": 384,
+      "handicap": 1
+    },
+    {
+      "hole": 18,
+      "par": 4,
+      "yards": 368,
+      "handicap": 10
+    }
+  ],
+  "libraryBinding": {
+    "courseId": "ee257690-fe52-4008-8ad2-ad8d2c617775",
+    "teeId": "cd3fdc58-a910-43a4-b0d4-3b56b9c82af5"
+  }
+}

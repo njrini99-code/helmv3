@@ -1,0 +1,38 @@
+{
+  "schema": "golfhelm-facility-v1",
+  "facilityId": "hendersonville-country-club",
+  "name": "Hendersonville Country Club",
+  "country": "US",
+  "region": "NC",
+  "originWgs84": [
+    -82.4846941,
+    35.3038331
+  ],
+  "aoi": {
+    "kind": "osm",
+    "id": "way/439392038",
+    "marginM": 300
+  },
+  "sourcePins": {
+    "osm": [
+      "way/439392038"
+    ]
+  },
+  "providerPolicy": {
+    "terrain": [
+      "usgs_s1m",
+      "usgs_3dep_project_1m"
+    ],
+    "imagery": [
+      "nc_onemap_2024_2027_analysis",
+      "usgs_naip_plus"
+    ],
+    "context": [
+      "osm"
+    ]
+  },
+  "notes": [
+    "Complete library snapshot 2026-09-21T01:57:42.835Z; retained coverage 2026-09-18T21:46:00Z. OSM pin is a discovery AOI candidate, not physical admission.",
+    "Retained coverage basis: course_area; h0 g0 f0 b0 t0."
+  ]
+}

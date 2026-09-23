@@ -1,0 +1,130 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "harbour-town-golf-links-tee-1415e837-8b0e-42eb-a1fd-75ed647f0b23-cc27f1f19a747bdbc2e3",
+  "layoutId": "harbour-town-golf-links",
+  "teeName": "Championship",
+  "revision": "cc27f1f19a747bdbc2e3775eb526ef3754a3c6a4e6f984ee263431ac825e4f4a",
+  "courseRating": 74.9,
+  "slopeRating": 137,
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-21",
+    "snapshotHash": "59c51440bb55ec122f369c154574307c0ff9abe59f97eb19a6b6ae172ef92a7d",
+    "note": "Immutable read-only snapshot; library source=seed. Scorecard facts only. No physical tee marker, hole association or geometry approval."
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 5,
+      "yards": 561,
+      "handicap": 13
+    },
+    {
+      "hole": 2,
+      "par": 3,
+      "yards": 217,
+      "handicap": 16
+    },
+    {
+      "hole": 3,
+      "par": 3,
+      "yards": 222,
+      "handicap": 17
+    },
+    {
+      "hole": 4,
+      "par": 4,
+      "yards": 363,
+      "handicap": 11
+    },
+    {
+      "hole": 5,
+      "par": 4,
+      "yards": 456,
+      "handicap": 6
+    },
+    {
+      "hole": 6,
+      "par": 4,
+      "yards": 459,
+      "handicap": 1
+    },
+    {
+      "hole": 7,
+      "par": 4,
+      "yards": 385,
+      "handicap": 8
+    },
+    {
+      "hole": 8,
+      "par": 4,
+      "yards": 449,
+      "handicap": 7
+    },
+    {
+      "hole": 9,
+      "par": 5,
+      "yards": 579,
+      "handicap": 12
+    },
+    {
+      "hole": 10,
+      "par": 4,
+      "yards": 466,
+      "handicap": 3
+    },
+    {
+      "hole": 11,
+      "par": 4,
+      "yards": 420,
+      "handicap": 5
+    },
+    {
+      "hole": 12,
+      "par": 4,
+      "yards": 450,
+      "handicap": 2
+    },
+    {
+      "hole": 13,
+      "par": 4,
+      "yards": 399,
+      "handicap": 10
+    },
+    {
+      "hole": 14,
+      "par": 4,
+      "yards": 369,
+      "handicap": 9
+    },
+    {
+      "hole": 15,
+      "par": 3,
+      "yards": 176,
+      "handicap": 15
+    },
+    {
+      "hole": 16,
+      "par": 5,
+      "yards": 535,
+      "handicap": 14
+    },
+    {
+      "hole": 17,
+      "par": 4,
+      "yards": 406,
+      "handicap": 4
+    },
+    {
+      "hole": 18,
+      "par": 3,
+      "yards": 187,
+      "handicap": 18
+    }
+  ],
+  "libraryBinding": {
+    "courseId": "3b5b7d54-3784-4424-ae56-2d96bdb37bf8",
+    "teeId": "1415e837-8b0e-42eb-a1fd-75ed647f0b23"
+  }
+}

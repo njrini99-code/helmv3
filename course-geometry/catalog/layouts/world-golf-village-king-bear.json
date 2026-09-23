@@ -1,0 +1,74 @@
+{
+  "schema": "golfhelm-layout-v1",
+  "layoutId": "world-golf-village-king-bear",
+  "facilityId": "king-and-bear-golf-course",
+  "name": "World Golf Village - King & Bear",
+  "siteIds": [
+    "osm-way-678136658"
+  ],
+  "segments": {
+    "main": {
+      "holes": [
+        "world-golf-village-king-bear-01",
+        "world-golf-village-king-bear-02",
+        "world-golf-village-king-bear-03",
+        "world-golf-village-king-bear-04",
+        "world-golf-village-king-bear-05",
+        "world-golf-village-king-bear-06",
+        "world-golf-village-king-bear-07",
+        "world-golf-village-king-bear-08",
+        "world-golf-village-king-bear-09",
+        "world-golf-village-king-bear-10",
+        "world-golf-village-king-bear-11",
+        "world-golf-village-king-bear-12",
+        "world-golf-village-king-bear-13",
+        "world-golf-village-king-bear-14",
+        "world-golf-village-king-bear-15",
+        "world-golf-village-king-bear-16",
+        "world-golf-village-king-bear-17",
+        "world-golf-village-king-bear-18"
+      ]
+    }
+  },
+  "segmentOrder": [
+    "main"
+  ],
+  "holeOrder": [
+    "world-golf-village-king-bear-01",
+    "world-golf-village-king-bear-02",
+    "world-golf-village-king-bear-03",
+    "world-golf-village-king-bear-04",
+    "world-golf-village-king-bear-05",
+    "world-golf-village-king-bear-06",
+    "world-golf-village-king-bear-07",
+    "world-golf-village-king-bear-08",
+    "world-golf-village-king-bear-09",
+    "world-golf-village-king-bear-10",
+    "world-golf-village-king-bear-11",
+    "world-golf-village-king-bear-12",
+    "world-golf-village-king-bear-13",
+    "world-golf-village-king-bear-14",
+    "world-golf-village-king-bear-15",
+    "world-golf-village-king-bear-16",
+    "world-golf-village-king-bear-17",
+    "world-golf-village-king-bear-18"
+  ],
+  "routeWayIds": null,
+  "bboxWgs84": null,
+  "capabilityTier": "C0",
+  "externalBindings": {
+    "golfCourseIds": [
+      "40be0a21-ddde-4dc7-8b70-3640d11a2d3c"
+    ]
+  },
+  "scorecardProfiles": [
+    "world-golf-village-king-bear-tee-126c462e-dd2d-408a-80ce-c3c4a392715e-5251b50fa5a93c59ae99",
+    "world-golf-village-king-bear-tee-a619c6b1-2a60-4339-be2e-8a8cc0c033a1-a19b8707b94cbe51cda7",
+    "world-golf-village-king-bear-tee-ad9d6611-a928-4b57-9bdb-678b5a475150-0292a18998067e6ffa67"
+  ],
+  "referenceScorecardProfileId": "world-golf-village-king-bear-tee-126c462e-dd2d-408a-80ce-c3c4a392715e-5251b50fa5a93c59ae99",
+  "geometry": null,
+  "notes": [
+    "Complete library intake of exact course UUID 40be0a21-ddde-4dc7-8b70-3640d11a2d3c; no usage threshold. C0 only: routes, bbox and geometry remain unresolved. Shared names/proximity establish no physical association."
+  ]
+}

@@ -201,6 +201,37 @@ profile records `decorativeEdgeBands: false`; a hole still over budget fails.
 
 ### Course factory build engine (Factory v2 PR B, 2026-09-19)
 
+The factory rechecks live free space before every writing task; admission at
+the start of a long batch does not reserve space for its later tasks. The
+unchanged 8 GiB reserve protects the host, and blocked writers can resume
+without repeating successful siblings.
+
+Complete-library intake (`build-library-intake-dossier.py`) evaluates every
+exact course UUID independently of completed-round counts. It retains all
+valid exported tee revisions and writes only hash-locked C0 candidate
+manifests. Shared names/polygons, unresolved subcourses and unsupported
+country/provider combinations stay explicit holds; they do not merge course
+IDs, assign hole order or authorize measurements. The retained discovery
+snapshot and its hash remain in the intake dossier.
+
+Explicit factory batch terminals run only their dependency closure. A route
+or candidate-preparation batch cannot silently launch terrain acquisition or
+Blender. The default world-aggregation batch still includes its separately
+labelled facility visual fallback. `route-recovery` verifies retained source
+hashes and reports missing/duplicate route identities with bounded remediation
+commands; a source inventory is not a physical approval.
+
+Offline world builds recompute the canonical study, physical world and truth
+gate independently of visual reuse. A render receipt binds the actual GLB,
+preview and export-report bytes to the complete terrain grid, source raster,
+coordinate frame, semantic/display geometry, generator implementation and
+Blender version. Only matching receipts skip generation; every reused GLB
+still undergoes current metric round-trip validation. Review changes cannot
+grant measurement authority through this cache. Legacy output without a
+receipt rebuilds once instead of claiming unverifiable compiler equivalence.
+The factory fingerprints Blender generation and validation scripts too, so
+renderer changes invalidate the appropriate world task.
+
 The library snapshot exporter paginates all five input tables in stable ID
 order with exact counts. It rejects missing counts, early empty pages,
 duplicate IDs and changing totals rather than exporting a capped inventory.
@@ -1528,7 +1559,9 @@ C2 publication requires successful byte verification as well as preparation.
 C2 does not grant tap measurement. C3 promotion requires current reviewed
 geometry, successful per-hole truth records and verified publication. C4 also
 requires current independent field evidence. Live
-consumers request C3 explicitly except the exact Upper pilot layout/hash.
+Runtime consumers request C3 explicitly. A `source_candidate`, including the
+former Upper visual pilot, is review-renderer-only and cannot enter One Tap,
+measurement, shot placement, analytics, or round review through a pilot flag.
 
 NC DEM acquisition now requests native EPSG:6543, locks a single full-coverage
 catalog raster, aligns to that raster's grid origin, and verifies vertical CRS
@@ -1555,6 +1588,10 @@ Geometry loading uses the immutable v2 round binding defined in
 `memory/features/golf-round-lifecycle.md`. A package's QA scorecard never
 replaces the round's saved tee, ordered pars/yards, overrides or observations.
 An unbound tee still has valid saved scoring data and no asserted tee position.
+A bound world also requires a complete one-to-one crosswalk from each saved
+played hole, in saved order, to its explicit package key. Missing, duplicate or
+mismatched keys keep the round on standard tracking; no ordinal, nearest-hole
+or partial-list fallback may shift another hole into that position.
 
 ### Physical admission evidence
 

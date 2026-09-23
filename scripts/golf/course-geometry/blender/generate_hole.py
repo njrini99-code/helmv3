@@ -169,18 +169,34 @@ def main():
             a = row * width + col
             terrain_faces.extend([(a, a + 1, a + width + 1), (a, a + width + 1, a + width)])
     terrain = mesh_object('GolfHelmTerrain', terrain_vertices, terrain_faces, terrain_material)
-    terrain['golfhelm_role'] = 'source_backed_lidar_terrain'
+    terrain_truth = data['terrain'].get('truthClass', 'unknown')
+    terrain['golfhelm_role'] = 'source_backed_lidar_terrain' if terrain_truth in ('measured', 'derived') else 'visual_only_terrain'
+    terrain['golfhelm_truth_class'] = terrain_truth
+    terrain['golfhelm_source_backed'] = terrain_truth in ('measured', 'derived')
+    terrain['golfhelm_measurement_authority'] = False
     terrain['golfhelm_raster_sha256'] = actual_raster
     layers = [terrain]
+    rendered_points = []
     surface_height = terrain_surface_sampler(grid)
     for feature in data['features']:
         kind = feature['kind']
         if kind not in materials:
             continue
-        layer = triangulated_polygon('GolfHelm' + kind.title() + '_' + feature['id'], feature['geometryMeters'], materials[kind], surface_height)
-        layer['golfhelm_feature_id'] = feature['id']
-        layer['golfhelm_source_backed'] = True
-        layers.append(layer)
+        geometry = feature.get('renderGeometryMeters', feature['geometryMeters'])
+        if geometry is None:
+            continue  # Entire shared feature is outside this hole's display crop.
+        polygons = geometry['coordinates'] if geometry['type'] == 'MultiPolygon' else [geometry['coordinates']]
+        for index, rings in enumerate(polygons):
+            name = 'GolfHelm' + kind.title() + '_' + feature['id'] + (f'_{index}' if len(polygons) > 1 else '')
+            layer = triangulated_polygon(name, {'type': 'Polygon', 'coordinates': rings}, materials[kind], surface_height)
+            layer['golfhelm_feature_id'] = feature['id']
+            layer['golfhelm_truth_class'] = feature.get('truthClass', 'unknown')
+            layer['golfhelm_source_backed'] = feature.get('truthClass') in ('measured', 'derived')
+            layer['golfhelm_measurement_authority'] = False
+            layer['golfhelm_display_clipped'] = 'renderClip' in feature
+            layers.append(layer)
+            if kind != 'water':
+                rendered_points.extend(point for ring in rings for point in ring)
     frame = bpy.data.objects.new('GolfHelmCanonicalFrame', None)
     frame.empty_display_type = 'ARROWS'
     frame['golfhelm_axes_before_export'] = 'x=east,y=elevation,z=north'
@@ -190,7 +206,6 @@ def main():
     min_y, max_y = min(item[1] for item in terrain_vertices), max(item[1] for item in terrain_vertices)
     min_z, max_z = min(item[2] for item in terrain_vertices), max(item[2] for item in terrain_vertices)
     span = max(max_x - min_x, max_y - min_y)
-    rendered_points = [point for feature in data['features'] for ring in feature['geometryMeters'].get('coordinates', []) for point in ring]
     if rendered_points:
         feature_span = max(max(point[0] for point in rendered_points) - min(point[0] for point in rendered_points),
                            max(point[2] for point in rendered_points) - min(point[2] for point in rendered_points))
@@ -226,6 +241,9 @@ def main():
     background.inputs['Strength'].default_value = .45
     glb_path.parent.mkdir(parents=True, exist_ok=True)
     bpy.ops.object.select_all(action='SELECT')
+    # This .blend is a disposable deterministic compile product; retain the
+    # current artifact without accumulating Blender's automatic .blend1 copies.
+    bpy.context.preferences.filepaths.save_version = 0
     bpy.ops.wm.save_as_mainfile(filepath=str(glb_path.with_suffix('.blend')))
     bpy.ops.export_scene.gltf(filepath=str(glb_path), export_format='GLB', export_yup=True, export_apply=True, export_extras=True, export_cameras=True, export_lights=True)
     if preview_path:

@@ -95,6 +95,18 @@ def fixture():
 
 
 class TerrainCompilerTest(unittest.TestCase):
+    def test_shared_lake_does_not_expand_played_bounds_but_source_envelope_survives(self):
+        hole, _pkg, shapes, features, _displays, _outlines = fixture()
+        shapes['lake'] = box(0, 10, 1000, 1000)
+        features['lake'] = {'id': 'lake', 'kind': 'water', 'reviewed': False}
+        hole['featureIds'].append('lake')
+        source_bounds = compiler.hole_bounds(hole, shapes, features)
+        played_bounds = compiler.hole_bounds(hole, shapes, features, played_only=True)
+        self.assertGreater(source_bounds[0][2], 1000)
+        self.assertLess(played_bounds[0][2], 30)
+        self.assertLess(played_bounds[0][3], 50)
+        self.assertEqual(shapes['lake'].bounds, (0, 10, 1000, 1000))
+
     def test_area_conservation_tolerance_is_strict_and_scale_aware(self):
         # The tolerance is only for accumulated floating-point triangle areas.
         # It is not a geometry displacement allowance: the face-cover and
@@ -125,6 +137,76 @@ class TerrainCompilerTest(unittest.TestCase):
         self.assertAlmostEqual(pixel_m[1], 12.5 / 2 * compiler.US_SURVEY_FOOT_TO_METERS)
         with self.assertRaisesRegex(ValueError, 'coarser'):
             compiler.nc_rendering_only_grid_bounds([100.1, 200.1, 110.0, 209.4], {'xmin': 0, 'ymin': 0}, .5)
+
+    def test_nc_selection_excludes_category_one_overview_rasters(self):
+        # DEM03 labels coarse LERC overview levels category=1 as well as the
+        # county source raster.  Selection must use the per-item native grid,
+        # not its shared category or the larger overview envelope.
+        footprint = box(2, 2, 8, 8)
+        native = {'attributes': {'objectid': 1, 'lowps': 3.125, 'name': 'County native'},
+                  'geometry': {'rings': [[[0, 0], [10, 0], [10, 10], [0, 10], [0, 0]]]}}
+        overview = {'attributes': {'objectid': 2, 'lowps': 500, 'name': 'L01 overview'},
+                    'geometry': {'rings': [[[-100, -100], [100, -100], [100, 100], [-100, 100], [-100, -100]]]}}
+        unknown = {'attributes': {'objectid': 3, 'name': 'unverified'}, 'geometry': native['geometry']}
+        self.assertEqual(compiler.nc_native_covering_rasters({'features': [native, overview, unknown]}, footprint), [native])
+
+    def test_nc_multiple_native_sources_remain_ambiguous(self):
+        footprint = box(2, 2, 8, 8)
+        rows = [{'attributes': {'objectid': value, 'lowps': 3.125},
+                 'geometry': {'rings': [[[0, 0], [10, 0], [10, 10], [0, 10], [0, 0]]]}}
+                for value in (1, 2)]
+        self.assertEqual(len(compiler.nc_native_covering_rasters({'features': rows}, footprint)), 2)
+
+    def test_nc_overlapping_native_sources_are_visual_only_when_explicitly_requested(self):
+        footprint = box(2, 2, 8, 8)
+        rows = [{'attributes': {'objectid': value, 'lowps': 3.125},
+                 'geometry': {'rings': [[[0, 0], [10, 0], [10, 10], [0, 10], [0, 0]]]}}
+                for value in (9, 2)]
+        catalog = {'objectIdFieldName': 'objectid', 'features': rows}
+        with self.assertRaisesRegex(ValueError, 'never blend'):
+            compiler.nc_select_covering_raster(catalog, footprint)
+        selected, candidate_ids, method = compiler.nc_select_covering_raster(catalog, footprint, 2)
+        self.assertEqual(selected['attributes']['objectid'], 2)
+        self.assertEqual(candidate_ids, [2, 9])
+        self.assertEqual(method, 'visual_only_lowest_object_id_among_overlapping_native_coverage')
+
+    def test_nc_overlap_dossier_retains_frames_without_promoting_a_physical_source(self):
+        footprint = box(2, 2, 8, 8)
+        rows = [
+            {'attributes': {'objectid': value, 'lowps': 3.125, 'name': f'County {value}'},
+             'geometry': {'rings': [[[0, 0], [10, 0], [10, 10], [0, 10], [0, 0]]]}}
+            for value in (9, 2)
+        ]
+        catalog = {'objectIdFieldName': 'objectid', 'features': rows}
+        service = {'spatialReference': {'wkt': compiler.pyproj.CRS('EPSG:6543').to_wkt()}}
+        item_info = {
+            'pixelSizeX': 3.125, 'pixelSizeY': 3.125,
+            'extent': {'xmin': 0, 'ymin': 0, 'xmax': 10, 'ymax': 10,
+                       'spatialReference': {'latestWkid': 6543, 'latestVcsWkid': 6360}},
+        }
+        with tempfile.TemporaryDirectory() as directory, \
+             patch.object(compiler, 'nc_onemap_request', return_value=item_info):
+            dossier = compiler.nc_selection_dossier(
+                Path(directory), service, catalog, footprint, [2, 2, 8, 8],
+                'multiple_full_coverage_native_candidates',
+            )
+            retained = json.loads((Path(directory) / 'source-selection-dossier.json').read_text())
+
+        self.assertEqual(dossier['truthClass'], 'unknown')
+        self.assertFalse(dossier['physicalTerrainAllowed'])
+        self.assertTrue(dossier['renderingOnlySelectionAllowed'])
+        self.assertEqual(dossier['candidateObjectIds'], [9, 2])
+        self.assertEqual(retained['candidates'][0]['verticalEvidence']['verticalCrs'], 'EPSG:6360')
+        self.assertIn('lowest object id is not physical source authority',
+                      retained['requiredRemediation']['forbiddenShortcuts'])
+
+    def test_nc_visual_selection_rejects_a_truncated_catalog(self):
+        footprint = box(2, 2, 8, 8)
+        catalog = {'objectIdFieldName': 'objectid', 'exceededTransferLimit': True,
+                   'features': [{'attributes': {'objectid': 1, 'lowps': 3.125},
+                                 'geometry': {'rings': [[[0, 0], [10, 0], [10, 10], [0, 10], [0, 0]]]}}]}
+        with self.assertRaisesRegex(ValueError, 'truncated'):
+            compiler.nc_select_covering_raster(catalog, footprint, 2)
 
     def test_usgs_rendering_only_grid_cannot_silently_claim_native_sampling(self):
         # 2 m would still exceed the provider cap; the caller must advance to
@@ -196,6 +278,47 @@ class TerrainCompilerTest(unittest.TestCase):
         self.assertEqual(compiler.vertical_unit_to_meters({'selectedTitle': 'USGS 1 Meter legacy cache'}), 1)
         with self.assertRaisesRegex(ValueError, 'omits verticalUnitToMeters'):
             compiler.vertical_unit_to_meters({'selectedTitle': 'Unidentified raster'})
+
+    def test_source_manifest_contract_rejects_finer_exports_and_missing_physical_z_evidence(self):
+        manifest = {
+            'providerPolicyId': compiler.USGS_3DEP_PROVIDER,
+            'requestedLocalBoundsM': [-10, -10, 20, 20],
+            'horizontalExportCrs': 'EPSG:32617',
+            'sourceNativeResolutionM': 1,
+            'exportPixelM': [1, 1],
+            'verticalDatum': 'NAVD88',
+            'rawVerticalUnit': 'meter',
+            'verticalUnitToMeters': 1,
+            'sourceFrameContract': compiler.USGS_3DEP_SOURCE_CONTRACT,
+            'renderingOnly': False,
+        }
+        contract = compiler.source_manifest_contract(manifest)
+        self.assertFalse(contract['legacyContract'])
+        self.assertEqual(contract['expectedSourceContract'], compiler.USGS_3DEP_SOURCE_CONTRACT)
+
+        finer = {**manifest, 'exportPixelM': [.5, .5]}
+        with self.assertRaisesRegex(ValueError, 'finer'):
+            compiler.source_manifest_contract(finer)
+        unknown_z = {key: value for key, value in manifest.items() if key != 'verticalUnitToMeters'}
+        with self.assertRaisesRegex(ValueError, 'verticalUnitToMeters'):
+            compiler.source_manifest_contract(unknown_z)
+        stale_frame = {**manifest, 'sourceFrameContract': 'usgs-3dep-native-grid-v0'}
+        with self.assertRaisesRegex(ValueError, 'SOURCE_FRAME_UNVERIFIED'):
+            compiler.source_manifest_contract(stale_frame)
+
+    def test_rendering_only_source_can_be_coarser_but_remains_distinct(self):
+        manifest = {
+            'providerPolicyId': compiler.CHARLESTON_COUNTY_DEM_2025_PROVIDER,
+            'requestedLocalBoundsM': [-10, -10, 20, 20],
+            'horizontalExportCrs': compiler.CHARLESTON_COUNTY_DEM_2025_CRS,
+            'sourceNativeResolutionM': compiler.CHARLESTON_COUNTY_DEM_2025_PIXEL_FEET * compiler.INTERNATIONAL_FOOT_TO_METERS,
+            'exportPixelM': [2, 2],
+            'renderingOnly': True,
+            'sourceFrameContract': compiler.CHARLESTON_COUNTY_DEM_2025_SOURCE_CONTRACT,
+        }
+        contract = compiler.source_manifest_contract(manifest)
+        self.assertTrue(contract['renderingOnly'])
+        self.assertEqual(contract['expectedSourceContract'], compiler.CHARLESTON_COUNTY_DEM_2025_SOURCE_CONTRACT)
 
     @classmethod
     def setUpClass(cls):

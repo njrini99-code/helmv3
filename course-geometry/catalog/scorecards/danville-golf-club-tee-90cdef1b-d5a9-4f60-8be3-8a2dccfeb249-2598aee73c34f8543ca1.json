@@ -1,0 +1,112 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "danville-golf-club-tee-90cdef1b-d5a9-4f60-8be3-8a2dccfeb249-2598aee73c34f8543ca1",
+  "layoutId": "danville-golf-club",
+  "teeName": "White",
+  "revision": "2598aee73c34f8543ca1ec215aa614ded3d6c8c204e2ca1f0397cb565c5a8b22",
+  "courseRating": 69.1,
+  "slopeRating": 128,
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-21",
+    "snapshotHash": "59c51440bb55ec122f369c154574307c0ff9abe59f97eb19a6b6ae172ef92a7d",
+    "note": "Immutable read-only snapshot; library source=round. Scorecard facts only. No physical tee marker, hole association or geometry approval."
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 4,
+      "yards": 354
+    },
+    {
+      "hole": 2,
+      "par": 4,
+      "yards": 368
+    },
+    {
+      "hole": 3,
+      "par": 4,
+      "yards": 344
+    },
+    {
+      "hole": 4,
+      "par": 3,
+      "yards": 144
+    },
+    {
+      "hole": 5,
+      "par": 5,
+      "yards": 493
+    },
+    {
+      "hole": 6,
+      "par": 3,
+      "yards": 161
+    },
+    {
+      "hole": 7,
+      "par": 4,
+      "yards": 320
+    },
+    {
+      "hole": 8,
+      "par": 4,
+      "yards": 354
+    },
+    {
+      "hole": 9,
+      "par": 4,
+      "yards": 402
+    },
+    {
+      "hole": 10,
+      "par": 3,
+      "yards": 184
+    },
+    {
+      "hole": 11,
+      "par": 4,
+      "yards": 270
+    },
+    {
+      "hole": 12,
+      "par": 4,
+      "yards": 405
+    },
+    {
+      "hole": 13,
+      "par": 4,
+      "yards": 356
+    },
+    {
+      "hole": 14,
+      "par": 4,
+      "yards": 354
+    },
+    {
+      "hole": 15,
+      "par": 5,
+      "yards": 520
+    },
+    {
+      "hole": 16,
+      "par": 3,
+      "yards": 126
+    },
+    {
+      "hole": 17,
+      "par": 4,
+      "yards": 390
+    },
+    {
+      "hole": 18,
+      "par": 4,
+      "yards": 372
+    }
+  ],
+  "libraryBinding": {
+    "courseId": "c6dfcaa9-57db-4970-8782-5e3ef0161937",
+    "teeId": "90cdef1b-d5a9-4f60-8be3-8a2dccfeb249"
+  }
+}

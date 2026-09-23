@@ -1,0 +1,112 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "sedgefield-cc-tee-1f2a463d-236f-485a-8b63-dfd9fbe7cbd8-e4dd87df6a97645944b1",
+  "layoutId": "sedgefield-cc",
+  "teeName": "Championship",
+  "revision": "e4dd87df6a97645944b1f083ea49eaee1728b71bc8d0ebf3f225265ccdf3e157",
+  "courseRating": 75.2,
+  "slopeRating": 140,
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-21",
+    "snapshotHash": "59c51440bb55ec122f369c154574307c0ff9abe59f97eb19a6b6ae172ef92a7d",
+    "note": "Immutable read-only snapshot; library source=manual. Scorecard facts only. No physical tee marker, hole association or geometry approval."
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 4,
+      "yards": 412
+    },
+    {
+      "hole": 2,
+      "par": 4,
+      "yards": 439
+    },
+    {
+      "hole": 3,
+      "par": 3,
+      "yards": 172
+    },
+    {
+      "hole": 4,
+      "par": 4,
+      "yards": 420
+    },
+    {
+      "hole": 5,
+      "par": 5,
+      "yards": 523
+    },
+    {
+      "hole": 6,
+      "par": 4,
+      "yards": 422
+    },
+    {
+      "hole": 7,
+      "par": 3,
+      "yards": 219
+    },
+    {
+      "hole": 8,
+      "par": 4,
+      "yards": 367
+    },
+    {
+      "hole": 9,
+      "par": 4,
+      "yards": 412
+    },
+    {
+      "hole": 10,
+      "par": 4,
+      "yards": 435
+    },
+    {
+      "hole": 11,
+      "par": 4,
+      "yards": 488
+    },
+    {
+      "hole": 12,
+      "par": 3,
+      "yards": 244
+    },
+    {
+      "hole": 13,
+      "par": 4,
+      "yards": 396
+    },
+    {
+      "hole": 14,
+      "par": 4,
+      "yards": 502
+    },
+    {
+      "hole": 15,
+      "par": 5,
+      "yards": 547
+    },
+    {
+      "hole": 16,
+      "par": 3,
+      "yards": 179
+    },
+    {
+      "hole": 17,
+      "par": 4,
+      "yards": 399
+    },
+    {
+      "hole": 18,
+      "par": 4,
+      "yards": 502
+    }
+  ],
+  "libraryBinding": {
+    "courseId": "2d21ab2c-2af4-4cc3-bd01-99e9c4c4f773",
+    "teeId": "1f2a463d-236f-485a-8b63-dfd9fbe7cbd8"
+  }
+}

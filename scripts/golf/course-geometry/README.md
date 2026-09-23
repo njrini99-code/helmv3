@@ -398,9 +398,53 @@ python3 $F invalidate --layout cacapon --task facility.osm.snapshot --reason "OS
 python3 $F intake [--min-rounds 5] [--write]          # cohort → C0 manifests, most-played first
 python3 $F batch --all-layouts --dry-run --json        # every catalogued 9–36-hole layout; no publish/capture work
 python3 $F batch --all-layouts                         # serial world compilation plus an auditable route-review.json for every layout; never publish/capture
+python3 $F route-recovery --json                      # read-only retained-source inventory; no shared ledger, fetches or approval writes
+python3 $F batch --all-layouts --until layout.route.dossier      # source review only
+python3 $F batch --all-layouts --until layout.candidates.compose # vector assembly only; unresolved routes remain blocked
 # --no-adopt-output ignores everything under output/ (what a fresh clone sees)
 # COURSE_FACTORY_DISK_RESERVE_GB=8 is the guard heavy tasks must stay above
 ```
+
+An explicit batch terminal limits work to its dependency closure. The default
+world batch still includes route dossiers and visual fallbacks; early terminals
+do not implicitly acquire rasters or run Blender. Unknown terminals fail before
+any task executes. See [route recovery](route-recovery.md) for inventory fields,
+source requirements and the Eagle Point subcourse repair.
+
+### Complete-library intake dossier
+
+The complete library snapshot has no usage threshold. Evaluate it with the
+dedicated dossier command so courses with no completed rounds remain visible.
+It reuses the C0 manifest writer, retains every valid exported tee profile by
+its exact course/tee UUIDs, and holds unresolved aliases, multi-layout sites,
+missing course AOIs, and unsupported country/provider combinations. Retained
+discovery metadata can explain a hold but cannot establish physical identity.
+
+```bash
+INTAKE=scripts/golf/course-geometry/build-library-intake-dossier.py
+SNAPSHOT=output/visualizations/course-library-snapshot.json
+COVERAGE=output/course-geometry/library-coverage/coverage.json
+DOSSIER=output/course-geometry/factory/research/library-intake-v1
+python3 "$INTAKE" --snapshot "$SNAPSHOT" --coverage "$COVERAGE" --out "$DOSSIER/dossier.json"
+# Inspect the proposed documents and holds, then copy planHash from that dossier.
+# The hash is an optimistic lock: any input/catalog change requires a fresh dossier.
+python3 "$INTAKE" --snapshot "$SNAPSHOT" --coverage "$COVERAGE" --out "$DOSSIER/write-report.json" \
+  --write --expect-plan-hash <planHash>
+# Reconcile newly added tees/revisions for existing exact UUID bindings, too.
+python3 scripts/golf/course-geometry/course-factory.py refresh-scorecards --snapshot "$SNAPSHOT" --write
+python3 scripts/golf/course-geometry/course-factory.py batch --all-layouts --until layout.candidates.compose --json
+python3 scripts/golf/course-geometry/course-factory.py batch --all-layouts --dry-run --json
+```
+
+Writes add only new manifests; they never overwrite existing files or expand an
+existing UUID binding. New layouts stay C0 with null routes, bbox, and geometry.
+The dossier reports source tee counts separately from exported valid scorecards
+so a tee omitted by the exporter cannot be mistaken for a complete tee inventory.
+Run the canonical `refresh-scorecards` step on every subsequent snapshot: intake
+leaves existing catalog bindings alone, while refresh appends new tee/profile
+revisions without replacing the reference selection or any round's snapshot.
+Metadata batches do not launch terrain or Blender. The default world batch
+executes heavy stages serially with the disk reserve checked before each writer.
 
 ### Active-team school proximity cohort
 

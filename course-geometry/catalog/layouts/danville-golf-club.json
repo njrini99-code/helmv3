@@ -1,0 +1,72 @@
+{
+  "schema": "golfhelm-layout-v1",
+  "layoutId": "danville-golf-club",
+  "facilityId": "danville-golf-club",
+  "name": "Danville Golf Club",
+  "siteIds": [
+    "osm-way-1125732485"
+  ],
+  "segments": {
+    "main": {
+      "holes": [
+        "danville-golf-club-01",
+        "danville-golf-club-02",
+        "danville-golf-club-03",
+        "danville-golf-club-04",
+        "danville-golf-club-05",
+        "danville-golf-club-06",
+        "danville-golf-club-07",
+        "danville-golf-club-08",
+        "danville-golf-club-09",
+        "danville-golf-club-10",
+        "danville-golf-club-11",
+        "danville-golf-club-12",
+        "danville-golf-club-13",
+        "danville-golf-club-14",
+        "danville-golf-club-15",
+        "danville-golf-club-16",
+        "danville-golf-club-17",
+        "danville-golf-club-18"
+      ]
+    }
+  },
+  "segmentOrder": [
+    "main"
+  ],
+  "holeOrder": [
+    "danville-golf-club-01",
+    "danville-golf-club-02",
+    "danville-golf-club-03",
+    "danville-golf-club-04",
+    "danville-golf-club-05",
+    "danville-golf-club-06",
+    "danville-golf-club-07",
+    "danville-golf-club-08",
+    "danville-golf-club-09",
+    "danville-golf-club-10",
+    "danville-golf-club-11",
+    "danville-golf-club-12",
+    "danville-golf-club-13",
+    "danville-golf-club-14",
+    "danville-golf-club-15",
+    "danville-golf-club-16",
+    "danville-golf-club-17",
+    "danville-golf-club-18"
+  ],
+  "routeWayIds": null,
+  "bboxWgs84": null,
+  "capabilityTier": "C0",
+  "externalBindings": {
+    "golfCourseIds": [
+      "c6dfcaa9-57db-4970-8782-5e3ef0161937"
+    ]
+  },
+  "scorecardProfiles": [
+    "danville-golf-club-tee-90cdef1b-d5a9-4f60-8be3-8a2dccfeb249-2598aee73c34f8543ca1"
+  ],
+  "referenceScorecardProfileId": "danville-golf-club-tee-90cdef1b-d5a9-4f60-8be3-8a2dccfeb249-2598aee73c34f8543ca1",
+  "geometry": null,
+  "notes": [
+    "Complete library intake of exact course UUID c6dfcaa9-57db-4970-8782-5e3ef0161937; no usage threshold. C0 only: routes, bbox and geometry remain unresolved. Shared names/proximity establish no physical association."
+  ]
+}

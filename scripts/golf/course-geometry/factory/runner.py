@@ -86,6 +86,10 @@ def execute(graph, ctx, run, keys=None, dry_run=False, recovered=()):
             ctx.states[key] = 'blocked'
             run.blocked.append({'key': key, 'reason': row.reason, 'blockers': [blocker.as_dict()]})
             continue
+        # Earlier tasks and unrelated applications consume disk during long
+        # batches. Admit each writer against the live reserve, not the free
+        # space observed when this graph started.
+        free = disk.free_bytes(ctx.output_root) if spec.estimated_bytes else free
         guard = disk.guard(ctx.output_root, spec.estimated_bytes, ledger, free) if spec.estimated_bytes else None
         if guard:
             row.state, row.reason, row.blockers = 'blocked', guard.code, [guard]

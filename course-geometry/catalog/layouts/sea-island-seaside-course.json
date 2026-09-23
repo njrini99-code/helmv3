@@ -1,0 +1,77 @@
+{
+  "schema": "golfhelm-layout-v1",
+  "layoutId": "sea-island-seaside-course",
+  "facilityId": "seaside-course",
+  "name": "Sea Island - Seaside Course",
+  "siteIds": [
+    "osm-way-301551447"
+  ],
+  "segments": {
+    "main": {
+      "holes": [
+        "sea-island-seaside-course-01",
+        "sea-island-seaside-course-02",
+        "sea-island-seaside-course-03",
+        "sea-island-seaside-course-04",
+        "sea-island-seaside-course-05",
+        "sea-island-seaside-course-06",
+        "sea-island-seaside-course-07",
+        "sea-island-seaside-course-08",
+        "sea-island-seaside-course-09",
+        "sea-island-seaside-course-10",
+        "sea-island-seaside-course-11",
+        "sea-island-seaside-course-12",
+        "sea-island-seaside-course-13",
+        "sea-island-seaside-course-14",
+        "sea-island-seaside-course-15",
+        "sea-island-seaside-course-16",
+        "sea-island-seaside-course-17",
+        "sea-island-seaside-course-18"
+      ]
+    }
+  },
+  "segmentOrder": [
+    "main"
+  ],
+  "holeOrder": [
+    "sea-island-seaside-course-01",
+    "sea-island-seaside-course-02",
+    "sea-island-seaside-course-03",
+    "sea-island-seaside-course-04",
+    "sea-island-seaside-course-05",
+    "sea-island-seaside-course-06",
+    "sea-island-seaside-course-07",
+    "sea-island-seaside-course-08",
+    "sea-island-seaside-course-09",
+    "sea-island-seaside-course-10",
+    "sea-island-seaside-course-11",
+    "sea-island-seaside-course-12",
+    "sea-island-seaside-course-13",
+    "sea-island-seaside-course-14",
+    "sea-island-seaside-course-15",
+    "sea-island-seaside-course-16",
+    "sea-island-seaside-course-17",
+    "sea-island-seaside-course-18"
+  ],
+  "routeWayIds": null,
+  "bboxWgs84": null,
+  "capabilityTier": "C0",
+  "knownRenovationAfter": "2026-05-01",
+  "externalBindings": {
+    "golfCourseIds": [
+      "7de64d20-2781-4a86-81ed-8b2fff616226"
+    ]
+  },
+  "scorecardProfiles": [
+    "sea-island-seaside-course-tee-045e2f05-41ae-4fee-a23d-3f630a66a733-e9fcfd021f21f9a76fc2",
+    "sea-island-seaside-course-tee-21891618-4130-49fc-97a9-cefd8a9b8afe-8cf5b020d355adca5e58",
+    "sea-island-seaside-course-tee-a3c2cef7-d5df-4770-8b1f-f1e40c6ef5de-c90e0a512e9bc70fb622"
+  ],
+  "referenceScorecardProfileId": "sea-island-seaside-course-tee-045e2f05-41ae-4fee-a23d-3f630a66a733-e9fcfd021f21f9a76fc2",
+  "geometry": null,
+  "notes": [
+    "Complete library intake of exact course UUID 7de64d20-2781-4a86-81ed-8b2fff616226; no usage threshold. C0 only: routes, bbox and geometry remain unresolved. Shared names/proximity establish no physical association.",
+    "2026-09-21 source inspection: retained Seaside polygon way/301551447 contains numbered routes 2–18 but no route1. The extract's other ref1, way/1545883623, belongs to the separately mapped Plantation Course way/301551411; it must not fill Seaside's gap. Retained source SHA256 36e1cd994081142a9a2bf8304b3e4c2432de7c27797e30e9800dbbe70a15af3a.",
+    "Official Sea Island source https://www.seaisland.com/golf/courses/seaside/ states Seaside is closed May 1–October 18, 2026 for restoration. knownRenovationAfter uses the stated start; no post-restoration source or completion approval is asserted. Existing imagery predating this date cannot establish changed surfaces."
+  ]
+}

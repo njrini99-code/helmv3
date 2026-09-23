@@ -137,6 +137,8 @@ def main():
             'kind': kind,
             'geometryMeters': feature['geometryMeters'],
             'sourceGeometryWgs84': feature.get('sourceGeometryWgs84'),
+            **({'renderGeometryMeters': feature['renderGeometryMeters'], 'renderClip': feature['renderClip']}
+               if 'renderGeometryMeters' in feature else {}),
             'provenance': provenance,
             'truthClass': feature_truth,
             'physical': rule,
@@ -158,6 +160,7 @@ def main():
         'coordinateSystem': source['coordinateSystem'],
         'terrainField': {
             'grid': source['terrain']['grid'],
+            **({'coverage': source['terrain']['coverage']} if 'coverage' in source['terrain'] else {}),
             'source': source['terrain']['source'],
             'physicalRole': 'bare_earth_macro_terrain',
             'truthClass': source.get('terrain', {}).get('truthClass', 'derived'),

@@ -1,0 +1,130 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "whistling-straits-tee-c38a0bd9-e01e-4729-a95a-bf2c10725773-4b05953e39de241d76bb",
+  "layoutId": "whistling-straits",
+  "teeName": "Forward",
+  "revision": "4b05953e39de241d76bb5e9c19044b06a3675293ff462fd94aea769f4b6a03cd",
+  "courseRating": 71.7,
+  "slopeRating": 132,
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-21",
+    "snapshotHash": "59c51440bb55ec122f369c154574307c0ff9abe59f97eb19a6b6ae172ef92a7d",
+    "note": "Immutable read-only snapshot; library source=seed. Scorecard facts only. No physical tee marker, hole association or geometry approval."
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 4,
+      "yards": 359,
+      "handicap": 4
+    },
+    {
+      "hole": 2,
+      "par": 4,
+      "yards": 319,
+      "handicap": 6
+    },
+    {
+      "hole": 3,
+      "par": 3,
+      "yards": 131,
+      "handicap": 15
+    },
+    {
+      "hole": 4,
+      "par": 4,
+      "yards": 281,
+      "handicap": 9
+    },
+    {
+      "hole": 5,
+      "par": 4,
+      "yards": 361,
+      "handicap": 8
+    },
+    {
+      "hole": 6,
+      "par": 5,
+      "yards": 425,
+      "handicap": 13
+    },
+    {
+      "hole": 7,
+      "par": 4,
+      "yards": 340,
+      "handicap": 1
+    },
+    {
+      "hole": 8,
+      "par": 3,
+      "yards": 150,
+      "handicap": 16
+    },
+    {
+      "hole": 9,
+      "par": 5,
+      "yards": 405,
+      "handicap": 14
+    },
+    {
+      "hole": 10,
+      "par": 3,
+      "yards": 178,
+      "handicap": 17
+    },
+    {
+      "hole": 11,
+      "par": 4,
+      "yards": 344,
+      "handicap": 10
+    },
+    {
+      "hole": 12,
+      "par": 4,
+      "yards": 375,
+      "handicap": 7
+    },
+    {
+      "hole": 13,
+      "par": 4,
+      "yards": 306,
+      "handicap": 3
+    },
+    {
+      "hole": 14,
+      "par": 4,
+      "yards": 303,
+      "handicap": 2
+    },
+    {
+      "hole": 15,
+      "par": 5,
+      "yards": 433,
+      "handicap": 11
+    },
+    {
+      "hole": 16,
+      "par": 5,
+      "yards": 409,
+      "handicap": 12
+    },
+    {
+      "hole": 17,
+      "par": 4,
+      "yards": 331,
+      "handicap": 5
+    },
+    {
+      "hole": 18,
+      "par": 3,
+      "yards": 175,
+      "handicap": 18
+    }
+  ],
+  "libraryBinding": {
+    "courseId": "18090c9b-2e97-4ab6-98eb-0a90266ff1ce",
+    "teeId": "c38a0bd9-e01e-4729-a95a-bf2c10725773"
+  }
+}

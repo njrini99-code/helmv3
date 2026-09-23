@@ -1,0 +1,74 @@
+{
+  "schema": "golfhelm-layout-v1",
+  "layoutId": "kiawah-island-ocean-course",
+  "facilityId": "kiawah-island-golf-resort-the-ocean-course",
+  "name": "Kiawah Island - Ocean Course",
+  "siteIds": [
+    "osm-relation-17647608"
+  ],
+  "segments": {
+    "main": {
+      "holes": [
+        "kiawah-island-ocean-course-01",
+        "kiawah-island-ocean-course-02",
+        "kiawah-island-ocean-course-03",
+        "kiawah-island-ocean-course-04",
+        "kiawah-island-ocean-course-05",
+        "kiawah-island-ocean-course-06",
+        "kiawah-island-ocean-course-07",
+        "kiawah-island-ocean-course-08",
+        "kiawah-island-ocean-course-09",
+        "kiawah-island-ocean-course-10",
+        "kiawah-island-ocean-course-11",
+        "kiawah-island-ocean-course-12",
+        "kiawah-island-ocean-course-13",
+        "kiawah-island-ocean-course-14",
+        "kiawah-island-ocean-course-15",
+        "kiawah-island-ocean-course-16",
+        "kiawah-island-ocean-course-17",
+        "kiawah-island-ocean-course-18"
+      ]
+    }
+  },
+  "segmentOrder": [
+    "main"
+  ],
+  "holeOrder": [
+    "kiawah-island-ocean-course-01",
+    "kiawah-island-ocean-course-02",
+    "kiawah-island-ocean-course-03",
+    "kiawah-island-ocean-course-04",
+    "kiawah-island-ocean-course-05",
+    "kiawah-island-ocean-course-06",
+    "kiawah-island-ocean-course-07",
+    "kiawah-island-ocean-course-08",
+    "kiawah-island-ocean-course-09",
+    "kiawah-island-ocean-course-10",
+    "kiawah-island-ocean-course-11",
+    "kiawah-island-ocean-course-12",
+    "kiawah-island-ocean-course-13",
+    "kiawah-island-ocean-course-14",
+    "kiawah-island-ocean-course-15",
+    "kiawah-island-ocean-course-16",
+    "kiawah-island-ocean-course-17",
+    "kiawah-island-ocean-course-18"
+  ],
+  "routeWayIds": null,
+  "bboxWgs84": null,
+  "capabilityTier": "C0",
+  "externalBindings": {
+    "golfCourseIds": [
+      "7c598ed3-7f89-433b-af73-e173105495c0"
+    ]
+  },
+  "scorecardProfiles": [
+    "kiawah-island-ocean-course-tee-1ed2aab8-a86e-4ec8-9bac-b9932779256e-27af51de9b884773835d",
+    "kiawah-island-ocean-course-tee-a5aa1611-f2c6-49af-9a1a-5e8401d7d337-9cdce476e9a85e4761f5",
+    "kiawah-island-ocean-course-tee-e71b1a50-c183-4e43-8768-27c72924200f-e2d59ee8d20cae02fb67"
+  ],
+  "referenceScorecardProfileId": "kiawah-island-ocean-course-tee-1ed2aab8-a86e-4ec8-9bac-b9932779256e-27af51de9b884773835d",
+  "geometry": null,
+  "notes": [
+    "Complete library intake of exact course UUID 7c598ed3-7f89-433b-af73-e173105495c0; no usage threshold. C0 only: routes, bbox and geometry remain unresolved. Shared names/proximity establish no physical association."
+  ]
+}

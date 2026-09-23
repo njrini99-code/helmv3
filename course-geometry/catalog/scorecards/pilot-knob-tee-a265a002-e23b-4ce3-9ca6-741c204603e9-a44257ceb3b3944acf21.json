@@ -1,0 +1,112 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "pilot-knob-tee-a265a002-e23b-4ce3-9ca6-741c204603e9-a44257ceb3b3944acf21",
+  "layoutId": "pilot-knob",
+  "teeName": "Blue",
+  "revision": "a44257ceb3b3944acf216f5530cb7a956f26f81de2e43eef1e35865dce696679",
+  "courseRating": 69.8,
+  "slopeRating": 133,
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-21",
+    "snapshotHash": "59c51440bb55ec122f369c154574307c0ff9abe59f97eb19a6b6ae172ef92a7d",
+    "note": "Immutable read-only snapshot; library source=round. Scorecard facts only. No physical tee marker, hole association or geometry approval."
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 5,
+      "yards": 471
+    },
+    {
+      "hole": 2,
+      "par": 3,
+      "yards": 195
+    },
+    {
+      "hole": 3,
+      "par": 4,
+      "yards": 375
+    },
+    {
+      "hole": 4,
+      "par": 4,
+      "yards": 336
+    },
+    {
+      "hole": 5,
+      "par": 4,
+      "yards": 299
+    },
+    {
+      "hole": 6,
+      "par": 3,
+      "yards": 186
+    },
+    {
+      "hole": 7,
+      "par": 4,
+      "yards": 393
+    },
+    {
+      "hole": 8,
+      "par": 4,
+      "yards": 392
+    },
+    {
+      "hole": 9,
+      "par": 4,
+      "yards": 353
+    },
+    {
+      "hole": 10,
+      "par": 5,
+      "yards": 533
+    },
+    {
+      "hole": 11,
+      "par": 3,
+      "yards": 156
+    },
+    {
+      "hole": 12,
+      "par": 4,
+      "yards": 368
+    },
+    {
+      "hole": 13,
+      "par": 4,
+      "yards": 366
+    },
+    {
+      "hole": 14,
+      "par": 4,
+      "yards": 384
+    },
+    {
+      "hole": 15,
+      "par": 4,
+      "yards": 372
+    },
+    {
+      "hole": 16,
+      "par": 4,
+      "yards": 385
+    },
+    {
+      "hole": 17,
+      "par": 3,
+      "yards": 188
+    },
+    {
+      "hole": 18,
+      "par": 4,
+      "yards": 385
+    }
+  ],
+  "libraryBinding": {
+    "courseId": "06dbd6e6-6d9e-47be-b487-1fea072311c8",
+    "teeId": "a265a002-e23b-4ce3-9ca6-741c204603e9"
+  }
+}

@@ -7,7 +7,7 @@ import json
 import os
 
 from source_geometry import identity as source_identity
-from source_geometry import read_source_geometry, resolved_routes
+from source_geometry import read_route_traces, read_source_geometry, resolved_routes
 
 from . import osm
 from .fingerprints import (
@@ -427,15 +427,26 @@ class Context:
         layout = self.layout(layout_id) or {}
         result = None
         source_geometry = self.retained(layout, 'sourceGeometry')
-        if source_geometry:
+        route_traces = self.retained(layout, 'routeTraces')
+        if source_geometry or route_traces:
             try:
+                if source_geometry and route_traces:
+                    raise ValueError('ROUTE_SOURCE_CONFLICT: select exactly one retained sourceGeometry or routeTraces input')
                 if layout.get('routeWayIds') or layout.get('geometry'):
-                    raise ValueError('ROUTE_SOURCE_CONFLICT: sourceGeometry cannot silently replace pinned OSM routes or a served package')
-                doc = read_source_geometry(source_geometry, layout['facilityId'], layout['siteIds'][0], layout['holeOrder'])
-                result = {'source': 'source_geometry', 'routeWayIds': None, 'sourceGeometryHash': source_identity(doc),
-                          'holeOrder': layout['holeOrder'], 'evidence': {'sourceGeometry': self.relpath(source_geometry)}}
+                    raise ValueError('ROUTE_SOURCE_CONFLICT: retained routes cannot silently replace pinned OSM routes or a served package')
+                if route_traces:
+                    doc = read_route_traces(route_traces, layout['facilityId'], layout['siteIds'][0], layout['holeOrder'])
+                    result = {'source': 'reviewed_route_traces', 'routeWayIds': None, 'routeTracesHash': source_identity(doc),
+                              'holeOrder': layout['holeOrder'], 'evidence': {'routeTraces': self.relpath(route_traces),
+                              'associationReview': doc['routeTraceAssociationReview']}}
+                else:
+                    doc = read_source_geometry(source_geometry, layout['facilityId'], layout['siteIds'][0], layout['holeOrder'])
+                    result = {'source': 'source_geometry', 'routeWayIds': None, 'sourceGeometryHash': source_identity(doc),
+                              'holeOrder': layout['holeOrder'], 'evidence': {'sourceGeometry': self.relpath(source_geometry)}}
             except (OSError, ValueError, TypeError, KeyError) as exc:
-                result = {'source': 'source_geometry', 'routeWayIds': None, 'problem': 'SOURCE_GEOMETRY_INVALID', 'evidence': {'detail': str(exc)}}
+                source = 'reviewed_route_traces' if route_traces and not source_geometry else 'source_geometry'
+                problem = 'ROUTE_TRACES_INVALID' if route_traces and not source_geometry else 'SOURCE_GEOMETRY_INVALID'
+                result = {'source': source, 'routeWayIds': None, 'problem': problem, 'evidence': {'detail': str(exc)}}
         elif layout.get('routeWayIds'):
             result = {'source': 'catalog', 'routeWayIds': list(layout['routeWayIds']), 'evidence': None}
         else:
@@ -481,6 +492,19 @@ class Context:
             'routeWayIds': routes.get('routeWayIds'),
         }
 
+    def route_terrain_renderable(self, layout_id):
+        """Whether the route-specific terrain branch is usable for rendering.
+
+        A resolved tee-to-green route alone is not enough to suppress the
+        facility visual fallback.  This intentionally accepts neither a
+        failed/pending acquisition nor a rendering-only terrain source: both
+        remain separate from the canonical physical terrain pointer.
+        """
+        state = self.states.get(f'layout.terrain.acquire[{layout_id}]')
+        manifest = self.terrain_source_manifest(layout_id) if state in ('cached', 'success') else None
+        return bool(manifest and manifest.get('coverageMethod') == 'perimeter-v1'
+                    and not manifest.get('renderingOnly'))
+
     def pilot_scorecard(self, layout_id):
         """The scorecard-shaped document the pipeline scripts consume, composed
         from the catalog: facility origin, layout routes, profile pars/yards."""
@@ -497,6 +521,7 @@ class Context:
                 'originWgs84': facility.get('originWgs84'), 'scorecardYards': [h['yards'] for h in holes], 'pars': [h['par'] for h in holes],
                 'facilityId': layout['facilityId'], 'holeOrder': layout['holeOrder'],
                 'routeWayIds': routes.get('routeWayIds'), 'routeSource': routes['source'], 'officialScorecardUrl': (card.get('source') or {}).get('url'),
+                'routeTracesHash': routes.get('routeTracesHash'),
                 'retrievedAt': (card.get('source') or {}).get('retrievedAt'), 'bboxWgs84': bbox, 'scorecardProfile': card['profileId']}
 
     def terrain_bounds(self, layout_id):

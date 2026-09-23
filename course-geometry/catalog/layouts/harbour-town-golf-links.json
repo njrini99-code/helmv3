@@ -1,0 +1,94 @@
+{
+  "schema": "golfhelm-layout-v1",
+  "layoutId": "harbour-town-golf-links",
+  "facilityId": "harbour-town-golf-links",
+  "name": "Harbour Town Golf Links",
+  "siteIds": [
+    "osm-relation-4813858"
+  ],
+  "segments": {
+    "main": {
+      "holes": [
+        "harbour-town-golf-links-01",
+        "harbour-town-golf-links-02",
+        "harbour-town-golf-links-03",
+        "harbour-town-golf-links-04",
+        "harbour-town-golf-links-05",
+        "harbour-town-golf-links-06",
+        "harbour-town-golf-links-07",
+        "harbour-town-golf-links-08",
+        "harbour-town-golf-links-09",
+        "harbour-town-golf-links-10",
+        "harbour-town-golf-links-11",
+        "harbour-town-golf-links-12",
+        "harbour-town-golf-links-13",
+        "harbour-town-golf-links-14",
+        "harbour-town-golf-links-15",
+        "harbour-town-golf-links-16",
+        "harbour-town-golf-links-17",
+        "harbour-town-golf-links-18"
+      ]
+    }
+  },
+  "segmentOrder": [
+    "main"
+  ],
+  "holeOrder": [
+    "harbour-town-golf-links-01",
+    "harbour-town-golf-links-02",
+    "harbour-town-golf-links-03",
+    "harbour-town-golf-links-04",
+    "harbour-town-golf-links-05",
+    "harbour-town-golf-links-06",
+    "harbour-town-golf-links-07",
+    "harbour-town-golf-links-08",
+    "harbour-town-golf-links-09",
+    "harbour-town-golf-links-10",
+    "harbour-town-golf-links-11",
+    "harbour-town-golf-links-12",
+    "harbour-town-golf-links-13",
+    "harbour-town-golf-links-14",
+    "harbour-town-golf-links-15",
+    "harbour-town-golf-links-16",
+    "harbour-town-golf-links-17",
+    "harbour-town-golf-links-18"
+  ],
+  "routeWayIds": [
+    722552376,
+    722552377,
+    722552378,
+    722552379,
+    722552380,
+    722552381,
+    722552382,
+    722552383,
+    722552384,
+    722552385,
+    722552386,
+    722552387,
+    722552388,
+    722552389,
+    722552390,
+    722552391,
+    722552392,
+    722552393
+  ],
+  "bboxWgs84": null,
+  "capabilityTier": "C0",
+  "externalBindings": {
+    "golfCourseIds": [
+      "3b5b7d54-3784-4424-ae56-2d96bdb37bf8"
+    ]
+  },
+  "scorecardProfiles": [
+    "harbour-town-golf-links-tee-1415e837-8b0e-42eb-a1fd-75ed647f0b23-cc27f1f19a747bdbc2e3",
+    "harbour-town-golf-links-tee-5ba185b3-66ea-44f5-84cb-fc3ff1dcd68b-a86775fe7b25e7759cba",
+    "harbour-town-golf-links-tee-81066522-a59f-45ff-b24c-fe768528541e-deeefb8cef7d255dd6c0"
+  ],
+  "referenceScorecardProfileId": "harbour-town-golf-links-tee-1415e837-8b0e-42eb-a1fd-75ed647f0b23-cc27f1f19a747bdbc2e3",
+  "geometry": null,
+  "notes": [
+    "Complete library intake of exact course UUID 3b5b7d54-3784-4424-ae56-2d96bdb37bf8; no usage threshold. C0 only: physical geometry remains unreviewed. Shared names/proximity establish no physical association.",
+    "2026-09-21 candidate route identity: all 18 retained numbered route LineStrings are fully covered by the actual Harbour Town multipolygon relation/4813858, assembled using exact shared node IDs. Duplicate ref11 way/1238650440 lies outside that polygon and explicitly names Heron Point. Pinning the retained numbered route IDs avoids the factory AOI's bbox-only relation fallback. Evidence: scripts/golf/course-geometry/route-recovery.md and src/test/fixtures/course-geometry/harbour-town-routing-evidence.json. No boundary approval or measurement authority is granted."
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "schema": "golfhelm-layout-v1",
+  "layoutId": "whistling-straits",
+  "facilityId": "whistling-straits",
+  "name": "Whistling Straits",
+  "siteIds": [
+    "osm-way-205111637"
+  ],
+  "segments": {
+    "main": {
+      "holes": [
+        "whistling-straits-01",
+        "whistling-straits-02",
+        "whistling-straits-03",
+        "whistling-straits-04",
+        "whistling-straits-05",
+        "whistling-straits-06",
+        "whistling-straits-07",
+        "whistling-straits-08",
+        "whistling-straits-09",
+        "whistling-straits-10",
+        "whistling-straits-11",
+        "whistling-straits-12",
+        "whistling-straits-13",
+        "whistling-straits-14",
+        "whistling-straits-15",
+        "whistling-straits-16",
+        "whistling-straits-17",
+        "whistling-straits-18"
+      ]
+    }
+  },
+  "segmentOrder": [
+    "main"
+  ],
+  "holeOrder": [
+    "whistling-straits-01",
+    "whistling-straits-02",
+    "whistling-straits-03",
+    "whistling-straits-04",
+    "whistling-straits-05",
+    "whistling-straits-06",
+    "whistling-straits-07",
+    "whistling-straits-08",
+    "whistling-straits-09",
+    "whistling-straits-10",
+    "whistling-straits-11",
+    "whistling-straits-12",
+    "whistling-straits-13",
+    "whistling-straits-14",
+    "whistling-straits-15",
+    "whistling-straits-16",
+    "whistling-straits-17",
+    "whistling-straits-18"
+  ],
+  "routeWayIds": null,
+  "bboxWgs84": null,
+  "capabilityTier": "C0",
+  "externalBindings": {
+    "golfCourseIds": [
+      "18090c9b-2e97-4ab6-98eb-0a90266ff1ce"
+    ]
+  },
+  "scorecardProfiles": [
+    "whistling-straits-tee-ad50160e-74b2-4a3a-b17a-83f158baeaaf-b9ccf2947410c5744c67",
+    "whistling-straits-tee-c38a0bd9-e01e-4729-a95a-bf2c10725773-4b05953e39de241d76bb",
+    "whistling-straits-tee-d3b1fdd5-fbe3-441e-a566-0e83faeb5536-8ff7ed12d45fcbf83b80"
+  ],
+  "referenceScorecardProfileId": "whistling-straits-tee-ad50160e-74b2-4a3a-b17a-83f158baeaaf-b9ccf2947410c5744c67",
+  "geometry": null,
+  "notes": [
+    "Complete library intake of exact course UUID 18090c9b-2e97-4ab6-98eb-0a90266ff1ce; no usage threshold. C0 only: routes, bbox and geometry remain unresolved. Shared names/proximity establish no physical association."
+  ]
+}

@@ -1,0 +1,130 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "world-golf-village-king-bear-tee-ad9d6611-a928-4b57-9bdb-678b5a475150-0292a18998067e6ffa67",
+  "layoutId": "world-golf-village-king-bear",
+  "teeName": "Championship",
+  "revision": "0292a18998067e6ffa675e7feeb1327eb57d7b7b60defdba04bc58ef9a736b0e",
+  "courseRating": 75.4,
+  "slopeRating": 140,
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-21",
+    "snapshotHash": "59c51440bb55ec122f369c154574307c0ff9abe59f97eb19a6b6ae172ef92a7d",
+    "note": "Immutable read-only snapshot; library source=seed. Scorecard facts only. No physical tee marker, hole association or geometry approval."
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 5,
+      "yards": 565,
+      "handicap": 11
+    },
+    {
+      "hole": 2,
+      "par": 4,
+      "yards": 381,
+      "handicap": 7
+    },
+    {
+      "hole": 3,
+      "par": 3,
+      "yards": 204,
+      "handicap": 17
+    },
+    {
+      "hole": 4,
+      "par": 4,
+      "yards": 471,
+      "handicap": 2
+    },
+    {
+      "hole": 5,
+      "par": 4,
+      "yards": 434,
+      "handicap": 4
+    },
+    {
+      "hole": 6,
+      "par": 4,
+      "yards": 372,
+      "handicap": 10
+    },
+    {
+      "hole": 7,
+      "par": 5,
+      "yards": 528,
+      "handicap": 14
+    },
+    {
+      "hole": 8,
+      "par": 4,
+      "yards": 422,
+      "handicap": 8
+    },
+    {
+      "hole": 9,
+      "par": 3,
+      "yards": 233,
+      "handicap": 16
+    },
+    {
+      "hole": 10,
+      "par": 5,
+      "yards": 551,
+      "handicap": 12
+    },
+    {
+      "hole": 11,
+      "par": 4,
+      "yards": 452,
+      "handicap": 6
+    },
+    {
+      "hole": 12,
+      "par": 5,
+      "yards": 573,
+      "handicap": 13
+    },
+    {
+      "hole": 13,
+      "par": 4,
+      "yards": 441,
+      "handicap": 5
+    },
+    {
+      "hole": 14,
+      "par": 3,
+      "yards": 159,
+      "handicap": 18
+    },
+    {
+      "hole": 15,
+      "par": 4,
+      "yards": 389,
+      "handicap": 9
+    },
+    {
+      "hole": 16,
+      "par": 4,
+      "yards": 441,
+      "handicap": 1
+    },
+    {
+      "hole": 17,
+      "par": 4,
+      "yards": 433,
+      "handicap": 3
+    },
+    {
+      "hole": 18,
+      "par": 3,
+      "yards": 230,
+      "handicap": 15
+    }
+  ],
+  "libraryBinding": {
+    "courseId": "40be0a21-ddde-4dc7-8b70-3640d11a2d3c",
+    "teeId": "ad9d6611-a928-4b57-9bdb-678b5a475150"
+  }
+}

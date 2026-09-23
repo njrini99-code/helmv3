@@ -245,6 +245,87 @@ CHARLESTON_COUNTY_DEM_2025_BASE = 'https://gisccimg.charlestoncounty.org/arcgis/
 CHARLESTON_COUNTY_DEM_2025_CRS = 'EPSG:6570'  # NAD83(2011) / South Carolina (ft)
 CHARLESTON_COUNTY_DEM_2025_PIXEL_FEET = 2.0
 INTERNATIONAL_FOOT_TO_METERS = 0.3048
+USGS_3DEP_SOURCE_CONTRACT = 'usgs-3dep-native-grid-v1'
+NC_ONEMAP_SOURCE_CONTRACT = 'nc-dem03-native-frame-v2'
+CHARLESTON_COUNTY_DEM_2025_SOURCE_CONTRACT = 'charleston-county-dem-2025-v1'
+
+
+def _positive_source_number(value, field):
+    """Read a numeric source assertion without silently coercing it."""
+    try:
+        number = float(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f'Source manifest has invalid {field}') from exc
+    if not math.isfinite(number) or number <= 0:
+        raise ValueError(f'Source manifest has invalid {field}')
+    return number
+
+
+def source_manifest_contract(manifest):
+    """Validate immutable terrain metadata before sampling a retained raster.
+
+    This validates an acquired source's *claims*, not its golf geometry. A
+    legacy source is preserved as evidence, but never upgraded merely because
+    this compiler was installed later. New sources below stamp the expected
+    provider contract. Horizontal feet never imply vertical feet.
+    """
+    provider = manifest.get('providerPolicyId', USGS_3DEP_PROVIDER)
+    expected = {
+        USGS_3DEP_PROVIDER: USGS_3DEP_SOURCE_CONTRACT,
+        NC_ONEMAP_PROVIDER: NC_ONEMAP_SOURCE_CONTRACT,
+        CHARLESTON_COUNTY_DEM_2025_PROVIDER: CHARLESTON_COUNTY_DEM_2025_SOURCE_CONTRACT,
+    }.get(provider)
+    if expected is None:
+        raise ValueError(f'Immutable source cache has unsupported terrain provider {provider!r}')
+
+    bounds = manifest.get('requestedLocalBoundsM')
+    if not isinstance(bounds, list) or len(bounds) != 4:
+        raise ValueError('Source manifest omits four requestedLocalBoundsM values')
+    try:
+        west, south, east, north = [float(value) for value in bounds]
+    except (TypeError, ValueError) as exc:
+        raise ValueError('Source manifest has invalid requestedLocalBoundsM values') from exc
+    if not all(math.isfinite(value) for value in (west, south, east, north)) or not west < east or not south < north:
+        raise ValueError('Source manifest has invalid requestedLocalBoundsM ordering')
+
+    try:
+        horizontal = pyproj.CRS.from_user_input(manifest.get('horizontalExportCrs'))
+    except pyproj.exceptions.CRSError as exc:
+        raise ValueError('Source manifest has missing or invalid horizontalExportCrs') from exc
+    if not horizontal.is_projected or len(horizontal.axis_info) < 2:
+        raise ValueError('Source manifest horizontalExportCrs is not a projected two-axis frame')
+
+    source_native = _positive_source_number(
+        manifest.get('sourceNativeResolutionM', manifest.get('nativeResolutionM')),
+        'sourceNativeResolutionM',
+    )
+    pixels = manifest.get('exportPixelM')
+    if not isinstance(pixels, list) or len(pixels) != 2:
+        raise ValueError('Source manifest omits two exportPixelM values')
+    output = [_positive_source_number(value, 'exportPixelM') for value in pixels]
+    if min(output) + 1e-9 < source_native:
+        raise ValueError('Source manifest exports a grid finer than its declared native source resolution')
+    if not manifest.get('renderingOnly') and any(
+        not math.isclose(value, source_native, rel_tol=0, abs_tol=1e-6) for value in output
+    ):
+        raise ValueError('Physical terrain source export differs from its declared native source grid')
+
+    if not manifest.get('renderingOnly'):
+        _positive_source_number(manifest.get('verticalUnitToMeters'), 'verticalUnitToMeters')
+        if not manifest.get('verticalDatum') or not manifest.get('rawVerticalUnit'):
+            raise ValueError('Physical terrain source omits vertical datum or raw unit evidence')
+
+    declared = manifest.get('sourceFrameContract')
+    if declared is not None and declared != expected:
+        raise ValueError('SOURCE_FRAME_UNVERIFIED: source manifest frame contract differs from the provider contract; retain it and acquire a new source revision')
+    return {
+        'providerPolicyId': provider,
+        'expectedSourceContract': expected,
+        'declaredSourceContract': declared,
+        'legacyContract': declared is None,
+        'sourceNativeResolutionM': source_native,
+        'renderingOnly': bool(manifest.get('renderingOnly')),
+    }
 NC_ONEMAP_BASE = 'https://services.nconemap.gov/secure/rest/services/Elevation/DEM03/ImageServer'
 NC_ONEMAP_HOST = 'services.nconemap.gov'
 NC_ONEMAP_SOURCE_PATH = '/secure/rest/services/Elevation/DEM03/ImageServer'
@@ -344,9 +425,19 @@ def existing_source_manifest(directory, pkg, bounds, rendering_only=False):
             raise ValueError('Immutable source cache belongs to another context; choose a new directory')
         if bool(manifest.get('renderingOnly')) != bool(rendering_only):
             raise ValueError('Immutable source cache has a different physical/render-only contract; choose a new directory')
-        for name in manifest['fileHashes']:
-            if hashlib.sha256((directory/name).read_bytes()).hexdigest() != manifest['fileHashes'][name]:
+        hashes = manifest.get('fileHashes')
+        if not isinstance(hashes, dict) or not hashes:
+            raise ValueError('Immutable source cache has no file hashes')
+        for name, expected_hash in hashes.items():
+            # Manifest paths are source evidence. Still reject a malformed
+            # retained manifest before it can make a hash check read outside
+            # the immutable source directory.
+            if Path(name).name != name:
+                raise ValueError('Immutable source cache contains an unsafe artifact name')
+            path = directory / name
+            if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != expected_hash:
                 raise ValueError('Immutable source cache hash mismatch: ' + name)
+        source_manifest_contract(manifest)
         if manifest['packageHash'] != pkg['contentHash']:
             # Same request bounds and byte-identical evidence serve a revised
             # package (for example added traces). The raster is never replaced;
@@ -588,6 +679,8 @@ def acquire_usgs_source(directory, pkg, bounds, rendering_only_resolution_m=None
                 'sourceNativeResolutionM': source_native_resolution_m, 'exportPixelM': [(ex['xmax']-ex['xmin'])/width, (ex['ymax']-ex['ymin'])/height],
                 'horizontalExportCrs': f'EPSG:{crs}', 'verticalDatum': 'NAVD88',
                 'rawVerticalUnit': 'meter', 'verticalUnitToMeters': 1,
+                'sourceFrameContract': USGS_3DEP_SOURCE_CONTRACT,
+                'verticalUnitStatus': 'declared_by_locked_usgs_3dep_catalog',
                 'retrievedAt': exported['retrievedAt'],
                 'sourceSelection': ('bounded_rendering_only_lower_resolution_export' if lower_resolution_visual_fallback else
                                     'bounded_rendering_only_resampled_export' if rendering_only_resolution_m is not None else
@@ -773,13 +866,100 @@ def nc_select_covering_raster(catalog, footprint, rendering_only_resolution_m=No
     return ordered[0], candidate_ids, 'visual_only_lowest_object_id_among_overlapping_native_coverage'
 
 
+def nc_selection_dossier(directory, service, catalog, footprint, request_bounds, reason):
+    """Retain a reviewable NC DEM03 source-selection refusal.
+
+    The ImageServer can return more than one native county raster whose
+    footprint covers a facility.  A stable OBJECTID is sufficient to lock a
+    *visual* export, but is not authority to choose a physical elevation
+    source.  Retain the exact catalog response, per-candidate raster-frame
+    metadata, and the requested bounds so a reviewer can make that decision
+    without re-querying a moving mosaic or guessing why the factory stopped.
+
+    This dossier deliberately contains no selected physical raster and grants
+    no measurement capability.  It is diagnostic evidence for a subsequent,
+    explicit source-selection review only.
+    """
+    object_id_field = catalog.get('objectIdFieldName', 'objectid')
+    candidates = []
+    for row in nc_native_covering_rasters(catalog, footprint):
+        attrs = row.get('attributes') or {}
+        object_id = attrs.get(object_id_field)
+        candidate = {
+            'objectId': object_id,
+            'title': attrs.get('name'),
+            'nativePixelSpacingUSSurveyFeet': attrs.get('lowps'),
+            'catalogAttributes': attrs,
+            'catalogGeometry': row.get('geometry'),
+            'itemInfoStatus': 'not_retrieved',
+        }
+        if object_id is None:
+            candidate['itemInfoStatus'] = 'missing_stable_object_id'
+        else:
+            try:
+                info = nc_onemap_request(f'{object_id}/info', {})
+                horizontal = (info.get('extent') or {}).get('spatialReference') or {}
+                validate_nc_horizontal_crs(horizontal)
+                vertical = nc_vertical_evidence(info)
+                candidate.update({
+                    'itemInfoStatus': 'retrieved',
+                    'itemInfoSha256': hashlib.sha256(
+                        json.dumps(info, sort_keys=True, separators=(',', ':')).encode('utf-8')
+                    ).hexdigest(),
+                    'itemExtent': info.get('extent'),
+                    'itemPixelSizeUSSurveyFeet': [info.get('pixelSizeX'), info.get('pixelSizeY')],
+                    'verticalEvidence': vertical or {
+                        'verticalDatum': None,
+                        'rawVerticalUnit': None,
+                        'verticalUnitToMeters': None,
+                        'verticalUnitStatus': 'unknown',
+                    },
+                })
+            except Exception as error:  # The source refusal must remain visible even during a metadata outage.
+                candidate.update({'itemInfoStatus': 'unavailable', 'itemInfoError': str(error)})
+        candidates.append(candidate)
+    candidate_ids = [candidate['objectId'] for candidate in candidates]
+    document = {
+        'schema': 'golfhelm-nc-dem03-source-selection-dossier-v1',
+        'providerPolicyId': NC_ONEMAP_PROVIDER,
+        'sourceFrameContract': NC_ONEMAP_SOURCE_CONTRACT,
+        'truthClass': 'unknown',
+        'physicalTerrainAllowed': False,
+        'renderingOnlySelectionAllowed': True,
+        'selectionStatus': reason,
+        'requestedBoundsEPSG6543': request_bounds,
+        'candidateObjectIds': candidate_ids,
+        'catalogResponseSha256': hashlib.sha256(
+            json.dumps(catalog, sort_keys=True, separators=(',', ':')).encode('utf-8')
+        ).hexdigest(),
+        'serviceHorizontalWkt': (service.get('spatialReference') or {}).get('wkt'),
+        'candidates': candidates,
+        'requiredRemediation': {
+            'action': 'approve one candidate raster or a separately validated source product for this facility revision',
+            'requiredEvidence': [
+                'stable source object identifier and retained item metadata',
+                'horizontal and vertical frame compatibility',
+                'source date/lineage and registration review for the facility',
+                'reviewer decision scoped to this requested bounds and source revision',
+            ],
+            'forbiddenShortcuts': [
+                'lowest object id is not physical source authority',
+                'do not blend overlapping county rasters',
+                'do not infer vertical units from horizontal US survey feet',
+            ],
+        },
+    }
+    write_json(directory / 'source-selection-dossier.json', document, True)
+    return document
+
+
 def acquire_nc_onemap_source(directory, pkg, bounds, rendering_only_resolution_m=None):
     manifest = existing_source_manifest(directory, pkg, bounds, rendering_only=rendering_only_resolution_m is not None)
     if manifest is not None:
         if manifest.get('providerPolicyId') != NC_ONEMAP_PROVIDER:
             raise ValueError('Immutable source cache belongs to another terrain provider')
-        if manifest.get('sourceFrameContract') != 'nc-dem03-native-v2':
-            raise ValueError('NC_SOURCE_FRAME_UNVERIFIED: retain the old source and acquire into a new source directory')
+        if manifest.get('sourceFrameContract') != NC_ONEMAP_SOURCE_CONTRACT:
+            raise ValueError('SOURCE_FRAME_UNVERIFIED: NC_SOURCE_FRAME_UNVERIFIED: retain the old source and acquire into a new source directory')
         return manifest
     directory.mkdir(parents=True, exist_ok=True)
     # Local ENU is the canonical world frame.  Its conversion is used only to
@@ -801,9 +981,20 @@ def acquire_nc_onemap_source(directory, pkg, bounds, rendering_only_resolution_m
         'spatialRel': 'esriSpatialRelIntersects', 'outFields': '*', 'returnGeometry': 'true',
     })
     footprint = box(*request_bounds)
-    selected, candidate_object_ids, selection_method = nc_select_covering_raster(
-        catalog, footprint, rendering_only_resolution_m,
-    )
+    try:
+        selected, candidate_object_ids, selection_method = nc_select_covering_raster(
+            catalog, footprint, rendering_only_resolution_m,
+        )
+    except ValueError as error:
+        if 'NC_SOURCE_SELECTION_UNRESOLVED' in str(error):
+            if catalog.get('exceededTransferLimit'):
+                reason = 'catalog_query_truncated'
+            elif nc_native_covering_rasters(catalog, footprint):
+                reason = 'multiple_full_coverage_native_candidates'
+            else:
+                reason = 'no_full_coverage_native_candidate'
+            nc_selection_dossier(directory, service, catalog, footprint, request_bounds, reason)
+        raise
     object_id = selected['attributes'][catalog.get('objectIdFieldName', 'objectid')]
     info = nc_onemap_request(f'{object_id}/info', {})
     validate_nc_horizontal_crs((info.get('extent') or {}).get('spatialReference') or {})
@@ -870,7 +1061,7 @@ def acquire_nc_onemap_source(directory, pkg, bounds, rendering_only_resolution_m
         'sourceNativeResolutionM': NC_ONEMAP_NATIVE_PIXEL_US_FEET * US_SURVEY_FOOT_TO_METERS,
         'exportPixelM': output_pixel_m,
         'horizontalExportCrs': NC_ONEMAP_CRS, 'horizontalSourceWkt': service['spatialReference']['wkt'],
-        'sourceFrameContract': 'nc-dem03-native-v2', 'sourceGridOrigin': origin,
+        'sourceFrameContract': NC_ONEMAP_SOURCE_CONTRACT, 'sourceGridOrigin': origin,
         **(vertical or {'verticalDatum': None, 'rawVerticalUnit': None, 'verticalUnitToMeters': None,
                        'verticalUnitStatus': 'unknown', 'visualVerticalUnitToMeters': US_SURVEY_FOOT_TO_METERS,
                        'visualElevationAssumption': 'US survey feet assumed for visual-only rendering; unavailable for measurements'}),
@@ -1046,6 +1237,8 @@ def acquire_charleston_county_dem_2025_source(directory, pkg, bounds, rendering_
         'horizontalSourceWkt': pyproj.CRS.from_epsg(6570).to_wkt(),
         'verticalDatum': 'NAVD88 (Geoid 18)', 'rawVerticalUnit': 'international_foot',
         'verticalUnitToMeters': INTERNATIONAL_FOOT_TO_METERS,
+        'sourceFrameContract': CHARLESTON_COUNTY_DEM_2025_SOURCE_CONTRACT,
+        'verticalUnitStatus': 'published_project_vertical_metadata',
         'verticalDatumEvidenceUrl': 'https://www.fisheries.noaa.gov/inport/item/77722',
         'retrievedAt': datetime.now(timezone.utc).date().isoformat(),
         'sourceSelection': 'charleston_county_2025_lidar_dem',
@@ -1076,7 +1269,7 @@ def acquire_source(directory, pkg, bounds, provider=USGS_3DEP_PROVIDER, renderin
 def vertical_unit_to_meters(manifest):
     """Return the declared source Z conversion without guessing source units."""
     if manifest.get('providerPolicyId') == NC_ONEMAP_PROVIDER:
-        if manifest.get('sourceFrameContract') != 'nc-dem03-native-v2':
+        if manifest.get('sourceFrameContract') != NC_ONEMAP_SOURCE_CONTRACT:
             raise ValueError('NC_SOURCE_FRAME_UNVERIFIED: retain legacy artifact; acquire a new native-frame revision')
         if manifest.get('verticalUnitStatus') != 'verified_from_locked_raster_vcs':
             if manifest.get('renderingOnly') and manifest.get('visualVerticalUnitToMeters') == US_SURVEY_FOOT_TO_METERS:

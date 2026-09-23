@@ -1,0 +1,37 @@
+{
+  "schema": "golfhelm-facility-v1",
+  "facilityId": "seaside-course",
+  "name": "Seaside Course",
+  "country": "US",
+  "region": "GA",
+  "originWgs84": [
+    -81.4100291,
+    31.1461369
+  ],
+  "aoi": {
+    "kind": "osm",
+    "id": "way/301551447",
+    "marginM": 300
+  },
+  "sourcePins": {
+    "osm": [
+      "way/301551447"
+    ]
+  },
+  "providerPolicy": {
+    "terrain": [
+      "usgs_s1m",
+      "usgs_3dep_project_1m"
+    ],
+    "imagery": [
+      "usgs_naip_plus"
+    ],
+    "context": [
+      "osm"
+    ]
+  },
+  "notes": [
+    "Complete library snapshot 2026-09-21T01:57:42.835Z; retained coverage 2026-09-18T21:46:00Z. OSM pin is a discovery AOI candidate, not physical admission.",
+    "Retained coverage basis: course_area; h17 g18 f21 b66 t71."
+  ]
+}

@@ -3,7 +3,7 @@ import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { pilotPackage } from '@/test/fixtures/course-geometry/pilot';
 import { PEEK_N_PEAK_UPPER_POLICY } from '../../course-geometry/course-registry';
 import { loadCoursePackage, manifestUrl, MemoryCourseAssetCache, type EssentialCourseManifest } from '../course-assets';
-import { bindingMatchesScoring, proposeRoundBinding, type DurableRoundCourseBinding, type RoundBindingProposal } from '../round-course-binding';
+import { bindingHasCompleteHoleCrosswalk, bindingMatchesScoring, proposeRoundBinding, type DurableRoundCourseBinding, type RoundBindingProposal } from '../round-course-binding';
 import { roundBindingTransport, type RoundBindingRpcClient } from '../round-binding-transport';
 
 vi.mock('@/lib/supabase/client', () => ({ createClient: vi.fn() }));
@@ -102,6 +102,24 @@ describe('durable round world binding at the asset/RPC persistence boundary', ()
     expect(bindingMatchesScoring(binding, { ...same, scorecardProfileId: 'white-2026' })).toBe(false);
     expect(bindingMatchesScoring(binding, { ...same, scorecardRevision: 'a'.repeat(64) })).toBe(false);
     expect(bindingMatchesScoring(binding)).toBe(true); // Read-only viewer supplies no scoring setup and cannot replace it.
+  });
+
+  it('requires a one-to-one saved-hole to package-hole crosswalk', async () => {
+    const proposal = await proposeRoundBinding(ROUND, manifest, pilotPackage, policy);
+    const complete: DurableRoundCourseBinding = {
+      ...proposal,
+      scoringSnapshot: { ...scoring, holes: [scoring.holes[0]!] },
+      scorecardSnapshotHash: 'd'.repeat(64),
+    };
+    expect(bindingHasCompleteHoleCrosswalk(complete)).toBe(true);
+
+    const missing = structuredClone(complete);
+    missing.scoringSnapshot.holes[0]!.geometryHoleKey = null;
+    expect(bindingHasCompleteHoleCrosswalk(missing)).toBe(false);
+
+    const wrong = structuredClone(complete);
+    wrong.scoringSnapshot.holes[0]!.geometryHoleKey = pilotPackage.holes[1]!.key;
+    expect(bindingHasCompleteHoleCrosswalk(wrong)).toBe(false);
   });
 
   it('refuses the losing concurrent proposal and preserves the winning immutable record', async () => {

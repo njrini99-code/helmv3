@@ -1,0 +1,130 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "sea-island-seaside-course-tee-a3c2cef7-d5df-4770-8b1f-f1e40c6ef5de-c90e0a512e9bc70fb622",
+  "layoutId": "sea-island-seaside-course",
+  "teeName": "Forward",
+  "revision": "c90e0a512e9bc70fb6227420368db4d0bffb845716bd4c8cece70bd460c5813f",
+  "courseRating": 68.2,
+  "slopeRating": 113,
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-21",
+    "snapshotHash": "59c51440bb55ec122f369c154574307c0ff9abe59f97eb19a6b6ae172ef92a7d",
+    "note": "Immutable read-only snapshot; library source=seed. Scorecard facts only. No physical tee marker, hole association or geometry approval."
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 4,
+      "yards": 316,
+      "handicap": 7
+    },
+    {
+      "hole": 2,
+      "par": 3,
+      "yards": 163,
+      "handicap": 17
+    },
+    {
+      "hole": 3,
+      "par": 4,
+      "yards": 352,
+      "handicap": 9
+    },
+    {
+      "hole": 4,
+      "par": 4,
+      "yards": 262,
+      "handicap": 11
+    },
+    {
+      "hole": 5,
+      "par": 5,
+      "yards": 396,
+      "handicap": 13
+    },
+    {
+      "hole": 6,
+      "par": 4,
+      "yards": 319,
+      "handicap": 4
+    },
+    {
+      "hole": 7,
+      "par": 4,
+      "yards": 324,
+      "handicap": 8
+    },
+    {
+      "hole": 8,
+      "par": 3,
+      "yards": 135,
+      "handicap": 16
+    },
+    {
+      "hole": 9,
+      "par": 4,
+      "yards": 281,
+      "handicap": 2
+    },
+    {
+      "hole": 10,
+      "par": 4,
+      "yards": 321,
+      "handicap": 3
+    },
+    {
+      "hole": 11,
+      "par": 3,
+      "yards": 172,
+      "handicap": 18
+    },
+    {
+      "hole": 12,
+      "par": 4,
+      "yards": 280,
+      "handicap": 12
+    },
+    {
+      "hole": 13,
+      "par": 4,
+      "yards": 312,
+      "handicap": 1
+    },
+    {
+      "hole": 14,
+      "par": 5,
+      "yards": 415,
+      "handicap": 14
+    },
+    {
+      "hole": 15,
+      "par": 3,
+      "yards": 145,
+      "handicap": 15
+    },
+    {
+      "hole": 16,
+      "par": 4,
+      "yards": 271,
+      "handicap": 10
+    },
+    {
+      "hole": 17,
+      "par": 4,
+      "yards": 329,
+      "handicap": 6
+    },
+    {
+      "hole": 18,
+      "par": 4,
+      "yards": 322,
+      "handicap": 5
+    }
+  ],
+  "libraryBinding": {
+    "courseId": "7de64d20-2781-4a86-81ed-8b2fff616226",
+    "teeId": "a3c2cef7-d5df-4770-8b1f-f1e40c6ef5de"
+  }
+}

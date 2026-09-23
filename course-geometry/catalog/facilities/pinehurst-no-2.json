@@ -1,0 +1,39 @@
+{
+  "schema": "golfhelm-facility-v1",
+  "facilityId": "pinehurst-no-2",
+  "name": "Pinehurst No. 2",
+  "country": "US",
+  "region": "NC",
+  "originWgs84": [
+    -79.4607309,
+    35.1917072
+  ],
+  "aoi": {
+    "kind": "osm",
+    "id": "way/1358696570",
+    "marginM": 300
+  },
+  "sourcePins": {
+    "osm": [
+      "way/1358696570"
+    ]
+  },
+  "providerPolicy": {
+    "terrain": [
+      "nc_onemap_dem03"
+    ],
+    "imagery": [
+      "nc_onemap_2024_2027_analysis",
+      "usgs_naip_plus"
+    ],
+    "context": [
+      "osm"
+    ]
+  },
+  "notes": [
+    "Complete library snapshot 2026-09-21T01:57:42.835Z; retained coverage 2026-09-18T21:46:00Z. OSM pin is a discovery AOI candidate, not physical admission.",
+    "Retained coverage basis: course_area; h19 g24 f35 b126 t4.",
+    "Exact No.2 polygon confirmed by the direct OSM way API on 2026-09-21. Official Pinehurst course directory separately lists No.2 and No.8; No.8 is removed from this source binding. C0 source discovery only.",
+    "Identity evidence: https://api.openstreetmap.org/api/0.6/way/1358696570.json (closed golf-course area named Pinehurst No. 2, version2); https://www.pinehurst.com/golf/ lists No.2 and No.8 separately. Retained evidence: output/course-geometry/factory/research/library-intake-v1/pinehurst2-way.json."
+  ]
+}

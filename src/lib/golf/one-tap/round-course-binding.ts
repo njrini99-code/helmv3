@@ -77,3 +77,24 @@ export function bindingMatchesScoring(binding: DurableRoundCourseBinding, setup?
       return s?.number === h.number && s.par === h.par && (s.yardage ?? 0) === h.yardage;
     });
 }
+
+/**
+ * The world binding must name the exact package hole for every saved round
+ * hole. A round can retain `physicalHoleId` and `teeFeatureId` as null when
+ * the source evidence does not support those claims, but it may never obtain
+ * a geometry hole by ordinal or nearest-neighbour fallback. This is checked
+ * again on every resume because the durable record is an external boundary.
+ */
+export function bindingHasCompleteHoleCrosswalk(binding: DurableRoundCourseBinding): boolean {
+  const holes = binding.scoringSnapshot.holes;
+  if (!holes.length) return false;
+  const numbers = new Set<number>();
+  const geometryKeys = new Set<string>();
+  return holes.every(hole => {
+    const geometryHoleKey = hole.geometryHoleKey;
+    if (numbers.has(hole.number) || !geometryHoleKey || geometryKeys.has(geometryHoleKey)) return false;
+    numbers.add(hole.number);
+    geometryKeys.add(geometryHoleKey);
+    return binding.holeBindings[String(hole.number)] === geometryHoleKey;
+  });
+}

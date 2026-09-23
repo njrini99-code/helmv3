@@ -1,0 +1,72 @@
+{
+  "schema": "golfhelm-layout-v1",
+  "layoutId": "hendersonville-country-club",
+  "facilityId": "hendersonville-country-club",
+  "name": "Hendersonville Country Club",
+  "siteIds": [
+    "osm-way-439392038"
+  ],
+  "segments": {
+    "main": {
+      "holes": [
+        "hendersonville-country-club-01",
+        "hendersonville-country-club-02",
+        "hendersonville-country-club-03",
+        "hendersonville-country-club-04",
+        "hendersonville-country-club-05",
+        "hendersonville-country-club-06",
+        "hendersonville-country-club-07",
+        "hendersonville-country-club-08",
+        "hendersonville-country-club-09",
+        "hendersonville-country-club-10",
+        "hendersonville-country-club-11",
+        "hendersonville-country-club-12",
+        "hendersonville-country-club-13",
+        "hendersonville-country-club-14",
+        "hendersonville-country-club-15",
+        "hendersonville-country-club-16",
+        "hendersonville-country-club-17",
+        "hendersonville-country-club-18"
+      ]
+    }
+  },
+  "segmentOrder": [
+    "main"
+  ],
+  "holeOrder": [
+    "hendersonville-country-club-01",
+    "hendersonville-country-club-02",
+    "hendersonville-country-club-03",
+    "hendersonville-country-club-04",
+    "hendersonville-country-club-05",
+    "hendersonville-country-club-06",
+    "hendersonville-country-club-07",
+    "hendersonville-country-club-08",
+    "hendersonville-country-club-09",
+    "hendersonville-country-club-10",
+    "hendersonville-country-club-11",
+    "hendersonville-country-club-12",
+    "hendersonville-country-club-13",
+    "hendersonville-country-club-14",
+    "hendersonville-country-club-15",
+    "hendersonville-country-club-16",
+    "hendersonville-country-club-17",
+    "hendersonville-country-club-18"
+  ],
+  "routeWayIds": null,
+  "bboxWgs84": null,
+  "capabilityTier": "C0",
+  "externalBindings": {
+    "golfCourseIds": [
+      "2e20e45a-c795-4581-827a-0323429b5ee6"
+    ]
+  },
+  "scorecardProfiles": [
+    "hendersonville-country-club-tee-1507c182-a4d0-4c42-ae7c-ed302d7fa3aa-4e5e0458c99cfeb00751"
+  ],
+  "referenceScorecardProfileId": "hendersonville-country-club-tee-1507c182-a4d0-4c42-ae7c-ed302d7fa3aa-4e5e0458c99cfeb00751",
+  "geometry": null,
+  "notes": [
+    "Complete library intake of exact course UUID 2e20e45a-c795-4581-827a-0323429b5ee6; no usage threshold. C0 only: routes, bbox and geometry remain unresolved. Shared names/proximity establish no physical association."
+  ]
+}

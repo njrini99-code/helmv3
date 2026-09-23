@@ -1,0 +1,40 @@
+{
+  "schema": "golfhelm-facility-v1",
+  "facilityId": "pinehurst-course-no-8",
+  "name": "Pinehurst Course No. 8",
+  "country": "US",
+  "region": "NC",
+  "originWgs84": [
+    -79.468976,
+    35.2156919
+  ],
+  "aoi": {
+    "kind": "osm",
+    "id": "way/428977993",
+    "marginM": 300
+  },
+  "sourcePins": {
+    "osm": [
+      "way/428977993"
+    ]
+  },
+  "providerPolicy": {
+    "terrain": [
+      "nc_onemap_dem03"
+    ],
+    "imagery": [
+      "nc_onemap_2024_2027_analysis",
+      "usgs_naip_plus"
+    ],
+    "context": [
+      "osm"
+    ]
+  },
+  "notes": [
+    "Complete library snapshot 2026-09-21T01:57:42.835Z; retained coverage 2026-09-18T21:46:00Z. OSM pin is a discovery AOI candidate, not physical admission.",
+    "Retained coverage basis: named_subcourse_aoi_metadata_only; h0 g0 f0 b0 t0.",
+    "Exact No.8 named course polygon confirmed by direct OSM API on 2026-09-21: way/428977993, version7, operator Pinehurst Resort, website https://www.pinehurst.com/golf/courses/no-8/. This source is distinct from No.2 way/1358696570.",
+    "Retained primary evidence: src/test/fixtures/course-geometry/pinehurst-no-8-aoi-evidence.json; full response SHA256 58f364e3d75f874c86007f847c2467ff5f385e09d5f99b1c3600c04bc638ba55. Center is the source polygon bbox center in lat,lon order. Feature counts remain unmeasured here; zeros do not assert absence.",
+    "Official course page lists the distinct 18-hole No.8 course. Metadata only; routes and all physical feature approval remain unresolved."
+  ]
+}

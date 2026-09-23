@@ -1,0 +1,38 @@
+{
+  "schema": "golfhelm-facility-v1",
+  "facilityId": "harbour-town-golf-links",
+  "name": "Harbour Town Golf Links",
+  "country": "US",
+  "region": "SC",
+  "originWgs84": [
+    -80.8092587,
+    32.1307201
+  ],
+  "aoi": {
+    "kind": "osm",
+    "id": "relation/4813858",
+    "marginM": 300
+  },
+  "sourcePins": {
+    "osm": [
+      "relation/4813858"
+    ]
+  },
+  "providerPolicy": {
+    "terrain": [
+      "usgs_s1m",
+      "usgs_3dep_project_1m"
+    ],
+    "imagery": [
+      "sc_statewide_aerial_discovery",
+      "usgs_naip_plus"
+    ],
+    "context": [
+      "osm"
+    ]
+  },
+  "notes": [
+    "Complete library snapshot 2026-09-21T01:57:42.835Z; retained coverage 2026-09-18T21:46:00Z. OSM pin is a discovery AOI candidate, not physical admission.",
+    "Retained coverage basis: course_area; h18 g31 f31 b75 t38."
+  ]
+}

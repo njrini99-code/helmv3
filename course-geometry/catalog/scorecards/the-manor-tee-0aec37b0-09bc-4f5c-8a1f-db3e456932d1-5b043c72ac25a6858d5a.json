@@ -1,0 +1,112 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "the-manor-tee-0aec37b0-09bc-4f5c-8a1f-db3e456932d1-5b043c72ac25a6858d5a",
+  "layoutId": "the-manor",
+  "teeName": "Black",
+  "revision": "5b043c72ac25a6858d5a1ef3efc9caf9d36d969d649b3fc080578a66c01c235c",
+  "courseRating": 74.5,
+  "slopeRating": 140,
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-21",
+    "snapshotHash": "59c51440bb55ec122f369c154574307c0ff9abe59f97eb19a6b6ae172ef92a7d",
+    "note": "Immutable read-only snapshot; library source=round. Scorecard facts only. No physical tee marker, hole association or geometry approval."
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 4,
+      "yards": 397
+    },
+    {
+      "hole": 2,
+      "par": 5,
+      "yards": 560
+    },
+    {
+      "hole": 3,
+      "par": 4,
+      "yards": 406
+    },
+    {
+      "hole": 4,
+      "par": 3,
+      "yards": 211
+    },
+    {
+      "hole": 5,
+      "par": 4,
+      "yards": 430
+    },
+    {
+      "hole": 6,
+      "par": 5,
+      "yards": 581
+    },
+    {
+      "hole": 7,
+      "par": 3,
+      "yards": 189
+    },
+    {
+      "hole": 8,
+      "par": 4,
+      "yards": 440
+    },
+    {
+      "hole": 9,
+      "par": 4,
+      "yards": 452
+    },
+    {
+      "hole": 10,
+      "par": 4,
+      "yards": 404
+    },
+    {
+      "hole": 11,
+      "par": 4,
+      "yards": 479
+    },
+    {
+      "hole": 12,
+      "par": 3,
+      "yards": 174
+    },
+    {
+      "hole": 13,
+      "par": 5,
+      "yards": 574
+    },
+    {
+      "hole": 14,
+      "par": 4,
+      "yards": 438
+    },
+    {
+      "hole": 15,
+      "par": 3,
+      "yards": 197
+    },
+    {
+      "hole": 16,
+      "par": 4,
+      "yards": 348
+    },
+    {
+      "hole": 17,
+      "par": 4,
+      "yards": 419
+    },
+    {
+      "hole": 18,
+      "par": 5,
+      "yards": 550
+    }
+  ],
+  "libraryBinding": {
+    "courseId": "26e99824-0218-42c0-b1a3-237803538d9a",
+    "teeId": "0aec37b0-09bc-4f5c-8a1f-db3e456932d1"
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "schema": "golfhelm-layout-v1",
+  "layoutId": "duke-university-golf-club",
+  "facilityId": "duke-university-golf-club",
+  "name": "Duke University Golf Club",
+  "siteIds": [
+    "osm-way-32921522"
+  ],
+  "segments": {
+    "main": {
+      "holes": [
+        "duke-university-golf-club-01",
+        "duke-university-golf-club-02",
+        "duke-university-golf-club-03",
+        "duke-university-golf-club-04",
+        "duke-university-golf-club-05",
+        "duke-university-golf-club-06",
+        "duke-university-golf-club-07",
+        "duke-university-golf-club-08",
+        "duke-university-golf-club-09",
+        "duke-university-golf-club-10",
+        "duke-university-golf-club-11",
+        "duke-university-golf-club-12",
+        "duke-university-golf-club-13",
+        "duke-university-golf-club-14",
+        "duke-university-golf-club-15",
+        "duke-university-golf-club-16",
+        "duke-university-golf-club-17",
+        "duke-university-golf-club-18"
+      ]
+    }
+  },
+  "segmentOrder": [
+    "main"
+  ],
+  "holeOrder": [
+    "duke-university-golf-club-01",
+    "duke-university-golf-club-02",
+    "duke-university-golf-club-03",
+    "duke-university-golf-club-04",
+    "duke-university-golf-club-05",
+    "duke-university-golf-club-06",
+    "duke-university-golf-club-07",
+    "duke-university-golf-club-08",
+    "duke-university-golf-club-09",
+    "duke-university-golf-club-10",
+    "duke-university-golf-club-11",
+    "duke-university-golf-club-12",
+    "duke-university-golf-club-13",
+    "duke-university-golf-club-14",
+    "duke-university-golf-club-15",
+    "duke-university-golf-club-16",
+    "duke-university-golf-club-17",
+    "duke-university-golf-club-18"
+  ],
+  "routeWayIds": null,
+  "bboxWgs84": null,
+  "capabilityTier": "C0",
+  "externalBindings": {
+    "golfCourseIds": [
+      "0d647d6e-cf24-4a86-bddf-a3b4b4f4a7ad"
+    ]
+  },
+  "scorecardProfiles": [
+    "duke-university-golf-club-tee-9307bc0f-5cf3-40fa-a33e-06b560d4fe0d-f070f212de70df61ed67"
+  ],
+  "referenceScorecardProfileId": "duke-university-golf-club-tee-9307bc0f-5cf3-40fa-a33e-06b560d4fe0d-f070f212de70df61ed67",
+  "geometry": null,
+  "notes": [
+    "Complete library intake of exact course UUID 0d647d6e-cf24-4a86-bddf-a3b4b4f4a7ad; no usage threshold. C0 only: routes, bbox and geometry remain unresolved. Shared names/proximity establish no physical association."
+  ]
+}

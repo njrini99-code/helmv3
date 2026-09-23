@@ -1,0 +1,130 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "isleworth-golf-country-club-tee-0234df64-ef9f-474d-9077-7ebf24e165ae-f46f4afa5cc441c80c93",
+  "layoutId": "isleworth-golf-country-club",
+  "teeName": "Championship",
+  "revision": "f46f4afa5cc441c80c93c1c424d64a2ca544dc71b644182897294c32de483d7e",
+  "courseRating": 75.6,
+  "slopeRating": 143,
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-21",
+    "snapshotHash": "59c51440bb55ec122f369c154574307c0ff9abe59f97eb19a6b6ae172ef92a7d",
+    "note": "Immutable read-only snapshot; library source=seed. Scorecard facts only. No physical tee marker, hole association or geometry approval."
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 4,
+      "yards": 468,
+      "handicap": 5
+    },
+    {
+      "hole": 2,
+      "par": 5,
+      "yards": 528,
+      "handicap": 13
+    },
+    {
+      "hole": 3,
+      "par": 4,
+      "yards": 406,
+      "handicap": 7
+    },
+    {
+      "hole": 4,
+      "par": 4,
+      "yards": 443,
+      "handicap": 4
+    },
+    {
+      "hole": 5,
+      "par": 4,
+      "yards": 441,
+      "handicap": 8
+    },
+    {
+      "hole": 6,
+      "par": 3,
+      "yards": 193,
+      "handicap": 16
+    },
+    {
+      "hole": 7,
+      "par": 4,
+      "yards": 364,
+      "handicap": 10
+    },
+    {
+      "hole": 8,
+      "par": 5,
+      "yards": 523,
+      "handicap": 14
+    },
+    {
+      "hole": 9,
+      "par": 3,
+      "yards": 197,
+      "handicap": 17
+    },
+    {
+      "hole": 10,
+      "par": 5,
+      "yards": 552,
+      "handicap": 12
+    },
+    {
+      "hole": 11,
+      "par": 4,
+      "yards": 441,
+      "handicap": 2
+    },
+    {
+      "hole": 12,
+      "par": 4,
+      "yards": 469,
+      "handicap": 3
+    },
+    {
+      "hole": 13,
+      "par": 4,
+      "yards": 385,
+      "handicap": 9
+    },
+    {
+      "hole": 14,
+      "par": 3,
+      "yards": 196,
+      "handicap": 15
+    },
+    {
+      "hole": 15,
+      "par": 4,
+      "yards": 439,
+      "handicap": 6
+    },
+    {
+      "hole": 16,
+      "par": 5,
+      "yards": 545,
+      "handicap": 11
+    },
+    {
+      "hole": 17,
+      "par": 3,
+      "yards": 182,
+      "handicap": 18
+    },
+    {
+      "hole": 18,
+      "par": 4,
+      "yards": 435,
+      "handicap": 1
+    }
+  ],
+  "libraryBinding": {
+    "courseId": "eaefce7a-9221-43dd-8026-6c49ee572aee",
+    "teeId": "0234df64-ef9f-474d-9077-7ebf24e165ae"
+  }
+}

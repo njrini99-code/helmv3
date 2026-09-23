@@ -1,0 +1,72 @@
+{
+  "schema": "golfhelm-layout-v1",
+  "layoutId": "sedgefield-cc",
+  "facilityId": "sedgefield-cc",
+  "name": "Sedgefield CC",
+  "siteIds": [
+    "osm-relation-12580941"
+  ],
+  "segments": {
+    "main": {
+      "holes": [
+        "sedgefield-cc-01",
+        "sedgefield-cc-02",
+        "sedgefield-cc-03",
+        "sedgefield-cc-04",
+        "sedgefield-cc-05",
+        "sedgefield-cc-06",
+        "sedgefield-cc-07",
+        "sedgefield-cc-08",
+        "sedgefield-cc-09",
+        "sedgefield-cc-10",
+        "sedgefield-cc-11",
+        "sedgefield-cc-12",
+        "sedgefield-cc-13",
+        "sedgefield-cc-14",
+        "sedgefield-cc-15",
+        "sedgefield-cc-16",
+        "sedgefield-cc-17",
+        "sedgefield-cc-18"
+      ]
+    }
+  },
+  "segmentOrder": [
+    "main"
+  ],
+  "holeOrder": [
+    "sedgefield-cc-01",
+    "sedgefield-cc-02",
+    "sedgefield-cc-03",
+    "sedgefield-cc-04",
+    "sedgefield-cc-05",
+    "sedgefield-cc-06",
+    "sedgefield-cc-07",
+    "sedgefield-cc-08",
+    "sedgefield-cc-09",
+    "sedgefield-cc-10",
+    "sedgefield-cc-11",
+    "sedgefield-cc-12",
+    "sedgefield-cc-13",
+    "sedgefield-cc-14",
+    "sedgefield-cc-15",
+    "sedgefield-cc-16",
+    "sedgefield-cc-17",
+    "sedgefield-cc-18"
+  ],
+  "routeWayIds": null,
+  "bboxWgs84": null,
+  "capabilityTier": "C0",
+  "externalBindings": {
+    "golfCourseIds": [
+      "2d21ab2c-2af4-4cc3-bd01-99e9c4c4f773"
+    ]
+  },
+  "scorecardProfiles": [
+    "sedgefield-cc-tee-1f2a463d-236f-485a-8b63-dfd9fbe7cbd8-e4dd87df6a97645944b1"
+  ],
+  "referenceScorecardProfileId": "sedgefield-cc-tee-1f2a463d-236f-485a-8b63-dfd9fbe7cbd8-e4dd87df6a97645944b1",
+  "geometry": null,
+  "notes": [
+    "Complete library intake of exact course UUID 2d21ab2c-2af4-4cc3-bd01-99e9c4c4f773; no usage threshold. C0 only: routes, bbox and geometry remain unresolved. Shared names/proximity establish no physical association."
+  ]
+}

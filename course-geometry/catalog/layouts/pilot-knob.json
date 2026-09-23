@@ -1,0 +1,72 @@
+{
+  "schema": "golfhelm-layout-v1",
+  "layoutId": "pilot-knob",
+  "facilityId": "pilot-knob-park",
+  "name": "Pilot Knob",
+  "siteIds": [
+    "osm-way-352559788"
+  ],
+  "segments": {
+    "main": {
+      "holes": [
+        "pilot-knob-01",
+        "pilot-knob-02",
+        "pilot-knob-03",
+        "pilot-knob-04",
+        "pilot-knob-05",
+        "pilot-knob-06",
+        "pilot-knob-07",
+        "pilot-knob-08",
+        "pilot-knob-09",
+        "pilot-knob-10",
+        "pilot-knob-11",
+        "pilot-knob-12",
+        "pilot-knob-13",
+        "pilot-knob-14",
+        "pilot-knob-15",
+        "pilot-knob-16",
+        "pilot-knob-17",
+        "pilot-knob-18"
+      ]
+    }
+  },
+  "segmentOrder": [
+    "main"
+  ],
+  "holeOrder": [
+    "pilot-knob-01",
+    "pilot-knob-02",
+    "pilot-knob-03",
+    "pilot-knob-04",
+    "pilot-knob-05",
+    "pilot-knob-06",
+    "pilot-knob-07",
+    "pilot-knob-08",
+    "pilot-knob-09",
+    "pilot-knob-10",
+    "pilot-knob-11",
+    "pilot-knob-12",
+    "pilot-knob-13",
+    "pilot-knob-14",
+    "pilot-knob-15",
+    "pilot-knob-16",
+    "pilot-knob-17",
+    "pilot-knob-18"
+  ],
+  "routeWayIds": null,
+  "bboxWgs84": null,
+  "capabilityTier": "C0",
+  "externalBindings": {
+    "golfCourseIds": [
+      "06dbd6e6-6d9e-47be-b487-1fea072311c8"
+    ]
+  },
+  "scorecardProfiles": [
+    "pilot-knob-tee-a265a002-e23b-4ce3-9ca6-741c204603e9-a44257ceb3b3944acf21"
+  ],
+  "referenceScorecardProfileId": "pilot-knob-tee-a265a002-e23b-4ce3-9ca6-741c204603e9-a44257ceb3b3944acf21",
+  "geometry": null,
+  "notes": [
+    "Complete library intake of exact course UUID 06dbd6e6-6d9e-47be-b487-1fea072311c8; no usage threshold. C0 only: routes, bbox and geometry remain unresolved. Shared names/proximity establish no physical association."
+  ]
+}

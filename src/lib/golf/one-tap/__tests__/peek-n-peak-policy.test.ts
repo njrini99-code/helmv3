@@ -10,7 +10,7 @@ const upper = parseGeometryPackage(packageJson);
 /** The fixture is still a source candidate; the tests approve its hash and
  * promote its status the way the owner's review would, without touching it. */
 const approved = { ...upper, status: 'reviewed_draft' as const };
-const policy: PeekNPeakOneTapPolicy = { ...PEEK_N_PEAK_ONE_TAP_V1, approvedGeometryHashes: new Set([upper.contentHash]), pilotAcceptsSourceCandidate: false };
+const policy: PeekNPeakOneTapPolicy = { ...PEEK_N_PEAK_ONE_TAP_V1, acceptedCapabilityTier: 'C3', approvedGeometryHashes: new Set([upper.contentHash]), pilotAcceptsSourceCandidate: false };
 /** The gate as it ships outside the pilot: nothing approved, no source-candidate exception. */
 const dark: PeekNPeakOneTapPolicy = { ...policy, approvedGeometryHashes: new Set() };
 const ok = { roundCourseId: 'peek-n-peak-upper', pkg: approved, featureFlagEnabled: true, preciseLocationAvailable: true };
@@ -33,14 +33,13 @@ describe('Peek\'n Peak Upper One-Tap eligibility (§21–22)', () => {
     expect(isPeekNPeakOneTapEligible({ ...ok, pkg: upper }, policy)).toEqual({ eligible: false, reason: 'source_candidate_package' });
     expect(isPeekNPeakOneTapEligible({ ...ok, pkg: approved }, dark)).toEqual({ eligible: false, reason: 'geometry_hash_not_approved' });
   });
-  it('ships the owner-approved Upper pilot: the fixture hash is approved and its source-candidate status is accepted knowingly', () => {
-    expect(PEEK_N_PEAK_ONE_TAP_V1.approvedGeometryHashes.has(upper.contentHash)).toBe(true);
-    expect(PEEK_N_PEAK_ONE_TAP_V1.pilotAcceptsSourceCandidate).toBe(true);
+  it('keeps the Upper candidate available to the review renderer but off every runtime measurement path', () => {
+    expect(PEEK_N_PEAK_ONE_TAP_V1.approvedGeometryHashes.has(upper.contentHash)).toBe(false);
+    expect(PEEK_N_PEAK_ONE_TAP_V1.pilotAcceptsSourceCandidate).toBe(false);
     expect(PEEK_N_PEAK_ONE_TAP_V1.renderWorld).toBe('v2');
-    expect(isPeekNPeakOneTapEligible({ ...ok, pkg: upper })).toEqual({ eligible: true, courseId: 'peek-n-peak-upper', geometryVersion: upper.contentHash });
-    // The exception is only for the approved hash: an unapproved source candidate is still refused.
-    expect(isPeekNPeakOneTapEligible({ ...ok, pkg: { ...upper, contentHash: 'b'.repeat(64) } })).toEqual({ eligible: false, reason: 'geometry_hash_not_approved' });
-    // And the pilot's public course files name exactly that hash.
+    expect(isPeekNPeakOneTapEligible({ ...ok, pkg: upper })).toEqual({ eligible: false, reason: 'source_candidate_package' });
+    // Static review files may retain the candidate hash, but runtime policy
+    // has no approved hash and therefore cannot consume them.
     const manifest = JSON.parse(readFileSync(join(process.cwd(), 'public/course-geometry/peek-n-peak-upper/manifest.json'), 'utf8')) as { geometryVersion: string; terrainByHole: Record<string, string>; contextLayerUrl?: string };
     expect(manifest.geometryVersion).toBe(upper.contentHash);
     expect(Object.keys(manifest.terrainByHole)).toHaveLength(upper.holes.length);

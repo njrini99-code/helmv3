@@ -15,6 +15,9 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
+from contextlib import contextmanager
+
+import fcntl
 
 from physical_admission import review_input_hash
 from source_geometry import resolved_routes
@@ -30,6 +33,66 @@ OVERPASS = 'https://overpass-api.de/api/interpreter'
 USER_AGENT = 'GolfHelm course-geometry factory (bounded, one request per facility revision)'
 MAX_AOI_BYTES = 4_000_000
 VISUAL_TERRAIN_DERIVED_RESOLUTIONS_M = (2, 4, 8, 12, 16)
+# A new source-frame validator must not reinterpret an older visual terrain
+# cache. The older cache remains retained evidence; v2 is a separate derived
+# scene source made under the current visual-only contract.
+NC_VISUAL_TERRAIN_CACHE_REVISION = 'nc-native-frame-v3'
+VISUAL_TERRAIN_DERIVED_CACHE_REVISION = 'v2'
+
+
+def terrain_acquisition_precondition(error, layout_id, provider, source_selection_dossier_path=None):
+    """Turn known evidence gaps into actionable blocked tasks, never failures.
+
+    The compiler raises a detailed exception because it does not know the
+    factory task graph.  Here those expected, provenance-preserving refusals
+    become stable work-queue reasons. Unknown errors still fail loudly.
+    """
+    message = str(error)
+    if 'NC_SOURCE_SELECTION_UNRESOLVED' in message:
+        details = {
+            'layoutId': layout_id,
+            'provider': provider.compiler_id,
+            'remediation': 'review the retained candidate raster dossier; physical terrain remains unavailable until one source is approved',
+        }
+        if source_selection_dossier_path:
+            details['sourceSelectionDossierPath'] = source_selection_dossier_path
+        return Precondition(Blocker('NC_SOURCE_SELECTION_UNRESOLVED', details))
+    if 'No native-1m tile set covers the full bounded course context' in message:
+        return Precondition(Blocker('NATIVE_TERRAIN_COVERAGE_GAP', {
+            'layoutId': layout_id,
+            'provider': provider.compiler_id,
+            'remediation': 'acquire a full-coverage native terrain product or retain a visual-only fallback without measurement authority',
+        }))
+    if 'Every covering terrain tile exported empty fill over the course context' in message:
+        return Precondition(Blocker('TERRAIN_EXPORT_EMPTY', {
+            'layoutId': layout_id,
+            'provider': provider.compiler_id,
+            'remediation': 'the provider returned no usable elevation samples; acquire another terrain product before rendering terrain or measuring',
+        }))
+    if 'VERTICAL_UNIT_UNKNOWN' in message:
+        return Precondition(Blocker('VERTICAL_UNIT_UNKNOWN', {
+            'layoutId': layout_id,
+            'provider': provider.compiler_id,
+            'remediation': 'verify an independent vertical CRS/unit before using terrain for physical measurements',
+        }))
+    if 'SOURCE_FRAME_UNVERIFIED' in message:
+        return Precondition(Blocker('SOURCE_FRAME_UNVERIFIED', {
+            'layoutId': layout_id,
+            'provider': provider.compiler_id,
+            'remediation': 'retain the legacy source cache; acquire a new source revision with the current horizontal and vertical frame contract before measurement use',
+        }))
+    return None
+
+
+def canopy_source_precondition(error, layout_id):
+    """Classify bounded upstream imagery outages without faking canopy data."""
+    message = str(error)
+    if any(token in message for token in ('HTTP Error 500', 'HTTP Error 502', 'HTTP Error 503', 'HTTP Error 504', 'timed out', 'TimeoutError')):
+        return Precondition(Blocker('CANOPY_SOURCE_TRANSIENT', {
+            'layoutId': layout_id,
+            'remediation': 'retry the bounded imagery acquisition later; canopy remains unavailable and cannot be used as obstacle or physical evidence',
+        }))
+    return None
 
 
 def _write_json(path, doc):
@@ -69,6 +132,76 @@ def safe_rmtree(ctx, path):
     if not ctx.inside_output(path):
         raise RuntimeError(f'refusing to delete outside the factory output root: {path}')
     shutil.rmtree(path)
+
+
+def visual_source_cache_complete(path):
+    """Whether a retained visual-terrain directory is reusable as a unit.
+
+    A source manifest is written near the end of acquisition, but class-C
+    eviction can later remove its large raster while deliberately retaining
+    the small manifest.  Treating the manifest alone as a cache hit makes a
+    visual fallback retry the same broken directory.  This is intentionally a
+    file-presence check only: physical source validation remains in the terrain
+    compiler and a visual cache can never supply physical measurements.
+    """
+    manifest_path = os.path.join(path, 'source-manifest.json')
+    if not os.path.isfile(manifest_path):
+        return False
+    try:
+        with open(manifest_path, encoding='utf-8') as stream:
+            manifest = json.load(stream)
+    except (OSError, json.JSONDecodeError):
+        return False
+    hashes = manifest.get('fileHashes')
+    if not isinstance(hashes, dict) or not hashes:
+        return False
+    return all(
+        isinstance(name, str)
+        and os.path.basename(name) == name
+        and os.path.isfile(os.path.join(path, name))
+        for name in hashes
+    )
+
+
+def reset_incomplete_visual_source_cache(ctx, path):
+    """Evict only an incomplete generated visual cache before retrying it."""
+    if os.path.isdir(path) and not visual_source_cache_complete(path):
+        safe_rmtree(ctx, path)
+
+
+@contextmanager
+def derived_output_lock(ctx, path):
+    """Serialize replacement of one derived output across factory processes.
+
+    Batch retries can legitimately overlap (for example, an operator retries a
+    failed layout while a catalog run is completing).  The output itself is
+    deliberately replaceable, so a process that sees an incomplete cache must
+    not remove it while another process is still writing its raster or world.
+    The sidecar lock is outside the replaceable directory and is released by
+    the kernel if the owning process exits.
+    """
+    lock_path = path + '.lock'
+    if not ctx.inside_output(lock_path):
+        raise RuntimeError(f'refusing to lock outside the factory output root: {lock_path}')
+    os.makedirs(os.path.dirname(lock_path), exist_ok=True)
+    with open(lock_path, 'a+', encoding='utf-8') as handle:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+
+
+def visual_terrain_source_root(ctx, facility_id, package, provider):
+    """A visual-only cache namespace that never reinterprets older frames."""
+    suffix = NC_VISUAL_TERRAIN_CACHE_REVISION if provider.compiler_id == 'nc_onemap_dem03' else 'perimeter-v1'
+    return os.path.join(
+        ctx.facility_out(facility_id), 'visual-terrain', f"{package['contentHash'][:12]}-{suffix}",
+    )
+
+
+def visual_terrain_candidate_path(source_root, resolution_m):
+    return f'{source_root}-visual-r{resolution_m}m-{VISUAL_TERRAIN_DERIVED_CACHE_REVISION}'
 
 
 # --- facility -------------------------------------------------------------
@@ -269,7 +402,7 @@ def compose_visual_candidates(node, ctx, run):
     resolution = ctx.route_resolution(layout_id) or {}
     admission = ctx.canonical_route_admission(layout_id)
     pointer_path = ctx.visual_candidate_pointer_path(layout_id)
-    if admission.get('admitted'):
+    if admission.get('admitted') and ctx.route_terrain_renderable(layout_id):
         _write_json(pointer_path, {
             'kind': 'golfhelm-layout-visual-candidate-pointer-v1', 'layoutId': layout_id, 'facilityId': facility_id,
             'status': 'not_required_source_route_available', 'canonicalHoleRoutesAdmitted': True,
@@ -298,17 +431,65 @@ def compose_visual_candidates(node, ctx, run):
         run_script(ctx, run, node, 'scripts/golf/course-geometry/prepare-osm-facility-visual.py', [extract, ctx.card_path(facility_id), package_dir])
         package = ctx.json(package_path, fresh=True)
         report = ctx.json(report_path, fresh=True)
+    route_status = 'unresolved' if not admission.get('admitted') else 'route_admitted_terrain_unavailable'
     _write_json(pointer_path, {
         'kind': 'golfhelm-layout-visual-candidate-pointer-v1', 'layoutId': layout_id, 'facilityId': facility_id,
         'packagePath': ctx.relpath(package_path), 'packageHash': package['contentHash'],
         'extractSha256': manifest.get('uncompressedSha256'), 'canonicalHoleRoutesAdmitted': False,
-        'routeStatus': 'unresolved', 'renderingContract': report['renderingContract'],
+        'routeStatus': route_status, 'renderingContract': report['renderingContract'],
         'sourceCoverage': report['sourceCoverage'], 'visualReadiness': report['visualReadiness'],
     })
     ref = artifact('package', package_path, 'C')
     ref.sha256 = package['contentHash']
     return [artifact('visual-candidate-pointer', pointer_path, 'C'), ref,
             artifact('visual-candidate-report', report_path, 'C')]
+
+
+def acquire_visual_terrain_source(node, ctx, run, layout_id, provider, source_root, base_args):
+    """Acquire or reuse a fully written visual source under the caller lock."""
+    source = source_root
+    # Keep the provider's native-size cap hard.  A facility that exceeds that
+    # one-request limit receives a separately versioned derived raster solely
+    # for a non-measurable visual scene. Nothing in this branch can make it a
+    # route, terrain measurement, shot constraint, or hole association.
+    # The native physical attempt and every visual tier use distinct cache
+    # identities.  A failed physical attempt may leave source-selection
+    # metadata behind, but it must not become the visual fallback's identity.
+    reset_incomplete_visual_source_cache(ctx, source)
+    try:
+        run_script(ctx, run, node, 'scripts/golf/course-geometry/compile-course-terrain.py', [*base_args, '--source', source])
+    except RuntimeError as error:
+        failure = str(error)
+        source_coverage_gap = provider.compiler_id == 'usgs_3dep_project_1m' and 'No native-1m tile set covers' in failure
+        vertical_unknown = provider.compiler_id == 'nc_onemap_dem03' and 'VERTICAL_UNIT_UNKNOWN' in failure
+        source_selection_unresolved = provider.compiler_id == 'nc_onemap_dem03' and 'NC_SOURCE_SELECTION_UNRESOLVED' in failure
+        precondition = terrain_acquisition_precondition(error, layout_id, provider)
+        if precondition and 'Every covering terrain tile exported empty fill' in failure:
+            raise precondition from error
+        if provider.compiler_id not in ('nc_onemap_dem03', 'usgs_3dep_project_1m') or ('pixel cap' not in failure and not source_coverage_gap and not vertical_unknown and not source_selection_unresolved):
+            raise
+        for resolution_m in VISUAL_TERRAIN_DERIVED_RESOLUTIONS_M:
+            candidate = visual_terrain_candidate_path(source_root, resolution_m)
+            # Retention class C is allowed to evict the raster while keeping
+            # its manifest. Require all manifest-listed files before reuse;
+            # otherwise start this derived visual cache fresh.
+            reset_incomplete_visual_source_cache(ctx, candidate)
+            try:
+                run_script(ctx, run, node, 'scripts/golf/course-geometry/compile-course-terrain.py', [*base_args, '--source', candidate,
+                           '--rendering-only-resolution-m', str(resolution_m)])
+            except RuntimeError as derived_error:
+                # A 1 m source may need a coarser export for pixel budget;
+                # a lower-resolution public fallback needs a render grid no
+                # finer than its declared source spacing.  In both cases try
+                # the next declared visual tier, never inventing resolution.
+                if 'pixel cap' in str(derived_error) or 'No native-1m tile set covers' in str(derived_error):
+                    continue
+                raise
+            source = candidate
+            break
+        else:
+            raise RuntimeError('No bounded derived visual terrain resolution fits the provider acquisition cap') from error
+    return source
 
 
 def acquire_visual_terrain(node, ctx, run):
@@ -332,44 +513,12 @@ def acquire_visual_terrain(node, ctx, run):
     # New sources must record the perimeter-aware coverage contract. The
     # older directory is retained immutable evidence; it cannot be relabelled
     # after discovering an edge-coverage defect.
-    source_root = os.path.join(ctx.facility_out(facility_id), 'visual-terrain', package['contentHash'][:12] + ('-nc-native-v2' if provider.compiler_id == 'nc_onemap_dem03' else '-perimeter-v1'))
+    source_root = visual_terrain_source_root(ctx, facility_id, package, provider)
     base_args = ['--acquire-only', '--provider', provider.compiler_id, '--holes', 'all', '--package', ctx.visual_candidate_package_path(layout_id),
                  '--output', os.path.join(ctx.facility_out(facility_id), 'visual-compiled')]
-    source = source_root
-    # Keep the provider's native-size cap hard.  A facility that exceeds that
-    # one-request limit receives a separately versioned derived raster solely
-    # for a non-measurable visual scene. Nothing in this branch can make it a
-    # route, terrain measurement, shot constraint, or hole association.
-    if os.path.isdir(source) and not os.path.isfile(os.path.join(source, 'source-manifest.json')):
-        safe_rmtree(ctx, source)
-    try:
-        run_script(ctx, run, node, 'scripts/golf/course-geometry/compile-course-terrain.py', [*base_args, '--source', source])
-    except RuntimeError as error:
-        failure = str(error)
-        source_coverage_gap = provider.compiler_id == 'usgs_3dep_project_1m' and 'No native-1m tile set covers' in failure
-        vertical_unknown = provider.compiler_id == 'nc_onemap_dem03' and 'VERTICAL_UNIT_UNKNOWN' in failure
-        if provider.compiler_id not in ('nc_onemap_dem03', 'usgs_3dep_project_1m') or ('pixel cap' not in failure and not source_coverage_gap and not vertical_unknown):
-            raise
-        for resolution_m in VISUAL_TERRAIN_DERIVED_RESOLUTIONS_M:
-            candidate = source_root + f'-visual-r{resolution_m}m-v1'
-            if os.path.isdir(candidate) and not os.path.isfile(os.path.join(candidate, 'source-manifest.json')):
-                safe_rmtree(ctx, candidate)
-            try:
-                run_script(ctx, run, node, 'scripts/golf/course-geometry/compile-course-terrain.py', [*base_args, '--source', candidate,
-                           '--rendering-only-resolution-m', str(resolution_m)])
-            except RuntimeError as derived_error:
-                # A 1 m source may need a coarser export for pixel budget;
-                # a lower-resolution public fallback needs a render grid no
-                # finer than its declared source spacing.  In both cases try
-                # the next declared visual tier, never inventing resolution.
-                if 'pixel cap' in str(derived_error) or 'No native-1m tile set covers' in str(derived_error):
-                    continue
-                raise
-            source = candidate
-            break
-        else:
-            raise RuntimeError('No bounded derived visual terrain resolution fits the provider acquisition cap') from error
-    manifest = ctx.json(os.path.join(source, 'source-manifest.json'), fresh=True)
+    with derived_output_lock(ctx, source_root):
+        source = acquire_visual_terrain_source(node, ctx, run, layout_id, provider, source_root, base_args)
+        manifest = ctx.json(os.path.join(source, 'source-manifest.json'), fresh=True)
     pointer_path = ctx.visual_terrain_pointer_path(layout_id)
     _write_json(pointer_path, {
         'kind': 'golfhelm-layout-visual-terrain-pointer-v1', 'layoutId': layout_id, 'facilityId': facility_id,
@@ -421,21 +570,25 @@ def build_visual_world(node, ctx, run):
     source_manifest = ctx.json(source_manifest_path, fresh=True)
     with open(source_manifest_path, 'rb') as source_manifest_file:
         source_manifest_sha256 = hashlib.sha256(source_manifest_file.read()).hexdigest()
-    current = ctx.json(manifest_path, fresh=True) if os.path.isfile(manifest_path) else None
-    reuse = bool(current and current.get('packageHash') == package['contentHash']
-                 and current.get('terrainSourceManifestSha256') == source_manifest_sha256
-                 and os.path.isfile(glb_path) and os.path.isfile(preview_path))
-    if not reuse:
-        if os.path.isdir(out):
-            safe_rmtree(ctx, out)
-        step = _facility_visual_step(source_manifest)
-        # Keep at least two visual-grid cells outside every source feature.
-        # The extra sampled terrain is render support only; no semantic point
-        # is moved or promoted into the physical model.
-        terrain_guard_m = max(16, step * 2)
-        run_script(ctx, run, node, 'scripts/golf/course-geometry/build-course-world.py',
-                   [package_path, source, out, '--terrain-step-m', str(step), '--padding-m', str(terrain_guard_m)])
-        current = ctx.json(manifest_path, fresh=True)
+    # A world compile removes and recreates the whole derived directory.  Do
+    # that atomically with respect to another factory run so a reader never
+    # observes a half-replaced study.json/manifest pair.
+    with derived_output_lock(ctx, out):
+        current = ctx.json(manifest_path, fresh=True) if os.path.isfile(manifest_path) else None
+        reuse = bool(current and current.get('packageHash') == package['contentHash']
+                     and current.get('terrainSourceManifestSha256') == source_manifest_sha256
+                     and os.path.isfile(glb_path) and os.path.isfile(preview_path))
+        if not reuse:
+            if os.path.isdir(out):
+                safe_rmtree(ctx, out)
+            step = _facility_visual_step(source_manifest)
+            # Keep at least two visual-grid cells outside every source feature.
+            # The extra sampled terrain is render support only; no semantic point
+            # is moved or promoted into the physical model.
+            terrain_guard_m = max(16, step * 2)
+            run_script(ctx, run, node, 'scripts/golf/course-geometry/build-course-world.py',
+                       [package_path, source, out, '--terrain-step-m', str(step), '--padding-m', str(terrain_guard_m)])
+            current = ctx.json(manifest_path, fresh=True)
     pointer_path = ctx.visual_world_pointer_path(layout_id)
     _write_json(pointer_path, {
         'kind': 'golfhelm-layout-visual-world-pointer-v1', 'layoutId': layout_id, 'facilityId': facility_id,
@@ -472,6 +625,9 @@ def _prepare(node, ctx, run, out, canopy=None):
     imported = ctx.retained(layout, 'sourceGeometry')
     if imported:
         args += ['--source-geometry', imported]
+    route_traces = ctx.retained(layout, 'routeTraces')
+    if route_traces:
+        args += ['--route-traces', route_traces]
     traces = ctx.retained(layout, 'imageryTraces')
     if traces and os.path.isfile(traces):
         args += ['--traces', traces]
@@ -484,7 +640,7 @@ def _prepare(node, ctx, run, out, canopy=None):
     return [ref, artifact('association-report', os.path.join(out, 'association-report.json'), 'A'),
             artifact('source-metadata', os.path.join(out, 'source-metadata.json'), 'A')] + [
                 artifact(name, os.path.join(out, name + '.json'), 'A')
-                for name in ('source-geometry', 'imagery-traces') if os.path.isfile(os.path.join(out, name + '.json'))]
+                for name in ('source-geometry', 'route-traces', 'imagery-traces') if os.path.isfile(os.path.join(out, name + '.json'))]
 
 
 def compose_candidates(node, ctx, run):
@@ -513,8 +669,18 @@ def acquire_terrain(node, ctx, run):
     # Keep the old four-corner source immutable. Perimeter coverage plus a
     # native-grid buffer is a different acquired raster, not a metadata edit.
     source = os.path.join(ctx.facility_out(node.scope.facility_id), 'terrain', key + ('-nc-native-v2' if provider.compiler_id == 'nc_onemap_dem03' else '-perimeter-v1'))
-    run_script(ctx, run, node, 'scripts/golf/course-geometry/compile-course-terrain.py',
-               ['--acquire-only', '--provider', provider.compiler_id, '--holes', 'all', '--package', pkg_path, '--source', source, '--output', ctx.terrain_base_out(layout_id)])
+    try:
+        run_script(ctx, run, node, 'scripts/golf/course-geometry/compile-course-terrain.py',
+                   ['--acquire-only', '--provider', provider.compiler_id, '--holes', 'all', '--package', pkg_path, '--source', source, '--output', ctx.terrain_base_out(layout_id)])
+    except RuntimeError as error:
+        dossier = os.path.join(source, 'source-selection-dossier.json')
+        precondition = terrain_acquisition_precondition(
+            error, layout_id, provider,
+            ctx.relpath(dossier) if os.path.isfile(dossier) else None,
+        )
+        if precondition:
+            raise precondition from error
+        raise
     manifest = ctx.json(os.path.join(source, 'source-manifest.json'), fresh=True)
     pointer = {'kind': 'golfhelm-factory-terrain-source-v1', 'layoutId': layout_id, 'directory': ctx.relpath(source),
                'requestedLocalBoundsM': bounds, 'sourceManifestHash': digest(manifest), 'sourceIdentity': terrain_source_identity(manifest),
@@ -547,7 +713,13 @@ def derive_canopy(node, ctx, run):
             raise RuntimeError('reusable canopy envelope mismatch')
         _write_json(out, {**document, 'packageHash': package['contentHash']})
     else:
-        run_script(ctx, run, node, 'scripts/golf/course-geometry/derive-canopy-naip.py', args)
+        try:
+            run_script(ctx, run, node, 'scripts/golf/course-geometry/derive-canopy-naip.py', args)
+        except RuntimeError as error:
+            precondition = canopy_source_precondition(error, layout_id)
+            if precondition:
+                raise precondition from error
+            raise
     paths = [out, os.path.join(naip, 'manifest.json'), os.path.join(naip, 'naip.tif')]
     retained = retain_receipt(ctx, layout_id, 'canopy', identity, package['contentHash'], paths)
     return [artifact('canopy-review', out, 'A'), artifact('naip-manifest', paths[1], 'B'), artifact('naip-raster', paths[2], 'B'),

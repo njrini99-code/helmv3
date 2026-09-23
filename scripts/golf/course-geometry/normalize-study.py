@@ -13,6 +13,7 @@ from pathlib import Path
 
 import numpy as np
 import pyproj
+from hole_footprint import clip_render_geometry, played_features
 from physical_admission import load_review, review_input
 
 _spec = importlib.util.spec_from_file_location('elevation_raster', Path(__file__).with_name('elevation_raster.py'))
@@ -161,10 +162,11 @@ def main():
     # decimating existing samples keeps every retained height source-backed.
     first_row, last_row, first_col, last_col = 0, lidar.raster.shape[0] - 1, 0, lidar.raster.shape[1] - 1
     if args.padding_m is not None:
-        # Canopy groups are decoration that can reach far beyond the played
-        # surfaces; they never size the metric grid.
-        footprint_source = [lidar.to_source.transform(point[0], point[1]) for feature in selected
-                            if feature['kind'] != 'woods' for point in points(feature['geometryWgs84']['coordinates'])]
+        # Shared lakes, rough and canopy can extend across several holes.
+        # Retain their full canonical polygons, but size this grid from the
+        # played route/surfaces; bounded display clips are created below.
+        footprint_source = [lidar.to_source.transform(point[0], point[1]) for feature in played_features(selected)
+                            for point in points(feature['geometryWgs84']['coordinates'])]
         dx_native = (extent['xmax'] - extent['xmin']) / lidar.raster.shape[1]
         dy_native = (extent['ymax'] - extent['ymin']) / lidar.raster.shape[0]
         min_sx, max_sx = min(p[0] for p in footprint_source) - args.padding_m, max(p[0] for p in footprint_source) + args.padding_m
@@ -194,6 +196,12 @@ def main():
             lon, lat = source_to_wgs.transform(sx, sy)
             east, north = local_enu(origin, (lon, lat))
             positions.append([round(east, 5), round(float(raw_height), 5), round(north, 5)])
+    terrain_grid = {'width': width, 'height': height, 'positionsMeters': positions,
+                    'sampleStride': stride, 'nominalStepMeters': round(stride * float(lidar.native_resolution_m), 6)}
+    if args.padding_m is not None:
+        for feature in compiled_features:
+            if feature['kind'] in ('water', 'rough') and feature['geometryMeters']['type'] in ('Polygon', 'MultiPolygon'):
+                feature['renderGeometryMeters'], feature['renderClip'] = clip_render_geometry(feature['geometryMeters'], terrain_grid)
     result = {
         'schemaVersion': 1, 'kind': 'golfhelm-canonical-local-meter-study', 'version': 1,
         'siteId': package['siteId'], 'physicalStudyKey': args.study_key, 'status': 'source_candidate_partial' if package['status'] == 'source_candidate' else 'reviewed_draft',
@@ -205,15 +213,18 @@ def main():
             'projection': 'wgs84-local-enu-v1', 'oneWorldUnitEqualsMeters': True},
         'features': compiled_features,
         'terrain': {'truthClass': 'visual_only' if terrain_rendering_only else 'derived',
-                    'grid': {'width': width, 'height': height, 'positionsMeters': positions,
-            'sampleStride': stride, 'nominalStepMeters': round(stride * float(lidar.native_resolution_m), 6)}, 'source': {
+                    'grid': terrain_grid, 'source': {
               'provider': lidar.manifest.get('provider', lidar.manifest.get('providerPolicyId', 'unknown')),
               'derivation': lidar.manifest.get('derivation', lidar.manifest.get('selectedTitle')),
               'nativeResolutionMeters': lidar.native_resolution_m,
               'sourceNativeResolutionMeters': lidar.manifest.get('sourceNativeResolutionM', lidar.native_resolution_m),
               'renderingOnly': terrain_rendering_only,
               'verticalDatum': lidar.manifest['verticalDatum'],
-              'verticalDatumStatus': lidar.manifest.get('verticalDatumStatus', 'declared by source catalog metadata'), 'rasterSha256': sha256(args.lidar_directory / 'elevation.tiff')}},
+              'verticalDatumStatus': lidar.manifest.get('verticalDatumStatus', 'declared by source catalog metadata'), 'rasterSha256': sha256(args.lidar_directory / 'elevation.tiff')},
+                    'coverage': {'mode': 'played_footprint_crop' if args.padding_m is not None else 'complete_source_raster',
+                                 'anchorFeatureIds': [feature['id'] for feature in played_features(selected)],
+                                 'paddingMeters': args.padding_m,
+                                 'sharedFeaturePolicy': 'retain_full_canonical_geometry_clip_display_only'}},
         'sources': {'imagery': {'provider': imagery['provider'], 'selectedKind': imagery['selectedKind'], 'nativeResolutionMeters': imagery['nativeResolutionM'],
                       'analysisStatus': imagery['analysisStatus'], 'attribution': imagery['attribution']} if imagery else None,
                     'geometry': package['sources'], 'terrain': lidar.manifest},

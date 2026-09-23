@@ -1,0 +1,3391 @@
+{
+  "schema": "golfhelm-retained-routing-evidence-v1",
+  "provenance": {
+    "attribution": "\u00a9 OpenStreetMap contributors",
+    "license": "ODbL-1.0",
+    "licenseUrl": "https://www.openstreetmap.org/copyright",
+    "retrievedAt": "2026-09-21",
+    "relationEndpoint": "https://api.openstreetmap.org/api/0.6/relation/4813858/full.json",
+    "relationResponseSha256": "e1530b68154e0d01863a35054ab5ab3b58dac5abd3aa091d935d01d880bc5fa3",
+    "routeExtractSha256": "a13e61f442c44ee43a34a0b2756e72684adbedce1e0f41ba537105ca18309ece",
+    "selection": "Complete relation response and every golf=hole element from the route extract, unmodified. Other route extract elements omitted. No boundary or measurement approval."
+  },
+  "relationResponse": {
+    "version": "0.6",
+    "generator": "openstreetmap-cgimap 2.1.0 (2942789 spike-08.openstreetmap.org)",
+    "copyright": "OpenStreetMap and contributors",
+    "attribution": "http://www.openstreetmap.org/copyright",
+    "license": "http://opendatacommons.org/licenses/odbl/1-0/",
+    "elements": [
+      {
+        "type": "node",
+        "id": 479448881,
+        "lat": 32.1325971,
+        "lon": -80.8132051,
+        "timestamp": "2019-09-02T14:17:24Z",
+        "version": 2,
+        "changeset": 74002942,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 480036696,
+        "lat": 32.1310391,
+        "lon": -80.8154416,
+        "timestamp": "2019-09-02T14:47:36Z",
+        "version": 3,
+        "changeset": 74004049,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 480036702,
+        "lat": 32.1320465,
+        "lon": -80.8158414,
+        "timestamp": "2019-09-02T14:47:36Z",
+        "version": 2,
+        "changeset": 74004049,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 2094202049,
+        "lat": 32.1377912,
+        "lon": -80.8132733,
+        "timestamp": "2013-01-04T00:02:00Z",
+        "version": 1,
+        "changeset": 14520565,
+        "user": "Munchabunch",
+        "uid": 414318
+      },
+      {
+        "type": "node",
+        "id": 2094205765,
+        "lat": 32.1363955,
+        "lon": -80.8147315,
+        "timestamp": "2016-06-27T23:25:00Z",
+        "version": 2,
+        "changeset": 40333086,
+        "user": "3yoda",
+        "uid": 632378
+      },
+      {
+        "type": "node",
+        "id": 3466859255,
+        "lat": 32.1321321,
+        "lon": -80.8158753,
+        "timestamp": "2019-09-02T14:47:36Z",
+        "version": 3,
+        "changeset": 74004049,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3466859256,
+        "lat": 32.1326737,
+        "lon": -80.8160903,
+        "timestamp": "2019-09-02T14:47:36Z",
+        "version": 3,
+        "changeset": 74004049,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3466859259,
+        "lat": 32.1333588,
+        "lon": -80.8163621,
+        "timestamp": "2019-09-02T14:47:36Z",
+        "version": 3,
+        "changeset": 74004049,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3466859260,
+        "lat": 32.1337325,
+        "lon": -80.8163984,
+        "timestamp": "2019-09-02T14:47:36Z",
+        "version": 3,
+        "changeset": 74004049,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3466859261,
+        "lat": 32.1343314,
+        "lon": -80.8158963,
+        "timestamp": "2019-09-02T14:47:36Z",
+        "version": 3,
+        "changeset": 74004049,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3466859262,
+        "lat": 32.1345769,
+        "lon": -80.8156905,
+        "timestamp": "2019-09-02T14:47:36Z",
+        "version": 2,
+        "changeset": 74004049,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3466859263,
+        "lat": 32.1349137,
+        "lon": -80.8154081,
+        "timestamp": "2019-09-02T15:00:05Z",
+        "version": 2,
+        "changeset": 74004501,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3466859264,
+        "lat": 32.135197,
+        "lon": -80.8151706,
+        "timestamp": "2019-09-02T15:00:05Z",
+        "version": 2,
+        "changeset": 74004501,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3466859265,
+        "lat": 32.1353453,
+        "lon": -80.8150463,
+        "timestamp": "2019-09-02T15:00:05Z",
+        "version": 2,
+        "changeset": 74004501,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3466859269,
+        "lat": 32.1360413,
+        "lon": -80.814803,
+        "timestamp": "2019-09-02T15:00:05Z",
+        "version": 2,
+        "changeset": 74004501,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3466859270,
+        "lat": 32.1359594,
+        "lon": -80.8148142,
+        "timestamp": "2019-09-02T15:00:05Z",
+        "version": 2,
+        "changeset": 74004501,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3466859271,
+        "lat": 32.1356472,
+        "lon": -80.814795,
+        "timestamp": "2019-09-02T15:00:05Z",
+        "version": 2,
+        "changeset": 74004501,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3466859272,
+        "lat": 32.1357414,
+        "lon": -80.8147567,
+        "timestamp": "2019-09-02T15:00:05Z",
+        "version": 2,
+        "changeset": 74004501,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3466859273,
+        "lat": 32.1358539,
+        "lon": -80.8147942,
+        "timestamp": "2019-09-02T15:00:05Z",
+        "version": 2,
+        "changeset": 74004501,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3466859274,
+        "lat": 32.1355589,
+        "lon": -80.8149016,
+        "timestamp": "2019-09-02T15:00:05Z",
+        "version": 2,
+        "changeset": 74004501,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3466859289,
+        "lat": 32.1364797,
+        "lon": -80.8145847,
+        "timestamp": "2016-06-27T23:25:00Z",
+        "version": 2,
+        "changeset": 40333086,
+        "user": "3yoda",
+        "uid": 632378
+      },
+      {
+        "type": "node",
+        "id": 3466859290,
+        "lat": 32.1369401,
+        "lon": -80.81403,
+        "timestamp": "2016-06-27T23:25:00Z",
+        "version": 2,
+        "changeset": 40333086,
+        "user": "3yoda",
+        "uid": 632378
+      },
+      {
+        "type": "node",
+        "id": 3466859494,
+        "lat": 32.1365705,
+        "lon": -80.8143978,
+        "timestamp": "2016-06-27T23:25:00Z",
+        "version": 2,
+        "changeset": 40333086,
+        "user": "3yoda",
+        "uid": 632378
+      },
+      {
+        "type": "node",
+        "id": 3466859495,
+        "lat": 32.136669,
+        "lon": -80.8142831,
+        "timestamp": "2016-06-27T23:25:00Z",
+        "version": 2,
+        "changeset": 40333086,
+        "user": "3yoda",
+        "uid": 632378
+      },
+      {
+        "type": "node",
+        "id": 3466859497,
+        "lat": 32.1367958,
+        "lon": -80.8141582,
+        "timestamp": "2016-06-27T23:25:00Z",
+        "version": 2,
+        "changeset": 40333086,
+        "user": "3yoda",
+        "uid": 632378
+      },
+      {
+        "type": "node",
+        "id": 3466859499,
+        "lat": 32.1360707,
+        "lon": -80.8149376,
+        "timestamp": "2019-09-02T15:00:05Z",
+        "version": 2,
+        "changeset": 74004501,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3466859500,
+        "lat": 32.1362383,
+        "lon": -80.8148415,
+        "timestamp": "2016-06-27T23:25:00Z",
+        "version": 2,
+        "changeset": 40333086,
+        "user": "3yoda",
+        "uid": 632378
+      },
+      {
+        "type": "node",
+        "id": 3466859543,
+        "lat": 32.1336418,
+        "lon": -80.8164745,
+        "timestamp": "2019-09-02T14:47:36Z",
+        "version": 3,
+        "changeset": 74004049,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3466859544,
+        "lat": 32.1339994,
+        "lon": -80.8161747,
+        "timestamp": "2019-09-02T14:47:36Z",
+        "version": 3,
+        "changeset": 74004049,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3466870884,
+        "lat": 32.1336693,
+        "lon": -80.8059514,
+        "timestamp": "2015-04-20T04:03:48Z",
+        "version": 1,
+        "changeset": 30346056,
+        "user": "DeVietor",
+        "uid": 506866
+      },
+      {
+        "type": "node",
+        "id": 3466870885,
+        "lat": 32.1326811,
+        "lon": -80.8073132,
+        "timestamp": "2019-08-20T02:52:17Z",
+        "version": 2,
+        "changeset": 73519848,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3466870886,
+        "lat": 32.1312313,
+        "lon": -80.8064073,
+        "timestamp": "2015-04-20T04:03:48Z",
+        "version": 1,
+        "changeset": 30346056,
+        "user": "DeVietor",
+        "uid": 506866
+      },
+      {
+        "type": "node",
+        "id": 3466870887,
+        "lat": 32.1294552,
+        "lon": -80.80629,
+        "timestamp": "2015-04-20T04:03:49Z",
+        "version": 1,
+        "changeset": 30346056,
+        "user": "DeVietor",
+        "uid": 506866
+      },
+      {
+        "type": "node",
+        "id": 3466870888,
+        "lat": 32.1294552,
+        "lon": -80.8059774,
+        "timestamp": "2015-04-20T04:03:49Z",
+        "version": 1,
+        "changeset": 30346056,
+        "user": "DeVietor",
+        "uid": 506866
+      },
+      {
+        "type": "node",
+        "id": 3466870889,
+        "lat": 32.1302936,
+        "lon": -80.8040625,
+        "timestamp": "2015-04-20T04:03:49Z",
+        "version": 1,
+        "changeset": 30346056,
+        "user": "DeVietor",
+        "uid": 506866
+      },
+      {
+        "type": "node",
+        "id": 3466870890,
+        "lat": 32.1327932,
+        "lon": -80.8051942,
+        "timestamp": "2019-08-14T15:12:30Z",
+        "version": 2,
+        "changeset": 73354463,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3466870891,
+        "lat": 32.1280321,
+        "lon": -80.8050264,
+        "timestamp": "2015-04-20T04:03:49Z",
+        "version": 1,
+        "changeset": 30346056,
+        "user": "DeVietor",
+        "uid": 506866
+      },
+      {
+        "type": "node",
+        "id": 3466870892,
+        "lat": 32.1272819,
+        "lon": -80.805769,
+        "timestamp": "2015-04-20T04:03:49Z",
+        "version": 1,
+        "changeset": 30346056,
+        "user": "DeVietor",
+        "uid": 506866
+      },
+      {
+        "type": "node",
+        "id": 3466871193,
+        "lat": 32.1261566,
+        "lon": -80.8061077,
+        "timestamp": "2015-04-20T04:03:49Z",
+        "version": 1,
+        "changeset": 30346056,
+        "user": "DeVietor",
+        "uid": 506866
+      },
+      {
+        "type": "node",
+        "id": 3466871194,
+        "lat": 32.1245901,
+        "lon": -80.8060686,
+        "timestamp": "2015-04-20T04:03:49Z",
+        "version": 1,
+        "changeset": 30346056,
+        "user": "DeVietor",
+        "uid": 506866
+      },
+      {
+        "type": "node",
+        "id": 3466871195,
+        "lat": 32.1248438,
+        "lon": -80.8052349,
+        "timestamp": "2015-04-20T04:03:49Z",
+        "version": 1,
+        "changeset": 30346056,
+        "user": "DeVietor",
+        "uid": 506866
+      },
+      {
+        "type": "node",
+        "id": 3466871196,
+        "lat": 32.1257595,
+        "lon": -80.8044142,
+        "timestamp": "2015-04-20T04:03:49Z",
+        "version": 1,
+        "changeset": 30346056,
+        "user": "DeVietor",
+        "uid": 506866
+      },
+      {
+        "type": "node",
+        "id": 3466871197,
+        "lat": 32.1265489,
+        "lon": -80.8034209,
+        "timestamp": "2019-08-16T15:57:26Z",
+        "version": 2,
+        "changeset": 73421722,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3466871198,
+        "lat": 32.1271324,
+        "lon": -80.8036304,
+        "timestamp": "2019-08-18T01:50:40Z",
+        "version": 2,
+        "changeset": 73454387,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3466871199,
+        "lat": 32.1278194,
+        "lon": -80.80413,
+        "timestamp": "2019-08-18T01:50:40Z",
+        "version": 2,
+        "changeset": 73454387,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3466871200,
+        "lat": 32.1261507,
+        "lon": -80.8145236,
+        "timestamp": "2019-09-01T02:57:44Z",
+        "version": 2,
+        "changeset": 73961664,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3466871201,
+        "lat": 32.1270112,
+        "lon": -80.8127814,
+        "timestamp": "2019-09-01T02:57:44Z",
+        "version": 2,
+        "changeset": 73961664,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3466871202,
+        "lat": 32.1289147,
+        "lon": -80.810628,
+        "timestamp": "2015-04-20T04:03:49Z",
+        "version": 1,
+        "changeset": 30346056,
+        "user": "DeVietor",
+        "uid": 506866
+      },
+      {
+        "type": "node",
+        "id": 3466871203,
+        "lat": 32.1306577,
+        "lon": -80.8105108,
+        "timestamp": "2015-04-20T04:03:49Z",
+        "version": 1,
+        "changeset": 30346056,
+        "user": "DeVietor",
+        "uid": 506866
+      },
+      {
+        "type": "node",
+        "id": 3466871204,
+        "lat": 32.1309224,
+        "lon": -80.8100027,
+        "timestamp": "2015-04-20T04:03:49Z",
+        "version": 1,
+        "changeset": 30346056,
+        "user": "DeVietor",
+        "uid": 506866
+      },
+      {
+        "type": "node",
+        "id": 3466871205,
+        "lat": 32.1288864,
+        "lon": -80.8097382,
+        "timestamp": "2019-08-26T23:15:36Z",
+        "version": 2,
+        "changeset": 73772401,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3466871206,
+        "lat": 32.127315,
+        "lon": -80.8086479,
+        "timestamp": "2015-04-20T04:03:49Z",
+        "version": 1,
+        "changeset": 30346056,
+        "user": "DeVietor",
+        "uid": 506866
+      },
+      {
+        "type": "node",
+        "id": 3466871207,
+        "lat": 32.1263336,
+        "lon": -80.8099394,
+        "timestamp": "2019-08-29T02:17:00Z",
+        "version": 2,
+        "changeset": 73862060,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3466871208,
+        "lat": 32.1261545,
+        "lon": -80.8103412,
+        "timestamp": "2019-08-29T02:17:00Z",
+        "version": 2,
+        "changeset": 73862060,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3466871209,
+        "lat": 32.1261125,
+        "lon": -80.8107322,
+        "timestamp": "2015-04-20T04:03:49Z",
+        "version": 1,
+        "changeset": 30346056,
+        "user": "DeVietor",
+        "uid": 506866
+      },
+      {
+        "type": "node",
+        "id": 3466871210,
+        "lat": 32.1253403,
+        "lon": -80.8132334,
+        "timestamp": "2015-04-20T04:03:49Z",
+        "version": 1,
+        "changeset": 30346056,
+        "user": "DeVietor",
+        "uid": 506866
+      },
+      {
+        "type": "node",
+        "id": 3466871211,
+        "lat": 32.1252299,
+        "lon": -80.814002,
+        "timestamp": "2015-04-20T04:03:49Z",
+        "version": 1,
+        "changeset": 30346056,
+        "user": "DeVietor",
+        "uid": 506866
+      },
+      {
+        "type": "node",
+        "id": 3466871212,
+        "lat": 32.1255057,
+        "lon": -80.8139629,
+        "timestamp": "2015-04-20T04:03:49Z",
+        "version": 1,
+        "changeset": 30346056,
+        "user": "DeVietor",
+        "uid": 506866
+      },
+      {
+        "type": "node",
+        "id": 3467074634,
+        "lat": 32.134914,
+        "lon": -80.8102459,
+        "timestamp": "2019-08-20T14:01:25Z",
+        "version": 3,
+        "changeset": 73541788,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3467074635,
+        "lat": 32.1362364,
+        "lon": -80.809304,
+        "timestamp": "2021-06-02T04:25:02Z",
+        "version": 4,
+        "changeset": 105706983,
+        "user": "cammace",
+        "uid": 3119079
+      },
+      {
+        "type": "node",
+        "id": 3467074636,
+        "lat": 32.1357353,
+        "lon": -80.8079558,
+        "timestamp": "2021-06-02T04:56:51Z",
+        "version": 2,
+        "changeset": 105707641,
+        "user": "cammace",
+        "uid": 3119079
+      },
+      {
+        "type": "node",
+        "id": 3467074637,
+        "lat": 32.135023,
+        "lon": -80.8068669,
+        "timestamp": "2021-06-02T04:56:51Z",
+        "version": 3,
+        "changeset": 105707641,
+        "user": "cammace",
+        "uid": 3119079
+      },
+      {
+        "type": "node",
+        "id": 3467074638,
+        "lat": 32.1339729,
+        "lon": -80.8053646,
+        "timestamp": "2015-04-20T06:24:25Z",
+        "version": 1,
+        "changeset": 30347222,
+        "user": "DeVietor",
+        "uid": 506866
+      },
+      {
+        "type": "node",
+        "id": 3467074639,
+        "lat": 32.1328698,
+        "lon": -80.8043746,
+        "timestamp": "2015-04-20T06:24:25Z",
+        "version": 1,
+        "changeset": 30347222,
+        "user": "DeVietor",
+        "uid": 506866
+      },
+      {
+        "type": "node",
+        "id": 3467074640,
+        "lat": 32.1314688,
+        "lon": -80.803593,
+        "timestamp": "2015-04-20T06:24:25Z",
+        "version": 1,
+        "changeset": 30347222,
+        "user": "DeVietor",
+        "uid": 506866
+      },
+      {
+        "type": "node",
+        "id": 3467074641,
+        "lat": 32.130498,
+        "lon": -80.8034366,
+        "timestamp": "2015-04-20T06:24:25Z",
+        "version": 1,
+        "changeset": 30347222,
+        "user": "DeVietor",
+        "uid": 506866
+      },
+      {
+        "type": "node",
+        "id": 3467074642,
+        "lat": 32.1292514,
+        "lon": -80.8033585,
+        "timestamp": "2015-04-20T06:24:25Z",
+        "version": 1,
+        "changeset": 30347222,
+        "user": "DeVietor",
+        "uid": 506866
+      },
+      {
+        "type": "node",
+        "id": 3467074643,
+        "lat": 32.1282365,
+        "lon": -80.8033064,
+        "timestamp": "2015-04-20T06:24:25Z",
+        "version": 1,
+        "changeset": 30347222,
+        "user": "DeVietor",
+        "uid": 506866
+      },
+      {
+        "type": "node",
+        "id": 3467074644,
+        "lat": 32.1267802,
+        "lon": -80.8022512,
+        "timestamp": "2015-04-20T06:24:25Z",
+        "version": 1,
+        "changeset": 30347222,
+        "user": "DeVietor",
+        "uid": 506866
+      },
+      {
+        "type": "node",
+        "id": 3467074645,
+        "lat": 32.1262617,
+        "lon": -80.8020428,
+        "timestamp": "2015-04-20T06:24:25Z",
+        "version": 1,
+        "changeset": 30347222,
+        "user": "DeVietor",
+        "uid": 506866
+      },
+      {
+        "type": "node",
+        "id": 3467074646,
+        "lat": 32.1259639,
+        "lon": -80.8021991,
+        "timestamp": "2015-04-20T06:24:25Z",
+        "version": 1,
+        "changeset": 30347222,
+        "user": "DeVietor",
+        "uid": 506866
+      },
+      {
+        "type": "node",
+        "id": 3467074647,
+        "lat": 32.1238894,
+        "lon": -80.8045597,
+        "timestamp": "2019-08-16T16:07:26Z",
+        "version": 2,
+        "changeset": 73422103,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3467074648,
+        "lat": 32.1239416,
+        "lon": -80.8073801,
+        "timestamp": "2019-08-16T15:17:03Z",
+        "version": 2,
+        "changeset": 73420447,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3467074649,
+        "lat": 32.1245501,
+        "lon": -80.8072796,
+        "timestamp": "2015-04-20T06:24:25Z",
+        "version": 1,
+        "changeset": 30347222,
+        "user": "DeVietor",
+        "uid": 506866
+      },
+      {
+        "type": "node",
+        "id": 3467074650,
+        "lat": 32.1246841,
+        "lon": -80.8068888,
+        "timestamp": "2015-04-20T06:24:26Z",
+        "version": 1,
+        "changeset": 30347222,
+        "user": "DeVietor",
+        "uid": 506866
+      },
+      {
+        "type": "node",
+        "id": 3467074651,
+        "lat": 32.1268412,
+        "lon": -80.8068162,
+        "timestamp": "2019-08-15T01:49:16Z",
+        "version": 2,
+        "changeset": 73368604,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3467074652,
+        "lat": 32.1272215,
+        "lon": -80.8067325,
+        "timestamp": "2015-04-20T06:24:26Z",
+        "version": 1,
+        "changeset": 30347222,
+        "user": "DeVietor",
+        "uid": 506866
+      },
+      {
+        "type": "node",
+        "id": 3467074653,
+        "lat": 32.1283978,
+        "lon": -80.8063571,
+        "timestamp": "2019-08-18T13:49:56Z",
+        "version": 2,
+        "changeset": 73464770,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3467074654,
+        "lat": 32.1285674,
+        "lon": -80.8064719,
+        "timestamp": "2015-04-20T06:24:26Z",
+        "version": 1,
+        "changeset": 30347222,
+        "user": "DeVietor",
+        "uid": 506866
+      },
+      {
+        "type": "node",
+        "id": 3467074655,
+        "lat": 32.1286226,
+        "lon": -80.8071102,
+        "timestamp": "2015-04-20T06:24:26Z",
+        "version": 1,
+        "changeset": 30347222,
+        "user": "DeVietor",
+        "uid": 506866
+      },
+      {
+        "type": "node",
+        "id": 3467074656,
+        "lat": 32.1304318,
+        "lon": -80.8069921,
+        "timestamp": "2019-08-20T02:38:38Z",
+        "version": 2,
+        "changeset": 73519700,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3467074657,
+        "lat": 32.1312541,
+        "lon": -80.8073014,
+        "timestamp": "2019-08-20T02:38:38Z",
+        "version": 2,
+        "changeset": 73519700,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3467074658,
+        "lat": 32.1327043,
+        "lon": -80.8085171,
+        "timestamp": "2015-04-20T06:24:26Z",
+        "version": 1,
+        "changeset": 30347222,
+        "user": "DeVietor",
+        "uid": 506866
+      },
+      {
+        "type": "node",
+        "id": 3467074659,
+        "lat": 32.133311,
+        "lon": -80.8091164,
+        "timestamp": "2015-04-20T06:24:26Z",
+        "version": 1,
+        "changeset": 30347222,
+        "user": "DeVietor",
+        "uid": 506866
+      },
+      {
+        "type": "node",
+        "id": 3467074660,
+        "lat": 32.132535,
+        "lon": -80.8099552,
+        "timestamp": "2019-08-20T14:01:25Z",
+        "version": 2,
+        "changeset": 73541788,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3467074661,
+        "lat": 32.1313143,
+        "lon": -80.8095072,
+        "timestamp": "2015-04-20T06:24:26Z",
+        "version": 1,
+        "changeset": 30347222,
+        "user": "DeVietor",
+        "uid": 506866
+      },
+      {
+        "type": "node",
+        "id": 3467074662,
+        "lat": 32.1293572,
+        "lon": -80.8085446,
+        "timestamp": "2019-08-26T23:15:36Z",
+        "version": 3,
+        "changeset": 73772401,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3467074663,
+        "lat": 32.1278877,
+        "lon": -80.8080339,
+        "timestamp": "2019-08-26T22:47:30Z",
+        "version": 2,
+        "changeset": 73772020,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3467074664,
+        "lat": 32.1274532,
+        "lon": -80.8077746,
+        "timestamp": "2015-04-20T06:24:26Z",
+        "version": 1,
+        "changeset": 30347222,
+        "user": "DeVietor",
+        "uid": 506866
+      },
+      {
+        "type": "node",
+        "id": 3467074665,
+        "lat": 32.1251921,
+        "lon": -80.8086783,
+        "timestamp": "2019-08-29T01:58:20Z",
+        "version": 2,
+        "changeset": 73861788,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3467074667,
+        "lat": 32.124982,
+        "lon": -80.811523,
+        "timestamp": "2015-04-20T06:24:26Z",
+        "version": 1,
+        "changeset": 30347222,
+        "user": "DeVietor",
+        "uid": 506866
+      },
+      {
+        "type": "node",
+        "id": 3467074668,
+        "lat": 32.1252849,
+        "lon": -80.8115148,
+        "timestamp": "2019-08-30T03:00:47Z",
+        "version": 2,
+        "changeset": 73903465,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3467074669,
+        "lat": 32.1242534,
+        "lon": -80.8133774,
+        "timestamp": "2019-08-30T03:25:24Z",
+        "version": 2,
+        "changeset": 73903762,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3467074670,
+        "lat": 32.1238249,
+        "lon": -80.8151471,
+        "timestamp": "2019-08-30T03:25:24Z",
+        "version": 2,
+        "changeset": 73903762,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3467074671,
+        "lat": 32.1237658,
+        "lon": -80.8157262,
+        "timestamp": "2019-08-30T03:25:24Z",
+        "version": 2,
+        "changeset": 73903762,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3467074672,
+        "lat": 32.1248017,
+        "lon": -80.8157778,
+        "timestamp": "2019-08-30T03:25:24Z",
+        "version": 2,
+        "changeset": 73903762,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3467074673,
+        "lat": 32.1256032,
+        "lon": -80.8150639,
+        "timestamp": "2019-08-31T15:09:43Z",
+        "version": 2,
+        "changeset": 73951627,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3467074674,
+        "lat": 32.1264603,
+        "lon": -80.8151609,
+        "timestamp": "2015-04-20T06:24:26Z",
+        "version": 1,
+        "changeset": 30347222,
+        "user": "DeVietor",
+        "uid": 506866
+      },
+      {
+        "type": "node",
+        "id": 3467074675,
+        "lat": 32.1281262,
+        "lon": -80.8130896,
+        "timestamp": "2015-04-20T06:24:26Z",
+        "version": 1,
+        "changeset": 30347222,
+        "user": "DeVietor",
+        "uid": 506866
+      },
+      {
+        "type": "node",
+        "id": 3467074676,
+        "lat": 32.1290629,
+        "lon": -80.8119522,
+        "timestamp": "2019-09-01T02:57:44Z",
+        "version": 2,
+        "changeset": 73961664,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3467074677,
+        "lat": 32.1295272,
+        "lon": -80.8116957,
+        "timestamp": "2015-04-20T06:24:26Z",
+        "version": 1,
+        "changeset": 30347222,
+        "user": "DeVietor",
+        "uid": 506866
+      },
+      {
+        "type": "node",
+        "id": 3467074678,
+        "lat": 32.1300457,
+        "lon": -80.8111486,
+        "timestamp": "2015-04-20T06:24:26Z",
+        "version": 1,
+        "changeset": 30347222,
+        "user": "DeVietor",
+        "uid": 506866
+      },
+      {
+        "type": "node",
+        "id": 3467074679,
+        "lat": 32.1319284,
+        "lon": -80.811383,
+        "timestamp": "2019-09-01T18:11:48Z",
+        "version": 2,
+        "changeset": 73979387,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3467074680,
+        "lat": 32.1326161,
+        "lon": -80.8118303,
+        "timestamp": "2019-09-01T18:11:48Z",
+        "version": 2,
+        "changeset": 73979387,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3467074681,
+        "lat": 32.1328551,
+        "lon": -80.8125077,
+        "timestamp": "2019-09-01T18:11:48Z",
+        "version": 2,
+        "changeset": 73979387,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3467074682,
+        "lat": 32.1375293,
+        "lon": -80.8128575,
+        "timestamp": "2019-09-02T15:00:05Z",
+        "version": 2,
+        "changeset": 74004501,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3467074683,
+        "lat": 32.1366418,
+        "lon": -80.8128567,
+        "timestamp": "2019-09-02T15:00:05Z",
+        "version": 3,
+        "changeset": 74004501,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3467074684,
+        "lat": 32.1349342,
+        "lon": -80.8133484,
+        "timestamp": "2019-09-02T15:00:05Z",
+        "version": 2,
+        "changeset": 74004501,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3467074685,
+        "lat": 32.133742,
+        "lon": -80.8134912,
+        "timestamp": "2019-09-02T15:00:05Z",
+        "version": 3,
+        "changeset": 74004501,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3467074687,
+        "lat": 32.133561,
+        "lon": -80.811547,
+        "timestamp": "2019-09-01T18:31:00Z",
+        "version": 2,
+        "changeset": 73979743,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3467074688,
+        "lat": 32.1333069,
+        "lon": -80.8109853,
+        "timestamp": "2019-09-01T18:31:00Z",
+        "version": 2,
+        "changeset": 73979743,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3467074689,
+        "lat": 32.1348201,
+        "lon": -80.8101817,
+        "timestamp": "2019-08-20T14:01:25Z",
+        "version": 2,
+        "changeset": 73541788,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 3480836518,
+        "lat": 32.1362454,
+        "lon": -80.8130969,
+        "timestamp": "2019-09-02T15:00:05Z",
+        "version": 2,
+        "changeset": 74004501,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 4268953149,
+        "lat": 32.1370617,
+        "lon": -80.8139807,
+        "timestamp": "2016-06-27T23:24:58Z",
+        "version": 1,
+        "changeset": 40333086,
+        "user": "3yoda",
+        "uid": 632378
+      },
+      {
+        "type": "node",
+        "id": 4268953150,
+        "lat": 32.1371697,
+        "lon": -80.8139627,
+        "timestamp": "2016-06-27T23:24:58Z",
+        "version": 1,
+        "changeset": 40333086,
+        "user": "3yoda",
+        "uid": 632378
+      },
+      {
+        "type": "node",
+        "id": 4268953151,
+        "lat": 32.1372198,
+        "lon": -80.8139188,
+        "timestamp": "2016-06-27T23:24:58Z",
+        "version": 1,
+        "changeset": 40333086,
+        "user": "3yoda",
+        "uid": 632378
+      },
+      {
+        "type": "node",
+        "id": 4268953152,
+        "lat": 32.1373165,
+        "lon": -80.8138294,
+        "timestamp": "2016-06-27T23:24:58Z",
+        "version": 1,
+        "changeset": 40333086,
+        "user": "3yoda",
+        "uid": 632378
+      },
+      {
+        "type": "node",
+        "id": 4268953153,
+        "lat": 32.1374036,
+        "lon": -80.8137866,
+        "timestamp": "2016-06-27T23:24:58Z",
+        "version": 1,
+        "changeset": 40333086,
+        "user": "3yoda",
+        "uid": 632378
+      },
+      {
+        "type": "node",
+        "id": 4268953154,
+        "lat": 32.1375074,
+        "lon": -80.8136763,
+        "timestamp": "2016-06-27T23:24:58Z",
+        "version": 1,
+        "changeset": 40333086,
+        "user": "3yoda",
+        "uid": 632378
+      },
+      {
+        "type": "node",
+        "id": 4268953157,
+        "lat": 32.1376276,
+        "lon": -80.8133967,
+        "timestamp": "2016-06-27T23:24:58Z",
+        "version": 1,
+        "changeset": 40333086,
+        "user": "3yoda",
+        "uid": 632378
+      },
+      {
+        "type": "node",
+        "id": 4268953230,
+        "lat": 32.1351397,
+        "lon": -80.8105798,
+        "timestamp": "2019-08-20T14:01:25Z",
+        "version": 2,
+        "changeset": 73541788,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 4805969661,
+        "lat": 32.1378381,
+        "lon": -80.8130512,
+        "timestamp": "2017-04-20T15:08:44Z",
+        "version": 1,
+        "changeset": 47975084,
+        "user": "ElliottPlack",
+        "uid": 105946
+      },
+      {
+        "type": "node",
+        "id": 4805969662,
+        "lat": 32.1378358,
+        "lon": -80.8130096,
+        "timestamp": "2017-04-20T15:08:44Z",
+        "version": 1,
+        "changeset": 47975084,
+        "user": "ElliottPlack",
+        "uid": 105946
+      },
+      {
+        "type": "node",
+        "id": 4805969663,
+        "lat": 32.1378176,
+        "lon": -80.812964,
+        "timestamp": "2017-04-20T15:08:44Z",
+        "version": 1,
+        "changeset": 47975084,
+        "user": "ElliottPlack",
+        "uid": 105946
+      },
+      {
+        "type": "node",
+        "id": 4805969664,
+        "lat": 32.1377733,
+        "lon": -80.81296,
+        "timestamp": "2017-04-20T15:08:44Z",
+        "version": 1,
+        "changeset": 47975084,
+        "user": "ElliottPlack",
+        "uid": 105946
+      },
+      {
+        "type": "node",
+        "id": 4805969665,
+        "lat": 32.1377506,
+        "lon": -80.8129627,
+        "timestamp": "2017-04-20T15:08:44Z",
+        "version": 1,
+        "changeset": 47975084,
+        "user": "ElliottPlack",
+        "uid": 105946
+      },
+      {
+        "type": "node",
+        "id": 4806793096,
+        "lat": 32.137318,
+        "lon": -80.8128456,
+        "timestamp": "2017-04-21T02:44:14Z",
+        "version": 1,
+        "changeset": 47988988,
+        "user": "ElliottPlack",
+        "uid": 105946
+      },
+      {
+        "type": "node",
+        "id": 6106480807,
+        "lat": 32.1246902,
+        "lon": -80.8094838,
+        "timestamp": "2018-11-30T15:48:39Z",
+        "version": 1,
+        "changeset": 65048876,
+        "user": "duy0323",
+        "uid": 8752948
+      },
+      {
+        "type": "node",
+        "id": 6709093667,
+        "lat": 32.131997,
+        "lon": -80.8047244,
+        "timestamp": "2019-08-14T03:22:19Z",
+        "version": 1,
+        "changeset": 73330022,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 6709093691,
+        "lat": 32.1303819,
+        "lon": -80.8040968,
+        "timestamp": "2019-08-14T03:22:19Z",
+        "version": 1,
+        "changeset": 73330022,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 6711308983,
+        "lat": 32.1266233,
+        "lon": -80.8066888,
+        "timestamp": "2019-08-15T01:49:16Z",
+        "version": 1,
+        "changeset": 73368604,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 6711308984,
+        "lat": 32.127032,
+        "lon": -80.8068043,
+        "timestamp": "2019-08-15T01:49:16Z",
+        "version": 1,
+        "changeset": 73368604,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 6711308985,
+        "lat": 32.126737,
+        "lon": -80.8067539,
+        "timestamp": "2019-08-15T01:49:16Z",
+        "version": 1,
+        "changeset": 73368604,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 6715909603,
+        "lat": 32.1238004,
+        "lon": -80.806421,
+        "timestamp": "2019-08-16T15:17:03Z",
+        "version": 1,
+        "changeset": 73420447,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 6715959090,
+        "lat": 32.1246977,
+        "lon": -80.803678,
+        "timestamp": "2019-08-16T16:07:26Z",
+        "version": 2,
+        "changeset": 73422103,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 6715992989,
+        "lat": 32.1256043,
+        "lon": -80.8046689,
+        "timestamp": "2019-08-16T15:57:26Z",
+        "version": 1,
+        "changeset": 73421722,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 6715992990,
+        "lat": 32.1263034,
+        "lon": -80.8037282,
+        "timestamp": "2019-08-16T15:57:26Z",
+        "version": 1,
+        "changeset": 73421722,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 6715992991,
+        "lat": 32.1260363,
+        "lon": -80.8040199,
+        "timestamp": "2019-08-16T15:57:26Z",
+        "version": 1,
+        "changeset": 73421722,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 6715999525,
+        "lat": 32.1236022,
+        "lon": -80.8053574,
+        "timestamp": "2019-08-16T16:07:26Z",
+        "version": 1,
+        "changeset": 73422103,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 6720901768,
+        "lat": 32.1277855,
+        "lon": -80.8066876,
+        "timestamp": "2019-08-18T13:49:56Z",
+        "version": 1,
+        "changeset": 73464770,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 6725479360,
+        "lat": 32.1304004,
+        "lon": -80.8062716,
+        "timestamp": "2019-08-20T02:38:38Z",
+        "version": 1,
+        "changeset": 73519700,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 6725513578,
+        "lat": 32.1314205,
+        "lon": -80.8065078,
+        "timestamp": "2019-08-20T02:44:13Z",
+        "version": 1,
+        "changeset": 73519756,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 6725526869,
+        "lat": 32.1310018,
+        "lon": -80.8071544,
+        "timestamp": "2019-08-20T02:38:38Z",
+        "version": 1,
+        "changeset": 73519700,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 6725526870,
+        "lat": 32.130819,
+        "lon": -80.8070747,
+        "timestamp": "2019-08-20T02:38:38Z",
+        "version": 1,
+        "changeset": 73519700,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 6725526871,
+        "lat": 32.1306722,
+        "lon": -80.8070185,
+        "timestamp": "2019-08-20T02:38:38Z",
+        "version": 1,
+        "changeset": 73519700,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 6725526937,
+        "lat": 32.1317238,
+        "lon": -80.8065285,
+        "timestamp": "2019-08-20T02:38:38Z",
+        "version": 1,
+        "changeset": 73519700,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 6725527112,
+        "lat": 32.1316702,
+        "lon": -80.8077227,
+        "timestamp": "2019-08-20T02:38:38Z",
+        "version": 1,
+        "changeset": 73519700,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 6726802799,
+        "lat": 32.1343073,
+        "lon": -80.8106789,
+        "timestamp": "2019-08-20T14:01:25Z",
+        "version": 1,
+        "changeset": 73541788,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 6726802800,
+        "lat": 32.1365463,
+        "lon": -80.8098469,
+        "timestamp": "2019-08-20T14:01:25Z",
+        "version": 1,
+        "changeset": 73541788,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 6726802801,
+        "lat": 32.1363834,
+        "lon": -80.8094581,
+        "timestamp": "2021-06-02T04:25:02Z",
+        "version": 2,
+        "changeset": 105706983,
+        "user": "cammace",
+        "uid": 3119079
+      },
+      {
+        "type": "node",
+        "id": 6726807961,
+        "lat": 32.132796,
+        "lon": -80.8098,
+        "timestamp": "2019-08-20T14:01:25Z",
+        "version": 1,
+        "changeset": 73541788,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 6726807962,
+        "lat": 32.1330489,
+        "lon": -80.8092077,
+        "timestamp": "2019-08-20T14:01:25Z",
+        "version": 1,
+        "changeset": 73541788,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 6726807963,
+        "lat": 32.1328234,
+        "lon": -80.80958,
+        "timestamp": "2019-08-20T14:01:25Z",
+        "version": 1,
+        "changeset": 73541788,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 6726850083,
+        "lat": 32.1313216,
+        "lon": -80.8035704,
+        "timestamp": "2019-08-20T14:20:34Z",
+        "version": 1,
+        "changeset": 73542735,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 6747322389,
+        "lat": 32.1276297,
+        "lon": -80.8091291,
+        "timestamp": "2019-08-26T22:47:30Z",
+        "version": 1,
+        "changeset": 73772020,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 6747322390,
+        "lat": 32.1297633,
+        "lon": -80.8099412,
+        "timestamp": "2019-08-26T22:47:30Z",
+        "version": 1,
+        "changeset": 73772020,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 6754615710,
+        "lat": 32.1247024,
+        "lon": -80.8105257,
+        "timestamp": "2019-08-29T01:58:20Z",
+        "version": 1,
+        "changeset": 73861788,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 6754618597,
+        "lat": 32.1255376,
+        "lon": -80.8081581,
+        "timestamp": "2019-08-29T01:58:20Z",
+        "version": 1,
+        "changeset": 73861788,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 6754618598,
+        "lat": 32.1247035,
+        "lon": -80.8111723,
+        "timestamp": "2019-08-29T01:58:20Z",
+        "version": 1,
+        "changeset": 73861788,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 6758505686,
+        "lat": 32.124514,
+        "lon": -80.8160855,
+        "timestamp": "2019-08-31T14:55:37Z",
+        "version": 2,
+        "changeset": 73951336,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 6761763980,
+        "lat": 32.1240662,
+        "lon": -80.8160526,
+        "timestamp": "2019-08-31T14:55:37Z",
+        "version": 1,
+        "changeset": 73951336,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 6761763981,
+        "lat": 32.1236753,
+        "lon": -80.815367,
+        "timestamp": "2019-08-31T14:55:37Z",
+        "version": 1,
+        "changeset": 73951336,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 6762953609,
+        "lat": 32.1262445,
+        "lon": -80.8153553,
+        "timestamp": "2019-09-01T02:57:44Z",
+        "version": 1,
+        "changeset": 73961664,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 6762953611,
+        "lat": 32.1283544,
+        "lon": -80.8111599,
+        "timestamp": "2019-09-01T02:57:44Z",
+        "version": 1,
+        "changeset": 73961664,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 6762953612,
+        "lat": 32.1296267,
+        "lon": -80.8104687,
+        "timestamp": "2019-09-01T02:57:44Z",
+        "version": 1,
+        "changeset": 73961664,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 6762964369,
+        "lat": 32.1298361,
+        "lon": -80.811559,
+        "timestamp": "2019-09-01T03:12:23Z",
+        "version": 1,
+        "changeset": 73961744,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 6766592495,
+        "lat": 32.135465,
+        "lon": -80.8149459,
+        "timestamp": "2019-09-02T14:47:36Z",
+        "version": 1,
+        "changeset": 74004049,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 6766592522,
+        "lat": 32.1319854,
+        "lon": -80.8139536,
+        "timestamp": "2019-09-02T14:47:36Z",
+        "version": 1,
+        "changeset": 74004049,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 6766592523,
+        "lat": 32.1316005,
+        "lon": -80.8149001,
+        "timestamp": "2019-09-02T14:47:36Z",
+        "version": 1,
+        "changeset": 74004049,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 6766592524,
+        "lat": 32.1317277,
+        "lon": -80.8143037,
+        "timestamp": "2019-09-02T14:47:36Z",
+        "version": 1,
+        "changeset": 74004049,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 6766616998,
+        "lat": 32.1360877,
+        "lon": -80.8148248,
+        "timestamp": "2019-09-02T15:00:05Z",
+        "version": 1,
+        "changeset": 74004501,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 6766616999,
+        "lat": 32.1355228,
+        "lon": -80.813233,
+        "timestamp": "2019-09-02T15:00:05Z",
+        "version": 1,
+        "changeset": 74004501,
+        "user": "scoll3",
+        "uid": 10221237
+      },
+      {
+        "type": "node",
+        "id": 8790917112,
+        "lat": 32.1363962,
+        "lon": -80.8094887,
+        "timestamp": "2021-06-02T04:25:02Z",
+        "version": 1,
+        "changeset": 105706983,
+        "user": "cammace",
+        "uid": 3119079
+      },
+      {
+        "type": "node",
+        "id": 8790925208,
+        "lat": 32.1341965,
+        "lon": -80.8056317,
+        "timestamp": "2021-06-02T04:56:51Z",
+        "version": 1,
+        "changeset": 105707641,
+        "user": "cammace",
+        "uid": 3119079
+      },
+      {
+        "type": "node",
+        "id": 8790925926,
+        "lat": 32.1358138,
+        "lon": -80.8083728,
+        "timestamp": "2021-06-02T04:25:02Z",
+        "version": 1,
+        "changeset": 105706983,
+        "user": "cammace",
+        "uid": 3119079
+      },
+      {
+        "type": "node",
+        "id": 8790925927,
+        "lat": 32.1358235,
+        "lon": -80.8084003,
+        "timestamp": "2021-06-02T04:25:02Z",
+        "version": 1,
+        "changeset": 105706983,
+        "user": "cammace",
+        "uid": 3119079
+      },
+      {
+        "type": "node",
+        "id": 8790925928,
+        "lat": 32.1358212,
+        "lon": -80.8084814,
+        "timestamp": "2021-06-02T04:25:02Z",
+        "version": 1,
+        "changeset": 105706983,
+        "user": "cammace",
+        "uid": 3119079
+      },
+      {
+        "type": "node",
+        "id": 8790925929,
+        "lat": 32.1358019,
+        "lon": -80.8085398,
+        "timestamp": "2021-06-02T04:25:02Z",
+        "version": 1,
+        "changeset": 105706983,
+        "user": "cammace",
+        "uid": 3119079
+      },
+      {
+        "type": "node",
+        "id": 8790925930,
+        "lat": 32.1358553,
+        "lon": -80.8087101,
+        "timestamp": "2021-06-02T04:25:02Z",
+        "version": 1,
+        "changeset": 105706983,
+        "user": "cammace",
+        "uid": 3119079
+      },
+      {
+        "type": "node",
+        "id": 8790925931,
+        "lat": 32.1358042,
+        "lon": -80.8086142,
+        "timestamp": "2021-06-02T04:25:02Z",
+        "version": 1,
+        "changeset": 105706983,
+        "user": "cammace",
+        "uid": 3119079
+      },
+      {
+        "type": "node",
+        "id": 8790925932,
+        "lat": 32.1360216,
+        "lon": -80.8089213,
+        "timestamp": "2021-06-02T04:25:02Z",
+        "version": 1,
+        "changeset": 105706983,
+        "user": "cammace",
+        "uid": 3119079
+      },
+      {
+        "type": "node",
+        "id": 8790925933,
+        "lat": 32.135882,
+        "lon": -80.8087872,
+        "timestamp": "2021-06-02T04:25:02Z",
+        "version": 1,
+        "changeset": 105706983,
+        "user": "cammace",
+        "uid": 3119079
+      },
+      {
+        "type": "node",
+        "id": 8790925934,
+        "lat": 32.1361556,
+        "lon": -80.8091292,
+        "timestamp": "2021-06-02T04:25:02Z",
+        "version": 1,
+        "changeset": 105706983,
+        "user": "cammace",
+        "uid": 3119079
+      },
+      {
+        "type": "node",
+        "id": 8790925936,
+        "lat": 32.1363676,
+        "lon": -80.8094493,
+        "timestamp": "2021-06-02T04:25:02Z",
+        "version": 1,
+        "changeset": 105706983,
+        "user": "cammace",
+        "uid": 3119079
+      },
+      {
+        "type": "node",
+        "id": 8790925937,
+        "lat": 32.1361191,
+        "lon": -80.809019,
+        "timestamp": "2021-06-02T04:25:02Z",
+        "version": 1,
+        "changeset": 105706983,
+        "user": "cammace",
+        "uid": 3119079
+      },
+      {
+        "type": "node",
+        "id": 8790960327,
+        "lat": 32.1358797,
+        "lon": -80.8081931,
+        "timestamp": "2021-06-02T04:56:51Z",
+        "version": 1,
+        "changeset": 105707641,
+        "user": "cammace",
+        "uid": 3119079
+      },
+      {
+        "type": "node",
+        "id": 8790960328,
+        "lat": 32.1355526,
+        "lon": -80.8076862,
+        "timestamp": "2021-06-02T04:56:51Z",
+        "version": 1,
+        "changeset": 105707641,
+        "user": "cammace",
+        "uid": 3119079
+      },
+      {
+        "type": "node",
+        "id": 8790960329,
+        "lat": 32.135137,
+        "lon": -80.8070424,
+        "timestamp": "2021-06-02T04:56:51Z",
+        "version": 1,
+        "changeset": 105707641,
+        "user": "cammace",
+        "uid": 3119079
+      },
+      {
+        "type": "node",
+        "id": 8790960330,
+        "lat": 32.1352812,
+        "lon": -80.8072315,
+        "timestamp": "2021-06-02T04:56:51Z",
+        "version": 1,
+        "changeset": 105707641,
+        "user": "cammace",
+        "uid": 3119079
+      },
+      {
+        "type": "node",
+        "id": 8790960331,
+        "lat": 32.1345623,
+        "lon": -80.8060688,
+        "timestamp": "2021-06-02T04:56:51Z",
+        "version": 1,
+        "changeset": 105707641,
+        "user": "cammace",
+        "uid": 3119079
+      },
+      {
+        "type": "node",
+        "id": 10969774207,
+        "lat": 32.1361701,
+        "lon": -80.8103258,
+        "timestamp": "2023-06-11T20:42:46Z",
+        "version": 1,
+        "changeset": 137219408,
+        "user": "LarsKienzel",
+        "uid": 11559885
+      },
+      {
+        "type": "node",
+        "id": 10969774208,
+        "lat": 32.1359945,
+        "lon": -80.8106951,
+        "timestamp": "2023-06-11T20:42:46Z",
+        "version": 1,
+        "changeset": 137219408,
+        "user": "LarsKienzel",
+        "uid": 11559885
+      },
+      {
+        "type": "way",
+        "id": 339482321,
+        "timestamp": "2019-08-20T02:44:13Z",
+        "version": 6,
+        "changeset": 73519756,
+        "user": "scoll3",
+        "uid": 10221237,
+        "nodes": [
+          3466870884,
+          3466870885,
+          6725526937,
+          6725513578,
+          3466870886,
+          6725479360,
+          3466870887,
+          3466870888,
+          3466870889,
+          6709093691,
+          6709093667,
+          3466870890,
+          3466870884
+        ]
+      },
+      {
+        "type": "way",
+        "id": 339482322,
+        "timestamp": "2019-08-16T15:57:26Z",
+        "version": 3,
+        "changeset": 73421722,
+        "user": "scoll3",
+        "uid": 10221237,
+        "nodes": [
+          3466870891,
+          3466870892,
+          3466871193,
+          3466871194,
+          3466871195,
+          6715992989,
+          3466871196,
+          6715992991,
+          6715992990,
+          3466871197,
+          3466871198,
+          3466871199,
+          3466870891
+        ]
+      },
+      {
+        "type": "way",
+        "id": 339482323,
+        "timestamp": "2025-10-30T01:38:27Z",
+        "version": 5,
+        "changeset": 173954022,
+        "user": "bdiscoe",
+        "uid": 402624,
+        "nodes": [
+          3466871200,
+          3466871201,
+          6762953611,
+          3466871202,
+          6762953612,
+          3466871203,
+          3466871204,
+          6747322390,
+          3466871205,
+          6747322389,
+          3466871206,
+          3466871207,
+          3466871208,
+          3466871209,
+          3466871210,
+          3466871211,
+          3466871212,
+          3466871200
+        ]
+      },
+      {
+        "type": "way",
+        "id": 339500032,
+        "timestamp": "2025-10-30T01:38:27Z",
+        "version": 27,
+        "changeset": 173954022,
+        "user": "bdiscoe",
+        "uid": 402624,
+        "nodes": [
+          4268953150,
+          4268953151,
+          4268953152,
+          4268953153,
+          4268953154,
+          4268953157,
+          2094202049,
+          4805969661,
+          4805969662,
+          4805969663,
+          4805969664,
+          4805969665,
+          3467074682,
+          4806793096,
+          3467074683,
+          3480836518,
+          6766616999,
+          3467074684,
+          3467074685,
+          3467074687,
+          3467074688,
+          6726802799,
+          3467074689,
+          3467074634,
+          4268953230,
+          10969774208,
+          10969774207,
+          6726802800,
+          8790917112,
+          6726802801,
+          8790925936,
+          3467074635,
+          8790925934,
+          8790925937,
+          8790925932,
+          8790925933,
+          8790925930,
+          8790925931,
+          8790925929,
+          8790925928,
+          8790925927,
+          8790925926,
+          8790960327,
+          3467074636,
+          8790960328,
+          8790960330,
+          8790960329,
+          3467074637,
+          8790960331,
+          8790925208,
+          3467074638,
+          3467074639,
+          3467074640,
+          6726850083,
+          3467074641,
+          3467074642,
+          3467074643,
+          3467074644,
+          3467074645,
+          3467074646,
+          6715959090,
+          3467074647,
+          6715999525,
+          6715909603,
+          3467074648,
+          3467074649,
+          3467074650,
+          6711308983,
+          6711308985,
+          3467074651,
+          6711308984,
+          3467074652,
+          6720901768,
+          3467074653,
+          3467074654,
+          3467074655,
+          3467074656,
+          6725526871,
+          6725526870,
+          6725526869,
+          3467074657,
+          6725527112,
+          3467074658,
+          3467074659,
+          6726807962,
+          6726807963,
+          6726807961,
+          3467074660,
+          3467074661,
+          3467074662,
+          3467074663,
+          3467074664,
+          6754618597,
+          3467074665,
+          6106480807,
+          6754615710,
+          6754618598,
+          3467074667,
+          3467074668,
+          3467074669,
+          3467074670,
+          6761763981,
+          3467074671,
+          6761763980,
+          6758505686,
+          3467074672,
+          3467074673,
+          6762953609,
+          3467074674,
+          3467074675,
+          3467074676,
+          3467074677,
+          6762964369,
+          3467074678,
+          3467074679,
+          3467074680,
+          3467074681,
+          479448881,
+          6766592522,
+          6766592524,
+          6766592523,
+          480036696,
+          480036702
+        ]
+      },
+      {
+        "type": "way",
+        "id": 487107150,
+        "timestamp": "2019-09-02T15:00:05Z",
+        "version": 4,
+        "changeset": 74004501,
+        "user": "scoll3",
+        "uid": 10221237,
+        "nodes": [
+          480036702,
+          3466859255,
+          3466859256,
+          3466859259,
+          3466859543,
+          3466859260,
+          3466859544,
+          3466859261,
+          3466859262,
+          3466859263,
+          3466859264,
+          3466859265,
+          6766592495,
+          3466859274,
+          3466859271,
+          3466859272,
+          3466859273,
+          3466859270,
+          3466859269,
+          6766616998,
+          3466859499
+        ]
+      },
+      {
+        "type": "way",
+        "id": 826315448,
+        "timestamp": "2020-07-15T00:02:22Z",
+        "version": 1,
+        "changeset": 88000375,
+        "user": "VLD085",
+        "uid": 9362690,
+        "nodes": [
+          3466859499,
+          3466859500,
+          2094205765,
+          3466859289,
+          3466859494,
+          3466859495,
+          3466859497,
+          3466859290,
+          4268953149,
+          4268953150
+        ]
+      },
+      {
+        "type": "relation",
+        "id": 4813858,
+        "timestamp": "2023-07-18T18:03:38Z",
+        "version": 5,
+        "changeset": 138681942,
+        "user": "GatewayGolf",
+        "uid": 17093825,
+        "members": [
+          {
+            "type": "way",
+            "ref": 826315448,
+            "role": "outer"
+          },
+          {
+            "type": "way",
+            "ref": 487107150,
+            "role": "outer"
+          },
+          {
+            "type": "way",
+            "ref": 339500032,
+            "role": "outer"
+          },
+          {
+            "type": "way",
+            "ref": 339482321,
+            "role": "inner"
+          },
+          {
+            "type": "way",
+            "ref": 339482323,
+            "role": "inner"
+          },
+          {
+            "type": "way",
+            "ref": 339482322,
+            "role": "inner"
+          }
+        ],
+        "tags": {
+          "addr:city": "Hilton Head Island",
+          "addr:housenumber": "11",
+          "addr:postcode": "29928",
+          "addr:state": "SC",
+          "addr:street": "Lighthouse Lane",
+          "leisure": "golf_course",
+          "name": "Harbour Town Golf Links",
+          "phone": "+1-843-363-8385",
+          "type": "multipolygon",
+          "website": "https://www.seapines.com/golf/courses/harbour-town-golf-links",
+          "wikidata": "Q5654884"
+        }
+      }
+    ]
+  },
+  "routeElements": [
+    {
+      "type": "way",
+      "id": 722552376,
+      "bounds": {
+        "minlat": 32.1341984,
+        "minlon": -80.809375,
+        "maxlat": 32.1360297,
+        "maxlon": -80.8060722
+      },
+      "nodes": [
+        6777734186,
+        10315228161,
+        6777734187,
+        6777734188
+      ],
+      "geometry": [
+        {
+          "lat": 32.1360297,
+          "lon": -80.809375
+        },
+        {
+          "lat": 32.1356822,
+          "lon": -80.8087777
+        },
+        {
+          "lat": 32.1347311,
+          "lon": -80.807143
+        },
+        {
+          "lat": 32.1341984,
+          "lon": -80.8060722
+        }
+      ],
+      "tags": {
+        "golf": "hole",
+        "par": "4",
+        "ref": "1"
+      }
+    },
+    {
+      "type": "way",
+      "id": 722552377,
+      "bounds": {
+        "minlat": 32.1301497,
+        "minlon": -80.8056582,
+        "maxlat": 32.1338709,
+        "maxlon": -80.8037218
+      },
+      "nodes": [
+        6777734189,
+        6777734190,
+        6777734191,
+        6777734192
+      ],
+      "geometry": [
+        {
+          "lat": 32.1338709,
+          "lon": -80.8056582
+        },
+        {
+          "lat": 32.1320771,
+          "lon": -80.8043302
+        },
+        {
+          "lat": 32.1306353,
+          "lon": -80.8037393
+        },
+        {
+          "lat": 32.1301497,
+          "lon": -80.8037218
+        }
+      ],
+      "tags": {
+        "golf": "hole",
+        "par": "5",
+        "ref": "2"
+      }
+    },
+    {
+      "type": "way",
+      "id": 722552378,
+      "bounds": {
+        "minlat": 32.1270201,
+        "minlon": -80.8063567,
+        "maxlat": 32.1297701,
+        "maxlon": -80.8036756
+      },
+      "nodes": [
+        6777734193,
+        6777734194,
+        6777734195
+      ],
+      "geometry": [
+        {
+          "lat": 32.1297701,
+          "lon": -80.8036756
+        },
+        {
+          "lat": 32.1280352,
+          "lon": -80.8057084
+        },
+        {
+          "lat": 32.1270201,
+          "lon": -80.8063567
+        }
+      ],
+      "tags": {
+        "golf": "hole",
+        "par": "4",
+        "ref": "3"
+      }
+    },
+    {
+      "type": "way",
+      "id": 722552379,
+      "bounds": {
+        "minlat": 32.1251556,
+        "minlon": -80.8065054,
+        "maxlat": 32.1267217,
+        "maxlon": -80.8062912
+      },
+      "nodes": [
+        6777734196,
+        6777734197
+      ],
+      "geometry": [
+        {
+          "lat": 32.1267217,
+          "lon": -80.8062912
+        },
+        {
+          "lat": 32.1251556,
+          "lon": -80.8065054
+        }
+      ],
+      "tags": {
+        "golf": "hole",
+        "par": "3",
+        "ref": "4"
+      }
+    },
+    {
+      "type": "way",
+      "id": 722552380,
+      "bounds": {
+        "minlat": 32.1241518,
+        "minlon": -80.8071515,
+        "maxlat": 32.1261159,
+        "maxlon": -80.8026742
+      },
+      "nodes": [
+        6777734198,
+        6777734199,
+        6777734200,
+        6777734201
+      ],
+      "geometry": [
+        {
+          "lat": 32.1241518,
+          "lon": -80.8071515
+        },
+        {
+          "lat": 32.1244589,
+          "lon": -80.8047314
+        },
+        {
+          "lat": 32.1255116,
+          "lon": -80.8035759
+        },
+        {
+          "lat": 32.1261159,
+          "lon": -80.8026742
+        }
+      ],
+      "tags": {
+        "golf": "hole",
+        "par": "5",
+        "ref": "5"
+      }
+    },
+    {
+      "type": "way",
+      "id": 722552381,
+      "bounds": {
+        "minlat": 32.1261719,
+        "minlon": -80.803765,
+        "maxlat": 32.129214,
+        "maxlon": -80.8022073
+      },
+      "nodes": [
+        6777734202,
+        6777734203,
+        6720134856,
+        6777734204
+      ],
+      "geometry": [
+        {
+          "lat": 32.1261719,
+          "lon": -80.8022073
+        },
+        {
+          "lat": 32.1281208,
+          "lon": -80.8037091
+        },
+        {
+          "lat": 32.1291018,
+          "lon": -80.8037593
+        },
+        {
+          "lat": 32.129214,
+          "lon": -80.803765
+        }
+      ],
+      "tags": {
+        "golf": "hole",
+        "par": "4",
+        "ref": "6"
+      }
+    },
+    {
+      "type": "way",
+      "id": 722552382,
+      "bounds": {
+        "minlat": 32.1289707,
+        "minlon": -80.806192,
+        "maxlat": 32.1298302,
+        "maxlon": -80.8045832
+      },
+      "nodes": [
+        6777734205,
+        6777734206
+      ],
+      "geometry": [
+        {
+          "lat": 32.1298302,
+          "lon": -80.8045832
+        },
+        {
+          "lat": 32.1289707,
+          "lon": -80.806192
+        }
+      ],
+      "tags": {
+        "golf": "hole",
+        "par": "3",
+        "ref": "7"
+      }
+    },
+    {
+      "type": "way",
+      "id": 722552383,
+      "bounds": {
+        "minlat": 32.128683,
+        "minlon": -80.8076597,
+        "maxlat": 32.1323476,
+        "maxlon": -80.8067148
+      },
+      "nodes": [
+        6777734207,
+        6777734208,
+        6777734209
+      ],
+      "geometry": [
+        {
+          "lat": 32.128683,
+          "lon": -80.8068805
+        },
+        {
+          "lat": 32.131055,
+          "lon": -80.8067148
+        },
+        {
+          "lat": 32.1323476,
+          "lon": -80.8076597
+        }
+      ],
+      "tags": {
+        "golf": "hole",
+        "par": "4",
+        "ref": "8"
+      }
+    },
+    {
+      "type": "way",
+      "id": 722552384,
+      "bounds": {
+        "minlat": 32.133095,
+        "minlon": -80.8093046,
+        "maxlat": 32.1352517,
+        "maxlon": -80.8074387
+      },
+      "nodes": [
+        6777734210,
+        6777734211,
+        6777734212
+      ],
+      "geometry": [
+        {
+          "lat": 32.133095,
+          "lon": -80.8074387
+        },
+        {
+          "lat": 32.1348145,
+          "lon": -80.8087863
+        },
+        {
+          "lat": 32.1352517,
+          "lon": -80.8093046
+        }
+      ],
+      "tags": {
+        "golf": "hole",
+        "par": "4",
+        "ref": "9"
+      }
+    },
+    {
+      "type": "way",
+      "id": 722552385,
+      "bounds": {
+        "minlat": 32.1314785,
+        "minlon": -80.8106304,
+        "maxlat": 32.13506,
+        "maxlon": -80.8098008
+      },
+      "nodes": [
+        6777734213,
+        6777734214,
+        6777734215
+      ],
+      "geometry": [
+        {
+          "lat": 32.13506,
+          "lon": -80.8098008
+        },
+        {
+          "lat": 32.1326998,
+          "lon": -80.8106304
+        },
+        {
+          "lat": 32.1314785,
+          "lon": -80.8103583
+        }
+      ],
+      "tags": {
+        "golf": "hole",
+        "par": "4",
+        "ref": "10"
+      }
+    },
+    {
+      "type": "way",
+      "id": 722552386,
+      "bounds": {
+        "minlat": 32.1278152,
+        "minlon": -80.8096709,
+        "maxlat": 32.1312469,
+        "maxlon": -80.8085798
+      },
+      "nodes": [
+        6777734216,
+        6777734217,
+        6777734218
+      ],
+      "geometry": [
+        {
+          "lat": 32.1312469,
+          "lon": -80.8096709
+        },
+        {
+          "lat": 32.1288225,
+          "lon": -80.8091407
+        },
+        {
+          "lat": 32.1278152,
+          "lon": -80.8085798
+        }
+      ],
+      "tags": {
+        "golf": "hole",
+        "par": "4",
+        "ref": "11"
+      }
+    },
+    {
+      "type": "way",
+      "id": 722552387,
+      "bounds": {
+        "minlat": 32.125239,
+        "minlon": -80.8111531,
+        "maxlat": 32.1274277,
+        "maxlon": -80.8080287
+      },
+      "nodes": [
+        6777734219,
+        6777734220,
+        6777734221
+      ],
+      "geometry": [
+        {
+          "lat": 32.1274277,
+          "lon": -80.8080287
+        },
+        {
+          "lat": 32.1256154,
+          "lon": -80.8099258
+        },
+        {
+          "lat": 32.125239,
+          "lon": -80.8111531
+        }
+      ],
+      "tags": {
+        "golf": "hole",
+        "par": "4",
+        "ref": "12"
+      }
+    },
+    {
+      "type": "way",
+      "id": 722552388,
+      "bounds": {
+        "minlat": 32.1242571,
+        "minlon": -80.8149355,
+        "maxlat": 32.1255556,
+        "maxlon": -80.8117262
+      },
+      "nodes": [
+        6777734222,
+        6777734223,
+        6777734224
+      ],
+      "geometry": [
+        {
+          "lat": 32.1255556,
+          "lon": -80.8117262
+        },
+        {
+          "lat": 32.1248317,
+          "lon": -80.8141206
+        },
+        {
+          "lat": 32.1242571,
+          "lon": -80.8149355
+        }
+      ],
+      "tags": {
+        "golf": "hole",
+        "par": "4",
+        "ref": "13"
+      }
+    },
+    {
+      "type": "way",
+      "id": 722552389,
+      "bounds": {
+        "minlat": 32.1241735,
+        "minlon": -80.8153392,
+        "maxlat": 32.1255389,
+        "maxlon": -80.8144894
+      },
+      "nodes": [
+        6777734225,
+        6777734226
+      ],
+      "geometry": [
+        {
+          "lat": 32.1241735,
+          "lon": -80.8153392
+        },
+        {
+          "lat": 32.1255389,
+          "lon": -80.8144894
+        }
+      ],
+      "tags": {
+        "golf": "hole",
+        "par": "3",
+        "ref": "14"
+      }
+    },
+    {
+      "type": "way",
+      "id": 722552390,
+      "bounds": {
+        "minlat": 32.1263027,
+        "minlon": -80.8150672,
+        "maxlat": 32.129562,
+        "maxlon": -80.8111948
+      },
+      "nodes": [
+        6777734227,
+        6777734228,
+        6777734229,
+        6777734230
+      ],
+      "geometry": [
+        {
+          "lat": 32.1263027,
+          "lon": -80.8150672
+        },
+        {
+          "lat": 32.128028,
+          "lon": -80.8124284
+        },
+        {
+          "lat": 32.128894,
+          "lon": -80.8113149
+        },
+        {
+          "lat": 32.129562,
+          "lon": -80.8111948
+        }
+      ],
+      "tags": {
+        "golf": "hole",
+        "par": "5",
+        "ref": "15"
+      }
+    },
+    {
+      "type": "way",
+      "id": 722552391,
+      "bounds": {
+        "minlat": 32.1304032,
+        "minlon": -80.8124251,
+        "maxlat": 32.1331475,
+        "maxlon": -80.8108502
+      },
+      "nodes": [
+        6777734231,
+        6777734232,
+        6777734233
+      ],
+      "geometry": [
+        {
+          "lat": 32.1304032,
+          "lon": -80.8108502
+        },
+        {
+          "lat": 32.1329391,
+          "lon": -80.8113347
+        },
+        {
+          "lat": 32.1331475,
+          "lon": -80.8124251
+        }
+      ],
+      "tags": {
+        "golf": "hole",
+        "par": "4",
+        "ref": "16"
+      }
+    },
+    {
+      "type": "way",
+      "id": 722552392,
+      "bounds": {
+        "minlat": 32.132755,
+        "minlon": -80.8142748,
+        "maxlat": 32.133468,
+        "maxlon": -80.8123778
+      },
+      "nodes": [
+        6777734234,
+        6777734235
+      ],
+      "geometry": [
+        {
+          "lat": 32.133468,
+          "lon": -80.8123778
+        },
+        {
+          "lat": 32.132755,
+          "lon": -80.8142748
+        }
+      ],
+      "tags": {
+        "golf": "hole",
+        "par": "3",
+        "ref": "17"
+      }
+    },
+    {
+      "type": "way",
+      "id": 722552393,
+      "bounds": {
+        "minlat": 32.1333062,
+        "minlon": -80.8148722,
+        "maxlat": 32.136978,
+        "maxlon": -80.813575
+      },
+      "nodes": [
+        6777734236,
+        6777734237,
+        6777734238
+      ],
+      "geometry": [
+        {
+          "lat": 32.1333062,
+          "lon": -80.8148722
+        },
+        {
+          "lat": 32.1356287,
+          "lon": -80.8137148
+        },
+        {
+          "lat": 32.136978,
+          "lon": -80.813575
+        }
+      ],
+      "tags": {
+        "golf": "hole",
+        "par": "4",
+        "ref": "18"
+      }
+    },
+    {
+      "type": "way",
+      "id": 1238650425,
+      "bounds": {
+        "minlat": 32.1205367,
+        "minlon": -80.8006007,
+        "maxlat": 32.1238835,
+        "maxlon": -80.7988059
+      },
+      "nodes": [
+        11506311752,
+        11506311753,
+        11506311754,
+        11506311755
+      ],
+      "geometry": [
+        {
+          "lat": 32.1238835,
+          "lon": -80.7988059
+        },
+        {
+          "lat": 32.1219937,
+          "lon": -80.8004228
+        },
+        {
+          "lat": 32.1211378,
+          "lon": -80.8005433
+        },
+        {
+          "lat": 32.1205367,
+          "lon": -80.8006007
+        }
+      ],
+      "tags": {
+        "golf": "hole",
+        "golf:course:name": "Atlantic Dunes",
+        "par": "5",
+        "ref": "14"
+      }
+    },
+    {
+      "type": "way",
+      "id": 1238650436,
+      "bounds": {
+        "minlat": 32.1365771,
+        "minlon": -80.8005703,
+        "maxlat": 32.1368312,
+        "maxlon": -80.7988766
+      },
+      "nodes": [
+        11506363127,
+        11506363128
+      ],
+      "geometry": [
+        {
+          "lat": 32.1365771,
+          "lon": -80.7988766
+        },
+        {
+          "lat": 32.1368312,
+          "lon": -80.8005703
+        }
+      ],
+      "tags": {
+        "golf": "hole",
+        "golf:course:name": "Heron Point",
+        "par": "3",
+        "ref": "7"
+      }
+    },
+    {
+      "type": "way",
+      "id": 1238650437,
+      "bounds": {
+        "minlat": 32.1375602,
+        "minlon": -80.8012064,
+        "maxlat": 32.1396058,
+        "maxlon": -80.7985655
+      },
+      "nodes": [
+        11506363129,
+        11506363130,
+        11506363131
+      ],
+      "geometry": [
+        {
+          "lat": 32.1375602,
+          "lon": -80.8012064
+        },
+        {
+          "lat": 32.1388488,
+          "lon": -80.8000876
+        },
+        {
+          "lat": 32.1396058,
+          "lon": -80.7985655
+        }
+      ],
+      "tags": {
+        "golf": "hole",
+        "golf:course:name": "Heron Point",
+        "par": "4",
+        "ref": "8"
+      }
+    },
+    {
+      "type": "way",
+      "id": 1238650438,
+      "bounds": {
+        "minlat": 32.140029,
+        "minlon": -80.7999392,
+        "maxlat": 32.1433026,
+        "maxlon": -80.7980018
+      },
+      "nodes": [
+        11506363132,
+        11506363133,
+        11506363134,
+        11506363135
+      ],
+      "geometry": [
+        {
+          "lat": 32.140029,
+          "lon": -80.7989231
+        },
+        {
+          "lat": 32.1418024,
+          "lon": -80.7980018
+        },
+        {
+          "lat": 32.1426252,
+          "lon": -80.7994051
+        },
+        {
+          "lat": 32.1433026,
+          "lon": -80.7999392
+        }
+      ],
+      "tags": {
+        "golf": "hole",
+        "golf:course:name": "Heron Point",
+        "par": "5",
+        "ref": "9"
+      }
+    },
+    {
+      "type": "way",
+      "id": 1238650439,
+      "bounds": {
+        "minlat": 32.1403555,
+        "minlon": -80.801834,
+        "maxlat": 32.1427083,
+        "maxlon": -80.8000016
+      },
+      "nodes": [
+        11506363136,
+        11506363137,
+        11506363138
+      ],
+      "geometry": [
+        {
+          "lat": 32.1427083,
+          "lon": -80.8000016
+        },
+        {
+          "lat": 32.1409706,
+          "lon": -80.8012792
+        },
+        {
+          "lat": 32.1403555,
+          "lon": -80.801834
+        }
+      ],
+      "tags": {
+        "golf": "hole",
+        "golf:course:name": "Heron Point",
+        "par": "4",
+        "ref": "10"
+      }
+    },
+    {
+      "type": "way",
+      "id": 1238650440,
+      "bounds": {
+        "minlat": 32.1363654,
+        "minlon": -80.8043166,
+        "maxlat": 32.1399479,
+        "maxlon": -80.8025439
+      },
+      "nodes": [
+        11506363139,
+        11506363140,
+        11506363141,
+        11506363142
+      ],
+      "geometry": [
+        {
+          "lat": 32.1399479,
+          "lon": -80.8025439
+        },
+        {
+          "lat": 32.1385129,
+          "lon": -80.8043166
+        },
+        {
+          "lat": 32.1369626,
+          "lon": -80.8035343
+        },
+        {
+          "lat": 32.1363654,
+          "lon": -80.8033538
+        }
+      ],
+      "tags": {
+        "golf": "hole",
+        "golf:course:name": "Heron Point",
+        "par": "5",
+        "ref": "11"
+      }
+    },
+    {
+      "type": "way",
+      "id": 1238650441,
+      "bounds": {
+        "minlat": 32.133067,
+        "minlon": -80.8028315,
+        "maxlat": 32.1356394,
+        "maxlon": -80.8004663
+      },
+      "nodes": [
+        11506363143,
+        11506363144,
+        11506363145
+      ],
+      "geometry": [
+        {
+          "lat": 32.1356394,
+          "lon": -80.8028315
+        },
+        {
+          "lat": 32.134374,
+          "lon": -80.8011576
+        },
+        {
+          "lat": 32.133067,
+          "lon": -80.8004663
+        }
+      ],
+      "tags": {
+        "golf": "hole",
+        "golf:course:name": "Heron Point",
+        "par": "4",
+        "ref": "12"
+      }
+    },
+    {
+      "type": "way",
+      "id": 1238650442,
+      "bounds": {
+        "minlat": 32.1326182,
+        "minlon": -80.8003453,
+        "maxlat": 32.1328285,
+        "maxlon": -80.798912
+      },
+      "nodes": [
+        11506363146,
+        11506363147
+      ],
+      "geometry": [
+        {
+          "lat": 32.1326182,
+          "lon": -80.8003453
+        },
+        {
+          "lat": 32.1328285,
+          "lon": -80.798912
+        }
+      ],
+      "tags": {
+        "golf": "hole",
+        "golf:course:name": "Heron Point",
+        "par": "3",
+        "ref": "13"
+      }
+    },
+    {
+      "type": "way",
+      "id": 1238650443,
+      "bounds": {
+        "minlat": 32.1332079,
+        "minlon": -80.7991009,
+        "maxlat": 32.1351412,
+        "maxlon": -80.7967687
+      },
+      "nodes": [
+        11506363148,
+        11506363149,
+        11506363150
+      ],
+      "geometry": [
+        {
+          "lat": 32.1332079,
+          "lon": -80.7991009
+        },
+        {
+          "lat": 32.1348725,
+          "lon": -80.79787
+        },
+        {
+          "lat": 32.1351412,
+          "lon": -80.7967687
+        }
+      ],
+      "tags": {
+        "golf": "hole",
+        "golf:course:name": "Heron Point",
+        "par": "4",
+        "ref": "14"
+      }
+    }
+  ]
+}
