@@ -91,6 +91,34 @@ name: CI
 # ~4 min to every code PR's critical path. Nothing is weaker: `CI aggregate`
 # still needs `typecheck`, `lint` and every heavy job, so any failure still
 # fails the required check.
+#
+# --- 2026-09-23 UPDATE: red-by-default failures and PR wall time ----------
+#
+# Measured that day: ~42% of PRs failed their first push, mostly for reasons
+# the PR did not cause; queueing was 64% of PR wait against the account's
+# 20-job concurrency cap. What changed (docs/CI_RUNBOOK.md has the table):
+#
+#   - `Database types drift` left `Static checks`; types-regen.yml owns it.
+#   - Generated-artifact and dead-reference checks fail a PR only for drift
+#     it introduced (scripts/github/pr-drift-gate.mjs, --introduced-since);
+#     Docs Regen regenerates on main.
+#   - `CI aggregate` excuses cancelled jobs only when the PR head has moved
+#     on (superseded run). Drafts still fail it (#2049, owner decision).
+#   - NO DETECT HOP: `unit-tests`, `next-build` and `supabase` no longer
+#     `needs: detect-changes`; each applies the same `code` filter
+#     (.github/path-filters.yml) in its first steps and finishes green with
+#     nothing to do on a docs/config-only PR. `detect-changes` still feeds
+#     the aggregate and the other workflows.
+#   - `typecheck` folded into `lint` ("TypeScript + Lint"); unit tests run in
+#     5 shards; `npm ci --prefer-offline --no-audit --no-fund` everywhere.
+#   - `unit-tests-timezone` and `baseball-auth-smoke` moved to nightly.yml;
+#     `pr-smoke-a11y` / `sentry-snapshot-capture` run on push to main,
+#     dispatch, or a PR labelled `ci:e2e`.
+#   - Next's .next/cache is saved from main once per UTC day per lockfile.
+#   - The Supabase job starts only db/auth/storage and runs pg_prove once.
+#
+# Code-PR job count: 12 → 11 (detect, static, ts+lint, 5 unit shards,
+# build, supabase, aggregate); per merge to main: 20 → 13.
 # -----------------------------------------------------------------------------
 
 on:
@@ -108,6 +136,9 @@ on:
   # running the full suite on every draft push only burns Actions queue slots).
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
+  # The full suite on any branch, including the advisory Playwright/Sentry
+  # jobs: `gh workflow run ci.yml --ref <branch>`.
+  workflow_dispatch:
 
 concurrency:
   # Per-COMMIT groups on main (playwright.yml's old pattern): two merges landing
@@ -199,7 +230,7 @@ jobs:
           deno-version: v2.x
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --prefer-offline --no-audit --no-fund
 
       - name: Schema invariants
         id: schema_invariants
@@ -574,43 +605,22 @@ jobs:
           done < <(jq -r 'to_entries[] | "\(.key)\t\(.value.outcome)"' <<< "$STEP_OUTCOMES")
           exit "$bad"
 
-  typecheck:
-    name: TypeScript
-    # NOT gated on detect-changes: unlike the build/test/Supabase jobs below,
-    # a change outside the `code` path filter (a rule file, memory/registry.yml,
-    # config/*.yml) can still change what `tsc` reports through an ambient
-    # `.d.ts` or a tsconfig `include`/`paths` entry the filter doesn't track —
-    # so this always runs, every PR and every push. Still skips while draft
-    # (owner decision, PR throughput) — see static-checks above.
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft != true
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          persist-credentials: false
-
-      - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Typecheck
-        run: npm run typecheck
-
   lint:
-    name: Lint
-    # NOT gated on detect-changes, for the same reason as `typecheck` above:
-    # ESLint reads config files (eslint.config.mjs is already in the `code`
-    # filter, but a rule referencing another tracked path is not guaranteed
-    # to be) and the ratchets in here read the whole tree, not just the diff.
-    # Always runs, except while draft (owner decision, PR throughput) — see
+    # TypeScript and Lint were two jobs until 2026-09-23 — two runner slots
+    # and two `npm ci`s per PR for ~3 min of tsc and ~2 min of ESLint. Folded
+    # into one: `tsc` is a named step with the same continue-on-error +
+    # aggregate pattern as every ratchet here, so a type error still fails
+    # this job under its own step name and cannot hide a lint failure (or the
+    # reverse). Sequential total (~6 min) stays under `Next build` (~7.7 min
+    # median), so the critical path does not grow.
+    #
+    # NOT gated on the `code` path filter: a change outside it (a rule file,
+    # memory/registry.yml, config/*.yml) can still change what `tsc` reports
+    # through an ambient `.d.ts` or a tsconfig `include`/`paths` entry, and
+    # ESLint reads config files and the ratchets read the whole tree. Always
+    # runs, except while draft (owner decision, PR throughput) — see
     # static-checks above.
+    name: TypeScript + Lint
     if: github.event_name != 'pull_request' || github.event.pull_request.draft != true
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -629,7 +639,13 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --prefer-offline --no-audit --no-fund
+
+      # Was the separate `TypeScript` job (see the note on this job).
+      - name: Typecheck
+        id: typecheck
+        continue-on-error: true
+        run: npm run typecheck
 
       # Parse src + scripts once with the three opt-in audit rules enabled.
       # Each named gate below evaluates this run's report with its own scope.
@@ -713,37 +729,73 @@ jobs:
 
   unit-tests:
     name: Unit tests
-    # Runs in parallel with typecheck/lint — see the header note.
-    needs: [detect-changes]
-    if: needs.detect-changes.outputs.code == 'true'
+    # No `needs:` — starts with everything else and applies the `code` path
+    # gate itself (see the PATH GATE step). Skips while draft.
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft != true
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: read
+      pull-requests: read  # dorny/paths-filter lists the PR's files via the API
     # Sharded because the suite is runner-bound, not config-bound: 8,657 tests
     # take ~2.4 min on a 10-core laptop and ~13.9 min on a 4-core hosted runner.
     # `npm ci` is only ~1.2 min of that, so installs are not the lever — cores
-    # are. Three shards keeps total runner minutes roughly flat while cutting
-    # this job's wall clock from ~15.5 min to ~6.
+    # are. Three shards cut wall clock from ~15.5 min to ~6, but by 2026-09-23
+    # a shard took ~9 min median and the unit job paced 66% of runs; five
+    # shards (~5.5 min each) put it back under `Next build`.
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3]
+        shard: [1, 2, 3, 4, 5]
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
 
+      # PATH GATE, IN-JOB (2026-09-23): this job decides for itself whether
+      # the PR touched anything in `code` (.github/path-filters.yml, the same
+      # list detect-changes reads) instead of `needs: detect-changes` — that
+      # hop cost a second queue wait on every code PR before the heavy work
+      # could start. Fail closed: any event but pull_request, or a filter
+      # that did not succeed, runs everything. A docs/config-only PR finishes
+      # this job green in seconds with every later step skipped.
+      - name: Filter changed paths
+        id: filter
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d  # v4.0.3
+        with:
+          filters: .github/path-filters.yml
+
+      - name: Code-relevant change? (fail closed)
+        id: gate
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          FILTER_OUTCOME: ${{ steps.filter.outcome }}
+          FILTER_CODE: ${{ steps.filter.outputs.code }}
+        run: |
+          if [ "$EVENT_NAME" = "pull_request" ] && [ "$FILTER_OUTCOME" = "success" ] && [ "$FILTER_CODE" = "false" ]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No code-relevant path changed; nothing for this job to check."
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Setup Node
+        if: steps.gate.outputs.run == 'true'
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
           node-version: 22
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        if: steps.gate.outputs.run == 'true'
+        run: npm ci --prefer-offline --no-audit --no-fund
 
-      - name: Unit tests (shard ${{ matrix.shard }}/3)
-        run: npm run test:run -- --shard=${{ matrix.shard }}/3
+      - name: Unit tests (shard ${{ matrix.shard }}/5)
+        if: steps.gate.outputs.run == 'true'
+        run: npm run test:run -- --shard=${{ matrix.shard }}/5
 
       # The `integration` project ran in no job of its own. It was still being
       # executed — but only by accident, because `--project business` matched
@@ -752,142 +804,106 @@ jobs:
       # coach-onboarding-staff-row and player-access-action-gate — the auth and
       # access-control tests — running at all.
       - name: Integration tests
-        if: matrix.shard == 1
+        if: steps.gate.outputs.run == 'true' && (matrix.shard == 1)
         run: npm run test:integration
-
-  # ---------------------------------------------------------------------------
-  # The same unit suite, run at a FAR timezone offset.
-  #
-  # WHY THIS IS NOT HYGIENE. On 2026-07-29 `main` went red at 8pm EDT because two
-  # "today" fixtures were anchored to the UTC date while the code under test used a
-  # local/team date (#1123). Sweeping for the class found exactly two
-  # offset-dependent files in 8,514 tests — and the second one proved the sharper
-  # point. Re-injecting the ORIGINAL React #418 hydration bug that
-  # `FairwayAgendaView` was hardened against gives:
-  #
-  #     TZ=America/New_York    -> 4 passed   <- the bug is INVISIBLE
-  #     TZ=Pacific/Kiritimati  -> 1 failed
-  #     TZ=Asia/Tokyo          -> 1 failed
-  #
-  # CI runs at UTC, where midday-ET fixtures land on the same calendar day, so that
-  # guard was DORMANT: it could not catch the regression it exists to prevent.
-  # This job is what wakes it up.
-  #
-  # WHY A MATRIX OF BOTH EXTREMES. Each caught a different subset — UTC-11 broke one
-  # assertion in stage-history-format, UTC+14 broke the other two plus both agenda
-  # cases. One offset is enough to detect the class in principle; two is cheap
-  # insurance against a fixture that only slips in one direction.
-  #
-  # COST: runner minutes, not wall-clock — GHA runs these in parallel with the
-  # other jobs, so a green PR is not slower. Rejected alternative: banning
-  # `toISOString().slice(0, 10)`. There are 216 call sites and most are legitimate
-  # (formatting an already-stored date, or intentionally UTC), so a blanket rule
-  # would be noise. Running at a shifted offset catches the class regardless of
-  # which API produced the date.
-  #
-  # Verified clean at BOTH offsets on c2ea35695 before this job was added:
-  # 892 files / 8,514 tests, identical to the UTC run.
-  # ---------------------------------------------------------------------------
-  unit-tests-timezone:
-    name: Unit tests (shifted timezone)
-    # PUSH/MAIN ONLY (owner 2026-08-20, PR throughput): this 2-tz x 3-shard
-    # matrix added 6 jobs to every PR and was the dominant PR-time cost. It now
-    # runs on push to main only; timezone regressions are caught post-merge
-    # (with fast rollback) rather than pre-merge. Revert this `if` to restore the
-    # pre-merge gate — see the CI-aggregate note about incident #1123.
-    #
-    # Also gated on `detect-changes`'s `code` output, same as the other heavy
-    # jobs — a no-op today (push events always classify as code=true) but
-    # kept explicit so a future change to that classification does not have
-    # to remember this job too.
-    #
-    # Runs in parallel with typecheck/lint — see the header note.
-    needs: [detect-changes]
-    if: github.event_name == 'push' && needs.detect-changes.outputs.code == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      matrix:
-        tz:
-          - Pacific/Kiritimati  # UTC+14, the furthest ahead of UTC
-          - Pacific/Midway      # UTC-11, the furthest behind
-        # Sharded for the same reason as unit-tests. Unsharded, this job would
-        # become the critical path the moment the others got faster.
-        shard: [1, 2, 3]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          persist-credentials: false
-
-      - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Unit tests at ${{ matrix.tz }} (shard ${{ matrix.shard }}/3)
-        env:
-          TZ: ${{ matrix.tz }}
-        run: |
-          echo "Runner offset: $(date +%z)  ($(date))"
-          npm run test:run -- --shard=${{ matrix.shard }}/3
 
   next-build:
     name: Next build
-    # Runs in parallel with typecheck/lint — see the header note.
-    needs: [detect-changes]
-    if: needs.detect-changes.outputs.code == 'true'
+    # No `needs:` — in-job `code` path gate, see Unit tests. Skips while draft.
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft != true
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: read
+      pull-requests: read  # dorny/paths-filter lists the PR's files via the API
+    outputs:
+      # Whether this run built (and uploaded `next-build-<sha>`). The
+      # artifact consumers below check it: a gated-off build has no artifact.
+      built: ${{ steps.gate.outputs.run }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
 
+      # PATH GATE, IN-JOB (2026-09-23): this job decides for itself whether
+      # the PR touched anything in `code` (.github/path-filters.yml, the same
+      # list detect-changes reads) instead of `needs: detect-changes` — that
+      # hop cost a second queue wait on every code PR before the heavy work
+      # could start. Fail closed: any event but pull_request, or a filter
+      # that did not succeed, runs everything. A docs/config-only PR finishes
+      # this job green in seconds with every later step skipped.
+      - name: Filter changed paths
+        id: filter
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d  # v4.0.3
+        with:
+          filters: .github/path-filters.yml
+
+      - name: Code-relevant change? (fail closed)
+        id: gate
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          FILTER_OUTCOME: ${{ steps.filter.outcome }}
+          FILTER_CODE: ${{ steps.filter.outputs.code }}
+        run: |
+          if [ "$EVENT_NAME" = "pull_request" ] && [ "$FILTER_OUTCOME" = "success" ] && [ "$FILTER_CODE" = "false" ]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No code-relevant path changed; nothing for this job to check."
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Setup Node
+        if: steps.gate.outputs.run == 'true'
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
           node-version: 22
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        if: steps.gate.outputs.run == 'true'
+        run: npm ci --prefer-offline --no-audit --no-fund
 
       # `next build --webpack` keeps its incremental compilation cache in
-      # .next/cache. Keyed on the lockfile plus source, with a lockfile-only
-      # restore-key so a source change still warm-starts.
+      # .next/cache. RESTORE on every run (lockfile-exact prefix first, then
+      # any); SAVE only on push to main, and only when today's key for this
+      # lockfile does not exist yet.
       #
-      # RESTORE on every run, SAVE only on push to main (2026-09-02). Measured
-      # on run 33637620180: the restore took 59 s and cut the build from ~460 s
-      # cold to 200 s, but the post-job SAVE took another 99 s — on every PR
-      # push, writing an entry keyed on a SHA nothing would ever restore
-      # again, into a 10 GB repository cache budget. Main's entry is what PR
-      # runs restore from (via the lockfile restore-key), so main is the only
-      # place a save changes anything.
+      # 2026-09-23: the key was `...-<sha>`, so EVERY merge to main saved a
+      # fresh multi-hundred-MB entry into a 10 GB repository cache that sat
+      # at 9.96 GB — GitHub evicted the least-recently-used entries, which
+      # were routinely the ones PRs were about to restore, and 27% of builds
+      # ran over 7 min cold. Keyed by UTC day + lockfile, main writes at most
+      # one entry a day (plus one per lockfile change); a day-old cache is
+      # still warm for webpack.
+      - name: Next cache key
+        if: steps.gate.outputs.run == 'true'
+        id: nextkey
+        run: echo "day=$(date -u +%Y%m%d)" >> "$GITHUB_OUTPUT"
+
       - name: Restore Next build cache
+        if: steps.gate.outputs.run == 'true'
+        id: nextcache
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: .next/cache
-          key: next-build-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ github.sha }}
+          key: next-build-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ steps.nextkey.outputs.day }}
           restore-keys: |
             next-build-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
             next-build-${{ runner.os }}-
 
       - name: Build
+        if: steps.gate.outputs.run == 'true'
         run: npm run build
 
-      - name: Save Next build cache (push to main only)
-        if: github.event_name == 'push'
+      - name: Save Next build cache (push to main, once a day per lockfile)
+        if: steps.gate.outputs.run == 'true' && (github.event_name == 'push' && steps.nextcache.outputs.cache-hit != 'true')
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: .next/cache
-          key: next-build-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ github.sha }}
+          key: next-build-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ steps.nextkey.outputs.day }}
 
       # BUILD ONCE (2026-09-06). `.next/cache` is excluded — that's the
       # webpack incremental cache restored/saved above, not needed by anyone
@@ -903,6 +919,7 @@ jobs:
       # build-once wiring existed. `error` turns the next silent miss into a
       # failed step instead of two mystery red checks a job away.
       - name: Upload Next build artifact
+        if: steps.gate.outputs.run == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: next-build-${{ github.sha }}
@@ -915,9 +932,8 @@ jobs:
 
   supabase:
     name: Supabase lint + RLS tests
-    # Runs in parallel with typecheck/lint — see the header note.
-    needs: [detect-changes]
-    if: needs.detect-changes.outputs.code == 'true'
+    # No `needs:` — in-job `code` path gate, see Unit tests. Skips while draft.
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft != true
     runs-on: ubuntu-latest
     timeout-minutes: 30
     # packages: read lets the ghcr.io login step below get the authenticated
@@ -926,6 +942,7 @@ jobs:
     permissions:
       contents: read
       packages: read
+      pull-requests: read  # dorny/paths-filter lists the PR's files via the API
     env:
       SUPABASE_PROJECT_ID: helmv3
     steps:
@@ -938,16 +955,48 @@ jobs:
           # checkout doesn't have the base commit to diff against.
           fetch-depth: 0
 
+      # PATH GATE, IN-JOB (2026-09-23): this job decides for itself whether
+      # the PR touched anything in `code` (.github/path-filters.yml, the same
+      # list detect-changes reads) instead of `needs: detect-changes` — that
+      # hop cost a second queue wait on every code PR before the heavy work
+      # could start. Fail closed: any event but pull_request, or a filter
+      # that did not succeed, runs everything. A docs/config-only PR finishes
+      # this job green in seconds with every later step skipped.
+      - name: Filter changed paths
+        id: filter
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d  # v4.0.3
+        with:
+          filters: .github/path-filters.yml
+
+      - name: Code-relevant change? (fail closed)
+        id: gate
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          FILTER_OUTCOME: ${{ steps.filter.outcome }}
+          FILTER_CODE: ${{ steps.filter.outputs.code }}
+        run: |
+          if [ "$EVENT_NAME" = "pull_request" ] && [ "$FILTER_OUTCOME" = "success" ] && [ "$FILTER_CODE" = "false" ]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No code-relevant path changed; nothing for this job to check."
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Setup Node
+        if: steps.gate.outputs.run == 'true'
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
           node-version: 22
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        if: steps.gate.outputs.run == 'true'
+        run: npm ci --prefer-offline --no-audit --no-fund
 
       - name: Setup Supabase CLI
+        if: steps.gate.outputs.run == 'true'
         uses: supabase/setup-cli@46f7f98c7f948ad727d22c1e67fab04c223a0520
         with:
           version: 2.114.0
@@ -957,6 +1006,7 @@ jobs:
       # the weekly CircleCI squawk job stays as an advisory full-history
       # sweep; this is the per-PR blocking gate for NEW migrations).
       - name: Lint new migrations with squawk
+        if: steps.gate.outputs.run == 'true'
         run: |
           set -euo pipefail
           base="${{ github.event.pull_request.base.sha }}"
@@ -983,17 +1033,33 @@ jobs:
             --exclude=require-lock-timeout,require-statement-timeout
 
       - name: "Declarative schema: new migrations reflected in supabase/schemas"
+        if: steps.gate.outputs.run == 'true'
         run: bash scripts/db/check-new-migrations-in-schema.sh "${{ github.event.pull_request.base.sha }}"
 
       # Authenticated ghcr pulls: anonymous pulls of ghcr.io/supabase/* hit
       # `toomanyrequests` when several PRs start the stack at once.
       - name: Log in to ghcr.io (Supabase images)
+        if: steps.gate.outputs.run == 'true'
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
-      - name: Start local Supabase stack
-        run: bash scripts/db/supabase-start-with-retry.sh
+      # ONLY WHAT THIS JOB USES (2026-09-23). 19 of 26 failures of this job
+      # were ghcr.io `toomanyrequests` while `supabase start` pulled ~12
+      # images at once. Every step below talks to Postgres directly (db lint,
+      # db:drift:check over DATABASE_URL, pg_prove), so the API gateway,
+      # PostgREST, Studio, Realtime, the image proxy, edge runtime, logging,
+      # mail and pooler containers are never used here. gotrue and
+      # storage-api stay: their schemas (auth.*, storage.*) are initialized
+      # by those services and migrations + pgTAP suites reference both
+      # (e.g. supabase/tests/rls/documents_storage.sql). The mirror fallback
+      # in the retry script still covers the images that remain.
+      - name: Start local Supabase stack (db, auth, storage only)
+        if: steps.gate.outputs.run == 'true'
+        run: >-
+          bash scripts/db/supabase-start-with-retry.sh
+          -x kong,postgrest,postgres-meta,studio,realtime,imgproxy,edge-runtime,logflare,vector,mailpit,supavisor
 
       - name: Lint migrations
+        if: steps.gate.outputs.run == 'true'
         run: supabase db lint --schema public
 
       # Schema invariants, run against the stack this job just rebuilt FROM
@@ -1024,11 +1090,20 @@ jobs:
       # than passing quietly. A drift guard that goes green when it never reached
       # a database is the exact false-green shape check:types-drift already has.
       - name: Schema invariants (migrations rebuild)
+        if: steps.gate.outputs.run == 'true'
         env:
           DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
         run: npm run db:drift:check
 
+      # ONE pg_prove run over every suite (2026-09-23). This used to call
+      # `supabase test db` once per file — a fresh pg_prove container per
+      # suite, most of the step's wall time. pg_prove still runs each file
+      # in its own psql session and reports every failure, so isolation and
+      # coverage are unchanged; `_helpers.sql` is still inlined into each
+      # file (the CLI copies only the named files into the container, so a
+      # relative `\i _helpers.sql` cannot resolve there).
       - name: Run pgTAP RLS suites
+        if: steps.gate.outputs.run == 'true'
         run: |
           set -euo pipefail
           # `supabase test db` pulls pg_prove itself; pre-pull it with the
@@ -1037,22 +1112,22 @@ jobs:
           # pre-pull, and the CLI pulls the image it wants as before.
           bash scripts/db/pull-supabase-image.sh ghcr.io/supabase/pg_prove:3.36 || true
           tmp_dir="$(mktemp -d)"
+          count=0
           for f in supabase/tests/rls/*.sql; do
             case "$f" in
               */_helpers.sql) continue ;;
             esac
-            echo "::group::$f"
-            tmp_file="$tmp_dir/$(basename "$f")"
             {
               cat supabase/tests/rls/_helpers.sql
               grep -Ev '^\\i(r)? .*_helpers\.sql$' "$f"
-            } > "$tmp_file"
-            supabase test db "$tmp_file"
-            echo "::endgroup::"
+            } > "$tmp_dir/$(basename "$f")"
+            count=$((count + 1))
           done
+          echo "Running $count pgTAP suite(s) in one pg_prove invocation."
+          supabase test db "$tmp_dir"
 
       - name: Stop local Supabase stack
-        if: always()
+        if: always() && steps.gate.outputs.run == 'true'
         run: supabase stop || true
 
   # ---------------------------------------------------------------------------
@@ -1073,20 +1148,24 @@ jobs:
   # Job/check NAMES are unchanged from the workflows they replace, per
   # docs/CI_RUNBOOK.md's table.
   #
-  # Both also require `needs.detect-changes.outputs.code == 'true'` (not just
-  # frontend/e2e) — there is no `next-build` artifact at all on a PR the
-  # detector classified as `code=false`, so a job that only touches
-  # `public/**` (in `frontend`'s path list but not `code`'s) will report
-  # SKIPPED here rather than running its own build the way pr-smoke.yml used
-  # to. That is a real, narrow behavior change from before; noted rather than
-  # hidden — see the PR that introduced this comment for the tradeoff.
+  # Both require `needs.next-build.outputs.built == 'true'` — there is no
+  # `next-build` artifact on a run whose path gate found nothing
+  # code-relevant, so they report SKIPPED there rather than building.
   # ---------------------------------------------------------------------------
   pr-smoke-a11y:
     name: Playwright PR smoke (a11y)
-    needs: [detect-changes, next-build]
+    # PUSH TO MAIN / DISPATCH / LABEL ONLY (2026-09-23, PR throughput). Both
+    # are advisory (never in `CI aggregate`) yet ran on most PRs, each taking
+    # a runner slot plus an `npm ci` and a Playwright install while PRs
+    # queued for slots. They now run on push to main (post-merge signal), on
+    # `workflow_dispatch`, and on a PR carrying the `ci:e2e` label — labels
+    # are read from the event, so add it BEFORE the push you want covered.
+    # A PR run also needs `Next build` to have actually built (its artifact).
+    needs: [next-build]
     if: >-
-      needs.detect-changes.outputs.code == 'true' &&
-      needs.detect-changes.outputs.frontend == 'true'
+      needs.next-build.outputs.built == 'true' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch' ||
+      contains(github.event.pull_request.labels.*.name, 'ci:e2e'))
     runs-on: ubuntu-latest
     timeout-minutes: 12
     env:
@@ -1106,7 +1185,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --prefer-offline --no-audit --no-fund
 
       - name: Download Next build artifact
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
@@ -1181,10 +1260,18 @@ jobs:
 
   sentry-snapshot-capture:
     name: Capture + upload Sentry snapshots
-    needs: [detect-changes, next-build]
+    # PUSH TO MAIN / DISPATCH / LABEL ONLY (2026-09-23, PR throughput). Both
+    # are advisory (never in `CI aggregate`) yet ran on most PRs, each taking
+    # a runner slot plus an `npm ci` and a Playwright install while PRs
+    # queued for slots. They now run on push to main (post-merge signal), on
+    # `workflow_dispatch`, and on a PR carrying the `ci:e2e` label — labels
+    # are read from the event, so add it BEFORE the push you want covered.
+    # A PR run also needs `Next build` to have actually built (its artifact).
+    needs: [next-build]
     if: >-
-      needs.detect-changes.outputs.code == 'true' &&
-      needs.detect-changes.outputs.e2e == 'true'
+      needs.next-build.outputs.built == 'true' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch' ||
+      contains(github.event.pull_request.labels.*.name, 'ci:e2e'))
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
@@ -1232,7 +1319,7 @@ jobs:
 
       - name: Install dependencies
         if: steps.token.outputs.enabled == 'true'
-        run: npm ci
+        run: npm ci --prefer-offline --no-audit --no-fund
 
       - name: Download Next build artifact
         if: steps.token.outputs.enabled == 'true'
@@ -1312,163 +1399,6 @@ jobs:
           retention-days: 7
           if-no-files-found: warn
 
-  baseball-auth-smoke:
-    name: BaseballHelm authenticated smoke
-    needs: detect-changes
-    # packages: read lets the local-supabase-stack composite action's ghcr.io
-    # login step get the authenticated (higher) pull rate limit for
-    # ghcr.io/supabase/* images; the workflow-level `permissions:` block above
-    # only grants `contents: read`, so a job needs this to use the token for
-    # anything else.
-    permissions:
-      contents: read
-      packages: read
-    # PUSH/MAIN ONLY (owner 2026-08-26, PR throughput): removed from the PR
-    # gate after it blocked a golf production hotfix twice in one afternoon —
-    # both times the runner died ("shutdown signal") during the TypeScript
-    # step of this job's in-job build, before a single test ran. Same
-    # mechanism as unit-tests-timezone: it now runs on push to main only, so
-    # a baseball smoke regression is caught post-merge (blocking the next
-    # promote) instead of gating every PR. To restore the pre-merge gate,
-    # revert this `if` AND re-add `- baseball-auth-smoke` to the CI-aggregate
-    # `needs` list.
-    if: github.event_name == 'push' && needs.detect-changes.outputs.code == 'true'
-    # #372: promotes the already-built, already-mandatory baseball-smoke +
-    # onboarding-smoke specs (e2e/baseball-smoke.spec.ts,
-    # e2e/baseball-onboarding-smoke.spec.ts) from push/workflow_dispatch-only
-    # (.github/workflows/playwright.yml's `e2e` job) into a required PR gate —
-    # the same mechanism that promoted Supabase RLS tests into `all` (#517)
-    # and the import-cycle ratchet (#808).
-    #
-    # ── 2026-07-30: THIS JOB NO LONGER TOUCHES PRODUCTION ──────────────────
-    # It used to run `npm run seed:baseball:ci` with the production Supabase URL
-    # and service-role key in its env, on every pull request. It now stands up a
-    # throwaway Supabase stack on the runner
-    # (.github/actions/local-supabase-stack) and seeds that instead.
-    #
-    # Three consequences worth knowing:
-    #
-    # 1. NO SECRETS ARE NEEDED, so the readiness-check / fail-loud steps that
-    #    used to sit here are gone, and the fork + Dependabot `if:` skip went
-    #    with them. That skip existed only because external PRs "structurally
-    #    cannot supply these secrets" — with the secrets gone the reason is gone,
-    #    and a required gate that silently skips on forks was a hole in it.
-    #
-    # 2. THE STEP ORDER MATTERS. `supabase start` must run BEFORE `npm run
-    #    build`, because Next.js inlines NEXT_PUBLIC_* at build time — a build
-    #    made before the local URL exists would ship the old value into the
-    #    client bundle and the smoke run would authenticate against it.
-    #
-    # 3. IT TESTS THIS PR'S SCHEMA, not production's. `supabase start` applies
-    #    everything under supabase/migrations/, so a migration that breaks a
-    #    smoke path now fails on the PR that introduces it.
-    #
-    # COST NOTE: this doubles Playwright-browser-install + a full `npm run
-    # build` on every push to main, on top of the existing next-build, and adds
-    # ~1-2min of `supabase start` — a real, ongoing CI-minutes tradeoff.
-    runs-on: ubuntu-latest
-    # 45, not 30. Measured on this branch: a CLEAN run is ~17 min (supabase start
-    # ~1m45s, build ~9-10 min under container contention, seed ~1 min, the smoke
-    # itself ~1m30s). A run where the smoke FAILS costs ~24 min, because every spec
-    # retries twice — which left only ~6 min of head-room against 30.
-    #
-    # That head-room is what produces a diagnosable failure. When the JOB timeout
-    # fires first, GitHub cancels the job outright and the `if: always()`
-    # report-upload step never runs: exactly how #953 produced three consecutive
-    # `cancelled` runs with nothing to debug from (see the note in
-    # playwright.yml's `e2e` job). A red run that uploads its Playwright report is
-    # worth far more than a cancelled one that finishes 15 minutes sooner.
-    timeout-minutes: 45
-    env:
-      # NOT secrets, and deliberately not read from any. The seed script creates
-      # exactly these two accounts on the local stack with exactly these values
-      # (scripts/seed-baseball-demo.ts — DEMO_COACH_EMAIL / DEMO_PLAYER_EMAIL /
-      # DEMO_PASSWORD, whose own header names this as the intended wiring). They
-      # are credentials for a database that is destroyed when the job ends.
-      E2E_BASEBALL_COACH_EMAIL: demo-coach@baseballhelmdemo.com
-      E2E_BASEBALL_COACH_PASSWORD: BaseballDemo2026
-      E2E_BASEBALL_PLAYER_EMAIL: demo-player@baseballhelmdemo.com
-      E2E_BASEBALL_PLAYER_PASSWORD: BaseballDemo2026
-      NODE_OPTIONS: --max-old-space-size=8192
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          persist-credentials: false
-
-      - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      # Everything below this point talks to the runner's own Postgres. See the
-      # action for why, and for the loopback assertion it ends with.
-      - name: Start local Supabase stack
-        uses: ./.github/actions/local-supabase-stack
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Cache Playwright browsers
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-          restore-keys: |
-            playwright-${{ runner.os }}-
-
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
-
-      # MUST come after the stack is up: Next.js inlines NEXT_PUBLIC_* into the
-      # client bundle at build time, so building first would bake in whatever the
-      # env held before the local URL existed.
-      # Separate cache prefix from next-build ON PURPOSE. This build runs after
-      # the local Supabase stack is up and inlines DIFFERENT NEXT_PUBLIC_*
-      # values, so the two must not share a cache entry.
-      - name: Cache Next build (smoke)
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-        with:
-          path: .next/cache
-          key: next-smoke-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ github.sha }}
-          restore-keys: |
-            next-smoke-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
-            next-smoke-${{ runner.os }}-
-
-      - name: Build (so dev server boots fast)
-        run: npm run build
-
-      # No --allow-prod (see package.json). Against a loopback URL the target
-      # guard allows the write with no flag; if production credentials ever leak
-      # back into this job's env, the guard refuses instead of seeding prod.
-      - name: Seed BaseballHelm CI accounts into the local stack
-        run: npm run seed:baseball:ci
-
-      - name: Run BaseballHelm mandatory smoke (blocking)
-        run: |
-          npx playwright test \
-            --project=chromium \
-            --project=baseball-coach \
-            --project=baseball-player \
-            e2e/baseball-onboarding-smoke.spec.ts \
-            e2e/baseball-smoke.spec.ts
-
-      - name: Upload Playwright report
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
-        with:
-          name: baseball-auth-smoke-playwright-report
-          path: playwright-report/
-          retention-days: 3
-          if-no-files-found: ignore
-
-      - name: Stop local Supabase stack
-        if: always()
-        run: supabase stop || true
-
   all:
     # Renamed from the bare `all` (2026-08-19): review-gate.yml's aggregate
     # job was ALSO named `all`, so both workflows posted an identically-named
@@ -1484,39 +1414,32 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: read
+      pull-requests: read  # the superseded-run check reads the PR's live head
     # `supabase` (Supabase lint + RLS tests) is part of the hard gate: the
     # baseball pgTAP RLS suite was greened on main by #517 (supersedes #423), so
     # RLS regressions block merge through the required aggregate instead of
     # being advisory-only — the gap that let the anon-access hole reach main.
     #
-    # `baseball-auth-smoke` is NO LONGER in this gate (owner 2026-08-26, PR
-    # throughput — see the note on the job itself). Like unit-tests-timezone,
-    # it now runs on push to main only; a red baseball smoke on `main` blocks
-    # the next production promote rather than every PR merge.
+    # `baseball-auth-smoke` and `unit-tests-timezone` are NOT in this gate
+    # (owner 2026-08-26 / 2026-08-20, PR throughput) and, since 2026-09-23,
+    # not in this workflow: they run nightly in .github/workflows/nightly.yml.
+    # A red run there blocks the next release, not a merge.
     #
-    # `unit-tests-timezone` is NO LONGER in this gate (owner 2026-08-20, PR
-    # throughput). It caught a real 8pm-EDT regression (#1123) as a pre-merge
-    # gate, but at 6 jobs/PR it was the dominant PR-time cost. It now runs on
-    # push to MAIN only (see its `if`), so a timezone regression is caught
-    # post-merge with fast rollback rather than blocking every PR. The
-    # enforcement point moves accordingly: a red timezone job on `main` now
-    # blocks the DEPLOY — it is caught by the pre-promote check of main's CI
-    # before a production promote — not the merge. To restore the
-    # pre-merge gate, re-add `- unit-tests-timezone` to `needs` below AND remove
-    # its `if: github.event_name == 'push'`.
-    #
-    # `static-checks` (2026-09-02) carries what used to be nine leaf jobs:
-    # Database types drift, Schema invariants, Feature knowledge, Control
-    # plane, Bridge env drift, Edge functions (Deno), Business contracts,
-    # Route Hygiene P0/P1, Import-cycle ratchet. `lint` carries ESLint plus the
+    # `static-checks` (2026-09-02) carries what used to be nine leaf jobs;
+    # `lint` ("TypeScript + Lint", 2026-09-23) carries tsc, ESLint and the
     # ratchets. Nothing left this gate; it got fewer job names.
-    # `pr-smoke-a11y` and `sentry-snapshot-capture` (2026-09-06, folded in
-    # from pr-smoke.yml/sentry-snapshots.yml) are deliberately NOT in this
-    # list — both were, and remain, advisory-only.
+    # `pr-smoke-a11y` and `sentry-snapshot-capture` are deliberately NOT in
+    # this list — both were, and remain, advisory-only.
+    #
+    # `unit-tests`, `next-build` and `supabase` no longer SKIP on a docs-only
+    # PR — they apply the `code` path gate inside the job and finish green.
+    # A skip now means a draft (handled first below) or something upstream
+    # never ran, which still fails on a code PR.
     needs:
       - detect-changes
       - static-checks
-      - typecheck
       - lint
       - unit-tests
       - next-build
@@ -1527,20 +1450,48 @@ jobs:
         # green aggregate from that run stayed attached to the head SHA after
         # the PR was marked ready, satisfying branch protection with nothing
         # tested (#2049). Failing here means only a real, non-draft run can
-        # ever turn this required check green.
+        # ever turn this required check green. (A skipped aggregate would be
+        # worse: GitHub counts a skipped required check as passing.)
         if: github.event_name == 'pull_request' && github.event.pull_request.draft == true
         run: |
           echo "Draft PR: gated jobs were skipped. The full suite runs when the PR is marked ready for review."
           exit 1
-      - name: Fail if any required CI check failed
-        # A skipped heavy job is fine ONLY on a docs-only PR (code=='false').
-        # On a code PR or a push, a skip is a real problem and still fails.
-        if: >-
-          contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') ||
-          (needs.detect-changes.outputs.code == 'true' && contains(needs.*.result, 'skipped'))
-        run: |
-          echo "One or more CI checks failed."
-          exit 1
 
-      - name: All CI checks green
-        run: echo "CI hard gates clean."
+      # SUPERSEDED RUNS (2026-09-23). A new push to a PR cancels the running
+      # suite (concurrency above), and this always() job used to turn that
+      # cancellation into a red X on the old commit — noise on every
+      # force-push or quick follow-up. A cancelled or skipped result is now
+      # excused ONLY when the PR's live head is no longer this run's commit;
+      # a cancellation on the current head (manual cancel, job timeout) and
+      # any real failure still fail. Fail closed: if the live head cannot be
+      # read, nothing is excused.
+      - name: Fail if any required CI check failed
+        env:
+          RESULTS: ${{ toJSON(needs.*.result) }}
+          CODE: ${{ needs.detect-changes.outputs.code }}
+          EVENT_NAME: ${{ github.event_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          RUN_HEAD: ${{ github.event.pull_request.head.sha }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -uo pipefail
+          echo "needs results: $RESULTS (code=$CODE)"
+          if jq -e 'index("failure")' <<< "$RESULTS" >/dev/null; then
+            echo "One or more CI checks failed."; exit 1
+          fi
+          incomplete=false
+          if jq -e 'index("cancelled")' <<< "$RESULTS" >/dev/null; then incomplete=true; fi
+          if [ "$CODE" = "true" ] && jq -e 'index("skipped")' <<< "$RESULTS" >/dev/null; then incomplete=true; fi
+          if [ "$incomplete" = "false" ]; then
+            echo "CI hard gates clean."; exit 0
+          fi
+          if [ "$EVENT_NAME" = "pull_request" ] && [ -n "$PR_NUMBER" ]; then
+            live="$(gh api "repos/$GH_REPO/pulls/$PR_NUMBER" --jq .head.sha 2>/dev/null || true)"
+            if [ -n "$live" ] && [ "$live" != "$RUN_HEAD" ]; then
+              echo "::notice::Superseded: PR head is now ${live:0:12}, this run was for ${RUN_HEAD:0:12}. Cancelled jobs here are not a result."
+              exit 0
+            fi
+          fi
+          echo "One or more required CI checks were cancelled or skipped on the current head."
+          exit 1

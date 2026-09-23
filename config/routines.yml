@@ -113,6 +113,17 @@ routines:
       it compares src/lib/types/database.ts to production and opens or
       updates the types/auto-regen PR when it drifted.
 
+  - id: nightly
+    trigger: github-actions-schedule
+    source: .github/workflows/nightly.yml
+    schedule: "23 8 * * *"
+    status: active
+    description: >-
+      Unit tests at two far timezone offsets and the BaseballHelm
+      authenticated smoke against a local Supabase stack, on main's head.
+      Moved off every push to main (ci.yml) on 2026-09-23 to free runner
+      slots for PRs; a red run blocks the next release, not a merge.
+
   - id: circleci-weekly
     trigger: circleci-scheduled-pipeline
     source: .circleci/config.yml
