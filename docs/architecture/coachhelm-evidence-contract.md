@@ -827,6 +827,7 @@ separately); A3 never sets it, since none of its inputs are ever derived.
 Neither of A3's metric families computes a `strokes_impact`/counterfactual
 number, so wiring this in later cannot double-count the impact
 `par-type.ts`'s existing per-par cards already own.
+
 ## Sequence attribution (A4 deliverable, slice 1 — pure core, no DB)
 
 `attributeSequence(facts, hole, scope)`

@@ -55,6 +55,7 @@ const CONSERVATION_HOLE: HoleContext = {
   penalty_strokes: 0,
   putts: 1,
   gir: false,
+  yardage: null,
 };
 const CONSERVATION_RAW_SHOTS: RawShotInput[] = [
   {
@@ -310,6 +311,7 @@ const HOLE_IN_ONE_HOLE: HoleContext = {
   penalty_strokes: 0,
   putts: 0,
   gir: true,
+  yardage: null,
 };
 const HOLE_IN_ONE_RAW_SHOTS: RawShotInput[] = [
   {
@@ -365,6 +367,7 @@ const THREE_PUTT_HOLE: HoleContext = {
   penalty_strokes: 0,
   putts: 3,
   gir: true,
+  yardage: null,
 };
 const THREE_PUTT_RAW_SHOTS: RawShotInput[] = [
   {
@@ -506,6 +509,7 @@ const REPEATED_RECOVERY_HOLE: HoleContext = {
   penalty_strokes: 0,
   putts: 1,
   gir: false,
+  yardage: null,
 };
 const REPEATED_RECOVERY_RAW_SHOTS: RawShotInput[] = [
   {
@@ -644,6 +648,7 @@ const OB_RETEE_HOLE: HoleContext = {
   penalty_strokes: 1,
   putts: 1,
   gir: false,
+  yardage: null,
 };
 const OB_RETEE_RAW_SHOTS: RawShotInput[] = [
   {
@@ -771,6 +776,7 @@ const HEURISTIC_GAP_HOLE: HoleContext = {
   penalty_strokes: 0,
   putts: 1,
   gir: true,
+  yardage: null,
 };
 const HEURISTIC_GAP_RAW_SHOTS: RawShotInput[] = [
   {
