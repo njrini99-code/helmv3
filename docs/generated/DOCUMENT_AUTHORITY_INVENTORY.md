@@ -445,7 +445,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/ledgers/changes/auth_onboarding_join.md` | current | - | - | - | 1 | 0 | - |
 | `memory/ledgers/changes/calendar_events.md` | current | - | - | - | 1 | 3 | - |
 | `memory/ledgers/changes/coach_intelligence_triage.md` | current | - | - | - | 1 | 0 | - |
-| `memory/ledgers/changes/coachhelm_ai.md` | current | - | - | - | 2 | 7 | - |
+| `memory/ledgers/changes/coachhelm_ai.md` | current | - | - | - | 2 | 8 | - |
 | `memory/ledgers/changes/crm_outreach.md` | current | - | - | - | 1 | 0 | - |
 | `memory/ledgers/changes/feature_awareness_system.md` | current | - | - | yes | 1 | 19 | - |
 | `memory/ledgers/changes/golf_round_lifecycle.md` | current | - | - | - | 2 | 6 | - |

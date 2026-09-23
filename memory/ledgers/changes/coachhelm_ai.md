@@ -229,3 +229,35 @@
   files, 1434 passed, 0 failed. `eslint` on all touched/new files: 0
   problems. `flags:check`: clean (6 flags). `docs:check` clean. See the
   matching test-ledger entry for the new/changed test cases.
+
+## 2026-09-23 — #2007 residual resolved: retry horizon caps re-check cost, no migration
+
+- Task owner's decision on the residual gap from the entry above: no
+  schema addition. Instead of a terminal row, the bulk pre-filter in
+  `api/cron/v3/causality-attribute/route.ts` now also drops a shot-level
+  candidate once its retry horizon has expired — `firstExposure +
+  POST_WINDOW_DAYS + RETRY_GRACE_DAYS` (14 days) `< now` — before it ever
+  reaches the per-candidate loop, counted under a new
+  `summary.comparable_retry_horizon_expired`. Once expired, a candidate
+  never takes a `todo` slot again (no further `loadPlayerContext` calls),
+  distinct from `comparable_follow_up_open` (window still open, expected
+  to retry) and from `comparable_insufficient_evidence` (the pure core
+  actually ran and reported it).
+- Rationale: once the follow-up window closes, the matched evidence is
+  essentially fixed — only a late-logged round can still change it. 14
+  days of grace covers that without retrying forever. This bounds each
+  insight's cost at roughly `RETRY_GRACE_DAYS` daily-cron
+  `loadPlayerContext` calls after window-close, instead of unbounded.
+- Test-fixture note: the existing A9 slice 1 cron tests used an absolute
+  `exposures: { 'insight-1': OLD }` fixture (`OLD` = a fixed 2026-01-01
+  date) to mean "window closed, reach the mock." With the new horizon
+  check, `OLD` is now far past the 35-day cutoff and would be dropped by
+  the new check instead. Replaced with a new `WINDOW_CLOSED_IN_GRACE`
+  fixture computed relative to `Date.now()` (25 days ago — window closed,
+  still inside the 14-day grace) in
+  `src/test/api/cron/causality-attribute.test.ts`, so the fixture stays
+  correct regardless of when the suite runs, unlike `OLD`.
+- Verification: `npm run typecheck:fast` clean; the three A9 slice 1 test
+  files together — 44 passed, 0 failed (2 new tests for the horizon-
+  expired-drop and still-in-grace cases). See the matching test-ledger
+  entry.

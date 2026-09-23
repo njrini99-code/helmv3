@@ -119,3 +119,22 @@
   `npm run test -- --run src/test/coachhelm` — 140 files, 1434 passed, 0
   failed. `npm run typecheck` (tsc) exit 0. `eslint` on all touched/new
   files: 0 problems.
+
+## 2026-09-23 — #2007 residual: retry-horizon-expired coverage
+
+- `causality-attribute.test.ts` gained 2 tests: a shot-level candidate
+  shown 40 days ago (past `POST_WINDOW_DAYS` + `RETRY_GRACE_DAYS`, i.e.
+  past 35 days) is dropped by the bulk pre-filter, counted under the new
+  `summary.comparable_retry_horizon_expired`, and never reaches
+  `computeComparableAttribution`; a candidate shown 25 days ago (window
+  closed, still inside the 14-day grace) is NOT dropped and still reaches
+  the mock as before.
+- Replaced the absolute `OLD` exposure fixture (8 call sites) with a new
+  `WINDOW_CLOSED_IN_GRACE` constant computed relative to `Date.now()` (25
+  days ago) across the existing "reaches computeComparableAttribution"
+  tests in this file — `OLD`'s fixed 2026-01-01 date is now past the new
+  35-day retry horizon relative to the current date, so those tests would
+  otherwise have started failing (dropped by the new check instead of
+  reaching the mock) without changing anything about their own intent.
+- Verification: the three A9 slice 1 test files together — 44 passed, 0
+  failed. `npm run typecheck:fast` clean.
