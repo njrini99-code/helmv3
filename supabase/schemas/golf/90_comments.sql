@@ -133,6 +133,7 @@ COMMENT ON COLUMN "public"."golf_player_focus_areas"."target_rounds" IS 'Number 
 COMMENT ON COLUMN "public"."golf_player_focus_areas"."baseline_value" IS 'The measured value when tracking STARTED (stamped alongside started_at, i.e. at player acceptance for a coach-prescribed area). Immutable: the progress driver writes current_value only and must never touch this. NULL means the starting point is unknown - the UI then renders Now/Target with NO percentage rather than guessing. See issue #1240.';
 
 COMMENT ON COLUMN "public"."golf_player_focus_areas"."snapshots" IS 'Append-only [{date, value}] history written by the progress driver, deduped per UTC day. Mirrors golf_goals.snapshots so the card can draw a real trend instead of a permanent em dash. See issue #1241.';
+COMMENT ON COLUMN "public"."golf_player_focus_areas"."evidence_revision" IS 'A8 slice 1: stable fingerprint (computeEvidenceRevision, src/lib/coachhelm/focus-areas/evidence-revision.ts) of the source insight''s evidence state at focus-area-approval time. NULL = no source insight, or created before this column existed, or the write flag was off. Never rewritten after insert -- slice 3 recomputes the live insight''s fingerprint at READ time and compares against this stored value, it does not update this column.';
 
 COMMENT ON TABLE "public"."golf_player_genome" IS 'v3 W33 per-player 80-dim genome vector. jsonb keyed by dimension_id. Computed nightly. rounds_basis lets the UI show "8 of 10 dims unlocked" progress states.';
 

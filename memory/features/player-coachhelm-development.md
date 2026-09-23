@@ -143,6 +143,34 @@ Player opens round review
   status/confidence/your_value/comparison_value/secondary_value/sample_n/
   window/engine_version, deliberately excluding ids and bookkeeping
   timestamps so a no-op regen never changes the fingerprint.
+  **Slice 1 (built, PR stacked on #1995 "Depends on #1995")**: migration
+  `20260923090000_golf_focus_area_evidence_revision` adds
+  `golf_player_focus_areas.evidence_revision text NULL` (additive, no
+  backfill, no RLS/grant change -- not yet applied in prod). Write is gated
+  behind the `coachhelm_focus_area_evidence_revision` flag
+  (`config/feature-flags.yml`, `type: temporary_migration`, off in every
+  environment) whose purpose notes the migration dependency; flip it on only
+  after the owner applies the migration and confirms the column exists via
+  `information_schema.columns`.
+  `src/lib/coachhelm/focus-areas/evidence-revision-source.ts` bridges a live
+  `golf_coach_insights` row's untyped `evidence` `Json` column into
+  `EvidenceRevisionInput`, defensively returning `null` (never throwing) for
+  any legacy/malformed row.
+  `src/app/golf/actions/development.ts`'s private
+  `resolveEvidenceRevisionForInsight` checks the flag first (never reads
+  `golf_coach_insights` while off) and stamps `evidence_revision` in
+  `createFocusAreaFromInsightV2Impl` and the legacy
+  `createFocusAreaFromInsightImpl`; `createFocusAreaFromReviewImpl` is
+  untouched since it has no source insight (`from_review_id`, not
+  `from_insight_id`). `FocusAreaCard` renders a small "Evidence snapshot
+  recorded" badge only when `evidence_revision` is present -- never the raw
+  hash. The `intelligence`/`coachhelm` page loaders do NOT yet select
+  `evidence_revision` (the column does not exist in prod); that read wiring
+  is slice 3's job, behind the same flag. A pgTAP assertion in
+  `supabase/tests/rls/wave_a_db_security.sql` guards the column stays a
+  nullable `text` (not yet run locally -- no Docker/local Supabase stack
+  available in this session; CI's Supabase lint + RLS tests job is the
+  verification gate).
 - **Focus-area progress is travel from baseline, never `current / target`,
   and an unresolvable metric must render no progress bar at all** — not a
   guessed one. `golf_player_focus_areas.baseline_value` (present in

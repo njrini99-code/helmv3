@@ -3,6 +3,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import { ACTIVE_FOCUS_DUPLICATE_ERROR } from '@/lib/coachhelm/focus-areas/duplicate-guard';
+import { computeInsightEvidenceRevision } from '@/lib/coachhelm/focus-areas/evidence-revision-source';
+import { isFlagEnabled } from '@/lib/flags';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fromUntyped } from '@/lib/supabase/untyped';
@@ -245,6 +247,46 @@ async function findActiveFocusAreaForMetric(
   }
 
   return data ?? null;
+}
+
+/**
+ * A8 slice 1 — behind `coachhelm_focus_area_evidence_revision` (off in every
+ * environment until migration `20260923090000_golf_focus_area_evidence_
+ * revision` is applied there — see that flag's `purpose` in
+ * config/feature-flags.yml), resolves the fingerprint of a source insight's
+ * evidence at the moment a focus area is approved from it, so a later read
+ * can tell whether the live insight still matches what was approved (slice
+ * 3) without this migration having landed for the read to even attempt.
+ *
+ * Flag off, a missing/unreadable insight row, or a row whose `evidence`
+ * isn't a well-formed `InsightEvidence` shape (a legacy/malformed row) all
+ * degrade to `null`, never a thrown error or a blocked create — "don't
+ * stamp a revision" is always safe; a focus area with `evidence_revision:
+ * null` behaves exactly as it did before this slice existed.
+ */
+async function resolveEvidenceRevisionForInsight(
+  client: SupabaseClient<Database>,
+  insightId: string,
+): Promise<string | null> {
+  if (!isFlagEnabled('coachhelm_focus_area_evidence_revision')) return null;
+
+  const { data, error } = await client
+    .from('golf_coach_insights')
+    .select('lifecycle_state, evidence, engine_version')
+    .eq('id', insightId)
+    .maybeSingle();
+
+  if (error) {
+    await logServerError(
+      `[development] evidence-revision insight read failed for ${insightId} — creating the focus area without a stamped revision: ${describeError(error)}`,
+      { action: 'development.resolveEvidenceRevisionForInsight', featureArea: 'development' },
+      'warning',
+    );
+    return null;
+  }
+  if (!data) return null;
+
+  return computeInsightEvidenceRevision(data);
 }
 
 // ============================================================================
@@ -1377,6 +1419,21 @@ async function createFocusAreaFromInsightV2Impl(
   // #1239: canonicalize so the progress driver recognizes it (this is the
   // path that wrote the orphaned ids). Unrecognized free text is preserved.
   const canonicalMetric = resolveFocusTargetMetric(args.targetMetric) ?? args.targetMetric ?? null;
+  // Same RLS gap as createFocusAreaFromReviewImpl: coach-only insert policy, no
+  // player self-insert policy. Player self-promote (verifyPlayerAccess
+  // reason==='self', ownership proven) routes through the admin client; coach
+  // stays on the scoped client. Without this, promoting your own CoachHelm/Hub
+  // insight to a focus area was silently rejected by RLS.
+  const writeClient = isCoachPromoting ? supabase : createAdminClient();
+
+  // A8 slice 1: resolved BEFORE building insertPayload so the flag-off (or
+  // read-failed, or malformed-evidence) case never puts an
+  // `evidence_revision` key in the object at all — absent, not `null`, so a
+  // typed insert never even sees the column name. Reads through the same
+  // client the write below uses, matching findActiveFocusAreaForMetric's
+  // convention just below.
+  const evidenceRevision = await resolveEvidenceRevisionForInsight(writeClient, args.insightId);
+
   const insertPayload = {
     player_id: args.playerId,
     team_id: teamId,
@@ -1389,13 +1446,8 @@ async function createFocusAreaFromInsightV2Impl(
     target_value: args.targetValue ?? null,
     from_insight_id: args.insightId,
     started_at: isCoachPromoting ? null : nowIso,
+    ...(evidenceRevision ? { evidence_revision: evidenceRevision } : {}),
   };
-  // Same RLS gap as createFocusAreaFromReviewImpl: coach-only insert policy, no
-  // player self-insert policy. Player self-promote (verifyPlayerAccess
-  // reason==='self', ownership proven) routes through the admin client; coach
-  // stays on the scoped client. Without this, promoting your own CoachHelm/Hub
-  // insight to a focus area was silently rejected by RLS.
-  const writeClient = isCoachPromoting ? supabase : createAdminClient();
 
   // Pkg 9 slice 1a — duplicate-active-work guard. Reads through the same
   // client the write below will use.
@@ -1404,9 +1456,15 @@ async function createFocusAreaFromInsightV2Impl(
     return { success: false, error: ACTIVE_FOCUS_DUPLICATE_ERROR, duplicateFocusAreaId: existingActive.id };
   }
 
-  const { data: row, error } = isCoachPromoting
-    ? await writeClient.from('golf_player_focus_areas').insert(insertPayload).select('id').single()
-    : await fromUntyped(writeClient, 'golf_player_focus_areas').insert(insertPayload).select('id').single();
+  // Always routed through fromUntyped: insertPayload may carry
+  // `evidence_revision` (A8 slice 1), a column not yet in generated types
+  // until migration 20260923090000 applies — see resolveEvidenceRevisionForInsight.
+  // Functionally identical to the prior `writeClient.from(...)` typed call
+  // for the coach branch; fromUntyped is just `client.from(table) as any`.
+  const { data: row, error } = await fromUntyped(writeClient, 'golf_player_focus_areas')
+    .insert(insertPayload)
+    .select('id')
+    .single();
 
   if (error || !row) {
     await logServerError(
@@ -1635,8 +1693,15 @@ async function createFocusAreaFromInsightImpl(
     return { success: false, error: ACTIVE_FOCUS_DUPLICATE_ERROR, duplicateFocusAreaId: existingActive.id };
   }
 
-  const { data: focusArea, error: insertError } = await supabase
-    .from('golf_player_focus_areas')
+  // A8 slice 1: resolved before the insert so a flag-off (or read-failed, or
+  // malformed-evidence) case never puts an `evidence_revision` key in the
+  // payload at all. See resolveEvidenceRevisionForInsight's doc comment.
+  const evidenceRevision = await resolveEvidenceRevisionForInsight(supabase, data.insight_id);
+
+  // Always routed through fromUntyped: the payload may carry
+  // `evidence_revision` (A8 slice 1), a column not yet in generated types
+  // until migration 20260923090000 applies.
+  const { data: focusArea, error: insertError } = await fromUntyped(supabase, 'golf_player_focus_areas')
     .insert({
       player_id: data.player_id,
       coach_id: coachId,
@@ -1655,6 +1720,7 @@ async function createFocusAreaFromInsightImpl(
       target_value: data.target_value ?? null,
       from_insight_id: data.insight_id,
       started_at: null,
+      ...(evidenceRevision ? { evidence_revision: evidenceRevision } : {}),
     })
     .select('id')
     .single();
