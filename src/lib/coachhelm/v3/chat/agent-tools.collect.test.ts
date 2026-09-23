@@ -73,7 +73,7 @@ function baseProposal(overrides: Record<string, unknown> = {}) {
   return {
     action: 'Create a task',
     summary: '3 sessions of 90 minutes',
-    facts: [],
+    facts: [{ label: 'Duration', value: '90 minutes' }],
     affects: [],
     notifications: [],
     missing: [],
@@ -87,7 +87,7 @@ function baseReceipt(overrides: Record<string, unknown> = {}) {
     status: 'completed' as const,
     action: 'Create a task',
     summary: 'Assigned 90 minutes of extra reps',
-    created: [],
+    created: [{ kind: 'task', count: 1, label: '90 minutes of extra reps' }],
     notifications: [],
     partial_failures: [],
     retryable: true,
@@ -122,8 +122,15 @@ describe('agent-tools — gated-action numbers reach the claim audit', () => {
     await tools.create_task!.onInputAvailable!({ input: {} } as never);
 
     expect(collect).toHaveBeenCalledTimes(1);
-    const envelope = collect.mock.calls[0]![0] as { detail?: { proposal?: { summary?: string } } };
-    expect(envelope.detail?.proposal?.summary).toBe('3 sessions of 90 minutes');
+    const envelope = collect.mock.calls[0]![0] as {
+      summary?: string;
+      detail?: { facts?: { label: string; value: string }[] };
+    };
+    // Scoped to the proposal's own `summary`/`facts` — the card's actual
+    // user-facing content (#1997 re-review, should-fix) — never the whole
+    // `{plan, proposal}` object.
+    expect(envelope.summary).toBe('3 sessions of 90 minutes');
+    expect(envelope.detail?.facts).toEqual([{ label: 'Duration', value: '90 minutes' }]);
     // collect must run BEFORE the Confirm card itself is streamed — a coach
     // approving off a stale numeric-audit state is the exact bug this closes.
     // (`writer.write` also fires earlier, for the `data-progress` part —
@@ -134,7 +141,7 @@ describe('agent-tools — gated-action numbers reach the claim audit', () => {
     expect(collect.mock.invocationCallOrder[0]).toBeLessThan(proposalWriteOrder!);
   });
 
-  it('routes an executeGated receipt through collect, including on the already-completed replay path', async () => {
+  it('routes an executeGated receipt through collect, scoped to created/notifications, including on the already-completed replay path', async () => {
     planTask.mockReturnValue({ plan: { title: 'Extra reps' }, proposal: baseProposal({ idempotency_key: 'key-2' }) });
     executeTask.mockResolvedValue(baseReceipt());
     const collect = vi.fn();
@@ -149,11 +156,17 @@ describe('agent-tools — gated-action numbers reach the claim audit', () => {
     await tools.create_task!.execute!({} as never, {} as never);
 
     const call = collect.mock.calls.find(
-      (c) => (c[0] as { detail?: { receipt?: unknown } }).detail?.receipt,
+      (c) => (c[0] as { summary?: string }).summary === 'Assigned 90 minutes of extra reps',
     );
     expect(call).toBeDefined();
-    const envelope = call![0] as { detail: { receipt: { summary: string } } };
-    expect(envelope.detail.receipt.summary).toBe('Assigned 90 minutes of extra reps');
+    const envelope = call![0] as { detail: { created: unknown; notifications: unknown } };
+    expect(envelope.detail.created).toEqual([
+      { kind: 'task', count: 1, label: '90 minutes of extra reps' },
+    ]);
+    expect(envelope.detail.notifications).toEqual([]);
+    // Never the whole receipt object (which also carries `status`/`at`/
+    // `retryable` — none of that is what the coach reads as a number).
+    expect(envelope.detail).not.toHaveProperty('status');
   });
 
   it('also routes an already-completed replay receipt through collect (not just a fresh run)', async () => {
@@ -184,6 +197,7 @@ describe('agent-tools — gated-action numbers reach the claim audit', () => {
       proposal: baseProposal({
         action: 'Create a recurring practice',
         summary: '8 practices, every Tuesday at 90 minutes each',
+        facts: [{ label: 'Occurrences', value: '8' }],
         idempotency_key: 'key-4',
       }),
     });
@@ -199,7 +213,47 @@ describe('agent-tools — gated-action numbers reach the claim audit', () => {
     await tools.create_recurring_practice!.onInputAvailable!({ input: {} } as never);
 
     expect(collect).toHaveBeenCalledTimes(1);
-    const envelope = collect.mock.calls[0]![0] as { detail?: { proposal?: { summary?: string } } };
-    expect(envelope.detail?.proposal?.summary).toBe('8 practices, every Tuesday at 90 minutes each');
+    const envelope = collect.mock.calls[0]![0] as { summary?: string };
+    expect(envelope.summary).toBe('8 practices, every Tuesday at 90 minutes each');
+  });
+
+  /**
+   * #1997 re-review, should-fix: the first version of this fix passed the
+   * whole `{plan, proposal}`/`{plan, receipt}` object to `collect`, so an
+   * internal-only numeric field on `plan` — never rendered on the card,
+   * never in `facts`/`created`/`notifications` — would still land in the
+   * turn's supported-number pool. A FABRICATED stat elsewhere in the same
+   * prose that happened to equal that internal number would then be wrongly
+   * treated as grounded. Scoping `collectActionNumbers` to only
+   * `summary`/`facts` (proposal) or `summary`/`created`/`notifications`
+   * (receipt) closes this: the internal field must not appear anywhere in
+   * what `collect` receives.
+   */
+  it('a fabricated stat matching an internal-only plan field is not silently supported — the plan is never passed to collect', async () => {
+    planTask.mockReturnValue({
+      // `internal_batch_size` is realistic-shaped internal bookkeeping: never
+      // surfaced in `facts`, `summary`, or anywhere else the coach can read.
+      plan: { title: 'Extra reps', internal_batch_size: 47 },
+      proposal: baseProposal({ facts: [{ label: 'Duration', value: '90 minutes' }] }),
+    });
+    const collect = vi.fn();
+    const tools = buildCoachTools({
+      sb: {} as never,
+      ctx: ctx(),
+      conversationId: 'conv-1',
+      writer: { write: vi.fn() } as never,
+      collect,
+    });
+
+    await tools.create_task!.onInputAvailable!({ input: {} } as never);
+
+    expect(collect).toHaveBeenCalledTimes(1);
+    const envelope = collect.mock.calls[0]![0] as Record<string, unknown>;
+    // The internal field must not appear anywhere collect() sees — not as a
+    // top-level field, not nested in `detail`. Scoped to `detail` (rather
+    // than the whole envelope) so this doesn't false-positive on `as_of`'s
+    // own timestamp digits incidentally containing "47".
+    expect(JSON.stringify(envelope.detail)).not.toContain('internal_batch_size');
+    expect(JSON.stringify(envelope.detail)).not.toContain('47');
   });
 });
