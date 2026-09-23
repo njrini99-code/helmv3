@@ -17,13 +17,24 @@ describe('buildRollingDistanceProfileScope', () => {
 
   it('handles a leap-year Feb 29 "now" without producing an invalid date', () => {
     // 2027 is not a leap year, so Feb 29 minus 12 months has no exact target
-    // day. Verified (not assumed): date-fns' addMonths rolls the overflow
-    // into March 1 rather than clamping to Feb 28 — this pins that actual
-    // behavior so a future date-fns upgrade that changes it is caught here,
-    // not discovered silently in a rendered date range.
+    // day. The deliberate, TZ-independent decision (computed via
+    // `subtractMonthsUTC`, entirely on UTC calendar fields): CLAMP to the
+    // target month's last day, Feb 28, 2027 — never roll into March.
+    //
+    // This used to assert '2027-03-01', pinning `date-fns`' `addMonths`
+    // called directly on a UTC-midnight `now`. That assertion only passed
+    // because `addMonths` reads LOCAL getters: in America/New_York (a
+    // negative-offset zone), a UTC-midnight instant reads back as the
+    // PREVIOUS local calendar day, so the local computation actually ran
+    // on Feb 28 (no overflow at all), and its preserved local time-of-day
+    // converted back to UTC as March 1 — a timezone artifact, not a
+    // decision about the leap-year case. CI runs in UTC, where the same
+    // `addMonths` call legitimately clamped to Feb 28 — the SAME answer
+    // this test now pins directly, deliberately, and without depending on
+    // the process's timezone at all.
     const now = new Date('2028-02-29T00:00:00.000Z');
     const scope = buildRollingDistanceProfileScope('player-1', now);
-    expect(scope.window_start).toBe('2027-03-01');
+    expect(scope.window_start).toBe('2027-02-28');
     expect(scope.window_end).toBe('2028-02-29');
   });
 });
