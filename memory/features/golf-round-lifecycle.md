@@ -634,6 +634,16 @@ reload (`lieFromShotResult`) restore position from.
   back to "the player") both as a fact and in the third-person rule. Until
   2026-09-02 the prompt named nobody and offered "Nick" as an example, and the
   model copied the example into a Shenandoah player's stored recap.
+- `generateAndStoreRoundReview` (`round-review-system.ts`) returns a typed,
+  additive `code` on every failure (`unauthenticated | unauthorized |
+  round_not_found | round_not_completed | db_error | save_failed |
+  unknown`), alongside the existing free-text `error` — see
+  `memory/features/coachhelm-ai.md`'s N13-companion entry for the full
+  rationale. The `golf_shots`/`golf_holes` reads inside the compute now
+  check `error`: previously an unchecked failure there fell back to an empty
+  array and the compute proceeded to a SUCCESSFUL upsert
+  (`ignoreDuplicates: false`), which could silently overwrite a good
+  existing review with empty content while reporting `success: true`.
 
 ## Tests To Prefer
 
@@ -643,6 +653,9 @@ reload (`lieFromShotResult`) restore position from.
 - Regression coverage for every explicit completed-round write capability and
   a migration replay/RLS suite for its grants and security boundary.
 - Playwright smoke for new round, continue round, submit/review, and mobile recovery.
+- `src/app/golf/actions/__tests__/round-review-error-codes.test.ts` — typed
+  failure codes and error logging for `generateAndStoreRoundReview`'s
+  compute path (2026-09-23).
 
 ## iOS shell presentation (added 2026-08-26)
 

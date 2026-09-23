@@ -309,6 +309,44 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   types" section and the seven named fixtures in
   `src/test/coachhelm/v3/fixtures/situational-intelligence.ts` (A0) for the
   concrete scenarios this package is proven against.
+- N13 sweep (repair plan, 2026-09-23): audited every CoachHelm action/route
+  under `src/app/golf/actions` and `src/lib/coachhelm` for a catch-all that
+  discards the real exception and returns one generic "session expired"-style
+  code. `triggerPlayerInsightsAfterRoundImpl` (`insights.ts`) was the
+  original N13 site and is already closed by the `AnalysisOutcome` taxonomy
+  above (Package 4, #1960) — `classifyThrown()` splits auth/provider/DB/
+  validation/unknown and only the stable `code` (never `.message`, which can
+  carry raw exception text) reaches the player-visible
+  `golf_rounds.coachhelm_failure_reason`. `golf.ts`'s two "session expired
+  mid-round" sites are correctly gated on an actual `!user` check with an
+  `isTransientAuthCheckFailure()` split (regression-tested, see
+  `golf-shot-edit-transient-auth.test.ts` /
+  `golf-save-partial-round.test.ts`) and only fire on genuine auth failure.
+  `admin-data.ts`'s `likelyCause: 'The user session expired…'` is an admin
+  diagnostic label generator over already-logged incidents, not a swallowed
+  user-facing exception. No new violation found; nothing else in scope
+  matched. Verified via `grep -rniE "session expired" src/lib/coachhelm
+  src/app/golf/actions`.
+- Swallowed round-review compute errors (2026-09-23,
+  `src/app/golf/actions/round-review-system.ts`, governed day-to-day by
+  `memory/features/golf-round-lifecycle.md` — noted here because it's the
+  N13 companion fix): `generateAndStoreRoundReview`'s compute path
+  (`computeAndStoreRoundReview`) now returns a typed, additive
+  `GenerateReviewFailureCode` (`unauthenticated | unauthorized |
+  round_not_found | round_not_completed | db_error | save_failed |
+  unknown`) on every failure branch, and every genuine DB error is logged
+  via `logServerError` with the action name and `roundId`/`playerId` — a
+  bare `roundError && roundError.code !== 'PGRST116'` check keeps a real "no
+  rows" (round not found) un-logged while catching everything else. The
+  `golf_shots`/`golf_holes` reads previously did not check `error` at all:
+  a transient failure fell back to an empty array and the compute continued
+  to a SUCCESSFUL upsert (`ignoreDuplicates: false`), which could silently
+  overwrite a good existing review with empty content while still returning
+  `success: true`. Both reads now fail the compute instead. `code` is
+  additive next to the existing free-text `error` (never a replacement —
+  `useRoundReviewV2.ts` and `review/page.tsx` still read `.error`) and wires
+  into `withAdminObserved`'s existing `extractActionSoftFailure` telemetry
+  with no extra plumbing.
 
 ## Tests To Prefer
 
@@ -316,6 +354,9 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
 - Cron/API tests under `src/test/api/cron/coachhelm*.test.ts`.
 - Component tests under `src/test/app/golf/dashboard/coachhelm/**`.
 - Browser validation for changed coach/player surfaces when UI or route behavior changes.
+- `src/app/golf/actions/__tests__/round-review-error-codes.test.ts` — typed
+  failure codes and logging for `generateAndStoreRoundReview`'s compute path
+  (2026-09-23).
 
 ## Related Docs
 
