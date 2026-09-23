@@ -111,6 +111,21 @@ export const MIN_SAMPLE_N = 5;
 
 type JsonRecord = Record<string, unknown>;
 
+/**
+ * FNV-1a-32 → 8-char zero-padded hex. Deterministic, runtime-portable, and
+ * NOT a security hash — just a stable content fingerprint for
+ * `evidenceRevisionKey` below, so a corrected value produces a different
+ * key than the value it corrects even when sample_n/window_end match.
+ */
+function stableHash(input: string): string {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < input.length; i++) {
+    hash ^= input.charCodeAt(i);
+    hash = (hash + ((hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24))) >>> 0;
+  }
+  return hash.toString(16).padStart(8, '0');
+}
+
 interface ExistingInsightRow {
   id: string;
   evidence: InsightEvidence | null;
@@ -268,10 +283,22 @@ async function updateExisting(
   // or the same round re-evaluated by a different generator run — never
   // count twice, and only movements recorded while the row is already
   // `detected` count at all (see lifecycle-policy.ts header, 2026-09-22).
+  //
+  // 2026-09-23 (§15.2 row 12, "corrected round within 24 hours"):
+  // sample_n|window_end alone has no content component, so a same-day
+  // correction (coach fixes a scoring error) that leaves the round count
+  // and window unchanged collided with the PRE-correction key and was
+  // silently not counted as a new confirmation. Fold a stable hash of
+  // `your_value` into the key so a genuine content change always produces a
+  // new key. The SAME evidence scanned on separate nights still hashes
+  // identically (same sample_n, window_end, your_value), so it still
+  // collapses to one confirmation, not several (row 8 — see
+  // lifecycle-policy.test.ts).
   const priorMaturationKeys: readonly string[] = Array.isArray(priorMetadata.maturation_keys)
     ? (priorMetadata.maturation_keys as unknown[]).filter((k): k is string => typeof k === 'string')
     : [];
-  const evidenceRevisionKey = `${evidence.sample_n}|${evidence.window_end}`;
+  const evidenceRevisionKey =
+    `${evidence.sample_n}|${evidence.window_end}|${stableHash(String(evidence.your_value))}`;
 
   const decision: LifecycleWriteDecision = resolveLifecycleOnWrite({
     existing: existing.lifecycle_state,

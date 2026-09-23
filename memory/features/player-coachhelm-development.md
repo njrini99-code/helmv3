@@ -101,6 +101,18 @@ Player opens round review
 
 ## Known Risk Areas
 
+- `upsertInsight`'s maturation-confirmation dedup key
+  (`src/lib/coachhelm/v2/insights/upsert.ts`, `evidenceRevisionKey`) is
+  `sample_n|window_end|<8-hex FNV-1a hash of your_value>` (2026-09-23 —
+  closed the §15.2 "corrected round within 24 hours" gap). Before this, the
+  key had no content component, so a same-day correction (coach fixes a
+  scoring error) that left the round count/window unchanged collided with
+  the pre-correction key and silently did not count as a new confirmation.
+  The hash is a stable, non-cryptographic fingerprint purely for dedup — the
+  SAME resulting value from two independent writes still hashes identically
+  (still ONE confirmation, not two — §15.2 row 8 is unaffected). Old-format
+  legacy keys (no hash suffix, written before this date) never collide with
+  a new-format key, so historical confirmation counts are preserved as-is.
 - Player acknowledgement/dismissal callbacks have historically been easy to render without wiring actions.
 - Revalidation can miss `/golf/dashboard/coachhelm` or `/golf/dashboard/my-development`.
 - Player-facing fallbacks can mask missing source data or LLM/citation failures.

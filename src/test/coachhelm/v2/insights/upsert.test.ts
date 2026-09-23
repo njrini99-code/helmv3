@@ -393,14 +393,18 @@ describe('upsertInsight', () => {
     expect(metadata.movement_count).toBe(3);
     // But lifecycle must NOT jump to matured off that stale counter.
     expect(payload.lifecycle_state).toBeUndefined();
-    expect(metadata.maturation_keys).toEqual(['47|2026-04-21']);
+    // 2026-09-23: key now carries a content hash of your_value alongside
+    // sample_n|window_end (§15.2 row 12) — match the shape, not a literal.
+    expect(metadata.maturation_keys).toHaveLength(1);
+    expect((metadata.maturation_keys as string[])[0]).toMatch(/^47\|2026-04-21\|[0-9a-f]{8}$/);
   });
 
   it('three DISTINCT evidence revisions recorded while detected mature the row', async () => {
     const existing = {
       id: 'existing-4',
       evidence: baseEvidence({ your_value: 0.38 }),
-      // Two independent new-round confirmations already recorded.
+      // Two independent new-round confirmations already recorded (legacy
+      // pre-2026-09-23 key format — no content hash component).
       metadata: { maturation_keys: ['20|2026-02-20', '35|2026-03-20'] },
       lifecycle_state: 'detected' as const,
     };
@@ -417,11 +421,15 @@ describe('upsertInsight', () => {
     const updateCall = calls.find((c) => c.op === 'update');
     const payload = updateCall!.payload as Record<string, unknown>;
     const metadata = payload.metadata as Record<string, unknown>;
-    expect(metadata.maturation_keys).toEqual(['20|2026-02-20', '35|2026-03-20', '52|2026-04-21']);
+    const keys = metadata.maturation_keys as string[];
+    // Old-format legacy keys carry over untouched (a different STRING never
+    // collides with a new-format key, so old confirmations still count).
+    expect(keys.slice(0, 2)).toEqual(['20|2026-02-20', '35|2026-03-20']);
+    expect(keys[2]).toMatch(/^52\|2026-04-21\|[0-9a-f]{8}$/);
     expect(payload.lifecycle_state).toBe('matured');
   });
 
-  it('re-evaluating the SAME evidence revision does not count twice toward maturation', async () => {
+  it('an identical-value refresh (no movement) leaves maturation_keys untouched', async () => {
     const existing = {
       id: 'existing-5',
       evidence: baseEvidence({ your_value: 0.38, sample_n: 47, window_end: '2026-04-21' }),
@@ -431,20 +439,98 @@ describe('upsertInsight', () => {
     const { client, calls } = createFakeSupabase({
       selectResult: { data: [existing], error: null },
     });
-    // Same sample_n/window_end as the already-counted revision — e.g. a
-    // duplicate analysis run over the identical underlying round — but the
-    // value still moves >5% (recompute noise / a corrected value).
+    // Same your_value as `existing` → no movement → a refresh write, which
+    // never touches maturation regardless of the key scheme (see "same
+    // signature, value within 5%" above). The genuine "same evidence
+    // scanned again" and "corrected round" cases are pinned below, where a
+    // real >5% move is in play both times.
     await upsertInsight(
       client,
-      baseInput({ evidence: baseEvidence({ your_value: 0.55, sample_n: 47, window_end: '2026-04-21' }) }),
+      baseInput({ evidence: baseEvidence({ your_value: 0.38, sample_n: 47, window_end: '2026-04-21' }) }),
     );
 
     const updateCall = calls.find((c) => c.op === 'update');
     const payload = updateCall!.payload as Record<string, unknown>;
     const metadata = payload.metadata as Record<string, unknown>;
-    // Unchanged — the key was already present.
     expect(metadata.maturation_keys).toEqual(['47|2026-04-21']);
     expect(payload.lifecycle_state).toBeUndefined();
+  });
+
+  it('the SAME resulting evidence from two independent writes counts as ONE confirmation, not two ' +
+     '(§15.2 row 8 survives the row-12 content-hash fix)', async () => {
+    const stubExisting = (yourValue: number, keys: string[]) => ({
+      id: 'existing-8',
+      evidence: baseEvidence({ your_value: yourValue, sample_n: 47, window_end: '2026-04-21' }),
+      metadata: { maturation_keys: keys },
+      lifecycle_state: 'detected' as const,
+    });
+    // The value BOTH writes land on — same target value, same sample_n,
+    // same window_end.
+    const landedEvidence = baseEvidence({ your_value: 0.38, sample_n: 47, window_end: '2026-04-21' });
+
+    // First write: some earlier reading moves (>5%) to 0.38 — the first
+    // confirmation.
+    const { client: client1, calls: calls1 } = createFakeSupabase({
+      selectResult: { data: [stubExisting(0.10, [])], error: null },
+    });
+    await upsertInsight(client1, baseInput({ evidence: landedEvidence }));
+    const firstPayload = calls1.find((c) => c.op === 'update')!.payload as Record<string, unknown>;
+    const firstKeys = (firstPayload.metadata as Record<string, unknown>).maturation_keys as string[];
+    expect(firstKeys).toHaveLength(1);
+
+    // Second, INDEPENDENT write (e.g. cron + trigger both firing on the
+    // same underlying round) — a DIFFERENT stale baseline, but it lands
+    // the exact same target value/sample_n/window_end as the first.
+    const { client: client2, calls: calls2 } = createFakeSupabase({
+      selectResult: { data: [stubExisting(0.15, firstKeys)], error: null },
+    });
+    await upsertInsight(client2, baseInput({ evidence: landedEvidence }));
+    const secondPayload = calls2.find((c) => c.op === 'update')!.payload as Record<string, unknown>;
+    const secondMetadata = secondPayload.metadata as Record<string, unknown>;
+
+    expect(secondMetadata.maturation_keys).toEqual(firstKeys);
+    expect(secondPayload.lifecycle_state).toBeUndefined();
+  });
+
+  it('§15.2 row 12 — a same-day correction (same sample_n/window_end, changed value) counts as a ' +
+     'NEW confirmation, not a collision with the pre-correction key', async () => {
+    const original = {
+      id: 'existing-correction',
+      evidence: baseEvidence({ your_value: 0.10, sample_n: 47, window_end: '2026-04-21' }),
+      metadata: {},
+      lifecycle_state: 'detected' as const,
+    };
+    const wrongValue = baseEvidence({ your_value: 0.30, sample_n: 47, window_end: '2026-04-21' });
+    const { client: client1, calls: calls1 } = createFakeSupabase({
+      selectResult: { data: [original], error: null },
+    });
+    await upsertInsight(client1, baseInput({ evidence: wrongValue }));
+    const afterWrong = calls1.find((c) => c.op === 'update')!.payload as Record<string, unknown>;
+    const keysAfterWrong = (afterWrong.metadata as Record<string, unknown>).maturation_keys as string[];
+    expect(keysAfterWrong).toHaveLength(1);
+
+    // Coach corrects a scoring error the SAME DAY: round count and window
+    // stay identical (same sample_n/window_end) — only the real value
+    // changes.
+    const existingWithWrongValue = {
+      id: 'existing-correction',
+      evidence: wrongValue,
+      metadata: { maturation_keys: keysAfterWrong },
+      lifecycle_state: 'detected' as const,
+    };
+    const correctedEvidence = baseEvidence({ your_value: 0.55, sample_n: 47, window_end: '2026-04-21' });
+    const { client: client2, calls: calls2 } = createFakeSupabase({
+      selectResult: { data: [existingWithWrongValue], error: null },
+    });
+    await upsertInsight(client2, baseInput({ evidence: correctedEvidence }));
+    const afterCorrection = calls2.find((c) => c.op === 'update')!.payload as Record<string, unknown>;
+    const keysAfterCorrection = (afterCorrection.metadata as Record<string, unknown>).maturation_keys as string[];
+
+    // Fixed behavior: the corrected content hashes differently, so this
+    // registers as a genuinely new, second confirmation instead of
+    // colliding with (and being silently dropped by) the pre-correction key.
+    expect(keysAfterCorrection).toHaveLength(2);
+    expect(keysAfterCorrection[0]).toBe(keysAfterWrong[0]);
   });
 
   // 2026-09-22: optimistic compare-and-set so a concurrent coach action
