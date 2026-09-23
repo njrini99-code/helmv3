@@ -2,10 +2,12 @@ BEGIN;
 
 SELECT plan(6);
 
--- Package 8 (2026-09-23, migration 20260923110000): the round-review
--- narrative's storage + task-key pieces. Additive only — no new
--- table, no RLS/grant change (golf_round_reviews' existing policies
--- already cover this column like every other one on the row).
+-- Package 8 (2026-09-23, migration 20260923100000 — folded into the same
+-- migration as the shared single-flight lock, see that file's own
+-- rationale): the round-review narrative's storage + task-key pieces.
+-- Additive only — no new table, no RLS/grant change (golf_round_reviews'
+-- existing policies already cover this column like every other one on the
+-- row).
 
 SELECT ok(
   (SELECT true FROM information_schema.columns

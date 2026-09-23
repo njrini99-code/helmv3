@@ -171,7 +171,7 @@ COMMENT ON TABLE "public"."golf_round_recap_provenance" IS 'One row per generate
 
 COMMENT ON COLUMN "public"."golf_round_reviews"."status" IS 'Review workflow status: draft (coach editing), published (visible to player), archived';
 
-COMMENT ON COLUMN "public"."golf_round_reviews"."ai_narrative" IS 'LLM-authored 3-5 sentence narrative paragraph (round-review narrative feature, Package 8, migration 20260923110000) — distinct from the deterministic `summary` column and from round-recap.ts''s separate `golf_rounds.ai_recap` blurb. NULL until the flagged narrative action generates and caches one for the round; caches a deterministic fallback permanently on LLM/validation failure the same way ai_recap does — one attempt per round, never silently retried on a later page load.';
+COMMENT ON COLUMN "public"."golf_round_reviews"."ai_narrative" IS 'LLM-authored 3-5 sentence narrative paragraph (round-review narrative feature, Package 8, migration 20260923100000) — distinct from the deterministic `summary` column and from round-recap.ts''s separate `golf_rounds.ai_recap` blurb. NULL until the flagged narrative action generates and caches one for the round; caches a deterministic fallback permanently on LLM/validation failure the same way ai_recap does — one attempt per round, never silently retried on a later page load.';
 
 COMMENT ON COLUMN "public"."golf_rounds"."draft_data" IS 'JSON blob storing full draft state for in-progress rounds (step, setupData, holes, completedHoleStats, etc.)';
 

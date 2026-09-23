@@ -349,17 +349,17 @@ flags:
       any DB read tied to generation (mirroring the A4 slice 3b pattern —
       zero cost while off), so no code path selects, claims a lock for, or
       writes golf_round_reviews.ai_narrative unless this is on. Requires
-      migration 20260923110000_round_review_narrative_schema applied in
-      prod (adds the ai_narrative column and widens
-      golf_coachhelm_llm_calls.task's CHECK to accept
-      'round_review_narrative') AND 20260923100000_round_recap_single_flight_lock
-      applied (the narrative reuses that migration's lock table/functions,
-      kind = 'round_review_narrative') — until both are applied, turning
-      this on would make every narrative generation attempt fail against
-      columns/functions that don't exist there yet. Off by default in
-      every environment for exactly that reason, same as
-      coachhelm_recap_single_flight_lock's own migration-ordering
-      rationale.
+      migration 20260923100000_round_recap_single_flight_lock applied in
+      prod — it carries both the shared lock table/functions AND (folded
+      into the same migration, revised in place before either piece was
+      applied anywhere) the ai_narrative column and the
+      golf_coachhelm_llm_calls.task CHECK widening to accept
+      'round_review_narrative', so neither piece can land half-applied.
+      Until it is applied, turning this on would make every narrative
+      generation attempt fail against columns/functions that don't exist
+      there yet. Off by default in every environment for exactly that
+      reason, same as coachhelm_recap_single_flight_lock's own
+      migration-ordering rationale.
     type: experiment
     status: active
     created_at: "2026-09-23"
@@ -372,13 +372,12 @@ flags:
     kill_switch_behavior: null
     cleanup_plan: >-
       Flip on (development, then preview, then production) only after the
-      owner applies BOTH 20260923110000_round_review_narrative_schema and
-      20260923100000_round_recap_single_flight_lock to each environment,
-      confirmed via information_schema.columns (ai_narrative) and pg_proc
-      (claim_round_recap_lock / release_round_recap_lock). Once on
-      everywhere and the fallback rate (deterministic vs. LLM-authored) is
-      acceptable, consider promoting to a permanent `release` flag —
-      owner's call, not automatic.
+      owner applies 20260923100000_round_recap_single_flight_lock to each
+      environment, confirmed via information_schema.columns (ai_narrative)
+      and pg_proc (claim_round_recap_lock / release_round_recap_lock).
+      Once on everywhere and the fallback rate (deterministic vs.
+      LLM-authored) is acceptable, consider promoting to a permanent
+      `release` flag — owner's call, not automatic.
 
   # A9 slice 1 (repair-plan addendum §14.12, PR #1992's pure core wired into
   # the attribution path). `causality/attribute.ts`'s round-level average has

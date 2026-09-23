@@ -11,16 +11,18 @@
  *
  * 2026-09-23 — round_review_narrative added (Package 8, owner decision).
  * Its own task key, deliberately NOT a reuse of round_review (round-recap.ts's
- * existing key): a 3-5 sentence paragraph for golf_round_reviews.ai_narrative
- * costs meaningfully more per call than round-recap.ts's 2-sentence blurb,
- * and the owner wants the two surfaces separable in spend telemetry
- * (golf_coachhelm_llm_calls.task, widened by migration
- * 20260923110000_round_review_narrative_schema.sql). Model and fallback
- * priority are this feature's own implementation defaults (not separately
- * specified by the owner): Haiku, matching the other two prose tasks, and
- * lowest fallback priority (4) — new and not yet load-bearing, so it sheds
- * first under budget pressure rather than displacing round_review or
- * coach_chat.
+ * existing key, also used by the ephemeral, never-persisted
+ * generateLlmRoundReview()): a 3-5 sentence paragraph for
+ * golf_round_reviews.ai_narrative costs meaningfully more per call than
+ * round-recap.ts's 2-sentence blurb, and the owner wants the two surfaces
+ * separable in spend telemetry (golf_coachhelm_llm_calls.task, widened by
+ * migration 20260923100000_round_recap_single_flight_lock.sql — folded into
+ * the same migration as the shared single-flight lock so neither piece can
+ * land half-applied). Model and fallback priority are this feature's own
+ * implementation defaults (not separately specified by the owner): Haiku,
+ * matching the other two prose tasks, and lowest fallback priority (4) —
+ * new and not yet load-bearing, so it sheds first under budget pressure
+ * rather than displacing round_review or coach_chat.
  */
 
 import type { EvidencePacket } from './claim-validator';
