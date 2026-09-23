@@ -1,6 +1,7 @@
 ---
 name: apple-appstore-reviewer
-description: 'Serves as a reviewer of the codebase with instructions on looking for Apple App Store optimizations or rejection reasons.'
+disable-model-invocation: true
+description: 'Review the iOS app for App Store rejection risks and listing optimizations. Use before an App Store submission or after a rejection.'
 ---
 
 # Apple App Store Review Specialist

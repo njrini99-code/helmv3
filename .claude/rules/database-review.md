@@ -39,8 +39,8 @@ is the worst-case, business-ending failure. Patterns + required tests:
 - **No destructive writes / idempotent imports** — no DELETE-then-INSERT
   in save/submit/sync SQL; importers update/merge, never duplicate, and
   preserve source/timestamp/confidence.
-- **Verified + rollback** — migrations carry a `-- VERIFIED:` prod-state
-  query and a `-- ROLLBACK:` note; `IF [NOT] EXISTS` guards; `DO $$…$$`
+- **Verify + rollback** — a data/DDL migration carries `-- ROLLBACK:` and
+  `-- VERIFY:` blocks (`npm run check:migration-headers`); `IF [NOT] EXISTS` guards; `DO $$…$$`
   around renames. A migration file being present does NOT mean it's
   applied in prod — verify against `information_schema`.
 

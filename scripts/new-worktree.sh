@@ -21,7 +21,7 @@
 # --reattach checks out an EXISTING agent/<task-name> branch instead of
 # creating one. It is the inverse of `npm run worktrees:park`, which removes a
 # checkout and keeps the branch: without it a parked branch could only be
-# recovered with a raw `git worktree add`, which guard-git refuses, so "the
+# recovered with a raw `git worktree add` that skips the workspace marker, so "the
 # branch is kept" was true and useless. --base is ignored when reattaching —
 # the branch already has its history.
 #

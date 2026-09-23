@@ -5,9 +5,11 @@ plain JavaScript beginning with `export const meta`. They spawn the repo's own
 agent definitions (`helm-reader` for read-only stages, `helm-worker` for stages
 that edit inside a worktree) and never merge, deploy, or touch production.
 
-- `helm-review.js` — five-dimension review of a PR (`/helm-review 1875`) or the
-  working-tree diff (no args), each finding adversarially verified by three
-  independent readers; two refutations kill a finding.
+- `helm-review.js` — five-dimension review of a PR (`/helm-review 1875`, read
+  from a detached checkout of the PR head) or the current checkout's diff (no
+  args), each finding adversarially verified by three independent readers;
+  two refutations kill a finding and the severity lens re-grades rather than
+  kills.
 - `helm-fix-ci.js` — for each PR number passed, diagnose the red check from the
   job logs and fix only that in the PR's own worktree, then push.
 

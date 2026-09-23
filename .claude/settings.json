@@ -20,66 +20,8 @@
       "mcp__claude_ai_Vercel",
       "mcp__claude_ai_Sentry"
     ],
-    "deny": [
-      "Bash(vercel --prod:*)",
-      "Bash(vercel deploy --prod:*)",
-      "Bash(./node_modules/.bin/vercel --prod:*)",
-      "Bash(./node_modules/.bin/vercel deploy --prod:*)",
-      "Bash(npx vercel --prod:*)",
-      "Bash(npx vercel deploy --prod:*)",
-      "Bash(scripts/deploy-prod.sh:*)",
-      "Bash(./scripts/deploy-prod.sh:*)",
-      "Bash(bash scripts/deploy-prod.sh:*)",
-      "Bash(sh scripts/deploy-prod.sh:*)"
-    ],
-    "ask": [
-      "Bash(supabase config push:*)",
-      "Bash(supabase db reset --linked:*)",
-      "Bash(supabase db reset --db-url:*)",
-      "Bash(vercel alias set:*)",
-      "Bash(./node_modules/.bin/vercel alias set:*)",
-      "Bash(./node_modules/.bin/supabase config push:*)",
-      "Bash(./node_modules/.bin/supabase db reset --linked:*)",
-      "Bash(./node_modules/.bin/supabase db reset --db-url:*)",
-      "Bash(npx vercel alias set:*)",
-      "Bash(npx supabase config push:*)",
-      "Bash(npx supabase db reset --linked:*)",
-      "Bash(npx supabase db reset --db-url:*)",
-      "mcp__claude_ai_Supabase__create_project",
-      "mcp__claude_ai_Supabase__delete_branch",
-      "mcp__claude_ai_Supabase__merge_branch",
-      "mcp__claude_ai_Supabase__pause_project",
-      "mcp__claude_ai_Supabase__reset_branch",
-      "mcp__claude_ai_Supabase__restore_project",
-      "mcp__e139bbde-4728-4ed3-977f-7b1b22f4b69c__create_project",
-      "mcp__e139bbde-4728-4ed3-977f-7b1b22f4b69c__delete_branch",
-      "mcp__e139bbde-4728-4ed3-977f-7b1b22f4b69c__merge_branch",
-      "mcp__e139bbde-4728-4ed3-977f-7b1b22f4b69c__pause_project",
-      "mcp__e139bbde-4728-4ed3-977f-7b1b22f4b69c__reset_branch",
-      "mcp__e139bbde-4728-4ed3-977f-7b1b22f4b69c__restore_project",
-      "mcp__fba2ada3-c190-4053-b91a-3e81f5296483__pause_project",
-      "mcp__fba2ada3-c190-4053-b91a-3e81f5296483__buy_domain",
-      "mcp__fba2ada3-c190-4053-b91a-3e81f5296483__buy_pro",
-      "mcp__fba2ada3-c190-4053-b91a-3e81f5296483__buy_credits",
-      "mcp__fba2ada3-c190-4053-b91a-3e81f5296483__buy_addon",
-      "mcp__fba2ada3-c190-4053-b91a-3e81f5296483__update_project_deployment_protection",
-      "Bash(vercel promote:*)",
-      "Bash(vercel rollback:*)",
-      "Bash(vercel env rm:*)",
-      "Bash(./node_modules/.bin/vercel promote:*)",
-      "Bash(./node_modules/.bin/vercel rollback:*)",
-      "Bash(./node_modules/.bin/vercel env rm:*)",
-      "Bash(npx vercel promote:*)",
-      "Bash(npx vercel rollback:*)",
-      "Bash(npx vercel env rm:*)",
-      "mcp__supabase__create_branch",
-      "mcp__supabase__delete_branch",
-      "mcp__supabase__merge_branch",
-      "mcp__supabase__reset_branch",
-      "mcp__supabase__update_storage_config",
-      "mcp__claude_ai_Supabase__create_branch",
-      "mcp__e139bbde-4728-4ed3-977f-7b1b22f4b69c__create_branch"
-    ]
+    "deny": [],
+    "ask": []
   },
   "hooks": {
     "SessionStart": [
@@ -89,12 +31,6 @@
             "type": "command",
             "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/session-context.sh",
             "timeout": 10
-          },
-          {
-            "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/init-session-state.mjs",
-            "timeout": 10,
-            "statusMessage": "engineering-os: init session"
           },
           {
             "type": "command",
@@ -138,54 +74,6 @@
         ]
       }
     ],
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-git.mjs"
-          },
-          {
-            "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-sql.mjs"
-          }
-        ]
-      },
-      {
-        "matcher": "^mcp__.*__(execute_sql|apply_migration)$",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-sql.mjs"
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Read|Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/record-context-load.mjs",
-            "timeout": 10,
-            "statusMessage": "engineering-os: record context load"
-          }
-        ]
-      },
-      {
-        "matcher": "Write|Edit|MultiEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/record-session-touch.mjs",
-            "timeout": 10,
-            "statusMessage": "engineering-os: record touch"
-          }
-        ]
-      }
-    ],
     "PreCompact": [
       {
         "hooks": [
@@ -198,9 +86,6 @@
         ]
       }
     ]
-  },
-  "enabledPlugins": {
-    "claude-security@claude-plugins-official": true
   },
   "autoMemoryEnabled": false
 }

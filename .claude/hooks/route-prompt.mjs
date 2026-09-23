@@ -7,8 +7,8 @@
 //
 // 1. DOOR HINTS — a fast, local keyword match against the prompt text,
 //    pointing an obvious prompt shape at the repo's own doors: `/land`,
-//    `/worktree`, `/gates`, `/held`, the `helm-sentry` skill, and Supabase/
-//    migration work. No subprocess, no I/O — a handful of regex tests.
+//    `/worktree`, `/gates`, `/held`, the `helm-sentry` skill, and the
+//    `helm-supabase` skill for Supabase/migration work. No subprocess, no I/O — a handful of regex tests.
 //
 // 2. FEATURE-DOC MAPPING (pre-existing) — if the prompt text names a
 //    repo-relative path under src/, supabase/, scripts/, memory/, or docs/,
@@ -64,8 +64,8 @@ const DOOR_HINTS = [
   { door: '/worktree', re: /\bnew\s+worktree\b|\bstart\s+(a\s+)?(new\s+)?task\b|\bcreate\s+a\s+worktree\b|\bspin\s+up\s+a\s+worktree\b/i },
   { door: '/gates', re: /\brun\s+(the\s+)?gates\b|\brun\s+(the\s+)?(ci\s+)?tests?\b|\btypecheck\s+and\s+lint\b|\brun\s+the\s+ci\b/i },
   { door: '/held', re: /\bheld\s+migrations?\b|\bmigrations?\s+on\s+hold\b|\bHELD\.md\b/i },
-  { door: 'helm-sentry skill', re: /\bsentry\b|\bproduction\s+error\b|\bstack\s+trace\b|\bpaging\s+alert\b/i },
-  { door: 'supabase:supabase skill', re: /\bmigration\b|\brls\b|\bsupabase\b|\bpostgres\b/i },
+  { door: 'helm-sentry skill', re: /\bsentry\b|\bproduction\s+error\b|\bpaging\s+alert\b|\bissue\s+id\b/i },
+  { door: 'helm-supabase skill', re: /\bmigration\b|\brls\b|\bsupabase\b|\bpostgres\b/i },
 ];
 
 /** Door hints whose keyword regex matches the prompt text, in listed order. */

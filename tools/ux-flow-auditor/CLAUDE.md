@@ -60,7 +60,7 @@ After understanding the context:
 2. Follow the style guide
 3. Use patterns from the codebase
 4. Add proper error handling
-5. Test mentally that it will work
+5. Run the checks `/gates` picks for the change
 
 ### 5. Verify Your Work
 

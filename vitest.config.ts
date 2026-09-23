@@ -146,12 +146,8 @@ export default defineConfig({
             // SessionStart/Stop hooks wired in .claude/settings.json. Same
             // "named explicitly, not swept in" rule applies — an unlisted
             // file under scripts/__tests__/ runs under nothing.
-            'scripts/__tests__/hooks/guard-git.test.mjs',
-            'scripts/__tests__/hooks/guard-sql.test.mjs',
-            'scripts/__tests__/hooks/guard-config-change.test.mjs',
             'scripts/__tests__/hooks/route-prompt.test.mjs',
             'scripts/__tests__/hooks/session-state-compaction.test.mjs',
-            'scripts/__tests__/hooks/require-gates.test.mjs',
             // db:apply preflight (2026-09-08). Same "named explicitly" rule.
             // Both checks it covers were found broken while dry-running the
             // September helm_debug/helm_jobs/pgaudit migrations (8 of the 9
