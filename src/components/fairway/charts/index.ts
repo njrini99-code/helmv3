@@ -6,8 +6,13 @@
  * (DESIGN-SYSTEM.md §5). Matte cards, calm green-on-cream palette, the single
  * glass tooltip, tabular numerics, accessible "view as table" on every chart.
  *
- * ADDITIVE ONLY: nothing here is imported by an existing page/component. These
- * render correctly inside a `.fairway-ds` scope on a `bg-canvas` page.
+ * Package 11 (#1933 bug, confirmed present on main): this claimed "nothing
+ * here is imported by an existing page/component," which stopped being true
+ * without the comment being updated — GenomeCompareView.tsx,
+ * FairwayEffectiveness.tsx, GoalsSection.tsx, PlayersGridView.tsx,
+ * GenomeDetailView.tsx, FairwayGoalCard.tsx, FairwayPlayerDashboard.tsx, and
+ * EvidenceVisuals.tsx all import straight from this barrel in production.
+ * These render correctly inside a `.fairway-ds` scope on a `bg-canvas` page.
  *
  *  Shared    — ChartFrame, ChartTooltip / RechartsTooltip, Numeric / DeltaChip,
  *              theme tokens + formatters, useCanvasLayer
