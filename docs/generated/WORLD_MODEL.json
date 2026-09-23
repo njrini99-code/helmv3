@@ -13438,6 +13438,11 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/focus-areas/load-evidence-revision-status.ts",
           "anchor": "src/lib/flags"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/focus-areas/practice-log-loader.ts",
+          "anchor": "src/lib/flags"
         }
       ]
     },
@@ -13692,12 +13697,42 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/focus-areas/follow-up-eligibility-loader.ts",
+          "anchor": "src/lib/supabase/untyped"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/focus-areas/follow-up-eligibility-loader.ts",
+          "anchor": "src/lib/supabase/fetch-all-rows"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/focus-areas/follow-up-eligibility-loader.ts",
+          "anchor": "src/lib/supabase/chunk-ids"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/focus-areas/load-evidence-revision-status.ts",
           "anchor": "src/lib/supabase/untyped"
         },
         {
           "kind": "import_graph",
           "path": "src/lib/coachhelm/focus-areas/load-evidence-revision-status.ts",
+          "anchor": "src/lib/supabase/chunk-ids"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/focus-areas/practice-log-loader.ts",
+          "anchor": "src/lib/supabase/untyped"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/focus-areas/practice-log-loader.ts",
+          "anchor": "src/lib/supabase/fetch-all-rows"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/focus-areas/practice-log-loader.ts",
           "anchor": "src/lib/supabase/chunk-ids"
         }
       ]
@@ -15297,6 +15332,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/app/golf/actions/round-review-sequence-attribution.ts",
+          "anchor": "src/lib/flags"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/app/golf/actions/round-review-system.ts",
           "anchor": "src/lib/supabase/admin"
         },
@@ -15463,6 +15503,21 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/round-recap.ts",
           "anchor": "src/lib/auth/action-rate-limit"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/round-review-sequence-attribution.test.ts",
+          "anchor": "src/lib/auth/verify-player-access"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/round-review-sequence-attribution.ts",
+          "anchor": "src/lib/supabase/server"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/round-review-sequence-attribution.ts",
+          "anchor": "src/lib/auth/verify-player-access"
         },
         {
           "kind": "import_graph",
@@ -15790,6 +15845,21 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/round-recap.ts",
           "anchor": "src/lib/coachhelm/v3/llm/recap-evidence"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/round-review-sequence-attribution.ts",
+          "anchor": "src/lib/coachhelm/v3/metrics/sequence-attribution-window"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/round-review-sequence-attribution.ts",
+          "anchor": "src/lib/coachhelm/v3/metrics/load-sequence-attribution"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/round-review-sequence-attribution.ts",
+          "anchor": "src/lib/coachhelm/v3/metrics/types"
         },
         {
           "kind": "import_graph",
@@ -17990,6 +18060,11 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/metrics/distance-profile.ts",
           "anchor": "src/lib/golf/stat-formulas"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/metrics/sequence-attribution-window.ts",
+          "anchor": "src/lib/golf/date-only"
         }
       ]
     },
