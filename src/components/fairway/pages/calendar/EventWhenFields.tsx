@@ -14,12 +14,13 @@
  * simply never adopted here: PopoverPanel, CalendarSurface, Segmented,
  * SelectablePill.
  *
- * THE ONE IDEA: the end-time list is duration-aware. Every option is labelled
- * with its length from the chosen start — "10:30 AM · 1 hr 30" — so picking an
- * end IS picking a duration. That is how Cron, Notion Calendar and Fantastical
- * all behave, and it is the visible half of the start/end relationship the
- * editor now enforces in code (moving the start carries the end with it).
- * It encodes the content rather than decorating it.
+ * THE ONE IDEA: the end-time chooser is duration-aware. The time drum's
+ * header shows the live length from the chosen start — "10:30 AM · 1 hr 30" —
+ * so picking an end IS picking a duration. That is how Cron, Notion Calendar
+ * and Fantastical all behave, and it is the visible half of the start/end
+ * relationship the editor enforces in code (moving the start carries the end
+ * with it). The picker itself is the iOS Clock drum (TimeWheel) on desktop
+ * and mobile alike — owner request, 2026-09-10.
  * ========================================================================== */
 
 import * as React from 'react';
@@ -29,9 +30,10 @@ import { cn } from '@/lib/utils';
 import { Button as UiButton } from '@/components/ui/button';
 import { PopoverPanel } from '@/components/fairway/overlays/PopoverPanel';
 import { DatePicker } from '@/components/fairway/calendar/date-picker';
+import { TimeWheel } from '@/components/fairway/controls/wheel-picker';
 
-/** Minutes between offered times. 15 is the granularity every calendar app
- *  converged on: fine enough for a 45-minute lift, coarse enough to scan. */
+/** Rounding step for the time the drum OPENS on when nothing is chosen yet.
+ *  The drum itself offers every minute, like the OS clock. */
 const STEP_MIN = 15;
 
 export function toMinutes(hhmm: string | null): number | null {
@@ -155,8 +157,8 @@ export function TimeChooser({
   onChange,
   label,
   disabled,
-  /** When set, each option is labelled with its duration from this start —
-   *  the end chooser's whole reason for existing. */
+  /** When set, the popover shows the live length from this start — the end
+   *  chooser's whole reason for existing. */
   durationFrom,
   labelIcon,
 }: {
@@ -168,34 +170,22 @@ export function TimeChooser({
   labelIcon?: React.ReactNode;
 }) {
   const [open, setOpen] = React.useState(false);
-  const listRef = React.useRef<HTMLDivElement | null>(null);
 
   const startMin = toMinutes(durationFrom ?? null);
+  const valueMin = toMinutes(value);
+  // Forward-going, so an end past midnight reads as a real length rather
+  // than a negative one.
+  const duration =
+    startMin !== null && valueMin !== null ? formatDuration((valueMin - startMin + 1440) % 1440) : '';
 
-  const options = React.useMemo(() => {
-    const out: Array<{ value: string; clock: string; duration: string }> = [];
-    for (let m = 0; m < 1440; m += STEP_MIN) {
-      const hhmm = fromMinutes(m);
-      out.push({
-        value: hhmm,
-        clock: formatClock(hhmm),
-        // Forward-going duration, so an end past midnight reads as a real
-        // length rather than a negative one.
-        duration: startMin === null ? '' : formatDuration((m - startMin + 1440) % 1440),
-      });
-    }
-    return out;
+  // The drum shows SOME time even before one is chosen. Opening on the start
+  // time (or one hour after it for the end field) means the first flick is a
+  // small adjustment, not a trip from midnight.
+  const fallback = React.useMemo(() => {
+    if (startMin !== null) return fromMinutes(startMin + 60);
+    const now = new Date();
+    return fromMinutes(Math.ceil((now.getHours() * 60 + now.getMinutes()) / STEP_MIN) * STEP_MIN);
   }, [startMin]);
-
-  // Scroll the current value into view when the list opens — a 96-row list that
-  // always starts at midnight is a list you have to fight.
-  React.useEffect(() => {
-    if (!open) return;
-    const id = window.requestAnimationFrame(() => {
-      listRef.current?.querySelector('[data-selected="true"]')?.scrollIntoView({ block: 'center' });
-    });
-    return () => window.cancelAnimationFrame(id);
-  }, [open]);
 
   return (
     <div>
@@ -208,6 +198,7 @@ export function TimeChooser({
         onOpenChange={setOpen}
         side="bottom"
         align="start"
+        ariaLabel={label}
         trigger={
           <UiButton variant="ghost" type="button" className={triggerCls} disabled={disabled} aria-label={label}>
             <span className="flex min-w-0 items-center gap-2">
@@ -220,46 +211,37 @@ export function TimeChooser({
           </UiButton>
         }
       >
-        <div
-          ref={listRef}
-          role="listbox"
-          aria-label={label}
-          className="max-h-[17rem] w-[13rem] overflow-y-auto p-1"
-        >
-          {options.map((o) => {
-            const isSelected = o.value === value;
-            return (
-              <UiButton
-                key={o.value}
-                variant="ghost"
-                type="button"
-                role="option"
-                aria-selected={isSelected}
-                data-selected={isSelected}
-                onClick={() => {
-                  onChange(o.value);
-                  setOpen(false);
-                }}
-                className={cn(
-                  'flex min-h-11 h-auto w-full items-baseline justify-between gap-3 rounded-fw-sm px-2.5 py-1.5 text-left font-fw-sans text-body-sm transition-colors',
-                  // Base UiButton ring is primary-500/ring-offset-white (see
-                  // triggerCls comment above) — this list otherwise never
-                  // sets its own ring color, so a 96-row keyboard-navigable
-                  // listbox loses the accent focus styling every other
-                  // Fairway control in this modal uses.
-                  'focus-visible:ring-accent-500/40 focus-visible:ring-offset-canvas',
-                  isSelected
-                    ? 'bg-accent-500/12 font-medium text-text-primary'
-                    : 'text-text-secondary hover:bg-surface-sunken hover:text-text-primary',
-                )}
-              >
-                <span>{o.clock}</span>
-                {o.duration ? (
-                  <span className="font-fw-mono text-caption text-text-tertiary">{o.duration}</span>
-                ) : null}
-              </UiButton>
-            );
-          })}
+        {/* The iOS Clock drum (owner request, 2026-09-10) on desktop AND
+            mobile: hour · minute · AM/PM columns, the centre row is the
+            value, and it commits as it settles. The former 96-row list
+            carried the duration on every row; a drum has no per-row label,
+            so the length lives in the header beside the chosen time. */}
+        <div className="w-[15rem] p-2">
+          <div className="flex items-baseline justify-between px-2 pb-1">
+            <span className="font-fw-sans text-body-sm font-medium text-text-primary">
+              {value ? formatClock(value) : 'Pick a time'}
+            </span>
+            {duration ? (
+              <span className="font-fw-mono text-caption text-text-tertiary">{duration}</span>
+            ) : null}
+          </div>
+          <TimeWheel value={value} onChange={onChange} fallback={fallback} disabled={disabled} />
+          <div className="flex justify-end pt-1">
+            <UiButton
+              variant="ghost"
+              type="button"
+              size="sm"
+              className="h-9 rounded-fw-sm px-3 font-fw-sans text-body-sm font-medium text-accent-700 hover:bg-accent-500/10 focus-visible:ring-accent-500/40 focus-visible:ring-offset-canvas"
+              onClick={() => {
+                // Closing without ever touching the drum still picks the
+                // time it opened on — a visible value should never be lost.
+                if (!value) onChange(fallback);
+                setOpen(false);
+              }}
+            >
+              Done
+            </UiButton>
+          </div>
         </div>
       </PopoverPanel>
     </div>

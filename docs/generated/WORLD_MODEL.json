@@ -579,6 +579,11 @@
         "category": "components"
       },
       {
+        "id": "components:src/components/fairway/controls/wheel-picker.*",
+        "pattern": "src/components/fairway/controls/wheel-picker.*",
+        "category": "components"
+      },
+      {
         "id": "components:src/components/fairway/pages/calendar/**",
         "pattern": "src/components/fairway/pages/calendar/**",
         "category": "components"
@@ -11995,6 +12000,18 @@
           "kind": "registry_declaration",
           "path": "memory/registry.yml",
           "pattern": "observability.feature_keys"
+        }
+      ]
+    },
+    {
+      "source": "calendar_events",
+      "target": "components:src/components/fairway/controls/wheel-picker.*",
+      "kind": "feature_component",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/components/fairway/controls/wheel-picker.*"
         }
       ]
     },
