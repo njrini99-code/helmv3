@@ -256,7 +256,7 @@ const PRIOR_EVIDENCE_ROW_LIMIT = 40;
  *         must not silently support a claim about whichever player IS being
  *         asked about now.
  */
-function priorTurnEvidence(messages: readonly ChatMessage[]): {
+function priorTurnEvidence(messages: readonly ChatMessage[], timezone: string): {
   shared: { measurements: Measurement[]; series: MeasurementSeries[]; detailNumbers: number[]; detailDates: string[] };
   deferred: {
     measurements: Measurement[];
@@ -305,7 +305,7 @@ function priorTurnEvidence(messages: readonly ChatMessage[]): {
       target.series.push(...envelope.series);
       if (envelope.detail !== undefined) {
         target.detailNumbers.push(...collectNumbers(envelope.detail));
-        target.detailDates.push(...collectDates(envelope.detail));
+        target.detailDates.push(...collectDates(envelope.detail, timezone));
       }
       for (const id of playerIdsHere) deferred.playerIds.add(id);
     }
@@ -456,7 +456,7 @@ export async function POST(req: NextRequest) {
     seriesAll.push(...envelope.series);
     if (envelope.detail !== undefined) {
       detailNumbers.push(...collectNumbers(envelope.detail));
-      detailDates.push(...collectDates(envelope.detail));
+      detailDates.push(...collectDates(envelope.detail, ctx.timezone));
     }
   };
 
@@ -480,7 +480,7 @@ export async function POST(req: NextRequest) {
       conversationId,
       PRIOR_EVIDENCE_ROW_LIMIT,
     );
-    const prior = priorTurnEvidence(priorMessages);
+    const prior = priorTurnEvidence(priorMessages, ctx.timezone);
     measurements.push(...prior.shared.measurements);
     seriesAll.push(...prior.shared.series);
     detailNumbers.push(...prior.shared.detailNumbers);
@@ -749,7 +749,14 @@ export async function POST(req: NextRequest) {
       }
 
       const fullText = accumulatedText.trim();
-      const unsupported = auditNumericClaims(fullText, measurements, seriesAll, detailNumbers, detailDates);
+      const unsupported = auditNumericClaims(
+        fullText,
+        measurements,
+        seriesAll,
+        detailNumbers,
+        detailDates,
+        ctx.timezone,
+      );
       auditResult = {
         grounded: unsupported.length === 0 && !streamErrored,
         unsupported,
@@ -813,7 +820,14 @@ export async function POST(req: NextRequest) {
         // 'complete'.
         const { grounded, unsupported, streamErrored } =
           auditResult ?? (() => {
-            const claims = auditNumericClaims(text, measurements, seriesAll, detailNumbers, detailDates);
+            const claims = auditNumericClaims(
+              text,
+              measurements,
+              seriesAll,
+              detailNumbers,
+              detailDates,
+              ctx.timezone,
+            );
             return { grounded: claims.length === 0, unsupported: claims, streamErrored: false };
           })();
 

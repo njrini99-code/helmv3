@@ -506,6 +506,149 @@ describe('auditNumericClaims', () => {
       );
       expect(claims.map((c) => c.text)).toEqual(['45']);
     });
+
+    // Second review round (2026-09-23), reviewer-run against the fixes below:
+    // window containment for a no-year date, timezone conversion for a
+    // timestamped date, the two-digit year pivot, and one documented (not
+    // fixed) residual risk.
+
+    it('accepts a no-year date strictly inside a window, not just at its boundary', () => {
+      // MUST-fix: the boundary-only check (`evidenceMonthDays`, built from
+      // window_start/window_end THEMSELVES) matched only Aug 16 and Sep 15 —
+      // a real in-window date like Aug 25 was flagged even though the whole
+      // window is real evidence for it.
+      const claims = auditNumericClaims(
+        'He played well on Aug 25.',
+        [
+          measurement({
+            metric_id: 'penalties_per_round',
+            value: 0.09,
+            sample_size: 11,
+            window_start: '2026-08-16',
+            window_end: '2026-09-15',
+          }),
+        ],
+      );
+      expect(claims).toEqual([]);
+    });
+
+    it('accepts a no-year date inside a window that crosses a year boundary', () => {
+      // The window's own start/end years (2025 and 2026) are the candidate
+      // years tried for containment — "Dec 28" resolves against 2025-12-28,
+      // which falls inside the window even though the window's END year is
+      // 2026.
+      const claims = auditNumericClaims(
+        'He played well on Dec 28.',
+        [
+          measurement({
+            metric_id: 'penalties_per_round',
+            value: 0.09,
+            sample_size: 11,
+            window_start: '2025-12-20',
+            window_end: '2026-01-10',
+          }),
+        ],
+      );
+      expect(claims).toEqual([]);
+    });
+
+    it('accepts a date whose UTC calendar day differs from the timezone-converted day, via collectDates', () => {
+      // MUST-fix: 2026-08-28T00:30:00Z is 8:30pm on 2026-08-27 in
+      // America/New_York — the coach reads this event as "Aug 27", not
+      // "Aug 28". Without a timezone, collectDates degrades to the old
+      // UTC-only day (proving the fix is additive, not a silent behavior
+      // change for an un-migrated caller).
+      const detail = { events: [{ title: 'Late tee time', starts_at: '2026-08-28T00:30:00Z' }] };
+
+      const withoutTimezone = auditNumericClaims(
+        'The team gathered on Aug 27.',
+        [],
+        [],
+        collectNumbers(detail),
+        collectDates(detail),
+      );
+      expect(withoutTimezone.map((c) => c.text)).toEqual(['Aug 27']);
+
+      const withTimezone = auditNumericClaims(
+        'The team gathered on Aug 27.',
+        [],
+        [],
+        collectNumbers(detail),
+        collectDates(detail, 'America/New_York'),
+      );
+      expect(withTimezone).toEqual([]);
+    });
+
+    it('accepts a date whose UTC calendar day differs from the timezone-converted day, via a series point', () => {
+      // Same fix, exercised through auditNumericClaims' OWN `timezone`
+      // parameter rather than a pre-converted collectDates call — the
+      // series-point (`p.at`) path inside auditNumericClaims itself.
+      const series: MeasurementSeries = {
+        metric_id: 'sg_putting',
+        metric_label: 'Strokes gained putting',
+        unit: 'strokes',
+        entity: { kind: 'player', id: 'p1', label: 'Nick' },
+        points: [{ at: '2026-08-28T00:30:00Z', value: 58, bucket: null, sample_size: 1 }],
+        window_start: null,
+        window_end: null,
+        as_of: '2026-08-28T12:00:00Z',
+        coverage: 'complete',
+        coverage_note: null,
+        source: 'rounds',
+        method: 'round_level',
+        benchmark: null,
+        direction: 'higher_better',
+      };
+
+      const withoutTimezone = auditNumericClaims('58 on Aug 27.', [], [series]);
+      expect(withoutTimezone.map((c) => c.text)).toEqual(['Aug 27']);
+
+      const withTimezone = auditNumericClaims('58 on Aug 27.', [], [series], [], [], 'America/New_York');
+      expect(withTimezone).toEqual([]);
+    });
+
+    it('pivots a two-digit year: >=70 resolves to 19xx, otherwise 20xx', () => {
+      const evidence = [
+        measurement({
+          metric_id: 'x',
+          value: 1,
+          sample_size: 1,
+          window_start: '2026-09-01',
+          window_end: '2026-09-30',
+        }),
+      ];
+      // "9/6/26" -> 2026, inside the window -> accepted.
+      expect(auditNumericClaims('Played 9/6/26.', evidence)).toEqual([]);
+      // "9/6/78" -> pivots to 1978 (>=70), which matches no evidence at all
+      // -> rejected. (Before the pivot this resolved to 2078, an equally
+      // unsupported but differently-wrong year.)
+      expect(auditNumericClaims('Played 9/6/78.', evidence).map((c) => c.text)).toEqual(['9/6/78']);
+    });
+
+    it('documents the residual risk left open by review, not fixed here: an unrelated window sharing a month-day still supports a no-year date elsewhere', () => {
+      // SHOULD (not required): the exact-day check (`evidenceMonthDays`) is
+      // global across the whole turn's evidence, not scoped to the claim's
+      // own metric/window. A season-tracking measurement ending Dec 31 lets
+      // an unrelated "wrapped up on Dec 31" pass even though nothing about
+      // THIS claim's own subject touches Dec 31. Scoping this to the
+      // claim's entity/window is a possible follow-up (see provenance.ts's
+      // `isSupported` doc comment) — this test pins today's documented,
+      // accepted behavior so a future change to it is deliberate rather
+      // than silent.
+      const claims = auditNumericClaims(
+        'Season wrapped up on Dec 31.',
+        [
+          measurement({
+            metric_id: 'season_length',
+            value: 24,
+            sample_size: 24,
+            window_start: '2026-01-01',
+            window_end: '2026-12-31',
+          }),
+        ],
+      );
+      expect(claims).toEqual([]);
+    });
   });
 });
 

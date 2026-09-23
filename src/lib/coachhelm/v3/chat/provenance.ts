@@ -29,6 +29,7 @@
  * ========================================================================== */
 
 import { z } from 'zod';
+import { todayIsoInZone } from '@/lib/golf/timezone';
 
 // ---------------------------------------------------------------------------
 // Coverage
@@ -318,20 +319,54 @@ function numbersInText(value: string): number[] {
 }
 
 /**
- * Every whole-string ISO date/timestamp reachable inside an arbitrary tool
- * payload, normalized to `YYYY-MM-DD` — the `detail`-shaped sibling of
- * {@link collectNumbers}, used to seed {@link auditDateExpressions}'s
- * evidence set with dates like `detail.events[].starts_at` or
- * `detail.rounds[].date` that never reach a `Measurement`'s
- * `window_start`/`window_end`.
+ * The calendar day(s) a whole-string ISO date/timestamp (already validated by
+ * {@link ISO_DATE_LITERAL}) reads as. A DATE-ONLY string (`YYYY-MM-DD`, no
+ * time component) has no zone to convert and is returned unchanged — this is
+ * the "date-only strings stay as they are" rule `window_start`/`window_end`
+ * follow. A full TIMESTAMP is returned as its naive UTC calendar day AND,
+ * when a `timezone` is given, the day the coach actually reads it as (via
+ * {@link todayIsoInZone}, the same zone-conversion `program-pulse.ts`'s
+ * `formatDateTime` renders chat timestamps with).
+ *
+ * Both days are accepted (not just the zone-converted one) so a caller that
+ * omits `timezone` — an existing test, or a future call site that forgets to
+ * thread it — degrades to the previous UTC-only behavior instead of
+ * silently under-supporting every timestamped date. Verified against a real
+ * shape: `starts_at: '2026-08-28T00:30:00Z'` reads as "Aug 27" to a coach in
+ * America/New_York (8:30pm the evening before) — the naive UTC slice alone
+ * flagged a model's "Aug 27" as unsupported even though the event evidence
+ * said so, just not in UTC's calendar.
  */
-export function collectDates(value: unknown, depth = 0): string[] {
+function isoDaysOf(value: string, timezone: string | undefined): string[] {
+  const utcDay = value.slice(0, 10);
+  if (value.length <= 10 || !timezone) return [utcDay];
+  const asDate = new Date(value);
+  if (Number.isNaN(asDate.getTime())) return [utcDay];
+  const localDay = todayIsoInZone(timezone, asDate);
+  return localDay === utcDay ? [utcDay] : [utcDay, localDay];
+}
+
+/**
+ * Every whole-string ISO date/timestamp reachable inside an arbitrary tool
+ * payload, normalized to `YYYY-MM-DD` (or two days — see {@link isoDaysOf})
+ * — the `detail`-shaped sibling of {@link collectNumbers}, used to seed
+ * {@link auditDateExpressions}'s evidence set with dates like
+ * `detail.events[].starts_at` or `detail.rounds[].date` that never reach a
+ * `Measurement`'s `window_start`/`window_end`.
+ *
+ * `timezone` is the coach's own IANA zone (`ctx.timezone`) — pass it so a
+ * timestamped `detail` value (unlike a plain date) is matched against the
+ * calendar day the coach actually sees, not only UTC's.
+ */
+export function collectDates(value: unknown, timezone?: string, depth = 0): string[] {
   if (depth > 6 || value === null || value === undefined) return [];
-  if (typeof value === 'string') return ISO_DATE_LITERAL.test(value) ? [value.slice(0, 10)] : [];
-  if (Array.isArray(value)) return value.flatMap((v) => collectDates(v, depth + 1));
+  if (typeof value === 'string') {
+    return ISO_DATE_LITERAL.test(value) ? isoDaysOf(value, timezone) : [];
+  }
+  if (Array.isArray(value)) return value.flatMap((v) => collectDates(v, timezone, depth + 1));
   if (typeof value === 'object') {
     return Object.values(value as Record<string, unknown>).flatMap((v) =>
-      collectDates(v, depth + 1),
+      collectDates(v, timezone, depth + 1),
     );
   }
   return [];
@@ -388,7 +423,15 @@ function resolveDateMatch(
     month = Number(monthNumStr);
     day = Number(dayNumStr);
     const y = Number(yearNumStr);
-    year = (yearNumStr ?? '').length === 2 ? 2000 + y : y;
+    // Two-digit year pivot: this product's real evidence is never from the
+    // 1900s, but a coach's prose isn't restricted to that — "grad year '78"
+    // or an old record typed as "3/5/78" would otherwise resolve to 2078.
+    // >=70 pivots to 19xx (the common two-digit-year convention), otherwise
+    // 20xx. A wrong-century guess here only ever FAILS CLOSED: this module
+    // still requires the resolved date to match real evidence before
+    // accepting it, so a bad pivot means a real date gets rejected as
+    // unsupported, never that a fabricated one gets waved through.
+    year = (yearNumStr ?? '').length === 2 ? (y >= 70 ? 1900 + y : 2000 + y) : y;
   }
   if (!Number.isInteger(month) || month < 1 || month > 12) return null;
   if (!Number.isInteger(day) || day < 1 || day > 31) return null;
@@ -424,9 +467,40 @@ function auditDateExpressions(
   const evidenceMonthDays = new Set<string>();
   for (const iso of evidenceDates) evidenceMonthDays.add(iso.slice(5, 10));
 
+  // Every year a window's own bounds touch — the candidates tried when a
+  // no-year expression ("Aug 25") needs a year to test for CONTAINMENT
+  // (rather than exact membership) against that window. A window spanning a
+  // year boundary (2025-12-20..2026-01-10) contributes BOTH 2025 and 2026,
+  // so "Dec 28" resolves against 2025-12-28 and is correctly seen to fall
+  // inside the window even though the window's END year is 2026.
+  const candidateYears = new Set<number>();
+  for (const [start, end] of evidenceWindows) {
+    const startYear = Number(start.slice(0, 4));
+    const endYear = Number(end.slice(0, 4));
+    if (Number.isInteger(startYear)) candidateYears.add(startYear);
+    if (Number.isInteger(endYear)) candidateYears.add(endYear);
+  }
+
   const isSupported = (month: number, day: number, year: number | null): boolean => {
     const monthDay = `${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    if (year === null) return evidenceMonthDays.has(monthDay);
+    if (year === null) {
+      // Exact-day membership, independent of year or window — deliberately
+      // GLOBAL across every evidence date in the turn, not scoped to a
+      // specific metric/window/entity. That is a real residual risk (an
+      // unrelated measurement's window boundary sharing a month-day, e.g.
+      // "ends Dec 31", would let a fabricated "wrapped up on Dec 31"
+      // elsewhere in the same turn pass) rather than a fabrication this
+      // check is meant to catch. Narrowing this to the claim's own
+      // entity/window is a possible follow-up, not done here — the fix this
+      // block makes is the CONTAINMENT check below, which is what actually
+      // closes the reported false-positive gap for a real, in-window date.
+      if (evidenceMonthDays.has(monthDay)) return true;
+      for (const candidateYear of candidateYears) {
+        const iso = `${candidateYear}-${monthDay}`;
+        if (evidenceWindows.some(([start, end]) => iso >= start && iso <= end)) return true;
+      }
+      return false;
+    }
     const iso = `${year}-${monthDay}`;
     return evidenceDates.has(iso) || evidenceWindows.some(([start, end]) => iso >= start && iso <= end);
   };
@@ -540,6 +614,15 @@ export function auditNumericClaims(
    * `extraSupported`'s flat number pool.
    */
   extraSupportedDates: readonly string[] = [],
+  /**
+   * The coach's IANA zone (`ctx.timezone`, NOT NULL in the schema) — only
+   * used to convert a WINDOW or SERIES-POINT value that carries an actual
+   * time component (a `window_start`/`window_end`/`p.at` that is already
+   * date-only is unaffected; there's no zone to convert). Omitted — an
+   * existing caller/test that hasn't been updated — degrades to the
+   * previous UTC-only day rather than throwing. See {@link isoDaysOf}.
+   */
+  timezone?: string,
 ): UnsupportedClaim[] {
   if (!text) return [];
 
@@ -585,8 +668,16 @@ export function auditNumericClaims(
   const evidenceDates = new Set<string>(extraSupportedDates);
   const evidenceWindows: Array<[string, string]> = [];
   const addWindow = (start: string | null, end: string | null) => {
-    if (start) evidenceDates.add(start.slice(0, 10));
-    if (end) evidenceDates.add(end.slice(0, 10));
+    // The exact-date evidence set accepts BOTH days for a timestamped bound
+    // (see isoDaysOf) — a window bound is normally date-only already, in
+    // which case this is a no-op change (one day, unchanged).
+    if (start) for (const d of isoDaysOf(start, timezone)) evidenceDates.add(d);
+    if (end) for (const d of isoDaysOf(end, timezone)) evidenceDates.add(d);
+    // The CONTAINMENT range itself deliberately keeps the naive UTC day —
+    // widening a window's bounds by zone is a different, riskier change
+    // (which direction shifts a bound depends on the offset's sign) than
+    // accepting an extra exact-match day, and a window bound is the
+    // "date-only strings stay as they are" case this fix does not touch.
     if (start && end) evidenceWindows.push([start.slice(0, 10), end.slice(0, 10)]);
   };
 
@@ -614,7 +705,7 @@ export function auditNumericClaims(
     for (const p of points) {
       add(p.value, s.metric_id);
       add(p.sample_size);
-      if (p.at) evidenceDates.add(p.at.slice(0, 10));
+      if (p.at) for (const d of isoDaysOf(p.at, timezone)) evidenceDates.add(d);
       // A distance-band label ("15-25 ft", "10-15 ft") is the tool's own
       // vocabulary for the bucket, not a claim — but its digits are not
       // otherwise anchored, so e.g. "15" and "25" from get_putting_distance_profile
