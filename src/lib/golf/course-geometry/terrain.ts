@@ -256,17 +256,29 @@ function tacticalPoints(scene: HoleScene, view: CourseView): readonly PointM[] {
   return contextPoints({ ...scene, features }, view);
 }
 
+/** The compiler sizes a hole's sampling grid from its played surfaces only
+ * (`hole_footprint.py` PLAYED_SURFACE_KINDS); a shared lake can run past it
+ * (Grande Dunes 06: a pond 70 m outside its grid blanked the whole hole). A
+ * water point without elevation is dropped from the fit, never given a height;
+ * a played surface without elevation is still a coverage failure. */
+function sharedContextPoints(scene: HoleScene): ReadonlySet<string> {
+  return new Set(scene.features.filter(feature => feature.kind === 'water').flatMap(feature => feature.parts.flat(2)).map(([x, y]) => `${x},${y}`));
+}
+
 function sourcePoints(scene: HoleScene, mesh: TerrainMesh, view: CourseView): Point3M[] {
   if (mesh.physicalHoleKey !== scene.physicalHoleKey || mesh.geometryHash !== scene.packageHash) throw new Error('Terrain geometry version mismatch');
   let cache = fitPoints.get(mesh);
   if (!cache) { cache = new Map(); fitPoints.set(mesh, cache); }
   let points = cache.get(view);
   if (!points) {
-    points = tacticalPoints(scene, view).map(point => {
+    const shared = sharedContextPoints(scene);
+    points = tacticalPoints(scene, view).flatMap(point => {
       const z = terrainHeight(mesh, point);
-      if (z == null) throw new Error('Missing elevation in requested view');
-      return [point[0], point[1], z] as Point3M;
+      if (z != null) return [[point[0], point[1], z] as Point3M];
+      if (shared.has(`${point[0]},${point[1]}`)) return [];
+      throw new Error('Missing elevation in requested view');
     });
+    if (!points.length) throw new Error('Missing elevation in requested view');
     cache.set(view, points);
   }
   return points;

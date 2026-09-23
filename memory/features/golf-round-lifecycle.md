@@ -700,6 +700,15 @@ OneMap) and the year only when the source states one. The terrain profile
 caption and the hole detail facts use it, so they no longer hard-code "USGS".
 Visual artifact v2 `SourceRef` dates are nullable to match.
 
+### Framing past the sampled grid (September 23, 2026)
+
+The compiler sizes each hole's elevation grid from its played surfaces
+(`hole_footprint.py` `PLAYED_SURFACE_KINDS`). Viewer framing still includes
+water, so a shared lake can reach past the grid. A water vertex without
+elevation is dropped from the camera fit and never given a height. A played
+surface vertex without elevation still throws `Missing elevation in requested
+view`. Grande Dunes 06 was blank because its pond ran 70 m past the grid.
+
 ### Meridian visual system (September 16, 2026)
 
 The expanded WebGL terrain view now renders Terrain and Side through a real

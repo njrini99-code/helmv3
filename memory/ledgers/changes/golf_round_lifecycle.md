@@ -291,3 +291,9 @@
 - SHA: this commit on `agent/course-factory-phase0`. Not merged or deployed.
 - Change: the runtime mesh schema and visual artifact v2 `SourceRef` accept null `acquisitionStart`/`acquisitionEnd`. The new `terrainSourceCredit` credits the provider (USGS 3DEP or NC OneMap) and a year only when the source states one. The factory `ship` no longer blocks with `TERRAIN_ACQUISITION_DATE_UNKNOWN`; a present but non-string date is `TERRAIN_ACQUISITION_DATE_INVALID`.
 - Why: the owner approved it on 2026-09-23. NC OneMap DEM03 (Starmount, Pinehurst No. 8, Duke) publishes no dates, and the lab refused those bundles. The captions also mislabelled NC OneMap terrain as USGS.
+
+## 2026-09-23 — shared water past the elevation grid no longer blanks a hole
+
+- SHA: this commit on `agent/course-factory-phase0`. Not merged or deployed.
+- Change: `terrain.ts` `sourcePoints` drops water vertices that have no elevation from the framing fit. Played surfaces without elevation still throw. Tests are in `terrain.test.ts` under "framing past the sampled grid".
+- Why: at Grande Dunes 06 the pond runs 70 m past a grid the compiler sized from played surfaces. The capture threw `Missing elevation in requested view`, and the hole never rendered.

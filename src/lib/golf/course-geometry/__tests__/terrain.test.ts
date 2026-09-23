@@ -24,6 +24,24 @@ describe('terrain source credit', () => {
     expect(terrainSourceCredit(mesh.source)).toEqual({ provider: 'USGS 3DEP', year: '2021' });
   });
 });
+describe('framing past the sampled grid', () => {
+  // Framing caches per mesh object, so each case parses its own mesh.
+  const shifted = (kind: 'water' | 'bunker') => {
+    const template = scene.features.find(feature => feature.kind === 'bunker')!;
+    const far = { ...template, id: `far-${kind}`, kind, parts: template.parts.map(ring => ring.map(line => line.map(([x, y]) => [x + 5000, y + 5000] as const))) };
+    return { ...scene, features: [...scene.features, far] } as typeof scene;
+  };
+  it('drops a shared water point without elevation instead of blanking the hole', () => {
+    const baseline = fitTerrainCamera(scene, parseTerrainMesh(terrainData, pkg), 'hole', 390, 640, TERRAIN_PRESETS.top);
+    const camera = fitTerrainCamera(shifted('water'), parseTerrainMesh(terrainData, pkg), 'hole', 390, 640, TERRAIN_PRESETS.top);
+    expect(camera.scale).toBeCloseTo(baseline.scale, 9);
+    expect(camera.focusM).toEqual(baseline.focusM);
+  });
+  it('still refuses a played surface without elevation', () => {
+    expect(() => fitTerrainCamera(shifted('bunker'), parseTerrainMesh(terrainData, pkg), 'hole', 390, 640, TERRAIN_PRESETS.top))
+      .toThrow('Missing elevation in requested view');
+  });
+});
 describe('source-linked terrain and camera', () => {
   it('retains source date, vertical datum, uncertainty and matching physical geometry', () => {
     expect(mesh.source.acquisitionStart).toBe('2021-12-04');
