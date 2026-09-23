@@ -431,8 +431,12 @@ export default async function PlayerCoachHelmPage() {
       progressHistory: progressHistoryOf(fa.progress_notes),
       from_review_round_id: fa.from_review_id ? roundIdByReviewId[fa.from_review_id] ?? null : null,
       evidence_revision_status: evidenceRevisionStatusFor(fa.id),
-      criteria: criteriaByFocusArea.get(fa.id) ?? null,
-      practiceSummary: practiceSummaryByFocusArea.get(fa.id) ?? null,
+      // `null` from the loader means that table's read failed (unknown),
+      // not "no criteria"/"never practiced" -- see practice-log-loader.ts's
+      // FocusAreaPracticeLogData doc comment. Branching here keeps that
+      // distinction from collapsing into a false "none" one call up.
+      criteria: criteriaByFocusArea ? (criteriaByFocusArea.get(fa.id) ?? null) : null,
+      practiceSummary: practiceSummaryByFocusArea ? (practiceSummaryByFocusArea.get(fa.id) ?? null) : null,
     }));
 
     developmentActiveAreas = focusAreasWithHistory.filter(
