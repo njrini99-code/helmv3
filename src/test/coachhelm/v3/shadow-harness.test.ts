@@ -13,7 +13,7 @@
  * rollup/A5/A6 output — never hand-picked numbers.
  */
 import { describe, expect, it } from 'vitest';
-import type { Hypothesis, MetricResultInput } from '@/lib/coachhelm/v3/reasoning/hypothesis-policy';
+import type { Hypothesis, MetricResult } from '@/lib/coachhelm/v3/reasoning/hypothesis-policy';
 import type { Issue } from '@/lib/coachhelm/v3/ranking/situational-ranking';
 import {
   countDuplicateLeadingPriority,
@@ -26,7 +26,7 @@ import {
   newRosterComplete,
   newRosterIncomplete,
 } from './fixtures/shadow-eval-snapshots';
-import type { ShotFact } from '@/lib/coachhelm/v3/context/types';
+import type { AnalysisScope, ShotFact } from '@/lib/coachhelm/v3/context/types';
 
 // ---------------------------------------------------------------------------
 // Test-local builders for the counter unit tests — deliberately hand-built,
@@ -64,8 +64,28 @@ function hypothesis(overrides: Partial<Hypothesis> & Pick<Hypothesis, 'state'>):
   };
 }
 
-function metric(overrides: Partial<MetricResultInput> & Pick<MetricResultInput, 'metricId'>): MetricResultInput {
-  return { value: 10, status: 'supported', ...overrides };
+const SCOPE: AnalysisScope = {
+  player_id: 'player-1',
+  window_start: '2026-06-01',
+  window_end: '2026-07-01',
+  analysis_cutoff: '2026-07-01T12:00:00.000Z',
+};
+
+function metric(overrides: Partial<MetricResult> & Pick<MetricResult, 'metricId'>): MetricResult {
+  return {
+    scope: SCOPE,
+    dimensions: {},
+    unit: 'percent',
+    value: 10,
+    numerator: null,
+    denominator: 0,
+    eligibleCount: 0,
+    observedCount: 0,
+    distinctRounds: 0,
+    status: 'supported',
+    exclusions: {},
+    ...overrides,
+  };
 }
 
 function fact(overrides: Partial<ShotFact> & Pick<ShotFact, 'round_id' | 'hole_number' | 'shot_number'>): ShotFact {

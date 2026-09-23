@@ -61,10 +61,10 @@ import {
 import type { MetricResult, MetricStatus } from '../metrics/types';
 import {
   buildHypotheses,
+  metricClaimId,
   shotClaimId as hypothesisShotClaimId,
   type Hypothesis,
   type HypothesisState,
-  type MetricResultInput,
 } from '../reasoning/hypothesis-policy';
 import {
   groupIssues,
@@ -300,10 +300,18 @@ function hypothesisPacket(
  */
 export function countUnsupportedCauseClaims(
   hypotheses: readonly Hypothesis[],
-  metrics: readonly MetricResultInput[],
+  metrics: readonly MetricResult[],
   facts: readonly ShotFact[],
 ): number {
-  const metricByClaim = new Map(metrics.map((m) => [`metric:${m.metricId}`, m]));
+  // Keyed by each row's own RESOLVED claim id (`metricClaimId(id,
+  // dimensions)`, hypothesis-policy.ts's own contract) — not the bare
+  // `metric:${metricId}` family id. A dimensioned row (e.g. a per-hole
+  // par5_regulation_opportunity_rate) only ever appears in
+  // supportingClaimIds/contradictingClaimIds under its dimensioned id;
+  // indexing by the bare id alone would make every dimensioned claim look
+  // unresolvable regardless of whether it actually traces back to a real
+  // row this call was given.
+  const metricByClaim = new Map(metrics.map((m) => [metricClaimId(m.metricId, m.dimensions), m]));
   const shotClaims = new Set(facts.map((f) => hypothesisShotClaimId(f)));
 
   let count = 0;
@@ -369,7 +377,7 @@ export function runShadowEvaluation(snapshot: ShadowSnapshot): ShadowEvalReport 
   const parRows = computeParOpportunities([...facts], [...holes], scope);
   const sequenceRollupRows = computeSequenceAttribution(facts, holes, scope);
 
-  const allMetricsForHypotheses: MetricResultInput[] = [...distanceRows, ...parRows, ...sequenceRollupRows];
+  const allMetricsForHypotheses: MetricResult[] = [...distanceRows, ...parRows, ...sequenceRollupRows];
   const hypotheses = buildHypotheses(allMetricsForHypotheses, facts);
 
   const factByHypothesisShotClaim = new Map(facts.map((f) => [hypothesisShotClaimId(f), f]));
