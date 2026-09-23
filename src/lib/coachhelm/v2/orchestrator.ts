@@ -74,7 +74,7 @@ import type {
   ShotPattern,
   ReasoningResult,
 } from './types';
-import { describeError } from '@/lib/utils/describe-error';
+import { describeError, toDbErrorMetadata } from '@/lib/utils/describe-error';
 
 interface RoundReviewShotRow {
   hole_number: number;
@@ -314,7 +314,11 @@ class CoachHelmIntelligence {
       this.calibrationBootstrapped = false;
       await logServerError(
         `ensureCalibrationBootstrapped failed: ${describeError(error)}`,
-        { action: 'orchestrator.ensureCalibrationBootstrapped', featureArea: 'coachhelm' },
+        {
+          action: 'orchestrator.ensureCalibrationBootstrapped',
+          featureArea: 'coachhelm',
+          metadata: { dbError: toDbErrorMetadata(error) },
+        },
         'warning',
       );
     }
@@ -460,13 +464,20 @@ class CoachHelmIntelligence {
       if (!result) continue;
       if (result.status === 'rejected') {
         const r = (result as PromiseRejectedResult).reason as unknown;
-        const reason = r instanceof Error ? r.message : String(r);
+        // describeError, not `r instanceof Error ? r.message : String(r)` —
+        // the hand-rolled check is exactly the anti-pattern describeError's
+        // own header documents ("[object Object]" in 20+ telemetry
+        // incidents): a v2 generator (the only ones that can genuinely
+        // reject here — v3's BaseGenerator.run() never does) can reject
+        // with a plain Postgrest-shaped object that fails `instanceof Error`.
+        const reason = describeError(r);
         tier1Failures.push({ generator, reason });
         await logServerError(`tier-1 generator '${generator}' rejected: ${reason}`, {
           action: 'analyzePlayer.tier1Generator',
           featureArea: 'coachhelm',
           playerId,
           extra: { generator, reason },
+          metadata: { dbError: toDbErrorMetadata(r) },
         });
         continue;
       }
@@ -478,17 +489,30 @@ class CoachHelmIntelligence {
       // fulfilled. (Other statuses — generated/gated/no_data/standing_lag — and
       // the v2 generators that don't return a receipt are all genuine successes.)
       const value = (result as PromiseFulfilledResult<unknown>).value as
-        | { status?: string }
+        | { status?: string; error?: unknown }
         | null
         | undefined;
       if (value && typeof value === 'object' && value.status === 'failed') {
-        const reason = 'generator threw internally (status=failed)';
+        // `value.error` is BaseGenerator.run()'s own caught error (added
+        // alongside `status: 'failed'` on the RunResult receipt) — before
+        // this, the receipt carried no error at all, so this admin_events
+        // row could only ever say "generator threw internally" with no
+        // code or message, even though generator-base.ts's OWN log line a
+        // moment earlier already had the real error via describeError.
+        // `dbError` mirrors the same structured-metadata shape
+        // pattern-miner.savePatterns and every other `dbError`-carrying
+        // logServerError call in coachhelm/v2 already use.
+        const reason =
+          value.error !== undefined
+            ? `generator threw internally: ${describeError(value.error)}`
+            : 'generator threw internally (status=failed)';
         tier1Failures.push({ generator, reason });
         await logServerError(`tier-1 generator '${generator}' reported status=failed`, {
           action: 'analyzePlayer.tier1Generator',
           featureArea: 'coachhelm',
           playerId,
           extra: { generator, reason },
+          metadata: value.error !== undefined ? { dbError: toDbErrorMetadata(value.error) } : undefined,
         });
         continue;
       }
@@ -503,7 +527,7 @@ class CoachHelmIntelligence {
     const compositeSummary = await synthesizeForPlayer(playerId).catch((err) => {
       void logServerError(
         `composite synthesis failed for ${playerId}: ${describeError(err)}`,
-        { action: 'analyzePlayer.composite' },
+        { action: 'analyzePlayer.composite', metadata: { dbError: toDbErrorMetadata(err) } },
       );
       return { player_id: playerId, rule_matches: 0, rule_suppressed: 0, rule_emitted: 0, errors: 1, refusals: 0 };
     });
@@ -726,7 +750,12 @@ class CoachHelmIntelligence {
     if (roundOwnerError || !roundOwnerRow?.player_id) {
       await logServerError(
         `generateRoundReview could not resolve owner for round ${roundId}${roundOwnerError ? `: ${roundOwnerError.message}` : ''}`,
-        { action: 'coachhelm.orchestrator.generateRoundReview', featureArea: 'coachhelm', extra: { roundId } },
+        {
+          action: 'coachhelm.orchestrator.generateRoundReview',
+          featureArea: 'coachhelm',
+          extra: { roundId },
+          metadata: roundOwnerError ? { dbError: toDbErrorMetadata(roundOwnerError) } : undefined,
+        },
       );
       return null;
     }
@@ -1220,7 +1249,11 @@ class CoachHelmIntelligence {
       console.error('[CoachHelm] Error generating team pattern insights:', describeError(error));
       await logServerError(
         `CoachHelm orchestrator failed generating team pattern insights: ${describeError(error)}`,
-        { action: 'coachhelm.orchestrator.generateTeamPatternInsights', featureArea: 'coachhelm' }
+        {
+          action: 'coachhelm.orchestrator.generateTeamPatternInsights',
+          featureArea: 'coachhelm',
+          metadata: { dbError: toDbErrorMetadata(error) },
+        }
       );
     }
 
@@ -2120,7 +2153,12 @@ class CoachHelmIntelligence {
       console.error('[CoachHelm] Error fetching player stats:', describeError(error));
       await logServerError(
         `CoachHelm orchestrator failed fetching player stats: ${describeError(error)}`,
-        { action: 'coachhelm.orchestrator.fetchPlayerStats', featureArea: 'coachhelm', playerId }
+        {
+          action: 'coachhelm.orchestrator.fetchPlayerStats',
+          featureArea: 'coachhelm',
+          playerId,
+          metadata: { dbError: toDbErrorMetadata(error) },
+        }
       );
       this._statsCache.set(playerId, undefined);
       return undefined;
@@ -2170,7 +2208,12 @@ class CoachHelmIntelligence {
       console.error('[CoachHelm] Error generating correlation insights:', describeError(error));
       await logServerError(
         `CoachHelm orchestrator failed generating correlation insights: ${describeError(error)}`,
-        { action: 'coachhelm.orchestrator.generateCorrelationInsights', featureArea: 'coachhelm', playerId }
+        {
+          action: 'coachhelm.orchestrator.generateCorrelationInsights',
+          featureArea: 'coachhelm',
+          playerId,
+          metadata: { dbError: toDbErrorMetadata(error) },
+        }
       );
     }
 

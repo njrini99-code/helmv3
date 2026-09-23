@@ -47,7 +47,7 @@ import type {
   MetricId,
   RunResult,
 } from './types';
-import { describeError } from '@/lib/utils/describe-error';
+import { describeError, toDbErrorMetadata } from '@/lib/utils/describe-error';
 
 /** Severity ordering for the upgrade-only leverage-priority floor below. */
 const PRIORITY_RANK: Record<InsightPriority, number> = {
@@ -461,7 +461,7 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
       if (selErr) {
         await logServerError(
           `${this.name} stale-scope retraction select failed for player=${this.playerId} scope=${scope}: ${selErr.message}`,
-          { action: `v3.generator.${this.name}.retract` },
+          { action: `v3.generator.${this.name}.retract`, metadata: { dbError: toDbErrorMetadata(selErr) } },
         );
         return 0;
       }
@@ -496,7 +496,7 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
         if (error) {
           await logServerError(
             `${this.name} stale-scope retraction update failed for insight=${r.id}: ${error.message}`,
-            { action: `v3.generator.${this.name}.retract` },
+            { action: `v3.generator.${this.name}.retract`, metadata: { dbError: toDbErrorMetadata(error) } },
           );
           continue;
         }
@@ -511,7 +511,7 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
     } catch (err) {
       await logServerError(
         `${this.name} stale-scope retraction threw for player=${this.playerId}: ${describeError(err)}`,
-        { action: `v3.generator.${this.name}.retract` },
+        { action: `v3.generator.${this.name}.retract`, metadata: { dbError: toDbErrorMetadata(err) } },
       );
       return 0;
     }
@@ -730,9 +730,9 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
       // machine-readable so the orchestrator routes it into generatorSummary.
       await logServerError(
         `${this.name} run() failed for player=${this.playerId}: ${describeError(err)}`,
-        { action: `v3.generator.${this.name}` },
+        { action: `v3.generator.${this.name}`, metadata: { dbError: toDbErrorMetadata(err) } },
       );
-      return { id: null, gated: false, status: 'failed' };
+      return { id: null, gated: false, status: 'failed', error: err };
     }
   }
 }
