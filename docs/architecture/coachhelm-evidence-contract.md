@@ -572,8 +572,130 @@ Audited surfaces and outcome:
   slices — coach-facing, so no player-feedback overlay (matches the coach
   feed's documented rule).
 
-Out of scope for A6 (need addendum A1–A4 evidence-packet work first): issue
-grouping and parent/child claim links.
+Out of scope for A6's top-N audit above (need addendum A1–A4 evidence-packet
+work first): issue grouping and parent/child claim links. See "Issue grouping
+and ranking-input unification" below for the slice that picks this up.
+
+### Issue grouping and ranking-input unification (A6 slice 1, 2026-09-23)
+
+`ranking/situational-ranking.ts`'s `groupIssues(packets: IssueSourcePacket[])
+: Issue[]` is the slice deferred by the top-N audit above. A3
+(`par-opportunities.ts`), A2's `distance-profile.ts`, A4's
+`sequence-attribution.ts`, and A5's `hypothesis-policy.ts` each look at a
+round's shots from a different angle and can each surface something about
+the SAME underlying shots (a par-5 approach that came up short can be
+flagged by a par-opportunity row, a distance-band row, AND a
+sequence-attribution finding at once) — `par-opportunities.ts`'s own file
+header calls out that reconciling this is deliberately deferred: "Neither
+family computes a strokes_impact/counterfactual number — that would double
+the impact `par-type.ts`'s existing per-par cards already own... reconciling
+impact ownership when that happens[, wiring this into a generator,] is a
+later slice." This module is that slice, for the new v3 pure-core families.
+
+- **Packets, not raw family output.** `groupIssues` consumes a flat
+  `IssueSourcePacket[]` — each one adapted from its own family into a common
+  shape by whatever wires it up (a LATER slice's job, not this one's). The
+  one field every adapter must populate honestly is `sourceShotIds`
+  (`shotClaimId`-shaped strings, matching A5's own format exactly for a
+  fully-known shot so ids from both modules interoperate without
+  translation — defined locally in `situational-ranking.ts` since #1993
+  had not merged as of this slice). Grouping never infers overlap from
+  `metricId`, `dimensions`, or label text — only from this explicit,
+  adapter-stated shot set. A `null` hole/shot number is never rendered as
+  the literal string `'null'` (two different unknown shots would
+  otherwise stringify identically and silently merge) — instead every
+  unknown-numbered shot renders to the SAME fixed marker
+  (`shot:<round_id>:unknown:unknown`, deterministic and pure, unlike a
+  per-call counter, so the issue's own `id` stays reproducible), and
+  `groupIssues` never uses that marker as a union-find join key, so two
+  packets sharing it still never merge on that basis alone. Each packet's
+  own (now globally unique, see below) `claimId` disambiguates its marker
+  when an issue's own `sourceShotIds`/`id` are built, so two different
+  packets' unknown shots landing in the same issue via some other, real,
+  shared id still don't collapse into one entry. A5's own `shotClaimId`
+  (#1993) still renders `'null'` literally as of this writing and needs
+  this same fixed-marker fix in A5 slice 2.
+- **Connectivity before eligibility, eligibility before ownership/scoring,
+  scoring before any future truncation** (revised 2026-09-23 review fix,
+  refining — not reversing — the A6 top-N audit's ordering rule:
+  eligibility still gates ownership and scoring exactly as before; only
+  WHERE it applies relative to connectivity has moved). `groupIssues` runs
+  union-find over EVERY packet with at least one source shot, eligible or
+  not, then only AFTER grouping filters each connected group down to its
+  eligible members to decide what surfaces. Filtering eligibility first
+  would silently split a chain that runs through an ineligible packet as a
+  bridge (`A ↔ ineligible ↔ C`, where A and C share no shot directly) into
+  two issues instead of one. The ineligible bridge itself never appears in
+  a `claims` list, never owns, and never contributes a shot to the
+  surfaced issue's own `sourceShotIds` — it only keeps the real claims on
+  either side of it correctly grouped. A connected group with no eligible
+  member at all surfaces no issue. Any future top-N truncation must still
+  happen strictly after ownership/scoring, never before, per the A6 top-N
+  audit above.
+- **Grouping is transitive shot overlap** (union-find): two packets sharing
+  even one shot land in the same issue, and the closure is transitive (A↔B,
+  B↔C ⇒ A, B, C together) even when A and C share no shot directly.
+- **`groupIssues` rejects a duplicate `claimId`** across the input packets
+  outright (throws) rather than silently letting one of the two colliding
+  packets vanish from a `claims`/`nonOwningClaimIds` list — `claimId` is
+  documented as reused verbatim from the originating family and must be
+  globally unique per packet.
+- **An accepted issue carries five things**: a **stable issue identity**
+  (`id`, content-addressed from the sorted deduplicated union of its own
+  ELIGIBLE members' source shots — the same evidence always yields the
+  same id regardless of packet input order); **parent/child claim links**
+  (`claims` — the issue is the parent, every eligible member packet's
+  `claimId`/`origin`/`label` survives unmerged, owner first (when one
+  exists) then the rest sorted by `claimId`, so a consumer can always
+  drill back down); **non-overlapping impact ownership**
+  (`impactOwnership` — **signed strokes-impact convention** (revised
+  2026-09-23 review fix): `strokesImpact` is negative for strokes LOST (a
+  weakness/opportunity) and positive for strokes GAINED (a strength).
+  Only a real NEGATIVE number is eligible to own an issue at all — a
+  strength, an exact `0`, or `null` never owns, however large its
+  magnitude, because "impact ownership" here specifically means the loss
+  this issue represents an opportunity to fix. Among loss candidates,
+  `pickOwner` picks the largest magnitude of loss; ties break by a fixed
+  origin priority `par > distance > sequence > hypothesis` then by
+  `claimId`. A group with no loss at all has `ownerClaimId: null` and
+  every member listed as non-owning. Every other member (when an owner
+  exists) contributes NO additional impact, which is what keeps three
+  perspectives on the same shots from tripling the estimate);
+  **opportunity frequency** (`opportunityFrequency` — distinct source-shot
+  count and distinct-round count across every ELIGIBLE member, i.e. the
+  union); and **effective policy inputs** (`policyInput` —
+  `strokesImpact`/`confidence`/`sampleSize` a later `ranking/score.ts`-
+  shaped policy would consume, mirroring ONLY the impact owner's own
+  numbers, including the owner's OWN sample size — never
+  `opportunityFrequency`'s union, so a much larger or smaller non-owning
+  claim's sample can never inflate or dilute the sample size backing the
+  owner's own number. Every field is `0` when there is no owner —
+  "one underlying issue yields one leading priority" holds by
+  construction, not convention).
+- **Tested against real A2/A3/A4 metric values**, not hand-picked numbers —
+  `situational-ranking.test.ts` calls the real `computeParOpportunities`
+  (A3), `computeDistanceProfile` (A2, #1989), and `attributeSequence` (A4,
+  #1988 — the one family here whose real `SequenceEvent.
+  measuredContribution` is an honest non-null, signed strokes-gained-style
+  number, unlike A2/A3's rate/count-only rows) on ONE shared par-5
+  fixture, and wraps each real result into a packet via a small test-local
+  adapter. `sourceShotIds` — the actual join key `groupIssues` reads — is
+  still test-supplied for every packet, not derived from any of the three
+  real functions' own return values: neither `MetricResult` (A2/A3) nor
+  `SequenceAttributionResult` (A4) carries per-shot provenance yet (see
+  `metrics/types.ts`'s own doc comment), so an honest adapter must supply
+  it from outside the family's own output — this is not a claim about
+  what a real production adapter's `sourceShotIds` derivation will look
+  like, only that the metric values/statuses driving eligibility and
+  ownership are real. The suite also covers the sign convention (a
+  strength never owns, a pure-strength/null group has no owner), the
+  eligibility-after-grouping bridge case, a null-hole/shot-number
+  collision, a duplicate `claimId`, and determinism across many random
+  input-order permutations, not just one reversal.
+- **Not wired into `ranking/score.ts` or any delivery surface** — building
+  the real A2/A3/A4/A5-to-`IssueSourcePacket` adapters and feeding
+  `groupIssues`'s output into scoring/delivery is later-slice work, per
+  this slice's explicit scope.
 
 Two ranking reads outside `golf_coach_insights` were checked and are
 DELIBERATELY not routed through `scoreInsight` — different domains, not an
