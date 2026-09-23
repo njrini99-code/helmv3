@@ -138,6 +138,7 @@ let mockPlayerFirstName: string | null = 'Caden';
 let golfRoundsFetchCount = 0;
 let winnerAiRecap: string | null = null;
 let mockRpcOverridePersisted: boolean | undefined;
+let winnerReadError: { message: string; code?: string } | null = null;
 
 function createChainableMock(maybeSingleData: unknown) {
   const chain: Record<string, unknown> = { data: null, error: null };
@@ -153,7 +154,9 @@ const mockFrom = vi.fn((table: string) => {
   if (table === 'golf_rounds') {
     golfRoundsFetchCount += 1;
     if (golfRoundsFetchCount > 1) {
-      return createChainableMock({ ai_recap: winnerAiRecap });
+      const chain = createChainableMock({ ai_recap: winnerAiRecap });
+      if (winnerReadError) chain.maybeSingle = vi.fn(async () => ({ data: null, error: winnerReadError }));
+      return chain;
     }
     return createChainableMock(mockRound);
   }
@@ -186,6 +189,7 @@ vi.mock('next/cache', () => ({
 }));
 
 import { generateRoundRecap } from '../round-recap';
+import { logServerError } from '@/lib/server-error-logger';
 import { buildRecapEvidencePacket } from '@/lib/coachhelm/v3/llm/recap-evidence';
 import { extractNumericTokens, normalize, SAFE_NUMERIC_TOKENS } from '@/lib/coachhelm/v3/llm/citations';
 
@@ -249,6 +253,7 @@ describe('round-recap.ts x claim-validator.ts — typed gate wired (flag ON)', (
     golfRoundsFetchCount = 0;
     winnerAiRecap = null;
     mockRpcOverridePersisted = undefined;
+    winnerReadError = null;
     isFlagEnabledMock.mockReset();
     isFlagEnabledMock.mockReturnValue(true);
   });
@@ -445,6 +450,7 @@ describe('round-recap.ts — recap provenance (Package 8, revision-keyed provena
     golfRoundsFetchCount = 0;
     winnerAiRecap = null;
     mockRpcOverridePersisted = undefined;
+    winnerReadError = null;
     isFlagEnabledMock.mockReset();
     isFlagEnabledMock.mockReturnValue(true);
   });
@@ -571,6 +577,25 @@ describe('round-recap.ts — recap provenance (Package 8, revision-keyed provena
     expect(persistedRecap).toEqual({ p_round_id: 'round-1', p_recap: thisCallsOwnText });
     // This call didn't produce what's stored, so it must not write provenance
     // for it — the winning call already did.
+    expect(provenanceRows).toHaveLength(0);
+  });
+
+  it('SHOULD-4: a failed winner re-read logs and returns no recap, never this call\'s discarded text', async () => {
+    isFlagEnabledMock.mockReturnValue(false);
+    mockRpcOverridePersisted = false;
+    winnerReadError = { message: 'connection reset', code: '08006' };
+    const thisCallsOwnText = 'This call generated its own text, but it lost the race and was never stored.';
+    generateTextMock.mockResolvedValueOnce({ text: thisCallsOwnText, usage: { inputTokens: 20, outputTokens: 20 } });
+
+    const result = await generateRoundRecap('round-1');
+
+    expect(result.recap).toBeNull();
+    expect(result.cached).toBe(false);
+    expect(vi.mocked(logServerError)).toHaveBeenCalledWith(
+      expect.stringContaining('winner re-read failed'),
+      expect.objectContaining({ action: 'generateRoundRecap.rereadWinner', roundId: 'round-1' }),
+      'warning',
+    );
     expect(provenanceRows).toHaveLength(0);
   });
 });

@@ -245,11 +245,30 @@ async function generateRoundRecapImpl(
   // applies the migration — same safety property the rest of this slice
   // keeps everywhere else.
   if (persisted?.persisted === false) {
-    const { data: winner } = await supabase
+    const { data: winner, error: winnerError } = await supabase
       .from('golf_rounds')
       .select('ai_recap')
       .eq('id', roundId)
       .maybeSingle<{ ai_recap: string | null }>();
+    if (winnerError) {
+      // The winner's recap is durably stored; a failed re-read must not hand
+      // back this call's discarded text as if it were the kept one.
+      await logServerError(
+        `Round recap winner re-read failed: ${winnerError.message}`,
+        {
+          action: 'generateRoundRecap.rereadWinner',
+          featureArea: 'round_review_ai',
+          roundId,
+          playerId: round.player_id,
+          userId: user.id,
+          errorCode: winnerError.code,
+          errorHint: winnerError.hint,
+          errorDetails: winnerError.details,
+        },
+        'warning',
+      );
+      return { recap: null, cached: false };
+    }
     return { recap: winner?.ai_recap ?? recap, cached: true };
   }
 
