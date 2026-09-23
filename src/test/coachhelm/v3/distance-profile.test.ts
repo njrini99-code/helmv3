@@ -17,6 +17,7 @@ import { describe, expect, it } from 'vitest';
 import { bucketApproachDistance } from '@/lib/coachhelm/v3/engine/shot-source';
 import {
   computeDistanceProfile,
+  describeSupportGap,
   type DistanceBand,
   type DistanceProfileMetricId,
 } from '@/lib/coachhelm/v3/metrics/distance-profile';
@@ -33,6 +34,7 @@ import {
   SCENARIO_D_LAYUP_175_PLUS,
   SCENARIO_E_BOUNDARIES,
   SCENARIO_E_HOLES,
+  SCENARIO_F_BOTH_FLOORS_125_175,
 } from './fixtures/distance-profile-fixtures';
 
 const ALL_BANDS: readonly DistanceBand[] = ['50_125ft', '125_175ft', '175_plus_ft'];
@@ -237,6 +239,67 @@ describe('distance-profile — scope', () => {
   it('echoes scope onto every MetricResult (scope.player_id specifically)', () => {
     const results = computeDistanceProfile(SCENARIO_A_125_175, scope('player-echo'), []);
     expect(results.every((r) => r.scope.player_id === 'player-echo')).toBe(true);
+  });
+});
+
+describe('distance-profile — failedFloors names the ACTUAL gating population, never a narrower proxy (#2008 review, MUST 1)', () => {
+  it('on_green_proximity_feet fails on attempts, not greens — its OWN reading-count floor is cleared', () => {
+    // Scenario B: 8 attempts (< MIN_ATTEMPTS=10), 4 rounds (>= MIN_ROUNDS=3),
+    // 3 green hits each with a reading (>= MIN_GREENS=3). Before this fix,
+    // describeSupportGap read this row's OWN eligibleCount/distinctRounds —
+    // both scoped to the narrower 3-shot reading population — and reported
+    // "3 of 3 greens hit", which is self-contradictory (that floor is
+    // actually cleared) and hid the real problem (8 of 10 attempts).
+    const results = computeDistanceProfile(SCENARIO_B_UNDER_ATTEMPTS_50_125, scope('player-b'), []);
+    const r = find(results, 'approach_on_green_proximity_feet', '50_125ft');
+    expect(r.status).toBe('insufficient');
+    expect(r.failedFloors).toEqual([{ floor: 'attempts', current: 8, required: 10 }]);
+  });
+
+  it('direction_coverage is gated on the BAND attempts/rounds floor, not on its own narrower missed-shots count', () => {
+    const results = computeDistanceProfile(SCENARIO_B_UNDER_ATTEMPTS_50_125, scope('player-b'), []);
+    const r = find(results, 'approach_direction_coverage', '50_125ft');
+    expect(r.status).toBe('insufficient');
+    expect(r.failedFloors).toEqual([{ floor: 'attempts', current: 8, required: 10 }]);
+  });
+
+  it('names the rounds floor, not attempts, when only rounds fails (scenario C)', () => {
+    const results = computeDistanceProfile(SCENARIO_C_UNDER_ROUNDS_175_PLUS, scope('player-c'), SCENARIO_C_HOLES);
+    const r = find(results, 'approach_green_hit_rate', '175_plus_ft');
+    expect(r.status).toBe('insufficient');
+    expect(r.failedFloors).toEqual([{ floor: 'rounds', current: 2, required: 3 }]);
+  });
+
+  it('names every failed floor at once, rounds-then-attempts-then-greens, when all three fail on the same row', () => {
+    const results = computeDistanceProfile(SCENARIO_F_BOTH_FLOORS_125_175, scope('player-f'), []);
+    const r = find(results, 'approach_on_green_proximity_feet', '125_175ft');
+    expect(r.status).toBe('insufficient');
+    expect(r.failedFloors).toEqual([
+      { floor: 'rounds', current: 2, required: 3 },
+      { floor: 'attempts', current: 4, required: 10 },
+      { floor: 'greens', current: 1, required: 3 },
+    ]);
+  });
+
+  it('is absent — not an empty array — once status clears insufficient', () => {
+    const results = computeDistanceProfile(SCENARIO_A_125_175, scope('player-a'), []);
+    const r = find(results, 'approach_green_hit_rate', '125_175ft');
+    expect(r.status).toBe('supported');
+    expect(r.failedFloors).toBeUndefined();
+  });
+});
+
+describe('distance-profile — describeSupportGap renders straight from failedFloors', () => {
+  it('renders the true attempts gap for the proximity row, not a proxy from its own reading count', () => {
+    const results = computeDistanceProfile(SCENARIO_B_UNDER_ATTEMPTS_50_125, scope('player-b'), []);
+    const r = find(results, 'approach_on_green_proximity_feet', '50_125ft');
+    expect(describeSupportGap(r)).toBe('8 of 10 attempts');
+  });
+
+  it('joins multiple failed floors with "and"', () => {
+    const results = computeDistanceProfile(SCENARIO_F_BOTH_FLOORS_125_175, scope('player-f'), []);
+    const r = find(results, 'approach_on_green_proximity_feet', '125_175ft');
+    expect(describeSupportGap(r)).toBe('2 of 3 rounds and 4 of 10 attempts and 1 of 3 greens hit');
   });
 });
 

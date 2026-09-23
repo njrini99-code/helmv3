@@ -101,7 +101,7 @@ function describeTileA11y(row: DistanceProfileRowViewModel, sectionLabel: string
     return `${base}: ${formatMetricValue(row)} of ${row.row.denominator} ${display.sampleUnit}.`;
   }
   if (row.kind === 'insufficient') {
-    return `${base}: not enough data yet, ${describeSupportGap(row.metricId, row.row)}.`;
+    return `${base}: not enough data yet, ${describeSupportGap(row.row)}.`;
   }
   return `${base}: no data recorded yet.`;
 }
@@ -157,7 +157,7 @@ function DistanceProfileTile({ row }: { row: DistanceProfileRowViewModel }) {
     // constants, rather than a generic count with no stated floor.
     return (
       <InsufficientData
-        description={`${describeSupportGap(row.metricId, row.row)} — below the support floor.`}
+        description={`${describeSupportGap(row.row)} — below the support floor.`}
         compact
       />
     );

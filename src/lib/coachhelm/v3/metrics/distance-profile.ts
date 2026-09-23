@@ -145,9 +145,9 @@
 import { round } from '@/lib/golf/stat-formulas';
 import { bucketApproachDistance, type ApproachBucket } from '../engine/shot-source';
 import type { AnalysisScope, HoleContext, ShotFact } from '../context/types';
-import type { MetricResult, MetricStatus } from './types';
+import type { MetricResult, MetricStatus, SupportFloorGap } from './types';
 
-export type { MetricResult, MetricStatus } from './types';
+export type { MetricResult, MetricStatus, SupportFloorGap } from './types';
 
 export type DistanceBand = ApproachBucket;
 
@@ -181,33 +181,72 @@ function statusFor(denominator: number, meetsFloor: boolean): MetricStatus {
 }
 
 /**
- * Names the SPECIFIC floor an `'insufficient'` row is short of, so a
- * surface can say "2 of 3 rounds" or "6 of 10 attempts" instead of a
- * generic count with no stated floor. Only meaningful when
- * `row.status === 'insufficient'` — the caller decides when to show it;
- * this function doesn't check `status` itself, so it stays a pure
- * description of the numbers rather than a second copy of the gating
- * logic in `statusFor`/`computeDistanceProfile`.
+ * Names EVERY floor an `'insufficient'` row is short of, so a surface can
+ * say "2 of 3 rounds and 6 of 10 attempts" instead of a generic count with
+ * no stated floor. Only meaningful when `row.status === 'insufficient'` —
+ * the caller decides when to show it; this function doesn't check `status`
+ * itself, it just renders whatever `row.failedFloors` says.
  *
- * Checks the ROUNDS floor first: every row here shares the same
- * `MIN_ATTEMPTS`/`MIN_ROUNDS` compound floor (`meetsAttemptFloor` in
- * `computeDistanceProfile`), so a row failing on rounds might still clear
- * the attempts count, and rounds is the rarer, more informative shortfall
- * to name. `approach_on_green_proximity_feet` carries an additional
- * `MIN_GREENS` floor on top; its `eligibleCount` is defined as the reading
- * count (`proximityReadings.length`), which in practice tracks the
- * green-hit count this floor actually gates (a green-finding shot without
- * a valid finish reading is the rare exception), so it stands in for
- * "greens hit" here without a separate field.
+ * Renders directly from `row.failedFloors` — computed once, in
+ * `computeDistanceProfile`, from each row's OWN real gating population
+ * (attempts/rounds, plus greens for proximity) — rather than re-deriving a
+ * gap from `row.eligibleCount`/`row.distinctRounds`. An earlier version of
+ * this function did exactly that re-derivation and was wrong for
+ * `approach_on_green_proximity_feet` and `approach_direction_coverage`:
+ * both rows narrow `eligibleCount`/`distinctRounds` to a population (green
+ * shots with a reading; missed shots) that is a SUBSET of what actually
+ * gates `status` (the band's full attempts/rounds). A row could clear its
+ * own narrower count while the wider floor that produced `'insufficient'`
+ * was still failing, so the old logic could name a floor the row cleared
+ * while hiding the one it didn't (#2008 review, MUST 1 — repro:
+ * `SCENARIO_B_UNDER_ATTEMPTS_50_125` reported "3 of 3 greens hit" for a row
+ * whose real problem was 8 of 10 attempts).
  */
-export function describeSupportGap(metricId: DistanceProfileMetricId, row: MetricResult): string {
-  if (row.distinctRounds < MIN_ROUNDS) {
-    return `${row.distinctRounds} of ${MIN_ROUNDS} rounds`;
+export function describeSupportGap(row: MetricResult): string {
+  const gaps = row.failedFloors ?? [];
+  if (gaps.length === 0) {
+    // Defensive only — computeDistanceProfile always populates
+    // `failedFloors` whenever it sets `status` to `'insufficient'`, so a
+    // real row never reaches this branch.
+    return 'not enough data yet';
   }
-  if (metricId === 'approach_on_green_proximity_feet') {
-    return `${row.eligibleCount} of ${MIN_GREENS} greens hit`;
+  return gaps.map(describeFloorGap).join(' and ');
+}
+
+function describeFloorGap(gap: SupportFloorGap): string {
+  switch (gap.floor) {
+    case 'rounds':
+      return `${gap.current} of ${gap.required} rounds`;
+    case 'greens':
+      return `${gap.current} of ${gap.required} greens hit`;
+    case 'attempts':
+    default:
+      return `${gap.current} of ${gap.required} attempts`;
   }
-  return `${row.eligibleCount} of ${MIN_ATTEMPTS} attempts`;
+}
+
+/** Builds this row's `failedFloors` from its OWN real gating quantities —
+ *  never from a narrower per-row count like `eligibleCount` — so the
+ *  reported gap can never disagree with what `statusFor` actually gated on.
+ *  `undefined` (not an empty array) whenever `status !== 'insufficient'`,
+ *  matching `MetricResult.failedFloors`'s own doc comment. Checks rounds
+ *  before attempts (rounds is the rarer, more informative shortfall to
+ *  name first when both fail), then greens last since only the proximity
+ *  row's caller passes `greensHit` at all. */
+function failedFloorsFor(
+  status: MetricStatus,
+  attempts: number,
+  attemptRounds: number,
+  greensHit?: number,
+): SupportFloorGap[] | undefined {
+  if (status !== 'insufficient') return undefined;
+  const gaps: SupportFloorGap[] = [];
+  if (attemptRounds < MIN_ROUNDS) gaps.push({ floor: 'rounds', current: attemptRounds, required: MIN_ROUNDS });
+  if (attempts < MIN_ATTEMPTS) gaps.push({ floor: 'attempts', current: attempts, required: MIN_ATTEMPTS });
+  if (greensHit !== undefined && greensHit < MIN_GREENS) {
+    gaps.push({ floor: 'greens', current: greensHit, required: MIN_GREENS });
+  }
+  return gaps;
 }
 
 function distinctRoundsOf(shots: readonly ShotFact[]): number {
@@ -305,6 +344,7 @@ export function computeDistanceProfile(
 
     const dimensions = { band };
 
+    const greenHitStatus = statusFor(attempts, meetsAttemptFloor);
     const greenShots = eligible.filter(isOnGreen);
     results.push({
       scope,
@@ -317,15 +357,17 @@ export function computeDistanceProfile(
       eligibleCount: attempts,
       observedCount: inBand.length,
       distinctRounds: attemptRounds,
-      status: statusFor(attempts, meetsAttemptFloor),
+      status: greenHitStatus,
       exclusions: bandExclusions,
       distanceMethod: 'recorded',
+      failedFloors: failedFloorsFor(greenHitStatus, attempts, attemptRounds),
     });
 
     const proximityReadings = greenShots
       .map((f) => f.distance_to_hole_after_feet)
       .filter((v): v is number => v !== null);
     const meetsProximityFloor = meetsAttemptFloor && greenShots.length >= MIN_GREENS;
+    const proximityStatus = statusFor(proximityReadings.length, meetsProximityFloor);
     const proximitySum = proximityReadings.reduce((a, b) => a + b, 0);
     results.push({
       scope,
@@ -340,13 +382,19 @@ export function computeDistanceProfile(
       distinctRounds: distinctRoundsOf(
         greenShots.filter((f) => f.distance_to_hole_after_feet !== null),
       ),
-      status: statusFor(proximityReadings.length, meetsProximityFloor),
+      status: proximityStatus,
       exclusions: {},
       distanceMethod: 'recorded',
+      // `greenShots.length` (not `proximityReadings.length`) — the MIN_GREENS
+      // floor gates on green-finding shots, and `meetsProximityFloor` above
+      // is computed the same way; see this row's own doc comment (module
+      // header) for why the two counts track but aren't the same field.
+      failedFloors: failedFloorsFor(proximityStatus, attempts, attemptRounds, greenShots.length),
     });
 
     const missedShots = eligible.filter((f) => !isOnGreen(f));
     const coveredMisses = missedShots.filter(hasDirectionReading);
+    const directionStatus = statusFor(missedShots.length, meetsAttemptFloor);
     results.push({
       scope,
       dimensions,
@@ -358,12 +406,17 @@ export function computeDistanceProfile(
       eligibleCount: missedShots.length,
       observedCount: missedShots.length,
       distinctRounds: distinctRoundsOf(missedShots),
-      status: statusFor(missedShots.length, meetsAttemptFloor),
+      status: directionStatus,
       exclusions: {},
       distanceMethod: 'recorded',
+      // Gated on the BAND's attempts/rounds (`meetsAttemptFloor`), not on
+      // `missedShots`'s own narrower count — same reasoning as the
+      // proximity row above, and the exact bug #2008's review caught.
+      failedFloors: failedFloorsFor(directionStatus, attempts, attemptRounds),
     });
 
     const severeShots = eligible.filter(isSevereOutcome);
+    const severeStatus = statusFor(attempts, meetsAttemptFloor);
     results.push({
       scope,
       dimensions,
@@ -375,9 +428,10 @@ export function computeDistanceProfile(
       eligibleCount: attempts,
       observedCount: inBand.length,
       distinctRounds: attemptRounds,
-      status: statusFor(attempts, meetsAttemptFloor),
+      status: severeStatus,
       exclusions: bandExclusions,
       distanceMethod: 'recorded',
+      failedFloors: failedFloorsFor(severeStatus, attempts, attemptRounds),
     });
 
     // Always reported, even when `status` is `'insufficient'`/`'invalid'` —
@@ -386,6 +440,7 @@ export function computeDistanceProfile(
     // `attempts`: unlike every other row in this file, this one does not
     // null `value` when its denominator is 0 (0 attempts is itself the
     // reportable fact).
+    const measuredStatus = statusFor(attempts, meetsAttemptFloor);
     results.push({
       scope,
       dimensions,
@@ -397,9 +452,10 @@ export function computeDistanceProfile(
       eligibleCount: attempts,
       observedCount: inBand.length,
       distinctRounds: attemptRounds,
-      status: statusFor(attempts, meetsAttemptFloor),
+      status: measuredStatus,
       exclusions: bandExclusions,
       distanceMethod: 'recorded',
+      failedFloors: failedFloorsFor(measuredStatus, attempts, attemptRounds),
     });
   }
 
