@@ -92,8 +92,14 @@ async function handleMessage(queue: QueueName, message: Record<string, unknown>)
         roundId,
         triggerReason: 'round_submitted',
       });
-      if (!result.success) {
-        throw new Error(result.error ?? 'postRoundTrigger reported failure');
+      // R3: only a RETRYABLE failure is worth the queue's retry. A parked
+      // outcome (under the floor, no roster, switched off) is an expected
+      // state the trigger has already recorded on the round — failing the
+      // message here would re-run the same expected state on every visibility
+      // timeout. A permanent failure is stamped and logged with its exception;
+      // re-running it would not change the answer.
+      if (result.outcome?.kind === 'retryable_failure') {
+        throw new Error(result.error ?? 'postRoundTrigger reported a retryable failure');
       }
       return;
     }

@@ -109,6 +109,24 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   `compareBySeverity` from `v3/ranking/score.ts` over the full set, then
   paginate.
 - Budget-sensitive LLM behavior should use team settings and persisted usage, not hardcoded token math.
+- Post-round analysis returns a typed `AnalysisOutcome` (repair plan R3,
+  2026-09-12; `src/lib/coachhelm/v3/engine/analysis-outcome.ts`):
+  `succeeded | partial | waiting_for_data | not_applicable | disabled |
+  retryable_failure | permanent_failure`, each with a retry policy. The engine
+  (`triggerPlayerInsightsAfterRoundImpl`) names its own state with a `code`
+  on every `success: false` envelope and preserves a caught exception as
+  `cause`; `postRoundTrigger`, the safety-net cron, the pgmq consumer and the
+  roster sweep branch on that code. No consumer may classify an outcome from
+  the message text, and no expected state (under the round floor, no roster,
+  switched off) may be stamped as a failure — it parks the round. The safety
+  net's never-processed sweep selects only rows with a NULL reason; parked
+  rows wake on a newer analyzed round (coverage), a new active membership,
+  or both CoachHelm switches being on, or (floor-parked) the player's
+  completed-round count meeting the coach's current `min_rounds_for_signal`,
+  so a coach lowering the floor wakes them on the next tick; transient
+  failures retry one tick apart up to `RETRY_MAX_ATTEMPTS` and then stay
+  failed as `:exhausted`. A failed wake-decision read is logged and leaves
+  the round parked.
 
 ## UI Contract
 

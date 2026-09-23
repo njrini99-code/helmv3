@@ -165,6 +165,11 @@ const EXPECTED_SOFT_FAILURE_CODES: ReadonlySet<string> = new Set([
   // whereas the empty-state codes describe an outcome that was never a
   // failure at all.
   'engine_no_team_membership',
+  // The player's team has no organisation or the organisation has no coach —
+  // the same not-applicable class as a missing roster (repair plan R3,
+  // 2026-09-12): nothing to run against until the org is repaired, so the
+  // round parks; a warning, not an incident.
+  'engine_no_coach',
   // A round-entry client can legitimately retain a shot ID when a concurrent
   // delete (another tab, a recovered retry, or Undo vs. Edit) already removed
   // it. The action keeps returning a failure envelope so callers reconcile

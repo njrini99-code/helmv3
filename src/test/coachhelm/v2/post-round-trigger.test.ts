@@ -77,53 +77,65 @@ describe('postRoundTrigger', () => {
 
     await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r1' });
 
-    const { data } = await admin.from('golf_rounds').select('*').eq('id', 'r1');
+    const { data, error } = await admin.from('golf_rounds').select('*').eq('id', 'r1');
+
+    expect(error).toBeNull();
     expect(data?.[0]?.['coachhelm_analyzed_at']).toBeTruthy();
     expect(data?.[0]?.['coachhelm_failed_at']).toBeNull();
     expect(data?.[0]?.['coachhelm_failure_reason']).toBeNull();
   });
 
-  it('sets coachhelm_failed_at + reason when trigger returns success: false', async () => {
+  it('an uncoded success:false is a permanent failure — nothing is read off the text', async () => {
     const admin = createPostRoundFake([
       { id: 'r2', player_id: 'p1', status: 'completed', coachhelm_analyzed_at: null },
     ]);
     mockTrigger.mockResolvedValue({ success: false, error: 'team disabled coachhelm' });
 
-    await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r2' });
+    const result = await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r2' });
 
-    const { data } = await admin.from('golf_rounds').select('*').eq('id', 'r2');
+    const { data, error } = await admin.from('golf_rounds').select('*').eq('id', 'r2');
+
+    expect(error).toBeNull();
     expect(data?.[0]?.['coachhelm_analyzed_at']).toBeFalsy();
     expect(data?.[0]?.['coachhelm_failed_at']).toBeTruthy();
-    // postRoundTrigger now sanitizes free-text reasons into a canonical
-    // enum via sanitizeFailureReason() — "team disabled coachhelm" matches
-    // the "disabled" branch and becomes 'engine_disabled'.
-    expect(String(data?.[0]?.['coachhelm_failure_reason'])).toMatch(/engine_disabled/);
+    // The old sanitizer would have sniffed "disabled" out of the message and
+    // stamped engine_disabled. An envelope that names no state is a failure.
+    expect(data?.[0]?.['coachhelm_failure_reason']).toBe('engine_error');
+    expect(result.outcome.kind).toBe('permanent_failure');
   });
 
-  it('sets coachhelm_failed_at + reason when trigger throws', async () => {
+  it('a thrown exception stamps failed with the code and keeps the exception in the log', async () => {
     const admin = createPostRoundFake([
       { id: 'r3', player_id: 'p1', status: 'completed', coachhelm_analyzed_at: null },
     ]);
-    mockTrigger.mockRejectedValue(new Error('engine_boom'));
+    const boom = new RangeError('engine_boom');
+    mockTrigger.mockRejectedValue(boom);
 
     await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r3' });
 
-    const { data } = await admin.from('golf_rounds').select('*').eq('id', 'r3');
+    const { data, error } = await admin.from('golf_rounds').select('*').eq('id', 'r3');
+
+    expect(error).toBeNull();
     expect(data?.[0]?.['coachhelm_failed_at']).toBeTruthy();
-    // Free-text "engine_boom" doesn't match any sanitizer branch → falls
-    // through to the catch-all 'engine_error' code.
-    expect(String(data?.[0]?.['coachhelm_failure_reason'])).toMatch(/engine_error/);
+    expect(data?.[0]?.['coachhelm_failure_reason']).toBe('engine_error');
+    const call = mocks.logServerError.mock.calls.find(([msg]) => String(msg).startsWith('postRoundTrigger outcome'));
+    expect(call?.[2]).toBe('error');
+    const extra = (call?.[1] as { extra?: Record<string, unknown> })?.extra;
+    expect(extra).toMatchObject({ causeName: 'RangeError', causeMessage: 'engine_boom', roundId: 'r3' });
+    expect(extra?.stack).toBe(boom.stack);
   });
 
-  it('truncates failure reason to 500 chars', async () => {
+  it('persists only the stable code — never the message — to the player-readable reason column', async () => {
     const long = 'x'.repeat(2000);
     const admin = createPostRoundFake([{ id: 'r4', player_id: 'p1', status: 'completed' }]);
     mockTrigger.mockRejectedValue(new Error(long));
 
     await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r4' });
 
-    const { data } = await admin.from('golf_rounds').select('*').eq('id', 'r4');
-    expect(String(data?.[0]?.['coachhelm_failure_reason']).length).toBeLessThanOrEqual(500);
+    const { data, error } = await admin.from('golf_rounds').select('*').eq('id', 'r4');
+
+    expect(error).toBeNull();
+    expect(data?.[0]?.['coachhelm_failure_reason']).toBe('engine_error');
   });
 
   it('never throws — fire-and-forget safe from after()', async () => {
@@ -133,10 +145,43 @@ describe('postRoundTrigger', () => {
     await expect(postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r5' })).resolves.not.toThrow();
   });
 
-  describe('engine-failure severity classification (verdict-softfail-severity)', () => {
-    it('code: engine_no_recent_rounds logs via logServerEvent at info + skipSentry, never logServerError', async () => {
+  describe('typed outcomes (repair plan R3)', () => {
+    it('rounds under the coach floor park: no analyzed stamp, NO failure stamp, waiting code recorded', async () => {
       const admin = createPostRoundFake([
         { id: 'r6', player_id: 'p1', status: 'completed', coachhelm_analyzed_at: null },
+      ]);
+      mockTrigger.mockResolvedValue({
+        success: false,
+        error: '2 completed rounds so far — CoachHelm speaks after 3',
+        code: 'engine_below_round_floor',
+        details: { completedRounds: 2, floor: 3 },
+      });
+
+      const result = await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r6' });
+
+      const { data, error } = await admin.from('golf_rounds').select('*').eq('id', 'r6');
+
+      expect(error).toBeNull();
+      expect(data?.[0]?.['coachhelm_analyzed_at']).toBeNull();
+      expect(data?.[0]?.['coachhelm_failed_at']).toBeNull();
+      expect(data?.[0]?.['coachhelm_failure_reason']).toBe('engine_below_round_floor');
+      expect(result).toMatchObject({ success: false, code: 'engine_below_round_floor' });
+      expect(result.outcome.kind).toBe('waiting_for_data');
+      expect(mocks.logServerEvent).toHaveBeenCalledWith(
+        expect.stringContaining('postRoundTrigger outcome waiting_for_data'),
+        expect.objectContaining({
+          skipSentry: true,
+          errorCode: 'engine_below_round_floor',
+          extra: expect.objectContaining({ details: { completedRounds: 2, floor: 3 } }),
+        }),
+        'info',
+      );
+      expect(mocks.logServerError).not.toHaveBeenCalled();
+    });
+
+    it('no completed rounds in the window parks the round the same way', async () => {
+      const admin = createPostRoundFake([
+        { id: 'r6b', player_id: 'p1', status: 'completed', coachhelm_analyzed_at: null },
       ]);
       mockTrigger.mockResolvedValue({
         success: false,
@@ -144,40 +189,17 @@ describe('postRoundTrigger', () => {
         code: 'engine_no_recent_rounds',
       });
 
-      await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r6' });
+      await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r6b' });
 
-      expect(mocks.logServerEvent).toHaveBeenCalledWith(
-        expect.stringContaining('postRoundTrigger engine failed'),
-        expect.objectContaining({ skipSentry: true, errorCode: 'engine_no_recent_rounds' }),
-        'info',
-      );
-      expect(mocks.logServerError).not.toHaveBeenCalledWith(
-        expect.stringContaining('postRoundTrigger engine failed'),
-        expect.anything(),
-        expect.anything(),
-      );
+      const { data, error } = await admin.from('golf_rounds').select('*').eq('id', 'r6b');
+
+      expect(error).toBeNull();
+      expect(data?.[0]?.['coachhelm_failed_at']).toBeNull();
+      expect(data?.[0]?.['coachhelm_failure_reason']).toBe('engine_no_recent_rounds');
+      expect(mocks.logServerError).not.toHaveBeenCalled();
     });
 
-    it('code: engine_session_expired logs via logServerError at warning + skipSentry (handled, not a live Sentry exception)', async () => {
-      const admin = createPostRoundFake([
-        { id: 'r7', player_id: 'p1', status: 'completed', coachhelm_analyzed_at: null },
-      ]);
-      mockTrigger.mockResolvedValue({
-        success: false,
-        error: 'Player analysis failed (likely session expired in background context)',
-        code: 'engine_session_expired',
-      });
-
-      await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r7' });
-
-      expect(mocks.logServerError).toHaveBeenCalledWith(
-        expect.stringContaining('postRoundTrigger engine failed'),
-        expect.objectContaining({ skipSentry: true, errorCode: 'engine_session_expired' }),
-        'warning',
-      );
-    });
-
-    it('code: engine_no_team_membership logs at warning + skipSentry — an un-rostered player is a roster state, not an incident', async () => {
+    it('an un-rostered player parks quietly at warning + skipSentry — a roster state, not an incident', async () => {
       const admin = createPostRoundFake([
         { id: 'r9', player_id: 'p1', status: 'completed', coachhelm_analyzed_at: null },
       ]);
@@ -187,16 +209,139 @@ describe('postRoundTrigger', () => {
         code: 'engine_no_team_membership',
       });
 
-      await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r9' });
+      const result = await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r9' });
 
+      const { data, error } = await admin.from('golf_rounds').select('*').eq('id', 'r9');
+
+      expect(error).toBeNull();
+      expect(data?.[0]?.['coachhelm_failed_at']).toBeNull();
+      expect(data?.[0]?.['coachhelm_failure_reason']).toBe('engine_no_team_membership');
+      expect(result.outcome.kind).toBe('not_applicable');
       expect(mocks.logServerError).toHaveBeenCalledWith(
-        expect.stringContaining('postRoundTrigger engine failed'),
+        expect.stringContaining('postRoundTrigger outcome not_applicable'),
         expect.objectContaining({ skipSentry: true, errorCode: 'engine_no_team_membership' }),
         'warning',
       );
     });
 
-    it('hands the engine code back to the caller so the safety-net cron can reach the same verdict', async () => {
+    it('a team or coach switch-off parks quietly at info', async () => {
+      const admin = createPostRoundFake([
+        { id: 'r12', player_id: 'p1', status: 'completed', coachhelm_analyzed_at: null },
+      ]);
+      mockTrigger.mockResolvedValue({
+        success: false,
+        error: 'CoachHelm disabled for team',
+        code: 'engine_disabled',
+        details: { scope: 'team' },
+      });
+
+      const result = await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r12' });
+
+      const { data, error } = await admin.from('golf_rounds').select('*').eq('id', 'r12');
+
+      expect(error).toBeNull();
+      expect(data?.[0]?.['coachhelm_failed_at']).toBeNull();
+      expect(data?.[0]?.['coachhelm_failure_reason']).toBe('engine_disabled');
+      expect(result.outcome.kind).toBe('disabled');
+      expect(mocks.logServerError).not.toHaveBeenCalled();
+    });
+
+    it('a transient fault stamps failed with a retryable code at warning, Sentry-visible', async () => {
+      const admin = createPostRoundFake([
+        { id: 'r13', player_id: 'p1', status: 'completed', coachhelm_analyzed_at: null },
+      ]);
+      mockTrigger.mockResolvedValue({
+        success: false,
+        error: 'Player analysis threw: canceling statement due to statement timeout',
+        code: 'engine_timeout',
+        cause: { name: 'Error', message: 'canceling statement due to statement timeout', code: '57014' },
+      });
+
+      const result = await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r13' });
+
+      const { data, error } = await admin.from('golf_rounds').select('*').eq('id', 'r13');
+
+      expect(error).toBeNull();
+      expect(data?.[0]?.['coachhelm_failed_at']).toBeTruthy();
+      expect(data?.[0]?.['coachhelm_failure_reason']).toBe('engine_timeout');
+      expect(result.outcome.kind).toBe('retryable_failure');
+      expect(mocks.logServerError).toHaveBeenCalledWith(
+        expect.stringContaining('postRoundTrigger outcome retryable_failure'),
+        expect.objectContaining({
+          errorCode: 'engine_timeout',
+          extra: expect.objectContaining({ causeCode: '57014' }),
+        }),
+        'warning',
+      );
+      const call = mocks.logServerError.mock.calls[0];
+      expect((call?.[1] as Record<string, unknown>).skipSentry).toBeUndefined();
+    });
+
+    it('a session-context failure is a permanent failure, not a retry loop', async () => {
+      const admin = createPostRoundFake([
+        { id: 'r7', player_id: 'p1', status: 'completed', coachhelm_analyzed_at: null },
+      ]);
+      mockTrigger.mockResolvedValue({
+        success: false,
+        error: 'Player analysis threw: Auth session missing!',
+        code: 'engine_session_expired',
+      });
+
+      const result = await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r7' });
+
+      const { data, error } = await admin.from('golf_rounds').select('*').eq('id', 'r7');
+
+      expect(error).toBeNull();
+      expect(data?.[0]?.['coachhelm_failed_at']).toBeTruthy();
+      expect(result.outcome.kind).toBe('permanent_failure');
+      expect(mocks.logServerError).toHaveBeenCalledWith(
+        expect.stringContaining('postRoundTrigger outcome permanent_failure'),
+        expect.objectContaining({ errorCode: 'engine_session_expired' }),
+        'error',
+      );
+    });
+
+    it('zero findings is a success with a reason, not a failure', async () => {
+      const admin = createPostRoundFake([
+        { id: 'r14', player_id: 'p1', status: 'completed', coachhelm_analyzed_at: null },
+      ]);
+      mockTrigger.mockResolvedValue({ success: true, insights_created: 0 });
+
+      const result = await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r14' });
+
+      const { data, error } = await admin.from('golf_rounds').select('*').eq('id', 'r14');
+
+      expect(error).toBeNull();
+      expect(data?.[0]?.['coachhelm_analyzed_at']).toBeTruthy();
+      expect(data?.[0]?.['coachhelm_failure_reason']).toBeNull();
+      expect(result).toMatchObject({ success: true, code: 'engine_succeeded' });
+      expect(mocks.logServerError).not.toHaveBeenCalled();
+      expect(mocks.logServerEvent).not.toHaveBeenCalled();
+    });
+
+    it('a partial run is analyzed with the partial marker and logged at warning + skipSentry', async () => {
+      const admin = createPostRoundFake([
+        { id: 'r15', player_id: 'p1', status: 'completed', coachhelm_analyzed_at: null },
+      ]);
+      mockTrigger.mockResolvedValue({ success: true, partial: true });
+
+      const result = await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r15' });
+
+      const { data, error } = await admin.from('golf_rounds').select('*').eq('id', 'r15');
+
+      expect(error).toBeNull();
+      expect(data?.[0]?.['coachhelm_analyzed_at']).toBeTruthy();
+      expect(data?.[0]?.['coachhelm_failed_at']).toBeNull();
+      expect(data?.[0]?.['coachhelm_failure_reason']).toBe('engine_partial_failure');
+      expect(result).toMatchObject({ success: true, partial: true, code: 'engine_partial_failure' });
+      expect(mocks.logServerError).toHaveBeenCalledWith(
+        expect.stringContaining('postRoundTrigger outcome partial'),
+        expect.objectContaining({ skipSentry: true }),
+        'warning',
+      );
+    });
+
+    it('hands the engine code back so the safety net and queue consumer reach the same verdict', async () => {
       const admin = createPostRoundFake([
         { id: 'r10', player_id: 'p1', status: 'completed', coachhelm_analyzed_at: null },
       ]);
@@ -209,34 +354,7 @@ describe('postRoundTrigger', () => {
       const result = await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r10' });
 
       expect(result).toMatchObject({ success: false, code: 'engine_no_team_membership' });
-    });
-
-    it('omits `code` entirely when the engine did not classify the failure', async () => {
-      const admin = createPostRoundFake([
-        { id: 'r11', player_id: 'p1', status: 'completed', coachhelm_analyzed_at: null },
-      ]);
-      mockTrigger.mockResolvedValue({ success: false, error: 'team disabled coachhelm' });
-
-      const result = await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r11' });
-
-      expect(result.success).toBe(false);
-      expect(result.code).toBeUndefined();
-    });
-
-    it('regression guard: an unrecognized code/message still logs at default error severity with no skipSentry', async () => {
-      const admin = createPostRoundFake([
-        { id: 'r8', player_id: 'p1', status: 'completed', coachhelm_analyzed_at: null },
-      ]);
-      mockTrigger.mockResolvedValue({ success: false, error: 'team disabled coachhelm' });
-
-      await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r8' });
-
-      const call = mocks.logServerError.mock.calls.find(([msg]) =>
-        String(msg).startsWith('postRoundTrigger engine failed'),
-      );
-      expect(call).toBeTruthy();
-      expect(call?.[2]).toBe('error');
-      expect((call?.[1] as Record<string, unknown> | undefined)?.skipSentry).toBeUndefined();
+      expect(result.outcome).toMatchObject({ kind: 'not_applicable', code: 'engine_no_team_membership' });
     });
   });
 });

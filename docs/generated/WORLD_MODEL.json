@@ -13204,6 +13204,28 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v2/orchestrator.ts",
           "line": 44
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v2/trigger-insights-bridge.ts",
+          "line": 3
+        }
+      ]
+    },
+    {
+      "source": "coach_intelligence_triage",
+      "target": "record_round_coachhelm_terminal_state",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/app/api/cron/coachhelm-safety-net/route.ts",
+          "line": 523
+        },
+        {
+          "kind": "rpc_call",
+          "path": "src/test/api/cron/coachhelm-safety-net-reconcile.test.ts",
+          "line": 159
         }
       ]
     },
@@ -13485,7 +13507,7 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/insights.ts",
-          "line": 78
+          "line": 79
         },
         {
           "kind": "import_graph",
@@ -13987,12 +14009,12 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/insights.ts",
-          "line": 80
+          "line": 81
         },
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/insights.ts",
-          "line": 81
+          "line": 82
         },
         {
           "kind": "import_graph",
@@ -14127,6 +14149,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/insights.ts",
           "line": 65
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/insights.ts",
+          "line": 78
         },
         {
           "kind": "import_graph",
@@ -15410,11 +15437,6 @@
         },
         {
           "kind": "import_graph",
-          "path": "src/lib/coachhelm/v2/post-round-trigger.ts",
-          "line": 28
-        },
-        {
-          "kind": "import_graph",
           "path": "src/lib/golf/__tests__/with-golf-action.test.ts",
           "line": 46
         },
@@ -15664,7 +15686,7 @@
         {
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v2/post-round-trigger.ts",
-          "line": 26
+          "line": 43
         },
         {
           "kind": "import_graph",
@@ -15890,6 +15912,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v2/post-round-trigger.ts",
+          "line": 52
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/llm/round-review.ts",
           "line": 31
         },
@@ -15960,7 +15987,7 @@
         {
           "kind": "rpc_call",
           "path": "src/lib/coachhelm/v2/post-round-trigger.ts",
-          "line": 100
+          "line": 88
         }
       ]
     },

@@ -73,8 +73,9 @@ import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import {
   __registerTriggerPlayerInsightsAfterRound,
-  type TriggerPlayerInsightsCode,
+  type TriggerPlayerInsightsResult,
 } from '@/lib/coachhelm/v2/trigger-insights-bridge';
+import { classifyThrown } from '@/lib/coachhelm/v3/engine/analysis-outcome';
 import { maybeCaptureRlsDenial } from '@/lib/admin/rls-denial';
 import { describeError } from '@/lib/utils/describe-error';
 import { getStatsActionContext } from '@/lib/golf/stats-action-context';
@@ -3987,23 +3988,13 @@ function buildStatInsightsForTeam(
  */
 async function triggerPlayerInsightsAfterRoundImpl(
   playerId: string
-): Promise<{
-  success: boolean;
-  insights_created?: number;
-  error?: string;
-  partial?: boolean;
-  /**
-   * Stable, non-message-derived classification for the observability layer
-   * (observeActionSoftFailure / classifySoftFailure in
-   * src/lib/admin/observe-action-result.ts). Set on the `success: false`
-   * outcomes below that are routine, expected states — not incidents — so
-   * they're classified by this code instead of regex-matching the
-   * user-facing `error` string. The union is declared on the bridge this
-   * function is registered against, so adding a code here cannot get out of
-   * step with what consumers on the other side of the bridge accept.
-   */
-  code?: TriggerPlayerInsightsCode;
-}> {
+): Promise<TriggerPlayerInsightsResult> {
+  // The result envelope is the bridge's `TriggerPlayerInsightsResult`: every
+  // `success: false` below carries a typed `code` from
+  // src/lib/coachhelm/v3/engine/analysis-outcome.ts (R3) — the observability
+  // layer, postRoundTrigger, the safety-net cron and the queue consumer all
+  // classify off that code, never off the user-facing `error` string. A
+  // caught exception travels along as `cause`, intact.
   const startTime = Date.now();
   // P0-04: track whether any mandatory generator failed so the caller
   // (postRoundTrigger) can mark the round PARTIAL rather than fully clean.
@@ -4041,7 +4032,9 @@ async function triggerPlayerInsightsAfterRoundImpl(
 
     const teamId = membership.team_id;
     const orgId = (membership.golf_teams as { organization_id: string } | null)?.organization_id;
-    if (!orgId) return { success: false, error: 'Team organization not found' };
+    // No organisation → no coach → no philosophy to run against. Typed as
+    // not-applicable (R3): nothing to retry until the team's org is fixed.
+    if (!orgId) return { success: false, error: 'Team organization not found', code: 'engine_no_coach' };
 
     // Find the coach for this organization.
     //
@@ -4061,7 +4054,7 @@ async function triggerPlayerInsightsAfterRoundImpl(
       .limit(1)
       .single();
 
-    if (!coach) return { success: false, error: 'Coach not found for team organization' };
+    if (!coach) return { success: false, error: 'Coach not found for team organization', code: 'engine_no_coach' };
 
     const { data: coachSettings } = await admin
       .from('golf_coachhelm_settings')
@@ -4069,9 +4062,13 @@ async function triggerPlayerInsightsAfterRoundImpl(
       .eq('coach_id', coach.id)
       .maybeSingle();
     if (coachSettings?.enabled === false) {
+      // An intentional switch-off, not a failure (R3 `disabled`): the round
+      // parks until the setting changes.
       return {
         success: false,
         error: coachSettings.disabled_reason || 'CoachHelm disabled for coach',
+        code: 'engine_disabled',
+        details: { scope: 'coach' },
       };
     }
 
@@ -4084,6 +4081,8 @@ async function triggerPlayerInsightsAfterRoundImpl(
       return {
         success: false,
         error: teamSettings.disabled_reason || 'CoachHelm disabled for team',
+        code: 'engine_disabled',
+        details: { scope: 'team' },
       };
     }
 
@@ -4124,11 +4123,12 @@ async function triggerPlayerInsightsAfterRoundImpl(
     // philosophy is already loaded, so a starved player is skipped BEFORE any
     // generator runs rather than having its output filtered afterwards.
     //
-    // A FLAG, NOT AN EARLY RETURN. The aging sweep further down is
-    // housekeeping — it retires stale insights that are already on the board —
-    // and returning here would leave a below-floor player's old insights
-    // active forever. The floor suppresses NEW claims; it does not suspend
-    // maintenance of old ones.
+    // 2026-09-12 (repair plan R3): a player under the floor is a
+    // `waiting_for_data` outcome — typed, with the numbers — not a failure
+    // and not "no completed rounds in the last 90 days" (which is what this
+    // path used to report, so 65 completed rounds in production sat stamped
+    // coachhelm_failed_at for a player who had simply not played three
+    // rounds yet). The round parks; the next completed round wakes it.
     const { count: completedRoundCount } = await admin
       .from('golf_rounds')
       .select('id', { count: 'exact', head: true })
@@ -4144,16 +4144,23 @@ async function triggerPlayerInsightsAfterRoundImpl(
 
     if (belowRoundFloor) {
       await logServerEvent(
-        `[insights.triggerPlayerInsightsAfterRound] player has ${completedRoundCount} completed rounds, coach floor is ${philosophy.minRoundsForSignal} — skipping generation`,
+        `[insights.triggerPlayerInsightsAfterRound] player is under the coach round floor — skipping generation`,
         {
           action: 'insights.triggerPlayerInsightsAfterRound.belowRoundFloor',
           featureArea: 'coachhelm',
           playerId,
           // A coach setting doing its job, not a fault.
           skipSentry: true,
+          extra: { completedRounds: completedRoundCount, floor: philosophy.minRoundsForSignal },
         },
         'info',
       );
+      return {
+        success: false,
+        error: `${completedRoundCount} completed round${completedRoundCount === 1 ? '' : 's'} so far — CoachHelm speaks after ${philosophy.minRoundsForSignal} (the coach's minimum-rounds setting)`,
+        code: 'engine_below_round_floor',
+        details: { completedRounds: completedRoundCount, floor: philosophy.minRoundsForSignal },
+      };
     }
 
     // 2026-05-24 Wave 7B — philosophy gate (replaces the post-filter sweep
@@ -4168,17 +4175,15 @@ async function triggerPlayerInsightsAfterRoundImpl(
         shouldIncludeInsight(insightType as InsightType, philosophy),
     };
 
-    // Run analysis for this single player.
-    // analyzePlayer internally uses createClient() (user-scoped) which may fail in
-    // fire-and-forget context where the user session is no longer available.
-    // This is non-critical: the round saved successfully, only post-round insights are skipped.
+    // Run analysis for this single player. The orchestrator uses the
+    // service-role admin client throughout (no request session involved), so
+    // a throw here is a real engine fault and is classified as one —
+    // transient faults retry, everything else stays inspectable with its
+    // original exception attached (R3). It used to map EVERY throw to
+    // "session expired".
     let analysis;
     try {
-      // Below the coach's round floor: skip generation entirely, but fall
-      // through so the aging sweep below still runs.
-      analysis = belowRoundFloor
-        ? null
-        : await coachHelmIntelligence.analyzePlayer(playerId, {
+      analysis = await coachHelmIntelligence.analyzePlayer(playerId, {
             includePatterns: true,
             includeCausal: true,
             includePredictions: true,
@@ -4194,16 +4199,13 @@ async function triggerPlayerInsightsAfterRoundImpl(
             patternLookbackDays: philosophy.patternLookbackDays,
             minRoundsForSignal: philosophy.minRoundsForSignal,
           });
-    } catch {
-      // Expected in fire-and-forget/cron contexts (roster-sweep, post-round
-      // trigger) — analyzePlayer()'s user-scoped client has no session to
-      // scope to once the originating request has finished. `code` lets the
-      // observability layer classify this without regex-matching the
-      // message (see EXPECTED_SOFT_FAILURE_CODES in observe-action-result.ts).
+    } catch (analysisError) {
+      const outcome = classifyThrown(analysisError);
       return {
         success: false,
-        error: 'Player analysis failed (likely session expired in background context)',
-        code: 'engine_session_expired',
+        error: `Player analysis threw: ${outcome.message}`,
+        code: outcome.code,
+        ...(outcome.cause ? { cause: outcome.cause } : {}),
       };
     }
 
@@ -4479,9 +4481,12 @@ async function triggerPlayerInsightsAfterRoundImpl(
       },
       'error'
     );
+    const outcome = classifyThrown(error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'CoachHelm post-round trigger failed',
+      code: outcome.code,
+      ...(outcome.cause ? { cause: outcome.cause } : {}),
     };
   }
 }

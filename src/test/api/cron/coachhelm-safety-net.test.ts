@@ -58,6 +58,27 @@ import { postRoundTrigger } from '@/lib/coachhelm/v2/post-round-trigger';
 
 const postRoundTriggerMock = vi.mocked(postRoundTrigger);
 
+type TriggerResult = Awaited<ReturnType<typeof postRoundTrigger>>;
+const ok = (): TriggerResult => ({
+  success: true,
+  code: 'engine_succeeded',
+  outcome: { kind: 'succeeded', code: 'engine_succeeded', message: 'ok' },
+});
+const failed = (
+  error: string,
+  code: TriggerResult['outcome']['code'] = 'engine_error',
+): TriggerResult => {
+  const kind =
+    code === 'engine_no_team_membership' || code === 'engine_no_coach'
+      ? 'not_applicable'
+      : code === 'engine_no_recent_rounds' || code === 'engine_below_round_floor'
+        ? 'waiting_for_data'
+        : code === 'engine_disabled'
+          ? 'disabled'
+          : 'permanent_failure';
+  return { success: false, error, code, outcome: { kind, code, message: error } };
+};
+
 type Row = Record<string, unknown>;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -84,6 +105,7 @@ function pendingRound(overrides: Row): Row {
     status: 'completed',
     coachhelm_analyzed_at: null,
     coachhelm_failed_at: null,
+    coachhelm_failure_reason: null,
     ...overrides,
   };
 }
@@ -91,7 +113,7 @@ function pendingRound(overrides: Row): Row {
 beforeEach(() => {
   vi.clearAllMocks();
   postRoundTriggerMock.mockReset();
-  postRoundTriggerMock.mockResolvedValue({ success: true });
+  postRoundTriggerMock.mockResolvedValue(ok());
   logServerErrorMock.mockClear();
   logServerEventMock.mockClear();
   process.env.CRON_SECRET = 'cs';
@@ -313,7 +335,7 @@ describe('GET /api/cron/coachhelm-safety-net', () => {
       // Five concurrent calls consume more than the test deadline before the
       // route considers launching its second chunk.
       vi.setSystemTime(new Date(Date.now() + 250));
-      return { success: true };
+      return ok();
     });
 
     const res = await callGet();
@@ -382,7 +404,7 @@ describe('GET /api/cron/coachhelm-safety-net', () => {
     seed(rounds);
     postRoundTriggerMock.mockImplementation(async () => {
       vi.setSystemTime(new Date(Date.now() + 50_000));
-      return { success: true };
+      return ok();
     });
 
     const res = await callGet();
@@ -412,7 +434,7 @@ describe('GET /api/cron/coachhelm-safety-net', () => {
 
   it('counts structured postRoundTrigger failures as failed', async () => {
     seed([pendingRound({ id: 'r1', player_id: 'p1', created_at: new Date(Date.now() - OLD_ENOUGH_MS).toISOString() })]);
-    postRoundTriggerMock.mockResolvedValueOnce({ success: false, error: 'team disabled coachhelm' });
+    postRoundTriggerMock.mockResolvedValueOnce(failed('team disabled coachhelm'));
 
     const res = await callGet();
     expect(res.status).toBe(200);
@@ -442,11 +464,7 @@ describe('GET /api/cron/coachhelm-safety-net', () => {
 
     it('logs an engine_no_team_membership outcome at warning + skipSentry and counts it as skipped, not failed', async () => {
       seedOnePending();
-      postRoundTriggerMock.mockResolvedValueOnce({
-        success: false,
-        error: 'No active team membership for player',
-        code: 'engine_no_team_membership',
-      });
+      postRoundTriggerMock.mockResolvedValueOnce(failed('No active team membership for player', 'engine_no_team_membership'));
 
       const res = await callGet();
       const body = (await res.json()) as { failed: number; skippedExpected: number };
@@ -462,12 +480,7 @@ describe('GET /api/cron/coachhelm-safety-net', () => {
 
     it('routes an engine_no_recent_rounds outcome to logServerEvent at info, never logServerError', async () => {
       seedOnePending();
-      postRoundTriggerMock.mockResolvedValueOnce({
-        success: false,
-        error:
-          'No completed rounds in the last 90 days yet — insights will populate after the next round',
-        code: 'engine_no_recent_rounds',
-      });
+      postRoundTriggerMock.mockResolvedValueOnce(failed('No completed rounds in the last 90 days yet — insights will populate after the next round', 'engine_no_recent_rounds'));
 
       const res = await callGet();
       const body = (await res.json()) as { failed: number; skippedExpected: number };
