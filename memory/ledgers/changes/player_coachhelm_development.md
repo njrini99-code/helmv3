@@ -27,3 +27,45 @@
 - Verification: every edited file was adversarially re-verified against
   its page's source, twice for the files that failed the first pass.
   typecheck 0, lint 0, build 0.
+
+## 2026-09-23 — #1997 rebase onto main: reconciled two independent grounding implementations
+
+- PR #1997 ("chat publication waits for validation," repair plan §14.10,
+  new `src/lib/coachhelm/v3/chat/verdict.ts`) branched before a separate,
+  already-merged PR (`#2001`, "register a measurement's window date as
+  claim-audit evidence") grew `auditNumericClaims`'s signature by two
+  optional params (`extraSupportedDates`, a coach-timezone-aware
+  conversion) and, in the process, inlined its own `auditResult`/
+  `grounded`/`streamErrored` computation directly in `chat/stream/
+  route.ts` — the exact ad-hoc pattern `verdict.ts`'s own header says it
+  exists to replace, because #2001 had no access to the not-yet-merged
+  `verdict.ts` abstraction.
+- Rebasing #1997 onto main after #2001 merged produced two real
+  conflicts in `route.ts` (plus a mechanical one in the generated
+  `auditNumericClaims`/`collectDates` import list). Resolution: kept
+  #1997's `computeTurnVerdict`-based code as the surviving path (every
+  line downstream of both conflicts already depended on `turnVerdict`/
+  `verdict`, not on `auditResult` — confirming the old boolean pattern
+  was truly dead once `verdict.ts` landed), and DISCARDED main's
+  `auditResult` inline computation and its `onFinish` fallback recompute
+  entirely (that recompute-on-a-possibly-truncated-fragment was flagged
+  in #1997's own commit message as the actual defect the ordered-checks
+  design fixes).
+- To avoid silently losing #2001's newer accuracy, `computeTurnVerdict`
+  (`verdict.ts`) gained the same two optional params
+  (`detailDates`/`timezone`) and threads them into its own
+  `auditNumericClaims` call; the `route.ts` call site now passes
+  `detailDates`/`ctx.timezone` through, matching what the discarded
+  inline code used to pass directly.
+- Verification: `npm run typecheck` (tsc) exit 0; `chat-verdict.test.ts`
+  + `stream/route.test.ts` — 23 passed, 0 failed; broader
+  `npm run test -- --run src/test/coachhelm` — 142 files, 1467 passed, 0
+  failed; `eslint` on touched files — 0 problems. `npm run build`
+  (this feature's `requiredChecks` calls for one, since the touched file
+  is a route handler) could NOT be completed — it failed three times on
+  `ENOSPC: no space left on device` (webpack's persistent cache), a
+  shared-disk exhaustion issue across this machine's worktrees (freeing
+  each failed attempt's own `.next` cache only bought a few more GiB
+  before the next run also filled it), not a defect in this change.
+  Reported honestly rather than claimed; the task owner should re-run
+  `npm run build` once disk headroom is available.
