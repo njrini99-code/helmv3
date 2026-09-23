@@ -54,21 +54,34 @@ vi.mock('@/lib/coachhelm/v3/causality/attribute', () => ({
 // never touching updateCoachWeight/recordInsightOutcome for these rows), not
 // `comparable-attribute.ts`'s own DB logic (see `comparable-attribute.test.ts`
 // for that).
-vi.mock('@/lib/coachhelm/v3/causality/comparable-attribute', () => ({
-  computeComparableAttribution: vi.fn(),
-  writeComparableAttribution: vi.fn(),
-  isShotLevelAttributionMetric: vi.fn(
-    (metricId: string) =>
-      metricId === 'approach_proximity_50_125ft' ||
-      metricId === 'approach_proximity_125_175ft' ||
-      metricId === 'approach_proximity_175_plus_ft',
-  ),
-  // A9 slice 2: real string (not a mock fn) — route.ts compares a written
-  // row's method_version against this constant to split comparable_attributed
-  // vs. comparable_attributed_limited, so the mock must carry the SAME value
-  // production code does.
-  COMPARABLE_OPPORTUNITIES_LIMITED_METHOD_VERSION: 'comparable_opportunities_v1_limited',
-}));
+vi.mock('@/lib/coachhelm/v3/causality/comparable-attribute', async () => {
+  const actual = await vi.importActual<
+    typeof import('@/lib/coachhelm/v3/causality/comparable-attribute')
+  >('@/lib/coachhelm/v3/causality/comparable-attribute');
+  return {
+    computeComparableAttribution: vi.fn(),
+    writeComparableAttribution: vi.fn(),
+    isShotLevelAttributionMetric: vi.fn(
+      (metricId: string) =>
+        metricId === 'approach_proximity_50_125ft' ||
+        metricId === 'approach_proximity_125_175ft' ||
+        metricId === 'approach_proximity_175_plus_ft',
+    ),
+    // A9 slice 2: real string (not a mock fn) — route.ts compares a written
+    // row's method_version against this constant to split comparable_attributed
+    // vs. comparable_attributed_limited, so the mock must carry the SAME value
+    // production code does.
+    COMPARABLE_OPPORTUNITIES_LIMITED_METHOD_VERSION: 'comparable_opportunities_v1_limited',
+    // Package 10: REAL implementations, not hand-rolled mocks — the route's
+    // bulk pre-filter must apply the SAME tie-break
+    // `comparable-attribute.ts`'s own per-candidate backstop uses (see that
+    // module's `resolveInterventionAnchor` doc comment); re-implementing the
+    // choice here would let the two silently drift apart. Already unit-tested
+    // standalone in comparable-attribute.test.ts.
+    resolveInterventionAnchor: actual.resolveInterventionAnchor,
+    INTERVENTION_ACTION_TYPES: actual.INTERVENTION_ACTION_TYPES,
+  };
+});
 
 // Defaults to the real production default (off) — a test only needs to
 // mock a `true` return when it's specifically exercising the A9 slice 1 path.
@@ -83,6 +96,7 @@ import {
   computeComparableAttribution,
   writeComparableAttribution,
   COMPARABLE_OPPORTUNITIES_LIMITED_METHOD_VERSION,
+  INTERVENTION_ACTION_TYPES,
 } from '@/lib/coachhelm/v3/causality/comparable-attribute';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { isFlagEnabled } from '@/lib/flags';
@@ -249,6 +263,18 @@ interface ClientOpts {
   /** Force the bulk exposure pre-filter fetch (`.in()` over the page's
    *  shot-level candidate ids) to error. */
   exposureBulkFetchError?: { message: string };
+  /**
+   * Package 10: map of `insight_id` -> its real first qualifying-action
+   * `created_at` ISO string, backing the cron's per-page bulk
+   * `golf_insight_action` pre-filter fetch (mirrors `exposures`). Defaults
+   * to `{}` (no candidate has a qualifying action) so every pre-existing
+   * exposure-anchored test above keeps its old behavior unchanged without
+   * passing this option.
+   */
+  actions?: Record<string, string>;
+  /** Force the bulk action pre-filter fetch (`.in()` over the page's
+   *  shot-level candidate ids) to error — mirrors `exposureBulkFetchError`. */
+  actionBulkFetchError?: { message: string };
 }
 
 function makeClient(rows: FixtureInsight[], opts: ClientOpts = {}) {
@@ -279,6 +305,31 @@ function makeClient(rows: FixtureInsight[], opts: ClientOpts = {}) {
       const matched = exposureRows
         .filter((r) => exposureQueriedIds.includes(r.insight_id))
         .sort((a, b) => a.shown_at.localeCompare(b.shown_at));
+      return Promise.resolve({ data: matched.slice(from, to + 1), error: null });
+    }),
+  };
+  // Package 10: mirrors exposureBuilder above for `golf_insight_action`.
+  // Two `.in()` calls chain in the route (`insight_id`, then `action_type`)
+  // — only the first is meaningful for filtering the fixture rows here.
+  const actionRows = Object.entries(opts.actions ?? {}).map(([insight_id, created_at]) => ({
+    insight_id,
+    created_at,
+  }));
+  let actionQueriedIds: string[] = [];
+  const actionBuilder = {
+    select: vi.fn().mockReturnThis(),
+    in: vi.fn((col: string, values: string[]) => {
+      if (col === 'insight_id') actionQueriedIds = values;
+      return actionBuilder;
+    }),
+    order: vi.fn().mockReturnThis(),
+    range: vi.fn((from: number, to: number) => {
+      if (opts.actionBulkFetchError) {
+        return Promise.resolve({ data: null, error: opts.actionBulkFetchError });
+      }
+      const matched = actionRows
+        .filter((r) => actionQueriedIds.includes(r.insight_id))
+        .sort((a, b) => a.created_at.localeCompare(b.created_at));
       return Promise.resolve({ data: matched.slice(from, to + 1), error: null });
     }),
   };
@@ -335,10 +386,11 @@ function makeClient(rows: FixtureInsight[], opts: ClientOpts = {}) {
       if (table === 'golf_coachhelm_coach_weights') return weightBuilder;
       if (table === 'golf_insight_outcome') return outcomeBuilder;
       if (table === 'golf_insight_exposure') return exposureBuilder;
+      if (table === 'golf_insight_action') return actionBuilder;
       throw new Error(`Unexpected table: ${table}`);
     }),
   } as unknown as ReturnType<typeof createAdminClient>;
-  return { client, calls, weightCalls, attributionBuilder, attributionInserts, outcomeCalls };
+  return { client, calls, weightCalls, attributionBuilder, attributionInserts, outcomeCalls, actionBuilder };
 }
 
 function authedRequest(): NextRequest {
@@ -980,6 +1032,110 @@ describe('causality-attribute cron A9 slice 1: comparable-opportunity attributio
     expect(errorCall).toBeDefined();
   });
 
+  it('Package 10: an action-only candidate (no exposure row at all) reaches computeComparableAttribution instead of being dropped by the old exposure-only pre-filter', async () => {
+    isFlagEnabledMock.mockReturnValue(true);
+    computeComparableAttributionMock.mockResolvedValue({ ok: false, reason: 'insufficient-evidence' });
+    const rows = [fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } })];
+    const { client } = makeClient(rows, {
+      exposures: {}, // no exposure row at all
+      actions: { 'insight-1': WINDOW_CLOSED_IN_GRACE }, // but a qualifying action exists
+    });
+    createAdminMock.mockReturnValue(client);
+
+    const res = await POST(authedRequest());
+    const summary = await res.json();
+
+    expect(summary.comparable_no_exposure_record).toBe(0);
+    expect(summary.considered).toBe(1);
+    expect(computeComparableAttributionMock).toHaveBeenCalledWith(
+      client,
+      expect.objectContaining({ insight_id: 'insight-1' }),
+    );
+  });
+
+  it('Package 10: the follow-up-window pre-filter check uses the ACTION anchor timestamp, not the (later) exposure timestamp, when both exist', async () => {
+    isFlagEnabledMock.mockReturnValue(true);
+    computeComparableAttributionMock.mockResolvedValue({ ok: false, reason: 'insufficient-evidence' });
+    const rows = [fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } })];
+    const { client } = makeClient(rows, {
+      // Exposure shown only 3 days ago — if the pre-filter used this
+      // timestamp, the 21-day follow-up window would still be open and the
+      // candidate would be dropped as comparable_follow_up_open.
+      exposures: { 'insight-1': new Date(Date.now() - 3 * 86_400_000).toISOString() },
+      // But a qualifying action happened long enough ago that ITS follow-up
+      // window has already closed (within the retry grace period).
+      actions: { 'insight-1': WINDOW_CLOSED_IN_GRACE },
+    });
+    createAdminMock.mockReturnValue(client);
+
+    const res = await POST(authedRequest());
+    const summary = await res.json();
+
+    expect(summary.comparable_follow_up_open).toBe(0);
+    expect(computeComparableAttributionMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('Package 10: a bulk action-fetch error is logged distinctly, counted under comparable_action_read_failed, and the page never reaches computeComparableAttribution — mirrors the exposure bulk-fetch-error test above', async () => {
+    isFlagEnabledMock.mockReturnValue(true);
+    const rows = [fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } })];
+    const { client } = makeClient(rows, {
+      exposures: { 'insight-1': WINDOW_CLOSED_IN_GRACE },
+      actionBulkFetchError: { message: 'connection reset' },
+    });
+    createAdminMock.mockReturnValue(client);
+
+    const res = await POST(authedRequest());
+    const summary = await res.json();
+
+    expect(summary.comparable_action_read_failed).toBe(1);
+    // Fails closed for the whole page, same as exposureBulkFetchFailed —
+    // never guesses "no action, fall back to exposure" on a real read error.
+    expect(computeComparableAttributionMock).not.toHaveBeenCalled();
+    const errorCall = logServerErrorMock.mock.calls.find(
+      (c) =>
+        (c[1] as { action?: string } | undefined)?.action ===
+        'cron.v3.causality.comparable-action-bulk-fetch',
+    );
+    expect(errorCall).toBeDefined();
+  });
+
+  it('Package 10: bulk pre-filter queries golf_insight_action filtered to exactly INTERVENTION_ACTION_TYPES', async () => {
+    isFlagEnabledMock.mockReturnValue(true);
+    computeComparableAttributionMock.mockResolvedValue({ ok: false, reason: 'insufficient-evidence' });
+    const rows = [fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } })];
+    const { client, actionBuilder } = makeClient(rows, {
+      exposures: { 'insight-1': WINDOW_CLOSED_IN_GRACE },
+    });
+    createAdminMock.mockReturnValue(client);
+
+    await POST(authedRequest());
+
+    expect(actionBuilder.in).toHaveBeenCalledWith('action_type', INTERVENTION_ACTION_TYPES);
+  });
+
+  it('backstop: computeComparableAttribution itself reporting action-read-failed is logged distinctly and counted, not folded into no-exposure-record — mirrors the exposure-read-failed backstop test below', async () => {
+    isFlagEnabledMock.mockReturnValue(true);
+    computeComparableAttributionMock.mockResolvedValue({
+      ok: false,
+      reason: 'action-read-failed',
+      error: 'statement timeout',
+    });
+    const rows = [fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } })];
+    const { client } = makeClient(rows, { exposures: { 'insight-1': WINDOW_CLOSED_IN_GRACE } });
+    createAdminMock.mockReturnValue(client);
+
+    const res = await POST(authedRequest());
+    const summary = await res.json();
+
+    expect(summary.comparable_action_read_failed).toBe(1);
+    expect(summary.comparable_no_exposure_record).toBe(0);
+    const errorCall = logServerErrorMock.mock.calls.find(
+      (c) =>
+        (c[1] as { action?: string } | undefined)?.action === 'cron.v3.causality.comparable-action-read',
+    );
+    expect(errorCall).toBeDefined();
+  });
+
   it('backstop: computeComparableAttribution itself reporting exposure-read-failed is logged distinctly and counted, not folded into no-exposure-record', async () => {
     isFlagEnabledMock.mockReturnValue(true);
     computeComparableAttributionMock.mockResolvedValue({
@@ -1056,6 +1212,7 @@ describe('causality-attribute cron A9 slice 1: comparable-opportunity attributio
       row: {
         insight_id: 'insight-1',
         intervention_at: '2026-08-01T00:00:00.000Z',
+        anchor_kind: 'exposure',
         target_metric_id: SHOT_LEVEL_METRIC,
         baseline_value: 22.4,
         post_value: 18.1,
@@ -1088,6 +1245,7 @@ describe('causality-attribute cron A9 slice 1: comparable-opportunity attributio
       row: {
         insight_id: 'insight-1',
         intervention_at: '2026-08-01T00:00:00.000Z',
+        anchor_kind: 'exposure',
         target_metric_id: SHOT_LEVEL_METRIC,
         baseline_value: 22.4,
         post_value: 18.1,
@@ -1145,6 +1303,7 @@ describe('causality-attribute cron A9 slice 1: comparable-opportunity attributio
       row: {
         insight_id: 'insight-1',
         intervention_at: '2026-08-01T00:00:00.000Z',
+        anchor_kind: 'exposure',
         target_metric_id: SHOT_LEVEL_METRIC,
         baseline_value: 22.4,
         post_value: 18.1,
@@ -1178,6 +1337,7 @@ describe('causality-attribute cron A9 slice 1: comparable-opportunity attributio
       row: {
         insight_id: 'insight-1',
         intervention_at: '2026-08-01T00:00:00.000Z',
+        anchor_kind: 'exposure',
         target_metric_id: SHOT_LEVEL_METRIC,
         baseline_value: 22.4,
         post_value: 18.1,

@@ -36,7 +36,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | --- | --- | --- | --- | --- |
 | `POLICY` | 19 | 2 | 6 | 0 |
 | `AGENT_SKILL` | 90 | 0 | 7 | 0 |
-| `CURRENT_FEATURE` | 27 | 27 | 12 | 0 |
+| `CURRENT_FEATURE` | 27 | 27 | 13 | 0 |
 | `REFERENCE` | 52 | 15 | 19 | 0 |
 | `GENERATED_TRUTH` | 20 | 3 | 6 | 4 |
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 0 |
@@ -192,7 +192,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/features/ios-native-shell.md` | current | yes | - | - | - |
 | `memory/features/observability-sentry.md` | current | yes | - | - | - |
 | `memory/features/observability-supabase.md` | current | yes | - | yes | - |
-| `memory/features/player-coachhelm-development.md` | current | yes | - | - | - |
+| `memory/features/player-coachhelm-development.md` | current | yes | - | yes | - |
 | `memory/features/player-hub.md` | current | yes | - | yes | - |
 | `memory/features/qualifiers.md` | current | yes | - | yes | - |
 | `memory/features/recruiting.md` | current | yes | - | - | - |

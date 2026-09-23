@@ -4,16 +4,22 @@ import { computeDistanceProfile } from '@/lib/coachhelm/v3/metrics/distance-prof
 import { computeParOpportunities } from '@/lib/coachhelm/v3/metrics/par-opportunities';
 import {
   attributeSequence,
+  computeSequenceAttribution,
   type SequenceAttributionResult,
   type SequenceEvent,
 } from '@/lib/coachhelm/v3/metrics/sequence-attribution';
 import type { MetricResult } from '@/lib/coachhelm/v3/metrics/types';
 import {
+  applyMaterialChangeSuppression,
   groupIssues,
+  issueToRankableInsight,
   shotClaimId,
+  type ActiveIntervention,
+  type Issue,
   type IssueOrigin,
   type IssueSourcePacket,
 } from '@/lib/coachhelm/v3/ranking/situational-ranking';
+import { rankInsights } from '@/lib/coachhelm/v3/ranking/score';
 
 /**
  * A6 slice 1 (repair-plan addendum §13) — issue grouping and
@@ -195,6 +201,73 @@ function syntheticPacket(overrides: Partial<IssueSourcePacket> & Pick<IssueSourc
     confidence: null,
     ...overrides,
   };
+}
+
+/** A6 slice 2's corrected sequence adapter — gates `eligible` on the
+ *  event's KIND clearing the #2020 rollup's scope-wide floor
+ *  (`computeSequenceAttribution`'s `sequence_event_strokes_gained` row
+ *  being `status: 'supported'`), never on the single event's own
+ *  `measuredContribution !== null` alone (slice 1's `sequencePacketFromEvent`
+ *  above, which this fixture deliberately does NOT use, would let one
+ *  hole's single occurrence found or own an issue with no population
+ *  behind it). The packet's own `sourceShotIds`/`strokesImpact` still
+ *  describe this ONE occurrence — only eligibility is gated scope-wide;
+ *  see `situational-ranking.ts`'s module doc comment, "Slice 2
+ *  additions". `evidenceKey` is kind-level (not shot/hole-specific) so
+ *  material-change suppression recognizes "the same pattern" across a
+ *  re-run with different underlying shots. */
+function sequencePacketFromRollupGatedEvent(
+  result: SequenceAttributionResult,
+  event: SequenceEvent,
+  kindRow: MetricResult,
+): IssueSourcePacket {
+  const sourceShotIds = event.shotNumbers.map((n) =>
+    shotClaimId({ round_id: result.round_id, hole_number: result.hole_number, shot_number: n }),
+  );
+  return {
+    claimId: `sequence:${event.kind}:${result.round_id}:${result.hole_number}:${event.shotNumbers.join('-')}`,
+    origin: 'sequence',
+    label: event.kind,
+    sourceShotIds,
+    eligible: kindRow.status === 'supported',
+    strokesImpact: event.measuredContribution,
+    confidence: null,
+    evidenceKey: `sequence:${event.kind}`,
+  };
+}
+
+/** A minimal par-4 hole that always yields exactly one resolved
+ *  `approach_to_recovery` event (tee→fairway, approach-miss→rough,
+ *  recovery→green, single putt — mirrors A4's own `CONSERVATION_HOLE`
+ *  shape in `sequence-attribution.test.ts`). Used to build a
+ *  multi-round, multi-hole fixture large enough to clear the #2020
+ *  rollup's `SEQUENCE_MIN_EVENTS`/`SEQUENCE_MIN_ROUNDS` floors for that
+ *  one kind — filler evidence, never itself appearing in any packet's
+ *  `sourceShotIds` below. */
+function recoveryHole(round_id: string, hole_number: number): { hole: HoleContext; facts: ShotFact[] } {
+  const facts: ShotFact[] = [
+    shot({
+      round_id, hole_number, shot_number: 1, shot_type: 'tee',
+      lie_before: 'tee', distance_to_hole_before_feet: 1500,
+      lie_after: 'fairway', distance_to_hole_after_feet: 300, result: 'fairway',
+    }),
+    shot({
+      round_id, hole_number, shot_number: 2, shot_type: 'approach',
+      lie_before: 'fairway', distance_to_hole_before_feet: 300,
+      lie_after: 'rough', distance_to_hole_after_feet: 60, result: 'rough',
+    }),
+    shot({
+      round_id, hole_number, shot_number: 3, shot_type: 'around_green',
+      lie_before: 'rough', distance_to_hole_before_feet: 60,
+      lie_after: 'green', distance_to_hole_after_feet: 5, result: 'green',
+    }),
+    shot({
+      round_id, hole_number, shot_number: 4, shot_type: 'putting', club_type: 'putter', intent: 'putt',
+      lie_before: 'green', distance_to_hole_before_feet: 5,
+      lie_after: 'hole', distance_to_hole_after_feet: 0, result: 'hole', putt_made: true,
+    }),
+  ];
+  return { hole: hole({ round_id, hole_number, par: 4, total_strokes: 4, putts: 1 }), facts };
 }
 
 /** Attaches the distance/lie detail `par5Play`'s own fixture omits (A3
@@ -657,6 +730,249 @@ describe('groupIssues — tie-breaking and edge cases', () => {
       const result = groupIssues(permuted);
       expect(result).toEqual(baseline);
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// A6 slice 2 (repair-plan addendum §13). Builds on slice 1's own fixture
+// pattern (real A2/A3 compute functions + a real A4 result) but adds the
+// #2020 rollup (`computeSequenceAttribution`) as the sequence packet's
+// ELIGIBILITY gate, and exercises the two genuinely new slice-2 pieces:
+// `Issue.evidenceKey` / `applyMaterialChangeSuppression`, and
+// `issueToRankableInsight`. Deliberately a SEPARATE fixture from slice 1's
+// (different round/hole ids throughout) so slice 1's own pinned tests are
+// never touched.
+// ---------------------------------------------------------------------------
+describe('groupIssues — par, distance, and sequence via the #2020 rollup-gated eligibility gate (A6 slice 2)', () => {
+  const ROUND = 'seq-rollup-r1';
+  const HOLE = 15;
+  const COURSE = 'course-rollup';
+
+  // Same par-5 shape as slice 1's `play` (greenShotNumber=3, putts=2),
+  // on its own round/hole so this fixture is fully independent.
+  const play = par5Play({ round_id: ROUND, course_id: COURSE, hole_number: HOLE, greenShotNumber: 3, putts: 2 });
+  const extraPlay1 = par5Play({ round_id: 'seq-rollup-r1b', course_id: COURSE, hole_number: HOLE, greenShotNumber: 3, putts: 2 });
+  const extraPlay2 = par5Play({ round_id: 'seq-rollup-r1c', course_id: COURSE, hole_number: HOLE, greenShotNumber: 3, putts: 2 });
+  const parRows = computeParOpportunities(
+    [...play.facts, ...extraPlay1.facts, ...extraPlay2.facts],
+    [play.hole, extraPlay1.hole, extraPlay2.hole],
+    scope(),
+  );
+  const opportunityRow = parRows.find((r) => r.metricId === 'par5_regulation_opportunity_rate')!;
+
+  const approach1 = shotClaimId({ round_id: ROUND, hole_number: HOLE, shot_number: 2 });
+  const approach2 = shotClaimId({ round_id: ROUND, hole_number: HOLE, shot_number: 3 });
+
+  const fillers = [
+    ...[101, 102, 103, 104].map((n) => fillerApproachShot(ROUND, n)),
+    ...[101, 102, 103].map((n) => fillerApproachShot('seq-rollup-r1b', n)),
+    ...[101, 102].map((n) => fillerApproachShot('seq-rollup-r1c', n)),
+  ];
+  const distanceRows = computeDistanceProfile(
+    [withSequenceDetail(play.facts).find((f) => f.shot_number === 2)!, ...fillers],
+    scope(),
+    [play.hole, extraPlay1.hole, extraPlay2.hole],
+  );
+  const greenHitRow = distanceRows.find((r) => r.metricId === 'approach_green_hit_rate' && r.dimensions.band === '50_125ft')!;
+
+  // The anchor event, resolved via the real per-hole `attributeSequence` —
+  // this ONE occurrence's own shots/impact are what the packet describes.
+  const sequenceFacts = withSequenceDetail(play.facts);
+  const sequenceResult = attributeSequence(sequenceFacts, play.hole, scope());
+  const approachEvent = sequenceResult.events.find((e) => e.kind === 'approach_to_recovery')!;
+
+  // 9 filler `approach_to_recovery` events (never appearing in any
+  // packet's own `sourceShotIds`) across 2 MORE distinct rounds, so the
+  // KIND clears the #2020 rollup's SEQUENCE_MIN_EVENTS(10)/
+  // SEQUENCE_MIN_ROUNDS(3) floor: anchor (1, round seq-rollup-r1) + 3 more
+  // in seq-rollup-r1 + 3 in seq-rollup-r2 + 3 in seq-rollup-r3 = 10 events
+  // / 3 rounds — exactly at both floors.
+  const recoveryFillers = [
+    recoveryHole(ROUND, 16), recoveryHole(ROUND, 17), recoveryHole(ROUND, 18),
+    recoveryHole('seq-rollup-r2', 15), recoveryHole('seq-rollup-r2', 16), recoveryHole('seq-rollup-r2', 17),
+    recoveryHole('seq-rollup-r3', 15), recoveryHole('seq-rollup-r3', 16), recoveryHole('seq-rollup-r3', 17),
+  ];
+  const sequenceRows = computeSequenceAttribution(
+    [...sequenceFacts, ...recoveryFillers.flatMap((f) => f.facts)],
+    [play.hole, ...recoveryFillers.map((f) => f.hole)],
+    scope(),
+  );
+  const approachToRecoveryRow = sequenceRows.find(
+    (r) => r.metricId === 'sequence_event_strokes_gained' && r.dimensions.event_kind === 'approach_to_recovery',
+  )!;
+
+  const parPacket: IssueSourcePacket = {
+    ...parPacketFromRow(opportunityRow, [approach1, approach2]),
+    evidenceKey: `par:${opportunityRow.metricId}:${COURSE}:${HOLE}`,
+  };
+  const distancePacket: IssueSourcePacket = {
+    ...distancePacketFromRow(greenHitRow, [approach1]),
+    evidenceKey: `distance:${greenHitRow.metricId}:${greenHitRow.dimensions.band}`,
+  };
+  const sequencePacket = sequencePacketFromRollupGatedEvent(sequenceResult, approachEvent, approachToRecoveryRow);
+
+  const allPackets = [parPacket, distancePacket, sequencePacket];
+
+  it('clears the rollup floor as a precondition, then groups all three into one issue', () => {
+    expect(opportunityRow.status).toBe('supported');
+    expect(approachToRecoveryRow.status).toBe('supported');
+    expect(approachToRecoveryRow.denominator).toBe(10);
+    expect(approachToRecoveryRow.distinctRounds).toBe(3);
+
+    const issues = groupIssues(allPackets);
+    expect(issues).toHaveLength(1);
+    const [issue] = issues;
+    expect(new Set(issue!.claims.map((c) => c.claimId))).toEqual(
+      new Set([parPacket.claimId, distancePacket.claimId, sequencePacket.claimId]),
+    );
+    // Gated by the rollup, but still describes only THIS occurrence — not
+    // every shot behind the rollup's 10-event population.
+    expect(issue!.sourceShotIds.sort()).toEqual([approach1, approach2].sort());
+  });
+
+  it('the rollup gates ELIGIBILITY only — a kind that has NOT cleared the floor never owns or joins', () => {
+    const unclearedKindRow: MetricResult = { ...approachToRecoveryRow, status: 'insufficient' };
+    const ungatedPacket = sequencePacketFromRollupGatedEvent(sequenceResult, approachEvent, unclearedKindRow);
+    const issues = groupIssues([parPacket, distancePacket, ungatedPacket]);
+    // Still one issue (par+distance still overlap and group), but the
+    // sequence claim never appears in it.
+    expect(issues).toHaveLength(1);
+    expect(issues[0]!.claims.map((c) => c.claimId)).not.toContain(ungatedPacket.claimId);
+    // With sequence gone, neither par nor distance computes an impact
+    // number at all — the group has no owner.
+    expect(issues[0]!.impactOwnership.ownerClaimId).toBeNull();
+  });
+
+  it('the grouped issue carries a stable, kind-level evidenceKey — distinct from its shot-set-addressed id', () => {
+    const issues = groupIssues(allPackets);
+    const issue = issues[0]!;
+    expect(issue.evidenceKey).toBe('sequence:approach_to_recovery');
+    expect(issue.evidenceKey).not.toBe(issue.id);
+    // The owner is the sequence claim (the only real impact number) —
+    // evidenceKey matches ITS evidenceKey, not par's or distance's.
+    expect(issue.impactOwnership.ownerClaimId).toBe(sequencePacket.claimId);
+  });
+
+  it('a group with no impact owner has evidenceKey: null', () => {
+    // par and distance alone: neither computes a strokes-impact number.
+    const issues = groupIssues([parPacket, distancePacket]);
+    expect(issues[0]!.impactOwnership.ownerClaimId).toBeNull();
+    expect(issues[0]!.evidenceKey).toBeNull();
+  });
+
+  it('falls back to an origin:label evidenceKey when a packet omits one', () => {
+    const shotId = shotClaimId({ round_id: 'seq-rollup-fallback', hole_number: 1, shot_number: 1 });
+    const packet = syntheticPacket({ claimId: 'fallback-1', origin: 'hypothesis', sourceShotIds: [shotId], strokesImpact: -0.4 });
+    const issue = groupIssues([packet])[0]!;
+    expect(issue.evidenceKey).toBe('hypothesis:fallback-1'); // label defaults to claimId in syntheticPacket
+  });
+});
+
+describe('applyMaterialChangeSuppression — A6 slice 2 (rev-2020-style floor-boundary discipline)', () => {
+  function issueWithImpact(claimId: string, evidenceKey: string, strokesImpact: number): Issue {
+    const shotId = shotClaimId({ round_id: `mc-${claimId}`, hole_number: 1, shot_number: 1 });
+    const packet = syntheticPacket({ claimId, origin: 'sequence', sourceShotIds: [shotId], strokesImpact, evidenceKey });
+    return groupIssues([packet])[0]!;
+  }
+
+  it('suppresses an unchanged issue (0% change from baseline) — the issue itself is never dropped', () => {
+    const issue = issueWithImpact('c1', 'sequence:approach_to_recovery', -1.0);
+    const result = applyMaterialChangeSuppression([issue], [{ evidenceKey: 'sequence:approach_to_recovery', baselineImpactMagnitude: 1.0 }]);
+    expect(result).toHaveLength(1);
+    expect(result[0]!.issue).toBe(issue);
+    expect(result[0]!.suppressed).toBe('active_intervention_unchanged');
+  });
+
+  it('does NOT resurface just below the threshold (49% worse)', () => {
+    const issue = issueWithImpact('c2', 'sequence:approach_to_recovery', -1.49);
+    const result = applyMaterialChangeSuppression([issue], [{ evidenceKey: 'sequence:approach_to_recovery', baselineImpactMagnitude: 1.0 }]);
+    expect(result[0]!.suppressed).toBe('active_intervention_unchanged');
+  });
+
+  it('resurfaces exactly AT the threshold (50% worse) — the boundary itself', () => {
+    const issue = issueWithImpact('c3', 'sequence:approach_to_recovery', -1.5);
+    const result = applyMaterialChangeSuppression([issue], [{ evidenceKey: 'sequence:approach_to_recovery', baselineImpactMagnitude: 1.0 }]);
+    expect(result[0]!.suppressed).toBeNull();
+  });
+
+  it('resurfaces well past the threshold', () => {
+    const issue = issueWithImpact('c4', 'sequence:approach_to_recovery', -3.0);
+    const result = applyMaterialChangeSuppression([issue], [{ evidenceKey: 'sequence:approach_to_recovery', baselineImpactMagnitude: 1.0 }]);
+    expect(result[0]!.suppressed).toBeNull();
+  });
+
+  it('never suppresses when no active intervention matches this evidenceKey — a genuinely different pattern always surfaces', () => {
+    const issue = issueWithImpact('c5', 'par:unrelated_metric:course-z:9', -5.0);
+    const interventions: ActiveIntervention[] = [{ evidenceKey: 'sequence:approach_to_recovery', baselineImpactMagnitude: 1.0 }];
+    const result = applyMaterialChangeSuppression([issue], interventions);
+    expect(result[0]!.suppressed).toBeNull();
+  });
+
+  it('never suppresses an issue with no impact owner (evidenceKey: null)', () => {
+    const shotId = shotClaimId({ round_id: 'mc-strength', hole_number: 1, shot_number: 1 });
+    const packet = syntheticPacket({ claimId: 'strength-1', origin: 'par', sourceShotIds: [shotId], strokesImpact: 2.0 });
+    const issue = groupIssues([packet])[0]!;
+    expect(issue.evidenceKey).toBeNull();
+    const result = applyMaterialChangeSuppression([issue], [{ evidenceKey: 'par:strength-1', baselineImpactMagnitude: 1.0 }]);
+    expect(result[0]!.suppressed).toBeNull();
+  });
+
+  it('a zero baseline treats any real current magnitude as material — resurfaces rather than dividing by zero', () => {
+    const issue = issueWithImpact('c6', 'sequence:zero-baseline-case', -0.01);
+    const result = applyMaterialChangeSuppression([issue], [{ evidenceKey: 'sequence:zero-baseline-case', baselineImpactMagnitude: 0 }]);
+    expect(result[0]!.suppressed).toBeNull();
+  });
+
+  it('never drops an issue from the returned list, suppressed or not, and preserves input order', () => {
+    const a = issueWithImpact('c7a', 'k7a', -1.0);
+    const b = issueWithImpact('c7b', 'k7b', -9.0); // no matching intervention — surfaces
+    const result = applyMaterialChangeSuppression([a, b], [{ evidenceKey: 'k7a', baselineImpactMagnitude: 1.0 }]);
+    expect(result).toHaveLength(2);
+    expect(result.map((r) => r.issue.id)).toEqual([a.id, b.id]);
+    expect(result[0]!.suppressed).toBe('active_intervention_unchanged');
+    expect(result[1]!.suppressed).toBeNull();
+  });
+});
+
+describe('issueToRankableInsight + rankInsights — A6 slice 2 ranking-input unification', () => {
+  it('a par/distance/sequence trio (one issue) yields exactly ONE ranked entry, not one per claim', () => {
+    const groupedShotId1 = shotClaimId({ round_id: 'rank-r1', hole_number: 7, shot_number: 2 });
+    const groupedShotId2 = shotClaimId({ round_id: 'rank-r1', hole_number: 7, shot_number: 3 });
+    const trio = [
+      syntheticPacket({ claimId: 'rank-par', origin: 'par', sourceShotIds: [groupedShotId1, groupedShotId2], strokesImpact: null }),
+      syntheticPacket({ claimId: 'rank-distance', origin: 'distance', sourceShotIds: [groupedShotId1], strokesImpact: null }),
+      syntheticPacket({
+        claimId: 'rank-sequence', origin: 'sequence', sourceShotIds: [groupedShotId1, groupedShotId2],
+        strokesImpact: -1.2, confidence: 0.8, evidenceKey: 'sequence:approach_to_recovery',
+      }),
+    ];
+    const standaloneA = syntheticPacket({
+      claimId: 'rank-standalone-a', origin: 'hypothesis',
+      sourceShotIds: [shotClaimId({ round_id: 'rank-r2', hole_number: 1, shot_number: 1 })],
+      strokesImpact: -0.3, confidence: 0.5,
+    });
+    const standaloneB = syntheticPacket({
+      claimId: 'rank-standalone-b', origin: 'hypothesis',
+      sourceShotIds: [shotClaimId({ round_id: 'rank-r3', hole_number: 1, shot_number: 1 })],
+      strokesImpact: -5.0, confidence: 0.9,
+    });
+
+    const issues = groupIssues([...trio, standaloneA, standaloneB]);
+    expect(issues).toHaveLength(3); // the trio's one issue + 2 standalones — never 5
+
+    const ranked = rankInsights(issues.map(issueToRankableInsight), {});
+    expect(ranked).toHaveLength(issues.length);
+
+    // The trio's issue ranks by its owner's real -1.2 impact, never a
+    // fabricated 0/null from par or distance's non-owning claims.
+    const trioIssue = issues.find((i) => i.claims.length > 1)!;
+    const trioRanked = issueToRankableInsight(trioIssue);
+    expect(trioRanked.strokes_impact).toBe(-1.2);
+    expect(trioRanked.confidence).toBe(0.8);
+    expect(trioRanked.sample_n).toBe(2);
+
+    // standaloneB's -5.0 impact outranks everything else in the list.
+    expect(ranked[0]!.strokes_impact).toBe(-5.0);
   });
 });
 

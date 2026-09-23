@@ -58,6 +58,7 @@ import {
   acceptFocusArea,
   declineFocusArea,
 } from '@/app/golf/actions/development';
+import { logFocusAreaPracticeSession } from '@/app/golf/actions/focus-area-practice-log';
 import { useToast } from '@/components/ui/sonner';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from '@/components/ui/drawer';
 
@@ -73,6 +74,14 @@ export interface DevelopmentDrillProps {
   standingByMetric?: Record<string, PlayerStanding>;
   causalRelationships?: CausalRelationshipRow[];
   achievedGoals?: FairwayGoalCardData[];
+  /**
+   * A8 slice 3 — server-computed `isFlagEnabled('coachhelm_focus_area_practice_log')`
+   * (that check is server-only and cannot run in this client component).
+   * Gates whether the active FocusAreaCards get a "Log practice" trigger at
+   * all; false/omitted renders exactly what this component rendered before
+   * slice 3. Default false.
+   */
+  practiceLogEnabled?: boolean;
 }
 
 /* ── Log-progress drawer — ported verbatim from FairwayMyDevelopment. ────── */
@@ -346,6 +355,7 @@ export function DevelopmentDrill({
   standingByMetric = {},
   causalRelationships = [],
   achievedGoals = [],
+  practiceLogEnabled = false,
 }: DevelopmentDrillProps) {
   const { home } = useStage();
   const router = useRouter();
@@ -423,6 +433,21 @@ export function DevelopmentDrill({
   const handleLogProgress = useCallback((focusArea: FocusAreaCardData) => {
     setLogState({ focusArea });
   }, []);
+
+  // A8 slice 3: the card owns the toast + optimistic bump — this just
+  // performs the write and refreshes on success (mirrors handleRecordOutcome
+  // on the coach side, PlayersGridView.tsx).
+  const handleLogPracticeSession = useCallback(
+    async (
+      focusArea: FocusAreaCardData,
+      input: { clientRequestId: string; drillId?: string | null; reps?: number | null; note?: string | null },
+    ) => {
+      const res = await logFocusAreaPracticeSession({ focusAreaId: focusArea.id, ...input });
+      if (res.success) router.refresh();
+      return res;
+    },
+    [router],
+  );
 
   const handleReopen = useCallback(
     (focusArea: FocusAreaCardData) => {
@@ -605,6 +630,7 @@ export function DevelopmentDrill({
                           onComplete={handleComplete}
                           completing={completingId === fa.id}
                           standing={st}
+                          onLogPracticeSession={practiceLogEnabled ? handleLogPracticeSession : undefined}
                         />
                       );
                     })}

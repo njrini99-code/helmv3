@@ -12,7 +12,7 @@
 > reference entirely is a ratchet-down — re-run
 > `node scripts/check-doc-schema-drift.mjs --update` after.
 
-<!-- schema-drift-absent: golf_round_holes -->
+<!-- schema-drift-absent: golf_round_holes, golf_round_recap_locks, golf_round_recap_provenance -->
 
 ## Status
 
@@ -634,6 +634,87 @@ reload (`lieFromShotResult`) restore position from.
   back to "the player") both as a fact and in the third-person rule. Until
   2026-09-02 the prompt named nobody and offered "Nick" as an example, and the
   model copied the example into a Shenandoah player's stored recap.
+- (2026-09-23, Package 8) `round-recap.ts` now takes a per-round, per-revision
+  single-flight lock BEFORE the LLM call, gated behind
+  `coachhelm_recap_single_flight_lock` (default off — with the flag off,
+  behavior is byte-for-byte what it was before, only migration
+  `20260923080000`'s cheap `ai_recap IS NULL` guard applies). Migration
+  `20260923100000` adds `golf_round_recap_locks` — composite PK `(round_id,
+  revision, kind)`, `holder_token`, `expires_at` — plus `claim_round_recap_lock`/
+  `release_round_recap_lock` (service-role only, zero authenticated access —
+  unlike `golf_round_recap_provenance`, which authenticated may read). No
+  "recap revision" concept exists anywhere in this codebase today (checked
+  `golf_rounds`' own columns and v2 insights' unrelated `evidenceRevisionKey`
+  maturation mechanism); the lock hardcodes `ROUND_RECAP_LOCK_REVISION = 1`
+  with the revision column present in the schema ahead of that need, for a
+  future regenerate flow. The claim is an atomic lease-table `INSERT ... ON
+  CONFLICT ... WHERE expires_at < now() RETURNING`, not
+  `pg_advisory_xact_lock`, because the LLM call spans a network round-trip
+  outside any one short DB transaction — same reasoning as
+  `20260821043500_single_flight_round_submit.sql`'s `FOR UPDATE NOWAIT`. A
+  losing caller polls briefly (`RECAP_LOCK_WAIT_MS`) for the winner's
+  persisted result before trying one reclaim (covers a crashed holder) and
+  otherwise fails closed — no LLM call, and deliberately no deterministic
+  persist either, since persisting would win the RPC's own `ai_recap IS NULL`
+  race against a winner still genuinely in flight, discarding its paid LLM
+  call. The migration is NOT applied as of this entry; it ships in the PR for
+  review.
+- (2026-09-23, same PR as Package 8) The lock table was generalized in place
+  — before this landed as a separate PR — to an explicit `kind` column
+  (`'recap' | 'round_review_narrative'`) folded into the primary key, so a
+  second feature (round-review narrative, below) can share the same lease
+  table without colliding with a live recap lock on the same `(round_id,
+  revision)`. `claim_round_recap_lock`/`release_round_recap_lock` both take
+  `kind` as a required argument now. The claim/release/wait helpers moved
+  OUT of `round-recap.ts` (a `'use server'` file, where every export becomes
+  a client-callable endpoint) into a shared server-only lib module that both
+  `round-recap.ts` and the new `round-review-narrative.ts` action import —
+  the module itself is not `'use server'`. A loser polling for the other
+  kind's result must never read the wrong column: the narrative loser polls
+  only `golf_round_reviews.ai_narrative`, never `golf_rounds.ai_recap`, and
+  vice versa. Migration `20260923110000` (originally a separate file for the
+  narrative's own schema additions) was deleted and folded into
+  `20260923100000` in place, so the lock generalization and the narrative's
+  `ai_narrative` column apply atomically — no window where one is applied
+  without the other.
+- (2026-09-23) New surface: `getRoundReviewNarrative` (`round-review-narrative.ts`),
+  a lazily-generated 3-5 sentence LLM paragraph for the Round Review page,
+  cached on `golf_round_reviews.ai_narrative` (added in the same
+  `20260923100000` migration). Gated end-to-end behind
+  `coachhelm_round_review_narrative` (default off) — the flag is checked
+  FIRST, before any DB read, RPC, or LLM call, so flag-off is truly zero
+  cost. Uses task key `round_review_narrative` (Haiku tier,
+  `FALLBACK_PRIORITY` 4) in `src/lib/coachhelm/v3/llm/round-review-narrative.ts`,
+  deliberately its own composer rather than reusing `composeRoundReview`
+  (task `round_review`), which is an ephemeral 80-150 word surface that is
+  never persisted — the two must stay independently tunable. Never
+  overwrites a published or coach-annotated review: "coach-annotated" means
+  `coach_notes` OR `coach_feedback_text` OR `coach_rating` is set —
+  deliberately NOT `coach_viewed_at` (a coach merely opening the review must
+  not freeze it). The guard is enforced in the persisting UPDATE's own WHERE
+  clause (`ai_narrative IS NULL AND status <> 'published' AND those three are
+  null`), not just an earlier read, so a race with a coach annotating a
+  moment later still can't overwrite; a 0-row UPDATE re-reads the actual
+  stored `ai_narrative` rather than trusting the caller's own (possibly
+  discarded) generated text. NULL-status trap: Postgres `<>` never matches
+  NULL, so the WHERE uses `.or('status.is.null,status.neq.published')` and
+  the read-guard uses a plain `=== 'published'` check (never `!==`) —
+  otherwise every NULL-status row would be silently excluded from ever
+  generating. Billing follows the DS-44 pattern also used by `round-recap.ts`:
+  `resolveBillingCoachId` (a deliberately separate, unshared copy) resolves
+  the player's active team's primary coach; when none is on file, the LLM
+  call is skipped outright (never call `compose()` with `coach_id: null`,
+  which would bypass the budget gate = unmetered spend) and the deterministic
+  template fallback is used directly. RLS note: `golf_round_reviews`'s
+  existing RLS lets the owning player UPDATE their own row directly, so a
+  player could in principle write `ai_narrative` themselves via PostgREST —
+  no worse than the `summary`/`coach_notes` columns already on that row
+  today; this server action is the only code path that sets `ai_narrative`
+  from a real generation. On the Round Review page, `buildNarrative()`
+  (`buildReviewViewModel.ts`) gained a new top-priority tier: a
+  non-empty `ai_narrative` wins over the existing `v2Body` / persisted
+  composed body / `v1Summary` fallback chain. Flag off, or no narrative
+  generated yet, falls through to prior behavior unchanged.
 - `generateAndStoreRoundReview` (`round-review-system.ts`) returns a typed,
   additive `code` on every failure (`unauthenticated | unauthorized |
   round_not_found | round_not_completed | db_error | save_failed |

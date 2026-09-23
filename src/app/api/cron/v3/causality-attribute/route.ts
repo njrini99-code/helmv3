@@ -34,6 +34,8 @@ import {
   computeComparableAttribution,
   writeComparableAttribution,
   isShotLevelAttributionMetric,
+  resolveInterventionAnchor,
+  INTERVENTION_ACTION_TYPES,
   COMPARABLE_OPPORTUNITIES_LIMITED_METHOD_VERSION,
 } from '@/lib/coachhelm/v3/causality/comparable-attribute';
 import { recordInsightOutcome } from '@/lib/coachhelm/v3/effectiveness/event-ledger';
@@ -210,6 +212,14 @@ interface CronSummary {
    * a failed check must never silently read as "no confounder found".
    */
   comparable_confounder_read_failed: number;
+  /**
+   * Package 10 (owner decision, anchor-on-first-action): the `golf_insight_
+   * action` lookup itself failed — a real infra error, never folded into
+   * `comparable_no_exposure_record`. Same split as `comparable_exposure_
+   * read_failed`: covers both the per-page bulk pre-filter fetch (route.ts)
+   * and the per-candidate backstop (`comparable-attribute.ts`'s own lookup).
+   */
+  comparable_action_read_failed: number;
 }
 
 export async function GET(req: NextRequest) {
@@ -243,6 +253,7 @@ async function handle(): Promise<NextResponse> {
     comparable_exposure_read_failed: 0,
     comparable_retry_horizon_expired: 0,
     comparable_confounder_read_failed: 0,
+    comparable_action_read_failed: 0,
   };
   // Read once per run, not once per candidate — matches the flag-off ==
   // pre-slice-1-behavior contract (A9 slice 1).
@@ -388,6 +399,48 @@ async function handle(): Promise<NextResponse> {
       }
     }
 
+    // Package 10 (owner decision): same bulk-fetch-and-pre-filter pattern as
+    // the exposure fetch above, for the first qualifying ACTION per insight
+    // — the pre-filter must use the SAME anchor choice
+    // (`resolveInterventionAnchor`) `computeComparableAttribution`'s
+    // per-candidate backstop uses, or a candidate whose real anchor is an
+    // action (possibly earlier OR later than its first exposure) would be
+    // pre-filtered using the wrong instant: dropped outright when it has no
+    // exposure row at all (`if (!shownAt)` used to fire before this change),
+    // or have its follow-up-window/retry-horizon math computed from the
+    // wrong (exposure) timestamp when both exist.
+    const firstActionByInsightId = new Map<string, string>();
+    let actionBulkFetchFailed = false;
+    if (shotLevelPageIds.length > 0) {
+      const { data: actionRows, error: actionErr } = await fetchAllRowsResult<{
+        insight_id: string;
+        created_at: string;
+      }>((from, to) =>
+        sb
+          .from('golf_insight_action')
+          .select('insight_id, created_at')
+          .in('insight_id', shotLevelPageIds)
+          .in('action_type', INTERVENTION_ACTION_TYPES)
+          .order('created_at', { ascending: true })
+          .order('id', { ascending: true })
+          .range(from, to),
+      );
+      if (actionErr) {
+        actionBulkFetchFailed = true;
+        await logServerError(
+          `causality comparable action bulk fetch (page ${page}): ${actionErr.message}`,
+          { action: 'cron.v3.causality.comparable-action-bulk-fetch' },
+        );
+        summary.comparable_action_read_failed += 1;
+      } else {
+        for (const row of actionRows ?? []) {
+          if (!firstActionByInsightId.has(row.insight_id)) {
+            firstActionByInsightId.set(row.insight_id, row.created_at);
+          }
+        }
+      }
+    }
+
     for (const c of candidatePage) {
       if (todo.length >= LIMIT) break;
       if (attributedSet.has(c.id)) continue;
@@ -413,16 +466,22 @@ async function handle(): Promise<NextResponse> {
           continue;
         }
         if (attemptComparable) {
-          // The bulk fetch above already failed closed for this page — do
-          // NOT enqueue (already counted once via
-          // `comparable_exposure_read_failed`, not per-candidate here).
-          if (exposureBulkFetchFailed) continue;
-          const shownAt = firstExposureByInsightId.get(c.id);
-          if (!shownAt) {
+          // The bulk fetches above already failed closed for this page — do
+          // NOT enqueue (already counted once via `comparable_exposure_
+          // read_failed`/`comparable_action_read_failed`, not per-candidate
+          // here). Action failure fails closed too: guessing "no action, use
+          // exposure" on a real read error could pre-filter using the wrong
+          // (exposure) anchor for a candidate that actually has an action.
+          if (exposureBulkFetchFailed || actionBulkFetchFailed) continue;
+          const anchor = resolveInterventionAnchor({
+            firstActionAt: firstActionByInsightId.get(c.id) ?? null,
+            firstExposureAt: firstExposureByInsightId.get(c.id) ?? null,
+          });
+          if (!anchor) {
             summary.comparable_no_exposure_record += 1;
             continue;
           }
-          const followUpWindowEndMs = new Date(shownAt).getTime() + POST_WINDOW_DAYS * 86_400_000;
+          const followUpWindowEndMs = new Date(anchor.at).getTime() + POST_WINDOW_DAYS * 86_400_000;
           if (followUpWindowEndMs > Date.now()) {
             summary.comparable_follow_up_open += 1;
             continue;
@@ -494,6 +553,16 @@ async function handle(): Promise<NextResponse> {
               { action: 'cron.v3.causality.comparable-exposure-read' },
             );
             summary.comparable_exposure_read_failed += 1;
+          } else if (comparable.reason === 'action-read-failed') {
+            // Same split as exposure-read-failed, for the Package 10 action
+            // lookup — the bulk pre-filter's own action fetch should have
+            // already caught most of these; this is the per-candidate
+            // backstop.
+            await logServerError(
+              `causality comparable action lookup ${c.id}: ${comparable.error}`,
+              { action: 'cron.v3.causality.comparable-action-read' },
+            );
+            summary.comparable_action_read_failed += 1;
           } else if (comparable.reason === 'confounder-read-failed') {
             // A9 slice 2: a real infra error on the confounder scan, not "no
             // confounder found" — must never be folded into a successful

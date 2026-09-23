@@ -726,6 +726,77 @@ later slice." This module is that slice, for the new v3 pure-core families.
   `groupIssues`'s output into scoring/delivery is later-slice work, per
   this slice's explicit scope.
 
+### Issue grouping and ranking-input unification (A6 slice 2, 2026-09-23)
+
+Three additions on top of slice 1's `groupIssues`, all still pure core —
+still no `ranking/score.ts` policy change, no flag needed, because nothing
+wires into a live ranking read yet:
+
+- **Sequence packets now gate `eligible` on the #2020 rollup
+  (`computeSequenceAttribution`'s per-`event_kind` `MetricResult.status`),
+  never on a single event's own resolution.** Slice 1's test-local
+  `sequencePacketFromEvent` let one hole's one `measuredContribution !==
+  null` event found/own an issue with zero population behind it —
+  contradicting the standing "a single round never clears the floors"
+  rule everywhere else in v3. `sequencePacketFromRollupGatedEvent` (test
+  helper, mirrors what a real adapter should do) instead requires the
+  EVENT KIND's own rollup row to be `status: 'supported'` (i.e. cleared
+  `SEQUENCE_MIN_EVENTS`/`SEQUENCE_MIN_ROUNDS`) before the packet is
+  eligible. The packet's own `sourceShotIds`/`strokesImpact` still
+  describe only the one occurrence being grouped, never the rollup's full
+  population — using the rollup as the source of a packet's shots or
+  impact would let transitive union-find over-merge every occurrence of a
+  kind across a player's whole history into one mega-issue.
+- **`Issue.evidenceKey: string | null`** — a new field, separate from
+  `id`. `id` is shot-set-addressed and shifts the moment new evidence
+  joins or leaves the group; `evidenceKey` is stable across that churn
+  (derived from the impact owner's own `IssueSourcePacket.evidenceKey`,
+  falling back to `` `${origin}:${label}` `` when the packet omits one) so
+  a consumer can recognize "this is still fundamentally the same
+  underlying pattern" even after the shot set changes. A group with no
+  owner has `evidenceKey: null`, matching the existing `ownerClaimId:
+  null` convention.
+- **`applyMaterialChangeSuppression(issues, activeInterventions):
+  SuppressibleIssue[]`** — pure function, runs strictly after
+  ownership/scoring and before any future top-N truncation, per the
+  standing ordering rule. Looks up each issue by `evidenceKey` (never
+  `id`) against the caller-supplied `ActiveIntervention[]`. No match, or
+  `evidenceKey: null` → never suppressed, regardless of magnitude — a
+  genuinely different pattern (or an issue with no owner to key off of)
+  always surfaces. A match compares `|policyInput.strokesImpact|` against
+  the intervention's own baseline magnitude: unchanged or worsened by
+  less than `MATERIAL_CHANGE_THRESHOLD` (50%) → suppressed with reason
+  `'active_intervention_unchanged'`; at or past the threshold → resurfaces
+  (`suppressed: null`). A zero baseline treats any nonzero current
+  magnitude as material (avoids a divide-by-zero silently suppressing
+  forever). **The function never removes an issue from its returned
+  list** — every input issue is present, `suppressed` is either `null` or
+  the one named reason, so a caller can never lose an issue's other data
+  by filtering it out. The `>=` boundary at exactly 50% was mutation-
+  verified: flipping it to `>` fails exactly the boundary test
+  (`situational-ranking.test.ts`) and only that test.
+- **`issueToRankableInsight(issue): RankableInsight`** — a new pure
+  adapter in `situational-ranking.ts` (imports `RankableInsight` as a type
+  from `./score`), NOT a change to `scoreInsight`/`rankInsights` or any
+  live caller. Maps `policyInput.strokesImpact`/`confidence`/`sampleSize`
+  straight through and derives `insight_type` from the impact owner's
+  `origin:label` (falling back to the first claim when there is no
+  owner). "One underlying issue yields one leading priority" is proved at
+  the ranked-output level in `situational-ranking.test.ts`: grouping a
+  par/distance/sequence trio describing the same shots into one `Issue`
+  and ranking it alongside two standalone issues yields exactly one
+  ranked entry for the trio, not three.
+- **Units caveat, documented not solved**: `IssueSourcePacket.strokesImpact`
+  is documented as per-round, but neither a sequence event's
+  `measuredContribution` nor the #2020 rollup's per-event mean is actually
+  per-round today. `policyInput`/`issueToRankableInsight` pass this number
+  through unchanged; reconciling the unit is out of this slice's scope.
+- **Still not wired into `ranking/score.ts`'s live callers or any delivery
+  surface** — `issueToRankableInsight` exists so a later slice can call it,
+  and `applyMaterialChangeSuppression` exists so a later slice can call it
+  with real `ActiveIntervention` data sourced from actual interventions;
+  neither is invoked by any production code path yet.
+
 Two ranking reads outside `golf_coach_insights` were checked and are
 DELIBERATELY not routed through `scoreInsight` — different domains, not an
 oversight: the goal-suggestion writer (`v3/goals/suggestion-writer.ts`) ranks
@@ -951,6 +1022,23 @@ row, reconciled onto the shared shape once #1990 landed a shared
   `value` is never null even at `denominator === 0` (`status: 'invalid'`
   there simply means "no evidence," not "value withheld") — it is the
   evidence count the other four rows' `status` is judged against.
+- **`MetricResult.failedFloors?: readonly SupportFloorGap[]`** (`{ floor:
+  string; current: number; required: number }`, `metrics/types.ts`) names
+  the SPECIFIC floor(s) this row's own `status: 'insufficient'` failed —
+  `'rounds'` | `'attempts'` | `'greens'` — built from the row's own real
+  gating population, never a narrower per-row proxy (#2008 review, MUST
+  1: a row once reported a floor its own narrower `eligibleCount` had
+  already cleared, hiding the wider floor that actually produced
+  `'insufficient'`). Absent entirely unless `status === 'insufficient'`;
+  most rows fail exactly one floor, but a row can fail more than one at
+  once (e.g. both rounds and attempts, or — for the proximity row —
+  rounds, attempts, AND greens together), in which case `failedFloors`
+  carries every one that failed, not just the first found.
+  `describeSupportGap(row)` (`metrics/support-gap.ts` — split out of this
+  module so a client component can import it as a value without pulling
+  in `distance-profile.ts`'s own server-only `bucketApproachDistance`
+  import chain) renders straight from `failedFloors`, joining multiple
+  gaps with `" and "`.
 - **Lay-up exclusion needs `par`, which `ShotFact` doesn't carry.**
   `holes: readonly HoleContext[]` is a REQUIRED third argument (not an
   optional side map) — `load-player-context.ts` already returns
@@ -1338,6 +1426,63 @@ never feeds `nextWeight` or any learning loop, so there is no
 direction-corrected signal to compute, only the plain observed change
 (module header's NAMING note).
 
+## Package 10 gap audit — open items (2026-09-23)
+
+Repair-plan §14.12 Package 10's gate: *"Improvement is not attributed to a
+mere page view, repeated cron scan, or unrelated later round. Missing
+post-action evidence remains unknown."* Most of the checklist ((a) real
+measurement method, (b) versioned outcomes, (e) limited language, (f)
+neutral personalization weights) was already covered on main or by issue
+2023, issue 2007 and issue 2016 by the time of this audit — see PR #2034's
+description for the full item-by-item map. Two items are named here as
+genuine, currently-open gaps rather than built, because both need
+product/owner decisions or a migration this slice does not make:
+
+- **Uncertainty (variance/SE/CI on the observed lift)**: neither
+  `causality/attribute.ts`'s round-level path nor this doc's
+  comparable-opportunities module above computes or stores a confidence
+  interval or standard error alongside `observedChange`/`improvement_lift`
+  — both report a point estimate only. Adding this needs a new column on
+  `golf_insight_outcome`/`golf_insight_outcome_attribution` (there is
+  nowhere to persist it today) and therefore a migration, plus a decision
+  on what estimator to use for the shot-level matched-opportunity case
+  (which is not a simple before/after paired difference). Not built by
+  #2034 — named here so it isn't rediscovered as a surprise gap.
+- **Round-level intervention-start anchor is still a proxy**: the
+  comparable-opportunities module above anchors `interventionAt` to a real
+  recorded instant (a matched shot-level exposure). `causality/attribute.ts`'s
+  round-level path has no equivalent — it still uses
+  `golf_coach_insights.created_at` as an admitted stand-in for when the
+  player was actually exposed to the insight, and has no "comparable future
+  opportunities" concept at all (it compares round-level metric averages
+  before/after, not matched per-shot opportunities). Fixing this would mean
+  either backfilling round-level attribution to read real exposure rows
+  (`golf_insight_exposure`) the way the shot-level path does, or accepting
+  the proxy permanently and documenting why. Not decided or built by #2034.
+
+Two related decisions were escalated to the owner rather than resolved in PR #2034
+(see that PR's description) — both are now RESOLVED (2026-09-23):
+
+- The `coachhelm_trust_status_exclude_unmeasured_outcomes` flag (the
+  missingness fix — a null-`improvement` `golf_insight_outcome` row from a
+  thin-sample attribution no longer counts as `measured`) ships **enabled**
+  by default in every environment. The owner reviewed the prod trust-tier
+  diff first: 26 of 68 insights change tier with the flag on, all 26 from
+  `needs_validation` → `new_hypothesis` and all 26 driven by a single
+  thin-sample outcome row; no `supported`/`promising`/`underperforming`
+  insight is affected. See #2034's description for the flag's exact
+  `purpose` text and the diff SQL used.
+- `interventionAt` for the shot-level comparable-opportunities path (this
+  doc's module above) now anchors to the first real recorded ACTION
+  (`golf_insight_action`, `INTERVENTION_ACTION_TYPES` —
+  `create_focus`/`acknowledged`/`resolved`) when one exists, falling back to
+  first EXPOSURE otherwise — see #2044 (`comparable-attribute.ts`'s
+  `resolveInterventionAnchor`, `attribution-read.ts`'s read-time
+  `anchor_kind` derivation, `attribution-view-model.ts`'s "(since first
+  shown)"/"(since you acted on it)" labels). Not persisted — no migration.
+  The round-level path's proxy anchor (`golf_coach_insights.created_at`,
+  named as an open item just above) is unaffected by this decision.
+
 ## Controlled hypotheses (A5 deliverable, slices 1-2)
 
 `buildHypotheses(metrics, facts)`
@@ -1483,14 +1628,118 @@ are dimensioned when they resolved against an actual row.
   `missingInputs`**, not an omitted entry — `buildHypotheses` returns a
   flat `Hypothesis[]` (no separate "withheld" bucket), so a family with an
   absent prerequisite still appears, stating the gap, rather than
-  vanishing silently. `short_bias`, `recovery`, and `par5_opportunity_loss`
-  have no metric producer today (no A2/A3 slice emits
-  `approach_short_miss_rate`/`approach_recovery_outcome_rate`) — every real
-  call reports them `'no_data'`, never fabricates a value.
-- **Still not wired to `diagnosis.ts` or `personal-context.ts`** — slice 2
-  was the `MetricResult` swap, dimensioned claim ids, and the
-  `shotClaimId` marker fix (above); the diagnosis/personal-context wiring
-  remains a later slice.
+  vanishing silently. `short_bias` and `recovery` have no metric producer
+  today (no A2/A3 slice emits `approach_short_miss_rate`/
+  `approach_recovery_outcome_rate`) — every real call reports them
+  `'no_data'`, never fabricates a value. Corrected 2026-09-23 (A10 slice
+  1's shadow harness): `par5_opportunity_loss` DOES have a real metric
+  producer — A3 emits both `par5_regulation_opportunity_rate` and
+  `par5_green_in_two_rate` (`par-opportunities.ts`'s Family 2) — this
+  paragraph previously grouped it with the two genuinely unreachable
+  families in error. `par5_opportunity_loss` reaches
+  `'supported_association'` on real input whenever a specific par-5 hole
+  is played 3+ times (`HOLE_OPPORTUNITY_MIN_SAMPLE_N`) without reaching
+  regulation most of the time — proven, not asserted, by
+  `shadow-harness.test.ts`'s established-roster snapshot below.
+
+### Slice 3: coach annotation (addendum §8.3)
+
+`mergeCoachAnnotation(hypothesis, { author, date, note })` and
+`reopenIfContradicted(annotated, fresh)` let a coach layer a judgment onto
+a hypothesis WITHOUT rewriting the evidence — the addendum's own text:
+"A coach can annotate a working explanation; retain author, date, and
+evidence. On future contradictory evidence, reopen the explanation instead
+of silently preserving certainty."
+
+- **Purely additive**: `mergeCoachAnnotation` returns
+  `{ ...hypothesis, coachAnnotation: {...} }` — `state`, `description`,
+  `prerequisites`, `supportingClaimIds`, `contradictingClaimIds`, and
+  `missingInputs` are byte-identical before and after (tested). It snapshots
+  `supportingClaimIds`/`contradictingClaimIds` AT THE MOMENT of annotation
+  into `coachAnnotation.supportingClaimIdsAtAnnotation`/
+  `contradictingClaimIdsAtAnnotation`, kept SEPARATE rather than merged
+  into one "known claims" set.
+- **Why separate snapshots**: a claim id names a row, not a direction —
+  `short_bias` pushes the SAME undimensioned `metricClaimId` onto either
+  `supportingClaimIds` or `contradictingClaimIds` depending on which side
+  of its threshold the metric lands on. A claim that was supporting at
+  annotation time and is contradicting on a later call is the SAME string
+  either way, so a union-based "known claims" set would treat it as
+  already-known and never reopen. `reopenIfContradicted` checks only
+  against the CONTRADICTING snapshot: any claim in a fresh evaluation's
+  `contradictingClaimIds` that isn't in that snapshot reopens the
+  annotation. Pinned by a regression test that flips `short_bias`'s single
+  metric from supporting to contradicting between two `buildHypotheses`
+  calls and asserts it reopens.
+- **`reopened: true` retains, never discards**: author/date/note and both
+  claim-id snapshots stay on the SAME `coachAnnotation` object; only
+  `reopened` flips. `state`/`description` always come from the fresh
+  evaluation passed in — `reopenIfContradicted` never re-derives or
+  downgrades them itself, it only decides whether the annotation still
+  applies.
+- **`'coach_annotated'` was dropped from `HypothesisState`** (review
+  decision): neither `mergeCoachAnnotation` nor `reopenIfContradicted` ever
+  sets `Hypothesis.state` to it — the addendum is explicit that annotation
+  layers onto the evidence, never replaces it, and there is no `'causal'`
+  state for an annotation to upgrade a hypothesis to. A state with no
+  producer isn't a state, so it was removed rather than kept as an
+  unreachable union member; a "reviewed" read belongs at the call site,
+  derived from `coachAnnotation != null`, not as a fourth `state` value.
+  Grepped for consumers first (`case 'coach_annotated'` in this module's
+  own four `describe*` switches, no external references anywhere in
+  `src/`) before removing.
+- **`diagnosis.ts` still not wired — a future DB-layer slice, not this
+  one**: `engine/diagnosis.ts` is a narrow pure `AxisTally` →
+  observation/check/action text helper (`dominantAxis`/
+  `approachAxisReading`) with exactly one caller, the DB-backed
+  `generators/approach-miss.ts`. It has no awareness of
+  `ShotFact`/`MetricResult`/`Hypothesis` at all. Wiring hypothesis ids into
+  a reading means wiring them into that DB-backed GENERATOR layer, not
+  `diagnosis.ts` itself — a materially larger change, and out of scope for
+  this module's pure-core, no-I/O slices.
+- **`personal-context.ts` — built, on a code-level mapping table (owner
+  decision, 2026-09-23)**: `resolvePersonalContextHints(goals,
+  focusAreas)` is pure — already-loaded `Goal[]`/`PlayerFocusArea[]` in,
+  `PersonalContextHints` (per-family, presence-only "prioritize this
+  family" signal) out. It never receives a `MetricResult` and never
+  touches a `Hypothesis`'s `state`/evidence arrays/`description` — a
+  test asserts `buildHypotheses`' output and its `metrics` input are
+  byte-identical `JSON.stringify` before and after resolving hints.
+  "Check-selection" is not a separate field: presence means "prioritize
+  resolving this family's `missingInputs`/`nextCheck`," and a caller
+  joins its own `buildHypotheses` output against the family key for that
+  detail — this module has no visibility into `missingInputs`/`nextCheck`
+  itself. `Goal.metric_id` (`MetricId`, `metrics/registry.ts`) and
+  `FocusAreaCategory` (`insight-types.ts`) remain a genuinely different
+  vocabulary from this module's own metric ids, so the table is a
+  same-underlying-thing judgment call per entry, not an identity match —
+  checked against every registered `MetricId` and every
+  `FocusAreaCategory`, exactly ONE honest entry exists: `scoring_par_5` →
+  `par5_opportunity_loss` (same holes; `scoring_par_5` is the coarse
+  average, `par5_regulation_opportunity_rate`/`par5_green_in_two_rate` are
+  the conversion-rate breakdown of that same outcome).
+  `FOCUS_AREA_TO_FAMILY` is empty — `short_game`
+  (chipping/pitching/sand, `shot_type: 'around_green'`) is a different
+  shot type from `recovery` (an approach-shot decision, `shot_type:
+  'approach'`, `intent: 'recovery'`), so the shared word "recovery" is not
+  a shared measurement domain; the other five categories and every other
+  `MetricId` (`sg_approach` — can't choose between `short_bias`/
+  `rough_gap`; `gir_pct` — all par types, not par-5-specific; driving/
+  putting/round-level-risk ids — no family touches those domains) have no
+  honest correspondence either, each with its reason in the module doc.
+  A near-empty table is the honest finding here, not a shortfall — the
+  four hypothesis families are narrow, and most of a player's own
+  goal-setting vocabulary genuinely falls outside them. No "intervention"
+  type/loader exists anywhere in the codebase (`development.ts`, 1968
+  lines, zero hits for "intervention") — interventions stay out of scope.
+- **Checklist item "paired fixtures with identical endpoints but different
+  recorded intent"** was already satisfied by slice 1/2:
+  `hypothesis-policy.test.ts`'s `'buildHypotheses — rough-lie approach:
+  identical shot, different intent, different hypothesis'` block reuses
+  the SAME `roughApproachShot` fixture (identical round/hole/shot/distance/
+  lie) across `go_for_green`/`recovery`/`unknown`/`layup` intents and
+  asserts each produces a different family — no new fixtures added this
+  slice.
 
 ## A10 capability gates (addendum A10, 2026-09-23)
 
@@ -1669,6 +1918,69 @@ mapping isn't reliable enough to trust as a filter) — see
 `memory/features/coachhelm-ai.md`'s A9 slice 2 entry for the full
 what-counts/what-doesn't rule and the deferred focus-area/drill-change
 follow-up.
+
+## Shadow-mode evaluation harness (A10 deliverable, slice 1 — pure, not wired)
+
+`runShadowEvaluation(snapshot)`
+(`src/lib/coachhelm/v3/eval/shadow-harness.ts`) is the addendum's own
+directive: "run all new families in shadow mode on de-identified fixed
+snapshots before coach-visible writes." Pure and offline — no DB read, no
+flag flip, no delivery-surface write. It feeds one `ShadowSnapshot`
+(`scope`/`facts`/`holes` only, never a live player id) through A2
+(`computeDistanceProfile`), A3 (`computeParOpportunities`), A4 both layers
+(`attributeSequence` per-hole and the #2020 `computeSequenceAttribution`
+rollup), A5 (`buildHypotheses`), and A6 (`groupIssues`), and returns one
+structured `ShadowEvalReport`.
+
+- **Provenance boundary, stated not solved**: `groupIssues` only ever
+  groups packets carrying honest `sourceShotIds` (per its own contract —
+  see "Issue grouping and ranking-input unification" above). A2/A3
+  `MetricResult` rows carry no per-shot provenance, and A5's
+  `par5_opportunity_loss` hypothesis is round-level, not shot-addressed —
+  none of those are turned into a packet; the report counts them under
+  `grouping.nonGroupablePacketSources` instead of fabricating an id to
+  close the gap. Only A4 sequence events (which carry `round_id`/
+  `hole_number`/`shotNumbers`) and A5's per-shot `rough_gap` hypothesis
+  (whose `id`/`supportingClaimIds` resolve back to one triggering
+  `ShotFact`) become packets. `recovery` never cites its own triggering
+  shot as support (by the A5 module's own design), so it never resolves to
+  a packet either — reported the same way, not miscounted as groupable.
+- **Sequence-packet eligibility mirrors A6 slice 2's rule (#2026, not yet
+  on `main`), reimplemented locally**: a packet built from one
+  `SequenceEvent` is eligible only when that event KIND's own #2020 rollup
+  row has `status: 'supported'`, never the single event's own resolution.
+  Duplicating six lines here rather than importing an unmerged branch is
+  intentional — replace with the real import once #2026 lands.
+- **Two grouping invariants, both independently unit-tested against a
+  hand-built VIOLATING input** (`.claude/rules/quality-gates.md`'s "a gate
+  that cannot fail is not a gate"): `countUnsupportedCauseClaims` (a
+  `'supported_association'` hypothesis with no real supporting
+  `status: 'supported'` metric row, or any claim id that doesn't resolve
+  to an input element this call was given) and
+  `countDuplicateLeadingPriority` (a source shot or an owning claim
+  appearing in more than one `Issue`) — both proven against every
+  snapshot in `shadow-eval-snapshots.ts`'s 2×2 matrix and mutation-verified
+  at their own boundary.
+- **2×2 snapshot fixture matrix** (`src/test/coachhelm/v3/fixtures/
+  shadow-eval-snapshots.ts`): new vs. established roster, crossed with
+  complete vs. incomplete data. Built from the A0 fixtures in
+  `situational-intelligence.ts` (`incomplete_shot_sequence` is the exact
+  "missing shot, completed scorecard" §14.1 row cited above, under
+  "Sequence attribution") passed through the real `normalizeShot`, plus
+  one re-keying helper that replicates a hand-authored hole shape across
+  many round ids — composition on an existing fixture, not a second
+  fixture system. The established-roster snapshot is a precondition, not
+  an assumption: its own test asserts A2/A3/A4-rollup rows actually reach
+  `status: 'supported'` before checking any invariant on top of them — an
+  established-roster contrast that never clears a real floor proves
+  nothing.
+- **Acceptance, proven not asserted**: `sequencePerHole.suppressed`/an
+  `'insufficient'` `sequenceRollup`/`par`/`distance` status on the
+  new-roster snapshots (support genuinely fails, floor genuinely not
+  cleared); `grouping.unsupportedCauseClaims === 0` and
+  `grouping.duplicateLeadingPriority === 0` on every real snapshot in the
+  matrix, including the established-roster ones where a violation would
+  actually have something to happen to.
 
 ## How to add a new comparison source
 

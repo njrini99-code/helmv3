@@ -759,6 +759,7 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     actions: {
       'src/app/golf/actions/coachhelm-analytics.ts': 'ALL',
       'src/app/golf/actions/player-effectiveness.ts': 'ALL',
+      'src/app/golf/actions/insight-attribution.ts': 'ALL',
     },
     primaryTable: 'golf_insight_effectiveness',
     heartbeatTable: 'golf_insight_effectiveness',
@@ -804,6 +805,8 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     actions: {
       'src/app/golf/actions/round-reviews.ts': 'ALL',
       'src/app/golf/actions/round-review-system.ts': 'ALL',
+      'src/app/golf/actions/round-review-sequence-attribution.ts': 'ALL',
+      'src/app/golf/actions/round-review-narrative.ts': 'ALL',
       'src/app/golf/actions/round-recap.ts': 'ALL',
       'src/app/golf/actions/v3/llm.ts': 'ALL',
       'src/app/golf/actions/insights.ts': ['generateRoundReview'],
@@ -834,6 +837,7 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
         'createFocusAreaFromInsight',
         'recordFocusAreaOutcome',
       ],
+      'src/app/golf/actions/focus-area-practice-log.ts': 'ALL',
     },
     primaryTable: 'golf_player_focus_areas',
     heartbeatTable: 'golf_player_focus_areas',

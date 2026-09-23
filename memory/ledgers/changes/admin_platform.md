@@ -2418,3 +2418,22 @@ section for the full per-module description; not restated here.
   with a large multi-season player roster opening several Game
   Fingerprint pages) and confirm the added Approach-section query
   doesn't push page load past an acceptable bound.
+
+## 2026-09-23 — registry entry: `coachhelm_a7_scoring_surface`
+
+- SHA: 42d1dccd4.
+- Change: a second, independent `experiment` flag (not a reuse of
+  `coachhelm_a7_distance_profile_surface`) added to
+  `config/feature-flags.yml` and `registry.generated.ts` (regenerated
+  via `npm run flags:generate`, `npm run flags:check` clean — 8 flags
+  total). Default off in every environment. Gates only whether the
+  Game Fingerprint page's Scoring section renders the new
+  par/length + par-5 opportunity surface — no auth/RLS/tenancy/
+  persistence decision. Full behavioral detail is in coachhelm_ai's own
+  change ledger (this is the mechanism-owning feature; that is the
+  surface-owning one).
+- Enable criteria (mirrors `coachhelm_a7_distance_profile_surface`
+  above): `loadParOpportunities` reads through `loadPlayerContext`, the
+  same session-scoped `golf_shots` query path — the same ~580x
+  RLS-vs-service-role gap and the same required heavy-roster preview
+  check apply before enabling this flag in any environment.

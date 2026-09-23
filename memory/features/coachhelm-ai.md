@@ -12,7 +12,7 @@
 > reference entirely is a ratchet-down — re-run
 > `node scripts/check-doc-schema-drift.mjs --update` after.
 
-<!-- schema-drift-absent: golf_insight_evidence -->
+<!-- schema-drift-absent: golf_insight_evidence, golf_round_recap_locks -->
 
 
 ## Status
@@ -276,6 +276,8 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
 - Round-review feedback and player acknowledgement paths can become stale if revalidation misses player or coach routes.
 - V3 feature surface is expanding quickly; registry/docs must be updated when new generators, tables, or cron routes land.
 - `compose.ts`'s numeric scan (`citations.ts`) checks a value appears somewhere in the flat evidence set — it cannot catch a REAL value cited under the wrong metric, player, or window. Package 8 slice 1 (2026-09-23, repair plan 14.10) added `src/lib/coachhelm/v3/llm/claim-validator.ts` as an opt-in second gate: a caller passes typed `ClaimReference[]` (claim id, metric id, value, player id, window) plus an `EvidencePacket` scoped to one player/window, and `validateClaims` checks each claim in a fixed order (player → window → metric exists → value, distinguishing a misattributed `wrong_field` from a fabricated `value_mismatch` → the `MIN_SAMPLE_N` floor → causal backing via reused `CausalityLevel`/`DiagnosisDriver`), plus an `uncited_number` vacuous-pass guard so a claim-free response with an unexplained number still fails. `compose.ts` wires it in as an EXTRA gate (delimited `<<<CLAIMS>>>` JSON block, zod `safeParse`, always stripped before either verifier runs or before any text reaches a player) behind the existing single corrective retry and budget re-gate; both gates' failures share that one retry. 2026-09-23 review-fix round: `EvidencePacketEntry.kind: 'measurement' | 'aggregate'` exempts a single-round's own direct facts from the `MIN_SAMPLE_N` floor (default `'aggregate'`, fails safe); `<<<CLAIMS>>>` delimiter handling now treats more than one block or an unterminated opener as malformed and strips every delimiter occurrence, not just the first; `uncited_number` also exempts a number present in any packet entry and narrow structural context (hole numbers, par values, written dates); a causal-language detector scans the PROSE independent of a claim's own `claim_type` label, since a model can under-tag a causal sentence as `'fact'`. **Package 8 slice 2 (2026-09-23) wired it into `round-recap.ts`'s `generateLLMRecap`** — the only live, persisted (`golf_rounds.ai_recap`) LLM-text surface among every `compose()` caller surveyed (`round-review.ts` stays unwired: zero production callers, and no new persistence path into `golf_round_reviews` was added — that remains an owner product/cost decision, not a slice). `buildRecapEvidencePacket()` (`recap-evidence.ts`) reuses the SAME `fir`/`gir` `pct()`-rounded values already in the prompt's `facts` block (recomputing independently risks a rounding-drift false rejection); round-level facts are `kind: 'measurement'`, season aggregates (`sample_n` = `stats.rounds_played`) are `kind: 'aggregate'` and withheld for a non-18-hole round exactly like the prompt already withholds them. Gated behind `coachhelm_recap_claim_packet` (`config/feature-flags.yml`, type `experiment`, default off everywhere) — off, no `evidence_packet` is built or passed, and behavior is unchanged from before this flag existed. `src/app/golf/actions/__tests__/round-recap-claim-gate.test.ts` forces the flag on and exercises the REAL `compose()` → `claim-validator.ts` pipeline (not a mocked `compose()`), proving a rejected claim and a malformed claims block each discard to the deterministic recap and that `save_round_ai_recap` only ever receives that deterministic text, never the discarded prose. **Package 8 revision-keyed provenance + single-flight (2026-09-23, migration `20260923080000_recap_provenance_and_single_flight`)**: `save_round_ai_recap`'s UPDATE now guards `AND ai_recap IS NULL` so a concurrent call that loses the generation race persists nothing instead of silently overwriting the winner (cheap half of single-flight only — a lock taken before the LLM call itself, to stop the double LLM spend, is deferred as an owner product/cost call). A new table, `golf_round_recap_provenance` <!-- schema-drift-absent: golf_round_recap_provenance --> (round_id PK/FK, not new `golf_rounds` columns), records `source: 'llm'|'deterministic'`, the `golf_coachhelm_llm_calls` `call_log_id`, `claim_packet_engaged`, and `stats_rounds_played_at_generation` — the `golf_player_stats_cache.rounds_played` snapshot the prose was generated against, since that stats cache keeps changing after generation even though a completed round's own score/shot data is permanent. `round-recap.ts` writes this best-effort via the admin client after a successful persist; a write failure (including the migration not yet being applied) is logged and swallowed, never blocking the recap. See `docs/architecture/coachhelm-evidence-contract.md`'s "Typed claim validator" section for the full writeup.
+- **Package 8, recap single-flight lock (PR #2046) went further than the deferred-lock note above says**: rather than staying deferred, migration `20260923100000_round_recap_single_flight_lock.sql` (still unapplied in prod as of this entry) adds a real pre-LLM-call lease table, `golf_round_recap_locks`, gated behind `coachhelm_recap_single_flight_lock` (default off). It generalizes past a recap-only lock: the PK is `(round_id, revision, kind)` with `kind: 'recap' | 'round_review_narrative'`, so a second LLM-text surface can share the table without colliding with a live recap lock on the same round/revision. `claim_round_recap_lock`/`release_round_recap_lock` are service-role-only (`REVOKE EXECUTE ... FROM PUBLIC, anon`, no grant to `anon`), RLS enabled, and take `kind` as a required argument. The claim/release/wait helpers live in a shared server-only lib (not `'use server'` — a `'use server'` file's every export becomes a client-callable endpoint, so the lock primitives can't live in `round-recap.ts` itself), imported by both `round-recap.ts` and the new `round-review-narrative.ts` action. A losing caller of one `kind` polls only that kind's own result column, never the other surface's — the narrative loser polls `golf_round_reviews.ai_narrative`, never `golf_rounds.ai_recap`.
+- **Package 8, round-review narrative (PR #2046, 2026-09-23)**: new surface `getRoundReviewNarrative` (`src/app/golf/actions/round-review-narrative.ts`) generates a lazy, cached 3-5 sentence paragraph for the Round Review page, persisted on a new `golf_round_reviews.ai_narrative` column (same migration as the lock generalization above, so schema and lock ship atomically). Gated behind `coachhelm_round_review_narrative` (`config/feature-flags.yml`, default off) — checked FIRST, before any DB read, so flag-off is zero cost. Own compose task key `round_review_narrative` (`src/lib/coachhelm/v3/llm/round-review-narrative.ts`, Haiku tier, `FALLBACK_PRIORITY` 4) — deliberately its own composer rather than reusing the existing `round_review` task (`composeRoundReview`), which is an ephemeral, never-persisted 80-150 word surface with a different job. Guard: never overwrite a published or coach-annotated review — "coach-annotated" means `coach_notes` OR `coach_feedback_text` OR `coach_rating` is set (deliberately not `coach_viewed_at`) — enforced in the persisting UPDATE's own WHERE clause (`ai_narrative IS NULL AND status <> 'published' AND those three IS NULL`), not just an earlier read, so a race with a coach annotating a moment later can't lose; on a 0-row UPDATE the code re-reads the actual stored `ai_narrative` rather than trusting its own (possibly discarded) generated text. NULL-status trap: Postgres `<>` never matches NULL, so both the UPDATE's WHERE (`.or('status.is.null,status.neq.published')`) and the read-guard (`=== 'published'`, never `!==`) treat NULL status as "not published, allowed." Billing follows the same DS-44 pattern as `round-recap.ts`: a deliberately unshared copy of `resolveBillingCoachId` resolves the player's active team's primary coach; when none is on file, `compose()` is skipped entirely (never pass `coach_id: null` into a user-initiated `compose()` call — it bypasses the budget gate) and the deterministic template fallback is used directly. RLS note for the PR body: `golf_round_reviews`'s existing RLS lets the owning player UPDATE their own row directly, so a player could write `ai_narrative` via PostgREST — no worse than the `summary`/`coach_notes` columns already on that row; this server action is the only code path that sets `ai_narrative` from a real generation. On the Round Review page, `buildNarrative()` (`buildReviewViewModel.ts`) gained a new top-priority tier — a non-empty `ai_narrative` wins over the existing `v2Body` / persisted composed body / `v1Summary` fallback chain; flag off or ungenerated falls through unchanged. Environment note: this PR's implementation could not run a live Supabase check (no MCP connection, no `SUPABASE_ACCESS_TOKEN` in this worktree) to confirm `golf_round_reviews.status` actually contains NULL rows in prod or to inspect `pg_policies` directly — the NULL-status and RLS handling above are defensive-by-code, not live-verified.
 - **`CoachHelmSubNav.tsx`'s header comment can lag the `COACH_TABS` array it
   describes.** A skeleton or nav consumer that hand-draws the tab strip from
   the file's header comment rather than importing `COACH_TABS`
@@ -448,7 +450,6 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   derivation is proven. Full contract in
   `docs/architecture/coachhelm-evidence-contract.md`'s "Issue grouping and
   ranking-input unification" section.
-
 - **`src/lib/coachhelm/v3/reasoning/hypothesis-policy.ts`** (2026-09-23,
   `agent/coachhelm-hypothesis-policy`, addendum §13, work package A5
   slice 1 + slice 2) — `buildHypotheses(metrics, facts)` proposes a small,
@@ -469,10 +470,17 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   several par-5s yields several) instead of reading one arbitrary row and
   dropping the rest. Slice 2 also found that `approach_measured_
   contribution` (A2's real producer) is a plain eligible-attempt COUNT,
-  never negative — not the signed strokes-gained value slice 1 assumed —
-  so `rough_gap`'s corroboration is now guarded on `unit === 'strokes'`
-  and stays a stated gap (never elevates/contradicts) until a
-  strokes-shaped metric exists. `shotClaimId` no longer renders a missing
+  never negative — not the signed strokes-gained value slice 1 assumed.
+  Follow-up (still slice 2): rather than name that real, present count
+  metric as `rough_gap`'s corroborator, `findMetric`/`missingInputs`/
+  `prerequisites`/every claim id key on a DISTINCT id,
+  `approach_rough_gap_strokes_contribution`
+  (`ROUGH_GAP_STROKES_METRIC_ID`), naming the honestly not-yet-existing
+  strokes-shaped signal — no producer emits it today, so `rough_gap`
+  always stays a stated gap until one does (likely A4's
+  `sequence-attribution.ts` `SequenceEvent.measuredContribution`, adapted
+  to a `MetricResult` row under this id — that adapter is deliberately not
+  built yet). `shotClaimId` no longer renders a missing
   `hole_number`/`shot_number` as the literal string `'null'`; it now
   matches `ranking/situational-ranking.ts`'s own fixed `'unknown'` marker
   scheme so ids from both modules interoperate without translation (that
@@ -490,10 +498,13 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   `'candidate'` (a real supporting claim exists but isn't corroborated, or
   was but got contradicted), `'supported_association'` (a `status:
   'supported'` metric agrees and nothing contradicts — an association,
-  never causal), and `'coach_annotated'` (reachable only from
-  `personal-context.ts` — not wired by slice 2 either, still a later
-  slice — nothing here produces it). No
-  `'proven'` state exists. `recovery` (no metric ever corroborates it, and
+  never causal). `'coach_annotated'` was briefly a fourth state in slice
+  3's draft, then DROPPED (review decision, 2026-09-23): `mergeCoachAnnotation`
+  deliberately never sets `state` to it (the addendum is explicit that a
+  coach's judgment layers onto the evidence, never replaces it), so nothing
+  could ever produce it — a state with no producer was removed rather than
+  kept as dead code; a "reviewed" read belongs at the call site
+  (`coachAnnotation != null`). No `'proven'` state exists. `recovery` (no metric ever corroborates it, and
   its own triggering shot is deliberately not cited as its own support)
   and `short_bias`/`par5_opportunity_loss` with an absent metric resolve
   to `'no_data'`; `rough_gap` and `'insufficient'` keep a real fact-based
@@ -510,12 +521,72 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   missing prerequisite is reported as a `Hypothesis` with empty claims and
   a populated `missingInputs`, never silently omitted. Claim ids
   (`metricClaimId`/`shotClaimId`) always resolve back to an element of the
-  `metrics`/`facts` a call was given (tested). **Still not wired to
-  `diagnosis.ts` or `personal-context.ts`** — slice 2 was the
-  `MetricResult` swap, the `shotClaimId` marker fix, and dimensioned claim
-  ids (above); the diagnosis/personal-context wiring remains a later
-  slice. See `docs/architecture/coachhelm-evidence-contract.md`'s
-  "Controlled hypotheses" section.
+  `metrics`/`facts` a call was given (tested). Slice 3 (2026-09-23,
+  addendum §8.3) added `mergeCoachAnnotation`/`reopenIfContradicted`: a
+  coach's judgment layers onto a hypothesis in a new `coachAnnotation`
+  field (author, date, note, and separate supporting/contradicting claim-id
+  snapshots) without touching `state`/`description`/`prerequisites`/the
+  claim arrays/`missingInputs`. `reopenIfContradicted` flags
+  `reopened: true` the moment a fresh contradicting claim wasn't already
+  known at annotation time — checked against the CONTRADICTING snapshot
+  specifically (never a union of both), since a claim id can flip sides
+  between calls (e.g. `short_bias` reuses one undimensioned id on both
+  sides). **`diagnosis.ts` remains unwired**: `diagnosis.ts`
+  (`engine/diagnosis.ts`) is a narrow pure `AxisTally`→text helper with one
+  caller, the DB-backed `generators/approach-miss.ts` — not a fit for this
+  module's pure-core `Hypothesis[]` shape without a much larger change than
+  "wire it in." Wiring hypotheses into a generator's reading belongs to
+  that DB-backed GENERATOR layer, not `diagnosis.ts` itself — a future
+  slice, reported back rather than forced here. **`personal-context.ts`
+  was built** (owner decision, 2026-09-23: a code-level mapping table, not
+  a DB table): `resolvePersonalContextHints(goals, focusAreas)` is pure,
+  never touches a `MetricResult`, and returns a per-family "prioritize
+  this" hint attributed to the goal/focus-area id behind it. Checked
+  against every registered `MetricId` (`metrics/registry.ts`) and every
+  `FocusAreaCategory` (`insight-types.ts`), exactly ONE honest mapping
+  exists — `scoring_par_5` → `par5_opportunity_loss` (same holes, coarse
+  average vs. conversion-rate breakdown); the focus-area table is empty
+  (e.g. `short_game`'s `shot_type: 'around_green'` is a different shot
+  type from `recovery`'s `shot_type: 'approach'` — the shared word
+  "recovery" is not a shared measurement domain). No "intervention"
+  type/loader exists anywhere in the codebase — interventions stay out of
+  scope. See `docs/architecture/coachhelm-evidence-contract.md`'s
+  "Controlled hypotheses" section for the full per-entry rationale and
+  exclusion list.
+
+- **`situational-ranking.ts` slice 2** (2026-09-23, addendum §13, A6 slice
+  2, still pure core, still not wired to a live ranking read, no flag
+  needed): sequence packets now gate `eligible` on the #2020 rollup's own
+  per-kind `status: 'supported'`, not on a single event's own resolution —
+  closes a real gap where one hole's one event could found/own an issue
+  with zero population behind it. New `Issue.evidenceKey: string | null`
+  (owner-derived, stable across shot-set churn, distinct from the
+  shot-set-addressed `id`) backs the new
+  `applyMaterialChangeSuppression(issues, activeInterventions)` — pure,
+  never drops an issue from its output, suppresses only an exact
+  `evidenceKey` match unchanged/under 50% worse than its intervention's
+  baseline, and resurfaces at or past that threshold (mutation-verified at
+  the boundary). New `issueToRankableInsight(issue): RankableInsight` pure
+  adapter proves "one issue, one leading priority" at the ranked-output
+  level via `rankInsights`. Full contract in
+  `docs/architecture/coachhelm-evidence-contract.md`'s "Issue grouping and
+  ranking-input unification (A6 slice 2)" section.
+
+- **`src/lib/coachhelm/v3/eval/shadow-harness.ts`** (2026-09-23, addendum
+  §13, work package A10 slice 1, pure, not wired) — `runShadowEvaluation
+  (snapshot)` runs A2/A3/A4-both-layers/A5/A6 over one de-identified
+  `ShadowSnapshot` and reports per-family status counts, a duplicate-issue
+  rate, and two invariant counters (`countUnsupportedCauseClaims`,
+  `countDuplicateLeadingPriority`) that must both read `0` on any real
+  snapshot for the report to be trusted — both mutation-verified and
+  unit-tested against a hand-built violating input, not just the real
+  fixture matrix. Corrects a stale claim in this file and the evidence
+  contract's A5 section: `par5_opportunity_loss` is NOT metric-producer-
+  less like `short_bias`/`recovery` — A3 emits both metrics it cites, and
+  it reaches `'supported_association'` on real input (proven by this
+  slice's established-roster snapshot). Full contract in
+  `docs/architecture/coachhelm-evidence-contract.md`'s "Shadow-mode
+  evaluation harness" section.
 - N13 sweep (repair plan, 2026-09-23): audited every CoachHelm action/route
   under `src/app/golf/actions` and `src/lib/coachhelm` for a catch-all that
   discards the real exception and returns one generic "session expired"-style
@@ -610,7 +681,20 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   `value`, never null, per `types.ts`'s "state it, don't hide it"
   contract; only a zero-denominator row (`status: 'invalid'`) nulls
   `value`. **Do not** wire this into `approach-miss.ts` yet — that's a
-  later slice, behind a flag.
+  later slice, behind a flag. **`failedFloors?: readonly SupportFloorGap[]`**
+  (`metrics/types.ts`, #2008 review) is absent unless `status ===
+  'insufficient'`, in which case it names every real floor
+  (`'rounds'`/`'attempts'`/`'greens'`) that row's OWN gating population
+  failed — a row can fail more than one floor at once (the proximity row's
+  rounds/attempts/greens all fail together in the fixture that proves
+  this), and `failedFloors` names all of them, never just the first.
+  `describeSupportGap(row)` moved to its own module,
+  `metrics/support-gap.ts` — a client component ('use client') needs it as
+  a runtime value, and that file has no value import of anything
+  server-only, unlike `distance-profile.ts` itself (which value-imports
+  `bucketApproachDistance` from `engine/shot-source.ts`, importing
+  `createAdminClient`); `distance-profile.ts` re-exports it unchanged for
+  every server-side caller.
 
 - **`src/lib/coachhelm/v3/metrics/par-opportunities.ts` is a new, pure
   metrics module** (2026-09-23, `agent/coachhelm-par-opportunities`,
@@ -978,6 +1062,57 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   (`coachhelm_comparable_opportunity_attribution`) stays default-off —
   slice 2 removes one enable blocker, but migration 20260922230000 still
   isn't applied and no real-world shadow evidence exists yet.
+
+- **A9 slice 3 adds the coach-facing READ of `golf_insight_outcome_
+  attribution`** (repair-plan §14.12). Nothing before this slice ever read
+  this table back for display — confirmed by the repair-plan §14.12
+  observed-outcome-language audit (2026-09-23), which found only a
+  completely different, human-self-report column
+  (`golf_coach_insights.outcome_status`) rendered anywhere.
+  `src/lib/coachhelm/v3/effectiveness/attribution-read.ts`: a pure,
+  flag-unaware DB loader — `readAttributionForInsight` (single insight)
+  and `readAttributionForPlayer` (player-scoped: resolves the player's own
+  insight ids first, then reads attribution rows for those ids, chunked at
+  `chunkIds`'s 200-id cap and paginated per chunk via `fetchAllRowsResult`
+  — both PostgREST caps `.claude/rules/database.md` names). **Never empty
+  on failure**: a real read failure returns `{ok: false}`; a legitimate
+  "not attributed yet" is `{ok: true, rows: []}` — collapsing these would
+  let the UI show "no evidence" for what might be an outage. Same
+  unknown-column degrade as the write side (`isUnknownColumnError`,
+  duplicated per-file by this codebase's own established convention) —
+  every row reads back `method_version: null` until migration
+  20260922230000 is applied, exactly like the write side's pre-N10 shape.
+  `src/lib/coachhelm/v3/effectiveness/attribution-view-model.ts`: pure
+  labeling — `null`/`'v2_observed_delta'` (the round-level path, which
+  predates the A9 slice 2 confounding check entirely) both collapse to
+  `'earlier_method'`, never `isClean`; `'comparable_opportunities_v1'` is
+  `'observed_change'`, the ONLY `isClean: true` value (it's the only
+  method whose own pipeline actively ran `detectConfoundingInterventions`
+  and found nothing); `'comparable_opportunities_v1_limited'` is
+  `'observed_change_limited'`, never clean (limited ≠ clean — a
+  healthy-sample-size limited row is still `state: 'result'`, just with
+  `isClean: false`); any unrecognized version string is `'unknown'`, a
+  neutral fallback, never clean. Sample size uses the same `< 3` floor
+  `event-ledger.ts`'s `deriveTrustStatus` established for "too few
+  measured outcomes" (`MIN_SUFFICIENT_ROUNDS`) — below it on either side
+  is `state: 'insufficient'` regardless of method. `src/app/golf/actions/
+  insight-attribution.ts`: the flag gate — `coachhelm_comparable_
+  opportunity_attribution` is checked BEFORE any Supabase call, so an off
+  flag makes zero DB calls; a failed read or unauthenticated caller both
+  return `null`. `AttributionReadout.tsx`
+  (`components/golf/coachhelm/insight-card/`) renders nothing for `null`
+  (flag off / unauthenticated / failed read, all collapsed by the action)
+  but DOES render the real `'missing'` state (a quiet "Not attributed
+  yet") — silence there would read as "proven to do nothing" rather than
+  "not measured yet". Wired into `FairwayPlayerInsight.tsx`'s hero insight
+  slot only (beside `InsightCard`'s `OutcomeBadge` — a DIFFERENT column,
+  the human self-report one). No migration applied by this slice; flag
+  stays default-off. This slice does NOT decide whether these rows should
+  ever feed `nextWeight` (still the open, separate decision the slice 2
+  entry above already named) — it is read-only, display-only. See
+  `attribution-read.test.ts`, `attribution-view-model.test.ts`,
+  `src/test/golf/actions/insight-attribution.test.ts`, and
+  `src/test/golf/components/AttributionReadout.test.tsx`.
 
 ## Tests To Prefer
 

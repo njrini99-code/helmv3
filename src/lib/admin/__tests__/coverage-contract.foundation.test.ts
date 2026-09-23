@@ -397,6 +397,27 @@ describe('global tripwire', () => {
     // wrapped with feature `development_plans_coach`. Both surfaces they
     // touch ship behind coachhelm_focus_area_practice_log (default off) and
     // an unapplied migration. Total 429 -> 432.
-    expect(total).toBe(432);
+    // 2026-09-23 (+2), A9 slice 3 (repair-plan §14.12): getInsightAttributionReadout
+    // and getPlayerAttributionReadouts in the new
+    // src/app/golf/actions/insight-attribution.ts — the coach-facing read of
+    // comparable-opportunity attribution results, both withAdminObserved-wrapped
+    // with feature `coachhelm_analytics` (same feature as the sibling
+    // getInsightEffectiveness/getPlayerEffectiveness reads). Total 432 -> 434.
+    // 2026-09-23 (+1), A4 slice 3b (repair-plan §13, work package A4):
+    // getRoundReviewSequenceAttribution in the new
+    // src/app/golf/actions/round-review-sequence-attribution.ts — a
+    // read-only, decorative Round Review mount, flag-gated
+    // (coachhelm_a4_sequence_attribution_surface, default off) with the
+    // flag check first so a flag-off call makes zero DB calls.
+    // withAdminObserved-wrapped with feature `round_review_ai` (mirrors
+    // getPlayerStandingForReview's 'player_or_coach' pattern on the same
+    // page). This wrapping was added in the train-2 merge — the action
+    // shipped unwrapped in the PR. Total 434 -> 435.
+    // 2026-09-23 (+1), PR #2046 (merged into train 2 independently of the
+    // above): getRoundReviewNarrative (round-review-narrative.ts), the
+    // round-review narrative action — withAdminObserved-wrapped with
+    // feature `round_review_ai`, gated behind
+    // `coachhelm_round_review_narrative` (default off). Total 435 -> 436.
+    expect(total).toBe(436);
   });
 });

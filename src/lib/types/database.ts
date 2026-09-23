@@ -13206,6 +13206,117 @@ export type Database = {
           },
         ]
       }
+      golf_focus_area_criteria: {
+        Row: {
+          created_at: string
+          created_by_user_id: string
+          focus_area_id: string
+          id: string
+          label: string
+          met: boolean
+          met_at: string | null
+          player_id: string
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_user_id: string
+          focus_area_id: string
+          id?: string
+          label: string
+          met?: boolean
+          met_at?: string | null
+          player_id: string
+          source: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by_user_id?: string
+          focus_area_id?: string
+          id?: string
+          label?: string
+          met?: boolean
+          met_at?: string | null
+          player_id?: string
+          source?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_focus_area_criteria_focus_area_id_fkey"
+            columns: ["focus_area_id"]
+            isOneToOne: false
+            referencedRelation: "golf_player_focus_areas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_focus_area_criteria_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      golf_focus_area_practice_sessions: {
+        Row: {
+          client_request_id: string
+          created_at: string
+          drill_id: string | null
+          focus_area_id: string
+          id: string
+          logged_by_role: string
+          logged_by_user_id: string
+          note: string | null
+          player_id: string
+          practiced_at: string
+          reps: number | null
+        }
+        Insert: {
+          client_request_id: string
+          created_at?: string
+          drill_id?: string | null
+          focus_area_id: string
+          id?: string
+          logged_by_role: string
+          logged_by_user_id: string
+          note?: string | null
+          player_id: string
+          practiced_at: string
+          reps?: number | null
+        }
+        Update: {
+          client_request_id?: string
+          created_at?: string
+          drill_id?: string | null
+          focus_area_id?: string
+          id?: string
+          logged_by_role?: string
+          logged_by_user_id?: string
+          note?: string | null
+          player_id?: string
+          practiced_at?: string
+          reps?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_focus_area_practice_sessions_focus_area_id_fkey"
+            columns: ["focus_area_id"]
+            isOneToOne: false
+            referencedRelation: "golf_player_focus_areas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_focus_area_practice_sessions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       golf_global_patterns: {
         Row: {
           average_impact: number
@@ -15994,6 +16105,41 @@ export type Database = {
           },
         ]
       }
+      golf_round_recap_locks: {
+        Row: {
+          expires_at: string
+          holder_token: string
+          kind: string
+          locked_at: string
+          revision: number
+          round_id: string
+        }
+        Insert: {
+          expires_at: string
+          holder_token: string
+          kind: string
+          locked_at?: string
+          revision?: number
+          round_id: string
+        }
+        Update: {
+          expires_at?: string
+          holder_token?: string
+          kind?: string
+          locked_at?: string
+          revision?: number
+          round_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_round_recap_locks_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: false
+            referencedRelation: "golf_rounds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       golf_round_recap_provenance: {
         Row: {
           call_log_id: string | null
@@ -16050,6 +16196,7 @@ export type Database = {
         Row: {
           action_items: Json | null
           ai_model_version: string | null
+          ai_narrative: string | null
           areas_count: number | null
           areas_to_review: Json | null
           coach_feedback_text: string | null
@@ -16091,6 +16238,7 @@ export type Database = {
         Insert: {
           action_items?: Json | null
           ai_model_version?: string | null
+          ai_narrative?: string | null
           areas_count?: number | null
           areas_to_review?: Json | null
           coach_feedback_text?: string | null
@@ -16132,6 +16280,7 @@ export type Database = {
         Update: {
           action_items?: Json | null
           ai_model_version?: string | null
+          ai_narrative?: string | null
           areas_count?: number | null
           areas_to_review?: Json | null
           coach_feedback_text?: string | null
@@ -20907,6 +21056,18 @@ export type Database = {
           window_start: string
         }[]
       }
+      claim_round_recap_lock: {
+        Args: {
+          p_kind: string
+          p_revision: number
+          p_round_id: string
+          p_ttl_seconds: number
+        }
+        Returns: {
+          expires_at: string
+          holder_token: string
+        }[]
+      }
       coach_id_for_team: {
         Args: { p_team_id: string; p_user_id: string }
         Returns: string
@@ -21799,6 +21960,15 @@ export type Database = {
       }
       release_baseball_team_invitation_redemption: {
         Args: { p_invitation_id: string }
+        Returns: undefined
+      }
+      release_round_recap_lock: {
+        Args: {
+          p_holder_token: string
+          p_kind: string
+          p_revision: number
+          p_round_id: string
+        }
         Returns: undefined
       }
       resolve_admin_event: { Args: { p_event_ids: string[] }; Returns: number }
