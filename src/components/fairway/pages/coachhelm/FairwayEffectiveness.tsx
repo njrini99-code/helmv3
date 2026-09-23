@@ -689,7 +689,8 @@ function CockpitView({
  * accuracy RIBBON (the bold filled rising trend, with its coin-flip benchmark
  * tick) inset into the same panel's lower band. Live from getPredictionPerformance.
  * ─────────────────────────────────────────────────────────────────────────── */
-function PrimaryInstrument({ data, days }: { data?: PredictionPerformanceData; days: number }) {
+/** Exported for unit testing (Package 11 — the Climbing/Holding delta chip). */
+export function PrimaryInstrument({ data, days }: { data?: PredictionPerformanceData; days: number }) {
   const resolved = data?.summary.validatedPredictions ?? 0;
   const accuracy = data?.summary.overallAccuracy ?? 0;
 
@@ -698,13 +699,15 @@ function PrimaryInstrument({ data, days }: { data?: PredictionPerformanceData; d
   const ribbonPoints: RibbonPoint[] = series.map((p) => ({ x: p.date, y: p.accuracyRate }));
 
   // Is accuracy climbing? Honest delta from the validated-only series.
+  // Strictly greater than — an unchanged rate is "Holding", not "Climbing
+  // +0%": `>=` let a zero delta wear the up-arrow and the success color.
   const firstPoint = series[0];
   const lastPoint = series[series.length - 1];
   const climbing =
     series.length >= 2 &&
     firstPoint !== undefined &&
     lastPoint !== undefined &&
-    lastPoint.accuracyRate >= firstPoint.accuracyRate;
+    lastPoint.accuracyRate > firstPoint.accuracyRate;
 
   const climbDelta =
     series.length >= 2 && firstPoint && lastPoint
@@ -1158,7 +1161,7 @@ function ErrorMixDeck({ data }: { data?: PredictionPerformanceData }) {
  * ══════════════════════════════════════════════════════════════════════════ */
 
 /* PREDICTIONS — the detailed prediction read (low-N honest). */
-function PredictionsSection({ data }: { data?: PredictionPerformanceData }) {
+export function PredictionsSection({ data }: { data?: PredictionPerformanceData }) {
   if (!data) {
     return (
       <EmptyState
@@ -1192,7 +1195,10 @@ function PredictionsSection({ data }: { data?: PredictionPerformanceData }) {
           value={data.summary.overallAccuracy}
           format={{ style: 'percent', maximumFractionDigits: 0 }}
           goodDirection="up"
-          starved={resolved === 0}
+          // starved must match `required` below — a low-N read (e.g. 2 for 2
+          // = "100%") is not trustworthy until GLOBAL_LOW_CONFIDENCE_RESOLVED
+          // resolved predictions, the same floor the InlineNotice above uses.
+          starved={resolved < GLOBAL_LOW_CONFIDENCE_RESOLVED}
           current={resolved}
           required={GLOBAL_LOW_CONFIDENCE_RESOLVED}
           unit="resolved predictions"
@@ -1213,7 +1219,7 @@ function PredictionsSection({ data }: { data?: PredictionPerformanceData }) {
           mono
           goodDirection="down"
           hideTrend
-          starved={resolved === 0}
+          starved={resolved < BUCKET_MIN_RESOLVED}
           current={resolved}
           required={BUCKET_MIN_RESOLVED}
           unit="resolved predictions"
@@ -1224,7 +1230,7 @@ function PredictionsSection({ data }: { data?: PredictionPerformanceData }) {
           format={{ style: 'percent', maximumFractionDigits: 0 }}
           goodDirection="up"
           hideTrend
-          starved={resolved === 0}
+          starved={resolved < GLOBAL_LOW_CONFIDENCE_RESOLVED}
           current={resolved}
           required={GLOBAL_LOW_CONFIDENCE_RESOLVED}
           unit="resolved predictions"

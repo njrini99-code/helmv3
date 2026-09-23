@@ -418,6 +418,16 @@ Player opens round review
   itself (a separate check, keyed on player+metric) — only the ledger's
   action count can read low. Fixing it means widening the dedup key, a
   follow-up slice.
+- Chart/label honesty (2026-09-23, Package 11): `ShotAnalysisCard.tsx`'s
+  "Key Weaknesses" now filters ranked contexts to `avgSG < 0` before slicing
+  the top 3 — the prior derivation only stable-sorted by sample-size tier
+  and never excluded a net-positive context, so a strong player could see a
+  genuine strength rendered red, unsigned, under "Key Weaknesses". An
+  all-positive ranked list now renders an honest "at or above par" note
+  instead of hiding the section. `WhyPopover.tsx`'s generated-explanation gap
+  label now suffixes strokes/yards/feet the same way its paired comparison
+  value already does (`formatComparisonValue`) — only `percent` had a unit
+  before.
 
 ## §15.2 Regression Fixture Matrix (repair plan, 2026-09-23)
 
