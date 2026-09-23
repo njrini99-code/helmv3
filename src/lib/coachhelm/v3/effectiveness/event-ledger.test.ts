@@ -26,6 +26,11 @@ vi.mock('@/lib/utils/transient-error', async (importOriginal) => {
   return { ...actual, delay: vi.fn().mockResolvedValue(undefined) };
 });
 
+const isFlagEnabledMock = vi.fn().mockReturnValue(false);
+vi.mock('@/lib/flags', () => ({
+  isFlagEnabled: (id: string) => isFlagEnabledMock(id),
+}));
+
 import { logServerError } from '@/lib/server-error-logger';
 import {
   deriveTrustStatus,
@@ -33,6 +38,7 @@ import {
   RECENT_TREND_WINDOW,
   recordInsightAction,
   recordInsightExposure,
+  getInsightEffectivenessSignals,
   type TrustStatus,
 } from './event-ledger';
 
@@ -338,5 +344,132 @@ describe('recordInsightExposure — bounded retry on transient network errors', 
     expect(logServerErrorMock).toHaveBeenCalledTimes(1);
     const [message] = logServerErrorMock.mock.calls[0]!;
     expect(message).toContain('recordInsightExposure insert failed');
+  });
+});
+
+/**
+ * Package 10 gap audit (repair-plan §14.12 item d — missingness) —
+ * getInsightEffectivenessSignals' outcome-counting loop, gated behind
+ * `coachhelm_trust_status_exclude_unmeasured_outcomes`. A null-`improvement`
+ * `golf_insight_outcome` row is a thin-sample attribution that never got a
+ * real measurement (attribute.ts's own MIN_WINDOW_ROUNDS no-op), not "we
+ * measured, nothing happened" — flag ON must exclude it from `measured`/
+ * `worked`; flag OFF (the shipped default) must reproduce the prior,
+ * unconditional-count behavior exactly.
+ */
+describe('getInsightEffectivenessSignals — outcome counting vs. coachhelm_trust_status_exclude_unmeasured_outcomes', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    isFlagEnabledMock.mockReturnValue(false);
+  });
+
+  function selectChain(rows: Array<Record<string, unknown>>) {
+    return {
+      select: () => ({
+        in: () => ({
+          order: () => ({
+            range: async () => ({ data: rows, error: null }),
+          }),
+        }),
+      }),
+    };
+  }
+
+  function makeClient(opts: {
+    exposure?: Array<{ insight_id: string }>;
+    action?: Array<{ insight_id: string }>;
+    outcome?: Array<{ insight_id: string; improvement: number | null; measured_at: string }>;
+  }) {
+    const tables: Record<string, ReturnType<typeof selectChain>> = {
+      golf_insight_exposure: selectChain(opts.exposure ?? []),
+      golf_insight_action: selectChain(opts.action ?? []),
+      golf_insight_outcome: selectChain(opts.outcome ?? []),
+    };
+    return { from: (name: string) => tables[name] };
+  }
+
+  test('flag OFF (default): a null-improvement row still counts into measured — unchanged prior behavior', async () => {
+    isFlagEnabledMock.mockReturnValue(false);
+    adminClientMock.mockReturnValue(
+      makeClient({
+        outcome: [{ insight_id: 'i-1', improvement: null, measured_at: '2026-09-01T00:00:00Z' }],
+      }),
+    );
+
+    const result = await getInsightEffectivenessSignals(['i-1']);
+    const sig = result.get('i-1');
+    expect(sig?.measured).toBe(1);
+    expect(sig?.worked).toBe(0);
+    expect(sig?.status).toBe<TrustStatus>('needs_validation');
+  });
+
+  test('flag ON: a null-improvement row (thin-sample, insufficient evidence) is excluded from measured', async () => {
+    isFlagEnabledMock.mockReturnValue(true);
+    adminClientMock.mockReturnValue(
+      makeClient({
+        outcome: [{ insight_id: 'i-1', improvement: null, measured_at: '2026-09-01T00:00:00Z' }],
+      }),
+    );
+
+    const result = await getInsightEffectivenessSignals(['i-1']);
+    const sig = result.get('i-1');
+    expect(sig?.measured).toBe(0);
+    expect(sig?.worked).toBe(0);
+    // Missing post-action evidence remains unknown, not a validated-but-thin status.
+    expect(sig?.status).toBe<TrustStatus>('new_hypothesis');
+  });
+
+  test('flag ON: 3+ null-improvement rows no longer read as underperforming on zero real evidence', async () => {
+    isFlagEnabledMock.mockReturnValue(true);
+    adminClientMock.mockReturnValue(
+      makeClient({
+        outcome: [
+          { insight_id: 'i-1', improvement: null, measured_at: '2026-09-01T00:00:00Z' },
+          { insight_id: 'i-1', improvement: null, measured_at: '2026-09-02T00:00:00Z' },
+          { insight_id: 'i-1', improvement: null, measured_at: '2026-09-03T00:00:00Z' },
+        ],
+      }),
+    );
+
+    const result = await getInsightEffectivenessSignals(['i-1']);
+    const sig = result.get('i-1');
+    expect(sig?.measured).toBe(0);
+    expect(sig?.status).not.toBe<TrustStatus>('underperforming');
+    expect(sig?.status).toBe<TrustStatus>('new_hypothesis');
+  });
+
+  test('flag ON: a real (non-null) improvement still counts normally alongside excluded null rows', async () => {
+    isFlagEnabledMock.mockReturnValue(true);
+    adminClientMock.mockReturnValue(
+      makeClient({
+        outcome: [
+          { insight_id: 'i-1', improvement: null, measured_at: '2026-09-01T00:00:00Z' },
+          { insight_id: 'i-1', improvement: 1.5, measured_at: '2026-09-02T00:00:00Z' },
+          { insight_id: 'i-1', improvement: -0.5, measured_at: '2026-09-03T00:00:00Z' },
+        ],
+      }),
+    );
+
+    const result = await getInsightEffectivenessSignals(['i-1']);
+    const sig = result.get('i-1');
+    // Only the 2 real-valued rows count — the null row is excluded either way.
+    expect(sig?.measured).toBe(2);
+    expect(sig?.worked).toBe(1);
+  });
+
+  test('shown/acted are unaffected by the flag either way', async () => {
+    isFlagEnabledMock.mockReturnValue(true);
+    adminClientMock.mockReturnValue(
+      makeClient({
+        exposure: [{ insight_id: 'i-1' }, { insight_id: 'i-1' }],
+        action: [{ insight_id: 'i-1' }],
+        outcome: [{ insight_id: 'i-1', improvement: null, measured_at: '2026-09-01T00:00:00Z' }],
+      }),
+    );
+
+    const result = await getInsightEffectivenessSignals(['i-1']);
+    const sig = result.get('i-1');
+    expect(sig?.shown).toBe(2);
+    expect(sig?.acted).toBe(1);
   });
 });
