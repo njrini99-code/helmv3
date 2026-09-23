@@ -406,8 +406,11 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   construction; every field `0` when there is no owner). `groupIssues`
   rejects a duplicate `claimId` outright rather than silently dropping a
   claim, and a `null` hole/shot number no longer collides with another
-  unknown shot (each gets a unique id instead — A5's own `shotClaimId`,
-  #1993, still has this bug and needs the same fix in its own slice).
+  unknown shot (each renders to a fixed marker excluded from union-find,
+  then disambiguated by its packet's own `claimId` when an issue's shots
+  are built, so identity stays reproducible — A5's own `shotClaimId`,
+  #1993, still renders `'null'` literally and needs this same fix in its
+  own slice).
   Tested against real `computeParOpportunities` (A3),
   `computeDistanceProfile` (A2, #1989), and `attributeSequence` (A4,
   #1988) metric values on one shared par-5 fixture, each wrapped by a

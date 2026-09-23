@@ -603,23 +603,35 @@ later slice." This module is that slice, for the new v3 pure-core families.
   `metricId`, `dimensions`, or label text — only from this explicit,
   adapter-stated shot set. A `null` hole/shot number is never rendered as
   the literal string `'null'` (two different unknown shots would
-  otherwise stringify identically and silently merge) — each gets its own
-  per-call unique id instead, so it groups with nothing rather than
-  wrongly with something. A5's own `shotClaimId` (#1993) still has this
-  bug as of this writing and needs the same fix in A5 slice 2.
-- **Grouping before eligibility, not after** (revised 2026-09-23 review
-  fix — this reverses the A6 top-N audit's naive "eligibility first"
-  framing for grouping specifically). `groupIssues` runs union-find over
-  EVERY packet with at least one source shot, eligible or not, then only
-  AFTER grouping filters each connected group down to its eligible
-  members to decide what surfaces. Filtering eligibility first would
-  silently split a chain that runs through an ineligible packet as a
+  otherwise stringify identically and silently merge) — instead every
+  unknown-numbered shot renders to the SAME fixed marker
+  (`shot:<round_id>:unknown:unknown`, deterministic and pure, unlike a
+  per-call counter, so the issue's own `id` stays reproducible), and
+  `groupIssues` never uses that marker as a union-find join key, so two
+  packets sharing it still never merge on that basis alone. Each packet's
+  own (now globally unique, see below) `claimId` disambiguates its marker
+  when an issue's own `sourceShotIds`/`id` are built, so two different
+  packets' unknown shots landing in the same issue via some other, real,
+  shared id still don't collapse into one entry. A5's own `shotClaimId`
+  (#1993) still renders `'null'` literally as of this writing and needs
+  this same fixed-marker fix in A5 slice 2.
+- **Connectivity before eligibility, eligibility before ownership/scoring,
+  scoring before any future truncation** (revised 2026-09-23 review fix,
+  refining — not reversing — the A6 top-N audit's ordering rule:
+  eligibility still gates ownership and scoring exactly as before; only
+  WHERE it applies relative to connectivity has moved). `groupIssues` runs
+  union-find over EVERY packet with at least one source shot, eligible or
+  not, then only AFTER grouping filters each connected group down to its
+  eligible members to decide what surfaces. Filtering eligibility first
+  would silently split a chain that runs through an ineligible packet as a
   bridge (`A ↔ ineligible ↔ C`, where A and C share no shot directly) into
   two issues instead of one. The ineligible bridge itself never appears in
   a `claims` list, never owns, and never contributes a shot to the
   surfaced issue's own `sourceShotIds` — it only keeps the real claims on
   either side of it correctly grouped. A connected group with no eligible
-  member at all surfaces no issue.
+  member at all surfaces no issue. Any future top-N truncation must still
+  happen strictly after ownership/scoring, never before, per the A6 top-N
+  audit above.
 - **Grouping is transitive shot overlap** (union-find): two packets sharing
   even one shot land in the same issue, and the closure is transitive (A↔B,
   B↔C ⇒ A, B, C together) even when A and C share no shot directly.

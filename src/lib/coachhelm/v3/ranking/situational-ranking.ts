@@ -6,9 +6,10 @@
  * fixed every surface that truncated a `golf_coach_insights` list before
  * ranking it, but explicitly left "issue grouping and parent/child claim
  * links" out of scope pending A1–A4's evidence-packet work. That work now
- * exists (A1 `ShotFact`/`HoleContext`, A3 `par-opportunities.ts`, A5
- * `hypothesis-policy.ts`, and A2/A4 landing shortly) — this module is the
- * grouping step it deferred to.
+ * exists (A1 `ShotFact`/`HoleContext`, A2 `distance-profile.ts`, A3
+ * `par-opportunities.ts`, A4 `sequence-attribution.ts`, and A5
+ * `hypothesis-policy.ts`) — this module is the grouping step it deferred
+ * to.
  *
  * The problem this solves: A3's `par-opportunities.ts`, A2's
  * `distance-profile.ts`, A4's `sequence-attribution.ts`, and A5's
@@ -55,6 +56,16 @@
  * contributes a shot to an issue's own `sourceShotIds`, but its shared
  * shots still correctly keep A and C in one issue instead of two. A group
  * with no eligible member at all surfaces no issue.
+ *
+ * The full order this module (and any future truncation built on top of
+ * it) must follow is: **connectivity first** (union-find over every
+ * packet, eligible or not) → **eligibility second** (filter each
+ * connected group down to what may surface) → **ownership and policy
+ * input third** (`pickOwner`/`buildIssue`, computed only from the
+ * eligible survivors) → **any future top-N truncation strictly after
+ * this**, never before (per the evidence contract's A6 top-N audit).
+ * Eligibility still gates ownership and scoring exactly as before; only
+ * WHERE it applies relative to connectivity has moved.
  *
  * ## Grouping
  * Two packets join the same issue when their `sourceShotIds` overlap in
@@ -123,7 +134,7 @@ const ORIGIN_PRIORITY: Record<IssueOrigin, number> = {
 /**
  * One family's finding, normalized into the shape grouping consumes.
  * Built by an adapter for the originating family (A2/A3's `MetricResult`,
- * A5's `Hypothesis`, or a future A4 finding) — this module never
+ * A5's `Hypothesis`, or an A4 `SequenceEvent` finding) — this module never
  * reconstructs eligibility or shot membership from a family-specific
  * shape itself.
  */
@@ -237,6 +248,11 @@ export interface Issue {
   policyInput: EffectivePolicyInput;
 }
 
+/** The fixed marker `shotClaimId` renders for an unknown hole/shot
+ *  number, and the segments that distinguish it from a real one — see
+ *  `shotClaimId`'s own doc comment for why this exists. */
+const UNKNOWN_SHOT_MARKER = 'unknown';
+
 /**
  * Matches A5 `hypothesis-policy.ts`'s own `shotClaimId` format for a
  * FULLY-KNOWN shot (`shot:<round_id>:<hole_number>:<shot_number>`) so ids
@@ -247,29 +263,47 @@ export interface Issue {
  *
  * A `null` `hole_number`/`shot_number` is deliberately NOT rendered as the
  * literal string `'null'` (A5's #1993 version still does this and needs
- * the same fix in A5 slice 2 — see repair-plan addendum §13 review notes,
- * 2026-09-23): two different shots that both have an unknown hole/shot
- * number would otherwise stringify identically and silently merge into
- * one issue in `groupIssues`'s union-find. Instead, each null-numbered
- * shot gets its own per-call unique id, so it is grouped with nothing —
- * ungroupable rather than wrongly grouped. This does mean the SAME
- * logical shot, if referenced by two different packets while its
- * hole/shot number is unknown, will not be recognized as the same shot
- * either; that tradeoff is intentional (see the module doc comment on
- * `sourceShotIds`: an adapter that cannot honestly name its source shots
- * should not expect grouping to guess for it).
+ * the same fix, with this same scheme, in A5 slice 2 — see repair-plan
+ * addendum §13 review notes, 2026-09-23): two different shots that both
+ * have an unknown hole/shot number would otherwise stringify identically
+ * and silently merge into one issue in `groupIssues`'s union-find.
+ * Instead, every unknown-numbered shot renders to the SAME fixed marker
+ * (`shot:<round_id>:unknown:unknown`) — deterministic and pure, unlike a
+ * per-call counter or timestamp, so the same input always produces the
+ * same id and `groupIssues`'s "stable issue identity" promise holds even
+ * for a packet with an unknown-numbered shot. The marker's shared-ness
+ * would normally let two packets both holding it accidentally merge, so
+ * `groupIssues` special-cases it: a marker is NEVER used as a union-find
+ * join key, no matter how many packets carry it (see `isUnknownShotId`).
+ * Each packet's OWN `claimId` — already guaranteed globally unique (see
+ * `assertUniqueClaimIds`) — disambiguates its marker when an issue's own
+ * `sourceShotIds`/`id` are built (see `buildIssue`'s `qualifyShotId`), so
+ * no information is lost even when two unknown shots end up in the same
+ * issue via some other, real, shared id. This does mean the SAME logical
+ * shot, if referenced by two different packets while its hole/shot number
+ * is unknown, will not be recognized as the same shot either; that
+ * tradeoff is intentional (see the module doc comment on `sourceShotIds`:
+ * an adapter that cannot honestly name its source shots should not expect
+ * grouping to guess for it).
  */
-let unknownShotCounter = 0;
 export function shotClaimId(shot: {
   round_id: string;
   hole_number: number | null;
   shot_number: number | null;
 }): string {
   if (shot.hole_number === null || shot.shot_number === null) {
-    unknownShotCounter += 1;
-    return `shot:${shot.round_id}:unknown:${unknownShotCounter}`;
+    return `shot:${shot.round_id}:${UNKNOWN_SHOT_MARKER}:${UNKNOWN_SHOT_MARKER}`;
   }
   return `shot:${shot.round_id}:${shot.hole_number}:${shot.shot_number}`;
+}
+
+/** Whether a `shotClaimId`-shaped string is the unknown-shot marker
+ *  (assumes, like `roundIdOfShotClaim`, that a round id never itself
+ *  contains a `:`) — such an id must never be used to join two packets
+ *  in `groupIssues`'s union-find. */
+function isUnknownShotId(shotId: string): boolean {
+  const parts = shotId.split(':');
+  return parts[2] === UNKNOWN_SHOT_MARKER && parts[3] === UNKNOWN_SHOT_MARKER;
 }
 
 /** Recovers the `round_id` segment from a `shotClaimId`-shaped string.
@@ -280,11 +314,29 @@ function roundIdOfShotClaim(shotId: string): string {
   return parts[1] ?? shotId;
 }
 
-/** The single sort comparator used everywhere a stable claimId ordering
- *  is needed, so "which order" is answered identically wherever it's
- *  asked (never a second, possibly-inconsistent inline comparator). */
+/** Disambiguates an unknown-shot marker by the claimId of the packet it
+ *  came from (globally unique, see `assertUniqueClaimIds`) before it goes
+ *  into an issue's own `sourceShotIds`/`id` — otherwise two different
+ *  packets' unknown shots, sharing the identical marker, would silently
+ *  collapse into one entry via the `Set` dedup in `buildIssue`. A known
+ *  shot id passes through unchanged. */
+function qualifyShotId(shotId: string, ownerClaimId: string): string {
+  return isUnknownShotId(shotId) ? `${shotId}:${ownerClaimId}` : shotId;
+}
+
+/** The single string comparator used everywhere a stable ordering is
+ *  needed (claim sorts, shot-id sorts, issue-id sorts) — plain code-unit
+ *  order, deliberately never `localeCompare`, whose collation depends on
+ *  the runtime's locale/ICU configuration and could otherwise disagree
+ *  with the code-unit order `Array.prototype.sort()`'s own default
+ *  uses elsewhere in this module. One comparator, used everywhere,
+ *  never a second possibly-inconsistent one. */
+function compareStrings(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
 function compareByClaimId(a: { claimId: string }, b: { claimId: string }): number {
-  return a.claimId.localeCompare(b.claimId);
+  return compareStrings(a.claimId, b.claimId);
 }
 
 /**
@@ -318,12 +370,14 @@ function pickOwner(
     const ap = ORIGIN_PRIORITY[a.origin];
     const bp = ORIGIN_PRIORITY[b.origin];
     if (ap !== bp) return ap - bp;
-    return a.claimId.localeCompare(b.claimId);
+    return compareStrings(a.claimId, b.claimId);
   })[0]!;
 }
 
 function buildIssue(members: readonly IssueSourcePacket[]): Issue {
-  const sourceShotIds = Array.from(new Set(members.flatMap((m) => m.sourceShotIds))).sort();
+  const sourceShotIds = Array.from(
+    new Set(members.flatMap((m) => m.sourceShotIds.map((s) => qualifyShotId(s, m.claimId)))),
+  ).sort(compareStrings);
   const id = `issue:${sourceShotIds.join('|')}`;
 
   const owner = pickOwner(members);
@@ -425,6 +479,10 @@ export function groupIssues(packets: readonly IssueSourcePacket[]): Issue[] {
   const firstPacketForShot = new Map<string, number>();
   withShots.forEach((packet, i) => {
     for (const shotId of packet.sourceShotIds) {
+      // The unknown-shot marker never joins two packets — see
+      // `shotClaimId`'s doc comment. Two different packets both carrying
+      // it must never union just because the marker string matches.
+      if (isUnknownShotId(shotId)) continue;
       const seen = firstPacketForShot.get(shotId);
       if (seen === undefined) {
         firstPacketForShot.set(shotId, i);
@@ -448,6 +506,6 @@ export function groupIssues(packets: readonly IssueSourcePacket[]): Issue[] {
     if (eligibleMembers.length === 0) continue; // the whole group is hidden — an ineligible bridge alone founds nothing
     issues.push(buildIssue(eligibleMembers));
   }
-  issues.sort((a, b) => a.id.localeCompare(b.id));
+  issues.sort((a, b) => compareStrings(a.id, b.id));
   return issues;
 }

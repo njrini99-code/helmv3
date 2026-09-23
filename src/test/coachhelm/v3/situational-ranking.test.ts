@@ -296,15 +296,16 @@ describe('groupIssues — par, distance, and sequence describing the same source
   });
 
   // An ineligible packet sharing a shot with the group, carrying a huge
-  // impact that must never win ownership or even appear — eligibility is
-  // applied BEFORE grouping/scoring.
+  // LOSS (negative — a real ownership candidate by sign alone) that must
+  // never win ownership or even appear: eligibility still gates ownership
+  // and scoring, even though grouping itself now runs before eligibility.
   const ineligiblePacket = syntheticPacket({
     claimId: 'metric:some_unsupported_row:x',
     origin: 'distance',
     label: 'some_unsupported_row',
     sourceShotIds: [approach1],
     eligible: false,
-    strokesImpact: 99,
+    strokesImpact: -99,
     confidence: 0.99,
   });
 
@@ -557,18 +558,52 @@ describe('groupIssues — tie-breaking and edge cases', () => {
   });
 
   it('two different unknown shots (null hole/shot number) never collide into one issue', () => {
-    // Both stringify the same way under the OLD `?? 'null'` scheme
-    // (`shot:r:null:null`) but must be treated as two distinct, unrelated
-    // shots — never silently merged.
+    // Both render to the SAME fixed marker (`shot:r:unknown:unknown`) —
+    // that's fine and deterministic; `groupIssues` deliberately never
+    // uses that marker as a union-find join key, so two packets sharing
+    // it never merge on that basis alone. Only a matching KNOWN shot id
+    // can merge two packets.
     const unknown1 = shotClaimId({ round_id: 'r', hole_number: null, shot_number: null });
     const unknown2 = shotClaimId({ round_id: 'r', hole_number: null, shot_number: null });
-    expect(unknown1).not.toBe(unknown2);
+    expect(unknown1).toBe(unknown2);
 
     const packets: IssueSourcePacket[] = [
       syntheticPacket({ claimId: 'a', origin: 'par', sourceShotIds: [unknown1] }),
       syntheticPacket({ claimId: 'b', origin: 'distance', sourceShotIds: [unknown2] }),
     ];
     expect(groupIssues(packets)).toHaveLength(2);
+  });
+
+  it('stable issue identity holds even for a packet with an unknown-numbered shot', () => {
+    // The old per-call-counter scheme made this non-reproducible (a fresh
+    // counter value every call); the fixed-marker scheme is pure, so the
+    // same input always yields the same id.
+    const build = (): IssueSourcePacket[] => [
+      syntheticPacket({
+        claimId: 'solo',
+        origin: 'hypothesis',
+        sourceShotIds: [shotClaimId({ round_id: 'r', hole_number: null, shot_number: null })],
+      }),
+    ];
+    const first = groupIssues(build());
+    const second = groupIssues(build());
+    expect(first.map((i) => i.id)).toEqual(second.map((i) => i.id));
+  });
+
+  it("an unknown shot from one packet is disambiguated by claimId, never dropped by dedup, when it shares an issue with another packet's unknown shot", () => {
+    const known = shotClaimId({ round_id: 'r', hole_number: 1, shot_number: 1 });
+    const unknownA = shotClaimId({ round_id: 'r', hole_number: null, shot_number: null });
+    const unknownB = shotClaimId({ round_id: 'r', hole_number: null, shot_number: null });
+    expect(unknownA).toBe(unknownB); // same literal marker
+
+    const a = syntheticPacket({ claimId: 'a', origin: 'par', sourceShotIds: [known, unknownA] });
+    const b = syntheticPacket({ claimId: 'b', origin: 'distance', sourceShotIds: [known, unknownB] });
+
+    const [issue] = groupIssues([a, b]);
+    // Both packets' distinct unknown shots must survive in the issue's own
+    // sourceShotIds (qualified by claimId), not collapse into one entry
+    // via a naive Set dedup on the raw marker string.
+    expect(issue!.sourceShotIds).toHaveLength(3); // known + a's unknown + b's unknown
   });
 
   it('rejects two distinct packets sharing the same claimId instead of silently dropping one', () => {
