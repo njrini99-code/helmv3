@@ -417,7 +417,8 @@ them would have broken those routes, not the dead one.
   outcome counts only what a trace recorded: `succeeded` is counted from
   status 'success', never derived as total minus failures. A trace still
   'started' after `STUCK_TRACE_AFTER_MS` (15 min) is `stuck` ("never
-  finished"), and a younger one is `running`. Deriving healthy by
+  finished") when it recorded at least one step, `abandoned` ("opened, no
+  steps") when it recorded none, and a younger one is `running`. Deriving healthy by
   subtraction had shown 62 never-finalized runs as succeeded (2026-09-23);
   `stepCoverage` returns null rather than inventing a denominator. This is
   `/admin/traces`, a DIFFERENT Flight Recorder from the self-healing loop's

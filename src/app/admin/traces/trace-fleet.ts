@@ -36,9 +36,17 @@ export interface TraceFleetSummary {
    * timed out before `helm_debug_finalize_trace` ran. Measured 2026-09-23:
    * 62 of 3,769 production runs in 14 days. The strip used to compute
    * "succeeded" as total - failed - warning, so every one of them rendered
-   * green.
+   * green. Only runs that recorded at least one step count here: they
+   * stalled partway through the pipeline, which is a real signal.
    */
   stuck: number;
+  /**
+   * Runs still `started` after the threshold that never recorded a single
+   * step — opened, then nothing ran (typically a round started and left).
+   * Measured 2026-09-23: 21 of the 68 unfinalized runs. Counted apart from
+   * `stuck` so an abandoned round is not presented as a pipeline fault.
+   */
+  abandoned: number;
   /** Runs still `started` and younger than the threshold: genuinely running. */
   running: number;
   /**
@@ -67,6 +75,7 @@ export function summarizeTraceFleet(
   let warning = 0;
   let succeeded = 0;
   let stuck = 0;
+  let abandoned = 0;
   let running = 0;
 
   for (const run of traces) {
@@ -92,6 +101,7 @@ export function summarizeTraceFleet(
     else if (run.status === 'started') {
       const startedAt = Date.parse(run.started_at);
       if (Number.isFinite(startedAt) && now - startedAt < STUCK_TRACE_AFTER_MS) running += 1;
+      else if (run.observed_step_count === 0) abandoned += 1;
       else stuck += 1;
     }
   }
@@ -109,6 +119,7 @@ export function summarizeTraceFleet(
     warning,
     succeeded,
     stuck,
+    abandoned,
     running,
     dominantGap,
     workflows: [...workflows].sort(),

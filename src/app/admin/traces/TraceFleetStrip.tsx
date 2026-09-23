@@ -122,8 +122,15 @@ export function TraceFleetStrip({ traces }: { traces: readonly FlightTraceRun[] 
               <Figure
                 value={fleet.stuck.toLocaleString()}
                 label="never finished"
-                hint="started, not finalized after 15 min"
+                hint="stalled after recording steps"
                 tone="warning"
+              />
+            ) : null}
+            {fleet.abandoned > 0 ? (
+              <Figure
+                value={fleet.abandoned.toLocaleString()}
+                label="opened, no steps"
+                hint="no step ran; usually a round left unstarted"
               />
             ) : null}
             {fleet.running > 0 ? <Figure value={fleet.running.toLocaleString()} label="running" /> : null}
