@@ -804,6 +804,7 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     actions: {
       'src/app/golf/actions/round-reviews.ts': 'ALL',
       'src/app/golf/actions/round-review-system.ts': 'ALL',
+      'src/app/golf/actions/round-review-narrative.ts': 'ALL',
       'src/app/golf/actions/round-recap.ts': 'ALL',
       'src/app/golf/actions/v3/llm.ts': 'ALL',
       'src/app/golf/actions/insights.ts': ['generateRoundReview'],

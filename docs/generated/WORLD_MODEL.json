@@ -2799,6 +2799,12 @@
         ]
       },
       {
+        "id": "golf_round_recap_locks",
+        "definedIn": [
+          "supabase/migrations/20260923100000_round_recap_single_flight_lock.sql"
+        ]
+      },
+      {
         "id": "golf_round_recap_provenance",
         "definedIn": [
           "supabase/migrations/20260923080000_recap_provenance_and_single_flight.sql"
@@ -3144,6 +3150,10 @@
       {
         "id": "check_rate_limit_atomic",
         "definedIn": "supabase/migrations/20260801100000_auth_rate_limits_atomic_rpc.sql"
+      },
+      {
+        "id": "claim_round_recap_lock",
+        "definedIn": "supabase/migrations/20260923100000_round_recap_single_flight_lock.sql"
       },
       {
         "id": "find_baseball_player_by_email_for_roster",
@@ -3600,6 +3610,10 @@
       {
         "id": "release_baseball_team_invitation_redemption",
         "definedIn": "supabase/migrations/20260630180200_baseball_team_invitation_redeem_rpc.sql"
+      },
+      {
+        "id": "release_round_recap_lock",
+        "definedIn": "supabase/migrations/20260923100000_round_recap_single_flight_lock.sql"
       },
       {
         "id": "resolve_admin_event",
@@ -13338,6 +13352,11 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/focus-areas/load-evidence-revision-status.ts",
           "anchor": "src/lib/flags"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/round-single-flight-lock.ts",
+          "anchor": "src/lib/supabase/admin"
         }
       ]
     },
@@ -13606,6 +13625,18 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/baseball/loaders.ts",
           "anchor": "src/lib/baseball/read-models/elite-stat-events"
+        }
+      ]
+    },
+    {
+      "source": "coachhelm_ai",
+      "target": "claim_round_recap_lock",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/lib/coachhelm/round-single-flight-lock.ts",
+          "anchor": "claim_round_recap_lock"
         }
       ]
     },
@@ -14055,6 +14086,18 @@
           "kind": "rpc_call",
           "path": "src/app/api/cron/v3/standing-refresh/route.ts",
           "anchor": "refresh_player_stats_cache"
+        }
+      ]
+    },
+    {
+      "source": "coachhelm_ai",
+      "target": "release_round_recap_lock",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/lib/coachhelm/round-single-flight-lock.ts",
+          "anchor": "release_round_recap_lock"
         }
       ]
     },
@@ -15177,6 +15220,21 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/app/golf/actions/round-review-narrative.ts",
+          "anchor": "src/lib/supabase/admin"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/round-review-narrative.ts",
+          "anchor": "src/lib/flags"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/round-review-narrative.ts",
+          "anchor": "src/lib/admin/observed-action"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/app/golf/actions/round-review-system.ts",
           "anchor": "src/lib/supabase/admin"
         },
@@ -15346,6 +15404,21 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/app/golf/actions/round-review-narrative.ts",
+          "anchor": "src/lib/supabase/server"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/round-review-narrative.ts",
+          "anchor": "src/lib/auth/verify-player-access"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/round-review-narrative.ts",
+          "anchor": "src/lib/auth/action-rate-limit"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/app/golf/actions/round-review-system.ts",
           "anchor": "src/lib/supabase/server"
         },
@@ -15460,6 +15533,16 @@
       "target": "coachhelm_ai",
       "kind": "feature_relation",
       "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/round-recap.ts",
+          "anchor": "src/lib/coachhelm/round-single-flight-lock"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/round-review-narrative.ts",
+          "anchor": "src/lib/coachhelm/round-single-flight-lock"
+        },
         {
           "kind": "import_graph",
           "path": "src/lib/golf/player-signal-settings.ts",
@@ -15599,6 +15682,17 @@
     },
     {
       "source": "golf_round_lifecycle",
+      "target": "golf_round_recap_locks",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260923100000_round_recap_single_flight_lock.sql"
+        }
+      ]
+    },
+    {
+      "source": "golf_round_lifecycle",
       "target": "golf_round_recap_provenance",
       "kind": "feature_table",
       "evidence": [
@@ -15670,6 +15764,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/round-recap.ts",
           "anchor": "src/lib/coachhelm/v3/llm/recap-evidence"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/round-review-narrative.ts",
+          "anchor": "src/lib/coachhelm/v3/llm/round-review-narrative"
         },
         {
           "kind": "import_graph",
@@ -17844,6 +17943,11 @@
         {
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/generators/scrambling.ts",
+          "anchor": "src/lib/golf/stat-formulas"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/llm/round-review-narrative.ts",
           "anchor": "src/lib/golf/stat-formulas"
         },
         {

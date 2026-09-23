@@ -397,6 +397,11 @@ describe('global tripwire', () => {
     // wrapped with feature `development_plans_coach`. Both surfaces they
     // touch ship behind coachhelm_focus_area_practice_log (default off) and
     // an unapplied migration. Total 429 -> 432.
-    expect(total).toBe(432);
+    // 2026-09-23 (+1), PR #2046: getRoundReviewNarrative
+    // (round-review-narrative.ts), the round-review narrative action —
+    // withAdminObserved-wrapped with feature `round_review_ai`, gated
+    // behind `coachhelm_round_review_narrative` (default off). Total
+    // 432 -> 433.
+    expect(total).toBe(433);
   });
 });

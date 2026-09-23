@@ -13,15 +13,15 @@ import {
 
 describe('buildAiConfigIdentity', () => {
   it('is deterministic regardless of input key order', () => {
-    const a = buildAiConfigIdentity({ coach_chat: 'x', round_review: 'y', hero_narrative: 'z' });
-    const b = buildAiConfigIdentity({ hero_narrative: 'z', round_review: 'y', coach_chat: 'x' });
+    const a = buildAiConfigIdentity({ coach_chat: 'x', round_review: 'y', hero_narrative: 'z', round_review_narrative: 'w' });
+    const b = buildAiConfigIdentity({ hero_narrative: 'z', round_review: 'y', coach_chat: 'x', round_review_narrative: 'w' });
     expect(a).toBe(b);
-    expect(a).toBe('coach_chat=x|hero_narrative=z|round_review=y');
+    expect(a).toBe('coach_chat=x|hero_narrative=z|round_review=y|round_review_narrative=w');
   });
 
   it('changes when any task->model mapping changes', () => {
-    const a = buildAiConfigIdentity({ coach_chat: 'sonnet', round_review: 'haiku', hero_narrative: 'haiku' });
-    const b = buildAiConfigIdentity({ coach_chat: 'sonnet-5', round_review: 'haiku', hero_narrative: 'haiku' });
+    const a = buildAiConfigIdentity({ coach_chat: 'sonnet', round_review: 'haiku', hero_narrative: 'haiku', round_review_narrative: 'haiku' });
+    const b = buildAiConfigIdentity({ coach_chat: 'sonnet-5', round_review: 'haiku', hero_narrative: 'haiku', round_review_narrative: 'haiku' });
     expect(a).not.toBe(b);
   });
 
@@ -39,12 +39,12 @@ describe('buildRuntimeIdentityTriplet', () => {
       appSha: '8e4c5b7d',
       dbMigrationHead: '20260902120000',
       dbMigrationHeadState: 'known',
-      modelForTask: { coach_chat: 'sonnet', round_review: 'haiku', hero_narrative: 'haiku' },
+      modelForTask: { coach_chat: 'sonnet', round_review: 'haiku', hero_narrative: 'haiku', round_review_narrative: 'haiku' },
     });
     expect(triplet.appSha).toBe('8e4c5b7d');
     expect(triplet.dbMigrationHead).toBe('20260902120000');
     expect(triplet.dbMigrationHeadState).toBe('known');
-    expect(triplet.aiConfigIdentity).toBe('coach_chat=sonnet|hero_narrative=haiku|round_review=haiku');
+    expect(triplet.aiConfigIdentity).toBe('coach_chat=sonnet|hero_narrative=haiku|round_review=haiku|round_review_narrative=haiku');
   });
 
   it('an unknown migration head is null with state unknown, never a fabricated value', () => {
