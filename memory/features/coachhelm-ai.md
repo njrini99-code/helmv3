@@ -317,8 +317,8 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   2026-09-23**: this consumer used to share `coachhelm_learned_personalization`
   with the unrelated v3 coach-weight read below — flipping it for one would
   silently have turned on the other. It now has its own id,
-  `coachhelm_v2_alert_personalization`, copied value/environment-for-value
-  (false everywhere) so the split changed no runtime behavior;
+  `coachhelm_v2_alert_personalization`, copied value and environments
+  exactly (false everywhere) so the split changed no runtime behavior;
   `orchestrator-personalization-gate.test.ts` proves `generateAlerts` reads
   that id and never the v3 one.
 - **v3 ranking's coach-weight multiplier is wired but flagged off** (2026-09-23,

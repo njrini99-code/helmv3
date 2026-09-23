@@ -59,6 +59,11 @@ describe('loadCoachWeightsForPlayer — gated behind coachhelm_learned_personali
     expect(weights).toEqual({});
     expect(fromSpy).not.toHaveBeenCalled();
     expect(isFlagEnabled).toHaveBeenCalledWith('coachhelm_learned_personalization');
+    // Flag-split safety net (2026-09-23): this id used to be shared with the
+    // unrelated v2 alert-threshold consumer (orchestrator.ts), which now has
+    // its own coachhelm_v2_alert_personalization id — see
+    // orchestrator-personalization-gate.test.ts for that half of this pair.
+    expect(isFlagEnabled).not.toHaveBeenCalledWith('coachhelm_v2_alert_personalization');
   });
 
   it("flag OFF: a live-production-shaped weight (1.6 @ sample_n 36) does not change scoreInsight's rank", async () => {
