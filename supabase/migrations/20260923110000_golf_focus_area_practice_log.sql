@@ -82,6 +82,9 @@ CREATE TABLE IF NOT EXISTS public.golf_focus_area_practice_sessions (
     logged_by_user_id uuid NOT NULL,
     logged_by_role text NOT NULL,
     drill_id text,
+    -- Bounded by golf_focus_area_practice_sessions_reps_check (0-1000);
+    -- never near 32-bit int range.
+    -- squawk-ignore prefer-bigint-over-int
     reps integer,
     note text,
     practiced_at timestamp with time zone NOT NULL,
@@ -99,6 +102,10 @@ CREATE TABLE IF NOT EXISTS public.golf_focus_area_practice_sessions (
 
 ALTER TABLE public.golf_focus_area_practice_sessions OWNER TO "postgres";
 
+-- Brand-new, empty table created earlier in this same migration
+-- transaction -- no rows and no concurrent traffic exist to be blocked by
+-- the ACCESS EXCLUSIVE lock, unlike adding a PK to a live table.
+-- squawk-ignore adding-serial-primary-key-field
 ALTER TABLE ONLY public.golf_focus_area_practice_sessions
 ADD CONSTRAINT golf_focus_area_practice_sessions_pkey PRIMARY KEY (id);
 
@@ -252,6 +259,10 @@ CREATE TABLE IF NOT EXISTS public.golf_focus_area_criteria (
 
 ALTER TABLE public.golf_focus_area_criteria OWNER TO "postgres";
 
+-- Brand-new, empty table created earlier in this same migration
+-- transaction -- no rows and no concurrent traffic exist to be blocked by
+-- the ACCESS EXCLUSIVE lock, unlike adding a PK to a live table.
+-- squawk-ignore adding-serial-primary-key-field
 ALTER TABLE ONLY public.golf_focus_area_criteria
 ADD CONSTRAINT golf_focus_area_criteria_pkey PRIMARY KEY (id);
 
