@@ -54,10 +54,14 @@ describe('DiagnosisPanel', () => {
     expect(screen.getByText(/Likely because/)).toBeTruthy();
   });
 
-  it('marks an observed_sequence diagnosis as Measured', () => {
+  it('marks an observed_sequence diagnosis as Measured, with honest sequence wording (not a causal claim)', () => {
     render(<DiagnosisPanel diagnosis={makeDiagnosis({ causality_level: 'observed_sequence' })} />);
     expect(screen.getByText('Measured')).toBeTruthy();
-    expect(screen.getByText(/Caused by/)).toBeTruthy();
+    // repair-plan §14.12 re-review (PR #2023): "Caused by" implied more than
+    // an observed temporal sequence supports. "Preceded by" states what was
+    // actually observed (root_cause came first) without asserting causation.
+    expect(screen.getByText(/Preceded by/)).toBeTruthy();
+    expect(screen.queryByText(/Caused by/)).toBeNull();
   });
 
   it('truncates drivers to maxDrivers with an honest count, no dangling "full breakdown" claim', () => {
