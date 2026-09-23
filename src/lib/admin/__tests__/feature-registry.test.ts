@@ -167,6 +167,7 @@ const NON_CRM_ACTION_FILES = [
   'roster.ts',
   'round-drafts.ts',
   'round-recap.ts',
+  'round-review-narrative.ts',
   'round-review-sequence-attribution.ts',
   'round-review-system.ts',
   'round-reviews.ts',
@@ -413,7 +414,11 @@ describe('FEATURE_REGISTRY completeness', () => {
     // logFocusAreaPracticeSession, addFocusAreaCriterion and
     // setFocusAreaCriterionMet join development_plans_coach's new 'ALL'
     // entry. Total 424 -> 427.
-    expect(total).toBe(427);
+    // 2026-09-23 (+1), PR #2046 (merged into train 2 independently of
+    // the above): round-review-narrative.ts joins round_review_ai as a
+    // new 'ALL'-mapped file (round-recap.ts and round-review-system.ts's
+    // sibling), for getRoundReviewNarrative. Total 427 -> 428.
+    expect(total).toBe(428);
   });
 
   it('the CRM row lists no files (never a wrap target)', () => {

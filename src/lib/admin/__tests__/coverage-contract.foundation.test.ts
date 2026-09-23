@@ -413,6 +413,11 @@ describe('global tripwire', () => {
     // getPlayerStandingForReview's 'player_or_coach' pattern on the same
     // page). This wrapping was added in the train-2 merge — the action
     // shipped unwrapped in the PR. Total 434 -> 435.
-    expect(total).toBe(435);
+    // 2026-09-23 (+1), PR #2046 (merged into train 2 independently of the
+    // above): getRoundReviewNarrative (round-review-narrative.ts), the
+    // round-review narrative action — withAdminObserved-wrapped with
+    // feature `round_review_ai`, gated behind
+    // `coachhelm_round_review_narrative` (default off). Total 435 -> 436.
+    expect(total).toBe(436);
   });
 });

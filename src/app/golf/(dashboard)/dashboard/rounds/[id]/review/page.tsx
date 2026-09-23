@@ -29,6 +29,7 @@ import {
 } from '@/app/golf/actions/round-review-system';
 import { markReviewAsViewed } from '@/app/golf/actions/round-reviews';
 import { getRoundTakeawayInsight, type EvidenceInsight } from '@/app/golf/actions/insight-delivery';
+import { getRoundReviewNarrative } from '@/app/golf/actions/round-review-narrative';
 import { getPlayerDisplayName, getDetailedStats } from '@/app/golf/actions/stats-data';
 import { RoundStatsPanel } from '@/components/golf/coachhelm/round-review/RoundStatsPanel';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
@@ -500,6 +501,33 @@ export default function RoundReviewPage() {
     };
   }, [round, roundId]);
 
+  // Package 8's round-review narrative (`golf_round_reviews.ai_narrative`),
+  // gated behind `coachhelm_round_review_narrative` (default off
+  // everywhere — flag off returns `{ narrative: null }` with zero server
+  // work, so this call is a no-op in every environment until the owner
+  // turns it on). Only fires once a review row exists (the narrative
+  // augments an existing review, never triggers the review compute
+  // itself) — keyed on `storedReview?.id` so it runs exactly once per
+  // review, not once per render. See `buildNarrative`'s doc comment for
+  // where this sits in the surface's tier order.
+  const [aiNarrative, setAiNarrative] = useState<string | null>(null);
+  useEffect(() => {
+    if (!storedReview?.id) return;
+    let cancelled = false;
+    getRoundReviewNarrative(roundId)
+      .then((result) => {
+        if (!cancelled) setAiNarrative(result.narrative);
+      })
+      .catch(() => {
+        // A narrative failure must never block the rest of the review —
+        // the existing v2Body/persisted/v1-summary tiers still render.
+        if (!cancelled) setAiNarrative(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [storedReview?.id, roundId]);
+
   // Generate review if needed. Called both from the cold-start auto-generate
   // effect a few lines down and from the Refresh / Generate review / Try
   // again clicks below — the two are no longer distinguished here. Whether a
@@ -794,6 +822,7 @@ export default function RoundReviewPage() {
           sharedWithCoach={storedReview.shared_with_coach}
           onShare={handleShare}
           v2Body={v2Body}
+          aiNarrative={aiNarrative}
           v2PracticePriority={v2PracticePriority}
           isCoachViewer={isCoachViewer}
           coachNotes={storedReview.coach_notes ?? null}

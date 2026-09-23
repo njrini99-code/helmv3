@@ -341,6 +341,87 @@ flags:
       exist in generated types yet, and that escape hatch should not
       outlive the reason it was needed.
 
+  - feature_id: coachhelm_recap_single_flight_lock
+    owner: golf/coachhelm
+    purpose: >-
+      Gates the tighter half of round-recap.ts's single-flight protection:
+      a per-round lease taken BEFORE compose()'s LLM call (Package 8,
+      deferred at migration 20260923080000 as "an owner product/cost
+      decision", approved and built at 20260923100000). Requires migration
+      20260923100000_round_recap_single_flight_lock applied in prod —
+      until then, neither golf_round_recap_locks nor its two claim/release
+      functions exist there. Off by default in every environment for
+      exactly that reason: "a lock claim/reclaim failure fails closed"
+      must never mean "every recap silently stops calling the LLM" in an
+      environment this migration hasn't reached yet. With the flag off,
+      round-recap.ts's generateRoundRecapImpl takes this branch's `if`
+      and skips it entirely — behavior is byte-for-byte what it was before
+      this lock existed (only 20260923080000's cheap `ai_recap IS NULL`
+      guard applies).
+    type: temporary_migration
+    status: active
+    created_at: "2026-09-23"
+    expires_at: "2026-10-23"
+    default: false
+    environment:
+      production: false
+      preview: false
+      development: false
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      Flip on (development, then preview, then production) only after the
+      owner applies migration 20260923100000_round_recap_single_flight_lock
+      to each environment and confirms both public.claim_round_recap_lock
+      and public.release_round_recap_lock exist via `pg_proc`. expires_at
+      is a review reminder, not an automatic kill — if the migration still
+      hasn't landed by then, re-date it rather than silently expiring.
+      Once on everywhere and stable for a season, consider promoting to a
+      permanent `release` flag or removing the flag branch entirely (the
+      lock becomes the only code path) — owner's call, not automatic.
+
+  # Round-review narrative (Package 8, owner decision 2026-09-23). A 3-5
+  # sentence LLM-authored paragraph for the Round Review page
+  # (golf_round_reviews.ai_narrative), distinct from round-recap.ts's
+  # 2-sentence golf_rounds.ai_recap blurb — its own task key
+  # (round_review_narrative), its own lock kind on the shared
+  # golf_round_recap_locks table, its own storage column.
+  - feature_id: coachhelm_round_review_narrative
+    owner: golf/coachhelm
+    purpose: >-
+      Gates the round-review narrative end to end: checked FIRST, before
+      any DB read tied to generation (mirroring the A4 slice 3b pattern —
+      zero cost while off), so no code path selects, claims a lock for, or
+      writes golf_round_reviews.ai_narrative unless this is on. Requires
+      migration 20260923100000_round_recap_single_flight_lock applied in
+      prod — it carries both the shared lock table/functions AND (folded
+      into the same migration, revised in place before either piece was
+      applied anywhere) the ai_narrative column and the
+      golf_coachhelm_llm_calls.task CHECK widening to accept
+      'round_review_narrative', so neither piece can land half-applied.
+      Until it is applied, turning this on would make every narrative
+      generation attempt fail against columns/functions that don't exist
+      there yet. Off by default in every environment for exactly that
+      reason, same as coachhelm_recap_single_flight_lock's own
+      migration-ordering rationale.
+    type: experiment
+    status: active
+    created_at: "2026-09-23"
+    expires_at: null
+    default: false
+    environment:
+      production: false
+      preview: false
+      development: false
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      Flip on (development, then preview, then production) only after the
+      owner applies 20260923100000_round_recap_single_flight_lock to each
+      environment, confirmed via information_schema.columns (ai_narrative)
+      and pg_proc (claim_round_recap_lock / release_round_recap_lock).
+      Once on everywhere and the fallback rate (deterministic vs.
+      LLM-authored) is acceptable, consider promoting to a permanent
+      `release` flag — owner's call, not automatic.
+
   # A9 slice 1 (repair-plan addendum §14.12, PR #1992's pure core wired into
   # the attribution path). `causality/attribute.ts`'s round-level average has
   # no natural per-shot opportunity for the "needs-shot-level-join" metrics
