@@ -62,6 +62,6 @@ describe('buildInstructions() — claims block gated by coachhelm_chat_claim_gat
     // "stable prefix" assumption for whichever half stayed the same).
     const [offBefore] = off.split('## Actions');
     const [onBefore] = on.split('## Claims block');
-    expect(onBefore.trimEnd()).toBe(offBefore.trimEnd());
+    expect(onBefore!.trimEnd()).toBe(offBefore!.trimEnd());
   });
 });

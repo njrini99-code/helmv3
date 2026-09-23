@@ -1109,7 +1109,7 @@ describe('POST /coachhelm/v3/chat/stream — #1999 review follow-ups (claims-blo
       if (typeof delta === 'string') expect(delta).not.toContain('<<<CLA');
     }
     const persisted = mocks.appendMessage.mock.calls[0]![1];
-    expect(persisted.content.trim()).toBe(forwardedText().trim());
+    expect((persisted.content as string).trim()).toBe(forwardedText().trim());
   });
 
   it('a partial opener that never completes is still flushed at EOF — nothing is silently lost', async () => {
@@ -1154,7 +1154,7 @@ describe('POST /coachhelm/v3/chat/stream — #1999 review follow-ups (claims-blo
     expect(forwardedText()).toBe('His putts total is 28.Nice work today.');
     expect(forwardedText()).not.toContain('CLAIMS');
     const persisted = mocks.appendMessage.mock.calls[0]![1];
-    expect(persisted.content.trim()).toBe(forwardedText().trim());
+    expect((persisted.content as string).trim()).toBe(forwardedText().trim());
   });
 
   it('multiple blocks: the wire withholds BOTH, forwarding only the text between and after them', async () => {
