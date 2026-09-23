@@ -52,7 +52,9 @@ branch. Start every task with `git status` and the current branch.
 - Worktrees share canonical env files, local permissions, tool credentials and
   the Vercel project: isolation covers source, not access. Never print
   credential values. Run `node scripts/ensure-worktree-deps.mjs <dir>` only
-  when dependencies differ or are missing.
+  when dependencies differ or are missing — or pass `--install` to
+  `scripts/new-worktree.sh` at creation time to run that same install upfront
+  instead of the default node_modules symlink.
 - Stage explicit paths. Push an explicit branch. Never force-push `main`;
   after a rebase use `--force-with-lease` on your own task branch only. Never
   bypass required checks with `--admin`.

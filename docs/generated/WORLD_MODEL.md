@@ -7,7 +7,7 @@
 A dependency graph over `memory/registry.yml`'s feature ownership, not a second copy of it. Every semantic edge below carries evidence — see `docs/generated/WORLD_MODEL.json` for the full attribution. Use `npm run knowledge:world-model -- --impact <file|feature>` for the blast-radius read model.
 
 **Node counts:** 29 features, 66 routes, 46 components, 30 apis, 91 actions, 102 services, 65 tests, 131 tables, 162 rpcs, 28 jobs, 17 invariants, 86 sentrySignals, 8 journeys.
-**Edges:** 1005 (merged; an edge with more than one evidence kind is a stronger claim).
+**Edges:** 977 (merged; an edge with more than one evidence kind is a stronger claim).
 **Unmapped:** Probed files with no registry owner (a real gap this graph surfaces, not fixed here): src/lib/inngest/functions.ts.
 **Table attribution:** A feature’s `tables` list comes only from its own `db:` migration globs, scanned for a literal `CREATE TABLE`. A feature can be real owner of a table with no migration under its glob still containing that statement (e.g. the table was created by a migration matched by a DIFFERENT feature’s `db:` glob, or the CREATE TABLE was later superseded by an ALTER/rename this scanner does not follow) — `admin_incidents` is exactly this case: its current-state doc names `admin_events` and `admin_error_resolutions` as Core Data, but no migration under its own `db:` glob still contains their CREATE TABLE, so this model reports zero tables for it. Read an empty `tables` list as “no migration-glob evidence found,” never as “this feature owns no tables” — check the feature’s own doc for the real answer.
 
@@ -100,7 +100,7 @@ BaseballHelm (recruiting + team management + Lift Lab) · active · criticality 
 Calendar And Events · active · criticality high · owner product
 
 - **Relations:** 0 doc/structurally-evidenced, 6 import-graph-only (weak)
-- **Tables:** `baseball_baserunning_events`, `baseball_batted_ball_events`, `baseball_catching_events`, `baseball_fielding_events`, `baseball_import_field_mappings`, `baseball_pitch_events`, `baseball_plate_appearances`, `baseball_player_development_metrics`, `baseball_stat_facts`, `baseball_stat_sources`, `baseball_swing_events`, `baseball_timeline_event_acks`, `baseball_video_events`, `baseball_workload_events`, `golf_insight_action`, `golf_insight_exposure`, `golf_insight_outcome`, `helm_debug`
+- **Tables:** `golf_insight_action`, `golf_insight_exposure`, `golf_insight_outcome`, `helm_debug`
 - **RPCs:** none
 - **Test surfaces:** 2
 - **Sentry/admin_events signals:** `academics_classes`, `calendar_events`
@@ -210,7 +210,7 @@ Player CoachHelm And Development · active · criticality high · owner product
 Player Hub · active · criticality high · owner product
 
 - **Relations:** 0 doc/structurally-evidenced, 7 import-graph-only (weak)
-- **Tables:** `baseball_baserunning_events`, `baseball_batted_ball_events`, `baseball_catching_events`, `baseball_fielding_events`, `baseball_import_field_mappings`, `baseball_pitch_events`, `baseball_plate_appearances`, `baseball_player_development_metrics`, `baseball_stat_facts`, `baseball_stat_sources`, `baseball_swing_events`, `baseball_timeline_event_acks`, `baseball_video_events`, `baseball_workload_events`, `golf_insight_action`, `golf_insight_exposure`, `golf_insight_outcome`, `helm_debug`
+- **Tables:** `golf_insight_action`, `golf_insight_exposure`, `golf_insight_outcome`, `helm_debug`
 - **RPCs:** `get_coach_today_schedule`
 - **Test surfaces:** 1
 - **Sentry/admin_events signals:** `player_hub`
