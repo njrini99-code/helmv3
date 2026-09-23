@@ -111,12 +111,51 @@
  *   fields are `0` when there is no owner.
  *
  * ## Not wired
- * This module does not read `golf_shots`/`golf_coach_insights`, does not
- * call `ranking/score.ts`, and does not decide what gets delivered to a
- * player or coach. Building the real A2/A3/A4/A5-to-`IssueSourcePacket`
- * adapters and feeding `groupIssues`'s output into `score.ts`/delivery is
- * later-slice work, per this slice's explicit scope.
+ * This module does not read `golf_shots`/`golf_coach_insights`, and does
+ * not decide what gets delivered to a player or coach. Building the real
+ * A2/A3/A4/A5-to-`IssueSourcePacket` adapters and wiring any of this into
+ * a generator or delivery surface is later-slice work, per this slice's
+ * explicit scope.
+ *
+ * ## Slice 2 additions (addendum §13, A6 slice 2)
+ * Three things this module's slice-1 contract above didn't yet cover:
+ *
+ *   - **`Issue.evidenceKey`** — an evidence-STABLE identity (see
+ *     `IssueSourcePacket.evidenceKey`'s doc comment), separate from `id`
+ *     (which is shot-set-addressed and shifts as new evidence arrives).
+ *     Exists specifically so material-change suppression (below) can
+ *     recognize "the same underlying pattern" across a re-run.
+ *   - **`applyMaterialChangeSuppression`** — given a list of `Issue`s and
+ *     a coach's currently-active interventions, marks (never drops) each
+ *     issue with a suppression reason when its `evidenceKey` matches an
+ *     active intervention AND its impact hasn't materially worsened past
+ *     `MATERIAL_CHANGE_THRESHOLD` since that intervention's recorded
+ *     baseline. A different `evidenceKey` — even one sharing shots with
+ *     the intervened issue — is never suppressed; see that function's
+ *     own doc comment.
+ *   - **`issueToRankableInsight`** — a pure adapter from `Issue` to
+ *     `ranking/score.ts`'s `RankableInsight` shape, so `groupIssues`'s
+ *     output can actually be ranked (`rankInsights`/`scoreInsight`)
+ *     without a second, hand-rolled conversion at each call site. Does
+ *     NOT modify `score.ts` or any of its live callers — every existing
+ *     ranking surface's output is unchanged, so no flag gates this. Also
+ *     see that function's own doc comment for the strokes-impact UNIT
+ *     caveat it documents rather than silently papers over.
+ *
+ * Sequence packets specifically: a real adapter feeding this module from
+ * A4 should gate a per-event packet's `eligible` on that event KIND's
+ * scope-wide `sequence_event_strokes_gained` row (`computeSequenceAttribution`,
+ * A4 slice 2/#2020) being `status: 'supported'` — never on the single
+ * event's own `measuredContribution !== null` alone, which would let one
+ * hole's single occurrence found or own an issue with no population
+ * behind it (a single round can never clear a floor). The packet's own
+ * `sourceShotIds`/`strokesImpact` still describe that ONE occurrence,
+ * never the rollup's aggregate — only ELIGIBILITY is gated scope-wide;
+ * grouping itself stays at per-event grain (see
+ * `situational-ranking.test.ts`'s rollup-gated describe block).
  */
+
+import type { RankableInsight } from './score';
 
 /** Which upstream family produced a packet. Listed in the fixed priority
  *  order `pickOwner` breaks ties with (par > distance > sequence >
@@ -177,6 +216,26 @@ export interface IssueSourcePacket {
    *  this packet). Mirrored, not combined, onto the issue's `policyInput`
    *  from whichever packet `pickOwner` selects. */
   confidence: number | null;
+  /**
+   * A caller-supplied, EVIDENCE-stable identity for this packet's
+   * underlying pattern — e.g. `par:par5_regulation_opportunity_rate:
+   * course-a:7` or `sequence:approach_to_recovery` — that stays the SAME
+   * across a re-run even when the exact source shots differ (a player's
+   * 12-month window shifts, a new round adds evidence, …). Deliberately
+   * separate from `Issue.id` (content-addressed from `sourceShotIds`,
+   * which DOES change as evidence changes — see that field's doc
+   * comment) and from `claimId` (unique per packet, not guaranteed
+   * comparable across two different runs for a sequence/A4-shaped
+   * packet, whose `claimId` embeds specific shot numbers). A6 slice 2's
+   * material-change suppression (`applyMaterialChangeSuppression`) is
+   * the reason this exists: an active intervention must be matched
+   * against the SAME underlying pattern next week, not the same exact
+   * shot set. Optional — a packet whose family has no stable notion of
+   * this yet may omit it; `buildIssue` falls back to
+   * `` `${origin}:${label}` `` for its issue's own `evidenceKey`, which
+   * is a weaker (metricId-only, no hole/band identity) but still
+   * deterministic default. */
+  evidenceKey?: string;
 }
 
 /** A parent issue's view of one of its member packets — every field
@@ -246,6 +305,14 @@ export interface Issue {
   impactOwnership: ImpactOwnership;
   opportunityFrequency: OpportunityFrequency;
   policyInput: EffectivePolicyInput;
+  /** The impact owner's `evidenceKey` (falling back to
+   *  `` `${owner.origin}:${owner.label}` `` when the owner packet didn't
+   *  supply one), or `null` when there is no owner — matches
+   *  `ImpactOwnership.ownerClaimId`'s null convention. Suppression keys
+   *  off THIS, never `id` (see `IssueSourcePacket.evidenceKey`'s doc
+   *  comment for why `id` is the wrong key: it shifts with new evidence,
+   *  `evidenceKey` does not). */
+  evidenceKey: string | null;
 }
 
 /** The fixed marker `shotClaimId` renders for an unknown hole/shot
@@ -414,7 +481,11 @@ function buildIssue(members: readonly IssueSourcePacket[]): Issue {
     sampleSize: owner ? owner.sourceShotIds.length : 0,
   };
 
-  return { id, sourceShotIds, claims, impactOwnership, opportunityFrequency, policyInput };
+  // See `Issue.evidenceKey`'s doc comment — falls back to an
+  // origin+label default when the owner packet didn't supply one.
+  const evidenceKey = owner ? (owner.evidenceKey ?? `${owner.origin}:${owner.label}`) : null;
+
+  return { id, sourceShotIds, claims, impactOwnership, opportunityFrequency, policyInput, evidenceKey };
 }
 
 /** Throws if two distinct packets share a `claimId` — `claimId` is
@@ -508,4 +579,140 @@ export function groupIssues(packets: readonly IssueSourcePacket[]): Issue[] {
   }
   issues.sort((a, b) => compareStrings(a.id, b.id));
   return issues;
+}
+
+/**
+ * Material-change suppression (addendum §13, A6 slice 2). A coach
+ * actively working an issue (an "active intervention") should not have
+ * it resurface as a fresh leading priority every time the evidence is
+ * recomputed, UNLESS the underlying problem has genuinely gotten worse —
+ * hiding it unconditionally would bury a real new risk just because
+ * SOMETHING with the same identity was already being worked.
+ *
+ * Keyed on `Issue.evidenceKey`, never `Issue.id` — `id` is
+ * content-addressed from `sourceShotIds` and changes as new rounds add
+ * evidence, so a suppression keyed on it would never match a later
+ * recomputation of "the same" pattern (see `IssueSourcePacket.
+ * evidenceKey`'s doc comment). An issue with no impact owner
+ * (`evidenceKey: null` — a pure-strength group) can never have an active
+ * intervention in the first place and is never suppressed.
+ *
+ * `applyMaterialChangeSuppression` never drops an issue from the
+ * returned list — it only marks each one's `suppressed` reason (or
+ * `null`), so a caller can filter, deprioritize, or simply display the
+ * reason, but can never lose track of an issue's existence entirely.
+ * This function makes no ranking or truncation decision itself; a caller
+ * wiring it in must run it strictly AFTER `groupIssues` (ownership is
+ * already resolved) and strictly BEFORE any top-N truncation — the same
+ * ordering discipline the A6 top-N audit established for eligibility.
+ */
+
+/** One coach's currently-active intervention on a specific evidence
+ *  pattern — however a future wiring slice loads/persists this, this
+ *  shape is all `applyMaterialChangeSuppression` needs. */
+export interface ActiveIntervention {
+  /** Matches an `Issue.evidenceKey` exactly. */
+  evidenceKey: string;
+  /** The impact MAGNITUDE (`Math.abs`, sign-agnostic) recorded when the
+   *  intervention started — the baseline severity a later recomputation
+   *  is compared against. Same unit as `EffectivePolicyInput.
+   *  strokesImpact`. */
+  baselineImpactMagnitude: number;
+}
+
+export type SuppressionReason = 'active_intervention_unchanged';
+
+export interface SuppressibleIssue {
+  issue: Issue;
+  /** A named reason this issue should NOT surface as a fresh leading
+   *  priority right now, or `null` when it should surface normally. The
+   *  issue itself is always present — see the module doc comment above. */
+  suppressed: SuppressionReason | null;
+}
+
+/**
+ * The fractional INCREASE in impact magnitude (vs. an intervention's
+ * recorded baseline) that counts as "genuinely new risk," resurfacing an
+ * issue that would otherwise stay suppressed. `0.5` = a 50% worsening —
+ * a named, documented constant so a future tuning pass changes ONE
+ * number, not a scattered literal. Applied to MAGNITUDE, never signed
+ * value, since `ActiveIntervention.baselineImpactMagnitude` is itself
+ * already `Math.abs`-normalized.
+ */
+export const MATERIAL_CHANGE_THRESHOLD = 0.5;
+
+/**
+ * Marks each issue with a suppression reason (or `null`) — see the
+ * module doc comment above for the full contract. An issue whose
+ * `evidenceKey` has no matching `ActiveIntervention` is NEVER suppressed,
+ * regardless of its impact magnitude or whether it happens to share
+ * source shots with an intervened issue (a different evidence pattern
+ * dominating the SAME shots this week — e.g. a sequence finding now
+ * outranking last week's par finding — is exactly a genuinely new risk,
+ * not a duplicate of the old one, precisely because its `evidenceKey`
+ * differs).
+ */
+export function applyMaterialChangeSuppression(
+  issues: readonly Issue[],
+  activeInterventions: readonly ActiveIntervention[],
+): SuppressibleIssue[] {
+  const byKey = new Map(activeInterventions.map((iv) => [iv.evidenceKey, iv] as const));
+
+  return issues.map((issue) => {
+    if (issue.evidenceKey === null) return { issue, suppressed: null };
+    const intervention = byKey.get(issue.evidenceKey);
+    if (!intervention) return { issue, suppressed: null };
+
+    const currentMagnitude = Math.abs(issue.policyInput.strokesImpact);
+    const baseline = Math.abs(intervention.baselineImpactMagnitude);
+    // A zero baseline (the intervention started against no measurable
+    // impact) treats ANY real current magnitude as material — a percent
+    // increase over zero is undefined, never silently "always material"
+    // nor "never material".
+    const isMaterialWorsening =
+      baseline > 0
+        ? (currentMagnitude - baseline) / baseline >= MATERIAL_CHANGE_THRESHOLD
+        : currentMagnitude > 0;
+
+    return isMaterialWorsening ? { issue, suppressed: null } : { issue, suppressed: 'active_intervention_unchanged' };
+  });
+}
+
+/**
+ * Adapts an `Issue` into `ranking/score.ts`'s `RankableInsight` shape —
+ * the "ranking-input unification" half of A6 slice 2. Deliberately a NEW
+ * pure function, not a change to `scoreInsight`/`rankInsights` themselves
+ * or any of their live callers: every live ranking surface's output is
+ * unchanged by this file, so no flag gates it. Mirrors ONLY the issue's
+ * already-resolved `policyInput` (never re-deriving anything from
+ * `claims`), which is what makes "one underlying issue yields one
+ * leading priority" hold at the ranked-output level too — an issue with
+ * three grouped claims produces exactly one `RankableInsight`, not three.
+ *
+ * `insight_type` is derived from the impact owner's own `origin`/`label`
+ * (falling back to the first claim when there is no owner) — a
+ * placeholder identity for `scoreInsight`'s coach-weight lookup, since a
+ * real production `insight_type` taxonomy is a later wiring slice's job,
+ * same posture as the rest of this module's "Not wired" note.
+ *
+ * UNIT CAVEAT (documented, not solved here): `scoreInsight` assumes
+ * `strokes_impact` is a PER-ROUND figure. `EffectivePolicyInput.
+ * strokesImpact` mirrors whatever unit the owning family's packet
+ * supplied — for a par/distance `MetricResult` row that's usually a rate
+ * or count (rarely reaches here, since neither family computes an
+ * impact number today), and for a sequence-attribution event it's a
+ * single event's `measuredContribution`, which is a per-EVENT number,
+ * not a per-round average. Reconciling this unit mismatch is a later
+ * slice's job; this adapter passes the number through honestly rather
+ * than fabricating a per-round conversion.
+ */
+export function issueToRankableInsight(issue: Issue): RankableInsight {
+  const ownerClaim = issue.claims.find((c) => c.claimId === issue.impactOwnership.ownerClaimId);
+  const representative = ownerClaim ?? issue.claims[0];
+  return {
+    insight_type: representative ? `${representative.origin}:${representative.label}` : 'issue:unknown',
+    strokes_impact: issue.policyInput.strokesImpact,
+    confidence: issue.policyInput.confidence,
+    sample_n: issue.policyInput.sampleSize,
+  };
 }

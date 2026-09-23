@@ -121,26 +121,27 @@ jobs:
       - name: Link the production project
         run: |
           set -euo pipefail
-          ./node_modules/.bin/supabase link --project-ref "$SUPABASE_PROJECT_ID" --password "$SUPABASE_DB_PASSWORD" > link.log 2>&1 \
-            || { sed -E 's/(password|token)[^ ]*/\1 [redacted]/Ig' link.log; exit 1; }
+          ./node_modules/.bin/supabase link --project-ref "$SUPABASE_PROJECT_ID" --password "$SUPABASE_DB_PASSWORD" > "$RUNNER_TEMP/link.log" 2>&1 \
+            || { sed -E 's/(password|token)[^ ]*/\1 [redacted]/Ig' "$RUNNER_TEMP/link.log"; exit 1; }
           echo "PASS linked to project (ref redacted)"
 
       - name: Order guard — list every migration production is missing
         run: |
           set -euo pipefail
           ./node_modules/.bin/supabase migration list --linked --output-format json \
-            --password "$SUPABASE_DB_PASSWORD" > migration-list.json 2> migration-list.log
+            --password "$SUPABASE_DB_PASSWORD" > "$RUNNER_TEMP/migration-list.json" 2> "$RUNNER_TEMP/migration-list.log"
           # The CLI's text table stopped being what a non-TTY run prints (2.115
           # emits JSON), so an awk over the table matched nothing and every
           # migration read as "not pending". Ask for JSON explicitly and parse it;
           # a pending row has a local version and an empty remote one. Fail
-          # closed if the document is missing or malformed.
+          # closed if the document is missing or malformed. The files live in
+          # RUNNER_TEMP: apply.mjs refuses a dirty working tree.
           pending="$(node -e '
-            const text = require("fs").readFileSync("migration-list.json", "utf8");
+            const text = require("fs").readFileSync(process.env.RUNNER_TEMP + "/migration-list.json", "utf8");
             const line = text.split("\n").find((l) => l.trim().startsWith("{\"migrations\""));
             if (!line) { console.error("no migrations JSON in supabase migration list output"); process.exit(1); }
             for (const m of JSON.parse(line).migrations) if (m.local && !m.remote) console.log(m.local);
-          ')" || { echo "::error::could not read the production migration list"; cat migration-list.log; exit 1; }
+          ')" || { echo "::error::could not read the production migration list"; cat "$RUNNER_TEMP/migration-list.log"; exit 1; }
           want="${MIGRATION%%_*}"
           echo "Pending on production (only $want will be applied; the rest stay pending):"
           if [ -z "$pending" ]; then echo "  (none)"; else echo "$pending" | awk '{ print "  " $0 }'; fi
@@ -174,8 +175,8 @@ jobs:
             [ -n "$HELD_REASON" ] || { echo "::error::held_override needs a reason"; exit 1; }
             args+=(--held-override "$HELD_OVERRIDE" --reason "$HELD_REASON")
           fi
-          node scripts/db/apply.mjs "${args[@]}" | tee dry-run.txt
-          { echo "### Dry run"; echo '```'; cat dry-run.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          node scripts/db/apply.mjs "${args[@]}" | tee "$RUNNER_TEMP/dry-run.txt"
+          { echo "### Dry run"; echo '```'; cat "$RUNNER_TEMP/dry-run.txt"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
 
       - name: apply.mjs --apply (send the single-file body, re-read ledger, run VERIFY queries)
         if: ${{ inputs.mode == 'apply' }}
@@ -185,8 +186,8 @@ jobs:
           if [ -n "$HELD_OVERRIDE" ]; then
             args+=(--held-override "$HELD_OVERRIDE" --reason "$HELD_REASON")
           fi
-          node scripts/db/apply.mjs "${args[@]}" | tee apply.txt
-          { echo "### Apply"; echo '```'; cat apply.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          node scripts/db/apply.mjs "${args[@]}" | tee "$RUNNER_TEMP/apply.txt"
+          { echo "### Apply"; echo '```'; cat "$RUNNER_TEMP/apply.txt"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Reminder
         if: ${{ inputs.mode == 'apply' && success() }}

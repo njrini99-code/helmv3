@@ -9,6 +9,9 @@
  *   - `DrillChips`               inline drill chip row
  *   - `DrillSheet`               full-detail drill sheet (opens from a chip)
  *   - `ResolutionCelebration`    confetti wrapper for resolved insights
+ *   - `AttributionReadout`       A9 slice 3: coach-facing automated
+ *                                outcome-attribution readout (flag-gated,
+ *                                renders nothing off/on a failed read)
  *
  * `HeroInsightCard` (staggered-mount wrapper) was removed 2026-09-22: zero
  * importers anywhere outside its own test — every live hero-density card
@@ -37,3 +40,5 @@ export { ResolutionCelebration } from './ResolutionCelebration';
 export type { ResolutionCelebrationProps } from './ResolutionCelebration';
 export { deriveTone, isImprovement } from './tone-derivation';
 export type { DerivedTone } from './tone-derivation';
+export { AttributionReadout } from './AttributionReadout';
+export type { AttributionReadoutProps } from './AttributionReadout';
