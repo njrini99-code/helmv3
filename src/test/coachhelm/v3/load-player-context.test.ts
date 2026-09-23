@@ -326,6 +326,22 @@ describe('loadPlayerContext — hole exclusion and course identity', () => {
     expect(result.holes[0]!.course_id).toBeNull();
     expect(holeIdentityKey(result.holes[0]!)).toBeNull();
   });
+
+  it('maps golf_holes.yardage onto HoleContext.yardage, preserving null', async () => {
+    const tables: FakeTables = {
+      golf_rounds: [{ id: 'r1', player_id: 'player-a', status: 'completed', team_id: null, course_id: 'c1', round_date: '2026-06-01' }],
+      golf_holes: [
+        { round_id: 'r1', hole_number: 1, par: 4, score: 4, penalty_strokes: 0, putts: 2, gir: true, yardage: 425, created_at: '2026-06-01T10:00:00.000Z' },
+        { round_id: 'r1', hole_number: 2, par: 3, score: 3, penalty_strokes: 0, putts: 2, gir: true, yardage: null, created_at: '2026-06-01T10:00:00.000Z' },
+      ],
+      golf_shots: [],
+    };
+    const { supabase } = makeFakeSupabase(tables);
+    const result = await loadPlayerContext(scope('player-a'), { supabase });
+    const byHole = new Map(result.holes.map((h) => [h.hole_number, h.yardage]));
+    expect(byHole.get(1)).toBe(425);
+    expect(byHole.get(2)).toBeNull();
+  });
 });
 
 describe('loadPlayerContext — pagination and chunking', () => {

@@ -319,8 +319,11 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   the cutoff (`updated_at` > cutoff) is excluded as `edited_after_cutoff`;
   a shot whose owning hole was itself excluded (any reason) is excluded as
   `hole_excluded` — both new `coverage.shotsExcludedByReason` keys added
-  in the post-review pass. Enforces the `HoleContext.total_strokes`
-  null-score exclusion against a live source for the first time. DB
+  in the post-review pass. `HOLE_COLUMNS` now also selects
+  `golf_holes.yardage`, mapped onto a new `HoleContext.yardage: number |
+  null` field (added for #1990, A3 par-opportunities). Enforces the
+  `HoleContext.total_strokes` null-score exclusion against a live source
+  for the first time. DB
   dependency is injected (`deps.supabase`), never constructed inside, so
   tests use a fake client. `context/adapters/shot-source-adapter.ts`'s
   `approachShotToShotFact` additively maps `engine/shot-source.ts`'s

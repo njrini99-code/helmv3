@@ -372,8 +372,13 @@ adapter (`load-player-context.ts`, and wiring into `engine/shot-source.ts` /
   `result === 'hole'` OR `putt_made === true`, matching how
   `round-review-system.ts`/`round-review-content.ts` already read it.
 - **`HoleContext`** (`context/types.ts`) — a hole's AUTHORITATIVE totals
-  (par, `total_strokes`, `penalty_strokes`, `putts`, `gir`), sourced from
-  `golf_holes`, never derived from the shots being validated against it.
+  (par, `total_strokes`, `penalty_strokes`, `putts`, `gir`, `yardage`),
+  sourced from `golf_holes`, never derived from the shots being validated
+  against it. `yardage` is nullable, like `golf_holes.yardage` itself —
+  added for #1990 (A3 par-opportunities), which fills it in from this
+  loader. `HoleContext.par` (already present) is what
+  `metrics/distance-profile.ts` (A2) uses for its 175+ yd par-5 lay-up
+  exclusion.
   Mirrors `engine/hole-diagnosis.ts`'s `DiagnosisHole` shape. `total_strokes`
   is non-nullable BY CONTRACT: a `HoleContext` must only ever be constructed
   for a hole with a non-null `golf_holes.score`, mirroring
