@@ -1409,8 +1409,11 @@ prerequisite migration.
   (slice 3). Flag-off test: `insight-attribution.test.ts` — "flag off:
   returns null and makes NO DB call at all — createClient is never
   invoked." Prerequisite migration:
-  `20260922230000_v3_attribution_method_version.sql`, already applied
-  on `main` (landed via #1980) — not a blocker for #2007/#2016/#2025.
+  `20260922230000_v3_attribution_method_version.sql` — the migration
+  file is merged to `main` via #1980, but it is NOT yet applied to
+  production (owner's apply queue); the A9 flag must stay off in
+  production until it is, since the write path's `method_version:
+  'comparable_opportunities_v1'` rows depend on that column existing.
 
 - **Practice log (A8)** — `coachhelm_focus_area_practice_log`, default
   off (all envs). One flag gates both the write and read surfaces
