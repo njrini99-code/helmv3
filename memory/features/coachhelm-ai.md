@@ -569,6 +569,22 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   level via `rankInsights`. Full contract in
   `docs/architecture/coachhelm-evidence-contract.md`'s "Issue grouping and
   ranking-input unification (A6 slice 2)" section.
+
+- **`src/lib/coachhelm/v3/eval/shadow-harness.ts`** (2026-09-23, addendum
+  §13, work package A10 slice 1, pure, not wired) — `runShadowEvaluation
+  (snapshot)` runs A2/A3/A4-both-layers/A5/A6 over one de-identified
+  `ShadowSnapshot` and reports per-family status counts, a duplicate-issue
+  rate, and two invariant counters (`countUnsupportedCauseClaims`,
+  `countDuplicateLeadingPriority`) that must both read `0` on any real
+  snapshot for the report to be trusted — both mutation-verified and
+  unit-tested against a hand-built violating input, not just the real
+  fixture matrix. Corrects a stale claim in this file and the evidence
+  contract's A5 section: `par5_opportunity_loss` is NOT metric-producer-
+  less like `short_bias`/`recovery` — A3 emits both metrics it cites, and
+  it reaches `'supported_association'` on real input (proven by this
+  slice's established-roster snapshot). Full contract in
+  `docs/architecture/coachhelm-evidence-contract.md`'s "Shadow-mode
+  evaluation harness" section.
 - N13 sweep (repair plan, 2026-09-23): audited every CoachHelm action/route
   under `src/app/golf/actions` and `src/lib/coachhelm` for a catch-all that
   discards the real exception and returns one generic "session expired"-style
