@@ -16,6 +16,7 @@ capture run against the factory lab (`:8774`), which is impure by nature.
 lab not listening) into `evaluate_gates`, keeping every gate in this module
 itself a pure function over already-loaded documents.
 """
+import json
 import os
 
 from .fingerprints import content_hash_matches
@@ -91,6 +92,19 @@ def gate_hash_chain(package, asset_manifest, context_layer, hole_docs):
             blockers.append(blocker('HOLE_MESH_HASH_MISMATCH', holeKey=key,
                                     meshContentHash=mesh.get('contentHash'), reportContentHash=report.get('contentHash'), manifestContentHash=entry.get('contentHash')))
     return blockers
+
+
+def gate_terrain_contract(hole_docs):
+    """Bound meshes the runtime schema would refuse (terrain_contract.py),
+    one blocker per distinct problem with the holes it covers -- otherwise
+    the factory lab refuses the bundle and every hole times out at capture."""
+    from .terrain_contract import contract_problems
+    grouped = {}
+    for key, docs in sorted((hole_docs or {}).items()):
+        for problem in contract_problems(docs.get('mesh') or {}) if docs.get('mesh') else []:
+            ident = json.dumps(problem, sort_keys=True)
+            grouped.setdefault(ident, (problem, []))[1].append(key)
+    return [blocker(problem['code'], holeKeys=keys, **{k: v for k, v in problem.items() if k != 'code'}) for problem, keys in grouped.values()]
 
 
 def gate_t_junctions(terrain_summary):
@@ -246,6 +260,7 @@ def evaluate_gates(ctx, layout_id, captures_report=None, capture_blockers=None):
     blockers += gate_holes_shape(package)
     blockers += gate_hash_chain(package, asset_manifest, context_layer, hole_docs)
     blockers += gate_t_junctions(terrain_summary)
+    blockers += gate_terrain_contract(hole_docs)
     blockers += gate_context_uncertain(context_report)
     blockers += (capture_blockers or [])
     blockers += gate_bundle_captures(captures_report)

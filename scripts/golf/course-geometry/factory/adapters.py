@@ -885,6 +885,7 @@ def aggregate_terrain(node, ctx, run):
     their producer artifacts or pretending old serialized hashes are new."""
     from .payload_reuse import bind_verified_hole
     from .planner import verify_artifacts
+    from .terrain_contract import conform_mesh
     layout_id = node.scope.layout_id
     package = ctx.package(layout_id)
     context_hash = (ctx.context_layer(layout_id) or {}).get('contentHash')
@@ -902,8 +903,20 @@ def aggregate_terrain(node, ctx, run):
         folder = ctx.compiled_dir(layout_id, hole['key'])
         mesh = ctx.json(os.path.join(folder, f'{hole["key"]}-terrain.json'), fresh=True)
         report = ctx.json(os.path.join(folder, f'{hole["key"]}-report.json'), fresh=True)
+        # The producer's own mesh must verify before conformance rewrites a
+        # contract field (terrain_contract.py); the rewrite is recorded on the
+        # bound report and binding, never on the producer artifacts.
+        producer_hash = mesh.get('contentHash') if mesh.get('contentHash') == report.get('contentHash') else None
+        mesh, conformance = conform_mesh(mesh)
+        if conformance:
+            if producer_hash is None:
+                raise RuntimeError('terrain producer mesh/report disagree; refusing contract conformance')
+            report = {**report, 'contentHash': mesh['contentHash']}
         payload, compressed, entry, rebound_report, binding = bind_verified_hole(
             mesh, report, package, hole, producer.fingerprint, context_hash)
+        if conformance:
+            rebound_report['contractConformance'] = conformance
+            binding.update({'contractConformance': conformance, 'producerMeshHash': producer_hash, 'conformedMeshHash': mesh['contentHash']})
         names = {f'{hole["key"]}-terrain.json': payload, entry['fileName']: compressed}
         for name, data in names.items():
             with open(os.path.join(bound, name), 'wb') as handle:

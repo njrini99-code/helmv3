@@ -212,8 +212,9 @@ def run_capability(node, ctx, run):
 
 
 SPECS = [
-    TaskSpec('layout.terrain.aggregate', '2', 'layout', ('hole.terrain.compile*',),
-             _summary_eval('terrain-summary', 'hole.terrain.compile', lambda c, l: os.path.join(c.layout_out(l), 'terrain-summary.json'), 'contentHash'), impl_files=(script('factory/payload_reuse.py'),), retention='C', estimated_bytes=100_000),
+    TaskSpec('layout.terrain.aggregate', '3', 'layout', ('hole.terrain.compile*',),
+             _summary_eval('terrain-summary', 'hole.terrain.compile', lambda c, l: os.path.join(c.layout_out(l), 'terrain-summary.json'), 'contentHash'),
+             impl_files=(script('factory/payload_reuse.py'), script('factory/terrain_contract.py')), retention='C', estimated_bytes=100_000),
     TaskSpec('layout.world.aggregate', '1', 'layout', ('hole.world.build*',),
              _summary_eval('world-manifest', 'hole.world.build', lambda c, l: os.path.join(c.layout_out(l), 'world', 'course-world-manifest.json'), 'physicalWorldHash'), retention='C', estimated_bytes=100_000),
     TaskSpec('layout.review.queue', '1', 'layout', ('layout.package.validate', 'layout.routes.resolve', 'layout.imagery.audit?', 'layout.context.classify?', 'hole.world.build*?',
