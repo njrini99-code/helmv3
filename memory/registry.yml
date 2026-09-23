@@ -2093,6 +2093,9 @@ features:
       services:
         - src/lib/native/**
         - src/lib/utils/capacitor.ts
+        # Native-UA marketing redirect must exempt the app-shell resources
+        # (/sw.js, /manifest.json, /offline.html, /monitoring).
+        - src/proxy.ts
         - src/lib/utils/push-registration.ts
         - src/lib/utils/haptics-pref.ts
         - src/lib/fairway/haptics.ts

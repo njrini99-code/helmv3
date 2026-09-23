@@ -361,7 +361,10 @@ const comprehensiveHoleSchema = z.object({
 const golfRoundComprehensiveSchema = z.object({
   courseName: z.string().min(1).max(200),
   courseCity: z.string().max(100).optional(),
-  courseState: z.string().max(2).optional(),
+  // The course library stores a free-text region ("Ontario", not "ON"), and
+  // the tee picker copies it into the round verbatim. A 2-character cap here
+  // rejected every round at a non-US course (UNCW, Oviinbyrd GC, 2026-09-13).
+  courseState: z.string().max(100).optional(),
   courseRating: z.number().min(50).max(85).optional(),
   courseSlope: z.number().int().min(55).max(155).optional(),
   teesPlayed: z.string().max(50).optional(),
@@ -411,7 +414,11 @@ const partialHoleSchema = z.object({
 const partialRoundSchema = z.object({
   courseName: z.string().min(1).max(200),
   courseCity: z.string().max(100).optional(),
-  courseState: z.string().max(2).optional(),
+  // Same cap as golfRoundComprehensiveSchema — see the note there. A fresh
+  // round's first save carries no holes, so a failure on this field was
+  // "unsalvageable" and surfaced as a bare `retry`, which the player read as
+  // "start round does nothing".
+  courseState: z.string().max(100).optional(),
   courseRating: z.number().min(50).max(85).optional().nullable(),
   courseSlope: z.number().int().min(55).max(155).optional().nullable(),
   teesPlayed: z.string().max(50).optional(),

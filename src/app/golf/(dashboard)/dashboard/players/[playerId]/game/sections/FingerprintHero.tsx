@@ -30,7 +30,6 @@
  * `SectionBand` was the shared chrome the other section files rendered inside
  * of; it is unreferenced along with them.
  * ========================================================================== */
-import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -41,13 +40,8 @@ import {
   IconTarget,
   IconTrendingUp,
 } from '@/components/icons';
-import {
-  InsightCard,
-  type InsightAction,
-} from '@/components/golf/coachhelm/insight-card';
 import type {
   FingerprintMetric,
-  SectionData,
 } from '@/app/golf/actions/player-fingerprint';
 import type { PlayerFingerprint } from '@/app/golf/actions/player-fingerprint';
 import { Button } from '@/components/ui/button';
@@ -208,117 +202,13 @@ function ratingColor(rating: number | null): string {
 }
 
 // ---------------------------------------------------------------------------
-// Shared section chrome — used by every non-hero section.
+// `SectionBand` (the shared chrome the other, already-dead section files
+// rendered inside of — see header) was removed 2026-09-22: zero importers
+// anywhere in src/** per the header's own note. `EmptySection` below was
+// its only internal caller and is left in place (unexported-but-idle, same
+// as the rest of this file per the header) since nothing in this pass asked
+// for it.
 // ---------------------------------------------------------------------------
-
-export interface SectionBandProps {
-  section: SectionData;
-  /** Numeral-ish overline (e.g. "01 · From the tee"). Most sections don't
-   *  bother; a few highlight the band with a supplementary overline. */
-  overline?: string;
-  /** The chart slot on the left side of the band (or full-width on mobile).
-   *  Sections pass their own compact visualization here. */
-  chart?: ReactNode;
-  /** Called when an InsightCard fires an action. */
-  onAction?: (action: InsightAction, insightId: string) => void;
-}
-
-/**
- * Render a single horizontal band for one category. Chart-left, insights-
- * right on desktop; stacked on mobile. Empty sections render the
- * "Not enough data" fallback in-slot so the layout never shifts.
- */
-export function SectionBand({
-  section,
-  overline,
-  chart,
-  onAction,
-}: SectionBandProps) {
-  const [topInsight, ...restInsights] = section.insights;
-
-  return (
-    <Card variant="overlay"
-      padding="none"
-      hover={false}
-      className="relative overflow-hidden"
-      data-testid={`section-band-${section.key}`}
-      data-sparse={section.sparse ? 'true' : 'false'}
-    >
-      <div className="p-6 md:p-7 space-y-5">
-        <div className="flex items-baseline justify-between gap-3">
-          <div>
-            {overline && (
-              <p className="text-eyebrow uppercase tracking-[0.14em] text-warm-500 font-medium">
-                {overline}
-              </p>
-            )}
-            <h2
-              data-testid={`section-heading-${section.key}`}
-              className="text-xl md:text-2xl font-medium text-warm-900 mt-0.5"
-            >
-              {section.category}
-            </h2>
-          </div>
-        </div>
-
-        {section.sparse ? (
-          <EmptySection />
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-            {/* Left: chart / metrics rail */}
-            <div className="lg:col-span-5 space-y-4">
-              {section.metrics.length > 0 && (
-                <div
-                  className="flex flex-wrap gap-2"
-                  data-testid={`section-metrics-${section.key}`}
-                >
-                  {section.metrics.map((m) => (
-                    <MetricPill key={m.label} metric={m} />
-                  ))}
-                </div>
-              )}
-              {chart && <div>{chart}</div>}
-            </div>
-
-            {/* Right: insights */}
-            <div className="lg:col-span-7 space-y-3">
-              {section.insights.length === 0 ? (
-                <p className="text-sm text-warm-400 italic">
-                  No insights yet for this area.
-                </p>
-              ) : (
-                <>
-                  {topInsight && (
-                    <InsightCard
-                      insight={topInsight}
-                      density="default"
-                      audience="coach"
-                      showActions
-                      onAction={onAction}
-                    />
-                  )}
-                  {restInsights.length > 0 && (
-                    <div className="space-y-2">
-                      {restInsights.slice(0, 4).map((insight) => (
-                        <InsightCard
-                          key={insight.id}
-                          insight={insight}
-                          density="compact"
-                          audience="coach"
-                          onAction={onAction}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-    </Card>
-  );
-}
 
 export function MetricPill({ metric }: { metric: FingerprintMetric }) {
   return (

@@ -528,8 +528,7 @@ export {
   type SignalEvidenceLine,
   // ── Player-path surfaces (phase 5 · the PLAYER shell variant) ──────────────
   // FairwayPlayerCoachHelm and the two components only it imported
-  // (HeroNarrativeCard, FocusAreasGrid) were deleted together 2026-08-18 —
-  // see the note in ./pages/coachhelm/index.ts.
-  FairwayMyDevelopment,
-  type FairwayMyDevelopmentProps,
+  // (HeroNarrativeCard, FocusAreasGrid) were deleted together 2026-08-18, and
+  // FairwayMyDevelopment was deleted 2026-09-22 (its route permanently
+  // redirects) — see the notes in ./pages/coachhelm/index.ts.
 } from './pages/coachhelm';

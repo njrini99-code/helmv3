@@ -31,7 +31,7 @@
  * Presentation only; flag-off path still uses the legacy HoleConfigurationForm.
  * ========================================================================== */
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { m, useReducedMotion } from 'framer-motion';
 import { ChevronLeft, Flag } from 'lucide-react';
 
@@ -53,6 +53,16 @@ interface FairwayHoleConfigProps {
   /** When the initialHoles came from a Cloud Course / saved course tee, show a
    *  short banner clarifying these are an editable baseline for this round. */
   baselineLabel?: string;
+  /**
+   * The parent's round-start failure (validation or the server write), shown
+   * next to this editor's own "Start round" control. Before 2026-09-17 it was
+   * rendered by the setup screen ABOVE the scorecard — on a phone that is 18
+   * hole rows above the button that was just tapped, so a failed start read as
+   * "it tries to load, then resets, no error" (UNCW field report).
+   */
+  submitError?: string | null;
+  /** True while the parent is persisting the round; disables Start and labels it. */
+  submitting?: boolean;
 }
 
 // Default par/yardage template — ONLY used when there is no baseline to seed
@@ -101,8 +111,18 @@ export function FairwayHoleConfig({
   courseName,
   holesPerRound = 18,
   baselineLabel,
+  submitError,
+  submitting = false,
 }: FairwayHoleConfigProps) {
   const prefersReducedMotion = useReducedMotion();
+  // Bring a start failure into view: the notice sits beside the dock, but the
+  // dock itself may already be under the keyboard-safe padding or the toast
+  // lane when the failure lands.
+  const submitErrorRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!submitError) return;
+    submitErrorRef.current?.scrollIntoView({ block: 'center', behavior: prefersReducedMotion ? 'auto' : 'smooth' });
+  }, [submitError, prefersReducedMotion]);
   const enter = (i: number) =>
     prefersReducedMotion
       ? {}
@@ -330,13 +350,21 @@ export function FairwayHoleConfig({
         </InlineNotice>
       )}
 
+      {submitError && (
+        <div ref={submitErrorRef} data-slot="round-start-error">
+          <InlineNotice tone="danger" title="Unable to start round">
+            {submitError}
+          </InlineNotice>
+        </div>
+      )}
+
       {/* Action dock */}
       <m.div {...enter(baselineLabel ? 3 : 2)} className="flex gap-3 pt-1">
-        <Button variant="secondary" type="button" onClick={onBack} leftIcon={<ChevronLeft className="h-4 w-4" />} className="flex-1">
+        <Button variant="secondary" type="button" onClick={onBack} disabled={submitting} leftIcon={<ChevronLeft className="h-4 w-4" />} className="flex-1">
           Back
         </Button>
-        <Button variant="primary" type="button" onClick={handleSubmit} className="flex-[2]">
-          Start round →
+        <Button variant="primary" type="button" onClick={handleSubmit} disabled={submitting} className="flex-[2]">
+          {submitting ? 'Starting…' : 'Start round →'}
         </Button>
       </m.div>
     </div>

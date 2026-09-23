@@ -10,7 +10,6 @@
 // ============================================================================
 
 import { createClient } from '@/lib/supabase/server';
-import { revalidatePath } from 'next/cache';
 import type {
   InsightType,
   InsightPriority,
@@ -88,7 +87,7 @@ async function searchInsightsImpl({
 
   try {
     // Resolve the caller from the session rather than trusting the
-    // client-supplied `coachId` (mirrors bulkDismissInsightsImpl above).
+    // client-supplied `coachId`.
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -316,231 +315,12 @@ export async function searchInsights(params: SearchInsightsParams): Promise<Sear
   return observedSearchInsights(params);
 }
 
-// ============================================================================
-// BULK DISMISS INSIGHTS
-// ============================================================================
-
-async function bulkDismissInsightsImpl(
-  insightIds: string[]
-): Promise<BulkActionResult> {
-  const supabase = await createClient();
-
-  try {
-    if (!insightIds.length) {
-      return { success: false, affectedCount: 0, error: 'No insights selected' };
-    }
-
-    // Verify user owns these insights
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return { success: false, affectedCount: 0, error: 'Not authenticated' };
-    }
-
-    const { data: coach } = await supabase
-      .from('golf_coaches')
-      .select('id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!coach) {
-      return { success: false, affectedCount: 0, error: 'Coach not found' };
-    }
-
-    // Bulk update. Live schema has BOTH a `status` enum ('active'|'dismissed'|...)
-    // AND a boolean `dismissed` + `dismissed_at` timestamp. The alerts/insights
-    // screens filter on `dismissed=false` so we must set both to make the
-    // record actually disappear from the default views.
-    const { data, error } = await supabase
-      .from('golf_coach_insights')
-      .update({
-        status: 'dismissed',
-        dismissed: true,
-        dismissed_at: new Date().toISOString(),
-        lifecycle_state: 'archived',
-      })
-      .eq('coach_id', coach.id)
-      .in('id', insightIds)
-      .select('id');
-
-    if (error) {
-      await logServerError(`[Bulk Dismiss Error]: ${describeError(error)}`, { action: 'insight_management.bulkDismissInsights' });
-      return { success: false, affectedCount: 0, error: 'Failed to dismiss insights' };
-    }
-
-    revalidatePath('/golf/dashboard');
-    revalidatePath('/golf/dashboard/insights');
-    revalidatePath('/golf/dashboard/alerts');
-    revalidatePath('/golf/dashboard/intelligence');
-
-    return { success: true, affectedCount: data?.length || 0 };
-  } catch (error) {
-    await logServerError(`Unexpected error in bulkDismissInsights: ${describeError(error)}`, { action: 'insight_management.bulkDismissInsights' });
-    return { success: false, affectedCount: 0, error: 'An unexpected error occurred' };
-  }
-}
-
-const observedBulkDismissInsights = withAdminObserved(
-  'bulkDismissInsights',
-  { sport: 'golf', feature: 'insights_management' },
-  bulkDismissInsightsImpl,
-);
-
-export async function bulkDismissInsights(insightIds: string[]): Promise<BulkActionResult> {
-  return observedBulkDismissInsights(insightIds);
-}
-
-// ============================================================================
-// BULK ACKNOWLEDGE INSIGHTS
-// ============================================================================
-
-async function bulkAcknowledgeInsightsImpl(
-  insightIds: string[]
-): Promise<BulkActionResult> {
-  const supabase = await createClient();
-
-  try {
-    if (!insightIds.length) {
-      return { success: false, affectedCount: 0, error: 'No insights selected' };
-    }
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return { success: false, affectedCount: 0, error: 'Not authenticated' };
-    }
-
-    const { data: coach } = await supabase
-      .from('golf_coaches')
-      .select('id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!coach) {
-      return { success: false, affectedCount: 0, error: 'Coach not found' };
-    }
-
-    // Write lifecycle_state='addressed' alongside the timestamp so the
-    // lifecycle cron picks these up for the addressed→resolved progression.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any)
-      .from('golf_coach_insights')
-      .update({
-        status: 'acknowledged',
-        acknowledged_at: new Date().toISOString(),
-        lifecycle_state: 'addressed',
-      })
-      .eq('coach_id', coach.id)
-      .in('id', insightIds)
-      .select('id');
-
-    if (error) {
-      await logServerError(`[Bulk Acknowledge Error]: ${describeError(error)}`, { action: 'insight_management.bulkAcknowledgeInsights' });
-      return { success: false, affectedCount: 0, error: 'Failed to acknowledge insights' };
-    }
-
-    revalidatePath('/golf/dashboard');
-    revalidatePath('/golf/dashboard/insights');
-    // Defense-in-depth: /insights is a permanent-redirect shim onto the coach
-    // Intelligence home's Signals drill (2026-07-19, plan Task 9) — revalidate
-    // the canonical destination too (pattern: v3/goals.ts createTeamGoal;
-    // see bulkDismissInsightsImpl above, which already does this).
-    revalidatePath('/golf/dashboard/intelligence');
-
-    return { success: true, affectedCount: data?.length || 0 };
-  } catch (error) {
-    await logServerError(`Unexpected error in bulkAcknowledgeInsights: ${describeError(error)}`, { action: 'insight_management.bulkAcknowledgeInsights' });
-    return { success: false, affectedCount: 0, error: 'An unexpected error occurred' };
-  }
-}
-
-const observedBulkAcknowledgeInsights = withAdminObserved(
-  'bulkAcknowledgeInsights',
-  { sport: 'golf', feature: 'insights_management' },
-  bulkAcknowledgeInsightsImpl,
-);
-
-export async function bulkAcknowledgeInsights(insightIds: string[]): Promise<BulkActionResult> {
-  return observedBulkAcknowledgeInsights(insightIds);
-}
-
-// ============================================================================
-// BULK RESOLVE INSIGHTS
-// ============================================================================
-
-async function bulkResolveInsightsImpl(
-  insightIds: string[]
-): Promise<BulkActionResult> {
-  const supabase = await createClient();
-
-  try {
-    if (!insightIds.length) {
-      return { success: false, affectedCount: 0, error: 'No insights selected' };
-    }
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return { success: false, affectedCount: 0, error: 'Not authenticated' };
-    }
-
-    const { data: coach } = await supabase
-      .from('golf_coaches')
-      .select('id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!coach) {
-      return { success: false, affectedCount: 0, error: 'Coach not found' };
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any)
-      .from('golf_coach_insights')
-      .update({
-        status: 'resolved',
-        resolved_at: new Date().toISOString(),
-        lifecycle_state: 'resolved',
-      })
-      .eq('coach_id', coach.id)
-      .in('id', insightIds)
-      .select('id');
-
-    if (error) {
-      await logServerError(`[Bulk Resolve Error]: ${describeError(error)}`, { action: 'insight_management.bulkResolveInsights' });
-      return { success: false, affectedCount: 0, error: 'Failed to resolve insights' };
-    }
-
-    revalidatePath('/golf/dashboard');
-    revalidatePath('/golf/dashboard/insights');
-    // Defense-in-depth: /insights is a permanent-redirect shim onto the coach
-    // Intelligence home's Signals drill (2026-07-19, plan Task 9) — revalidate
-    // the canonical destination too (pattern: v3/goals.ts createTeamGoal;
-    // see bulkDismissInsightsImpl above, which already does this).
-    revalidatePath('/golf/dashboard/intelligence');
-
-    return { success: true, affectedCount: data?.length || 0 };
-  } catch (error) {
-    await logServerError(`Unexpected error in bulkResolveInsights: ${describeError(error)}`, { action: 'insight_management.bulkResolveInsights' });
-    return { success: false, affectedCount: 0, error: 'An unexpected error occurred' };
-  }
-}
-
-const observedBulkResolveInsights = withAdminObserved(
-  'bulkResolveInsights',
-  { sport: 'golf', feature: 'insights_management' },
-  bulkResolveInsightsImpl,
-);
-
-export async function bulkResolveInsights(insightIds: string[]): Promise<BulkActionResult> {
-  return observedBulkResolveInsights(insightIds);
-}
+// `bulkDismissInsights`/`bulkAcknowledgeInsights`/`bulkResolveInsights` removed
+// 2026-09-22 — confirmed zero non-test, non-registry-inventory callers by a
+// fresh `git grep`. All three shared the same shape: coach-scoped bulk status
+// update by insight id array, `select('id')` for an affected count, and a
+// revalidatePath fan-out to the dashboard/insights/alerts/intelligence
+// routes. No UI ever wired a multi-select bulk action to call them.
 
 // ============================================================================
 // EXPORT INSIGHTS

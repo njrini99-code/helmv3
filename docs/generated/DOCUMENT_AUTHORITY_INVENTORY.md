@@ -39,7 +39,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `AUDIT_SNAPSHOT` | 56 | 6 | 30 | 24 |
 | `STATE_SNAPSHOT` | 6 | 2 | 5 | 0 |
 | `HISTORY_LEDGER` | 40 | 0 | 7 | 13 |
-| `INCIDENT` | 28 | 15 | 2 | 0 |
+| `INCIDENT` | 30 | 15 | 2 | 0 |
 | `ADR` | 5 | 0 | 3 | 0 |
 | `INDEX` | 19 | 1 | 7 | 5 |
 | `UNKNOWN` | 94 | 12 | 40 | 80 |
@@ -65,7 +65,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/rules/golfhelm-engineering-os.md` | current | - | - | yes | 1 | 4 | - |
 | `.claude/rules/integrations.md` | current | - | - | - | 4 | 10 | - |
 | `.claude/rules/quality-gates.md` | current | - | - | - | 8 | 7 | - |
-| `.claude/rules/shipping.md` | current | - | - | - | 23 | 3 | - |
+| `.claude/rules/shipping.md` | current | - | - | - | 23 | 2 | - |
 | `AGENTS.md` | current | yes | - | yes | 0 | 8 | - |
 | `CLAUDE.md` | current | yes | - | yes | 0 | 4 | - |
 | `CONTRIBUTING.md` | current | - | - | yes | 0 | 2 | - |
@@ -177,11 +177,11 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/features/auth-onboarding-join.md` | current | yes | - | - | 3 | 15 | - |
 | `memory/features/calendar-events.md` | current | yes | - | yes | 6 | 29 | - |
 | `memory/features/coach-intelligence-triage.md` | current | yes | - | yes | 2 | 24 | - |
-| `memory/features/coachhelm-ai.md` | current | yes | - | yes | 5 | 28 | - |
+| `memory/features/coachhelm-ai.md` | current | yes | - | yes | 5 | 29 | - |
 | `memory/features/crm_outreach.md` | current | yes | - | - | 2 | 24 | - |
 | `memory/features/email_outbound.md` | current | yes | - | - | 2 | 18 | - |
-| `memory/features/golf-round-lifecycle.md` | current | yes | - | yes | 3 | 29 | - |
-| `memory/features/ios-native-shell.md` | current | yes | - | - | 1 | 12 | - |
+| `memory/features/golf-round-lifecycle.md` | current | yes | - | yes | 3 | 31 | - |
+| `memory/features/ios-native-shell.md` | current | yes | - | - | 1 | 14 | - |
 | `memory/features/observability-sentry.md` | current | yes | - | - | 6 | 32 | - |
 | `memory/features/observability-supabase.md` | current | yes | - | yes | 5 | 45 | - |
 | `memory/features/player-coachhelm-development.md` | current | yes | - | - | 1 | 28 | - |
@@ -190,7 +190,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/features/recruiting.md` | current | yes | - | - | 3 | 15 | - |
 | `memory/features/roster-team.md` | current | yes | - | - | 2 | 9 | - |
 | `memory/features/settings-preferences.md` | current | yes | - | - | 1 | 10 | - |
-| `memory/features/shot-tracking.md` | current | yes | - | yes | 5 | 51 | - |
+| `memory/features/shot-tracking.md` | current | yes | - | yes | 5 | 52 | - |
 | `memory/features/stats-analytics.md` | current | yes | - | yes | 2 | 26 | - |
 | `memory/features/team-access-control.md` | current | yes | - | - | 1 | 18 | - |
 | `memory/features/team-communications.md` | current | yes | - | - | 9 | 14 | - |
@@ -267,7 +267,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/TOOL_AUTHORITY_MATRIX.md` | generated | - | yes | yes | 4 | 3 | - |
 | `docs/audits/COMPLETE_FINDINGS_2026_08_18.md` | current | - | yes | yes | 1 | 38 | - |
 | `docs/generated/ENTRY_POINTS.md` | generated | - | - | - | 0 | 0 | - |
-| `docs/generated/HELM_FEATURE_MAP.md` | generated | - | - | - | 3 | 212 | - |
+| `docs/generated/HELM_FEATURE_MAP.md` | generated | - | - | - | 3 | 214 | - |
 | `docs/generated/RETRIEVAL_BENCH.md` | generated | - | - | - | 1 | 10 | - |
 | `docs/generated/WORLD_MODEL.md` | generated | - | - | - | 0 | 2 | - |
 | `docs/generated/contracts/README.md` | generated | - | - | - | 0 | 7 | - |
@@ -292,7 +292,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/architecture/coachhelm-evidence-contract.md` | current | yes | - | yes | 3 | 9 | - |
 | `docs/superpowers/plans/2026-04-22-insight-delivery/00-design-contract.md` | superseded | - | - | yes | 0 | 4 | - |
 | `docs/superpowers/plans/2026-04-22-insight-quality/00-design-contract.md` | superseded | - | - | yes | 0 | 3 | - |
-| `memory/system/golfhelm-engineering-os.md` | current | - | - | yes | 16 | 17 | - |
+| `memory/system/golfhelm-engineering-os.md` | current | - | - | yes | 16 | 18 | - |
 | `memory/templates/ui-contract.md` | current | - | - | - | 0 | 0 | - |
 
 ### `RUNBOOK`
@@ -457,7 +457,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/ledgers/changes/recruiting.md` | current | - | - | - | 1 | 0 | - |
 | `memory/ledgers/changes/roster_team.md` | current | - | - | - | 1 | 0 | - |
 | `memory/ledgers/changes/settings_preferences.md` | current | - | - | - | 1 | 0 | - |
-| `memory/ledgers/changes/shot_tracking.md` | current | - | - | - | 2 | 37 | - |
+| `memory/ledgers/changes/shot_tracking.md` | current | - | - | - | 2 | 39 | - |
 | `memory/ledgers/changes/stats_analytics.md` | current | - | - | - | 1 | 0 | - |
 | `memory/ledgers/changes/team_access_control.md` | current | - | - | - | 1 | 0 | - |
 | `memory/ledgers/changes/team_communications.md` | current | - | - | yes | 3 | 22 | - |
@@ -472,7 +472,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/ledgers/tests/golf_round_lifecycle.md` | current | - | - | - | 2 | 5 | - |
 | `memory/ledgers/tests/observability_sentry.md` | current | - | - | - | 1 | 26 | 2 |
 | `memory/ledgers/tests/qualifiers.md` | current | - | - | - | 1 | 6 | - |
-| `memory/ledgers/tests/shot_tracking.md` | current | - | - | - | 2 | 47 | - |
+| `memory/ledgers/tests/shot_tracking.md` | current | - | - | - | 2 | 48 | - |
 | `memory/ledgers/tests/stats_analytics.md` | current | - | - | - | 1 | 1 | - |
 | `memory/ledgers/tests/team_communications.md` | current | - | - | yes | 1 | 12 | - |
 
@@ -503,11 +503,13 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/incidents/golf_round_lifecycle/INC-2026-08-25-nondestructive-submit-and-checkpoint-fallback.md` | current | - | - | - | 1 | 0 | - |
 | `memory/incidents/golf_round_lifecycle/INC-2026-08-25-recap-persist-schema-permission.md` | current | - | - | - | 1 | 1 | - |
 | `memory/incidents/golf_round_lifecycle/INC-2026-08-30-account-deletion-still-cascades-golf-history.md` | current | - | - | - | 1 | 4 | - |
+| `memory/incidents/golf_round_lifecycle/INC-2026-09-16-course-state-two-letter-rejection.md` | current | - | - | - | 2 | 1 | - |
 | `memory/incidents/qualifiers/INC-2026-08-22-end-date-closed-qualifier-early.md` | current | - | - | - | 1 | 2 | - |
 | `memory/incidents/shot_tracking/INC-2026-08-22-confirmed-snapshot-recovery-prompt.md` | current | - | - | - | 4 | 2 | - |
 | `memory/incidents/shot_tracking/INC-2026-08-22-delete-shot-stale-id.md` | current | - | - | - | 4 | 2 | - |
 | `memory/incidents/shot_tracking/INC-2026-08-22-partial-save-round-deletion.md` | current | - | - | - | 4 | 0 | - |
 | `memory/incidents/shot_tracking/INC-2026-08-25-atomic-snapshot-hole-mismatch.md` | current | - | - | - | 1 | 1 | - |
+| `memory/incidents/shot_tracking/INC-2026-09-15-single-phone-false-conflict-block.md` | current | - | - | - | 2 | 2 | - |
 
 ### `ADR`
 
@@ -551,7 +553,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.github/PULL_REQUEST_TEMPLATE.md` | current | - | - | - | 0 | 1 | - |
 | `.github/branch-protection.md` | current | - | - | - | 5 | 5 | 1 |
 | `android/playstore/SUBMISSION.md` | current | - | - | - | 0 | 4 | - |
-| `docs/AGENT_LIFECYCLE.md` | current | - | - | yes | 0 | 44 | 9 |
+| `docs/AGENT_LIFECYCLE.md` | current | - | - | yes | 0 | 46 | 9 |
 | `docs/BI_DASHBOARD_ARCHITECTURE.md` | current | yes | - | - | 2 | 21 | 20 |
 | `docs/CI_RUNBOOK.md` | current | - | - | yes | 8 | 17 | - |
 | `docs/HELM_OS.md` | current | - | - | yes | 5 | 20 | - |
