@@ -13102,6 +13102,21 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v2/analytics/effectiveness-writer.ts",
+          "line": 43
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v2/analytics/effectiveness-writer.ts",
+          "line": 44
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v2/analytics/effectiveness-writer.ts",
+          "line": 45
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v2/insights/standing-injection.ts",
           "line": 20
         },
