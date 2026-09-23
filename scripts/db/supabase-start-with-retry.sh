@@ -7,6 +7,10 @@
 # Images that did pull stay in the local Docker cache, so each attempt pulls
 # fewer images and the burst shrinks. A failure that is not a rate limit
 # (e.g. a broken migration) fails on the first attempt, unretried.
+#
+# Arguments are passed through to `supabase start` on every attempt, e.g.
+# `-x studio,realtime,...` so a job pulls only the containers it uses (fewer
+# pulls, smaller rate-limit burst — ci.yml's Supabase job, 2026-09-23).
 set -uo pipefail
 
 # A rate limit can pin one image: every other image pulls, but ghcr.io keeps
@@ -31,7 +35,7 @@ log="$(mktemp)"
 trap 'rm -f "$log"' EXIT
 
 for ((i = 1; i <= attempts; i++)); do
-  supabase start 2>&1 | tee "$log"
+  supabase start "$@" 2>&1 | tee "$log"
   status=${PIPESTATUS[0]}
   if [[ $status -eq 0 ]]; then
     exit 0
