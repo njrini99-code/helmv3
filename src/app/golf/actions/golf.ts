@@ -1,6 +1,6 @@
 'use server';
 
-import { randomInt } from 'crypto';
+import { createHash, randomInt } from 'crypto';
 import { after } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { derivePlayerQualifierProgress } from './qualifier-progress';
@@ -2924,10 +2924,38 @@ async function submitGolfRoundComprehensiveImpl(
       // `{ queued: false }`, in which case this falls through to the
       // Inngest branch below exactly as it did before this queue existed.
       if (isHelmQueueEnabled()) {
+        // N12: a bare `round:${id}:analysis` key dedupes on round id alone,
+        // so a correction to this round's shots/holes within the 24h
+        // rolling window (`helm_jobs_enqueue`'s SQL-side dedupe) would
+        // collide with the original analysis job and never re-enqueue.
+        // Folding a short content hash of the submitted payload in means a
+        // resubmission with different content gets a distinct key
+        // (re-analyzed) while a verbatim duplicate submit still collapses
+        // onto the same job.
+        //
+        // Verified: `submitGolfRoundComprehensiveImpl` above refuses to
+        // resubmit a round whose row already reads `status === 'completed'`
+        // (see the check ~100 lines above `existingRound.status ===
+        // 'completed'`), and both `savePartialRoundImpl` and
+        // `save_partial_round_atomic` refuse to touch a completed round too
+        // — so editing an already-completed round's content and having it
+        // reach this call site is not currently possible. What this DOES
+        // still cover live: the continue/new/recover-round client flows all
+        // call this action with the same `existingRoundId` on retry while
+        // the row is still `in_progress` (e.g. a failed attempt, or the
+        // player fixing a hole before the retry succeeds) — those retries
+        // reach this exact line, and a bare round-id key would have
+        // deduped a content-changed retry onto the first attempt's job.
+        const roundContentHash = createHash('sha256')
+          .update(
+            JSON.stringify({ holesPayload, shotsPayload, puttDetailsPayload, approachDetailsPayload }),
+          )
+          .digest('hex')
+          .slice(0, 12);
         const enqueueResult = await enqueueJob(
           'coachhelm_analysis',
           { roundId: backgroundRoundId, playerId: backgroundPlayerId },
-          { dedupeKey: `round:${backgroundRoundId}:analysis` },
+          { dedupeKey: `round:${backgroundRoundId}:analysis:${roundContentHash}` },
         );
         if (enqueueResult.queued) {
           await flightRecorder.complete('post.coachhelm', {
