@@ -315,20 +315,30 @@
   never actually blocked on it.
 - Why: addendum §13, A4 slice 2, per the slice plan (slice 1 was the
   per-hole pure core; a later slice wires this rollup into
-  `hypothesis-policy.ts`/a FilmstripReview mount). Every row's
+  `hypothesis-policy.ts`/a Round Review mount). Every row's
   `eligibleCount`/`denominator`/`distinctRounds` is computed from that
   row's own real gating population by construction — carrying forward the
   #2008 review's MUST 1 lesson (a distance-profile row once reported a
   floor its own narrower population had already cleared, hiding the wider
   floor that actually produced `'insufficient'`) into a brand-new module
   rather than repeating it.
-- Verification: 6 new tests in
+- Verification: 8 new tests in
   `src/test/coachhelm/v3/sequence-attribution.test.ts` (conservation +
   insufficient-but-real-value, zero-denominator invalid rows, real
   non-null coverage value below its floor, suppressed-hole-still-counted,
   gap-lands-in-exclusions-not-denominator), reusing this file's own
   existing per-hole fixtures (`CONSERVATION_HOLE`, `incompleteShotSequence`,
-  `explicitPenaltyPair`) rather than inventing new ones. Full file: 19/19
-  passing. `typecheck`/`lint` run on touched files. Not wired into any
-  generator, composite, or page — pure core + tests only, same posture as
-  A0–A3.
+  `explicitPenaltyPair`) rather than inventing new ones. Full file: 22/22
+  passing. Corrected 2026-09-23 (rev-2020 Fix-first, MUST): the first
+  pass had no test that actually reached `'supported'` or exercised the
+  `&&` between the two floors — a `>=` → `>`, an `&&` → `||`, or moving
+  `acc.roundIds.add(...)` out of the `measuredContribution !== null`
+  branch (the exact #2008 wrong-population bug) would all have passed.
+  Three new floor-boundary tests (10 events/3 rounds → supported; 9/3 and
+  10/2 → insufficient, for both the event-kind row and the coverage row
+  at once, via a shared `holeInOneBatch` fixture) plus two added
+  assertions on existing tests (`coverage.distinctRounds === 1` on the
+  suppressed-hole test; `penaltyRow.distinctRounds === 0` on the gap
+  test, which is what actually catches the `roundIds.add` mutation).
+  `typecheck`/`lint` run on touched files. Not wired into any generator,
+  composite, or page — pure core + tests only, same posture as A0–A3.
