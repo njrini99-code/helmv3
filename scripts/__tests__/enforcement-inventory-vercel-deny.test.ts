@@ -153,12 +153,12 @@ describe('vercelMutatingDenyHits — the Supabase exclusion is derived from the 
 });
 
 describe('the live configuration', () => {
-  it('purchases and project controls ask, and CLI production deploys are denied because deploys go through the Vercel Git integration', () => {
+  it('purchases and project controls ask, and CLI production deploys are denied because the owner runs releases', () => {
     // Production mutators remain subject to native authorization, including
-    // tools addressed by the account connector UUID. Since 2026-09-17 the
-    // CLI `vercel --prod` / `vercel deploy --prod` spellings are denied
-    // outright rather than asked — the intended production path is the
-    // Vercel Git integration, not a local upload from an agent's checkout.
+    // tools addressed by the account connector UUID. The CLI `vercel --prod` /
+    // `vercel deploy --prod` spellings are denied outright rather than asked:
+    // Git deploys are disabled and the owner releases by running
+    // scripts/deploy-prod.sh, never an agent.
     const settings = JSON.parse(readFileSync(resolve(REPO, '.claude/settings.json'), 'utf-8'));
     const connectors: Connector[] = JSON.parse(
       readFileSync(resolve(REPO, 'config/mcp-connector-ids.json'), 'utf-8'),

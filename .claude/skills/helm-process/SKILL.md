@@ -20,8 +20,9 @@ no authorization restrictions.
   `git push -u origin <branch>`, create a PR, and use `/land` to merge and sync
   after required checks pass.
 - Use `npm run worktrees:retire` for safe cleanup.
-- For an explicitly authorized production deployment:
-  `scripts/deploy-prod.sh`. Pushes alone do not establish a release.
+- Production deploys only when the owner says to; the owner runs
+  `scripts/deploy-prod.sh` (agents are denied it). Pushes and merges never
+  deploy.
 
 Use the current session's connected tools. The project Supabase MCP supports
 reads and task-authorized migrations; an authenticated CLI is also valid.

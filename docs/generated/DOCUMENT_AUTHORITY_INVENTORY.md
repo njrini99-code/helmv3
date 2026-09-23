@@ -65,8 +65,8 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/rules/golfhelm-engineering-os.md` | current | - | - | yes | 1 | 4 | - |
 | `.claude/rules/integrations.md` | current | - | - | - | 4 | 10 | - |
 | `.claude/rules/quality-gates.md` | current | - | - | - | 8 | 7 | - |
-| `.claude/rules/shipping.md` | current | - | - | - | 23 | 2 | - |
-| `AGENTS.md` | current | yes | - | yes | 0 | 8 | - |
+| `.claude/rules/shipping.md` | current | - | - | - | 23 | 3 | - |
+| `AGENTS.md` | current | yes | - | yes | 0 | 9 | - |
 | `CLAUDE.md` | current | yes | - | yes | 0 | 4 | - |
 | `CONTRIBUTING.md` | current | - | - | yes | 0 | 2 | - |
 | `README.md` | current | - | - | - | 0 | 5 | - |
@@ -263,7 +263,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/agents/ui-polish-reviewer.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/skills/apple-appstore-reviewer/SKILL.md` | current | - | - | - | 0 | 0 | - |
 | `audit/A1-RESOLUTION.md` | generated | - | - | - | 0 | 2 | - |
-| `docs/CONTROL_PLANE_ENFORCEMENT.md` | generated | - | yes | yes | 11 | 13 | - |
+| `docs/CONTROL_PLANE_ENFORCEMENT.md` | generated | - | yes | yes | 12 | 13 | - |
 | `docs/TOOL_AUTHORITY_MATRIX.md` | generated | - | yes | yes | 4 | 3 | - |
 | `docs/audits/COMPLETE_FINDINGS_2026_08_18.md` | current | - | yes | yes | 1 | 38 | - |
 | `docs/generated/ENTRY_POINTS.md` | generated | - | - | - | 0 | 0 | - |
@@ -553,7 +553,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.github/PULL_REQUEST_TEMPLATE.md` | current | - | - | - | 0 | 1 | - |
 | `.github/branch-protection.md` | current | - | - | - | 5 | 5 | 1 |
 | `android/playstore/SUBMISSION.md` | current | - | - | - | 0 | 4 | - |
-| `docs/AGENT_LIFECYCLE.md` | current | - | - | yes | 0 | 46 | 9 |
+| `docs/AGENT_LIFECYCLE.md` | current | - | - | yes | 0 | 47 | 9 |
 | `docs/BI_DASHBOARD_ARCHITECTURE.md` | current | yes | - | - | 2 | 21 | 20 |
 | `docs/CI_RUNBOOK.md` | current | - | - | yes | 8 | 17 | - |
 | `docs/HELM_OS.md` | current | - | - | yes | 5 | 20 | - |

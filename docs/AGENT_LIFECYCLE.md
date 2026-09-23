@@ -446,12 +446,11 @@ gh pr list --state merged --limit 20 \
 9. **Squash merge** — one new commit on main; remote branch auto-deleted.
 10. **`git fetch`** — local main catches up.
 
-11. **Vercel Git integration** — the merge commit on `main` builds and
-    promotes to production (since 2026-09-17; `vercel.json` no longer
-    disables Git deploys, and `scripts/vercel-ignore-build.sh` skips every
-    branch but `main`). Vercel sets `VERCEL_GIT_COMMIT_SHA`, so the Sentry
-    release is the merge commit. Merging IS shipping — land only what may
-    go live. Confirm the deployment is READY before calling it live.
+11. **No deploy.** `vercel.json` disables Vercel Git deployments, so the
+    merge sits in `npm run release:status` as unreleased. Production changes
+    only when the owner says to deploy and runs `scripts/deploy-prod.sh`
+    from a clean, current `main`; it stamps the Sentry release and verifies
+    the served commit.
 
 ---
 
@@ -790,24 +789,24 @@ Standing rules that no hook enforces:
   they are R3 under the engineering OS, meaning prepare only; the owner
   executes.
 
-### Vercel — merging to main is deploying; the CLI is not
+### Vercel — merging does not deploy; the owner releases manually
 
-**Production deploys from the Vercel Git integration** (since 2026-09-17).
-Every commit on `main` builds and promotes; `scripts/vercel-ignore-build.sh`
-skips every other branch. `scripts/deploy-prod.sh` is retired and refuses to
-run: a CLI deploy beside the Git integration created duplicate and failed
-production deploys (2026-09-15) and stale Sentry release tags. Production
-serves the latest READY `main` deployment.
+`vercel.json` disables Vercel Git deployments for every branch, and
+`scripts/vercel-ignore-build.sh` skips any Git-triggered build as defense in
+depth. Production deploys only when the owner says to: the owner runs
+`scripts/deploy-prod.sh` from a clean, current `main` (in a Claude session,
+`! scripts/deploy-prod.sh`). The script checks the linked project, the tree
+and the weekly budget, stamps the Sentry release, deploys, and verifies the
+served commit. (It was retired 2026-09-17 while the Git integration
+auto-deployed `main`, and restored 2026-09-22 when releases became manual.)
 
-Denied at the permission layer in four spellings each: `vercel deploy
---prod`, `vercel --prod`, `vercel promote`, `vercel rollback`,
-`vercel alias set`. `guard-bash.sh` blocks the same shapes by regex,
-explicitly as belt-and-braces — the comment in that file notes that a
-permission deny matches a literal prefix, so a reordered invocation would
-dodge it.
-
-All four mutate what production serves. `alias set` is included because
-domain routing is production state even though it deploys nothing.
+Agents are denied `scripts/deploy-prod.sh` and `vercel --prod` /
+`vercel deploy --prod` in `.claude/settings.json` (bare, `./node_modules/.bin`
+and `npx` spellings). `vercel promote`, `vercel rollback`, `vercel alias set`
+and `vercel env rm` are `ask` rules: they need the owner's approval. A deny
+matches a literal prefix, so a reordered invocation can dodge it; policy, not
+the matcher, is what keeps agents from deploying. The generated
+`docs/CONTROL_PLANE_ENFORCEMENT.md` is the live list.
 
 Practical rules that are not enforced by anything:
 
