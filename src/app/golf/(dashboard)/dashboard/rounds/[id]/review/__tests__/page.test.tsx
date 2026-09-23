@@ -246,6 +246,14 @@ vi.mock('@/app/golf/actions/insight-delivery', () => ({
   getRoundTakeawayInsight: vi.fn(async () => null),
 }));
 
+// Package 8's round-review narrative — flag off everywhere by default, so
+// the real action already no-ops, but every other server action this page
+// imports gets an explicit mock (this file's own convention) rather than
+// relying on that default holding in CI.
+vi.mock('@/app/golf/actions/round-review-narrative', () => ({
+  getRoundReviewNarrative: vi.fn(async () => ({ narrative: null, cached: false })),
+}));
+
 // FilmstripReview's "What to do next" CTA now opens a shared FocusAreaModal
 // (closed by default — ModalShell conditionally renders nothing while
 // closed, see ModalShell.tsx) instead of the retired vaul-Drawer

@@ -13206,6 +13206,117 @@ export type Database = {
           },
         ]
       }
+      golf_focus_area_criteria: {
+        Row: {
+          created_at: string
+          created_by_user_id: string
+          focus_area_id: string
+          id: string
+          label: string
+          met: boolean
+          met_at: string | null
+          player_id: string
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_user_id: string
+          focus_area_id: string
+          id?: string
+          label: string
+          met?: boolean
+          met_at?: string | null
+          player_id: string
+          source: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by_user_id?: string
+          focus_area_id?: string
+          id?: string
+          label?: string
+          met?: boolean
+          met_at?: string | null
+          player_id?: string
+          source?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_focus_area_criteria_focus_area_id_fkey"
+            columns: ["focus_area_id"]
+            isOneToOne: false
+            referencedRelation: "golf_player_focus_areas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_focus_area_criteria_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      golf_focus_area_practice_sessions: {
+        Row: {
+          client_request_id: string
+          created_at: string
+          drill_id: string | null
+          focus_area_id: string
+          id: string
+          logged_by_role: string
+          logged_by_user_id: string
+          note: string | null
+          player_id: string
+          practiced_at: string
+          reps: number | null
+        }
+        Insert: {
+          client_request_id: string
+          created_at?: string
+          drill_id?: string | null
+          focus_area_id: string
+          id?: string
+          logged_by_role: string
+          logged_by_user_id: string
+          note?: string | null
+          player_id: string
+          practiced_at: string
+          reps?: number | null
+        }
+        Update: {
+          client_request_id?: string
+          created_at?: string
+          drill_id?: string | null
+          focus_area_id?: string
+          id?: string
+          logged_by_role?: string
+          logged_by_user_id?: string
+          note?: string | null
+          player_id?: string
+          practiced_at?: string
+          reps?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_focus_area_practice_sessions_focus_area_id_fkey"
+            columns: ["focus_area_id"]
+            isOneToOne: false
+            referencedRelation: "golf_player_focus_areas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_focus_area_practice_sessions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       golf_global_patterns: {
         Row: {
           average_impact: number

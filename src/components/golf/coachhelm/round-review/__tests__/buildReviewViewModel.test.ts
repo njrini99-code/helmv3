@@ -198,6 +198,23 @@ describe('buildNarrative', () => {
       buildNarrative('v1 summary', null, 'Solid round. This occurs in NaN% of rounds with NaN% reliability.'),
     ).toBe('Solid round.');
   });
+
+  // Package 8: golf_round_reviews.ai_narrative is the new TOP tier, above
+  // v2Body and the persisted composed body — it is a purpose-written,
+  // cached-once-per-round paragraph, distinct from and preferred over
+  // both the V2 hook's fresh generation and the CoachHelm composed body.
+  it('prefers the ai_narrative top tier over a fresh v2Body', () => {
+    expect(buildNarrative('v1 summary', 'fresh v2 body', 'persisted composed body', 'ai narrative')).toBe(
+      'ai narrative',
+    );
+  });
+  it('falls through an empty/whitespace ai_narrative to the existing tiers', () => {
+    expect(buildNarrative('v1 summary', 'fresh v2 body', 'persisted composed body', '   ')).toBe('fresh v2 body');
+  });
+  it('falls through a null/undefined ai_narrative to the existing tiers with no behavior change', () => {
+    expect(buildNarrative('v1 summary', null, 'persisted composed body', null)).toBe('persisted composed body');
+    expect(buildNarrative('v1 summary', null, 'persisted composed body', undefined)).toBe('persisted composed body');
+  });
 });
 
 describe('buildStrokesLostRows (strokesToGain single-home)', () => {
