@@ -86,6 +86,15 @@
 -- file names none; CI's fresh local stack failed at this statement with
 -- `schema "pgmq" does not exist`. Create it first (no-op on hosted Supabase
 -- where the dashboard toggle already made it).
+
+-- VERIFY: select 1 from pg_extension where extname = 'pgmq';
+-- VERIFY: select 1 from information_schema.tables where table_schema = 'helm_jobs' and table_name = 'dedupe_keys';
+-- VERIFY: select 1 from information_schema.tables where table_schema = 'helm_jobs' and table_name = 'dead_letters';
+-- VERIFY: select 1 from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'helm_jobs' and c.relname = 'dead_letters' and c.relrowsecurity;
+-- VERIFY: select 1 where has_function_privilege('anon', 'public.helm_jobs_enqueue(text,jsonb,text)', 'execute') = false;
+-- VERIFY: select 1 where has_function_privilege('authenticated', 'public.helm_jobs_enqueue(text,jsonb,text)', 'execute') = false;
+-- VERIFY: select 1 where has_function_privilege('service_role', 'public.helm_jobs_depth()', 'execute');
+-- VERIFY: select 1 where has_function_privilege('anon', 'public.helm_jobs_requeue_dead_letter(uuid)', 'execute') = false;
 create schema if not exists pgmq;
 create extension if not exists pgmq schema pgmq;
 

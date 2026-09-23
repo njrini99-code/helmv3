@@ -31,6 +31,25 @@
 --
 -- ROLLBACK: drop the four functions, then both tables.
 
+-- VERIFY: select 1 from information_schema.tables where table_schema =
+-- VERIFY: 'helm_debug' and table_name = 'db_statement_samples';
+-- VERIFY: select 1 from information_schema.tables where table_schema =
+-- VERIFY: 'helm_debug' and table_name = 'db_statement_alert_state';
+-- VERIFY: select 1 from pg_indexes where schemaname = 'helm_debug' and
+-- VERIFY: indexname = 'db_statement_samples_rank_idx';
+-- VERIFY: select 1 where has_function_privilege('anon',
+-- VERIFY: 'public.record_db_statement_samples(timestamptz,jsonb,jsonb,jsonb)',
+-- VERIFY: 'execute') = false;
+-- VERIFY: select 1 where has_function_privilege('authenticated',
+-- VERIFY: 'public.helm_debug_read_db_statement_samples(integer,integer)',
+-- VERIFY: 'execute') = false;
+-- VERIFY: select 1 where has_function_privilege('service_role',
+-- VERIFY: 'public.helm_debug_read_db_statement_samples(integer,integer)',
+-- VERIFY: 'execute');
+-- VERIFY: select 1 where has_function_privilege('anon',
+-- VERIFY: 'public.helm_debug_read_statement_alert_state(text[])', 'execute') =
+-- VERIFY: false;
+
 create schema if not exists helm_debug;
 
 create table if not exists helm_debug.db_statement_samples (

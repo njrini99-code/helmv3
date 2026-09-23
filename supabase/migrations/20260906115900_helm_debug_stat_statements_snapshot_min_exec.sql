@@ -17,6 +17,21 @@
 -- 20260903190000_helm_debug_stat_snapshot_extensions_search_path.sql (minus
 -- this field).
 
+-- VERIFY: select 1 from pg_proc where oid =
+-- VERIFY: 'public.helm_debug_stat_statements_snapshot(integer)'::regprocedure;
+-- VERIFY: select 1 from (select count(*) c from pg_proc p join pg_namespace n
+-- VERIFY: on n.oid = p.pronamespace where n.nspname = 'public' and p.proname =
+-- VERIFY: 'helm_debug_stat_statements_snapshot') s where s.c = 1;
+-- VERIFY: select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+-- VERIFY: where n.nspname = 'public' and p.proname =
+-- VERIFY: 'helm_debug_stat_statements_snapshot' and p.prosrc like
+-- VERIFY: '%min_exec_ms%';
+-- VERIFY: select 1 where has_function_privilege('anon',
+-- VERIFY: 'public.helm_debug_stat_statements_snapshot(integer)', 'execute') =
+-- VERIFY: false;
+-- VERIFY: select 1 where has_function_privilege('service_role',
+-- VERIFY: 'public.helm_debug_stat_statements_snapshot(integer)', 'execute');
+
 create or replace function public.helm_debug_stat_statements_snapshot(
     p_limit integer default 50
 )
