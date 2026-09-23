@@ -18075,6 +18075,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/metrics/distance-profile-window.ts",
+          "line": 25
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/metrics/distance-profile.ts",
           "line": 145
         }
