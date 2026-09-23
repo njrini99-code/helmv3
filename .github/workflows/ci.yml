@@ -83,17 +83,14 @@ name: CI
 # manual/main full suite) is unaffected; it downloads the same artifact when
 # one exists for its SHA and falls back to building only when it doesn't.
 #
-# FAST-FIRST ORDERING: `next-build`, the three `unit-tests` shards,
-# `unit-tests-timezone`, and `supabase` (Supabase lint + RLS tests) now also
-# `needs: [typecheck, lint]` in addition to `detect-changes` — a typecheck or
-# lint failure stops all four heavy jobs before they start spending runner
-# minutes on a PR that was already going to be rejected. `CI aggregate`'s
-# `if:` did not need to change: `typecheck` and `lint` are themselves in its
-# `needs:` list, so their own `failure`/`cancelled` result already fails the
-# aggregate directly — a heavy job skipping as a SIDE EFFECT of a failed
-# typecheck/lint never needs its own detection, and the existing
-# `code=='true' && skipped` clause still exists purely for the
-# path-gating skip case it was written for.
+# PARALLEL ORDERING (2026-09-22, owner): `next-build`, the three `unit-tests`
+# shards, `unit-tests-timezone`, and `supabase` (Supabase lint + RLS tests)
+# need only `detect-changes` and start alongside `typecheck`/`lint`. The
+# 2026-09-06 fast-first ordering (`needs: [typecheck, lint]`) saved runner
+# minutes, but the repo is public, so Actions minutes are free, and it added
+# ~4 min to every code PR's critical path. Nothing is weaker: `CI aggregate`
+# still needs `typecheck`, `lint` and every heavy job, so any failure still
+# fails the required check.
 # -----------------------------------------------------------------------------
 
 on:
@@ -650,9 +647,8 @@ jobs:
 
   unit-tests:
     name: Unit tests
-    # Fast-first (2026-09-06): also needs typecheck/lint so a failure there
-    # stops this job before it spends runner minutes — see the header note.
-    needs: [detect-changes, typecheck, lint]
+    # Runs in parallel with typecheck/lint — see the header note.
+    needs: [detect-changes]
     if: needs.detect-changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -739,8 +735,8 @@ jobs:
     # kept explicit so a future change to that classification does not have
     # to remember this job too.
     #
-    # Fast-first (2026-09-06): also needs typecheck/lint — see header note.
-    needs: [detect-changes, typecheck, lint]
+    # Runs in parallel with typecheck/lint — see the header note.
+    needs: [detect-changes]
     if: github.event_name == 'push' && needs.detect-changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -777,8 +773,8 @@ jobs:
 
   next-build:
     name: Next build
-    # Fast-first (2026-09-06): also needs typecheck/lint — see header note.
-    needs: [detect-changes, typecheck, lint]
+    # Runs in parallel with typecheck/lint — see the header note.
+    needs: [detect-changes]
     if: needs.detect-changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -853,8 +849,8 @@ jobs:
 
   supabase:
     name: Supabase lint + RLS tests
-    # Fast-first (2026-09-06): also needs typecheck/lint — see header note.
-    needs: [detect-changes, typecheck, lint]
+    # Runs in parallel with typecheck/lint — see the header note.
+    needs: [detect-changes]
     if: needs.detect-changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
