@@ -33,9 +33,8 @@ export interface CourseGeometryPolicy {
   readonly approvedPackageByteHashes?: Readonly<Record<string, string>>;
   /** The tier the approved package has earned; capabilities above it are refused. */
   readonly acceptedCapabilityTier: 'C2' | 'C3' | 'C4';
-  /** Historical visual-pilot metadata. It is deliberately not an authority
-   * exception: source-candidate packages can render in the review/lab path,
-   * but never enter runtime geometry consumers. */
+  /** Owner-approved exception that lets a `source_candidate` package serve
+   * (no OSM feature reviewed by a person); downstream keeps saying so. */
   readonly pilotAcceptsSourceCandidate: boolean;
   /** golf_courses ids that ARE this layout. */
   readonly dbCourseIds: ReadonlySet<string>;
@@ -103,19 +102,17 @@ export interface CourseGeometryEligibilityInput {
   requiredTier?: CapabilityTier;
 }
 
-/** Package approval for runtime geometry consumers: the exact approved hash,
- * one of the policy's sites, and a physically reviewed package. A
- * `source_candidate` can still be rendered by the separate review pipeline;
- * it cannot be smuggled into measurement, placement, analytics, or One Tap
- * by an owner/pilot policy flag. */
+/** Package approval as the asset loaders apply it: the exact approved hash,
+ * one of the policy's sites, and a source candidate only under the explicit
+ * pilot exception. */
 export function packageApproved(pkg: Pick<CourseGeometryPackage, 'siteId' | 'contentHash' | 'status'>, policy: CourseGeometryPolicy): boolean {
-  return policy.approvedGeometryHashes.has(pkg.contentHash) && policy.siteIds.has(pkg.siteId) && pkg.status !== 'source_candidate';
+  return policy.approvedGeometryHashes.has(pkg.contentHash) && policy.siteIds.has(pkg.siteId) && (pkg.status !== 'source_candidate' || policy.pilotAcceptsSourceCandidate);
 }
 
 export function isCourseGeometryEligible(input: CourseGeometryEligibilityInput, policy: CourseGeometryPolicy): CourseGeometryEligibility {
   if (input.roundCourseId !== policy.layoutId) return { eligible: false, reason: 'wrong_course' };
   if (!policy.siteIds.has(input.pkg.siteId)) return { eligible: false, reason: 'wrong_site' };
-  if (input.pkg.status === 'source_candidate') return { eligible: false, reason: 'source_candidate_package' };
+  if (input.pkg.status === 'source_candidate' && !policy.pilotAcceptsSourceCandidate) return { eligible: false, reason: 'source_candidate_package' };
   if (!policy.approvedGeometryHashes.has(input.pkg.contentHash)) return { eligible: false, reason: 'geometry_hash_not_approved' };
   if (input.requiredTier && !tierAtLeast(policy.acceptedCapabilityTier, input.requiredTier)) return { eligible: false, reason: 'capability_not_available' };
   if (!input.featureFlagEnabled) return { eligible: false, reason: 'feature_flag_off' };

@@ -90,7 +90,9 @@ describe('live round placement (§77)', () => {
       if (url.endsWith('/manifest.json')) return body({ geometryVersion: sourceCandidate.contentHash, packageUrl: '/course-geometry/peek-n-peak-upper/source-candidate.json' });
       return body(sourceCandidate);
     });
-    expect(await loadApprovedCoursePackage('peek-n-peak-upper', { ...approved, approvedGeometryHashes: new Set([sourceCandidate.contentHash]) }, sourceCandidateFetch)).toBeNull();
+    // A source candidate loads only under the policy's explicit pilot exception.
+    expect(await loadApprovedCoursePackage('peek-n-peak-upper', { ...approved, pilotAcceptsSourceCandidate: false, approvedGeometryHashes: new Set([sourceCandidate.contentHash]) }, sourceCandidateFetch)).toBeNull();
+    expect((await loadApprovedCoursePackage('peek-n-peak-upper', { ...approved, pilotAcceptsSourceCandidate: true, approvedGeometryHashes: new Set([sourceCandidate.contentHash]) }, sourceCandidateFetch))?.pkg.status).toBe('source_candidate');
     expect(await loadApprovedCoursePackage('other-course', approved, fetchImpl)).toBeNull();
     const stale: CourseGeometryPolicy = { ...approved, approvedGeometryHashes: new Set(['some-other-hash']) };
     expect(await loadApprovedCoursePackage('peek-n-peak-upper', stale, fetchImpl)).toBeNull();

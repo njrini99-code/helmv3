@@ -24,9 +24,11 @@ export function explicitHoleBindings(pkg: CourseGeometryPackage, policy: CourseG
 }
 
 /** Master design §77 placement: Meridian Live replaces the shot-entry screen
- * only for an explicitly admitted physical package. Visual candidates can
- * remain available in the review renderer, but cannot supply a live round.
- * Every unavailable round keeps the existing tracker unchanged. */
+ * of the existing round flow only for an eligible round — an approved
+ * package (C3, or C2 under a policy's owner-approved `livePilot` hash), the
+ * release flag on, a device location — and only when every saved round hole
+ * maps to a package hole. Every other round renders the existing tracker
+ * unchanged. */
 export interface OneTapLiveRound {
   roundId: string;
   courseId: string;
@@ -75,7 +77,7 @@ export function resolveOneTapLiveRound(input: ResolveLiveRoundInput): { live: On
   if (!policy) return { live: null, eligibility: { eligible: false, reason: 'wrong_course' } };
   if (!input.pkg) return { live: null, eligibility: { eligible: false, reason: 'geometry_hash_not_approved' } };
   const eligibility = isCourseGeometryEligible({ roundCourseId: input.roundCourseId, pkg: input.pkg, featureFlagEnabled: input.featureFlagEnabled, preciseLocationAvailable: !!input.location,
-    requiredTier: 'C3' }, policy);
+    requiredTier: policy.livePilot?.layoutId === policy.layoutId && policy.livePilot.geometryHashes.has(input.pkg.contentHash) ? 'C2' : 'C3' }, policy);
   if (!eligibility.eligible) return { live: null, eligibility };
   const roundHoleKeys = input.roundHoleKeys ?? explicitHoleBindings(input.pkg, policy);
   const roundSetup = input.roundSetup ? structuredClone(input.roundSetup) : undefined;

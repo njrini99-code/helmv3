@@ -1,10 +1,10 @@
 import { isCourseGeometryEligible, layoutIdForSite, policyForLayout, policyForSite, resolveCoursePolicy, type CourseGeometryEligibility, type CourseGeometryEligibilityInput, type CourseGeometryPolicy, type RoundCourseIdentity } from './course-policy';
 
-/** Peek'n Peak Upper — the golden visual-reference layout. Its current source
- * candidate remains useful in the separate review renderer, but this runtime
- * registry intentionally approves no geometry until the physical admission
- * package and per-hole capability manifest are reviewed. The name pattern
- * still excludes the Lower course so a future approval cannot cross-bind. */
+/** Peek'n Peak Upper — the golden reference layout (One-Tap master design
+ * §21–22; Factory v2 wave 0). The exact Upper package, identified by its OSM
+ * site id and a production-approved geometry hash, behind a reversible
+ * release flag. The name pattern requires "Upper" so the Lower course can
+ * never activate (§22). */
 export const PEEK_N_PEAK_UPPER_POLICY: CourseGeometryPolicy = {
   layoutId: 'peek-n-peak-upper',
   facilityId: 'peek-n-peak',
@@ -15,14 +15,28 @@ export const PEEK_N_PEAK_UPPER_POLICY: CourseGeometryPolicy = {
    * exist only where that migration has been applied through `db:apply`; off,
    * the round plays device-only and the ledger still scores it (§77). */
   syncFeatureFlag: 'peek_n_peak_one_tap_sync_v1',
-  approvedGeometryHashes: new Set<string>(),
-  /** C2 visual review does not make a candidate a runtime package. */
+  /** The 2026-09-16 Upper package (`src/test/fixtures/course-geometry/peek-n-peak-upper.json`,
+   * the one every compiled terrain under `compiled-peek-n-peak-upper/` is
+   * hash-locked to) was approved by the owner on 2026-09-16 for the on-course
+   * pilot; `public/course-geometry/peek-n-peak-upper/manifest.json` names the same hash. */
+  approvedGeometryHashes: new Set(['fdec6ea8467dd214372bde680e7b7f9236c06ad5d27bb5ddeadf8ed5e9d3f87a']),
+  approvedPackageByteHashes: { fdec6ea8467dd214372bde680e7b7f9236c06ad5d27bb5ddeadf8ed5e9d3f87a: '7dbe0b9caf1c7e5e6399397c0521bc97af418d6693cc6ddc29228af88dfae119' },
+  /** C2: renders in production with uncertainty labelled; no capability that
+   * needs a reviewed surface runs on it (lie words read "Surface uncertain",
+   * round-review shot resolution stays off for a source-candidate package). */
   acceptedCapabilityTier: 'C2',
-  pilotAcceptsSourceCandidate: false,
+  /** Pilot exception, owner-approved 2026-09-16: the approved package is still
+   * `source_candidate` — no OSM feature has been reviewed by a person. Set
+   * false again once a reviewed package is approved. */
+  pilotAcceptsSourceCandidate: true,
   dbCourseIds: new Set<string>(['48596a01-88a4-4081-aaa1-3b049584aa2d']),
   courseNamePatterns: [/peek\W*n?\W*peak[\s\S]*\bupper\b/i],
   renderWorld: 'v2',
-  holeBindings: {},
+  holeBindings: {
+    fdec6ea8467dd214372bde680e7b7f9236c06ad5d27bb5ddeadf8ed5e9d3f87a: Object.fromEntries(
+      Array.from({ length: 18 }, (_, i) => [i + 1, `peek-n-peak-upper-${String(i + 1).padStart(2, '0')}`])),
+  },
+  livePilot: { layoutId: 'peek-n-peak-upper', geometryHashes: new Set(['fdec6ea8467dd214372bde680e7b7f9236c06ad5d27bb5ddeadf8ed5e9d3f87a']) },
 };
 
 /** Every layout the app may draw. Adding a course is an entry here plus its
