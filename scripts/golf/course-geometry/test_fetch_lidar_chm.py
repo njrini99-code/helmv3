@@ -144,6 +144,18 @@ class PdalRetryTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, 'after 3 attempts'):
                 lidar.run_pdal('pdal', {'pipeline': []}, Path(tmp), sleep=lambda s: None)
 
+    def test_points_without_a_spatial_reference_are_unusable_at_once_not_retried(self):
+        import tempfile
+        from pathlib import Path
+        from unittest import mock
+        stderr = ("PDAL: filters.reprojection: source data has no spatial reference and none is "
+                  "specified with the 'in_srs' option.")
+        run = mock.Mock(return_value=mock.Mock(returncode=1, stderr=stderr))
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(lidar.subprocess, 'run', run):
+            with self.assertRaises(lidar.LidarProjectUnusable):
+                lidar.run_pdal('pdal', {'pipeline': []}, Path(tmp), sleep=lambda s: None)
+        self.assertEqual(run.call_count, 1)
+
 
 class MosaicTests(unittest.TestCase):
     def test_cellwise_max_keeps_nodata_only_where_no_tile_has_returns(self):

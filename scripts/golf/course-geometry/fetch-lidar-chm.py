@@ -174,6 +174,17 @@ def pipeline(url, bounds_3857, crs, extent, width, height, out):
     ]}
 
 
+# A project whose points carry no spatial reference (NC_PHASE1B_2001 under
+# Starmount and Longleaf) is a permanent defect in the published data, not a
+# transient read: PDAL refuses it identically every time. It is rejected like
+# a thin project -- recorded by name -- instead of failing the whole acquire.
+NO_SRS_MARKER = 'source data has no spatial reference'
+
+
+class LidarProjectUnusable(Exception):
+    """A covering project whose published data cannot be used as-is."""
+
+
 def run_pdal(pdal, spec, workdir, attempts=PDAL_ATTEMPTS, sleep=time.sleep):
     path = workdir / 'pipeline.json'
     metadata = workdir / 'pipeline-metadata.json'
@@ -182,6 +193,8 @@ def run_pdal(pdal, spec, workdir, attempts=PDAL_ATTEMPTS, sleep=time.sleep):
         result = subprocess.run([pdal, 'pipeline', str(path), '--metadata', str(metadata)], capture_output=True, text=True)
         if result.returncode == 0:
             return attempt
+        if NO_SRS_MARKER in result.stderr:
+            raise LidarProjectUnusable(f'source data has no spatial reference: {result.stderr.strip()[-300:]}')
         if attempt < attempts:
             sleep(10 * attempt)
     raise RuntimeError(f'pdal pipeline failed ({result.returncode}) after {attempts} attempts: {result.stderr.strip()[-600:]}')
@@ -357,12 +370,16 @@ def main():
                 'terrainExportSha256': file_sha256(export_path), 'crs': f'EPSG:{crs}', 'extent': {k: extent[k] for k in ('xmin', 'ymin', 'xmax', 'ymax')},
                 'width': width, 'height': height, 'indexSha256': hashlib.sha256(index_raw).hexdigest(), 'indexUrl': INDEX_URL,
                 'candidatesRejected': rejected, 'treeHeightMinM': 3, 'noiseClassesDropped': list(NOISE_CLASSES)}
-    failures, thin = [], []
+    failures, thin, unusable = [], [], []
 
     def attempt(project, build):
         try:
             extra = build()
             stats = raster_stats(chm_path, width, height)
+        except LidarProjectUnusable as error:
+            unusable.append({'name': project['name'], 'source': project.get('source', 'ept'), 'reason': str(error)})
+            chm_path.unlink(missing_ok=True)
+            return False
         except (RuntimeError, OSError, ValueError) as error:
             failures.append({'name': project['name'], 'reason': str(error)})
             chm_path.unlink(missing_ok=True)
@@ -389,7 +406,7 @@ def main():
         rejected += tiles_rejected
         done = any(attempt(project, lambda project=project: {'tileReceipts': build_from_tiles(args.pdal, project, crs, extent, width, height, args.output_dir, chm_path)})
                    for project in tiles_covering)
-    manifest.update({'failures': failures, 'candidatesThin': thin})
+    manifest.update({'failures': failures, 'candidatesThin': thin, 'candidatesUnusable': unusable})
     if not done:
         if failures:
             (args.output_dir / 'manifest.json').write_text(json.dumps({**manifest, 'status': 'failed'}, indent=2) + '\n')
