@@ -81,8 +81,8 @@ describe('loadPlayerContext — source scoping (player/team/sport)', () => {
   it('scopes rounds to the given player_id, never leaking another player on the same team', () => {
     const tables: FakeTables = {
       golf_rounds: [
-        { id: 'round-a1', player_id: 'player-a', team_id: 'team-x', course_id: 'course-1', round_date: '2026-06-01' },
-        { id: 'round-b1', player_id: 'player-b', team_id: 'team-x', course_id: 'course-1', round_date: '2026-06-01' },
+        { id: 'round-a1', player_id: 'player-a', status: 'completed', team_id: 'team-x', course_id: 'course-1', round_date: '2026-06-01' },
+        { id: 'round-b1', player_id: 'player-b', status: 'completed', team_id: 'team-x', course_id: 'course-1', round_date: '2026-06-01' },
       ],
       golf_holes: [
         { round_id: 'round-a1', hole_number: 1, par: 4, score: 4, penalty_strokes: 0, putts: 2, gir: true, created_at: '2026-06-01T10:00:00.000Z' },
@@ -100,7 +100,7 @@ describe('loadPlayerContext — source scoping (player/team/sport)', () => {
 
   it('only ever queries golf_* tables', async () => {
     const tables: FakeTables = {
-      golf_rounds: [{ id: 'r1', player_id: 'player-a', team_id: null, course_id: null, round_date: '2026-06-01' }],
+      golf_rounds: [{ id: 'r1', player_id: 'player-a', status: 'completed', team_id: null, course_id: null, round_date: '2026-06-01' }],
       golf_holes: [],
       golf_shots: [],
     };
@@ -114,9 +114,9 @@ describe('loadPlayerContext — window scoping', () => {
   it('bounds rounds by window_start/window_end on round_date', async () => {
     const tables: FakeTables = {
       golf_rounds: [
-        { id: 'in-window', player_id: 'player-a', team_id: null, course_id: 'c1', round_date: '2026-06-15' },
-        { id: 'before-window', player_id: 'player-a', team_id: null, course_id: 'c1', round_date: '2026-05-01' },
-        { id: 'after-window', player_id: 'player-a', team_id: null, course_id: 'c1', round_date: '2026-07-15' },
+        { id: 'in-window', player_id: 'player-a', status: 'completed', team_id: null, course_id: 'c1', round_date: '2026-06-15' },
+        { id: 'before-window', player_id: 'player-a', status: 'completed', team_id: null, course_id: 'c1', round_date: '2026-05-01' },
+        { id: 'after-window', player_id: 'player-a', status: 'completed', team_id: null, course_id: 'c1', round_date: '2026-07-15' },
       ],
       golf_holes: [
         { round_id: 'in-window', hole_number: 1, par: 4, score: 4, penalty_strokes: 0, putts: 2, gir: true, created_at: '2026-06-15T10:00:00.000Z' },
@@ -137,7 +137,7 @@ describe('loadPlayerContext — window scoping', () => {
 describe('loadPlayerContext — historical cutoff', () => {
   it('excludes a hole recorded after analysis_cutoff, counted under holesExcludedByReason.after_cutoff', async () => {
     const tables: FakeTables = {
-      golf_rounds: [{ id: 'r1', player_id: 'player-a', team_id: null, course_id: 'c1', round_date: '2026-06-01' }],
+      golf_rounds: [{ id: 'r1', player_id: 'player-a', status: 'completed', team_id: null, course_id: 'c1', round_date: '2026-06-01' }],
       golf_holes: [
         { round_id: 'r1', hole_number: 1, par: 4, score: 4, penalty_strokes: 0, putts: 2, gir: true, created_at: '2026-06-01T10:00:00.000Z' },
         { round_id: 'r1', hole_number: 2, par: 4, score: 5, penalty_strokes: 0, putts: 2, gir: false, created_at: '2026-09-01T10:00:00.000Z' },
@@ -152,7 +152,7 @@ describe('loadPlayerContext — historical cutoff', () => {
 
   it('treats a null created_at (legacy row) as available rather than excluded', async () => {
     const tables: FakeTables = {
-      golf_rounds: [{ id: 'r1', player_id: 'player-a', team_id: null, course_id: 'c1', round_date: '2026-06-01' }],
+      golf_rounds: [{ id: 'r1', player_id: 'player-a', status: 'completed', team_id: null, course_id: 'c1', round_date: '2026-06-01' }],
       golf_holes: [
         { round_id: 'r1', hole_number: 1, par: 4, score: 4, penalty_strokes: 0, putts: 2, gir: true, created_at: null },
       ],
@@ -166,7 +166,7 @@ describe('loadPlayerContext — historical cutoff', () => {
 
   it('excludes a shot recorded after cutoff even when its hole is otherwise included, surfacing as a partial sequence', async () => {
     const tables: FakeTables = {
-      golf_rounds: [{ id: 'r1', player_id: 'player-a', team_id: null, course_id: 'c1', round_date: '2026-06-01' }],
+      golf_rounds: [{ id: 'r1', player_id: 'player-a', status: 'completed', team_id: null, course_id: 'c1', round_date: '2026-06-01' }],
       golf_holes: [
         { round_id: 'r1', hole_number: 1, par: 4, score: 4, penalty_strokes: 0, putts: 2, gir: true, created_at: '2026-06-01T10:00:00.000Z' },
       ],
@@ -186,10 +186,122 @@ describe('loadPlayerContext — historical cutoff', () => {
   });
 });
 
+describe('loadPlayerContext — rounds scoped to completed status (review item A)', () => {
+  it('excludes an in-progress round, matching every sibling reader', async () => {
+    const tables: FakeTables = {
+      golf_rounds: [
+        { id: 'completed-round', player_id: 'player-a', status: 'completed', team_id: null, course_id: 'c1', round_date: '2026-06-01' },
+        { id: 'in-progress-round', player_id: 'player-a', status: 'in_progress', team_id: null, course_id: 'c1', round_date: '2026-06-01' },
+      ],
+      golf_holes: [
+        { round_id: 'completed-round', hole_number: 1, par: 4, score: 4, penalty_strokes: 0, putts: 2, gir: true, created_at: '2026-06-01T10:00:00.000Z' },
+        { round_id: 'in-progress-round', hole_number: 1, par: 4, score: 4, penalty_strokes: 0, putts: 2, gir: true, created_at: '2026-06-01T10:00:00.000Z' },
+      ],
+      golf_shots: [],
+    };
+    const { supabase } = makeFakeSupabase(tables);
+    const result = await loadPlayerContext(scope('player-a'), { supabase });
+    expect(result.holes.map((h) => h.round_id)).toEqual(['completed-round']);
+  });
+});
+
+describe('loadPlayerContext — shot exclusion beyond its own created_at (review items B, C, D)', () => {
+  it('excludes a shot edited after the cutoff, counted under shotsExcludedByReason.edited_after_cutoff', async () => {
+    const tables: FakeTables = {
+      golf_rounds: [{ id: 'r1', player_id: 'player-a', status: 'completed', team_id: null, course_id: 'c1', round_date: '2026-06-01' }],
+      golf_holes: [
+        { round_id: 'r1', hole_number: 1, par: 4, score: 4, penalty_strokes: 0, putts: 2, gir: true, created_at: '2026-06-01T10:00:00.000Z' },
+      ],
+      golf_shots: [
+        shotRow({ shot_number: 1, result: 'fairway', created_at: '2026-06-01T10:01:00.000Z', updated_at: '2026-06-01T10:01:00.000Z' }),
+        // Created before the cutoff, but edited after it — the CURRENT row no
+        // longer reflects what was known as of the cutoff.
+        shotRow({ shot_number: 2, result: 'green', created_at: '2026-06-01T10:02:00.000Z', updated_at: '2026-09-01T00:00:00.000Z' }),
+      ],
+    };
+    const { supabase } = makeFakeSupabase(tables);
+    const result = await loadPlayerContext(scope('player-a'), { supabase });
+    expect(result.shots).toHaveLength(1);
+    expect(result.shots[0]!.shot_number).toBe(1);
+    expect(result.coverage.shotsExcludedByReason.edited_after_cutoff).toBe(1);
+  });
+
+  it('never treats a null updated_at as edited after the cutoff', async () => {
+    const tables: FakeTables = {
+      golf_rounds: [{ id: 'r1', player_id: 'player-a', status: 'completed', team_id: null, course_id: 'c1', round_date: '2026-06-01' }],
+      golf_holes: [
+        { round_id: 'r1', hole_number: 1, par: 4, score: 4, penalty_strokes: 0, putts: 2, gir: true, created_at: '2026-06-01T10:00:00.000Z' },
+      ],
+      golf_shots: [shotRow({ shot_number: 1, result: 'fairway', updated_at: null })],
+    };
+    const { supabase } = makeFakeSupabase(tables);
+    const result = await loadPlayerContext(scope('player-a'), { supabase });
+    expect(result.shots).toHaveLength(1);
+    expect(result.coverage.shotsExcludedByReason.edited_after_cutoff).toBeUndefined();
+  });
+
+  it('excludes a shot whose owning hole was excluded (null_score), counted under shotsExcludedByReason.hole_excluded', async () => {
+    const tables: FakeTables = {
+      golf_rounds: [{ id: 'r1', player_id: 'player-a', status: 'completed', team_id: null, course_id: 'c1', round_date: '2026-06-01' }],
+      golf_holes: [
+        { round_id: 'r1', hole_number: 1, par: 4, score: null, penalty_strokes: 0, putts: null, gir: null, created_at: '2026-06-01T10:00:00.000Z' },
+      ],
+      golf_shots: [shotRow({ shot_number: 1, result: 'fairway' })],
+    };
+    const { supabase } = makeFakeSupabase(tables);
+    const result = await loadPlayerContext(scope('player-a'), { supabase });
+    expect(result.shots).toHaveLength(0);
+    expect(result.coverage.shotsExcludedByReason.hole_excluded).toBe(1);
+  });
+
+  it('compares cutoff and timestamps as instants, not raw ISO strings (differing offsets, same instant)', async () => {
+    // '+00:00' vs 'Z' — identical instant, different string representation.
+    // A naive string comparison could disagree with Date.parse ordering.
+    const tables: FakeTables = {
+      golf_rounds: [{ id: 'r1', player_id: 'player-a', status: 'completed', team_id: null, course_id: 'c1', round_date: '2026-06-01' }],
+      golf_holes: [
+        { round_id: 'r1', hole_number: 1, par: 4, score: 4, penalty_strokes: 0, putts: 2, gir: true, created_at: '2026-06-01T10:00:00.000Z' },
+      ],
+      golf_shots: [
+        shotRow({ shot_number: 1, result: 'fairway', created_at: '2026-07-01T00:00:00.000+00:00' }),
+      ],
+    };
+    const { supabase } = makeFakeSupabase(tables);
+    const result = await loadPlayerContext(scope('player-a', { analysis_cutoff: '2026-07-01T00:00:00.000Z' }), { supabase });
+    // The shot's created_at IS the cutoff instant (just written with a
+    // different offset) — "at or before" must still include it.
+    expect(result.shots).toHaveLength(1);
+    expect(result.coverage.shotsExcludedByReason.after_cutoff).toBeUndefined();
+  });
+});
+
+describe('loadPlayerContext — player scoping rests solely on .eq(player_id) (review item E)', () => {
+  it('filters golf_rounds by scope.player_id, with no other authorization check inside the loader', async () => {
+    const tables: FakeTables = {
+      golf_rounds: [
+        { id: 'r1', player_id: 'player-a', status: 'completed', team_id: null, course_id: 'c1', round_date: '2026-06-01' },
+        { id: 'r2', player_id: 'player-b', status: 'completed', team_id: null, course_id: 'c1', round_date: '2026-06-01' },
+      ],
+      golf_holes: [
+        { round_id: 'r1', hole_number: 1, par: 4, score: 4, penalty_strokes: 0, putts: 2, gir: true, created_at: '2026-06-01T10:00:00.000Z' },
+        { round_id: 'r2', hole_number: 1, par: 4, score: 5, penalty_strokes: 0, putts: 2, gir: false, created_at: '2026-06-01T10:00:00.000Z' },
+      ],
+      golf_shots: [],
+    };
+    const { supabase } = makeFakeSupabase(tables);
+    const result = await loadPlayerContext(scope('player-b'), { supabase });
+    // Only player-b's round is ever visible — the `.eq('player_id', ...)`
+    // filter is the ONLY thing standing between this call and player-a's
+    // data, which is why the caller (never this module) must be trusted to
+    // pass an authorized scope.player_id.
+    expect(result.holes.map((h) => h.round_id)).toEqual(['r2']);
+  });
+});
+
 describe('loadPlayerContext — hole exclusion and course identity', () => {
   it('excludes a hole with a null score, counted under holesExcludedByReason.null_score', async () => {
     const tables: FakeTables = {
-      golf_rounds: [{ id: 'r1', player_id: 'player-a', team_id: null, course_id: 'c1', round_date: '2026-06-01' }],
+      golf_rounds: [{ id: 'r1', player_id: 'player-a', status: 'completed', team_id: null, course_id: 'c1', round_date: '2026-06-01' }],
       golf_holes: [
         { round_id: 'r1', hole_number: 1, par: 4, score: null, penalty_strokes: 0, putts: null, gir: null, created_at: '2026-06-01T10:00:00.000Z' },
       ],
@@ -203,7 +315,7 @@ describe('loadPlayerContext — hole exclusion and course identity', () => {
 
   it('resolves course_id from the owning round, and a null course_id makes holeIdentityKey return null', async () => {
     const tables: FakeTables = {
-      golf_rounds: [{ id: 'r1', player_id: 'player-a', team_id: null, course_id: null, round_date: '2026-06-01' }],
+      golf_rounds: [{ id: 'r1', player_id: 'player-a', status: 'completed', team_id: null, course_id: null, round_date: '2026-06-01' }],
       golf_holes: [
         { round_id: 'r1', hole_number: 7, par: 4, score: 4, penalty_strokes: 0, putts: 2, gir: true, created_at: '2026-06-01T10:00:00.000Z' },
       ],
@@ -223,7 +335,7 @@ describe('loadPlayerContext — pagination and chunking', () => {
     const holes: FakeRow[] = [];
     for (let i = 0; i < ROUND_COUNT; i += 1) {
       const id = `round-${i}`;
-      rounds.push({ id, player_id: 'player-a', team_id: null, course_id: 'c1', round_date: '2026-06-01' });
+      rounds.push({ id, player_id: 'player-a', status: 'completed', team_id: null, course_id: 'c1', round_date: '2026-06-01' });
       holes.push({ round_id: id, hole_number: 1, par: 4, score: 4, penalty_strokes: 0, putts: 2, gir: true, created_at: '2026-06-01T10:00:00.000Z' });
     }
     const { supabase } = makeFakeSupabase({ golf_rounds: rounds, golf_holes: holes, golf_shots: [] });
@@ -235,7 +347,7 @@ describe('loadPlayerContext — pagination and chunking', () => {
 describe('loadPlayerContext — errors are surfaced, never treated as empty', () => {
   it('throws when the golf_holes query errors, rather than returning an empty result', async () => {
     const tables: FakeTables = {
-      golf_rounds: [{ id: 'r1', player_id: 'player-a', team_id: null, course_id: 'c1', round_date: '2026-06-01' }],
+      golf_rounds: [{ id: 'r1', player_id: 'player-a', status: 'completed', team_id: null, course_id: 'c1', round_date: '2026-06-01' }],
       golf_holes: [],
       golf_shots: [],
     };
@@ -250,7 +362,7 @@ describe('loadPlayerContext — errors are surfaced, never treated as empty', ()
 
   it('throws when the golf_shots query errors', async () => {
     const tables: FakeTables = {
-      golf_rounds: [{ id: 'r1', player_id: 'player-a', team_id: null, course_id: 'c1', round_date: '2026-06-01' }],
+      golf_rounds: [{ id: 'r1', player_id: 'player-a', status: 'completed', team_id: null, course_id: 'c1', round_date: '2026-06-01' }],
       golf_holes: [{ round_id: 'r1', hole_number: 1, par: 4, score: 4, penalty_strokes: 0, putts: 2, gir: true, created_at: '2026-06-01T10:00:00.000Z' }],
       golf_shots: [],
     };
@@ -276,6 +388,7 @@ function shotRow(overrides: Partial<Record<string, unknown>>): FakeRow {
     is_penalty: false,
     putt_made: null,
     created_at: '2026-06-01T10:00:00.000Z',
+    updated_at: '2026-06-01T10:00:00.000Z',
     ...overrides,
   };
 }

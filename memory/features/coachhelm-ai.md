@@ -304,17 +304,25 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   `src/test/coachhelm/v3/fixtures/situational-intelligence.ts` (A0) for the
   concrete scenarios this package is proven against.
 
-- **A1 slice 2 (2026-09-23, `agent/coachhelm-player-context`, stacked on
-  `agent/coachhelm-evidence-facts`): `load-player-context.ts` and the
-  shot-source adapter.** `context/load-player-context.ts`'s
-  `loadPlayerContext(scope, deps)` is the first DB-backed A1 function —
-  scopes strictly by `player_id` (never `team_id`), bounds rounds by
-  `window_start`/`window_end`, and bounds holes/shots by `analysis_cutoff`
-  against their own `created_at` (the closest available proxy for
-  "observed"). Enforces the `HoleContext.total_strokes` null-score
-  exclusion against a live source for the first time. DB dependency is
-  injected (`deps.supabase`), never constructed inside, so tests use a fake
-  client. `context/adapters/shot-source-adapter.ts`'s
+- **A1 slice 2 (2026-09-23, `agent/coachhelm-player-context`, based on
+  `main` — formerly stacked on #1981's branch, now merged as
+  `99ae02c05`): `load-player-context.ts` and the shot-source adapter.**
+  `context/load-player-context.ts`'s `loadPlayerContext(scope, deps)` is
+  the first DB-backed A1 function — scopes strictly by `player_id` (never
+  `team_id`; this filter is the ONLY authorization check inside the
+  module — callers must pass an already-authorized `player_id`), and
+  additionally scopes rounds to `status = 'completed'`, matching every
+  sibling reader. Bounds rounds by `window_start`/`window_end`, and bounds
+  holes/shots by `analysis_cutoff` against their own `created_at` (the
+  closest available proxy for "observed"), comparing timestamps as
+  instants (`Date.parse`) rather than raw ISO strings. A shot edited after
+  the cutoff (`updated_at` > cutoff) is excluded as `edited_after_cutoff`;
+  a shot whose owning hole was itself excluded (any reason) is excluded as
+  `hole_excluded` — both new `coverage.shotsExcludedByReason` keys added
+  in the post-review pass. Enforces the `HoleContext.total_strokes`
+  null-score exclusion against a live source for the first time. DB
+  dependency is injected (`deps.supabase`), never constructed inside, so
+  tests use a fake client. `context/adapters/shot-source-adapter.ts`'s
   `approachShotToShotFact` additively maps `engine/shot-source.ts`'s
   `ApproachShot` onto `ShotFact`; `shot-source-adapter.test.ts` compares the
   existing broad approach totals before/after normalization on fixed
