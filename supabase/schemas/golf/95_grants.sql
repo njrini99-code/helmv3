@@ -238,6 +238,16 @@ GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,MAINTAIN,UPDATE ON TABLE "public".
 
 GRANT ALL ON TABLE "public"."golf_events" TO "service_role";
 
+GRANT SELECT,INSERT ON TABLE "public"."golf_focus_area_criteria" TO "authenticated";
+
+GRANT UPDATE("met") ON TABLE "public"."golf_focus_area_criteria" TO "authenticated";
+
+GRANT UPDATE("met_at") ON TABLE "public"."golf_focus_area_criteria" TO "authenticated";
+
+GRANT UPDATE("updated_at") ON TABLE "public"."golf_focus_area_criteria" TO "authenticated";
+
+GRANT ALL ON TABLE "public"."golf_focus_area_criteria" TO "service_role";
+
 GRANT SELECT,INSERT ON TABLE "public"."golf_focus_area_practice_sessions" TO "authenticated";
 
 GRANT ALL ON TABLE "public"."golf_focus_area_practice_sessions" TO "service_role";

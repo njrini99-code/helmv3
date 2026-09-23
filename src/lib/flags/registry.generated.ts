@@ -32,7 +32,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
   {
     feature_id: "coachhelm_focus_area_practice_log",
     owner: "golf/coachhelm",
-    purpose: "Gates the practice-completion log rows for a focus area and the coach-written review criteria on golf_player_focus_areas added for A8 slice 2. Off means zero reads or writes of either surface anywhere in the app — required because the migration that creates them has not been applied in every environment yet.",
+    purpose: "Gates the coach-written \"done\" criteria and the practice-completion log rows for a focus area, added for A8 slice 2. Off means zero reads or writes of either new table anywhere in the app — required because the migration that creates them has not been applied in every environment yet.",
     type: "temporary_migration",
     status: "active",
     created_at: "2026-09-23",
