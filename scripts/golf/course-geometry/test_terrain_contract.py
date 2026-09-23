@@ -50,10 +50,13 @@ class ContractProblemsTests(unittest.TestCase):
     def test_conforming_mesh_has_no_problems(self):
         self.assertEqual(contract_problems(mesh()), [])
 
-    def test_null_acquisition_dates_are_named_not_inferred(self):
-        problems = contract_problems(mesh(provider='nc_onemap_dem03', start=None, end=None))
-        self.assertEqual([p['code'] for p in problems], ['TERRAIN_ACQUISITION_DATE_UNKNOWN'])
-        self.assertEqual(problems[0]['fields'], ['acquisitionStart', 'acquisitionEnd'])
+    def test_null_acquisition_dates_parse(self):
+        self.assertEqual(contract_problems(mesh(provider='nc_onemap_dem03', start=None, end=None)), [])
+
+    def test_a_non_string_date_is_named(self):
+        problems = contract_problems(mesh(start=2019, end=None))
+        self.assertEqual([p['code'] for p in problems], ['TERRAIN_ACQUISITION_DATE_INVALID'])
+        self.assertEqual(problems[0]['fields'], ['acquisitionStart'])
 
     def test_unconformed_datum_and_unknown_provider_are_named(self):
         codes = [p['code'] for p in contract_problems(mesh('NGVD29', provider='charleston_county_dem_2025'))]
@@ -74,6 +77,10 @@ class RuntimeAlignmentTests(unittest.TestCase):
         source = (REPO / 'src/lib/golf/course-geometry/terrain.ts').read_text()
         self.assertIn(f'triangleFeatures: z.array(z.number().int().min(0).max({RUNTIME_MAX_FEATURES - 1}))', source)
 
+    def test_runtime_accepts_null_acquisition_dates(self):
+        source = (REPO / 'src/lib/golf/course-geometry/terrain.ts').read_text()
+        self.assertIn('acquisitionStart: z.string().max(20).nullable(), acquisitionEnd: z.string().max(20).nullable()', source)
+
     def test_constants_match_the_runtime_mesh_schema(self):
         source = (REPO / 'src/lib/golf/course-geometry/terrain.ts').read_text()
         self.assertIn(f"verticalDatum: z.literal('{RUNTIME_DATUM}')", source)
@@ -84,11 +91,11 @@ class RuntimeAlignmentTests(unittest.TestCase):
 
 class ShipTerrainContractGateTests(unittest.TestCase):
     def test_problems_group_across_holes(self):
-        bad = mesh(provider='nc_onemap_dem03', start=None, end=None)
+        bad = mesh(datum='NGVD29')
         docs = {'h01': {'mesh': bad}, 'h02': {'mesh': dict(bad, physicalHoleKey='h02')}, 'h03': {'mesh': mesh()}}
         blockers = ship.gate_terrain_contract(docs)
         self.assertEqual(len(blockers), 1)
-        self.assertEqual(blockers[0]['code'], 'TERRAIN_ACQUISITION_DATE_UNKNOWN')
+        self.assertEqual(blockers[0]['code'], 'TERRAIN_VERTICAL_DATUM_UNSUPPORTED')
         self.assertEqual(blockers[0]['holeKeys'], ['h01', 'h02'])
 
     def test_missing_mesh_is_left_to_the_hash_chain_gate(self):

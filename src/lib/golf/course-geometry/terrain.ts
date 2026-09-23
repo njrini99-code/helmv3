@@ -80,13 +80,23 @@ const meshSchema = z.object({
   featureIds: z.array(z.string().min(1).max(100)).min(1).max(256),
   featureKinds: z.array(z.enum(['ground', 'woods', 'rough', 'water', 'fairway', 'tee', 'green', 'bunker'])).min(1).max(256),
   source: z.object({ provider: z.enum(['USGS 3DEP', 'usgs_3dep_project_1m', 'nc_onemap_dem03']), title: z.string().max(300), url: z.string().url().max(2000),
-    acquisitionStart: z.string().max(20), acquisitionEnd: z.string().max(20), nativeResolutionM: z.number().positive(),
+    // Null when the provider publishes no acquisition dates (NC OneMap DEM03):
+    // a year read out of a raster title would be an inference, not evidence.
+    acquisitionStart: z.string().max(20).nullable(), acquisitionEnd: z.string().max(20).nullable(), nativeResolutionM: z.number().positive(),
     verticalAccuracyM: z.number().nonnegative().nullable(), registrationResidualM: z.number().nonnegative().nullable() }).passthrough(),
   limitations: z.array(z.string().max(300)).max(20),
 });
 /** XY is the existing course-local EN frame. Z is orthometric NAVD88 height,
  * NOT geocentric ENU Up or phone altitude. Rendering never feeds shot metrics. */
 export type TerrainMesh = z.infer<typeof meshSchema>;
+const TERRAIN_PROVIDER_NAMES: Record<TerrainMesh['source']['provider'], string> = {
+  'USGS 3DEP': 'USGS 3DEP', usgs_3dep_project_1m: 'USGS 3DEP', nc_onemap_dem03: 'NC OneMap',
+};
+/** Who measured the terrain and, when the provider publishes it, the year. */
+export function terrainSourceCredit(source: TerrainMesh['source']): { provider: string; year: string | null } {
+  const year = source.acquisitionStart?.slice(0, 4);
+  return { provider: TERRAIN_PROVIDER_NAMES[source.provider], year: year && /^\d{4}$/.test(year) ? year : null };
+}
 export function parseTerrainMesh(value: unknown, pkg: CourseGeometryPackage): TerrainMesh {
   const mesh = meshSchema.parse(value);
   const hole = pkg.holes.find(h => h.key === mesh.physicalHoleKey);

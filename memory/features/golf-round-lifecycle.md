@@ -690,6 +690,16 @@ Source ingestion, Python triangulation and source fixtures stay outside player
 routes. This is a one-hole source candidate, with no production resolver,
 publication, account/location collection or lifecycle writer change.
 
+### Undated terrain sources (September 23, 2026)
+
+`meshSchema.source.acquisitionStart` and `acquisitionEnd` are nullable. NC
+OneMap DEM03 publishes no acquisition dates, and the owner chose to show that
+terrain rather than block it or infer a year from a raster title.
+`terrainSourceCredit(source)` returns the provider name (USGS 3DEP or NC
+OneMap) and the year only when the source states one. The terrain profile
+caption and the hole detail facts use it, so they no longer hard-code "USGS".
+Visual artifact v2 `SourceRef` dates are nullable to match.
+
 ### Meridian visual system (September 16, 2026)
 
 The expanded WebGL terrain view now renders Terrain and Side through a real

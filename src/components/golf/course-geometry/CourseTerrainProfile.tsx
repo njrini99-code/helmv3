@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { checkedConnection } from '@/lib/golf/course-geometry/quality';
-import { terrainHeight } from '@/lib/golf/course-geometry/terrain';
+import { terrainHeight, terrainSourceCredit } from '@/lib/golf/course-geometry/terrain';
 import type { HoleScene, PointM } from '@/lib/golf/course-geometry/types';
 
 export interface TerrainProfileSample { distanceM: number; positionM: PointM; elevationM: number | null }
@@ -86,7 +86,7 @@ export function CourseTerrainProfile({ scene, selectedShotNumber, width = 390, h
   const distance = Math.round(profile.distanceM / horizontalFactor);
   const change = profile.changeM == null ? null : profile.changeM / elevationFactor;
   const roundedChange = change == null ? null : Math.round(change);
-  const sourceYear = scene.terrain!.source.acquisitionStart.slice(0, 4);
+  const credit = terrainSourceCredit(scene.terrain!.source);
   const accuracy = scene.terrain!.source.verticalAccuracyM;
   return <section className="flex h-full min-h-[260px] w-full flex-col bg-surface p-4 font-fw-sans" data-slot="terrain-profile"
     data-profile-basis={profile.basis} data-profile-distance-m={profile.distanceM}>
@@ -115,6 +115,6 @@ export function CourseTerrainProfile({ scene, selectedShotNumber, width = 390, h
       {paths.map((d, i) => <path key={i} data-profile-run={i} d={d} fill="none" stroke="var(--fw-color-accent-600)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />)}
     </svg>
     <p className="text-caption leading-relaxed text-text-secondary">{profile.hasGaps ? 'Gaps show missing terrain. ' : ''}Axes scaled independently; elevation values are unexaggerated.</p>
-    <p className="mt-1 text-caption leading-relaxed text-text-secondary">USGS 3DEP{sourceYear ? ` · ${sourceYear}` : ''} · {accuracy == null ? 'Source accuracy unverified' : `Source vertical accuracy ${accuracy} m`} · {scene.terrain!.verticalDatum}.</p>
+    <p className="mt-1 text-caption leading-relaxed text-text-secondary">{credit.provider}{credit.year ? ` · ${credit.year}` : ''} · {accuracy == null ? 'Source accuracy unverified' : `Source vertical accuracy ${accuracy} m`} · {scene.terrain!.verticalDatum}.</p>
   </section>;
 }

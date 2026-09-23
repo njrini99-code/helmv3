@@ -3,7 +3,7 @@ import fc from 'fast-check';
 import { parseGeometryPackage } from '../schema';
 import { buildHoleScene } from '../build-scene';
 import { normalizePersistedShot } from '../normalize';
-import { fitTerrainCamera, MAX_TERRAIN_TRIANGLES, MAX_TERRAIN_VERTEX_COMPONENTS, parseTerrainMesh, projectTerrainPoint, sourceVertexNormals, terrainBasis, terrainHeight, TERRAIN_PRESETS, woodsOcclusion } from '../terrain';
+import { fitTerrainCamera, MAX_TERRAIN_TRIANGLES, MAX_TERRAIN_VERTEX_COMPONENTS, parseTerrainMesh, projectTerrainPoint, sourceVertexNormals, terrainBasis, terrainHeight, terrainSourceCredit, TERRAIN_PRESETS, woodsOcclusion } from '../terrain';
 import type { Point3M, TerrainMesh } from '../terrain';
 import data from '@/test/fixtures/course-geometry/cacapon.json';
 import terrainData from '@/test/fixtures/course-geometry/cacapon-07-terrain.json';
@@ -16,6 +16,14 @@ const mesh = parseTerrainMesh(terrainData, pkg);
 const evidence = [normalizePersistedShot({ shot_number: 2, shot_type: 'approach', result: 'sand',
   distance_to_hole_before: 158, distance_to_hole_after: 17, distance_unit_before: 'yards', distance_unit_after: 'yards', miss_direction: 'short_right', shot_distance: 141 })];
 const scene = buildHoleScene(pkg, 'cacapon-07', evidence, mesh);
+describe('terrain source credit', () => {
+  it('parses a provider that publishes no acquisition dates and credits it without a year', () => {
+    const undated = parseTerrainMesh({ ...terrainData, source: { ...terrainData.source, provider: 'nc_onemap_dem03', acquisitionStart: null, acquisitionEnd: null } }, pkg);
+    expect(undated.source.acquisitionStart).toBeNull();
+    expect(terrainSourceCredit(undated.source)).toEqual({ provider: 'NC OneMap', year: null });
+    expect(terrainSourceCredit(mesh.source)).toEqual({ provider: 'USGS 3DEP', year: '2021' });
+  });
+});
 describe('source-linked terrain and camera', () => {
   it('retains source date, vertical datum, uncertainty and matching physical geometry', () => {
     expect(mesh.source.acquisitionStart).toBe('2021-12-04');

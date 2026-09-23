@@ -42,8 +42,8 @@ export interface SourceRef {
   title: string;
   url: string;
   nativeResolutionM: number;
-  acquisitionStart: string;
-  acquisitionEnd: string;
+  acquisitionStart: string | null;
+  acquisitionEnd: string | null;
 }
 /** One base display LOD (§106): the canonical terrain interpolated, never
  * re-measured, into an indexed mesh. lod0 is the finest. */
@@ -267,7 +267,7 @@ const ribbonSetWire = z.object({
 });
 const sourceRefWire = z.object({
   provider: z.string().min(1).max(100), title: z.string().max(300), url: z.string().url().max(2000), nativeResolutionM: z.number().positive(),
-  acquisitionStart: z.string().max(20), acquisitionEnd: z.string().max(20),
+  acquisitionStart: z.string().max(20).nullable(), acquisitionEnd: z.string().max(20).nullable(),
 });
 const wireSchema = z.object({
   schemaVersion: z.literal(2), kind: z.literal('meridian_visual_artifact_v2'), encoding: z.literal('base64-le'),

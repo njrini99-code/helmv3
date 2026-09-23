@@ -59,11 +59,11 @@ def contract_problems(mesh):
     features = len(mesh.get('featureIds') or [])
     if features > RUNTIME_MAX_FEATURES:
         problems.append({'code': 'TERRAIN_FEATURE_TABLE_OVERFLOW', 'features': features, 'max': RUNTIME_MAX_FEATURES})
-    missing = [k for k in ('acquisitionStart', 'acquisitionEnd') if not isinstance(source.get(k), str)]
-    if missing:
-        # The runtime shows acquisitionStart's year beside the terrain. A
-        # source whose catalog carries no acquisition dates (NC OneMap DEM03)
-        # cannot meet that, and a year read out of a raster title is an
-        # inference, not evidence -- an owner decision, not a factory fix.
-        problems.append({'code': 'TERRAIN_ACQUISITION_DATE_UNKNOWN', 'provider': source.get('provider'), 'title': source.get('title'), 'fields': missing})
+    # Acquisition dates may be null: NC OneMap DEM03 publishes none, and the
+    # owner chose (2026-09-23) to show such terrain credited by provider
+    # without a year rather than infer one from a raster title. A date that
+    # is present must still be a string.
+    bad = [k for k in ('acquisitionStart', 'acquisitionEnd') if source.get(k) is not None and not isinstance(source.get(k), str)]
+    if bad:
+        problems.append({'code': 'TERRAIN_ACQUISITION_DATE_INVALID', 'provider': source.get('provider'), 'fields': bad})
     return problems

@@ -13,7 +13,7 @@ import type { HoleScene, ShotEvidence } from '@/lib/golf/course-geometry/types';
 import { puttingFocusCamera, puttingPlanCamera, type SceneView } from '@/lib/golf/course-geometry/camera';
 import { CourseHoleScene, sceneCamera } from './CourseHoleScene';
 import { CourseTerrainProfile } from './CourseTerrainProfile';
-import { PERSPECTIVE_FOV, PRODUCTION_CAMERA_STATES, productionCameraState, TERRAIN_PRESETS, projectTerrainPoint, terrainHeight, type Point3M, type ProductionCameraState, type TerrainFitProfile, type TerrainPose, type TerrainPreset, wrapYawDegrees, yawDeltaDegrees } from '@/lib/golf/course-geometry/terrain';
+import { PERSPECTIVE_FOV, PRODUCTION_CAMERA_STATES, productionCameraState, TERRAIN_PRESETS, projectTerrainPoint, terrainHeight, terrainSourceCredit, type Point3M, type ProductionCameraState, type TerrainFitProfile, type TerrainPose, type TerrainPreset, wrapYawDegrees, yawDeltaDegrees } from '@/lib/golf/course-geometry/terrain';
 
 import { fitTerrainViewportCamera } from '@/lib/golf/course-geometry/terrain-viewport';
 import type { TerrainRuntimeController } from '@/lib/golf/course-geometry/runtime-controller';
@@ -585,10 +585,11 @@ function Drawing({ scene, view, context, events, selectedShotNumber, activeDraft
   // the production view shows them in a bottom sheet (outside-world §3.6) so
   // its default state stays course-first.
   const detailHint = terrainEnabled && <p>{production ? 'Tap the course for the distance from where you are. Drag to tilt, pinch to zoom, double-tap to reset the view.' : 'Drag to tilt; pinch to zoom.'} Outlined hazards are possible surfaces, not recorded ball positions.</p>;
+  const terrainCredit = scene?.terrain ? terrainSourceCredit(scene.terrain.source) : null;
   const detailFacts = <>
     {active && <p>{recordedDistance(active.before)} before{active.rawMiss ? ` · ${active.rawMiss.replaceAll('_', ' ')}` : ''}. {describePosition(scene, active).detail}</p>}
     <p>{scene?.attribution ?? 'Course geometry unavailable.'}</p>
-    <p>{scene?.terrain ? `${scene.terrain.source.acquisitionStart.slice(0, 4)} USGS terrain study. ` : ''}Estimated pin; the daily hole location is unverified. Trees and heights are illustrative.</p>
+    <p>{terrainCredit ? `${[terrainCredit.year, terrainCredit.provider].filter(Boolean).join(' ')} terrain study. ` : ''}Estimated pin; the daily hole location is unverified. Trees and heights are illustrative.</p>
     {(scene?.sharedGreenHoleOrdinals?.length ?? 0) > 1 && <p>Shared green: holes {scene!.sharedGreenHoleOrdinals!.join(' and ')}.</p>}
   </>;
   return <div className={expanded ? 'flex min-h-0 flex-1 flex-col overflow-hidden sm:flex-row' : undefined} data-slot={expanded ? 'course-explorer' : undefined} data-putting-overview={compactPuttingPlan || undefined} data-putting-scope={compactPuttingPlan ? puttingScope : undefined}>
