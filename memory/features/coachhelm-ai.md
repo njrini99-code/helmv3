@@ -271,6 +271,24 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   from every coach/player surface. Planned retirement PR (sequenced after
   `agent/coachhelm-outcomes` lands on main) not yet done as of 2026-09-22.
 
+- **`src/lib/coachhelm/v3/context/` is a new, pure-core-only package**
+  (2026-09-23, `agent/coachhelm-evidence-facts`, repair-plan addendum §13,
+  work packages A0/A1) — `types.ts` (`ShotFact`, `HoleContext`,
+  `AnalysisScope`, `holeIdentityKey`), `normalize-shot.ts`
+  (`normalizeShotValue`/`normalizeShot` — independent feet/yards/percent/
+  count/strokes conversion, strict zero-vs-missing separation), and
+  `build-hole-sequence.ts` (`buildHoleSequence` — validates a hole's shots
+  against its authoritative `HoleContext` totals: order, termination, and
+  penalty representation, not just a matching row count). Nothing here
+  reads a table. **Not yet wired to anything**: no adapter onto
+  `engine/shot-source.ts`/`engine/generator-base.ts`, no
+  `load-player-context.ts`, no `evidence-packet.ts`, no generator output
+  change — those are later slices (A2+). See
+  `docs/architecture/coachhelm-evidence-contract.md`'s "Situational fact
+  types" section and the six named fixtures in
+  `src/test/coachhelm/v3/fixtures/situational-intelligence.ts` (A0) for the
+  concrete scenarios this package is proven against.
+
 ## Tests To Prefer
 
 - Unit tests under `src/test/coachhelm/**`.
