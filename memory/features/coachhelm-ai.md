@@ -538,6 +538,46 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   `docs/architecture/coachhelm-evidence-contract.md`'s "Sequence
   attribution" section.
 
+- **`src/lib/coachhelm/v3/evaluation/comparable-opportunities.ts` is a new,
+  pure evaluation module** (2026-09-23,
+  `agent/coachhelm-comparable-opportunities`, addendum §14.12, work package
+  A9) — `computeComparableOpportunities(input):
+  ComparableOpportunitiesResult`, built on the A1 types and A3's shared
+  `MetricResult`. **Not wired into `causality/attribute.ts` or any UI
+  surface** — pure core + tests only, learning weights untouched. The
+  SHOT-LEVEL counterpart to `attribute.ts`'s round-level before/after
+  average: compares a rate or mean over MATCHED opportunities on either
+  side of an actual `interventionAt` instant, so a change isn't confounded
+  by facing easier/harder shots after the intervention. A SINGLE `spec`
+  (`MatchingSpec`: distance band, lie, shot role, plus version ids) is
+  applied identically to both sides (PR #1992 review, MUST 1 — an earlier
+  revision took a baseline/follow-up spec pair and rejected only on
+  version-string mismatch, which didn't guard the actual band/lie/role
+  definitions; one shared spec makes "matched on the same definition" true
+  by construction instead). A shot recorded at exactly `interventionAt` is
+  assigned to follow-up, never baseline; no calendar-day buffer is needed
+  around that boundary, unlike `attribute.ts` (see the module header).
+  Support floor (`MIN_OPPORTUNITY_N` = 5, `MIN_DISTINCT_ROUNDS` = 2)
+  downgrades an under-supported side's `MetricResult.status` to
+  `'insufficient'` (value still reported) and the top-level `status` to
+  `'insufficient_evidence'`; for a `'mean'` outcome, a matched shot with a
+  `null` value is dropped BEFORE eligibleCount/observedCount/denominator/
+  distinctRounds are computed (MUST 2 — a round contributing only a
+  null-valued shot must not satisfy the round floor) and counted under
+  `exclusions.missing_value` (SHOULD 3). `multipleInterventions` downgrades
+  a supported result to `'observed_change_limited'`. No field is ever named
+  `lift`, `improvement`, or `proven` — the output field is `observedChange`
+  (direction-agnostic `followUp.value - baseline.value`) plus a
+  `methodVersion` string (`'comparable_opportunities_v1'`), independent of
+  `attribute.ts`'s `attribution_method_version` (migration 20260922230000).
+  Also discloses course mix and opportunity-count imbalance between sides,
+  derived from each side's own contributing-shot population.
+  See `docs/architecture/coachhelm-evidence-contract.md`'s
+  "Comparable-opportunities outcome measurement" section and
+  `src/test/coachhelm/v3/comparable-opportunities.test.ts` for the
+  fixtures, including the version-mismatch-rejection and
+  exactly-at-the-instant boundary cases.
+
 ## Tests To Prefer
 
 - Unit tests under `src/test/coachhelm/**`.

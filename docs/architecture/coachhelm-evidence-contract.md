@@ -1013,6 +1013,89 @@ slice 2.
   `src/lib/coachhelm/v3/metrics/types.ts` rather than defining its own
   aggregate shape.
 
+## Comparable-opportunities outcome measurement (A9 deliverable — pure, not wired)
+
+`src/lib/coachhelm/v3/evaluation/comparable-opportunities.ts` (addendum A9,
+repair plan §14.12) exports `computeComparableOpportunities(input):
+ComparableOpportunitiesResult`, a pure function over `ShotFact[]`/
+`HoleContext[]`. **Not wired into `causality/attribute.ts` or any UI
+surface** — same not-wired discipline as A1/A3 above; learning/
+personalization weights are untouched by this slice.
+
+Where this differs from `causality/attribute.ts`: `attribute.ts` measures a
+ROUND-LEVEL average (e.g. `sg_total`) before vs after an insight's
+`surfaced_at`, for metrics with no natural per-shot opportunity. This module
+is the SHOT-LEVEL counterpart — it compares a rate or mean over MATCHED
+opportunities (same distance band, same lie, same shot role) on either side
+of an actual recorded intervention instant, so a measured change isn't
+confounded by the player simply facing easier or harder shots after the
+intervention than before. The two modules are independent; this one does not
+read or write `golf_insight_outcome_attribution` or its `method_version`
+column (migration 20260922230000).
+
+**Input**: `facts` (`ShotFact[]`), `holes` (`HoleContext[]`, used only to
+resolve `round_id` → `course_id` for course-mix disclosure), an
+`interventionAt` instant, a frozen `baselineWindow` and a `followUpWindow`
+(`{start, end}`), a single `spec` (`MatchingSpec`: an optional distance band and
+version id, an optional lie filter, an optional shot-role filter, and a
+benchmark version id) applied identically to BOTH sides, an `outcome`
+classifier (`'rate'` with an `isSuccess` predicate, or `'mean'` with a
+numeric `valueOf`), a `multipleInterventions` flag, and a `metricId` label.
+
+**Single spec, not a baseline/follow-up pair** (PR #1992 review, MUST 1): an
+earlier revision took two independent `MatchingSpec`s and rejected the
+comparison when their version ids disagreed — that only guarded the version
+STRINGS, not the actual band/lie/role definitions, which could still differ
+silently. Taking one `spec` for both sides makes "matched on the same
+definition" true by construction: there is no `spec_mismatch` rejection to
+write, and the addendum's "without silently changing band boundaries or
+benchmark versions" acceptance criterion holds structurally rather than by
+validation. `distanceBandVersion`/`benchmarkVersion` are still carried onto
+each side's `MetricResult.dimensions` as opaque provenance strings.
+
+**Boundary rule**: a shot recorded at EXACTLY `interventionAt` is assigned
+to follow-up, never baseline, regardless of what the window bounds say —
+the intervention is treated as already in effect at the instant it is
+recorded, and a baseline can never include the moment that ends it
+(`splitSide`'s doc comment; proven by a dedicated fixture in
+`src/test/coachhelm/v3/comparable-opportunities.test.ts`). Unlike
+`attribute.ts`, this needs no calendar-day buffer around the boundary:
+`splitSide` compares real instants with a strict `<`/`>=` split, which has
+no value satisfying both sides at once, whereas `attribute.ts`'s day-
+granularity windows could otherwise let the triggering day land in both.
+
+**Support floor**: `MIN_OPPORTUNITY_N` (5) matched opportunities AND
+`MIN_DISTINCT_ROUNDS` (2) on a side, mirroring `attribute.ts`'s
+`MIN_WINDOW_ROUNDS`. An unsupported side still reports its `value` (never
+hidden — the same `MetricResult` "state it, don't hide it" contract as
+A2/A3), but its `MetricResult.status` is `'insufficient'`, and the
+top-level `status` is `'insufficient_evidence'` whenever EITHER side fails
+the floor; `observedChange` is `null` in that case. For a `'mean'` outcome, a
+matched shot whose `valueOf` returns `null` is dropped before any of
+`eligibleCount`/`observedCount`/`denominator`/`distinctRounds` are computed
+(PR #1992 review, MUST 2) — a round whose only matched shot has no usable
+value must not itself satisfy `MIN_DISTINCT_ROUNDS`. Each dropped shot is
+counted under `exclusions.missing_value` (SHOULD 3), never silently
+absorbed.
+
+**Output** (`ComparableOpportunitiesResult`): `baseline` and `followUp`,
+each a `MetricResult` (see A3's section above for the shared type);
+`observedChange` — `followUp.value - baseline.value`, direction-agnostic,
+`null` unless both sides are supported; `methodVersion:
+'comparable_opportunities_v1'`; the `multipleInterventions` flag as given;
+and `disclosedDifferences` (course mix — course ids matched on
+baseline-only/follow-up-only/shared, derived from the exact same
+`contributing` shot population each side's `MetricResult` was built from,
+never re-derived separately — and `opportunityCountImbalance`, the signed
+`followUp.denominator - baseline.denominator`). `status` is one of
+`'observed_change'`, `'observed_change_limited'` (both sides supported but
+`multipleInterventions` was set — the change is real but cannot be
+isolated to this one intervention), or `'insufficient_evidence'`. **No
+field is ever named `lift`, `improvement`, or `proven`** — this module
+never feeds `nextWeight` or any learning loop, so there is no
+direction-corrected signal to compute, only the plain observed change
+(module header's NAMING note).
+
 ## How to add a new comparison source
 
 1. Append to `InsightComparisonSource` and `COMPARISON_SOURCES` in `types.ts`.
