@@ -689,6 +689,116 @@ and `lie_after`, which `reachedGreen` reads, pass through normalization
 unchanged). `approach-miss.ts` itself is unmodified except exporting the
 already-existing `reachedGreen` so the comparison can reuse it instead of
 forking a copy that could drift.
+`HoleContext` also carries `yardage: number | null` (`golf_holes.yardage`,
+sparsely populated) — added for A3's par/length grouping below. `null`
+means not recorded, never estimated from a shot's recorded distance.
+
+## Par/length + par-5 opportunity metrics (A3 deliverable — pure, not wired)
+
+`src/lib/coachhelm/v3/metrics/par-opportunities.ts` (addendum A3) exports
+`computeParOpportunities(facts, holes, scope): MetricResult[]`, a pure
+function over the A1 types above. **Not wired into any generator, composite,
+or the feed** — this slice only ships the pure core plus its tests; wiring
+is a later slice, same as A1 before it.
+
+Before building this, the collision A3 was scoped to reproduce
+(`generators/par-type.ts`/`course-mgmt.ts` grouping a specific hole by bare
+`hole_number`) was re-checked against current code: `course-mgmt.ts`'s
+`worst_holes` ranking already keys on `(course_id, hole_number)` — fixed in
+#1936, pinned by `src/test/coachhelm/v3/course-mgmt-hole-identity.test.ts` —
+and `par-type.ts` never groups by a specific hole at all (it only
+decomposes by `par`, across all holes of that par). Neither file needed a
+collision fix in this slice; the "Specific-hole scoring" row above already
+reflects the fixed state. A3's OWN collision-safe grouping job is in the new
+code below.
+
+Two independent metric families, deliberately kept apart:
+
+- **`par_length_scoring`** — identity-agnostic. Average strokes-relative-to-
+  par per `par` (3/4/5), always emitting the broad `length_group: 'all'` row
+  first. Length bands are CONSTANT, versioned yardage cutoffs
+  (`PAR_LENGTH_BANDS`, `dimensions.band_version` = `PAR_LENGTH_BAND_VERSION`,
+  currently `'par-length-bands-v1'`) — never derived from a player's own
+  data, so the same boundary reads identically under a lifetime, a recent,
+  or an as-of-narrowed scope, and can be printed to a coach as a fixed label
+  ("380-429 yd"). Cutoffs: par 3 <150 / 150-189 / 190+; par 4 <380 / 380-429
+  / 430+; par 5 <500 / 500-539 / 540+ — consistent with the existing
+  single-threshold "long hole" labels already in
+  `v2/mining/course-management.ts` (par 3 ≥190yd, par 4 ≥400/425yd, par 5
+  ≥540yd) rather than an unrelated cut. A `'short'`/`'mid'`/`'long'` row is
+  only added once that band alone clears `PAR_LENGTH_MIN_SAMPLE_N` (5); an
+  under-supported band is simply absent, folded back into `'all'`. Holes
+  without a `course_id` still count here: "unknown identity prevents
+  cross-round specific-hole aggregation; it does not prevent par/length
+  aggregation" (addendum §4.4).
+- **`par5_regulation_opportunity_rate`** / **`par5_green_in_two_rate`** /
+  **`par5_putting_conversion_rate`** — specific-hole, one row per
+  `holeIdentityKey(hole)`; a hole with no `course_id` is excluded from this
+  family entirely (never merged by bare `hole_number` — the same rule as
+  `course-mgmt.ts`'s `worst_holes`, proven by a two-course-same-hole-number
+  fixture in `src/test/coachhelm/v3/par-opportunities.test.ts`).
+  "Opportunity" (reaching the green in `par - 2` recorded strokes or fewer —
+  regulation or better), "green in two" (`par - 3` or fewer — a strictly
+  narrower eagle look), and "conversion" (finishing birdie-or-better, read
+  from `HoleContext.total_strokes`) are three separate rows on purpose, so a
+  coach can tell which half of a par-5 weakness is the leak, and
+  green-in-two is never folded into either the opportunity or the
+  conversion rate. Only computed for a `buildHoleSequence(...).complete ===
+  true` play. A play excluded from eligibility carries one of two distinct
+  reasons, never conflated: `exclusions.incomplete_sequence` (the recorded
+  sequence itself is broken — missing/misordered/unterminated) vs
+  `exclusions.out_of_scope` (every fact this play ever had was cut by
+  `scope.window_start`/`window_end`/`analysis_cutoff` — a scope decision,
+  not a data-quality gap). "Reached the green" mirrors
+  `engine/shot-source.ts`'s sand-save `reached` predicate exactly: `result`
+  in `'green' | 'hole' | 'gir'` (case-insensitive) OR `lie_after === 'green'`
+  — `'hole'` is included on purpose, since a par-5 hole-out from off the
+  green (an albatross via a holed 2nd shot, an eagle via a holed 3rd-shot
+  chip-in) is the best possible outcome and must count as reaching the green
+  at that shot's number, not silently score as a miss. Regulation/green-in-
+  two are then read from that shot's raw `shot_number`, which already counts
+  every recorded row including penalties in order — a penalty earlier in the
+  hole correctly pushes a later green-finding shot's number up with no
+  special case needed (fixture: a stroke-and-distance penalty makes a hole's
+  green-finding shot its 4th recorded stroke, not its 3rd, so no opportunity
+  is created). Neither family reads `ShotFact.intent`: an ambiguous second
+  shot on a par 5 stays ambiguous — intent inference is explicitly A2's job,
+  not this one's (see `ShotIntent`'s doc comment).
+
+**Scope contract, and why it differs by family**: `computeParOpportunities`
+self-scopes `facts` (via an internal `factsInScope`, filtering
+`ShotFact.observed_at`) but CANNOT self-scope `holes` — `HoleContext` carries
+no date field at all. `par5_regulation_opportunity_rate` and its siblings are
+correctly scoped as a result (they only ever look at in-scope facts).
+`par_length_scoring` is NOT: the caller MUST pass an already
+window/cutoff/completed-status-filtered `holes` array (`load-player-context.ts`,
+#1986, is the intended enforcer); passing an unscoped array silently produces
+a lifetime aggregate regardless of `scope`. Band BOUNDARIES themselves are
+unaffected either way — they are compile-time constants, never derived from
+`holes` or `scope`.
+
+`HoleContext.yardage` currently has no live producer: the DB-backed loader
+that would select `golf_holes.yardage` (`load-player-context.ts`) is being
+built in #1986. Until that lands, `computeParOpportunities` only ever sees
+`yardage: null` from a real adapter, so every par's length bands fold back
+to the `'all'` row in production — the type and the band logic are ready,
+the wiring is a dependency on #1986, not this PR.
+
+`MetricResult`/`MetricStatus` live in `src/lib/coachhelm/v3/metrics/types.ts`
+— shared across metrics packages (A3 re-exports both from
+`par-opportunities.ts` for existing callers/tests). A narrower version of
+the addendum's §4.3 design-contract shape, adapted to the merged A1 types:
+no `interval` (no confidence-interval estimation shipped yet) and no
+`sourceShotIds` (no consumer reads per-shot provenance yet) — both are
+additive if a package needs them. Carries an optional
+`distanceMethod?: 'recorded' | 'derived_progress'` for a package whose input
+can be either a recorded travel distance or a derived progress-toward-hole
+estimate (A2's `distance-profile.ts`, which predates this file with its own
+`id`/`band`/`playerId`-shaped `MetricResult` and reconciles onto this shape
+separately); A3 never sets it, since none of its inputs are ever derived.
+Neither of A3's metric families computes a `strokes_impact`/counterfactual
+number, so wiring this in later cannot double-count the impact
+`par-type.ts`'s existing per-par cards already own.
 
 ## How to add a new comparison source
 
