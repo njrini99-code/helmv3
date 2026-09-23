@@ -35,14 +35,14 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 0 |
 | `RUNBOOK` | 5 | 2 | 1 | 0 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
-| `PLAN` | 57 | 5 | 33 | 83 |
+| `PLAN` | 61 | 5 | 34 | 83 |
 | `AUDIT_SNAPSHOT` | 56 | 6 | 30 | 24 |
 | `STATE_SNAPSHOT` | 7 | 2 | 6 | 0 |
 | `HISTORY_LEDGER` | 40 | 0 | 8 | 13 |
 | `INCIDENT` | 30 | 15 | 2 | 0 |
 | `ADR` | 5 | 0 | 3 | 0 |
 | `INDEX` | 26 | 1 | 12 | 5 |
-| `UNKNOWN` | 100 | 12 | 43 | 83 |
+| `UNKNOWN` | 100 | 12 | 43 | 80 |
 
 ## Files
 
@@ -337,7 +337,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/plans/2026-09-16-meridian-v2-master-plan.md` | current | - | - | yes | 2 | 2 | - |
 | `docs/plans/2026-09-16-meridian-v2-status.md` | current | - | - | yes | 1 | 12 | 2 |
 | `docs/plans/2026-09-16-meridian-visual-master-plan-status.md` | current | - | - | yes | 4 | 13 | - |
-| `docs/plans/2026-09-16-one-tap-status.md` | current | - | - | yes | 1 | 12 | - |
+| `docs/plans/2026-09-16-one-tap-status.md` | current | - | - | yes | 2 | 12 | - |
 | `docs/plans/2026-09-16-outside-world-status.md` | current | - | - | - | 1 | 13 | - |
 | `docs/plans/2026-09-16-peek-n-peak-enhancements-and-round-review.md` | current | - | - | yes | 1 | 3 | - |
 | `docs/plans/2026-09-16-peek-one-tap-field-calibration.md` | current | - | - | - | 1 | 0 | - |
@@ -346,10 +346,14 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/plans/2026-09-19-course-geometry-factory-v2-review.md` | current | - | - | - | 2 | 14 | - |
 | `docs/plans/2026-09-19-course-geometry-factory-v2.md` | current | - | - | yes | 2 | 2 | - |
 | `docs/plans/2026-09-19-course-library-scale-out-plan.md` | current | - | - | yes | 2 | 9 | - |
-| `docs/plans/2026-09-20-course-3d-system-handoff.md` | current | - | - | yes | 1 | 44 | - |
+| `docs/plans/2026-09-20-course-3d-system-handoff.md` | current | - | - | yes | 2 | 44 | - |
 | `docs/plans/2026-09-20-course-factory-authority-implementation.md` | current | - | - | yes | 2 | 3 | - |
 | `docs/plans/2026-09-20-course-factory-canary-evidence.md` | current | - | - | - | 1 | 0 | - |
 | `docs/plans/2026-09-20-course-factory-completion-plan.md` | current | - | - | - | 0 | 0 | - |
+| `docs/plans/2026-09-21-course-factory-phase0-audit.md` | current | - | - | yes | 0 | 0 | - |
+| `docs/plans/2026-09-21-course-factory-throughput.md` | current | - | - | - | 0 | 1 | - |
+| `docs/plans/2026-09-21-course-factory-world-coverage-audit.md` | current | - | - | - | 0 | 0 | - |
+| `docs/plans/2026-09-22-one-tap-meridian-readiness.md` | current | - | - | - | 0 | 8 | - |
 | `docs/plans/IOS_PREMIUM_NATIVE_UPDATE_2026-08-25.md` | current | yes | - | yes | 2 | 1 | - |
 | `docs/plans/assets/course-geometry-2026-09-15/peek-n-peak-upper-07-course-truth.md` | current | - | - | yes | 0 | 0 | - |
 | `docs/plans/calendar-premium/DESIGN-PLAN.md` | current | - | - | yes | 0 | 5 | - |
@@ -669,7 +673,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `ios/appstore/REVIEW_NOTES_2.0-9.md` | current | - | - | - | 0 | 0 | - |
 | `ios/appstore/SUBMISSION.md` | current | - | - | - | 0 | 2 | - |
 | `public/courses/CREDITS.md` | current | - | - | - | 0 | 0 | - |
-| `scripts/golf/course-geometry/route-recovery.md` | current | - | - | yes | 0 | 3 | 3 |
+| `scripts/golf/course-geometry/route-recovery.md` | current | - | - | yes | 0 | 3 | - |
 | `scripts/ops/MAC_MINI_HEADLESS_RUNBOOK.md` | current | - | - | - | 0 | 1 | - |
 | `src/test/SKIPPED.md` | current | - | - | yes | 1 | 15 | 4 |
 | `supabase/migrations/HELD.md` | current | - | - | - | 27 | 41 | - |
