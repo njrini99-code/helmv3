@@ -6,6 +6,7 @@ import {
   extractDocFeatureCrossRefs,
   extractInvariantsFromSource,
   parseJourneysDoc,
+  findStageLine,
   cronPathToRouteFile,
   mergeEdges,
   sortWorldModel,
@@ -125,16 +126,24 @@ describe('resolvePrimaryFeature', () => {
 describe('extractDocFeatureCrossRefs', () => {
   const known = new Set(['admin_platform', 'admin_incidents', 'admin_selfheal', 'recruiting', 'crm_outreach']);
 
-  it('extracts a positive cross-reference to another known feature', () => {
+  it('extracts a positive cross-reference to another known feature, anchored by the target id, not line', () => {
     const text = 'Diagnose and Repair are owned by `admin_selfheal`, the sibling doc.';
     const edges = extractDocFeatureCrossRefs('admin_incidents', text, 'memory/features/admin-incidents.md', known);
     expect(edges).toEqual([
       {
         source: 'admin_incidents',
         target: 'admin_selfheal',
-        evidence: { kind: 'feature_doc_contract', path: 'memory/features/admin-incidents.md', line: 1 },
+        evidence: { kind: 'feature_doc_contract', path: 'memory/features/admin-incidents.md', anchor: 'admin_selfheal' },
       },
     ]);
+  });
+
+  it('omits line by default and includes it only with { includeLines: true }', () => {
+    const text = 'Diagnose and Repair are owned by `admin_selfheal`, the sibling doc.';
+    const withoutLines = extractDocFeatureCrossRefs('admin_incidents', text, 'x.md', known);
+    expect(withoutLines[0].evidence.line).toBeUndefined();
+    const withLines = extractDocFeatureCrossRefs('admin_incidents', text, 'x.md', known, { includeLines: true });
+    expect(withLines[0].evidence.line).toBe(1);
   });
 
   it('never emits a self-edge', () => {
@@ -167,10 +176,34 @@ describe('extractDocFeatureCrossRefs', () => {
     expect(edges).toHaveLength(1);
   });
 
-  it('records the correct line number across a multi-line doc', () => {
+  it('records the correct line number across a multi-line doc, when includeLines is set', () => {
     const text = ['line one', 'line two owns `admin_selfheal` here', 'line three'].join('\n');
-    const edges = extractDocFeatureCrossRefs('admin_incidents', text, 'x.md', known);
+    const edges = extractDocFeatureCrossRefs('admin_incidents', text, 'x.md', known, { includeLines: true });
     expect(edges[0].evidence.line).toBe(2);
+  });
+
+  it('collapses repeated mentions of the SAME target anywhere in the doc to ONE edge, not one per mention', () => {
+    // The exact churn class this anchor design closes: a PR adding an
+    // EARLIER mention of a target already cited lower in the doc must not
+    // change anything committed for this target — there is only ever one
+    // edge, anchored on the target id itself, regardless of how many times
+    // (or which lines) it's mentioned.
+    const text = [
+      '`admin_selfheal` handles Diagnose.',
+      'Later, `admin_selfheal` handles Repair too.',
+    ].join('\n');
+    const edges = extractDocFeatureCrossRefs('admin_incidents', text, 'x.md', known);
+    expect(edges).toHaveLength(1);
+    expect(edges[0].evidence.anchor).toBe('admin_selfheal');
+  });
+
+  it('with { includeLines: true }, reports the FIRST qualifying mention\'s line, not the last', () => {
+    const text = [
+      '`admin_selfheal` handles Diagnose.',
+      'Later, `admin_selfheal` handles Repair too.',
+    ].join('\n');
+    const edges = extractDocFeatureCrossRefs('admin_incidents', text, 'x.md', known, { includeLines: true });
+    expect(edges[0].evidence.line).toBe(1);
   });
 });
 
@@ -208,8 +241,15 @@ export function evaluateQualifierInvariants(a, b) {
     expect(found[1].label).toBe('Round numbered beyond the configured cap');
   });
 
-  it('reports a line number inside the matched block, not just line 1', () => {
+  it('anchors each invariant on its own id, and omits line unless includeLines is set', () => {
     const found = extractInvariantsFromSource(fixtureSource, 'x.ts');
+    expect(found[0].anchor).toBe('cross_team_link');
+    expect(found[1].anchor).toBe('over_cap');
+    expect(found[0].line).toBeUndefined();
+  });
+
+  it('reports a line number inside the matched block, not just line 1, with { includeLines: true }', () => {
+    const found = extractInvariantsFromSource(fixtureSource, 'x.ts', { includeLines: true });
     expect(found[0].line).toBeGreaterThan(1);
     expect(found[1].line).toBeGreaterThan(found[0].line);
   });
@@ -230,8 +270,8 @@ describe('cronPathToRouteFile', () => {
 describe('mergeEdges', () => {
   it('accumulates evidence for the same (source, target, kind) rather than duplicating the edge', () => {
     const merged = mergeEdges([
-      { source: 'a', target: 'b', kind: 'feature_relation', evidence: { kind: 'feature_doc_contract', path: 'a.md', line: 1 } },
-      { source: 'a', target: 'b', kind: 'feature_relation', evidence: { kind: 'import_graph', path: 'a.ts', line: 5 } },
+      { source: 'a', target: 'b', kind: 'feature_relation', evidence: { kind: 'feature_doc_contract', path: 'a.md', anchor: 1 } },
+      { source: 'a', target: 'b', kind: 'feature_relation', evidence: { kind: 'import_graph', path: 'a.ts', anchor: 'src/lib/x' } },
     ]);
     expect(merged).toHaveLength(1);
     expect(merged[0].evidence).toHaveLength(2);
@@ -239,18 +279,36 @@ describe('mergeEdges', () => {
 
   it('never drops an identical duplicate evidence entry as a second copy', () => {
     const merged = mergeEdges([
-      { source: 'a', target: 'b', kind: 'feature_relation', evidence: { kind: 'feature_doc_contract', path: 'a.md', line: 1 } },
-      { source: 'a', target: 'b', kind: 'feature_relation', evidence: { kind: 'feature_doc_contract', path: 'a.md', line: 1 } },
+      { source: 'a', target: 'b', kind: 'feature_relation', evidence: { kind: 'feature_doc_contract', path: 'a.md', anchor: 1 } },
+      { source: 'a', target: 'b', kind: 'feature_relation', evidence: { kind: 'feature_doc_contract', path: 'a.md', anchor: 1 } },
     ]);
     expect(merged[0].evidence).toHaveLength(1);
   });
 
   it('keeps distinct target features as separate edges', () => {
     const merged = mergeEdges([
-      { source: 'a', target: 'b', kind: 'feature_relation', evidence: { kind: 'feature_doc_contract', path: 'a.md', line: 1 } },
-      { source: 'a', target: 'c', kind: 'feature_relation', evidence: { kind: 'feature_doc_contract', path: 'a.md', line: 2 } },
+      { source: 'a', target: 'b', kind: 'feature_relation', evidence: { kind: 'feature_doc_contract', path: 'a.md', anchor: 1 } },
+      { source: 'a', target: 'c', kind: 'feature_relation', evidence: { kind: 'feature_doc_contract', path: 'a.md', anchor: 1 } },
     ]);
     expect(merged).toHaveLength(2);
+  });
+
+  it('dedupes by (kind, path, anchor), not by line: two entries sharing an anchor but carrying different lines still collapse to one', () => {
+    // Anchor is the committed identity now — a line number (only present
+    // with includeLines) is no longer part of what makes evidence distinct.
+    const merged = mergeEdges([
+      { source: 'a', target: 'b', kind: 'feature_relation', evidence: { kind: 'rpc_call', path: 'a.ts', anchor: 'get_thing', line: 10 } },
+      { source: 'a', target: 'b', kind: 'feature_relation', evidence: { kind: 'rpc_call', path: 'a.ts', anchor: 'get_thing', line: 40 } },
+    ]);
+    expect(merged[0].evidence).toHaveLength(1);
+  });
+
+  it('keeps two entries with the same kind/path but DIFFERENT anchors distinct', () => {
+    const merged = mergeEdges([
+      { source: 'a', target: 'b', kind: 'feature_relation', evidence: { kind: 'rpc_call', path: 'a.ts', anchor: 'get_thing' } },
+      { source: 'a', target: 'b', kind: 'feature_relation', evidence: { kind: 'rpc_call', path: 'a.ts', anchor: 'get_other_thing' } },
+    ]);
+    expect(merged[0].evidence).toHaveLength(2);
   });
 });
 
@@ -473,30 +531,39 @@ journeys:
     expect(startRoundJourney.features).toEqual(['golf_round_lifecycle']);
   });
 
-  it('emits one journey_feature edge per stage, each with its own line evidence', () => {
+  it('emits one journey_feature edge per stage, each anchored by journey:stage, with line omitted by default', () => {
     const result = parseJourneysDoc(GOLDEN_PATH_SHAPED, 'memory/journeys/golden-paths.yml');
     expect(result.edges).toHaveLength(4); // 2 stages + 2 stages, not deduped at the edge level
     for (const edge of result.edges) {
       expect(edge.kind).toBe('journey_feature');
       expect(edge.evidence.kind).toBe('journey_stage');
       expect(edge.evidence.path).toBe('memory/journeys/golden-paths.yml');
+      expect(edge.evidence.line).toBeUndefined();
     }
   });
 
-  it('gives the two golf_round_lifecycle stages DIFFERENT line numbers, not the same one twice', () => {
+  it('gives the two golf_round_lifecycle stages DIFFERENT anchors, not the same one twice', () => {
     // The exact bug class a naive `text.indexOf('feature_id: golf_round_lifecycle')`
     // lookup would hit: both stages share a feature_id, so a lookup that
-    // isn't source-order-aware would attribute both edges to the FIRST
-    // occurrence's line.
+    // isn't stage-id-aware would attribute both edges to the same identity.
     const result = parseJourneysDoc(GOLDEN_PATH_SHAPED, 'memory/journeys/golden-paths.yml');
     const startRoundEdges = result.edges.filter(
       (e) => e.source === 'journey:player_start_round' && e.target === 'golf_round_lifecycle',
     );
     expect(startRoundEdges).toHaveLength(2);
     const [first, second] = startRoundEdges;
+    expect(first.evidence.anchor).toBe('player_start_round:configure_round');
+    expect(second.evidence.anchor).toBe('player_start_round:start_round');
+  });
+
+  it('resolves real, ordered line numbers for both stages with { includeLines: true }', () => {
+    const result = parseJourneysDoc(GOLDEN_PATH_SHAPED, 'memory/journeys/golden-paths.yml', { includeLines: true });
+    const startRoundEdges = result.edges.filter(
+      (e) => e.source === 'journey:player_start_round' && e.target === 'golf_round_lifecycle',
+    );
+    const [first, second] = startRoundEdges;
     expect(first.evidence.line).toBeDefined();
     expect(second.evidence.line).toBeDefined();
-    expect(first.evidence.line).not.toBe(second.evidence.line);
     expect(second.evidence.line).toBeGreaterThan(first.evidence.line);
   });
 
@@ -552,6 +619,75 @@ journeys:
     expect(result.journeys).toEqual([]);
     expect(result.edges).toEqual([]);
     expect(result.problems).toEqual([]);
+  });
+});
+
+describe('findStageLine', () => {
+  // A blank separator line between journeys (exactly how the real
+  // memory/journeys/golden-paths.yml is formatted) is the regression this
+  // fixture pins: an earlier version used `\s*` for the leading-indent
+  // capture, which — because `\s` also matches `\n` — let the match swallow
+  // a preceding blank line's own newline plus the next line's leading
+  // spaces. That put `m.index` one line too early (reporting the blank line
+  // itself) and inflated the captured indent by one, which silently
+  // dropped `player_start_round` from being recognized as a journey-level
+  // marker at all. `[ \t]`, not `\s`, keeps the indent match inside one line.
+  const TEXT = `
+journeys:
+  - id: player_login_hub
+    stages:
+      - id: authenticate
+        feature_id: auth_onboarding_join
+      - id: land_on_dashboard
+        feature_id: player_hub
+
+  - id: player_start_round
+    stages:
+      - id: configure_round
+        feature_id: golf_round_lifecycle
+      - id: start_round
+        feature_id: golf_round_lifecycle
+`;
+
+  it('finds a stage in the first journey', () => {
+    const line = findStageLine(TEXT, 'player_login_hub', 'land_on_dashboard');
+    expect(TEXT.split('\n')[line - 1].trim()).toBe('- id: land_on_dashboard');
+  });
+
+  it('finds a stage in a LATER journey, across the blank separator line', () => {
+    const line = findStageLine(TEXT, 'player_start_round', 'start_round');
+    expect(TEXT.split('\n')[line - 1].trim()).toBe('- id: start_round');
+  });
+
+  it('does not cross into a different journey with the same-named stage id', () => {
+    // Both journeys have a stage literally named "configure_round" here —
+    // resolution must stay inside the requested journey's own block.
+    const twoJourneysSameStageName = `
+journeys:
+  - id: journey_a
+    stages:
+      - id: configure_round
+        feature_id: x
+  - id: journey_b
+    stages:
+      - id: configure_round
+        feature_id: y
+`;
+    const lineA = findStageLine(twoJourneysSameStageName, 'journey_a', 'configure_round');
+    const lineB = findStageLine(twoJourneysSameStageName, 'journey_b', 'configure_round');
+    expect(lineA).not.toBe(lineB);
+    expect(twoJourneysSameStageName.split('\n')[lineA - 1]).toContain('configure_round');
+    expect(twoJourneysSameStageName.split('\n')[lineB - 1]).toContain('configure_round');
+  });
+
+  it('returns undefined for an unknown journey or stage id, never throws', () => {
+    expect(findStageLine(TEXT, 'not_a_journey', 'authenticate')).toBeUndefined();
+    expect(findStageLine(TEXT, 'player_login_hub', 'not_a_stage')).toBeUndefined();
+  });
+
+  it('returns undefined when either argument is missing', () => {
+    expect(findStageLine(TEXT, undefined, 'authenticate')).toBeUndefined();
+    expect(findStageLine(TEXT, 'player_login_hub', undefined)).toBeUndefined();
   });
 });
 

@@ -152,13 +152,28 @@ export function resolvePrimaryFeature(registry, filePath, matchGlob, flattenCode
  * This is the plan's "explicit product contract in a feature doc" evidence
  * kind (`CONTROL_PLANE_IMPLEMENTATION_PLAN_2026-09-03.md` §3 E.4.1).
  *
+ * `anchor` is the target feature id itself — already the matched symbol —
+ * and this producer emits AT MOST ONE edge per (sourceFeatureId, target) per
+ * doc, at its first qualifying mention. An earlier version anchored on a
+ * per-target occurrence ordinal (1st mention, 2nd mention, ...) instead; that
+ * was still positional — a PR adding an EARLIER mention of a target already
+ * cited lower in the doc renumbered every later mention's ordinal, which is
+ * exactly the churn class this replaces, and `memory/features/*.md` (the
+ * files that motivated this fix) are the busiest docs in the repo for this
+ * exact edge kind. Collapsing to one edge per target removes the ordinal
+ * entirely: a committed entry now changes only when a doc gains its first
+ * mention of a feature or loses its last one, never when an existing
+ * mention moves. `line` (the first qualifying mention's line) is included
+ * only when `includeLines` is set.
+ *
  * @param {string} sourceFeatureId
  * @param {string} docText
  * @param {string} docPath
  * @param {Set<string>} knownFeatureIds
- * @returns {Array<{source: string, target: string, evidence: {kind: 'feature_doc_contract', path: string, line: number}}>}
+ * @param {{includeLines?: boolean}} [options]
+ * @returns {Array<{source: string, target: string, evidence: {kind: 'feature_doc_contract', path: string, anchor: string, line?: number}}>}
  */
-export function extractDocFeatureCrossRefs(sourceFeatureId, docText, docPath, knownFeatureIds) {
+export function extractDocFeatureCrossRefs(sourceFeatureId, docText, docPath, knownFeatureIds, { includeLines = false } = {}) {
   const edges = [];
   const seen = new Set();
   const lines = docText.split('\n');
@@ -170,14 +185,11 @@ export function extractDocFeatureCrossRefs(sourceFeatureId, docText, docPath, kn
       if (target === sourceFeatureId) continue;
       if (!knownFeatureIds.has(target)) continue;
       if (NEGATED_RELATION_RE.test(line)) continue;
-      const key = `${target}::${index + 1}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      edges.push({
-        source: sourceFeatureId,
-        target,
-        evidence: { kind: 'feature_doc_contract', path: docPath, line: index + 1 },
-      });
+      if (seen.has(target)) continue;
+      seen.add(target);
+      const evidence = { kind: 'feature_doc_contract', path: docPath, anchor: target };
+      if (includeLines) evidence.line = index + 1;
+      edges.push({ source: sourceFeatureId, target, evidence });
     }
   });
   return edges;
@@ -195,11 +207,18 @@ export function extractDocFeatureCrossRefs(sourceFeatureId, docText, docPath, kn
  * `severity:` pairs each invariant with its own severity even when several
  * invariants are defined back to back in the same file.
  *
+ * `anchor` is the invariant's own `id` — already unique per file (it is what
+ * `world-model.mjs` namespaces into the node id, `invariant:<file>:<id>`), so
+ * it needs no occurrence counter. `line` is included only when
+ * `includeLines` is set, so the committed graph doesn't shift on every
+ * unrelated edit above an invariant block in the same file.
+ *
  * @param {string} sourceText
  * @param {string} filePath
- * @returns {Array<{id: string, label: string | null, severity: string, path: string, line: number}>}
+ * @param {{includeLines?: boolean}} [options]
+ * @returns {Array<{id: string, label: string | null, severity: string, path: string, anchor: string, line?: number}>}
  */
-export function extractInvariantsFromSource(sourceText, filePath) {
+export function extractInvariantsFromSource(sourceText, filePath, { includeLines = false } = {}) {
   const invariants = [];
   const blockRe = /id:\s*'([a-z][a-z0-9_]*)'[\s\S]*?severity:\s*'(critical|warning)'/g;
   const labelRe = /label:\s*'([^']*)'/;
@@ -207,15 +226,15 @@ export function extractInvariantsFromSource(sourceText, filePath) {
   while ((match = blockRe.exec(sourceText)) !== null) {
     const [full, id, severity] = match;
     const labelMatch = full.match(labelRe);
-    const upToMatch = sourceText.slice(0, match.index);
-    const line = upToMatch.split('\n').length;
-    invariants.push({
+    const invariant = {
       id,
       label: labelMatch ? labelMatch[1] : null,
       severity,
       path: filePath,
-      line,
-    });
+      anchor: id,
+    };
+    if (includeLines) invariant.line = sourceText.slice(0, match.index).split('\n').length;
+    invariants.push(invariant);
   }
   return invariants;
 }
@@ -237,15 +256,26 @@ export function extractInvariantsFromSource(sourceText, filePath) {
  * YAML at all — are each one synthetic fixture instead of a real
  * `memory/journeys/` file.
  *
+ * `anchor` is `<journey.id>:<stage.id>` — `check-journeys.mjs` already
+ * enforces both halves unique (a journey id repo-wide, a stage id within its
+ * own journey), so js-yaml's parsed array gives a stable identity directly,
+ * with no text matching needed to tell two stages apart even when they
+ * share a `feature_id` (e.g. golf_round_lifecycle in both configure_round
+ * and start_round in golden-paths.yml). `line` is recovered from raw text
+ * only when `includeLines` is set, via `findStageLine` below — on demand,
+ * never committed, so inserting a stage above another in the same file no
+ * longer shifts a committed line number.
+ *
  * @param {string} text - raw file contents
  * @param {string} filePath - tracked path, used as edge evidence
+ * @param {{includeLines?: boolean}} [options]
  * @returns {{
  *   journeys: Array<{id: string, name: string, source: string, features: string[]}>,
- *   edges: Array<{source: string, target: string, kind: 'journey_feature', evidence: {kind: 'journey_stage', path: string, line: number | undefined}}>,
+ *   edges: Array<{source: string, target: string, kind: 'journey_feature', evidence: {kind: 'journey_stage', path: string, anchor: string | undefined, line?: number}}>,
  *   problems: string[],
  * }}
  */
-export function parseJourneysDoc(text, filePath) {
+export function parseJourneysDoc(text, filePath, { includeLines = false } = {}) {
   const journeys = [];
   const edges = [];
   const problems = [];
@@ -262,22 +292,6 @@ export function parseJourneysDoc(text, filePath) {
     return { journeys, edges, problems };
   }
 
-  // js-yaml's public load() API returns no per-node line/column for a
-  // successfully parsed document, so line evidence for each stage's
-  // `feature_id:` is recovered the same tolerant, source-order way
-  // lib/registry.mjs's own line-based reader works: every `feature_id:` line
-  // in the raw text, in file order, consumed 1:1 against every stage's
-  // feature_id as js-yaml's array is walked in that same order — correct
-  // even when the same feature_id repeats across stages (e.g.
-  // golf_round_lifecycle in both configure_round and start_round in
-  // golden-paths.yml), because both scans preserve source order and neither
-  // reorders.
-  const featureIdLines = [...text.matchAll(/^\s*feature_id:\s*(\S+)\s*$/gm)].map((m) => ({
-    value: m[1],
-    line: text.slice(0, m.index).split('\n').length,
-  }));
-  let cursor = 0;
-
   doc.journeys.forEach((journey, index) => {
     if (typeof journey?.id !== 'string' || !Array.isArray(journey?.stages)) {
       problems.push(`journeys[${index}] missing a string id or a stages array`);
@@ -288,14 +302,18 @@ export function parseJourneysDoc(text, filePath) {
       const featureId = stage?.feature_id;
       if (typeof featureId !== 'string') continue;
       featureIds.add(featureId);
-      const hit = featureIdLines[cursor];
-      const line = hit && hit.value === featureId ? hit.line : undefined;
-      if (hit) cursor += 1;
+      const stageId = typeof stage?.id === 'string' ? stage.id : undefined;
+      const evidence = {
+        kind: 'journey_stage',
+        path: filePath,
+        anchor: stageId ? `${journey.id}:${stageId}` : undefined,
+      };
+      if (includeLines) evidence.line = findStageLine(text, journey.id, stageId);
       edges.push({
         source: `journey:${journey.id}`,
         target: featureId,
         kind: 'journey_feature',
-        evidence: { kind: 'journey_stage', path: filePath, line },
+        evidence,
       });
     }
     journeys.push({
@@ -307,6 +325,45 @@ export function parseJourneysDoc(text, filePath) {
   });
 
   return { journeys, edges, problems };
+}
+
+/**
+ * On-demand line lookup for a `journey_stage` anchor (`--lines` mode only —
+ * never called on the committed write path). Every `- id: <token>` line in
+ * the file is a journey marker (top-level, shallowest indent) or a stage
+ * marker (indented under one); the shallowest indent seen at all is treated
+ * as the journey level so this works regardless of the file's exact
+ * indentation width. Returns `undefined` (never throws) when the journey or
+ * stage id can't be found — a stale/renamed anchor is a report-time miss,
+ * not a crash, same as `document-inventory.mjs`'s Anchor SHA staleness scan.
+ *
+ * @param {string} text
+ * @param {string | undefined} journeyId
+ * @param {string | undefined} stageId
+ * @returns {number | undefined}
+ */
+export function findStageLine(text, journeyId, stageId) {
+  if (!journeyId || !stageId) return undefined;
+  // `[ \t]`, not `\s`, for every "whitespace" span here: `\s` also matches
+  // `\n`, so a greedy `\s*` right after the multiline `^` anchor could swallow
+  // a preceding BLANK line's own newline plus this line's leading spaces —
+  // the match then starts one line too early (at the blank line) and reports
+  // the wrong indent for it too. Confirmed against the real file: a blank
+  // separator line before `- id: player_start_round` made the old `\s*`
+  // version report line 146 (the blank line) instead of 147, and indent 3
+  // instead of 2, which silently excluded that journey from being treated
+  // as a journey-level marker at all.
+  const idLineRe = /^([ \t]*)-[ \t]*id:[ \t]*(\S+)[ \t]*$/gm;
+  const hits = [...text.matchAll(idLineRe)].map((m) => ({ indent: m[1].length, id: m[2], index: m.index }));
+  if (hits.length === 0) return undefined;
+  const minIndent = Math.min(...hits.map((h) => h.indent));
+  const journeyMarkers = hits.filter((h) => h.indent === minIndent);
+  const start = journeyMarkers.find((h) => h.id === journeyId);
+  if (!start) return undefined;
+  const end = journeyMarkers.find((h) => h.index > start.index)?.index ?? text.length;
+  const stageHit = hits.find((h) => h.index > start.index && h.index < end && h.indent > minIndent && h.id === stageId);
+  if (!stageHit) return undefined;
+  return text.slice(0, stageHit.index).split('\n').length;
 }
 
 /**
@@ -354,6 +411,13 @@ export function sortWorldModel(model) {
  * one edge per (source, target, kind), accumulating evidence. Two extractors
  * finding the same relationship through different evidence is a STRONGER
  * claim, not a duplicate — never collapsed away.
+ *
+ * Dedup key is `(kind, path, anchor)`, not `(kind, path, line)`: `anchor` is
+ * now the stable identity every line-carrying evidence kind produces (an
+ * invariant id, an rpc name, an import specifier, a journey/stage pair, a
+ * doc-mention occurrence ordinal), and evidence kinds with neither field
+ * (`registry_glob`, `migration_schema`, ...) still compare `undefined ===
+ * undefined` exactly as before.
  */
 export function mergeEdges(rawEdges) {
   const byKey = new Map();
@@ -362,7 +426,7 @@ export function mergeEdges(rawEdges) {
     const existing = byKey.get(key);
     if (existing) {
       const dup = existing.evidence.some(
-        (e) => e.kind === edge.evidence.kind && e.path === edge.evidence.path && e.line === edge.evidence.line,
+        (e) => e.kind === edge.evidence.kind && e.path === edge.evidence.path && e.anchor === edge.evidence.anchor,
       );
       if (!dup) existing.evidence.push(edge.evidence);
     } else {
