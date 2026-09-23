@@ -310,14 +310,8 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   against its authoritative `HoleContext` totals: order, termination, and
   penalty representation, not just a matching row count — a hole
   terminates on `result === 'hole'` OR `putt_made === true`). Nothing here
-  reads a table. **Not yet wired to anything**: no adapter onto
-  `engine/shot-source.ts`/`engine/generator-base.ts`, no
-  `load-player-context.ts`, no `evidence-packet.ts`, no generator output
-  change — those are later slices (A2+). `AnalysisScope` is carried by
-  every fixture but not consumed yet; its source-scoping/cutoff tests are
-  deferred to the `load-player-context.ts` slice. See
-  `docs/architecture/coachhelm-evidence-contract.md`'s "Situational fact
-  types" section and the seven named fixtures in
+  reads a table. See `docs/architecture/coachhelm-evidence-contract.md`'s
+  "Situational fact types" section and the seven named fixtures in
   `src/test/coachhelm/v3/fixtures/situational-intelligence.ts` (A0) for the
   concrete scenarios this package is proven against.
 - N13 sweep (repair plan, 2026-09-23): audited every CoachHelm action/route
@@ -358,6 +352,36 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   `useRoundReviewV2.ts` and `review/page.tsx` still read `.error`) and wires
   into `withAdminObserved`'s existing `extractActionSoftFailure` telemetry
   with no extra plumbing.
+
+- **A1 slice 2 (2026-09-23, `agent/coachhelm-player-context`, based on
+  `main` — formerly stacked on #1981's branch, now merged as
+  `99ae02c05`): `load-player-context.ts` and the shot-source adapter.**
+  `context/load-player-context.ts`'s `loadPlayerContext(scope, deps)` is
+  the first DB-backed A1 function — scopes strictly by `player_id` (never
+  `team_id`; this filter is the ONLY authorization check inside the
+  module — callers must pass an already-authorized `player_id`), and
+  additionally scopes rounds to `status = 'completed'`, matching every
+  sibling reader. Bounds rounds by `window_start`/`window_end`, and bounds
+  holes/shots by `analysis_cutoff` against their own `created_at` (the
+  closest available proxy for "observed"), comparing timestamps as
+  instants (`Date.parse`) rather than raw ISO strings. A shot edited after
+  the cutoff (`updated_at` > cutoff) is excluded as `edited_after_cutoff`;
+  a shot whose owning hole was itself excluded (any reason) is excluded as
+  `hole_excluded` — both new `coverage.shotsExcludedByReason` keys added
+  in the post-review pass. `HOLE_COLUMNS` now also selects
+  `golf_holes.yardage`, mapped onto a new `HoleContext.yardage: number |
+  null` field (added for #1990, A3 par-opportunities). Enforces the
+  `HoleContext.total_strokes` null-score exclusion against a live source
+  for the first time. DB
+  dependency is injected (`deps.supabase`), never constructed inside, so
+  tests use a fake client. `context/adapters/shot-source-adapter.ts`'s
+  `approachShotToShotFact` additively maps `engine/shot-source.ts`'s
+  `ApproachShot` onto `ShotFact`; `shot-source-adapter.test.ts` compares the
+  existing broad approach totals before/after normalization on fixed
+  fixtures (see the evidence-contract doc's "Player-context loader and
+  shot-source adapter" section for what differs and why). **Still not
+  wired to a generator**: no change to `engine/generator-base.ts` or any
+  generator's output, no `evidence-packet.ts` — those remain later slices.
 
 ## Tests To Prefer
 

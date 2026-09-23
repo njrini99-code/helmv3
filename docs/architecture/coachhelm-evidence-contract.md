@@ -392,8 +392,13 @@ adapter (`load-player-context.ts`, and wiring into `engine/shot-source.ts` /
   `result === 'hole'` OR `putt_made === true`, matching how
   `round-review-system.ts`/`round-review-content.ts` already read it.
 - **`HoleContext`** (`context/types.ts`) — a hole's AUTHORITATIVE totals
-  (par, `total_strokes`, `penalty_strokes`, `putts`, `gir`), sourced from
-  `golf_holes`, never derived from the shots being validated against it.
+  (par, `total_strokes`, `penalty_strokes`, `putts`, `gir`, `yardage`),
+  sourced from `golf_holes`, never derived from the shots being validated
+  against it. `yardage` is nullable, like `golf_holes.yardage` itself —
+  added for #1990 (A3 par-opportunities), which fills it in from this
+  loader. `HoleContext.par` (already present) is what
+  `metrics/distance-profile.ts` (A2) uses for its 175+ yd par-5 lay-up
+  exclusion.
   Mirrors `engine/hole-diagnosis.ts`'s `DiagnosisHole` shape. `total_strokes`
   is non-nullable BY CONTRACT: a `HoleContext` must only ever be constructed
   for a hole with a non-null `golf_holes.score`, mirroring
@@ -453,6 +458,73 @@ expected result never depends on when a test happens to run.
 function — the source-scoping and historical-cutoff tests the addendum
 lists for A1 are deferred to the loader slice (`load-player-context.ts`),
 which is the first place a live source exists to scope or cut off against.
+
+## Player-context loader and shot-source adapter (A1 slice 2)
+
+`context/load-player-context.ts`'s `loadPlayerContext(scope, deps)` is the
+first DB-backed A1 function — it is the ONLY place in `context/` that reads
+`golf_rounds`/`golf_holes`/`golf_shots`, and it fulfills the two boxes the
+section above left deferred:
+
+- **Scoping.** `scope.player_id` is the ONLY scope column filtered on, and
+  it is the ONLY authorization check inside this module — `deps.supabase`
+  is caller-supplied and may carry no RLS at all (an admin client), so
+  whoever calls `loadPlayerContext` is responsible for only ever passing a
+  `player_id` that caller is authorized to read. `golf_rounds.team_id` is
+  read but never filtered — two players sharing a team must never see each
+  other's rounds through this loader (see the "does not use team_id to
+  scope" test). `window_start`/`window_end` bound `golf_rounds.round_date`.
+  Rounds are further scoped to `status = 'completed'`, matching every
+  sibling reader (`shot-source.ts`, `causality/attribute.ts`,
+  `chat/read-tools.ts`, `goals/window-metric.ts`) — an in-progress round's
+  holes/shots are not settled evidence yet.
+- **Cutoff.** `analysis_cutoff` bounds each hole's and shot's own
+  `created_at` — the closest available proxy for "observed", since
+  `golf_holes`/`golf_shots` carry no separate observation timestamp. A
+  `null` created_at (a legacy row predating the column) is treated as
+  available, not excluded. A shot excluded by cutoff can turn an
+  otherwise-complete hole into a partial sequence; `coverage
+  .partialSequenceCount` (via `buildHoleSequence`) is how a caller sees
+  that without the shot silently vanishing. A shot's `updated_at` is
+  checked separately: one edited strictly AFTER the cutoff is excluded
+  with reason `edited_after_cutoff` — its current value isn't what was
+  known as of the cutoff, even if the row itself existed earlier.
+  `golf_holes` has no `updated_at` column, so this applies to shots only.
+  Cutoff and recorded timestamps are compared as instants (`Date.parse`),
+  never as raw ISO strings, since two timestamps for the same instant can
+  differ in string form (offset, precision).
+- **`HoleContext` invariant enforced here.** A hole with a null
+  `golf_holes.score` is excluded (`coverage.holesExcludedByReason
+  .null_score`), mirroring `hole-diagnosis.ts`'s own exclusion — this is
+  where that invariant, stated as a doc comment on `HoleContext
+  .total_strokes`, is actually enforced against a live source. A shot
+  whose owning hole was excluded for ANY reason (null score, missing par
+  or hole number, after cutoff) is excluded too, with reason
+  `hole_excluded` in `coverage.shotsExcludedByReason` — a direct shot
+  consumer (e.g. `metrics/distance-profile.ts`, which reads `ShotFact[]`
+  without ever looking at `HoleContext`) must not keep evidence from a
+  hole this loader has already disowned.
+- **DB dependency is injected** (`deps.supabase`) rather than constructed
+  inside — a test passes a fake client instead of a live database. Every
+  Supabase error is thrown (via `fetchAllRows`), never swallowed into an
+  empty result. Round-id lists are chunked at 200
+  (`src/lib/supabase/chunk-ids.ts`) before each `.in()` filter, and each
+  chunk is paginated past the 1,000-row cap (`fetchAllRows`).
+
+`context/adapters/shot-source-adapter.ts`'s `approachShotToShotFact` maps
+`engine/shot-source.ts`'s already-shipped `ApproachShot` (what
+`approach-miss.ts` already loads and aggregates) onto `ShotFact`, additively
+— it changes no generator output. `shot-source-adapter.test.ts` compares
+the existing broad approach totals before/after normalization on fixed
+fixtures: bucketing on a canonical, unit-normalized distance instead of the
+existing raw-value bucketing (`bucketApproachDistance`'s own "unrecognized
+unit ⇒ assume yards" fallback) is the only source of disagreement found,
+and it only ever REMOVES an unmeasurable-distance shot from `attempts` —
+never adds one, and never changes which shots count as green hits (`result`
+and `lie_after`, which `reachedGreen` reads, pass through normalization
+unchanged). `approach-miss.ts` itself is unmodified except exporting the
+already-existing `reachedGreen` so the comparison can reuse it instead of
+forking a copy that could drift.
 
 ## How to add a new comparison source
 
