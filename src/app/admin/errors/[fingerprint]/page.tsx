@@ -3,7 +3,7 @@ import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { fetchFingerprintDetail } from '@/lib/admin/data/errors';
 import { InlineNotice, StatStrip, StatusPill, Surface, type FwStatusTone } from '@/components/fairway';
 import type { TriageSeverity } from '@/lib/admin/data/triage';
-import { extractActionName, featureLabelFor, resolveActionFilePath } from '@/lib/admin/incident-report';
+import { extractActionName, extractUserIdUnverified, featureLabelFor, resolveActionFilePath } from '@/lib/admin/incident-report';
 import { PanelBoundary } from '../../_components/PanelBoundary';
 import { PanelPageSkeleton } from '../../_components/PanelSkeletons';
 import { PanelNoData } from '../../_components/PanelStates';
@@ -37,6 +37,8 @@ import { buildBoardAliasGroups, buildIncidentGenome } from '@/lib/admin/incident
 import { fetchCurrentReleaseWatch } from '@/lib/admin/incidents/release-watch';
 import { ReleaseRelationshipLabel } from '@/components/admin/premium';
 import { IncidentGenomePanel } from '../_components/IncidentGenomePanel';
+import { AffectedPeoplePanel } from '../_components/AffectedPeoplePanel';
+import { fetchAffectedPeopleForFingerprint } from '@/lib/admin/data/affected-people';
 export const dynamic = 'force-dynamic';
 
 const SEVERITY_TONE: Record<TriageSeverity, FwStatusTone> = {
@@ -203,10 +205,21 @@ export default async function FingerprintDetailPage({
     // The unified incident is fetched ALONGSIDE the forensics, not instead of
     // them: this page is the one surface where the raw occurrences still
     // matter, and a lifecycle read that fails must not take them down with it.
-    const [{ events, report, summary, forensics, trend, storedRca }, unified] = await Promise.all([
-      fetchFingerprintDetail(rawFingerprint),
-      fetchIncidentById(fingerprint).catch(() => null),
-    ]);
+    const [{ events, report, summary, forensics, trend, storedRca }, unified, affected] =
+      await Promise.all([
+        fetchFingerprintDetail(rawFingerprint),
+        fetchIncidentById(fingerprint).catch(() => null),
+        // WHO, alongside the occurrences — the identities `mergeTriage` has
+        // always read and discarded. Its own read rather than the board's
+        // capped `affectedPeople`: this page is the fault's whole history, not
+        // the board's 72h window. Fails to `known: false`, never to a silent
+        // empty, so "could not read who" can never render as "nobody".
+        fetchAffectedPeopleForFingerprint(rawFingerprint).catch(() => ({
+          people: [],
+          total: 0,
+          known: false,
+        })),
+      ]);
 
     if (events.length === 0 || !forensics) {
       // A reliability-sourced fingerprint (`rel:<signature>`, from the nightly
@@ -321,6 +334,12 @@ export default async function FingerprintDetailPage({
 
         <ForensicsHeader forensics={forensics} />
 
+        <AffectedPeoplePanel
+          people={affected.people}
+          total={affected.total}
+          known={affected.known}
+        />
+
         {/* Rollup the data layer already computed but previously discarded —
             an operator had to Copy the report and paste it elsewhere to see
             first-seen, unique users, or which deploys bracket the incident. */}
@@ -403,9 +422,24 @@ export default async function FingerprintDetailPage({
               </p>
               <EventDetailLine source={e.source} feature={e.feature} metadata={e.metadata} />
               {e.user_id ? (
-                <Link href={`/admin/users/${e.user_id}`} className="text-xs text-accent-700 underline">
-                  {e.user_email ?? e.user_id}
-                </Link>
+                <span className="inline-flex items-center gap-1.5">
+                  <Link href={`/admin/users/${e.user_id}`} className="text-xs text-accent-700 underline">
+                    {e.user_email ?? e.user_id}
+                  </Link>
+                  {extractUserIdUnverified(e.metadata) ? (
+                    // Not a confirmed identity — this row's user_id came from
+                    // an unverified JWT subject (see extractUserIdUnverified),
+                    // the normal "session expired mid-round" case. Surfaced
+                    // here so an operator can't mistake it for a getUser()-
+                    // verified attribution just because it renders as a link.
+                    <span
+                      className="rounded bg-warm-100 px-1 py-0.5 text-eyebrow font-medium uppercase tracking-wide text-warm-600"
+                      title="Attributed from an unverified session subject, not a verified getUser() call"
+                    >
+                      unverified
+                    </span>
+                  ) : null}
+                </span>
               ) : null}
               {e.stack_trace ? (
                 // Contained CODE block, never a page-level pan: w-full + min-w-0

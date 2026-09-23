@@ -30,7 +30,8 @@
  * answer different questions: `recordRealtimeChannelFailure` (a `helm.*`
  * count) gives Bridge a RATE nobody has to notice to see; `Sentry.captureMessage`
  * gives a human an actual issue to look at when a channel's transport is
- * failing, gated to ONCE PER `channelClass` PER SESSION so a reconnect loop
+ * failing AND DID NOT RECOVER (see REALTIME_RECOVERY_GRACE_MS), gated to
+ * ONCE PER `channelClass` PER SESSION so a reconnect loop
  * cannot flood Sentry with duplicate issues (a metric increment has no such
  * cost; a captured message does). The tags on that message
  * (`helm.feature`, `supabase.service`, `supabase.operation`, `realtime.state`)
@@ -75,6 +76,28 @@ export interface ObserveRealtimeChannelOptions {
 
 const CAPTURED_ONCE_PER_SESSION = new Set<string>();
 
+/**
+ * How long a failed channel gets to come back before Sentry hears about it.
+ *
+ * A dropped socket that supabase-js re-joins on its own is ordinary on
+ * mobile (backgrounding, a network handover, Low Power Mode), and the call
+ * sites refetch on the reconnect, so nothing is lost. Capturing on the drop
+ * itself filed JAVASCRIPT-NEXTJS-RJ at error level 143 times (2026-09-03 to
+ * 09-22) for exactly that recovered case. The metric, breadcrumb and warn log
+ * still record every drop immediately — Bridge keeps the rate — but only a
+ * channel still down after this window becomes a Sentry issue.
+ */
+export const REALTIME_RECOVERY_GRACE_MS = 60_000;
+
+/**
+ * A backgrounded tab (iOS suspends timers) fires an overdue timer the moment
+ * it wakes — before the socket has had any chance to re-join. A timer this
+ * much later than scheduled means the page was asleep, so the window starts
+ * again rather than reporting a failure the user never saw.
+ */
+const SUSPENDED_TIMER_SLACK_MS = 5_000;
+const MAX_GRACE_RESTARTS = 3;
+
 /** Test-only: forget which channelClasses already captured a Sentry message
  *  this session, so a test can assert the dedupe behavior from a clean state. */
 export function __resetRealtimeCaptureDedupeForTests(): void {
@@ -101,6 +124,42 @@ export function observeRealtimeChannel<C extends RealtimeChannelLike>(
   const subscribeStartedAt = Date.now();
   let subscribedOnce = false;
   let reconnectCount = 0;
+  let pendingCapture: ReturnType<typeof setTimeout> | null = null;
+
+  const cancelPendingCapture = () => {
+    if (pendingCapture !== null) {
+      clearTimeout(pendingCapture);
+      pendingCapture = null;
+    }
+  };
+
+  const captureIfStillDown = (status: string, severity: 'error' | 'warning', restarts = 0) => {
+    const scheduledAt = Date.now();
+    pendingCapture = setTimeout(() => {
+      pendingCapture = null;
+      try {
+        const lateBy = Date.now() - scheduledAt - REALTIME_RECOVERY_GRACE_MS;
+        if (lateBy > SUSPENDED_TIMER_SLACK_MS && restarts < MAX_GRACE_RESTARTS) {
+          captureIfStillDown(status, severity, restarts + 1);
+          return;
+        }
+        if (CAPTURED_ONCE_PER_SESSION.has(options.channelClass)) return;
+        CAPTURED_ONCE_PER_SESSION.add(options.channelClass);
+        Sentry.captureMessage(`Realtime channel transport failure: ${status}`, {
+          level: severity,
+          tags: {
+            'helm.feature': options.feature,
+            'supabase.service': 'realtime',
+            'supabase.operation': 'subscribe',
+            'realtime.state': status,
+          },
+          extra: { recoveryGraceMs: REALTIME_RECOVERY_GRACE_MS },
+        });
+      } catch {
+        // Same fail-open contract as the subscribe callback below.
+      }
+    }, REALTIME_RECOVERY_GRACE_MS);
+  };
 
   try {
     channel.subscribe((status: string, err?: Error) => {
@@ -112,6 +171,9 @@ export function observeRealtimeChannel<C extends RealtimeChannelLike>(
 
       try {
         if (status === 'SUBSCRIBED') {
+          // Recovered inside the grace window: the drop stays a metric and
+          // a breadcrumb, never a Sentry issue.
+          cancelPendingCapture();
           if (!subscribedOnce) {
             subscribedOnce = true;
             const latencyMs = Date.now() - subscribeStartedAt;
@@ -140,6 +202,9 @@ export function observeRealtimeChannel<C extends RealtimeChannelLike>(
           // through cleanup, which is out of scope for this pass — see
           // brief §12 doc note). Breadcrumb only, no metric, no capture.
           recordHelmBreadcrumb('realtime', 'realtime.closed', { feature: options.feature, result: 'CLOSED' });
+          // A channel closed after a failure (usually the caller tearing it
+          // down) has nobody left to report to.
+          cancelPendingCapture();
           return;
         }
 
@@ -156,17 +221,8 @@ export function observeRealtimeChannel<C extends RealtimeChannelLike>(
           operation: 'subscribe',
         });
 
-        if (!CAPTURED_ONCE_PER_SESSION.has(options.channelClass)) {
-          CAPTURED_ONCE_PER_SESSION.add(options.channelClass);
-          Sentry.captureMessage(`Realtime channel transport failure: ${status}`, {
-            level: severity,
-            tags: {
-              'helm.feature': options.feature,
-              'supabase.service': 'realtime',
-              'supabase.operation': 'subscribe',
-              'realtime.state': status,
-            },
-          });
+        if (pendingCapture === null && !CAPTURED_ONCE_PER_SESSION.has(options.channelClass)) {
+          captureIfStillDown(status, severity);
         }
       } catch {
         // This file's own observation logic must never break the caller's

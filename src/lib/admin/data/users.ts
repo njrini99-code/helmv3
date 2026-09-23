@@ -759,13 +759,17 @@ export async function fetchUserDetail(userId: string): Promise<{
       .in('event_type', ['login', 'signup', 'security'])
       .order('created_at', { ascending: false })
       .limit(25),
-    admin
-      .from('admin_events')
-      .select('id, title, severity, created_at, fingerprint')
-      .eq('user_id', userId)
-      .eq('event_type', 'error')
-      .order('created_at', { ascending: false })
-      .limit(25),
+    excludeAuthNoise(
+      admin
+        .from('admin_events')
+        .select('id, title, severity, created_at, fingerprint')
+        .eq('user_id', userId)
+        .eq('event_type', 'error')
+        .in('severity', INCIDENT_SEVERITIES)
+        .eq('resolved', false)
+        .order('created_at', { ascending: false })
+        .limit(25),
+    ),
   ]);
 
   const authEvents = (authEventsRes.data ?? []) as Array<{

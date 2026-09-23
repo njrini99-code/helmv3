@@ -1,8 +1,9 @@
 import * as Sentry from '@sentry/nextjs';
 import '@supabase/supabase-js/tracing';
 import { redactEventPii } from '@/lib/observability/redact-pii';
+import { fingerprintSupabaseAutoCapture } from '@/lib/observability/supabase-error-grouping';
 import { isAlreadyBridgeLogged } from '@/lib/bridge-logged-marker';
-import { buildClientSentryOptions } from '@/lib/sentry-client-options';
+import { buildClientSentryOptions, isHealthProbeFetchEcho } from '@/lib/sentry-client-options';
 import { classifyTraceSurface } from '@/lib/error-trace-classification';
 import { enforceMetricAttributeAllowlist } from '@/lib/observability/metrics';
 import { enforceLogAttributeAllowlist } from '@/lib/observability/structured-log';
@@ -18,6 +19,27 @@ function isConsoleOriginEvent(event: Sentry.ErrorEvent): boolean {
   if (event.logger === 'console') return true;
   return Boolean(
     event.exception?.values?.some((value) => value.mechanism?.type === 'console'),
+  );
+}
+
+/**
+ * `@supabase/supabase-js/tracing` captures resolved RPC errors as unhandled.
+ * A timed-out presence refresh is a deliberate best-effort retry path; scope
+ * this suppression to its exact source frame so no other Supabase timeout is
+ * hidden from Sentry.
+ */
+function isBackgroundPresenceHeartbeatTimeout(event: Sentry.ErrorEvent): boolean {
+  return Boolean(
+    event.exception?.values?.some((value) => {
+      // The live auto-instrumented event is an `Error` whose value contains
+      // the Supabase timeout name, so match its complete value rather than
+      // depending on Sentry's error-type normalization.
+      const timeout = /^TimeoutError:\s*signal timed out$/i.test(value.value ?? '');
+      const heartbeatFrame = value.stacktrace?.frames?.some((frame) =>
+        frame.filename?.includes('src/hooks/use-presence') && frame.function === 'sendHeartbeat',
+      );
+      return timeout && heartbeatFrame;
+    }),
   );
 }
 
@@ -151,6 +173,15 @@ Sentry.init({
   // duplicated event.contexts.location written by error-logging.ts.
   // Replay already masks DOM text.
   beforeSend(event, hint) {
+    // /api/health's database readiness failure is independently captured on
+    // the server and persisted through the Bridge. The connectivity hook
+    // intentionally accepts its 503 response as proof that the DEVICE is
+    // still online, so do not turn the same probe into an unhandled browser
+    // issue for every active page.
+    if (isHealthProbeFetchEcho(event)) {
+      return null;
+    }
+
     // Drop the console-origin ECHO of an error the Bridge pipeline already
     // captured. React's default onCaughtError console.error's every error a
     // boundary catches, and captureConsoleIntegration({levels:['error']})
@@ -165,6 +196,10 @@ Sentry.init({
     // Only ever suppresses a strict duplicate — an error nothing bridge-logged
     // still reaches Sentry through the console path exactly as before.
     if (isConsoleOriginEvent(event) && isAlreadyBridgeLogged(hint?.originalException)) {
+      return null;
+    }
+
+    if (isBackgroundPresenceHeartbeatTimeout(event)) {
       return null;
     }
 
@@ -238,7 +273,10 @@ Sentry.init({
     // Mask email addresses in message / extra / contexts / exception values.
     // The scrubbing above covers only the request envelope; the free-text fields
     // are where addresses actually appear.
-    return redactEventPii(event);
+    // Browser Supabase clients are instrumented too (src/lib/supabase/client.ts),
+    // so their auto-captured PostgREST errors get the same grouping as the
+    // server's — see supabase-error-grouping.ts.
+    return fingerprintSupabaseAutoCapture(redactEventPii(event), hint);
   },
 });
 

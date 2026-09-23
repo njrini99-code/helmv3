@@ -67,9 +67,40 @@ describe('summarizeTraceFleet', () => {
       short: 0,
       failed: 0,
       warning: 0,
+      succeeded: 0,
+      stuck: 0,
+      running: 0,
       dominantGap: null,
       workflows: [],
     });
+  });
+
+  /**
+   * 2026-09-23: 62 of 3,769 production runs sat at status='started' forever
+   * (crashed or timed out before finalize). "succeeded" used to be derived as
+   * total - failed - warning, which rendered every one of them green.
+   */
+  it('never counts an unfinalized run as succeeded', () => {
+    const now = Date.parse('2026-09-23T12:00:00Z');
+    const s = summarizeTraceFleet(
+      [
+        run({ status: 'success' }),
+        run({ status: 'started', started_at: '2026-09-23T10:00:00Z' }),
+        run({ status: 'started', started_at: '2026-09-23T11:55:00Z' }),
+        run({ status: 'started', started_at: 'not-a-date' }),
+        run({ status: 'failure' }),
+      ],
+      now,
+    );
+    expect(s.succeeded).toBe(1);
+    expect(s.stuck).toBe(2);
+    expect(s.running).toBe(1);
+    expect(s.failed).toBe(1);
+  });
+
+  it('leaves an unknown status out of every outcome bucket', () => {
+    const s = summarizeTraceFleet([run({ status: 'mystery' })]);
+    expect(s.succeeded + s.failed + s.warning + s.stuck + s.running).toBe(0);
   });
 });
 
