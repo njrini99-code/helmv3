@@ -1,0 +1,117 @@
+/* Fairway · controls · WheelPicker
+ * iOS-style drum columns. Geometry is fixed in px on purpose: the snap math
+ * in wheel-picker.tsx reads the same ITEM_HEIGHT / VISIBLE_ROWS constants.
+ */
+
+.wheel {
+  --wp-item-h: 44px;
+  --wp-rows: 5;
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  height: calc(var(--wp-item-h) * var(--wp-rows));
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* The selection band sits BEHIND the columns so the highlighted row reads as
+ * one continuous pill across hour · minute · period, exactly like the OS. */
+.band {
+  position: absolute;
+  inset-inline: 0;
+  top: calc(var(--wp-item-h) * ((var(--wp-rows) - 1) / 2));
+  height: var(--wp-item-h);
+  border-radius: var(--fw-radius-md, 12px);
+  background: var(--fw-color-surface-sunken);
+  box-shadow: inset 0 0 0 1px var(--fw-color-border-subtle);
+  pointer-events: none;
+}
+
+.column {
+  position: relative;
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  outline: none;
+  /* Fade the rows away from the band top and bottom. */
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 28%,
+    #000 72%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(to bottom, transparent 0, #000 28%, #000 72%, transparent 100%);
+}
+
+.column::-webkit-scrollbar {
+  display: none;
+}
+
+.column:focus-visible {
+  box-shadow: 0 0 0 2px color-mix(in oklch, var(--fw-color-accent-500) 40%, transparent);
+  border-radius: var(--fw-radius-md, 12px);
+}
+
+/* Spacer rows let the first / last real option reach the band. */
+.pad {
+  height: calc(var(--wp-item-h) * ((var(--wp-rows) - 1) / 2));
+  flex: none;
+}
+
+.item {
+  height: var(--wp-item-h);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-inline: 12px;
+  scroll-snap-align: center;
+  /* NOT scroll-snap-stop: always — that forces momentum scrolling to stop at
+   * the VERY NEXT snap point, one row per flick. A real OS drum (and
+   * `scroll-snap-type: y mandatory` alone, already on .column) lets one fast
+   * flick travel many rows and still land exactly centred on whichever one
+   * it settles on; `always` would make a 60-row minute column unusable
+   * without dozens of small flicks. */
+  font-family: var(--fw-font-sans, inherit);
+  font-variant-numeric: tabular-nums;
+  font-size: 1.375rem;
+  line-height: 1;
+  color: var(--fw-color-text-tertiary);
+  cursor: pointer;
+  border: 0;
+  background: transparent;
+  width: 100%;
+  white-space: nowrap;
+  transition:
+    color var(--fw-dur-fast, 140ms) ease,
+    transform var(--fw-dur-fast, 140ms) ease,
+    opacity var(--fw-dur-fast, 140ms) ease;
+  transform: scale(0.92);
+  opacity: 0.55;
+}
+
+.item[data-distance='0'] {
+  color: var(--fw-color-text-primary);
+  font-weight: 500;
+  transform: scale(1);
+  opacity: 1;
+}
+
+.item[data-distance='1'] {
+  opacity: 0.75;
+  transform: scale(0.96);
+}
+
+.item[data-distance='2'] {
+  opacity: 0.55;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .item {
+    transition: none;
+  }
+}
