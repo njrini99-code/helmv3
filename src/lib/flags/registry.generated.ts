@@ -15,7 +15,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
   {
     feature_id: "coachhelm_learned_personalization",
     owner: "golf/coachhelm",
-    purpose: "Adjusts a coach's v2 alert-generation thresholds (decline, pressure gap) using their own ack/dismiss history instead of only the coach-set CoachPhilosophy values; default off pending real-world evidence that this improves alert relevance.",
+    purpose: "Gates whether v3 insight ranking's loadCoachWeightsForPlayer applies stored golf_coachhelm_coach_weights instead of neutral 1.0 defaults; default off because production's weights were computed under v1's broken outcome-attribution math (see score.ts's own docblock), not because of any evidence problem with this flag.",
     type: "experiment",
     status: "active",
     created_at: "2026-09-22",
@@ -27,7 +27,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
       development: false,
     },
     kill_switch_behavior: null,
-    cleanup_plan: "Either promote to a permanent `release` flag once shadow-log data shows the learned thresholds track real coach preference (fewer dismissed alerts without missing real declines), or remove the wiring and this flag entirely if the evidence doesn't support it.",
+    cleanup_plan: "Flip on once golf_coachhelm_coach_weights has accumulated enough post-fix (corrected v2 causality attribution) samples to trust the persisted weights, or remove the coach-weight read entirely if that ranking signal is abandoned.",
   },
   {
     feature_id: "coachhelm_recap_claim_packet",
@@ -45,6 +45,23 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     },
     kill_switch_behavior: null,
     cleanup_plan: "Either promote to a permanent `release` flag once shadow data (the recap's fallback rate with the packet engaged vs. without) shows the typed gate isn't discarding good recaps, or remove the packet wiring entirely if it is.",
+  },
+  {
+    feature_id: "coachhelm_v2_alert_personalization",
+    owner: "golf/coachhelm",
+    purpose: "Adjusts a coach's v2 alert-generation thresholds (decline, pressure gap) using their own ack/dismiss history instead of only the coach-set CoachPhilosophy values; default off pending real-world evidence that this improves alert relevance.",
+    type: "experiment",
+    status: "active",
+    created_at: "2026-09-23",
+    expires_at: null,
+    default: false,
+    environment: {
+      production: false,
+      preview: false,
+      development: false,
+    },
+    kill_switch_behavior: null,
+    cleanup_plan: "Either promote to a permanent `release` flag once shadow-log data shows the learned thresholds track real coach preference (fewer dismissed alerts without missing real declines), or remove the wiring and this flag entirely if the evidence doesn't support it.",
   },
   {
     feature_id: "coachhelm_v2_availability",

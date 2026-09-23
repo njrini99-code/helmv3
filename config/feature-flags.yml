@@ -148,6 +148,38 @@ flags:
       No planned removal — permanent ops lever gating a genuinely optional
       verification pass, not a migration bridge.
 
+  # v3 insight ranking's coach-weight multiplier (loadCoachWeightsForPlayer,
+  # score.ts). Split 2026-09-23 from a flag this id used to share with the
+  # unrelated v2 alert-threshold consumer below (now its own
+  # coachhelm_v2_alert_personalization id) — the two were independently
+  # flippable behaviors hiding behind one switch, so turning on the v3
+  # coach-weight read would have silently turned on v2 alert
+  # personalization too. This id keeps its exact value/environment
+  # (false everywhere) so the split is a no-op for runtime behavior.
+  - feature_id: coachhelm_learned_personalization
+    owner: golf/coachhelm
+    purpose: >-
+      Gates whether v3 insight ranking's loadCoachWeightsForPlayer applies
+      stored golf_coachhelm_coach_weights instead of neutral 1.0 defaults;
+      default off because production's weights were computed under v1's
+      broken outcome-attribution math (see score.ts's own docblock), not
+      because of any evidence problem with this flag.
+    type: experiment
+    status: active
+    created_at: "2026-09-22"
+    expires_at: null
+    default: false
+    environment:
+      production: false
+      preview: false
+      development: false
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      Flip on once golf_coachhelm_coach_weights has accumulated enough
+      post-fix (corrected v2 causality attribution) samples to trust the
+      persisted weights, or remove the coach-weight read entirely if
+      that ranking signal is abandoned.
+
   # CoachHelm learning-loop wiring: BehaviorLearner.getLearnedPreferences()'s
   # result was previously computed and immediately discarded in
   # orchestrator.ts's generateAlerts() (dead work, not dead code — it ran a
@@ -160,7 +192,13 @@ flags:
   # (BehaviorLearner.getPersonalizedThreshold, bounded to +/-25%) replace
   # the coach's raw declineThreshold/pressureGapThreshold before
   # applyPhilosophyThresholds runs.
-  - feature_id: coachhelm_learned_personalization
+  #
+  # Split 2026-09-23 from coachhelm_learned_personalization, which this
+  # consumer used to share with the unrelated v3 coach-weight read in
+  # score.ts. Value/environment copied exactly from that id at the moment
+  # of the split (false everywhere), so this change is a no-op for runtime
+  # behavior.
+  - feature_id: coachhelm_v2_alert_personalization
     owner: golf/coachhelm
     purpose: >-
       Adjusts a coach's v2 alert-generation thresholds (decline, pressure
@@ -169,7 +207,7 @@ flags:
       evidence that this improves alert relevance.
     type: experiment
     status: active
-    created_at: "2026-09-22"
+    created_at: "2026-09-23"
     expires_at: null
     default: false
     environment:

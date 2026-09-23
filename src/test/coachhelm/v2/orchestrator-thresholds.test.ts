@@ -66,7 +66,7 @@ describe('applyPhilosophyThresholds (LIVE-24)', () => {
   });
 });
 
-describe('computePersonalizedThresholds (coachhelm_learned_personalization)', () => {
+describe('computePersonalizedThresholds (coachhelm_v2_alert_personalization)', () => {
   it('reports no change and returns the input thresholds when the learner returns the same values', async () => {
     const behaviorLearner = {
       getPersonalizedThreshold: vi.fn(async (_metric: string, defaultThreshold: number) => defaultThreshold),

@@ -9,7 +9,9 @@
  *   sample_n ≥ MIN_CALIBRATED_SAMPLES so under-calibrated weights don't
  *   skew rank order. Gated behind `coachhelm_learned_personalization`
  *   (default OFF) as of 2026-09-23 — see loadCoachWeightsForPlayer's own
- *   docblock.
+ *   docblock. As of 2026-09-23 this id is exclusive to this v3 read path;
+ *   the v2 alert-threshold consumer that used to share it now has its own
+ *   `coachhelm_v2_alert_personalization` id (config/feature-flags.yml).
  * - goalBoost (Tier-2 audit, 2026-05-27) floats insights touching an
  *   active player goal to the top:
  *     1.0 = no active goal touches this insight's metric/category
