@@ -27,17 +27,28 @@ import numpy as np
 import pyproj
 import shapely
 from hole_footprint import played_features
-from shapely import constrained_delaunay_triangles
 from shapely.geometry import LineString, MultiPolygon, Polygon, box
 from shapely.ops import polygonize, unary_union
 from terrain_source_rule import SourceRejected, order_by_recency, select_first_survivor
+from terrain_triangulate import triangulate_faces
 
 ROOT = Path(__file__).resolve().parents[3]
 FIXTURES = ROOT / 'src/test/fixtures/course-geometry'
-COMPILER_VERSION = 'course-terrain-v4'
+COMPILER_VERSION = 'course-terrain-v5'
 SOURCE_COVERAGE_METHOD = 'perimeter-v1'
 SOURCE_COVERAGE_PADDING_METERS = 8
 NODING_GRID_M = 1e-6
+# Degenerate-geometry gate for pieces/faces/triangles, in m^2. A genuine
+# GEOS overlay artifact (a collinear sliver from a buffer/difference chain)
+# is ~1e-15 m^2 or smaller. A legitimate sliver from two materials or cells
+# meeting at a near-tangent angle can be a real, non-degenerate ~1e-9 to
+# 1e-8 m^2 triangle: node_pieces already gives it and its neighbor the same
+# noded boundary, so it is on both sides of a shared edge. The pre-v5
+# threshold (1e-8) sat inside that legitimate range and discarded such a
+# sliver on one side only, leaving the neighbor's matching edge unpaired
+# (a T-junction). 1e-10 stays far above the true noise floor while passing
+# every legitimate sliver observed in course-factory batches to date.
+DEGENERATE_AREA_M2 = 1e-10
 STYLE_VERSION = 'narrow-surround-v1'
 CONTEXT_MARGIN_M = 160
 METRIC_STEP_M = 2
@@ -1845,7 +1856,7 @@ def node_pieces(pieces):
     tree = shapely.STRtree([piece for _, _, piece in pieces])
     faces, unassigned = [], 0
     for face in polygonize(linework):
-        if face.area < 1e-8:
+        if face.area < DEGENERATE_AREA_M2:
             continue
         point = face.representative_point()
         owners = [i for i in tree.query(point, predicate='intersects').tolist() if pieces[i][2].covers(point)]
@@ -1968,34 +1979,12 @@ def compile_hole(hole, pkg, raw_shapes, raw_features, displays, outline_reports,
             for cell_index in sorted(tree.query(region, predicate='intersects').tolist()):
                 cut = parts_inside_region(region, region.intersection(cell_shapes[cell_index]))
                 for part in getattr(cut, 'geoms', [cut]):
-                    if part.geom_type == 'Polygon' and not part.is_empty and part.area >= 1e-8:
+                    if part.geom_type == 'Polygon' and not part.is_empty and part.area >= DEGENERATE_AREA_M2:
                         pieces.append((feature_index, material, part))
     faces, noding = node_pieces(pieces)
-    area_by_feature, count_by_feature = [0.0]*len(visible), [0]*len(visible)
-    for feature_index, material, face in faces:
-        ident = ids[feature_index]
-        # GEOS's constrained triangulation can return a face-sized triangle
-        # outside one part of a polygon with holes. Intersect that exceptional
-        # result back to the exact face before adding it; do not loosen the
-        # per-feature area conservation assertion.
-        for raw_triangle in constrained_delaunay_triangles(face).geoms:
-            clipped = raw_triangle if face.covers(raw_triangle) else raw_triangle.intersection(face)
-            if clipped.is_empty:
-                continue
-            triangles = [clipped] if clipped.geom_type == 'Polygon' and len(clipped.exterior.coords) == 4 else constrained_delaunay_triangles(clipped).geoms
-            for triangle in triangles:
-                if triangle.area < 1e-8:
-                    continue
-                if not face.covers(triangle):
-                    raise ValueError(f'Triangulation escaped source region: {hole["key"]} {ident}')
-                points = list(triangle.exterior.coords)[:3]
-                # Normals and heights are sampled at these SAME rounded XY
-                # values, so coincident material/cell vertices cannot crease.
-                points = [(round(px, 5), round(py, 5)) for px, py in points]
-                if Polygon(points).area < 1e-10:
-                    continue
-                xy.extend(points); triangle_features.append(feature_index); triangle_materials.append(material)
-                area_by_feature[feature_index] += triangle.area; count_by_feature[feature_index] += 1
+    tri_xy, tri_features, tri_materials, area_by_feature, count_by_feature = triangulate_faces(
+        faces, ids, hole['key'], len(visible), DEGENERATE_AREA_M2)
+    xy.extend(tri_xy); triangle_features.extend(tri_features); triangle_materials.extend(tri_materials)
     for feature_index, (ident, kind, shape) in enumerate(visible):
         area, count = area_by_feature[feature_index], count_by_feature[feature_index]
         area_delta = area-shape.area

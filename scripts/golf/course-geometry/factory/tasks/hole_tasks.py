@@ -8,7 +8,7 @@ from .. import lab
 from ..fingerprints import terrain_source_identity
 from ..model import TaskSpec
 from .common import (
-    TERRAIN_COMPILER_FILES,
+    TERRAIN_COMPILE_FILES,
     artifact,
     blocked,
     dep_input,
@@ -17,7 +17,7 @@ from .common import (
     script,
 )
 
-TERRAIN_COMPILER = 'course-terrain-v4'
+TERRAIN_COMPILER = 'course-terrain-v5'
 TERRAIN_STYLE = 'narrow-surround-v1'
 RENDERER_FILES = ('src/lib/golf/course-geometry/three-renderer.ts', 'src/lib/golf/course-geometry/terrain-material.ts',
                   'src/lib/golf/course-geometry/ground-shader-v2.ts', 'src/lib/golf/course-geometry/visual-style.ts',
@@ -126,7 +126,7 @@ def eval_player_capture(node, ctx):
 
 SPECS = [
     TaskSpec('hole.terrain.compile', TERRAIN_COMPILER, 'hole', ('layout.terrain.acquire', 'layout.package.validate', 'layout.context.classify?'), eval_terrain_compile,
-             impl_files=TERRAIN_COMPILER_FILES, retention='C', estimated_bytes=5_000_000,
+             impl_files=TERRAIN_COMPILE_FILES, retention='C', estimated_bytes=5_000_000,
              settings={'style': TERRAIN_STYLE}),
     TaskSpec('hole.world.build', '2', 'hole', ('layout.package.validate', 'layout.terrain.acquire'), eval_world_build,
              impl_files=(script('build-course-world.py'), script('world_render_cache.py'), script('normalize-study.py'), script('hole_footprint.py'),

@@ -957,7 +957,7 @@ def aggregate_terrain(node, ctx, run):
                         'triangles': report.get('triangles'), 'tJunctionVertices': (report.get('noding') or {}).get('tJunctionVertices'),
                         'asset': entry, 'producerFingerprint': producer.fingerprint})
     manifest_path = os.path.join(bound, 'asset-manifest.json')
-    _write_json(manifest_path, {'schemaVersion': 1, 'compilerVersion': 'course-terrain-v4', 'geometryHash': package['contentHash'],
+    _write_json(manifest_path, {'schemaVersion': 1, 'compilerVersion': 'course-terrain-v5', 'geometryHash': package['contentHash'],
                                'sourceIdentity': terrain_source_identity(ctx.terrain_source_manifest(layout_id)), 'holes': entries})
     summary = {'kind': 'golfhelm-factory-terrain-summary-v1', 'layoutId': layout_id, 'packageHash': package['contentHash'],
                'sourceIdentity': terrain_source_identity(ctx.terrain_source_manifest(layout_id)), 'holes': sorted(reports, key=lambda r: r['ordinal'])}
