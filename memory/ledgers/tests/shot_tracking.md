@@ -488,3 +488,8 @@ date.
   pin); pre-submit staleness routes through the heal (continue only).
 - Guarantee still missing: no runtime test drives the iOS kill + beacon
   sequence end to end; the wiring tests cannot catch a dropped beacon.
+
+## 2026-09-23 — course factory canopy and capture guarantees
+
+- Added: `HoleFreePartsTests`, `LidarMergeTests` and `HoleTerritoryTests` (`test_derive_canopy_naip.py`), `test_fetch_lidar_chm.py` (EPT project choice, `boundsConforming`, newest flight, single-leaf pipeline on the export grid), `CanopyCorridorTests` (`test_ship.py`), `FeatureTableTests` plus a runtime-schema alignment check (`test_terrain_contract.py`), and a DAG test showing that new lidar coverage re-derives the canopy and then reaches a cached fixed point (`test_factory_impact.py`).
+- Guarantee still missing: nothing checks CHM tree share against the imagery date, so a stale flight (Golden Horseshoe 2013) can still show removed trees. The lab's render-time `fitTerrainCamera` throw is avoided at capture time, not fixed in the lab.

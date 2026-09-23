@@ -1074,3 +1074,9 @@
   `updated_at` without telling the client, and the B9 boolean forgave only
   one, so every Hampden-Sydney phone escalated to the permanent block during
   post-round stat entry.
+
+## 2026-09-23 — course factory: lidar-led canopy, one copy per hole, blank-capture fix
+
+- SHA: `df2b41a86`, `ed2072304` and `a39bc1762` on `agent/course-factory-phase0`. Not merged or deployed; factory tooling only.
+- Change: `derive-canopy-naip.py` writes hole-free regions, splitting each forest through its clearings. The new `layout.lidar.acquire` task (`fetch-lidar-chm.py`, a 3DEP EPT point cloud through PDAL) supplies a canopy height model. Trees are cells 3–60 m tall where lidar has returns, and NAIP classifies the rest. Each canopy cell is written once, by its nearest hole (a Voronoi partition). `ship` adds `CANOPY_IN_PLAY_CORRIDOR` (>40% woods within 20 m of a route) and `TERRAIN_FEATURE_TABLE_OVERFLOW` (>256 mesh features). Lab captures take the 390×844 viewport instead of a full-page shot.
+- Why: the owner saw trees in the middle of fairways. Golden Horseshoe's route corridors were 76% canopy. The causes were dropped clearings, NAIP classifying open ground as canopy (27% of its canopy sits where lidar measures under 1 m), and each forest written about three times. Measured offline, corridor canopy is 0.13 after the change. Chromium 151's full-page capture also crashed the lab, so blank PNGs were recorded as captured.
