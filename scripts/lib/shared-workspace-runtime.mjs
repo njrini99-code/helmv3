@@ -5,7 +5,7 @@ import { dirname, join, resolve } from 'node:path';
 const RESOURCES = [
   '.env', '.env.local', '.env.development', '.env.development.local',
   '.env.test', '.env.test.local', '.env.production', '.env.production.local',
-  '.vercel/project.json', '.claude/settings.local.json',
+  '.vercel/project.json', '.claude/settings.local.json', '.codex/config.toml',
   'supabase/.temp/project-ref', 'supabase/.temp/pooler-url',
 ];
 

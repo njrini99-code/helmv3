@@ -212,9 +212,14 @@ describe('the three corrected claims stay corrected', () => {
     expect(db).toMatch(/not a parser/);
   });
 
-  it('CLAUDE.md distinguishes detection from prevention', () => {
-    expect(asserted('CLAUDE.md')).not.toMatch(/A governed edit is blocked until/);
-    expect(read('CLAUDE.md')).toMatch(/DETECTED, not prevented/);
+  it('AGENTS.md claims no Stop gate and no context gate', () => {
+    // The Stop gate and the edit-time context gate were retired with their
+    // hooks. The policy must say so rather than describe enforcement that
+    // no longer exists.
+    const a = asserted('AGENTS.md');
+    expect(a).not.toMatch(/Stop gate (reports|rejects|checks)/);
+    expect(a).not.toMatch(/A governed edit is blocked until/);
+    expect(read('AGENTS.md')).toMatch(/No hook blocks you from finishing a/);
   });
 
   it('shipping.md does not claim an rm guard that does not exist', () => {
@@ -224,36 +229,21 @@ describe('the three corrected claims stay corrected', () => {
     expect(read('.claude/rules/shipping.md')).toMatch(/Recursive `rm` is UNENFORCED/);
   });
 
-  it('autonomy.md does not justify autonomy with hooks that do not exist', () => {
-    // The most consequential of the four. A now-deleted paragraph told the
-    // reader it was safe to proceed without asking, and named three shapes —
-    // force push, destructive SQL, unscoped recursive rm — as
-    // deterministically blocked, when none of the three was covered by any
-    // hook or deny rule.
-    //
-    // 2026-09-07: force push and destructive SQL got REAL, narrow guards
-    // (guard-git.mjs, guard-sql.mjs) — so the blanket "no hook covers force
-    // push, destructive SQL, or recursive rm" this suite used to pin is now
-    // itself the kind of overclaim this file exists to prevent, just
-    // pointed the other way. What must still hold: autonomy.md names each
-    // guard's actual scope (a subset of commands/statements, not a shell or
-    // SQL parser) rather than claiming blanket coverage, and it still names
-    // the two things nothing catches — Bash-driven writes into the
-    // canonical checkout, and a recursive `rm`.
-    const a = asserted('.claude/rules/autonomy.md');
-    expect(a).not.toMatch(/they block the shapes\s+that actually matter/);
-    const raw = read('.claude/rules/autonomy.md');
-    expect(raw).toMatch(/guard-git\.mjs/);
-    expect(raw).toMatch(/guard-sql\.mjs/);
-    expect(raw).toMatch(/not parsers or complete security boundaries/);
+  it('AGENTS.md describes the guards as narrow text matchers, not boundaries', () => {
+    // guard-git.mjs and guard-sql.mjs cover specific command shapes; the
+    // policy must name that scope rather than claim blanket coverage.
+    const raw = read('AGENTS.md');
+    expect(raw).toMatch(/guard-git/);
+    expect(raw).toMatch(/guard-sql/);
+    expect(raw).toMatch(/text matchers, not security boundaries/);
+    expect(asserted('AGENTS.md')).not.toMatch(/they block the shapes\s+that actually matter/);
   });
 
-  it('all four point readers at the generated inventory', () => {
+  it('the policy and rules point readers at the generated inventory', () => {
     for (const p of [
       '.claude/rules/database.md',
-      'CLAUDE.md',
+      'AGENTS.md',
       '.claude/rules/shipping.md',
-      '.claude/rules/autonomy.md',
     ]) {
       expect(read(p), `${p} should cite the inventory`).toContain('CONTROL_PLANE_ENFORCEMENT.md');
     }

@@ -128,7 +128,7 @@ jobs:
           SELFHEAL_DRY_RUN: ${{ inputs.dry_run || 'false' }}
         run: |
           set -uo pipefail
-          npm install -g @anthropic-ai/claude-code >/dev/null 2>&1
+          npm install -g @anthropic-ai/claude-code@2.1.280 >/dev/null 2>&1
           claude --version
 
           dry=""

@@ -638,7 +638,7 @@ describe('SENTINEL: injections can never reach the live checkout', () => {
       rmSync(join(fx, '.claude/hooks'), { recursive: true, force: true });
       expect(checkIn(fx, 'hook-scripts-exist')?.state).toBe('FAIL');
       // ...and the real repo is untouched by that deletion.
-      expect(existsSync(resolve(REPO, '.claude/hooks/guard-canonical-write.mjs'))).toBe(true);
+      expect(existsSync(resolve(REPO, '.claude/hooks/guard-git.mjs'))).toBe(true);
     } finally {
       rmSync(fx, { recursive: true, force: true });
     }

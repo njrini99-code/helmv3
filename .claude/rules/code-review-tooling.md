@@ -1,3 +1,11 @@
+---
+paths:
+  - ".github/**"
+  - ".coderabbit/**"
+  - ".coderabbit.yaml"
+  - ".circleci/**"
+  - ".gitleaks.toml"
+---
 <!-- markdownlint-disable MD022 MD012 -->
 ## Code Review Tooling
 No AI reviewer bots run on PRs — Review Gate + CodeQL cover the same hard

@@ -22,10 +22,9 @@ rewrite the checkout. **Pushing or merging to `main` does not deploy.** Vercel
 Git deployments are disabled for every branch by `vercel.json`; production is
 promoted intentionally from an approved deployment. The ignored-build script
 is defense in depth and skips any build carrying `VERCEL_GIT_COMMIT_REF`.
-Never deploy from the CLI unless the owner explicitly authorizes it; the
-repository's production-deploy guard may refuse the command. After an
-intentional promotion, verify that the deployment is READY and that the
-served commit SHA is the approved release.
+The release path and its approval are in AGENTS.md "Production"
+(`scripts/deploy-prod.sh`; bare `vercel deploy --prod` is denied). After a
+release, `npm run release:status` must show the approved SHA.
 
 `.vercelignore` replaces the default ignore set; every secret-bearing ignored
 path must therefore be listed explicitly and checked by the repository doctor.

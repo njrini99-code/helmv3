@@ -178,6 +178,7 @@ export function collectDenies(settings) {
     mcp: deny.filter((r) => r.startsWith('mcp__')),
     bash: deny.filter((r) => r.startsWith('Bash(')),
     other: deny.filter((r) => !r.startsWith('mcp__') && !r.startsWith('Bash(')),
+    ask: settings.permissions?.ask ?? [],
   };
 }
 
@@ -222,6 +223,12 @@ function resolveClaims(hooks, denies, connectorIds = loadConnectorIds()) {
   const matcherCovers = (re) => blockingHooks.filter((h) => re.test(h.matcher));
 
   const denyMatch = (pred) => denies.all.filter(pred);
+  const askMatch = (pred) => (denies.ask ?? []).filter(pred);
+  const asked = (hits, spellings) => ({
+    mechanism: `${hits.length} ask rules`,
+    where: '.claude/settings.json → permissions.ask',
+    observed: `REQUIRES APPROVAL — the user is asked before it runs (${spellings})`,
+  });
 
   return [
     {
@@ -234,7 +241,7 @@ function resolveClaims(hooks, denies, connectorIds = loadConnectorIds()) {
               where: '.claude/settings.json → hooks.PreToolUse',
               observed: 'WIRED — matcher covers the tool names; exercised in src/test/hooks/',
             }
-          : { mechanism: 'NONE', where: '—', observed: 'UNENFORCED' };
+          : { mechanism: 'NONE', where: '—', observed: 'NOT A GOAL — AGENTS.md allows authorized edits in canonical; parallel sessions use worktrees' };
       },
     },
     {
@@ -336,9 +343,9 @@ function resolveClaims(hooks, denies, connectorIds = loadConnectorIds()) {
         return pre.length
           ? { mechanism: pre.map((h) => basename(h.script ?? '?')).join(', '), where: '.claude/settings.json → hooks.PreToolUse', observed: 'WIRED' }
           : {
-              mechanism: 'NONE (detection only)',
-              where: '.claude/settings.json → hooks.Stop',
-              observed: 'POST-HOC — the Stop gate reports it after the edit; nothing prevents it',
+              mechanism: 'NONE',
+              where: '—',
+              observed: 'NOT ENFORCED BY DESIGN — AGENTS.md "Context" asks for it; no hook detects or prevents it',
             };
       },
     },
@@ -471,6 +478,14 @@ function resolveClaims(hooks, denies, connectorIds = loadConnectorIds()) {
       claim: 'A production deploy typed as a vercel command (`deploy --prod`, `promote`, `rollback`) is refused',
       resolve: () => {
         const hits = denyMatch((r) => /vercel.*(--prod|promote|rollback)/.test(r));
+        const asks = askMatch((r) => /vercel.*(promote|rollback)/.test(r));
+        if (hits.length && asks.length) {
+          return {
+            mechanism: `${hits.length} deny rules (--prod), ${asks.length} ask rules (promote, rollback)`,
+            where: '.claude/settings.json → permissions.deny / permissions.ask',
+            observed: 'CONFIGURED — a bare `--prod` deploy is refused; promote and rollback ask for approval',
+          };
+        }
         return hits.length
           ? {
               mechanism: `${hits.length} deny rules`,
@@ -488,6 +503,8 @@ function resolveClaims(hooks, denies, connectorIds = loadConnectorIds()) {
       claim: 'Re-pointing the production alias (`vercel alias set`) is refused',
       resolve: () => {
         const hits = denyMatch((r) => /vercel alias set/.test(r));
+        const asks = askMatch((r) => /vercel alias set/.test(r));
+        if (!hits.length && asks.length) return asked(asks, 'bare, ./node_modules/.bin and npx spellings');
         return hits.length
           ? {
               mechanism: `${hits.length} deny rules`,
@@ -514,6 +531,13 @@ function resolveClaims(hooks, denies, connectorIds = loadConnectorIds()) {
             mechanism: covered.join(', '),
             where: '.claude/settings.json → permissions.deny',
             observed: 'CONFIGURED — the wrapper itself is denied',
+          };
+        }
+        const askedFor = askMatch((r) => r.includes('deploy-prod'));
+        if (askedFor.length) {
+          return {
+            ...asked(askedFor, 'the release path in AGENTS.md "Production"'),
+            mechanism: askedFor.join(', '),
           };
         }
         // Only report the gap if the wrapper actually still runs a production

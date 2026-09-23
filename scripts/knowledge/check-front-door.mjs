@@ -3,33 +3,40 @@
  * check-front-door.mjs — fail if the always-loaded context exceeds its
  * token budget.
  *
- * CLAUDE.md, AGENTS.md, and the rules files marked "loads every session"
- * (`.claude/rules/autonomy.md`, `shipping.md`, `code-review-tooling.md` per
- * CLAUDE.md's own header) are read on every single turn regardless of task.
- * That is the front door: growing it to answer one task's question taxes
- * every other task forever. Phase 5 declares a budget in AGENTS.md — CLAUDE
- * + AGENTS + always-on rules <= 10k tokens — and this is the check that
- * makes it a gate instead of a sentence.
+ * The front door is what every session pays for before its first file read:
+ * CLAUDE.md, AGENTS.md (imported by CLAUDE.md), and every `.claude/rules/*.md`
+ * without `paths:` frontmatter (a rule with `paths:` loads only when a
+ * matching file is read). Growing it to answer one task's question taxes
+ * every other task forever; the budget below makes that a gate.
  *
- * Token estimate: bytes / 4 (the same rough heuristic named in the plan;
- * not a real tokenizer, but stable and dependency-free).
+ * Token estimate: bytes / 4 (rough, stable, dependency-free).
  *
  * Usage:
  *   node scripts/knowledge/check-front-door.mjs
  *
  * Pure stdlib.
  */
-import { statSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { join } from 'node:path';
 
 const BUDGET_TOKENS = 10_000;
 const BYTES_PER_TOKEN = 4;
+const RULES_DIR = '.claude/rules';
+
+/** Frontmatter must open on the first line for Claude Code to honor `paths:`. */
+function isPathScoped(text) {
+  if (!text.startsWith('---\n')) return false;
+  const end = text.indexOf('\n---', 4);
+  return end !== -1 && /^paths:/m.test(text.slice(4, end));
+}
 
 const FILES = [
   'CLAUDE.md',
   'AGENTS.md',
-  '.claude/rules/autonomy.md',
-  '.claude/rules/shipping.md',
-  '.claude/rules/code-review-tooling.md',
+  ...readdirSync(RULES_DIR)
+    .filter((f) => f.endsWith('.md'))
+    .map((f) => join(RULES_DIR, f))
+    .filter((f) => !isPathScoped(readFileSync(f, 'utf8'))),
 ];
 
 let totalBytes = 0;

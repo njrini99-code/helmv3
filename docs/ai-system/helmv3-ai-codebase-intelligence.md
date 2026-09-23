@@ -1,20 +1,14 @@
 # Helmv3 AI-Native Codebase Intelligence System
 
-> **Superseded routing, kept for mechanics.** The Source Of Truth table below
-> named a stale path for feature inventory; fixed below to route through
-> `memory/registry.yml` → `memory/features/*.md`. The governing document for
-> the feature-awareness + engineering-OS system is now
-> `docs/ai-system/GOLFHELM_SELF_HEALING_ENGINEERING_SYSTEM.md`, with the
-> compact runtime contract at `memory/system/golfhelm-engineering-os.md`. The
-> mechanics this file documents (map-changed-files to registry to
-> context-pack to review, the PR workflow) remain accurate.
+> Policy: `AGENTS.md`. This file documents the knowledge-routing mechanics
+> only (map-changed-files → registry → context pack → review). The golf
+> reliability model is `memory/system/golfhelm-engineering-os.md`.
 
-AGENTS.md is the single operating policy. The registry routes feature context;
-hooks supply diagnostics and narrowly scoped destructive-command guards.
-Canonical and configuration edits are allowed within task authorization.
-Stop reminders are advisory. Existing worktree count is advisory unless an
-explicit HELM_MAX_MUTATION_WORKTREES cap is configured; disk reserve remains
-enforced. Local push checks do not regenerate files or repeat CI.
+The registry routes feature context; hooks supply session context and a few
+narrowly scoped destructive-command guards. No hook blocks the end of a turn.
+Existing worktree count is advisory unless an explicit
+HELM_MAX_MUTATION_WORKTREES cap is configured; disk reserve remains enforced.
+Local push checks do not regenerate files or repeat CI.
 
 Readers inherit available tools and stay read-only by task contract. Project
 MCP configuration carries Playwright and project-scoped Supabase read/write

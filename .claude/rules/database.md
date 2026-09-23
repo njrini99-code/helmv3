@@ -1,4 +1,3 @@
-<!-- markdownlint-disable MD022 MD012 -->
 ---
 paths:
   - "supabase/migrations/**"
@@ -6,7 +5,7 @@ paths:
   - "src/lib/supabase/**"
   - "scripts/db/**"
 ---
-
+<!-- markdownlint-disable MD022 MD012 -->
 # Database rules
 Loads automatically when you touch SQL, migrations, or Supabase client code.
 Review checklist for a migration/policy PR: `.claude/rules/database-review.md`.
@@ -74,6 +73,8 @@ before depending on a column or policy existing. `npm run db:drift:check`
 is the broader comparison.
 
 ## After a schema change
-`npm run db:types` regenerates `src/lib/types/database.ts`; CI fails if it
-drifts (`db:types:check`), and running it refreshes the columns doc on the
-next `node scripts/regen-docs.mjs`.
+`npm run db:types` regenerates `src/lib/types/database.ts`. CI's
+`check:types-drift` compares it with production (it warns instead of failing
+when `SUPABASE_ACCESS_TOKEN` is absent). Run `node scripts/regen-docs.mjs`
+afterwards to refresh the columns doc. For client/query work, load the
+`helm-supabase` skill.

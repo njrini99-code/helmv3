@@ -1,24 +1,13 @@
 #!/usr/bin/env bash
 #
-# RETIRED 2026-09-17. Production deploys from the Vercel Git integration:
-# a squash-merge to `main` builds and promotes on Vercel, with
-# VERCEL_GIT_COMMIT_SHA set by Vercel itself (so the Sentry release stamp
-# this script existed for is automatic). Running this alongside the Git
-# integration produced duplicate and failed production deploys (2026-09-15:
-# three CLI deploys for one merge, two of them ERROR) and stale release
-# tags. See AGENTS.md "Tools and environments" and .claude/rules/shipping.md.
+# The production release path (AGENTS.md "Production"). vercel.json disables
+# Vercel Git deployments, so merging to main does not deploy; this script is
+# how an approved main commit reaches production. Claude asks before running
+# it (.claude/settings.json "ask"). It refuses a dirty tree, a non-main branch,
+# an unlinked directory, and a spent weekly budget (config/release-policy.yml),
+# stamps the Sentry release, deploys, and verifies the served commit.
 #
-# The body is kept for the verification tests in
-# scripts/__tests__/deploy-prod-verify.test.ts, which set
-# HELM_RETIRED_CLI_DEPLOY_OVERRIDE=1. Nothing else should.
-if [ "${HELM_RETIRED_CLI_DEPLOY_OVERRIDE:-}" != "1" ]; then
-  echo "REFUSING: scripts/deploy-prod.sh is retired (2026-09-17)." >&2
-  echo "Production deploys from the Vercel Git integration when a PR is merged to main." >&2
-  echo "Check the deployment in Vercel (or \`npm run release:status\`); do not deploy from the CLI." >&2
-  exit 1
-fi
-#
-# (Historical) Promote main to production, WITH the commit stamped into the Sentry release.
+# Promote main to production, WITH the commit stamped into the Sentry release.
 #
 # WHY THIS EXISTS
 # ---------------
