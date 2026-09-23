@@ -45,6 +45,7 @@ import type { NavItem } from '@/components/fairway/app-shell/types';
 import { SessionActivityProvider } from '@/components/providers/SessionActivityProvider';
 import { createClient } from '@/lib/supabase/client';
 import { clearActiveTeam } from '@/app/golf/actions/team-switcher';
+import { clearAllCachedResources } from '@/lib/golf/client-resource-cache';
 import { toast } from '@/components/ui/sonner';
 import { cn } from '@/lib/utils';
 import {
@@ -242,6 +243,10 @@ function useBridgeSignOut() {
 
     try {
       await clearActiveTeam().catch(() => undefined);
+      // Helm Bridge shares the GolfHelm session, so this device is exactly
+      // the shared-device case client-resource-cache.ts's contract exists
+      // for — the next admin to sign in must not inherit a stale warm cache.
+      clearAllCachedResources();
       const { error } = await createClient().auth.signOut();
       if (error) throw error;
 

@@ -34,6 +34,19 @@ import {
 import { haptic } from '@/lib/lifting/haptics';
 import { submitBodyweightEntry } from '@/app/lifting/actions/weight-checkins';
 import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
+import { cn } from '@/lib/utils';
+
+// The WebView never resizes for the soft keyboard (`resize: 'ionic'`, no
+// <ion-app> — CapacitorProvider), and Safari doesn't resize its layout
+// viewport either, so a sheet pinned to `bottom-0` sits under the keys the
+// moment the (auto-focused) Bodyweight input is tapped. Same fix as
+// Sheet.tsx's bottom side: lift by `--keyboard-height` (CapacitorProvider
+// publishes it, 0px on desktop and with the keyboard down) instead of
+// pinning to the literal viewport edge, and mark the panel
+// `data-fw-keyboard-aware` so the provider's global keyboardWillShow
+// scrollIntoView leaves this surface to its own clearance.
+const KEYBOARD_LIFT =
+  'bottom-[var(--keyboard-height,0px)] transition-[bottom] duration-[250ms] motion-reduce:transition-none';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -162,7 +175,11 @@ export function WeightEntryModal({
             role="dialog"
             aria-modal="true"
             aria-label="Enter weight"
-            className="fixed inset-x-0 bottom-0 z-50 sm:inset-0 sm:flex sm:items-center sm:justify-center sm:p-4"
+            data-fw-keyboard-aware
+            className={cn(
+              'fixed inset-x-0 z-50 sm:inset-0 sm:flex sm:items-center sm:justify-center sm:p-4',
+              KEYBOARD_LIFT,
+            )}
             initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 40 }}
