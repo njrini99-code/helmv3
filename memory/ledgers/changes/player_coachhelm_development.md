@@ -30,7 +30,8 @@
 
 ## 2026-09-23 — A7 distance-profile scope/loader: rolling 12 months, confirmed-safe pagination
 
-- SHA: ee1b4db95, f938d1220.
+- SHA: 7f1834abe, 81860195b. Corrected 2026-09-23 (#2008 review) — the
+  SHAs originally recorded here were not on this branch.
 - Change: `loadDistanceProfile` and `buildRollingDistanceProfileScope`
   give the new A7 distance-profile surface (see coachhelm_ai's ledger
   for the full slice) a real, labeled `[today-12mo, today]`

@@ -6,6 +6,8 @@ import {
   scope,
   SCENARIO_A_125_175,
   SCENARIO_B_UNDER_ATTEMPTS_50_125,
+  SCENARIO_C_UNDER_ROUNDS_175_PLUS,
+  SCENARIO_C_HOLES,
 } from '@/test/coachhelm/v3/fixtures/distance-profile-fixtures';
 import { buildDistanceProfileViewModel } from '../buildDistanceProfileViewModel';
 import { DistanceProfileSection } from '../DistanceProfileSection';
@@ -40,25 +42,37 @@ describe('DistanceProfileSection', () => {
     // NumberFlow renders the value/suffix as separate text nodes ("60", "%"),
     // so a plain-text query for '60%' is too brittle — check the button's
     // whole rendered text instead.
-    const supportedButton = screen.getByRole('button', { name: /Greens hit, 125–175 ft/i });
+    const supportedButton = screen.getByRole('button', { name: /Greens hit, 125-175 yd/i });
     expect(supportedButton.textContent).toContain('60');
     expect(supportedButton.textContent).toContain('%');
 
     // Insufficient: 50_125ft's own green-hit-rate row is under-floor but
     // still carries a real (non-null) value — InsufficientData renders
     // regardless, proving the surface switches on `kind`, not on nullness.
-    // The real count (8, scenario B's fixture size) must actually be
-    // STATED somewhere in the tile — InsufficientData's `current`/`required`
-    // pair only renders a number together, so passing `current` alone would
-    // silently show no count at all; this asserts the real fix (an explicit
-    // `description`), not just the presence of the generic title.
-    const insufficientButton = screen.getByRole('button', { name: /Greens hit, 50–125 ft/i });
+    // The SPECIFIC floor it's short of (8 of the MIN_ATTEMPTS=10 attempts —
+    // scenario B's 4 rounds already clear MIN_ROUNDS=3) must actually be
+    // STATED, not a generic count with no floor named — `describeSupportGap`
+    // is the metric core's own fix for this, not something the surface
+    // reconstructs on its own.
+    const insufficientButton = screen.getByRole('button', { name: /Greens hit, 50-125 yd/i });
     expect(within(insufficientButton).getByText('Not enough data yet')).toBeInTheDocument();
-    expect(within(insufficientButton).getByText(/8 attempts so far/i)).toBeInTheDocument();
+    expect(within(insufficientButton).getByText(/8 of 10 attempts/i)).toBeInTheDocument();
 
     // Invalid: 175_plus_ft never received a fixture shot — denominator 0.
-    const invalidButton = screen.getByRole('button', { name: /Greens hit, 175\+ ft/i });
+    const invalidButton = screen.getByRole('button', { name: /Greens hit, 175\+ yd/i });
     expect(within(invalidButton).getByText('No data yet')).toBeInTheDocument();
+  });
+
+  it('names the ROUNDS floor specifically when that (not attempts) is what an insufficient row is short of', () => {
+    // Scenario C clears MIN_ATTEMPTS (12 >= 10) but only has 2 distinct
+    // rounds against MIN_ROUNDS=3 — describeSupportGap must report "2 of 3
+    // rounds", not the attempts count, since rounds is the actual shortfall.
+    const results = computeDistanceProfile(SCENARIO_C_UNDER_ROUNDS_175_PLUS, scope('p1'), SCENARIO_C_HOLES);
+    const sections = buildDistanceProfileViewModel(results);
+    render(<DistanceProfileSection sections={sections} windowLabel="Last 12 months (test)" />);
+
+    const button = screen.getByRole('button', { name: /Greens hit, 175\+ yd/i });
+    expect(within(button).getByText(/2 of 3 rounds/i)).toBeInTheDocument();
   });
 
   it('bakes the value and kind into the accessible name, not just the metric/band identity', () => {
@@ -76,15 +90,15 @@ describe('DistanceProfileSection', () => {
     render(<DistanceProfileSection sections={sections} windowLabel="Last 12 months (test)" />);
 
     expect(
-      screen.getByRole('button', { name: /Greens hit, 125–175 ft: 60% of 10 attempts\./i }),
+      screen.getByRole('button', { name: /Greens hit, 125-175 yd: 60% of 10 attempts\./i }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('button', {
-        name: /Greens hit, 50–125 ft: not enough data yet, 8 attempts recorded\./i,
+        name: /Greens hit, 50-125 yd: not enough data yet, 8 of 10 attempts\./i,
       }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: /Greens hit, 175\+ ft: no data recorded yet\./i }),
+      screen.getByRole('button', { name: /Greens hit, 175\+ yd: no data recorded yet\./i }),
     ).toBeInTheDocument();
   });
 
@@ -97,7 +111,7 @@ describe('DistanceProfileSection', () => {
     const sections = buildDistanceProfileViewModel(results);
     render(<DistanceProfileSection sections={sections} windowLabel="Last 12 months (test)" />);
 
-    const contributionButton = screen.getByRole('button', { name: /Measured attempts, 50–125 ft/i });
+    const contributionButton = screen.getByRole('button', { name: /Measured attempts, 50-125 yd/i });
     expect(within(contributionButton).queryByText('Not enough data yet')).not.toBeInTheDocument();
     expect(contributionButton.textContent).toContain('8');
     expect(contributionButton.textContent).toContain('Below support floor');
@@ -111,7 +125,7 @@ describe('DistanceProfileSection', () => {
 
     expect(sheetContent()).not.toBeInTheDocument();
 
-    const tile = screen.getByRole('button', { name: /Greens hit, 125–175 ft/i });
+    const tile = screen.getByRole('button', { name: /Greens hit, 125-175 yd/i });
     tile.focus();
     expect(tile).toHaveFocus();
     await user.keyboard('{Enter}');

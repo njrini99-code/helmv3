@@ -60,7 +60,7 @@ import { describeError } from '@/lib/utils/describe-error';
  * `supabase` client (never an admin client) so RLS still applies exactly
  * as it does for every other query on this page.
  */
-async function loadDistanceProfileAddendum(
+export async function loadDistanceProfileAddendum(
   playerId: string,
   supabase: SupabaseClient<Database>,
 ): Promise<ReactNode | null> {
@@ -78,6 +78,21 @@ async function loadDistanceProfileAddendum(
     );
     return null;
   }
+}
+
+/**
+ * Flag gate, pulled out of the `Promise.all` array so it's directly
+ * testable: `enabled: false` must never call `loadDistanceProfileAddendum`
+ * at all (not just skip rendering its result), and `loadDistanceProfileAddendum`
+ * always resolves (never rejects) since its own try/catch already degrades a
+ * throw to `null` — this wrapper adds no new failure mode of its own.
+ */
+export function loadDistanceProfileAddendumIfEnabled(
+  enabled: boolean,
+  playerId: string,
+  supabase: SupabaseClient<Database>,
+): Promise<ReactNode | null> {
+  return enabled ? loadDistanceProfileAddendum(playerId, supabase) : Promise.resolve(null);
 }
 
 export const metadata: Metadata = {
@@ -349,7 +364,7 @@ export default async function PlayerGamePage({
     // genuinely on; `loadDistanceProfileAddendum` is already best-effort
     // internally (its own try/catch + logServerError), so a failure here
     // degrades to `null` (no addendum), never to a thrown page error.
-    distanceProfileEnabled ? loadDistanceProfileAddendum(playerId, supabase) : Promise.resolve(null),
+    loadDistanceProfileAddendumIfEnabled(distanceProfileEnabled, playerId, supabase),
   ]);
 
   if (!fingerprint) notFound();
