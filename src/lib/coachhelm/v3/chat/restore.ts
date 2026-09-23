@@ -23,6 +23,12 @@ const REPLAYABLE = new Set([
   'data-evidence',
   'data-action-proposal',
   'data-action-receipt',
+  // The live grounding flag (route.ts's `execute`, N15) is written into the
+  // persisted assistant turn's `ui_parts` the same way a receipt is. Without
+  // it here, the flag showed only during the original streaming session —
+  // reloading the thread silently dropped it and an ungrounded answer read
+  // as a normal one again.
+  'data-grounding-flag',
 ]);
 
 /**

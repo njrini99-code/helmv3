@@ -184,6 +184,187 @@ describe('auditNumericClaims', () => {
     });
     expect(auditNumericClaims('Tour reference is 88%.', [withBenchmark])).toEqual([]);
   });
+
+  /**
+   * Production 2026-09-22 (issue #1540 / repair plan N15): 33 of the last 30
+   * days' chat replies were marked 'failed', most of them real, correctly
+   * sourced answers. Two dominant false-positive classes accounted for most
+   * of them — both reproduced from actual failed rows' persisted `ui_parts`.
+   */
+  it('accepts a distance-band bucket label whose bounds are both > 12', () => {
+    // get_putting_distance_profile's own bucket names ('15-25 ft', '10-15
+    // ft') were read as two bare numbers by the audit — "15" and "25" (or
+    // "-25", once the hyphen was misread as a sign) — even though they are
+    // the tool's own vocabulary for which band the pct/attempts belong to,
+    // not a claim in their own right.
+    const series: MeasurementSeries = {
+      metric_id: 'putt_make_pct_by_distance',
+      metric_label: 'Make rate by distance',
+      unit: 'percent',
+      entity: { kind: 'player', id: 'p1', label: 'Elliott' },
+      points: [{ at: '15-25 ft', value: 4, bucket: '15-25 ft', sample_size: 23 }],
+      window_start: '2026-08-21',
+      window_end: '2026-08-25',
+      as_of: '2026-08-26T02:20:07Z',
+      coverage: 'complete',
+      coverage_note: null,
+      source: 'stats cache',
+      method: 'putt_make_pct',
+      benchmark: null,
+      direction: 'higher_better',
+    };
+    expect(
+      auditNumericClaims('Making 4% from 15-25 ft (23 attempts).', [], [series]),
+    ).toEqual([]);
+  });
+
+  it('accepts a figure a tool wrote into its own prose, not a numeric field', () => {
+    // Reproduced from a real failed row: get_player_insights returns
+    // measurements: [] and puts every number inside `detail.insights[].content`
+    // ("you're making 50% of putts from 3-5 ft (20 attempts) (PGA Tour ~91%)").
+    // collectNumbers only walked numeric leaves, so none of it — including the
+    // insight's OWN Tour comparison — ever reached `extraSupported`, and a
+    // chat turn that faithfully restated the insight was discarded as
+    // fabrication.
+    const detail = {
+      insights: [
+        {
+          title: '3-5 ft putting: 50%',
+          content:
+            "Across your last 5 rounds you're making 50% of putts from 3-5 ft " +
+            '(20 attempts) (PGA Tour ~91%).',
+          insight_id: 'f7c5a144-bf4a-49de-aa72-40971effe4d6',
+          created_at: '2026-08-30T12:49:51.053068+00:00',
+        },
+      ],
+    };
+    const claims = auditNumericClaims(
+      "Making 50% from 3-5 ft (20 attempts) — well off the PGA Tour's ~91%.",
+      [],
+      [],
+      collectNumbers(detail),
+    );
+    expect(claims).toEqual([]);
+  });
+
+  it('does not mine an id or a timestamp for digits', () => {
+    // A round/insight id or a `created_at` happening to contain "23" or "51"
+    // must not silently support an unrelated fabricated claim of 23 or 51.
+    const detail = {
+      insight_id: 'f7c5a144-bf4a-49de-aa72-40971effe4d6',
+      created_at: '2026-08-30T12:49:51.053068+00:00',
+    };
+    const claims = auditNumericClaims('His make rate is 23%.', [], [], collectNumbers(detail));
+    expect(claims.map((c) => c.value)).toEqual([23]);
+  });
+
+  it('still catches a fabrication sitting next to a real distance-band claim', () => {
+    const series: MeasurementSeries = {
+      metric_id: 'putt_make_pct_by_distance',
+      metric_label: 'Make rate by distance',
+      unit: 'percent',
+      entity: { kind: 'player', id: 'p1', label: 'Elliott' },
+      points: [{ at: '3-5 ft', value: 50, bucket: '3-5 ft', sample_size: 20 }],
+      window_start: '2026-08-21',
+      window_end: '2026-08-25',
+      as_of: '2026-08-26T02:20:07Z',
+      coverage: 'complete',
+      coverage_note: null,
+      source: 'stats cache',
+      method: 'putt_make_pct',
+      benchmark: null,
+      direction: 'higher_better',
+    };
+    const claims = auditNumericClaims(
+      'Making 50% from 3-5 ft (20 attempts), and his overall make rate is 71%.',
+      [],
+      [series],
+    );
+    expect(claims.map((c) => c.value)).toEqual([71]);
+  });
+
+  /**
+   * Review of PR #1975 (2026-09-22): `route.ts`'s `priorTurnEvidence` can feed
+   * this function many prior turns' worth of measurements of one metric in a
+   * single call. Two separate risks follow, and each gets its own test below:
+   * a caller handing in evidence that does not actually match the type it
+   * claims to (a stored `ui_parts` blob, not something just built and
+   * validated) must not crash the audit, and enough accumulated volume of one
+   * metric must not become a way to sneak a real fabrication past the check.
+   */
+  it('does not throw when a series carries a malformed points field', () => {
+    // `series` is typed as `MeasurementSeries[]`, but `priorTurnEvidence`
+    // hands this function evidence read back out of the database — a legacy
+    // row predating a schema field, or simply bad data, can arrive with
+    // `points` missing or not an array. Before the guard, `for (const p of
+    // s.points)` threw a TypeError here, which crashed the whole turn's
+    // audit rather than the audit just skipping the one malformed series.
+    const malformed = {
+      metric_id: 'putts_per_round',
+      metric_label: 'Putts per round',
+      unit: 'count',
+      entity: { kind: 'player', id: 'p1', label: 'Elliott' },
+      points: undefined,
+      window_start: null,
+      window_end: null,
+      as_of: '2026-01-01T00:00:00Z',
+      coverage: 'complete',
+      coverage_note: null,
+      source: 'rounds',
+      method: 'round_level',
+      benchmark: null,
+      direction: null,
+    } as unknown as MeasurementSeries;
+    expect(() => auditNumericClaims('He made 71%.', [], [malformed])).not.toThrow();
+    // The fabrication is still caught — the malformed series is skipped, not
+    // treated as a free pass for anything unsourced.
+    expect(auditNumericClaims('He made 71%.', [], [malformed]).map((c) => c.value)).toEqual([71]);
+  });
+
+  it('still catches a fabrication after many prior-turn measurements of one metric have accumulated', () => {
+    // `priorTurnEvidence` can carry several prior turns' measurements of the
+    // same metric into one audit call, comfortably past
+    // PAIRWISE_ANCHOR_CAP (32). Their sheer volume must not become a way to
+    // launder an unrelated, clearly invented number through the pairwise-
+    // differencing allowance — the group is capped and evicts its oldest
+    // members rather than disabling differencing (or, worse, the check
+    // itself) once it grows past the cap.
+    const many: Measurement[] = Array.from({ length: 50 }, (_, i) =>
+      measurement({ metric_id: 'putts_per_round', unit: 'count', value: 1000 + i * 37 }),
+    );
+    const claims = auditNumericClaims('His putts per round jumped to 9999.', many);
+    expect(claims.map((c) => c.value)).toEqual([9999]);
+  });
+
+  it('keeps supporting a same-turn pairwise difference even after the metric group exceeds the anchor cap', () => {
+    // 40 prior-turn values of one metric push that metric's anchor group well
+    // past PAIRWISE_ANCHOR_CAP (32) before the two CURRENT-turn values (a, b)
+    // are even added. Old code disabled pairwise differencing for the WHOLE
+    // group once it exceeded the cap, so a genuine same-turn comparison would
+    // be wrongly flagged just because unrelated prior turns padded the group.
+    // New code evicts the OLDEST members instead, so a and b — added last —
+    // always survive and their difference stays supported.
+    const old: Measurement[] = Array.from({ length: 40 }, (_, i) =>
+      measurement({ metric_id: 'sg_putting_mean', unit: 'strokes', value: 1000 + i * 37 }),
+    );
+    const a = measurement({
+      metric_id: 'sg_putting_mean',
+      unit: 'strokes',
+      value: -3.45,
+      entity: { kind: 'player', id: 'p1', label: 'Nick' },
+    });
+    const b = measurement({
+      metric_id: 'sg_putting_mean',
+      unit: 'strokes',
+      value: -5.86,
+      entity: { kind: 'player', id: 'p2', label: 'Someone' },
+    });
+    const claims = auditNumericClaims(
+      'The gap between them is roughly 2.41 strokes per round.',
+      [...old, a, b],
+    );
+    expect(claims).toEqual([]);
+  });
 });
 
 /**

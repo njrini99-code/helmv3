@@ -38,7 +38,19 @@ export interface ChatLlmCallRow {
   prompt_tokens: number;
   completion_tokens: number;
   cost_usd: number;
-  citations: null;
+  /**
+   * `null` when grounded. Otherwise the same shape compose.ts's own
+   * `verification_failed` row uses (compose.ts's `logCall` call in the
+   * unrecoverable-verification-failure branch) — the two shapes were kept
+   * apart deliberately until chat's claim audit and round-review's citation
+   * set shared one, which they now effectively do: both are "the literal
+   * text the check could not match". A `failed` chat row with no reason
+   * attached is not diagnosable from this table alone; per-occurrence detail
+   * in `error_logs` is a queryable metric, not a durable record — retention
+   * prunes it, and #1540 was found only because a fresh production query
+   * happened to land before that happened.
+   */
+  citations: { reason: 'verification_failed'; unmatched_tokens: string[] } | null;
   verified: boolean;
   /**
    * Always false, and correct — not an oversight carried over from the old
@@ -60,6 +72,8 @@ export function buildChatLlmCallRow(args: {
   costUsd: number;
   /** `unsupported.length === 0` from the route's numeric-claim audit. */
   grounded: boolean;
+  /** The claim texts the audit flagged — e.g. `['71', '-25']`. Ignored when grounded. */
+  unmatchedTokens: string[];
 }): ChatLlmCallRow {
   return {
     task: 'coach_chat',
@@ -73,10 +87,11 @@ export function buildChatLlmCallRow(args: {
     prompt_tokens: args.promptTokens,
     completion_tokens: args.completionTokens,
     cost_usd: args.costUsd,
-    // Left null until chat's claim audit and round-review's citation set share
-    // a shape. Two different structures in one jsonb column would be worse
-    // than an honest absence.
-    citations: null,
+    // Bare number literals only ('71', '-25') — never the surrounding prose,
+    // a player name or a database value. See the ChatLlmCallRow doc comment.
+    citations: args.grounded
+      ? null
+      : { reason: 'verification_failed', unmatched_tokens: args.unmatchedTokens },
     verified: args.grounded,
     fallback_to_template: false,
   };

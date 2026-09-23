@@ -278,6 +278,40 @@ export interface UnsupportedClaim {
  */
 const CLAIM_EXEMPT = /\b(?:\d{4}-\d{2}-\d{2}|\d{1,2}:\d{2}\s*(?:am|pm)?)\b/gi;
 
+/** The single pattern used both to find a claim in prose and to read a number out of tool text. */
+const NUMERIC_TOKEN_RE = /-?\d+(?:\.\d+)?/g;
+
+/** A bare UUID — never a statistic, always an identifier. */
+const UUID_LITERAL = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** A bare ISO date or timestamp — same reasoning as {@link CLAIM_EXEMPT}. */
+const ISO_DATE_LITERAL =
+  /^\d{4}-\d{2}-\d{2}([T ]\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})?)?$/;
+
+/**
+ * Numbers a tool wrote directly into a text field — `title`, `content`,
+ * `summary`, `value_display`. `get_player_insights` composes coaching prose
+ * server-side ("making 4% of putts from 15-25 ft (23 attempts)") rather than
+ * returning those figures as `Measurement`s, and {@link collectNumbers} used
+ * to only walk numeric leaves, so every number in that prose was invisible to
+ * the audit. Verified against production 2026-09-22: a chat turn that
+ * restated an insight's own wording — attempts, make-rates, even the
+ * PGA Tour comparison the insight itself carried — was flagged as fabricated
+ * because the audit had never looked at the string that number came from.
+ *
+ * A whole-string UUID or ISO date/timestamp is skipped rather than mined for
+ * digits — an id or a timestamp is not a statistic, and walking it would
+ * hand the audit meaningless "supported" anchors (a round's id, a
+ * `created_at`) that could mask a genuine fabrication landing on the same
+ * digits by coincidence.
+ */
+function numbersInText(value: string): number[] {
+  if (UUID_LITERAL.test(value) || ISO_DATE_LITERAL.test(value)) return [];
+  const matches = value.match(NUMERIC_TOKEN_RE);
+  if (!matches) return [];
+  return matches.map(Number).filter((n) => Number.isFinite(n));
+}
+
 /** Tolerance for matching a written number against a measured one. */
 const MATCH_EPSILON = 0.051;
 
@@ -360,6 +394,20 @@ export function auditNumericClaims(
     if (metricId) {
       const key = metricGroup(metricId);
       const group = byMetric.get(key) ?? new Set<number>();
+      // Cross-turn evidence carryover (route.ts's `priorTurnEvidence`) can
+      // accumulate many measurements of the same metric across several
+      // turns. A `Set` already dedupes an exact repeat; what it does not do
+      // on its own is stay bounded — and the differencing loop below skips a
+      // metric group entirely once it exceeds PAIRWISE_ANCHOR_CAP, which
+      // would silently turn off a genuine same-turn comparison just because
+      // old evidence padded the group. Evicting the OLDEST member first (Set
+      // iteration order is insertion order) keeps the group at the cap while
+      // preferring the most recently seen values — the ones most likely to
+      // still be relevant to the current question.
+      if (!group.has(n) && group.size >= PAIRWISE_ANCHOR_CAP) {
+        const oldest = group.values().next().value;
+        if (oldest !== undefined) group.delete(oldest);
+      }
       group.add(n);
       byMetric.set(key, group);
     }
@@ -377,13 +425,28 @@ export function auditNumericClaims(
   }
   for (const n of extraSupported) add(n);
   for (const s of series) {
-    for (const p of s.points) {
+    // `series` is typed as `MeasurementSeries[]`, but a caller can hand this
+    // function evidence that was round-tripped through the database first
+    // (route.ts's `priorTurnEvidence`, reading a stored `ui_parts` blob) —
+    // the type is a claim about the good case, not a runtime guarantee.
+    // `points` missing or non-array must be skipped, not iterated, or a
+    // single legacy/forged envelope crashes the whole turn's audit.
+    const points = Array.isArray(s.points) ? s.points : [];
+    for (const p of points) {
       add(p.value, s.metric_id);
       add(p.sample_size);
+      // A distance-band label ("15-25 ft", "10-15 ft") is the tool's own
+      // vocabulary for the bucket, not a claim — but its digits are not
+      // otherwise anchored, so e.g. "15" and "25" from get_putting_distance_profile
+      // read as invented statistics. Registering them the same way a tool's
+      // prose numbers are (numbersInText) closes that gap without a
+      // separate distance/unit exemption regex, which risked also exempting
+      // a real proximity claim like "18 ft away".
+      if (p.bucket) for (const n of numbersInText(p.bucket)) add(n);
     }
     // First-to-last movement is the whole point of a trend, so allow the delta.
-    const first = s.points[0]?.value;
-    const last = s.points[s.points.length - 1]?.value;
+    const first = points[0]?.value;
+    const last = points[points.length - 1]?.value;
     if (typeof first === 'number' && typeof last === 'number') add(last - first);
   }
 
@@ -398,6 +461,9 @@ export function auditNumericClaims(
    * justified by subtracting two putt counts.
    */
   for (const group of byMetric.values()) {
+    // `add()` above never lets a group exceed PAIRWISE_ANCHOR_CAP; the upper
+    // check is kept as a direct guarantee against this loop's own O(n²) cost
+    // rather than trusting that invariant silently.
     if (group.size < 2 || group.size > PAIRWISE_ANCHOR_CAP) continue;
     const values = [...group];
     for (const [i, left] of values.entries()) {
@@ -410,7 +476,7 @@ export function auditNumericClaims(
   const seen = new Set<string>();
   const anchors = [...supported];
 
-  for (const match of scrubbed.matchAll(/-?\d+(?:\.\d+)?/g)) {
+  for (const match of scrubbed.matchAll(NUMERIC_TOKEN_RE)) {
     const raw = match[0];
     const value = Number(raw);
     if (!Number.isFinite(value)) continue;
@@ -444,6 +510,9 @@ export function auditNumericClaims(
 export function collectNumbers(value: unknown, depth = 0): number[] {
   if (depth > 6 || value === null || value === undefined) return [];
   if (typeof value === 'number') return Number.isFinite(value) ? [value] : [];
+  // A tool's own descriptive text (see numbersInText) carries numbers too —
+  // `get_player_insights`' `content`/`title` being the motivating case.
+  if (typeof value === 'string') return numbersInText(value);
   if (Array.isArray(value)) return value.flatMap((v) => collectNumbers(v, depth + 1));
   if (typeof value === 'object') {
     return Object.values(value as Record<string, unknown>).flatMap((v) =>
