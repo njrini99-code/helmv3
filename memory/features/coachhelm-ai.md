@@ -232,6 +232,18 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   A `'failed'` row now also records why: `golf_coachhelm_llm_calls.citations` carries `{reason: 'verification_failed', unmatched_tokens}` (mirrors `compose.ts`'s shape) instead of `null`, and the live stream carries a `data-grounding-flag` part with the same note appended to `content` on persistence — before this fix the flag only ever reached the DB row, so a coach watching the answer stream in never saw it until a reload; `restore.ts`'s `REPLAYABLE` set now also includes `data-grounding-flag`, so the flag survives a reload instead of only the original streaming session. See `src/test/coachhelm/v3/chat-provenance.test.ts` for the reproduced false positives.
 
   Independent review of the fix (2026-09-22) found the live audit itself had a real regression: it checked `result.text`, which in `ai` 7.0.79 is the LAST agent step's text only (`StreamTextResult#text`), so a fabrication planted in an earlier step of a multi-step turn was invisible to it, and `onFinish` reused that narrow verdict instead of re-checking the full persisted text. Fixed by accumulating every `text-delta` chunk in the stream-forwarding loop and auditing exactly that string in both places. A provider error or a dropped connection mid-generation is now also tracked explicitly (`streamErrored`) and forces the turn to `'failed'` regardless of what the numeric audit finds — previously a stream error could leave a partial, unaudited answer stored as `'complete'`. `priorTurnEvidence` (cross-turn evidence carryover) now validates every stored envelope with `ToolEnvelope.safeParse` before trusting its shape (a legacy or forged `ui_parts` blob can no longer crash the turn). Player-scoping is two-phase: it splits carryover into `shared` (team/round-level evidence with no player entity — always safe) and `deferred` (anything player-scoped, or entity-less, e.g. `get_player_insights`, which returns no `entity` at all and so cannot be assumed safe). `execute` then unions the current turn's own tagged player id(s) with `deferred`'s before deciding whether to fold `deferred` in, so the current turn's context — not just prior turns' — governs the decision (a number about player A must not "support" a claim about player B). This is a heuristic bounded by what's tagged: an entity-less envelope secretly about a second, untagged player is indistinguishable from one about the single tagged player. A second-round fix (2026-09-23) closed a related hole: when THIS turn makes zero fresh player-scoped tool calls at all (the model answering entirely from memory), `deferred` is never folded in, even if it names only one player — with no fresh evidence of who this turn is actually about, "only one player on record" can't be trusted (production shape: turn 1 fetches Alice's putts; turn 2 asks about Bob and answers from memory with no tool call, and Alice's carried-over number would otherwise "support" a claim about Bob). `shared` (team/round-level) evidence is unaffected and still always carries over, including on a zero-tool-call turn. Carryover is capped to the last 5 assistant turns via a bounded, descending `listRecentMessages` query (avoiding both PostgREST's 1,000-row cap and an unbounded evidence window), and the pairwise-differencing anchor cap (`PAIRWISE_ANCHOR_CAP`) now evicts its oldest member instead of silently disabling differencing once exceeded. Known, accepted, self-only risk (not changed here): `chat_messages_coach_only` is a `FOR ALL` RLS policy, so a coach can edit their own persisted `ui_parts`, including a stored evidence envelope.
+- **A session-scoped (RLS'd) `golf_shots` read is ~580x slower than a
+  service-role read on the same table** (measured in migration
+  `20260817121500`). Every A7/A2/A3 loader (`load-player-context.ts` and
+  its callers, e.g. `load-distance-profile.ts`, `load-par-opportunities.ts`)
+  correctly uses the page's own session-scoped client, never an admin one
+  — that's the right tenancy call, not a bug — but it means enabling a
+  flag that turns this load on for a heavy multi-season roster is a real
+  page-load-time risk, not just a correctness one. Do not "fix" this by
+  switching to an admin client. Run a heavy-roster load check in preview
+  before flipping `coachhelm_a7_distance_profile_surface` or
+  `coachhelm_a7_scoring_surface` on for any environment (both flags'
+  `cleanup_plan`/ledger entries name this explicitly).
 - Safety-net fallback behavior can mask generator failures if logs are ignored.
 - Course-management "worst holes" and hole-1 "warmup" insights require at
   least five samples, matching the persisted insight writer's Rule 1
@@ -672,6 +684,38 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   `src/test/coachhelm/v3/comparable-opportunities.test.ts` for the
   fixtures, including the version-mismatch-rejection and
   exactly-at-the-instant boundary cases.
+- **A7 Game Fingerprint mount (2026-09-23, `agent/a7-distance-profile-surface`,
+  addendum §13 A7 slice 1) — the FIRST place A2's pure metric core actually
+  reaches a page.** `metrics/load-distance-profile.ts` composes
+  `loadPlayerContext` (A1) + `computeDistanceProfile` (A2) into one
+  server-only loader; `DistanceProfileSection` renders its `MetricResult[]`
+  (via `buildDistanceProfileViewModel`) inside the Game Fingerprint page's
+  Approach section, through a new optional `sectionAddenda` prop on
+  `FairwayPlayerGameFingerprint` (keyed by `FingerprintSectionKey`, e.g.
+  `approach`/`scoring`). Flag-gated
+  (`coachhelm_a7_distance_profile_surface`, default off everywhere) and the
+  loader is SKIPPED (not just unrendered) while the flag is off — see
+  `loadDistanceProfileAddendumIfEnabled` in `page.tsx`, pulled out of the
+  page's `Promise.all` specifically so that gate is unit-tested directly,
+  not just implied by the ternary it replaced. `loadDistanceProfileAddendum`
+  itself never rejects: any throw (including from the loader) degrades to
+  `null` (no addendum) plus a `logServerError` call, so one addendum's
+  failure can never fail the page's whole parallel fetch. Reuses the page's
+  own session-scoped Supabase client — never admin — so RLS still applies;
+  see this doc's "Known Risk Areas" section on that client's `golf_shots`
+  read cost.
+  `sectionAddenda` absent (every existing call site) renders byte-for-byte
+  the same markup as before this prop existed — a #2008 review caught a
+  version of this claim that was true component-for-component but not
+  actually true of the rendered DOM (an unconditional wrapper div around
+  every section), fixed by only wrapping a section when it actually has an
+  addendum.
+- A7's slice-2 counterpart (`agent/a7-scoring-surface`, PR #2010, stacked
+  on this branch) mounts A3's par-opportunities metrics into the Scoring
+  section the same way, behind its own independent
+  `coachhelm_a7_scoring_surface` flag — see this doc's own future update
+  once that PR lands, and `player_coachhelm_development`/`admin_platform`'s
+  ledgers for the flag/loader detail in the meantime.
 
 - **A9 slice 1 wires the pure core above into the `causality-attribute` cron**
   (2026-09-23, `agent/coachhelm-comparable-attribution`, addendum §14.12) —

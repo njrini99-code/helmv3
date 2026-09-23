@@ -472,17 +472,39 @@ export function FairwayPlayerGameFingerprint({
         </nav>
 
         {/* ════════════════ 3 · GAME AREAS — the six sections ═══════════════ */}
-        {orderedSections.map((section, index) => (
-          <div key={section.key} className="space-y-4">
-            <FingerprintSection
-              section={section}
-              index={index}
-              pendingIds={pendingIds}
-              onAction={handleAction}
-            />
-            {sectionAddenda?.[section.key]}
-          </div>
-        ))}
+        {orderedSections.map((section, index) => {
+          const addendum = sectionAddenda?.[section.key];
+          // Only wrap in the extra `space-y-4` div when there is actually an
+          // addendum to append — every existing call site (no `sectionAddenda`
+          // prop, or one that omits this key) renders the exact same
+          // `<FingerprintSection>` markup as before this prop existed, not a
+          // new wrapper div around it. A prior version of this map always
+          // added the wrapper, so "byte-for-byte unaffected" was true only
+          // when compared component-for-component, not against the actual
+          // rendered DOM.
+          if (!addendum) {
+            return (
+              <FingerprintSection
+                key={section.key}
+                section={section}
+                index={index}
+                pendingIds={pendingIds}
+                onAction={handleAction}
+              />
+            );
+          }
+          return (
+            <div key={section.key} className="space-y-4">
+              <FingerprintSection
+                section={section}
+                index={index}
+                pendingIds={pendingIds}
+                onAction={handleAction}
+              />
+              {addendum}
+            </div>
+          );
+        })}
 
         {/* ════════════════ 4 · GENERATED-AT footnote ═══════════════════════ */}
         <p className="text-center font-fw-sans text-caption text-text-tertiary">

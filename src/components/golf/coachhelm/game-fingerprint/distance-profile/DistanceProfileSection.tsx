@@ -27,7 +27,7 @@ import type {
   DistanceProfileBandViewModel,
   DistanceProfileRowViewModel,
 } from './buildDistanceProfileViewModel';
-import type { DistanceProfileMetricId } from '@/lib/coachhelm/v3/metrics/distance-profile';
+import { describeSupportGap, type DistanceProfileMetricId } from '@/lib/coachhelm/v3/metrics/distance-profile';
 
 const METRIC_DISPLAY: Record<
   DistanceProfileMetricId,
@@ -101,7 +101,7 @@ function describeTileA11y(row: DistanceProfileRowViewModel, sectionLabel: string
     return `${base}: ${formatMetricValue(row)} of ${row.row.denominator} ${display.sampleUnit}.`;
   }
   if (row.kind === 'insufficient') {
-    return `${base}: not enough data yet, ${row.row.eligibleCount} ${display.sampleUnit} recorded.`;
+    return `${base}: not enough data yet, ${describeSupportGap(row.metricId, row.row)}.`;
   }
   return `${base}: no data recorded yet.`;
 }
@@ -148,16 +148,16 @@ function DistanceProfileTile({ row }: { row: DistanceProfileRowViewModel }) {
   }
 
   if (row.kind === 'insufficient') {
-    // No `required`: the support floor (MIN_ATTEMPTS/MIN_ROUNDS/MIN_GREENS)
-    // is an internal detail of computeDistanceProfile, not part of
-    // MetricResult, and fabricating one here would be exactly the "stronger
-    // certainty than the packet" this surface must avoid. `current` and
-    // `required` only render a count TOGETHER (InsufficientData.tsx's own
-    // `hasCounts` gate) — passing `current` alone renders no number at all,
-    // so the real, non-fabricated count goes in `description` directly.
+    // No `current`/`required` props: `InsufficientData.tsx`'s own
+    // `hasCounts` gate only renders a count when both are given together,
+    // and this row's floor is compound (attempts AND rounds, plus a greens
+    // floor for proximity) rather than the single number those props model.
+    // `describeSupportGap` names the SPECIFIC floor this row is short of
+    // (e.g. "2 of 3 rounds") from the metric core's own exported floor
+    // constants, rather than a generic count with no stated floor.
     return (
       <InsufficientData
-        description={`${row.row.eligibleCount} ${display.sampleUnit} so far — below the support floor.`}
+        description={`${describeSupportGap(row.metricId, row.row)} — below the support floor.`}
         compact
       />
     );
@@ -185,7 +185,7 @@ function DistanceProfileDrillDown({ row }: { row: DistanceProfileRowViewModel })
     <Sheet.Body className="flex flex-col gap-4 pt-2">
       <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-body-sm">
         <dt className="text-text-tertiary">Status</dt>
-        <dd className="font-medium text-text-primary">{row.kind}</dd>
+        <dd className="font-medium text-text-primary">{humanizeReason(row.kind)}</dd>
 
         <dt className="text-text-tertiary">Value</dt>
         <dd className="font-medium tabular-nums text-text-primary">
@@ -240,7 +240,15 @@ export interface DistanceProfileSectionProps {
 export function DistanceProfileSection({ sections, windowLabel }: DistanceProfileSectionProps) {
   const [selected, setSelected] = useState<DistanceProfileRowViewModel | null>(null);
 
-  if (sections.length === 0) {
+  // `computeDistanceProfile` always emits a row for every band/metric
+  // combination it recognizes (never an empty array in production — a band
+  // with zero shots still gets 'invalid' rows, not omitted ones), so
+  // `sections.length === 0` alone is effectively unreachable outside a
+  // fabricated test input. The real "nothing to show yet" state is every
+  // row across every section being 'invalid' — a genuinely new player with
+  // no approach shots at all.
+  const hasAnyNonInvalidRow = sections.some((section) => section.rows.some((row) => row.kind !== 'invalid'));
+  if (!hasAnyNonInvalidRow) {
     return (
       <EmptyState
         variant="subtle"
