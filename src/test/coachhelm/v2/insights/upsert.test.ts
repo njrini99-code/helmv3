@@ -1,5 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+// The real logServerError touches Sentry + an admin Supabase client; every
+// test here already exercised CAS-miss/lost-race paths that call it without
+// mocking (it no-ops safely in this env), so this mock changes nothing about
+// existing assertions — it only lets the exhausted-retry test below assert
+// on severity/skipSentry, which real code never exposes another way.
+vi.mock('@/lib/server-error-logger', () => ({
+  logServerError: vi.fn(async () => undefined),
+}));
+
 import { upsertInsight } from '@/lib/coachhelm/v2/insights/upsert';
+import { logServerError } from '@/lib/server-error-logger';
 import { calcConfidence, type InsightInput, type InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
 
 // -----------------------------------------------------------------------------
@@ -89,10 +100,25 @@ function createFakeSupabase(opts: {
         // upsert(..., { onConflict, ignoreDuplicates }).select().maybeSingle() —
         // shipped in upsert.ts with the 2026-05-23 P0-3 race-condition fix
         // (UNIQUE NULLS NOT DISTINCT on signature+player_id+coach_id+team_id).
-        const terminal = state.op === 'insert'
-          ? (opts.insertResult ?? { data: { id: 'new-insight-id' }, error: null })
-          : (opts.selectResult ?? { data: null, error: null });
-        return Promise.resolve(recordAndReturn(terminal));
+        if (state.op === 'insert') {
+          const terminal = opts.insertResult ?? { data: { id: 'new-insight-id' }, error: null };
+          return Promise.resolve(recordAndReturn(terminal));
+        }
+        // SELECT .maybeSingle() — updateExisting's post-CAS-miss re-read
+        // uses this terminal (not .limit()), but shares the SAME ordered
+        // `selectResults` queue/counter as .limit() below: the dedup lookup
+        // and the re-read are just successive SELECT calls from the same
+        // fixture's point of view. `.maybeSingle()`'s real contract is "one
+        // row or null, never an array", so a fixture's array-shaped `data`
+        // (written for `.limit()`'s array return) is unwrapped to its first
+        // element here — existing `selectResult(s)` fixtures work unchanged
+        // whichever terminal method consumes them.
+        const queued = opts.selectResults?.[selectCallIndex];
+        selectCallIndex += 1;
+        const chosen = queued ?? opts.selectResult ?? { data: [], error: null };
+        const rawData = chosen.data;
+        const single = Array.isArray(rawData) ? (rawData[0] ?? null) : (rawData ?? null);
+        return Promise.resolve(recordAndReturn({ data: single, error: chosen.error ?? null }));
       }),
 
       // INSERT
@@ -590,6 +616,119 @@ describe('upsertInsight', () => {
         expect(updateCalls[1]!.filters?.updated_at).toBe('2026-04-21T10:05:00.000Z');
         const payload = updateCalls[1]!.payload as Record<string, unknown>;
         expect((payload.evidence as InsightEvidence).sample_n).toBe(90);
+      });
+
+      it('exhausts its one retry and pages loudly instead of silently dropping evidence that is still newer', async () => {
+        // Pathological but real: every re-read this write sees is STILL
+        // older than our incoming evidence (a persistently slow/contended
+        // row), so the retry budget (attempt < 1) runs out while we are
+        // genuinely the newer write — the exact silent-loss case the CAS
+        // exists to prevent, not a benign backoff.
+        const observed = {
+          id: 'existing-exhausted',
+          evidence: baseEvidence({ sample_n: 47, window_end: '2026-04-21', your_value: 0.39 }),
+          metadata: {},
+          lifecycle_state: 'detected' as const,
+          updated_at: '2026-04-21T10:00:00.000Z',
+        };
+        // Both re-reads land on the same (still-older) lifecycle/evidence —
+        // lifecycle_state never changes, only updated_at ticks, so the CAS
+        // keeps missing without ever becoming a genuine lifecycle race.
+        const fresh1 = { ...observed, updated_at: '2026-04-21T10:05:00.000Z' };
+        const fresh2 = { ...observed, updated_at: '2026-04-21T10:10:00.000Z' };
+        const { client, calls } = createFakeSupabase({
+          selectResults: [
+            { data: [observed], error: null }, // dedup lookup
+            { data: [fresh1], error: null },    // re-read after 1st CAS miss
+            { data: [fresh2], error: null },    // re-read after 2nd CAS miss (retry)
+          ],
+          updateResults: [
+            { data: [], error: null }, // 1st CAS attempt misses
+            { data: [], error: null }, // retry (2nd CAS attempt) also misses
+          ],
+        });
+
+        const newerEvidence = baseEvidence({ sample_n: 90, window_end: '2026-05-20', your_value: 0.55 });
+        // Explicit coach_id/team_id skip resolvePlayerOwnership (irrelevant
+        // to this test, and the fake client doesn't implement its `.in()`
+        // chain), so the only logServerError call left is the one under test.
+        const id = await upsertInsight(
+          client,
+          baseInput({ evidence: newerEvidence, coach_id: 'coach-1', team_id: 'team-1' }),
+        );
+
+        expect(id).toBe('existing-exhausted');
+        // Exactly two CAS attempts — the initial write and its one retry —
+        // never a third. The `attempt < 1` bound holds.
+        expect(calls.filter((c) => c.op === 'update')).toHaveLength(2);
+
+        const mockLog = vi.mocked(logServerError);
+        expect(mockLog).toHaveBeenCalledTimes(1);
+        const [message, context, severity] = mockLog.mock.calls[0]!;
+        expect(message).toContain('dropped a NEWER evidence write');
+        expect(severity).toBe('error');
+        // Must page — this is real evidence loss, not the expected-benign
+        // stale-worker backoff, so skipSentry must NOT be set.
+        expect((context as { skipSentry?: boolean }).skipSentry).toBeUndefined();
+      });
+
+      it('a same-instant window_end in a different format (date-only vs. full timestamp) ties, falling to sample_n, instead of losing on string length', async () => {
+        // window_end is NOT a consistent format across generators (v2 mining
+        // writes date-only 'YYYY-MM-DD'; to-insight-input.ts and v3 evidence
+        // builders write a full now.toISOString() timestamp). A raw string
+        // compare ranks the date-only form as "less than" ANY same-day
+        // timestamp, purely because it's a string-length prefix — even one
+        // representing the exact same midnight instant, which should be a
+        // TIE that falls through to sample_n, not an automatic "older".
+        const persisted = {
+          id: 'existing-mixed-format',
+          evidence: baseEvidence({ sample_n: 47, window_end: '2026-04-21T00:00:00.000Z', your_value: 0.39 }),
+          metadata: {},
+          lifecycle_state: 'detected' as const,
+          updated_at: '2026-04-21T00:00:00.000Z',
+        };
+        const freshSameLifecycle = { ...persisted, updated_at: '2026-04-21T00:05:00.000Z' };
+        const { client, calls } = createFakeSupabase({
+          selectResults: [{ data: [persisted], error: null }, { data: [freshSameLifecycle], error: null }],
+          updateResults: [
+            { data: [], error: null }, // first CAS attempt misses
+            { data: [{ id: 'existing-mixed-format' }], error: null }, // retry succeeds
+          ],
+        });
+
+        // Same calendar day (midnight, date-only) but a genuinely larger
+        // sample_n — must win the tie, not be dropped as "not newer".
+        const incoming = baseEvidence({ sample_n: 90, window_end: '2026-04-21', your_value: 0.55 });
+        const id = await upsertInsight(
+          client,
+          baseInput({ evidence: incoming, coach_id: 'coach-1', team_id: 'team-1' }),
+        );
+
+        expect(id).toBe('existing-mixed-format');
+        expect(calls.filter((c) => c.op === 'update')).toHaveLength(2);
+      });
+
+      it('CAS predicate carries a realistic PostgREST microsecond timestamp byte-for-byte', async () => {
+        // PostgREST timestamptz(6) round-trips with microsecond precision
+        // and an explicit offset, not JS's Date#toISOString() millisecond/'Z'
+        // shape. The CAS .eq() must pass through exactly what was read, with
+        // no reformatting that could silently miss a real row.
+        const REALISTIC_TS = '2026-04-21T10:00:00.123456+00:00';
+        const existing = {
+          id: 'existing-microsecond',
+          evidence: baseEvidence({ sample_n: 47, window_end: '2026-04-21', your_value: 0.39 }),
+          metadata: {},
+          lifecycle_state: 'detected' as const,
+          updated_at: REALISTIC_TS,
+        };
+        const { client, calls } = createFakeSupabase({
+          selectResult: { data: [existing], error: null },
+        });
+
+        await upsertInsight(client, baseInput({ evidence: baseEvidence({ sample_n: 47, window_end: '2026-04-21', your_value: 0.55 }) }));
+
+        const updateCall = calls.find((c) => c.op === 'update');
+        expect(updateCall!.filters?.updated_at).toBe(REALISTIC_TS);
       });
     });
   });

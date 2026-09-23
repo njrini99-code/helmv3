@@ -126,10 +126,28 @@ interface ExistingInsightRow {
  * against the row's current state, or drop itself as the stale one. `b: null`
  * (no revision to compare against) is treated as "newer" so a bad re-read
  * doesn't wedge a genuinely fresh write.
+ *
+ * `window_end` is NOT a consistent format across callers (checked 2026-09-23,
+ * `rg -n "window_end:" src/lib/coachhelm`): v2 mining (approach-analytics.ts,
+ * course-management.ts, tee-strategy.ts) writes a date-only `YYYY-MM-DD`
+ * (`.toISOString().slice(0, 10)` / `todayIsoDate()`), while
+ * to-insight-input.ts and several v3 evidence builders write a full
+ * `now.toISOString()` timestamp. A raw string compare treats the shorter
+ * date-only form as "less than" a full timestamp for the SAME calendar day
+ * (a same-length-prefix loses to anything longer), which would misjudge a
+ * genuinely-not-older write as stale. Comparing as parsed instants avoids
+ * that; the raw string compare is kept only as a fallback for an unparseable
+ * value; sample_n still breaks a same-instant tie either way.
  */
 function isEvidenceNewer(a: InsightEvidence, b: InsightEvidence | null): boolean {
   if (!b) return true;
-  if (a.window_end !== b.window_end) return a.window_end > b.window_end;
+  const aTime = Date.parse(a.window_end);
+  const bTime = Date.parse(b.window_end);
+  if (Number.isFinite(aTime) && Number.isFinite(bTime)) {
+    if (aTime !== bTime) return aTime > bTime;
+  } else if (a.window_end !== b.window_end) {
+    return a.window_end > b.window_end;
+  }
   return a.sample_n > b.sample_n;
 }
 
@@ -408,31 +426,56 @@ async function updateExisting(
     // causes apart instead of always backing off — a lifecycle action must
     // still win unconditionally, but a same-lifecycle evidence race should
     // let the genuinely newer write through.
-    const { data: freshRows, error: reReadError } = await supabase
+    const { data: fresh, error: reReadError } = await supabase
       .from('golf_coach_insights')
       .select('id, evidence, metadata, lifecycle_state, updated_at')
       .eq('id', existing.id)
-      .limit(1);
-    const fresh = (freshRows?.[0] ?? null) as ExistingInsightRow | null;
+      .maybeSingle();
 
-    if (!reReadError && fresh && fresh.lifecycle_state === existing.lifecycle_state) {
+    if (reReadError) {
+      // The re-read itself failed (transient DB error) — distinct from a
+      // genuine lifecycle race below, which needs its own message so an
+      // operator isn't told "lost lifecycle CAS race" for a plain read
+      // failure that says nothing about what actually happened to the row.
+      await logServerError(
+        `upsertInsight.updateExisting: re-read after a CAS miss failed for insight=${existing.id}: ` +
+          `${reReadError.message}; skipping write rather than retry blind`,
+        { action: 'coachhelm.upsert.updateExisting.cas', featureArea: 'coachhelm', extra: { insightId: existing.id } },
+        'warning',
+      );
+      return existing.id;
+    }
+
+    if (fresh && (fresh as ExistingInsightRow).lifecycle_state === existing.lifecycle_state) {
       // lifecycle_state is unchanged — the race was a concurrent
       // EVIDENCE-only refresh. Retry (once) only if OUR incoming evidence
       // is actually newer than what is now persisted; otherwise we are the
       // stale worker and must not clobber a concurrent newer revision.
-      const evidenceIsNewer = isEvidenceNewer(evidence, fresh.evidence);
+      const freshRow = fresh as ExistingInsightRow;
+      const evidenceIsNewer = isEvidenceNewer(evidence, freshRow.evidence);
       if (attempt < 1 && evidenceIsNewer) {
-        return updateExisting(supabase, fresh, input, evidence, teamId, attempt + 1);
+        return updateExisting(supabase, freshRow, input, evidence, teamId, attempt + 1);
       }
-      const reason = evidenceIsNewer
-        ? `retry budget exhausted (attempt=${attempt}) while incoming evidence is still newer than the ` +
-          `already-persisted sample_n=${fresh.evidence?.sample_n ?? 'null'}/window_end=${fresh.evidence?.window_end ?? 'null'}; ` +
-          `dropping to bound the race instead of retrying indefinitely`
-        : `incoming sample_n=${evidence.sample_n}/window_end=${evidence.window_end} is not newer than the ` +
-          `already-persisted sample_n=${fresh.evidence?.sample_n ?? 'null'}/window_end=${fresh.evidence?.window_end ?? 'null'}; ` +
-          `skipping write to avoid regressing a concurrent newer revision`;
+      if (evidenceIsNewer) {
+        // The retry budget is exhausted but our evidence IS still newer —
+        // this is exactly the silent-loss failure mode the CAS exists to
+        // prevent, not a benign backoff. Page loudly; do not skipSentry.
+        await logServerError(
+          `upsertInsight.updateExisting: dropped a NEWER evidence write for insight=${existing.id} ` +
+            `after exhausting the retry budget (attempt=${attempt}); incoming sample_n=${evidence.sample_n}/` +
+            `window_end=${evidence.window_end} is still newer than the persisted ` +
+            `sample_n=${freshRow.evidence?.sample_n ?? 'null'}/window_end=${freshRow.evidence?.window_end ?? 'null'}. ` +
+            `This is a real evidence loss, not an expected race outcome — investigate repeated CAS contention on this row.`,
+          { action: 'coachhelm.upsert.updateExisting.cas', featureArea: 'coachhelm', extra: { insightId: existing.id } },
+          'error',
+        );
+        return existing.id;
+      }
       await logServerError(
-        `upsertInsight.updateExisting: dropped a stale evidence write for insight=${existing.id} (${reason})`,
+        `upsertInsight.updateExisting: dropped a stale evidence write for insight=${existing.id} ` +
+          `(incoming sample_n=${evidence.sample_n}/window_end=${evidence.window_end} is not newer than the ` +
+          `already-persisted sample_n=${freshRow.evidence?.sample_n ?? 'null'}/window_end=${freshRow.evidence?.window_end ?? 'null'}; ` +
+          `skipping write to avoid regressing a concurrent newer revision)`,
         {
           action: 'coachhelm.upsert.updateExisting.cas',
           featureArea: 'coachhelm',
@@ -446,11 +489,10 @@ async function updateExisting(
       return existing.id;
     }
 
-    // Either the re-read failed, or lifecycle_state genuinely moved — a
-    // real lifecycle action won. Do not retry and clobber it — log and
-    // hand back the row's identity unchanged. The next analysis run
-    // re-reads the current state and decides fresh; a lost evidence
-    // refresh this run is not a lost insight.
+    // lifecycle_state genuinely moved — a real lifecycle action won. Do not
+    // retry and clobber it — log and hand back the row's identity
+    // unchanged. The next analysis run re-reads the current state and
+    // decides fresh; a lost evidence refresh this run is not a lost insight.
     await logServerError(
       `upsertInsight.updateExisting: lost lifecycle CAS race for insight=${existing.id} ` +
         `(observed lifecycle_state=${existing.lifecycle_state ?? 'null'}, attempted transition=${decision.transition}); ` +

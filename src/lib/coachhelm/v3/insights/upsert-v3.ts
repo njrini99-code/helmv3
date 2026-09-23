@@ -50,12 +50,17 @@ export async function upsertInsightV3(
   if (result === GATED_OUT) return result;
 
   // Stamp engine_version. Best-effort — a stamp failure should NOT
-  // throw away the insight write.
+  // throw away the insight write. Guarded to a no-op once already
+  // stamped ('v3' filter) — an unconditional UPDATE here bumps
+  // `updated_at` on every single v3 write, including a plain refresh
+  // that changed nothing else, which can consume upsertInsight's one CAS
+  // retry (row 10, plan §5.1) for no reason.
   try {
     const { error } = await supabase
       .from('golf_coach_insights')
       .update({ engine_version: 'v3' })
-      .eq('id', result);
+      .eq('id', result)
+      .or('engine_version.is.null,engine_version.neq.v3');
     if (error) {
       await logServerError(
         `upsertInsightV3 stamp failed for ${result}: ${error.message}`,
