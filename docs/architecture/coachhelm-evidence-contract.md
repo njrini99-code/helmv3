@@ -1012,6 +1012,7 @@ slice 2.
   2), not built yet. Slice 2 must consume the shared `MetricResult` in
   `src/lib/coachhelm/v3/metrics/types.ts` rather than defining its own
   aggregate shape.
+
 ## Comparable-opportunities outcome measurement (A9 deliverable — pure, not wired)
 
 `src/lib/coachhelm/v3/evaluation/comparable-opportunities.ts` (addendum A9,
