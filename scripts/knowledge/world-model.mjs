@@ -63,6 +63,17 @@
  *   node scripts/knowledge/world-model.mjs                    # write
  *   node scripts/knowledge/world-model.mjs --check             # verify, no write
  *   node scripts/knowledge/world-model.mjs --impact <file|feature>
+ *   node scripts/knowledge/world-model.mjs --lines
+ *     Report only, never written or checked: rebuilds the model with real
+ *     source line numbers resolved fresh from the current tree for every
+ *     anchor-carrying evidence kind (feature_doc_contract, source_reference,
+ *     journey_stage, rpc_call, import_graph). The committed JSON/MD carry an
+ *     `anchor` (a stable symbol — invariant id, rpc name, import specifier,
+ *     journey/stage pair, doc-mention ordinal) instead of a `line`, because a
+ *     line number shifts on almost ANY unrelated edit above the matched spot
+ *     in the same file and turned this generated file into a merge conflict
+ *     for every other PR touching the same source — the same class of churn
+ *     `document-inventory.mjs`'s `--refs` flag exists to solve for docs.
  */
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
@@ -82,6 +93,18 @@ import {
   resolveImpactTarget,
   compareStrings,
 } from './lib/world-model-core.mjs';
+
+// Evidence kinds whose committed shape carries `anchor` (a stable symbol —
+// an invariant id, an rpc name, an import specifier, a journey/stage pair,
+// a doc-mention occurrence ordinal) instead of a `line` number. `line` is
+// still computed on every run (nothing here is stale or approximate) but is
+// included in the object only when the caller asks for it — the committed
+// write path never does, `--lines` always does. See each producer's own
+// comment in lib/world-model-core.mjs and the two inline sites below
+// (rpc_call, import_graph) for why a line number there churned the
+// committed docs/generated/WORLD_MODEL.json on almost any unrelated edit to
+// the same source file.
+const LINE_CARRYING_EVIDENCE_KINDS = ['feature_doc_contract', 'source_reference', 'journey_stage', 'rpc_call', 'import_graph'];
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const OUT_JSON = resolve(ROOT, 'docs/generated/WORLD_MODEL.json');
@@ -155,7 +178,7 @@ function loadFeatureKeyMetadata() {
 // the authoritative shape; scripts/knowledge/check-journeys.mjs is the full
 // structural validator, this loader only needs enough to build nodes+edges).
 // ---------------------------------------------------------------------------
-function loadJourneys() {
+function loadJourneys({ includeLines = false } = {}) {
   const dir = resolve(ROOT, 'memory/journeys');
   if (!existsSync(dir)) {
     return {
@@ -175,7 +198,7 @@ function loadJourneys() {
 
   for (const file of files) {
     const text = readTracked(file);
-    const parsed = parseJourneysDoc(text, file);
+    const parsed = parseJourneysDoc(text, file, { includeLines });
     journeys.push(...parsed.journeys);
     edges.push(...parsed.edges);
     for (const reason of parsed.problems) fileProblems.push({ file, reason });
@@ -196,7 +219,7 @@ function loadJourneys() {
 // ---------------------------------------------------------------------------
 // Build the model
 // ---------------------------------------------------------------------------
-async function buildModel() {
+async function buildModel({ includeLines = false } = {}) {
   const registry = await loadRegistry(ROOT);
   const files = trackedFiles();
   // Exclude this generator's own output from every input scan — a report
@@ -344,12 +367,14 @@ async function buildModel() {
     if (!rpcDefinedIn.has(rpcName)) continue;
     const { primary } = resolvePrimaryFeature(registry, filePart, matchGlob, flattenCodePatterns);
     if (!primary) continue;
-    rawEdges.push({
-      source: primary,
-      target: rpcName,
-      kind: 'feature_rpc',
-      evidence: { kind: 'rpc_call', path: filePart, line },
-    });
+    // Anchor is the rpc name itself — already the match this loop keys on,
+    // so no extra computation. `line` is always fresh (git grep -n runs
+    // every call) but only included when includeLines is set, so the
+    // committed graph doesn't shift when an unrelated line above the call
+    // site is added or removed in the same file.
+    const evidence = { kind: 'rpc_call', path: filePart, anchor: rpcName };
+    if (includeLines) evidence.line = line;
+    rawEdges.push({ source: primary, target: rpcName, kind: 'feature_rpc', evidence });
   }
 
   // --- Jobs: Vercel crons, Inngest functions, launchd -----------------------
@@ -437,19 +462,18 @@ async function buildModel() {
   }
   for (const file of invariantCandidates) {
     const text = readTracked(file);
-    const found = extractInvariantsFromSource(text, file);
+    const found = extractInvariantsFromSource(text, file, { includeLines });
     if (found.length === 0) continue;
     const { primary } = resolvePrimaryFeature(registry, file, matchGlob, flattenCodePatterns);
     for (const inv of found) {
       const invId = `invariant:${file}:${inv.id}`;
-      nodes.invariants.push({ id: invId, label: inv.label, severity: inv.severity, path: inv.path, line: inv.line });
+      const invNode = { id: invId, label: inv.label, severity: inv.severity, path: inv.path, anchor: inv.anchor };
+      if (includeLines) invNode.line = inv.line;
+      nodes.invariants.push(invNode);
       if (primary) {
-        rawEdges.push({
-          source: primary,
-          target: invId,
-          kind: 'feature_invariant',
-          evidence: { kind: 'source_reference', path: file, line: inv.line },
-        });
+        const evidence = { kind: 'source_reference', path: file, anchor: inv.anchor };
+        if (includeLines) evidence.line = inv.line;
+        rawEdges.push({ source: primary, target: invId, kind: 'feature_invariant', evidence });
       }
     }
   }
@@ -478,7 +502,7 @@ async function buildModel() {
     if (!docPath || !existsSync(resolve(ROOT, docPath))) continue;
     const text = readTracked(docPath);
     rawEdges.push(
-      ...extractDocFeatureCrossRefs(id, text, docPath, featureIds).map((e) => ({
+      ...extractDocFeatureCrossRefs(id, text, docPath, featureIds, { includeLines }).map((e) => ({
         source: e.source,
         target: e.target,
         kind: 'feature_relation',
@@ -514,19 +538,19 @@ async function buildModel() {
         if (!resolved) continue;
         const { primary: targetPrimary } = resolvePrimaryFeature(registry, resolved, matchGlob, flattenCodePatterns);
         if (!targetPrimary || targetPrimary === id) continue;
-        const line = text.slice(0, m.index).split('\n').length;
-        rawEdges.push({
-          source: id,
-          target: targetPrimary,
-          kind: 'feature_relation',
-          evidence: { kind: 'import_graph', path: file, line },
-        });
+        // Anchor is the import specifier text itself (the matched `@/...`
+        // path) — already unique enough per file for this weak evidence
+        // kind. `line` is always recomputed fresh here; only included when
+        // includeLines is set.
+        const evidence = { kind: 'import_graph', path: file, anchor: importPath };
+        if (includeLines) evidence.line = text.slice(0, m.index).split('\n').length;
+        rawEdges.push({ source: id, target: targetPrimary, kind: 'feature_relation', evidence });
       }
     }
   }
 
   // --- Journeys --------------------------------------------------------------
-  const { journeys, edges: journeyEdges, note: journeysNote } = loadJourneys();
+  const { journeys, edges: journeyEdges, note: journeysNote } = loadJourneys({ includeLines });
   nodes.journeys = journeys;
   rawEdges.push(...journeyEdges);
 
@@ -706,6 +730,42 @@ async function runImpact(target) {
 // ---------------------------------------------------------------------------
 // main
 // ---------------------------------------------------------------------------
+/**
+ * --lines. Report only — never written to disk, never checked. Rebuilds
+ * the model with `includeLines: true` (every extractor recomputes its own
+ * `line` fresh from the current tree — nothing here is stale or cached) and
+ * prints every anchor-carrying evidence/invariant entry with its resolved
+ * current line, so the debugging value the committed JSON used to carry
+ * inline is one command away instead of gone. Run `npm run knowledge:world-model:lines`.
+ */
+async function runLines() {
+  const model = await buildModel({ includeLines: true });
+  console.log('World Model — anchors resolved to current line numbers (report only, not written to disk):\n');
+
+  const invariantsWithLines = model.nodes.invariants.filter((inv) => inv.line !== undefined);
+  if (invariantsWithLines.length) {
+    console.log(`## invariants (${invariantsWithLines.length})`);
+    for (const inv of invariantsWithLines) console.log(`  ${inv.path}:${inv.line} — anchor \`${inv.anchor}\``);
+    console.log('');
+  }
+
+  for (const kind of LINE_CARRYING_EVIDENCE_KINDS) {
+    if (kind === 'source_reference') continue; // same anchor/line as the invariants section above
+    const rows = [];
+    for (const edge of model.edges) {
+      for (const ev of edge.evidence) {
+        if (ev.kind === kind && ev.line !== undefined) {
+          rows.push({ source: edge.source, target: edge.target, path: ev.path, anchor: ev.anchor, line: ev.line });
+        }
+      }
+    }
+    if (!rows.length) continue;
+    console.log(`## ${kind} (${rows.length})`);
+    for (const r of rows) console.log(`  ${r.path}:${r.line} — anchor \`${r.anchor}\` (${r.source} -> ${r.target})`);
+    console.log('');
+  }
+}
+
 async function main() {
   const args = process.argv.slice(2);
   const impactIndex = args.indexOf('--impact');
@@ -716,6 +776,11 @@ async function main() {
       process.exit(2);
     }
     await runImpact(target);
+    return;
+  }
+
+  if (args.includes('--lines')) {
+    await runLines();
     return;
   }
 

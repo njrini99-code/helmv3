@@ -81,6 +81,7 @@
     "knowledge:report": "node scripts/knowledge/workflow-report.mjs",
     "knowledge:world-model": "node scripts/knowledge/world-model.mjs",
     "knowledge:world-model:check": "node scripts/knowledge/world-model.mjs --check",
+    "knowledge:world-model:lines": "node scripts/knowledge/world-model.mjs --lines",
     "knowledge:journeys-check": "node scripts/knowledge/check-journeys.mjs",
     "knowledge:journeys-check:test": "node --test scripts/knowledge/__tests__/check-journeys.test.mjs",
     "knowledge:invariants-check": "node scripts/knowledge/check-invariants.mjs",
