@@ -4,6 +4,15 @@ BEGIN;
 -- replays used user_id + acknowledged_at. The action writes both shapes during
 -- the compatibility window, so this test locks down the cross-environment
 -- contract and the explicit owner-only delete path.
+--
+-- Policy names: production's live policies are `baseball_timeline_event_acks_*`
+-- (with "_event_"), NOT the `baseball_timeline_acks_*` names
+-- `20260624000430`/`20260825222432` (LOCAL-ONLY, never ran live — see the
+-- corrected supabase/migrations/HELD.md row for 20260825222432) create on a
+-- fresh replay. `20260923000000_baseball_timeline_event_acks_contract_repair.sql`
+-- converges both environments onto the production names for insert/update/
+-- delete, so this test asserts those names, confirmed live via pg_policies
+-- 2026-09-23.
 SELECT plan(10);
 
 SELECT has_column('public', 'baseball_timeline_event_acks', 'team_id',
@@ -38,7 +47,7 @@ SELECT ok(
     JOIN pg_namespace n ON n.oid = c.relnamespace
     WHERE n.nspname = 'public'
       AND c.relname = 'baseball_timeline_event_acks'
-      AND p.polname = 'baseball_timeline_acks_delete'
+      AND p.polname = 'baseball_timeline_event_acks_delete'
       AND p.polcmd = 'd'
       AND regexp_replace(pg_get_expr(p.polqual, p.polrelid), '[[:space:]]+', '', 'g')
         ILIKE '%user_id=(selectauth.uid()asuid)%'
@@ -69,7 +78,7 @@ SELECT ok(
     JOIN pg_namespace n ON n.oid = c.relnamespace
     WHERE n.nspname = 'public'
       AND c.relname = 'baseball_timeline_event_acks'
-      AND p.polname = 'baseball_timeline_acks_insert'
+      AND p.polname = 'baseball_timeline_event_acks_insert'
       AND p.polcmd = 'a'
       AND regexp_replace(pg_get_expr(p.polwithcheck, p.polrelid), '[[:space:]]+', '', 'g')
         ILIKE '%user_id=(selectauth.uid()asuid)%'
