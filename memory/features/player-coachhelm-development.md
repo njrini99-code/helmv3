@@ -39,6 +39,7 @@ This area depends heavily on shot tracking, stats, round reviews, and CoachHelm 
 - `src/app/golf/actions/development.ts`
 - `src/app/golf/actions/player-feedback.ts`
 - `src/app/golf/actions/round-reviews.ts`
+- `src/app/golf/actions/round-review-sequence-attribution.ts`
 - `src/app/golf/actions/v3/**`
 - `src/lib/coachhelm/v2/**`
 - `src/lib/coachhelm/v3/**`
@@ -722,6 +723,48 @@ a new maturation confirmation.
       `''` (not `'none'`) for an unset `transform`, which crashes `vaul`'s
       own drag-cleanup code on every open/close — neither is specific to
       this component.
+- **Round Review sequence-attribution mount (A4 slice 3b, 2026-09-23,
+  `agent/coachhelm-a4-round-review-mount`, stacked on #2015
+  `agent/coachhelm-review-stable-read` with #2020
+  `agent/a4-sequence-attribution-rollup` merged in)** — a read-only section
+  on the Round Review page (`'use client'`) surfacing A4 slice 2's
+  `computeSequenceAttribution` rollup, behind
+  `coachhelm_a4_sequence_attribution_surface` (default off, all
+  environments false). The flag check is the literal first statement in the
+  new `'use server'` action
+  (`src/app/golf/actions/round-review-sequence-attribution.ts`), before
+  `createClient()`/`getUser()`, so the surface makes zero DB calls while
+  off. `src/lib/coachhelm/v3/metrics/load-sequence-attribution.ts` wraps
+  `loadPlayerContext` (A1 — already chunked at 200, already paginated past
+  the 1,000-row PostgREST cap) and `computeSequenceAttribution` in a
+  try/catch that returns `null` on any read error, never `[]`; the page
+  renders nothing (`SequenceAttributionSection` returns `null`) rather than
+  showing an empty or broken block. Auth/authorization reuses
+  `verifyPlayerAccess` directly (self-or-coach), matching
+  `getPlayerStandingForReviewImpl`'s existing shape in
+  `round-review-system.ts`. Only `status === 'supported'` rows render a
+  number; `insufficient`/`invalid`/`descriptive_only` rows render "Not
+  enough holes yet" and never a value, so a thin sample can't read as a
+  finding. Wording stays "observed" per #2023's guard (`sav`/`prov`/`caused
+  by`/`guaranteed` all forbidden in this scan root) — the component lives
+  under `components/golf/coachhelm/round-review/`, already inside that
+  guard's scan roots.
+  **Sign convention**: positive means strokes GAINED. This intentionally
+  does NOT reuse `ScoringSection.tsx`'s `formatStrokesVsPar` (positive =
+  more strokes than par = worse) even un-flipped, and that component is
+  unmerged (#2010) besides. It reuses `formatSigned`
+  (`src/components/fairway/charts/theme.ts`) exactly as `RoundSGSummary`
+  already does elsewhere on the same page for `strokes_gained_total` —
+  positive renders `+`, with the words "gained"/"lost" spelled out rather
+  than relying on the sign alone. Pinned by a dedicated sign-convention
+  test in `SequenceAttributionSection.test.tsx`.
+  **Window**: the page has no single existing 12-month convention to
+  import (same "opaque, cron-refreshed standing cache with no explicit
+  `window_start`/`window_end`" situation A7 already found on the sibling
+  Game Fingerprint page) — `sequence-attribution-window.ts` builds an
+  independent UTC-safe rolling 12-calendar-month `AnalysisScope`, following
+  A7's pattern rather than importing its unmerged
+  `distance-profile-window.ts`.
 
 ## Tests To Prefer
 
