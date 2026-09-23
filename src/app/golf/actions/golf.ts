@@ -6435,6 +6435,46 @@ export interface SavePartialRoundOptions {
    * shell — see `isEmptyShellRound`.
    */
   allowReuse?: boolean;
+  /**
+   * R8 (2026-09-22): set ONLY by `persistRoundStart` — the "begin a brand
+   * new round" call, never autosave, never `writeRoundRecreatingIfMissing`'s
+   * round_missing retry (that retry's intent is CREATE, not "is this a
+   * duplicate", and must keep persisting shots even if a stray match
+   * exists). An opt-IN flag rather than an opt-out one so every existing
+   * caller — autosave, the beacon, the API route, the recreate retry — is
+   * unaffected by construction.
+   *
+   * When set, the no-id branch's course/date/qualifier heuristic stops
+   * silently falling through to a fresh INSERT in two cases that produced
+   * real stranded rounds in production (measured 2026-09-22: 10 abandoned
+   * `in_progress` duplicates, most created BEFORE the sibling that went on
+   * to complete):
+   *   - a matching in_progress round exists but is NOT an empty shell (real
+   *     progress) → returns `in_progress_exists` instead of inserting a
+   *     second round that stealth-strands the first.
+   *   - no in_progress match, but a COMPLETED round already occupies that
+   *     exact player/course/date/qualifier slot → returns
+   *     `duplicate_completed_round` so the caller can warn instead of
+   *     silently starting a second round for a day already logged.
+   * Pass `confirmDuplicateCourse: true` to proceed anyway after the player
+   * has seen that warning.
+   */
+  startIntent?: boolean;
+  /** See `startIntent` — bypasses only the `duplicate_completed_round` warning. */
+  confirmDuplicateCourse?: boolean;
+  /**
+   * R8 follow-up (2026-09-23): college golf routinely plays 36 holes in one
+   * day — two genuinely separate rounds for the same player, course, AND
+   * date. The `in_progress_exists` check above cannot tell "an abandoned
+   * duplicate of the same round" apart from "round 1 of 36 is still open
+   * while the player starts round 2" from server data alone; only the
+   * player knows. Set ONLY after the player has seen the `in_progress_exists`
+   * signal and explicitly chosen "Start a new round" over Resume/Discard —
+   * bypasses just that one check so the insert proceeds; every other
+   * `startIntent` rule (empty-shell reuse, the `duplicate_completed_round`
+   * warning) still applies.
+   */
+  confirmSeparateRound?: boolean;
 }
 
 /**
@@ -6454,9 +6494,44 @@ export interface SavePartialRoundHoleInvalid {
   message: string;
 }
 
+/**
+ * R8: the no-id branch (`startIntent: true` only) found the player's own
+ * in_progress round already occupying this exact course/date/qualifier slot,
+ * with real progress (not an empty shell). Returned instead of inserting a
+ * second round, which is exactly how the production orphans this closes were
+ * produced. 36-hole-day follow-up: the caller presents Resume / Discard /
+ * Start a new round rather than assuming Resume — `scoredHoles`/`updatedAt`
+ * are for the Discard confirmation, which must show what it would delete
+ * before the player commits to it.
+ */
+export interface SavePartialRoundInProgressExists {
+  success: false;
+  error: 'in_progress_exists';
+  code: 'in_progress_exists';
+  roundId: string;
+  scoredHoles: number;
+  updatedAt: string | null;
+}
+
+/**
+ * R8: the no-id branch (`startIntent: true` only) found a COMPLETED round
+ * already occupying this exact player/course/date/qualifier slot. Returned
+ * instead of silently inserting a duplicate; the caller should warn and let
+ * the player confirm (re-call with `confirmDuplicateCourse: true`) or view
+ * the existing round.
+ */
+export interface SavePartialRoundDuplicateCompleted {
+  success: false;
+  error: 'duplicate_completed_round';
+  code: 'duplicate_completed_round';
+  completedRoundId: string;
+}
+
 export type SavePartialRoundResult =
   | ActionResult<{ roundId: string; updatedAt?: string; warnings?: string[] }>
-  | SavePartialRoundHoleInvalid;
+  | SavePartialRoundHoleInvalid
+  | SavePartialRoundInProgressExists
+  | SavePartialRoundDuplicateCompleted;
 
 async function savePartialRoundImpl(
   data: PartialRoundData,
@@ -7480,7 +7555,7 @@ async function savePartialRoundImpl(
       } else if (resolvedCourseId) {
         let existingRoundQuery = supabase
           .from('golf_rounds')
-          .select('id')
+          .select('id, updated_at')
           .eq('player_id', player.id)
           .eq('status', 'in_progress')
           .eq('course_id', resolvedCourseId)
@@ -7497,10 +7572,31 @@ async function savePartialRoundImpl(
           ? existingRoundQuery.eq('qualifier_round_number', resolvedQualifierRoundNumber)
           : existingRoundQuery.is('qualifier_round_number', null);
 
-        const { data: candidateRound } = await existingRoundQuery
+        const { data: candidateRound, error: candidateRoundError } = await existingRoundQuery
           .order('updated_at', { ascending: false })
           .limit(1)
           .maybeSingle();
+
+        // Fail CLOSED, on purpose, unlike the completed-round check below: an
+        // unreadable in-progress lookup here means we genuinely don't know
+        // whether this exact slot is already occupied, and falling through
+        // to insert on that unknown is exactly the write pattern that
+        // produced the stranded-duplicate rounds this file exists to
+        // prevent. A retryable error costs the player one tap; a silent
+        // insert can cost them a whole round's data.
+        if (candidateRoundError) {
+          await logServerError(
+            `savePartialRound: in-progress candidate lookup failed for player ${player.id}; refusing to insert (fail-closed): ${candidateRoundError.message}`,
+            { action: 'savePartialRound.inProgressCandidateLookup', featureArea: 'round_tracking', playerId: player.id, userId: user.id },
+            'error',
+          );
+          void flightRecorder.warn('db.create_or_update_draft', { errorSummary: 'in_progress_lookup_failed' });
+          endTrace('warning');
+          return {
+            success: false,
+            error: 'Could not check for an existing round at this course. Please try again.',
+          };
+        }
 
         // A1: a course/date/qualifier match is a HEURISTIC, not a unique
         // key — two legitimate in-progress rounds can share all of it (a
@@ -7515,6 +7611,95 @@ async function savePartialRoundImpl(
         // FairwayRecoverRound, never by persistRoundStart.
         if (candidateRound && (options?.allowReuse || await isEmptyShellRound(candidateRound.id))) {
           existingRound = candidateRound;
+        } else if (candidateRound && options?.startIntent && !options?.confirmSeparateRound) {
+          // R8: `persistRoundStart` — a brand-new "start a round" action —
+          // found the player's OWN in_progress round already occupying this
+          // exact slot, with real progress. Falling through to an INSERT
+          // here is exactly how the production orphans were produced: the
+          // first round sits abandoned while a second one gets played and
+          // submitted. Resume it instead of stranding it.
+          //
+          // 36-hole-day follow-up: `confirmSeparateRound` bypasses ONLY this
+          // branch, after the player has explicitly chosen "Start a new
+          // round" over Resume/Discard on the client's conflict prompt — the
+          // insert below then proceeds with `candidateRound` left untouched
+          // (never reused, never discarded from here).
+          //
+          // The Discard choice on that prompt is destructive, so the client
+          // needs enough to show what it would delete before the player
+          // commits — a scored-hole count and a last-updated time, not just
+          // an opaque id. Unlike the lookup above, a failure here fails OPEN
+          // (defaults to 0): it only feeds a display string, never a write
+          // decision, so a wrong-but-safe "0 holes scored" is preferable to
+          // blocking the whole conflict prompt over a display query.
+          const { count: scoredHoleCount } = await supabase
+            .from('golf_holes')
+            .select('id', { count: 'exact', head: true })
+            .eq('round_id', candidateRound.id)
+            .not('score', 'is', null);
+          void flightRecorder.warn('db.create_or_update_draft', { errorSummary: 'in_progress_exists' });
+          endTrace('warning');
+          return {
+            success: false,
+            error: 'in_progress_exists',
+            code: 'in_progress_exists',
+            roundId: candidateRound.id,
+            scoredHoles: scoredHoleCount ?? 0,
+            updatedAt: candidateRound.updated_at ?? null,
+          };
+        }
+      }
+
+      // R8: `persistRoundStart` only (`startIntent`) — before inserting a
+      // brand-new round, check whether a COMPLETED round already occupies
+      // this exact player/course/date/qualifier slot. Unlike the in_progress
+      // heuristic above this is not a data-loss risk (nothing here could be
+      // overwritten), so it warns rather than resumes: the caller shows the
+      // player a confirmation and re-calls with `confirmDuplicateCourse:
+      // true` to proceed. Skipped once the player has confirmed, and skipped
+      // entirely when the course couldn't be resolved to an id (same
+      // disambiguation limit as the heuristic above). A failed read fails
+      // OPEN (falls through to the normal insert) rather than blocking a
+      // round start on a diagnostic query.
+      if (!existingRound && options?.startIntent && !options?.confirmDuplicateCourse && resolvedCourseId) {
+        let completedMatchQuery = supabase
+          .from('golf_rounds')
+          .select('id')
+          .eq('player_id', player.id)
+          .eq('status', 'completed')
+          .eq('course_id', resolvedCourseId)
+          .eq('round_date', data.roundDate);
+        completedMatchQuery = data.qualifierId
+          ? completedMatchQuery.eq('qualifier_id', data.qualifierId)
+          : completedMatchQuery.is('qualifier_id', null);
+        // Mirror the in-progress heuristic's own qualifier_round_number
+        // filter above: without it, a 36-hole one-day qualifier (round 1
+        // completed, round 2 legitimately starting) warns spuriously,
+        // because round 1's COMPLETED row matches on qualifier_id alone.
+        completedMatchQuery = resolvedQualifierRoundNumber != null
+          ? completedMatchQuery.eq('qualifier_round_number', resolvedQualifierRoundNumber)
+          : completedMatchQuery.is('qualifier_round_number', null);
+
+        const { data: completedMatch, error: completedMatchError } = await completedMatchQuery
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (completedMatchError) {
+          await logServerError(
+            `savePartialRound: duplicate-completed-round lookup failed for player ${player.id}; proceeding with insert: ${completedMatchError.message}`,
+            { action: 'savePartialRound.duplicateCheck', featureArea: 'round_tracking', playerId: player.id, userId: user.id },
+            'warning',
+          );
+        } else if (completedMatch) {
+          void flightRecorder.warn('db.create_or_update_draft', { errorSummary: 'duplicate_completed_round' });
+          endTrace('warning');
+          return {
+            success: false,
+            error: 'duplicate_completed_round',
+            code: 'duplicate_completed_round',
+            completedRoundId: completedMatch.id,
+          };
         }
       }
 

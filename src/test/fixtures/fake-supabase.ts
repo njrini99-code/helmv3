@@ -25,6 +25,13 @@ interface FakeOptions {
   tables?: Record<string, Row[]>;
   rpc?: Record<string, (args: unknown) => Promise<{ data: unknown; error: unknown }>>;
   user?: { id: string; email?: string } | null;
+  // Opt-in, consumed-once error injection for a SELECT read's very next
+  // `.maybeSingle()`/`.single()` call against the named table — models a
+  // transient read failure (a dropped connection, an unreadable row) for
+  // testing a caller's fail-open/fail-closed handling, without a general
+  // fault-injection parser. Cleared after the first match so a later query
+  // against the same table (e.g. a retry) behaves normally again.
+  queryErrors?: Record<string, unknown>;
 }
 
 interface QueryState {
@@ -63,7 +70,16 @@ class QueryBuilder<T = Row> implements PromiseLike<{ data: T[]; error: unknown }
   constructor(
     private readonly tables: Record<string, Row[]>,
     private state: QueryState,
+    private readonly queryErrors?: Record<string, unknown>,
   ) {}
+
+  private consumeInjectedError(): unknown | undefined {
+    if (!this.queryErrors) return undefined;
+    const err = this.queryErrors[this.state.table];
+    if (err === undefined) return undefined;
+    delete this.queryErrors[this.state.table];
+    return err;
+  }
 
   select(cols: string = '*'): this {
     this.state.selectCols =
@@ -120,6 +136,8 @@ class QueryBuilder<T = Row> implements PromiseLike<{ data: T[]; error: unknown }
     return this;
   }
   async single(): Promise<{ data: T | null; error: unknown }> {
+    const injected = this.consumeInjectedError();
+    if (injected !== undefined) return { data: null, error: injected };
     const rows = applyState(this.tables[this.state.table] ?? [], this.state);
     if (rows.length === 0) {
       return { data: null, error: { code: 'PGRST116', message: 'No rows' } };
@@ -130,6 +148,8 @@ class QueryBuilder<T = Row> implements PromiseLike<{ data: T[]; error: unknown }
     return { data: rows[0] as T, error: null };
   }
   async maybeSingle(): Promise<{ data: T | null; error: unknown }> {
+    const injected = this.consumeInjectedError();
+    if (injected !== undefined) return { data: null, error: injected };
     const rows = applyState(this.tables[this.state.table] ?? [], this.state);
     return { data: (rows[0] as T) ?? null, error: null };
   }
@@ -254,15 +274,22 @@ export function createFakeSupabase(opts: FakeOptions = {}) {
   const tables = opts.tables ?? {};
   const rpcHandlers = opts.rpc ?? {};
   const user = opts.user ?? null;
+  // Own mutable copy: consuming an injected error must not mutate the
+  // caller's original `opts.queryErrors` object between test runs.
+  const queryErrors = opts.queryErrors ? { ...opts.queryErrors } : undefined;
   return {
     from(table: string) {
       return {
         select: (cols?: string) =>
-          new QueryBuilder(tables, {
-            table,
-            filters: [],
-            selectCols: cols && cols !== '*' ? cols.split(',').map((c) => c.trim()) : '*',
-          }),
+          new QueryBuilder(
+            tables,
+            {
+              table,
+              filters: [],
+              selectCols: cols && cols !== '*' ? cols.split(',').map((c) => c.trim()) : '*',
+            },
+            queryErrors,
+          ),
         insert: (payload: unknown) => new WriteBuilder(tables, table, 'insert', payload),
         update: (payload: unknown) => new WriteBuilder(tables, table, 'update', payload),
         upsert: (payload: unknown, options?: { onConflict?: string }) =>

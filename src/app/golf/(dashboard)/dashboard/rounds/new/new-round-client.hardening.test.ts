@@ -96,7 +96,11 @@ describe('New Round — multi-device conflict blocks further writes (B2/B9)', ()
       .map((m) => afterWrapper.slice(m.index + m[0].length, m.index + 160));
     expect(raw.length).toBeGreaterThan(0);
     for (const args of raw) {
-      expect(args).toMatch(/^(data, targetRoundId\)|initialData\)|\s*buildPartialRoundData\([^)]*\),\s*undefined,)/);
+      // R8: persistRoundStart's create call now passes a 3rd `startIntent`
+      // options argument (`initialData, undefined, { ... }`) — still a
+      // CREATE (no round id, no lock token), so it belongs in this same
+      // allowlist of raw calls.
+      expect(args).toMatch(/^(data, targetRoundId\)|initialData\)|initialData,\s*undefined,\s*\{|\s*buildPartialRoundData\([^)]*\),\s*undefined,)/);
     }
   });
 
@@ -173,7 +177,13 @@ describe('New Round — future round dates (B7)', () => {
 
 describe('New Round — one helper for round-write failures (B6)', () => {
   it('persistRoundStart never shows a bare signal key (busy/retry) verbatim', () => {
-    const handler = slice('const persistRoundStart = useCallback(async (', 'const handleSetupSubmit = async (');
+    // Sliced to persistRoundStart itself, not the wider region up to
+    // handleSetupSubmit — the 36-hole-day conflict handlers now sit in that
+    // region and legitimately reuse deleteInProgressRound's own
+    // `result.error || '<message>'` pattern (same as the pre-existing
+    // handleDeleteRound), which is a plain delete-action message, not one of
+    // savePartialRound's bare busy/retry signal keys this rule guards against.
+    const handler = slice('const persistRoundStart = useCallback(async (', 'const handleConflictResume = () => {');
     expect(handler).not.toMatch(/setError\(result\.error \|\|/);
     expect(handler).toMatch(/describeRoundWriteFailure\(result\.error\)/);
   });
@@ -197,5 +207,157 @@ describe('New Round — completion surfaces provide cold-chunk feedback (B10)', 
     const submitRender = source.slice(source.indexOf("{step === 'submitting' && ("));
     expect(submitRender).toContain('<SubmitOverlay');
     expect(submitRender).toContain('isVisible');
+  });
+});
+
+describe('New Round — start-intent dedupe against a stranded/duplicate round (R8)', () => {
+  const persistRoundStartSource = () =>
+    slice('const persistRoundStart = useCallback(async (', 'const handleSetupSubmit = async (');
+
+  it('sends startIntent (never allowReuse) so the server can dedupe a plain "begin a new round" call', () => {
+    const handler = persistRoundStartSource();
+    expect(handler).toContain('startIntent: true');
+    expect(handler).not.toContain('allowReuse');
+  });
+
+  it('surfaces in_progress_exists as a conflict prompt instead of creating a sibling or auto-navigating', () => {
+    const handler = persistRoundStartSource();
+    const branch = handler.slice(
+      handler.indexOf("result.error === 'in_progress_exists'"),
+      handler.indexOf("result.error === 'duplicate_completed_round'"),
+    );
+    // 36-hole-day follow-up: the player, not the server, decides whether
+    // this is the same abandoned round or a genuinely separate one — so
+    // persistRoundStart itself must not navigate away.
+    expect(branch).toContain('setInProgressConflict({');
+    expect(branch).toContain('roundId: result.roundId');
+    expect(branch).not.toContain('router.push');
+    // No round was created for this outcome — nothing here should look like
+    // starting a fresh round.
+    expect(branch).not.toContain('savedRoundIdRef.current = result.data');
+  });
+
+  it('arms the duplicate-course confirmation ref on the warning, so the SAME "Start round" tap proceeds next time', () => {
+    const handler = persistRoundStartSource();
+    const branch = handler.slice(
+      handler.indexOf("result.error === 'duplicate_completed_round'"),
+      handler.indexOf('// B6: this call always sends'),
+    );
+    expect(branch).toContain('duplicateCourseConfirmedRef.current = true');
+  });
+
+  it('forwards the confirmation ref back to the server on the next call', () => {
+    const handler = persistRoundStartSource();
+    expect(handler).toContain('confirmDuplicateCourse: duplicateCourseConfirmedRef.current');
+  });
+});
+
+describe('New Round — 36-hole-day conflict prompt gives Resume/Discard/Start-new choices (R8 follow-up)', () => {
+  const persistRoundStartSource = () =>
+    slice('const persistRoundStart = useCallback(async (', 'const handleConflictResume = () => {');
+
+  it('carries scoredHoles/updatedAt from the server into the conflict prompt state (for the Discard confirm)', () => {
+    const handler = persistRoundStartSource();
+    const branch = handler.slice(
+      handler.indexOf("result.error === 'in_progress_exists'"),
+      handler.indexOf("result.error === 'duplicate_completed_round'"),
+    );
+    expect(branch).toContain('scoredHoles: result.scoredHoles');
+    expect(branch).toContain('updatedAt: result.updatedAt');
+  });
+
+  it('forwards the separate-round bypass ref back to the server on every call', () => {
+    const handler = persistRoundStartSource();
+    expect(handler).toContain('confirmSeparateRound: confirmSeparateRoundRef.current');
+  });
+
+  it('clears the conflict state, the discard-confirm state, and the bypass ref once a round genuinely starts', () => {
+    const handler = persistRoundStartSource();
+    const successTail = handler.slice(handler.indexOf('duplicateCourseConfirmedRef.current = false;'));
+    expect(successTail).toContain('confirmSeparateRoundRef.current = false;');
+    expect(successTail).toContain('setInProgressConflict(null);');
+    expect(successTail).toContain('setDiscardConfirming(false);');
+  });
+
+  it('Resume navigates to Continue Round for the conflicting round, and only Resume does', () => {
+    const resume = slice('const handleConflictResume = () => {', 'const handleConflictConfirmDiscard = async () => {');
+    expect(resume).toContain('router.push(`/golf/dashboard/rounds/continue/${inProgressConflict.roundId}`)');
+  });
+
+  it('the destructive delete never runs unless discardConfirming is already true (guards the two-step confirm)', () => {
+    const discard = slice('const handleConflictConfirmDiscard = async () => {', 'const handleConflictStartNewRound = async () => {');
+    const guardIdx = discard.indexOf('!discardConfirming');
+    const deleteIdx = discard.indexOf('deleteInProgressRound(inProgressConflict.roundId)');
+    expect(guardIdx).toBeGreaterThanOrEqual(0);
+    expect(deleteIdx).toBeGreaterThan(guardIdx);
+  });
+
+  it('confirmed discard calls the existing non-destructive delete action, never a raw insert/reuse, then retries the SAME flow that includes the save-course step', () => {
+    const discard = slice('const handleConflictConfirmDiscard = async () => {', 'const handleConflictStartNewRound = async () => {');
+    expect(discard).toContain('deleteInProgressRound(inProgressConflict.roundId)');
+    expect(discard).toContain('clearEmergencySave(inProgressConflict.roundId, playerId)');
+    // Retries via the retry-thunk (re-runs handleHolesSave/startWithPreloadedConfigs
+    // in full, including the save-course step), not a bare persistRoundStart call.
+    expect(discard).toContain('lastStartRetryRef.current()');
+    expect(discard).not.toContain('persistRoundStart(');
+    // Must not silently keep the conflict (or its confirm state) open on the happy path.
+    expect(discard).toContain('setInProgressConflict(null)');
+    expect(discard).toContain('setDiscardConfirming(false)');
+  });
+
+  it('Start a new round arms the server bypass, retries the same full flow, and does NOT touch the existing round at all', () => {
+    const startNew = slice(
+      'const handleConflictStartNewRound = async () => {',
+      'const startWithPreloadedConfigs = useCallback(async (',
+    );
+    expect(startNew).toContain('confirmSeparateRoundRef.current = true');
+    expect(startNew).not.toContain('deleteInProgressRound');
+    expect(startNew).toContain('lastStartRetryRef.current()');
+    expect(startNew).not.toContain('persistRoundStart(');
+  });
+
+  it('handleHolesSave and startWithPreloadedConfigs each record themselves as the retry target, so Discard/Start-new never skip the save-course step', () => {
+    expect(source).toContain('lastStartRetryRef.current = () => handleHolesSave(configuredHoles);');
+    expect(source).toContain('lastStartRetryRef.current = () => startWithPreloadedConfigs(configs);');
+    // Both retry targets must still reach the save-course / cloud-catalog step.
+    const holesSave = slice('const handleHolesSave = async (configuredHoles: HoleConfig[]) => {', 'const buildPartialRoundData = useCallback(');
+    expect(holesSave).toContain('savePlayerCourse(');
+    const preloaded = slice('const startWithPreloadedConfigs = useCallback(async (', 'const handleSetupSubmit = async (');
+    expect(preloaded).toContain('contributeCourseFromRound(');
+  });
+
+  it('the conflict dialog offers exactly the three named actions before any confirm, reusing the shared Button component', () => {
+    const dialog = slice('const inProgressConflictDialog = (', 'ENTRY SCREENS (setup + holes)');
+    const confirmStart = dialog.indexOf('discardConfirming && inProgressConflict');
+    const defaultView = dialog.slice(dialog.indexOf(') : ('), dialog.lastIndexOf(')}'));
+    expect(confirmStart).toBeGreaterThanOrEqual(0);
+    expect(confirmStart).toBeLessThan(dialog.indexOf(') : ('));
+    expect(defaultView).toContain('onClick={handleConflictResume}');
+    expect(defaultView).toContain('onClick={handleConflictStartNewRound}');
+    // The first-tap "Discard" only arms the confirm state — it must NOT be
+    // wired to the actual delete handler directly.
+    expect(defaultView).toContain('onClick={() => setDiscardConfirming(true)}');
+    expect(defaultView).not.toContain('handleConflictConfirmDiscard');
+    expect(defaultView).toMatch(/<FwButton[^]*?Resume/);
+    expect(defaultView).toMatch(/<FwButton[^]*?Start a new round/);
+    expect(defaultView).toMatch(/<FwButton[^]*?>\s*Discard\s*<\/FwButton>/);
+  });
+
+  it('the discard-confirm view shows what will be deleted and only THEN wires the actual delete', () => {
+    const dialog = slice('const inProgressConflictDialog = (', 'ENTRY SCREENS (setup + holes)');
+    const confirmView = dialog.slice(
+      dialog.indexOf('discardConfirming && inProgressConflict'),
+      dialog.indexOf(') : ('),
+    );
+    expect(confirmView).toContain('inProgressConflict.scoredHoles');
+    expect(confirmView).toContain('formatConflictUpdatedAt(inProgressConflict.updatedAt)');
+    expect(confirmView).toContain('onClick={handleConflictConfirmDiscard}');
+    expect(confirmView).toContain('Cancel');
+    expect(confirmView).toMatch(/Confirm discard/);
+  });
+
+  it('the setup/holes step renders the conflict dialog', () => {
+    const setupReturn = slice("if (step === 'setup' || step === 'holes') {", 'Submitting overlay stats');
+    expect(setupReturn).toContain('{inProgressConflictDialog}');
   });
 });

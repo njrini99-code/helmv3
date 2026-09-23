@@ -19,7 +19,15 @@ describe('New Round shot recovery boundary', () => {
       source.indexOf('const handleSetupSubmit'),
     );
 
-    expect(startSource).toContain('await savePartialRound(initialData)');
+    // R8 (2026-09-22): persistRoundStart now passes `startIntent: true` so
+    // the server can dedupe a brand-new "start a round" call against an
+    // existing in_progress/completed round for this exact course/date. It
+    // must never pass `allowReuse` — that flag is reserved for explicit
+    // restore flows reconnecting a player to progress they already have,
+    // never a plain "begin a new round" call.
+    expect(startSource).toContain('await savePartialRound(initialData, undefined, {');
+    expect(startSource).toContain('startIntent: true');
+    expect(startSource).not.toContain('allowReuse');
     expect(startSource).toContain('savedRoundIdRef.current = result.data.roundId');
   });
 

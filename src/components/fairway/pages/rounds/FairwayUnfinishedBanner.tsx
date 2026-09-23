@@ -15,6 +15,15 @@
  *   • the course name + city
  *   • a PRIMARY "Continue" CTA (→ /rounds/continue/[id]) and a QUIET "Discard"
  *
+ * R8 (2026-09-22): a round every one of whose holes already has a durable
+ * score (`hasPendingSubmission`, computed server-side from `golf_holes` —
+ * NOT `draft_data.submissionBackup`, which a subsequent autosave overwrites)
+ * gets an accent "Ready to submit" pill and a "Finish submitting" primary CTA
+ * instead of "In progress"/"Continue". The route and destination are
+ * unchanged — Continue Round itself re-opens the submit dialog once it sees
+ * every hole scored — this only makes a round that's actually done, not one
+ * still being played, look like it.
+ *
  * Discard reuses the EXISTING non-destructive server action
  * `deleteInProgressRound` UNCHANGED (no delete-then-reinsert; the action owns
  * the safe delete + emergency-save clear). A two-step confirm guards it.
@@ -28,7 +37,7 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { Play } from 'lucide-react';
+import { Play, Send } from 'lucide-react';
 import { Surface, Inset } from '@/components/fairway/surfaces/surface';
 import { StatusPill } from '@/components/fairway/controls/status-pill';
 import { Button } from '@/components/fairway/controls/button';
@@ -107,6 +116,14 @@ function UnfinishedRow({
   const holesTarget = round.holes_played ?? 18;
   const currentHole = round.current_hole ?? 0;
   const isSetup = !currentHole;
+  // R8: every hole already has a durable score (computed server-side from
+  // `golf_holes`) — the round is stuck holding a completed scorecard, most
+  // likely because a final submit was attempted and never confirmed
+  // committed (see `submitGolfRoundComprehensive` in golf.ts). Route is
+  // identical — Continue Round re-opens the submit dialog itself once it
+  // sees every hole is scored — only the label changes so the player
+  // doesn't mistake a finished round for one still being played.
+  const readyToSubmit = Boolean(round.hasPendingSubmission);
   // A bare state code with no city ("Va") reads as a stray, unlabeled
   // fragment — only render a location when there's an actual city to anchor
   // it (course_state alone is dropped, not shown bare).
@@ -163,9 +180,15 @@ function UnfinishedRow({
 
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <StatusPill tone="warning" size="sm">
-                In progress
-              </StatusPill>
+              {readyToSubmit ? (
+                <StatusPill tone="accent" size="sm">
+                  Ready to submit
+                </StatusPill>
+              ) : (
+                <StatusPill tone="warning" size="sm">
+                  In progress
+                </StatusPill>
+              )}
               {timeAgo && (
                 <span className="font-fw-sans text-eyebrow text-text-tertiary">{timeAgo}</span>
               )}
@@ -213,9 +236,13 @@ function UnfinishedRow({
                 variant="primary"
                 size="sm"
                 onClick={handleContinue}
-                leftIcon={<Play className="h-4 w-4" aria-hidden="true" />}
+                leftIcon={
+                  readyToSubmit
+                    ? <Send className="h-4 w-4" aria-hidden="true" />
+                    : <Play className="h-4 w-4" aria-hidden="true" />
+                }
               >
-                Continue
+                {readyToSubmit ? 'Finish submitting' : 'Continue'}
               </Button>
             </>
           )}
