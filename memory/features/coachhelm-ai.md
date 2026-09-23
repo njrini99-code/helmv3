@@ -169,6 +169,20 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   `useReducedMotionGuard()` from `@/lib/coachhelm/v3/motion`. (STU, source:
   `coachhelm-stats-hooks-310-false-positive.md` dated 2026-07-30, updated
   2026-08-19; verified 2026-09-05 that src/lib/coachhelm/v3/motion exists.)
+- **Outcome measurement now covers v3 insights** (2026-09-22,
+  `agent/coachhelm-outcome-measure`): `backfillInsightOutcomes`
+  (`v2/analytics/effectiveness-writer.ts`) previously only mapped v2-era
+  metric names to round columns, so `outcome_status`/`OutcomeBadge` were
+  effectively NULL on every v3-authored insight. It now also resolves v3
+  `evidence.metric` ids through the v3 metric registry
+  (`lookupMetricSource`/`averageInWindow`/`improvementSign`), keeps the
+  legacy mapping as a fallback, and leaves intentional-null metrics
+  unmeasured on purpose. It also now populates
+  `outcome_metric_name`/`outcome_metric_before`/`outcome_metric_after`, not
+  just `outcome_status`. Candidate selection is paginated and
+  pre-filtered to measurable rows (`FETCH_PAGE_SIZE`/`MAX_FETCH_PAGES`) so a
+  page of permanently-unmeasurable rows can't starve the per-tick backfill
+  budget — same pattern as the `causality-attribute` cron.
 
 ## Tests To Prefer
 
