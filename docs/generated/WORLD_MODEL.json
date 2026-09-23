@@ -13493,7 +13493,7 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/coachhelm-ai.md",
-          "line": 583
+          "line": 622
         },
         {
           "kind": "import_graph",
@@ -14069,7 +14069,7 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/coachhelm-ai.md",
-          "line": 583
+          "line": 622
         },
         {
           "kind": "import_graph",
@@ -18086,7 +18086,7 @@
         {
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/metrics/distance-profile-window.ts",
-          "line": 25
+          "line": 24
         },
         {
           "kind": "import_graph",
