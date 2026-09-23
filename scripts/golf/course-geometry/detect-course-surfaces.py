@@ -91,13 +91,14 @@ GREEN_DEFAULTS = {
     'ndvi_max': 0.90,
     'brightness_smooth_m': 6.0,        # tighter than the tee detector's 10m: a green is smaller
     'texture_scales_m': (3.0, 5.0, 9.0),
-    'core_percentile': 90.0,           # a green must be brighter+smoother than nearly all other turf
     'crown_smooth_m': 20.0,            # DEM smoothing radius for the "locally raised" relief signal
     'slope_max': 0.14,                 # looser than a tee's flat cut: a green can be gently domed
     'open_radius_m': 1.5,
-    'min_area_m2': 250.0,              # a little under the 300 prior: small/older greens exist
-    'max_area_m2': 1500.0,             # a little over the 1200 prior: double greens, big modern greens
-    'split_area_m2': 1500.0,           # a component larger than this is probably green+approach merged
+    'seed_percentile': 92.0,           # strict: only a pixel this confidently green-like can start a candidate
+    'grow_percentile': 65.0,           # permissive: a seed is grown out to the full extent of this weaker band
+    'min_area_m2': 150.0,              # a little under the 300 prior: small/older greens exist
+    'max_area_m2': 1800.0,             # a little over the 1200 prior: double greens, big modern greens
+    'split_area_m2': 1800.0,           # a component larger than this is probably green+approach merged
     'min_roundness': 0.30,             # 4*pi*area/perimeter^2; a fused green+fairway blob fails this
     'min_compactness': 0.35,           # area / own-bbox area, the fallback shape gate
     'peak_spacing_m': 22.0,            # minimum separation between two split seeds inside one big blob
@@ -422,19 +423,36 @@ def detect_greens(naip, dem, chm=None, options=None, boundary_wgs84=None, exclus
     score = (0.40 * np.clip(bright_z, -3, 3) / 3 + 0.30 * np.clip(-texture_z, -3, 3) / 3
              + 0.20 * crown_norm + chm_weight * chm_term) / score_weight_sum
 
-    flat_mask = slope <= options['slope_max']
-    core_mask = turf_mask & flat_mask & (score >= np.percentile(score[turf_mask], options['core_percentile']))
+    flat_mask = turf_mask & (slope <= options['slope_max'])
     if exclusion_mask is not None:
-        core_mask &= ~exclusion_mask
+        flat_mask = flat_mask & ~exclusion_mask
     if boundary_wgs84 is not None:
-        core_mask &= _boundary_mask(naip, boundary_wgs84)
+        flat_mask = flat_mask & _boundary_mask(naip, boundary_wgs84)
     if open_ground is not None:
-        core_mask &= open_ground
-    core_mask = cr.binary_opening(core_mask, options['open_radius_m'], pixel_m)
+        flat_mask = flat_mask & open_ground
+
+    # Hysteresis, the same idea Canny edge detection uses: a single hard
+    # percentile cut either (a) high enough to keep fairway out, in which
+    # case a real green with slightly uneven illumination only has *part*
+    # of its own surface cross the bar and gets reported as a too-small
+    # fragment (or dropped outright by the area gate), or (b) low enough to
+    # recover a green's full extent, in which case it also recovers a lot
+    # of fairway. A `seed_mask` pixel is confident enough on its own to
+    # anchor a candidate; a `grow_mask` pixel is only accepted as part of a
+    # region that already has a seed -- unseeded fairway never becomes a
+    # candidate no matter how much of it clears the permissive bar.
+    turf_scores = score[turf_mask]
+    seed_mask = flat_mask & (score >= np.percentile(turf_scores, options['seed_percentile']))
+    grow_mask = flat_mask & (score >= np.percentile(turf_scores, options['grow_percentile']))
+    seed_mask = cr.binary_opening(seed_mask, options['open_radius_m'], pixel_m)
 
     from scipy.ndimage import label
-    labeled, count = label(core_mask)
+    seed_labeled, seed_count = label(seed_mask)
+    grow_labeled, grow_count = label(grow_mask)
     pixel_area = pixel_m[0] * pixel_m[1]
+
+    seeded_grow_ids = set(np.unique(grow_labeled[seed_mask])) - {0}
+    core_components = [(grow_labeled == g) for g in seeded_grow_ids]
 
     bunker_xy = []
     if bunker_candidates:
@@ -444,8 +462,7 @@ def detect_greens(naip, dem, chm=None, options=None, boundary_wgs84=None, exclus
 
     results = []
     seq = 0
-    for i in range(1, count + 1):
-        component = labeled == i
+    for component in core_components:
         area_m2 = float(component.sum()) * pixel_area
         if area_m2 < options['min_area_m2']:
             continue
