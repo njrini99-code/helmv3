@@ -15,12 +15,29 @@
 -- canonical), then reads back `.select('acknowledged_at')`. Confirmed live
 -- 2026-09-23 (`information_schema.columns`): `public.baseball_timeline_event_acks`
 -- has exactly `id, team_id, timeline_event_id, player_id, acked_by, acked_at,
--- reaction, note` — no `user_id`, no `acknowledged_at`. Every acknowledgement
--- write has therefore been raising `column
--- baseball_timeline_event_acks.user_id does not exist` (36 occurrences in the
--- 24h immediately preceding this review) instead of persisting. The table
--- has 0 rows in production (confirmed live 2026-09-23) — every acknowledge
--- attempt to date has failed outright, not merely lost half its payload.
+-- reaction, note` — no `user_id`, no `acknowledged_at`.
+--
+-- CORRECTED 2026-09-23 (independent db-migration-reviewer pass) — the error
+-- evidence is real but was mischaracterized in an earlier draft of this
+-- header. Read live via the Supabase MCP `query_logs` against `edge_logs`
+-- (24h window): exactly 40 requests to
+-- `/rest/v1/baseball_timeline_event_acks` in the preceding 24h, EVERY one a
+-- `GET` returning `400` with `proxy_status: PostgREST; error=42703`, and
+-- ZERO `POST`/`PATCH`/`DELETE` requests to the table at all in that window.
+-- The failing requests are `getMyTimelineAcknowledgements`'s
+-- `.select('timeline_event_id').eq('user_id', ...)` READ path
+-- (`src/app/baseball/actions/timeline-acks.ts`), not
+-- `acknowledgeTimelineEvent`'s write/upsert — the write path was not
+-- exercised at all in this window (consistent with the table's 0 rows). Had
+-- a write been attempted against the current schema, it would fail
+-- differently: PostgREST rejects an INSERT/UPSERT payload naming an unknown
+-- column with `PGRST204` ("Could not find the '<column>' column"), not
+-- `42703` (`42703` is a raw Postgres "column does not exist" error, which
+-- only a query PostgREST itself constructs — like this `.eq('user_id', ...)`
+-- filter — can surface). Both paths are broken by the same missing columns;
+-- this migration closes both. The table has 0 rows in production (confirmed
+-- live 2026-09-23) — every write attempt to date, whenever it last ran, has
+-- failed outright, not merely lost half its payload.
 --
 -- The table's live RLS also has no DELETE policy at all: `withdrawTimeline-
 -- Acknowledgement`'s `.delete().eq('timeline_event_id', ...).eq('user_id',
@@ -68,7 +85,8 @@
 --     from production.
 -- This migration converges on the PRODUCTION names
 -- (`baseball_timeline_event_acks_*`) for the policies it touches, since that
--- is where the 36-errors/24h are happening. It drops both spellings
+-- is the environment carrying the 40-errors/24h read-path evidence above.
+-- It drops both spellings
 -- (`IF EXISTS`, so whichever one a given environment doesn't have is a
 -- no-op) before creating each one under the production name. `..._select` is
 -- deliberately NOT touched — its live predicate (`is_baseball_team_coach_v2(
@@ -78,6 +96,59 @@
 -- need to carry. `supabase/tests/rls/baseball_timeline_ack_contract.sql` is
 -- updated in this same change to assert the production names for `_insert`
 -- and the new `_delete`.
+--
+-- SECURITY — WHY THE INSERT/UPDATE WITH CHECK GAINS A THIRD CLAUSE
+-- -------------------------------------------------------------------
+-- An earlier draft of this migration tightened INSERT/UPDATE to require
+-- `user_id = auth.uid() AND acked_by = auth.uid()` and stopped there,
+-- reasoning that binding both actor columns to the caller was enough.
+-- Independent review (db-migration-reviewer, 2026-09-23) simulated the
+-- resulting policy and found that binding the ACTOR columns says nothing
+-- about which EVENT or TEAM the row claims to belong to — `team_id` and
+-- `player_id` on `baseball_timeline_event_acks` are plain columns the
+-- caller supplies, unchecked against the `timeline_event_id` they claim to
+-- ack. Concretely, with only the actor-binding WITH CHECK: (1) any
+-- authenticated user — including one with no relationship to baseball at
+-- all — could INSERT a row acking another team's `timeline_event_id` by
+-- supplying that team's `team_id`/`player_id` alongside their own
+-- `user_id`/`acked_by`; (2) that forged `team_id` would then make the ack
+-- visible to the FORGED team's coach via the untouched `_select` policy
+-- (`is_baseball_team_coach_v2(team_id)`); (3) a player could ack a
+-- `staff_only` timeline row they are not entitled to even see, since
+-- nothing checked the underlying event's `visibility`; (4) an UPDATE could
+-- repoint an existing row's `timeline_event_id`/`team_id` to a different
+-- team's event entirely, since the actor-only WITH CHECK re-validates only
+-- the caller, not the row's new target. All four require the same missing
+-- piece: proof that the specific (`timeline_event_id`, `team_id`,
+-- `player_id`) triple on the row is one the caller could legitimately see,
+-- via the SAME predicate `20260624000430`'s original design used (mirror
+-- the timeline SELECT visibility rule) and this repo's own pgTAP suite
+-- already asserts (`supabase/tests/rls/baseball_timeline_event_acks.sql`,
+-- assertion 3 — that suite is updated in this change to point at this
+-- migration's policy names). Fixed below by adding, to BOTH policies'
+-- `WITH CHECK`:
+--   AND EXISTS (
+--     SELECT 1 FROM public.baseball_player_timeline_events e
+--     WHERE e.id = baseball_timeline_event_acks.timeline_event_id
+--       AND e.team_id = baseball_timeline_event_acks.team_id
+--       AND e.player_id = baseball_timeline_event_acks.player_id
+--       AND (
+--         public.is_baseball_team_staff(e.team_id)
+--         OR (e.visibility <> 'staff_only'
+--             AND e.player_id = public.get_my_baseball_player_id())
+--       )
+--   )
+-- `is_baseball_team_staff(uuid) RETURNS boolean` (not `..._coach_v2`, per
+-- reviewer direction — staff is the broader, correct grant for "may ack a
+-- team event", matching `baseball_timeline_delete`/`_insert` on
+-- `baseball_player_timeline_events` itself, which already use
+-- `is_baseball_team_staff`, not the coach-only helper) and
+-- `get_my_baseball_player_id() RETURNS uuid` both confirmed live 2026-09-23
+-- via `pg_proc`; `baseball_player_timeline_events.team_id`/`.player_id`/
+-- `.visibility` (text, NOT NULL) confirmed live via
+-- `information_schema.columns` the same day. This is intentionally an
+-- INSERT/UPDATE-only fix — SELECT and DELETE were not part of the finding
+-- and are unchanged.
 --
 -- GUARANTEES
 -- ----------
@@ -113,8 +184,17 @@ ALTER TABLE public.baseball_timeline_event_acks
 -- also converges production onto the same NOT NULL shape
 -- `src/lib/types/baseball-acknowledgements.ts` already documents as
 -- canonical and a fresh local replay already carries (from `20260624000430`).
+-- Table verified empty by the guard immediately above, in the same
+-- transaction — squawk's generic warning about a blocking table rewrite /
+-- full-table validation scan on a NOT NULL add does not apply to a table
+-- this migration itself just proved has 0 rows. (Confirmed the ignore
+-- comment must sit directly above each ALTER COLUMN sub-clause, not above
+-- the outer ALTER TABLE, by running squawk-cli@2.64.0 locally with CI's
+-- exact flags against both placements.)
 ALTER TABLE public.baseball_timeline_event_acks
+  -- squawk-ignore adding-not-nullable-field
   ALTER COLUMN user_id SET NOT NULL,
+  -- squawk-ignore adding-not-nullable-field
   ALTER COLUMN acknowledged_at SET NOT NULL;
 
 -- Guarded on the constraint's DEFINITION, not its name — a fresh local
@@ -153,19 +233,36 @@ DROP POLICY IF EXISTS baseball_timeline_event_acks_insert ON public.baseball_tim
 DROP POLICY IF EXISTS baseball_timeline_event_acks_update ON public.baseball_timeline_event_acks;
 DROP POLICY IF EXISTS baseball_timeline_event_acks_delete ON public.baseball_timeline_event_acks;
 
--- INSERT: same live predicate (acked_by = caller) plus the new binding
+-- INSERT: the live predicate (acked_by = caller) plus the new binding
 -- (user_id = caller), so a row can never be written with the two actor
--- aliases pointing at different people.
+-- aliases pointing at different people, PLUS the visibility gate (see
+-- "SECURITY" above) so the caller cannot forge a team_id/player_id/
+-- timeline_event_id triple they have no right to ack.
 CREATE POLICY baseball_timeline_event_acks_insert
   ON public.baseball_timeline_event_acks FOR INSERT
   TO authenticated
   WITH CHECK (
     user_id = (select auth.uid())
     AND acked_by = (select auth.uid())
+    AND EXISTS (
+      SELECT 1 FROM public.baseball_player_timeline_events e
+      WHERE e.id = baseball_timeline_event_acks.timeline_event_id
+        AND e.team_id = baseball_timeline_event_acks.team_id
+        AND e.player_id = baseball_timeline_event_acks.player_id
+        AND (
+          public.is_baseball_team_staff(e.team_id)
+          OR (
+            e.visibility <> 'staff_only'
+            AND e.player_id = public.get_my_baseball_player_id()
+          )
+        )
+    )
   );
 
 -- UPDATE: same shape, both as the row-visibility USING clause and the
--- post-update WITH CHECK.
+-- post-update WITH CHECK — the WITH CHECK visibility gate also stops an
+-- UPDATE from repointing a row at a different team's event (see
+-- "SECURITY" above).
 CREATE POLICY baseball_timeline_event_acks_update
   ON public.baseball_timeline_event_acks FOR UPDATE
   TO authenticated
@@ -176,6 +273,19 @@ CREATE POLICY baseball_timeline_event_acks_update
   WITH CHECK (
     user_id = (select auth.uid())
     AND acked_by = (select auth.uid())
+    AND EXISTS (
+      SELECT 1 FROM public.baseball_player_timeline_events e
+      WHERE e.id = baseball_timeline_event_acks.timeline_event_id
+        AND e.team_id = baseball_timeline_event_acks.team_id
+        AND e.player_id = baseball_timeline_event_acks.player_id
+        AND (
+          public.is_baseball_team_staff(e.team_id)
+          OR (
+            e.visibility <> 'staff_only'
+            AND e.player_id = public.get_my_baseball_player_id()
+          )
+        )
+    )
   );
 
 -- DELETE: did not exist live at all before this migration — withdrawing an
@@ -193,9 +303,9 @@ CREATE POLICY baseball_timeline_event_acks_delete
 -- VERIFY: select 1 from information_schema.columns where table_schema = 'public' and table_name = 'baseball_timeline_event_acks' and column_name = 'user_id' and is_nullable = 'NO';
 -- VERIFY: select 1 from information_schema.columns where table_schema = 'public' and table_name = 'baseball_timeline_event_acks' and column_name = 'acknowledged_at' and is_nullable = 'NO';
 -- VERIFY: select 1 from pg_constraint where conrelid = 'public.baseball_timeline_event_acks'::regclass and contype = 'u' and pg_get_constraintdef(oid) = 'UNIQUE (timeline_event_id, user_id)';
--- VERIFY: select 1 from pg_policies where schemaname = 'public' and tablename = 'baseball_timeline_event_acks' and policyname = 'baseball_timeline_event_acks_insert' and with_check ilike '%user_id%' and with_check ilike '%acked_by%';
--- VERIFY: select 1 from pg_policies where schemaname = 'public' and tablename = 'baseball_timeline_event_acks' and policyname = 'baseball_timeline_event_acks_update';
--- VERIFY: select 1 from pg_policies where schemaname = 'public' and tablename = 'baseball_timeline_event_acks' and policyname = 'baseball_timeline_event_acks_delete';
+-- VERIFY: select 1 from pg_policies where schemaname = 'public' and tablename = 'baseball_timeline_event_acks' and policyname = 'baseball_timeline_event_acks_insert' and with_check ilike '%user_id%' and with_check ilike '%acked_by%' and with_check ilike '%is_baseball_team_staff%';
+-- VERIFY: select 1 from pg_policies where schemaname = 'public' and tablename = 'baseball_timeline_event_acks' and policyname = 'baseball_timeline_event_acks_update' and qual ilike '%user_id%' and qual ilike '%acked_by%' and with_check ilike '%user_id%' and with_check ilike '%acked_by%' and with_check ilike '%is_baseball_team_staff%';
+-- VERIFY: select 1 from pg_policies where schemaname = 'public' and tablename = 'baseball_timeline_event_acks' and policyname = 'baseball_timeline_event_acks_delete' and qual ilike '%user_id%' and qual ilike '%acked_by%';
 -- VERIFY: select 1 where not exists (select 1 from pg_policy p join pg_class c on c.oid = p.polrelid join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public' and c.relname = 'baseball_timeline_event_acks' and p.polroles @> ARRAY['anon'::regrole]::oid[]);
 --
 -- ROLLBACK: ALTER TABLE public.baseball_timeline_event_acks ALTER COLUMN

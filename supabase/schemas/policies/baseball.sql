@@ -892,11 +892,17 @@ CREATE POLICY "baseball_teams_update_own_coach" ON "public"."baseball_teams" FOR
 
 CREATE POLICY "baseball_timeline_delete" ON "public"."baseball_player_timeline_events" FOR DELETE TO "authenticated" USING ("public"."is_baseball_team_staff"("team_id"));
 
-CREATE POLICY "baseball_timeline_event_acks_insert" ON "public"."baseball_timeline_event_acks" FOR INSERT TO "authenticated" WITH CHECK (("acked_by" = ( SELECT "auth"."uid"() AS "uid")));
+CREATE POLICY "baseball_timeline_event_acks_delete" ON "public"."baseball_timeline_event_acks" FOR DELETE TO "authenticated" USING ((("acked_by" = ( SELECT "auth"."uid"() AS "uid")) AND ("user_id" = ( SELECT "auth"."uid"() AS "uid"))));
+
+CREATE POLICY "baseball_timeline_event_acks_insert" ON "public"."baseball_timeline_event_acks" FOR INSERT TO "authenticated" WITH CHECK ((("user_id" = ( SELECT "auth"."uid"() AS "uid")) AND ("acked_by" = ( SELECT "auth"."uid"() AS "uid")) AND (EXISTS ( SELECT 1
+   FROM "public"."baseball_player_timeline_events" "e"
+  WHERE (("e"."id" = "baseball_timeline_event_acks"."timeline_event_id") AND ("e"."team_id" = "baseball_timeline_event_acks"."team_id") AND ("e"."player_id" = "baseball_timeline_event_acks"."player_id") AND ("public"."is_baseball_team_staff"("e"."team_id") OR (("e"."visibility" <> 'staff_only'::"text") AND ("e"."player_id" = "public"."get_my_baseball_player_id"()))))))));
 
 CREATE POLICY "baseball_timeline_event_acks_select" ON "public"."baseball_timeline_event_acks" FOR SELECT TO "authenticated" USING (("public"."is_baseball_team_coach_v2"("team_id") OR ("acked_by" = ( SELECT "auth"."uid"() AS "uid"))));
 
-CREATE POLICY "baseball_timeline_event_acks_update" ON "public"."baseball_timeline_event_acks" FOR UPDATE TO "authenticated" USING (("acked_by" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("acked_by" = ( SELECT "auth"."uid"() AS "uid")));
+CREATE POLICY "baseball_timeline_event_acks_update" ON "public"."baseball_timeline_event_acks" FOR UPDATE TO "authenticated" USING ((("user_id" = ( SELECT "auth"."uid"() AS "uid")) AND ("acked_by" = ( SELECT "auth"."uid"() AS "uid")))) WITH CHECK ((("user_id" = ( SELECT "auth"."uid"() AS "uid")) AND ("acked_by" = ( SELECT "auth"."uid"() AS "uid")) AND (EXISTS ( SELECT 1
+   FROM "public"."baseball_player_timeline_events" "e"
+  WHERE (("e"."id" = "baseball_timeline_event_acks"."timeline_event_id") AND ("e"."team_id" = "baseball_timeline_event_acks"."team_id") AND ("e"."player_id" = "baseball_timeline_event_acks"."player_id") AND ("public"."is_baseball_team_staff"("e"."team_id") OR (("e"."visibility" <> 'staff_only'::"text") AND ("e"."player_id" = "public"."get_my_baseball_player_id"()))))))));
 
 CREATE POLICY "baseball_timeline_insert" ON "public"."baseball_player_timeline_events" FOR INSERT TO "authenticated" WITH CHECK ("public"."is_baseball_team_staff"("team_id"));
 
