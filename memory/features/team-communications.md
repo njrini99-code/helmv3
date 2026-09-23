@@ -421,7 +421,7 @@ when the column is empty. That is why `GroupMember` is its own type rather than
 `GolfConversationParticipant`, whose `subtitle` is required and whose DM path
 fills the gap with `'Golf Coach'` / `'Golf Player'`.
 
-<!-- schema-drift-absent: golf_group_membership_management, golf_user_on_conversation_team -->
+<!-- schema-drift-absent: golf_group_membership_management, golf_user_on_conversation_team, golf_active_team -->
 <!--
   `golf_user_on_conversation_team` is a real function, created by
   20260907160000 — which is written and NOT applied, so it is correctly absent
@@ -432,6 +432,9 @@ fills the gap with `'Golf Coach'` / `'Golf Player'`.
   `golf_group_membership_management` is not a database object at all — it is
   the pgTAP suite's own filename, which happens to start with `golf_`:
   `supabase/tests/rls/golf_group_membership_management.sql`.
+  `golf_active_team` is not a database object either — it is the cookie name
+  `getGolfActiveTeamConversationIds()` reads to scope a multi-team head
+  coach's conversation rail (see the warm-start cache-key section below).
 -->
 
 ## Group membership management, and why it needed a policy change
