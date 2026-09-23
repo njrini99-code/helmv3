@@ -1,5 +1,3 @@
-import 'server-only';
-
 /**
  * Pkg 9 gap 2 — "follow-up eligibility" (owner decision, 2026-09-23): before
  * this, nothing in the codebase named or computed this concept (checked
@@ -16,14 +14,16 @@ import 'server-only';
  * Distinct from `due-for-review.ts` on purpose: that module answers "does
  * this ACTIVE area need a check-in reminder soon" (date-window, `active` /
  * `in_progress` / `paused` only). This module answers "has this area run its
- * course (completed, or its target date has passed) AND has the player
- * played enough rounds since it started for a follow-up decision to mean
- * anything" — a `completed` or overdue area is exactly the case
- * `due-for-review.ts` excludes (its `FOCUS_AREA_DUE_STATUSES` never includes
- * `completed`/`declined`, and "past the target date" already graduated out
- * of `due_soon` into `overdue` there). The two modules are meant to be read
- * side by side in the same coach queue (#1998), not merged: "still open,
- * check in soon" vs. "ready for a follow-up decision".
+ * course (completed, or its target date has passed while it was still
+ * actionable) AND has the player played enough rounds since it started for a
+ * follow-up decision to mean anything" — the two are meant to be read side
+ * by side in the same coach queue (#1998), not merged: "still open, check in
+ * soon" vs. "ready for a follow-up decision".
+ *
+ * Deliberately pure and I/O-free (no `server-only`) — like `due-for-review.ts`,
+ * so a client component (`DueForReviewPanel`) can run classification locally
+ * against props already on the page. The `golf_rounds` read lives in the
+ * sibling `follow-up-eligibility-loader.ts` (server-only).
  *
  * Owner rule: eligible when (status === 'completed' OR today is past
  * `target_date`) AND the player has played >= `FOLLOW_UP_ROUNDS_THRESHOLD`
@@ -38,12 +38,7 @@ import 'server-only';
  * metric actually improved) — this only answers whether a follow-up
  * decision is ripe to make, not what that decision should be.
  */
-import type { SupabaseClient } from '@supabase/supabase-js';
-import { fromUntyped } from '@/lib/supabase/untyped';
-import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
-import { chunkIds } from '@/lib/supabase/chunk-ids';
-import { logServerError } from '@/lib/server-error-logger';
-import { describeError } from '@/lib/utils/describe-error';
+import { FOCUS_AREA_DUE_STATUSES } from './due-for-review';
 
 /** Owner rule: >= 3 completed rounds since start before a follow-up is ripe. */
 export const FOLLOW_UP_ROUNDS_THRESHOLD = 3;
@@ -75,11 +70,18 @@ export interface FollowUpEligibilityEntry<T> {
 /**
  * Classify one focus area as follow-up-ripe or not, relative to
  * `todayIso` (caller-resolved, zone-safe — same `todayIsoInZone(teamTimezone)`
- * convention `due-for-review.ts` documents; never computed inside). `null`
- * covers both "still actively being worked" and "a rounds-target area with
- * no target_date to compare" — a rounds-kind area only becomes eligible by
- * being explicitly completed, per the owner rule; there is no "past due" for
- * a rounds target here (see due-for-review.ts's own note on that gap).
+ * convention `due-for-review.ts` documents; never computed inside).
+ *
+ * The `status === 'completed'` leg fires regardless of `target_kind` — a
+ * player who finished the work early is done, whatever the timeframe said.
+ * The "past target date" leg is gated on `FOCUS_AREA_DUE_STATUSES` (the same
+ * `active`/`in_progress`/`paused` set `due-for-review.ts` uses): a `proposed`
+ * area was never accepted (no real start, matches the owner's "accepted/
+ * active start, not creation of a proposal" rule) and a `declined` area is
+ * already resolved — neither should read as "past its target date, waiting
+ * on rounds" forever in the coach queue. A rounds-kind target only becomes
+ * eligible by being explicitly completed; there is no "past due" for a
+ * rounds target here (see `due-for-review.ts`'s own note on that gap).
  *
  * "Past" the target date matches `due-for-review.ts`'s `overdue` boundary:
  * strictly before `todayIso`, not on it — a target due today is not yet
@@ -90,7 +92,13 @@ export function followUpEligibilityReason(
   todayIso: string,
 ): FollowUpEligibilityReason | null {
   if (area.status === 'completed') return 'completed';
-  if (area.target_kind === 'date' && area.target_date && area.target_date.slice(0, 10) < todayIso) {
+  if (
+    area.status &&
+    (FOCUS_AREA_DUE_STATUSES as readonly string[]).includes(area.status) &&
+    area.target_kind === 'date' &&
+    area.target_date &&
+    area.target_date.slice(0, 10) < todayIso
+  ) {
     return 'past_target_date';
   }
   return null;
@@ -101,6 +109,15 @@ export function followUpEligibilityReason(
  * `roundsSinceStartByFocusArea` comes from `loadFollowUpRoundCounts` — this
  * function stays pure and takes the counts as data, mirroring
  * `computeDueFocusAreas`'s split between derivation and I/O.
+ *
+ * `roundsSinceStartByFocusArea` must be a SUCCESSFUL result (the caller
+ * already branched on `loadFollowUpRoundCounts`'s `null` — a failed read —
+ * before reaching here; see `DueForReviewPanel`). Given that, a focus area
+ * with NO entry in the map didn't fail to load a count — it was never
+ * started (`started_at` was null), which `loadFollowUpRoundCounts` excludes
+ * on purpose. Such an area is excluded here too, not defaulted to 0 rounds:
+ * a legacy `completed` row with no recorded `started_at` would otherwise
+ * show a permanent "waiting for rounds (0/3)" it can never climb out of.
  */
 export function computeFollowUpEligibility<T extends FollowUpEligibilityInput>(
   areas: readonly T[],
@@ -112,7 +129,8 @@ export function computeFollowUpEligibility<T extends FollowUpEligibilityInput>(
   for (const area of areas) {
     const reason = followUpEligibilityReason(area, opts.todayIso);
     if (!reason) continue;
-    const roundsSinceStart = roundsSinceStartByFocusArea.get(area.id) ?? 0;
+    if (!roundsSinceStartByFocusArea.has(area.id)) continue;
+    const roundsSinceStart = roundsSinceStartByFocusArea.get(area.id)!;
     const eligible = roundsSinceStart >= threshold;
     out.push({
       area,
@@ -121,81 +139,6 @@ export function computeFollowUpEligibility<T extends FollowUpEligibilityInput>(
       eligible,
       waitingLabel: eligible ? null : `waiting for rounds (${roundsSinceStart}/${threshold})`,
     });
-  }
-  return out;
-}
-
-export interface FollowUpRoundCountInput {
-  id: string;
-  player_id: string;
-  /** Accept/active start — `null` (still `proposed`) means no window to
-   *  count rounds against; such areas are simply left out of the result map,
-   *  same as `computeFollowUpEligibility` would never call `followUpEligibilityReason`
-   *  true for a non-completed proposed area in practice. */
-  started_at: string | null;
-}
-
-/**
- * Batch-loads a completed-round count per focus area, counting only rounds
- * on or after that area's own `started_at` date (matches
- * `loadWindowRoundsByPlayer`'s `round_date >= startDate` string-comparison
- * convention in progress-drivers.ts — `golf_rounds.round_date` is a plain
- * date, no timezone conversion needed). One query per player-id chunk
- * (`chunkIds`), each paged past PostgREST's 1000-row cap
- * (`fetchAllRowsResult`) — per CLAUDE.md's pagination/URL-size rules.
- *
- * Returns `null` — not an empty Map — on any read failure, so a caller never
- * confuses "the read failed" with "zero rounds played" (same contract as
- * `loadFocusAreaPracticeLogData`'s `null`-means-unknown convention). Areas
- * with no `started_at` are simply absent from the returned map.
- */
-export async function loadFollowUpRoundCounts(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabase: SupabaseClient<any>,
-  areas: readonly FollowUpRoundCountInput[],
-): Promise<Map<string, number> | null> {
-  const out = new Map<string, number>();
-  const started = areas.filter(
-    (a): a is FollowUpRoundCountInput & { started_at: string } => Boolean(a.started_at),
-  );
-  if (started.length === 0) return out;
-
-  const playerIds = [...new Set(started.map((a) => a.player_id))];
-  const earliestStartDate = started.reduce((min, a) => {
-    const d = a.started_at.slice(0, 10);
-    return d < min ? d : min;
-  }, started[0]!.started_at.slice(0, 10));
-
-  type RoundRow = { player_id: string; round_date: string | null };
-  const rounds: RoundRow[] = [];
-  try {
-    for (const batch of chunkIds(playerIds)) {
-      const { data, error } = await fetchAllRowsResult<RoundRow>((from, to) =>
-        fromUntyped(supabase, 'golf_rounds')
-          .select('player_id, round_date')
-          .in('player_id', batch)
-          .eq('status', 'completed')
-          .gte('round_date', earliestStartDate)
-          .order('id', { ascending: true })
-          .range(from, to),
-      );
-      if (error) throw error;
-      rounds.push(...(data ?? []));
-    }
-  } catch (error) {
-    await logServerError(
-      `[follow-up-eligibility] golf_rounds batch read failed — round counts will render as absent, not as a false "0 rounds": ${describeError(error)}`,
-      { action: 'followUpEligibility.loadFollowUpRoundCounts', featureArea: 'development' },
-      'warning',
-    );
-    return null;
-  }
-
-  for (const area of started) {
-    const startDate = area.started_at.slice(0, 10);
-    const count = rounds.filter((r) => r.player_id === area.player_id && r.round_date && r.round_date >= startDate)
-      .length;
-    out.set(area.id, count);
   }
   return out;
 }

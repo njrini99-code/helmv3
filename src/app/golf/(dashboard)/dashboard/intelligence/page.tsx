@@ -33,6 +33,7 @@ import { fromUntyped } from '@/lib/supabase/untyped';
 import { computeEvidenceRevisionStatuses } from '@/lib/coachhelm/focus-areas/load-evidence-revision-status';
 import type { EvidenceRevisionComparison } from '@/lib/coachhelm/focus-areas/evidence-revision-status';
 import { loadFocusAreaPracticeLogData } from '@/lib/coachhelm/focus-areas/practice-log-loader';
+import { loadFollowUpRoundCounts } from '@/lib/coachhelm/focus-areas/follow-up-eligibility-loader';
 import { isFlagEnabled } from '@/lib/flags';
 
 /**
@@ -338,10 +339,27 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
   // A8 slice 2 (read side): zero .from() calls against either new table
   // while coachhelm_focus_area_practice_log is off — the loader checks the
   // flag first and returns empty maps immediately in that case.
-  const { criteriaByFocusArea, practiceSummaryByFocusArea } = await loadFocusAreaPracticeLogData(
-    supabase,
-    (focusAreas || []).map((fa) => fa.id),
-  );
+  // Pkg 9 gap 2 (follow-up eligibility, owner decision 2026-09-23): a batch
+  // golf_rounds read, independent of the practice-log tables above, run in
+  // parallel with them. `null` (read failed) is threaded down as-is —
+  // DueForReviewPanel treats it the same "unknown, not zero" way
+  // criteriaByFocusArea/practiceSummaryByFocusArea already do.
+  const [{ criteriaByFocusArea, practiceSummaryByFocusArea }, followUpRoundCountsMap] = await Promise.all([
+    loadFocusAreaPracticeLogData(
+      supabase,
+      (focusAreas || []).map((fa) => fa.id),
+    ),
+    loadFollowUpRoundCounts(
+      supabase,
+      (focusAreas || []).map((fa) => ({ id: fa.id, player_id: fa.player_id, started_at: fa.started_at })),
+    ),
+  ]);
+  // Client components can't receive a Map across the server/client boundary
+  // — DueForReviewPanel (and everything between it and this page) is
+  // 'use client', so this crosses as a plain object.
+  const followUpRoundCounts: Record<string, number> | null = followUpRoundCountsMap
+    ? Object.fromEntries(followUpRoundCountsMap)
+    : null;
   // A8 slice 3 (write side): `isFlagEnabled` is server-only — resolved once
   // here and threaded down opaquely through `playersDrillProps` (see
   // PlayersGridViewProps.practiceLogEnabled) rather than re-derived from the
@@ -478,6 +496,7 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
               sp.player && players.some((p) => p.id === sp.player) ? sp.player : null,
             todayIso,
             practiceLogEnabled,
+            followUpRoundCounts,
           }}
           effectivenessDrillProps={{
             teamId,

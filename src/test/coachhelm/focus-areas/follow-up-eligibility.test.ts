@@ -77,10 +77,16 @@ describe('followUpEligibilityReason', () => {
     expect(followUpEligibilityReason(area({ status: 'declined', target_kind: null, target_date: null }), TODAY_ISO)).toBeNull();
   });
 
-  it('the status leg does not itself gate a proposed area\'s past target_date — never-started areas are excluded downstream by having no started_at (see computeFollowUpEligibility\'s "missing round count" test and loadFollowUpRoundCounts)', () => {
+  it('is null for a proposed (not yet accepted) area with a past target_date — never accepted, no real start to measure against', () => {
     expect(
       followUpEligibilityReason(area({ status: 'proposed', target_kind: 'date', target_date: '2026-09-01' }), TODAY_ISO),
-    ).toBe('past_target_date');
+    ).toBeNull();
+  });
+
+  it('is null for a declined area with a past target_date — already resolved, not waiting on anything', () => {
+    expect(
+      followUpEligibilityReason(area({ status: 'declined', target_kind: 'date', target_date: '2026-09-01' }), TODAY_ISO),
+    ).toBeNull();
   });
 });
 
@@ -105,9 +111,19 @@ describe('computeFollowUpEligibility', () => {
     expect(result[0]).toMatchObject({ eligible: true, roundsSinceStart: 3, waitingLabel: null });
   });
 
-  it('treats a missing round-count entry as 0, not an error', () => {
+  it('excludes an area with no entry in the counts map — never started, not 0 rounds', () => {
+    // A missing entry means loadFollowUpRoundCounts left it out (no
+    // started_at), not "0 rounds played" — a legacy completed row with no
+    // recorded start must not sit in the queue forever as "waiting for
+    // rounds (0/3)".
     const areas = [area({ id: 'fa-no-count', status: 'completed' })];
     const result = computeFollowUpEligibility(areas, new Map(), { todayIso: TODAY_ISO });
+    expect(result).toHaveLength(0);
+  });
+
+  it('shows "waiting for rounds (0/3)" for an area that DID start but has 0 rounds since (explicit 0 entry)', () => {
+    const areas = [area({ id: 'fa-zero-rounds', status: 'completed' })];
+    const result = computeFollowUpEligibility(areas, new Map([['fa-zero-rounds', 0]]), { todayIso: TODAY_ISO });
     expect(result[0]).toMatchObject({ roundsSinceStart: 0, eligible: false, waitingLabel: 'waiting for rounds (0/3)' });
   });
 

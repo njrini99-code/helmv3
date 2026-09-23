@@ -98,10 +98,8 @@ import {
 } from '@/app/golf/actions/focus-area-practice-log';
 import { loadFocusAreaPracticeLogData } from '@/lib/coachhelm/focus-areas/practice-log-loader';
 import { computeDueFocusAreas } from '@/lib/coachhelm/focus-areas/due-for-review';
-import {
-  computeFollowUpEligibility,
-  loadFollowUpRoundCounts,
-} from '@/lib/coachhelm/focus-areas/follow-up-eligibility';
+import { computeFollowUpEligibility } from '@/lib/coachhelm/focus-areas/follow-up-eligibility';
+import { loadFollowUpRoundCounts } from '@/lib/coachhelm/focus-areas/follow-up-eligibility-loader';
 import { computeInsightEvidenceRevision } from '@/lib/coachhelm/focus-areas/evidence-revision-source';
 
 const PLAYER_ID = 'player-1';
@@ -352,17 +350,30 @@ describe('Package 9 gate — one focus area, coach assignment through re-eligibi
     });
 
     // Play 3 completed rounds on/after the area's start date — real
-    // persisted golf_rounds rows, read back through the real loader.
+    // persisted golf_rounds rows, read back through the real loader. Also
+    // seed three rounds that each fail exactly one of the loader's filters,
+    // to prove they're excluded rather than merely never having been present:
+    // a round before the start date, an in-progress round, and a round for
+    // a different player.
     tables.golf_rounds.push(
       { id: crypto.randomUUID(), player_id: PLAYER_ID, round_date: startDate, status: 'completed' },
       { id: crypto.randomUUID(), player_id: PLAYER_ID, round_date: startDate, status: 'completed' },
       { id: crypto.randomUUID(), player_id: PLAYER_ID, round_date: startDate, status: 'completed' },
+      // before the start date — must not count
+      { id: crypto.randomUUID(), player_id: PLAYER_ID, round_date: '2000-01-01', status: 'completed' },
+      // not completed — must not count
+      { id: crypto.randomUUID(), player_id: PLAYER_ID, round_date: startDate, status: 'in_progress' },
+      // a different player — must not count
+      { id: crypto.randomUUID(), player_id: 'player-2', round_date: startDate, status: 'completed' },
     );
 
     const countsAfterRounds = await loadFollowUpRoundCounts(coachReadClient as never, [
       { id: focusAreaId, player_id: PLAYER_ID, started_at: startedRow.started_at as string },
     ]);
     expect(countsAfterRounds).not.toBeNull();
+    // Exactly 3, not 6 — proves the before-start, non-completed, and
+    // other-player rounds were all filtered out, not just absent.
+    expect(countsAfterRounds!.get(focusAreaId)).toBe(3);
 
     const eligibilityAfterRounds = computeFollowUpEligibility(
       [
