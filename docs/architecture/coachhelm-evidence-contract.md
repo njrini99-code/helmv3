@@ -705,7 +705,7 @@ Before building this, the collision A3 was scoped to reproduce
 (`generators/par-type.ts`/`course-mgmt.ts` grouping a specific hole by bare
 `hole_number`) was re-checked against current code: `course-mgmt.ts`'s
 `worst_holes` ranking already keys on `(course_id, hole_number)` — fixed in
-#1936, pinned by `src/test/coachhelm/v3/course-mgmt-hole-identity.test.ts` —
+PR #1936, pinned by `src/test/coachhelm/v3/course-mgmt-hole-identity.test.ts` —
 and `par-type.ts` never groups by a specific hole at all (it only
 decomposes by `par`, across all holes of that par). Neither file needed a
 collision fix in this slice; the "Specific-hole scoring" row above already
@@ -771,8 +771,9 @@ self-scopes `facts` (via an internal `factsInScope`, filtering
 no date field at all. `par5_regulation_opportunity_rate` and its siblings are
 correctly scoped as a result (they only ever look at in-scope facts).
 `par_length_scoring` is NOT: the caller MUST pass an already
-window/cutoff/completed-status-filtered `holes` array (`load-player-context.ts`,
-#1986, is the intended enforcer); passing an unscoped array silently produces
+window/cutoff/completed-status-filtered `holes` array
+(`load-player-context.ts`, PR #1986, is the intended enforcer); passing an
+unscoped array silently produces
 a lifetime aggregate regardless of `scope`. Band BOUNDARIES themselves are
 unaffected either way — they are compile-time constants, never derived from
 `holes` or `scope`.
