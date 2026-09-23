@@ -395,6 +395,15 @@ jobs:
         continue-on-error: true
         run: npm run flags:check
 
+      # course-geometry/registry.generated.json is what the round pages read
+      # to decide which courses may go Live. It must match the owner-written
+      # approvals.json, the catalog and the published packages (same
+      # drift-check shape as flags:check).
+      - name: Course-geometry registry is current
+        id: course_geometry_registry
+        continue-on-error: true
+        run: npm run course-geometry:registry:check
+
       # Helm Bridge integration env drift.
       #
       # Runs in --drift mode, which is a no-op while NONE of these secrets are
