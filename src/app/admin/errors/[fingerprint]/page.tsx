@@ -3,7 +3,7 @@ import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { fetchFingerprintDetail } from '@/lib/admin/data/errors';
 import { InlineNotice, StatStrip, StatusPill, Surface, type FwStatusTone } from '@/components/fairway';
 import type { TriageSeverity } from '@/lib/admin/data/triage';
-import { extractActionName, featureLabelFor, resolveActionFilePath } from '@/lib/admin/incident-report';
+import { extractActionName, extractUserIdUnverified, featureLabelFor, resolveActionFilePath } from '@/lib/admin/incident-report';
 import { PanelBoundary } from '../../_components/PanelBoundary';
 import { PanelPageSkeleton } from '../../_components/PanelSkeletons';
 import { PanelNoData } from '../../_components/PanelStates';
@@ -422,9 +422,24 @@ export default async function FingerprintDetailPage({
               </p>
               <EventDetailLine source={e.source} feature={e.feature} metadata={e.metadata} />
               {e.user_id ? (
-                <Link href={`/admin/users/${e.user_id}`} className="text-xs text-accent-700 underline">
-                  {e.user_email ?? e.user_id}
-                </Link>
+                <span className="inline-flex items-center gap-1.5">
+                  <Link href={`/admin/users/${e.user_id}`} className="text-xs text-accent-700 underline">
+                    {e.user_email ?? e.user_id}
+                  </Link>
+                  {extractUserIdUnverified(e.metadata) ? (
+                    // Not a confirmed identity — this row's user_id came from
+                    // an unverified JWT subject (see extractUserIdUnverified),
+                    // the normal "session expired mid-round" case. Surfaced
+                    // here so an operator can't mistake it for a getUser()-
+                    // verified attribution just because it renders as a link.
+                    <span
+                      className="rounded bg-warm-100 px-1 py-0.5 text-eyebrow font-medium uppercase tracking-wide text-warm-600"
+                      title="Attributed from an unverified session subject, not a verified getUser() call"
+                    >
+                      unverified
+                    </span>
+                  ) : null}
+                </span>
               ) : null}
               {e.stack_trace ? (
                 // Contained CODE block, never a page-level pan: w-full + min-w-0
