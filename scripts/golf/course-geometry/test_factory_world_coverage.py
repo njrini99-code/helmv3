@@ -129,6 +129,70 @@ class WorldCoverageTests(unittest.TestCase):
         self.assertEqual(row["acquisitionTask"]["kind"], "route_evidence")
         self.assertIn("proximity", row["acquisitionTask"]["prohibitedResolution"])
 
+    def _blocked_terrain_run_report(self, *, code: str = "NATIVE_TERRAIN_COVERAGE_GAP", suffix: str = "old") -> None:
+        write(self.output / "runs" / f"run-2026092{suffix}" / "report.json", {"blocked": [
+            {"key": f"layout.terrain.acquire[{self.layout_id}]",
+             "blockers": [{"code": code, "evidence": {"layoutId": self.layout_id, "provider": "nc_onemap_dem03"}}]},
+        ]})
+
+    def test_stale_dossier_and_old_blocked_run_do_not_override_a_completed_source_manifest(self):
+        # Reproduces the Benvenue/Eagle Point shape: a run once blocked on
+        # NATIVE_TERRAIN_COVERAGE_GAP, and the terrain directory still holds
+        # the rejected-candidate dossier and a stale coverage-exception from
+        # that same episode -- but a source-manifest.json now exists,
+        # recording that the acquisition fell back to a different provider
+        # and completed. None of the retained-but-superseded evidence should
+        # keep reporting this as still blocked or still pending.
+        self._blocked_terrain_run_report()
+        terrain_dir = self.output / "facilities" / "test-facility" / "terrain" / "abc123-nc-native-v2"
+        write(terrain_dir / "coverage-exception.json", {"state": "needs_source_review", "packageHash": "old-hash"})
+        write(terrain_dir / "source-selection-dossier.json", {"schema": "golfhelm-nc-dem03-source-selection-dossier-v1", "providerPolicyId": "nc_onemap_dem03"})
+        write(terrain_dir / "source-manifest.json", {"providerPolicyId": "usgs_3dep_project_1m", "fallbackFrom": "nc_onemap_dem03", "packageHash": "new-hash"})
+        with patch("factory.world_coverage.route_inventory", return_value=self._routes()):
+            report = audit_catalog(str(self.root), str(self.catalog), str(self.output))
+        row = report["layouts"][0]
+        self.assertEqual(row["terrain"]["state"], "native_terrain_acquired")
+        self.assertEqual(len(row["terrain"]["sourceManifests"]), 1)
+        self.assertNotIn(row["lifecycleState"], {"native_terrain_incomplete", "terrain_decision_pending"})
+        self.assertNotEqual(row["nextBlocker"], "NATIVE_TERRAIN_COVERAGE_GAP")
+        self.assertEqual(terrain_decisions(report)["decisions"], [])
+
+    def test_dossier_without_a_manifest_still_reports_a_pending_terrain_decision(self):
+        # No source-manifest.json anywhere yet, and the latest run report
+        # carries no NATIVE_TERRAIN_COVERAGE_GAP block for this key: the
+        # dossier is the only evidence, and genuinely nothing has succeeded,
+        # so the pending state must still surface.
+        terrain_dir = self.output / "facilities" / "test-facility" / "terrain" / "abc123-nc-native-v2"
+        write(terrain_dir / "source-selection-dossier.json", {"schema": "golfhelm-nc-dem03-source-selection-dossier-v1", "providerPolicyId": "nc_onemap_dem03"})
+        with patch("factory.world_coverage.route_inventory", return_value=self._routes()):
+            report = audit_catalog(str(self.root), str(self.catalog), str(self.output))
+        row = report["layouts"][0]
+        self.assertEqual(row["terrain"]["state"], "terrain_decision_pending")
+        self.assertEqual(row["terrain"]["sourceManifests"], [])
+
+    def test_an_old_terrain_keys_manifest_never_masks_a_blocker_on_the_current_key(self):
+        # Two candidate directories under the same facility: an abandoned
+        # "old" key (different requested bounds/policy) that happens to have
+        # a manifest from a past attempt, and the layout's *current* key
+        # (named by its terrain-source.json pointer, exactly as
+        # `acquire_terrain` writes it), which is genuinely still blocked and
+        # has no manifest of its own. The old key's manifest must not be
+        # picked up as if it were current-key evidence.
+        terrain_root = self.output / "facilities" / "test-facility" / "terrain"
+        old_key_dir = terrain_root / "oldkey-nc-native-v2"
+        write(old_key_dir / "source-manifest.json", {"providerPolicyId": "usgs_3dep_project_1m", "packageHash": "abandoned-hash"})
+        current_key_dir = terrain_root / "currentkey-nc-native-v2"
+        write(self.output / "layouts" / self.layout_id / "terrain-source.json", {
+            "kind": "golfhelm-factory-terrain-source-v1", "layoutId": self.layout_id, "directory": str(current_key_dir),
+        })
+        self._blocked_terrain_run_report()
+        with patch("factory.world_coverage.route_inventory", return_value=self._routes()):
+            report = audit_catalog(str(self.root), str(self.catalog), str(self.output))
+        row = report["layouts"][0]
+        self.assertEqual(row["terrain"]["state"], "native_terrain_incomplete")
+        self.assertEqual(row["terrain"]["sourceManifests"], [])
+        self.assertEqual(row["nextBlocker"], "NATIVE_TERRAIN_COVERAGE_GAP")
+
     def test_external_work_projections_are_read_only_and_complete(self):
         with patch("factory.world_coverage.route_inventory", return_value={"layouts": [{"layoutId": self.layout_id, "routeStatus": "unresolved", "candidateAssemblyReady": False, "blockers": ["ROUTE_WAY_IDS_REQUIRED"]}]}):
             report = audit_catalog(str(self.root), str(self.catalog), str(self.output))

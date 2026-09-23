@@ -9,6 +9,7 @@ import re
 import tempfile
 
 from .catalog import load_catalog
+from .source_registry import imagery_policy
 from .tee_profiles import content_hash, import_profiles
 
 USGS = ['usgs_s1m', 'usgs_3dep_project_1m']
@@ -26,6 +27,16 @@ def terrain_providers(facility):
     if (facility.get('state') or '').upper() == 'NC':
         return ['nc_onemap_dem03']      # Provider adapter selected; source datum and redistribution review remain gates
     return USGS                          # discovery may still find a tile the audit did not name
+
+
+def imagery_providers(facility, course):
+    """Region-ranked imagery policy (source_registry §imagery), not the
+    stale 'naip_current' placeholder — that id names no provider at all.
+    library_intake.py already patches this in after the fact for the
+    complete-library dossier path; deriving it correctly here means a plain
+    `intake` run (no dossier) writes the same real policy Forsyth/Landfall
+    carry, instead of an unresolvable one."""
+    return imagery_policy(facility.get('state') or course.get('state'))
 
 
 def build_entries(cohort, coverage, scorecards, existing, min_rounds=1):
@@ -60,20 +71,48 @@ def build_entries(cohort, coverage, scorecards, existing, min_rounds=1):
             rows.append(row)
             continue
         osm_course = facility.get('osmCourse') or {}
+        # A `leisure=golf_course` polygon is the strongest evidence, but some
+        # facilities (Bryan Park, Forest Oaks) are mapped as bare golf=hole/
+        # green/tee features with no enclosing course polygon at all; the
+        # coverage audit already anchors those to a *named* enclosing OSM
+        # element (a park, a resort) that has real geometry. A `node` anchor
+        # (a hotel, a street corner) has no polygon and is never used as an
+        # AOI — that is still a human-pin case.
+        #
+        # A way/relation anchor is only usable once its *real* OSM tags have
+        # been fetched and checked — `facility_resolver.resolve_facility`
+        # stamps a verified anchor with `realTags` (possibly `{}` for a
+        # genuinely untagged element); Forest Oaks' own failure was trusting
+        # an anchor's name alone, which cannot rule out an administrative
+        # boundary (`boundary=statistical`) standing in for the facility. A
+        # coverage row written before that check existed has no `realTags`
+        # key at all and must not be silently trusted just because its
+        # `type` looks right — it needs a fresh resolution, not a guess.
+        anchor = facility.get('anchor') or {}
+        anchor_real_tags = anchor.get('realTags')
+        anchor_verified = anchor.get('type') in ('way', 'relation') and anchor_real_tags is not None
+        anchor_is_administrative = bool({'boundary', 'place', 'admin_level'} & set(anchor_real_tags or {}))
+        usable_anchor = anchor if anchor_verified and not anchor_is_administrative else None
+        anchor_reason = None
+        if anchor.get('type') in ('way', 'relation') and not usable_anchor:
+            anchor_reason = ('this anchor is an administrative/statistical boundary, not a facility'
+                              if anchor_is_administrative else
+                              'anchor predates tag vetting; re-run the facility resolver for it before intake can use it')
         pin = facility.get('osmPin')
-        element = pin or (f"{osm_course['type']}/{osm_course['id']}" if osm_course else None)
+        element = pin or (f"{osm_course['type']}/{osm_course['id']}" if osm_course else None) \
+            or (f"{usable_anchor['type']}/{usable_anchor['id']}" if usable_anchor else None)
         row.update(osm=element, features=f"h{facility.get('holes', 0)} g{facility.get('greens', 0)} f{facility.get('fairways', 0)} b{facility.get('bunkers', 0)} t{facility.get('tees', 0)}",
                    terrain=('3dep-1m' if facility.get('dem1mTiles') else 'none'))
         if not element:
-            row.update(status='skipped', reason='no OSM course polygon matched; a human pin is needed before an AOI exists')
+            row.update(status='skipped', reason=anchor_reason or 'no OSM course polygon matched; a human pin is needed before an AOI exists')
             rows.append(row)
             continue
-        center = osm_course.get('center')
+        center = osm_course.get('center') or (usable_anchor.get('center') if usable_anchor else None)
         if not center:
             row.update(status='skipped', reason='the pinned OSM element has no recorded centre; run the coverage audit for it')
             rows.append(row)
             continue
-        osm_name = osm_course.get('name')
+        osm_name = osm_course.get('name') or (usable_anchor.get('name') if usable_anchor else None)
         library_names = facility.get('libraryNames') or []
         if len(facility.get('libraryIds') or []) > 1 and osm_name and any(n.lower() == osm_name.lower() for n in library_names) \
                 and (course.get('name') or '').lower() != osm_name.lower():
@@ -82,7 +121,16 @@ def build_entries(cohort, coverage, scorecards, existing, min_rounds=1):
             row.update(status='skipped', reason=f'coverage audit binds this row to the polygon of {osm_name!r}; a human pin is needed')
             rows.append(row)
             continue
-        facility_name = osm_name or re.sub(r'\s*\(.*?\)\s*', ' ', facility['name']).strip()
+        # A bare directional sub-course name ("South Course") is the OSM
+        # name of one course at a multi-course facility, never the facility
+        # itself (library_intake.py holds the same pattern as
+        # ALIAS_OR_SIBLING_REVIEW for the complete-library path; Forest
+        # Creek's own polygon is named just "South Course"). Falling back to
+        # the coverage/library name here keeps the facility identifiable
+        # and stops a second, unrelated "South Course" elsewhere from ever
+        # slugifying to the same facility_id.
+        generic_subcourse = bool(re.fullmatch(r'(north|south|east|west)( course)?', (osm_name or '').strip(), re.IGNORECASE))
+        facility_name = (osm_name if osm_name and not generic_subcourse else None) or re.sub(r'\s*\(.*?\)\s*', ' ', facility['name']).strip()
         facility_id = slugify(facility_name)
         layout_id = slugify(course.get('name'))
         if layout_id in existing.layouts or any(r.get('layoutId') == layout_id for r in rows):
@@ -100,14 +148,20 @@ def build_entries(cohort, coverage, scorecards, existing, min_rounds=1):
         holes = [f'{layout_id}-{n:02}' for n in range(1, hole_count + 1)]
         facility_doc = facility_docs.get(facility_id) or existing.facilities.get(facility_id)
         if facility_doc is None:
+            origin_note = ('origin is the OSM course centre until the build pins it from the AOI.' if osm_course else
+                            f'no golf_course polygon is mapped; origin is the centre of the enclosing OSM element {element!r} ({usable_anchor.get("name")!r}) until the build pins it from the AOI.')
+            feature_basis = facility.get('featureBasis')
+            feature_note = (f'Coverage audit: {row["features"]} inside the course polygon' if feature_basis == 'course_area' else
+                             f'Coverage audit: {row["features"]} counted around the anchor element, not inside a course boundary' if feature_basis else
+                             f'Coverage audit: {row["features"]}')
             facility_doc = {
                 'schema': 'golfhelm-facility-v1', 'facilityId': facility_id, 'name': facility_name, 'country': 'US',
                 'region': (facility.get('state') or course.get('state') or '??')[:40].upper()[:2] if (facility.get('state') or course.get('state')) else 'US',
                 'originWgs84': [round(center[1], 7), round(center[0], 7)],
                 'aoi': {'kind': 'osm', 'id': element, 'marginM': 300}, 'sourcePins': {'osm': [element]},
-                'providerPolicy': {'terrain': terrain_providers(facility), 'imagery': ['naip_current'], 'context': ['osm']},
-                'notes': [f'Intake from the {cohort.get("queriedAt")} usage cohort and the library coverage audit ({coverage.get("generatedAt", "")[:10]}); origin is the OSM course centre until the build pins it from the AOI.',
-                          f'Coverage audit: {row["features"]} inside the course polygon; DEM tiles named: {len(facility.get("dem1mTiles") or [])}; verdict {facility.get("verdict")}.'][:20],
+                'providerPolicy': {'terrain': terrain_providers(facility), 'imagery': imagery_providers(facility, course), 'context': ['osm']},
+                'notes': [f'Intake from the {cohort.get("queriedAt")} usage cohort and the library coverage audit ({coverage.get("generatedAt", "")[:10]}); {origin_note}',
+                          f'{feature_note}; DEM tiles named: {len(facility.get("dem1mTiles") or [])}; verdict {facility.get("verdict")}.'][:20],
             }
             facility_docs[facility_id] = facility_doc
         selection = course.get('selection') if isinstance(course.get('selection'), dict) else None

@@ -119,6 +119,19 @@ def build_parser():
     e.add_argument('--path-prefix', required=True, help='directory below --output containing only intended intermediates')
     e.add_argument('--apply', action='store_true', help='perform deletion; default reports the exact candidates only')
     e.add_argument('--json', action='store_true')
+    ship = sub.add_parser('ship', help='run the DAG through layout.world.aggregate/layout.terrain.aggregate, capture the candidate against the factory lab, then the automated QA gates; stop at READY_FOR_APPROVAL or a blocker list')
+    ship.add_argument('--layout', help='required unless --approve')
+    ship.add_argument('--approve', nargs=2, metavar=('LAYOUT', 'CONTENTHASH'), help='merge this exact READY_FOR_APPROVAL hash into course-geometry/approvals.json and regenerate the registry')
+    ship.add_argument('--live-pilot', action='store_true', help='with --approve: set livePilot: true on the merged package entry')
+    ship.add_argument('--upload', action='store_true', help='with --approve: also upload the staged files to Supabase Storage (requires the bucket migration to be applied)')
+    ship.add_argument('--all-played', action='store_true',
+                      help='run ship for every played, catalogued course (Oviinbyrd excepted) from output/course-geometry/overnight/played-courses.json, '
+                           'one course at a time, each ship/evict step under its own BUILD.lock; honours PAUSE and --min-free-gb before every course; '
+                           'writes output/course-geometry/overnight/batch-summary.json. Must not itself be wrapped in lockf -k BUILD.lock (it locks per course).')
+    ship.add_argument('--min-free-gb', type=float, default=9.0, help='with --all-played: wait until at least this much free disk before each course (default 9.0)')
+    ship.add_argument('--poll-seconds', type=int, default=30, help='with --all-played: how often to re-check PAUSE/free disk while waiting (default 30)')
+    ship.add_argument('--dry-run', action='store_true', help='with --all-played: print the selected/skipped courses and exit without running ship or evict')
+    ship.add_argument('--json', action='store_true')
     return p
 
 
@@ -536,9 +549,26 @@ def cmd_coverage(session, args, out):
     return 0
 
 
+def cmd_ship(session, args, out):
+    if args.approve:
+        from .ship_publish import cmd_ship_approve
+        return cmd_ship_approve(session, args, out)
+    if args.live_pilot or args.upload:
+        raise SystemExit('--live-pilot and --upload only apply with --approve')
+    if args.all_played:
+        if args.layout:
+            raise SystemExit('--layout and --all-played are mutually exclusive')
+        from .ship_batch import cmd_ship_all_played
+        return cmd_ship_all_played(session, args, out)
+    if not args.layout:
+        raise SystemExit('ship requires --layout (or --approve LAYOUT CONTENTHASH, or --all-played)')
+    from .ship_run import cmd_ship_build
+    return cmd_ship_build(session, args, out)
+
+
 COMMANDS = {'doctor': cmd_doctor, 'plan': cmd_plan, 'run': cmd_run, 'status': cmd_status, 'batch': cmd_batch, 'why': cmd_why, 'invalidate': cmd_invalidate, 'evict': cmd_evict, 'intake': cmd_intake,
             'refresh-scorecards': cmd_refresh_scorecards, 'review-bundle': cmd_review_bundle, 'route-recovery': cmd_route_recovery,
-            'coverage': cmd_coverage}
+            'coverage': cmd_coverage, 'ship': cmd_ship}
 
 
 def main(argv=None, out=None, ledger=None, executors=None, spec_overrides=None):

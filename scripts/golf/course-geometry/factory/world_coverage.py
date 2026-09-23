@@ -135,16 +135,40 @@ def _facility_visual(layout_root: Path) -> dict[str, Any]:
     }
 
 
-def _terrain_evidence(output_root: Path, layout_id: str, facility_id: str) -> dict[str, Any]:
+def _terrain_evidence(output_root: Path, layout_id: str, facility_id: str, current_terrain_dir: Path | None = None) -> dict[str, Any]:
     """Summarize retained terrain decisions without selecting a terrain source.
 
     A factory run is evidence about why a stage stopped. The direct terrain
     root blocker is preferred over dependent-task noise. Source-selection
     dossiers are referenced by digest so a reviewer can see exactly which
-    source decision still needs review.
+    source decision still needs review -- but a dossier's mere presence must
+    never drive `state` on its own: a rejected candidate's dossier is
+    retained evidence of a fallback that already succeeded
+    (`source-manifest.json`'s own `fallbackFrom` names the rejected
+    provider), not proof that a decision is still open, and it is never
+    cleaned up once the fallback lands. A retained `source-manifest.json` is
+    proof the acquisition for this directory completed, so it outranks both
+    the dossier and any older run report's blocker recorded for the same key
+    (a run report is also never retracted once a later, out-of-band compile
+    succeeds).
+
+    `current_terrain_dir` is the layout's current terrain key directory
+    (`Context.terrain_source_dir`), when the caller can resolve it. A
+    manifest only counts as acquired there -- an older key's directory
+    (different requested bounds or provider policy) can hold a manifest from
+    a since-abandoned candidate, which must never mask a real blocker still
+    open on the current key. When the pointer can't be resolved, fall back
+    to any manifest found anywhere under the facility's terrain root.
     """
-    dossiers = sorted((output_root / "facilities" / facility_id / "terrain").glob("**/source-selection-dossier.json"))
+    terrain_root = output_root / "facilities" / facility_id / "terrain"
+    dossiers = sorted(terrain_root.glob("**/source-selection-dossier.json"))
     dossier_rows = [_file_evidence(path) for path in dossiers]
+    if current_terrain_dir is not None:
+        current_manifest = current_terrain_dir / "source-manifest.json"
+        manifests = [current_manifest] if current_manifest.is_file() else []
+    else:
+        manifests = sorted(terrain_root.glob("**/source-manifest.json"))
+    manifest_rows = [_file_evidence(path) for path in manifests]
     direct: dict[str, Any] | None = None
     for report_path in sorted((output_root / "runs").glob("*/report.json"), key=lambda path: path.stat().st_mtime, reverse=True):
         report = _read(report_path)
@@ -161,13 +185,15 @@ def _terrain_evidence(output_root: Path, layout_id: str, facility_id: str) -> di
             break
         if direct:
             break
-    if direct and direct.get("code") == "NATIVE_TERRAIN_COVERAGE_GAP":
+    if manifest_rows:
+        state = "native_terrain_acquired"
+    elif direct and direct.get("code") == "NATIVE_TERRAIN_COVERAGE_GAP":
         state = "native_terrain_incomplete"
     elif dossier_rows:
         state = "terrain_decision_pending"
     else:
         state = "terrain_candidate_or_not_audited"
-    return {"state": state, "directBlocker": direct, "sourceSelectionDossiers": dossier_rows}
+    return {"state": state, "directBlocker": direct, "sourceSelectionDossiers": dossier_rows, "sourceManifests": manifest_rows}
 
 
 def _lifecycle_state(row: dict[str, Any]) -> str:
@@ -294,7 +320,8 @@ def audit_catalog(repo_root: str, catalog_root: str, output_root: str) -> dict[s
         scorecard_ready = bool(card and supported_hole_count(len(expected)) and len(card.get("holes") or []) == len(expected))
         scorecard_blockers = [] if scorecard_ready else (["SCORECARD_REQUIRED"] if not card else ["SCORECARD_HOLE_MISMATCH"])
         visual = _facility_visual(root)
-        terrain = _terrain_evidence(Path(output_root), layout_id, layout["facilityId"])
+        current_terrain_dir = context.terrain_source_dir(layout_id)
+        terrain = _terrain_evidence(Path(output_root), layout_id, layout["facilityId"], Path(current_terrain_dir) if current_terrain_dir else None)
         missing_glbs = [h["holeKey"] for h in holes if not h["glb"]]
         failed_roundtrips = [h["holeKey"] for h in holes if h["glb"] and not h["roundTrip"]]
         key_mismatches = [{"catalogHoleKey": h["holeKey"], "artifactHoleKey": h["artifactHoleKey"]} for h in holes if h["glb"] and not h["physicalHoleKeyMatchesCatalog"]]
