@@ -291,3 +291,45 @@
   during the grace window itself).
 - Verification: `npm run typecheck:fast` clean; `causality-attribute.
   test.ts` — 28 passed, 0 failed (1 new test).
+
+## 2026-09-23 — A7 distance-profile surface: loader, view model, Fairway section, Game Fingerprint mount (slice 1)
+
+- SHA: ee1b4db95 (server loader + view model), f938d1220 (rolling
+  12-month scope + window label), 09609e21d (Fairway section
+  component), 7070eae8d (accessibility fixes + Game Fingerprint mount).
+- Change: adds `loadDistanceProfile` (server-only, wraps
+  `loadPlayerContext` + `computeDistanceProfile`),
+  `buildRollingDistanceProfileScope`/`describeDistanceProfileWindow`
+  (a labeled, closed `[today-12mo, today]` scope — Game Fingerprint's
+  own Approach/Scoring sections read an opaque, cron-recomputed
+  `golf_player_stats_cache` window with no `window_start`/`window_end`
+  to mirror, confirmed by reading `player-fingerprint.ts`'s own doc
+  comment, so there is no single window to match), and
+  `DistanceProfileSection` (a status-discriminated tile grid +
+  drill-down `Sheet`, switching on `MetricResult.status` only, never on
+  `value !== null`). Mounted behind `coachhelm_a7_distance_profile_surface`
+  (experiment, default off everywhere) via a new optional
+  `sectionAddenda` prop on `FairwayPlayerGameFingerprint`
+  (`Partial<Record<FingerprintSectionKey, ReactNode>>`, rendered right
+  after that section's own card; absent → byte-for-byte unchanged
+  output), threaded through `PlayerDeepDiveTabs` to
+  `players/[playerId]/game/page.tsx`. The page's loader call runs in
+  parallel with its existing fetches, reuses the page's own
+  session-scoped Supabase client (never admin), and is wrapped in its
+  own try/catch that degrades to no addendum (never a page error) with
+  `logServerError` on failure.
+- Why: addendum §13 A7, first Game Fingerprint mount for the A1/A2
+  metrics work (A2 lands in Approach per this slice; A3 → Scoring and
+  A4 → FilmstripReview are separate follow-up slices). Shipped flagged
+  off pending a design/product review of placement and copy, per the
+  same repair-plan pattern used for other new surfaces on this page.
+- Verification: `loadPlayerContext`'s pagination (`fetchAllRows`, both
+  the `golf_holes`/`golf_shots` id lists chunked at 200 via a shared
+  `chunkIds(roundIds)`) was confirmed by direct code reading, not
+  assumed, before choosing a live rolling-12-month load over a lifetime
+  one. `FairwayPlayerGameFingerprint.mode.test.tsx` (7/7) passes
+  unchanged, proving the new prop is a true no-op when absent.
+  typecheck:fast and `eslint --max-warnings 0` clean on every touched
+  file. Not verified: mobile/desktop visual layout (no local build or
+  dev server run this session) — deferred to CI's `pr-smoke-a11y` job
+  or a preview deploy.
