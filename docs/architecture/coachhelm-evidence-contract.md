@@ -275,6 +275,26 @@ benchmark: `counterfactualComparable` (false → `counterfactual: null`) and
 true`, the same render path the women's gender-anchor omission uses).
 `ApproachMissGenerator` sets both false.
 
+## Delivered vs. viewed (N11, 2026-09-23)
+
+`recordExposureForReturned` (`insight-delivery.ts:312-330`) writes a
+`golf_insight_exposure` row on every server render that returns an insight to
+a surface — post-rank, post-dedupe, post-overlay, pre-return. This proves
+the insight reached a CoachHelm screen. It does not prove a coach looked at
+it: there is no client-observed "the coach actually saw this" signal today.
+
+The `TrustSignal.shown` field (`event-ledger.ts`) and its DB columns are
+unchanged by this note — this is a copy fix only. Everywhere the count
+reaches a coach (Fairway effectiveness page, trust chip tooltips,
+aria-labels), the label reads "Delivered", never "Shown", with a short hint
+that it counts delivery, not a confirmed view
+(`src/components/fairway/pages/coachhelm/FairwayEffectiveness.tsx`).
+
+A real "viewed" signal — a client-reported, debounced, in-viewport
+confirmation distinct from delivery — is deferred future work (Package
+9/11), not something this fix adds. Until it exists, "Delivered" is the
+honest ceiling: it is evidence of reach, not of attention.
+
 ## Standing read rules (2026-09-12, repair deferrals)
 
 Two rules every reader of `golf_player_standing` and `golf_coach_insights`

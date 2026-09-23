@@ -114,3 +114,31 @@ describe('InsightEffectivenessSection — one honest empty-state pattern', () =>
     expect(container.querySelectorAll('[role="status"]').length).toBe(0);
   });
 });
+
+describe('InsightTrustBand / InsightTrustChip — "Delivered" honesty label (N11)', () => {
+  it('labels the exposure count "Delivered", never "Shown", in the KPI band and the per-row chip', () => {
+    const { container, getByText, getAllByText, queryByText } = render(
+      <InsightEffectivenessSection data={effectiveness(0, 12)} trust={populatedTrust} />,
+    );
+
+    // KPI band tile label.
+    expect(getByText('Insights delivered')).toBeTruthy();
+    // Per-row chip's muted micro-stat ("Delivered 3 · Acted 1") — the same
+    // row's chip renders once per responsive layout variant, so assert at
+    // least one match rather than exactly one.
+    expect(getAllByText(/Delivered 3 · Acted 1/).length).toBeGreaterThan(0);
+    // The old label must not survive anywhere on the page.
+    expect(queryByText(/\bShown\b/)).toBeNull();
+
+    // The KPI tile carries a hover hint disclosing delivery ≠ a confirmed view.
+    const hinted = Array.from(container.querySelectorAll('[title]')).find((el) =>
+      (el.getAttribute('title') ?? '').includes('not confirmed views'),
+    );
+    expect(hinted).toBeTruthy();
+
+    // The per-row chip's tooltip/aria-label carries the same disclosure.
+    const chip = container.querySelector('[title*="not a confirmed view"]');
+    expect(chip).toBeTruthy();
+    expect(chip?.getAttribute('aria-label') ?? chip?.querySelector('[aria-label]')?.getAttribute('aria-label')).toBeTruthy();
+  });
+});
