@@ -456,14 +456,14 @@ export default function RoundReviewPage() {
     };
   }, [round, roundId]);
 
-  // Generate review if needed.
-  //
-  // `userTriggered` distinguishes an explicit click (Refresh / Generate
-  // review / Try again below) from the cold-start auto-generate effect a
-  // few lines down, which calls this with no argument. The flag is threaded
-  // straight to `generateAndStoreRoundReview` so only the explicit-click
-  // path is rate-limited server-side — see that action's own comment.
-  const generateReview = useCallback(async (userTriggered: boolean = false) => {
+  // Generate review if needed. Called both from the cold-start auto-generate
+  // effect a few lines down and from the Refresh / Generate review / Try
+  // again clicks below — the two are no longer distinguished here. Whether a
+  // call is a REGENERATE (and therefore rate-limited) is derived server-side
+  // in `generateAndStoreRoundReview` from whether a stored review already
+  // exists for the round, not from a client-supplied flag a direct caller
+  // could omit to dodge the gate.
+  const generateReview = useCallback(async () => {
     if (!round) return;
 
     setGeneratingReview(true);
@@ -474,11 +474,7 @@ export default function RoundReviewPage() {
     if (!storedReview) setError(null);
 
     try {
-      const result = await generateAndStoreRoundReview(
-        roundId,
-        round.player_id,
-        userTriggered ? { userTriggered: true } : undefined,
-      );
+      const result = await generateAndStoreRoundReview(roundId, round.player_id);
 
       if (result.success && result.review) {
         setStoredReview(result.review);
@@ -583,7 +579,17 @@ export default function RoundReviewPage() {
   // by `isGenerating` below to drive the Refresh-button spinner + the
   // "Running CoachHelm analysis..." copy when the hook generates in the
   // background, so it remains referenced; `v1Loading` is intentionally unused.
-  const isLoading = loadingRound || loadingStoredReview || generatingReview;
+  //
+  // `generatingReview` only forces the full-page skeleton when there's no
+  // `storedReview` to show instead (the first-generation / cold auto-generate
+  // case, where the skeleton IS the only honest thing to render). Refreshing
+  // an EXISTING review must never fall back into this branch — that was the
+  // rest of the stable-read bug: a full-page skeleton mid-refresh discarded
+  // the already-loaded review from the screen for the whole regenerate
+  // window, even on a call that was about to succeed. The pending state for
+  // that case is the Refresh button's own spinner (`isGenerating` below,
+  // already wired to the button's spin class + `disabled`).
+  const isLoading = loadingRound || loadingStoredReview || (generatingReview && !storedReview);
   const isGenerating = generatingReview || v1Generating;
 
   // P216: one standardized analysis-in-progress message (no V1/V2 split copy)
@@ -604,7 +610,7 @@ export default function RoundReviewPage() {
               <FwButton
                 variant="secondary"
                 size="sm"
-                onClick={() => generateReview(true)}
+                onClick={() => generateReview()}
                 disabled={isGenerating}
               >
                 <IconRefresh size={16} className={isGenerating ? 'animate-spin' : ''} />
@@ -671,7 +677,7 @@ export default function RoundReviewPage() {
             tone="danger"
             title="We couldn't load this review"
             action={
-              <FwButton variant="secondary" size="sm" onClick={() => generateReview(true)}>
+              <FwButton variant="secondary" size="sm" onClick={() => generateReview()}>
                 <IconRefresh size={16} />
                 <span>Try again</span>
               </FwButton>
@@ -764,7 +770,7 @@ export default function RoundReviewPage() {
           title="No review yet"
           description="Refresh to generate CoachHelm analysis for this round."
           action={
-            <FwButton variant="secondary" size="sm" onClick={() => generateReview(true)} disabled={isGenerating}>
+            <FwButton variant="secondary" size="sm" onClick={() => generateReview()} disabled={isGenerating}>
               <IconRefresh size={16} className={isGenerating ? 'animate-spin' : ''} />
               <span>Generate review</span>
             </FwButton>
@@ -838,7 +844,7 @@ export default function RoundReviewPage() {
               <FwButton
                 variant="secondary"
                 size="sm"
-                onClick={() => generateReview(true)}
+                onClick={() => generateReview()}
                 disabled={isGenerating}
               >
                 <IconRefresh size={16} className={isGenerating ? 'animate-spin' : ''} />

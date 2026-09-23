@@ -50,6 +50,12 @@ let mockRoundsData: unknown[] = [];
 let coordinatorMode = false;
 let upsertCallCount = 0;
 let upsertGate: Promise<void> = Promise.resolve();
+// Controls the `golf_round_reviews` existence check's `.maybeSingle()` result
+// under `coordinatorMode` — i.e. whether generateAndStoreRoundReview treats a
+// call as a first generation (null, ungated) or a regenerate (a row, gated),
+// and whether the read itself errors (fail-closed → gated).
+let existingReviewData: { id: string } | null = null;
+let existingReviewErrorValue: unknown = null;
 const COORD_ROUND: Record<string, unknown> = {
   id: 'round-coord-1',
   player_id: '11111111-1111-1111-1111-111111111111',
@@ -84,6 +90,12 @@ const mockFrom = vi.fn((table: string) => {
         upsertCallCount += 1;
         return { data: { id: 'review-coord-1' }, error: null };
       });
+      // The regenerate existence check (`.select('id').eq(...).maybeSingle()`)
+      // hits this same table — controlled per-test via `existingReviewData`/
+      // `existingReviewErrorValue`, independent of the upsert-counting `.single`
+      // above (a real call site only ever uses one or the other on a given
+      // `.from()` chain, never both).
+      chain.maybeSingle = vi.fn(async () => ({ data: existingReviewData, error: existingReviewErrorValue }));
       return chain;
     }
     return createChainableMock({ data: [] });
@@ -214,6 +226,10 @@ describe('generateAndStoreRoundReview — single-flight coordinator (P2-13)', ()
     upsertCallCount = 0;
     upsertGate = Promise.resolve();
     mockFrom.mockClear();
+    // First generation (no existing row) — the coordinator tests exercise the
+    // cold path, so the regenerate gate must stay out of the way regardless.
+    existingReviewData = null;
+    existingReviewErrorValue = null;
   });
 
   // Reset the harness flag so later suites (if reordered) are unaffected.
@@ -276,19 +292,24 @@ describe('generateAndStoreRoundReview — single-flight coordinator (P2-13)', ()
 });
 
 // ---------------------------------------------------------------------------
-// The review page's Refresh/Generate-review/Try-again buttons now pass
-// `{ userTriggered: true }` so a genuine click is rate-limited, while the
-// SAME action's other callers (this page's own cold auto-generate effect,
-// and useRoundReviewV2's independent auto-generate effect) call with no
-// options and must never be throttled — see the comment on
-// `GenerateReviewOptions` in round-review-system.ts.
+// generateAndStoreRoundReview only gates a REGENERATE, and derives that
+// server-side from whether a `golf_round_reviews` row already exists for the
+// round — never from a caller-supplied flag, which a direct caller could
+// simply omit to dodge the gate. First generation (no row yet) stays
+// ungated — this is the state both auto-generate effects (this page's own,
+// and useRoundReviewV2's) fire in. A failed existence read fails CLOSED: an
+// unknown state is treated as "a review exists" so a DB hiccup can never
+// quietly exempt a caller from the cost gate. See the comment on the
+// existence check in round-review-system.ts.
 // ---------------------------------------------------------------------------
-describe('generateAndStoreRoundReview — user-triggered rate limit', () => {
+describe('generateAndStoreRoundReview — regenerate rate limit (server-derived)', () => {
   beforeEach(() => {
     coordinatorMode = true;
     upsertCallCount = 0;
     upsertGate = Promise.resolve();
     mockFrom.mockClear();
+    existingReviewData = null;
+    existingReviewErrorValue = null;
     vi.mocked(gateCoachHelmEngineCall).mockReset();
     vi.mocked(gateCoachHelmEngineCall).mockResolvedValue({ allowed: true });
   });
@@ -297,13 +318,25 @@ describe('generateAndStoreRoundReview — user-triggered rate limit', () => {
     coordinatorMode = false;
   });
 
-  it('blocks an explicit user-triggered call when the engine gate denies it, before any compute runs', async () => {
+  it('never consults the gate on first generation (no existing review row), even when the gate would deny', async () => {
+    existingReviewData = null;
+    vi.mocked(gateCoachHelmEngineCall).mockResolvedValue({ allowed: false, error: 'blocked' });
+
+    const result = await generateAndStoreRoundReview('round-coord-1', PLAYER_ID);
+
+    expect(gateCoachHelmEngineCall).not.toHaveBeenCalled();
+    expect(result.success).toBe(true);
+    expect(upsertCallCount).toBe(1);
+  });
+
+  it('blocks a regenerate (an existing review row) when the engine gate denies it, before any compute runs', async () => {
+    existingReviewData = { id: 'review-existing-1' };
     vi.mocked(gateCoachHelmEngineCall).mockResolvedValueOnce({
       allowed: false,
       error: 'Too many analyze requests in the last minute — please wait a moment and try again.',
     });
 
-    const result = await generateAndStoreRoundReview('round-coord-1', PLAYER_ID, { userTriggered: true });
+    const result = await generateAndStoreRoundReview('round-coord-1', PLAYER_ID);
 
     expect(result).toEqual({
       success: false,
@@ -313,21 +346,25 @@ describe('generateAndStoreRoundReview — user-triggered rate limit', () => {
     expect(upsertCallCount).toBe(0);
   });
 
-  it('lets an explicit user-triggered call through when the engine gate allows it', async () => {
-    const result = await generateAndStoreRoundReview('round-coord-1', PLAYER_ID, { userTriggered: true });
+  it('lets a regenerate through when the engine gate allows it', async () => {
+    existingReviewData = { id: 'review-existing-1' };
+
+    const result = await generateAndStoreRoundReview('round-coord-1', PLAYER_ID);
 
     expect(gateCoachHelmEngineCall).toHaveBeenCalledWith(expect.any(String));
     expect(result.success).toBe(true);
     expect(upsertCallCount).toBe(1);
   });
 
-  it('never consults the gate for an automatic (non-user-triggered) call, even when the gate would deny', async () => {
-    vi.mocked(gateCoachHelmEngineCall).mockResolvedValue({ allowed: false, error: 'blocked' });
+  it('fails closed (applies the gate) when the existence read itself errors', async () => {
+    existingReviewData = null;
+    existingReviewErrorValue = { message: 'connection reset' };
+    vi.mocked(gateCoachHelmEngineCall).mockResolvedValueOnce({ allowed: false, error: 'blocked' });
 
     const result = await generateAndStoreRoundReview('round-coord-1', PLAYER_ID);
 
-    expect(gateCoachHelmEngineCall).not.toHaveBeenCalled();
-    expect(result.success).toBe(true);
-    expect(upsertCallCount).toBe(1);
+    expect(gateCoachHelmEngineCall).toHaveBeenCalled();
+    expect(result).toEqual({ success: false, error: 'blocked', code: 'rate_limited' });
+    expect(upsertCallCount).toBe(0);
   });
 });
