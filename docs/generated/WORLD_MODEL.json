@@ -13401,6 +13401,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/v3/team-practice-rx.ts",
           "anchor": "src/lib/admin/observed-action"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/focus-areas/practice-log-loader.ts",
+          "anchor": "src/lib/flags"
         }
       ]
     },
@@ -13642,6 +13647,21 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/v3/team-practice-rx.ts",
           "anchor": "src/lib/supabase/server"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/focus-areas/practice-log-loader.ts",
+          "anchor": "src/lib/supabase/untyped"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/focus-areas/practice-log-loader.ts",
+          "anchor": "src/lib/supabase/fetch-all-rows"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/focus-areas/practice-log-loader.ts",
+          "anchor": "src/lib/supabase/chunk-ids"
         }
       ]
     },
