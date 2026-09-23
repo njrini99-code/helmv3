@@ -836,6 +836,7 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
         'createFocusAreaFromInsight',
         'recordFocusAreaOutcome',
       ],
+      'src/app/golf/actions/focus-area-practice-log.ts': 'ALL',
     },
     primaryTable: 'golf_player_focus_areas',
     heartbeatTable: 'golf_player_focus_areas',
