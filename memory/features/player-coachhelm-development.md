@@ -270,6 +270,21 @@ Player opens round review
   contract in `docs/architecture/coachhelm-evidence-contract.md`'s "Issue
   grouping and ranking-input unification" section and
   `memory/features/coachhelm-ai.md`.
+- **`src/lib/coachhelm/v3/reasoning/hypothesis-policy.ts`** (2026-09-23,
+  addendum §13, work package A5 slice 1, pure core, not wired to a route
+  or component yet) — `buildHypotheses(metrics, facts)` proposes a small,
+  named set of candidate explanations (`short_bias`, `rough_gap`,
+  `recovery`, `par5_opportunity_loss`, plus a non-family `'insufficient'`
+  entry) for a round's shot data, never a fabricated cause and never a
+  psychology/fatigue/mechanics inference. It distinguishes `'no_data'`
+  (nothing but a stated gap — e.g. `recovery`, which has no metric
+  producer today) from `'candidate'` (a real, if uncorroborated, pattern
+  match) so a future consumer surface can't read a bare gap as if it were
+  weak-but-real evidence; `description` text varies with that state
+  (hedged vs. association wording) rather than reading identically
+  regardless of confidence. Full contract in
+  `docs/architecture/coachhelm-evidence-contract.md`'s "Controlled
+  hypotheses" section and `memory/features/coachhelm-ai.md`.
 
 - **Duplicate-active-work guard (Pkg 9 slice 1a, 2026-09-23,
   `agent/coachhelm-focus-dedup`)**: all 5 focus-area create paths

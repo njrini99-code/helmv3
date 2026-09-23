@@ -1277,7 +1277,10 @@ as of this slice.
 - **Four named families, plus one non-family entry**: `short_bias`,
   `rough_gap`, `recovery`, `par5_opportunity_loss`, and `'insufficient'`
   — an entry that names two competing families instead of picking one when
-  the fact that would discriminate them isn't recorded.
+  the fact that would discriminate them isn't recorded. All five live in
+  the exported `HypothesisFamily` union (`Hypothesis['family']`), which
+  `NextCheck.distinguishes: HypothesisFamily[]` also uses — a
+  `nextCheck` can only ever name a real family, not an arbitrary string.
 - **What can and can't come from `facts`**: `ShotFact` (A1) carries neither
   `par` nor a miss-direction field, so `short_bias` (needs a short/long
   miss split) and `par5_opportunity_loss` (needs to know which holes were
@@ -1290,16 +1293,41 @@ as of this slice.
   `'insufficient'` with a `nextCheck` naming both competing families and
   the input (`fact:intent`) that would resolve it. Never inferred from
   distance or outcome, only the explicit tag.
-- **States**: `'candidate'` (the floor — named, not yet corroborated, or
-  contradicted), `'supported_association'` (a `status: 'supported'` metric
-  points the same direction and nothing contradicts it — an association,
-  never a causal claim), `'coach_annotated'` (reachable only once a coach
-  has reviewed a hypothesis — `personal-context.ts`, slice 2; nothing in
-  this module can produce it). There is no `'proven'` state anywhere in
-  the type.
+- **States**: `'no_data'` (this hypothesis's entire content is a stated
+  gap — no supporting claim, no contradicting claim, only
+  `missingInputs`), `'candidate'` (at least one real supporting claim
+  exists — a genuine pattern match — but it isn't corroborated by a
+  trusted metric, or it was but a contradiction downgraded it back),
+  `'supported_association'` (a `status: 'supported'` metric points the
+  same direction and nothing contradicts it — an association, never a
+  causal claim), `'coach_annotated'` (reachable only once a coach has
+  reviewed a hypothesis — `personal-context.ts`, slice 2; nothing in this
+  module can produce it). There is no `'proven'` state anywhere in the
+  type. `'no_data'` vs `'candidate'` is a review-driven fix (2026-09-23):
+  a consumer must not read "recovery, no producer" and "rough_gap, a real
+  pattern match, just uncorroborated" as the same confidence — `recovery`
+  (no metric ever cites its own triggering shot as its own support — see
+  below) and `short_bias`/`par5_opportunity_loss` with an absent metric all
+  resolve to `'no_data'`; `rough_gap` and `'insufficient'` keep a real
+  fact-based supporting claim and so floor at `'candidate'`.
+- **`description` is a function of `state`, never a fixed per-family
+  template** (review-driven fix, 2026-09-23): the same family reads
+  differently depending on how much is actually corroborated — hedged,
+  uncertain wording for `'no_data'`/`'candidate'` ("may be…", "not yet
+  corroborated", "no data available…"), association wording for
+  `'supported_association'` ("associated with…"), and no description ever
+  uses "proven" or a causal verb (`describeShortBias`,
+  `describeRoughGap`, `describeRecovery`, `describePar5OpportunityLoss`
+  in `hypothesis-policy.ts`; each state's wording is tested separately).
 - **Contradiction always downgrades, never elevates past it**: a
-  `contradictingClaimIds` entry caps `state` at `'candidate'` even when the
-  hypothesis's own primary metric would otherwise have elevated it.
+  `contradictingClaimIds` entry caps `state` at `'candidate'` (never
+  `'no_data'` — a contradiction is real data) even when the hypothesis's
+  own primary metric would otherwise have elevated it. `short_bias` gains
+  a documented refute floor alongside its support floor: a supported
+  `approach_short_miss_rate` at or above `SHORT_BIAS_SUPPORT_MIN_PERCENT`
+  (60) supports it, at or below `SHORT_BIAS_REFUTE_MAX_PERCENT` (40)
+  contradicts it, and a value strictly between the two floors does
+  neither (stays `'no_data'`).
 - **Claim ids always resolve to an input element**: `metricClaimId(id)` →
   `` `metric:${id}` ``, `shotClaimId(shot)` →
   `` `shot:${round_id}:${hole_number}:${shot_number}` `` — tested by
@@ -1309,10 +1337,10 @@ as of this slice.
   `missingInputs`**, not an omitted entry — `buildHypotheses` returns a
   flat `Hypothesis[]` (no separate "withheld" bucket), so a family with an
   absent prerequisite still appears, stating the gap, rather than
-  vanishing silently. `short_bias` and `par5_opportunity_loss` have no
-  metric producer today (no A2/A3 slice emits
+  vanishing silently. `short_bias`, `recovery`, and `par5_opportunity_loss`
+  have no metric producer today (no A2/A3 slice emits
   `approach_short_miss_rate`/`approach_recovery_outcome_rate`) — every real
-  call reports them as gapped, never fabricates a value.
+  call reports them `'no_data'`, never fabricates a value.
 - **Not wired to `diagnosis.ts` or `personal-context.ts`** — that's slice 2,
   per this slice's explicit scope.
 

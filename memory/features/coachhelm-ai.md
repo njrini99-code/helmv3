@@ -439,17 +439,30 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   ingest-tagged `intent` (never inferred from distance/outcome) — an
   `'unknown'` intent (what nearly every real shot normalizes to today)
   produces `'insufficient'` with a `nextCheck` naming both competing
-  families, instead of guessing which applies. States: `'candidate'` (the
-  floor), `'supported_association'` (a `status: 'supported'` metric
-  agrees and nothing contradicts — an association, never causal), and
-  `'coach_annotated'` (reachable only from `personal-context.ts`, slice 2 —
-  nothing here produces it). No `'proven'` state exists. A contradicting
-  claim always caps state at `'candidate'`, even overriding what the
-  primary metric alone would have elevated. A missing prerequisite is
-  reported as a `Hypothesis` with empty claims and a populated
-  `missingInputs`, never silently omitted — `short_bias` and
-  `recovery`/`par5_opportunity_loss`'s corroborating metrics have no
-  producer today, so real calls report them gapped. Claim ids
+  families, instead of guessing which applies. States (review-driven fix,
+  2026-09-23, adds `'no_data'`): `'no_data'` (entire content is a stated
+  gap — no supporting or contradicting claim, only `missingInputs`),
+  `'candidate'` (a real supporting claim exists but isn't corroborated, or
+  was but got contradicted), `'supported_association'` (a `status:
+  'supported'` metric agrees and nothing contradicts — an association,
+  never causal), and `'coach_annotated'` (reachable only from
+  `personal-context.ts`, slice 2 — nothing here produces it). No
+  `'proven'` state exists. `recovery` (no metric ever corroborates it, and
+  its own triggering shot is deliberately not cited as its own support)
+  and `short_bias`/`par5_opportunity_loss` with an absent metric resolve
+  to `'no_data'`; `rough_gap` and `'insufficient'` keep a real fact-based
+  supporting claim and floor at `'candidate'` instead. `description` is a
+  function of `state`, not a fixed per-family string — hedged wording
+  below `'supported_association'`, association wording at it, never
+  "proven" or a causal verb (tested per state). A contradicting claim
+  always caps state at `'candidate'` (never `'no_data'`), even overriding
+  what the primary metric alone would have elevated; `short_bias` also
+  gained a documented refute floor (`SHORT_BIAS_REFUTE_MAX_PERCENT`,
+  alongside its existing support floor) so a metric can actively
+  contradict it, not just fail to support it. `Hypothesis.family` and
+  `NextCheck.distinguishes` share one exported `HypothesisFamily` union. A
+  missing prerequisite is reported as a `Hypothesis` with empty claims and
+  a populated `missingInputs`, never silently omitted. Claim ids
   (`metricClaimId`/`shotClaimId`) always resolve back to an element of the
   `metrics`/`facts` a call was given (tested). **Not wired to
   `diagnosis.ts` or `personal-context.ts`** — that's slice 2. See

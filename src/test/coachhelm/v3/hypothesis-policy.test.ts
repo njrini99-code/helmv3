@@ -10,6 +10,7 @@ import {
   metricClaimId,
   shotClaimId,
   type MetricResultInput,
+  type MetricStatusInput,
 } from '@/lib/coachhelm/v3/reasoning/hypothesis-policy';
 
 function roughApproachShot(intent: ShotIntent, overrides: Partial<ShotFact> = {}): ShotFact {
@@ -134,37 +135,44 @@ describe('buildHypotheses — rough_gap elevates only with a corroborating, unco
     assertClaimsResolve(result, metrics, facts);
   });
 
-  it('an insufficient-status metric neither elevates nor contradicts', () => {
-    const facts = [roughApproachShot('go_for_green')];
-    const metrics: MetricResultInput[] = [
-      { metricId: 'approach_measured_contribution', value: -0.9, status: 'insufficient' },
-    ];
-    const result = buildHypotheses(metrics, facts);
-    const roughGap = result.find((h) => h.family === 'rough_gap')!;
-    expect(roughGap.state).toBe('candidate');
-    expect(roughGap.supportingClaimIds).toEqual([shotClaimId(facts[0]!)]);
-    expect(roughGap.contradictingClaimIds).toEqual([]);
-  });
+  it.each<MetricStatusInput>(['insufficient', 'descriptive_only', 'invalid'])(
+    'a %s-status metric neither elevates nor contradicts',
+    (status) => {
+      const facts = [roughApproachShot('go_for_green')];
+      const metrics: MetricResultInput[] = [
+        { metricId: 'approach_measured_contribution', value: -0.9, status },
+      ];
+      const result = buildHypotheses(metrics, facts);
+      const roughGap = result.find((h) => h.family === 'rough_gap')!;
+      expect(roughGap.state).toBe('candidate');
+      expect(roughGap.supportingClaimIds).toEqual([shotClaimId(facts[0]!)]);
+      expect(roughGap.contradictingClaimIds).toEqual([]);
+    },
+  );
 });
 
-describe('buildHypotheses — recovery never rises past candidate (no producer today)', () => {
-  it('always reports the missing recovery-outcome metric', () => {
+describe('buildHypotheses — recovery has no corroborating producer today, always no_data', () => {
+  it('always reports the missing recovery-outcome metric with no supporting claim', () => {
     const facts = [roughApproachShot('recovery')];
     const result = buildHypotheses([], facts);
     const recovery = result.find((h) => h.family === 'recovery')!;
-    expect(recovery.state).toBe('candidate');
+    // Deliberately empty: the triggering shot's own tag is not cited as
+    // its own support (that would be circular), and no metric corroborates
+    // a recovery-specific outcome today — see module doc comment.
+    expect(recovery.state).toBe('no_data');
+    expect(recovery.supportingClaimIds).toEqual([]);
+    expect(recovery.contradictingClaimIds).toEqual([]);
     expect(recovery.missingInputs).toContain(metricClaimId('approach_recovery_outcome_rate'));
-    expect(recovery.supportingClaimIds).toEqual([shotClaimId(facts[0]!)]);
   });
 });
 
-describe('buildHypotheses — short_bias has no producer today', () => {
-  it('is withheld (empty claims, missingInputs populated) once there is an approach shot', () => {
+describe('buildHypotheses — short_bias has no producer today, no_data until a metric lands', () => {
+  it('is withheld (no_data: empty claims, missingInputs populated) once there is an approach shot', () => {
     const facts = [roughApproachShot('go_for_green')];
     const result = buildHypotheses([], facts);
     const shortBias = result.find((h) => h.family === 'short_bias')!;
     expect(shortBias).toBeDefined();
-    expect(shortBias.state).toBe('candidate');
+    expect(shortBias.state).toBe('no_data');
     expect(shortBias.supportingClaimIds).toEqual([]);
     expect(shortBias.missingInputs).toContain(metricClaimId('approach_short_miss_rate'));
   });
@@ -189,14 +197,51 @@ describe('buildHypotheses — short_bias has no producer today', () => {
     const result = buildHypotheses([], [puttOnly]);
     expect(result.some((h) => h.family === 'short_bias')).toBe(false);
   });
+
+  it('a supported miss rate at or above the support floor elevates to supported_association', () => {
+    const facts = [roughApproachShot('go_for_green')];
+    const metrics: MetricResultInput[] = [
+      { metricId: 'approach_short_miss_rate', value: 70, status: 'supported' },
+    ];
+    const result = buildHypotheses(metrics, facts);
+    const shortBias = result.find((h) => h.family === 'short_bias')!;
+    expect(shortBias.state).toBe('supported_association');
+    expect(shortBias.supportingClaimIds).toEqual([metricClaimId('approach_short_miss_rate')]);
+    assertClaimsResolve(result, metrics, facts);
+  });
+
+  it('a supported miss rate at or below the refute floor contradicts it (should-fix #3)', () => {
+    const facts = [roughApproachShot('go_for_green')];
+    const metrics: MetricResultInput[] = [
+      { metricId: 'approach_short_miss_rate', value: 25, status: 'supported' },
+    ];
+    const result = buildHypotheses(metrics, facts);
+    const shortBias = result.find((h) => h.family === 'short_bias')!;
+    expect(shortBias.state).toBe('candidate');
+    expect(shortBias.contradictingClaimIds).toEqual([metricClaimId('approach_short_miss_rate')]);
+    expect(shortBias.supportingClaimIds).toEqual([]);
+    assertClaimsResolve(result, metrics, facts);
+  });
+
+  it('a supported miss rate strictly between the floors neither supports nor contradicts', () => {
+    const facts = [roughApproachShot('go_for_green')];
+    const metrics: MetricResultInput[] = [
+      { metricId: 'approach_short_miss_rate', value: 50, status: 'supported' },
+    ];
+    const result = buildHypotheses(metrics, facts);
+    const shortBias = result.find((h) => h.family === 'short_bias')!;
+    expect(shortBias.state).toBe('no_data');
+    expect(shortBias.supportingClaimIds).toEqual([]);
+    expect(shortBias.contradictingClaimIds).toEqual([]);
+  });
 });
 
 describe('buildHypotheses — par5_opportunity_loss is metric-only and contradiction downgrades it', () => {
-  it('missing the opportunity metric caps state at candidate with the gap reported', () => {
+  it('missing the opportunity metric reports no_data with the gap named', () => {
     const result = buildHypotheses([], []);
     const par5 = result.find((h) => h.family === 'par5_opportunity_loss')!;
     expect(par5).toBeDefined();
-    expect(par5.state).toBe('candidate');
+    expect(par5.state).toBe('no_data');
     expect(par5.missingInputs).toContain(metricClaimId('par5_regulation_opportunity_rate'));
     expect(par5.supportingClaimIds).toEqual([]);
   });
@@ -235,6 +280,103 @@ describe('buildHypotheses — par5_opportunity_loss is metric-only and contradic
     expect(par5.missingInputs).toEqual([]);
     assertClaimsResolve(result, contradictingMetrics, []);
   });
+
+  it.each<MetricStatusInput>(['insufficient', 'descriptive_only', 'invalid'])(
+    'a %s-status opportunity metric never elevates',
+    (status) => {
+      const metrics: MetricResultInput[] = [
+        { metricId: 'par5_regulation_opportunity_rate', value: 20, status },
+      ];
+      const result = buildHypotheses(metrics, []);
+      const par5 = result.find((h) => h.family === 'par5_opportunity_loss')!;
+      expect(par5.state).toBe('no_data');
+      expect(par5.supportingClaimIds).toEqual([]);
+    },
+  );
+});
+
+describe('buildHypotheses — description is a function of state, not a fixed template', () => {
+  const HEDGE_WORDS = ['may', 'not yet corroborated', 'no data', 'neither'];
+  const ASSOCIATION_WORDS = ['associated with', 'association'];
+  const BANNED_ABSOLUTE_TERMS = ['proven', 'proves', 'definitely', 'certainly', 'causes', 'caused by'];
+
+  function describedFamily(state: 'no_data' | 'candidate' | 'supported_association', family: string) {
+    return function assertWording(description: string) {
+      const lower = description.toLowerCase();
+      for (const term of BANNED_ABSOLUTE_TERMS) {
+        expect(lower, `${family}/${state} description must not say "${term}": ${description}`).not.toContain(term);
+      }
+      if (state === 'supported_association') {
+        expect(
+          ASSOCIATION_WORDS.some((w) => lower.includes(w)),
+          `${family}/supported_association description should read as an association: ${description}`,
+        ).toBe(true);
+      } else {
+        expect(
+          HEDGE_WORDS.some((w) => lower.includes(w)),
+          `${family}/${state} description should read as hedged/uncertain: ${description}`,
+        ).toBe(true);
+      }
+    };
+  }
+
+  it('short_bias reads differently across no_data, candidate, and supported_association', () => {
+    const noData = buildHypotheses([], [roughApproachShot('go_for_green')]).find((h) => h.family === 'short_bias')!;
+    // short_bias only ever reaches 'candidate' via a contradiction (it has
+    // no fact-based supporting claim of its own) — a below-refute-floor
+    // value is the only route there.
+    const candidate = buildHypotheses(
+      [{ metricId: 'approach_short_miss_rate', value: 25, status: 'supported' }],
+      [roughApproachShot('go_for_green')],
+    ).find((h) => h.family === 'short_bias')!;
+    const supported = buildHypotheses(
+      [{ metricId: 'approach_short_miss_rate', value: 70, status: 'supported' }],
+      [roughApproachShot('go_for_green')],
+    ).find((h) => h.family === 'short_bias')!;
+
+    expect(new Set([noData.description, candidate.description, supported.description]).size).toBe(3);
+    describedFamily('no_data', 'short_bias')(noData.description);
+    describedFamily('candidate', 'short_bias')(candidate.description);
+    describedFamily('supported_association', 'short_bias')(supported.description);
+  });
+
+  it('recovery (always no_data today) reads as a stated gap, never as corroborated', () => {
+    const recovery = buildHypotheses([], [roughApproachShot('recovery')]).find((h) => h.family === 'recovery')!;
+    expect(recovery.state).toBe('no_data');
+    describedFamily('no_data', 'recovery')(recovery.description);
+  });
+
+  it('rough_gap reads differently across candidate and supported_association', () => {
+    const candidate = buildHypotheses([], [roughApproachShot('go_for_green')]).find((h) => h.family === 'rough_gap')!;
+    const supported = buildHypotheses(
+      [{ metricId: 'approach_measured_contribution', value: -0.4, status: 'supported' }],
+      [roughApproachShot('go_for_green')],
+    ).find((h) => h.family === 'rough_gap')!;
+
+    expect(candidate.description).not.toBe(supported.description);
+    describedFamily('candidate', 'rough_gap')(candidate.description);
+    describedFamily('supported_association', 'rough_gap')(supported.description);
+  });
+
+  it('par5_opportunity_loss reads differently across no_data, candidate-via-contradiction, and supported_association', () => {
+    const noData = buildHypotheses([], []).find((h) => h.family === 'par5_opportunity_loss')!;
+    const supported = buildHypotheses(
+      [{ metricId: 'par5_regulation_opportunity_rate', value: 40, status: 'supported' }],
+      [],
+    ).find((h) => h.family === 'par5_opportunity_loss')!;
+    const downgraded = buildHypotheses(
+      [
+        { metricId: 'par5_regulation_opportunity_rate', value: 40, status: 'supported' },
+        { metricId: 'par5_green_in_two_rate', value: 85, status: 'supported' },
+      ],
+      [],
+    ).find((h) => h.family === 'par5_opportunity_loss')!;
+
+    expect(new Set([noData.description, supported.description, downgraded.description]).size).toBe(3);
+    describedFamily('no_data', 'par5_opportunity_loss')(noData.description);
+    describedFamily('supported_association', 'par5_opportunity_loss')(supported.description);
+    describedFamily('candidate', 'par5_opportunity_loss')(downgraded.description);
+  });
 });
 
 describe('buildHypotheses — never infers psychology, fatigue, or mechanics', () => {
@@ -244,7 +386,7 @@ describe('buildHypotheses — never infers psychology, fatigue, or mechanics', (
     'focus', 'motivat', 'clutch', 'yips',
   ];
 
-  it('scans every hypothesis produced across the whole registry for banned terms', () => {
+  it('scans the full serialized form of every hypothesis produced across the whole registry', () => {
     const facts: ShotFact[] = [
       roughApproachShot('go_for_green'),
       roughApproachShot('recovery', { shot_number: 3 }),
@@ -258,12 +400,11 @@ describe('buildHypotheses — never infers psychology, fatigue, or mechanics', (
     ];
     const result = buildHypotheses(metrics, facts);
     expect(result.length).toBeGreaterThan(0);
-    const text = result
-      .map((h) => `${h.id} ${h.family} ${h.description}`)
-      .join(' ')
-      .toLowerCase();
-    for (const term of BANNED_TERMS) {
-      expect(text).not.toContain(term);
+    for (const h of result) {
+      const text = JSON.stringify(h).toLowerCase();
+      for (const term of BANNED_TERMS) {
+        expect(text, `${h.id} (${h.family}) contains banned term "${term}"`).not.toContain(term);
+      }
     }
   });
 });
