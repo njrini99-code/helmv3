@@ -95,6 +95,10 @@ CREATE TABLE IF NOT EXISTS public.golf_round_recap_locks (
     round_id uuid NOT NULL REFERENCES public.golf_rounds (
         id
     ) ON DELETE CASCADE,
+    -- Hardcoded to 1 today (ROUND_RECAP_LOCK_REVISION = 1 in round-recap.ts);
+    -- present ahead of need for a future regenerate flow that would
+    -- increment it per round, never anywhere near 32-bit range.
+    -- squawk-ignore prefer-bigint-over-int
     revision integer NOT NULL DEFAULT 1,
     kind text NOT NULL,
     holder_token uuid NOT NULL,
@@ -283,6 +287,12 @@ ALTER TABLE public.golf_coachhelm_llm_calls
 DROP CONSTRAINT IF EXISTS golf_coachhelm_llm_calls_task_check;
 
 ALTER TABLE public.golf_coachhelm_llm_calls
+-- golf_coachhelm_llm_calls is ~750 rows; the table-scan validation this
+-- constraint re-add triggers is instant, and this is an append-only audit
+-- log with negligible concurrent-write pressure. NOT VALID + a separate
+-- VALIDATE CONSTRAINT would add a second DDL statement for no measurable
+-- safety gain at this size.
+-- squawk-ignore constraint-missing-not-valid
 ADD CONSTRAINT golf_coachhelm_llm_calls_task_check
 CHECK (task = any(ARRAY[
     'round_review'::text,
