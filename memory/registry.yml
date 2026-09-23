@@ -1058,6 +1058,11 @@ features:
         - src/hooks/golf/use-golf-messages.ts
         - src/hooks/golf/use-message-attachments.ts
         - src/hooks/golf/use-message-reactions.ts
+        # Same gap, same fix (named, not globbed): the warm-start cache
+        # (session-scoped rail/thread paint) and the idle-prewarm hook that
+        # fills it are both new (2026-09) and both outside GOVERNED_PATTERNS.
+        - src/hooks/golf/use-surface-prewarm.ts
+        - src/lib/golf/client-resource-cache.ts
       db:
         - supabase/migrations/*messag*.sql
         - supabase/migrations/*announcement*.sql
@@ -1079,6 +1084,9 @@ features:
         # holds several other features' action tests, so a glob would claim them.
         - src/app/golf/actions/__tests__/message-attachments-partial-failure.test.ts
         - src/test/actions/send-message-duplicate-key-equivalence.test.ts
+        - src/hooks/golf/__tests__/use-golf-conversations.warm-start.test.tsx
+        - src/hooks/golf/__tests__/use-surface-prewarm.test.tsx
+        - src/lib/golf/__tests__/client-resource-cache.test.ts
     integrations:
       - supabase
       - notifications
