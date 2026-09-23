@@ -488,44 +488,57 @@ interface DrillRow {
 }
 
 /**
+ * Team membership states that still count as "on the team" for ownership
+ * purposes. 'pending' (invited, not yet approved) and 'removed' (explicitly
+ * taken off the roster — `removePlayerFromTeamImpl` hard-deletes the row on
+ * a normal removal, so a surviving 'removed' row is a soft-delete path some
+ * other caller uses) are excluded. 'inactive' is a normal still-rostered
+ * state (the roster UI's active/inactive toggle — injured/redshirt players
+ * are NOT off the team) and was wrongly excluded before this fix, which
+ * orphaned every insight generated for a benched-but-rostered player.
+ */
+const OWNED_TEAM_MEMBER_STATUSES = ['active', 'inactive'] as const;
+
+/**
  * Resolve the team + staffing coach for a player so newly-created insights
  * carry the FK ownership the existing coach RLS policy expects.
  *
  * Ownership is resolved through `golf_team_coach_staff` (the canonical
  * coach↔team relationship). When a team has multiple staff, we prefer the
  * `is_primary` coach, then fall back to the earliest-created staff row.
- * Falls back to nulls if a player has no active team membership or no
- * staffed coach — better to land an orphaned row than throw.
+ * Falls back to nulls if a player genuinely has no team membership row or no
+ * staffed coach — better to land an orphaned row than throw, since refusing
+ * to write loses the insight entirely rather than just its ownership.
+ *
+ * 2026-09-22 (orphan-insight investigation): both lookups here used to
+ * destructure only `{ data }`, discarding `error` — so a real, retryable
+ * Postgres/network failure on either query was silently indistinguishable
+ * from "this player genuinely has no team," and produced the exact same
+ * permanent orphan (coach_id AND team_id both NULL) as the legitimate case.
+ * A prod read of the 18 existing orphan rows found none currently
+ * attributable to this (all had a real, current absence of team membership
+ * data — either zero `golf_team_members` rows ever, or a historical
+ * removal), so this fix does not retroactively explain or repair those —
+ * see the PR description for the read-only repair proposal. It closes the
+ * silent-failure class going forward: an actual query error is now logged
+ * distinctly (matching the pattern already used for
+ * `isTentativePromotionEnabled` below and `approveJoinRequestImpl` in
+ * `teams.ts`) instead of being indistinguishable from "no team," and a
+ * one-shot retry absorbs a single transient blip before falling back to
+ * nulls.
  */
 async function resolvePlayerOwnership(
   supabase: SupabaseClient,
   playerId: string,
 ): Promise<{ coachId: string | null; teamId: string | null }> {
   try {
-    const { data: membership } = await supabase
-      .from('golf_team_members')
-      .select('team_id')
-      .eq('player_id', playerId)
-      .eq('status', 'active')
-      .order('created_at', { ascending: true, nullsFirst: false })
-      .limit(1)
-      .maybeSingle();
-
-    const teamId = membership?.team_id ?? null;
+    const teamId = await resolveActiveTeamId(supabase, playerId);
     if (!teamId) {
       return { coachId: null, teamId: null };
     }
 
-    const { data: staff } = await supabase
-      .from('golf_team_coach_staff')
-      .select('coach_id, is_primary, created_at')
-      .eq('team_id', teamId)
-      .order('is_primary', { ascending: false, nullsFirst: false })
-      .order('created_at', { ascending: true, nullsFirst: false })
-      .limit(1)
-      .maybeSingle();
-
-    return { coachId: staff?.coach_id ?? null, teamId };
+    const coachId = await resolveTeamPrimaryCoachId(supabase, teamId);
+    return { coachId, teamId };
   } catch (error) {
     await logServerError(
       `resolvePlayerOwnership failed: ${describeError(error)}`,
@@ -534,6 +547,64 @@ async function resolvePlayerOwnership(
     );
     return { coachId: null, teamId: null };
   }
+}
+
+async function resolveActiveTeamId(
+  supabase: SupabaseClient,
+  playerId: string,
+  attempt = 0,
+): Promise<string | null> {
+  const { data: membership, error } = await supabase
+    .from('golf_team_members')
+    .select('team_id')
+    .eq('player_id', playerId)
+    .in('status', OWNED_TEAM_MEMBER_STATUSES)
+    .order('created_at', { ascending: true, nullsFirst: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    if (attempt === 0) {
+      return resolveActiveTeamId(supabase, playerId, attempt + 1);
+    }
+    await logServerError(
+      `resolvePlayerOwnership: golf_team_members lookup failed for player=${playerId}, falling back to unowned: ${describeError(error)}`,
+      { action: 'coachhelm.upsert.resolvePlayerOwnership', featureArea: 'coachhelm', playerId },
+      'warning'
+    );
+    return null;
+  }
+
+  return membership?.team_id ?? null;
+}
+
+async function resolveTeamPrimaryCoachId(
+  supabase: SupabaseClient,
+  teamId: string,
+  attempt = 0,
+): Promise<string | null> {
+  const { data: staff, error } = await supabase
+    .from('golf_team_coach_staff')
+    .select('coach_id, is_primary, created_at')
+    .eq('team_id', teamId)
+    .order('is_primary', { ascending: false, nullsFirst: false })
+    .order('created_at', { ascending: true, nullsFirst: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    if (attempt === 0) {
+      return resolveTeamPrimaryCoachId(supabase, teamId, attempt + 1);
+    }
+    await logServerError(
+      `resolvePlayerOwnership: golf_team_coach_staff lookup failed for team=${teamId}, falling back to unowned coach: ${describeError(error)}`,
+      { action: 'coachhelm.upsert.resolvePlayerOwnership', featureArea: 'coachhelm' },
+      'warning'
+    );
+    return null;
+  }
+
+  return staff?.coach_id ?? null;
 }
 
 /**
