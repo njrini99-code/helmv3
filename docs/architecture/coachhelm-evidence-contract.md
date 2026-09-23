@@ -1382,12 +1382,84 @@ as of this slice.
   `missingInputs`**, not an omitted entry — `buildHypotheses` returns a
   flat `Hypothesis[]` (no separate "withheld" bucket), so a family with an
   absent prerequisite still appears, stating the gap, rather than
-  vanishing silently. `short_bias`, `recovery`, and `par5_opportunity_loss`
-  have no metric producer today (no A2/A3 slice emits
-  `approach_short_miss_rate`/`approach_recovery_outcome_rate`) — every real
-  call reports them `'no_data'`, never fabricates a value.
+  vanishing silently. `short_bias` and `recovery` have no metric producer
+  today (no A2/A3 slice emits `approach_short_miss_rate`/
+  `approach_recovery_outcome_rate`) — every real call reports them
+  `'no_data'`, never fabricates a value. Corrected 2026-09-23 (A10 slice
+  1's shadow harness): `par5_opportunity_loss` DOES have a real metric
+  producer — A3 emits both `par5_regulation_opportunity_rate` and
+  `par5_green_in_two_rate` (`par-opportunities.ts`'s Family 2) — this
+  paragraph previously grouped it with the two genuinely unreachable
+  families in error. `par5_opportunity_loss` reaches
+  `'supported_association'` on real input whenever a specific par-5 hole
+  is played 3+ times (`HOLE_OPPORTUNITY_MIN_SAMPLE_N`) without reaching
+  regulation most of the time — proven, not asserted, by
+  `shadow-harness.test.ts`'s established-roster snapshot below.
 - **Not wired to `diagnosis.ts` or `personal-context.ts`** — that's slice 2,
   per this slice's explicit scope.
+
+## Shadow-mode evaluation harness (A10 deliverable, slice 1 — pure, not wired)
+
+`runShadowEvaluation(snapshot)`
+(`src/lib/coachhelm/v3/eval/shadow-harness.ts`) is the addendum's own
+directive: "run all new families in shadow mode on de-identified fixed
+snapshots before coach-visible writes." Pure and offline — no DB read, no
+flag flip, no delivery-surface write. It feeds one `ShadowSnapshot`
+(`scope`/`facts`/`holes` only, never a live player id) through A2
+(`computeDistanceProfile`), A3 (`computeParOpportunities`), A4 both layers
+(`attributeSequence` per-hole and the #2020 `computeSequenceAttribution`
+rollup), A5 (`buildHypotheses`), and A6 (`groupIssues`), and returns one
+structured `ShadowEvalReport`.
+
+- **Provenance boundary, stated not solved**: `groupIssues` only ever
+  groups packets carrying honest `sourceShotIds` (per its own contract —
+  see "Issue grouping and ranking-input unification" above). A2/A3
+  `MetricResult` rows carry no per-shot provenance, and A5's
+  `par5_opportunity_loss` hypothesis is round-level, not shot-addressed —
+  none of those are turned into a packet; the report counts them under
+  `grouping.nonGroupablePacketSources` instead of fabricating an id to
+  close the gap. Only A4 sequence events (which carry `round_id`/
+  `hole_number`/`shotNumbers`) and A5's per-shot `rough_gap` hypothesis
+  (whose `id`/`supportingClaimIds` resolve back to one triggering
+  `ShotFact`) become packets. `recovery` never cites its own triggering
+  shot as support (by the A5 module's own design), so it never resolves to
+  a packet either — reported the same way, not miscounted as groupable.
+- **Sequence-packet eligibility mirrors A6 slice 2's rule (#2026, not yet
+  on `main`), reimplemented locally**: a packet built from one
+  `SequenceEvent` is eligible only when that event KIND's own #2020 rollup
+  row has `status: 'supported'`, never the single event's own resolution.
+  Duplicating six lines here rather than importing an unmerged branch is
+  intentional — replace with the real import once #2026 lands.
+- **Two grouping invariants, both independently unit-tested against a
+  hand-built VIOLATING input** (`.claude/rules/quality-gates.md`'s "a gate
+  that cannot fail is not a gate"): `countUnsupportedCauseClaims` (a
+  `'supported_association'` hypothesis with no real supporting
+  `status: 'supported'` metric row, or any claim id that doesn't resolve
+  to an input element this call was given) and
+  `countDuplicateLeadingPriority` (a source shot or an owning claim
+  appearing in more than one `Issue`) — both proven against every
+  snapshot in `shadow-eval-snapshots.ts`'s 2×2 matrix and mutation-verified
+  at their own boundary.
+- **2×2 snapshot fixture matrix** (`src/test/coachhelm/v3/fixtures/
+  shadow-eval-snapshots.ts`): new vs. established roster, crossed with
+  complete vs. incomplete data. Built from the A0 fixtures in
+  `situational-intelligence.ts` (`incomplete_shot_sequence` is the exact
+  "missing shot, completed scorecard" §14.1 row cited above, under
+  "Sequence attribution") passed through the real `normalizeShot`, plus
+  one re-keying helper that replicates a hand-authored hole shape across
+  many round ids — composition on an existing fixture, not a second
+  fixture system. The established-roster snapshot is a precondition, not
+  an assumption: its own test asserts A2/A3/A4-rollup rows actually reach
+  `status: 'supported'` before checking any invariant on top of them — an
+  established-roster contrast that never clears a real floor proves
+  nothing.
+- **Acceptance, proven not asserted**: `sequencePerHole.suppressed`/an
+  `'insufficient'` `sequenceRollup`/`par`/`distance` status on the
+  new-roster snapshots (support genuinely fails, floor genuinely not
+  cleared); `grouping.unsupportedCauseClaims === 0` and
+  `grouping.duplicateLeadingPriority === 0` on every real snapshot in the
+  matrix, including the established-roster ones where a violation would
+  actually have something to happen to.
 
 ## How to add a new comparison source
 

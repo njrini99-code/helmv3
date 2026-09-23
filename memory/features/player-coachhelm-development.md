@@ -285,6 +285,18 @@ Player opens round review
   regardless of confidence. Full contract in
   `docs/architecture/coachhelm-evidence-contract.md`'s "Controlled
   hypotheses" section and `memory/features/coachhelm-ai.md`.
+- **`src/lib/coachhelm/v3/eval/shadow-harness.ts`** (2026-09-23, addendum
+  §13, work package A10 slice 1, pure, not wired to a route or component):
+  `runShadowEvaluation(snapshot)` runs every new v3 family (A2/A3/A4 both
+  layers/A5/A6) over one de-identified fixed snapshot and reports
+  per-family support status plus two invariant counters that must both be
+  `0` — one flagging a hypothesis whose "supported" state isn't actually
+  backed by a real supported metric, one flagging a shot or owning claim
+  credited to more than one grouped issue. Proven against a real 2×2
+  new-vs-established-roster / complete-vs-incomplete-data fixture matrix,
+  not just hand-picked numbers. Full contract in
+  `docs/architecture/coachhelm-evidence-contract.md`'s "Shadow-mode
+  evaluation harness" section and `memory/features/coachhelm-ai.md`.
 
 - **Duplicate-active-work guard (Pkg 9 slice 1a, 2026-09-23,
   `agent/coachhelm-focus-dedup`)**: all 5 focus-area create paths
