@@ -189,6 +189,13 @@ legacy `is_recurring` flag in sync for older consumers.
 - Recurring event edits must respect scope: this, thisAndFuture, or all.
 - Feed tokens must be treated as secrets and rate limited.
 - Calendar conflict detection should consider classes, blocked time, and exclusions.
+- **Only players are invitable.** The golf calendar page passes the editor a
+  roster merged with every organisation coach (`role: 'coach'`);
+  `FairwayEventEditor` drops coach rows from the invite picker. Attendance
+  references `golf_players`, and `checkScheduleConflicts`' shared-team gate
+  denies the whole check if one requested id is not a teammate player
+  (2026-09-23: a head coach was denied on 14 consecutive event creations).
+  Test: `FairwayEventEditor.test.tsx` "coaches are not invitees".
 - **Class meetings take no RSVPs and never travel through attendance.**
   `respondToEvent` refuses any `isClassEvent` row with code `class_meeting`;
   `getUserBusyPeriodsWithStatus` skips class rows reached via

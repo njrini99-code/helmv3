@@ -11,4 +11,8 @@ export interface TeamPlayer {
   first_name: string;
   last_name: string;
   avatar_url?: string;
+  /** The calendar page merges the roster with the organisation's coaches and
+   *  tags each row. Only players can be invited: attendance references
+   *  `golf_players`, so a coach id can never be saved as an attendee. */
+  role?: 'coach' | 'player';
 }

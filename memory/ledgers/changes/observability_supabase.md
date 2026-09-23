@@ -594,3 +594,13 @@
   phase, so no component was added; `foldDatabaseState` is the intended
   input to a Mission Control header chip. Nothing in Track F is wired into
   a production call site.
+
+## 2026-09-23 — the lock evaluator stopped treating the Realtime walsender as a stuck query
+
+- SHA: `f77c259a6` (app-health routine PR, branch `agent/health-20260923-1847`).
+- Change: `evaluateLockSnapshot` skips `long_active` for `safeQueryClass ===
+  'start_replication'`; `lock_wait`/`idle_in_tx` unchanged.
+- Why: six unresolved CRITICAL `long_active` rows in 24h, all the
+  `realtime_replication_connection` walsender (connection age, not statement
+  age). TELEMETRY_DEFECT — no product incident filed; no replay manifest
+  (the schema requires an incident doc).

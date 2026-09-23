@@ -106,6 +106,37 @@ describe('evaluateLockSnapshot — service role thresholds', () => {
   });
 });
 
+describe('evaluateLockSnapshot — streaming replication sessions', () => {
+  // A logical-replication walsender (Supabase Realtime's
+  // `START_REPLICATION SLOT ...`) stays `state = 'active'` for the whole life
+  // of its connection, waiting on WAL. Measured 2026-09-23: six unresolved
+  // CRITICAL long_active incidents in 24h, every one `blocked_query_class =
+  // 'start_replication'`, 9-26 minutes "active" — the Realtime connection
+  // being alive, not a stuck query.
+  const walsender = row({ roleClass: 'other', safeQueryClass: 'start_replication', durationMs: 1_098_392 });
+
+  it('does not report a long-lived replication stream as a long_active incident', () => {
+    expect(evaluateLockSnapshot({ rows: [walsender], deadlocksDelta: null })).toEqual([]);
+  });
+
+  it('still reports a replication session that is waiting on a lock', () => {
+    const result = evaluateLockSnapshot({
+      rows: [{ ...walsender, isWaitingOnLock: true, durationMs: 30_000, blockedPidCount: 1 }],
+      deadlocksDelta: null,
+    });
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({ kind: 'lock_wait', blockedQueryClass: 'start_replication' });
+  });
+
+  it('still reports an ordinary long-running statement from the same role class', () => {
+    const result = evaluateLockSnapshot({
+      rows: [row({ roleClass: 'other', safeQueryClass: 'select golf_rounds', durationMs: 1_098_392 })],
+      deadlocksDelta: null,
+    });
+    expect(result[0]).toMatchObject({ kind: 'long_active', severity: 'critical' });
+  });
+});
+
 describe('evaluateLockSnapshot — deadlocks', () => {
   it('does not synthesize a deadlock candidate when deadlocksDelta is null (no signal, not zero)', () => {
     const result = evaluateLockSnapshot({ rows: [], deadlocksDelta: null });

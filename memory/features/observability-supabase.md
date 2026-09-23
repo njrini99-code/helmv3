@@ -83,7 +83,12 @@ migration reads `unconfigured`, never a fabricated green result.
 - Pure evaluators, all in `src/lib/observability/supabase/`:
   - `locks.ts` — `evaluateLockSnapshot`, app-role vs service-role
     thresholds (8s posture vs the measured 30s service_role timeout),
-    deadlocks fed from the health sampler's own delta signal.
+    deadlocks fed from the health sampler's own delta signal. A
+    `start_replication` session (the Realtime walsender, active for its
+    whole connection) is exempt from `long_active` only — a replication
+    session waiting on a lock is still reported (2026-09-23; it had been
+    raising a CRITICAL incident every few hours). The SQL facade's
+    `db_health_samples.longest_active_ms` still counts the walsender.
   - `health-rules.ts` — `evaluateConnectionSaturation` (fraction scale,
     0.70/0.80-sustained/0.90) and `evaluateRollbackRate` (baseline from the
     older half of a >=24-sample window, regression needs both >2x baseline
