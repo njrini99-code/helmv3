@@ -137,7 +137,7 @@ is a second thing to keep true.
 - **Behaviour:** `memory/features/calendar-events.md`
 - **Code:** `src/app/golf/(dashboard)/dashboard/calendar/**`, `src/components/golf/calendar/**`, `src/components/fairway/pages/calendar/**`, `src/components/fairway/controls/wheel-picker.*`, `src/app/api/calendar/**`, `src/app/golf/actions/attendance.ts` … and 20 more in the registry
 - **Telemetry:** `calendar_events` (golfhelm, high), `academics_classes` (golfhelm, low)
-- **Incidents:** none recorded
+- **Incidents:** `memory/incidents/calendar_events/INC-2026-09-23-coach-invitees-deny-conflict-check.md`
 - **Repair units:** none in the queue
 - **History:** `memory/ledgers/changes/calendar_events.md`, `memory/ledgers/tests/calendar_events.md`
 
