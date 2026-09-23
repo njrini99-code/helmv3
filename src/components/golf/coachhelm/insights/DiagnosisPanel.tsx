@@ -95,7 +95,10 @@ const THIN_SAMPLE = 20;
  * honest unit; the StandingBar (which DOES carry a benchmark) is used elsewhere.
  */
 function DriverRow({ driver }: { driver: DiagnosisDriver }) {
-  const label = metricLabel(driver.metric);
+  // Producer label first: a driver whose value is not the registry quantity
+  // for its metric id (approach_miss's green-hit % under a proximity id) must
+  // not render a percent under a feet-metric heading.
+  const label = driver.label ?? metricLabel(driver.metric);
   const display = formatValue(driver.value, driver.unit);
   const thin = driver.sample_n < THIN_SAMPLE;
 

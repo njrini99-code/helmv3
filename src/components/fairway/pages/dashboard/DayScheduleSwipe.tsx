@@ -30,6 +30,7 @@ import { Button, IconButton } from '@/components/fairway/controls/button';
 import { Skeleton } from '@/components/fairway/feedback/Skeleton';
 import { InlineNotice } from '@/components/fairway/feedback/InlineNotice';
 import { cn } from '@/lib/utils';
+import { useScrollFade } from '@/lib/fairway/use-scroll-fade';
 import { formatTimeInTz } from '@/lib/utils/timezone';
 import {
   EVENT_LABEL,
@@ -83,6 +84,8 @@ export function DayScheduleSwipe({
   const [direction, setDirection] = useState(1);
   const dragStartX = useRef<number | null>(null);
   const reduce = useReducedMotion();
+  const { ref: dayRailRef, fadeStyle: dayRailFade } = useScrollFade<HTMLDivElement>('x');
+  const selectedDayRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const resolved = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -164,6 +167,24 @@ export function DayScheduleSwipe({
   const dayEvents = byDay.get(dayKey) ?? [];
   const label = isReady ? dayLabel(dayKey, todayKey as string) : '';
 
+  useEffect(() => {
+    const selected = selectedDayRef.current;
+    const rail = selected?.parentElement;
+    if (!selected || !rail) return;
+    const keepSelectedVisible = () => {
+      if (rail.scrollWidth <= rail.clientWidth) return;
+      const item = selected.getBoundingClientRect();
+      const bounds = rail.getBoundingClientRect();
+      if (item.left < bounds.left + 28 || item.right > bounds.right - 28) {
+        rail.scrollLeft += item.left + item.width / 2 - bounds.left - bounds.width / 2;
+      }
+    };
+    keepSelectedVisible();
+    const observer = new ResizeObserver(keepSelectedVisible);
+    observer.observe(rail);
+    return () => observer.disconnect();
+  }, [dayKey]);
+
   const goto = (next: number) => {
     const clamped = Math.max(0, Math.min(maxOffset, next));
     if (clamped === clampedOffset) return;
@@ -202,8 +223,8 @@ export function DayScheduleSwipe({
         <div className="flex min-w-0 flex-col gap-2">
           {/* Day switcher row */}
           <div className="flex items-center justify-between gap-2">
-            <div className="flex min-w-0 items-baseline gap-2">
-              <span className="font-fw-display text-body font-semibold text-text-primary">
+            <div className="flex min-w-0 flex-col items-start">
+              <span className="whitespace-nowrap font-fw-display text-body font-semibold text-text-primary">
                 {label}
               </span>
               {clampedOffset > 0 ? (
@@ -211,7 +232,7 @@ export function DayScheduleSwipe({
                   variant="ghost"
                   size="sm"
                   onClick={() => goto(0)}
-                  className="px-2 text-caption font-medium text-accent-700 hover:text-accent-600"
+                  className="-ml-2 px-2 text-caption font-medium text-accent-700 hover:text-accent-600"
                 >
                   Back to today
                 </Button>
@@ -267,6 +288,8 @@ export function DayScheduleSwipe({
               (audit 2026-07-24, P-01 / P-14). It doubles as the keyboard
               affordance the chevron-only version never had. */}
           <div
+            ref={dayRailRef}
+            style={dayRailFade}
             role="toolbar"
             aria-label="Pick a day"
             aria-orientation="horizontal"
@@ -295,6 +318,7 @@ export function DayScheduleSwipe({
                 // eslint-disable-next-line helm/no-raw-button -- compact day cell inside a toolbar, not a <Button> pill (audit P-01)
                 <button
                   key={key}
+                  ref={selected ? selectedDayRef : undefined}
                   type="button"
                   onClick={() => goto(dayOffset)}
                   aria-current={selected ? 'true' : undefined}
@@ -302,7 +326,7 @@ export function DayScheduleSwipe({
                     count > 0 ? ` — ${count} event${count === 1 ? '' : 's'}` : ' — nothing scheduled'
                   }`}
                   className={cn(
-                    'flex min-h-11 flex-1 shrink-0 basis-0 flex-col items-center justify-center gap-1 rounded-fw-sm px-1 py-1.5 transition-colors',
+                    'flex min-h-11 min-w-11 flex-1 shrink-0 basis-0 flex-col items-center justify-center gap-1 rounded-fw-sm px-1 py-1.5 transition-colors',
                     selected
                       ? 'bg-accent-650 text-text-on-accent'
                       : 'text-text-tertiary hover:bg-surface-sunken',

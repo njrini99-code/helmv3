@@ -94,7 +94,7 @@ export function FairwayPlayerRoster({
   const count = players.length;
 
   return (
-    <div className={cn('flex flex-col gap-7', className)}>
+    <div className={cn('flex flex-col gap-6', !hideHeader && 'mx-auto w-full max-w-[1200px] px-4 py-6 md:px-6 md:py-8', className)}>
       {hideHeader ? null : (
         <ViewHeader
           title="Team Roster"
@@ -115,7 +115,7 @@ export function FairwayPlayerRoster({
            mobile-landscape card-width squeeze as FairwayCoachRoster's grid;
            lg (1024px) instead of md (768px) keeps 2-up only where a card
            actually has room for a full name. */
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 md:gap-5 lg:grid-cols-2">
           {players.map((player) => (
             <TeammateCard key={player.id} player={player} />
           ))}
@@ -137,8 +137,8 @@ function TeammateCard({ player }: { player: FairwayPlayerRosterPlayer }) {
   const scratchOrBetter = hasHandicap && (player.handicap as number) <= 0;
 
   return (
-    <Surface elevation="border" padding="md" className="flex flex-col gap-5">
-      <div className="flex items-start gap-4">
+    <Surface elevation="border" padding="none" className="grid grid-cols-[minmax(0,1fr)_44px] items-center gap-2 p-4 md:flex md:flex-col md:items-stretch md:gap-5 md:p-6">
+      <div className="flex min-w-0 items-center gap-3 md:items-start md:gap-4">
         {/* Avatar — image with presence dot, OR deterministic colored initials. */}
         {player.avatar_url ? (
           <Avatar
@@ -162,13 +162,13 @@ function TeammateCard({ player }: { player: FairwayPlayerRosterPlayer }) {
                 latter collapsed a two-word name to one letter + ellipsis in
                 the narrower 2-col grid cell (GAPS_AUDIT_TABLET_LANDSCAPE_
                 2026-09-02.md #1). */}
-            <h3 className="min-w-0 line-clamp-2 break-words font-fw-sans text-h3 font-semibold leading-snug text-text-primary [overflow-wrap:anywhere]">
+            <h3 className="min-w-0 line-clamp-2 break-words font-fw-sans text-body font-semibold leading-snug md:text-h3 text-text-primary [overflow-wrap:anywhere]">
               {name}
             </h3>
-            <FairwayYearBadge year={player.graduation_year} />
+            <span className="hidden md:inline-flex"><FairwayYearBadge year={player.graduation_year} /></span>
           </div>
 
-          <div className="mt-2.5 flex flex-wrap items-center gap-2">
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 md:mt-2.5">
             {hasHandicap ? (
               <Chip
                 tone={scratchOrBetter ? 'success' : 'neutral'}
@@ -192,13 +192,13 @@ function TeammateCard({ player }: { player: FairwayPlayerRosterPlayer }) {
       </div>
 
       {/* The ONE action — a ghost Button wrapping a next/link (asChild). */}
-      <Button variant="ghost" size="sm" fullWidth asChild>
+      <Button variant="ghost" size="sm" fullWidth asChild className="h-11 w-11 px-0 md:h-auto md:w-full md:px-3.5">
         <Link
           href={`/golf/dashboard/messages?player=${player.id}`}
           aria-label={`Message ${name}`}
         >
           <IconMessage size={15} />
-          <span>Message</span>
+          <span className="sr-only md:not-sr-only">Message</span>
         </Link>
       </Button>
     </Surface>

@@ -1,51 +1,13 @@
 'use client';
 
-/**
- * ============================================================================
- * Fairway · messages · FairwayMessages — the team-inbox orchestrator
- * ----------------------------------------------------------------------------
- * The flag-on /golf/dashboard/messages surface. A calm two-pane inbox that
- * MIRRORS the shipped /coachhelm/chat pattern (AskWorkspace → rail + thread):
- *
- *   ┌────────────────────────────────────────────────────────────────┐
- *   │  ViewHeader · "Messages" · Team messages · <team name>          │  ← ONE masthead
- *   │                              [Team] (coach)   [New message]     │  ← 1 primary
- *   ├──────────────────┬─────────────────────────────────────────────┤
- *   │ MessageConvers-  │  MessageThreadPane (the ONE focal hero)       │
- *   │ ationRail (aside)│  + MessageComposer (sunken matte track)       │
- *   └──────────────────┴─────────────────────────────────────────────┘
- *
- * This is a SHARED page — coach + player render the SAME inbox; role differs
- * only at the edges (spec §role): the coach-only quiet "Team" broadcast
- * secondaryAction, the modal's currentUserRole, and the no-team copy branch.
- *
- * ── REUSE, DON'T REBUILD ────────────────────────────────────────────────────
- * Every behavior the legacy page.tsx wired is PRESERVED here, unchanged in
- * substance — this component only re-skins presentation:
- *   • useGolfConversations() — conversations + loading + refetch (UNCHANGED hook)
- *   • useGolfMessages(id)    — messages, sendMessage, editMessage, removeMessage,
- *                              isOtherTyping, sendTypingStatus, currentUserId
- *                              (UNCHANGED hook; soft-delete + optimistic rollback
- *                              live inside it — we never touch the write paths)
- *   • useMessageAttachments() — sendMessageWithAttachments (UNCHANGED hook)
- *   • createGolfConversation / getPlayerUserId (UNCHANGED server actions)
- *   • FairwayNewMessageSheet (Fairway-tokenized recipient picker — same search
- *     logic as the legacy GolfNewMessageModal, re-skinned onto fw primitives) /
- *     FairwayTeamBroadcastSheet (Fairway-tokenized coach broadcast composer —
- *     same two-step logic + server actions as the legacy GolfTeamBroadcastModal,
- *     re-skinned onto fw primitives; triggered from our state)
- * Preserved interactions: the ?player= deep-link (find-or-create), auto-select
- * first conversation, mobile master-detail (mobileShowChat), PullToRefresh on the
- * rail, auto-scroll-to-bottom (in the thread pane), and the typing throttle
- * (in the composer).
- *
- * Renders inside a `.fairway-ds` scope on a `bg-canvas` page (like
- * FairwayPlayerStats) WITHOUT CoachHelmShell — this is a team-management page.
- * ========================================================================== */
+/** Full-window team inbox. This orchestrator owns conversation selection,
+ * group actions, identity and send wiring; panes own presentation and scrolling. */
 
+import { useMessageReactions } from '@/hooks/golf/use-message-reactions';
+import { conversationRecipientName, isGroupConversation } from './conversation-kind';
 import * as React from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Users } from 'lucide-react';
+import { SquarePen, Users } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 import { fairwayScope } from '@/lib/redesign/flag';
@@ -67,10 +29,10 @@ import { FairwayNewMessageSheet } from './FairwayNewMessageSheet';
 import { FairwayTeamBroadcastSheet } from './FairwayTeamBroadcastSheet';
 import { PullToRefresh } from '@/components/golf/PullToRefresh';
 import { useImmersiveSurface } from '@/hooks/use-immersive-surface';
+import { useMediaQuery } from '@/hooks/use-media-query';
 import type { PendingAttachment } from '@/lib/storage/attachments';
 
-import { ViewHeader } from '@/components/fairway/view-header';
-import { Button } from '@/components/fairway/controls/button';
+import { Button, IconButton } from '@/components/fairway/controls/button';
 import { EmptyState } from '@/components/fairway/feedback';
 
 import { MessageConversationRail } from './MessageConversationRail';
@@ -86,6 +48,7 @@ import { isTransientNetworkErrorMessage } from '@/lib/transient-network-error';
 export function FairwayMessages() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const isDesktop = useMediaQuery('(min-width: 768px)');
   const playerIdFromUrl = searchParams.get('player');
   // P260: notification deep-link target (?conversation=<id>). Notifications set
   // this so clicking "New message from X" opens the thread that fired, not just
@@ -93,7 +56,7 @@ export function FairwayMessages() {
   const conversationIdFromUrl = searchParams.get('conversation');
 
   // Server-resolved user data — role/team via the same context the legacy used.
-  const { userId, role: userRole, teamId, teamName } = useGolfUser();
+  const { userId, role: userRole, teamId } = useGolfUser();
 
   // ── UNCHANGED hook: conversations + refetch ─────────────────────────────────
   const {
@@ -133,6 +96,7 @@ export function FairwayMessages() {
     sendTypingStatus,
     currentUserId,
   } = useGolfMessages(selectedConversationId || '');
+  const reactions = useMessageReactions(selectedConversationId ?? '', messages.filter((message) => message.conversation_id === selectedConversationId && !message.sendFailed).map((message) => message.id), currentUserId ?? userId);
 
   // ── UNCHANGED hook: attachment send ─────────────────────────────────────────
   const { sendMessageWithAttachments } = useMessageAttachments();
@@ -147,6 +111,13 @@ export function FairwayMessages() {
   // state, like every other overlay on this surface: the thread pane owns the
   // trigger, this file owns what the trigger opens.
   const [showGroupDetails, setShowGroupDetails] = React.useState(false);
+
+  React.useEffect(() => {
+    setMobileActionsId(null);
+    setShowGroupDetails(false);
+    setEditingMessageId(null);
+    setDeleteConfirmId(null);
+  }, [selectedConversationId]);
 
   // ── Group participant name map: user_id → { name, avatar } (Bug fix #1) ─────
   // For group conversations, each incoming bubble's sender_id is resolved to a
@@ -166,7 +137,12 @@ export function FairwayMessages() {
     new Set(),
   );
 
+  const groupFetchVersion = React.useRef(0);
+  const groupSelection = React.useRef<string | null>(null);
+
   const fetchGroupParticipants = React.useCallback(async (conversationId: string) => {
+    if (groupSelection.current !== conversationId) return;
+    const version = ++groupFetchVersion.current;
     const supabase = createClient();
     const { data: participants, error: participantsError } = await supabase
       .from('golf_conversation_participants')
@@ -181,7 +157,13 @@ export function FairwayMessages() {
       );
     }
 
-    if (!participants || participants.length === 0) return;
+    if (!participants || participants.length === 0) {
+      if (version === groupFetchVersion.current) {
+        setGroupParticipants(new Map());
+        setGroupMemberIds(new Set());
+      }
+      return;
+    }
 
     const memberIds = new Set(participants.map(p => p.user_id));
 
@@ -261,28 +243,34 @@ export function FairwayMessages() {
         });
       }
     });
+    if (version !== groupFetchVersion.current) return;
     setGroupParticipants(map);
     setGroupMemberIds(memberIds);
   }, []);
 
-  // Fetch participant names whenever we enter a group conversation; clear on 1:1.
+  // Invalidate in-flight results when the selected conversation changes.
   React.useEffect(() => {
+    if (groupSelection.current !== selectedConversationId) {
+      groupSelection.current = selectedConversationId;
+      setGroupParticipants(new Map());
+      setGroupMemberIds(new Set());
+    }
     if (!selectedConversationId) {
       setGroupParticipants(new Map());
       setGroupMemberIds(new Set());
       return;
     }
     const conv = conversations.find(c => c.id === selectedConversationId);
-    if (conv?.is_group) {
+    if (isGroupConversation(conv)) {
       fetchGroupParticipants(selectedConversationId);
     } else {
       setGroupParticipants(new Map());
       setGroupMemberIds(new Set());
     }
+    return () => { groupFetchVersion.current += 1; };
   }, [selectedConversationId, conversations, fetchGroupParticipants]);
 
   // Thread-count meta — HONEST: count only, NO unread chip in the masthead.
-  const threadCount = conversations.length;
 
   // ── ?player= deep-link: find-or-create, then select (PRESERVED verbatim) ─────
   const [handledPlayerParam, setHandledPlayerParam] = React.useState(false);
@@ -300,7 +288,7 @@ export function FairwayMessages() {
       }
 
       const existingConversation = conversations.find(conv => {
-        return !conv.is_group && conv.other_participant?.id === playerUserId;
+        return !isGroupConversation(conv) && conv.other_participant?.id === playerUserId;
       });
 
       if (existingConversation) {
@@ -351,10 +339,11 @@ export function FairwayMessages() {
     router.replace('/golf/dashboard/messages', { scroll: false });
   }, [conversations, conversationsLoading, conversationIdFromUrl, handledConversationParam, router]);
 
-  // ── Auto-select first conversation (only when no deep-link param) (PRESERVED) ─
+  // Desktop shows a thread beside the rail; a phone must not read a hidden thread.
   React.useEffect(() => {
     const firstConversation = conversations[0];
     if (
+      isDesktop &&
       !conversationsLoading &&
       firstConversation &&
       !selectedConversationId &&
@@ -363,7 +352,7 @@ export function FairwayMessages() {
     ) {
       setSelectedConversationId(firstConversation.id);
     }
-  }, [conversations, conversationsLoading, selectedConversationId, playerIdFromUrl, conversationIdFromUrl]);
+  }, [isDesktop, conversations, conversationsLoading, selectedConversationId, playerIdFromUrl, conversationIdFromUrl]);
 
   const selectedConversation = React.useMemo(() => {
     if (!selectedConversationId) return null;
@@ -372,6 +361,8 @@ export function FairwayMessages() {
 
   // ── Selection + mobile master-detail (PRESERVED) ────────────────────────────
   const handleSelectConversation = (id: string) => {
+    setMobileActionsId(null);
+    setShowGroupDetails(false);
     setSelectedConversationId(id);
     setMobileShowChat(true);
   };
@@ -581,156 +572,35 @@ export function FairwayMessages() {
   }
 
   return (
-    // Bug fix #2 — scroll: overflow-hidden + flex flex-col propagates the fixed
-    // dvh height down to the grid so the thread pane's flex-1 overflow-y-auto
-    // activates. Without overflow-hidden the inner flex-1 has no bounded parent
-    // and the message list grows instead of scrolling.
-    // Mobile subtracts whichever is taller of the bottom chrome and the
-    // keyboard: FairwayBottomNav's fixed 56px + safe-area normally, or the
-    // `--keyboard-height` CapacitorProvider publishes on keyboardWillShow (and
-    // the visualViewport fallback publishes on the web). The iOS WebView does
-    // NOT resize for the keyboard (`resize: 'ionic'`, no ion-app here), so a
-    // 100dvh column kept its full height and the composer sat under the keys —
-    // "I can't see what I'm typing", Shenandoah team chat, 2026-09-01. While
-    // the keyboard is up the bottom nav is under it anyway, so its 56px is
-    // not owed.
-    // Mobile also subtracts FairwayBottomNav's fixed 56px (md:hidden, safe-area
-    // pad already inside that 56px via its own env() padding) — without this
-    // the composer at the foot of the thread pane rendered UNDER the tab bar
-    // on notched phones instead of clearing it. Reverts to the plain top-bar
-    // -only calc at md+, where the bottom nav is hidden and doesn't apply.
     <div
-      // This screen lays itself out against the keyboard (the height above),
-      // so the provider's keyboardWillShow scroll-into-view must leave it
-      // alone: centring the composer in a viewport the keyboard covers would
-      // scroll the thread header off the top for nothing.
+      data-fw-messages
       data-fw-keyboard-aware
       className={fairwayScope(
-        // Two mobile budgets, because the chrome below this surface differs.
-        // With a thread OPEN the tab bar is hidden and its padding collapsed
-        // (useImmersiveSurface), so the only thing owed underneath is the
-        // home indicator. On the LIST the bar is up, and AppShell has already
-        // reserved `2rem + 56px + safe-area` for it — subtracting that same
-        // amount here is what stops the nav being counted twice, which was
-        // ~200px of dead beige between the composer and the tab bar.
-        // The keyboard term only takes what the reservation has not.
         mobileShowChat
-          // Thread open on a phone: BOTH shell bars are hidden, so the
-          // surface owns the whole viewport and its own insets. No `4rem`
-          // term — that was the shell top bar, which is no longer there —
-          // and `pt-[safe-area-top]` because nothing above it is reserving
-          // the notch any more. This is what makes the thread header the
-          // ONE header instead of the second one.
-          ? 'flex h-[calc(100dvh-env(safe-area-inset-bottom,0px)-max(0px,calc(var(--keyboard-height,0px)-env(safe-area-inset-bottom,0px))))] flex-col overflow-hidden bg-canvas bg-canvas-gradient pt-[env(safe-area-inset-top,0px)] md:h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-env(safe-area-inset-bottom,0px))] md:pt-0'
-          : 'flex h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-56px-env(safe-area-inset-bottom,0px)-max(0px,calc(var(--keyboard-height,0px)-2rem-56px-env(safe-area-inset-bottom,0px))))] flex-col overflow-hidden bg-canvas bg-canvas-gradient md:h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-env(safe-area-inset-bottom,0px))]'
+          ? 'flex h-[calc(100dvh-var(--keyboard-height,0px))] flex-col overflow-hidden bg-canvas bg-canvas-gradient pt-[env(safe-area-inset-top,0px)] md:h-dvh md:pt-0'
+          : 'flex h-[calc(100dvh-var(--fw-mobile-nav-height))] flex-col overflow-hidden bg-canvas bg-canvas-gradient pt-[env(safe-area-inset-top,0px)] md:h-dvh md:pt-0'
       )}
     >
-      {/* `py-3` on phone, not `py-6`: with the editorial masthead gone below
-          `md` there is nothing left up here that needs to breathe — the row
-          beneath is a search field. The desktop rhythm is unchanged from `sm`.
-
-          With a thread OPEN on a phone the horizontal gutter goes too: the
-          thread pane flattens to the canvas at that width (MessageThreadPane),
-          and a 16px cream margin either side of a full-screen conversation is
-          the last thing making it read as a card on a page. The gutter returns
-          for the conversation LIST, where it is separating rows from the screen
-          edge and is doing real work. */}
-      <div
-        className={`mx-auto flex w-full max-w-7xl flex-1 flex-col overflow-hidden py-3 sm:px-6 sm:py-6 lg:py-8 ${
-          mobileShowChat ? 'px-0' : 'px-4'
-        }`}
-      >
-        {/* ── ONE MASTHEAD — replaces the legacy LargeTitleHeader + PageHeader ──
-            On a phone with a thread open it steps aside: the masthead plus the
-            thread's own header left 100–272px of an 844px screen for messages
-            (audit 2026-09-02, UI-4). The thread header carries Back. */}
-        {/* ── PHONE: a compact action row, not an editorial masthead ─────────
-            The full ViewHeader below is a desktop cover treatment (Doctrine
-            Rule 2: on phone these condense to one line). Rendering it here
-            printed the destination name THREE times before the first
-            conversation row — FairwayTopBar already shows "Messages" on
-            mobile (FairwayTopBar.tsx:261, `md:hidden`, and its own comment
-            notes it shares the left edge with "the page masthead below it"),
-            then the eyebrow said MESSAGES and the title said "Team messages".
-            The team name and the conversation count followed, then the action
-            buttons on their own stacked row, because the masthead only goes
-            side-by-side at `sm:`.
-            Only the two ACTIONS are not carried by other chrome, so only they
-            survive here. The conversation count is dropped rather than moved:
-            the rail beneath it is the count, rendered. */}
-        {!mobileShowChat && (
-          <div className="flex items-center justify-end gap-2 md:hidden">
-            {userRole === 'coach' && teamId ? (
-              <Button
-                variant="secondary"
-                size="sm"
-                leftIcon={<Users size={16} aria-hidden="true" />}
-                onClick={() => setShowTeamBroadcastModal(true)}
-              >
-                Team
-              </Button>
-            ) : null}
-            <Button size="sm" onClick={() => setShowNewMessageModal(true)}>
-              New message
-            </Button>
-          </div>
-        )}
-
-        <div className="hidden md:block">
-        <ViewHeader
-          eyebrow="Messages"
-          title="Team messages"
-          description={teamName || undefined}
-          meta={
-            <span className="font-fw-mono tabular-nums">
-              {threadCount} {threadCount === 1 ? 'conversation' : 'conversations'}
-            </span>
-          }
-          secondaryActions={
-            userRole === 'coach' && teamId ? (
-              <Button
-                variant="secondary"
-                size="sm"
-                leftIcon={<Users size={16} aria-hidden="true" />}
-                onClick={() => setShowTeamBroadcastModal(true)}
-              >
-                Team
-              </Button>
-            ) : undefined
-          }
-          primaryAction={
-            <Button size="sm" onClick={() => setShowNewMessageModal(true)}>
-              New message
-            </Button>
-          }
-        />
-        </div>
-
-        {/* ── Two-pane inbox: rail (supporting aside) + thread (focal hero) ──── */}
-        {/* flex-1 min-h-0 on the grid so it fills remaining height without
-            overflowing; min-h-0 overrides the implicit min-h-auto on flex items.
-            GAPS_AUDIT_TABLET_LANDSCAPE #6 reported this row as narrow with
-            blank cream beside the thread at 810px — but that screenshot
-            predates AppShell's isCompactWidth fix for the SAME audit's #4
-            (the 260px rail not collapsing below 1024px). Re-derived against
-            the current collapsed 76px rail: the 12-col grid below already
-            fills its row exactly (5/12+7/12 of the row, with the gap, sums to
-            the full row width by construction — a CSS Grid with only
-            fractional tracks cannot leave dead space). No grid/width change
-            here; see the inner max-w wrapper below for the one real gap this
-            audit surfaced (an uncapped thread column on wide desktops). */}
-        <div className={`${mobileShowChat ? 'mt-0 md:mt-6' : 'mt-3 md:mt-6'} flex min-h-0 flex-1 grid-cols-12 items-stretch gap-5 md:grid md:gap-6`}>
-          {/* TRIAGE — conversation rail. On mobile it hides when a chat is open. */}
-          <aside
-            className={
-              mobileShowChat
-                ? 'hidden md:col-span-5 md:flex md:flex-col lg:col-span-4'
-                : // P263: w-full so the rail spans the full viewport on mobile
-                  // (flex parent — col-span is a no-op there; w-full governs width).
-                  'col-span-12 flex w-full flex-col md:w-auto md:col-span-5 lg:col-span-4'
-            }
-          >
-            <PullToRefresh onRefresh={handleConversationsRefresh} className="overscroll-contain touch-pan-y">
+      <div className="flex w-full min-h-0 flex-1 flex-col overflow-hidden">
+        {/* The workspace fills its window; only individual bubbles limit line length. */}
+        <div className="flex min-h-0 flex-1 items-stretch md:grid md:grid-cols-[18rem_minmax(0,1fr)] xl:grid-cols-[21rem_minmax(0,1fr)]">
+          <aside className={mobileShowChat
+            ? 'hidden min-h-0 md:flex md:flex-col md:border-r md:border-border-subtle md:bg-surface'
+            : 'flex w-full min-h-0 flex-col md:border-r md:border-border-subtle md:bg-surface'}>
+            <div className="flex min-h-16 shrink-0 items-center justify-between gap-1 px-4 md:border-b md:border-border-subtle">
+              <h1 className="font-fw-sans text-h2 font-semibold tracking-tight text-text-primary md:text-h3">Messages</h1>
+              <div className="flex items-center gap-1">
+                {userRole === 'coach' && teamId ? (
+                  <IconButton variant="ghost" aria-label="Message team" title="Message team" onClick={() => setShowTeamBroadcastModal(true)}>
+                    <Users size={20} aria-hidden="true" />
+                  </IconButton>
+                ) : null}
+                <IconButton variant="primary" aria-label="New message" title="New message" onClick={() => setShowNewMessageModal(true)}>
+                  <SquarePen size={20} aria-hidden="true" />
+                </IconButton>
+              </div>
+            </div>
+            <PullToRefresh onRefresh={handleConversationsRefresh} className="min-h-0 flex-1 overflow-y-auto overscroll-contain touch-pan-y px-3 py-3">
               <MessageConversationRail
                 conversations={conversations}
                 selectedId={selectedConversationId}
@@ -745,21 +615,12 @@ export function FairwayMessages() {
             </PullToRefresh>
           </aside>
 
-          {/* PULSE — the open thread (focal hero) + WHAT'S-NEXT composer track.
-              flex flex-col min-h-0 so MessageThreadPane fills the grid cell height. */}
-          {/* P263: w-full so the thread spans the full viewport on mobile (flex
-              parent — col-span is a no-op there; w-full governs width). */}
-          <div className={mobileShowChat ? 'flex w-full min-h-0 flex-col md:w-auto md:col-span-7 lg:col-span-8' : 'hidden min-h-0 flex-col md:col-span-7 md:flex lg:col-span-8'}>
-            {/* The grid cell above is already the honest width (see the
-                comment on the row) — but on a genuinely wide desktop monitor
-                (col-span-8 of a >=1400px-wide window) that cell can exceed a
-                comfortable reading width for a chat column. This inner
-                wrapper caps the PANEL, not the cell, at ~720px and centers it
-                with mx-auto once the cell is wider than that; at every
-                narrower width (everything this audit actually screenshotted)
-                it's a no-op — w-full already matches the cell exactly. */}
-            <div className="mx-auto flex w-full min-h-0 max-w-[720px] flex-1 flex-col">
+          <div className={mobileShowChat
+            ? 'flex w-full min-h-0 min-w-0 flex-col'
+            : 'hidden min-h-0 min-w-0 flex-col md:flex'}>
+            <div className="flex w-full min-h-0 min-w-0 flex-1 flex-col">
               <MessageThreadPane
+                reactions={reactions}
                 conversation={selectedConversation}
                 messages={messages}
                 loading={messagesLoading}
@@ -815,24 +676,7 @@ export function FairwayMessages() {
                     onSend={handleSendMessage}
                     onSendWithAttachments={handleSendMessageWithAttachments}
                     onTyping={sendTypingStatus}
-                    /* G-47 — the field names who is about to hear you
-                     * ("Message Cole", `Composer.dc.html:45`), which is the
-                     * one thing the composer can tell you that the header
-                     * cannot once it has scrolled away.
-                     *
-                     * Same source the thread header reads
-                     * (`MessageThreadPane.tsx:838`), so the two cannot name
-                     * different people. A 1:1 uses the FIRST name, matching
-                     * what the artboard writes; a group keeps its title whole,
-                     * because a group's name is not a person's and clipping it
-                     * at the first space would invent one. Undefined either
-                     * way falls back to the generic placeholder rather than
-                     * rendering "Message undefined". */
-                    recipientName={
-                      selectedConversation.is_group
-                        ? selectedConversation.title || undefined
-                        : selectedConversation.other_participant?.name?.split(' ')[0] || undefined
-                    }
+                    recipientName={conversationRecipientName(selectedConversation)}
                   />
                 ) : null}
               </MessageThreadPane>
@@ -862,7 +706,7 @@ export function FairwayMessages() {
           resolved. Handing the sheet both lets it say "9 members" honestly
           while listing the 8 it can name, instead of silently reporting the
           smaller number as the truth. */}
-      {selectedConversation?.is_group && (
+      {selectedConversation && isGroupConversation(selectedConversation) && (
         <GroupDetailsSheet
           open={showGroupDetails}
           onOpenChange={setShowGroupDetails}

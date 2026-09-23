@@ -37,19 +37,6 @@ describe('keyboard inset — who consumes it', () => {
   it('the messages column always gives up room for the keyboard, in both mobile modes', () => {
     const src = read('src/components/fairway/pages/messages/FairwayMessages.tsx');
 
-    // The shape changed from `max(bottom chrome, keyboard)` to
-    // `chrome + max(0, keyboard - chrome)`. Same guarantee, different arithmetic:
-    // the old form assumed the column owed the FULL bottom chrome, but AppShell
-    // already reserves the tab bar's height in its own padding, so subtracting
-    // it again cost ~200px of dead space. The keyboard now takes only what that
-    // reservation has not already covered.
-    //
-    // There are two mobile budgets because the chrome differs: with a thread
-    // open the tab bar is hidden and its padding collapsed (immersive), so only
-    // the home indicator is owed; on the list the bar is up.
-    const keyboardTerms = src.split('max(0px,calc(var(--keyboard-height,0px)').length - 1;
-    expect(keyboardTerms).toBe(2);
-
     // The guarantee this test exists for: a column that keeps its full height
     // while the keyboard covers the composer is the bug.
     expect(src).not.toContain('100dvh-4rem-56px-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px)');

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 //
-// G-56 / M03D F17 — the action surface is a labelled bottom sheet.
+// G-56 / M03D F17 — the action surface is a labelled anchored popup.
 //
 // G-56 IS A RECORD OF A SELF-CORRECTION, and that is why it is worth a suite.
 // M03D first read these overlays as scrim-tap-to-dismiss, then found that
@@ -30,7 +30,7 @@
 import { createElement } from 'react';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { MessageThreadPane, type MessageThreadPaneProps } from './MessageThreadPane';
 import type { GolfConversationWithMeta, MessageWithReadStatus } from '@/hooks/golf/use-golf-messages';
@@ -215,7 +215,7 @@ describe('G-56 — the panel is the token, measured on both sides', () => {
 });
 
 // ---------------------------------------------------------------------------
-// The rendered sheet.
+// The rendered anchored popup.
 // ---------------------------------------------------------------------------
 
 describe('G-56 — the rendered action sheet', () => {
@@ -231,21 +231,25 @@ describe('G-56 — the rendered action sheet', () => {
     render(createElement(MessageThreadPane, baseProps(own, { mobileActionsId: MESSAGE_ID })));
     const copy = document.body.querySelector('[aria-label="Copy message"]');
     expect(copy, 'expected the action sheet to be open').not.toBeNull();
-    return { row: copy!.parentElement!, panel: copy!.parentElement!.parentElement! };
+    return { row: copy!.parentElement!, panel: copy!.closest('[data-slot="message-actions"]')! };
   };
 
-  it('is the shared Sheet, so the panel geometry is the token by construction', () => {
+  it('is an anchored warm-glass popup with the mobile geometry token', () => {
     const { panel } = openSheet();
-    expect(panel.className).toContain('rounded-t-fw-lg');
-    expect(panel.className).toContain('border-border-subtle');
+    const list = panel.querySelector('[data-fw-message-actions-list]')!;
+    expect(list.className).toContain('rounded-fw-lg');
+    expect(list.className).toContain('bg-[var(--fw-glass-bg)]');
+    expect(list.className).toContain('backdrop-filter:blur(var(--fw-blur-glass))');
+    expect(list.className).toContain('border');
+    expect(panel.className).not.toContain('fw-glass-chrome');
     // No literal anywhere on the panel — the whole point of the token match.
-    expect(panel.className).not.toMatch(/\[1\.75rem\]|\[oklch/);
+    expect(list.className).not.toMatch(/\[1\.75rem\]|\[oklch/);
   });
 
-  it('carries the drag grip the artboards draw', () => {
+  it('uses a soft mobile backdrop behind the crisp anchored panel', () => {
     const { panel } = openSheet();
-    const grip = panel.querySelector('[class*="rounded-full"][class*="w-10"]');
-    expect(grip, 'expected the Sheet’s drag handle').not.toBeNull();
+    expect(document.body.querySelector('[data-slot="message-actions-backdrop"]')).not.toBeNull();
+    expect(panel.querySelector('[data-fw-selected-message]')).not.toBeNull();
   });
 
   it('renders LABELLED rows, which is the whole of F17', () => {
@@ -317,8 +321,63 @@ describe('G-56 — the rendered action sheet', () => {
       createElement(MessageThreadPane, baseProps(true, { mobileActionsId: MESSAGE_ID, onSetMobileActions })),
     );
     const panel = document.body.querySelector('[aria-label="Copy message"]')!
-      .parentElement!.parentElement!;
+      .closest('[data-slot="message-actions"]')!;
     panel.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     expect(onSetMobileActions).toHaveBeenCalledWith(null);
+  });
+});
+
+// Reactions are controls backed by the page's persisted state, in both DMs and groups.
+describe('message reaction controls', () => {
+  const originalScrollIntoView = HTMLElement.prototype.scrollIntoView;
+  beforeAll(() => { HTMLElement.prototype.scrollIntoView = vi.fn(); });
+  afterAll(() => { HTMLElement.prototype.scrollIntoView = originalScrollIntoView; });
+  it('offers reactions on an incoming group message without offering edit or delete', () => {
+    const setReaction = vi.fn(async () => true);
+    render(createElement(MessageThreadPane, baseProps(false, {
+      conversation: { id: 'dm-1', is_group: true, participant_count: 8, title: 'Team Updates', unread_count: 0 } as GolfConversationWithMeta,
+      mobileActionsId: MESSAGE_ID,
+      reactions: { rows: [], error: null, pending: null, refresh: vi.fn(async () => {}), setReaction },
+    })));
+    const like = document.body.querySelector('[aria-label="Like"]') as HTMLButtonElement;
+    expect(like).toBeTruthy();
+    like.click();
+    expect(setReaction).toHaveBeenCalledWith(MESSAGE_ID, '👍', true);
+    expect(document.body.querySelector('[aria-label="Delete message"]')).toBeNull();
+    expect(document.body.querySelector('[aria-label="Edit message"]')).toBeNull();
+  });
+
+  it('does not expose actions from a previous conversation while new messages load', () => {
+    render(createElement(MessageThreadPane, baseProps(false, {
+      conversation: { id: 'another-thread', participant_count: 2, unread_count: 0 } as GolfConversationWithMeta,
+      mobileActionsId: MESSAGE_ID,
+    })));
+    expect(document.body.querySelector('[aria-label="Copy message"]')).toBeNull();
+    expect(document.body.querySelector('[aria-label="Edit message"]')).toBeNull();
+    expect(document.body.querySelector('[aria-label="Delete message"]')).toBeNull();
+  });
+
+  it('anchors the incoming avatar inside the bubble, independently of reactions and metadata', () => {
+    render(createElement(MessageThreadPane, baseProps(false)));
+    const avatar = document.body.querySelector('[data-message-avatar]');
+    expect(avatar).not.toBeNull();
+    expect(avatar!.parentElement?.hasAttribute('data-message-bubble')).toBe(true);
+  });
+
+  it('shows the group count and lets the viewer remove only their reaction', () => {
+    const setReaction = vi.fn(async () => true);
+    render(createElement(MessageThreadPane, baseProps(false, {
+      reactions: {
+        rows: [
+          { id: 'one', message_id: MESSAGE_ID, user_id: 'player-2', emoji: '👍' },
+          { id: 'two', message_id: MESSAGE_ID, user_id: 'coach-1', emoji: '👍' },
+        ],
+        error: null, pending: null, refresh: vi.fn(async () => {}), setReaction,
+      },
+    })));
+    const badge = screen.getByRole('button', { name: '👍: 2 reactions, including you' });
+    expect(badge?.getAttribute('aria-pressed')).toBe('true');
+    badge.click();
+    expect(setReaction).toHaveBeenCalledWith(MESSAGE_ID, '👍', false);
   });
 });

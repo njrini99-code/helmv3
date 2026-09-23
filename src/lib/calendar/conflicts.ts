@@ -30,6 +30,7 @@ export interface ConflictResult {
     playerId?: string;
     avatarUrl?: string | null;
     conflictingEvent: {
+      id?: string;
       title: string;
       start: Date;
       end: Date;
@@ -82,6 +83,10 @@ export async function checkEventConflicts(
 
   const conflicts: ConflictResult['conflicts'] = [];
 
+  if (attendeePlayerIds.length === 0) {
+    return { hasConflict: false, conflicts: [], suggestedTimes: [] };
+  }
+
   // Get player details and user IDs
   const { data: players, error: playersError } = await supabase
     .from('golf_players')
@@ -98,15 +103,19 @@ export async function checkEventConflicts(
   }
 
   // A genuinely empty attendee list is a real answer: nobody to conflict with.
+  const requestedPlayerIds = new Set(attendeePlayerIds);
+  const returnedPlayerIds = new Set((players ?? []).map((player) => player.id));
+  let partial = [...requestedPlayerIds].some((id) => !returnedPlayerIds.has(id));
+  if ((players ?? []).some((player) => !player.user_id)) partial = true;
+
   if (!players || players.length === 0) {
     return {
       hasConflict: false,
       conflicts: [],
       suggestedTimes: [],
+      ...(partial ? { partial: true } : {}),
     };
   }
-
-  let partial = false;
 
   const userIds = players.map(p => p.user_id).filter(Boolean) as string[];
 
@@ -134,13 +143,13 @@ export async function checkEventConflicts(
           playerId: player.id,
           avatarUrl: player.avatar_url,
           conflictingEvent: {
+            id: period.eventId,
             title: period.title || 'Busy',
             start: period.start,
             end: period.end,
             type: period.type,
           },
         });
-        break; // Only report first conflict per user
       }
     }
   }
@@ -256,4 +265,3 @@ function isSameTimeSlot(a: TimeSlot, b: TimeSlot): boolean {
  * event editor via `checkScheduleConflicts` (`src/app/golf/actions/golf.ts`,
  * dynamic `await import` at :4363), and it calls `findCommonAvailability` twice.
  */
-

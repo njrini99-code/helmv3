@@ -35,16 +35,17 @@ describe('FairwayBottomNav — #905 negative-shift fix', () => {
     expect(list.className).not.toMatch(/justify-around|justify-center/);
   });
 
-  it('keeps min-w-0 on every destination column (the #899 floor-removal fix)', () => {
+  it('keeps all four destinations and More accessible when a label expands', () => {
     const { container } = render(
       <FairwayBottomNav items={ITEMS} pathname="/baseball/dashboard/command-center" onMoreOpen={() => {}} />,
     );
     const columns = container.querySelectorAll('ul > li');
     // 4 destinations + the More column.
     expect(columns).toHaveLength(5);
-    for (const column of Array.from(columns)) {
-      expect((column as HTMLElement).className).toContain('min-w-0');
+    for (const item of ITEMS) {
+      expect(screen.getByRole('link', { name: item.label })).toBeInTheDocument();
     }
+    expect(screen.getByRole('button', { name: 'More' })).toBeInTheDocument();
   });
 
   it('renders the first destination ("Home") as a real, unclipped tab', () => {

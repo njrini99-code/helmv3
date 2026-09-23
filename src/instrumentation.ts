@@ -36,6 +36,11 @@ const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN?.trim() || process.env.SENTRY_DSN
 // resolve-environment.ts and its matrix test.
 const environment = resolveServerEnvironment(process.env);
 
+/** Next's own message when the response stream's consumer disconnects
+ *  mid-render. Anchored to the whole message so a real stream error that
+ *  merely mentions closing is not swallowed with it. */
+const CLIENT_ABORTED_STREAM = /^The destination stream closed early\.?$/;
+
 const sharedIgnoreErrors = [
   'NEXT_NOT_FOUND',
   'NEXT_REDIRECT',
@@ -104,6 +109,15 @@ const sharedIgnoreErrors = [
   'LiftingUnauthorizedError',
   'LiftingNoOrgError',
   'LiftingForbiddenError',
+  // The client went away while a server component's RSC payload was still
+  // streaming — a navigation, a closed tab, a dropped mobile connection.
+  // Next reports it through onRequestError as an unhandled render error, so
+  // it reached the Bridge as a 500 on the route being LEFT: 260 rows across
+  // nine /golf/dashboard/* fingerprints in the 72h to 2026-09-09, zero
+  // affected users, and the self-heal loop's Repair stage spent its
+  // 2026-09-09 run on it. Nothing failed for anyone; it is the request being
+  // abandoned, not the page.
+  CLIENT_ABORTED_STREAM,
 ];
 
 /**
@@ -497,8 +511,15 @@ function isNextControlFlowDigest(error: unknown): boolean {
   return typeof digest === 'string' && (digest === 'DYNAMIC_SERVER_USAGE' || digest.startsWith('NEXT_'));
 }
 
+function isClientAbortedStream(error: unknown): boolean {
+  return error instanceof Error && CLIENT_ABORTED_STREAM.test(error.message);
+}
+
 function shouldSkipBridgeWrite(error: unknown, alreadyLogged: boolean): boolean {
   if (isNextControlFlowDigest(error)) return true;
+  // Sentry already ignores this via sharedIgnoreErrors; the Bridge write
+  // must skip it for the same reason (see CLIENT_ABORTED_STREAM).
+  if (isClientAbortedStream(error)) return true;
   // Already went through logServerException/logServerError at the throw
   // site (e.g. a golf CRM server action's `catch { logServerException(...);
   // throw error; }`) and is now escaping to onRequestError a second time —

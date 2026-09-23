@@ -21,7 +21,7 @@
  *   --update  Rewrite .lint-baseline.json from the current run and exit 0.
  */
 
-import { execFileSync } from 'node:child_process';
+import { loadResults, withoutAuditRules } from './lib/lint-results.mjs';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -35,35 +35,11 @@ const UPDATE = process.argv.includes('--update');
 // ---------------------------------------------------------------------------
 // 1. Run ESLint and collect per-rule warning counts
 // ---------------------------------------------------------------------------
-let eslintOutput;
-try {
-  // execFileSync with an explicit argv array — no shell, no injection surface.
-  // stderr → 'inherit' so deprecation notices print directly and don't
-  // pollute the JSON stdout buffer we parse below.
-  eslintOutput = execFileSync(
-    'npx',
-    ['eslint', 'src', 'scripts', '--format', 'json', '--max-warnings', '999999'],
-    // maxBuffer: 64 MB — the full-repo JSON output is ~10 MB today and will
-    // grow; 64 MB leaves ample headroom without meaningful memory cost.
-    { cwd: ROOT, encoding: 'utf-8', maxBuffer: 64 * 1024 * 1024, stdio: ['ignore', 'pipe', 'inherit'] }
-  );
-} catch (err) {
-  // eslint exits non-zero when warnings/errors are present, but still writes
-  // valid JSON to stdout.  Use that if it looks like JSON.
-  eslintOutput = (err.stdout || '').trim();
-  if (!eslintOutput.startsWith('[')) {
-    console.error('ESLint failed and did not produce JSON output.');
-    console.error(err.message);
-    process.exit(1);
-  }
-}
-
-/** @type {Array<{messages: Array<{severity: number, ruleId: string|null}>}>} */
 let files;
 try {
-  files = JSON.parse(eslintOutput);
-} catch (parseErr) {
-  console.error('Could not parse ESLint JSON output:', parseErr.message);
+  files = withoutAuditRules(loadResults(ROOT, ['src', 'scripts']));
+} catch (error) {
+  console.error('lint-ratchet: could not obtain ESLint results:', error.message);
   process.exit(1);
 }
 

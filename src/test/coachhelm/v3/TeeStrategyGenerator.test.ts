@@ -15,6 +15,8 @@ function makeAgg(opts: {
   ndFw?: number;
   ndDist?: number;
   roundsCovered?: number;
+  /** Driver tee shots whose distance is derived progress, not recorded travel. */
+  driverDerivedN?: number;
 }) {
   const driverAttempts = opts.driverAttempts ?? 30;
   const driverFw = opts.driverFw ?? 0.5;
@@ -31,12 +33,16 @@ function makeAgg(opts: {
       fairwayHits: Math.round(driverAttempts * driverFw),
       fairwayPct: driverFw,
       avgDistance: driverDist,
+      derivedDistanceN: opts.driverDerivedN ?? 0,
+      distanceN: driverAttempts,
     },
     nonDriver: {
       attempts: ndAttempts,
       fairwayHits: Math.round(ndAttempts * ndFw),
       fairwayPct: ndFw,
       avgDistance: ndDist,
+      derivedDistanceN: 0,
+      distanceN: ndAttempts,
     },
     pattern: opts.pattern,
     fairwayGap: driverFw - ndFw,
@@ -68,6 +74,8 @@ describe('TeeStrategyGenerator', () => {
     expect(c.content).toContain('25pp');
     expect(c.content).toContain('25 yards'); // dist gap
     expect(c.content).toMatch(/layback is the higher-EV play/);
+    // Every distance recorded → no travel-vs-progress disclosure.
+    expect(c.content).not.toContain('estimated progress toward the hole');
     expect(c.signature).toBe('tee_strategy:laggy');
   });
 
@@ -177,5 +185,31 @@ describe('evidence.window_end carries the newest contributing round', () => {
     const g = new TeeStrategyGenerator(PLAYER_ID);
     const c = g.composeContent(makeAgg({ pattern: 'laggy' }));
     expect(c.evidence.window_end).toBe('2026-05-25');
+  });
+});
+
+describe('TeeStrategyGenerator — travel vs progress (addendum §5)', () => {
+  it('discloses derived progress distances instead of presenting them as travel', () => {
+    const g = new TeeStrategyGenerator(PLAYER_ID);
+    const c = g.composeContent(
+      makeAgg({
+        pattern: 'laggy',
+        driverFw: 0.45, ndFw: 0.7, driverDist: 270, ndDist: 245,
+        driverAttempts: 30, driverDerivedN: 4,
+      }),
+    );
+    expect(c.content).toContain(
+      '4 of 45 tee distances are estimated progress toward the hole from hole yardage, not recorded travel distance',
+    );
+    // Never carry language for a derived number.
+    expect(c.content.toLowerCase()).not.toContain('carry');
+  });
+
+  it('the sharp branch carries the same disclosure', () => {
+    const g = new TeeStrategyGenerator(PLAYER_ID);
+    const c = g.composeContent(
+      makeAgg({ pattern: 'sharp', driverFw: 0.68, ndFw: 0.7, driverDist: 275, ndDist: 240, driverDerivedN: 1 }),
+    );
+    expect(c.content).toContain('1 of 45 tee distances are estimated progress toward the hole');
   });
 });

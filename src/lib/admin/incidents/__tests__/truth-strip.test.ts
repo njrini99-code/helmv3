@@ -385,7 +385,7 @@ describe('Truth Strip — the self-heal cell and the loop’s flow', () => {
     )['self-heal']!;
     expect(cell.state).toBe('DANGER');
     expect(cell.tone).toBe('danger');
-    expect(cell.href).toBe('/admin/self-heal');
+    expect(cell.href).toBe('/admin/errors?view=loop');
     expect(cell.detail).toMatch(/2 incidents have waited/);
   });
 

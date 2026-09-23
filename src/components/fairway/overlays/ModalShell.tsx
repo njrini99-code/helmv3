@@ -31,6 +31,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useMediaQuery } from '@/hooks/use-media-query';
 import {
   FW_Z,
   scrimVariants,
@@ -59,6 +60,20 @@ const SIZE_CLASS = {
 
 export type ModalShellSize = keyof typeof SIZE_CLASS;
 
+/**
+ * How the panel occupies the viewport.
+ *
+ *   dialog     (default) a centred box sized to its content, capped inside
+ *              the safe box; the ordinary confirm / form modal.
+ *   workspace  a task surface that owns the screen: on phones it fills the
+ *              viewport edge to edge (square corners, no gutter, the soft
+ *              keyboard shortens it); from `sm` up it is a wide, tall stage
+ *              (calc(100vw - 1rem) × min(88dvh, 900px), max 1200px). The
+ *              child lays out header / body / footer inside a flex column
+ *              and never overrides the frame's geometry.
+ */
+export type ModalShellPresentation = 'dialog' | 'workspace';
+
 export interface ModalShellProps {
   /** Controlled open state. Omit for uncontrolled (use with `trigger`). */
   open?: boolean;
@@ -68,8 +83,10 @@ export interface ModalShellProps {
   defaultOpen?: boolean;
   /** Optional trigger element (rendered via Radix `asChild`). */
   trigger?: React.ReactNode;
-  /** Max-width preset. Default `md`. */
+  /** Max-width preset. Default `md`. Ignored by `presentation="workspace"`. */
   size?: ModalShellSize;
+  /** Viewport occupation. Default `dialog`. See ModalShellPresentation. */
+  presentation?: ModalShellPresentation;
   /**
    * Accessible title. REQUIRED for a11y. Either pass a string (rendered as the
    * styled `ModalShell.Title`) or render your own `<ModalShell.Title>` in
@@ -97,6 +114,7 @@ function ModalShellRoot({
   defaultOpen,
   trigger,
   size = 'md',
+  presentation = 'dialog',
   title,
   hideTitle = false,
   description,
@@ -221,6 +239,12 @@ function ModalShellRoot({
   }, []);
 
   const titleIsString = typeof title === 'string';
+  const workspace = presentation === 'workspace';
+  // Phone workspace: top 0 / bottom = keyboard; the safe-area padding is the
+  // child's job (its header pads env(safe-area-inset-top)). Subscribed, so
+  // a rotation or a resize re-frames the panel.
+  const phone = useMediaQuery('(max-width: 639.98px)');
+  const workspacePhone = workspace && phone;
 
   return (
     <Dialog.Root open={isOpen} onOpenChange={handleOpenChange}>
@@ -293,26 +317,42 @@ function ModalShellRoot({
                 // with the keyboard down, so the safe-area form is unchanged
                 // then; with it up, `m-auto` re-centres the panel in the
                 // visible box and the body scrolls inside the shorter cap.
-                style={{
-                  zIndex: FW_Z.modal,
-                  position: 'fixed',
-                  top: 'max(1rem, env(safe-area-inset-top))',
-                  bottom: MODAL_BOTTOM_INSET,
-                  maxHeight: `calc(100dvh - max(1rem, env(safe-area-inset-top)) - ${MODAL_BOTTOM_INSET})`,
-                  transition: reduced ? undefined : 'bottom 250ms ease-out',
-                }}
+                style={
+                  workspace && workspacePhone
+                    ? {
+                        zIndex: FW_Z.modal,
+                        position: 'fixed',
+                        top: 0,
+                        bottom: 'var(--keyboard-height, 0px)',
+                        maxHeight: 'none',
+                        transition: reduced ? undefined : 'bottom 250ms ease-out',
+                      }
+                    : {
+                        zIndex: FW_Z.modal,
+                        position: 'fixed',
+                        top: 'max(1rem, env(safe-area-inset-top))',
+                        bottom: MODAL_BOTTOM_INSET,
+                        maxHeight: `calc(100dvh - max(1rem, env(safe-area-inset-top)) - ${MODAL_BOTTOM_INSET})`,
+                        transition: reduced ? undefined : 'bottom 250ms ease-out',
+                      }
+                }
                 // The panel handles its own keyboard clearance; the provider's
                 // global keyboardWillShow scroll must leave the page alone.
                 data-fw-keyboard-aware
                 className={cn(
-                  'fixed inset-x-0 m-auto h-fit w-[calc(100vw-2rem)]',
+                  'fixed inset-x-0 m-auto',
                   'overflow-hidden',
-                  'rounded-fw-lg text-text-primary',
+                  'text-text-primary',
                   'flex flex-col',
                   GLASS_STRONG_CLASS,
-                  SIZE_CLASS[size],
+                  workspace
+                    ? // Phone: edge to edge, full height (the inline top/bottom
+                      // pin it; h-auto lets them size it). sm+: a wide stage.
+                      'h-auto w-full max-w-none rounded-none sm:h-[min(88dvh,900px)] sm:w-[calc(100vw-1rem)] sm:max-w-[1200px] sm:rounded-fw-lg'
+                    : cn('h-fit w-[calc(100vw-2rem)] rounded-fw-lg', SIZE_CLASS[size]),
                   className,
                 )}
+                data-presentation={presentation}
                 variants={reduced ? panelVariantsReduced : panelVariants}
                 initial="hidden"
                 animate="visible"

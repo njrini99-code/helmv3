@@ -33,7 +33,11 @@ import { staleDataSuffix } from '@/lib/coachhelm/v3/engine/window-honesty';
 import { loadLastRoundDate } from '@/lib/coachhelm/v3/engine/hole-diagnosis';
 import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
 import { round } from '@/lib/golf/stat-formulas';
-import { cohortAnchor, type CohortGender } from '@/lib/coachhelm/v3/counterfactual/cohort-baselines';
+import {
+  greenHitAnchor,
+  cohortAnchorSource,
+  type CohortGender,
+} from '@/lib/coachhelm/v3/counterfactual/cohort-baselines';
 import { loadPlayerCohort } from '@/lib/coachhelm/v3/counterfactual/player-cohort-loader';
 import {
   loadApproachShots,
@@ -49,9 +53,13 @@ import type {
 } from '@/lib/coachhelm/v3/engine/types';
 import {
   dominantAxis,
-  approachAxisDriver,
+  approachAxisReading,
+  axisReadingToText,
+  type ApproachAxis,
+  type AxisReading,
   type AxisTally,
 } from '@/lib/coachhelm/v3/engine/diagnosis';
+import type { Diagnosis } from '@/lib/coachhelm/v2/insights/types';
 
 const BUCKET_TO_METRIC_ID: Record<ApproachBucket, MetricId> = {
   '50_125ft':      'approach_proximity_50_125ft',
@@ -87,13 +95,14 @@ const BUCKET_LABEL: Record<ApproachBucket, string> = {
  * recorded in YARDS and previously ×3'd into a fake proximity (see aggregate()).
  */
 
-/** APPROXIMATE PGA green-hit % by approach band (no sourced per-band table yet — see
- *  Research doc §2 ranges 75-85 / 60-70 / 45-55%). Flagged "approx" in the prose. */
-const TOUR_GREEN_HIT_PCT: Record<ApproachBucket, number> = {
-  '50_125ft':    80,
-  '125_175ft':   65,
-  '175_plus_ft': 50,
-};
+/*
+ * The APPROXIMATE green-hit % anchors by band (men's 80 / 65 / 50, Research doc
+ * §2 ranges 75-85 / 60-70 / 45-55%; women's discounted) live in
+ * `counterfactual/cohort-baselines.ts` as `greenHitAnchor(bucket, gender)` —
+ * keyed by BUCKET, not by the approach_proximity_* metric id, because that id
+ * is registered as on-green proximity in feet and a percent parked under it
+ * was being read as feet by every registry-trusting consumer.
+ */
 
 /** Need at least this many GREENS HIT in the band before reporting a proximity —
  *  an average over one or two greens is noise. */
@@ -254,6 +263,24 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
    */
   protected override readonly attachStandingWhenAvailable = true;
 
+  /**
+   * No counterfactual and no Tour tick on the standing block (repair plan
+   * Package 2, "separate proximity/green-hit metric identities"):
+   *
+   *   - `agg.playerValue` is proximity over GREEN-FINDING shots only, while
+   *     `standing.pga_value` (and the research-doc Tour figures) are proximity
+   *     over ALL approaches from the range, misses included. A gap between the
+   *     two is not a gap — production showed players "beating Tour" from 175+
+   *     (25.8 ft vs 45 ft) purely because their long misses were excluded.
+   *   - The green-hit % headline has no strokes-per-green-hit model yet; a
+   *     "strokes saved" projection for it would be invented (addendum A2).
+   *
+   * The standing's TEAM tick stays: teammates are measured on the same
+   * on-green-only basis, so that comparison is like-for-like.
+   */
+  protected override readonly counterfactualComparable = false;
+  protected override readonly standingTourComparable = false;
+
   readonly metricId: MetricId;
   readonly bucket: ApproachBucket;
 
@@ -335,9 +362,14 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
 
   composeContent(agg: ApproachMissAggregate): ComposedContent {
     const label = BUCKET_LABEL[agg.bucket];
-    const tourGreenHit =
-      cohortAnchor(this.metricId, agg.cohort_gender) ?? TOUR_GREEN_HIT_PCT[agg.bucket];
-    const tourLabel = agg.cohort_gender === 'womens' ? "women's college" : 'PGA Tour';
+    const womens = agg.cohort_gender === 'womens';
+    const tourGreenHit = greenHitAnchor(agg.bucket, agg.cohort_gender);
+    // Women's anchors are derived targets, men's are approximate Tour band
+    // figures — neither is a measured population average, and the prose and
+    // the evidence label both say which it is.
+    const anchorClause = womens
+      ? `women's college target ~${tourGreenHit}%, estimated`
+      : `PGA Tour ~${tourGreenHit}%, approximate`;
     const ghDisp = `${agg.green_hit_pct.toFixed(0)}%`;
     const prox = agg.proximity_when_hit_feet;
 
@@ -351,7 +383,7 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
     // coach whether the leak is finding greens or controlling distance once there.
     const reachSentence =
       `Across your last ${agg.attempts} approaches from ${label} you found the green ` +
-      `${ghDisp} of the time (${tourLabel} ~${tourGreenHit}%, approximate).`;
+      `${ghDisp} of the time (${anchorClause}).`;
     // NO TOUR COMPARISON HERE, deliberately. `prox` is averaged over
     // GREEN-FINDING SHOTS ONLY (see aggregate()), while the Tour proximity
     // figure (research doc §2, "200+ yds: ~45+ ft") is Proximity to Hole over
@@ -372,19 +404,57 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
         ? ` Note: ${agg.penalty_rate_pct.toFixed(0)}% of these approaches incurred a penalty — worth flagging in practice.`
         : '';
 
-    // Dominant miss axis → driver+action. Short/long leads (the dial-in lever);
-    // left/right is the fallback when the vertical miss is balanced. Omitted
-    // entirely when neither axis dominates — no fabricated tendency.
+    // Dominant miss axis → observation / check / action. Short/long leads (the
+    // dial-in lever); left/right is the fallback when the vertical miss is
+    // balanced. Omitted entirely when neither axis dominates — no fabricated
+    // tendency. The reading states the measured share and names what the shot
+    // record does NOT contain (intent, club, wind, target); it never asserts a
+    // mechanical cause. The same reading is stamped as the typed diagnosis so
+    // the structured root cause and the prose cannot disagree.
     const slDom = dominantAxis(agg.miss_short_long);
     const lrDom = dominantAxis(agg.miss_left_right);
     let axisSentence = '';
+    let reading: AxisReading | null = null;
+    let axisMeta: { axis: ApproachAxis; share: number; n: number } | null = null;
     if (slDom) {
-      axisSentence = ' ' + approachAxisDriver(
-        slDom.axis === 'negative' ? 'short' : 'long', slDom.share, slDom.n);
+      axisMeta = { axis: slDom.axis === 'negative' ? 'short' : 'long', share: slDom.share, n: slDom.n };
     } else if (lrDom) {
-      axisSentence = ' ' + approachAxisDriver(
-        lrDom.axis === 'negative' ? 'left' : 'right', lrDom.share, lrDom.n);
+      axisMeta = { axis: lrDom.axis === 'negative' ? 'left' : 'right', share: lrDom.share, n: lrDom.n };
     }
+    if (axisMeta) {
+      reading = approachAxisReading(axisMeta.axis, axisMeta.share, axisMeta.n);
+      axisSentence = ' ' + axisReadingToText(reading);
+    }
+    const metricLabel = `Greens hit from ${label}`;
+    const diagnosis: Diagnosis | undefined =
+      reading && axisMeta
+        ? {
+            symptom: `${metricLabel}: ${ghDisp} over ${agg.attempts} approaches. ${reading.observation}`,
+            root_cause: reading.check,
+            causality_level: 'inferred_hypothesis',
+            drivers: [
+              {
+                metric: this.metricId,
+                label: metricLabel,
+                value: agg.green_hit_pct,
+                unit: 'percent',
+                sample_n: agg.attempts,
+                source: 'golf_shots · approach finishes in band',
+              },
+              {
+                metric: `approach_miss_${axisMeta.axis}_share`,
+                label: `Misses finishing ${axisMeta.axis}`,
+                value: Math.round(axisMeta.share * 100),
+                unit: 'percent',
+                sample_n: axisMeta.n,
+                source: 'golf_shots · approach_miss_details.miss_direction',
+              },
+            ],
+            recommended_action: reading.action,
+            // Recomputed from the final confidence factors by the base.
+            confidence_reason: '',
+          }
+        : undefined;
 
     // The 175+ band is the one that pools a green-hunting shot with a par-5
     // lay-up; the shorter bands are green-hunting either way, so the split is
@@ -400,14 +470,19 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
       priority: 'low',
       signature: `approach_miss:${agg.bucket}`,
       evidence: {
+        // Registry id kept for standing / signature continuity; `your_value` is
+        // the green-hit PERCENT, so the polarity is declared here and every
+        // consumer that would otherwise read the id's feet/lower_better config
+        // (tone, movement pill, diagnosis driver label) uses these fields.
         metric: this.metricId,
-        metric_label: `Greens hit from ${label}`,
+        metric_label: metricLabel,
         unit: 'percent',
+        polarity: 'higher_better',
         your_value: agg.green_hit_pct,
         your_value_display: ghDisp,
         comparison_value: tourGreenHit,
-        comparison_label: agg.cohort_gender === 'womens' ? "Women's college (approx)" : 'PGA Tour (approx)',
-        comparison_source: 'pga_baseline',
+        comparison_label: womens ? "Women's college green-hit target (est.)" : 'PGA Tour (approx)',
+        comparison_source: cohortAnchorSource(agg.cohort_gender),
         sample_n: agg.attempts,
         window_days: 90,
         window_start: '',
@@ -428,6 +503,7 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
           proximity_when_hit_feet: agg.proximity_when_hit_feet,
           green_hit_pct: agg.green_hit_pct,
         },
+        ...(diagnosis ? { diagnosis } : {}),
       },
     };
   }

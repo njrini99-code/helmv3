@@ -38,6 +38,7 @@ function makeInitialState(overrides: Partial<ShotTrackingState> = {}): ShotTrack
     autoSaveStatus: 'idle',
     showPenaltyModal: false,
     penaltyType: null,
+    penaltyOrigin: 'here',
     showUndoConfirm: false,
     undoSaving: false,
     editingShot: null,
@@ -130,6 +131,13 @@ describe('getShotTypeFromState', () => {
 
   it('returns approach for shot 1 on par 3', () => {
     const state = makeInitialState({ currentShot: 1, currentLie: 'tee' });
+    expect(getShotTypeFromState(state, makeRoundHole({ par: 3 }))).toBe('approach');
+  });
+
+  it('returns tee for the stroke replayed from the tee after an OB / lost-ball penalty', () => {
+    // Stroke and distance: shot 1 OB, shot 2 penalty, shot 3 is hit from the tee again.
+    const state = makeInitialState({ currentShot: 3, currentLie: 'tee', distanceToHole: 400, distanceUnit: 'yards' });
+    expect(getShotTypeFromState(state, makeRoundHole({ par: 4 }))).toBe('tee');
     expect(getShotTypeFromState(state, makeRoundHole({ par: 3 }))).toBe('approach');
   });
 
@@ -378,6 +386,40 @@ describe('shotReducer', () => {
       expect(next.currentShot).toBe(3);
       expect(next.showPenaltyModal).toBe(false);
       expect(next.penaltyType).toBeNull();
+    });
+
+    it('CONFIRM_PENALTY for OB puts the player back on the tee at full yardage', () => {
+      const state = makeInitialState({ showPenaltyModal: true, penaltyType: 'ob', currentShot: 2, currentLie: 'other', distanceToHole: 180 });
+      const penaltyShot = makeShotRecord({
+        shotNumber: 2, shotType: 'penalty', isPenalty: true, penaltyType: 'ob', result: 'penalty',
+        lieBefore: 'tee', distanceToHoleBefore: 400, distanceUnitBefore: 'yards',
+        distanceToHoleAfter: 400, distanceUnitAfter: 'yards',
+      });
+      const next = shotReducer(state, { type: 'CONFIRM_PENALTY', payload: penaltyShot });
+      expect(next.currentShot).toBe(3);
+      expect(next.currentLie).toBe('tee');
+      expect(next.distanceToHole).toBe(400);
+      expect(next.distanceUnit).toBe('yards');
+    });
+
+    it('CONFIRM_PENALTY with an errant stroke writes both rows and advances two', () => {
+      const safe = makeShotRecord({ shotNumber: 1, result: 'fairway', distanceToHoleAfter: 115 });
+      const state = makeInitialState({ shotHistory: [safe], showPenaltyModal: true, penaltyType: 'lost', penaltyOrigin: 'here', currentShot: 2, currentLie: 'fairway', distanceToHole: 115 });
+      const errant = makeShotRecord({ shotNumber: 2, shotType: 'approach', lieBefore: 'fairway', distanceToHoleBefore: 115, result: 'other', distanceToHoleAfter: 115 });
+      const penalty = makeShotRecord({ shotNumber: 3, shotType: 'penalty', isPenalty: true, penaltyType: 'lost', result: 'penalty', lieBefore: 'fairway', distanceToHoleBefore: 115, distanceToHoleAfter: 115 });
+      const next = shotReducer(state, { type: 'CONFIRM_PENALTY', payload: penalty, errantStroke: errant });
+      expect(next.shotHistory.map((s) => s.shotNumber)).toEqual([1, 2, 3]);
+      expect(next.currentShot).toBe(4);
+      expect(next.currentLie).toBe('fairway');
+      expect(next.distanceToHole).toBe(115);
+    });
+
+    it('SHOW_PENALTY_MODAL defaults the origin from the card', () => {
+      const inPlay = makeShotRecord({ shotNumber: 1, result: 'fairway' });
+      expect(shotReducer(makeInitialState({ shotHistory: [inPlay] }), { type: 'SHOW_PENALTY_MODAL' }).penaltyOrigin).toBe('here');
+      const inTrouble = makeShotRecord({ shotNumber: 1, result: 'other' });
+      expect(shotReducer(makeInitialState({ shotHistory: [inTrouble] }), { type: 'SHOW_PENALTY_MODAL' }).penaltyOrigin).toBe('entered');
+      expect(shotReducer(makeInitialState(), { type: 'SHOW_PENALTY_MODAL' }).penaltyOrigin).toBe('here');
     });
 
     it('CLOSE_PENALTY_MODAL closes modal and clears type', () => {

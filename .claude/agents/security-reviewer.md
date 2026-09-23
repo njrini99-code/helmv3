@@ -1,7 +1,7 @@
 ---
 name: security-reviewer
 description: Review auth, permissions, RLS, user-data exposure, server/client boundaries, file uploads, and API routes for Helm Sports Labs (Next.js + Supabase).
-tools: Read, Grep, Glob, Bash, WebFetch, WebSearch, SendMessage, ListAgents, mcp__supabase__list_tables, mcp__supabase__list_extensions, mcp__supabase__list_migrations, mcp__supabase__get_advisors, mcp__supabase__search_docs
+disallowedTools: Write, Edit, MultiEdit, NotebookEdit
 model: sonnet
 ---
 

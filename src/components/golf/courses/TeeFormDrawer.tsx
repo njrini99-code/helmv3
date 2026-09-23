@@ -297,7 +297,7 @@ export function TeeFormDrawer({
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="sm:mx-auto sm:max-w-2xl sm:rounded-fw-lg">
+      <DrawerContent className="overflow-hidden sm:mx-auto sm:max-w-2xl sm:rounded-fw-lg">
         {/* Header — pinned above the scrolling body */}
         <div className="flex items-start justify-between gap-3 px-6 pt-4 pb-3">
           <div className="min-w-0">
@@ -321,7 +321,7 @@ export function TeeFormDrawer({
         </div>
 
         {/* Scrollable body — the hole editor can be tall */}
-        <div className="max-h-[78vh] overflow-y-auto px-6">
+        <div className="min-h-0 flex-1 overflow-y-auto px-6">
           {/* Top-level error area */}
           {error && (
             <div
@@ -536,7 +536,7 @@ export function TeeFormDrawer({
         </div>
 
         {/* Footer — pinned below the scrolling body */}
-        <div className="flex items-center justify-end gap-2 border-t border-border-subtle px-6 py-4">
+        <div className="flex items-center justify-end gap-2 border-t border-border-subtle px-6 pt-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))]">
           <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={submitting}>
             Cancel
           </Button>

@@ -29,9 +29,6 @@ const DETAIL_LEAVES = new Set([
   '/admin/users/[id]/view-as',
   '/admin/thread/[entity]/[id]',
   '/admin/golf/tracer',
-  // Phase 4 lens layer — clicked into from /admin/lenses/users, not navigated
-  // to directly, same pattern as /admin/users/[id] above.
-  '/admin/lenses/users/[id]',
 ]);
 
 function walkRoutes(dir: string, base = '/admin'): string[] {
@@ -72,9 +69,15 @@ describe('Bridge navigation covers every route', () => {
     expect(dangling, `ADMIN_NAV entries with no page.tsx:\n${dangling.join('\n')}`).toEqual([]);
   });
 
-  it('the two previously-orphaned boards are now reachable', () => {
+  it('the previously-orphaned Teams board is still reachable', () => {
+    // Billing was the other one. It is gone entirely as of the 30→19
+    // consolidation: production has no Stripe key (verified 2026-09-08 —
+    // zero STRIPE_* variables across 68 production env vars), so the page
+    // could only ever render its own "Invoicing is not available yet"
+    // notice. /admin/billing 307s to /admin; CreateInvoiceForm and
+    // src/lib/stripe/** are untouched, so restoring it is one commit.
     expect(navHrefs.has('/admin/teams')).toBe(true);
-    expect(navHrefs.has('/admin/billing')).toBe(true);
+    expect(navHrefs.has('/admin/billing')).toBe(false);
   });
 
   it('keyboard shortcuts are unique', () => {

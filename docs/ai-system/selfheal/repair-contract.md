@@ -311,6 +311,15 @@ cycle:
 - **A green `npm test` does not prove the file compiles.** Vitest transpiles
   through esbuild, which accepted a malformed JSX expression that `tsc`
   rejected. Run `preflight` even when tests pass.
+- **Run the gates in the FOREGROUND and wait.** You are a one-shot `claude -p`
+  session: nothing resumes you when a background task finishes. Run
+  34347403858 (2026-09-09) wrote a correct failing test and fix for
+  `530e91c6`, started `npm run preflight` and `npm test` with
+  `run_in_background`, said "I'll wait for the notification", ended its
+  turn — and the process exited, killed both tasks, discarded the worktree
+  with the fix in it, and failed the run for having no `REPAIR-SUMMARY`.
+  Never `run_in_background`, never a trailing `&`, never end a turn
+  "waiting for" anything.
 
 **`npm run build` may not be runnable in your workspace, and that is by
 design.** `.worktreeinclude` withholds `.env.local`, so the build fails on

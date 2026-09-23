@@ -14,6 +14,70 @@ they are already near the bottom; an explicit search result takes precedence
 and opens at its matched message instead. The search target consumes the
 initial-open sentinel so it cannot be overwritten by a stale initial scroll.
 
+The immersive mobile thread uses one bottom safe-area inset, owned by the
+composer. Its writing field sits in a compact flush footer. Attachments open
+in the shared scrollable Sheet on phones and a menu on desktop. Group details
+use Sheet.Body so long member lists scroll within the viewport. Group creation
+dates use the conversation row's UTC calendar date because conversations carry
+no team-timezone field; the same group metadata therefore renders identically
+on every client.
+
+The mobile inbox has one Messages header with working All, Unread and Groups
+filters. Short conversations settle near the composer; longer histories retain
+the existing scroll anchoring.
+
+On desktop and tablet the inbox fills the app content window beside the left
+navigation, with a compact fixed-width rail and an uncapped thread panel.
+Route-scoped `data-fw-messages` CSS removes the duplicate shell header and its
+bottom reservation. Individual bubbles retain readable widths. The shared
+`globals.css` file is outside the feature router; only this route-scoped rule
+is part of the messaging change.
+
+Header, rail, and composer derive conversation kind from participant count
+(and ids when count is absent). A two-person broadcast resolves its actual
+counterpart even when its storage group flag is set. Real groups retain their
+full title; unresolved identities use an honest generic label.
+
+Incoming avatars anchor to the final bubble in a sender group, independent of
+reaction and timestamp height. Reaction controls retain 44px hit areas around
+compact 28px visual badges that meet the bubble edge. Switching conversations
+closes action/group overlays and rejects previous-thread action targets.
+
+Message reactions are persisted in golf_message_reactions using the session
+client and existing participant RLS. Hold a message (or right-click on desktop)
+to add one; desktop also exposes a keyboard-focusable action button. Desktop
+and touch use an anchored, collision-aware popup beside the held message.
+Touch bubbles suppress native text selection and WebKit callouts; mouse text
+selection remains available and Copy is an explicit action. A drag cancels the
+hold timer so scrolling does not accidentally open reactions. The warm glass
+reaction rail and actions sit over a softly blurred backdrop, with a crisp
+selected-message preview and an entrance/exit from the message anchor. Bounds
+respect the actual device insets; reduced motion removes the lift transition.
+Both show active reactions and pending state. Reaction hover/count
+feedback and composer send transitions respect reduced motion. Tap a reaction count to add/remove your own reaction. Counts include
+distinct members, refresh through realtime, and reload on window focus. Errors
+remain visible; switching threads discards stale fetch results. Removing a
+reaction targets the current user's row only and never edits group membership.
+Every reactions read and write is gated on `client.auth.getSession()` first
+and the hook re-loads on `SIGNED_IN`/`TOKEN_REFRESHED`: the browser client is a
+singleton, but the session it carries can be absent at the moment a call fires
+(reliably so on iOS WKWebView after backgrounding), and `golf_message_reactions`
+deliberately grants `anon` nothing, so an ungated call fails with `42501`
+rather than RLS's silent empty set. That is the table doing its job — never
+widen the grant; gate the call (measured 2026-09-09T18:31:49Z, one ungated GET
+went out with no JWT in the same millisecond an authenticated heartbeat left
+the same device). Likewise `getPlayerNotificationCounts` returns
+`{ success: true, authExpired: true }` for a dead session, mirroring the coach
+action, so the 45s badge poll stops instead of persisting "Not authenticated"
+to the Bridge every tick.
+`20260908160000_golf_message_reactions_access.sql` reconciles the already-live
+membership helper, reaction policies, indexes and publication into migration
+replay. The declarative schema already carried those objects; the earlier
+reconstructed table migration omitted them. `golf_message_reactions.sql`
+exercises authenticated member/outsider behavior with rolled-back fixtures.
+The phone composer keyboard contract is measured in
+`e2e/golf-critical-paths.spec.ts`, rather than counting a particular CSS formula.
+
 These surfaces are operationally important because they touch files, notifications, task creation, player acknowledgement, and team access rules.
 
 ## Primary Entry Points
@@ -102,8 +166,8 @@ Announcement create
 - The composer's Attachments section renders for any coach with a team (2026-08-26): it offers direct device upload (25 MB cap, mirrors the Documents-page accept list) plus the library picker; it must NOT be hidden just because the team library is empty.
 - Announcement player view needs compact cards, clear acknowledgement action, linked documents/tasks, and urgency state.
 - Mobile versions should keep primary action clear and move lower-priority controls into sheets or menus.
-- On a phone the messages column shrinks by whichever is taller of the bottom
-  chrome (56px nav + safe area) and `--keyboard-height`, so the composer sits
+- On a phone the immersive messages column fills the viewport minus
+  `--keyboard-height`, with its sole bottom safe-area inset in the composer, which sits
   directly above the keys ("I can't see what I'm typing", Shenandoah team
   chat 2026-09-01); the thread pane re-pins to the newest message when its
   region shrinks, and the composer drops its home-indicator pad while the
@@ -502,6 +566,33 @@ and draws the same chip `display: flex; justify-content: center; padding: 0 0
 16px 0` — in flow, so it structurally cannot collide. The chip's material stays
 Thread's glass, which `audit/DECISIONS.md` froze; only the placement moved.
 
+## Touch: the chips scroll without blur, and the bubble text never highlights (2026-09-09)
+
+Owner report from a phone: the thread scrolls choppily, and a long-press opens
+the reactions row correctly but also starts a text highlight when the hold lands
+on the message text. Two causes, both in `MessageThreadPane.tsx`'s territory.
+
+**Scroll.** G-50a (`audit/DECISIONS.md`) costed the day chip's 22px glass blur
+as "a single ~90×26px element" — one chip pinned at the head of the pane. The
+2026-09-07 change above made it a per-boundary separator in flow, so a
+200-message group thread scrolls dozens of them, and on iOS every
+`backdrop-filter` element inside a scroller is its own compositing layer,
+re-blurred on each frame. The chip now sets `backdrop-filter: none` under
+`(pointer: coarse)` and keeps the tinted ground and pop shadow, the same call
+`globals.css` already makes when it reduces glass blur on mobile. Desktop keeps
+the frozen material. **Rule carried forward: nothing that scrolls inside the
+thread gets a backdrop filter on touch.** The masthead, composer and reactions
+sheet are pinned, so theirs stay.
+
+**Selection.** The bubble turns `user-select` off on coarse pointers, but the
+message text is a `<p>` inside it, and the Capacitor layer in `globals.css`
+re-enables `user-select: text` on every `p` and `span` at `body.capacitor p`
+specificity — higher than a single Tailwind class. Only the native app hits it,
+which is why mobile Safari never showed it. A bubble-scoped
+`body.capacitor [data-message-bubble] p, … span` rule now outranks the
+re-enable; `MessageThreadPane.capacitorSelection.test.ts` pins its shape and
+cascade order. Copy in the reactions row is what replaces selection, as before.
+
 ## Opening a thread at its newest message: arm, then pin (2026-09-07)
 
 Two defects made a thread open at its OLDEST message once it was tall enough to
@@ -550,3 +641,27 @@ A test that renders with `loading: false` from the start cannot see either half.
 - `memory/context/golfhelm-features.md`
 - `memory/context/golfhelm-database.md`
 - `docs/PUSH_NOTIFICATION_AUDIT.md`
+
+Group participant requests are invalidated when conversation selection changes; late results and mutation refresh callbacks cannot overwrite the next conversation’s identity map. Empty membership clears stale members.
+
+### Mobile navigation and refresh stability (2026-09-08)
+
+Phone inbox entry does not auto-select a hidden conversation or mark it read.
+Desktop keeps its adjacent-thread auto-selection. Background read-receipt
+refreshes retain existing rail rows, and a failed refresh preserves the last
+successful inbox. Reaction action bodies remain mounted through their exit
+animation, scoped to the current conversation.
+
+The shared floating bottom navigation reserves `--fw-mobile-nav-height`,
+including its capsule margins and the home indicator; the inbox uses the same
+measurement. More defers destination prefetch until its entrance finishes and
+closes on a normal navigation tap. Shared app-shell and overlay paths remain
+unmapped in `memory/registry.yml`; their visual contract is also recorded in
+`docs/v3-design-language.md` rather than implying that the messaging feature
+owns every consumer.
+
+Historical DM identities are resolved by user ID through the authenticated
+conversation-membership boundary when roster-scoped profile reads cannot
+resolve them. This does not broaden customer profile RLS, return email
+addresses, or expose a general profile directory. A truly missing profile
+keeps a generic member label.

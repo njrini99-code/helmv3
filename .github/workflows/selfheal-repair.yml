@@ -148,6 +148,11 @@ jobs:
           never deploy. Open at most THREE pull requests. If a finding cannot be
           reproduced with a failing test, do NOT open a PR for it — say so and
           move on. ${dry}
+          This is a one-shot headless session: nothing resumes you. Run every
+          command in the FOREGROUND and wait for it — never run_in_background,
+          never trailing '&', never end your turn 'waiting for' anything. The
+          moment you end your turn the process exits and any background work
+          is killed with it.
           End your reply with a line of the form
           REPAIR-SUMMARY: <what you did>." \
             --permission-mode bypassPermissions \

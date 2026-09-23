@@ -20,25 +20,14 @@ import {
   SearchCheck,
   ScrollText,
   Radar,
-  CreditCard,
   GitBranch,
-  Trophy,
-  Waypoints,
   Database,
   RefreshCw,
   Dumbbell,
   Search,
   LogOut,
-  Recycle,
   Bot,
-  FileCheck2,
-  Route,
-  Milestone,
-  LineChart,
-  Footprints,
-  TrendingUp,
   ToggleLeft,
-  Target,
 } from 'lucide-react';
 import {
   AppShell,
@@ -65,6 +54,7 @@ import {
   BRIDGE_BOTTOM_NAV_HREFS,
   BRIDGE_BOTTOM_NAV_LABELS,
 } from './admin-nav';
+import { RETIRED_SHORTCUTS } from '@/lib/admin/retired-routes';
 import { RelativeTime } from './RelativeTime';
 
 /** Sub-route leaf labels the Breadcrumb trail can't derive from ADMIN_NAV
@@ -144,25 +134,14 @@ const NAV_ICON_BY_HREF = {
   '/admin/errors': AlertTriangle,
   '/admin/traces': GitBranch,
   '/admin/engineering': Bot,
-  '/admin/work-log': FileCheck2,
-  '/admin/qualifiers': Trophy,
-  // Waypoints, not another alert glyph: this tab's subject is the CORRELATION
-  // between three sources, and it sits directly beside Errors in the same
-  // section — a second warning triangle would read as a duplicate of it.
-  '/admin/reliability': Waypoints,
-  // The database's own icon, not a variant of Reliability's Waypoints or
+  // The database's own icon, not a variant of the Incidents triangle or
   // Jobs' Timer — this tab's subject is Postgres state itself (connections,
   // deduped DB errors, query deltas), not cross-source correlation or cron
   // scheduling.
   '/admin/database': Database,
-  // A target, not another gauge: Utilization's Gauge measures ADOPTION, this
-  // tab's subject is a BUDGET against a threshold (how much of the allowance
-  // is consumed) — a second gauge glyph would read as a duplicate of it.
-  '/admin/slo': Target,
   // A closed loop, not another gauge: this tab's subject is a CIRCUIT that
   // either completes or does not, and it sits beside Reliability where a
   // second measurement glyph would read as a variant of it.
-  '/admin/self-heal': Recycle,
   '/admin/auth': KeyRound,
   '/admin/utilization': Gauge,
   '/admin/golf': Flag,
@@ -179,12 +158,6 @@ const NAV_ICON_BY_HREF = {
   '/admin/releases': ToggleLeft,
   '/admin/health': HeartPulse,
   '/admin/teams': Radar,
-  '/admin/billing': CreditCard,
-  '/admin/lenses/golf': Route,
-  '/admin/lenses/baseball': Milestone,
-  '/admin/lenses/lifting': TrendingUp,
-  '/admin/lenses/teams': LineChart,
-  '/admin/lenses/users': Footprints,
 } as const;
 
 /**
@@ -406,6 +379,19 @@ export function AdminShell({
       if (href) {
         e.preventDefault();
         router.push(href);
+        return;
+      }
+      // A shortcut whose TAB was retired by the 30->19 consolidation still
+      // works — it routes to the view that absorbed that tab, so an operator
+      // with muscle memory for Shift+G ("Golf journey lens") lands on
+      // /admin/golf?view=journey rather than on nothing at all. Consulted
+      // AFTER hrefForShortcut, never before, so a live tab can never be
+      // shadowed by a retired one; `retired-shortcuts.test.ts` pins that no
+      // retired key collides with a live ADMIN_NAV key or a reserved local.
+      const retired = RETIRED_SHORTCUTS[e.key];
+      if (retired) {
+        e.preventDefault();
+        router.push(retired);
       }
     }
     window.addEventListener('keydown', onKeyDown);

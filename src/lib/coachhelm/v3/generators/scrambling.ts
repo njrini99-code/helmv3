@@ -32,7 +32,12 @@ import { round } from '@/lib/golf/stat-formulas';
 import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
 import { loadSandShots, type SandShot } from '@/lib/coachhelm/v3/engine/shot-source';
 import { loadPlayerCohort } from '@/lib/coachhelm/v3/counterfactual/player-cohort-loader';
-import { cohortAnchor, type CohortGender } from '@/lib/coachhelm/v3/counterfactual/cohort-baselines';
+import {
+  cohortAnchor,
+  cohortAnchorLabel,
+  cohortAnchorSource,
+  type CohortGender,
+} from '@/lib/coachhelm/v3/counterfactual/cohort-baselines';
 import type {
   ComposedContent,
   GeneratorAggregate,
@@ -163,9 +168,9 @@ export class ScramblingGenerator extends BaseGenerator<ScramblingAggregate> {
     const leaveDisp = agg.avg_leave_feet != null ? `${Math.round(agg.avg_leave_feet)} ft` : null;
 
     const anchor = cohortAnchor('scrambling_pct_sand', agg.cohort_gender) ?? 50;
-    const anchorLabel = agg.cohort_gender === 'womens'
-      ? "women's college sand-save avg"
-      : 'PGA Tour sand save avg';
+    // Women's anchor is a derived target (LPGA/NCAA figures discounted to
+    // college), not a measured college average — the label and source say so.
+    const anchorLabel = cohortAnchorLabel(agg.cohort_gender, 'sand save');
 
     let title: string;
     let driver: string;
@@ -194,7 +199,9 @@ export class ScramblingGenerator extends BaseGenerator<ScramblingAggregate> {
     }
 
     const content =
-      `${driver} ${agg.cohort_gender === 'womens' ? "Women's college" : 'Tour'} sand-save average is ~${anchor}%.` +
+      `${driver} ${agg.cohort_gender === 'womens'
+        ? `Women's college sand-save target is ~${anchor}% (estimated).`
+        : `Tour sand-save average is ~${anchor}%.`}` +
       staleDataSuffix(agg.last_round_date);
 
     return {
@@ -212,7 +219,7 @@ export class ScramblingGenerator extends BaseGenerator<ScramblingAggregate> {
         your_value_display: saveDisp,
         comparison_value: anchor,
         comparison_label: anchorLabel,
-        comparison_source: 'pga_baseline',
+        comparison_source: cohortAnchorSource(agg.cohort_gender),
         sample_n: agg.attempts,
         // Phase E: scrambling is a SHOT-SOURCE engine — loadSandShots genuinely
         // windows the last 90 days (golf_shots via golf_rounds.round_date >= now-90d),

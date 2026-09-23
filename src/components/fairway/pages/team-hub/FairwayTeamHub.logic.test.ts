@@ -41,6 +41,28 @@ function makeTrip(overrides: Partial<TripData>): TripData {
 }
 
 describe('Team Hub bento overview', () => {
+  it('limits the mobile task preview and keeps its header link touch-sized', () => {
+    const tasks = Array.from({ length: 5 }, (_, index) => ({
+      id: `task-${index + 1}`,
+      title: `Task ${index + 1}`,
+      description: 'Task details',
+      due_date: null,
+      category: 'practice',
+      requires_upload: false,
+      status: 'pending' as const,
+      completed_at: null,
+    }));
+
+    render(createElement(FairwayTeamHub, { ...fixture, tasks }));
+
+    expect(screen.getByRole('link', { name: /tasks 5 open/i })).toHaveClass('min-h-11');
+    expect(screen.getByText('Task 1')).toBeInTheDocument();
+    expect(screen.getByText('Task 2')).toBeInTheDocument();
+    expect(screen.getByText('Task 3')).toBeInTheDocument();
+    expect(screen.getByText('Task 4').closest('.hidden')).toHaveClass('hidden', 'md:block');
+    expect(screen.getByText('Task 5').closest('.hidden')).toHaveClass('hidden', 'md:block');
+  });
+
   it('renders every team domain as a card with no tab layer', () => {
     render(createElement(FairwayTeamHub, fixture));
 

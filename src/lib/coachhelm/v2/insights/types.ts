@@ -35,6 +35,12 @@ export type InsightUnit = 'percent' | 'strokes' | 'count' | 'yards' | 'feet';
  * - d1_avg / d2_avg / d3_avg / naia_avg / juco_avg: college-division benchmarks
  * - pga_baseline:     PGA Tour benchmark
  * - absolute_target:  a known target value (par, uniform distribution, etc.)
+ * - estimated_target: a DERIVED coaching target, not a measured population
+ *                     average — e.g. the women's-college anchors in
+ *                     `v3/counterfactual/cohort-baselines.ts`, which are LPGA /
+ *                     NCAA figures discounted to college. Rendered as
+ *                     "Estimated target" so a coach never reads it as a
+ *                     measured norm (repair plan N16).
  *
  * `peer_percentile` was removed in 2026-05-17 (audit finding Q-NEW-12) —
  * it was being used against fixed reference points (uniform 4-way
@@ -50,7 +56,8 @@ export type InsightComparisonSource =
   | 'your_baseline'
   | 'team_avg'
   | 'pga_baseline'
-  | 'absolute_target';
+  | 'absolute_target'
+  | 'estimated_target';
 
 /** Runtime tuple matching {@link InsightComparisonSource} for validation. */
 export const COMPARISON_SOURCES = [
@@ -63,6 +70,7 @@ export const COMPARISON_SOURCES = [
   'juco_avg',
   'pga_baseline',
   'absolute_target',
+  'estimated_target',
 ] as const satisfies readonly InsightComparisonSource[];
 
 /** Stable lookup key in the BaselineRegistry: `${source}.${bucket}`. */
@@ -103,6 +111,14 @@ export interface InsightConfidenceFactors {
    *   placeholder rows and `true` when it computes real factors.
    */
   factors_measured?: boolean;
+  /**
+   * Which `calcConfidence` rule produced `evidence.confidence`. Stamped by
+   * `upsertInsight` and the lifecycle cron on every write so a reader can
+   * tell an `honest_v2` value (sample × freshness, monotone) from one the
+   * pre-2026-09-12 branch produced (which jumped UP as recency fell below 1).
+   * Absent on rows last written before the stamp existed.
+   */
+  method_version?: string;
 }
 
 export interface InsightEvidence {
@@ -110,6 +126,16 @@ export interface InsightEvidence {
   metric: string;
   metric_label: string;
   unit: InsightUnit;
+  /**
+   * Which way `your_value` is good. Declared by the PRODUCER when the headline
+   * value is not the quantity the registry entry for `metric` describes —
+   * e.g. `approach_miss` keeps `metric: approach_proximity_*ft` (feet,
+   * lower_better) for standing/signature continuity while `your_value` is the
+   * green-hit PERCENT (higher_better). Readers (`tone-derivation.ts`) prefer
+   * this over the registry direction; absent → registry, then a name-pattern
+   * fallback. Additive: every existing row is unchanged.
+   */
+  polarity?: 'higher_better' | 'lower_better';
 
   // Your number
   your_value: number;
@@ -192,6 +218,13 @@ export type CausalityLevel = 'observed_sequence' | 'inferred_hypothesis';
 export interface DiagnosisDriver {
   /** Canonical metric id this driver reads (e.g. 'putts_made_3_5ft_pct'). */
   metric: string;
+  /**
+   * Human label for THIS driver's value. Set by the producer when the value
+   * is not the registry quantity for `metric` (the approach_miss green-hit %
+   * under a proximity id); the DiagnosisPanel prefers it over the registry
+   * display label so a percent never renders under a feet-metric heading.
+   */
+  label?: string;
   /** The measured value of that metric. */
   value: number;
   /** Unit of `value`. */
@@ -250,6 +283,13 @@ export interface InsightInput {
   priority?: InsightPriority;
 }
 
+/** Current `calcConfidence` rule id — see `InsightConfidenceFactors.method_version`. */
+export const CONFIDENCE_METHOD_VERSION = 'honest_v2';
+
+function clamp01(n: number): number {
+  return Math.max(0, Math.min(1, Number.isFinite(n) ? n : 0));
+}
+
 /**
  * Standard confidence calculation (Rule 1 of the design contract).
  * Every generator must use this — do not inline variants.
@@ -257,11 +297,19 @@ export interface InsightInput {
  * SV-1: the historical blend `0.4·sample + 0.3·recency + 0.3·variance` silently
  * added a fabricated +0.45 floor whenever generators stamped the recency=1.0 /
  * variance=0.5 placeholders. When `confidence_factors.factors_measured === false`
- * those two are known-placeholders, so we drop the fabricated +0.45 and surface
- * honest sample-adequacy (dropped weight redistributes → a true weighted
- * average, never a floor). A genuinely DECAYED recency (`< 1`, written by the
- * lifecycle cron from real row age) is still honored under that flag, so a
- * matured row's confidence keeps falling with age — variance stays dropped.
+ * those two are known-placeholders, so variance is dropped and the value is
+ * honest sample adequacy scaled by freshness.
+ *
+ * 2026-09-12 (`honest_v2`): the first honest-mode rule switched formulas at
+ * recency < 1 — `(0.4·sa + 0.3·rec) / 0.7` — which is DISCONTINUOUS at the
+ * boundary: sa 0.24 scored 0.24 fully fresh but 0.56 at recency 0.99, so a
+ * row that merely aged past its window cleared the 0.4 tentative floor (41 of
+ * 208 production candidates got there only that way). The rule is now
+ * `sa · (1 − (3/7)·(1 − rec))`: exactly `sa` at recency 1 (every fresh row is
+ * unchanged), monotone non-increasing in age, and the same 0.4/0.3 weighting
+ * expressed as a freshness multiplier instead of a second formula. It is a
+ * support score, not a calibrated probability.
+ *
  * `undefined` (the default) keeps the legacy blend for backward compatibility:
  * every v2 miner is unchanged. `true` means both factors are genuinely measured.
  */
@@ -270,17 +318,11 @@ export function calcConfidence(
 ): number {
   const { sample_adequacy, recency, variance, factors_measured } =
     evidence.confidence_factors;
-
-  // Honest mode: placeholders explicitly flagged unmeasured. Drop the fabricated
-  // variance; keep sample adequacy. A real age-decayed recency (< 1) still
-  // counts — redistribute weight across the two honest terms (no +0.45 floor).
   if (factors_measured === false) {
-    if (recency < 1) {
-      return (0.4 * sample_adequacy + 0.3 * recency) / 0.7;
-    }
-    return Math.max(0, Math.min(1, sample_adequacy));
+    const sa = clamp01(sample_adequacy);
+    const freshness = clamp01(recency);
+    return sa * (1 - (1 - freshness) * (3 / 7));
   }
-
   // Legacy / fully-measured blend (default).
   return 0.4 * sample_adequacy + 0.3 * recency + 0.3 * variance;
 }

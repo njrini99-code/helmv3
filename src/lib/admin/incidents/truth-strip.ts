@@ -230,7 +230,7 @@ export function buildTruthStrip(input: TruthStripInput): TruthCell[] {
         tone: escalate ? 'warning' : LOOP_TONE_TO_STATE[loop.tone],
         freshness: ageWords(input.loopAgeMs),
         source: 'background_job_logs',
-        href: escalate ? '/admin/errors?lens=stalled' : '/admin/self-heal',
+        href: escalate ? '/admin/errors?lens=stalled' : '/admin/errors?view=loop',
         detail: flowWords ? `${loop.detail} ${flowWords.detail}` : loop.detail,
       }
     : {
@@ -241,7 +241,7 @@ export function buildTruthStrip(input: TruthStripInput): TruthCell[] {
         tone: 'neutral',
         freshness: 'age unknown',
         source: 'background_job_logs',
-        href: '/admin/self-heal',
+        href: '/admin/errors?view=loop',
         detail:
           'The self-healing stage heartbeats could not be read, so the loop cannot be judged.' +
           (flowWords ? ` ${flowWords.detail}` : ''),
@@ -271,7 +271,7 @@ export function buildTruthStrip(input: TruthStripInput): TruthCell[] {
             : 'success',
     freshness: ageWords(coverage.oldestAgeMs),
     source: 'Sentry · Supabase · Vercel · App',
-    href: '/admin/reliability',
+    href: '/admin/errors?view=sources',
     detail: coverage.anyBlind
       ? `Blind: ${coverage.blindSources.join(', ')}. Counts on this page are from readable sources only.`
       : `${coverage.reading} reading, ${coverage.partial} partial, ${coverage.unknown} unknown.`,

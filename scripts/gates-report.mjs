@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // scripts/gates-report.mjs — median and p95 wait per gate over the ledger.
 //
-// Reads memory/ledgers/gates.jsonl (written by scripts/serialize.mjs, one
+// Reads .helm/runtime/gates.jsonl (written by scripts/serialize.mjs, one
 // row per gate run: { ts, gate, waitMs, runMs, slots }) and prints, per gate
 // name, the count, median wait, p95 wait, and median run time. `waitMs` is
 // time spent queued behind HELM_GATE_SLOTS other gates on this machine
@@ -20,7 +20,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = join(__dirname, '..');
 
 function parseArgs(argv) {
-  const out = { ledger: join(REPO_ROOT, 'memory', 'ledgers', 'gates.jsonl') };
+  const out = { ledger: join(REPO_ROOT, '.helm', 'runtime', 'gates.jsonl') };
   for (let i = 0; i < argv.length; i += 1) {
     if (argv[i] === '--ledger' && argv[i + 1]) {
       out.ledger = argv[i + 1];
@@ -84,7 +84,7 @@ export function buildReport(rows) {
 
 export function formatReport(report) {
   if (report.length === 0) {
-    return 'No gate timing recorded yet (memory/ledgers/gates.jsonl is empty). Run a gate through scripts/serialize.mjs first.';
+    return 'No gate timing recorded yet (.helm/runtime/gates.jsonl is empty). Run a gate through scripts/serialize.mjs first.';
   }
   const header = ['gate', 'runs', 'median wait', 'p95 wait', 'median run'];
   const rows = report.map((r) => [

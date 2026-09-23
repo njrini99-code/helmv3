@@ -56,8 +56,10 @@ describe('SlowStatementsPanel', () => {
       error: 'db_statement_samples (migration HELD — see supabase/migrations/HELD.md)',
     });
     render(await SlowStatementsPanel());
-    expect(screen.getByText(/statement capture not shipped yet/i)).toBeInTheDocument();
-    expect(screen.getByText(/HELD.md/)).toBeInTheDocument();
+    expect(screen.getByText(/statement capture is held, not missing/i)).toBeInTheDocument();
+    // The specific migration filename, not just "see HELD.md" — a 109-row
+    // register the reader would otherwise have to search themselves.
+    expect(screen.getByText(/20260906120010_helm_debug_db_statement_samples\.sql/)).toBeInTheDocument();
   });
 
   it('renders a no-data empty state when applied but nothing sampled yet', async () => {

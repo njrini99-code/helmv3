@@ -297,13 +297,21 @@ export const MetricCard = forwardRef<HTMLDivElement, MetricCardProps>(
       // tile reads as a premium physical surface, not a flat outlined box.
       // --fw-shadow-card is light-cards-only (carries the warm-white top edge).
       'border border-border-subtle [box-shadow:var(--fw-shadow-card)]',
-      'transition-[box-shadow,transform,border-color] ease-soft',
+      'transition-[box-shadow,transform,border-color,filter] ease-soft',
       isHero ? 'p-8 gap-3' : isCompact ? 'p-4 gap-1.5' : 'p-6 gap-2',
       interactive && [
         'cursor-pointer will-change-transform',
         '[transition-duration:240ms] [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
-        'hover:shadow-raise hover:-translate-y-[2px] hover:border-transparent',
-        'active:translate-y-0 active:shadow-soft active:[transition-duration:110ms]',
+        // Gated behind `@media (hover: hover)`: an unscoped `hover:` fires on
+        // TAP in mobile WebKit and stays stuck, so a tapped KPI card kept its
+        // 2px lift until you tapped elsewhere.
+        '[@media(hover:hover)]:hover:shadow-raise [@media(hover:hover)]:hover:-translate-y-[2px] [@media(hover:hover)]:hover:border-transparent',
+        // Press is the touch-side affordance: the hover lift above never fires
+        // on a phone, so `active:translate-y-0` alone cancelled nothing and a
+        // tapped KPI card sat inert. Settle below rest instead of back to it.
+        'active:translate-y-0 active:scale-[0.994] active:shadow-flat active:brightness-[0.985]',
+        'active:[transition-duration:110ms] active:[transition-timing-function:var(--fw-ease-spring)]',
+        'motion-reduce:active:scale-100 motion-reduce:active:brightness-100',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
       ],
       !interactive && 'duration-base',

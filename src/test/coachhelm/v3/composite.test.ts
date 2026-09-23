@@ -142,9 +142,15 @@ describe('pressure_decel_chain', () => {
     expect(match).not.toBeNull();
     expect(match!.source_insight_ids).toHaveLength(2);
     const composed = pressureDecel.compose(match!);
-    expect(composed.title).toContain('Pressure shows up in your short putts');
+    expect(composed.title).toContain('Pressure gap and short-putt weakness overlap');
     expect(composed.content).toContain('3-5 ft');
     expect(composed.content).toContain('75%');
+    // Two standings side by side: the prose says what to check and recommends,
+    // it does not assert the decel mechanism as fact.
+    expect(composed.content).toContain('not measured here');
+    expect(composed.content).toContain('check: compare make rate from 3-5 ft');
+    expect(composed.content).toContain('Recommended:');
+    expect(composed.content).not.toContain('canonical "decel under pressure" failure mode');
   });
 
   it('does NOT fire when pressure_gap is below 0.3 strokes', () => {

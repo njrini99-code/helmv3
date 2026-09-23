@@ -28,6 +28,14 @@ interface ActionResult<T = void> {
   success: boolean;
   data?: T;
   error?: string;
+  /**
+   * True when the caller has no live session — the 45s badge poll in
+   * notification-badge-context.tsx keeps calling this after logout/session
+   * expiry until the tab reloads, which is expected, not an incident. Signals
+   * the client to stop polling instead of repeating the same expected miss.
+   * Mirrors getCoachNotificationCounts.
+   */
+  authExpired?: boolean;
 }
 
 export interface PlayerNotificationCounts {
@@ -59,7 +67,27 @@ async function getPlayerNotificationCountsImpl(
 
     // Resilient, not raw — a transient GoTrue error must not read as logged out.
     const { user } = await getUserResilient(supabase);
-    if (!user) return { success: false, error: 'Not authenticated' };
+    if (!user) {
+      // Silent, expected empty result — see ActionResult.authExpired above. A
+      // `{success:false}` here is persisted to the Bridge by withAdminObserved
+      // on EVERY 45s poll for the lifetime of a stale tab. Measured 2026-09-09:
+      // fingerprint f402b5ab "[getPlayerNotificationCounts] Not authenticated",
+      // 7 rows, all from one player's session that had expired. The coach
+      // branch already returned this shape; the player branch did not.
+      return {
+        success: true,
+        data: {
+          unreadAnnouncements: 0,
+          pendingTasks: 0,
+          unreadMessages: null,
+          unseenTravel: 0,
+          calendarNotifications: 0,
+          unseenAnnouncements: [],
+          lastSeenAt: null,
+        },
+        authExpired: true,
+      };
+    }
 
     // DS: playerId/userId/teamId arrived from the client and were previously
     // used as bare filters with no binding to the caller. Verify the caller

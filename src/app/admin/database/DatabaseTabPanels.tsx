@@ -29,7 +29,35 @@ import { LocalTime } from '../_components/LocalTime';
  * in this same directory.
  * -------------------------------------------------------------------- */
 
-const HELD_MIGRATIONS_NOTE = 'Migrations HELD — see supabase/migrations/HELD.md';
+/**
+ * "Held", not "missing" — and named, not gestured at.
+ *
+ * These panels read RPCs that do not exist in production because their
+ * migrations are DELIBERATELY unapplied, awaiting `db-migration-reviewer`
+ * review (HELD.md, row `20260906115900`+). That is a decision someone made,
+ * not an outage and not an empty table, and the two have completely different
+ * fixes. `Migrations HELD — see HELD.md` said the right thing but made the
+ * reader open a 109-row register and find the row themselves; naming the file
+ * is the difference between a state an operator can act on and one they have
+ * to research. Same standard the Agent Flight Recorder panel already sets.
+ */
+const STATEMENT_CAPTURE_HELD =
+  'Held: supabase/migrations/20260906120010_helm_debug_db_statement_samples.sql is written and awaiting db-migration-reviewer review, so record_db_statement_samples does not exist in production yet. This is not an empty table — see HELD.md.';
+
+/**
+ * The held note ALWAYS wins the description, with the read's own words kept
+ * beside it. `result.error ?? NOTE` used to mean the note only ever rendered
+ * when the read said nothing — and the read always says something, namely
+ * "migration HELD — see HELD.md", which is exactly the gesture-at-a-109-row-
+ * register this replaces. The read still names which RPC it could not find,
+ * so both facts belong on screen.
+ */
+function heldDescription(note: string, readError: string | null | undefined): string {
+  return readError ? `${note} (the read reported: ${readError})` : note;
+}
+
+const ANALYSIS_COLLECTOR_HELD =
+  'Held: supabase/migrations/20260906120100_helm_debug_db_analysis_samples.sql is written and awaiting db-migration-reviewer review, so helm_debug_db_analysis_snapshot does not exist in production yet. This is not an empty table — see HELD.md.';
 
 function Sparkline({ points }: { points: SparklinePoint[] }) {
   if (points.length < 2) return null;
@@ -72,7 +100,7 @@ export async function SlowStatementsPanel() {
   const result = await fetchSlowStatements();
 
   if (result.status === 'unconfigured') {
-    return <PanelNoData label="Statement capture not shipped yet" description={result.error ?? HELD_MIGRATIONS_NOTE} />;
+    return <PanelNoData label="Statement capture is held, not missing" description={heldDescription(STATEMENT_CAPTURE_HELD, result.error)} />;
   }
   if (result.status === 'error' || !result.data) {
     return <PanelStale label="Slow statements" error={result.error} />;
@@ -115,7 +143,7 @@ function AnalysisRowView({ row }: { row: AnalysisSampleRow }) {
 export async function IndexSuggestionsPanel() {
   const result = await fetchDatabaseAnalysis();
   if (result.status === 'unconfigured') {
-    return <PanelNoData label="Analysis collector not shipped yet" description={result.error ?? HELD_MIGRATIONS_NOTE} />;
+    return <PanelNoData label="Analysis collector is held, not missing" description={heldDescription(ANALYSIS_COLLECTOR_HELD, result.error)} />;
   }
   if (result.status === 'error' || !result.data) {
     return <PanelStale label="Index suggestions" error={result.error} />;
@@ -136,7 +164,7 @@ export async function IndexSuggestionsPanel() {
 export async function UnusedIndexesPanel() {
   const result = await fetchDatabaseAnalysis();
   if (result.status === 'unconfigured') {
-    return <PanelNoData label="Analysis collector not shipped yet" description={result.error ?? HELD_MIGRATIONS_NOTE} />;
+    return <PanelNoData label="Analysis collector is held, not missing" description={heldDescription(ANALYSIS_COLLECTOR_HELD, result.error)} />;
   }
   if (result.status === 'error' || !result.data) {
     return <PanelStale label="Unused indexes" error={result.error} />;
@@ -157,7 +185,7 @@ export async function UnusedIndexesPanel() {
 export async function BloatPanel() {
   const result = await fetchDatabaseAnalysis();
   if (result.status === 'unconfigured') {
-    return <PanelNoData label="Analysis collector not shipped yet" description={result.error ?? HELD_MIGRATIONS_NOTE} />;
+    return <PanelNoData label="Analysis collector is held, not missing" description={heldDescription(ANALYSIS_COLLECTOR_HELD, result.error)} />;
   }
   if (result.status === 'error' || !result.data) {
     return <PanelStale label="Bloat" error={result.error} />;
@@ -178,7 +206,7 @@ export async function BloatPanel() {
 export async function CoveragePanel() {
   const result = await fetchDatabaseAnalysis();
   if (result.status === 'unconfigured') {
-    return <PanelNoData label="Coverage census not shipped yet" description={result.error ?? HELD_MIGRATIONS_NOTE} />;
+    return <PanelNoData label="Coverage census is held, not missing" description={heldDescription(ANALYSIS_COLLECTOR_HELD, result.error)} />;
   }
   if (result.status === 'error' || !result.data) {
     return <PanelStale label="Coverage" error={result.error} />;
@@ -250,7 +278,10 @@ export async function ChangedSinceYesterdayStrip() {
     return (
       <p className="text-xs text-warm-500">
         Changed since yesterday: not enough history yet
-        {result.status === 'unconfigured' ? ` (${HELD_MIGRATIONS_NOTE})` : ''}.
+        {result.status === 'unconfigured'
+          ? ' — held, not missing: supabase/migrations/20260906120010_helm_debug_db_statement_samples.sql awaits review'
+          : ''}
+        .
       </p>
     );
   }

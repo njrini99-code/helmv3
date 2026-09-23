@@ -78,7 +78,22 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
 - Player-facing feedback must be tied to the authenticated player and revalidate the affected dashboard surfaces.
 - Coach-to-team ownership is via `golf_team_coach_staff`; do not infer it from `golf_coaches.team_id`.
 - V2/V3 scoring and generator logic should stay pure where designed as pure engine code; Supabase access belongs in loaders, actions, or orchestration boundaries.
+- Insight lifecycle is decided only by `src/lib/coachhelm/v2/insights/lifecycle-policy.ts` (see `docs/architecture/coachhelm-evidence-contract.md`). A `tentative` row is promoted to `detected` on the first write whose freshly recomputed confidence clears the 0.4 floor; the nightly lifecycle cron only demotes/archives/resolves and never promotes. Promotion is pausable per team via `golf_team_coachhelm_settings.preferences.tentative_promotion_enabled = false`.
+- Honest-mode confidence (`factors_measured=false`) is `sample_adequacy × freshness` (`honest_v2`); it is a support score, never a probability, and can never rise as evidence ages.
 - Citations, evidence, and baseline comparisons are part of the trust contract. Do not emit fabricated comparisons or uncited claims.
+- Claim honesty (2026-09-12, repair plan Package 2): prose states what was
+  measured, hands unmeasured causes to the coach as a check, and frames the
+  action as a recommendation (`approachAxisReading` observation/check/action in
+  `v3/engine/diagnosis.ts`; the round builders in `v2/orchestrator.ts`; the
+  short-side and pressure-decel composites). Heuristic severities go in
+  `ComposedInsight.rankScore`, never `strokeImpact`. A row whose `your_value`
+  is not the registry quantity for its metric id declares `evidence.polarity`
+  (approach_miss: green-hit percent under `approach_proximity_*ft`). Women's
+  cohort anchors ship as `comparison_source: 'estimated_target'` with a
+  `target (est.)` label. Specific-hole rankings key on (`course_id`,
+  `hole_number`); derived tee distances carry `distance_method:
+  'derived_progress'`. The metric identity table lives in
+  `docs/architecture/coachhelm-evidence-contract.md`.
 - Budget-sensitive LLM behavior should use team settings and persisted usage, not hardcoded token math.
 
 ## UI Contract
@@ -154,6 +169,41 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   `useReducedMotionGuard()` from `@/lib/coachhelm/v3/motion`. (STU, source:
   `coachhelm-stats-hooks-310-false-positive.md` dated 2026-07-30, updated
   2026-08-19; verified 2026-09-05 that src/lib/coachhelm/v3/motion exists.)
+- **Outcome measurement now covers v3 insights** (2026-09-22,
+  `agent/coachhelm-outcome-measure`): `backfillInsightOutcomes`
+  (`v2/analytics/effectiveness-writer.ts`) previously only mapped v2-era
+  metric names to round columns, so `outcome_status`/`OutcomeBadge` were
+  effectively NULL on every v3-authored insight. It now also resolves v3
+  `evidence.metric` ids through the v3 metric registry
+  (`lookupMetricSource`/`averageInWindow`/`improvementSign`), keeps the
+  legacy mapping as a fallback, and leaves intentional-null metrics
+  unmeasured on purpose. It also now populates
+  `outcome_metric_name`/`outcome_metric_before`/`outcome_metric_after`, not
+  just `outcome_status`. Candidate selection is paginated and
+  pre-filtered to measurable rows (`FETCH_PAGE_SIZE`/`MAX_FETCH_PAGES`) so a
+  page of permanently-unmeasurable rows can't starve the per-tick backfill
+  budget — same pattern as the `causality-attribute` cron.
+- **Learned personalization of v2 alert thresholds is wired but flagged off**
+  (2026-09-22, `agent/coachhelm-learning-cleanup`): `BehaviorLearner`'s
+  `getLearnedPreferences()`/`getPersonalizedThreshold` are now consulted in
+  `orchestrator.ts`'s `generateAlerts()`, but only applied to
+  `philosophy.declineThreshold`/`pressureGapThreshold` when the
+  `coachhelm_learned_personalization` feature flag (default OFF in every
+  environment, see `config/feature-flags.yml`) is on. With the flag off the
+  computed thresholds are shadow-logged
+  (`coachhelm.learned_personalization.shadow`) instead of applied, so alert
+  generation is unchanged until an owner turns the flag on with evidence to
+  support it. Also fixed upstream: `'feedback'`-type interactions (from
+  `rateInsight`) are now correctly bucketed into `BehaviorLearner`'s
+  ack/dismiss counts, and `rateInsightImpl` now records a real `insight_type`
+  in interaction metadata so per-type bucketing works.
+- **v2 coach-alert family (bubble_player, pattern_detected, streak,
+  surge_player, plateau, tournament_pressure, closing_holes, par_3_issues,
+  recurring_weakness, team_trend, scoring_decline) is still live-written,
+  100% dark on read** — no v3 successor exists yet, `engine_version` is
+  never stamped `v3` for these, so `applyInsightVisibility` excludes them
+  from every coach/player surface. Planned retirement PR (sequenced after
+  `agent/coachhelm-outcomes` lands on main) not yet done as of 2026-09-22.
 
 ## Tests To Prefer
 

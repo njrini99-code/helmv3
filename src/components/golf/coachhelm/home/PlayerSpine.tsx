@@ -23,6 +23,7 @@
 import Link from 'next/link';
 import { Spine } from '@/components/fairway/modules';
 import type { PriorityItem, StandingTrackProps } from '@/components/fairway/modules';
+import { cn } from '@/lib/utils';
 
 export interface PlayerSpineProps {
   hero: { value: string; unit?: string };
@@ -31,12 +32,14 @@ export interface PlayerSpineProps {
   priorities: PriorityItem[];
   ledger: Array<{ label: string; value: string }>;
   className?: string;
+  /** Additional classes for the compact mobile summary only. */
+  mobileClassName?: string;
 }
 
-export function PlayerSpine({ hero, verdict, track, priorities, ledger, className }: PlayerSpineProps) {
+export function PlayerSpine({ hero, verdict, track, priorities, ledger, className, mobileClassName }: PlayerSpineProps) {
   return (
     <>
-      <aside className="overflow-clip rounded-fw-lg border border-accent-700 bg-gradient-to-r from-accent-900 to-accent-800 p-4 text-text-on-accent [box-shadow:var(--fw-shadow-card)] min-[940px]:hidden">
+      <aside className={cn('overflow-clip rounded-fw-lg border border-accent-700 bg-gradient-to-r from-accent-900 to-accent-800 p-4 text-text-on-accent [box-shadow:var(--fw-shadow-card)] min-[940px]:hidden', mobileClassName)}>
         <div className="flex min-w-0 items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
             <p className="font-fw-display text-eyebrow uppercase tracking-[0.13em] text-accent-300">CoachHelm AI</p>
@@ -46,7 +49,7 @@ export function PlayerSpine({ hero, verdict, track, priorities, ledger, classNam
             </p>
             <p className="mt-2 line-clamp-2 font-fw-sans text-caption leading-relaxed text-ink-on-deep">{verdict}</p>
           </div>
-          <Link href="/golf/dashboard/rounds/new" className="shrink-0 rounded-full border border-white/25 px-3 py-2 text-caption font-semibold text-text-on-accent transition-opacity duration-150 hover:opacity-80">
+          <Link href="/golf/dashboard/rounds/new" className="inline-flex min-h-11 shrink-0 items-center rounded-full border border-white/25 px-3 py-2 text-caption font-semibold text-text-on-accent transition-opacity duration-150 hover:opacity-80">
             Log round
           </Link>
         </div>

@@ -1,0 +1,15 @@
+import { chromium } from '@playwright/test';
+import dotenv from 'dotenv'; dotenv.config({ path: '/Users/ricknini/worktrees/helmv3/calendar-makeover/.env.local' });
+const b = await chromium.launch();
+const ctx = await b.newContext({ viewport: { width: 1280, height: 860 }, baseURL: 'http://localhost:3013' });
+const p = await ctx.newPage();
+await p.goto('/golf/login');
+await p.locator('#golf-signin-email').fill(process.env.GOLFHELM_COACH_EMAIL); await p.locator('#golf-signin-password').fill(process.env.GOLFHELM_COACH_PASSWORD);
+await p.getByRole('button', { name: 'Sign in' }).click();
+await p.waitForURL(u => u.pathname.startsWith('/golf/') && !u.pathname.endsWith('/login'), { timeout: 60000 });
+await p.goto('/golf/dashboard/calendar');
+await p.getByRole('heading', { level: 1 }).first().waitFor({ timeout: 30000 });
+await p.waitForTimeout(1200);
+await p.screenshot({ path: 'docs/reviews/calendar-mobile-review/captures-v2/coach/desktop-1280.png' });
+console.log('arrows visible:', await p.getByRole('button', { name: 'Next month' }).isVisible(), 'new event visible:', await p.getByRole('button', { name: 'New event' }).filter({ visible: true }).count());
+await b.close();

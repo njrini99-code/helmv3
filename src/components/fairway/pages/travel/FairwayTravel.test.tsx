@@ -94,6 +94,37 @@ function makeItinerary(id: string, overrides: Partial<TravelItinerary> = {}): Tr
 }
 
 describe('FairwayTravel — #173 orphaned detail pane', () => {
+  it('scrolls the selected detail into view after a normal mobile selection', async () => {
+    const originalWidth = window.innerWidth;
+    const originalScrollIntoView = HTMLElement.prototype.scrollIntoView;
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 });
+    HTMLElement.prototype.scrollIntoView = scrollIntoView;
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      callback(0);
+      return 0;
+    });
+
+    try {
+      render(
+        <FairwayTravel
+          itineraries={[makeItinerary('a'), makeItinerary('b'), makeItinerary('c')]}
+          coachId="coach-1"
+          teamId="team-1"
+          isCoach={false}
+          nowISO="2026-07-01"
+        />,
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: /Trip b/ }));
+
+      await waitFor(() => expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' }));
+    } finally {
+      Object.defineProperty(window, 'innerWidth', { configurable: true, value: originalWidth });
+      HTMLElement.prototype.scrollIntoView = originalScrollIntoView;
+    }
+  });
+
   it('never stretches the detail column to the (possibly long) list column height on desktop', () => {
     const itineraries = Array.from({ length: 8 }, (_, i) => makeItinerary(String(i)));
 

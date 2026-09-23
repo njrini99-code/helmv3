@@ -18,13 +18,13 @@ function node(overrides: Partial<ConstellationNode> = {}): ConstellationNode {
 
 describe('FeatureConstellationGrid', () => {
   it('renders one card per node with its posture', () => {
-    render(<FeatureConstellationGrid view={{ nodes: [node()], edges: [], edgeSource: 'none' }} selectedKey={null} />);
+    render(<FeatureConstellationGrid view={{ nodes: [node()], edges: [], edgeSource: 'none' }} selectedKey={null} hrefForKey={(k) => `/admin/errors?view=sources&feature=${k}`} />);
     expect(screen.getByText('Round Tracking')).toBeInTheDocument();
     expect(screen.getByText('green')).toBeInTheDocument();
   });
 
   it('renders an honest empty state, never a blank grid', () => {
-    render(<FeatureConstellationGrid view={{ nodes: [], edges: [], edgeSource: 'none' }} selectedKey={null} />);
+    render(<FeatureConstellationGrid view={{ nodes: [], edges: [], edgeSource: 'none' }} selectedKey={null} hrefForKey={(k) => `/admin/errors?view=sources&feature=${k}`} />);
     expect(screen.getByText(/No feature health data available/i)).toBeInTheDocument();
   });
 
@@ -36,14 +36,14 @@ describe('FeatureConstellationGrid', () => {
           edges: [{ source: 'round_tracking' as never, target: 'stats' as never, sharedTable: 'golf_rounds' }],
           edgeSource: 'shared-table',
         }}
-        selectedKey={null}
+        selectedKey={null} hrefForKey={(k) => `/admin/errors?view=sources&feature=${k}`}
       />,
     );
     expect(screen.getAllByText(/shares golf_rounds with/i)).toHaveLength(2);
   });
 
   it('never fabricates an edge note when edgeSource is none', () => {
-    render(<FeatureConstellationGrid view={{ nodes: [node()], edges: [], edgeSource: 'none' }} selectedKey={null} />);
+    render(<FeatureConstellationGrid view={{ nodes: [node()], edges: [], edgeSource: 'none' }} selectedKey={null} hrefForKey={(k) => `/admin/errors?view=sources&feature=${k}`} />);
     expect(screen.getByText(/No feature currently shares/i)).toBeInTheDocument();
   });
 
@@ -51,7 +51,7 @@ describe('FeatureConstellationGrid', () => {
     render(
       <FeatureConstellationGrid
         view={{ nodes: [node({ signalVolume: 0 })], edges: [], edgeSource: 'none' }}
-        selectedKey={null}
+        selectedKey={null} hrefForKey={(k) => `/admin/errors?view=sources&feature=${k}`}
       />,
     );
     expect(screen.getByText('0')).toBeInTheDocument();

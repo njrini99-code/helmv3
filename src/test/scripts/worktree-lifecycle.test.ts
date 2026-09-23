@@ -803,6 +803,50 @@ describe('the CLI, against real worktrees', () => {
 
     run(['--gc-branches']);
     expect(git(['branch', '--list', 'agent/w6'], canonical)).not.toContain('agent/w6');
+    expect(git(['rev-parse', '--verify', 'refs/tags/archive/agent/w6^{}'], canonical)).toBe(sha);
+  });
+
+  it('--gc-branches preserves a branch when its archive tag conflicts', () => {
+    git(['branch', 'agent/w6-conflict', 'main'], canonical);
+    const sha = git(['rev-parse', 'agent/w6-conflict'], canonical);
+    commit(canonical, 'archive-conflict-tip');
+    const otherSha = git(['rev-parse', 'HEAD'], canonical);
+    expect(otherSha).not.toBe(sha);
+    git(['tag', '-a', 'archive/agent/w6-conflict', otherSha, '-m', 'existing archive'], canonical);
+    writePrStub({ 'agent/w6-conflict': `904 MERGED ${sha}` });
+
+    const out = run(['--gc-branches']);
+    expect(git(['branch', '--list', 'agent/w6-conflict'], canonical)).toContain('agent/w6-conflict');
+    expect(out).toMatch(/archive\/agent\/w6-conflict already points/);
+  });
+
+  it('--gc-branches preserves a branch when its archive tag cannot be created', () => {
+    git(['branch', 'agent/w6-tag-failure', 'main'], canonical);
+    const sha = git(['rev-parse', 'agent/w6-tag-failure'], canonical);
+    // A tag at the archive namespace root prevents Git from creating any
+    // archive/<branch> child ref, exercising the create-failure veto.
+    git(['tag', '-a', 'archive', sha, '-m', 'archive namespace sentinel'], canonical);
+    writePrStub({ 'agent/w6-tag-failure': `905 MERGED ${sha}` });
+
+    const out = run(['--gc-branches']);
+    expect(git(['branch', '--list', 'agent/w6-tag-failure'], canonical)).toContain('agent/w6-tag-failure');
+    expect(out).toMatch(/could not create archive tag archive\/agent\/w6-tag-failure/);
+  });
+
+  it('--gc-branches archives and deletes a proven merged remote-only branch', () => {
+    const remote = join(tmp, 'origin.git');
+    mkdirSync(remote, { recursive: true });
+    git(['init', '-q', '--bare', '-b', 'main'], remote);
+    git(['remote', 'add', 'origin', remote], canonical);
+    git(['push', '-q', 'origin', 'main'], canonical);
+    const sha = git(['rev-parse', 'main'], canonical);
+    git(['push', '-q', 'origin', `main:refs/heads/feat/remote-retire`], canonical);
+    git(['fetch', '-q', 'origin'], canonical);
+    writePrStub({ 'feat/remote-retire': `4244 MERGED ${sha}` });
+
+    run(['--gc-branches']);
+    expect(git(['rev-parse', '--verify', 'refs/tags/archive/feat/remote-retire^{}'], canonical)).toBe(sha);
+    expect(git(['ls-remote', '--heads', 'origin', 'feat/remote-retire'], canonical)).toBe('');
   });
 
   it('SENTINEL: a fixture run can never resolve back to the live Helm checkout', () => {

@@ -14,7 +14,7 @@
  * product-owned footer slot (Settings + Sign out).
  *
  * `peek={false}` — opens straight to content height (no half-detent drag);
- * `bg-elevated` opaque (no blur, §Performance floor); vaul owns focus-trap,
+ * Tinted glass chrome with a fixed blur; vaul owns focus-trap,
  * Esc-to-close, scrim-click-to-close, and focus-restore-to-trigger natively —
  * none of that is hand-rolled here (the retired AppShell drawer used to).
  *
@@ -24,7 +24,7 @@
  * no-op.
  * ========================================================================== */
 
-import { memo } from 'react';
+import { memo, useEffect, useState, type MouseEvent } from 'react';
 import { cn } from '@/lib/utils';
 import { IconChevronRight } from '@/components/icons';
 import { Sheet } from '@/components/fairway/overlays';
@@ -32,7 +32,7 @@ import { Avatar } from '@/components/fairway/controls/avatar';
 import { selectOverflow, matchActive } from './more-nav';
 import type { NavItem, NavSection, ShellLinkComponent, ShellUser } from './types';
 
-const DefaultLink: ShellLinkComponent = ({ href, children, ...rest }) => (
+const DefaultLink: ShellLinkComponent = ({ href, children, prefetch: _prefetch, ...rest }) => (
   <a href={href} {...rest}>
     {children}
   </a>
@@ -81,13 +81,15 @@ interface OverflowRowProps {
   item: NavItem;
   active: boolean;
   Link: ShellLinkComponent;
+  prefetch: boolean;
 }
 
-function OverflowRow({ item, active, Link }: OverflowRowProps) {
+function OverflowRow({ item, active, Link, prefetch }: OverflowRowProps) {
   const Icon = item.icon;
   return (
     <Link
       href={item.href}
+      prefetch={prefetch}
       aria-current={active ? 'page' : undefined}
       className={cn(
         // #177: `w-full overflow-hidden` — the row must never measure wider
@@ -95,8 +97,8 @@ function OverflowRow({ item, active, Link }: OverflowRowProps) {
         // than expected before `truncate` can clip it). `min-w-0` lets the
         // flex child below actually shrink instead of pushing the row wide.
         'flex w-full min-h-[56px] min-w-0 items-center gap-3 overflow-hidden rounded-fw-md px-4 py-2',
-        'transition-colors [transition-duration:var(--fw-dur-fast)] motion-reduce:transition-none',
-        active ? 'bg-surface-sunken text-accent-700' : 'text-text-secondary hover:bg-surface-sunken/60',
+        'transition-[background-color,transform] [transition-duration:var(--fw-dur-fast)] motion-safe:active:scale-[0.98] motion-reduce:transition-none',
+        active ? 'bg-accent-100 text-accent-700' : 'text-text-secondary hover:bg-surface-sunken/60',
       )}
     >
       <span
@@ -154,23 +156,37 @@ export const MoreNavSheet = memo(function MoreNavSheet({
 }: MoreNavSheetProps) {
   const Link = linkComponent ?? DefaultLink;
   const overflow = selectOverflow(sections, excludeHrefs);
+  const [prefetchReady, setPrefetchReady] = useState(false);
+  useEffect(() => { if (!open) setPrefetchReady(false); }, [open]);
+
+  const closeForNavigation = (event: MouseEvent<HTMLDivElement>) => {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    const link = event.target instanceof Element ? event.target.closest('a[href]') : null;
+    if (!(link instanceof HTMLAnchorElement) || link.target === '_blank' || link.hasAttribute('download')) return;
+    if (link.origin === window.location.origin) onOpenChange(false);
+  };
 
   return (
     <Sheet
+      data-slot="more-nav-sheet"
+      onAnimationEnd={(event) => {
+        if (event.target === event.currentTarget && open) setPrefetchReady(true);
+      }}
       open={open}
       onOpenChange={onOpenChange}
       side="bottom"
       peek={false}
       title={title}
       hideTitle
-      className={sheetClassName}
+      className={cn('fw-glass-chrome', sheetClassName)}
     >
-      <Sheet.Body>
+      <Sheet.Body onClick={closeForNavigation}>
         {header}
 
         {user ? (
           <Link
             href={settingsHref}
+            prefetch={open && prefetchReady}
             className={cn(
               // #178: explicit 44px floor (WCAG 2.2 AA 2.5.8) — the row's
               // rendered height happens to clear it today (Avatar `md` +
@@ -224,6 +240,7 @@ export const MoreNavSheet = memo(function MoreNavSheet({
                     (item.activeMatch && pathname ? item.activeMatch(pathname) : matchActive(item.href, pathname))
                   }
                   Link={Link}
+                  prefetch={open && prefetchReady}
                 />
               ))}
             </div>
@@ -232,7 +249,7 @@ export const MoreNavSheet = memo(function MoreNavSheet({
       </Sheet.Body>
 
       {footer ? (
-        <Sheet.Footer className="flex-row items-center justify-between sm:justify-between">{footer}</Sheet.Footer>
+        <Sheet.Footer onClick={closeForNavigation} className="flex-row items-center justify-between sm:justify-between">{footer}</Sheet.Footer>
       ) : null}
     </Sheet>
   );

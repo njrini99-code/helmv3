@@ -1,6 +1,6 @@
 'use client';
 
-import { startTransition, useState, useCallback, useRef, useEffect } from 'react';
+import { startTransition, useState, useCallback, useRef, useEffect, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import type { HoleStats, ShotRecord, RoundHole } from '@/lib/types/golf';
@@ -28,6 +28,7 @@ import {
   describeRoundWriteResult,
   isQualifierClosedError,
 } from '@/lib/golf/round-missing-recovery';
+import { isUnreadableWriteFailure } from '@/lib/golf/round-write-outcome';
 import { updateRoundType } from '@/app/golf/actions/round-type';
 
 import { useRoundStatusSync } from '@/hooks/golf/use-round-status-sync';
@@ -97,6 +98,7 @@ interface RoundSetupData {
 
 
 interface ContinueRoundClientProps {
+  roundTypeEditor?: ReactNode;
   roundId: string;
   playerId: string;
   setupData: RoundSetupData;
@@ -114,6 +116,7 @@ interface ContinueRoundClientProps {
 }
 
 export default function ContinueRoundClient({
+  roundTypeEditor,
   roundId: routeRoundId,
   playerId,
   setupData,
@@ -220,17 +223,24 @@ export default function ContinueRoundClient({
   // Mirrors roundConflictBlockedRef for rendering — a ref change alone does
   // not trigger a re-render, so the blocked banner needs this to appear.
   const [roundConflictBlocked, setRoundConflictBlocked] = useState(false);
-  // B9: true from the moment a background beacon save (sendBeacon/keepalive
-  // fetch on pagehide/visibilitychange-hidden) is queued until the next
-  // status check resolves it. A beacon has NO readable response — the
-  // browser guarantees delivery, not a callback — so its own successful
-  // write advances the server's `updated_at` with no way for this client to
-  // learn the new value. Without this flag, the very next poll or save
-  // would see that self-caused mismatch as proof of a genuine multi-device
-  // conflict and permanently block writing, on a single device, every time
-  // the phone locks mid-round. Treat exactly the next apparent staleness
-  // after a pending beacon as self-caused and adopt it instead of blocking.
-  const pendingBeaconRef = useRef(false);
+  // B9: true while a write this device issued has an outcome it could not
+  // read — a background beacon (no response by design) or a foreground save
+  // the browser killed mid-flight (iOS "Load failed" on phone lock / app
+  // switch). Such a write bumps the server's `updated_at` without telling
+  // us the new value, so the next poll or save sees a mismatch that looks
+  // exactly like another device writing. The next apparent staleness after
+  // this is set is therefore this device's own write: the self-heal reads
+  // the server's CURRENT `updated_at` and adopts it, which is correct no
+  // matter how many unreadable writes landed in between. Cleared by that
+  // heal; set again by the next unreadable write. See
+  // src/lib/golf/round-write-outcome.ts for the full reasoning.
+  const pendingUnreadableWriteRef = useRef(false);
+  // One background beacon per hidden period: iOS fires BOTH
+  // `visibilitychange: hidden` and `pagehide` when the app is backgrounded,
+  // and the second beacon carries the same snapshot as the first — two
+  // landings would bump `updated_at` twice for one self-heal. Reset when
+  // the page is visible again.
+  const beaconSentWhileHiddenRef = useRef(false);
   // C1: set synchronously in `handleDeleteRound`, BEFORE the delete call —
   // the race is a checkpoint/auto-save already in flight for this SAME
   // round id whose `round_missing` response lands after the delete. The
@@ -335,29 +345,34 @@ export default function ContinueRoundClient({
    * `knownCurrentUpdatedAt` lets a caller that already fetched the server's
    * value (the status-sync poll) hand it straight through instead of this
    * function re-fetching it.
+   *
+   * Resolves `true` when the apparent conflict was this device's own
+   * unreadable write (or a concurrent path already resolved it) and the lock
+   * token now matches the server, so the caller may retry its write; `false`
+   * when the round is now blocked (or was redirected as completed).
    */
   const handleRoundSyncConflict = useCallback(async (
     fallbackMessage: string,
     knownCurrentUpdatedAt?: string | null,
-  ) => {
-    // B9: a background beacon has no readable response, so its own
-    // successful write is indistinguishable from a genuine multi-device
-    // conflict until this next check. Treat exactly one apparent conflict
-    // after a pending beacon as self-caused: adopt the value and resume
-    // normal saving, rather than escalating to a permanent write-block on a
-    // single device that simply had its phone lock.
-    if (pendingBeaconRef.current) {
-      pendingBeaconRef.current = false;
+  ): Promise<boolean> => {
+    // B9: a write this device issued but could not read the outcome of (a
+    // beacon, or a save the browser killed mid-flight) is indistinguishable
+    // from a genuine multi-device conflict until this next check. Treat the
+    // next apparent conflict after one as self-caused: adopt the value and
+    // resume normal saving, rather than escalating to a permanent
+    // write-block on a single device that simply had its phone lock.
+    if (pendingUnreadableWriteRef.current) {
+      pendingUnreadableWriteRef.current = false;
       if (knownCurrentUpdatedAt) {
         lastServerUpdatedAtRef.current = knownCurrentUpdatedAt;
-        return;
+        return true;
       }
       try {
         const stalenessResult = await checkRoundStaleness(roundId, lastServerUpdatedAtRef.current);
         if (stalenessResult.success) {
           if (stalenessResult.data.status === 'completed') {
             redirectToCompletedRound();
-            return;
+            return false;
           }
           if (stalenessResult.data.currentUpdatedAt) {
             lastServerUpdatedAtRef.current = stalenessResult.data.currentUpdatedAt;
@@ -367,7 +382,14 @@ export default function ContinueRoundClient({
         // Nothing more to do — a real write attempt will surface a fresh
         // conflict (and re-enter this function) if this guess was wrong.
       }
-      return;
+      return true;
+    }
+
+    // The poll and a save can both be in flight with the same old token and
+    // both observe the same self-caused mismatch; whichever resolves second
+    // finds the token already adopted. Not a conflict.
+    if (knownCurrentUpdatedAt && knownCurrentUpdatedAt === lastServerUpdatedAtRef.current) {
+      return true;
     }
 
     try {
@@ -381,14 +403,40 @@ export default function ContinueRoundClient({
       // (which re-fetches the full round fresh) may resume saving.
       if (stalenessResult.success && stalenessResult.data.status === 'completed') {
         redirectToCompletedRound();
-        return;
+        return false;
+      }
+      // Same race as above, seen from the save side: the token was adopted
+      // by a concurrent self-heal between this save's dispatch and its
+      // `conflict` answer, and the server now agrees with it.
+      if (stalenessResult.success && !stalenessResult.data.isStale) {
+        return true;
       }
     } catch {
       // Fall through to the generic conflict message below.
     }
 
     blockRoundForConflict(fallbackMessage);
+    return false;
   }, [blockRoundForConflict, redirectToCompletedRound, roundId]);
+
+  /**
+   * Every foreground `savePartialRound` goes through here so a call whose
+   * outcome the browser lost (killed fetch on phone lock — see
+   * round-write-outcome.ts) is recorded as a possibly-landed write under the
+   * current token, exactly like a beacon, instead of being mistaken for
+   * another device on the next check.
+   */
+  const savePartialRoundTracked = useCallback(async (
+    data: PartialRoundData,
+    targetRoundId: string | undefined,
+  ) => {
+    try {
+      return await savePartialRound(data, targetRoundId);
+    } catch (err) {
+      if (isUnreadableWriteFailure(err)) pendingUnreadableWriteRef.current = true;
+      throw err;
+    }
+  }, []);
 
   // Throttle auto-save warning to at most once per 60s to avoid toast spam
   const showAutoSaveWarning = useCallback(() => {
@@ -602,13 +650,20 @@ export default function ContinueRoundClient({
       });
 
       // 2. Best-effort async server save (may be killed by browser on mobile)
+      // B2: a device PROVEN behind must not write — and the beacon holds no
+      // lock token (see below), so this return is the only thing stopping it.
+      if (roundConflictBlockedRef.current) return;
+      // iOS fires visibilitychange-hidden AND pagehide for one backgrounding;
+      // the snapshot cannot change while hidden, so one beacon covers both.
+      if (beaconSentWhileHiddenRef.current) return;
+
       const inProgressArr = Object.entries(mergedInProgress)
         .filter(([, shots]) => shots.length > 0)
         .map(([idx, shots]) => ({
           holeNumber: holesSnapshot[Number(idx)]?.number ?? Number(idx) + 1,
           shots,
         }));
-      const saveData = {
+      const saveData: PartialRoundData = {
         courseName: setupData.courseName,
         courseCity: setupData.courseCity || undefined,
         courseState: setupData.courseState || undefined,
@@ -629,30 +684,45 @@ export default function ContinueRoundClient({
           par: hole.par,
           yardage: hole.yardage,
         })),
+        // Deliberately NO `expectedUpdatedAt`: a beacon has no reader, so a
+        // lock rejection would silently drop the last shots before a phone
+        // lock — the 2026-06-10 lost-round failure mode. The token this
+        // device holds is stale precisely after its own earlier unreadable
+        // write (until the next poll heals it), so a locked beacon would be
+        // refused exactly when it matters. A device PROVEN behind is kept
+        // from writing by the `roundConflictBlockedRef` return above.
       };
       // Unload-safe delivery — see new-round-client: a plain server-action fetch
       // is killed on page freeze, so sendBeacon guarantees the in-progress round
       // reaches the server and stays resumable.
       if (beaconPartialSave(saveData, roundId)) {
-        // B9: this write's response is unreadable — see pendingBeaconRef above.
-        pendingBeaconRef.current = true;
+        beaconSentWhileHiddenRef.current = true;
+        // B9: this write's response is unreadable — see pendingUnreadableWriteRef above.
+        pendingUnreadableWriteRef.current = true;
       }
     };
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
         handlePageHide();
+      } else {
+        beaconSentWhileHiddenRef.current = false;
       }
+    };
+    const handlePageShow = () => {
+      beaconSentWhileHiddenRef.current = false;
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
     document.addEventListener('visibilitychange', handleVisibilityChange);
     // pagehide fires on iOS when switching apps — more reliable than visibilitychange
     window.addEventListener('pagehide', handlePageHide);
+    window.addEventListener('pageshow', handlePageShow);
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('pagehide', handlePageHide);
+      window.removeEventListener('pageshow', handlePageShow);
     };
   }, [playerId, roundId, setupData]); // Only stable values — holes/stats/holeIndex read from refs
 
@@ -794,7 +864,12 @@ export default function ContinueRoundClient({
 
       serverSaveInProgressRef.current = true;
       try {
-        const result = await savePartialRound(saveData, liveRoundId());
+        // Always the LIVE token: `saveData` captured it at build time, and a
+        // self-healed conflict (below) or a recreate refreshes it mid-loop.
+        const result = await savePartialRoundTracked(
+          { ...saveData, expectedUpdatedAt: lastServerUpdatedAtRef.current },
+          liveRoundId(),
+        );
         if (result.success) {
           consecutiveSaveFailuresRef.current = 0;
           if (result.data.updatedAt) lastServerUpdatedAtRef.current = result.data.updatedAt;
@@ -802,7 +877,9 @@ export default function ContinueRoundClient({
           return true;
         }
         if (result.error === 'conflict') {
-          await handleRoundSyncConflict(ROUND_CONFLICT_RELOAD_MESSAGE);
+          // B9: our own unreadable write moved the row — the token is
+          // adopted, so re-send this same checkpoint under it.
+          if (await handleRoundSyncConflict(ROUND_CONFLICT_RELOAD_MESSAGE)) continue;
           return false;
         }
         if (isCompletedRoundError(result.error)) {
@@ -853,6 +930,7 @@ export default function ContinueRoundClient({
     recreateMissingRound,
     redirectToCompletedRound,
     roundId,
+    savePartialRoundTracked,
     showAutoSaveWarning,
   ]);
 
@@ -1098,7 +1176,7 @@ export default function ContinueRoundClient({
     serverSaveInProgressRef.current = true;
     try {
       const mergedInProgress = { ...inProgressShotsByHoleRef.current, [holeIndex]: shots };
-      const result = await savePartialRound(
+      const result = await savePartialRoundTracked(
         buildPartialRoundData(undefined, holeIndex, mergedInProgress),
         liveRoundId()
       );
@@ -1107,6 +1185,8 @@ export default function ContinueRoundClient({
         if (result.data.updatedAt) lastServerUpdatedAtRef.current = result.data.updatedAt;
         clearEmergencySaveThrough(roundId, playerId, emergencyTimestamp);
       } else if (result.error === 'conflict') {
+        // A self-healed conflict needs no retry here: the next auto-save
+        // tick re-sends the full state under the adopted token.
         void handleRoundSyncConflict(ROUND_CONFLICT_RELOAD_MESSAGE);
       } else if (result.error === 'busy' || result.error === 'retry') {
         // Single-flight skip — another save for this round holds the row
@@ -1156,7 +1236,7 @@ export default function ContinueRoundClient({
           serverSaveInProgressRef.current = true;
           try {
             const mergedPending = { ...inProgressShotsByHoleRef.current, [pending.holeIndex]: pending.shots };
-            const r = await savePartialRound(
+            const r = await savePartialRoundTracked(
               buildPartialRoundData(undefined, pending.holeIndex, mergedPending),
               liveRoundId()
             );
@@ -1194,6 +1274,7 @@ export default function ContinueRoundClient({
     recreateMissingRound,
     redirectToCompletedRound,
     roundId,
+    savePartialRoundTracked,
     setupData,
     showAutoSaveWarning,
   ]);
@@ -1255,21 +1336,27 @@ export default function ContinueRoundClient({
         try {
           const stalenessResult = await checkRoundStaleness(roundId, lastServerUpdatedAtRef.current);
           if (stalenessResult.success) {
-            if (stalenessResult.data.currentUpdatedAt) {
-              lastServerUpdatedAtRef.current = stalenessResult.data.currentUpdatedAt;
-            }
             if (stalenessResult.data.status === 'completed') {
               redirectToCompletedRound();
               return;
             }
+            // B2/B9: the same self-heal-or-block decision every other write
+            // uses. The token is adopted only when the mismatch was this
+            // device's own unreadable write; a genuine conflict blocks —
+            // never adopt first and bail second, which would let the next
+            // auto-save pass the lock with this device's stale scorecard.
             if (stalenessResult.data.isStale) {
-              setError(
-                'This round was modified on another device or browser tab. ' +
-                'Please reload the page to get the latest data before submitting.'
+              const healed = await handleRoundSyncConflict(
+                ROUND_CONFLICT_RELOAD_MESSAGE,
+                stalenessResult.data.currentUpdatedAt,
               );
-              isSubmittingRef.current = false;
-              setSubmitting(false);
-              return;
+              if (!healed) {
+                isSubmittingRef.current = false;
+                setSubmitting(false);
+                return;
+              }
+            } else if (stalenessResult.data.currentUpdatedAt) {
+              lastServerUpdatedAtRef.current = stalenessResult.data.currentUpdatedAt;
             }
           }
         } catch {
@@ -1418,14 +1505,23 @@ export default function ContinueRoundClient({
       return;
     }
     try {
-      let result = await savePartialRound(buildPartialRoundData(), roundId);
+      let result = await savePartialRoundTracked(buildPartialRoundData(), roundId);
 
       // 'busy' = an auto-save for this round is mid-flight server-side. This is
       // a user-initiated save, so don't fail it on a coalescing skip — wait for
       // the in-flight save to release the row and try once more.
       if (!result.success && (result.error === 'busy' || result.error === 'retry')) {
         await new Promise((resolve) => setTimeout(resolve, 1_500));
-        result = await savePartialRound(buildPartialRoundData(), roundId);
+        result = await savePartialRoundTracked(buildPartialRoundData(), roundId);
+      }
+
+      // B9: a self-healed conflict (our own unreadable write moved the row)
+      // adopts the token — re-send once under it. A genuine conflict blocks
+      // and returns below.
+      if (!result.success && result.error === 'conflict') {
+        if (await handleRoundSyncConflict(ROUND_CONFLICT_RELOAD_MESSAGE)) {
+          result = await savePartialRoundTracked(buildPartialRoundData(), roundId);
+        }
       }
 
       // A user-initiated save must not be the one that loses the round.
@@ -1433,7 +1529,7 @@ export default function ContinueRoundClient({
       // Exit and Discard are two buttons in the same exit dialog) — in that
       // case re-creating would resurrect it.
       if (!result.success && result.error === 'round_missing' && !roundDiscardedRef.current) {
-        result = await savePartialRound(buildPartialRoundData(), undefined);
+        result = await savePartialRoundTracked(buildPartialRoundData(), undefined);
       }
 
       if (!result.success) {
@@ -1516,7 +1612,7 @@ export default function ContinueRoundClient({
       {/* Compact resume context. The scorecard owns live hole navigation, so this
           header stays focused on the course and durable progress rather than
           repeating a stale “starting hole” utility row. */}
-      <div className={fairwayScope('bg-surface border-b border-border-subtle px-4 py-3')}>
+      <header data-testid="continue-round-context" className={fairwayScope('bg-surface border-b border-border-subtle px-4 pb-3 pt-[calc(env(safe-area-inset-top,0px)+0.75rem)]')}>
         <div className="max-w-[720px] mx-auto flex items-center gap-3">
           <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-fw-md bg-accent-50 text-accent-700 ring-1 ring-accent-200">
             <svg className="h-5 w-5 text-accent-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -1536,7 +1632,10 @@ export default function ContinueRoundClient({
             <p className="font-fw-sans text-microbadge uppercase tracking-wide text-text-tertiary">saved</p>
           </div>
         </div>
-      </div>
+        {roundTypeEditor && (
+          <div className="max-w-[720px] mx-auto mt-2">{roundTypeEditor}</div>
+        )}
+      </header>
 
       {/* Error Display — Fairway danger tokens. A conflict block additionally
           gets a Reload control: "reload to continue" must name a dead end
@@ -1589,26 +1688,25 @@ export default function ContinueRoundClient({
         />
       </div>
 
-      {/* Submit banner — shown when all holes are done but finish confirm was dismissed.
-          An on-dark "cockpit" band on Fairway tokens so it reads as one surface
-          with the warm-black scorecard band. */}
-      {pendingFinalStats && !showFinishConfirm && !submitting && (
-        <div className={fairwayScope('on-dark sticky top-[var(--golf-mobile-header-offset)] z-20 bg-nav-bg px-4 py-3 text-nav-text lg:top-[49px] flex items-center justify-between gap-3')}>
-          <p className="font-fw-sans text-body-sm font-medium text-nav-text">All holes completed — ready to submit!</p>
-          <FwButton
-            variant="primary"
-            size="sm"
-            onClick={() => setShowFinishConfirm(true)}
-            className="flex-shrink-0"
-          >
-            Submit Round
-          </FwButton>
-        </div>
-      )}
-
       {/* Shot Tracking — presentation only, no mutation/autosave logic moves. */}
       <div className={fairwayScope('min-h-full bg-canvas')}>
         <FairwayShotTracking
+          safeAreaHandledAbove
+          statusSlot={
+            pendingFinalStats && !showFinishConfirm && !submitting && (
+              <div className={fairwayScope('on-dark bg-nav-bg px-4 py-3 text-nav-text flex items-center justify-between gap-3')}>
+                <p className="font-fw-sans text-body-sm font-medium text-nav-text">All holes completed — ready to submit!</p>
+                <FwButton
+                  variant="primary"
+                  size="sm"
+                  onClick={() => setShowFinishConfirm(true)}
+                  className="flex-shrink-0"
+                >
+                  Submit Round
+                </FwButton>
+              </div>
+            )
+          }
           holes={holes}
           currentHoleIndex={currentHoleIndex}
           onHoleComplete={handleHoleComplete}

@@ -62,6 +62,26 @@ export const fwPress =
   'active:translate-y-[0.5px] active:scale-[0.98] active:[transition-timing-function:var(--fw-ease-spring)] ' +
   'motion-reduce:active:translate-y-0 motion-reduce:active:scale-100';
 
+/**
+ * The press response for LARGE surfaces — a bento cell, a signal row, a
+ * filmstrip column, a whole card.
+ *
+ * Deliberately NOT `fwPress`. That curve is tuned for a control you can span
+ * with a thumb: 0.98 on a 44px pill travels ~0.9px and reads as a crisp key.
+ * The same 0.98 across a 360px-wide card travels 4px per edge and reads as a
+ * wobble — the surface appears to shrink away from the finger rather than take
+ * its weight. So the scale is gentler and the shadow does the work instead:
+ * the surface settles from its resting elevation onto the page, which is what
+ * "pressed" looks like physically.
+ *
+ * Paired with `hoverOnlyWhenSupported` (tailwind.config.ts), touch devices see
+ * only this and never a stuck hover lift.
+ */
+export const fwPressSurface =
+  'active:scale-[0.994] active:shadow-flat active:brightness-[0.985] ' +
+  'active:[transition-duration:110ms] active:[transition-timing-function:var(--fw-ease-spring)] ' +
+  'motion-reduce:active:scale-100 motion-reduce:active:brightness-100';
+
 /** Status families shared by StatusPill / Badge / FilterPill semantics. */
 export type FwStatusTone =
   | 'neutral'

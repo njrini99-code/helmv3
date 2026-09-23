@@ -114,7 +114,10 @@ export function lieFromShotResult(shot: ShotRecord): LieType {
     case 'fairway': return 'fairway';
     case 'rough': return 'rough';
     case 'sand': return 'sand';
-    case 'penalty': return (shot.lieBefore as Exclude<LieType, 'tee'>) || 'other';
+    // A penalty row's lieBefore is where the ball is played from next: the
+    // drop for water/unplayable, the tee again after OB/lost (stroke and
+    // distance) — see buildPenaltyShot.
+    case 'penalty': return shot.lieBefore || 'other';
     default: return 'other';
   }
 }

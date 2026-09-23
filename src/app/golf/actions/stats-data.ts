@@ -42,6 +42,7 @@ import type {
   SprayChartShotGroup,
   SprayChartSummaryBand,
   SprayChartOutcomeBucket,
+  StatsRoundScope,
 } from './stats-data-types';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
@@ -865,6 +866,19 @@ export async function getStatsSummary(
 // last-N anyway).
 const DETAILED_STATS_MAX_ROUNDS = 100;
 
+/**
+ * Server actions are directly callable, so a multi-round scope cannot trust
+ * the browser to keep its selection modest. The UI prevents selecting more
+ * than this same bound; this guard keeps direct action calls from expanding a
+ * shot query beyond the detailed-stats performance budget.
+ */
+function explicitRoundIds(scope?: StatsRoundScope): string[] | null {
+  if (scope == null || scope === 'overall') return null;
+  const raw = Array.isArray(scope) ? scope : [scope];
+  return Array.from(new Set(raw.filter((id): id is string => typeof id === 'string' && id.length > 0)))
+    .slice(0, DETAILED_STATS_MAX_ROUNDS);
+}
+
 function presetLimitCount(filter?: StatsFilter): number | null {
   switch (filter?.preset) {
     case 'last5':
@@ -881,7 +895,7 @@ function presetLimitCount(filter?: StatsFilter): number | null {
 async function queryDetailedStatsWithClient(
   supabase: Awaited<ReturnType<typeof createClient>>,
   playerId: string,
-  roundId?: string | 'overall',
+  roundId?: StatsRoundScope,
   filter?: StatsFilter,
   // When the user-scoped shot query trips the 8s statement_timeout (the per-row
   // golf_shots RLS policies — is_golf_team_coach() etc. — make a coach reading a
@@ -894,6 +908,8 @@ async function queryDetailedStatsWithClient(
   allowAdminRetry: boolean = true,
 ): Promise<GolfStats> {
   const conditions = getFilterConditions(filter);
+  const requestedRoundIds = explicitRoundIds(roundId);
+  if (requestedRoundIds?.length === 0) return calculateStatsFromShots([], [], []);
 
   let query = supabase
     .from('golf_rounds')
@@ -918,6 +934,7 @@ async function queryDetailedStatsWithClient(
   if (conditions.endDate) query = query.lte('round_date', conditions.endDate);
   query = applyRoundTypeFilter(query, conditions.roundType);
   if (conditions.courseName) query = query.eq('course_name', conditions.courseName);
+  if (requestedRoundIds) query = query.in('id', requestedRoundIds);
   query = query.order('round_date', { ascending: false });
 
   // Push the preset limit into SQL — previously we fetched every completed
@@ -934,7 +951,7 @@ async function queryDetailedStatsWithClient(
   // the extra hop off the critical path. We only do this when no preset is
   // active — preset caps are explicit user requests, not silent truncation.
   let totalCountForFilter: number | null = null;
-  if (presetLimit === null) {
+  if (presetLimit === null && !requestedRoundIds) {
     let countQuery = supabase
       .from('golf_rounds')
       .select('id', { count: 'exact', head: true })
@@ -961,21 +978,25 @@ async function queryDetailedStatsWithClient(
     return calculateStatsFromShots([], [], []);
   }
 
-  const roundsData = applyPresetLimit(fetchedRounds || [], filter);
+  const fetchedRoundRows = applyPresetLimit(fetchedRounds || [], filter);
+  // The database query above already scopes IDs, but retain this in-process
+  // allow-list. It protects the downstream holes/shots reads if a mock,
+  // proxy, or future query refactor returns more rows than requested.
+  const roundsData = requestedRoundIds
+    ? fetchedRoundRows.filter((round) => requestedRoundIds.includes(round.id))
+    : fetchedRoundRows;
   if (roundsData.length === 0) return calculateStatsFromShots([], [], []);
 
   // Truncation flag: only meaningful for non-preset queries. We compare the
   // unfiltered match count against the hard cap. If we couldn't get an exact
   // count (rare — query error), fall back to the cap-equality heuristic.
-  const truncated = presetLimit === null
+  const truncated = !requestedRoundIds && presetLimit === null
     ? (totalCountForFilter !== null
         ? totalCountForFilter > DETAILED_STATS_MAX_ROUNDS
         : roundsData.length >= DETAILED_STATS_MAX_ROUNDS)
     : false;
 
-  const roundIds = roundId && roundId !== 'overall'
-    ? [roundId]
-    : roundsData.map(r => r.id);
+  const roundIds = roundsData.map(r => r.id);
 
   try {
     const [{ data: holesData, error: holesError }, { data: shotsData, error: shotsError }] = await Promise.all([
@@ -1023,11 +1044,7 @@ async function queryDetailedStatsWithClient(
     if (holesError) throw holesError;
     if (shotsError) throw shotsError;
 
-    const filteredRoundsData = roundId && roundId !== 'overall'
-      ? roundsData.filter(r => r.id === roundId)
-      : roundsData;
-
-    const roundsInfo: RoundInfo[] = filteredRoundsData.map(r => ({
+    const roundsInfo: RoundInfo[] = roundsData.map(r => ({
       id: r.id,
       round_date: r.round_date,
       course_name: r.course_name || 'Unknown Course',
@@ -1160,7 +1177,7 @@ async function queryDetailedStatsWithClient(
  */
 async function getDetailedStatsImpl(
   playerId: string,
-  roundId?: string | 'overall',
+  roundId?: StatsRoundScope,
   filter?: StatsFilter
 ): Promise<GolfStats> {
   try {
@@ -1199,7 +1216,7 @@ const observedGetDetailedStats = withAdminObserved(
 
 export async function getDetailedStats(
   playerId: string,
-  roundId?: string | 'overall',
+  roundId?: StatsRoundScope,
   filter?: StatsFilter
 ): Promise<GolfStats> {
   if (getStatsActionContext()?.requestedPlayerId === playerId) {
@@ -1226,7 +1243,7 @@ export async function getDetailedStats(
  */
 async function getDetailedStatsAsAdminImpl(
   playerId: string,
-  roundId?: string | 'overall',
+  roundId?: StatsRoundScope,
   filter?: StatsFilter,
 ): Promise<GolfStats> {
   try {
@@ -1259,7 +1276,7 @@ __registerGetDetailedStatsAsAdmin(observedGetDetailedStatsAsAdmin);
 
 async function getSprayChartDataImpl(
   playerId: string,
-  roundId?: string | 'overall',
+  roundId?: StatsRoundScope,
   filter?: StatsFilter
 ): Promise<SprayChartResponse> {
   const emptyGroup = (family: SprayChartShotFamily): SprayChartShotGroup => ({
@@ -1301,6 +1318,8 @@ async function getSprayChartDataImpl(
     }
 
     const conditions = getFilterConditions(filter);
+    const requestedRoundIds = explicitRoundIds(roundId);
+    if (requestedRoundIds?.length === 0) return emptyResponse();
     let query = supabase
       .from('golf_rounds')
       .select('id, round_date, course_name, round_type, total_score, score_to_par, holes_played')
@@ -1317,6 +1336,7 @@ async function getSprayChartDataImpl(
     if (conditions.courseName) {
       query = query.eq('course_name', conditions.courseName);
     }
+    if (requestedRoundIds) query = query.in('id', requestedRoundIds);
 
     query = query.order('round_date', { ascending: false });
 
@@ -1329,14 +1349,15 @@ async function getSprayChartDataImpl(
       return emptyResponse();
     }
 
-    const roundsData = applyPresetLimit(fetchedRounds || [], filter);
+    const fetchedRoundRows = applyPresetLimit(fetchedRounds || [], filter);
+    const roundsData = requestedRoundIds
+      ? fetchedRoundRows.filter((round) => requestedRoundIds.includes(round.id))
+      : fetchedRoundRows;
     if (roundsData.length === 0) {
       return emptyResponse();
     }
 
-    const roundIds = roundId && roundId !== 'overall'
-      ? [roundId]
-      : roundsData.map((round) => round.id);
+    const roundIds = roundsData.map((round) => round.id);
 
     const [{ data: holesData, error: holesError }, { data: shotsData, error: shotsError }] = await Promise.all([
       fetchAllRowsResult((from, to) => supabase
@@ -1494,16 +1515,12 @@ async function getSprayChartDataImpl(
       });
     }
 
-    const includedRounds = roundId && roundId !== 'overall'
-      ? roundsData.filter((round) => round.id === roundId).length
-      : roundsData.length;
-
     return {
       driving: buildSprayChartGroup('driving', drivingPoints, drivingTotalShots),
       approach: buildSprayChartGroup('approach', approachPoints, approachTotalShots),
       scope: {
         roundId: roundId ?? 'overall',
-        roundsIncluded: includedRounds,
+        roundsIncluded: roundsData.length,
         filterApplied: Boolean(filter),
       },
     };
@@ -1529,7 +1546,7 @@ const observedGetSprayChartData = withAdminObserved(
 
 export async function getSprayChartData(
   playerId: string,
-  roundId?: string | 'overall',
+  roundId?: StatsRoundScope,
   filter?: StatsFilter
 ): Promise<SprayChartResponse> {
   if (getStatsActionContext()?.requestedPlayerId === playerId) {
@@ -2266,7 +2283,16 @@ async function getPlayerRoundOptionsImpl(playerId: string): Promise<RoundOption[
 
     const { data, error } = await supabase
       .from('golf_rounds')
-      .select('id, round_date, course_name, total_score, round_type')
+      .select(`
+        id,
+        round_date,
+        course_name,
+        total_score,
+        round_type,
+        qualifier_id,
+        qualifier_round_number,
+        qualifier:golf_qualifiers(name)
+      `)
       .eq('player_id', playerId)
       .eq('status', 'completed')
       .order('round_date', { ascending: false })
@@ -2280,13 +2306,19 @@ async function getPlayerRoundOptionsImpl(playerId: string): Promise<RoundOption[
       return null;
     }
 
-    return (data ?? []).map((r) => ({
-      id: r.id,
-      date: r.round_date,
-      courseName: r.course_name,
-      totalScore: r.total_score,
-      roundType: r.round_type ? roundTypeFromDb(r.round_type) : null,
-    }));
+    return (data ?? []).map((r) => {
+      const qualifier = Array.isArray(r.qualifier) ? r.qualifier[0] : r.qualifier;
+      return {
+        id: r.id,
+        date: r.round_date,
+        courseName: r.course_name,
+        totalScore: r.total_score,
+        roundType: r.round_type ? roundTypeFromDb(r.round_type) : null,
+        qualifierId: r.qualifier_id ?? null,
+        qualifierName: qualifier?.name ?? null,
+        qualifierRoundNumber: r.qualifier_round_number ?? null,
+      };
+    });
   } catch (error) {
     await logServerError(
       `[Stats] getPlayerRoundOptions failed: ${describeError(error)}`,

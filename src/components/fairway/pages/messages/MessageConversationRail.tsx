@@ -42,10 +42,11 @@ import { Skeleton } from '@/components/fairway/feedback/Skeleton';
 import { Input } from '@/components/fairway/forms/Input';
 import { Button } from '@/components/fairway/controls/button';
 import { Avatar } from '@/components/fairway/controls/avatar';
+import { Segmented, TRACK_SUNKEN_SHADOW } from '@/components/fairway/controls/segmented';
 import { Badge } from '@/components/fairway/controls/badge';
 import { InstrumentPanel } from '@/components/fairway/instrument';
 import { useMediaQuery } from '@/hooks/use-media-query';
-import { isGroupConversation } from './conversation-kind';
+import { isGroupConversation, conversationDisplayName } from './conversation-kind';
 
 export interface MessageConversationRailProps {
   /** Rows from the unchanged useGolfConversations() hook. */
@@ -149,9 +150,7 @@ function ConversationRow({
   // rendered the group glyph instead of the person's initials. See
   // conversation-kind.ts.
   const isGroup = isGroupConversation(conv);
-  const displayName = isGroup
-    ? conv.title || 'Team Group'
-    : conv.other_participant?.name || 'Unknown User';
+  const displayName = conversationDisplayName(conv);
   const time = formatTime(conv.last_message?.created_at);
 
   return (
@@ -411,6 +410,7 @@ export function MessageConversationRail({
   // `surface-sunken` fill, so the two states did collapse visually.
   const activeId = isDesktop ? selectedId : null;
 
+  const [filter, setFilter] = React.useState<'all' | 'unread' | 'groups'>('all');
   const [searchQuery, setSearchQuery] = React.useState('');
   const [searchResults, setSearchResults] = React.useState<MessageSearchResult[]>([]);
   const [searchLoading, setSearchLoading] = React.useState(false);
@@ -460,7 +460,8 @@ export function MessageConversationRail({
   // disagreeing in the same card. The rail's panel header carries no count
   // of its own now; the masthead is the single source of truth for it.
 
-  if (loading) {
+  // Realtime read receipts refresh data without replacing the visible inbox.
+  if (loading && conversations.length === 0) {
     return (
       <InstrumentPanel
         depth="base"
@@ -549,46 +550,29 @@ export function MessageConversationRail({
 
   // TRIAGE: unread floats to top, then recency groups (each kept in the hook's
   // most-recent-first order within the bucket).
-  const unread = conversations.filter(c => c.unread_count > 0);
-  const read = conversations.filter(c => c.unread_count === 0);
+  const visibleConversations = conversations.filter(c => filter === 'all' || (filter === 'unread' ? c.unread_count > 0 : isGroupConversation(c)));
+  const unread = visibleConversations.filter(c => c.unread_count > 0);
+  const read = visibleConversations.filter(c => c.unread_count === 0);
   const grouped = groupConversationsByTime(read);
 
   return (
     <InstrumentPanel
       as="nav"
       depth="base"
-      // On a phone this rail IS the Messages screen, so its bezel is pure
-      // overhead: `padding="md"` costs 24px and the "Conversations" heading
-      // another ~46px (`text-h3` + the bezel's `mb-5`) before the search field,
-      // to label a full-screen list of conversations that sits under a top bar
-      // already reading "Messages". Doctrine Rule 2 — one line on phone, not a
-      // stack of bands. The page gutter supplies the horizontal inset, so the
-      // list runs edge-to-edge like a native inbox.
-      //
-      // `aria-label` below is unconditional, so dropping the VISIBLE heading
-      // costs assistive tech nothing — the nav landmark keeps its name either
-      // way.
-      //
-      // Gated in JS rather than CSS because `header` is a prop rendered inside
-      // the primitive, with no slot to target. This is the same
-      // `useMediaQuery` pattern AppShell uses to gate the desktop rail's mount:
-      // the hook's server snapshot is `false` (mobile-first, matching SSR) and
-      // it reads matchMedia synchronously on the first client render, so a
-      // desktop viewport corrects before paint rather than flashing.
-      padding={isDesktop ? 'md' : 'none'}
-      header={isDesktop ? 'Conversations' : undefined}
+      padding="none"
+
       aria-label="Conversations"
       className={cn(
         'flex flex-col',
         // Same reasoning as the thread pane: a card that fills the screen has
         // stopped being a card (Doctrine Rule 11). `!` is required because the
         // border comes from a CSS module class of equal specificity.
-        'max-md:!rounded-none max-md:!border-0 max-md:!shadow-none max-md:bg-transparent',
+        '!rounded-none !border-0 !shadow-none !bg-transparent',
         className,
       )}
     >
       {/* P259: cross-conversation message search. */}
-      <div className="mb-3">
+      <div className="mb-3 rounded-fw-sm bg-surface-sunken" style={{ boxShadow: TRACK_SUNKEN_SHADOW }}>
         <Input
           type="search"
           value={searchQuery}
@@ -596,9 +580,28 @@ export function MessageConversationRail({
           placeholder="Search messages…"
           leading={<Search aria-hidden />}
           aria-label="Search messages"
+          className="bg-transparent"
         />
       </div>
 
+      {!isSearching && (
+        <Segmented
+          aria-label="Conversation filter"
+          value={filter}
+          onValueChange={setFilter}
+          options={[{ value: 'all', label: 'All' }, { value: 'unread', label: 'Unread' }, { value: 'groups', label: 'Groups' }]}
+          size="lg"
+          fullWidth
+          className="fw-message-filters mb-4"
+        />
+      )}
+      {!isSearching && visibleConversations.length === 0 && (
+        <EmptyState variant="subtle" icon={Inbox}
+          title={filter === 'unread' ? 'You’re all caught up' : 'No group conversations'}
+          description={filter === 'unread' ? 'New messages will appear here.' : 'Your team conversations will appear here.'}
+          action={<Button variant="ghost" size="sm" onClick={() => setFilter('all')}>Show all messages</Button>}
+        />
+      )}
       {isSearching ? (
         // ── Search results view (replaces the triage list while searching) ──
         searchLoading ? (

@@ -12,13 +12,9 @@ const SUBNAV_TAB_WIDTH = 84;
  *
  * The fallback mirrors the live surface (FairwayPlayerStats → CoachHelmShell →
  * StatsSpineStage), so the skeleton matches the real content's tokens, width,
- * and shape — no two-stage flash, no layout shift. `FairwayPlayerStats` itself
- * wraps `CoachHelmShell` in its OWN `mx-auto max-w-[1200px] px-4 py-2 md:px-6`
- * box, and `CoachHelmShell` nests a SECOND pair of `mx-auto max-w-[1200px]`
- * containers inside that (masthead+subnav at `px-4 pt-2 md:px-6`, body at
- * `px-4 py-6 md:px-6`) — this fallback reproduces that exact two-level chain
- * (not a single flattened container), the persistent (now single-tab)
- * CoachHelmSubNav strip so it doesn't pop in once FairwayPlayerStats
+ * and shape. CoachHelmShell owns the one centered container and its gutters;
+ * the outer wrapper adds only vertical spacing. Keep the persistent subnav
+ * footprint stable until FairwayPlayerStats
  * hydrates, and the Spine & Stage `300px 1fr` two-block skeleton
  * StatsSpineStage renders for its own client-side loading state (see
  * StatsSpineStage.tsx, the `if (loading)` branch) so the route fallback and
@@ -27,7 +23,7 @@ const SUBNAV_TAB_WIDTH = 84;
 export default function Loading() {
   return (
     <div className={fairwayScope('min-h-full bg-canvas')}>
-      <div className="mx-auto w-full max-w-[1200px] px-4 py-2 md:px-6">
+      <div className="w-full py-2">
         <div
           className="flex w-full flex-col"
           role="status"

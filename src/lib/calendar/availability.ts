@@ -11,9 +11,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { GolfEvent, GolfPlayerClass } from '@/lib/types/golf';
 import { fetchAllRows } from '@/lib/supabase/fetch-all-rows';
-import { classIdFromDescription } from '@/lib/calendar/class-events';
+import { classIdFromDescription, isClassEvent } from '@/lib/calendar/class-events';
 import { parseSemesterDates } from '@/lib/golf/semester';
-import { wallClockInZone } from '@/lib/golf/timezone';
+import { todayIsoInZone, wallClockInZone } from '@/lib/golf/timezone';
+import { parseRecurrenceRule, type RecurrenceRule } from '@/lib/golf/recurrence';
 import { DEFAULT_TIMEZONE, getValidTimezone, eventDaySpan, zonedMidnight } from '@/lib/calendar/timezone';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
@@ -49,7 +50,7 @@ type TeamEventRow = Pick<
 
 type AttendanceEventRow = Pick<
   GolfEvent,
-  'id' | 'title' | 'start_time' | 'end_time' | 'all_day'
+  'id' | 'title' | 'start_time' | 'end_time' | 'all_day' | 'event_type' | 'description'
 >;
 
 interface AttendanceWithEvent {
@@ -143,6 +144,14 @@ interface CoachBlockedTimeRow {
   end_date: string | null;
   start_time: string | null;
   end_time: string | null;
+  all_day?: boolean | null;
+  is_recurring?: boolean | null;
+  recurrence_rule?: string | null;
+}
+
+interface AcademicExclusionRow {
+  start_date: string;
+  end_date: string;
 }
 
 // ============================================================================
@@ -228,16 +237,23 @@ export async function getUserBusyPeriodsWithStatus(
   // The conflict checker then says everyone is free and a coach schedules a
   // practice on top of an existing one.
   //
-  // A user who is genuinely neither is unaffected: `.maybeSingle()` reports
-  // that as { data: null, error: null }, which stays a trusted answer.
+  // A nonempty requested auth identity with no player or coach row is also
+  // incomplete: the caller asked for a schedule, but there is no profile from
+  // which to resolve teams, classes, or blocked time. Only an explicitly empty
+  // userId is treated as an intentionally absent identity.
   const identityError = playerResult.error ?? coachResult.error;
-  if (identityError) {
+  const identityMissing = Boolean(userId.trim()) && (!player && !coach);
+  const identityIncomplete = Boolean(userId.trim()) &&
+    (identityMissing || (player !== null && !player.user_id) || (coach !== null && !coach.user_id));
+  if (identityError || identityIncomplete) {
     identityPartial = true;
-    await logServerError(
-      `[availability] identity read failed for user ${userId}; busy periods will be reported as incomplete rather than free: ${describeError(identityError)}`,
-      { action: 'calendar.getUserBusyPeriods', featureArea: 'calendar' },
-      'warning',
-    );
+    if (identityError) {
+      await logServerError(
+        `[availability] identity read failed for user ${userId}; busy periods will be reported as incomplete rather than free: ${describeError(identityError)}`,
+        { action: 'calendar.getUserBusyPeriods', featureArea: 'calendar' },
+        'warning',
+      );
+    }
   }
 
   // Resolve every team this user belongs to. Multi-team coaches and
@@ -375,7 +391,7 @@ export async function getUserBusyPeriodsWithStatus(
           .from('golf_event_attendance')
           .select(`
             event_id,
-            event:golf_events!inner(id, title, start_time, end_time, all_day)
+            event:golf_events!inner(id, title, start_time, end_time, all_day, event_type, description)
           `)
           .eq('player_id', player.id)
           .eq('status', 'accepted')
@@ -397,17 +413,25 @@ export async function getUserBusyPeriodsWithStatus(
   const blockedTimesPromise = coach
     ? supabase
         .from('golf_coach_blocked_time')
-        .select('id, title, start_date, end_date, start_time, end_time')
+        .select('id, title, start_date, end_date, start_time, end_time, all_day, is_recurring, recurrence_rule')
         .eq('coach_id', coach.id)
-        .gte('end_date', dateMin)
-        .lte('start_date', dateMax)
     : Promise.resolve({ data: [] as CoachBlockedTimeRow[] });
 
-  const [teamEvents, attendanceRows, classesResult, blockedTimesResult] = await Promise.all([
+  const academicExclusionsPromise = player
+    ? supabase
+        .from('golf_academic_exclusions')
+        .select('start_date, end_date')
+        .eq('player_id', player.id)
+        .lte('start_date', dateMax)
+        .gte('end_date', dateMin)
+    : Promise.resolve({ data: [] as AcademicExclusionRow[] });
+
+  const [teamEvents, attendanceRows, classesResult, blockedTimesResult, academicExclusionsResult] = await Promise.all([
     teamEventsPromise,
     attendancesPromise,
     classesPromise,
     blockedTimesPromise,
+    academicExclusionsPromise,
   ]);
 
   // A class meeting is a PERSONAL commitment that happens to live on the team
@@ -456,6 +480,25 @@ export async function getUserBusyPeriodsWithStatus(
     for (const row of (ownedClasses ?? []) as { id: string }[]) ownedClassIds.add(row.id);
   }
 
+  const academicExclusionsError = 'error' in academicExclusionsResult
+    ? academicExclusionsResult.error
+    : null;
+  if (academicExclusionsError) {
+    partial = true;
+    await logServerError(
+      `[availability] academic-exclusion read failed; class busy time may be incomplete: ${describeError(academicExclusionsError)}`,
+      { action: 'calendar.getUserBusyPeriods', featureArea: 'calendar' },
+      'warning',
+    );
+  }
+  const academicExclusions = (academicExclusionsResult.data ?? []) as AcademicExclusionRow[];
+  const isClassDateExcluded = (date: Date): boolean => {
+    const dateKey = todayIsoInZone(getValidTimezone(classTimeZone), date);
+    return academicExclusions.some((exclusion) =>
+      dateKey >= exclusion.start_date && dateKey <= exclusion.end_date,
+    );
+  };
+
   // Process team events
   for (const event of realTeamEvents) {
     const interval = eventBusyInterval(event, classTimeZone);
@@ -493,6 +536,7 @@ export async function getUserBusyPeriodsWithStatus(
       // does not go through the helper.
       const interval = eventBusyInterval(event, classTimeZone);
       if (!interval || !overlapsWindow(interval, timeMin, timeMax)) continue;
+      if (isClassDateExcluded(interval.start)) continue;
 
       busyPeriods.push({
         start: interval.start,
@@ -511,6 +555,13 @@ export async function getUserBusyPeriodsWithStatus(
   for (const attendance of attendanceRows) {
     const event = firstEventOrNull(attendance.event);
     if (!event || existingEventIds.has(event.id)) continue;
+    // A class occurrence is its OWNER's commitment and is contributed above,
+    // typed 'class', only when this player owns it. An attendance row on a
+    // class row is not a commitment at all (respondToEvent refuses them; older
+    // rows may exist) — and pushing it here would relabel someone else's class
+    // as a plain 'event' with its real title, which is exactly how a class
+    // name reached a viewer with no class-detail access. Skip, never relabel.
+    if (isClassEvent(event)) continue;
 
     const interval = eventBusyInterval(event, classTimeZone);
     if (!interval || !overlapsWindow(interval, timeMin, timeMax)) continue;
@@ -542,7 +593,7 @@ export async function getUserBusyPeriodsWithStatus(
     for (const cls of classesResult.data as GolfPlayerClass[]) {
       if (classEventsByClassId.has(cls.id)) continue;
       const classInstances = expandRecurringClass(cls, timeMin, timeMax, classTimeZone);
-      busyPeriods.push(...classInstances);
+      busyPeriods.push(...classInstances.filter((instance) => !isClassDateExcluded(instance.start)));
     }
   }
 
@@ -558,25 +609,22 @@ export async function getUserBusyPeriodsWithStatus(
   }
   if (blockedTimesResult.data) {
     for (const blocked of blockedTimesResult.data as CoachBlockedTimeRow[]) {
-      const startDateTime = parseEventDateTime(blocked.start_date, blocked.start_time);
-      const endDateTime = parseEventDateTime(
-        blocked.end_date || blocked.start_date,
-        blocked.end_time || blocked.start_time
+      const occurrences = expandBlockedTime(
+        blocked,
+        timeMin,
+        timeMax,
+        classTimeZone,
+        coach!.user_id,
       );
-
-      busyPeriods.push({
-        start: startDateTime,
-        end: endDateTime,
-        type: 'blocked',
-        title: blocked.title || 'Blocked',
-        ownerId: coach!.user_id,
-        ownerType: 'coach',
-      });
+      busyPeriods.push(...occurrences);
     }
   }
 
-  // Sort by start time and merge overlapping periods
-  return { periods: mergeOverlappingPeriods(busyPeriods), partial };
+  // Sort only. Preserve each source interval and event id so conflict details
+  // can identify every overlapping commitment and exclude the edited event
+  // without accidentally removing a merged neighbour.
+  busyPeriods.sort((a, b) => a.start.getTime() - b.start.getTime());
+  return { periods: busyPeriods, partial };
 }
 
 /**
@@ -647,12 +695,17 @@ export async function findCommonAvailability(
   if (userIds.length === 0) return [];
 
   // 1. Get busy periods for all users
-  const allBusyPeriods = await Promise.all(
-    userIds.map(id => getUserBusyPeriods(id, dateRange.start, dateRange.end, supabase))
+  const busyResults = await Promise.all(
+    userIds.map(id => getUserBusyPeriodsWithStatus(id, dateRange.start, dateRange.end, supabase))
   );
 
+  // An empty list from a failed read is indistinguishable from a genuinely
+  // open calendar. Suggestions must be fail-closed rather than presenting a
+  // slot that was never checked for every participant.
+  if (busyResults.some((result) => result.partial)) return [];
+
   // 2. Merge all busy periods from all users
-  const mergedBusy = mergeOverlappingPeriods(allBusyPeriods.flat());
+  const mergedBusy = mergeOverlappingPeriods(busyResults.flatMap((result) => result.periods));
 
   // 3. Generate all possible time slots within working hours
   const slots = generateTimeSlots(dateRange, duration, workingHours, timeZone);
@@ -669,12 +722,151 @@ export async function findCommonAvailability(
  * Parse event date and time into a Date object
  * Handles cases where time might be null (all-day events)
  */
-function parseEventDateTime(date: string, time: string | null): Date {
-  if (!time) {
-    // All-day event - use start of day
-    return new Date(`${date}T00:00:00`);
+function parseEventDateTime(
+  date: string,
+  time: string | null,
+  timeZone: string | null | undefined,
+): Date {
+  return wallClockInZone(new Date(`${date}T00:00:00`), time || '00:00', timeZone);
+}
+
+const MAX_BLOCKED_RECURRENCE_DAYS = 50_000;
+
+function utcNoon(date: string): Date {
+  return new Date(`${date}T12:00:00Z`);
+}
+
+function utcDateKey(date: Date): string {
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
+}
+
+function addUtcMonths(date: Date, months: number): Date {
+  const targetMonth = date.getUTCMonth() + months;
+  const targetYear = date.getUTCFullYear() + Math.floor(targetMonth / 12);
+  const normalizedMonth = ((targetMonth % 12) + 12) % 12;
+  const lastDay = new Date(Date.UTC(targetYear, normalizedMonth + 1, 0)).getUTCDate();
+  return new Date(Date.UTC(targetYear, normalizedMonth, Math.min(date.getUTCDate(), lastDay), 12));
+}
+
+function occurrenceDatesInWindow(
+  startDate: string,
+  rule: RecurrenceRule,
+  minimumDate: string,
+  maximumDate: string,
+): string[] {
+  const start = utcNoon(startDate);
+  const minimum = utcNoon(minimumDate);
+  const maximum = utcNoon(maximumDate);
+  const until = rule.until ? utcNoon(rule.until) : null;
+  if (!Number.isFinite(+start) || !Number.isFinite(+minimum) || !Number.isFinite(+maximum)) return [];
+
+  const dates: string[] = [];
+  let generated = 0;
+  const collect = (candidate: Date): boolean => {
+    if (candidate > maximum || (until && candidate > until)) return false;
+    generated += 1;
+    if (rule.count !== undefined && generated > rule.count) return false;
+    if (candidate >= minimum) dates.push(utcDateKey(candidate));
+    return rule.count === undefined || generated < rule.count;
+  };
+
+  const weekdays = rule.weekdays && rule.weekdays.length > 0 && rule.frequency !== 'monthly'
+    ? new Set(rule.weekdays.filter((day) => day >= 0 && day <= 6))
+    : null;
+
+  if (weekdays && weekdays.size > 0) {
+    const anchor = new Date(start);
+    anchor.setUTCDate(anchor.getUTCDate() - anchor.getUTCDay());
+    const intervalWeeks = rule.frequency === 'biweekly'
+      ? 2
+      : rule.frequency === 'weekly' ? Math.max(1, rule.interval ?? 1) : 1;
+    const current = new Date(start);
+    for (let walked = 0; current <= maximum; walked += 1) {
+      if (walked > MAX_BLOCKED_RECURRENCE_DAYS) {
+        throw new Error('Blocked-time recurrence is too old to verify safely.');
+      }
+      if (until && current > until) break;
+      const weeksSinceAnchor = Math.floor((current.getTime() - anchor.getTime()) / (7 * 86_400_000));
+      if (weekdays.has(current.getUTCDay()) && weeksSinceAnchor % intervalWeeks === 0 && !collect(current)) break;
+      current.setUTCDate(current.getUTCDate() + 1);
+    }
+    return dates;
   }
-  return new Date(`${date}T${time}`);
+
+  let current = new Date(start);
+  for (let iterations = 0; current <= maximum; iterations += 1) {
+    if (iterations > MAX_BLOCKED_RECURRENCE_DAYS) {
+      throw new Error('Blocked-time recurrence is too old to verify safely.');
+    }
+    if (!collect(current)) break;
+    switch (rule.frequency) {
+      case 'daily':
+        current.setUTCDate(current.getUTCDate() + Math.max(1, rule.interval ?? 1));
+        break;
+      case 'weekly':
+        current.setUTCDate(current.getUTCDate() + 7 * Math.max(1, rule.interval ?? 1));
+        break;
+      case 'biweekly':
+        current.setUTCDate(current.getUTCDate() + 14);
+        break;
+      case 'monthly':
+        current = addUtcMonths(current, Math.max(1, rule.interval ?? 1));
+        break;
+    }
+  }
+  return dates;
+}
+
+function expandBlockedTime(
+  blocked: CoachBlockedTimeRow,
+  timeMin: Date,
+  timeMax: Date,
+  timeZone: string | null | undefined,
+  ownerId: string,
+): BusyPeriod[] {
+  const startDate = blocked.start_date;
+  const endDate = blocked.end_date || startDate;
+  const start = utcNoon(startDate);
+  const end = utcNoon(endDate);
+  const durationDays = Math.max(0, Math.round((end.getTime() - start.getTime()) / 86_400_000));
+  // `recurrence_rule` is the source of truth. Earlier write paths persisted
+  // the rule while leaving the redundant is_recurring flag at its false
+  // default, so trusting only that flag made those blocked periods disappear.
+  const rule = parseRecurrenceRule(blocked.recurrence_rule);
+  const zone = getValidTimezone(timeZone);
+  // Begin early enough to retain a multi-day block which starts before the
+  // requested window and still overlaps it. End on the requested local day.
+  const firstRelevant = utcNoon(todayIsoInZone(zone, timeMin));
+  firstRelevant.setUTCDate(firstRelevant.getUTCDate() - durationDays - 1);
+  const occurrenceDates = rule
+    ? occurrenceDatesInWindow(startDate, rule, utcDateKey(firstRelevant), todayIsoInZone(zone, timeMax))
+    : [startDate];
+  const periods: BusyPeriod[] = [];
+
+  for (const occurrenceDate of occurrenceDates) {
+    const allDay = Boolean(blocked.all_day || !blocked.start_time);
+    const occurrenceEndDate = utcNoon(occurrenceDate);
+    occurrenceEndDate.setUTCDate(occurrenceEndDate.getUTCDate() + durationDays + (allDay ? 1 : 0));
+    const occurrenceEndKey = utcDateKey(occurrenceEndDate);
+    const periodStart = parseEventDateTime(occurrenceDate, allDay ? null : blocked.start_time, zone);
+    const periodEnd = allDay
+      ? parseEventDateTime(occurrenceEndKey, null, zone)
+      : parseEventDateTime(occurrenceEndKey, blocked.end_time || blocked.start_time, zone);
+
+    if (periodStart < timeMax && periodEnd > timeMin) {
+      periods.push({
+        start: periodStart,
+        end: periodEnd,
+        type: 'blocked',
+        title: blocked.title || 'Blocked',
+        eventId: blocked.id,
+        ownerId,
+        ownerType: 'coach',
+      });
+    }
+  }
+
+  return periods;
 }
 
 /**
@@ -795,7 +987,8 @@ function mergeOverlappingPeriods(periods: BusyPeriod[]): BusyPeriod[] {
   // Sort by start time
   const sorted = [...periods].sort((a, b) => a.start.getTime() - b.start.getTime());
 
-  const merged: BusyPeriod[] = [sorted[0]!];
+  const first = sorted[0]!;
+  const merged: BusyPeriod[] = [{ ...first }];
 
   for (let i = 1; i < sorted.length; i++) {
     const current = sorted[i]!;
@@ -810,7 +1003,7 @@ function mergeOverlappingPeriods(periods: BusyPeriod[]): BusyPeriod[] {
       }
     } else {
       // Non-overlapping - add as new period
-      merged.push(current);
+      merged.push({ ...current });
     }
   }
 
@@ -940,4 +1133,3 @@ export function getEndOfWeek(date: Date): Date {
   result.setHours(23, 59, 59, 999);
   return result;
 }
-

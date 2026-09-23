@@ -14,7 +14,7 @@
  *   2. Refuses a PR whose branch is not `agent/*`, unless --any-branch is
  *      passed — this tool is for the agent-worktree workflow, not for
  *      landing arbitrary branches on someone's behalf.
- *   3. Merges with `gh pr merge --squash --delete-branch`. Never force-push,
+ *   3. Merges with `gh pr merge --squash`. Never force-push,
  *      never any other merge strategy.
  *   4. Fast-forwards the CANONICAL checkout (resolved from git worktree
  *      metadata, never a hardcoded path) with `git pull --ff-only`.
@@ -23,7 +23,7 @@
  *      deletes the branch under the DELETE_MERGED_EXACT proof standard
  *      (see scripts/lib/worktree-lifecycle.mjs, including the no-upstream
  *      case #1863 added — a merged PR's head OID is stronger evidence than a
- *      remote ref that `gh --delete-branch` already removed).
+ *      remote ref that GitHub automatically removed).
  *   6. Prints a four-line summary.
  *
  * This never overrides the mutation budget and never force-pushes. It runs
@@ -107,6 +107,21 @@ export function evaluateRequiredChecks(rollup, requiredContexts) {
     else if (state !== 'SUCCESS') failing.push(`${name}=${state}`);
   }
   return { ok: missing.length === 0 && failing.length === 0, missing, failing };
+}
+
+/**
+ * How to bring the canonical checkout's `main` up to date after a merge.
+ * On `main`, fast-forward the working tree. Anywhere else (a session left
+ * canonical on a task branch), update the local `main` ref without touching
+ * that branch or its uncommitted files: `git pull` there would pull the task
+ * branch — usually deleted on merge — and abort the landing before
+ * `--retire` runs. Pure, so it's unit-tested directly.
+ *
+ * @returns {{args: string[], fatal: boolean}}
+ */
+export function canonicalSyncPlan(currentBranch) {
+  if (currentBranch === 'main') return { args: ['pull', '--ff-only'], fatal: true };
+  return { args: ['fetch', 'origin', 'main:main'], fatal: false };
 }
 
 /** Run a command, returning { ok, stdout, stderr }. Never throws. */
@@ -215,31 +230,38 @@ async function main(argv) {
   }
 
   process.stdout.write(`pr-land: PR #${args.prNumber} is green on all ${contexts.length} required contexts (${source}) — merging\n`);
-  const merge = exec('gh', ['pr', 'merge', String(args.prNumber), '--squash', '--delete-branch'], { cwd: canonicalRoot });
+  const merge = exec('gh', ['pr', 'merge', String(args.prNumber), '--squash'], { cwd: canonicalRoot });
   if (!merge.ok) {
-    // `--delete-branch` also tries to delete the LOCAL branch, which git refuses
-    // while a worktree has it checked out — the exact case this command exists
-    // for. The merge itself has already happened by then, so re-read the PR
-    // state before deciding this was a failure. Observed on the first live run
-    // (PR #1864): "cannot delete branch ... used by worktree" after a
-    // successful squash merge.
+    // A transport error can arrive after GitHub accepts the merge. Re-read
+    // its state before reporting failure. Branch deletion belongs to the
+    // lifecycle tool so it can verify an archive before removing either ref.
     const after = ghJson(['pr', 'view', String(args.prNumber), '--json', 'state'], canonicalRoot);
     if (after?.state !== 'MERGED') {
       process.stderr.write(`pr-land: gh pr merge failed:\n${merge.stderr || merge.stdout}\n`);
       return 1;
     }
     process.stdout.write(
-      'pr-land: merged; local branch delete deferred to --retire (branch is checked out in a worktree)\n',
+      'pr-land: confirmed merged; branch archival and deletion deferred to --retire\n',
     );
   }
 
-  const pull = exec('git', ['pull', '--ff-only'], { cwd: canonicalRoot });
-  if (!pull.ok) {
+  const canonicalBranch = exec('git', ['branch', '--show-current'], { cwd: canonicalRoot }).stdout;
+  const sync = canonicalSyncPlan(canonicalBranch);
+  const pull = exec('git', sync.args, { cwd: canonicalRoot });
+  if (!pull.ok && sync.fatal) {
     process.stderr.write(
-      `pr-land: PR #${args.prNumber} merged, but 'git pull --ff-only' in ${canonicalRoot} failed:\n${pull.stderr || pull.stdout}\n` +
+      `pr-land: PR #${args.prNumber} merged, but 'git ${sync.args.join(' ')}' in ${canonicalRoot} failed:\n${pull.stderr || pull.stdout}\n` +
         'Resolve manually, then run: node scripts/worktree-lifecycle.mjs --retire\n',
     );
     return 1;
+  }
+  if (!pull.ok) {
+    process.stderr.write(
+      `pr-land: canonical is on '${canonicalBranch || '(detached)'}', not main; 'git ${sync.args.join(' ')}' failed ` +
+        `(${pull.stderr || pull.stdout}) — local main not updated, continuing to --retire\n`,
+    );
+  } else if (canonicalBranch !== 'main') {
+    process.stdout.write(`pr-land: canonical is on '${canonicalBranch || '(detached)'}'; updated local main without touching it\n`);
   }
 
   const retireScript = resolve(HERE, 'worktree-lifecycle.mjs');
@@ -249,7 +271,7 @@ async function main(argv) {
 
   process.stdout.write('\n');
   process.stdout.write(`pr-land summary for #${args.prNumber}\n`);
-  process.stdout.write(`  merged:  gh pr merge --squash --delete-branch (branch ${pr.headRefName})\n`);
+  process.stdout.write(`  merged:  gh pr merge --squash (branch ${pr.headRefName})\n`);
   process.stdout.write(`  pulled:  ${canonicalRoot} fast-forwarded to origin/main\n`);
   process.stdout.write(`  retired: ${retire.ok ? 'worktree-lifecycle.mjs --retire ran' : 'worktree-lifecycle.mjs --retire reported an issue — see above'}\n`);
   return 0;

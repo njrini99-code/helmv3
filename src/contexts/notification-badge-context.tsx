@@ -126,7 +126,12 @@ export function NotificationBadgeProvider({ children }: { children: React.ReactN
     try {
       if (isPlayer && playerId && userId && teamId) {
         const result = await getPlayerNotificationCounts(playerId, userId, teamId);
-        if (result.success && result.data) {
+        if (result.authExpired) {
+          // Same circuit breaker the coach branch has had since the 45s poll
+          // was added; the player branch kept polling a dead session.
+          stopPolling();
+          sessionExpiredThisPoll = true;
+        } else if (result.success && result.data) {
           setAnnouncements(result.data.unreadAnnouncements);
           setTasks(result.data.pendingTasks);
           // null means the count could not be read. HOLD the previous value

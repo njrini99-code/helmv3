@@ -633,6 +633,10 @@ function toCoachHelmInsight(insight: ComposedInsight): CoachHelmReviewInsight {
     body: insight.body,
     tone: insight.tone,
     confidence: insight.confidence,
+    // `strokeImpact` is only set when the magnitude was measured in strokes.
+    // Heuristic round insights carry `rankScore` instead (ordering only) and
+    // deliberately persist with NO magnitude — do not copy `rankScore` here,
+    // it is not strokes and "Estimated impact: … strokes" must not print it.
     strokeImpact: insight.strokeImpact,
     evidenceMetrics: insight.evidenceMetrics,
   };

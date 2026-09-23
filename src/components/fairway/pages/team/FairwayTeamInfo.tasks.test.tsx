@@ -41,6 +41,13 @@ function baseProps(
 }
 
 describe('FairwayTeamInfo — My tasks widget', () => {
+  it('uses compact mobile section spacing while retaining roomy desktop spacing', () => {
+    render(<FairwayTeamInfo {...baseProps([])} />);
+
+    const stack = screen.getByRole('heading', { name: 'Head coach' }).closest('section')?.parentElement;
+    expect(stack).toHaveClass('gap-6', 'md:gap-10');
+  });
+
   it('shows a HIGH priority pill on a high-priority pending task (#161)', () => {
     render(
       <FairwayTeamInfo

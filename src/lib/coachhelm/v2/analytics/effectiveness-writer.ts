@@ -40,6 +40,9 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { logServerError } from '@/lib/server-error-logger';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { describeError } from '@/lib/utils/describe-error';
+import { averageInWindow } from '@/lib/coachhelm/v3/causality/attribute';
+import { lookupMetricSource } from '@/lib/coachhelm/v3/causality/metric-sources';
+import { improvementSign } from '@/lib/coachhelm/v3/metrics/registry';
 
 /**
  * Compute effectiveness rollups for the day-before-now and write them.
@@ -276,21 +279,50 @@ export async function rollupInsightEffectivenessForRange(
 //   - Pull candidate insights (lifecycle in matured/addressed/archived,
 //     outcome_status IS NULL) with player_id, evidence, created_at,
 //     insight_type so we know which metric direction to credit.
-//   - For each candidate, compute pre/post averages from `golf_rounds`
-//     filtered by player_id + round_date band. We use `golf_rounds` directly
-//     rather than `golf_player_stats_cache` because the cache only stores a
-//     single current-state aggregate, not a historical bucket.
-//   - Bucket the candidates by outcome status and bulk-update each bucket
-//     with one UPDATE per status.
+//   - For each candidate, resolve `evidence.metric` (falling back to
+//     `insight_type`) against the v3 metric registry first
+//     (`lookupMetricSource` / `averageInWindow`, `v3/causality/`). Most v3
+//     insights (sg_*, gir_pct, penalty_rate_per_round, big_number_rate,
+//     scoring_par_3/4/5, scrambling_pct_sand, and the `score_to_par` /
+//     `fairways_hit_pct` aliases) resolve here and get measured from their
+//     canonical per-round source (golf_rounds or golf_round_stats_cache).
+//     A metric the v3 registry marks `intentional-null` (no trustworthy
+//     per-round time-series) is left unmeasured on purpose — same policy
+//     the v3 causality-attribute cron uses.
+//   - A metric the v3 registry doesn't recognize at all (legacy v2 naming
+//     like `scoring_average` / `total_putts`) falls back to the original
+//     `metricToRoundField` mapping against the bulk-fetched `golf_rounds`
+//     window, computed in-memory (no extra query). We use `golf_rounds`
+//     directly rather than `golf_player_stats_cache` because the cache only
+//     stores a single current-state aggregate, not a historical bucket.
+//   - Each measured candidate gets outcome_status/outcome_metric_name/
+//     outcome_metric_before/outcome_metric_after written together in one
+//     per-row UPDATE (not a bulk upsert — several other NOT NULL columns on
+//     `golf_coach_insights` have no default, so a partial-column upsert
+//     would attempt an invalid INSERT on conflict).
 //
 // If a metric can't be cleanly mapped we leave outcome_status NULL — better
 // to under-attribute than to fabricate a measurement.
 
 const POST_WINDOW_DAYS = 14;
 const OUTCOME_DELTA_THRESHOLD = 0.5;
-// Cap the number of candidates we process per cron tick. The cron runs daily
+// Cap the number of candidates we process per cron tick. Lowered from 500 to
+// 150 when the v3 metric path was added: a v3-resolvable candidate now costs
+// two extra `averageInWindow` queries (pre/post) instead of being covered by
+// the single bulk `golf_rounds` fetch below, mirroring the LIMIT=50 the v3
+// causality-attribute cron (`api/cron/v3/causality-attribute`) uses for the
+// same per-insight window-query shape. The cron runs daily
 // so any leftover candidates get picked up tomorrow.
-const OUTCOME_BACKFILL_LIMIT = 500;
+const OUTCOME_BACKFILL_LIMIT = 150;
+// Per-id outcome updates run with this much concurrency at a time (bounded
+// fan-out, not one request per candidate serially).
+const OUTCOME_UPDATE_CONCURRENCY = 20;
+// Page size for the paginated candidate fetch below, and a hard cap on pages
+// scanned per tick — mirrors FETCH_PAGE_SIZE/MAX_FETCH_PAGES in
+// `api/cron/v3/causality-attribute/route.ts`. At 200/page this scans up to
+// 4,000 candidates per run before giving up for the night.
+const FETCH_PAGE_SIZE = 200;
+const MAX_FETCH_PAGES = 20;
 
 interface OutcomeCandidate {
   id: string;
@@ -372,28 +404,64 @@ async function backfillInsightOutcomes(
     asOfMs - POST_WINDOW_DAYS * 24 * 60 * 60 * 1000,
   ).toISOString();
 
-  const { data: candData, error: candErr } = await supabase
-    .from('golf_coach_insights')
-    .select('id, player_id, insight_type, created_at, evidence')
-    .in('lifecycle_state', ['matured', 'addressed', 'archived'])
-    .is('outcome_status', null)
-    .lte('created_at', newestEligibleIso)
-    .limit(OUTCOME_BACKFILL_LIMIT);
+  // PAGINATE (created_at ASC) rather than a single unordered `.limit()`. Most
+  // of the eligible backlog is permanently unmeasurable — an evidence.metric
+  // the v3 registry marks intentional-null, or one neither the v3 registry
+  // nor the legacy `metricToRoundField` mapping recognizes at all. An
+  // unordered fixed-N window fills up with those sticky rows (they never get
+  // an outcome_status write, so they never leave the eligible set) and
+  // starves the measurable backlog — the same failure mode documented on
+  // `api/cron/v3/causality-attribute`'s FETCH_PAGE_SIZE/MAX_FETCH_PAGES. We
+  // page through candidates, drop unmeasurable rows synchronously (both
+  // lookups are pure/in-memory), and stop once OUTCOME_BACKFILL_LIMIT
+  // measurable rows are collected or pages run out.
+  const candidates: OutcomeCandidate[] = [];
+  let page = 0;
+  for (; page < MAX_FETCH_PAGES && candidates.length < OUTCOME_BACKFILL_LIMIT; page += 1) {
+    const from = page * FETCH_PAGE_SIZE;
+    const to = from + FETCH_PAGE_SIZE - 1;
+    const { data: pageData, error: candErr } = await supabase
+      .from('golf_coach_insights')
+      .select('id, player_id, insight_type, created_at, evidence')
+      .in('lifecycle_state', ['matured', 'addressed', 'archived'])
+      .is('outcome_status', null)
+      .lte('created_at', newestEligibleIso)
+      .order('created_at', { ascending: true })
+      .order('id', { ascending: true })
+      .range(from, to);
 
-  if (candErr) {
-    await logServerError(
-      `analytics.effectiveness.outcome_fetch failed: ${candErr.message}`,
-      {
-        action: 'analytics.effectiveness.outcome_fetch',
-        featureArea: 'coachhelm_analytics',
-        extra: { code: candErr.code },
-      },
-      'warning',
-    );
-    return;
+    if (candErr) {
+      await logServerError(
+        `analytics.effectiveness.outcome_fetch failed: ${candErr.message}`,
+        {
+          action: 'analytics.effectiveness.outcome_fetch',
+          featureArea: 'coachhelm_analytics',
+          extra: { code: candErr.code, page },
+        },
+        'warning',
+      );
+      return;
+    }
+
+    const pageRows = (pageData ?? []) as unknown as OutcomeCandidate[];
+    if (pageRows.length === 0) break; // candidates exhausted
+
+    for (const row of pageRows) {
+      if (candidates.length >= OUTCOME_BACKFILL_LIMIT) break;
+      const evidence = row.evidence ?? {};
+      const metric =
+        typeof evidence.metric === 'string' ? evidence.metric : (row.insight_type ?? '');
+      if (!metric) continue;
+      const v3Source = lookupMetricSource(metric);
+      const v3Measurable = v3Source !== null && v3Source.kind !== 'intentional-null';
+      const legacyMeasurable = v3Source === null && metricToRoundField(metric) !== null;
+      if (!v3Measurable && !legacyMeasurable) continue; // never measurable — don't clog the window
+      candidates.push(row);
+    }
+
+    if (pageRows.length < FETCH_PAGE_SIZE) break; // short page => last page
   }
 
-  const candidates = (candData ?? []) as unknown as OutcomeCandidate[];
   if (candidates.length === 0) return;
 
   // Pull all rounds we need in one trip, scoped to the union of player ids
@@ -444,9 +512,33 @@ async function backfillInsightOutcomes(
     roundsByPlayer.set(r.player_id, list);
   }
 
-  const improvedIds: string[] = [];
-  const unchangedIds: string[] = [];
-  const regressedIds: string[] = [];
+  // Enum values must match the reader at line ~174 above
+  // (b.outcomes_improved / outcomes_no_change / outcomes_worsened).
+  type OutcomeStatus = 'improved' | 'no_change' | 'worsened';
+  interface OutcomeUpdate {
+    id: string;
+    status: OutcomeStatus;
+    metricName: string;
+    before: number;
+    after: number;
+  }
+  const updates: OutcomeUpdate[] = [];
+
+  // Signed delta in the "improvement" direction. A 'lower is better' metric
+  // improves when post < pre — `sign` is already the registry/legacy
+  // direction multiplier, never inferred from the raw sign of the delta.
+  function classify(id: string, metric: string, preAvg: number, postAvg: number, sign: 1 | -1) {
+    const improvementDelta = (postAvg - preAvg) * sign;
+    const status: OutcomeStatus =
+      improvementDelta > OUTCOME_DELTA_THRESHOLD
+        ? 'improved'
+        : improvementDelta < -OUTCOME_DELTA_THRESHOLD
+          ? 'worsened'
+          : 'no_change';
+    updates.push({ id, status, metricName: metric, before: preAvg, after: postAvg });
+  }
+
+  const windowMs = POST_WINDOW_DAYS * 24 * 60 * 60 * 1000;
 
   for (const cand of candidates) {
     if (!cand.player_id || !cand.created_at) continue;
@@ -456,15 +548,58 @@ async function backfillInsightOutcomes(
     const evidence = cand.evidence ?? {};
     const metric =
       typeof evidence.metric === 'string' ? evidence.metric : (cand.insight_type ?? '');
+    if (!metric) continue;
+
+    const preStart = createdMs - windowMs;
+    const postEnd = createdMs + windowMs;
+
+    // v3 metric ids (sg_*, gir_pct, penalty_rate_per_round, big_number_rate,
+    // scoring_par_3/4/5, scrambling_pct_sand, score_to_par/fairways_hit_pct
+    // aliases, ...) resolve through the same per-round source table the v3
+    // causality-attribute cron uses. This takes priority over the legacy v2
+    // mapping below.
+    const v3Source = lookupMetricSource(metric);
+    if (v3Source) {
+      if (v3Source.kind === 'intentional-null') {
+        // Registry says this metric has no trustworthy per-round
+        // time-series — leave outcome_status NULL, don't fabricate one.
+        continue;
+      }
+      const preStartIso = new Date(preStart).toISOString();
+      const createdIso = new Date(createdMs).toISOString();
+      // v3 window sources (averageGolfRoundsColumn et al. in
+      // v3/causality/attribute.ts) filter dates INCLUSIVELY via
+      // `.gte(start.slice(0,10)).lte(end.slice(0,10))`. A post-window
+      // starting at createdIso would therefore re-include a round played on
+      // the insight's own creation date in BOTH windows (that round is
+      // usually the one the post-round trigger just generated the insight
+      // from), diluting the delta. Start the post window the day AFTER the
+      // creation date instead — the legacy golf_rounds path below already
+      // buckets a same-day round into "pre" only (its created_at is an
+      // intraday timestamp, always later than that day's midnight
+      // round_date), so this keeps both paths consistent.
+      const createdDateStartMs = Date.parse(`${createdIso.slice(0, 10)}T00:00:00.000Z`);
+      const postStartMs = createdDateStartMs + 24 * 60 * 60 * 1000;
+      const postStartIso = new Date(postStartMs).toISOString();
+      const postEndIso = new Date(postStartMs + windowMs).toISOString();
+      const [preResult, postResult] = await Promise.all([
+        averageInWindow(supabase, cand.player_id, metric, preStartIso, createdIso),
+        averageInWindow(supabase, cand.player_id, metric, postStartIso, postEndIso),
+      ]);
+      if (preResult.ok && postResult.ok) {
+        classify(cand.id, metric, preResult.avg, postResult.avg, improvementSign(metric));
+      }
+      continue;
+    }
+
+    // Not a v3 metric id at all — fall back to the legacy v2 golf_rounds
+    // column mapping, using the rounds already bulk-fetched above (no extra
+    // query per candidate).
     const mapping = metricToRoundField(metric);
     if (!mapping) continue;
 
     const playerRounds = roundsByPlayer.get(cand.player_id) ?? [];
     if (playerRounds.length === 0) continue;
-
-    const windowMs = POST_WINDOW_DAYS * 24 * 60 * 60 * 1000;
-    const preStart = createdMs - windowMs;
-    const postEnd = createdMs + windowMs;
 
     const preVals: number[] = [];
     const postVals: number[] = [];
@@ -482,50 +617,52 @@ async function backfillInsightOutcomes(
     const postAvg = avg(postVals);
     if (preAvg === null || postAvg === null) continue;
 
-    // Signed delta in the "improvement" direction. A 'lower is better'
-    // metric improves when post < pre.
-    const rawDelta = postAvg - preAvg;
-    const directionSign = mapping.direction === 'higher' ? 1 : -1;
-    const improvementDelta = rawDelta * directionSign;
-
-    if (improvementDelta > OUTCOME_DELTA_THRESHOLD) {
-      improvedIds.push(cand.id);
-    } else if (improvementDelta < -OUTCOME_DELTA_THRESHOLD) {
-      regressedIds.push(cand.id);
-    } else if (Math.abs(improvementDelta) <= OUTCOME_DELTA_THRESHOLD) {
-      unchangedIds.push(cand.id);
-    }
+    classify(cand.id, metric, preAvg, postAvg, mapping.direction === 'higher' ? 1 : -1);
   }
 
   const measuredAt = new Date().toISOString();
-  // Enum values must match the reader at line ~174 above
-  // (b.outcomes_improved / outcomes_no_change / outcomes_worsened).
-  const buckets: Array<[string[], string]> = [
-    [improvedIds, 'improved'],
-    [unchangedIds, 'no_change'],
-    [regressedIds, 'worsened'],
-  ];
-  for (const [ids, status] of buckets) {
-    if (ids.length === 0) continue;
-    const { error: updErr } = await supabase
-      .from('golf_coach_insights')
-      .update(
-        { outcome_status: status, outcome_measured_at: measuredAt } as unknown as Record<
-          string,
-          never
-        >,
-      )
-      .in('id', ids);
-    if (updErr) {
-      await logServerError(
-        `analytics.effectiveness.outcome_update[${status}] failed: ${updErr.message}`,
-        {
-          action: 'analytics.effectiveness.outcome_update',
-          featureArea: 'coachhelm_analytics',
-          extra: { code: updErr.code, status, count: ids.length },
-        },
-        'warning',
-      );
-    }
+
+  // Per-row UPDATE (not a bulk upsert): several other NOT NULL columns on
+  // `golf_coach_insights` (insight_type, title, ...) have no default, so a
+  // partial-column upsert would attempt an invalid INSERT the moment it hit
+  // the ON CONFLICT path. Bounded fan-out keeps this from becoming hundreds
+  // of fully-serial round trips.
+  for (let i = 0; i < updates.length; i += OUTCOME_UPDATE_CONCURRENCY) {
+    const chunk = updates.slice(i, i + OUTCOME_UPDATE_CONCURRENCY);
+    await Promise.all(
+      chunk.map(async (u) => {
+        const { error: updErr } = await supabase
+          .from('golf_coach_insights')
+          .update(
+            {
+              outcome_status: u.status,
+              outcome_measured_at: measuredAt,
+              outcome_metric_name: u.metricName,
+              outcome_metric_before: u.before,
+              outcome_metric_after: u.after,
+            } as unknown as Record<string, never>,
+          )
+          .eq('id', u.id);
+        if (updErr) {
+          await logServerError(
+            `analytics.effectiveness.outcome_update[${u.status}] failed: ${updErr.message}`,
+            {
+              action: 'analytics.effectiveness.outcome_update',
+              featureArea: 'coachhelm_analytics',
+              extra: { code: updErr.code, status: u.status, id: u.id },
+            },
+            'warning',
+          );
+        }
+      }),
+    );
   }
 }
+
+/**
+ * Exported for direct unit testing only — same pattern as
+ * `__INSIGHT_CATEGORY_METRIC_PREFIXES` in `v3/causality/metric-sources.ts`.
+ * Not part of the runtime contract; real callers go through
+ * `rollupInsightEffectivenessForRange`/`...ForYesterday`.
+ */
+export const __backfillInsightOutcomesForTest = backfillInsightOutcomes;

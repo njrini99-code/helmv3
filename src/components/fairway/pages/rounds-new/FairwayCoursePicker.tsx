@@ -42,6 +42,7 @@ import { cn } from '@/lib/utils';
 import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import { Button } from '@/components/fairway/controls/button';
 import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
+import { logError } from '@/lib/error-logging';
 import {
   IconSearch, IconPlus, IconChevronLeft, IconArrowLeft, IconArrowRight, IconFlag, IconX,
 } from '@/components/icons';
@@ -136,7 +137,12 @@ export function FairwayCoursePicker({
       setRecent(rec);
       setTeam(tm);
       return library;
-    } catch {
+    } catch (err) {
+      // A toast is not a record. Until 2026-09-17 every failure in this
+      // picker was swallowed here — a stale server action, a killed fetch —
+      // and the field report was "it won't let them pick the course, no
+      // error" with nothing in error_logs to go on.
+      logError(err instanceof Error ? err : new Error(String(err)), { component: 'FairwayCoursePicker', action: 'load course library', featureArea: 'round_tracking', bypassStaleActionFilter: true }, 'medium');
       fairwayToast.danger('Could not load the course library');
       return [];
     } finally {
@@ -176,14 +182,18 @@ export function FairwayCoursePicker({
       const detail = await getCourseDetail(course.id);
       if (teeReqRef.current !== req) return; // superseded by a newer selection
       setTees(detail?.tees ?? []);
-    } catch {
+    } catch (err) {
+      logError(err instanceof Error ? err : new Error(String(err)), { component: 'FairwayCoursePicker', action: 'load tees', featureArea: 'round_tracking', courseId: course.id, bypassStaleActionFilter: true }, 'medium');
       if (teeReqRef.current === req) fairwayToast.danger('Could not load tees for that course');
     } finally {
       if (teeReqRef.current === req) setLoadingTees(false);
     }
   }, []);
 
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+
   const selectCourse = useCallback(async (course: GolfCourse) => {
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
     setSelected(course);
     setStage('tees');
     await loadTees(course);
@@ -199,18 +209,44 @@ export function FairwayCoursePicker({
     setPicking(true);
     try {
       const defaults = await getTeeRoundDefaults(tee.id);
-      if (!defaults) { fairwayToast.danger('Could not load that tee'); return; }
+      if (!defaults) {
+        // The tee exists in the list but the server returned nothing for it —
+        // a data gap (deleted tee, RLS, missing holes), not a transport loss.
+        logError(new Error('Tee defaults unavailable'), { component: 'FairwayCoursePicker', action: 'pick tee', featureArea: 'round_tracking', courseId: selected?.id ?? null, teeId: tee.id, bypassStaleActionFilter: true }, 'medium');
+        fairwayToast.danger('Could not load that tee');
+        return;
+      }
       // Carry the course's imagery out with the tee. `selected` is the full
       // golf_courses row this picker already loaded to build the tee list, so
       // this costs nothing — and it lets the setup screen show the actual
       // course photo instead of a name-derived stock scene.
-      onPick({
-        ...defaults,
-        courseImageUrl: selected?.image_url ?? null,
-        courseNormalizedName: selected?.normalized_name ?? null,
-      });
+      try {
+        onPick({
+          ...defaults,
+          courseImageUrl: selected?.image_url ?? null,
+          courseNormalizedName: selected?.normalized_name ?? null,
+        });
+      } catch (onPickErr) {
+        // Anything the parent's onPick throws — a cache-write exception,
+        // a bad state update — used to fall through to the outer catch and
+        // be misreported as "could not load that tee". Log it as itself.
+        logError(
+          onPickErr instanceof Error ? onPickErr : new Error(String(onPickErr)),
+          {
+            component: 'FairwayCoursePicker',
+            action: 'onPick threw',
+            featureArea: 'round_tracking',
+            courseId: selected?.id ?? null,
+            teeId: tee.id,
+            bypassStaleActionFilter: true,
+          },
+          'medium',
+        );
+        throw onPickErr;
+      }
       onOpenChange(false);
-    } catch {
+    } catch (err) {
+      logError(err instanceof Error ? err : new Error(String(err)), { component: 'FairwayCoursePicker', action: 'pick tee', featureArea: 'round_tracking', courseId: selected?.id ?? null, teeId: tee.id, bypassStaleActionFilter: true }, 'medium');
       fairwayToast.danger('Could not load that tee');
     } finally {
       setPicking(false);
@@ -234,10 +270,10 @@ export function FairwayCoursePicker({
   const stageMotion = reduceMotion
     ? { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 }, transition: { duration: 0.12 } }
     : {
-        initial: { opacity: 0, y: 10 },
+        initial: { opacity: 0.5, y: 6 },
         animate: { opacity: 1, y: 0 },
-        exit: { opacity: 0, y: -8 },
-        transition: { duration: 0.22, ease: [0.16, 1, 0.3, 1] as const },
+        exit: { opacity: 0, y: -4 },
+        transition: { duration: 0.18, ease: [0.16, 1, 0.3, 1] as const },
       };
 
   return (
@@ -247,11 +283,13 @@ export function FairwayCoursePicker({
           drawers stack on top. */}
       <Drawer open={open} onOpenChange={onOpenChange} shouldScaleBackground={false}>
         <DrawerContent
+          showHandle={false}
+          data-slot="course-picker"
           className={cn(
             // The picker IS the page, not a sheet floating over the setup:
             // full-viewport on every breakpoint with the opaque canvas covering
             // the setup entirely (mt-0 overrides the base sheet's mt-24 gap).
-            'inset-0 mt-0 h-[100dvh] max-h-[100dvh] w-screen max-w-none rounded-none p-0',
+            'inset-0 mt-0 h-[calc(100dvh-var(--keyboard-height,0px))] max-h-[calc(100dvh-var(--keyboard-height,0px))] w-screen max-w-none rounded-none p-0 outline-none',
           )}
         >
           <DrawerTitle className="sr-only">
@@ -264,7 +302,7 @@ export function FairwayCoursePicker({
             type="button"
             onClick={() => onOpenChange(false)}
             aria-label="Close"
-            className="absolute right-4 top-[max(1rem,calc(env(safe-area-inset-top,0px)+0.5rem))] z-20 inline-flex h-10 w-10 items-center justify-center rounded-full bg-surface/80 text-text-secondary shadow-soft backdrop-blur transition-[transform,color] [transition-duration:var(--fw-dur-fast)] hover:scale-105 hover:text-text-primary active:scale-95 sm:right-6 sm:top-[max(1.5rem,calc(env(safe-area-inset-top,0px)+0.5rem))]"
+            className="absolute right-4 top-[max(1rem,calc(env(safe-area-inset-top,0px)+0.5rem))] z-20 inline-flex h-11 w-11 items-center justify-center rounded-full bg-surface/80 text-text-secondary shadow-soft backdrop-blur transition-[transform,color] [transition-duration:var(--fw-dur-fast)] hover:scale-105 hover:text-text-primary active:scale-95 sm:right-6 sm:top-[max(1.5rem,calc(env(safe-area-inset-top,0px)+0.5rem))]"
           >
             <IconX size={18} aria-hidden />
           </button>
@@ -278,17 +316,9 @@ export function FairwayCoursePicker({
               (UI-9). Auto top/bottom margins on a flex-column child absorb
               leftover main-axis space either way, so this alone fixes both
               stages without a stage-specific branch. */}
-          <div className="flex h-full w-full flex-col overflow-y-auto px-4 py-6 sm:px-6 sm:py-10">
+          <div ref={scrollRef} data-slot="course-picker-scroll" className="flex min-h-0 w-full flex-1 flex-col overflow-y-auto overscroll-contain px-4 pt-[calc(env(safe-area-inset-top,0px)+1.5rem)] pb-[calc(env(safe-area-inset-bottom,0px)+1.5rem)] sm:px-6 sm:pt-[calc(env(safe-area-inset-top,0px)+2.5rem)] sm:pb-[calc(env(safe-area-inset-bottom,0px)+2.5rem)]">
             <div className="mx-auto flex w-full max-w-3xl flex-col">
-            {/* Airy, premium header — bold title + clean search on the cream canvas.
-                `pr-*` reserves the floating Close control's lane. That button is
-                `absolute right-4` at 40px, while this column's `truncate` clips
-                at the CONTAINER edge — so a long course name ran its last ~40px,
-                ellipsis included, underneath the X. Truncation cannot fix that:
-                it was clipping at the wrong boundary, not clipping too late.
-                Reserving the lane means the title ends where the button starts,
-                and the ellipsis stays legible. Sized to the control plus a
-                breath (40 + 8), and only where the control floats. */}
+            {/* Reserve the close control lane; long course names wrap inside it. */}
             <header className="px-1 pr-12 sm:pr-14">
               <div className="flex items-start gap-2.5">
                 {stage === 'tees' && (
@@ -297,7 +327,7 @@ export function FairwayCoursePicker({
                     type="button"
                     onClick={backToCourses}
                     aria-label="Back to courses"
-                    className="-ml-1 mt-1 inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-surface-sunken hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-600 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
+                    className="-ml-1 mt-1 inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-surface-sunken hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-600 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
                   >
                     <IconChevronLeft size={20} aria-hidden />
                   </button>
@@ -306,7 +336,7 @@ export function FairwayCoursePicker({
                   <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.18em] text-accent-700">
                     {stage === 'tees' ? 'New round · Tee' : 'New round'}
                   </p>
-                  <h1 className="mt-1.5 truncate font-fw-display text-h1 font-semibold tracking-[-0.02em] text-text-primary">
+                  <h1 className="mt-1.5 break-words font-fw-display text-h1 font-semibold tracking-[-0.02em] text-text-primary">
                     {heroTitle}
                   </h1>
                   <p className="mt-1.5 max-w-md font-fw-sans text-body text-text-secondary">{heroDesc}</p>
@@ -332,7 +362,7 @@ export function FairwayCoursePicker({
 
             {/* Body (the ground) — stage transition. */}
             <div className="relative mt-4 flex flex-col">
-              <AnimatePresence mode="wait" initial={false}>
+              <AnimatePresence mode="popLayout" initial={false}>
                 <m.div key={stage} {...stageMotion} className="flex flex-col">
                   {stage === 'courses'
                     ? <CoursesStage
@@ -741,7 +771,7 @@ function TeesStage({
     null,
   );
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto px-1 pb-2">
+    <div className="px-1 pb-2">
       {loading ? (
         <TeeCardSkeletons />
       ) : tees.length === 0 ? (

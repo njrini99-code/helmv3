@@ -323,6 +323,10 @@ export const METRIC_SOURCE_ALIASES: Record<string, MetricSourceDef> = {
   three_putt_chain: { kind: 'intentional-null', reason: 'needs-hole-level-sequencing' },
   compound_mistake_rate: { kind: 'intentional-null', reason: 'needs-hole-level-sequencing' },
   short_side_proximity: { kind: 'intentional-null', reason: 'needs-shot-level-join' },
+  // Successor id for the same composite (short_side_scrambling_chain): the
+  // rule measures the recovery leave from rough/sand, never short-sidedness,
+  // so its evidence.metric stopped claiming it. Same source gap as above.
+  recovery_proximity_rough_sand: { kind: 'intentional-null', reason: 'needs-shot-level-join' },
 
   // DEFERRED (no honest per-round source — intentionally NOT aliased):
   //  - `shortside_scrambling_pct`: "short-side" is a positional concept, not a

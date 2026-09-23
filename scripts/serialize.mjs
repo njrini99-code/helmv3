@@ -32,7 +32,10 @@ const POLL_MS = 2000;
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = join(__dirname, '..');
-const LEDGER_PATH = process.env.HELM_GATE_LEDGER ?? join(REPO_ROOT, 'memory', 'ledgers', 'gates.jsonl');
+// Gate timings are local runtime telemetry. Keeping them under `.helm/` makes
+// the report available in every checkout without turning each passed gate into
+// a tracked working-tree change that blocks worktree retirement.
+const LEDGER_PATH = process.env.HELM_GATE_LEDGER ?? join(REPO_ROOT, '.helm', 'runtime', 'gates.jsonl');
 const LEDGER_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 
 // This file is both the CLI entry point and (for `recordGateTiming`) an

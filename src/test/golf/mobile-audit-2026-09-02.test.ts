@@ -35,21 +35,7 @@ describe('mobile audit 2026-09-02', () => {
     expect(src).toContain("if (visibleBuckets[0]?.key === anchorBucket.key) return;");
   });
 
-  it('UI-4: the inbox masthead hides on a phone while a thread is open', () => {
-    const src = read('src/components/fairway/pages/messages/FairwayMessages.tsx');
-    // UI-4 hid the editorial masthead below `md` while a thread was open,
-    // because it plus the thread header left ~100px of an 844px screen for
-    // messages. The masthead is now hidden below `md` in EVERY state — on the
-    // list view it printed the destination name a third time (the top bar and
-    // the eyebrow already say it) above a stacked action row.
-    //
-    // Asserting the PROPERTY UI-4 protects — the masthead never occupies phone
-    // height — rather than the conditional it originally used, which is
-    // strictly weaker than what ships now.
-    expect(src).toContain('<div className="hidden md:block">');
-    expect(src).toContain('<ViewHeader');
-    expect(src).toContain("mobileShowChat ? 'mt-0 md:mt-6' : 'mt-3 md:mt-6'");
-  });
+  // UI-4: viewport geometry is exercised in e2e/golf-critical-paths.spec.ts.
 
   it('UI-5: the event editor scrolls its own error banner into view', () => {
     const src = read('src/components/fairway/pages/calendar/FairwayEventEditor.tsx');

@@ -13,39 +13,51 @@ updated.
 
 `npm install` wires a `pre-push` git hook automatically (the `prepare`
 lifecycle script, `scripts/setup-hooks.mjs` — sets `core.hooksPath` to the
-tracked `.githooks/`; `npm run hooks:install` does the same by hand). It
-runs the cheap checks that actually fail PRs, scoped to only the files the
-push changes, so failures show up in seconds locally instead of ~20 minutes
-later on GitHub:
+tracked `.githooks/`; `npm run hooks:install` does the same by hand). The hook
+keeps local work fast and range-scoped:
 
-- `typecheck:fast` (tsgo, falling back to `tsc` if tsgo isn't installed) —
-  only when a `.ts`/`.tsx` file changed.
-- `eslint` on the changed `.ts`/`.tsx`/`.mjs` files (warnings print; only an
-  error-severity finding fails the step).
-- `npm run lint:ratchet` (full-repo, ~1 min) — only when a changed file is
-  under `src/` or `scripts/`.
-- `sqlfluff lint --dialect postgres --rules core` on changed
-  `supabase/migrations/*.sql` — **informational only** (prints findings, never
-  fails the push): the SQL backlog is grandfathered on purpose, and the only
-  thing that actually gates it anywhere, CI included, is the full-repo
-  ratchet (`scripts/sql-lint-ratchet.mjs`). Skipped, not run, if `sqlfluff`
-  isn't on `PATH`.
-- `gitleaks git --log-opts=<range>` over the pushed commit range — skipped,
-  not failed, if `gitleaks` isn't on `PATH`.
-- `markdownlint-cli2` on changed `.md` files — **informational only**, same
-  reasoning as sqlfluff above (34,576 pre-existing violations are
-  grandfathered) — then `npm run markdown:ratchet` (full-repo, **this one
-  fails the push**) when a `.md` file changed.
-- Regenerates `docs/generated/` (doc inventory, world model, feature map,
-  entry points) when a `.md`, `memory/registry.yml`, or migration file
-  changed, and **fails the push** if that regeneration produces a diff —
-  commit the regenerated files and push again. It never commits for you.
-- `npm run docs:rules-current` when a `.claude/rules/*.md`, `CLAUDE.md`, or
-  `AGENTS.md` file changed.
+- `git diff --check` over each pushed commit range — blocks trailing
+  whitespace and other patch-format errors before they reach the remote.
+- `gitleaks git --redact --log-opts=<range>` over each pushed commit range —
+  runs when `gitleaks` is installed and is skipped with a notice when it is
+  unavailable. CI remains the authoritative full repository secret scan.
 
-Every step is timed and printed. Skip the whole hook for one push with
-`HELM_SKIP_PREPUSH=1 git push` (prints a loud notice) — CI still runs every
-check regardless, so skipping only defers when you find out.
+The hook does not run typecheck, ESLint, ratchets, generated-docs commands, or
+the Review Gate locally. Those project-wide checks remain in CI, where they run
+once per workflow. Skip the local hook for one push with
+`HELM_SKIP_PREPUSH=1 git push`; CI still runs every required check.
+
+The paired `pre-commit` hook scans staged content with redacted gitleaks output
+when the tool is installed. A staged migration receives a reminder to run and
+review `npm run db:types`; the hook does not contact Supabase, regenerate files,
+or alter the index.
+
+The `Feature knowledge registry` step in `ci.yml` is the single CI caller for
+the static knowledge checks. `npm run knowledge:check` already runs registry
+globs, document-inventory, and feature-map validation, so these are kept as
+named stages inside that step rather than repeated standalone workflow steps.
+
+The `Lint` job parses `src` and `scripts` once through `scripts/lint-ci.mjs
+--scan`, enabling the three normally disabled audit rules. Separate named
+steps consume that report: standard ESLint still requires zero warnings/errors
+in `src/**/*.{ts,tsx}` (excluding the three audit rules); the generic ratchet
+counts regular warnings and `ERROR:` diagnostics across both directories;
+each audit counts only its own rule in `src`, retaining false-zero, slack,
+regression, baseline-update, and report-only coverage behavior.
+
+If an enabled audit rule consumes an `eslint-disable`, the producer rechecks
+only that affected file with the default rules to preserve unused-disable
+warnings in the hard lint and generic ratchet. It logs the number of affected
+files; ordinary runs need no second scan.
+
+The report lives in runner temporary storage and is bound to the checkout path,
+workflow run, attempt, and SHA. The producer removes any previous report before
+scanning and writes only after a valid complete-scope result. Exit 1 with valid
+ESLint JSON is diagnostic output; tooling failures, missing/empty/malformed
+reports, and mismatched run IDs fail the gate. The producer and every evaluator
+remain in the final aggregate. Standalone lint and audit commands still scan
+normally when `HELM_ESLINT_REPORT` is unset; the shared report is never cached or
+uploaded for reuse across jobs.
 
 ## 1. Status classification — hard gate vs. advisory
 
@@ -135,7 +147,7 @@ branch unless `--any-branch` is passed; see `scripts/pr-land.mjs`.
 
 | Check | Source | What it validates | Gate type |
 |---|---|---|---|
-| `CI aggregate` | `ci.yml` | aggregate: `Static checks` (DB-types drift, schema invariants, feature knowledge, control plane, bridge env, Deno edge functions, business contracts, route hygiene, import cycles — named steps of one job since 2026-09-02), `TypeScript`, `Lint` (ESLint + ratchets) — these three ALWAYS run — plus `Unit tests` ×3, `Next build`, and **`Supabase lint + RLS tests`**, which SKIP when `detect-changes` (`.github/workflows/detect-changes.yml`, a shared `dorny/paths-filter` reusable workflow, 2026-09-06) finds no changed path under `src/**`, `supabase/**`, `e2e/**`, `package*.json`, `next.config.*`, `tsconfig*.json`, `vitest.config.ts`, `eslint.config.mjs`, `tailwind.config.*`, `postcss.config.*`, `middleware.ts`, `scripts/**/*.{ts,mjs}`, or `ci.yml`/`detect-changes.yml` themselves. Those three heavy jobs (plus `unit-tests-timezone`) also `needs: [typecheck, lint]` (2026-09-06) so a typecheck/lint failure stops them before they spend runner minutes. A docs-only or config-only PR outside that list finishes in minutes (detect + static + typecheck + lint + aggregate, no install-heavy build/test/Supabase job); a `push` to `main` always runs the full set. | **Hard gate** — uniquely named since 2026-08-19; a green `CI aggregate` now really is CI's |
+| `CI aggregate` | `ci.yml` | aggregate: `Static checks` (DB-types drift, schema invariants, feature knowledge, control plane, bridge env, Deno edge functions, business contracts, route hygiene, import cycles — named steps of one job since 2026-09-02), `TypeScript`, `Lint` (ESLint + ratchets) — these three ALWAYS run — plus `Unit tests` ×3, `Next build`, and **`Supabase lint + RLS tests`**, which SKIP when `detect-changes` (`.github/workflows/detect-changes.yml`, a shared `dorny/paths-filter` reusable workflow, 2026-09-06) finds no changed path under `src/**`, `supabase/**`, `e2e/**`, `package*.json`, `next.config.*`, `tsconfig*.json`, `vitest.config.ts`, `eslint.config.mjs`, `tailwind.config.*`, `postcss.config.*`, `middleware.ts`, `scripts/**/*.{ts,mjs}`, or `ci.yml`/`detect-changes.yml` themselves. Those three heavy jobs (plus `unit-tests-timezone`) run in parallel with `typecheck`/`lint` (2026-09-22; the 2026-09-06 `needs: [typecheck, lint]` ordering added ~4 min per PR to save runner minutes that are free on a public repo). `main` branch protection no longer requires branches to be up to date (2026-09-22): each merge used to force every open PR to rerun CI, and a merge queue is unavailable on a user-owned repo; push-to-main CI still runs the full set. A docs-only or config-only PR outside that list finishes in minutes (detect + static + typecheck + lint + aggregate, no install-heavy build/test/Supabase job); a `push` to `main` always runs the full set. | **Hard gate** — uniquely named since 2026-08-19; a green `CI aggregate` now really is CI's |
 | `Review Gate aggregate` | `review-gate.yml` | aggregate: `Review Gate checks` (ast-grep, gitleaks, actionlint, yamllint, shellcheck, markdownlint, ruff+pylint, sqlfluff, hadolint, env-secrets as steps) + `semgrep (custom rules)` | **Hard gate** — uniquely named since 2026-08-19 |
 | ~~`Smoke checks`~~ | ~~`playwright.yml`~~ | ~~build-only smoke: `npm ci` + `next build`~~ | **REMOVED 2026-09-02** — a duplicate of `Next build`; context dropped first, job second |
 | `Playwright PR smoke (a11y)` | `ci.yml` (`pr-smoke-a11y` job) | public-route accessibility Playwright | Advisory — **folded in from the now-deleted `pr-smoke.yml` (2026-09-06)**; gated on `detect-changes`'s `code`/`frontend` outputs (a non-matching PR shows this job SKIPPED rather than not starting at all, since it now lives inside `ci.yml`), and consumes `next-build`'s uploaded `.next` artifact instead of running `npm run dev` itself |

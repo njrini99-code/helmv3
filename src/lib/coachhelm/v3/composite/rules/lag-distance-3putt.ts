@@ -110,6 +110,11 @@ const rule: CompositeRule = {
         metric: 'three_putt_chain',
         metric_label: 'Estimated 3-putt rate (15+ ft)',
         unit: 'percent',
+        // Not a render-registry id and its name matches no lower-better
+        // pattern, so without this a rising 3-putt estimate painted green
+        // (repair Package 2; `v3/metrics/registry.ts` already knows the
+        // direction for attribution).
+        polarity: 'lower_better',
         your_value: threePuttPct,
         your_value_display: `~${threePuttPct}% est. 3-putts`,
         comparison_value: 3,

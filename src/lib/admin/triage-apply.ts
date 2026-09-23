@@ -36,6 +36,18 @@ export async function resolveTriageMember(
   admin: AdminClient,
   member: { key: string; origin: string; lastSeen: string },
   reason: string,
+  /**
+   * The commit that fixed it, for an `ALREADY FIXED` close. Optional because
+   * the Vercel cron cannot produce one — a Vercel function carries no git
+   * checkout, so it cannot run `git merge-base --is-ancestor` to prove a named
+   * SHA actually shipped, and triage-contract.md STEP 4 therefore reserves the
+   * SHA-bearing close for the `npm run triage` operator path. The RPC has
+   * always taken `p_fixed_in_sha` (see the live signature in `pg_proc`); this
+   * argument was simply never passed, so every ledger row this module wrote
+   * recorded a NULL `fixed_in_sha` and a recurrence could not be traced back
+   * to the change that was supposed to have fixed it.
+   */
+  fixedInSha?: string,
 ): Promise<TriageMemberResolution> {
   let rowsResolved = 0;
 
@@ -57,6 +69,7 @@ export async function resolveTriageMember(
   const { data, error: rpcError } = await admin.rpc('admin_auto_resolve_error_fingerprint', {
     p_fingerprint: member.key,
     p_last_seen_at: member.lastSeen,
+    p_fixed_in_sha: fixedInSha,
     p_note: reason.slice(0, 500),
   });
   if (rpcError) {

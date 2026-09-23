@@ -850,25 +850,52 @@ export function getStrokesGainedCategory(shot: RawShot, par: number): 'tee' | 'a
 /**
  * SG-4: attribute a penalty stroke to the OFFENDING category.
  *
- * A penalty shot has `shot_type === 'penalty'` and carries no real lie/result of
- * its own, so it can't be categorised by `getStrokesGainedCategory`. The stroke
- * that actually went wrong was hit from the penalty shot's `lie_before` /
- * distance-to-hole — so we categorise by that position:
- *   - on the tee (and not a par 3) → tee
- *   - on/around the green          → around_green
- *   - otherwise (in play)          → approach (long game)
+ * A penalty row (`is_penalty` / `shot_type === 'penalty'`) is written by the
+ * tracker AFTER the player records the errant shot, and its own
+ * `lie_before` / distance is where the ball is played from NEXT (the drop, or
+ * the tee again after OB) — not where the errant swing was made. Charging by
+ * the row's own position put 130 of 208 tee-shot penalties (90 days to
+ * 2026-09-09) against Approach and 16 approach penalties against Around
+ * Green. So the category comes from the shot that EARNED the penalty: the
+ * nearest preceding non-penalty shot on the hole, or — when the penalty was
+ * logged before the shot (78 of 311 rows) — the nearest following one. The
+ * row's own position is the fallback when the hole has no other shots.
+ *   - hit from the tee (and not a par 3) → tee
+ *   - on/around the green               → around_green
+ *   - otherwise (in play)               → approach (long game)
  *
  * Returns 'approach' as the conservative default when position is unknown.
  */
 /** @internal - exported for testing */
-export function getPenaltyCategory(shot: RawShot, par: number): 'tee' | 'approach' | 'around_green' {
-  if (shot.lie_before === 'tee') return par === 3 ? 'approach' : 'tee';
-  if (shot.lie_before === 'green') return 'around_green';
-  if (shot.distance_to_hole_before != null) {
-    const distYards = normalizeToYards(shot.distance_to_hole_before, shot.distance_unit_before);
+export function getPenaltyCategory(
+  shot: RawShot,
+  par: number,
+  holeShots?: readonly RawShot[],
+): 'tee' | 'approach' | 'around_green' {
+  const origin = resolvePenaltyOrigin(shot, holeShots);
+  if (origin.lie_before === 'tee') return par === 3 ? 'approach' : 'tee';
+  if (origin.lie_before === 'green') return 'around_green';
+  if (origin.distance_to_hole_before != null) {
+    const distYards = normalizeToYards(origin.distance_to_hole_before, origin.distance_unit_before);
     if (distYards <= AROUND_GREEN_THRESHOLD_YARDS) return 'around_green';
   }
   return 'approach';
+}
+
+/** The shot whose position a penalty stroke is charged to — see getPenaltyCategory. */
+function resolvePenaltyOrigin(penalty: RawShot, holeShots?: readonly RawShot[]): RawShot {
+  if (!holeShots || holeShots.length === 0) return penalty;
+  const real = holeShots.filter(s => !s.is_penalty && s.shot_type !== 'penalty');
+  let before: RawShot | null = null;
+  let after: RawShot | null = null;
+  for (const s of real) {
+    if (s.shot_number < penalty.shot_number) {
+      if (!before || s.shot_number > before.shot_number) before = s;
+    } else if (s.shot_number > penalty.shot_number) {
+      if (!after || s.shot_number < after.shot_number) after = s;
+    }
+  }
+  return before ?? after ?? penalty;
 }
 
 // ============================================================================
@@ -2518,7 +2545,7 @@ function aggregateRoundStats(rounds: Array<{
           shot.is_penalty === true ||
           shot.shot_type === 'penalty';
         if (isPenaltyShot) {
-          const penaltyCategory = getPenaltyCategory(shot, hole.par);
+          const penaltyCategory = getPenaltyCategory(shot, hole.par, hole.shots);
           if (penaltyCategory === 'tee') {
             sgTee -= 1;
             sgTeeCount++;

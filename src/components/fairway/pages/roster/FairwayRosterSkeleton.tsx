@@ -90,8 +90,8 @@ export function FairwayCoachCardSkeleton() {
  */
 function FairwayTeammateCardSkeleton() {
   return (
-    <Surface elevation="border" padding="md" className="flex flex-col gap-5">
-      <div className="flex items-start gap-4">
+    <Surface elevation="border" padding="none" className="grid grid-cols-[minmax(0,1fr)_44px] items-center gap-2 p-4 md:flex md:flex-col md:gap-5 md:p-6">
+      <div className="flex min-w-0 items-center gap-3 md:items-start md:gap-4">
         {/* Avatar (48px round) */}
         <Skeleton className="h-12 w-12 flex-shrink-0 rounded-full" />
         {/* Name + year badge, then handicap chip + grad-year caption */}
@@ -108,7 +108,7 @@ function FairwayTeammateCardSkeleton() {
       </div>
 
       {/* Ghost Message button (size="sm", 36px) */}
-      <Skeleton className="h-9 w-full rounded-fw-md" />
+      <Skeleton className="h-11 w-11 rounded-full md:h-9 md:w-full md:rounded-fw-md" />
     </Surface>
   );
 }
@@ -149,7 +149,7 @@ export function FairwayRosterSkeleton() {
             mobile-landscape cards too narrow for their content; the skeleton
             must mirror the real grid's breakpoints exactly or it reserves
             the wrong slot shape and the real content shifts on paint. */}
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 md:gap-5 lg:grid-cols-2">
           {Array.from({ length: 6 }).map((_, i) => (
             <FairwayTeammateCardSkeleton key={i} />
           ))}

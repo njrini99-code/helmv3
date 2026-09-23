@@ -237,16 +237,14 @@ describe('G-55 — the rendered action rows', () => {
     ]);
   });
 
-  it('separates Delete on the desktop hover row too', () => {
-    // The defect was symmetrical and so is the fix: the hover row carried the
-    // same two reversible actions flush against the destructive one.
-    const { container } = render(createElement(MessageThreadPane, baseProps()));
-    const edit = container.querySelector('[aria-label="Edit message"]');
-    expect(edit, 'expected the desktop hover row').not.toBeNull();
-    const row = edit!.parentElement!;
-    expect(row.className).toContain('lg:flex');
-
-    expect(describeRow(row)).toEqual(['Edit message', 'separator', 'Delete message']);
+  it('opens the same actions from the desktop control', () => {
+    const onSetMobileActions = vi.fn();
+    const { container } = render(createElement(MessageThreadPane, baseProps({ onSetMobileActions })));
+    const action = container.querySelector<HTMLButtonElement>('[aria-label="Message actions"]');
+    expect(action).not.toBeNull();
+    action!.click();
+    expect(onSetMobileActions).toHaveBeenCalledWith(OWN_MESSAGE_ID);
+    expect(container.querySelector('[aria-label="Delete message"]')).toBeNull();
   });
 
   it('gives the rule BOTH of the artboard\u2019s margins, now that it runs the same way', () => {
@@ -268,14 +266,14 @@ describe('G-55 — the rendered action rows', () => {
     expect(rule!.className).toContain(`mx-${along / 4}`);
   });
 
-  it('paints both separators with the token, not a literal', () => {
+  it('separates destructive actions with the shared token', () => {
     render(createElement(MessageThreadPane, baseProps({ mobileActionsId: OWN_MESSAGE_ID })));
     // Two rules, in two orientations: the desktop hover row's vertical one and
     // the sheet's horizontal one.
     const rules = Array.from(
       document.body.querySelectorAll('[aria-hidden="true"][class*="-px"]'),
     ).filter((el) => el.className.includes('w-px') || el.className.includes('h-px'));
-    expect(rules.length).toBe(2);
+    expect(rules.length).toBe(1);
     for (const rule of rules) {
       expect(rule.className).toContain('bg-border-subtle');
       // A hairline, and only a hairline — the artboards' rule is 1px.
@@ -285,7 +283,7 @@ describe('G-55 — the rendered action rows', () => {
   });
 
   it('keeps Delete destructive, which the separator reinforces rather than replaces', () => {
-    const { container } = render(
+    render(
       createElement(MessageThreadPane, baseProps({ mobileActionsId: OWN_MESSAGE_ID })),
     );
     // Both artboards colour Delete oklch(0.505 0.19 27) and keep the rule. The
@@ -293,7 +291,7 @@ describe('G-55 — the rendered action rows', () => {
     for (const html of [actionsArtboard, reactionsArtboard]) {
       expect(html).toContain('color: oklch(0.505 0.19 27);">Delete<');
     }
-    const deletes = Array.from(container.querySelectorAll('[aria-label="Delete message"]'));
+    const deletes = Array.from(document.body.querySelectorAll('[aria-label="Delete message"]'));
     expect(deletes.length).toBeGreaterThan(0);
     for (const btn of deletes) {
       expect(btn.className).toMatch(/danger|text-fw-danger|bg-fw-danger/);

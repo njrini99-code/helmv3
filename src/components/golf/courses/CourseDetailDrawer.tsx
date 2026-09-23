@@ -320,7 +320,7 @@ export function CourseDetailDrawer({
                 type="button"
                 onClick={() => onOpenChange(false)}
                 aria-label="Close"
-                className="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full bg-black/35 text-white backdrop-blur-sm transition-colors hover:bg-black/50"
+                className="absolute right-3 top-3 inline-flex h-11 w-11 items-center justify-center rounded-full bg-black/35 text-white backdrop-blur-sm transition-colors hover:bg-black/50"
               >
                 <IconX size={18} aria-hidden />
               </button>
@@ -335,7 +335,7 @@ export function CourseDetailDrawer({
                     type="button"
                     onClick={() => fileRef.current?.click()}
                     disabled={uploading || !course}
-                    className="inline-flex items-center gap-1.5 rounded-full bg-black/35 px-3 py-1.5 text-caption font-medium text-white backdrop-blur-sm transition-colors hover:bg-black/50 disabled:opacity-60"
+                    className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-black/35 px-3 py-2 text-caption font-medium text-white backdrop-blur-sm transition-colors hover:bg-black/50 disabled:opacity-60"
                   >
                     <IconUpload size={13} aria-hidden /> {uploading ? 'Uploading…' : course?.image_url ? 'Replace' : 'Add photo'}
                   </button>
@@ -346,7 +346,7 @@ export function CourseDetailDrawer({
                       onClick={() => setRemovePhotoConfirm(true)}
                       disabled={pending}
                       aria-label="Remove photo"
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/35 text-white backdrop-blur-sm transition-colors hover:bg-black/50 disabled:opacity-60"
+                      className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-black/35 text-white backdrop-blur-sm transition-colors hover:bg-black/50 disabled:opacity-60"
                     >
                       <IconTrash size={13} aria-hidden />
                     </button>
