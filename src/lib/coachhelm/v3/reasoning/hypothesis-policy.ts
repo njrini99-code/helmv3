@@ -61,10 +61,18 @@
  * contradiction downgraded it back. `'supported_association'` — a metric
  * with `status === 'supported'` points the same direction as the
  * hypothesis, and nothing contradicts it; this is an ASSOCIATION, not a
- * causal claim. `'coach_annotated'` is reachable only once a coach has
- * reviewed a hypothesis (`personal-context.ts` — not wired by slice 2
- * either; still a LATER slice) — nothing in this module can produce it,
- * and it is kept in the union only so the type is stable across slices.
+ * causal claim.
+ *
+ * `'coach_annotated'` is currently UNREACHABLE: `mergeCoachAnnotation`
+ * (slice 3, addendum §8.3) attaches a `CoachAnnotation` alongside a
+ * hypothesis but deliberately never overwrites `state` — the spec is
+ * explicit that a coach's judgment layers onto the evidence, never
+ * replaces it, and there is no `'causal'` state for an annotation to
+ * upgrade a hypothesis to. That leaves this value in the union with no
+ * producer; whether to keep it (e.g. for a future UI-only "reviewed" read
+ * derived from `coachAnnotation != null`, distinct from this module's own
+ * `state`) or drop it from `HypothesisState` is an open question raised
+ * back to the addendum owner, not decided in this slice.
  * There is deliberately no `'proven'` state: this module never claims
  * that.
  *
@@ -115,6 +123,19 @@
  * as evidence FOR it would be circular. `recovery` is therefore always
  * `'no_data'` in this slice (its `id` still carries the triggering shot's
  * coordinates for traceability).
+ *
+ * ## Slice 3: coach annotation
+ * `mergeCoachAnnotation`/`reopenIfContradicted` (addendum §8.3) let a coach
+ * layer a judgment onto a hypothesis without touching the evidence: `state`,
+ * `description`, `prerequisites`, `supportingClaimIds`,
+ * `contradictingClaimIds`, and `missingInputs` are untouched by either
+ * function — only the new `coachAnnotation` field is set. On a later call
+ * with fresh `metrics`/`facts`, `reopenIfContradicted` flags the annotation
+ * `reopened: true` (never silently dropped, never silently kept current)
+ * the moment a NEW contradicting claim shows up that wasn't already known
+ * at annotation time — including a claim id that flips from supporting to
+ * contradicting between calls, which is why the two claim-id snapshots are
+ * kept separate rather than merged into one "known" set.
  */
 
 import type { ShotFact, ShotIntent } from '../context/types';
@@ -144,6 +165,35 @@ export type HypothesisFamily =
 export interface NextCheck {
   distinguishes: HypothesisFamily[];
   requires: string;
+}
+
+/**
+ * A coach's judgment about a hypothesis, layered alongside the evidence —
+ * addendum §8.3: "A coach can annotate a working explanation; retain
+ * author, date, and evidence. On future contradictory evidence, reopen the
+ * explanation instead of silently preserving certainty." Set by
+ * `mergeCoachAnnotation`, updated by `reopenIfContradicted`. Never read by
+ * either function as a reason to change `state`/`description`/the claim or
+ * `missingInputs` arrays — those stay exactly what the evidence says.
+ */
+export interface CoachAnnotation {
+  /** Coach id (or equivalent identifier) who made the annotation. */
+  author: string;
+  /** ISO timestamp supplied by the caller — this module has no clock. */
+  date: string;
+  /** The coach's own note. Free text; never fed back into `description` or
+   *  any other field the banned-terms scan covers. */
+  note: string;
+  /** `supportingClaimIds` at the moment of annotation — the evidentiary
+   *  snapshot the coach's judgment was made against. */
+  supportingClaimIdsAtAnnotation: readonly string[];
+  /** `contradictingClaimIds` at the moment of annotation. */
+  contradictingClaimIdsAtAnnotation: readonly string[];
+  /** True once `reopenIfContradicted` has found a fresh contradicting
+   *  claim that was not in `contradictingClaimIdsAtAnnotation` — the
+   *  annotation is retained for the record but no longer treated as
+   *  current. */
+  reopened: boolean;
 }
 
 export interface Hypothesis {
@@ -176,6 +226,9 @@ export interface Hypothesis {
   /** Non-null only when this hypothesis (or a sibling it competes with)
    *  can't yet be distinguished from another. */
   nextCheck: NextCheck | null;
+  /** A coach's layered judgment — see {@link CoachAnnotation}. Absent
+   *  unless `mergeCoachAnnotation` has been applied. */
+  coachAnnotation?: CoachAnnotation;
 }
 
 // ---------------------------------------------------------------------------
@@ -644,4 +697,70 @@ export function buildHypotheses(
   hypotheses.push(...buildPar5OpportunityHypotheses(metrics));
 
   return hypotheses;
+}
+
+// ---------------------------------------------------------------------------
+// Coach annotation (addendum §8.3) — pure, additive layering. Neither
+// function reads or changes `state`/`description`/`prerequisites`/
+// `supportingClaimIds`/`contradictingClaimIds`/`missingInputs`/`nextCheck`;
+// a coach's judgment never overwrites the evidence, and there is no
+// `'causal'` state for an annotation to upgrade a hypothesis to.
+// ---------------------------------------------------------------------------
+
+/**
+ * Attach a coach's annotation to a hypothesis. Pure: no clock, no IO — the
+ * caller supplies `date`. Snapshots `supportingClaimIds`/
+ * `contradictingClaimIds` at the moment of annotation (for
+ * `reopenIfContradicted` to later compare against); does not touch any
+ * other field on `hypothesis`.
+ */
+export function mergeCoachAnnotation(
+  hypothesis: Hypothesis,
+  annotation: { author: string; date: string; note: string },
+): Hypothesis {
+  return {
+    ...hypothesis,
+    coachAnnotation: {
+      author: annotation.author,
+      date: annotation.date,
+      note: annotation.note,
+      supportingClaimIdsAtAnnotation: [...hypothesis.supportingClaimIds],
+      contradictingClaimIdsAtAnnotation: [...hypothesis.contradictingClaimIds],
+      reopened: false,
+    },
+  };
+}
+
+/**
+ * Per addendum §8.3: "On future contradictory evidence, reopen the
+ * explanation instead of silently preserving certainty." Compares a
+ * freshly rebuilt hypothesis (same id, latest `metrics`/`facts`) against
+ * the CONTRADICTING claim ids the coach's annotation was made against.
+ *
+ * Claim ids name a row, not a direction — the same undimensioned id can
+ * appear in `supportingClaimIds` for one call and `contradictingClaimIds`
+ * for another (e.g. `short_bias`'s single metric flipping sides), so a
+ * flip must be detected against the CONTRADICTING snapshot specifically,
+ * never a union of both — a claim that was supporting at annotation time
+ * and is contradicting now must count as new contradicting evidence.
+ *
+ * No new contradicting claim: the annotation carries forward onto `fresh`
+ * unchanged (still `reopened: false`) — every other field comes from
+ * `fresh`, so `missingInputs`/etc. stay current even while the annotation
+ * holds. A new contradicting claim: `reopened` flips to `true` on the
+ * SAME annotation object (author/date/note/snapshot retained for the
+ * record, per §8.3) — `fresh`'s own `state`/`description` pass through
+ * untouched; this function never re-derives or downgrades them itself.
+ */
+export function reopenIfContradicted(annotated: Hypothesis, fresh: Hypothesis): Hypothesis {
+  if (!annotated.coachAnnotation) return fresh;
+  const knownContradicting = new Set(annotated.coachAnnotation.contradictingClaimIdsAtAnnotation);
+  const hasNewContradiction = fresh.contradictingClaimIds.some((c) => !knownContradicting.has(c));
+  if (!hasNewContradiction) {
+    return { ...fresh, coachAnnotation: annotated.coachAnnotation };
+  }
+  return {
+    ...fresh,
+    coachAnnotation: { ...annotated.coachAnnotation, reopened: true },
+  };
 }

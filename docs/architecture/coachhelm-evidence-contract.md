@@ -1407,10 +1407,83 @@ are dimensioned when they resolved against an actual row.
   have no metric producer today (no A2/A3 slice emits
   `approach_short_miss_rate`/`approach_recovery_outcome_rate`) — every real
   call reports them `'no_data'`, never fabricates a value.
-- **Still not wired to `diagnosis.ts` or `personal-context.ts`** — slice 2
-  was the `MetricResult` swap, dimensioned claim ids, and the
-  `shotClaimId` marker fix (above); the diagnosis/personal-context wiring
-  remains a later slice.
+
+### Slice 3: coach annotation (addendum §8.3)
+
+`mergeCoachAnnotation(hypothesis, { author, date, note })` and
+`reopenIfContradicted(annotated, fresh)` let a coach layer a judgment onto
+a hypothesis WITHOUT rewriting the evidence — the addendum's own text:
+"A coach can annotate a working explanation; retain author, date, and
+evidence. On future contradictory evidence, reopen the explanation instead
+of silently preserving certainty."
+
+- **Purely additive**: `mergeCoachAnnotation` returns
+  `{ ...hypothesis, coachAnnotation: {...} }` — `state`, `description`,
+  `prerequisites`, `supportingClaimIds`, `contradictingClaimIds`, and
+  `missingInputs` are byte-identical before and after (tested). It snapshots
+  `supportingClaimIds`/`contradictingClaimIds` AT THE MOMENT of annotation
+  into `coachAnnotation.supportingClaimIdsAtAnnotation`/
+  `contradictingClaimIdsAtAnnotation`, kept SEPARATE rather than merged
+  into one "known claims" set.
+- **Why separate snapshots**: a claim id names a row, not a direction —
+  `short_bias` pushes the SAME undimensioned `metricClaimId` onto either
+  `supportingClaimIds` or `contradictingClaimIds` depending on which side
+  of its threshold the metric lands on. A claim that was supporting at
+  annotation time and is contradicting on a later call is the SAME string
+  either way, so a union-based "known claims" set would treat it as
+  already-known and never reopen. `reopenIfContradicted` checks only
+  against the CONTRADICTING snapshot: any claim in a fresh evaluation's
+  `contradictingClaimIds` that isn't in that snapshot reopens the
+  annotation. Pinned by a regression test that flips `short_bias`'s single
+  metric from supporting to contradicting between two `buildHypotheses`
+  calls and asserts it reopens.
+- **`reopened: true` retains, never discards**: author/date/note and both
+  claim-id snapshots stay on the SAME `coachAnnotation` object; only
+  `reopened` flips. `state`/`description` always come from the fresh
+  evaluation passed in — `reopenIfContradicted` never re-derives or
+  downgrades them itself, it only decides whether the annotation still
+  applies.
+- **`'coach_annotated'` is currently UNREACHABLE**: neither function ever
+  sets `Hypothesis.state` to it — the addendum is explicit that annotation
+  layers onto the evidence, never replaces it, and there is no `'causal'`
+  state for an annotation to upgrade a hypothesis to. Whether to keep this
+  value in `HypothesisState` (e.g. for a future UI-only "reviewed" read
+  derived from `coachAnnotation != null`) or drop it is an open question,
+  not decided in this slice.
+- **`diagnosis.ts`/`personal-context.ts` still not wired — reported, not
+  forced**:
+  - `engine/diagnosis.ts` is a narrow pure `AxisTally` → observation/check/
+    action text helper (`dominantAxis`/`approachAxisReading`) with exactly
+    one caller, the DB-backed `generators/approach-miss.ts`. It has no
+    awareness of `ShotFact`/`MetricResult`/`Hypothesis` at all — wiring
+    hypothesis ids into it would mean either breaking its tally-only
+    purity contract or wiring the DB-backed generator layer instead, which
+    is a materially larger change than "modify diagnosis.ts" and outside
+    a pure-core, no-I/O slice.
+  - `personal-context.ts` was scoped to resolve active goals/focus
+    areas/interventions for a player (through existing loaders) into
+    check-selection/delivery-priority hints, never touching metric
+    results. Before building it: `Goal.metric_id` is typed `MetricId`
+    (`metrics/registry.ts`), and NONE of this module's own metric ids
+    (`approach_short_miss_rate`, `approach_rough_gap_strokes_contribution`,
+    `approach_recovery_outcome_rate`, `par5_regulation_opportunity_rate`,
+    `par5_green_in_two_rate`) are registered `MetricId`s — a goal can never
+    match a hypothesis family through this path. No "intervention"
+    type/loader exists anywhere in the codebase (`development.ts`, 1968
+    lines, zero hits). `FocusAreaCategory` (`insight-types.ts`) has no
+    verified mapping to a `HypothesisFamily` — its `relatedStats` are
+    loosely-named legacy stat strings, not this module's metric-id
+    vocabulary. Building `personal-context.ts` against any of these would
+    either always return an empty result or require inventing an
+    unverified correspondence table — reported back rather than shipped.
+- **Checklist item "paired fixtures with identical endpoints but different
+  recorded intent"** was already satisfied by slice 1/2:
+  `hypothesis-policy.test.ts`'s `'buildHypotheses — rough-lie approach:
+  identical shot, different intent, different hypothesis'` block reuses
+  the SAME `roughApproachShot` fixture (identical round/hole/shot/distance/
+  lie) across `go_for_green`/`recovery`/`unknown`/`layup` intents and
+  asserts each produces a different family — no new fixtures added this
+  slice.
 
 ## How to add a new comparison source
 
