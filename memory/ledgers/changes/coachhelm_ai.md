@@ -87,3 +87,41 @@
 - Verification: every edited file was adversarially re-verified against
   its page's source, twice for the files that failed the first pass.
   typecheck 0, lint 0, build 0.
+
+## 2026-09-23 — A9 slice 1: comparable-opportunity attribution wired into the cron
+
+- SHA: dadbe5f0d (branch `agent/coachhelm-comparable-attribution`, stacked
+  on PR #1992 — OPEN as of this SHA).
+- Change: new `src/lib/coachhelm/v3/causality/comparable-attribute.ts`
+  wires PR #1992's pure `computeComparableOpportunities` core into the
+  `causality-attribute` cron for the three `intentional-null`
+  "needs-shot-level-join" approach-proximity metrics, behind a new
+  default-off flag `coachhelm_comparable_opportunity_attribution`. The
+  cron's pre-filter and main loop (`api/cron/v3/causality-attribute/
+  route.ts`) route these metrics to the new module instead of the
+  round-level `computeAttribution` only when the flag is on; flag off is
+  byte-identical to before this slice.
+- Why: `attribute.ts`'s round-level before/after average has no per-shot
+  "opportunity" concept for these metrics — they've been permanently
+  skipped since W22. This gives them a real, shot-level comparison instead,
+  using the insight's FIRST REAL `golf_insight_exposure.shown_at` as
+  `interventionAt` (never a `created_at` proxy — zero exposure rows retries
+  next run rather than a permanent skip, per the addendum's anti-simulation
+  rule). Every written row carries `lift: null` unconditionally, so it can
+  never move a coach weight — `recordInsightOutcome`/`updateCoachWeight`
+  are never called for these rows. Whether this signal should ever feed
+  learning is an explicit, separate decision (A9 slice 3), not something
+  this slice decides.
+- Verification: `comparable-attribute.test.ts` (new, 12 tests — the
+  module's own DB orchestration: the exposure lookup, window computation,
+  skip-reason mapping, and the write function's `lift: null` invariant +
+  unknown-column degrade/retry for both PGRST204 and 42703) and a new A9
+  slice 1 describe block in `causality-attribute.test.ts` (7 tests — the
+  cron's wiring: flag on/off, all three skip reasons, the success path,
+  the `method_version_column_missing` degrade signal, a write error, and
+  that the weight/outcome-ledger tables are never touched). `flags:check`
+  clean (6 flags). `typecheck:fast` clean except a pre-existing,
+  out-of-scope error in PR #1992's own
+  `src/test/coachhelm/v3/comparable-opportunities.test.ts` (confirmed
+  present on that branch before this slice's changes, not caused by them).
+  `docs:check` clean.
