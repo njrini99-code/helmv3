@@ -59,7 +59,7 @@ runs:
 
     - name: Start local Supabase stack
       shell: bash
-      run: supabase start
+      run: bash scripts/db/supabase-start-with-retry.sh
 
     - name: Export local stack credentials
       shell: bash
