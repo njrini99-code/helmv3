@@ -118,6 +118,8 @@ interface FocusAreaRow {
   status: string | null;
   current_value: number | null;
   target_value: number | null;
+  baseline_value: number | null;
+  target_metric: string | null;
   created_at: string;
 }
 
@@ -254,7 +256,9 @@ export default async function PlayerGamePage({
     // Focus areas
     supabase
       .from('golf_player_focus_areas')
-      .select('id, title, area_type, status, current_value, target_value, created_at')
+      .select(
+        'id, title, area_type, status, current_value, target_value, baseline_value, target_metric, created_at',
+      )
       .eq('player_id', playerId)
       .order('created_at', { ascending: false }),
 
