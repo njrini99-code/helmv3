@@ -295,6 +295,90 @@ confirmation distinct from delivery — is deferred future work (Package
 9/11), not something this fix adds. Until it exists, "Delivered" is the
 honest ceiling: it is evidence of reach, not of attention.
 
+## Typed claim validator (2026-09-23, Package 8 slice 1)
+
+`src/lib/coachhelm/v3/llm/citations.ts`'s numeric scan checks every number
+the model emits against a FLAT evidence value set — it has no concept of
+which metric a number was cited for, so a real value cited under the
+wrong metric, player, or window passes unnoticed. `claim-validator.ts`
+closes that gap for a `compose()` caller that opts in.
+
+- `EvidencePacket` scopes the check to ONE `player_id` and ONE window
+  (`window_start`/`window_end`), matching how round_review composes: one
+  player, one round. Each `EvidencePacketEntry` carries `metric_id`,
+  `value`, `sample_n`, and an optional `causal_support` (reused
+  `CausalityLevel` + `DiagnosisDriver[]` from `v2/insights/types.ts`).
+- `ClaimReference` is the model's typed assertion: claim id, metric id,
+  value, player id, window, and an optional `claim_type: 'causal'` for a
+  claim that asserts a cause rather than a fact.
+- `validateClaims(claims, packet, prose)` checks each claim in a FIXED
+  order — player, then window, then metric existence, then value, then
+  the `sample_n` floor (reused `MIN_SAMPLE_N`, see the section above),
+  then causal backing — so a claim broken in more than one way always
+  reports the first check it fails, not whichever check happened to run
+  last. A value that matches a DIFFERENT metric's entry in the same
+  packet is `wrong_field`, distinct from `value_mismatch` (matches
+  nothing at all). A causal claim needs BOTH a `causality_level` and at
+  least one driver on its entry, else `unsupported_cause`.
+- Vacuous-pass guard: a numeric token in the prose that no claim
+  (accepted or rejected) ever attempted to cite is its own
+  `uncited_number` rejection — a response with zero claims cannot
+  trivially pass just because nothing was rejected.
+- `compose.ts` wires this in as an EXTRA gate, after the existing numeric
+  scan, when the caller supplies `evidence_packet` on `ComposeRequest`.
+  The model is asked to append a delimited `<<<CLAIMS>>>...<<<END_CLAIMS>>>`
+  JSON block; it is parsed with zod `safeParse`, never the AI SDK's own
+  structured-output API, and is ALWAYS stripped before either verifier
+  runs or before any text reaches a player. A missing or unparsable block
+  is `malformed`, not an exception. Both gates share the SAME single
+  corrective retry (still budget re-gated); on final failure the call log
+  records `citations.reason: 'claim_validation_failed'` (taking priority
+  over `'verification_failed'` when the typed gate is the one that
+  failed) with a `claim_validation: { malformed, rejected: [{claim_id,
+  metric_id, reason}] }` payload — fields only, no prose, mirroring the
+  existing `evidence_offered` no-prose contract.
+- Not wired in this slice: `round-review.ts` does not build or pass an
+  `evidence_packet` yet, so this gate is dormant for every live caller
+  today. `round-review.ts` itself has zero callers in production
+  (`round-regime.ts` documents this); the wiring candidate is
+  `round-recap.ts`'s `generateLLMRecap`, the only live, persisted
+  (`golf_rounds.ai_recap`) LLM-text surface among the candidates
+  surveyed — a later slice.
+- `EvidencePacketEntry.kind: 'measurement' | 'aggregate'` (2026-09-23
+  review fix): the `sample_n` floor only applies to `'aggregate'` (a
+  value computed over multiple observations — a rate, an average).
+  `'measurement'` (a direct single-round fact: this round's own score,
+  putts, fairways hit) is exempt — there is no "n" to sample when the
+  count IS the fact. Unlabeled entries default to `'aggregate'` so an
+  entry a producer forgot to classify still fails safe (floored).
+- Delimiter handling is defense-in-depth against the model itself, not
+  just malformed JSON (2026-09-23 review fix): more than one
+  `<<<CLAIMS>>>`/`<<<END_CLAIMS>>>` pair, or an opener with no matching
+  closer, is `malformed` — every delimiter occurrence is stripped
+  regardless (global, not "replace the first"), so a duplicated or
+  unterminated block can never leave a literal delimiter or raw JSON
+  fragment in text a player reads.
+- The `uncited_number` guard also exempts (2026-09-23 review fix): a
+  number that appears in ANY packet entry's value, even if no claim
+  formally cited it, and numbers in narrow structural context — hole
+  numbers (`hole 14`), par values (`par 4`), and written dates
+  (`September 12`) — so accurate prose doesn't fall back just because
+  nothing registered a course-structure number as an "evidence value".
+  A bare number with no structural keyword beside it is still
+  scrutinised.
+- Causal language is checked in the PROSE independent of what a claim
+  declares (2026-09-23 review fix): a model can tag its own claim
+  `claim_type: 'fact'` (or omit the field) while still writing a causal
+  sentence ("because", "due to", "led to", "as a result", "which is
+  why", …) — the model's own label is not trusted. Causal prose with no
+  ACCEPTED claim actually tagged and backed `'causal'` is its own
+  `unsupported_cause` rejection, distinct from (and not duplicating) a
+  properly-tagged causal claim that already failed its own backing
+  check.
+- A successful packet-engaged call now logs `citations.claim_validation:
+  { accepted, rejected: 0 }` (2026-09-23 review fix) — previously only a
+  discard told you the typed gate had run at all.
+
 ## Standing read rules (2026-09-12, repair deferrals)
 
 Two rules every reader of `golf_player_standing` and `golf_coach_insights`
