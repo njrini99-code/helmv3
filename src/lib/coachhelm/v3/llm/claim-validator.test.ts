@@ -345,3 +345,21 @@ describe('validateClaims() — fixed check order (nice-to-have, post-#1991 revie
     expect(result.rejected[0]?.reason).toBe('wrong_player');
   });
 });
+
+describe('validateClaims() — §15.2 fixture matrix: registered metric derivation', () => {
+  // Repair plan §15.2 row: "Correct percentage complement or rounding —
+  // accepted only through registered metric derivation." NO CODE PATH ON
+  // MAIN: this module checks a claimed value against a FLAT set of packet
+  // entries, one metric_id at a time (see the module doc above and
+  // `EvidencePacket`/`PacketEntry`). There is no registry of derived
+  // relationships (e.g. fairways_missed_pct = 100 - fairways_hit_pct), so a
+  // model citing a correct arithmetic complement/rounding of a real packet
+  // value under a DIFFERENT, unregistered metric_id currently has no
+  // dedicated accept/reject path at all — it would either miss entirely
+  // (unknown_metric) or coincidentally collide with an unrelated entry.
+  // Do not build a derivation registry to close this in a fixture-matrix
+  // PR; flagging for a scoped follow-up.
+  it.todo(
+    'accepts a claimed percentage complement/rounding ONLY when it resolves through a registered metric derivation — no such registry exists yet (see claim-validator.ts module doc)',
+  );
+});

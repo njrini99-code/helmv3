@@ -341,6 +341,38 @@ describe('postRoundTrigger', () => {
       );
     });
 
+    it('a parked round is not stuck — a later trigger for the round that clears the ' +
+       'floor is analyzed normally, §15.2 "third eligible round arrives"', async () => {
+      const admin = createPostRoundFake([
+        { id: 'r16', player_id: 'p1', status: 'completed', coachhelm_analyzed_at: null },
+      ]);
+      mockTrigger.mockResolvedValue({
+        success: false,
+        error: '2 completed rounds so far — CoachHelm speaks after 3',
+        code: 'engine_below_round_floor',
+        details: { completedRounds: 2, floor: 3 },
+      });
+      const parked = await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r16' });
+      expect(parked.outcome.kind).toBe('waiting_for_data');
+      {
+        const { data } = await admin.from('golf_rounds').select('*').eq('id', 'r16');
+        expect(data?.[0]?.['coachhelm_analyzed_at']).toBeNull();
+        expect(data?.[0]?.['coachhelm_failure_reason']).toBe('engine_below_round_floor');
+      }
+
+      // The third round completes and re-triggers analysis for the SAME
+      // round row — the engine now sees enough evidence and wakes.
+      mockTrigger.mockResolvedValue({ success: true, insights_created: 4 });
+      const woke = await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r16' });
+      expect(woke.outcome.kind).toBe('succeeded');
+
+      const { data, error } = await admin.from('golf_rounds').select('*').eq('id', 'r16');
+      expect(error).toBeNull();
+      expect(data?.[0]?.['coachhelm_analyzed_at']).toBeTruthy();
+      expect(data?.[0]?.['coachhelm_failed_at']).toBeNull();
+      expect(data?.[0]?.['coachhelm_failure_reason']).toBeNull();
+    });
+
     it('hands the engine code back so the safety net and queue consumer reach the same verdict', async () => {
       const admin = createPostRoundFake([
         { id: 'r10', player_id: 'p1', status: 'completed', coachhelm_analyzed_at: null },

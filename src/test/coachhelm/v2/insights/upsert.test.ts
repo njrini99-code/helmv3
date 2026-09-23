@@ -496,4 +496,84 @@ describe('upsertInsight', () => {
       expect(updateCall!.filters?.lifecycle_state).toBe('tentative');
     });
   });
+
+  // §15.2 fixture matrix — "Old worker finishes after a new revision: new
+  // accepted result survives" / repair plan §5.1 acceptance #6, "a
+  // concurrent run cannot revert a later state." REAL GAP (not fixed here —
+  // reported to team-lead, see PR body): the CAS block above only guards
+  // `lifecycle_state`. Plan §5.1 point 6 calls for a "compare-and-set
+  // against the observed lifecycle/REVISION" — only the lifecycle half
+  // shipped (see the CAS block's own "R1/R2 leftover" comment). When two
+  // analysis runs race for the same insight and `lifecycle_state` does not
+  // change between them — the common "refresh, no movement" case — nothing
+  // stops an OLDER run's stale evidence from landing after a NEWER run's
+  // fresher evidence already did.
+  describe('stale write vs. a concurrent newer revision (plan §5.1: "a concurrent run cannot revert a later state")', () => {
+    it.fails('an older, stale write does not regress evidence a newer concurrent run already persisted', async () => {
+      // "existing" reflects what a newer worker ALREADY wrote: larger
+      // sample_n, later window_end, same lifecycle_state.
+      const fresherEvidence = baseEvidence({ sample_n: 90, window_end: '2026-05-20', your_value: 0.40 });
+      const existing = {
+        id: 'existing-race',
+        evidence: fresherEvidence,
+        metadata: {},
+        lifecycle_state: 'detected' as const,
+      };
+      // This call's input is the OLDER worker's stale payload — decided
+      // before it knew about the newer write, reaching the UPDATE only now.
+      const staleEvidence = baseEvidence({ sample_n: 47, window_end: '2026-04-21', your_value: 0.39 });
+      const { client, calls } = createFakeSupabase({
+        selectResult: { data: [existing], error: null },
+      });
+
+      await upsertInsight(client, baseInput({ evidence: staleEvidence }));
+
+      const updateCall = calls.find((c) => c.op === 'update');
+      const payload = updateCall!.payload as Record<string, unknown>;
+      const writtenEvidence = payload.evidence as InsightEvidence;
+      // Desired: the write must not regress sample_n/window_end behind what
+      // a concurrent newer run already persisted. Today it does — the CAS
+      // filter only guards lifecycle_state, which is unchanged here, so the
+      // stale write lands and clobbers the fresher evidence.
+      expect(writtenEvidence.sample_n).toBeGreaterThanOrEqual(fresherEvidence.sample_n);
+      expect(writtenEvidence.window_end >= fresherEvidence.window_end).toBe(true);
+    });
+  });
+
+  // §15.2 fixture matrix — "Corrected round within 24 hours: new revision is
+  // not suppressed by old dedup key." REAL GAP (reported, not fixed here):
+  // `evidenceRevisionKey = ${sample_n}|${window_end}` (see updateExisting)
+  // has NO content/value component. A same-day correction to a round (coach
+  // fixes a scoring error) that leaves sample_n and window_end unchanged
+  // produces the IDENTICAL key as the pre-correction evidence, so the
+  // maturation-confirmation tracker treats the corrected write as "the same
+  // revision already counted" even though the underlying value changed.
+  describe('corrected-round revision-key collision (plan §5.1, inverse of "stale evidence does not become new evidence")', () => {
+    it.fails('a same-day correction with an unchanged sample_n/window_end still counts as a new maturation confirmation', async () => {
+      const existing = {
+        id: 'existing-correction',
+        evidence: baseEvidence({ sample_n: 47, window_end: '2026-04-21', your_value: 0.30 }),
+        // Already confirmed once under this (sample_n, window_end) key.
+        metadata: { maturation_keys: ['47|2026-04-21'] },
+        lifecycle_state: 'detected' as const,
+      };
+      // Coach corrects a scoring error the same day: round count and window
+      // are unchanged (still the same round), but the real value moved.
+      const correctedEvidence = baseEvidence({ sample_n: 47, window_end: '2026-04-21', your_value: 0.55 });
+      const { client, calls } = createFakeSupabase({
+        selectResult: { data: [existing], error: null },
+      });
+
+      await upsertInsight(client, baseInput({ evidence: correctedEvidence }));
+
+      const updateCall = calls.find((c) => c.op === 'update');
+      const payload = updateCall!.payload as Record<string, unknown>;
+      const metadata = payload.metadata as Record<string, unknown>;
+      // Desired: a genuinely corrected value should register as a new
+      // confirmation. Today it does not — the key collides with the
+      // pre-correction write, so maturation_keys stays at length 1 instead
+      // of growing to 2.
+      expect((metadata.maturation_keys as string[]).length).toBe(2);
+    });
+  });
 });
