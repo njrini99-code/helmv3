@@ -26,6 +26,7 @@
  */
 import { describe, it, expect, vi } from 'vitest';
 import { createFakeSupabase, type FakeSupabase } from '@/test/fixtures/fake-supabase';
+import { logServerError } from '@/lib/server-error-logger';
 
 let fake: FakeSupabase;
 let adminFake: FakeSupabase;
@@ -62,8 +63,8 @@ function baseTables() {
   };
 }
 
-function seed(tables: ReturnType<typeof baseTables>) {
-  fake = createFakeSupabase({ user: { id: 'u-p1' }, tables });
+function seed(tables: ReturnType<typeof baseTables>, queryErrors?: Record<string, unknown>) {
+  fake = createFakeSupabase({ user: { id: 'u-p1' }, tables, queryErrors });
   adminFake = fake;
 }
 
@@ -269,5 +270,96 @@ describe('savePartialRound no-id branch — startIntent (R8)', () => {
     if (result.success) {
       expect(result.data.roundId).toBe(EXISTING_ROUND);
     }
+  });
+
+  it('SHOULD-FIX #1: fails CLOSED with a retryable error (no insert) when the in-progress candidate lookup errors', async () => {
+    const tables = baseTables();
+    // No existing round needed — the lookup itself is what fails, so the
+    // fail-open/fail-closed choice is the only thing under test here.
+    seed(tables, { golf_rounds: { message: 'connection reset', code: 'ECONNRESET' } });
+
+    const result = await savePartialRound(newRoundPayload, undefined, { startIntent: true });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      // A generic retryable message, not the raw db error and not one of the
+      // structured signal codes ('in_progress_exists' / 'duplicate_completed_round')
+      // — the caller must not mistake an unreadable lookup for "no conflict".
+      expect(result.error).not.toBe('in_progress_exists');
+      expect(result.error).not.toBe('duplicate_completed_round');
+      expect(typeof result.error).toBe('string');
+    }
+    // Fail CLOSED: nothing was inserted while the slot's occupancy was unknown.
+    expect(tables.golf_rounds).toHaveLength(0);
+    expect(logServerError).toHaveBeenCalledWith(
+      expect.stringContaining('in-progress candidate lookup failed'),
+      expect.objectContaining({ action: 'savePartialRound.inProgressCandidateLookup' }),
+      'error',
+    );
+  });
+
+  it('SHOULD-FIX #2: a completed round 1 of a 36-hole qualifier day does not spuriously warn when starting round 2 (qualifier_round_number now filters the completed-round check too)', async () => {
+    const QUALIFIER = '44444444-4444-4444-8444-444444444444';
+    const tables = baseTables();
+    tables.golf_rounds.push({
+      id: COMPLETED_ROUND, player_id: 'player-1', team_id: 'team-1', course_id: COURSE,
+      course_name: 'Winchester CC', round_date: '2026-09-02', status: 'completed',
+      qualifier_id: QUALIFIER, qualifier_round_number: 1,
+      updated_at: '2026-09-02T12:00:00Z',
+    });
+    seed(tables);
+
+    // Round 2 of the same qualifier day — a DIFFERENT qualifier_round_number,
+    // passed explicitly so this test doesn't depend on resolveQualifierRoundNumber's
+    // own derivation. Before this fix, the completed-round check ignored
+    // qualifier_round_number and matched round 1's completed row on
+    // qualifier_id alone, warning spuriously.
+    const result = await savePartialRound(
+      { ...newRoundPayload, qualifierId: QUALIFIER, qualifierRoundNumber: 2 },
+      undefined,
+      { startIntent: true },
+    );
+
+    expect(result.success).toBe(true);
+    expect(tables.golf_rounds).toHaveLength(2);
+    expect(tables.golf_rounds.find((r) => r.id === COMPLETED_ROUND)?.status).toBe('completed');
+  });
+
+  it('SHOULD-FIX #4: confirmSeparateRound bypasses ONLY the in-progress check — a completed match at the same slot still blocks with duplicate_completed_round', async () => {
+    const tables = baseTables();
+    // Both conflicts present at once: the player's own non-empty in_progress
+    // round AND a completed round, same course/date/qualifier slot.
+    tables.golf_rounds.push(
+      {
+        id: EXISTING_ROUND, player_id: 'player-1', team_id: 'team-1', course_id: COURSE,
+        course_name: 'Winchester CC', round_date: '2026-09-02', status: 'in_progress',
+        qualifier_id: null, qualifier_round_number: null,
+        updated_at: '2026-09-02T02:00:00Z',
+      },
+      {
+        id: COMPLETED_ROUND, player_id: 'player-1', team_id: 'team-1', course_id: COURSE,
+        course_name: 'Winchester CC', round_date: '2026-09-02', status: 'completed',
+        qualifier_id: null, qualifier_round_number: null,
+        updated_at: '2026-09-02T18:00:00Z',
+      },
+    );
+    tables.golf_holes.push({ id: 'h1', round_id: EXISTING_ROUND, hole_number: 1, score: 4, putts: 2 });
+    seed(tables);
+
+    const result = await savePartialRound(newRoundPayload, undefined, {
+      startIntent: true,
+      confirmSeparateRound: true,
+    });
+
+    // The bypass is scoped to exactly the in_progress_exists check — the
+    // completed-round warning still fires and still blocks the insert.
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toBe('duplicate_completed_round');
+      expect('completedRoundId' in result && result.completedRoundId).toBe(COMPLETED_ROUND);
+    }
+    expect(tables.golf_rounds).toHaveLength(2);
+    expect(tables.golf_rounds.find((r) => r.id === EXISTING_ROUND)?.status).toBe('in_progress');
+    expect(tables.golf_rounds.find((r) => r.id === COMPLETED_ROUND)?.status).toBe('completed');
   });
 });

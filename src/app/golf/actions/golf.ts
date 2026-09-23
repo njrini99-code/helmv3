@@ -6499,14 +6499,18 @@ export interface SavePartialRoundHoleInvalid {
  * in_progress round already occupying this exact course/date/qualifier slot,
  * with real progress (not an empty shell). Returned instead of inserting a
  * second round, which is exactly how the production orphans this closes were
- * produced — the caller should route to Continue Round for `roundId` rather
- * than retry the create.
+ * produced. 36-hole-day follow-up: the caller presents Resume / Discard /
+ * Start a new round rather than assuming Resume — `scoredHoles`/`updatedAt`
+ * are for the Discard confirmation, which must show what it would delete
+ * before the player commits to it.
  */
 export interface SavePartialRoundInProgressExists {
   success: false;
   error: 'in_progress_exists';
   code: 'in_progress_exists';
   roundId: string;
+  scoredHoles: number;
+  updatedAt: string | null;
 }
 
 /**
@@ -7551,7 +7555,7 @@ async function savePartialRoundImpl(
       } else if (resolvedCourseId) {
         let existingRoundQuery = supabase
           .from('golf_rounds')
-          .select('id')
+          .select('id, updated_at')
           .eq('player_id', player.id)
           .eq('status', 'in_progress')
           .eq('course_id', resolvedCourseId)
@@ -7568,10 +7572,31 @@ async function savePartialRoundImpl(
           ? existingRoundQuery.eq('qualifier_round_number', resolvedQualifierRoundNumber)
           : existingRoundQuery.is('qualifier_round_number', null);
 
-        const { data: candidateRound } = await existingRoundQuery
+        const { data: candidateRound, error: candidateRoundError } = await existingRoundQuery
           .order('updated_at', { ascending: false })
           .limit(1)
           .maybeSingle();
+
+        // Fail CLOSED, on purpose, unlike the completed-round check below: an
+        // unreadable in-progress lookup here means we genuinely don't know
+        // whether this exact slot is already occupied, and falling through
+        // to insert on that unknown is exactly the write pattern that
+        // produced the stranded-duplicate rounds this file exists to
+        // prevent. A retryable error costs the player one tap; a silent
+        // insert can cost them a whole round's data.
+        if (candidateRoundError) {
+          await logServerError(
+            `savePartialRound: in-progress candidate lookup failed for player ${player.id}; refusing to insert (fail-closed): ${candidateRoundError.message}`,
+            { action: 'savePartialRound.inProgressCandidateLookup', featureArea: 'round_tracking', playerId: player.id, userId: user.id },
+            'error',
+          );
+          void flightRecorder.warn('db.create_or_update_draft', { errorSummary: 'in_progress_lookup_failed' });
+          endTrace('warning');
+          return {
+            success: false,
+            error: 'Could not check for an existing round at this course. Please try again.',
+          };
+        }
 
         // A1: a course/date/qualifier match is a HEURISTIC, not a unique
         // key — two legitimate in-progress rounds can share all of it (a
@@ -7599,6 +7624,19 @@ async function savePartialRoundImpl(
           // round" over Resume/Discard on the client's conflict prompt — the
           // insert below then proceeds with `candidateRound` left untouched
           // (never reused, never discarded from here).
+          //
+          // The Discard choice on that prompt is destructive, so the client
+          // needs enough to show what it would delete before the player
+          // commits — a scored-hole count and a last-updated time, not just
+          // an opaque id. Unlike the lookup above, a failure here fails OPEN
+          // (defaults to 0): it only feeds a display string, never a write
+          // decision, so a wrong-but-safe "0 holes scored" is preferable to
+          // blocking the whole conflict prompt over a display query.
+          const { count: scoredHoleCount } = await supabase
+            .from('golf_holes')
+            .select('id', { count: 'exact', head: true })
+            .eq('round_id', candidateRound.id)
+            .not('score', 'is', null);
           void flightRecorder.warn('db.create_or_update_draft', { errorSummary: 'in_progress_exists' });
           endTrace('warning');
           return {
@@ -7606,6 +7644,8 @@ async function savePartialRoundImpl(
             error: 'in_progress_exists',
             code: 'in_progress_exists',
             roundId: candidateRound.id,
+            scoredHoles: scoredHoleCount ?? 0,
+            updatedAt: candidateRound.updated_at ?? null,
           };
         }
       }
@@ -7632,6 +7672,13 @@ async function savePartialRoundImpl(
         completedMatchQuery = data.qualifierId
           ? completedMatchQuery.eq('qualifier_id', data.qualifierId)
           : completedMatchQuery.is('qualifier_id', null);
+        // Mirror the in-progress heuristic's own qualifier_round_number
+        // filter above: without it, a 36-hole one-day qualifier (round 1
+        // completed, round 2 legitimately starting) warns spuriously,
+        // because round 1's COMPLETED row matches on qualifier_id alone.
+        completedMatchQuery = resolvedQualifierRoundNumber != null
+          ? completedMatchQuery.eq('qualifier_round_number', resolvedQualifierRoundNumber)
+          : completedMatchQuery.is('qualifier_round_number', null);
 
         const { data: completedMatch, error: completedMatchError } = await completedMatchQuery
           .order('updated_at', { ascending: false })
