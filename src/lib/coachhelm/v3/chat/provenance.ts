@@ -278,6 +278,40 @@ export interface UnsupportedClaim {
  */
 const CLAIM_EXEMPT = /\b(?:\d{4}-\d{2}-\d{2}|\d{1,2}:\d{2}\s*(?:am|pm)?)\b/gi;
 
+/** The single pattern used both to find a claim in prose and to read a number out of tool text. */
+const NUMERIC_TOKEN_RE = /-?\d+(?:\.\d+)?/g;
+
+/** A bare UUID — never a statistic, always an identifier. */
+const UUID_LITERAL = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** A bare ISO date or timestamp — same reasoning as {@link CLAIM_EXEMPT}. */
+const ISO_DATE_LITERAL =
+  /^\d{4}-\d{2}-\d{2}([T ]\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})?)?$/;
+
+/**
+ * Numbers a tool wrote directly into a text field — `title`, `content`,
+ * `summary`, `value_display`. `get_player_insights` composes coaching prose
+ * server-side ("making 4% of putts from 15-25 ft (23 attempts)") rather than
+ * returning those figures as `Measurement`s, and {@link collectNumbers} used
+ * to only walk numeric leaves, so every number in that prose was invisible to
+ * the audit. Verified against production 2026-09-22: a chat turn that
+ * restated an insight's own wording — attempts, make-rates, even the
+ * PGA Tour comparison the insight itself carried — was flagged as fabricated
+ * because the audit had never looked at the string that number came from.
+ *
+ * A whole-string UUID or ISO date/timestamp is skipped rather than mined for
+ * digits — an id or a timestamp is not a statistic, and walking it would
+ * hand the audit meaningless "supported" anchors (a round's id, a
+ * `created_at`) that could mask a genuine fabrication landing on the same
+ * digits by coincidence.
+ */
+function numbersInText(value: string): number[] {
+  if (UUID_LITERAL.test(value) || ISO_DATE_LITERAL.test(value)) return [];
+  const matches = value.match(NUMERIC_TOKEN_RE);
+  if (!matches) return [];
+  return matches.map(Number).filter((n) => Number.isFinite(n));
+}
+
 /** Tolerance for matching a written number against a measured one. */
 const MATCH_EPSILON = 0.051;
 
@@ -380,6 +414,14 @@ export function auditNumericClaims(
     for (const p of s.points) {
       add(p.value, s.metric_id);
       add(p.sample_size);
+      // A distance-band label ("15-25 ft", "10-15 ft") is the tool's own
+      // vocabulary for the bucket, not a claim — but its digits are not
+      // otherwise anchored, so e.g. "15" and "25" from get_putting_distance_profile
+      // read as invented statistics. Registering them the same way a tool's
+      // prose numbers are (numbersInText) closes that gap without a
+      // separate distance/unit exemption regex, which risked also exempting
+      // a real proximity claim like "18 ft away".
+      if (p.bucket) for (const n of numbersInText(p.bucket)) add(n);
     }
     // First-to-last movement is the whole point of a trend, so allow the delta.
     const first = s.points[0]?.value;
@@ -410,7 +452,7 @@ export function auditNumericClaims(
   const seen = new Set<string>();
   const anchors = [...supported];
 
-  for (const match of scrubbed.matchAll(/-?\d+(?:\.\d+)?/g)) {
+  for (const match of scrubbed.matchAll(NUMERIC_TOKEN_RE)) {
     const raw = match[0];
     const value = Number(raw);
     if (!Number.isFinite(value)) continue;
@@ -444,6 +486,9 @@ export function auditNumericClaims(
 export function collectNumbers(value: unknown, depth = 0): number[] {
   if (depth > 6 || value === null || value === undefined) return [];
   if (typeof value === 'number') return Number.isFinite(value) ? [value] : [];
+  // A tool's own descriptive text (see numbersInText) carries numbers too —
+  // `get_player_insights`' `content`/`title` being the motivating case.
+  if (typeof value === 'string') return numbersInText(value);
   if (Array.isArray(value)) return value.flatMap((v) => collectNumbers(v, depth + 1));
   if (typeof value === 'object') {
     return Object.values(value as Record<string, unknown>).flatMap((v) =>

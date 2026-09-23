@@ -115,6 +115,13 @@ export interface CoachChatDataParts extends Record<string, unknown> {
   'action-receipt': ActionReceipt;
   /** A tool's provenance envelope, for the chart/table renderers. */
   'evidence': { tool: string; envelope: ToolEnvelope };
+  /**
+   * Written by the streaming route (not a tool) once the finished turn fails
+   * the numeric-claim audit — see `chat/stream/route.ts`'s grounding check.
+   * Carries the SAME text appended to `content` on persistence, so the note
+   * appears in this live connection instead of only on the next reload.
+   */
+  'grounding-flag': { note: string };
 }
 
 /** Coach-readable progress copy. Raw tool names never reach the interface. */

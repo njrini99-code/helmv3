@@ -64,7 +64,9 @@ import {
   type Measurement,
   type MeasurementSeries,
   type ToolEnvelope,
+  type UnsupportedClaim,
 } from '@/lib/coachhelm/v3/chat/provenance';
+import type { ChatMessage } from '@/lib/coachhelm/v3/chat/types';
 import {
   appendMessage,
   createConversation,
@@ -176,6 +178,51 @@ function logStreamModelError(error: unknown): void {
 
 const UNGROUNDED_NOTE =
   "\n\n_Some figures in this answer could not be traced back to your program's data, so I've flagged it rather than presenting them as fact. Please ask again._";
+
+/** How far back into the conversation {@link priorTurnEvidence} looks. */
+const PRIOR_EVIDENCE_MESSAGE_LIMIT = 20;
+
+/**
+ * Evidence already shown to the coach earlier in THIS conversation.
+ *
+ * The claim audit used to see only the current request's fresh tool calls
+ * (`collect`, below). A model does not always re-call a tool for data it
+ * already has in its own context — production, 2026-09-10: a coach asked two
+ * questions about the same player 22 seconds apart; the second answer
+ * restated the first answer's round-by-round table verbatim (77, 35, -3.38…)
+ * with NO tool call of its own. Every number in it was real and had already
+ * been shown to the coach, but that request's audit had never seen any of it
+ * and discarded the whole answer as fabricated.
+ *
+ * Read from THIS SERVER'S OWN persisted `ui_parts` (`listMessages`), never
+ * from the client-sent `uiMessages` thread: a `data-evidence` part is written
+ * server-side, after this route itself ran the tool (see `evidence()` in
+ * `buildCoachTools`), and nothing else ever produces one. Seeding the
+ * supported set from the client's replayed payload instead would let a
+ * tampered request forge "evidence" for whatever number it wanted.
+ */
+function priorTurnEvidence(messages: readonly ChatMessage[]): {
+  measurements: Measurement[];
+  series: MeasurementSeries[];
+  detailNumbers: number[];
+} {
+  const measurements: Measurement[] = [];
+  const series: MeasurementSeries[] = [];
+  const detailNumbers: number[] = [];
+  for (const message of messages.slice(-PRIOR_EVIDENCE_MESSAGE_LIMIT)) {
+    if (!Array.isArray(message.ui_parts)) continue;
+    for (const part of message.ui_parts) {
+      if (!part || typeof part !== 'object') continue;
+      const { type, data } = part as { type?: unknown; data?: { envelope?: ToolEnvelope } };
+      if (type !== 'data-evidence' || !data?.envelope) continue;
+      const envelope = data.envelope;
+      measurements.push(...(envelope.measurements ?? []));
+      series.push(...(envelope.series ?? []));
+      if (envelope.detail !== undefined) detailNumbers.push(...collectNumbers(envelope.detail));
+    }
+  }
+  return { measurements, series, detailNumbers };
+}
 
 export async function POST(req: NextRequest) {
   let ctx: CoachChatContext;
@@ -316,6 +363,16 @@ export async function POST(req: NextRequest) {
     if (envelope.detail !== undefined) detailNumbers.push(...collectNumbers(envelope.detail));
   };
 
+  // Seed the audit with evidence THIS conversation already produced (see
+  // priorTurnEvidence's doc comment) — a fresh conversation has none to load.
+  if (!needsNewConversation) {
+    const priorMessages = await listMessages(supabase, conversationId);
+    const prior = priorTurnEvidence(priorMessages);
+    measurements.push(...prior.measurements);
+    seriesAll.push(...prior.series);
+    detailNumbers.push(...prior.detailNumbers);
+  }
+
   const convId = conversationId;
   // Opaque, server-generated (gen_random_uuid() — golf_coachhelm_chat_conversations.id
   // default, prod_public_baseline.sql), never derived from coach_id/player
@@ -326,6 +383,10 @@ export async function POST(req: NextRequest) {
   // Captured in `execute` so `onFinish` can bill ACTUAL tokens, not the gate's
   // worst-case estimate. See recordTurnCost below.
   let usagePromise: Promise<{ inputTokens?: number; outputTokens?: number }> | null = null;
+  // Computed in `execute`, once the full text is known — see the manual
+  // stream-forwarding loop below — and reused by `onFinish` so the audit
+  // runs exactly once per turn and both places agree on the verdict.
+  let auditResult: { grounded: boolean; unsupported: UnsupportedClaim[] } | null = null;
 
   const stream = createUIMessageStream({
     execute: async ({ writer }) => {
@@ -453,14 +514,62 @@ export async function POST(req: NextRequest) {
       // words that named neither the cause nor anything they could do. The
       // sanitised message below already said "the model quota is exhausted";
       // it was just never reaching the browser.
-      writer.merge(
-        result.toUIMessageStream({
-          sendStart: true,
-          sendFinish: true,
-          sendReasoning: false,
-          onError: sanitiseStreamError,
-        }),
-      );
+      //
+      // Forwarded chunk-by-chunk ourselves (equivalent to `writer.merge` —
+      // see its implementation: a reader loop over the same async iterable)
+      // rather than handed to `writer.merge` directly, so `execute` does not
+      // resolve, and the response does not close, until every chunk has been
+      // sent. That gives us one deterministic point — after the loop, before
+      // `execute` returns — to run the grounding audit on the COMPLETE text
+      // and still speak into this same connection. N15: the audit used to
+      // run only in `onFinish`, which cannot happen until the stream has
+      // already finished sending — a coach watching the answer stream in
+      // never saw the flag live, only on a later reload of the thread. The
+      // `finish` chunk is held back and re-emitted last so an ungrounded
+      // turn's flag still arrives before the message is marked done, per the
+      // UI message stream protocol.
+      // `toUIMessageStream`'s deprecated method overload does not carry a
+      // precise element type through to a `for await` loop; the SDK's own
+      // `writer.write` parameter type is the source of truth for what a
+      // chunk may be, so chunks are typed against THAT rather than
+      // duplicating the SDK's chunk union here.
+      type StreamChunk = Parameters<typeof writer.write>[0];
+      const uiStream = result.toUIMessageStream({
+        sendStart: true,
+        sendFinish: true,
+        sendReasoning: false,
+        onError: sanitiseStreamError,
+      }) as AsyncIterable<StreamChunk>;
+      let finishChunk: StreamChunk | null = null;
+      for await (const chunk of uiStream) {
+        if ((chunk as { type?: string }).type === 'finish') {
+          finishChunk = chunk;
+          continue;
+        }
+        writer.write(chunk);
+      }
+
+      // `result.text` rejects when a model failure aborted generation —
+      // `onError` above already turned that into its own stream chunk and
+      // `logStreamModelError` already logged it, so there is no new text to
+      // audit. Swallowed rather than left to reject `execute()`'s own
+      // promise: a model error must not fail `execute` itself, matching the
+      // pre-existing contract `writer.merge` relied on (it absorbs a bad
+      // sub-stream into an error chunk rather than rejecting).
+      // `onFinish`'s own `hasPersistableAssistantContent` guard is what
+      // actually keeps an empty/failed turn from being persisted as a
+      // grounded answer, not this fallback.
+      const finalText = await Promise.resolve(result.text).catch(() => '');
+      const unsupported = auditNumericClaims(finalText, measurements, seriesAll, detailNumbers);
+      auditResult = { grounded: unsupported.length === 0, unsupported };
+      if (!auditResult.grounded) {
+        writer.write({
+          type: 'data-grounding-flag',
+          id: 'grounding-flag',
+          data: { note: UNGROUNDED_NOTE },
+        });
+      }
+      if (finishChunk) writer.write(finishChunk);
     },
 
     /**
@@ -490,8 +599,17 @@ export async function POST(req: NextRequest) {
         // `step-start` alone does not count as an answer.
         const hasContent = hasPersistableAssistantContent(assistant, textOf(assistant));
         if (!hasContent) return;
-        const unsupported = auditNumericClaims(text, measurements, seriesAll, detailNumbers);
-        const grounded = unsupported.length === 0;
+        // Reuse the verdict `execute` already computed on the identical text,
+        // so the live flag and the persisted status can never disagree. The
+        // recompute is a defensive fallback only — it would run if `execute`
+        // threw before reaching its own audit, in which case `onFinish` is
+        // still the last chance to avoid persisting ungrounded text as
+        // 'complete'.
+        const { grounded, unsupported } =
+          auditResult ?? (() => {
+            const claims = auditNumericClaims(text, measurements, seriesAll, detailNumbers);
+            return { grounded: claims.length === 0, unsupported: claims };
+          })();
 
         if (!grounded) {
           // A designed guardrail FIRING is not an incident: the claim was
@@ -554,7 +672,14 @@ export async function POST(req: NextRequest) {
         // worst-case estimate instead (which an earlier revision of this route
         // did) over-charges every short answer several times over and
         // exhausts a coach's daily budget long before they have spent it.
-        await recordTurnCost({ admin, ctx, conversationId: convId, usagePromise, grounded });
+        await recordTurnCost({
+          admin,
+          ctx,
+          conversationId: convId,
+          usagePromise,
+          grounded,
+          unmatchedTokens: unsupported.map((c) => c.text),
+        });
 
         // helm.ai.* — the call reached this point, so the model responded and
         // was billed; an ungrounded/failed-audit turn is still a successful
@@ -623,8 +748,10 @@ async function recordTurnCost(args: {
    *  passed at all, so the ledger recorded a literal `false` for every turn —
    *  0 of 37 verified in production while round_review recorded 29 of 121. */
   grounded: boolean;
+  /** The claim texts the audit flagged, when `grounded` is false. */
+  unmatchedTokens: string[];
 }): Promise<void> {
-  const { admin, ctx, conversationId, usagePromise, grounded } = args;
+  const { admin, ctx, conversationId, usagePromise, grounded, unmatchedTokens } = args;
   try {
     const usage = usagePromise ? await usagePromise : undefined;
     const promptTokens = usage?.inputTokens ?? 0;
@@ -654,6 +781,7 @@ async function recordTurnCost(args: {
         completionTokens,
         costUsd: cost,
         grounded,
+        unmatchedTokens,
       }),
     );
     await recordSpend(admin, { coach_id: ctx.coach_id, task: 'coach_chat', cost_usd: cost });

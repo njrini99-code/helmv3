@@ -184,6 +184,104 @@ describe('auditNumericClaims', () => {
     });
     expect(auditNumericClaims('Tour reference is 88%.', [withBenchmark])).toEqual([]);
   });
+
+  /**
+   * Production 2026-09-22 (issue #1540 / repair plan N15): 33 of the last 30
+   * days' chat replies were marked 'failed', most of them real, correctly
+   * sourced answers. Two dominant false-positive classes accounted for most
+   * of them — both reproduced from actual failed rows' persisted `ui_parts`.
+   */
+  it('accepts a distance-band bucket label whose bounds are both > 12', () => {
+    // get_putting_distance_profile's own bucket names ('15-25 ft', '10-15
+    // ft') were read as two bare numbers by the audit — "15" and "25" (or
+    // "-25", once the hyphen was misread as a sign) — even though they are
+    // the tool's own vocabulary for which band the pct/attempts belong to,
+    // not a claim in their own right.
+    const series: MeasurementSeries = {
+      metric_id: 'putt_make_pct_by_distance',
+      metric_label: 'Make rate by distance',
+      unit: 'percent',
+      entity: { kind: 'player', id: 'p1', label: 'Elliott' },
+      points: [{ at: '15-25 ft', value: 4, bucket: '15-25 ft', sample_size: 23 }],
+      window_start: '2026-08-21',
+      window_end: '2026-08-25',
+      as_of: '2026-08-26T02:20:07Z',
+      coverage: 'complete',
+      coverage_note: null,
+      source: 'stats cache',
+      method: 'putt_make_pct',
+      benchmark: null,
+      direction: 'higher_better',
+    };
+    expect(
+      auditNumericClaims('Making 4% from 15-25 ft (23 attempts).', [], [series]),
+    ).toEqual([]);
+  });
+
+  it('accepts a figure a tool wrote into its own prose, not a numeric field', () => {
+    // Reproduced from a real failed row: get_player_insights returns
+    // measurements: [] and puts every number inside `detail.insights[].content`
+    // ("you're making 50% of putts from 3-5 ft (20 attempts) (PGA Tour ~91%)").
+    // collectNumbers only walked numeric leaves, so none of it — including the
+    // insight's OWN Tour comparison — ever reached `extraSupported`, and a
+    // chat turn that faithfully restated the insight was discarded as
+    // fabrication.
+    const detail = {
+      insights: [
+        {
+          title: '3-5 ft putting: 50%',
+          content:
+            "Across your last 5 rounds you're making 50% of putts from 3-5 ft " +
+            '(20 attempts) (PGA Tour ~91%).',
+          insight_id: 'f7c5a144-bf4a-49de-aa72-40971effe4d6',
+          created_at: '2026-08-30T12:49:51.053068+00:00',
+        },
+      ],
+    };
+    const claims = auditNumericClaims(
+      "Making 50% from 3-5 ft (20 attempts) — well off the PGA Tour's ~91%.",
+      [],
+      [],
+      collectNumbers(detail),
+    );
+    expect(claims).toEqual([]);
+  });
+
+  it('does not mine an id or a timestamp for digits', () => {
+    // A round/insight id or a `created_at` happening to contain "23" or "51"
+    // must not silently support an unrelated fabricated claim of 23 or 51.
+    const detail = {
+      insight_id: 'f7c5a144-bf4a-49de-aa72-40971effe4d6',
+      created_at: '2026-08-30T12:49:51.053068+00:00',
+    };
+    const claims = auditNumericClaims('His make rate is 23%.', [], [], collectNumbers(detail));
+    expect(claims.map((c) => c.value)).toEqual([23]);
+  });
+
+  it('still catches a fabrication sitting next to a real distance-band claim', () => {
+    const series: MeasurementSeries = {
+      metric_id: 'putt_make_pct_by_distance',
+      metric_label: 'Make rate by distance',
+      unit: 'percent',
+      entity: { kind: 'player', id: 'p1', label: 'Elliott' },
+      points: [{ at: '3-5 ft', value: 50, bucket: '3-5 ft', sample_size: 20 }],
+      window_start: '2026-08-21',
+      window_end: '2026-08-25',
+      as_of: '2026-08-26T02:20:07Z',
+      coverage: 'complete',
+      coverage_note: null,
+      source: 'stats cache',
+      method: 'putt_make_pct',
+      benchmark: null,
+      direction: 'higher_better',
+    };
+    const claims = auditNumericClaims(
+      'Making 50% from 3-5 ft (20 attempts), and his overall make rate is 71%.',
+      [],
+      [series],
+    );
+    expect(claims.map((c) => c.value)).toEqual([71]);
+  });
 });
 
 /**

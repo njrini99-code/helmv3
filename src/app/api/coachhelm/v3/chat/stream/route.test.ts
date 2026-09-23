@@ -159,6 +159,19 @@ vi.mock('@/lib/coachhelm/v3/llm/chat-call-row', () => ({ buildChatLlmCallRow: vi
 
 import { POST } from './route';
 
+/**
+ * The route now consumes `toUIMessageStream()`'s return value with a real
+ * `for await` (see route.ts's grounding-audit rework), not `writer.merge`,
+ * which only ever called `.getReader()` on it and swallowed a bad shape as a
+ * background error. A bare `{ __uiStream: true }` object is no longer
+ * iterable enough — this stands in for the SDK's real AsyncIterableStream,
+ * empty because this suite asserts on observability wiring, not stream
+ * content.
+ */
+function emptyUiMessageStream(): AsyncIterable<never> {
+  return (async function* () {})();
+}
+
 function makeRequest(body: Record<string, unknown>): NextRequest {
   return {
     json: async () => body,
@@ -193,7 +206,7 @@ describe('POST /coachhelm/v3/chat/stream — Sentry AI observability', () => {
   it('opts streamText into telemetry with recordInputs/recordOutputs explicitly false', async () => {
     mocks.streamText.mockImplementation(() => ({
       usage: Promise.resolve({ inputTokens: 500, outputTokens: 120 }),
-      toUIMessageStream: () => ({ __uiStream: true }),
+      toUIMessageStream: () => emptyUiMessageStream(),
     }));
 
     await runPostAndSettle(baseBody);
@@ -211,7 +224,7 @@ describe('POST /coachhelm/v3/chat/stream — Sentry AI observability', () => {
   it('tags the turn with the opaque, server-generated conversation id', async () => {
     mocks.streamText.mockImplementation(() => ({
       usage: Promise.resolve({ inputTokens: 500, outputTokens: 120 }),
-      toUIMessageStream: () => ({ __uiStream: true }),
+      toUIMessageStream: () => emptyUiMessageStream(),
     }));
 
     await runPostAndSettle(baseBody);
@@ -222,7 +235,7 @@ describe('POST /coachhelm/v3/chat/stream — Sentry AI observability', () => {
   it('records helm.ai.* success once the turn completes', async () => {
     mocks.streamText.mockImplementation(() => ({
       usage: Promise.resolve({ inputTokens: 500, outputTokens: 120 }),
-      toUIMessageStream: () => ({ __uiStream: true }),
+      toUIMessageStream: () => emptyUiMessageStream(),
     }));
 
     await runPostAndSettle(baseBody);
@@ -242,7 +255,7 @@ describe('POST /coachhelm/v3/chat/stream — Sentry AI observability', () => {
       opts.onError?.({ error: new Error('model unreachable') });
       return {
         usage: Promise.resolve({ inputTokens: undefined, outputTokens: undefined }),
-        toUIMessageStream: () => ({ __uiStream: true }),
+        toUIMessageStream: () => emptyUiMessageStream(),
       };
     });
 

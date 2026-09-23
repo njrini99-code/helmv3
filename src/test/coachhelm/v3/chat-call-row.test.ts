@@ -38,6 +38,7 @@ const BASE = {
   promptTokens: 1200,
   completionTokens: 300,
   costUsd: 0.068,
+  unmatchedTokens: [] as string[],
 };
 
 describe('buildChatLlmCallRow', () => {
@@ -74,5 +75,30 @@ describe('buildChatLlmCallRow', () => {
     expect(row.cost_usd).toBe(0.068);
     expect(row.task).toBe('coach_chat');
     expect(row.model_id).toBe('claude-sonnet-5');
+  });
+
+  /**
+   * #1540 item 3: a 'failed' chat turn recorded no reason anywhere durable —
+   * `error_logs`' per-occurrence detail is a queryable metric, not a record,
+   * and retention prunes it. This mirrors compose.ts's own
+   * `verification_failed` shape (compose.ts's unrecoverable-verification
+   * branch) so a `failed` row is diagnosable from `golf_coachhelm_llm_calls`
+   * alone, without a live error_logs row to cross-reference.
+   */
+  it('records the specific reason and claim texts when grounding failed', () => {
+    const row = buildChatLlmCallRow({
+      ...BASE,
+      grounded: false,
+      unmatchedTokens: ['71', '-25'],
+    });
+    expect(row.citations).toEqual({
+      reason: 'verification_failed',
+      unmatched_tokens: ['71', '-25'],
+    });
+  });
+
+  it('carries no citations reason for a grounded turn', () => {
+    const row = buildChatLlmCallRow({ ...BASE, grounded: true, unmatchedTokens: ['71'] });
+    expect(row.citations).toBeNull();
   });
 });

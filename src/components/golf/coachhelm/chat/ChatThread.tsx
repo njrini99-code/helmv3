@@ -234,6 +234,21 @@ function MessageTurn({
           );
         }
 
+        // Written by the route (not a tool) when the finished turn fails the
+        // numeric-claim audit — see chat/stream/route.ts. Rendered live, in
+        // THIS connection, not only after a reload: the note used to reach
+        // only the persisted `content`, so a coach watching the answer
+        // stream in never saw it appear until they reopened the thread.
+        if (part.type === 'data-grounding-flag') {
+          const note = String((part.data as { note?: string } | undefined)?.note ?? '');
+          if (!note) return null;
+          return (
+            <div key={index} className={PROSE_WIDTH}>
+              <AssistantProse text={note} playersByName={playersByName} lead={false} />
+            </div>
+          );
+        }
+
         return null;
       })}
 
