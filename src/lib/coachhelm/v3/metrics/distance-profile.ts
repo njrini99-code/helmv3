@@ -13,17 +13,25 @@
  * (mirrors `ApproachMissGenerator`'s own scope) — a putt or a tee shot never
  * enters a band here, regardless of its distance.
  *
- * ── WHY `parByRoundHole` IS OPTIONAL, NOT A THIRD REQUIRED ARGUMENT ─────
+ * ── WHY `holes: HoleContext[]` IS A REQUIRED THIRD ARGUMENT ─────────────
  * The lay-up heuristic (`is_likely_layup` in the migration above) needs the
  * hole's PAR, but `ShotFact` — A1's pure-core type — carries no `par`
- * field (it only exists on `HoleContext`). `computeDistanceProfile`'s
- * primary shape is `(facts, scope)`, matching the addendum; a caller that
- * already has `HoleContext[]` (e.g. from `load-player-context.ts`) can
- * build the `parByRoundHole` map and pass it as a third, optional argument
- * to get the real lay-up exclusion. Omitting it is not an error — it is a
- * conservative, documented fallback: no shot in the 175+ band is ever
- * excluded as a lay-up (every miss counts as a miss), rather than requiring
- * a param this module's own inputs can't supply.
+ * field (it only exists on `HoleContext`). `computeDistanceProfile` takes
+ * the caller's `HoleContext[]` (e.g. from `load-player-context.ts`, which
+ * already returns one alongside `ShotFact[]`) and builds a
+ * `round_id:hole_number → par` lookup internally.
+ *
+ * A 175+ yd shot whose hole is NOT resolvable from `holes` (no matching
+ * `HoleContext` — a genuine gap, or the hole was excluded upstream) is
+ * excluded from the band outright, with reason `missing_par` — it is
+ * NEVER silently kept as "probably not a lay-up." This is a real behavior
+ * change from an earlier draft of this module, which treated an
+ * unresolvable par the same as a confirmed non-par-5: that silently
+ * counted evidence this module cannot actually vouch for. Only a shot
+ * with a CONFIRMED par is ever included in the 175+ band's eligible set,
+ * and only a CONFIRMED par-5 miss is excluded as a lay-up — the
+ * migration's own `IS NOT DISTINCT FROM 5` NULL-safety rule, now enforced
+ * on the exclusion side (`missing_par`) instead of the inclusion side.
  *
  * ── WHY `miss_direction` NEEDED ADDING TO `ShotFact` ─────────────────────
  * Direction coverage needs `golf_shots.miss_direction`, which A1's original
@@ -92,7 +100,7 @@
  */
 import { round } from '@/lib/golf/stat-formulas';
 import { bucketApproachDistance, type ApproachBucket } from '../engine/shot-source';
-import type { AnalysisScope, ShotFact } from '../context/types';
+import type { AnalysisScope, HoleContext, ShotFact } from '../context/types';
 
 export type DistanceBand = ApproachBucket;
 
@@ -133,19 +141,17 @@ export interface MetricResult {
    *  populated, even when `value` is null, so a caller can explain why. */
   attempts: number;
   distinctRounds: number;
-  /** 175+ yd par-5 approaches missing the green, excluded from every
-   *  metric in this band as likely lay-ups. Always 0 outside the 175+
-   *  band, and always 0 when `parByRoundHole` was omitted (no lay-up can
-   *  be identified without par — see the module doc comment). */
+  /** 175+ yd CONFIRMED par-5 approaches missing the green, excluded from
+   *  every metric in this band as likely lay-ups. Always 0 outside the
+   *  175+ band. */
   layupExcludedN: number;
+  /** 175+ yd shots whose hole's par could not be resolved from the
+   *  `holes` argument — excluded outright, never silently kept as
+   *  "probably not a lay-up." Always 0 outside the 175+ band. See the
+   *  module doc comment's "WHY `holes: HoleContext[]` IS A REQUIRED THIRD
+   *  ARGUMENT" section. */
+  missingParExcludedN: number;
   support: SupportLevel;
-}
-
-export interface DistanceProfileOptions {
-  /** hole par keyed by `` `${round_id}:${hole_number}` `` — see the module
-   *  doc comment for why this is optional rather than a required input
-   *  `ShotFact[]` alone cannot supply. */
-  parByRoundHole?: ReadonlyMap<string, number>;
 }
 
 /** Addendum A2 §5.2 / migration 20260922120000: the all-shot support floor. */
@@ -160,6 +166,20 @@ const BANDS: readonly DistanceBand[] = ['50_125ft', '125_175ft', '175_plus_ft'];
 function parKey(roundId: string, holeNumber: number | null): string | null {
   if (holeNumber === null) return null;
   return `${roundId}:${holeNumber}`;
+}
+
+/** `round_id:hole_number → par`, built from the caller's `HoleContext[]`.
+ *  A hole with a null `holeIdentityKey`-style key (shouldn't happen —
+ *  `HoleContext.hole_number` is non-nullable by type — kept defensive
+ *  anyway) is simply never added, which is exactly the "unresolvable"
+ *  state `missing_par` exclusion is for. */
+function buildParByRoundHole(holes: readonly HoleContext[]): ReadonlyMap<string, number> {
+  const map = new Map<string, number>();
+  for (const h of holes) {
+    const key = parKey(h.round_id, h.hole_number);
+    if (key !== null) map.set(key, h.par);
+  }
+  return map;
 }
 
 /** Same predicate as `approach-miss.ts`'s `reachedGreen` / the migration's
@@ -205,24 +225,25 @@ function average(values: readonly number[]): number | null {
 export function computeDistanceProfile(
   facts: readonly ShotFact[],
   scope: AnalysisScope,
-  options: DistanceProfileOptions = {},
+  holes: readonly HoleContext[],
 ): MetricResult[] {
-  const { parByRoundHole } = options;
+  const parByRoundHole = buildParByRoundHole(holes);
   const results: MetricResult[] = [];
 
   for (const band of BANDS) {
     const inBand = facts.filter((f) => bandOf(f) === band);
 
     let layupExcludedN = 0;
+    let missingParExcludedN = 0;
     const eligible = inBand.filter((f) => {
       if (band !== '175_plus_ft') return true;
-      if (!parByRoundHole) return true;
       const key = parKey(f.round_id, f.hole_number);
       const par = key === null ? undefined : parByRoundHole.get(key);
-      // `par !== 5` would also be true for an unresolvable hole (undefined)
-      // — mirrors the migration's `IS NOT DISTINCT FROM 5` fix: an
-      // unknown par must not silently count as "not a lay-up" OR silently
-      // count as one. Only a CONFIRMED par-5 miss is excluded.
+      if (par === undefined) {
+        // Unresolvable par — never silently treated as "not a lay-up".
+        missingParExcludedN += 1;
+        return false;
+      }
       const isLikelyLayup = par === 5 && !isOnGreen(f);
       if (isLikelyLayup) layupExcludedN += 1;
       return !isLikelyLayup;
@@ -243,6 +264,7 @@ export function computeDistanceProfile(
       attempts,
       distinctRounds,
       layupExcludedN,
+      missingParExcludedN,
       support,
     });
 
@@ -265,6 +287,7 @@ export function computeDistanceProfile(
       attempts,
       distinctRounds,
       layupExcludedN,
+      missingParExcludedN,
       support: onGreenSupport,
     });
 
@@ -282,6 +305,7 @@ export function computeDistanceProfile(
       attempts,
       distinctRounds,
       layupExcludedN,
+      missingParExcludedN,
       support,
     });
 
@@ -295,6 +319,7 @@ export function computeDistanceProfile(
       attempts,
       distinctRounds,
       layupExcludedN,
+      missingParExcludedN,
       support,
     });
 
@@ -309,6 +334,7 @@ export function computeDistanceProfile(
       attempts,
       distinctRounds,
       layupExcludedN,
+      missingParExcludedN,
       support,
     });
   }

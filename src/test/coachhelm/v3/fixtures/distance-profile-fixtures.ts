@@ -5,8 +5,7 @@
  * numbers directly rather than re-deriving them from the fixture, so a
  * fixture change that silently shifts the answer is caught.
  */
-import type { ShotFact } from '@/lib/coachhelm/v3/context/types';
-import type { AnalysisScope } from '@/lib/coachhelm/v3/context/types';
+import type { AnalysisScope, HoleContext, ShotFact } from '@/lib/coachhelm/v3/context/types';
 
 const CUTOFF = '2026-08-01T00:00:00.000Z';
 
@@ -37,6 +36,25 @@ export function approachFact(overrides: Partial<ShotFact> & { round_id: string }
     putt_made: null,
     miss_direction: null,
     observed_at: '2026-06-01T00:00:00.000Z',
+    ...overrides,
+  };
+}
+
+/** A minimal, fully-specified HoleContext — the `holes` argument
+ *  `computeDistanceProfile` uses to resolve a 175+ yd shot's par (see
+ *  distance-profile.ts's "WHY `holes: HoleContext[]` IS A REQUIRED THIRD
+ *  ARGUMENT"). `par` is required here (not defaulted) since it's the
+ *  whole reason a scenario supplies a hole at all. */
+export function holeContext(
+  overrides: Partial<HoleContext> & { round_id: string; hole_number: number; par: number },
+): HoleContext {
+  return {
+    course_id: null,
+    total_strokes: overrides.par,
+    penalty_strokes: 0,
+    putts: null,
+    gir: null,
+    yardage: null,
     ...overrides,
   };
 }
@@ -92,6 +110,9 @@ export const SCENARIO_B_UNDER_ATTEMPTS_50_125: ShotFact[] = Array.from({ length:
 // ---------------------------------------------------------------------------
 // Scenario C — 175+ yd band, clears ATTEMPTS but not ROUNDS (12 attempts,
 // only 2 distinct rounds — MIN_ROUNDS=3 fails despite MIN_ATTEMPTS=10 OK).
+// Both holes are a known par 4 (never 5), so none of the 12 shots are
+// excluded as a lay-up or as missing_par — the ONLY thing failing here is
+// the rounds floor.
 // ---------------------------------------------------------------------------
 export const SCENARIO_C_UNDER_ROUNDS_175_PLUS: ShotFact[] = Array.from({ length: 12 }, (_, i) =>
   approachFact({
@@ -102,27 +123,36 @@ export const SCENARIO_C_UNDER_ROUNDS_175_PLUS: ShotFact[] = Array.from({ length:
     lie_after: 'fairway',
   }),
 );
+export const SCENARIO_C_HOLES: HoleContext[] = [
+  holeContext({ round_id: 'c-round-1', hole_number: 9, par: 4 }),
+  holeContext({ round_id: 'c-round-2', hole_number: 9, par: 4 }),
+];
 
 // ---------------------------------------------------------------------------
-// Scenario D — 175+ yd band, the lay-up exclusion. Three shots:
-//   d1: par-5 hole, missed the green -> a LIKELY LAY-UP (excluded only when
-//       parByRoundHole is supplied).
-//   d2: par-4 hole, missed the green -> never a lay-up (not a par 5).
-//   d3: par-5 hole, FOUND the green -> never a lay-up (isOnGreen true).
-// Without parByRoundHole: attempts=3, layupExcludedN=0 (documented fallback).
-// With parByRoundHole ({d1-round:5:5, d2-round:6:4, d3-round:7:5}):
-//   attempts=2 (d2, d3), layupExcludedN=1 (d1).
+// Scenario D — 175+ yd band, the lay-up / missing-par exclusion. Three shots:
+//   d1: par-5 hole (KNOWN), missed the green -> a LIKELY LAY-UP.
+//   d2: par-4 hole (KNOWN), missed the green -> never a lay-up (not a par 5).
+//   d3: par-5 hole (KNOWN), FOUND the green -> never a lay-up (isOnGreen).
+// With SCENARIO_D_HOLES (all three holes resolvable): attempts=2 (d2, d3),
+// layupExcludedN=1 (d1), missingParExcludedN=0.
+// With holes=[] (none resolvable): attempts=0, layupExcludedN=0,
+// missingParExcludedN=3 — every shot is excluded, none silently kept.
 // ---------------------------------------------------------------------------
 export const SCENARIO_D_LAYUP_175_PLUS: ShotFact[] = [
   approachFact({ round_id: 'd1-round', hole_number: 5, distance_to_hole_before_feet: yardsToFeet(200), result: 'fairway', lie_after: 'fairway' }),
   approachFact({ round_id: 'd2-round', hole_number: 6, distance_to_hole_before_feet: yardsToFeet(210), result: 'rough', lie_after: 'rough' }),
   approachFact({ round_id: 'd3-round', hole_number: 7, distance_to_hole_before_feet: yardsToFeet(190), distance_to_hole_after_feet: 25, result: 'green', lie_after: 'green' }),
 ];
-export const SCENARIO_D_PAR_BY_ROUND_HOLE = new Map<string, number>([
-  ['d1-round:5', 5],
-  ['d2-round:6', 4],
-  ['d3-round:7', 5],
-]);
+export const SCENARIO_D_HOLES: HoleContext[] = [
+  holeContext({ round_id: 'd1-round', hole_number: 5, par: 5 }),
+  holeContext({ round_id: 'd2-round', hole_number: 6, par: 4 }),
+  holeContext({ round_id: 'd3-round', hole_number: 7, par: 5 }),
+];
+/** Only d1's hole is resolvable — used to prove exclusion is resolved
+ *  PER SHOT: d1 becomes a layup exclusion, d2/d3 become missing_par. */
+export const SCENARIO_D_HOLES_PARTIAL: HoleContext[] = [
+  holeContext({ round_id: 'd1-round', hole_number: 5, par: 5 }),
+];
 
 // ---------------------------------------------------------------------------
 // Scenario E — band boundaries (before-distance in yards; hi exclusive,
@@ -142,3 +172,7 @@ export const SCENARIO_E_BOUNDARIES: Record<string, ShotFact> = {
   just_under_175: approachFact({ round_id: 'e-round', distance_to_hole_before_feet: yardsToFeet(174.9) }),
   lower_bound_175_0: approachFact({ round_id: 'e-round', distance_to_hole_before_feet: yardsToFeet(175.0) }),
 };
+/** The `lower_bound_175_0` fixture lands in the 175+ band, so a resolvable,
+ *  non-par-5 hole is required or it would be excluded as `missing_par`
+ *  rather than counted — that exclusion isn't what this scenario tests. */
+export const SCENARIO_E_HOLES: HoleContext[] = [holeContext({ round_id: 'e-round', hole_number: 1, par: 4 })];
