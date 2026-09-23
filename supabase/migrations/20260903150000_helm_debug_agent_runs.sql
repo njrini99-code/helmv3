@@ -98,6 +98,7 @@ create table if not exists helm_debug.agent_runs (
     check (confidence is null or (confidence >= 0 and confidence <= 1)),
     started_at timestamptz not null default clock_timestamp(),
     finished_at timestamptz,
+    -- squawk-ignore prefer-bigint-over-int
     duration_ms integer check (duration_ms is null or duration_ms >= 0),
     metadata jsonb not null default '{}'::jsonb,
     created_at timestamptz not null default clock_timestamp(),

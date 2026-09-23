@@ -66,7 +66,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/rules/integrations.md` | current | - | - | - | 4 | 10 | - |
 | `.claude/rules/quality-gates.md` | current | - | - | - | 8 | 7 | - |
 | `.claude/rules/shipping.md` | current | - | - | - | 23 | 2 | - |
-| `AGENTS.md` | current | yes | - | yes | 0 | 8 | - |
+| `AGENTS.md` | current | yes | - | yes | 0 | 9 | - |
 | `CLAUDE.md` | current | yes | - | yes | 0 | 4 | - |
 | `CONTRIBUTING.md` | current | - | - | yes | 0 | 2 | - |
 | `README.md` | current | - | - | - | 0 | 5 | - |
@@ -600,7 +600,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/operations/2026-05-28-coderabbit-fails-investigation.md` | current | - | - | - | 0 | 12 | - |
 | `docs/operations/2026-06-30-baseball-stats-seed-key-rotation.md` | current | - | - | - | 0 | 3 | - |
 | `docs/operations/2026-08-26-migration-history-drift.md` | current | - | - | yes | 2 | 7 | - |
-| `docs/operations/APPLY_PATH.md` | current | - | - | - | 1 | 5 | - |
+| `docs/operations/APPLY_PATH.md` | current | - | - | - | 1 | 6 | - |
 | `docs/operations/BASEBALLHELM_BUSINESS_CONTRACT_MATRIX.md` | current | - | - | yes | 3 | 30 | - |
 | `docs/operations/BASEBALLHELM_FEATURE_READINESS_MATRIX.md` | current | - | - | yes | 4 | 61 | 4 |
 | `docs/operations/BASEBALL_STATS_SOURCE_OF_TRUTH.md` | current | - | - | yes | 5 | 2 | - |

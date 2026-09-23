@@ -20,6 +20,9 @@
 -- before applying, and re-check the live catalog immediately before, in case
 -- something has changed since 2026-09-05.
 
+-- VERIFY: select 1 from pg_attribute where attrelid=to_regclass('public.baseball_camp_registrations') and attname='registered_at' and not attisdropped -- noqa: LT05
+-- VERIFY: select 1 from pg_attribute where attrelid=to_regclass('public.baseball_camp_registrations') and attname='attended_at' and not attisdropped -- noqa: LT05
+
 ALTER TABLE public.baseball_camp_registrations
 ADD COLUMN IF NOT EXISTS registered_at timestamptz,
 ADD COLUMN IF NOT EXISTS attended_at timestamptz;
