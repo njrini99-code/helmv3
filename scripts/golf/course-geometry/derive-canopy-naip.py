@@ -34,7 +34,7 @@ from PIL import Image, ImageDraw
 from scipy import ndimage
 from shapely import wkb
 from shapely.geometry import LineString, Polygon, box
-from shapely.ops import unary_union
+from shapely.ops import split, unary_union
 
 
 def _sibling(name, filename):
@@ -76,6 +76,36 @@ CANOPY_SHARE_MIN = 0.02   # below this share, calibration is suspect before a ti
 CANOPY_SHARE_MAX = 0.85   # near-total tree cover across the export reads as a bad NDVI gate, not a wooded course
 CANOPY_SURFACE_OVERLAP_MAX = 0.03  # final regions overlapping fairway/green/tee beyond this share means the vector step leaked onto a playing surface
 CANOPY_GROUP_DENSITY_MAX_PER_HA = 2.0  # groups per hectare of the export; above this reads as classification speckle, not distinct tree masses
+
+
+MIN_SPLIT_PART_M2 = 25  # a split piece this small is a seam sliver, not a tree mass
+MIN_CLEARING_M2 = 200  # a gap smaller than this is between crowns, not a clearing anything plays through
+
+
+def hole_free_parts(polygon):
+    """Pieces of `polygon` with no interior rings, covering the same area.
+
+    A region is written as one exterior ring (`coordinatesWgs84`), so a
+    forest mass enclosing a clearing -- a fairway cut through woods, the
+    normal shape on a wooded course -- used to be written without the
+    clearing, and crown artwork filled the fairway (Golden Horseshoe: 70-77%
+    of its play corridors). Cut through each interior ring with a vertical
+    line until no piece has one."""
+    if polygon.is_empty:
+        return []
+    clearings = [ring for ring in polygon.interiors if Polygon(ring).area >= MIN_CLEARING_M2]
+    if len(clearings) != len(polygon.interiors):
+        polygon = Polygon(polygon.exterior, clearings)
+    if not polygon.interiors:
+        return [polygon]
+    minx, miny, maxx, maxy = polygon.bounds
+    x = polygon.interiors[0].centroid.x
+    cut = LineString([(x, miny - 1), (x, maxy + 1)])
+    pieces = []
+    for part in split(polygon, cut).geoms:
+        if part.geom_type == 'Polygon' and part.area >= MIN_SPLIT_PART_M2:
+            pieces.extend(hole_free_parts(part))
+    return pieces
 
 
 class NoFPACCoverage(RuntimeError):
@@ -309,6 +339,7 @@ def main():
 
     regions = []
     final_region_shapes = []
+    masses = 0  # canopy groups before clearing splits: the density bound measures speckle, not seams
     for hole in pkg['holes']:
         own = [shapes[i] for i in hole['featureIds'] if i in shapes]
         minx, miny, maxx, maxy = unary_union(own).bounds
@@ -328,18 +359,23 @@ def main():
                 simple = part.simplify(4.0, preserve_topology=True)
             if simple.is_empty or not simple.is_valid or simple.area < MIN_GROUP_M2:
                 continue
-            ring = [list(unproject.transform(x, y)) for x, y in simple.exterior.coords]
-            index += 1
-            regions.append({'id': f"{hole['key']}-canopy-{index:03}", 'holeKey': hole['key'],
-                            'areaM2': round(simple.area, 1), 'coordinatesWgs84': ring})
-            final_region_shapes.append(simple)
+            masses += 1
+            # Only an exterior ring is written, so a region is split until it
+            # has no clearings; the auto-review below measures these exact
+            # written shapes, never the in-memory polygon with its holes.
+            for piece in hole_free_parts(simple):
+                ring = [list(unproject.transform(x, y)) for x, y in piece.exterior.coords]
+                index += 1
+                regions.append({'id': f"{hole['key']}-canopy-{index:03}", 'holeKey': hole['key'],
+                                'areaM2': round(piece.area, 1), 'coordinatesWgs84': ring})
+                final_region_shapes.append(Polygon(piece.exterior))
 
     # Automatic sign-off (replaces the human visual review): NDVI share,
     # overlap with the final regions against fairway/green/tee, and group
     # density over the export area, each against an explicit bound.
     canopy_share = round(float(canopy.mean()), 4)
     course_area_ha = (extent['xmax'] - extent['xmin']) * (extent['ymax'] - extent['ymin']) / 10_000
-    auto_review = auto_review_record(canopy_share, len(regions), final_region_shapes, playing_surfaces, course_area_ha)
+    auto_review = auto_review_record(canopy_share, masses, final_region_shapes, playing_surfaces, course_area_ha)
     within_bounds = auto_review['withinBounds']
     review = {
         'schemaVersion': 1, 'kind': 'golfhelm-canopy-review-v1', 'siteId': pkg['siteId'], 'packageHash': pkg['contentHash'],

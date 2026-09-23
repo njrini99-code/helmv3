@@ -184,5 +184,38 @@ class AutoReviewRecordTests(unittest.TestCase):
         self.assertFalse(record['withinBounds'])
 
 
+class HoleFreePartsTests(unittest.TestCase):
+    def test_a_clearing_survives_as_uncovered_area(self):
+        from shapely.geometry import Polygon as P
+        forest = P([(0, 0), (200, 0), (200, 100), (0, 100)], [[(50, 30), (150, 30), (150, 70), (50, 70)]])
+        parts = canopy.hole_free_parts(forest)
+        self.assertTrue(parts and all(not p.interiors for p in parts))
+        written = [P(p.exterior) for p in parts]
+        from shapely.ops import unary_union as U
+        self.assertAlmostEqual(U(written).area, forest.area, delta=1.0)
+        self.assertFalse(U(written).contains(P([(60, 40), (140, 40), (140, 60), (60, 60)]).centroid))
+
+    def test_nested_and_multiple_clearings(self):
+        from shapely.geometry import Polygon as P
+        forest = P([(0, 0), (300, 0), (300, 100), (0, 100)],
+                   [[(20, 20), (60, 20), (60, 80), (20, 80)], [(120, 20), (180, 20), (180, 80), (120, 80)], [(220, 40), (260, 40), (260, 60), (220, 60)]])
+        parts = canopy.hole_free_parts(forest)
+        self.assertTrue(all(not p.interiors for p in parts))
+        from shapely.ops import unary_union as U
+        self.assertAlmostEqual(U([P(p.exterior) for p in parts]).area, forest.area, delta=1.0)
+
+    def test_gaps_between_crowns_are_filled_not_split(self):
+        from shapely.geometry import Polygon as P
+        forest = P([(0, 0), (100, 0), (100, 100), (0, 100)], [[(40, 40), (45, 40), (45, 45), (40, 45)]])
+        parts = canopy.hole_free_parts(forest)
+        self.assertEqual(len(parts), 1)
+        self.assertEqual(parts[0].area, 10000)
+
+    def test_plain_polygon_is_unchanged(self):
+        from shapely.geometry import Polygon as P
+        square = P([(0, 0), (50, 0), (50, 50), (0, 50)])
+        self.assertEqual(canopy.hole_free_parts(square), [square])
+
+
 if __name__ == '__main__':
     unittest.main()

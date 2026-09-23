@@ -351,6 +351,34 @@ class StorageTests(unittest.TestCase):
         self.assertEqual(by_path['manifest.json']['headers'].get('X-upsert'), 'true')
         self.assertEqual(by_path['package-abc.json']['headers'].get('X-upsert'), 'false')
 
+class CanopyCorridorTests(unittest.TestCase):
+    ORIGIN = [-80.0, 36.0]
+
+    @staticmethod
+    def square(lon, lat, half_deg):
+        return {'type': 'Polygon', 'coordinates': [[[lon - half_deg, lat - half_deg], [lon + half_deg, lat - half_deg],
+                                                    [lon + half_deg, lat + half_deg], [lon - half_deg, lat + half_deg], [lon - half_deg, lat - half_deg]]]}
+
+    def package(self, woods):
+        route = {'id': 'r1', 'kind': 'route', 'geometryWgs84': {'type': 'LineString', 'coordinates': [[-80.0, 36.0], [-80.0, 36.003]]}}
+        return {'originWgs84': self.ORIGIN, 'holes': [{'key': 'h01', 'ordinal': 1, 'routeFeatureId': 'r1'}],
+                'features': [route] + [{'id': f'w{i}', 'kind': 'woods', 'geometryWgs84': g} for i, g in enumerate(woods)]}
+
+    def test_forest_over_the_route_blocks(self):
+        shares = ship.canopy_corridor_shares(self.package([self.square(-80.0, 36.0015, 0.003)]))
+        self.assertEqual(shares[0]['canopyShare'], 1.0)
+        blockers = ship.gate_canopy_in_play(shares)
+        self.assertEqual([b['code'] for b in blockers], ['CANOPY_IN_PLAY_CORRIDOR'])
+        self.assertEqual(blockers[0]['holeKeys'], ['h01'])
+
+    def test_woods_off_the_corridor_pass(self):
+        shares = ship.canopy_corridor_shares(self.package([self.square(-79.995, 36.0015, 0.001)]))
+        self.assertEqual(shares[0]['canopyShare'], 0.0)
+        self.assertEqual(ship.gate_canopy_in_play(shares), [])
+
+    def test_no_woods_is_zero_not_missing(self):
+        self.assertEqual(ship.canopy_corridor_shares(self.package([]))[0]['canopyShare'], 0.0)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -114,6 +114,54 @@ def gate_t_junctions(terrain_summary):
             for hole in (terrain_summary.get('holes') or []) if hole.get('tJunctionVertices')]
 
 
+# Tree cover inside each hole's play corridor (the routed centreline +/-
+# CANOPY_CORRIDOR_BUFFER_M): what renders as a hole played through forest.
+# Measured 2026-09-23 over 23 built layouts: every healthy course's worst
+# hole is <= 0.34 (a straight route cutting a dogleg's corner through real
+# trees). Golden Horseshoe averaged 0.76 with the dropped-clearing bug and
+# 0.47 after it, while a 3DEP lidar canopy-height model (trees >= 3 m) puts
+# the same corridors at 0.07-0.22 (over cells with lidar returns; >= 84%
+# of each corridor but one) -- the remainder is NAIP NDVI/texture
+# classifying open ground as canopy. 0.40 sits above every real dogleg.
+CANOPY_CORRIDOR_BUFFER_M = 20
+CANOPY_CORRIDOR_MAX = 0.40
+
+
+def canopy_corridor_shares(package, buffer_m=CANOPY_CORRIDOR_BUFFER_M):
+    """Per hole, the share of its play corridor that the package's `woods`
+    features cover -- what the renderer will fill with crowns. Informational
+    for every hole; `gate_canopy_in_play` blocks on the outliers."""
+    if not package or not package.get('originWgs84'):
+        return []
+    import pyproj
+    from shapely.geometry import shape
+    from shapely.ops import transform, unary_union
+    lon, lat = package['originWgs84']
+    local = pyproj.CRS.from_proj4(f'+proj=aeqd +lat_0={lat} +lon_0={lon} +units=m')
+    project = pyproj.Transformer.from_crs(4326, local, always_xy=True).transform
+    features = {f['id']: f for f in package.get('features') or []}
+    woods = [transform(project, shape(f['geometryWgs84'])).buffer(0)
+             for f in features.values() if f['kind'] == 'woods']
+    canopy = unary_union(woods) if woods else None
+    shares = []
+    for hole in package.get('holes') or []:
+        route = features.get(hole.get('routeFeatureId'))
+        if not route:
+            continue
+        corridor = transform(project, shape(route['geometryWgs84'])).buffer(buffer_m)
+        share = canopy.intersection(corridor).area / corridor.area if canopy is not None and corridor.area else 0.0
+        shares.append({'holeKey': hole['key'], 'ordinal': hole.get('ordinal'), 'canopyShare': round(share, 3)})
+    return shares
+
+
+def gate_canopy_in_play(shares, max_share=CANOPY_CORRIDOR_MAX):
+    over = [s for s in shares if s['canopyShare'] > max_share]
+    if not over:
+        return []
+    return [blocker('CANOPY_IN_PLAY_CORRIDOR', holeKeys=[s['holeKey'] for s in over],
+                    canopyShares=[s['canopyShare'] for s in over], max=max_share, corridorBufferMeters=CANOPY_CORRIDOR_BUFFER_M)]
+
+
 def gate_context_uncertain(context_report, max_share=CONTEXT_UNCERTAIN_MAX):
     """Advisory backstop only (owner sign-off happens at `ship --approve`,
     not here): fires only for an obviously broken context layer, well above
@@ -261,6 +309,8 @@ def evaluate_gates(ctx, layout_id, captures_report=None, capture_blockers=None):
     blockers += gate_hash_chain(package, asset_manifest, context_layer, hole_docs)
     blockers += gate_t_junctions(terrain_summary)
     blockers += gate_terrain_contract(hole_docs)
+    canopy_shares = canopy_corridor_shares(package)
+    blockers += gate_canopy_in_play(canopy_shares)
     blockers += gate_context_uncertain(context_report)
     blockers += (capture_blockers or [])
     blockers += gate_bundle_captures(captures_report)
@@ -269,6 +319,7 @@ def evaluate_gates(ctx, layout_id, captures_report=None, capture_blockers=None):
     advisory = {
         'contextUncertainShares': context_uncertain_shares(context_report),
         'tracedSurfaces': traced_surfaces(package),
+        'canopyCorridorShares': canopy_shares,
         'glbSpan': {'status': 'unassessed (not shipped)',
                     'reason': 'GLBs are visual review products only (aggregate_world\'s own manifest text); the published package never includes one.',
                     'findings': gate_glb_span(glb_reports)},
