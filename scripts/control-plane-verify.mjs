@@ -441,7 +441,7 @@ function checkHookWiring() {
   // Verify reachability of the guards actually configured, rather than
   // requiring a retired canonical-edit ban to exist forever.
   const pre = rows.filter((r) => r.event === 'PreToolUse');
-  for (const guard of ['guard-git.mjs', 'guard-sql.mjs']) {
+  for (const guard of ['guard-git.mjs']) {
     const entries = pre.filter((r) => r.command.includes(guard));
     const reaches = entries.some((r) => new RegExp(r.matcher).test('Bash'));
     add('hooks', `${guard}-reachable`, reaches ? PASS : FAIL,
@@ -457,7 +457,7 @@ function checkClaimConsistency() {
     : null;
   if (!inv) return add('claims', 'enforcement-inventory-present', UNKNOWN, 'docs/CONTROL_PLANE_ENFORCEMENT.md missing');
 
-  const files = ['CLAUDE.md', 'AGENTS.md', '.claude/rules/database.md', '.claude/rules/shipping.md', '.claude/rules/autonomy.md'];
+  const files = ['CLAUDE.md', 'AGENTS.md', '.claude/rules/database.md', '.claude/rules/shipping.md'];
   // Quoted spans are corrections recording what the old text said; an assertion
   // is what the file says in its own voice.
   const strip = (t) => t.replace(/[“”"][^“”"]*[“”"]/g, ' ');

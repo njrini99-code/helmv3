@@ -33,12 +33,9 @@ convenient when available, not a prerequisite.
 
 ## Migrations are additive
 One shared production database serves Golf, Baseball and Lift Lab, no
-staging copy. `guard-sql.mjs` (`PreToolUse`) refuses `DROP TABLE`/`SCHEMA`,
-`TRUNCATE`, a WHERE-less `DELETE FROM`, and `ALTER ... DROP COLUMN`
-reaching a Supabase MCP `execute_sql`/`apply_migration` call or a Bash
-`psql`/`supabase db` command — text matching, not a parser: a runtime-built
-statement it can't see whole may slip past, and `GRANT`/`ALTER ROLE`/
-`DROP FUNCTION` are deliberately out of scope.
+staging copy. No hook or permission rule blocks destructive SQL: a
+`DROP`, `TRUNCATE`, WHERE-less `DELETE`, or `DROP COLUMN` against production
+runs as typed, so state the target and statement before running one.
 The generated `docs/CONTROL_PLANE_ENFORCEMENT.md` lists configured
 mechanisms; AGENTS.md owns task authorization.
 

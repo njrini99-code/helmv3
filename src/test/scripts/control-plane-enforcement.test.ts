@@ -83,13 +83,9 @@ describe('hook wiring is real', () => {
     // silently drift.
     const blocking = hookRows().filter((r) => r.event === 'PreToolUse');
     const scripts = blocking.map((r) => scriptPath(r.command));
-    expect(scripts).toEqual(
-      expect.arrayContaining([
-        '.claude/hooks/guard-git.mjs',
-        '.claude/hooks/guard-sql.mjs',
-      ]),
-    );
-    expect(blocking.length).toBeGreaterThan(1);
+    // guard-sql.mjs was removed when the owner granted full Supabase access;
+    // guard-git.mjs (protects other sessions' uncommitted work) remains.
+    expect(scripts).toEqual(['.claude/hooks/guard-git.mjs']);
   });
 
   it('no hook claims to cover MCP unless one actually matches mcp__', () => {
@@ -106,19 +102,9 @@ describe('hook wiring is real', () => {
 });
 
 describe('database access and destructive-operation permissions', () => {
-  it('project deletion, resets and costly operations request approval', () => {
-    const mutating = [
-      'create_project',
-      'delete_branch',
-      'merge_branch',
-      'pause_project',
-      'reset_branch',
-      'restore_project',
-    ];
-    const missing = mutating
-      .map((t) => `mcp__claude_ai_Supabase__${t}`)
-      .filter((r) => !ask.includes(r));
-    expect(missing).toEqual([]);
+  it('Supabase and Vercel mutations are not gated by permission rules (owner grant)', () => {
+    const gated = [...ask, ...deny].filter((r) => /supabase|vercel|e139bbde|fba2ada3/i.test(r));
+    expect(gated).toEqual([]);
   });
 
   it('provides project-scoped database access without disabling migrations', () => {
@@ -199,17 +185,10 @@ describe('the three corrected claims stay corrected', () => {
     read(p)
       .replace(/[\u201c\u201d"][^\u201c\u201d"]*[\u201c\u201d"]/g, ' ');
 
-  it('database.md describes guard-sql.mjs\'s actual, narrow coverage rather than a blanket block', () => {
-    // 2026-09-07: guard-sql.mjs now really does refuse DROP TABLE/SCHEMA,
-    // TRUNCATE, a WHERE-less DELETE, and ALTER...DROP COLUMN — so the old
-    // "blocked by a PreToolUse hook on both the file-write and MCP paths"
-    // phrasing this suite used to forbid is no longer a lie to correct, it
-    // is closer to true. What must still not happen is overclaiming: the
-    // hook is text matching over SQL syntax, not a parser, and everything
-    // outside that exact statement shape is explicitly out of scope.
+  it('database.md says plainly that nothing blocks destructive SQL', () => {
     const db = read('.claude/rules/database.md');
-    expect(db).toMatch(/guard-sql\.mjs/);
-    expect(db).toMatch(/not a parser/);
+    expect(db).not.toMatch(/guard-sql/);
+    expect(db).toMatch(/No hook or permission rule blocks destructive SQL/);
   });
 
   it('AGENTS.md claims no Stop gate and no context gate', () => {
@@ -229,14 +208,12 @@ describe('the three corrected claims stay corrected', () => {
     expect(read('.claude/rules/shipping.md')).toMatch(/Recursive `rm` is UNENFORCED/);
   });
 
-  it('AGENTS.md describes the guards as narrow text matchers, not boundaries', () => {
-    // guard-git.mjs and guard-sql.mjs cover specific command shapes; the
-    // policy must name that scope rather than claim blanket coverage.
+  it('AGENTS.md describes the remaining guard as a narrow text matcher, not a boundary', () => {
     const raw = read('AGENTS.md');
     expect(raw).toMatch(/guard-git/);
-    expect(raw).toMatch(/guard-sql/);
-    expect(raw).toMatch(/text matchers, not security boundaries/);
-    expect(asserted('AGENTS.md')).not.toMatch(/they block the shapes\s+that actually matter/);
+    expect(raw).not.toMatch(/guard-sql/);
+    expect(raw).toMatch(/text matcher, not a security boundary/);
+    expect(raw).toMatch(/No permission rule denies or asks for Bash, Supabase, or Vercel/);
   });
 
   it('the policy and rules point readers at the generated inventory', () => {

@@ -2,10 +2,10 @@
 #
 # The production release path (AGENTS.md "Production"). vercel.json disables
 # Vercel Git deployments, so merging to main does not deploy; this script is
-# how an approved main commit reaches production. Claude asks before running
-# it (.claude/settings.json "ask"). It refuses a dirty tree, a non-main branch,
-# an unlinked directory, and a spent weekly budget (config/release-policy.yml),
-# stamps the Sentry release, deploys, and verifies the served commit.
+# how an approved main commit reaches production. It refuses a dirty tree, a
+# non-main branch, an unlinked directory, and a spent weekly budget
+# (config/release-policy.yml), stamps the Sentry release, deploys, and
+# verifies the served commit.
 #
 # Promote main to production, WITH the commit stamped into the Sentry release.
 #

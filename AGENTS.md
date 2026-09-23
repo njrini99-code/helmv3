@@ -99,8 +99,8 @@ production: write a forward-only migration, get it reviewed and merged, then
 apply it with `npm run db:apply -- <file>` or the project Supabase MCP after
 confirming the target and SQL (`docs/operations/APPLY_PATH.md`), and verify the
 resulting schema. Changing a row's status in `supabase/migrations/HELD.md` is
-the owner's decision. Claude's project MCP can write; Codex's
-(`.codex/config.toml`) is read-only by design.
+the owner's decision. Supabase access (MCP, CLI, SQL) is fully permitted for
+Claude and Codex; the judgment above is the safeguard, not a permission rule.
 
 ## Production
 
@@ -109,10 +109,11 @@ does not deploy. Release only when the user asks for one. The release path is
 `scripts/deploy-prod.sh` from a clean, current `main` checkout: it checks the
 linked project, the clean tree and the weekly budget
 (`config/release-policy.yml`), stamps the Sentry release, deploys, and verifies
-the served commit. Claude asks for approval before it runs. `vercel deploy
---prod` outside that script is denied. Rollback, promote, and alias changes
-also ask. Report a release as live only after `npm run release:status` shows
-the approved SHA. Vercel reads, logs, and previews are normal diagnostics.
+the served commit. Prefer it over a bare `vercel deploy --prod`, which skips those
+checks. Vercel access (CLI and MCP: deploy, promote, rollback, alias, env) is
+fully permitted; use it when the task calls for it and state the target first.
+Report a release as live only after `npm run release:status` shows the
+approved SHA.
 
 ## Product conventions
 
@@ -126,7 +127,8 @@ authority). Required review automation: Review Gate and CodeQL
 
 ## Guards
 
-The `guard-git` and `guard-sql` hooks block a few destructive command shapes
-(force-push, bulk staging, raw worktree removal, destructive SQL against
-production). They are text matchers, not security boundaries. The generated
+No permission rule denies or asks for Bash, Supabase, or Vercel. The one
+guard hook, `guard-git`, blocks a few Git shapes that destroy other sessions'
+work (force-push to `main`, bulk staging, raw worktree removal, `branch -D`);
+it is a text matcher, not a security boundary. The generated
 `docs/CONTROL_PLANE_ENFORCEMENT.md` lists what is actually wired.
