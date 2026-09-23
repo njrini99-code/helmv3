@@ -582,14 +582,34 @@ a new maturation confirmation.
     under concurrent edit by two other in-flight A8 slices (evidence
     revision / evidence badge) when this slice started, and this keeps
     those rebases conflict-free.
-  - **Deliberately out of scope for this slice**: loader/UI wiring. Neither
-    the `intelligence`/`coachhelm` page loaders nor `FocusAreaCard` read or
-    render criteria or practice sessions yet — those files are owned by
-    the two concurrent A8 slices above, and wiring here would guarantee a
-    conflict. A follow-up slice wires the read side once this slice lands.
+  - **Read-side loader + UI (follow-up slice, stacked on this one)**:
+    `src/lib/coachhelm/focus-areas/practice-log-loader.ts` is a plain,
+    non-`'use server'` server module (not a public action endpoint) —
+    `loadFocusAreaPracticeLogData(supabase, focusAreaIds)` batch-loads both
+    tables for a set of focus areas in one call, checking the flag FIRST
+    (zero `.from()` calls while off, same contract as the actions above)
+    and returning `{criteriaByFocusArea, practiceSummaryByFocusArea}` maps
+    keyed by `focus_area_id`. Both the coach grid
+    (`intelligence/page.tsx`) and the player page (`coachhelm/page.tsx`)
+    call it once with every loaded focus area's id and thread the result
+    onto each row as `criteria`/`practiceSummary` before handing off to
+    `PlayersGridView`/`FocusAreaCard`. Practice sessions are rolled up to
+    `{count, lastPracticedAt}` — never the raw per-session rows — so the
+    card never grows unbounded. `FocusAreaCard` renders a read-only
+    checklist (`criteria`, met/unmet via `IconCheckCircle2`/`IconCircleDot`)
+    and a one-line practice-log summary; both are absent/null-safe (render
+    nothing) exactly like `evidence_revision` above, and neither has a
+    mark-met/log-practice affordance yet — the `setFocusAreaCriterionMet`/
+    `logFocusAreaPracticeSession` actions exist but wiring a mutation
+    control onto the card is still a further slice. Focus-area ids are
+    chunked at `chunkIds`'s 200-id `ID_CHUNK_SIZE` before each `.in()`, and
+    each chunk is paged past PostgREST's 1000-row cap via `fetchAllRows` —
+    the same two-limit discipline `load-player-context.ts` already uses for
+    `golf_holes`/`golf_shots`.
   - A `db:types` regen PR follows once the owner applies the migration —
     until then `src/lib/types/database.ts` has no row types for either
-    table, and both actions go through `fromUntyped(supabase, table)`.
+    table, and both the actions and the loader go through
+    `fromUntyped(supabase, table)`.
   - The pgTAP suite
     (`supabase/tests/rls/golf_focus_area_practice_sessions.sql`, despite the
     filename, now covers BOTH new tables) has not been run locally (no

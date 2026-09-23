@@ -46,6 +46,7 @@ import { isFlagEnabled } from '@/lib/flags';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { computeEvidenceRevisionStatuses } from '@/lib/coachhelm/focus-areas/load-evidence-revision-status';
 import type { EvidenceRevisionComparison } from '@/lib/coachhelm/focus-areas/evidence-revision-status';
+import { loadFocusAreaPracticeLogData } from '@/lib/coachhelm/focus-areas/practice-log-loader';
 
 /**
  * A8 slice 3: the focus-area select is routed through `fromUntyped` (see
@@ -417,11 +418,25 @@ export default async function PlayerCoachHelmPage() {
     const evidenceRevisionStatusFor = (id: string): EvidenceRevisionComparison | undefined =>
       evidenceRevisionStatusByFocusAreaId ? evidenceRevisionStatusByFocusAreaId[id] : undefined;
 
+    // A8 slice 2 (read side): zero .from() calls against either new table
+    // while coachhelm_focus_area_practice_log is off — the loader checks
+    // the flag first and returns empty maps immediately in that case.
+    const { criteriaByFocusArea, practiceSummaryByFocusArea } = await loadFocusAreaPracticeLogData(
+      supabase,
+      (focusAreas || []).map((fa) => fa.id),
+    );
+
     const focusAreasWithHistory = (focusAreas || []).map((fa) => ({
       ...fa,
       progressHistory: progressHistoryOf(fa.progress_notes),
       from_review_round_id: fa.from_review_id ? roundIdByReviewId[fa.from_review_id] ?? null : null,
       evidence_revision_status: evidenceRevisionStatusFor(fa.id),
+      // `null` from the loader means that table's read failed (unknown),
+      // not "no criteria"/"never practiced" -- see practice-log-loader.ts's
+      // FocusAreaPracticeLogData doc comment. Branching here keeps that
+      // distinction from collapsing into a false "none" one call up.
+      criteria: criteriaByFocusArea ? (criteriaByFocusArea.get(fa.id) ?? null) : null,
+      practiceSummary: practiceSummaryByFocusArea ? (practiceSummaryByFocusArea.get(fa.id) ?? null) : null,
     }));
 
     developmentActiveAreas = focusAreasWithHistory.filter(
