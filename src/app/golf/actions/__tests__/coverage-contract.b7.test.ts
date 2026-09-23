@@ -11,12 +11,16 @@ import { assertAreaFullyWrapped } from '@/lib/admin/__tests__/coverage-contract.
  * insights.ts spans THREE batches (B7/B8/B9 — plan
  * docs/superpowers/plans/helm-bridge/waves/w15-total-coverage.md "Batch
  * notes"), so this contract asserts ONLY B7's 16 default-tagged
- * `coachhelm_ai_engine` exports and excludes the 10 exports owned by later
- * batches (7 insights_management overrides + generateRoundReview
+ * `coachhelm_ai_engine` exports and excludes the 8 exports owned by later
+ * batches (5 insights_management overrides + generateRoundReview
  * [round_review_ai, B9] + getPlayerFocusAreas [my_development, B9] +
  * getPlayerCoachHelmDashboard [player_coachhelm_dashboard, B9]) until their
  * owning batch lands. Task 16 flips on the repo-wide tripwire that locks the
  * whole file.
+ *
+ * (`acknowledgeComposedInsight`/`dismissComposedInsight` were removed from
+ * this exclude list 2026-09-22 along with the dead exports themselves — see
+ * insights.ts.)
  *
  * RED before the Batch 7 retrofit (lists every unwrapped B7 export); GREEN
  * after.
@@ -28,8 +32,6 @@ const INSIGHTS_TS_NON_B7_EXPORTS = [
   'reactivateInsight',
   'resolveInsight',
   'rateInsight',
-  'acknowledgeComposedInsight',
-  'dismissComposedInsight',
   // round_review_ai (B9)
   'generateRoundReview',
   // my_development (B9)

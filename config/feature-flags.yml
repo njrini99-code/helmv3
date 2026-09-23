@@ -147,3 +147,38 @@ flags:
     cleanup_plan: >-
       No planned removal — permanent ops lever gating a genuinely optional
       verification pass, not a migration bridge.
+
+  # CoachHelm learning-loop wiring: BehaviorLearner.getLearnedPreferences()'s
+  # result was previously computed and immediately discarded in
+  # orchestrator.ts's generateAlerts() (dead work, not dead code — it ran a
+  # query every call and threw the result away). Wired: with this flag off
+  # (the default everywhere), generateAlerts() still computes the learned
+  # thresholds but only logs when they would have differed from the
+  # coach's persisted CoachPhilosophy thresholds (shadow) — `philosophy` is
+  # never mutated, so alert output is unchanged from before this flag
+  # existed. On: the learned, ack/dismiss-adjusted per-type thresholds
+  # (BehaviorLearner.getPersonalizedThreshold, bounded to +/-25%) replace
+  # the coach's raw declineThreshold/pressureGapThreshold before
+  # applyPhilosophyThresholds runs.
+  - feature_id: coachhelm_learned_personalization
+    owner: golf/coachhelm
+    purpose: >-
+      Adjusts a coach's v2 alert-generation thresholds (decline, pressure
+      gap) using their own ack/dismiss history instead of only the
+      coach-set CoachPhilosophy values; default off pending real-world
+      evidence that this improves alert relevance.
+    type: experiment
+    status: active
+    created_at: "2026-09-22"
+    expires_at: null
+    default: false
+    environment:
+      production: false
+      preview: false
+      development: false
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      Either promote to a permanent `release` flag once shadow-log data
+      shows the learned thresholds track real coach preference (fewer
+      dismissed alerts without missing real declines), or remove the
+      wiring and this flag entirely if the evidence doesn't support it.

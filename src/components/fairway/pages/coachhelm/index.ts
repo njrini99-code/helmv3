@@ -130,11 +130,10 @@ export type {
 //     `FocusAreasGrid`) — that was the one decision the retain-note here had
 //     been deferring since 2026-08-15. `PlayerCoachHelmHome` superseded it and
 //     /golf/dashboard/coachhelm has mounted that instead all along.
-//   • FairwayMyDevelopment   — the player My Development list over
-//     /golf/dashboard/my-development. Renders the player CoachHelmShell variant,
-//     a FocusAreaCard list (active/completed partition preserved) with REAL
-//     source-chip Links + per-area Sparkline (honest InsufficientData when thin),
-//     a real error state distinct from empty, and retires the hand-rolled glass.
-//     Wires development.ts#updateFocusAreaProgress / completeFocusArea UNCHANGED.
-export { FairwayMyDevelopment } from './FairwayMyDevelopment';
-export type { FairwayMyDevelopmentProps } from './FairwayMyDevelopment';
+//   • FairwayMyDevelopment removed 2026-09-22, same pattern: its route,
+//     /golf/dashboard/my-development, is a `permanentRedirect` to
+//     /golf/dashboard/coachhelm?view=development (see that page.tsx) — this
+//     component had zero renderers left, only its own test. Player
+//     Development is served by `DevelopmentDrill`
+//     (`components/golf/coachhelm/home/DevelopmentDrill.tsx`), which ports
+//     this file's log-progress drawer and proposed-area card verbatim.

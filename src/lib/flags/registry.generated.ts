@@ -13,6 +13,23 @@ import type { FlagDefinition } from './types';
 
 export const FLAG_REGISTRY: readonly FlagDefinition[] = [
   {
+    feature_id: "coachhelm_learned_personalization",
+    owner: "golf/coachhelm",
+    purpose: "Adjusts a coach's v2 alert-generation thresholds (decline, pressure gap) using their own ack/dismiss history instead of only the coach-set CoachPhilosophy values; default off pending real-world evidence that this improves alert relevance.",
+    type: "experiment",
+    status: "active",
+    created_at: "2026-09-22",
+    expires_at: null,
+    default: false,
+    environment: {
+      production: false,
+      preview: false,
+      development: false,
+    },
+    kill_switch_behavior: null,
+    cleanup_plan: "Either promote to a permanent `release` flag once shadow-log data shows the learned thresholds track real coach preference (fewer dismissed alerts without missing real declines), or remove the wiring and this flag entirely if the evidence doesn't support it.",
+  },
+  {
     feature_id: "coachhelm_v2_availability",
     owner: "golf/coachhelm",
     purpose: "Global product-availability switch for the CoachHelm V2 AI layer. Off disables the whole surface for every coach and player account; the underlying check is a fail-open string comparison (any value except the literal string \"false\" leaves it on).",

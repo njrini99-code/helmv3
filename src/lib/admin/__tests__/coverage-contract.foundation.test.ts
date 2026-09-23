@@ -381,6 +381,10 @@ describe('global tripwire', () => {
     // — in src/app/golf/actions/{attendance,scheduling,conflict-inbox,
     // class-detail}.ts, all wrapped with feature `calendar_events`. The three
     // reads carry no demoSafe. Total 432 -> 436.
-    expect(total).toBe(436);
+    // 2026-09-22 (-5), dead-code cleanup: removed acknowledgeComposedInsight
+    // and dismissComposedInsight (insights.ts, zero live callers) and
+    // bulkDismissInsights/bulkAcknowledgeInsights/bulkResolveInsights
+    // (insight-management.ts, zero live callers). Total 436 -> 431.
+    expect(total).toBe(431);
   });
 });

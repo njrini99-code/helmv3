@@ -77,6 +77,29 @@ const DISMISS_TYPES = new Set([
 ]);
 
 /**
+ * Ratings `rateInsight` (insights.ts) can record via
+ * `recordInteraction(..., 'feedback', ..., { rating })`. Not itself an
+ * ACK_TYPES/DISMISS_TYPES member — 'feedback' rows are bucketed by their
+ * `metadata.rating` value instead (see `classifyFeedback` below), since a
+ * "feedback" interaction is a rating, not a raw ack/dismiss signal.
+ */
+const NEGATIVE_RATINGS = new Set(['not_helpful']);
+
+/**
+ * A `feedback`-type row (coach clicked 👍/👎/"actionable" on an insight) has
+ * no interaction_type in ACK_TYPES/DISMISS_TYPES — its signal lives in
+ * `metadata.rating` instead. `not_helpful` counts as a dismissal; every
+ * other known rating (`helpful`, `actionable`) or a missing/unrecognized
+ * rating defaults to an acknowledgment — a coach who bothered to rate an
+ * insight engaged with it either way.
+ */
+function classifyFeedback(meta: Record<string, unknown>): 'ack' | 'dismiss' {
+  const rating = (meta as { rating?: unknown }).rating;
+  if (typeof rating === 'string' && NEGATIVE_RATINGS.has(rating)) return 'dismiss';
+  return 'ack';
+}
+
+/**
  * Behavior Learner class for adaptive personalization.
  */
 export class BehaviorLearner {
@@ -236,6 +259,14 @@ export class BehaviorLearner {
       } else if (DISMISS_TYPES.has(row.interaction_type)) {
         dismisses++;
         byInsightType[typeKey].dismisses++;
+      } else if (row.interaction_type === 'feedback') {
+        if (classifyFeedback(meta) === 'dismiss') {
+          dismisses++;
+          byInsightType[typeKey].dismisses++;
+        } else {
+          acks++;
+          byInsightType[typeKey].acks++;
+        }
       }
     }
 
@@ -285,16 +316,47 @@ export class BehaviorLearner {
   }
 
   /**
-   * Legacy API: a default threshold is returned unchanged for now; the
-   * event-log model does not yet store learned numeric thresholds. Callers
-   * requiring feedback-driven thresholds should use the dedicated
-   * `CoachPhilosophy` table instead.
+   * Nudges `defaultThreshold` by how often the coach dismisses vs.
+   * acknowledges alerts of this type. Prefers the per-`metric` bucket in
+   * `byInsightType` when it has enough samples; falls back to the entity's
+   * overall ack/dismiss rate when the bucket is too small or absent; returns
+   * `defaultThreshold` unchanged when neither has enough signal.
+   *
+   * Bounded to ±`MAX_ADJUSTMENT` so a small, noisy sample can never swing a
+   * threshold wildly — this nudges, it doesn't override the coach's own
+   * `CoachPhilosophy` setting. Callers gate this behind a feature flag
+   * (`coachhelm_learned_personalization`); with the flag off, compute this
+   * for shadow-logging only and never apply it.
    */
-  async getPersonalizedThreshold(
-    _metric: string,
-    defaultThreshold: number,
-  ): Promise<number> {
-    return defaultThreshold;
+  private static readonly PERSONALIZATION_MIN_SAMPLE = 8;
+  private static readonly PERSONALIZATION_MAX_ADJUSTMENT = 0.25;
+
+  async getPersonalizedThreshold(metric: string, defaultThreshold: number): Promise<number> {
+    const profile = await this.loadBehavior();
+    const bucket = profile.byInsightType[metric];
+    const bucketSample = bucket ? bucket.acks + bucket.dismisses : 0;
+    const useBucket = bucketSample >= BehaviorLearner.PERSONALIZATION_MIN_SAMPLE;
+
+    const acks = useBucket
+      ? bucket!.acks
+      : Math.round(profile.acknowledgmentRate * profile.totalInteractions);
+    const dismisses = useBucket
+      ? bucket!.dismisses
+      : Math.round(profile.dismissalRate * profile.totalInteractions);
+    const total = acks + dismisses;
+    if (total < BehaviorLearner.PERSONALIZATION_MIN_SAMPLE) return defaultThreshold;
+
+    const dismissRate = dismisses / total;
+    // dismissRate > 0.5 (dismissed more than acked) raises the bar (fewer
+    // fire); < 0.5 lowers it. Scaled so dismissRate=1 hits +MAX_ADJUSTMENT
+    // and dismissRate=0 hits -MAX_ADJUSTMENT, then clamped defensively.
+    const rawAdjustment = (dismissRate - 0.5) * 2 * BehaviorLearner.PERSONALIZATION_MAX_ADJUSTMENT;
+    const adjustment = Math.max(
+      -BehaviorLearner.PERSONALIZATION_MAX_ADJUSTMENT,
+      Math.min(BehaviorLearner.PERSONALIZATION_MAX_ADJUSTMENT, rawAdjustment),
+    );
+    const personalized = defaultThreshold * (1 + adjustment);
+    return personalized > 0 ? personalized : defaultThreshold;
   }
 
   /**
