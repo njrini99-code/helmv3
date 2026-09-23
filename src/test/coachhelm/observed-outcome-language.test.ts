@@ -29,16 +29,26 @@
 // own "why the parser and not a regex" note).
 //
 // SCOPE. Coach/player UI (`components/golf/coachhelm`,
-// `components/fairway/pages/coachhelm`) and the CoachHelm chat surface
-// (`lib/coachhelm/v3/chat`) — the two places this addendum names
-// ("coach- and player-facing string ... chat tool description and LLM
-// prompt"). Admin-only analytics dashboards (`app/admin/**`) are a
-// different, internal audience reading a raw score, not an outcome claim to
-// an end user, and are out of scope. `DiagnosisPanel.tsx`'s "Caused by" is a
-// different axis — root-cause DIAGNOSIS (why a symptom happens, an honest
-// measured-fact-vs-hypothesis distinction the panel already makes), not an
-// OUTCOME claim about whether an intervention worked — allowlisted here,
-// flagged separately to the task owner rather than silently left unguarded.
+// `components/fairway/pages/coachhelm`, `components/golf/player-hub`) and
+// CoachHelm's chat/generation surfaces (`lib/coachhelm/v3/chat`,
+// `lib/coachhelm/v3/brief`, `lib/coachhelm/v3/composite`,
+// `lib/coachhelm/v3/insights`) — the places this addendum names ("coach-
+// and player-facing string ... chat tool description and LLM prompt") plus
+// the adjacent surfaces most likely to grow one next. The player-hub and
+// brief/composite/insights roots currently produce zero hits — added
+// anyway (rev-2023 SHOULD 4) since a clean scan costs nothing and a future
+// violation there would otherwise go unguarded exactly like `InsightCard`'s
+// did. Admin-only analytics dashboards (`app/admin/**`) are a different,
+// internal audience reading a raw score, not an outcome claim to an end
+// user, and stay out of scope.
+//
+// DiagnosisPanel.tsx's "Caused by" → "Preceded by" (rev-2023 MUST 2): fixed
+// at the source instead of allowlisted — an observed temporal sequence
+// (root_cause happening before symptom in the recorded shot data) is a
+// measured FACT (see its own `CausalityChip`) but still not a controlled
+// measurement, so it can't back a causal claim either. No file in this
+// codebase is allowlisted by this guard any more; if one legitimately needs
+// to be, allowlist the EXACT span (not the whole file) with a reason.
 // =============================================================================
 
 import { describe, it, expect } from 'vitest';
@@ -51,33 +61,41 @@ const SRC = path.resolve(__dirname, '../..');
 const SCAN_ROOTS = [
   'components/golf/coachhelm',
   'components/fairway/pages/coachhelm',
+  'components/golf/player-hub',
   'lib/coachhelm/v3/chat',
+  'lib/coachhelm/v3/brief',
+  'lib/coachhelm/v3/composite',
+  'lib/coachhelm/v3/insights',
 ].map((p) => path.join(SRC, p));
-
-/**
- * Allowlisted by path, not by string content — an allowlisted file is
- * exempt from every pattern below, so keep this list short and each entry
- * justified in the header comment above.
- */
-const ALLOWLIST_FILES = new Set([
-  path.join(SRC, 'components/golf/coachhelm/insights/DiagnosisPanel.tsx'),
-]);
 
 interface ForbiddenPattern {
   pattern: RegExp;
   label: string;
 }
 
+// A "saved ... strokes" claim in EITHER order ("Saved ~1.2 str/rd" and the
+// reversed "1.2 strokes saved" both assert the same measured-saving claim),
+// and matching the "str/rd" abbreviation this codebase actually uses (the
+// hedged phrasing itself, "~N str/rd at stake", never pairs "str/rd" with
+// "saved"/"saving" nearby, so this stays false-positive-free against it).
+const SAVE_WORD = /\bsav(?:ed|ing)\b/.source;
+const STROKE_WORD = /\bstr(?:okes?|\/rd)\b/.source;
+
 const FORBIDDEN: ForbiddenPattern[] = [
   {
-    pattern: /\bsaved\b[\s\S]{0,20}\bstrokes?\b/i,
+    pattern: new RegExp(`${SAVE_WORD}[\\s\\S]{0,20}${STROKE_WORD}`, 'i'),
     label:
-      'a quantified "Saved ... strokes" claim (asserts a MEASURED saving) — use the hedged "~N str/rd at stake" phrasing this codebase already uses everywhere else for the same evidence.strokes_impact estimate',
+      'a quantified "Saved ... strokes" / "Saved ... str/rd" claim (asserts a MEASURED saving) — use the hedged "~N str/rd at stake" phrasing this codebase already uses everywhere else for the same evidence.strokes_impact estimate',
   },
   {
-    pattern: /\bproven\b/i,
+    pattern: new RegExp(`${STROKE_WORD}[\\s\\S]{0,20}${SAVE_WORD}`, 'i'),
     label:
-      '"proven" — an observed before/after difference is not proof (a small sample can clear a support floor by chance, and nothing rules out a confound); use "supported"/"observed change" instead (see event-ledger.ts\'s deriveTrustStatus, N9)',
+      'a quantified "N strokes ... saved" claim in REVERSED order (asserts a MEASURED saving) — use the hedged "~N str/rd at stake" phrasing instead',
+  },
+  {
+    pattern: /\bprov(?:en|ed|es|e)\b/i,
+    label:
+      '"prove"/"proven"/"proved"/"proves" — an observed before/after difference is not proof (a small sample can clear a support floor by chance, and nothing rules out a confound); use "supported"/"observed change" instead (see event-ledger.ts\'s deriveTrustStatus, N9)',
   },
   {
     pattern: /\bcaused by\b/i,
@@ -128,6 +146,20 @@ function collectSourceFiles(dir: string, out: string[] = []): string[] {
  *    JsxExpression child (`{impact.toFixed(1)}`) is replaced with a single
  *    placeholder character — its own nested JSX (if any) is still walked
  *    and checked on its own by the recursive descent below.
+ *
+ *  KNOWN LIMITATION (rev-2023 SHOULD 5) — SIBLING JSX ELEMENTS, not just
+ *  sibling text/expression nodes, are each their OWN independent span: a
+ *  phrase split across two adjacent tags, e.g.
+ *  `<span>Saved</span> <span>strokes</span>`, produces two separate spans
+ *  ("Saved" and "strokes") and neither alone matches a two-word pattern
+ *  like `SAVE_WORD ... STROKE_WORD` below — this guard would miss that
+ *  exact split. `<span>Saved {x} strokes</span>` (one element, an
+ *  expression child in between) IS caught — that's what the "per element,
+ *  not per node" flattening above exists for. A real forbidden phrase
+ *  deliberately split across sibling tags for styling would be unusual
+ *  (and worth a human's attention if it ever appears), but it's a real gap
+ *  in this walker, not a hypothetical one — noted rather than silently
+ *  assumed away.
  */
 function extractUserFacingText(label: string, source: string): Array<{ line: number; text: string }> {
   const sf = ts.createSourceFile(label, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
@@ -157,7 +189,6 @@ function extractUserFacingText(label: string, source: string): Array<{ line: num
 }
 
 function findViolations(file: string): string[] {
-  if (ALLOWLIST_FILES.has(file)) return [];
   const source = readFileSync(file, 'utf8');
   const spans = extractUserFacingText(file, source);
   const violations: string[] = [];
@@ -232,6 +263,49 @@ describe('observed-outcome language: no causal-certainty claim in coach/player U
       violations.flatMap((span) => FORBIDDEN.filter(({ pattern }) => pattern.test(span.text)).map((f) => f.label)),
     );
     expect(matchedLabels.size).toBe(3);
+  });
+
+  it('flags the abbreviated "Saved ~N str/rd" form (rev-2023 MUST 1) — not just the spelled-out "strokes"', () => {
+    const fixture = `<span>Saved ~1.2 str/rd</span>`;
+    const violations = extractUserFacingText('fixture.tsx', fixture).filter((span) =>
+      FORBIDDEN.some(({ pattern }) => pattern.test(span.text)),
+    );
+    expect(violations.length).toBeGreaterThan(0);
+  });
+
+  it('flags the REVERSED order "N strokes saved" (rev-2023 MUST 1) — same claim, opposite word order', () => {
+    const fixture = `<span>1.2 strokes saved this round</span>`;
+    const violations = extractUserFacingText('fixture.tsx', fixture).filter((span) =>
+      FORBIDDEN.some(({ pattern }) => pattern.test(span.text)),
+    );
+    expect(violations.length).toBeGreaterThan(0);
+  });
+
+  it('flags the reversed order with the "str/rd" abbreviation too ("1.2 str/rd saved")', () => {
+    const fixture = `<span>1.2 str/rd saved</span>`;
+    const violations = extractUserFacingText('fixture.tsx', fixture).filter((span) =>
+      FORBIDDEN.some(({ pattern }) => pattern.test(span.text)),
+    );
+    expect(violations.length).toBeGreaterThan(0);
+  });
+
+  it.each(['prove', 'proves', 'proved', 'proven'])(
+    'flags every conjugation of "prove" (rev-2023 MUST 1), not just "proven" — case: %s',
+    (word) => {
+      const fixture = `<span>This will ${word} it works</span>`;
+      const violations = extractUserFacingText('fixture.tsx', fixture).filter((span) =>
+        FORBIDDEN.some(({ pattern }) => pattern.test(span.text)),
+      );
+      expect(violations.length).toBeGreaterThan(0);
+    },
+  );
+
+  it('does not flag "improve"/"improvement" as a false positive of the "prove" family (word-boundary check)', () => {
+    const fixture = `<span>This should improve your approach shots</span>`;
+    const violations = extractUserFacingText('fixture.tsx', fixture).filter((span) =>
+      FORBIDDEN.some(({ pattern }) => pattern.test(span.text)),
+    );
+    expect(violations).toEqual([]);
   });
 
   it('does not flag an unrelated, legitimate use of "saved" (no nearby "strokes")', () => {

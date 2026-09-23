@@ -126,6 +126,27 @@ interface OutcomeBadgeProps {
   className?: string;
 }
 
+/**
+ * repair-plan §14.12 re-review (PR #2023, rev-2023 SHOULD 3): `outcome_
+ * status` is set by `recordFocusAreaOutcomeImpl` — in practice always a
+ * COACH's manual grade (its only two UI callers, `PlayersGridView.tsx` and
+ * `GenomeDetailView.tsx`, both live under `components/fairway/pages/
+ * coachhelm/`; no player-facing surface calls it, even though the
+ * underlying `verifyPlayerAccess` check would technically also allow
+ * self-access). "Coach marked ___" says plainly WHO asserted this and
+ * that it's a manual grade, not a system-measured verdict — the same
+ * distinction `readOutcomeStatus`'s own doc comment already draws, now
+ * stated in the label itself rather than only in a comment a coach never
+ * sees. `no_change` stays unrendered (too noisy on the feed, unchanged
+ * design decision) but keeps a matching label here so the three states
+ * read consistently if that decision is ever revisited.
+ */
+const OUTCOME_LABELS: Record<OutcomeStatus, string> = {
+  improved: 'Coach marked improved',
+  worsened: 'Coach marked worsened',
+  no_change: 'Coach marked unchanged',
+};
+
 function OutcomeBadge({ insight, className }: OutcomeBadgeProps) {
   const status = readOutcomeStatus(insight);
   if (!status) return null;
@@ -176,7 +197,7 @@ function OutcomeBadge({ insight, className }: OutcomeBadgeProps) {
         >
           <path d="M3 8l3-4 3 4" />
         </svg>
-        Improved · ~{impact.toFixed(1)} str/rd at stake
+        {OUTCOME_LABELS.improved} · ~{impact.toFixed(1)} str/rd at stake
       </span>
     );
   }
@@ -193,12 +214,13 @@ function OutcomeBadge({ insight, className }: OutcomeBadgeProps) {
           className,
         )}
       >
-        Outcome regressed
+        {OUTCOME_LABELS.worsened}
       </span>
     );
   }
 
   // status === 'no_change' is intentionally omitted — too noisy on the feed.
+  // OUTCOME_LABELS.no_change exists so the wording is ready if that changes.
   return null;
 }
 

@@ -746,7 +746,11 @@ function PrimaryInstrument({ data, days }: { data?: PredictionPerformanceData; d
         </div>
         {live ? (
           <span className="font-fw-sans text-body-sm text-text-secondary">
-            of {resolved} resolved predictions proved accurate — well above a 50% coin flip.
+            {/* repair-plan §14.12 re-review (PR #2023): was "proved accurate" —
+                each resolved prediction's accuracy is a directly checkable fact,
+                but "proved" overstates what a hit RATE across resolved
+                predictions demonstrates. */}
+            of {resolved} resolved predictions were accurate — well above a 50% coin flip.
           </span>
         ) : null}
       </div>
@@ -1033,7 +1037,7 @@ function PatternImpactDeck({
         </div>
         <InsufficientData
           title="Nothing to credit yet"
-          description="When CoachHelm detects and resolves performance patterns, their signed strokes-saved impact lands here as a diverging tornado."
+          description="When CoachHelm detects and resolves performance patterns, their signed stroke-impact estimate lands here as a diverging tornado."
           unit="detected patterns"
           current={0}
           required={1}
@@ -1083,9 +1087,14 @@ function PatternImpactDeck({
           <p className="font-fw-sans text-caption text-text-tertiary">
             {data.patternsDetected} detected · {data.patternsResolved} resolved ·{' '}
             <span className="font-fw-mono text-text-secondary">
-              {data.totalStrokesSaved.toFixed(1)}
+              ~{data.totalStrokesSaved.toFixed(1)}
             </span>{' '}
-            strokes saved
+            {/* repair-plan §14.12 re-review (PR #2023): was "strokes saved" —
+                totalStrokesSaved sums each resolved pattern's GENERATION-TIME
+                stroke_impact estimate, never a post-resolution measurement, so
+                "saved" (a measured claim) is exactly the same overclaim
+                OutcomeBadge's old wording made. */}
+            str/rd impact (est.)
           </p>
         </div>
         <Button
@@ -1225,7 +1234,7 @@ function PredictionsSection({ data }: { data?: PredictionPerformanceData }) {
       <Ribbon
         title="Prediction accuracy over time"
         overline="Validated predictions only"
-        takeaway="Share of validated predictions that proved accurate per snapshot, vs a coin-flip baseline."
+        takeaway="Share of validated predictions that were accurate per snapshot, vs a coin-flip baseline."
         data={ribbonPoints}
         benchmark={{ value: 0.5, label: 'coin flip' }}
         valueFormatter={(v) => formatPercent(v, 0)}
@@ -1709,7 +1718,7 @@ function PatternsSection({ data }: { data?: PatternImpactData }) {
     return (
       <EmptyState
         title="No patterns detected yet"
-        description="When CoachHelm detects performance patterns across the team, their lifecycle and strokes-saved impact appear here."
+        description="When CoachHelm detects performance patterns across the team, their lifecycle and stroke-impact estimate appear here."
       />
     );
   }
@@ -1725,7 +1734,10 @@ function PatternsSection({ data }: { data?: PatternImpactData }) {
         </div>
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           <StatTile
-            label="Strokes saved"
+            // repair-plan §14.12 re-review (PR #2023): was "Strokes saved" —
+            // totalStrokesSaved sums resolved patterns' generation-time
+            // stroke_impact estimates, never a post-resolution measurement.
+            label="Stroke impact (est.)"
             value={data.totalStrokesSaved}
             format={{ maximumFractionDigits: 1 }}
             mono

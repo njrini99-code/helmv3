@@ -407,7 +407,7 @@ describe('InsightCard zero-impact suppression (tee-strat-1)', () => {
 // OutcomeBadge — observed-outcome language audit (repair-plan §14.12)
 // ---------------------------------------------------------------------------
 describe('InsightCard OutcomeBadge (observed-outcome language audit)', () => {
-  it('improved + meaningful impact: renders the hedged "~N str/rd at stake" phrasing, never a measured "Saved" claim', () => {
+  it('improved + meaningful impact: renders "Coach marked improved" (a manual grade, not a system verdict) with the hedged "~N str/rd at stake" phrasing, never a measured "Saved" claim', () => {
     const insight = makeInsight({
       outcome_status: 'improved',
       evidence: makeEvidence({ strokes_impact: 1.2 }),
@@ -415,7 +415,7 @@ describe('InsightCard OutcomeBadge (observed-outcome language audit)', () => {
     render(<InsightCard insight={insight} density="default" audience="coach" />);
     const badge = screen.getByTestId('insight-outcome-badge');
     expect(badge).toHaveAttribute('data-outcome', 'improved');
-    expect(badge.textContent).toContain('Improved');
+    expect(badge.textContent).toContain('Coach marked improved');
     expect(badge.textContent).toContain('~1.2 str/rd at stake');
     // The old wording asserted a measured saving ("Saved") from an estimate
     // that was never actually re-measured — must never regress to that.
@@ -431,7 +431,7 @@ describe('InsightCard OutcomeBadge (observed-outcome language audit)', () => {
     expect(screen.queryByTestId('insight-outcome-badge')).toBeNull();
   });
 
-  it('worsened: renders the neutral "Outcome regressed" label regardless of impact magnitude', () => {
+  it('worsened: renders "Coach marked worsened" regardless of impact magnitude', () => {
     const insight = makeInsight({
       outcome_status: 'worsened',
       evidence: makeEvidence({ strokes_impact: 0.9 }),
@@ -439,7 +439,7 @@ describe('InsightCard OutcomeBadge (observed-outcome language audit)', () => {
     render(<InsightCard insight={insight} density="default" audience="coach" />);
     const badge = screen.getByTestId('insight-outcome-badge');
     expect(badge).toHaveAttribute('data-outcome', 'worsened');
-    expect(badge.textContent).toBe('Outcome regressed');
+    expect(badge.textContent).toBe('Coach marked worsened');
   });
 
   it('no_change: intentionally omitted — no badge at all (too noisy on the feed)', () => {
