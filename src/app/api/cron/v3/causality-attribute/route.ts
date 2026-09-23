@@ -85,6 +85,21 @@ const FETCH_PAGE_SIZE = 200;
  * maxDuration. At 200/page this scans up to 10k candidates per run.
  */
 const MAX_FETCH_PAGES = 50;
+/**
+ * A9 slice 1 (PR #2007 review, residual on MUST 2): once a shot-level
+ * candidate's follow-up window has closed, its matched evidence is
+ * essentially fixed — only a late-logged round can still change the
+ * outcome. The schema can't represent a terminal "insufficient evidence,
+ * stop retrying" row honestly (`golf_insight_outcome_attribution`'s
+ * numeric/integer columns are all NOT NULL, no status/marker column), so
+ * instead of writing one, we cap the retry window itself: once
+ * `firstExposure + POST_WINDOW_DAYS + RETRY_GRACE_DAYS` has passed, the
+ * candidate is dropped from the bulk pre-filter for good and never takes a
+ * `todo` slot again. This bounds each insight's cost at roughly
+ * `RETRY_GRACE_DAYS` daily-cron `loadPlayerContext` calls instead of an
+ * unbounded number, with no migration.
+ */
+const RETRY_GRACE_DAYS = 14;
 
 interface CronSummary {
   considered: number;
@@ -156,6 +171,19 @@ interface CronSummary {
    * (`comparable-attribute.ts`'s own lookup).
    */
   comparable_exposure_read_failed: number;
+  /**
+   * A9 slice 1 (PR #2007 review, residual on MUST 2): the candidate's
+   * follow-up window closed more than `RETRY_GRACE_DAYS` ago. The schema
+   * can't represent a terminal "insufficient evidence" row honestly (see
+   * `RETRY_GRACE_DAYS`'s doc comment above), so this is not written as an
+   * attribution row — the candidate is just permanently dropped from the
+   * bulk pre-filter and never takes a `todo` slot (never calls
+   * `loadPlayerContext`) again. Distinct from `comparable_follow_up_open`
+   * (window still open, retry expected) and from
+   * `comparable_insufficient_evidence` (the pure core ran and found
+   * insufficient evidence on a stale run before this cap existed).
+   */
+  comparable_retry_horizon_expired: number;
 }
 
 export async function GET(req: NextRequest) {
@@ -186,6 +214,7 @@ async function handle(): Promise<NextResponse> {
     comparable_insufficient_evidence: 0,
     comparable_follow_up_open: 0,
     comparable_exposure_read_failed: 0,
+    comparable_retry_horizon_expired: 0,
   };
   // Read once per run, not once per candidate — matches the flag-off ==
   // pre-slice-1-behavior contract (A9 slice 1).
@@ -346,8 +375,16 @@ async function handle(): Promise<NextResponse> {
             summary.comparable_no_exposure_record += 1;
             continue;
           }
-          if (new Date(shownAt).getTime() + POST_WINDOW_DAYS * 86_400_000 > Date.now()) {
+          const followUpWindowEndMs = new Date(shownAt).getTime() + POST_WINDOW_DAYS * 86_400_000;
+          if (followUpWindowEndMs > Date.now()) {
             summary.comparable_follow_up_open += 1;
+            continue;
+          }
+          // Residual on MUST 2 (no schema change): once the window has been
+          // closed for more than RETRY_GRACE_DAYS, the matched evidence is
+          // essentially fixed and this candidate never enqueues again.
+          if (followUpWindowEndMs + RETRY_GRACE_DAYS * 86_400_000 < Date.now()) {
+            summary.comparable_retry_horizon_expired += 1;
             continue;
           }
         }

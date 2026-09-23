@@ -103,6 +103,13 @@ interface FixtureInsight {
 }
 
 const OLD = '2026-01-01T00:00:00.000Z'; // far older than the 21d cutoff
+// A9 slice 1 (PR #2007 review, residual on MUST 2): exposure shown 25 days
+// ago — the 21-day follow-up window has closed, but the 14-day
+// RETRY_GRACE_DAYS horizon (closing at day 35) has not, so the candidate
+// should still reach computeComparableAttribution. Relative to Date.now()
+// (not an absolute date like OLD) so it stays valid regardless of when the
+// suite runs.
+const WINDOW_CLOSED_IN_GRACE = new Date(Date.now() - 25 * 86_400_000).toISOString();
 
 function fixture(over: Partial<FixtureInsight> & { id: string }): FixtureInsight {
   return {
@@ -745,7 +752,7 @@ describe('causality-attribute cron A9 slice 1: comparable-opportunity attributio
     isFlagEnabledMock.mockReturnValue(true);
     computeComparableAttributionMock.mockResolvedValue({ ok: false, reason: 'insufficient-evidence' });
     const rows = [fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } })];
-    const { client } = makeClient(rows, { exposures: { 'insight-1': OLD } });
+    const { client } = makeClient(rows, { exposures: { 'insight-1': WINDOW_CLOSED_IN_GRACE } });
     createAdminMock.mockReturnValue(client);
 
     const res = await POST(authedRequest());
@@ -790,6 +797,38 @@ describe('causality-attribute cron A9 slice 1: comparable-opportunity attributio
     expect(computeComparableAttributionMock).not.toHaveBeenCalled();
   });
 
+  it('residual on MUST 2: a shot-level candidate whose retry horizon (window close + 14d grace) has expired is dropped for good and never reaches computeComparableAttribution', async () => {
+    isFlagEnabledMock.mockReturnValue(true);
+    // Shown 40 days ago: the 21-day window closed at day 21, and the 14-day
+    // grace period closed at day 35 — 40 is past both.
+    const shownLongAgo = new Date(Date.now() - 40 * 86_400_000).toISOString();
+    const rows = [fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } })];
+    const { client } = makeClient(rows, { exposures: { 'insight-1': shownLongAgo } });
+    createAdminMock.mockReturnValue(client);
+
+    const res = await POST(authedRequest());
+    const summary = await res.json();
+
+    expect(summary.comparable_retry_horizon_expired).toBe(1);
+    expect(summary.comparable_follow_up_open).toBe(0);
+    expect(summary.considered).toBe(0);
+    expect(computeComparableAttributionMock).not.toHaveBeenCalled();
+  });
+
+  it('residual on MUST 2: a shot-level candidate still within the retry grace period (window closed, horizon not yet expired) still reaches computeComparableAttribution', async () => {
+    isFlagEnabledMock.mockReturnValue(true);
+    computeComparableAttributionMock.mockResolvedValue({ ok: false, reason: 'insufficient-evidence' });
+    const rows = [fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } })];
+    const { client } = makeClient(rows, { exposures: { 'insight-1': WINDOW_CLOSED_IN_GRACE } });
+    createAdminMock.mockReturnValue(client);
+
+    const res = await POST(authedRequest());
+    const summary = await res.json();
+
+    expect(summary.comparable_retry_horizon_expired).toBe(0);
+    expect(computeComparableAttributionMock).toHaveBeenCalledTimes(1);
+  });
+
   it('MUST 2 pre-filter: a bulk exposure-fetch error is logged distinctly, counted, and the page never reaches computeComparableAttribution', async () => {
     isFlagEnabledMock.mockReturnValue(true);
     const rows = [fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } })];
@@ -819,7 +858,7 @@ describe('causality-attribute cron A9 slice 1: comparable-opportunity attributio
       error: 'statement timeout',
     });
     const rows = [fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } })];
-    const { client } = makeClient(rows, { exposures: { 'insight-1': OLD } });
+    const { client } = makeClient(rows, { exposures: { 'insight-1': WINDOW_CLOSED_IN_GRACE } });
     createAdminMock.mockReturnValue(client);
 
     const res = await POST(authedRequest());
@@ -838,7 +877,7 @@ describe('causality-attribute cron A9 slice 1: comparable-opportunity attributio
     isFlagEnabledMock.mockReturnValue(true);
     computeComparableAttributionMock.mockResolvedValue({ ok: false, reason: 'no-exposure-record' });
     const rows = [fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } })];
-    const { client } = makeClient(rows, { exposures: { 'insight-1': OLD } });
+    const { client } = makeClient(rows, { exposures: { 'insight-1': WINDOW_CLOSED_IN_GRACE } });
     createAdminMock.mockReturnValue(client);
 
     const res = await POST(authedRequest());
@@ -854,7 +893,7 @@ describe('causality-attribute cron A9 slice 1: comparable-opportunity attributio
     isFlagEnabledMock.mockReturnValue(true);
     computeComparableAttributionMock.mockResolvedValue({ ok: false, reason: 'follow-up-window-open' });
     const rows = [fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } })];
-    const { client } = makeClient(rows, { exposures: { 'insight-1': OLD } });
+    const { client } = makeClient(rows, { exposures: { 'insight-1': WINDOW_CLOSED_IN_GRACE } });
     createAdminMock.mockReturnValue(client);
 
     const res = await POST(authedRequest());
@@ -870,7 +909,7 @@ describe('causality-attribute cron A9 slice 1: comparable-opportunity attributio
     isFlagEnabledMock.mockReturnValue(true);
     computeComparableAttributionMock.mockResolvedValue({ ok: false, reason: 'insufficient-evidence' });
     const rows = [fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } })];
-    const { client } = makeClient(rows, { exposures: { 'insight-1': OLD } });
+    const { client } = makeClient(rows, { exposures: { 'insight-1': WINDOW_CLOSED_IN_GRACE } });
     createAdminMock.mockReturnValue(client);
 
     const res = await POST(authedRequest());
@@ -898,7 +937,7 @@ describe('causality-attribute cron A9 slice 1: comparable-opportunity attributio
     });
     writeComparableAttributionMock.mockResolvedValue({ written: true, methodVersionColumnMissing: false });
     const rows = [fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } })];
-    const { client, weightCalls } = makeClient(rows, { exposures: { 'insight-1': OLD } });
+    const { client, weightCalls } = makeClient(rows, { exposures: { 'insight-1': WINDOW_CLOSED_IN_GRACE } });
     createAdminMock.mockReturnValue(client);
 
     const res = await POST(authedRequest());
@@ -932,7 +971,7 @@ describe('causality-attribute cron A9 slice 1: comparable-opportunity attributio
     // written:false with no `error` (not a failure, a routine degrade).
     writeComparableAttributionMock.mockResolvedValue({ written: false, methodVersionColumnMissing: true });
     const rows = [fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } })];
-    const { client } = makeClient(rows, { exposures: { 'insight-1': OLD } });
+    const { client } = makeClient(rows, { exposures: { 'insight-1': WINDOW_CLOSED_IN_GRACE } });
     createAdminMock.mockReturnValue(client);
 
     const res = await POST(authedRequest());
@@ -966,7 +1005,7 @@ describe('causality-attribute cron A9 slice 1: comparable-opportunity attributio
       error: 'permission denied for table golf_insight_outcome_attribution',
     });
     const rows = [fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } })];
-    const { client } = makeClient(rows, { exposures: { 'insight-1': OLD } });
+    const { client } = makeClient(rows, { exposures: { 'insight-1': WINDOW_CLOSED_IN_GRACE } });
     createAdminMock.mockReturnValue(client);
 
     const res = await POST(authedRequest());
