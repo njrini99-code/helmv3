@@ -796,6 +796,13 @@ features:
         # is outside GOVERNED_PATTERNS (.claude/hooks/lib/feature-map.mjs),
         # which covers src/app|lib|components/golf, not the Fairway tree.
         - src/components/fairway/pages/calendar/**
+        # The iOS-style time drum (TimeWheel/WheelColumn) EventWhenFields
+        # mounts for the event editor's start/end fields. Lives in
+        # fairway/controls/, not fairway/pages/calendar/ — same class of gap
+        # as the comment above (`knowledge:map` resolving to no feature).
+        # Currently calendar-only; re-home this entry (or make it shared) if
+        # another feature ever adopts the control.
+        - src/components/fairway/controls/wheel-picker.*
       api:
         - src/app/api/calendar/**
       actions:

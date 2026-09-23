@@ -135,7 +135,7 @@ is a second thing to keep true.
 **Calendar And Events** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/calendar-events.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/calendar/**`, `src/components/golf/calendar/**`, `src/components/fairway/pages/calendar/**`, `src/app/api/calendar/**`, `src/app/golf/actions/attendance.ts`, `src/app/golf/actions/calendar-feeds.ts` … and 12 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/calendar/**`, `src/components/golf/calendar/**`, `src/components/fairway/pages/calendar/**`, `src/components/fairway/controls/wheel-picker.*`, `src/app/api/calendar/**`, `src/app/golf/actions/attendance.ts` … and 13 more in the registry
 - **Telemetry:** `calendar_events` (golfhelm, high), `academics_classes` (golfhelm, low)
 - **Incidents:** none recorded
 - **Repair units:** none in the queue

@@ -218,6 +218,17 @@ legacy `is_recurring` flag in sync for older consumers.
   view (`role="alert"`) so an end-before-start rejection is never rendered
   above the fold of a scrolled modal (UI-5 / P1-8).
 
+- Time fields (event editor start/end, busy-time editor) are the iOS Clock
+  drum on desktop and mobile alike (owner request, 2026-09-10):
+  `TimeWheel` in `src/components/fairway/controls/wheel-picker.tsx` — hour ·
+  minute · AM/PM columns, one continuous selection band, snap-on-settle,
+  keyboard listbox per column. Minutes are offered at 1-minute granularity
+  (the old list stepped by 15). `TimeChooser` (EventWhenFields.tsx) still
+  owns the trigger and the duration-from-start label; the drum has no per-row
+  label, so the length shows in the popover header beside the chosen time.
+  A popover closed via "Done" with nothing chosen commits the time it opened
+  on (start + 1 hr for the end field; the next quarter-hour otherwise).
+
 ## Known Risk Areas
 
 - Calendar has both premium/editorial and shared/simple component histories; avoid duplicating divergent logic.
