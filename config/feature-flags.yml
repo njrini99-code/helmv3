@@ -182,3 +182,39 @@ flags:
       shows the learned thresholds track real coach preference (fewer
       dismissed alerts without missing real declines), or remove the
       wiring and this flag entirely if the evidence doesn't support it.
+
+  # Package 8 slice 2 (repair plan 14.10): round-recap is the only live,
+  # persisted (golf_rounds.ai_recap) LLM-text surface among those surveyed
+  # (composeRoundReview/hero-narrative/practice-rx all have zero production
+  # callers), so it is the wiring target for claim-validator.ts's typed
+  # gate. This flag controls ONLY whether generateLLMRecap builds and
+  # passes an evidence_packet — compose()'s existing flat numeric scan
+  # (citations.ts) runs either way, unaffected by this flag.
+  - feature_id: coachhelm_recap_claim_packet
+    owner: golf/coachhelm
+    purpose: >-
+      Gates whether the round recap's compose() call also receives a
+      typed EvidencePacket (Package 8), engaging claim-validator.ts's
+      wrong-metric/wrong-player/wrong-window/unsupported-cause checks for
+      this one LLM surface, on top of the existing flat numeric scan;
+      default off pending real-world evidence this doesn't over-reject
+      otherwise-good recaps into the deterministic fallback. A recap
+      discarded to the fallback is cached forever (round-recap.ts only
+      ever generates once per round; there is no regenerate path) — this
+      flag must stay off in production until one exists, so a
+      false-positive rejection isn't permanent for that round.
+    type: experiment
+    status: active
+    created_at: "2026-09-23"
+    expires_at: null
+    default: false
+    environment:
+      production: false
+      preview: false
+      development: false
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      Either promote to a permanent `release` flag once shadow data (the
+      recap's fallback rate with the packet engaged vs. without) shows the
+      typed gate isn't discarding good recaps, or remove the packet
+      wiring entirely if it is.

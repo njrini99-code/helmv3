@@ -41,7 +41,8 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { compose } from '@/lib/coachhelm/v3/llm/compose';
-import { buildRecapEvidence } from '@/lib/coachhelm/v3/llm/recap-evidence';
+import { buildRecapEvidence, buildRecapEvidencePacket } from '@/lib/coachhelm/v3/llm/recap-evidence';
+import { isFlagEnabled } from '@/lib/flags';
 import { pct } from '@/lib/golf/stat-formulas';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
@@ -323,6 +324,15 @@ ${facts.join('\n')}
 
 Output only the two sentences. Nothing else.`;
 
+  // Package 8 slice 2 (repair plan 14.10): the typed claim gate is
+  // additive and opt-in. Off by default (coachhelm_recap_claim_packet) —
+  // when off, evidence_packet is undefined and compose()'s existing flat
+  // numeric scan (evidence: buildRecapEvidence(facts) below) is the only
+  // gate, exactly as before this flag existed.
+  const evidencePacket = isFlagEnabled('coachhelm_recap_claim_packet')
+    ? buildRecapEvidencePacket(round, stats, fir, gir)
+    : undefined;
+
   const result = await compose(
     {
       task: 'round_review',
@@ -337,6 +347,7 @@ Output only the two sentences. Nothing else.`;
       // loosening of the verifier, which still rejects any figure we did not
       // hand over. See `recap-evidence.ts` for the production measurements.
       evidence: buildRecapEvidence(facts),
+      evidence_packet: evidencePacket,
       max_completion_tokens: 120, // ~36 words × ~3 tokens/word + buffer
     },
     fallbackText,
