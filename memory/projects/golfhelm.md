@@ -646,6 +646,7 @@ src/lib/coachhelm/
 - `src/app/golf/actions/event-documents.ts`
 - `src/app/golf/actions/focus-area-practice-log.ts`
 - `src/app/golf/actions/golf.ts`
+- `src/app/golf/actions/insight-attribution.ts`
 - `src/app/golf/actions/insight-celebration.ts`
 - `src/app/golf/actions/insight-delivery-ranking.ts`
 - `src/app/golf/actions/insight-delivery.ts`

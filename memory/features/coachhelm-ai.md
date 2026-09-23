@@ -1009,6 +1009,57 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   slice 2 removes one enable blocker, but migration 20260922230000 still
   isn't applied and no real-world shadow evidence exists yet.
 
+- **A9 slice 3 adds the coach-facing READ of `golf_insight_outcome_
+  attribution`** (repair-plan §14.12). Nothing before this slice ever read
+  this table back for display — confirmed by the repair-plan §14.12
+  observed-outcome-language audit (2026-09-23), which found only a
+  completely different, human-self-report column
+  (`golf_coach_insights.outcome_status`) rendered anywhere.
+  `src/lib/coachhelm/v3/effectiveness/attribution-read.ts`: a pure,
+  flag-unaware DB loader — `readAttributionForInsight` (single insight)
+  and `readAttributionForPlayer` (player-scoped: resolves the player's own
+  insight ids first, then reads attribution rows for those ids, chunked at
+  `chunkIds`'s 200-id cap and paginated per chunk via `fetchAllRowsResult`
+  — both PostgREST caps `.claude/rules/database.md` names). **Never empty
+  on failure**: a real read failure returns `{ok: false}`; a legitimate
+  "not attributed yet" is `{ok: true, rows: []}` — collapsing these would
+  let the UI show "no evidence" for what might be an outage. Same
+  unknown-column degrade as the write side (`isUnknownColumnError`,
+  duplicated per-file by this codebase's own established convention) —
+  every row reads back `method_version: null` until migration
+  20260922230000 is applied, exactly like the write side's pre-N10 shape.
+  `src/lib/coachhelm/v3/effectiveness/attribution-view-model.ts`: pure
+  labeling — `null`/`'v2_observed_delta'` (the round-level path, which
+  predates the A9 slice 2 confounding check entirely) both collapse to
+  `'earlier_method'`, never `isClean`; `'comparable_opportunities_v1'` is
+  `'observed_change'`, the ONLY `isClean: true` value (it's the only
+  method whose own pipeline actively ran `detectConfoundingInterventions`
+  and found nothing); `'comparable_opportunities_v1_limited'` is
+  `'observed_change_limited'`, never clean (limited ≠ clean — a
+  healthy-sample-size limited row is still `state: 'result'`, just with
+  `isClean: false`); any unrecognized version string is `'unknown'`, a
+  neutral fallback, never clean. Sample size uses the same `< 3` floor
+  `event-ledger.ts`'s `deriveTrustStatus` established for "too few
+  measured outcomes" (`MIN_SUFFICIENT_ROUNDS`) — below it on either side
+  is `state: 'insufficient'` regardless of method. `src/app/golf/actions/
+  insight-attribution.ts`: the flag gate — `coachhelm_comparable_
+  opportunity_attribution` is checked BEFORE any Supabase call, so an off
+  flag makes zero DB calls; a failed read or unauthenticated caller both
+  return `null`. `AttributionReadout.tsx`
+  (`components/golf/coachhelm/insight-card/`) renders nothing for `null`
+  (flag off / unauthenticated / failed read, all collapsed by the action)
+  but DOES render the real `'missing'` state (a quiet "Not attributed
+  yet") — silence there would read as "proven to do nothing" rather than
+  "not measured yet". Wired into `FairwayPlayerInsight.tsx`'s hero insight
+  slot only (beside `InsightCard`'s `OutcomeBadge` — a DIFFERENT column,
+  the human self-report one). No migration applied by this slice; flag
+  stays default-off. This slice does NOT decide whether these rows should
+  ever feed `nextWeight` (still the open, separate decision the slice 2
+  entry above already named) — it is read-only, display-only. See
+  `attribution-read.test.ts`, `attribution-view-model.test.ts`,
+  `src/test/golf/actions/insight-attribution.test.ts`, and
+  `src/test/golf/components/AttributionReadout.test.tsx`.
+
 ## Tests To Prefer
 
 - Unit tests under `src/test/coachhelm/**`.
