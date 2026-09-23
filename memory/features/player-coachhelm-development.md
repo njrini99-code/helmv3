@@ -361,7 +361,7 @@ introduced this table for the repro and report.
 | 33 | Unsupported claim using an exempt small number | Covered | `claim-validator.test.ts:66` (`unsupported_small_number`) |
 | 34 | Correct percentage complement or rounding | Missing (no code path) | no metric-derivation registry exists — `it.todo`, `claim-validator.test.ts` |
 | 35 | Correct number for wrong player/team | Covered | `claim-validator.test.ts:124` (`wrong_player`) |
-| 36 | LLM provider failure | Needs follow-up | `deterministic-review.ts` is the fallback core; wiring-level test unconfirmed |
+| 36 | LLM provider failure | Needs follow-up | live fallback is `buildDeterministicRecap` in `round-recap.ts`, reached via `compose()`'s `fallbackText`; `deterministic-review.ts` is used only by the prewarm script, not this path — wiring-level test unconfirmed |
 | 37 | Cached fallback after transient failure | Needs follow-up | not conclusively verified this pass |
 | 38 | Chat fails validation after generating text | Needs follow-up | chat surface does not appear to use `claim-validator.ts`; separate mechanism not investigated |
 | 39 | Focus assigned, no practice completion data | Missing (no code path) | no completion-tracking concept in `focus-areas/` — `it.todo`, `fixture-matrix-gaps.test.ts` |

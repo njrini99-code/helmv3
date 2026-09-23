@@ -355,7 +355,8 @@ describe('postRoundTrigger', () => {
       const parked = await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r16' });
       expect(parked.outcome.kind).toBe('waiting_for_data');
       {
-        const { data } = await admin.from('golf_rounds').select('*').eq('id', 'r16');
+        const { data, error } = await admin.from('golf_rounds').select('*').eq('id', 'r16');
+        expect(error).toBeNull();
         expect(data?.[0]?.['coachhelm_analyzed_at']).toBeNull();
         expect(data?.[0]?.['coachhelm_failure_reason']).toBe('engine_below_round_floor');
       }
