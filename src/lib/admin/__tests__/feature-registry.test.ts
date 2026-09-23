@@ -165,6 +165,7 @@ const NON_CRM_ACTION_FILES = [
   'roster.ts',
   'round-drafts.ts',
   'round-recap.ts',
+  'round-review-narrative.ts',
   'round-review-system.ts',
   'round-reviews.ts',
   'shot-analytics.ts',
