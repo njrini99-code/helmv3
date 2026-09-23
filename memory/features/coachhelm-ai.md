@@ -373,6 +373,33 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   "Situational fact types" section and the seven named fixtures in
   `src/test/coachhelm/v3/fixtures/situational-intelligence.ts` (A0) for the
   concrete scenarios this package is proven against.
+- **`src/lib/coachhelm/v3/ranking/situational-ranking.ts`** (2026-09-23,
+  addendum §13, work package A6 slice 1, pure core, not wired to
+  `ranking/score.ts` or delivery yet) — `groupIssues(packets:
+  IssueSourcePacket[]): Issue[]` is the issue-grouping/parent-child-claim
+  work the A6 top-N audit above explicitly deferred. A3
+  (`par-opportunities.ts`), a future A2 `distance-profile.ts`, a future A4
+  `sequence-attribution.ts`, and A5's `hypothesis-policy.ts` can each
+  surface something about the SAME underlying shots from a different
+  angle; this module groups packets whose adapter-stated `sourceShotIds`
+  transitively overlap (union-find) into one `Issue`, filtering ineligible
+  packets out BEFORE grouping (mirroring the A6 top-N rule one level up).
+  An accepted issue carries: a content-addressed, input-order-independent
+  `id`; `claims` (parent/child links — every member survives unmerged,
+  owner first then sorted by `claimId`, so drill-down is never lost);
+  `impactOwnership` (exactly ONE deterministic owner claim — largest
+  `|strokesImpact|`, `null` never beating a real number including `0`,
+  ties broken by a fixed origin order then `claimId` — every other member
+  contributes zero additional impact, so three perspectives on the same
+  shots never triple the estimate); `opportunityFrequency` (distinct
+  source-shot/round counts); and `policyInput` (the
+  `strokesImpact`/`confidence`/`sampleSize` a later ranking policy would
+  consume, mirroring ONLY the owner — "one issue, one leading priority" by
+  construction). Tested against a real `computeParOpportunities` row
+  wrapped by a test-local adapter, plus hand-built A2/A4-shaped synthetic
+  packets (#1989/#1988 unmerged as of this slice). Full contract in
+  `docs/architecture/coachhelm-evidence-contract.md`'s "Issue grouping and
+  ranking-input unification" section.
 - N13 sweep (repair plan, 2026-09-23): audited every CoachHelm action/route
   under `src/app/golf/actions` and `src/lib/coachhelm` for a catch-all that
   discards the real exception and returns one generic "session expired"-style

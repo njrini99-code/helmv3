@@ -572,8 +572,74 @@ Audited surfaces and outcome:
   slices — coach-facing, so no player-feedback overlay (matches the coach
   feed's documented rule).
 
-Out of scope for A6 (need addendum A1–A4 evidence-packet work first): issue
-grouping and parent/child claim links.
+Out of scope for A6's top-N audit above (need addendum A1–A4 evidence-packet
+work first): issue grouping and parent/child claim links. See "Issue grouping
+and ranking-input unification" below for the slice that picks this up.
+
+### Issue grouping and ranking-input unification (A6 slice 1, 2026-09-23)
+
+`ranking/situational-ranking.ts`'s `groupIssues(packets: IssueSourcePacket[])
+: Issue[]` is the slice deferred by the top-N audit above. A3
+(`par-opportunities.ts`), A2's future `distance-profile.ts`, A4's future
+`sequence-attribution.ts`, and A5's `hypothesis-policy.ts` each look at a
+round's shots from a different angle and can each surface something about
+the SAME underlying shots (a par-5 approach that came up short can be
+flagged by a par-opportunity row, a distance-band row, AND a
+sequence-attribution finding at once) — `par-opportunities.ts`'s own file
+header calls out that reconciling this is deliberately deferred: "Neither
+family computes a strokes_impact/counterfactual number — that would double
+the impact `par-type.ts`'s existing per-par cards already own... reconciling
+impact ownership when that happens[, wiring this into a generator,] is a
+later slice." This module is that slice, for the new v3 pure-core families.
+
+- **Packets, not raw family output.** `groupIssues` consumes a flat
+  `IssueSourcePacket[]` — each one adapted from its own family into a common
+  shape by whatever wires it up (a LATER slice's job, not this one's). The
+  one field every adapter must populate honestly is `sourceShotIds`
+  (`shotClaimId`-shaped strings, matching A5's own format exactly so ids
+  from both modules interoperate without translation — defined locally in
+  `situational-ranking.ts` since #1993 had not merged as of this slice).
+  Grouping never infers overlap from `metricId`, `dimensions`, or label
+  text — only from this explicit, adapter-stated shot set.
+- **Eligibility before grouping, grouping before scoring, scoring before any
+  future truncation** — the A6 top-N audit's own rule, applied one level up.
+  `eligible` is decided by each packet's own adapter (a `MetricResult` at
+  `status: 'invalid'`, or a `Hypothesis` at `state: 'no_data'`, is not
+  eligible) and filtered out BEFORE grouping; an ineligible packet founds
+  and joins no issue regardless of how large a `strokesImpact` it claims.
+- **Grouping is transitive shot overlap** (union-find): two packets sharing
+  even one shot land in the same issue, and the closure is transitive (A↔B,
+  B↔C ⇒ A, B, C together) even when A and C share no shot directly.
+- **An accepted issue carries five things**: a **stable issue identity**
+  (`id`, content-addressed from the sorted deduplicated union of its own
+  source shots — the same evidence always yields the same id regardless of
+  packet input order); **parent/child claim links** (`claims` — the issue
+  is the parent, every member packet's `claimId`/`origin`/`label` survives
+  unmerged, owner first then the rest sorted by `claimId`, so a consumer can
+  always drill back down); **non-overlapping impact ownership**
+  (`impactOwnership` — exactly ONE member is chosen as impact owner by
+  `pickOwner`: largest `|strokesImpact|` wins, `null` never outranks a real
+  number including `0`, ties break by a fixed origin priority `par >
+  distance > sequence > hypothesis` then by `claimId`; every other member
+  contributes NO additional impact, which is what keeps three perspectives
+  on the same shots from tripling the estimate); **opportunity frequency**
+  (`opportunityFrequency` — distinct source-shot count and distinct-round
+  count backing the issue); and **effective policy inputs**
+  (`policyInput` — `strokesImpact`/`confidence`/`sampleSize` a later
+  `ranking/score.ts`-shaped policy would consume, mirroring ONLY the impact
+  owner's own numbers, never an average or sum — "one underlying issue
+  yields one leading priority" holds by construction, not convention).
+- **Tested against real A3 output** (`situational-ranking.test.ts` calls
+  the real `computeParOpportunities` and wraps one of its actual
+  `MetricResult` rows into a packet via a test-local adapter) **and
+  synthetic A2/A4-shaped packets** (hand-built, since #1989/#1988 had not
+  merged as of this slice) describing the same source shots — proving the
+  transitive-overlap grouping and the non-inflated impact estimate against
+  a real par-opportunity row, not just synthetic data on both sides.
+- **Not wired into `ranking/score.ts` or any delivery surface** — building
+  the real A2/A3/A4/A5-to-`IssueSourcePacket` adapters and feeding
+  `groupIssues`'s output into scoring/delivery is later-slice work, per
+  this slice's explicit scope.
 
 Two ranking reads outside `golf_coach_insights` were checked and are
 DELIBERATELY not routed through `scoreInsight` — different domains, not an
