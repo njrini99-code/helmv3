@@ -11,7 +11,7 @@
 BEGIN;
 \ir _helpers.sql
 
-SELECT plan(17);
+SELECT plan(18);
 
 -- ============================================================================
 -- A1 — get_golf_conversations_with_details(uuid): authenticated-only definer,
@@ -107,6 +107,23 @@ SELECT ok(
      WHERE table_schema = 'public' AND table_name = 'golf_player_focus_areas'
        AND column_name = 'progress_notes'),
   'golf_player_focus_areas.progress_notes default uses the {entries:[]} shape'
+);
+
+-- ============================================================================
+-- CoachHelm addendum A8 slice 1 — evidence_revision is additive/nullable,
+-- migration 20260923090000_golf_focus_area_evidence_revision. Not covered by
+-- any RLS policy change (existing player-self/coach policies already cover
+-- the row); this just guards the column shape a future migration could
+-- silently narrow (e.g. adding NOT NULL would break every pre-slice-1 row).
+-- ============================================================================
+
+SELECT ok(
+  EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'golf_player_focus_areas'
+      AND column_name = 'evidence_revision' AND data_type = 'text' AND is_nullable = 'YES'
+  ),
+  'golf_player_focus_areas.evidence_revision is a nullable text column'
 );
 
 SELECT * FROM finish();

@@ -180,6 +180,19 @@ export interface FocusAreaCardData {
   /** Short context line carried from the origin review/insight. */
   review_context?: string | null;
   /**
+   * A8 slice 1: the source insight's evidence fingerprint
+   * (`golf_player_focus_areas.evidence_revision`) at the moment this focus
+   * area was approved from it — present only when the
+   * `coachhelm_focus_area_evidence_revision` flag was on at creation time
+   * (requires migration `20260923090000_golf_focus_area_evidence_revision`
+   * applied). Absent/null on every row created before this slice, or with
+   * the flag off, or with no source insight — render nothing, never a
+   * placeholder. Slice 3 will compare this against the live insight's
+   * current fingerprint to badge a mismatch; this card only shows presence,
+   * never the raw hash (meaningless to a coach) or a stale/fresh verdict.
+   */
+  evidence_revision?: string | null;
+  /**
    * Recorded effectiveness verdict (golf_coach_insights.outcome_status, surfaced
    * onto the focus area). When present the card reflects it as a StatusPill
    * ("Outcome: improved") instead of offering the capture control again.
@@ -848,6 +861,21 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
             context={focusArea.review_context}
             role={role}
           />
+
+          {/* A8 slice 1: shows only when an evidence fingerprint was stamped
+              at approval time (flag on + a well-formed source insight). Never
+              renders the raw hash — that's meaningless to a coach — only
+              that this focus area is pinned to a specific evidence snapshot. */}
+          {focusArea.evidence_revision ? (
+            <Badge
+              tone="neutral"
+              variant="outline"
+              size="sm"
+              title="This focus area is pinned to the evidence snapshot from when it was approved."
+            >
+              Evidence snapshot recorded
+            </Badge>
+          ) : null}
 
           {/* Practice Rx — drills prescribed for the originating insight. Self-
               fetches via getDrillsForInsight and collapses to null when the
