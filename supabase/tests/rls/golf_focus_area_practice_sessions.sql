@@ -355,6 +355,7 @@ SELECT throws_ok(
        'player', now(), '00000000-0000-0000-0000-0000000000f1'::uuid)
   $q$,
   '23505',
+  NULL,  -- any message: the 3-arg form would read the description as the expected message
   'a plain duplicate (focus_area_id, client_request_id), no ON CONFLICT clause, raises 23505'
 );
 
