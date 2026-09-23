@@ -50,6 +50,11 @@ def build_parser():
     p.add_argument('--catalog', default=None, help=f'catalog directory (default {DEFAULT_CATALOG})')
     p.add_argument('--output', default=None, help=f'factory output root (default {DEFAULT_OUTPUT})')
     p.add_argument('--no-adopt-output', action='store_true', help='ignore retained artifacts under output/ (deterministic plans)')
+    p.add_argument('--fresh', action='store_true',
+                    help='replay from sources: ignore every catalog/retained fixture override (the checked-in package, canopy review, terrain, OSM snapshot, …) '
+                         'and never adopt one into the ledger. Requires --output pointing outside the default factory output root.')
+    p.add_argument('--fresh-traces', action='append', default=[], metavar='LAYOUT=PATH',
+                    help='in --fresh mode, an imagery-traces file to use for LAYOUT instead of the catalog default (none); repeatable')
     sub = p.add_subparsers(dest='command', required=True)
     sub.add_parser('doctor')
     for name in ('plan', 'status'):
@@ -117,11 +122,24 @@ def build_parser():
     return p
 
 
+def _parse_fresh_traces(items):
+    overrides = {}
+    for item in items or []:
+        layout_id, sep, path = item.partition('=')
+        if not sep or not layout_id or not path:
+            raise SystemExit(f'--fresh-traces must be LAYOUT=PATH, got {item!r}')
+        overrides[layout_id] = path
+    return overrides
+
+
 class Session:
     def __init__(self, args, ledger=None, executors=None, spec_overrides=None):
         self.repo_root = os.path.abspath(args.repo_root) if args.repo_root else find_repo_root(os.path.dirname(os.path.abspath(__file__)))
         self.catalog_root = os.path.join(self.repo_root, args.catalog or DEFAULT_CATALOG) if not (args.catalog and os.path.isabs(args.catalog)) else args.catalog
         self.output_root = os.path.join(self.repo_root, args.output or DEFAULT_OUTPUT) if not (args.output and os.path.isabs(args.output)) else args.output
+        self.fresh = bool(getattr(args, 'fresh', False))
+        if self.fresh and os.path.realpath(self.output_root) == os.path.realpath(os.path.join(self.repo_root, DEFAULT_OUTPUT)):
+            raise SystemExit('--fresh requires --output pointing outside the default factory output root (it must not adopt or share a ledger with it)')
         self.catalog = load_catalog(self.catalog_root)
         self.specs = default_specs(spec_overrides)
         # Recovery is a retained-file inventory, including while a batch is
@@ -130,7 +148,8 @@ class Session:
         # Injected executors (tests) replace the real adapters wholesale, so a
         # test never reaches a script or the network by accident.
         self.ctx = Context(self.repo_root, self.catalog, self.output_root, self.ledger, adopt_output=not args.no_adopt_output,
-                           executors=executors if executors is not None else dict(DEFAULT_EXECUTORS))
+                           executors=executors if executors is not None else dict(DEFAULT_EXECUTORS),
+                           fresh=self.fresh, trace_overrides=_parse_fresh_traces(getattr(args, 'fresh_traces', None)))
 
     def graph(self, layout=None, facility=None, holes=None):
         layouts = [layout] if layout else None
@@ -204,7 +223,7 @@ def cmd_doctor(session, args, out):
 
 def cmd_plan(session, args, out):
     graph = session.graph(args.layout, args.facility)
-    rows = plan(graph, session.ctx)
+    rows = plan(graph, session.ctx, adopt=not session.fresh)
     apply_disk_guard(rows, session.ctx, graph)
     selection = {'layout': args.layout, 'facility': args.facility}
     if args.golden:
@@ -366,7 +385,7 @@ def cmd_batch(session, args, out):
 
 def cmd_status(session, args, out):
     graph = session.graph(args.layout, args.facility)
-    rows = plan(graph, session.ctx)
+    rows = plan(graph, session.ctx, adopt=not session.fresh)
     apply_disk_guard(rows, session.ctx, graph)
     status = status_json(rows, session.ctx, args.layout)
     out.write((json.dumps(status, indent=1, default=str) if args.json else render_status(status)) + '\n')
@@ -391,7 +410,7 @@ def node_key(session, args):
 
 def cmd_why(session, args, out):
     graph = session.graph(args.layout)
-    rows = plan(graph, session.ctx)
+    rows = plan(graph, session.ctx, adopt=not session.fresh)
     apply_disk_guard(rows, session.ctx, graph)
     key = node_key(session, args)
     by_key = {r.key: r for r in rows}

@@ -29,7 +29,7 @@ import re
 from pathlib import Path
 
 from shapely.geometry import LineString, Polygon, box
-from shapely.ops import unary_union
+from shapely.ops import linemerge, unary_union
 
 ROOT = Path(__file__).resolve().parents[3]
 RULES = json.loads((ROOT / 'src/lib/golf/course-geometry/context-rules.json').read_text())
@@ -48,6 +48,15 @@ HOLE_MARGIN_M = 24
 ROUGH_PRIMARY_M = 10
 ROUGH_SECONDARY_M = 28
 LEVEL_HEIGHT_M = 3.2
+# A raw OSM way (a stream, a road) can run for kilometres past the course
+# that happens to touch it; only the part near the course is context. Keep
+# this margin generous enough that a ribbon can still be traced walking off
+# the course bounds, never so generous that a whole way survives clipping.
+CONTEXT_CLIP_MARGIN_M = 250
+# Same limit and definition as `projectToLocal` (src/lib/golf/course-geometry
+# /project.ts) and `wgs84ToEnuInFrame` (src/lib/golf/one-tap/geodesy.ts):
+# horizontal distance only, not full 3D ENU including height.
+LOCAL_FRAME_RADIUS_M = 5000
 
 
 def canonical(value):
@@ -72,6 +81,45 @@ def make_local(origin):
         return [-math.sin(lon) * d[0] + math.cos(lon) * d[1],
                 -math.sin(lat) * math.cos(lon) * d[0] - math.sin(lat) * math.sin(lon) * d[1] + math.cos(lat) * d[2]]
     return local
+
+
+def make_inverse(origin):
+    """Local east/north (zero-altitude tangent plane) -> WGS84, inverting
+    `make_local`. Newton-refined the same way as compile-course-terrain.py's
+    `geographic`, scalar rather than vectorised: this runs per clipped vertex,
+    not per raster pixel."""
+    lon0, lat0 = [v * math.pi / 180 for v in origin]
+    e2 = 6.6943799901413165e-3
+    n0 = 6378137 / math.sqrt(1 - e2 * math.sin(lat0) ** 2)
+    ox = n0 * math.cos(lat0) * math.cos(lon0)
+    oy = n0 * math.cos(lat0) * math.sin(lon0)
+    oz = n0 * (1 - e2) * math.sin(lat0)
+
+    def inverse(point):
+        x, y = point
+        lon = origin[0] + x / (111320 * math.cos(lat0))
+        lat = origin[1] + y / 111000
+        for _ in range(6):
+            la, ph = lon * math.pi / 180, lat * math.pi / 180
+            n = 6378137 / math.sqrt(1 - e2 * math.sin(ph) ** 2)
+            dx = n * math.cos(ph) * math.cos(la) - ox
+            dy = n * math.cos(ph) * math.sin(la) - oy
+            dz = n * (1 - e2) * math.sin(ph) - oz
+            east = -math.sin(lon0) * dx + math.cos(lon0) * dy
+            north = -math.sin(lat0) * math.cos(lon0) * dx - math.sin(lat0) * math.sin(lon0) * dy + math.cos(lat0) * dz
+            lon += (x - east) / (111320 * math.cos(lat0))
+            lat += (y - north) / 111000
+        return [lon, lat]
+    return inverse
+
+
+def flatten_positions(geom):
+    """Every WGS84 vertex a stored geometry dict carries, for the hard 5 km check."""
+    if geom['type'] == 'LineString':
+        return geom['coordinates']
+    if geom['type'] == 'Polygon':
+        return [p for ring in geom['coordinates'] for p in ring]
+    return [p for poly in geom['coordinates'] for ring in poly for p in ring]
 
 
 def read_extract(path):
@@ -119,6 +167,7 @@ def main():
 
     pkg = json.loads(args.package.read_text())
     local = make_local(pkg['originWgs84'])
+    inverse = make_inverse(pkg['originWgs84'])
     golf_raw, golf_manifest = read_extract(args.golf_extract)
     context_raw, context_manifest = read_extract(args.context_extract)
     golf_source = f"osm-overpass-{golf_manifest.get('retrievedAt', 'retained')}"
@@ -134,6 +183,9 @@ def main():
         ys = mesh['vertices'][1::3]
         hole_bounds[key] = box(min(xs) - HOLE_MARGIN_M, min(ys) - HOLE_MARGIN_M, max(xs) + HOLE_MARGIN_M, max(ys) + HOLE_MARGIN_M)
     course_bounds = unary_union(list(hole_bounds.values()))
+    cminx, cminy, cmaxx, cmaxy = course_bounds.bounds
+    clip_region = box(cminx - CONTEXT_CLIP_MARGIN_M, cminy - CONTEXT_CLIP_MARGIN_M,
+                      cmaxx + CONTEXT_CLIP_MARGIN_M, cmaxy + CONTEXT_CLIP_MARGIN_M)
 
     # Context extract first (superset with a margin); golf extract fills gaps.
     ways = {}
@@ -143,7 +195,7 @@ def main():
                 ways[element['id']] = (element, source)
 
     zones = []
-    skipped = {'no_rule': 0, 'playing': 0, 'geometry': 0, 'outside': 0}
+    skipped = {'no_rule': 0, 'playing': 0, 'geometry': 0, 'outside': 0, 'clipped_away': 0}
     for way_id in sorted(ways):
         element, source = ways[way_id]
         tags = element.get('tags') or {}
@@ -157,24 +209,62 @@ def main():
             continue
         closed = len(coords) >= 4 and coords[0] == coords[-1]
         projected = [local(p) for p in coords]
+        is_line = False
         if closed and rule['geometry'] in ('area', 'any'):
             shape = Polygon(projected)
             if not shape.is_valid or shape.is_empty or shape.area < 4:
                 skipped['geometry'] += 1
                 continue
-            geometry = {'type': 'Polygon', 'coordinates': [coords]}
         elif rule['geometry'] in ('line', 'any') and not (closed and rule['geometry'] == 'line' and rule['class'] in ('road', 'service_path')):
             shape = LineString(projected)
             if shape.length < 2:
                 skipped['geometry'] += 1
                 continue
-            geometry = {'type': 'LineString', 'coordinates': coords}
+            is_line = True
         else:
             skipped['geometry'] += 1
             continue
         if not shape.intersects(course_bounds):
             skipped['outside'] += 1
             continue
+        # A retained OSM way can run kilometres past the course (a stream, a
+        # road) even though it touches the course bounds. Clip to the course
+        # bounds plus a fixed margin before storing WGS84 coordinates or
+        # measuring anything against it, so one distant vertex can never push
+        # a package past the runtime's 5 km local frame (project.ts:24,
+        # geodesy.ts:66).
+        shape = shape.intersection(clip_region)
+        if shape.is_empty:
+            skipped['clipped_away'] += 1
+            continue
+        if is_line:
+            if shape.geom_type == 'MultiLineString':
+                merged = linemerge(shape)
+                shape = merged if merged.geom_type == 'LineString' else max(shape.geoms, key=lambda g: g.length)
+            if shape.geom_type != 'LineString' or len(shape.coords) < 2:
+                skipped['geometry'] += 1
+                continue
+            geometry = {'type': 'LineString', 'coordinates': [inverse(p) for p in shape.coords]}
+        else:
+            if shape.geom_type == 'Polygon':
+                polys = [shape]
+            elif shape.geom_type == 'MultiPolygon':
+                polys = list(shape.geoms)
+            else:
+                skipped['geometry'] += 1
+                continue
+            polys = [p for p in polys if p.is_valid and not p.is_empty and p.area >= 4]
+            if not polys:
+                skipped['clipped_away'] += 1
+                continue
+            shape = polys[0] if len(polys) == 1 else unary_union(polys)
+
+            def ring_coords(ring):
+                return [inverse(p) for p in ring.coords]
+            if len(polys) == 1:
+                geometry = {'type': 'Polygon', 'coordinates': [ring_coords(polys[0].exterior)] + [ring_coords(r) for r in polys[0].interiors]}
+            else:
+                geometry = {'type': 'MultiPolygon', 'coordinates': [[ring_coords(p.exterior)] + [ring_coords(r) for r in p.interiors] for p in polys]}
         hole_keys = sorted(key for key, bounds in hole_bounds.items() if shape.intersects(bounds))
         attributes, defaults = {}, []
         if rule.get('widthM') is not None:
@@ -216,6 +306,20 @@ def main():
              'review': {'status': 'unreviewed', 'reviewedAt': None,
                         'notes': ['Classified from retained OSM extracts by prepare-context-layer.py; every zone cites its way and its rule defaults.']}}
     layer['contentHash'] = sha(layer)
+
+    # Hard check (independent of the clip above): push the written WGS84
+    # coordinates back through the same forward projection the runtime uses
+    # and confirm every one still lands inside its 5 km local frame. This
+    # catches a bad inverse as well as a bad clip.
+    worst = 0.0
+    for zone in layer['zones']:
+        for point in flatten_positions(zone['geometryWgs84']):
+            east, north = local(point)
+            worst = max(worst, math.hypot(east, north))
+    if worst > LOCAL_FRAME_RADIUS_M:
+        raise SystemExit(
+            f'LOCAL_FRAME_EXTENT_EXCEEDED: a context zone coordinate is {worst:.1f} m from the origin, '
+            f'over the {LOCAL_FRAME_RADIUS_M} m local-frame limit (project.ts, geodesy.ts)')
 
     # Report (§34–35, §42.4): what share of each hole's drawn context is explained.
     package_shapes = []

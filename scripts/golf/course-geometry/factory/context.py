@@ -48,7 +48,8 @@ def _compiler_module(path):
 
 
 class Context:
-    def __init__(self, repo_root, catalog, output_root, ledger=None, adopt_output=True, executors=None, spec_overrides=None):
+    def __init__(self, repo_root, catalog, output_root, ledger=None, adopt_output=True, executors=None, spec_overrides=None,
+                 fresh=False, trace_overrides=None):
         self.repo_root = os.path.abspath(repo_root)
         self.catalog = catalog
         self.output_root = os.path.abspath(output_root)
@@ -56,6 +57,13 @@ class Context:
         self.adopt_output = adopt_output
         self.executors = executors or {}
         self.spec_overrides = spec_overrides or {}
+        # `--fresh`: a deterministic-from-sources replay. No catalog/retained
+        # fixture ever stands in for a task's own output, so every layout
+        # task actually builds. The one exception is `trace_overrides`: an
+        # explicit, pluggable substitute for the retained imagery-traces
+        # file (e.g. an auto-trace), keyed by layout id.
+        self.fresh = fresh
+        self.trace_overrides = trace_overrides or {}
         self.graph = None
         self.outputs = {}          # node key -> output hash of a cached/successful node
         self.states = {}           # node key -> state
@@ -108,8 +116,23 @@ class Context:
         return path is not None and (self.adopt_output or not self.is_output_path(path))
 
     def retained(self, doc, key):
+        if self.fresh:
+            # `imageryTraces` is the one input Phase 2 makes pluggable (an
+            # auto-trace file may stand in for the hand-traced fixture);
+            # every other retained/catalog fixture is ignored so the task
+            # actually builds from sources.
+            if key == 'imageryTraces':
+                override = self.trace_overrides.get((doc or {}).get('layoutId'))
+                return self.abspath(override) if override else None
+            return None
         retained = (doc or {}).get('retained') or {}
         return self.abspath(retained.get(key))
+
+    def geometry_override(self, layout_id):
+        """The catalog's checked-in package pointer (Peek's adoption path).
+        Ignored in `--fresh` mode so `layout.package.compose` builds instead
+        of adopting the golden fixture."""
+        return None if self.fresh else (self.layout(layout_id) or {}).get('geometry')
 
     def layout_out(self, layout_id):
         return os.path.join(self.output_root, 'layouts', layout_id)
@@ -355,7 +378,7 @@ class Context:
         return self._extracts[path]
 
     def package_path(self, layout_id):
-        geometry = (self.layout(layout_id) or {}).get('geometry')
+        geometry = self.geometry_override(layout_id)
         built = os.path.join(self.package_dir(layout_id), 'normalized.json')
         if self.can_adopt(built) and os.path.isfile(built):
             return built

@@ -73,7 +73,11 @@ def plan_node(node, ctx, recovered=(), adopt=True, free=None):
             unfinished = 'INTERRUPTED_RUN_RECOVERED'
         elif last and last['state'] == 'failed' and last['fingerprint'] == fp:
             unfinished = 'PREVIOUS_RUN_FAILED'
-    retained = bool(ev.artifacts) and not any(ctx.is_output_path(a.path) for a in ev.artifacts)
+    # `--fresh`: nothing may be adopted as external/retained evidence, even if
+    # a future task built an artifact outside the output root without going
+    # through `ctx.retained()`. This is a hard rail, not merely a reflection
+    # of `ctx.retained()` already returning None everywhere in fresh mode.
+    retained = bool(ev.artifacts) and not any(ctx.is_output_path(a.path) for a in ev.artifacts) and not getattr(ctx, 'fresh', False)
     invalidated = bool(success and ledger.invalidation_after(node.key, success['finished_at']))
     if adoptable and not unfinished and (not success or (retained and not invalidated)):
         # A retained artifact that proves it was built from the current

@@ -307,7 +307,7 @@ def eval_package_compose(node, ctx):
     """The served package: the catalog's checked-in package when it names one
     (verified by its contentHash), else the second prepare pass."""
     layout_id = node.scope.layout_id
-    geometry = (ctx.layout(layout_id) or {}).get('geometry')
+    geometry = ctx.geometry_override(layout_id)
     if geometry:
         inputs = {'candidates': dep_input(ctx, node, 'layout.candidates.compose'), 'canopy': dep_input(ctx, node, 'layout.canopy.derive'),
                   'traces': digest(ctx.json(ctx.retained(ctx.layout(layout_id), 'imageryTraces'))),
@@ -406,6 +406,12 @@ def eval_canopy_derive(node, ctx):
     terrain = ctx.terrain_source_manifest(layout_id)
     if not terrain or terrain.get('coverageMethod') != 'perimeter-v1':
         return evaluation(inputs, [], [], False, ['canopy review depends on a terrain source that predates the perimeter-coverage contract'])
+    auto_review = doc.get('autoReview')
+    if auto_review is not None and auto_review.get('withinBounds') is False:
+        # The automatic sign-off replaces the human visual review: outside
+        # its explicit bounds (NDVI share, surface overlap, group density),
+        # this is the actual blocker, not a note a reviewer might defer.
+        return evaluation(inputs, [blocked('CANOPY_OUT_OF_BOUNDS', layoutId=layout_id, measurements=auto_review.get('measurements'), bounds=auto_review.get('bounds'))])
     naip = ctx.naip_dir(layout_id)
     naip_manifest = ctx.json(os.path.join(naip, 'manifest.json')) if naip else None
     notes = [f'canopy review {doc.get("reviewedAt", "")}: {len(doc.get("regions", []))} groups, raster {str(doc.get("rasterSha256"))[:12]}']
@@ -431,9 +437,16 @@ def eval_canopy_derive(node, ctx):
         notes.append(f'{imagery.CODE}: captured {stale["earliestCapture"]}..{stale["latestCapture"]}, renovation after {stale["knownRenovationAfter"]}; '
                      f'the canopy layer shows the course before it')
     adoptable = True
-    if indexed and (doc.get('sourceIdentity') != indexed['identity'] or not naip_manifest
-                    or naip_manifest.get('sourceIdentity') != indexed['identity']):
-        adoptable, notes = False, notes + ['canopy must be rederived from the verified facility imagery cache']
+    if indexed:
+        # FPAC conus_naip leaf-on is preferred over the facility's indexed
+        # NAIP Plus cache whenever it has coverage (derive-canopy-naip.py's
+        # own rule); a legacy review predating that rule recorded no
+        # `sourceSelection` and used NAIP Plus unconditionally, so it keeps
+        # the old requirement.
+        selection = (doc.get('sourceSelection') or {}).get('provider') or 'naip_plus'
+        if selection == 'naip_plus' and (doc.get('sourceIdentity') != indexed['identity'] or not naip_manifest
+                                          or naip_manifest.get('sourceIdentity') != indexed['identity']):
+            adoptable, notes = False, notes + ['canopy must be rederived from the verified facility imagery cache']
     if naip_manifest and naip_manifest.get('rasterSha256') != doc.get('rasterSha256'):
         adoptable, notes = False, notes + ['canopy review was derived from another NAIP export']
     candidates = ctx.json(ctx.candidates_package_path(layout_id)) if ctx.can_adopt(ctx.candidates_package_path(layout_id)) else None

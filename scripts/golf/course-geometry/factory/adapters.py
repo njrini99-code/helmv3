@@ -27,6 +27,7 @@ from .fingerprints import digest, file_sha256, terrain_source_identity
 from .model import Blocker, Precondition
 from .planner import DONE
 from .providers import select_terrain_provider
+from .tasks import facility_tasks
 from .tasks.common import artifact, script
 
 OVERPASS = 'https://overpass-api.de/api/interpreter'
@@ -80,6 +81,20 @@ def terrain_acquisition_precondition(error, layout_id, provider, source_selectio
             'layoutId': layout_id,
             'provider': provider.compiler_id,
             'remediation': 'retain the legacy source cache; acquire a new source revision with the current horizontal and vertical frame contract before measurement use',
+        }))
+    return None
+
+
+def context_classification_precondition(error, layout_id):
+    """A context zone that still reaches past the runtime's 5 km local frame
+    (project.ts, geodesy.ts) after clipping is a data problem, not a script
+    crash: surface it as a stable, actionable blocked task."""
+    message = str(error)
+    if 'LOCAL_FRAME_EXTENT_EXCEEDED' in message:
+        return Precondition(Blocker('LOCAL_FRAME_EXTENT_EXCEEDED', {
+            'layoutId': layout_id,
+            'remediation': 'a retained OSM way still reaches past the 5 km local frame after the fixed clip margin; '
+                           'review the course AOI/margin or the offending way before classifying context again',
         }))
     return None
 
@@ -224,44 +239,11 @@ def overpass(query, limit, sleep=time.sleep):
     return raw
 
 
-def resolve_aoi(node, ctx, run):
-    """One bounded Overpass request for the facility's AOI element. Writes the
-    element polygon (ways), its bbox and the margin bbox every fetcher uses."""
-    facility = ctx.facility(node.scope.facility_id)
-    kind, ident = facility['aoi']['id'].split('/')
-    margin = facility['aoi']['marginM']
-    raw = overpass(f'[out:json][timeout:60];{kind}({ident});out geom;', MAX_AOI_BYTES)
-    doc = json.loads(raw)
-    elements = doc.get('elements') or []
-    if not elements:
-        raise ValueError(f'Overpass returned no element for {facility["aoi"]["id"]}')
-    points = []
-    polygon = None
-    for element in elements:
-        if element.get('type') == 'way':
-            polygon = [(p['lon'], p['lat']) for p in element.get('geometry') or []]
-            points.extend(polygon)
-        for member in element.get('members') or []:
-            points.extend((p['lon'], p['lat']) for p in member.get('geometry') or [])
-        bounds = element.get('bounds')
-        if bounds and not points:
-            points.extend([(bounds['minlon'], bounds['minlat']), (bounds['maxlon'], bounds['maxlat'])])
-    if not points:
-        raise ValueError('AOI element carries no geometry')
-    west, south = min(p[0] for p in points), min(p[1] for p in points)
-    east, north = max(p[0] for p in points), max(p[1] for p in points)
-    lat = (south + north) / 2
-    dlat = margin / 111_320
-    dlon = margin / (111_320 * max(math.cos(math.radians(lat)), 0.2))
-    aoi = {'kind': 'golfhelm-factory-aoi-v1', 'facilityId': facility['facilityId'], 'element': facility['aoi']['id'],
-           'elementBboxWgs84': [round(west, 7), round(south, 7), round(east, 7), round(north, 7)], 'marginM': margin,
-           'bboxWgs84': [round(west - dlon, 7), round(south - dlat, 7), round(east + dlon, 7), round(north + dlat, 7)],
-           'centroidWgs84': [round((west + east) / 2, 7), round(lat, 7)], 'polygon': polygon,
-           'retrievedAt': datetime.now(timezone.utc).date().isoformat(), 'endpoint': OVERPASS,
-           'responseSha256': hashlib.sha256(raw).hexdigest(), 'license': 'ODbL-1.0', 'attribution': '© OpenStreetMap contributors'}
-    path = ctx.aoi_path(facility['facilityId'])
-    _write_json(path, aoi)
-    return [artifact('aoi', path, 'A')]
+# facility.aoi.resolve's executor now lives in tasks/facility_tasks.py
+# (facility_tasks.resolve_aoi): the fetch bbox must cover every catalogued
+# layout's pinned routeWayIds, not only the AOI element itself, so it needs
+# the catalog (ctx.catalog.layouts_of), which this module doesn't otherwise
+# touch.
 
 
 def write_card(ctx, facility_id):
@@ -835,7 +817,13 @@ def classify_context(node, ctx, run):
     if receipt:
         rebind_context(ctx.context_layer_out(layout_id), ctx.context_report_out(layout_id), package_doc['contentHash'], receipt['packageHash'])
     else:
-        run_script(ctx, run, node, 'scripts/golf/course-geometry/prepare-context-layer.py', [package, golf, context, compiled, out])
+        try:
+            run_script(ctx, run, node, 'scripts/golf/course-geometry/prepare-context-layer.py', [package, golf, context, compiled, out])
+        except RuntimeError as error:
+            precondition = context_classification_precondition(error, layout_id)
+            if precondition:
+                raise precondition from error
+            raise
         # The script names outputs after the package file; the factory keeps
         # them under layout ID so retained and built layers share one path.
         stem = os.path.splitext(os.path.basename(package))[0]
@@ -1196,7 +1184,7 @@ def verify_publish(node, ctx, run):
 
 
 DEFAULT_EXECUTORS = {
-    'facility.aoi.resolve': resolve_aoi,
+    'facility.aoi.resolve': facility_tasks.resolve_aoi,
     'facility.osm.snapshot': snapshot_osm,
     'facility.context.snapshot': snapshot_context,
     'layout.routes.resolve': resolve_routes,

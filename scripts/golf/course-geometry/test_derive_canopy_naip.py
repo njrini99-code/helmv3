@@ -2,12 +2,20 @@
 package's own OSM fairway and woods pixels, never above the reviewed ceiling
 and never below the floor; texture still separates turf from crowns."""
 import importlib.util
+import json
 import os
+import sys
+import tempfile
 import unittest
+from pathlib import Path
+from unittest.mock import patch
 
 import numpy as np
+from shapely.geometry import box
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+if HERE not in sys.path:
+    sys.path.insert(0, HERE)
 
 
 def load():
@@ -86,6 +94,94 @@ class ClassifyTests(unittest.TestCase):
         thin = {'features': [{'kind': 'fairway', 'geometryWgs84': {'type': 'Polygon', 'coordinates': [[[0, 0], [3, 0], [3, 3], [0, 3], [0, 0]]]}}]}
         cal = canopy.calibrate(ndvi, thin, lambda lon, lat: (lon, lat), (size, size))
         self.assertEqual((cal['turfNdviMedian'], cal['rule'], cal['ndviMin']), (None, 'fixed_ceiling', canopy.NDVI_MIN))
+
+
+class ImagerySelectionTests(unittest.TestCase):
+    """FPAC conus_naip leaf-on is preferred whenever it has coverage; the
+    facility's indexed NAIP Plus cache is only a fallback, and a retained
+    cache is reused from whichever provider produced it."""
+
+    def test_fpac_coverage_is_preferred_over_the_index(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp) / 'naip'
+            fake_manifest = {'provider': 'USDA NAIP via FPAC conus_naip ImageServer'}
+            with patch.object(canopy, 'acquire', return_value=fake_manifest) as fake_acquire:
+                manifest, provider, reason = canopy.select_imagery(directory, {'xmin': 0, 'ymin': 0, 'xmax': 1, 'ymax': 1}, (10, 10), 32617, Path('index.json'))
+            fake_acquire.assert_called_once()
+            self.assertEqual((manifest, provider), (fake_manifest, 'fpac_conus_naip'))
+            self.assertIn('coverage', reason)
+
+    def test_naip_plus_is_a_fallback_when_fpac_has_no_coverage(self):
+        import indexed_naip
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp) / 'naip'
+            fake_manifest = {'provider': 'USGS NAIP Plus source-locked facility cache'}
+            with patch.object(canopy, 'acquire', side_effect=canopy.NoFPACCoverage('no tiles')), \
+                    patch.object(indexed_naip, 'acquire', return_value=fake_manifest) as fake_indexed:
+                manifest, provider, reason = canopy.select_imagery(directory, {'xmin': 0, 'ymin': 0, 'xmax': 1, 'ymax': 1}, (10, 10), 32617, Path('index.json'))
+            fake_indexed.assert_called_once()
+            self.assertEqual((manifest, provider), (fake_manifest, 'naip_plus'))
+            self.assertIn('no coverage', reason)
+
+    def test_no_coverage_and_no_fallback_index_is_a_hard_stop(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp) / 'naip'
+            with patch.object(canopy, 'acquire', side_effect=canopy.NoFPACCoverage('no tiles')):
+                with self.assertRaises(SystemExit):
+                    canopy.select_imagery(directory, {'xmin': 0, 'ymin': 0, 'xmax': 1, 'ymax': 1}, (10, 10), 32617, None)
+
+    def test_a_retained_naip_plus_cache_is_reused_without_re_deciding(self):
+        import indexed_naip
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp) / 'naip'
+            directory.mkdir()
+            (directory / 'manifest.json').write_text(json.dumps({'provider': 'USGS NAIP Plus source-locked facility cache'}))
+            with patch.object(canopy, 'acquire') as fake_acquire, patch.object(indexed_naip, 'acquire', return_value={'provider': 'USGS NAIP Plus source-locked facility cache'}) as fake_indexed:
+                _manifest, provider, reason = canopy.select_imagery(directory, {'xmin': 0, 'ymin': 0, 'xmax': 1, 'ymax': 1}, (10, 10), 32617, Path('index.json'))
+            fake_acquire.assert_not_called()
+            fake_indexed.assert_called_once()
+            self.assertEqual(provider, 'naip_plus')
+            self.assertEqual(reason, 'retained cache')
+
+
+class AutoReviewRecordTests(unittest.TestCase):
+    """The automatic sign-off that replaces the human canopy review."""
+
+    def test_peeks_own_measurements_pass_the_bounds(self):
+        # Peek'n Peak Upper's checked-in review: 144 groups, 46.9% canopy
+        # share, no overlap with a playing surface, over a ~605 ha export.
+        record = canopy.auto_review_record(0.469, 144, [], None, 605.3)
+        self.assertTrue(record['withinBounds'])
+        self.assertEqual(record['reviewer'], 'auto-canopy-review-v1')
+        self.assertAlmostEqual(record['measurements']['groupDensityPerHectare'], 144 / 605.3, places=3)
+
+    def test_a_share_below_the_floor_is_out_of_bounds(self):
+        record = canopy.auto_review_record(0.01, 2, [], None, 500.0)
+        self.assertFalse(record['withinBounds'])
+
+    def test_a_share_above_the_ceiling_is_out_of_bounds(self):
+        record = canopy.auto_review_record(0.9, 200, [], None, 500.0)
+        self.assertFalse(record['withinBounds'])
+
+    def test_final_regions_overlapping_a_playing_surface_are_out_of_bounds(self):
+        # The vector region (after closing/opening/simplify) covers a fairway
+        # box entirely: overlap is measured on the final shape, not the mask.
+        fairway = box(0, 0, 100, 100)
+        region = box(0, 0, 100, 100)
+        record = canopy.auto_review_record(0.3, 1, [region], fairway, 100.0)
+        self.assertFalse(record['withinBounds'])
+        self.assertEqual(record['measurements']['surfaceOverlapShare'], 1.0)
+
+    def test_a_small_overlap_from_buffering_stays_in_bounds(self):
+        fairway = box(0, 0, 100, 100)
+        region = box(99, 0, 199, 100)  # touches, 1% overlap of its own area
+        record = canopy.auto_review_record(0.3, 1, [region], fairway, 100.0)
+        self.assertLessEqual(record['measurements']['surfaceOverlapShare'], canopy.CANOPY_SURFACE_OVERLAP_MAX)
+        self.assertTrue(record['withinBounds'])
+
+    def test_over_segmented_groups_are_out_of_bounds_on_density(self):
+        record = canopy.auto_review_record(0.3, 500, [], None, 10.0)
+        self.assertFalse(record['withinBounds'])
 
 
 if __name__ == '__main__':

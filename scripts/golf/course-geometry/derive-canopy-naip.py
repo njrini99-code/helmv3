@@ -67,6 +67,21 @@ TEXTURE_MIN = 10.5
 SURFACE_BUFFER_PX = 3
 MAX_BYTES = 60_000_000
 
+# Automatic canopy sign-off (replaces the human visual review): a review
+# outside these bounds blocks in `layout.canopy.derive` instead of merely
+# noting it. Measured on the export's own raster share, and on the final
+# vector regions after the closing/opening/simplify passes (never the raw
+# classification mask: those passes can push a region back onto a surface).
+CANOPY_SHARE_MIN = 0.02   # below this share, calibration is suspect before a tile is trusted treeless
+CANOPY_SHARE_MAX = 0.85   # near-total tree cover across the export reads as a bad NDVI gate, not a wooded course
+CANOPY_SURFACE_OVERLAP_MAX = 0.03  # final regions overlapping fairway/green/tee beyond this share means the vector step leaked onto a playing surface
+CANOPY_GROUP_DENSITY_MAX_PER_HA = 2.0  # groups per hectare of the export; above this reads as classification speckle, not distinct tree masses
+
+
+class NoFPACCoverage(RuntimeError):
+    """FPAC conus_naip has no catalog tiles for this request; the caller may
+    fall back to the facility's indexed NAIP Plus cache."""
+
 
 def calibrated_ndvi_min(turf_median):
     """The NDVI gate for one export and the rule that chose it: the fairway
@@ -142,6 +157,8 @@ def acquire(directory, extent, size):
              'returnGeometry': 'false', 'outFields': 'OBJECTID,Name,Category', 'where': 'Category=1'}
     catalog = json.loads(read(NAIP + '/query?' + urllib.parse.urlencode(query), 2_000_000))
     tiles = sorted(row['attributes']['Name'] for row in catalog.get('features', []) if row['attributes']['Name'].startswith('m_'))
+    if not tiles:
+        raise NoFPACCoverage(f'no FPAC conus_naip tiles intersect bounds {extent}')
     params = {'f': 'image', 'bbox': f"{extent['xmin']},{extent['ymin']},{extent['xmax']},{extent['ymax']}",
               'bboxSR': crs, 'imageSR': crs, 'size': f'{size[0]},{size[1]}', 'format': 'tiff',
               'pixelType': 'U8', 'bandIds': '0,1,2,3', 'interpolation': 'RSP_NearestNeighbor'}
@@ -159,6 +176,53 @@ def acquire(directory, extent, size):
                 'rasterSha256': hashlib.sha256(raster).hexdigest(), 'rasterBytes': len(raster)}
     manifest_path.write_text(json.dumps(manifest, indent=2) + '\n')
     return manifest
+
+
+def select_imagery(naip_directory, extent, size, epsg, imagery_index):
+    """FPAC conus_naip leaf-on first; the facility's indexed NAIP Plus cache
+    only when FPAC has no coverage at this site. A retained cache is reused
+    from whichever provider produced it, never re-decided mid-course."""
+    manifest_path = naip_directory / 'manifest.json'
+    if manifest_path.exists():
+        retained_provider = 'naip_plus' if json.loads(manifest_path.read_text()).get('provider', '').startswith('USGS NAIP Plus') else 'fpac_conus_naip'
+        if retained_provider == 'naip_plus':
+            import indexed_naip
+            return indexed_naip.acquire(imagery_index, naip_directory, extent, size, epsg), retained_provider, 'retained cache'
+        return acquire(naip_directory, extent, size), retained_provider, 'retained cache'
+    try:
+        return acquire(naip_directory, extent, size), 'fpac_conus_naip', 'FPAC conus_naip has coverage at this site'
+    except NoFPACCoverage as exc:
+        if not imagery_index:
+            raise SystemExit(f'FPAC conus_naip has no coverage and no --imagery-index fallback was supplied: {exc}') from exc
+        import indexed_naip
+        return (indexed_naip.acquire(imagery_index, naip_directory, extent, size, epsg), 'naip_plus',
+                f'FPAC conus_naip has no coverage at this site: {exc}')
+
+
+def auto_review_record(canopy_share, group_count, final_region_shapes, playing_surfaces, course_area_ha):
+    """The automatic canopy sign-off: NDVI share of the export, the final
+    vector regions' overlap with fairway/green/tee (never the raw
+    classification mask — the closing/opening/simplify passes above can push
+    a region back onto a surface), and group density per hectare of the
+    export. Each measurement is checked against an explicit, fixed bound;
+    only an out-of-bounds measurement may block downstream (§ eval_canopy_derive)."""
+    final_union = unary_union(final_region_shapes) if final_region_shapes else None
+    overlap_share = 0.0
+    if (final_union is not None and not final_union.is_empty and final_union.area
+            and playing_surfaces is not None and not playing_surfaces.is_empty):
+        overlap_share = round(final_union.intersection(playing_surfaces).area / final_union.area, 4)
+    density_per_ha = round(group_count / course_area_ha, 4) if course_area_ha else None
+    within_bounds = (CANOPY_SHARE_MIN <= canopy_share <= CANOPY_SHARE_MAX and overlap_share <= CANOPY_SURFACE_OVERLAP_MAX
+                     and (density_per_ha is None or density_per_ha <= CANOPY_GROUP_DENSITY_MAX_PER_HA))
+    return {
+        'reviewer': 'auto-canopy-review-v1',
+        'bounds': {'canopyShareOfExport': [CANOPY_SHARE_MIN, CANOPY_SHARE_MAX],
+                   'surfaceOverlapShare': [0.0, CANOPY_SURFACE_OVERLAP_MAX],
+                   'groupDensityPerHectare': [0.0, CANOPY_GROUP_DENSITY_MAX_PER_HA]},
+        'measurements': {'canopyShareOfExport': canopy_share, 'surfaceOverlapShare': overlap_share,
+                         'groupDensityPerHectare': density_per_ha, 'courseAreaHectares': round(course_area_ha, 2)},
+        'withinBounds': within_bounds,
+    }
 
 
 def polygonize(mask, transform, epsg=course_crs.LEGACY_EPSG):
@@ -195,11 +259,7 @@ def main():
     pkg = json.loads(args.package.read_text())
     export = json.loads((args.terrain_source / 'export.json').read_text())
     extent, width, height = export['extent'], export['width'], export['height']
-    if args.imagery_index:
-        import indexed_naip
-        manifest = indexed_naip.acquire(args.imagery_index, args.naip_directory, extent, (width, height), course_crs.export_epsg(export))
-    else:
-        manifest = acquire(args.naip_directory, extent, (width, height))
+    manifest, provider, provider_reason = select_imagery(args.naip_directory, extent, (width, height), course_crs.export_epsg(export), args.imagery_index)
     bands = gdal.Open(str(args.naip_directory / 'naip.tif')).ReadAsArray().astype(float)
     valid = np.any(bands != 0, axis=0)
     red, nir = bands[0], bands[3]
@@ -218,10 +278,12 @@ def main():
         return (x - extent['xmin']) / px_x, (extent['ymax'] - y) / px_y
 
     shapes = {}
+    kind_by_id = {}
     surface = Image.new('L', (width, height), 0)
     draw = ImageDraw.Draw(surface)
     for feature in pkg['features']:
         geometry = feature['geometryWgs84']
+        kind_by_id[feature['id']] = feature['kind']
         if geometry['type'] == 'LineString':
             shapes[feature['id']] = LineString([project.transform(*p) for p in geometry['coordinates']])
             continue
@@ -229,6 +291,10 @@ def main():
             continue
         shapes[feature['id']] = Polygon([project.transform(*p) for p in geometry['coordinates'][0]])
         draw.polygon([to_pixel(*p) for p in geometry['coordinates'][0]], fill=255)
+    # The playing surfaces a region must not (re-)cover, in the same local
+    # metres frame as the final vector regions below.
+    surface_shapes = [shapes[i] for i, kind in kind_by_id.items() if kind in ('fairway', 'green', 'tee') and i in shapes]
+    playing_surfaces = unary_union(surface_shapes) if surface_shapes else None
     masked = ndimage.binary_dilation(np.array(surface) > 0, iterations=SURFACE_BUFFER_PX)
     # Exclude the entire texture neighborhood of unknown pixels as well as
     # the pixels themselves: a no-data edge cannot become a tree candidate.
@@ -242,6 +308,7 @@ def main():
     canopy_union = unary_union([g for g in groups if g.area >= MIN_GROUP_M2])
 
     regions = []
+    final_region_shapes = []
     for hole in pkg['holes']:
         own = [shapes[i] for i in hole['featureIds'] if i in shapes]
         minx, miny, maxx, maxy = unary_union(own).bounds
@@ -265,26 +332,37 @@ def main():
             index += 1
             regions.append({'id': f"{hole['key']}-canopy-{index:03}", 'holeKey': hole['key'],
                             'areaM2': round(simple.area, 1), 'coordinatesWgs84': ring})
+            final_region_shapes.append(simple)
+
+    # Automatic sign-off (replaces the human visual review): NDVI share,
+    # overlap with the final regions against fairway/green/tee, and group
+    # density over the export area, each against an explicit bound.
+    canopy_share = round(float(canopy.mean()), 4)
+    course_area_ha = (extent['xmax'] - extent['xmin']) * (extent['ymax'] - extent['ymin']) / 10_000
+    auto_review = auto_review_record(canopy_share, len(regions), final_region_shapes, playing_surfaces, course_area_ha)
+    within_bounds = auto_review['withinBounds']
     review = {
         'schemaVersion': 1, 'kind': 'golfhelm-canopy-review-v1', 'siteId': pkg['siteId'], 'packageHash': pkg['contentHash'],
         'source': manifest['provider'], 'sourceUrl': manifest['service'], 'catalogTiles': manifest['catalogTiles'],
         'capturedAt': manifest['captureDates'], 'nativeResolutionM': manifest['nativeResolutionM'],
         'rasterSha256': manifest['rasterSha256'], 'retrievedAt': manifest['retrievedAt'], 'license': manifest['license'],
         'sourceIdentity': manifest.get('sourceIdentity'), 'truthClass': 'derived',
-        'reviewStatus': 'review_required', 'canMeasurePhysicalGeometry': False,
+        'sourceSelection': {'provider': provider, 'reason': provider_reason},
+        'reviewStatus': 'auto_reviewed' if within_bounds else 'out_of_bounds', 'canMeasurePhysicalGeometry': False,
+        'autoReview': auto_review,
         'method': {'ndviMin': calibration['ndviMin'], 'ndviCalibration': calibration, 'nirTextureStdMin': TEXTURE_MIN, 'textureWindowPx': 7, 'surfaceBufferPx': SURFACE_BUFFER_PX,
                    'morphology': 'open 3x3, close 5x5', 'vectorClosingM': 6, 'vectorOpeningM': 2, 'minGroupM2': MIN_GROUP_M2, 'simplifyM': 2.0,
                    'contextMarginM': CONTEXT_MARGIN_M},
         'reviewedAt': datetime.now(timezone.utc).date().isoformat(),
-        'reviewer': 'Automated spectral classification; independent course review pending',
+        'reviewer': auto_review['reviewer'],
         'meaning': 'Approximate canopy groups classified from leaf-on NAIP by NIR texture and NDVI, masked away from every OSM golf surface. '
                    'Group interiors bound crown artwork only; crown glyphs are illustrative, not surveyed trees. '
                    'No currentness, height or obstruction claim.',
-        'stats': {'canopyShareOfExport': round(float(canopy.mean()), 4), 'validImageryShare': float(valid.mean()), 'groups': len(regions)},
+        'stats': {'canopyShareOfExport': canopy_share, 'validImageryShare': float(valid.mean()), 'groups': len(regions)},
         'regions': regions,
     }
     args.output.write_text(json.dumps(review, indent=2, ensure_ascii=False) + '\n')
-    print(json.dumps({'groups': len(regions), 'canopyShare': review['stats']['canopyShareOfExport'],
+    print(json.dumps({'groups': len(regions), 'canopyShare': canopy_share, 'provider': provider, 'withinBounds': within_bounds,
                       'holes': len({r['holeKey'] for r in regions}), 'ndviMin': calibration['ndviMin'], 'ndviRule': calibration['rule']}))
 
 
