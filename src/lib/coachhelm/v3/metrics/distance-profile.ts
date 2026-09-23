@@ -202,28 +202,14 @@ function statusFor(denominator: number, meetsFloor: boolean): MetricStatus {
  * `SCENARIO_B_UNDER_ATTEMPTS_50_125` reported "3 of 3 greens hit" for a row
  * whose real problem was 8 of 10 attempts).
  */
-export function describeSupportGap(row: MetricResult): string {
-  const gaps = row.failedFloors ?? [];
-  if (gaps.length === 0) {
-    // Defensive only — computeDistanceProfile always populates
-    // `failedFloors` whenever it sets `status` to `'insufficient'`, so a
-    // real row never reaches this branch.
-    return 'not enough data yet';
-  }
-  return gaps.map(describeFloorGap).join(' and ');
-}
-
-function describeFloorGap(gap: SupportFloorGap): string {
-  switch (gap.floor) {
-    case 'rounds':
-      return `${gap.current} of ${gap.required} rounds`;
-    case 'greens':
-      return `${gap.current} of ${gap.required} greens hit`;
-    case 'attempts':
-    default:
-      return `${gap.current} of ${gap.required} attempts`;
-  }
-}
+// `describeSupportGap` lives in `./support-gap.ts` now — a client component
+// ('use client') needs it as a runtime value, and that file has no value
+// import of anything server-only (unlike this one, which value-imports
+// `bucketApproachDistance` from `../engine/shot-source`, itself importing
+// `createAdminClient`). Re-exported here so every existing server-side
+// caller of this module is unaffected (#2008 review, URGENT fix for a
+// `node:async_hooks` client-bundle failure).
+export { describeSupportGap } from './support-gap';
 
 /** Builds this row's `failedFloors` from its OWN real gating quantities —
  *  never from a narrower per-row count like `eligibleCount` — so the

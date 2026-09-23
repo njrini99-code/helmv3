@@ -27,7 +27,11 @@ import type {
   DistanceProfileBandViewModel,
   DistanceProfileRowViewModel,
 } from './buildDistanceProfileViewModel';
-import { describeSupportGap, type DistanceProfileMetricId } from '@/lib/coachhelm/v3/metrics/distance-profile';
+import type { DistanceProfileMetricId } from '@/lib/coachhelm/v3/metrics/distance-profile';
+// A value import, not a type — deliberately from `support-gap.ts`, not
+// `distance-profile.ts` (which value-imports server-only code via
+// `../engine/shot-source`'s `createAdminClient`). See that file's header.
+import { describeSupportGap } from '@/lib/coachhelm/v3/metrics/support-gap';
 
 const METRIC_DISPLAY: Record<
   DistanceProfileMetricId,
