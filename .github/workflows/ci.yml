@@ -914,7 +914,7 @@ jobs:
         run: bash scripts/db/check-new-migrations-in-schema.sh "${{ github.event.pull_request.base.sha }}"
 
       - name: Start local Supabase stack
-        run: supabase start
+        run: bash scripts/db/supabase-start-with-retry.sh
 
       - name: Lint migrations
         run: supabase db lint --schema public
