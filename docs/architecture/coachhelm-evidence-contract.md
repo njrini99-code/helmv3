@@ -446,6 +446,36 @@ closes that gap for a `compose()` caller that opts in.
     RLS mirrors `golf_rounds`' own read policies (self player, team
     coach, admin); only the service role writes it (`authenticated` gets
     `SELECT` only, nothing to `anon`/`PUBLIC`).
+- **Chat vs. recap use two SEPARATE claim-grounding mechanisms — a known
+  open item, not a defect** (audited 2026-09-23): recap/`compose()` gates
+  on `claim-validator.ts`'s typed `validateClaims` (player/window/metric/
+  value/sample-floor/causal-backing against a structured
+  `EvidencePacket`, see above). The coach-chat stream route
+  (`src/app/api/coachhelm/v3/chat/stream/route.ts`) gates on a DIFFERENT,
+  lighter mechanism instead: `chat/provenance.ts`'s `auditNumericClaims`,
+  a numeric-token-vs-tool-evidence scan with no typed claim references or
+  per-metric checks. Both correctly BLOCK ungrounded output from being
+  persisted as `'complete'` (chat: `onFinish` gates `appendMessage` on the
+  audit result and stores `status: 'failed'` instead;
+  `chat/restore.ts`'s `REPLAYABLE` set keeps `'data-grounding-flag'` so a
+  failed turn stays visibly flagged on reload, not silently normal —
+  tested at `src/test/coachhelm/v3/chat-restore.test.ts`, PR #1975).
+  Whether chat should eventually adopt the same typed `validateClaims`
+  gate as recap (chat's real-time streaming shape vs. a single
+  post-generation validation makes this a real design question, not an
+  oversight) is open, not decided here.
+- **Package 8 addendum checklist item (f), "a concise evidence-backed
+  review narrative," remains UNBUILT** (audited 2026-09-23): no caller
+  and no persistence path. `round-review.ts`'s `composeRoundReview` has a
+  server-action wrapper (`src/app/golf/actions/v3/llm.ts`,
+  `generateLlmRoundReview`) whose OWN header comment used to claim "a
+  client component on the round-review page" calls it — false;
+  `round-regime.ts:132` documents that the action has zero callers
+  outside its own file, and `llm.ts`'s header now says so instead. No
+  persistence path from `composeRoundReview` into `golf_round_reviews`
+  exists either. Building this needs its own spec (an owner decision, not
+  a slice) — see the "Not wired in slice 1" bullet above for the same
+  finding at the `round-review.ts` level.
 
 ## Standing read rules (2026-09-12, repair deferrals)
 
