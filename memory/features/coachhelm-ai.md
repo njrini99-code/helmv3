@@ -421,6 +421,40 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   derivation is proven. Full contract in
   `docs/architecture/coachhelm-evidence-contract.md`'s "Issue grouping and
   ranking-input unification" section.
+
+- **`src/lib/coachhelm/v3/reasoning/hypothesis-policy.ts`** (2026-09-23,
+  `agent/coachhelm-hypothesis-policy`, addendum §13, work package A5
+  slice 1) — `buildHypotheses(metrics, facts)` proposes a small, NAMED set
+  of candidate explanations for a round's shot data (`short_bias`,
+  `rough_gap`, `recovery`, `par5_opportunity_loss`, plus a non-family
+  `'insufficient'` entry naming two competing families instead of picking
+  one) — never a fabricated cause, never a psychology/fatigue/mechanics
+  inference. `metrics` is `MetricResultInput[]`, a structural subset of the
+  shared `MetricResult` landing via #1990 (`src/lib/coachhelm/v3/metrics/
+  types.ts`, not merged as of this slice — same field names, so switching
+  the import later is one line). `ShotFact` carries no `par` and no
+  miss-direction field, so `short_bias`/`par5_opportunity_loss` can only
+  come from a `metrics` row, never guessed; `rough_gap`/`recovery` come
+  from an approach shot with `lie_before === 'rough'`, split on the
+  ingest-tagged `intent` (never inferred from distance/outcome) — an
+  `'unknown'` intent (what nearly every real shot normalizes to today)
+  produces `'insufficient'` with a `nextCheck` naming both competing
+  families, instead of guessing which applies. States: `'candidate'` (the
+  floor), `'supported_association'` (a `status: 'supported'` metric
+  agrees and nothing contradicts — an association, never causal), and
+  `'coach_annotated'` (reachable only from `personal-context.ts`, slice 2 —
+  nothing here produces it). No `'proven'` state exists. A contradicting
+  claim always caps state at `'candidate'`, even overriding what the
+  primary metric alone would have elevated. A missing prerequisite is
+  reported as a `Hypothesis` with empty claims and a populated
+  `missingInputs`, never silently omitted — `short_bias` and
+  `recovery`/`par5_opportunity_loss`'s corroborating metrics have no
+  producer today, so real calls report them gapped. Claim ids
+  (`metricClaimId`/`shotClaimId`) always resolve back to an element of the
+  `metrics`/`facts` a call was given (tested). **Not wired to
+  `diagnosis.ts` or `personal-context.ts`** — that's slice 2. See
+  `docs/architecture/coachhelm-evidence-contract.md`'s "Controlled
+  hypotheses" section.
 - N13 sweep (repair plan, 2026-09-23): audited every CoachHelm action/route
   under `src/app/golf/actions` and `src/lib/coachhelm` for a catch-all that
   discards the real exception and returns one generic "session expired"-style

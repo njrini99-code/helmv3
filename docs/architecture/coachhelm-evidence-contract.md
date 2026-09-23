@@ -1259,6 +1259,63 @@ never feeds `nextWeight` or any learning loop, so there is no
 direction-corrected signal to compute, only the plain observed change
 (module header's NAMING note).
 
+## Controlled hypotheses (A5 deliverable, slice 1 — pure core, no DB)
+
+`buildHypotheses(metrics, facts)`
+(`src/lib/coachhelm/v3/reasoning/hypothesis-policy.ts`) proposes a small,
+NAMED set of candidate explanations for a round's shot data — never a
+fabricated cause, never a psychology/fatigue/mechanics inference (a test
+scans every hypothesis this module can produce for banned terms —
+`pressure`, `confidence`, `swing`, `mechanics`, and similar).
+
+`metrics` is typed as `MetricResultInput[]`, a structural subset of the
+shared `MetricResult` landing in `src/lib/coachhelm/v3/metrics/types.ts`
+via #1990 (same field names — `metricId`, `value`, `status` — so swapping
+the import later is a one-line change). `#1990` had not merged to `main`
+as of this slice.
+
+- **Four named families, plus one non-family entry**: `short_bias`,
+  `rough_gap`, `recovery`, `par5_opportunity_loss`, and `'insufficient'`
+  — an entry that names two competing families instead of picking one when
+  the fact that would discriminate them isn't recorded.
+- **What can and can't come from `facts`**: `ShotFact` (A1) carries neither
+  `par` nor a miss-direction field, so `short_bias` (needs a short/long
+  miss split) and `par5_opportunity_loss` (needs to know which holes were
+  par 5s) can ONLY come from a `metrics` row — never guessed from
+  distance or outcome. `rough_gap` and `recovery` DO come from facts: a
+  `shot_type: 'approach'` shot with `lie_before === 'rough'`, split on the
+  ingest-tagged `intent` (`'go_for_green'` → `rough_gap`, `'recovery'` →
+  `recovery`, an explicit `'layup'` → neither, anything else — including
+  `'unknown'`, the value nearly every real shot normalizes to today) →
+  `'insufficient'` with a `nextCheck` naming both competing families and
+  the input (`fact:intent`) that would resolve it. Never inferred from
+  distance or outcome, only the explicit tag.
+- **States**: `'candidate'` (the floor — named, not yet corroborated, or
+  contradicted), `'supported_association'` (a `status: 'supported'` metric
+  points the same direction and nothing contradicts it — an association,
+  never a causal claim), `'coach_annotated'` (reachable only once a coach
+  has reviewed a hypothesis — `personal-context.ts`, slice 2; nothing in
+  this module can produce it). There is no `'proven'` state anywhere in
+  the type.
+- **Contradiction always downgrades, never elevates past it**: a
+  `contradictingClaimIds` entry caps `state` at `'candidate'` even when the
+  hypothesis's own primary metric would otherwise have elevated it.
+- **Claim ids always resolve to an input element**: `metricClaimId(id)` →
+  `` `metric:${id}` ``, `shotClaimId(shot)` →
+  `` `shot:${round_id}:${hole_number}:${shot_number}` `` — tested by
+  resolving every `supportingClaimIds`/`contradictingClaimIds` entry back
+  to an element of the `metrics`/`facts` a call was given.
+- **"No hypothesis" is a `Hypothesis` with empty claims and a populated
+  `missingInputs`**, not an omitted entry — `buildHypotheses` returns a
+  flat `Hypothesis[]` (no separate "withheld" bucket), so a family with an
+  absent prerequisite still appears, stating the gap, rather than
+  vanishing silently. `short_bias` and `par5_opportunity_loss` have no
+  metric producer today (no A2/A3 slice emits
+  `approach_short_miss_rate`/`approach_recovery_outcome_rate`) — every real
+  call reports them as gapped, never fabricates a value.
+- **Not wired to `diagnosis.ts` or `personal-context.ts`** — that's slice 2,
+  per this slice's explicit scope.
+
 ## How to add a new comparison source
 
 1. Append to `InsightComparisonSource` and `COMPARISON_SOURCES` in `types.ts`.
