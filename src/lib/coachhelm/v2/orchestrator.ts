@@ -233,7 +233,7 @@ export interface PersonalizedThresholds {
 
 /**
  * Computes what `generateAlerts`'s decline/pressure-gap thresholds WOULD be
- * under `BehaviorLearner.getPersonalizedThreshold` (coachhelm_learned_personalization),
+ * under `BehaviorLearner.getPersonalizedThreshold` (coachhelm_v2_alert_personalization),
  * without deciding whether to apply them — the caller does that, so the
  * "flag off never mutates philosophy" contract is a plain if/else at the
  * call site rather than buried in here. Pure aside from the
@@ -897,7 +897,7 @@ class CoachHelmIntelligence {
 
     // Initialize behavior learner for coach preferences. Previously this
     // query's result was awaited and thrown away; kept here (used below,
-    // gated by coachhelm_learned_personalization, once `philosophy` is
+    // gated by coachhelm_v2_alert_personalization, once `philosophy` is
     // loaded) so `loadBehavior()`'s cache is warm before
     // `getPersonalizedThreshold()` needs it — no extra query.
     const behaviorLearner = new BehaviorLearner(coachId, 'coach');
@@ -934,8 +934,10 @@ class CoachHelmIntelligence {
       pressureGapThreshold: philosophyRow?.pressure_gap_threshold ?? undefined,
     };
 
-    // Learned-preference personalization (NEW, coachhelm_learned_personalization,
-    // default OFF everywhere). `computePersonalizedThresholds` nudges each
+    // Learned-preference personalization (coachhelm_v2_alert_personalization,
+    // default OFF everywhere; split 2026-09-23 from a flag this consumer used
+    // to share with the unrelated v3 coach-weight read in score.ts).
+    // `computePersonalizedThresholds` nudges each
     // threshold by the coach's own ack/dismiss history on that alert type,
     // bounded to +/-25% (see BehaviorLearner.getPersonalizedThreshold). We
     // always COMPUTE the personalized values — loadBehavior()'s cache is
@@ -944,7 +946,7 @@ class CoachHelmIntelligence {
     // branch below. With the flag off, `philosophy` is never assigned to here
     // at all: alert output is byte-identical to before this change, and a
     // differing personalized value is only logged (shadow).
-    const personalizationEnabled = isFlagEnabled('coachhelm_learned_personalization');
+    const personalizationEnabled = isFlagEnabled('coachhelm_v2_alert_personalization');
     const personalized = await computePersonalizedThresholds(
       behaviorLearner,
       philosophy.declineThreshold ?? DEFAULT_DECLINE_THRESHOLD,

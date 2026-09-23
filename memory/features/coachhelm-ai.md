@@ -305,7 +305,7 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   `getLearnedPreferences()`/`getPersonalizedThreshold` are now consulted in
   `orchestrator.ts`'s `generateAlerts()`, but only applied to
   `philosophy.declineThreshold`/`pressureGapThreshold` when the
-  `coachhelm_learned_personalization` feature flag (default OFF in every
+  `coachhelm_v2_alert_personalization` feature flag (default OFF in every
   environment, see `config/feature-flags.yml`) is on. With the flag off the
   computed thresholds are shadow-logged
   (`coachhelm.learned_personalization.shadow`) instead of applied, so alert
@@ -313,12 +313,21 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   support it. Also fixed upstream: `'feedback'`-type interactions (from
   `rateInsight`) are now correctly bucketed into `BehaviorLearner`'s
   ack/dismiss counts, and `rateInsightImpl` now records a real `insight_type`
-  in interaction metadata so per-type bucketing works.
+  in interaction metadata so per-type bucketing works. **Flag split
+  2026-09-23**: this consumer used to share `coachhelm_learned_personalization`
+  with the unrelated v3 coach-weight read below — flipping it for one would
+  silently have turned on the other. It now has its own id,
+  `coachhelm_v2_alert_personalization`, copied value and environments
+  exactly (false everywhere) so the split changed no runtime behavior;
+  `orchestrator-personalization-gate.test.ts` proves `generateAlerts` reads
+  that id and never the v3 one.
 - **v3 ranking's coach-weight multiplier is wired but flagged off** (2026-09-23,
   PR #1980 review follow-up): `loadCoachWeightsForPlayer`
-  (`v3/ranking/score.ts`) is gated behind the same
-  `coachhelm_learned_personalization` flag (default OFF) as the alert
-  personalization above. Production's `golf_coachhelm_coach_weights` (4
+  (`v3/ranking/score.ts`) is gated behind `coachhelm_learned_personalization`
+  (default OFF) — as of the 2026-09-23 flag split above, this id is
+  exclusive to this v3 read path; the v2 alert-threshold consumer that used
+  to share it now reads its own `coachhelm_v2_alert_personalization`.
+  Production's `golf_coachhelm_coach_weights` (4
   rows, sample_n up to 36, weights 0.77-1.60 as of 2026-09-23) was built
   entirely from v1's outcome attribution — the pre-N10 formula that
   algebraically cancelled to post-vs-ambient instead of the observed lift

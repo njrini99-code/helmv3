@@ -325,7 +325,7 @@ export class BehaviorLearner {
    * Bounded to ±`MAX_ADJUSTMENT` so a small, noisy sample can never swing a
    * threshold wildly — this nudges, it doesn't override the coach's own
    * `CoachPhilosophy` setting. Callers gate this behind a feature flag
-   * (`coachhelm_learned_personalization`); with the flag off, compute this
+   * (`coachhelm_v2_alert_personalization`); with the flag off, compute this
    * for shadow-logging only and never apply it.
    */
   private static readonly PERSONALIZATION_MIN_SAMPLE = 8;
