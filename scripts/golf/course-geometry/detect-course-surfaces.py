@@ -77,8 +77,15 @@ def _load_module(name, filename):
 
 # `detect-tee-complexes.py`'s tee detector is reused unmodified (see the
 # module docstring): it is already validated on its own, and this module
-# must not fork or re-derive it.
+# must not fork or re-derive it. `propose-routes.py`'s `cluster_tee_complexes`
+# is reused read-only too, for the green-distance gate below -- neither file
+# is edited by this module (both are owned by other workers on this task).
 dtc = _load_module('detect_tee_complexes', 'detect-tee-complexes.py')
+pr = _load_module('propose_routes', 'propose-routes.py')
+
+TEE_GREEN_MIN_M = 90.0    # "a tee complex should lie 90-600m from some green"
+TEE_GREEN_MAX_M = 600.0
+TEE_GREEN_EXCLUDE_M = 40.0  # "and not within 40m of a green" -- a green's own apron/surrounds, not a tee
 
 CHM_NODATA = -9999.0
 CHM_TREE_MIN_M = 3.0     # matches derive-canopy-naip.py's own tree floor
@@ -91,7 +98,7 @@ GREEN_DEFAULTS = {
     'ndvi_max': 0.90,
     'brightness_smooth_m': 6.0,        # tighter than the tee detector's 10m: a green is smaller
     'texture_scales_m': (3.0, 5.0, 9.0),
-    'crown_smooth_m': 20.0,            # DEM smoothing radius for the "locally raised" relief signal
+    'local_context_m': 55.0,           # local-population window size: a hole's worth of fairway+rough+green
     'slope_max': 0.14,                 # looser than a tee's flat cut: a green can be gently domed
     'open_radius_m': 1.5,
     'seed_percentile': 92.0,           # strict: only a pixel this confidently green-like can start a candidate
@@ -102,7 +109,12 @@ GREEN_DEFAULTS = {
     'min_roundness': 0.30,             # 4*pi*area/perimeter^2; a fused green+fairway blob fails this
     'min_compactness': 0.35,           # area / own-bbox area, the fallback shape gate
     'peak_spacing_m': 22.0,            # minimum separation between two split seeds inside one big blob
-    'bunker_bonus_radius_m': 40.0,
+    'bunker_bonus_radius_m': 30.0,     # "most greens have >=1 bunker within 30m"
+    'bunker_bonus_weight': 0.20,
+    'planarity_ring_m': 30.0,          # the annulus a candidate's own DEM planarity is compared against
+    'planarity_ring_margin_m': 4.0,    # gap between the candidate's own footprint and the ring, so the
+                                        # ring doesn't sample the candidate's own gentle apron transition
+    'planarity_scale_m': 0.15,         # RMS-residual-improvement (metres) that saturates the planarity term
     'confidence_min': 0.0,
 }
 
@@ -249,6 +261,31 @@ def _px(meters, pixel_m):
     return max(1, int(round(meters / max(pixel_m[0], 1e-6))))
 
 
+def _local_stats(value, weight_mask, size_px, global_mean, global_std):
+    """Mean/std of `value` within a `size_px` window, counting only
+    `weight_mask` pixels (turf, typically) -- a green a few percentiles
+    above the *whole-property* turf population still reads as merely
+    average against its own hole's fairway+rough, and a whole-course
+    percentile cut therefore keeps far too much ordinary fairway (see the
+    module's committed diagnosis against winchester-country-club's real
+    OSM truth). Comparing each pixel against its own local neighbourhood
+    instead directly encodes "distinctly better-mown than what's right
+    around it", not merely "in the property's top decile somewhere".
+    Falls back to the given global mean/std where a window has too little
+    turf coverage to trust locally (e.g. right at the property edge)."""
+    from scipy.ndimage import uniform_filter
+    weight = weight_mask.astype(np.float64)
+    count = uniform_filter(weight, size=size_px, mode='nearest')
+    sum_v = uniform_filter(value * weight, size=size_px, mode='nearest')
+    sum_v2 = uniform_filter((value ** 2) * weight, size=size_px, mode='nearest')
+    enough = count > 0.15  # at least ~15% local turf coverage to trust the local stat
+    with np.errstate(invalid='ignore', divide='ignore'):
+        local_mean = np.where(enough, sum_v / np.where(count > 0, count, 1), global_mean)
+        local_var = np.where(enough, sum_v2 / np.where(count > 0, count, 1) - local_mean ** 2, global_std ** 2)
+    local_std = np.sqrt(np.clip(local_var, 1e-6, None))
+    return local_mean, local_std
+
+
 # ---------------------------------------------------------------------------
 # Bunkers
 
@@ -379,15 +416,64 @@ def _split_oversized_component(component, score, pixel_m, peak_spacing_m, max_ar
             yield region
 
 
+def _plane_residual(dem_grid, mask, pixel_m):
+    """RMS residual (metres) of the best-fit plane through `dem_grid` at
+    `mask`'s True cells. A green's own surface, even gently contoured, sits
+    much closer to a single fitted plane than a 30m ring of ordinary
+    terrain around it does (a mound, a swale, a fairway's camber) -- a
+    planarity-*comparison*, not a raw crown height, which is why this is
+    computed per-candidate against its own surrounding ring rather than as
+    a fixed-radius per-pixel filter (a 1m bare-earth DEM's noise floor
+    swamps a fixed few-centimetre crown threshold; comparing two windows'
+    residuals cancels most of that noise). Returns `None` when `mask` has
+    too few cells to fit a plane."""
+    rows, cols = np.where(mask)
+    if rows.size < 6:
+        return None
+    z = dem_grid[rows, cols]
+    x = cols.astype(np.float64) * pixel_m[0]
+    y = rows.astype(np.float64) * pixel_m[1]
+    design = np.column_stack([x, y, np.ones_like(x)])
+    coeffs, *_ = np.linalg.lstsq(design, z, rcond=None)
+    residual = z - design @ coeffs
+    return float(np.sqrt(np.mean(residual ** 2)))
+
+
+def _planarity_score(dem_grid, region, pixel_m, ring_m, ring_margin_m, scale_m):
+    """`clip((ring_residual - region_residual) / scale_m, 0, 1)` -- how much
+    smoother/flatter `region`'s own DEM is than the annulus `ring_margin_m`
+    to `ring_margin_m + ring_m` beyond its boundary. `None` (never a gate)
+    when either fit has too few points to be meaningful. Crops to a local
+    window first -- a whole-raster distance transform per candidate would
+    be wasteful when a course can carry dozens of candidates."""
+    from scipy.ndimage import distance_transform_edt
+    region_residual = _plane_residual(dem_grid, region, pixel_m)
+    if region_residual is None:
+        return None
+    pad_px = int(round((ring_margin_m + ring_m) / max(pixel_m[0], 1e-6))) + 2
+    rows, cols = np.where(region)
+    r0, r1 = max(0, rows.min() - pad_px), min(region.shape[0], rows.max() + pad_px + 1)
+    c0, c1 = max(0, cols.min() - pad_px), min(region.shape[1], cols.max() + pad_px + 1)
+    local_region = region[r0:r1, c0:c1]
+    local_dem = dem_grid[r0:r1, c0:c1]
+    dist_px = distance_transform_edt(~local_region) * max(pixel_m[0], 1e-6)
+    ring_mask_local = (dist_px > ring_margin_m) & (dist_px <= ring_margin_m + ring_m)
+    ring_residual = _plane_residual(local_dem, ring_mask_local, pixel_m)
+    if ring_residual is None:
+        return None
+    return float(np.clip((ring_residual - region_residual) / max(scale_m, 1e-6), 0.0, 1.0))
+
+
 def detect_greens(naip, dem, chm=None, options=None, boundary_wgs84=None, exclusion_mask=None, bunker_candidates=None):
     """Whole-course green candidates. See the module docstring for the
-    scoring recipe (bright+smooth turf, gentle crown, flat-ish, optionally
-    confirmed open by lidar) and `_split_oversized_component` for how a
-    green fused to its approach in the raw mask gets separated back out.
-    `bunker_candidates`, when given, folds "how many detected bunkers sit
-    within `bunker_bonus_radius_m`" into confidence -- greens are usually
-    ringed by bunkers; this is evidence, never a gate, so a green with no
-    nearby bunker is still reported."""
+    scoring recipe (bright+smooth turf, high NDVI, flat-ish, optionally
+    confirmed open by lidar) plus a per-candidate planarity comparison
+    against its own surrounding ring (`_planarity_score`) and
+    `_split_oversized_component` for how a green fused to its approach in
+    the raw mask gets separated back out. `bunker_candidates`, when given,
+    folds "is a detected bunker within `bunker_bonus_radius_m`" into
+    confidence -- greens are usually ringed by bunkers; this is evidence,
+    never a gate, so a green with no nearby bunker is still reported."""
     options = dict(GREEN_DEFAULTS, **(options or {}))
     pixel_m = naip.pixel_size()
     ndvi = _ndvi(naip)
@@ -402,26 +488,39 @@ def detect_greens(naip, dem, chm=None, options=None, boundary_wgs84=None, exclus
 
     dem_grid = dem.array[0] if dem.array.ndim == 3 else dem.array
     slope = dtc._slope_magnitude(dem_grid, dem.pixel_size())
-    crown_smooth_px = _px(options['crown_smooth_m'], pixel_m)
-    dem_local_mean = uniform_filter(dem_grid, size=crown_smooth_px, mode='nearest')
-    crown = dem_grid - dem_local_mean
+    ndvi_smooth = uniform_filter(ndvi, size=smooth_px, mode='nearest')
 
     turf_bright = brightness_smooth[turf_mask]
     turf_texture = texture_multi[turf_mask]
+    turf_ndvi = ndvi_smooth[turf_mask]
     if turf_bright.size < 100:
         return []
     bright_mean, bright_std = turf_bright.mean(), max(turf_bright.std(), 1e-6)
     texture_mean, texture_std = turf_texture.mean(), max(turf_texture.std(), 1e-6)
-    bright_z = (brightness_smooth - bright_mean) / bright_std
-    texture_z = (texture_multi - texture_mean) / texture_std
-    crown_norm = np.clip(crown / 0.5, 0, 1)  # 0.5m local relief saturates the crown term
+    ndvi_mean, ndvi_std = turf_ndvi.mean(), max(turf_ndvi.std(), 1e-6)
 
+    # Local, not whole-course, population: see `_local_stats`. The window is
+    # sized to span a hole (fairway + rough + green together), not a green
+    # alone -- otherwise the "local" mean would just be the green again.
+    local_px = _px(options['local_context_m'], pixel_m)
+    local_bright_mean, local_bright_std = _local_stats(brightness_smooth, turf_mask, local_px, bright_mean, bright_std)
+    local_texture_mean, local_texture_std = _local_stats(texture_multi, turf_mask, local_px, texture_mean, texture_std)
+    local_ndvi_mean, local_ndvi_std = _local_stats(ndvi_smooth, turf_mask, local_px, ndvi_mean, ndvi_std)
+    bright_z = (brightness_smooth - local_bright_mean) / local_bright_std
+    texture_z = (texture_multi - local_texture_mean) / local_texture_std
+    ndvi_z = (ndvi_smooth - local_ndvi_mean) / local_ndvi_std
+
+    # "Greens are the highest-NDVI, lowest-texture compact blobs on the
+    # property" -- NDVI vigour and mowing-smoothness are weighted about
+    # equally; brightness alone (round 2's signal) is kept but downweighted,
+    # since dormant/shadowed turf makes brightness the least reliable of the
+    # three across seasons and courses.
     _, open_ground = chm_open_mask(chm)
     chm_term = open_ground.astype(np.float64) if open_ground is not None else np.zeros_like(brightness)
     chm_weight = 0.10 if open_ground is not None else 0.0
-    score_weight_sum = 0.40 + 0.30 + 0.20 + chm_weight
-    score = (0.40 * np.clip(bright_z, -3, 3) / 3 + 0.30 * np.clip(-texture_z, -3, 3) / 3
-             + 0.20 * crown_norm + chm_weight * chm_term) / score_weight_sum
+    score_weight_sum = 0.30 + 0.35 + 0.25 + chm_weight
+    score = (0.30 * np.clip(bright_z, -3, 3) / 3 + 0.35 * np.clip(ndvi_z, -3, 3) / 3
+             + 0.25 * np.clip(-texture_z, -3, 3) / 3 + chm_weight * chm_term) / score_weight_sum
 
     flat_mask = turf_mask & (slope <= options['slope_max'])
     if exclusion_mask is not None:
@@ -491,13 +590,15 @@ def detect_greens(naip, dem, chm=None, options=None, boundary_wgs84=None, exclus
             centroid_wgs84 = cr.epsg_to_wgs84(centroid_xy, naip.epsg)
 
             region_score = float(score[region].mean())
-            mean_crown = float(crown[region].mean())
+            planarity = _planarity_score(dem_grid, region, pixel_m, options['planarity_ring_m'],
+                                          options['planarity_ring_margin_m'], options['planarity_scale_m'])
             nearest_bunker_m = min((((centroid_xy.x - bx) ** 2 + (centroid_xy.y - by) ** 2) ** 0.5 for bx, by in bunker_xy), default=None)
             bunker_bonus = 0.0
             if nearest_bunker_m is not None and nearest_bunker_m <= options['bunker_bonus_radius_m']:
-                bunker_bonus = 0.15 * (1.0 - nearest_bunker_m / options['bunker_bonus_radius_m'])
+                bunker_bonus = options['bunker_bonus_weight'] * (1.0 - nearest_bunker_m / options['bunker_bonus_radius_m'])
             shape_score = max(roundness, compactness)
-            confidence = round(max(0.0, min(1.0, 0.55 * region_score + 0.25 * shape_score + bunker_bonus)), 4)
+            planarity_term = 0.15 * (planarity if planarity is not None else 0.5)  # 0.5: neutral, not a penalty, when it can't be fit
+            confidence = round(max(0.0, min(1.0, 0.45 * region_score + 0.20 * shape_score + planarity_term + bunker_bonus)), 4)
             if confidence < options['confidence_min']:
                 continue
             seq += 1
@@ -506,7 +607,8 @@ def detect_greens(naip, dem, chm=None, options=None, boundary_wgs84=None, exclus
                 'centroidWgs84': (centroid_wgs84.x, centroid_wgs84.y),
                 'geometryWgs84': mapping(polygon_wgs84), 'areaM2': round(region_area_m2, 1), 'confidence': confidence,
                 'evidence': {'score': round(region_score, 4), 'roundness': round(roundness, 3), 'compactness': round(compactness, 3),
-                             'meanCrownM': round(mean_crown, 3), 'nearestBunkerM': round(nearest_bunker_m, 1) if nearest_bunker_m is not None else None},
+                             'planarity': round(planarity, 3) if planarity is not None else None,
+                             'nearestBunkerM': round(nearest_bunker_m, 1) if nearest_bunker_m is not None else None},
             })
     results.sort(key=lambda r: -r['confidence'])
     return _suppress_overlaps(results)
@@ -530,10 +632,50 @@ def _suppress_overlaps(results, iou_max=0.3):
 # Orchestration
 
 
+def gate_tees_by_green_distance(tee_candidates, green_candidates, epsg, min_m=TEE_GREEN_MIN_M,
+                                 max_m=TEE_GREEN_MAX_M, exclude_within_m=TEE_GREEN_EXCLUDE_M,
+                                 complex_radius_m=pr.DEFAULT_TEE_COMPLEX_RADIUS_M):
+    """Tees are reused unmodified from `detect-tee-complexes.py`, whose own
+    precision (validated separately) is poor when nothing else on the
+    property is known yet -- a flat bright mown patch with no route to
+    check against is cheap to false-positive on. Once greens exist, a real
+    tee complex is never right next to a green (that is the green's own
+    apron/surrounds -- `exclude_within_m`) and is never absurdly close or
+    absurdly far from every green on the property either
+    (`min_m`/`max_m`) -- gated at *complex* level (clustered the same way
+    `propose-routes.py` clusters real tee markers into one hole's complex),
+    since a single member of a real complex can sit closer or farther from
+    a green than the complex as a whole. A course with zero detected greens
+    gates nothing -- there is no distance to measure, and it would be worse
+    to drop every tee candidate than to pass all of them through
+    unfiltered."""
+    if not green_candidates:
+        return list(tee_candidates)
+    green_xy = [cr.wgs84_to_epsg(cr.to_shapely({'type': 'Point', 'coordinates': g['centroidWgs84']}), epsg).coords[0]
+                for g in green_candidates]
+    clustered = pr.cluster_tee_complexes([dict(t) for t in tee_candidates], epsg, radius_m=complex_radius_m)
+    groups = {}
+    for original, clustered_t in zip(tee_candidates, clustered):
+        groups.setdefault(clustered_t['complexId'], []).append((original, clustered_t['xy']))
+
+    kept = []
+    for members in groups.values():
+        best = min((((mx - gx) ** 2 + (my - gy) ** 2) ** 0.5 for _, (mx, my) in members for gx, gy in green_xy), default=None)
+        if best is None or best < exclude_within_m or best > max_m:
+            continue
+        if best < min_m:
+            continue
+        kept.extend(original for original, _ in members)
+    return kept
+
+
 def detect_all(naip, dem, chm=None, boundary_wgs84=None, context_extract=None,
-                green_options=None, tee_options=None, bunker_options=None):
+                green_options=None, tee_options=None, bunker_options=None, gate_tees=True):
     """Bunkers, then greens (using bunker proximity), then tees (via
-    `detect-tee-complexes.py`, unmodified). Returns
+    `detect-tee-complexes.py`, unmodified) -- gated by distance to a
+    detected green (`gate_tees_by_green_distance`) unless `gate_tees` is
+    False (the eval harness turns this off to score the raw tee detector on
+    its own merits alongside the gated pipeline). Returns
     `{'bunkers': [...], 'greens': [...], 'tees': [...]}`, each in the shared
     `{id, kind, centroidWgs84, geometryWgs84, areaM2, confidence, evidence}`
     shape."""
@@ -544,6 +686,8 @@ def detect_all(naip, dem, chm=None, boundary_wgs84=None, context_extract=None,
     tee_candidates = dtc.detect(naip, dem, options=tee_options, boundary_wgs84=boundary_wgs84)
     for t in tee_candidates:
         t['kind'] = 'tee'
+    if gate_tees:
+        tee_candidates = gate_tees_by_green_distance(tee_candidates, greens, naip.epsg)
     return {'bunkers': bunkers, 'greens': greens, 'tees': tee_candidates}
 
 

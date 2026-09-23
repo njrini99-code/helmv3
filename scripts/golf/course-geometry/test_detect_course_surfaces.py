@@ -103,7 +103,7 @@ class GreenDetectionTests(unittest.TestCase):
     def test_compact_bright_smooth_flat_patch_is_a_green(self):
         naip = _make_naip(green_patches=[(60, 82, 60, 82)])  # ~22x22m = 484 sqm
         dem = _make_dem()
-        results = dcs.detect_greens(naip, dem, options={'min_area_m2': 100.0, 'split_area_m2': 5000.0})
+        results = dcs.detect_greens(naip, dem, options={'min_area_m2': 100.0, 'split_area_m2': 5000.0, 'local_context_m': 25.0})
         self.assertTrue(results, 'expected at least one green candidate')
         self.assertEqual(results[0]['kind'], 'green')
         self.assertGreater(results[0]['confidence'], 0.0)
@@ -130,8 +130,8 @@ class GreenDetectionTests(unittest.TestCase):
         dem = _make_dem()
         bunkers = dcs.detect_bunkers(naip, options={'min_area_m2': 5.0})
         self.assertTrue(bunkers)
-        without = dcs.detect_greens(naip, dem, options={'min_area_m2': 100.0, 'split_area_m2': 5000.0})
-        with_bunker = dcs.detect_greens(naip, dem, options={'min_area_m2': 100.0, 'split_area_m2': 5000.0}, bunker_candidates=bunkers)
+        without = dcs.detect_greens(naip, dem, options={'min_area_m2': 100.0, 'split_area_m2': 5000.0, 'local_context_m': 25.0})
+        with_bunker = dcs.detect_greens(naip, dem, options={'min_area_m2': 100.0, 'split_area_m2': 5000.0, 'local_context_m': 25.0}, bunker_candidates=bunkers)
         self.assertGreaterEqual(with_bunker[0]['confidence'], without[0]['confidence'])
 
 
@@ -147,8 +147,56 @@ class ChmGateTests(unittest.TestCase):
         chm_array = np.zeros((SIZE, SIZE), dtype=np.float64)
         chm_array[60:82, 60:82] = 12.0  # tree canopy sitting right over the candidate
         chm = cr.Raster(chm_array[np.newaxis, :, :], GEOTRANSFORM, EPSG, [dcs.CHM_NODATA])
-        results = dcs.detect_greens(naip, dem, chm=chm, options={'min_area_m2': 100.0, 'split_area_m2': 5000.0})
-        self.assertEqual(results, [])
+        results = dcs.detect_greens(naip, dem, chm=chm, options={'min_area_m2': 100.0, 'split_area_m2': 5000.0, 'local_context_m': 25.0})
+        # No candidate may sit at the tree-covered patch itself -- a thin
+        # smoothing-halo sliver right at its synthetic hard edge (a step
+        # discontinuity real imagery never has) is not what this asserts.
+        row_c, col_c = (60 + 82) / 2, (60 + 82) / 2
+        x = GEOTRANSFORM[0] + col_c * GEOTRANSFORM[1]
+        y = GEOTRANSFORM[3] + row_c * GEOTRANSFORM[5]
+        for r in results:
+            centroid_xy = cr.wgs84_to_epsg(cr.to_shapely({'type': 'Point', 'coordinates': r['centroidWgs84']}), EPSG)
+            self.assertGreater(((centroid_xy.x - x) ** 2 + (centroid_xy.y - y) ** 2) ** 0.5, 5.0)
+
+
+class TeeGreenGateTests(unittest.TestCase):
+    """`gate_tees_by_green_distance` operates on candidate dicts directly --
+    no raster needed -- so these exercise it at unit level."""
+
+    def _tee(self, tee_id, lon, lat):
+        return {'id': tee_id, 'kind': 'tee', 'centroidWgs84': (lon, lat),
+                'geometryWgs84': {'type': 'Polygon', 'coordinates': [[[lon - 0.0001, lat], [lon, lat + 0.0001], [lon + 0.0001, lat], [lon - 0.0001, lat]]]},
+                'areaM2': 100.0, 'confidence': 0.5, 'evidence': {}}
+
+    def _green(self, lon, lat):
+        return {'id': 'detect-green-0001', 'kind': 'green', 'centroidWgs84': (lon, lat),
+                'geometryWgs84': {'type': 'Polygon', 'coordinates': [[[lon - 0.0001, lat], [lon, lat + 0.0001], [lon + 0.0001, lat], [lon - 0.0001, lat]]]},
+                'areaM2': 500.0, 'confidence': 0.7, 'evidence': {}}
+
+    def test_no_detected_greens_gates_nothing(self):
+        tees = [self._tee('t1', -78.0, 39.0)]
+        kept = dcs.gate_tees_by_green_distance(tees, [], EPSG)
+        self.assertEqual(kept, tees)
+
+    def test_tee_right_next_to_a_green_is_excluded(self):
+        green = self._green(-78.0, 39.0)
+        # ~10m north of the green -- inside its own apron, per TEE_GREEN_EXCLUDE_M.
+        tee = self._tee('t1', -78.0, 39.0 + 0.00009)
+        kept = dcs.gate_tees_by_green_distance([tee], [green], EPSG)
+        self.assertEqual(kept, [])
+
+    def test_tee_far_from_every_green_is_excluded(self):
+        green = self._green(-78.0, 39.0)
+        tee = self._tee('t1', -78.0, 39.02)  # roughly 2.2km away
+        kept = dcs.gate_tees_by_green_distance([tee], [green], EPSG)
+        self.assertEqual(kept, [])
+
+    def test_tee_in_plausible_hole_length_range_is_kept(self):
+        green = self._green(-78.0, 39.0)
+        # ~350m south -- within the 90-600m band.
+        tee = self._tee('t1', -78.0, 39.0 - 0.00315)
+        kept = dcs.gate_tees_by_green_distance([tee], [green], EPSG)
+        self.assertEqual([t['id'] for t in kept], ['t1'])
 
 
 class OutputFormatTests(unittest.TestCase):

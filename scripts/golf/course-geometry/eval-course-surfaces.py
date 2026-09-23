@@ -391,8 +391,9 @@ def summarize(rows):
 
 
 TUNE_GRID = {
-    'green.seed_percentile': [90.0, 94.0, 97.0],
-    'green.grow_percentile': [50.0, 60.0, 70.0, 80.0],
+    'green.seed_percentile': [95.0, 97.0, 99.0],
+    'green.grow_percentile': [75.0, 85.0, 92.0],
+    'green.min_roundness': [0.30, 0.45],
 }
 
 
