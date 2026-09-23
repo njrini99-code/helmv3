@@ -188,14 +188,25 @@ that function for ownership rules.
   `playerId`, and `extra: { generator, reason }`.
 - `analyzePlayer` returns `generatorSummary: { successes, failures }` on the
   `PlayerAnalysis` payload so callers can react to partial failure.
+  `src/app/golf/actions/insights.ts` reads `generatorSummary.failures` off
+  this in-process return value directly.
 - `/api/coachhelm/analyze-player` was deleted (`d282423ed`, "close
   runtime-broken refs" — it was orphaned, calling nothing that still
-  existed). There is currently no HTTP surface returning `generatorSummary`
-  directly; callers get partial-failure status through `analyzePlayer`'s
-  in-process return value only. Audit Q-NEW-6 (platform-level observability
-  for `generatorSummary.failures.length > 0`) remains open against whatever
-  surface eventually replaces it — do not point new work at the deleted
-  route.
+  existed). There is no HTTP surface returning `generatorSummary` directly;
+  do not point new work at the deleted route.
+- The post-round trigger path has its own typed contract instead of reading
+  `generatorSummary` text: `AnalysisOutcome`
+  (`src/lib/coachhelm/v3/engine/analysis-outcome.ts`, #1960/repair Package
+  4). `outcomeFromTriggerResult` maps a `partial: true` trigger result to
+  `{ kind: 'partial', code: 'engine_partial_failure' }` — one of seven typed
+  kinds (`succeeded | partial | waiting_for_data | not_applicable |
+  disabled | retryable_failure | permanent_failure`), each with its own
+  retry policy and terminal-state mapping, so an expected state (below the
+  round floor, no membership, analysis disabled) is parked rather than
+  stamped failed like a crash. Audit Q-NEW-6 (platform-level observability
+  for partial failure) is closed for this path by `AnalysisOutcome`'s
+  `partial` kind; `analyzePlayer`'s direct `generatorSummary` consumer above
+  is a separate, still-untyped surface.
 
 ## Claim honesty fields (2026-09-12, repair plan Package 2)
 
@@ -308,4 +319,5 @@ follows; both are pure functions with tests.
 | `src/app/api/cron/coachhelm-insight-lifecycle/route.ts` | Nightly Rules 1–4 (resolve / archive / decay / demote); never promotes. `MIN_SAMPLE_N`, coach/team-scoped dedup and the insert / refresh / movement / resurrection / promotion branches live in the two rows above |
 | `src/lib/coachhelm/v2/insights/to-insight-input.ts` | Legacy v1 → v2 adapter; returns null on insufficient data |
 | `src/lib/coachhelm/v2/orchestrator.ts` | Tier-1 generator dispatch + `generatorSummary` |
+| `src/lib/coachhelm/v3/engine/analysis-outcome.ts` | Typed `AnalysisOutcome` for the post-round trigger path (#1960) |
 | `src/test/coachhelm/v2/insights/baseline-registry.test.ts` | Static guard catching hard-coded `comparison_source` strings |
