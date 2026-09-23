@@ -399,7 +399,15 @@ describe('FEATURE_REGISTRY completeness', () => {
     // generateTournamentPrep from insights.ts's explicit manifest entry —
     // both zero-caller dead code (see coverage-contract.foundation's
     // matching comment). Matches 431 -> 429 there.
-    expect(total).toBe(421);
+    // 2026-09-23 (+3), CoachHelm train 2: two new 'use server' action files
+    // were missing from this manifest (silently unscanned, not a violation
+    // the completeness checks above would ever catch — w-review-page-2's
+    // finding). getInsightAttributionReadout and getPlayerAttributionReadouts
+    // (insight-attribution.ts, #2044) join coachhelm_analytics's 'ALL' entry
+    // (+2); getRoundReviewSequenceAttribution (round-review-sequence-
+    // attribution.ts, #2036) joins round_review_ai's 'ALL' entry (+1).
+    // Total 421 -> 424.
+    expect(total).toBe(424);
   });
 
   it('the CRM row lists no files (never a wrap target)', () => {
