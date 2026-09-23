@@ -317,6 +317,24 @@ Player opens round review
   action count can read low. Fixing it means widening the dedup key, a
   follow-up slice.
 
+- **Missing-evidence-counted-as-measured fix (Package 10 gap audit,
+  2026-09-23, `agent/coachhelm-trust-status-null-measured`)**:
+  `getInsightEffectivenessSignals` (`event-ledger.ts`) was counting every
+  `golf_insight_outcome` row into `sig.measured` regardless of whether
+  `improvement` was null. A thin-sample attribution (below
+  `attribute.ts`'s `MIN_WINDOW_ROUNDS`) still inserts that row via
+  `recordInsightOutcome` with `improvement: null` — insufficient evidence,
+  not a real measurement — so an insight resting on only thin-sample
+  outcomes could read `'needs_validation'` or, with 3+ such rows and
+  `worked === 0`, `'underperforming'`, on zero real evidence. Gated behind
+  the new `coachhelm_trust_status_exclude_unmeasured_outcomes` flag
+  (default off everywhere, see `config/feature-flags.yml`) pending team
+  review of the coach-visible trust-tier change; flag off is byte-identical
+  to the prior (buggy) behavior. `worked`, `shown`, and `acted` are
+  unaffected; `deriveTrend`'s null-skip was already correct. Write-side
+  unrelated: a null-`improvement`/null-`lift` row already never reaches
+  `nextWeight` either way.
+
 ## Tests To Prefer
 
 - `src/test/app/golf/dashboard/coachhelm/**`

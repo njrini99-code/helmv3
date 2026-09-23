@@ -221,6 +221,41 @@ flags:
       dismissed alerts without missing real declines), or remove the
       wiring and this flag entirely if the evidence doesn't support it.
 
+  # Package 10 gap audit (repair-plan §14.12 item d — missingness): a
+  # thin-sample attribution below attribute.ts's MIN_WINDOW_ROUNDS still
+  # inserts a `golf_insight_outcome` row via recordInsightOutcome, with
+  # `improvement: null` — "insufficient evidence", not "measured, no
+  # effect". event-ledger.ts's getInsightEffectivenessSignals previously
+  # counted that row into `measured` regardless, which could move an
+  # insight to 'needs_validation' or even 'underperforming' (3+ null rows,
+  # worked=0) on zero real evidence. Write side unaffected either way — a
+  # null-improvement row already never reaches nextWeight (attribute.ts's
+  # own null-lift no-op, unrelated to this flag).
+  - feature_id: coachhelm_trust_status_exclude_unmeasured_outcomes
+    owner: golf/coachhelm
+    purpose: >-
+      Gates whether getInsightEffectivenessSignals excludes a
+      null-improvement golf_insight_outcome row (an attempted-but-thin-sample
+      attribution) from the `measured`/`worked` trust-status counts instead
+      of counting it as a real measurement; default off pending team review
+      of the coach-visible trust-tier change this produces for any insight
+      currently sitting on only thin-sample outcomes.
+    type: experiment
+    status: active
+    created_at: "2026-09-23"
+    expires_at: null
+    default: false
+    environment:
+      production: false
+      preview: false
+      development: false
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      Enable once reviewed — this is a correctness fix to an existing,
+      always-on rollup, not new behavior pending evidence, so the flag is
+      expected to promote quickly to a permanent `release` state or be
+      removed by inlining the fix once accepted.
+
   # Package 8 slice 2 (repair plan 14.10): round-recap is the only live,
   # persisted (golf_rounds.ai_recap) LLM-text surface among those surveyed
   # (composeRoundReview/hero-narrative/practice-rx all have zero production

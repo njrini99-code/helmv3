@@ -64,6 +64,23 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     cleanup_plan: "Either promote to a permanent `release` flag once shadow data (the recap's fallback rate with the packet engaged vs. without) shows the typed gate isn't discarding good recaps, or remove the packet wiring entirely if it is.",
   },
   {
+    feature_id: "coachhelm_trust_status_exclude_unmeasured_outcomes",
+    owner: "golf/coachhelm",
+    purpose: "Gates whether getInsightEffectivenessSignals excludes a null-improvement golf_insight_outcome row (an attempted-but-thin-sample attribution) from the `measured`/`worked` trust-status counts instead of counting it as a real measurement; default off pending team review of the coach-visible trust-tier change this produces for any insight currently sitting on only thin-sample outcomes.",
+    type: "experiment",
+    status: "active",
+    created_at: "2026-09-23",
+    expires_at: null,
+    default: false,
+    environment: {
+      production: false,
+      preview: false,
+      development: false,
+    },
+    kill_switch_behavior: null,
+    cleanup_plan: "Enable once reviewed — this is a correctness fix to an existing, always-on rollup, not new behavior pending evidence, so the flag is expected to promote quickly to a permanent `release` state or be removed by inlining the fix once accepted.",
+  },
+  {
     feature_id: "coachhelm_v2_alert_personalization",
     owner: "golf/coachhelm",
     purpose: "Adjusts a coach's v2 alert-generation thresholds (decline, pressure gap) using their own ack/dismiss history instead of only the coach-set CoachPhilosophy values; default off pending real-world evidence that this improves alert relevance.",
