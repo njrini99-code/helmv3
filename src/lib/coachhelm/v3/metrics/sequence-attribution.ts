@@ -60,18 +60,25 @@
  * scorecard → par total may remain valid; full sequence attribution
  * unavailable", §14.1).
  *
- * `attributeSequence` operates on ONE hole. Rolling per-hole events up into
- * a scope-wide aggregate (numerator/denominator/status/interval across
- * every hole in an `AnalysisScope`) is PLANNED for a later slice (slice 2),
- * not built yet — this module is intentionally not wired into
- * `v2/orchestrator.ts` or any composite. Slice 2 should consume the shared
- * `MetricResult` type landing via #1990's `metrics/types.ts`; that type
- * does not exist on `main` yet and nothing in this module depends on it.
+ * `attributeSequence` operates on ONE hole. `computeSequenceAttribution`
+ * below (addendum §13, A4 slice 2) rolls per-hole events up into a
+ * scope-wide `MetricResult[]` — the shared `MetricResult` type has been on
+ * `main` since #1990, and A2 (`distance-profile.ts`)/A3
+ * (`par-opportunities.ts`) already consume it, so this slice was never
+ * actually blocked on it (a stale claim in an earlier revision of this
+ * comment said otherwise). Still NOT wired into `v2/orchestrator.ts`,
+ * `reasoning/hypothesis-policy.ts` (A5), or any composite/generator — that
+ * integration remains a later slice; this one's job is only the rollup
+ * itself, for a caller (e.g. a Round Review mount) to consume directly.
  */
 
 import { getExpectedStrokes, isGreenHit } from '@/lib/utils/golf-stats-calculator-shots';
 import { buildHoleSequence } from '../context/build-hole-sequence';
 import type { AnalysisScope, HoleContext, ShotFact } from '../context/types';
+import { factsInScope } from './par-opportunities';
+import type { MetricResult, MetricStatus } from './types';
+
+export type { MetricResult, MetricStatus } from './types';
 
 const FEET_PER_YARD = 3;
 
@@ -372,4 +379,188 @@ export function attributeSequence(
     lostStrokesVsPar,
     exclusions,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Scope-wide rollup (addendum §13, A4 slice 2)
+// ---------------------------------------------------------------------------
+
+/** Compound floor for an event-kind row — mirrors A2 (`distance-profile.ts`)'s
+ *  `MIN_ATTEMPTS`/`MIN_ROUNDS` pattern: a single volume floor is not enough,
+ *  since one marathon round could otherwise clear a 10-event floor on its
+ *  own. Per-event-kind volume is naturally low (a par-4/5 hole yields AT
+ *  MOST one `tee_to_next` event, for instance), so the rounds floor matters
+ *  here even more than it does for a per-shot metric. */
+export const SEQUENCE_MIN_EVENTS = 10;
+export const SEQUENCE_MIN_ROUNDS = 3;
+/** The hole-coverage row's own floor — see `computeSequenceAttribution`'s
+ *  doc comment. Deliberately its own constant (not reusing
+ *  `SEQUENCE_MIN_EVENTS`): an "event" and a "hole" are different units, and
+ *  a shared name would imply they're interchangeable when they aren't. */
+export const SEQUENCE_MIN_HOLES = 10;
+
+function sequenceStatusFor(denominator: number, meetsFloor: boolean): MetricStatus {
+  if (denominator === 0) return 'invalid';
+  return meetsFloor ? 'supported' : 'insufficient';
+}
+
+const SEQUENCE_EVENT_KINDS: readonly SequenceEventKind[] = [
+  'tee_to_next',
+  'approach_to_recovery',
+  'first_putt_to_next_putt',
+  'putting_sequence',
+  'penalty',
+  'other',
+];
+
+interface EventKindAccumulator {
+  /** Every event of this kind, across every attributed hole, whose baseline
+   *  resolved (`measuredContribution !== null`) — the population this row's
+   *  `status` actually gates on. */
+  resolved: SequenceEvent[];
+  /** Distinct `round_id`s among THAT SAME resolved population — never a
+   *  wider or narrower set (#2008 review, MUST 1: a row's `distinctRounds`
+   *  must be exactly what its own `status` gates on, not a proxy). */
+  roundIds: Set<string>;
+  /** Every event of this kind, resolved or not — states the wider
+   *  population `eligibleCount`/`denominator` narrow from, mirroring A2's
+   *  `observedCount` convention. */
+  observedCount: number;
+  /** `baselineGap` reason counts among this kind's UNRESOLVED events only. */
+  gapCounts: Partial<Record<BaselineGapReason, number>>;
+}
+
+function emptyAccumulator(): EventKindAccumulator {
+  return { resolved: [], roundIds: new Set(), observedCount: 0, gapCounts: {} };
+}
+
+/**
+ * Rolls `attributeSequence`'s per-hole events up into a scope-wide
+ * `MetricResult[]` (addendum §13, A4 slice 2) — the aggregate this module's
+ * own doc comment used to call "planned for a later slice."
+ *
+ * SCOPE CONTRACT: mirrors `computeParOpportunities` exactly. `facts` is
+ * self-scoped internally via `factsInScope` (reused from
+ * `par-opportunities.ts` rather than duplicating the same window/cutoff
+ * logic a second time). `holes` is NOT — `HoleContext` carries no date
+ * field — so `holes` must already be window/cutoff/completed-status
+ * filtered by the caller (`load-player-context.ts` is the intended
+ * enforcer, same as for A2/A3).
+ *
+ * Two kinds of row:
+ *
+ *   - `sequence_event_strokes_gained`, one row per `SequenceEventKind`
+ *     (`dimensions.event_kind`) — the mean `measuredContribution` across
+ *     every event of that kind whose baseline resolved, over every
+ *     ATTRIBUTED (non-suppressed) hole in `holes`. A suppressed hole
+ *     contributes NO events to any row (its own `attributeSequence` result
+ *     has `events: []`), but IS counted by the coverage row below.
+ *
+ *     SIGN CONVENTION — read this before wiring a display: POSITIVE means
+ *     strokes GAINED versus the canonical baseline (performed better than
+ *     expected). This is the OPPOSITE of `ScoringSection.tsx`'s
+ *     `formatStrokesVsPar`, where positive means MORE strokes than par
+ *     (worse) — that formatter must never be reused for this metric without
+ *     flipping its sign first, or a coach would read "gained a stroke" as
+ *     "lost one."
+ *
+ *   - `sequence_hole_coverage` — a single row (empty `dimensions`) stating
+ *     how many of `holes` were attributed vs. suppressed. Mirrors A2's
+ *     `approach_measured_contribution`: a COUNT, never a rate, and its
+ *     `value` is always the real attributed-hole count — never null, even
+ *     when `status` is `'invalid'` (zero holes attributed is itself the
+ *     reportable fact). `exclusions` names each suppression reason
+ *     (`buildHoleSequence`'s own reason strings, e.g. `no_shots_recorded`)
+ *     by how many suppressed holes carried it — one hole can carry more
+ *     than one reason, so a count here can exceed the suppressed-hole
+ *     count.
+ *
+ * `eligibleCount`/`distinctRounds` on EVERY row here are computed from that
+ * row's own real gating population — never a narrower proxy (#2008 review,
+ * MUST 1: a distance-profile row once reported a floor its own narrower
+ * population had already cleared, hiding the wider floor that actually
+ * produced `'insufficient'`; every row here keeps `eligibleCount` and
+ * `denominator` identical to each other and to the population `status`
+ * gates on, by construction).
+ */
+export function computeSequenceAttribution(
+  facts: readonly ShotFact[],
+  holes: readonly HoleContext[],
+  scope: AnalysisScope,
+): MetricResult[] {
+  const inScopeFacts = factsInScope(facts, scope);
+
+  const byKind = new Map<SequenceEventKind, EventKindAccumulator>();
+  for (const kind of SEQUENCE_EVENT_KINDS) byKind.set(kind, emptyAccumulator());
+
+  let attributedCount = 0;
+  const attributedRoundIds = new Set<string>();
+  const suppressionReasonCounts: Record<string, number> = {};
+
+  for (const hole of holes) {
+    const result = attributeSequence(inScopeFacts, hole, scope);
+    if (result.status === 'suppressed') {
+      for (const reason of result.reasons) {
+        suppressionReasonCounts[reason] = (suppressionReasonCounts[reason] ?? 0) + 1;
+      }
+      continue;
+    }
+
+    attributedCount += 1;
+    attributedRoundIds.add(hole.round_id);
+
+    for (const event of result.events) {
+      const acc = byKind.get(event.kind)!;
+      acc.observedCount += 1;
+      if (event.measuredContribution !== null) {
+        acc.resolved.push(event);
+        acc.roundIds.add(hole.round_id);
+      } else if (event.baselineGap !== null) {
+        acc.gapCounts[event.baselineGap] = (acc.gapCounts[event.baselineGap] ?? 0) + 1;
+      }
+    }
+  }
+
+  const rows: MetricResult[] = [];
+  for (const kind of SEQUENCE_EVENT_KINDS) {
+    const acc = byKind.get(kind)!;
+    const denominator = acc.resolved.length;
+    const distinctRounds = acc.roundIds.size;
+    const meetsFloor = denominator >= SEQUENCE_MIN_EVENTS && distinctRounds >= SEQUENCE_MIN_ROUNDS;
+    const contributionSum = acc.resolved.reduce((sum, e) => sum + (e.measuredContribution ?? 0), 0);
+
+    rows.push({
+      scope,
+      dimensions: { event_kind: kind },
+      metricId: 'sequence_event_strokes_gained',
+      unit: 'strokes',
+      value: denominator > 0 ? contributionSum / denominator : null,
+      numerator: denominator > 0 ? contributionSum : null,
+      denominator,
+      eligibleCount: denominator,
+      observedCount: acc.observedCount,
+      distinctRounds,
+      status: sequenceStatusFor(denominator, meetsFloor),
+      exclusions: { ...acc.gapCounts },
+    });
+  }
+
+  const meetsCoverageFloor =
+    attributedCount >= SEQUENCE_MIN_HOLES && attributedRoundIds.size >= SEQUENCE_MIN_ROUNDS;
+  rows.push({
+    scope,
+    dimensions: {},
+    metricId: 'sequence_hole_coverage',
+    unit: 'count',
+    value: attributedCount,
+    numerator: attributedCount,
+    denominator: attributedCount,
+    eligibleCount: attributedCount,
+    observedCount: holes.length,
+    distinctRounds: attributedRoundIds.size,
+    status: sequenceStatusFor(attributedCount, meetsCoverageFloor),
+    exclusions: suppressionReasonCounts,
+  });
+
+  return rows;
 }
