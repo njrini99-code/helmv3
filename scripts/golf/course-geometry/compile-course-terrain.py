@@ -30,7 +30,13 @@ from hole_footprint import played_features
 from shapely.geometry import LineString, MultiPolygon, Polygon, box
 from shapely.ops import polygonize, unary_union
 from terrain_source_rule import SourceRejected, order_by_recency, select_first_survivor
-from terrain_triangulate import triangulate_faces
+
+# DEGENERATE_AREA_M2 is defined in terrain_triangulate.py, not here: that
+# module is deliberately excluded from TERRAIN_ACQUIRE_FILES
+# (factory/tasks/common.py), so re-tuning this constant must not move the
+# fingerprint of layout.terrain.acquire / layout.visual.terrain.acquire.
+# Keeping it in this file would defeat that split on its first edit.
+from terrain_triangulate import DEGENERATE_AREA_M2, triangulate_faces
 
 ROOT = Path(__file__).resolve().parents[3]
 FIXTURES = ROOT / 'src/test/fixtures/course-geometry'
@@ -38,17 +44,6 @@ COMPILER_VERSION = 'course-terrain-v5'
 SOURCE_COVERAGE_METHOD = 'perimeter-v1'
 SOURCE_COVERAGE_PADDING_METERS = 8
 NODING_GRID_M = 1e-6
-# Degenerate-geometry gate for pieces/faces/triangles, in m^2. A genuine
-# GEOS overlay artifact (a collinear sliver from a buffer/difference chain)
-# is ~1e-15 m^2 or smaller. A legitimate sliver from two materials or cells
-# meeting at a near-tangent angle can be a real, non-degenerate ~1e-9 to
-# 1e-8 m^2 triangle: node_pieces already gives it and its neighbor the same
-# noded boundary, so it is on both sides of a shared edge. The pre-v5
-# threshold (1e-8) sat inside that legitimate range and discarded such a
-# sliver on one side only, leaving the neighbor's matching edge unpaired
-# (a T-junction). 1e-10 stays far above the true noise floor while passing
-# every legitimate sliver observed in course-factory batches to date.
-DEGENERATE_AREA_M2 = 1e-10
 STYLE_VERSION = 'narrow-surround-v1'
 CONTEXT_MARGIN_M = 160
 METRIC_STEP_M = 2
