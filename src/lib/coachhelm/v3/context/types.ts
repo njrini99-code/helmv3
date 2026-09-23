@@ -134,9 +134,6 @@ export interface HoleContext {
   penalty_strokes: number | null;
   putts: number | null;
   gir: boolean | null;
-  /** `golf_holes.yardage`. Nullable in the database — not every hole has a
-   *  recorded yardage — and stays nullable here, never defaulted. */
-  yardage: number | null;
 }
 
 /**
