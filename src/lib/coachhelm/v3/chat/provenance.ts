@@ -299,55 +299,175 @@ const ISO_DATE_LITERAL =
  * PGA Tour comparison the insight itself carried — was flagged as fabricated
  * because the audit had never looked at the string that number came from.
  *
- * A whole-string UUID is skipped rather than mined for digits — an id is not
- * a statistic, and walking it would hand the audit a meaningless "supported"
- * anchor that could mask a genuine fabrication landing on the same digits by
- * coincidence. A whole-string ISO date/timestamp gets the same treatment for
- * its *other* components (hour, minute, month, full year-month-day run as one
- * token) but not for day-of-month or year: `detail.events[].starts_at`,
- * `detail.rounds[].date` and similar tool-supplied ISO fields are exactly
- * where the day/year the model later writes as "Aug 16" or "Sep 6, 2026"
- * actually lives (see {@link dateAnchors}'s doc comment). Registering only
- * those two components keeps the id/timestamp-mining guard intact while
- * closing the gap for the one thing a coach actually restates from a date.
+ * A whole-string UUID or ISO date/timestamp is skipped rather than mined for
+ * digits — an id or a timestamp is not a statistic, and walking it would
+ * hand the audit meaningless "supported" anchors (a round's id, a
+ * `created_at`) that could mask a genuine fabrication landing on the same
+ * digits by coincidence. A tool-supplied ISO date IS real evidence for a
+ * date the model later writes in prose ("Aug 16", "Sep 6, 2026") — but that
+ * is handled separately, by matching the whole date expression against
+ * {@link collectDates}, not by feeding its digits into this flat number
+ * pool (see {@link auditDateExpressions}'s doc comment for why the two
+ * cannot share one pool).
  */
 function numbersInText(value: string): number[] {
-  if (UUID_LITERAL.test(value)) return [];
-  if (ISO_DATE_LITERAL.test(value)) return dateAnchors(value);
+  if (UUID_LITERAL.test(value) || ISO_DATE_LITERAL.test(value)) return [];
   const matches = value.match(NUMERIC_TOKEN_RE);
   if (!matches) return [];
   return matches.map(Number).filter((n) => Number.isFinite(n));
 }
 
 /**
- * Day-of-month and year anchors from an ISO `window_start`/`window_end` (or
- * a series point's `at`), registered the same way `sample_size` and
- * `denominator` are.
- *
- * Found in live verification (replay of stored chat turns against this
- * check): a ranking tool's `window_start`/`window_end` are real evidence,
- * but the model routinely renders them in prose as "Aug 16", "Sep 6, 2026"
- * or "9/6/26" rather than the ISO form the tool returned. `numbersInText`
- * deliberately skips a whole-string ISO date (it is metadata, not a
- * statistic) — but that guard only covers the ISO string itself, not a
- * *different* rendering of the same date elsewhere in the model's prose,
- * which then reads as an unsupported number purely because of which format
- * the model chose. This is the `window_start`/`window_end` sibling of the
- * `detail`/`extraSupported` gap #1975 closed: a real value, checked against
- * the wrong set. Only day-of-month and year are registered — the calendar
- * month is not, both because it is nearly always spelled as a name ("Aug",
- * not "8") and because a bare month digit is already exempt (`<= 12`).
+ * Every whole-string ISO date/timestamp reachable inside an arbitrary tool
+ * payload, normalized to `YYYY-MM-DD` — the `detail`-shaped sibling of
+ * {@link collectNumbers}, used to seed {@link auditDateExpressions}'s
+ * evidence set with dates like `detail.events[].starts_at` or
+ * `detail.rounds[].date` that never reach a `Measurement`'s
+ * `window_start`/`window_end`.
  */
-function dateAnchors(iso: string | null | undefined): number[] {
-  if (typeof iso !== 'string') return [];
-  const match = /^(\d{4})-\d{2}-(\d{2})/.exec(iso);
-  if (!match) return [];
-  const year = Number(match[1]);
-  const day = Number(match[2]);
-  const out: number[] = [];
-  if (Number.isFinite(year)) out.push(year, year % 100);
-  if (Number.isFinite(day)) out.push(day);
-  return out;
+export function collectDates(value: unknown, depth = 0): string[] {
+  if (depth > 6 || value === null || value === undefined) return [];
+  if (typeof value === 'string') return ISO_DATE_LITERAL.test(value) ? [value.slice(0, 10)] : [];
+  if (Array.isArray(value)) return value.flatMap((v) => collectDates(v, depth + 1));
+  if (typeof value === 'object') {
+    return Object.values(value as Record<string, unknown>).flatMap((v) =>
+      collectDates(v, depth + 1),
+    );
+  }
+  return [];
+}
+
+const MONTH_NAMES: Record<string, number> = {
+  jan: 1, january: 1, feb: 2, february: 2, mar: 3, march: 3, apr: 4, april: 4,
+  may: 5, jun: 6, june: 6, jul: 7, july: 7, aug: 8, august: 8,
+  sep: 9, sept: 9, september: 9, oct: 10, october: 10, nov: 11, november: 11,
+  dec: 12, december: 12,
+};
+
+/** "Aug", "Aug.", "August" — a month name, matched case-insensitively. */
+const MONTH_NAME_ALT = Object.keys(MONTH_NAMES)
+  .sort((a, b) => b.length - a.length)
+  .join('|');
+
+/**
+ * A date the model wrote in prose, in any of the non-ISO shapes evidence
+ * gets restated in: "Aug 16", "Aug 16, 2026", "August 16th", "Sep 6, 2026",
+ * a numeric "9/6/26" / "9/6/2026" (the slash form requires a year — a bare
+ * "3/5", with no year, is at least as likely to be a fraction or a
+ * distance-band label as a date, and every observed case had a year), or a
+ * month-day range that only spells the month once ("Aug 27-28",
+ * "August 22-23") — the optional trailing group shares the first date's
+ * month and year.
+ */
+const DATE_EXPRESSION_RE = new RegExp(
+  `\\b(?:(${MONTH_NAME_ALT})\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?(?:,?\\s*(\\d{4}))?(?:\\s*[-–—]\\s*(\\d{1,2})(?:st|nd|rd|th)?\\b)?|(\\d{1,2})\\/(\\d{1,2})\\/(\\d{2}|\\d{4}))\\b`,
+  'gi',
+);
+
+/**
+ * Resolve one {@link DATE_EXPRESSION_RE} match into a comparable date, or
+ * `null` when the numbers don't form a real calendar date (a slash triple
+ * that isn't month/day, e.g. a mis-scanned ratio).
+ */
+function resolveDateMatch(
+  monthName: string | undefined,
+  dayA: string | undefined,
+  yearA: string | undefined,
+  monthNumStr: string | undefined,
+  dayNumStr: string | undefined,
+  yearNumStr: string | undefined,
+): { month: number; day: number; year: number | null } | null {
+  let month: number;
+  let day: number;
+  let year: number | null = null;
+  if (monthName) {
+    month = MONTH_NAMES[monthName.toLowerCase()] ?? NaN;
+    day = Number(dayA);
+    if (yearA) year = Number(yearA);
+  } else {
+    month = Number(monthNumStr);
+    day = Number(dayNumStr);
+    const y = Number(yearNumStr);
+    year = (yearNumStr ?? '').length === 2 ? 2000 + y : y;
+  }
+  if (!Number.isInteger(month) || month < 1 || month > 12) return null;
+  if (!Number.isInteger(day) || day < 1 || day > 31) return null;
+  return { month, day, year };
+}
+
+/**
+ * Read the model's text for a date expression and flag one no evidence date
+ * or window contains, WITHOUT feeding any of its digits into the ordinary
+ * number-matching pool.
+ *
+ * Registering a date's bare day-of-month (13-31) or two-digit year globally
+ * — an earlier version of this fix did exactly that — makes every OTHER
+ * number in the turn that happens to equal one of them read as "supported"
+ * too: with a season running through 2026, a fabricated "26 putts" would
+ * pass in every single turn, regardless of what the evidence actually says,
+ * just because some measurement's window ends in a year ending in 26. A
+ * date is a different kind of claim than a statistic and is checked
+ * against a different, date-shaped evidence set (exact match, or falling
+ * inside a window's [start, end]) — never against the flat `supported`
+ * pool a stray "26" could also satisfy.
+ *
+ * Mutates `text` by blanking every recognized expression (matched or not)
+ * so the ordinary numeric scan never re-examines the same digits — a
+ * rejected date is reported once, as the whole expression ("Oct 3"), not
+ * once for the whole thing and again for its day-of-month.
+ */
+function auditDateExpressions(
+  text: string,
+  evidenceDates: ReadonlySet<string>,
+  evidenceWindows: ReadonlyArray<readonly [string, string]>,
+): { scrubbed: string; claims: UnsupportedClaim[] } {
+  const evidenceMonthDays = new Set<string>();
+  for (const iso of evidenceDates) evidenceMonthDays.add(iso.slice(5, 10));
+
+  const isSupported = (month: number, day: number, year: number | null): boolean => {
+    const monthDay = `${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    if (year === null) return evidenceMonthDays.has(monthDay);
+    const iso = `${year}-${monthDay}`;
+    return evidenceDates.has(iso) || evidenceWindows.some(([start, end]) => iso >= start && iso <= end);
+  };
+
+  const claims: UnsupportedClaim[] = [];
+  const seen = new Set<string>();
+  const flag = (label: string, day: number) => {
+    if (seen.has(label)) return;
+    seen.add(label);
+    claims.push({ text: label, value: day });
+  };
+
+  const scrubbed = text.replace(
+    DATE_EXPRESSION_RE,
+    (whole, monthName, dayA, yearA, rangeEndDay, monthNumStr, dayNumStr, yearNumStr) => {
+      const resolved = resolveDateMatch(monthName, dayA, yearA, monthNumStr, dayNumStr, yearNumStr);
+      if (!resolved) return whole; // Not a real calendar date — leave for the numeric scan.
+
+      if (!isSupported(resolved.month, resolved.day, resolved.year)) {
+        // With a range tail, `whole` includes the second day too ("Aug
+        // 27-28") — flag just the head so the two days can be reported (and
+        // individually deduped) independently.
+        flag(rangeEndDay ? `${monthName} ${dayA}` : whole, resolved.day);
+      }
+      // "Aug 27-28": the range's second day shares the first's month/year
+      // but is never itself matched by DATE_EXPRESSION_RE (no month name of
+      // its own), so it is checked here rather than falling through
+      // unrecognized to the plain numeric scan.
+      if (rangeEndDay) {
+        const endDay = Number(rangeEndDay);
+        if (Number.isInteger(endDay) && endDay >= 1 && endDay <= 31) {
+          if (!isSupported(resolved.month, endDay, resolved.year)) {
+            flag(`${monthName} ${rangeEndDay}`, endDay);
+          }
+        }
+      }
+      return ' '.repeat(whole.length);
+    },
+  );
+
+  return { scrubbed, claims };
 }
 
 /** Tolerance for matching a written number against a measured one. */
@@ -412,6 +532,14 @@ export function auditNumericClaims(
    * the grounding gate this replaced.
    */
   extraSupported: readonly number[] = [],
+  /**
+   * Every ISO date reachable inside an envelope's `detail` — typically
+   * {@link collectDates}'s output for the same `detail` payload
+   * `extraSupported` was built from. See {@link auditDateExpressions} for
+   * why dates are checked separately rather than folded into
+   * `extraSupported`'s flat number pool.
+   */
+  extraSupportedDates: readonly string[] = [],
 ): UnsupportedClaim[] {
   if (!text) return [];
 
@@ -451,6 +579,17 @@ export function auditNumericClaims(
     }
   };
 
+  // Evidence dates, kept separate from `supported` — see
+  // `auditDateExpressions`'s doc comment for why a date is matched against
+  // its own evidence set rather than this flat number pool.
+  const evidenceDates = new Set<string>(extraSupportedDates);
+  const evidenceWindows: Array<[string, string]> = [];
+  const addWindow = (start: string | null, end: string | null) => {
+    if (start) evidenceDates.add(start.slice(0, 10));
+    if (end) evidenceDates.add(end.slice(0, 10));
+    if (start && end) evidenceWindows.push([start.slice(0, 10), end.slice(0, 10)]);
+  };
+
   for (const m of measurements) {
     add(m.value, m.metric_id);
     add(m.sample_size);
@@ -460,13 +599,11 @@ export function auditNumericClaims(
     if (typeof m.value === 'number' && typeof m.benchmark?.value === 'number') {
       add(m.value - m.benchmark.value);
     }
-    for (const n of dateAnchors(m.window_start)) add(n);
-    for (const n of dateAnchors(m.window_end)) add(n);
+    addWindow(m.window_start, m.window_end);
   }
   for (const n of extraSupported) add(n);
   for (const s of series) {
-    for (const n of dateAnchors(s.window_start)) add(n);
-    for (const n of dateAnchors(s.window_end)) add(n);
+    addWindow(s.window_start, s.window_end);
     // `series` is typed as `MeasurementSeries[]`, but a caller can hand this
     // function evidence that was round-tripped through the database first
     // (route.ts's `priorTurnEvidence`, reading a stored `ui_parts` blob) —
@@ -477,7 +614,7 @@ export function auditNumericClaims(
     for (const p of points) {
       add(p.value, s.metric_id);
       add(p.sample_size);
-      for (const n of dateAnchors(p.at)) add(n);
+      if (p.at) evidenceDates.add(p.at.slice(0, 10));
       // A distance-band label ("15-25 ft", "10-15 ft") is the tool's own
       // vocabulary for the bucket, not a claim — but its digits are not
       // otherwise anchored, so e.g. "15" and "25" from get_putting_distance_profile
@@ -514,8 +651,13 @@ export function auditNumericClaims(
     }
   }
 
-  const scrubbed = text.replace(CLAIM_EXEMPT, ' ');
-  const found: UnsupportedClaim[] = [];
+  const exempt = text.replace(CLAIM_EXEMPT, ' ');
+  // Resolved before the plain numeric scan, and blanked out of `scrubbed`
+  // either way, so a date's own digits are never re-examined as a bare
+  // number (matched or not — a rejected date is reported once, as the
+  // whole expression, not again for its day-of-month).
+  const { scrubbed, claims: dateClaims } = auditDateExpressions(exempt, evidenceDates, evidenceWindows);
+  const found: UnsupportedClaim[] = [...dateClaims];
   const seen = new Set<string>();
   const anchors = [...supported];
 

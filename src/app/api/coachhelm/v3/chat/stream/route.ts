@@ -60,6 +60,7 @@ import { buildCoachTools, isConfirmRequired } from '@/lib/coachhelm/v3/chat/agen
 import { buildInstructions } from '@/lib/coachhelm/v3/chat/instructions';
 import {
   auditNumericClaims,
+  collectDates,
   collectNumbers,
   // Imported as a value, not `type`-only: `priorTurnEvidence` runs it as a
   // zod schema (`ToolEnvelope.safeParse`) to validate a stored `ui_parts`
@@ -256,19 +257,26 @@ const PRIOR_EVIDENCE_ROW_LIMIT = 40;
  *         asked about now.
  */
 function priorTurnEvidence(messages: readonly ChatMessage[]): {
-  shared: { measurements: Measurement[]; series: MeasurementSeries[]; detailNumbers: number[] };
+  shared: { measurements: Measurement[]; series: MeasurementSeries[]; detailNumbers: number[]; detailDates: string[] };
   deferred: {
     measurements: Measurement[];
     series: MeasurementSeries[];
     detailNumbers: number[];
+    detailDates: string[];
     playerIds: Set<string>;
   };
 } {
-  const shared = { measurements: [] as Measurement[], series: [] as MeasurementSeries[], detailNumbers: [] as number[] };
+  const shared = {
+    measurements: [] as Measurement[],
+    series: [] as MeasurementSeries[],
+    detailNumbers: [] as number[],
+    detailDates: [] as string[],
+  };
   const deferred = {
     measurements: [] as Measurement[],
     series: [] as MeasurementSeries[],
     detailNumbers: [] as number[],
+    detailDates: [] as string[],
     playerIds: new Set<string>(),
   };
 
@@ -295,7 +303,10 @@ function priorTurnEvidence(messages: readonly ChatMessage[]): {
 
       target.measurements.push(...envelope.measurements);
       target.series.push(...envelope.series);
-      if (envelope.detail !== undefined) target.detailNumbers.push(...collectNumbers(envelope.detail));
+      if (envelope.detail !== undefined) {
+        target.detailNumbers.push(...collectNumbers(envelope.detail));
+        target.detailDates.push(...collectDates(envelope.detail));
+      }
       for (const id of playerIdsHere) deferred.playerIds.add(id);
     }
   }
@@ -436,10 +447,17 @@ export async function POST(req: NextRequest) {
   // rows, RSVP counts. The model may legitimately cite these, so they count as
   // supported. See auditNumericClaims' `extraSupported`.
   const detailNumbers: number[] = [];
+  // ISO dates reachable inside a tool's `detail` (an event's `starts_at`, a
+  // round's `date`) — the model may restate one in non-ISO prose ("Aug 16",
+  // "9/6/26"); see auditNumericClaims' `extraSupportedDates`.
+  const detailDates: string[] = [];
   const collect = (envelope: ToolEnvelope) => {
     measurements.push(...envelope.measurements);
     seriesAll.push(...envelope.series);
-    if (envelope.detail !== undefined) detailNumbers.push(...collectNumbers(envelope.detail));
+    if (envelope.detail !== undefined) {
+      detailNumbers.push(...collectNumbers(envelope.detail));
+      detailDates.push(...collectDates(envelope.detail));
+    }
   };
 
   // Seed the audit with evidence THIS conversation already produced (see
@@ -453,8 +471,9 @@ export async function POST(req: NextRequest) {
     measurements: Measurement[];
     series: MeasurementSeries[];
     detailNumbers: number[];
+    detailDates: string[];
     playerIds: Set<string>;
-  } = { measurements: [], series: [], detailNumbers: [], playerIds: new Set() };
+  } = { measurements: [], series: [], detailNumbers: [], detailDates: [], playerIds: new Set() };
   if (!needsNewConversation) {
     const priorMessages = await listRecentMessages(
       supabase,
@@ -465,6 +484,7 @@ export async function POST(req: NextRequest) {
     measurements.push(...prior.shared.measurements);
     seriesAll.push(...prior.shared.series);
     detailNumbers.push(...prior.shared.detailNumbers);
+    detailDates.push(...prior.shared.detailDates);
     priorDeferred = prior.deferred;
   }
 
@@ -725,10 +745,11 @@ export async function POST(req: NextRequest) {
         measurements.push(...priorDeferred.measurements);
         seriesAll.push(...priorDeferred.series);
         detailNumbers.push(...priorDeferred.detailNumbers);
+        detailDates.push(...priorDeferred.detailDates);
       }
 
       const fullText = accumulatedText.trim();
-      const unsupported = auditNumericClaims(fullText, measurements, seriesAll, detailNumbers);
+      const unsupported = auditNumericClaims(fullText, measurements, seriesAll, detailNumbers, detailDates);
       auditResult = {
         grounded: unsupported.length === 0 && !streamErrored,
         unsupported,
@@ -792,7 +813,7 @@ export async function POST(req: NextRequest) {
         // 'complete'.
         const { grounded, unsupported, streamErrored } =
           auditResult ?? (() => {
-            const claims = auditNumericClaims(text, measurements, seriesAll, detailNumbers);
+            const claims = auditNumericClaims(text, measurements, seriesAll, detailNumbers, detailDates);
             return { grounded: claims.length === 0, unsupported: claims, streamErrored: false };
           })();
 
