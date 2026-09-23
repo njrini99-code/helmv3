@@ -372,10 +372,15 @@
   a small positive value).
 - Why: addendum §13 A7 slice 2, A3 → Scoring per the slice plan (A2 →
   Approach was slice 1; A4 → FilmstripReview is a separate later
-  slice). Known, accepted cost: with both A7 flags on,
-  `loadPlayerContext` runs twice for the same scope (once per
-  addendum) — kept for independent reviewability/toggling rather than
-  sharing a single load across two still-separately-flagged surfaces.
+  slice). Corrected 2026-09-23 (#2010 review, SHOULD 3) — this
+  originally accepted `loadPlayerContext` running twice for the same
+  scope (once per addendum) as a known cost of independent
+  reviewability/toggling. `loadDistanceProfileAndScoringAddenda` now
+  calls it exactly once when both A7 flags are on, feeding the same
+  `{shots, holes}` straight to `computeDistanceProfile` and
+  `computeParOpportunities`; each surface keeps its own failure
+  isolation on top of that shared read. A single flag on is unchanged
+  (a thin pass-through to that addendum's own existing loader).
 - Verification: 14 new/touched tests (`buildScoringViewModel` 5,
   `ScoringSection` 8, `load-par-opportunities` wiring 1).
   `FairwayPlayerGameFingerprint.mode.test.tsx` (7/7) and
@@ -385,8 +390,10 @@
   regression in existing markup, not the no-op claim. Corrected
   2026-09-23 (#2010 review, MUST 1) — the no-op-while-off property is
   actually proven by `loadScoringAddendumIfEnabled`'s own unit tests
-  (page.distanceProfileAddendum.test.ts-style: flag off never calls
-  `loadScoringAddendum`; a throw resolves to `null`, not a rejection),
+  in the new `page.scoringAddendum.test.ts` (mirroring
+  `page.distanceProfileAddendum.test.ts`'s convention: flag off never
+  calls `loadScoringAddendum`; a throw resolves to `null`, not a
+  rejection),
   mirroring slice 1's `loadDistanceProfileAddendumIfEnabled` pattern.
   `typecheck:fast` and `eslint --max-warnings 0` clean; `flags:check`
   clean (9 flags total). Not verified: mobile/desktop visual layout (no
