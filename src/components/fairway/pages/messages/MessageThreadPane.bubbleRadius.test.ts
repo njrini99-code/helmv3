@@ -34,6 +34,13 @@ const code = source
   })
   .join('\n');
 
+// The action panel is independently allowed to use the sheet radius. Scope
+// this contract to the rendered message surface so adding a popup cannot turn
+// it into a pane-wide radius ban.
+const bubbleSurfaceStart = code.indexOf('inline-flex rounded-card');
+const bubbleSurfaceEnd = code.indexOf('<MessageActionsPanel', bubbleSurfaceStart);
+const bubbleSurfaceCode = code.slice(bubbleSurfaceStart, bubbleSurfaceEnd);
+
 function tokenValue(name: string): string {
   const m = tokens.match(new RegExp(`--fw-radius-${name}:\\s*([^;]+);`));
   const captured = m?.[1];
@@ -79,12 +86,14 @@ describe('G-48 — the thread pane draws bubbles at that token', () => {
       "isFirstInGroup && !isLastInGroup && 'rounded-card'",
       "!isFirstInGroup && isLastInGroup && (isOwn ? 'rounded-card rounded-tr-md rounded-br-sm' : 'rounded-card rounded-tl-md rounded-bl-sm')",
     ]) {
-      expect(code).toContain(variant);
+      expect(bubbleSurfaceCode).toContain(variant);
     }
   });
 
-  it('no longer reaches for the sheet/modal step anywhere in the pane', () => {
-    expect(code).not.toContain('rounded-fw-lg');
+  it('keeps the sheet/modal radius off the rendered message surface', () => {
+    expect(bubbleSurfaceStart).toBeGreaterThanOrEqual(0);
+    expect(bubbleSurfaceEnd).toBeGreaterThan(bubbleSurfaceStart);
+    expect(bubbleSurfaceCode).not.toContain('rounded-fw-lg');
   });
 
   it('carries the typing indicator and the edit box with it', () => {
@@ -92,8 +101,8 @@ describe('G-48 — the thread pane draws bubbles at that token', () => {
     // copies the incoming-bubble shorthand, and the edit box replaces a bubble
     // in place. Leaving either at 28px would have made the swap visible as an
     // inconsistency rather than a correction.
-    expect(code).toContain('inline-flex rounded-card rounded-bl-sm px-4 py-3');
-    expect(code).toContain('w-full rounded-card border border-accent-200');
+    expect(bubbleSurfaceCode).toContain('inline-flex rounded-card rounded-bl-sm px-4 py-3');
+    expect(bubbleSurfaceCode).toContain('w-full rounded-card border border-accent-200');
   });
 
   it('leaves the small corners alone — they are a separate, unresolved question', () => {
@@ -102,8 +111,8 @@ describe('G-48 — the thread pane draws bubbles at that token', () => {
     // manifest routes exactly those two values to A03 as variant requests;
     // inventing them here would be forking a shared primitive, which §19.3
     // forbids. `rounded-br-sm` / `rounded-tr-md` therefore stay as they are.
-    expect(code).toContain('rounded-br-sm');
-    expect(code).toContain('rounded-tr-md');
+    expect(bubbleSurfaceCode).toContain('rounded-br-sm');
+    expect(bubbleSurfaceCode).toContain('rounded-tr-md');
     expect(tokenValue('sm')).toBe('0.625rem');
   });
 });

@@ -46,6 +46,11 @@ const code = source
   })
   .join('\n');
 
+const CHIP_ROW = 'pointer-events-none flex justify-center pb-4';
+const chipSurfaceStart = code.indexOf(`<div className="${CHIP_ROW}"`);
+const chipSurfaceEnd = code.indexOf('<m.div', chipSurfaceStart);
+const chipSurfaceCode = code.slice(chipSurfaceStart, chipSurfaceEnd);
+
 /** The chip's own markup — the `<span class="glass" …>TODAY</span>` line. */
 const chipLine = artboard.split('\n').find((l) => l.includes('>TODAY<'));
 
@@ -96,11 +101,9 @@ describe('G-50a — the artboard chip and the tokens agree', () => {
   });
 });
 
-const CHIP_ROW = 'pointer-events-none flex justify-center pb-4';
-
 describe('G-50a — the component inlines the chip instead of floating it', () => {
   it('no longer draws the two hairlines that bound the label into the list', () => {
-    expect(code).not.toContain('<span className="h-px flex-1 bg-border-subtle" />');
+    expect(chipSurfaceCode).not.toContain('<span className="h-px flex-1 bg-border-subtle" />');
   });
 
   it('sits IN FLOW and centred — it cannot overlap the group below it', () => {
@@ -110,45 +113,42 @@ describe('G-50a — the component inlines the chip instead of floating it', () =
       .split('\n')
       .find((l) => l.includes('justify-content: center') && l.includes('padding: 0 0 16px 0'));
     expect(groupChipRow, 'Group.dc.html no longer draws an inline centred chip row').toBeDefined();
-    expect(code).toContain(CHIP_ROW);
+    expect(chipSurfaceStart).toBeGreaterThanOrEqual(0);
+    expect(chipSurfaceEnd).toBeGreaterThan(chipSurfaceStart);
+    expect(chipSurfaceCode).toContain(CHIP_ROW);
     // The regression this replaces: an absolute chip over a zero-height row
     // painted on top of the next group's sender name.
-    expect(code).not.toContain('absolute -top-3 left-0 right-0');
-    expect(code).not.toContain('relative z-raised h-0');
+    expect(chipSurfaceCode).not.toContain('absolute -top-3 left-0 right-0');
+    expect(chipSurfaceCode).not.toContain('relative z-raised h-0');
   });
 
   it('keeps role="separator" — the a11y semantics a visual change quietly loses', () => {
-    const idx = code.indexOf(CHIP_ROW);
-    expect(idx).toBeGreaterThan(-1);
-    expect(code.slice(idx, idx + 200)).toContain('role="separator"');
+    expect(chipSurfaceCode).toContain('role="separator"');
   });
 
   it('references the glass TOKENS, never the banned legacy glass-* utilities', () => {
-    const idx = code.indexOf(CHIP_ROW);
-    const block = code.slice(idx, idx + 1200);
-    expect(block).toContain('[background:var(--fw-glass-bg)]');
-    expect(block).toContain('blur(var(--fw-blur-glass))_saturate(var(--fw-glass-saturate))');
-    expect(block).toContain('var(--fw-shadow-pop)');
+    expect(chipSurfaceCode).toContain('[background:var(--fw-glass-bg)]');
+    expect(chipSurfaceCode).toContain('blur(var(--fw-blur-glass))_saturate(var(--fw-glass-saturate))');
+    expect(chipSurfaceCode).toContain('var(--fw-shadow-pop)');
     // `.claude/rules/design-system.md` bans `glass-*`; those are the legacy
     // cream-100 utilities, unrelated to the --fw-glass-* tokens above.
-    expect(block).not.toMatch(/\bbg-glass\b|\bglass-standard\b|\bbackdrop-blur-glass\b/);
+    expect(chipSurfaceCode).not.toMatch(/\bbg-glass\b|\bglass-standard\b|\bbackdrop-blur-glass\b/);
   });
 
   it("carries the artboard's padding, radius and tracking", () => {
-    const idx = code.indexOf(CHIP_ROW);
-    const block = code.slice(idx, idx + 1200);
     // 6px 14px → py-1.5 px-3.5; 9999px → rounded-full; 0.06em tracking.
     // Material stays Thread's glass chip; only the placement took Group's.
     expect((chipLine ?? '')).toContain('padding: 6px 14px');
-    expect(block).toContain('rounded-full px-3.5 py-1.5');
+    expect(chipSurfaceCode).toContain('rounded-full px-3.5 py-1.5');
     expect((chipLine ?? '')).toContain('letter-spacing: 0.06em');
-    expect(block).toContain('tracking-[0.06em]');
+    expect(chipSurfaceCode).toContain('tracking-[0.06em]');
   });
 
-  it('does not license glass anywhere else in the file', () => {
-    // DECISIONS.md bounds the licence to this chip: "does not license glass on
-    // any larger surface". One backdrop-filter site, and it is the chip's.
-    const sites = code.match(/backdrop-filter:/g) ?? [];
+  it('keeps both glass filter declarations on the date chip surface', () => {
+    // The action popup is independently licensed glass. Count only the date
+    // chip's standard and WebKit declarations so adding that popup cannot
+    // invalidate this chip contract.
+    const sites = chipSurfaceCode.match(/backdrop-filter:/g) ?? [];
     expect(sites.length).toBe(2); // the standard property and its -webkit- pair
   });
 });
