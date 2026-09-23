@@ -45,6 +45,36 @@
   its page's source, twice for the files that failed the first pass.
   typecheck 0, lint 0, build 0.
 
+## 2026-09-23 — coachhelm_trust_status_exclude_unmeasured_outcomes ships enabled
+
+- SHA: 6e4f09466.
+- Change: `config/feature-flags.yml`'s
+  `coachhelm_trust_status_exclude_unmeasured_outcomes` flag (PR #2034's
+  Package 10 missingness fix — a null-`improvement` `golf_insight_outcome`
+  row no longer counts as `measured`) is set `default: true` and
+  `environment.production/preview/development: true`, with the owner's
+  diff numbers recorded in the flag's `purpose` field.
+- Why: owner decision, after reviewing the read-only prod trust-tier diff
+  (`scratchpad/pr-2034-trust-tier-diff.sql` in the authoring session, not
+  executed as part of this repo) — 26 of 68 insights change tier with the
+  flag on, all 26 `needs_validation` → `new_hypothesis`, all 26 driven by a
+  single thin-sample outcome row, zero `supported`/`promising`/
+  `underperforming` insights affected. Also recorded in
+  `docs/architecture/coachhelm-evidence-contract.md`'s Package 10 section
+  (both owner-escalated items there are now marked RESOLVED) and in #2034's
+  PR description.
+- Verification: `npm run docs:check` clean (including `markdown:ratchet`,
+  re-verified after a reflow needed to dodge an MD018 false-positive on an
+  inline `#2034` reference at column 1, same class as SHA a813dcf34).
+  **`npm run flags:generate` (regenerates `src/lib/flags/
+  registry.generated.ts` from this YAML) has NOT been run** — blocked by
+  this session's own tool-permission classifier ("Feature Flag Writes"),
+  which denies write actions that flip a flag's shipped default without
+  separate, explicit authorization beyond a relayed decision. `npm run
+  flags:check` currently reports the generated registry stale relative to
+  this YAML change. Someone with that permission (or the user directly)
+  needs to run `npm run flags:generate` and commit the result before this
+  flag change is actually live or #2034 is ready for review.
 ## 2026-09-23 — #1997 rebase onto main: reconciled two independent grounding implementations
 
 - PR #1997 ("chat publication waits for validation," repair plan §14.10,
