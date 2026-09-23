@@ -55,7 +55,7 @@
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { CoachHelmShell } from './CoachHelmShell';
-import { FocusAreaCard, type FocusAreaCardData } from './FocusAreaCard';
+import { FocusAreaCard, type FocusAreaCardData, type FocusAreaCriterionView } from './FocusAreaCard';
 import { GoalsSection } from './GoalsSection';
 import { CausalWhyPanel } from './CausalWhyPanel';
 import type { CausalRelationshipRow } from '@/app/golf/actions/causal-relationships';
@@ -109,6 +109,7 @@ import {
   reactivateFocusArea,
   type FocusAreaOutcome,
 } from '@/app/golf/actions/development';
+import { setFocusAreaCriterionMet } from '@/app/golf/actions/focus-area-practice-log';
 import { formatScoringAverage } from '@/lib/golf/format-scoring-average';
 
 /* ---------------------------------------------------------------------------
@@ -227,6 +228,15 @@ export interface PlayersGridViewProps {
    * straight through to `DueForReviewPanel`.
    */
   todayIso: string;
+  /**
+   * A8 slice 3 — server-computed `isFlagEnabled('coachhelm_focus_area_practice_log')`
+   * (that check is server-only, resolved once in `intelligence/page.tsx` and
+   * threaded through opaquely via `playersDrillProps`/`TriageDesk`). Gates
+   * whether the active board's FocusAreaCards get an interactive criteria
+   * checklist at all; false/omitted renders the pre-slice-3 static list.
+   * Default false.
+   */
+  practiceLogEnabled?: boolean;
 }
 
 /* ---------------------------------------------------------------------------
@@ -279,6 +289,7 @@ export function PlayersGridView({
   className,
   embedded = false,
   todayIso,
+  practiceLogEnabled = false,
 }: PlayersGridViewProps) {
   const router = useRouter();
 
@@ -532,6 +543,23 @@ export function PlayersGridView({
   // perform the write and refresh on success so the card reflects the verdict.
   async function handleRecordOutcome(fa: FocusAreaCardData, outcome: FocusAreaOutcome) {
     const res = await recordFocusAreaOutcome(fa.id, outcome);
+    if (res.success) router.refresh();
+    return res;
+  }
+
+  // A8 slice 3: mark-criterion-met. The card owns the per-row optimistic
+  // override + toast; we just perform the write and refresh on success
+  // (mirrors handleRecordOutcome above).
+  async function handleSetCriterionMet(
+    fa: FocusAreaCardData,
+    criterion: FocusAreaCriterionView,
+    met: boolean,
+  ) {
+    const res = await setFocusAreaCriterionMet({
+      focusAreaId: fa.id,
+      criterionId: criterion.id,
+      met,
+    });
     if (res.success) router.refresh();
     return res;
   }
@@ -972,6 +1000,7 @@ export function PlayersGridView({
               onReopen={handleReopen}
               onCreate={() => openCreate()}
               showPlayerName={!selectedPlayerId}
+              onSetCriterionMet={practiceLogEnabled ? handleSetCriterionMet : undefined}
             />
           </div>
         )}
@@ -1269,6 +1298,7 @@ function FocusAreaBoard({
   onReopen,
   onCreate,
   showPlayerName,
+  onSetCriterionMet,
 }: {
   areas: PlayersGridFocusArea[];
   players: PlayersGridPlayer[];
@@ -1285,6 +1315,13 @@ function FocusAreaBoard({
   onReopen: (fa: FocusAreaCardData) => void;
   onCreate: () => void;
   showPlayerName: boolean;
+  /** A8 slice 3 — omitted/undefined when the flag is off (see PlayersGridView's
+   *  `practiceLogEnabled`); FocusAreaCard itself also gates on role+actionable. */
+  onSetCriterionMet?: (
+    fa: FocusAreaCardData,
+    criterion: FocusAreaCriterionView,
+    met: boolean,
+  ) => Promise<{ success: boolean; error?: string }>;
 }) {
   const byId = React.useMemo(() => new Map(players.map((p) => [p.id, p])), [players]);
 
@@ -1362,6 +1399,7 @@ function FocusAreaBoard({
               onDelete={onDelete}
               onRecordOutcome={onRecordOutcome}
               completing={completingId === fa.id}
+              onSetCriterionMet={onSetCriterionMet}
             />
           ))}
         </div>

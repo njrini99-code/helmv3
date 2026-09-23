@@ -33,6 +33,7 @@ import { fromUntyped } from '@/lib/supabase/untyped';
 import { computeEvidenceRevisionStatuses } from '@/lib/coachhelm/focus-areas/load-evidence-revision-status';
 import type { EvidenceRevisionComparison } from '@/lib/coachhelm/focus-areas/evidence-revision-status';
 import { loadFocusAreaPracticeLogData } from '@/lib/coachhelm/focus-areas/practice-log-loader';
+import { isFlagEnabled } from '@/lib/flags';
 
 /**
  * A8 slice 3: the focus-area select is routed through `fromUntyped` (see
@@ -341,6 +342,12 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
     supabase,
     (focusAreas || []).map((fa) => fa.id),
   );
+  // A8 slice 3 (write side): `isFlagEnabled` is server-only — resolved once
+  // here and threaded down opaquely through `playersDrillProps` (see
+  // PlayersGridViewProps.practiceLogEnabled) rather than re-derived from the
+  // flag-gated criteria/practiceSummary data, which can't distinguish
+  // "flag off" from "flag on, no data yet".
+  const practiceLogEnabled = isFlagEnabled('coachhelm_focus_area_practice_log');
 
   const focusAreasWithPlayers: PlayersGridFocusArea[] = (focusAreas || []).map((fa) => ({
     ...fa,
@@ -470,6 +477,7 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
             initialSelectedPlayerId:
               sp.player && players.some((p) => p.id === sp.player) ? sp.player : null,
             todayIso,
+            practiceLogEnabled,
           }}
           effectivenessDrillProps={{
             teamId,
