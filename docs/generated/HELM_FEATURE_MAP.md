@@ -161,7 +161,7 @@ is a second thing to keep true.
 - **Telemetry:** `player_coachhelm_dashboard` (coachhelm, med), `development_plans_coach` (coachhelm, med), `my_development` (coachhelm, low), `drills_practice_rx` (coachhelm, low), `coachhelm_v3_goals` (coachhelm, med)
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
-- **History:** `memory/ledgers/changes/player_coachhelm_development.md`
+- **History:** `memory/ledgers/changes/player_coachhelm_development.md`, `memory/ledgers/tests/player_coachhelm_development.md`
 
 ## `team_communications`
 

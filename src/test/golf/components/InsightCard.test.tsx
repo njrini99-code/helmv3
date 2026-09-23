@@ -404,6 +404,71 @@ describe('InsightCard zero-impact suppression (tee-strat-1)', () => {
 });
 
 // ---------------------------------------------------------------------------
+// OutcomeBadge — observed-outcome language audit (repair-plan §14.12)
+// ---------------------------------------------------------------------------
+describe('InsightCard OutcomeBadge (observed-outcome language audit)', () => {
+  it('improved + meaningful impact: renders the hedged "~N str/rd at stake" phrasing, never a measured "Saved" claim', () => {
+    const insight = makeInsight({
+      outcome_status: 'improved',
+      evidence: makeEvidence({ strokes_impact: 1.2 }),
+    });
+    render(<InsightCard insight={insight} density="default" audience="coach" />);
+    const badge = screen.getByTestId('insight-outcome-badge');
+    expect(badge).toHaveAttribute('data-outcome', 'improved');
+    expect(badge.textContent).toContain('Improved');
+    expect(badge.textContent).toContain('~1.2 str/rd at stake');
+    // The old wording asserted a measured saving ("Saved") from an estimate
+    // that was never actually re-measured — must never regress to that.
+    expect(badge.textContent).not.toContain('Saved');
+  });
+
+  it('improved + zero/no impact: the badge is suppressed (no bare "Improved" pill with a fabricated 0.0 figure)', () => {
+    const insight = makeInsight({
+      outcome_status: 'improved',
+      evidence: makeEvidence({ strokes_impact: 0 }),
+    });
+    render(<InsightCard insight={insight} density="default" audience="coach" />);
+    expect(screen.queryByTestId('insight-outcome-badge')).toBeNull();
+  });
+
+  it('worsened: renders the neutral "Outcome regressed" label regardless of impact magnitude', () => {
+    const insight = makeInsight({
+      outcome_status: 'worsened',
+      evidence: makeEvidence({ strokes_impact: 0.9 }),
+    });
+    render(<InsightCard insight={insight} density="default" audience="coach" />);
+    const badge = screen.getByTestId('insight-outcome-badge');
+    expect(badge).toHaveAttribute('data-outcome', 'worsened');
+    expect(badge.textContent).toBe('Outcome regressed');
+  });
+
+  it('no_change: intentionally omitted — no badge at all (too noisy on the feed)', () => {
+    const insight = makeInsight({
+      outcome_status: 'no_change',
+      evidence: makeEvidence({ strokes_impact: 0.5 }),
+    });
+    render(<InsightCard insight={insight} density="default" audience="coach" />);
+    expect(screen.queryByTestId('insight-outcome-badge')).toBeNull();
+  });
+
+  it('no recorded outcome (outcome_status null): no badge — the typical case', () => {
+    const insight = makeInsight({ outcome_status: null });
+    render(<InsightCard insight={insight} density="default" audience="coach" />);
+    expect(screen.queryByTestId('insight-outcome-badge')).toBeNull();
+  });
+
+  it('is live in the hero density too (not just default) — confirms the badge is NOT dead code', () => {
+    const insight = makeInsight({
+      outcome_status: 'improved',
+      evidence: makeEvidence({ strokes_impact: 2.4 }),
+    });
+    render(<InsightCard insight={insight} density="hero" audience="coach" />);
+    const badge = screen.getByTestId('insight-outcome-badge');
+    expect(badge.textContent).toContain('~2.4 str/rd at stake');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Action firing
 // ---------------------------------------------------------------------------
 
