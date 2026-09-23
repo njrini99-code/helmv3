@@ -321,7 +321,17 @@ flags:
       round-level equivalent, writing `method_version:
       'comparable_opportunities_v1'` rows with `lift` always null; default
       off pending real-world evidence on the insufficient-evidence /
-      no-exposure-record rate before any shadow data exists.
+      no-exposure-record rate before any shadow data exists. Enable criteria
+      (PR #2007 review, both required before this goes on in production):
+      (1) migration 20260922230000 must be applied — off that migration,
+      every write degrades away with nothing inserted
+      (`writeComparableAttribution`'s `methodVersionColumnMissing` path), so
+      turning the flag on beforehand produces zero rows, not partial ones;
+      (2) A9 slice 2 (confounding / `multipleInterventions` detection) must
+      ship first — slice 1 hard-codes `multipleInterventions: false`, and a
+      confounded row written under that hard-code is PERMANENT (the insert
+      is idempotent, PK on `insight_id`) and cannot be relabeled once slice 2
+      lands.
     type: experiment
     status: active
     created_at: "2026-09-23"
@@ -333,7 +343,8 @@ flags:
       development: false
     kill_switch_behavior: null
     cleanup_plan: >-
-      A9 slice 2 extends metric coverage and adds an observability rollup;
+      A9 slice 2 extends metric coverage, adds confounding detection (the
+      enable-blocking prerequisite above), and adds an observability rollup;
       slice 3 is the explicit, separate decision on whether this signal
       should ever feed `nextWeight` (requires either a dedicated non-`lift`
       column or a reviewed ADR relaxing the pure core's "never named lift"
