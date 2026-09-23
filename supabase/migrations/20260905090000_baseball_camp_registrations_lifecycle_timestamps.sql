@@ -75,10 +75,19 @@ COMMENT ON COLUMN public.baseball_camp_registrations.attended_at IS
 'When the player was marked as attended by the camp''s owning coach '
 '(checkInCampPlayer). NULL until check-in; no default.';
 
--- VERIFY: select 1 from information_schema.columns where table_schema = 'public' and table_name = 'baseball_camp_registrations' and column_name = 'registered_at' and data_type = 'timestamp with time zone';
--- VERIFY: select 1 from information_schema.columns where table_schema = 'public' and table_name = 'baseball_camp_registrations' and column_name = 'attended_at' and data_type = 'timestamp with time zone';
--- VERIFY: select 1 from information_schema.columns where table_schema = 'public' and table_name = 'baseball_camp_registrations' and column_name = 'registered_at' and column_default = 'now()';
--- VERIFY: select 1 where not exists (select 1 from public.baseball_camp_registrations where registered_at is null);
+-- VERIFY: select 1 from information_schema.columns where table_schema =
+-- VERIFY: 'public' and table_name = 'baseball_camp_registrations' and
+-- VERIFY: column_name = 'registered_at' and data_type = 'timestamp with time
+-- VERIFY: zone';
+-- VERIFY: select 1 from information_schema.columns where table_schema =
+-- VERIFY: 'public' and table_name = 'baseball_camp_registrations' and
+-- VERIFY: column_name = 'attended_at' and data_type = 'timestamp with time
+-- VERIFY: zone';
+-- VERIFY: select 1 from information_schema.columns where table_schema =
+-- VERIFY: 'public' and table_name = 'baseball_camp_registrations' and
+-- VERIFY: column_name = 'registered_at' and column_default = 'now()';
+-- VERIFY: select 1 where not exists (select 1 from
+-- VERIFY: public.baseball_camp_registrations where registered_at is null);
 --
 -- ROLLBACK: ALTER TABLE public.baseball_camp_registrations ALTER COLUMN
 -- ROLLBACK: registered_at DROP DEFAULT, DROP COLUMN registered_at, DROP

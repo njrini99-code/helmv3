@@ -62,7 +62,8 @@
 SET LOCAL lock_timeout = '5s';
 
 ALTER TABLE public.baseball_pitch_events
-ADD COLUMN IF NOT EXISTS batter_id uuid REFERENCES public.baseball_players(id) ON DELETE SET NULL,
+ADD COLUMN IF NOT EXISTS batter_id uuid
+REFERENCES public.baseball_players (id) ON DELETE SET NULL,
 ADD COLUMN IF NOT EXISTS pitch_type_classified text,
 ADD COLUMN IF NOT EXISTS is_called_strike boolean,
 ADD COLUMN IF NOT EXISTS count_state text;
@@ -82,13 +83,28 @@ COMMENT ON COLUMN public.baseball_workload_events.count IS
 'the create-if-not-exists in 20260624000080 no-op''d against this '
 'pre-existing table).';
 
--- VERIFY: select 1 from information_schema.columns where table_schema = 'public' and table_name = 'baseball_pitch_events' and column_name = 'batter_id' and data_type = 'uuid';
--- VERIFY: select 1 from information_schema.columns where table_schema = 'public' and table_name = 'baseball_pitch_events' and column_name = 'pitch_type_classified';
--- VERIFY: select 1 from information_schema.columns where table_schema = 'public' and table_name = 'baseball_pitch_events' and column_name = 'is_called_strike' and data_type = 'boolean';
--- VERIFY: select 1 from information_schema.columns where table_schema = 'public' and table_name = 'baseball_pitch_events' and column_name = 'count_state';
--- VERIFY: select 1 from information_schema.columns where table_schema = 'public' and table_name = 'baseball_workload_events' and column_name = 'count' and data_type = 'integer';
--- VERIFY: select 1 from information_schema.columns where table_schema = 'public' and table_name = 'baseball_workload_events' and column_name = 'high_intent_count' and data_type = 'integer';
--- VERIFY: select 1 from pg_constraint con join pg_class rel on rel.oid = con.conrelid where rel.relname = 'baseball_pitch_events' and con.contype = 'f' and pg_get_constraintdef(con.oid) ilike '%batter_id%baseball_players%on delete set null%';
+-- VERIFY: select 1 from information_schema.columns where table_schema =
+-- VERIFY: 'public' and table_name = 'baseball_pitch_events' and column_name =
+-- VERIFY: 'batter_id' and data_type = 'uuid';
+-- VERIFY: select 1 from information_schema.columns where table_schema =
+-- VERIFY: 'public' and table_name = 'baseball_pitch_events' and column_name =
+-- VERIFY: 'pitch_type_classified';
+-- VERIFY: select 1 from information_schema.columns where table_schema =
+-- VERIFY: 'public' and table_name = 'baseball_pitch_events' and column_name =
+-- VERIFY: 'is_called_strike' and data_type = 'boolean';
+-- VERIFY: select 1 from information_schema.columns where table_schema =
+-- VERIFY: 'public' and table_name = 'baseball_pitch_events' and column_name =
+-- VERIFY: 'count_state';
+-- VERIFY: select 1 from information_schema.columns where table_schema =
+-- VERIFY: 'public' and table_name = 'baseball_workload_events' and column_name
+-- VERIFY: = 'count' and data_type = 'integer';
+-- VERIFY: select 1 from information_schema.columns where table_schema =
+-- VERIFY: 'public' and table_name = 'baseball_workload_events' and column_name
+-- VERIFY: = 'high_intent_count' and data_type = 'integer';
+-- VERIFY: select 1 from pg_constraint con join pg_class rel on rel.oid =
+-- VERIFY: con.conrelid where rel.relname = 'baseball_pitch_events' and
+-- VERIFY: con.contype = 'f' and pg_get_constraintdef(con.oid) ilike
+-- VERIFY: '%batter_id%baseball_players%on delete set null%';
 --
 -- ROLLBACK: ALTER TABLE public.baseball_pitch_events DROP COLUMN batter_id,
 -- ROLLBACK: DROP COLUMN pitch_type_classified, DROP COLUMN is_called_strike,
@@ -98,6 +114,8 @@ COMMENT ON COLUMN public.baseball_workload_events.count IS
 -- ROLLBACK: and (as of this migration's own guard reasoning above) not yet
 -- ROLLBACK: read by any shipped call site, so dropping them cannot lose data
 -- ROLLBACK: any application path depends on. Re-check
--- ROLLBACK: `grep -rn "batter_id\|pitch_type_classified\|is_called_strike\|count_state" src/app/baseball src/lib/baseball`
+-- ROLLBACK: `grep -rn
+-- ROLLBACK: "batter_id\|pitch_type_classified\|is_called_strike\|count_state"
+-- ROLLBACK: src/app/baseball src/lib/baseball`
 -- ROLLBACK: immediately before rolling back, in case a caller started
 -- ROLLBACK: relying on these columns after this migration shipped.
