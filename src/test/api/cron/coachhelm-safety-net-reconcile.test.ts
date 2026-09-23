@@ -45,6 +45,7 @@ interface Tables {
   golf_teams?: Row[];
   golf_coaches?: Row[];
   golf_coachhelm_settings?: Row[];
+  golf_coach_philosophy?: Row[];
 }
 
 function seed(tables: Tables) {
@@ -56,6 +57,7 @@ function seed(tables: Tables) {
       golf_teams: [],
       golf_coaches: [],
       golf_coachhelm_settings: [],
+      golf_coach_philosophy: [],
       ...tables,
     },
     rpc: {
@@ -275,6 +277,74 @@ describe('safety net — parked rounds (R3)', () => {
     const body = (await (await callGet()).json()) as { reconciled: { woken: number; stillParked: number } };
     expect(postRoundTriggerMock).not.toHaveBeenCalled();
     expect(body.reconciled).toMatchObject({ woken: 0, stillParked: 1 });
+  });
+
+  it('a coach lowering the round floor wakes the floor-parked player once, without another round', async () => {
+    seed({
+      golf_rounds: [
+        parked('engine_below_round_floor', { id: 'r1', player_id: 'p1', created_at: ago(3 * HOUR_MS) }),
+        parked('engine_below_round_floor', { id: 'r2', player_id: 'p1', created_at: ago(2 * HOUR_MS) }),
+      ],
+      golf_team_members: [{ player_id: 'p1', team_id: 't1', status: 'active' }],
+      golf_teams: [{ id: 't1', organization_id: 'o1' }],
+      golf_coaches: [{ id: 'c1', organization_id: 'o1', created_at: '2026-01-01' }],
+      golf_coach_philosophy: [{ coach_id: 'c1', min_rounds_for_signal: 3 }],
+    });
+
+    let body = (await (await callGet()).json()) as { reconciled: { woken: number; stillParked: number; covered: number } };
+    expect(postRoundTriggerMock).not.toHaveBeenCalled();
+    expect(body.reconciled).toMatchObject({ woken: 0, stillParked: 2 });
+
+    // The coach lowers the floor to two rounds.
+    await fake.from('golf_coach_philosophy').update({ min_rounds_for_signal: 2 }).eq('coach_id', 'c1');
+    body = (await (await callGet()).json()) as { reconciled: { woken: number; stillParked: number; covered: number } };
+    expect(postRoundTriggerMock).toHaveBeenCalledTimes(1);
+    expect(postRoundTriggerMock).toHaveBeenCalledWith(fake, expect.objectContaining({ roundId: 'r2', triggerReason: 'safety_net' }));
+    expect(body.reconciled).toMatchObject({ woken: 1, covered: 1 });
+    expect((await round('r1')).data).toMatchObject({ coachhelm_failure_reason: 'engine_covered_by_later_run' });
+  });
+
+  it('a floor-parked player with no philosophy row is held to the default floor', async () => {
+    seed({
+      golf_rounds: [
+        parked('engine_below_round_floor', { id: 'r1', player_id: 'p1', created_at: ago(3 * HOUR_MS) }),
+        parked('engine_below_round_floor', { id: 'r2', player_id: 'p1', created_at: ago(2 * HOUR_MS) }),
+      ],
+      golf_team_members: [{ player_id: 'p1', team_id: 't1', status: 'active' }],
+      golf_teams: [{ id: 't1', organization_id: 'o1' }],
+      golf_coaches: [{ id: 'c1', organization_id: 'o1', created_at: '2026-01-01' }],
+    });
+
+    const body = (await (await callGet()).json()) as { reconciled: { woken: number; stillParked: number } };
+    expect(postRoundTriggerMock).not.toHaveBeenCalled();
+    expect(body.reconciled).toMatchObject({ woken: 0, stillParked: 2 });
+  });
+
+  it('a failed wake-decision read keeps the round parked and logs it', async () => {
+    seed({
+      golf_rounds: [parked('engine_no_team_membership', { id: 'r1', player_id: 'p1', created_at: ago(HOUR_MS) })],
+      golf_team_members: [{ player_id: 'p1', team_id: 't1', status: 'active' }],
+    });
+    const realFrom = fake.from.bind(fake);
+    vi.spyOn(fake, 'from').mockImplementation(((table: string) =>
+      table === 'golf_team_members'
+        ? {
+            select: () => ({
+              eq: () => ({
+                eq: () => ({ limit: async () => ({ data: null, error: { message: 'boom' } }) }),
+              }),
+            }),
+          }
+        : realFrom(table)) as typeof fake.from);
+
+    const body = (await (await callGet()).json()) as { reconciled: { woken: number; stillParked: number } };
+    expect(postRoundTriggerMock).not.toHaveBeenCalled();
+    expect(body.reconciled).toMatchObject({ woken: 0, stillParked: 1 });
+    expect(logServerErrorMock).toHaveBeenCalledWith(
+      expect.stringContaining('golf_team_members read failed: boom'),
+      expect.anything(),
+      'warning',
+    );
   });
 
   it('a woken run that parks again leaves the older rounds parked (no coverage claimed)', async () => {

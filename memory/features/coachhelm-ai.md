@@ -121,11 +121,12 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   switched off) may be stamped as a failure — it parks the round. The safety
   net's never-processed sweep selects only rows with a NULL reason; parked
   rows wake on a newer analyzed round (coverage), a new active membership,
-  or both CoachHelm switches being on; transient failures retry one tick
-  apart up to `RETRY_MAX_ATTEMPTS` and then stay failed as `:exhausted`. A
-  coach lowering the round floor does not yet wake parked rounds by itself
-  (follow-up: call `postRoundTrigger` for each affected player's newest
-  parked round from the philosophy save action).
+  or both CoachHelm switches being on, or (floor-parked) the player's
+  completed-round count meeting the coach's current `min_rounds_for_signal`,
+  so a coach lowering the floor wakes them on the next tick; transient
+  failures retry one tick apart up to `RETRY_MAX_ATTEMPTS` and then stay
+  failed as `:exhausted`. A failed wake-decision read is logged and leaves
+  the round parked.
 
 ## UI Contract
 

@@ -90,6 +90,7 @@ import { classifySoftFailure } from '@/lib/admin/observe-action-result';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { requireCronAuth } from '@/lib/cron/auth';
 import { recordJobRun } from '@/lib/admin/job-log';
+import { PHILOSOPHY_DEFAULTS } from '@/lib/coachhelm/constants';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -500,7 +501,7 @@ interface ParkedRoundRow {
   coachhelm_failure_reason: string;
 }
 
-type WakeEvent = 'round' | 'membership' | 'settings';
+type WakeEvent = 'round' | 'membership' | 'settings' | 'floor';
 
 function wakeEventFor(reason: string): WakeEvent {
   const code = parseFailureReason(reason)?.code ?? reason;
@@ -511,6 +512,8 @@ function wakeEventFor(reason: string): WakeEvent {
       return 'membership';
     case 'engine_disabled':
       return 'settings';
+    case 'engine_below_round_floor':
+      return 'floor';
     default:
       return 'round';
   }
@@ -564,6 +567,41 @@ async function hasActiveMembership(supabase: SupabaseClient, playerId: string): 
 }
 
 /**
+ * The coach whose philosophy and switches govern a team's rounds, resolved
+ * exactly as the engine does (organisation → oldest coach), so a wake
+ * decision matches the run that follows it. Null when there is none or a
+ * read failed (logged; the caller keeps the round parked).
+ */
+async function resolveEngineCoachId(supabase: SupabaseClient, teamId: string): Promise<string | null> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const client = supabase as any;
+  const { data: team, error: teamError } = await client
+    .from('golf_teams')
+    .select('organization_id')
+    .eq('id', teamId)
+    .maybeSingle();
+  if (teamError) {
+    await logWakeReadFailure('golf_teams', teamError.message, { teamId });
+    return null;
+  }
+  const orgId = team?.organization_id as string | undefined;
+  if (!orgId) return null;
+  const { data: coach, error: coachError } = await client
+    .from('golf_coaches')
+    .select('id')
+    .eq('organization_id', orgId)
+    .order('created_at', { ascending: true, nullsFirst: true })
+    .order('id', { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (coachError) {
+    await logWakeReadFailure('golf_coaches', coachError.message, { teamId, orgId });
+    return null;
+  }
+  return (coach?.id as string | undefined) ?? null;
+}
+
+/**
  * Are the team's and its coach's CoachHelm switches both on? Resolves the
  * coach exactly as the engine does (organisation → oldest coach), so the
  * wake decision matches the run that follows it.
@@ -582,40 +620,68 @@ async function analysisEnabledFor(supabase: SupabaseClient, teamId: string | nul
     return false;
   }
   if (teamSettings?.enabled === false) return false;
-  const { data: team, error: teamError } = await client
-    .from('golf_teams')
-    .select('organization_id')
-    .eq('id', teamId)
-    .maybeSingle();
-  if (teamError) {
-    await logWakeReadFailure('golf_teams', teamError.message, { teamId });
-    return false;
-  }
-  const orgId = team?.organization_id as string | undefined;
-  if (!orgId) return false;
-  const { data: coach, error: coachError } = await client
-    .from('golf_coaches')
-    .select('id')
-    .eq('organization_id', orgId)
-    .order('created_at', { ascending: true, nullsFirst: true })
-    .order('id', { ascending: true })
-    .limit(1)
-    .maybeSingle();
-  if (coachError) {
-    await logWakeReadFailure('golf_coaches', coachError.message, { teamId, orgId });
-    return false;
-  }
-  if (!coach?.id) return false;
+  const coachId = await resolveEngineCoachId(supabase, teamId);
+  if (!coachId) return false;
   const { data: coachSettings, error: coachSettingsError } = await client
     .from('golf_coachhelm_settings')
     .select('enabled')
-    .eq('coach_id', coach.id)
+    .eq('coach_id', coachId)
     .maybeSingle();
   if (coachSettingsError) {
-    await logWakeReadFailure('golf_coachhelm_settings', coachSettingsError.message, { teamId, coachId: coach.id });
+    await logWakeReadFailure('golf_coachhelm_settings', coachSettingsError.message, { teamId, coachId });
     return false;
   }
   return coachSettings?.enabled !== false;
+}
+
+/**
+ * Has the player now reached the coach's minimum-rounds floor? A coach who
+ * LOWERS the floor wakes rounds parked under it on the next tick, without
+ * waiting for the player's next round. Counts completed rounds exactly as
+ * the engine's floor check does, against the coach the engine would use
+ * (via the player's active membership, not the round's team) — if the two
+ * disagreed, a woken run would park again and be re-woken every tick. An
+ * unknown count or a failed read keeps the round parked.
+ */
+async function meetsRoundFloor(supabase: SupabaseClient, playerId: string): Promise<boolean> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const client = supabase as any;
+  const { data: membership, error: membershipError } = await client
+    .from('golf_team_members')
+    .select('team_id')
+    .eq('player_id', playerId)
+    .eq('status', 'active')
+    .limit(1)
+    .maybeSingle();
+  if (membershipError) {
+    await logWakeReadFailure('golf_team_members', membershipError.message, { playerId });
+    return false;
+  }
+  const teamId = membership?.team_id as string | undefined;
+  if (!teamId) return false;
+  const coachId = await resolveEngineCoachId(supabase, teamId);
+  if (!coachId) return false;
+  const { data: philosophy, error: philosophyError } = await client
+    .from('golf_coach_philosophy')
+    .select('min_rounds_for_signal')
+    .eq('coach_id', coachId)
+    .maybeSingle();
+  if (philosophyError) {
+    await logWakeReadFailure('golf_coach_philosophy', philosophyError.message, { teamId, coachId });
+    return false;
+  }
+  const floor =
+    (philosophy?.min_rounds_for_signal as number | null | undefined) ?? PHILOSOPHY_DEFAULTS.minRoundsForSignal;
+  const { count, error: countError } = await client
+    .from('golf_rounds')
+    .select('id', { count: 'exact', head: true })
+    .eq('player_id', playerId)
+    .eq('status', 'completed');
+  if (countError) {
+    await logWakeReadFailure('golf_rounds', countError.message, { playerId });
+    return false;
+  }
+  return typeof count === 'number' && count >= floor;
 }
 
 /**
@@ -626,11 +692,12 @@ async function analysisEnabledFor(supabase: SupabaseClient, teamId: string | nul
  *     run;
  *   - a membership-parked player who now has an active roster row gets ONE
  *     engine run on their newest parked round; a settings-parked player
- *     gets one when both switches are back on;
- *   - a data-parked player (under the floor / nothing in the window) is
- *     woken by the next completed round's own trigger, which lands in the
- *     never-processed sweep if that trigger never ran — nothing to do here
- *     beyond coverage.
+ *     gets one when both switches are back on; a floor-parked player gets
+ *     one when their completed-round count meets the coach's CURRENT floor
+ *     (so lowering the floor wakes them without another round);
+ *   - otherwise a data-parked player (under the floor / nothing in the
+ *     window) is woken by the next completed round's own trigger, which
+ *     lands in the never-processed sweep if that trigger never ran.
  * Legacy FAILED rows carrying the pre-R3 expected-state codes go through
  * the same rules.
  */
@@ -724,6 +791,7 @@ async function reconcileParkedRounds(
     let shouldWake = false;
     if (event === 'membership') shouldWake = await hasActiveMembership(supabase, playerId);
     else if (event === 'settings') shouldWake = await analysisEnabledFor(supabase, newest.team_id);
+    else if (event === 'floor') shouldWake = await meetsRoundFloor(supabase, playerId);
     if (!shouldWake) {
       summary.stillParked += remaining.length;
       continue;
