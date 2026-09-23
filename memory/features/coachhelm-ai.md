@@ -183,6 +183,27 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   pre-filtered to measurable rows (`FETCH_PAGE_SIZE`/`MAX_FETCH_PAGES`) so a
   page of permanently-unmeasurable rows can't starve the per-tick backfill
   budget — same pattern as the `causality-attribute` cron.
+- **Learned personalization of v2 alert thresholds is wired but flagged off**
+  (2026-09-22, `agent/coachhelm-learning-cleanup`): `BehaviorLearner`'s
+  `getLearnedPreferences()`/`getPersonalizedThreshold` are now consulted in
+  `orchestrator.ts`'s `generateAlerts()`, but only applied to
+  `philosophy.declineThreshold`/`pressureGapThreshold` when the
+  `coachhelm_learned_personalization` feature flag (default OFF in every
+  environment, see `config/feature-flags.yml`) is on. With the flag off the
+  computed thresholds are shadow-logged
+  (`coachhelm.learned_personalization.shadow`) instead of applied, so alert
+  generation is unchanged until an owner turns the flag on with evidence to
+  support it. Also fixed upstream: `'feedback'`-type interactions (from
+  `rateInsight`) are now correctly bucketed into `BehaviorLearner`'s
+  ack/dismiss counts, and `rateInsightImpl` now records a real `insight_type`
+  in interaction metadata so per-type bucketing works.
+- **v2 coach-alert family (bubble_player, pattern_detected, streak,
+  surge_player, plateau, tournament_pressure, closing_holes, par_3_issues,
+  recurring_weakness, team_trend, scoring_decline) is still live-written,
+  100% dark on read** — no v3 successor exists yet, `engine_version` is
+  never stamped `v3` for these, so `applyInsightVisibility` excludes them
+  from every coach/player surface. Planned retirement PR (sequenced after
+  `agent/coachhelm-outcomes` lands on main) not yet done as of 2026-09-22.
 
 ## Tests To Prefer
 

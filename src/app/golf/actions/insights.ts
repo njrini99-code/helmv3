@@ -1693,6 +1693,10 @@ async function rateInsightImpl(
     try {
       await recordInteraction(coach.id, 'coach', 'feedback', `insight_${rating}`, {
         insightId,
+        // snake_case: BehaviorLearner.aggregate() buckets byInsightType off
+        // metadata.insight_type (not the camelCase insightType below, kept
+        // for existing readers of this metadata blob).
+        insight_type: insight.insight_type,
         insightType: insight.insight_type,
         priority: insight.priority,
         rating,

@@ -54,7 +54,8 @@ import { analyzeMultiWindowTrends } from './trends/multi-window';
 import { detectAnomalies } from './stats/anomaly-detector';
 import { detectStreaks } from './trends/streak-detector';
 import { scoreInsight, shouldShowInsight } from './feedback/insight-scorer';
-import { logServerError } from '@/lib/server-error-logger';
+import { logServerError, logServerEvent } from '@/lib/server-error-logger';
+import { isFlagEnabled } from '@/lib/flags/is-enabled';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 
 import type {
@@ -219,6 +220,42 @@ export function applyPhilosophyThresholds(
       ? 'warning'
       : 'info';
   return { shouldAlert, severity };
+}
+
+export interface PersonalizedThresholds {
+  declineThreshold: number;
+  pressureGapThreshold: number;
+  /** Whether the personalized value differs from the input `currentDeclineThreshold`. */
+  declineChanged: boolean;
+  /** Whether the personalized value differs from the input `currentPressureGapThreshold`. */
+  pressureChanged: boolean;
+}
+
+/**
+ * Computes what `generateAlerts`'s decline/pressure-gap thresholds WOULD be
+ * under `BehaviorLearner.getPersonalizedThreshold` (coachhelm_learned_personalization),
+ * without deciding whether to apply them — the caller does that, so the
+ * "flag off never mutates philosophy" contract is a plain if/else at the
+ * call site rather than buried in here. Pure aside from the
+ * `behaviorLearner` calls, which read the already-loaded `BehaviorProfile`
+ * cache (no query when called after `getLearnedPreferences()`/
+ * `loadBehavior()` has already run for this instance).
+ */
+export async function computePersonalizedThresholds(
+  behaviorLearner: Pick<BehaviorLearner, 'getPersonalizedThreshold'>,
+  currentDeclineThreshold: number,
+  currentPressureGapThreshold: number,
+): Promise<PersonalizedThresholds> {
+  const [declineThreshold, pressureGapThreshold] = await Promise.all([
+    behaviorLearner.getPersonalizedThreshold('scoring_decline', currentDeclineThreshold),
+    behaviorLearner.getPersonalizedThreshold('pressure_gap', currentPressureGapThreshold),
+  ]);
+  return {
+    declineThreshold,
+    pressureGapThreshold,
+    declineChanged: declineThreshold !== currentDeclineThreshold,
+    pressureChanged: pressureGapThreshold !== currentPressureGapThreshold,
+  };
 }
 
 /**
@@ -829,9 +866,13 @@ class CoachHelmIntelligence {
   ): Promise<ComposedInsight[]> {
     const alerts: ComposedInsight[] = [];
 
-    // Initialize behavior learner for coach preferences
+    // Initialize behavior learner for coach preferences. Previously this
+    // query's result was awaited and thrown away; kept here (used below,
+    // gated by coachhelm_learned_personalization, once `philosophy` is
+    // loaded) so `loadBehavior()`'s cache is warm before
+    // `getPersonalizedThreshold()` needs it — no extra query.
     const behaviorLearner = new BehaviorLearner(coachId, 'coach');
-    await behaviorLearner.getLearnedPreferences();
+    const learnedPreferences = await behaviorLearner.getLearnedPreferences();
 
     // Get team patterns via cross-learner
     const crossLearner = new CrossLearner(teamId);
@@ -863,6 +904,48 @@ class CoachHelmIntelligence {
       declineThreshold: philosophyRow?.decline_threshold ?? undefined,
       pressureGapThreshold: philosophyRow?.pressure_gap_threshold ?? undefined,
     };
+
+    // Learned-preference personalization (NEW, coachhelm_learned_personalization,
+    // default OFF everywhere). `computePersonalizedThresholds` nudges each
+    // threshold by the coach's own ack/dismiss history on that alert type,
+    // bounded to +/-25% (see BehaviorLearner.getPersonalizedThreshold). We
+    // always COMPUTE the personalized values — loadBehavior()'s cache is
+    // already warm from getLearnedPreferences() above, so this is free — but
+    // only ASSIGN them onto `philosophy` inside the `if (personalizationEnabled)`
+    // branch below. With the flag off, `philosophy` is never assigned to here
+    // at all: alert output is byte-identical to before this change, and a
+    // differing personalized value is only logged (shadow).
+    const personalizationEnabled = isFlagEnabled('coachhelm_learned_personalization');
+    const personalized = await computePersonalizedThresholds(
+      behaviorLearner,
+      philosophy.declineThreshold ?? DEFAULT_DECLINE_THRESHOLD,
+      philosophy.pressureGapThreshold ?? DEFAULT_PRESSURE_GAP_THRESHOLD,
+    );
+    if (personalizationEnabled) {
+      philosophy.declineThreshold = personalized.declineThreshold;
+      philosophy.pressureGapThreshold = personalized.pressureGapThreshold;
+    } else if (personalized.declineChanged || personalized.pressureChanged) {
+      await logServerEvent(
+        'coachhelm.learned_personalization.shadow',
+        {
+          action: 'orchestrator.generateAlerts.personalizationShadow',
+          featureArea: 'coachhelm',
+          metadata: {
+            coachId,
+            currentDeclineThreshold: philosophy.declineThreshold ?? DEFAULT_DECLINE_THRESHOLD,
+            personalizedDeclineThreshold: personalized.declineThreshold,
+            currentPressureGapThreshold:
+              philosophy.pressureGapThreshold ?? DEFAULT_PRESSURE_GAP_THRESHOLD,
+            personalizedPressureGapThreshold: personalized.pressureGapThreshold,
+            alertFrequency: learnedPreferences.alertFrequency,
+          },
+          // Expected, informational shadow signal — not an error surface.
+          skipSentry: true,
+        },
+        'info',
+      );
+    }
+
     // F060 — per-type alert toggles (default-enabled when a switch is unset).
     const alertToggles: AlertTypeToggleFlags = {
       alertScoringDecline: philosophyRow?.alert_scoring_decline ?? undefined,
