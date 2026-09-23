@@ -357,5 +357,8 @@ flags:
     kill_switch_behavior: null
     cleanup_plan: >-
       Either promote to a permanent `release` flag once the section has
-      been reviewed, or remove the section and its wiring if the review
-      asks for a different surface/placement instead.
+      been reviewed and the rolling-12-month load (shared with the
+      distance-profile flag when both are on — see `admin_platform`'s
+      ledger) has been checked against a heavy-user roster in preview, or
+      remove the section and its wiring if the review asks for a
+      different surface/placement instead.
