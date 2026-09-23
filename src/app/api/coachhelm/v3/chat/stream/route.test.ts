@@ -522,7 +522,13 @@ describe('POST /coachhelm/v3/chat/stream — grounding audit over the full strea
     expect(flagIndex).toBeLessThan(finishIndex);
   });
 
-  it('seeds the audit with evidence already shown to the coach earlier in the conversation', async () => {
+  it('seeds the audit with team-scoped evidence already shown to the coach, even on a zero-tool-call turn', async () => {
+    // Team/round-level ("shared") evidence carries no cross-player risk, so
+    // it must carry over unconditionally — including on a turn where the
+    // model makes no fresh tool call at all (`buildCoachTools` below returns
+    // `{}`, so `collect` is never invoked). This is the shared-evidence
+    // counterpart to the player-scoped Alice/Bob test below: same zero-tool
+    // shape, but nothing here depends on knowing which player is in play.
     mocks.getConversation.mockResolvedValue({
       id: '11111111-1111-4111-8111-111111111111',
       coach_id: 'coach-1',
@@ -533,7 +539,22 @@ describe('POST /coachhelm/v3/chat/stream — grounding audit over the full strea
       updated_at: '2026-01-01T00:00:00.000Z',
     });
     mocks.listRecentMessages.mockResolvedValue([
-      priorAssistantRow(),
+      priorAssistantRow({
+        ui_parts: [
+          {
+            type: 'data-evidence',
+            id: 'ev-1',
+            data: {
+              tool: 'get_team_stats',
+              envelope: makeEnvelope({
+                measurements: [
+                  makeMeasurement({ entity: { kind: 'team', id: 'team-1', label: 'Test Team' } }),
+                ],
+              }),
+            },
+          },
+        ],
+      }),
       // A malformed / legacy envelope alongside a valid one — must be
       // dropped, not crash the turn (review point 5).
       priorAssistantRow({
@@ -561,6 +582,77 @@ describe('POST /coachhelm/v3/chat/stream — grounding audit over the full strea
     expect(seededMeasurements).toEqual(
       expect.arrayContaining([expect.objectContaining({ metric_id: 'putts_per_round', value: 30 })]),
     );
+  });
+
+  it('does NOT seed player-scoped prior evidence on a zero-tool-call turn about a different player (Alice/Bob)', async () => {
+    // Production shape this guards against: turn 1 fetches Alice's putts
+    // (30/round); turn 2 asks about Bob and the model answers entirely from
+    // memory — no fresh tool call this turn, so `currentTurnPlayerIds` is
+    // empty. The old code's `allPlayerIds.size <= 1` check collapsed to just
+    // `deferred`'s one tracked player (Alice) and folded her number in
+    // unconditionally, so a claim of "Bob's putts per round is 30" audited
+    // as grounded — Alice's number silently "supported" a claim about Bob.
+    // With zero fresh player ids this turn, deferred must be dropped
+    // entirely, not folded in just because it happens to name only one
+    // player.
+    mocks.getConversation.mockResolvedValue({
+      id: '11111111-1111-4111-8111-111111111111',
+      coach_id: 'coach-1',
+      title: 'Existing',
+      pinned: false,
+      archived_at: null,
+      created_at: '2026-01-01T00:00:00.000Z',
+      updated_at: '2026-01-01T00:00:00.000Z',
+    });
+    mocks.listRecentMessages.mockResolvedValue([
+      priorAssistantRow({
+        ui_parts: [
+          {
+            type: 'data-evidence',
+            id: 'ev-alice',
+            data: {
+              tool: 'get_recent_rounds',
+              envelope: makeEnvelope({
+                measurements: [
+                  makeMeasurement({
+                    value: 30,
+                    entity: { kind: 'player', id: 'alice', label: 'Alice' },
+                  }),
+                ],
+              }),
+            },
+          },
+        ],
+      }),
+    ]);
+    // This turn makes no fresh tool call at all — the model answers from
+    // memory, exactly like the production repro.
+    mocks.buildCoachTools.mockReturnValue({});
+    mocks.streamText.mockImplementation(() => ({
+      usage: Promise.resolve({ inputTokens: 10, outputTokens: 10 }),
+      toUIMessageStream: () => minimalUiMessageStream("Bob's putts per round is 30."),
+    }));
+    // The real auditNumericClaims would flag "30" as unsupported once Alice's
+    // measurement is correctly excluded; asserting on what was SEEDED (not
+    // relying on the mocked audit's own verdict) is what actually pins the
+    // fix — but also flip the mock to prove the flag comes out the other end.
+    mocks.auditNumericClaims.mockImplementation((_text: string, measurements: unknown[]) =>
+      (measurements as { value: number }[]).some((m) => m.value === 30)
+        ? []
+        : [{ text: '30', value: 30 }],
+    );
+
+    await runPostAndSettle({
+      conversation_id: '11111111-1111-4111-8111-111111111111',
+      messages: [{ id: 'u1', role: 'user', parts: [{ type: 'text', text: "How's Bob doing?" }] }],
+      client_turn_id: 'turn-2',
+    });
+
+    const seededMeasurements = mocks.auditNumericClaims.mock.calls[0]![1] as { value: number }[];
+    expect(seededMeasurements.some((m) => m.value === 30)).toBe(false);
+
+    const persisted = mocks.appendMessage.mock.calls[0]![1];
+    expect(persisted.status).toBe('failed');
   });
 
   it('drops player-scoped prior evidence when the recent window covers more than one player', async () => {

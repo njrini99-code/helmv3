@@ -709,8 +709,19 @@ export async function POST(req: NextRequest) {
           .filter((e) => e.kind === 'player')
           .map((e) => e.id),
       );
+      // A turn with zero fresh player-scoped tool calls this turn (the model
+      // answering entirely from memory, no new tool call) must not fold in
+      // `deferred` at all — not even when exactly one player is on record
+      // there. With `currentTurnPlayerIds` empty, `allPlayerIds` would
+      // otherwise collapse to whichever single player `deferred` happens to
+      // carry, and that player's number would silently "support" a claim
+      // about a DIFFERENT player this turn never fetched anything for (e.g.
+      // turn 1 fetches Alice's putts; turn 2 asks about Bob and answers from
+      // memory — Alice's number must not ground a claim about Bob). Requiring
+      // at least one fresh player id this turn is what lets us confirm the
+      // deferred player is actually who's being discussed now.
       const allPlayerIds = new Set([...currentTurnPlayerIds, ...priorDeferred.playerIds]);
-      if (allPlayerIds.size <= 1) {
+      if (currentTurnPlayerIds.size > 0 && allPlayerIds.size <= 1) {
         measurements.push(...priorDeferred.measurements);
         seriesAll.push(...priorDeferred.series);
         detailNumbers.push(...priorDeferred.detailNumbers);
