@@ -263,10 +263,20 @@ async function findActiveFocusAreaForMetric(
  * degrade to `null`, never a thrown error or a blocked create — "don't
  * stamp a revision" is always safe; a focus area with `evidence_revision:
  * null` behaves exactly as it did before this slice existed.
+ *
+ * DB-review follow-up (#2004): `playerId` scopes the read to the insight
+ * that actually belongs to the player the focus area is being created for.
+ * The V2 self-promote path resolves this through the admin client (RLS
+ * bypassed by design — see the writeClient comment at its call site), so
+ * without this filter nothing stopped a player from causing a *different*
+ * player's insight to be read and fingerprinted just by supplying that
+ * insight's id. A cross-player id now reads no row and degrades to `null`,
+ * same as any other unreadable insight.
  */
 async function resolveEvidenceRevisionForInsight(
   client: SupabaseClient<Database>,
   insightId: string,
+  playerId: string,
 ): Promise<string | null> {
   if (!isFlagEnabled('coachhelm_focus_area_evidence_revision')) return null;
 
@@ -274,6 +284,7 @@ async function resolveEvidenceRevisionForInsight(
     .from('golf_coach_insights')
     .select('lifecycle_state, evidence, engine_version')
     .eq('id', insightId)
+    .eq('player_id', playerId)
     .maybeSingle();
 
   if (error) {
@@ -1432,7 +1443,7 @@ async function createFocusAreaFromInsightV2Impl(
   // typed insert never even sees the column name. Reads through the same
   // client the write below uses, matching findActiveFocusAreaForMetric's
   // convention just below.
-  const evidenceRevision = await resolveEvidenceRevisionForInsight(writeClient, args.insightId);
+  const evidenceRevision = await resolveEvidenceRevisionForInsight(writeClient, args.insightId, args.playerId);
 
   const insertPayload = {
     player_id: args.playerId,
@@ -1696,7 +1707,7 @@ async function createFocusAreaFromInsightImpl(
   // A8 slice 1: resolved before the insert so a flag-off (or read-failed, or
   // malformed-evidence) case never puts an `evidence_revision` key in the
   // payload at all. See resolveEvidenceRevisionForInsight's doc comment.
-  const evidenceRevision = await resolveEvidenceRevisionForInsight(supabase, data.insight_id);
+  const evidenceRevision = await resolveEvidenceRevisionForInsight(supabase, data.insight_id, data.player_id);
 
   // Always routed through fromUntyped: the payload may carry
   // `evidence_revision` (A8 slice 1), a column not yet in generated types

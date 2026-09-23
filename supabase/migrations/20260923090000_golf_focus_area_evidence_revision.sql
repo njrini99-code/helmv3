@@ -24,6 +24,11 @@
 -- that flag's own purpose string. No RLS or grant changes: existing
 -- golf_player_focus_areas policies already cover the whole row.
 
+-- DB-review follow-up (#2004): golf_player_focus_areas is a live,
+-- high-traffic table; cap how long this ALTER will wait for its lock
+-- rather than risk queuing behind a long-running transaction indefinitely.
+SET lock_timeout = '5s';
+
 ALTER TABLE "public"."golf_player_focus_areas"
 ADD COLUMN IF NOT EXISTS "evidence_revision" text;
 

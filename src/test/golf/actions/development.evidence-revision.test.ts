@@ -89,13 +89,47 @@ const MALFORMED_INSIGHT_ROW = {
   engine_version: null,
 };
 
+/**
+ * DB-review follow-up (#2004): `resolveEvidenceRevisionForInsight` now
+ * scopes its read with `.eq('player_id', playerId)` — this fake mirrors
+ * that filter for real, returning no row when the query's `player_id`
+ * value doesn't match `ownerPlayerId`, so a test can prove the cross-player
+ * case degrades to "no revision" rather than reading a foreign insight.
+ */
+function makeInsightReadHandler(insightRow: Record<string, unknown> | null, ownerPlayerId: string) {
+  return {
+    select: () => {
+      const filters: Record<string, unknown> = {};
+      const chain = {
+        eq: (col: string, value: unknown) => {
+          filters[col] = value;
+          return chain;
+        },
+        maybeSingle: async () => {
+          if ('player_id' in filters && filters.player_id !== ownerPlayerId) {
+            return { data: null, error: null };
+          }
+          return { data: insightRow, error: null };
+        },
+        single: async () => ({ data: { metadata: null, content: 'insight body', team_id: 'team-1' }, error: null }),
+      };
+      return chain;
+    },
+    update: () => ({ eq: () => ({ eq: async () => ({ error: null }) }) }),
+  };
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   isFlagEnabledMock.mockReturnValue(false);
 });
 
 describe('createFocusAreaFromInsightV2 — evidence-revision flag gate', () => {
-  function harness(fa: ReturnType<typeof makeFocusAreaTable>, insightRow: Record<string, unknown> | null) {
+  function harness(
+    fa: ReturnType<typeof makeFocusAreaTable>,
+    insightRow: Record<string, unknown> | null,
+    ownerPlayerId = 'player-1',
+  ) {
     verifyPlayerAccessMock.mockResolvedValue({ allowed: true, reason: 'self' });
     createClientMock.mockResolvedValue({
       auth: { getUser: async () => ({ data: { user: { id: 'user-1' } }, error: null }) },
@@ -107,7 +141,7 @@ describe('createFocusAreaFromInsightV2 — evidence-revision flag gate', () => {
           return { select: () => ({ eq: () => ({ limit: () => ({ maybeSingle: async () => ({ data: { coach_id: 'coach-1' }, error: null }) }) }) }) };
         }
         if (table === 'golf_coach_insights') {
-          return { select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: insightRow, error: null }) }) }) };
+          return makeInsightReadHandler(insightRow, ownerPlayerId);
         }
         return emptyTable();
       },
@@ -119,7 +153,7 @@ describe('createFocusAreaFromInsightV2 — evidence-revision flag gate', () => {
       from: (table: string) => {
         if (table === 'golf_player_focus_areas') return fa.handler;
         if (table === 'golf_coach_insights') {
-          return { select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: insightRow, error: null }) }) }) };
+          return makeInsightReadHandler(insightRow, ownerPlayerId);
         }
         return emptyTable();
       },
@@ -200,10 +234,34 @@ describe('createFocusAreaFromInsightV2 — evidence-revision flag gate', () => {
     expect(result.success).toBe(true);
     expect(Object.prototype.hasOwnProperty.call(fa.inserted[0], 'evidence_revision')).toBe(false);
   });
+
+  it('DB-review follow-up (#2004): flag on but the insight belongs to a different player — does not stamp evidence_revision', async () => {
+    isFlagEnabledMock.mockReturnValue(true);
+    const fa = makeFocusAreaTable();
+    // The insight row is otherwise perfectly well-formed; only its owner
+    // differs from the player creating the focus area.
+    harness(fa, WELL_FORMED_INSIGHT_ROW, 'someone-elses-player-id');
+
+    const result = await createFocusAreaFromInsightV2({
+      playerId: 'player-1',
+      insightId: 'insight-1',
+      title: 'Approach',
+      description: 'desc',
+      areaType: 'iron_play',
+      targetMetric: 'sg_approach_cross_player',
+    });
+
+    expect(result.success).toBe(true);
+    expect(Object.prototype.hasOwnProperty.call(fa.inserted[0], 'evidence_revision')).toBe(false);
+  });
 });
 
 describe('createFocusAreaFromInsight — legacy path evidence-revision flag gate', () => {
-  function harness(fa: ReturnType<typeof makeFocusAreaTable>, insightRow: Record<string, unknown> | null) {
+  function harness(
+    fa: ReturnType<typeof makeFocusAreaTable>,
+    insightRow: Record<string, unknown> | null,
+    ownerPlayerId = 'player-1',
+  ) {
     verifyPlayerAccessMock.mockResolvedValue({ allowed: true, reason: 'coach' });
     createClientMock.mockResolvedValue({
       auth: { getUser: async () => ({ data: { user: { id: 'user-1' } }, error: null }) },
@@ -212,18 +270,10 @@ describe('createFocusAreaFromInsight — legacy path evidence-revision flag gate
           return { select: () => ({ eq: () => ({ single: async () => ({ data: { id: 'coach-1' }, error: null }) }) }) };
         }
         if (table === 'golf_coach_insights') {
-          return {
-            // Two distinct reads against the same table in the real code:
-            // the pre-existing metadata/content/team_id fetch (.single()),
-            // and the A8 evidence-revision fetch (.maybeSingle()).
-            select: () => ({
-              eq: () => ({
-                single: async () => ({ data: { metadata: null, content: 'insight body', team_id: 'team-1' }, error: null }),
-                maybeSingle: async () => ({ data: insightRow, error: null }),
-              }),
-            }),
-            update: () => ({ eq: () => ({ eq: async () => ({ error: null }) }) }),
-          };
+          // Two distinct reads against the same table in the real code: the
+          // pre-existing metadata/content/team_id fetch (.single()), and the
+          // A8 evidence-revision fetch (.maybeSingle(), now player-scoped).
+          return makeInsightReadHandler(insightRow, ownerPlayerId);
         }
         if (table === 'golf_player_focus_areas') return fa.handler;
         return emptyTable();
@@ -269,5 +319,24 @@ describe('createFocusAreaFromInsight — legacy path evidence-revision flag gate
     expect(result.success).toBe(true);
     expect(fa.inserted).toHaveLength(1);
     expect(fa.inserted[0]!.evidence_revision).toBe(computeInsightEvidenceRevision(WELL_FORMED_INSIGHT_ROW));
+  });
+
+  it('DB-review follow-up (#2004): flag on but the insight belongs to a different player — does not stamp evidence_revision', async () => {
+    isFlagEnabledMock.mockReturnValue(true);
+    const fa = makeFocusAreaTable();
+    harness(fa, WELL_FORMED_INSIGHT_ROW, 'someone-elses-player-id');
+
+    const result = await createFocusAreaFromInsight({
+      insight_id: 'insight-1',
+      player_id: 'player-1',
+      coach_id: 'coach-1',
+      title: 'Putting',
+      description: null,
+      insight_type: 'stat_regression',
+      target_metric: 'putts_cross_player',
+    });
+
+    expect(result.success).toBe(true);
+    expect(Object.prototype.hasOwnProperty.call(fa.inserted[0], 'evidence_revision')).toBe(false);
   });
 });
