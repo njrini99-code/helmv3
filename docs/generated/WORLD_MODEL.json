@@ -13317,6 +13317,16 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/app/golf/actions/insight-attribution.ts",
+          "anchor": "src/lib/flags"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/insight-attribution.ts",
+          "anchor": "src/lib/admin/observed-action"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/app/golf/actions/insight-celebration.ts",
           "anchor": "src/lib/admin/observed-action"
         },
@@ -13489,6 +13499,16 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/coachhelm-data.ts",
+          "anchor": "src/lib/auth/verify-player-access"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/insight-attribution.ts",
+          "anchor": "src/lib/supabase/server"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/insight-attribution.ts",
           "anchor": "src/lib/auth/verify-player-access"
         },
         {
@@ -13861,6 +13881,16 @@
       "target": "player_coachhelm_development",
       "kind": "feature_relation",
       "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/insight-attribution.ts",
+          "anchor": "src/lib/coachhelm/v3/effectiveness/attribution-read"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/insight-attribution.ts",
+          "anchor": "src/lib/coachhelm/v3/effectiveness/attribution-view-model"
+        },
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/insight-delivery-ranking.ts",
@@ -17306,6 +17336,21 @@
         {
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/context/load-player-context.ts",
+          "anchor": "src/lib/supabase/chunk-ids"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/effectiveness/attribution-read.ts",
+          "anchor": "src/lib/supabase/untyped"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/effectiveness/attribution-read.ts",
+          "anchor": "src/lib/supabase/fetch-all-rows"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/effectiveness/attribution-read.ts",
           "anchor": "src/lib/supabase/chunk-ids"
         },
         {
