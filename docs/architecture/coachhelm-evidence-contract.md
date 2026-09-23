@@ -1611,39 +1611,49 @@ of silently preserving certainty."
   evaluation passed in — `reopenIfContradicted` never re-derives or
   downgrades them itself, it only decides whether the annotation still
   applies.
-- **`'coach_annotated'` is currently UNREACHABLE**: neither function ever
+- **`'coach_annotated'` was dropped from `HypothesisState`** (review
+  decision): neither `mergeCoachAnnotation` nor `reopenIfContradicted` ever
   sets `Hypothesis.state` to it — the addendum is explicit that annotation
   layers onto the evidence, never replaces it, and there is no `'causal'`
-  state for an annotation to upgrade a hypothesis to. Whether to keep this
-  value in `HypothesisState` (e.g. for a future UI-only "reviewed" read
-  derived from `coachAnnotation != null`) or drop it is an open question,
-  not decided in this slice.
-- **`diagnosis.ts`/`personal-context.ts` still not wired — reported, not
-  forced**:
-  - `engine/diagnosis.ts` is a narrow pure `AxisTally` → observation/check/
-    action text helper (`dominantAxis`/`approachAxisReading`) with exactly
-    one caller, the DB-backed `generators/approach-miss.ts`. It has no
-    awareness of `ShotFact`/`MetricResult`/`Hypothesis` at all — wiring
-    hypothesis ids into it would mean either breaking its tally-only
-    purity contract or wiring the DB-backed generator layer instead, which
-    is a materially larger change than "modify diagnosis.ts" and outside
-    a pure-core, no-I/O slice.
-  - `personal-context.ts` was scoped to resolve active goals/focus
-    areas/interventions for a player (through existing loaders) into
-    check-selection/delivery-priority hints, never touching metric
-    results. Before building it: `Goal.metric_id` is typed `MetricId`
-    (`metrics/registry.ts`), and NONE of this module's own metric ids
-    (`approach_short_miss_rate`, `approach_rough_gap_strokes_contribution`,
-    `approach_recovery_outcome_rate`, `par5_regulation_opportunity_rate`,
-    `par5_green_in_two_rate`) are registered `MetricId`s — a goal can never
-    match a hypothesis family through this path. No "intervention"
-    type/loader exists anywhere in the codebase (`development.ts`, 1968
-    lines, zero hits). `FocusAreaCategory` (`insight-types.ts`) has no
-    verified mapping to a `HypothesisFamily` — its `relatedStats` are
-    loosely-named legacy stat strings, not this module's metric-id
-    vocabulary. Building `personal-context.ts` against any of these would
-    either always return an empty result or require inventing an
-    unverified correspondence table — reported back rather than shipped.
+  state for an annotation to upgrade a hypothesis to. A state with no
+  producer isn't a state, so it was removed rather than kept as an
+  unreachable union member; a "reviewed" read belongs at the call site,
+  derived from `coachAnnotation != null`, not as a fourth `state` value.
+  Grepped for consumers first (`case 'coach_annotated'` in this module's
+  own four `describe*` switches, no external references anywhere in
+  `src/`) before removing.
+- **`diagnosis.ts` still not wired — a future DB-layer slice, not this
+  one**: `engine/diagnosis.ts` is a narrow pure `AxisTally` →
+  observation/check/action text helper (`dominantAxis`/
+  `approachAxisReading`) with exactly one caller, the DB-backed
+  `generators/approach-miss.ts`. It has no awareness of
+  `ShotFact`/`MetricResult`/`Hypothesis` at all. Wiring hypothesis ids into
+  a reading means wiring them into that DB-backed GENERATOR layer, not
+  `diagnosis.ts` itself — a materially larger change, and out of scope for
+  this module's pure-core, no-I/O slices.
+- **`personal-context.ts` — open item, needs a vocabulary decision, not a
+  mapping table**: scoped to resolve active goals/focus areas/interventions
+  for a player (through existing loaders) into check-selection/
+  delivery-priority hints, never touching metric results. Not built this
+  slice because there is no shared vocabulary to build it against:
+  `Goal.metric_id` is typed `MetricId` (`metrics/registry.ts`), and NONE of
+  this module's own metric ids (`approach_short_miss_rate`,
+  `approach_rough_gap_strokes_contribution`,
+  `approach_recovery_outcome_rate`, `par5_regulation_opportunity_rate`,
+  `par5_green_in_two_rate`) are registered `MetricId`s, so a goal can never
+  match a hypothesis family through `metric_id`. No "intervention"
+  type/loader exists anywhere in the codebase (`development.ts`, 1968
+  lines, zero hits for "intervention"). `FocusAreaCategory`
+  (`insight-types.ts`) has no verified mapping to a `HypothesisFamily` —
+  its `relatedStats` are loosely-named legacy stat strings, not this
+  module's metric-id vocabulary. Deliberately NOT resolved by inventing an
+  unverified `FocusAreaCategory` → `HypothesisFamily` correspondence table
+  or an ad hoc `Intervention` type — either would either always return
+  empty (the `Goal.metric_id` path) or fabricate a mapping nothing in the
+  codebase currently backs. Building `personal-context.ts` needs one of:
+  a real shared metric-id vocabulary between `Goal`/`MetricId` and this
+  module's families, a genuine intervention loader, or a different,
+  narrower spec — an owner decision, not a slice.
 - **Checklist item "paired fixtures with identical endpoints but different
   recorded intent"** was already satisfied by slice 1/2:
   `hypothesis-policy.test.ts`'s `'buildHypotheses — rough-lie approach:

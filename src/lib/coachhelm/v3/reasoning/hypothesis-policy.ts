@@ -63,18 +63,16 @@
  * hypothesis, and nothing contradicts it; this is an ASSOCIATION, not a
  * causal claim.
  *
- * `'coach_annotated'` is currently UNREACHABLE: `mergeCoachAnnotation`
- * (slice 3, addendum §8.3) attaches a `CoachAnnotation` alongside a
- * hypothesis but deliberately never overwrites `state` — the spec is
- * explicit that a coach's judgment layers onto the evidence, never
- * replaces it, and there is no `'causal'` state for an annotation to
- * upgrade a hypothesis to. That leaves this value in the union with no
- * producer; whether to keep it (e.g. for a future UI-only "reviewed" read
- * derived from `coachAnnotation != null`, distinct from this module's own
- * `state`) or drop it from `HypothesisState` is an open question raised
- * back to the addendum owner, not decided in this slice.
- * There is deliberately no `'proven'` state: this module never claims
- * that.
+ * There was briefly a `'coach_annotated'` state in this union (slice 3
+ * draft, addendum §8.3) — dropped after review: `mergeCoachAnnotation`
+ * attaches a `CoachAnnotation` alongside a hypothesis but deliberately
+ * never overwrites `state` (a coach's judgment layers onto the evidence,
+ * never replaces it), so nothing in this module could ever produce that
+ * value — a state with no producer isn't a state, it's dead code. A
+ * "reviewed" read belongs at the call site, derived from
+ * `coachAnnotation != null`, not as a fourth member of `HypothesisState`.
+ * There is deliberately no `'proven'` state either: this module never
+ * claims that.
  *
  * `description` is a function of `state`, not a fixed per-family string —
  * the SAME family reads differently depending on how much has actually
@@ -136,6 +134,11 @@
  * at annotation time — including a claim id that flips from supporting to
  * contradicting between calls, which is why the two claim-id snapshots are
  * kept separate rather than merged into one "known" set.
+ *
+ * `HypothesisState` has no `'coach_annotated'` member — see the "## States"
+ * section above for why a state with no producer was dropped rather than
+ * kept as dead code. A "reviewed" read belongs at the call site
+ * (`coachAnnotation != null`), not as a fourth `state` value.
  */
 
 import type { ShotFact, ShotIntent } from '../context/types';
@@ -148,7 +151,7 @@ export type { MetricResult, MetricStatus } from '../metrics/types';
 // Hypothesis shape
 // ---------------------------------------------------------------------------
 
-export type HypothesisState = 'no_data' | 'candidate' | 'supported_association' | 'coach_annotated';
+export type HypothesisState = 'no_data' | 'candidate' | 'supported_association';
 
 /** One of the four named registry families, or `'insufficient'` for an
  *  entry that names competing families instead of picking one. */
@@ -357,8 +360,6 @@ function describeShortBias(state: HypothesisState): string {
       return 'Approach shots are associated with coming up short of the target more often than ' +
         'missing long, left, or right — a supported metric agrees with this pattern, though this ' +
         'is an association, not a causal claim.';
-    case 'coach_annotated':
-      return 'A coach has reviewed the short-bias pattern for this player.';
   }
 }
 
@@ -444,8 +445,6 @@ function describeRecovery(state: HypothesisState): string {
     case 'supported_association':
       return 'This approach is associated with a recovery pattern from the rough that a supported ' +
         'metric agrees with — an association, not a causal claim.';
-    case 'coach_annotated':
-      return 'A coach has reviewed this recovery attempt.';
   }
 }
 
@@ -485,8 +484,6 @@ function describeRoughGap(state: HypothesisState): string {
       return 'A deliberate go-for-green approach from the rough is associated with underperforming ' +
         'the canonical strokes-gained baseline for that lie and distance — an association, not a ' +
         'causal claim.';
-    case 'coach_annotated':
-      return 'A coach has reviewed this rough-approach pattern.';
   }
 }
 
@@ -615,8 +612,6 @@ function describePar5OpportunityLoss(state: HypothesisState): string {
       return 'This round is associated with a below-typical par-5 regulation/green-in-two ' +
         'conversion rate — a scoring opportunity this player usually reaches was not converted ' +
         'this time. An association, not a causal claim.';
-    case 'coach_annotated':
-      return 'A coach has reviewed this par-5 opportunity pattern.';
   }
 }
 

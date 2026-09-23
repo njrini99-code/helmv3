@@ -496,13 +496,13 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   `'candidate'` (a real supporting claim exists but isn't corroborated, or
   was but got contradicted), `'supported_association'` (a `status:
   'supported'` metric agrees and nothing contradicts — an association,
-  never causal), and `'coach_annotated'` — currently UNREACHABLE: slice 3's
-  `mergeCoachAnnotation` attaches a `CoachAnnotation` alongside a
-  hypothesis but deliberately never sets `state` to it (the addendum is
-  explicit that a coach's judgment layers onto the evidence, never
-  replaces it), leaving this value in the union with no producer pending
-  an owner decision on whether to keep or drop it. No
-  `'proven'` state exists. `recovery` (no metric ever corroborates it, and
+  never causal). `'coach_annotated'` was briefly a fourth state in slice
+  3's draft, then DROPPED (review decision, 2026-09-23): `mergeCoachAnnotation`
+  deliberately never sets `state` to it (the addendum is explicit that a
+  coach's judgment layers onto the evidence, never replaces it), so nothing
+  could ever produce it — a state with no producer was removed rather than
+  kept as dead code; a "reviewed" read belongs at the call site
+  (`coachAnnotation != null`). No `'proven'` state exists. `recovery` (no metric ever corroborates it, and
   its own triggering shot is deliberately not cited as its own support)
   and `short_bias`/`par5_opportunity_loss` with an absent metric resolve
   to `'no_data'`; `rough_gap` and `'insufficient'` keep a real fact-based
@@ -533,7 +533,9 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   `diagnosis.ts` (`engine/diagnosis.ts`) is a narrow pure `AxisTally`→text
   helper with one caller, the DB-backed `generators/approach-miss.ts` — not
   a fit for this module's pure-core `Hypothesis[]` shape without a much
-  larger change than "wire it in," reported back rather than forced.
+  larger change than "wire it in." Wiring hypotheses into a generator's
+  reading belongs to that DB-backed GENERATOR layer, not `diagnosis.ts`
+  itself — a future slice, reported back rather than forced here.
   `personal-context.ts` was scoped to resolve active goals/focus
   areas/interventions for check-selection priority, but `Goal.metric_id`
   (typed `MetricId`, `metrics/registry.ts`) shares NO ids with this
