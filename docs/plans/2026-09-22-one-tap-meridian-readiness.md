@@ -172,7 +172,7 @@ single-course:
    needs the owner to approve its exact package hash (and a `livePilot` entry
    for C2 Live).
 2. **Local-only work — done 2026-09-22.** The 6 commits are pushed to
-   `origin/agent/course-factory-c`; the Phase 0 set is `27e8f431a…` on
+   `origin/agent/course-factory-c`; the Phase 0 set is `2c4f350c2` on
    `agent/course-factory-phase0` (pushed), without `output/`,
    `.playwright-cli/` or the stale temporary lab fixtures, which remain
    uncommitted in the worktree.
