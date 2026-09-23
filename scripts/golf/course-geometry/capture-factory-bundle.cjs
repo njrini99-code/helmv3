@@ -32,7 +32,12 @@ const output = path.resolve(args.out || `output/playwright/factory-bundles/${lay
       try {
         const expected = manifest.holes.find(h => h.key === key);
         await page.goto(`${base}/?layout=${layout}&bundle=${bundle}&hole=${key}`, { waitUntil: 'domcontentloaded' });
-        await page.waitForSelector('canvas[data-terrain-state="ready"]', { timeout: 60000 });
+        // Race the ready canvas against the lab's own refusal (a bundle the
+        // runtime schema rejects renders role=alert at once), so a refused
+        // bundle fails in seconds, not 60 s per hole.
+        await page.waitForSelector('canvas[data-terrain-state="ready"], main [role="alert"]', { timeout: 60000 });
+        const alert = await page.locator('main [role="alert"]').first().textContent({ timeout: 100 }).catch(() => null);
+        if (alert !== null) throw new Error(`Factory bundle unavailable: ${alert.slice(0, 2000)}`);
         const evidence = await page.locator('[data-factory-state="ready"]').evaluate(el => ({ ...el.dataset }));
         const renderer = await page.locator('canvas[data-terrain-state="ready"]').evaluate(el => ({ ...el.dataset }));
         if (evidence.factoryBundle !== bundle || evidence.packageHash !== manifest.packageHash || evidence.meshHash !== expected.meshHash || renderer.terrainHash !== expected.meshHash) throw new Error('Captured identity mismatch');
@@ -40,6 +45,14 @@ const output = path.resolve(args.out || `output/playwright/factory-bundles/${lay
         await page.screenshot({ path: path.join(output, file), fullPage: true });
         captures.push({ holeKey: key, file, evidence, renderer });
         console.log(`${key}: draw ${renderer.drawCalls}/${renderer.drawCallBudget}, mesh ${expected.meshHash.slice(0, 12)}`);
+      } catch (error) {
+        // One hole's failure is that hole's evidence; the other holes still
+        // get captured (a thrown error here used to abandon the whole run).
+        const terrainState = await page.locator('canvas[data-terrain-state]').first().getAttribute('data-terrain-state', { timeout: 100 }).catch(() => null);
+        const file = `${key}-failed-390x844.png`;
+        await page.screenshot({ path: path.join(output, file), fullPage: true }).catch(() => {});
+        errors.push({ hole: key, message: String(error.message || error).slice(0, 2500), terrainState, file });
+        console.error(`${key}: FAILED (${terrainState ?? 'no terrain canvas'}) ${String(error.message || error).split('\n')[0].slice(0, 200)}`);
       } finally { await page.close(); }
     }
   } finally {
