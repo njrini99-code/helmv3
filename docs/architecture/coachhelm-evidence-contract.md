@@ -1258,12 +1258,13 @@ never feeds `nextWeight` or any learning loop, so there is no
 direction-corrected signal to compute, only the plain observed change
 (module header's NAMING note).
 
-## Controlled hypotheses (A5 deliverable, slice 1 + slice 2 — pure core, no DB)
+## Controlled hypotheses (A5 deliverable, slices 1-2)
 
 `buildHypotheses(metrics, facts)`
-(`src/lib/coachhelm/v3/reasoning/hypothesis-policy.ts`) proposes a small,
-NAMED set of candidate explanations for a round's shot data — never a
-fabricated cause, never a psychology/fatigue/mechanics inference (a test
+(`src/lib/coachhelm/v3/reasoning/hypothesis-policy.ts`) — PURE CORE, no
+DB — proposes a small, NAMED set of candidate explanations for a round's
+shot data — never a fabricated cause, never a psychology/fatigue/mechanics
+inference (a test
 scans every hypothesis this module can produce for banned terms —
 `pressure`, `confidence`, `swing`, `mechanics`, and similar).
 
